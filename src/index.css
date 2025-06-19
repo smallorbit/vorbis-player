@@ -6,14 +6,8 @@
   0% {
     transform: translateX(0);
   }
-  20% {
-    transform: translateX(0);
-  }
-  45% {
-    transform: translateX(calc(-100% + 300px));
-  }
-  70% {
-    transform: translateX(calc(-100% + 300px));
+  50% {
+    transform: translateX(-100%);
   }
   100% {
     transform: translateX(0);
@@ -21,9 +15,10 @@
 }
 
 .animate-marquee {
-  animation: marquee 12s ease-in-out infinite;
+  animation: marquee 8s linear infinite;
   display: block !important;
   text-align: left !important;
+  white-space: nowrap !important;
 }
 
 .animate-marquee:hover {
@@ -103,4 +98,17 @@ button:focus-visible {
   button {
     background-color: #f9f9f9;
   }
+}
+
+/* Fix timestamp width to prevent layout shifting */
+.rhap_time {
+  min-width: 45px !important;
+  text-align: center !important;
+  font-variant-numeric: tabular-nums !important;
+}
+
+/* Ensure the time container doesn't change size */
+.rhap_time-display {
+  min-width: 45px !important;
+  display: inline-block !important;
 }
