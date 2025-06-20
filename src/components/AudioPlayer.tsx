@@ -70,8 +70,42 @@ const AudioPlayerComponent = () => {
     
     checkOverflow();
     
-    // Re-check on window resize
     const handleResize = () => checkOverflow();
+    window.addEventListener('resize', handleResize);
+    
+    return () => window.removeEventListener('resize', handleResize);
+  }, [currentTrackIndex, tracks]);
+
+  // Dynamically adjust font size to fit long song titles within the container width
+  // This ensures titles are always readable regardless of length
+  useEffect(() => {
+    const adjustFontSize = () => {
+      if (titleRef.current) {
+        const titleElement = titleRef.current;
+        const container = titleElement.parentElement;
+        
+        if (container) {
+          const containerWidth = container.offsetWidth;
+          
+          let fontSize = 32; 
+          titleElement.style.fontSize = `${fontSize}px`;
+          
+          while (
+            titleElement.scrollWidth > containerWidth 
+          ) {
+            fontSize -= 1;
+            titleElement.style.fontSize = `${fontSize}px`;
+            
+            // Prevent infinite loop
+            if (fontSize <= 12) break;
+          }
+        }
+      }
+    };
+    
+    adjustFontSize();
+    
+    const handleResize = () => adjustFontSize();
     window.addEventListener('resize', handleResize);
     
     return () => window.removeEventListener('resize', handleResize);
@@ -89,6 +123,8 @@ const AudioPlayerComponent = () => {
     return <div className="text-center mt-20">No tracks to play.</div>;
   }
 
+  // Custom mute button implementation because the default audio player 
+  // doesn't provide the exact mute functionality we need
   const CustomMuteButton = () => (
     <button
       onClick={handleMuteToggle}
@@ -109,10 +145,10 @@ const AudioPlayerComponent = () => {
 
   return (
     <div className="w-[393px] mx-auto mt-10">
-      <div className="song-title text-center mb-6 h-16 overflow-hidden relative">
+      <div className="song-title text-center mb-6 h-16 flex items-center justify-center">
         <div 
           ref={titleRef}
-          className={`whitespace-nowrap song-title ${isTextOverflowing ? 'animate-marquee' : 'flex justify-center items-center h-full'}`}
+          className="whitespace-nowrap"
         >
           {tracks[currentTrackIndex].title}
         </div>
