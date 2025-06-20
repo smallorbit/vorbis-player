@@ -1,15 +1,38 @@
 import React, { useState, useEffect, useRef } from 'react';
 import AudioPlayer, { RHAP_UI } from 'react-h5-audio-player';
 import 'react-h5-audio-player/lib/styles.css';
-import { tracks } from '../data/tracks';
 import Playlist from './Playlist';
+import { getDropboxAudioFiles } from '../services/dropbox';
+import type { Track } from '../services/dropbox';
 
 const AudioPlayerComponent = () => {
+  const [tracks, setTracks] = useState<Track[]>([]);
   const [currentTrackIndex, setCurrentTrackIndex] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [isTextOverflowing, setIsTextOverflowing] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const titleRef = useRef<HTMLDivElement>(null);
   const audioPlayerRef = useRef<any>(null);
+
+  useEffect(() => {
+    const fetchTracks = async () => {
+      try {
+        setIsLoading(true);
+        const fetchedTracks = await getDropboxAudioFiles('');
+        if (fetchedTracks.length === 0) {
+          setError("No audio files found in your app's Dropbox folder. Make sure files have been added and the app has 'files.metadata.read' permissions.");
+        }
+        setTracks(fetchedTracks);
+      } catch (err: any) {
+        setError(err.message || "An unknown error occurred while fetching tracks.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchTracks();
+  }, []);
 
   const handleNext = () => {
     setCurrentTrackIndex((prev) => (prev + 1) % tracks.length);
@@ -52,7 +75,19 @@ const AudioPlayerComponent = () => {
     window.addEventListener('resize', handleResize);
     
     return () => window.removeEventListener('resize', handleResize);
-  }, [currentTrackIndex]);
+  }, [currentTrackIndex, tracks]);
+
+  if (isLoading) {
+    return <div className="text-center mt-20">Loading music from Dropbox...</div>;
+  }
+
+  if (error) {
+    return <div className="text-center mt-20 text-red-500">Error: {error}</div>;
+  }
+
+  if (tracks.length === 0) {
+    return <div className="text-center mt-20">No tracks to play.</div>;
+  }
 
   const CustomMuteButton = () => (
     <button
@@ -99,6 +134,7 @@ const AudioPlayerComponent = () => {
         layout="horizontal"
       />
       <Playlist 
+        tracks={tracks}
         currentTrackIndex={currentTrackIndex}
         onTrackSelect={handleTrackSelect}
       />

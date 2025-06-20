@@ -1,12 +1,13 @@
 import React from 'react';
-import { tracks } from '../data/tracks';
+import type { Track } from '../services/dropbox';
 
 interface PlaylistProps {
+  tracks: Track[];
   currentTrackIndex: number;
   onTrackSelect: (index: number) => void;
 }
 
-const Playlist: React.FC<PlaylistProps> = ({ currentTrackIndex, onTrackSelect }) => {
+const Playlist: React.FC<PlaylistProps> = ({ tracks, currentTrackIndex, onTrackSelect }) => {
   return (
     <div className="w-full max-w-md mx-auto mt-6">
       <h3 className="text-lg font-semibold mb-4 text-center">Playlist</h3>
