@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import AudioPlayer, { RHAP_UI } from 'react-h5-audio-player';
 import 'react-h5-audio-player/lib/styles.css';
 import { tracks } from '../data/tracks';
+import Playlist from './Playlist';
 
 const AudioPlayerComponent = () => {
   const [currentTrackIndex, setCurrentTrackIndex] = useState(0);
@@ -16,6 +17,10 @@ const AudioPlayerComponent = () => {
 
   const handlePrevious = () => {
     setCurrentTrackIndex((prev) => (prev - 1 + tracks.length) % tracks.length);
+  };
+
+  const handleTrackSelect = (index: number) => {
+    setCurrentTrackIndex(index);
   };
 
   const handleMuteToggle = () => {
@@ -92,6 +97,10 @@ const AudioPlayerComponent = () => {
         ]}
         customVolumeControls={[<CustomMuteButton key="mute-button" />]}
         layout="horizontal"
+      />
+      <Playlist 
+        currentTrackIndex={currentTrackIndex}
+        onTrackSelect={handleTrackSelect}
       />
     </div>
   );
