@@ -86,18 +86,32 @@ const AudioPlayerComponent = () => {
         
         if (container) {
           const containerWidth = container.offsetWidth;
+          const screenWidth = window.innerWidth;
           
-          let fontSize = 32; 
+          // Base font size based on screen size (responsive)
+          let baseFontSize;
+          if (screenWidth < 640) {
+            baseFontSize = 18; // Mobile
+          } else if (screenWidth < 768) {
+            baseFontSize = 20; // Small tablet
+          } else if (screenWidth < 1024) {
+            baseFontSize = 24; // Tablet
+          } else {
+            baseFontSize = 32; // Desktop
+          }
+          
+          let fontSize = baseFontSize;
           titleElement.style.fontSize = `${fontSize}px`;
           
+          // Reduce font size until text fits, with responsive minimum
+          const minFontSize = screenWidth < 640 ? 12 : 14;
+          
           while (
-            titleElement.scrollWidth > containerWidth 
+            titleElement.scrollWidth > containerWidth && 
+            fontSize > minFontSize
           ) {
             fontSize -= 1;
             titleElement.style.fontSize = `${fontSize}px`;
-            
-            // Prevent infinite loop
-            if (fontSize <= 12) break;
           }
         }
       }
@@ -144,36 +158,40 @@ const AudioPlayerComponent = () => {
   );
 
   return (
-    <div className="w-[393px] mx-auto mt-10">
-      <div className="song-title text-center mb-6 h-16 flex items-center justify-center">
+    <div className="w-full max-w-md mx-auto mt-4 px-4 sm:max-w-lg md:max-w-2xl lg:max-w-4xl">
+      <div className="song-title text-center mb-4 sm:mb-6 h-12 sm:h-16 flex items-center justify-center px-2">
         <div 
           ref={titleRef}
-          className="whitespace-nowrap"
+          className="whitespace-nowrap text-sm sm:text-base md:text-lg"
         >
           {tracks[currentTrackIndex].title}
         </div>
       </div>
-      <AudioPlayer
-        ref={audioPlayerRef}
-        autoPlay
-        src={tracks[currentTrackIndex].src}
-        onEnded={handleNext}
-        onClickNext={handleNext}
-        onClickPrevious={handlePrevious}
-        showSkipControls
-        showJumpControls={false}
-        customControlsSection={[
-          RHAP_UI.MAIN_CONTROLS,
-          RHAP_UI.VOLUME_CONTROLS,
-        ]}
-        customVolumeControls={[<CustomMuteButton key="mute-button" />]}
-        layout="horizontal"
-      />
-      <Playlist 
-        tracks={tracks}
-        currentTrackIndex={currentTrackIndex}
-        onTrackSelect={handleTrackSelect}
-      />
+      <div className="bg-white/5 rounded-lg p-3 sm:p-4 backdrop-blur-sm border border-white/10">
+        <AudioPlayer
+          ref={audioPlayerRef}
+          autoPlay
+          src={tracks[currentTrackIndex].src}
+          onEnded={handleNext}
+          onClickNext={handleNext}
+          onClickPrevious={handlePrevious}
+          showSkipControls
+          showJumpControls={false}
+          customControlsSection={[
+            RHAP_UI.MAIN_CONTROLS,
+            RHAP_UI.VOLUME_CONTROLS,
+          ]}
+          customVolumeControls={[<CustomMuteButton key="mute-button" />]}
+          layout="horizontal"
+        />
+      </div>
+      <div className="mt-4 sm:mt-6">
+        <Playlist 
+          tracks={tracks}
+          currentTrackIndex={currentTrackIndex}
+          onTrackSelect={handleTrackSelect}
+        />
+      </div>
     </div>
   );
 };
