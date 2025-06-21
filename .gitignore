@@ -12,6 +12,9 @@ dist
 dist-ssr
 *.local
 
+# Vite
+.vite
+
 # Environment variables
 .env.local
 .env.*.local
