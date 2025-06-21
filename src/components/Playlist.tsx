@@ -7,37 +7,63 @@ interface PlaylistProps {
   onTrackSelect: (index: number) => void;
 }
 
+interface PlaylistItemProps {
+  track: Track;
+  index: number;
+  isSelected: boolean;
+  isLast: boolean;
+  onSelect: (index: number) => void;
+}
+
+const PlaylistItem: React.FC<PlaylistItemProps> = ({ 
+  track, 
+  index, 
+  isSelected, 
+  isLast, 
+  onSelect 
+}) => {
+  return (
+    <div
+      onClick={() => onSelect(index)}
+      className={`px-4 py-3 cursor-pointer transition-colors duration-200 hover:bg-neutral-700 ${
+        isSelected 
+          ? 'bg-neutral-600 text-white' 
+          : 'text-neutral-300 hover:text-white'
+      } ${!isLast ? 'border-b border-neutral-700' : ''}`}
+    >
+      <div className="grid grid-cols-[3rem_1fr_auto] items-center gap-4">
+        <div className="text-neutral-400 text-center">{index + 1}</div>
+        <div className={`truncate ${
+            isSelected ? 'text-white' : 'text-neutral-200'
+          }`}>
+          {track.title}
+        </div>
+        {isSelected && (
+          <div className="text-white">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M8 5v14l11-7z"/>
+            </svg>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
 const Playlist: React.FC<PlaylistProps> = ({ tracks, currentTrackIndex, onTrackSelect }) => {
   return (
     <div className="w-full max-w-md mx-auto mt-6">
       <h3 className="text-lg font-semibold mb-4 text-center">Playlist</h3>
       <div className="bg-neutral-800 rounded-lg overflow-hidden">
         {tracks.map((track, index) => (
-          <div
+          <PlaylistItem
             key={index}
-            onClick={() => onTrackSelect(index)}
-            className={`px-4 py-3 cursor-pointer transition-colors duration-200 hover:bg-neutral-700 ${
-              index === currentTrackIndex 
-                ? 'bg-neutral-600 text-white' 
-                : 'text-neutral-300 hover:text-white'
-            } ${index !== tracks.length - 1 ? 'border-b border-neutral-700' : ''}`}
-          >
-            <div className="grid grid-cols-[3rem_1fr_auto] items-center gap-4">
-              <div className="text-neutral-400 text-center">{index + 1}</div>
-              <div className={`truncate ${
-                  index === currentTrackIndex ? 'text-white' : 'text-neutral-200'
-                }`}>
-                {track.title}
-              </div>
-              {index === currentTrackIndex && (
-                <div className="text-white">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M8 5v14l11-7z"/>
-                  </svg>
-                </div>
-              )}
-            </div>
-          </div>
+            track={track}
+            index={index}
+            isSelected={index === currentTrackIndex}
+            isLast={index === tracks.length - 1}
+            onSelect={onTrackSelect}
+          />
         ))}
       </div>
     </div>
