@@ -88,6 +88,7 @@ const AudioPlayerComponent = () => {
             showSkipControls
             showJumpControls={false}
             layout="horizontal"
+            customAdditionalControls={[]}
           />
         </div>
       </div>
