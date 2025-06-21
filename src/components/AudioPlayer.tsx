@@ -60,22 +60,24 @@ const AudioPlayerComponent = () => {
 
   return (
     <div className="w-full max-w-md mx-auto mt-4 px-4 sm:max-w-lg md:max-w-2xl lg:max-w-4xl">
-      <div className="song-title text-center mb-4 sm:mb-6 h-12 sm:h-16 flex items-center justify-center px-2">
-        <HyperText
-          className="text-sm sm:text-base md:text-lg lg:text-xl font-bold text-white py-0"
-          duration={800}
-          animateOnHover={false}
-          startOnView={false}
-          delay={0}
-          as="span"
-          trigger={currentTrackIndex}
-          characterSet={["♪", "♫", "♬", "♩", "♯", "♭", "𝄞", "𝄡", "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"]}
-        >
-          {tracks[currentTrackIndex].title}
-        </HyperText>
-      </div>
       <div className="bg-white/5 rounded-lg p-3 sm:p-4 backdrop-blur-sm border border-white/10">
-        <div style={{ paddingRight: '20px' }}>
+        <div className="song-title text-center mb-4 sm:mb-6 h-12 sm:h-16 flex items-center justify-center px-2">
+          <div style={{ paddingRight: '10px', paddingLeft: '10px' , paddingTop: '10px', paddingBottom: '0px' }}>
+            <HyperText
+              className="text-sm sm:text-base md:text-lg lg:text-xl font-bold text-white py-0"
+              duration={800}
+              animateOnHover={false}
+              startOnView={false}
+              delay={0}
+              as="span"
+              trigger={currentTrackIndex}
+              characterSet={["♪", "♫", "♬", "♩", "♯", "♭", "𝄞", "𝄡", "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"]}
+            >
+              {tracks[currentTrackIndex].title}
+            </HyperText>
+          </div>
+        </div>
+        <div style={{ paddingRight: '20px', paddingLeft: '20px' , paddingTop: '20px', paddingBottom: '10px' }}>
           <AudioPlayer
             ref={audioPlayerRef}
             autoPlay
