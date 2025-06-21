@@ -124,46 +124,52 @@ button:focus-visible {
 
 .rhap_main {
   display: flex !important;
-  align-items: center !important;
-  justify-content: space-between !important;
-  gap: 0.75rem !important;
+  flex-direction: column !important;
+  gap: 1rem !important;
 }
 
-/* Progress bar responsive design */
+/* Move progress section to top */
 .rhap_progress-section {
-  flex: 1 !important;
-  display: flex !important;
-  align-items: center !important;
-  gap: 0.5rem !important;
-  min-width: 0 !important;
+  order: -1 !important;
 }
 
 .rhap_progress-container {
-  flex: 1 !important;
-  height: 4px !important;
-  background: rgba(255, 255, 255, 0.2) !important;
-  border-radius: 2px !important;
+  height: 6px !important;
+  background: rgba(255, 255, 255, 0.6) !important;
+  border-radius: 3px !important;
   cursor: pointer !important;
+  position: relative !important;
 }
 
 .rhap_progress-bar {
   height: 100% !important;
-  background: #ffffff !important;
-  border-radius: 2px !important;
+  background: rgba(255, 255, 255, 0.2) !important;
+  border-radius: 3px !important;
   transition: all 0.1s ease !important;
 }
 
 .rhap_progress-indicator {
-  width: 12px !important;
-  height: 12px !important;
+  width: 14px !important;
+  height: 14px !important;
   background: #ffffff !important;
   border-radius: 50% !important;
   opacity: 0 !important;
   transition: opacity 0.2s ease !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3) !important;
+  position: absolute !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
 }
 
 .rhap_progress-container:hover .rhap_progress-indicator {
   opacity: 1 !important;
+}
+
+/* Controls row */
+.rhap_main-controls,
+.rhap_volume-controls {
+  display: flex !important;
+  align-items: center !important;
 }
 
 /* Control buttons responsive design */

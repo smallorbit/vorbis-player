@@ -177,10 +177,6 @@ const AudioPlayerComponent = () => {
           onClickPrevious={handlePrevious}
           showSkipControls
           showJumpControls={false}
-          customControlsSection={[
-            RHAP_UI.MAIN_CONTROLS,
-            RHAP_UI.VOLUME_CONTROLS,
-          ]}
           customVolumeControls={[<CustomMuteButton key="mute-button" />]}
           layout="horizontal"
         />
