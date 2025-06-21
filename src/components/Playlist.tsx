@@ -56,7 +56,6 @@ const PlaylistItem: React.FC<PlaylistItemProps> = ({
 const Playlist: React.FC<PlaylistProps> = ({ tracks, currentTrackIndex, onTrackSelect }) => {
   return (
     <div className="w-full max-w-4xl mx-auto mt-6">
-      <h3 className="text-lg font-semibold mb-4 text-center text-white">Playlist</h3>
       <div className="bg-neutral-800 rounded-lg overflow-hidden border border-neutral-700 shadow-sm">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-neutral-700">
