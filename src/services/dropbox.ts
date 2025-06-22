@@ -25,6 +25,7 @@ const dbx = new Dropbox({
 export interface Track {
   title: string;
   src: string;
+  duration?: string;
 }
 
 const getFileName = (path: string): string => {
@@ -33,6 +34,31 @@ const getFileName = (path: string): string => {
   // Remove the extension for a cleaner title
   fileName = fileName.replace(/\.[^/.]+$/, "");
   return fileName;
+}
+
+const getAudioDuration = (src: string): Promise<string> => {
+  return new Promise((resolve) => {
+    const audio = new Audio();
+    audio.preload = 'metadata';
+    
+    audio.onloadedmetadata = () => {
+      const duration = audio.duration;
+      if (isNaN(duration)) {
+        resolve('--:--');
+        return;
+      }
+      
+      const minutes = Math.floor(duration / 60);
+      const seconds = Math.floor(duration % 60);
+      resolve(`${minutes}:${seconds.toString().padStart(2, '0')}`);
+    };
+    
+    audio.onerror = () => {
+      resolve('--:--');
+    };
+    
+    audio.src = src;
+  });
 }
 
 export const getDropboxAudioFiles = async (folderPath: string): Promise<Track[]> => {
@@ -67,9 +93,13 @@ export const getDropboxAudioFiles = async (folderPath: string): Promise<Track[]>
       }
       try {
         const tempLinkResult = await dbx.filesGetTemporaryLink({ path: file.path_lower });
+        const src = tempLinkResult.result.link;
+        const duration = await getAudioDuration(src);
+        
         return {
           title: getFileName(file.name),
-          src: tempLinkResult.result.link,
+          src,
+          duration,
         };
       } catch (linkError) {
         if (import.meta.env.DEV) {
