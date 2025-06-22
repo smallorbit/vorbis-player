@@ -4,24 +4,7 @@ import Playlist from './Playlist';
 import { getDropboxAudioFiles, dropboxAuth } from '../services/dropbox';
 import type { Track } from '../services/dropbox';
 import { HyperText } from './ui/hyper-text';
-
-const sortTracksByNumber = (tracks: Track[]): Track[] => {
-  return [...tracks].sort((a, b) => {
-    const aMatch = a.title.match(/^(\d+)/);
-    const bMatch = b.title.match(/^(\d+)/);
-    
-    if (aMatch && bMatch) {
-      const aNum = parseInt(aMatch[1], 10);
-      const bNum = parseInt(bMatch[1], 10);
-      return aNum - bNum;
-    }
-    
-    if (aMatch && !bMatch) return -1;
-    if (!aMatch && bMatch) return 1;
-    
-    return a.title.localeCompare(b.title);
-  });
-};
+import { sortTracksByNumber } from '../lib/utils';
 
 const AudioPlayerComponent = () => {
   const [tracks, setTracks] = useState<Track[]>([]);
@@ -31,38 +14,39 @@ const AudioPlayerComponent = () => {
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const audioRef = useRef<HTMLAudioElement>(null!);
   
-  useEffect(() => {
+  const fetchTracks = async () => {
     // Don't try to fetch tracks if we're on the auth callback page
     if (window.location.pathname === '/auth/dropbox/callback') {
       setIsLoading(false); // Don't show loading state during auth
       return;
     }
-
-    const fetchTracks = async () => {
-      try {
-        setError(null); // Clear any previous errors
-        setIsLoading(true);
-        const fetchedTracks = await getDropboxAudioFiles('');
-        if (fetchedTracks.length === 0) {
-          setError("No audio files found in your app's Dropbox folder. Make sure files have been added and the app has 'files.metadata.read' permissions.");
-        }
-        // Set the current track to the first one in sorted order before setting tracks
-        if (fetchedTracks.length > 0) {
-          const sortedTracks = sortTracksByNumber(fetchedTracks);
-          const firstSortedTrack = sortedTracks[0];
-          const originalIndex = fetchedTracks.findIndex(track => track === firstSortedTrack);
-          if (originalIndex !== -1) {
-            setCurrentTrackIndex(originalIndex);
-          }
-        }
-        setTracks(fetchedTracks);
-      } catch (err: unknown) {
-        setError(err instanceof Error ? err.message : "An unknown error occurred while fetching tracks.");
-      } finally {
-        setIsLoading(false);
+    
+    try {
+      setError(null); // Clear any previous errors
+      setIsLoading(true);
+      const fetchedTracks = await getDropboxAudioFiles('');
+      if (fetchedTracks.length === 0) {
+        setError("No audio files found in your app's Dropbox folder. Make sure files have been added and the app has 'files.metadata.read' permissions.");
       }
-    };
+      // Set the current track to the first one in sorted order before setting tracks
+      if (fetchedTracks.length > 0) {
+        const sortedTracks = sortTracksByNumber(fetchedTracks);
+        const firstSortedTrack = sortedTracks[0];
+        // The fetchedTracks are not sorted, so we find the original index
+        const originalIndex = fetchedTracks.findIndex(track => track === firstSortedTrack);
+        if (originalIndex !== -1) {
+          setCurrentTrackIndex(originalIndex);
+        }
+      }
+      setTracks(fetchedTracks);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "An unknown error occurred while fetching tracks.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchTracks();
   }, []);
 
@@ -71,30 +55,6 @@ const AudioPlayerComponent = () => {
     const handleFocus = () => {
       // Only retry if we're not on the callback page and don't have tracks
       if (window.location.pathname !== '/auth/dropbox/callback' && tracks.length === 0 && !isLoading) {
-        const fetchTracks = async () => {
-          try {
-            setError(null);
-            setIsLoading(true);
-            const fetchedTracks = await getDropboxAudioFiles('');
-            if (fetchedTracks.length === 0) {
-              setError("No audio files found in your app's Dropbox folder. Make sure files have been added and the app has 'files.metadata.read' permissions.");
-            }
-            setTracks(fetchedTracks);
-            // Set the current track to the first one in sorted order
-            if (fetchedTracks.length > 0) {
-              const sortedTracks = sortTracksByNumber(fetchedTracks);
-              const firstSortedTrack = sortedTracks[0];
-              const originalIndex = fetchedTracks.findIndex(track => track === firstSortedTrack);
-              if (originalIndex !== -1) {
-                setCurrentTrackIndex(originalIndex);
-              }
-            }
-          } catch (err: unknown) {
-            setError(err instanceof Error ? err.message : "An unknown error occurred while fetching tracks.");
-          } finally {
-            setIsLoading(false);
-          }
-        };
         fetchTracks();
       }
     };
@@ -108,39 +68,24 @@ const AudioPlayerComponent = () => {
     setCurrentTrackIndex(index);
   };
 
-  // Listen for track changes when using next/previous buttons
   useEffect(() => {
     const audio = audioRef.current;
-    if (!audio || tracks.length === 0 || isInitialLoad) return;
+    if (!audio) return;
 
     const updateCurrentTrack = () => {
-      const currentSrc = audio.src;
-      if (!currentSrc) return;
-      
-      const trackIndex = tracks.findIndex(track => track.src === currentSrc);
+      // Find the track in the playlist that matches the audio player's current source
+      const trackIndex = tracks.findIndex(track => track.src === audio.src);
       if (trackIndex !== -1 && trackIndex !== currentTrackIndex) {
-        console.log('Track changed via skip buttons:', trackIndex, tracks[trackIndex]?.title);
         setCurrentTrackIndex(trackIndex);
       }
     };
 
-    const handlePlay = () => {
-      setIsInitialLoad(false);
-    };
-
-    // Listen to multiple events to catch track changes
     audio.addEventListener('loadstart', updateCurrentTrack);
-    audio.addEventListener('loadeddata', updateCurrentTrack);
-    audio.addEventListener('canplay', updateCurrentTrack);
-    audio.addEventListener('play', handlePlay);
     
     return () => {
       audio.removeEventListener('loadstart', updateCurrentTrack);
-      audio.removeEventListener('loadeddata', updateCurrentTrack);
-      audio.removeEventListener('canplay', updateCurrentTrack);
-      audio.removeEventListener('play', handlePlay);
     };
-  }, [tracks, currentTrackIndex, isInitialLoad]);
+  }, [tracks, currentTrackIndex]);
 
   // Convert tracks to the format expected by react-modern-audio-player
   const playList = useMemo(() => 
