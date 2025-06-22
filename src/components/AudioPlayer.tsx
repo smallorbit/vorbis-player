@@ -3,6 +3,7 @@ import AudioPlayer from 'react-modern-audio-player';
 import Playlist from './Playlist';
 import { getDropboxAudioFiles, dropboxAuth } from '../services/dropbox';
 import type { Track } from '../services/dropbox';
+import { HyperText } from './ui/hyper-text';
 
 const sortTracksByNumber = (tracks: Track[]): Track[] => {
   return [...tracks].sort((a, b) => {
@@ -192,18 +193,21 @@ const AudioPlayerComponent = () => {
       return (
         <div className="bg-white/10 rounded-xl p-8 backdrop-blur-sm border border-white/20 shadow-xl max-w-md w-full mx-4">
           <div className="text-center">
-            <div className="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-6">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
-                <path d="M8 5v14l11-7z"/>
-              </svg>
-            </div>
-            <h2 className="text-2xl font-bold text-white mb-3">Music Player</h2>
-            <p className="text-gray-300 mb-8">Ready to start your playlist</p>
+            
+            <HyperText duration={800} className="text-2xl font-bold text-white mb-3" as="h2">
+              Vorbis Audio Player
+            </HyperText>
             <button
               onClick={() => setIsInitialLoad(false)}
               className="w-full px-6 py-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold text-lg"
             >
-              Start Playing
+              Click to start
+                <div className="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-6">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
+                  <path d="M8 5v14l11-7z"/>
+                </svg>
+              </div>
+              
             </button>
           </div>
         </div>
