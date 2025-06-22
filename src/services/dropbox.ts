@@ -248,10 +248,44 @@ class DropboxAuth {
     this.tokenData = null;
     this.dbx = null;
     localStorage.removeItem('dropbox_token');
+    // Also clear PKCE data just in case
     localStorage.removeItem('dropbox_pkce');
   }
 
+  public async handleRedirect(): Promise<void> {
+    const urlParams = new URLSearchParams(window.location.search);
+    const code = urlParams.get('code');
+    const error = urlParams.get('error');
+    const errorDescription = urlParams.get('error_description');
+
+    if (error) {
+      this.logout();
+      throw new Error(`Dropbox auth error: ${error} - ${errorDescription}`);
+    }
+
+    if (code && window.location.pathname === '/auth/dropbox/callback') {
+      const processedCode = sessionStorage.getItem('dropbox_processed_code');
+      if (processedCode === code) {
+        console.log('Code already processed, redirecting...');
+        window.history.replaceState({}, document.title, '/');
+        return;
+      }
+
+      try {
+        await this.handleAuthCallback(code);
+        sessionStorage.setItem('dropbox_processed_code', code);
+        window.history.replaceState({}, document.title, '/');
+      } catch (e) {
+        sessionStorage.removeItem('dropbox_processed_code');
+        this.logout();
+        throw e;
+      }
+    }
+  }
+
   public clearStoredTokens(): void {
+    this.tokenData = null;
+    this.dbx = null;
     this.logout();
   }
 }
