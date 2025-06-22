@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import AudioPlayer from 'react-modern-audio-player';
 import Playlist from './Playlist';
 import { getDropboxAudioFiles } from '../services/dropbox';
@@ -10,6 +10,7 @@ const AudioPlayerComponent = () => {
   const [currentTrackIndex, setCurrentTrackIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const audioRef = useRef<HTMLAudioElement>(null);
   
   useEffect(() => {
     const fetchTracks = async () => {
@@ -33,6 +34,26 @@ const AudioPlayerComponent = () => {
   const handleTrackSelect = (index: number) => {
     setCurrentTrackIndex(index);
   };
+
+  // Listen for track changes when using next/previous buttons
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio || tracks.length === 0) return;
+
+    const handleLoadStart = () => {
+      // Find the current track index based on the audio source
+      const currentSrc = audio.src;
+      const trackIndex = tracks.findIndex(track => track.src === currentSrc);
+      if (trackIndex !== -1 && trackIndex !== currentTrackIndex) {
+        setCurrentTrackIndex(trackIndex);
+      }
+    };
+
+    audio.addEventListener('loadstart', handleLoadStart);
+    return () => {
+      audio.removeEventListener('loadstart', handleLoadStart);
+    };
+  }, [tracks, currentTrackIndex]);
 
   // Convert tracks to the format expected by react-modern-audio-player
   const playList = useMemo(() => 
@@ -78,7 +99,9 @@ const AudioPlayerComponent = () => {
         </div>
         <div className="px-2 sm:px-4 md:px-6 pt-3 sm:pt-4 md:pt-5 pb-2 sm:pb-3 overflow-hidden">
           <AudioPlayer
+            key={currentTrackIndex}
             playList={playList}
+            audioRef={audioRef}
             audioInitialState={{
               isPlaying: true,
               curPlayId: currentTrackIndex + 1,
