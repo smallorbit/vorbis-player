@@ -12,9 +12,10 @@ interface MediaItem {
 
 interface MediaCollageProps {
   currentTrack: Track | null;
+  shuffleCounter: number;
 }
 
-const MediaCollage = memo<MediaCollageProps>(({ currentTrack }) => {
+const MediaCollage = memo<MediaCollageProps>(({ currentTrack, shuffleCounter }) => {
   const [mediaItems, setMediaItems] = useState<MediaItem[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -35,7 +36,7 @@ const MediaCollage = memo<MediaCollageProps>(({ currentTrack }) => {
       .slice(0, 3); // Limit to first 3 meaningful words
   };
 
-  const fetchMediaContent = async (track: Track) => {
+  const fetchMediaContent = async (track: Track, shuffleSeed: number = 0) => {
     if (!track) return;
     
     // Clear previous media items immediately
@@ -45,7 +46,8 @@ const MediaCollage = memo<MediaCollageProps>(({ currentTrack }) => {
       const keywords = extractKeywords(track.title);
       const searchQuery = keywords.join(' ');
       
-      const youtubeResult = await youtubeService.searchVideos(searchQuery, 1);
+      // Pass shuffle counter to ensure different video selection
+      const youtubeResult = await youtubeService.searchVideos(searchQuery, 1, shuffleSeed);
       
       const mediaItems: MediaItem[] = [];
       
@@ -72,9 +74,10 @@ const MediaCollage = memo<MediaCollageProps>(({ currentTrack }) => {
 
   useEffect(() => {
     if (currentTrack) {
-      fetchMediaContent(currentTrack);
+      // The shuffleCounter from props is now the seed for the API call
+      fetchMediaContent(currentTrack, shuffleCounter); 
     }
-  }, [currentTrack]);
+  }, [currentTrack, shuffleCounter]); // Re-fetches when the track or counter changes
 
   if (!currentTrack) {
     return null;
@@ -85,7 +88,7 @@ const MediaCollage = memo<MediaCollageProps>(({ currentTrack }) => {
       <div className="bg-white/5 rounded-lg p-4 backdrop-blur-sm border border-white/10">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold text-white">
-             Vorbis Audio Player
+             Vorbis Player
           </h3>
           {loading && (
             <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
@@ -106,8 +109,7 @@ const MediaCollage = memo<MediaCollageProps>(({ currentTrack }) => {
                 <iframe
                   src={item.url}
                   title={item.title}
-                  className="w-full h-full"
-                  frameBorder="0"
+                  className="w-full h-full border-0"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                   allowFullScreen
                 />

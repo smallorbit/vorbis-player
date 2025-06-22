@@ -14,6 +14,7 @@ const AudioPlayerComponent = () => {
   const [error, setError] = useState<string | null>(null);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const audioRef = useRef<HTMLAudioElement>(null!);
+  const [shuffleCounter, setShuffleCounter] = useState(0);
   
   const fetchTracks = async () => {
     // Don't try to fetch tracks if we're on the auth callback page
@@ -65,8 +66,15 @@ const AudioPlayerComponent = () => {
   }, [tracks.length, isLoading]);
 
   const handleTrackSelect = (index: number) => {
+    // If the same track is clicked again
+    if (index === currentTrackIndex) {
+      setShuffleCounter(prev => prev + 1);
+    } else {
+      // If a new track is clicked
+      setCurrentTrackIndex(index);
+      setShuffleCounter(0); // Reset counter for a new track
+    }
     setIsInitialLoad(false);
-    setCurrentTrackIndex(index);
   };
 
   useEffect(() => {
@@ -141,7 +149,7 @@ const AudioPlayerComponent = () => {
           <div className="text-center">
             
             <HyperText duration={800} className="text-2xl font-bold text-white mb-3" as="h2">
-              Vorbis Audio Player
+              Vorbis Player
             </HyperText>
             <button
               onClick={() => setIsInitialLoad(false)}
@@ -162,7 +170,10 @@ const AudioPlayerComponent = () => {
 
     return (
       <div className="w-full max-w-2xl lg:max-w-4xl xl:max-w-5xl">
-        <MediaCollage currentTrack={tracks[currentTrackIndex] || null} />
+        <MediaCollage 
+          currentTrack={tracks[currentTrackIndex] || null} 
+          shuffleCounter={shuffleCounter} 
+        />
         <div className="mb-3 sm:mb-4 md:mb-6">
           <Playlist 
             tracks={tracks}

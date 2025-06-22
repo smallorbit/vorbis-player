@@ -13,17 +13,17 @@ export interface YouTubeSearchResult {
 class YouTubeService {
 
 
-  async searchVideos(query: string, maxResults: number = 4): Promise<YouTubeSearchResult> {
+  async searchVideos(query: string, maxResults: number = 4, shuffleSeed: number = 0): Promise<YouTubeSearchResult> {
     // Extract single hashtag-appropriate word from query
     const hashtag = this.extractHashtag(query);
     
     // For now, return a single result pointing to the hashtag page
     // In the future, we could scrape this page to get actual video IDs
     const videos: YouTubeVideo[] = [{
-      id: `hashtag-${hashtag}-${Date.now()}`,
+      id: `hashtag-${hashtag}-${Date.now()}-${shuffleSeed}`,
       title: `#${hashtag} Video`,
       thumbnail: `https://via.placeholder.com/320x180/1a1a1a/ffffff?text=%23${hashtag}`,
-      embedUrl: this.getRandomVideoByHashtag(hashtag)
+      embedUrl: this.getRandomVideoByHashtag(hashtag, shuffleSeed)
     }];
     console.log("videos:", videos);
 
@@ -42,7 +42,7 @@ class YouTubeService {
     return words[0] || 'music';
   }
 
-  private getRandomVideoByHashtag(hashtag: string): string {
+  private getRandomVideoByHashtag(hashtag: string, shuffleSeed: number = 0): string {
     // Map hashtags to curated videos that fit the theme - 100+ popular song title words
     const hashtagToVideos: Record<string, string[]> = {
       // Emotions & Feelings
@@ -192,7 +192,9 @@ class YouTubeService {
     const videos = hashtagToVideos[hashtag];
     
     
-    const randomId = videos[Math.floor(Math.random() * videos.length)];
+    // Use shuffle seed to ensure different video selection
+    const randomIndex = (shuffleSeed + Math.floor(Math.random() * videos.length)) % videos.length;
+    const randomId = videos[randomIndex];
     return this.createEmbedUrl(randomId, {
       autoplay: true,
       mute: true,
@@ -200,11 +202,6 @@ class YouTubeService {
       controls: false
     });
   }
-
-
-
-
-
 
 
   // Utility method to extract video ID from various YouTube URL formats
