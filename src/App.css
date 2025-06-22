@@ -41,15 +41,4 @@
   color: #888;
 }
 
-/* Add space between volume controls and right edge */
-.rhap_container .rhap_controls-section {
-  padding-right: 16px !important;
-}
 
-.rhap_container .rhap_volume-controls {
-  margin-right: 16px !important;
-}
-
-.rhap_container {
-  padding-right: 16px !important;
-}

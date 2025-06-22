@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import AudioPlayer, { RHAP_UI } from 'react-h5-audio-player';
-import 'react-h5-audio-player/lib/styles.css';
+import AudioPlayer from 'react-modern-audio-player';
 import Playlist from './Playlist';
 import { getDropboxAudioFiles } from '../services/dropbox';
 import type { Track } from '../services/dropbox';
@@ -32,19 +31,18 @@ const AudioPlayerComponent = () => {
     fetchTracks();
   }, []);
 
-  const handleNext = () => {
-    setCurrentTrackIndex((prev) => (prev + 1) % tracks.length);
-  };
-
-  const handlePrevious = () => {
-    setCurrentTrackIndex((prev) => (prev - 1 + tracks.length) % tracks.length);
-  };
-
   const handleTrackSelect = (index: number) => {
     setCurrentTrackIndex(index);
   };
 
-
+  // Convert tracks to the format expected by react-modern-audio-player
+  const playList = tracks.map((track, index) => ({
+    id: index + 1,
+    src: track.src,
+    name: track.title,
+    writer: 'Unknown Artist',
+    img: undefined,
+  }));
 
   if (isLoading) {
     return <div className="text-center mt-20">Loading music from Dropbox...</div>;
@@ -79,16 +77,17 @@ const AudioPlayerComponent = () => {
         </div>
         <div style={{ paddingRight: '20px', paddingLeft: '20px' , paddingTop: '20px', paddingBottom: '10px' }}>
           <AudioPlayer
-            ref={audioPlayerRef}
-            autoPlay
-            src={tracks[currentTrackIndex].src}
-            onEnded={handleNext}
-            onClickNext={handleNext}
-            onClickPrevious={handlePrevious}
-            showSkipControls
-            showJumpControls={false}
-            layout="horizontal"
-            customAdditionalControls={[]}
+            playList={playList}
+            audioInitialState={{
+              isPlaying: false,
+              curPlayId: currentTrackIndex + 1,
+              volume: 1
+            }}
+            activeUI={{
+              all: true,
+              progress: "bar",
+              playList: "unSortable"
+            }}
           />
         </div>
       </div>
