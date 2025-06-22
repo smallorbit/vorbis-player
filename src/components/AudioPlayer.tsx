@@ -4,6 +4,24 @@ import Playlist from './Playlist';
 import { getDropboxAudioFiles, dropboxAuth } from '../services/dropbox';
 import type { Track } from '../services/dropbox';
 
+const sortTracksByNumber = (tracks: Track[]): Track[] => {
+  return [...tracks].sort((a, b) => {
+    const aMatch = a.title.match(/^(\d+)/);
+    const bMatch = b.title.match(/^(\d+)/);
+    
+    if (aMatch && bMatch) {
+      const aNum = parseInt(aMatch[1], 10);
+      const bNum = parseInt(bMatch[1], 10);
+      return aNum - bNum;
+    }
+    
+    if (aMatch && !bMatch) return -1;
+    if (!aMatch && bMatch) return 1;
+    
+    return a.title.localeCompare(b.title);
+  });
+};
+
 const AudioPlayerComponent = () => {
   const [tracks, setTracks] = useState<Track[]>([]);
   const [currentTrackIndex, setCurrentTrackIndex] = useState(0);
@@ -27,6 +45,15 @@ const AudioPlayerComponent = () => {
           setError("No audio files found in your app's Dropbox folder. Make sure files have been added and the app has 'files.metadata.read' permissions.");
         }
         setTracks(fetchedTracks);
+        // Set the current track to the first one in sorted order
+        if (fetchedTracks.length > 0) {
+          const sortedTracks = sortTracksByNumber(fetchedTracks);
+          const firstSortedTrack = sortedTracks[0];
+          const originalIndex = fetchedTracks.findIndex(track => track === firstSortedTrack);
+          if (originalIndex !== -1) {
+            setCurrentTrackIndex(originalIndex);
+          }
+        }
       } catch (err: unknown) {
         setError(err instanceof Error ? err.message : "An unknown error occurred while fetching tracks.");
       } finally {
@@ -51,6 +78,15 @@ const AudioPlayerComponent = () => {
               setError("No audio files found in your app's Dropbox folder. Make sure files have been added and the app has 'files.metadata.read' permissions.");
             }
             setTracks(fetchedTracks);
+            // Set the current track to the first one in sorted order
+            if (fetchedTracks.length > 0) {
+              const sortedTracks = sortTracksByNumber(fetchedTracks);
+              const firstSortedTrack = sortedTracks[0];
+              const originalIndex = fetchedTracks.findIndex(track => track === firstSortedTrack);
+              if (originalIndex !== -1) {
+                setCurrentTrackIndex(originalIndex);
+              }
+            }
           } catch (err: unknown) {
             setError(err instanceof Error ? err.message : "An unknown error occurred while fetching tracks.");
           } finally {
