@@ -10,7 +10,7 @@ function App() {
     const handleAuthCallback = async () => {
       const urlParams = new URLSearchParams(window.location.search);
       const code = urlParams.get('code');
-      
+        
       console.log('Current URL:', window.location.href);
       console.log('Pathname:', window.location.pathname);
       console.log('Code:', code);
