@@ -3,7 +3,6 @@ import AudioPlayer from 'react-modern-audio-player';
 import Playlist from './Playlist';
 import { getDropboxAudioFiles } from '../services/dropbox';
 import type { Track } from '../services/dropbox';
-import { HyperText } from './ui/hyper-text';
 
 const AudioPlayerComponent = () => {
   const [tracks, setTracks] = useState<Track[]>([]);
@@ -83,18 +82,9 @@ const AudioPlayerComponent = () => {
       <div className="bg-white/5 rounded-lg p-2 sm:p-3 md:p-4 backdrop-blur-sm border border-white/10 overflow-hidden">
         <div className="song-title text-center mb-3 sm:mb-4 md:mb-6 h-10 sm:h-12 md:h-16 flex items-center justify-center px-2">
           <div className="px-2 sm:px-3 md:px-4 pt-2 md:pt-3">
-            <HyperText
-              className="text-sm sm:text-base md:text-lg lg:text-xl font-bold text-white py-0"
-              duration={800}
-              animateOnHover={false}
-              startOnView={false}
-              delay={0}
-              as="span"
-              trigger={currentTrackIndex}
-              characterSet={["♪", "♫", "♬", "♩", "♯", "♭", "𝄞", "𝄡", "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"]}
-            >
+            <span className="text-sm sm:text-base md:text-lg lg:text-xl font-bold text-white py-0">
               {tracks[currentTrackIndex].title}
-            </HyperText>
+            </span>
           </div>
         </div>
         <div className="px-2 sm:px-4 md:px-6 pt-3 sm:pt-4 md:pt-5 pb-2 sm:pb-3 overflow-hidden">
