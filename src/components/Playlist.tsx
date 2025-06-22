@@ -1,6 +1,23 @@
-import { memo } from 'react';
+import { memo, useMemo } from 'react';
 import type { Track } from '../services/dropbox';
 
+const sortTracksByNumber = (tracks: Track[]): Track[] => {
+  return [...tracks].sort((a, b) => {
+    const aMatch = a.title.match(/^(\d+)/);
+    const bMatch = b.title.match(/^(\d+)/);
+    
+    if (aMatch && bMatch) {
+      const aNum = parseInt(aMatch[1], 10);
+      const bNum = parseInt(bMatch[1], 10);
+      return aNum - bNum;
+    }
+    
+    if (aMatch && !bMatch) return -1;
+    if (!aMatch && bMatch) return 1;
+    
+    return a.title.localeCompare(b.title);
+  });
+};
 
 interface PlaylistProps {
   tracks: Track[];
@@ -56,6 +73,22 @@ const PlaylistItem = memo<PlaylistItemProps>(({
 });
 
 const Playlist = memo<PlaylistProps>(({ tracks, currentTrackIndex, onTrackSelect }) => {
+  const sortedTracks = useMemo(() => sortTracksByNumber(tracks), [tracks]);
+  
+  const currentTrack = tracks[currentTrackIndex];
+  const sortedCurrentTrackIndex = useMemo(() => {
+    if (!currentTrack) return -1;
+    return sortedTracks.findIndex(track => track === currentTrack);
+  }, [sortedTracks, currentTrack]);
+
+  const handleTrackSelect = (sortedIndex: number) => {
+    const selectedTrack = sortedTracks[sortedIndex];
+    const originalIndex = tracks.findIndex(track => track === selectedTrack);
+    if (originalIndex !== -1) {
+      onTrackSelect(originalIndex);
+    }
+  };
+
   return (
     <div className="w-full max-w-4xl mx-auto mt-6">
       <div className="bg-neutral-800 rounded-lg overflow-hidden border border-neutral-700 shadow-sm">
@@ -72,13 +105,13 @@ const Playlist = memo<PlaylistProps>(({ tracks, currentTrackIndex, onTrackSelect
               </tr>
             </thead>
             <tbody className="bg-neutral-800 divide-y divide-neutral-700">
-              {tracks.map((track, index) => (
+              {sortedTracks.map((track, index) => (
                 <PlaylistItem
-                  key={index}
+                  key={`${track.title}-${track.src}`}
                   track={track}
                   index={index}
-                  isSelected={index === currentTrackIndex}
-                  onSelect={onTrackSelect}
+                  isSelected={index === sortedCurrentTrackIndex}
+                  onSelect={handleTrackSelect}
                 />
               ))}
             </tbody>
