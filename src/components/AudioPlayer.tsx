@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import AudioPlayer from 'react-modern-audio-player';
 import Playlist from './Playlist';
+import MediaCollage from './MediaCollage';
 import { getDropboxAudioFiles, dropboxAuth } from '../services/dropbox';
 import type { Track } from '../services/dropbox';
 import { HyperText } from './ui/hyper-text';
@@ -161,6 +162,7 @@ const AudioPlayerComponent = () => {
 
     return (
       <div className="w-full max-w-2xl lg:max-w-4xl xl:max-w-5xl">
+        <MediaCollage currentTrack={tracks[currentTrackIndex] || null} />
         <div className="mb-3 sm:mb-4 md:mb-6">
           <Playlist 
             tracks={tracks}
