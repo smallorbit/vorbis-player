@@ -1,7 +1,6 @@
 import { useState, useEffect, memo } from 'react';
 import type { Track } from '../services/dropbox';
 import { youtubeService } from '../services/youtube';
-import { imageService } from '../services/images';
 
 interface MediaItem {
   id: string;
@@ -46,11 +45,7 @@ const MediaCollage = memo<MediaCollageProps>(({ currentTrack }) => {
       const keywords = extractKeywords(track.title);
       const searchQuery = keywords.join(' ');
       
-      // Fetch YouTube videos and images with slight delay to ensure unique IDs
       const youtubeResult = await youtubeService.searchVideos(searchQuery, 1);
-      // Small delay to ensure different timestamps for unique IDs
-      await new Promise(resolve => setTimeout(resolve, 10));
-      const imageResult = await imageService.searchImages(searchQuery, 3);
       
       const mediaItems: MediaItem[] = [];
       
@@ -65,17 +60,6 @@ const MediaCollage = memo<MediaCollageProps>(({ currentTrack }) => {
           thumbnail: video.thumbnail
         });
       }
-      
-      // Add images
-      imageResult.images.forEach(image => {
-        mediaItems.push({
-          id: image.id,
-          type: 'image',
-          url: image.url,
-          title: image.title,
-          thumbnail: image.thumbnailUrl
-        });
-      });
       
       setMediaItems(mediaItems);
     } catch (error) {
@@ -101,22 +85,21 @@ const MediaCollage = memo<MediaCollageProps>(({ currentTrack }) => {
       <div className="bg-white/5 rounded-lg p-4 backdrop-blur-sm border border-white/10">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold text-white">
-            Visual Experience
+             Vorbis Audio Player
           </h3>
           {loading && (
             <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
           )}
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {mediaItems.map((item, index) => (
+        <div className="w-full">
+          {mediaItems.map((item) => (
             <div
               key={item.id}
-              className={`relative rounded-lg overflow-hidden bg-white/10 backdrop-blur-sm border border-white/20 transition-all duration-300 hover:scale-105 hover:bg-white/20 ${
-                index === 0 ? 'md:col-span-2 md:row-span-2' : ''
-              }`}
+              className="relative rounded-lg overflow-hidden bg-white/10 backdrop-blur-sm border border-white/20 transition-all duration-300 hover:scale-105 hover:bg-white/20 w-full"
               style={{
-                aspectRatio: index === 0 ? '16/9' : '4/3'
+                aspectRatio: '9/16', // Vertical aspect ratio for YouTube Shorts
+                height: '400px'
               }}
             >
               {item.type === 'youtube' ? (
