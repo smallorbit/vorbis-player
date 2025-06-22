@@ -216,14 +216,14 @@ const AudioPlayerComponent = () => {
 
     return (
       <div className="w-full max-w-2xl lg:max-w-4xl xl:max-w-5xl">
+        <div className="mb-3 sm:mb-4 md:mb-6">
+          <Playlist 
+            tracks={tracks}
+            currentTrackIndex={currentTrackIndex}
+            onTrackSelect={handleTrackSelect}
+          />
+        </div>
         <div className="bg-white/5 rounded-lg p-2 sm:p-3 md:p-4 backdrop-blur-sm border border-white/10 overflow-hidden">
-          <div className="song-title text-center mb-3 sm:mb-4 md:mb-6 h-10 sm:h-12 md:h-16 flex items-center justify-center px-2">
-            <div className="px-2 sm:px-3 md:px-4 pt-2 md:pt-3">
-              <span className="text-sm sm:text-base md:text-lg lg:text-xl font-bold text-white py-0">
-                {tracks[currentTrackIndex].title}
-              </span>
-            </div>
-          </div>
           <div className="px-2 sm:px-4 md:px-6 pt-3 sm:pt-4 md:pt-5 pb-2 sm:pb-3 overflow-hidden">
             <AudioPlayer
               key={currentTrackIndex}
@@ -248,13 +248,6 @@ const AudioPlayerComponent = () => {
               }}
             />
           </div>
-        </div>
-        <div className="mt-3 sm:mt-4 md:mt-6">
-          <Playlist 
-            tracks={tracks}
-            currentTrackIndex={currentTrackIndex}
-            onTrackSelect={handleTrackSelect}
-          />
         </div>
       </div>
     );
