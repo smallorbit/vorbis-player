@@ -80,7 +80,7 @@ const AudioPlayerComponent = () => {
           <AudioPlayer
             playList={playList}
             audioInitialState={{
-              isPlaying: false,
+              isPlaying: true,
               curPlayId: currentTrackIndex + 1,
               volume: 1
             }}
