@@ -63,7 +63,7 @@ const PlaylistItem = memo<PlaylistItemProps>(({
           )}
         </div>
       </td>
-      <td className={`px-6 py-4 whitespace-nowrap text-sm ${
+      <td className={`px-6 py-4 whitespace-nowrap text-sm text-right ${
         isSelected ? 'text-white' : 'text-neutral-400'
       }`}>
         {track.duration || '--:--'}
@@ -99,7 +99,7 @@ const Playlist = memo<PlaylistProps>(({ tracks, currentTrackIndex, onTrackSelect
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-neutral-400 uppercase tracking-wider">
                   Title
                 </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-neutral-400 uppercase tracking-wider">
+                <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-neutral-400 uppercase tracking-wider">
                   Duration
                 </th>
               </tr>
