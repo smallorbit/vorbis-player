@@ -32,3 +32,4 @@ dist-ssr
 
 # Audio files
 public/audio/
+.claude/settings.local.json

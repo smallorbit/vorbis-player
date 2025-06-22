@@ -46,9 +46,6 @@ const PlaylistItem = memo<PlaylistItemProps>(({
           )}
         </div>
       </td>
-      <td className="px-6 py-4 whitespace-nowrap text-sm text-neutral-400">
-        --
-      </td>
     </tr>
   );
 });
@@ -63,9 +60,6 @@ const Playlist = memo<PlaylistProps>(({ tracks, currentTrackIndex, onTrackSelect
               <tr>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-neutral-400 uppercase tracking-wider">
                   Title
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-neutral-400 uppercase tracking-wider">
-                  Duration
                 </th>
               </tr>
             </thead>
