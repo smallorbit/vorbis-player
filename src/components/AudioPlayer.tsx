@@ -27,6 +27,7 @@ const AudioPlayerComponent = () => {
   const [currentTrackIndex, setCurrentTrackIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
   const audioRef = useRef<HTMLAudioElement>(null!);
   
   useEffect(() => {
@@ -44,8 +45,7 @@ const AudioPlayerComponent = () => {
         if (fetchedTracks.length === 0) {
           setError("No audio files found in your app's Dropbox folder. Make sure files have been added and the app has 'files.metadata.read' permissions.");
         }
-        setTracks(fetchedTracks);
-        // Set the current track to the first one in sorted order
+        // Set the current track to the first one in sorted order before setting tracks
         if (fetchedTracks.length > 0) {
           const sortedTracks = sortTracksByNumber(fetchedTracks);
           const firstSortedTrack = sortedTracks[0];
@@ -54,6 +54,7 @@ const AudioPlayerComponent = () => {
             setCurrentTrackIndex(originalIndex);
           }
         }
+        setTracks(fetchedTracks);
       } catch (err: unknown) {
         setError(err instanceof Error ? err.message : "An unknown error occurred while fetching tracks.");
       } finally {
@@ -102,28 +103,43 @@ const AudioPlayerComponent = () => {
   }, [tracks.length, isLoading]);
 
   const handleTrackSelect = (index: number) => {
+    setIsInitialLoad(false);
     setCurrentTrackIndex(index);
   };
 
   // Listen for track changes when using next/previous buttons
   useEffect(() => {
     const audio = audioRef.current;
-    if (!audio || tracks.length === 0) return;
+    if (!audio || tracks.length === 0 || isInitialLoad) return;
 
-    const handleLoadStart = () => {
-      // Find the current track index based on the audio source
+    const updateCurrentTrack = () => {
       const currentSrc = audio.src;
+      if (!currentSrc) return;
+      
       const trackIndex = tracks.findIndex(track => track.src === currentSrc);
       if (trackIndex !== -1 && trackIndex !== currentTrackIndex) {
+        console.log('Track changed via skip buttons:', trackIndex, tracks[trackIndex]?.title);
         setCurrentTrackIndex(trackIndex);
       }
     };
 
-    audio.addEventListener('loadstart', handleLoadStart);
-    return () => {
-      audio.removeEventListener('loadstart', handleLoadStart);
+    const handlePlay = () => {
+      setIsInitialLoad(false);
     };
-  }, [tracks, currentTrackIndex]);
+
+    // Listen to multiple events to catch track changes
+    audio.addEventListener('loadstart', updateCurrentTrack);
+    audio.addEventListener('loadeddata', updateCurrentTrack);
+    audio.addEventListener('canplay', updateCurrentTrack);
+    audio.addEventListener('play', handlePlay);
+    
+    return () => {
+      audio.removeEventListener('loadstart', updateCurrentTrack);
+      audio.removeEventListener('loadeddata', updateCurrentTrack);
+      audio.removeEventListener('canplay', updateCurrentTrack);
+      audio.removeEventListener('play', handlePlay);
+    };
+  }, [tracks, currentTrackIndex, isInitialLoad]);
 
   // Convert tracks to the format expected by react-modern-audio-player
   const playList = useMemo(() => 
@@ -170,6 +186,30 @@ const AudioPlayerComponent = () => {
 
   if (tracks.length === 0) {
     return <div className="text-center mt-20">No tracks to play.</div>;
+  }
+
+  if (isInitialLoad) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="bg-white/10 rounded-xl p-8 backdrop-blur-sm border border-white/20 shadow-xl max-w-md w-full mx-4">
+          <div className="text-center">
+            <div className="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-6">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
+                <path d="M8 5v14l11-7z"/>
+              </svg>
+            </div>
+            <h2 className="text-2xl font-bold text-white mb-3">Music Player</h2>
+            <p className="text-gray-300 mb-8">Ready to start your playlist</p>
+            <button
+              onClick={() => setIsInitialLoad(false)}
+              className="w-full px-6 py-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold text-lg"
+            >
+              Start Playing
+            </button>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
