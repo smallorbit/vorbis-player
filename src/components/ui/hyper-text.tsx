@@ -24,7 +24,7 @@ interface HyperTextProps extends MotionProps {
   /** Custom character set for scramble effect. Defaults to uppercase alphabet */
   characterSet?: CharacterSet;
   /** Trigger value to restart animation when it changes */
-  trigger?: any;
+  trigger?: unknown;
 }
 
 const DEFAULT_CHARACTER_SET = Object.freeze(

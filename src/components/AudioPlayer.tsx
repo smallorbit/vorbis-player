@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import AudioPlayer from 'react-modern-audio-player';
 import Playlist from './Playlist';
 import { getDropboxAudioFiles } from '../services/dropbox';
@@ -20,8 +20,8 @@ const AudioPlayerComponent = () => {
           setError("No audio files found in your app's Dropbox folder. Make sure files have been added and the app has 'files.metadata.read' permissions.");
         }
         setTracks(fetchedTracks);
-      } catch (err: any) {
-        setError(err.message || "An unknown error occurred while fetching tracks.");
+      } catch (err: unknown) {
+        setError(err instanceof Error ? err.message : "An unknown error occurred while fetching tracks.");
       } finally {
         setIsLoading(false);
       }
@@ -35,13 +35,15 @@ const AudioPlayerComponent = () => {
   };
 
   // Convert tracks to the format expected by react-modern-audio-player
-  const playList = tracks.map((track, index) => ({
-    id: index + 1,
-    src: track.src,
-    name: track.title,
-    writer: 'Unknown Artist',
-    img: undefined,
-  }));
+  const playList = useMemo(() => 
+    tracks.map((track, index) => ({
+      id: index + 1,
+      src: track.src,
+      name: track.title,
+      writer: 'Unknown Artist',
+      img: undefined,
+    })), [tracks]
+  );
 
   if (isLoading) {
     return <div className="text-center mt-20">Loading music from Dropbox...</div>;

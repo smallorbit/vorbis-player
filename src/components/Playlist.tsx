@@ -1,4 +1,4 @@
-import React from 'react';
+import { memo } from 'react';
 import type { Track } from '../services/dropbox';
 
 
@@ -15,7 +15,7 @@ interface PlaylistItemProps {
   onSelect: (index: number) => void;
 }
 
-const PlaylistItem: React.FC<PlaylistItemProps> = ({ 
+const PlaylistItem = memo<PlaylistItemProps>(({ 
   track, 
   index, 
   isSelected, 
@@ -51,9 +51,9 @@ const PlaylistItem: React.FC<PlaylistItemProps> = ({
       </td>
     </tr>
   );
-};
+});
 
-const Playlist: React.FC<PlaylistProps> = ({ tracks, currentTrackIndex, onTrackSelect }) => {
+const Playlist = memo<PlaylistProps>(({ tracks, currentTrackIndex, onTrackSelect }) => {
   return (
     <div className="w-full max-w-4xl mx-auto mt-6">
       <div className="bg-neutral-800 rounded-lg overflow-hidden border border-neutral-700 shadow-sm">
@@ -85,6 +85,6 @@ const Playlist: React.FC<PlaylistProps> = ({ tracks, currentTrackIndex, onTrackS
       </div>
     </div>
   );
-};
+});
 
 export default Playlist; 
