@@ -152,45 +152,44 @@ const AudioPlayerComponent = () => {
     })), [tracks]
   );
 
-  if (isLoading) {
-    return <div className="text-center mt-20">Loading music from Dropbox...</div>;
-  }
-
-  if (error) {
-    // Check if it's an authentication error
-    const isAuthError = error.includes('Redirecting to Dropbox login') || 
-                       error.includes('No authentication token') ||
-                       error.includes('Authentication expired');
-    
-    if (isAuthError) {
-      return (
-        <div className="text-center mt-20">
-          <div className="bg-white/5 rounded-lg p-6 backdrop-blur-sm border border-white/10 max-w-md mx-auto">
-            <h2 className="text-xl font-bold text-white mb-4">Connect to Dropbox</h2>
-            <p className="text-gray-300 mb-6">
-              Sign in to your Dropbox account to access your music files.
-            </p>
-            <button
-              onClick={() => dropboxAuth.redirectToAuth()}
-              className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold"
-            >
-              Connect Dropbox
-            </button>
-          </div>
-        </div>
-      );
+  const renderContent = () => {
+    if (isLoading) {
+      return <div className="text-center">Loading music from Dropbox...</div>;
     }
-    
-    return <div className="text-center mt-20 text-red-500">Error: {error}</div>;
-  }
 
-  if (tracks.length === 0) {
-    return <div className="text-center mt-20">No tracks to play.</div>;
-  }
+    if (error) {
+      const isAuthError = error.includes('Redirecting to Dropbox login') || 
+                         error.includes('No authentication token') ||
+                         error.includes('Authentication expired');
+      
+      if (isAuthError) {
+        return (
+          <div className="bg-white/5 rounded-lg p-6 backdrop-blur-sm border border-white/10 max-w-md w-full">
+            <div className="text-center">
+              <h2 className="text-xl font-bold text-white mb-4">Connect to Dropbox</h2>
+              <p className="text-gray-300 mb-6">
+                Sign in to your Dropbox account to access your music files.
+              </p>
+              <button
+                onClick={() => dropboxAuth.redirectToAuth()}
+                className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold"
+              >
+                Connect Dropbox
+              </button>
+            </div>
+          </div>
+        );
+      }
+      
+      return <div className="text-center text-red-500">Error: {error}</div>;
+    }
 
-  if (isInitialLoad) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
+    if (tracks.length === 0) {
+      return <div className="text-center">No tracks to play.</div>;
+    }
+
+    if (isInitialLoad) {
+      return (
         <div className="bg-white/10 rounded-xl p-8 backdrop-blur-sm border border-white/20 shadow-xl max-w-md w-full mx-4">
           <div className="text-center">
             <div className="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-6">
@@ -208,52 +207,58 @@ const AudioPlayerComponent = () => {
             </button>
           </div>
         </div>
-      </div>
-    );
-  }
+      );
+    }
 
-  return (
-    <div className="w-full max-w-full mx-auto mt-4 px-2 sm:px-4 sm:max-w-2xl lg:max-w-4xl xl:max-w-5xl">
-      <div className="bg-white/5 rounded-lg p-2 sm:p-3 md:p-4 backdrop-blur-sm border border-white/10 overflow-hidden">
-        <div className="song-title text-center mb-3 sm:mb-4 md:mb-6 h-10 sm:h-12 md:h-16 flex items-center justify-center px-2">
-          <div className="px-2 sm:px-3 md:px-4 pt-2 md:pt-3">
-            <span className="text-sm sm:text-base md:text-lg lg:text-xl font-bold text-white py-0">
-              {tracks[currentTrackIndex].title}
-            </span>
+    return (
+      <div className="w-full max-w-2xl lg:max-w-4xl xl:max-w-5xl">
+        <div className="bg-white/5 rounded-lg p-2 sm:p-3 md:p-4 backdrop-blur-sm border border-white/10 overflow-hidden">
+          <div className="song-title text-center mb-3 sm:mb-4 md:mb-6 h-10 sm:h-12 md:h-16 flex items-center justify-center px-2">
+            <div className="px-2 sm:px-3 md:px-4 pt-2 md:pt-3">
+              <span className="text-sm sm:text-base md:text-lg lg:text-xl font-bold text-white py-0">
+                {tracks[currentTrackIndex].title}
+              </span>
+            </div>
+          </div>
+          <div className="px-2 sm:px-4 md:px-6 pt-3 sm:pt-4 md:pt-5 pb-2 sm:pb-3 overflow-hidden">
+            <AudioPlayer
+              key={currentTrackIndex}
+              playList={playList}
+              audioRef={audioRef}
+              audioInitialState={{
+                isPlaying: true,
+                curPlayId: currentTrackIndex + 1,
+                volume: 1
+              }}
+              activeUI={{
+                all: false,
+                playButton: true,
+                prevNnext: true,
+                volumeSlider: true,
+                repeatType: true,
+                trackTime: true,
+                trackInfo: false,
+                artwork: false,
+                progress: "bar",
+                playList: false
+              }}
+            />
           </div>
         </div>
-        <div className="px-2 sm:px-4 md:px-6 pt-3 sm:pt-4 md:pt-5 pb-2 sm:pb-3 overflow-hidden">
-          <AudioPlayer
-            key={currentTrackIndex}
-            playList={playList}
-            audioRef={audioRef}
-            audioInitialState={{
-              isPlaying: true,
-              curPlayId: currentTrackIndex + 1,
-              volume: 1
-            }}
-            activeUI={{
-              all: false,
-              playButton: true,
-              prevNnext: true,
-              volumeSlider: true,
-              repeatType: true,
-              trackTime: true,
-              trackInfo: false,
-              artwork: false,
-              progress: "bar",
-              playList: false
-            }}
+        <div className="mt-3 sm:mt-4 md:mt-6">
+          <Playlist 
+            tracks={tracks}
+            currentTrackIndex={currentTrackIndex}
+            onTrackSelect={handleTrackSelect}
           />
         </div>
       </div>
-      <div className="mt-3 sm:mt-4 md:mt-6">
-        <Playlist 
-          tracks={tracks}
-          currentTrackIndex={currentTrackIndex}
-          onTrackSelect={handleTrackSelect}
-        />
-      </div>
+    );
+  };
+
+  return (
+    <div className="min-h-screen w-full flex items-center justify-center px-2 sm:px-4">
+      {renderContent()}
     </div>
   );
 };
