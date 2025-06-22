@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import AudioPlayer from 'react-modern-audio-player';
 import Playlist from './Playlist';
-import { getDropboxAudioFiles } from '../services/dropbox';
+import { getDropboxAudioFiles, dropboxAuth } from '../services/dropbox';
 import type { Track } from '../services/dropbox';
 
 const AudioPlayerComponent = () => {
@@ -9,11 +9,18 @@ const AudioPlayerComponent = () => {
   const [currentTrackIndex, setCurrentTrackIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const audioRef = useRef<HTMLAudioElement>(null);
+  const audioRef = useRef<HTMLAudioElement>(null!);
   
   useEffect(() => {
+    // Don't try to fetch tracks if we're on the auth callback page
+    if (window.location.pathname === '/auth/dropbox/callback') {
+      setIsLoading(false); // Don't show loading state during auth
+      return;
+    }
+
     const fetchTracks = async () => {
       try {
+        setError(null); // Clear any previous errors
         setIsLoading(true);
         const fetchedTracks = await getDropboxAudioFiles('');
         if (fetchedTracks.length === 0) {
@@ -29,6 +36,34 @@ const AudioPlayerComponent = () => {
 
     fetchTracks();
   }, []);
+
+  // Listen for navigation events to retry fetching when returning from auth
+  useEffect(() => {
+    const handleFocus = () => {
+      // Only retry if we're not on the callback page and don't have tracks
+      if (window.location.pathname !== '/auth/dropbox/callback' && tracks.length === 0 && !isLoading) {
+        const fetchTracks = async () => {
+          try {
+            setError(null);
+            setIsLoading(true);
+            const fetchedTracks = await getDropboxAudioFiles('');
+            if (fetchedTracks.length === 0) {
+              setError("No audio files found in your app's Dropbox folder. Make sure files have been added and the app has 'files.metadata.read' permissions.");
+            }
+            setTracks(fetchedTracks);
+          } catch (err: unknown) {
+            setError(err instanceof Error ? err.message : "An unknown error occurred while fetching tracks.");
+          } finally {
+            setIsLoading(false);
+          }
+        };
+        fetchTracks();
+      }
+    };
+
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, [tracks.length, isLoading]);
 
   const handleTrackSelect = (index: number) => {
     setCurrentTrackIndex(index);
@@ -70,6 +105,30 @@ const AudioPlayerComponent = () => {
   }
 
   if (error) {
+    // Check if it's an authentication error
+    const isAuthError = error.includes('Redirecting to Dropbox login') || 
+                       error.includes('No authentication token') ||
+                       error.includes('Authentication expired');
+    
+    if (isAuthError) {
+      return (
+        <div className="text-center mt-20">
+          <div className="bg-white/5 rounded-lg p-6 backdrop-blur-sm border border-white/10 max-w-md mx-auto">
+            <h2 className="text-xl font-bold text-white mb-4">Connect to Dropbox</h2>
+            <p className="text-gray-300 mb-6">
+              Sign in to your Dropbox account to access your music files.
+            </p>
+            <button
+              onClick={() => dropboxAuth.redirectToAuth()}
+              className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold"
+            >
+              Connect Dropbox
+            </button>
+          </div>
+        </div>
+      );
+    }
+    
     return <div className="text-center mt-20 text-red-500">Error: {error}</div>;
   }
 
