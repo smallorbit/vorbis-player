@@ -61,7 +61,7 @@ class YouTubeService {
   private getMockResults(query: string, maxResults: number): YouTubeSearchResult {
     // Mock data for development - replace with actual API calls
     const mockVideos: YouTubeVideo[] = Array.from({ length: Math.min(maxResults, 4) }, (_, i) => ({
-      id: `mock-${i}-${Date.now()}`,
+      id: `youtube-mock-${query.replace(/\s+/g, '-')}-${i}-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
       title: `${query} - Music Video ${i + 1}`,
       thumbnail: `https://via.placeholder.com/320x180/1a1a1a/ffffff?text=${encodeURIComponent(query)}`,
       embedUrl: this.getRandomMusicVideo()

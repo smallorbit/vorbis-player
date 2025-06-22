@@ -73,7 +73,7 @@ class ImageService {
       const height = 300;
       
       return {
-        id: `mock-${i}-${Date.now()}`,
+        id: `image-mock-${query.replace(/\s+/g, '-')}-${i}-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
         url: `https://picsum.photos/seed/${query}-${i}/${width}/${height}`,
         thumbnailUrl: `https://picsum.photos/seed/${query}-${i}/${width/2}/${height/2}`,
         title: `${query} ${theme} ${i + 1}`,

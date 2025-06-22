@@ -39,16 +39,18 @@ const MediaCollage = memo<MediaCollageProps>(({ currentTrack }) => {
   const fetchMediaContent = async (track: Track) => {
     if (!track) return;
     
+    // Clear previous media items immediately
+    setMediaItems([]);
     setLoading(true);
     try {
       const keywords = extractKeywords(track.title);
       const searchQuery = keywords.join(' ');
       
-      // Fetch YouTube videos and images in parallel
-      const [youtubeResult, imageResult] = await Promise.all([
-        youtubeService.searchVideos(searchQuery, 1),
-        imageService.searchImages(searchQuery, 3)
-      ]);
+      // Fetch YouTube videos and images with slight delay to ensure unique IDs
+      const youtubeResult = await youtubeService.searchVideos(searchQuery, 1);
+      // Small delay to ensure different timestamps for unique IDs
+      await new Promise(resolve => setTimeout(resolve, 10));
+      const imageResult = await imageService.searchImages(searchQuery, 3);
       
       const mediaItems: MediaItem[] = [];
       
