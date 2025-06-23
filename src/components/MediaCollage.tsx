@@ -47,7 +47,9 @@ const MediaCollage = memo<MediaCollageProps>(({ currentTrack, shuffleCounter }) 
         throw new Error('No panda video IDs found.');
       }
       
-      const randomVideoId = pandaVideoIds[Math.floor(Math.random() * pandaVideoIds.length)];
+      // Use shuffle counter to ensure different video selection when same song is clicked
+      const videoIndex = (shuffleCounter + Math.floor(Math.random() * pandaVideoIds.length)) % pandaVideoIds.length;
+      const randomVideoId = pandaVideoIds[videoIndex];
 
       const video: MediaItem = {
         id: randomVideoId,
@@ -75,7 +77,7 @@ const MediaCollage = memo<MediaCollageProps>(({ currentTrack, shuffleCounter }) 
     if (currentTrack) {
       fetchMediaContent(currentTrack);
     }
-  }, [currentTrack]);
+  }, [currentTrack, shuffleCounter]);
 
   if (!currentTrack) {
     return null;
