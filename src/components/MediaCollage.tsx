@@ -1,6 +1,8 @@
-import { useState, useEffect, memo } from 'react';
+import { useState, useEffect, memo, useCallback } from 'react';
 import type { Track } from '../services/dropbox';
 import { youtubeService } from '../services/youtube';
+
+type VideoMode = 'pandas' | 'puppies' | 'kitties';
 
 interface MediaItem {
   id: string;
@@ -18,38 +20,26 @@ interface MediaCollageProps {
 const MediaCollage = memo<MediaCollageProps>(({ currentTrack, shuffleCounter }) => {
   const [mediaItems, setMediaItems] = useState<MediaItem[]>([]);
   const [loading, setLoading] = useState(false);
+  const [videoMode, setVideoMode] = useState<VideoMode>(() => {
+    const saved = localStorage.getItem('panda-player-video-mode');
+    return (saved as VideoMode) || 'pandas';
+  });
 
-  const extractKeywords = (title: string): string[] => {
-    // Remove track numbers, file extensions, and common separators
-    const cleaned = title
-      .replace(/^\d+[\s\-\.]*/, '') // Remove leading numbers
-      .replace(/\.(mp3|wav|flac|m4a|ogg)$/i, '') // Remove file extensions
-      .replace(/[\-_]+/g, ' ') // Replace dashes/underscores with spaces
-      .trim();
-    
-    // Split into words and filter out common stopwords
-    const stopwords = new Set(['the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by']);
-    
-    return cleaned
-      .split(/\s+/)
-      .filter(word => word.length > 2 && !stopwords.has(word.toLowerCase()))
-      .slice(0, 3); // Limit to first 3 meaningful words
-  };
 
-  const fetchMediaContent = async (track: Track) => {
+  const fetchMediaContent = useCallback(async (track: Track) => {
     if (!track) return;
 
     setMediaItems([]);
     setLoading(true);
     try {
-      const pandaVideoIds = await youtubeService.loadVideoIdsFromCategory('panda');
-      if (pandaVideoIds.length === 0) {
-        throw new Error('No panda video IDs found.');
+      const videoIds = await youtubeService.loadVideoIdsFromCategory(videoMode);
+      if (videoIds.length === 0) {
+        throw new Error(`No ${videoMode} video IDs found.`);
       }
       
       // Use shuffle counter to ensure different video selection when same song is clicked
-      const videoIndex = (shuffleCounter + Math.floor(Math.random() * pandaVideoIds.length)) % pandaVideoIds.length;
-      const randomVideoId = pandaVideoIds[videoIndex];
+      const videoIndex = (shuffleCounter + Math.floor(Math.random() * videoIds.length)) % videoIds.length;
+      const randomVideoId = videoIds[videoIndex];
 
       const video: MediaItem = {
         id: randomVideoId,
@@ -60,7 +50,7 @@ const MediaCollage = memo<MediaCollageProps>(({ currentTrack, shuffleCounter }) 
           loop: true,
           controls: true,
         }),
-        title: 'Random Panda Video',
+        title: `Random ${videoMode.charAt(0).toUpperCase() + videoMode.slice(1, -1)} Video`,
         thumbnail: `https://i.ytimg.com/vi/${randomVideoId}/hqdefault.jpg`,
       };
       
@@ -71,13 +61,36 @@ const MediaCollage = memo<MediaCollageProps>(({ currentTrack, shuffleCounter }) 
     } finally {
       setLoading(false);
     }
-  };
+  }, [videoMode, shuffleCounter]);
 
   useEffect(() => {
     if (currentTrack) {
       fetchMediaContent(currentTrack);
     }
-  }, [currentTrack, shuffleCounter]);
+  }, [currentTrack, shuffleCounter, videoMode, fetchMediaContent]);
+
+  const handleModeChange = (mode: VideoMode) => {
+    setVideoMode(mode);
+    localStorage.setItem('panda-player-video-mode', mode);
+  };
+
+  const getModeEmoji = (mode: VideoMode) => {
+    switch (mode) {
+      case 'pandas': return '🐼';
+      case 'puppies': return '🐶';
+      case 'kitties': return '🐱';
+      default: return '🐼';
+    }
+  };
+
+  const getModeTitle = (mode: VideoMode) => {
+    switch (mode) {
+      case 'pandas': return 'Panda Player';
+      case 'puppies': return 'Puppy Player';
+      case 'kitties': return 'Kitty Player';
+      default: return 'Panda Player';
+    }
+  };
 
   if (!currentTrack) {
     return null;
@@ -86,13 +99,32 @@ const MediaCollage = memo<MediaCollageProps>(({ currentTrack, shuffleCounter }) 
   return (
     <div className="w-full mb-6">
       <div className="bg-white/5 rounded-lg p-4 backdrop-blur-sm border border-white/10">
-        <div className="relative flex justify-center items-center mb-4">
+        <div className="relative flex justify-between items-center mb-4">
           <h3 className="text-lg font-semibold text-white">
-             Panda Player 🐼🎵
+            {getModeTitle(videoMode)} {getModeEmoji(videoMode)}🎵
           </h3>
-          {loading && (
-            <div className="absolute right-0 animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-          )}
+          
+          <div className="flex items-center gap-2">
+            <div className="flex bg-white/10 rounded-lg p-1 gap-1">
+              {(['pandas', 'puppies', 'kitties'] as VideoMode[]).map((mode) => (
+                <button
+                  key={mode}
+                  onClick={() => handleModeChange(mode)}
+                  className={`px-3 py-1 rounded-md text-sm font-medium transition-all duration-200 ${
+                    videoMode === mode
+                      ? 'bg-white/20 text-white shadow-sm'
+                      : 'text-white/70 hover:text-white hover:bg-white/10'
+                  }`}
+                >
+                  {getModeEmoji(mode)}
+                </button>
+              ))}
+            </div>
+            
+            {loading && (
+              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+            )}
+          </div>
         </div>
         
         <div className="w-full">
