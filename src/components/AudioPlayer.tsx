@@ -86,6 +86,7 @@ const AudioPlayerComponent = () => {
       const trackIndex = tracks.findIndex(track => track.src === audio.src);
       if (trackIndex !== -1 && trackIndex !== currentTrackIndex) {
         setCurrentTrackIndex(trackIndex);
+        setShuffleCounter(0); // Reset shuffle counter when track changes via audio player controls
       }
     };
 
