@@ -1,12 +1,13 @@
 # Panda Player 🐼🎵
 
-A modern audio player that combines Dropbox music streaming with curated panda video visuals. Stream your music from Dropbox while enjoying delightful panda videos that shuffle with each track.
+A modern audio player that combines Dropbox music streaming with curated animal video visuals. Stream your music from Dropbox while enjoying delightful videos of pandas, puppies, or kitties that change with each track.
 
 ## Features
 
 - **Dropbox Integration**: Stream audio files directly from your Dropbox account
-- **Visual Experience**: Curated panda videos that complement your music
+- **Multi-Mode Visual Experience**: Choose between pandas 🐼, puppies 🐶, or kitties 🐱 video modes
 - **Smart Shuffle**: Click the same song repeatedly to cycle through different videos
+- **Quick Mode Switching**: Toggle between animal themes with one-click emoji buttons
 - **Modern UI**: Clean, responsive design with Tailwind CSS
 - **Secure Authentication**: PKCE OAuth flow for safe Dropbox access
 
@@ -57,7 +58,8 @@ A modern audio player that combines Dropbox music streaming with curated panda v
 6. **First run**
    - Open http://localhost:3000
    - Click "Connect Dropbox" to authenticate
-   - Enjoy your music with panda videos! 🐼
+   - Choose your preferred animal mode (🐼 🐶 🐱)
+   - Enjoy your music with curated animal videos!
 
 ## How It Works
 
@@ -68,8 +70,13 @@ A modern audio player that combines Dropbox music streaming with curated panda v
 - Auto-sorts tracks by number in filename
 
 ### Video Experience
-- Shows curated panda videos while music plays
-- **Shuffle Feature**: Click the same song in the playlist to see different panda videos
+- Shows curated animal videos while music plays in three modes:
+  - **Pandas** 🐼: Adorable panda moments
+  - **Puppies** 🐶: Playful puppy videos
+  - **Kitties** 🐱: Cute kitten compilations
+- **Mode Switching**: Click emoji buttons in the header to instantly switch themes
+- **Shuffle Feature**: Click the same song in the playlist to see different videos within the selected mode
+- **Persistence**: Your preferred mode is remembered across sessions
 - Videos auto-play (muted) and loop for ambient visual experience
 
 ### Authentication
@@ -101,7 +108,9 @@ src/
 │   ├── dropbox.ts      # Dropbox API integration
 │   └── youtube.ts      # Video management
 ├── assets/             # Static assets
-│   └── panda-videoIds.json  # Curated video collection
+│   ├── panda-videoIds.json   # Curated panda videos
+│   ├── puppies-videoIds.json # Curated puppy videos
+│   └── kitties-videoIds.json # Curated kitten videos
 └── lib/                # Utilities
     └── utils.ts        # Helper functions
 ```
@@ -110,9 +119,10 @@ src/
 
 ### Adding New Video Categories
 
-1. Create a new JSON file in `src/assets/` (e.g., `cats-videoIds.json`)
+1. Create a new JSON file in `src/assets/` (e.g., `rabbits-videoIds.json`)
 2. Add YouTube video IDs as an array of strings
-3. Update the video loading logic in `MediaCollage.tsx`
+3. Update the `VideoMode` type and mode selection logic in `MediaCollage.tsx`
+4. Add the new mode to the emoji button array and helper functions
 
 Use the included utility to extract video IDs from YouTube:
 ```bash
