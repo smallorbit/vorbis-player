@@ -1,4 +1,4 @@
-# Panda Player 🐼🎵
+# Vorbis Player
 
 A modern audio player that combines Dropbox music streaming with curated animal video visuals. Stream your music from Dropbox while enjoying delightful videos of pandas, puppies, or kitties that change with each track.
 
@@ -22,6 +22,7 @@ A modern audio player that combines Dropbox music streaming with curated animal 
 ### Installation
 
 1. **Clone and install dependencies**
+
    ```bash
    git clone <repository-url>
    cd vap
@@ -35,12 +36,14 @@ A modern audio player that combines Dropbox music streaming with curated animal 
    - Copy your App Key
 
 3. **Configure environment**
+
    ```bash
    cp .env.local.example .env.local
    # Edit .env.local with your Dropbox App Key
    ```
 
    Required in `.env.local`:
+
    ```
    VITE_DROPBOX_APP_KEY="your_dropbox_app_key_here"
    VITE_DROPBOX_REDIRECT_URI="http://localhost:3000/auth/dropbox/callback"
@@ -51,12 +54,13 @@ A modern audio player that combines Dropbox music streaming with curated animal 
    - Files are automatically sorted by track number if filenames start with numbers
 
 5. **Start the app**
+
    ```bash
    npm run dev
    ```
 
 6. **First run**
-   - Open http://localhost:3000
+   - Open <http://localhost:3000>
    - Click "Connect Dropbox" to authenticate
    - Choose your preferred animal mode (🐼 🐶 🐱)
    - Enjoy your music with curated animal videos!
@@ -64,12 +68,14 @@ A modern audio player that combines Dropbox music streaming with curated animal 
 ## How It Works
 
 ### Audio Playback
+
 - Fetches audio files from your Dropbox app folder
 - Supports common audio formats
 - Full playback controls (play, pause, next, previous, volume)
 - Auto-sorts tracks by number in filename
 
 ### Video Experience
+
 - Shows curated animal videos while music plays in three modes:
   - **Pandas** 🐼: Adorable panda moments
   - **Puppies** 🐶: Playful puppy videos
@@ -80,6 +86,7 @@ A modern audio player that combines Dropbox music streaming with curated animal 
 - Videos auto-play (muted) and loop for ambient visual experience
 
 ### Authentication
+
 - Uses secure PKCE OAuth flow
 - Tokens stored locally with automatic refresh
 - App-scoped access (only accesses designated app folder, not entire Dropbox)
@@ -126,6 +133,7 @@ src/
 4. Add the new mode to the emoji button array and helper functions
 
 Use the included utility to extract video IDs from YouTube:
+
 ```bash
 node src/lib/extractVideoIds.js saved-youtube-page.html cats-videoIds.json
 ```
@@ -133,7 +141,7 @@ node src/lib/extractVideoIds.js saved-youtube-page.html cats-videoIds.json
 ### Tech Stack
 
 - **Frontend**: React 18 + TypeScript + Vite
-- **Styling**: Tailwind CSS 
+- **Styling**: Tailwind CSS
 - **Audio**: react-modern-audio-player
 - **Cloud Storage**: Dropbox API
 - **Build Tool**: Vite with HMR
@@ -141,6 +149,7 @@ node src/lib/extractVideoIds.js saved-youtube-page.html cats-videoIds.json
 ## Deployment
 
 Build for production:
+
 ```bash
 npm run build
 ```
@@ -152,16 +161,18 @@ The `dist/` folder contains static files that can be deployed to any web hosting
 ## Troubleshooting
 
 ### "No audio files found"
+
 - Ensure audio files are in your Dropbox app folder (not regular Dropbox folders)
 - Check that files have supported extensions: .mp3, .wav, .flac, .m4a, .ogg
 - Verify Dropbox app has `files.metadata.read` permissions
 
 ### Authentication Issues
+
 - Double-check your App Key in `.env.local`
 - Ensure redirect URI matches exactly in both `.env.local` and Dropbox app settings
 - Try clearing browser storage and re-authenticating
 
 ### Videos Not Loading
+
 - Check browser console for any network errors
 - Ensure stable internet connection for YouTube embeds
-

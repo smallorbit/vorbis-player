@@ -18,14 +18,14 @@ const AudioPlayerComponent = () => {
   const audioRef = useRef<HTMLAudioElement>(null!);
   const [shuffleCounter, setShuffleCounter] = useState(0);
   const [showAdminPanel, setShowAdminPanel] = useState(false);
-  
+
   const fetchTracks = async () => {
     // Don't try to fetch tracks if we're on the auth callback page
     if (window.location.pathname === '/auth/dropbox/callback') {
       setIsLoading(false); // Don't show loading state during auth
       return;
     }
-    
+
     try {
       setError(null); // Clear any previous errors
       setIsLoading(true);
@@ -94,14 +94,14 @@ const AudioPlayerComponent = () => {
     };
 
     audio.addEventListener('loadstart', updateCurrentTrack);
-    
+
     return () => {
       audio.removeEventListener('loadstart', updateCurrentTrack);
     };
   }, [tracks, currentTrackIndex]);
 
   // Convert tracks to the format expected by react-modern-audio-player
-  const playList = useMemo(() => 
+  const playList = useMemo(() =>
     tracks.map((track, index) => ({
       id: index + 1,
       src: track.src,
@@ -117,10 +117,10 @@ const AudioPlayerComponent = () => {
     }
 
     if (error) {
-      const isAuthError = error.includes('Redirecting to Dropbox login') || 
-                         error.includes('No authentication token') ||
-                         error.includes('Authentication expired');
-      
+      const isAuthError = error.includes('Redirecting to Dropbox login') ||
+        error.includes('No authentication token') ||
+        error.includes('Authentication expired');
+
       if (isAuthError) {
         return (
           <div className="bg-white/5 rounded-lg p-6 backdrop-blur-sm border border-white/10 max-w-md w-full">
@@ -139,7 +139,7 @@ const AudioPlayerComponent = () => {
           </div>
         );
       }
-      
+
       return <div className="text-center text-red-500">Error: {error}</div>;
     }
 
@@ -151,21 +151,21 @@ const AudioPlayerComponent = () => {
       return (
         <div className="bg-white/10 rounded-xl p-8 backdrop-blur-sm border border-white/20 shadow-xl max-w-md w-full mx-4">
           <div className="text-center">
-            
+
             <HyperText duration={800} className="text-2xl font-bold text-white mb-3" as="h2">
-              Panda Player 🐼🎵
+              Vorbis Player
             </HyperText>
             <button
               onClick={() => setIsInitialLoad(false)}
               className="w-full px-6 py-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold text-lg"
             >
               Click to start
-                <div className="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-6">
+              <div className="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-6">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
-                  <path d="M8 5v14l11-7z"/>
+                  <path d="M8 5v14l11-7z" />
                 </svg>
               </div>
-              
+
             </button>
           </div>
         </div>
@@ -174,12 +174,12 @@ const AudioPlayerComponent = () => {
 
     return (
       <div className="w-full max-w-2xl lg:max-w-4xl xl:max-w-5xl">
-        <MediaCollage 
-          currentTrack={tracks[currentTrackIndex] || null} 
-          shuffleCounter={shuffleCounter} 
+        <MediaCollage
+          currentTrack={tracks[currentTrackIndex] || null}
+          shuffleCounter={shuffleCounter}
         />
         <div className="mb-3 sm:mb-4 md:mb-6">
-          <Playlist 
+          <Playlist
             tracks={tracks}
             currentTrackIndex={currentTrackIndex}
             onTrackSelect={handleTrackSelect}
@@ -219,9 +219,9 @@ const AudioPlayerComponent = () => {
     <div className="min-h-screen w-full flex items-center justify-center px-2 sm:px-4">
       {/* Secret Admin Access */}
       <AdminKeyCombo onActivate={() => setShowAdminPanel(true)} />
-      
+
       {renderContent()}
-      
+
       {/* Admin Panel Modal */}
       {showAdminPanel && (
         <VideoAdmin onClose={() => setShowAdminPanel(false)} />
