@@ -2,6 +2,8 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import AudioPlayer from 'react-modern-audio-player';
 import Playlist from './Playlist';
 import MediaCollage from './MediaCollage';
+import VideoAdmin from './admin/VideoAdmin';
+import AdminKeyCombo from './admin/AdminKeyCombo';
 import { getDropboxAudioFiles, dropboxAuth } from '../services/dropbox';
 import type { Track } from '../services/dropbox';
 import { HyperText } from './ui/hyper-text';
@@ -15,6 +17,7 @@ const AudioPlayerComponent = () => {
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const audioRef = useRef<HTMLAudioElement>(null!);
   const [shuffleCounter, setShuffleCounter] = useState(0);
+  const [showAdminPanel, setShowAdminPanel] = useState(false);
   
   const fetchTracks = async () => {
     // Don't try to fetch tracks if we're on the auth callback page
@@ -214,7 +217,15 @@ const AudioPlayerComponent = () => {
 
   return (
     <div className="min-h-screen w-full flex items-center justify-center px-2 sm:px-4">
+      {/* Secret Admin Access */}
+      <AdminKeyCombo onActivate={() => setShowAdminPanel(true)} />
+      
       {renderContent()}
+      
+      {/* Admin Panel Modal */}
+      {showAdminPanel && (
+        <VideoAdmin onClose={() => setShowAdminPanel(false)} />
+      )}
     </div>
   );
 };
