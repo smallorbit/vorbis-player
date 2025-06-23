@@ -6,7 +6,7 @@ A modern audio player that combines Dropbox music streaming with curated animal 
 
 - **Dropbox Integration**: Stream audio files directly from your Dropbox account
 - **Multi-Mode Visual Experience**: Choose between pandas 🐼, puppies 🐶, or kitties 🐱 video modes
-- **Smart Shuffle**: Click the same song repeatedly to cycle through different videos
+- **Intuitive Shuffle**: Dedicated shuffle bar beneath videos for easy video cycling
 - **Quick Mode Switching**: Toggle between animal themes with one-click emoji buttons
 - **Modern UI**: Clean, responsive design with Tailwind CSS
 - **Secure Authentication**: PKCE OAuth flow for safe Dropbox access
@@ -75,7 +75,7 @@ A modern audio player that combines Dropbox music streaming with curated animal 
   - **Puppies** 🐶: Playful puppy videos
   - **Kitties** 🐱: Cute kitten compilations
 - **Mode Switching**: Click emoji buttons in the header to instantly switch themes
-- **Shuffle Feature**: Click the same song in the playlist to see different videos within the selected mode
+- **Shuffle Feature**: Use the dedicated shuffle bar beneath videos to cycle through different videos within the selected mode
 - **Persistence**: Your preferred mode is remembered across sessions
 - Videos auto-play (muted) and loop for ambient visual experience
 
@@ -101,8 +101,9 @@ npm run preview  # Preview production build
 src/
 ├── components/           # React components
 │   ├── AudioPlayer.tsx  # Main audio player orchestrator
-│   ├── MediaCollage.tsx # Panda video display
+│   ├── MediaCollage.tsx # Video display with shuffle controls
 │   ├── Playlist.tsx     # Track listing
+│   ├── admin/           # Admin panel components
 │   └── ui/              # Reusable UI components
 ├── services/            # External service integrations
 │   ├── dropbox.ts      # Dropbox API integration

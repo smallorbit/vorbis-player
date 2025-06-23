@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is **Panda Player** - a React-based audio player that combines Dropbox music streaming with YouTube video visuals. The app fetches audio files from a user's Dropbox account and displays curated animal videos (pandas, puppies, or kitties) that shuffle when the same song is clicked repeatedly. Users can switch between different animal video modes with quick-toggle buttons.
+This is **Panda Player** - a React-based audio player that combines Dropbox music streaming with YouTube video visuals. The app fetches audio files from a user's Dropbox account and displays curated animal videos (pandas, puppies, or kitties) with an intuitive shuffle bar for easy video cycling. Users can switch between different animal video modes with quick-toggle buttons and access admin tools for video curation.
 
 ## Development Commands
 
@@ -32,8 +32,10 @@ npm run preview
 
 ### Key State Management
 - `currentTrackIndex`: Tracks which song is currently selected/playing
-- `shuffleCounter`: Increments when same song is clicked, triggers different video selection
+- `shuffleCounter`: Legacy counter from playlist track clicks
+- `internalShuffleCounter`: Independent counter for shuffle bar interactions
 - `videoMode`: Controls which animal category videos are displayed ('pandas' | 'puppies' | 'kitties')
+- `showAdminPanel`: Controls visibility of admin video management interface
 - Track selection sync: When users click playlist items vs. use audio player next/prev buttons
 - Mode persistence: User's preferred video mode saved to localStorage
 
@@ -49,7 +51,8 @@ npm run preview
 - **Category-based**: Videos organized in JSON files by animal category ('pandas', 'puppies', 'kitties')
 - **Dynamic Mode Selection**: Quick-toggle buttons allow instant switching between video categories
 - **Mode UI**: Emoji buttons (🐼 🐶 🐱) in MediaCollage header with active state styling
-- **Shuffle Logic**: Uses `shuffleCounter + random` to ensure different video selection on repeat clicks within selected mode
+- **Shuffle Logic**: Combines `shuffleCounter + internalShuffleCounter + random` for video selection
+- **Shuffle Bar**: Full-width clickable area beneath videos with HyperText animation
 - **Persistence**: Selected video mode saved to localStorage and restored on page load
 - **YouTube Embedding**: Videos embedded with autoplay, mute, loop, and controls enabled
 
@@ -70,9 +73,12 @@ VITE_UNSPLASH_ACCESS_KEY=""
 ## Critical Implementation Details
 
 ### Shuffle Behavior
-- Clicking same song in playlist: Only increments `shuffleCounter`, keeps audio playing, changes video
-- Clicking different song: Updates `currentTrackIndex`, resets `shuffleCounter` to 0
-- Audio player next/prev: Updates both `currentTrackIndex` and resets `shuffleCounter` for sync
+- **Dedicated Shuffle Bar**: Full-width clickable bar beneath videos with HyperText animation displaying "SHUFFLE [emoji]"
+- **Internal Shuffle Counter**: `internalShuffleCounter` managed independently from track changes
+- **Combined Shuffle Logic**: Uses both `shuffleCounter` (from track clicks) and `internalShuffleCounter` for video selection
+- **Track Selection**: Clicking different songs updates `currentTrackIndex` and resets `internalShuffleCounter`
+- **Audio Player Navigation**: Next/prev buttons update `currentTrackIndex` and reset shuffle counters for sync
+- **Mobile-Friendly**: Full-width clickable area optimized for thumb accessibility
 
 ### Video ID Management
 - Video IDs stored in `src/assets/[category]-videoIds.json` files
@@ -94,6 +100,8 @@ VITE_UNSPLASH_ACCESS_KEY=""
 - **Audio**: react-modern-audio-player library
 - **Storage**: Dropbox API for file access
 - **State Management**: React hooks with localStorage persistence
+- **UI Components**: HyperText for animated text effects
+- **Admin System**: Secret key combination access with comprehensive video management
 - **Deployment**: Static build suitable for any hosting platform
 
 ## Video Mode System
@@ -111,3 +119,23 @@ VITE_UNSPLASH_ACCESS_KEY=""
 2. Update `VideoMode` type in `MediaCollage.tsx`
 3. Add mode to emoji button array and helper functions
 4. Update documentation to reflect new category
+
+## Admin System
+
+### Access & Security
+- **Secret Access**: Triple-A key press (press 'a' three times quickly) activates admin panel
+- **Component Structure**: `AdminKeyCombo` + `VideoAdmin` modal system
+- **Non-Intrusive**: Hidden from normal users, no visible UI elements
+
+### Admin Features
+- **Video Preview Grid**: Visual grid showing all videos for selected mode
+- **Bulk Management**: Select multiple videos for deletion
+- **Mode Switching**: Admin can switch between pandas/puppies/kitties modes
+- **Health Reporting**: Shows video count and collection status
+- **JSON Export**: Download current video collections as backup
+
+### Implementation Details
+- **AdminKeyCombo**: Keyboard event listener with sequence detection and timeout
+- **VideoAdmin**: Full-screen modal with video grid, selection controls, and mode tabs
+- **adminService**: Service layer for file operations and health checks
+- **State Management**: Separate admin state isolated from main app functionality
