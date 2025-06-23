@@ -86,12 +86,12 @@ const MediaCollage = memo<MediaCollageProps>(({ currentTrack, shuffleCounter }) 
   return (
     <div className="w-full mb-6">
       <div className="bg-white/5 rounded-lg p-4 backdrop-blur-sm border border-white/10">
-        <div className="flex items-center justify-between mb-4">
+        <div className="relative flex justify-center items-center mb-4">
           <h3 className="text-lg font-semibold text-white">
-             Vorbis Player
+             Panda Player
           </h3>
           {loading && (
-            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+            <div className="absolute right-0 animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
           )}
         </div>
         
