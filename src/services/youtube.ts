@@ -41,6 +41,7 @@ class YouTubeService {
     // Return the first word, or 'music' as fallback
     return words[0] || 'music';
   }
+  
 
   private getRandomVideoByHashtag(hashtag: string, shuffleSeed: number = 0): string {
     // Map hashtags to curated videos that fit the theme - 100+ popular song title words
@@ -239,6 +240,16 @@ class YouTubeService {
     if (options.controls === false) params.set('controls', '0');
 
     return `https://www.youtube.com/embed/${videoId}?${params.toString()}`;
+  }
+
+  async loadVideoIdsFromCategory(category: string): Promise<string[]> {
+    try {
+      const videoIdsModule = await import(`../assets/${category}-videoIds.json`);
+      return videoIdsModule.default || [];
+    } catch (error) {
+      console.error(`Failed to load video IDs for category: ${category}`, error);
+      return [];
+    }
   }
 }
 

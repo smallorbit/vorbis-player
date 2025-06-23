@@ -36,34 +36,33 @@ const MediaCollage = memo<MediaCollageProps>(({ currentTrack, shuffleCounter }) 
       .slice(0, 3); // Limit to first 3 meaningful words
   };
 
-  const fetchMediaContent = async (track: Track, shuffleSeed: number = 0) => {
+  const fetchMediaContent = async (track: Track) => {
     if (!track) return;
-    
-    // Clear previous media items immediately
+
     setMediaItems([]);
     setLoading(true);
     try {
-      const keywords = extractKeywords(track.title);
-      const searchQuery = keywords.join(' ');
-      
-      // Pass shuffle counter to ensure different video selection
-      const youtubeResult = await youtubeService.searchVideos(searchQuery, 1, shuffleSeed);
-      
-      const mediaItems: MediaItem[] = [];
-      
-      // Add YouTube video if available
-      if (youtubeResult.videos.length > 0) {
-        const video = youtubeResult.videos[0];
-        mediaItems.push({
-          id: video.id,
-          type: 'youtube',
-          url: video.embedUrl,
-          title: video.title,
-          thumbnail: video.thumbnail
-        });
+      const pandaVideoIds = await youtubeService.loadVideoIdsFromCategory('panda');
+      if (pandaVideoIds.length === 0) {
+        throw new Error('No panda video IDs found.');
       }
       
-      setMediaItems(mediaItems);
+      const randomVideoId = pandaVideoIds[Math.floor(Math.random() * pandaVideoIds.length)];
+
+      const video: MediaItem = {
+        id: randomVideoId,
+        type: 'youtube',
+        url: youtubeService.createEmbedUrl(randomVideoId, {
+          autoplay: true,
+          mute: true,
+          loop: true,
+          controls: true,
+        }),
+        title: 'Random Panda Video',
+        thumbnail: `https://i.ytimg.com/vi/${randomVideoId}/hqdefault.jpg`,
+      };
+      
+      setMediaItems([video]);
     } catch (error) {
       console.error('Error fetching media content:', error);
       setMediaItems([]);
@@ -74,10 +73,9 @@ const MediaCollage = memo<MediaCollageProps>(({ currentTrack, shuffleCounter }) 
 
   useEffect(() => {
     if (currentTrack) {
-      // The shuffleCounter from props is now the seed for the API call
-      fetchMediaContent(currentTrack, shuffleCounter); 
+      fetchMediaContent(currentTrack);
     }
-  }, [currentTrack, shuffleCounter]); // Re-fetches when the track or counter changes
+  }, [currentTrack]);
 
   if (!currentTrack) {
     return null;
