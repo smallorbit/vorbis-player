@@ -1,6 +1,7 @@
 import { useState, useEffect, memo, useCallback } from 'react';
 import type { Track } from '../services/dropbox';
 import { youtubeService } from '../services/youtube';
+import { HyperText } from './ui/hyper-text';
 
 type VideoMode = 'pandas' | 'puppies' | 'kitties';
 
@@ -20,6 +21,7 @@ interface MediaCollageProps {
 const MediaCollage = memo<MediaCollageProps>(({ currentTrack, shuffleCounter }) => {
   const [mediaItems, setMediaItems] = useState<MediaItem[]>([]);
   const [loading, setLoading] = useState(false);
+  const [internalShuffleCounter, setInternalShuffleCounter] = useState(0);
   const [videoMode, setVideoMode] = useState<VideoMode>(() => {
     const saved = localStorage.getItem('panda-player-video-mode');
     return (saved as VideoMode) || 'pandas';
@@ -36,9 +38,10 @@ const MediaCollage = memo<MediaCollageProps>(({ currentTrack, shuffleCounter }) 
       if (videoIds.length === 0) {
         throw new Error(`No ${videoMode} video IDs found.`);
       }
-      
-      // Use shuffle counter to ensure different video selection when same song is clicked
-      const videoIndex = (shuffleCounter + Math.floor(Math.random() * videoIds.length)) % videoIds.length;
+
+      // Use combined shuffle counters to ensure different video selection
+      const combinedShuffleCount = shuffleCounter + internalShuffleCounter;
+      const videoIndex = (combinedShuffleCount + Math.floor(Math.random() * videoIds.length)) % videoIds.length;
       const randomVideoId = videoIds[videoIndex];
 
       const video: MediaItem = {
@@ -53,7 +56,7 @@ const MediaCollage = memo<MediaCollageProps>(({ currentTrack, shuffleCounter }) 
         title: `Random ${videoMode.charAt(0).toUpperCase() + videoMode.slice(1, -1)} Video`,
         thumbnail: `https://i.ytimg.com/vi/${randomVideoId}/hqdefault.jpg`,
       };
-      
+
       setMediaItems([video]);
     } catch (error) {
       console.error('Error fetching media content:', error);
@@ -61,7 +64,7 @@ const MediaCollage = memo<MediaCollageProps>(({ currentTrack, shuffleCounter }) 
     } finally {
       setLoading(false);
     }
-  }, [videoMode, shuffleCounter]);
+  }, [videoMode, shuffleCounter, internalShuffleCounter]);
 
   useEffect(() => {
     if (currentTrack) {
@@ -69,9 +72,18 @@ const MediaCollage = memo<MediaCollageProps>(({ currentTrack, shuffleCounter }) 
     }
   }, [currentTrack, shuffleCounter, videoMode, fetchMediaContent]);
 
+  // Reset internal shuffle counter when track changes
+  useEffect(() => {
+    setInternalShuffleCounter(0);
+  }, [currentTrack]);
+
   const handleModeChange = (mode: VideoMode) => {
     setVideoMode(mode);
     localStorage.setItem('panda-player-video-mode', mode);
+  };
+
+  const handleShuffleVideo = () => {
+    setInternalShuffleCounter(prev => prev + 1);
   };
 
   const getModeEmoji = (mode: VideoMode) => {
@@ -103,30 +115,29 @@ const MediaCollage = memo<MediaCollageProps>(({ currentTrack, shuffleCounter }) 
           <h3 className="text-lg font-semibold text-white">
             {getModeTitle(videoMode)} {getModeEmoji(videoMode)}🎵
           </h3>
-          
+
           <div className="flex items-center gap-2">
             <div className="flex bg-white/10 rounded-lg p-1 gap-1">
               {(['pandas', 'puppies', 'kitties'] as VideoMode[]).map((mode) => (
                 <button
                   key={mode}
                   onClick={() => handleModeChange(mode)}
-                  className={`px-3 py-1 rounded-md text-sm font-medium transition-all duration-200 ${
-                    videoMode === mode
-                      ? 'bg-white/20 text-white shadow-sm'
-                      : 'text-white/70 hover:text-white hover:bg-white/10'
-                  }`}
+                  className={`px-3 py-1 rounded-md text-sm font-medium transition-all duration-200 ${videoMode === mode
+                    ? 'bg-white/20 text-white shadow-sm'
+                    : 'text-white/70 hover:text-white hover:bg-white/10'
+                    }`}
                 >
                   {getModeEmoji(mode)}
                 </button>
               ))}
             </div>
-            
+
             {loading && (
               <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
             )}
           </div>
         </div>
-        
+
         <div className="w-full">
           {mediaItems.map((item) => (
             <div
@@ -157,7 +168,7 @@ const MediaCollage = memo<MediaCollageProps>(({ currentTrack, shuffleCounter }) 
                   }}
                 />
               )}
-              
+
               {item.title && (
                 <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-3">
                   <p className="text-white text-sm font-medium truncate">
@@ -168,7 +179,24 @@ const MediaCollage = memo<MediaCollageProps>(({ currentTrack, shuffleCounter }) 
             </div>
           ))}
         </div>
-        
+
+        {/* Shuffle Bar - Full width clickable area */}
+        {mediaItems.length > 0 && (
+          <button
+            onClick={handleShuffleVideo}
+            className="group w-full py-3 bg-white/5 hover:bg-white/10 border-t border-b border-white/10 transition-all duration-200 active:bg-white/15 flex justify-center items-center"
+            title="Click anywhere to shuffle video"
+          >
+            <HyperText
+              duration={600}
+              className="text-white text-lg font-semibold tracking-wider pointer-events-none"
+              as="span"
+            >
+              {"SHUFFLE " + getModeEmoji(videoMode)}
+            </HyperText>
+          </button>
+        )}
+
         {mediaItems.length === 0 && !loading && (
           <div className="text-center text-white/60 py-8">
             <p>No media content available for this track</p>
