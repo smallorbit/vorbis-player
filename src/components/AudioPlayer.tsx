@@ -150,7 +150,7 @@ const AudioPlayerComponent = () => {
           <div className="text-center">
             
             <HyperText duration={800} className="text-2xl font-bold text-white mb-3" as="h2">
-              Panda Player
+              Panda Player 🐼🎵
             </HyperText>
             <button
               onClick={() => setIsInitialLoad(false)}
