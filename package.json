@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@tailwindcss/postcss": "^4.1.10",
+    "@types/react-window": "^1.8.8",
     "clsx": "^2.1.1",
     "dropbox": "^10.34.0",
     "motion": "^12.18.1",
@@ -20,6 +21,8 @@
     "react-icons": "^5.5.0",
     "react-is": "^19.1.0",
     "react-modern-audio-player": "^1.4.0-rc.2",
+    "react-window": "^1.8.11",
+    "react-window-infinite-loader": "^1.0.10",
     "tailwind-merge": "^3.3.1"
   },
   "devDependencies": {
