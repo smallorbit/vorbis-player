@@ -1,9 +1,11 @@
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback, memo, lazy, Suspense } from 'react';
 import AudioPlayer from 'react-modern-audio-player';
-import Playlist from './Playlist';
+// Lazy load Playlist for code splitting
+const Playlist = lazy(() => import('./Playlist'));
 import MediaCollage from './MediaCollage';
-import VideoAdmin from './admin/VideoAdmin';
-import AdminKeyCombo from './admin/AdminKeyCombo';
+// Lazy load admin components to reduce initial bundle size
+const VideoAdmin = lazy(() => import('./admin/VideoAdmin'));
+const AdminKeyCombo = lazy(() => import('./admin/AdminKeyCombo'));
 import { getDropboxAudioFiles, dropboxAuth } from '../services/dropbox';
 import type { Track } from '../services/dropbox';
 import { HyperText } from './hyper-text';
@@ -68,17 +70,6 @@ const AudioPlayerComponent = () => {
     return () => window.removeEventListener('focus', handleFocus);
   }, [tracks.length, isLoading]);
 
-  const handleTrackSelect = (index: number) => {
-    // If the same track is clicked again
-    if (index === currentTrackIndex) {
-      setShuffleCounter(prev => prev + 1);
-    } else {
-      // If a new track is clicked
-      setCurrentTrackIndex(index);
-      setShuffleCounter(0); // Reset counter for a new track
-    }
-    setIsInitialLoad(false);
-  };
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -110,6 +101,22 @@ const AudioPlayerComponent = () => {
       img: undefined,
     })), [tracks]
   );
+
+  // Memoize the current track to prevent unnecessary re-renders
+  const currentTrack = useMemo(() => tracks[currentTrackIndex] || null, [tracks, currentTrackIndex]);
+
+  // Memoize track selection handler
+  const handleTrackSelect = useCallback((index: number) => {
+    // If the same track is clicked again
+    if (index === currentTrackIndex) {
+      setShuffleCounter(prev => prev + 1);
+    } else {
+      // If a new track is clicked
+      setCurrentTrackIndex(index);
+      setShuffleCounter(0); // Reset counter for a new track
+    }
+    setIsInitialLoad(false);
+  }, [currentTrackIndex]);
 
   const renderContent = () => {
     if (isLoading) {
@@ -175,39 +182,30 @@ const AudioPlayerComponent = () => {
     return (
       <div className="w-full max-w-2xl lg:max-w-4xl xl:max-w-5xl">
         <MediaCollage
-          currentTrack={tracks[currentTrackIndex] || null}
+          currentTrack={currentTrack}
           shuffleCounter={shuffleCounter}
         />
         <div className="mb-3 sm:mb-4 md:mb-6">
-          <Playlist
-            tracks={tracks}
-            currentTrackIndex={currentTrackIndex}
-            onTrackSelect={handleTrackSelect}
-          />
+          <Suspense fallback={
+            <div className="w-full max-w-4xl mx-auto mt-6">
+              <div className="bg-neutral-800 rounded-lg p-4 border border-neutral-700">
+                <div className="animate-pulse text-white/60 text-center">Loading playlist...</div>
+              </div>
+            </div>
+          }>
+            <Playlist
+              tracks={tracks}
+              currentTrackIndex={currentTrackIndex}
+              onTrackSelect={handleTrackSelect}
+            />
+          </Suspense>
         </div>
         <div className="bg-white/5 rounded-lg p-2 sm:p-3 md:p-4 backdrop-blur-sm border border-white/10 overflow-hidden">
           <div className="px-2 sm:px-4 md:px-6 pt-3 sm:pt-4 md:pt-5 pb-2 sm:pb-3 overflow-hidden">
-            <AudioPlayer
-              key={currentTrackIndex}
+            <AudioPlayerMemo
+              currentTrackIndex={currentTrackIndex}
               playList={playList}
               audioRef={audioRef}
-              audioInitialState={{
-                isPlaying: true,
-                curPlayId: currentTrackIndex + 1,
-                volume: 1
-              }}
-              activeUI={{
-                all: false,
-                playButton: true,
-                prevNnext: true,
-                volumeSlider: true,
-                repeatType: true,
-                trackTime: true,
-                trackInfo: false,
-                artwork: false,
-                progress: "bar",
-                playList: false
-              }}
             />
           </div>
         </div>
@@ -217,17 +215,65 @@ const AudioPlayerComponent = () => {
 
   return (
     <div className="min-h-screen w-full flex items-center justify-center px-2 sm:px-4">
-      {/* Secret Admin Access */}
-      <AdminKeyCombo onActivate={() => setShowAdminPanel(true)} />
+      {/* Secret Admin Access - Lazy loaded */}
+      <Suspense fallback={null}>
+        <AdminKeyCombo onActivate={() => setShowAdminPanel(true)} />
+      </Suspense>
 
       {renderContent()}
 
-      {/* Admin Panel Modal */}
+      {/* Admin Panel Modal - Lazy loaded */}
       {showAdminPanel && (
-        <VideoAdmin onClose={() => setShowAdminPanel(false)} />
+        <Suspense fallback={
+          <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div>
+          </div>
+        }>
+          <VideoAdmin onClose={() => setShowAdminPanel(false)} />
+        </Suspense>
       )}
     </div>
   );
 };
+
+// Memoized AudioPlayer component to prevent unnecessary re-renders
+const AudioPlayerMemo = memo<{
+  currentTrackIndex: number;
+  playList: Array<{
+    id: number;
+    src: string;
+    name: string;
+    writer: string;
+    img: undefined;
+  }>;
+  audioRef: React.MutableRefObject<HTMLAudioElement>;
+}>(({ currentTrackIndex, playList, audioRef }) => {
+  return (
+    <AudioPlayer
+      key={currentTrackIndex}
+      playList={playList}
+      audioRef={audioRef}
+      audioInitialState={{
+        isPlaying: true,
+        curPlayId: currentTrackIndex + 1,
+        volume: 1
+      }}
+      activeUI={{
+        all: false,
+        playButton: true,
+        prevNnext: true,
+        volumeSlider: true,
+        repeatType: true,
+        trackTime: true,
+        trackInfo: false,
+        artwork: false,
+        progress: "bar",
+        playList: false
+      }}
+    />
+  );
+});
+
+AudioPlayerMemo.displayName = 'AudioPlayerMemo';
 
 export default AudioPlayerComponent;
