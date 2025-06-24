@@ -1,4 +1,5 @@
-import { memo, useMemo } from 'react';
+import { memo, useMemo, useCallback } from 'react';
+import { FixedSizeList as List } from 'react-window';
 import type { Track } from '../services/dropbox';
 import { sortTracksByNumber } from '../lib/utils';
 
@@ -64,13 +65,31 @@ const Playlist = memo<PlaylistProps>(({ tracks, currentTrackIndex, onTrackSelect
     return sortedTracks.findIndex(track => track === currentTrack);
   }, [sortedTracks, currentTrack]);
 
-  const handleTrackSelect = (sortedIndex: number) => {
+  const handleTrackSelect = useCallback((sortedIndex: number) => {
     const selectedTrack = sortedTracks[sortedIndex];
     const originalIndex = tracks.findIndex(track => track === selectedTrack);
     if (originalIndex !== -1) {
       onTrackSelect(originalIndex);
     }
-  };
+  }, [sortedTracks, tracks, onTrackSelect]);
+
+  // Virtual list row renderer
+  const Row = useCallback(({ index, style }: { index: number; style: React.CSSProperties }) => {
+    const track = sortedTracks[index];
+    return (
+      <div style={style}>
+        <PlaylistItem
+          track={track}
+          index={index}
+          isSelected={index === sortedCurrentTrackIndex}
+          onSelect={handleTrackSelect}
+        />
+      </div>
+    );
+  }, [sortedTracks, sortedCurrentTrackIndex, handleTrackSelect]);
+
+  // If track list is small, render normally. If large, use virtualization
+  const shouldVirtualize = sortedTracks.length > 50;
 
   return (
     <div className="w-full max-w-4xl mx-auto mt-6">
@@ -88,15 +107,30 @@ const Playlist = memo<PlaylistProps>(({ tracks, currentTrackIndex, onTrackSelect
               </tr>
             </thead>
             <tbody className="bg-neutral-800 divide-y divide-neutral-700">
-              {sortedTracks.map((track, index) => (
-                <PlaylistItem
-                  key={`${track.title}-${track.src}`}
-                  track={track}
-                  index={index}
-                  isSelected={index === sortedCurrentTrackIndex}
-                  onSelect={handleTrackSelect}
-                />
-              ))}
+              {shouldVirtualize ? (
+                <tr>
+                  <td colSpan={2} className="p-0">
+                    <List
+                      height={Math.min(400, sortedTracks.length * 60)} // Max height of 400px
+                      itemCount={sortedTracks.length}
+                      itemSize={60}
+                      width="100%"
+                    >
+                      {Row}
+                    </List>
+                  </td>
+                </tr>
+              ) : (
+                sortedTracks.map((track, index) => (
+                  <PlaylistItem
+                    key={`${track.title}-${track.src}`}
+                    track={track}
+                    index={index}
+                    isSelected={index === sortedCurrentTrackIndex}
+                    onSelect={handleTrackSelect}
+                  />
+                ))
+              )}
             </tbody>
           </table>
         </div>
