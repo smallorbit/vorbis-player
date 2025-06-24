@@ -35,7 +35,10 @@ const AudioPlayerComponent = () => {
       if (fetchedTracks.length === 0) {
         setError("No audio files found in your app's Dropbox folder. Make sure files have been added and the app has 'files.metadata.read' permissions.");
       }
-      // Set the current track to the first one in sorted order before setting tracks
+      
+      setTracks(fetchedTracks);
+      
+      // Set the current track to the first one in sorted order AFTER setting tracks
       if (fetchedTracks.length > 0) {
         const sortedTracks = sortTracksByNumber(fetchedTracks);
         const firstSortedTrack = sortedTracks[0];
@@ -43,9 +46,11 @@ const AudioPlayerComponent = () => {
         const originalIndex = fetchedTracks.findIndex(track => track === firstSortedTrack);
         if (originalIndex !== -1) {
           setCurrentTrackIndex(originalIndex);
+          if (import.meta.env.DEV) {
+            console.log('🎵 Initial track set to index:', originalIndex, firstSortedTrack.title);
+          }
         }
       }
-      setTracks(fetchedTracks);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "An unknown error occurred while fetching tracks.");
     } finally {
@@ -71,23 +76,104 @@ const AudioPlayerComponent = () => {
   }, [tracks.length, isLoading]);
 
 
+  // Enhanced synchronization that works with or without playlist interaction
   useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio) return;
-
     const updateCurrentTrack = () => {
+      // Try to find audio element in multiple ways
+      const audio = audioRef.current || 
+                   document.querySelector('audio') || 
+                   document.querySelector('[data-testid="audio-element"]');
+      
+      if (!audio) {
+        if (import.meta.env.DEV) {
+          console.log('🎵 No audio element found for sync');
+        }
+        return;
+      }
+
       // Find the track in the playlist that matches the audio player's current source
-      const trackIndex = tracks.findIndex(track => track.src === audio.src);
+      const trackIndex = tracks.findIndex(track => {
+        // More robust source matching
+        const audioSrc = audio.src || audio.currentSrc;
+        return audioSrc && (
+          track.src === audioSrc || 
+          audioSrc.includes(track.src) || 
+          track.src.includes(audioSrc.split('?')[0]) // Handle query parameters
+        );
+      });
+
       if (trackIndex !== -1 && trackIndex !== currentTrackIndex) {
+        if (import.meta.env.DEV) {
+          console.log(`🎵 Playlist sync: Track changed from ${currentTrackIndex} to ${trackIndex}`, {
+            audioSrc: audio.src || audio.currentSrc,
+            trackSrc: tracks[trackIndex]?.src,
+            audioElement: audio.constructor.name
+          });
+        }
         setCurrentTrackIndex(trackIndex);
         setShuffleCounter(0); // Reset shuffle counter when track changes via audio player controls
       }
     };
 
-    audio.addEventListener('loadstart', updateCurrentTrack);
+    // Listen to multiple events to ensure we catch all track changes
+    const events = ['loadstart', 'loadedmetadata', 'canplay', 'play', 'ended', 'timeupdate'];
+    
+    // Set up event listeners with a delay to ensure audio element exists
+    const setupListeners = () => {
+      const audio = audioRef.current || 
+                   document.querySelector('audio') || 
+                   document.querySelector('[data-testid="audio-element"]');
+                   
+      if (audio) {
+        events.forEach(event => {
+          audio.addEventListener(event, updateCurrentTrack);
+        });
+        
+        if (import.meta.env.DEV) {
+          console.log('🎵 Audio event listeners attached to:', audio.constructor.name);
+        }
+        
+        return audio;
+      }
+      return null;
+    };
+
+    // Try to setup immediately
+    let audio = setupListeners();
+    
+    // If no audio element found, try again with intervals
+    let retryCount = 0;
+    let retryInterval: NodeJS.Timeout | null = null;
+    
+    if (!audio) {
+      retryInterval = setInterval(() => {
+        audio = setupListeners();
+        retryCount++;
+        
+        if (audio || retryCount > 10) { // Stop trying after 10 attempts (5 seconds)
+          if (retryInterval) clearInterval(retryInterval);
+        }
+      }, 500);
+    }
+
+    // Continuous polling as backup (more aggressive for initial sync)
+    const pollInterval = setInterval(() => {
+      updateCurrentTrack();
+    }, 500); // Check every 500ms
 
     return () => {
-      audio.removeEventListener('loadstart', updateCurrentTrack);
+      if (retryInterval) {
+        clearInterval(retryInterval);
+      }
+      clearInterval(pollInterval);
+      
+      // Clean up event listeners - find the audio element again to be safe
+      const currentAudio = audioRef.current || document.querySelector('audio');
+      if (currentAudio) {
+        events.forEach(event => {
+          currentAudio.removeEventListener(event, updateCurrentTrack);
+        });
+      }
     };
   }, [tracks, currentTrackIndex]);
 
@@ -117,6 +203,81 @@ const AudioPlayerComponent = () => {
     }
     setIsInitialLoad(false);
   }, [currentTrackIndex]);
+
+  // Additional sync using MutationObserver to watch for DOM changes
+  useEffect(() => {
+    let observer: MutationObserver;
+
+    const setupObserver = () => {
+      const audioContainer = document.querySelector('[class*="audio"]') || 
+                           document.querySelector('[class*="player"]') ||
+                           document.body;
+
+      if (audioContainer) {
+        observer = new MutationObserver(() => {
+          // Check for track changes whenever the DOM changes
+          const audio = document.querySelector('audio');
+          if (audio && tracks.length > 0) {
+            const currentSrc = audio.src || audio.currentSrc;
+            if (currentSrc) {
+              const trackIndex = tracks.findIndex(track => 
+                currentSrc.includes(track.src) || track.src.includes(currentSrc.split('?')[0])
+              );
+              
+              if (trackIndex !== -1 && trackIndex !== currentTrackIndex) {
+                if (import.meta.env.DEV) {
+                  console.log('🎵 MutationObserver detected track change:', trackIndex);
+                }
+                setCurrentTrackIndex(trackIndex);
+                setShuffleCounter(0);
+              }
+            }
+          }
+        });
+
+        observer.observe(audioContainer, {
+          childList: true,
+          subtree: true,
+          attributes: true,
+          attributeFilter: ['src', 'data-current-track']
+        });
+      }
+    };
+
+    // Setup with a small delay to ensure DOM is ready
+    const timeoutId = setTimeout(setupObserver, 1000);
+
+    return () => {
+      clearTimeout(timeoutId);
+      if (observer) {
+        observer.disconnect();
+      }
+    };
+  }, [tracks, currentTrackIndex]);
+
+  // Final fallback: Monitor if we have tracks but no current track properly set
+  useEffect(() => {
+    if (tracks.length > 0 && currentTrackIndex === 0 && !isInitialLoad) {
+      // Force sync check after tracks are loaded
+      const timeoutId = setTimeout(() => {
+        const audio = document.querySelector('audio');
+        if (audio && audio.src) {
+          const trackIndex = tracks.findIndex(track => 
+            audio.src.includes(track.src) || track.src.includes(audio.src.split('?')[0])
+          );
+          
+          if (trackIndex !== -1 && trackIndex !== currentTrackIndex) {
+            if (import.meta.env.DEV) {
+              console.log('🎵 Final fallback sync triggered:', trackIndex);
+            }
+            setCurrentTrackIndex(trackIndex);
+          }
+        }
+      }, 2000); // Wait 2 seconds after tracks load
+
+      return () => clearTimeout(timeoutId);
+    }
+  }, [tracks, currentTrackIndex, isInitialLoad]);
 
   const renderContent = () => {
     if (isLoading) {
