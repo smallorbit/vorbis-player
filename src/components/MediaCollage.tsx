@@ -1,7 +1,7 @@
 import { useState, useEffect, memo, useCallback } from 'react';
 import type { Track } from '../services/dropbox';
 import { youtubeService } from '../services/youtube';
-import { HyperText } from './ui/hyper-text';
+import { HyperText } from './hyper-text';
 
 type VideoMode = 'pandas' | 'puppies' | 'kitties';
 
@@ -23,7 +23,7 @@ const MediaCollage = memo<MediaCollageProps>(({ currentTrack, shuffleCounter }) 
   const [loading, setLoading] = useState(false);
   const [internalShuffleCounter, setInternalShuffleCounter] = useState(0);
   const [videoMode, setVideoMode] = useState<VideoMode>(() => {
-    const saved = localStorage.getItem('panda-player-video-mode');
+    const saved = localStorage.getItem('vorbis-player-video-mode');
     return (saved as VideoMode) || 'pandas';
   });
 

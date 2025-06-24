@@ -6,7 +6,7 @@ import VideoAdmin from './admin/VideoAdmin';
 import AdminKeyCombo from './admin/AdminKeyCombo';
 import { getDropboxAudioFiles, dropboxAuth } from '../services/dropbox';
 import type { Track } from '../services/dropbox';
-import { HyperText } from './ui/hyper-text';
+import { HyperText } from './hyper-text';
 import { sortTracksByNumber } from '../lib/utils';
 
 const AudioPlayerComponent = () => {
