@@ -126,16 +126,24 @@ src/
 │   └── admin/           # Admin panel components
 │       ├── AdminKeyCombo.tsx  # Secret key sequence detector
 │       └── VideoAdmin.tsx     # Video management interface
+├── hooks/               # Custom React hooks
+│   └── useDebounce.ts  # Debouncing utility hook
 ├── services/            # External service integrations
 │   ├── dropbox.ts      # Dropbox API integration
 │   ├── youtube.ts      # Video management
+│   ├── images.ts       # Image processing utilities
 │   └── adminService.ts # Admin panel backend services
 ├── assets/             # Static assets
-│   ├── panda-videoIds.json   # Curated panda videos
+│   ├── pandas-videoIds.json   # Curated panda videos
 │   ├── puppies-videoIds.json # Curated puppy videos
 │   └── kitties-videoIds.json # Curated kitten videos
 └── lib/                # Utilities
-    └── utils.ts        # Helper functions
+    ├── utils.ts        # Helper functions
+    └── extractVideoIds.js # Video ID extraction utility
+
+public/
+├── sw.js               # Service worker for caching and offline support
+└── vorbis_player_logo.jpg # Application logo
 ```
 
 ## Contributing

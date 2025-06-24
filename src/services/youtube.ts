@@ -13,7 +13,7 @@ export interface YouTubeSearchResult {
 class YouTubeService {
 
 
-  async searchVideos(query: string, maxResults: number = 4, shuffleSeed: number = 0): Promise<YouTubeSearchResult> {
+  async searchVideos(query: string, _maxResults?: number, shuffleSeed: number = 0): Promise<YouTubeSearchResult> {
     // Extract single hashtag-appropriate word from query
     const hashtag = this.extractHashtag(query);
     
@@ -242,10 +242,22 @@ class YouTubeService {
     return `https://www.youtube.com/embed/${videoId}?${params.toString()}`;
   }
 
+  private videoIdCache = new Map<string, string[]>();
+
   async loadVideoIdsFromCategory(category: string): Promise<string[]> {
+    // Return cached result if available
+    if (this.videoIdCache.has(category)) {
+      return this.videoIdCache.get(category)!;
+    }
+
     try {
       const videoIdsModule = await import(`../assets/${category}-videoIds.json`);
-      return videoIdsModule.default || [];
+      const videoIds = videoIdsModule.default || [];
+      
+      // Cache the result for future use
+      this.videoIdCache.set(category, videoIds);
+      
+      return videoIds;
     } catch (error) {
       console.error(`Failed to load video IDs for category: ${category}`, error);
       return [];

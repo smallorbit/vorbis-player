@@ -1,7 +1,8 @@
-import { useState, useEffect, memo, useCallback } from 'react';
+import { useState, useEffect, memo, useCallback, useRef } from 'react';
 import type { Track } from '../services/dropbox';
 import { youtubeService } from '../services/youtube';
 import { HyperText } from './hyper-text';
+import { useDebounce } from '../hooks/useDebounce';
 
 type VideoMode = 'pandas' | 'puppies' | 'kitties';
 
@@ -26,6 +27,11 @@ const MediaCollage = memo<MediaCollageProps>(({ currentTrack, shuffleCounter }) 
     const saved = localStorage.getItem('vorbis-player-video-mode');
     return (saved as VideoMode) || 'pandas';
   });
+  const [nextVideoItems, setNextVideoItems] = useState<MediaItem[]>([]);
+
+  // Debounce the shuffle counters to prevent excessive API calls
+  const debouncedShuffleCounter = useDebounce(shuffleCounter, 300);
+  const debouncedInternalShuffleCounter = useDebounce(internalShuffleCounter, 300);
 
 
   const fetchMediaContent = useCallback(async (track: Track) => {
@@ -39,8 +45,8 @@ const MediaCollage = memo<MediaCollageProps>(({ currentTrack, shuffleCounter }) 
         throw new Error(`No ${videoMode} video IDs found.`);
       }
 
-      // Use combined shuffle counters to ensure different video selection
-      const combinedShuffleCount = shuffleCounter + internalShuffleCounter;
+      // Use combined debounced shuffle counters to ensure different video selection
+      const combinedShuffleCount = debouncedShuffleCounter + debouncedInternalShuffleCounter;
       const videoIndex = (combinedShuffleCount + Math.floor(Math.random() * videoIds.length)) % videoIds.length;
       const randomVideoId = videoIds[videoIndex];
 
@@ -58,51 +64,72 @@ const MediaCollage = memo<MediaCollageProps>(({ currentTrack, shuffleCounter }) 
       };
 
       setMediaItems([video]);
+
+      // Preload next video for smoother transitions
+      try {
+        const nextVideoIndex = (videoIndex + 1) % videoIds.length;
+        const nextVideoId = videoIds[nextVideoIndex];
+        const nextVideo: MediaItem = {
+          id: nextVideoId,
+          type: 'youtube',
+          url: youtubeService.createEmbedUrl(nextVideoId, {
+            autoplay: false,
+            mute: true,
+            loop: true,
+            controls: true,
+          }),
+          title: `Next ${videoMode.charAt(0).toUpperCase() + videoMode.slice(1, -1)} Video`,
+          thumbnail: `https://i.ytimg.com/vi/${nextVideoId}/hqdefault.jpg`,
+        };
+        setNextVideoItems([nextVideo]);
+      } catch (preloadError) {
+        console.warn('Failed to preload next video:', preloadError);
+      }
     } catch (error) {
       console.error('Error fetching media content:', error);
       setMediaItems([]);
     } finally {
       setLoading(false);
     }
-  }, [videoMode, shuffleCounter, internalShuffleCounter]);
+  }, [videoMode, debouncedShuffleCounter, debouncedInternalShuffleCounter]);
 
   useEffect(() => {
     if (currentTrack) {
       fetchMediaContent(currentTrack);
     }
-  }, [currentTrack, shuffleCounter, videoMode, fetchMediaContent]);
+  }, [currentTrack, debouncedShuffleCounter, debouncedInternalShuffleCounter, videoMode, fetchMediaContent]);
 
   // Reset internal shuffle counter when track changes
   useEffect(() => {
     setInternalShuffleCounter(0);
   }, [currentTrack]);
 
-  const handleModeChange = (mode: VideoMode) => {
+  const handleModeChange = useCallback((mode: VideoMode) => {
     setVideoMode(mode);
-    localStorage.setItem('panda-player-video-mode', mode);
-  };
+    localStorage.setItem('vorbis-player-video-mode', mode);
+  }, []);
 
-  const handleShuffleVideo = () => {
+  const handleShuffleVideo = useCallback(() => {
     setInternalShuffleCounter(prev => prev + 1);
-  };
+  }, []);
 
-  const getModeEmoji = (mode: VideoMode) => {
+  const getModeEmoji = useCallback((mode: VideoMode) => {
     switch (mode) {
       case 'pandas': return '🐼';
       case 'puppies': return '🐶';
       case 'kitties': return '🐱';
       default: return '🐼';
     }
-  };
+  }, []);
 
-  const getModeTitle = (mode: VideoMode) => {
+  const getModeTitle = useCallback((mode: VideoMode) => {
     switch (mode) {
       case 'pandas': return 'Panda Player';
       case 'puppies': return 'Puppy Player';
       case 'kitties': return 'Kitty Player';
       default: return 'Panda Player';
     }
-  };
+  }, []);
 
   if (!currentTrack) {
     return null;
@@ -119,16 +146,13 @@ const MediaCollage = memo<MediaCollageProps>(({ currentTrack, shuffleCounter }) 
           <div className="flex items-center gap-2">
             <div className="flex bg-white/10 rounded-lg p-1 gap-1">
               {(['pandas', 'puppies', 'kitties'] as VideoMode[]).map((mode) => (
-                <button
+                <ModeButton
                   key={mode}
-                  onClick={() => handleModeChange(mode)}
-                  className={`px-3 py-1 rounded-md text-sm font-medium transition-all duration-200 ${videoMode === mode
-                    ? 'bg-white/20 text-white shadow-sm'
-                    : 'text-white/70 hover:text-white hover:bg-white/10'
-                    }`}
-                >
-                  {getModeEmoji(mode)}
-                </button>
+                  mode={mode}
+                  isActive={videoMode === mode}
+                  onClick={handleModeChange}
+                  emoji={getModeEmoji(mode)}
+                />
               ))}
             </div>
 
@@ -140,47 +164,7 @@ const MediaCollage = memo<MediaCollageProps>(({ currentTrack, shuffleCounter }) 
 
         <div className="w-full">
           {mediaItems.map((item) => (
-            <div
-              key={item.id}
-              className="relative rounded-lg overflow-hidden bg-white/10 backdrop-blur-sm border border-white/20 transition-all duration-300 hover:scale-105 hover:bg-white/20 w-full"
-              style={{
-                aspectRatio: '1/1', // Vertical aspect ratio for YouTube Shorts
-                height: '390px'
-              }}
-            >
-              {item.type === 'youtube' ? (
-                <iframe
-                  src={item.url}
-                  title={item.title}
-                  className="w-full h-full border-0"
-                  style={{
-                    transform: 'scale(1.66)',
-                    transformOrigin: 'center center'
-                  }}
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                />
-              ) : (
-                <img
-                  src={item.url}
-                  alt={item.title}
-                  className="w-full h-full object-cover"
-                  loading="lazy"
-                  onError={(e) => {
-                    const target = e.target as HTMLImageElement;
-                    target.src = `https://via.placeholder.com/400x300/1a1a1a/ffffff?text=${encodeURIComponent(item.title || 'No Image')}`;
-                  }}
-                />
-              )}
-
-              {item.title && (
-                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-3">
-                  <p className="text-white text-sm font-medium truncate">
-                    {item.title}
-                  </p>
-                </div>
-              )}
-            </div>
+            <VideoItem key={item.id} item={item} />
           ))}
         </div>
 
@@ -206,10 +190,144 @@ const MediaCollage = memo<MediaCollageProps>(({ currentTrack, shuffleCounter }) 
             <p>No media content available for this track</p>
           </div>
         )}
+
+        {/* Hidden preloaded videos for faster transitions */}
+        {nextVideoItems.length > 0 && (
+          <div className="hidden">
+            {nextVideoItems.map((item) => (
+              <div key={`preload-${item.id}`}>
+                <link rel="prefetch" href={item.thumbnail} />
+                {/* Preload thumbnail for faster loading */}
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
 });
+
+// Memoized mode button component to prevent unnecessary re-renders
+const ModeButton = memo<{
+  mode: VideoMode;
+  isActive: boolean;
+  onClick: (mode: VideoMode) => void;
+  emoji: string;
+}>(({ mode, isActive, onClick, emoji }) => {
+  const handleClick = useCallback(() => onClick(mode), [mode, onClick]);
+  
+  return (
+    <button
+      onClick={handleClick}
+      className={`px-3 py-1 rounded-md text-sm font-medium transition-all duration-200 ${
+        isActive
+          ? 'bg-white/20 text-white shadow-sm'
+          : 'text-white/70 hover:text-white hover:bg-white/10'
+      }`}
+    >
+      {emoji}
+    </button>
+  );
+});
+
+ModeButton.displayName = 'ModeButton';
+
+// Custom hook for intersection observer
+const useIntersectionObserver = (options: IntersectionObserverInit = {}) => {
+  const [isIntersecting, setIsIntersecting] = useState(false);
+  const [hasBeenVisible, setHasBeenVisible] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const element = ref.current;
+    if (!element) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        const isVisible = entry.isIntersecting;
+        setIsIntersecting(isVisible);
+        if (isVisible && !hasBeenVisible) {
+          setHasBeenVisible(true);
+        }
+      },
+      { threshold: 0.1, ...options }
+    );
+
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [hasBeenVisible, options]);
+
+  return { ref, isIntersecting, hasBeenVisible };
+};
+
+// Memoized video item component with lazy loading
+const VideoItem = memo<{
+  item: MediaItem;
+}>(({ item }) => {
+  const { ref, hasBeenVisible } = useIntersectionObserver();
+  const [shouldLoad, setShouldLoad] = useState(false);
+
+  useEffect(() => {
+    if (hasBeenVisible && !shouldLoad) {
+      // Add a small delay to prevent loading too many videos at once
+      const timer = setTimeout(() => setShouldLoad(true), 200);
+      return () => clearTimeout(timer);
+    }
+  }, [hasBeenVisible, shouldLoad]);
+
+  return (
+    <div
+      ref={ref}
+      className="relative rounded-lg overflow-hidden bg-white/10 backdrop-blur-sm border border-white/20 transition-all duration-300 hover:scale-105 hover:bg-white/20 w-full"
+      style={{
+        aspectRatio: '1/1',
+        height: '390px'
+      }}
+    >
+      {shouldLoad ? (
+        item.type === 'youtube' ? (
+          <iframe
+            src={item.url}
+            title={item.title}
+            className="w-full h-full border-0"
+            style={{
+              transform: 'scale(1.66)',
+              transformOrigin: 'center center'
+            }}
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+            loading="lazy"
+          />
+        ) : (
+          <img
+            src={item.url}
+            alt={item.title}
+            className="w-full h-full object-cover"
+            loading="lazy"
+            onError={(e) => {
+              const target = e.target as HTMLImageElement;
+              target.src = `https://via.placeholder.com/400x300/1a1a1a/ffffff?text=${encodeURIComponent(item.title || 'No Image')}`;
+            }}
+          />
+        )
+      ) : (
+        <div className="w-full h-full bg-neutral-700 flex items-center justify-center">
+          <div className="animate-pulse text-white/40">Loading...</div>
+        </div>
+      )}
+
+      {item.title && shouldLoad && (
+        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-3">
+          <p className="text-white text-sm font-medium truncate">
+            {item.title}
+          </p>
+        </div>
+      )}
+    </div>
+  );
+});
+
+VideoItem.displayName = 'VideoItem';
 
 MediaCollage.displayName = 'MediaCollage';
 
