@@ -122,10 +122,10 @@ src/
 │   ├── AudioPlayer.tsx  # Main audio player orchestrator
 │   ├── MediaCollage.tsx # Video display with shuffle controls
 │   ├── Playlist.tsx     # Track listing
-│   ├── admin/           # Admin panel components
-│   │   ├── AdminKeyCombo.tsx  # Secret key sequence detector
-│   │   └── VideoAdmin.tsx     # Video management interface
-│   └── ui/              # Reusable UI components
+│   ├── hyper-text.tsx   # Animated text component
+│   └── admin/           # Admin panel components
+│       ├── AdminKeyCombo.tsx  # Secret key sequence detector
+│       └── VideoAdmin.tsx     # Video management interface
 ├── services/            # External service integrations
 │   ├── dropbox.ts      # Dropbox API integration
 │   ├── youtube.ts      # Video management
