@@ -6,8 +6,10 @@ A modern audio player that combines Dropbox music streaming with curated animal 
 
 - **Dropbox Integration**: Stream audio files directly from your Dropbox account
 - **Multi-Mode Visual Experience**: Choose between pandas 🐼, puppies 🐶, or kitties 🐱 video modes
-- **Intuitive Shuffle**: Dedicated shuffle bar beneath videos for easy video cycling
+- **Intuitive Shuffle**: Dedicated full-width shuffle bar with HyperText animation for easy video cycling
+- **Optimized Video Display**: Smart cropping and scaling to maximize content in square viewport
 - **Quick Mode Switching**: Toggle between animal themes with one-click emoji buttons
+- **Admin System**: Hidden admin panel for video curation and management (triple-A key access)
 - **Modern UI**: Clean, responsive design with Tailwind CSS
 - **Secure Authentication**: PKCE OAuth flow for safe Dropbox access
 
@@ -81,7 +83,8 @@ A modern audio player that combines Dropbox music streaming with curated animal 
   - **Puppies** 🐶: Playful puppy videos
   - **Kitties** 🐱: Cute kitten compilations
 - **Mode Switching**: Click emoji buttons in the header to instantly switch themes
-- **Shuffle Feature**: Use the dedicated shuffle bar beneath videos to cycle through different videos within the selected mode
+- **Shuffle Feature**: Use the dedicated full-width shuffle bar with HyperText animation beneath videos to cycle through different videos within the selected mode
+- **Optimized Viewport**: Square aspect ratio with smart cropping to maximize video content visibility
 - **Persistence**: Your preferred mode is remembered across sessions
 - Videos auto-play (muted) and loop for ambient visual experience
 
@@ -90,6 +93,15 @@ A modern audio player that combines Dropbox music streaming with curated animal 
 - Uses secure PKCE OAuth flow
 - Tokens stored locally with automatic refresh
 - App-scoped access (only accesses designated app folder, not entire Dropbox)
+
+### Admin System
+
+- **Hidden Access**: Press 'A' three times quickly to activate the admin panel
+- **Video Management**: Preview, select, and delete videos from any mode
+- **Bulk Operations**: Select multiple videos for batch deletion
+- **Mode Switching**: Admin can switch between pandas/puppies/kitties modes
+- **Health Reporting**: Shows video count and collection status for each mode
+- **No UI Clutter**: Completely hidden from normal users, activated only by secret key sequence
 
 ## Development
 
@@ -111,10 +123,13 @@ src/
 │   ├── MediaCollage.tsx # Video display with shuffle controls
 │   ├── Playlist.tsx     # Track listing
 │   ├── admin/           # Admin panel components
+│   │   ├── AdminKeyCombo.tsx  # Secret key sequence detector
+│   │   └── VideoAdmin.tsx     # Video management interface
 │   └── ui/              # Reusable UI components
 ├── services/            # External service integrations
 │   ├── dropbox.ts      # Dropbox API integration
-│   └── youtube.ts      # Video management
+│   ├── youtube.ts      # Video management
+│   └── adminService.ts # Admin panel backend services
 ├── assets/             # Static assets
 │   ├── panda-videoIds.json   # Curated panda videos
 │   ├── puppies-videoIds.json # Curated puppy videos
