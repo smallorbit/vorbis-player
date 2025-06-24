@@ -64,11 +64,11 @@ class ImageService {
   private getMockImages(query: string, count: number): ImageSearchResult {
     // Generate mock images using placeholder services
     const themes = ['music', 'abstract', 'nature', 'urban', 'vintage', 'neon'];
-    const colors = ['1a1a1a', '2563eb', '7c3aed', 'dc2626', 'ea580c', '059669'];
+    // const colors = ['1a1a1a', '2563eb', '7c3aed', 'dc2626', 'ea580c', '059669']; // Unused for now
     
     const images: ImageResult[] = Array.from({ length: count }, (_, i) => {
       const theme = themes[i % themes.length];
-      const color = colors[i % colors.length];
+      // const color = colors[i % colors.length]; // Unused for now
       const width = 400;
       const height = 300;
       
