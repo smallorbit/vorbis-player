@@ -26,8 +26,8 @@ A modern audio player that combines Dropbox music streaming with curated animal 
 1. **Clone and install dependencies**
 
    ```bash
-   git clone <repository-url>
-   cd vap
+   git clone git@github.com:rmpacheco/vorbis-player.git
+   cd vorbis-player
    npm install
    ```
 
