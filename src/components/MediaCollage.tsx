@@ -144,8 +144,8 @@ const MediaCollage = memo<MediaCollageProps>(({ currentTrack, shuffleCounter }) 
               key={item.id}
               className="relative rounded-lg overflow-hidden bg-white/10 backdrop-blur-sm border border-white/20 transition-all duration-300 hover:scale-105 hover:bg-white/20 w-full"
               style={{
-                aspectRatio: '9/16', // Vertical aspect ratio for YouTube Shorts
-                height: '400px'
+                aspectRatio: '1/1', // Vertical aspect ratio for YouTube Shorts
+                height: '390px'
               }}
             >
               {item.type === 'youtube' ? (
@@ -153,6 +153,10 @@ const MediaCollage = memo<MediaCollageProps>(({ currentTrack, shuffleCounter }) 
                   src={item.url}
                   title={item.title}
                   className="w-full h-full border-0"
+                  style={{
+                    transform: 'scale(1.66)',
+                    transformOrigin: 'center center'
+                  }}
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                   allowFullScreen
                 />
