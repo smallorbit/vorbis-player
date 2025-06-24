@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 
 interface AdminKeyComboProps {
   onActivate: () => void;
@@ -9,7 +9,7 @@ const AdminKeyCombo: React.FC<AdminKeyComboProps> = ({ onActivate }) => {
   const [lastKeyTime, setLastKeyTime] = useState<number>(0);
   
   // Secret key sequence: Triple-click the 'A' key
-  const targetSequence = ['KeyA', 'KeyA', 'KeyA'];
+  const targetSequence = useMemo(() => ['KeyA', 'KeyA', 'KeyA'], []);
   const sequenceTimeout = 1500; // Reset sequence after 1.5 seconds
 
   useEffect(() => {
@@ -42,7 +42,7 @@ const AdminKeyCombo: React.FC<AdminKeyComboProps> = ({ onActivate }) => {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [keySequence, lastKeyTime, onActivate]);
+  }, [keySequence, lastKeyTime, onActivate, targetSequence]);
 
   return null; // This component doesn't render anything
 };
