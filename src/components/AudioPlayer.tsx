@@ -1,13 +1,12 @@
-import { useState, useEffect, useMemo, useRef, useCallback, memo, lazy, Suspense } from 'react';
-import AudioPlayer from 'react-modern-audio-player';
+import { useState, useEffect, useMemo, useCallback, memo, lazy, Suspense } from 'react';
 const Playlist = lazy(() => import('./Playlist'));
 import MediaCollage from './MediaCollage';
 const VideoAdmin = lazy(() => import('./admin/VideoAdmin'));
 const AdminKeyCombo = lazy(() => import('./admin/AdminKeyCombo'));
-import { getDropboxAudioFiles, dropboxAuth } from '../services/dropbox';
-import type { Track } from '../services/dropbox';
+import { getSpotifyUserPlaylists, spotifyAuth } from '../services/spotify';
+import { spotifyPlayer } from '../services/spotifyPlayer';
+import type { Track } from '../services/spotify';
 import { HyperText } from './hyper-text';
-import { sortTracksByNumber } from '../lib/utils';
 
 const AudioPlayerComponent = () => {
   const [tracks, setTracks] = useState<Track[]>([]);
@@ -15,36 +14,47 @@ const AudioPlayerComponent = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
-  const audioRef = useRef<HTMLAudioElement>(null!);
   const [shuffleCounter, setShuffleCounter] = useState(0);
   const [showAdminPanel, setShowAdminPanel] = useState(false);
 
   const fetchTracks = async () => {
-    if (window.location.pathname === '/auth/dropbox/callback') {
+    if (window.location.pathname === '/auth/spotify/callback') {
       setIsLoading(false);
+      return;
+    }
+
+    // Check if user is authenticated first
+    if (!spotifyAuth.isAuthenticated()) {
+      setIsLoading(false);
+      setError("Redirecting to Spotify login...");
+      spotifyAuth.redirectToAuth();
       return;
     }
 
     try {
       setError(null);
       setIsLoading(true);
-      const fetchedTracks = await getDropboxAudioFiles('');
+      
+      await spotifyPlayer.initialize();
+      
+      const fetchedTracks = await getSpotifyUserPlaylists();
       if (fetchedTracks.length === 0) {
-        setError("No audio files found in your app's Dropbox folder. Make sure files have been added and the app has 'files.metadata.read' permissions.");
+        setError("No tracks found in your Spotify account. Please add music to playlists or like some songs in Spotify, then refresh this page.");
       }
       
       setTracks(fetchedTracks);
       
       if (fetchedTracks.length > 0) {
-        const sortedTracks = sortTracksByNumber(fetchedTracks);
-        const firstSortedTrack = sortedTracks[0];
-        const originalIndex = fetchedTracks.findIndex(track => track === firstSortedTrack);
-        if (originalIndex !== -1) {
-          setCurrentTrackIndex(originalIndex);
-        }
+        setCurrentTrackIndex(0);
       }
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "An unknown error occurred while fetching tracks.");
+      console.error('Failed to initialize Spotify player:', err);
+      if (err instanceof Error && err.message.includes('authenticated')) {
+        setError("Redirecting to Spotify login...");
+        spotifyAuth.redirectToAuth();
+      } else {
+        setError(err instanceof Error ? err.message : "An unknown error occurred while fetching tracks.");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -56,7 +66,7 @@ const AudioPlayerComponent = () => {
 
   useEffect(() => {
     const handleFocus = () => {
-      if (window.location.pathname !== '/auth/dropbox/callback' && tracks.length === 0 && !isLoading) {
+      if (window.location.pathname !== '/auth/spotify/callback' && tracks.length === 0 && !isLoading) {
         fetchTracks();
       }
     };
@@ -67,62 +77,45 @@ const AudioPlayerComponent = () => {
 
 
   useEffect(() => {
-    const updateCurrentTrack = () => {
-      const audio = audioRef.current || document.querySelector('audio');
-      if (!audio) return;
-
-      const trackIndex = tracks.findIndex(track => {
-        const audioSrc = audio.src || audio.currentSrc;
-        return audioSrc && (
-          track.src === audioSrc || 
-          audioSrc.includes(track.src) || 
-          track.src.includes(audioSrc.split('?')[0])
-        );
-      });
-
-      if (trackIndex !== -1 && trackIndex !== currentTrackIndex) {
-        setCurrentTrackIndex(trackIndex);
-        setShuffleCounter(0);
+    const handlePlayerStateChange = (state: SpotifyPlaybackState | null) => {
+      if (state && state.track_window.current_track) {
+        const currentTrack = state.track_window.current_track;
+        const trackIndex = tracks.findIndex(track => track.id === currentTrack.id);
+        
+        if (trackIndex !== -1 && trackIndex !== currentTrackIndex) {
+          setCurrentTrackIndex(trackIndex);
+          setShuffleCounter(0);
+        }
       }
     };
 
-    const pollInterval = setInterval(updateCurrentTrack, 500);
-    return () => clearInterval(pollInterval);
+    spotifyPlayer.onPlayerStateChanged(handlePlayerStateChange);
   }, [tracks, currentTrackIndex]);
 
-  // Convert tracks to the format expected by react-modern-audio-player
-  const playList = useMemo(() =>
-    tracks.map((track, index) => ({
-      id: index + 1,
-      src: track.src,
-      name: track.title,
-      writer: 'Unknown Artist',
-      img: undefined,
-    })), [tracks]
-  );
+  const playTrack = useCallback(async (index: number) => {
+    if (tracks[index]) {
+      try {
+        await spotifyPlayer.playTrack(tracks[index].uri);
+        setCurrentTrackIndex(index);
+      } catch (error) {
+        console.error('Failed to play track:', error);
+      }
+    }
+  }, [tracks]);
 
   // Memoize the current track to prevent unnecessary re-renders
   const currentTrack = useMemo(() => tracks[currentTrackIndex] || null, [tracks, currentTrackIndex]);
 
-  const handleTrackSelect = useCallback((index: number) => {
-    if (index === currentTrackIndex) {
-      setShuffleCounter(prev => prev + 1);
-    } else {
-      setCurrentTrackIndex(index);
-      setShuffleCounter(0);
-    }
-    setIsInitialLoad(false);
-  }, [currentTrackIndex]);
 
 
 
   const renderContent = () => {
     if (isLoading) {
-      return <div className="text-center">Loading music from Dropbox...</div>;
+      return <div className="text-center">Loading music from Spotify...</div>;
     }
 
     if (error) {
-      const isAuthError = error.includes('Redirecting to Dropbox login') ||
+      const isAuthError = error.includes('Redirecting to Spotify login') ||
         error.includes('No authentication token') ||
         error.includes('Authentication expired');
 
@@ -130,15 +123,15 @@ const AudioPlayerComponent = () => {
         return (
           <div className="bg-white/5 rounded-lg p-6 backdrop-blur-sm border border-white/10 max-w-md w-full">
             <div className="text-center">
-              <h2 className="text-xl font-bold text-white mb-4">Connect to Dropbox</h2>
+              <h2 className="text-xl font-bold text-white mb-4">Connect to Spotify</h2>
               <p className="text-gray-300 mb-6">
-                Sign in to your Dropbox account to access your music files.
+                Sign in to your Spotify account to access your music. Requires Spotify Premium.
               </p>
               <button
-                onClick={() => dropboxAuth.redirectToAuth()}
-                className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold"
+                onClick={() => spotifyAuth.redirectToAuth()}
+                className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-semibold"
               >
-                Connect Dropbox
+                Connect Spotify
               </button>
             </div>
           </div>
@@ -194,18 +187,24 @@ const AudioPlayerComponent = () => {
             <Playlist
               tracks={tracks}
               currentTrackIndex={currentTrackIndex}
-              onTrackSelect={handleTrackSelect}
+              onTrackSelect={playTrack}
             />
           </Suspense>
         </div>
-        <div className="bg-white/5 rounded-lg p-2 sm:p-3 md:p-4 backdrop-blur-sm border border-white/10 overflow-hidden">
-          <div className="px-2 sm:px-4 md:px-6 pt-3 sm:pt-4 md:pt-5 pb-2 sm:pb-3 overflow-hidden">
-            <AudioPlayerMemo
-              currentTrackIndex={currentTrackIndex}
-              playList={playList}
-              audioRef={audioRef}
-            />
-          </div>
+        <div className="bg-white/5 rounded-lg p-2 sm:p-3 md:p-4 backdrop-blur-sm border border-white/10">
+          <SpotifyPlayerControls
+            currentTrack={currentTrack}
+            onPlay={() => spotifyPlayer.resume()}
+            onPause={() => spotifyPlayer.pause()}
+            onNext={() => {
+              spotifyPlayer.nextTrack();
+              setShuffleCounter(0);
+            }}
+            onPrevious={() => {
+              spotifyPlayer.previousTrack();
+              setShuffleCounter(0);
+            }}
+          />
         </div>
       </div>
     );
@@ -232,43 +231,90 @@ const AudioPlayerComponent = () => {
   );
 };
 
-const AudioPlayerMemo = memo<{
-  currentTrackIndex: number;
-  playList: Array<{
-    id: number;
-    src: string;
-    name: string;
-    writer: string;
-    img: undefined;
-  }>;
-  audioRef: React.MutableRefObject<HTMLAudioElement>;
-}>(({ currentTrackIndex, playList, audioRef }) => {
+const SpotifyPlayerControls = memo<{
+  currentTrack: Track | null;
+  onPlay: () => void;
+  onPause: () => void;
+  onNext: () => void;
+  onPrevious: () => void;
+}>(({ currentTrack, onPlay, onPause, onNext, onPrevious }) => {
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [volume, setVolume] = useState(50);
+
+  useEffect(() => {
+    const checkPlaybackState = async () => {
+      const state = await spotifyPlayer.getCurrentState();
+      if (state) {
+        setIsPlaying(!state.paused);
+      }
+    };
+    
+    const interval = setInterval(checkPlaybackState, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const handlePlayPause = () => {
+    if (isPlaying) {
+      onPause();
+    } else {
+      onPlay();
+    }
+  };
+
+  const handleVolumeChange = (newVolume: number) => {
+    setVolume(newVolume);
+    spotifyPlayer.setVolume(newVolume / 100);
+  };
+
   return (
-    <AudioPlayer
-      key={currentTrackIndex}
-      playList={playList}
-      audioRef={audioRef}
-      audioInitialState={{
-        isPlaying: true,
-        curPlayId: currentTrackIndex + 1,
-        volume: 1
-      }}
-      activeUI={{
-        all: false,
-        playButton: true,
-        prevNnext: true,
-        volumeSlider: true,
-        repeatType: false,
-        trackTime: true,
-        trackInfo: false,
-        artwork: false,
-        progress: "bar",
-        playList: false
-      }}
-    />
+    <div className="flex flex-col space-y-3 p-4">
+      {/* Track Info */}
+      <div className="flex-1 min-w-0">
+        <p className="text-white font-medium truncate">{currentTrack?.name || 'No track selected'}</p>
+        <p className="text-gray-400 text-sm truncate">{currentTrack?.artists || ''}</p>
+      </div>
+      
+      {/* Controls */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-3">
+          <button
+            onClick={onPrevious}
+            className="text-white hover:text-gray-300 transition-colors"
+          >
+            ⏮️
+          </button>
+          
+          <button
+            onClick={handlePlayPause}
+            className="bg-green-600 hover:bg-green-700 text-white rounded-full p-2 transition-colors"
+          >
+            {isPlaying ? '⏸️' : '▶️'}
+          </button>
+          
+          <button
+            onClick={onNext}
+            className="text-white hover:text-gray-300 transition-colors"
+          >
+            ⏭️
+          </button>
+        </div>
+        
+        <div className="flex items-center space-x-2">
+          <span className="text-white text-sm">🔊</span>
+          <input
+            type="range"
+            min="0"
+            max="100"
+            value={volume}
+            onChange={(e) => handleVolumeChange(Number(e.target.value))}
+            className="w-20"
+          />
+        </div>
+      </div>
+    </div>
   );
 });
 
-AudioPlayerMemo.displayName = 'AudioPlayerMemo';
+SpotifyPlayerControls.displayName = 'SpotifyPlayerControls';
 
 export default AudioPlayerComponent;

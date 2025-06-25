@@ -1,5 +1,5 @@
 import { useState, useEffect, memo, useCallback, useRef } from 'react';
-import type { Track } from '../services/dropbox';
+import type { Track } from '../services/spotify';
 import { youtubeService } from '../services/youtube';
 import { HyperText } from './hyper-text';
 import { useDebounce } from '../hooks/useDebounce';
@@ -244,7 +244,7 @@ const VideoItem = memo<{
     <div
       className="relative rounded-lg overflow-hidden bg-white/10 backdrop-blur-sm border border-white/20 transition-all duration-300 hover:scale-105 hover:bg-white/20 w-full"
       style={{
-        aspectRatio: '1/1',
+        aspectRatio: '3/4',
         height: '390px'
       }}
     >
@@ -254,7 +254,7 @@ const VideoItem = memo<{
           title={item.title}
           className="w-full h-full border-0"
           style={{
-            transform: 'scale(1.66)',
+            transform: 'scale(1.0)',
             transformOrigin: 'center center'
           }}
           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"

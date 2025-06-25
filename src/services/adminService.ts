@@ -1,13 +1,5 @@
 type VideoMode = '80sTV' | '90sTV';
 
-interface VideoMetadata {
-  id: string;
-  title?: string;
-  description?: string;
-  duration?: string;
-  uploadDate?: string;
-  viewCount?: string;
-}
 
 class AdminService {
   /**
@@ -37,28 +29,6 @@ class AdminService {
     // YouTube video IDs are typically 11 characters long and contain alphanumeric characters, hyphens, and underscores
     const youtubeIdPattern = /^[a-zA-Z0-9_-]{11}$/;
     return youtubeIdPattern.test(videoId);
-  }
-
-  /**
-   * Attempts to fetch video metadata from YouTube (requires API key)
-   */
-  async fetchVideoMetadata(videoId: string): Promise<VideoMetadata | null> {
-    // This would require YouTube Data API v3 key
-    // For now, return basic info based on video ID
-    try {
-      // Could implement API call here if VITE_YOUTUBE_API_KEY is available
-      return {
-        id: videoId,
-        title: `Video ${videoId}`,
-        description: 'No description available',
-        duration: 'Unknown',
-        uploadDate: 'Unknown',
-        viewCount: 'Unknown'
-      };
-    } catch (error) {
-      console.error(`Failed to fetch metadata for video ${videoId}:`, error);
-      return null;
-    }
   }
 
   /**
