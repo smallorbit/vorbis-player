@@ -31,10 +31,8 @@ const MediaCollage = memo<MediaCollageProps>(({ currentTrack, shuffleCounter }) 
     const saved = localStorage.getItem('vorbis-player-lock-video');
     return saved === 'true';
   });
-  const [nextVideoItems, setNextVideoItems] = useState<MediaItem[]>([]);
   const lockedVideoRef = useRef<MediaItem | null>(null);
 
-  // Debounce the shuffle counters to prevent excessive API calls
   const debouncedShuffleCounter = useDebounce(shuffleCounter, 300);
   const debouncedInternalShuffleCounter = useDebounce(internalShuffleCounter, 300);
 
@@ -65,7 +63,6 @@ const MediaCollage = memo<MediaCollageProps>(({ currentTrack, shuffleCounter }) 
         throw new Error(`No ${videoMode} video IDs found.`);
       }
 
-      // Use combined debounced shuffle counters to ensure different video selection
       const combinedShuffleCount = debouncedShuffleCounter + debouncedInternalShuffleCounter;
       const videoIndex = (combinedShuffleCount + Math.floor(Math.random() * videoIds.length)) % videoIds.length;
       const randomVideoId = videoIds[videoIndex];
@@ -84,30 +81,7 @@ const MediaCollage = memo<MediaCollageProps>(({ currentTrack, shuffleCounter }) 
       };
 
       setMediaItems([video]);
-      
-      // Store this video as the potential locked video
       lockedVideoRef.current = video;
-
-      // Preload next video for smoother transitions
-      try {
-        const nextVideoIndex = (videoIndex + 1) % videoIds.length;
-        const nextVideoId = videoIds[nextVideoIndex];
-        const nextVideo: MediaItem = {
-          id: nextVideoId,
-          type: 'youtube',
-          url: youtubeService.createEmbedUrl(nextVideoId, {
-            autoplay: false,
-            mute: true,
-            loop: true,
-            controls: true,
-          }),
-          title: `Next ${getModeTitle(videoMode)} Video`,
-          thumbnail: `https://i.ytimg.com/vi/${nextVideoId}/hqdefault.jpg`,
-        };
-        setNextVideoItems([nextVideo]);
-      } catch (preloadError) {
-        console.warn('Failed to preload next video:', preloadError);
-      }
     } catch (error) {
       console.error('Error fetching media content:', error);
       setMediaItems([]);
@@ -116,33 +90,34 @@ const MediaCollage = memo<MediaCollageProps>(({ currentTrack, shuffleCounter }) 
     }
   }, [videoMode, debouncedShuffleCounter, debouncedInternalShuffleCounter, getModeTitle]);
 
-  // Create a computed value for the effective shuffle counter
-  const effectiveShuffleCounter = lockVideoToTrack ? 0 : debouncedShuffleCounter;
 
   useEffect(() => {
     if (!currentTrack) return;
     
-    // If video is locked and we have a locked video, use that instead
     if (lockVideoToTrack && lockedVideoRef.current) {
       setMediaItems([lockedVideoRef.current]);
       return;
     }
     
-    // Otherwise fetch new content
     fetchMediaContent(currentTrack);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     currentTrack, 
     debouncedShuffleCounter,
     debouncedInternalShuffleCounter, 
     videoMode, 
     fetchMediaContent
-    // Note: lockVideoToTrack is NOT in dependencies to prevent shuffle on lock/unlock
   ]);
 
-  // Reset internal shuffle counter when track changes
   useEffect(() => {
     setInternalShuffleCounter(0);
   }, [currentTrack]);
+
+  useEffect(() => {
+    if (lockVideoToTrack && lockedVideoRef.current) {
+      setMediaItems([lockedVideoRef.current]);
+    }
+  }, [lockVideoToTrack]);
 
   const handleModeChange = useCallback((mode: VideoMode) => {
     setVideoMode(mode);
@@ -232,23 +207,11 @@ const MediaCollage = memo<MediaCollageProps>(({ currentTrack, shuffleCounter }) 
           </div>
         )}
 
-        {/* Hidden preloaded videos for faster transitions */}
-        {nextVideoItems.length > 0 && (
-          <div className="hidden">
-            {nextVideoItems.map((item) => (
-              <div key={`preload-${item.id}`}>
-                <link rel="prefetch" href={item.thumbnail} />
-                {/* Preload thumbnail for faster loading */}
-              </div>
-            ))}
-          </div>
-        )}
       </div>
     </div>
   );
 });
 
-// Memoized mode button component to prevent unnecessary re-renders
 const ModeButton = memo<{
   mode: VideoMode;
   isActive: boolean;
@@ -273,91 +236,45 @@ const ModeButton = memo<{
 
 ModeButton.displayName = 'ModeButton';
 
-// Custom hook for intersection observer
-const useIntersectionObserver = (options: IntersectionObserverInit = {}) => {
-  const [isIntersecting, setIsIntersecting] = useState(false);
-  const [hasBeenVisible, setHasBeenVisible] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    const element = ref.current;
-    if (!element) return;
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        const isVisible = entry.isIntersecting;
-        setIsIntersecting(isVisible);
-        if (isVisible && !hasBeenVisible) {
-          setHasBeenVisible(true);
-        }
-      },
-      { threshold: 0.1, ...options }
-    );
-
-    observer.observe(element);
-    return () => observer.disconnect();
-  }, [hasBeenVisible, options]);
-
-  return { ref, isIntersecting, hasBeenVisible };
-};
-
-// Memoized video item component with lazy loading
 const VideoItem = memo<{
   item: MediaItem;
 }>(({ item }) => {
-  const { ref, hasBeenVisible } = useIntersectionObserver();
-  const [shouldLoad, setShouldLoad] = useState(false);
-
-  useEffect(() => {
-    if (hasBeenVisible && !shouldLoad) {
-      // Add a small delay to prevent loading too many videos at once
-      const timer = setTimeout(() => setShouldLoad(true), 200);
-      return () => clearTimeout(timer);
-    }
-  }, [hasBeenVisible, shouldLoad]);
-
   return (
     <div
-      ref={ref}
       className="relative rounded-lg overflow-hidden bg-white/10 backdrop-blur-sm border border-white/20 transition-all duration-300 hover:scale-105 hover:bg-white/20 w-full"
       style={{
         aspectRatio: '1/1',
         height: '390px'
       }}
     >
-      {shouldLoad ? (
-        item.type === 'youtube' ? (
-          <iframe
-            src={item.url}
-            title={item.title}
-            className="w-full h-full border-0"
-            style={{
-              transform: 'scale(1.66)',
-              transformOrigin: 'center center'
-            }}
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowFullScreen
-            loading="lazy"
-          />
-        ) : (
-          <img
-            src={item.url}
-            alt={item.title}
-            className="w-full h-full object-cover"
-            loading="lazy"
-            onError={(e) => {
-              const target = e.target as HTMLImageElement;
-              target.src = `https://via.placeholder.com/400x300/1a1a1a/ffffff?text=${encodeURIComponent(item.title || 'No Image')}`;
-            }}
-          />
-        )
+      {item.type === 'youtube' ? (
+        <iframe
+          src={item.url}
+          title={item.title}
+          className="w-full h-full border-0"
+          style={{
+            transform: 'scale(1.66)',
+            transformOrigin: 'center center'
+          }}
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowFullScreen
+          loading="lazy"
+        />
       ) : (
-        <div className="w-full h-full bg-neutral-700 flex items-center justify-center">
-          <div className="animate-pulse text-white/40">Loading...</div>
-        </div>
+        <img
+          src={item.url}
+          alt={item.title}
+          className="w-full h-full object-cover"
+          loading="lazy"
+          onError={(e) => {
+            const target = e.target as HTMLImageElement;
+            target.src = `https://via.placeholder.com/400x300/1a1a1a/ffffff?text=${encodeURIComponent(item.title || 'No Image')}`;
+          }}
+        />
       )}
 
-      {item.title && shouldLoad && (
+      {item.title && (
         <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-3">
           <p className="text-white text-sm font-medium truncate">
             {item.title}
