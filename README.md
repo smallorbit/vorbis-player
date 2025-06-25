@@ -1,14 +1,14 @@
 # Vorbis Player
 
-A modern audio player that combines Dropbox music streaming with curated animal video visuals. Stream your music from Dropbox while enjoying delightful videos of pandas, puppies, or kitties that change with each track.
+A modern audio player that combines Dropbox music streaming with curated retro TV show visuals. Stream your music from Dropbox while enjoying nostalgic TV content from the 80s and 90s that change with each track.
 
 ## Features
 
 - **Dropbox Integration**: Stream audio files directly from your Dropbox account
-- **Multi-Mode Visual Experience**: Choose between pandas 🐼, puppies 🐶, or kitties 🐱 video modes
+- **Multi-Mode Visual Experience**: Choose between 80's TV 8️⃣0️⃣s or 90's TV ⓽⓪s video modes
 - **Intuitive Shuffle**: Dedicated full-width shuffle bar with HyperText animation for easy video cycling
 - **Optimized Video Display**: Smart cropping and scaling to maximize content in square viewport
-- **Quick Mode Switching**: Toggle between animal themes with one-click emoji buttons
+- **Quick Mode Switching**: Toggle between retro TV eras with one-click emoji buttons
 - **Admin System**: Hidden admin panel for video curation and management (triple-A key access)
 - **Modern UI**: Clean, responsive design with Tailwind CSS
 - **Secure Authentication**: PKCE OAuth flow for safe Dropbox access
@@ -64,8 +64,8 @@ A modern audio player that combines Dropbox music streaming with curated animal 
 6. **First run**
    - Open <http://localhost:3000>
    - Click "Connect Dropbox" to authenticate
-   - Choose your preferred animal mode (🐼 🐶 🐱)
-   - Enjoy your music with curated animal videos!
+   - Choose your preferred TV era mode (8️⃣0️⃣s ⓽⓪s)
+   - Enjoy your music with curated retro TV content!
 
 ## How It Works
 
@@ -78,10 +78,9 @@ A modern audio player that combines Dropbox music streaming with curated animal 
 
 ### Video Experience
 
-- Shows curated animal videos while music plays in three modes:
-  - **Pandas** 🐼: Adorable panda moments
-  - **Puppies** 🐶: Playful puppy videos
-  - **Kitties** 🐱: Cute kitten compilations
+- Shows curated retro TV content while music plays in two modes:
+  - **80's TV** 8️⃣0️⃣s: Classic 80s television shows and content
+  - **90's TV** ⓽⓪s: Nostalgic 90s television shows and content
 - **Mode Switching**: Click emoji buttons in the header to instantly switch themes
 - **Shuffle Feature**: Use the dedicated full-width shuffle bar with HyperText animation beneath videos to cycle through different videos within the selected mode
 - **Optimized Viewport**: Square aspect ratio with smart cropping to maximize video content visibility
@@ -99,7 +98,7 @@ A modern audio player that combines Dropbox music streaming with curated animal 
 - **Hidden Access**: Press 'A' three times quickly to activate the admin panel
 - **Video Management**: Preview, select, and delete videos from any mode
 - **Bulk Operations**: Select multiple videos for batch deletion
-- **Mode Switching**: Admin can switch between pandas/puppies/kitties modes
+- **Mode Switching**: Admin can switch between 80sTV/90sTV modes
 - **Health Reporting**: Shows video count and collection status for each mode
 - **No UI Clutter**: Completely hidden from normal users, activated only by secret key sequence
 
@@ -134,9 +133,8 @@ src/
 │   ├── images.ts       # Image processing utilities
 │   └── adminService.ts # Admin panel backend services
 ├── assets/             # Static assets
-│   ├── pandas-videoIds.json   # Curated panda videos
-│   ├── puppies-videoIds.json # Curated puppy videos
-│   └── kitties-videoIds.json # Curated kitten videos
+│   ├── 80sTV-videoIds.json    # Curated 80s TV content
+│   └── 90sTV-videoIds.json    # Curated 90s TV content
 └── lib/                # Utilities
     ├── utils.ts        # Helper functions
     └── extractVideoIds.js # Video ID extraction utility
@@ -150,7 +148,7 @@ public/
 
 ### Adding New Video Categories
 
-1. Create a new JSON file in `src/assets/` (e.g., `rabbits-videoIds.json`)
+1. Create a new JSON file in `src/assets/` (e.g., `2000sTV-videoIds.json`)
 2. Add YouTube video IDs as an array of strings
 3. Update the `VideoMode` type and mode selection logic in `MediaCollage.tsx`
 4. Add the new mode to the emoji button array and helper functions
@@ -158,7 +156,7 @@ public/
 Use the included utility to extract video IDs from YouTube:
 
 ```bash
-node src/lib/extractVideoIds.js saved-youtube-page.html cats-videoIds.json
+node src/lib/extractVideoIds.js saved-youtube-page.html 2000sTV-videoIds.json
 ```
 
 ### Tech Stack
@@ -199,3 +197,33 @@ The `dist/` folder contains static files that can be deployed to any web hosting
 
 - Check browser console for any network errors
 - Ensure stable internet connection for YouTube embeds
+
+## Command Line: Extract YouTube Video IDs from Playlist or Video
+
+You can generate a video ID JSON file for a given category from a YouTube playlist or video URL using the CLI:
+
+```
+node src/lib/extractVideoIds.js youtube <youtube_url_or_id> <category>
+```
+
+- `<youtube_url_or_id>`: The full YouTube playlist/video URL (any format: playlist, watch, youtu.be, embed, etc) **or just the playlist ID**.
+- `<category>`: A single word describing the content (e.g. `80sTV`, `90sTV`).
+
+This will create (or overwrite) a file at `src/assets/<category>-videoIds.json` containing the extracted video IDs in the correct format for use as a mode.
+
+**Examples:**
+
+Extract from a playlist URL:
+```
+node src/lib/extractVideoIds.js youtube "https://www.youtube.com/playlist?list=PLRuEQW0xlqZrCaZ9dCubWD_WPSM8R6xjO" 80sTV
+```
+
+Extract from a playlist ID:
+```
+node src/lib/extractVideoIds.js youtube PLRuEQW0xlqZrCaZ9dCubWD_WPSM8R6xjO 80sTV
+```
+
+Extract from a single video:
+```
+node src/lib/extractVideoIds.js youtube "https://www.youtube.com/watch?v=dQw4w9WgXcQ" 80sTV
+```

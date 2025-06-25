@@ -4,7 +4,7 @@ import { youtubeService } from '../services/youtube';
 import { HyperText } from './hyper-text';
 import { useDebounce } from '../hooks/useDebounce';
 
-type VideoMode = 'pandas' | 'puppies' | 'kitties';
+type VideoMode = '80sTV' | '90sTV';
 
 interface MediaItem {
   id: string;
@@ -25,7 +25,7 @@ const MediaCollage = memo<MediaCollageProps>(({ currentTrack, shuffleCounter }) 
   const [internalShuffleCounter, setInternalShuffleCounter] = useState(0);
   const [videoMode, setVideoMode] = useState<VideoMode>(() => {
     const saved = localStorage.getItem('vorbis-player-video-mode');
-    return (saved as VideoMode) || 'pandas';
+    return (saved as VideoMode) || '80sTV';
   });
   const [nextVideoItems, setNextVideoItems] = useState<MediaItem[]>([]);
 
@@ -59,7 +59,7 @@ const MediaCollage = memo<MediaCollageProps>(({ currentTrack, shuffleCounter }) 
           loop: true,
           controls: true,
         }),
-        title: `Random ${videoMode.charAt(0).toUpperCase() + videoMode.slice(1, -1)} Video`,
+        title: `Random ${getModeTitle(videoMode)} Video`,
         thumbnail: `https://i.ytimg.com/vi/${randomVideoId}/hqdefault.jpg`,
       };
 
@@ -78,7 +78,7 @@ const MediaCollage = memo<MediaCollageProps>(({ currentTrack, shuffleCounter }) 
             loop: true,
             controls: true,
           }),
-          title: `Next ${videoMode.charAt(0).toUpperCase() + videoMode.slice(1, -1)} Video`,
+          title: `Next ${getModeTitle(videoMode)} Video`,
           thumbnail: `https://i.ytimg.com/vi/${nextVideoId}/hqdefault.jpg`,
         };
         setNextVideoItems([nextVideo]);
@@ -115,19 +115,17 @@ const MediaCollage = memo<MediaCollageProps>(({ currentTrack, shuffleCounter }) 
 
   const getModeEmoji = useCallback((mode: VideoMode) => {
     switch (mode) {
-      case 'pandas': return '🐼';
-      case 'puppies': return '🐶';
-      case 'kitties': return '🐱';
-      default: return '🐼';
+      case '90sTV': return '⓽⓪s';
+      case '80sTV': return '8️⃣0️⃣s';
+      default: return '8️⃣0️⃣s'; // default to 80sTV
     }
   }, []);
 
   const getModeTitle = useCallback((mode: VideoMode) => {
     switch (mode) {
-      case 'pandas': return 'Panda Player';
-      case 'puppies': return 'Puppy Player';
-      case 'kitties': return 'Kitty Player';
-      default: return 'Panda Player';
+      case '80sTV': return "80's TV";
+      case '90sTV': return "90's TV";
+      default: return '80sTV';
     }
   }, []);
 
@@ -140,12 +138,12 @@ const MediaCollage = memo<MediaCollageProps>(({ currentTrack, shuffleCounter }) 
       <div className="bg-white/5 rounded-lg p-4 backdrop-blur-sm border border-white/10">
         <div className="relative flex justify-between items-center mb-4">
           <h3 className="text-lg font-semibold text-white">
-            {getModeTitle(videoMode)} {getModeEmoji(videoMode)}🎵
+            {getModeTitle(videoMode)} 
           </h3>
 
           <div className="flex items-center gap-2">
             <div className="flex bg-white/10 rounded-lg p-1 gap-1">
-              {(['pandas', 'puppies', 'kitties'] as VideoMode[]).map((mode) => (
+              {(['80sTV', '90sTV'] as VideoMode[]).map((mode) => (
                 <ModeButton
                   key={mode}
                   mode={mode}

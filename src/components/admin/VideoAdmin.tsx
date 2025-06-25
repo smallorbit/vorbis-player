@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { youtubeService } from '../../services/youtube';
 import { adminService } from '../../services/adminService';
 
-type VideoMode = 'pandas' | 'puppies' | 'kitties';
+type VideoMode = '80sTV' | '90sTV';
 
 interface VideoItem {
   id: string;
@@ -16,7 +16,7 @@ interface VideoAdminProps {
 }
 
 const VideoAdmin: React.FC<VideoAdminProps> = ({ onClose }) => {
-  const [selectedMode, setSelectedMode] = useState<VideoMode>('pandas');
+  const [selectedMode, setSelectedMode] = useState<VideoMode>('80sTV');
   const [videos, setVideos] = useState<VideoItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedVideos, setSelectedVideos] = useState<Set<string>>(new Set());
@@ -31,7 +31,7 @@ const VideoAdmin: React.FC<VideoAdminProps> = ({ onClose }) => {
         id,
         thumbnailUrl: `https://i.ytimg.com/vi/${id}/hqdefault.jpg`,
         embedUrl: youtubeService.createEmbedUrl(id, { controls: true }),
-        title: `${mode.charAt(0).toUpperCase() + mode.slice(1, -1)} Video ${id}`
+        title: `${getModeTitle(mode)} Video ${id}`
       }));
       setVideos(videoItems);
       setSelectedVideos(new Set());
@@ -128,10 +128,17 @@ const VideoAdmin: React.FC<VideoAdminProps> = ({ onClose }) => {
 
   const getModeEmoji = (mode: VideoMode) => {
     switch (mode) {
-      case 'pandas': return '🐼';
-      case 'puppies': return '🐶';
-      case 'kitties': return '🐱';
-      default: return '🐼';
+      case '90sTV': return '⓽⓪s';
+      case '80sTV': return '8️⃣0️⃣s';
+      default: return '8️⃣0️⃣s';
+    }
+  };
+
+  const getModeTitle = (mode: VideoMode) => {
+    switch (mode) {
+      case '80sTV': return "80's TV";
+      case '90sTV': return "90's TV";
+      default: return "80's TV";
     }
   };
 
@@ -154,7 +161,7 @@ const VideoAdmin: React.FC<VideoAdminProps> = ({ onClose }) => {
           <div className="flex items-center gap-4 mb-4">
             <span className="text-white/80">Mode:</span>
             <div className="flex bg-white/10 rounded-lg p-1 gap-1">
-              {(['pandas', 'puppies', 'kitties'] as VideoMode[]).map((mode) => (
+              {(['80sTV', '90sTV'] as VideoMode[]).map((mode) => (
                 <button
                   key={mode}
                   onClick={() => handleModeChange(mode)}
@@ -164,7 +171,7 @@ const VideoAdmin: React.FC<VideoAdminProps> = ({ onClose }) => {
                       : 'text-white/70 hover:text-white hover:bg-white/10'
                   }`}
                 >
-                  {getModeEmoji(mode)} {mode.charAt(0).toUpperCase() + mode.slice(1)}
+                  {getModeEmoji(mode)} {getModeTitle(mode)}
                 </button>
               ))}
             </div>

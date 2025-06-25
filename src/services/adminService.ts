@@ -1,4 +1,4 @@
-type VideoMode = 'pandas' | 'puppies' | 'kitties';
+type VideoMode = '80sTV' | '90sTV';
 
 interface VideoMetadata {
   id: string;
