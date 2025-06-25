@@ -1,9 +1,7 @@
 import { useState, useEffect, useMemo, useRef, useCallback, memo, lazy, Suspense } from 'react';
 import AudioPlayer from 'react-modern-audio-player';
-// Lazy load Playlist for code splitting
 const Playlist = lazy(() => import('./Playlist'));
 import MediaCollage from './MediaCollage';
-// Lazy load admin components to reduce initial bundle size
 const VideoAdmin = lazy(() => import('./admin/VideoAdmin'));
 const AdminKeyCombo = lazy(() => import('./admin/AdminKeyCombo'));
 import { getDropboxAudioFiles, dropboxAuth } from '../services/dropbox';
@@ -22,14 +20,13 @@ const AudioPlayerComponent = () => {
   const [showAdminPanel, setShowAdminPanel] = useState(false);
 
   const fetchTracks = async () => {
-    // Don't try to fetch tracks if we're on the auth callback page
     if (window.location.pathname === '/auth/dropbox/callback') {
-      setIsLoading(false); // Don't show loading state during auth
+      setIsLoading(false);
       return;
     }
 
     try {
-      setError(null); // Clear any previous errors
+      setError(null);
       setIsLoading(true);
       const fetchedTracks = await getDropboxAudioFiles('');
       if (fetchedTracks.length === 0) {
@@ -38,17 +35,12 @@ const AudioPlayerComponent = () => {
       
       setTracks(fetchedTracks);
       
-      // Set the current track to the first one in sorted order AFTER setting tracks
       if (fetchedTracks.length > 0) {
         const sortedTracks = sortTracksByNumber(fetchedTracks);
         const firstSortedTrack = sortedTracks[0];
-        // The fetchedTracks are not sorted, so we find the original index
         const originalIndex = fetchedTracks.findIndex(track => track === firstSortedTrack);
         if (originalIndex !== -1) {
           setCurrentTrackIndex(originalIndex);
-          if (import.meta.env.DEV) {
-            console.log('🎵 Initial track set to index:', originalIndex, firstSortedTrack.title);
-          }
         }
       }
     } catch (err: unknown) {
@@ -62,10 +54,8 @@ const AudioPlayerComponent = () => {
     fetchTracks();
   }, []);
 
-  // Listen for navigation events to retry fetching when returning from auth
   useEffect(() => {
     const handleFocus = () => {
-      // Only retry if we're not on the callback page and don't have tracks
       if (window.location.pathname !== '/auth/dropbox/callback' && tracks.length === 0 && !isLoading) {
         fetchTracks();
       }
@@ -76,105 +66,28 @@ const AudioPlayerComponent = () => {
   }, [tracks.length, isLoading]);
 
 
-  // Enhanced synchronization that works with or without playlist interaction
   useEffect(() => {
     const updateCurrentTrack = () => {
-      // Try to find audio element in multiple ways
-      const audio = audioRef.current || 
-                   document.querySelector('audio') || 
-                   document.querySelector('[data-testid="audio-element"]');
-      
-      if (!audio) {
-        if (import.meta.env.DEV) {
-          console.log('🎵 No audio element found for sync');
-        }
-        return;
-      }
+      const audio = audioRef.current || document.querySelector('audio');
+      if (!audio) return;
 
-      // Find the track in the playlist that matches the audio player's current source
       const trackIndex = tracks.findIndex(track => {
-        // More robust source matching
         const audioSrc = audio.src || audio.currentSrc;
         return audioSrc && (
           track.src === audioSrc || 
           audioSrc.includes(track.src) || 
-          track.src.includes(audioSrc.split('?')[0]) // Handle query parameters
+          track.src.includes(audioSrc.split('?')[0])
         );
       });
 
       if (trackIndex !== -1 && trackIndex !== currentTrackIndex) {
-        if (import.meta.env.DEV) {
-          console.log(`🎵 Playlist sync: Track changed from ${currentTrackIndex} to ${trackIndex}`, {
-            audioSrc: audio.src || audio.currentSrc,
-            trackSrc: tracks[trackIndex]?.src,
-            audioElement: audio.constructor.name
-          });
-        }
         setCurrentTrackIndex(trackIndex);
-        setShuffleCounter(0); // Reset shuffle counter when track changes via audio player controls
+        setShuffleCounter(0);
       }
     };
 
-    // Listen to multiple events to ensure we catch all track changes
-    const events = ['loadstart', 'loadedmetadata', 'canplay', 'play', 'ended', 'timeupdate'];
-    
-    // Set up event listeners with a delay to ensure audio element exists
-    const setupListeners = () => {
-      const audio = audioRef.current || 
-                   document.querySelector('audio') || 
-                   document.querySelector('[data-testid="audio-element"]');
-                   
-      if (audio) {
-        events.forEach(event => {
-          audio.addEventListener(event, updateCurrentTrack);
-        });
-        
-        if (import.meta.env.DEV) {
-          console.log('🎵 Audio event listeners attached to:', audio.constructor.name);
-        }
-        
-        return audio;
-      }
-      return null;
-    };
-
-    // Try to setup immediately
-    let audio = setupListeners();
-    
-    // If no audio element found, try again with intervals
-    let retryCount = 0;
-    let retryInterval: NodeJS.Timeout | null = null;
-    
-    if (!audio) {
-      retryInterval = setInterval(() => {
-        audio = setupListeners();
-        retryCount++;
-        
-        if (audio || retryCount > 10) { // Stop trying after 10 attempts (5 seconds)
-          if (retryInterval) clearInterval(retryInterval);
-        }
-      }, 500);
-    }
-
-    // Continuous polling as backup (more aggressive for initial sync)
-    const pollInterval = setInterval(() => {
-      updateCurrentTrack();
-    }, 500); // Check every 500ms
-
-    return () => {
-      if (retryInterval) {
-        clearInterval(retryInterval);
-      }
-      clearInterval(pollInterval);
-      
-      // Clean up event listeners - find the audio element again to be safe
-      const currentAudio = audioRef.current || document.querySelector('audio');
-      if (currentAudio) {
-        events.forEach(event => {
-          currentAudio.removeEventListener(event, updateCurrentTrack);
-        });
-      }
-    };
+    const pollInterval = setInterval(updateCurrentTrack, 500);
+    return () => clearInterval(pollInterval);
   }, [tracks, currentTrackIndex]);
 
   // Convert tracks to the format expected by react-modern-audio-player
@@ -191,93 +104,17 @@ const AudioPlayerComponent = () => {
   // Memoize the current track to prevent unnecessary re-renders
   const currentTrack = useMemo(() => tracks[currentTrackIndex] || null, [tracks, currentTrackIndex]);
 
-  // Memoize track selection handler
   const handleTrackSelect = useCallback((index: number) => {
-    // If the same track is clicked again
     if (index === currentTrackIndex) {
       setShuffleCounter(prev => prev + 1);
     } else {
-      // If a new track is clicked
       setCurrentTrackIndex(index);
-      setShuffleCounter(0); // Reset counter for a new track
+      setShuffleCounter(0);
     }
     setIsInitialLoad(false);
   }, [currentTrackIndex]);
 
-  // Additional sync using MutationObserver to watch for DOM changes
-  useEffect(() => {
-    let observer: MutationObserver;
 
-    const setupObserver = () => {
-      const audioContainer = document.querySelector('[class*="audio"]') || 
-                           document.querySelector('[class*="player"]') ||
-                           document.body;
-
-      if (audioContainer) {
-        observer = new MutationObserver(() => {
-          // Check for track changes whenever the DOM changes
-          const audio = document.querySelector('audio');
-          if (audio && tracks.length > 0) {
-            const currentSrc = audio.src || audio.currentSrc;
-            if (currentSrc) {
-              const trackIndex = tracks.findIndex(track => 
-                currentSrc.includes(track.src) || track.src.includes(currentSrc.split('?')[0])
-              );
-              
-              if (trackIndex !== -1 && trackIndex !== currentTrackIndex) {
-                if (import.meta.env.DEV) {
-                  console.log('🎵 MutationObserver detected track change:', trackIndex);
-                }
-                setCurrentTrackIndex(trackIndex);
-                setShuffleCounter(0);
-              }
-            }
-          }
-        });
-
-        observer.observe(audioContainer, {
-          childList: true,
-          subtree: true,
-          attributes: true,
-          attributeFilter: ['src', 'data-current-track']
-        });
-      }
-    };
-
-    // Setup with a small delay to ensure DOM is ready
-    const timeoutId = setTimeout(setupObserver, 1000);
-
-    return () => {
-      clearTimeout(timeoutId);
-      if (observer) {
-        observer.disconnect();
-      }
-    };
-  }, [tracks, currentTrackIndex]);
-
-  // Final fallback: Monitor if we have tracks but no current track properly set
-  useEffect(() => {
-    if (tracks.length > 0 && currentTrackIndex === 0 && !isInitialLoad) {
-      // Force sync check after tracks are loaded
-      const timeoutId = setTimeout(() => {
-        const audio = document.querySelector('audio');
-        if (audio && audio.src) {
-          const trackIndex = tracks.findIndex(track => 
-            audio.src.includes(track.src) || track.src.includes(audio.src.split('?')[0])
-          );
-          
-          if (trackIndex !== -1 && trackIndex !== currentTrackIndex) {
-            if (import.meta.env.DEV) {
-              console.log('🎵 Final fallback sync triggered:', trackIndex);
-            }
-            setCurrentTrackIndex(trackIndex);
-          }
-        }
-      }, 2000); // Wait 2 seconds after tracks load
-
-      return () => clearTimeout(timeoutId);
-    }
-  }, [tracks, currentTrackIndex, isInitialLoad]);
 
   const renderContent = () => {
     if (isLoading) {
@@ -376,14 +213,12 @@ const AudioPlayerComponent = () => {
 
   return (
     <div className="min-h-screen w-full flex items-center justify-center px-2 sm:px-4">
-      {/* Secret Admin Access - Lazy loaded */}
       <Suspense fallback={null}>
         <AdminKeyCombo onActivate={() => setShowAdminPanel(true)} />
       </Suspense>
 
       {renderContent()}
 
-      {/* Admin Panel Modal - Lazy loaded */}
       {showAdminPanel && (
         <Suspense fallback={
           <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
@@ -397,7 +232,6 @@ const AudioPlayerComponent = () => {
   );
 };
 
-// Memoized AudioPlayer component to prevent unnecessary re-renders
 const AudioPlayerMemo = memo<{
   currentTrackIndex: number;
   playList: Array<{
