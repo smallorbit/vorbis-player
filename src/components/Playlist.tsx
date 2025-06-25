@@ -1,7 +1,6 @@
 import { memo, useMemo, useCallback } from 'react';
 import { FixedSizeList as List } from 'react-window';
-import type { Track } from '../services/dropbox';
-import { sortTracksByNumber } from '../lib/utils';
+import type { Track } from '../services/spotify';
 
 interface PlaylistProps {
   tracks: Track[];
@@ -36,7 +35,8 @@ const PlaylistItem = memo<PlaylistItemProps>(({
       }`}>
         <div className="flex items-center gap-3">
           <div className="truncate">
-            {track.title}
+            <div className="font-medium">{track.name}</div>
+            <div className="text-xs text-neutral-400">{track.artists}</div>
           </div>
           {isSelected && (
             <div className="text-white flex-shrink-0">
@@ -50,24 +50,24 @@ const PlaylistItem = memo<PlaylistItemProps>(({
       <td className={`px-6 py-4 whitespace-nowrap text-sm text-right ${
         isSelected ? 'text-white' : 'text-neutral-400'
       }`}>
-        {track.duration || '--:--'}
+        {track.duration_ms ? `${Math.floor(track.duration_ms / 60000)}:${Math.floor((track.duration_ms % 60000) / 1000).toString().padStart(2, '0')}` : '--:--'}
       </td>
     </tr>
   );
 });
 
 const Playlist = memo<PlaylistProps>(({ tracks, currentTrackIndex, onTrackSelect }) => {
-  const sortedTracks = useMemo(() => sortTracksByNumber(tracks), [tracks]);
+  const sortedTracks = useMemo(() => tracks, [tracks]);
   
   const currentTrack = tracks[currentTrackIndex];
   const sortedCurrentTrackIndex = useMemo(() => {
     if (!currentTrack) return -1;
-    return sortedTracks.findIndex(track => track === currentTrack);
+    return sortedTracks.findIndex((track: Track) => track === currentTrack);
   }, [sortedTracks, currentTrack]);
 
   const handleTrackSelect = useCallback((sortedIndex: number) => {
     const selectedTrack = sortedTracks[sortedIndex];
-    const originalIndex = tracks.findIndex(track => track === selectedTrack);
+    const originalIndex = tracks.findIndex((track: Track) => track === selectedTrack);
     if (originalIndex !== -1) {
       onTrackSelect(originalIndex);
     }
@@ -99,7 +99,7 @@ const Playlist = memo<PlaylistProps>(({ tracks, currentTrackIndex, onTrackSelect
             <thead className="bg-neutral-900">
               <tr>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-neutral-400 uppercase tracking-wider">
-                  Title
+                  Track - Artist
                 </th>
                 <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-neutral-400 uppercase tracking-wider">
                   Duration
@@ -121,9 +121,9 @@ const Playlist = memo<PlaylistProps>(({ tracks, currentTrackIndex, onTrackSelect
                   </td>
                 </tr>
               ) : (
-                sortedTracks.map((track, index) => (
+                sortedTracks.map((track: Track, index: number) => (
                   <PlaylistItem
-                    key={`${track.title}-${track.src}`}
+                    key={`${track.name}-${track.id}`}
                     track={track}
                     index={index}
                     isSelected={index === sortedCurrentTrackIndex}

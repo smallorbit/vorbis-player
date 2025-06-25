@@ -1,6 +1,6 @@
 import { type ClassValue, clsx } from "clsx"
 import { twMerge } from "tailwind-merge"
-import type { Track } from '../services/dropbox';
+import type { Track } from '../services/spotify';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -8,8 +8,8 @@ export function cn(...inputs: ClassValue[]) {
 
 export const sortTracksByNumber = (tracks: Track[]): Track[] => {
   return [...tracks].sort((a, b) => {
-    const aMatch = a.title.match(/^(\d+)/);
-    const bMatch = b.title.match(/^(\d+)/);
+    const aMatch = a.name.match(/^(\d+)/);
+    const bMatch = b.name.match(/^(\d+)/);
     
     if (aMatch && bMatch) {
       const aNum = parseInt(aMatch[1], 10);
@@ -20,6 +20,6 @@ export const sortTracksByNumber = (tracks: Track[]): Track[] => {
     if (aMatch && !bMatch) return -1;
     if (!aMatch && bMatch) return 1;
     
-    return a.title.localeCompare(b.title);
+    return a.name.localeCompare(b.name);
   });
 }; 

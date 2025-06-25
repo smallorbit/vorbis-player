@@ -1,10 +1,10 @@
 # Vorbis Player
 
-A modern audio player that combines Dropbox music streaming with curated retro TV show visuals. Stream your music from Dropbox while enjoying nostalgic TV content from the 80s and 90s that change with each track.
+A modern audio player that combines Spotify music streaming with curated retro TV show visuals. Stream your music from Spotify while enjoying nostalgic TV content from the 80s and 90s that change with each track.
 
 ## Features
 
-- **Dropbox Integration**: Stream audio files directly from your Dropbox account
+- **Spotify Integration**: Stream music directly from your Spotify account (Premium required)
 - **Multi-Mode Visual Experience**: Choose between 80's TV 8️⃣0️⃣s or 90's TV ⓽⓪s video modes
 - **Intuitive Shuffle**: Dedicated full-width shuffle bar with HyperText animation for easy video cycling
 - **Optimized Video Display**: Smart cropping and scaling to maximize content in square viewport
@@ -18,8 +18,8 @@ A modern audio player that combines Dropbox music streaming with curated retro T
 ### Prerequisites
 
 - Node.js 18+ and npm
-- A Dropbox account
-- Audio files in your Dropbox app folder
+- A Spotify Premium account
+- Access to Spotify Developer Dashboard
 
 ### Installation
 
@@ -31,29 +31,31 @@ A modern audio player that combines Dropbox music streaming with curated retro T
    npm install
    ```
 
-2. **Set up Dropbox App**
-   - Create a new app at [Dropbox App Console](https://www.dropbox.com/developers/apps)
-   - Choose "Scoped access" and "App folder" permissions
-   - Add redirect URI: `http://localhost:3000/auth/dropbox/callback`
-   - Copy your App Key
+2. **Set up Spotify App**
+   - Create a new app at [Spotify Developer Dashboard](https://developer.spotify.com/dashboard)
+   - Choose "Web Playback SDK" for planned API usage
+   - Add redirect URI: `http://127.0.0.1:3000/auth/spotify/callback`
+   - **Important**: Use `127.0.0.1` instead of `localhost` for Spotify OAuth compatibility
+   - Copy your Client ID
 
 3. **Configure environment**
 
    ```bash
    cp .env.local.example .env.local
-   # Edit .env.local with your Dropbox App Key
+   # Edit .env.local with your Spotify Client ID
    ```
 
    Required in `.env.local`:
 
    ```
-   VITE_DROPBOX_APP_KEY="your_dropbox_app_key_here"
-   VITE_DROPBOX_REDIRECT_URI="http://localhost:3000/auth/dropbox/callback"
+   VITE_SPOTIFY_CLIENT_ID="your_spotify_client_id_here"
+   VITE_SPOTIFY_REDIRECT_URI="http://127.0.0.1:3000/auth/spotify/callback"
    ```
 
-4. **Add music to Dropbox**
-   - Upload audio files (MP3, WAV, FLAC, M4A, OGG) to your Dropbox app folder
-   - Files are automatically sorted by track number if filenames start with numbers
+4. **Prepare your Spotify account**
+   - Ensure you have a Spotify Premium subscription
+   - Create playlists with your favorite music
+   - The app will access your playlists to display tracks
 
 5. **Start the app**
 
@@ -62,8 +64,8 @@ A modern audio player that combines Dropbox music streaming with curated retro T
    ```
 
 6. **First run**
-   - Open <http://localhost:3000>
-   - Click "Connect Dropbox" to authenticate
+   - Open <http://127.0.0.1:3000>
+   - Click "Connect Spotify" to authenticate
    - Choose your preferred TV era mode (8️⃣0️⃣s ⓽⓪s)
    - Enjoy your music with curated retro TV content!
 
@@ -71,10 +73,10 @@ A modern audio player that combines Dropbox music streaming with curated retro T
 
 ### Audio Playback
 
-- Fetches audio files from your Dropbox app folder
-- Supports common audio formats
-- Essential playback controls (play, pause, next, previous, volume)
-- Auto-sorts tracks by number in filename
+- Streams music from your Spotify playlists
+- Full-quality streaming with Spotify Premium
+- Essential playbook controls (play, pause, next, previous, volume)
+- Access to your personal music library and playlists
 
 ### Video Experience
 
@@ -91,7 +93,8 @@ A modern audio player that combines Dropbox music streaming with curated retro T
 
 - Uses secure PKCE OAuth flow
 - Tokens stored locally with automatic refresh
-- App-scoped access (only accesses designated app folder, not entire Dropbox)
+- Required scopes: streaming, user-read-email, user-read-private, user-read-playback-state
+- Requires Spotify Premium for playback functionality
 
 ### Admin System
 

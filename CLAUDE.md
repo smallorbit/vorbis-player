@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is **Vorbis Player** - a React-based audio player that combines Dropbox music streaming with curated retro TV show visuals. The app fetches audio files from a user's Dropbox account and displays nostalgic television content from the 80s and 90s, with an intuitive shuffle bar for easy video cycling. Users can switch between different retro TV eras with quick-toggle buttons and access admin tools for video curation.
+This is **Vorbis Player** - a React-based audio player that combines Spotify music streaming with curated retro TV show visuals. The app streams music from a user's Spotify account and displays nostalgic television content from the 80s and 90s, with an intuitive shuffle bar for easy video cycling. Users can switch between different retro TV eras with quick-toggle buttons and access admin tools for video curation.
 
 ## Development Commands
 
@@ -44,8 +44,8 @@ npm run preview
 
 ### Authentication & Data Flow
 
-- **Dropbox Integration**: Uses PKCE OAuth flow for secure authentication
-- **Audio Files**: Fetched from user's Dropbox app folder, sorted by track number
+- **Spotify Integration**: Uses PKCE OAuth flow for secure authentication with required scopes
+- **Music Streaming**: Streams from user's Spotify playlists using Web Playback SDK (Premium required)
 - **Video Content**: Displays curated retro TV show videos from era-specific JSON files:
   - `src/assets/80sTV-videoIds.json` (80s TV era mode)
   - `src/assets/90sTV-videoIds.json` (90s TV era mode)
@@ -67,8 +67,15 @@ npm run preview
 Required environment variables in `.env.local`:
 
 ```
+VITE_SPOTIFY_CLIENT_ID="your_spotify_client_id"
+VITE_SPOTIFY_REDIRECT_URI="http://127.0.0.1:3000/auth/spotify/callback"
+```
+
+Optional (for backward compatibility):
+
+```
 VITE_DROPBOX_APP_KEY="your_dropbox_app_key"
-VITE_DROPBOX_REDIRECT_URI="http://localhost:3000/auth/dropbox/callback"
+VITE_DROPBOX_REDIRECT_URI="http://127.0.0.1:3000/auth/dropbox/callback"
 ```
 
 ## Critical Implementation Details
@@ -101,12 +108,13 @@ VITE_DROPBOX_REDIRECT_URI="http://localhost:3000/auth/dropbox/callback"
 - Graceful fallback when video IDs are missing or invalid
 - CLI tool supports direct YouTube URL/playlist extraction: `node src/lib/extractVideoIds.js youtube <url> <era>`
 
-### Dropbox Integration
+### Spotify Integration
 
-- Uses app-scoped access (not full Dropbox access)
+- Uses Web Playback SDK for high-quality music streaming
+- Requires Spotify Premium subscription for playback
 - Supports token refresh for long-term authentication
-- Handles authentication callback at `/auth/dropbox/callback`
-- Audio files must be in the root of the app's designated Dropbox folder
+- Handles authentication callback at `http://127.0.0.1:3000/auth/spotify/callback`
+- Accesses user's playlists and provides full playback controls
 
 ## Tech Stack
 

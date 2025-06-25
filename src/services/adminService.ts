@@ -1,13 +1,5 @@
 type VideoMode = '80sTV' | '90sTV';
 
-interface VideoMetadata {
-  id: string;
-  title?: string;
-  description?: string;
-  duration?: string;
-  uploadDate?: string;
-  viewCount?: string;
-}
 
 class AdminService {
   /**

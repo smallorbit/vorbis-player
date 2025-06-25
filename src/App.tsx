@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import AudioPlayerComponent from './components/AudioPlayer';
 import { dropboxAuth } from './services/dropbox';
+import { spotifyAuth } from './services/spotify';
 
 function App() {
   const [isAuthenticating, setIsAuthenticating] = useState(true);
@@ -9,7 +10,11 @@ function App() {
   useEffect(() => {
     const authenticate = async () => {
       try {
-        await dropboxAuth.handleRedirect();
+        if (window.location.pathname.includes('/auth/spotify/callback')) {
+          await spotifyAuth.handleRedirect();
+        } else if (window.location.pathname.includes('/auth/dropbox/callback')) {
+          await dropboxAuth.handleRedirect();
+        }
       } catch (error) {
         setAuthError(error instanceof Error ? error.message : 'An unknown error occurred.');
       } finally {
@@ -39,7 +44,7 @@ function App() {
           <button
             onClick={() => {
               setAuthError(null);
-              dropboxAuth.redirectToAuth();
+              spotifyAuth.redirectToAuth();
             }}
             className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
           >

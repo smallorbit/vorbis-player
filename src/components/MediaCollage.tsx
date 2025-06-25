@@ -1,5 +1,5 @@
 import { useState, useEffect, memo, useCallback, useRef } from 'react';
-import type { Track } from '../services/dropbox';
+import type { Track } from '../services/spotify';
 import { youtubeService } from '../services/youtube';
 import { HyperText } from './hyper-text';
 import { useDebounce } from '../hooks/useDebounce';
