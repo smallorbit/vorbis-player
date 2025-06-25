@@ -42,12 +42,12 @@ class ImageService {
 
       const data = await response.json();
       
-      const images: ImageResult[] = data.results?.map((item: any) => ({
+      const images: ImageResult[] = data.results?.map((item: { id: string; urls: { regular: string; small: string }; alt_description?: string; user: { name: string } }) => ({
         id: item.id,
         url: item.urls.regular,
         thumbnailUrl: item.urls.small,
         title: item.alt_description || `${query} photo`,
-        author: item.user.name,
+        author: item.user?.name || 'Unknown',
         source: 'Unsplash'
       })) || [];
 

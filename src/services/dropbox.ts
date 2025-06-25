@@ -1,4 +1,5 @@
 import { Dropbox } from 'dropbox';
+import type { files } from 'dropbox';
 
 const DROPBOX_APP_KEY = import.meta.env.VITE_DROPBOX_APP_KEY;
 const DROPBOX_REDIRECT_URI = import.meta.env.VITE_DROPBOX_REDIRECT_URI;
@@ -29,9 +30,7 @@ class DropboxAuth {
     if (stored) {
       try {
         const tokenData = JSON.parse(stored);
-        // Check if token is expired (if it has an expiry)
         if (tokenData.expires_at && Date.now() > tokenData.expires_at) {
-          console.log('Stored token is expired, clearing...');
           localStorage.removeItem('dropbox_token');
           return;
         }
@@ -50,7 +49,6 @@ class DropboxAuth {
 
   private initializeDropbox() {
     if (this.tokenData?.access_token) {
-      console.log('Initializing Dropbox with access token:', this.tokenData.access_token);
       this.dbx = new Dropbox({ 
         clientId: DROPBOX_APP_KEY,
         accessToken: this.tokenData.access_token,
@@ -131,8 +129,6 @@ class DropboxAuth {
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('Token exchange error:', errorText);
-        // Clear any existing expired tokens to force fresh authentication
         this.clearStoredTokens();
         throw new Error(`Token exchange failed: ${response.statusText} - ${errorText}`);
       }
@@ -146,13 +142,9 @@ class DropboxAuth {
 
       this.saveTokenToStorage(tokenData);
       this.initializeDropbox();
-      
-      // Clean up PKCE data
       localStorage.removeItem('dropbox_pkce');
     } catch (error) {
-      console.error('Token exchange failed:', error);
       localStorage.removeItem('dropbox_pkce');
-      // Clear any existing expired tokens to force fresh authentication
       this.clearStoredTokens();
       throw error;
     }
@@ -167,59 +159,49 @@ class DropboxAuth {
       throw new Error("VITE_DROPBOX_APP_KEY is not defined.");
     }
 
-    try {
-      const response = await fetch('https://api.dropboxapi.com/oauth2/token', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: new URLSearchParams({
-          grant_type: 'refresh_token',
-          refresh_token: this.tokenData.refresh_token,
-          client_id: DROPBOX_APP_KEY,
-        }),
-      });
+    const response = await fetch('https://api.dropboxapi.com/oauth2/token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({
+        grant_type: 'refresh_token',
+        refresh_token: this.tokenData.refresh_token,
+        client_id: DROPBOX_APP_KEY,
+      }),
+    });
 
-      if (!response.ok) {
-        throw new Error(`Token refresh failed: ${response.statusText}`);
-      }
-
-      const data = await response.json();
-      const tokenData: TokenData = {
-        access_token: data.access_token,
-        refresh_token: data.refresh_token || this.tokenData.refresh_token,
-        expires_at: data.expires_in ? Date.now() + (data.expires_in * 1000) : undefined
-      };
-
-      this.saveTokenToStorage(tokenData);
-      this.initializeDropbox();
-    } catch (error) {
-      console.error('Token refresh failed:', error);
-      throw error;
+    if (!response.ok) {
+      throw new Error(`Token refresh failed: ${response.statusText}`);
     }
+
+    const data = await response.json();
+    const tokenData: TokenData = {
+      access_token: data.access_token,
+      refresh_token: data.refresh_token || this.tokenData.refresh_token,
+      expires_at: data.expires_in ? Date.now() + (data.expires_in * 1000) : undefined
+    };
+
+    this.saveTokenToStorage(tokenData);
+    this.initializeDropbox();
   }
 
   public async ensureValidToken(): Promise<void> {
     if (!this.tokenData) {
-      console.log('No authentication token available');
       throw new Error('No authentication token available');
     }
-    console.log('Token data:', this.tokenData);
 
-    // If token has expiry info and is expired/about to expire
     if (this.tokenData.expires_at && Date.now() > this.tokenData.expires_at - 300000) {
       await this.refreshAccessToken();
       return;
     }
     
-    // For tokens without expiry info, try a quick test call to verify validity
     if (!this.tokenData.expires_at) {
       try {
         await this.dbx?.usersGetCurrentAccount();
       } catch (error) {
         const errorObj = error as { status?: number };
         if (errorObj?.status === 401) {
-          console.log('Token validation failed, clearing expired token');
           this.clearStoredTokens();
           throw new Error('Authentication token is invalid');
         }
@@ -248,7 +230,6 @@ class DropboxAuth {
     this.tokenData = null;
     this.dbx = null;
     localStorage.removeItem('dropbox_token');
-    // Also clear PKCE data just in case
     localStorage.removeItem('dropbox_pkce');
   }
 
@@ -266,7 +247,6 @@ class DropboxAuth {
     if (code && window.location.pathname === '/auth/dropbox/callback') {
       const processedCode = sessionStorage.getItem('dropbox_processed_code');
       if (processedCode === code) {
-        console.log('Code already processed, redirecting...');
         window.history.replaceState({}, document.title, '/');
         return;
       }
@@ -336,10 +316,6 @@ export const getDropboxAudioFiles = async (folderPath: string): Promise<Track[]>
     await dropboxAuth.ensureValidToken();
     const dbx = dropboxAuth.getDropboxInstance();
     
-    if (import.meta.env.DEV) {
-      console.log('Attempting to list folder:', folderPath || '(root/app folder)');
-    }
-    
     const pathToUse = folderPath === '' ? '' : folderPath;
     
     const response = await dbx.filesListFolder({ 
@@ -347,19 +323,12 @@ export const getDropboxAudioFiles = async (folderPath: string): Promise<Track[]>
       recursive: false 
     });
     
-    if (import.meta.env.DEV) {
-      console.log('Dropbox API response:', response.result);
-    }
-    
     const audioFileEntries = response.result.entries.filter(
-      (entry: any) => entry['.tag'] === 'file' && /\.(mp3|wav|flac|m4a)$/i.test(entry.name)
+      (entry): entry is files.FileMetadataReference => entry['.tag'] === 'file' && /\.(mp3|wav|flac|m4a)$/i.test(entry.name)
     );
 
-    if (import.meta.env.DEV) {
-      console.log(`Found ${audioFileEntries.length} audio files:`, audioFileEntries.map((f: any) => f.name));
-    }
 
-    const trackPromises = audioFileEntries.map(async (file: any) => {
+    const trackPromises = audioFileEntries.map(async (file: files.FileMetadataReference) => {
       if (!file.path_lower) {
         return null;
       }
@@ -373,10 +342,7 @@ export const getDropboxAudioFiles = async (folderPath: string): Promise<Track[]>
           src,
           duration,
         };
-      } catch (linkError) {
-        if (import.meta.env.DEV) {
-          console.error(`Error getting link for ${file.name}:`, linkError);
-        }
+      } catch {
         return null;
       }
     });
@@ -388,19 +354,7 @@ export const getDropboxAudioFiles = async (folderPath: string): Promise<Track[]>
   } catch (error: unknown) {
     const errorObj = error as { status?: number; message?: string; response?: unknown; error?: { error_summary?: string } };
     
-    if (import.meta.env.DEV) {
-      console.error("Error fetching files from Dropbox:", error);
-      console.error("Error details:", {
-        status: errorObj?.status,
-        message: errorObj?.message,
-        response: errorObj?.response,
-        error_summary: errorObj?.error?.error_summary
-      });
-    }
-    
-    // Handle no authentication token case
     if (errorObj?.message === 'No authentication token available' || errorObj?.message === 'Authentication token is invalid') {
-      console.log('No valid authentication token, redirecting to login...');
       dropboxAuth.redirectToAuth();
       throw new Error("Redirecting to Dropbox login...");
     }
@@ -409,8 +363,7 @@ export const getDropboxAudioFiles = async (folderPath: string): Promise<Track[]>
       try {
         await dropboxAuth.refreshAccessToken();
         return await getDropboxAudioFiles(folderPath);
-      } catch (refreshError) {
-        console.error('Token refresh failed:', refreshError);
+      } catch {
         dropboxAuth.redirectToAuth();
         throw new Error("Authentication expired. Redirecting to Dropbox login...");
       }
