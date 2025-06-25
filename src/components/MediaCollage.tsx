@@ -32,6 +32,7 @@ const MediaCollage = memo<MediaCollageProps>(({ currentTrack, shuffleCounter }) 
     return saved === 'true';
   });
   const [nextVideoItems, setNextVideoItems] = useState<MediaItem[]>([]);
+  const lockedVideoRef = useRef<MediaItem | null>(null);
 
   // Debounce the shuffle counters to prevent excessive API calls
   const debouncedShuffleCounter = useDebounce(shuffleCounter, 300);
@@ -65,9 +66,7 @@ const MediaCollage = memo<MediaCollageProps>(({ currentTrack, shuffleCounter }) 
       }
 
       // Use combined debounced shuffle counters to ensure different video selection
-      // If video is locked to track, ignore external shuffle counter from track changes
-      const localEffectiveShuffleCounter = lockVideoToTrack ? 0 : debouncedShuffleCounter;
-      const combinedShuffleCount = localEffectiveShuffleCounter + debouncedInternalShuffleCounter;
+      const combinedShuffleCount = debouncedShuffleCounter + debouncedInternalShuffleCounter;
       const videoIndex = (combinedShuffleCount + Math.floor(Math.random() * videoIds.length)) % videoIds.length;
       const randomVideoId = videoIds[videoIndex];
 
@@ -85,6 +84,9 @@ const MediaCollage = memo<MediaCollageProps>(({ currentTrack, shuffleCounter }) 
       };
 
       setMediaItems([video]);
+      
+      // Store this video as the potential locked video
+      lockedVideoRef.current = video;
 
       // Preload next video for smoother transitions
       try {
@@ -112,21 +114,29 @@ const MediaCollage = memo<MediaCollageProps>(({ currentTrack, shuffleCounter }) 
     } finally {
       setLoading(false);
     }
-  }, [videoMode, debouncedShuffleCounter, debouncedInternalShuffleCounter, lockVideoToTrack, getModeTitle]);
+  }, [videoMode, debouncedShuffleCounter, debouncedInternalShuffleCounter, getModeTitle]);
 
   // Create a computed value for the effective shuffle counter
   const effectiveShuffleCounter = lockVideoToTrack ? 0 : debouncedShuffleCounter;
 
   useEffect(() => {
-    if (currentTrack) {
-      fetchMediaContent(currentTrack);
+    if (!currentTrack) return;
+    
+    // If video is locked and we have a locked video, use that instead
+    if (lockVideoToTrack && lockedVideoRef.current) {
+      setMediaItems([lockedVideoRef.current]);
+      return;
     }
+    
+    // Otherwise fetch new content
+    fetchMediaContent(currentTrack);
   }, [
     currentTrack, 
-    effectiveShuffleCounter,
+    debouncedShuffleCounter,
     debouncedInternalShuffleCounter, 
     videoMode, 
     fetchMediaContent
+    // Note: lockVideoToTrack is NOT in dependencies to prevent shuffle on lock/unlock
   ]);
 
   // Reset internal shuffle counter when track changes
