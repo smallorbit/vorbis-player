@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is **Vorbis Player** - a React-based audio player that combines Dropbox music streaming with YouTube video visuals. The app fetches audio files from a user's Dropbox account and displays curated animal videos (pandas, puppies, or kitties) with an intuitive shuffle bar for easy video cycling. Users can switch between different animal video modes with quick-toggle buttons and access admin tools for video curation.
+This is **Vorbis Player** - a React-based audio player that combines Dropbox music streaming with curated retro TV show visuals. The app fetches audio files from a user's Dropbox account and displays nostalgic television content from the 80s and 90s, with an intuitive shuffle bar for easy video cycling. Users can switch between different retro TV eras with quick-toggle buttons and access admin tools for video curation.
 
 ## Development Commands
 
@@ -36,7 +36,8 @@ npm run preview
 - `currentTrackIndex`: Tracks which song is currently selected/playing
 - `shuffleCounter`: Legacy counter from playlist track clicks
 - `internalShuffleCounter`: Independent counter for shuffle bar interactions
-- `videoMode`: Controls which animal category videos are displayed ('pandas' | 'puppies' | 'kitties')
+- `videoMode`: Controls which retro TV era videos are displayed ('80sTV' | '90sTV')
+- `lockVideoToTrack`: Boolean state that locks the current video to prevent changes during track switches
 - `showAdminPanel`: Controls visibility of admin video management interface
 - Track selection sync: When users click playlist items vs. use audio player next/prev buttons
 - Mode persistence: User's preferred video mode saved to localStorage
@@ -45,20 +46,21 @@ npm run preview
 
 - **Dropbox Integration**: Uses PKCE OAuth flow for secure authentication
 - **Audio Files**: Fetched from user's Dropbox app folder, sorted by track number
-- **Video Content**: Displays curated animal videos from category-specific JSON files:
-  - `src/assets/panda-videoIds.json` (pandas mode)
-  - `src/assets/puppies-videoIds.json` (puppies mode)
-  - `src/assets/kitties-videoIds.json` (kitties mode)
+- **Video Content**: Displays curated retro TV show videos from era-specific JSON files:
+  - `src/assets/80sTV-videoIds.json` (80s TV era mode)
+  - `src/assets/90sTV-videoIds.json` (90s TV era mode)
 
 ### Video System Architecture
 
-- **Category-based**: Videos organized in JSON files by animal category ('pandas', 'puppies', 'kitties')
-- **Dynamic Mode Selection**: Quick-toggle buttons allow instant switching between video categories
-- **Mode UI**: Emoji buttons (🐼 🐶 🐱) in MediaCollage header with active state styling
+- **Era-based**: Videos organized in JSON files by retro TV era ('80sTV', '90sTV')
+- **Dynamic Mode Selection**: Quick-toggle buttons allow instant switching between TV eras
+- **Mode UI**: Emoji buttons (8️⃣0️⃣s ⓽⓪s) in MediaCollage header with active state styling
+- **Video Lock Feature**: Lock button (🔒/🔓) allows users to freeze current video during track changes
 - **Shuffle Logic**: Combines `shuffleCounter + internalShuffleCounter + random` for video selection
-- **Shuffle Bar**: Full-width clickable area beneath videos with HyperText animation
-- **Persistence**: Selected video mode saved to localStorage and restored on page load
+- **Shuffle Bar**: Full-width clickable area beneath videos with HyperText animation displaying "SHUFFLE [emoji]"
+- **Persistence**: Selected video mode and lock preference saved to localStorage
 - **YouTube Embedding**: Videos embedded with autoplay, mute, loop, and controls enabled
+- **Square Viewport**: Optimized 1:1 aspect ratio with smart cropping for maximum content visibility
 
 ## Environment Configuration
 
@@ -78,9 +80,18 @@ VITE_UNSPLASH_ACCESS_KEY=""
 
 ## Critical Implementation Details
 
+### Video Lock System
+
+- **Lock State Management**: `lockVideoToTrack` boolean controls whether videos change with track selection
+- **Lock Persistence**: Lock preference saved to localStorage as 'vorbis-player-lock-video'
+- **Lock Mechanism**: Uses `lockedVideoRef` to store the current video when locked, preventing new video fetches
+- **Lock UI**: Toggle button shows 🔒 when locked, 🔓 when unlocked with hover tooltips
+- **Effect Dependencies**: `lockVideoToTrack` deliberately excluded from useEffect dependencies to prevent video shuffle on lock/unlock
+- **Lock Behavior**: When locked, `fetchMediaContent` is bypassed and the stored video from `lockedVideoRef.current` is displayed
+
 ### Shuffle Behavior
 
-- **Dedicated Shuffle Bar**: Full-width clickable bar beneath videos with HyperText animation displaying "SHUFFLE [emoji]"
+- **Dedicated Shuffle Bar**: Full-width clickable area beneath videos with HyperText animation displaying "SHUFFLE [emoji]"
 - **Internal Shuffle Counter**: `internalShuffleCounter` managed independently from track changes
 - **Combined Shuffle Logic**: Uses both `shuffleCounter` (from track clicks) and `internalShuffleCounter` for video selection
 - **Track Selection**: Clicking different songs updates `currentTrackIndex` and resets `internalShuffleCounter`
@@ -89,12 +100,13 @@ VITE_UNSPLASH_ACCESS_KEY=""
 
 ### Video ID Management
 
-- Video IDs stored in `src/assets/[category]-videoIds.json` files
-- Current categories: 'pandas', 'puppies', 'kitties'
-- Use `src/lib/extractVideoIds.js` utility to parse YouTube HTML exports
+- Video IDs stored in `src/assets/[era]-videoIds.json` files
+- Current eras: '80sTV', '90sTV'
+- Use `src/lib/extractVideoIds.js` utility to extract video IDs from YouTube playlists/videos
 - Videos selected using modulo arithmetic with shuffle counter for deterministic variety
 - Dynamic loading via `youtubeService.loadVideoIdsFromCategory(videoMode)`
 - Graceful fallback when video IDs are missing or invalid
+- CLI tool supports direct YouTube URL/playlist extraction: `node src/lib/extractVideoIds.js youtube <url> <era>`
 
 ### Dropbox Integration
 
@@ -118,19 +130,19 @@ VITE_UNSPLASH_ACCESS_KEY=""
 
 ### Implementation Details
 
-- **VideoMode Type**: `'pandas' | 'puppies' | 'kitties'`
-- **Mode Selection**: Emoji buttons in MediaCollage header
-- **State Management**: `videoMode` state with localStorage persistence
-- **Video Loading**: Dynamic import of category-specific JSON files
-- **UI Updates**: Title and branding change based on selected mode
-- **Shuffle Integration**: Mode changes trigger video refresh while respecting shuffle counter
+- **VideoMode Type**: `'80sTV' | '90sTV'`
+- **Mode Selection**: Emoji buttons (8️⃣0️⃣s ⓽⓪s) in MediaCollage header
+- **State Management**: `videoMode` state with localStorage persistence as 'vorbis-player-video-mode'
+- **Video Loading**: Dynamic import of era-specific JSON files
+- **UI Updates**: Title and branding change based on selected era
+- **Shuffle Integration**: Mode changes trigger video refresh while respecting shuffle counter and lock state
 
-### Adding New Modes
+### Adding New Eras
 
-1. Create new `[category]-videoIds.json` file in `src/assets/`
+1. Create new `[era]-videoIds.json` file in `src/assets/` using the CLI tool
 2. Update `VideoMode` type in `MediaCollage.tsx`
-3. Add mode to emoji button array and helper functions
-4. Update documentation to reflect new category
+3. Add era to emoji button array and helper functions (`getModeEmoji`, `getModeTitle`)
+4. Update documentation to reflect new era
 
 ## Admin System
 
@@ -142,9 +154,9 @@ VITE_UNSPLASH_ACCESS_KEY=""
 
 ### Admin Features
 
-- **Video Preview Grid**: Visual grid showing all videos for selected mode
+- **Video Preview Grid**: Visual grid showing all videos for selected era
 - **Bulk Management**: Select multiple videos for deletion
-- **Mode Switching**: Admin can switch between pandas/puppies/kitties modes
+- **Era Switching**: Admin can switch between 80sTV/90sTV eras
 - **Health Reporting**: Shows video count and collection status
 - **JSON Export**: Download current video collections as backup
 
