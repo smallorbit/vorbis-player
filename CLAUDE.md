@@ -71,13 +71,6 @@ VITE_DROPBOX_APP_KEY="your_dropbox_app_key"
 VITE_DROPBOX_REDIRECT_URI="http://localhost:3000/auth/dropbox/callback"
 ```
 
-Optional (for future API-based features):
-
-```
-VITE_YOUTUBE_API_KEY=""
-VITE_UNSPLASH_ACCESS_KEY=""
-```
-
 ## Critical Implementation Details
 
 ### Video Lock System
