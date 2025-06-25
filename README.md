@@ -73,7 +73,7 @@ A modern audio player that combines Dropbox music streaming with curated retro T
 
 - Fetches audio files from your Dropbox app folder
 - Supports common audio formats
-- Full playback controls (play, pause, next, previous, volume)
+- Essential playback controls (play, pause, next, previous, volume)
 - Auto-sorts tracks by number in filename
 
 ### Video Experience

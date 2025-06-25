@@ -424,7 +424,7 @@ const AudioPlayerMemo = memo<{
         playButton: true,
         prevNnext: true,
         volumeSlider: true,
-        repeatType: true,
+        repeatType: false,
         trackTime: true,
         trackInfo: false,
         artwork: false,
