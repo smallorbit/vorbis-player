@@ -27,12 +27,31 @@ const MediaCollage = memo<MediaCollageProps>(({ currentTrack, shuffleCounter }) 
     const saved = localStorage.getItem('vorbis-player-video-mode');
     return (saved as VideoMode) || '80sTV';
   });
+  const [lockVideoToTrack, setLockVideoToTrack] = useState<boolean>(() => {
+    const saved = localStorage.getItem('vorbis-player-lock-video');
+    return saved === 'true';
+  });
   const [nextVideoItems, setNextVideoItems] = useState<MediaItem[]>([]);
 
   // Debounce the shuffle counters to prevent excessive API calls
   const debouncedShuffleCounter = useDebounce(shuffleCounter, 300);
   const debouncedInternalShuffleCounter = useDebounce(internalShuffleCounter, 300);
 
+  const getModeEmoji = useCallback((mode: VideoMode) => {
+    switch (mode) {
+      case '90sTV': return '⓽⓪s';
+      case '80sTV': return '8️⃣0️⃣s';
+      default: return '8️⃣0️⃣s'; // default to 80sTV
+    }
+  }, []);
+
+  const getModeTitle = useCallback((mode: VideoMode) => {
+    switch (mode) {
+      case '80sTV': return "80's TV";
+      case '90sTV': return "90's TV";
+      default: return '80sTV';
+    }
+  }, []);
 
   const fetchMediaContent = useCallback(async (track: Track) => {
     if (!track) return;
@@ -46,7 +65,9 @@ const MediaCollage = memo<MediaCollageProps>(({ currentTrack, shuffleCounter }) 
       }
 
       // Use combined debounced shuffle counters to ensure different video selection
-      const combinedShuffleCount = debouncedShuffleCounter + debouncedInternalShuffleCounter;
+      // If video is locked to track, ignore external shuffle counter from track changes
+      const localEffectiveShuffleCounter = lockVideoToTrack ? 0 : debouncedShuffleCounter;
+      const combinedShuffleCount = localEffectiveShuffleCounter + debouncedInternalShuffleCounter;
       const videoIndex = (combinedShuffleCount + Math.floor(Math.random() * videoIds.length)) % videoIds.length;
       const randomVideoId = videoIds[videoIndex];
 
@@ -91,13 +112,22 @@ const MediaCollage = memo<MediaCollageProps>(({ currentTrack, shuffleCounter }) 
     } finally {
       setLoading(false);
     }
-  }, [videoMode, debouncedShuffleCounter, debouncedInternalShuffleCounter]);
+  }, [videoMode, debouncedShuffleCounter, debouncedInternalShuffleCounter, lockVideoToTrack, getModeTitle]);
+
+  // Create a computed value for the effective shuffle counter
+  const effectiveShuffleCounter = lockVideoToTrack ? 0 : debouncedShuffleCounter;
 
   useEffect(() => {
     if (currentTrack) {
       fetchMediaContent(currentTrack);
     }
-  }, [currentTrack, debouncedShuffleCounter, debouncedInternalShuffleCounter, videoMode, fetchMediaContent]);
+  }, [
+    currentTrack, 
+    effectiveShuffleCounter,
+    debouncedInternalShuffleCounter, 
+    videoMode, 
+    fetchMediaContent
+  ]);
 
   // Reset internal shuffle counter when track changes
   useEffect(() => {
@@ -109,24 +139,14 @@ const MediaCollage = memo<MediaCollageProps>(({ currentTrack, shuffleCounter }) 
     localStorage.setItem('vorbis-player-video-mode', mode);
   }, []);
 
+  const handleLockVideoToggle = useCallback(() => {
+    const newLockState = !lockVideoToTrack;
+    setLockVideoToTrack(newLockState);
+    localStorage.setItem('vorbis-player-lock-video', newLockState.toString());
+  }, [lockVideoToTrack]);
+
   const handleShuffleVideo = useCallback(() => {
     setInternalShuffleCounter(prev => prev + 1);
-  }, []);
-
-  const getModeEmoji = useCallback((mode: VideoMode) => {
-    switch (mode) {
-      case '90sTV': return '⓽⓪s';
-      case '80sTV': return '8️⃣0️⃣s';
-      default: return '8️⃣0️⃣s'; // default to 80sTV
-    }
-  }, []);
-
-  const getModeTitle = useCallback((mode: VideoMode) => {
-    switch (mode) {
-      case '80sTV': return "80's TV";
-      case '90sTV': return "90's TV";
-      default: return '80sTV';
-    }
   }, []);
 
   if (!currentTrack) {
@@ -153,6 +173,19 @@ const MediaCollage = memo<MediaCollageProps>(({ currentTrack, shuffleCounter }) 
                 />
               ))}
             </div>
+            
+            {/* Video Lock Toggle */}
+            <button
+              onClick={handleLockVideoToggle}
+              className={`px-3 py-1 rounded-md text-sm font-medium transition-all duration-200 ${
+                lockVideoToTrack
+                  ? 'bg-blue-600/80 text-white shadow-sm'
+                  : 'text-white/70 hover:text-white hover:bg-white/10 border border-white/20'
+              }`}
+              title={lockVideoToTrack ? 'Video locked to track (click to unlock)' : 'Video changes with tracks (click to lock)'}
+            >
+              {lockVideoToTrack ? '🔒' : '🔓'}
+            </button>
 
             {loading && (
               <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
