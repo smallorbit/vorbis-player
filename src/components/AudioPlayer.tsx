@@ -7,6 +7,11 @@ import { getSpotifyUserPlaylists, spotifyAuth } from '../services/spotify';
 import { spotifyPlayer } from '../services/spotifyPlayer';
 import type { Track } from '../services/spotify';
 import { HyperText } from './hyper-text';
+import { Card, CardHeader, CardContent } from './ui/card';
+import { Button } from './ui/button';
+import { Skeleton } from './ui/skeleton';
+import { Alert, AlertDescription } from './ui/alert';
+import { Slider } from './ui/slider';
 
 const AudioPlayerComponent = () => {
   const [tracks, setTracks] = useState<Track[]>([]);
@@ -111,7 +116,18 @@ const AudioPlayerComponent = () => {
 
   const renderContent = () => {
     if (isLoading) {
-      return <div className="text-center">Loading music from Spotify...</div>;
+      return (
+        <Card className="bg-white/5 backdrop-blur-sm border-white/10 max-w-md w-full">
+          <CardContent className="p-6">
+            <div className="space-y-3">
+              <Skeleton className="h-4 w-3/4 bg-white/10" />
+              <Skeleton className="h-4 w-1/2 bg-white/10" />
+              <Skeleton className="h-4 w-2/3 bg-white/10" />
+            </div>
+            <p className="text-center text-white mt-4">Loading music from Spotify...</p>
+          </CardContent>
+        </Card>
+      );
     }
 
     if (error) {
@@ -121,52 +137,65 @@ const AudioPlayerComponent = () => {
 
       if (isAuthError) {
         return (
-          <div className="bg-white/5 rounded-lg p-6 backdrop-blur-sm border border-white/10 max-w-md w-full">
-            <div className="text-center">
-              <h2 className="text-xl font-bold text-white mb-4">Connect to Spotify</h2>
+          <Card className="bg-white/5 backdrop-blur-sm border-white/10 max-w-md w-full">
+            <CardHeader>
+              <h2 className="text-xl font-bold text-white text-center">Connect to Spotify</h2>
+            </CardHeader>
+            <CardContent className="text-center">
               <p className="text-gray-300 mb-6">
                 Sign in to your Spotify account to access your music. Requires Spotify Premium.
               </p>
-              <button
+              <Button
                 onClick={() => spotifyAuth.redirectToAuth()}
-                className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-semibold"
+                className="bg-green-600 hover:bg-green-700 text-white font-semibold"
               >
                 Connect Spotify
-              </button>
-            </div>
-          </div>
+              </Button>
+            </CardContent>
+          </Card>
         );
       }
 
-      return <div className="text-center text-red-500">Error: {error}</div>;
+      return (
+        <Alert variant="destructive" className="max-w-md w-full bg-red-900/20 border-red-500/50">
+          <AlertDescription className="text-red-200">
+            Error: {error}
+          </AlertDescription>
+        </Alert>
+      );
     }
 
     if (tracks.length === 0) {
-      return <div className="text-center">No tracks to play.</div>;
+      return (
+        <Alert className="max-w-md w-full bg-white/5 border-white/10">
+          <AlertDescription className="text-white text-center">
+            No tracks to play.
+          </AlertDescription>
+        </Alert>
+      );
     }
 
     if (isInitialLoad) {
       return (
-        <div className="bg-white/10 rounded-xl p-8 backdrop-blur-sm border border-white/20 shadow-xl max-w-md w-full mx-4">
-          <div className="text-center">
-
-            <HyperText duration={800} className="text-2xl font-bold text-white mb-3" as="h2">
+        <Card className="bg-white/10 backdrop-blur-sm border-white/20 shadow-xl max-w-md w-full mx-4">
+          <CardContent className="p-8 text-center">
+            <div className="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-6">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
+                <path d="M8 5v14l11-7z" />
+              </svg>
+            </div>
+            <HyperText duration={800} className="text-2xl font-bold text-white mb-6" as="h2">
               Vorbis Player
             </HyperText>
-            <button
+            <Button
               onClick={() => setIsInitialLoad(false)}
-              className="w-full px-6 py-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold text-lg"
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold text-lg py-4"
+              size="lg"
             >
               Click to start
-              <div className="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-6">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
-                  <path d="M8 5v14l11-7z" />
-                </svg>
-              </div>
-
-            </button>
-          </div>
-        </div>
+            </Button>
+          </CardContent>
+        </Card>
       );
     }
 
@@ -191,21 +220,23 @@ const AudioPlayerComponent = () => {
             />
           </Suspense>
         </div>
-        <div className="bg-white/5 rounded-lg p-2 sm:p-3 md:p-4 backdrop-blur-sm border border-white/10">
-          <SpotifyPlayerControls
-            currentTrack={currentTrack}
-            onPlay={() => spotifyPlayer.resume()}
-            onPause={() => spotifyPlayer.pause()}
-            onNext={() => {
-              spotifyPlayer.nextTrack();
-              setShuffleCounter(0);
-            }}
-            onPrevious={() => {
-              spotifyPlayer.previousTrack();
-              setShuffleCounter(0);
-            }}
-          />
-        </div>
+        <Card className="bg-white/5 backdrop-blur-sm border-white/10">
+          <CardContent className="p-2 sm:p-3 md:p-4">
+            <SpotifyPlayerControls
+              currentTrack={currentTrack}
+              onPlay={() => spotifyPlayer.resume()}
+              onPause={() => spotifyPlayer.pause()}
+              onNext={() => {
+                spotifyPlayer.nextTrack();
+                setShuffleCounter(0);
+              }}
+              onPrevious={() => {
+                spotifyPlayer.previousTrack();
+                setShuffleCounter(0);
+              }}
+            />
+          </CardContent>
+        </Card>
       </div>
     );
   };
@@ -277,36 +308,41 @@ const SpotifyPlayerControls = memo<{
       {/* Controls */}
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-3">
-          <button
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={onPrevious}
-            className="text-white hover:text-gray-300 transition-colors"
+            className="text-white hover:text-gray-300 hover:bg-white/10"
           >
             ⏮️
-          </button>
+          </Button>
           
-          <button
+          <Button
             onClick={handlePlayPause}
-            className="bg-green-600 hover:bg-green-700 text-white rounded-full p-2 transition-colors"
+            className="bg-green-600 hover:bg-green-700 text-white rounded-full p-2"
+            size="sm"
           >
             {isPlaying ? '⏸️' : '▶️'}
-          </button>
+          </Button>
           
-          <button
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={onNext}
-            className="text-white hover:text-gray-300 transition-colors"
+            className="text-white hover:text-gray-300 hover:bg-white/10"
           >
             ⏭️
-          </button>
+          </Button>
         </div>
         
         <div className="flex items-center space-x-2">
           <span className="text-white text-sm">🔊</span>
-          <input
-            type="range"
-            min="0"
-            max="100"
-            value={volume}
-            onChange={(e) => handleVolumeChange(Number(e.target.value))}
+          <Slider
+            value={[volume]}
+            onValueChange={(value) => handleVolumeChange(value[0])}
+            max={100}
+            min={0}
+            step={1}
             className="w-20"
           />
         </div>

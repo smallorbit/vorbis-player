@@ -1,5 +1,9 @@
 import { memo, useMemo, useCallback, useState } from 'react';
 import type { Track } from '../services/spotify';
+import { Card, CardHeader, CardContent, CardTitle, CardDescription } from './ui/card';
+import { ScrollArea } from './ui/scroll-area';
+import { Button } from './ui/button';
+import { Avatar, AvatarImage, AvatarFallback } from './ui/avatar';
 
 interface PlaylistProps {
   tracks: Track[];
@@ -51,17 +55,20 @@ const PlaylistItem = memo<PlaylistItemProps>(({
 
       {/* Album Artwork */}
       <div className="relative flex-shrink-0">
-        <img 
-          src={track.image || '/api/placeholder/56/56'} 
-          alt={track.album}
-          className="w-12 h-12 sm:w-14 sm:h-14 max-h-12 sm:max-h-14 max-w-full object-cover shadow-md"
-          style={{ width: 48, height: 48, maxWidth: 56, maxHeight: 56 }}
-          onError={(e) => {
-            e.currentTarget.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNTYiIGhlaWdodD0iNTYiIHZpZXdCb3g9IjAgMCA1NiA1NiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjU2IiBoZWlnaHQ9IjU2IiBmaWxsPSIjNDA0MDQwIi8+CjxwYXRoIGQ9Ik0yOCAzNkMzMC4yMDkxIDM2IDMyIDM0LjIwOTEgMzIgMzJDMzIgMjkuNzkwOSAzMC4yMDkxIDI4IDI4IDI4QzI1Ljc5MDkgMjggMjQgMjkuNzkwOSAyNCAzMkMyNCAzNC4yMDkxIDI1Ljc5MDkgMzYgMjggMzZaIiBmaWxsPSIjNzA3MDcwIi8+CjxwYXRoIGQ9Ik0yOCA0NEMzNi44MzY2IDQ0IDQ0IDM2LjgzNjYgNDQgMjhDNDQgMTkuMTYzNCAzNi44MzY2IDEyIDI4IDEyQzE5LjE2MzQgMTIgMTIgMTkuMTYzNCAxMiAyOEMxMiAzNi44MzY2IDE5LjE2MzQgNDQgMjggNDRaTTI4IDQwQzM0LjYyNzQgNDAgNDAgMzQuNjI3NCA0MCAyOEM0MCAyMS4zNzI2IDM0LjYyNzQgMTYgMjggMTZDMjEuMzcyNiAxNiAxNiAyMS4zNzI2IDE2IDI4QzE2IDM0LjYyNzQgMjEuMzcyNiA0MCAyOCA0MFoiIGZpbGw9IiM3MDcwNzAiLz4KPC9zdmc+';
-          }}
-        />
+        <Avatar className="w-12 h-12 sm:w-14 sm:h-14">
+          <AvatarImage 
+            src={track.image || '/api/placeholder/56/56'} 
+            alt={track.album}
+            className="object-cover"
+          />
+          <AvatarFallback className="bg-neutral-700 text-neutral-400">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="text-neutral-400">
+              <path d="M12 3a9 9 0 0 0-9 9 9 9 0 0 0 9 9 9 9 0 0 0 9-9 9 9 0 0 0-9-9zm0 2a7 7 0 0 1 7 7 7 7 0 0 1-7 7 7 7 0 0 1-7-7 7 7 0 0 1 7-7zm0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3z" fill="currentColor"/>
+            </svg>
+          </AvatarFallback>
+        </Avatar>
         {isSelected && (
-          <div className="absolute inset-0 bg-black/40 rounded-lg flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" className="text-white">
               <path d="M8 5v14l11-7z"/>
             </svg>
@@ -92,13 +99,17 @@ const PlaylistItem = memo<PlaylistItemProps>(({
         </span>
         
         {/* Menu Button */}
-        <button className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 p-1 hover:bg-neutral-600 rounded">
+        <Button 
+          variant="ghost" 
+          size="sm"
+          className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 p-1 h-8 w-8"
+        >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="text-neutral-400">
             <circle cx="12" cy="5" r="2" fill="currentColor"/>
             <circle cx="12" cy="12" r="2" fill="currentColor"/>
             <circle cx="12" cy="19" r="2" fill="currentColor"/>
           </svg>
-        </button>
+        </Button>
       </div>
     </div>
   );
@@ -126,26 +137,28 @@ const Playlist = memo<PlaylistProps>(({ tracks, currentTrackIndex, onTrackSelect
 
   return (
     <div className="w-full max-w-4xl mx-auto mt-6">
-      <div className="bg-neutral-800/50 rounded-lg backdrop-blur-sm border border-neutral-700/50">
-        {/* Header */}
-        <div className="px-6 py-4 border-b border-neutral-700/50">
-          <h3 className="text-lg font-semibold text-white">Up Next</h3>
-          <p className="text-sm text-neutral-400 mt-1">{sortedTracks.length} tracks</p>
-        </div>
+      <Card className="bg-neutral-800/50 backdrop-blur-sm border-neutral-700/50">
+        <CardHeader className="border-b border-neutral-700/50">
+          <CardTitle className="text-lg font-semibold text-white">Up Next</CardTitle>
+          <CardDescription className="text-sm text-neutral-400">{sortedTracks.length} tracks</CardDescription>
+        </CardHeader>
         
-        {/* Playlist Items */}
-        <div className="p-4 space-y-2 max-h-96 overflow-y-auto">
-          {sortedTracks.map((track: Track, index: number) => (
-            <PlaylistItem
-              key={`${track.name}-${track.id}`}
-              track={track}
-              index={index}
-              isSelected={index === sortedCurrentTrackIndex}
-              onSelect={handleTrackSelect}
-            />
-          ))}
-        </div>
-      </div>
+        <CardContent className="p-0">
+          <ScrollArea className="max-h-96">
+            <div className="p-4 space-y-2">
+              {sortedTracks.map((track: Track, index: number) => (
+                <PlaylistItem
+                  key={`${track.name}-${track.id}`}
+                  track={track}
+                  index={index}
+                  isSelected={index === sortedCurrentTrackIndex}
+                  onSelect={handleTrackSelect}
+                />
+              ))}
+            </div>
+          </ScrollArea>
+        </CardContent>
+      </Card>
     </div>
   );
 });

@@ -3,6 +3,12 @@ import type { Track } from '../services/spotify';
 import { youtubeService } from '../services/youtube';
 import { HyperText } from './hyper-text';
 import { useDebounce } from '../hooks/useDebounce';
+import { Card, CardContent } from './ui/card';
+import { ToggleGroup, ToggleGroupItem } from './ui/toggle-group';
+import { Toggle } from './ui/toggle';
+import { AspectRatio } from './ui/aspect-ratio';
+import { Skeleton } from './ui/skeleton';
+import { cn } from '../lib/utils';
 
 type VideoMode = '80sTV' | '90sTV';
 
@@ -140,40 +146,51 @@ const MediaCollage = memo<MediaCollageProps>(({ currentTrack, shuffleCounter }) 
 
   return (
     <div className="w-full mb-6">
-      <div className="bg-white/5 rounded-lg p-4 backdrop-blur-sm border border-white/10">
-        <div className="relative flex justify-between items-center mb-4">
-          <h3 className="text-lg font-semibold text-white">
-            {getModeTitle(videoMode)} 
-          </h3>
+      <Card className="bg-white/5 backdrop-blur-sm border-white/10">
+        <CardContent className="p-4">
+          <div className="relative flex justify-between items-center mb-4">
+            <h3 className="text-lg font-semibold text-white">
+              {getModeTitle(videoMode)} 
+            </h3>
 
           <div className="flex items-center gap-2">
-            <div className="flex bg-white/10 rounded-lg p-1 gap-1">
+            <ToggleGroup
+              type="single"
+              value={videoMode}
+              onValueChange={(value) => value && handleModeChange(value as VideoMode)}
+              className="bg-white/10 rounded-lg p-1"
+            >
               {(['80sTV', '90sTV'] as VideoMode[]).map((mode) => (
-                <ModeButton
+                <ToggleGroupItem
                   key={mode}
-                  mode={mode}
-                  isActive={videoMode === mode}
-                  onClick={handleModeChange}
-                  emoji={getModeEmoji(mode)}
-                />
+                  value={mode}
+                  className={cn(
+                    "px-3 py-1 text-sm font-medium transition-all duration-200",
+                    "data-[state=on]:bg-white/20 data-[state=on]:text-white data-[state=on]:shadow-sm",
+                    "data-[state=off]:text-white/70 hover:text-white hover:bg-white/10"
+                  )}
+                >
+                  {getModeEmoji(mode)}
+                </ToggleGroupItem>
               ))}
-            </div>
+            </ToggleGroup>
             
             {/* Video Lock Toggle */}
-            <button
-              onClick={handleLockVideoToggle}
-              className={`px-3 py-1 rounded-md text-sm font-medium transition-all duration-200 ${
-                lockVideoToTrack
-                  ? 'bg-blue-600/80 text-white shadow-sm'
-                  : 'text-white/70 hover:text-white hover:bg-white/10 border border-white/20'
-              }`}
+            <Toggle
+              pressed={lockVideoToTrack}
+              onPressedChange={handleLockVideoToggle}
+              className={cn(
+                "px-3 py-1 text-sm font-medium transition-all duration-200",
+                "data-[state=on]:bg-blue-600/80 data-[state=on]:text-white data-[state=on]:shadow-sm",
+                "data-[state=off]:text-white/70 data-[state=off]:hover:text-white data-[state=off]:hover:bg-white/10 data-[state=off]:border data-[state=off]:border-white/20"
+              )}
               title={lockVideoToTrack ? 'Video locked to track (click to unlock)' : 'Video changes with tracks (click to lock)'}
             >
               {lockVideoToTrack ? '🔒' : '🔓'}
-            </button>
+            </Toggle>
 
             {loading && (
-              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+              <Skeleton className="h-5 w-5 rounded-full bg-white/20" />
             )}
           </div>
         </div>
@@ -206,82 +223,54 @@ const MediaCollage = memo<MediaCollageProps>(({ currentTrack, shuffleCounter }) 
             <p>No media content available for this track</p>
           </div>
         )}
-
-      </div>
+        </CardContent>
+      </Card>
     </div>
   );
 });
-
-const ModeButton = memo<{
-  mode: VideoMode;
-  isActive: boolean;
-  onClick: (mode: VideoMode) => void;
-  emoji: string;
-}>(({ mode, isActive, onClick, emoji }) => {
-  const handleClick = useCallback(() => onClick(mode), [mode, onClick]);
-  
-  return (
-    <button
-      onClick={handleClick}
-      className={`px-3 py-1 rounded-md text-sm font-medium transition-all duration-200 ${
-        isActive
-          ? 'bg-white/20 text-white shadow-sm'
-          : 'text-white/70 hover:text-white hover:bg-white/10'
-      }`}
-    >
-      {emoji}
-    </button>
-  );
-});
-
-ModeButton.displayName = 'ModeButton';
 
 
 const VideoItem = memo<{
   item: MediaItem;
 }>(({ item }) => {
   return (
-    <div
-      className="relative rounded-lg overflow-hidden bg-white/10 backdrop-blur-sm border border-white/20 transition-all duration-300 hover:scale-105 hover:bg-white/20 w-full"
-      style={{
-        aspectRatio: '3/4',
-        height: '390px'
-      }}
-    >
-      {item.type === 'youtube' ? (
-        <iframe
-          src={item.url}
-          title={item.title}
-          className="w-full h-full border-0"
-          style={{
-            transform: 'scale(1.0)',
-            transformOrigin: 'center center'
-          }}
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-          allowFullScreen
-          loading="lazy"
-        />
-      ) : (
-        <img
-          src={item.url}
-          alt={item.title}
-          className="w-full h-full object-cover"
-          loading="lazy"
-          onError={(e) => {
-            const target = e.target as HTMLImageElement;
-            target.src = `https://via.placeholder.com/400x300/1a1a1a/ffffff?text=${encodeURIComponent(item.title || 'No Image')}`;
-          }}
-        />
-      )}
+    <AspectRatio ratio={3/4} className="w-full">
+      <div className="relative rounded-lg overflow-hidden bg-white/10 backdrop-blur-sm border border-white/20 transition-all duration-300 hover:scale-105 hover:bg-white/20 w-full h-full">
+        {item.type === 'youtube' ? (
+          <iframe
+            src={item.url}
+            title={item.title}
+            className="w-full h-full border-0"
+            style={{
+              transform: 'scale(1.0)',
+              transformOrigin: 'center center'
+            }}
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+            loading="lazy"
+          />
+        ) : (
+          <img
+            src={item.url}
+            alt={item.title}
+            className="w-full h-full object-cover"
+            loading="lazy"
+            onError={(e) => {
+              const target = e.target as HTMLImageElement;
+              target.src = `https://via.placeholder.com/400x300/1a1a1a/ffffff?text=${encodeURIComponent(item.title || 'No Image')}`;
+            }}
+          />
+        )}
 
-      {item.title && (
-        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-3">
-          <p className="text-white text-sm font-medium truncate">
-            {item.title}
-          </p>
-        </div>
-      )}
-    </div>
+        {item.title && (
+          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-3">
+            <p className="text-white text-sm font-medium truncate">
+              {item.title}
+            </p>
+          </div>
+        )}
+      </div>
+    </AspectRatio>
   );
 });
 
