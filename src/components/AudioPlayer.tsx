@@ -29,34 +29,32 @@ const Container = styled.div`
 
 const ContentWrapper = styled.div`
   width: 100%;
-  max-width: 32rem; /* max-w-2xl */
+  max-width: 32rem; /* 512px - mobile/small tablet */
+  
+  @media (min-width: ${({ theme }) => theme.breakpoints.md}) {
+    max-width: 48rem; /* 768px - larger tablet */
+  }
   
   @media (min-width: ${({ theme }) => theme.breakpoints.lg}) {
-    max-width: 56rem; /* max-w-4xl */
+    max-width: 60rem; /* 960px - desktop */
   }
   
   @media (min-width: ${({ theme }) => theme.breakpoints.xl}) {
-    max-width: 64rem; /* max-w-5xl */
+    max-width: 72rem; /* 1152px - large desktop */
   }
 `;
 
 const PlaylistSection = styled.div`
-  margin-bottom: ${({ theme }) => theme.spacing.md};
-  
-  @media (min-width: ${({ theme }) => theme.breakpoints.sm}) {
-    margin-bottom: ${({ theme }) => theme.spacing.lg};
-  }
-  
-  @media (min-width: ${({ theme }) => theme.breakpoints.md}) {
-    margin-bottom: ${({ theme }) => theme.spacing.xl};
-  }
+  margin-bottom: ${({ theme }) => theme.spacing.sm};
 `;
 
 const LoadingCard = styled(Card)`
   ${cardBase};
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(38, 38, 38, 0.5);
   backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(115, 115, 115, 0.5);
+  border-radius: 0 0 ${({ theme }) => theme.borderRadius.lg} ${({ theme }) => theme.borderRadius.lg};
+  border-top: none;
   width: 100%;
 `;
 
@@ -379,7 +377,7 @@ const AudioPlayerComponent = () => {
           </Suspense>
         </PlaylistSection>
         <LoadingCard>
-          <CardContent style={{ padding: '0.5rem' }}>
+          <CardContent style={{ padding: '1rem' }}>
             <SpotifyPlayerControls
               currentTrack={currentTrack}
               onPlay={() => spotifyPlayer.resume()}

@@ -14,6 +14,8 @@ const PlaylistCard = styled(Card)`
   background: rgba(38, 38, 38, 0.5);
   backdrop-filter: blur(12px);
   border: 1px solid rgba(115, 115, 115, 0.5);
+  border-radius: ${({ theme }) => theme.borderRadius.lg} ${({ theme }) => theme.borderRadius.lg} 0 0;
+  border-bottom: none;
 `;
 
 const PlaylistHeader = styled(CardHeader)`
@@ -91,10 +93,14 @@ const TrackName = styled.div<{ isSelected: boolean }>`
   font-weight: ${({ theme }) => theme.fontWeight.semibold};
   font-size: ${({ theme }) => theme.fontSize.base};
   line-height: 1.25;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
   color: ${({ isSelected, theme }) => isSelected ? theme.colors.white : '#f5f5f5'};
+  
+  /* Allow up to 2 lines with ellipsis on overflow */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  word-break: break-word;
 `;
 
 const TrackArtist = styled.div<{ isSelected: boolean }>`
