@@ -57,7 +57,6 @@ const LoadingCard = styled(Card)`
   background: rgba(255, 255, 255, 0.05);
   backdrop-filter: blur(12px);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  max-width: 28rem;
   width: 100%;
 `;
 
@@ -77,8 +76,6 @@ const SkeletonContainer = styled.div`
 
 const PlaylistFallback = styled.div`
   width: 100%;
-  max-width: 56rem;
-  margin: 0 auto;
   margin-top: ${({ theme }) => theme.spacing.lg};
 `;
 
@@ -318,7 +315,7 @@ const AudioPlayerComponent = () => {
       }
 
       return (
-        <Alert variant="destructive" style={{ maxWidth: '28rem', width: '100%' }}>
+        <Alert variant="destructive" style={{ width: '100%' }}>
           <AlertDescription style={{ color: '#fecaca' }}>
             Error: {error}
           </AlertDescription>
@@ -328,7 +325,7 @@ const AudioPlayerComponent = () => {
 
     if (tracks.length === 0) {
       return (
-        <Alert style={{ maxWidth: '28rem', width: '100%' }}>
+        <Alert style={{ width: '100%' }}>
           <AlertDescription style={{ color: 'white', textAlign: 'center' }}>
             No tracks to play.
           </AlertDescription>
@@ -338,7 +335,7 @@ const AudioPlayerComponent = () => {
 
     if (isInitialLoad) {
       return (
-        <LoadingCard style={{ padding: '2rem', textAlign: 'center', maxWidth: '28rem', margin: '0 1rem' }}>
+        <LoadingCard style={{ padding: '2rem', textAlign: 'center' }}>
           <CardContent>
             <SpinIcon>
               <svg width="24" height="24" viewBox="0 0 24 24" fill="white">

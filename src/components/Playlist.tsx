@@ -8,9 +8,6 @@ import { Avatar, AvatarImage, AvatarFallback } from '../components/styled';
 // Styled components
 const PlaylistContainer = styled.div`
   width: 100%;
-  max-width: 56rem;
-  margin: 0 auto;
-  margin-top: 0; /* Remove the mt-6 gap */
 `;
 
 const PlaylistCard = styled(Card)`
