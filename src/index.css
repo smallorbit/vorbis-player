@@ -1,7 +1,3 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
 :root {
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
@@ -49,7 +45,7 @@ button {
   font-size: 1em;
   font-weight: 500;
   font-family: inherit;
-  background-color: #1a1a1a;
+  background-color: #905252;
   cursor: pointer;
   transition: border-color 0.25s;
 }
@@ -61,16 +57,107 @@ button:focus-visible {
   outline: 4px auto -webkit-focus-ring-color;
 }
 
-@media (prefers-color-scheme: light) {
+@media (prefers-color-scheme: dark) {
   :root {
     color: #213547;
-    background-color: #ffffff;
+    background-color: #c2b85e;
   }
   a:hover {
     color: #747bff;
   }
   button {
-    background-color: #f9f9f9;
+    background-color: goldenrod;
   }
 }
+
+/* Custom slider styles for volume control */
+
+/* Glass morphism effect */
+@supports (backdrop-filter: blur(20px)) {
+  .backdrop-blur-lg {
+    backdrop-filter: blur(20px);
+  }
+}
+
+/* Button animations
+@keyframes pulse-orange {
+  0%, 100% {
+    box-shadow: 0 12px 35px rgba(251, 146, 60, 0.5);
+  }
+  50% {
+    box-shadow: 0 12px 35px rgba(251, 146, 60, 0.8);
+  }
+} */
+
+/* .animate-pulse-orange {
+  animation: pulse-orange 2s ease-in-out infinite;
+} */
+
+/* Enhanced shadows for better contrast */
+.drop-shadow-bold {
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.8));
+}
+
+/* High contrast borders */
+.border-3 {
+  border-width: 3px;
+}
+
+.border-4 {
+  border-width: 4px;
+}
+
+/* Text shadows for better readability in light mode */
+.text-shadow-lg {
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+/* Volume slider styles */
+input[type="range"] {
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  appearance: none;
+  -webkit-appearance: none;
+  height: 20px;
+  width: 20px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #fb923c, #f59e0b);
+  border: 3px solid #ffffff;
+  box-shadow: 0 4px 12px rgba(251, 146, 60, 0.5);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  box-shadow: 0 6px 20px rgba(251, 146, 60, 0.7);
+}
+
+input[type="range"]::-moz-range-thumb {
+  height: 20px;
+  width: 20px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #fb923c, #f59e0b);
+  border: 3px solid #ffffff;
+  box-shadow: 0 4px 12px rgba(251, 146, 60, 0.5);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+}
+
+input[type="range"]::-moz-range-thumb:hover {
+  transform: scale(1.2);
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  box-shadow: 0 6px 20px rgba(251, 146, 60, 0.7);
+}
+
+input[type="range"]::-moz-range-track {
+  background: transparent;
+  border: none;
+}
+
 

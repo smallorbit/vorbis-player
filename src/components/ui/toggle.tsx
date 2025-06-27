@@ -1,45 +1,93 @@
-import * as React from "react"
-import * as TogglePrimitive from "@radix-ui/react-toggle"
-import { cva, type VariantProps } from "class-variance-authority"
+import React from 'react';
+import styled, { css } from 'styled-components';
+import { buttonBase } from '../../styles/utils';
 
-import { cn } from "@/lib/utils"
-
-const toggleVariants = cva(
-  "inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium hover:bg-muted hover:text-muted-foreground disabled:pointer-events-none disabled:opacity-50 data-[state=on]:bg-accent data-[state=on]:text-accent-foreground [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 [&_svg]:shrink-0 focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] outline-none transition-[color,box-shadow] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive whitespace-nowrap",
-  {
-    variants: {
-      variant: {
-        default: "bg-transparent",
-        outline:
-          "border border-input bg-transparent shadow-xs hover:bg-accent hover:text-accent-foreground",
-      },
-      size: {
-        default: "h-9 px-2 min-w-9",
-        sm: "h-8 px-1.5 min-w-8",
-        lg: "h-10 px-2.5 min-w-10",
-      },
-    },
-    defaultVariants: {
-      variant: "default",
-      size: "default",
-    },
-  }
-)
-
-function Toggle({
-  className,
-  variant,
-  size,
-  ...props
-}: React.ComponentProps<typeof TogglePrimitive.Root> &
-  VariantProps<typeof toggleVariants>) {
-  return (
-    <TogglePrimitive.Root
-      data-slot="toggle"
-      className={cn(toggleVariants({ variant, size, className }))}
-      {...props}
-    />
-  )
+interface ToggleProps {
+  pressed?: boolean;
+  variant?: 'default' | 'outline';
+  size?: 'default' | 'sm' | 'lg';
+  children: React.ReactNode;
+  onPressedChange?: (pressed: boolean) => void;
+  disabled?: boolean;
+  className?: string;
+  title?: string;
 }
 
-export { Toggle, toggleVariants }
+const getVariantStyles = (variant: ToggleProps['variant'], pressed: boolean) => {
+  if (pressed) {
+    return css`
+      background-color: ${({ theme }) => theme.colors.accent};
+      color: ${({ theme }) => theme.colors.white};
+    `;
+  }
+  
+  switch (variant) {
+    case 'outline':
+      return css`
+        background-color: transparent;
+        border: 1px solid ${({ theme }) => theme.colors.border};
+        color: ${({ theme }) => theme.colors.foreground};
+        
+        &:hover {
+          background-color: ${({ theme }) => theme.colors.muted.background};
+        }
+      `;
+    default:
+      return css`
+        background-color: transparent;
+        color: ${({ theme }) => theme.colors.foreground};
+        
+        &:hover {
+          background-color: ${({ theme }) => theme.colors.muted.background};
+        }
+      `;
+  }
+};
+
+const getSizeStyles = (size: ToggleProps['size']) => {
+  switch (size) {
+    case 'sm':
+      return css`
+        padding: ${({ theme }) => theme.spacing.xs} ${({ theme }) => theme.spacing.sm};
+        font-size: ${({ theme }) => theme.fontSize.xs};
+      `;
+    case 'lg':
+      return css`
+        padding: ${({ theme }) => theme.spacing.md} ${({ theme }) => theme.spacing.lg};
+        font-size: ${({ theme }) => theme.fontSize.base};
+      `;
+    default:
+      return css`
+        padding: ${({ theme }) => theme.spacing.sm} ${({ theme }) => theme.spacing.md};
+        font-size: ${({ theme }) => theme.fontSize.sm};
+      `;
+  }
+};
+
+const StyledToggle = styled.button<ToggleProps>`
+  ${buttonBase}
+  ${({ variant, pressed }) => getVariantStyles(variant, pressed || false)}
+  ${({ size }) => getSizeStyles(size)}
+`;
+
+export const Toggle = React.forwardRef<HTMLButtonElement, ToggleProps>(
+  ({ pressed = false, onPressedChange, children, ...props }, ref) => {
+    const handleClick = () => {
+      onPressedChange?.(!pressed);
+    };
+
+    return (
+      <StyledToggle
+        ref={ref}
+        pressed={pressed}
+        onClick={handleClick}
+        aria-pressed={pressed}
+        {...props}
+      >
+        {children}
+      </StyledToggle>
+    );
+  }
+);
+
+Toggle.displayName = 'Toggle';

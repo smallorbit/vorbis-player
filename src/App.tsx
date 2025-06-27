@@ -1,9 +1,52 @@
 import { useEffect, useState } from 'react';
+import styled, { keyframes } from 'styled-components';
 import AudioPlayerComponent from './components/AudioPlayer';
 import { dropboxAuth } from './services/dropbox';
 import { spotifyAuth } from './services/spotify';
 // Import spotifyPlayer service to ensure global callback is set up
 import './services/spotifyPlayer';
+import { ThemeProvider } from './styles/ThemeProvider';
+import { flexCenter, buttonPrimary } from './styles/utils';
+
+// Styled components
+const AppContainer = styled.div`
+  background-color: ${({ theme }) => theme.colors.background};
+  color: ${({ theme }) => theme.colors.foreground};
+  min-height: 100vh;
+  ${flexCenter}
+`;
+
+const LoadingContainer = styled.div`
+  text-align: center;
+`;
+
+const spin = keyframes`
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+`;
+
+const Spinner = styled.div`
+  width: 3rem;
+  height: 3rem;
+  border: 2px solid transparent;
+  border-bottom: 2px solid ${({ theme }) => theme.colors.white};
+  border-radius: 50%;
+  animation: ${spin} 1s linear infinite;
+  margin: 0 auto ${({ theme }) => theme.spacing.md};
+`;
+
+const ErrorText = styled.p`
+  color: ${({ theme }) => theme.colors.error};
+  margin-bottom: ${({ theme }) => theme.spacing.md};
+`;
+
+const RetryButton = styled.button`
+  ${buttonPrimary}
+`;
 
 function App() {
   const [isAuthenticating, setIsAuthenticating] = useState(true);
@@ -29,38 +72,43 @@ function App() {
 
   if (isAuthenticating) {
     return (
-      <div className="bg-neutral-900 text-white min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
-          <p>Checking authentication...</p>
-        </div>
-      </div>
+      <ThemeProvider>
+        <AppContainer>
+          <LoadingContainer>
+            <Spinner />
+            <p>Checking authentication...</p>
+          </LoadingContainer>
+        </AppContainer>
+      </ThemeProvider>
     );
   }
 
   if (authError) {
     return (
-      <div className="bg-neutral-900 text-white min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-red-400 mb-4">Authentication Error: {authError}</p>
-          <button
-            onClick={() => {
-              setAuthError(null);
-              spotifyAuth.redirectToAuth();
-            }}
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-          >
-            Try Again
-          </button>
-        </div>
-      </div>
+      <ThemeProvider>
+        <AppContainer>
+          <LoadingContainer>
+            <ErrorText>Authentication Error: {authError}</ErrorText>
+            <RetryButton
+              onClick={() => {
+                setAuthError(null);
+                spotifyAuth.redirectToAuth();
+              }}
+            >
+              Try Again
+            </RetryButton>
+          </LoadingContainer>
+        </AppContainer>
+      </ThemeProvider>
     );
   }
 
   return (
-    <div className="bg-neutral-900 text-white min-h-screen flex items-center justify-center">
-      <AudioPlayerComponent />
-    </div>
+    <ThemeProvider>
+      <AppContainer>
+        <AudioPlayerComponent />
+      </AppContainer>
+    </ThemeProvider>
   );
 }
 

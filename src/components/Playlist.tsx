@@ -1,9 +1,164 @@
 import { memo, useMemo, useCallback, useState } from 'react';
+import styled from 'styled-components';
 import type { Track } from '../services/spotify';
-import { Card, CardHeader, CardContent, CardTitle, CardDescription } from './ui/card';
-import { ScrollArea } from './ui/scroll-area';
-import { Button } from './ui/button';
-import { Avatar, AvatarImage, AvatarFallback } from './ui/avatar';
+import { Card, CardHeader, CardContent, CardTitle, CardDescription } from '../components/styled';
+import { ScrollArea } from '../components/styled';
+import { Button } from '../components/styled';
+import { Avatar, AvatarImage, AvatarFallback } from '../components/styled';
+
+// Styled components
+const PlaylistContainer = styled.div`
+  width: 100%;
+  max-width: 56rem;
+  margin: 0 auto;
+  margin-top: 0; /* Remove the mt-6 gap */
+`;
+
+const PlaylistCard = styled(Card)`
+  background: rgba(38, 38, 38, 0.5);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(115, 115, 115, 0.5);
+`;
+
+const PlaylistHeader = styled(CardHeader)`
+  border-bottom: 1px solid rgba(115, 115, 115, 0.5);
+`;
+
+const PlaylistTitle = styled(CardTitle)`
+  font-size: ${({ theme }) => theme.fontSize.lg};
+  font-weight: ${({ theme }) => theme.fontWeight.semibold};
+  color: ${({ theme }) => theme.colors.white};
+`;
+
+const PlaylistDescription = styled(CardDescription)`
+  font-size: ${({ theme }) => theme.fontSize.sm};
+  color: ${({ theme }) => theme.colors.gray[400]};
+`;
+
+const PlaylistContent = styled(CardContent)`
+  padding: 0;
+`;
+
+const PlaylistScrollArea = styled(ScrollArea)`
+  max-height: 24rem;
+`;
+
+const PlaylistItems = styled.div`
+  padding: ${({ theme }) => theme.spacing.md};
+  display: flex;
+  flex-direction: column;
+  gap: ${({ theme }) => theme.spacing.sm};
+`;
+
+const PlaylistItemContainer = styled.div<{ isSelected: boolean; isDragging: boolean }>`
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing.md};
+  padding: ${({ theme }) => theme.spacing.md};
+  border-radius: ${({ theme }) => theme.borderRadius.lg};
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
+  
+  ${({ isSelected }) => isSelected ? `
+    background: rgba(34, 197, 94, 0.2);
+    border-color: rgba(34, 197, 94, 0.3);
+  ` : `
+    &:hover {
+      background: rgba(115, 115, 115, 0.3);
+    }
+  `}
+  
+  ${({ isDragging }) => isDragging && `
+    opacity: 0.5;
+    transform: scale(0.95);
+  `}
+  
+  &:hover .drag-handle {
+    opacity: 1;
+  }
+  
+  &:hover .menu-button {
+    opacity: 1;
+  }
+`;
+
+const DragHandle = styled.div`
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  cursor: grab;
+  color: ${({ theme }) => theme.colors.gray[500]};
+  
+  &:active {
+    cursor: grabbing;
+  }
+`;
+
+const AlbumArtContainer = styled.div`
+  position: relative;
+  flex-shrink: 0;
+`;
+
+const PlayIcon = styled.div`
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: ${({ theme }) => theme.colors.white};
+`;
+
+const TrackInfo = styled.div`
+  flex: 1;
+  min-width: 0;
+`;
+
+const TrackName = styled.div<{ isSelected: boolean }>`
+  font-weight: ${({ theme }) => theme.fontWeight.semibold};
+  font-size: ${({ theme }) => theme.fontSize.base};
+  line-height: 1.25;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: ${({ isSelected, theme }) => isSelected ? theme.colors.white : '#f5f5f5'};
+`;
+
+const TrackArtist = styled.div<{ isSelected: boolean }>`
+  font-size: ${({ theme }) => theme.fontSize.sm};
+  margin-top: ${({ theme }) => theme.spacing.xs};
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: ${({ isSelected, theme }) => isSelected ? '#bbf7d0' : theme.colors.gray[400]};
+`;
+
+const TrackMeta = styled.div`
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing.md};
+  flex-shrink: 0;
+`;
+
+const Duration = styled.span<{ isSelected: boolean }>`
+  font-size: ${({ theme }) => theme.fontSize.sm};
+  font-family: monospace;
+  color: ${({ isSelected, theme }) => isSelected ? '#bbf7d0' : theme.colors.gray[400]};
+`;
+
+const MenuButton = styled(Button)`
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  padding: ${({ theme }) => theme.spacing.xs};
+  height: 2rem;
+  width: 2rem;
+  color: ${({ theme }) => theme.colors.gray[400]};
+  
+  .menu-button & {
+    opacity: 1;
+  }
+`;
 
 interface PlaylistProps {
   tracks: Track[];
@@ -27,20 +182,17 @@ const PlaylistItem = memo<PlaylistItemProps>(({
   const [isDragging, setIsDragging] = useState(false);
 
   return (
-    <div
+    <PlaylistItemContainer
       onClick={() => onSelect(index)}
-      className={`group flex items-center gap-4 p-3 rounded-lg cursor-pointer transition-all duration-200 ${
-        isSelected 
-          ? 'bg-green-600/20 border border-green-500/30' 
-          : 'hover:bg-neutral-700/30 border border-transparent'
-      } ${isDragging ? 'opacity-50 scale-95' : ''}`}
+      isSelected={isSelected}
+      isDragging={isDragging}
       draggable={true}
       onDragStart={() => setIsDragging(true)}
       onDragEnd={() => setIsDragging(false)}
     >
       {/* Drag Handle */}
-      <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 cursor-grab active:cursor-grabbing">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="text-neutral-500">
+      <DragHandle className="drag-handle">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
           <rect x="3" y="4" width="3" height="3" fill="currentColor"/>
           <rect x="10" y="4" width="3" height="3" fill="currentColor"/>
           <rect x="17" y="4" width="3" height="3" fill="currentColor"/>
@@ -51,67 +203,61 @@ const PlaylistItem = memo<PlaylistItemProps>(({
           <rect x="10" y="16" width="3" height="3" fill="currentColor"/>
           <rect x="17" y="16" width="3" height="3" fill="currentColor"/>
         </svg>
-      </div>
+      </DragHandle>
 
       {/* Album Artwork */}
-      <div className="relative flex-shrink-0">
-        <Avatar className="w-12 h-12 sm:w-14 sm:h-14">
+      <AlbumArtContainer>
+        <Avatar style={{ width: '3rem', height: '3rem' }}>
           <AvatarImage 
             src={track.image || '/api/placeholder/56/56'} 
             alt={track.album}
-            className="object-cover"
+            style={{ objectFit: 'cover' }}
           />
-          <AvatarFallback className="bg-neutral-700 text-neutral-400">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="text-neutral-400">
+          <AvatarFallback style={{ backgroundColor: '#374151', color: '#9ca3af' }}>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
               <path d="M12 3a9 9 0 0 0-9 9 9 9 0 0 0 9 9 9 9 0 0 0 9-9 9 9 0 0 0-9-9zm0 2a7 7 0 0 1 7 7 7 7 0 0 1-7 7 7 7 0 0 1-7-7 7 7 0 0 1 7-7zm0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3z" fill="currentColor"/>
             </svg>
           </AvatarFallback>
         </Avatar>
         {isSelected && (
-          <div className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" className="text-white">
+          <PlayIcon>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
               <path d="M8 5v14l11-7z"/>
             </svg>
-          </div>
+          </PlayIcon>
         )}
-      </div>
+      </AlbumArtContainer>
 
       {/* Track Info */}
-      <div className="flex-1 min-w-0">
-        <div className={`font-semibold text-base leading-tight truncate ${
-          isSelected ? 'text-white' : 'text-neutral-100'
-        }`}>
+      <TrackInfo>
+        <TrackName isSelected={isSelected}>
           {track.name}
-        </div>
-        <div className={`text-sm mt-1 truncate ${
-          isSelected ? 'text-green-100' : 'text-neutral-400'
-        }`}>
+        </TrackName>
+        <TrackArtist isSelected={isSelected}>
           {track.artists}
-        </div>
-      </div>
+        </TrackArtist>
+      </TrackInfo>
 
       {/* Duration and Menu */}
-      <div className="flex items-center gap-3 flex-shrink-0">
-        <span className={`text-sm font-mono tabular-nums ${
-          isSelected ? 'text-green-100' : 'text-neutral-400'
-        }`}>
+      <TrackMeta>
+        <Duration isSelected={isSelected}>
           {track.duration_ms ? `${Math.floor(track.duration_ms / 60000)}:${Math.floor((track.duration_ms % 60000) / 1000).toString().padStart(2, '0')}` : '--:--'}
-        </span>
+        </Duration>
         
         {/* Menu Button */}
-        <Button 
+        <MenuButton 
           variant="ghost" 
           size="sm"
-          className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 p-1 h-8 w-8"
+          className="menu-button"
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="text-neutral-400">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
             <circle cx="12" cy="5" r="2" fill="currentColor"/>
             <circle cx="12" cy="12" r="2" fill="currentColor"/>
             <circle cx="12" cy="19" r="2" fill="currentColor"/>
           </svg>
-        </Button>
-      </div>
-    </div>
+        </MenuButton>
+      </TrackMeta>
+    </PlaylistItemContainer>
   );
 });
 
@@ -136,16 +282,16 @@ const Playlist = memo<PlaylistProps>(({ tracks, currentTrackIndex, onTrackSelect
   // If needed for large playlists, implement with div-based layout instead of table
 
   return (
-    <div className="w-full max-w-4xl mx-auto mt-6">
-      <Card className="bg-neutral-800/50 backdrop-blur-sm border-neutral-700/50">
-        <CardHeader className="border-b border-neutral-700/50">
-          <CardTitle className="text-lg font-semibold text-white">Up Next</CardTitle>
-          <CardDescription className="text-sm text-neutral-400">{sortedTracks.length} tracks</CardDescription>
-        </CardHeader>
+    <PlaylistContainer>
+      <PlaylistCard>
+        <PlaylistHeader>
+          <PlaylistTitle>Up Next</PlaylistTitle>
+          <PlaylistDescription>{sortedTracks.length} tracks</PlaylistDescription>
+        </PlaylistHeader>
         
-        <CardContent className="p-0">
-          <ScrollArea className="max-h-96">
-            <div className="p-4 space-y-2">
+        <PlaylistContent>
+          <PlaylistScrollArea>
+            <PlaylistItems>
               {sortedTracks.map((track: Track, index: number) => (
                 <PlaylistItem
                   key={`${track.name}-${track.id}`}
@@ -155,11 +301,11 @@ const Playlist = memo<PlaylistProps>(({ tracks, currentTrackIndex, onTrackSelect
                   onSelect={handleTrackSelect}
                 />
               ))}
-            </div>
-          </ScrollArea>
-        </CardContent>
-      </Card>
-    </div>
+            </PlaylistItems>
+          </PlaylistScrollArea>
+        </PlaylistContent>
+      </PlaylistCard>
+    </PlaylistContainer>
   );
 });
 

@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useCallback, memo, lazy, Suspense } from 'react';
+import styled, { keyframes } from 'styled-components';
 const Playlist = lazy(() => import('./Playlist'));
 import MediaCollage from './MediaCollage';
 const VideoAdmin = lazy(() => import('./admin/VideoAdmin'));
@@ -7,11 +8,160 @@ import { getSpotifyUserPlaylists, spotifyAuth } from '../services/spotify';
 import { spotifyPlayer } from '../services/spotifyPlayer';
 import type { Track } from '../services/spotify';
 import { HyperText } from './hyper-text';
-import { Card, CardHeader, CardContent } from './ui/card';
-import { Button } from './ui/button';
-import { Skeleton } from './ui/skeleton';
-import { Alert, AlertDescription } from './ui/alert';
-import { Slider } from './ui/slider';
+import { Card, CardHeader, CardContent } from '../components/styled';
+import { Button } from '../components/styled';
+import { Skeleton } from '../components/styled';
+import { Alert, AlertDescription } from '../components/styled';
+import { Slider } from '../components/styled';
+import { flexCenter, flexBetween, flexColumn, cardBase } from '../styles/utils';
+
+// Styled components
+const Container = styled.div`
+  min-height: 100vh;
+  width: 100%;
+  ${flexCenter};
+  padding: ${({ theme }) => theme.spacing.sm};
+  
+  @media (min-width: ${({ theme }) => theme.breakpoints.sm}) {
+    padding: ${({ theme }) => theme.spacing.md};
+  }
+`;
+
+const ContentWrapper = styled.div`
+  width: 100%;
+  max-width: 32rem; /* max-w-2xl */
+  
+  @media (min-width: ${({ theme }) => theme.breakpoints.lg}) {
+    max-width: 56rem; /* max-w-4xl */
+  }
+  
+  @media (min-width: ${({ theme }) => theme.breakpoints.xl}) {
+    max-width: 64rem; /* max-w-5xl */
+  }
+`;
+
+const PlaylistSection = styled.div`
+  margin-bottom: ${({ theme }) => theme.spacing.md};
+  
+  @media (min-width: ${({ theme }) => theme.breakpoints.sm}) {
+    margin-bottom: ${({ theme }) => theme.spacing.lg};
+  }
+  
+  @media (min-width: ${({ theme }) => theme.breakpoints.md}) {
+    margin-bottom: ${({ theme }) => theme.spacing.xl};
+  }
+`;
+
+const LoadingCard = styled(Card)`
+  ${cardBase};
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  max-width: 28rem;
+  width: 100%;
+`;
+
+const SpinIcon = styled.div`
+  width: 4rem;
+  height: 4rem;
+  background-color: ${({ theme }) => theme.colors.primary};
+  border-radius: 50%;
+  ${flexCenter};
+  margin: 0 auto ${({ theme }) => theme.spacing.lg};
+`;
+
+const SkeletonContainer = styled.div`
+  ${flexColumn};
+  gap: ${({ theme }) => theme.spacing.md};
+`;
+
+const PlaylistFallback = styled.div`
+  width: 100%;
+  max-width: 56rem;
+  margin: 0 auto;
+  margin-top: ${({ theme }) => theme.spacing.lg};
+`;
+
+const PlaylistFallbackCard = styled.div`
+  background-color: ${({ theme }) => theme.colors.gray[800]};
+  border-radius: ${({ theme }) => theme.borderRadius.lg};
+  padding: ${({ theme }) => theme.spacing.md};
+  border: 1px solid ${({ theme }) => theme.colors.gray[700]};
+`;
+
+const spin = keyframes`
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+`;
+
+const AdminSpinner = styled.div`
+  animation: ${spin} 1s linear infinite;
+  border-radius: 50%;
+  width: 3rem;
+  height: 3rem;
+  border: 2px solid transparent;
+  border-bottom: 2px solid ${({ theme }) => theme.colors.white};
+`;
+
+const AdminOverlay = styled.div`
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.8);
+  ${flexCenter};
+  z-index: 50;
+`;
+
+const PlayerControlsContainer = styled.div`
+  ${flexColumn};
+  gap: ${({ theme }) => theme.spacing.md};
+  padding: ${({ theme }) => theme.spacing.md};
+`;
+
+const TrackInfo = styled.div`
+  flex: 1;
+  min-width: 0;
+`;
+
+const TrackName = styled.p`
+  color: ${({ theme }) => theme.colors.white};
+  font-weight: ${({ theme }) => theme.fontWeight.medium};
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+`;
+
+const TrackArtist = styled.p`
+  color: ${({ theme }) => theme.colors.gray[400]};
+  font-size: ${({ theme }) => theme.fontSize.sm};
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+`;
+
+const ControlsRow = styled.div`
+  ${flexBetween};
+`;
+
+const ControlsLeft = styled.div`
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing.md};
+`;
+
+const VolumeControls = styled.div`
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing.sm};
+`;
+
+const VolumeIcon = styled.span`
+  color: ${({ theme }) => theme.colors.white};
+  font-size: ${({ theme }) => theme.fontSize.sm};
+`;
 
 const AudioPlayerComponent = () => {
   const [tracks, setTracks] = useState<Track[]>([]);
@@ -131,16 +281,16 @@ const AudioPlayerComponent = () => {
   const renderContent = () => {
     if (isLoading) {
       return (
-        <Card className="bg-white/5 backdrop-blur-sm border-white/10 max-w-md w-full">
-          <CardContent className="p-6">
-            <div className="space-y-3">
-              <Skeleton className="h-4 w-3/4 bg-white/10" />
-              <Skeleton className="h-4 w-1/2 bg-white/10" />
-              <Skeleton className="h-4 w-2/3 bg-white/10" />
-            </div>
-            <p className="text-center text-white mt-4">Loading music from Spotify...</p>
+        <LoadingCard>
+          <CardContent>
+            <SkeletonContainer>
+              <Skeleton />
+              <Skeleton />
+              <Skeleton />
+            </SkeletonContainer>
+            <p style={{ textAlign: 'center', color: 'white', marginTop: '1rem' }}>Loading music from Spotify...</p>
           </CardContent>
-        </Card>
+        </LoadingCard>
       );
     }
 
@@ -151,28 +301,28 @@ const AudioPlayerComponent = () => {
 
       if (isAuthError) {
         return (
-          <Card className="bg-white/5 backdrop-blur-sm border-white/10 max-w-md w-full">
+          <LoadingCard>
             <CardHeader>
-              <h2 className="text-xl font-bold text-white text-center">Connect to Spotify</h2>
+              <h2 style={{ fontSize: '1.25rem', fontWeight: 'bold', color: 'white', textAlign: 'center' }}>Connect to Spotify</h2>
             </CardHeader>
-            <CardContent className="text-center">
-              <p className="text-gray-300 mb-6">
+            <CardContent style={{ textAlign: 'center' }}>
+              <p style={{ color: '#d1d5db', marginBottom: '1.5rem' }}>
                 Sign in to your Spotify account to access your music. Requires Spotify Premium.
               </p>
               <Button
                 onClick={() => spotifyAuth.redirectToAuth()}
-                className="bg-green-600 hover:bg-green-700 text-white font-semibold"
+                style={{ backgroundColor: '#16a34a' }}
               >
                 Connect Spotify
               </Button>
             </CardContent>
-          </Card>
+          </LoadingCard>
         );
       }
 
       return (
-        <Alert variant="destructive" className="max-w-md w-full bg-red-900/20 border-red-500/50">
-          <AlertDescription className="text-red-200">
+        <Alert variant="destructive" style={{ maxWidth: '28rem', width: '100%' }}>
+          <AlertDescription style={{ color: '#fecaca' }}>
             Error: {error}
           </AlertDescription>
         </Alert>
@@ -181,8 +331,8 @@ const AudioPlayerComponent = () => {
 
     if (tracks.length === 0) {
       return (
-        <Alert className="max-w-md w-full bg-white/5 border-white/10">
-          <AlertDescription className="text-white text-center">
+        <Alert style={{ maxWidth: '28rem', width: '100%' }}>
+          <AlertDescription style={{ color: 'white', textAlign: 'center' }}>
             No tracks to play.
           </AlertDescription>
         </Alert>
@@ -191,41 +341,41 @@ const AudioPlayerComponent = () => {
 
     if (isInitialLoad) {
       return (
-        <Card className="bg-white/10 backdrop-blur-sm border-white/20 shadow-xl max-w-md w-full mx-4">
-          <CardContent className="p-8 text-center">
-            <div className="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-6">
+        <LoadingCard style={{ padding: '2rem', textAlign: 'center', maxWidth: '28rem', margin: '0 1rem' }}>
+          <CardContent>
+            <SpinIcon>
               <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
                 <path d="M8 5v14l11-7z" />
               </svg>
-            </div>
-            <HyperText duration={800} className="text-2xl font-bold text-white mb-6" as="h2">
+            </SpinIcon>
+            <HyperText duration={800} style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'white', marginBottom: '1.5rem' }} as="h2">
               Vorbis Player
             </HyperText>
             <Button
               onClick={() => setIsInitialLoad(false)}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold text-lg py-4"
+              style={{ width: '100%', backgroundColor: '#2563eb', fontSize: '1.125rem', padding: '1rem' }}
               size="lg"
             >
               Click to start
             </Button>
           </CardContent>
-        </Card>
+        </LoadingCard>
       );
     }
 
     return (
-      <div className="w-full max-w-2xl lg:max-w-4xl xl:max-w-5xl">
+      <ContentWrapper>
         <MediaCollage
           currentTrack={currentTrack}
           shuffleCounter={shuffleCounter}
         />
-        <div className="mb-3 sm:mb-4 md:mb-6">
+        <PlaylistSection>
           <Suspense fallback={
-            <div className="w-full max-w-4xl mx-auto mt-6">
-              <div className="bg-neutral-800 rounded-lg p-4 border border-neutral-700">
-                <div className="animate-pulse text-white/60 text-center">Loading playlist...</div>
-              </div>
-            </div>
+            <PlaylistFallback>
+              <PlaylistFallbackCard>
+                <div style={{ animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite', color: 'rgba(255, 255, 255, 0.6)', textAlign: 'center' }}>Loading playlist...</div>
+              </PlaylistFallbackCard>
+            </PlaylistFallback>
           }>
             <Playlist
               tracks={tracks}
@@ -233,9 +383,9 @@ const AudioPlayerComponent = () => {
               onTrackSelect={playTrack}
             />
           </Suspense>
-        </div>
-        <Card className="bg-white/5 backdrop-blur-sm border-white/10">
-          <CardContent className="p-2 sm:p-3 md:p-4">
+        </PlaylistSection>
+        <LoadingCard>
+          <CardContent style={{ padding: '0.5rem' }}>
             <SpotifyPlayerControls
               currentTrack={currentTrack}
               onPlay={() => spotifyPlayer.resume()}
@@ -244,13 +394,13 @@ const AudioPlayerComponent = () => {
               onPrevious={handlePrevious}
             />
           </CardContent>
-        </Card>
-      </div>
+        </LoadingCard>
+      </ContentWrapper>
     );
   };
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center px-2 sm:px-4">
+    <Container>
       <Suspense fallback={null}>
         <AdminKeyCombo onActivate={() => setShowAdminPanel(true)} />
       </Suspense>
@@ -259,14 +409,14 @@ const AudioPlayerComponent = () => {
 
       {showAdminPanel && (
         <Suspense fallback={
-          <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div>
-          </div>
+          <AdminOverlay>
+            <AdminSpinner></AdminSpinner>
+          </AdminOverlay>
         }>
           <VideoAdmin onClose={() => setShowAdminPanel(false)} />
         </Suspense>
       )}
-    </div>
+    </Container>
   );
 };
 
@@ -306,28 +456,28 @@ const SpotifyPlayerControls = memo<{
   };
 
   return (
-    <div className="flex flex-col space-y-3 p-4">
+    <PlayerControlsContainer>
       {/* Track Info */}
-      <div className="flex-1 min-w-0">
-        <p className="text-white font-medium truncate">{currentTrack?.name || 'No track selected'}</p>
-        <p className="text-gray-400 text-sm truncate">{currentTrack?.artists || ''}</p>
-      </div>
+      <TrackInfo>
+        <TrackName>{currentTrack?.name || 'No track selected'}</TrackName>
+        <TrackArtist>{currentTrack?.artists || ''}</TrackArtist>
+      </TrackInfo>
       
       {/* Controls */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-3">
+      <ControlsRow>
+        <ControlsLeft>
           <Button
             variant="ghost"
             size="sm"
             onClick={onPrevious}
-            className="text-white hover:text-gray-300 hover:bg-white/10"
+            style={{ color: 'white' }}
           >
             ⏮️
           </Button>
           
           <Button
             onClick={handlePlayPause}
-            className="bg-green-600 hover:bg-green-700 text-white rounded-full p-2"
+            style={{ backgroundColor: '#16a34a', color: 'white', borderRadius: '50%', padding: '0.5rem' }}
             size="sm"
           >
             {isPlaying ? '⏸️' : '▶️'}
@@ -337,25 +487,25 @@ const SpotifyPlayerControls = memo<{
             variant="ghost"
             size="sm"
             onClick={onNext}
-            className="text-white hover:text-gray-300 hover:bg-white/10"
+            style={{ color: 'white' }}
           >
             ⏭️
           </Button>
-        </div>
+        </ControlsLeft>
         
-        <div className="flex items-center space-x-2">
-          <span className="text-white text-sm">🔊</span>
+        <VolumeControls>
+          <VolumeIcon>🔊</VolumeIcon>
           <Slider
             value={[volume]}
             onValueChange={(value) => handleVolumeChange(value[0])}
             max={100}
             min={0}
             step={1}
-            className="w-20"
+            style={{ width: '5rem' }}
           />
-        </div>
-      </div>
-    </div>
+        </VolumeControls>
+      </ControlsRow>
+    </PlayerControlsContainer>
   );
 });
 
