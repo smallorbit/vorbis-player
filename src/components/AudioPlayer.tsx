@@ -169,7 +169,7 @@ const AudioPlayerComponent = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
-  const [shuffleCounter, setShuffleCounter] = useState(0);
+  // const [shuffleCounter, setShuffleCounter] = useState(0);
   const [showAdminPanel, setShowAdminPanel] = useState(false);
 
   const fetchTracks = async () => {
@@ -239,7 +239,7 @@ const AudioPlayerComponent = () => {
 
         if (trackIndex !== -1 && trackIndex !== currentTrackIndex) {
           setCurrentTrackIndex(trackIndex);
-          setShuffleCounter(0);
+          // setShuffleCounter(0);
         }
       }
     };
@@ -262,14 +262,14 @@ const AudioPlayerComponent = () => {
     if (tracks.length === 0) return;
     const nextIndex = (currentTrackIndex + 1) % tracks.length;
     playTrack(nextIndex);
-    setShuffleCounter(0);
+    // setShuffleCounter(0);
   }, [currentTrackIndex, tracks.length, playTrack]);
 
   const handlePrevious = useCallback(() => {
     if (tracks.length === 0) return;
     const prevIndex = currentTrackIndex === 0 ? tracks.length - 1 : currentTrackIndex - 1;
     playTrack(prevIndex);
-    setShuffleCounter(0);
+    // setShuffleCounter(0);
   }, [currentTrackIndex, tracks.length, playTrack]);
 
   // Memoize the current track to prevent unnecessary re-renders
