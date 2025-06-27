@@ -493,7 +493,7 @@ const SpotifyPlayerControls = memo<{
             max={100}
             min={0}
             step={1}
-            style={{ width: '5rem' }}
+            style={{ width: '3rem' }}
           />
         </VolumeControls>
       </ControlsRow>
