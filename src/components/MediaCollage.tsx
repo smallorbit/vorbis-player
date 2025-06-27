@@ -99,19 +99,19 @@ const MediaCollage = memo<MediaCollageProps>(({ currentTrack, shuffleCounter }) 
 
   useEffect(() => {
     if (!currentTrack) return;
-    
+
     if (lockVideoToTrack && lockedVideoRef.current) {
       setMediaItems([lockedVideoRef.current]);
       return;
     }
-    
+
     fetchMediaContent(currentTrack);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
-    currentTrack, 
+    currentTrack,
     debouncedShuffleCounter,
-    debouncedInternalShuffleCounter, 
-    videoMode, 
+    debouncedInternalShuffleCounter,
+    videoMode,
     fetchMediaContent
   ]);
 
@@ -150,79 +150,79 @@ const MediaCollage = memo<MediaCollageProps>(({ currentTrack, shuffleCounter }) 
         <CardContent className="p-4">
           <div className="relative flex justify-between items-center mb-4">
             <h3 className="text-lg font-semibold text-white">
-              {getModeTitle(videoMode)} 
+              {getModeTitle(videoMode)}
             </h3>
 
-          <div className="flex items-center gap-2">
-            <ToggleGroup
-              type="single"
-              value={videoMode}
-              onValueChange={(value) => value && handleModeChange(value as VideoMode)}
-              className="bg-white/10 rounded-lg p-1"
-            >
-              {(['80sTV', '90sTV'] as VideoMode[]).map((mode) => (
-                <ToggleGroupItem
-                  key={mode}
-                  value={mode}
-                  className={cn(
-                    "px-3 py-1 text-sm font-medium transition-all duration-200",
-                    "data-[state=on]:bg-white/20 data-[state=on]:text-white data-[state=on]:shadow-sm",
-                    "data-[state=off]:text-white/70 hover:text-white hover:bg-white/10"
-                  )}
-                >
-                  {getModeEmoji(mode)}
-                </ToggleGroupItem>
-              ))}
-            </ToggleGroup>
-            
-            {/* Video Lock Toggle */}
-            <Toggle
-              pressed={lockVideoToTrack}
-              onPressedChange={handleLockVideoToggle}
-              className={cn(
-                "px-3 py-1 text-sm font-medium transition-all duration-200",
-                "data-[state=on]:bg-blue-600/80 data-[state=on]:text-white data-[state=on]:shadow-sm",
-                "data-[state=off]:text-white/70 data-[state=off]:hover:text-white data-[state=off]:hover:bg-white/10 data-[state=off]:border data-[state=off]:border-white/20"
+            <div className="flex items-center gap-2">
+              <ToggleGroup
+                type="single"
+                value={videoMode}
+                onValueChange={(value) => value && handleModeChange(value as VideoMode)}
+                className="bg-white/10 rounded-lg p-1"
+              >
+                {(['80sTV', '90sTV'] as VideoMode[]).map((mode) => (
+                  <ToggleGroupItem
+                    key={mode}
+                    value={mode}
+                    className={cn(
+                      "px-3 py-1 text-sm font-medium transition-all duration-200",
+                      "data-[state=on]:bg-white/20 data-[state=on]:text-white data-[state=on]:shadow-sm",
+                      "data-[state=off]:text-white/70 hover:text-white hover:bg-white/10"
+                    )}
+                  >
+                    {getModeEmoji(mode)}
+                  </ToggleGroupItem>
+                ))}
+              </ToggleGroup>
+
+              {/* Video Lock Toggle */}
+              <Toggle
+                pressed={lockVideoToTrack}
+                onPressedChange={handleLockVideoToggle}
+                className={cn(
+                  "px-3 py-1 text-sm font-medium transition-all duration-200",
+                  "data-[state=on]:bg-blue-600/80 data-[state=on]:text-white data-[state=on]:shadow-sm",
+                  "data-[state=off]:text-white/70 data-[state=off]:hover:text-white data-[state=off]:hover:bg-white/10 data-[state=off]:border data-[state=off]:border-white/20"
+                )}
+                title={lockVideoToTrack ? 'Video locked to track (click to unlock)' : 'Video changes with tracks (click to lock)'}
+              >
+                {lockVideoToTrack ? '🔒' : '🔓'}
+              </Toggle>
+
+              {loading && (
+                <Skeleton className="h-5 w-5 rounded-full bg-white/20" />
               )}
-              title={lockVideoToTrack ? 'Video locked to track (click to unlock)' : 'Video changes with tracks (click to lock)'}
-            >
-              {lockVideoToTrack ? '🔒' : '🔓'}
-            </Toggle>
-
-            {loading && (
-              <Skeleton className="h-5 w-5 rounded-full bg-white/20" />
-            )}
+            </div>
           </div>
-        </div>
 
-        <div className="w-full">
-          {mediaItems.map((item) => (
-            <VideoItem key={item.id} item={item} />
-          ))}
-        </div>
-
-        {/* Shuffle Bar - Full width clickable area */}
-        {mediaItems.length > 0 && (
-          <button
-            onClick={handleShuffleVideo}
-            className="group w-full py-3 bg-white/5 hover:bg-white/10 border-t border-b border-white/10 transition-all duration-200 active:bg-white/15 flex justify-center items-center"
-            title="Click anywhere to shuffle video"
-          >
-            <HyperText
-              duration={600}
-              className="text-white text-lg font-semibold tracking-wider pointer-events-none"
-              as="span"
-            >
-              {"SHUFFLE " + getModeEmoji(videoMode)}
-            </HyperText>
-          </button>
-        )}
-
-        {mediaItems.length === 0 && !loading && (
-          <div className="text-center text-white/60 py-8">
-            <p>No media content available for this track</p>
+          <div className="w-full">
+            {mediaItems.map((item) => (
+              <VideoItem key={item.id} item={item} />
+            ))}
           </div>
-        )}
+
+          {/* Shuffle Bar - Full width clickable area */}
+          {mediaItems.length > 0 && (
+            <button
+              onClick={handleShuffleVideo}
+              className="group w-full py-3 bg-white/5 hover:bg-white/10 border-t border-b border-white/10 transition-all duration-200 active:bg-white/15 flex justify-center items-center"
+              title="Click anywhere to shuffle video"
+            >
+              <HyperText
+                duration={600}
+                className="text-white text-lg font-semibold tracking-wider pointer-events-none"
+                as="span"
+              >
+                {"SHUFFLE " + getModeEmoji(videoMode)}
+              </HyperText>
+            </button>
+          )}
+
+          {mediaItems.length === 0 && !loading && (
+            <div className="text-center text-white/60 py-8">
+              <p>No media content available for this track</p>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
@@ -234,7 +234,7 @@ const VideoItem = memo<{
   item: MediaItem;
 }>(({ item }) => {
   return (
-    <AspectRatio ratio={3/4} className="w-full">
+    <AspectRatio ratio={3 / 4} className="w-full">
       <div className="relative rounded-lg overflow-hidden bg-white/10 backdrop-blur-sm border border-white/20 transition-all duration-300 hover:scale-105 hover:bg-white/20 w-full h-full">
         {item.type === 'youtube' ? (
           <iframe

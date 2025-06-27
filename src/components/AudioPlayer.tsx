@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useCallback, memo, lazy, Suspense } from 'react';
 import styled, { keyframes } from 'styled-components';
 const Playlist = lazy(() => import('./Playlist'));
-import MediaCollage from './MediaCollage';
+// import MediaCollage from './MediaCollage';
 const VideoAdmin = lazy(() => import('./admin/VideoAdmin'));
 const AdminKeyCombo = lazy(() => import('./admin/AdminKeyCombo'));
 import { getSpotifyUserPlaylists, spotifyAuth } from '../services/spotify';
@@ -189,16 +189,16 @@ const AudioPlayerComponent = () => {
     try {
       setError(null);
       setIsLoading(true);
-      
+
       await spotifyPlayer.initialize();
-      
+
       const fetchedTracks = await getSpotifyUserPlaylists();
       if (fetchedTracks.length === 0) {
         setError("No tracks found in your Spotify account. Please add music to playlists or like some songs in Spotify, then refresh this page.");
       }
-      
+
       setTracks(fetchedTracks);
-      
+
       if (fetchedTracks.length > 0) {
         setCurrentTrackIndex(0);
       }
@@ -236,7 +236,7 @@ const AudioPlayerComponent = () => {
       if (state && state.track_window.current_track) {
         const currentTrack = state.track_window.current_track;
         const trackIndex = tracks.findIndex(track => track.id === currentTrack.id);
-        
+
         if (trackIndex !== -1 && trackIndex !== currentTrackIndex) {
           setCurrentTrackIndex(trackIndex);
           setShuffleCounter(0);
@@ -274,9 +274,6 @@ const AudioPlayerComponent = () => {
 
   // Memoize the current track to prevent unnecessary re-renders
   const currentTrack = useMemo(() => tracks[currentTrackIndex] || null, [tracks, currentTrackIndex]);
-
-
-
 
   const renderContent = () => {
     if (isLoading) {
@@ -365,10 +362,10 @@ const AudioPlayerComponent = () => {
 
     return (
       <ContentWrapper>
-        <MediaCollage
+        {/* <MediaCollage
           currentTrack={currentTrack}
           shuffleCounter={shuffleCounter}
-        />
+        /> */}
         <PlaylistSection>
           <Suspense fallback={
             <PlaylistFallback>
@@ -437,7 +434,7 @@ const SpotifyPlayerControls = memo<{
         setIsPlaying(!state.paused);
       }
     };
-    
+
     const interval = setInterval(checkPlaybackState, 1000);
     return () => clearInterval(interval);
   }, []);
@@ -462,7 +459,7 @@ const SpotifyPlayerControls = memo<{
         <TrackName>{currentTrack?.name || 'No track selected'}</TrackName>
         <TrackArtist>{currentTrack?.artists || ''}</TrackArtist>
       </TrackInfo>
-      
+
       {/* Controls */}
       <ControlsRow>
         <ControlsLeft>
@@ -474,7 +471,7 @@ const SpotifyPlayerControls = memo<{
           >
             ⏮️
           </Button>
-          
+
           <Button
             onClick={handlePlayPause}
             style={{ backgroundColor: '#16a34a', color: 'white', borderRadius: '50%', padding: '0.5rem' }}
@@ -482,7 +479,7 @@ const SpotifyPlayerControls = memo<{
           >
             {isPlaying ? '⏸️' : '▶️'}
           </Button>
-          
+
           <Button
             variant="ghost"
             size="sm"
@@ -492,7 +489,7 @@ const SpotifyPlayerControls = memo<{
             ⏭️
           </Button>
         </ControlsLeft>
-        
+
         <VolumeControls>
           <VolumeIcon>🔊</VolumeIcon>
           <Slider
