@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import AudioPlayerComponent from './components/AudioPlayer';
 import { dropboxAuth } from './services/dropbox';
 import { spotifyAuth } from './services/spotify';
+// Import spotifyPlayer service to ensure global callback is set up
+import './services/spotifyPlayer';
 
 function App() {
   const [isAuthenticating, setIsAuthenticating] = useState(true);

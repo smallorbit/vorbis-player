@@ -108,6 +108,20 @@ const AudioPlayerComponent = () => {
     }
   }, [tracks]);
 
+  const handleNext = useCallback(() => {
+    if (tracks.length === 0) return;
+    const nextIndex = (currentTrackIndex + 1) % tracks.length;
+    playTrack(nextIndex);
+    setShuffleCounter(0);
+  }, [currentTrackIndex, tracks.length, playTrack]);
+
+  const handlePrevious = useCallback(() => {
+    if (tracks.length === 0) return;
+    const prevIndex = currentTrackIndex === 0 ? tracks.length - 1 : currentTrackIndex - 1;
+    playTrack(prevIndex);
+    setShuffleCounter(0);
+  }, [currentTrackIndex, tracks.length, playTrack]);
+
   // Memoize the current track to prevent unnecessary re-renders
   const currentTrack = useMemo(() => tracks[currentTrackIndex] || null, [tracks, currentTrackIndex]);
 
@@ -226,14 +240,8 @@ const AudioPlayerComponent = () => {
               currentTrack={currentTrack}
               onPlay={() => spotifyPlayer.resume()}
               onPause={() => spotifyPlayer.pause()}
-              onNext={() => {
-                spotifyPlayer.nextTrack();
-                setShuffleCounter(0);
-              }}
-              onPrevious={() => {
-                spotifyPlayer.previousTrack();
-                setShuffleCounter(0);
-              }}
+              onNext={handleNext}
+              onPrevious={handlePrevious}
             />
           </CardContent>
         </Card>

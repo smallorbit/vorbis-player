@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, memo } from 'react';
-import { spotifyAuth, getSpotifyUserPlaylists, Track } from '../services/spotify';
+import { spotifyAuth, getSpotifyUserPlaylists, type Track } from '../services/spotify';
 import { spotifyPlayer } from '../services/spotifyPlayer';
 
 interface SpotifyAudioPlayerProps {
@@ -44,7 +44,9 @@ const SpotifyAudioPlayer = ({
         return;
       }
       
-      setTracks(fetchedTracks);
+      // Limit to 5 tracks for demo purposes
+      const limitedTracks = fetchedTracks.slice(0, 5);
+      setTracks(limitedTracks);
       
       if (fetchedTracks.length > 0) {
         setCurrentTrackIndex(0);
@@ -103,27 +105,38 @@ const SpotifyAudioPlayer = ({
     }
   }, [tracks, isPlayerReady]);
 
+  const handleNext = useCallback(() => {
+    if (tracks.length === 0) return;
+    const nextIndex = (currentTrackIndex + 1) % tracks.length;
+    playTrack(nextIndex);
+  }, [currentTrackIndex, tracks.length, playTrack]);
+
+  const handlePrevious = useCallback(() => {
+    if (tracks.length === 0) return;
+    const prevIndex = currentTrackIndex === 0 ? tracks.length - 1 : currentTrackIndex - 1;
+    playTrack(prevIndex);
+  }, [currentTrackIndex, tracks.length, playTrack]);
+
   const currentTrack = tracks[currentTrackIndex] || null;
 
   if (isLoading) {
     return (
-      <div className={`bg-neutral-900 rounded-lg p-6 ${className}`}>
-        <div className="animate-pulse text-white text-center">Loading Spotify...</div>
+      <div className={className}>
+        <div>Loading Spotify...</div>
       </div>
     );
   }
 
   if (!spotifyAuth.isAuthenticated()) {
     return (
-      <div className={`bg-neutral-900 rounded-lg p-6 ${className}`}>
-        <div className="text-center">
-          <h3 className="text-xl font-bold text-white mb-4">Connect to Spotify</h3>
-          <p className="text-gray-300 mb-6">
+      <div className={className}>
+        <div>
+          <h3>Connect to Spotify</h3>
+          <p>
             Sign in to your Spotify account to play music. Requires Spotify Premium.
           </p>
           <button
             onClick={() => spotifyAuth.redirectToAuth()}
-            className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-semibold"
           >
             Connect Spotify
           </button>
@@ -134,41 +147,38 @@ const SpotifyAudioPlayer = ({
 
   if (error) {
     return (
-      <div className={`bg-neutral-900 rounded-lg p-6 ${className}`}>
-        <div className="text-center text-red-400">{error}</div>
+      <div className={className}>
+        <div>{error}</div>
       </div>
     );
   }
 
   if (tracks.length === 0) {
     return (
-      <div className={`bg-neutral-900 rounded-lg p-6 ${className}`}>
-        <div className="text-center text-gray-400">No tracks available</div>
+      <div className={className}>
+        <div>No tracks available</div>
       </div>
     );
   }
 
   return (
-    <div className={`bg-neutral-900 rounded-lg overflow-hidden ${className}`}>
-      {/* Current Track Display */}
-      <div className="p-4 border-b border-neutral-700">
+    <div className={className}>
+      <div>
         <TrackDisplay track={currentTrack} />
       </div>
 
-      {/* Player Controls */}
-      <div className="p-4 border-b border-neutral-700">
+      <div>
         <PlayerControls 
           isPlayerReady={isPlayerReady}
           onPlay={() => spotifyPlayer.resume()}
           onPause={() => spotifyPlayer.pause()}
-          onNext={() => spotifyPlayer.nextTrack()}
-          onPrevious={() => spotifyPlayer.previousTrack()}
+          onNext={handleNext}
+          onPrevious={handlePrevious}
         />
       </div>
 
-      {/* Playlist */}
       {showPlaylist && (
-        <div className="max-h-64 overflow-y-auto">
+        <div>
           <PlaylistView
             tracks={tracks}
             currentTrackIndex={currentTrackIndex}
@@ -183,25 +193,26 @@ const SpotifyAudioPlayer = ({
 const TrackDisplay = memo<{ track: Track | null }>(({ track }) => {
   if (!track) {
     return (
-      <div className="text-center text-gray-400">
+      <div>
         No track selected
       </div>
     );
   }
 
   return (
-    <div className="flex items-center space-x-4">
+    <div>
       {track.image && (
         <img 
           src={track.image} 
           alt={track.album}
-          className="w-16 h-16 rounded-lg object-cover"
+          width="64"
+          height="64"
         />
       )}
-      <div className="flex-1 min-w-0">
-        <h4 className="text-white font-medium truncate">{track.name}</h4>
-        <p className="text-gray-400 text-sm truncate">{track.artists}</p>
-        <p className="text-gray-500 text-xs truncate">{track.album}</p>
+      <div>
+        <h4>{track.name}</h4>
+        <p>{track.artists}</p>
+        <p>{track.album}</p>
       </div>
     </div>
   );
@@ -249,56 +260,29 @@ const PlayerControls = memo<{
   };
 
   return (
-    <div className="flex items-center justify-between">
-      <div className="flex items-center space-x-3">
-        <button
-          onClick={onPrevious}
-          disabled={!isPlayerReady}
-          className="text-white hover:text-gray-300 transition-colors disabled:opacity-50"
-        >
-          <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/>
-          </svg>
+    <div>
+      <div>
+        <button onClick={onPrevious} disabled={!isPlayerReady}>
+          Previous
         </button>
         
-        <button
-          onClick={handlePlayPause}
-          disabled={!isPlayerReady}
-          className="bg-green-600 hover:bg-green-700 text-white rounded-full p-3 transition-colors disabled:opacity-50"
-        >
-          {isPlaying ? (
-            <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
-            </svg>
-          ) : (
-            <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M8 5v14l11-7z"/>
-            </svg>
-          )}
+        <button onClick={handlePlayPause} disabled={!isPlayerReady}>
+          {isPlaying ? 'Pause' : 'Play'}
         </button>
         
-        <button
-          onClick={onNext}
-          disabled={!isPlayerReady}
-          className="text-white hover:text-gray-300 transition-colors disabled:opacity-50"
-        >
-          <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/>
-          </svg>
+        <button onClick={onNext} disabled={!isPlayerReady}>
+          Next
         </button>
       </div>
       
-      <div className="flex items-center space-x-2">
-        <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
-          <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
-        </svg>
+      <div>
+        <label>Volume</label>
         <input
           type="range"
           min="0"
           max="100"
           value={volume}
           onChange={(e) => handleVolumeChange(Number(e.target.value))}
-          className="w-20 accent-green-600"
           disabled={!isPlayerReady}
         />
       </div>
@@ -314,28 +298,27 @@ const PlaylistView = memo<{
   onTrackSelect: (index: number) => void;
 }>(({ tracks, currentTrackIndex, onTrackSelect }) => {
   return (
-    <div className="divide-y divide-neutral-700">
+    <div>
       {tracks.map((track, index) => (
         <div
           key={track.id}
           onClick={() => onTrackSelect(index)}
-          className={`p-3 cursor-pointer hover:bg-neutral-800 transition-colors ${
-            index === currentTrackIndex ? 'bg-neutral-800 border-l-4 border-green-600' : ''
-          }`}
+          style={{ backgroundColor: index === currentTrackIndex ? '#f0f0f0' : 'transparent' }}
         >
-          <div className="flex items-center space-x-3">
+          <div>
             {track.image && (
               <img 
                 src={track.image} 
                 alt={track.album}
-                className="w-10 h-10 rounded object-cover"
+                width="40"
+                height="40"
               />
             )}
-            <div className="flex-1 min-w-0">
-              <p className="text-white text-sm font-medium truncate">{track.name}</p>
-              <p className="text-gray-400 text-xs truncate">{track.artists}</p>
+            <div>
+              <p>{track.name}</p>
+              <p>{track.artists}</p>
             </div>
-            <div className="text-gray-500 text-xs">
+            <div>
               {Math.floor(track.duration_ms / 60000)}:{String(Math.floor((track.duration_ms % 60000) / 1000)).padStart(2, '0')}
             </div>
           </div>

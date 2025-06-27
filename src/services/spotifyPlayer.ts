@@ -1,17 +1,20 @@
 import { spotifyAuth } from './spotify';
 
+// Set up the global callback immediately when this module loads
+if (typeof window !== 'undefined') {
+  window.onSpotifyWebPlaybackSDKReady = () => {
+    console.log('Spotify Web Playback SDK is ready');
+    // SDK is ready but we'll initialize manually when authenticated
+  };
+}
+
 export class SpotifyPlayerService {
   private player: SpotifyPlayer | null = null;
   private deviceId: string | null = null;
   private isReady = false;
 
   constructor() {
-    // Prevent automatic initialization by clearing the callback
-    if (typeof window !== 'undefined') {
-      window.onSpotifyWebPlaybackSDKReady = () => {
-        // SDK is ready but we'll initialize manually when authenticated
-      };
-    }
+    // Callback is already set up globally above
   }
 
   async initialize(): Promise<void> {
