@@ -195,60 +195,27 @@ const ControlButton = styled.button<{ isPlaying?: boolean }>`
   `}
 `;
 
-const VolumeSection = styled.div`
-  display: flex;
-  align-items: center;
-  gap: ${({ theme }) => theme.spacing.xs};
-  flex-shrink: 0;
-  min-width: 0;
-`;
-
-const VolumeIcon = styled.div`
+const VolumeButton = styled.button`
+  border: none;
+  background: transparent;
   color: ${({ theme }) => theme.colors.gray[400]};
   display: flex;
   align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: ${({ theme }) => theme.spacing.xs};
+  border-radius: ${({ theme }) => theme.borderRadius.md};
+  transition: all 0.2s ease;
+  
+  &:hover {
+    background: rgba(115, 115, 115, 0.2);
+    color: ${({ theme }) => theme.colors.white};
+  }
   
   svg {
     width: 1rem;
     height: 1rem;
     fill: currentColor;
-  }
-`;
-
-const VolumeSlider = styled.div`
-  position: relative;
-  width: 2.5rem;
-  height: 0.25rem;
-  background: rgba(115, 115, 115, 0.3);
-  border-radius: 0.125rem;
-  cursor: pointer;
-`;
-
-const VolumeProgress = styled.div<{ percentage: number }>`
-  position: absolute;
-  left: 0;
-  top: 0;
-  height: 100%;
-  width: ${({ percentage }) => percentage}%;
-  background: rgba(34, 197, 94, 0.8);
-  border-radius: 0.125rem;
-  transition: all 0.1s ease;
-`;
-
-const VolumeThumb = styled.div<{ percentage: number }>`
-  position: absolute;
-  top: 50%;
-  left: ${({ percentage }) => percentage}%;
-  transform: translate(-50%, -50%);
-  width: 0.75rem;
-  height: 0.75rem;
-  background: #bbf7d0;
-  border-radius: 50%;
-  opacity: 0;
-  transition: all 0.1s ease;
-  
-  ${VolumeSlider}:hover & {
-    opacity: 1;
   }
 `;
 
@@ -514,7 +481,7 @@ const SpotifyPlayerControls = memo<{
   onPrevious: () => void;
 }>(({ currentTrack, onPlay, onPause, onNext, onPrevious }) => {
   const [isPlaying, setIsPlaying] = useState(false);
-  const [volume, setVolume] = useState(50);
+  const [isMuted, setIsMuted] = useState(false);
 
   useEffect(() => {
     const checkPlaybackState = async () => {
@@ -528,6 +495,11 @@ const SpotifyPlayerControls = memo<{
     return () => clearInterval(interval);
   }, []);
 
+  useEffect(() => {
+    // Set volume to 100% on initialization
+    spotifyPlayer.setVolume(1.0);
+  }, []);
+
   const handlePlayPause = () => {
     if (isPlaying) {
       onPause();
@@ -536,17 +508,10 @@ const SpotifyPlayerControls = memo<{
     }
   };
 
-  const handleVolumeChange = (newVolume: number) => {
-    setVolume(newVolume);
-    spotifyPlayer.setVolume(newVolume / 100);
-  };
-
-  const handleVolumeClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const percentage = (x / rect.width) * 100;
-    const newVolume = Math.max(0, Math.min(100, percentage));
-    handleVolumeChange(newVolume);
+  const handleMuteToggle = () => {
+    const newMutedState = !isMuted;
+    setIsMuted(newMutedState);
+    spotifyPlayer.setVolume(newMutedState ? 0 : 1.0);
   };
 
   return (
@@ -587,17 +552,17 @@ const SpotifyPlayerControls = memo<{
         </ControlButtons>
 
         {/* Volume */}
-        <VolumeSection>
-          <VolumeIcon>
+        <VolumeButton onClick={handleMuteToggle}>
+          {isMuted ? (
             <svg viewBox="0 0 24 24">
-              <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z" />
+              <path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/>
             </svg>
-          </VolumeIcon>
-          <VolumeSlider onClick={handleVolumeClick}>
-            <VolumeProgress percentage={volume} />
-            <VolumeThumb percentage={volume} />
-          </VolumeSlider>
-        </VolumeSection>
+          ) : (
+            <svg viewBox="0 0 24 24">
+              <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
+            </svg>
+          )}
+        </VolumeButton>
       </ControlsRow>
     </PlayerControlsContainer>
   );
