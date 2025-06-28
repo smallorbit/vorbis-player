@@ -1,18 +1,10 @@
 import styled from 'styled-components';
+import { useState } from 'react';
 
 interface AvatarProps {
-  children: React.ReactNode;
-  style?: React.CSSProperties;
-}
-
-interface AvatarImageProps {
   src?: string;
   alt?: string;
-  style?: React.CSSProperties;
-}
-
-interface AvatarFallbackProps {
-  children: React.ReactNode;
+  fallback?: React.ReactNode;
   style?: React.CSSProperties;
 }
 
@@ -44,14 +36,38 @@ const StyledAvatarFallback = styled.div`
   color: ${({ theme }) => theme.colors.muted.foreground};
 `;
 
-export const Avatar: React.FC<AvatarProps> = ({ children, style }) => {
-  return <StyledAvatar style={style}>{children}</StyledAvatar>;
+export const Avatar: React.FC<AvatarProps> = ({ src, alt, fallback, style }) => {
+  const [imageError, setImageError] = useState(false);
+  const [imageLoaded, setImageLoaded] = useState(false);
+
+  const handleImageError = () => {
+    setImageError(true);
+  };
+
+  const handleImageLoad = () => {
+    setImageLoaded(true);
+    setImageError(false);
+  };
+
+  return (
+    <StyledAvatar style={style}>
+      {src && !imageError && (
+        <StyledAvatarImage 
+          src={src} 
+          alt={alt} 
+          onError={handleImageError}
+          onLoad={handleImageLoad}
+        />
+      )}
+      {(!src || imageError || !imageLoaded) && fallback && (
+        <StyledAvatarFallback>
+          {fallback}
+        </StyledAvatarFallback>
+      )}
+    </StyledAvatar>
+  );
 };
 
-export const AvatarImage: React.FC<AvatarImageProps> = ({ src, alt, style }) => {
-  return <StyledAvatarImage src={src} alt={alt} style={style} />;
-};
-
-export const AvatarFallback: React.FC<AvatarFallbackProps> = ({ children, style }) => {
-  return <StyledAvatarFallback style={style}>{children}</StyledAvatarFallback>;
-};
+// Keep these exports for backward compatibility but mark as deprecated
+export const AvatarImage = StyledAvatarImage;
+export const AvatarFallback = StyledAvatarFallback;

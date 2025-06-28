@@ -145,18 +145,16 @@ const PlaylistItem = memo<PlaylistItemProps>(({
     >
       {/* Album Artwork */}
       <AlbumArtContainer>
-        <Avatar style={{ width: '3rem', height: '3rem' }}>
-          <AvatarImage 
-            src={track.image || '/api/placeholder/56/56'} 
-            alt={track.album}
-            style={{ objectFit: 'cover' }}
-          />
-          <AvatarFallback style={{ backgroundColor: '#374151', color: '#9ca3af' }}>
+        <Avatar 
+          src={track.image} 
+          alt={track.album}
+          style={{ width: '3rem', height: '3rem' }}
+          fallback={
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
               <path d="M12 3a9 9 0 0 0-9 9 9 9 0 0 0 9 9 9 9 0 0 0 9-9 9 9 0 0 0-9-9zm0 2a7 7 0 0 1 7 7 7 7 0 0 1-7 7 7 7 0 0 1-7-7 7 7 0 0 1 7-7zm0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3z" fill="currentColor"/>
             </svg>
-          </AvatarFallback>
-        </Avatar>
+          }
+        />
         {isSelected && (
           <PlayIcon>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">

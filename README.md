@@ -5,13 +5,13 @@ A modern audio player that combines Spotify music streaming with curated retro T
 ## Features
 
 - **Spotify Integration**: Stream music directly from your Spotify account (Premium required)
-- **Modern Playlist Design**: Engaging card-based playlist with album artwork, drag-to-reorder functionality, and clean visual hierarchy
+- **Modern Playlist Design**: Clean card-based playlist with album artwork and responsive visual hierarchy
 - **Multi-Mode Visual Experience**: Choose between 80's TV 8️⃣0️⃣s or 90's TV ⓽⓪s video modes
 - **Intuitive Shuffle**: Dedicated full-width shuffle bar with HyperText animation for easy video cycling
 - **Optimized Video Display**: Smart cropping and scaling to maximize content in square viewport
 - **Quick Mode Switching**: Toggle between retro TV eras with one-click emoji buttons
 - **Admin System**: Hidden admin panel for video curation and management (triple-A key access)
-- **Modern UI**: Clean, responsive design with Tailwind CSS
+- **Modern UI**: Clean, responsive design with styled-components
 - **Secure Authentication**: PKCE OAuth flow for secure Spotify access
 
 ## Quick Start
@@ -78,7 +78,7 @@ A modern audio player that combines Spotify music streaming with curated retro T
 - Full-quality streaming with Spotify Premium
 - Essential playback controls (play, pause, next, previous, volume)
 - Access to your personal music library and playlists
-- Modern playlist interface with album artwork and drag-to-reorder tracks
+- Modern playlist interface with album artwork and clean visual design
 
 ### Video Experience
 
@@ -127,6 +127,11 @@ src/
 │   ├── MediaCollage.tsx # Video display with shuffle controls
 │   ├── Playlist.tsx     # Track listing
 │   ├── hyper-text.tsx   # Animated text component
+│   ├── styled/          # styled-components UI library
+│   │   ├── Avatar.tsx   # Image component with fallback support
+│   │   ├── Button.tsx   # Button component with variants
+│   │   ├── Card.tsx     # Card layout components
+│   │   └── index.ts     # Component exports
 │   └── admin/           # Admin panel components
 │       ├── AdminKeyCombo.tsx  # Secret key sequence detector
 │       └── VideoAdmin.tsx     # Video management interface
@@ -138,6 +143,9 @@ src/
 │   ├── youtube.ts      # Video management
 │   ├── images.ts       # Image processing utilities
 │   └── adminService.ts # Admin panel backend services
+├── styles/             # Styling system
+│   ├── theme.ts        # Design tokens and theme configuration
+│   └── utils.ts        # styled-components utility mixins
 ├── assets/             # Static assets
 │   ├── 80sTV-videoIds.json    # Curated 80s TV content
 │   └── 90sTV-videoIds.json    # Curated 90s TV content
@@ -168,7 +176,7 @@ node src/lib/extractVideoIds.js saved-youtube-page.html 2000sTV-videoIds.json
 ### Tech Stack
 
 - **Frontend**: React 18 + TypeScript + Vite
-- **Styling**: Tailwind CSS
+- **Styling**: styled-components with custom theme system
 - **Audio**: Spotify Web Playback SDK
 - **Authentication**: Spotify Web API with PKCE OAuth
 - **Build Tool**: Vite with HMR
