@@ -12,7 +12,6 @@ import { Card, CardHeader, CardContent } from '../components/styled';
 import { Button } from '../components/styled';
 import { Skeleton } from '../components/styled';
 import { Alert, AlertDescription } from '../components/styled';
-import { Slider } from '../components/styled';
 import { flexCenter, flexColumn, cardBase } from '../styles/utils';
 
 // Styled components
@@ -111,55 +110,119 @@ const AdminOverlay = styled.div`
 `;
 
 const PlayerControlsContainer = styled.div`
-  ${flexColumn};
+  display: flex;
+  align-items: center;
   gap: ${({ theme }) => theme.spacing.md};
   padding: ${({ theme }) => theme.spacing.md};
 `;
 
-const TrackInfo = styled.div`
+const PlayerTrackInfo = styled.div`
   flex: 1;
   min-width: 0;
 `;
 
-const TrackName = styled.p`
+const PlayerTrackName = styled.div`
+  font-weight: ${({ theme }) => theme.fontWeight.semibold};
+  font-size: ${({ theme }) => theme.fontSize.base};
+  line-height: 1.25;
   color: ${({ theme }) => theme.colors.white};
-  font-weight: ${({ theme }) => theme.fontWeight.medium};
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 `;
 
-const TrackArtist = styled.p`
-  color: ${({ theme }) => theme.colors.gray[400]};
+const PlayerTrackArtist = styled.div`
   font-size: ${({ theme }) => theme.fontSize.sm};
+  margin-top: ${({ theme }) => theme.spacing.xs};
+  color: ${({ theme }) => theme.colors.gray[400]};
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 `;
 
-const ControlsRow = styled.div`
+const ControlButtons = styled.div`
   display: flex;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing.md};
+  gap: ${({ theme }) => theme.spacing.sm};
+  flex-shrink: 0;
 `;
 
-const ControlsLeft = styled.div`
+const ControlButton = styled.button<{ isPlaying?: boolean }>`
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 50%;
+  border: none;
   display: flex;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing.md};
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 1rem;
+  
+  ${({ isPlaying }) => isPlaying ? `
+    background: rgba(34, 197, 94, 0.2);
+    color: #bbf7d0;
+    
+    &:hover {
+      background: rgba(34, 197, 94, 0.3);
+    }
+  ` : `
+    background: rgba(115, 115, 115, 0.2);
+    color: ${({ theme }) => theme.colors.white};
+    
+    &:hover {
+      background: rgba(115, 115, 115, 0.3);
+    }
+  `}
 `;
 
-const VolumeControls = styled.div`
+const VolumeSection = styled.div`
   display: flex;
   align-items: center;
   gap: ${({ theme }) => theme.spacing.xs};
   flex-shrink: 0;
-  margin-left: auto;
 `;
 
 const VolumeIcon = styled.span`
-  color: ${({ theme }) => theme.colors.white};
+  color: ${({ theme }) => theme.colors.gray[400]};
   font-size: ${({ theme }) => theme.fontSize.sm};
+`;
+
+const VolumeSlider = styled.div`
+  position: relative;
+  width: 4rem;
+  height: 0.25rem;
+  background: rgba(115, 115, 115, 0.3);
+  border-radius: 0.125rem;
+  cursor: pointer;
+`;
+
+const VolumeProgress = styled.div<{ percentage: number }>`
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  width: ${({ percentage }) => percentage}%;
+  background: rgba(34, 197, 94, 0.8);
+  border-radius: 0.125rem;
+  transition: all 0.1s ease;
+`;
+
+const VolumeThumb = styled.div<{ percentage: number }>`
+  position: absolute;
+  top: 50%;
+  left: ${({ percentage }) => percentage}%;
+  transform: translate(-50%, -50%);
+  width: 0.75rem;
+  height: 0.75rem;
+  background: #bbf7d0;
+  border-radius: 50%;
+  opacity: 0;
+  transition: all 0.1s ease;
+  
+  ${VolumeSlider}:hover & {
+    opacity: 1;
+  }
 `;
 
 const AudioPlayerComponent = () => {
@@ -451,56 +514,45 @@ const SpotifyPlayerControls = memo<{
     spotifyPlayer.setVolume(newVolume / 100);
   };
 
+  const handleVolumeClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const percentage = (x / rect.width) * 100;
+    const newVolume = Math.max(0, Math.min(100, percentage));
+    handleVolumeChange(newVolume);
+  };
+
   return (
     <PlayerControlsContainer>
       {/* Track Info */}
-      <TrackInfo>
-        <TrackName>{currentTrack?.name || 'No track selected'}</TrackName>
-        <TrackArtist>{currentTrack?.artists || ''}</TrackArtist>
-      </TrackInfo>
+      <PlayerTrackInfo>
+        <PlayerTrackName>{currentTrack?.name || 'No track selected'}</PlayerTrackName>
+        <PlayerTrackArtist>{currentTrack?.artists || ''}</PlayerTrackArtist>
+      </PlayerTrackInfo>
 
-      {/* Controls */}
-      <ControlsRow>
-        <ControlsLeft>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onPrevious}
-            style={{ color: 'white' }}
-          >
-            ⏮️
-          </Button>
+      {/* Control Buttons */}
+      <ControlButtons>
+        <ControlButton onClick={onPrevious}>
+          ⏮️
+        </ControlButton>
 
-          <Button
-            onClick={handlePlayPause}
-            style={{ backgroundColor: '#16a34a', color: 'white', borderRadius: '50%', padding: '0.5rem' }}
-            size="sm"
-          >
-            {isPlaying ? '⏸️' : '▶️'}
-          </Button>
+        <ControlButton isPlaying={isPlaying} onClick={handlePlayPause}>
+          {isPlaying ? '⏸️' : '▶️'}
+        </ControlButton>
 
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onNext}
-            style={{ color: 'white' }}
-          >
-            ⏭️
-          </Button>
-        </ControlsLeft>
+        <ControlButton onClick={onNext}>
+          ⏭️
+        </ControlButton>
+      </ControlButtons>
 
-        <VolumeControls>
-          <VolumeIcon>🔊</VolumeIcon>
-          <Slider
-            value={[volume]}
-            onValueChange={(value) => handleVolumeChange(value[0])}
-            max={100}
-            min={0}
-            step={1}
-            style={{ width: '2rem' }}
-          />
-        </VolumeControls>
-      </ControlsRow>
+      {/* Volume */}
+      <VolumeSection>
+        <VolumeIcon>🔊</VolumeIcon>
+        <VolumeSlider onClick={handleVolumeClick}>
+          <VolumeProgress percentage={volume} />
+          <VolumeThumb percentage={volume} />
+        </VolumeSlider>
+      </VolumeSection>
     </PlayerControlsContainer>
   );
 });
