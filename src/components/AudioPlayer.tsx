@@ -47,13 +47,32 @@ const PlaylistSection = styled.div`
   margin-bottom: ${({ theme }) => theme.spacing.sm};
 `;
 
-const LoadingCard = styled(Card)`
+const LoadingCard = styled(Card)<{ backgroundImage?: string }>`
   ${cardBase};
-  background: rgba(38, 38, 38, 0.5);
-  backdrop-filter: blur(12px);
+  position: relative;
+  overflow: hidden;
   border: 1px solid rgba(115, 115, 115, 0.5);
   border-radius: 0 0 ${({ theme }) => theme.borderRadius.lg} ${({ theme }) => theme.borderRadius.lg};
   border-top: none;
+  
+  ${({ backgroundImage }) => backgroundImage ? `
+    background-image: url(${backgroundImage});
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    
+    &::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(8px);
+      z-index: 1;
+    }
+  ` : `
+    background: rgba(38, 38, 38, 0.5);
+    backdrop-filter: blur(12px);
+  `}
 `;
 
 const SpinIcon = styled.div`
@@ -109,6 +128,8 @@ const AdminOverlay = styled.div`
 `;
 
 const PlayerControlsContainer = styled.div`
+  position: relative;
+  z-index: 2;
   display: flex;
   flex-direction: column;
   gap: ${({ theme }) => theme.spacing.sm};
@@ -437,7 +458,7 @@ const AudioPlayerComponent = () => {
             />
           </Suspense>
         </PlaylistSection>
-        <LoadingCard>
+        <LoadingCard backgroundImage={currentTrack?.image}>
           <CardContent style={{ padding: '1rem' }}>
             <SpotifyPlayerControls
               currentTrack={currentTrack}
