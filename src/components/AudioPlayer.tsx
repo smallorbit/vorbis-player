@@ -157,7 +157,12 @@ const ControlButton = styled.button<{ isPlaying?: boolean }>`
   justify-content: center;
   cursor: pointer;
   transition: all 0.2s ease;
-  font-size: 1rem;
+  
+  svg {
+    width: 1rem;
+    height: 1rem;
+    fill: currentColor;
+  }
   
   ${({ isPlaying }) => isPlaying ? `
     background: rgba(34, 197, 94, 0.2);
@@ -181,16 +186,24 @@ const VolumeSection = styled.div`
   align-items: center;
   gap: ${({ theme }) => theme.spacing.xs};
   flex-shrink: 0;
+  min-width: 0;
 `;
 
-const VolumeIcon = styled.span`
+const VolumeIcon = styled.div`
   color: ${({ theme }) => theme.colors.gray[400]};
-  font-size: ${({ theme }) => theme.fontSize.sm};
+  display: flex;
+  align-items: center;
+  
+  svg {
+    width: 1rem;
+    height: 1rem;
+    fill: currentColor;
+  }
 `;
 
 const VolumeSlider = styled.div`
   position: relative;
-  width: 4rem;
+  width: 2.5rem;
   height: 0.25rem;
   background: rgba(115, 115, 115, 0.3);
   border-radius: 0.125rem;
@@ -533,21 +546,37 @@ const SpotifyPlayerControls = memo<{
       {/* Control Buttons */}
       <ControlButtons>
         <ControlButton onClick={onPrevious}>
-          ⏮️
+          <svg viewBox="0 0 24 24">
+            <path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/>
+          </svg>
         </ControlButton>
 
         <ControlButton isPlaying={isPlaying} onClick={handlePlayPause}>
-          {isPlaying ? '⏸️' : '▶️'}
+          {isPlaying ? (
+            <svg viewBox="0 0 24 24">
+              <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
+            </svg>
+          ) : (
+            <svg viewBox="0 0 24 24">
+              <path d="M8 5v14l11-7z"/>
+            </svg>
+          )}
         </ControlButton>
 
         <ControlButton onClick={onNext}>
-          ⏭️
+          <svg viewBox="0 0 24 24">
+            <path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/>
+          </svg>
         </ControlButton>
       </ControlButtons>
 
       {/* Volume */}
       <VolumeSection>
-        <VolumeIcon>🔊</VolumeIcon>
+        <VolumeIcon>
+          <svg viewBox="0 0 24 24">
+            <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
+          </svg>
+        </VolumeIcon>
         <VolumeSlider onClick={handleVolumeClick}>
           <VolumeProgress percentage={volume} />
           <VolumeThumb percentage={volume} />
