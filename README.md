@@ -2,6 +2,8 @@
 
 A modern audio player that streams music from your Spotify account with a clean, responsive interface designed for music discovery and playback.
 
+<img src="public/screenshot.png" alt="Vorbis Player Interface" width="600">
+
 ## Features
 
 - **Spotify Integration**: Stream music directly from your Spotify account (Premium required)
