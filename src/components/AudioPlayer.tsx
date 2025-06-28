@@ -159,8 +159,8 @@ const ControlButton = styled.button<{ isPlaying?: boolean }>`
   transition: all 0.2s ease;
   
   svg {
-    width: 1rem;
-    height: 1rem;
+    width: 1.5rem;
+    height: 1.5rem;
     fill: currentColor;
   }
   
