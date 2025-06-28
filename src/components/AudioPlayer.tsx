@@ -4,6 +4,8 @@ const Playlist = lazy(() => import('./Playlist'));
 // import MediaCollage from './MediaCollage';
 const VideoAdmin = lazy(() => import('./admin/VideoAdmin'));
 const AdminKeyCombo = lazy(() => import('./admin/AdminKeyCombo'));
+const VisualizerCanvas = lazy(() => import('./visualizer/VisualizerCanvas'));
+const SpotifyAudioBridge = lazy(() => import('./visualizer/SpotifyAudioBridge').then(module => ({ default: module.default || module.SpotifyAudioBridge })));
 import { getSpotifyUserPlaylists, spotifyAuth } from '../services/spotify';
 import { spotifyPlayer } from '../services/spotifyPlayer';
 import type { Track } from '../services/spotify';
@@ -13,6 +15,9 @@ import { Button } from '../components/styled';
 import { Skeleton } from '../components/styled';
 import { Alert, AlertDescription } from '../components/styled';
 import { flexCenter, flexColumn, cardBase } from '../styles/utils';
+import { ViewToggle } from './ViewToggle';
+import { VisualizerSelector } from './VisualizerSelector';
+import { useVisualizerStore } from '../lib/visualizer/state';
 
 // Styled components
 const Container = styled.div`
@@ -45,6 +50,29 @@ const ContentWrapper = styled.div`
 
 const PlaylistSection = styled.div`
   margin-bottom: 0;
+`;
+
+const VisualizerSection = styled.div`
+  width: 100%;
+  height: 60vh;
+  min-height: 400px;
+  margin-bottom: ${({ theme }) => theme.spacing.md};
+  border-radius: ${({ theme }) => theme.borderRadius.lg};
+  overflow: hidden;
+  background: rgba(38, 38, 38, 0.5);
+  border: 1px solid rgba(115, 115, 115, 0.3);
+  
+  @media (min-width: ${({ theme }) => theme.breakpoints.md}) {
+    height: 70vh;
+    min-height: 500px;
+  }
+`;
+
+const ControlsSection = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: ${({ theme }) => theme.spacing.sm};
+  margin-bottom: ${({ theme }) => theme.spacing.md};
 `;
 
 const LoadingCard = styled(Card) <{ backgroundImage?: string; standalone?: boolean }>`
@@ -193,7 +221,9 @@ const ControlButtons = styled.div`
   flex-shrink: 0;
 `;
 
-const ControlButton = styled.button<{ isPlaying?: boolean }>`
+const ControlButton = styled.button.withConfig({
+  shouldForwardProp: (prop) => prop !== 'isPlaying'
+})<{ isPlaying?: boolean }>`
   
   border: none;
   display: flex;
@@ -257,6 +287,8 @@ const AudioPlayerComponent = () => {
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   // const [shuffleCounter, setShuffleCounter] = useState(0);
   const [showAdminPanel, setShowAdminPanel] = useState(false);
+  
+  const { viewMode, setVisualizerActive } = useVisualizerStore();
 
   const fetchTracks = async () => {
     if (window.location.pathname === '/auth/spotify/callback') {
@@ -332,6 +364,11 @@ const AudioPlayerComponent = () => {
 
     spotifyPlayer.onPlayerStateChanged(handlePlayerStateChange);
   }, [tracks, currentTrackIndex]);
+
+  // Update visualizer active state based on view mode
+  useEffect(() => {
+    setVisualizerActive(viewMode === 'visualizer');
+  }, [viewMode, setVisualizerActive]);
 
   const playTrack = useCallback(async (index: number) => {
     if (tracks[index]) {
@@ -448,25 +485,50 @@ const AudioPlayerComponent = () => {
 
     return (
       <ContentWrapper>
-        {/* <MediaCollage
-          currentTrack={currentTrack}
-          shuffleCounter={shuffleCounter}
-        /> */}
-        <PlaylistSection>
-          <Suspense fallback={
-            <PlaylistFallback>
-              <PlaylistFallbackCard>
-                <div style={{ animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite', color: 'rgba(255, 255, 255, 0.6)', textAlign: 'center' }}>Loading playlist...</div>
-              </PlaylistFallbackCard>
-            </PlaylistFallback>
-          }>
-            <Playlist
-              tracks={tracks}
-              currentTrackIndex={currentTrackIndex}
-              onTrackSelect={playTrack}
-            />
-          </Suspense>
-        </PlaylistSection>
+        {/* Controls Section - Always visible */}
+        <ControlsSection>
+          <ViewToggle />
+          {viewMode === 'visualizer' && <VisualizerSelector />}
+        </ControlsSection>
+        
+        {/* Conditional Content Section */}
+        {viewMode === 'playlist' ? (
+          <PlaylistSection>
+            <Suspense fallback={
+              <PlaylistFallback>
+                <PlaylistFallbackCard>
+                  <div style={{ animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite', color: 'rgba(255, 255, 255, 0.6)', textAlign: 'center' }}>Loading playlist...</div>
+                </PlaylistFallbackCard>
+              </PlaylistFallback>
+            }>
+              <Playlist
+                tracks={tracks}
+                currentTrackIndex={currentTrackIndex}
+                onTrackSelect={playTrack}
+              />
+            </Suspense>
+          </PlaylistSection>
+        ) : (
+          <VisualizerSection>
+            <Suspense fallback={
+              <div style={{ 
+                width: '100%', 
+                height: '100%', 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center', 
+                color: 'rgba(255, 255, 255, 0.6)' 
+              }}>
+                Loading visualizer...
+              </div>
+            }>
+              <VisualizerCanvas />
+              <SpotifyAudioBridge />
+            </Suspense>
+          </VisualizerSection>
+        )}
+        
+        {/* Audio Player Controls - Always visible at bottom */}
         <LoadingCard backgroundImage={currentTrack?.image}>
           <CardContent style={{ padding: '1rem' }}>
             <SpotifyPlayerControls

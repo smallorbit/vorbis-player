@@ -3,7 +3,7 @@ import styled from 'styled-components';
 import type { Track } from '../services/spotify';
 import { Card, CardHeader, CardContent, CardTitle, CardDescription } from '../components/styled';
 import { ScrollArea } from '../components/styled';
-import { Avatar, AvatarImage, AvatarFallback } from '../components/styled';
+import { Avatar } from '../components/styled';
 
 // Styled components
 const PlaylistContainer = styled.div`

@@ -36,7 +36,8 @@ export const ToggleGroup = React.forwardRef<HTMLDivElement, ToggleGroupProps>(
   ({ type = 'single', value, onValueChange, children, className, ...props }, ref) => {
     const handleValueChange = (itemValue: string) => {
       if (type === 'single') {
-        onValueChange?.(value === itemValue ? '' : itemValue);
+        // For single mode, always set the clicked value (don't allow deselecting)
+        onValueChange?.(itemValue);
       } else {
         const currentValue = Array.isArray(value) ? value : [];
         const newValue = currentValue.includes(itemValue)
@@ -56,7 +57,7 @@ export const ToggleGroup = React.forwardRef<HTMLDivElement, ToggleGroupProps>(
     return (
       <StyledToggleGroup ref={ref} className={className} {...props}>
         {React.Children.map(children, (child) => {
-          if (React.isValidElement<ToggleGroupItemProps>(child) && child.type === ToggleGroupItem) {
+          if (React.isValidElement<ToggleGroupItemProps>(child) && child.props.value) {
             return React.cloneElement(child, {
               pressed: isPressed(child.props.value),
               onPressedChange: () => handleValueChange(child.props.value),

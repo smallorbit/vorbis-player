@@ -64,7 +64,10 @@ const getSizeStyles = (size: ToggleProps['size']) => {
   }
 };
 
-const StyledToggle = styled.button<ToggleProps>`
+const StyledToggle = styled.button.withConfig({
+  shouldForwardProp: (prop) => 
+    !['pressed', 'variant', 'size', 'onPressedChange'].includes(prop)
+})<ToggleProps>`
   ${buttonBase}
   ${({ variant, pressed }) => getVariantStyles(variant, pressed || false)}
   ${({ size }) => getSizeStyles(size)}
