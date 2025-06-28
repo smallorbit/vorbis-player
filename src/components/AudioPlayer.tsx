@@ -13,7 +13,7 @@ import { Button } from '../components/styled';
 import { Skeleton } from '../components/styled';
 import { Alert, AlertDescription } from '../components/styled';
 import { Slider } from '../components/styled';
-import { flexCenter, flexBetween, flexColumn, cardBase } from '../styles/utils';
+import { flexCenter, flexColumn, cardBase } from '../styles/utils';
 
 // Styled components
 const Container = styled.div`
@@ -138,7 +138,9 @@ const TrackArtist = styled.p`
 `;
 
 const ControlsRow = styled.div`
-  ${flexBetween};
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing.md};
 `;
 
 const ControlsLeft = styled.div`
@@ -150,7 +152,9 @@ const ControlsLeft = styled.div`
 const VolumeControls = styled.div`
   display: flex;
   align-items: center;
-  gap: ${({ theme }) => theme.spacing.sm};
+  gap: ${({ theme }) => theme.spacing.xs};
+  flex-shrink: 0;
+  margin-left: auto;
 `;
 
 const VolumeIcon = styled.span`
@@ -493,7 +497,7 @@ const SpotifyPlayerControls = memo<{
             max={100}
             min={0}
             step={1}
-            style={{ width: '3rem' }}
+            style={{ width: '2rem' }}
           />
         </VolumeControls>
       </ControlsRow>
