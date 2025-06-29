@@ -1,17 +1,33 @@
 # Vorbis Player
 
-A modern audio player that streams music from your Spotify account with a clean, responsive interface designed for music discovery and playback.
+A modern audio-visual player that combines Spotify music streaming with intelligent YouTube video discovery. Experience your music with automatic video accompaniment and a sleek, unified interface designed for continuous entertainment.
 
 <img src="public/screenshot.png" alt="Vorbis Player Interface" width="600">
 
 ## Features
 
-- **Spotify Integration**: Stream music directly from your Spotify account (Premium required)
-- **Modern Playlist Design**: Clean card-based playlist with album artwork and responsive visual hierarchy
-- **Intuitive Controls**: Essential playback controls with professional design and mobile-responsive layout
-- **Album Art Backgrounds**: Dynamic album artwork backgrounds that enhance the visual experience
-- **Modern UI**: Clean, responsive design with styled-components and custom theme system
-- **Secure Authentication**: PKCE OAuth flow for secure Spotify access
+### 🎵 Audio Experience
+- **Spotify Integration**: Stream high-quality music from your Spotify account (Premium required)
+- **Auto-Play & Continuous Playback**: Automatically starts first song and seamlessly advances through tracks
+- **Infinite Playlist**: Loops back to beginning when reaching the end of your music collection
+- **Smart Retry System**: Hover over videos to retry with alternative content when embedding fails
+
+### 🎬 Visual Experience  
+- **Intelligent Video Discovery**: Automatically finds relevant YouTube videos for each track
+- **Persistent Blacklist**: Remembers and avoids non-embeddable videos across sessions
+- **Integrated Player Card**: Video and audio controls unified in a single elegant interface
+- **Dynamic Backgrounds**: Album artwork creates immersive visual atmosphere
+
+### 🎛️ User Interface
+- **Sliding Playlist Drawer**: Space-saving collapsible playlist accessible from anywhere
+- **Modern Card Design**: Clean, responsive interface with album artwork and visual hierarchy  
+- **Mobile-Optimized**: Touch-friendly controls and responsive design for all devices
+- **Hover Interactions**: Intuitive retry overlays and interactive elements
+
+### 🔒 Security & Performance
+- **Secure Authentication**: PKCE OAuth flow for safe Spotify access
+- **Client-Side Intelligence**: Advanced video filtering and quality assessment
+- **Persistent Storage**: Remembers failed videos and user preferences locally
 
 ## Quick Start
 
@@ -66,17 +82,26 @@ A modern audio player that streams music from your Spotify account with a clean,
 6. **First run**
    - Open <http://127.0.0.1:3000>
    - Click "Connect Spotify" to authenticate
-   - Enjoy your music with the clean, modern interface!
+   - Music starts automatically with accompanying videos
+   - Click "📋 View Playlist" to browse your collection
+   - Hover over any video to retry with alternative content if needed
 
 ## How It Works
 
-### Audio Playback
+### Audio-Visual Integration
 
-- Streams music from your Spotify playlists
-- Full-quality streaming with Spotify Premium
-- Essential playback controls (play, pause, next, previous, mute)
-- Access to your personal music library and playlists
-- Modern playlist interface with album artwork and clean visual design
+- **Spotify Streaming**: High-quality music from your personal playlists and library
+- **YouTube Discovery**: Intelligent search for relevant music videos using advanced filtering
+- **Smart Matching**: Content filtering removes ads, low-quality, and irrelevant videos
+- **Automatic Progression**: Seamless transitions between tracks with continuous video playback
+- **Retry System**: Manual retry option finds alternative videos when embedding fails
+
+### Playlist Management
+
+- **Collapsible Interface**: Playlist drawer slides out when needed, maximizing video space
+- **Track Selection**: Click any song to jump immediately to that track
+- **Visual Feedback**: Current track highlighting and album artwork throughout interface
+- **Responsive Design**: Optimized for both desktop and mobile interaction
 
 ### Authentication
 
@@ -101,8 +126,9 @@ npm run preview  # Preview production build
 ```
 src/
 ├── components/           # React components
-│   ├── AudioPlayer.tsx  # Main audio player orchestrator
-│   ├── Playlist.tsx     # Track listing
+│   ├── AudioPlayer.tsx  # Main orchestrator with integrated video player
+│   ├── VideoPlayer.tsx  # YouTube video discovery and display
+│   ├── Playlist.tsx     # Collapsible track listing drawer
 │   ├── hyper-text.tsx   # Animated text component
 │   └── styled/          # styled-components UI library
 │       ├── Avatar.tsx   # Image component with fallback support
@@ -113,7 +139,11 @@ src/
 │   └── useDebounce.ts  # Debouncing utility hook
 ├── services/            # External service integrations
 │   ├── spotify.ts      # Spotify Web API integration
-│   └── spotifyPlayer.ts # Spotify Web Playback SDK
+│   ├── spotifyPlayer.ts # Spotify Web Playback SDK
+│   ├── youtubeSearch.ts # YouTube video discovery service
+│   ├── videoSearchOrchestrator.ts # Intelligent video matching
+│   ├── contentFilter.ts # Video quality and relevance filtering
+│   └── videoQuality.ts  # Video resolution and quality assessment
 ├── styles/             # Styling system
 │   ├── theme.ts        # Design tokens and theme configuration
 │   └── utils.ts        # styled-components utility mixins
@@ -130,7 +160,10 @@ public/
 - **Frontend**: React 18 + TypeScript + Vite
 - **Styling**: styled-components with custom theme system
 - **Audio**: Spotify Web Playback SDK
+- **Video**: YouTube iframe embedding with intelligent discovery
 - **Authentication**: Spotify Web API with PKCE OAuth
+- **Content Intelligence**: Advanced filtering and quality assessment algorithms
+- **Storage**: localStorage for persistent blacklist and user preferences
 - **Build Tool**: Vite with HMR
 
 ## Deployment
@@ -154,9 +187,21 @@ The `dist/` folder contains static files that can be deployed to any web hosting
 - Check that your Spotify account has music accessible
 - Verify your Spotify app has the correct scopes and permissions
 
+### Video Issues
+
+- **"Video unavailable"**: Hover over the video and click "🔄 Try Another" to find alternative content
+- **No videos loading**: The app automatically searches for alternatives; this is normal behavior
+- **Persistent video failures**: The system learns and avoids problematic videos automatically
+
 ### Authentication Issues
 
 - Double-check your Client ID in `.env.local`
 - Ensure redirect URI matches exactly in both `.env.local` and Spotify app settings
 - Use `127.0.0.1` instead of `localhost` for Spotify OAuth compatibility
 - Try clearing browser storage and re-authenticating
+
+### Performance Issues
+
+- Clear localStorage to reset video blacklist: `localStorage.clear()` in browser console
+- Refresh the page if videos stop loading consistently
+- The app is optimized for continuous playback; occasional video misses are expected

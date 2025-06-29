@@ -7,7 +7,13 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "proxy:install": "cd proxy-server && npm install",
+    "proxy:start": "cd proxy-server && npm start",
+    "proxy:dev": "cd proxy-server && npm run dev",
+    "proxy:test": "curl -s http://127.0.0.1:3001/health || echo 'Proxy server not running'",
+    "dev:all": "concurrently \"npm run proxy:start\" \"npm run dev\"",
+    "start:all": "concurrently \"npm run proxy:start\" \"npm run preview\""
   },
   "dependencies": {
     "@radix-ui/react-alert-dialog": "^1.1.14",
@@ -43,6 +49,7 @@
     "@types/react": "^18.3.9",
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react": "^4.4.1",
+    "concurrently": "^8.2.2",
     "eslint": "^9.25.0",
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.19",

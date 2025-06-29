@@ -3,6 +3,7 @@ export interface YouTubeVideo {
   title: string;
   thumbnail: string;
   embedUrl: string;
+  embeddable?: boolean;
 }
 
 export interface YouTubeSearchResult {
@@ -11,7 +12,6 @@ export interface YouTubeSearchResult {
 }
 
 class YouTubeService {
-
 
   extractVideoId(url: string): string | null {
     const patterns = [
@@ -34,6 +34,7 @@ class YouTubeService {
     mute?: boolean;
     loop?: boolean;
     controls?: boolean;
+    enablejsapi?: boolean;
   } = {}): string {
     const params = new URLSearchParams();
     
@@ -44,6 +45,7 @@ class YouTubeService {
       params.set('playlist', videoId);
     }
     if (options.controls === false) params.set('controls', '0');
+    if (options.enablejsapi) params.set('enablejsapi', '1');
 
     return `https://www.youtube.com/embed/${videoId}?${params.toString()}`;
   }
