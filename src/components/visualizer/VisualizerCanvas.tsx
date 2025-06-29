@@ -1,10 +1,8 @@
-import React, { Suspense, useRef } from 'react';
+import React, { Suspense, useRef, useMemo, useEffect } from 'react';
 import styled from 'styled-components';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
-// import { useVisualizerStore } from '../../lib/visualizer/state';
-import { AutoOrbitCameraControls } from './camera/AutoOrbitCamera';
-import { CanvasBackground, BackgroundFog } from './canvas/common';
+import { Matrix4, Vector3, Quaternion } from 'three';
 import type { Mesh } from 'three';
 
 interface VisualizerCanvasProps {
@@ -27,65 +25,113 @@ const Ground = () => (
   </mesh>
 );
 
-// Placeholder visualizer component - will be replaced by actual visualizers
-const PlaceholderVisualizer = () => {
-  const cubeRef = useRef<Mesh>(null);
-  const sphereRef = useRef<Mesh>(null);
-  const cylinderRef = useRef<Mesh>(null);
-  const torusRef = useRef<Mesh>(null);
+// Audio-reactive grid visualizer matching r3f-audio-visualizer pattern
+const GridVisualizer = () => {
+  const meshRef = useRef<any>(null);
+  const tmpMatrix = useMemo(() => new Matrix4(), []);
 
-  useFrame((state) => {
-    const t = state.clock.elapsedTime;
-    
-    // Rotate the cube
-    if (cubeRef.current) {
-      cubeRef.current.rotation.x = t * 0.5;
-      cubeRef.current.rotation.y = t * 0.3;
+  // Grid configuration matching the reference
+  const nGridRows = 100;
+  const nGridCols = 100;
+  const cubeSideLength = 0.025;
+  const cubeSpacingScalar = 3;
+  const totalCubes = nGridRows * nGridCols;
+
+  // Coordinate mapper function (simplified version)
+  const coordinateMapper = (normGridX: number, normGridY: number, time: number) => {
+    // Create wave patterns similar to audio frequency data
+    const wave1 = Math.sin(time * 2 + normGridX * 10) * 0.3;
+    const wave2 = Math.sin(time * 1.5 + normGridY * 8) * 0.2;
+    const wave3 = Math.sin(time * 3 + (normGridX + normGridY) * 6) * 0.4;
+
+    // Radial component
+    const centerDistance = Math.hypot(normGridX - 0.5, normGridY - 0.5);
+    const radialWave = Math.sin(time * 1.8 + centerDistance * 12) * 0.5;
+
+    return (wave1 + wave2 + wave3 + radialWave) * 0.8;
+  };
+
+  // Color setup based on radial distance
+  const getColor = (normRadialOffset: number) => {
+    // Simple color gradient from center to edge
+    const hue = 0.5 + normRadialOffset * 0.3; // Teal to blue range
+    const saturation = 0.8;
+    const lightness = 0.6 + normRadialOffset * 0.2;
+
+    return {
+      r: lightness,
+      g: lightness * 0.8,
+      b: lightness * 1.2
+    };
+  };
+
+  // Initialize colors
+  useEffect(() => {
+    if (!meshRef.current) return;
+
+    const normQuadrantHypotenuse = Math.hypot(0.5, 0.5);
+
+    for (let row = 0; row < nGridRows; row++) {
+      for (let col = 0; col < nGridCols; col++) {
+        const instanceIdx = row * nGridCols + col;
+        const normGridX = row / (nGridRows - 1);
+        const normGridY = col / (nGridCols - 1);
+        const normRadialOffset = Math.hypot(normGridX - 0.5, normGridY - 0.5) / normQuadrantHypotenuse;
+
+        const color = getColor(normRadialOffset);
+        meshRef.current.setColorAt(instanceIdx, new Vector3(color.r, color.g, color.b));
+      }
     }
-    
-    // Float the sphere
-    if (sphereRef.current) {
-      sphereRef.current.position.y = Math.sin(t * 2) * 2;
+
+    if (meshRef.current.instanceColor) {
+      meshRef.current.instanceColor.needsUpdate = true;
     }
-    
-    // Scale the cylinder
-    if (cylinderRef.current) {
-      cylinderRef.current.scale.y = 1 + Math.sin(t * 3) * 0.5;
+  }, [nGridRows, nGridCols]);
+
+  useFrame(({ clock }) => {
+    if (!meshRef.current) return;
+
+    const elapsedTimeSec = clock.getElapsedTime();
+    const gridSizeX = nGridRows * cubeSpacingScalar * cubeSideLength;
+    const gridSizeY = nGridCols * cubeSpacingScalar * cubeSideLength;
+
+    for (let row = 0; row < nGridRows; row++) {
+      for (let col = 0; col < nGridCols; col++) {
+        const instanceIdx = row * nGridCols + col;
+        const normGridX = row / (nGridRows - 1);
+        const normGridY = col / (nGridCols - 1);
+
+        // Get Z coordinate from our coordinate mapper
+        const z = coordinateMapper(normGridX, normGridY, elapsedTimeSec);
+
+        // Calculate X and Y positions (centered grid)
+        const x = gridSizeX * (normGridX - 0.5);
+        const y = gridSizeY * (normGridY - 0.5);
+
+        // Set position using the tmpMatrix
+        tmpMatrix.setPosition(x, y, z);
+        meshRef.current.setMatrixAt(instanceIdx, tmpMatrix);
+      }
     }
-    
-    // Rotate the torus
-    if (torusRef.current) {
-      torusRef.current.rotation.x = t * 0.2;
-      torusRef.current.rotation.y = t * 0.4;
-    }
+
+    meshRef.current.instanceMatrix.needsUpdate = true;
   });
 
   return (
-    <group>
-      {/* Animated rotating cube */}
-      <mesh ref={cubeRef} castShadow>
-        <boxGeometry args={[2, 2, 2]} />
-        <meshStandardMaterial color="#ff6b6b" />
-      </mesh>
-      
-      {/* Floating sphere */}
-      <mesh ref={sphereRef} position={[4, 0, 0]} castShadow>
-        <sphereGeometry args={[1, 32, 32]} />
-        <meshStandardMaterial color="#4ecdc4" />
-      </mesh>
-      
-      {/* Pulsing cylinder */}
-      <mesh ref={cylinderRef} position={[-4, 0, 0]} castShadow>
-        <cylinderGeometry args={[1, 1, 2, 32]} />
-        <meshStandardMaterial color="#45b7d1" />
-      </mesh>
-      
-      {/* Central wireframe torus for visual interest */}
-      <mesh ref={torusRef}>
-        <torusGeometry args={[3, 0.5, 16, 100]} />
-        <meshStandardMaterial color="#ffffff" wireframe />
-      </mesh>
-    </group>
+    <instancedMesh
+      ref={meshRef}
+      args={[undefined, undefined, totalCubes]}
+      castShadow
+      receiveShadow
+    >
+      <boxGeometry args={[cubeSideLength, cubeSideLength, cubeSideLength]} />
+      <meshPhongMaterial
+        color="white"
+        toneMapped={false}
+        transparent
+        opacity={0.9}
+      />
+    </instancedMesh>
   );
 };
 
@@ -98,58 +144,18 @@ const VisualizerCanvas: React.FC<VisualizerCanvasProps> = ({ className }) => {
   return (
     <CanvasContainer className={className}>
       <Canvas
-        shadows
-        camera={{ 
-          position: [10, 5, 10], 
-          fov: 75,
-          near: 0.1,
-          far: 1000
-        }}
-        gl={{
-          antialias: true,
-          alpha: false,
-          powerPreference: 'high-performance',
-        }}
-        dpr={[1, 2]} // Device pixel ratio for better quality on high-DPI displays
+        camera={{ position: [0, 0, 5], fov: 75 }}
+        gl={{ antialias: true }}
       >
-        {/* Background and fog */}
-        <CanvasBackground />
-        <BackgroundFog />
-        
-        {/* Lighting setup */}
-        <ambientLight intensity={0.4} />
-        <directionalLight
-          position={[10, 10, 5]}
-          intensity={1}
-          castShadow
-          shadow-mapSize-width={2048}
-          shadow-mapSize-height={2048}
-          shadow-camera-far={50}
-          shadow-camera-left={-10}
-          shadow-camera-right={10}
-          shadow-camera-top={10}
-          shadow-camera-bottom={-10}
-        />
-        <pointLight position={[-10, -10, -10]} intensity={0.5} />
-        
-        {/* Camera controls */}
-        <AutoOrbitCameraControls />
-        
-        {/* Manual orbit controls for user interaction */}
-        <OrbitControls
-          enablePan={true}
-          enableZoom={true}
-          enableRotate={true}
-          minDistance={5}
-          maxDistance={50}
-          minPolarAngle={0}
-          maxPolarAngle={Math.PI}
-        />
-        
-        {/* Scene content */}
+        <color attach="background" args={['#0a0a0a']} />
+
+        <ambientLight intensity={0.5} />
+        <pointLight position={[10, 10, 10]} />
+
+        <OrbitControls enablePan={true} enableZoom={true} enableRotate={true} />
+
         <Suspense fallback={<LoadingFallback />}>
-          <Ground />
-          <PlaceholderVisualizer />
+          <GridVisualizer />
         </Suspense>
       </Canvas>
     </CanvasContainer>

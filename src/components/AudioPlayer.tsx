@@ -16,7 +16,6 @@ import { Skeleton } from '../components/styled';
 import { Alert, AlertDescription } from '../components/styled';
 import { flexCenter, flexColumn, cardBase } from '../styles/utils';
 import { ViewToggle } from './ViewToggle';
-import { VisualizerSelector } from './VisualizerSelector';
 import { useVisualizerStore } from '../lib/visualizer/state';
 
 // Styled components
@@ -288,7 +287,7 @@ const AudioPlayerComponent = () => {
   // const [shuffleCounter, setShuffleCounter] = useState(0);
   const [showAdminPanel, setShowAdminPanel] = useState(false);
   
-  const { viewMode, setVisualizerActive } = useVisualizerStore();
+  const { viewMode } = useVisualizerStore();
 
   const fetchTracks = async () => {
     if (window.location.pathname === '/auth/spotify/callback') {
@@ -365,10 +364,6 @@ const AudioPlayerComponent = () => {
     spotifyPlayer.onPlayerStateChanged(handlePlayerStateChange);
   }, [tracks, currentTrackIndex]);
 
-  // Update visualizer active state based on view mode
-  useEffect(() => {
-    setVisualizerActive(viewMode === 'visualizer');
-  }, [viewMode, setVisualizerActive]);
 
   const playTrack = useCallback(async (index: number) => {
     if (tracks[index]) {
@@ -488,7 +483,6 @@ const AudioPlayerComponent = () => {
         {/* Controls Section - Always visible */}
         <ControlsSection>
           <ViewToggle />
-          {viewMode === 'visualizer' && <VisualizerSelector />}
         </ControlsSection>
         
         {/* Conditional Content Section */}

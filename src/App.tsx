@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import styled, { keyframes } from 'styled-components';
 import AudioPlayerComponent from './components/AudioPlayer';
+import VisualizerTest from './VisualizerTest';
+import Pure3DVisualizer from './Pure3DVisualizer';
 import { dropboxAuth } from './services/dropbox';
 import { spotifyAuth } from './services/spotify';
 // Import spotifyPlayer service to ensure global callback is set up
@@ -101,6 +103,18 @@ function App() {
         </AppContainer>
       </ThemeProvider>
     );
+  }
+
+  // Check if we're in test mode
+  const urlParams = new URLSearchParams(window.location.search);
+  const testMode = urlParams.get('test');
+  
+  if (testMode === 'visualizer') {
+    return <VisualizerTest />;
+  }
+  
+  if (testMode === 'pure3d') {
+    return <Pure3DVisualizer />;
   }
 
   return (
