@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Visualizer Test</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: #0a0a0a;
+            color: white;
+            font-family: Arial, sans-serif;
+        }
+        #app {
+            width: 100vw;
+            height: 100vh;
+        }
+        .error {
+            padding: 20px;
+            background: #ff4444;
+            color: white;
+            margin: 20px;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <div style="padding: 20px;">
+            <h1>3D Visualizer Test</h1>
+            <p>Testing React Three Fiber in isolation...</p>
+        </div>
+    </div>
+    
+    <script type="module">
+        import React from '/node_modules/react/index.js';
+        import ReactDOM from '/node_modules/react-dom/client/index.js';
+        import { Canvas } from '/node_modules/@react-three/fiber/dist/index.js';
+        
+        function TestSphere() {
+            const meshRef = React.useRef();
+            
+            // Simple animation
+            React.useEffect(() => {
+                let animationId;
+                function animate() {
+                    if (meshRef.current) {
+                        meshRef.current.rotation.x += 0.01;
+                        meshRef.current.rotation.y += 0.01;
+                    }
+                    animationId = requestAnimationFrame(animate);
+                }
+                animate();
+                return () => cancelAnimationFrame(animationId);
+            }, []);
+            
+            return React.createElement('mesh', { ref: meshRef }, [
+                React.createElement('sphereGeometry', { key: 'geo', args: [1, 32, 32] }),
+                React.createElement('meshStandardMaterial', { key: 'mat', color: '#4ecdc4' })
+            ]);
+        }
+        
+        function App() {
+            try {
+                return React.createElement('div', { style: { width: '100%', height: '100vh' } }, [
+                    React.createElement('h2', { key: 'title', style: { position: 'absolute', top: 0, left: 20, zIndex: 10 } }, '3D Test'),
+                    React.createElement(Canvas, {
+                        key: 'canvas',
+                        camera: { position: [0, 0, 5] }
+                    }, [
+                        React.createElement('ambientLight', { key: 'ambient', intensity: 0.5 }),
+                        React.createElement('pointLight', { key: 'point', position: [10, 10, 10] }),
+                        React.createElement(TestSphere, { key: 'sphere' })
+                    ])
+                ]);
+            } catch (error) {
+                return React.createElement('div', { className: 'error' }, `Error: ${error.message}`);
+            }
+        }
+        
+        const root = ReactDOM.createRoot(document.getElementById('app'));
+        root.render(React.createElement(App));
+    </script>
+</body>
+</html>
