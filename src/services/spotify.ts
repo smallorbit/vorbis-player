@@ -259,6 +259,108 @@ export interface Track {
   image?: string;
 }
 
+export interface PlaylistInfo {
+  id: string;
+  name: string;
+  description: string | null;
+  images: { url: string; height: number | null; width: number | null }[];
+  tracks: { total: number };
+  owner: { display_name: string };
+}
+
+export const getUserPlaylists = async (): Promise<PlaylistInfo[]> => {
+  try {
+    const token = await spotifyAuth.ensureValidToken();
+    console.log('✓ Fetching user playlists...');
+    
+    const response = await fetch('https://api.spotify.com/v1/me/playlists?limit=50', {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Playlist fetch error:', response.status, errorText);
+      throw new Error(`Failed to fetch playlists: ${response.status} ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    console.log(`✓ Found ${data.items?.length || 0} playlists`);
+    
+    if (!data.items || data.items.length === 0) {
+      console.warn('No playlists found in user account');
+      return [];
+    }
+    
+    return data.items.map((playlist: any): PlaylistInfo => ({
+      id: playlist.id,
+      name: playlist.name,
+      description: playlist.description,
+      images: playlist.images || [],
+      tracks: { total: playlist.tracks.total },
+      owner: { display_name: playlist.owner.display_name }
+    }));
+    
+  } catch (error) {
+    console.error('Error fetching user playlists:', error);
+    throw error;
+  }
+};
+
+export const getPlaylistTracks = async (playlistId: string): Promise<Track[]> => {
+  try {
+    const token = await spotifyAuth.ensureValidToken();
+    console.log(`✓ Fetching tracks from playlist: ${playlistId}`);
+    
+    const tracks: Track[] = [];
+    let nextUrl = `https://api.spotify.com/v1/playlists/${playlistId}/tracks?limit=50`;
+    
+    while (nextUrl) {
+      const response = await fetch(nextUrl, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Tracks fetch error:', response.status, errorText);
+        throw new Error(`Failed to fetch tracks: ${response.status} ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      
+      for (const item of data.items || []) {
+        if (item.track?.id && item.track.type === 'track') {
+          const track = item.track;
+          const albumImage = track.album?.images?.[0]?.url;
+          
+          tracks.push({
+            id: track.id,
+            name: track.name,
+            artists: track.artists?.map((a: any) => a.name).join(', ') || 'Unknown Artist',
+            album: track.album?.name || 'Unknown Album',
+            duration_ms: track.duration_ms || 0,
+            uri: track.uri,
+            preview_url: track.preview_url,
+            image: albumImage
+          });
+        }
+      }
+      
+      nextUrl = data.next; // Pagination
+    }
+    
+    console.log(`✓ Found ${tracks.length} valid tracks`);
+    return tracks;
+    
+  } catch (error) {
+    console.error('Error fetching playlist tracks:', error);
+    throw error;
+  }
+};
+
 export const getSpotifyUserPlaylists = async (): Promise<Track[]> => {
   try {
     const token = await spotifyAuth.ensureValidToken();
