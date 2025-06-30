@@ -13,6 +13,7 @@ import { Skeleton } from '../components/styled';
 import { Alert, AlertDescription } from '../components/styled';
 import { flexCenter, flexColumn, cardBase } from '../styles/utils';
 import VideoPlayer from './VideoPlayer';
+import VideoManagementDrawer from './VideoManagementDrawer';
 import { extractDominantColor, getTransparentVariant, getLighterVariant } from '../utils/colorExtractor';
 
 // Styled components
@@ -417,7 +418,10 @@ const VideoPlayerContainer = styled.div`
 const PlaylistButtonContainer = styled.div`
   display: flex;
   justify-content: flex-end;
+  align-items: center;
+  gap: 0.75rem;
   width: 100%;
+  flex-wrap: wrap;
 `;
 
 const InfoControls = styled.div`
@@ -438,6 +442,8 @@ const AudioPlayerComponent = () => {
   const [selectedPlaylistName, setSelectedPlaylistName] = useState<string>('');
   const [showAdminPanel, setShowAdminPanel] = useState(false);
   const [showPlaylist, setShowPlaylist] = useState(false);
+  const [showVideoManagement, setShowVideoManagement] = useState(false);
+  const [videoRefreshKey, setVideoRefreshKey] = useState(0);
   const [accentColor, setAccentColor] = useState<string>('goldenrod');
 
   const handlePlaylistSelect = async (playlistId: string, playlistName: string) => {
@@ -818,7 +824,7 @@ const AudioPlayerComponent = () => {
             <CardContent style={{ padding: '0.5rem', position: 'relative', zIndex: 2 }}>
               <VideoPlayerContainer>
                 <Suspense fallback={<div style={{ minHeight: 320 }}>Loading video player...</div>}>
-                  <VideoPlayer currentTrack={currentTrack} />
+                  <VideoPlayer key={videoRefreshKey} currentTrack={currentTrack} />
                 </Suspense>
               </VideoPlayerContainer>
           
@@ -846,6 +852,9 @@ const AudioPlayerComponent = () => {
           </Button>
         </InfoControls> */}
         <PlaylistButtonContainer>
+          <PlaylistToggleButton onClick={() => setShowVideoManagement(true)}>
+            🎬 Manage Videos
+          </PlaylistToggleButton>
           <PlaylistToggleButton onClick={() => setShowPlaylist(true)}>
             📋 View Playlist ({tracks.length} tracks)
           </PlaylistToggleButton>
@@ -898,6 +907,16 @@ const AudioPlayerComponent = () => {
           <VideoAdmin onClose={() => setShowAdminPanel(false)} />
         </Suspense>
       )}
+
+      <VideoManagementDrawer
+        currentTrack={currentTrack}
+        isOpen={showVideoManagement}
+        onClose={() => setShowVideoManagement(false)}
+        onVideoChanged={() => {
+          // Force VideoPlayer to refresh by changing its key
+          setVideoRefreshKey(prev => prev + 1);
+        }}
+      />
     </Container>
   );
 };

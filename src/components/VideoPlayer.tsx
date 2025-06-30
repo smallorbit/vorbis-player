@@ -3,6 +3,7 @@ import styled from 'styled-components';
 import type { Track } from '../services/spotify';
 import { youtubeService } from '../services/youtube';
 import { videoSearchOrchestrator } from '../services/videoSearchOrchestrator';
+import { videoManagementService } from '../services/videoManagementService';
 import { AspectRatio } from './ui/aspect-ratio';
 import { LoadingIndicator } from './ui/LoadingIndicator';
 import { SearchErrorDisplay, type SearchError } from './ui/SearchErrorDisplay';
@@ -49,46 +50,6 @@ const StyledImage = styled.img`
   object-fit: cover;
 `;
 
-const RetryOverlay = styled.div`
-  position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  width: 120px;
-  background: linear-gradient(to left, rgba(0, 0, 0, 0.8) 0%, transparent 100%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  opacity: 0;
-  transition: opacity 0.2s ease;
-  pointer-events: none;
-  
-  ${VideoContainer}:hover & {
-    opacity: 1;
-    pointer-events: auto;
-  }
-`;
-
-const RetryButton = styled.button`
-  background: rgba(255, 255, 255, 0.9);
-  border: none;
-  border-radius: 0.5rem;
-  padding: 0.75rem 1rem;
-  color: #1a1a1a;
-  font-size: 0.875rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  
-  &:hover {
-    background: white;
-    transform: translateY(-1px);
-  }
-  
-  &:active {
-    transform: translateY(0);
-  }
-`;
 
 // Global blacklist for non-embeddable videos (persists across component remounts and page refreshes)
 const BLACKLIST_STORAGE_KEY = 'vorbis-player-video-blacklist';
@@ -130,24 +91,38 @@ const VideoPlayer = memo<VideoPlayerProps>(({ currentTrack }) => {
     setLoading(true);
     setError(null);
     setNoEmbeddableVideos(false);
-    setSearchPhase('Searching YouTube...');
+    setSearchPhase('Checking saved videos...');
+    
     try {
-      // Search for alternatives, excluding all blacklisted videos
+      // First check if we have a saved association for this track
+      const savedAssociation = await videoManagementService.getVideoForTrack(track);
+      
+      if (savedAssociation) {
+        setMediaItems([{
+          id: savedAssociation.videoId,
+          type: 'youtube',
+          url: youtubeService.createEmbedUrl(savedAssociation.videoId, {
+            autoplay: true,
+            mute: true,
+            loop: true,
+            controls: true,
+          }),
+          title: savedAssociation.videoTitle,
+          thumbnail: savedAssociation.videoThumbnail,
+        }]);
+        setSearchPhase('');
+        setLoading(false);
+        return;
+      }
+      
+      // If no saved association, fall back to search
+      setSearchPhase('Searching YouTube...');
       const blacklistedArray = Array.from(globalVideoBlacklist);
-      const searchResult = await videoSearchOrchestrator.findAlternativeVideosWithMetadata(track, blacklistedArray);
-      const bestVideo = searchResult.videos.length > 0 ? searchResult.videos[0] : null;
+      const searchResults = await videoSearchOrchestrator.findAlternativeVideos(track, blacklistedArray);
+      const bestVideo = searchResults.length > 0 ? searchResults[0] : null;
       
       if (!bestVideo) {
         console.log(`No videos found for "${track.name}" by ${track.artists}`);
-        
-        // Check if this is specifically due to embedding restrictions
-        if (searchResult.allFilteredDueToEmbedding) {
-          console.log(`⚠️ No embeddable videos available for "${track.name}" - hiding video player`);
-          setNoEmbeddableVideos(true);
-          setMediaItems([]);
-          return;
-        }
-        
         setError({
           type: 'no_results',
           message: 'No videos found for this track',
@@ -184,74 +159,6 @@ const VideoPlayer = memo<VideoPlayerProps>(({ currentTrack }) => {
     }
   }, []);
 
-  const handleRetry = useCallback(async () => {
-    if (!currentTrack) return;
-    
-    const currentVideoId = mediaItems[0]?.id;
-    
-    // Add current video to permanent blacklist
-    if (currentVideoId) {
-      globalVideoBlacklist.add(currentVideoId);
-      saveBlacklist(globalVideoBlacklist); // Persist to localStorage
-      console.log(`Blacklisted video ${currentVideoId}. Total blacklisted: ${globalVideoBlacklist.size}`);
-    }
-    
-    setLoading(true);
-    setError(null);
-    setNoEmbeddableVideos(false);
-    setSearchPhase('Finding alternative video...');
-    setMediaItems([]); // Clear current video
-    
-    try {
-      // Use findAlternativeVideosWithMetadata to exclude ALL blacklisted videos
-      const blacklistedArray = Array.from(globalVideoBlacklist);
-      const searchResult = await videoSearchOrchestrator.findAlternativeVideosWithMetadata(
-        currentTrack,
-        blacklistedArray
-      );
-      
-      if (searchResult.videos.length > 0) {
-        const bestAlternative = searchResult.videos[0];
-        setMediaItems([{
-          id: bestAlternative.id,
-          type: 'youtube',
-          url: youtubeService.createEmbedUrl(bestAlternative.id, {
-            autoplay: true,
-            mute: true,
-            loop: true,
-            controls: true,
-          }),
-          title: bestAlternative.title,
-          thumbnail: bestAlternative.thumbnailUrl,
-        }]);
-        setSearchPhase('');
-      } else {
-        // Check if this is specifically due to embedding restrictions
-        if (searchResult.allFilteredDueToEmbedding) {
-          console.log(`⚠️ No embeddable alternative videos available for "${currentTrack.name}" - hiding video player`);
-          setNoEmbeddableVideos(true);
-          return;
-        }
-        
-        setError({
-          type: 'no_results',
-          message: 'No alternative videos found',
-          details: `Could not find any other videos for "${currentTrack.name}" by ${currentTrack.artists}`,
-          retryable: true
-        });
-      }
-    } catch (error) {
-      setError({
-        type: 'network_error',
-        message: error instanceof Error ? error.message : 'Failed to find alternative video',
-        details: error instanceof Error ? error.stack : undefined,
-        retryable: true
-      });
-    } finally {
-      setLoading(false);
-      setSearchPhase('');
-    }
-  }, [currentTrack, mediaItems]);
 
   useEffect(() => {
     if (!currentTrack) return;
@@ -317,11 +224,6 @@ const VideoPlayer = memo<VideoPlayerProps>(({ currentTrack }) => {
                 }}
               />
             )}
-            <RetryOverlay>
-              <RetryButton onClick={handleRetry}>
-                🔄 Try Another
-              </RetryButton>
-            </RetryOverlay>
           </VideoContainer>
         </AspectRatio>
       )}
