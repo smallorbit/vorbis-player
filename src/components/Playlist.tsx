@@ -4,6 +4,7 @@ import type { Track } from '../services/spotify';
 import { Card, CardHeader, CardContent, CardTitle, CardDescription } from '../components/styled';
 import { ScrollArea } from '../components/styled';
 import { Avatar } from '../components/styled';
+import { getTransparentVariant } from '../utils/colorExtractor';
 
 // Styled components
 const PlaylistContainer = styled.div`
@@ -48,7 +49,7 @@ const PlaylistItems = styled.div`
   gap: ${({ theme }) => theme.spacing.sm};
 `;
 
-const PlaylistItemContainer = styled.div<{ isSelected: boolean }>`
+const PlaylistItemContainer = styled.div<{ isSelected: boolean; accentColor: string }>`
   display: flex;
   align-items: center;
   gap: ${({ theme }) => theme.spacing.sm};
@@ -58,9 +59,9 @@ const PlaylistItemContainer = styled.div<{ isSelected: boolean }>`
   transition: all 0.2s ease;
   border: 1px solid transparent;
   
-  ${({ isSelected }) => isSelected ? `
-    background: rgba(218, 165, 32, 0.2);
-    border-color: goldenrod;
+  ${({ isSelected, accentColor }) => isSelected ? `
+    background: ${getTransparentVariant(accentColor, 0.2)};
+    border-color: ${accentColor};
   ` : `
     &:hover {
       background: rgba(115, 115, 115, 0.3);
@@ -103,25 +104,26 @@ const TrackName = styled.div<{ isSelected: boolean }>`
   word-break: break-word;
 `;
 
-const TrackArtist = styled.div<{ isSelected: boolean }>`
+const TrackArtist = styled.div<{ isSelected: boolean; accentColor: string }>`
   font-size: ${({ theme }) => theme.fontSize.sm};
   margin-top: ${({ theme }) => theme.spacing.xs};
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  color: ${({ isSelected, theme }) => isSelected ? 'goldenrod' : theme.colors.gray[400]};
+  color: ${({ isSelected, accentColor, theme }) => isSelected ? accentColor : theme.colors.gray[400]};
 `;
 
-const Duration = styled.span<{ isSelected: boolean }>`
+const Duration = styled.span<{ isSelected: boolean; accentColor: string }>`
   font-size: ${({ theme }) => theme.fontSize.sm};
   font-family: monospace;
-  color: ${({ isSelected, theme }) => isSelected ? 'goldenrod' : theme.colors.gray[400]};
+  color: ${({ isSelected, accentColor, theme }) => isSelected ? accentColor : theme.colors.gray[400]};
   flex-shrink: 0;
 `;
 
 interface PlaylistProps {
   tracks: Track[];
   currentTrackIndex: number;
+  accentColor: string;
   onTrackSelect: (index: number) => void;
 }
 
@@ -129,6 +131,7 @@ interface PlaylistItemProps {
   track: Track;
   index: number;
   isSelected: boolean;
+  accentColor: string;
   onSelect: (index: number) => void;
 }
 
@@ -136,12 +139,14 @@ const PlaylistItem = memo<PlaylistItemProps>(({
   track, 
   index, 
   isSelected, 
+  accentColor,
   onSelect 
 }) => {
   return (
     <PlaylistItemContainer
       onClick={() => onSelect(index)}
       isSelected={isSelected}
+      accentColor={accentColor}
     >
       {/* Album Artwork */}
       <AlbumArtContainer>
@@ -169,20 +174,20 @@ const PlaylistItem = memo<PlaylistItemProps>(({
         <TrackName isSelected={isSelected}>
           {track.name}
         </TrackName>
-        <TrackArtist isSelected={isSelected}>
+        <TrackArtist isSelected={isSelected} accentColor={accentColor}>
           {track.artists}
         </TrackArtist>
       </TrackInfo>
 
       {/* Duration */}
-      <Duration isSelected={isSelected}>
+      <Duration isSelected={isSelected} accentColor={accentColor}>
         {track.duration_ms ? `${Math.floor(track.duration_ms / 60000)}:${Math.floor((track.duration_ms % 60000) / 1000).toString().padStart(2, '0')}` : '--:--'}
       </Duration>
     </PlaylistItemContainer>
   );
 });
 
-const Playlist = memo<PlaylistProps>(({ tracks, currentTrackIndex, onTrackSelect }) => {
+const Playlist = memo<PlaylistProps>(({ tracks, currentTrackIndex, accentColor, onTrackSelect }) => {
   const sortedTracks = useMemo(() => tracks, [tracks]);
   
   const currentTrack = tracks[currentTrackIndex];
@@ -216,6 +221,7 @@ const Playlist = memo<PlaylistProps>(({ tracks, currentTrackIndex, onTrackSelect
                   track={track}
                   index={index}
                   isSelected={index === sortedCurrentTrackIndex}
+                  accentColor={accentColor}
                   onSelect={handleTrackSelect}
                 />
               ))}

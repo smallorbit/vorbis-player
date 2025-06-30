@@ -13,6 +13,7 @@ import { Skeleton } from '../components/styled';
 import { Alert, AlertDescription } from '../components/styled';
 import { flexCenter, flexColumn, cardBase } from '../styles/utils';
 import VideoPlayer from './VideoPlayer';
+import { extractDominantColor, getTransparentVariant, getLighterVariant } from '../utils/colorExtractor';
 
 // Styled components
 const Container = styled.div`
@@ -289,14 +290,15 @@ const ControlButtons = styled.div`
   flex-shrink: 0;
 `;
 
-const ControlButton = styled.button<{ isPlaying?: boolean }>`
-  
+const ControlButton = styled.button<{ isPlaying?: boolean; accentColor: string }>`
   border: none;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   transition: all 0.2s ease;
+  padding: 0.5rem;
+  border-radius: 0.375rem;
   
   svg {
     width: 1.5rem;
@@ -304,16 +306,16 @@ const ControlButton = styled.button<{ isPlaying?: boolean }>`
     fill: currentColor;
   }
   
-  ${({ isPlaying }) => isPlaying ? `
-    background: rgba(218, 165, 32, 0.2);
-    color: goldenrod;
+  ${({ isPlaying, accentColor }) => isPlaying ? `
+    background: ${getTransparentVariant(accentColor, 0.2)};
+    color: ${accentColor};
     
     &:hover {
-      background: rgba(218, 165, 32, 0.3);
+      background: ${getTransparentVariant(accentColor, 0.3)};
     }
   ` : `
     background: rgba(115, 115, 115, 0.2);
-    color: ${({ theme }: any) => theme.colors.white};
+    color: white;
     
     &:hover {
       background: rgba(115, 115, 115, 0.3);
@@ -353,7 +355,7 @@ const TimelineContainer = styled.div`
   margin: ${({ theme }: any) => theme.spacing.sm} 0;
 `;
 
-const TimelineSlider = styled.input`
+const TimelineSlider = styled.input<{ accentColor: string }>`
   flex: 1;
   height: 4px;
   background: rgba(115, 115, 115, 0.3);
@@ -366,7 +368,7 @@ const TimelineSlider = styled.input`
     appearance: none;
     width: 12px;
     height: 12px;
-    background: goldenrod !important;
+    background: ${props => props.accentColor} !important;
     border-radius: 50%;
     cursor: pointer;
     border: none;
@@ -381,7 +383,7 @@ const TimelineSlider = styled.input`
   &::-moz-range-thumb {
     width: 12px;
     height: 12px;
-    background: goldenrod !important;
+    background: ${props => props.accentColor} !important;
     border-radius: 50%;
     cursor: pointer;
     border: none;
@@ -396,8 +398,8 @@ const TimelineSlider = styled.input`
   /* Progress fill effect */
   background: linear-gradient(
     to right,
-    goldenrod 0%,
-    goldenrod ${props => (props.value / props.max) * 100}%,
+    ${props => props.accentColor} 0%,
+    ${props => props.accentColor} ${props => (props.value / props.max) * 100}%,
     rgba(115, 115, 115, 0.3) ${props => (props.value / props.max) * 100}%,
     rgba(115, 115, 115, 0.3) 100%
   );
@@ -439,6 +441,7 @@ const AudioPlayerComponent = () => {
   // const [shuffleCounter, setShuffleCounter] = useState(0);
   const [showAdminPanel, setShowAdminPanel] = useState(false);
   const [showPlaylist, setShowPlaylist] = useState(false);
+  const [accentColor, setAccentColor] = useState<string>('goldenrod');
 
   const fetchTracks = async () => {
     if (window.location.pathname === '/auth/spotify/callback') {
@@ -567,6 +570,29 @@ const AudioPlayerComponent = () => {
   // Memoize the current track to prevent unnecessary re-renders
   const currentTrack = useMemo(() => tracks[currentTrackIndex] || null, [tracks, currentTrackIndex]);
 
+  // Extract dominant color from album art when track changes
+  useEffect(() => {
+    const extractColor = async () => {
+      if (currentTrack?.image) {
+        try {
+          const dominantColor = await extractDominantColor(currentTrack.image);
+          if (dominantColor) {
+            setAccentColor(dominantColor.hex);
+          } else {
+            setAccentColor('goldenrod'); // Fallback
+          }
+        } catch (error) {
+          console.error('Failed to extract color from album art:', error);
+          setAccentColor('goldenrod'); // Fallback
+        }
+      } else {
+        setAccentColor('goldenrod'); // Fallback when no image
+      }
+    };
+
+    extractColor();
+  }, [currentTrack?.image]);
+
   const renderContent = () => {
     if (isLoading) {
       return (
@@ -666,6 +692,7 @@ const AudioPlayerComponent = () => {
           
               <SpotifyPlayerControls
                 currentTrack={currentTrack}
+                accentColor={accentColor}
                 onPlay={() => spotifyPlayer.resume()}
                 onPause={() => spotifyPlayer.pause()}
                 onNext={handleNext}
@@ -708,6 +735,7 @@ const AudioPlayerComponent = () => {
               <Playlist
                 tracks={tracks}
                 currentTrackIndex={currentTrackIndex}
+                accentColor={accentColor}
                 onTrackSelect={(index) => {
                   playTrack(index);
                   setShowPlaylist(false); // Close drawer after selecting track
@@ -744,11 +772,12 @@ const AudioPlayerComponent = () => {
 
 const SpotifyPlayerControls = memo<{
   currentTrack: Track | null;
+  accentColor: string;
   onPlay: () => void;
   onPause: () => void;
   onNext: () => void;
   onPrevious: () => void;
-}>(({ currentTrack, onPlay, onPause, onNext, onPrevious }) => {
+}>(({ currentTrack, accentColor, onPlay, onPause, onNext, onPrevious }) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [currentPosition, setCurrentPosition] = useState(0);
@@ -848,13 +877,13 @@ const SpotifyPlayerControls = memo<{
         <ControlsRow>
         {/* Control Buttons */}
         <ControlButtons>
-          <ControlButton onClick={onPrevious}>
+          <ControlButton accentColor={accentColor} onClick={onPrevious}>
             <svg viewBox="0 0 24 24">
               <path d="M6 6h2v12H6zm3.5 6l8.5 6V6z" />
             </svg>
           </ControlButton>
 
-          <ControlButton isPlaying={isPlaying} onClick={handlePlayPause}>
+          <ControlButton accentColor={accentColor} isPlaying={isPlaying} onClick={handlePlayPause}>
             {isPlaying ? (
               <svg viewBox="0 0 24 24">
                 <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
@@ -866,7 +895,7 @@ const SpotifyPlayerControls = memo<{
             )}
           </ControlButton>
 
-          <ControlButton onClick={onNext}>
+          <ControlButton accentColor={accentColor} onClick={onNext}>
             <svg viewBox="0 0 24 24">
               <path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z" />
             </svg>
@@ -896,6 +925,7 @@ const SpotifyPlayerControls = memo<{
           min="0"
           max={duration}
           value={currentPosition}
+          accentColor={accentColor}
           onChange={handleSliderChange}
           onMouseDown={handleSliderMouseDown}
           onMouseUp={handleSliderMouseUp}
