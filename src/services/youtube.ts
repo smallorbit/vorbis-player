@@ -6,6 +6,20 @@ export interface YouTubeVideo {
   embeddable?: boolean;
 }
 
+export interface VideoEmbeddingInfo {
+  videoId: string;
+  isEmbeddable: boolean;
+  reason?: string | null;
+  metadata: {
+    title?: string;
+    channelName?: string;
+    isLiveStream?: boolean;
+    responseLength?: number;
+    hasPlayerConfig?: boolean;
+  };
+  timestamp: string;
+}
+
 export interface YouTubeSearchResult {
   videos: YouTubeVideo[];
   error?: string;
@@ -51,6 +65,86 @@ class YouTubeService {
   }
 
   private videoIdCache = new Map<string, string[]>();
+  private embeddingCache = new Map<string, VideoEmbeddingInfo>();
+
+  async checkVideoEmbeddability(videoId: string): Promise<VideoEmbeddingInfo> {
+    // Return cached result if available and recent (1 hour cache)
+    const cached = this.embeddingCache.get(videoId);
+    if (cached) {
+      const cacheAge = Date.now() - new Date(cached.timestamp).getTime();
+      if (cacheAge < 60 * 60 * 1000) { // 1 hour
+        return cached;
+      }
+    }
+
+    try {
+      // Use the embed-test endpoint for more accurate detection
+      const proxyUrl = `http://127.0.0.1:3001/youtube/embed-test/${videoId}`;
+      const response = await fetch(proxyUrl);
+      
+      if (!response.ok) {
+        console.warn(`Failed to check embeddability for video ${videoId}:`, response.status);
+        // Return default embeddable state if check fails
+        const defaultInfo: VideoEmbeddingInfo = {
+          videoId,
+          isEmbeddable: true, // Assume embeddable if we can't check
+          reason: null,
+          metadata: {},
+          timestamp: new Date().toISOString()
+        };
+        return defaultInfo;
+      }
+
+      const embeddingInfo: VideoEmbeddingInfo = await response.json();
+      
+      // Cache the result
+      this.embeddingCache.set(videoId, embeddingInfo);
+      
+      console.log(`Video ${videoId} embeddability check:`, embeddingInfo.isEmbeddable ? 'EMBEDDABLE' : 'NOT EMBEDDABLE');
+      
+      return embeddingInfo;
+    } catch (error) {
+      console.error(`Error checking embeddability for video ${videoId}:`, error);
+      
+      // Return default embeddable state if check fails
+      const defaultInfo: VideoEmbeddingInfo = {
+        videoId,
+        isEmbeddable: true, // Assume embeddable if we can't check
+        reason: null,
+        metadata: {},
+        timestamp: new Date().toISOString()
+      };
+      return defaultInfo;
+    }
+  }
+
+  async batchCheckEmbeddability(videoIds: string[]): Promise<Map<string, VideoEmbeddingInfo>> {
+    const results = new Map<string, VideoEmbeddingInfo>();
+    
+    // Process in parallel with some concurrency limit to avoid overwhelming the proxy
+    const concurrency = 3;
+    const chunks = [];
+    for (let i = 0; i < videoIds.length; i += concurrency) {
+      chunks.push(videoIds.slice(i, i + concurrency));
+    }
+
+    for (const chunk of chunks) {
+      const promises = chunk.map(async (videoId) => {
+        const info = await this.checkVideoEmbeddability(videoId);
+        results.set(videoId, info);
+        return info;
+      });
+      
+      await Promise.all(promises);
+      
+      // Add small delay between chunks to be respectful to the proxy/YouTube
+      if (chunks.indexOf(chunk) < chunks.length - 1) {
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+    }
+
+    return results;
+  }
 
   async loadVideoIdsFromCategory(category: string): Promise<string[]> {
     // Return cached result if available

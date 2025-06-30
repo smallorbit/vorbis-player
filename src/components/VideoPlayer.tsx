@@ -123,18 +123,31 @@ const VideoPlayer = memo<VideoPlayerProps>(({ currentTrack }) => {
   const [loading, setLoading] = useState(false);
   const [searchPhase, setSearchPhase] = useState<string>('');
   const [error, setError] = useState<SearchError | null>(null);
+  const [noEmbeddableVideos, setNoEmbeddableVideos] = useState(false);
 
   const fetchVideoForTrack = useCallback(async (track: Track) => {
     if (!track) return;
     setLoading(true);
     setError(null);
+    setNoEmbeddableVideos(false);
     setSearchPhase('Searching YouTube...');
     try {
       // Search for alternatives, excluding all blacklisted videos
       const blacklistedArray = Array.from(globalVideoBlacklist);
-      const alternatives = await videoSearchOrchestrator.findAlternativeVideos(track, blacklistedArray);
-      const bestVideo = alternatives.length > 0 ? alternatives[0] : null;
+      const searchResult = await videoSearchOrchestrator.findAlternativeVideosWithMetadata(track, blacklistedArray);
+      const bestVideo = searchResult.videos.length > 0 ? searchResult.videos[0] : null;
+      
       if (!bestVideo) {
+        console.log(`No videos found for "${track.name}" by ${track.artists}`);
+        
+        // Check if this is specifically due to embedding restrictions
+        if (searchResult.allFilteredDueToEmbedding) {
+          console.log(`⚠️ No embeddable videos available for "${track.name}" - hiding video player`);
+          setNoEmbeddableVideos(true);
+          setMediaItems([]);
+          return;
+        }
+        
         setError({
           type: 'no_results',
           message: 'No videos found for this track',
@@ -185,19 +198,20 @@ const VideoPlayer = memo<VideoPlayerProps>(({ currentTrack }) => {
     
     setLoading(true);
     setError(null);
+    setNoEmbeddableVideos(false);
     setSearchPhase('Finding alternative video...');
     setMediaItems([]); // Clear current video
     
     try {
-      // Use findAlternativeVideos to exclude ALL blacklisted videos
+      // Use findAlternativeVideosWithMetadata to exclude ALL blacklisted videos
       const blacklistedArray = Array.from(globalVideoBlacklist);
-      const alternatives = await videoSearchOrchestrator.findAlternativeVideos(
+      const searchResult = await videoSearchOrchestrator.findAlternativeVideosWithMetadata(
         currentTrack,
         blacklistedArray
       );
       
-      if (alternatives.length > 0) {
-        const bestAlternative = alternatives[0];
+      if (searchResult.videos.length > 0) {
+        const bestAlternative = searchResult.videos[0];
         setMediaItems([{
           id: bestAlternative.id,
           type: 'youtube',
@@ -212,6 +226,13 @@ const VideoPlayer = memo<VideoPlayerProps>(({ currentTrack }) => {
         }]);
         setSearchPhase('');
       } else {
+        // Check if this is specifically due to embedding restrictions
+        if (searchResult.allFilteredDueToEmbedding) {
+          console.log(`⚠️ No embeddable alternative videos available for "${currentTrack.name}" - hiding video player`);
+          setNoEmbeddableVideos(true);
+          return;
+        }
+        
         setError({
           type: 'no_results',
           message: 'No alternative videos found',
@@ -240,6 +261,12 @@ const VideoPlayer = memo<VideoPlayerProps>(({ currentTrack }) => {
 
   if (!currentTrack) return null;
 
+  // Hide the entire video player if no embeddable videos are available for this track
+  if (noEmbeddableVideos && !loading) {
+    console.log(`VideoPlayer: Hiding player for "${currentTrack.name}" - no embeddable videos available`);
+    return null;
+  }
+
   const currentVideoItem = mediaItems.length > 0 ? mediaItems[0] : null;
 
   return (
@@ -251,14 +278,14 @@ const VideoPlayer = memo<VideoPlayerProps>(({ currentTrack }) => {
           className="py-8"
         />
       )}
-      {error && !loading && (
+      {error && !loading && !noEmbeddableVideos && (
         <SearchErrorDisplay 
           error={error}
           onRetry={() => fetchVideoForTrack(currentTrack)}
           onSkip={() => setError(null)}
         />
       )}
-      {mediaItems.length === 0 && !loading && !error && currentTrack && (
+      {mediaItems.length === 0 && !loading && !error && currentTrack && !noEmbeddableVideos && (
         <FallbackVideoDisplay 
           track={currentTrack}
           onSearchRetry={() => fetchVideoForTrack(currentTrack)}

@@ -407,6 +407,11 @@ const TimeLabel = styled.span`
 
 const VideoPlayerContainer = styled.div`
   margin: ${({ theme }: any) => theme.spacing.md} ${({ theme }: any) => theme.spacing.md} ${({ theme }: any) => theme.spacing.lg} ${({ theme }: any) => theme.spacing.md};
+  
+  /* Handle empty state when no embeddable videos */
+  &:empty {
+    display: none;
+  }
 `;
 
 const PlaylistButtonContainer = styled.div`

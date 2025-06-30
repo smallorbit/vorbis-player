@@ -1,11 +1,18 @@
 import { youtubeSearchService, type VideoSearchResult } from './youtubeSearch';
 import { videoQualityService, type ResolutionLevel } from './videoQuality';
 import { contentFilterService, type FilteredVideoResult } from './contentFilter';
+import { youtubeService } from './youtube';
 import type { Track } from './spotify';
+
+export interface VideoSearchResult {
+  videos: FilteredVideoResult[];
+  allFilteredDueToEmbedding?: boolean;
+}
 
 export interface VideoSearchOrchestrator {
   findBestVideo(track: Track): Promise<FilteredVideoResult | null>;
   findAlternativeVideos(track: Track, exclude?: string[]): Promise<FilteredVideoResult[]>;
+  findAlternativeVideosWithMetadata(track: Track, exclude?: string[]): Promise<VideoSearchResult>;
   getVideoQuality(videoId: string): Promise<any>;
   clearCache(): void;
 }
@@ -50,8 +57,18 @@ class VideoSearchOrchestratorImpl implements VideoSearchOrchestrator {
         return null;
       }
 
+      // Step 2.5: Pre-check embedding capabilities for top candidates
+      const embeddableResults = await this.filterEmbeddableVideos(filteredResults.slice(0, 5));
+      
+      if (embeddableResults.length === 0) {
+        console.log(`No embeddable videos found for: ${searchQuery}`);
+        // Fallback to original results if embedding check fails for all
+        console.log('Falling back to original results without embedding pre-check');
+      }
+
       // Step 3: Score videos by quality and relevance
-      const scoredResults = await this.scoreVideoResults(filteredResults, searchQuery);
+      const resultsToScore = embeddableResults.length > 0 ? embeddableResults : filteredResults;
+      const scoredResults = await this.scoreVideoResults(resultsToScore, searchQuery);
       
       // Step 4: Select best result that meets minimum thresholds
       const bestResult = scoredResults.find(result => 
@@ -75,8 +92,13 @@ class VideoSearchOrchestratorImpl implements VideoSearchOrchestrator {
   }
 
   async findAlternativeVideos(track: Track, exclude: string[] = []): Promise<FilteredVideoResult[]> {
+    const result = await this.findAlternativeVideosWithMetadata(track, exclude);
+    return result.videos;
+  }
+
+  async findAlternativeVideosWithMetadata(track: Track, exclude: string[] = []): Promise<VideoSearchResult> {
     if (!track || !track.name) {
-      return [];
+      return { videos: [] };
     }
 
     try {
@@ -91,14 +113,24 @@ class VideoSearchOrchestratorImpl implements VideoSearchOrchestrator {
       // Apply content filtering
       const contentFiltered = contentFilterService.filterSearchResults(filteredByExclusion, searchQuery);
       
-      // Score and return top alternatives
-      const scoredResults = await this.scoreVideoResults(contentFiltered, searchQuery);
+      // Pre-check embedability for top alternatives
+      const embeddableResults = await this.filterEmbeddableVideos(contentFiltered.slice(0, 10));
       
-      return scoredResults.slice(0, this.DEFAULT_MAX_RESULTS);
+      // Check if all videos were filtered due to embedding restrictions
+      const allFilteredDueToEmbedding = contentFiltered.length > 0 && embeddableResults.length === 0;
+      
+      // Score and return top alternatives
+      const resultsToScore = embeddableResults.length > 0 ? embeddableResults : contentFiltered;
+      const scoredResults = await this.scoreVideoResults(resultsToScore, searchQuery);
+      
+      return {
+        videos: scoredResults.slice(0, this.DEFAULT_MAX_RESULTS),
+        allFilteredDueToEmbedding
+      };
       
     } catch (error) {
       console.error('Error finding alternative videos:', error);
-      return [];
+      return { videos: [] };
     }
   }
 
@@ -114,6 +146,42 @@ class VideoSearchOrchestratorImpl implements VideoSearchOrchestrator {
   clearCache(): void {
     videoQualityService.clearCache();
     // Note: YouTubeSearchService cache is handled internally
+  }
+
+  private async filterEmbeddableVideos(results: VideoSearchResult[]): Promise<VideoSearchResult[]> {
+    if (results.length === 0) {
+      return results;
+    }
+
+    try {
+      console.log(`Pre-checking embedding capabilities for ${results.length} videos`);
+      
+      // Extract video IDs
+      const videoIds = results.map(result => result.id);
+      
+      // Batch check embedding capabilities
+      const embeddingInfo = await youtubeService.batchCheckEmbeddability(videoIds);
+      
+      // Filter to only embeddable videos
+      const embeddableResults = results.filter(result => {
+        const info = embeddingInfo.get(result.id);
+        return info?.isEmbeddable ?? true; // Default to embeddable if check failed
+      });
+      
+      console.log(`Filtered to ${embeddableResults.length} embeddable videos from ${results.length} candidates`);
+      
+      // Store info about embedding filtering for debugging
+      if (embeddableResults.length === 0 && results.length > 0) {
+        console.warn(`⚠️ All ${results.length} video candidates were filtered out due to embedding restrictions`);
+      }
+      
+      return embeddableResults;
+      
+    } catch (error) {
+      console.error('Error pre-checking video embeddability:', error);
+      // Return original results if embedding check fails
+      return results;
+    }
   }
 
   // Search with multiple fallback strategies
