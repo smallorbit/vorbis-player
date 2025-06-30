@@ -2,7 +2,8 @@
 
 A modern audio-visual player that combines Spotify music streaming with intelligent YouTube video discovery. Experience your music with automatic video accompaniment and a sleek, unified interface designed for continuous entertainment.
 
-<img src="public/screenshot.png" alt="Vorbis Player Interface" width="600">
+<img src="src/assets/screenshot-player.png" alt="Vorbis Player" width="600">
+<img src="src/assets/screenshot-playlist.png" alt="Vorbis Player - Playlist" width="600">
 
 ## Features
 
