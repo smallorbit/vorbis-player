@@ -59,8 +59,8 @@ const PlaylistItemContainer = styled.div<{ isSelected: boolean }>`
   border: 1px solid transparent;
   
   ${({ isSelected }) => isSelected ? `
-    background: rgba(34, 197, 94, 0.2);
-    border-color: rgba(34, 197, 94, 0.3);
+    background: rgba(218, 165, 32, 0.2);
+    border-color: goldenrod;
   ` : `
     &:hover {
       background: rgba(115, 115, 115, 0.3);
@@ -109,13 +109,13 @@ const TrackArtist = styled.div<{ isSelected: boolean }>`
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  color: ${({ isSelected, theme }) => isSelected ? '#bbf7d0' : theme.colors.gray[400]};
+  color: ${({ isSelected, theme }) => isSelected ? 'goldenrod' : theme.colors.gray[400]};
 `;
 
 const Duration = styled.span<{ isSelected: boolean }>`
   font-size: ${({ theme }) => theme.fontSize.sm};
   font-family: monospace;
-  color: ${({ isSelected, theme }) => isSelected ? '#bbf7d0' : theme.colors.gray[400]};
+  color: ${({ isSelected, theme }) => isSelected ? 'goldenrod' : theme.colors.gray[400]};
   flex-shrink: 0;
 `;
 

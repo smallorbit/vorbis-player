@@ -142,7 +142,7 @@ const LoadingCard = styled(Card) <{ backgroundImage?: string; standalone?: boole
   position: relative;
   overflow: hidden;
   border: 1px solid rgba(115, 115, 115, 0.5);
-  border-radius: ${({ theme }: any) => theme.borderRadius.lg};
+  border-radius: 1.25rem;
   border-top: 1px solid rgba(115, 115, 115, 0.5);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6), 0 2px 8px rgba(0, 0, 0, 0.4);
   
@@ -155,7 +155,7 @@ const LoadingCard = styled(Card) <{ backgroundImage?: string; standalone?: boole
       background-size: cover;
       background-position: center;
       background-repeat: no-repeat;
-      border-radius: ${({ theme }: any) => theme.borderRadius.lg};
+      border-radius: 1.25rem;
       z-index: 0;
     }
     
@@ -165,7 +165,7 @@ const LoadingCard = styled(Card) <{ backgroundImage?: string; standalone?: boole
       inset: 0;
       background: rgba(0, 0, 0, 0.7);
       backdrop-filter: blur(8px);
-      border-radius: ${({ theme }: any) => theme.borderRadius.lg};
+      border-radius: 1.25rem;
       z-index: 1;
     }
   ` : `
@@ -195,7 +195,7 @@ const PlaylistFallback = styled.div`
 
 const PlaylistFallbackCard = styled.div`
   background-color: ${({ theme }: any) => theme.colors.gray[800]};
-  border-radius: ${({ theme }: any) => theme.borderRadius.lg};
+  border-radius: 1.25rem;
   padding: ${({ theme }: any) => theme.spacing.md};
   border: 1px solid ${({ theme }: any) => theme.colors.gray[700]};
 `;
@@ -232,13 +232,7 @@ const PlayerControlsContainer = styled.div`
   display: flex;
   flex-direction: column;
   gap: ${({ theme }: any) => theme.spacing.sm};
-  padding: ${({ theme }: any) => theme.spacing.md};
-  
-  @media (min-width: ${({ theme }: any) => theme.breakpoints.sm}) {
-    flex-direction: row;
-    align-items: center;
-    gap: ${({ theme }: any) => theme.spacing.md};
-  }
+  padding: ${({ theme }: any) => theme.spacing.md} ${({ theme }: any) => theme.spacing.md} ${({ theme }: any) => theme.spacing.sm} ${({ theme }: any) => theme.spacing.md};
 `;
 
 const PlayerTrackInfo = styled.div`
@@ -268,11 +262,23 @@ const PlayerTrackArtist = styled.div`
 const ControlsRow = styled.div`
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
   gap: ${({ theme }: any) => theme.spacing.md};
   
-  @media (min-width: ${({ theme }: any) => theme.breakpoints.sm}) {
+  @media (min-width: ${({ theme }: any) => theme.breakpoints.md}) {
     justify-content: flex-start;
+  }
+`;
+
+const TrackInfoRow = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: ${({ theme }: any) => theme.spacing.md};
+  
+  @media (min-width: ${({ theme }: any) => theme.breakpoints.md}) {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
   }
 `;
 
@@ -299,11 +305,11 @@ const ControlButton = styled.button<{ isPlaying?: boolean }>`
   }
   
   ${({ isPlaying }) => isPlaying ? `
-    background: rgba(34, 197, 94, 0.2);
-    color: #bbf7d0;
+    background: rgba(218, 165, 32, 0.2);
+    color: goldenrod;
     
     &:hover {
-      background: rgba(34, 197, 94, 0.3);
+      background: rgba(218, 165, 32, 0.3);
     }
   ` : `
     background: rgba(115, 115, 115, 0.2);
@@ -337,6 +343,82 @@ const VolumeButton = styled.button`
     height: 1rem;
     fill: currentColor;
   }
+`;
+
+const TimelineContainer = styled.div`
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }: any) => theme.spacing.sm};
+  width: 100%;
+  margin: ${({ theme }: any) => theme.spacing.sm} 0;
+`;
+
+const TimelineSlider = styled.input`
+  flex: 1;
+  height: 4px;
+  background: rgba(115, 115, 115, 0.3);
+  border-radius: 2px;
+  outline: none;
+  cursor: pointer;
+  
+  &::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 12px;
+    height: 12px;
+    background: goldenrod !important;
+    border-radius: 50%;
+    cursor: pointer;
+    border: none;
+    box-shadow: none;
+    transition: all 0.2s ease;
+    
+    &:hover {
+      transform: scale(1.2);
+    }
+  }
+  
+  &::-moz-range-thumb {
+    width: 12px;
+    height: 12px;
+    background: goldenrod !important;
+    border-radius: 50%;
+    cursor: pointer;
+    border: none;
+    box-shadow: none;
+    transition: all 0.2s ease;
+    
+    &:hover {
+      transform: scale(1.2);
+    }
+  }
+  
+  /* Progress fill effect */
+  background: linear-gradient(
+    to right,
+    goldenrod 0%,
+    goldenrod ${props => (props.value / props.max) * 100}%,
+    rgba(115, 115, 115, 0.3) ${props => (props.value / props.max) * 100}%,
+    rgba(115, 115, 115, 0.3) 100%
+  );
+`;
+
+const TimeLabel = styled.span`
+  color: ${({ theme }: any) => theme.colors.gray[400]};
+  font-size: ${({ theme }: any) => theme.fontSize.sm};
+  font-family: monospace;
+  min-width: 40px;
+  text-align: center;
+`;
+
+const VideoPlayerContainer = styled.div`
+  margin: ${({ theme }: any) => theme.spacing.md} ${({ theme }: any) => theme.spacing.md} ${({ theme }: any) => theme.spacing.lg} ${({ theme }: any) => theme.spacing.md};
+`;
+
+const PlaylistButtonContainer = styled.div`
+  display: flex;
+  justify-content: flex-end;
+  width: 100%;
 `;
 
 const InfoControls = styled.div`
@@ -518,7 +600,7 @@ const AudioPlayerComponent = () => {
               </p>
               <Button
                 onClick={() => spotifyAuth.redirectToAuth()}
-                style={{ backgroundColor: '#16a34a' }}
+                style={{ backgroundColor: 'goldenrod' }}
               >
                 Connect Spotify
               </Button>
@@ -560,7 +642,7 @@ const AudioPlayerComponent = () => {
             </HyperText>
             <Button
               onClick={() => setIsInitialLoad(false)}
-              style={{ width: '100%', backgroundColor: '#2563eb', fontSize: '1.125rem', padding: '1rem' }}
+              style={{ width: '100%', backgroundColor: 'goldenrod', fontSize: '1.125rem', padding: '1rem' }}
               size="lg"
             >
               Click to start
@@ -576,9 +658,11 @@ const AudioPlayerComponent = () => {
           <LoadingCard backgroundImage={currentTrack?.image}>
         
             <CardContent style={{ padding: '0.5rem', position: 'relative', zIndex: 2 }}>
-              <Suspense fallback={<div style={{ minHeight: 320 }}>Loading video player...</div>}>
-                <VideoPlayer currentTrack={currentTrack} />
-              </Suspense>
+              <VideoPlayerContainer>
+                <Suspense fallback={<div style={{ minHeight: 320 }}>Loading video player...</div>}>
+                  <VideoPlayer currentTrack={currentTrack} />
+                </Suspense>
+              </VideoPlayerContainer>
           
               <SpotifyPlayerControls
                 currentTrack={currentTrack}
@@ -602,9 +686,11 @@ const AudioPlayerComponent = () => {
             SHUFFLE 🎵
           </Button>
         </InfoControls> */}
-        <PlaylistToggleButton onClick={() => setShowPlaylist(true)}>
-          📋 View Playlist ({tracks.length} tracks)
-        </PlaylistToggleButton>
+        <PlaylistButtonContainer>
+          <PlaylistToggleButton onClick={() => setShowPlaylist(true)}>
+            📋 View Playlist ({tracks.length} tracks)
+          </PlaylistToggleButton>
+        </PlaylistButtonContainer>
 
         <PlaylistOverlay 
           isOpen={showPlaylist} 
@@ -665,18 +751,27 @@ const SpotifyPlayerControls = memo<{
 }>(({ currentTrack, onPlay, onPause, onNext, onPrevious }) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
+  const [currentPosition, setCurrentPosition] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
 
   useEffect(() => {
     const checkPlaybackState = async () => {
       const state = await spotifyPlayer.getCurrentState();
       if (state) {
         setIsPlaying(!state.paused);
+        if (!isDragging) {
+          setCurrentPosition(state.position);
+        }
+        if (state.track_window.current_track) {
+          setDuration(state.track_window.current_track.duration_ms);
+        }
       }
     };
 
     const interval = setInterval(checkPlaybackState, 1000);
     return () => clearInterval(interval);
-  }, []);
+  }, [isDragging]);
 
   useEffect(() => {
     // Set volume to 100% on initialization
@@ -697,16 +792,60 @@ const SpotifyPlayerControls = memo<{
     spotifyPlayer.setVolume(newMutedState ? 0 : 1.0);
   };
 
+  const handleSeek = async (position: number) => {
+    try {
+      const token = await spotifyAuth.ensureValidToken();
+      const deviceId = spotifyPlayer.getDeviceId();
+      
+      if (!deviceId) {
+        console.error('No device ID available for seeking');
+        return;
+      }
+
+      await fetch(`https://api.spotify.com/v1/me/player/seek?position_ms=${Math.floor(position)}&device_id=${deviceId}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+    } catch (error) {
+      console.error('Failed to seek:', error);
+    }
+  };
+
+  const handleSliderChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const position = parseInt(e.target.value);
+    setCurrentPosition(position);
+  };
+
+  const handleSliderMouseDown = () => {
+    setIsDragging(true);
+  };
+
+  const handleSliderMouseUp = (e: React.MouseEvent<HTMLInputElement>) => {
+    const position = parseInt((e.target as HTMLInputElement).value);
+    setIsDragging(false);
+    handleSeek(position);
+  };
+
+  const formatTime = (ms: number) => {
+    const seconds = Math.floor(ms / 1000);
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+  };
+
   return (
     <PlayerControlsContainer>
-      {/* Track Info */}
-      <PlayerTrackInfo>
-        <PlayerTrackName>{currentTrack?.name || 'No track selected'}</PlayerTrackName>
-        <PlayerTrackArtist>{currentTrack?.artists || ''}</PlayerTrackArtist>
-      </PlayerTrackInfo>
+      {/* Track Info and Controls Row */}
+      <TrackInfoRow>
+        <PlayerTrackInfo>
+          <PlayerTrackName>{currentTrack?.name || 'No track selected'}</PlayerTrackName>
+          <PlayerTrackArtist>{currentTrack?.artists || ''}</PlayerTrackArtist>
+        </PlayerTrackInfo>
 
-      {/* Controls Row */}
-      <ControlsRow>
+        {/* Control Buttons and Volume */}
+        <ControlsRow>
         {/* Control Buttons */}
         <ControlButtons>
           <ControlButton onClick={onPrevious}>
@@ -747,6 +886,22 @@ const SpotifyPlayerControls = memo<{
           )}
         </VolumeButton>
       </ControlsRow>
+      </TrackInfoRow>
+
+      {/* Timeline Slider */}
+      <TimelineContainer>
+        <TimeLabel>{formatTime(currentPosition)}</TimeLabel>
+        <TimelineSlider
+          type="range"
+          min="0"
+          max={duration}
+          value={currentPosition}
+          onChange={handleSliderChange}
+          onMouseDown={handleSliderMouseDown}
+          onMouseUp={handleSliderMouseUp}
+        />
+        <TimeLabel>{formatTime(duration)}</TimeLabel>
+      </TimelineContainer>
     </PlayerControlsContainer>
   );
 });

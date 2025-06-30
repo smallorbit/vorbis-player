@@ -26,11 +26,12 @@ const Container = styled.div`
 
 const VideoContainer = styled.div`
   position: relative;
-  border-radius: 0.5rem;
+  border-radius: 1rem;
   overflow: hidden;
   background-color: rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(0.375rem);
   border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 0 4px 16px rgba(0, 0, 0, 0.2);
   transition: all 0.3s ease;
   width: 100%;
   height: 100%;
