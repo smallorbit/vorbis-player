@@ -137,10 +137,10 @@ const BackupActions = styled.div`
 `;
 
 const ActionButton = styled.button<{ variant?: 'primary' | 'secondary' | 'danger' }>`
-  background: ${props => 
+  background: ${props =>
     props.variant === 'primary' ? 'rgba(255, 215, 0, 0.8)' :
-    props.variant === 'danger' ? 'rgba(255, 0, 0, 0.8)' :
-    'rgba(255, 255, 255, 0.1)'
+      props.variant === 'danger' ? 'rgba(255, 0, 0, 0.8)' :
+        'rgba(255, 255, 255, 0.1)'
   };
   color: ${props => props.variant === 'primary' ? 'black' : 'white'};
   border: none;
@@ -207,7 +207,7 @@ const VideoManagementSettings = memo(({ className }: VideoManagementSettingsProp
       try {
         const content = e.target?.result as string;
         const result = videoManagementService.importData(content);
-        
+
         if (result.success) {
           // Refresh preferences and stats
           setPreferences(videoManagementService.getPreferences());
@@ -222,7 +222,7 @@ const VideoManagementSettings = memo(({ className }: VideoManagementSettingsProp
       }
     };
     reader.readAsText(file);
-    
+
     // Reset file input
     event.target.value = '';
   };
@@ -241,8 +241,8 @@ const VideoManagementSettings = memo(({ className }: VideoManagementSettingsProp
 
   return (
     <Container className={className}>
-      <Title>Video Management Settings</Title>
-      
+      {/* <Title>Video Management Settings</Title> */}
+
       <SettingItem>
         <SettingInfo>
           <SettingLabel>Remember Video Choices</SettingLabel>
@@ -255,23 +255,6 @@ const VideoManagementSettings = memo(({ className }: VideoManagementSettingsProp
             type="checkbox"
             checked={preferences.rememberVideoChoices}
             onChange={(e) => handlePreferenceChange('rememberVideoChoices', e.target.checked)}
-          />
-          <SwitchSlider />
-        </Switch>
-      </SettingItem>
-
-      <SettingItem>
-        <SettingInfo>
-          <SettingLabel>Auto-Play Next Track</SettingLabel>
-          <SettingDescription>
-            Automatically advance to the next track when the current one ends
-          </SettingDescription>
-        </SettingInfo>
-        <Switch>
-          <SwitchInput
-            type="checkbox"
-            checked={preferences.autoPlayNext}
-            onChange={(e) => handlePreferenceChange('autoPlayNext', e.target.checked)}
           />
           <SwitchSlider />
         </Switch>
