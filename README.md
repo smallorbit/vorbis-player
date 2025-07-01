@@ -20,11 +20,13 @@ A modern audio-visual player that combines Spotify music streaming with intellig
 - **Dynamic Backgrounds**: Album artwork creates immersive visual atmosphere
 
 ### 🎛️ User Interface
+- **Integrated Playlist Access**: Spotify-inspired queue icon seamlessly integrated into player controls
 - **Sliding Playlist Drawer**: Space-saving collapsible playlist accessible from anywhere
 - **Modern Card Design**: Clean, responsive interface with album artwork and visual hierarchy  
 - **Volume Modal**: Responsive volume control with slider (desktop) and toggle buttons (mobile)
 - **Mobile-Optimized**: Touch-friendly controls and responsive design for all devices
-- **Hover Interactions**: Intuitive retry overlays and interactive elements
+- **Accessibility-First**: Full keyboard navigation and screen reader support
+- **Hover Interactions**: Intuitive retry overlays and interactive elements with professional tooltips
 
 ### 🔒 Security & Performance
 - **Secure Authentication**: PKCE OAuth flow for safe Spotify access

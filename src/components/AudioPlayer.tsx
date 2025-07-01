@@ -8,6 +8,7 @@ import { getPlaylistTracks, spotifyAuth } from '../services/spotify';
 import { spotifyPlayer } from '../services/spotifyPlayer';
 import type { Track } from '../services/spotify';
 import { Card, CardHeader, CardContent } from '../components/styled';
+import PlaylistIcon from './PlaylistIcon';
 import { Button } from '../components/styled';
 import { Skeleton } from '../components/styled';
 import { Alert, AlertDescription } from '../components/styled';
@@ -45,19 +46,6 @@ const ContentWrapper = styled.div`
   }
 `;
 
-const PlaylistToggleButton = styled(Button)`
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  color: white;
-  
-  &:hover {
-    background: rgba(255, 255, 255, 0.2);
-  }
-`;
 
 const PlaylistDrawer = styled.div<{ isOpen: boolean }>`
   position: fixed;
@@ -455,10 +443,10 @@ const AudioPlayerComponent = () => {
       setSelectedPlaylistName(playlistName);
 
       console.log('🎵 Loading tracks from playlist:', playlistName);
-      
+
       // Initialize Spotify player
       await spotifyPlayer.initialize();
-      
+
       // Ensure our device is the active player
       try {
         await spotifyPlayer.transferPlaybackToDevice();
@@ -469,7 +457,7 @@ const AudioPlayerComponent = () => {
 
       // Fetch tracks from the selected playlist
       const fetchedTracks = await getPlaylistTracks(playlistId);
-      
+
       if (fetchedTracks.length === 0) {
         setError("No tracks found in this playlist.");
         return;
@@ -477,16 +465,16 @@ const AudioPlayerComponent = () => {
 
       setTracks(fetchedTracks);
       setCurrentTrackIndex(0);
-      
+
       console.log(`🎵 Loaded ${fetchedTracks.length} tracks, starting playback...`);
-      
+
       // Start playing the first track (user interaction has occurred)
       setTimeout(async () => {
         try {
           console.log('🎵 Attempting to start playback after playlist selection...');
           await playTrack(0);
           console.log('🎵 Playback started successfully after playlist selection!');
-          
+
           // Check playback state after a delay and try to recover
           setTimeout(async () => {
             const state = await spotifyPlayer.getCurrentState();
@@ -497,14 +485,14 @@ const AudioPlayerComponent = () => {
               playerReady: spotifyPlayer.getIsReady(),
               deviceId: spotifyPlayer.getDeviceId()
             });
-            
+
             // If state is undefined, the player might not be active - try to activate it
             if (!state || !state.track_window?.current_track) {
               console.log('🎵 No player state detected, attempting to transfer playback to our device...');
               try {
                 const token = await spotifyAuth.ensureValidToken();
                 const deviceId = spotifyPlayer.getDeviceId();
-                
+
                 if (deviceId) {
                   // Transfer playback to our device
                   await fetch('https://api.spotify.com/v1/me/player', {
@@ -518,9 +506,9 @@ const AudioPlayerComponent = () => {
                       play: true
                     })
                   });
-                  
+
                   console.log('🎵 Transferred playback to our device');
-                  
+
                   // Try playing the track again
                   setTimeout(async () => {
                     try {
@@ -580,20 +568,20 @@ const AudioPlayerComponent = () => {
           playerReady: spotifyPlayer.getIsReady(),
           deviceId: spotifyPlayer.getDeviceId()
         });
-        
+
         // Check if we have valid authentication
         const isAuthenticated = spotifyAuth.isAuthenticated();
         console.log('🎵 Authentication status:', isAuthenticated);
-        
+
         if (!isAuthenticated) {
           console.error('🎵 Not authenticated with Spotify');
           return;
         }
-        
+
         await spotifyPlayer.playTrack(tracks[index].uri);
         setCurrentTrackIndex(index);
         console.log('🎵 playTrack call completed');
-        
+
         // Check if playback actually started after a delay
         setTimeout(async () => {
           const state = await spotifyPlayer.getCurrentState();
@@ -607,7 +595,7 @@ const AudioPlayerComponent = () => {
             }
           }
         }, 1000);
-        
+
       } catch (error) {
         console.error('🎵 Failed to play track:', error);
         console.error('🎵 Error details:', {
@@ -640,7 +628,7 @@ const AudioPlayerComponent = () => {
   useEffect(() => {
     let pollInterval: NodeJS.Timeout;
     let hasEnded = false; // Prevent multiple triggers
-    
+
     const checkForSongEnd = async () => {
       try {
         const state = await spotifyPlayer.getCurrentState();
@@ -649,7 +637,7 @@ const AudioPlayerComponent = () => {
           const duration = currentTrack.duration_ms;
           const position = state.position;
           const timeRemaining = duration - position;
-          
+
           // Log current state periodically for debugging
           if (Math.random() < 0.2) { // Log 20% of the time
             console.log('🎵 Playback state:', {
@@ -660,7 +648,7 @@ const AudioPlayerComponent = () => {
               paused: state.paused
             });
           }
-          
+
           // Check if song has ended (within 2 seconds of completion OR position at end)
           if (!hasEnded && duration > 0 && position > 0 && (
             timeRemaining <= 2000 || // Within 2 seconds of end
@@ -672,9 +660,9 @@ const AudioPlayerComponent = () => {
               duration: duration + 'ms',
               currentTrack: currentTrack.name
             });
-            
+
             hasEnded = true; // Prevent multiple triggers
-            
+
             // Auto-advance to next track
             const nextIndex = (currentTrackIndex + 1) % tracks.length;
             if (tracks[nextIndex]) {
@@ -695,7 +683,7 @@ const AudioPlayerComponent = () => {
     if (tracks.length > 0) {
       pollInterval = setInterval(checkForSongEnd, 2000);
     }
-    
+
     return () => {
       if (pollInterval) {
         clearInterval(pollInterval);
@@ -821,14 +809,14 @@ const AudioPlayerComponent = () => {
       <ContentWrapper>
         <div style={{ marginTop: '1.5rem' }}>
           <LoadingCard backgroundImage={currentTrack?.image}>
-        
+
             <CardContent style={{ padding: '0.5rem', position: 'relative', zIndex: 2 }}>
               <VideoPlayerContainer>
                 <Suspense fallback={<div style={{ minHeight: 320 }}>Loading video player...</div>}>
                   <VideoPlayer key={videoRefreshKey} currentTrack={currentTrack} />
                 </Suspense>
               </VideoPlayerContainer>
-          
+
               <SpotifyPlayerControls
                 currentTrack={currentTrack}
                 accentColor={accentColor}
@@ -836,6 +824,8 @@ const AudioPlayerComponent = () => {
                 onPause={() => spotifyPlayer.pause()}
                 onNext={handleNext}
                 onPrevious={handlePrevious}
+                onShowPlaylist={() => setShowPlaylist(true)}
+                trackCount={tracks.length}
               />
             </CardContent>
           </LoadingCard>
@@ -853,25 +843,33 @@ const AudioPlayerComponent = () => {
           </Button>
         </InfoControls> */}
         <PlaylistButtonContainer>
-          <PlaylistToggleButton onClick={() => setShowVideoManagement(true)}>
+          <Button
+            onClick={() => setShowVideoManagement(true)}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              marginBottom: '1rem',
+              background: 'rgba(255, 255, 255, 0.1)',
+              border: '1px solid rgba(255, 255, 255, 0.2)',
+              color: 'white'
+            }}
+          >
             🎬 Manage Videos
-          </PlaylistToggleButton>
-          <PlaylistToggleButton onClick={() => setShowPlaylist(true)}>
-            📋 View Playlist ({tracks.length} tracks)
-          </PlaylistToggleButton>
+          </Button>
         </PlaylistButtonContainer>
 
-        <PlaylistOverlay 
-          isOpen={showPlaylist} 
-          onClick={() => setShowPlaylist(false)} 
+        <PlaylistOverlay
+          isOpen={showPlaylist}
+          onClick={() => setShowPlaylist(false)}
         />
-        
+
         <PlaylistDrawer isOpen={showPlaylist}>
           <PlaylistHeader>
             <PlaylistTitle>Playlist ({tracks.length} tracks)</PlaylistTitle>
             <CloseButton onClick={() => setShowPlaylist(false)}>×</CloseButton>
           </PlaylistHeader>
-          
+
           <PlaylistContent>
             <Suspense fallback={<PlaylistFallback><PlaylistFallbackCard><div style={{ animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite', color: 'rgba(255, 255, 255, 0.6)', textAlign: 'center' }}>Loading playlist...</div></PlaylistFallbackCard></PlaylistFallback>}>
               <Playlist
@@ -886,7 +884,7 @@ const AudioPlayerComponent = () => {
             </Suspense>
           </PlaylistContent>
         </PlaylistDrawer>
-       
+
       </ContentWrapper>
     );
   };
@@ -929,7 +927,9 @@ const SpotifyPlayerControls = memo<{
   onPause: () => void;
   onNext: () => void;
   onPrevious: () => void;
-}>(({ currentTrack, accentColor, onPlay, onPause, onNext, onPrevious }) => {
+  onShowPlaylist: () => void;
+  trackCount: number;
+}>(({ currentTrack, accentColor, onPlay, onPause, onNext, onPrevious, onShowPlaylist, trackCount }) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [volume, setVolume] = useState(50);
@@ -975,7 +975,7 @@ const SpotifyPlayerControls = memo<{
   const handleMuteToggle = () => {
     const newMutedState = !isMuted;
     setIsMuted(newMutedState);
-    
+
     if (newMutedState) {
       // Store current volume before muting
       setPreviousVolume(volume);
@@ -991,12 +991,12 @@ const SpotifyPlayerControls = memo<{
   const handleVolumeChange = (newVolume: number) => {
     setVolume(newVolume);
     spotifyPlayer.setVolume(newVolume / 100);
-    
+
     // Auto-unmute if volume is changed from 0
     if (newVolume > 0 && isMuted) {
       setIsMuted(false);
     }
-    
+
     // Auto-mute if volume is set to 0
     if (newVolume === 0 && !isMuted) {
       setIsMuted(true);
@@ -1011,7 +1011,7 @@ const SpotifyPlayerControls = memo<{
     try {
       const token = await spotifyAuth.ensureValidToken();
       const deviceId = spotifyPlayer.getDeviceId();
-      
+
       if (!deviceId) {
         console.error('No device ID available for seeking');
         return;
@@ -1061,46 +1061,54 @@ const SpotifyPlayerControls = memo<{
 
         {/* Control Buttons and Volume */}
         <ControlsRow>
-        {/* Control Buttons */}
-        <ControlButtons>
-          <ControlButton accentColor={accentColor} onClick={onPrevious}>
-            <svg viewBox="0 0 24 24">
-              <path d="M6 6h2v12H6zm3.5 6l8.5 6V6z" />
-            </svg>
-          </ControlButton>
-
-          <ControlButton accentColor={accentColor} isPlaying={isPlaying} onClick={handlePlayPause}>
-            {isPlaying ? (
+          {/* Control Buttons */}
+          <ControlButtons>
+            <ControlButton accentColor={accentColor} onClick={onPrevious}>
               <svg viewBox="0 0 24 24">
-                <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
+                <path d="M6 6h2v12H6zm3.5 6l8.5 6V6z" />
+              </svg>
+            </ControlButton>
+
+            <ControlButton accentColor={accentColor} isPlaying={isPlaying} onClick={handlePlayPause}>
+              {isPlaying ? (
+                <svg viewBox="0 0 24 24">
+                  <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
+                </svg>
+              ) : (
+                <svg viewBox="0 0 24 24">
+                  <path d="M8 5v14l11-7z" />
+                </svg>
+              )}
+            </ControlButton>
+
+            <ControlButton accentColor={accentColor} onClick={onNext}>
+              <svg viewBox="0 0 24 24">
+                <path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z" />
+              </svg>
+            </ControlButton>
+
+            <ControlButton accentColor={accentColor} onClick={onShowPlaylist}>
+              <svg viewBox="0 0 24 24" role="img" aria-hidden="true">
+                <path d="M3 6h18v2H3V6zm0 5h18v2H3v-2zm0 5h18v2H3v-2z" />
+              </svg>
+
+            </ControlButton>
+            {/* <PlaylistIcon onClick={onShowPlaylist} trackCount={trackCount} /> */}
+          </ControlButtons>
+
+          {/* Volume */}
+          <VolumeButton onClick={handleVolumeButtonClick}>
+            {isMuted ? (
+              <svg viewBox="0 0 24 24">
+                <path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z" />
               </svg>
             ) : (
               <svg viewBox="0 0 24 24">
-                <path d="M8 5v14l11-7z" />
+                <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z" />
               </svg>
             )}
-          </ControlButton>
-
-          <ControlButton accentColor={accentColor} onClick={onNext}>
-            <svg viewBox="0 0 24 24">
-              <path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z" />
-            </svg>
-          </ControlButton>
-        </ControlButtons>
-
-        {/* Volume */}
-        <VolumeButton onClick={handleVolumeButtonClick}>
-          {isMuted ? (
-            <svg viewBox="0 0 24 24">
-              <path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z" />
-            </svg>
-          ) : (
-            <svg viewBox="0 0 24 24">
-              <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z" />
-            </svg>
-          )}
-        </VolumeButton>
-      </ControlsRow>
+          </VolumeButton>
+        </ControlsRow>
       </TrackInfoRow>
 
       {/* Timeline Slider */}
@@ -1118,7 +1126,7 @@ const SpotifyPlayerControls = memo<{
         />
         <TimeLabel>{formatTime(duration)}</TimeLabel>
       </TimelineContainer>
-      
+
       <VolumeModal
         isOpen={showVolumeModal}
         onClose={() => setShowVolumeModal(false)}
