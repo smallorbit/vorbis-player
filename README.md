@@ -22,6 +22,7 @@ A modern audio-visual player that combines Spotify music streaming with intellig
 ### 🎛️ User Interface
 - **Sliding Playlist Drawer**: Space-saving collapsible playlist accessible from anywhere
 - **Modern Card Design**: Clean, responsive interface with album artwork and visual hierarchy  
+- **Volume Modal**: Responsive volume control with slider (desktop) and toggle buttons (mobile)
 - **Mobile-Optimized**: Touch-friendly controls and responsive design for all devices
 - **Hover Interactions**: Intuitive retry overlays and interactive elements
 
@@ -130,6 +131,7 @@ src/
 │   ├── AudioPlayer.tsx  # Main orchestrator with integrated video player
 │   ├── VideoPlayer.tsx  # YouTube video discovery and display
 │   ├── Playlist.tsx     # Collapsible track listing drawer
+│   ├── VolumeModal.tsx  # Responsive volume control modal
 │   ├── hyper-text.tsx   # Animated text component
 │   └── styled/          # styled-components UI library
 │       ├── Avatar.tsx   # Image component with fallback support

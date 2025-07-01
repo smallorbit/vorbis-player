@@ -36,12 +36,16 @@ npm run start:all        # Start both proxy and preview server
 1. **App.tsx** - Handles Spotify OAuth authentication flow and renders the main AudioPlayerComponent
 2. **AudioPlayerComponent** - Main orchestrator that manages audio playback, track selection, and coordinates between playlist and video display. Includes integrated VideoPlayer within a unified card interface
 3. **VideoPlayer** - Handles YouTube video discovery, embedding, and retry logic with persistent blacklist system
-4. **Playlist** - Collapsible drawer interface showing track listing with current track highlighting
+4. **VolumeModal** - Responsive volume control modal with slider (desktop) and toggle buttons (mobile)
+5. **Playlist** - Collapsible drawer interface showing track listing with current track highlighting
 
 ### Key State Management
 
 - `currentTrackIndex`: Tracks which song is currently selected/playing
 - `showPlaylist`: Controls visibility of the sliding playlist drawer
+- `showVolumeModal`: Controls visibility of the volume control modal
+- `volume`: Current volume level (0-100) for Spotify player integration
+- `isMuted`: Boolean state for mute/unmute functionality
 - `isInitialLoad`: Prevents auto-play from triggering multiple times
 - `globalVideoBlacklist`: Persistent Set of failed video IDs stored in localStorage
 - Track selection sync: When users click playlist items vs. use audio player next/prev buttons
@@ -96,6 +100,16 @@ VITE_DROPBOX_REDIRECT_URI="http://127.0.0.1:3000/auth/dropbox/callback"
 - **Manual Blacklisting**: Retry button adds current video to blacklist before searching alternatives
 - **Cross-Session Memory**: Blacklist survives browser restarts and page refreshes
 - **Cache Integration**: Works with video search orchestrator's `findAlternativeVideos` method
+
+### Volume Modal System
+
+- **Responsive Interface**: Modal with different controls based on device type
+- **Desktop Experience**: Full volume slider (0-100%) with real-time visual feedback
+- **Mobile Experience**: Volume adjustment buttons (+10/-10) with current level display
+- **Smart State Management**: Auto-mute at 0%, auto-unmute when increasing volume
+- **Keyboard Accessibility**: Arrow keys for volume adjustment, space for mute, escape to close
+- **Glass Morphism Styling**: Backdrop blur with semi-transparent background matching app design
+- **Accent Color Integration**: Dynamic theming using album artwork dominant colors
 
 ### Playlist Drawer System
 
