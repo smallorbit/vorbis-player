@@ -1,12 +1,14 @@
 import React, { useEffect, useCallback } from 'react';
 import styled from 'styled-components';
 import type { Track } from '../services/spotify';
+import VideoManagementSection from './VideoManagementSection';
 
 interface SettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
   currentTrack: Track | null;
   accentColor: string;
+  onVideoChanged?: () => void;
 }
 
 const Overlay = styled.div<{ isOpen: boolean }>`
@@ -150,7 +152,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   isOpen,
   onClose,
   currentTrack,
-  accentColor
+  accentColor,
+  onVideoChanged
 }) => {
   // Handle keyboard shortcuts
   const handleKeyDown = useCallback((event: KeyboardEvent) => {
@@ -209,9 +212,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               Video Management
             </SectionTitle>
             
-            <PlaceholderText>
-              Video management settings will be integrated here
-            </PlaceholderText>
+            <VideoManagementSection 
+              currentTrack={currentTrack}
+              onVideoChanged={onVideoChanged}
+            />
           </SettingsSection>
 
           {/* Playback Settings Section */}

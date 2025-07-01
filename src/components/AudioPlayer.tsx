@@ -406,15 +406,6 @@ const VideoPlayerContainer = styled.div`
   }
 `;
 
-const PlaylistButtonContainer = styled.div`
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  gap: 0.75rem;
-  width: 100%;
-  flex-wrap: wrap;
-`;
-
 const InfoControls = styled.div`
   width: 100%;
   margin-bottom: 1.5rem;
@@ -845,22 +836,6 @@ const AudioPlayerComponent = () => {
             SHUFFLE 🎵
           </Button>
         </InfoControls> */}
-        <PlaylistButtonContainer>
-          <Button
-            onClick={() => setShowVideoManagement(true)}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.5rem',
-              marginBottom: '1rem',
-              background: 'rgba(255, 255, 255, 0.1)',
-              border: '1px solid rgba(255, 255, 255, 0.2)',
-              color: 'white'
-            }}
-          >
-            🎬 Manage Videos
-          </Button>
-        </PlaylistButtonContainer>
 
         <PlaylistOverlay
           isOpen={showPlaylist}
@@ -925,6 +900,10 @@ const AudioPlayerComponent = () => {
         onClose={() => setShowSettings(false)}
         currentTrack={currentTrack}
         accentColor={accentColor}
+        onVideoChanged={() => {
+          // Force VideoPlayer to refresh by changing its key
+          setVideoRefreshKey(prev => prev + 1);
+        }}
       />
     </Container>
   );
