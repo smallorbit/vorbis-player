@@ -15,7 +15,7 @@ import { flexCenter, flexColumn, cardBase } from '../styles/utils';
 import VideoPlayer from './VideoPlayer';
 import VideoManagementDrawer from './VideoManagementDrawer';
 import VolumeModal from './VolumeModal';
-import { extractDominantColor, getTransparentVariant, getLighterVariant } from '../utils/colorExtractor';
+import { extractDominantColor, getTransparentVariant } from '../utils/colorExtractor';
 
 // Styled components
 const Container = styled.div`
