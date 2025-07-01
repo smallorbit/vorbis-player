@@ -17,6 +17,7 @@ interface MediaItem {
 
 interface VideoPlayerProps {
   currentTrack: Track | null;
+  showVideo?: boolean;
 }
 
 const Container = styled.div`
@@ -122,7 +123,7 @@ const loadBlacklist = (): Set<string> => {
 
 const globalVideoBlacklist = loadBlacklist();
 
-const VideoPlayer = memo<VideoPlayerProps>(({ currentTrack }) => {
+const VideoPlayer = memo<VideoPlayerProps>(({ currentTrack, showVideo = true }) => {
   const [mediaItems, setMediaItems] = useState<MediaItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [, setSearchPhase] = useState<string>('');
@@ -209,7 +210,7 @@ const VideoPlayer = memo<VideoPlayerProps>(({ currentTrack }) => {
   if (!currentTrack) return null;
 
   // Always show the video container to maintain consistent card size
-  const showPlaceholder = (mediaItems.length === 0 && !loading && !error) || videoLoadFailed || noEmbeddableVideos;
+  const showPlaceholder = !showVideo || (mediaItems.length === 0 && !loading && !error) || videoLoadFailed || noEmbeddableVideos;
   const currentVideoItem = mediaItems.length > 0 ? mediaItems[0] : null;
   const showLoadingOverlay = loading;
   const showErrorOverlay = error && !loading;
