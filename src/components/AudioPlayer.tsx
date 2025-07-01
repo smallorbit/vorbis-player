@@ -817,6 +817,7 @@ const AudioPlayerComponent = () => {
                 onNext={handleNext}
                 onPrevious={handlePrevious}
                 onShowPlaylist={() => setShowPlaylist(true)}
+                onShowSettings={() => setShowSettings(true)}
                 trackCount={tracks.length}
               />
             </CardContent>
@@ -906,8 +907,9 @@ const SpotifyPlayerControls = memo<{
   onNext: () => void;
   onPrevious: () => void;
   onShowPlaylist: () => void;
+  onShowSettings: () => void;
   trackCount: number;
-}>(({ currentTrack, accentColor, onPlay, onPause, onNext, onPrevious, onShowPlaylist, trackCount }) => {
+}>(({ currentTrack, accentColor, onPlay, onPause, onNext, onPrevious, onShowPlaylist, onShowSettings, trackCount }) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [volume, setVolume] = useState(50);
@@ -1073,7 +1075,7 @@ const SpotifyPlayerControls = memo<{
             </ControlButton>
             {/* <PlaylistIcon onClick={onShowPlaylist} trackCount={trackCount} /> */}
 
-            <SettingsIcon onClick={() => setShowSettings(true)} />
+            <SettingsIcon onClick={onShowSettings} />
           </ControlButtons>
 
           {/* Volume */}
