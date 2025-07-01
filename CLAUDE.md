@@ -37,13 +37,17 @@ npm run start:all        # Start both proxy and preview server
 2. **AudioPlayerComponent** - Main orchestrator that manages audio playback, track selection, and coordinates between playlist and video display. Includes integrated VideoPlayer within a unified card interface
 3. **VideoPlayer** - Handles YouTube video discovery, embedding, and retry logic with persistent blacklist system
 4. **PlaylistIcon** - Spotify-inspired queue icon integrated into player controls with accessibility features and responsive design
-5. **VolumeModal** - Responsive volume control modal with slider (desktop) and toggle buttons (mobile)
-6. **Playlist** - Collapsible drawer interface showing track listing with current track highlighting
+5. **SettingsIcon** - Settings gear icon integrated into player controls for accessing configuration options
+6. **SettingsModal** - Unified settings interface with video management and configuration options
+7. **VideoManagementSection** - Video-track association management component embedded within settings modal
+8. **VolumeModal** - Responsive volume control modal with slider (desktop) and toggle buttons (mobile)
+9. **Playlist** - Collapsible drawer interface showing track listing with current track highlighting
 
 ### Key State Management
 
 - `currentTrackIndex`: Tracks which song is currently selected/playing
 - `showPlaylist`: Controls visibility of the sliding playlist drawer
+- `showSettings`: Controls visibility of the settings modal interface
 - `showVolumeModal`: Controls visibility of the volume control modal
 - `volume`: Current volume level (0-100) for Spotify player integration
 - `isMuted`: Boolean state for mute/unmute functionality
@@ -111,6 +115,17 @@ VITE_DROPBOX_REDIRECT_URI="http://127.0.0.1:3000/auth/dropbox/callback"
 - **Keyboard Accessibility**: Arrow keys for volume adjustment, space for mute, escape to close
 - **Glass Morphism Styling**: Backdrop blur with semi-transparent background matching app design
 - **Accent Color Integration**: Dynamic theming using album artwork dominant colors
+
+### Settings Modal System
+
+- **Integrated Icon**: Settings gear icon integrated into audio player controls alongside playlist and volume buttons
+- **Unified Interface**: Modal dialog with organized sections for different configuration areas
+- **Video Management**: Complete video-track association management embedded within settings
+- **Responsive Design**: 500px width on desktop with max-height constraints, full-width on mobile
+- **Glass Morphism Styling**: Backdrop blur with semi-transparent background matching app design
+- **Keyboard Navigation**: Full accessibility with escape key support and focus management
+- **Sectioned Layout**: Organized into Video Management, Playback, and Interface categories
+- **Expandable Settings**: Advanced settings sections can be collapsed/expanded for better organization
 
 ### Playlist Drawer System
 
