@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import styled, { keyframes } from 'styled-components';
 import AudioPlayerComponent from './components/AudioPlayer';
-import { dropboxAuth } from './services/dropbox';
 import { spotifyAuth } from './services/spotify';
 // Import spotifyPlayer service to ensure global callback is set up
 import './services/spotifyPlayer';
@@ -57,8 +56,6 @@ function App() {
       try {
         if (window.location.pathname.includes('/auth/spotify/callback')) {
           await spotifyAuth.handleRedirect();
-        } else if (window.location.pathname.includes('/auth/dropbox/callback')) {
-          await dropboxAuth.handleRedirect();
         }
       } catch (error) {
         setAuthError(error instanceof Error ? error.message : 'An unknown error occurred.');

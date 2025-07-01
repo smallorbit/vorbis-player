@@ -406,14 +406,6 @@ const VideoPlayerContainer = styled.div`
   }
 `;
 
-const InfoControls = styled.div`
-  width: 100%;
-  margin-bottom: 1.5rem;
-  background: rgba(38, 38, 38, 0.5);
-  border-radius: 0.5rem;
-  padding: 1.5rem 1rem 1rem 1rem;
-  color: white;
-`;
 
 const AudioPlayerComponent = () => {
   const [tracks, setTracks] = useState<Track[]>([]);
@@ -824,18 +816,6 @@ const AudioPlayerComponent = () => {
             </CardContent>
           </LoadingCard>
         </div>
-        {/* <InfoControls>
-          <div style={{ marginBottom: '0.5rem', fontWeight: 'bold', fontSize: '1.15rem' }}>Now Playing</div>
-          <div style={{ marginBottom: '1rem', color: '#d1d5db' }}>{currentTrack?.name} · {currentTrack?.artists}</div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-            <Button onClick={handlePrevious} variant="secondary">◀ Prev</Button>
-            <span style={{ color: '#fff', fontSize: '1rem' }}>{tracks.length > 0 ? `${currentTrackIndex + 1} / ${tracks.length}` : ''}</span>
-            <Button onClick={handleNext} variant="secondary">Next ▶</Button>
-          </div>
-          <Button onClick={() => playTrack(Math.floor(Math.random() * tracks.length))} style={{ marginTop: 4 }}>
-            SHUFFLE 🎵
-          </Button>
-        </InfoControls> */}
 
         <PlaylistOverlay
           isOpen={showPlaylist}
