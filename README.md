@@ -20,14 +20,15 @@ A modern audio-visual player that combines Spotify music streaming with intellig
 - **Dynamic Backgrounds**: Album artwork creates immersive visual atmosphere
 
 ### 🎛️ User Interface
-- **Integrated Playlist Access**: Spotify-inspired queue icon seamlessly integrated into player controls
-- **Unified Settings Menu**: Gear icon provides access to video management and configuration options
+- **Integrated Control Suite**: Queue, settings, and volume icons seamlessly integrated into player controls
+- **Unified Settings Modal**: Comprehensive settings interface with video management and configuration options
 - **Sliding Playlist Drawer**: Space-saving collapsible playlist accessible from anywhere
 - **Modern Card Design**: Clean, responsive interface with album artwork and visual hierarchy  
-- **Volume Modal**: Responsive volume control with slider (desktop) and toggle buttons (mobile)
+- **Responsive Volume Control**: Modal with slider (desktop) and toggle buttons (mobile)
+- **Organized Settings Sections**: Video management, playback preferences, and interface options
 - **Mobile-Optimized**: Touch-friendly controls and responsive design for all devices
 - **Accessibility-First**: Full keyboard navigation and screen reader support
-- **Hover Interactions**: Intuitive retry overlays and interactive elements with professional tooltips
+- **Glass Morphism Design**: Professional backdrop blur effects with semi-transparent interfaces
 
 ### 🔒 Security & Performance
 - **Secure Authentication**: PKCE OAuth flow for safe Spotify access
@@ -88,7 +89,8 @@ A modern audio-visual player that combines Spotify music streaming with intellig
    - Open <http://127.0.0.1:3000>
    - Click "Connect Spotify" to authenticate
    - Music starts automatically with accompanying videos
-   - Click "📋 View Playlist" to browse your collection
+   - Use the queue icon to browse your playlist
+   - Access settings via the gear icon for video management
    - Hover over any video to retry with alternative content if needed
 
 ## How It Works
@@ -101,10 +103,13 @@ A modern audio-visual player that combines Spotify music streaming with intellig
 - **Automatic Progression**: Seamless transitions between tracks with continuous video playback
 - **Retry System**: Manual retry option finds alternative videos when embedding fails
 
-### Playlist Management
+### Interface Management
 
-- **Collapsible Interface**: Playlist drawer slides out when needed, maximizing video space
+- **Integrated Controls**: All player controls (playlist, settings, volume) seamlessly integrated into main interface
+- **Settings Modal**: Comprehensive settings system with video management, playback preferences, and configuration options
+- **Collapsible Playlist**: Playlist drawer slides out when needed, maximizing video space
 - **Track Selection**: Click any song to jump immediately to that track
+- **Video Management**: Easy access to video search, selection, and custom URL configuration
 - **Visual Feedback**: Current track highlighting and album artwork throughout interface
 - **Responsive Design**: Optimized for both desktop and mobile interaction
 
@@ -134,7 +139,11 @@ src/
 │   ├── AudioPlayer.tsx  # Main orchestrator with integrated video player
 │   ├── VideoPlayer.tsx  # YouTube video discovery and display
 │   ├── Playlist.tsx     # Collapsible track listing drawer
+│   ├── SettingsModal.tsx # Unified settings interface
+│   ├── SettingsIcon.tsx # Settings gear icon component
+│   ├── VideoManagementSection.tsx # Video management component for settings
 │   ├── VolumeModal.tsx  # Responsive volume control modal
+│   ├── PlaylistIcon.tsx # Playlist queue icon component
 │   ├── hyper-text.tsx   # Animated text component
 │   └── styled/          # styled-components UI library
 │       ├── Avatar.tsx   # Image component with fallback support
