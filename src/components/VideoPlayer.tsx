@@ -6,6 +6,7 @@ import { videoSearchOrchestrator } from '../services/videoSearchOrchestrator';
 import { videoManagementService } from '../services/videoManagementService';
 import { AspectRatio } from './ui/aspect-ratio';
 import { SearchErrorDisplay, type SearchError } from './ui/SearchErrorDisplay';
+import { theme } from '../styles/theme';
 
 interface MediaItem {
   id: string;
@@ -36,7 +37,7 @@ const LoadingOverlay = styled.div`
   justify-content: center;
   background: rgba(0, 0, 0, 0.3);
   backdrop-filter: blur(4px);
-  border-radius: 1rem;
+  border-radius: 1.25rem;
   z-index: 10;
 `;
 
@@ -56,14 +57,13 @@ const Spinner = styled.div`
 
 const VideoContainer = styled.div<{ isPlaceholder?: boolean }>`
   position: relative;
-  border-radius: 1rem;
+  border-radius: 1.25rem;
   overflow: hidden;
   ${({ isPlaceholder }) => isPlaceholder ? `
     background: transparent;
-    border: none;
+    border: 0px solid rgba(11, 11, 11, 0.32);
     box-shadow: none;
     backdrop-filter: none;
-    // transform: scale(1);
     z-index: 2;
   ` : `
     background-color: rgba(255, 255, 255, 0.1);
@@ -91,7 +91,7 @@ const StyledImage = styled.img`
 const PlaceholderContainer = styled.div`
   width: 100%;
   height: 100%;
-  border-radius: 1rem;
+  border-radius: 1.25rem;
   position: relative;
   overflow: hidden;
   background: transparent;
@@ -125,6 +125,21 @@ const VideoPlayer = memo<VideoPlayerProps>(({ currentTrack, showVideo = true }) 
   const [error, setError] = useState<SearchError | null>(null);
   const [noEmbeddableVideos, setNoEmbeddableVideos] = useState(false);
   const [videoLoadFailed, setVideoLoadFailed] = useState(false);
+
+  // State for objectPosition
+  const [objectPosition, setObjectPosition] = useState(() =>
+    `center calc(50% + ${window.matchMedia(`(min-width: ${theme.breakpoints.sm})`).matches ? '3.5rem' : '5.25rem'})`
+  );
+
+  useEffect(() => {
+    const updateObjectPosition = () => {
+      setObjectPosition(
+        `center calc(50% + ${window.matchMedia(`(min-width: ${theme.breakpoints.sm})`).matches ? '3.5rem' : '5.25rem'})`
+      );
+    };
+    window.addEventListener('resize', updateObjectPosition);
+    return () => window.removeEventListener('resize', updateObjectPosition);
+  }, []);
 
   const fetchVideoForTrack = useCallback(async (track: Track) => {
     if (!track) return;
@@ -212,7 +227,7 @@ const VideoPlayer = memo<VideoPlayerProps>(({ currentTrack, showVideo = true }) 
 
   return (
     <Container>
-      <AspectRatio ratio={16 / 9} className="w-full mb-4">
+      <AspectRatio ratio={16 / 9} >
         <VideoContainer isPlaceholder={showPlaceholder}>
           {showPlaceholder ? (
             <PlaceholderContainer>
@@ -221,14 +236,14 @@ const VideoPlayer = memo<VideoPlayerProps>(({ currentTrack, showVideo = true }) 
                   src={currentTrack.image}
                   alt={currentTrack.name}
                   style={{
-                    width: '100%',
-                    height: '100%',
+                    width: 'calc(100% + 1.5rem)',
+                    height: 'calc(100% + 0rem)',
                     objectFit: 'cover',
                     overflow: 'hidden',
-                    scale: '1.06',
+                    scale: '1.0',
                     // top: '50%',
-                    // transform: 'translate(10px, 10px)',
-                    objectPosition: 'center calc(50% + 3.2rem)',
+                    transform: 'translate(-.75rem, 0rem)',
+                    objectPosition: objectPosition,
                     // borderRadius: 'inherit',
                     // display: 'block',
                   }}
@@ -282,7 +297,7 @@ const VideoPlayer = memo<VideoPlayerProps>(({ currentTrack, showVideo = true }) 
                     width: '115%',
                     height: '115%',
                     objectFit: 'cover',
-                    objectPosition: 'center calc(50% - 40px)',
+                    objectPosition: objectPosition,
                     borderRadius: 'inherit',
                     display: 'block',
                   }}

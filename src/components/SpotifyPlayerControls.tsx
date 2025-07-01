@@ -14,7 +14,7 @@ const PlayerControlsContainer = styled.div`
   display: flex;
   flex-direction: column;
   gap: ${({ theme }: any) => theme.spacing.sm};
-  padding: ${({ theme }: any) => theme.spacing.lg} ${({ theme }: any) => theme.spacing.md} ${({ theme }: any) => theme.spacing.xs} ${({ theme }: any) => theme.spacing.md};
+  padding: ${({ theme }: any) => theme.spacing.md} ${({ theme }: any) => theme.spacing.md} ${({ theme }: any) => theme.spacing.sm} ${({ theme }: any) => theme.spacing.md};
 `;
 
 const PlayerTrackInfo = styled.div`
@@ -45,7 +45,7 @@ const ControlsRow = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: ${({ theme }: any) => theme.spacing.sm};
+  gap: ${({ theme }: any) => theme.spacing.xs};
   
   @media (min-width: ${({ theme }: any) => theme.breakpoints.sm}) {
     justify-content: flex-start;
@@ -112,7 +112,7 @@ const VolumeButton = styled.button`
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  padding: 0.5rem;
+  padding: 0.3rem;
   border-radius: 0.375rem;
   transition: all 0.2s ease;
   
@@ -136,7 +136,7 @@ const VideoToggleButton = styled.button<{ isActive: boolean }>`
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  padding: 0.5rem;
+  padding: 0.3rem;
   border-radius: 0.375rem;
   transition: all 0.2s ease;
   

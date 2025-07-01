@@ -132,7 +132,7 @@ const ActionButton = styled.button<{ variant?: 'primary' | 'danger' }>`
 `;
 
 const SearchInput = styled.input`
-  width: 100%;
+  width: calc(100% - 1.5rem);
   padding: 0.75rem;
   background: rgba(255, 255, 255, 0.1);
   border: 1px solid rgba(255, 255, 255, 0.2);

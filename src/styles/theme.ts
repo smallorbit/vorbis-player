@@ -66,6 +66,7 @@ export const theme = {
   
   borderRadius: {
     none: '0',
+    xs: '0.05rem',  // 1px
     sm: '0.125rem',  // 2px
     md: '0.375rem',  // 6px
     lg: '0.5rem',    // 8px
@@ -96,6 +97,7 @@ export const theme = {
   },
   
   shadows: {
+    xs: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
     sm: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
     md: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
     lg: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
@@ -112,7 +114,8 @@ export const theme = {
   },
   
   breakpoints: {
-    sm: '640px',
+    xs: '370px',
+    sm: '620px',
     md: '768px',
     lg: '1024px',
     xl: '1280px',
@@ -139,6 +142,7 @@ export type Theme = typeof theme;
 
 // Helper function for responsive design
 export const mediaQuery = {
+  xs: `@media (min-width: ${theme.breakpoints.xs})`,
   sm: `@media (min-width: ${theme.breakpoints.sm})`,
   md: `@media (min-width: ${theme.breakpoints.md})`,
   lg: `@media (min-width: ${theme.breakpoints.lg})`,

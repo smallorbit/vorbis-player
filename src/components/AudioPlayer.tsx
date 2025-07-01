@@ -34,8 +34,6 @@ const ContentWrapper = styled.div`
   padding-left: 1rem;
   padding-right: 1rem;
   box-sizing: border-box;
-  top: 1rem;
-  bottom: 1rem;
   position: absolute;
   z-index: 1000;
   
@@ -133,21 +131,21 @@ const LoadingCard = styled(Card) <{ backgroundImage?: string; standalone?: boole
   ${cardBase};
   position: relative;
   overflow: hidden;
-  border: 1px solid rgba(115, 115, 115, 0.5);
+  border: 0px solid rgba(176, 27, 164, 0.5);
   border-radius: 1.25rem;
-  border-top: 1px solid rgba(115, 115, 115, 0.5);
+  border-top: 0px solid rgba(16, 182, 49, 0.5);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6), 0 2px 8px rgba(0, 0, 0, 0.4);
   
   ${({ backgroundImage }) => backgroundImage ? `
     &::after {
       content: '';
       position: absolute;
-      inset: 0;
+      inset: 0.1rem;
       background-image: url(${backgroundImage});
       background-size: cover;
       background-position: center;
       background-repeat: no-repeat;
-      border-radius: 0.5rem;
+      border-radius: 1.25rem;
       z-index: 0;
     }
     
@@ -156,8 +154,8 @@ const LoadingCard = styled(Card) <{ backgroundImage?: string; standalone?: boole
       position: absolute;
       inset: 0;
       background: rgba(0, 0, 0, 0.7);
-      backdrop-filter: blur(8px);
-      border-radius: 0.5rem;
+      backdrop-filter: blur(4px);
+      border-radius: 1.25rem;
       z-index: 1;
     }
   ` : `
@@ -586,7 +584,6 @@ const AudioPlayerComponent = () => {
 
     return (
       <ContentWrapper>
-        <div>
           <LoadingCard backgroundImage={currentTrack?.image}>
 
             <CardContent style={{ position: 'relative', zIndex: 2 }}>
@@ -611,7 +608,6 @@ const AudioPlayerComponent = () => {
               />
             </CardContent>
           </LoadingCard>
-        </div>
 
         <PlaylistOverlay
           isOpen={showPlaylist}
