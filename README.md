@@ -81,13 +81,26 @@ A modern audio-visual player that combines Spotify music streaming with intellig
    - Create playlists with your favorite music
    - The app will access your playlists to display tracks
 
-5. **Start the app**
+5. **Set up the proxy server (for YouTube video discovery)**
 
    ```bash
-   npm run dev
+   npm run proxy:install
    ```
 
-6. **First run**
+6. **Start the app**
+
+   For development with full video functionality:
+   ```bash
+   npm run dev:all  # Starts both proxy server and dev server
+   ```
+
+   Or start components separately:
+   ```bash
+   npm run proxy:start  # Start proxy server (in separate terminal)
+   npm run dev          # Start development server (in another terminal)
+   ```
+
+7. **First run**
    - Open <http://127.0.0.1:3000>
    - Click "Connect Spotify" to authenticate
    - Music starts automatically with accompanying videos
@@ -128,10 +141,18 @@ A modern audio-visual player that combines Spotify music streaming with intellig
 ### Available Scripts
 
 ```bash
-npm run dev      # Start development server
-npm run build    # Build for production  
-npm run lint     # Run ESLint
-npm run preview  # Preview production build
+npm run dev          # Start development server
+npm run build        # Build for production  
+npm run lint         # Run ESLint
+npm run preview      # Preview production build
+
+# Proxy server commands (for YouTube search bypass)
+npm run proxy:install    # Install proxy server dependencies
+npm run proxy:start      # Start proxy server
+npm run proxy:dev        # Start proxy server in development mode
+npm run proxy:test       # Test proxy server health
+npm run dev:all          # Start both proxy and dev server
+npm run start:all        # Start both proxy and preview server
 ```
 
 ### Project Structure
@@ -142,17 +163,32 @@ src/
 │   ├── AudioPlayer.tsx  # Main orchestrator with integrated video player
 │   ├── VideoPlayer.tsx  # YouTube video discovery and display
 │   ├── Playlist.tsx     # Collapsible track listing drawer
+│   ├── PlaylistIcon.tsx # Playlist queue icon component
 │   ├── SettingsModal.tsx # Unified settings interface
 │   ├── SettingsIcon.tsx # Settings gear icon component
+│   ├── SpotifyAudioPlayer.tsx # Core Spotify audio playback component
+│   ├── SpotifyPlayerControls.tsx # Spotify player control interface
 │   ├── VideoManagementSection.tsx # Video management component for settings
-│   ├── VolumeModal.tsx  # Responsive volume control modal
-│   ├── PlaylistIcon.tsx # Playlist queue icon component
-│   ├── hyper-text.tsx   # Animated text component
-│   └── styled/          # styled-components UI library
-│       ├── Avatar.tsx   # Image component with fallback support
-│       ├── Button.tsx   # Button component with variants
-│       ├── Card.tsx     # Card layout components
-│       └── index.ts     # Component exports
+│   ├── VideoManagementModal.tsx # Modal for video management
+│   ├── VideoManagementDrawer.tsx # Drawer for video management
+│   ├── VideoManagementButton.tsx # Button for video management access
+│   ├── admin/           # Admin components
+│   │   └── VideoAdmin.tsx # Video administration interface
+│   ├── styled/          # styled-components UI library
+│   │   ├── Avatar.tsx   # Image component with fallback support
+│   │   ├── Button.tsx   # Button component with variants
+│   │   ├── Card.tsx     # Card layout components
+│   │   ├── Alert.tsx    # Alert component
+│   │   ├── ScrollArea.tsx # Scrollable area component
+│   │   ├── Skeleton.tsx # Loading skeleton component
+│   │   ├── Slider.tsx   # Slider input component
+│   │   └── index.ts     # Component exports
+│   └── ui/              # Radix UI components and utilities
+│       ├── FallbackVideoDisplay.tsx # Video fallback display
+│       ├── LoadingIndicator.tsx # Loading spinner component
+│       ├── SearchErrorDisplay.tsx # Error display for search failures
+│       ├── youtube-integration.tsx # YouTube integration utilities
+│       └── [various UI components] # Additional UI primitives
 ├── hooks/               # Custom React hooks
 │   └── useDebounce.ts  # Debouncing utility hook
 ├── services/            # External service integrations
@@ -161,7 +197,11 @@ src/
 │   ├── youtubeSearch.ts # YouTube video discovery service
 │   ├── videoSearchOrchestrator.ts # Intelligent video matching
 │   ├── contentFilter.ts # Video quality and relevance filtering
-│   └── videoQuality.ts  # Video resolution and quality assessment
+│   ├── videoQuality.ts  # Video resolution and quality assessment
+│   ├── videoManagementService.ts # Video management utilities
+│   ├── trackVideoAssociationService.ts # Track-video associations
+│   ├── youtube.ts      # YouTube utilities and helpers
+│   └── adminService.ts # Admin functionality service
 ├── styles/             # Styling system
 │   ├── theme.ts        # Design tokens and theme configuration
 │   └── utils.ts        # styled-components utility mixins
@@ -171,18 +211,24 @@ src/
 public/
 ├── sw.js               # Service worker for caching and offline support
 └── vorbis_player_logo.jpg # Application logo
+
+proxy-server/           # Node.js proxy server for YouTube search
+├── server.js          # Express server for CORS bypass
+├── package.json       # Proxy server dependencies
+└── README.md          # Proxy server documentation
 ```
 
 ### Tech Stack
 
 - **Frontend**: React 18 + TypeScript + Vite
-- **Styling**: styled-components with custom theme system
+- **Styling**: styled-components with custom theme system and Radix UI primitives
 - **Audio**: Spotify Web Playback SDK
-- **Video**: YouTube iframe embedding with intelligent discovery
+- **Video**: YouTube iframe embedding with intelligent discovery via proxy server
 - **Authentication**: Spotify Web API with PKCE OAuth
 - **Content Intelligence**: Advanced filtering and quality assessment algorithms
 - **Storage**: localStorage for persistent blacklist and user preferences
-- **Build Tool**: Vite with HMR
+- **UI Components**: Radix UI primitives with custom styled-components
+- **Build Tool**: Vite with HMR and concurrent proxy server support
 
 ## Deployment
 
@@ -194,7 +240,18 @@ npm run build
 
 The `dist/` folder contains static files that can be deployed to any web hosting service (Vercel, Netlify, GitHub Pages, etc.).
 
-**Note**: Update the Spotify redirect URI in your app settings to match your production domain.
+### Proxy Server Deployment
+
+For full video functionality in production, the proxy server must also be deployed:
+
+1. **Deploy the proxy server** to a Node.js hosting service (Railway, Render, Heroku, etc.)
+2. **Update the YouTube search service** to use your production proxy URL
+3. **Configure CORS** in the proxy server for your production domain
+
+**Important**: 
+- Update the Spotify redirect URI in your app settings to match your production domain
+- The proxy server is required for YouTube video discovery due to CORS restrictions
+- Without the proxy server, the app will function but videos won't load automatically
 
 ## Troubleshooting
 
@@ -218,8 +275,16 @@ The `dist/` folder contains static files that can be deployed to any web hosting
 - Use `127.0.0.1` instead of `localhost` for Spotify OAuth compatibility
 - Try clearing browser storage and re-authenticating
 
+### Proxy Server Issues
+
+- **Check proxy server status**: Run `npm run proxy:test` to verify it's running
+- **Proxy server not starting**: Ensure Node.js is installed and run `npm run proxy:install`
+- **Videos not loading**: Verify proxy server is running on port 3001
+- **Development setup**: Use `npm run dev:all` to start both proxy and client together
+
 ### Performance Issues
 
 - Clear localStorage to reset video blacklist: `localStorage.clear()` in browser console
 - Refresh the page if videos stop loading consistently
 - The app is optimized for continuous playback; occasional video misses are expected
+- If proxy server becomes unresponsive, restart it with `npm run proxy:start`
