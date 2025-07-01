@@ -17,7 +17,9 @@ A modern audio-visual player that combines Spotify music streaming with intellig
 - **Intelligent Video Discovery**: Automatically finds relevant YouTube videos for each track
 - **Persistent Blacklist**: Remembers and avoids non-embeddable videos across sessions
 - **Integrated Player Card**: Video and audio controls unified in a single elegant interface
-- **Dynamic Backgrounds**: Album artwork creates immersive visual atmosphere
+- **Dynamic Album Art Background**: Blurred album artwork creates immersive visual atmosphere
+- **Seamless Video Placeholders**: When no video is available, shows clear album art through transparent "window" effect while maintaining consistent card sizing
+- **Smooth Loading States**: Simple spinner overlays during video search maintain layout stability
 
 ### 🎛️ User Interface
 - **Integrated Control Suite**: Queue, settings, and volume icons seamlessly integrated into player controls with consistent 1.5rem sizing for visual uniformity
@@ -111,6 +113,7 @@ A modern audio-visual player that combines Spotify music streaming with intellig
 - **Track Selection**: Click any song to jump immediately to that track
 - **Video Management**: Easy access to video search, selection, and custom URL configuration
 - **Visual Feedback**: Current track highlighting and album artwork throughout interface
+- **Consistent Sizing**: Player card maintains stable dimensions during all loading states and content transitions
 - **Responsive Design**: Optimized for both desktop and mobile interaction
 
 ### Authentication
