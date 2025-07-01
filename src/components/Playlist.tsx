@@ -49,7 +49,9 @@ const PlaylistItems = styled.div`
   gap: ${({ theme }) => theme.spacing.sm};
 `;
 
-const PlaylistItemContainer = styled.div<{ isSelected: boolean; accentColor: string }>`
+const PlaylistItemContainer = styled.div.withConfig({
+  shouldForwardProp: (prop) => !['isSelected', 'accentColor'].includes(prop),
+})<{ isSelected: boolean; accentColor: string }>`
   display: flex;
   align-items: center;
   gap: ${({ theme }) => theme.spacing.sm};
@@ -90,7 +92,9 @@ const TrackInfo = styled.div`
   min-width: 0;
 `;
 
-const TrackName = styled.div<{ isSelected: boolean }>`
+const TrackName = styled.div.withConfig({
+  shouldForwardProp: (prop) => prop !== 'isSelected',
+})<{ isSelected: boolean }>`
   font-weight: ${({ theme }) => theme.fontWeight.semibold};
   font-size: ${({ theme }) => theme.fontSize.base};
   line-height: 1.25;
@@ -104,7 +108,9 @@ const TrackName = styled.div<{ isSelected: boolean }>`
   word-break: break-word;
 `;
 
-const TrackArtist = styled.div<{ isSelected: boolean; accentColor: string }>`
+const TrackArtist = styled.div.withConfig({
+  shouldForwardProp: (prop) => !['isSelected', 'accentColor'].includes(prop),
+})<{ isSelected: boolean; accentColor: string }>`
   font-size: ${({ theme }) => theme.fontSize.sm};
   margin-top: ${({ theme }) => theme.spacing.xs};
   overflow: hidden;
@@ -113,7 +119,9 @@ const TrackArtist = styled.div<{ isSelected: boolean; accentColor: string }>`
   color: ${({ isSelected, accentColor, theme }) => isSelected ? accentColor : theme.colors.gray[400]};
 `;
 
-const Duration = styled.span<{ isSelected: boolean; accentColor: string }>`
+const Duration = styled.span.withConfig({
+  shouldForwardProp: (prop) => !['isSelected', 'accentColor'].includes(prop),
+})<{ isSelected: boolean; accentColor: string }>`
   font-size: ${({ theme }) => theme.fontSize.sm};
   font-family: monospace;
   color: ${({ isSelected, accentColor, theme }) => isSelected ? accentColor : theme.colors.gray[400]};
