@@ -14,7 +14,7 @@ const PlayerControlsContainer = styled.div`
   display: flex;
   flex-direction: column;
   gap: ${({ theme }: any) => theme.spacing.sm};
-  padding: ${({ theme }: any) => theme.spacing.md} ${({ theme }: any) => theme.spacing.md} ${({ theme }: any) => theme.spacing.sm} ${({ theme }: any) => theme.spacing.md};
+  padding: ${({ theme }: any) => theme.spacing.lg} ${({ theme }: any) => theme.spacing.md} ${({ theme }: any) => theme.spacing.xs} ${({ theme }: any) => theme.spacing.md};
 `;
 
 const PlayerTrackInfo = styled.div`
@@ -45,9 +45,9 @@ const ControlsRow = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: ${({ theme }: any) => theme.spacing.md};
+  gap: ${({ theme }: any) => theme.spacing.sm};
   
-  @media (min-width: ${({ theme }: any) => theme.breakpoints.md}) {
+  @media (min-width: ${({ theme }: any) => theme.breakpoints.sm}) {
     justify-content: flex-start;
   }
 `;
@@ -55,9 +55,9 @@ const ControlsRow = styled.div`
 const TrackInfoRow = styled.div`
   display: flex;
   flex-direction: column;
-  gap: ${({ theme }: any) => theme.spacing.md};
+  gap: ${({ theme }: any) => theme.spacing.sm};
   
-  @media (min-width: ${({ theme }: any) => theme.breakpoints.md}) {
+  @media (min-width: ${({ theme }: any) => theme.breakpoints.sm}) {
     flex-direction: row;
     align-items: center;
     justify-content: space-between;

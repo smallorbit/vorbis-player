@@ -63,6 +63,8 @@ const VideoContainer = styled.div<{ isPlaceholder?: boolean }>`
     border: none;
     box-shadow: none;
     backdrop-filter: none;
+    // transform: scale(1);
+    z-index: 2;
   ` : `
     background-color: rgba(255, 255, 255, 0.1);
     backdrop-filter: blur(0.375rem);
@@ -86,20 +88,13 @@ const StyledImage = styled.img`
   object-fit: cover;
 `;
 
-const PlaceholderContainer = styled.div<{ backgroundImage?: string }>`
+const PlaceholderContainer = styled.div`
   width: 100%;
   height: 100%;
   border-radius: 1rem;
   position: relative;
   overflow: hidden;
-  ${({ backgroundImage }) => backgroundImage ? `
-    background-image: url(${backgroundImage});
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
-  ` : `
-    background: transparent;
-  `}
+  background: transparent;
 `;
 
 
@@ -220,7 +215,31 @@ const VideoPlayer = memo<VideoPlayerProps>(({ currentTrack, showVideo = true }) 
       <AspectRatio ratio={16 / 9} className="w-full mb-4">
         <VideoContainer isPlaceholder={showPlaceholder}>
           {showPlaceholder ? (
-            <PlaceholderContainer backgroundImage={currentTrack?.image} />
+            <PlaceholderContainer>
+              {currentTrack?.image && (
+                <img
+                  src={currentTrack.image}
+                  alt={currentTrack.name}
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'cover',
+                    overflow: 'hidden',
+                    scale: '1.06',
+                    // top: '50%',
+                    // transform: 'translate(10px, 10px)',
+                    objectPosition: 'center calc(50% + 3.2rem)',
+                    // borderRadius: 'inherit',
+                    // display: 'block',
+                  }}
+                  loading="lazy"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.src = `https://via.placeholder.com/400x300/1a1a1a/ffffff?text=${encodeURIComponent(currentTrack.name || 'No Image')}`;
+                  }}
+                />
+              )}
+            </PlaceholderContainer>
           ) : currentVideoItem ? (
             currentVideoItem.type === 'youtube' ? (
               <StyledIframe
@@ -254,7 +273,27 @@ const VideoPlayer = memo<VideoPlayerProps>(({ currentTrack, showVideo = true }) 
               />
             )
           ) : (
-            <PlaceholderContainer backgroundImage={currentTrack?.image} />
+            <PlaceholderContainer>
+              {currentTrack?.image && (
+                <img
+                  src={currentTrack.image}
+                  alt={currentTrack.name}
+                  style={{
+                    width: '115%',
+                    height: '115%',
+                    objectFit: 'cover',
+                    objectPosition: 'center calc(50% - 40px)',
+                    borderRadius: 'inherit',
+                    display: 'block',
+                  }}
+                  loading="lazy"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.src = `https://via.placeholder.com/400x300/1a1a1a/ffffff?text=${encodeURIComponent(currentTrack.name || 'No Image')}`;
+                  }}
+                />
+              )}
+            </PlaceholderContainer>
           )}
           
           {showLoadingOverlay && (
