@@ -16,7 +16,6 @@ import { Skeleton } from '../components/styled';
 import { Alert, AlertDescription } from '../components/styled';
 import { flexCenter, flexColumn, cardBase } from '../styles/utils';
 import VideoPlayer from './VideoPlayer';
-import VideoManagementDrawer from './VideoManagementDrawer';
 import VolumeModal from './VolumeModal';
 import { extractDominantColor, getTransparentVariant } from '../utils/colorExtractor';
 
@@ -424,7 +423,6 @@ const AudioPlayerComponent = () => {
   const [selectedPlaylistName, setSelectedPlaylistName] = useState<string>('');
   const [showAdminPanel, setShowAdminPanel] = useState(false);
   const [showPlaylist, setShowPlaylist] = useState(false);
-  const [showVideoManagement, setShowVideoManagement] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [videoRefreshKey, setVideoRefreshKey] = useState(0);
   const [accentColor, setAccentColor] = useState<string>('goldenrod');
@@ -885,15 +883,6 @@ const AudioPlayerComponent = () => {
         </Suspense>
       )}
 
-      <VideoManagementDrawer
-        currentTrack={currentTrack}
-        isOpen={showVideoManagement}
-        onClose={() => setShowVideoManagement(false)}
-        onVideoChanged={() => {
-          // Force VideoPlayer to refresh by changing its key
-          setVideoRefreshKey(prev => prev + 1);
-        }}
-      />
 
       <SettingsModal
         isOpen={showSettings}
