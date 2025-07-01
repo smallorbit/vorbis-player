@@ -20,7 +20,7 @@ A modern audio-visual player that combines Spotify music streaming with intellig
 - **Dynamic Backgrounds**: Album artwork creates immersive visual atmosphere
 
 ### 🎛️ User Interface
-- **Integrated Control Suite**: Queue, settings, and volume icons seamlessly integrated into player controls
+- **Integrated Control Suite**: Queue, settings, and volume icons seamlessly integrated into player controls with consistent 1.5rem sizing for visual uniformity
 - **Unified Settings Modal**: Comprehensive settings interface with video management and configuration options
 - **Sliding Playlist Drawer**: Space-saving collapsible playlist accessible from anywhere
 - **Modern Card Design**: Clean, responsive interface with album artwork and visual hierarchy  
@@ -105,7 +105,7 @@ A modern audio-visual player that combines Spotify music streaming with intellig
 
 ### Interface Management
 
-- **Integrated Controls**: All player controls (playlist, settings, volume) seamlessly integrated into main interface
+- **Integrated Controls**: All player controls (playlist, settings, volume) seamlessly integrated into main interface with consistent 1.5rem icon sizing
 - **Settings Modal**: Comprehensive settings system with video management, playback preferences, and configuration options
 - **Collapsible Playlist**: Playlist drawer slides out when needed, maximizing video space
 - **Track Selection**: Click any song to jump immediately to that track

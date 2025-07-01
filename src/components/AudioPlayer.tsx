@@ -307,6 +307,7 @@ const ControlButton = styled.button<{ isPlaying?: boolean; accentColor: string }
 `;
 
 const VolumeButton = styled.button`
+
   border: none;
   background: transparent;
   color: ${({ theme }: any) => theme.colors.gray[400]};
@@ -314,8 +315,8 @@ const VolumeButton = styled.button`
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  padding: ${({ theme }: any) => theme.spacing.xs};
-  border-radius: ${({ theme }: any) => theme.borderRadius.md};
+  padding: 0.5rem;
+  border-radius: 0.375rem;
   transition: all 0.2s ease;
   
   &:hover {
@@ -324,8 +325,8 @@ const VolumeButton = styled.button`
   }
   
   svg {
-    width: 1rem;
-    height: 1rem;
+    width: 1.5rem;
+    height: 1.5rem;
     fill: currentColor;
   }
 `;

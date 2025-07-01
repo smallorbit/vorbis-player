@@ -34,14 +34,15 @@ npm run start:all        # Start both proxy and preview server
 ### Core Components Flow
 
 1. **App.tsx** - Handles Spotify OAuth authentication flow and renders the main AudioPlayerComponent
-2. **AudioPlayerComponent** - Main orchestrator that manages audio playback, track selection, and coordinates between playlist and video display. Includes integrated VideoPlayer within a unified card interface
+2. **AudioPlayerComponent** - Main orchestrator that manages audio playback, track selection, and coordinates between playlist and video display. Includes integrated VideoPlayer within a unified card interface with consistent 1.5rem control icons
 3. **VideoPlayer** - Handles YouTube video discovery, embedding, and retry logic with persistent blacklist system
-4. **PlaylistIcon** - Spotify-inspired queue icon integrated into player controls with accessibility features and responsive design
-5. **SettingsIcon** - Settings gear icon integrated into player controls for accessing configuration options
-6. **SettingsModal** - Unified settings interface with video management and configuration options
-7. **VideoManagementSection** - Video-track association management component embedded within settings modal
-8. **VolumeModal** - Responsive volume control modal with slider (desktop) and toggle buttons (mobile)
-9. **Playlist** - Collapsible drawer interface showing track listing with current track highlighting
+4. **PlaylistIcon** - Spotify-inspired queue icon integrated into player controls with accessibility features and responsive design (1.5rem sizing)
+5. **SettingsIcon** - Settings gear icon integrated into player controls for accessing configuration options (1.5rem sizing)
+6. **VolumeIcon** - Volume trigger icon integrated into player controls with consistent 1.5rem sizing for visual uniformity
+7. **SettingsModal** - Unified settings interface with video management and configuration options
+8. **VideoManagementSection** - Video-track association management component embedded within settings modal
+9. **VolumeModal** - Responsive volume control modal with slider (desktop) and toggle buttons (mobile)
+10. **Playlist** - Collapsible drawer interface showing track listing with current track highlighting
 
 ### Key State Management
 
@@ -126,10 +127,11 @@ VITE_DROPBOX_REDIRECT_URI="http://127.0.0.1:3000/auth/dropbox/callback"
 - **Keyboard Navigation**: Full accessibility with escape key support and focus management
 - **Sectioned Layout**: Organized into Video Management, Playback, and Interface categories
 - **Expandable Settings**: Advanced settings sections can be collapsed/expanded for better organization
+- **Consistent Icon Sizing**: All control icons (settings, playlist, volume) standardized to 1.5rem for visual consistency
 
 ### Playlist Drawer System
 
-- **Integrated Icon**: Spotify-inspired queue icon integrated into audio player controls
+- **Integrated Icon**: Spotify-inspired queue icon integrated into audio player controls with consistent 1.5rem sizing
 - **Sliding Drawer**: Fixed-position drawer slides from right with smooth animations
 - **Responsive Design**: 400px width on desktop, full-width on mobile
 - **Overlay Backdrop**: Click-to-close overlay with blur effects
