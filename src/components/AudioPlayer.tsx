@@ -9,6 +9,8 @@ import { spotifyPlayer } from '../services/spotifyPlayer';
 import type { Track } from '../services/spotify';
 import { Card, CardHeader, CardContent } from '../components/styled';
 import PlaylistIcon from './PlaylistIcon';
+import SettingsIcon from './SettingsIcon';
+import SettingsModal from './SettingsModal';
 import { Button } from '../components/styled';
 import { Skeleton } from '../components/styled';
 import { Alert, AlertDescription } from '../components/styled';
@@ -432,6 +434,7 @@ const AudioPlayerComponent = () => {
   const [showAdminPanel, setShowAdminPanel] = useState(false);
   const [showPlaylist, setShowPlaylist] = useState(false);
   const [showVideoManagement, setShowVideoManagement] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   const [videoRefreshKey, setVideoRefreshKey] = useState(0);
   const [accentColor, setAccentColor] = useState<string>('goldenrod');
 
@@ -916,6 +919,13 @@ const AudioPlayerComponent = () => {
           setVideoRefreshKey(prev => prev + 1);
         }}
       />
+
+      <SettingsModal
+        isOpen={showSettings}
+        onClose={() => setShowSettings(false)}
+        currentTrack={currentTrack}
+        accentColor={accentColor}
+      />
     </Container>
   );
 };
@@ -1094,6 +1104,8 @@ const SpotifyPlayerControls = memo<{
 
             </ControlButton>
             {/* <PlaylistIcon onClick={onShowPlaylist} trackCount={trackCount} /> */}
+
+            <SettingsIcon onClick={() => setShowSettings(true)} />
           </ControlButtons>
 
           {/* Volume */}
