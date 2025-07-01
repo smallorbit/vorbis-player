@@ -211,62 +211,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               </svg>
               Video Management
             </SectionTitle>
-            
-            <VideoManagementSection 
+
+            <VideoManagementSection
               currentTrack={currentTrack}
               onVideoChanged={onVideoChanged}
             />
           </SettingsSection>
 
-          {/* Playback Settings Section */}
-          <SettingsSection>
-            <SectionTitle>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M8,5.14V19.14L19,12.14L8,5.14Z" />
-              </svg>
-              Playback
-            </SectionTitle>
-            
-            <SettingItem>
-              <SettingInfo>
-                <SettingLabel>Auto-advance tracks</SettingLabel>
-                <SettingDescription>
-                  Automatically play the next track when the current track ends
-                </SettingDescription>
-              </SettingInfo>
-              <PlaceholderText>Coming soon</PlaceholderText>
-            </SettingItem>
-
-            <SettingItem>
-              <SettingInfo>
-                <SettingLabel>Default volume</SettingLabel>
-                <SettingDescription>
-                  Set the default volume level for new sessions
-                </SettingDescription>
-              </SettingInfo>
-              <PlaceholderText>Coming soon</PlaceholderText>
-            </SettingItem>
-          </SettingsSection>
-
-          {/* Interface Settings Section */}
-          <SettingsSection>
-            <SectionTitle>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,8.39C10.57,9.4 10.57,10.6 12,11.61C13.43,10.6 13.43,9.4 12,8.39M6.13,15.26C6.13,14.61 6.39,14.13 6.91,13.91C7.43,13.69 7.97,13.77 8.54,14.15C8.76,14.15 8.76,14.39 8.54,14.39C8.11,14.39 7.68,14.46 7.35,14.68C7.06,14.68 6.91,14.92 6.91,15.26C6.91,15.7 7.06,16.05 7.35,16.22C7.68,16.44 8.11,16.5 8.54,16.5C8.76,16.5 8.76,16.74 8.54,16.74C7.97,17.12 7.43,17.21 6.91,16.98C6.39,16.76 6.13,16.28 6.13,15.26M17.87,15.26C17.87,16.28 17.61,16.76 17.09,16.98C16.57,17.21 16.03,17.12 15.46,16.74C15.24,16.74 15.24,16.5 15.46,16.5C15.89,16.5 16.32,16.44 16.65,16.22C16.94,16.05 17.09,15.7 17.09,15.26C17.09,14.92 16.94,14.68 16.65,14.68C16.32,14.46 15.89,14.39 15.46,14.39C15.24,14.39 15.24,14.15 15.46,14.15C16.03,13.77 16.57,13.69 17.09,13.91C17.61,14.13 17.87,14.61 17.87,15.26Z" />
-              </svg>
-              Interface
-            </SectionTitle>
-            
-            <SettingItem>
-              <SettingInfo>
-                <SettingLabel>Theme</SettingLabel>
-                <SettingDescription>
-                  Customize the app's appearance and color scheme
-                </SettingDescription>
-              </SettingInfo>
-              <PlaceholderText>Coming soon</PlaceholderText>
-            </SettingItem>
-          </SettingsSection>
         </SettingsContent>
       </Modal>
     </Overlay>
