@@ -22,14 +22,16 @@ A modern audio-visual player that combines Spotify music streaming with intellig
 - **Smooth Loading States**: Simple spinner overlays during video search maintain layout stability
 
 ### 🎛️ User Interface
-- **Integrated Control Suite**: Queue and settings icons seamlessly integrated into player controls with consistent 1.5rem sizing for visual uniformity
+- **Three-Column Layout**: Track info, controls, and settings organized in an intuitive three-column design with optimized space utilization
+- **Integrated Timeline Controls**: Playback controls positioned along the timeline for compact, streamlined interface
+- **Volume & Video Controls**: Dedicated volume and video toggle buttons with responsive design for desktop and mobile
 - **Unified Settings Modal**: Comprehensive settings interface with video management and configuration options
-- **Sliding Playlist Drawer**: Space-saving collapsible playlist accessible from anywhere
+- **Sliding Playlist Drawer**: Space-saving collapsible playlist accessible from anywhere with 1.5rem consistent icon sizing
+- **Square Video Format**: 1:1 aspect ratio video display optimized for modern mobile-first viewing
 - **Modern Card Design**: Clean, responsive interface with album artwork and visual hierarchy  
-- **Organized Settings Sections**: Video management, playback preferences, and interface options
-- **Mobile-Optimized**: Touch-friendly controls and responsive design for all devices
+- **Mobile-Optimized**: Reduced minimum width (585px) and touch-friendly controls for all devices
 - **Accessibility-First**: Full keyboard navigation and screen reader support
-- **Glass Morphism Design**: Professional backdrop blur effects with semi-transparent interfaces
+- **Glass Morphism Design**: Enhanced backdrop blur effects with semi-transparent interfaces
 
 ### 🔒 Security & Performance
 - **Secure Authentication**: PKCE OAuth flow for safe Spotify access
@@ -119,14 +121,16 @@ A modern audio-visual player that combines Spotify music streaming with intellig
 
 ### Interface Management
 
-- **Integrated Controls**: All player controls (playlist, settings) seamlessly integrated into main interface with consistent 1.5rem icon sizing
+- **Three-Column Layout**: Track information, playback controls, and settings organized in a clean three-column design for optimal space efficiency
+- **Timeline-Integrated Controls**: Play, pause, next, and previous buttons positioned along the timeline for streamlined access
+- **Smart Control Placement**: Volume and video toggle positioned on the left, like button and playlist on the right for intuitive operation
 - **Settings Modal**: Comprehensive settings system with video management, playback preferences, and configuration options
-- **Collapsible Playlist**: Playlist drawer slides out when needed, maximizing video space
+- **Collapsible Playlist**: Playlist drawer slides out when needed, maximizing video space with consistent 1.5rem icon sizing
 - **Track Selection**: Click any song to jump immediately to that track
-- **Video Management**: Easy access to video search, selection, and custom URL configuration
+- **Square Video Display**: 1:1 aspect ratio optimized for modern viewing preferences and mobile devices
 - **Visual Feedback**: Current track highlighting and album artwork throughout interface
 - **Consistent Sizing**: Player card maintains stable dimensions during all loading states and content transitions
-- **Responsive Design**: Optimized for both desktop and mobile interaction
+- **Responsive Design**: Mobile-optimized with 585px minimum width for better small-screen compatibility
 
 ### Authentication
 
@@ -168,7 +172,7 @@ src/
 │   ├── SettingsModal.tsx # Unified settings interface
 │   ├── SettingsIcon.tsx # Settings gear icon component
 │   ├── SpotifyAudioPlayer.tsx # Core Spotify audio playback component
-│   ├── SpotifyPlayerControls.tsx # Spotify player control interface
+│   ├── SpotifyPlayerControls.tsx # Three-column player control interface with timeline-integrated controls
 │   ├── VideoManagementSection.tsx # Video management component for settings
 │   ├── VideoManagementSettings.tsx # Video management settings component
 │   ├── VideoManagementButton.tsx # Button for video management access

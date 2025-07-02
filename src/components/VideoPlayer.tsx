@@ -68,10 +68,10 @@ const VideoContainer = styled.div<{ isPlaceholder?: boolean }>`
   ` : `
     background-color: rgba(255, 255, 255, 0.1);
     backdrop-filter: blur(0.375rem);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    // border: 1px solid rgba(255, 255, 255, 0.2);
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 0 4px 16px rgba(0, 0, 0, 0.2);
   `}
-  transition: all 0.3s ease;
+  // transition: all 0.3s ease;
   width: 100%;
   height: 100%;
 `;
@@ -227,7 +227,7 @@ const VideoPlayer = memo<VideoPlayerProps>(({ currentTrack, showVideo = true }) 
 
   return (
     <Container>
-      <AspectRatio ratio={16 / 9} >
+      <AspectRatio ratio={1} style={{ borderRadius: '1.25rem', overflow: 'hidden' }}>
         <VideoContainer isPlaceholder={showPlaceholder}>
           {showPlaceholder ? (
             <PlaceholderContainer>
@@ -241,10 +241,11 @@ const VideoPlayer = memo<VideoPlayerProps>(({ currentTrack, showVideo = true }) 
                     objectFit: 'cover',
                     overflow: 'hidden',
                     scale: '1.0',
+                    // padding: '.5rem 0 0 0',
+                    // margin: '0.75rem 0 0 .75rem',
                     // top: '50%',
-                    transform: 'translate(-.75rem, 0rem)',
-                    objectPosition: objectPosition,
-                    // borderRadius: 'inherit',
+                    // transform: 'translate(-.75rem, 0rem)',
+                    borderRadius: 'inherit',
                     // display: 'block',
                   }}
                   loading="lazy"

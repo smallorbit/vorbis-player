@@ -154,7 +154,7 @@ const LoadingCard = styled(Card) <{ backgroundImage?: string; standalone?: boole
       position: absolute;
       inset: 0;
       background: rgba(0, 0, 0, 0.7);
-      backdrop-filter: blur(4px);
+      backdrop-filter: blur(34px);
       border-radius: 1.25rem;
       z-index: 1;
     }
