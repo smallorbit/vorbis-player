@@ -248,20 +248,20 @@ const AudioPlayerComponent = () => {
       // Start playing the first track (user interaction has occurred)
       setTimeout(async () => {
         try {
-          console.log('🎵 Attempting to start playback after playlist selection...');
+          // console.log('🎵 Attempting to start playback after playlist selection...');
           await playTrack(0);
-          console.log('🎵 Playback started successfully after playlist selection!');
+          // console.log('🎵 Playback started successfully after playlist selection!');
 
           // Check playback state after a delay and try to recover
           setTimeout(async () => {
             const state = await spotifyPlayer.getCurrentState();
-            console.log('🎵 Post-start playback check:', {
-              paused: state?.paused,
-              position: state?.position,
-              trackName: state?.track_window?.current_track?.name,
-              playerReady: spotifyPlayer.getIsReady(),
-              deviceId: spotifyPlayer.getDeviceId()
-            });
+            // console.log('🎵 Post-start playback check:', {
+            //   paused: state?.paused,
+            //   position: state?.position,
+            //   trackName: state?.track_window?.current_track?.name,
+            //   playerReady: spotifyPlayer.getIsReady(),
+            //   deviceId: spotifyPlayer.getDeviceId()
+            // });
 
             // If state is undefined, the player might not be active - try to activate it
             if (!state || !state.track_window?.current_track) {
