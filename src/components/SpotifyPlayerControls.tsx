@@ -1,8 +1,9 @@
 import { useState, useEffect, memo } from 'react';
 import styled from 'styled-components';
 import { spotifyPlayer } from '../services/spotifyPlayer';
-import { spotifyAuth } from '../services/spotify';
+import { spotifyAuth, checkTrackSaved, saveTrack, unsaveTrack } from '../services/spotify';
 import type { Track } from '../services/spotify';
+import LikeButton from './LikeButton';
 // ... existing code ...
 // Copy all styled components and the SpotifyPlayerControls component from AudioPlayer.tsx here
 // ... existing code ... 
@@ -239,6 +240,8 @@ const SpotifyPlayerControls = memo<{
   const [currentPosition, setCurrentPosition] = useState(0);
   const [duration, setDuration] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
+  const [isLiked, setIsLiked] = useState(false);
+  const [isLikePending, setIsLikePending] = useState(false);
 
   useEffect(() => {
     const checkPlaybackState = async () => {
@@ -264,6 +267,29 @@ const SpotifyPlayerControls = memo<{
     setVolume(50);
     setPreviousVolume(50);
   }, []);
+
+  // Check like status when track changes
+  useEffect(() => {
+    const checkLikeStatus = async () => {
+      if (!currentTrack?.id) {
+        setIsLiked(false);
+        return;
+      }
+
+      try {
+        setIsLikePending(true);
+        const liked = await checkTrackSaved(currentTrack.id);
+        setIsLiked(liked);
+      } catch (error) {
+        console.error('Failed to check like status:', error);
+        setIsLiked(false);
+      } finally {
+        setIsLikePending(false);
+      }
+    };
+
+    checkLikeStatus();
+  }, [currentTrack?.id]);
 
   const handlePlayPause = () => {
     if (isPlaying) {
@@ -291,6 +317,31 @@ const SpotifyPlayerControls = memo<{
 
   const handleVolumeButtonClick = () => {
     handleMuteToggle();
+  };
+
+  const handleLikeToggle = async () => {
+    if (!currentTrack?.id || isLikePending) return;
+
+    try {
+      setIsLikePending(true);
+      
+      // Optimistic update
+      const newLikedState = !isLiked;
+      setIsLiked(newLikedState);
+
+      // Make API call
+      if (newLikedState) {
+        await saveTrack(currentTrack.id);
+      } else {
+        await unsaveTrack(currentTrack.id);
+      }
+    } catch (error) {
+      console.error('Failed to toggle like status:', error);
+      // Revert optimistic update on error
+      setIsLiked(!isLiked);
+    } finally {
+      setIsLikePending(false);
+    }
   };
 
   const handleSeek = async (position: number) => {
@@ -373,6 +424,14 @@ const SpotifyPlayerControls = memo<{
               </svg>
             </ControlButton>
 
+            <LikeButton
+              trackId={currentTrack?.id}
+              isLiked={isLiked}
+              isLoading={isLikePending}
+              accentColor={accentColor}
+              onToggleLike={handleLikeToggle}
+            />
+
             <ControlButton accentColor={accentColor} onClick={onShowPlaylist}>
               <svg viewBox="0 0 24 24" role="img" aria-hidden="true">
                 <path d="M3 6h18v2H3V6zm0 5h18v2H3v-2zm0 5h18v2H3v-2z" />
@@ -406,8 +465,8 @@ const SpotifyPlayerControls = memo<{
               </svg>
             )}
           </VolumeButton>
-           {/* Video Toggle */}
-           <VideoToggleButton isActive={showVideo} onClick={onToggleVideo}>
+          {/* Video Toggle */}
+          <VideoToggleButton isActive={showVideo} onClick={onToggleVideo}>
             {showVideo ? (
               <svg viewBox="0 0 24 24">
                 <path d="M17 10.5V7C17 6.45 16.55 6 16 6H4C3.45 6 3 6.45 3 7V17C3 17.55 3.45 18 4 18H16C16.55 18 17 17.55 17 17V13.5L21 17.5V6.5L17 10.5Z" />

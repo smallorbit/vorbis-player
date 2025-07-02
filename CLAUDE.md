@@ -42,7 +42,8 @@ npm run start:all        # Start both proxy and preview server
 7. **SettingsModal** - Unified settings interface with video management and configuration options
 8. **VideoManagementSection** - Video-track association management component embedded within settings modal
 9. **VolumeModal** - Responsive volume control modal with slider (desktop) and toggle buttons (mobile)
-10. **Playlist** - Collapsible drawer interface showing track listing with current track highlighting
+10. **LikeButton** - Heart-shaped toggle button for saving/removing tracks from user's Spotify Liked Songs library with smooth animations, loading states, and consistent 1.5rem sizing
+11. **Playlist** - Collapsible drawer interface showing track listing with current track highlighting
 
 ### Key State Management
 
@@ -140,6 +141,17 @@ VITE_DROPBOX_REDIRECT_URI="http://127.0.0.1:3000/auth/dropbox/callback"
 - **Accessibility**: Full keyboard navigation and screen reader support with track count announcements
 - **Touch Optimized**: Larger touch targets on mobile with appropriate hover state handling
 
+### Like Songs System
+
+- **Real-time State Sync**: Checks current like status when tracks load and updates UI immediately
+- **Optimistic Updates**: UI responds instantly to like/unlike actions with smooth heart animations
+- **Error Handling**: Graceful fallback and retry logic for failed API calls with user feedback
+- **Heart Animation**: Custom keyframe animations including heartbeat effect and scale transitions
+- **Loading States**: Spinner overlay during API calls prevents double-clicks and provides visual feedback
+- **Consistent Integration**: 1.5rem sizing matches other control buttons with proper accessibility
+- **Keyboard Support**: Full keyboard navigation with Enter/Space key support and focus indicators
+- **ARIA Compliance**: Proper labeling and role attributes for screen reader compatibility
+
 ### YouTube Integration Challenges
 
 - **CORS Bypass**: Uses local proxy server for YouTube search to avoid browser restrictions
@@ -180,7 +192,7 @@ VITE_DROPBOX_REDIRECT_URI="http://127.0.0.1:3000/auth/dropbox/callback"
 
 ### Spotify Services
 
-- **spotify.ts**: Spotify Web API integration for playlists and authentication
+- **spotify.ts**: Spotify Web API integration for playlists and authentication, includes track library management functions for checking, saving, and removing tracks from user's Spotify Liked Songs
 - **spotifyPlayer.ts**: Spotify Web Playback SDK wrapper with state management
 
 ### Support Services

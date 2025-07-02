@@ -11,6 +11,7 @@ const SCOPES = [
   'playlist-read-private',
   'playlist-read-collaborative',
   'user-library-read',
+  'user-library-modify',
   'user-top-read'
 ];
 
@@ -489,5 +490,66 @@ export const getSpotifyUserPlaylists = async (): Promise<Track[]> => {
       throw new Error('Redirecting to Spotify login...');
     }
     throw error;
+  }
+};
+
+/**
+ * Check if a track is saved in the user's library (liked songs)
+ * @param trackId - The Spotify track ID to check
+ * @returns Promise<boolean> - True if the track is saved, false otherwise
+ */
+export const checkTrackSaved = async (trackId: string): Promise<boolean> => {
+  const token = await spotifyAuth.ensureValidToken();
+  const response = await fetch(`https://api.spotify.com/v1/me/tracks/contains?ids=${trackId}`, {
+    headers: { 'Authorization': `Bearer ${token}` }
+  });
+  
+  if (!response.ok) {
+    throw new Error(`Failed to check track saved status: ${response.status}`);
+  }
+  
+  const data = await response.json();
+  return data[0]; // Returns boolean
+};
+
+/**
+ * Add a track to the user's library (liked songs)
+ * @param trackId - The Spotify track ID to save
+ * @returns Promise<void>
+ */
+export const saveTrack = async (trackId: string): Promise<void> => {
+  const token = await spotifyAuth.ensureValidToken();
+  const response = await fetch('https://api.spotify.com/v1/me/tracks', {
+    method: 'PUT',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ ids: [trackId] })
+  });
+  
+  if (!response.ok) {
+    throw new Error(`Failed to save track: ${response.status}`);
+  }
+};
+
+/**
+ * Remove a track from the user's library (liked songs)
+ * @param trackId - The Spotify track ID to remove
+ * @returns Promise<void>
+ */
+export const unsaveTrack = async (trackId: string): Promise<void> => {
+  const token = await spotifyAuth.ensureValidToken();
+  const response = await fetch('https://api.spotify.com/v1/me/tracks', {
+    method: 'DELETE',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ ids: [trackId] })
+  });
+  
+  if (!response.ok) {
+    throw new Error(`Failed to unsave track: ${response.status}`);
   }
 };

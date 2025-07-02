@@ -164,6 +164,7 @@ src/
 │   ├── Playlist.tsx     # Collapsible track listing drawer
 │   ├── PlaylistIcon.tsx # Playlist queue icon component
 │   ├── PlaylistSelection.tsx # Playlist selection interface
+│   ├── LikeButton.tsx    # Heart-shaped button for liking/unliking tracks with animations
 │   ├── SettingsModal.tsx # Unified settings interface
 │   ├── SettingsIcon.tsx # Settings gear icon component
 │   ├── SpotifyAudioPlayer.tsx # Core Spotify audio playback component
