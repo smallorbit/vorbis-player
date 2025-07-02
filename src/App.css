@@ -28,30 +28,4 @@
   color: #888;
 }
 
-/* Ensure react-modern-audio-player respects container boundaries */
-#rm-audio-player,
-.rm-audio-player-provider {
-  max-width: 100% !important;
-  overflow: hidden !important;
-  box-sizing: border-box !important;
-}
-
-/* Make sure all child elements of the audio player are responsive */
-#rm-audio-player * {
-  max-width: 100% !important;
-  box-sizing: border-box !important;
-}
-
-/* Ensure the player interface doesn't exceed container width */
-.rm-audio-player-provider [data-testid="interface-container"] {
-  max-width: 100% !important;
-  overflow: hidden !important;
-}
-
-/* Make playlist responsive */
-.rm-audio-player-provider [data-testid="playlist-container"] {
-  max-width: 100% !important;
-  overflow-x: auto !important;
-}
-
 

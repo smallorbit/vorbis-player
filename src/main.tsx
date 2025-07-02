@@ -1,7 +1,6 @@
 import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.tsx'
-import StandalonePlayerDemo from './StandalonePlayerDemo.tsx'
 
 // Toggle between original app and standalone demo
 const DEMO_MODE = new URLSearchParams(window.location.search).get('demo') === 'true';
