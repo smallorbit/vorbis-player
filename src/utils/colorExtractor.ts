@@ -63,8 +63,8 @@ function rgbToHex(r: number, g: number, b: number): string {
  */
 function isGoodContrast(r: number, g: number, b: number): boolean {
   const [, , lightness] = rgbToHsl(r, g, b);
-  // Exclude colors that are too dark (<20%) or too light (>85%)
-  return lightness >= 20 && lightness <= 85;
+  // Exclude colors that are too dark (<40%) or too light (>85%)
+  return lightness >= 40 && lightness <= 85;
 }
 
 /**
@@ -72,8 +72,8 @@ function isGoodContrast(r: number, g: number, b: number): boolean {
  */
 function isVibrant(r: number, g: number, b: number): boolean {
   const [, saturation] = rgbToHsl(r, g, b);
-  // Require minimum saturation of 30%
-  return saturation >= 30;
+  // Require minimum saturation of 50%
+  return saturation >= 50;
 }
 
 /**

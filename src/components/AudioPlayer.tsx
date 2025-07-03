@@ -34,9 +34,10 @@ const ContentWrapper = styled.div`
   min-width: 36rem;
   min-height: 44rem;
   
-  width: calc(100vw - 1rem );
+  // width: calc(100vw - 1rem );
+  width: 768px;
   // height: calc(width + 8rem);
-  height: 100%;
+  height: 880px;
   // width: calc(100vw - 1rem);
   margin: 0 auto;
   padding-top: 0.5rem;
@@ -168,8 +169,8 @@ const LoadingCard = styled(Card) <{ backgroundImage?: string; standalone?: boole
       content: '';
       position: absolute;
       inset: 0;
-      background: rgba(0, 0, 0, 0.7);
-      backdrop-filter: blur(34px);
+      background: rgba(32, 30, 30, 0.7);
+      backdrop-filter: blur(24px);
       border-radius: 1.25rem;
       z-index: 1;
     }
