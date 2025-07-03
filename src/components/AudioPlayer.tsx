@@ -146,11 +146,9 @@ const LoadingCard = styled(Card) <{ backgroundImage?: string; standalone?: boole
   right: 0;
   bottom: 0;
   overflow: hidden;
-  border: 0px solid rgba(176, 27, 164, 0.5);
   border-radius: 1.25rem;
-  border-top: 0px solid rgba(16, 182, 49, 0.5);
-  // border-bottom: 20px solid rgba(16, 182, 49, 0.5);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6), 0 2px 8px rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(34, 36, 36, 0.68);
+  box-shadow: 0 8px 24px rgba(38, 36, 37, 0.7), 0 2px 8px rgba(22, 21, 21, 0.6);
   
   ${({ backgroundImage }) => backgroundImage ? `
     &::after {

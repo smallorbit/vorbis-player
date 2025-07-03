@@ -24,10 +24,13 @@ interface VideoPlayerProps {
 const Container = styled.div`
   width: 100%;
   position: relative;
-  border: 0px solid rgba(20, 16, 19, 0.5);
+  // border: 1px solid rgba(55, 52, 54, 0.37);
   border-radius: 1.25rem;
-  border-right: 1px solid rgba(34, 36, 36, 0.68);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6), 0 2px 8px rgba(0, 0, 0, 0.4);
+  // border-right: 1px solid rgba(34, 36, 36, 0.68);
+  // box-shadow: 0 8px 24px rgba(98, 93, 98, 0.2), 0 2px 8px rgba(144, 137, 137, 0.19);
+  box-shadow:
+    0 4px 12px rgba(20, 19, 19, 0.5), 
+    inset 8px 8px 16px rgba(23, 24, 24, 0.66);
 `;
 
 const LoadingOverlay = styled.div`
@@ -244,7 +247,7 @@ const VideoPlayer = memo<VideoPlayerProps>(({ currentTrack, showVideo = true }) 
                     height: 'calc(100% + 0rem)',
                     objectFit: 'cover',
                     overflow: 'hidden',
-                    scale: '1.0',
+                    scale: '1.01',
                     // padding: '.5rem 0 0 0',
                     // margin: '0.75rem 0 0 .75rem',
                     // top: '50%',
