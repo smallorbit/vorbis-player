@@ -439,7 +439,27 @@ const SpotifyPlayerControls = memo<{
           <PlayerTrackArtist>{currentTrack?.artists || ''}</PlayerTrackArtist>
         </TrackInfoLeft>
         <TrackInfoCenter>
-          
+          <ControlButton accentColor={accentColor} onClick={onPrevious}>
+            <svg viewBox="0 0 24 24">
+              <path d="M6 6h2v12H6zm3.5 6l8.5 6V6z" />
+            </svg>
+          </ControlButton>
+          <ControlButton accentColor={accentColor} isPlaying={isPlaying} onClick={handlePlayPause}>
+            {isPlaying ? (
+              <svg viewBox="0 0 24 24">
+                <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
+              </svg>
+            ) : (
+              <svg viewBox="0 0 24 24">
+                <path d="M8 5v14l11-7z" />
+              </svg>
+            )}
+          </ControlButton>
+          <ControlButton accentColor={accentColor} onClick={onNext}>
+            <svg viewBox="0 0 24 24">
+              <path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z" />
+            </svg>
+          </ControlButton>
         </TrackInfoCenter>
         <TrackInfoRight>
           <LikeButton
@@ -449,11 +469,7 @@ const SpotifyPlayerControls = memo<{
             accentColor={accentColor}
             onToggleLike={handleLikeToggle}
           />
-          <ControlButton accentColor={accentColor} onClick={onShowPlaylist} title="Show Playlist">
-            <svg viewBox="0 0 24 24" role="img" aria-hidden="true">
-              <path d="M3 6h18v2H3V6zm0 5h18v2H3v-2zm0 5h18v2H3v-2z" />
-            </svg>
-          </ControlButton>
+          
         </TrackInfoRight>
       </TrackInfoRow>
 
@@ -509,28 +525,12 @@ const SpotifyPlayerControls = memo<{
         />
         <TimeLabel>{formatTime(duration)}</TimeLabel>
         <TimelineRight>
+          <ControlButton accentColor={accentColor} onClick={onShowPlaylist} title="Show Playlist">
+            <svg viewBox="0 0 24 24" role="img" aria-hidden="true">
+              <path d="M3 6h18v2H3V6zm0 5h18v2H3v-2zm0 5h18v2H3v-2z" />
+            </svg>
+          </ControlButton>
           
-          <ControlButton accentColor={accentColor} onClick={onPrevious}>
-            <svg viewBox="0 0 24 24">
-              <path d="M6 6h2v12H6zm3.5 6l8.5 6V6z" />
-            </svg>
-          </ControlButton>
-          <ControlButton accentColor={accentColor} isPlaying={isPlaying} onClick={handlePlayPause}>
-            {isPlaying ? (
-              <svg viewBox="0 0 24 24">
-                <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
-              </svg>
-            ) : (
-              <svg viewBox="0 0 24 24">
-                <path d="M8 5v14l11-7z" />
-              </svg>
-            )}
-          </ControlButton>
-          <ControlButton accentColor={accentColor} onClick={onNext}>
-            <svg viewBox="0 0 24 24">
-              <path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z" />
-            </svg>
-          </ControlButton>
      
         </TimelineRight>
       </TimelineRow>

@@ -24,6 +24,10 @@ interface VideoPlayerProps {
 const Container = styled.div`
   width: 100%;
   position: relative;
+  border: 0px solid rgba(20, 16, 19, 0.5);
+  border-radius: 1.25rem;
+  border-right: 1px solid rgba(34, 36, 36, 0.68);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6), 0 2px 8px rgba(0, 0, 0, 0.4);
 `;
 
 const LoadingOverlay = styled.div`

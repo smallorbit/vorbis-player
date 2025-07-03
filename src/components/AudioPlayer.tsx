@@ -17,7 +17,7 @@ import SpotifyPlayerControls from './SpotifyPlayerControls';
 
 // Styled components
 const Container = styled.div`
-  min-height: 100vh;
+  // min-height: 100vh;
   width: 100%;
   ${flexCenter};
   padding: ${({ theme }: any) => theme.spacing.sm};
@@ -28,21 +28,31 @@ const Container = styled.div`
 `;
 
 const ContentWrapper = styled.div`
-  width: 100%;
-  max-width: 48rem; /* 768px - matches playlist and video nicely */
+  // aspect-ratio: 16/9;
+  max-width: 50rem;
+  max-height: 58rem;
+  min-width: 36rem;
+  min-height: 44rem;
+  
+  width: calc(100vw - 1rem );
+  // height: calc(width + 8rem);
+  height: 100%;
+  // width: calc(100vw - 1rem);
   margin: 0 auto;
-  padding-left: 1rem;
-  padding-right: 1rem;
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
   box-sizing: border-box;
   position: absolute;
   z-index: 1000;
   
-  @media (min-width: ${({ theme }: any) => theme.breakpoints.sm}) {
-    max-width: 60rem;
-  }
-  @media (min-width: ${({ theme }: any) => theme.breakpoints.md}) {
-    max-width: 72rem;
-  }
+  // @media (min-width: ${({ theme }: any) => theme.breakpoints.sm}) {
+  //   max-width: 60rem;
+  // }
+  // @media (min-width: ${({ theme }: any) => theme.breakpoints.md}) {
+  //   max-width: 72rem;
+  // }
 `;
 
 
@@ -129,11 +139,16 @@ const CloseButton = styled.button`
 
 const LoadingCard = styled(Card) <{ backgroundImage?: string; standalone?: boolean }>`
   ${cardBase};
-  position: relative;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   overflow: hidden;
   border: 0px solid rgba(176, 27, 164, 0.5);
   border-radius: 1.25rem;
   border-top: 0px solid rgba(16, 182, 49, 0.5);
+  // border-bottom: 20px solid rgba(16, 182, 49, 0.5);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6), 0 2px 8px rgba(0, 0, 0, 0.4);
   
   ${({ backgroundImage }) => backgroundImage ? `
@@ -592,7 +607,8 @@ const AudioPlayerComponent = () => {
                   <VideoPlayer key={videoRefreshKey} currentTrack={currentTrack} showVideo={showVideo} />
                 </Suspense>
               </VideoPlayerContainer>
-
+            </CardContent>
+            <CardContent style={{ position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 2 }}>
               <SpotifyPlayerControls
                 currentTrack={currentTrack}
                 accentColor={accentColor}
