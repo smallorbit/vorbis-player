@@ -7,6 +7,7 @@ import { videoManagementService } from '../services/videoManagementService';
 import { AspectRatio } from './ui/aspect-ratio';
 import { SearchErrorDisplay, type SearchError } from './ui/SearchErrorDisplay';
 import { theme } from '../styles/theme';
+import AlbumArt from './AlbumArt';
 
 interface MediaItem {
   id: string;
@@ -95,14 +96,6 @@ const StyledImage = styled.img`
   object-fit: cover;
 `;
 
-const PlaceholderContainer = styled.div`
-  width: 100%;
-  height: 100%;
-  border-radius: 1.25rem;
-  position: relative;
-  overflow: hidden;
-  background: transparent;
-`;
 
 
 // Global blacklist for non-embeddable videos (persists across component remounts and page refreshes)
@@ -236,33 +229,12 @@ const VideoPlayer = memo<VideoPlayerProps>(({ currentTrack, showVideo = true }) 
     <Container>
       <AspectRatio ratio={1} style={{ borderRadius: '1.25rem', overflow: 'hidden' }}>
         <VideoContainer isPlaceholder={showPlaceholder}>
+          {/* Accent color glow layer - positioned beneath placeholder */}
           {showPlaceholder ? (
-            <PlaceholderContainer>
-              {currentTrack?.image && (
-                <img
-                  src={currentTrack.image}
-                  alt={currentTrack.name}
-                  style={{
-                    width: 'calc(100% + 1.5rem)',
-                    height: 'calc(100% + 0rem)',
-                    objectFit: 'cover',
-                    overflow: 'hidden',
-                    scale: '1.01',
-                    // padding: '.5rem 0 0 0',
-                    // margin: '0.75rem 0 0 .75rem',
-                    // top: '50%',
-                    // transform: 'translate(-.75rem, 0rem)',
-                    borderRadius: 'inherit',
-                    // display: 'block',
-                  }}
-                  loading="lazy"
-                  onError={(e) => {
-                    const target = e.target as HTMLImageElement;
-                    target.src = `https://via.placeholder.com/400x300/1a1a1a/ffffff?text=${encodeURIComponent(currentTrack.name || 'No Image')}`;
-                  }}
-                />
-              )}
-            </PlaceholderContainer>
+            <AlbumArt
+              currentTrack={currentTrack}
+              objectPosition={objectPosition}
+            />
           ) : currentVideoItem ? (
             currentVideoItem.type === 'youtube' ? (
               <StyledIframe
@@ -296,27 +268,10 @@ const VideoPlayer = memo<VideoPlayerProps>(({ currentTrack, showVideo = true }) 
               />
             )
           ) : (
-            <PlaceholderContainer>
-              {currentTrack?.image && (
-                <img
-                  src={currentTrack.image}
-                  alt={currentTrack.name}
-                  style={{
-                    width: '115%',
-                    height: '115%',
-                    objectFit: 'cover',
-                    objectPosition: objectPosition,
-                    borderRadius: 'inherit',
-                    display: 'block',
-                  }}
-                  loading="lazy"
-                  onError={(e) => {
-                    const target = e.target as HTMLImageElement;
-                    target.src = `https://via.placeholder.com/400x300/1a1a1a/ffffff?text=${encodeURIComponent(currentTrack.name || 'No Image')}`;
-                  }}
-                />
-              )}
-            </PlaceholderContainer>
+            <AlbumArt
+              currentTrack={currentTrack}
+              objectPosition={objectPosition}
+            />
           )}
           
           {showLoadingOverlay && (

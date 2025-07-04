@@ -11,8 +11,8 @@ import { Button } from '../components/styled';
 import { Skeleton } from '../components/styled';
 import { Alert, AlertDescription } from '../components/styled';
 import { flexCenter, flexColumn, cardBase } from '../styles/utils';
-import VideoPlayer from './VideoPlayer';
-import { extractDominantColor, getTransparentVariant } from '../utils/colorExtractor';
+import AlbumArt from './AlbumArt';
+import { extractDominantColor } from '../utils/colorExtractor';
 import SpotifyPlayerControls from './SpotifyPlayerControls';
 
 // Styled components
@@ -390,7 +390,7 @@ const AudioPlayerComponent = () => {
       } catch (error) {
         console.error('🎵 Failed to play track:', error);
         console.error('🎵 Error details:', {
-          error: error.message,
+          error: error instanceof Error ? error.message : String(error),
           playerReady: spotifyPlayer.getIsReady(),
           deviceId: spotifyPlayer.getDeviceId(),
           trackUri: tracks[index].uri
@@ -601,11 +601,8 @@ const AudioPlayerComponent = () => {
           <LoadingCard backgroundImage={currentTrack?.image}>
 
             <CardContent style={{ position: 'relative', zIndex: 2 }}>
-              <VideoPlayerContainer>
-                <Suspense fallback={<div style={{ minHeight: 320 }}>Loading video player...</div>}>
-                  <VideoPlayer key={videoRefreshKey} currentTrack={currentTrack} showVideo={showVideo} />
-                </Suspense>
-              </VideoPlayerContainer>
+              <AlbumArt currentTrack={currentTrack} accentColor={accentColor} />
+              
             </CardContent>
             <CardContent style={{ position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 2 }}>
               <SpotifyPlayerControls
