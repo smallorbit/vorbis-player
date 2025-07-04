@@ -10,7 +10,7 @@ interface ColorData {
   count: number;
 }
 
-interface ExtractedColor {
+export interface ExtractedColor {
   hex: string;
   rgb: string;
   hsl: string;
@@ -234,4 +234,112 @@ export function getTransparentVariant(color: string, opacity = 0.2): string {
   }
   
   return `rgba(${r}, ${g}, ${b}, ${opacity})`;
+}
+
+/**
+ * Extracts the top N vibrant colors from an image URL
+ */
+export async function extractTopVibrantColors(imageUrl: string, count = 3): Promise<ExtractedColor[]> {
+  return new Promise((resolve) => {
+    try {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+
+      img.onload = () => {
+        try {
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+
+          if (!ctx) {
+            resolve([]);
+            return;
+          }
+
+          const maxSize = 150;
+          const scale = Math.min(maxSize / img.width, maxSize / img.height);
+          canvas.width = img.width * scale;
+          canvas.height = img.height * scale;
+
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+          const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          const data = imageData.data;
+
+          const colorMap = new Map<string, ColorData>();
+
+          for (let i = 0; i < data.length; i += 16) {
+            const r = data[i];
+            const g = data[i + 1];
+            const b = data[i + 2];
+            const a = data[i + 3];
+            if (a < 128) continue;
+            const rBucket = Math.floor(r / 8) * 8;
+            const gBucket = Math.floor(g / 8) * 8;
+            const bBucket = Math.floor(b / 8) * 8;
+            const key = `${rBucket}-${gBucket}-${bBucket}`;
+            if (colorMap.has(key)) {
+              colorMap.get(key)!.count++;
+            } else {
+              colorMap.set(key, { r: rBucket, g: gBucket, b: bBucket, count: 1 });
+            }
+          }
+
+          // Score and filter vibrant, good-contrast colors
+          const scoredColors: (ColorData & { score: number })[] = [];
+          for (const color of colorMap.values()) {
+            if (!isGoodContrast(color.r, color.g, color.b) || !isVibrant(color.r, color.g, color.b)) {
+              continue;
+            }
+            const [, saturation, lightness] = rgbToHsl(color.r, color.g, color.b);
+            const vibrancyScore = saturation / 100;
+            const contrastScore = 1 - Math.abs(lightness - 50) / 50;
+            const score = color.count * vibrancyScore * contrastScore;
+            scoredColors.push({ ...color, score });
+          }
+
+          // Sort by score descending
+          scoredColors.sort((a, b) => b.score - a.score);
+
+          // Helper to check if two colors are too similar (Euclidean distance in RGB)
+          function isTooSimilar(c1: ColorData, c2: ColorData, threshold = 40) {
+            const dr = c1.r - c2.r;
+            const dg = c1.g - c2.g;
+            const db = c1.b - c2.b;
+            return Math.sqrt(dr * dr + dg * dg + db * db) < threshold;
+          }
+
+          // Select top N distinct colors
+          const selected: ColorData[] = [];
+          for (const color of scoredColors) {
+            if (selected.every(sel => !isTooSimilar(sel, color))) {
+              selected.push(color);
+              if (selected.length >= count) break;
+            }
+          }
+
+          const result: ExtractedColor[] = selected.map((color) => {
+            const hex = rgbToHex(color.r, color.g, color.b);
+            const rgb = `rgb(${color.r}, ${color.g}, ${color.b})`;
+            const [h, s, l] = rgbToHsl(color.r, color.g, color.b);
+            const hsl = `hsl(${Math.round(h)}, ${Math.round(s)}%, ${Math.round(l)}%)`;
+            return { hex, rgb, hsl };
+          });
+
+          resolve(result);
+        } catch (error) {
+          console.error('Error processing image data:', error);
+          resolve([]);
+        }
+      };
+
+      img.onerror = () => {
+        resolve([]);
+      };
+
+      img.src = imageUrl;
+    } catch (error) {
+      console.error('Error loading image:', error);
+      resolve([]);
+    }
+  });
 }

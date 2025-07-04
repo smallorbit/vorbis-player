@@ -18,9 +18,6 @@ const AlbumArtContainer = styled.div<{ accentColor?: string }>`
   margin: 1.25rem;
   backdrop-filter: blur(10px);
   z-index: 2;
-  
-  
-  
 `;
 
 const AlbumArt: React.FC<AlbumArtProps> = ({ currentTrack = null, accentColor }) => {

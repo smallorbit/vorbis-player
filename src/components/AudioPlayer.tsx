@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback, memo, lazy, Suspense } from 'react';
+import { useState, useEffect, useMemo, useCallback, lazy, Suspense } from 'react';
 import styled, { keyframes } from 'styled-components';
 const Playlist = lazy(() => import('./Playlist'));
 const PlaylistSelection = lazy(() => import('./PlaylistSelection'));
@@ -14,6 +14,7 @@ import { flexCenter, flexColumn, cardBase } from '../styles/utils';
 import AlbumArt from './AlbumArt';
 import { extractDominantColor } from '../utils/colorExtractor';
 import SpotifyPlayerControls from './SpotifyPlayerControls';
+import { theme } from '@/styles/theme';
 
 // Styled components
 const Container = styled.div`
@@ -223,8 +224,7 @@ const AudioPlayerComponent = () => {
   const [selectedPlaylistId, setSelectedPlaylistId] = useState<string | null>(null);
   const [showPlaylist, setShowPlaylist] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
-  const [videoRefreshKey, setVideoRefreshKey] = useState(0);
-  const [accentColor, setAccentColor] = useState<string>('goldenrod');
+  const [accentColor, setAccentColor] = useState<string>(theme.colors.accent );
   const [showVideo, setShowVideo] = useState(false);
 
   const handlePlaylistSelect = async (playlistId: string, playlistName: string) => {
@@ -508,14 +508,14 @@ const AudioPlayerComponent = () => {
           if (dominantColor) {
             setAccentColor(dominantColor.hex);
           } else {
-            setAccentColor('goldenrod'); // Fallback
+            setAccentColor(theme.colors.accent); // Fallback
           }
         } catch (error) {
           console.error('Failed to extract color from album art:', error);
-          setAccentColor('goldenrod'); // Fallback
+          setAccentColor(theme.colors.accent); // Fallback
         }
       } else {
-        setAccentColor('goldenrod'); // Fallback when no image
+        setAccentColor(theme.colors.accent); // Fallback
       }
     };
 
@@ -557,7 +557,7 @@ const AudioPlayerComponent = () => {
               </p>
               <Button
                 onClick={() => spotifyAuth.redirectToAuth()}
-                style={{ backgroundColor: 'goldenrod' }}
+                style={{ backgroundColor: theme.colors.accent }}
               >
                 Connect Spotify
               </Button>
@@ -617,6 +617,7 @@ const AudioPlayerComponent = () => {
                 trackCount={tracks.length}
                 showVideo={showVideo}
                 onToggleVideo={() => setShowVideo(v => !v)}
+                onAccentColorChange={setAccentColor}
               />
             </CardContent>
           </LoadingCard>

@@ -5,6 +5,7 @@ import { Card, CardHeader, CardContent, CardTitle } from './styled';
 import { Button } from './styled';
 import { Skeleton } from './styled';
 import { Alert, AlertDescription } from './styled';
+import { theme } from '@/styles/theme';
 
 interface PlaylistSelectionProps {
   onPlaylistSelect: (playlistId: string, playlistName: string) => void;
@@ -69,7 +70,7 @@ const PlaylistItem = styled.div`
   
   &:hover {
     background: rgba(218, 165, 32, 0.1);
-    border-color: goldenrod;
+    border-color: ${theme.colors.accent};
     transform: translateY(-2px);
   }
 `;
