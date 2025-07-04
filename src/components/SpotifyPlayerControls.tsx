@@ -4,6 +4,7 @@ import { spotifyPlayer } from '../services/spotifyPlayer';
 import { spotifyAuth, checkTrackSaved, saveTrack, unsaveTrack } from '../services/spotify';
 import type { Track } from '../services/spotify';
 import LikeButton from './LikeButton';
+import EyedropperOverlay from './EyedropperOverlay';
 
 import { extractTopVibrantColors } from '../utils/colorExtractor';
 import type { ExtractedColor } from '../utils/colorExtractor';
@@ -93,8 +94,8 @@ const ControlButton = styled.button<{ isPlaying?: boolean; accentColor: string }
   }
   
   ${({ isPlaying, accentColor }) => isPlaying ? `
-    background: ${accentColor}33;
-    color: ${accentColor};
+    background: ${accentColor};
+    color: #fff; // ${accentColor}99;
     
     &:hover {
       background: ${accentColor}4D;
@@ -211,6 +212,10 @@ const TimelineRight = styled.div`
   gap: ${({ theme }: any) => theme.spacing.xs};
 `;
 
+// Add Dropper SVG icon
+const DropperIcon = () => (
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19.07 4.93a3 3 0 0 1 0 4.24l-1.41 1.41-4.24-4.24 1.41-1.41a3 3 0 0 1 4.24 0z"/><path d="M17.66 7.34L6 19v3h3L20.66 10.34"/></svg>
+);
 
 // --- SpotifyPlayerControls Component ---
 const SpotifyPlayerControls = memo<{
@@ -243,6 +248,39 @@ const SpotifyPlayerControls = memo<{
   const popoverRef = useRef<HTMLDivElement>(null);
   const paletteBtnRef = useRef<HTMLButtonElement>(null);
   const [popoverPos, setPopoverPos] = useState<{ left: number; top: number } | null>(null);
+  const [showEyedropper, setShowEyedropper] = useState(false);
+  // Custom accent color per track (from eyedropper)
+  const [customAccentColorOverrides, setCustomAccentColorOverrides] = useState<Record<string, string>>({});
+
+  // Load custom accent color overrides from localStorage on mount
+  useEffect(() => {
+    const stored = localStorage.getItem('customAccentColorOverrides');
+    if (stored) {
+      try {
+        setCustomAccentColorOverrides(JSON.parse(stored));
+      } catch (e) {
+        // ignore parse errors
+      }
+    }
+  }, []);
+
+  // Save custom accent color overrides to localStorage when changed
+  useEffect(() => {
+    localStorage.setItem('customAccentColorOverrides', JSON.stringify(customAccentColorOverrides));
+  }, [customAccentColorOverrides]);
+
+  // Helper to get the custom color for the current track
+  const customColor = currentTrack?.id ? customAccentColorOverrides[currentTrack.id] : undefined;
+
+  // When user picks a color with the eyedropper, store it as the custom color for this track
+  const handleCustomAccentColor = (color: string) => {
+    if (currentTrack?.id) {
+      setCustomAccentColorOverrides(prev => ({ ...prev, [currentTrack.id!]: color }));
+      onAccentColorChange?.(color);
+    } else {
+      onAccentColorChange?.(color);
+    }
+  };
 
   useEffect(() => {
     const checkPlaybackState = async () => {
@@ -492,13 +530,13 @@ const SpotifyPlayerControls = memo<{
             ref={paletteBtnRef}
             style={{ position: 'relative' }}
           >
-            {/* Palette SVG icon */}
-            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" role="img">
-              <path d="M21 12.79A9 9 0 1 1 12 3a7 7 0 0 1 7 7c0 1.38-.56 2.63-1.46 3.54-.63.63-.54 1.71.21 2.21a2 2 0 0 0 2.25.13z"/>
-              <circle cx="8.5" cy="10.5" r="1"/>
-              <circle cx="12" cy="7.5" r="1"/>
-              <circle cx="15.5" cy="10.5" r="1"/>
-              <circle cx="12" cy="14.5" r="1"/>
+            {/* Palette SVG icon with dynamic fill */}
+            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" role="img">
+              <path d="M21 12.79A9 9 0 1 1 12 3a7 7 0 0 1 7 7c0 1.38-.56 2.63-1.46 3.54-.63.63-.54 1.71.21 2.21a2 2 0 0 0 2.25.13z" fill={accentColor} />
+              <circle cx="8.5" cy="10.5" r="1" fill="#fff"/>
+              <circle cx="12" cy="7.5" r="1" fill="#fff"/>
+              <circle cx="15.5" cy="10.5" r="1" fill="#fff"/>
+              <circle cx="12" cy="14.5" r="1" fill="#fff"/>
             </svg>
           </ControlButton>
           {/* Popover menu rendered in portal, outside the button */}
@@ -525,9 +563,9 @@ const SpotifyPlayerControls = memo<{
               <div style={{ color: '#fff', fontWeight: 600, marginBottom: 8, fontSize: 15 }}>Choose Accent Color</div>
               {isExtracting && <p style={{ color: '#888', fontSize: 14 }}>Extracting colors...</p>}
               {extractError && <p style={{ color: 'red', fontSize: 14 }}>{extractError}</p>}
-              {!isExtracting && !extractError && colorOptions && colorOptions.length > 0 && (
+              {!isExtracting && !extractError && (
                 <div style={{ display: 'flex', gap: 12 }}>
-                  {colorOptions.map((color, idx) => (
+                  {(colorOptions ?? []).map((color, idx) => (
                     <button
                       key={color.hex}
                       onClick={() => {
@@ -549,18 +587,50 @@ const SpotifyPlayerControls = memo<{
                       aria-label={`Choose color ${color.hex}`}
                     />
                   ))}
+                  {/* Always show eyedropper button if album art is available */}
+                  {currentTrack?.image && (
+                    <button
+                      onClick={() => setShowEyedropper(true)}
+                      style={{
+                        width: 32,
+                        height: 32,
+                        borderRadius: '10%',
+                        border: '2px solid #888',
+                        background: customColor || '#181818',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        transition: 'box-shadow 0.2s, border 0.2s',
+                      }}
+                      title="Pick from album art"
+                      aria-label="Pick color from album art"
+                    >
+                      <DropperIcon />
+                    </button>
+                  )}
                 </div>
               )}
-              {!isExtracting && !extractError && colorOptions && colorOptions.length === 0 && (
+              {/* {!isExtracting && !extractError && colorOptions && colorOptions.length === 0 && (
                 <p style={{ color: '#888', fontSize: 14 }}>No vibrant colors found in album art.</p>
               )}
               {!isExtracting && !extractError && !colorOptions && (
                 <p style={{ color: '#888', fontSize: 14 }}>Accent color options will appear here.</p>
-              )}
+              )} */}
             </div>,
             document.body
           )}
-          <ControlButton accentColor={accentColor} onClick={onShowSettings} title="Settings">
+          {showEyedropper && currentTrack?.image && (
+            createPortal(
+              <EyedropperOverlay
+                image={currentTrack.image}
+                onPick={handleCustomAccentColor}
+                onClose={() => setShowEyedropper(false)}
+              />,
+              document.body
+            )
+          )}
+          {/* <ControlButton accentColor={accentColor} onClick={onShowSettings} title="Settings">
             <svg viewBox="0 0 24 24" role="img" aria-hidden="true">
               <path d="M12,15.5A3.5,3.5 0 0,1 8.5,12A3.5,3.5 0 0,1 12,8.5A3.5,3.5 0 0,1 15.5,12A3.5,3.5 0 0,1 12,15.5M19.43,12.97C19.47,12.65 19.5,12.33 19.5,12C19.5,11.67 19.47,11.34 19.43,11L21.54,9.37C21.73,9.22 21.78,8.95 21.66,8.73L19.66,5.27C19.54,5.05 19.27,4.96 19.05,5.05L16.56,6.05C16.04,5.66 15.5,5.32 14.87,5.07L14.5,2.42C14.46,2.18 14.25,2 14,2H10C9.75,2 9.54,2.18 9.5,2.42L9.13,5.07C8.5,5.32 7.96,5.66 7.44,6.05L4.95,5.05C4.73,4.96 4.46,5.05 4.34,5.27L2.34,8.73C2.22,8.95 2.27,9.22 2.46,9.37L4.57,11C4.53,11.34 4.5,11.67 4.5,12C4.5,12.33 4.53,12.65 4.57,12.97L2.46,14.63C2.27,14.78 2.22,15.05 2.34,15.27L4.34,18.73C4.46,18.95 4.73,19.03 4.95,18.95L7.44,17.94C7.96,18.34 8.5,18.68 9.13,18.93L9.5,21.58C9.54,21.82 9.75,22 10,22H14C14.25,22 14.46,21.82 14.5,21.58L14.87,18.93C15.5,18.68 16.04,18.34 16.56,17.94L19.05,18.95C19.27,19.03 19.54,18.95 19.66,18.73L21.66,15.27C21.78,15.05 21.73,14.78 21.54,14.63L19.43,12.97Z" />
             </svg>
@@ -573,7 +643,7 @@ const SpotifyPlayerControls = memo<{
             <svg viewBox="0 0 24 24">
               <path d="M21 6.5L17 10.5V7C17 6.45 16.55 6 16 6H4C3.45 6 3 6.45 3 7V17C3 17.55 3.45 18 4 18H16C16.55 18 17 17.55 17 17V13.5L21 17.5V6.5M16 16H4V8H16V16M2.41 2.13L1 3.54L4.86 7.4C4.33 7.69 4 8.31 4 9V15C4 16.1 4.9 17 6 17H12C12.69 17 13.31 16.67 13.6 16.14L22.46 25L23.87 23.59L2.41 2.13Z" />
             </svg>
-          )}
+          )} */}
           <VolumeButton onClick={handleVolumeButtonClick} title={isMuted ? 'Unmute' : 'Mute'}>
             {isMuted ? (
               <svg viewBox="0 0 24 24">
