@@ -226,6 +226,25 @@ const AudioPlayerComponent = () => {
   const [showSettings, setShowSettings] = useState(false);
   const [accentColor, setAccentColor] = useState<string>(theme.colors.accent );
   const [showVideo, setShowVideo] = useState(false);
+  // New: per-song accent color overrides
+  const [accentColorOverrides, setAccentColorOverrides] = useState<Record<string, string>>({});
+
+  // Load overrides from localStorage on mount
+  useEffect(() => {
+    const stored = localStorage.getItem('accentColorOverrides');
+    if (stored) {
+      try {
+        setAccentColorOverrides(JSON.parse(stored));
+      } catch (e) {
+        // ignore parse errors
+      }
+    }
+  }, []);
+
+  // Save overrides to localStorage when changed
+  useEffect(() => {
+    localStorage.setItem('accentColorOverrides', JSON.stringify(accentColorOverrides));
+  }, [accentColorOverrides]);
 
   const handlePlaylistSelect = async (playlistId: string, playlistName: string) => {
     try {
@@ -499,9 +518,13 @@ const AudioPlayerComponent = () => {
   // Memoize the current track to prevent unnecessary re-renders
   const currentTrack = useMemo(() => tracks[currentTrackIndex] || null, [tracks, currentTrackIndex]);
 
-  // Extract dominant color from album art when track changes
+  // On track change: use override if present, else extract
   useEffect(() => {
     const extractColor = async () => {
+      if (currentTrack?.id && accentColorOverrides[currentTrack.id]) {
+        setAccentColor(accentColorOverrides[currentTrack.id]);
+        return;
+      }
       if (currentTrack?.image) {
         try {
           const dominantColor = await extractDominantColor(currentTrack.image);
@@ -518,9 +541,18 @@ const AudioPlayerComponent = () => {
         setAccentColor(theme.colors.accent); // Fallback
       }
     };
-
     extractColor();
-  }, [currentTrack?.image]);
+  }, [currentTrack?.id, currentTrack?.image, accentColorOverrides, theme.colors.accent]);
+
+  // Handler for user accent color change (from SpotifyPlayerControls)
+  const handleAccentColorChange = (color: string) => {
+    if (currentTrack?.id) {
+      setAccentColorOverrides(prev => ({ ...prev, [currentTrack.id]: color }));
+      setAccentColor(color);
+    } else {
+      setAccentColor(color);
+    }
+  };
 
   const renderContent = () => {
     // Show loading state
@@ -617,7 +649,7 @@ const AudioPlayerComponent = () => {
                 trackCount={tracks.length}
                 showVideo={showVideo}
                 onToggleVideo={() => setShowVideo(v => !v)}
-                onAccentColorChange={setAccentColor}
+                onAccentColorChange={handleAccentColorChange}
               />
             </CardContent>
           </LoadingCard>
