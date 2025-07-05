@@ -39,11 +39,13 @@ npm run start:all        # Start both proxy and preview server
 4. **PlaylistIcon** - Spotify-inspired queue icon integrated into player controls with accessibility features and responsive design (1.5rem sizing)
 5. **SettingsIcon** - Settings gear icon integrated into player controls for accessing configuration options (1.5rem sizing)
 6. **VolumeIcon** - Volume trigger icon integrated into player controls with consistent 1.5rem sizing for visual uniformity
-7. **SettingsModal** - Unified settings interface with video management and configuration options
-8. **VideoManagementSection** - Video-track association management component embedded within settings modal
-9. **VolumeModal** - Responsive volume control modal with slider (desktop) and toggle buttons (mobile)
-10. **LikeButton** - Heart-shaped toggle button for saving/removing tracks from user's Spotify Liked Songs library with smooth animations, loading states, and consistent 1.5rem sizing
-11. **Playlist** - Collapsible drawer interface showing track listing with current track highlighting
+7. **PaintbrushIcon** - Visual effects trigger icon integrated into player controls for accessing shimmer and glow effects (1.5rem sizing)
+8. **SettingsModal** - Unified settings interface with video management and configuration options
+9. **VideoManagementSection** - Video-track association management component embedded within settings modal
+10. **VolumeModal** - Responsive volume control modal with slider (desktop) and toggle buttons (mobile)
+11. **VisualEffectsMenu** - Bottom sliding menu for controlling shimmer and glow effects with real-time sliders
+12. **LikeButton** - Heart-shaped toggle button for saving/removing tracks from user's Spotify Liked Songs library with smooth animations, loading states, and consistent 1.5rem sizing
+13. **Playlist** - Collapsible drawer interface showing track listing with current track highlighting
 
 ### Key State Management
 
@@ -51,6 +53,10 @@ npm run start:all        # Start both proxy and preview server
 - `showPlaylist`: Controls visibility of the sliding playlist drawer
 - `showSettings`: Controls visibility of the settings modal interface
 - `showVolumeModal`: Controls visibility of the volume control modal
+- `showVisualEffects`: Controls visibility of the visual effects menu
+- `shimmerIntensity`: Controls shimmer effect intensity (0-100) with localStorage persistence
+- `glowIntensity`: Controls glow effect intensity (0-100) with localStorage persistence
+- `accentColor`: Dynamically extracted dominant color from album artwork
 - `volume`: Current volume level (0-100) for Spotify player integration
 - `isMuted`: Boolean state for mute/unmute functionality
 - `isInitialLoad`: Prevents auto-play from triggering multiple times
@@ -128,7 +134,7 @@ VITE_DROPBOX_REDIRECT_URI="http://127.0.0.1:3000/auth/dropbox/callback"
 - **Keyboard Navigation**: Full accessibility with escape key support and focus management
 - **Sectioned Layout**: Organized into Video Management, Playback, and Interface categories
 - **Expandable Settings**: Advanced settings sections can be collapsed/expanded for better organization
-- **Consistent Icon Sizing**: All control icons (settings, playlist, volume) standardized to 1.5rem for visual consistency
+- **Consistent Icon Sizing**: All control icons (settings, playlist, volume, visual effects) standardized to 1.5rem for visual consistency
 
 ### Playlist Drawer System
 
@@ -151,6 +157,23 @@ VITE_DROPBOX_REDIRECT_URI="http://127.0.0.1:3000/auth/dropbox/callback"
 - **Consistent Integration**: 1.5rem sizing matches other control buttons with proper accessibility
 - **Keyboard Support**: Full keyboard navigation with Enter/Space key support and focus indicators
 - **ARIA Compliance**: Proper labeling and role attributes for screen reader compatibility
+
+### Visual Effects System
+
+- **Paintbrush Integration**: Paintbrush icon integrated into audio player controls alongside settings, playlist, and volume buttons
+- **Bottom Sliding Menu**: Visual effects menu slides from bottom of main card with smooth animations and glass morphism styling
+- **Shimmer Effect**: Targeted shimmer effect applied only to PlaceholderContainer (album art when no video playing)
+  - Uses dominant color extraction for realistic color-matched shimmer
+  - Diagonal gradient sweep animation with fade in/out for natural appearance
+  - Only affects album artwork pixels using mix-blend-mode for seamless integration
+- **Glow Effect**: Outer glow effect around entire player card with pulsing animation
+  - Multiple layered box-shadows for depth and realism
+  - Positioned outside card boundaries to avoid clipping by overflow:hidden
+  - Synchronized with dominant color for cohesive visual experience
+- **Real-time Controls**: Dual sliders for independent shimmer and glow intensity control (0-100%)
+- **Persistent Settings**: Both effect intensities stored in localStorage with keys 'vorbis-player-shimmer-intensity' and 'vorbis-player-glow-intensity'
+- **Dynamic Theming**: Slider thumbs and accents use extracted dominant color for visual consistency
+- **Performance Optimized**: Effects only render when intensity > 0, with efficient CSS animations and transient props
 
 ### YouTube Integration Challenges
 

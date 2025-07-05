@@ -1,5 +1,5 @@
 import { useState, useEffect, memo, useCallback } from 'react';
-import styled from 'styled-components';
+import styled, { keyframes, css } from 'styled-components';
 import type { Track } from '../services/spotify';
 import { youtubeService } from '../services/youtube';
 import { videoSearchOrchestrator } from '../services/videoSearchOrchestrator';
@@ -7,6 +7,7 @@ import { videoManagementService } from '../services/videoManagementService';
 import { AspectRatio } from './ui/aspect-ratio';
 import { SearchErrorDisplay, type SearchError } from './ui/SearchErrorDisplay';
 import { theme } from '../styles/theme';
+import AccentColorGlowOverlay from './AccentColorGlowOverlay';
 import AlbumArt from './AlbumArt';
 
 interface MediaItem {
@@ -20,6 +21,8 @@ interface MediaItem {
 interface VideoPlayerProps {
   currentTrack: Track | null;
   showVideo?: boolean;
+  glowIntensity?: number;
+  accentColor?: string;
 }
 
 const Container = styled.div`
@@ -118,7 +121,7 @@ const loadBlacklist = (): Set<string> => {
 
 const globalVideoBlacklist = loadBlacklist();
 
-const VideoPlayer = memo<VideoPlayerProps>(({ currentTrack, showVideo = true }) => {
+const VideoPlayer = memo<VideoPlayerProps>(({ currentTrack, showVideo = true, glowIntensity = 0, accentColor = '#f058c0' }) => {
   const [mediaItems, setMediaItems] = useState<MediaItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [, setSearchPhase] = useState<string>('');
@@ -230,6 +233,14 @@ const VideoPlayer = memo<VideoPlayerProps>(({ currentTrack, showVideo = true }) 
       <AspectRatio ratio={1} style={{ borderRadius: '1.25rem', overflow: 'hidden' }}>
         <VideoContainer isPlaceholder={showPlaceholder}>
           {/* Accent color glow layer - positioned beneath placeholder */}
+          {showPlaceholder && (
+            <AccentColorGlowOverlay
+              glowIntensity={glowIntensity}
+              accentColor={accentColor}
+              backgroundImage={currentTrack?.image}
+            />
+          )}
+          
           {showPlaceholder ? (
             <AlbumArt
               currentTrack={currentTrack}
@@ -268,10 +279,18 @@ const VideoPlayer = memo<VideoPlayerProps>(({ currentTrack, showVideo = true }) 
               />
             )
           ) : (
-            <AlbumArt
-              currentTrack={currentTrack}
-              objectPosition={objectPosition}
-            />
+            <>
+              {/* Accent color glow layer for second placeholder instance */}
+              <AccentColorGlowOverlay
+                glowIntensity={glowIntensity}
+                accentColor={accentColor}
+                backgroundImage={currentTrack?.image}
+              />
+              <AlbumArt
+                currentTrack={currentTrack}
+                objectPosition={objectPosition}
+              />
+            </>
           )}
           
           {showLoadingOverlay && (

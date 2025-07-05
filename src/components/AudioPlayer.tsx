@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback, lazy, Suspense } from 'react';
-import styled, { keyframes } from 'styled-components';
+import styled from 'styled-components';
 const Playlist = lazy(() => import('./Playlist'));
 const PlaylistSelection = lazy(() => import('./PlaylistSelection'));
 import { getPlaylistTracks, spotifyAuth } from '../services/spotify';
@@ -14,6 +14,7 @@ import { flexCenter, flexColumn, cardBase } from '../styles/utils';
 import AlbumArt from './AlbumArt';
 import { extractDominantColor } from '../utils/colorExtractor';
 import SpotifyPlayerControls from './SpotifyPlayerControls';
+import VisualEffectsMenu from './VisualEffectsMenu';
 import { theme } from '@/styles/theme';
 
 // Styled components
@@ -197,23 +198,6 @@ const PlaylistFallbackCard = styled.div`
   border: 1px solid ${({ theme }: any) => theme.colors.gray[700]};
 `;
 
-const spin = keyframes`
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-`;
-
-const VideoPlayerContainer = styled.div`
-  margin: ${({ theme }: any) => theme.spacing.sm} ;
-  
-  /* Handle empty state when no embeddable videos */
-  &:empty {
-    display: none;
-  }
-`;
 
 
 const AudioPlayerComponent = () => {
@@ -226,18 +210,71 @@ const AudioPlayerComponent = () => {
   const [showSettings, setShowSettings] = useState(false);
   const [accentColor, setAccentColor] = useState<string>(theme.colors.accent );
   const [showVideo, setShowVideo] = useState(false);
+  const [showVisualEffects, setShowVisualEffects] = useState(false);
+  const [glowIntensity, setGlowIntensity] = useState<number>(() => {
+    const saved = localStorage.getItem('vorbis-player-glow-intensity');
+    return saved ? parseInt(saved, 10) : 0;
+  });
   // New: per-song accent color overrides
   const [accentColorOverrides, setAccentColorOverrides] = useState<Record<string, string>>({});
+
+  // Album art filters state
+  const [albumFilters, setAlbumFilters] = useState<{
+    brightness: number;
+    contrast: number;
+    saturation: number;
+    hue: number;
+    blur: number;
+    sepia: number;
+    grayscale: number;
+    invert: number;
+  }>(() => {
+    const saved = localStorage.getItem('vorbis-player-album-filters');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        // Migration: ensure boolean invert and add missing properties
+        return {
+          brightness: parsed.brightness ?? 100,
+          contrast: parsed.contrast ?? 100,
+          saturation: parsed.saturation ?? 100,
+          hue: parsed.hue ?? 0,
+          blur: parsed.blur ?? 0,
+          sepia: parsed.sepia ?? 0,
+          grayscale: parsed.grayscale ?? 0,
+          invert: typeof parsed.invert === 'boolean' ? parsed.invert : (parsed.invert > 0)
+        };
+      } catch (e) {
+        // If parsing fails, use defaults
+        return {
+          brightness: 100,
+          contrast: 100,
+          saturation: 100,
+          hue: 0,
+          blur: 0,
+          sepia: 0,
+          grayscale: 0,
+          invert: false
+        };
+      }
+    }
+    return {
+      brightness: 100,
+      contrast: 100,
+      saturation: 100,
+      hue: 0,
+      blur: 0,
+      sepia: 0,
+      grayscale: 0,
+      invert: false
+    };
+  });
 
   // Load overrides from localStorage on mount
   useEffect(() => {
     const stored = localStorage.getItem('accentColorOverrides');
     if (stored) {
-      try {
         setAccentColorOverrides(JSON.parse(stored));
-      } catch (e) {
-        // ignore parse errors
-      }
     }
   }, []);
 
@@ -245,6 +282,31 @@ const AudioPlayerComponent = () => {
   useEffect(() => {
     localStorage.setItem('accentColorOverrides', JSON.stringify(accentColorOverrides));
   }, [accentColorOverrides]);
+
+  // Persist album filters to localStorage
+  useEffect(() => {
+    localStorage.setItem('vorbis-player-album-filters', JSON.stringify(albumFilters));
+  }, [albumFilters]);
+
+  const handleFilterChange = useCallback((filterName: string, value: number | boolean) => {
+    setAlbumFilters(prev => ({
+      ...prev,
+      [filterName]: value
+    }));
+  }, []);
+
+  const handleResetFilters = useCallback(() => {
+    setAlbumFilters({
+      brightness: 100,
+      contrast: 100,
+      saturation: 100,
+      hue: 0,
+      blur: 0,
+      sepia: 0,
+      grayscale: 0,
+      invert: false
+    });
+  }, []);
 
   const handlePlaylistSelect = async (playlistId: string, playlistName: string) => {
     try {
@@ -554,6 +616,12 @@ const AudioPlayerComponent = () => {
     }
   };
 
+  // Persist glow settings to localStorage
+  useEffect(() => {
+    localStorage.setItem('vorbis-player-glow-intensity', glowIntensity.toString());
+    console.log('Glow intensity changed to:', glowIntensity);
+  }, [glowIntensity]);
+
   const renderContent = () => {
     // Show loading state
     if (isLoading) {
@@ -631,10 +699,9 @@ const AudioPlayerComponent = () => {
     return (
       <ContentWrapper>
           <LoadingCard backgroundImage={currentTrack?.image}>
-
-            <CardContent style={{ position: 'relative', zIndex: 2 }}>
-              <AlbumArt currentTrack={currentTrack} accentColor={accentColor} />
-              
+            
+           <CardContent style={{ position: 'relative', zIndex: 2 }}>
+              <AlbumArt currentTrack={currentTrack} accentColor={accentColor} glowIntensity={glowIntensity} albumFilters={albumFilters} />
             </CardContent>
             <CardContent style={{ position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 2 }}>
               <SpotifyPlayerControls
@@ -650,8 +717,17 @@ const AudioPlayerComponent = () => {
                 showVideo={showVideo}
                 onToggleVideo={() => setShowVideo(v => !v)}
                 onAccentColorChange={handleAccentColorChange}
+                onShowVisualEffects={() => setShowVisualEffects(true)}
               />
             </CardContent>
+            <VisualEffectsMenu
+              isOpen={showVisualEffects}
+              onClose={() => setShowVisualEffects(false)}
+              accentColor={accentColor}
+              filters={albumFilters}
+              onFilterChange={handleFilterChange}
+              onResetFilters={handleResetFilters}
+            />
           </LoadingCard>
 
         <PlaylistOverlay
@@ -693,10 +769,7 @@ const AudioPlayerComponent = () => {
         onClose={() => setShowSettings(false)}
         currentTrack={currentTrack}
         accentColor={accentColor}
-        onVideoChanged={() => {
-          // Force VideoPlayer to refresh by changing its key
-          setVideoRefreshKey(prev => prev + 1);
-        }}
+        
       />
     </Container>
   );
