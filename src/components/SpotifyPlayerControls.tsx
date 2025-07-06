@@ -1,13 +1,10 @@
-import { useState, useEffect, memo, useRef, useLayoutEffect } from 'react';
+import { useState, useEffect, memo } from 'react';
 import styled from 'styled-components';
-import { spotifyPlayer } from '../services/spotifyPlayer';
-import { spotifyAuth, checkTrackSaved, saveTrack, unsaveTrack } from '../services/spotify';
 import type { Track } from '../services/spotify';
 import LikeButton from './LikeButton';
-import EyedropperOverlay from './EyedropperOverlay';
-import { extractTopVibrantColors } from '../utils/colorExtractor';
-import type { ExtractedColor } from '../utils/colorExtractor';
-import { createPortal } from 'react-dom';
+import ColorPickerPopover from './ColorPickerPopover';
+import TimelineSlider from './TimelineSlider';
+import { useSpotifyControls } from '../hooks/useSpotifyControls';
 
 // --- Styled Components ---
 const PlayerControlsContainer = styled.div`
@@ -130,71 +127,6 @@ const VolumeButton = styled.button`
   }
 `;
 
-const TimelineSlider = styled.input<{ accentColor: string }>`
-  flex: 1;
-  height: 4px;
-  background: rgba(115, 115, 115, 0.3);
-  border-radius: 2px;
-  outline: none;
-  cursor: pointer;
-  
-  &::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    appearance: none;
-    width: 12px;
-    height: 12px;
-    background: ${props => props.accentColor} !important;
-    border-radius: 50%;
-    cursor: pointer;
-    border: none;
-    box-shadow: none;
-    transition: all 0.2s ease;
-    
-    &:hover {
-      transform: scale(1.2);
-    }
-  }
-  
-  &::-moz-range-thumb {
-    width: 12px;
-    height: 12px;
-    background: ${props => props.accentColor} !important;
-    border-radius: 50%;
-    cursor: pointer;
-    border: none;
-    box-shadow: none;
-    transition: all 0.2s ease;
-    
-    &:hover {
-      transform: scale(1.2);
-    }
-  }
-  
-  /* Progress fill effect */
-  background: linear-gradient(
-    to right,
-    ${props => props.accentColor} 0%,
-    ${props => props.accentColor} ${(props) => props.value && props.max ? (Number(props.value) / Number(props.max)) * 100 : 0}%,
-    rgba(115, 115, 115, 0.3) ${(props) => props.value && props.max ? (Number(props.value) / Number(props.max)) * 100 : 0}%,
-    rgba(115, 115, 115, 0.3) 100%
-  );
-`;
-
-const TimeLabel = styled.span`
-  color: ${({ theme }: any) => theme.colors.gray[400]};
-  font-size: ${({ theme }: any) => theme.fontSize.sm};
-  font-family: monospace;
-  min-width: 40px;
-  text-align: center;
-`;
-
-const TimelineRow = styled.div`
-  display: flex;
-  align-items: center;
-  gap: ${({ theme }: any) => theme.spacing.sm};
-  width: 100%;
-  margin: 0;
-`;
 
 const TimelineLeft = styled.div`
   display: flex;
@@ -227,25 +159,34 @@ const SpotifyPlayerControls = memo<{
   onShowVisualEffects?: () => void;
   showVisualEffects?: boolean;
 }>(({ currentTrack, accentColor, onPlay, onPause, onNext, onPrevious, onShowPlaylist, onAccentColorChange, onShowVisualEffects, showVisualEffects }) => {
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [isMuted, setIsMuted] = useState(false);
-  const [volume, setVolume] = useState(50);
-  const [previousVolume, setPreviousVolume] = useState(50);
-  const [currentPosition, setCurrentPosition] = useState(0);
-  const [duration, setDuration] = useState(0);
-  const [isDragging, setIsDragging] = useState(false);
-  const [isLiked, setIsLiked] = useState(false);
-  const [isLikePending, setIsLikePending] = useState(false);
-  const [colorOptions, setColorOptions] = useState<ExtractedColor[] | null>(null);
-  const [isExtracting, setIsExtracting] = useState(false);
-  const [extractError, setExtractError] = useState<string | null>(null);
-  const [showColorPopover, setShowColorPopover] = useState(false);
-  const popoverRef = useRef<HTMLDivElement>(null);
-  const paletteBtnRef = useRef<HTMLButtonElement>(null);
-  const [popoverPos, setPopoverPos] = useState<{ left: number; top: number } | null>(null);
-  const [showEyedropper, setShowEyedropper] = useState(false);
   // Custom accent color per track (from eyedropper)
   const [customAccentColorOverrides, setCustomAccentColorOverrides] = useState<Record<string, string>>({});
+
+  // Use Spotify controls hook
+  const {
+    isPlaying,
+    isMuted,
+    volume,
+    currentPosition,
+    duration,
+    isDragging,
+    isLiked,
+    isLikePending,
+    handlePlayPause,
+    handleMuteToggle,
+    handleVolumeButtonClick,
+    handleLikeToggle,
+    handleSliderChange,
+    handleSliderMouseDown,
+    handleSliderMouseUp,
+    formatTime,
+  } = useSpotifyControls({
+    currentTrack,
+    onPlay,
+    onPause,
+    onNext,
+    onPrevious
+  });
 
   // Load custom accent color overrides from localStorage on mount
   useEffect(() => {
@@ -259,16 +200,10 @@ const SpotifyPlayerControls = memo<{
     }
   }, []);
 
-  // Get the last chosen custom color for the current track
-  const getLastCustomColor = () => {
-    return currentTrack?.id ? customAccentColorOverrides[currentTrack.id] : null;
-  };
-
   // Save custom accent color overrides to localStorage when changed
   useEffect(() => {
     localStorage.setItem('customAccentColorOverrides', JSON.stringify(customAccentColorOverrides));
   }, [customAccentColorOverrides]);
-
 
   // When user picks a color with the eyedropper, store it as the custom color for this track
   const handleCustomAccentColor = (color: string) => {
@@ -280,200 +215,6 @@ const SpotifyPlayerControls = memo<{
     }
   };
 
-  useEffect(() => {
-    const checkPlaybackState = async () => {
-      const state = await spotifyPlayer.getCurrentState();
-      if (state) {
-        setIsPlaying(!state.paused);
-        if (!isDragging) {
-          setCurrentPosition(state.position);
-        }
-        if (state.track_window.current_track) {
-          setDuration(state.track_window.current_track.duration_ms);
-        }
-      }
-    };
-
-    const interval = setInterval(checkPlaybackState, 1000);
-    return () => clearInterval(interval);
-  }, [isDragging]);
-
-  useEffect(() => {
-    // Set initial volume to 50%
-    spotifyPlayer.setVolume(0.5);
-    setVolume(50);
-    setPreviousVolume(50);
-  }, []);
-
-  // Check like status when track changes
-  useEffect(() => {
-    const checkLikeStatus = async () => {
-      if (!currentTrack?.id) {
-        setIsLiked(false);
-        return;
-      }
-
-      try {
-        setIsLikePending(true);
-        const liked = await checkTrackSaved(currentTrack.id);
-        setIsLiked(liked);
-      } catch (error) {
-        console.error('Failed to check like status:', error);
-        setIsLiked(false);
-      } finally {
-        setIsLikePending(false);
-      }
-    };
-
-    checkLikeStatus();
-  }, [currentTrack?.id]);
-
-  // Extract colors when popover opens or track changes
-  useEffect(() => {
-    if (showColorPopover && currentTrack?.image) {
-      console.log('[AccentColor] Extracting from image:', currentTrack.image);
-      setIsExtracting(true);
-      setExtractError(null);
-      setColorOptions(null);
-      extractTopVibrantColors(currentTrack.image, 3)
-        .then(colors => {
-          console.log('[AccentColor] Extracted colors:', colors);
-          setColorOptions(colors);
-          setIsExtracting(false);
-        })
-        .catch(err => {
-          console.error('[AccentColor] Extraction error:', err);
-          setExtractError('Failed to extract colors');
-          setIsExtracting(false);
-        });
-    } else if (showColorPopover) {
-      console.log('[AccentColor] No image found for current track:', currentTrack);
-    }
-  }, [showColorPopover, currentTrack?.image]);
-
-  // Close popover on outside click
-  useEffect(() => {
-    if (!showColorPopover) return;
-    function handleClick(e: MouseEvent) {
-      if (
-        popoverRef.current &&
-        !popoverRef.current.contains(e.target as Node) &&
-        paletteBtnRef.current &&
-        !paletteBtnRef.current.contains(e.target as Node)
-      ) {
-        setShowColorPopover(false);
-      }
-    }
-    document.addEventListener('mousedown', handleClick);
-    return () => document.removeEventListener('mousedown', handleClick);
-  }, [showColorPopover]);
-
-  // When popover opens, calculate position
-  useLayoutEffect(() => {
-    if (showColorPopover && paletteBtnRef.current) {
-      const rect = paletteBtnRef.current.getBoundingClientRect();
-      setPopoverPos({
-        left: rect.left + rect.width * 1.5,
-        top: rect.top - 12, // 12px gap above button
-      });
-    }
-  }, [showColorPopover]);
-
-  const handlePlayPause = () => {
-    if (isPlaying) {
-      onPause();
-    } else {
-      onPlay();
-    }
-  };
-
-  const handleMuteToggle = () => {
-    const newMutedState = !isMuted;
-    setIsMuted(newMutedState);
-
-    if (newMutedState) {
-      // Store current volume before muting
-      setPreviousVolume(volume);
-      spotifyPlayer.setVolume(0);
-    } else {
-      // Restore previous volume when unmuting
-      const volumeToRestore = previousVolume > 0 ? previousVolume : 50;
-      setVolume(volumeToRestore);
-      spotifyPlayer.setVolume(volumeToRestore / 100);
-    }
-  };
-
-  const handleVolumeButtonClick = () => {
-    handleMuteToggle();
-  };
-
-  const handleLikeToggle = async () => {
-    if (!currentTrack?.id || isLikePending) return;
-
-    try {
-      setIsLikePending(true);
-
-      // Optimistic update
-      const newLikedState = !isLiked;
-      setIsLiked(newLikedState);
-
-      // Make API call
-      if (newLikedState) {
-        await saveTrack(currentTrack.id);
-      } else {
-        await unsaveTrack(currentTrack.id);
-      }
-    } catch (error) {
-      console.error('Failed to toggle like status:', error);
-      // Revert optimistic update on error
-      setIsLiked(!isLiked);
-    } finally {
-      setIsLikePending(false);
-    }
-  };
-
-  const handleSeek = async (position: number) => {
-    try {
-      const token = await spotifyAuth.ensureValidToken();
-      const deviceId = spotifyPlayer.getDeviceId();
-
-      if (!deviceId) {
-        console.error('No device ID available for seeking');
-        return;
-      }
-
-      await fetch(`https://api.spotify.com/v1/me/player/seek?position_ms=${Math.floor(position)}&device_id=${deviceId}`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-    } catch (error) {
-      console.error('Failed to seek:', error);
-    }
-  };
-
-  const handleSliderChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const position = parseInt(e.target.value);
-    setCurrentPosition(position);
-  };
-
-  const handleSliderMouseDown = () => {
-    setIsDragging(true);
-  };
-
-  const handleSliderMouseUp = (e: React.MouseEvent<HTMLInputElement>) => {
-    const position = parseInt((e.target as HTMLInputElement).value);
-    setIsDragging(false);
-    handleSeek(position);
-  };
-
-  const formatTime = (ms: number) => {
-    const seconds = Math.floor(ms / 1000);
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = seconds % 60;
-    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
-  };
 
   return (
     <PlayerControlsContainer>
@@ -519,155 +260,28 @@ const SpotifyPlayerControls = memo<{
       </TrackInfoRow>
 
       {/* Timeline Row with time, slider, and right controls */}
-      <TimelineRow>
+      <TimelineSlider
+        currentPosition={currentPosition}
+        duration={duration}
+        accentColor={accentColor}
+        formatTime={formatTime}
+        onSliderChange={handleSliderChange}
+        onSliderMouseDown={handleSliderMouseDown}
+        onSliderMouseUp={handleSliderMouseUp}
+      >
         <TimelineLeft>
           <ControlButton accentColor={accentColor} onClick={onShowVisualEffects} isActive={showVisualEffects} title="Visual effects">
             <svg viewBox="0 0 24 24" role="img" aria-hidden="true">
               <path d="M20.71,4.63L19.37,3.29C19,2.9 18.35,2.9 17.96,3.29L9,12.25L11.75,15L20.71,6.04C21.1,5.65 21.1,5 20.71,4.63M7,14A3,3 0 0,0 4,17C4,18.31 2.84,19 2,19C2.92,20.22 4.5,21 6,21A4,4 0 0,0 10,17A3,3 0 0,0 7,14Z" />
             </svg>
           </ControlButton>
-          <ControlButton
+          <ColorPickerPopover
             accentColor={accentColor}
-            onClick={() => setShowColorPopover(v => !v)}
-            title="Theme options"
-            ref={paletteBtnRef}
-            style={{ position: 'relative' }}
-          >
-            {/* Palette SVG icon with dynamic fill */}
-            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" role="img">
-              <path d="M21 12.79A9 9 0 1 1 12 3a7 7 0 0 1 7 7c0 1.38-.56 2.63-1.46 3.54-.63.63-.54 1.71.21 2.21a2 2 0 0 0 2.25.13z" fill={accentColor} />
-              <circle cx="8.5" cy="10.5" r="1" fill="#fff" />
-              <circle cx="12" cy="7.5" r="1" fill="#fff" />
-              <circle cx="15.5" cy="10.5" r="1" fill="#fff" />
-              <circle cx="12" cy="14.5" r="1" fill="#fff" />
-            </svg>
-          </ControlButton>
-          {/* Popover menu rendered in portal, outside the button */}
-          {showColorPopover && popoverPos && createPortal(
-            <div
-              ref={popoverRef}
-              style={{
-                position: 'fixed',
-                left: popoverPos.left,
-                top: popoverPos.top,
-                transform: 'translate(-50%, -100%)',
-                background: '#232323',
-                borderRadius: 12,
-                boxShadow: '0 4px 24px rgba(0,0,0,0.25)',
-                padding: '1rem 1.25rem',
-                zIndex: 9999,
-                minWidth: 160,
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                gap: 12,
-              }}
-            >
-              <div style={{ color: '#fff', fontWeight: 600, marginBottom: 8, fontSize: 15 }}>Choose Accent Color</div>
-              {isExtracting && <p style={{ color: '#888', fontSize: 14 }}>Extracting colors...</p>}
-              {extractError && <p style={{ color: 'red', fontSize: 14 }}>{extractError}</p>}
-              {!isExtracting && !extractError && (
-                <div style={{ display: 'flex', gap: 12 }}>
-                  {(colorOptions ?? []).map((color) => (
-                    <button
-                      key={color.hex}
-                      onClick={() => {
-                        onAccentColorChange?.(color.hex);
-                        setShowColorPopover(false);
-                      }}
-                      style={{
-                        width: 32,
-                        height: 32,
-                        borderRadius: '10%',
-                        border: color.hex === accentColor ? '3px solid #fff' : '2px solid #888',
-                        background: color.hex,
-                        cursor: 'pointer',
-                        outline: color.hex === accentColor ? '2px solid #ffd700' : 'none',
-                        boxShadow: color.hex === accentColor ? '0 0 0 2px #ffd700' : 'none',
-                        transition: 'box-shadow 0.2s, border 0.2s',
-                      }}
-                      title={color.hex}
-                      aria-label={`Choose color ${color.hex}`}
-                    />
-                  ))}
-                  {/* Custom color button - uses last chosen custom color for this track */}
-                  <button
-                    onClick={() => {
-                      const lastCustomColor = getLastCustomColor();
-                      if (lastCustomColor) {
-                        onAccentColorChange?.(lastCustomColor);
-                        setShowColorPopover(false);
-                      }
-                    }}
-                    style={{
-                      width: 32,
-                      height: 32,
-                      borderRadius: '10%',
-                      border: '2px solid #888',
-                      background: getLastCustomColor() || '#181818',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      transition: 'box-shadow 0.2s, border 0.2s',
-                      opacity: getLastCustomColor() ? 1 : 0.5,
-                      color: getLastCustomColor() ? '#fff' : '#aaa',
-                    }}
-                    title="Use custom color"
-                    aria-label="Use custom color"
-                    disabled={!getLastCustomColor()}
-                  >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M19.07 4.93a3 3 0 0 1 0 4.24l-1.41 1.41-4.24-4.24 1.41-1.41a3 3 0 0 1 4.24 0z" />
-                      <path d="M17.66 7.34L6 19v3h3L20.66 10.34" />
-                    </svg>
-                  </button>
-                  {/* Always show eyedropper button if album art is available */}
-                  {currentTrack?.image && (
-
-                    <ControlButton
-                      accentColor={accentColor}
-                      onClick={() => setShowEyedropper(true)}
-                      title="Pick color from album art"
-                      aria-label="Pick color from album art"
-                      style={{
-                        width: 32,
-                        height: 32,
-                        borderRadius: '10%',
-                        border: '2px solid #888',
-                        // background: '#181818',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        transition: 'box-shadow 0.2s, border 0.2s',
-                        color: '#fff',
-                      }}
-                    >
-                      <svg width="32" height="32" viewBox="2 2 20 20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <circle cx="11" cy="11" r="8" />
-                        <path d="M21 21l-4.35-4.35" />
-                        <circle cx="11" cy="11" r="3" />
-                      </svg>
-                    </ControlButton>
-                  )}
-                </div>
-              )}
-
-            </div>,
-            document.body
-          )}
-          {showEyedropper && currentTrack?.image && (
-            createPortal(
-              <EyedropperOverlay
-                image={currentTrack.image}
-                onPick={handleCustomAccentColor}
-                onClose={() => setShowEyedropper(false)}
-              />,
-              document.body
-            )
-          )}
-
+            currentTrack={currentTrack}
+            onAccentColorChange={onAccentColorChange}
+            customAccentColorOverrides={customAccentColorOverrides}
+            onCustomAccentColor={handleCustomAccentColor}
+          />
           <VolumeButton onClick={handleVolumeButtonClick} title={isMuted ? 'Unmute' : 'Mute'}>
             {isMuted ? (
               <svg viewBox="0 0 24 24">
@@ -687,21 +301,7 @@ const SpotifyPlayerControls = memo<{
               </svg>
             )}
           </VolumeButton>
-
-
         </TimelineLeft>
-        <TimeLabel>{formatTime(currentPosition)}</TimeLabel>
-        <TimelineSlider
-          type="range"
-          min="0"
-          max={duration}
-          value={currentPosition}
-          accentColor={accentColor}
-          onChange={handleSliderChange}
-          onMouseDown={handleSliderMouseDown}
-          onMouseUp={handleSliderMouseUp}
-        />
-        <TimeLabel>{formatTime(duration)}</TimeLabel>
         <TimelineRight>
           <ControlButton accentColor={accentColor} onClick={onShowPlaylist} title="Show Playlist">
             <svg viewBox="0 0 24 24" role="img" aria-hidden="true">
@@ -709,7 +309,7 @@ const SpotifyPlayerControls = memo<{
             </svg>
           </ControlButton>
         </TimelineRight>
-      </TimelineRow>
+      </TimelineSlider>
     </PlayerControlsContainer>
   );
 });

@@ -1,19 +1,18 @@
-import { useState, useEffect, useMemo, useCallback, lazy, Suspense } from 'react';
+import { useEffect, useMemo, useCallback } from 'react';
 import styled from 'styled-components';
-const Playlist = lazy(() => import('./Playlist'));
-const PlaylistSelection = lazy(() => import('./PlaylistSelection'));
-import { getPlaylistTracks, spotifyAuth } from '../services/spotify';
+import { spotifyAuth } from '../services/spotify';
 import { spotifyPlayer } from '../services/spotifyPlayer';
 import type { Track } from '../services/spotify';
-import { Card, CardHeader, CardContent } from '../components/styled';
-import { Button } from '../components/styled';
-import { Skeleton } from '../components/styled';
-import { Alert, AlertDescription } from '../components/styled';
-import { flexCenter, flexColumn, cardBase } from '../styles/utils';
+import { CardContent } from '../components/styled';
+import { flexCenter, cardBase } from '../styles/utils';
 import AlbumArt from './AlbumArt';
 import { extractDominantColor } from '../utils/colorExtractor';
 import SpotifyPlayerControls from './SpotifyPlayerControls';
 import VisualEffectsMenu from './VisualEffectsMenu';
+import PlaylistDrawer from './PlaylistDrawer';
+import PlayerStateRenderer from './PlayerStateRenderer';
+import { usePlayerState } from '../hooks/usePlayerState';
+import { usePlaylistManager } from '../hooks/usePlaylistManager';
 import { theme } from '@/styles/theme';
 import { DEFAULT_GLOW_RATE } from './AccentColorGlowOverlay';
 
@@ -46,88 +45,7 @@ const ContentWrapper = styled.div`
 `;
 
 
-const PlaylistDrawer = styled.div<{ isOpen: boolean }>`
-  position: fixed;
-  top: 0;
-  right: 0;
-  width: 400px;
-  height: 100vh;
-  background: rgba(0, 0, 0, 0.95);
-  backdrop-filter: blur(10px);
-  border-left: 1px solid rgba(255, 255, 255, 0.1);
-  transform: translateX(${props => props.isOpen ? '0' : '100%'});
-  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  z-index: 1000;
-  overflow-y: auto;
-  padding: 1rem;
-  box-sizing: border-box;
-  
-  @media (max-width: 480px) {
-    width: 100vw;
-  }
-`;
-
-const PlaylistContent = styled.div`
-  padding: 0.5rem 0 1rem 0;
-  
-  /* Ensure playlist cards have proper spacing from top and bottom */
-  > div:first-child {
-    margin-top: 0;
-  }
-  
-  > div:last-child {
-    margin-bottom: 0;
-  }
-`;
-
-const PlaylistOverlay = styled.div<{ isOpen: boolean }>`
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(2px);
-  opacity: ${props => props.isOpen ? 1 : 0};
-  visibility: ${props => props.isOpen ? 'visible' : 'hidden'};
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  z-index: 999;
-`;
-
-const PlaylistHeader = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1rem;
-  padding-bottom: 1rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-`;
-
-const PlaylistTitle = styled.h3`
-  color: white;
-  margin: 0;
-  font-size: 1.2rem;
-  font-weight: 600;
-`;
-
-const CloseButton = styled.button`
-  background: none;
-  border: none;
-  color: rgba(255, 255, 255, 0.7);
-  font-size: 1.5rem;
-  cursor: pointer;
-  padding: 0.5rem;
-  border-radius: 0.25rem;
-  transition: all 0.2s ease;
-  
-  &:hover {
-    background: rgba(255, 255, 255, 0.1);
-    color: white;
-  }
-`;
-
-
-const LoadingCard = styled(Card) <{ backgroundImage?: string; standalone?: boolean }>`
+const LoadingCard = styled.div<{ backgroundImage?: string; standalone?: boolean }>`
   ${cardBase};
   position: absolute;
   top: 0;
@@ -168,254 +86,43 @@ const LoadingCard = styled(Card) <{ backgroundImage?: string; standalone?: boole
 `;
 
 
-const SkeletonContainer = styled.div`
-  ${flexColumn};
-  gap: ${({ theme }: any) => theme.spacing.md};
-`;
-
-const PlaylistFallback = styled.div`
-  width: 100%;
-  margin-top: ${({ theme }: any) => theme.spacing.lg};
-`;
-
-const PlaylistFallbackCard = styled.div`
-  background-color: ${({ theme }: any) => theme.colors.gray[800]};
-  border-radius: 1.25rem;
-  padding: ${({ theme }: any) => theme.spacing.md};
-  border: 1px solid ${({ theme }: any) => theme.colors.gray[700]};
-`;
-
-// Helper to wait for Spotify player readiness
-async function waitForSpotifyReady(timeout = 10000): Promise<void> {
-  const start = Date.now();
-  while (!spotifyPlayer.getIsReady() || !spotifyPlayer.getDeviceId()) {
-    if (Date.now() - start > timeout) throw new Error('Spotify player not ready after waiting');
-    await new Promise(res => setTimeout(res, 200));
-  }
-}
-
 const AudioPlayerComponent = () => {
-  const [tracks, setTracks] = useState<Track[]>([]);
-  const [currentTrackIndex, setCurrentTrackIndex] = useState(0);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [selectedPlaylistId, setSelectedPlaylistId] = useState<string | null>(null);
-  const [showPlaylist, setShowPlaylist] = useState(false);
-  const [accentColor, setAccentColor] = useState<string>(theme.colors.accent);
-  const [showVisualEffects, setShowVisualEffects] = useState(false);
-  const [glowIntensity, setGlowIntensity] = useState<number>(() => {
-    const saved = localStorage.getItem('vorbis-player-glow-intensity');
-    return saved ? parseInt(saved, 10) : 100;
-  });
-  const [glowRate, setGlowRate] = useState<number>(() => {
-    const saved = localStorage.getItem('vorbis-player-glow-rate');
-    return saved ? parseFloat(saved) : DEFAULT_GLOW_RATE;
-  });
-  const [glowMode, setGlowMode] = useState<'global' | 'per-album'>(() => {
-    const saved = localStorage.getItem('vorbis-player-glow-mode');
-    return saved === 'per-album' ? 'per-album' : 'global';
-  });
-  const [perAlbumGlow, setPerAlbumGlow] = useState<Record<string, { intensity: number; rate: number }>>(() => {
-    const saved = localStorage.getItem('vorbis-player-per-album-glow');
-    return saved ? JSON.parse(saved) : {};
-  });
-  // New: per-song accent color overrides
-  const [accentColorOverrides, setAccentColorOverrides] = useState<Record<string, string>>({});
+  const {
+    tracks,
+    currentTrackIndex,
+    isLoading,
+    error,
+    selectedPlaylistId,
+    showPlaylist,
+    accentColor,
+    showVisualEffects,
+    glowIntensity,
+    glowRate,
+    glowMode,
+    perAlbumGlow,
+    accentColorOverrides,
+    albumFilters,
+    setTracks,
+    setCurrentTrackIndex,
+    setIsLoading,
+    setError,
+    setSelectedPlaylistId,
+    setShowPlaylist,
+    setAccentColor,
+    setShowVisualEffects,
+    setGlowIntensity,
+    setGlowRate,
+    setGlowMode,
+    setPerAlbumGlow,
+    setAccentColorOverrides,
+    handleFilterChange,
+    handleResetFilters,
+  } = usePlayerState();
 
-  // Album art filters state
-  const [albumFilters, setAlbumFilters] = useState<{
-    brightness: number;
-    contrast: number;
-    saturation: number;
-    hue: number;
-    blur: number;
-    sepia: number;
-    grayscale: number;
-    invert: number;
-  }>(() => {
-    const saved = localStorage.getItem('vorbis-player-album-filters');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        // Migration: ensure boolean invert and add missing properties
-        return {
-          brightness: parsed.brightness ?? 100,
-          contrast: parsed.contrast ?? 100,
-          saturation: parsed.saturation ?? 100,
-          hue: parsed.hue ?? 0,
-          blur: parsed.blur ?? 0,
-          sepia: parsed.sepia ?? 0,
-          grayscale: parsed.grayscale ?? 0,
-          invert: typeof parsed.invert === 'boolean' ? (parsed.invert ? 1 : 0) : parsed.invert
-        };
-      } catch (e) {
-        // If parsing fails, use defaults
-        return {
-          brightness: 100,
-          contrast: 100,
-          saturation: 100,
-          hue: 0,
-          blur: 0,
-          sepia: 0,
-          grayscale: 0,
-          invert: 0
-        };
-      }
-    }
-    return {
-      brightness: 100,
-      contrast: 100,
-      saturation: 100,
-      hue: 0,
-      blur: 0,
-      sepia: 0,
-      grayscale: 0,
-      invert: 0
-    };
-  });
-
-  // Load overrides from localStorage on mount
-  useEffect(() => {
-    const stored = localStorage.getItem('accentColorOverrides');
-    if (stored) {
-      setAccentColorOverrides(JSON.parse(stored));
-    }
-  }, []);
-
-  // Save overrides to localStorage when changed
-  useEffect(() => {
-    localStorage.setItem('accentColorOverrides', JSON.stringify(accentColorOverrides));
-  }, [accentColorOverrides]);
-
-  // Persist album filters to localStorage
-  useEffect(() => {
-    localStorage.setItem('vorbis-player-album-filters', JSON.stringify(albumFilters));
-  }, [albumFilters]);
-
-  const handleFilterChange = useCallback((filterName: string, value: number | boolean) => {
-    setAlbumFilters(prev => ({
-      ...prev,
-      [filterName]: value
-    }));
-  }, []);
-
-  const handleResetFilters = useCallback(() => {
-    setAlbumFilters({
-      brightness: 100,
-      contrast: 100,
-      saturation: 100,
-      hue: 0,
-      blur: 0,
-      sepia: 0,
-      grayscale: 0,
-      invert: 0
-    });
-  }, []);
-
-  const handlePlaylistSelect = async (playlistId: string) => {
-    try {
-      setError(null);
-      setIsLoading(true);
-      setSelectedPlaylistId(playlistId);
-
-      // Initialize Spotify player
-      await spotifyPlayer.initialize();
-
-      // Wait for the player to be ready
-      await waitForSpotifyReady();
-
-      // Ensure our device is the active player
-      await spotifyPlayer.transferPlaybackToDevice();
-
-      // Fetch tracks from the selected playlist
-      const fetchedTracks = await getPlaylistTracks(playlistId);
-
-      if (fetchedTracks.length === 0) {
-        setError("No tracks found in this playlist.");
-        return;
-      }
-
-      setTracks(fetchedTracks);
-      setCurrentTrackIndex(0);
-
-
-      // Start playing the first track (user interaction has occurred)
-      setTimeout(async () => {
-        try {
-          await playTrack(0);
-
-          // Check playback state after a delay and try to recover
-          setTimeout(async () => {
-            const state = await spotifyPlayer.getCurrentState();
-
-            // If state is undefined, the player might not be active - try to activate it
-            if (!state || !state.track_window?.current_track) {
-              try {
-                const token = await spotifyAuth.ensureValidToken();
-                const deviceId = spotifyPlayer.getDeviceId();
-
-                if (deviceId) {
-                  // Transfer playback to our device
-                  await fetch('https://api.spotify.com/v1/me/player', {
-                    method: 'PUT',
-                    headers: {
-                      'Authorization': `Bearer ${token}`,
-                      'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                      device_ids: [deviceId],
-                      play: true
-                    })
-                  });
-
-
-                  // Try playing the track again
-                  setTimeout(async () => {
-                    try {
-                      await playTrack(0);
-                    } catch (error) {
-                    }
-                  }, 1000);
-                }
-              } catch (error) {
-              }
-            }
-          }, 2000);
-        } catch (error) {
-        }
-      }, 1500);
-
-    } catch (err: unknown) {
-      if (err instanceof Error && err.message.includes('authenticated')) {
-        setError("Authentication expired. Redirecting to Spotify login...");
-        spotifyAuth.redirectToAuth();
-      } else {
-        setError(err instanceof Error ? err.message : "An unknown error occurred while loading tracks.");
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Handle Spotify auth redirect when component mounts
-  useEffect(() => {
-    const handleAuthRedirect = async () => {
-      try {
-        await spotifyAuth.handleRedirect();
-      } catch (error) {
-        setError(error instanceof Error ? error.message : 'Authentication failed');
-      }
-    };
-
-    handleAuthRedirect();
-  }, []);
-
-
-
+  // Define playTrack function
   const playTrack = useCallback(async (index: number) => {
     if (tracks[index]) {
       try {
-
         // Check if we have valid authentication
         const isAuthenticated = spotifyAuth.isAuthenticated();
 
@@ -433,14 +140,39 @@ const AudioPlayerComponent = () => {
             try {
               await spotifyPlayer.resume();
             } catch (resumeError) {
+              // Silent fail
             }
           }
         }, 1000);
 
       } catch (error) {
+        // Silent fail
       }
     }
-  }, [tracks]);
+  }, [tracks, setCurrentTrackIndex]);
+
+  // Use playlist manager hook
+  const { handlePlaylistSelect } = usePlaylistManager({
+    setError,
+    setIsLoading,
+    setSelectedPlaylistId,
+    setTracks,
+    setCurrentTrackIndex,
+    playTrack
+  });
+
+  // Handle Spotify auth redirect when component mounts
+  useEffect(() => {
+    const handleAuthRedirect = async () => {
+      try {
+        await spotifyAuth.handleRedirect();
+      } catch (error) {
+        setError(error instanceof Error ? error.message : 'Authentication failed');
+      }
+    };
+
+    handleAuthRedirect();
+  }, []);
 
   // Simple player state monitoring (removed complex auto-play logic)
   useEffect(() => {
@@ -557,19 +289,6 @@ const AudioPlayerComponent = () => {
     }
   };
 
-  // Persist glow settings to localStorage
-  useEffect(() => {
-    localStorage.setItem('vorbis-player-glow-intensity', glowIntensity.toString());
-  }, [glowIntensity]);
-  useEffect(() => {
-    localStorage.setItem('vorbis-player-glow-rate', glowRate.toString());
-  }, [glowRate]);
-  useEffect(() => {
-    localStorage.setItem('vorbis-player-glow-mode', glowMode);
-  }, [glowMode]);
-  useEffect(() => {
-    localStorage.setItem('vorbis-player-per-album-glow', JSON.stringify(perAlbumGlow));
-  }, [perAlbumGlow]);
 
   // Determine current album ID (if available)
   const currentAlbumId = currentTrack?.album || '';
@@ -580,76 +299,19 @@ const AudioPlayerComponent = () => {
     : { intensity: glowIntensity, rate: glowRate };
 
   const renderContent = () => {
-    // Show loading state
-    if (isLoading) {
-      return (
-        <LoadingCard standalone>
-          <CardContent>
-            <SkeletonContainer>
-              <Skeleton />
-              <Skeleton />
-              <Skeleton />
-            </SkeletonContainer>
-            <p style={{ textAlign: 'center', color: 'white', marginTop: '1rem' }}>Loading music from Spotify...</p>
-          </CardContent>
-        </LoadingCard>
-      );
-    }
-
-    // Handle authentication errors
-    if (error) {
-      const isAuthError = error.includes('Redirecting to Spotify login') ||
-        error.includes('No authentication token') ||
-        error.includes('Authentication expired');
-
-      if (isAuthError) {
-        return (
-          <LoadingCard standalone>
-            <CardHeader>
-              <h2 style={{ fontSize: '1.25rem', fontWeight: 'bold', color: 'white', textAlign: 'center' }}>Connect to Spotify</h2>
-            </CardHeader>
-            <CardContent style={{ textAlign: 'center' }}>
-              <p style={{ color: '#d1d5db', marginBottom: '1.5rem' }}>
-                Sign in to your Spotify account to access your music. Requires Spotify Premium.
-              </p>
-              <Button
-                onClick={() => spotifyAuth.redirectToAuth()}
-                style={{ backgroundColor: theme.colors.accent }}
-              >
-                Connect Spotify
-              </Button>
-            </CardContent>
-          </LoadingCard>
-        );
-      }
-
-      return (
-        <Alert variant="destructive" style={{ width: '100%' }}>
-          <AlertDescription style={{ color: '#fecaca' }}>
-            Error: {error}
-          </AlertDescription>
-        </Alert>
-      );
-    }
-
-    // Show playlist selection when no playlist is selected
-    if (!selectedPlaylistId || tracks.length === 0) {
-      return (
-        <Suspense fallback={
-          <LoadingCard standalone>
-            <CardContent>
-              <SkeletonContainer>
-                <Skeleton />
-                <Skeleton />
-                <Skeleton />
-              </SkeletonContainer>
-              <p style={{ textAlign: 'center', color: 'white', marginTop: '1rem' }}>Loading playlist selection...</p>
-            </CardContent>
-          </LoadingCard>
-        }>
-          <PlaylistSelection onPlaylistSelect={handlePlaylistSelect} />
-        </Suspense>
-      );
+    // Use PlayerStateRenderer for loading, error, and playlist selection states
+    const stateRenderer = (
+      <PlayerStateRenderer
+        isLoading={isLoading}
+        error={error}
+        selectedPlaylistId={selectedPlaylistId}
+        tracks={tracks}
+        onPlaylistSelect={handlePlaylistSelect}
+      />
+    );
+    
+    if (stateRenderer.props.isLoading || stateRenderer.props.error || !stateRenderer.props.selectedPlaylistId || stateRenderer.props.tracks.length === 0) {
+      return stateRenderer;
     }
 
 
@@ -695,31 +357,14 @@ const AudioPlayerComponent = () => {
           />
         </LoadingCard>
 
-        <PlaylistOverlay
+        <PlaylistDrawer
           isOpen={showPlaylist}
-          onClick={() => setShowPlaylist(false)}
+          onClose={() => setShowPlaylist(false)}
+          tracks={tracks}
+          currentTrackIndex={currentTrackIndex}
+          accentColor={accentColor}
+          onTrackSelect={playTrack}
         />
-
-        <PlaylistDrawer isOpen={showPlaylist}>
-          <PlaylistHeader>
-            <PlaylistTitle>Playlist ({tracks.length} tracks)</PlaylistTitle>
-            <CloseButton onClick={() => setShowPlaylist(false)}>×</CloseButton>
-          </PlaylistHeader>
-
-          <PlaylistContent>
-            <Suspense fallback={<PlaylistFallback><PlaylistFallbackCard><div style={{ animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite', color: 'rgba(255, 255, 255, 0.6)', textAlign: 'center' }}>Loading playlist...</div></PlaylistFallbackCard></PlaylistFallback>}>
-              <Playlist
-                tracks={tracks}
-                currentTrackIndex={currentTrackIndex}
-                accentColor={accentColor}
-                onTrackSelect={(index) => {
-                  playTrack(index);
-                  setShowPlaylist(false); // Close drawer after selecting track
-                }}
-              />
-            </Suspense>
-          </PlaylistContent>
-        </PlaylistDrawer>
 
       </ContentWrapper>
     );
