@@ -97,13 +97,6 @@ VITE_SPOTIFY_CLIENT_ID="your_spotify_client_id"
 VITE_SPOTIFY_REDIRECT_URI="http://127.0.0.1:3000/auth/spotify/callback"
 ```
 
-Optional (for backward compatibility):
-
-```
-VITE_DROPBOX_APP_KEY="your_dropbox_app_key"
-VITE_DROPBOX_REDIRECT_URI="http://127.0.0.1:3000/auth/dropbox/callback"
-```
-
 ## Critical Implementation Details
 
 ### Auto-Play System
@@ -244,16 +237,19 @@ The application includes a Node.js proxy server in `proxy-server/` directory to 
 ## Common Issues & Solutions
 
 ### Album Art Filters Not Working
+
 - **Root Cause**: Missing `albumFilters` prop in AlbumArt component
 - **Solution**: Always pass `albumFilters={albumFilters}` to AlbumArt component
 - **Location**: AudioPlayer.tsx line ~704
 
 ### Type Inconsistencies
+
 - **Filter Types**: Ensure filter interfaces match between components
 - **Invert Property**: AlbumArtFilters expects boolean, VisualEffectsMenu uses number
 - **Solution**: Standardize on single type across all filter components
 
 ### Development Workflow
+
 - **Always run both servers**: Use `npm run dev:all` for full functionality
 - **Test proxy health**: Run `npm run proxy:test` if videos not loading
 - **Component hierarchy**: AudioPlayer → AlbumArt → AlbumArtFilters for filter application
@@ -263,4 +259,3 @@ The application includes a Node.js proxy server in `proxy-server/` directory to 
 - /commit means you are to commit the current working changes to the current branch.   unless otherwise instructed, you should split the changes into logically related commits in the correct sequential order
 - /doc means you need to update README.md
 - /comdoc means you need to do everything from /doc, then everything from /commit (in that order)
-
