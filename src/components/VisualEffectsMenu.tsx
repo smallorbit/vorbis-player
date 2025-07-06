@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import styled from 'styled-components';
+import { DEFAULT_GLOW_RATE } from './AccentColorGlowOverlay';
 
 interface VisualEffectsMenuProps {
   isOpen: boolean;
@@ -16,6 +17,18 @@ interface VisualEffectsMenuProps {
   };
   onFilterChange: (filterName: string, value: number | boolean) => void;
   onResetFilters: () => void;
+  // Glow controls
+  glowIntensity: number;
+  setGlowIntensity: (v: number) => void;
+  glowRate: number;
+  setGlowRate: (v: number) => void;
+  glowMode: 'global' | 'per-album';
+  setGlowMode: (v: 'global' | 'per-album') => void;
+  perAlbumGlow: Record<string, { intensity: number; rate: number }>;
+  setPerAlbumGlow: (v: Record<string, { intensity: number; rate: number }>) => void;
+  currentAlbumId: string;
+  currentAlbumName: string;
+  effectiveGlow: { intensity: number; rate: number };
 }
 
 const DrawerOverlay = styled.div<{ $isOpen: boolean }>`
@@ -25,7 +38,6 @@ const DrawerOverlay = styled.div<{ $isOpen: boolean }>`
   right: 0;
   bottom: 0;
   background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(8px);
   z-index: 50;
   opacity: ${({ $isOpen }) => ($isOpen ? '1' : '0')};
   pointer-events: ${({ $isOpen }) => ($isOpen ? 'auto' : 'none')};
@@ -223,7 +235,18 @@ export const VisualEffectsMenu: React.FC<VisualEffectsMenuProps> = ({
   accentColor,
   filters,
   onFilterChange,
-  onResetFilters
+  onResetFilters,
+  glowIntensity,
+  setGlowIntensity,
+  glowRate,
+  setGlowRate,
+  glowMode,
+  setGlowMode,
+  perAlbumGlow,
+  setPerAlbumGlow,
+  currentAlbumId,
+  currentAlbumName,
+  effectiveGlow
 }) => {
   // Add ESC key support to close the drawer
   useEffect(() => {
@@ -271,6 +294,112 @@ export const VisualEffectsMenu: React.FC<VisualEffectsMenuProps> = ({
         </DrawerHeader>
         
         <DrawerContent>
+          {/* Glow Controls Section */}
+          <FilterSection>
+            <SectionTitle>Glow Effect</SectionTitle>
+            <FilterGrid>
+              <ControlGroup>
+                <ControlLabel>
+                  Glow Mode
+                  <ToggleButton
+                    $accentColor={accentColor}
+                    $isActive={glowMode === 'per-album'}
+                    onClick={() => setGlowMode(glowMode === 'global' ? 'per-album' : 'global')}
+                  >
+                    {glowMode === 'per-album' ? 'Per Album' : 'Global'}
+                  </ToggleButton>
+                </ControlLabel>
+              </ControlGroup>
+              {glowMode === 'per-album' && currentAlbumId ? (
+                <>
+                  <ControlGroup>
+                    <ControlLabel>
+                      Album Glow Intensity
+                      <ControlValue>{(perAlbumGlow[currentAlbumId]?.intensity ?? 100)}</ControlValue>
+                    </ControlLabel>
+                    <Slider
+                      type="range"
+                      min={0}
+                      max={100}
+                      value={perAlbumGlow[currentAlbumId]?.intensity ?? 100}
+                      onChange={e => {
+                        setPerAlbumGlow({
+                          ...perAlbumGlow,
+                          [currentAlbumId]: {
+                            intensity: Number(e.target.value),
+                            rate: perAlbumGlow[currentAlbumId]?.rate ?? DEFAULT_GLOW_RATE
+                          }
+                        });
+                      }}
+                      $accentColor={accentColor}
+                    />
+                  </ControlGroup>
+                  <ControlGroup>
+                    <ControlLabel>
+                      Album Glow Rate
+                      <ControlValue>{(perAlbumGlow[currentAlbumId]?.rate ?? DEFAULT_GLOW_RATE).toFixed(2)}s</ControlValue>
+                    </ControlLabel>
+                    <Slider
+                      type="range"
+                      min={0.5}
+                      max={5}
+                      step={0.01}
+                      value={perAlbumGlow[currentAlbumId]?.rate ?? DEFAULT_GLOW_RATE}
+                      onChange={e => {
+                        setPerAlbumGlow({
+                          ...perAlbumGlow,
+                          [currentAlbumId]: {
+                            intensity: perAlbumGlow[currentAlbumId]?.intensity ?? 100,
+                            rate: Number(e.target.value)
+                          }
+                        });
+                      }}
+                      $accentColor={accentColor}
+                    />
+                  </ControlGroup>
+                  <div style={{ fontSize: '0.8rem', color: '#aaa', marginBottom: '0.5rem' }}>
+                    Album: {currentAlbumName || currentAlbumId}
+                  </div>
+                </>
+              ) : (
+                <>
+                  <ControlGroup>
+                    <ControlLabel>
+                      Glow Intensity
+                      <ControlValue>{glowIntensity}</ControlValue>
+                    </ControlLabel>
+                    <Slider
+                      type="range"
+                      min={0}
+                      max={100}
+                      value={glowIntensity}
+                      onChange={e => setGlowIntensity(Number(e.target.value))}
+                      $accentColor={accentColor}
+                    />
+                  </ControlGroup>
+                  <ControlGroup>
+                    <ControlLabel>
+                      Glow Rate
+                      <ControlValue>{glowRate.toFixed(2)}s</ControlValue>
+                    </ControlLabel>
+                    <Slider
+                      type="range"
+                      min={0.5}
+                      max={5}
+                      step={0.01}
+                      value={glowRate}
+                      onChange={e => setGlowRate(Number(e.target.value))}
+                      $accentColor={accentColor}
+                    />
+                  </ControlGroup>
+                </>
+              )}
+              <div style={{ fontSize: '0.8rem', color: '#aaa', marginBottom: '0.5rem' }}>
+                Effective: Intensity {effectiveGlow.intensity}, Rate {effectiveGlow.rate.toFixed(2)}s
+              </div>
+            </FilterGrid>
+          </FilterSection>
+          {/* Album Art Filters Section */}
           <FilterSection>
             <SectionTitle>Album Art Filters</SectionTitle>
             <FilterGrid>

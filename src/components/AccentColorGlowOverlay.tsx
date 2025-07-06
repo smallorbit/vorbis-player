@@ -3,6 +3,7 @@ import styled, { keyframes, css } from 'styled-components';
 
 interface AccentColorGlowOverlayProps {
   glowIntensity: number;
+  glowRate?: number;
   accentColor: string;
   backgroundImage?: string;
 }
@@ -22,10 +23,13 @@ const breatheAnimation = keyframes`
   }
 `;
 
+export const DEFAULT_GLOW_RATE = 3.0;
+
 // Background glow layer - pure accent color
 const GlowBackgroundLayer = styled.div<{
   $glowIntensity: number;
   $accentColor: string;
+  $glowRate: number;
 }>`
   position: absolute;
   width: -webkit-fill-available;
@@ -36,8 +40,8 @@ const GlowBackgroundLayer = styled.div<{
   pointer-events: none;
   z-index: -1;
   
-  ${({ $glowIntensity }) => $glowIntensity > 0 && css`
-    animation: ${breatheAnimation} 2.2s ease-in-out infinite;
+  ${({ $glowIntensity, $glowRate }) => $glowIntensity > 0 && css`
+    animation: ${breatheAnimation} ${$glowRate || DEFAULT_GLOW_RATE}s ease-in-out infinite;
   `}
   
   opacity: ${({ $glowIntensity }) => $glowIntensity / 100};
@@ -65,6 +69,7 @@ export const hexToRgb = (hex: string): [number, number, number] => {
 
 export const AccentColorGlowOverlay: React.FC<AccentColorGlowOverlayProps> = ({
   glowIntensity,
+  glowRate = DEFAULT_GLOW_RATE,
   accentColor,
   backgroundImage
 }) => {
@@ -81,6 +86,7 @@ export const AccentColorGlowOverlay: React.FC<AccentColorGlowOverlayProps> = ({
       <GlowBackgroundLayer
         $glowIntensity={glowIntensity}
         $accentColor={accentColor}
+        $glowRate={glowRate}
       />
       
     

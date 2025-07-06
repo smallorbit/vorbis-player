@@ -2,13 +2,14 @@ import React, { useRef, useEffect } from 'react';
 import styled from 'styled-components';
 import type { Track } from '../services/spotify';
 import AlbumArtFilters from './AlbumArtFilters';
-import AccentColorGlowOverlay, { hexToRgb, colorDistance } from './AccentColorGlowOverlay';
+import AccentColorGlowOverlay, { hexToRgb, colorDistance, DEFAULT_GLOW_RATE } from './AccentColorGlowOverlay';
 
 interface AlbumArtProps {
   currentTrack: Track | null;
   objectPosition?: string;
   accentColor?: string;
   glowIntensity?: number;
+  glowRate?: number;
   albumFilters?: {
     brightness: number;
     contrast: number;
@@ -17,7 +18,7 @@ interface AlbumArtProps {
     blur: number;
     sepia: number;
     grayscale: number;
-    invert: boolean;
+    invert: number;
   };
 }
 // const objectPosition = 'center center calc(50% + 3.5rem)';
@@ -34,7 +35,7 @@ const AlbumArtContainer = styled.div<{ accentColor?: string }>`
 `;
 
 
-const AlbumArt: React.FC<AlbumArtProps> = ({ currentTrack = null, accentColor, glowIntensity, albumFilters }) => {
+const AlbumArt: React.FC<AlbumArtProps> = ({ currentTrack = null, accentColor, glowIntensity, glowRate, albumFilters }) => {
   const [canvasUrl, setCanvasUrl] = React.useState<string | null>(null);
 
   React.useEffect(() => {
@@ -78,7 +79,7 @@ const AlbumArt: React.FC<AlbumArtProps> = ({ currentTrack = null, accentColor, g
 
   return (
     <AlbumArtContainer accentColor={accentColor} >
-      <AlbumArtFilters filters={albumFilters ?? {
+      <AlbumArtFilters filters={albumFilters ? { ...albumFilters, invert: !!albumFilters.invert } : {
         brightness: 100,
         contrast: 100,
         saturation: 100,
@@ -89,10 +90,11 @@ const AlbumArt: React.FC<AlbumArtProps> = ({ currentTrack = null, accentColor, g
         invert: false,
       }}>
         <AccentColorGlowOverlay
-                  glowIntensity={glowIntensity || 100}
-                  accentColor={accentColor || '#000000'}
-                  backgroundImage={currentTrack?.image}
-                />
+          glowIntensity={glowIntensity || 100}
+          glowRate={glowRate || DEFAULT_GLOW_RATE}
+          accentColor={accentColor || '#000000'}
+          backgroundImage={currentTrack?.image}
+        />
         {canvasUrl ? (
           <img
             src={canvasUrl}

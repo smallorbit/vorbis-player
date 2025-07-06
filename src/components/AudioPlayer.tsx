@@ -16,6 +16,7 @@ import { extractDominantColor } from '../utils/colorExtractor';
 import SpotifyPlayerControls from './SpotifyPlayerControls';
 import VisualEffectsMenu from './VisualEffectsMenu';
 import { theme } from '@/styles/theme';
+import { DEFAULT_GLOW_RATE } from './AccentColorGlowOverlay';
 
 // Styled components
 const Container = styled.div`
@@ -213,7 +214,19 @@ const AudioPlayerComponent = () => {
   const [showVisualEffects, setShowVisualEffects] = useState(false);
   const [glowIntensity, setGlowIntensity] = useState<number>(() => {
     const saved = localStorage.getItem('vorbis-player-glow-intensity');
-    return saved ? parseInt(saved, 10) : 0;
+    return saved ? parseInt(saved, 10) : 100;
+  });
+  const [glowRate, setGlowRate] = useState<number>(() => {
+    const saved = localStorage.getItem('vorbis-player-glow-rate');
+    return saved ? parseFloat(saved) : DEFAULT_GLOW_RATE; 
+  });
+  const [glowMode, setGlowMode] = useState<'global' | 'per-album'>(() => {
+    const saved = localStorage.getItem('vorbis-player-glow-mode');
+    return saved === 'per-album' ? 'per-album' : 'global';
+  });
+  const [perAlbumGlow, setPerAlbumGlow] = useState<Record<string, { intensity: number; rate: number }>>(() => {
+    const saved = localStorage.getItem('vorbis-player-per-album-glow');
+    return saved ? JSON.parse(saved) : {};
   });
   // New: per-song accent color overrides
   const [accentColorOverrides, setAccentColorOverrides] = useState<Record<string, string>>({});
@@ -242,7 +255,7 @@ const AudioPlayerComponent = () => {
           blur: parsed.blur ?? 0,
           sepia: parsed.sepia ?? 0,
           grayscale: parsed.grayscale ?? 0,
-          invert: typeof parsed.invert === 'boolean' ? parsed.invert : (parsed.invert > 0)
+          invert: typeof parsed.invert === 'boolean' ? (parsed.invert ? 1 : 0) : parsed.invert
         };
       } catch (e) {
         // If parsing fails, use defaults
@@ -254,7 +267,7 @@ const AudioPlayerComponent = () => {
           blur: 0,
           sepia: 0,
           grayscale: 0,
-          invert: false
+          invert: 0
         };
       }
     }
@@ -266,7 +279,7 @@ const AudioPlayerComponent = () => {
       blur: 0,
       sepia: 0,
       grayscale: 0,
-      invert: false
+      invert: 0
     };
   });
 
@@ -304,7 +317,7 @@ const AudioPlayerComponent = () => {
       blur: 0,
       sepia: 0,
       grayscale: 0,
-      invert: false
+      invert: 0
     });
   }, []);
 
@@ -619,8 +632,24 @@ const AudioPlayerComponent = () => {
   // Persist glow settings to localStorage
   useEffect(() => {
     localStorage.setItem('vorbis-player-glow-intensity', glowIntensity.toString());
-    console.log('Glow intensity changed to:', glowIntensity);
   }, [glowIntensity]);
+  useEffect(() => {
+    localStorage.setItem('vorbis-player-glow-rate', glowRate.toString());
+  }, [glowRate]);
+  useEffect(() => {
+    localStorage.setItem('vorbis-player-glow-mode', glowMode);
+  }, [glowMode]);
+  useEffect(() => {
+    localStorage.setItem('vorbis-player-per-album-glow', JSON.stringify(perAlbumGlow));
+  }, [perAlbumGlow]);
+
+  // Determine current album ID (if available)
+  const currentAlbumId = currentTrack?.album || '';
+  const currentAlbumName = currentTrack?.album || '';
+  // Compute effective glow settings
+  const effectiveGlow = glowMode === 'per-album' && currentAlbumId && perAlbumGlow[currentAlbumId]
+    ? perAlbumGlow[currentAlbumId]
+    : { intensity: glowIntensity, rate: glowRate };
 
   const renderContent = () => {
     // Show loading state
@@ -701,7 +730,7 @@ const AudioPlayerComponent = () => {
           <LoadingCard backgroundImage={currentTrack?.image}>
             
            <CardContent style={{ position: 'relative', zIndex: 2 }}>
-              <AlbumArt currentTrack={currentTrack} accentColor={accentColor} glowIntensity={glowIntensity} albumFilters={albumFilters} />
+              <AlbumArt currentTrack={currentTrack} accentColor={accentColor} glowIntensity={effectiveGlow.intensity} glowRate={effectiveGlow.rate} albumFilters={albumFilters} />
             </CardContent>
             <CardContent style={{ position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 2 }}>
               <SpotifyPlayerControls
@@ -727,6 +756,17 @@ const AudioPlayerComponent = () => {
               filters={albumFilters}
               onFilterChange={handleFilterChange}
               onResetFilters={handleResetFilters}
+              glowIntensity={glowIntensity}
+              setGlowIntensity={setGlowIntensity}
+              glowRate={typeof glowRate === 'number' ? glowRate : DEFAULT_GLOW_RATE}
+              setGlowRate={setGlowRate}
+              glowMode={glowMode}
+              setGlowMode={setGlowMode}
+              perAlbumGlow={perAlbumGlow}
+              setPerAlbumGlow={setPerAlbumGlow}
+              currentAlbumId={currentAlbumId}
+              currentAlbumName={currentAlbumName}
+              effectiveGlow={effectiveGlow}
             />
           </LoadingCard>
 
