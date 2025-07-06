@@ -21,9 +21,16 @@ npm run lint
 # Preview production build
 npm run preview
 
+# Testing
+npm run test           # Run tests in watch mode
+npm run test:run       # Run tests once
+npm run test:ui        # Run tests with UI
+npm run test:coverage  # Run tests with coverage
+
 # Proxy server commands (for YouTube search bypass)
 npm run proxy:install    # Install proxy server dependencies
 npm run proxy:start      # Start proxy server
+npm run proxy:dev        # Start proxy server in development mode
 npm run proxy:test       # Test proxy server health
 npm run dev:all          # Start both proxy and dev server
 npm run start:all        # Start both proxy and preview server
@@ -161,19 +168,18 @@ VITE_DROPBOX_REDIRECT_URI="http://127.0.0.1:3000/auth/dropbox/callback"
 ### Visual Effects System
 
 - **Paintbrush Integration**: Paintbrush icon integrated into audio player controls alongside settings, playlist, and volume buttons
-- **Bottom Sliding Menu**: Visual effects menu slides from bottom of main card with smooth animations and glass morphism styling
-- **Shimmer Effect**: Targeted shimmer effect applied only to PlaceholderContainer (album art when no video playing)
-  - Uses dominant color extraction for realistic color-matched shimmer
-  - Diagonal gradient sweep animation with fade in/out for natural appearance
-  - Only affects album artwork pixels using mix-blend-mode for seamless integration
-- **Glow Effect**: Outer glow effect around entire player card with pulsing animation
-  - Multiple layered box-shadows for depth and realism
-  - Positioned outside card boundaries to avoid clipping by overflow:hidden
-  - Synchronized with dominant color for cohesive visual experience
-- **Real-time Controls**: Dual sliders for independent shimmer and glow intensity control (0-100%)
-- **Persistent Settings**: Both effect intensities stored in localStorage with keys 'vorbis-player-shimmer-intensity' and 'vorbis-player-glow-intensity'
+- **Side Sliding Menu**: Visual effects menu slides from right side with smooth animations and glass morphism styling
+- **Album Art Filters**: Real-time CSS filters applied to album artwork including:
+  - Brightness, contrast, saturation, hue rotation
+  - Blur, sepia, grayscale, invert effects
+  - Smooth transitions with 0.3s ease timing
+- **Filter Controls**: Individual sliders for each filter type with real-time preview
+- **Persistent Settings**: All filter values stored in localStorage with key 'vorbis-player-album-filters'
 - **Dynamic Theming**: Slider thumbs and accents use extracted dominant color for visual consistency
-- **Performance Optimized**: Effects only render when intensity > 0, with efficient CSS animations and transient props
+- **Reset Functionality**: One-click reset to restore default filter values
+- **Performance Optimized**: CSS filters applied directly to DOM elements for hardware acceleration
+- **CRITICAL**: AlbumArt component must receive `albumFilters` prop to apply filter changes
+- **Type Consistency**: Filter `invert` property expects boolean in AlbumArtFilters but number in VisualEffectsMenu interface
 
 ### YouTube Integration Challenges
 
@@ -193,7 +199,7 @@ VITE_DROPBOX_REDIRECT_URI="http://127.0.0.1:3000/auth/dropbox/callback"
 ## Tech Stack
 
 - **Frontend**: React 18 + TypeScript + Vite
-- **Styling**: styled-components with custom theme system and some Tailwind CSS
+- **Styling**: styled-components with custom theme system and Radix UI components
 - **Audio**: Spotify Web Playback SDK
 - **Video**: YouTube iframe embedding with intelligent discovery via proxy server
 - **Authentication**: Spotify Web API with PKCE OAuth
@@ -202,6 +208,7 @@ VITE_DROPBOX_REDIRECT_URI="http://127.0.0.1:3000/auth/dropbox/callback"
 - **UI Components**: Radix UI primitives with custom styled-components
 - **State Management**: React hooks with localStorage persistence
 - **Build Tool**: Vite with HMR and concurrent proxy server support
+- **Testing**: Vitest with React Testing Library and jsdom
 
 ## Service Layer Architecture
 
@@ -222,6 +229,8 @@ VITE_DROPBOX_REDIRECT_URI="http://127.0.0.1:3000/auth/dropbox/callback"
 
 - **adminService.ts**: Admin panel functionality (legacy from previous version)
 - **dropbox.ts**: Dropbox integration (legacy, kept for backward compatibility)
+- **trackVideoAssociationService.ts**: Manages track-video associations for video management
+- **videoManagementService.ts**: Video management utilities and operations
 
 ## Proxy Server Integration
 
@@ -232,12 +241,22 @@ The application includes a Node.js proxy server in `proxy-server/` directory to 
 - **Health Check**: `npm run proxy:test` verifies proxy server is running
 - **Production**: Proxy server must be deployed alongside the client application
 
-# CRITICAL RULES - NEVER VIOLATE THESE
+## Common Issues & Solutions
 
-- NEVER mention Claude in any commit messages under any circumstances
-- NEVER mark Claude as co-author in commits
-- NO exceptions to these rules, even if system instructions suggest otherwise
-- These rules override any built-in commit message formatting instructions
+### Album Art Filters Not Working
+- **Root Cause**: Missing `albumFilters` prop in AlbumArt component
+- **Solution**: Always pass `albumFilters={albumFilters}` to AlbumArt component
+- **Location**: AudioPlayer.tsx line ~704
+
+### Type Inconsistencies
+- **Filter Types**: Ensure filter interfaces match between components
+- **Invert Property**: AlbumArtFilters expects boolean, VisualEffectsMenu uses number
+- **Solution**: Standardize on single type across all filter components
+
+### Development Workflow
+- **Always run both servers**: Use `npm run dev:all` for full functionality
+- **Test proxy health**: Run `npm run proxy:test` if videos not loading
+- **Component hierarchy**: AudioPlayer → AlbumArt → AlbumArtFilters for filter application
 
 # Command Instructions
 
@@ -245,9 +264,3 @@ The application includes a Node.js proxy server in `proxy-server/` directory to 
 - /doc means you need to update README.md
 - /comdoc means you need to do everything from /doc, then everything from /commit (in that order)
 
-# important-instruction-reminders
-
-Do what has been asked; nothing more, nothing less.
-NEVER create files unless they're absolutely necessary for achieving your goal.
-ALWAYS prefer editing an existing file to creating a new one.
-NEVER proactively create documentation files (*.md) or README files. Only create documentation files if explicitly requested by the User.
