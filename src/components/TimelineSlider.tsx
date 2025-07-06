@@ -59,7 +59,7 @@ const TimeLabel = styled.span`
   text-align: center;
 `;
 
-const TimelineRow = styled.div`
+export const TimelineRow = styled.div`
   display: flex;
   align-items: center;
   gap: ${({ theme }: any) => theme.spacing.sm};

@@ -2,7 +2,6 @@ import { useEffect, useMemo, useCallback } from 'react';
 import styled from 'styled-components';
 import { spotifyAuth } from '../services/spotify';
 import { spotifyPlayer } from '../services/spotifyPlayer';
-import type { Track } from '../services/spotify';
 import { CardContent } from '../components/styled';
 import { flexCenter, cardBase } from '../styles/utils';
 import AlbumArt from './AlbumArt';
@@ -28,12 +27,19 @@ const Container = styled.div`
 `;
 
 const ContentWrapper = styled.div`
-  max-width: 50rem;
-  max-height: 58rem;
-  min-width: 36rem;
-  min-height: 44rem;
-  width: 768px;
-  height: 880px;
+   
+  width: 1024px;
+  height: 1126px;
+
+  
+  @media (max-height: ${theme.breakpoints.lg}) {
+    width: 768px;
+    height: 872px;
+  }
+
+
+
+  
   margin: 0 auto;
   padding-top: 0.5rem;
   padding-bottom: 0.5rem;
@@ -309,7 +315,7 @@ const AudioPlayerComponent = () => {
         onPlaylistSelect={handlePlaylistSelect}
       />
     );
-    
+
     if (stateRenderer.props.isLoading || stateRenderer.props.error || !stateRenderer.props.selectedPlaylistId || stateRenderer.props.tracks.length === 0) {
       return stateRenderer;
     }

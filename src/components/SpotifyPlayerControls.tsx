@@ -3,8 +3,15 @@ import styled from 'styled-components';
 import type { Track } from '../services/spotify';
 import LikeButton from './LikeButton';
 import ColorPickerPopover from './ColorPickerPopover';
-import TimelineSlider from './TimelineSlider';
+import { TimelineRow, TimelineSlider } from './TimelineSlider';
 import { useSpotifyControls } from '../hooks/useSpotifyControls';
+import { theme } from '../styles/theme';
+
+const xs = theme.spacing.xs;
+const sm = theme.spacing.sm;
+const md = theme.spacing.md;
+const lg = theme.spacing.lg;
+const xl = theme.spacing.xl;
 
 // --- Styled Components ---
 const PlayerControlsContainer = styled.div`
@@ -13,7 +20,7 @@ const PlayerControlsContainer = styled.div`
   display: flex;
   flex-direction: column;
   gap: ${({ theme }: any) => theme.spacing.sm};
-  padding: ${({ theme }: any) => theme.spacing.xs} ${({ theme }: any) => theme.spacing.md} ${({ theme }: any) => theme.spacing.md} ${({ theme }: any) => theme.spacing.md};
+  padding: ${sm} ${lg} ${lg} ${lg};
 `;
 
 const PlayerTrackName = styled.div`
@@ -260,15 +267,7 @@ const SpotifyPlayerControls = memo<{
       </TrackInfoRow>
 
       {/* Timeline Row with time, slider, and right controls */}
-      <TimelineSlider
-        currentPosition={currentPosition}
-        duration={duration}
-        accentColor={accentColor}
-        formatTime={formatTime}
-        onSliderChange={handleSliderChange}
-        onSliderMouseDown={handleSliderMouseDown}
-        onSliderMouseUp={handleSliderMouseUp}
-      >
+      <TimelineRow>
         <TimelineLeft>
           <ControlButton accentColor={accentColor} onClick={onShowVisualEffects} isActive={showVisualEffects} title="Visual effects">
             <svg viewBox="0 0 24 24" role="img" aria-hidden="true">
@@ -302,6 +301,17 @@ const SpotifyPlayerControls = memo<{
             )}
           </VolumeButton>
         </TimelineLeft>
+
+        <TimelineSlider
+          currentPosition={currentPosition}
+          duration={duration}
+          accentColor={accentColor}
+          formatTime={formatTime}
+          onSliderChange={handleSliderChange}
+          onSliderMouseDown={handleSliderMouseDown}
+          onSliderMouseUp={handleSliderMouseUp}
+        />
+
         <TimelineRight>
           <ControlButton accentColor={accentColor} onClick={onShowPlaylist} title="Show Playlist">
             <svg viewBox="0 0 24 24" role="img" aria-hidden="true">
@@ -309,7 +319,7 @@ const SpotifyPlayerControls = memo<{
             </svg>
           </ControlButton>
         </TimelineRight>
-      </TimelineSlider>
+      </TimelineRow>
     </PlayerControlsContainer>
   );
 });
