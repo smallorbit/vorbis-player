@@ -2,9 +2,6 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.tsx'
 
-// Toggle between original app and standalone demo
-const DEMO_MODE = new URLSearchParams(window.location.search).get('demo') === 'true';
-
 // Register service worker for caching
 if ('serviceWorker' in navigator && import.meta.env.PROD) {
   window.addEventListener('load', () => {
@@ -19,7 +16,5 @@ if ('serviceWorker' in navigator && import.meta.env.PROD) {
 }
 
 createRoot(document.getElementById('root')!).render(
-  // <StrictMode>
-    DEMO_MODE ? <StandalonePlayerDemo /> : <App />
-  // </StrictMode>,
+  <App />
 )

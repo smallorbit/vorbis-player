@@ -64,9 +64,9 @@ const getSizeStyles = (size: ToggleProps['size']) => {
   }
 };
 
-const StyledToggle = styled.button<ToggleProps>`
+const StyledToggle = styled.button<Omit<ToggleProps, 'variant'> & { $variant?: ToggleProps['variant'] }>`
   ${buttonBase}
-  ${({ variant, pressed }) => getVariantStyles(variant, pressed || false)}
+  ${({ $variant, pressed }) => getVariantStyles($variant, pressed || false)}
   ${({ size }) => getSizeStyles(size)}
 `;
 
@@ -80,6 +80,7 @@ export const Toggle = React.forwardRef<HTMLButtonElement, ToggleProps>(
       <StyledToggle
         ref={ref}
         pressed={pressed}
+        $variant={props.variant}
         onClick={handleClick}
         aria-pressed={pressed}
         {...props}

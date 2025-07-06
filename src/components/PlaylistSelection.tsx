@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { getUserPlaylists, type PlaylistInfo, spotifyAuth } from '../services/spotify';
-import { Card, CardHeader, CardContent, CardTitle } from './styled';
+import { Card, CardHeader, CardContent } from './styled';
 import { Button } from './styled';
 import { Skeleton } from './styled';
 import { Alert, AlertDescription } from './styled';
@@ -75,12 +75,12 @@ const PlaylistItem = styled.div`
   }
 `;
 
-const PlaylistImage = styled.div<{ imageUrl?: string }>`
+const PlaylistImage = styled.div<{ $imageUrl?: string }>`
   width: 60px;
   height: 60px;
   border-radius: 0.5rem;
-  background: ${props => props.imageUrl ? 
-    `url(${props.imageUrl}) center/cover` : 
+  background: ${props => props.$imageUrl ? 
+    `url(${props.$imageUrl}) center/cover` : 
     'linear-gradient(45deg, #333, #555)'
   };
   flex-shrink: 0;
@@ -88,7 +88,7 @@ const PlaylistImage = styled.div<{ imageUrl?: string }>`
   align-items: center;
   justify-content: center;
   
-  ${props => !props.imageUrl && `
+  ${props => !props.$imageUrl && `
     &::after {
       content: '🎵';
       font-size: 1.5rem;
@@ -210,8 +210,8 @@ const PlaylistSelection: React.FC<PlaylistSelectionProps> = ({ onPlaylistSelect 
                   cursor: 'pointer',
                   transition: 'background 0.2s ease'
                 }}
-                onMouseEnter={(e) => (e.target as HTMLButtonElement).style.background = '#1ed760'}
-                onMouseLeave={(e) => (e.target as HTMLButtonElement).style.background = '#1db954'}
+                onMouseEnter={(e: React.MouseEvent<HTMLButtonElement>) => { (e.target as HTMLButtonElement).style.background = '#1ed760'; }}
+                onMouseLeave={(e: React.MouseEvent<HTMLButtonElement>) => { (e.target as HTMLButtonElement).style.background = '#1db954'; }}
               >
                 Connect Spotify
               </Button>
@@ -234,7 +234,7 @@ const PlaylistSelection: React.FC<PlaylistSelectionProps> = ({ onPlaylistSelect 
                   onClick={() => handlePlaylistClick(playlist)}
                 >
                   <PlaylistImage 
-                    imageUrl={playlist.images[0]?.url}
+                    $imageUrl={playlist.images[0]?.url}
                   />
                   <PlaylistInfo>
                     <PlaylistName>{playlist.name}</PlaylistName>

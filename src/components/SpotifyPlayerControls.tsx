@@ -5,14 +5,9 @@ import { spotifyAuth, checkTrackSaved, saveTrack, unsaveTrack } from '../service
 import type { Track } from '../services/spotify';
 import LikeButton from './LikeButton';
 import EyedropperOverlay from './EyedropperOverlay';
-
-import PaintbrushIcon from './PaintbrushIcon';
 import { extractTopVibrantColors } from '../utils/colorExtractor';
 import type { ExtractedColor } from '../utils/colorExtractor';
 import { createPortal } from 'react-dom';
-// ... existing code ...
-// Copy all styled components and the SpotifyPlayerControls component from AudioPlayer.tsx here
-// ... existing code ... 
 
 // --- Styled Components ---
 const PlayerControlsContainer = styled.div`
@@ -227,14 +222,11 @@ const SpotifyPlayerControls = memo<{
   onNext: () => void;
   onPrevious: () => void;
   onShowPlaylist: () => void;
-  onShowSettings: () => void;
   trackCount: number;
-  showVideo: boolean;
-  onToggleVideo: () => void;
   onAccentColorChange?: (color: string) => void;
   onShowVisualEffects?: () => void;
   showVisualEffects?: boolean;
-}>(({ currentTrack, accentColor, onPlay, onPause, onNext, onPrevious, onShowPlaylist, onShowSettings, showVideo, onToggleVideo, onAccentColorChange, onShowVisualEffects, showVisualEffects }) => {
+}>(({ currentTrack, accentColor, onPlay, onPause, onNext, onPrevious, onShowPlaylist, onAccentColorChange, onShowVisualEffects, showVisualEffects }) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [volume, setVolume] = useState(50);
@@ -573,7 +565,7 @@ const SpotifyPlayerControls = memo<{
               {extractError && <p style={{ color: 'red', fontSize: 14 }}>{extractError}</p>}
               {!isExtracting && !extractError && (
                 <div style={{ display: 'flex', gap: 12 }}>
-                  {(colorOptions ?? []).map((color, idx) => (
+                  {(colorOptions ?? []).map((color) => (
                     <button
                       key={color.hex}
                       onClick={() => {

@@ -97,10 +97,8 @@ class SpotifyAuth {
 
     const code_verifier = localStorage.getItem('spotify_code_verifier');
     if (!code_verifier) {
-      console.error('Code verifier not found in localStorage. Available keys:', Object.keys(localStorage));
       throw new Error('Code verifier not found. Please restart the authentication flow.');
     }
-    console.log('Found code verifier, proceeding with token exchange...');
 
     const response = await fetch('https://accounts.spotify.com/api/token', {
       method: 'POST',
@@ -118,15 +116,6 @@ class SpotifyAuth {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Token exchange failed:', {
-        status: response.status,
-        statusText: response.statusText,
-        error: errorText,
-        clientId: SPOTIFY_CLIENT_ID,
-        redirectUri: SPOTIFY_REDIRECT_URI,
-        hasCodeVerifier: !!code_verifier,
-        codeLength: code?.length
-      });
       throw new Error(`Token exchange failed: ${response.statusText} - ${errorText}`);
     }
 
@@ -225,12 +214,10 @@ class SpotifyAuth {
         sessionStorage.setItem('spotify_processed_code', code);
         window.history.replaceState({}, document.title, '/');
       } catch (e) {
-        console.error('Failed to handle auth callback:', e);
         sessionStorage.removeItem('spotify_processed_code');
         
         // If code verifier is missing, restart the auth flow
         if (e instanceof Error && e.message.includes('Code verifier not found')) {
-          console.log('Restarting authentication flow due to missing code verifier...');
           this.logout();
           await this.redirectToAuth();
           return;
@@ -272,7 +259,6 @@ export interface PlaylistInfo {
 export const getUserPlaylists = async (): Promise<PlaylistInfo[]> => {
   try {
     const token = await spotifyAuth.ensureValidToken();
-    console.log('✓ Fetching user playlists...');
     
     const response = await fetch('https://api.spotify.com/v1/me/playlists?limit=50', {
       headers: {
@@ -282,15 +268,12 @@ export const getUserPlaylists = async (): Promise<PlaylistInfo[]> => {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Playlist fetch error:', response.status, errorText);
       throw new Error(`Failed to fetch playlists: ${response.status} ${response.statusText}`);
     }
 
     const data = await response.json();
-    console.log(`✓ Found ${data.items?.length || 0} playlists`);
     
     if (!data.items || data.items.length === 0) {
-      console.warn('No playlists found in user account');
       return [];
     }
     
@@ -304,7 +287,6 @@ export const getUserPlaylists = async (): Promise<PlaylistInfo[]> => {
     }));
     
   } catch (error) {
-    console.error('Error fetching user playlists:', error);
     throw error;
   }
 };
@@ -312,7 +294,6 @@ export const getUserPlaylists = async (): Promise<PlaylistInfo[]> => {
 export const getPlaylistTracks = async (playlistId: string): Promise<Track[]> => {
   try {
     const token = await spotifyAuth.ensureValidToken();
-    console.log(`✓ Fetching tracks from playlist: ${playlistId}`);
     
     const tracks: Track[] = [];
     let nextUrl = `https://api.spotify.com/v1/playlists/${playlistId}/tracks?limit=50`;
@@ -326,7 +307,6 @@ export const getPlaylistTracks = async (playlistId: string): Promise<Track[]> =>
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('Tracks fetch error:', response.status, errorText);
         throw new Error(`Failed to fetch tracks: ${response.status} ${response.statusText}`);
       }
 
@@ -353,11 +333,9 @@ export const getPlaylistTracks = async (playlistId: string): Promise<Track[]> =>
       nextUrl = data.next; // Pagination
     }
     
-    console.log(`✓ Found ${tracks.length} valid tracks`);
     return tracks;
     
   } catch (error) {
-    console.error('Error fetching playlist tracks:', error);
     throw error;
   }
 };
@@ -365,9 +343,7 @@ export const getPlaylistTracks = async (playlistId: string): Promise<Track[]> =>
 export const getSpotifyUserPlaylists = async (): Promise<Track[]> => {
   try {
     const token = await spotifyAuth.ensureValidToken();
-    console.log('✓ Token obtained successfully');
     
-    console.log('Fetching user playlists...');
     const response = await fetch('https://api.spotify.com/v1/me/playlists?limit=50', {
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -376,15 +352,12 @@ export const getSpotifyUserPlaylists = async (): Promise<Track[]> => {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Playlist fetch error:', response.status, errorText);
       throw new Error(`Failed to fetch playlists: ${response.status} ${response.statusText}`);
     }
 
     const data = await response.json();
-    console.log(`✓ Found ${data.items?.length || 0} playlists:`, data.items?.map((p: { name: string }) => p.name));
     
     if (!data.items || data.items.length === 0) {
-      console.warn('No playlists found in user account');
       return [];
     }
     
@@ -393,11 +366,9 @@ export const getSpotifyUserPlaylists = async (): Promise<Track[]> => {
     // Get tracks from user's playlists (limit to first 10 playlists to avoid rate limits)
     for (const playlist of (data.items || []).slice(0, 10)) {
       if (!playlist.tracks?.href) {
-        console.warn(`Playlist ${playlist.name} has no tracks href`);
         continue;
       }
       
-      console.log(`Fetching tracks from playlist: "${playlist.name}" (${playlist.tracks.total} tracks)`);
       const tracksResponse = await fetch(playlist.tracks.href + '?limit=50', {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -406,9 +377,7 @@ export const getSpotifyUserPlaylists = async (): Promise<Track[]> => {
 
       if (tracksResponse.ok) {
         const tracksData = await tracksResponse.json();
-        console.log(`✓ Found ${tracksData.items?.length || 0} track items in "${playlist.name}"`);
         
-        let validTracksInPlaylist = 0;
         for (const item of (tracksData.items || [])) {
           if (item.track && item.track.id && !item.track.is_local && item.track.type === 'track') {
             tracks.push({
@@ -421,29 +390,13 @@ export const getSpotifyUserPlaylists = async (): Promise<Track[]> => {
               preview_url: item.track.preview_url,
               image: item.track.album?.images?.[0]?.url,
             });
-            validTracksInPlaylist++;
-          } else {
-            console.debug(`Skipped item in "${playlist.name}":`, {
-              hasTrack: !!item.track,
-              hasId: !!item.track?.id,
-              isLocal: item.track?.is_local,
-              type: item.track?.type
-            });
           }
         }
-        console.log(`✓ Added ${validTracksInPlaylist} valid tracks from "${playlist.name}"`);
-      } else {
-        const errorText = await tracksResponse.text();
-        console.warn(`Failed to fetch tracks from playlist "${playlist.name}":`, tracksResponse.status, errorText);
       }
     }
-
-    console.log(`✓ Total tracks collected from playlists: ${tracks.length}`);
     
     // If no tracks found in playlists, try to get liked songs
     if (tracks.length === 0) {
-      console.log('No tracks found in playlists, trying liked songs...');
-      
       const likedResponse = await fetch('https://api.spotify.com/v1/me/tracks?limit=50', {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -452,7 +405,6 @@ export const getSpotifyUserPlaylists = async (): Promise<Track[]> => {
 
       if (likedResponse.ok) {
         const likedData = await likedResponse.json();
-        console.log(`✓ Found ${likedData.items?.length || 0} liked songs`);
         
         for (const item of (likedData.items || [])) {
           if (item.track && item.track.id && !item.track.is_local && item.track.type === 'track') {
@@ -468,23 +420,11 @@ export const getSpotifyUserPlaylists = async (): Promise<Track[]> => {
             });
           }
         }
-        console.log(`✓ Added ${tracks.length} tracks from liked songs`);
-      } else {
-        console.warn('Failed to fetch liked songs:', likedResponse.status);
       }
-    }
-    
-    if (tracks.length === 0) {
-      console.warn('No valid tracks found anywhere. This could mean:');
-      console.warn('- All playlists are empty');
-      console.warn('- No liked songs');
-      console.warn('- All tracks are local files (not supported)');
-      console.warn('- User needs to add music to their Spotify account');
     }
     
     return tracks;
   } catch (error) {
-    console.error('Error in getSpotifyUserPlaylists:', error);
     if (error instanceof Error && error.message === 'No authentication token available') {
       spotifyAuth.redirectToAuth();
       throw new Error('Redirecting to Spotify login...');

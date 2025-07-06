@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React from 'react';
 import styled, { keyframes, css } from 'styled-components';
 
 interface AccentColorGlowOverlayProps {
@@ -23,7 +23,7 @@ const breatheAnimation = keyframes`
   }
 `;
 
-export const DEFAULT_GLOW_RATE = 3.0;
+export const DEFAULT_GLOW_RATE = 2.5;
 
 // Background glow layer - pure accent color
 const GlowBackgroundLayer = styled.div<{
@@ -77,8 +77,6 @@ export const AccentColorGlowOverlay: React.FC<AccentColorGlowOverlayProps> = ({
   if (glowIntensity === 0 || !backgroundImage) {
     return null;
   }
-
-  console.log('AccentColorGlowOverlay rendering with:', { glowIntensity, accentColor, backgroundImage });
 
   return (
     

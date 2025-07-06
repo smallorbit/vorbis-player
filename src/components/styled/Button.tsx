@@ -9,6 +9,8 @@ interface ButtonProps {
   children: React.ReactNode;
   onClick?: () => void;
   style?: React.CSSProperties;
+  onMouseEnter?: (e: React.MouseEvent<HTMLButtonElement>) => void;
+  onMouseLeave?: (e: React.MouseEvent<HTMLButtonElement>) => void;
 }
 
 const getVariantStyles = (variant: ButtonProps['variant']) => {
@@ -69,8 +71,8 @@ const getSizeStyles = (size: ButtonProps['size']) => {
   }
 };
 
-const StyledButton = styled.button<ButtonProps>`
-  ${({ variant }) => getVariantStyles(variant)}
+const StyledButton = styled.button<Omit<ButtonProps, 'variant'> & { $variant?: ButtonProps['variant'] }>`
+  ${({ $variant }) => getVariantStyles($variant)}
   ${({ size }) => getSizeStyles(size)}
 `;
 
@@ -81,7 +83,7 @@ export const Button: React.FC<ButtonProps> = ({
   ...props 
 }) => {
   return (
-    <StyledButton variant={variant} size={size} {...props}>
+    <StyledButton $variant={variant} size={size} {...props}>
       {children}
     </StyledButton>
   );

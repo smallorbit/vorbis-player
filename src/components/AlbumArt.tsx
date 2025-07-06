@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React from 'react';
 import styled from 'styled-components';
 import type { Track } from '../services/spotify';
 import AlbumArtFilters from './AlbumArtFilters';
@@ -21,19 +21,17 @@ interface AlbumArtProps {
     invert: number;
   };
 }
-// const objectPosition = 'center center calc(50% + 3.5rem)';
+
 const AlbumArtContainer = styled.div<{ accentColor?: string }>`
   
   border-radius: 1.25rem;
   position: relative;
   width: -webkit-fill-available;
-  // height: -webkit-fill-available;
   margin: 1.25rem;
   overflow: hidden;
   background: transparent;
   z-index: 2;
 `;
-
 
 const AlbumArt: React.FC<AlbumArtProps> = ({ currentTrack = null, accentColor, glowIntensity, glowRate, albumFilters }) => {
   const [canvasUrl, setCanvasUrl] = React.useState<string | null>(null);
@@ -101,15 +99,9 @@ const AlbumArt: React.FC<AlbumArtProps> = ({ currentTrack = null, accentColor, g
             alt={currentTrack?.name}
             style={{
               width: '-webkit-fill-available',
-              // height: '-webkit-fill-available',
-              // scale: '1.0',
-              // width: '100%',
-              // height: '100%',
               objectFit: 'cover',
               overflow: 'hidden',
               borderRadius: '1.25rem',
-              // border: '5px solid fuchsia',
-              // position: 'relative',
               display: 'block',
               zIndex: 2,
             }}

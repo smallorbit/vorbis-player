@@ -9,14 +9,14 @@ interface AlertProps {
   style?: React.CSSProperties;
 }
 
-const StyledAlert = styled.div<{ variant?: 'default' | 'destructive' }>`
+const StyledAlert = styled.div<{ $variant?: 'default' | 'destructive' }>`
   ${cardBase}
   position: relative;
   width: 100%;
   padding: ${({ theme }) => theme.spacing.md};
   font-size: ${({ theme }) => theme.fontSize.sm};
   
-  ${({ variant, theme }) => variant === 'destructive' && `
+  ${({ $variant, theme }) => $variant === 'destructive' && `
     border-color: ${theme.colors.error};
     color: ${theme.colors.error};
   `}
@@ -35,7 +35,7 @@ const AlertDescription = styled.div`
 
 const Alert = React.forwardRef<HTMLDivElement, AlertProps>(
   ({ variant = 'default', children, className, ...props }, ref) => (
-    <StyledAlert ref={ref} variant={variant} className={className} role="alert" {...props}>
+    <StyledAlert ref={ref} $variant={variant} className={className} role="alert" {...props}>
       {children}
     </StyledAlert>
   )
