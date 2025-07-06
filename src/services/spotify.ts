@@ -75,7 +75,7 @@ class SpotifyAuth {
 
     const code_verifier = this.generateCodeVerifier();
     const code_challenge = await this.generateCodeChallenge(code_verifier);
-    
+
     localStorage.setItem('spotify_code_verifier', code_verifier);
 
     const params = new URLSearchParams({
@@ -215,14 +215,14 @@ class SpotifyAuth {
         window.history.replaceState({}, document.title, '/');
       } catch (e) {
         sessionStorage.removeItem('spotify_processed_code');
-        
+
         // If code verifier is missing, restart the auth flow
         if (e instanceof Error && e.message.includes('Code verifier not found')) {
           this.logout();
           await this.redirectToAuth();
           return;
         }
-        
+
         this.logout();
         throw e;
       }
@@ -256,94 +256,91 @@ export interface PlaylistInfo {
   owner: { display_name: string };
 }
 
+interface SpotifyPlaylistResponse {
+  id: string;
+  name: string;
+  description: string | null;
+  images: { url: string; height: number | null; width: number | null }[];
+  tracks: { total: number };
+  owner: { display_name: string };
+}
+
 export const getUserPlaylists = async (): Promise<PlaylistInfo[]> => {
-  try {
-    const token = await spotifyAuth.ensureValidToken();
-    
-    const response = await fetch('https://api.spotify.com/v1/me/playlists?limit=50', {
+  const token = await spotifyAuth.ensureValidToken();
+
+  const response = await fetch('https://api.spotify.com/v1/me/playlists?limit=50', {
+    headers: {
+      'Authorization': `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch playlists: ${response.status} ${response.statusText}`);
+  }
+
+  const data = await response.json();
+
+  if (!data.items || data.items.length === 0) {
+    return [];
+  }
+
+  return data.items.map((playlist: SpotifyPlaylistResponse): PlaylistInfo => ({
+    id: playlist.id,
+    name: playlist.name,
+    description: playlist.description,
+    images: playlist.images || [],
+    tracks: { total: playlist.tracks.total },
+    owner: { display_name: playlist.owner.display_name }
+  }));
+};
+
+export const getPlaylistTracks = async (playlistId: string): Promise<Track[]> => {
+  const token = await spotifyAuth.ensureValidToken();
+
+  const tracks: Track[] = [];
+  let nextUrl = `https://api.spotify.com/v1/playlists/${playlistId}/tracks?limit=50`;
+
+  while (nextUrl) {
+    const response = await fetch(nextUrl, {
       headers: {
         'Authorization': `Bearer ${token}`,
       },
     });
 
     if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Failed to fetch playlists: ${response.status} ${response.statusText}`);
+      throw new Error(`Failed to fetch tracks: ${response.status} ${response.statusText}`);
     }
 
     const data = await response.json();
-    
-    if (!data.items || data.items.length === 0) {
-      return [];
-    }
-    
-    return data.items.map((playlist: any): PlaylistInfo => ({
-      id: playlist.id,
-      name: playlist.name,
-      description: playlist.description,
-      images: playlist.images || [],
-      tracks: { total: playlist.tracks.total },
-      owner: { display_name: playlist.owner.display_name }
-    }));
-    
-  } catch (error) {
-    throw error;
-  }
-};
 
-export const getPlaylistTracks = async (playlistId: string): Promise<Track[]> => {
-  try {
-    const token = await spotifyAuth.ensureValidToken();
-    
-    const tracks: Track[] = [];
-    let nextUrl = `https://api.spotify.com/v1/playlists/${playlistId}/tracks?limit=50`;
-    
-    while (nextUrl) {
-      const response = await fetch(nextUrl, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
+    for (const item of data.items || []) {
+      if (item.track?.id && item.track.type === 'track') {
+        const track = item.track;
+        const albumImage = track.album?.images?.[0]?.url;
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Failed to fetch tracks: ${response.status} ${response.statusText}`);
+        tracks.push({
+          id: track.id,
+          name: track.name,
+          artists: track.artists?.map((a: { name: string }) => a.name).join(', ') || 'Unknown Artist',
+          album: track.album?.name || 'Unknown Album',
+          duration_ms: track.duration_ms || 0,
+          uri: track.uri,
+          preview_url: track.preview_url,
+          image: albumImage
+        });
       }
-
-      const data = await response.json();
-      
-      for (const item of data.items || []) {
-        if (item.track?.id && item.track.type === 'track') {
-          const track = item.track;
-          const albumImage = track.album?.images?.[0]?.url;
-          
-          tracks.push({
-            id: track.id,
-            name: track.name,
-            artists: track.artists?.map((a: any) => a.name).join(', ') || 'Unknown Artist',
-            album: track.album?.name || 'Unknown Album',
-            duration_ms: track.duration_ms || 0,
-            uri: track.uri,
-            preview_url: track.preview_url,
-            image: albumImage
-          });
-        }
-      }
-      
-      nextUrl = data.next; // Pagination
     }
-    
-    return tracks;
-    
-  } catch (error) {
-    throw error;
+
+    nextUrl = data.next; // Pagination
   }
+
+  return tracks;
 };
 
 export const getSpotifyUserPlaylists = async (): Promise<Track[]> => {
   try {
     const token = await spotifyAuth.ensureValidToken();
-    
+
     const response = await fetch('https://api.spotify.com/v1/me/playlists?limit=50', {
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -351,24 +348,23 @@ export const getSpotifyUserPlaylists = async (): Promise<Track[]> => {
     });
 
     if (!response.ok) {
-      const errorText = await response.text();
       throw new Error(`Failed to fetch playlists: ${response.status} ${response.statusText}`);
     }
 
     const data = await response.json();
-    
+
     if (!data.items || data.items.length === 0) {
       return [];
     }
-    
+
     const tracks: Track[] = [];
-    
+
     // Get tracks from user's playlists (limit to first 10 playlists to avoid rate limits)
     for (const playlist of (data.items || []).slice(0, 10)) {
       if (!playlist.tracks?.href) {
         continue;
       }
-      
+
       const tracksResponse = await fetch(playlist.tracks.href + '?limit=50', {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -377,7 +373,7 @@ export const getSpotifyUserPlaylists = async (): Promise<Track[]> => {
 
       if (tracksResponse.ok) {
         const tracksData = await tracksResponse.json();
-        
+
         for (const item of (tracksData.items || [])) {
           if (item.track && item.track.id && !item.track.is_local && item.track.type === 'track') {
             tracks.push({
@@ -394,7 +390,7 @@ export const getSpotifyUserPlaylists = async (): Promise<Track[]> => {
         }
       }
     }
-    
+
     // If no tracks found in playlists, try to get liked songs
     if (tracks.length === 0) {
       const likedResponse = await fetch('https://api.spotify.com/v1/me/tracks?limit=50', {
@@ -405,7 +401,7 @@ export const getSpotifyUserPlaylists = async (): Promise<Track[]> => {
 
       if (likedResponse.ok) {
         const likedData = await likedResponse.json();
-        
+
         for (const item of (likedData.items || [])) {
           if (item.track && item.track.id && !item.track.is_local && item.track.type === 'track') {
             tracks.push({
@@ -422,7 +418,7 @@ export const getSpotifyUserPlaylists = async (): Promise<Track[]> => {
         }
       }
     }
-    
+
     return tracks;
   } catch (error) {
     if (error instanceof Error && error.message === 'No authentication token available') {
@@ -443,11 +439,11 @@ export const checkTrackSaved = async (trackId: string): Promise<boolean> => {
   const response = await fetch(`https://api.spotify.com/v1/me/tracks/contains?ids=${trackId}`, {
     headers: { 'Authorization': `Bearer ${token}` }
   });
-  
+
   if (!response.ok) {
     throw new Error(`Failed to check track saved status: ${response.status}`);
   }
-  
+
   const data = await response.json();
   return data[0]; // Returns boolean
 };
@@ -467,7 +463,7 @@ export const saveTrack = async (trackId: string): Promise<void> => {
     },
     body: JSON.stringify({ ids: [trackId] })
   });
-  
+
   if (!response.ok) {
     throw new Error(`Failed to save track: ${response.status}`);
   }
@@ -488,7 +484,7 @@ export const unsaveTrack = async (trackId: string): Promise<void> => {
     },
     body: JSON.stringify({ ids: [trackId] })
   });
-  
+
   if (!response.ok) {
     throw new Error(`Failed to unsave track: ${response.status}`);
   }

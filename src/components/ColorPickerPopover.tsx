@@ -89,7 +89,7 @@ export const ColorPickerPopover: React.FC<ColorPickerPopoverProps> = ({
     } else if (showColorPopover) {
       console.log('[AccentColor] No image found for current track:', currentTrack);
     }
-  }, [showColorPopover, currentTrack?.image]);
+  }, [showColorPopover, currentTrack?.image, currentTrack]);
 
   // Close popover on outside click
   useEffect(() => {
