@@ -1,10 +1,21 @@
 import React from 'react';
 import styled from 'styled-components';
 
-const TimelineSliderInput = styled.input<{ accentColor: string }>`
+const TimelineSliderInput = styled.input.attrs<{ accentColor: string; value: number; max: number }>(
+  ({ accentColor, value, max }: { accentColor: string; value: number; max: number }) => ({
+    style: {
+      background: `linear-gradient(
+        to right,
+        ${accentColor} 0%,
+        ${accentColor} ${value && max ? (Number(value) / Number(max)) * 100 : 0}%,
+        rgba(115, 115, 115, 0.3) ${value && max ? (Number(value) / Number(max)) * 100 : 0}%,
+        rgba(115, 115, 115, 0.3) 100%
+      )`
+    }
+  })
+)<{ accentColor: string; value: number; max: number }>`
   flex: 1;
   height: 4px;
-  background: rgba(115, 115, 115, 0.3);
   border-radius: 2px;
   outline: none;
   cursor: pointer;
@@ -40,15 +51,6 @@ const TimelineSliderInput = styled.input<{ accentColor: string }>`
       transform: scale(1.2);
     }
   }
-  
-  /* Progress fill effect */
-  background: linear-gradient(
-    to right,
-    ${props => props.accentColor} 0%,
-    ${props => props.accentColor} ${(props) => props.value && props.max ? (Number(props.value) / Number(props.max)) * 100 : 0}%,
-    rgba(115, 115, 115, 0.3) ${(props) => props.value && props.max ? (Number(props.value) / Number(props.max)) * 100 : 0}%,
-    rgba(115, 115, 115, 0.3) 100%
-  );
 `;
 
 const TimeLabel = styled.span`
