@@ -489,3 +489,51 @@ export const unsaveTrack = async (trackId: string): Promise<void> => {
     throw new Error(`Failed to unsave track: ${response.status}`);
   }
 };
+
+/**
+ * Get the user's liked songs from Spotify
+ * @param limit - Maximum number of tracks to fetch (default: 50)
+ * @returns Promise<Track[]> - Array of liked tracks
+ */
+export const getLikedSongs = async (limit: number = 50): Promise<Track[]> => {
+  const token = await spotifyAuth.ensureValidToken();
+  
+  const tracks: Track[] = [];
+  let nextUrl = `https://api.spotify.com/v1/me/tracks?limit=${Math.min(limit, 50)}`;
+  
+  while (nextUrl && tracks.length < limit) {
+    const response = await fetch(nextUrl, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch liked songs: ${response.status} ${response.statusText}`);
+    }
+
+    const data = await response.json();
+
+    for (const item of data.items || []) {
+      if (item.track?.id && item.track.type === 'track' && tracks.length < limit) {
+        const track = item.track;
+        const albumImage = track.album?.images?.[0]?.url;
+
+        tracks.push({
+          id: track.id,
+          name: track.name,
+          artists: track.artists?.map((a: { name: string }) => a.name).join(', ') || 'Unknown Artist',
+          album: track.album?.name || 'Unknown Album',
+          duration_ms: track.duration_ms || 0,
+          uri: track.uri,
+          preview_url: track.preview_url,
+          image: albumImage
+        });
+      }
+    }
+
+    nextUrl = data.next; // Pagination
+  }
+
+  return tracks;
+};
