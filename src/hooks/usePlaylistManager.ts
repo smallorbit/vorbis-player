@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import { getPlaylistTracks, spotifyAuth } from '../services/spotify';
+import { getPlaylistTracks, getLikedSongs, spotifyAuth } from '../services/spotify';
 import { spotifyPlayer } from '../services/spotifyPlayer';
 import type { Track } from '../services/spotify';
 
@@ -10,6 +10,16 @@ async function waitForSpotifyReady(timeout = 10000): Promise<void> {
     if (Date.now() - start > timeout) throw new Error('Spotify player not ready after waiting');
     await new Promise(res => setTimeout(res, 200));
   }
+}
+
+// Helper to shuffle an array
+function shuffleArray<T>(array: T[]): T[] {
+  const shuffled = [...array];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
 }
 
 interface UsePlaylistManagerProps {
@@ -45,11 +55,26 @@ export const usePlaylistManager = ({
       // Ensure our device is the active player
       await spotifyPlayer.transferPlaybackToDevice();
 
-      // Fetch tracks from the selected playlist
-      const fetchedTracks = await getPlaylistTracks(playlistId);
+      // Fetch tracks based on playlist type
+      let fetchedTracks: Track[] = [];
+      
+      if (playlistId === 'liked-songs') {
+        // Fetch liked songs (limit to 200 for performance)
+        fetchedTracks = await getLikedSongs(200);
+        
+        // Shuffle liked songs for a better listening experience
+        fetchedTracks = shuffleArray(fetchedTracks);
+      } else {
+        // Fetch tracks from the selected playlist
+        fetchedTracks = await getPlaylistTracks(playlistId);
+      }
 
       if (fetchedTracks.length === 0) {
-        setError("No tracks found in this playlist.");
+        if (playlistId === 'liked-songs') {
+          setError("No liked songs found. Please like some songs in Spotify first.");
+        } else {
+          setError("No tracks found in this playlist.");
+        }
         return;
       }
 
