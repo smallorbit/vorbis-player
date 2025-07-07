@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import { getUserPlaylists, type PlaylistInfo, spotifyAuth } from '../services/spotify';
+import { getUserPlaylists, getLikedSongs, type PlaylistInfo, spotifyAuth } from '../services/spotify';
 import { Card, CardHeader, CardContent } from './styled';
 import { Button } from './styled';
 import { Skeleton } from './styled';
@@ -128,6 +128,7 @@ const PlaylistSelection: React.FC<PlaylistSelectionProps> = ({ onPlaylistSelect 
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [likedSongsCount, setLikedSongsCount] = useState<number>(0);
 
   useEffect(() => {
     const checkAuthAndFetchPlaylists = async () => {
@@ -143,12 +144,26 @@ const PlaylistSelection: React.FC<PlaylistSelectionProps> = ({ onPlaylistSelect 
         }
         
         setIsAuthenticated(true);
-        const userPlaylists = await getUserPlaylists();
         
-        if (userPlaylists.length === 0) {
-          setError("No playlists found. Please create some playlists in Spotify first.");
+        // Fetch playlists and liked songs count in parallel
+        const [userPlaylists, likedSongs] = await Promise.all([
+          getUserPlaylists(),
+          getLikedSongs(1) // Just fetch one to get count without loading all
+        ]);
+        
+        if (userPlaylists.length === 0 && likedSongs.length === 0) {
+          setError("No playlists or liked songs found. Please create some playlists or like some songs in Spotify first.");
         } else {
           setPlaylists(userPlaylists);
+          // Get actual count from API
+          const token = await spotifyAuth.ensureValidToken();
+          const response = await fetch('https://api.spotify.com/v1/me/tracks?limit=1', {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          if (response.ok) {
+            const data = await response.json();
+            setLikedSongsCount(data.total);
+          }
         }
       } catch (err) {
         console.error('Failed to fetch playlists:', err);
@@ -166,6 +181,11 @@ const PlaylistSelection: React.FC<PlaylistSelectionProps> = ({ onPlaylistSelect 
     onPlaylistSelect(playlist.id, playlist.name);
   };
 
+  const handleLikedSongsClick = () => {
+    console.log('🎵 Selected liked songs');
+    onPlaylistSelect('liked-songs', 'Liked Songs');
+  };
+
   const handleLogin = async () => {
     try {
       await spotifyAuth.redirectToAuth();
@@ -180,7 +200,7 @@ const PlaylistSelection: React.FC<PlaylistSelectionProps> = ({ onPlaylistSelect 
       <SelectionCard>
         <Header>
           <Title>Choose Your Music</Title>
-          <Subtitle>Select a playlist to start listening</Subtitle>
+          <Subtitle>Select a playlist or your liked songs to start listening</Subtitle>
         </Header>
         
         <CardContent>
@@ -226,8 +246,36 @@ const PlaylistSelection: React.FC<PlaylistSelectionProps> = ({ onPlaylistSelect 
             </Alert>
           )}
           
-          {!isLoading && isAuthenticated && !error && playlists.length > 0 && (
+          {!isLoading && isAuthenticated && !error && (playlists.length > 0 || likedSongsCount > 0) && (
             <PlaylistGrid>
+              {/* Liked Songs Option */}
+              {likedSongsCount > 0 && (
+                <PlaylistItem onClick={handleLikedSongsClick}>
+                  <PlaylistImage>
+                    <div style={{
+                      background: 'linear-gradient(135deg, #1DB954 0%, #1ed760 100%)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      width: '100%',
+                      height: '100%',
+                      borderRadius: '0.5rem',
+                      fontSize: '1.5rem',
+                      color: 'white'
+                    }}>
+                      ♥
+                    </div>
+                  </PlaylistImage>
+                  <PlaylistInfo>
+                    <PlaylistName>Liked Songs</PlaylistName>
+                    <PlaylistDetails>
+                      {likedSongsCount} tracks • Shuffle enabled
+                    </PlaylistDetails>
+                  </PlaylistInfo>
+                </PlaylistItem>
+              )}
+              
+              {/* Regular Playlists */}
               {playlists.map((playlist) => (
                 <PlaylistItem 
                   key={playlist.id} 
