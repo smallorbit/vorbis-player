@@ -5,6 +5,7 @@ import EyedropperOverlay from './EyedropperOverlay';
 import { extractTopVibrantColors } from '../utils/colorExtractor';
 import type { ExtractedColor } from '../utils/colorExtractor';
 import type { Track } from '../services/spotify';
+import { theme } from '../styles/theme';
 
 const ControlButton = styled.button<{ isActive?: boolean; accentColor: string }>`
   border: none;
@@ -13,8 +14,8 @@ const ControlButton = styled.button<{ isActive?: boolean; accentColor: string }>
   justify-content: center;
   cursor: pointer;
   transition: all 0.2s ease;
-  padding: 0.5rem;
-  border-radius: 0.375rem;
+  padding: ${theme.spacing.sm};
+  border-radius: ${theme.borderRadius.md};
   
   svg {
     width: 1.5rem;
@@ -22,19 +23,19 @@ const ControlButton = styled.button<{ isActive?: boolean; accentColor: string }>
     fill: currentColor;
   }
   
-  ${({ isActive, accentColor }) => isActive ? `
+  ${({ isActive, accentColor }: { isActive?: boolean; accentColor: string }) => isActive ? `
     background: ${accentColor};
-    color: #fff;
+    color: ${theme.colors.white};
     
     &:hover {
       background: ${accentColor}4D;
     }
   ` : `
-    background: rgba(115, 115, 115, 0.2);
-    color: white;
+    background: ${theme.colors.control.background};
+    color: ${theme.colors.white};
     
     &:hover {
-      background: rgba(115, 115, 115, 0.3);
+      background: ${theme.colors.control.backgroundHover};
     }
   `}
 `;
@@ -146,16 +147,16 @@ export const ColorPickerPopover: React.FC<ColorPickerPopoverProps> = ({
             left: popoverPos.left,
             top: popoverPos.top,
             transform: 'translate(-50%, -100%)',
-            background: '#232323',
-            borderRadius: 12,
+            background: theme.colors.popover.background,
+            borderRadius: theme.borderRadius.xl,
             boxShadow: '0 4px 24px rgba(0,0,0,0.25)',
-            padding: '1rem 1.25rem',
-            zIndex: 9999,
+            padding: `${theme.spacing.md} ${theme.spacing.lg}`,
+            zIndex: theme.zIndex.popover,
             minWidth: 160,
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
-            gap: 12,
+            gap: theme.spacing.xs,
           }}
         >
           <div style={{ color: '#fff', fontWeight: 600, marginBottom: 8, fontSize: 15 }}>

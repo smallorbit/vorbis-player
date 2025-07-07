@@ -242,3 +242,159 @@ export const customScrollbar = css`
     background: ${theme.colors.gray[500]};
   }
 `;
+
+// Overlay patterns
+export const overlayBase = css`
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: ${theme.zIndex.overlay};
+`;
+
+export const overlayLight = css`
+  ${overlayBase}
+  background: ${theme.colors.overlay.light};
+  backdrop-filter: blur(2px);
+`;
+
+export const overlayDark = css`
+  ${overlayBase}
+  background: ${theme.colors.overlay.dark};
+  backdrop-filter: blur(20px);
+`;
+
+// Drawer patterns
+export const drawerBase = css`
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: ${theme.zIndex.modal};
+  overflow-y: auto;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+`;
+
+export const drawerContainer = css`
+  ${drawerBase}
+  width: 400px;
+  background: ${theme.colors.overlay.dark};
+  backdrop-filter: blur(20px);
+  border-left: 1px solid ${theme.colors.popover.border};
+  
+  @media (max-width: ${theme.breakpoints.sm}) {
+    width: 100vw;
+  }
+`;
+
+// Control button patterns
+export const controlButtonBase = css`
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  padding: ${theme.spacing.sm};
+  border-radius: ${theme.borderRadius.md};
+  
+  svg {
+    width: 1.5rem;
+    height: 1.5rem;
+    fill: currentColor;
+  }
+`;
+
+export const controlButtonInactive = css`
+  ${controlButtonBase}
+  background: ${theme.colors.control.background};
+  color: ${theme.colors.white};
+  
+  &:hover {
+    background: ${theme.colors.control.backgroundHover};
+  }
+`;
+
+export const controlButtonActive = css<{ accentColor: string }>`
+  ${controlButtonBase}
+  background: ${(props: { accentColor: string }) => props.accentColor};
+  color: ${theme.colors.white};
+  
+  &:hover {
+    background: ${(props: { accentColor: string }) => props.accentColor}4D;
+  }
+`;
+
+// Popover patterns
+export const popoverBase = css`
+  background: ${theme.colors.popover.background};
+  border-radius: ${theme.borderRadius.xl};
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.25);
+  border: 1px solid ${theme.colors.popover.border};
+  z-index: ${theme.zIndex.popover};
+`;
+
+// Close button pattern
+export const closeButton = css`
+  background: none;
+  border: none;
+  color: ${theme.colors.muted.foreground};
+  cursor: pointer;
+  padding: ${theme.spacing.xs};
+  border-radius: ${theme.borderRadius.md};
+  transition: all 0.2s ease;
+  
+  &:hover {
+    color: ${theme.colors.white};
+    background: ${theme.colors.muted.background};
+  }
+  
+  svg {
+    width: 1rem;
+    height: 1rem;
+  }
+`;
+
+// Slider patterns
+export const sliderBase = css<{ accentColor: string }>`
+  appearance: none;
+  width: 100%;
+  height: 4px;
+  background: ${theme.colors.control.background};
+  border-radius: ${theme.borderRadius.sm};
+  outline: none;
+  cursor: pointer;
+  
+  &::-webkit-slider-thumb {
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    background: ${(props: { accentColor: string }) => props.accentColor};
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    transition: all 0.2s ease;
+  }
+  
+  &::-webkit-slider-thumb:hover {
+    transform: scale(1.2);
+    box-shadow: 0 0 0 4px ${(props: { accentColor: string }) => props.accentColor}33;
+  }
+  
+  &::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    background: ${(props: { accentColor: string }) => props.accentColor};
+    border-radius: 50%;
+    cursor: pointer;
+    border: none;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    transition: all 0.2s ease;
+  }
+  
+  &::-moz-range-thumb:hover {
+    transform: scale(1.2);
+    box-shadow: 0 0 0 4px ${(props: { accentColor: string }) => props.accentColor}33;
+  }
+`;

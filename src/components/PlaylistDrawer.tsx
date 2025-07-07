@@ -1,6 +1,7 @@
 import React, { Suspense } from 'react';
 import styled from 'styled-components';
 import type { Track } from '../services/spotify';
+import { theme } from '../styles/theme';
 
 const Playlist = React.lazy(() => import('./Playlist'));
 
@@ -10,17 +11,17 @@ const PlaylistDrawerContainer = styled.div<{ isOpen: boolean }>`
   right: 0;
   width: 400px;
   height: 100vh;
-  background: rgba(0, 0, 0, 0.95);
+  background: ${theme.colors.overlay.dark};
   backdrop-filter: blur(10px);
-  border-left: 1px solid rgba(255, 255, 255, 0.1);
+  border-left: 1px solid ${theme.colors.popover.border};
   transform: translateX(${props => props.isOpen ? '0' : '100%'});
   transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  z-index: 1000;
+  z-index: ${theme.zIndex.modal};
   overflow-y: auto;
-  padding: 1rem;
+  padding: ${theme.spacing.md};
   box-sizing: border-box;
   
-  @media (max-width: 480px) {
+  @media (max-width: ${theme.breakpoints.sm}) {
     width: 100vw;
   }
 `;
@@ -44,43 +45,43 @@ const PlaylistOverlay = styled.div<{ isOpen: boolean }>`
   left: 0;
   width: 100vw;
   height: 100vh;
-  background: rgba(0, 0, 0, 0.5);
+  background: ${theme.colors.overlay.light};
   backdrop-filter: blur(2px);
   opacity: ${props => props.isOpen ? 1 : 0};
   visibility: ${props => props.isOpen ? 'visible' : 'hidden'};
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  z-index: 999;
+  z-index: ${theme.zIndex.overlay};
 `;
 
 const PlaylistHeader = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1rem;
-  padding-bottom: 1rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  margin-bottom: ${theme.spacing.md};
+  padding-bottom: ${theme.spacing.md};
+  border-bottom: 1px solid ${theme.colors.popover.border};
 `;
 
 const PlaylistTitle = styled.h3`
-  color: white;
+  color: ${theme.colors.white};
   margin: 0;
-  font-size: 1.2rem;
-  font-weight: 600;
+  font-size: ${theme.fontSize.xl};
+  font-weight: ${theme.fontWeight.semibold};
 `;
 
 const CloseButton = styled.button`
   background: none;
   border: none;
-  color: rgba(255, 255, 255, 0.7);
-  font-size: 1.5rem;
+  color: ${theme.colors.muted.foreground};
+  font-size: ${theme.fontSize.xl};
   cursor: pointer;
-  padding: 0.5rem;
-  border-radius: 0.25rem;
+  padding: ${theme.spacing.sm};
+  border-radius: ${theme.borderRadius.md};
   transition: all 0.2s ease;
   
   &:hover {
-    background: rgba(255, 255, 255, 0.1);
-    color: white;
+    background: ${theme.colors.muted.background};
+    color: ${theme.colors.white};
   }
 `;
 

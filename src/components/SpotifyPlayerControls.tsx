@@ -84,8 +84,8 @@ const ControlButton = styled.button<{ isActive?: boolean; accentColor: string }>
   justify-content: center;
   cursor: pointer;
   transition: all 0.2s ease;
-  padding: 0.5rem;
-  border-radius: 0.375rem;
+  padding: ${theme.spacing.sm};
+  border-radius: ${theme.borderRadius.md};
   
   svg {
     width: 1.5rem;
@@ -93,38 +93,29 @@ const ControlButton = styled.button<{ isActive?: boolean; accentColor: string }>
     fill: currentColor;
   }
   
-  ${({ isActive, accentColor }) => isActive ? `
-    background: ${accentColor};
-    color: #fff; // ${accentColor}99;
-    
-    &:hover {
-      background: ${accentColor}4D;
-    }
-  ` : `
-    background: rgba(115, 115, 115, 0.2);
-    color: white;
-    
-    &:hover {
-      background: rgba(115, 115, 115, 0.3);
-    }
-  `}
+  background: ${({ isActive, accentColor }: { isActive?: boolean; accentColor: string }) => isActive ? accentColor : theme.colors.control.background};
+  color: ${theme.colors.white};
+  
+  &:hover {
+    background: ${({ isActive, accentColor }: { isActive?: boolean; accentColor: string }) => isActive ? `${accentColor}4D` : theme.colors.control.backgroundHover};
+  }
 `;
 
 const VolumeButton = styled.button`
   border: none;
   background: transparent;
-  color: ${({ theme }: any) => theme.colors.gray[400]};
+  color: ${theme.colors.gray[400]};
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  padding: 0.3rem;
-  border-radius: 0.375rem;
+  padding: ${theme.spacing.xs};
+  border-radius: ${theme.borderRadius.md};
   transition: all 0.2s ease;
   
   &:hover {
-    background: rgba(115, 115, 115, 0.2);
-    color: ${({ theme }: any) => theme.colors.white};
+    background: ${theme.colors.control.background};
+    color: ${theme.colors.white};
   }
   
   svg {
