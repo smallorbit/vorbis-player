@@ -1,6 +1,7 @@
 import React, { useEffect, memo } from 'react';
 import styled from 'styled-components';
 import { DEFAULT_GLOW_RATE } from './AccentColorGlowOverlay';
+import { theme } from '../styles/theme';
 
 interface VisualEffectsMenuProps {
   isOpen: boolean;
@@ -37,8 +38,8 @@ const DrawerOverlay = styled.div<{ $isOpen: boolean }>`
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  z-index: 50;
+  background: ${theme.colors.overlay.light};
+  z-index: ${theme.zIndex.overlay};
   opacity: ${({ $isOpen }) => ($isOpen ? '1' : '0')};
   pointer-events: ${({ $isOpen }) => ($isOpen ? 'auto' : 'none')};
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -50,15 +51,15 @@ const DrawerContainer = styled.div<{ $isOpen: boolean }>`
   right: 0;
   bottom: 0;
   width: 400px;
-  background: rgba(0, 0, 0, 0.95);
+  background: ${theme.colors.overlay.dark};
   backdrop-filter: blur(20px);
-  border-left: 1px solid rgba(255, 255, 255, 0.1);
+  border-left: 1px solid ${theme.colors.popover.border};
   transform: translateX(${({ $isOpen }) => ($isOpen ? '0' : '100%')});
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  z-index: 51;
+  z-index: ${theme.zIndex.modal};
   overflow-y: auto;
   
-  @media (max-width: 768px) {
+  @media (max-width: ${theme.breakpoints.md}) {
     width: 100vw;
   }
 `;
@@ -81,15 +82,15 @@ const DrawerTitle = styled.h3`
 const CloseButton = styled.button`
   background: none;
   border: none;
-  color: rgba(255, 255, 255, 0.7);
+  color: ${theme.colors.muted.foreground};
   cursor: pointer;
-  padding: 0.25rem;
-  border-radius: 0.375rem;
+  padding: ${theme.spacing.xs};
+  border-radius: ${theme.borderRadius.md};
   transition: all 0.2s ease;
   
   &:hover {
-    color: rgba(255, 255, 255, 0.9);
-    background: rgba(255, 255, 255, 0.1);
+    color: ${theme.colors.white};
+    background: ${theme.colors.muted.background};
   }
   
   svg {
@@ -130,8 +131,8 @@ const Slider = styled.input<{ $accentColor: string }>`
   appearance: none;
   width: 100%;
   height: 4px;
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 2px;
+  background: ${theme.colors.control.background};
+  border-radius: ${theme.borderRadius.sm};
   outline: none;
   cursor: pointer;
   
@@ -139,7 +140,7 @@ const Slider = styled.input<{ $accentColor: string }>`
     appearance: none;
     width: 16px;
     height: 16px;
-    background: ${({ $accentColor }) => $accentColor};
+    background: ${({ $accentColor }: { $accentColor: string }) => $accentColor};
     border-radius: 50%;
     cursor: pointer;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
@@ -148,13 +149,13 @@ const Slider = styled.input<{ $accentColor: string }>`
   
   &::-webkit-slider-thumb:hover {
     transform: scale(1.2);
-    box-shadow: 0 0 0 4px ${({ $accentColor }) => $accentColor}33;
+    box-shadow: 0 0 0 4px ${({ $accentColor }: { $accentColor: string }) => $accentColor}33;
   }
   
   &::-moz-range-thumb {
     width: 16px;
     height: 16px;
-    background: ${({ $accentColor }) => $accentColor};
+    background: ${({ $accentColor }: { $accentColor: string }) => $accentColor};
     border-radius: 50%;
     cursor: pointer;
     border: none;
@@ -164,7 +165,7 @@ const Slider = styled.input<{ $accentColor: string }>`
   
   &::-moz-range-thumb:hover {
     transform: scale(1.2);
-    box-shadow: 0 0 0 4px ${({ $accentColor }) => $accentColor}33;
+    box-shadow: 0 0 0 4px ${({ $accentColor }: { $accentColor: string }) => $accentColor}33;
   }
 `;
 
@@ -211,20 +212,20 @@ const ResetButton = styled.button<{ $accentColor: string }>`
 `;
 
 const ToggleButton = styled.button<{ $accentColor: string; $isActive: boolean }>`
-  background: ${({ $isActive, $accentColor }) => $isActive ? $accentColor : 'rgba(255, 255, 255, 0.1)'};
-  border: 1px solid ${({ $isActive, $accentColor }) => $isActive ? $accentColor : 'rgba(255, 255, 255, 0.2)'};
-  color: ${({ $isActive }) => $isActive ? '#000' : 'rgba(255, 255, 255, 0.7)'};
-  padding: 0.5rem 1rem;
-  border-radius: 0.375rem;
+  background: ${({ $isActive, $accentColor }: { $isActive: boolean; $accentColor: string }) => $isActive ? $accentColor : theme.colors.muted.background};
+  border: 1px solid ${({ $isActive, $accentColor }: { $isActive: boolean; $accentColor: string }) => $isActive ? $accentColor : theme.colors.border};
+  color: ${({ $isActive }: { $isActive: boolean }) => $isActive ? theme.colors.black : theme.colors.muted.foreground};
+  padding: ${theme.spacing.sm} ${theme.spacing.md};
+  border-radius: ${theme.borderRadius.md};
   cursor: pointer;
-  font-size: 0.875rem;
-  font-weight: 500;
+  font-size: ${theme.fontSize.sm};
+  font-weight: ${theme.fontWeight.medium};
   transition: all 0.2s ease;
   
   &:hover {
-    background: ${({ $isActive, $accentColor }) => $isActive ? $accentColor + 'DD' : $accentColor + '22'};
-    border-color: ${({ $accentColor }) => $accentColor};
-    color: ${({ $isActive }) => $isActive ? '#000' : 'rgba(255, 255, 255, 0.9)'};
+    background: ${({ $isActive, $accentColor }: { $isActive: boolean; $accentColor: string }) => $isActive ? $accentColor + 'DD' : $accentColor + '22'};
+    border-color: ${({ $accentColor }: { $accentColor: string }) => $accentColor};
+    color: ${({ $isActive }: { $isActive: boolean }) => $isActive ? theme.colors.black : theme.colors.white};
     transform: translateY(-1px);
   }
 `;
