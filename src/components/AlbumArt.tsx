@@ -30,6 +30,8 @@ const AlbumArtContainer = styled.div<{ accentColor?: string }>`
   margin: 1.25rem;
   overflow: hidden;
   background: transparent;
+  box-shadow: 0 8px 24px rgba(23, 22, 22, 0.7), 0 2px 8px rgba(22, 21, 21, 0.6);
+
   z-index: 2;
 `;
 
