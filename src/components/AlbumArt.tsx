@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import styled from 'styled-components';
 import type { Track } from '../services/spotify';
 import AlbumArtFilters from './AlbumArtFilters';
@@ -35,7 +35,7 @@ const AlbumArtContainer = styled.div<{ accentColor?: string }>`
   z-index: 2;
 `;
 
-const AlbumArt: React.FC<AlbumArtProps> = ({ currentTrack = null, accentColor, glowIntensity, glowRate, albumFilters }) => {
+const AlbumArt: React.FC<AlbumArtProps> = memo(({ currentTrack = null, accentColor, glowIntensity, glowRate, albumFilters }) => {
   const [canvasUrl, setCanvasUrl] = React.useState<string | null>(null);
 
   React.useEffect(() => {
@@ -122,6 +122,6 @@ const AlbumArt: React.FC<AlbumArtProps> = ({ currentTrack = null, accentColor, g
     </AlbumArtContainer>
 
   );
-};
+});
 
 export default AlbumArt; 

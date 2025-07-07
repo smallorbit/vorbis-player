@@ -16,6 +16,22 @@ export interface ExtractedColor {
   hsl: string;
 }
 
+// Performance optimization: Cache for color extraction results
+const colorCache = new Map<string, ExtractedColor | null>();
+const MAX_CACHE_SIZE = 100;
+
+// Helper function to manage cache size
+function addToCache(key: string, value: ExtractedColor | null) {
+  if (colorCache.size >= MAX_CACHE_SIZE) {
+    // Remove oldest entries (simple LRU)
+    const firstKey = colorCache.keys().next().value;
+    if (firstKey) {
+      colorCache.delete(firstKey);
+    }
+  }
+  colorCache.set(key, value);
+}
+
 /**
  * Converts RGB values to HSL
  */
@@ -80,6 +96,11 @@ function isVibrant(r: number, g: number, b: number): boolean {
  * Extracts the dominant color from an image URL
  */
 export async function extractDominantColor(imageUrl: string): Promise<ExtractedColor | null> {
+  // Check cache first
+  if (colorCache.has(imageUrl)) {
+    return colorCache.get(imageUrl) || null;
+  }
+
   return new Promise((resolve) => {
     try {
       const img = new Image();
@@ -162,17 +183,22 @@ export async function extractDominantColor(imageUrl: string): Promise<ExtractedC
             const [h, s, l] = rgbToHsl(bestColor.r, bestColor.g, bestColor.b);
             const hsl = `hsl(${Math.round(h)}, ${Math.round(s)}%, ${Math.round(l)}%)`;
             
-            resolve({ hex, rgb, hsl });
+            const result = { hex, rgb, hsl };
+            addToCache(imageUrl, result);
+            resolve(result);
           } else {
+            addToCache(imageUrl, null);
             resolve(null);
           }
         } catch (error) {
           console.error('Error processing image data:', error);
+          addToCache(imageUrl, null);
           resolve(null);
         }
       };
       
       img.onerror = () => {
+        addToCache(imageUrl, null);
         resolve(null);
       };
       
@@ -180,6 +206,7 @@ export async function extractDominantColor(imageUrl: string): Promise<ExtractedC
       img.src = imageUrl;
     } catch (error) {
       console.error('Error loading image:', error);
+      addToCache(imageUrl, null);
       resolve(null);
     }
   });

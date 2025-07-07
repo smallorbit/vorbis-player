@@ -10,7 +10,9 @@ export default defineConfig({
       output: {
         manualChunks: {
           vendor: ['react', 'react-dom'],
-          audio: ['react-modern-audio-player']
+          radix: ['@radix-ui/react-dialog', '@radix-ui/react-slider', '@radix-ui/react-scroll-area', '@radix-ui/react-tabs', '@radix-ui/react-avatar', '@radix-ui/react-aspect-ratio'],
+          styled: ['styled-components'],
+          icons: ['lucide-react']
         }
       }
     },

@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, memo } from 'react';
 import styled from 'styled-components';
 import { DEFAULT_GLOW_RATE } from './AccentColorGlowOverlay';
 
@@ -229,7 +229,7 @@ const ToggleButton = styled.button<{ $accentColor: string; $isActive: boolean }>
   }
 `;
 
-export const VisualEffectsMenu: React.FC<VisualEffectsMenuProps> = ({
+export const VisualEffectsMenu: React.FC<VisualEffectsMenuProps> = memo(({
   isOpen,
   onClose,
   accentColor,
@@ -440,6 +440,6 @@ export const VisualEffectsMenu: React.FC<VisualEffectsMenuProps> = ({
       </DrawerContainer>
     </>
   );
-};
+});
 
 export default VisualEffectsMenu;

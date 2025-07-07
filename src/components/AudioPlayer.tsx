@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useCallback } from 'react';
+import { useEffect, useMemo, useCallback, lazy, Suspense } from 'react';
 import styled from 'styled-components';
 import { spotifyAuth } from '../services/spotify';
 import { spotifyPlayer } from '../services/spotifyPlayer';
@@ -7,8 +7,10 @@ import { flexCenter, cardBase } from '../styles/utils';
 import AlbumArt from './AlbumArt';
 import { extractDominantColor } from '../utils/colorExtractor';
 import SpotifyPlayerControls from './SpotifyPlayerControls';
-import VisualEffectsMenu from './VisualEffectsMenu';
 import PlaylistDrawer from './PlaylistDrawer';
+
+// Lazy load heavy components for better performance
+const VisualEffectsMenu = lazy(() => import('./VisualEffectsMenu'));
 import PlayerStateRenderer from './PlayerStateRenderer';
 import { usePlayerState } from '../hooks/usePlayerState';
 import { usePlaylistManager } from '../hooks/usePlaylistManager';
@@ -342,25 +344,27 @@ const AudioPlayerComponent = () => {
               onShowVisualEffects={() => setShowVisualEffects(true)}
             />
           </CardContent>
-          <VisualEffectsMenu
-            isOpen={showVisualEffects}
-            onClose={() => setShowVisualEffects(false)}
-            accentColor={accentColor}
-            filters={albumFilters}
-            onFilterChange={handleFilterChange}
-            onResetFilters={handleResetFilters}
-            glowIntensity={glowIntensity}
-            setGlowIntensity={setGlowIntensity}
-            glowRate={typeof glowRate === 'number' ? glowRate : DEFAULT_GLOW_RATE}
-            setGlowRate={setGlowRate}
-            glowMode={glowMode}
-            setGlowMode={setGlowMode}
-            perAlbumGlow={perAlbumGlow}
-            setPerAlbumGlow={setPerAlbumGlow}
-            currentAlbumId={currentAlbumId}
-            currentAlbumName={currentAlbumName}
-            effectiveGlow={effectiveGlow}
-          />
+          <Suspense fallback={<div>Loading effects...</div>}>
+            <VisualEffectsMenu
+              isOpen={showVisualEffects}
+              onClose={() => setShowVisualEffects(false)}
+              accentColor={accentColor}
+              filters={albumFilters}
+              onFilterChange={handleFilterChange}
+              onResetFilters={handleResetFilters}
+              glowIntensity={glowIntensity}
+              setGlowIntensity={setGlowIntensity}
+              glowRate={typeof glowRate === 'number' ? glowRate : DEFAULT_GLOW_RATE}
+              setGlowRate={setGlowRate}
+              glowMode={glowMode}
+              setGlowMode={setGlowMode}
+              perAlbumGlow={perAlbumGlow}
+              setPerAlbumGlow={setPerAlbumGlow}
+              currentAlbumId={currentAlbumId}
+              currentAlbumName={currentAlbumName}
+              effectiveGlow={effectiveGlow}
+            />
+          </Suspense>
         </LoadingCard>
 
         <PlaylistDrawer
