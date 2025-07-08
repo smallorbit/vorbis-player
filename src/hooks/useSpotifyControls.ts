@@ -90,11 +90,11 @@ export const useSpotifyControls = ({
           (currentTrack && state.track_window.current_track.id !== currentTrack.id)) {
         onPlay();
       } else {
-        // If the current track matches and it's just paused, resume it
+        // If the current track matches
         if (state.paused) {
           await spotifyPlayer.resume();
         } else {
-          onPlay();
+          // Track is already playing, do nothing (just sync UI)
         }
       }
     }
