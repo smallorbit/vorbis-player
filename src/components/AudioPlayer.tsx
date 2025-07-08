@@ -144,17 +144,42 @@ const AudioPlayerComponent = () => {
         // Check if playback actually started after a delay
         setTimeout(async () => {
           const state = await spotifyPlayer.getCurrentState();
-          if (state?.paused && state.position === 0) {
+          if (state) {
+            // If the track is paused and at position 0, it means playback didn't start
+            if (state.paused && state.position === 0) {
+              try {
+                await spotifyPlayer.resume();
+              } catch (resumeError) {
+                console.error('Failed to resume after playback attempt:', resumeError);
+              }
+            }
+          } else {
+            // If we don't have state, try to ensure our device is active
             try {
-              await spotifyPlayer.resume();
-            } catch (resumeError) {
-              // Silent fail
+              const token = await spotifyAuth.ensureValidToken();
+              const deviceId = spotifyPlayer.getDeviceId();
+
+              if (deviceId) {
+                await fetch('https://api.spotify.com/v1/me/player', {
+                  method: 'PUT',
+                  headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                  },
+                  body: JSON.stringify({
+                    device_ids: [deviceId],
+                    play: true
+                  })
+                });
+              }
+            } catch (error) {
+              console.error('Failed to activate device:', error);
             }
           }
-        }, 1000);
+        }, 1500);
 
       } catch (error) {
-        // Silent fail
+        console.error('Failed to play track:', error);
       }
     }
   }, [tracks, setCurrentTrackIndex]);
@@ -334,7 +359,14 @@ const AudioPlayerComponent = () => {
             <SpotifyPlayerControls
               currentTrack={currentTrack}
               accentColor={accentColor}
-              onPlay={() => spotifyPlayer.resume()}
+              onPlay={() => {
+                // Check if we should play the current track or resume
+                if (currentTrack) {
+                  playTrack(currentTrackIndex);
+                } else {
+                  spotifyPlayer.resume();
+                }
+              }}
               onPause={() => spotifyPlayer.pause()}
               onNext={handleNext}
               onPrevious={handlePrevious}

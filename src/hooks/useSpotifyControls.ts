@@ -77,13 +77,28 @@ export const useSpotifyControls = ({
     checkLikeStatus();
   }, [currentTrack?.id]);
 
-  const handlePlayPause = useCallback(() => {
+  const handlePlayPause = useCallback(async () => {
     if (isPlaying) {
       onPause();
     } else {
-      onPlay();
+      // Check current playback state to decide between play and resume
+      const state = await spotifyPlayer.getCurrentState();
+      
+      // If there's no current track or the current track doesn't match what we expect,
+      // use onPlay to start playing the selected track
+      if (!state || !state.track_window?.current_track || 
+          (currentTrack && state.track_window.current_track.id !== currentTrack.id)) {
+        onPlay();
+      } else {
+        // If the current track matches
+        if (state.paused) {
+          await spotifyPlayer.resume();
+        } else {
+          // Track is already playing, do nothing (just sync UI)
+        }
+      }
     }
-  }, [isPlaying, onPlay, onPause]);
+  }, [isPlaying, onPlay, onPause, currentTrack]);
 
   const handleMuteToggle = useCallback(() => {
     const newMutedState = !isMuted;

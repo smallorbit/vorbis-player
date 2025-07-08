@@ -56,53 +56,45 @@ export const usePlaylistManager = ({
       setTracks(fetchedTracks);
       setCurrentTrackIndex(0);
 
-      // Start playing the first track (user interaction has occurred)
+      // Start playing the first track with improved reliability
       setTimeout(async () => {
         try {
           await playTrack(0);
-
-          // Check playback state after a delay and try to recover
-          setTimeout(async () => {
-            const state = await spotifyPlayer.getCurrentState();
-
-            // If state is undefined, the player might not be active - try to activate it
-            if (!state || !state.track_window?.current_track) {
-              try {
-                const token = await spotifyAuth.ensureValidToken();
-                const deviceId = spotifyPlayer.getDeviceId();
-
-                if (deviceId) {
-                  // Transfer playback to our device
-                  await fetch('https://api.spotify.com/v1/me/player', {
-                    method: 'PUT',
-                    headers: {
-                      'Authorization': `Bearer ${token}`,
-                      'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                      device_ids: [deviceId],
-                      play: true
-                    })
-                  });
-
-                  // Try playing the track again
-                  setTimeout(async () => {
-                    try {
-                      await playTrack(0);
-                    } catch (error) {
-                      // Silent fail
-                    }
-                  }, 1000);
-                }
-              } catch (error) {
-                // Silent fail
-              }
-            }
-          }, 2000);
         } catch (error) {
-          // Silent fail
+          console.error('Failed to start playback:', error);
+          // Try to recover by ensuring our device is active
+          try {
+            const token = await spotifyAuth.ensureValidToken();
+            const deviceId = spotifyPlayer.getDeviceId();
+
+            if (deviceId) {
+              // Transfer playback to our device and start playing
+              await fetch('https://api.spotify.com/v1/me/player', {
+                method: 'PUT',
+                headers: {
+                  'Authorization': `Bearer ${token}`,
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                  device_ids: [deviceId],
+                  play: true
+                })
+              });
+
+              // Try playing the track again after a brief delay
+              setTimeout(async () => {
+                try {
+                  await playTrack(0);
+                } catch (retryError) {
+                  console.error('Failed to play track after recovery attempt:', retryError);
+                }
+              }, 1000);
+            }
+          } catch (recoveryError) {
+            console.error('Recovery attempt failed:', recoveryError);
+          }
         }
-      }, 1500);
+      }, 1000);
 
     } catch (err: unknown) {
       if (err instanceof Error && err.message.includes('authenticated')) {
