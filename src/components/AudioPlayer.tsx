@@ -6,11 +6,11 @@ import { CardContent } from '../components/styled';
 import { flexCenter, cardBase } from '../styles/utils';
 import AlbumArt from './AlbumArt';
 import { extractDominantColor } from '../utils/colorExtractor';
-import SpotifyPlayerControls from './SpotifyPlayerControls';
-import PlaylistDrawer from './PlaylistDrawer';
 
-// Lazy load heavy components for better performance
+// Lazy load heavy components for better performance and faster initial load
 const VisualEffectsMenu = lazy(() => import('./VisualEffectsMenu'));
+const PlaylistDrawer = lazy(() => import('./PlaylistDrawer'));
+const SpotifyPlayerControls = lazy(() => import('./SpotifyPlayerControls'));
 import PlayerStateRenderer from './PlayerStateRenderer';
 import { usePlayerState } from '../hooks/usePlayerState';
 import { usePlaylistManager } from '../hooks/usePlaylistManager';
@@ -356,25 +356,27 @@ const AudioPlayerComponent = () => {
             <AlbumArt currentTrack={currentTrack} accentColor={accentColor} glowIntensity={effectiveGlow.intensity} glowRate={effectiveGlow.rate} albumFilters={albumFilters} />
           </CardContent>
           <CardContent style={{ position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 2 }}>
-            <SpotifyPlayerControls
-              currentTrack={currentTrack}
-              accentColor={accentColor}
-              onPlay={() => {
-                // Check if we should play the current track or resume
-                if (currentTrack) {
-                  playTrack(currentTrackIndex);
-                } else {
-                  spotifyPlayer.resume();
-                }
-              }}
-              onPause={() => spotifyPlayer.pause()}
-              onNext={handleNext}
-              onPrevious={handlePrevious}
-              onShowPlaylist={() => setShowPlaylist(true)}
-              trackCount={tracks.length}
-              onAccentColorChange={handleAccentColorChange}
-              onShowVisualEffects={() => setShowVisualEffects(true)}
-            />
+            <Suspense fallback={<div style={{ height: '80px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.7)' }}>Loading controls...</div>}>
+              <SpotifyPlayerControls
+                currentTrack={currentTrack}
+                accentColor={accentColor}
+                onPlay={() => {
+                  // Check if we should play the current track or resume
+                  if (currentTrack) {
+                    playTrack(currentTrackIndex);
+                  } else {
+                    spotifyPlayer.resume();
+                  }
+                }}
+                onPause={() => spotifyPlayer.pause()}
+                onNext={handleNext}
+                onPrevious={handlePrevious}
+                onShowPlaylist={() => setShowPlaylist(true)}
+                trackCount={tracks.length}
+                onAccentColorChange={handleAccentColorChange}
+                onShowVisualEffects={() => setShowVisualEffects(true)}
+              />
+            </Suspense>
           </CardContent>
           <Suspense fallback={<div>Loading effects...</div>}>
             <VisualEffectsMenu
@@ -399,14 +401,16 @@ const AudioPlayerComponent = () => {
           </Suspense>
         </LoadingCard>
 
-        <PlaylistDrawer
-          isOpen={showPlaylist}
-          onClose={() => setShowPlaylist(false)}
-          tracks={tracks}
-          currentTrackIndex={currentTrackIndex}
-          accentColor={accentColor}
-          onTrackSelect={playTrack}
-        />
+        <Suspense fallback={<div style={{ position: 'fixed', top: 0, right: 0, bottom: 0, width: '400px', background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.7)' }}>Loading playlist...</div>}>
+          <PlaylistDrawer
+            isOpen={showPlaylist}
+            onClose={() => setShowPlaylist(false)}
+            tracks={tracks}
+            currentTrackIndex={currentTrackIndex}
+            accentColor={accentColor}
+            onTrackSelect={playTrack}
+          />
+        </Suspense>
 
       </ContentWrapper>
     );

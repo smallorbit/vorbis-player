@@ -1,0 +1,40 @@
+.card {
+  border-radius: 1.25rem;
+  border: 1px solid rgba(34, 36, 36, 0.68);
+  background: rgba(38, 38, 38, 0.5);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 8px 24px rgba(38, 36, 37, 0.7), 0 2px 8px rgba(22, 21, 21, 0.6);
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.cardHeader {
+  display: flex;
+  flex-direction: column;
+  space-y: 1.5;
+  padding: 1.5rem;
+}
+
+.cardTitle {
+  font-size: 1.125rem;
+  font-weight: 600;
+  line-height: 1;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.cardDescription {
+  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.cardContent {
+  padding: 1.5rem;
+  padding-top: 0;
+}
+
+.cardFooter {
+  display: flex;
+  align-items: center;
+  padding: 1.5rem;
+  padding-top: 0;
+}

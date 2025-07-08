@@ -10,13 +10,35 @@ export default defineConfig({
       output: {
         manualChunks: {
           vendor: ['react', 'react-dom'],
-          radix: ['@radix-ui/react-dialog', '@radix-ui/react-slider', '@radix-ui/react-scroll-area', '@radix-ui/react-tabs', '@radix-ui/react-avatar', '@radix-ui/react-aspect-ratio'],
-          styled: ['styled-components'],
+          radix: [
+            '@radix-ui/react-dialog',
+            '@radix-ui/react-slider', 
+            '@radix-ui/react-scroll-area',
+            '@radix-ui/react-tabs',
+            '@radix-ui/react-avatar',
+            '@radix-ui/react-aspect-ratio',
+            '@radix-ui/react-alert-dialog',
+            '@radix-ui/react-dropdown-menu',
+            '@radix-ui/react-separator',
+            '@radix-ui/react-slot',
+            '@radix-ui/react-toggle',
+            '@radix-ui/react-toggle-group',
+            '@radix-ui/react-checkbox'
+          ],
+          styled: ['styled-components'], // Keep for gradual migration
           icons: ['lucide-react']
         }
       }
     },
-    chunkSizeWarningLimit: 1000
+    chunkSizeWarningLimit: 1000,
+    cssCodeSplit: true,
+    minify: 'terser',
+    terserOptions: {
+      compress: {
+        drop_console: true,
+        drop_debugger: true
+      }
+    }
   },
   resolve: {
     alias: {
