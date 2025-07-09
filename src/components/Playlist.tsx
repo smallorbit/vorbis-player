@@ -1,4 +1,4 @@
-import { memo, useMemo, useCallback } from 'react';
+import React, { memo, useMemo, useCallback, useRef, useEffect } from 'react';
 import styled from 'styled-components';
 import type { Track } from '../services/spotify';
 import { Card, CardHeader, CardContent, CardTitle, CardDescription } from '../components/styled';
@@ -133,6 +133,7 @@ interface PlaylistProps {
   currentTrackIndex: number;
   accentColor: string;
   onTrackSelect: (index: number) => void;
+  isOpen?: boolean; // Add isOpen prop to trigger scrolling
 }
 
 interface PlaylistItemProps {
@@ -141,6 +142,7 @@ interface PlaylistItemProps {
   isSelected: boolean;
   accentColor: string;
   onSelect: (index: number) => void;
+  itemRef?: React.RefObject<HTMLDivElement>; // Add ref prop
 }
 
 const PlaylistItem = memo<PlaylistItemProps>(({ 
@@ -148,10 +150,12 @@ const PlaylistItem = memo<PlaylistItemProps>(({
   index, 
   isSelected, 
   accentColor,
-  onSelect 
+  onSelect,
+  itemRef
 }) => {
   return (
     <PlaylistItemContainer
+      ref={itemRef}
       onClick={() => onSelect(index)}
       isSelected={isSelected}
       accentColor={accentColor}
@@ -195,8 +199,9 @@ const PlaylistItem = memo<PlaylistItemProps>(({
   );
 });
 
-const Playlist = memo<PlaylistProps>(({ tracks, currentTrackIndex, accentColor, onTrackSelect }) => {
+const Playlist = memo<PlaylistProps>(({ tracks, currentTrackIndex, accentColor, onTrackSelect, isOpen = false }) => {
   const sortedTracks = useMemo(() => tracks, [tracks]);
+  const currentTrackRef = useRef<HTMLDivElement>(null);
   
   const currentTrack = tracks[currentTrackIndex];
   const sortedCurrentTrackIndex = useMemo(() => {
@@ -211,6 +216,22 @@ const Playlist = memo<PlaylistProps>(({ tracks, currentTrackIndex, accentColor, 
       onTrackSelect(originalIndex);
     }
   }, [sortedTracks, tracks, onTrackSelect]);
+
+  // Auto-scroll to current track when playlist opens
+  useEffect(() => {
+    if (isOpen && currentTrackRef.current && sortedCurrentTrackIndex >= 0) {
+      // Add a slight delay to ensure the playlist is fully rendered
+      const timeoutId = setTimeout(() => {
+        currentTrackRef.current?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center',
+          inline: 'nearest'
+        });
+      }, 100);
+
+      return () => clearTimeout(timeoutId);
+    }
+  }, [isOpen, sortedCurrentTrackIndex]);
 
   return (
     <PlaylistContainer>
@@ -231,6 +252,7 @@ const Playlist = memo<PlaylistProps>(({ tracks, currentTrackIndex, accentColor, 
                   isSelected={index === sortedCurrentTrackIndex}
                   accentColor={accentColor}
                   onSelect={handleTrackSelect}
+                  itemRef={index === sortedCurrentTrackIndex ? currentTrackRef : undefined}
                 />
               ))}
             </PlaylistItems>

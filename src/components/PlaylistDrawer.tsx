@@ -149,6 +149,7 @@ export const PlaylistDrawer: React.FC<PlaylistDrawerProps> = ({
                 onTrackSelect(index);
                 onClose(); // Close drawer after selecting track
               }}
+              isOpen={isOpen}
             />
           </Suspense>
         </PlaylistContent>
