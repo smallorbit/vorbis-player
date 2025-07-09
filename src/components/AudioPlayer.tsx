@@ -104,6 +104,7 @@ const AudioPlayerComponent = () => {
     showPlaylist,
     accentColor,
     showVisualEffects,
+    glowEnabled,
     glowIntensity,
     glowRate,
     glowMode,
@@ -118,6 +119,7 @@ const AudioPlayerComponent = () => {
     setShowPlaylist,
     setAccentColor,
     setShowVisualEffects,
+    setGlowEnabled,
     setGlowIntensity,
     setGlowRate,
     setGlowMode,
@@ -353,7 +355,7 @@ const AudioPlayerComponent = () => {
         <LoadingCard backgroundImage={currentTrack?.image}>
 
           <CardContent style={{ position: 'relative', zIndex: 2 }}>
-            <AlbumArt currentTrack={currentTrack} accentColor={accentColor} glowIntensity={effectiveGlow.intensity} glowRate={effectiveGlow.rate} albumFilters={albumFilters} />
+            <AlbumArt currentTrack={currentTrack} accentColor={accentColor} glowIntensity={glowEnabled ? effectiveGlow.intensity : 0} glowRate={effectiveGlow.rate} albumFilters={albumFilters} />
           </CardContent>
           <CardContent style={{ position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 2 }}>
             <Suspense fallback={<div style={{ height: '80px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.7)' }}>Loading controls...</div>}>
@@ -386,6 +388,8 @@ const AudioPlayerComponent = () => {
               filters={albumFilters}
               onFilterChange={handleFilterChange}
               onResetFilters={handleResetFilters}
+              glowEnabled={glowEnabled}
+              setGlowEnabled={setGlowEnabled}
               glowIntensity={glowIntensity}
               setGlowIntensity={setGlowIntensity}
               glowRate={typeof glowRate === 'number' ? glowRate : DEFAULT_GLOW_RATE}
