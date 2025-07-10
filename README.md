@@ -77,7 +77,7 @@ A modern Spotify music player with a sleek, unified interface designed for enjoy
 3. **Configure environment**
 
    ```bash
-   cp .env.local.example .env.local
+   cp .env.example .env.local
    # Edit .env.local with your Spotify Client ID
    ```
 
@@ -242,17 +242,46 @@ public/
 
 ## Deployment
 
-Build for production:
+### 🚀 Deploy to Vercel (Recommended)
+
+This app is optimized for Vercel deployment. For the simplest deployment experience:
+
+**Quick Deploy:**
+1. Push your code to GitHub/GitLab/Bitbucket
+2. Connect your repository to [Vercel](https://vercel.com)
+3. Set environment variables:
+   - `VITE_SPOTIFY_CLIENT_ID`: Your Spotify app's Client ID
+   - `VITE_SPOTIFY_REDIRECT_URI`: `https://your-app.vercel.app/auth/spotify/callback`
+4. Deploy!
+
+**Detailed Instructions:** See [deploy-to-vercel.md](./deploy-to-vercel.md) for step-by-step instructions.
+
+**CLI Deployment:**
+```bash
+# Install Vercel CLI
+npm install -g vercel
+
+# Deploy to production
+npm run deploy
+
+# Or deploy preview
+npm run deploy:preview
+```
+
+### Manual Build Deployment
+
+For other hosting services:
 
 ```bash
 npm run build
 ```
 
-The `dist/` folder contains static files that can be deployed to any web hosting service (Vercel, Netlify, GitHub Pages, etc.).
+The `dist/` folder contains static files that can be deployed to any web hosting service (Netlify, GitHub Pages, etc.).
 
 **Important**: 
 - Update the Spotify redirect URI in your app settings to match your production domain
 - Ensure your production domain is whitelisted in your Spotify app settings
+- Set up environment variables on your hosting platform
 
 ## Troubleshooting
 
