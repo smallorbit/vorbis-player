@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is **Vorbis Player** - a React-based audio-visual player that combines Spotify music streaming with intelligent YouTube video discovery. The app streams music from a user's Spotify account and automatically finds relevant YouTube videos for each track, creating a unified music-video experience with advanced content filtering and persistent learning capabilities.
+This is **Vorbis Player** - a React-based Spotify music player with customizable visual effects and a sleek, unified interface. The app streams music from a user's Spotify account with beautiful album artwork, dynamic color theming, and customizable visual effects for an enhanced music listening experience.
 
 ## Recent Major Updates
 
@@ -50,13 +50,6 @@ npm run test:run       # Run tests once
 npm run test:ui        # Run tests with UI
 npm run test:coverage  # Run tests with coverage
 
-# Proxy server commands (for YouTube search bypass)
-npm run proxy:install    # Install proxy server dependencies
-npm run proxy:start      # Start proxy server
-npm run proxy:dev        # Start proxy server in development mode
-npm run proxy:test       # Test proxy server health
-npm run dev:all          # Start both proxy and dev server
-npm run start:all        # Start both proxy and preview server
 ```
 
 ## Architecture
@@ -64,19 +57,18 @@ npm run start:all        # Start both proxy and preview server
 ### Core Components Flow
 
 1. **App.tsx** - Handles Spotify OAuth authentication flow and renders the main AudioPlayerComponent
-2. **AudioPlayerComponent** - Main orchestrator that manages audio playback, track selection, and coordinates between playlist and video display. Includes integrated VideoPlayer within a unified card interface with consistent 1.5rem control icons
-3. **VideoPlayer** - Handles YouTube video discovery, embedding, and retry logic with persistent blacklist system
+2. **AudioPlayerComponent** - Main orchestrator that manages audio playback, track selection, and album art display with consistent 1.5rem control icons
+3. **AlbumArt** - Displays album artwork with customizable visual effects and filters
 4. **PlaylistSelection** - Enhanced playlist selection interface with Liked Songs support and automatic shuffle
 5. **PlaylistIcon** - Spotify-inspired queue icon integrated into player controls with accessibility features and responsive design (1.5rem sizing)
 6. **SettingsIcon** - Settings gear icon integrated into player controls for accessing configuration options (1.5rem sizing)
 7. **VolumeIcon** - Volume trigger icon integrated into player controls with consistent 1.5rem sizing for visual uniformity
 8. **PaintbrushIcon** - Visual effects trigger icon integrated into player controls for accessing shimmer and glow effects (1.5rem sizing)
-9. **SettingsModal** - Unified settings interface with video management and configuration options
-10. **VideoManagementSection** - Video-track association management component embedded within settings modal
-11. **VolumeModal** - Responsive volume control modal with slider (desktop) and toggle buttons (mobile)
-12. **VisualEffectsMenu** - Bottom sliding menu for controlling shimmer and glow effects with real-time sliders
-13. **LikeButton** - Heart-shaped toggle button for saving/removing tracks from user's Spotify Liked Songs library with smooth animations, loading states, and consistent 1.5rem sizing
-14. **Playlist** - Collapsible drawer interface showing track listing with current track highlighting
+9. **SettingsModal** - Unified settings interface with visual effects and configuration options
+10. **VolumeModal** - Responsive volume control modal with slider (desktop) and toggle buttons (mobile)
+11. **VisualEffectsMenu** - Side sliding menu for controlling visual effects with real-time sliders
+12. **LikeButton** - Heart-shaped toggle button for saving/removing tracks from user's Spotify Liked Songs library with smooth animations, loading states, and consistent 1.5rem sizing
+13. **Playlist** - Collapsible drawer interface showing track listing with current track highlighting
 
 ### Key State Management
 
@@ -92,7 +84,7 @@ npm run start:all        # Start both proxy and preview server
 - `volume`: Current volume level (0-100) for Spotify player integration
 - `isMuted`: Boolean state for mute/unmute functionality
 - `isInitialLoad`: Prevents auto-play from triggering multiple times
-- `globalVideoBlacklist`: Persistent Set of failed video IDs stored in localStorage
+- `albumFilters`: Visual effects filters applied to album artwork with localStorage persistence
 - Track selection sync: When users click playlist items vs. use audio player next/prev buttons
 - Auto-play progression: Seamless advancement between tracks with end-of-song detection
 
@@ -101,18 +93,17 @@ npm run start:all        # Start both proxy and preview server
 - **Spotify Integration**: Uses PKCE OAuth flow for secure authentication with required scopes
 - **Music Streaming**: Streams from user's Spotify playlists and Liked Songs using Web Playback SDK (Premium required)
 - **Liked Songs Access**: Full access to user's Spotify Liked Songs collection with automatic shuffle
-- **Video Discovery**: Intelligent YouTube search via proxy server to bypass CORS restrictions
-- **Content Filtering**: Advanced filtering removes ads, promotional content, and low-quality videos
-- **Persistent Learning**: Failed video IDs are stored in localStorage and excluded from future searches
+- **Visual Effects**: Customizable shimmer, glow, and filter effects applied to album artwork
+- **Color Extraction**: Dynamic color theming based on album artwork dominant colors
+- **Persistent Settings**: Visual effects and user preferences stored in localStorage
 
-### Video Discovery Architecture
+### Visual Effects Architecture
 
-- **YouTube Search Service**: Web scraping approach via local proxy server with rate limiting and caching
-- **Video Search Orchestrator**: Coordinates search, filtering, and quality scoring with fallback strategies
-- **Content Filter Service**: Filters ads, promotional content, low-quality videos with channel quality assessment
-- **Video Quality Service**: Assesses video resolution and quality metrics
-- **Blacklist System**: Global persistent blacklist prevents retry loops for non-embeddable videos
-- **Retry Mechanism**: Hover overlay allows manual retry with alternative video discovery
+- **Color Extraction Service**: Extracts dominant colors from album artwork with LRU caching for performance
+- **Visual Effects System**: Real-time CSS filters applied to album artwork (brightness, contrast, saturation, etc.)
+- **Filter Persistence**: Visual effects settings stored in localStorage with cross-session memory
+- **Dynamic Theming**: UI elements adapt to extracted album colors for cohesive visual experience
+- **Performance Optimization**: Hardware-accelerated CSS filters with smooth transitions
 
 ## Environment Configuration
 
@@ -144,13 +135,13 @@ VITE_SPOTIFY_REDIRECT_URI="http://127.0.0.1:3000/auth/spotify/callback"
 - **Infinite Loop**: Returns to first track after last song for continuous playback
 - **State Management**: Uses `isInitialLoad` flag and proper useEffect dependency ordering to prevent initialization errors
 
-### Video Blacklist System
+### Visual Effects Settings System
 
-- **Global Persistence**: `globalVideoBlacklist` Set stored in localStorage as 'vorbis-player-video-blacklist'
-- **Automatic Exclusion**: All video searches exclude blacklisted IDs to prevent retry loops
-- **Manual Blacklisting**: Retry button adds current video to blacklist before searching alternatives
-- **Cross-Session Memory**: Blacklist survives browser restarts and page refreshes
-- **Cache Integration**: Works with video search orchestrator's `findAlternativeVideos` method
+- **Global Persistence**: Visual effects settings stored in localStorage as 'vorbis-player-album-filters'
+- **Real-time Application**: Filter changes applied immediately to album artwork with smooth transitions
+- **Cross-Session Memory**: Visual effects preferences survive browser restarts and page refreshes
+- **Dynamic Theming**: UI elements adapt to filter changes and extracted colors
+- **Performance Optimization**: Hardware-accelerated CSS filters with efficient update cycles
 
 ### Performance Optimizations
 
@@ -174,11 +165,11 @@ VITE_SPOTIFY_REDIRECT_URI="http://127.0.0.1:3000/auth/spotify/callback"
 
 - **Integrated Icon**: Settings gear icon integrated into audio player controls alongside playlist and volume buttons
 - **Unified Interface**: Modal dialog with organized sections for different configuration areas
-- **Video Management**: Complete video-track association management embedded within settings
+- **Visual Effects Management**: Complete visual effects and filter configuration embedded within settings
 - **Responsive Design**: 500px width on desktop with max-height constraints, full-width on mobile
 - **Glass Morphism Styling**: Backdrop blur with semi-transparent background matching app design
 - **Keyboard Navigation**: Full accessibility with escape key support and focus management
-- **Sectioned Layout**: Organized into Video Management, Playback, and Interface categories
+- **Sectioned Layout**: Organized into Visual Effects, Playback, and Interface categories
 - **Expandable Settings**: Advanced settings sections can be collapsed/expanded for better organization
 - **Consistent Icon Sizing**: All control icons (settings, playlist, volume, visual effects) standardized to 1.5rem for visual consistency
 
@@ -189,7 +180,7 @@ VITE_SPOTIFY_REDIRECT_URI="http://127.0.0.1:3000/auth/spotify/callback"
 - **Responsive Design**: 400px width on desktop, full-width on mobile
 - **Overlay Backdrop**: Click-to-close overlay with blur effects
 - **Auto-Close**: Drawer closes automatically when user selects a track
-- **Space Optimization**: Icon integration maximizes video viewing area while keeping playlist accessible
+- **Space Optimization**: Icon integration maximizes album artwork viewing area while keeping playlist accessible
 - **Accessibility**: Full keyboard navigation and screen reader support with track count announcements
 - **Touch Optimized**: Larger touch targets on mobile with appropriate hover state handling
 
@@ -220,12 +211,12 @@ VITE_SPOTIFY_REDIRECT_URI="http://127.0.0.1:3000/auth/spotify/callback"
 - **CRITICAL**: AlbumArt component must receive `albumFilters` prop to apply filter changes
 - **Type Consistency**: Filter `invert` property expects boolean in AlbumArtFilters but number in VisualEffectsMenu interface
 
-### YouTube Integration Challenges
+### Visual Effects Performance
 
-- **CORS Bypass**: Uses local proxy server for YouTube search to avoid browser restrictions
-- **Embedding Detection**: Client-side detection of YouTube embedding restrictions is limited by CORS
-- **Retry Strategy**: Manual retry system with hover overlay when videos fail to embed
-- **Rate Limiting**: Implemented in YouTube search service with exponential backoff
+- **Hardware Acceleration**: CSS filters utilize GPU acceleration for smooth performance
+- **Efficient Updates**: Filter changes batched and applied with optimized rendering cycles
+- **Memory Management**: Color extraction cache prevents memory leaks with LRU eviction
+- **Transition Optimization**: Smooth 0.3s ease transitions between filter states
 
 ### Spotify Integration
 
@@ -242,25 +233,24 @@ VITE_SPOTIFY_REDIRECT_URI="http://127.0.0.1:3000/auth/spotify/callback"
 - **Frontend**: React 18 + TypeScript + Vite
 - **Styling**: styled-components with custom theme system and Radix UI components
 - **Audio**: Spotify Web Playback SDK with Liked Songs support
-- **Video**: YouTube iframe embedding with intelligent discovery via proxy server
+- **Visual Effects**: Hardware-accelerated CSS filters with real-time application
 - **Authentication**: Spotify Web API with PKCE OAuth
-- **Content Intelligence**: Advanced filtering and quality assessment algorithms
-- **Storage**: localStorage for persistent blacklist and user preferences
+- **Color Intelligence**: Advanced color extraction and dynamic theming algorithms
+- **Storage**: localStorage for persistent visual effects and user preferences
 - **UI Components**: Radix UI primitives with custom styled-components
 - **State Management**: React hooks with localStorage persistence
-- **Build Tool**: Vite with HMR and concurrent proxy server support
+- **Build Tool**: Vite with HMR and optimized development experience
 - **Testing**: Vitest with React Testing Library and jsdom
 - **Performance**: Optimized with lazy loading, caching, and component memoization
 
 ## Service Layer Architecture
 
-### YouTube Services
+### Visual Effects Services
 
-- **youtubeSearch.ts**: Core YouTube search with web scraping via proxy, caching, and rate limiting
-- **videoSearchOrchestrator.ts**: High-level coordination of video discovery with quality scoring and fallback strategies
-- **contentFilter.ts**: Filters out ads, promotional content, and low-quality videos with channel assessment
-- **videoQuality.ts**: Assesses video resolution and quality metrics
-- **youtube.ts**: Basic YouTube utilities for video ID extraction and embed URL creation
+- **colorExtractor.ts**: Optimized color extraction with LRU caching for improved performance
+- **visualEffects.ts**: Real-time CSS filter application and management
+- **filterPersistence.ts**: LocalStorage management for visual effects settings
+- **themeManager.ts**: Dynamic color theming based on extracted album colors
 
 ### Spotify Services
 
@@ -277,8 +267,8 @@ VITE_SPOTIFY_REDIRECT_URI="http://127.0.0.1:3000/auth/spotify/callback"
 
 - **adminService.ts**: Admin panel functionality (legacy from previous version)
 - **dropbox.ts**: Dropbox integration (legacy, kept for backward compatibility)
-- **trackVideoAssociationService.ts**: Manages track-video associations for video management
-- **videoManagementService.ts**: Video management utilities and operations
+- **settingsService.ts**: User preferences and settings management
+- **uiStateService.ts**: UI state management utilities
 
 ### Utility Services
 
@@ -286,14 +276,14 @@ VITE_SPOTIFY_REDIRECT_URI="http://127.0.0.1:3000/auth/spotify/callback"
 - **usePlaylistManager.ts**: Enhanced playlist management hook with Liked Songs support and shuffle functionality
 - **useSpotifyControls.ts**: Spotify playback controls management
 
-## Proxy Server Integration
+## Visual Effects Integration
 
-The application includes a Node.js proxy server in `proxy-server/` directory to bypass CORS restrictions for YouTube search:
+The application includes comprehensive visual effects management throughout the interface:
 
-- **Purpose**: Enables client-side YouTube video discovery without API keys
-- **Development**: Use `npm run dev:all` to start both proxy and client simultaneously
-- **Health Check**: `npm run proxy:test` verifies proxy server is running
-- **Production**: Proxy server must be deployed alongside the client application
+- **Purpose**: Provides customizable visual experience with real-time filter application
+- **Development**: All effects are client-side with hardware acceleration for smooth performance
+- **Persistence**: Visual effects settings persist across browser sessions via localStorage
+- **Performance**: Optimized with LRU caching and efficient update cycles
 
 ## Common Issues & Solutions
 
@@ -323,8 +313,8 @@ The application includes a Node.js proxy server in `proxy-server/` directory to 
 
 ### Development Workflow
 
-- **Always run both servers**: Use `npm run dev:all` for full functionality
-- **Test proxy health**: Run `npm run proxy:test` if videos not loading
+- **Single server**: Use `npm run dev` for development
+- **Visual effects testing**: Test all filter combinations for performance
 - **Component hierarchy**: AudioPlayer → AlbumArt → AlbumArtFilters for filter application
 - **Performance monitoring**: Use React DevTools Profiler for performance analysis
 
