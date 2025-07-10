@@ -215,10 +215,6 @@ export const ColorPickerPopover: React.FC<ColorPickerPopoverProps> = ({
                 aria-label="Use custom color"
                 disabled={!getLastCustomColor()}
               >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M19.07 4.93a3 3 0 0 1 0 4.24l-1.41 1.41-4.24-4.24 1.41-1.41a3 3 0 0 1 4.24 0z" />
-                  <path d="M17.66 7.34L6 19v3h3L20.66 10.34" />
-                </svg>
               </button>
               {/* Always show eyedropper button if album art is available */}
               {currentTrack?.image && (

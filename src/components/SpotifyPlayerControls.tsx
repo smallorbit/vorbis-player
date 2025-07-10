@@ -140,11 +140,6 @@ const TimelineRight = styled.div`
   gap: ${({ theme }: any) => theme.spacing.xs};
 `;
 
-// Add Dropper SVG icon
-const DropperIcon = () => (
-  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19.07 4.93a3 3 0 0 1 0 4.24l-1.41 1.41-4.24-4.24 1.41-1.41a3 3 0 0 1 4.24 0z" /><path d="M17.66 7.34L6 19v3h3L20.66 10.34" /></svg>
-);
-
 // --- SpotifyPlayerControls Component ---
 const SpotifyPlayerControls = memo<{
   currentTrack: Track | null;
