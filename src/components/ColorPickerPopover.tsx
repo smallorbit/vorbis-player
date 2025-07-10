@@ -129,12 +129,10 @@ export const ColorPickerPopover: React.FC<ColorPickerPopoverProps> = ({
         ref={paletteBtnRef}
         style={{ position: 'relative' }}
       >
-        <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" role="img">
-          <path d="M21 12.79A9 9 0 1 1 12 3a7 7 0 0 1 7 7c0 1.38-.56 2.63-1.46 3.54-.63.63-.54 1.71.21 2.21a2 2 0 0 0 2.25.13z" fill={accentColor} />
-          <circle cx="8.5" cy="10.5" r="1" fill="#fff" />
-          <circle cx="12" cy="7.5" r="1" fill="#fff" />
-          <circle cx="15.5" cy="10.5" r="1" fill="#fff" />
-          <circle cx="12" cy="14.5" r="1" fill="#fff" />
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M18.37 2.63 14 7l-1.59-1.59a2 2 0 0 0-2.82 0L8 7l9 9 1.59-1.59a2 2 0 0 0 0-2.82L17 10l4.37-4.37a2.12 2.12 0 1 0-3-3Z"/>
+          <path d="M9 8c-2 3-4 3.5-7 4l8 10c2-1 6-5 6-7"/>
+          <path d="M14.5 17.5 4.5 15"/>
         </svg>
       </ControlButton>
 
