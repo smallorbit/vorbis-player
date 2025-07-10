@@ -23,6 +23,7 @@ export interface PlayerState {
   showPlaylist: boolean;
   accentColor: string;
   showVisualEffects: boolean;
+  glowEnabled: boolean;
   glowIntensity: number;
   glowRate: number;
   glowMode: 'global' | 'per-album';
@@ -40,6 +41,11 @@ export const usePlayerState = () => {
   const [showPlaylist, setShowPlaylist] = useState(false);
   const [accentColor, setAccentColor] = useState<string>(theme.colors.accent);
   const [showVisualEffects, setShowVisualEffects] = useState(false);
+  
+  const [glowEnabled, setGlowEnabled] = useState<boolean>(() => {
+    const saved = localStorage.getItem('vorbis-player-glow-enabled');
+    return saved ? JSON.parse(saved) : true;
+  });
   
   const [glowIntensity, setGlowIntensity] = useState<number>(() => {
     const saved = localStorage.getItem('vorbis-player-glow-intensity');
@@ -123,6 +129,10 @@ export const usePlayerState = () => {
 
   // Persist glow settings to localStorage
   useEffect(() => {
+    localStorage.setItem('vorbis-player-glow-enabled', JSON.stringify(glowEnabled));
+  }, [glowEnabled]);
+  
+  useEffect(() => {
     localStorage.setItem('vorbis-player-glow-intensity', glowIntensity.toString());
   }, [glowIntensity]);
   
@@ -168,6 +178,7 @@ export const usePlayerState = () => {
     showPlaylist,
     accentColor,
     showVisualEffects,
+    glowEnabled,
     glowIntensity,
     glowRate,
     glowMode,
@@ -184,6 +195,7 @@ export const usePlayerState = () => {
     setShowPlaylist,
     setAccentColor,
     setShowVisualEffects,
+    setGlowEnabled,
     setGlowIntensity,
     setGlowRate,
     setGlowMode,

@@ -90,14 +90,14 @@ const AlbumArt: React.FC<AlbumArtProps> = memo(({ currentTrack = null, accentCol
         invert: false,
       }}>
         <AccentColorGlowOverlay
-          glowIntensity={glowIntensity || 100}
-          glowRate={glowRate || DEFAULT_GLOW_RATE}
+          glowIntensity={glowIntensity ?? 100}
+          glowRate={glowRate ?? DEFAULT_GLOW_RATE}
           accentColor={accentColor || '#000000'}
           backgroundImage={currentTrack?.image}
         />
         {canvasUrl ? (
           <img
-            src={canvasUrl}
+            src={glowIntensity === 0 ? currentTrack?.image : canvasUrl}
             alt={currentTrack?.name}
             style={{
               width: '-webkit-fill-available',
