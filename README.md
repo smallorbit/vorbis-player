@@ -1,6 +1,6 @@
 # Vorbis Player
 
-A modern audio-visual player that combines Spotify music streaming with intelligent YouTube video discovery. Experience your music with automatic video accompaniment and a sleek, unified interface designed for continuous entertainment.
+A modern Spotify music player with a sleek, unified interface designed for enjoying and sharing playlists with custom visual touches to enhance the experience. 
 
 <img src="src/assets/screenshot-player.png" alt="Vorbis Player" width="600">
 <img src="src/assets/screenshot-playlist.png" alt="Vorbis Player - Playlist" width="600">
@@ -13,24 +13,22 @@ A modern audio-visual player that combines Spotify music streaming with intellig
 - **Playlist Support**: Access all your Spotify playlists with seamless track navigation
 - **Auto-Play & Continuous Playback**: Automatically starts first song and seamlessly advances through tracks
 - **Infinite Playlist**: Loops back to beginning when reaching the end of your music collection
-- **Smart Retry System**: Hover over videos to retry with alternative content when embedding fails
 
-### 🎬 Visual Experience  
-- **Intelligent Video Discovery**: Automatically finds relevant YouTube videos for each track
-- **Persistent Blacklist**: Remembers and avoids non-embeddable videos across sessions
-- **Integrated Player Card**: Video and audio controls unified in a single elegant interface
-- **Dynamic Album Art Background**: Blurred album artwork creates immersive visual atmosphere
-- **Seamless Video Placeholders**: When no video is available, shows clear album art through transparent "window" effect while maintaining consistent card sizing
-- **Smooth Loading States**: Simple spinner overlays during video search maintain layout stability
+
+### 🎨 Visual Experience  
+- **Dynamic Album Art**: Beautiful album artwork display with customizable visual effects
+- **Integrated Player Card**: Clean, unified interface with elegant design
+- **Custom Visual Effects**: Adjustable glow effects to personalize your experience
+- **Responsive Design**: Smooth transitions and loading states throughout the interface
 
 ### 🎛️ User Interface
 - **Three-Column Layout**: Track info, controls, and settings organized in an intuitive three-column design with optimized space utilization
 - **Centered Control Layout**: Main playback controls (previous, play/pause, next) positioned in the center column for easy access
 - **Timeline-Integrated Controls**: Settings and volume controls positioned along the timeline for compact, streamlined interface
 - **Fixed-Size Layout**: Consistent 768px x 880px dimensions for predictable layout and optimal viewing experience
-- **Unified Settings Modal**: Comprehensive settings interface with video management and configuration options
+- **Unified Settings Modal**: Comprehensive settings interface with visual effects and configuration options
 - **Sliding Playlist Drawer**: Space-saving collapsible playlist accessible from anywhere with 1.5rem consistent icon sizing
-- **Square Video Format**: 1:1 aspect ratio video display optimized for modern mobile-first viewing
+- **Album Art Display**: Prominent album artwork with customizable visual effects
 - **Warm Color Palette**: Warmer background tones (rgba(85, 78, 78, 0.56)) for comfortable viewing
 - **Enhanced Color Extraction**: Improved accent color selection with higher saturation (50%) and lightness (40%) thresholds for more vibrant colors
 - **Refined Blur Effects**: Optimized backdrop blur (24px) for better visual clarity while maintaining glass morphism design
@@ -47,8 +45,8 @@ A modern audio-visual player that combines Spotify music streaming with intellig
 
 ### �🔒 Security & Performance
 - **Secure Authentication**: PKCE OAuth flow for safe Spotify access
-- **Client-Side Intelligence**: Advanced video filtering and quality assessment
-- **Persistent Storage**: Remembers failed videos and user preferences locally
+- **Smart Color Extraction**: Intelligent color extraction from album artwork for dynamic theming
+- **Persistent Storage**: Remembers user preferences and visual settings locally
 - **Optimized Caching**: Intelligent caching strategies for improved performance and reduced API calls
 
 ## Quick Start
@@ -95,44 +93,30 @@ A modern audio-visual player that combines Spotify music streaming with intellig
    - Create playlists with your favorite music and/or like songs to build your Liked Songs collection
    - The app will access your playlists and liked songs to display tracks
 
-5. **Set up the proxy server (for YouTube video discovery)**
+5. **Start the app**
 
    ```bash
-   npm run proxy:install
+   npm run dev
    ```
 
-6. **Start the app**
-
-   For development with full video functionality:
-   ```bash
-   npm run dev:all  # Starts both proxy server and dev server
-   ```
-
-   Or start components separately:
-   ```bash
-   npm run proxy:start  # Start proxy server (in separate terminal)
-   npm run dev          # Start development server (in another terminal)
-   ```
-
-7. **First run**
+6. **First run**
    - Open <http://127.0.0.1:3000>
    - Click "Connect Spotify" to authenticate
    - Choose from your playlists or select "Liked Songs" for shuffled playback
-   - Music starts automatically with accompanying videos
+   - Music starts automatically with beautiful album artwork
    - Use the queue icon to browse your playlist
-   - Access settings via the gear icon for video management
-   - Hover over any video to retry with alternative content if needed
+   - Access settings via the gear icon for visual effects and configuration
 
 ## How It Works
 
-### Audio-Visual Integration
+### Music Streaming
 
-- **Spotify Streaming**: High-quality music from your personal playlists and liked songs library
+- **Spotify Integration**: High-quality music from your personal playlists and liked songs library
 - **Liked Songs Support**: Full access to your Spotify Liked Songs with automatic shuffle for music discovery
-- **YouTube Discovery**: Intelligent search for relevant music videos using advanced filtering
-- **Smart Matching**: Content filtering removes ads, low-quality, and irrelevant videos
-- **Automatic Progression**: Seamless transitions between tracks with continuous video playback
-- **Retry System**: Manual retry option finds alternative videos when embedding fails
+- **Smart Color Extraction**: Dynamic color theming based on album artwork
+- **Visual Effects**: Customizable shimmer and glow effects for enhanced visual experience
+- **Automatic Progression**: Seamless transitions between tracks with continuous playback
+- **Album Art Display**: Beautiful artwork display with customizable visual effects
 
 ### Interface Management
 
@@ -141,10 +125,10 @@ A modern audio-visual player that combines Spotify music streaming with intellig
 - **Timeline-Integrated Controls**: Settings and volume controls positioned along the timeline for streamlined secondary access
 - **Smart Control Placement**: Like button and playlist on the right, settings and volume on the left for intuitive operation
 - **Fixed Dimensions**: Consistent 768px x 880px layout provides predictable viewing experience across all devices
-- **Settings Modal**: Comprehensive settings system with video management, playback preferences, and configuration options
-- **Collapsible Playlist**: Playlist drawer slides out when needed, maximizing video space with consistent 1.5rem icon sizing
+- **Settings Modal**: Comprehensive settings system with visual effects, playback preferences, and configuration options
+- **Collapsible Playlist**: Playlist drawer slides out when needed, maximizing interface space with consistent 1.5rem icon sizing
 - **Track Selection**: Click any song to jump immediately to that track
-- **Square Video Display**: 1:1 aspect ratio optimized for modern viewing preferences and mobile devices
+- **Album Art Display**: Prominent album artwork with customizable visual effects and responsive design
 - **Enhanced Shadow Effects**: Improved container shadows with inset effects for better depth perception
 - **Visual Feedback**: Current track highlighting and album artwork throughout interface
 - **Consistent Sizing**: Player card maintains stable dimensions during all loading states and content transitions
@@ -170,14 +154,6 @@ npm run test         # Run tests in watch mode
 npm run test:run     # Run tests once
 npm run test:ui      # Run tests with UI
 npm run test:coverage # Run tests with coverage
-
-# Proxy server commands (for YouTube search bypass)
-npm run proxy:install    # Install proxy server dependencies
-npm run proxy:start      # Start proxy server
-npm run proxy:dev        # Start proxy server in development mode
-npm run proxy:test       # Test proxy server health
-npm run dev:all          # Start both proxy and dev server
-npm run start:all        # Start both proxy and preview server
 ```
 
 ### Project Structure
@@ -185,8 +161,8 @@ npm run start:all        # Start both proxy and preview server
 ```
 src/
 ├── components/           # React components
-│   ├── AudioPlayer.tsx  # Main orchestrator with integrated video player
-│   ├── VideoPlayer.tsx  # YouTube video discovery and display
+│   ├── AudioPlayer.tsx  # Main audio player orchestrator
+│   ├── AlbumArt.tsx     # Album artwork display with visual effects
 │   ├── Playlist.tsx     # Collapsible track listing drawer
 │   ├── PlaylistIcon.tsx # Playlist queue icon component
 │   ├── PlaylistSelection.tsx # Playlist selection interface with Liked Songs support
@@ -195,11 +171,8 @@ src/
 │   ├── SettingsIcon.tsx # Settings gear icon component
 │   ├── SpotifyAudioPlayer.tsx # Core Spotify audio playback component
 │   ├── SpotifyPlayerControls.tsx # Three-column player control interface with timeline-integrated controls
-│   ├── VideoManagementSection.tsx # Video management component for settings
-│   ├── VideoManagementSettings.tsx # Video management settings component
-│   ├── VideoManagementButton.tsx # Button for video management access
-│   ├── admin/           # Admin components
-│   │   └── VideoAdmin.tsx # Video administration interface
+│   ├── VisualEffectsMenu.tsx # Visual effects control menu
+│   ├── VolumeModal.tsx  # Volume control modal
 │   ├── styled/          # styled-components UI library
 │   │   ├── Avatar.tsx   # Image component with fallback support
 │   │   ├── Button.tsx   # Button component with variants
@@ -210,10 +183,7 @@ src/
 │   │   ├── Slider.tsx   # Slider input component
 │   │   └── index.ts     # Component exports
 │   └── ui/              # Radix UI components and utilities
-│       ├── FallbackVideoDisplay.tsx # Video fallback display
 │       ├── LoadingIndicator.tsx # Loading spinner component
-│       ├── SearchErrorDisplay.tsx # Error display for search failures
-│       ├── youtube-integration.tsx # YouTube integration utilities
 │       └── [various UI components] # Additional UI primitives
 ├── hooks/               # Custom React hooks
 │   ├── useDebounce.ts  # Debouncing utility hook
@@ -221,15 +191,7 @@ src/
 │   └── useSpotifyControls.ts # Spotify playback controls
 ├── services/            # External service integrations
 │   ├── spotify.ts      # Spotify Web API integration with Liked Songs support
-│   ├── spotifyPlayer.ts # Spotify Web Playback SDK
-│   ├── youtubeSearch.ts # YouTube video discovery service
-│   ├── videoSearchOrchestrator.ts # Intelligent video matching
-│   ├── contentFilter.ts # Video quality and relevance filtering
-│   ├── videoQuality.ts  # Video resolution and quality assessment
-│   ├── videoManagementService.ts # Video management utilities
-│   ├── trackVideoAssociationService.ts # Track-video associations
-│   ├── youtube.ts      # YouTube utilities and helpers
-│   └── adminService.ts # Admin functionality service
+│   └── spotifyPlayer.ts # Spotify Web Playback SDK
 ├── styles/             # Styling system
 │   ├── theme.ts        # Design tokens and theme configuration
 │   └── utils.ts        # styled-components utility mixins
@@ -242,11 +204,6 @@ src/
 public/
 ├── sw.js               # Service worker for caching and offline support
 └── vorbis_player_logo.jpg # Application logo
-
-proxy-server/           # Node.js proxy server for YouTube search
-├── server.js          # Express server for CORS bypass
-├── package.json       # Proxy server dependencies
-└── README.md          # Proxy server documentation
 ```
 
 ### Tech Stack
@@ -254,12 +211,11 @@ proxy-server/           # Node.js proxy server for YouTube search
 - **Frontend**: React 18 + TypeScript + Vite
 - **Styling**: styled-components with custom theme system and Radix UI primitives
 - **Audio**: Spotify Web Playback SDK with Liked Songs support
-- **Video**: YouTube iframe embedding with intelligent discovery via proxy server
 - **Authentication**: Spotify Web API with PKCE OAuth
-- **Content Intelligence**: Advanced filtering and quality assessment algorithms
-- **Storage**: localStorage for persistent blacklist and user preferences
+- **Visual Effects**: Dynamic color extraction and customizable visual effects
+- **Storage**: localStorage for user preferences and visual settings
 - **UI Components**: Radix UI primitives with custom styled-components
-- **Build Tool**: Vite with HMR and concurrent proxy server support
+- **Build Tool**: Vite with HMR and optimized development experience
 - **Performance**: Optimized with lazy loading, caching, and component memoization
 - **Testing**: Vitest with React Testing Library and jsdom
 
@@ -294,18 +250,9 @@ npm run build
 
 The `dist/` folder contains static files that can be deployed to any web hosting service (Vercel, Netlify, GitHub Pages, etc.).
 
-### Proxy Server Deployment
-
-For full video functionality in production, the proxy server must also be deployed:
-
-1. **Deploy the proxy server** to a Node.js hosting service (Railway, Render, Heroku, etc.)
-2. **Update the YouTube search service** to use your production proxy URL
-3. **Configure CORS** in the proxy server for your production domain
-
 **Important**: 
 - Update the Spotify redirect URI in your app settings to match your production domain
-- The proxy server is required for YouTube video discovery due to CORS restrictions
-- Without the proxy server, the app will function but videos won't load automatically
+- Ensure your production domain is whitelisted in your Spotify app settings
 
 ## Troubleshooting
 
@@ -316,12 +263,6 @@ For full video functionality in production, the proxy server must also be deploy
 - Check that your Spotify account has music accessible
 - Verify your Spotify app has the correct scopes and permissions
 
-### Video Issues
-
-- **"Video unavailable"**: Hover over the video and click "🔄 Try Another" to find alternative content
-- **No videos loading**: The app automatically searches for alternatives; this is normal behavior
-- **Persistent video failures**: The system learns and avoids problematic videos automatically
-
 ### Authentication Issues
 
 - Double-check your Client ID in `.env.local`
@@ -329,16 +270,16 @@ For full video functionality in production, the proxy server must also be deploy
 - Use `127.0.0.1` instead of `localhost` for Spotify OAuth compatibility
 - Try clearing browser storage and re-authenticating
 
-### Proxy Server Issues
-
-- **Check proxy server status**: Run `npm run proxy:test` to verify it's running
-- **Proxy server not starting**: Ensure Node.js is installed and run `npm run proxy:install`
-- **Videos not loading**: Verify proxy server is running on port 3001
-- **Development setup**: Use `npm run dev:all` to start both proxy and client together
-
 ### Performance Issues
 
-- Clear localStorage to reset video blacklist: `localStorage.clear()` in browser console
-- Refresh the page if videos stop loading consistently
-- The app is optimized for continuous playback; occasional video misses are expected
-- If proxy server becomes unresponsive, restart it with `npm run proxy:start`
+- Clear localStorage to reset user preferences: `localStorage.clear()` in browser console
+- Refresh the page if the app becomes unresponsive
+- The app is optimized for continuous playback and smooth transitions
+- Check browser console for any JavaScript errors if issues persist
+
+### Visual Effects Issues
+
+- If visual effects aren't working, try refreshing the page
+- Clear localStorage to reset visual settings to defaults
+- Ensure your browser supports CSS filters and backdrop-blur effects
+- Try disabling browser extensions that might interfere with visual effects
