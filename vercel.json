@@ -40,10 +40,5 @@
   ],
   "env": {
     "NODE_ENV": "production"
-  },
-  "functions": {
-    "app/api/**": {
-      "runtime": "nodejs18.x"
-    }
   }
 }
