@@ -1,0 +1,43 @@
+# Dependencies
+node_modules/
+proxy-server/
+
+# Development files
+.env.local
+.env.*.local
+
+# Build artifacts
+dist/
+coverage/
+
+# Testing
+src/test/
+**/*.test.ts
+**/*.test.tsx
+**/*.spec.ts
+**/*.spec.tsx
+
+# Documentation (deploy only essential docs)
+docs/
+*.md
+!README.md
+!deploy-to-vercel.md
+
+# Development tools
+.vscode/
+.idea/
+*.log
+*.tgz
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Scripts (except deployment)
+scripts/
+!scripts/deploy.js

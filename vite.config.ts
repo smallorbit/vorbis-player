@@ -33,12 +33,16 @@ export default defineConfig({
     chunkSizeWarningLimit: 1000,
     cssCodeSplit: true,
     minify: 'terser',
-    terserOptions: {
-      compress: {
-        drop_console: true,
-        drop_debugger: true
-      }
-    }
+          terserOptions: {
+        compress: {
+          drop_console: true,
+          drop_debugger: true
+        }
+      },
+    // Optimize for Vercel deployment
+    target: 'es2020',
+    sourcemap: false, // Disable source maps in production for smaller bundles
+    assetsInlineLimit: 4096 // Inline small assets
   },
   resolve: {
     alias: {
