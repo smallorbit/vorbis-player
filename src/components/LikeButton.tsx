@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import styled, { keyframes, css } from 'styled-components';
 
 // Define the component interface
@@ -121,16 +121,10 @@ const LikeButton: React.FC<LikeButtonProps> = ({
   onToggleLike,
   className
 }) => {
-  const [isAnimating, setIsAnimating] = useState(false);
-
   const handleClick = () => {
     if (isLoading || !trackId) return;
     
-    setIsAnimating(true);
     onToggleLike();
-    
-    // Reset animation state after animation completes
-    setTimeout(() => setIsAnimating(false), 600);
   };
 
   const handleKeyDown = (event: React.KeyboardEvent) => {

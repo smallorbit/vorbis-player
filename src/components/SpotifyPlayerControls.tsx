@@ -9,11 +9,8 @@ const ColorPickerPopover = lazy(() => import('./ColorPickerPopover'));
 import { useSpotifyControls } from '../hooks/useSpotifyControls';
 import { theme } from '../styles/theme';
 
-const xs = theme.spacing.xs;
 const sm = theme.spacing.sm;
-const md = theme.spacing.md;
 const lg = theme.spacing.lg;
-const xl = theme.spacing.xl;
 
 // --- Styled Components ---
 const PlayerControlsContainer = styled.div`
@@ -164,11 +161,9 @@ const SpotifyPlayerControls = memo<{
     volume,
     currentPosition,
     duration,
-    isDragging,
     isLiked,
     isLikePending,
     handlePlayPause,
-    handleMuteToggle,
     handleVolumeButtonClick,
     handleLikeToggle,
     handleSliderChange,
