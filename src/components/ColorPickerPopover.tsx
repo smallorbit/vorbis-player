@@ -234,15 +234,52 @@ export const ColorPickerPopover: React.FC<ColorPickerPopoverProps> = ({
                     color: '#fff',
                   }}
                 >
-                  <svg width="32" height="32" viewBox="2 2 20 20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <circle cx="11" cy="11" r="8" />
-                    <path d="M21 21l-4.35-4.35" />
-                    <circle cx="11" cy="11" r="3" />
+                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M18.37 2.63 14 7l-1.59-1.59a2 2 0 0 0-2.82 0L8 7l9 9 1.59-1.59a2 2 0 0 0 0-2.82L17 10l4.37-4.37a2.12 2.12 0 1 0-3-3Z"/>
+                    <path d="M9 8c-2 3-4 3.5-7 4l8 10c2-1 6-5 6-7"/>
+                    <path d="M14.5 17.5 4.5 15"/>
                   </svg>
                 </ControlButton>
               )}
             </div>
           )}
+          {/* Reset button */}
+          <button
+            onClick={() => {
+              if (currentTrack?.id) {
+                // Remove custom color override for this track
+                const newOverrides = { ...customAccentColorOverrides };
+                delete newOverrides[currentTrack.id];
+                onCustomAccentColor(''); // This will trigger a re-extraction
+                
+                // We need to call the parent's reset function to force color re-extraction
+                // Since we don't have direct access to it, we'll use a placeholder color
+                // and let the parent component handle the reset
+                onAccentColorChange?.('RESET_TO_DEFAULT');
+              }
+              setShowColorPopover(false);
+            }}
+            style={{
+              marginTop: '8px',
+              padding: '6px 12px',
+              background: 'rgba(255, 255, 255, 0.1)',
+              border: '1px solid rgba(255, 255, 255, 0.2)',
+              borderRadius: '6px',
+              color: '#fff',
+              fontSize: '12px',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+            }}
+            onMouseEnter={(e) => {
+              (e.target as HTMLElement).style.background = 'rgba(255, 255, 255, 0.2)';
+            }}
+            onMouseLeave={(e) => {
+              (e.target as HTMLElement).style.background = 'rgba(255, 255, 255, 0.1)';
+            }}
+            title="Reset to default color"
+          >
+            Reset to Default
+          </button>
         </div>,
         document.body
       )}

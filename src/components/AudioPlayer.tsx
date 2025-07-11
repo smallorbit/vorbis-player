@@ -316,6 +316,32 @@ const AudioPlayerComponent = () => {
 
   // Handler for user accent color change (from SpotifyPlayerControls)
   const handleAccentColorChange = (color: string) => {
+    if (color === 'RESET_TO_DEFAULT' && currentTrack?.id) {
+      // Remove custom color override for this track
+      setAccentColorOverrides(prev => {
+        const newOverrides = { ...prev };
+        delete newOverrides[currentTrack.id!];
+        return newOverrides;
+      });
+      // Re-extract the dominant color from the album art
+      if (currentTrack?.image) {
+        extractDominantColor(currentTrack.image)
+          .then(dominantColor => {
+            if (dominantColor) {
+              setAccentColor(dominantColor.hex);
+            } else {
+              setAccentColor(theme.colors.accent);
+            }
+          })
+          .catch(() => {
+            setAccentColor(theme.colors.accent);
+          });
+      } else {
+        setAccentColor(theme.colors.accent);
+      }
+      return;
+    }
+    
     if (currentTrack?.id) {
       setAccentColorOverrides(prev => ({ ...prev, [currentTrack.id]: color }));
       setAccentColor(color);
@@ -377,6 +403,8 @@ const AudioPlayerComponent = () => {
                 trackCount={tracks.length}
                 onAccentColorChange={handleAccentColorChange}
                 onShowVisualEffects={() => setShowVisualEffects(true)}
+                glowEnabled={glowEnabled}
+                onGlowToggle={() => setGlowEnabled(!glowEnabled)}
               />
             </Suspense>
           </CardContent>

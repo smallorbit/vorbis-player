@@ -150,7 +150,10 @@ const SpotifyPlayerControls = memo<{
   onAccentColorChange?: (color: string) => void;
   onShowVisualEffects?: () => void;
   showVisualEffects?: boolean;
-}>(({ currentTrack, accentColor, onPlay, onPause, onNext, onPrevious, onShowPlaylist, onAccentColorChange, onShowVisualEffects, showVisualEffects }) => {
+  // Add glow control props
+  glowEnabled?: boolean;
+  onGlowToggle?: () => void;
+}>(({ currentTrack, accentColor, onPlay, onPause, onNext, onPrevious, onShowPlaylist, onAccentColorChange, onShowVisualEffects, showVisualEffects, glowEnabled, onGlowToggle }) => {
   // Custom accent color per track (from eyedropper)
   const [customAccentColorOverrides, setCustomAccentColorOverrides] = useState<Record<string, string>>({});
 
@@ -197,6 +200,36 @@ const SpotifyPlayerControls = memo<{
 
   // When user picks a color with the eyedropper, store it as the custom color for this track
   const handleCustomAccentColor = (color: string) => {
+    if (currentTrack?.id) {
+      if (color === '') {
+        // Empty string means reset - remove the override
+        setCustomAccentColorOverrides(prev => {
+          const newOverrides = { ...prev };
+          delete newOverrides[currentTrack.id!];
+          return newOverrides;
+        });
+      } else {
+        setCustomAccentColorOverrides(prev => ({ ...prev, [currentTrack.id!]: color }));
+      }
+      onAccentColorChange?.(color);
+    } else {
+      onAccentColorChange?.(color);
+    }
+  };
+
+  // Handle accent color changes, including reset
+  const handleAccentColorChange = (color: string) => {
+    if (color === 'RESET_TO_DEFAULT' && currentTrack?.id) {
+      // Remove custom color override for this track
+      setCustomAccentColorOverrides(prev => {
+        const newOverrides = { ...prev };
+        delete newOverrides[currentTrack.id!];
+        return newOverrides;
+      });
+      // Don't call onAccentColorChange here - let the parent re-extract the color
+      return;
+    }
+    
     if (currentTrack?.id) {
       setCustomAccentColorOverrides(prev => ({ ...prev, [currentTrack.id!]: color }));
       onAccentColorChange?.(color);
@@ -255,14 +288,29 @@ const SpotifyPlayerControls = memo<{
           <ControlButton accentColor={accentColor} onClick={onShowVisualEffects} isActive={showVisualEffects} title="Visual effects">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <circle cx="12" cy="12" r="3"/>
-              <path d="M12 1v6m0 6v6m11-7h-6m-6 0H1"/>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
             </svg>
           </ControlButton>
+          {/* Add glow toggle button */}
+          {onGlowToggle && (
+            <ControlButton 
+              accentColor={accentColor} 
+              onClick={onGlowToggle} 
+              isActive={glowEnabled} 
+              title={`Glow ${glowEnabled ? 'enabled' : 'disabled'}`}
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="9"/>
+                <circle cx="12" cy="12" r="3"/>
+                <path d="M12 3v4m0 10v4m9-9h-4m-10 0H3"/>
+              </svg>
+            </ControlButton>
+          )}
           <Suspense fallback={<div style={{ width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>⚡</div>}>
             <ColorPickerPopover
               accentColor={accentColor}
               currentTrack={currentTrack}
-              onAccentColorChange={onAccentColorChange}
+              onAccentColorChange={handleAccentColorChange}
               customAccentColorOverrides={customAccentColorOverrides}
               onCustomAccentColor={handleCustomAccentColor}
             />
