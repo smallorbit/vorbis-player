@@ -163,8 +163,10 @@ async function staleWhileRevalidate(request, config) {
   
   // Return cached version immediately if available
   if (cached && !isExpired(cached, config.maxAge)) {
-    // Fire and forget the background update
-    event.waitUntil(fetchPromise);
+    // Fire and forget the background update (no need to wait)
+    fetchPromise.catch(() => {
+      // Silently handle background update failures
+    });
     return cached;
   }
   
