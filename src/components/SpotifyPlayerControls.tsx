@@ -229,7 +229,7 @@ const SpotifyPlayerControls = memo<{
       // Don't call onAccentColorChange here - let the parent re-extract the color
       return;
     }
-    
+
     if (currentTrack?.id) {
       setCustomAccentColorOverrides(prev => ({ ...prev, [currentTrack.id!]: color }));
       onAccentColorChange?.(color);
@@ -271,6 +271,17 @@ const SpotifyPlayerControls = memo<{
           </ControlButton>
         </TrackInfoCenter>
         <TrackInfoRight>
+          <ControlButton accentColor={accentColor} onClick={onShowPlaylist} title="Show Playlist">
+            <svg viewBox="0 0 24 24" role="img" aria-hidden="true">
+              <path d="M3 6h18v2H3V6zm0 5h18v2H3v-2zm0 5h18v2H3v-2z" />
+            </svg>
+          </ControlButton>
+        </TrackInfoRight>
+      </TrackInfoRow>
+
+      {/* Timeline Row with time, slider, and right controls */}
+      <TimelineRow>
+        <TimelineLeft>
           <LikeButton
             trackId={currentTrack?.id}
             isLiked={isLiked}
@@ -279,30 +290,19 @@ const SpotifyPlayerControls = memo<{
             onToggleLike={handleLikeToggle}
           />
 
-        </TrackInfoRight>
-      </TrackInfoRow>
 
-      {/* Timeline Row with time, slider, and right controls */}
-      <TimelineRow>
-        <TimelineLeft>
-          <ControlButton accentColor={accentColor} onClick={onShowVisualEffects} isActive={showVisualEffects} title="Visual effects">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="3"/>
-              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-            </svg>
-          </ControlButton>
           {/* Add glow toggle button */}
           {onGlowToggle && (
-            <ControlButton 
-              accentColor={accentColor} 
-              onClick={onGlowToggle} 
-              isActive={glowEnabled} 
+            <ControlButton
+              accentColor={accentColor}
+              onClick={onGlowToggle}
+              isActive={glowEnabled}
               title={`Glow ${glowEnabled ? 'enabled' : 'disabled'}`}
             >
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="9"/>
-                <circle cx="12" cy="12" r="3"/>
-                <path d="M12 3v4m0 10v4m9-9h-4m-10 0H3"/>
+                <circle cx="12" cy="12" r="9" />
+                <circle cx="12" cy="12" r="3" />
+                <path d="M12 3v4m0 10v4m9-9h-4m-10 0H3" />
               </svg>
             </ControlButton>
           )}
@@ -347,9 +347,10 @@ const SpotifyPlayerControls = memo<{
         />
 
         <TimelineRight>
-          <ControlButton accentColor={accentColor} onClick={onShowPlaylist} title="Show Playlist">
-            <svg viewBox="0 0 24 24" role="img" aria-hidden="true">
-              <path d="M3 6h18v2H3V6zm0 5h18v2H3v-2zm0 5h18v2H3v-2z" />
+          <ControlButton accentColor={accentColor} onClick={onShowVisualEffects} isActive={showVisualEffects} title="Visual effects">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="3" />
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
             </svg>
           </ControlButton>
         </TimelineRight>
