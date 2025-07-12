@@ -23,12 +23,13 @@ interface AlbumArtProps {
 }
 
 // Keyframes for pulsing box-shadow, now as a function
-const pulseBoxShadow = (accentShadow: string) => keyframes`
+const pulseBoxShadow = (accentShadow: string, accentColor: string) => keyframes`
+
   0%, 100% {
-    box-shadow: 0 8px 24px rgba(23, 22, 22, 0.7), 0 2px 8px rgba(22, 21, 21, 0.6), 0 0 48px 16px ${accentShadow};
+    box-shadow: 0 8px 24px rgba(23, 22, 22, 0.7), 0 2px 8px rgba(22, 21, 21, 0.6), 0 0 40px 150px ${hexToRgba(accentColor, 0.2)};
   }
   50% {
-    box-shadow: 0 8px 24px rgba(23, 22, 22, 0.7), 0 2px 8px rgba(22, 21, 21, 0.6), 0 0 40px 12px ${accentShadow};
+    box-shadow: 0 8px 24px rgba(23, 22, 22, 0.7), 0 2px 8px rgba(22, 21, 21, 0.6), 0 0 48px 150px ${accentShadow};
   }
 `;
 
@@ -53,9 +54,9 @@ const AlbumArtContainer = styled.div<{
   z-index: 2;
   ${({ accentColor, glowIntensity, glowRate }) => {
     if (glowIntensity && glowIntensity > 0 && accentColor) {
-      const accentShadow = hexToRgba(accentColor, Math.min(0.85, glowIntensity / 200));
+      const accentShadow = hexToRgba(accentColor, Math.min(0.1, glowIntensity / 600));
       return css`
-        animation: ${pulseBoxShadow(accentShadow)} ${glowRate || DEFAULT_GLOW_RATE}s cubic-bezier(0.8, 0, 0.2, 1) infinite;
+        animation: ${pulseBoxShadow(accentShadow, accentColor)} ${glowRate ? glowRate * 1.5 : DEFAULT_GLOW_RATE}s linear infinite;
         box-shadow: 0 8px 24px rgba(23, 22, 22, 0.7), 0 2px 8px rgba(22, 21, 21, 0.6), 0 0 32px 0 ${accentShadow};
         @media (prefers-reduced-motion: reduce) {
           animation: none;
@@ -93,7 +94,7 @@ const AlbumArt: React.FC<AlbumArtProps> = memo(({ currentTrack = null, accentCol
         const b = data[i + 2];
         const a = data[i + 3];
         const dist = colorDistance([r, g, b], accentColorRgb);
-        const maxDistance = 100;
+        const maxDistance = 60;
         if (dist < maxDistance) {
           // factor: 0 (exact match) -> 1 (at threshold)
           const factor = dist / maxDistance;

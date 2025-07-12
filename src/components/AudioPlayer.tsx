@@ -103,7 +103,7 @@ const LoadingCard = styled.div<{
       position: absolute;
       inset: 0;
       background: rgba(32, 30, 30, 0.7);
-      backdrop-filter: blur(24px);
+      backdrop-filter: blur(16px);
       border-radius: 1.25rem;
       z-index: 1;
     }

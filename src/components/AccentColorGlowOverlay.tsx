@@ -12,18 +12,17 @@ interface AccentColorGlowOverlayProps {
 const breatheAnimation = keyframes`
   0%, 100% {
     
-    filter: brightness(0.9);
-    // filter: saturate(0.8);
+    filter: brightness(1);
     // opacity: 1;
   }
   50% {
-    filter: brightness(1.25);
+    filter: brightness(1.15);
     // filter: saturate(1.1);
     // opacity: 0.8;
   }
 `;
 
-export const DEFAULT_GLOW_RATE = 2.5;
+export const DEFAULT_GLOW_RATE = 3.5;
 
 // Background glow layer - pure accent color
 const GlowBackgroundLayer = styled.div<{
@@ -41,7 +40,7 @@ const GlowBackgroundLayer = styled.div<{
   z-index: -1;
   
   ${({ $glowIntensity, $glowRate }) => $glowIntensity > 0 && css`
-    animation: ${breatheAnimation} ${$glowRate || DEFAULT_GLOW_RATE}s ease-in-out infinite;
+    animation: ${breatheAnimation} ${$glowRate || DEFAULT_GLOW_RATE}s linear infinite;
   `}
   
   opacity: ${({ $glowIntensity }) => $glowIntensity / 100};
@@ -73,21 +72,21 @@ export const AccentColorGlowOverlay: React.FC<AccentColorGlowOverlayProps> = ({
   accentColor,
   backgroundImage
 }) => {
- 
+
   if (glowIntensity === 0 || !backgroundImage) {
     return null;
   }
 
   return (
-    
-      
-      <GlowBackgroundLayer
-        $glowIntensity={glowIntensity}
-        $accentColor={accentColor}
-        $glowRate={glowRate}
-      />
-      
-    
+
+
+    <GlowBackgroundLayer
+      $glowIntensity={glowIntensity}
+      $accentColor={accentColor}
+      $glowRate={glowRate}
+    />
+
+
   );
 };
 
