@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import styled from 'styled-components';
 
 const TimelineSliderInput = styled.input.attrs<{ accentColor: string; value: number; max: number }>(
@@ -80,7 +80,21 @@ interface TimelineSliderProps {
   children?: React.ReactNode; // For left and right controls
 }
 
-export const TimelineSlider: React.FC<TimelineSliderProps> = ({
+// Custom comparison function for memo optimization
+const areTimelineSliderPropsEqual = (
+  prevProps: TimelineSliderProps,
+  nextProps: TimelineSliderProps
+): boolean => {
+  return (
+    prevProps.currentPosition === nextProps.currentPosition &&
+    prevProps.duration === nextProps.duration &&
+    prevProps.accentColor === nextProps.accentColor &&
+    prevProps.children === nextProps.children
+    // formatTime, onSliderChange, onSliderMouseDown, onSliderMouseUp should be memoized by parent
+  );
+};
+
+export const TimelineSlider = memo<TimelineSliderProps>(({
   currentPosition,
   duration,
   accentColor,
@@ -107,6 +121,8 @@ export const TimelineSlider: React.FC<TimelineSliderProps> = ({
       <TimeLabel>{formatTime(duration)}</TimeLabel>
     </TimelineRow>
   );
-};
+}, areTimelineSliderPropsEqual);
+
+TimelineSlider.displayName = 'TimelineSlider';
 
 export default TimelineSlider;

@@ -1,5 +1,6 @@
 import { createRoot } from 'react-dom/client'
 import './index.css'
+import './styles/glow-animations.css'
 import App from './App.tsx'
 
 // Register service worker for caching

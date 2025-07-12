@@ -1,4 +1,4 @@
-import { useState, useEffect, memo, lazy, Suspense } from 'react';
+import { useState, useEffect, memo, lazy, Suspense, useCallback } from 'react';
 import styled from 'styled-components';
 import type { Track } from '../services/spotify';
 import LikeButton from './LikeButton';
@@ -137,8 +137,43 @@ const TimelineRight = styled.div`
   gap: ${({ theme }: any) => theme.spacing.xs};
 `;
 
-// --- SpotifyPlayerControls Component ---
-const SpotifyPlayerControls = memo<{
+// Custom comparison function for SpotifyPlayerControls memo optimization
+const areControlsPropsEqual = (
+  prevProps: SpotifyPlayerControlsProps,
+  nextProps: SpotifyPlayerControlsProps
+): boolean => {
+  // Check if track changed (most important check)
+  if (prevProps.currentTrack?.id !== nextProps.currentTrack?.id) {
+    return false;
+  }
+  
+  // Check accent color
+  if (prevProps.accentColor !== nextProps.accentColor) {
+    return false;
+  }
+  
+  // Check glow settings
+  if (prevProps.glowEnabled !== nextProps.glowEnabled) {
+    return false;
+  }
+  
+  // Check visual effects state
+  if (prevProps.showVisualEffects !== nextProps.showVisualEffects) {
+    return false;
+  }
+  
+  // Check track count for playlist display
+  if (prevProps.trackCount !== nextProps.trackCount) {
+    return false;
+  }
+  
+  // For callbacks, we assume they're stable (parent should use useCallback)
+  // This prevents unnecessary re-renders due to function reference changes
+  
+  return true;
+};
+
+interface SpotifyPlayerControlsProps {
   currentTrack: Track | null;
   accentColor: string;
   onPlay: () => void;
@@ -153,7 +188,10 @@ const SpotifyPlayerControls = memo<{
   // Add glow control props
   glowEnabled?: boolean;
   onGlowToggle?: () => void;
-}>(({ currentTrack, accentColor, onPlay, onPause, onNext, onPrevious, onShowPlaylist, onAccentColorChange, onShowVisualEffects, showVisualEffects, glowEnabled, onGlowToggle }) => {
+}
+
+// --- SpotifyPlayerControls Component ---
+const SpotifyPlayerControls = memo<SpotifyPlayerControlsProps>(({ currentTrack, accentColor, onPlay, onPause, onNext, onPrevious, onShowPlaylist, onAccentColorChange, onShowVisualEffects, showVisualEffects, glowEnabled, onGlowToggle }) => {
   // Custom accent color per track (from eyedropper)
   const [customAccentColorOverrides, setCustomAccentColorOverrides] = useState<Record<string, string>>({});
 
@@ -199,7 +237,7 @@ const SpotifyPlayerControls = memo<{
   }, [customAccentColorOverrides]);
 
   // When user picks a color with the eyedropper, store it as the custom color for this track
-  const handleCustomAccentColor = (color: string) => {
+  const handleCustomAccentColor = useCallback((color: string) => {
     if (currentTrack?.id) {
       if (color === '') {
         // Empty string means reset - remove the override
@@ -215,10 +253,10 @@ const SpotifyPlayerControls = memo<{
     } else {
       onAccentColorChange?.(color);
     }
-  };
+  }, [currentTrack?.id, onAccentColorChange]);
 
   // Handle accent color changes, including reset
-  const handleAccentColorChange = (color: string) => {
+  const handleAccentColorChange = useCallback((color: string) => {
     if (color === 'RESET_TO_DEFAULT' && currentTrack?.id) {
       // Remove custom color override for this track
       setCustomAccentColorOverrides(prev => {
@@ -236,7 +274,7 @@ const SpotifyPlayerControls = memo<{
     } else {
       onAccentColorChange?.(color);
     }
-  };
+  }, [currentTrack?.id, onAccentColorChange]);
 
 
   return (
@@ -298,6 +336,7 @@ const SpotifyPlayerControls = memo<{
               onClick={onGlowToggle}
               isActive={glowEnabled}
               title={`Glow ${glowEnabled ? 'enabled' : 'disabled'}`}
+              data-testid="glow-toggle"
             >
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="12" cy="12" r="9" />
@@ -347,7 +386,13 @@ const SpotifyPlayerControls = memo<{
         />
 
         <TimelineRight>
-          <ControlButton accentColor={accentColor} onClick={onShowVisualEffects} isActive={showVisualEffects} title="Visual effects">
+          <ControlButton 
+            accentColor={accentColor} 
+            onClick={onShowVisualEffects} 
+            isActive={showVisualEffects} 
+            title="Visual effects"
+            data-testid="visual-effects-button"
+          >
             <svg viewBox="0 0 24 24" style={{ display: 'block' }} width="1.5rem" height="1.5rem" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path
                 fill="currentColor"
@@ -362,7 +407,7 @@ const SpotifyPlayerControls = memo<{
       </TimelineRow>
     </PlayerControlsContainer>
   );
-});
+}, areControlsPropsEqual);
 
 SpotifyPlayerControls.displayName = 'SpotifyPlayerControls';
 

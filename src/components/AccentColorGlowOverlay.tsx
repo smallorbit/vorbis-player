@@ -1,5 +1,5 @@
 import React from 'react';
-import styled, { keyframes, css } from 'styled-components';
+import styled from 'styled-components';
 
 interface AccentColorGlowOverlayProps {
   glowIntensity: number;
@@ -8,23 +8,9 @@ interface AccentColorGlowOverlayProps {
   backgroundImage?: string;
 }
 
-// Breathing animation that mimics music tempo
-const breatheAnimation = keyframes`
-  0%, 100% {
-    
-    filter: brightness(1);
-    // opacity: 1;
-  }
-  50% {
-    filter: brightness(1.15);
-    // filter: saturate(1.1);
-    // opacity: 0.8;
-  }
-`;
-
 export const DEFAULT_GLOW_RATE = 3.5;
 
-// Background glow layer - pure accent color
+// Background glow layer - pure accent color (optimized with CSS classes)
 const GlowBackgroundLayer = styled.div<{
   $glowIntensity: number;
   $accentColor: string;
@@ -33,18 +19,9 @@ const GlowBackgroundLayer = styled.div<{
   position: absolute;
   width: -webkit-fill-available;
   height: -webkit-fill-available;
-  
-  // border: 5px solid red;
   background: ${({ $accentColor }) => $accentColor};
   pointer-events: none;
   z-index: -1;
-  
-  ${({ $glowIntensity, $glowRate }) => $glowIntensity > 0 && css`
-    animation: ${breatheAnimation} ${$glowRate || DEFAULT_GLOW_RATE}s linear infinite;
-  `}
-  
-  opacity: ${({ $glowIntensity }) => $glowIntensity / 100};
-  display: ${({ $glowIntensity }) => $glowIntensity > 0 ? 'block' : 'none'};
 `;
 
 
@@ -66,7 +43,20 @@ export const hexToRgb = (hex: string): [number, number, number] => {
   ];
 };
 
-export const AccentColorGlowOverlay: React.FC<AccentColorGlowOverlayProps> = ({
+// Custom comparison function for memo optimization
+const areGlowPropsEqual = (
+  prevProps: AccentColorGlowOverlayProps, 
+  nextProps: AccentColorGlowOverlayProps
+): boolean => {
+  return (
+    prevProps.glowIntensity === nextProps.glowIntensity &&
+    prevProps.glowRate === nextProps.glowRate &&
+    prevProps.accentColor === nextProps.accentColor &&
+    prevProps.backgroundImage === nextProps.backgroundImage
+  );
+};
+
+export const AccentColorGlowOverlay = React.memo<AccentColorGlowOverlayProps>(({
   glowIntensity,
   glowRate = DEFAULT_GLOW_RATE,
   accentColor,
@@ -77,17 +67,21 @@ export const AccentColorGlowOverlay: React.FC<AccentColorGlowOverlayProps> = ({
     return null;
   }
 
+  // Determine CSS classes for glow background animation
+  const glowBackgroundClasses = [
+    glowIntensity > 0 ? 'glow-background' : 'glow-hidden'
+  ].filter(Boolean).join(' ');
+
   return (
-
-
     <GlowBackgroundLayer
       $glowIntensity={glowIntensity}
       $accentColor={accentColor}
       $glowRate={glowRate}
+      className={glowBackgroundClasses}
     />
-
-
   );
-};
+}, areGlowPropsEqual);
+
+AccentColorGlowOverlay.displayName = 'AccentColorGlowOverlay';
 
 export default AccentColorGlowOverlay;

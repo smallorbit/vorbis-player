@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
+import { useState, useEffect, useRef, useLayoutEffect, memo } from 'react';
 import { createPortal } from 'react-dom';
 import styled from 'styled-components';
 import EyedropperOverlay from './EyedropperOverlay';
@@ -48,7 +48,35 @@ interface ColorPickerPopoverProps {
   onCustomAccentColor: (color: string) => void;
 }
 
-export const ColorPickerPopover: React.FC<ColorPickerPopoverProps> = ({
+// Custom comparison function for ColorPickerPopover memo optimization
+const areColorPickerPropsEqual = (
+  prevProps: ColorPickerPopoverProps,
+  nextProps: ColorPickerPopoverProps
+): boolean => {
+  // Check if track changed (most important check)
+  if (prevProps.currentTrack?.id !== nextProps.currentTrack?.id) {
+    return false;
+  }
+  
+  // Check accent color
+  if (prevProps.accentColor !== nextProps.accentColor) {
+    return false;
+  }
+  
+  // Check if custom overrides for current track changed
+  const currentTrackId = prevProps.currentTrack?.id;
+  if (currentTrackId) {
+    if (prevProps.customAccentColorOverrides[currentTrackId] !== 
+        nextProps.customAccentColorOverrides[currentTrackId]) {
+      return false;
+    }
+  }
+  
+  // For callbacks, we assume they're stable (parent should use useCallback)
+  return true;
+};
+
+export const ColorPickerPopover = memo<ColorPickerPopoverProps>(({
   accentColor,
   currentTrack,
   onAccentColorChange,
@@ -297,6 +325,8 @@ export const ColorPickerPopover: React.FC<ColorPickerPopoverProps> = ({
       )}
     </>
   );
-};
+}, areColorPickerPropsEqual);
+
+ColorPickerPopover.displayName = 'ColorPickerPopover';
 
 export default ColorPickerPopover;

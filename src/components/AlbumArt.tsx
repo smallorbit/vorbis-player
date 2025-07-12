@@ -1,8 +1,39 @@
-import React, { memo } from 'react';
-import styled, { keyframes, css } from 'styled-components';
+import React, { memo, useEffect, useState, useCallback } from 'react';
+import styled, { keyframes } from 'styled-components';
 import type { Track } from '../services/spotify';
 import AlbumArtFilters from './AlbumArtFilters';
-import AccentColorGlowOverlay, { hexToRgb, colorDistance, DEFAULT_GLOW_RATE } from './AccentColorGlowOverlay';
+import AccentColorGlowOverlay, { hexToRgb, DEFAULT_GLOW_RATE } from './AccentColorGlowOverlay';
+import { useImageProcessingWorker } from '../hooks/useImageProcessingWorker';
+
+// Spinner animation for processing indicator
+const spin = keyframes`
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+`;
+
+const ProcessingSpinner = styled.div`
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: rgba(0, 0, 0, 0.7);
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+
+  &::after {
+    content: '';
+    width: 12px;
+    height: 12px;
+    border: 2px solid #fff;
+    border-top: 2px solid transparent;
+    border-radius: 50%;
+    animation: ${spin} 1s linear infinite;
+  }
+`;
 
 interface AlbumArtProps {
   currentTrack: Track | null;
@@ -22,22 +53,6 @@ interface AlbumArtProps {
   };
 }
 
-// Keyframes for pulsing box-shadow, now as a function
-const pulseBoxShadow = (accentShadow: string, accentColor: string) => keyframes`
-
-  0%, 100% {
-    box-shadow: 0 8px 24px rgba(23, 22, 22, 0.7), 0 2px 8px rgba(22, 21, 21, 0.6), 0 0 40px 150px ${hexToRgba(accentColor, 0.2)};
-  }
-  50% {
-    box-shadow: 0 8px 24px rgba(23, 22, 22, 0.7), 0 2px 8px rgba(22, 21, 21, 0.6), 0 0 48px 150px ${accentShadow};
-  }
-`;
-
-// Helper to convert hex to rgba with alpha
-function hexToRgba(hex: string, alpha: number) {
-  const rgb = hexToRgb(hex);
-  return `rgba(${rgb[0]}, ${rgb[1]}, ${rgb[2]}, ${alpha})`;
-}
 
 const AlbumArtContainer = styled.div<{
   accentColor?: string;
@@ -47,70 +62,153 @@ const AlbumArtContainer = styled.div<{
   border-radius: 1.25rem;
   position: relative;
   width: -webkit-fill-available;
-  margin: 1.25rem;
+  margin: 1rem;
   overflow: hidden;
   background: transparent;
   box-shadow: 0 8px 24px rgba(23, 22, 22, 0.7), 0 2px 8px rgba(22, 21, 21, 0.6);
   z-index: 2;
-  ${({ accentColor, glowIntensity, glowRate }) => {
-    if (glowIntensity && glowIntensity > 0 && accentColor) {
-      const accentShadow = hexToRgba(accentColor, Math.min(0.1, glowIntensity / 600));
-      return css`
-        animation: ${pulseBoxShadow(accentShadow, accentColor)} ${glowRate || DEFAULT_GLOW_RATE}s linear infinite;
-    box - shadow: 0 8px 24px rgba(23, 22, 22, 0.7), 0 2px 8px rgba(22, 21, 21, 0.6), 0 0 32px 0 ${accentShadow};
-    @media(prefers - reduced - motion: reduce) {
-      animation: none;
-    }
-    `;
-    }
-    return '';
-  }}
 `;
 
-const AlbumArt: React.FC<AlbumArtProps> = memo(({ currentTrack = null, accentColor, glowIntensity, glowRate, albumFilters }) => {
-  const [canvasUrl, setCanvasUrl] = React.useState<string | null>(null);
+// Custom comparison function for memo optimization
+const arePropsEqual = (prevProps: AlbumArtProps, nextProps: AlbumArtProps): boolean => {
+  // Check if track changed (most important check)
+  if (prevProps.currentTrack?.id !== nextProps.currentTrack?.id) {
+    return false;
+  }
 
-  React.useEffect(() => {
+  // Check if track image changed
+  if (prevProps.currentTrack?.image !== nextProps.currentTrack?.image) {
+    return false;
+  }
+
+  // Check accent color
+  if (prevProps.accentColor !== nextProps.accentColor) {
+    return false;
+  }
+
+  // Check glow settings
+  if (prevProps.glowIntensity !== nextProps.glowIntensity ||
+    prevProps.glowRate !== nextProps.glowRate) {
+    return false;
+  }
+
+  // Check album filters - shallow comparison should be sufficient for performance
+  if (!prevProps.albumFilters && !nextProps.albumFilters) {
+    return true;
+  }
+
+  if (!prevProps.albumFilters || !nextProps.albumFilters) {
+    return false;
+  }
+
+  // Check key filter properties that affect visual appearance
+  const filterKeys: (keyof typeof prevProps.albumFilters)[] = [
+    'brightness', 'contrast', 'saturation', 'hue', 'blur', 'sepia', 'grayscale', 'invert'
+  ];
+
+  for (const key of filterKeys) {
+    if (prevProps.albumFilters[key] !== nextProps.albumFilters[key]) {
+      return false;
+    }
+  }
+
+  return true;
+};
+
+const AlbumArt: React.FC<AlbumArtProps> = memo(({ currentTrack = null, accentColor, glowIntensity, glowRate, albumFilters }) => {
+  const [canvasUrl, setCanvasUrl] = useState<string | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const { processImage } = useImageProcessingWorker();
+
+  // Update CSS variables for glow animation
+  useEffect(() => {
+    if (accentColor && glowIntensity !== undefined && glowRate !== undefined) {
+      const rgb = hexToRgb(accentColor);
+      const root = document.documentElement;
+      root.style.setProperty('--accent-color', accentColor);
+      root.style.setProperty('--glow-intensity', glowIntensity.toString());
+      root.style.setProperty('--glow-rate', `${glowRate}s`);
+      root.style.setProperty('--accent-rgb', `${rgb[0]}, ${rgb[1]}, ${rgb[2]}`);
+    }
+  }, [accentColor, glowIntensity, glowRate]);
+
+  // Process image using Web Worker for better performance
+  const processImageWithWorker = useCallback(async (
+    imageElement: HTMLImageElement,
+    accentColorRgb: [number, number, number]
+  ) => {
+    try {
+      setIsProcessing(true);
+
+      // Create canvas and get image data on main thread (minimal work)
+      const canvas = document.createElement('canvas');
+      canvas.width = imageElement.width;
+      canvas.height = imageElement.height;
+      const ctx = canvas.getContext('2d');
+
+      if (!ctx) {
+        throw new Error('Failed to get canvas context');
+      }
+
+      // Draw image to canvas
+      ctx.drawImage(imageElement, 0, 0);
+
+      // Get image data for worker processing
+      const imageData = ctx.getImageData(0, 0, imageElement.width, imageElement.height);
+
+      // Process image data in Web Worker (heavy computation off main thread)
+      const processedImageData = await processImage(imageData, accentColorRgb, 60);
+
+      // Put processed data back to canvas on main thread
+      ctx.putImageData(processedImageData, 0, 0);
+      setCanvasUrl(canvas.toDataURL());
+
+    } catch (error) {
+      console.error('Image processing failed:', error);
+      setCanvasUrl(null);
+    } finally {
+      setIsProcessing(false);
+    }
+  }, [processImage]);
+
+  useEffect(() => {
     if (!currentTrack?.image) {
       setCanvasUrl(null);
       return;
     }
+
     const accentColorRgb = hexToRgb(accentColor || '#000000');
     const image = new window.Image();
     image.crossOrigin = 'anonymous';
     image.src = currentTrack.image;
+
     image.onload = () => {
-      const canvas = document.createElement('canvas');
-      canvas.width = image.width;
-      canvas.height = image.height;
-      const ctx = canvas.getContext('2d');
-      if (!ctx) return;
-      ctx.drawImage(image, 0, 0);
-      const imageData = ctx.getImageData(0, 0, image.width, image.height);
-      const data = imageData.data;
-      for (let i = 0; i < data.length; i += 4) {
-        const r = data[i];
-        const g = data[i + 1];
-        const b = data[i + 2];
-        const a = data[i + 3];
-        const dist = colorDistance([r, g, b], accentColorRgb);
-        const maxDistance = 60;
-        if (dist < maxDistance) {
-          // factor: 0 (exact match) -> 1 (at threshold)
-          const factor = dist / maxDistance;
-          data[i + 3] = Math.round(a * factor);
-        }
-      }
-      ctx.putImageData(imageData, 0, 0);
-      setCanvasUrl(canvas.toDataURL());
+      processImageWithWorker(image, accentColorRgb);
     };
-    image.onerror = () => setCanvasUrl(null);
-  }, [currentTrack, accentColor]);
+
+    image.onerror = () => {
+      console.error('Failed to load image:', currentTrack.image);
+      setCanvasUrl(null);
+      setIsProcessing(false);
+    };
+
+  }, [currentTrack, accentColor, processImageWithWorker]);
 
   if (!currentTrack) return null;
 
+  // Determine CSS classes for glow animation
+  const glowClasses = [
+    'glow-container',
+    glowIntensity && glowIntensity > 0 && accentColor ? 'glow-active' : ''
+  ].filter(Boolean).join(' ');
+
   return (
-    <AlbumArtContainer accentColor={accentColor} glowIntensity={glowIntensity} glowRate={glowRate}>
+    <AlbumArtContainer
+      accentColor={accentColor}
+      glowIntensity={glowIntensity}
+      glowRate={glowRate}
+      className={glowClasses}
+    >
       <AlbumArtFilters filters={albumFilters ? { ...albumFilters, invert: !!albumFilters.invert } : {
         brightness: 100,
         contrast: 100,
@@ -127,9 +225,9 @@ const AlbumArt: React.FC<AlbumArtProps> = memo(({ currentTrack = null, accentCol
           accentColor={accentColor || '#000000'}
           backgroundImage={currentTrack?.image}
         />
-        {canvasUrl ? (
+        {currentTrack?.image ? (
           <img
-            src={glowIntensity === 0 ? currentTrack?.image : canvasUrl}
+            src={glowIntensity === 0 || !canvasUrl ? currentTrack.image : canvasUrl}
             alt={currentTrack?.name}
             style={{
               width: '-webkit-fill-available',
@@ -138,6 +236,9 @@ const AlbumArt: React.FC<AlbumArtProps> = memo(({ currentTrack = null, accentCol
               borderRadius: '1.25rem',
               display: 'block',
               zIndex: 2,
+              opacity: isProcessing ? 0.9 : 1,
+              transition: 'opacity 0.2s ease-in-out',
+              transform: 'scale(1.01)',
             }}
             loading="lazy"
             onError={(e) => {
@@ -146,14 +247,26 @@ const AlbumArt: React.FC<AlbumArtProps> = memo(({ currentTrack = null, accentCol
             }}
           />
         ) : (
-          <div style={{ width: '100%', height: '100%', backgroundColor: 'red' }}>
+          <div style={{
+            width: '100%',
+            height: '100%',
+            backgroundColor: '#1a1a1a',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: '#666',
+            borderRadius: '1.25rem'
+          }}>
             <p>No image</p>
           </div>
         )}
+        {isProcessing && <ProcessingSpinner />}
       </AlbumArtFilters>
     </AlbumArtContainer>
 
   );
-});
+}, arePropsEqual);
+
+AlbumArt.displayName = 'AlbumArt';
 
 export default AlbumArt; 

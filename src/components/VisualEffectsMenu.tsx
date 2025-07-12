@@ -1,7 +1,10 @@
-import React, { useEffect, memo } from 'react';
+import React, { useEffect, memo, useCallback, useMemo } from 'react';
 import styled from 'styled-components';
+import { FixedSizeList as List } from 'react-window';
 import { DEFAULT_GLOW_RATE } from './AccentColorGlowOverlay';
 import { theme } from '../styles/theme';
+import { PerformanceProfilerComponent } from './PerformanceProfiler';
+import VisualEffectsPerformanceMonitor from './VisualEffectsPerformanceMonitor';
 
 interface VisualEffectsMenuProps {
   isOpen: boolean;
@@ -192,6 +195,26 @@ const FilterGrid = styled.div`
   gap: 0.75rem;
 `;
 
+const VirtualListContainer = styled.div`
+  height: 300px; /* Fixed height for virtualization - optimized for ~5 visible items */
+  width: 100%;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0.5rem;
+  overflow: hidden;
+  /* Hardware acceleration for smooth scrolling */
+  transform: translateZ(0);
+  will-change: scroll-position;
+`;
+
+const FilterItem = styled.div`
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  
+  &:last-child {
+    border-bottom: none;
+  }
+`;
+
 const ResetButton = styled.button<{ $accentColor: string }>`
   background: rgba(255, 255, 255, 0.1);
   border: 1px solid rgba(255, 255, 255, 0.2);
@@ -231,6 +254,65 @@ const ToggleButton = styled.button<{ $accentColor: string; $isActive: boolean }>
     transform: translateY(-1px);
   }
 `;
+
+// Custom comparison function for memo optimization
+const areVisualEffectsPropsEqual = (
+  prevProps: VisualEffectsMenuProps, 
+  nextProps: VisualEffectsMenuProps
+): boolean => {
+  // Check simple props first
+  if (
+    prevProps.isOpen !== nextProps.isOpen ||
+    prevProps.accentColor !== nextProps.accentColor ||
+    prevProps.glowEnabled !== nextProps.glowEnabled ||
+    prevProps.glowIntensity !== nextProps.glowIntensity ||
+    prevProps.glowRate !== nextProps.glowRate ||
+    prevProps.glowMode !== nextProps.glowMode ||
+    prevProps.currentAlbumId !== nextProps.currentAlbumId ||
+    prevProps.currentAlbumName !== nextProps.currentAlbumName
+  ) {
+    return false;
+  }
+  
+  // Check filters object
+  const filterKeys: (keyof typeof prevProps.filters)[] = [
+    'brightness', 'contrast', 'saturation', 'hue', 'sepia', 'grayscale', 'invert'
+  ];
+  
+  for (const key of filterKeys) {
+    if (prevProps.filters[key] !== nextProps.filters[key]) {
+      return false;
+    }
+  }
+  
+  // Check effective glow
+  if (
+    prevProps.effectiveGlow.intensity !== nextProps.effectiveGlow.intensity ||
+    prevProps.effectiveGlow.rate !== nextProps.effectiveGlow.rate
+  ) {
+    return false;
+  }
+  
+  // Check perAlbumGlow - shallow comparison for performance
+  const prevKeys = Object.keys(prevProps.perAlbumGlow);
+  const nextKeys = Object.keys(nextProps.perAlbumGlow);
+  
+  if (prevKeys.length !== nextKeys.length) {
+    return false;
+  }
+  
+  for (const key of prevKeys) {
+    if (
+      !nextProps.perAlbumGlow[key] ||
+      prevProps.perAlbumGlow[key].intensity !== nextProps.perAlbumGlow[key].intensity ||
+      prevProps.perAlbumGlow[key].rate !== nextProps.perAlbumGlow[key].rate
+    ) {
+      return false;
+    }
+  }
+  
+  return true;
+};
 
 export const VisualEffectsMenu: React.FC<VisualEffectsMenuProps> = memo(({
   isOpen,
@@ -272,21 +354,90 @@ export const VisualEffectsMenu: React.FC<VisualEffectsMenuProps> = memo(({
     };
   }, [isOpen, onClose]);
 
-  const filterConfig = [
+  // Memoized filter configuration for optimal virtual scrolling performance
+  const filterConfig = useMemo(() => [
     { key: 'brightness', label: 'Brightness', min: 0, max: 200, unit: '%' },
     { key: 'contrast', label: 'Contrast', min: 0, max: 200, unit: '%' },
     { key: 'saturation', label: 'Saturation', min: 0, max: 300, unit: '%' },
     { key: 'hue', label: 'Hue Rotate', min: 0, max: 360, unit: '°' },
     { key: 'sepia', label: 'Sepia', min: 0, max: 100, unit: '%' },
-    { key: 'grayscale', label: 'Grayscale', min: 0, max: 100, unit: '%' }
-  ];
+    { key: 'grayscale', label: 'Grayscale', min: 0, max: 100, unit: '%' },
+    { key: 'invert', label: 'Invert', min: 0, max: 1, unit: '', type: 'toggle' as const }
+  ], []);
 
-  const handleInvertToggle = () => {
+  // Optimized callbacks with minimal dependencies
+  const handleInvertToggle = useCallback(() => {
     onFilterChange('invert', filters.invert === 0 ? 1 : 0);
-  };
+  }, [filters.invert, onFilterChange]);
+
+  const handleFilterChange = useCallback((key: string, value: number) => {
+    onFilterChange(key, value);
+  }, [onFilterChange]);
+
+  // Optimized filter value getter for performance
+  const getFilterValue = useCallback((key: string) => {
+    return filters[key as keyof typeof filters];
+  }, [filters]);
+
+  // Optimized render function for virtual list items with minimal re-renders
+  const renderFilterItem = useCallback(({ index, style }: { index: number; style: React.CSSProperties }) => {
+    const config = filterConfig[index];
+    const { key, label, min, max, unit, type } = config;
+    
+    // Use optimized filter value getter
+    const currentValue = getFilterValue(key);
+    
+    if (type === 'toggle') {
+      return (
+        <div style={style} key={`filter-${key}`}>
+          <FilterItem>
+            <ControlGroup>
+              <ControlLabel>
+                {label}
+                <ToggleButton
+                  $accentColor={accentColor}
+                  $isActive={currentValue === 1}
+                  onClick={handleInvertToggle}
+                  aria-label={`Toggle ${label}`}
+                >
+                  {currentValue === 1 ? 'On' : 'Off'}
+                </ToggleButton>
+              </ControlLabel>
+            </ControlGroup>
+          </FilterItem>
+        </div>
+      );
+    }
+
+    return (
+      <div style={style} key={`filter-${key}`}>
+        <FilterItem>
+          <ControlGroup>
+            <ControlLabel>
+              {label}
+              <ControlValue>{currentValue}{unit}</ControlValue>
+            </ControlLabel>
+            <Slider
+              type="range"
+              min={min}
+              max={max}
+              value={currentValue}
+              onChange={(e) => handleFilterChange(key, parseInt(e.target.value))}
+              $accentColor={accentColor}
+              aria-label={`Adjust ${label}`}
+            />
+          </ControlGroup>
+        </FilterItem>
+      </div>
+    );
+  }, [filterConfig, accentColor, handleInvertToggle, handleFilterChange, getFilterValue]);
 
   return (
-    <>
+    <PerformanceProfilerComponent id="visual-effects-menu">
+      <VisualEffectsPerformanceMonitor 
+        filterCount={filterConfig.length}
+        isEnabled={process.env.NODE_ENV === 'development'}
+      />
       <DrawerOverlay $isOpen={isOpen} onClick={onClose} />
       <DrawerContainer $isOpen={isOpen}>
         <DrawerHeader>
@@ -423,44 +574,28 @@ export const VisualEffectsMenu: React.FC<VisualEffectsMenuProps> = memo(({
           {/* Album Art Filters Section */}
           <FilterSection>
             <SectionTitle>Album Art Filters</SectionTitle>
-            <FilterGrid>
-              {filterConfig.map(({ key, label, min, max, unit }) => (
-                <ControlGroup key={key}>
-                  <ControlLabel>
-                    {label}
-                    <ControlValue>{filters[key as keyof typeof filters]}{unit}</ControlValue>
-                  </ControlLabel>
-                  <Slider
-                    type="range"
-                    min={min}
-                    max={max}
-                    value={filters[key as keyof typeof filters]}
-                    onChange={(e) => onFilterChange(key, parseInt(e.target.value))}
-                    $accentColor={accentColor}
-                  />
-                </ControlGroup>
-              ))}
-              <ControlGroup>
-                <ControlLabel>
-                  Invert
-                  <ToggleButton
-                    $accentColor={accentColor}
-                    $isActive={filters.invert === 1}
-                    onClick={handleInvertToggle}
-                  >
-                    {filters.invert === 1 ? 'On' : 'Off'}
-                  </ToggleButton>
-                </ControlLabel>
-              </ControlGroup>
-            </FilterGrid>
+            <VirtualListContainer data-testid="filter-scroll-container">
+              <List
+                height={300}
+                itemCount={filterConfig.length}
+                itemSize={60}
+                itemData={filterConfig}
+                overscanCount={1} // Pre-render 1 item outside visible area for smooth scrolling
+                width="100%"
+              >
+                {renderFilterItem}
+              </List>
+            </VirtualListContainer>
             <ResetButton onClick={onResetFilters} $accentColor={accentColor}>
               Reset All Filters
             </ResetButton>
           </FilterSection>
         </DrawerContent>
       </DrawerContainer>
-    </>
+    </PerformanceProfilerComponent>
   );
-});
+}, areVisualEffectsPropsEqual);
+
+VisualEffectsMenu.displayName = 'VisualEffectsMenu';
 
 export default VisualEffectsMenu;

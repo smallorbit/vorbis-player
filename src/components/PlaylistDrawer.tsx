@@ -1,4 +1,4 @@
-import React, { Suspense } from 'react';
+import React, { Suspense, memo } from 'react';
 import styled from 'styled-components';
 import type { Track } from '../services/spotify';
 import { theme } from '../styles/theme';
@@ -106,7 +106,36 @@ interface PlaylistDrawerProps {
   onTrackSelect: (index: number) => void;
 }
 
-export const PlaylistDrawer: React.FC<PlaylistDrawerProps> = ({
+// Custom comparison function for PlaylistDrawer memo optimization
+const arePlaylistDrawerPropsEqual = (
+  prevProps: PlaylistDrawerProps,
+  nextProps: PlaylistDrawerProps
+): boolean => {
+  // Check if open state changed
+  if (prevProps.isOpen !== nextProps.isOpen) {
+    return false;
+  }
+  
+  // Check if current track changed
+  if (prevProps.currentTrackIndex !== nextProps.currentTrackIndex) {
+    return false;
+  }
+  
+  // Check accent color
+  if (prevProps.accentColor !== nextProps.accentColor) {
+    return false;
+  }
+  
+  // Check if tracks array length changed (shallow check for performance)
+  if (prevProps.tracks.length !== nextProps.tracks.length) {
+    return false;
+  }
+  
+  // For callbacks, we assume they're stable (parent should use useCallback)
+  return true;
+};
+
+export const PlaylistDrawer = memo<PlaylistDrawerProps>(({
   isOpen,
   onClose,
   tracks,
@@ -156,6 +185,8 @@ export const PlaylistDrawer: React.FC<PlaylistDrawerProps> = ({
       </PlaylistDrawerContainer>
     </>
   );
-};
+}, arePlaylistDrawerPropsEqual);
+
+PlaylistDrawer.displayName = 'PlaylistDrawer';
 
 export default PlaylistDrawer;

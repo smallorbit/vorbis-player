@@ -88,7 +88,9 @@ const LoadingCard = styled.div<{
       position: absolute;
       inset: 0;
       background: rgba(32, 30, 30, 0.7);
-      backdrop-filter: blur(16px);
+      // background: rgba(19, 19, 19, 0.8);
+      // background: ${(props: { accentColor?: string }) => props.accentColor || 'rgba(32, 30, 30, 0.7)'};
+      backdrop-filter: blur(40px);
       border-radius: 1.25rem;
       z-index: 1;
     }
@@ -319,8 +321,42 @@ const AudioPlayerComponent = () => {
     extractColor();
   }, [currentTrack?.id, currentTrack?.image, accentColorOverrides, theme.colors.accent]);
 
+  // Optimized callback handlers for better performance
+  const handlePlay = useCallback(() => {
+    // Check if we should play the current track or resume
+    if (currentTrack) {
+      playTrack(currentTrackIndex);
+    } else {
+      spotifyPlayer.resume();
+    }
+  }, [currentTrack, playTrack, currentTrackIndex]);
+
+  const handlePause = useCallback(() => {
+    spotifyPlayer.pause();
+  }, []);
+
+  const handleShowPlaylist = useCallback(() => {
+    setShowPlaylist(true);
+  }, []);
+
+  const handleShowVisualEffects = useCallback(() => {
+    setShowVisualEffects(true);
+  }, []);
+
+  const handleCloseVisualEffects = useCallback(() => {
+    setShowVisualEffects(false);
+  }, []);
+
+  const handleGlowToggle = useCallback(() => {
+    setGlowEnabled(!glowEnabled);
+  }, [glowEnabled]);
+
+  const handleClosePlaylist = useCallback(() => {
+    setShowPlaylist(false);
+  }, []);
+
   // Handler for user accent color change (from SpotifyPlayerControls)
-  const handleAccentColorChange = (color: string) => {
+  const handleAccentColorChange = useCallback((color: string) => {
     if (color === 'RESET_TO_DEFAULT' && currentTrack?.id) {
       // Remove custom color override for this track
       setAccentColorOverrides(prev => {
@@ -353,7 +389,7 @@ const AudioPlayerComponent = () => {
     } else {
       setAccentColor(color);
     }
-  };
+  }, [currentTrack?.id, currentTrack?.image, setAccentColorOverrides, setAccentColor, theme.colors.accent]);
 
 
   // Determine current album ID (if available)
@@ -391,7 +427,7 @@ const AudioPlayerComponent = () => {
           glowRate={effectiveGlow.rate}
         >
 
-          <CardContent style={{ position: 'relative', zIndex: 2 }}>
+          <CardContent style={{ position: 'relative', zIndex: 2, marginTop: '-0.25rem' }}>
             <AlbumArt currentTrack={currentTrack} accentColor={accentColor} glowIntensity={glowEnabled ? effectiveGlow.intensity : 0} glowRate={effectiveGlow.rate} albumFilters={albumFilters} />
           </CardContent>
           <CardContent style={{ position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 2 }}>
@@ -399,30 +435,23 @@ const AudioPlayerComponent = () => {
               <SpotifyPlayerControls
                 currentTrack={currentTrack}
                 accentColor={accentColor}
-                onPlay={() => {
-                  // Check if we should play the current track or resume
-                  if (currentTrack) {
-                    playTrack(currentTrackIndex);
-                  } else {
-                    spotifyPlayer.resume();
-                  }
-                }}
-                onPause={() => spotifyPlayer.pause()}
+                onPlay={handlePlay}
+                onPause={handlePause}
                 onNext={handleNext}
                 onPrevious={handlePrevious}
-                onShowPlaylist={() => setShowPlaylist(true)}
+                onShowPlaylist={handleShowPlaylist}
                 trackCount={tracks.length}
                 onAccentColorChange={handleAccentColorChange}
-                onShowVisualEffects={() => setShowVisualEffects(true)}
+                onShowVisualEffects={handleShowVisualEffects}
                 glowEnabled={glowEnabled}
-                onGlowToggle={() => setGlowEnabled(!glowEnabled)}
+                onGlowToggle={handleGlowToggle}
               />
             </Suspense>
           </CardContent>
           <Suspense fallback={<div>Loading effects...</div>}>
             <VisualEffectsMenu
               isOpen={showVisualEffects}
-              onClose={() => setShowVisualEffects(false)}
+              onClose={handleCloseVisualEffects}
               accentColor={accentColor}
               filters={albumFilters}
               onFilterChange={handleFilterChange}
@@ -447,7 +476,7 @@ const AudioPlayerComponent = () => {
         <Suspense fallback={<div style={{ position: 'fixed', top: 0, right: 0, bottom: 0, width: '400px', background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.7)' }}>Loading playlist...</div>}>
           <PlaylistDrawer
             isOpen={showPlaylist}
-            onClose={() => setShowPlaylist(false)}
+            onClose={handleClosePlaylist}
             tracks={tracks}
             currentTrackIndex={currentTrackIndex}
             accentColor={accentColor}

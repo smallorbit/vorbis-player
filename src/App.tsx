@@ -6,6 +6,8 @@ import { spotifyAuth } from './services/spotify';
 import './services/spotifyPlayer';
 import { ThemeProvider } from './styles/ThemeProvider';
 import { flexCenter, buttonPrimary } from './styles/utils';
+// import { PerformanceDebugger } from './components/PerformanceProfiler';
+// import { PerformanceTestSuite } from './components/PerformanceTestSuite';
 
 // Styled components
 const AppContainer = styled.div`
@@ -50,6 +52,7 @@ const RetryButton = styled.button`
 function App() {
   const [isAuthenticating, setIsAuthenticating] = useState(true);
   const [authError, setAuthError] = useState<string | null>(null);
+  // const [showPerformanceTest, setShowPerformanceTest] = useState(false);
 
   useEffect(() => {
     const authenticate = async () => {
@@ -65,6 +68,19 @@ function App() {
     };
 
     authenticate();
+  }, []);
+
+  // Add hotkey for performance test suite (Ctrl+Shift+P)
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.ctrlKey && event.shiftKey && event.key === 'P') {
+        event.preventDefault();
+        // setShowPerformanceTest(prev => !prev);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
   if (isAuthenticating) {
@@ -104,6 +120,13 @@ function App() {
     <ThemeProvider>
       <AppContainer>
         <AudioPlayerComponent />
+
+        {/* Performance monitoring and testing tools - hidden for now */}
+        {/* <PerformanceDebugger visible={process.env.NODE_ENV === 'development'} />
+        <PerformanceTestSuite 
+          isVisible={showPerformanceTest} 
+          onClose={() => setShowPerformanceTest(false)} 
+        /> */}
       </AppContainer>
     </ThemeProvider>
   );
