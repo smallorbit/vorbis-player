@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useCallback, lazy, Suspense } from 'react';
-import styled from 'styled-components';
+import styled, { keyframes, css } from 'styled-components';
 import { spotifyAuth } from '../services/spotify';
 import { spotifyPlayer } from '../services/spotifyPlayer';
 import { CardContent } from '../components/styled';
@@ -16,6 +16,21 @@ import { usePlayerState } from '../hooks/usePlayerState';
 import { usePlaylistManager } from '../hooks/usePlaylistManager';
 import { theme } from '@/styles/theme';
 import { DEFAULT_GLOW_RATE } from './AccentColorGlowOverlay';
+
+// Keyframes for pulsing card shadow, as a function
+const pulseCardShadow = (accentShadow: string) => keyframes`
+  0%, 100% {
+    box-shadow: 0 8px 24px rgba(38, 36, 37, 0.7), 0 2px 8px rgba(22, 21, 21, 0.6), 0 0 32px 12px ${accentShadow};
+  }
+  50% {
+    box-shadow: 0 8px 24px rgba(38, 36, 37, 0.7), 0 2px 8px rgba(22, 21, 21, 0.6), 0 0 24px 8px ${accentShadow};
+  }
+`;
+// Helper to convert hex to rgba with alpha (reuse from AlbumArt)
+function hexToRgba(hex: string, alpha: number) {
+  const rgb = hex.replace('#', '').match(/.{1,2}/g)?.map(x => parseInt(x, 16)) || [0, 0, 0];
+  return `rgba(${rgb[0]}, ${rgb[1]}, ${rgb[2]}, ${alpha})`;
+}
 
 // Styled components
 const Container = styled.div`
@@ -53,7 +68,14 @@ const ContentWrapper = styled.div`
 `;
 
 
-const LoadingCard = styled.div<{ backgroundImage?: string; standalone?: boolean }>`
+const LoadingCard = styled.div<{
+  backgroundImage?: string;
+  standalone?: boolean;
+  accentColor?: string;
+  glowEnabled?: boolean;
+  glowIntensity?: number;
+  glowRate?: number;
+}>`
   ${cardBase};
   position: absolute;
   top: 0;
@@ -64,7 +86,6 @@ const LoadingCard = styled.div<{ backgroundImage?: string; standalone?: boolean 
   border-radius: 1.25rem;
   border: 1px solid rgba(34, 36, 36, 0.68);
   box-shadow: 0 8px 24px rgba(38, 36, 37, 0.7), 0 2px 8px rgba(22, 21, 21, 0.6);
-  
   ${({ backgroundImage }) => backgroundImage ? `
     &::after {
       content: '';
@@ -77,7 +98,6 @@ const LoadingCard = styled.div<{ backgroundImage?: string; standalone?: boolean 
       border-radius: 1.25rem;
       z-index: 0;
     }
-    
     &::before {
       content: '';
       position: absolute;
@@ -341,7 +361,7 @@ const AudioPlayerComponent = () => {
       }
       return;
     }
-    
+
     if (currentTrack?.id) {
       setAccentColorOverrides(prev => ({ ...prev, [currentTrack.id]: color }));
       setAccentColor(color);
@@ -378,7 +398,13 @@ const AudioPlayerComponent = () => {
 
     return (
       <ContentWrapper>
-        <LoadingCard backgroundImage={currentTrack?.image}>
+        <LoadingCard
+          backgroundImage={currentTrack?.image}
+          accentColor={accentColor}
+          glowEnabled={glowEnabled}
+          glowIntensity={effectiveGlow.intensity}
+          glowRate={effectiveGlow.rate}
+        >
 
           <CardContent style={{ position: 'relative', zIndex: 2 }}>
             <AlbumArt currentTrack={currentTrack} accentColor={accentColor} glowIntensity={glowEnabled ? effectiveGlow.intensity : 0} glowRate={effectiveGlow.rate} albumFilters={albumFilters} />
