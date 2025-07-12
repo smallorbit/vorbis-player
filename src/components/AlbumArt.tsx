@@ -56,12 +56,12 @@ const AlbumArtContainer = styled.div<{
     if (glowIntensity && glowIntensity > 0 && accentColor) {
       const accentShadow = hexToRgba(accentColor, Math.min(0.1, glowIntensity / 600));
       return css`
-        animation: ${pulseBoxShadow(accentShadow, accentColor)} ${glowRate ? glowRate * 1.5 : DEFAULT_GLOW_RATE}s linear infinite;
-        box-shadow: 0 8px 24px rgba(23, 22, 22, 0.7), 0 2px 8px rgba(22, 21, 21, 0.6), 0 0 32px 0 ${accentShadow};
-        @media (prefers-reduced-motion: reduce) {
-          animation: none;
-        }
-      `;
+        animation: ${pulseBoxShadow(accentShadow, accentColor)} ${glowRate || DEFAULT_GLOW_RATE}s linear infinite;
+    box - shadow: 0 8px 24px rgba(23, 22, 22, 0.7), 0 2px 8px rgba(22, 21, 21, 0.6), 0 0 32px 0 ${accentShadow};
+    @media(prefers - reduced - motion: reduce) {
+      animation: none;
+    }
+    `;
     }
     return '';
   }}
