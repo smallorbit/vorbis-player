@@ -1,5 +1,6 @@
 import React, { memo, useCallback } from 'react';
 import styled, { keyframes, css } from 'styled-components';
+import { theme } from '../styles/theme';
 
 // Define the component interface
 interface LikeButtonProps {
@@ -26,20 +27,20 @@ const heartBeat = keyframes`
   70% { transform: scale(1); }
 `;
 
-// Styled button component following the existing ControlButton pattern
+// Styled button component following the ToggleButton pattern
 const StyledLikeButton = styled.button<{ 
   $isLiked: boolean; 
   $accentColor: string; 
   $isLoading: boolean; 
 }>`
-  border: none;
+  border: 1px solid ${({ $isLiked, $accentColor }: { $isLiked: boolean; $accentColor: string }) => $isLiked ? $accentColor : theme.colors.border};
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: ${({ $isLoading }) => $isLoading ? 'default' : 'pointer'};
   transition: all 0.2s ease;
   padding: 0.5rem;
-  border-radius: 0.375rem;
+  border-radius: ${theme.borderRadius.md};
   position: relative;
   opacity: ${({ $isLoading }) => $isLoading ? 0.6 : 1};
   
@@ -51,27 +52,30 @@ const StyledLikeButton = styled.button<{
     transition: all 0.2s ease;
   }
   
-  /* Styling for liked state */
+  /* Styling for liked state - matching ToggleButton active state */
   ${({ $isLiked, $accentColor }) => $isLiked ? css`
-    background: ${$accentColor}33;
-    color: ${$accentColor};
+    background: ${$accentColor};
+    color: ${theme.colors.black};
     
     &:hover:not(:disabled) {
-      background: ${$accentColor}4D;
-      transform: scale(1.05);
+      background: ${$accentColor}DD;
+      border-color: ${$accentColor};
+      color: ${theme.colors.black};
+      transform: translateY(-1px);
     }
     
     svg {
       animation: ${heartBeat} 0.6s ease-in-out;
     }
   ` : css`
-    background: rgba(115, 115, 115, 0.2);
-    color: white;
+    background: ${theme.colors.muted.background};
+    color: ${theme.colors.muted.foreground};
     
     &:hover:not(:disabled) {
-      background: rgba(115, 115, 115, 0.3);
-      color: ${$accentColor};
-      transform: scale(1.05);
+      background: ${$accentColor}22;
+      border-color: ${$accentColor};
+      color: ${theme.colors.white};
+      transform: translateY(-1px);
     }
   `}
   
