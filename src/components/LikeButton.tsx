@@ -55,12 +55,12 @@ const StyledLikeButton = styled.button<{
   /* Styling for liked state - matching ToggleButton active state */
   ${({ $isLiked, $accentColor }) => $isLiked ? css`
     background: ${$accentColor};
-    color: ${theme.colors.black};
+    color: ${theme.colors.white  };
     
     &:hover:not(:disabled) {
-      background: ${$accentColor}DD;
+      background: ${$accentColor}4D;
       border-color: ${$accentColor};
-      color: ${theme.colors.black};
+      color: ${theme.colors.white};
       transform: translateY(-1px);
     }
     
