@@ -60,7 +60,7 @@ interface PlayerStateRendererProps {
   error: string | null;
   selectedPlaylistId: string | null;
   tracks: any[];
-  onPlaylistSelect: (playlistId: string) => void;
+  onPlaylistSelect: (playlistId: string, playlistName?: string) => void;
 }
 
 export const PlayerStateRenderer: React.FC<PlayerStateRendererProps> = ({
@@ -70,6 +70,9 @@ export const PlayerStateRenderer: React.FC<PlayerStateRendererProps> = ({
   tracks,
   onPlaylistSelect
 }) => {
+  const handlePlaylistSelect = (playlistId: string, playlistName: string) => {
+    onPlaylistSelect(playlistId, playlistName);
+  };
   // Show loading state
   if (isLoading) {
     return (
@@ -143,7 +146,7 @@ export const PlayerStateRenderer: React.FC<PlayerStateRendererProps> = ({
           </CardContent>
         </LoadingCard>
       }>
-        <PlaylistSelection onPlaylistSelect={onPlaylistSelect} />
+        <PlaylistSelection onPlaylistSelect={handlePlaylistSelect} />
       </Suspense>
     );
   }

@@ -21,6 +21,7 @@ export interface PlayerState {
   error: string | null;
   selectedPlaylistId: string | null;
   showPlaylist: boolean;
+  showPlaylistSelection: boolean;
   accentColor: string;
   showVisualEffects: boolean;
   glowEnabled: boolean;
@@ -39,6 +40,7 @@ export const usePlayerState = () => {
   const [error, setError] = useState<string | null>(null);
   const [selectedPlaylistId, setSelectedPlaylistId] = useState<string | null>(null);
   const [showPlaylist, setShowPlaylist] = useState(false);
+  const [showPlaylistSelection, setShowPlaylistSelection] = useState(false);
   const [accentColor, setAccentColor] = useState<string>(theme.colors.accent);
   const [showVisualEffects, setShowVisualEffects] = useState(false);
   
@@ -176,6 +178,7 @@ export const usePlayerState = () => {
     error,
     selectedPlaylistId,
     showPlaylist,
+    showPlaylistSelection,
     accentColor,
     showVisualEffects,
     glowEnabled,
@@ -193,6 +196,7 @@ export const usePlayerState = () => {
     setError,
     setSelectedPlaylistId,
     setShowPlaylist,
+    setShowPlaylistSelection,
     setAccentColor,
     setShowVisualEffects,
     setGlowEnabled,

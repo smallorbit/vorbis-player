@@ -185,13 +185,14 @@ interface SpotifyPlayerControlsProps {
   onAccentColorChange?: (color: string) => void;
   onShowVisualEffects?: () => void;
   showVisualEffects?: boolean;
+  onSwitchPlaylist?: () => void;
   // Add glow control props
   glowEnabled?: boolean;
   onGlowToggle?: () => void;
 }
 
 // --- SpotifyPlayerControls Component ---
-const SpotifyPlayerControls = memo<SpotifyPlayerControlsProps>(({ currentTrack, accentColor, onPlay, onPause, onNext, onPrevious, onShowPlaylist, onAccentColorChange, onShowVisualEffects, showVisualEffects, glowEnabled, onGlowToggle }) => {
+const SpotifyPlayerControls = memo<SpotifyPlayerControlsProps>(({ currentTrack, accentColor, onPlay, onPause, onNext, onPrevious, onShowPlaylist, onAccentColorChange, onShowVisualEffects, showVisualEffects, onSwitchPlaylist, glowEnabled, onGlowToggle }) => {
   // Custom accent color per track (from eyedropper)
   const [customAccentColorOverrides, setCustomAccentColorOverrides] = useState<Record<string, string>>({});
 
@@ -314,6 +315,15 @@ const SpotifyPlayerControls = memo<SpotifyPlayerControlsProps>(({ currentTrack, 
               <path d="M3 6h18v2H3V6zm0 5h18v2H3v-2zm0 5h18v2H3v-2z" />
             </svg>
           </ControlButton>
+          {onSwitchPlaylist && (
+            <ControlButton accentColor={accentColor} onClick={onSwitchPlaylist} title="Switch Playlist">
+              <svg viewBox="0 0 24 24" role="img" aria-hidden="true">
+                <path d="M3 6h12v2H3V6zm0 5h12v2H3v-2zm0 5h12v2H3v-2z" />
+                <path d="M16 9l4 3-4 3V9z" fill="currentColor" />
+                <path d="M21 6v2h-2V6h2zm0 5v2h-2v-2h2zm0 5v2h-2v-2h2z" fill="currentColor" opacity="0.6" />
+              </svg>
+            </ControlButton>
+          )}
         </TrackInfoRight>
       </TrackInfoRow>
 

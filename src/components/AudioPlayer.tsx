@@ -9,6 +9,7 @@ import { extractDominantColor } from '../utils/colorExtractor';
 
 const VisualEffectsMenu = lazy(() => import('./VisualEffectsMenu'));
 const PlaylistDrawer = lazy(() => import('./PlaylistDrawer'));
+const PlaylistSelection = lazy(() => import('./PlaylistSelection'));
 const SpotifyPlayerControls = lazy(() => import('./SpotifyPlayerControls'));
 import PlayerStateRenderer from './PlayerStateRenderer';
 import { usePlayerState } from '../hooks/usePlayerState';
@@ -105,6 +106,7 @@ const AudioPlayerComponent = () => {
     error,
     selectedPlaylistId,
     showPlaylist,
+    showPlaylistSelection,
     accentColor,
     showVisualEffects,
     glowEnabled,
@@ -120,6 +122,7 @@ const AudioPlayerComponent = () => {
     setError,
     setSelectedPlaylistId,
     setShowPlaylist,
+    setShowPlaylistSelection,
     setAccentColor,
     setShowVisualEffects,
     setGlowEnabled,
@@ -318,6 +321,10 @@ const AudioPlayerComponent = () => {
     setShowPlaylist(true);
   }, []);
 
+  const handleShowPlaylistSelection = useCallback(() => {
+    setShowPlaylistSelection(true);
+  }, []);
+
   const handleShowVisualEffects = useCallback(() => {
     setShowVisualEffects(true);
   }, []);
@@ -333,6 +340,15 @@ const AudioPlayerComponent = () => {
   const handleClosePlaylist = useCallback(() => {
     setShowPlaylist(false);
   }, []);
+
+  const handleClosePlaylistSelection = useCallback(() => {
+    setShowPlaylistSelection(false);
+  }, []);
+
+  const handlePlaylistSelectionSelect = useCallback((playlistId: string, playlistName?: string) => {
+    handlePlaylistSelect(playlistId, playlistName);
+    setShowPlaylistSelection(false);
+  }, [handlePlaylistSelect]);
 
   const handleAccentColorChange = useCallback((color: string) => {
     if (color === 'RESET_TO_DEFAULT' && currentTrack?.id) {
@@ -414,6 +430,7 @@ const AudioPlayerComponent = () => {
                 trackCount={tracks.length}
                 onAccentColorChange={handleAccentColorChange}
                 onShowVisualEffects={handleShowVisualEffects}
+                onSwitchPlaylist={handleShowPlaylistSelection}
                 glowEnabled={glowEnabled}
                 onGlowToggle={handleGlowToggle}
               />
@@ -454,6 +471,68 @@ const AudioPlayerComponent = () => {
             onTrackSelect={playTrack}
           />
         </Suspense>
+
+        {/* Playlist Selection Overlay */}
+        {showPlaylistSelection && (
+          <div style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(0, 0, 0, 0.8)',
+            zIndex: 10000,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}>
+            <div style={{
+              position: 'relative',
+              width: '100%',
+              height: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}>
+              <button
+                onClick={handleClosePlaylistSelection}
+                style={{
+                  position: 'absolute',
+                  top: '1rem',
+                  right: '1rem',
+                  background: 'rgba(255, 255, 255, 0.1)',
+                  border: '1px solid rgba(255, 255, 255, 0.2)',
+                  borderRadius: '0.5rem',
+                  color: 'white',
+                  padding: '0.5rem',
+                  cursor: 'pointer',
+                  zIndex: 10001,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: '40px',
+                  height: '40px'
+                }}
+                title="Close"
+              >
+                ✕
+              </button>
+              <Suspense fallback={
+                <div style={{ 
+                  color: 'white', 
+                  textAlign: 'center',
+                  background: 'rgba(0, 0, 0, 0.5)',
+                  padding: '2rem',
+                  borderRadius: '1rem'
+                }}>
+                  Loading playlist selection...
+                </div>
+              }>
+                <PlaylistSelection onPlaylistSelect={handlePlaylistSelectionSelect} />
+              </Suspense>
+            </div>
+          </div>
+        )}
 
       </ContentWrapper>
     );
