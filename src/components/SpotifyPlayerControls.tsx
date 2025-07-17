@@ -19,22 +19,16 @@ const PlayerControlsContainer = styled.div`
   display: flex;
   flex-direction: column;
   gap: ${({ theme }: any) => theme.spacing.sm};
-  padding: ${sm} ${lg} ${lg} ${lg};
   
-  /* Mobile responsive adjustments */
-  @media (max-width: ${({ theme }: any) => theme.breakpoints.sm}) {
-    padding: ${sm} ${sm} ${sm} ${sm};
-    gap: ${({ theme }: any) => theme.spacing.xs};
+  /* Desktop and tablet styling */
+  @media (min-width: ${({ theme }: any) => theme.breakpoints.md}) {
+    padding: ${sm} ${lg} ${lg} ${lg};
   }
   
-  /* iPhone 14 and similar */
-  @media (max-width: 414px) {
-    padding: 0.375rem 0.5rem 0.5rem 0.5rem;
-  }
-  
-  /* Extra small phones */
-  @media (max-width: 360px) {
-    padding: 0.25rem 0.375rem 0.375rem 0.375rem;
+  /* Mobile styling - optimized for full viewport */
+  @media (max-width: ${({ theme }: any) => theme.breakpoints.md}) {
+    padding: 0.5rem 1rem 1rem 1rem;
+    gap: 0.375rem;
   }
 `;
 
@@ -85,20 +79,9 @@ const TrackInfoCenter = styled.div`
   transform: translateX(-50%);
   
   /* Mobile responsive adjustments */
-  @media (max-width: ${({ theme }: any) => theme.breakpoints.sm}) {
+  @media (max-width: ${({ theme }: any) => theme.breakpoints.md}) {
     min-width: 7rem;
     gap: 0.25rem;
-  }
-  
-  /* iPhone 14 and similar */
-  @media (max-width: 414px) {
-    min-width: 6rem;
-    gap: 0.125rem;
-  }
-  
-  /* Extra small phones */
-  @media (max-width: 360px) {
-    min-width: 5.5rem;
   }
 `;
 
@@ -122,18 +105,15 @@ const ControlButton = styled.button<{ isActive?: boolean; accentColor: string }>
   min-height: 2.5rem;
   
   /* Mobile touch-friendly adjustments */
-  @media (max-width: ${({ theme }: any) => theme.breakpoints.sm}) {
+  @media (max-width: ${({ theme }: any) => theme.breakpoints.md}) {
     min-width: 3rem;
     min-height: 3rem;
-    padding: ${theme.spacing.md};
+    padding: 0.75rem;
     border-radius: ${theme.borderRadius.lg};
-  }
-  
-  /* iPhone 14 and similar */
-  @media (max-width: 414px) {
-    min-width: 2.75rem;
-    min-height: 2.75rem;
-    padding: 0.625rem;
+    
+    &:active {
+      transform: scale(0.95);
+    }
   }
   
   svg {
@@ -141,14 +121,9 @@ const ControlButton = styled.button<{ isActive?: boolean; accentColor: string }>
     height: 1.5rem;
     fill: currentColor;
     
-    @media (max-width: ${({ theme }: any) => theme.breakpoints.sm}) {
+    @media (max-width: ${({ theme }: any) => theme.breakpoints.md}) {
       width: 1.75rem;
       height: 1.75rem;
-    }
-    
-    @media (max-width: 414px) {
-      width: 1.625rem;
-      height: 1.625rem;
     }
   }
   
@@ -158,13 +133,6 @@ const ControlButton = styled.button<{ isActive?: boolean; accentColor: string }>
   &:hover, &:focus {
     background: ${({ isActive, accentColor }: { isActive?: boolean; accentColor: string }) => isActive ? `${accentColor}4D` : theme.colors.control.backgroundHover};
     outline: none;
-  }
-  
-  /* Better touch feedback */
-  @media (max-width: ${({ theme }: any) => theme.breakpoints.sm}) {
-    &:active {
-      transform: scale(0.95);
-    }
   }
 `;
 

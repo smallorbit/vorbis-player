@@ -10,7 +10,18 @@ const AppContainer = styled.div`
   background-color: ${({ theme }) => theme.colors.background};
   color: ${({ theme }) => theme.colors.foreground};
   min-height: 100vh;
-  ${flexCenter}
+  
+  /* Desktop and tablet - use flex centering */
+  @media (min-width: ${({ theme }) => theme.breakpoints.md}) {
+    ${flexCenter}
+  }
+  
+  /* Mobile - no flex centering, full width */
+  @media (max-width: ${({ theme }) => theme.breakpoints.md}) {
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+  }
 `;
 
 const LoadingContainer = styled.div`

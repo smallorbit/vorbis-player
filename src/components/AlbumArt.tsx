@@ -61,28 +61,23 @@ const AlbumArtContainer = styled.div<{
   border-radius: 1.25rem;
   position: relative;
   width: -webkit-fill-available;
-  margin: 1rem;
   overflow: hidden;
   background: transparent;
   box-shadow: 0 8px 24px rgba(23, 22, 22, 0.7), 0 2px 8px rgba(22, 21, 21, 0.6);
   z-index: 2;
   
-  /* Mobile responsive adjustments */
-  @media (max-width: ${({ theme }: any) => theme.breakpoints.sm}) {
-    margin: 0.75rem;
-    border-radius: 1rem;
+  /* Desktop and tablet styling */
+  @media (min-width: ${({ theme }: any) => theme.breakpoints.md}) {
+    margin: 1rem;
+    border-radius: 1.25rem;
   }
   
-  /* iPhone 14 and similar */
-  @media (max-width: 414px) {
+  /* Mobile styling - optimized for full viewport */
+  @media (max-width: ${({ theme }: any) => theme.breakpoints.md}) {
     margin: 0.5rem;
-    border-radius: 0.875rem;
-  }
-  
-  /* Extra small phones */
-  @media (max-width: 360px) {
-    margin: 0.375rem;
     border-radius: 0.75rem;
+    width: calc(100vw - 1rem);
+    box-sizing: border-box;
   }
 `;
 
