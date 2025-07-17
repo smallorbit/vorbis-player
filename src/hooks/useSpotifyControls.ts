@@ -28,7 +28,6 @@ export const useSpotifyControls = ({
   const [isLiked, setIsLiked] = useState(false);
   const [isLikePending, setIsLikePending] = useState(false);
 
-  // Monitor playback state
   useEffect(() => {
     const checkPlaybackState = async () => {
       const state = await spotifyPlayer.getCurrentState();
@@ -47,14 +46,12 @@ export const useSpotifyControls = ({
     return () => clearInterval(interval);
   }, [isDragging]);
 
-  // Set initial volume
   useEffect(() => {
     spotifyPlayer.setVolume(0.5);
     setVolume(50);
     setPreviousVolume(50);
   }, []);
 
-  // Check like status when track changes
   useEffect(() => {
     const checkLikeStatus = async () => {
       if (!currentTrack?.id) {
@@ -81,20 +78,14 @@ export const useSpotifyControls = ({
     if (isPlaying) {
       onPause();
     } else {
-      // Check current playback state to decide between play and resume
       const state = await spotifyPlayer.getCurrentState();
       
-      // If there's no current track or the current track doesn't match what we expect,
-      // use onPlay to start playing the selected track
       if (!state || !state.track_window?.current_track || 
           (currentTrack && state.track_window.current_track.id !== currentTrack.id)) {
         onPlay();
       } else {
-        // If the current track matches
         if (state.paused) {
           await spotifyPlayer.resume();
-        } else {
-          // Track is already playing, do nothing (just sync UI)
         }
       }
     }
@@ -184,7 +175,6 @@ export const useSpotifyControls = ({
   }, []);
 
   return {
-    // State
     isPlaying,
     isMuted,
     volume,
@@ -193,8 +183,6 @@ export const useSpotifyControls = ({
     isDragging,
     isLiked,
     isLikePending,
-
-    // Handlers
     handlePlayPause,
     handleMuteToggle,
     handleVolumeButtonClick,
@@ -204,8 +192,6 @@ export const useSpotifyControls = ({
     handleSliderMouseDown,
     handleSliderMouseUp,
     formatTime,
-
-    // Navigation handlers
     onNext,
     onPrevious,
   };

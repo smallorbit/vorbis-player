@@ -3,7 +3,6 @@ import { getPlaylistTracks, getLikedSongs, spotifyAuth } from '../services/spoti
 import { spotifyPlayer } from '../services/spotifyPlayer';
 import type { Track } from '../services/spotify';
 
-// Helper to wait for Spotify player readiness
 async function waitForSpotifyReady(timeout = 10000): Promise<void> {
   const start = Date.now();
   while (!spotifyPlayer.getIsReady() || !spotifyPlayer.getDeviceId()) {
@@ -12,7 +11,6 @@ async function waitForSpotifyReady(timeout = 10000): Promise<void> {
   }
 }
 
-// Helper to shuffle an array
 function shuffleArray<T>(array: T[]): T[] {
   const shuffled = [...array];
   for (let i = shuffled.length - 1; i > 0; i--) {
@@ -46,26 +44,15 @@ export const usePlaylistManager = ({
       setIsLoading(true);
       setSelectedPlaylistId(playlistId);
 
-      // Initialize Spotify player
       await spotifyPlayer.initialize();
-
-      // Wait for the player to be ready
       await waitForSpotifyReady();
-
-      // Ensure our device is the active player
       await spotifyPlayer.transferPlaybackToDevice();
-
-      // Fetch tracks based on playlist type
       let fetchedTracks: Track[] = [];
       
       if (playlistId === 'liked-songs') {
-        // Fetch liked songs (limit to 200 for performance)
         fetchedTracks = await getLikedSongs(200);
-        
-        // Shuffle liked songs for a better listening experience
         fetchedTracks = shuffleArray(fetchedTracks);
       } else {
-        // Fetch tracks from the selected playlist
         fetchedTracks = await getPlaylistTracks(playlistId);
       }
 
@@ -81,19 +68,16 @@ export const usePlaylistManager = ({
       setTracks(fetchedTracks);
       setCurrentTrackIndex(0);
 
-      // Start playing the first track with improved reliability
       setTimeout(async () => {
         try {
           await playTrack(0);
         } catch (error) {
           console.error('Failed to start playback:', error);
-          // Try to recover by ensuring our device is active
           try {
             const token = await spotifyAuth.ensureValidToken();
             const deviceId = spotifyPlayer.getDeviceId();
 
             if (deviceId) {
-              // Transfer playback to our device and start playing
               await fetch('https://api.spotify.com/v1/me/player', {
                 method: 'PUT',
                 headers: {
@@ -106,7 +90,6 @@ export const usePlaylistManager = ({
                 })
               });
 
-              // Try playing the track again after a brief delay
               setTimeout(async () => {
                 try {
                   await playTrack(0);

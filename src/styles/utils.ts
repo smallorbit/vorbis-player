@@ -1,7 +1,6 @@
 import { css } from 'styled-components';
 import { theme } from './theme';
 
-// Common flexbox utilities
 export const flexCenter = css`
   display: flex;
   align-items: center;
@@ -24,7 +23,6 @@ export const flexRow = css`
   flex-direction: row;
 `;
 
-// Common positioning
 export const absoluteCenter = css`
   position: absolute;
   top: 50%;
@@ -37,14 +35,12 @@ export const fullSize = css`
   height: 100%;
 `;
 
-// Glass morphism effect
 export const glassMorphism = css`
   background: rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(20px);
   border: 1px solid rgba(255, 255, 255, 0.2);
 `;
 
-// Button variants
 export const buttonBase = css`
   display: inline-flex;
   align-items: center;
@@ -106,7 +102,6 @@ export const buttonGhost = css`
   }
 `;
 
-// Card styles
 export const cardBase = css`
   background-color: ${theme.colors.muted.background};
   border: 1px solid ${theme.colors.border};
@@ -115,7 +110,6 @@ export const cardBase = css`
   box-shadow: ${theme.shadows.sm};
 `;
 
-// Input styles
 export const inputBase = css`
   display: flex;
   width: 100%;
@@ -143,7 +137,6 @@ export const inputBase = css`
   }
 `;
 
-// Text utilities
 export const textShadow = css`
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
 `;
@@ -154,7 +147,6 @@ export const truncateText = css`
   white-space: nowrap;
 `;
 
-// Animation utilities
 export const fadeIn = css`
   opacity: 0;
   animation: fadeIn 0.3s ease-in-out forwards;
@@ -179,7 +171,6 @@ export const slideUp = css`
   }
 `;
 
-// Hover effects
 export const hoverScale = css`
   transition: transform ${theme.transitions.fast};
   
@@ -196,7 +187,6 @@ export const hoverGlow = css`
   }
 `;
 
-// Screen reader only
 export const srOnly = css`
   position: absolute;
   width: 1px;
@@ -209,7 +199,6 @@ export const srOnly = css`
   border: 0;
 `;
 
-// Responsive helpers
 export const hideOnMobile = css`
   @media (max-width: ${theme.breakpoints.md}) {
     display: none;
@@ -222,7 +211,6 @@ export const showOnMobile = css`
   }
 `;
 
-// Scrollbar styling
 export const customScrollbar = css`
   &::-webkit-scrollbar {
     width: 8px;
@@ -243,7 +231,6 @@ export const customScrollbar = css`
   }
 `;
 
-// Overlay patterns
 export const overlayBase = css`
   position: fixed;
   top: 0;
@@ -265,7 +252,6 @@ export const overlayDark = css`
   backdrop-filter: blur(20px);
 `;
 
-// Drawer patterns
 export const drawerBase = css`
   position: fixed;
   top: 0;
@@ -288,7 +274,6 @@ export const drawerContainer = css`
   }
 `;
 
-// Control button patterns
 export const controlButtonBase = css`
   border: none;
   display: flex;
@@ -326,7 +311,6 @@ export const controlButtonActive = css<{ accentColor: string }>`
   }
 `;
 
-// Popover patterns
 export const popoverBase = css`
   background: ${theme.colors.popover.background};
   border-radius: ${theme.borderRadius.xl};
@@ -335,7 +319,6 @@ export const popoverBase = css`
   z-index: ${theme.zIndex.popover};
 `;
 
-// Close button pattern
 export const closeButton = css`
   background: none;
   border: none;
@@ -356,7 +339,6 @@ export const closeButton = css`
   }
 `;
 
-// Slider patterns
 export const sliderBase = css<{ accentColor: string }>`
   appearance: none;
   width: 100%;

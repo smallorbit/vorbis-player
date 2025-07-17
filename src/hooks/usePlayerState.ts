@@ -109,7 +109,6 @@ export const usePlayerState = () => {
     };
   });
 
-  // Load overrides from localStorage on mount
   useEffect(() => {
     const stored = localStorage.getItem('accentColorOverrides');
     if (stored) {
@@ -117,17 +116,14 @@ export const usePlayerState = () => {
     }
   }, []);
 
-  // Save overrides to localStorage when changed
   useEffect(() => {
     localStorage.setItem('accentColorOverrides', JSON.stringify(accentColorOverrides));
   }, [accentColorOverrides]);
 
-  // Persist album filters to localStorage
   useEffect(() => {
     localStorage.setItem('vorbis-player-album-filters', JSON.stringify(albumFilters));
   }, [albumFilters]);
 
-  // Persist glow settings to localStorage
   useEffect(() => {
     localStorage.setItem('vorbis-player-glow-enabled', JSON.stringify(glowEnabled));
   }, [glowEnabled]);
@@ -169,7 +165,6 @@ export const usePlayerState = () => {
   }, []);
 
   return {
-    // State
     tracks,
     currentTrackIndex,
     isLoading,
@@ -185,8 +180,6 @@ export const usePlayerState = () => {
     perAlbumGlow,
     accentColorOverrides,
     albumFilters,
-    
-    // Setters
     setTracks,
     setCurrentTrackIndex,
     setIsLoading,
@@ -202,8 +195,6 @@ export const usePlayerState = () => {
     setPerAlbumGlow,
     setAccentColorOverrides,
     setAlbumFilters,
-    
-    // Handlers
     handleFilterChange,
     handleResetFilters,
   };

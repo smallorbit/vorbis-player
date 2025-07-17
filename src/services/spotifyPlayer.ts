@@ -1,10 +1,8 @@
 import { spotifyAuth } from './spotify';
 
-// Set up the global callback immediately when this module loads
 if (typeof window !== 'undefined') {
   window.onSpotifyWebPlaybackSDKReady = () => {
     console.log('Spotify Web Playback SDK is ready');
-    // SDK is ready but we'll initialize manually when authenticated
   };
 }
 
@@ -13,17 +11,13 @@ export class SpotifyPlayerService {
   private deviceId: string | null = null;
   private isReady = false;
 
-  constructor() {
-    // Callback is already set up globally above
-  }
+  constructor() {}
 
   async initialize(): Promise<void> {
-    // Check if user is authenticated first
     if (!spotifyAuth.isAuthenticated()) {
       throw new Error('User must be authenticated before initializing player');
     }
 
-    // If player is already initialized, just return
     if (this.player) {
       return;
     }
@@ -189,7 +183,6 @@ export class SpotifyPlayerService {
 
   onPlayerStateChanged(callback: (state: SpotifyPlaybackState | null) => void): void {
     if (this.player) {
-      // Remove any existing listeners first to prevent duplicates
       this.player.removeListener('player_state_changed');
       this.player.addListener('player_state_changed', callback);
     }
