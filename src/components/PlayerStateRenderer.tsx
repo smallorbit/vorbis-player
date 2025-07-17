@@ -3,7 +3,6 @@ import styled, { keyframes } from 'styled-components';
 import { spotifyAuth } from '../services/spotify';
 import { Card, CardHeader, CardContent } from '../components/styled';
 import { Button } from '../components/styled';
-import { Skeleton } from '../components/styled';
 import { Alert, AlertDescription } from '../components/styled';
 import { flexColumn, cardBase } from '../styles/utils';
 import { theme } from '@/styles/theme';
@@ -161,11 +160,6 @@ const ProgressBar = styled.div`
     background: linear-gradient(90deg, transparent, #1db954, transparent);
     animation: ${shimmer} 1.5s infinite linear;
   }
-`;
-
-const SkeletonContainer = styled.div`
-  ${flexColumn};
-  gap: ${({ theme }: any) => theme.spacing.md};
 `;
 
 interface PlayerStateRendererProps {
