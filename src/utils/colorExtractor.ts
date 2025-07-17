@@ -1,8 +1,3 @@
-/**
- * Color extraction utility for album artwork
- * Extracts dominant colors from images using canvas analysis
- */
-
 interface ColorData {
   r: number;
   g: number;
@@ -16,14 +11,11 @@ export interface ExtractedColor {
   hsl: string;
 }
 
-// Performance optimization: Cache for color extraction results
 const colorCache = new Map<string, ExtractedColor | null>();
 const MAX_CACHE_SIZE = 100;
 
-// Helper function to manage cache size
 function addToCache(key: string, value: ExtractedColor | null) {
   if (colorCache.size >= MAX_CACHE_SIZE) {
-    // Remove oldest entries (simple LRU)
     const firstKey = colorCache.keys().next().value;
     if (firstKey) {
       colorCache.delete(firstKey);
@@ -32,9 +24,6 @@ function addToCache(key: string, value: ExtractedColor | null) {
   colorCache.set(key, value);
 }
 
-/**
- * Converts RGB values to HSL
- */
 function rgbToHsl(r: number, g: number, b: number): [number, number, number] {
   r /= 255;
   g /= 255;
@@ -67,36 +56,21 @@ function rgbToHsl(r: number, g: number, b: number): [number, number, number] {
   return [h * 360, s * 100, l * 100];
 }
 
-/**
- * Converts RGB to hex
- */
 function rgbToHex(r: number, g: number, b: number): string {
   return `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`;
 }
 
-/**
- * Determines if a color is too dark or too light for good contrast
- */
 function isGoodContrast(r: number, g: number, b: number): boolean {
   const [, , lightness] = rgbToHsl(r, g, b);
-  // Exclude colors that are too dark (<40%) or too light (>85%)
   return lightness >= 40 && lightness <= 85;
 }
 
-/**
- * Determines if a color is vibrant enough (has good saturation)
- */
 function isVibrant(r: number, g: number, b: number): boolean {
   const [, saturation] = rgbToHsl(r, g, b);
-  // Require minimum saturation of 50%
   return saturation >= 50;
 }
 
-/**
- * Extracts the dominant color from an image URL
- */
 export async function extractDominantColor(imageUrl: string): Promise<ExtractedColor | null> {
-  // Check cache first
   if (colorCache.has(imageUrl)) {
     return colorCache.get(imageUrl) || null;
   }
@@ -108,7 +82,6 @@ export async function extractDominantColor(imageUrl: string): Promise<ExtractedC
       
       img.onload = () => {
         try {
-          // Create canvas and draw image
           const canvas = document.createElement('canvas');
           const ctx = canvas.getContext('2d');
           
@@ -117,7 +90,6 @@ export async function extractDominantColor(imageUrl: string): Promise<ExtractedC
             return;
           }
 
-          // Scale down image for faster processing
           const maxSize = 150;
           const scale = Math.min(maxSize / img.width, maxSize / img.height);
           canvas.width = img.width * scale;
@@ -125,23 +97,19 @@ export async function extractDominantColor(imageUrl: string): Promise<ExtractedC
           
           ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
           
-          // Get image data
           const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
           const data = imageData.data;
           
-          // Count colors (sample every 4th pixel for performance)
           const colorMap = new Map<string, ColorData>();
           
-          for (let i = 0; i < data.length; i += 16) { // Sample every 4th pixel (i += 16 because each pixel is 4 values)
+          for (let i = 0; i < data.length; i += 16) {
             const r = data[i];
             const g = data[i + 1];
             const b = data[i + 2];
             const a = data[i + 3];
             
-            // Skip transparent pixels
             if (a < 128) continue;
             
-            // Group similar colors together (reduce precision)
             const rBucket = Math.floor(r / 8) * 8;
             const gBucket = Math.floor(g / 8) * 8;
             const bBucket = Math.floor(b / 8) * 8;
@@ -155,20 +123,17 @@ export async function extractDominantColor(imageUrl: string): Promise<ExtractedC
             }
           }
           
-          // Find the most common vibrant color
           let bestColor: ColorData | null = null;
           let bestScore = 0;
           
           for (const color of colorMap.values()) {
-            // Skip colors that are too dark, light, or not vibrant
             if (!isGoodContrast(color.r, color.g, color.b) || !isVibrant(color.r, color.g, color.b)) {
               continue;
             }
             
-            // Score based on frequency and vibrancy
             const [, saturation, lightness] = rgbToHsl(color.r, color.g, color.b);
             const vibrancyScore = saturation / 100;
-            const contrastScore = 1 - Math.abs(lightness - 50) / 50; // Prefer colors closer to 50% lightness
+            const contrastScore = 1 - Math.abs(lightness - 50) / 50;
             const score = color.count * vibrancyScore * contrastScore;
             
             if (score > bestScore) {
@@ -202,7 +167,6 @@ export async function extractDominantColor(imageUrl: string): Promise<ExtractedC
         resolve(null);
       };
       
-      // Handle CORS issues by trying different approaches
       img.src = imageUrl;
     } catch (error) {
       console.error('Error loading image:', error);
@@ -212,11 +176,7 @@ export async function extractDominantColor(imageUrl: string): Promise<ExtractedC
   });
 }
 
-/**
- * Gets a lighter variant of a color for hover states
- */
 export function getLighterVariant(color: string, amount = 0.2): string {
-  // Convert hex to RGB if needed
   let r: number, g: number, b: number;
   
   if (color.startsWith('#')) {
@@ -232,7 +192,6 @@ export function getLighterVariant(color: string, amount = 0.2): string {
     return color;
   }
   
-  // Increase brightness
   r = Math.min(255, Math.floor(r + (255 - r) * amount));
   g = Math.min(255, Math.floor(g + (255 - g) * amount));
   b = Math.min(255, Math.floor(b + (255 - b) * amount));
@@ -240,11 +199,7 @@ export function getLighterVariant(color: string, amount = 0.2): string {
   return `rgb(${r}, ${g}, ${b})`;
 }
 
-/**
- * Gets a semi-transparent variant of a color for backgrounds
- */
 export function getTransparentVariant(color: string, opacity = 0.2): string {
-  // Convert hex to RGB if needed
   let r: number, g: number, b: number;
   
   if (color.startsWith('#')) {
@@ -263,9 +218,6 @@ export function getTransparentVariant(color: string, opacity = 0.2): string {
   return `rgba(${r}, ${g}, ${b}, ${opacity})`;
 }
 
-/**
- * Extracts the top N vibrant colors from an image URL
- */
 export async function extractTopVibrantColors(imageUrl: string, count = 3): Promise<ExtractedColor[]> {
   return new Promise((resolve) => {
     try {
@@ -311,7 +263,6 @@ export async function extractTopVibrantColors(imageUrl: string, count = 3): Prom
             }
           }
 
-          // Score and filter vibrant, good-contrast colors
           const scoredColors: (ColorData & { score: number })[] = [];
           for (const color of colorMap.values()) {
             if (!isGoodContrast(color.r, color.g, color.b) || !isVibrant(color.r, color.g, color.b)) {
@@ -324,10 +275,8 @@ export async function extractTopVibrantColors(imageUrl: string, count = 3): Prom
             scoredColors.push({ ...color, score });
           }
 
-          // Sort by score descending
           scoredColors.sort((a, b) => b.score - a.score);
 
-          // Helper to check if two colors are too similar (Euclidean distance in RGB)
           function isTooSimilar(c1: ColorData, c2: ColorData, threshold = 40) {
             const dr = c1.r - c2.r;
             const dg = c1.g - c2.g;
@@ -335,7 +284,6 @@ export async function extractTopVibrantColors(imageUrl: string, count = 3): Prom
             return Math.sqrt(dr * dr + dg * dg + db * db) < threshold;
           }
 
-          // Select top N distinct colors
           const selected: ColorData[] = [];
           for (const color of scoredColors) {
             if (selected.every(sel => !isTooSimilar(sel, color))) {

@@ -2,7 +2,6 @@ import { defineConfig } from 'vitest/config'
 import react from '@vitejs/plugin-react'
 import path from 'path'
 
-// https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
   build: {
@@ -25,7 +24,7 @@ export default defineConfig({
             '@radix-ui/react-toggle-group',
             '@radix-ui/react-checkbox'
           ],
-          styled: ['styled-components'], // Keep for gradual migration
+          styled: ['styled-components'],
           icons: ['lucide-react']
         }
       }
@@ -33,10 +32,9 @@ export default defineConfig({
     chunkSizeWarningLimit: 1000,
     cssCodeSplit: true,
     minify: 'esbuild',
-    // Optimize for Vercel deployment
     target: 'es2020',
-    sourcemap: false, // Disable source maps in production for smaller bundles
-    assetsInlineLimit: 4096 // Inline small assets
+    sourcemap: false,
+    assetsInlineLimit: 4096
   },
   resolve: {
     alias: {

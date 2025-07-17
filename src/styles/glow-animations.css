@@ -1,22 +1,17 @@
-/* GPU-Accelerated Glow Animations for Vorbis Player */
-/* Optimized using transform/filter instead of box-shadow for better performance */
 
 :root {
-  /* CSS variables for dynamic theming */
   --accent-color: #000000;
   --glow-intensity: 50;
   --glow-rate: 3.5s;
   --accent-rgb: 0, 0, 0;
 }
 
-/* GPU layer promotion and optimization hints */
 .glow-container {
   transform: translateZ(0);
   will-change: transform, opacity;
   isolation: isolate;
 }
 
-/* Optimized pulsing glow animation using filter: drop-shadow() */
 @keyframes pulse-glow {
   0%, 100% {
     filter: 
@@ -34,7 +29,6 @@
   }
 }
 
-/* Breathing animation for accent color overlay */
 @keyframes breathe-glow {
   0%, 100% {
     filter: brightness(0.9);
@@ -42,21 +36,18 @@
     transform: translateZ(0);
   }
   50% {
-    /* filter: brightness(1.2); */
     filter: brightness(calc(var(--glow-intensity) / 100));
     opacity: calc(var(--glow-intensity) / 100);
     transform: translateZ(0);
   }
 }
 
-/* Main glow animation class */
 .glow-active {
   animation: pulse-glow var(--glow-rate) linear infinite;
   transform: translateZ(0);
   will-change: transform, filter;
 }
 
-/* Background glow layer animation */
 .glow-background {
   animation: breathe-glow var(--glow-rate) linear infinite;
   transform: translateZ(0);
@@ -71,12 +62,10 @@
   display: block;
 }
 
-/* Hidden state for when glow is disabled */
 .glow-hidden {
   display: none;
 }
 
-/* Respect user motion preferences */
 @media (prefers-reduced-motion: reduce) {
   .glow-active,
   .glow-background {
@@ -86,7 +75,6 @@
   }
 }
 
-/* Performance optimization for low-end devices */
 @media (max-resolution: 1dppx) {
   .glow-active {
     animation-duration: calc(var(--glow-rate) * 1.5);
@@ -96,7 +84,6 @@
   }
 }
 
-/* High refresh rate optimization */
 @media (min-resolution: 2dppx) {
   .glow-active,
   .glow-background {

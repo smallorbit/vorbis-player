@@ -23,7 +23,6 @@
   }
 }
 
-/* Variants */
 .primary {
   background: linear-gradient(135deg, 
     hsl(var(--primary-hue), 70%, 55%) 0%, 
@@ -95,7 +94,6 @@
   }
 }
 
-/* Sizes */
 .sm {
   padding: 0.375rem 0.75rem;
   font-size: 0.75rem;

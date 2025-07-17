@@ -3,7 +3,6 @@ import './index.css'
 import './styles/glow-animations.css'
 import App from './App.tsx'
 
-// Register service worker for caching
 if ('serviceWorker' in navigator && import.meta.env.PROD) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/sw.js')

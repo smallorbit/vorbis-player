@@ -38,37 +38,20 @@ h1 {
   line-height: 1.1;
 }
 
-/* Button styles are now handled by the theme system and styled-components */
 
-/* Custom slider styles for volume control */
 
-/* Glass morphism effect */
 @supports (backdrop-filter: blur(20px)) {
   .backdrop-blur-lg {
     backdrop-filter: blur(20px);
   }
 }
 
-/* Button animations
-@keyframes pulse-orange {
-  0%, 100% {
-    box-shadow: 0 12px 35px rgba(251, 146, 60, 0.5);
-  }
-  50% {
-    box-shadow: 0 12px 35px rgba(251, 146, 60, 0.8);
-  }
-} */
 
-/* .animate-pulse-orange {
-  animation: pulse-orange 2s ease-in-out infinite;
-} */
 
-/* Enhanced shadows for better contrast */
 .drop-shadow-bold {
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.8));
 }
 
-/* High contrast borders */
 .border-3 {
   border-width: 3px;
 }
@@ -77,12 +60,10 @@ h1 {
   border-width: 4px;
 }
 
-/* Text shadows for better readability in light mode */
 .text-shadow-lg {
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
 }
 
-/* Volume slider styles */
 input[type="range"] {
   appearance: none;
   -webkit-appearance: none;

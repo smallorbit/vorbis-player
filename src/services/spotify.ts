@@ -216,7 +216,6 @@ class SpotifyAuth {
       } catch (e) {
         sessionStorage.removeItem('spotify_processed_code');
 
-        // If code verifier is missing, restart the auth flow
         if (e instanceof Error && e.message.includes('Code verifier not found')) {
           this.logout();
           await this.redirectToAuth();
@@ -331,7 +330,7 @@ export const getPlaylistTracks = async (playlistId: string): Promise<Track[]> =>
       }
     }
 
-    nextUrl = data.next; // Pagination
+    nextUrl = data.next;
   }
 
   return tracks;
@@ -359,7 +358,6 @@ export const getSpotifyUserPlaylists = async (): Promise<Track[]> => {
 
     const tracks: Track[] = [];
 
-    // Get tracks from user's playlists (limit to first 10 playlists to avoid rate limits)
     for (const playlist of (data.items || []).slice(0, 10)) {
       if (!playlist.tracks?.href) {
         continue;
@@ -391,7 +389,6 @@ export const getSpotifyUserPlaylists = async (): Promise<Track[]> => {
       }
     }
 
-    // If no tracks found in playlists, try to get liked songs
     if (tracks.length === 0) {
       const likedResponse = await fetch('https://api.spotify.com/v1/me/tracks?limit=50', {
         headers: {
@@ -429,11 +426,6 @@ export const getSpotifyUserPlaylists = async (): Promise<Track[]> => {
   }
 };
 
-/**
- * Check if a track is saved in the user's library (liked songs)
- * @param trackId - The Spotify track ID to check
- * @returns Promise<boolean> - True if the track is saved, false otherwise
- */
 export const checkTrackSaved = async (trackId: string): Promise<boolean> => {
   const token = await spotifyAuth.ensureValidToken();
   const response = await fetch(`https://api.spotify.com/v1/me/tracks/contains?ids=${trackId}`, {
@@ -445,14 +437,9 @@ export const checkTrackSaved = async (trackId: string): Promise<boolean> => {
   }
 
   const data = await response.json();
-  return data[0]; // Returns boolean
+  return data[0];
 };
 
-/**
- * Add a track to the user's library (liked songs)
- * @param trackId - The Spotify track ID to save
- * @returns Promise<void>
- */
 export const saveTrack = async (trackId: string): Promise<void> => {
   const token = await spotifyAuth.ensureValidToken();
   const response = await fetch('https://api.spotify.com/v1/me/tracks', {
@@ -469,11 +456,6 @@ export const saveTrack = async (trackId: string): Promise<void> => {
   }
 };
 
-/**
- * Remove a track from the user's library (liked songs)
- * @param trackId - The Spotify track ID to remove
- * @returns Promise<void>
- */
 export const unsaveTrack = async (trackId: string): Promise<void> => {
   const token = await spotifyAuth.ensureValidToken();
   const response = await fetch('https://api.spotify.com/v1/me/tracks', {
@@ -490,11 +472,6 @@ export const unsaveTrack = async (trackId: string): Promise<void> => {
   }
 };
 
-/**
- * Get the user's liked songs from Spotify
- * @param limit - Maximum number of tracks to fetch (default: 50)
- * @returns Promise<Track[]> - Array of liked tracks
- */
 export const getLikedSongs = async (limit: number = 50): Promise<Track[]> => {
   const token = await spotifyAuth.ensureValidToken();
   
@@ -532,7 +509,7 @@ export const getLikedSongs = async (limit: number = 50): Promise<Track[]> => {
       }
     }
 
-    nextUrl = data.next; // Pagination
+    nextUrl = data.next;
   }
 
   return tracks;
