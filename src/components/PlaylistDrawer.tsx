@@ -21,8 +21,26 @@ const PlaylistDrawerContainer = styled.div<{ isOpen: boolean }>`
   padding: ${theme.spacing.md};
   box-sizing: border-box;
   
+  /* Mobile responsive adjustments */
+  @media (max-width: ${theme.breakpoints.md}) {
+    width: 100vw;
+    padding: ${theme.spacing.sm};
+    border-left: none;
+  }
+  
   @media (max-width: ${theme.breakpoints.sm}) {
     width: 100vw;
+    padding: ${theme.spacing.sm} ${theme.spacing.xs};
+  }
+  
+  /* iPhone 14 and similar */
+  @media (max-width: 414px) {
+    padding: 0.75rem 0.5rem;
+  }
+  
+  /* Extra small phones */
+  @media (max-width: 360px) {
+    padding: 0.5rem 0.375rem;
   }
 `;
 
@@ -78,10 +96,38 @@ const CloseButton = styled.button`
   padding: ${theme.spacing.sm};
   border-radius: ${theme.borderRadius.md};
   transition: all 0.2s ease;
+  min-width: 2.5rem;
+  min-height: 2.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   
-  &:hover {
-    background: ${theme.colors.muted.background};
+  /* Mobile touch-friendly adjustments */
+  @media (max-width: ${theme.breakpoints.sm}) {
+    min-width: 3rem;
+    min-height: 3rem;
+    padding: ${theme.spacing.md};
+    font-size: ${theme.fontSize['2xl']};
+  }
+  
+  /* iPhone 14 and similar */
+  @media (max-width: 414px) {
+    min-width: 2.75rem;
+    min-height: 2.75rem;
+    padding: 0.625rem;
+  }
+  
+  &:hover, &:focus {
+    background: ${theme.colors.control.background};
     color: ${theme.colors.white};
+    outline: none;
+  }
+  
+  /* Better touch feedback */
+  @media (max-width: ${theme.breakpoints.sm}) {
+    &:active {
+      transform: scale(0.95);
+    }
   }
 `;
 

@@ -20,6 +20,22 @@ const PlayerControlsContainer = styled.div`
   flex-direction: column;
   gap: ${({ theme }: any) => theme.spacing.sm};
   padding: ${sm} ${lg} ${lg} ${lg};
+  
+  /* Mobile responsive adjustments */
+  @media (max-width: ${({ theme }: any) => theme.breakpoints.sm}) {
+    padding: ${sm} ${sm} ${sm} ${sm};
+    gap: ${({ theme }: any) => theme.spacing.xs};
+  }
+  
+  /* iPhone 14 and similar */
+  @media (max-width: 414px) {
+    padding: 0.375rem 0.5rem 0.5rem 0.5rem;
+  }
+  
+  /* Extra small phones */
+  @media (max-width: 360px) {
+    padding: 0.25rem 0.375rem 0.375rem 0.375rem;
+  }
 `;
 
 const PlayerTrackName = styled.div`
@@ -67,6 +83,23 @@ const TrackInfoCenter = styled.div`
   position: absolute;
   left: 50%;
   transform: translateX(-50%);
+  
+  /* Mobile responsive adjustments */
+  @media (max-width: ${({ theme }: any) => theme.breakpoints.sm}) {
+    min-width: 7rem;
+    gap: 0.25rem;
+  }
+  
+  /* iPhone 14 and similar */
+  @media (max-width: 414px) {
+    min-width: 6rem;
+    gap: 0.125rem;
+  }
+  
+  /* Extra small phones */
+  @media (max-width: 360px) {
+    min-width: 5.5rem;
+  }
 `;
 
 const TrackInfoRight = styled.div`
@@ -85,18 +118,53 @@ const ControlButton = styled.button<{ isActive?: boolean; accentColor: string }>
   transition: all 0.2s ease;
   padding: ${theme.spacing.sm};
   border-radius: ${theme.borderRadius.md};
+  min-width: 2.5rem;
+  min-height: 2.5rem;
+  
+  /* Mobile touch-friendly adjustments */
+  @media (max-width: ${({ theme }: any) => theme.breakpoints.sm}) {
+    min-width: 3rem;
+    min-height: 3rem;
+    padding: ${theme.spacing.md};
+    border-radius: ${theme.borderRadius.lg};
+  }
+  
+  /* iPhone 14 and similar */
+  @media (max-width: 414px) {
+    min-width: 2.75rem;
+    min-height: 2.75rem;
+    padding: 0.625rem;
+  }
   
   svg {
     width: 1.5rem;
     height: 1.5rem;
     fill: currentColor;
+    
+    @media (max-width: ${({ theme }: any) => theme.breakpoints.sm}) {
+      width: 1.75rem;
+      height: 1.75rem;
+    }
+    
+    @media (max-width: 414px) {
+      width: 1.625rem;
+      height: 1.625rem;
+    }
   }
   
   background: ${({ isActive, accentColor }: { isActive?: boolean; accentColor: string }) => isActive ? accentColor : theme.colors.control.background};
   color: ${theme.colors.white};
   
-  &:hover {
+  &:hover, &:focus {
     background: ${({ isActive, accentColor }: { isActive?: boolean; accentColor: string }) => isActive ? `${accentColor}4D` : theme.colors.control.backgroundHover};
+    outline: none;
+  }
+  
+  /* Better touch feedback */
+  @media (max-width: ${({ theme }: any) => theme.breakpoints.sm}) {
+    &:active {
+      transform: scale(0.95);
+    }
   }
 `;
 

@@ -41,6 +41,54 @@ export const glassMorphism = css`
   border: 1px solid rgba(255, 255, 255, 0.2);
 `;
 
+// Mobile-responsive utilities
+export const mobileFullWidth = css`
+  @media (max-width: ${theme.breakpoints.sm}) {
+    width: 100%;
+  }
+`;
+
+export const mobilePadding = css`
+  @media (max-width: ${theme.breakpoints.sm}) {
+    padding: ${theme.spacing.sm};
+  }
+  
+  @media (max-width: 414px) {
+    padding: ${theme.spacing.xs};
+  }
+`;
+
+export const mobileMargin = css`
+  @media (max-width: ${theme.breakpoints.sm}) {
+    margin: ${theme.spacing.sm};
+  }
+  
+  @media (max-width: 414px) {
+    margin: ${theme.spacing.xs};
+  }
+`;
+
+export const touchFriendly = css`
+  @media (max-width: ${theme.breakpoints.sm}) {
+    min-width: 44px;
+    min-height: 44px;
+    
+    &:active {
+      transform: scale(0.95);
+    }
+  }
+`;
+
+export const mobileText = css`
+  @media (max-width: ${theme.breakpoints.sm}) {
+    font-size: ${theme.fontSize.sm};
+  }
+  
+  @media (max-width: 414px) {
+    font-size: ${theme.fontSize.xs};
+  }
+`;
+
 export const buttonBase = css`
   display: inline-flex;
   align-items: center;

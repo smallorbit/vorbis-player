@@ -64,7 +64,13 @@ const DrawerContainer = styled.div<{ $isOpen: boolean }>`
   z-index: ${theme.zIndex.modal};
   overflow-y: auto;
   
+  /* Mobile responsive adjustments */
   @media (max-width: ${theme.breakpoints.md}) {
+    width: 100vw;
+    border-left: none;
+  }
+  
+  @media (max-width: ${theme.breakpoints.sm}) {
     width: 100vw;
   }
 `;
@@ -75,6 +81,21 @@ const DrawerHeader = styled.div`
   justify-content: space-between;
   padding: 1.5rem 1.5rem 1rem;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  
+  /* Mobile responsive adjustments */
+  @media (max-width: ${theme.breakpoints.sm}) {
+    padding: 1rem 1rem 0.75rem;
+  }
+  
+  /* iPhone 14 and similar */
+  @media (max-width: 414px) {
+    padding: 0.875rem 0.75rem 0.625rem;
+  }
+  
+  /* Extra small phones */
+  @media (max-width: 360px) {
+    padding: 0.75rem 0.5rem 0.5rem;
+  }
 `;
 
 const DrawerTitle = styled.h3`

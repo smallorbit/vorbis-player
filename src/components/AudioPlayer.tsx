@@ -20,6 +20,12 @@ const Container = styled.div`
   width: 100%;
   ${flexCenter};
   padding: ${({ theme }: any) => theme.spacing.sm};
+  min-height: 100vh;
+  
+  @media (max-width: ${({ theme }: any) => theme.breakpoints.md}) {
+    padding: ${({ theme }: any) => theme.spacing.xs};
+    min-height: 100vh;
+  }
   
   @media (min-width: ${({ theme }: any) => theme.breakpoints.sm}) {
     padding: ${({ theme }: any) => theme.spacing.sm};
@@ -27,22 +33,61 @@ const Container = styled.div`
 `;
 
 const ContentWrapper = styled.div`
-  width: 1024px;
-  height: 1126px;
+  width: 100%;
+  max-width: 1024px;
+  height: auto;
+  min-height: 100vh;
+  margin: 0 auto;
+  padding: 0.5rem;
+  box-sizing: border-box;
+  position: relative;
+  z-index: 1000;
+  
+  /* Desktop and large tablets */
+  @media (min-width: ${({ theme }: any) => theme.breakpoints.lg}) {
+    width: 1024px;
+    height: 1126px;
+    min-height: auto;
+  }
+  
+  /* Medium tablets */
+  @media (min-width: ${({ theme }: any) => theme.breakpoints.md}) and (max-width: ${({ theme }: any) => theme.breakpoints.lg}) {
+    width: 768px;
+    height: 872px;
+    min-height: auto;
+  }
+  
+  /* Small tablets and large phones in landscape */
+  @media (min-width: ${({ theme }: any) => theme.breakpoints.sm}) and (max-width: ${({ theme }: any) => theme.breakpoints.md}) {
+    width: 95%;
+    max-width: 600px;
+    padding: 0.75rem;
+    min-height: 100vh;
+  }
+  
+  /* Mobile phones */
+  @media (max-width: ${({ theme }: any) => theme.breakpoints.sm}) {
+    width: 100%;
+    padding: 0.5rem;
+    min-height: 100vh;
+    position: relative;
+  }
+  
+  /* iPhone 14 and similar (390px width) */
+  @media (max-width: 414px) {
+    padding: 0.25rem;
+    min-height: 100vh;
+  }
+  
+  /* Extra small phones */
+  @media (max-width: 360px) {
+    padding: 0.125rem;
+  }
 
   @media (max-height: ${theme.breakpoints.lg}) {
     width: 768px;
     height: 872px;
   }
-
-  margin: 0 auto;
-  padding-top: 0.5rem;
-  padding-bottom: 0.5rem;
-  padding-left: 0.5rem;
-  padding-right: 0.5rem;
-  box-sizing: border-box;
-  position: absolute;
-  z-index: 1000;
 `;
 
 
@@ -64,6 +109,25 @@ const LoadingCard = styled.div<{
   border-radius: 1.25rem;
   border: 1px solid rgba(34, 36, 36, 0.68);
   box-shadow: 0 8px 24px rgba(38, 36, 37, 0.7), 0 2px 8px rgba(22, 21, 21, 0.6);
+  
+  /* Mobile adjustments */
+  @media (max-width: ${({ theme }: any) => theme.breakpoints.sm}) {
+    position: relative;
+    width: 100%;
+    height: 100vh;
+    border-radius: 1rem;
+    top: auto;
+    left: auto;
+    right: auto;
+    bottom: auto;
+  }
+  
+  /* iPhone 14 and similar */
+  @media (max-width: 414px) {
+    border-radius: 0.75rem;
+    height: 100vh;
+  }
+  
   ${({ backgroundImage }) => backgroundImage ? `
     &::after {
       content: '';
@@ -84,6 +148,25 @@ const LoadingCard = styled.div<{
       backdrop-filter: blur(40px);
       border-radius: 1.25rem;
       z-index: 1;
+    }
+    
+    @media (max-width: ${({ theme }: any) => theme.breakpoints.sm}) {
+      &::after {
+        inset: 0.05rem;
+        border-radius: 1rem;
+      }
+      &::before {
+        border-radius: 1rem;
+      }
+    }
+    
+    @media (max-width: 414px) {
+      &::after {
+        border-radius: 0.75rem;
+      }
+      &::before {
+        border-radius: 0.75rem;
+      }
     }
   ` : `
     background: rgba(38, 38, 38, 0.5);

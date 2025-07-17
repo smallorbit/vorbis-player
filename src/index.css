@@ -29,8 +29,30 @@ a:hover {
 
 body {
   margin: 0;
-  min-width: 585px;
+  min-width: 320px; /* iPhone 5 minimum width */
   min-height: 100vh;
+  
+  /* Prevent zoom on iOS when focusing inputs */
+  -webkit-text-size-adjust: 100%;
+  
+  /* Better touch scrolling on iOS */
+  -webkit-overflow-scrolling: touch;
+  
+  /* Prevent horizontal scrolling */
+  overflow-x: hidden;
+}
+
+/* Mobile-specific improvements */
+@media (max-width: 768px) {
+  body {
+    min-width: 320px;
+  }
+  
+  /* Prevent bounce scrolling on iOS */
+  #root {
+    position: relative;
+    overflow-x: hidden;
+  }
 }
 
 h1 {
