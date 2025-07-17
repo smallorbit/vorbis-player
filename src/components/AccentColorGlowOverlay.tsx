@@ -10,7 +10,6 @@ interface AccentColorGlowOverlayProps {
 
 export const DEFAULT_GLOW_RATE = 3.5;
 
-// Background glow layer - pure accent color (optimized with CSS classes)
 const GlowBackgroundLayer = styled.div<{
   $glowIntensity: number;
   $accentColor: string;
@@ -24,16 +23,12 @@ const GlowBackgroundLayer = styled.div<{
   z-index: -1;
 `;
 
-
-
-// Helper function to check if two colors are similar
 export const colorDistance = (color1: [number, number, number], color2: [number, number, number]): number => {
   const [r1, g1, b1] = color1;
   const [r2, g2, b2] = color2;
   return Math.sqrt((r2 - r1) ** 2 + (g2 - g1) ** 2 + (b2 - b1) ** 2);
 };
 
-// Convert hex color to RGB array
 export const hexToRgb = (hex: string): [number, number, number] => {
   const cleanHex = hex.replace('#', '');
   return [
@@ -43,9 +38,8 @@ export const hexToRgb = (hex: string): [number, number, number] => {
   ];
 };
 
-// Custom comparison function for memo optimization
 const areGlowPropsEqual = (
-  prevProps: AccentColorGlowOverlayProps, 
+  prevProps: AccentColorGlowOverlayProps,
   nextProps: AccentColorGlowOverlayProps
 ): boolean => {
   return (
@@ -56,22 +50,18 @@ const areGlowPropsEqual = (
   );
 };
 
-export const AccentColorGlowOverlay = React.memo<AccentColorGlowOverlayProps>(({
+export const AccentColorGlowOverlay = React.memo<React.FC<AccentColorGlowOverlayProps>>(({
   glowIntensity,
   glowRate = DEFAULT_GLOW_RATE,
   accentColor,
   backgroundImage
 }) => {
-
   if (glowIntensity === 0 || !backgroundImage) {
     return null;
   }
-
-  // Determine CSS classes for glow background animation
   const glowBackgroundClasses = [
     glowIntensity > 0 ? 'glow-background' : 'glow-hidden'
   ].filter(Boolean).join(' ');
-
   return (
     <GlowBackgroundLayer
       $glowIntensity={glowIntensity}

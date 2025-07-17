@@ -7,7 +7,6 @@ import { flexCenter, cardBase } from '../styles/utils';
 import AlbumArt from './AlbumArt';
 import { extractDominantColor } from '../utils/colorExtractor';
 
-// Lazy load heavy components for better performance and faster initial load
 const VisualEffectsMenu = lazy(() => import('./VisualEffectsMenu'));
 const PlaylistDrawer = lazy(() => import('./PlaylistDrawer'));
 const SpotifyPlayerControls = lazy(() => import('./SpotifyPlayerControls'));
@@ -17,7 +16,6 @@ import { usePlaylistManager } from '../hooks/usePlaylistManager';
 import { theme } from '@/styles/theme';
 import { DEFAULT_GLOW_RATE } from './AccentColorGlowOverlay';
 
-// Styled components
 const Container = styled.div`
   width: 100%;
   ${flexCenter};
@@ -39,7 +37,7 @@ const ContentWrapper = styled.div`
     height: 872px;
   }
 
-
+  
 
   
   margin: 0 auto;
@@ -88,8 +86,6 @@ const LoadingCard = styled.div<{
       position: absolute;
       inset: 0;
       background: rgba(32, 30, 30, 0.7);
-      // background: rgba(19, 19, 19, 0.8);
-      // background: ${(props: { accentColor?: string }) => props.accentColor || 'rgba(32, 30, 30, 0.7)'};
       backdrop-filter: blur(40px);
       border-radius: 1.25rem;
       z-index: 1;
@@ -136,11 +132,9 @@ const AudioPlayerComponent = () => {
     handleResetFilters,
   } = usePlayerState();
 
-  // Define playTrack function
   const playTrack = useCallback(async (index: number) => {
     if (tracks[index]) {
       try {
-        // Check if we have valid authentication
         const isAuthenticated = spotifyAuth.isAuthenticated();
 
         if (!isAuthenticated) {
@@ -150,11 +144,9 @@ const AudioPlayerComponent = () => {
         await spotifyPlayer.playTrack(tracks[index].uri);
         setCurrentTrackIndex(index);
 
-        // Check if playback actually started after a delay
         setTimeout(async () => {
           const state = await spotifyPlayer.getCurrentState();
           if (state) {
-            // If the track is paused and at position 0, it means playback didn't start
             if (state.paused && state.position === 0) {
               try {
                 await spotifyPlayer.resume();
@@ -163,7 +155,6 @@ const AudioPlayerComponent = () => {
               }
             }
           } else {
-            // If we don't have state, try to ensure our device is active
             try {
               const token = await spotifyAuth.ensureValidToken();
               const deviceId = spotifyPlayer.getDeviceId();
@@ -193,7 +184,6 @@ const AudioPlayerComponent = () => {
     }
   }, [tracks, setCurrentTrackIndex]);
 
-  // Use playlist manager hook
   const { handlePlaylistSelect } = usePlaylistManager({
     setError,
     setIsLoading,
@@ -203,7 +193,6 @@ const AudioPlayerComponent = () => {
     playTrack
   });
 
-  // Handle Spotify auth redirect when component mounts
   useEffect(() => {
     const handleAuthRedirect = async () => {
       try {
@@ -216,7 +205,6 @@ const AudioPlayerComponent = () => {
     handleAuthRedirect();
   }, []);
 
-  // Simple player state monitoring (removed complex auto-play logic)
   useEffect(() => {
     const handlePlayerStateChange = (state: SpotifyPlaybackState | null) => {
       if (state && state.track_window.current_track) {
@@ -232,10 +220,9 @@ const AudioPlayerComponent = () => {
     spotifyPlayer.onPlayerStateChanged(handlePlayerStateChange);
   }, [tracks, currentTrackIndex]);
 
-  // Auto-advance to next track when current track ends
   useEffect(() => {
     let pollInterval: NodeJS.Timeout;
-    let hasEnded = false; // Prevent multiple triggers
+    let hasEnded = false;
 
     const checkForSongEnd = async () => {
       try {
@@ -246,21 +233,18 @@ const AudioPlayerComponent = () => {
           const position = state.position;
           const timeRemaining = duration - position;
 
-
-          // Check if song has ended (within 2 seconds of completion OR position at end)
           if (!hasEnded && duration > 0 && position > 0 && (
-            timeRemaining <= 2000 || // Within 2 seconds of end
-            position >= duration - 1000 // Within 1 second of end
+            timeRemaining <= 2000 ||
+            position >= duration - 1000
           )) {
 
-            hasEnded = true; // Prevent multiple triggers
+            hasEnded = true;
 
-            // Auto-advance to next track
             const nextIndex = (currentTrackIndex + 1) % tracks.length;
             if (tracks[nextIndex]) {
               setTimeout(() => {
                 playTrack(nextIndex);
-                hasEnded = false; // Reset for next track
+                hasEnded = false;
               }, 500);
             }
           }
@@ -269,7 +253,6 @@ const AudioPlayerComponent = () => {
       }
     };
 
-    // Poll every 2 seconds to check for song endings (more frequent)
     if (tracks.length > 0) {
       pollInterval = setInterval(checkForSongEnd, 2000);
     }
@@ -293,10 +276,8 @@ const AudioPlayerComponent = () => {
     playTrack(prevIndex);
   }, [currentTrackIndex, tracks.length, playTrack]);
 
-  // Memoize the current track to prevent unnecessary re-renders
   const currentTrack = useMemo(() => tracks[currentTrackIndex] || null, [tracks, currentTrackIndex]);
 
-  // On track change: use override if present, else extract
   useEffect(() => {
     const extractColor = async () => {
       if (currentTrack?.id && accentColorOverrides[currentTrack.id]) {
@@ -309,21 +290,19 @@ const AudioPlayerComponent = () => {
           if (dominantColor) {
             setAccentColor(dominantColor.hex);
           } else {
-            setAccentColor(theme.colors.accent); // Fallback
+            setAccentColor(theme.colors.accent);
           }
         } catch (error) {
-          setAccentColor(theme.colors.accent); // Fallback
+          setAccentColor(theme.colors.accent);
         }
       } else {
-        setAccentColor(theme.colors.accent); // Fallback
+        setAccentColor(theme.colors.accent);
       }
     };
     extractColor();
   }, [currentTrack?.id, currentTrack?.image, accentColorOverrides, theme.colors.accent]);
 
-  // Optimized callback handlers for better performance
   const handlePlay = useCallback(() => {
-    // Check if we should play the current track or resume
     if (currentTrack) {
       playTrack(currentTrackIndex);
     } else {
@@ -355,16 +334,13 @@ const AudioPlayerComponent = () => {
     setShowPlaylist(false);
   }, []);
 
-  // Handler for user accent color change (from SpotifyPlayerControls)
   const handleAccentColorChange = useCallback((color: string) => {
     if (color === 'RESET_TO_DEFAULT' && currentTrack?.id) {
-      // Remove custom color override for this track
       setAccentColorOverrides(prev => {
         const newOverrides = { ...prev };
         delete newOverrides[currentTrack.id!];
         return newOverrides;
       });
-      // Re-extract the dominant color from the album art
       if (currentTrack?.image) {
         extractDominantColor(currentTrack.image)
           .then(dominantColor => {
@@ -391,17 +367,13 @@ const AudioPlayerComponent = () => {
     }
   }, [currentTrack?.id, currentTrack?.image, setAccentColorOverrides, setAccentColor, theme.colors.accent]);
 
-
-  // Determine current album ID (if available)
   const currentAlbumId = currentTrack?.album || '';
   const currentAlbumName = currentTrack?.album || '';
-  // Compute effective glow settings
   const effectiveGlow = glowMode === 'per-album' && currentAlbumId && perAlbumGlow[currentAlbumId]
     ? perAlbumGlow[currentAlbumId]
     : { intensity: glowIntensity, rate: glowRate };
 
   const renderContent = () => {
-    // Use PlayerStateRenderer for loading, error, and playlist selection states
     const stateRenderer = (
       <PlayerStateRenderer
         isLoading={isLoading}
@@ -415,7 +387,6 @@ const AudioPlayerComponent = () => {
     if (stateRenderer.props.isLoading || stateRenderer.props.error || !stateRenderer.props.selectedPlaylistId || stateRenderer.props.tracks.length === 0) {
       return stateRenderer;
     }
-
 
     return (
       <ContentWrapper>

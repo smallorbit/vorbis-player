@@ -30,7 +30,6 @@ export const AlbumArtFilters: React.FC<AlbumArtFiltersProps> = ({
   children,
   className
 }) => {
-  // Build CSS filter string from filter values
   const filterString = [
     `brightness(${filters.brightness}%)`,
     `contrast(${filters.contrast}%)`,

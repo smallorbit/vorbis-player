@@ -5,7 +5,6 @@ import AlbumArtFilters from './AlbumArtFilters';
 import AccentColorGlowOverlay, { hexToRgb, DEFAULT_GLOW_RATE } from './AccentColorGlowOverlay';
 import { useImageProcessingWorker } from '../hooks/useImageProcessingWorker';
 
-// Spinner animation for processing indicator
 const spin = keyframes`
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
@@ -69,49 +68,34 @@ const AlbumArtContainer = styled.div<{
   z-index: 2;
 `;
 
-// Custom comparison function for memo optimization
 const arePropsEqual = (prevProps: AlbumArtProps, nextProps: AlbumArtProps): boolean => {
-  // Check if track changed (most important check)
   if (prevProps.currentTrack?.id !== nextProps.currentTrack?.id) {
     return false;
   }
-
-  // Check if track image changed
   if (prevProps.currentTrack?.image !== nextProps.currentTrack?.image) {
     return false;
   }
-
-  // Check accent color
   if (prevProps.accentColor !== nextProps.accentColor) {
     return false;
   }
-
-  // Check glow settings
   if (prevProps.glowIntensity !== nextProps.glowIntensity ||
     prevProps.glowRate !== nextProps.glowRate) {
     return false;
   }
-
-  // Check album filters - shallow comparison should be sufficient for performance
   if (!prevProps.albumFilters && !nextProps.albumFilters) {
     return true;
   }
-
   if (!prevProps.albumFilters || !nextProps.albumFilters) {
     return false;
   }
-
-  // Check key filter properties that affect visual appearance
   const filterKeys: (keyof typeof prevProps.albumFilters)[] = [
     'brightness', 'contrast', 'saturation', 'hue', 'blur', 'sepia', 'grayscale', 'invert'
   ];
-
   for (const key of filterKeys) {
     if (prevProps.albumFilters[key] !== nextProps.albumFilters[key]) {
       return false;
     }
   }
-
   return true;
 };
 
@@ -120,7 +104,6 @@ const AlbumArt: React.FC<AlbumArtProps> = memo(({ currentTrack = null, accentCol
   const [isProcessing, setIsProcessing] = useState(false);
   const { processImage } = useImageProcessingWorker();
 
-  // Update CSS variables for glow animation
   useEffect(() => {
     if (accentColor && glowIntensity !== undefined && glowRate !== undefined) {
       const rgb = hexToRgb(accentColor);
@@ -132,37 +115,24 @@ const AlbumArt: React.FC<AlbumArtProps> = memo(({ currentTrack = null, accentCol
     }
   }, [accentColor, glowIntensity, glowRate]);
 
-  // Process image using Web Worker for better performance
   const processImageWithWorker = useCallback(async (
     imageElement: HTMLImageElement,
     accentColorRgb: [number, number, number]
   ) => {
     try {
       setIsProcessing(true);
-
-      // Create canvas and get image data on main thread (minimal work)
       const canvas = document.createElement('canvas');
       canvas.width = imageElement.width;
       canvas.height = imageElement.height;
       const ctx = canvas.getContext('2d');
-
       if (!ctx) {
         throw new Error('Failed to get canvas context');
       }
-
-      // Draw image to canvas
       ctx.drawImage(imageElement, 0, 0);
-
-      // Get image data for worker processing
       const imageData = ctx.getImageData(0, 0, imageElement.width, imageElement.height);
-
-      // Process image data in Web Worker (heavy computation off main thread)
       const processedImageData = await processImage(imageData, accentColorRgb, 60);
-
-      // Put processed data back to canvas on main thread
       ctx.putImageData(processedImageData, 0, 0);
       setCanvasUrl(canvas.toDataURL());
-
     } catch (error) {
       console.error('Image processing failed:', error);
       setCanvasUrl(null);
@@ -176,27 +146,22 @@ const AlbumArt: React.FC<AlbumArtProps> = memo(({ currentTrack = null, accentCol
       setCanvasUrl(null);
       return;
     }
-
     const accentColorRgb = hexToRgb(accentColor || '#000000');
     const image = new window.Image();
     image.crossOrigin = 'anonymous';
     image.src = currentTrack.image;
-
     image.onload = () => {
       processImageWithWorker(image, accentColorRgb);
     };
-
     image.onerror = () => {
       console.error('Failed to load image:', currentTrack.image);
       setCanvasUrl(null);
       setIsProcessing(false);
     };
-
   }, [currentTrack, accentColor, processImageWithWorker]);
 
   if (!currentTrack) return null;
 
-  // Determine CSS classes for glow animation
   const glowClasses = [
     'glow-container',
     glowIntensity && glowIntensity > 0 && accentColor ? 'glow-active' : ''
