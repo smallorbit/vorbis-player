@@ -89,7 +89,7 @@ const arePropsEqual = (prevProps: AlbumArtProps, nextProps: AlbumArtProps): bool
     return false;
   }
   const filterKeys: (keyof typeof prevProps.albumFilters)[] = [
-    'brightness', 'contrast', 'saturation', 'hue', 'blur', 'sepia', 'grayscale', 'invert'
+    'brightness', 'contrast', 'saturation', 'blur', 'sepia', 'grayscale', 'invert'
   ];
   for (const key of filterKeys) {
     if (prevProps.albumFilters[key] !== nextProps.albumFilters[key]) {

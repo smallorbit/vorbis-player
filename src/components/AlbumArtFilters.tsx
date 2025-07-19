@@ -34,7 +34,6 @@ export const AlbumArtFilters: React.FC<AlbumArtFiltersProps> = ({
     `brightness(${filters.brightness}%)`,
     `contrast(${filters.contrast}%)`,
     `saturate(${filters.saturation}%)`,
-    `hue-rotate(${filters.hue}deg)`,
     `blur(${filters.blur}px)`,
     `sepia(${filters.sepia}%)`,
     `grayscale(${filters.grayscale}%)`,
