@@ -21,7 +21,8 @@
     "proxy:dev": "cd proxy-server && npm run dev",
     "proxy:test": "curl -s http://127.0.0.1:3001/health || echo 'Proxy server not running'",
     "dev:all": "concurrently \"npm run proxy:start\" \"npm run dev\"",
-    "start:all": "concurrently \"npm run proxy:start\" \"npm run preview\""
+    "start:all": "concurrently \"npm run proxy:start\" \"npm run preview\"",
+    "validate:pwa": "node scripts/validate-pwa.js"
   },
   "dependencies": {
     "@radix-ui/react-alert-dialog": "^1.1.14",

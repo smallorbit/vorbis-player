@@ -57,6 +57,34 @@ A modern Spotify music player with a sleek, unified interface designed for enjoy
 - A Spotify Premium account
 - Access to Spotify Developer Dashboard
 
+### Install as PWA (Progressive Web App)
+
+Vorbis Player can be installed as a native app on your desktop or mobile device:
+
+#### Chrome/Edge Installation:
+1. Open Vorbis Player in Chrome or Edge
+2. Look for the install icon (📱) in the address bar
+3. Click "Install" to add to your desktop
+4. The app will launch in its own window, just like a native application
+
+#### Mobile Installation:
+1. Open Vorbis Player in Chrome on your mobile device
+2. Tap the menu (⋮) and select "Add to Home Screen"
+3. The app will appear on your home screen with its own icon
+4. Launch it like any other app
+
+#### Safari (iOS) Installation:
+1. Open Vorbis Player in Safari
+2. Tap the share button (📤) and select "Add to Home Screen"
+3. The app will be available on your home screen
+
+**Benefits of PWA Installation:**
+- Works offline with cached resources
+- Native app-like experience
+- Automatic updates
+- No app store required
+- Faster loading on repeat visits
+
 ### Installation
 
 1. **Clone and install dependencies**

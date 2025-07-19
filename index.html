@@ -6,6 +6,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>_vorbis_player_</title>
     
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#6366f1" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Vorbis Player" />
+    <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
+    
     <!-- Performance optimizations: Resource hints -->
     <link rel="preconnect" href="https://api.spotify.com">
     <link rel="preconnect" href="https://accounts.spotify.com">
@@ -16,5 +24,20 @@
     <div id="root"></div>
     <script src="https://sdk.scdn.co/spotify-player.js"></script>
     <script type="module" src="/src/main.tsx"></script>
+    
+    <!-- Service Worker Registration -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js')
+            .then((registration) => {
+              console.log('SW registered: ', registration);
+            })
+            .catch((registrationError) => {
+              console.log('SW registration failed: ', registrationError);
+            });
+        });
+      }
+    </script>
   </body>
 </html>

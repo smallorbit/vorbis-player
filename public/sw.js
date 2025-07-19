@@ -8,8 +8,11 @@ const RUNTIME_CACHE_NAME = `vap-runtime-${CACHE_VERSION}`;
 const STATIC_ASSETS = [
   '/',
   '/index.html',
-  '/assets/',
-  '/manifest.json'
+  '/manifest.json',
+  '/vorbis_player_logo.jpg',
+  '/icons/icon-192x192.png',
+  '/icons/icon-512x512.png',
+  '/icons/icon-96x96.png'
 ];
 
 // Runtime caching strategies
