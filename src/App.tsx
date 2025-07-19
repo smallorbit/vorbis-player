@@ -13,7 +13,16 @@ const AppContainer = styled.div`
   width: 100%;
   ${flexCenter}
   
-  /* PWA-specific styles for standalone mode */
+  /* PWA-specific styles for fullscreen mode */
+  @media (display-mode: fullscreen) {
+    width: 100vw;
+    height: 100vh;
+    padding: 0;
+    margin: 0;
+    overflow: hidden;
+  }
+  
+  /* Also support standalone mode for compatibility */
   @media (display-mode: standalone) {
     width: 100vw;
     height: 100vh;

@@ -25,7 +25,15 @@ const Container = styled.div`
     padding: ${({ theme }: any) => theme.spacing.sm};
   }
   
-  /* PWA-specific styles for standalone mode */
+  /* PWA-specific styles for fullscreen mode */
+  @media (display-mode: fullscreen) {
+    width: 100vw;
+    height: 100vh;
+    padding: 0;
+    margin: 0;
+  }
+  
+  /* Also support standalone mode for compatibility */
   @media (display-mode: standalone) {
     width: 100vw;
     height: 100vh;
@@ -52,7 +60,18 @@ const ContentWrapper = styled.div`
   position: absolute;
   z-index: 1000;
   
-  /* PWA-specific styles for standalone mode */
+  /* PWA-specific styles for fullscreen mode */
+  @media (display-mode: fullscreen) {
+    width: 100vw;
+    height: 100vh;
+    max-width: 1024px;
+    max-height: 1126px;
+    padding: 0;
+    margin: 0;
+    position: relative;
+  }
+  
+  /* Also support standalone mode for compatibility */
   @media (display-mode: standalone) {
     width: 100vw;
     height: 100vh;

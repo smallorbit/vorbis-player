@@ -27,8 +27,12 @@ if (fs.existsSync(manifestPath)) {
       console.log('✅ manifest.json is valid');
       console.log(`   - Name: ${manifest.name}`);
       console.log(`   - Short Name: ${manifest.short_name}`);
-      console.log(`   - Display: ${manifest.display}`);
+      console.log(`   - Display: ${manifest.display} (${manifest.display === 'fullscreen' ? 'no title bar' : 'with title bar'})`);
       console.log(`   - Icons: ${manifest.icons.length} icon(s) defined`);
+      if (manifest.window) {
+        console.log(`   - Window Size: ${manifest.window.width}x${manifest.window.height}`);
+        console.log(`   - Min Size: ${manifest.window.min_width}x${manifest.window.min_height}`);
+      }
     } else {
       console.log('❌ manifest.json missing required fields:', missingFields);
     }

@@ -8,7 +8,7 @@ The Vorbis Player has been successfully configured as a Progressive Web App (PWA
 
 ### 1. Web App Manifest (`public/manifest.json`)
 - **App Information**: Name, short name, description, and theme colors
-- **Display Mode**: Set to "standalone" for native app-like experience
+- **Display Mode**: Set to "fullscreen" for true native app experience (no title bar)
 - **Window Dimensions**: Optimized window size (1024x1126) with minimum dimensions (768x872)
 - **Icons**: Multiple sizes (192x192, 512x512) for different devices
 - **Screenshots**: App screenshots for app store listings
@@ -34,10 +34,11 @@ The Vorbis Player has been successfully configured as a Progressive Web App (PWA
 - **Service Worker Registration**: Automatic PWA functionality
 
 ### 5. Window Size Optimization
-- **CSS Media Queries**: PWA-specific styles using `@media (display-mode: standalone)`
+- **CSS Media Queries**: PWA-specific styles using `@media (display-mode: fullscreen)`
 - **Full Window Coverage**: App takes up entire window space in PWA mode
 - **Responsive Design**: Adapts to different window sizes while maintaining player proportions
-- **No Browser UI**: Clean, native app experience without browser chrome
+- **No Title Bar**: True fullscreen experience with no browser UI elements
+- **Immersive Experience**: Completely native app feel without any browser chrome
 
 ## PWA Features Enabled
 
@@ -45,7 +46,8 @@ The Vorbis Player has been successfully configured as a Progressive Web App (PWA
 - Users can install the app on their desktop or mobile device
 - App launches in its own window, separate from the browser
 - **Optimized Window Size**: Opens with exact player dimensions (1024x1126)
-- **No Browser UI**: Clean, native app-like experience with custom icon and branding
+- **No Title Bar**: True fullscreen experience with no browser UI elements
+- **Native App Feel**: Completely immersive experience with custom icon and branding
 
 ### ✅ Offline Capable
 - Service worker caches critical resources
@@ -121,7 +123,7 @@ This script checks:
 - **Offline Fallbacks**: Graceful handling of network failures
 
 ### Manifest Configuration
-- **Display**: standalone (native app-like window)
+- **Display**: fullscreen (true native app experience, no title bar)
 - **Window Size**: 1024x1126 (optimized for player dimensions)
 - **Minimum Size**: 768x872 (responsive fallback)
 - **Orientation**: portrait-primary (mobile-optimized)

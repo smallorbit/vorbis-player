@@ -37,7 +37,21 @@ body {
   overflow: hidden;
 }
 
-/* PWA-specific styles for standalone mode */
+/* PWA-specific styles for fullscreen mode */
+@media (display-mode: fullscreen) {
+  body {
+    background: #1a1a1a;
+  }
+  
+  #root {
+    width: 100vw;
+    height: 100vh;
+    padding: 0;
+    margin: 0;
+  }
+}
+
+/* Also support standalone mode for compatibility */
 @media (display-mode: standalone) {
   body {
     background: #1a1a1a;
