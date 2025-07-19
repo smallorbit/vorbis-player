@@ -30,6 +30,7 @@ The Vorbis Player has been successfully configured as a Progressive Web App (PWA
 ### 4. HTML Meta Tags (`index.html`)
 - **Manifest Link**: Connects to the web app manifest
 - **Theme Color**: Consistent branding across the app
+- **Mobile Web App Capable**: Modern PWA capability meta tag
 - **Apple Meta Tags**: iOS Safari compatibility
 - **Service Worker Registration**: Automatic PWA functionality
 

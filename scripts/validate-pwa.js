@@ -92,17 +92,24 @@ if (fs.existsSync(htmlPath)) {
   const htmlContent = fs.readFileSync(htmlPath, 'utf8');
   const hasManifest = htmlContent.includes('rel="manifest"');
   const hasThemeColor = htmlContent.includes('theme-color');
+  const hasMobileWebAppCapable = htmlContent.includes('mobile-web-app-capable');
   const hasAppleMeta = htmlContent.includes('apple-mobile-web-app');
   const hasServiceWorker = htmlContent.includes('serviceWorker');
   
-  if (hasManifest && hasThemeColor && hasAppleMeta && hasServiceWorker) {
+  if (hasManifest && hasThemeColor && hasMobileWebAppCapable && hasAppleMeta && hasServiceWorker) {
     console.log('✅ HTML contains all required PWA meta tags');
     console.log('   - Manifest link: ✅');
     console.log('   - Theme color: ✅');
+    console.log('   - Mobile web app capable: ✅');
     console.log('   - Apple meta tags: ✅');
     console.log('   - Service worker registration: ✅');
   } else {
     console.log('❌ HTML missing required PWA meta tags');
+    if (!hasManifest) console.log('   - Missing: manifest link');
+    if (!hasThemeColor) console.log('   - Missing: theme color');
+    if (!hasMobileWebAppCapable) console.log('   - Missing: mobile-web-app-capable');
+    if (!hasAppleMeta) console.log('   - Missing: apple meta tags');
+    if (!hasServiceWorker) console.log('   - Missing: service worker registration');
   }
 } else {
   console.log('❌ index.html not found');
