@@ -22,6 +22,17 @@ const PlayerControlsContainer = styled.div`
   padding: ${sm} ${lg} ${lg} ${lg};
 `;
 
+// New components for the track info row
+const TrackInfoOnlyRow = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: ${({ theme }: any) => theme.spacing.xs};
+  width: 100%;
+  padding: 0 ${({ theme }: any) => theme.spacing.md};
+`;
+
 const PlayerTrackName = styled.div`
   font-weight: ${({ theme }: any) => theme.fontWeight.semibold};
   font-size: ${({ theme }: any) => theme.fontSize.base};
@@ -30,15 +41,16 @@ const PlayerTrackName = styled.div`
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  width: 100%;
 `;
 
 const PlayerTrackArtist = styled.div`
   font-size: ${({ theme }: any) => theme.fontSize.sm};
-  margin-top: ${({ theme }: any) => theme.spacing.xs};
   color: ${({ theme }: any) => theme.colors.gray[400]};
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  width: 100%;
 `;
 
 const TrackInfoRow = styled.div`
@@ -279,11 +291,16 @@ const SpotifyPlayerControls = memo<SpotifyPlayerControlsProps>(({ currentTrack, 
 
   return (
     <PlayerControlsContainer>
-      {/* Track Info Row with three columns */}
+      {/* New Track Info Row - Song name and artist only */}
+      <TrackInfoOnlyRow>
+        <PlayerTrackName>{currentTrack?.name || 'No track selected'}</PlayerTrackName>
+        <PlayerTrackArtist>{currentTrack?.artists || ''}</PlayerTrackArtist>
+      </TrackInfoOnlyRow>
+
+      {/* Controls Row - now without track info in the left section */}
       <TrackInfoRow style={{ position: 'relative' }}>
         <TrackInfoLeft>
-          <PlayerTrackName>{currentTrack?.name || 'No track selected'}</PlayerTrackName>
-          <PlayerTrackArtist>{currentTrack?.artists || ''}</PlayerTrackArtist>
+          {/* Left side is now empty - could be used for other controls if needed */}
         </TrackInfoLeft>
         <TrackInfoCenter>
           <ControlButton accentColor={accentColor} onClick={onPrevious}>
@@ -411,5 +428,4 @@ const SpotifyPlayerControls = memo<SpotifyPlayerControlsProps>(({ currentTrack, 
 
 SpotifyPlayerControls.displayName = 'SpotifyPlayerControls';
 
-export default SpotifyPlayerControls;
-// ... existing code ... 
+export default SpotifyPlayerControls; 
