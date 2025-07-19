@@ -13,16 +13,7 @@ const AppContainer = styled.div`
   width: 100%;
   ${flexCenter}
   
-  /* PWA-specific styles for minimal-ui mode (minimal browser UI) */
-  @media (display-mode: minimal-ui) {
-    width: 100vw;
-    height: 100vh;
-    padding: 0;
-    margin: 0;
-    overflow: hidden;
-  }
-  
-  /* Also support standalone mode for compatibility */
+  /* PWA-specific styles for window-controls-overlay mode */
   @media (display-mode: standalone) {
     width: 100vw;
     height: 100vh;
@@ -120,9 +111,8 @@ function App() {
 
   return (
     <ThemeProvider>
-      <AppContainer>
+      <AppContainer className="app-draggable">
         <AudioPlayerComponent />
-
       </AppContainer>
     </ThemeProvider>
   );

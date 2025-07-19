@@ -27,7 +27,10 @@ if (fs.existsSync(manifestPath)) {
       console.log('✅ manifest.json is valid');
       console.log(`   - Name: ${manifest.name}`);
       console.log(`   - Short Name: ${manifest.short_name}`);
-      console.log(`   - Display: ${manifest.display} (${manifest.display === 'minimal-ui' ? 'minimal browser UI' : manifest.display === 'standalone' ? 'native app' : 'with title bar'})`);
+      console.log(`   - Display: ${manifest.display} (${manifest.display === 'standalone' ? 'standalone with window controls overlay' : manifest.display === 'minimal-ui' ? 'minimal browser UI' : 'with title bar'})`);
+      if (manifest.display_override) {
+        console.log(`   - Display Override: ${manifest.display_override.join(', ')}`);
+      }
       console.log(`   - Icons: ${manifest.icons.length} icon(s) defined`);
       if (manifest.window) {
         console.log(`   - Window Size: ${manifest.window.width}x${manifest.window.height}`);

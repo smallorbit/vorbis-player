@@ -8,7 +8,8 @@ The Vorbis Player has been successfully configured as a Progressive Web App (PWA
 
 ### 1. Web App Manifest (`public/manifest.json`)
 - **App Information**: Name, short name, description, and theme colors
-- **Display Mode**: Set to "minimal-ui" for minimal browser UI (hides title bar)
+- **Display Mode**: Set to "standalone" with "window-controls-overlay" override
+- **Window Controls Overlay**: Modern approach to hide title bar and customize window controls
 - **Window Dimensions**: Optimized window size (1024x1126) with minimum dimensions (768x872)
 - **Icons**: Multiple sizes (192x192, 512x512) for different devices
 - **Screenshots**: App screenshots for app store listings
@@ -34,12 +35,13 @@ The Vorbis Player has been successfully configured as a Progressive Web App (PWA
 - **Apple Meta Tags**: iOS Safari compatibility
 - **Service Worker Registration**: Automatic PWA functionality
 
-### 5. Window Size Optimization
-- **CSS Media Queries**: PWA-specific styles using `@media (display-mode: minimal-ui)`
+### 5. Window Controls Overlay Implementation
+- **CSS Media Queries**: PWA-specific styles using `@media (display-mode: standalone)`
 - **Full Window Coverage**: App takes up entire window space in PWA mode
 - **Responsive Design**: Adapts to different window sizes while maintaining player proportions
-- **Minimal Browser UI**: Uses `minimal-ui` display mode to hide title bar
-- **Native App Experience**: Minimal browser chrome for immersive experience
+- **Window Controls Overlay**: Modern approach using `display_override: ["window-controls-overlay"]`
+- **Draggable App**: Uses `-webkit-app-region` for proper window control
+- **Native App Experience**: Custom window controls with no title bar
 
 ## PWA Features Enabled
 
@@ -124,7 +126,8 @@ This script checks:
 - **Offline Fallbacks**: Graceful handling of network failures
 
 ### Manifest Configuration
-- **Display**: minimal-ui (minimal browser UI, hides title bar)
+- **Display**: standalone (native app experience)
+- **Display Override**: window-controls-overlay (hides title bar, custom controls)
 - **Window Size**: 1024x1126 (optimized for player dimensions)
 - **Minimum Size**: 768x872 (responsive fallback)
 - **Orientation**: portrait-primary (mobile-optimized)

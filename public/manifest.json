@@ -3,7 +3,10 @@
     "short_name": "Vorbis",
     "description": "A modern music player with Spotify integration and visual effects",
     "start_url": "/",
-    "display": "minimal-ui",
+    "display": "standalone",
+    "display_override": [
+        "window-controls-overlay"
+    ],
     "background_color": "#1a1a1a",
     "theme_color": "#6366f1",
     "orientation": "portrait-primary",
