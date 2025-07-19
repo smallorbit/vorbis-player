@@ -37,14 +37,10 @@ body {
   overflow: hidden;
 }
 
-/* PWA-specific styles for standalone mode (no title bar) */
-@media (display-mode: standalone) {
+/* PWA-specific styles for minimal-ui mode (minimal browser UI) */
+@media (display-mode: minimal-ui) {
   body {
     background: #1a1a1a;
-    /* Hide title bar area */
-    -webkit-app-region: drag;
-    -webkit-user-select: none;
-    -webkit-touch-callout: none;
   }
   
   #root {
@@ -52,23 +48,20 @@ body {
     height: 100vh;
     padding: 0;
     margin: 0;
-    /* Make the entire app draggable */
-    -webkit-app-region: drag;
+  }
+}
+
+/* Also support standalone mode for compatibility */
+@media (display-mode: standalone) {
+  body {
+    background: #1a1a1a;
   }
   
-  /* Make interactive elements non-draggable */
-  button, input, select, textarea, [role="button"], [tabindex] {
-    -webkit-app-region: no-drag;
-  }
-  
-  /* Ensure the player area is draggable */
-  .player-container {
-    -webkit-app-region: drag;
-  }
-  
-  /* Make controls non-draggable */
-  .player-controls {
-    -webkit-app-region: no-drag;
+  #root {
+    width: 100vw;
+    height: 100vh;
+    padding: 0;
+    margin: 0;
   }
 }
 
