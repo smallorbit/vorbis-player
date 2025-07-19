@@ -24,6 +24,14 @@ const Container = styled.div`
   @media (min-width: ${({ theme }: any) => theme.breakpoints.sm}) {
     padding: ${({ theme }: any) => theme.spacing.sm};
   }
+  
+  /* PWA-specific styles for standalone mode */
+  @media (display-mode: standalone) {
+    width: 100vw;
+    height: 100vh;
+    padding: 0;
+    margin: 0;
+  }
 `;
 
 const ContentWrapper = styled.div`
@@ -43,6 +51,17 @@ const ContentWrapper = styled.div`
   box-sizing: border-box;
   position: absolute;
   z-index: 1000;
+  
+  /* PWA-specific styles for standalone mode */
+  @media (display-mode: standalone) {
+    width: 100vw;
+    height: 100vh;
+    max-width: 1024px;
+    max-height: 1126px;
+    padding: 0;
+    margin: 0;
+    position: relative;
+  }
 `;
 
 

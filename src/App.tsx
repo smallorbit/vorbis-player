@@ -10,7 +10,17 @@ const AppContainer = styled.div`
   background-color: ${({ theme }) => theme.colors.background};
   color: ${({ theme }) => theme.colors.foreground};
   min-height: 100vh;
+  width: 100%;
   ${flexCenter}
+  
+  /* PWA-specific styles for standalone mode */
+  @media (display-mode: standalone) {
+    width: 100vw;
+    height: 100vh;
+    padding: 0;
+    margin: 0;
+    overflow: hidden;
+  }
 `;
 
 const LoadingContainer = styled.div`

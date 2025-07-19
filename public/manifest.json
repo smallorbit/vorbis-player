@@ -9,6 +9,12 @@
     "orientation": "portrait-primary",
     "scope": "/",
     "lang": "en",
+    "window": {
+        "width": 1024,
+        "height": 1126,
+        "min_width": 768,
+        "min_height": 872
+    },
     "categories": [
         "music",
         "entertainment"
