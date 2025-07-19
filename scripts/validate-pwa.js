@@ -27,7 +27,7 @@ if (fs.existsSync(manifestPath)) {
       console.log('✅ manifest.json is valid');
       console.log(`   - Name: ${manifest.name}`);
       console.log(`   - Short Name: ${manifest.short_name}`);
-      console.log(`   - Display: ${manifest.display} (${manifest.display === 'fullscreen' ? 'no title bar' : 'with title bar'})`);
+      console.log(`   - Display: ${manifest.display} (${manifest.display === 'standalone' ? 'native app with hidden title bar' : 'with title bar'})`);
       console.log(`   - Icons: ${manifest.icons.length} icon(s) defined`);
       if (manifest.window) {
         console.log(`   - Window Size: ${manifest.window.width}x${manifest.window.height}`);

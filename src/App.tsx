@@ -13,22 +13,15 @@ const AppContainer = styled.div`
   width: 100%;
   ${flexCenter}
   
-  /* PWA-specific styles for fullscreen mode */
-  @media (display-mode: fullscreen) {
-    width: 100vw;
-    height: 100vh;
-    padding: 0;
-    margin: 0;
-    overflow: hidden;
-  }
-  
-  /* Also support standalone mode for compatibility */
+  /* PWA-specific styles for standalone mode (no title bar) */
   @media (display-mode: standalone) {
     width: 100vw;
     height: 100vh;
     padding: 0;
     margin: 0;
     overflow: hidden;
+    /* Make the app draggable to hide title bar */
+    -webkit-app-region: drag;
   }
 `;
 

@@ -8,7 +8,7 @@ The Vorbis Player has been successfully configured as a Progressive Web App (PWA
 
 ### 1. Web App Manifest (`public/manifest.json`)
 - **App Information**: Name, short name, description, and theme colors
-- **Display Mode**: Set to "fullscreen" for true native app experience (no title bar)
+- **Display Mode**: Set to "standalone" with CSS to hide title bar
 - **Window Dimensions**: Optimized window size (1024x1126) with minimum dimensions (768x872)
 - **Icons**: Multiple sizes (192x192, 512x512) for different devices
 - **Screenshots**: App screenshots for app store listings
@@ -34,11 +34,11 @@ The Vorbis Player has been successfully configured as a Progressive Web App (PWA
 - **Service Worker Registration**: Automatic PWA functionality
 
 ### 5. Window Size Optimization
-- **CSS Media Queries**: PWA-specific styles using `@media (display-mode: fullscreen)`
+- **CSS Media Queries**: PWA-specific styles using `@media (display-mode: standalone)`
 - **Full Window Coverage**: App takes up entire window space in PWA mode
 - **Responsive Design**: Adapts to different window sizes while maintaining player proportions
-- **No Title Bar**: True fullscreen experience with no browser UI elements
-- **Immersive Experience**: Completely native app feel without any browser chrome
+- **No Title Bar**: Uses `-webkit-app-region` CSS to hide title bar area
+- **Draggable App**: Entire app is draggable while controls remain interactive
 
 ## PWA Features Enabled
 
@@ -123,7 +123,7 @@ This script checks:
 - **Offline Fallbacks**: Graceful handling of network failures
 
 ### Manifest Configuration
-- **Display**: fullscreen (true native app experience, no title bar)
+- **Display**: standalone (native app experience with hidden title bar)
 - **Window Size**: 1024x1126 (optimized for player dimensions)
 - **Minimum Size**: 768x872 (responsive fallback)
 - **Orientation**: portrait-primary (mobile-optimized)
