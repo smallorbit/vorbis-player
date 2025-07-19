@@ -28,11 +28,11 @@ const Container = styled.div`
 
 const ContentWrapper = styled.div`
   width: 1024px;
-  height: 1126px;
+  height: 1186px;
 
   @media (max-height: ${theme.breakpoints.lg}) {
     width: 768px;
-    height: 872px;
+    height: 922px;
   }
 
   margin: 0 auto;
