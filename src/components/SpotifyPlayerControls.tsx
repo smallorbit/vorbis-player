@@ -29,13 +29,13 @@ const TrackInfoOnlyRow = styled.div`
   align-items: center;
   text-align: center;
   gap: ${({ theme }: any) => theme.spacing.xs};
-  width: 100%;
+  // width: 100%;
   padding: 0 ${({ theme }: any) => theme.spacing.md};
 `;
 
 const PlayerTrackName = styled.div`
   font-weight: ${({ theme }: any) => theme.fontWeight.semibold};
-  font-size: ${({ theme }: any) => theme.fontSize.lg};
+  font-size: ${({ theme }: any) => theme.fontSize.xl};
   line-height: 1.25;
   color: ${({ theme }: any) => theme.colors.white};
   overflow: hidden;
@@ -99,17 +99,17 @@ const ControlButton = styled.button<{ isActive?: boolean; accentColor: string }>
   border-radius: ${theme.borderRadius.md};
   
   svg {
-    width: 1.5rem;
-    height: 1.5rem;
-    fill: currentColor;
-  }
-  
-  background: ${({ isActive, accentColor }: { isActive?: boolean; accentColor: string }) => isActive ? accentColor : theme.colors.control.background};
-  color: ${theme.colors.white};
+  width: 1.5rem;
+  height: 1.5rem;
+  fill: currentColor;
+}
+
+background: ${({ isActive, accentColor }: { isActive?: boolean; accentColor: string }) => isActive ? accentColor : theme.colors.control.background};
+color: ${theme.colors.white};
   
   &:hover {
-    background: ${({ isActive, accentColor }: { isActive?: boolean; accentColor: string }) => isActive ? `${accentColor}4D` : theme.colors.control.backgroundHover};
-  }
+  background: ${({ isActive, accentColor }: { isActive?: boolean; accentColor: string }) => isActive ? `${accentColor}4D` : theme.colors.control.backgroundHover};
+}
 `;
 
 const VolumeButton = styled.button`
@@ -341,7 +341,7 @@ const SpotifyPlayerControls = memo<SpotifyPlayerControlsProps>(({ currentTrack, 
             <ControlButton
               accentColor={accentColor}
               isActive={glowEnabled}
-              title={`Visual Effects ${glowEnabled ? 'enabled' : 'disabled'}`}
+              title={`Visual Effects ${glowEnabled ? 'enabled' : 'disabled'} `}
               onClick={onGlowToggle}
               style={{ marginLeft: 8 }}
             >
