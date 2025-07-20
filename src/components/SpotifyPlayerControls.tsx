@@ -35,8 +35,8 @@ const TrackInfoOnlyRow = styled.div`
 
 const PlayerTrackName = styled.div`
   font-weight: ${({ theme }: any) => theme.fontWeight.semibold};
-  font-size: ${({ theme }: any) => theme.fontSize.xl};
-  line-height: 1.25;
+  font-size: ${({ theme }: any) => theme.fontSize['2xl']};
+  line-height: ${({ theme }: any) => theme.fontSize['3xl']};
   color: ${({ theme }: any) => theme.colors.white};
   overflow: hidden;
   text-overflow: ellipsis;
@@ -45,7 +45,8 @@ const PlayerTrackName = styled.div`
 `;
 
 const PlayerTrackArtist = styled.div`
-  font-size: ${({ theme }: any) => theme.fontSize.base};
+  font-size: ${({ theme }: any) => theme.fontSize.sm};
+  line-height: ${({ theme }: any) => theme.fontSize.sm};
   color: ${({ theme }: any) => theme.colors.gray[300]};
   overflow: hidden;
   text-overflow: ellipsis;
