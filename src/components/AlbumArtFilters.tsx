@@ -6,8 +6,6 @@ interface AlbumArtFiltersProps {
     brightness: number;
     contrast: number;
     saturation: number;
-    hue: number;
-    blur: number;
     sepia: number;
   };
   backgroundImage?: string;
@@ -32,7 +30,6 @@ export const AlbumArtFilters: React.FC<AlbumArtFiltersProps> = ({
     `brightness(${filters.brightness}%)`,
     `contrast(${filters.contrast}%)`,
     `saturate(${filters.saturation}%)`,
-    `blur(${filters.blur}px)`,
     `sepia(${filters.sepia}%)`
   ].join(' ');
 

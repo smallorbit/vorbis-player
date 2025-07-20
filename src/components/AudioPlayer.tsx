@@ -344,10 +344,8 @@ const AudioPlayerComponent = () => {
 
   const handleVisualEffectsToggle = useCallback(() => {
     if (visualEffectsEnabled) {
-      // Turning off visual effects - just disable them, settings are already saved
       setVisualEffectsEnabled(false);
     } else {
-      // Turning on visual effects - restore saved settings or keep defaults
       setVisualEffectsEnabled(true);
       restoreSavedFilters();
       if (savedGlowIntensity !== null) {
@@ -423,7 +421,7 @@ const AudioPlayerComponent = () => {
 
           <CardContent style={{ position: 'relative', zIndex: 2, marginTop: '-0.25rem' }}>
             <AlbumArt currentTrack={currentTrack} accentColor={accentColor} glowIntensity={visualEffectsEnabled ? effectiveGlow.intensity : 0} glowRate={effectiveGlow.rate} albumFilters={visualEffectsEnabled ? albumFilters : {
-              brightness: 100,
+              brightness: 110,
               contrast: 100,
               saturation: 100,
               hue: 0,

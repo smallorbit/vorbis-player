@@ -8,8 +8,8 @@ interface AccentColorGlowOverlayProps {
   backgroundImage?: string;
 }
 
-export const DEFAULT_GLOW_RATE = 4.5;
-export const DEFAULT_GLOW_INTENSITY = 100;
+export const DEFAULT_GLOW_RATE = 4.0;
+export const DEFAULT_GLOW_INTENSITY = 110;
 
 const GlowBackgroundLayer = styled.div<{
   $glowIntensity: number;

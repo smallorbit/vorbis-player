@@ -19,8 +19,8 @@ A modern Spotify music player with a sleek, unified interface designed for enjoy
 - **Dynamic Album Art**: Beautiful album artwork display with customizable visual effects
 - **Integrated Player Card**: Clean, unified interface with elegant design
 - **Streamlined Visual Effects**: Simplified visual effects system with easy on/off toggle and intuitive controls
-- **Custom Album Filters**: Adjustable brightness, saturation, sepia, contrast, and invert effects for personalized visual experience
-- **Enhanced Glow System**: Simplified glow controls with three intensity levels (Low, Medium, High) and rate options (Slow, Medium, Fast)
+- **Custom Album Filters**: Refined set of essential filters - brightness, saturation, sepia, and contrast - for optimal visual customization
+- **Enhanced Glow System**: Simplified glow controls with three intensity levels (Less/Normal/More) and rate options (Slower/Normal/Faster)
 - **Responsive Design**: Smooth transitions and loading states throughout the interface
 
 ### 🎛️ User Interface
@@ -118,7 +118,7 @@ A modern Spotify music player with a sleek, unified interface designed for enjoy
 - **Spotify Integration**: High-quality music from your personal playlists and liked songs library
 - **Liked Songs Support**: Full access to your Spotify Liked Songs with automatic shuffle for music discovery
 - **Smart Color Extraction**: Dynamic color theming based on album artwork
-- **Visual Effects**: Streamlined visual effects system with simplified glow controls and customizable album filters
+- **Visual Effects**: Streamlined visual effects system with optimized glow controls and refined album filters (brightness, saturation, sepia, contrast)
 - **Automatic Progression**: Seamless transitions between tracks with continuous playback
 - **Album Art Display**: Beautiful artwork display with customizable visual effects
 
@@ -251,8 +251,10 @@ public/
 - **Optimized Icons**: Consistent 1.5rem sizing across all control icons
 - **Streamlined Visual Effects**: Simplified visual effects system with intuitive three-option controls (Less/Normal/More)
 - **Simplified Glow Controls**: Removed complex per-album glow settings in favor of unified global controls
-- **Enhanced Filter Options**: Refined brightness, saturation, sepia, and contrast ranges for better visual results
+- **Refined Filter Set**: Focused on essential filters (brightness, saturation, sepia, contrast) with optimized default values
+- **Enhanced Filter Options**: Improved brightness default (110%) and refined glow intensity range (95-125) for better visual results
 - **Improved Settings Persistence**: Visual effects settings are preserved when toggling effects on/off
+- **Cleaner Codebase**: Removed unused blur and hue filters, eliminated invert option for a more focused experience
 
 ## Deployment
 

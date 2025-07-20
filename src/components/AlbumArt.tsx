@@ -2,7 +2,7 @@ import React, { memo, useEffect, useState, useCallback } from 'react';
 import styled, { keyframes } from 'styled-components';
 import type { Track } from '../services/spotify';
 import AlbumArtFilters from './AlbumArtFilters';
-import AccentColorGlowOverlay, { hexToRgb, DEFAULT_GLOW_RATE } from './AccentColorGlowOverlay';
+import AccentColorGlowOverlay, { hexToRgb, DEFAULT_GLOW_RATE, DEFAULT_GLOW_INTENSITY } from './AccentColorGlowOverlay';
 import { useImageProcessingWorker } from '../hooks/useImageProcessingWorker';
 
 const spin = keyframes`
@@ -173,15 +173,13 @@ const AlbumArt: React.FC<AlbumArtProps> = memo(({ currentTrack = null, accentCol
       className={glowClasses}
     >
       <AlbumArtFilters filters={albumFilters ? albumFilters : {
-        brightness: 100,
+        brightness: 110,
         contrast: 100,
         saturation: 100,
-        hue: 0,
-        blur: 0,
         sepia: 0
       }}>
         <AccentColorGlowOverlay
-          glowIntensity={glowIntensity ?? 100}
+          glowIntensity={glowIntensity ?? DEFAULT_GLOW_INTENSITY}
           glowRate={glowRate ?? DEFAULT_GLOW_RATE}
           accentColor={accentColor || '#000000'}
           backgroundImage={currentTrack?.image}

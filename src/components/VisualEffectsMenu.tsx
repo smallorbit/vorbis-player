@@ -323,15 +323,15 @@ export const VisualEffectsMenu: React.FC<VisualEffectsMenuProps> = memo(({
 
   // Glow intensity and rate option mappings
   const glowIntensityOptions = [
-    { label: 'Low', value: 90 },
-    { label: 'Medium', value: 100 },
-    { label: 'High', value: 110 }
+    { label: 'Less', value: 95 },
+    { label: 'Normal', value: 110 },
+    { label: 'More', value: 125 }
   ];
 
   const glowRateOptions = [
-    { label: 'Slow', value: 6.0 },
-    { label: 'Medium', value: 4.5 },
-    { label: 'Fast', value: 3.0 }
+    { label: 'Slower', value: 5.0 },
+    { label: 'Normal', value: 4.0 },
+    { label: 'Faster', value: 3.0 }
   ];
 
 
