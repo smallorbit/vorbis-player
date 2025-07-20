@@ -116,53 +116,6 @@ const ControlLabel = styled.label`
   font-weight: 500;
 `;
 
-const ControlValue = styled.span`
-  font-size: 0.75rem;
-  color: rgba(255, 255, 255, 0.6);
-  font-weight: 400;
-`;
-
-const Slider = styled.input<{ $accentColor: string }>`
-  appearance: none;
-  width: 100%;
-  height: 4px;
-  background: ${theme.colors.control.background};
-  border-radius: ${theme.borderRadius.sm};
-  outline: none;
-  cursor: pointer;
-  
-  &::-webkit-slider-thumb {
-    appearance: none;
-    width: 16px;
-    height: 16px;
-    background: ${({ $accentColor }: { $accentColor: string }) => $accentColor};
-    border-radius: 50%;
-    cursor: pointer;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-    transition: all 0.2s ease;
-  }
-  
-  &::-webkit-slider-thumb:hover {
-    transform: scale(1.2);
-    box-shadow: 0 0 0 4px ${({ $accentColor }: { $accentColor: string }) => $accentColor}33;
-  }
-  
-  &::-moz-range-thumb {
-    width: 16px;
-    height: 16px;
-    background: ${({ $accentColor }: { $accentColor: string }) => $accentColor};
-    border-radius: 50%;
-    cursor: pointer;
-    border: none;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-    transition: all 0.2s ease;
-  }
-  
-  &::-moz-range-thumb:hover {
-    transform: scale(1.2);
-    box-shadow: 0 0 0 4px ${({ $accentColor }: { $accentColor: string }) => $accentColor}33;
-  }
-`;
 
 const FilterSection = styled.div`
   border-top: 1px solid rgba(255, 255, 255, 0.1);
@@ -226,24 +179,6 @@ const ResetButton = styled.button<{ $accentColor: string }>`
   }
 `;
 
-const ToggleButton = styled.button<{ $accentColor: string; $isActive: boolean }>`
-  background: ${({ $isActive, $accentColor }: { $isActive: boolean; $accentColor: string }) => $isActive ? $accentColor : theme.colors.muted.background};
-  border: 1px solid ${({ $isActive, $accentColor }: { $isActive: boolean; $accentColor: string }) => $isActive ? $accentColor : theme.colors.border};
-  color: ${({ $isActive }: { $isActive: boolean }) => $isActive ? theme.colors.black : theme.colors.muted.foreground};
-  padding: ${theme.spacing.sm} ${theme.spacing.md};
-  border-radius: ${theme.borderRadius.md};
-  cursor: pointer;
-  font-size: ${theme.fontSize.sm};
-  font-weight: ${theme.fontWeight.medium};
-  transition: all 0.2s ease;
-  
-  &:hover {
-    background: ${({ $isActive, $accentColor }: { $isActive: boolean; $accentColor: string }) => $isActive ? $accentColor + 'DD' : $accentColor + '22'};
-    border-color: ${({ $accentColor }: { $accentColor: string }) => $accentColor};
-    color: ${({ $isActive }: { $isActive: boolean }) => $isActive ? theme.colors.black : theme.colors.white};
-    transform: translateY(-1px);
-  }
-`;
 
 const OptionButtonGroup = styled.div`
   display: flex;
@@ -399,20 +334,6 @@ export const VisualEffectsMenu: React.FC<VisualEffectsMenuProps> = memo(({
     { label: 'Fast', value: 3.0 }
   ];
 
-  // Helper functions to get current option labels
-  const getCurrentGlowIntensityLabel = useCallback((value: number) => {
-    const closest = glowIntensityOptions.reduce((prev, curr) =>
-      Math.abs(curr.value - value) < Math.abs(prev.value - value) ? curr : prev
-    );
-    return closest.label;
-  }, []);
-
-  const getCurrentGlowRateLabel = useCallback((value: number) => {
-    const closest = glowRateOptions.reduce((prev, curr) =>
-      Math.abs(curr.value - value) < Math.abs(prev.value - value) ? curr : prev
-    );
-    return closest.label;
-  }, []);
 
   const getCurrentFilterOptionLabel = useCallback((key: string, value: number) => {
     const config = filterConfig.find(f => f.key === key);
