@@ -1,7 +1,7 @@
 import React, { useEffect, memo, useCallback, useMemo } from 'react';
 import styled from 'styled-components';
 import { FixedSizeList as List } from 'react-window';
-import { DEFAULT_GLOW_RATE } from './AccentColorGlowOverlay';
+
 import { theme } from '../styles/theme';
 import { PerformanceProfilerComponent } from './PerformanceProfiler';
 import VisualEffectsPerformanceMonitor from './VisualEffectsPerformanceMonitor';
@@ -16,24 +16,14 @@ interface VisualEffectsMenuProps {
     saturation: number;
     hue: number;
     sepia: number;
-    grayscale: number;
-    invert: number;
   };
   onFilterChange: (filterName: string, value: number | boolean) => void;
   onResetFilters: () => void;
   // Glow controls
-  glowEnabled: boolean;
-  setGlowEnabled: (v: boolean) => void;
   glowIntensity: number;
   setGlowIntensity: (v: number) => void;
   glowRate: number;
   setGlowRate: (v: number) => void;
-  glowMode: 'global' | 'per-album';
-  setGlowMode: (v: 'global' | 'per-album') => void;
-  perAlbumGlow: Record<string, { intensity: number; rate: number }>;
-  setPerAlbumGlow: (v: Record<string, { intensity: number; rate: number }>) => void;
-  currentAlbumId: string;
-  currentAlbumName: string;
   effectiveGlow: { intensity: number; rate: number };
 }
 
@@ -126,53 +116,6 @@ const ControlLabel = styled.label`
   font-weight: 500;
 `;
 
-const ControlValue = styled.span`
-  font-size: 0.75rem;
-  color: rgba(255, 255, 255, 0.6);
-  font-weight: 400;
-`;
-
-const Slider = styled.input<{ $accentColor: string }>`
-  appearance: none;
-  width: 100%;
-  height: 4px;
-  background: ${theme.colors.control.background};
-  border-radius: ${theme.borderRadius.sm};
-  outline: none;
-  cursor: pointer;
-  
-  &::-webkit-slider-thumb {
-    appearance: none;
-    width: 16px;
-    height: 16px;
-    background: ${({ $accentColor }: { $accentColor: string }) => $accentColor};
-    border-radius: 50%;
-    cursor: pointer;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-    transition: all 0.2s ease;
-  }
-  
-  &::-webkit-slider-thumb:hover {
-    transform: scale(1.2);
-    box-shadow: 0 0 0 4px ${({ $accentColor }: { $accentColor: string }) => $accentColor}33;
-  }
-  
-  &::-moz-range-thumb {
-    width: 16px;
-    height: 16px;
-    background: ${({ $accentColor }: { $accentColor: string }) => $accentColor};
-    border-radius: 50%;
-    cursor: pointer;
-    border: none;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-    transition: all 0.2s ease;
-  }
-  
-  &::-moz-range-thumb:hover {
-    transform: scale(1.2);
-    box-shadow: 0 0 0 4px ${({ $accentColor }: { $accentColor: string }) => $accentColor}33;
-  }
-`;
 
 const FilterSection = styled.div`
   border-top: 1px solid rgba(255, 255, 255, 0.1);
@@ -196,8 +139,8 @@ const FilterGrid = styled.div`
 `;
 
 const VirtualListContainer = styled.div`
-  height: 300px; /* Fixed height for virtualization - optimized for ~5 visible items */
   width: 100%;
+  height: 100%;
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 0.5rem;
   overflow: hidden;
@@ -236,16 +179,24 @@ const ResetButton = styled.button<{ $accentColor: string }>`
   }
 `;
 
-const ToggleButton = styled.button<{ $accentColor: string; $isActive: boolean }>`
+
+const OptionButtonGroup = styled.div`
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+`;
+
+const OptionButton = styled.button<{ $accentColor: string; $isActive: boolean }>`
   background: ${({ $isActive, $accentColor }: { $isActive: boolean; $accentColor: string }) => $isActive ? $accentColor : theme.colors.muted.background};
   border: 1px solid ${({ $isActive, $accentColor }: { $isActive: boolean; $accentColor: string }) => $isActive ? $accentColor : theme.colors.border};
   color: ${({ $isActive }: { $isActive: boolean }) => $isActive ? theme.colors.black : theme.colors.muted.foreground};
-  padding: ${theme.spacing.sm} ${theme.spacing.md};
-  border-radius: ${theme.borderRadius.md};
+  padding: 0.375rem 0.75rem;
+  border-radius: ${theme.borderRadius.sm};
   cursor: pointer;
-  font-size: ${theme.fontSize.sm};
+  font-size: 0.75rem;
   font-weight: ${theme.fontWeight.medium};
   transition: all 0.2s ease;
+  min-width: 60px;
   
   &:hover {
     background: ${({ $isActive, $accentColor }: { $isActive: boolean; $accentColor: string }) => $isActive ? $accentColor + 'DD' : $accentColor + '22'};
@@ -257,34 +208,30 @@ const ToggleButton = styled.button<{ $accentColor: string; $isActive: boolean }>
 
 // Custom comparison function for memo optimization
 const areVisualEffectsPropsEqual = (
-  prevProps: VisualEffectsMenuProps, 
+  prevProps: VisualEffectsMenuProps,
   nextProps: VisualEffectsMenuProps
 ): boolean => {
   // Check simple props first
   if (
     prevProps.isOpen !== nextProps.isOpen ||
     prevProps.accentColor !== nextProps.accentColor ||
-    prevProps.glowEnabled !== nextProps.glowEnabled ||
     prevProps.glowIntensity !== nextProps.glowIntensity ||
-    prevProps.glowRate !== nextProps.glowRate ||
-    prevProps.glowMode !== nextProps.glowMode ||
-    prevProps.currentAlbumId !== nextProps.currentAlbumId ||
-    prevProps.currentAlbumName !== nextProps.currentAlbumName
+    prevProps.glowRate !== nextProps.glowRate
   ) {
     return false;
   }
-  
+
   // Check filters object
   const filterKeys: (keyof typeof prevProps.filters)[] = [
-    'brightness', 'contrast', 'saturation', 'hue', 'sepia', 'grayscale', 'invert'
+    'brightness', 'contrast', 'saturation', 'sepia'
   ];
-  
+
   for (const key of filterKeys) {
     if (prevProps.filters[key] !== nextProps.filters[key]) {
       return false;
     }
   }
-  
+
   // Check effective glow
   if (
     prevProps.effectiveGlow.intensity !== nextProps.effectiveGlow.intensity ||
@@ -292,25 +239,9 @@ const areVisualEffectsPropsEqual = (
   ) {
     return false;
   }
-  
-  // Check perAlbumGlow - shallow comparison for performance
-  const prevKeys = Object.keys(prevProps.perAlbumGlow);
-  const nextKeys = Object.keys(nextProps.perAlbumGlow);
-  
-  if (prevKeys.length !== nextKeys.length) {
-    return false;
-  }
-  
-  for (const key of prevKeys) {
-    if (
-      !nextProps.perAlbumGlow[key] ||
-      prevProps.perAlbumGlow[key].intensity !== nextProps.perAlbumGlow[key].intensity ||
-      prevProps.perAlbumGlow[key].rate !== nextProps.perAlbumGlow[key].rate
-    ) {
-      return false;
-    }
-  }
-  
+
+
+
   return true;
 };
 
@@ -321,19 +252,10 @@ export const VisualEffectsMenu: React.FC<VisualEffectsMenuProps> = memo(({
   filters,
   onFilterChange,
   onResetFilters,
-  glowEnabled,
-  setGlowEnabled,
   glowIntensity,
   setGlowIntensity,
   glowRate,
-  setGlowRate,
-  glowMode,
-  setGlowMode,
-  perAlbumGlow,
-  setPerAlbumGlow,
-  currentAlbumId,
-  currentAlbumName,
-  effectiveGlow
+  setGlowRate
 }) => {
   // Add ESC key support to close the drawer
   useEffect(() => {
@@ -354,21 +276,74 @@ export const VisualEffectsMenu: React.FC<VisualEffectsMenuProps> = memo(({
     };
   }, [isOpen, onClose]);
 
-  // Memoized filter configuration for optimal virtual scrolling performance
+  // Simplified filter configuration with 3-option selections
   const filterConfig = useMemo(() => [
-    { key: 'brightness', label: 'Brightness', min: 0, max: 200, unit: '%' },
-    { key: 'contrast', label: 'Contrast', min: 0, max: 200, unit: '%' },
-    { key: 'saturation', label: 'Saturation', min: 0, max: 300, unit: '%' },
-    { key: 'hue', label: 'Hue Rotate', min: 0, max: 360, unit: '°' },
-    { key: 'sepia', label: 'Sepia', min: 0, max: 100, unit: '%' },
-    { key: 'grayscale', label: 'Grayscale', min: 0, max: 100, unit: '%' },
-    { key: 'invert', label: 'Invert', min: 0, max: 1, unit: '', type: 'toggle' as const }
+    {
+      key: 'brightness',
+      label: 'Brightness',
+      type: 'options' as const,
+      options: [
+        { label: 'Less', value: 90 },
+        { label: 'Normal', value: 100 },
+        { label: 'More', value: 110 }
+      ]
+    },
+    {
+      key: 'saturation',
+      label: 'Saturation',
+      type: 'options' as const,
+      options: [
+        { label: 'Less', value: 80 },
+        { label: 'Normal', value: 100 },
+        { label: 'More', value: 120 }
+      ]
+    },
+    {
+      key: 'sepia',
+      label: 'Sepia',
+      type: 'options' as const,
+      options: [
+        { label: 'None', value: 0 },
+        { label: 'Some', value: 20 },
+        { label: 'More', value: 40 }
+      ]
+    },
+    {
+      key: 'contrast',
+      label: 'Contrast',
+      type: 'options' as const,
+      options: [
+        { label: 'Less', value: 85 },
+        { label: 'Normal', value: 100 },
+        { label: 'More', value: 115 }
+      ]
+    }
   ], []);
 
-  // Optimized callbacks with minimal dependencies
-  const handleInvertToggle = useCallback(() => {
-    onFilterChange('invert', filters.invert === 0 ? 1 : 0);
-  }, [filters.invert, onFilterChange]);
+  // Glow intensity and rate option mappings
+  const glowIntensityOptions = [
+    { label: 'Less', value: 95 },
+    { label: 'Normal', value: 110 },
+    { label: 'More', value: 125 }
+  ];
+
+  const glowRateOptions = [
+    { label: 'Slower', value: 5.0 },
+    { label: 'Normal', value: 4.0 },
+    { label: 'Faster', value: 3.0 }
+  ];
+
+
+  const getCurrentFilterOptionLabel = useCallback((key: string, value: number) => {
+    const config = filterConfig.find(f => f.key === key);
+    if (config?.type === 'options') {
+      const closest = config.options.reduce((prev, curr) =>
+        Math.abs(curr.value - value) < Math.abs(prev.value - value) ? curr : prev
+      );
+      return closest.label;
+    }
+    return value.toString();
+  }, [filterConfig]);
 
   const handleFilterChange = useCallback((key: string, value: number) => {
     onFilterChange(key, value);
@@ -382,59 +357,46 @@ export const VisualEffectsMenu: React.FC<VisualEffectsMenuProps> = memo(({
   // Optimized render function for virtual list items with minimal re-renders
   const renderFilterItem = useCallback(({ index, style }: { index: number; style: React.CSSProperties }) => {
     const config = filterConfig[index];
-    const { key, label, min, max, unit, type } = config;
-    
+    const { key, label, type } = config;
+
     // Use optimized filter value getter
     const currentValue = getFilterValue(key);
-    
-    if (type === 'toggle') {
+
+    if (type === 'options') {
       return (
         <div style={style} key={`filter-${key}`}>
           <FilterItem>
             <ControlGroup>
               <ControlLabel>
                 {label}
-                <ToggleButton
-                  $accentColor={accentColor}
-                  $isActive={currentValue === 1}
-                  onClick={handleInvertToggle}
-                  aria-label={`Toggle ${label}`}
-                >
-                  {currentValue === 1 ? 'On' : 'Off'}
-                </ToggleButton>
+                {/* <ControlValue>{getCurrentFilterOptionLabel(key, currentValue)}</ControlValue> */}
               </ControlLabel>
+              <OptionButtonGroup>
+                {config.options.map((option) => (
+                  <OptionButton
+                    key={`${key}-${option.value}`}
+                    $accentColor={accentColor}
+                    $isActive={currentValue === option.value}
+                    onClick={() => handleFilterChange(key, option.value)}
+                    aria-label={`Set ${label} to ${option.label}`}
+                  >
+                    {option.label}
+                  </OptionButton>
+                ))}
+              </OptionButtonGroup>
             </ControlGroup>
           </FilterItem>
         </div>
       );
     }
 
-    return (
-      <div style={style} key={`filter-${key}`}>
-        <FilterItem>
-          <ControlGroup>
-            <ControlLabel>
-              {label}
-              <ControlValue>{currentValue}{unit}</ControlValue>
-            </ControlLabel>
-            <Slider
-              type="range"
-              min={min}
-              max={max}
-              value={currentValue}
-              onChange={(e) => handleFilterChange(key, parseInt(e.target.value))}
-              $accentColor={accentColor}
-              aria-label={`Adjust ${label}`}
-            />
-          </ControlGroup>
-        </FilterItem>
-      </div>
-    );
-  }, [filterConfig, accentColor, handleInvertToggle, handleFilterChange, getFilterValue]);
+    // Should not reach here since all filters are options type
+    return null;
+  }, [filterConfig, accentColor, handleFilterChange, getFilterValue, getCurrentFilterOptionLabel]);
 
   return (
     <PerformanceProfilerComponent id="visual-effects-menu">
-      <VisualEffectsPerformanceMonitor 
+      <VisualEffectsPerformanceMonitor
         filterCount={filterConfig.length}
         isEnabled={process.env.NODE_ENV === 'development'}
       />
@@ -444,11 +406,11 @@ export const VisualEffectsMenu: React.FC<VisualEffectsMenuProps> = memo(({
           <DrawerTitle>Visual Effects</DrawerTitle>
           <CloseButton onClick={onClose} aria-label="Close visual effects drawer">
             <svg viewBox="0 0 24 24" fill="currentColor">
-              <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+              <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
             </svg>
           </CloseButton>
         </DrawerHeader>
-        
+
         <DrawerContent>
           {/* Glow Controls Section */}
           <FilterSection>
@@ -456,129 +418,49 @@ export const VisualEffectsMenu: React.FC<VisualEffectsMenuProps> = memo(({
             <FilterGrid>
               <ControlGroup>
                 <ControlLabel>
-                  Enable Glow
-                  <ToggleButton
-                    $accentColor={accentColor}
-                    $isActive={glowEnabled}
-                    onClick={() => setGlowEnabled(!glowEnabled)}
-                  >
-                    {glowEnabled ? 'On' : 'Off'}
-                  </ToggleButton>
+                  Intensity
+                  {/* <ControlValue>{getCurrentGlowIntensityLabel(glowIntensity)}</ControlValue> */}
                 </ControlLabel>
+                <OptionButtonGroup>
+                  {glowIntensityOptions.map((option) => (
+                    <OptionButton
+                      key={`global-intensity-${option.value}`}
+                      $accentColor={accentColor}
+                      $isActive={glowIntensity === option.value}
+                      onClick={() => setGlowIntensity(option.value)}
+                    >
+                      {option.label}
+                    </OptionButton>
+                  ))}
+                </OptionButtonGroup>
               </ControlGroup>
-              {glowEnabled && (
-                <>
-                  <ControlGroup>
-                    <ControlLabel>
-                      Glow Mode
-                      <ToggleButton
-                        $accentColor={accentColor}
-                        $isActive={glowMode === 'per-album'}
-                        onClick={() => setGlowMode(glowMode === 'global' ? 'per-album' : 'global')}
-                      >
-                        {glowMode === 'per-album' ? 'Per Album' : 'Global'}
-                      </ToggleButton>
-                    </ControlLabel>
-                  </ControlGroup>
-                  {glowMode === 'per-album' && currentAlbumId ? (
-                    <>
-                      <ControlGroup>
-                        <ControlLabel>
-                          Album Glow Intensity
-                          <ControlValue>{(perAlbumGlow[currentAlbumId]?.intensity ?? 100)}</ControlValue>
-                        </ControlLabel>
-                        <Slider
-                          type="range"
-                          min={0}
-                          max={100}
-                          value={perAlbumGlow[currentAlbumId]?.intensity ?? 100}
-                          onChange={e => {
-                            setPerAlbumGlow({
-                              ...perAlbumGlow,
-                              [currentAlbumId]: {
-                                intensity: Number(e.target.value),
-                                rate: perAlbumGlow[currentAlbumId]?.rate ?? DEFAULT_GLOW_RATE
-                              }
-                            });
-                          }}
-                          $accentColor={accentColor}
-                        />
-                      </ControlGroup>
-                      <ControlGroup>
-                        <ControlLabel>
-                          Album Glow Rate
-                          <ControlValue>{(perAlbumGlow[currentAlbumId]?.rate ?? DEFAULT_GLOW_RATE).toFixed(2)}s</ControlValue>
-                        </ControlLabel>
-                        <Slider
-                          type="range"
-                          min={0.5}
-                          max={5}
-                          step={0.01}
-                          value={perAlbumGlow[currentAlbumId]?.rate ?? DEFAULT_GLOW_RATE}
-                          onChange={e => {
-                            setPerAlbumGlow({
-                              ...perAlbumGlow,
-                              [currentAlbumId]: {
-                                intensity: perAlbumGlow[currentAlbumId]?.intensity ?? 100,
-                                rate: Number(e.target.value)
-                              }
-                            });
-                          }}
-                          $accentColor={accentColor}
-                        />
-                      </ControlGroup>
-                      <div style={{ fontSize: '0.8rem', color: '#aaa', marginBottom: '0.5rem' }}>
-                        Album: {currentAlbumName || currentAlbumId}
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <ControlGroup>
-                        <ControlLabel>
-                          Glow Intensity
-                          <ControlValue>{glowIntensity}</ControlValue>
-                        </ControlLabel>
-                        <Slider
-                          type="range"
-                          min={0}
-                          max={100}
-                          value={glowIntensity}
-                          onChange={e => setGlowIntensity(Number(e.target.value))}
-                          $accentColor={accentColor}
-                        />
-                      </ControlGroup>
-                      <ControlGroup>
-                        <ControlLabel>
-                          Glow Rate
-                          <ControlValue>{glowRate.toFixed(2)}s</ControlValue>
-                        </ControlLabel>
-                        <Slider
-                          type="range"
-                          min={0.5}
-                          max={5}
-                          step={0.01}
-                          value={glowRate}
-                          onChange={e => setGlowRate(Number(e.target.value))}
-                          $accentColor={accentColor}
-                        />
-                      </ControlGroup>
-                    </>
-                  )}
-                  <div style={{ fontSize: '0.8rem', color: '#aaa', marginBottom: '0.5rem' }}>
-                    Effective: Intensity {effectiveGlow.intensity}, Rate {effectiveGlow.rate.toFixed(2)}s
-                  </div>
-                </>
-              )}
+              <ControlGroup>
+                <ControlLabel>
+                  Rate
+                  {/* <ControlValue>{getCurrentGlowRateLabel(glowRate)}</ControlValue> */}
+                </ControlLabel>
+                <OptionButtonGroup>
+                  {glowRateOptions.map((option) => (
+                    <OptionButton
+                      key={`global-rate-${option.value}`}
+                      $accentColor={accentColor}
+                      $isActive={glowRate === option.value}
+                      onClick={() => setGlowRate(option.value)}
+                    >
+                      {option.label}
+                    </OptionButton>
+                  ))}
+                </OptionButtonGroup>
+              </ControlGroup>
             </FilterGrid>
           </FilterSection>
-          {/* Album Art Filters Section */}
           <FilterSection>
             <SectionTitle>Album Art Filters</SectionTitle>
             <VirtualListContainer data-testid="filter-scroll-container">
               <List
-                height={300}
+                height={100 * filterConfig.length}
                 itemCount={filterConfig.length}
-                itemSize={60}
+                itemSize={90}
                 itemData={filterConfig}
                 overscanCount={1} // Pre-render 1 item outside visible area for smooth scrolling
                 width="100%"

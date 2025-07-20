@@ -158,30 +158,30 @@ const areControlsPropsEqual = (
   if (prevProps.currentTrack?.id !== nextProps.currentTrack?.id) {
     return false;
   }
-  
+
   // Check accent color
   if (prevProps.accentColor !== nextProps.accentColor) {
     return false;
   }
-  
+
   // Check glow settings
   if (prevProps.glowEnabled !== nextProps.glowEnabled) {
     return false;
   }
-  
+
   // Check visual effects state
   if (prevProps.showVisualEffects !== nextProps.showVisualEffects) {
     return false;
   }
-  
+
   // Check track count for playlist display
   if (prevProps.trackCount !== nextProps.trackCount) {
     return false;
   }
-  
+
   // For callbacks, we assume they're stable (parent should use useCallback)
   // This prevents unnecessary re-renders due to function reference changes
-  
+
   return true;
 };
 
@@ -337,23 +337,13 @@ const SpotifyPlayerControls = memo<SpotifyPlayerControlsProps>(({ currentTrack, 
       {/* Timeline Row with time, slider, and right controls */}
       <TimelineRow>
         <TimelineLeft>
-          <LikeButton
-            trackId={currentTrack?.id}
-            isLiked={isLiked}
-            isLoading={isLikePending}
-            accentColor={accentColor}
-            onToggleLike={handleLikeToggle}
-          />
-
-
-          {/* Add glow toggle button */}
           {onGlowToggle && (
             <ControlButton
               accentColor={accentColor}
-              onClick={onGlowToggle}
               isActive={glowEnabled}
-              title={`Glow ${glowEnabled ? 'enabled' : 'disabled'}`}
-              data-testid="glow-toggle"
+              title={`Visual Effects ${glowEnabled ? 'enabled' : 'disabled'}`}
+              onClick={onGlowToggle}
+              style={{ marginLeft: 8 }}
             >
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="12" cy="12" r="9" />
@@ -362,6 +352,24 @@ const SpotifyPlayerControls = memo<SpotifyPlayerControlsProps>(({ currentTrack, 
               </svg>
             </ControlButton>
           )}
+          <ControlButton
+            accentColor={accentColor}
+            onClick={onShowVisualEffects}
+            isActive={showVisualEffects}
+            title="Visual effects"
+            data-testid="visual-effects-button"
+          >
+            <svg viewBox="0 0 24 24" style={{ display: 'block' }} width="1.5rem" height="1.5rem" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path
+                fill="currentColor"
+                fillRule="evenodd"
+                clipRule="evenodd"
+                d="M19.43 12.98c.04-.32.07-.65.07-.98s-.03-.66-.07-.98l2.11-1.65a.5.5 0 00.12-.64l-2-3.46a.5.5 0 00-.6-.22l-2.49 1a7.03 7.03 0 00-1.7-.98l-.38-2.65A.488.488 0 0014 2h-4a.488.488 0 00-.5.42l-.38 2.65c-.63.25-1.21.57-1.77.98l-2.49-1a.5.5 0 00-.6.22l-2 3.46a.5.5 0 00.12.64l2.11 1.65c-.05.32-.08.65-.08.99s.03.67.08.99l-2.11 1.65a.5.5 0 00-.12.64l2 3.46c.14.24.44.33.7.22l2.49-1c.54.41 1.13.74 1.77.98l.38 2.65c.05.28.27.42.5.42h4c.23 0 .45-.14.5-.42l.38-2.65c.63-.25 1.22-.57 1.77-.98l2.49 1c.26.11.56.02.7-.22l2-3.46a.5.5 0 00-.12-.64l-2.11-1.65zM12 15.5A3.5 3.5 0 1112 8.5a3.5 3.5 0 010 7z"
+              />
+              <circle cx="12" cy="12" r="2" fill="#fff" />
+            </svg>
+          </ControlButton>
+
           <Suspense fallback={<div style={{ width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>⚡</div>}>
             <ColorPickerPopover
               accentColor={accentColor}
@@ -403,23 +411,15 @@ const SpotifyPlayerControls = memo<SpotifyPlayerControlsProps>(({ currentTrack, 
         />
 
         <TimelineRight>
-          <ControlButton 
-            accentColor={accentColor} 
-            onClick={onShowVisualEffects} 
-            isActive={showVisualEffects} 
-            title="Visual effects"
-            data-testid="visual-effects-button"
-          >
-            <svg viewBox="0 0 24 24" style={{ display: 'block' }} width="1.5rem" height="1.5rem" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path
-                fill="currentColor"
-                fillRule="evenodd"
-                clipRule="evenodd"
-                d="M19.43 12.98c.04-.32.07-.65.07-.98s-.03-.66-.07-.98l2.11-1.65a.5.5 0 00.12-.64l-2-3.46a.5.5 0 00-.6-.22l-2.49 1a7.03 7.03 0 00-1.7-.98l-.38-2.65A.488.488 0 0014 2h-4a.488.488 0 00-.5.42l-.38 2.65c-.63.25-1.21.57-1.77.98l-2.49-1a.5.5 0 00-.6.22l-2 3.46a.5.5 0 00.12.64l2.11 1.65c-.05.32-.08.65-.08.99s.03.67.08.99l-2.11 1.65a.5.5 0 00-.12.64l2 3.46c.14.24.44.33.7.22l2.49-1c.54.41 1.13.74 1.77.98l.38 2.65c.05.28.27.42.5.42h4c.23 0 .45-.14.5-.42l.38-2.65c.63-.25 1.22-.57 1.77-.98l2.49 1c.26.11.56.02.7-.22l2-3.46a.5.5 0 00-.12-.64l-2.11-1.65zM12 15.5A3.5 3.5 0 1112 8.5a3.5 3.5 0 010 7z"
-              />
-              <circle cx="12" cy="12" r="2" fill="#fff" />
-            </svg>
-          </ControlButton>
+          <LikeButton
+            trackId={currentTrack?.id}
+            isLiked={isLiked}
+            isLoading={isLikePending}
+            accentColor={accentColor}
+            onToggleLike={handleLikeToggle}
+          />
+
+
         </TimelineRight>
       </TimelineRow>
     </PlayerControlsContainer>

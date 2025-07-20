@@ -2,7 +2,7 @@ import React, { memo, useEffect, useState, useCallback } from 'react';
 import styled, { keyframes } from 'styled-components';
 import type { Track } from '../services/spotify';
 import AlbumArtFilters from './AlbumArtFilters';
-import AccentColorGlowOverlay, { hexToRgb, DEFAULT_GLOW_RATE } from './AccentColorGlowOverlay';
+import AccentColorGlowOverlay, { hexToRgb, DEFAULT_GLOW_RATE, DEFAULT_GLOW_INTENSITY } from './AccentColorGlowOverlay';
 import { useImageProcessingWorker } from '../hooks/useImageProcessingWorker';
 
 const spin = keyframes`
@@ -47,8 +47,6 @@ interface AlbumArtProps {
     hue: number;
     blur: number;
     sepia: number;
-    grayscale: number;
-    invert: number;
   };
 }
 
@@ -89,7 +87,7 @@ const arePropsEqual = (prevProps: AlbumArtProps, nextProps: AlbumArtProps): bool
     return false;
   }
   const filterKeys: (keyof typeof prevProps.albumFilters)[] = [
-    'brightness', 'contrast', 'saturation', 'hue', 'blur', 'sepia', 'grayscale', 'invert'
+    'brightness', 'contrast', 'saturation', 'blur', 'sepia'
   ];
   for (const key of filterKeys) {
     if (prevProps.albumFilters[key] !== nextProps.albumFilters[key]) {
@@ -174,18 +172,14 @@ const AlbumArt: React.FC<AlbumArtProps> = memo(({ currentTrack = null, accentCol
       glowRate={glowRate}
       className={glowClasses}
     >
-      <AlbumArtFilters filters={albumFilters ? { ...albumFilters, invert: !!albumFilters.invert } : {
-        brightness: 100,
+      <AlbumArtFilters filters={albumFilters ? albumFilters : {
+        brightness: 110,
         contrast: 100,
         saturation: 100,
-        hue: 0,
-        blur: 0,
-        sepia: 0,
-        grayscale: 0,
-        invert: false,
+        sepia: 0
       }}>
         <AccentColorGlowOverlay
-          glowIntensity={glowIntensity ?? 100}
+          glowIntensity={glowIntensity ?? DEFAULT_GLOW_INTENSITY}
           glowRate={glowRate ?? DEFAULT_GLOW_RATE}
           accentColor={accentColor || '#000000'}
           backgroundImage={currentTrack?.image}

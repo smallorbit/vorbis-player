@@ -18,25 +18,25 @@
       drop-shadow(0 8px 12px rgba(23, 22, 22, 0.5))
       drop-shadow(0 2px 8px rgba(22, 21, 21, 0.6))
       drop-shadow(0 2px 158px rgba(var(--accent-rgb), calc(var(--glow-intensity) /150)));
-    transform: scale(0.999);
+      transform: scale(1);
   }
   50% {
     filter: 
       drop-shadow(0 12px 12px rgba(23, 22, 22, 0.4))
       drop-shadow(0 4px 8px rgba(22, 21, 21, 0.8))
       drop-shadow(0 4px 188px rgba(var(--accent-rgb), calc(var(--glow-intensity) / 500)));
-    transform: scale(1);
+      transform: scale(0.999);
   }
 }
 
 @keyframes breathe-glow {
   0%, 100% {
-    filter: brightness(0.9);
+    filter: brightness(calc(var(--glow-intensity) / 100));
     opacity: calc(var(--glow-intensity) / 100);
     transform: translateZ(0);
   }
   50% {
-    filter: brightness(calc(var(--glow-intensity) / 100));
+    filter: brightness(0.9);
     opacity: calc(var(--glow-intensity) / 100);
     transform: translateZ(0);
   }

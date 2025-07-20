@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useCallback, lazy, Suspense } from 'react';
+import { useEffect, useMemo, useCallback, lazy, Suspense, useState } from 'react';
 import styled from 'styled-components';
 import { spotifyAuth } from '../services/spotify';
 import { spotifyPlayer } from '../services/spotifyPlayer';
@@ -14,7 +14,8 @@ import PlayerStateRenderer from './PlayerStateRenderer';
 import { usePlayerState } from '../hooks/usePlayerState';
 import { usePlaylistManager } from '../hooks/usePlaylistManager';
 import { theme } from '@/styles/theme';
-import { DEFAULT_GLOW_RATE } from './AccentColorGlowOverlay';
+import { DEFAULT_GLOW_RATE, DEFAULT_GLOW_INTENSITY } from './AccentColorGlowOverlay';
+
 
 const Container = styled.div`
   width: 100%;
@@ -102,11 +103,12 @@ const AudioPlayerComponent = () => {
     showPlaylist,
     accentColor,
     showVisualEffects,
-    glowEnabled,
-    glowIntensity,
-    glowRate,
-    glowMode,
-    perAlbumGlow,
+    visualEffectsEnabled,
+    setVisualEffectsEnabled,
+
+
+
+
     accentColorOverrides,
     albumFilters,
     setTracks,
@@ -117,15 +119,34 @@ const AudioPlayerComponent = () => {
     setShowPlaylist,
     setAccentColor,
     setShowVisualEffects,
-    setGlowEnabled,
-    setGlowIntensity,
-    setGlowRate,
-    setGlowMode,
-    setPerAlbumGlow,
+
+
+
     setAccentColorOverrides,
     handleFilterChange,
     handleResetFilters,
+    restoreSavedFilters,
   } = usePlayerState();
+
+  // Global glow state (these will be managed by the VisualEffectsMenu)
+  const [glowIntensity, setGlowIntensity] = useState(DEFAULT_GLOW_INTENSITY); // Medium
+  const [glowRate, setGlowRate] = useState(DEFAULT_GLOW_RATE);
+  const [savedGlowIntensity, setSavedGlowIntensity] = useState<number | null>(null);
+  const [savedGlowRate, setSavedGlowRate] = useState<number | null>(null);
+
+  // Use global glow settings
+  const effectiveGlow = { intensity: glowIntensity, rate: glowRate };
+
+  // Wrapper functions that save settings when glow values change
+  const handleGlowIntensityChange = useCallback((intensity: number) => {
+    setGlowIntensity(intensity);
+    setSavedGlowIntensity(intensity);
+  }, []);
+
+  const handleGlowRateChange = useCallback((rate: number) => {
+    setGlowRate(rate);
+    setSavedGlowRate(rate);
+  }, []);
 
   const playTrack = useCallback(async (index: number) => {
     if (tracks[index]) {
@@ -321,9 +342,20 @@ const AudioPlayerComponent = () => {
     setShowVisualEffects(false);
   }, []);
 
-  const handleGlowToggle = useCallback(() => {
-    setGlowEnabled(!glowEnabled);
-  }, [glowEnabled]);
+  const handleVisualEffectsToggle = useCallback(() => {
+    if (visualEffectsEnabled) {
+      setVisualEffectsEnabled(false);
+    } else {
+      setVisualEffectsEnabled(true);
+      restoreSavedFilters();
+      if (savedGlowIntensity !== null) {
+        setGlowIntensity(savedGlowIntensity);
+      }
+      if (savedGlowRate !== null) {
+        setGlowRate(savedGlowRate);
+      }
+    }
+  }, [visualEffectsEnabled, restoreSavedFilters, savedGlowIntensity, savedGlowRate]);
 
   const handleClosePlaylist = useCallback(() => {
     setShowPlaylist(false);
@@ -362,12 +394,6 @@ const AudioPlayerComponent = () => {
     }
   }, [currentTrack?.id, currentTrack?.image, setAccentColorOverrides, setAccentColor, theme.colors.accent]);
 
-  const currentAlbumId = currentTrack?.album || '';
-  const currentAlbumName = currentTrack?.album || '';
-  const effectiveGlow = glowMode === 'per-album' && currentAlbumId && perAlbumGlow[currentAlbumId]
-    ? perAlbumGlow[currentAlbumId]
-    : { intensity: glowIntensity, rate: glowRate };
-
   const renderContent = () => {
     const stateRenderer = (
       <PlayerStateRenderer
@@ -388,13 +414,20 @@ const AudioPlayerComponent = () => {
         <LoadingCard
           backgroundImage={currentTrack?.image}
           accentColor={accentColor}
-          glowEnabled={glowEnabled}
+          glowEnabled={visualEffectsEnabled}
           glowIntensity={effectiveGlow.intensity}
           glowRate={effectiveGlow.rate}
         >
 
           <CardContent style={{ position: 'relative', zIndex: 2, marginTop: '-0.25rem' }}>
-            <AlbumArt currentTrack={currentTrack} accentColor={accentColor} glowIntensity={glowEnabled ? effectiveGlow.intensity : 0} glowRate={effectiveGlow.rate} albumFilters={albumFilters} />
+            <AlbumArt currentTrack={currentTrack} accentColor={accentColor} glowIntensity={visualEffectsEnabled ? effectiveGlow.intensity : 0} glowRate={effectiveGlow.rate} albumFilters={visualEffectsEnabled ? albumFilters : {
+              brightness: 110,
+              contrast: 100,
+              saturation: 100,
+              hue: 0,
+              blur: 0,
+              sepia: 0
+            }} />
           </CardContent>
           <CardContent style={{ position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 2 }}>
             <Suspense fallback={<div style={{ height: '80px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.7)' }}>Loading controls...</div>}>
@@ -409,12 +442,12 @@ const AudioPlayerComponent = () => {
                 trackCount={tracks.length}
                 onAccentColorChange={handleAccentColorChange}
                 onShowVisualEffects={handleShowVisualEffects}
-                glowEnabled={glowEnabled}
-                onGlowToggle={handleGlowToggle}
+                glowEnabled={visualEffectsEnabled}
+                onGlowToggle={handleVisualEffectsToggle}
               />
             </Suspense>
           </CardContent>
-          <Suspense fallback={<div>Loading effects...</div>}>
+          {visualEffectsEnabled && <Suspense fallback={<div>Loading effects...</div>}>
             <VisualEffectsMenu
               isOpen={showVisualEffects}
               onClose={handleCloseVisualEffects}
@@ -422,21 +455,13 @@ const AudioPlayerComponent = () => {
               filters={albumFilters}
               onFilterChange={handleFilterChange}
               onResetFilters={handleResetFilters}
-              glowEnabled={glowEnabled}
-              setGlowEnabled={setGlowEnabled}
               glowIntensity={glowIntensity}
-              setGlowIntensity={setGlowIntensity}
-              glowRate={typeof glowRate === 'number' ? glowRate : DEFAULT_GLOW_RATE}
-              setGlowRate={setGlowRate}
-              glowMode={glowMode}
-              setGlowMode={setGlowMode}
-              perAlbumGlow={perAlbumGlow}
-              setPerAlbumGlow={setPerAlbumGlow}
-              currentAlbumId={currentAlbumId}
-              currentAlbumName={currentAlbumName}
+              setGlowIntensity={handleGlowIntensityChange}
+              glowRate={glowRate}
+              setGlowRate={handleGlowRateChange}
               effectiveGlow={effectiveGlow}
             />
-          </Suspense>
+          </Suspense>}
         </LoadingCard>
 
         <Suspense fallback={<div style={{ position: 'fixed', top: 0, right: 0, bottom: 0, width: '400px', background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.7)' }}>Loading playlist...</div>}>
