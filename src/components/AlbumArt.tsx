@@ -47,7 +47,6 @@ interface AlbumArtProps {
     hue: number;
     blur: number;
     sepia: number;
-    invert: number;
   };
 }
 
@@ -88,7 +87,7 @@ const arePropsEqual = (prevProps: AlbumArtProps, nextProps: AlbumArtProps): bool
     return false;
   }
   const filterKeys: (keyof typeof prevProps.albumFilters)[] = [
-    'brightness', 'contrast', 'saturation', 'blur', 'sepia', 'invert'
+    'brightness', 'contrast', 'saturation', 'blur', 'sepia'
   ];
   for (const key of filterKeys) {
     if (prevProps.albumFilters[key] !== nextProps.albumFilters[key]) {
@@ -173,15 +172,13 @@ const AlbumArt: React.FC<AlbumArtProps> = memo(({ currentTrack = null, accentCol
       glowRate={glowRate}
       className={glowClasses}
     >
-      <AlbumArtFilters filters={albumFilters ? { ...albumFilters, invert: !!albumFilters.invert } : {
+      <AlbumArtFilters filters={albumFilters ? albumFilters : {
         brightness: 100,
         contrast: 100,
         saturation: 100,
         hue: 0,
         blur: 0,
-        sepia: 0,
-
-        invert: false,
+        sepia: 0
       }}>
         <AccentColorGlowOverlay
           glowIntensity={glowIntensity ?? 100}

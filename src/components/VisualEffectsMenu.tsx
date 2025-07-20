@@ -16,7 +16,6 @@ interface VisualEffectsMenuProps {
     saturation: number;
     hue: number;
     sepia: number;
-    invert: number;
   };
   onFilterChange: (filterName: string, value: number | boolean) => void;
   onResetFilters: () => void;
@@ -289,7 +288,7 @@ const areVisualEffectsPropsEqual = (
 
   // Check filters object
   const filterKeys: (keyof typeof prevProps.filters)[] = [
-    'brightness', 'contrast', 'saturation', 'sepia', 'invert'
+    'brightness', 'contrast', 'saturation', 'sepia'
   ];
 
   for (const key of filterKeys) {
@@ -384,8 +383,7 @@ export const VisualEffectsMenu: React.FC<VisualEffectsMenuProps> = memo(({
         { label: 'Normal', value: 100 },
         { label: 'More', value: 115 }
       ]
-    },
-    { key: 'invert', label: 'Invert', min: 0, max: 1, unit: '', type: 'toggle' as const }
+    }
   ], []);
 
   // Glow intensity and rate option mappings
@@ -427,11 +425,6 @@ export const VisualEffectsMenu: React.FC<VisualEffectsMenuProps> = memo(({
     return value.toString();
   }, [filterConfig]);
 
-  // Optimized callbacks with minimal dependencies
-  const handleInvertToggle = useCallback(() => {
-    onFilterChange('invert', filters.invert === 0 ? 1 : 0);
-  }, [filters.invert, onFilterChange]);
-
   const handleFilterChange = useCallback((key: string, value: number) => {
     onFilterChange(key, value);
   }, [onFilterChange]);
@@ -448,28 +441,6 @@ export const VisualEffectsMenu: React.FC<VisualEffectsMenuProps> = memo(({
 
     // Use optimized filter value getter
     const currentValue = getFilterValue(key);
-
-    if (type === 'toggle') {
-      return (
-        <div style={style} key={`filter-${key}`}>
-          <FilterItem>
-            <ControlGroup>
-              <ControlLabel>
-                {label}
-                <ToggleButton
-                  $accentColor={accentColor}
-                  $isActive={currentValue === 1}
-                  onClick={handleInvertToggle}
-                  aria-label={`Toggle ${label}`}
-                >
-                  {currentValue === 1 ? 'On' : 'Off'}
-                </ToggleButton>
-              </ControlLabel>
-            </ControlGroup>
-          </FilterItem>
-        </div>
-      );
-    }
 
     if (type === 'options') {
       return (
@@ -499,30 +470,9 @@ export const VisualEffectsMenu: React.FC<VisualEffectsMenuProps> = memo(({
       );
     }
 
-    // Default slider for remaining options (none currently)
-    const { min, max, unit } = config;
-    return (
-      <div style={style} key={`filter-${key}`}>
-        <FilterItem>
-          <ControlGroup>
-            <ControlLabel>
-              {label}
-              <ControlValue>{currentValue}{unit}</ControlValue>
-            </ControlLabel>
-            <Slider
-              type="range"
-              min={min}
-              max={max}
-              value={currentValue}
-              onChange={(e) => handleFilterChange(key, parseInt(e.target.value))}
-              $accentColor={accentColor}
-              aria-label={`Adjust ${label}`}
-            />
-          </ControlGroup>
-        </FilterItem>
-      </div>
-    );
-  }, [filterConfig, accentColor, handleInvertToggle, handleFilterChange, getFilterValue, getCurrentFilterOptionLabel]);
+    // Should not reach here since all filters are options type
+    return null;
+  }, [filterConfig, accentColor, handleFilterChange, getFilterValue, getCurrentFilterOptionLabel]);
 
   return (
     <PerformanceProfilerComponent id="visual-effects-menu">
@@ -548,8 +498,8 @@ export const VisualEffectsMenu: React.FC<VisualEffectsMenuProps> = memo(({
             <FilterGrid>
               <ControlGroup>
                 <ControlLabel>
-                  Glow Intensity
-                  <ControlValue>{getCurrentGlowIntensityLabel(glowIntensity)}</ControlValue>
+                  Intensity
+                  {/* <ControlValue>{getCurrentGlowIntensityLabel(glowIntensity)}</ControlValue> */}
                 </ControlLabel>
                 <OptionButtonGroup>
                   {glowIntensityOptions.map((option) => (
@@ -566,8 +516,8 @@ export const VisualEffectsMenu: React.FC<VisualEffectsMenuProps> = memo(({
               </ControlGroup>
               <ControlGroup>
                 <ControlLabel>
-                  Glow Rate
-                  <ControlValue>{getCurrentGlowRateLabel(glowRate)}</ControlValue>
+                  Rate
+                  {/* <ControlValue>{getCurrentGlowRateLabel(glowRate)}</ControlValue> */}
                 </ControlLabel>
                 <OptionButtonGroup>
                   {glowRateOptions.map((option) => (
@@ -582,9 +532,6 @@ export const VisualEffectsMenu: React.FC<VisualEffectsMenuProps> = memo(({
                   ))}
                 </OptionButtonGroup>
               </ControlGroup>
-              <div style={{ fontSize: '0.8rem', color: '#aaa', marginBottom: '0.5rem' }}>
-                Effective: Intensity {getCurrentGlowIntensityLabel(effectiveGlow.intensity)}, Rate {getCurrentGlowRateLabel(effectiveGlow.rate)}
-              </div>
             </FilterGrid>
           </FilterSection>
           <FilterSection>

@@ -10,7 +10,6 @@ export interface AlbumFilters {
   hue: number;
   blur: number;
   sepia: number;
-  invert: number;
 }
 
 export interface PlayerState {
@@ -64,9 +63,7 @@ export const usePlayerState = () => {
           saturation: parsed.saturation ?? 100,
           hue: parsed.hue ?? 0,
           blur: parsed.blur ?? 0,
-          sepia: parsed.sepia ?? 0,
-    
-          invert: typeof parsed.invert === 'boolean' ? (parsed.invert ? 1 : 0) : parsed.invert
+          sepia: parsed.sepia ?? 0
         };
       } catch (e) {
         return {
@@ -75,9 +72,7 @@ export const usePlayerState = () => {
           saturation: 100,
           hue: 0,
           blur: 0,
-          sepia: 0,
-
-          invert: 0
+          sepia: 0
         };
       }
     }
@@ -87,9 +82,7 @@ export const usePlayerState = () => {
       saturation: 100,
       hue: 0,
       blur: 0,
-      sepia: 0,
-
-      invert: 0
+      sepia: 0
     };
   });
 
@@ -139,8 +132,7 @@ export const usePlayerState = () => {
       saturation: 100,
       hue: 0,
       blur: 0,
-      sepia: 0,
-      invert: 0
+      sepia: 0
     });
   }, []);
 

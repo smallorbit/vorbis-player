@@ -428,8 +428,7 @@ const AudioPlayerComponent = () => {
               saturation: 100,
               hue: 0,
               blur: 0,
-              sepia: 0,
-              invert: 0
+              sepia: 0
             }} />
           </CardContent>
           <CardContent style={{ position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 2 }}>
