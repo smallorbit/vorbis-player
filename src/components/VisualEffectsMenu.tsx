@@ -255,8 +255,7 @@ export const VisualEffectsMenu: React.FC<VisualEffectsMenuProps> = memo(({
   glowIntensity,
   setGlowIntensity,
   glowRate,
-  setGlowRate,
-  effectiveGlow
+  setGlowRate
 }) => {
   // Add ESC key support to close the drawer
   useEffect(() => {
