@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { Track } from '../services/spotify';
 import { theme } from '@/styles/theme';
-import { DEFAULT_GLOW_RATE } from '../components/AccentColorGlowOverlay';
+
 
 export interface AlbumFilters {
   brightness: number;
@@ -10,7 +10,6 @@ export interface AlbumFilters {
   hue: number;
   blur: number;
   sepia: number;
-  grayscale: number;
   invert: number;
 }
 
@@ -23,13 +22,11 @@ export interface PlayerState {
   showPlaylist: boolean;
   accentColor: string;
   showVisualEffects: boolean;
-  glowEnabled: boolean;
-  glowIntensity: number;
-  glowRate: number;
-  glowMode: 'global' | 'per-album';
+  visualEffectsEnabled: boolean;
   perAlbumGlow: Record<string, { intensity: number; rate: number }>;
   accentColorOverrides: Record<string, string>;
   albumFilters: AlbumFilters;
+  savedAlbumFilters: AlbumFilters | null;
 }
 
 export const usePlayerState = () => {
@@ -42,25 +39,12 @@ export const usePlayerState = () => {
   const [accentColor, setAccentColor] = useState<string>(theme.colors.accent);
   const [showVisualEffects, setShowVisualEffects] = useState(false);
   
-  const [glowEnabled, setGlowEnabled] = useState<boolean>(() => {
-    const saved = localStorage.getItem('vorbis-player-glow-enabled');
+  const [visualEffectsEnabled, setVisualEffectsEnabled] = useState<boolean>(() => {
+    const saved = localStorage.getItem('vorbis-player-visual-effects-enabled');
     return saved ? JSON.parse(saved) : true;
   });
   
-  const [glowIntensity, setGlowIntensity] = useState<number>(() => {
-    const saved = localStorage.getItem('vorbis-player-glow-intensity');
-    return saved ? parseInt(saved, 10) : 100;
-  });
-  
-  const [glowRate, setGlowRate] = useState<number>(() => {
-    const saved = localStorage.getItem('vorbis-player-glow-rate');
-    return saved ? parseFloat(saved) : DEFAULT_GLOW_RATE;
-  });
-  
-  const [glowMode, setGlowMode] = useState<'global' | 'per-album'>(() => {
-    const saved = localStorage.getItem('vorbis-player-glow-mode');
-    return saved === 'per-album' ? 'per-album' : 'global';
-  });
+
   
   const [perAlbumGlow, setPerAlbumGlow] = useState<Record<string, { intensity: number; rate: number }>>(() => {
     const saved = localStorage.getItem('vorbis-player-per-album-glow');
@@ -81,7 +65,7 @@ export const usePlayerState = () => {
           hue: parsed.hue ?? 0,
           blur: parsed.blur ?? 0,
           sepia: parsed.sepia ?? 0,
-          grayscale: parsed.grayscale ?? 0,
+    
           invert: typeof parsed.invert === 'boolean' ? (parsed.invert ? 1 : 0) : parsed.invert
         };
       } catch (e) {
@@ -92,7 +76,7 @@ export const usePlayerState = () => {
           hue: 0,
           blur: 0,
           sepia: 0,
-          grayscale: 0,
+
           invert: 0
         };
       }
@@ -104,10 +88,12 @@ export const usePlayerState = () => {
       hue: 0,
       blur: 0,
       sepia: 0,
-      grayscale: 0,
+
       invert: 0
     };
   });
+
+  const [savedAlbumFilters, setSavedAlbumFilters] = useState<AlbumFilters | null>(null);
 
   useEffect(() => {
     const stored = localStorage.getItem('accentColorOverrides');
@@ -125,30 +111,25 @@ export const usePlayerState = () => {
   }, [albumFilters]);
 
   useEffect(() => {
-    localStorage.setItem('vorbis-player-glow-enabled', JSON.stringify(glowEnabled));
-  }, [glowEnabled]);
+    localStorage.setItem('vorbis-player-visual-effects-enabled', JSON.stringify(visualEffectsEnabled));
+  }, [visualEffectsEnabled]);
   
-  useEffect(() => {
-    localStorage.setItem('vorbis-player-glow-intensity', glowIntensity.toString());
-  }, [glowIntensity]);
-  
-  useEffect(() => {
-    localStorage.setItem('vorbis-player-glow-rate', glowRate.toString());
-  }, [glowRate]);
-  
-  useEffect(() => {
-    localStorage.setItem('vorbis-player-glow-mode', glowMode);
-  }, [glowMode]);
+
   
   useEffect(() => {
     localStorage.setItem('vorbis-player-per-album-glow', JSON.stringify(perAlbumGlow));
   }, [perAlbumGlow]);
 
   const handleFilterChange = useCallback((filterName: string, value: number | boolean) => {
-    setAlbumFilters(prev => ({
-      ...prev,
-      [filterName]: value
-    }));
+    setAlbumFilters(prev => {
+      const newFilters = {
+        ...prev,
+        [filterName]: value
+      };
+      // Save the updated filters as the current settings
+      setSavedAlbumFilters(newFilters);
+      return newFilters;
+    });
   }, []);
 
   const handleResetFilters = useCallback(() => {
@@ -159,10 +140,15 @@ export const usePlayerState = () => {
       hue: 0,
       blur: 0,
       sepia: 0,
-      grayscale: 0,
       invert: 0
     });
   }, []);
+
+  const restoreSavedFilters = useCallback(() => {
+    if (savedAlbumFilters) {
+      setAlbumFilters(savedAlbumFilters);
+    }
+  }, [savedAlbumFilters]);
 
   return {
     tracks,
@@ -173,13 +159,11 @@ export const usePlayerState = () => {
     showPlaylist,
     accentColor,
     showVisualEffects,
-    glowEnabled,
-    glowIntensity,
-    glowRate,
-    glowMode,
+    visualEffectsEnabled,
     perAlbumGlow,
     accentColorOverrides,
     albumFilters,
+    savedAlbumFilters,
     setTracks,
     setCurrentTrackIndex,
     setIsLoading,
@@ -188,14 +172,13 @@ export const usePlayerState = () => {
     setShowPlaylist,
     setAccentColor,
     setShowVisualEffects,
-    setGlowEnabled,
-    setGlowIntensity,
-    setGlowRate,
-    setGlowMode,
+    setVisualEffectsEnabled,
+
     setPerAlbumGlow,
     setAccentColorOverrides,
     setAlbumFilters,
     handleFilterChange,
     handleResetFilters,
+    restoreSavedFilters,
   };
 };

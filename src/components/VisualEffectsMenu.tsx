@@ -1,7 +1,7 @@
 import React, { useEffect, memo, useCallback, useMemo } from 'react';
 import styled from 'styled-components';
 import { FixedSizeList as List } from 'react-window';
-import { DEFAULT_GLOW_RATE } from './AccentColorGlowOverlay';
+
 import { theme } from '../styles/theme';
 import { PerformanceProfilerComponent } from './PerformanceProfiler';
 import VisualEffectsPerformanceMonitor from './VisualEffectsPerformanceMonitor';
@@ -16,24 +16,15 @@ interface VisualEffectsMenuProps {
     saturation: number;
     hue: number;
     sepia: number;
-    grayscale: number;
     invert: number;
   };
   onFilterChange: (filterName: string, value: number | boolean) => void;
   onResetFilters: () => void;
   // Glow controls
-  glowEnabled: boolean;
-  setGlowEnabled: (v: boolean) => void;
   glowIntensity: number;
   setGlowIntensity: (v: number) => void;
   glowRate: number;
   setGlowRate: (v: number) => void;
-  glowMode: 'global' | 'per-album';
-  setGlowMode: (v: 'global' | 'per-album') => void;
-  perAlbumGlow: Record<string, { intensity: number; rate: number }>;
-  setPerAlbumGlow: (v: Record<string, { intensity: number; rate: number }>) => void;
-  currentAlbumId: string;
-  currentAlbumName: string;
   effectiveGlow: { intensity: number; rate: number };
 }
 
@@ -196,8 +187,8 @@ const FilterGrid = styled.div`
 `;
 
 const VirtualListContainer = styled.div`
-  height: 300px; /* Fixed height for virtualization - optimized for ~5 visible items */
   width: 100%;
+  height: 100%;
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 0.5rem;
   overflow: hidden;
@@ -283,34 +274,30 @@ const OptionButton = styled.button<{ $accentColor: string; $isActive: boolean }>
 
 // Custom comparison function for memo optimization
 const areVisualEffectsPropsEqual = (
-  prevProps: VisualEffectsMenuProps, 
+  prevProps: VisualEffectsMenuProps,
   nextProps: VisualEffectsMenuProps
 ): boolean => {
   // Check simple props first
   if (
     prevProps.isOpen !== nextProps.isOpen ||
     prevProps.accentColor !== nextProps.accentColor ||
-    prevProps.glowEnabled !== nextProps.glowEnabled ||
     prevProps.glowIntensity !== nextProps.glowIntensity ||
-    prevProps.glowRate !== nextProps.glowRate ||
-    prevProps.glowMode !== nextProps.glowMode ||
-    prevProps.currentAlbumId !== nextProps.currentAlbumId ||
-    prevProps.currentAlbumName !== nextProps.currentAlbumName
+    prevProps.glowRate !== nextProps.glowRate
   ) {
     return false;
   }
-  
+
   // Check filters object
   const filterKeys: (keyof typeof prevProps.filters)[] = [
-    'brightness', 'contrast', 'saturation', 'sepia', 'grayscale', 'invert'
+    'brightness', 'contrast', 'saturation', 'sepia', 'invert'
   ];
-  
+
   for (const key of filterKeys) {
     if (prevProps.filters[key] !== nextProps.filters[key]) {
       return false;
     }
   }
-  
+
   // Check effective glow
   if (
     prevProps.effectiveGlow.intensity !== nextProps.effectiveGlow.intensity ||
@@ -318,25 +305,9 @@ const areVisualEffectsPropsEqual = (
   ) {
     return false;
   }
-  
-  // Check perAlbumGlow - shallow comparison for performance
-  const prevKeys = Object.keys(prevProps.perAlbumGlow);
-  const nextKeys = Object.keys(nextProps.perAlbumGlow);
-  
-  if (prevKeys.length !== nextKeys.length) {
-    return false;
-  }
-  
-  for (const key of prevKeys) {
-    if (
-      !nextProps.perAlbumGlow[key] ||
-      prevProps.perAlbumGlow[key].intensity !== nextProps.perAlbumGlow[key].intensity ||
-      prevProps.perAlbumGlow[key].rate !== nextProps.perAlbumGlow[key].rate
-    ) {
-      return false;
-    }
-  }
-  
+
+
+
   return true;
 };
 
@@ -347,18 +318,10 @@ export const VisualEffectsMenu: React.FC<VisualEffectsMenuProps> = memo(({
   filters,
   onFilterChange,
   onResetFilters,
-  glowEnabled,
-  setGlowEnabled,
   glowIntensity,
   setGlowIntensity,
   glowRate,
   setGlowRate,
-  glowMode,
-  setGlowMode,
-  perAlbumGlow,
-  setPerAlbumGlow,
-  currentAlbumId,
-  currentAlbumName,
   effectiveGlow
 }) => {
   // Add ESC key support to close the drawer
@@ -382,64 +345,72 @@ export const VisualEffectsMenu: React.FC<VisualEffectsMenuProps> = memo(({
 
   // Simplified filter configuration with 3-option selections
   const filterConfig = useMemo(() => [
-    { 
-      key: 'brightness', 
-      label: 'Brightness', 
+    {
+      key: 'brightness',
+      label: 'Brightness',
       type: 'options' as const,
       options: [
-        { label: 'Less', value: 75 },
+        { label: 'Less', value: 90 },
         { label: 'Normal', value: 100 },
-        { label: 'More', value: 150 }
+        { label: 'More', value: 110 }
       ]
     },
-    { 
-      key: 'saturation', 
-      label: 'Saturation', 
+    {
+      key: 'saturation',
+      label: 'Saturation',
       type: 'options' as const,
       options: [
-        { label: 'Less', value: 50 },
+        { label: 'Less', value: 80 },
         { label: 'Normal', value: 100 },
-        { label: 'More', value: 200 }
+        { label: 'More', value: 120 }
       ]
     },
-    { 
-      key: 'sepia', 
-      label: 'Sepia', 
+    {
+      key: 'sepia',
+      label: 'Sepia',
       type: 'options' as const,
       options: [
         { label: 'None', value: 0 },
-        { label: 'Some', value: 50 },
-        { label: 'More', value: 100 }
+        { label: 'Some', value: 20 },
+        { label: 'More', value: 40 }
       ]
     },
-    { key: 'contrast', label: 'Contrast', min: 0, max: 200, unit: '%', type: 'slider' as const },
-    { key: 'grayscale', label: 'Grayscale', min: 0, max: 100, unit: '%', type: 'slider' as const },
+    {
+      key: 'contrast',
+      label: 'Contrast',
+      type: 'options' as const,
+      options: [
+        { label: 'Less', value: 85 },
+        { label: 'Normal', value: 100 },
+        { label: 'More', value: 115 }
+      ]
+    },
     { key: 'invert', label: 'Invert', min: 0, max: 1, unit: '', type: 'toggle' as const }
   ], []);
 
   // Glow intensity and rate option mappings
   const glowIntensityOptions = [
-    { label: 'Low', value: 25 },
-    { label: 'Medium', value: 50 },
-    { label: 'High', value: 100 }
+    { label: 'Low', value: 90 },
+    { label: 'Medium', value: 100 },
+    { label: 'High', value: 110 }
   ];
 
   const glowRateOptions = [
-    { label: 'Slow', value: 4.0 },
-    { label: 'Medium', value: 2.5 },
-    { label: 'Fast', value: 1.0 }
+    { label: 'Slow', value: 6.0 },
+    { label: 'Medium', value: 4.5 },
+    { label: 'Fast', value: 3.0 }
   ];
 
   // Helper functions to get current option labels
   const getCurrentGlowIntensityLabel = useCallback((value: number) => {
-    const closest = glowIntensityOptions.reduce((prev, curr) => 
+    const closest = glowIntensityOptions.reduce((prev, curr) =>
       Math.abs(curr.value - value) < Math.abs(prev.value - value) ? curr : prev
     );
     return closest.label;
   }, []);
 
   const getCurrentGlowRateLabel = useCallback((value: number) => {
-    const closest = glowRateOptions.reduce((prev, curr) => 
+    const closest = glowRateOptions.reduce((prev, curr) =>
       Math.abs(curr.value - value) < Math.abs(prev.value - value) ? curr : prev
     );
     return closest.label;
@@ -448,7 +419,7 @@ export const VisualEffectsMenu: React.FC<VisualEffectsMenuProps> = memo(({
   const getCurrentFilterOptionLabel = useCallback((key: string, value: number) => {
     const config = filterConfig.find(f => f.key === key);
     if (config?.type === 'options') {
-      const closest = config.options.reduce((prev, curr) => 
+      const closest = config.options.reduce((prev, curr) =>
         Math.abs(curr.value - value) < Math.abs(prev.value - value) ? curr : prev
       );
       return closest.label;
@@ -474,10 +445,10 @@ export const VisualEffectsMenu: React.FC<VisualEffectsMenuProps> = memo(({
   const renderFilterItem = useCallback(({ index, style }: { index: number; style: React.CSSProperties }) => {
     const config = filterConfig[index];
     const { key, label, type } = config;
-    
+
     // Use optimized filter value getter
     const currentValue = getFilterValue(key);
-    
+
     if (type === 'toggle') {
       return (
         <div style={style} key={`filter-${key}`}>
@@ -507,7 +478,7 @@ export const VisualEffectsMenu: React.FC<VisualEffectsMenuProps> = memo(({
             <ControlGroup>
               <ControlLabel>
                 {label}
-                <ControlValue>{getCurrentFilterOptionLabel(key, currentValue)}</ControlValue>
+                {/* <ControlValue>{getCurrentFilterOptionLabel(key, currentValue)}</ControlValue> */}
               </ControlLabel>
               <OptionButtonGroup>
                 {config.options.map((option) => (
@@ -528,7 +499,7 @@ export const VisualEffectsMenu: React.FC<VisualEffectsMenuProps> = memo(({
       );
     }
 
-    // Default slider for remaining options (contrast, grayscale)
+    // Default slider for remaining options (none currently)
     const { min, max, unit } = config;
     return (
       <div style={style} key={`filter-${key}`}>
@@ -555,7 +526,7 @@ export const VisualEffectsMenu: React.FC<VisualEffectsMenuProps> = memo(({
 
   return (
     <PerformanceProfilerComponent id="visual-effects-menu">
-      <VisualEffectsPerformanceMonitor 
+      <VisualEffectsPerformanceMonitor
         filterCount={filterConfig.length}
         isEnabled={process.env.NODE_ENV === 'development'}
       />
@@ -565,11 +536,11 @@ export const VisualEffectsMenu: React.FC<VisualEffectsMenuProps> = memo(({
           <DrawerTitle>Visual Effects</DrawerTitle>
           <CloseButton onClick={onClose} aria-label="Close visual effects drawer">
             <svg viewBox="0 0 24 24" fill="currentColor">
-              <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+              <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
             </svg>
           </CloseButton>
         </DrawerHeader>
-        
+
         <DrawerContent>
           {/* Glow Controls Section */}
           <FilterSection>
@@ -577,143 +548,52 @@ export const VisualEffectsMenu: React.FC<VisualEffectsMenuProps> = memo(({
             <FilterGrid>
               <ControlGroup>
                 <ControlLabel>
-                  Enable Glow
-                  <ToggleButton
-                    $accentColor={accentColor}
-                    $isActive={glowEnabled}
-                    onClick={() => setGlowEnabled(!glowEnabled)}
-                  >
-                    {glowEnabled ? 'On' : 'Off'}
-                  </ToggleButton>
+                  Glow Intensity
+                  <ControlValue>{getCurrentGlowIntensityLabel(glowIntensity)}</ControlValue>
                 </ControlLabel>
+                <OptionButtonGroup>
+                  {glowIntensityOptions.map((option) => (
+                    <OptionButton
+                      key={`global-intensity-${option.value}`}
+                      $accentColor={accentColor}
+                      $isActive={glowIntensity === option.value}
+                      onClick={() => setGlowIntensity(option.value)}
+                    >
+                      {option.label}
+                    </OptionButton>
+                  ))}
+                </OptionButtonGroup>
               </ControlGroup>
-              {glowEnabled && (
-                <>
-                  <ControlGroup>
-                    <ControlLabel>
-                      Glow Mode
-                      <ToggleButton
-                        $accentColor={accentColor}
-                        $isActive={glowMode === 'per-album'}
-                        onClick={() => setGlowMode(glowMode === 'global' ? 'per-album' : 'global')}
-                      >
-                        {glowMode === 'per-album' ? 'Per Album' : 'Global'}
-                      </ToggleButton>
-                    </ControlLabel>
-                  </ControlGroup>
-                  {glowMode === 'per-album' && currentAlbumId ? (
-                    <>
-                      <ControlGroup>
-                        <ControlLabel>
-                          Album Glow Intensity
-                          <ControlValue>{getCurrentGlowIntensityLabel(perAlbumGlow[currentAlbumId]?.intensity ?? 100)}</ControlValue>
-                        </ControlLabel>
-                        <OptionButtonGroup>
-                          {glowIntensityOptions.map((option) => (
-                            <OptionButton
-                              key={`album-intensity-${option.value}`}
-                              $accentColor={accentColor}
-                              $isActive={(perAlbumGlow[currentAlbumId]?.intensity ?? 100) === option.value}
-                              onClick={() => {
-                                setPerAlbumGlow({
-                                  ...perAlbumGlow,
-                                  [currentAlbumId]: {
-                                    intensity: option.value,
-                                    rate: perAlbumGlow[currentAlbumId]?.rate ?? DEFAULT_GLOW_RATE
-                                  }
-                                });
-                              }}
-                            >
-                              {option.label}
-                            </OptionButton>
-                          ))}
-                        </OptionButtonGroup>
-                      </ControlGroup>
-                      <ControlGroup>
-                        <ControlLabel>
-                          Album Glow Rate
-                          <ControlValue>{getCurrentGlowRateLabel(perAlbumGlow[currentAlbumId]?.rate ?? DEFAULT_GLOW_RATE)}</ControlValue>
-                        </ControlLabel>
-                        <OptionButtonGroup>
-                          {glowRateOptions.map((option) => (
-                            <OptionButton
-                              key={`album-rate-${option.value}`}
-                              $accentColor={accentColor}
-                              $isActive={(perAlbumGlow[currentAlbumId]?.rate ?? DEFAULT_GLOW_RATE) === option.value}
-                              onClick={() => {
-                                setPerAlbumGlow({
-                                  ...perAlbumGlow,
-                                  [currentAlbumId]: {
-                                    intensity: perAlbumGlow[currentAlbumId]?.intensity ?? 100,
-                                    rate: option.value
-                                  }
-                                });
-                              }}
-                            >
-                              {option.label}
-                            </OptionButton>
-                          ))}
-                        </OptionButtonGroup>
-                      </ControlGroup>
-                      <div style={{ fontSize: '0.8rem', color: '#aaa', marginBottom: '0.5rem' }}>
-                        Album: {currentAlbumName || currentAlbumId}
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <ControlGroup>
-                        <ControlLabel>
-                          Glow Intensity
-                          <ControlValue>{getCurrentGlowIntensityLabel(glowIntensity)}</ControlValue>
-                        </ControlLabel>
-                        <OptionButtonGroup>
-                          {glowIntensityOptions.map((option) => (
-                            <OptionButton
-                              key={`global-intensity-${option.value}`}
-                              $accentColor={accentColor}
-                              $isActive={glowIntensity === option.value}
-                              onClick={() => setGlowIntensity(option.value)}
-                            >
-                              {option.label}
-                            </OptionButton>
-                          ))}
-                        </OptionButtonGroup>
-                      </ControlGroup>
-                      <ControlGroup>
-                        <ControlLabel>
-                          Glow Rate
-                          <ControlValue>{getCurrentGlowRateLabel(glowRate)}</ControlValue>
-                        </ControlLabel>
-                        <OptionButtonGroup>
-                          {glowRateOptions.map((option) => (
-                            <OptionButton
-                              key={`global-rate-${option.value}`}
-                              $accentColor={accentColor}
-                              $isActive={glowRate === option.value}
-                              onClick={() => setGlowRate(option.value)}
-                            >
-                              {option.label}
-                            </OptionButton>
-                          ))}
-                        </OptionButtonGroup>
-                      </ControlGroup>
-                    </>
-                  )}
-                  <div style={{ fontSize: '0.8rem', color: '#aaa', marginBottom: '0.5rem' }}>
-                    Effective: Intensity {getCurrentGlowIntensityLabel(effectiveGlow.intensity)}, Rate {getCurrentGlowRateLabel(effectiveGlow.rate)}
-                  </div>
-                </>
-              )}
+              <ControlGroup>
+                <ControlLabel>
+                  Glow Rate
+                  <ControlValue>{getCurrentGlowRateLabel(glowRate)}</ControlValue>
+                </ControlLabel>
+                <OptionButtonGroup>
+                  {glowRateOptions.map((option) => (
+                    <OptionButton
+                      key={`global-rate-${option.value}`}
+                      $accentColor={accentColor}
+                      $isActive={glowRate === option.value}
+                      onClick={() => setGlowRate(option.value)}
+                    >
+                      {option.label}
+                    </OptionButton>
+                  ))}
+                </OptionButtonGroup>
+              </ControlGroup>
+              <div style={{ fontSize: '0.8rem', color: '#aaa', marginBottom: '0.5rem' }}>
+                Effective: Intensity {getCurrentGlowIntensityLabel(effectiveGlow.intensity)}, Rate {getCurrentGlowRateLabel(effectiveGlow.rate)}
+              </div>
             </FilterGrid>
           </FilterSection>
-          {/* Album Art Filters Section */}
           <FilterSection>
             <SectionTitle>Album Art Filters</SectionTitle>
             <VirtualListContainer data-testid="filter-scroll-container">
               <List
-                height={300}
+                height={100 * filterConfig.length}
                 itemCount={filterConfig.length}
-                itemSize={80}
+                itemSize={90}
                 itemData={filterConfig}
                 overscanCount={1} // Pre-render 1 item outside visible area for smooth scrolling
                 width="100%"

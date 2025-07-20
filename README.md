@@ -18,7 +18,9 @@ A modern Spotify music player with a sleek, unified interface designed for enjoy
 ### 🎨 Visual Experience  
 - **Dynamic Album Art**: Beautiful album artwork display with customizable visual effects
 - **Integrated Player Card**: Clean, unified interface with elegant design
-- **Custom Visual Effects**: Adjustable glow effects to personalize your experience
+- **Streamlined Visual Effects**: Simplified visual effects system with easy on/off toggle and intuitive controls
+- **Custom Album Filters**: Adjustable brightness, saturation, sepia, contrast, and invert effects for personalized visual experience
+- **Enhanced Glow System**: Simplified glow controls with three intensity levels (Low, Medium, High) and rate options (Slow, Medium, Fast)
 - **Responsive Design**: Smooth transitions and loading states throughout the interface
 
 ### 🎛️ User Interface
@@ -27,6 +29,8 @@ A modern Spotify music player with a sleek, unified interface designed for enjoy
 - **Timeline-Integrated Controls**: Settings and volume controls positioned along the timeline for compact, streamlined interface
 - **Fixed-Size Layout**: Consistent 768px x 880px dimensions for predictable layout and optimal viewing experience
 - **Unified Settings Modal**: Comprehensive settings interface with visual effects and configuration options
+- **Streamlined Visual Effects Toggle**: Single-button visual effects control that toggles all visual enhancements on/off with preserved settings
+- **Simplified Visual Effects Menu**: Redesigned visual effects interface with three-option selections for easier customization
 - **Sliding Playlist Drawer**: Space-saving collapsible playlist accessible from anywhere with 1.5rem consistent icon sizing
 - **Album Art Display**: Prominent album artwork with customizable visual effects
 - **Warm Color Palette**: Warmer background tones (rgba(85, 78, 78, 0.56)) for comfortable viewing
@@ -114,7 +118,7 @@ A modern Spotify music player with a sleek, unified interface designed for enjoy
 - **Spotify Integration**: High-quality music from your personal playlists and liked songs library
 - **Liked Songs Support**: Full access to your Spotify Liked Songs with automatic shuffle for music discovery
 - **Smart Color Extraction**: Dynamic color theming based on album artwork
-- **Visual Effects**: Customizable shimmer and glow effects for enhanced visual experience
+- **Visual Effects**: Streamlined visual effects system with simplified glow controls and customizable album filters
 - **Automatic Progression**: Seamless transitions between tracks with continuous playback
 - **Album Art Display**: Beautiful artwork display with customizable visual effects
 
@@ -245,6 +249,10 @@ public/
 - **Enhanced Styling**: Improved responsive design and visual consistency
 - **Better Error Handling**: More graceful error states and user feedback
 - **Optimized Icons**: Consistent 1.5rem sizing across all control icons
+- **Streamlined Visual Effects**: Simplified visual effects system with intuitive three-option controls (Less/Normal/More)
+- **Simplified Glow Controls**: Removed complex per-album glow settings in favor of unified global controls
+- **Enhanced Filter Options**: Refined brightness, saturation, sepia, and contrast ranges for better visual results
+- **Improved Settings Persistence**: Visual effects settings are preserved when toggling effects on/off
 
 ## Deployment
 

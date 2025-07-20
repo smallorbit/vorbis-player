@@ -8,7 +8,8 @@ interface AccentColorGlowOverlayProps {
   backgroundImage?: string;
 }
 
-export const DEFAULT_GLOW_RATE = 2.5;
+export const DEFAULT_GLOW_RATE = 4.5;
+export const DEFAULT_GLOW_INTENSITY = 100;
 
 const GlowBackgroundLayer = styled.div<{
   $glowIntensity: number;
@@ -51,7 +52,7 @@ const areGlowPropsEqual = (
 };
 
 export const AccentColorGlowOverlay = React.memo<React.FC<AccentColorGlowOverlayProps>>(({
-  glowIntensity,
+  glowIntensity = DEFAULT_GLOW_INTENSITY,
   glowRate = DEFAULT_GLOW_RATE,
   accentColor,
   backgroundImage
