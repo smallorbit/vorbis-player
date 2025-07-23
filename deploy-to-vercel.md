@@ -108,7 +108,7 @@ Once connected to your repository, Vercel will automatically:
 | Variable | Description | Example |
 |----------|-------------|---------|
 | `VITE_SPOTIFY_CLIENT_ID` | Your Spotify app's Client ID | `abc123def456ghi789` |
-| `VITE_SPOTIFY_REDIRECT_URI` | Your app's callback URL | `https://vorbis-player.vercel.app/auth/spotify/callback` |
+| `VITE_SPOTIFY_REDIRECT_URI` | Your app's callback URL | `https://thenameofyour.vercel.app/auth/spotify/callback` |
 
 ## Custom Domain (Optional)
 
