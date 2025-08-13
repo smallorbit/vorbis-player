@@ -1,0 +1,182 @@
+/* Desktop-specific styles for transparent Vorbis Player */
+
+/* Enable window dragging for frameless windows */
+body {
+  -webkit-app-region: drag;
+  user-select: none;
+  overflow: hidden;
+}
+
+/* Prevent dragging from interactive elements */
+button, input, select, textarea, [role="button"], [tabindex], 
+.slider, .control-button, .playlist-item, .settings-button {
+  -webkit-app-region: no-drag;
+  user-select: auto;
+}
+
+/* Glass morphism background for the main app container */
+.app-container {
+  background: rgba(18, 18, 18, 0.3);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.3),
+    0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Enhanced transparency for the audio player card */
+.audio-player-card {
+  background: rgba(32, 32, 32, 0.4);
+  backdrop-filter: blur(30px);
+  -webkit-backdrop-filter: blur(30px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 
+    0 12px 40px rgba(0, 0, 0, 0.4),
+    0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+/* Subtle hover effects for interactive elements */
+.control-button:hover,
+.playlist-item:hover,
+.settings-button:hover {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  transform: translateY(-1px);
+  transition: all 0.2s ease;
+}
+
+/* Enhanced glow effects for desktop */
+.glow-overlay {
+  background: radial-gradient(
+    circle at center,
+    rgba(255, 255, 255, 0.1) 0%,
+    rgba(255, 255, 255, 0.05) 50%,
+    transparent 100%
+  );
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+}
+
+/* Platform-specific adjustments */
+.platform-mac {
+  /* macOS specific styles */
+  border-radius: 12px;
+}
+
+.platform-windows {
+  /* Windows specific styles */
+  border-radius: 8px;
+}
+
+.platform-linux {
+  /* Linux specific styles */
+  border-radius: 8px;
+}
+
+/* Always-on-top indicator */
+.always-on-top-indicator {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 8px;
+  height: 8px;
+  background: rgba(0, 255, 0, 0.6);
+  border-radius: 50%;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    opacity: 0.6;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
+  100% {
+    opacity: 0.6;
+    transform: scale(1);
+  }
+}
+
+/* Enhanced scrollbars for desktop */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* Focus indicators for keyboard navigation */
+*:focus {
+  outline: 2px solid rgba(255, 255, 255, 0.5);
+  outline-offset: 2px;
+}
+
+/* Disable focus outline for mouse users */
+*:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .app-container {
+    background: rgba(0, 0, 0, 0.9);
+    border: 2px solid rgba(255, 255, 255, 0.8);
+  }
+  
+  .audio-player-card {
+    background: rgba(0, 0, 0, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.6);
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  
+  .always-on-top-indicator {
+    animation: none;
+  }
+}
+
+/* Dark mode adjustments */
+@media (prefers-color-scheme: dark) {
+  .app-container {
+    background: rgba(0, 0, 0, 0.4);
+  }
+  
+  .audio-player-card {
+    background: rgba(0, 0, 0, 0.5);
+  }
+}
+
+/* Light mode adjustments */
+@media (prefers-color-scheme: light) {
+  .app-container {
+    background: rgba(255, 255, 255, 0.2);
+  }
+  
+  .audio-player-card {
+    background: rgba(255, 255, 255, 0.3);
+  }
+}

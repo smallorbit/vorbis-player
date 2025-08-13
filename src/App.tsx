@@ -5,12 +5,26 @@ import { spotifyAuth } from './services/spotify';
 import './services/spotifyPlayer';
 import { ThemeProvider } from './styles/ThemeProvider';
 import { flexCenter, buttonPrimary } from './styles/utils';
+import { useDesktopIntegration } from './hooks/useDesktopIntegration';
+import { DesktopWindowControls } from './components/DesktopWindowControls';
+import { globalShortcuts } from './services/globalShortcuts';
+import { desktopNotifications } from './services/desktopNotifications';
+import { DesktopUtils } from './utils/desktopUtils';
+import './styles/desktop.css';
 
-const AppContainer = styled.div`
-  background-color: ${({ theme }) => theme.colors.background};
+const AppContainer = styled.div<{ isElectron: boolean; platformClass: string }>`
+  background-color: ${({ theme, isElectron }) => 
+    isElectron ? 'transparent' : theme.colors.background};
   color: ${({ theme }) => theme.colors.foreground};
   min-height: 100vh;
   ${flexCenter}
+  position: relative;
+  
+  ${({ isElectron, platformClass }) => isElectron && `
+    &.${platformClass} {
+      /* Desktop-specific styling applied via CSS classes */
+    }
+  `}
 `;
 
 const LoadingContainer = styled.div`
@@ -45,9 +59,32 @@ const RetryButton = styled.button`
   ${buttonPrimary}
 `;
 
+const AlwaysOnTopIndicator = styled.div<{ isAlwaysOnTop: boolean }>`
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 8px;
+  height: 8px;
+  background: ${({ isAlwaysOnTop }) => 
+    isAlwaysOnTop ? 'rgba(0, 255, 0, 0.6)' : 'transparent'};
+  border-radius: 50%;
+  animation: ${({ isAlwaysOnTop }) => isAlwaysOnTop ? 'pulse 2s infinite' : 'none'};
+  z-index: 1001;
+  pointer-events: none;
+`;
+
 function App() {
   const [isAuthenticating, setIsAuthenticating] = useState(true);
   const [authError, setAuthError] = useState<string | null>(null);
+  
+  const {
+    isElectron,
+    windowState,
+    handleMouseDown,
+    handleMouseUp
+  } = useDesktopIntegration();
+
+  const platformClass = DesktopUtils.getPlatformClass();
 
   useEffect(() => {
     const authenticate = async () => {
@@ -65,11 +102,60 @@ function App() {
     authenticate();
   }, []);
 
+  // Initialize desktop features
+  useEffect(() => {
+    if (isElectron) {
+      // Initialize global shortcuts
+      globalShortcuts.initialize();
+      
+      // Request notification permission
+      desktopNotifications.requestPermission();
+      
+      // Show connection notification
+      desktopNotifications.showConnectionNotification(true);
+    }
+
+    return () => {
+      if (isElectron) {
+        globalShortcuts.destroy();
+      }
+    };
+  }, [isElectron]);
+
+  // Handle desktop-specific events
+  useEffect(() => {
+    const handleToggleWindow = () => {
+      // This will be handled by the desktop integration hook
+    };
+
+    const handleToggleAlwaysOnTop = () => {
+      // This will be handled by the desktop integration hook
+    };
+
+    const handleNotificationAction = (_event: Event) => {
+      // Handle notification actions
+      // The global shortcuts service will handle the actual actions
+    };
+
+    window.addEventListener('toggle-window', handleToggleWindow);
+    window.addEventListener('toggle-always-on-top', handleToggleAlwaysOnTop);
+    window.addEventListener('notification-action', handleNotificationAction);
+
+    return () => {
+      window.removeEventListener('toggle-window', handleToggleWindow);
+      window.removeEventListener('toggle-always-on-top', handleToggleAlwaysOnTop);
+      window.removeEventListener('notification-action', handleNotificationAction);
+    };
+  }, []);
 
   if (isAuthenticating) {
     return (
       <ThemeProvider>
-        <AppContainer>
+        <AppContainer 
+          isElectron={isElectron} 
+          platformClass={platformClass}
+          className={`app-container ${platformClass}`}
+        >
           <LoadingContainer>
             <Spinner />
             <p>Checking authentication...</p>
@@ -82,7 +168,11 @@ function App() {
   if (authError) {
     return (
       <ThemeProvider>
-        <AppContainer>
+        <AppContainer 
+          isElectron={isElectron} 
+          platformClass={platformClass}
+          className={`app-container ${platformClass}`}
+        >
           <LoadingContainer>
             <ErrorText>Authentication Error: {authError}</ErrorText>
             <RetryButton
@@ -101,9 +191,21 @@ function App() {
 
   return (
     <ThemeProvider>
-      <AppContainer>
+      <AppContainer 
+        isElectron={isElectron} 
+        platformClass={platformClass}
+        className={`app-container ${platformClass}`}
+        onMouseDown={handleMouseDown}
+        onMouseUp={handleMouseUp}
+      >
+        {/* Desktop window controls */}
+        <DesktopWindowControls />
+        
+        {/* Always-on-top indicator */}
+        <AlwaysOnTopIndicator isAlwaysOnTop={windowState.isAlwaysOnTop} />
+        
+        {/* Main audio player component */}
         <AudioPlayerComponent />
-
       </AppContainer>
     </ThemeProvider>
   );
