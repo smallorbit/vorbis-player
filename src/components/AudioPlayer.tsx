@@ -9,12 +9,15 @@ import { extractDominantColor } from '../utils/colorExtractor';
 
 const VisualEffectsMenu = lazy(() => import('./VisualEffectsMenu'));
 const PlaylistDrawer = lazy(() => import('./PlaylistDrawer'));
+const LibraryNavigation = lazy(() => import('./LibraryNavigation'));
 const SpotifyPlayerControls = lazy(() => import('./SpotifyPlayerControls'));
 import PlayerStateRenderer from './PlayerStateRenderer';
 import { usePlayerState } from '../hooks/usePlayerState';
 import { usePlaylistManager } from '../hooks/usePlaylistManager';
 import { theme } from '@/styles/theme';
 import { DEFAULT_GLOW_RATE, DEFAULT_GLOW_INTENSITY } from './AccentColorGlowOverlay';
+import { LocalTrack, EnhancedTrack } from '../types/spotify';
+import { unifiedPlayer } from '../services/unifiedPlayer';
 
 
 const Container = styled.div`
@@ -208,6 +211,71 @@ const AudioPlayerComponent = () => {
     setCurrentTrackIndex,
     playTrack
   });
+
+  // Handle local music track selection
+  const handleLocalTrackSelect = useCallback(async (track: LocalTrack) => {
+    try {
+      const enhancedTrack: EnhancedTrack = {
+        ...track,
+        id: track.id,
+        name: track.name,
+        artists: [{ name: track.artist }],
+        album: { name: track.album, images: track.albumArt ? [{ url: track.albumArt }] : [] },
+        duration_ms: track.duration,
+        uri: `local:${track.id}`,
+        source: 'local',
+        filePath: track.filePath,
+        format: track.format,
+        bitrate: track.bitrate
+      };
+
+      // Load and play the local track
+      await unifiedPlayer.loadTrack(enhancedTrack, true);
+      
+      // Update UI state
+      setCurrentTrackIndex(0);
+      setTracks([enhancedTrack]);
+      
+    } catch (error) {
+      console.error('Failed to play local track:', error);
+      setError('Failed to play local music file');
+    }
+  }, [setCurrentTrackIndex, setTracks, setError]);
+
+  // Handle queuing multiple local tracks
+  const handleQueueLocalTracks = useCallback(async (localTracks: LocalTrack[], startIndex = 0) => {
+    try {
+      const enhancedTracks: EnhancedTrack[] = localTracks.map(track => ({
+        ...track,
+        id: track.id,
+        name: track.name,
+        artists: [{ name: track.artist }],
+        album: { name: track.album, images: track.albumArt ? [{ url: track.albumArt }] : [] },
+        duration_ms: track.duration,
+        uri: `local:${track.id}`,
+        source: 'local',
+        filePath: track.filePath,
+        format: track.format,
+        bitrate: track.bitrate
+      }));
+
+      // Set up the queue
+      unifiedPlayer.setQueue(enhancedTracks, startIndex);
+      
+      // Start playing
+      if (enhancedTracks.length > 0) {
+        await unifiedPlayer.loadTrack(enhancedTracks[startIndex], true);
+      }
+      
+      // Update UI state
+      setTracks(enhancedTracks);
+      setCurrentTrackIndex(startIndex);
+      
+    } catch (error) {
+      console.error('Failed to queue local tracks:', error);
+      setError('Failed to load local music tracks');
+    }
+  }, [setTracks, setCurrentTrackIndex, setError]);
 
   useEffect(() => {
     const handleAuthRedirect = async () => {
@@ -472,6 +540,15 @@ const AudioPlayerComponent = () => {
             currentTrackIndex={currentTrackIndex}
             accentColor={accentColor}
             onTrackSelect={playTrack}
+          />
+        </Suspense>
+
+        <Suspense fallback={<div style={{ position: 'fixed', top: 0, left: 0, bottom: 0, width: '400px', background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.7)' }}>Loading library...</div>}>
+          <LibraryNavigation
+            onTrackSelect={handleLocalTrackSelect}
+            onQueueTracks={handleQueueLocalTracks}
+            onPlaylistSelect={handlePlaylistSelect}
+            showPlaylist={showPlaylist}
           />
         </Suspense>
 

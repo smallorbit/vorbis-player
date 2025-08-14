@@ -82,4 +82,108 @@ declare global {
 
 }
 
+// Local music library types
+export interface LocalTrack {
+  id: string;
+  name: string;
+  artist: string;
+  album: string;
+  duration: number; // in milliseconds
+  filePath: string;
+  fileName: string;
+  fileSize: number;
+  format: string; // 'mp3', 'flac', 'wav', etc.
+  bitrate?: number;
+  sampleRate?: number;
+  trackNumber?: number;
+  year?: number;
+  genre?: string;
+  albumArtist?: string;
+  composer?: string;
+  comment?: string;
+  lyrics?: string;
+  albumArt?: string; // base64 encoded or file path
+  dateAdded: Date;
+  dateModified: Date;
+  playCount: number;
+  lastPlayed?: Date;
+  source: 'local';
+}
+
+// Enhanced Track interface to support both Spotify and local tracks
+export interface EnhancedTrack extends SpotifyTrack {
+  source: 'spotify' | 'local';
+  filePath?: string; // for local tracks
+  format?: string; // for local tracks
+  bitrate?: number; // for local tracks
+}
+
+// Audio player configuration
+export interface AudioPlayerConfig {
+  enableLocalPlayback: boolean;
+  maxCacheSize: number; // in MB
+  audioQuality: 'auto' | 'high' | 'medium' | 'low';
+  crossfadeDuration: number; // in seconds
+  gaplessPlayback: boolean;
+}
+
+// Local library settings
+export interface LocalLibrarySettings {
+  musicDirectories: string[];
+  watchForChanges: boolean;
+  scanOnStartup: boolean;
+  autoIndexNewFiles: boolean;
+  supportedFormats: string[];
+  excludePatterns: string[];
+  includeSubdirectories: boolean;
+}
+
+// Database schema types
+export interface DbTrack {
+  id: string;
+  name: string;
+  artist: string;
+  album: string;
+  duration: number;
+  file_path: string;
+  file_name: string;
+  file_size: number;
+  format: string;
+  bitrate?: number;
+  sample_rate?: number;
+  track_number?: number;
+  year?: number;
+  genre?: string;
+  album_artist?: string;
+  composer?: string;
+  comment?: string;
+  lyrics?: string;
+  album_art?: string;
+  date_added: string; // ISO string
+  date_modified: string; // ISO string
+  play_count: number;
+  last_played?: string; // ISO string
+}
+
+export interface DbAlbum {
+  id: string;
+  name: string;
+  artist: string;
+  year?: number;
+  genre?: string;
+  album_art?: string;
+  track_count: number;
+  total_duration: number;
+  date_added: string;
+}
+
+export interface DbArtist {
+  id: string;
+  name: string;
+  album_count: number;
+  track_count: number;
+  total_duration: number;
+  date_added: string;
+}
+
 export {};
