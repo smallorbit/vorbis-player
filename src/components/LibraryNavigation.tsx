@@ -4,7 +4,8 @@ import { Button } from './styled/Button';
 import LocalLibraryBrowser from './LocalLibraryBrowser';
 import LocalLibrarySettings from './LocalLibrarySettings';
 import PlaylistSelection from './PlaylistSelection';
-import { LocalTrack } from '../types/spotify';
+import type { LocalTrack } from '../types/spotify.d.ts';
+import { isElectron } from '../utils/environment';
 
 const NavigationContainer = styled.div`
   display: flex;
@@ -15,6 +16,8 @@ const NavigationContainer = styled.div`
   border-radius: 16px;
   border: 1px solid rgba(255, 255, 255, 0.1);
   overflow: hidden;
+  -webkit-app-region: no-drag;
+  pointer-events: auto;
 `;
 
 const NavigationHeader = styled.div`
@@ -25,7 +28,7 @@ const NavigationHeader = styled.div`
   gap: 8px;
 `;
 
-const NavButton = styled(Button)<{ active: boolean }>`
+const NavButton = styled(Button) <{ active: boolean }>`
   flex: 1;
   background: ${props => props.active ? 'rgba(255, 255, 255, 0.15)' : 'rgba(255, 255, 255, 0.05)'};
   color: ${props => props.active ? 'white' : 'rgba(255, 255, 255, 0.7)'};
@@ -55,7 +58,7 @@ const LocalViewSelector = styled.div`
   padding: 16px 20px 0;
 `;
 
-const LocalViewButton = styled(Button)<{ active: boolean }>`
+const LocalViewButton = styled(Button) <{ active: boolean }>`
   background: ${props => props.active ? 'rgba(255, 255, 255, 0.1)' : 'transparent'};
   color: ${props => props.active ? 'white' : 'rgba(255, 255, 255, 0.6)'};
   border: 1px solid ${props => props.active ? 'rgba(255, 255, 255, 0.2)' : 'rgba(255, 255, 255, 0.1)'};
@@ -128,32 +131,43 @@ export const LibraryNavigation: React.FC<LibraryNavigationProps> = ({
   onPlaylistSelect,
   showPlaylist = false
 }) => {
-  const [activeSource, setActiveSource] = useState<LibrarySource>('spotify');
+  const [activeSource, setActiveSource] = useState<LibrarySource>(() =>
+    isElectron() ? 'local' : 'spotify'
+  );
   const [localView, setLocalView] = useState<LocalView>('browser');
   const [hasLocalLibrary, setHasLocalLibrary] = useState(false);
 
   // Check if local library has been set up
   React.useEffect(() => {
-    const checkLocalLibrary = () => {
+    const checkLocalLibrary = async () => {
       try {
-        const settings = JSON.parse(localStorage.getItem('localLibrarySettings') || '{}');
-        setHasLocalLibrary(settings.musicDirectories?.length > 0);
-      } catch {
+        if (window.electronAPI) {
+          const settings = await window.electronAPI.scannerGetSettings();
+          const hasDirectories = settings.musicDirectories?.length > 0;
+          console.log('📂 LibraryNavigation: Checking local library setup:', {
+            hasDirectories,
+            directoriesCount: settings.musicDirectories?.length || 0
+          });
+          setHasLocalLibrary(hasDirectories);
+        } else {
+          // Fallback for web version
+          const settings = JSON.parse(localStorage.getItem('localLibrarySettings') || '{}');
+          setHasLocalLibrary(settings.musicDirectories?.length > 0);
+        }
+      } catch (error) {
+        console.error('Failed to check local library setup:', error);
         setHasLocalLibrary(false);
       }
     };
 
     checkLocalLibrary();
-    
-    // Listen for settings changes
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'localLibrarySettings') {
-        checkLocalLibrary();
-      }
-    };
 
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
+    // Poll for settings changes every 2 seconds
+    const pollInterval = setInterval(checkLocalLibrary, 2000);
+
+    return () => {
+      clearInterval(pollInterval);
+    };
   }, []);
 
   const handleSetupLocalLibrary = () => {
@@ -163,7 +177,7 @@ export const LibraryNavigation: React.FC<LibraryNavigationProps> = ({
 
   const renderSpotifyView = () => {
     return (
-      <PlaylistSelection 
+      <PlaylistSelection
         onPlaylistSelect={onPlaylistSelect}
         showPlaylist={showPlaylist}
       />
@@ -204,12 +218,14 @@ export const LibraryNavigation: React.FC<LibraryNavigationProps> = ({
   return (
     <NavigationContainer>
       <NavigationHeader>
-        <NavButton
-          active={activeSource === 'spotify'}
-          onClick={() => setActiveSource('spotify')}
-        >
-          🎵 Spotify
-        </NavButton>
+        {!isElectron() && (
+          <NavButton
+            active={activeSource === 'spotify'}
+            onClick={() => setActiveSource('spotify')}
+          >
+            🎵 Spotify
+          </NavButton>
+        )}
         <NavButton
           active={activeSource === 'local'}
           onClick={() => setActiveSource('local')}
@@ -223,7 +239,23 @@ export const LibraryNavigation: React.FC<LibraryNavigationProps> = ({
           <LocalViewSelector>
             <LocalViewButton
               active={localView === 'browser'}
-              onClick={() => setLocalView('browser')}
+              onClick={async () => {
+                setLocalView('browser');
+                // Refresh library status when switching to Library view
+                try {
+                  if (window.electronAPI) {
+                    const settings = await window.electronAPI.scannerGetSettings();
+                    const hasDirectories = settings.musicDirectories?.length > 0;
+                    console.log('📂 LibraryNavigation: Refreshed on Library click:', {
+                      hasDirectories,
+                      directoriesCount: settings.musicDirectories?.length || 0
+                    });
+                    setHasLocalLibrary(hasDirectories);
+                  }
+                } catch (error) {
+                  console.error('Failed to refresh library status:', error);
+                }
+              }}
             >
               Library
             </LocalViewButton>

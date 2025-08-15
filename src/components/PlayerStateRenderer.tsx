@@ -6,6 +6,7 @@ import { Button } from '../components/styled';
 import { Alert, AlertDescription } from '../components/styled';
 import { flexColumn, cardBase } from '../styles/utils';
 import { theme } from '@/styles/theme';
+import { isElectron } from '../utils/environment';
 
 const PlaylistSelection = React.lazy(() => import('./PlaylistSelection'));
 
@@ -41,7 +42,7 @@ const shimmer = keyframes`
   }
 `;
 
-const LoadingCard = styled(Card)<{ backgroundImage?: string; standalone?: boolean }>`
+const LoadingCard = styled(Card) <{ backgroundImage?: string; standalone?: boolean }>`
   ${cardBase};
   position: absolute;
   top: 0;
@@ -177,6 +178,37 @@ export const PlayerStateRenderer: React.FC<PlayerStateRendererProps> = ({
   tracks,
   onPlaylistSelect
 }) => {
+  // Debug environment detection
+  console.log('🔍 Environment check:', {
+    isElectron: isElectron(),
+    hasElectronAPI: !!window.electronAPI,
+    userAgent: navigator.userAgent,
+    selectedPlaylistId,
+    tracksCount: tracks.length
+  });
+
+  // In Electron mode, always show local library setup instead of Spotify
+  if (isElectron()) {
+    return (
+      <LoadingCard standalone>
+        <CardHeader>
+          <h2 style={{ fontSize: '1.25rem', fontWeight: 'bold', color: 'white', textAlign: 'center' }}>
+            Set Up Local Music Library
+          </h2>
+        </CardHeader>
+        <CardContent style={{ textAlign: 'center' }}>
+          <p style={{ color: '#d1d5db', marginBottom: '1.5rem' }}>
+            Add your music directories to get started with your local music collection.
+            Supports FLAC, MP3, WAV, OGG, M4A, and AAC files.
+          </p>
+          <p style={{ color: '#d1d5db', marginBottom: '1.5rem', fontSize: '0.875rem' }}>
+            Use the "💿 Local Music" tab to configure your music directories.
+          </p>
+        </CardContent>
+      </LoadingCard>
+    );
+  }
+
   // Show loading state
   if (isLoading) {
     return (
@@ -200,6 +232,29 @@ export const PlayerStateRenderer: React.FC<PlayerStateRendererProps> = ({
       error.includes('Authentication expired');
 
     if (isAuthError) {
+      // In Electron mode, show local library setup instead of Spotify auth
+      if (isElectron()) {
+        return (
+          <LoadingCard standalone>
+            <CardHeader>
+              <h2 style={{ fontSize: '1.25rem', fontWeight: 'bold', color: 'white', textAlign: 'center' }}>
+                Set Up Local Music Library
+              </h2>
+            </CardHeader>
+            <CardContent style={{ textAlign: 'center' }}>
+              <p style={{ color: '#d1d5db', marginBottom: '1.5rem' }}>
+                Add your music directories to get started with your local music collection.
+                Supports FLAC, MP3, WAV, OGG, M4A, and AAC files.
+              </p>
+              <p style={{ color: '#d1d5db', marginBottom: '1.5rem', fontSize: '0.875rem' }}>
+                Use the "💿 Local Music" tab to configure your music directories.
+              </p>
+            </CardContent>
+          </LoadingCard>
+        );
+      }
+
+      // Web mode - show Spotify authentication
       return (
         <LoadingCard standalone>
           <CardHeader>

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import styled from 'styled-components';
-import { LocalLibrarySettings as SettingsType } from '../types/spotify';
-import { localLibraryScanner } from '../services/localLibraryScanner';
+import type { LocalLibrarySettings as SettingsType } from '../types/spotify.d.ts';
+import { localLibraryScanner } from '../services/localLibraryScannerIPC';
 import { Button } from './styled/Button';
 import { Card } from './styled/Card';
 import { ScrollArea } from './ui/scroll-area';
@@ -253,66 +253,45 @@ export const LocalLibrarySettings: React.FC = () => {
   const [isAddingDirectory, setIsAddingDirectory] = useState(false);
 
   useEffect(() => {
-    // Load current settings
-    const currentSettings = localLibraryScanner.getSettings();
-    setSettings(currentSettings);
+    // Load current settings from main process
+    const loadCurrentSettings = async () => {
+      await localLibraryScanner.loadSettings();
+      const currentSettings = localLibraryScanner.getSettings();
+      setSettings(currentSettings);
+      console.log('📂 LocalLibrarySettings loaded:', currentSettings);
+    };
+
+    loadCurrentSettings();
 
     // Set up scan progress listener
-    const handleScanProgress = (progress: any) => {
-      setScanProgress(prev => ({
-        ...prev,
-        progress: progress.progress,
-        currentFile: progress.currentFile,
-        scannedFiles: progress.scannedFiles,
-        totalFiles: progress.totalFiles
-      }));
+    // Poll for scan progress instead of using events (IPC version doesn't have events)
+    const pollScanProgress = async () => {
+      try {
+        const currentProgress = await localLibraryScanner.getScanProgress();
+        setScanProgress(prev => ({
+          ...prev,
+          isScanning: currentProgress.isScanning,
+          progress: currentProgress.totalFiles > 0
+            ? (currentProgress.scannedFiles / currentProgress.totalFiles) * 100
+            : 0,
+          currentFile: currentProgress.currentFile || '',
+          scannedFiles: currentProgress.scannedFiles || 0,
+          totalFiles: currentProgress.totalFiles || 0,
+          errors: currentProgress.errors || []
+        }));
+      } catch (error) {
+        console.error('Error polling scan progress:', error);
+      }
     };
 
-    const handleScanStarted = () => {
-      setScanProgress(prev => ({ ...prev, isScanning: true, errors: [] }));
-    };
+    // Initial poll
+    pollScanProgress();
 
-    const handleScanCompleted = (result: any) => {
-      setScanProgress(prev => ({
-        ...prev,
-        isScanning: false,
-        progress: 100,
-        errors: result.errors || []
-      }));
-    };
-
-    const handleScanError = (error: any) => {
-      setScanProgress(prev => ({
-        ...prev,
-        isScanning: false,
-        errors: [error.error.toString()]
-      }));
-    };
-
-    localLibraryScanner.on('scanProgress', handleScanProgress);
-    localLibraryScanner.on('scanStarted', handleScanStarted);
-    localLibraryScanner.on('scanCompleted', handleScanCompleted);
-    localLibraryScanner.on('scanError', handleScanError);
-
-    // Get initial scan progress
-    const currentProgress = localLibraryScanner.getScanProgress();
-    setScanProgress(prev => ({
-      ...prev,
-      isScanning: currentProgress.isScanning,
-      progress: currentProgress.totalFiles > 0 
-        ? (currentProgress.scannedFiles / currentProgress.totalFiles) * 100 
-        : 0,
-      currentFile: currentProgress.currentFile,
-      scannedFiles: currentProgress.scannedFiles,
-      totalFiles: currentProgress.totalFiles,
-      errors: currentProgress.errors
-    }));
+    // Set up polling interval
+    const interval = setInterval(pollScanProgress, 1000); // Poll every second
 
     return () => {
-      localLibraryScanner.off('scanProgress', handleScanProgress);
-      localLibraryScanner.off('scanStarted', handleScanStarted);
-      localLibraryScanner.off('scanCompleted', handleScanCompleted);
-      localLibraryScanner.off('scanError', handleScanError);
+      clearInterval(interval);
     };
   }, []);
 
@@ -398,7 +377,7 @@ export const LocalLibrarySettings: React.FC = () => {
               )}
             </DirectoriesList>
 
-            <AddDirectoryButton 
+            <AddDirectoryButton
               onClick={handleAddDirectory}
               disabled={isAddingDirectory}
             >
@@ -483,9 +462,9 @@ export const LocalLibrarySettings: React.FC = () => {
                   <span>{Math.round(scanProgress.progress)}%</span>
                 </ProgressText>
                 {scanProgress.currentFile && (
-                  <div style={{ 
-                    color: 'rgba(255, 255, 255, 0.6)', 
-                    fontSize: '11px', 
+                  <div style={{
+                    color: 'rgba(255, 255, 255, 0.6)',
+                    fontSize: '11px',
                     marginTop: '4px',
                     fontFamily: 'monospace',
                     whiteSpace: 'nowrap',
@@ -499,7 +478,7 @@ export const LocalLibrarySettings: React.FC = () => {
             )}
 
             <ScanActions>
-              <ScanButton 
+              <ScanButton
                 onClick={handleStartScan}
                 disabled={scanProgress.isScanning || settings.musicDirectories.length === 0}
               >
@@ -516,10 +495,10 @@ export const LocalLibrarySettings: React.FC = () => {
                   <ErrorMessage key={index}>{error}</ErrorMessage>
                 ))}
                 {scanProgress.errors.length > 5 && (
-                  <div style={{ 
-                    color: 'rgba(255, 255, 255, 0.6)', 
-                    fontSize: '12px', 
-                    marginTop: '8px' 
+                  <div style={{
+                    color: 'rgba(255, 255, 255, 0.6)',
+                    fontSize: '12px',
+                    marginTop: '8px'
                   }}>
                     ... and {scanProgress.errors.length - 5} more errors
                   </div>

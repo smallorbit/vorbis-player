@@ -16,8 +16,9 @@ import { usePlayerState } from '../hooks/usePlayerState';
 import { usePlaylistManager } from '../hooks/usePlaylistManager';
 import { theme } from '@/styles/theme';
 import { DEFAULT_GLOW_RATE, DEFAULT_GLOW_INTENSITY } from './AccentColorGlowOverlay';
-import { LocalTrack, EnhancedTrack } from '../types/spotify';
+import type { LocalTrack, EnhancedTrack } from '../types/spotify';
 import { unifiedPlayer } from '../services/unifiedPlayer';
+import { isElectron } from '../utils/environment';
 
 
 const Container = styled.div`
@@ -46,11 +47,15 @@ const ContentWrapper = styled.div`
   padding-right: 0.5rem;
   box-sizing: border-box;
   position: absolute;
+  -webkit-app-region: no-drag;
+  pointer-events: auto;
   z-index: 1000;
 `;
 
 
-const LoadingCard = styled.div<{
+const LoadingCard = styled.div.withConfig({
+  shouldForwardProp: (prop) => !['backgroundImage', 'standalone', 'accentColor', 'glowEnabled', 'glowIntensity', 'glowRate'].includes(prop),
+}) <{
   backgroundImage?: string;
   standalone?: boolean;
   accentColor?: string;
@@ -154,6 +159,14 @@ const AudioPlayerComponent = () => {
   const playTrack = useCallback(async (index: number) => {
     if (tracks[index]) {
       try {
+        // In Electron mode, only handle local tracks
+        if (isElectron()) {
+          // Local tracks should be handled by the unified player
+          // This function will mainly be used for UI track selection
+          setCurrentTrackIndex(index);
+          return;
+        }
+
         const isAuthenticated = spotifyAuth.isAuthenticated();
 
         if (!isAuthenticated) {
@@ -219,8 +232,12 @@ const AudioPlayerComponent = () => {
         ...track,
         id: track.id,
         name: track.name,
-        artists: [{ name: track.artist }],
-        album: { name: track.album, images: track.albumArt ? [{ url: track.albumArt }] : [] },
+        artists: [{ name: track.artist, uri: `local:artist:${track.artist}` }],
+        album: {
+          name: track.album,
+          uri: `local:album:${track.album}`,
+          images: track.albumArt ? [{ url: track.albumArt, height: 640, width: 640 }] : []
+        },
         duration_ms: track.duration,
         uri: `local:${track.id}`,
         source: 'local',
@@ -229,13 +246,24 @@ const AudioPlayerComponent = () => {
         bitrate: track.bitrate
       };
 
+      // Create Track object for UI state
+      const uiTrack = {
+        id: track.id,
+        name: track.name,
+        artists: track.artist,
+        album: track.album,
+        duration_ms: track.duration,
+        uri: `local:${track.id}`,
+        image: track.albumArt
+      };
+
       // Load and play the local track
       await unifiedPlayer.loadTrack(enhancedTrack, true);
-      
+
       // Update UI state
       setCurrentTrackIndex(0);
-      setTracks([enhancedTrack]);
-      
+      setTracks([uiTrack]);
+
     } catch (error) {
       console.error('Failed to play local track:', error);
       setError('Failed to play local music file');
@@ -249,8 +277,12 @@ const AudioPlayerComponent = () => {
         ...track,
         id: track.id,
         name: track.name,
-        artists: [{ name: track.artist }],
-        album: { name: track.album, images: track.albumArt ? [{ url: track.albumArt }] : [] },
+        artists: [{ name: track.artist, uri: `local:artist:${track.artist}` }],
+        album: {
+          name: track.album,
+          uri: `local:album:${track.album}`,
+          images: track.albumArt ? [{ url: track.albumArt, height: 640, width: 640 }] : []
+        },
         duration_ms: track.duration,
         uri: `local:${track.id}`,
         source: 'local',
@@ -259,18 +291,29 @@ const AudioPlayerComponent = () => {
         bitrate: track.bitrate
       }));
 
+      // Create Track objects for UI state
+      const uiTracks = localTracks.map(track => ({
+        id: track.id,
+        name: track.name,
+        artists: track.artist,
+        album: track.album,
+        duration_ms: track.duration,
+        uri: `local:${track.id}`,
+        image: track.albumArt
+      }));
+
       // Set up the queue
       unifiedPlayer.setQueue(enhancedTracks, startIndex);
-      
+
       // Start playing
       if (enhancedTracks.length > 0) {
         await unifiedPlayer.loadTrack(enhancedTracks[startIndex], true);
       }
-      
+
       // Update UI state
-      setTracks(enhancedTracks);
+      setTracks(uiTracks);
       setCurrentTrackIndex(startIndex);
-      
+
     } catch (error) {
       console.error('Failed to queue local tracks:', error);
       setError('Failed to load local music tracks');
@@ -278,6 +321,11 @@ const AudioPlayerComponent = () => {
   }, [setTracks, setCurrentTrackIndex, setError]);
 
   useEffect(() => {
+    // Skip Spotify authentication in Electron mode
+    if (isElectron()) {
+      return;
+    }
+
     const handleAuthRedirect = async () => {
       try {
         await spotifyAuth.handleRedirect();
@@ -473,6 +521,35 @@ const AudioPlayerComponent = () => {
       />
     );
 
+    // In Electron mode, always show the full interface with LibraryNavigation
+    if (isElectron()) {
+      return (
+        <ContentWrapper>
+          <LoadingCard
+            backgroundImage={currentTrack?.image}
+            accentColor={accentColor}
+            glowEnabled={visualEffectsEnabled}
+            glowIntensity={effectiveGlow.intensity}
+            glowRate={effectiveGlow.rate}
+          >
+            <CardContent style={{ position: 'relative', zIndex: 2, marginTop: '-0.25rem' }}>
+              {stateRenderer}
+            </CardContent>
+          </LoadingCard>
+
+          <Suspense fallback={<div style={{ position: 'fixed', top: 0, left: 0, bottom: 0, width: '400px', background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.7)' }}>Loading library...</div>}>
+            <LibraryNavigation
+              onTrackSelect={handleLocalTrackSelect}
+              onQueueTracks={handleQueueLocalTracks}
+              onPlaylistSelect={handlePlaylistSelect}
+              showPlaylist={showPlaylist}
+            />
+          </Suspense>
+        </ContentWrapper>
+      );
+    }
+
+    // Web mode - only show full interface when ready
     if (stateRenderer.props.isLoading || stateRenderer.props.error || !stateRenderer.props.selectedPlaylistId || stateRenderer.props.tracks.length === 0) {
       return stateRenderer;
     }

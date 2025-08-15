@@ -35,7 +35,9 @@ const TestSuiteContainer = styled.div<{ $isVisible: boolean }>`
   overflow-y: auto;
   opacity: ${({ $isVisible }) => ($isVisible ? 1 : 0)};
   pointer-events: ${({ $isVisible }) => ($isVisible ? 'auto' : 'none')};
+  visibility: ${({ $isVisible }) => ($isVisible ? 'visible' : 'hidden')};
   transition: all 0.3s ease;
+  -webkit-app-region: no-drag;
 `;
 
 const TestHeader = styled.div`
@@ -125,36 +127,36 @@ const ProgressIndicator = styled.div`
   font-style: italic;
 `;
 
-export const PerformanceTestSuite: React.FC<PerformanceTestSuiteProps> = ({ 
-  isVisible, 
-  onClose 
+export const PerformanceTestSuite: React.FC<PerformanceTestSuiteProps> = ({
+  isVisible,
+  onClose
 }) => {
   const [testResults, setTestResults] = useState<TestResult[]>([]);
   const [isRunning, setIsRunning] = useState(false);
   const [currentTest, setCurrentTest] = useState<string>('');
 
   const runSingleTest = useCallback(async (
-    testName: string, 
+    testName: string,
     testFn: () => Promise<void> | void,
     expectedThresholds = DEFAULT_THRESHOLDS
   ): Promise<TestResult> => {
     setCurrentTest(testName);
-    
+
     const profiler = new PerformanceProfiler();
     profiler.startProfiling();
-    
+
     try {
       await testFn();
     } catch (error) {
       console.error(`Test ${testName} failed:`, error);
     }
-    
+
     // Wait a frame to ensure all updates are complete
     await new Promise(resolve => requestAnimationFrame(resolve));
-    
+
     const metrics = profiler.endProfiling();
     const passed = profiler.validateMetrics(metrics, expectedThresholds);
-    
+
     return {
       testName,
       metrics,
@@ -204,7 +206,7 @@ export const PerformanceTestSuite: React.FC<PerformanceTestSuiteProps> = ({
   const runMemoryLeakTest = useCallback(async () => {
     return runSingleTest('Memory Usage Stability', async () => {
       const initialMemory = (performance as any).memory?.usedJSHeapSize || 0;
-      
+
       // Perform multiple operations that could cause memory leaks
       for (let i = 0; i < 20; i++) {
         // Toggle visual effects menu
@@ -216,15 +218,15 @@ export const PerformanceTestSuite: React.FC<PerformanceTestSuiteProps> = ({
           await new Promise(resolve => setTimeout(resolve, 10));
         }
       }
-      
+
       // Force garbage collection if available
       if ((window as any).gc) {
         (window as any).gc();
       }
-      
+
       const finalMemory = (performance as any).memory?.usedJSHeapSize || 0;
       const memoryIncrease = (finalMemory - initialMemory) / 1024 / 1024; // MB
-      
+
       if (memoryIncrease > 5) { // More than 5MB increase is concerning
         throw new Error(`Memory increased by ${memoryIncrease.toFixed(2)}MB`);
       }
@@ -234,29 +236,29 @@ export const PerformanceTestSuite: React.FC<PerformanceTestSuiteProps> = ({
   const runFullTestSuite = useCallback(async () => {
     setIsRunning(true);
     setTestResults([]);
-    
+
     const tests = [
       runInteractionTest,
       runGlowAnimationTest,
       runFilterScrollTest,
       runMemoryLeakTest
     ];
-    
+
     const results: TestResult[] = [];
-    
+
     for (const test of tests) {
       try {
         const result = await test();
         results.push(result);
         setTestResults([...results]);
-        
+
         // Brief pause between tests
         await new Promise(resolve => setTimeout(resolve, 100));
       } catch (error) {
         console.error('Test failed:', error);
       }
     }
-    
+
     setCurrentTest('');
     setIsRunning(false);
   }, [runInteractionTest, runGlowAnimationTest, runFilterScrollTest, runMemoryLeakTest]);
@@ -280,7 +282,7 @@ export const PerformanceTestSuite: React.FC<PerformanceTestSuiteProps> = ({
         <TestTitle>Performance Test Suite</TestTitle>
         <CloseButton onClick={onClose}>✕</CloseButton>
       </TestHeader>
-      
+
       <TestContent>
         <div style={{ marginBottom: '1rem' }}>
           <TestButton $variant="primary" onClick={runFullTestSuite} disabled={isRunning}>
@@ -290,7 +292,7 @@ export const PerformanceTestSuite: React.FC<PerformanceTestSuiteProps> = ({
             Clear Results
           </TestButton>
         </div>
-        
+
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '1rem' }}>
           <TestButton onClick={runInteractionTest} disabled={isRunning}>
             Interaction Test
@@ -305,13 +307,13 @@ export const PerformanceTestSuite: React.FC<PerformanceTestSuiteProps> = ({
             Memory Test
           </TestButton>
         </div>
-        
+
         {isRunning && (
           <ProgressIndicator>
             Running: {currentTest || 'Preparing tests...'}
           </ProgressIndicator>
         )}
-        
+
         <TestResults>
           {testResults.map((result, index) => (
             <ResultItem key={index} $passed={result.passed}>
@@ -339,7 +341,7 @@ export const PerformanceTestSuite: React.FC<PerformanceTestSuiteProps> = ({
             </ResultItem>
           ))}
         </TestResults>
-        
+
         {testResults.length > 0 && (
           <div style={{ marginTop: '1rem', padding: '1rem', background: 'rgba(255, 255, 255, 0.05)', borderRadius: '0.5rem' }}>
             <div style={{ fontWeight: 'bold', marginBottom: '0.5rem' }}>

@@ -71,16 +71,18 @@ const getSizeStyles = (size: ButtonProps['size']) => {
   }
 };
 
-const StyledButton = styled.button<Omit<ButtonProps, 'variant'> & { $variant?: ButtonProps['variant'] }>`
+const StyledButton = styled.button.withConfig({
+  shouldForwardProp: (prop) => !['active'].includes(prop),
+}) <Omit<ButtonProps, 'variant'> & { $variant?: ButtonProps['variant'] }>`
   ${({ $variant }) => getVariantStyles($variant)}
   ${({ size }) => getSizeStyles(size)}
 `;
 
-export const Button: React.FC<ButtonProps> = ({ 
-  variant = 'primary', 
-  size = 'md', 
-  children, 
-  ...props 
+export const Button: React.FC<ButtonProps> = ({
+  variant = 'primary',
+  size = 'md',
+  children,
+  ...props
 }) => {
   return (
     <StyledButton $variant={variant} size={size} {...props}>

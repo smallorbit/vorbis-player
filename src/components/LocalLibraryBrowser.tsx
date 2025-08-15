@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import styled from 'styled-components';
-import { LocalTrack, DbAlbum, DbArtist } from '../types/spotify';
-import { localLibraryDatabase } from '../services/localLibraryDatabase';
-import { localLibraryScanner } from '../services/localLibraryScanner';
+import type { LocalTrack, DbAlbum, DbArtist } from '../types/spotify.d.ts';
+import { localLibraryDatabase } from '../services/localLibraryDatabaseIPC';
+import { localLibraryScanner } from '../services/localLibraryScannerIPC';
 import { unifiedPlayer } from '../services/unifiedPlayer';
-import { ScrollArea } from './ui/scroll-area';
+// import { ScrollArea } from './ui/scroll-area';
 import { Button } from './styled/Button';
 import { Card } from './styled/Card';
 
@@ -47,7 +47,7 @@ const ViewSelector = styled.div`
   margin: 16px 20px;
 `;
 
-const ViewButton = styled(Button)<{ active: boolean }>`
+const ViewButton = styled(Button) <{ active: boolean }>`
   background: ${props => props.active ? 'rgba(255, 255, 255, 0.2)' : 'transparent'};
   color: ${props => props.active ? 'white' : 'rgba(255, 255, 255, 0.7)'};
   border: 1px solid ${props => props.active ? 'rgba(255, 255, 255, 0.3)' : 'rgba(255, 255, 255, 0.1)'};
@@ -84,14 +84,40 @@ const SearchInput = styled.input`
 
 const ContentArea = styled.div`
   flex: 1;
-  overflow: hidden;
+  height: 0; /* Allow flex child to shrink below content size */
+  min-height: 0; /* Allow flex child to shrink */
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-app-region: no-drag;
+  pointer-events: auto;
+  
+  /* Custom scrollbar styling */
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
+  
+  &::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 4px;
+    
+    &:hover {
+      background: rgba(255, 255, 255, 0.5);
+    }
+  }
 `;
 
 const TrackList = styled.div`
   padding: 0 20px 20px;
 `;
 
-const TrackItem = styled.div<{ isSelected?: boolean }>`
+const TrackItem = styled.div.withConfig({
+  shouldForwardProp: (prop) => !['isSelected'].includes(prop),
+}) <{ isSelected?: boolean }>`
   display: grid;
   grid-template-columns: 40px 1fr auto auto;
   gap: 12px;
@@ -173,8 +199,8 @@ const AlbumCard = styled(Card)`
 const AlbumArt = styled.div<{ src?: string }>`
   width: 100%;
   aspect-ratio: 1;
-  background: ${props => props.src 
-    ? `url(${props.src}) center/cover` 
+  background: ${props => props.src
+    ? `url(${props.src}) center/cover`
     : 'linear-gradient(45deg, #333, #555)'
   };
   border-radius: 8px;
@@ -267,6 +293,14 @@ export const LocalLibraryBrowser: React.FC<LocalLibraryBrowserProps> = ({
     totalDuration: 0
   });
 
+  console.log('📊 LocalLibraryBrowser current state:', {
+    tracksCount: tracks.length,
+    albumsCount: albums.length,
+    artistsCount: artists.length,
+    isLoading,
+    stats
+  });
+
   // Load initial data
   useEffect(() => {
     loadData();
@@ -275,13 +309,29 @@ export const LocalLibraryBrowser: React.FC<LocalLibraryBrowserProps> = ({
 
   const loadData = async () => {
     setIsLoading(true);
+    console.log('🔄 LocalLibraryBrowser: Loading data...');
     try {
       const [tracksData, albumsData, artistsData] = await Promise.all([
         localLibraryDatabase.getAllTracks(),
         localLibraryDatabase.getAllAlbums(),
         localLibraryDatabase.getAllArtists()
       ]);
-      
+
+      console.log('📊 LocalLibraryBrowser: Received data:', {
+        tracksCount: tracksData.length,
+        albumsCount: albumsData.length,
+        artistsCount: artistsData.length
+      });
+
+      if (tracksData.length > 0) {
+        console.log('🎵 Sample tracks with formats:', tracksData.slice(0, 5).map(track => ({
+          name: track.name,
+          format: track.format,
+          filePath: track.filePath,
+          fileSize: track.fileSize
+        })));
+      }
+
       setTracks(tracksData);
       setAlbums(albumsData);
       setArtists(artistsData);
@@ -304,9 +354,9 @@ export const LocalLibraryBrowser: React.FC<LocalLibraryBrowserProps> = ({
   // Filter data based on search query
   const filteredTracks = useMemo(() => {
     if (!searchQuery) return tracks;
-    
+
     const query = searchQuery.toLowerCase();
-    return tracks.filter(track => 
+    return tracks.filter(track =>
       track.name.toLowerCase().includes(query) ||
       track.artist.toLowerCase().includes(query) ||
       track.album.toLowerCase().includes(query) ||
@@ -316,9 +366,9 @@ export const LocalLibraryBrowser: React.FC<LocalLibraryBrowserProps> = ({
 
   const filteredAlbums = useMemo(() => {
     if (!searchQuery) return albums;
-    
+
     const query = searchQuery.toLowerCase();
-    return albums.filter(album => 
+    return albums.filter(album =>
       album.name.toLowerCase().includes(query) ||
       album.artist.toLowerCase().includes(query)
     );
@@ -326,20 +376,20 @@ export const LocalLibraryBrowser: React.FC<LocalLibraryBrowserProps> = ({
 
   const filteredArtists = useMemo(() => {
     if (!searchQuery) return artists;
-    
+
     const query = searchQuery.toLowerCase();
-    return artists.filter(artist => 
+    return artists.filter(artist =>
       artist.name.toLowerCase().includes(query)
     );
   }, [artists, searchQuery]);
 
   const handleTrackClick = useCallback(async (track: LocalTrack, index: number) => {
     setSelectedTrackId(track.id);
-    
+
     if (onTrackSelect) {
       onTrackSelect(track);
     }
-    
+
     if (onQueueTracks) {
       onQueueTracks(filteredTracks, index);
     }
@@ -377,41 +427,49 @@ export const LocalLibraryBrowser: React.FC<LocalLibraryBrowserProps> = ({
   const formatTotalDuration = (ms: number): string => {
     const hours = Math.floor(ms / (1000 * 60 * 60));
     const minutes = Math.floor((ms % (1000 * 60 * 60)) / (1000 * 60));
-    
+
     if (hours > 0) {
       return `${hours}h ${minutes}m`;
     }
     return `${minutes}m`;
   };
 
-  const renderTracksView = () => (
-    <TrackList>
-      {filteredTracks.length === 0 ? (
-        <EmptyState>
-          <div>No tracks found</div>
-          {searchQuery && <div>Try adjusting your search terms</div>}
-        </EmptyState>
-      ) : (
-        filteredTracks.map((track, index) => (
-          <TrackItem
-            key={track.id}
-            isSelected={track.id === selectedTrackId}
-            onClick={() => handleTrackClick(track, index)}
-          >
-            <TrackNumber>
-              {track.trackNumber || index + 1}
-            </TrackNumber>
-            <TrackInfo>
-              <TrackName>{track.name}</TrackName>
-              <TrackArtist>{track.artist} • {track.album}</TrackArtist>
-            </TrackInfo>
-            <TrackFormat>{track.format}</TrackFormat>
-            <TrackDuration>{formatDuration(track.duration)}</TrackDuration>
-          </TrackItem>
-        ))
-      )}
-    </TrackList>
-  );
+  const renderTracksView = () => {
+    console.log(`🎵 Rendering tracks view with ${filteredTracks.length} tracks`);
+    return (
+      <TrackList>
+        {filteredTracks.length === 0 ? (
+          <EmptyState>
+            <div>No tracks found</div>
+            {searchQuery && <div>Try adjusting your search terms</div>}
+          </EmptyState>
+        ) : (
+          <>
+            <div style={{ padding: '10px 12px', color: 'rgba(255,255,255,0.6)', fontSize: '12px', borderBottom: '1px solid rgba(255,255,255,0.1)', marginBottom: '8px' }}>
+              Showing {filteredTracks.length} tracks
+            </div>
+            {filteredTracks.map((track, index) => (
+              <TrackItem
+                key={track.id}
+                isSelected={track.id === selectedTrackId}
+                onClick={() => handleTrackClick(track, index)}
+              >
+                <TrackNumber>
+                  {track.trackNumber || index + 1}
+                </TrackNumber>
+                <TrackInfo>
+                  <TrackName>{track.name}</TrackName>
+                  <TrackArtist>{track.artist} • {track.album}</TrackArtist>
+                </TrackInfo>
+                <TrackFormat>{track.format}</TrackFormat>
+                <TrackDuration>{formatDuration(track.duration)}</TrackDuration>
+              </TrackItem>
+            ))}
+          </>
+        )}
+      </TrackList>
+    );
+  };
 
   const renderAlbumsView = () => (
     <AlbumGrid>
@@ -485,6 +543,16 @@ export const LocalLibraryBrowser: React.FC<LocalLibraryBrowserProps> = ({
         >
           Artists
         </ViewButton>
+        <ViewButton
+          active={false}
+          onClick={() => {
+            console.log('🔄 Manual refresh requested');
+            loadData();
+            loadStats();
+          }}
+        >
+          🔄 Refresh
+        </ViewButton>
       </ViewSelector>
 
       <SearchContainer>
@@ -497,11 +565,9 @@ export const LocalLibraryBrowser: React.FC<LocalLibraryBrowserProps> = ({
       </SearchContainer>
 
       <ContentArea>
-        <ScrollArea>
-          {viewMode === 'tracks' && renderTracksView()}
-          {viewMode === 'albums' && renderAlbumsView()}
-          {viewMode === 'artists' && renderArtistsView()}
-        </ScrollArea>
+        {viewMode === 'tracks' && renderTracksView()}
+        {viewMode === 'albums' && renderAlbumsView()}
+        {viewMode === 'artists' && renderArtistsView()}
       </ContentArea>
     </LibraryContainer>
   );
