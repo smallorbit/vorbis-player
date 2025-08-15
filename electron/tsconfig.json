@@ -1,0 +1,24 @@
+{
+    "extends": "../tsconfig.node.json",
+    "compilerOptions": {
+        "module": "ESNext",
+        "moduleResolution": "node",
+        "allowSyntheticDefaultImports": true,
+        "strict": true,
+        "esModuleInterop": true,
+        "skipLibCheck": true,
+        "forceConsistentCasingInFileNames": true,
+        "resolveJsonModule": true,
+        "isolatedModules": true,
+        "noEmit": true
+    },
+    "include": [
+        "**/*.ts",
+        "../src/types/**/*.d.ts"
+    ],
+    "exclude": [
+        "node_modules",
+        "dist",
+        "dist-electron"
+    ]
+}
