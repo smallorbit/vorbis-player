@@ -37,7 +37,9 @@ const DrawerOverlay = styled.div<{ $isOpen: boolean }>`
   z-index: ${theme.zIndex.overlay};
   opacity: ${({ $isOpen }) => ($isOpen ? '1' : '0')};
   pointer-events: ${({ $isOpen }) => ($isOpen ? 'auto' : 'none')};
+  visibility: ${({ $isOpen }) => ($isOpen ? 'visible' : 'hidden')};
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  -webkit-app-region: no-drag;
 `;
 
 const DrawerContainer = styled.div<{ $isOpen: boolean }>`
@@ -53,6 +55,8 @@ const DrawerContainer = styled.div<{ $isOpen: boolean }>`
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   z-index: ${theme.zIndex.modal};
   overflow-y: auto;
+  -webkit-app-region: no-drag;
+  pointer-events: auto;
   
   @media (max-width: ${theme.breakpoints.md}) {
     width: 100vw;

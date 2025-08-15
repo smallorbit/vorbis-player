@@ -20,6 +20,8 @@ const PlaylistDrawerContainer = styled.div<{ isOpen: boolean }>`
   overflow-y: auto;
   padding: ${theme.spacing.md};
   box-sizing: border-box;
+  -webkit-app-region: no-drag;
+  pointer-events: auto;
   
   @media (max-width: ${theme.breakpoints.sm}) {
     width: 100vw;
@@ -49,8 +51,10 @@ const PlaylistOverlay = styled.div<{ isOpen: boolean }>`
   backdrop-filter: blur(2px);
   opacity: ${props => props.isOpen ? 1 : 0};
   visibility: ${props => props.isOpen ? 'visible' : 'hidden'};
+  pointer-events: ${props => props.isOpen ? 'auto' : 'none'};
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   z-index: ${theme.zIndex.overlay};
+  -webkit-app-region: no-drag;
 `;
 
 const PlaylistHeader = styled.div`
@@ -115,22 +119,22 @@ const arePlaylistDrawerPropsEqual = (
   if (prevProps.isOpen !== nextProps.isOpen) {
     return false;
   }
-  
+
   // Check if current track changed
   if (prevProps.currentTrackIndex !== nextProps.currentTrackIndex) {
     return false;
   }
-  
+
   // Check accent color
   if (prevProps.accentColor !== nextProps.accentColor) {
     return false;
   }
-  
+
   // Check if tracks array length changed (shallow check for performance)
   if (prevProps.tracks.length !== nextProps.tracks.length) {
     return false;
   }
-  
+
   // For callbacks, we assume they're stable (parent should use useCallback)
   return true;
 };
@@ -160,10 +164,10 @@ export const PlaylistDrawer = memo<PlaylistDrawerProps>(({
           <Suspense fallback={
             <PlaylistFallback>
               <PlaylistFallbackCard>
-                <div style={{ 
-                  animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite', 
-                  color: 'rgba(255, 255, 255, 0.6)', 
-                  textAlign: 'center' 
+                <div style={{
+                  animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                  color: 'rgba(255, 255, 255, 0.6)',
+                  textAlign: 'center'
                 }}>
                   Loading playlist...
                 </div>

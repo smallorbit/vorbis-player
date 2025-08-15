@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import styled, { keyframes } from 'styled-components';
 import AudioPlayerComponent from './components/AudioPlayer';
+import ElectronTitleBar from './components/ElectronTitleBar';
 import { spotifyAuth } from './services/spotify';
 import './services/spotifyPlayer';
 import { ThemeProvider } from './styles/ThemeProvider';
@@ -10,6 +11,7 @@ const AppContainer = styled.div`
   background-color: ${({ theme }) => theme.colors.background};
   color: ${({ theme }) => theme.colors.foreground};
   min-height: 100vh;
+  padding-top: 30px; /* Space for Electron title bar */
   ${flexCenter}
 `;
 
@@ -101,9 +103,9 @@ function App() {
 
   return (
     <ThemeProvider>
+      <ElectronTitleBar />
       <AppContainer>
         <AudioPlayerComponent />
-
       </AppContainer>
     </ThemeProvider>
   );

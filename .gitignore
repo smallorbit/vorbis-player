@@ -32,4 +32,30 @@ dist-ssr
 
 # Audio files
 public/audio/
+
 .claude/settings.local.json
+
+# Electron build outputs
+dist-electron/
+out/
+
+# SQLite databases
+*.db
+*.db-journal
+*.db-wal
+
+# User data and settings
+localLibrarySettings.json
+userData/
+
+# Logs
+*.log
+logs/
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/settings.json
+

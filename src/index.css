@@ -25,12 +25,37 @@ a:hover {
 #root {
   width: 100%;
   min-height: 100vh;
+  -webkit-app-region: no-drag;
+  pointer-events: auto;
 }
 
 body {
   margin: 0;
   min-width: 585px;
   min-height: 100vh;
+  /* Don't make the entire body draggable - causes interaction issues */
+  -webkit-app-region: no-drag;
+  -webkit-user-select: auto;
+  user-select: auto;
+}
+
+/* Allow interaction with all interactive elements */
+button, input, select, textarea, a, [role="button"], [tabindex] {
+  -webkit-app-region: no-drag;
+  -webkit-user-select: auto;
+  user-select: auto;
+  pointer-events: auto;
+}
+
+/* Fix general interaction issues */
+* {
+  box-sizing: border-box;
+}
+
+/* Ensure all clickable elements work properly */
+[onClick], [onPointerDown], [onMouseDown], .clickable {
+  -webkit-app-region: no-drag;
+  pointer-events: auto;
 }
 
 h1 {
@@ -88,7 +113,7 @@ input[type="range"]::-webkit-slider-thumb:hover {
   box-shadow: 0 6px 20px rgba(251, 146, 60, 0.7);
 }
 
-input[type="range"]::-moz-range-thumb {
+/* input[type="range"]::-moz-range-thumb {
   height: 20px;
   width: 20px;
   border-radius: 50%;
@@ -109,6 +134,6 @@ input[type="range"]::-moz-range-thumb:hover {
 input[type="range"]::-moz-range-track {
   background: transparent;
   border: none;
-}
+} */
 
 

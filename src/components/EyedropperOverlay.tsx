@@ -61,6 +61,8 @@ const EyedropperOverlay: React.FC<EyedropperOverlayProps> = ({ image, onPick, on
       alignItems: 'center',
       justifyContent: 'center',
       flexDirection: 'column',
+      WebkitAppRegion: 'no-drag',
+      pointerEvents: 'auto',
     }}>
       <div style={{ position: 'relative', background: '#222', borderRadius: 16, padding: 16, boxShadow: '0 4px 32px #0008' }}>
         <canvas
