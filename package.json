@@ -3,6 +3,8 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "main": "dist-electron/main.cjs",
+  "homepage": "./",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
@@ -21,7 +23,12 @@
     "proxy:dev": "cd proxy-server && npm run dev",
     "proxy:test": "curl -s http://127.0.0.1:3001/health || echo 'Proxy server not running'",
     "dev:all": "concurrently \"npm run proxy:start\" \"npm run dev\"",
-    "start:all": "concurrently \"npm run proxy:start\" \"npm run preview\""
+    "start:all": "concurrently \"npm run proxy:start\" \"npm run preview\"",
+    "electron:build": "vite build --config electron.vite.config.ts",
+    "electron:dev": "concurrently \"npm run dev\" \"npm run electron:build\" \"npx wait-on http://127.0.0.1:3000 && npx wait-on dist-electron/main.cjs && cross-env VITE_DEV_SERVER_URL=http://127.0.0.1:3000 electron .\"",
+    "electron:pack": "npm run build && npm run electron:build && electron-builder",
+    "electron:dist": "npm run build && npm run electron:build && electron-builder --publish=never",
+    "postinstall": "electron-builder install-app-deps"
   },
   "dependencies": {
     "@radix-ui/react-alert-dialog": "^1.1.14",
@@ -62,6 +69,9 @@
     "@vitest/coverage-v8": "^3.2.4",
     "@vitest/ui": "^3.2.4",
     "concurrently": "^8.2.2",
+    "cross-env": "^7.0.3",
+    "electron": "^34.0.0",
+    "electron-builder": "^25.1.8",
     "eslint": "^9.25.0",
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.19",
@@ -70,6 +80,50 @@
     "typescript": "~5.8.3",
     "typescript-eslint": "^8.30.1",
     "vite": "^6.3.5",
-    "vitest": "^3.2.4"
+    "vitest": "^3.2.4",
+    "wait-on": "^8.0.1"
+  },
+  "build": {
+    "appId": "com.vorbis.player",
+    "productName": "Vorbis Player",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "dist-electron/**/*",
+      "node_modules/**/*"
+    ],
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
+      ]
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "linux": {
+      "target": [
+        {
+          "target": "AppImage",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    }
   }
 }
