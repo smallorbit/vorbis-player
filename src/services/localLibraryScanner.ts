@@ -1,7 +1,7 @@
-import { LocalTrack, LocalLibrarySettings } from '../types/spotify';
+import type { LocalTrack, LocalLibrarySettings } from '../types/spotify.d.ts';
 import * as musicMetadata from 'music-metadata';
 import { watch, FSWatcher } from 'chokidar';
-import { localLibraryDatabase } from './localLibraryDatabase';
+import { localLibraryDatabase } from './localLibraryDatabaseIPC';
 
 export class LocalLibraryScannerService {
   private settings: LocalLibrarySettings = {

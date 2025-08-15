@@ -1,5 +1,5 @@
 import Database from 'better-sqlite3';
-import { LocalTrack, DbTrack, DbAlbum, DbArtist } from '../types/spotify';
+import type { LocalTrack, DbTrack, DbAlbum, DbArtist } from '../types/spotify.d.ts';
 
 export class LocalLibraryDatabaseService {
   private db: Database.Database | null = null;

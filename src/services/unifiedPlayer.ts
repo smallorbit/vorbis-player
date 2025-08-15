@@ -1,7 +1,7 @@
-import { LocalTrack, EnhancedTrack } from '../types/spotify';
+import type { LocalTrack, EnhancedTrack } from '../types/spotify.d.ts';
 import { localAudioPlayer } from './localAudioPlayer';
 import { spotifyPlayer } from './spotifyPlayer';
-import { localLibraryDatabase } from './localLibraryDatabase';
+import { localLibraryDatabase } from './localLibraryDatabaseIPC';
 
 export type PlaybackSource = 'spotify' | 'local';
 

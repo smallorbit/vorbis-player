@@ -1,4 +1,4 @@
-import { LocalTrack, AudioPlayerConfig } from '../types/spotify';
+import type { LocalTrack, AudioPlayerConfig } from '../types/spotify.d.ts';
 
 export class LocalAudioPlayerService {
   private audioContext: AudioContext | null = null;
@@ -6,6 +6,8 @@ export class LocalAudioPlayerService {
   private audioSource: AudioBufferSourceNode | null = null;
   private gainNode: GainNode | null = null;
   private analyserNode: AnalyserNode | null = null;
+  private htmlAudio: HTMLAudioElement | null = null;
+  private useHTMLAudio = false;
   
   private currentTrack: LocalTrack | null = null;
   private isPlaying = false;
@@ -85,29 +87,122 @@ export class LocalAudioPlayerService {
   }
 
   async loadTrack(track: LocalTrack): Promise<void> {
-    if (!this.audioContext) {
-      throw new Error('Audio context not initialized');
-    }
-
     try {
       // Stop current playback
       this.stop();
       
       this.currentTrack = track;
       
-      // Load audio file
-      const audioData = await this.loadAudioFile(track.filePath);
+      console.log(`🎵 Loading track: ${track.name} from ${track.filePath} (${track.format})`);
       
-      // Decode audio data
-      this.audioBuffer = await this.audioContext.decodeAudioData(audioData);
-      this.duration = this.audioBuffer.duration * 1000; // Convert to milliseconds
+      // For M4A files, try HTML5 Audio first (better codec support)
+      if (track.format === 'm4a' || track.format === 'aac') {
+        await this.loadTrackWithHTMLAudio(track);
+      } else {
+        // Use Web Audio API for other formats
+        await this.loadTrackWithWebAudio(track);
+      }
       
       this.emit('trackLoaded', { track, duration: this.duration });
       
-      console.log(`🎵 Loaded local track: ${track.name} (${track.format})`);
+      console.log(`🎵 Successfully loaded local track: ${track.name} (${track.format}), duration: ${this.duration}ms`);
     } catch (error) {
       console.error('Failed to load track:', error);
+      console.error('Track details:', { 
+        name: track.name, 
+        filePath: track.filePath, 
+        format: track.format,
+        fileSize: track.fileSize
+      });
+      
+      // If Web Audio API fails for M4A, try HTML5 Audio as fallback
+      if ((track.format === 'm4a' || track.format === 'aac') && error.name === 'EncodingError') {
+        console.log(`🔄 Falling back to HTML5 Audio for ${track.format} file`);
+        try {
+          await this.loadTrackWithHTMLAudio(track);
+          this.emit('trackLoaded', { track, duration: this.duration });
+          console.log(`🎵 Successfully loaded with HTML5 Audio: ${track.name}`);
+          return;
+        } catch (fallbackError) {
+          console.error('HTML5 Audio fallback also failed:', fallbackError);
+        }
+      }
+      
       this.emit('error', { error: 'Failed to load audio file', track });
+      throw error;
+    }
+  }
+
+  private async loadTrackWithWebAudio(track: LocalTrack): Promise<void> {
+    if (!this.audioContext) {
+      throw new Error('Audio context not initialized');
+    }
+
+    // Load audio file
+    const audioData = await this.loadAudioFile(track.filePath);
+    console.log(`📁 Loaded audio data: ${audioData.byteLength} bytes`);
+    
+    // Decode audio data
+    this.audioBuffer = await this.audioContext.decodeAudioData(audioData);
+    this.duration = this.audioBuffer.duration * 1000; // Convert to milliseconds
+    this.useHTMLAudio = false;
+  }
+
+  private async loadTrackWithHTMLAudio(track: LocalTrack): Promise<void> {
+    return new Promise((resolve, reject) => {
+      if (!this.htmlAudio) {
+        this.htmlAudio = new Audio();
+      }
+
+      const audio = this.htmlAudio;
+      
+      // Create a blob URL from the file path for HTML5 Audio
+      this.createAudioBlobURL(track.filePath).then(blobURL => {
+        audio.src = blobURL;
+        
+        const onLoadedMetadata = () => {
+          this.duration = audio.duration * 1000; // Convert to milliseconds
+          this.useHTMLAudio = true;
+          console.log(`🎵 HTML5 Audio loaded: duration ${this.duration}ms`);
+          
+          // Cleanup event listeners
+          audio.removeEventListener('loadedmetadata', onLoadedMetadata);
+          audio.removeEventListener('error', onError);
+          
+          resolve();
+        };
+
+        const onError = (e: Event) => {
+          console.error('HTML5 Audio loading error:', e);
+          
+          // Cleanup event listeners
+          audio.removeEventListener('loadedmetadata', onLoadedMetadata);
+          audio.removeEventListener('error', onError);
+          
+          reject(new Error('Failed to load audio with HTML5 Audio'));
+        };
+
+        audio.addEventListener('loadedmetadata', onLoadedMetadata);
+        audio.addEventListener('error', onError);
+        
+        // Start loading
+        audio.load();
+      }).catch(reject);
+    });
+  }
+
+  private async createAudioBlobURL(filePath: string): Promise<string> {
+    try {
+      if (window.electronAPI) {
+        const buffer = await window.electronAPI.readFileBuffer(filePath);
+        const blob = new Blob([buffer], { type: 'audio/mp4' }); // M4A MIME type
+        return URL.createObjectURL(blob);
+      } else {
+        // Fallback for web environment
+        return filePath;
+      }
+    } catch (error) {
+      console.error('Failed to create blob URL:', error);
       throw error;
     }
   }
@@ -132,47 +227,23 @@ export class LocalAudioPlayerService {
   }
 
   async play(): Promise<void> {
-    if (!this.audioContext || !this.audioBuffer) {
+    if (!this.currentTrack) {
       throw new Error('No track loaded');
     }
 
     try {
-      // Resume audio context if suspended
-      if (this.audioContext.state === 'suspended') {
-        await this.audioContext.resume();
+      if (this.useHTMLAudio) {
+        await this.playWithHTMLAudio();
+      } else {
+        await this.playWithWebAudio();
       }
-
-      // Stop any existing source
-      if (this.audioSource) {
-        this.audioSource.stop();
-        this.audioSource.disconnect();
-      }
-
-      // Create new audio source
-      this.audioSource = this.audioContext.createBufferSource();
-      this.audioSource.buffer = this.audioBuffer;
       
-      // Connect to analyser for visualizations
-      this.audioSource.connect(this.analyserNode!);
-      
-      // Handle playback end
-      this.audioSource.onended = () => {
-        if (this.isPlaying) {
-          this.emit('trackEnded', { track: this.currentTrack });
-        }
-      };
-
-      // Start playback
-      const offset = this.isPaused ? this.pauseTime / 1000 : 0;
-      this.audioSource.start(0, offset);
-      
-      this.startTime = this.audioContext.currentTime - offset;
       this.isPlaying = true;
       this.isPaused = false;
       
       this.emit('playbackStarted', { track: this.currentTrack });
       
-      console.log(`▶️ Playing: ${this.currentTrack?.name}`);
+      console.log(`▶️ Playing: ${this.currentTrack?.name} (${this.useHTMLAudio ? 'HTML5' : 'WebAudio'})`);
     } catch (error) {
       console.error('Failed to play track:', error);
       this.emit('error', { error: 'Playback failed', track: this.currentTrack });
@@ -180,21 +251,91 @@ export class LocalAudioPlayerService {
     }
   }
 
+  private async playWithWebAudio(): Promise<void> {
+    if (!this.audioContext || !this.audioBuffer) {
+      throw new Error('Web Audio API not ready');
+    }
+
+    // Resume audio context if suspended
+    if (this.audioContext.state === 'suspended') {
+      await this.audioContext.resume();
+    }
+
+    // Stop any existing source
+    if (this.audioSource) {
+      this.audioSource.stop();
+      this.audioSource.disconnect();
+    }
+
+    // Create new audio source
+    this.audioSource = this.audioContext.createBufferSource();
+    this.audioSource.buffer = this.audioBuffer;
+    
+    // Connect to analyser for visualizations
+    this.audioSource.connect(this.analyserNode!);
+    
+    // Handle playback end
+    this.audioSource.onended = () => {
+      if (this.isPlaying) {
+        this.emit('trackEnded', { track: this.currentTrack });
+      }
+    };
+
+    // Start playback
+    const offset = this.isPaused ? this.pauseTime / 1000 : 0;
+    this.audioSource.start(0, offset);
+    
+    this.startTime = this.audioContext.currentTime - offset;
+  }
+
+  private async playWithHTMLAudio(): Promise<void> {
+    if (!this.htmlAudio) {
+      throw new Error('HTML5 Audio not ready');
+    }
+
+    const audio = this.htmlAudio;
+    
+    // Set up event listeners for HTML5 Audio
+    audio.onended = () => {
+      if (this.isPlaying) {
+        this.emit('trackEnded', { track: this.currentTrack });
+      }
+    };
+
+    // Resume from paused position
+    if (this.isPaused && this.pauseTime > 0) {
+      audio.currentTime = this.pauseTime / 1000;
+    }
+
+    // Start playback
+    await audio.play();
+    this.startTime = Date.now() / 1000 - audio.currentTime;
+  }
+
   pause(): void {
-    if (this.isPlaying && this.audioSource) {
+    if (!this.isPlaying) return;
+
+    if (this.useHTMLAudio && this.htmlAudio) {
+      this.htmlAudio.pause();
+      this.pauseTime = this.htmlAudio.currentTime * 1000; // Convert to milliseconds
+    } else if (this.audioSource) {
       this.audioSource.stop();
       this.pauseTime = this.getCurrentPosition();
-      this.isPlaying = false;
-      this.isPaused = true;
-      
-      this.emit('playbackPaused', { track: this.currentTrack, position: this.pauseTime });
-      
-      console.log(`⏸️ Paused: ${this.currentTrack?.name}`);
     }
+    
+    this.isPlaying = false;
+    this.isPaused = true;
+    
+    this.emit('playbackPaused', { track: this.currentTrack, position: this.pauseTime });
+    
+    console.log(`⏸️ Paused: ${this.currentTrack?.name}`);
   }
 
   stop(): void {
-    if (this.audioSource) {
+    if (this.useHTMLAudio && this.htmlAudio) {
+      this.htmlAudio.pause();
+      this.htmlAudio.currentTime = 0;
+    } else if (this.audioSource) {
       this.audioSource.stop();
       this.audioSource.disconnect();
       this.audioSource = null;
@@ -209,19 +350,22 @@ export class LocalAudioPlayerService {
   }
 
   async seek(position: number): Promise<void> {
-    if (!this.audioBuffer || !this.audioContext) {
-      return;
-    }
-
-    const wasPlaying = this.isPlaying;
-    this.stop();
-    
-    this.pauseTime = position;
-    
-    if (wasPlaying) {
-      await this.play();
-    } else {
-      this.isPaused = true;
+    if (this.useHTMLAudio && this.htmlAudio) {
+      this.htmlAudio.currentTime = position / 1000; // Convert from milliseconds
+      if (this.isPlaying) {
+        this.startTime = Date.now() / 1000 - this.htmlAudio.currentTime;
+      }
+    } else if (this.audioBuffer && this.audioContext) {
+      const wasPlaying = this.isPlaying;
+      this.stop();
+      
+      this.pauseTime = position;
+      
+      if (wasPlaying) {
+        await this.play();
+      } else {
+        this.isPaused = true;
+      }
     }
     
     this.emit('seeked', { track: this.currentTrack, position });
@@ -241,12 +385,14 @@ export class LocalAudioPlayerService {
   }
 
   getCurrentPosition(): number {
-    if (!this.audioContext) return 0;
-    
-    if (this.isPlaying) {
-      return (this.audioContext.currentTime - this.startTime) * 1000;
-    } else if (this.isPaused) {
-      return this.pauseTime;
+    if (this.useHTMLAudio && this.htmlAudio) {
+      return this.htmlAudio.currentTime * 1000; // Convert to milliseconds
+    } else if (this.audioContext) {
+      if (this.isPlaying) {
+        return (this.audioContext.currentTime - this.startTime) * 1000;
+      } else if (this.isPaused) {
+        return this.pauseTime;
+      }
     }
     
     return 0;
@@ -332,6 +478,12 @@ export class LocalAudioPlayerService {
     if (this.audioContext) {
       this.audioContext.close();
       this.audioContext = null;
+    }
+
+    if (this.htmlAudio) {
+      this.htmlAudio.pause();
+      this.htmlAudio.src = '';
+      this.htmlAudio = null;
     }
     
     this.listeners.clear();
