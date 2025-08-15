@@ -32,6 +32,40 @@ export interface ElectronAPI {
   getAppVersion(): Promise<string>;
   getAppPath(): Promise<string>;
   getUserDataPath(): Promise<string>;
+  
+  // Database operations
+  dbInitialize(): Promise<boolean>;
+  dbGetAllTracks(): Promise<LocalTrack[]>;
+  dbGetAllAlbums(): Promise<any[]>;
+  dbGetAllArtists(): Promise<any[]>;
+  dbGetStats(): Promise<{
+    totalTracks: number;
+    totalAlbums: number;
+    totalArtists: number;
+    totalDuration: number;
+  }>;
+  
+  // Scanner operations
+  scannerGetSettings(): Promise<{
+    musicDirectories: string[];
+    watchForChanges: boolean;
+    scanOnStartup: boolean;
+    autoIndexNewFiles: boolean;
+    supportedFormats: string[];
+    excludePatterns: string[];
+    includeSubdirectories: boolean;
+  }>;
+  scannerUpdateSettings(settings: any): Promise<any>;
+  scannerAddDirectory(directory: string): Promise<void>;
+  scannerRemoveDirectory(directory: string): Promise<void>;
+  scannerGetProgress(): Promise<{
+    isScanning: boolean;
+    totalFiles: number;
+    scannedFiles: number;
+    currentFile: string;
+    errors: string[];
+  }>;
+  scannerScanDirectories(): Promise<{ success: boolean }>;
 }
 
 declare global {
