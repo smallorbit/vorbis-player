@@ -304,6 +304,8 @@ export class LocalAudioPlayerService {
 
     // Stop any existing source
     if (this.audioSource) {
+      // Clear the onended handler to prevent it from firing when we stop the old source
+      this.audioSource.onended = null;
       this.audioSource.stop();
       this.audioSource.disconnect();
     }
@@ -373,6 +375,9 @@ export class LocalAudioPlayerService {
   }
 
   stop(): void {
+    // Set isPlaying to false first to prevent onended from triggering trackEnded
+    this.isPlaying = false;
+    
     if (this.useHTMLAudio && this.htmlAudio) {
       this.htmlAudio.pause();
       this.htmlAudio.currentTime = 0;
@@ -382,7 +387,6 @@ export class LocalAudioPlayerService {
       this.audioSource = null;
     }
     
-    this.isPlaying = false;
     this.isPaused = false;
     this.startTime = 0;
     this.pauseTime = 0;
