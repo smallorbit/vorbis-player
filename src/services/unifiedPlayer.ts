@@ -66,6 +66,7 @@ export class UnifiedPlayerService {
     });
 
     localAudioPlayer.on('trackEnded', async ({ track }) => {
+      console.log('🎵 trackEnded event triggered:', { trackName: track?.name, trackId: track?.id });
       this.state.isPlaying = false;
       
       // Update play count for local tracks
@@ -74,6 +75,7 @@ export class UnifiedPlayerService {
       }
       
       // Auto-advance to next track
+      console.log('🎵 Auto-advancing to next track...');
       await this.next();
       
       this.emit('trackEnded', { track, source: 'local' });
@@ -190,16 +192,25 @@ export class UnifiedPlayerService {
   }
 
   async next(): Promise<void> {
+    console.log('🎵 next() called:', { 
+      queueLength: this.state.queue.length, 
+      currentIndex: this.state.currentIndex,
+      nextIndex: this.state.currentIndex + 1
+    });
+    
     if (this.state.queue.length === 0) {
+      console.log('🎵 No tracks in queue, returning');
       return;
     }
 
     const nextIndex = this.state.currentIndex + 1;
     if (nextIndex < this.state.queue.length) {
+      console.log('🎵 Loading next track at index:', nextIndex, 'track:', this.state.queue[nextIndex]?.name);
       this.state.currentIndex = nextIndex;
       const nextTrack = this.state.queue[nextIndex];
       await this.loadTrack(nextTrack, true);
     } else {
+      console.log('🎵 End of queue reached');
       // End of queue
       await this.stop();
       this.emit('queueEnded', {});
