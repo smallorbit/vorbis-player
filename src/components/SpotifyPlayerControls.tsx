@@ -89,7 +89,9 @@ const TrackInfoRight = styled.div`
   gap: ${({ theme }: any) => theme.spacing.xs};
 `;
 
-const ControlButton = styled.button<{ isActive?: boolean; accentColor: string }>`
+const ControlButton = styled.button.withConfig({
+  shouldForwardProp: (prop) => !['isActive', 'accentColor'].includes(prop)
+}) <{ isActive?: boolean; accentColor: string }>`
   border: none;
   display: flex;
   align-items: center;

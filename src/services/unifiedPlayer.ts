@@ -209,6 +209,12 @@ export class UnifiedPlayerService {
       this.state.currentIndex = nextIndex;
       const nextTrack = this.state.queue[nextIndex];
       await this.loadTrack(nextTrack, true);
+      
+      // Emit queueChanged event to notify UI of track change
+      this.emit('queueChanged', { 
+        queue: this.state.queue, 
+        currentIndex: this.state.currentIndex 
+      });
     } else {
       console.log('🎵 End of queue reached');
       // End of queue
@@ -233,6 +239,12 @@ export class UnifiedPlayerService {
       this.state.currentIndex = prevIndex;
       const prevTrack = this.state.queue[prevIndex];
       await this.loadTrack(prevTrack, true);
+      
+      // Emit queueChanged event to notify UI of track change
+      this.emit('queueChanged', { 
+        queue: this.state.queue, 
+        currentIndex: this.state.currentIndex 
+      });
     }
   }
 

@@ -123,17 +123,22 @@ interface LibraryNavigationProps {
   onQueueTracks?: (tracks: LocalTrack[], startIndex?: number) => void;
   onPlaylistSelect?: (playlistId: string) => void;
   showPlaylist?: boolean;
+  activeSource?: 'spotify' | 'local';
 }
 
 export const LibraryNavigation: React.FC<LibraryNavigationProps> = ({
   onTrackSelect,
   onQueueTracks,
   onPlaylistSelect,
-  showPlaylist = false
+  showPlaylist = false,
+  activeSource: externalActiveSource
 }) => {
-  const [activeSource, setActiveSource] = useState<LibrarySource>(() =>
+  const [internalActiveSource, setInternalActiveSource] = useState<LibrarySource>(() =>
     isElectron() ? 'local' : 'spotify'
   );
+
+  // Use external active source if provided, otherwise use internal state
+  const activeSource = externalActiveSource || internalActiveSource;
   const [localView, setLocalView] = useState<LocalView>('browser');
   const [hasLocalLibrary, setHasLocalLibrary] = useState(false);
 
@@ -221,14 +226,14 @@ export const LibraryNavigation: React.FC<LibraryNavigationProps> = ({
         {!isElectron() && (
           <NavButton
             active={activeSource === 'spotify'}
-            onClick={() => setActiveSource('spotify')}
+            onClick={() => setInternalActiveSource('spotify')}
           >
             🎵 Spotify
           </NavButton>
         )}
         <NavButton
           active={activeSource === 'local'}
-          onClick={() => setActiveSource('local')}
+          onClick={() => setInternalActiveSource('local')}
         >
           💿 Local Music
         </NavButton>

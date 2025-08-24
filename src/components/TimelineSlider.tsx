@@ -10,10 +10,11 @@ const TimelineSliderInput = styled.input.attrs<{ accentColor: string; value: num
         ${accentColor} ${value && max ? (Number(value) / Number(max)) * 100 : 0}%,
         rgba(115, 115, 115, 0.3) ${value && max ? (Number(value) / Number(max)) * 100 : 0}%,
         rgba(115, 115, 115, 0.3) 100%
-      )`
+      )`,
+      color: accentColor
     }
   })
-)<{ accentColor: string; value: number; max: number }>`
+) <{ value: number; max: number }>`
   flex: 1;
   height: 4px;
   border-radius: 2px;
@@ -25,7 +26,7 @@ const TimelineSliderInput = styled.input.attrs<{ accentColor: string; value: num
     appearance: none;
     width: 12px;
     height: 12px;
-    background: ${props => props.accentColor} !important;
+    background: currentColor !important;
     border-radius: 50%;
     cursor: pointer;
     border: none;
@@ -40,7 +41,7 @@ const TimelineSliderInput = styled.input.attrs<{ accentColor: string; value: num
   &::-moz-range-thumb {
     width: 12px;
     height: 12px;
-    background: ${props => props.accentColor} !important;
+    background: currentColor !important;
     border-radius: 50%;
     cursor: pointer;
     border: none;

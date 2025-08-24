@@ -17,7 +17,7 @@ import { usePlaylistManager } from '../hooks/usePlaylistManager';
 import { theme } from '@/styles/theme';
 import { DEFAULT_GLOW_RATE, DEFAULT_GLOW_INTENSITY } from './AccentColorGlowOverlay';
 import type { LocalTrack, EnhancedTrack } from '../types/spotify';
-import { unifiedPlayer } from '../services/unifiedPlayer';
+import { unifiedPlayer, type PlaybackSource } from '../services/unifiedPlayer';
 import { isElectron } from '../utils/environment';
 
 
@@ -135,6 +135,60 @@ const AudioPlayerComponent = () => {
     handleResetFilters,
     restoreSavedFilters,
   } = usePlayerState();
+
+  // Set up unified player event listeners for local tracks
+  useEffect(() => {
+    const handleQueueChanged = ({ queue, currentIndex }: { queue: EnhancedTrack[], currentIndex: number }) => {
+      console.log('🎵 Queue changed:', { currentIndex, trackName: queue[currentIndex]?.name });
+
+      // Update UI state to match unified player state
+      if (queue.length > 0 && currentIndex >= 0) {
+        // Convert all tracks in the queue to UI format
+        const uiTracks = queue.map(track => ({
+          id: track.id,
+          name: track.name,
+          artists: track.artists[0].name,
+          album: track.album.name,
+          duration_ms: track.duration_ms,
+          uri: track.uri,
+          image: track.album.images[0]?.url,
+          source: 'local' as const
+        }));
+
+        setCurrentTrackIndex(currentIndex);
+        setTracks(uiTracks); // Maintain the full queue
+      }
+    };
+
+    const handlePlaybackStarted = ({ track, source }: { track: EnhancedTrack | null, source: PlaybackSource }) => {
+      console.log('🎵 Playback started:', { trackName: track?.name || 'unknown', source });
+      // Note: We'll handle isPlaying state in the SpotifyPlayerControls component
+    };
+
+    const handlePlaybackPaused = ({ track, source }: { track: EnhancedTrack | null, source: PlaybackSource }) => {
+      console.log('🎵 Playback paused:', { trackName: track?.name || 'unknown', source });
+      // Note: We'll handle isPlaying state in the SpotifyPlayerControls component
+    };
+
+    const handlePlaybackStopped = ({ track, source }: { track: EnhancedTrack | null, source: PlaybackSource }) => {
+      console.log('🎵 Playback stopped:', { trackName: track?.name || 'unknown', source });
+      // Note: We'll handle isPlaying state in the SpotifyPlayerControls component
+    };
+
+    // Subscribe to unified player events
+    unifiedPlayer.on('queueChanged', handleQueueChanged);
+    unifiedPlayer.on('playbackStarted', handlePlaybackStarted);
+    unifiedPlayer.on('playbackPaused', handlePlaybackPaused);
+    unifiedPlayer.on('playbackStopped', handlePlaybackStopped);
+
+    return () => {
+      // Cleanup event listeners
+      unifiedPlayer.off('queueChanged', handleQueueChanged);
+      unifiedPlayer.off('playbackStarted', handlePlaybackStarted);
+      unifiedPlayer.off('playbackPaused', handlePlaybackPaused);
+      unifiedPlayer.off('playbackStopped', handlePlaybackStopped);
+    };
+  }, [setCurrentTrackIndex, setTracks]);
 
   // Global glow state (these will be managed by the VisualEffectsMenu)
   const [glowIntensity, setGlowIntensity] = useState(DEFAULT_GLOW_INTENSITY); // Medium
@@ -254,11 +308,12 @@ const AudioPlayerComponent = () => {
         album: track.album,
         duration_ms: track.duration,
         uri: `local:${track.id}`,
-        image: track.albumArt
+        image: track.albumArt,
+        source: 'local' as const
       };
 
-      // Load and play the local track
-      await unifiedPlayer.loadTrack(enhancedTrack, true);
+      // Set up unified player queue with this track
+      unifiedPlayer.setQueue([enhancedTrack], 0);
 
       // Update UI state
       setCurrentTrackIndex(0);
@@ -306,7 +361,8 @@ const AudioPlayerComponent = () => {
         album: track.album,
         duration_ms: track.duration,
         uri: `local:${track.id}`,
-        image: track.albumArt
+        image: track.albumArt,
+        source: 'local' as const
       }));
 
       // Set up the queue
@@ -404,19 +460,35 @@ const AudioPlayerComponent = () => {
     };
   }, [tracks, currentTrackIndex, playTrack]);
 
+  const currentTrack = useMemo(() => tracks[currentTrackIndex] || null, [tracks, currentTrackIndex]);
+
   const handleNext = useCallback(() => {
     if (tracks.length === 0) return;
-    const nextIndex = (currentTrackIndex + 1) % tracks.length;
-    playTrack(nextIndex);
-  }, [currentTrackIndex, tracks.length, playTrack]);
+
+    // Check if current track is local
+    if (currentTrack && (currentTrack as any).source === 'local') {
+      // Use unified player for local tracks
+      unifiedPlayer.next();
+    } else {
+      // Use existing logic for Spotify tracks
+      const nextIndex = (currentTrackIndex + 1) % tracks.length;
+      playTrack(nextIndex);
+    }
+  }, [currentTrackIndex, tracks.length, playTrack, currentTrack]);
 
   const handlePrevious = useCallback(() => {
     if (tracks.length === 0) return;
-    const prevIndex = currentTrackIndex === 0 ? tracks.length - 1 : currentTrackIndex - 1;
-    playTrack(prevIndex);
-  }, [currentTrackIndex, tracks.length, playTrack]);
 
-  const currentTrack = useMemo(() => tracks[currentTrackIndex] || null, [tracks, currentTrackIndex]);
+    // Check if current track is local
+    if (currentTrack && (currentTrack as any).source === 'local') {
+      // Use unified player for local tracks
+      unifiedPlayer.previous();
+    } else {
+      // Use existing logic for Spotify tracks
+      const prevIndex = currentTrackIndex === 0 ? tracks.length - 1 : currentTrackIndex - 1;
+      playTrack(prevIndex);
+    }
+  }, [currentTrackIndex, tracks.length, playTrack, currentTrack]);
 
   useEffect(() => {
     const extractColor = async () => {
@@ -444,18 +516,34 @@ const AudioPlayerComponent = () => {
 
   const handlePlay = useCallback(() => {
     if (currentTrack) {
-      playTrack(currentTrackIndex);
+      // Check if it's a local track
+      if ((currentTrack as any).source === 'local') {
+        // Use unified player for local tracks
+        unifiedPlayer.play();
+      } else {
+        // Use existing logic for Spotify tracks
+        playTrack(currentTrackIndex);
+      }
     } else {
       spotifyPlayer.resume();
     }
-  }, [currentTrack, playTrack, currentTrackIndex]);
+  }, [currentTrack, currentTrackIndex, playTrack]);
 
   const handlePause = useCallback(() => {
-    spotifyPlayer.pause();
-  }, []);
+    // Check if current track is local
+    if (currentTrack && (currentTrack as any).source === 'local') {
+      // Use unified player for local tracks
+      unifiedPlayer.pause();
+    } else {
+      // Use Spotify player for Spotify tracks
+      spotifyPlayer.pause();
+    }
+  }, [currentTrack]);
 
   const handleShowPlaylist = useCallback(() => {
     setShowPlaylist(true);
+    // In Electron mode, we need to ensure the library navigation shows the Spotify view
+    // This will be handled by the LibraryNavigation component
   }, []);
 
   const handleShowVisualEffects = useCallback(() => {
@@ -543,6 +631,40 @@ const AudioPlayerComponent = () => {
             <CardContent style={{ position: 'relative', zIndex: 2, marginTop: '-0.25rem' }}>
               {stateRenderer}
             </CardContent>
+            <CardContent style={{ position: 'relative', zIndex: 2 }}>
+              <AlbumArt
+                currentTrack={currentTrack}
+                accentColor={accentColor}
+                glowIntensity={visualEffectsEnabled ? effectiveGlow.intensity : 0}
+                glowRate={effectiveGlow.rate}
+                albumFilters={visualEffectsEnabled ? albumFilters : {
+                  brightness: 110,
+                  contrast: 100,
+                  saturation: 100,
+                  hue: 0,
+                  blur: 0,
+                  sepia: 0
+                }}
+              />
+            </CardContent>
+            <CardContent style={{ position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 2 }}>
+              <Suspense fallback={<div style={{ height: '80px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.7)' }}>Loading controls...</div>}>
+                <SpotifyPlayerControls
+                  currentTrack={currentTrack}
+                  accentColor={accentColor}
+                  onPlay={handlePlay}
+                  onPause={handlePause}
+                  onNext={handleNext}
+                  onPrevious={handlePrevious}
+                  onShowPlaylist={handleShowPlaylist}
+                  trackCount={tracks.length}
+                  onAccentColorChange={handleAccentColorChange}
+                  onShowVisualEffects={handleShowVisualEffects}
+                  glowEnabled={visualEffectsEnabled}
+                  onGlowToggle={handleVisualEffectsToggle}
+                />
+              </Suspense>
+            </CardContent>
           </LoadingCard>
 
           <Suspense fallback={<div style={{ position: 'fixed', top: 0, left: 0, bottom: 0, width: '400px', background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.7)' }}>Loading library...</div>}>
@@ -551,6 +673,7 @@ const AudioPlayerComponent = () => {
               onQueueTracks={handleQueueLocalTracks}
               onPlaylistSelect={handlePlaylistSelect}
               showPlaylist={showPlaylist}
+              activeSource={showPlaylist ? 'spotify' : undefined}
             />
           </Suspense>
         </ContentWrapper>
