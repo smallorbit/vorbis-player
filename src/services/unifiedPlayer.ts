@@ -101,6 +101,7 @@ export class UnifiedPlayerService {
   }
 
   async loadTrack(track: EnhancedTrack, autoPlay = false): Promise<void> {
+    console.log('🎵 loadTrack called:', { trackName: track.name, autoPlay });
     try {
       // Stop current playback
       await this.stop();
@@ -225,6 +226,12 @@ export class UnifiedPlayerService {
   }
 
   setQueue(tracks: EnhancedTrack[], startIndex = 0): void {
+    console.log('🎵 setQueue called:', { 
+      tracksCount: tracks.length, 
+      startIndex, 
+      firstTrack: tracks[0]?.name,
+      selectedTrack: tracks[startIndex]?.name 
+    });
     this.state.queue = [...tracks];
     this.state.currentIndex = startIndex;
     

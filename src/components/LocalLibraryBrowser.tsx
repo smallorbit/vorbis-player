@@ -306,21 +306,21 @@ export const LocalLibraryBrowser: React.FC<LocalLibraryBrowserProps> = ({
     try {
       console.log('🗑️ Clearing library and rescanning...');
       setIsLoading(true);
-      
+
       // Clear the library
       await localLibraryDatabase.clearLibrary();
-      
+
       // Trigger a full rescan using Electron IPC
       await window.electronAPI?.scannerScanDirectories({
         extractArtwork: true,
         parallel: true,
         batchSize: 50
       });
-      
+
       // Reload data
       await loadData();
       await loadStats();
-      
+
       console.log('✅ Library cleared and rescanned successfully');
     } catch (error) {
       console.error('Failed to clear and rescan:', error);
@@ -334,13 +334,13 @@ export const LocalLibraryBrowser: React.FC<LocalLibraryBrowserProps> = ({
   useEffect(() => {
     loadData();
     loadStats();
-    
+
     // Expose debug functions to window
     (window as any).debugClearAndRescan = clearAndRescan;
     (window as any).debugClearLibrary = () => localLibraryDatabase.clearLibrary();
     (window as any).debugLoadData = loadData;
     (window as any).debugLoadStats = loadStats;
-    
+
     return () => {
       // Cleanup debug functions
       delete (window as any).debugClearAndRescan;
@@ -427,6 +427,7 @@ export const LocalLibraryBrowser: React.FC<LocalLibraryBrowserProps> = ({
   }, [artists, searchQuery]);
 
   const handleTrackClick = useCallback(async (track: LocalTrack, index: number) => {
+    console.log('🎵 Track clicked:', { trackName: track.name, index, trackId: track.id });
     setSelectedTrackId(track.id);
 
     if (onTrackSelect) {
@@ -434,6 +435,7 @@ export const LocalLibraryBrowser: React.FC<LocalLibraryBrowserProps> = ({
     }
 
     if (onQueueTracks) {
+      console.log('📋 Queueing tracks with startIndex:', index);
       onQueueTracks(filteredTracks, index);
     }
   }, [filteredTracks, onTrackSelect, onQueueTracks]);

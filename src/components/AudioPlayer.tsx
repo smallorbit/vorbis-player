@@ -273,6 +273,12 @@ const AudioPlayerComponent = () => {
 
   // Handle queuing multiple local tracks
   const handleQueueLocalTracks = useCallback(async (localTracks: LocalTrack[], startIndex = 0) => {
+    console.log('🎵 handleQueueLocalTracks called:', { 
+      tracksCount: localTracks.length, 
+      startIndex, 
+      firstTrack: localTracks[0]?.name,
+      selectedTrack: localTracks[startIndex]?.name 
+    });
     try {
       const enhancedTracks: EnhancedTrack[] = localTracks.map(track => ({
         ...track,
