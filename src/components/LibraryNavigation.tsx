@@ -115,6 +115,27 @@ const SetupButton = styled(Button)`
   }
 `;
 
+const CloseButton = styled(Button)`
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 8px;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  line-height: 1;
+  margin-left: auto;
+  
+  &:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    border-color: rgba(255, 255, 255, 0.2);
+  }
+`;
+
 type LibrarySource = 'spotify' | 'local';
 type LocalView = 'browser' | 'settings';
 
@@ -124,6 +145,7 @@ interface LibraryNavigationProps {
   onPlaylistSelect?: (playlistId: string) => void;
   showPlaylist?: boolean;
   activeSource?: 'spotify' | 'local';
+  onClose?: () => void;
 }
 
 export const LibraryNavigation: React.FC<LibraryNavigationProps> = ({
@@ -131,7 +153,8 @@ export const LibraryNavigation: React.FC<LibraryNavigationProps> = ({
   onQueueTracks,
   onPlaylistSelect,
   showPlaylist = false,
-  activeSource: externalActiveSource
+  activeSource: externalActiveSource,
+  onClose
 }) => {
   const [internalActiveSource, setInternalActiveSource] = useState<LibrarySource>(() =>
     isElectron() ? 'local' : 'spotify'
@@ -139,6 +162,13 @@ export const LibraryNavigation: React.FC<LibraryNavigationProps> = ({
 
   // Use external active source if provided, otherwise use internal state
   const activeSource = externalActiveSource || internalActiveSource;
+  
+  // Update internal state when external activeSource changes
+  React.useEffect(() => {
+    if (externalActiveSource && externalActiveSource !== internalActiveSource) {
+      setInternalActiveSource(externalActiveSource);
+    }
+  }, [externalActiveSource, internalActiveSource]);
   const [localView, setLocalView] = useState<LocalView>('browser');
   const [hasLocalLibrary, setHasLocalLibrary] = useState(false);
 
@@ -176,7 +206,7 @@ export const LibraryNavigation: React.FC<LibraryNavigationProps> = ({
   }, []);
 
   const handleSetupLocalLibrary = () => {
-    setActiveSource('local');
+    setInternalActiveSource('local');
     setLocalView('settings');
   };
 
@@ -237,6 +267,15 @@ export const LibraryNavigation: React.FC<LibraryNavigationProps> = ({
         >
           💿 Local Music
         </NavButton>
+        {isElectron() && onClose && (
+          <CloseButton
+            onClick={onClose}
+            title="Close Library"
+            aria-label="Close Library"
+          >
+            ✕
+          </CloseButton>
+        )}
       </NavigationHeader>
 
       <ViewContainer>

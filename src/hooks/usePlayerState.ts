@@ -19,6 +19,7 @@ export interface PlayerState {
   error: string | null;
   selectedPlaylistId: string | null;
   showPlaylist: boolean;
+  showLibrary: boolean;
   accentColor: string;
   showVisualEffects: boolean;
   visualEffectsEnabled: boolean;
@@ -35,6 +36,7 @@ export const usePlayerState = () => {
   const [error, setError] = useState<string | null>(null);
   const [selectedPlaylistId, setSelectedPlaylistId] = useState<string | null>(null);
   const [showPlaylist, setShowPlaylist] = useState(false);
+  const [showLibrary, setShowLibrary] = useState(true); // Library is visible by default in Electron mode
   const [accentColor, setAccentColor] = useState<string>(theme.colors.accent);
   const [showVisualEffects, setShowVisualEffects] = useState(false);
   
@@ -149,6 +151,7 @@ export const usePlayerState = () => {
     error,
     selectedPlaylistId,
     showPlaylist,
+    showLibrary,
     accentColor,
     showVisualEffects,
     visualEffectsEnabled,
@@ -162,6 +165,7 @@ export const usePlayerState = () => {
     setError,
     setSelectedPlaylistId,
     setShowPlaylist,
+    setShowLibrary,
     setAccentColor,
     setShowVisualEffects,
     setVisualEffectsEnabled,

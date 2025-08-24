@@ -109,6 +109,7 @@ const AudioPlayerComponent = () => {
     error,
     selectedPlaylistId,
     showPlaylist,
+    showLibrary,
     accentColor,
     showVisualEffects,
     visualEffectsEnabled,
@@ -125,6 +126,7 @@ const AudioPlayerComponent = () => {
     setError,
     setSelectedPlaylistId,
     setShowPlaylist,
+    setShowLibrary,
     setAccentColor,
     setShowVisualEffects,
 
@@ -541,9 +543,10 @@ const AudioPlayerComponent = () => {
   }, [currentTrack]);
 
   const handleShowPlaylist = useCallback(() => {
-    setShowPlaylist(true);
-    // In Electron mode, we need to ensure the library navigation shows the Spotify view
-    // This will be handled by the LibraryNavigation component
+    setShowPlaylist(prev => !prev);
+    // In Electron mode, we need to ensure the library navigation shows the appropriate view
+    // When opening playlist (showPlaylist becomes true), switch to Spotify view
+    // When closing playlist (showPlaylist becomes false), switch back to local view
   }, []);
 
   const handleShowVisualEffects = useCallback(() => {
@@ -571,6 +574,10 @@ const AudioPlayerComponent = () => {
 
   const handleClosePlaylist = useCallback(() => {
     setShowPlaylist(false);
+  }, []);
+
+  const handleCloseLibrary = useCallback(() => {
+    setShowLibrary(false);
   }, []);
 
   const handleAccentColorChange = useCallback((color: string) => {
@@ -667,15 +674,36 @@ const AudioPlayerComponent = () => {
             </CardContent>
           </LoadingCard>
 
-          <Suspense fallback={<div style={{ position: 'fixed', top: 0, left: 0, bottom: 0, width: '400px', background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.7)' }}>Loading library...</div>}>
-            <LibraryNavigation
-              onTrackSelect={handleLocalTrackSelect}
-              onQueueTracks={handleQueueLocalTracks}
-              onPlaylistSelect={handlePlaylistSelect}
-              showPlaylist={showPlaylist}
-              activeSource={showPlaylist ? 'spotify' : undefined}
-            />
-          </Suspense>
+          {visualEffectsEnabled && (
+            <Suspense fallback={<div>Loading effects...</div>}>
+              <VisualEffectsMenu
+                isOpen={showVisualEffects}
+                onClose={handleCloseVisualEffects}
+                accentColor={accentColor}
+                filters={albumFilters}
+                onFilterChange={handleFilterChange}
+                onResetFilters={handleResetFilters}
+                glowIntensity={glowIntensity}
+                setGlowIntensity={handleGlowIntensityChange}
+                glowRate={glowRate}
+                setGlowRate={handleGlowRateChange}
+                effectiveGlow={effectiveGlow}
+              />
+            </Suspense>
+          )}
+
+          {showLibrary && (
+            <Suspense fallback={<div style={{ position: 'fixed', top: 0, left: 0, bottom: 0, width: '400px', background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.7)' }}>Loading library...</div>}>
+              <LibraryNavigation
+                onTrackSelect={handleLocalTrackSelect}
+                onQueueTracks={handleQueueLocalTracks}
+                onPlaylistSelect={handlePlaylistSelect}
+                showPlaylist={showPlaylist}
+                activeSource={showPlaylist ? 'spotify' : 'local'}
+                onClose={handleCloseLibrary}
+              />
+            </Suspense>
+          )}
         </ContentWrapper>
       );
     }
