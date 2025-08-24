@@ -187,8 +187,8 @@ export const PlayerStateRenderer: React.FC<PlayerStateRendererProps> = ({
     tracksCount: tracks.length
   });
 
-  // In Electron mode, always show local library setup instead of Spotify
-  if (isElectron()) {
+  // In Electron mode, show local library setup only when no tracks are loaded
+  if (isElectron() && (!selectedPlaylistId || tracks.length === 0)) {
     return (
       <LoadingCard standalone>
         <CardHeader>
@@ -232,8 +232,8 @@ export const PlayerStateRenderer: React.FC<PlayerStateRendererProps> = ({
       error.includes('Authentication expired');
 
     if (isAuthError) {
-      // In Electron mode, show local library setup instead of Spotify auth
-      if (isElectron()) {
+      // In Electron mode, show local library setup instead of Spotify auth only when no tracks are loaded
+      if (isElectron() && (!selectedPlaylistId || tracks.length === 0)) {
         return (
           <LoadingCard standalone>
             <CardHeader>

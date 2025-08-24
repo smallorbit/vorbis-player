@@ -263,6 +263,7 @@ const AudioPlayerComponent = () => {
       // Update UI state
       setCurrentTrackIndex(0);
       setTracks([uiTrack]);
+      setSelectedPlaylistId('local-library'); // Set a playlist ID for local tracks
 
     } catch (error) {
       console.error('Failed to play local track:', error);
@@ -313,6 +314,7 @@ const AudioPlayerComponent = () => {
       // Update UI state
       setTracks(uiTracks);
       setCurrentTrackIndex(startIndex);
+      setSelectedPlaylistId('local-library'); // Set a playlist ID for local tracks
 
     } catch (error) {
       console.error('Failed to queue local tracks:', error);
