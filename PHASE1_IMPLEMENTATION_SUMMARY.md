@@ -12,8 +12,9 @@ Phase 1 of the Local Music Library feature has been successfully implemented acc
 
 ### 1. Audio Engine Implementation
 - **Local Audio Player Service** (`src/services/localAudioPlayer.ts`)
-  - Web Audio API based playback engine
-  - Support for multiple audio formats (MP3, FLAC, WAV, OGG, M4A, AAC)
+  - Web Audio API based playback engine with HTML5 Audio fallback
+  - Support for multiple audio formats (MP3, FLAC, WAV, OGG, M4A/AAC, M4A/ALAC)
+  - Automatic codec detection for M4A files (AAC vs ALAC)
   - Gapless playback capability
   - Real-time audio analysis for visualizations
   - Volume control and seeking functionality

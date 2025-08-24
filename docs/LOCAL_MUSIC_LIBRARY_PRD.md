@@ -26,7 +26,7 @@ The local music library feature addresses users who maintain personal music coll
 
 ### 3.1 Primary Goals
 - **Unified Music Experience**: Integrate local file playback with existing Spotify functionality
-- **Comprehensive Format Support**: Support popular audio formats (FLAC, MP3, M4A, AAC, OGG, WAV)
+- **Comprehensive Format Support**: Support popular audio formats (FLAC, MP3, M4A (AAC/ALAC), OGG, WAV)
 - **Intelligent Library Management**: Automatic indexing, metadata extraction, and organization
 - **Seamless User Experience**: Maintain the existing visual design language and performance standards
 

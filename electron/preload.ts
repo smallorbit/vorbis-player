@@ -38,6 +38,7 @@ const electronAPI: ElectronAPI = {
   dbGetAllTracks: () => ipcRenderer.invoke('db-get-all-tracks'),
   dbGetAllAlbums: () => ipcRenderer.invoke('db-get-all-albums'),
   dbGetAllArtists: () => ipcRenderer.invoke('db-get-all-artists'),
+  dbClearLibrary: () => ipcRenderer.invoke('db-clear-library'),
   dbGetStats: () => ipcRenderer.invoke('db-get-stats'),
   
   // Scanner operations
@@ -46,7 +47,11 @@ const electronAPI: ElectronAPI = {
   scannerAddDirectory: (directory: string) => ipcRenderer.invoke('scanner-add-directory', directory),
   scannerRemoveDirectory: (directory: string) => ipcRenderer.invoke('scanner-remove-directory', directory),
   scannerGetProgress: () => ipcRenderer.invoke('scanner-get-progress'),
-  scannerScanDirectories: () => ipcRenderer.invoke('scanner-scan-directories'),
+  scannerScanDirectories: (options?: {
+    extractArtwork?: boolean;
+    parallel?: boolean;
+    batchSize?: number;
+  }) => ipcRenderer.invoke('scanner-scan-directories', options),
 };
 
 contextBridge.exposeInMainWorld('electronAPI', electronAPI);

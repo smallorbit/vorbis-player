@@ -301,10 +301,53 @@ export const LocalLibraryBrowser: React.FC<LocalLibraryBrowserProps> = ({
     stats
   });
 
+  // Debug functions for clearing and rescanning
+  const clearAndRescan = async () => {
+    try {
+      console.log('🗑️ Clearing library and rescanning...');
+      setIsLoading(true);
+      
+      // Clear the library
+      await localLibraryDatabase.clearLibrary();
+      
+      // Trigger a full rescan using Electron IPC
+      await window.electronAPI?.scannerScanDirectories({
+        extractArtwork: true,
+        parallel: true,
+        batchSize: 50
+      });
+      
+      // Reload data
+      await loadData();
+      await loadStats();
+      
+      console.log('✅ Library cleared and rescanned successfully');
+    } catch (error) {
+      console.error('Failed to clear and rescan:', error);
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // Load initial data
   useEffect(() => {
     loadData();
     loadStats();
+    
+    // Expose debug functions to window
+    (window as any).debugClearAndRescan = clearAndRescan;
+    (window as any).debugClearLibrary = () => localLibraryDatabase.clearLibrary();
+    (window as any).debugLoadData = loadData;
+    (window as any).debugLoadStats = loadStats;
+    
+    return () => {
+      // Cleanup debug functions
+      delete (window as any).debugClearAndRescan;
+      delete (window as any).debugClearLibrary;
+      delete (window as any).debugLoadData;
+      delete (window as any).debugLoadStats;
+    };
   }, []);
 
   const loadData = async () => {
@@ -552,6 +595,17 @@ export const LocalLibraryBrowser: React.FC<LocalLibraryBrowserProps> = ({
           }}
         >
           🔄 Refresh
+        </ViewButton>
+        <ViewButton
+          active={false}
+          onClick={() => {
+            if (window.confirm('Clear entire library and rescan? This will take a few minutes.')) {
+              clearAndRescan();
+            }
+          }}
+          style={{ color: '#ff6b6b' }}
+        >
+          🗑️ Clear & Rescan
         </ViewButton>
       </ViewSelector>
 

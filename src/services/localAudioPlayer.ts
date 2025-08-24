@@ -93,10 +93,11 @@ export class LocalAudioPlayerService {
       
       this.currentTrack = track;
       
-      console.log(`🎵 Loading track: ${track.name} from ${track.filePath} (${track.format})`);
+      console.log(`🎵 Loading track: ${track.name} from ${track.filePath} (${track.format}, codec: ${track.codec || 'unknown'})`);
       
-      // For M4A files, try HTML5 Audio first (better codec support)
-      if (track.format === 'm4a' || track.format === 'aac') {
+      // For M4A files (both AAC and ALAC) and AAC files, try HTML5 Audio first (better codec support)
+      // ALAC in particular needs HTML5 Audio as Web Audio API has limited support
+      if (track.format === 'm4a' || track.format === 'aac' || track.codec === 'ALAC') {
         await this.loadTrackWithHTMLAudio(track);
       } else {
         // Use Web Audio API for other formats
@@ -105,26 +106,35 @@ export class LocalAudioPlayerService {
       
       this.emit('trackLoaded', { track, duration: this.duration });
       
-      console.log(`🎵 Successfully loaded local track: ${track.name} (${track.format}), duration: ${this.duration}ms`);
+      console.log(`🎵 Successfully loaded local track: ${track.name} (${track.format}, codec: ${track.codec || 'unknown'}), duration: ${this.duration}ms`);
     } catch (error) {
       console.error('Failed to load track:', error);
       console.error('Track details:', { 
         name: track.name, 
         filePath: track.filePath, 
         format: track.format,
+        codec: track.codec,
         fileSize: track.fileSize
       });
       
       // If Web Audio API fails for M4A, try HTML5 Audio as fallback
-      if ((track.format === 'm4a' || track.format === 'aac') && error.name === 'EncodingError') {
-        console.log(`🔄 Falling back to HTML5 Audio for ${track.format} file`);
+      // If HTML5 fails for M4A, try Web Audio API as fallback
+      const isM4ARelated = (track.format === 'm4a' || track.format === 'aac' || track.codec === 'ALAC');
+      
+      if (isM4ARelated && (error.name === 'EncodingError' || error.message.includes('HTML5 Audio'))) {
+        const fallbackMethod = error.message.includes('HTML5 Audio') ? 'Web Audio API' : 'HTML5 Audio';
+        console.log(`🔄 Falling back to ${fallbackMethod} for ${track.format} file (codec: ${track.codec || 'unknown'})`);
         try {
-          await this.loadTrackWithHTMLAudio(track);
+          if (fallbackMethod === 'Web Audio API') {
+            await this.loadTrackWithWebAudio(track);
+          } else {
+            await this.loadTrackWithHTMLAudio(track);
+          }
           this.emit('trackLoaded', { track, duration: this.duration });
-          console.log(`🎵 Successfully loaded with HTML5 Audio: ${track.name}`);
+          console.log(`🎵 Successfully loaded with ${fallbackMethod}: ${track.name}`);
           return;
         } catch (fallbackError) {
-          console.error('HTML5 Audio fallback also failed:', fallbackError);
+          console.error(`${fallbackMethod} fallback also failed:`, fallbackError);
         }
       }
       
@@ -174,6 +184,12 @@ export class LocalAudioPlayerService {
 
         const onError = (e: Event) => {
           console.error('HTML5 Audio loading error:', e);
+          console.error('Audio element error details:', {
+            error: (e.target as HTMLAudioElement).error,
+            networkState: (e.target as HTMLAudioElement).networkState,
+            readyState: (e.target as HTMLAudioElement).readyState,
+            src: (e.target as HTMLAudioElement).src
+          });
           
           // Cleanup event listeners
           audio.removeEventListener('loadedmetadata', onLoadedMetadata);
@@ -194,15 +210,40 @@ export class LocalAudioPlayerService {
   private async createAudioBlobURL(filePath: string): Promise<string> {
     try {
       if (window.electronAPI) {
+        console.log(`📁 Creating blob URL for: ${filePath}`);
         const buffer = await window.electronAPI.readFileBuffer(filePath);
-        const blob = new Blob([buffer], { type: 'audio/mp4' }); // M4A MIME type
-        return URL.createObjectURL(blob);
+        console.log(`📁 Read buffer: ${buffer.length} bytes`);
+        
+        // Use appropriate MIME type based on format
+        // Note: ALAC files use the same container as AAC (audio/mp4)
+        // The browser will handle the codec detection internally
+        let mimeType = 'audio/mp4'; // Default for m4a/aac/alac
+        
+        const format = filePath.split('.').pop()?.toLowerCase();
+        if (format === 'mp3') {
+          mimeType = 'audio/mpeg';
+        } else if (format === 'ogg') {
+          mimeType = 'audio/ogg';
+        } else if (format === 'wav') {
+          mimeType = 'audio/wav';
+        } else if (format === 'flac') {
+          mimeType = 'audio/flac';
+        }
+        
+        console.log(`🎵 Using MIME type: ${mimeType} for format: ${format}`);
+        
+        const blob = new Blob([buffer], { type: mimeType });
+        const blobUrl = URL.createObjectURL(blob);
+        console.log(`🔗 Created blob URL: ${blobUrl}`);
+        return blobUrl;
       } else {
         // Fallback for web environment
+        console.log(`🔗 Using file path directly: ${filePath}`);
         return filePath;
       }
     } catch (error) {
       console.error('Failed to create blob URL:', error);
+      console.error('File path:', filePath);
       throw error;
     }
   }

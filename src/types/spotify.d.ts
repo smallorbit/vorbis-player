@@ -92,7 +92,8 @@ export interface LocalTrack {
   filePath: string;
   fileName: string;
   fileSize: number;
-  format: string; // 'mp3', 'flac', 'wav', etc.
+  format: string; // 'mp3', 'flac', 'wav', 'm4a', etc.
+  codec?: string; // 'ALAC', 'AAC', 'MP3', 'FLAC', etc.
   bitrate?: number;
   sampleRate?: number;
   trackNumber?: number;
@@ -149,6 +150,7 @@ export interface DbTrack {
   file_name: string;
   file_size: number;
   format: string;
+  codec?: string;
   bitrate?: number;
   sample_rate?: number;
   track_number?: number;
@@ -184,6 +186,114 @@ export interface DbArtist {
   track_count: number;
   total_duration: number;
   date_added: string;
+}
+
+// New types for Phase 2 features
+export interface DbPlaylist {
+  id: string;
+  name: string;
+  description?: string;
+  track_ids: string; // JSON array of track IDs
+  is_mixed: boolean; // true if contains both local and Spotify tracks
+  spotify_tracks?: string; // JSON array of Spotify track data
+  cover_art?: string;
+  date_created: string;
+  date_modified: string;
+  created_by: 'user' | 'system';
+}
+
+export interface DbSearchHistory {
+  id: string;
+  query: string;
+  search_type: 'tracks' | 'albums' | 'artists' | 'all';
+  result_count: number;
+  timestamp: string;
+}
+
+export interface DbSavedFilter {
+  id: string;
+  name: string;
+  filter_criteria: string; // JSON object with filter parameters
+  date_created: string;
+  date_modified: string;
+}
+
+export interface DbMigration {
+  id: number;
+  version: string;
+  description: string;
+  executed_at: string;
+}
+
+// Enhanced filter types
+export interface AdvancedFilterCriteria {
+  artists?: string[];
+  albums?: string[];
+  genres?: string[];
+  years?: { min?: number; max?: number };
+  duration?: { min?: number; max?: number }; // in seconds
+  bitrate?: { min?: number; max?: number };
+  formats?: string[];
+  playCount?: { min?: number; max?: number };
+  dateAdded?: { from?: string; to?: string };
+  hasLyrics?: boolean;
+  hasAlbumArt?: boolean;
+}
+
+export interface SearchOptions {
+  query: string;
+  type: 'tracks' | 'albums' | 'artists' | 'all';
+  limit?: number;
+  offset?: number;
+  fuzzyMatch?: boolean;
+  sortBy?: 'relevance' | 'name' | 'artist' | 'album' | 'year' | 'dateAdded';
+  sortOrder?: 'asc' | 'desc';
+}
+
+export interface SearchResult {
+  tracks: LocalTrack[];
+  albums: DbAlbum[];
+  artists: DbArtist[];
+  totalResults: number;
+  searchTime: number; // in milliseconds
+}
+
+// Album art processing types
+export interface AlbumArtwork {
+  id: string;
+  track_id?: string;
+  album_id?: string;
+  data: string; // base64 encoded image
+  format: string; // 'image/jpeg', 'image/png', etc.
+  width: number;
+  height: number;
+  file_size: number;
+  source: 'embedded' | 'directory' | 'online';
+  file_path?: string; // for directory-based artwork
+  date_added: string;
+}
+
+export interface DbAlbumArtwork {
+  id: string;
+  track_id?: string;
+  album_id?: string;
+  data: string;
+  format: string;
+  width: number;
+  height: number;
+  file_size: number;
+  source: string;
+  file_path?: string;
+  date_added: string;
+}
+
+// Performance monitoring types
+export interface DbPerformanceMetric {
+  id: string;
+  operation: string;
+  duration: number; // in milliseconds
+  timestamp: string;
+  metadata?: string; // JSON object with additional data
 }
 
 export {};

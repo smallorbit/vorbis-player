@@ -82,7 +82,7 @@ export class LocalLibraryScannerService {
     }
   }
 
-  async scanAllDirectories(): Promise<void> {
+  async scanAllDirectories(forceRescan = false): Promise<void> {
     this.scanProgress.isScanning = true;
     this.scanProgress.totalFiles = 0;
     this.scanProgress.scannedFiles = 0;
@@ -98,7 +98,7 @@ export class LocalLibraryScannerService {
 
       // Second pass: scan files
       for (const directory of this.settings.musicDirectories) {
-        await this.scanDirectory(directory);
+        await this.scanDirectory(directory, forceRescan);
       }
 
       this.emit('scanCompleted', { 
@@ -129,7 +129,7 @@ export class LocalLibraryScannerService {
     }
   }
 
-  private async scanDirectory(directory: string): Promise<void> {
+  private async scanDirectory(directory: string, forceRescan = false): Promise<void> {
     try {
       if (!window.electronAPI) {
         throw new Error('File system access not available');
@@ -143,7 +143,7 @@ export class LocalLibraryScannerService {
 
       for (const filePath of files) {
         try {
-          await this.scanFile(filePath);
+          await this.scanFile(filePath, forceRescan);
           this.scanProgress.scannedFiles++;
           
           this.emit('scanProgress', {
@@ -163,13 +163,14 @@ export class LocalLibraryScannerService {
     }
   }
 
-  private async scanFile(filePath: string): Promise<LocalTrack | null> {
+  private async scanFile(filePath: string, forceRescan = false): Promise<LocalTrack | null> {
     try {
       // Check if file was already scanned and is unchanged
       const fileStats = await window.electronAPI.getFileStats(filePath);
       const existingTrack = await localLibraryDatabase.getTrackByPath(filePath);
       
-      if (existingTrack && existingTrack.dateModified.getTime() === fileStats.mtime.getTime()) {
+      // Skip if file hasn't changed and we're not forcing a rescan, AND codec info exists
+      if (!forceRescan && existingTrack && existingTrack.dateModified.getTime() === fileStats.mtime.getTime() && existingTrack.codec) {
         return existingTrack;
       }
 
@@ -191,6 +192,11 @@ export class LocalLibraryScannerService {
         albumArt = `data:${picture.format};base64,${picture.data.toString('base64')}`;
       }
 
+      // Log codec information for debugging
+      if (metadata.format.codec) {
+        console.log(`🎵 Detected codec for ${this.extractFilename(filePath)}: ${metadata.format.codec}`);
+      }
+
       // Create track object
       const track: LocalTrack = {
         id: this.generateTrackId(filePath),
@@ -202,6 +208,7 @@ export class LocalLibraryScannerService {
         fileName: this.extractFilename(filePath),
         fileSize: fileStats.size,
         format: this.extractFormat(filePath),
+        codec: metadata.format.codec, // Store the actual codec (e.g., 'ALAC', 'AAC', 'MP3', etc.)
         bitrate: metadata.format.bitrate,
         sampleRate: metadata.format.sampleRate,
         trackNumber: metadata.common.track?.no,
@@ -397,6 +404,24 @@ export class LocalLibraryScannerService {
     }
   }
 
+  // Utility function to clear library and rescan
+  async clearAndRescan(): Promise<void> {
+    try {
+      console.log('🗑️ Clearing library and rescanning...');
+      
+      // Clear the library
+      await localLibraryDatabase.clearLibrary();
+      
+      // Force rescan all directories
+      await this.scanAllDirectories(true);
+      
+      console.log('✅ Library cleared and rescanned successfully');
+    } catch (error) {
+      console.error('Failed to clear and rescan:', error);
+      throw error;
+    }
+  }
+
   // Cleanup
   destroy(): void {
     this.watchers.forEach((watcher) => watcher.close());
@@ -407,3 +432,10 @@ export class LocalLibraryScannerService {
 
 // Singleton instance
 export const localLibraryScanner = new LocalLibraryScannerService();
+
+// Expose for debugging in browser console
+if (typeof window !== 'undefined') {
+  (window as any).debugClearAndRescan = () => localLibraryScanner.clearAndRescan();
+  (window as any).debugClearLibrary = () => localLibraryDatabase.clearLibrary();
+  (window as any).debugScanLibrary = () => localLibraryScanner.scanAllDirectories(true);
+}

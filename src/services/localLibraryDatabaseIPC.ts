@@ -100,6 +100,24 @@ export class LocalLibraryDatabaseService {
     }
   }
 
+  async clearLibrary(): Promise<void> {
+    if (!window.electronAPI) {
+      throw new Error('Electron API not available');
+    }
+
+    if (!this.initialized) {
+      await this.initialize();
+    }
+
+    try {
+      await window.electronAPI.dbClearLibrary();
+      console.log('✅ Library cleared via IPC');
+    } catch (error) {
+      console.error('Failed to clear library:', error);
+      throw error;
+    }
+  }
+
   // Placeholder methods for future implementation
   async addTrack(track: LocalTrack): Promise<void> {
     // TODO: Implement when needed

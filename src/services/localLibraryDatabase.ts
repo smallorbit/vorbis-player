@@ -28,6 +28,7 @@ export class LocalLibraryDatabaseService {
 
       this.createTables();
       this.createIndexes();
+      this.migrateDatabase();
       
       this.initialized = true;
       console.log('🗄️ Local library database initialized');
@@ -52,6 +53,7 @@ export class LocalLibraryDatabaseService {
         file_name TEXT NOT NULL,
         file_size INTEGER NOT NULL,
         format TEXT NOT NULL,
+        codec TEXT,
         bitrate INTEGER,
         sample_rate INTEGER,
         track_number INTEGER,
@@ -147,6 +149,25 @@ export class LocalLibraryDatabaseService {
     });
   }
 
+  private migrateDatabase(): void {
+    if (!this.db) return;
+
+    // Check if codec column exists
+    const tableInfo = this.db.prepare("PRAGMA table_info(tracks)").all();
+    const hasCodecColumn = tableInfo.some((col: any) => col.name === 'codec');
+    
+    if (!hasCodecColumn) {
+      console.log('🔄 Migrating database: Adding codec column to tracks table');
+      try {
+        this.db.exec('ALTER TABLE tracks ADD COLUMN codec TEXT');
+        console.log('✅ Database migration completed: codec column added');
+      } catch (error) {
+        // Column might already exist in some edge cases
+        console.warn('Migration warning:', error);
+      }
+    }
+  }
+
   // Track operations
   async saveTrack(track: LocalTrack): Promise<void> {
     if (!this.db || !this.initialized) {
@@ -156,10 +177,10 @@ export class LocalLibraryDatabaseService {
     const stmt = this.db.prepare(`
       INSERT OR REPLACE INTO tracks (
         id, name, artist, album, duration, file_path, file_name, file_size,
-        format, bitrate, sample_rate, track_number, year, genre, album_artist,
+        format, codec, bitrate, sample_rate, track_number, year, genre, album_artist,
         composer, comment, lyrics, album_art, date_added, date_modified,
         play_count, last_played
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
 
     try {
@@ -173,6 +194,7 @@ export class LocalLibraryDatabaseService {
         track.fileName,
         track.fileSize,
         track.format,
+        track.codec,
         track.bitrate,
         track.sampleRate,
         track.trackNumber,
@@ -459,6 +481,7 @@ export class LocalLibraryDatabaseService {
       fileName: dbTrack.file_name,
       fileSize: dbTrack.file_size,
       format: dbTrack.format,
+      codec: dbTrack.codec,
       bitrate: dbTrack.bitrate,
       sampleRate: dbTrack.sample_rate,
       trackNumber: dbTrack.track_number,
@@ -517,6 +540,35 @@ export class LocalLibraryDatabaseService {
   }
 
   // Database maintenance
+  async clearLibrary(): Promise<void> {
+    if (!this.db || !this.initialized) {
+      throw new Error('Database not initialized');
+    }
+
+    try {
+      console.log('🗑️ Clearing local music library...');
+      
+      // Delete all data from tables
+      this.db.exec('DELETE FROM tracks');
+      this.db.exec('DELETE FROM tracks_fts');
+      this.db.exec('DELETE FROM albums');
+      this.db.exec('DELETE FROM artists');
+      this.db.exec('DELETE FROM playlists');
+      this.db.exec('DELETE FROM playlist_tracks');
+      
+      // Reset autoincrement counters
+      this.db.exec("DELETE FROM sqlite_sequence WHERE name IN ('tracks', 'albums', 'artists', 'playlists', 'playlist_tracks')");
+      
+      // Vacuum to reclaim space
+      this.db.exec('VACUUM');
+      
+      console.log('✅ Local music library cleared successfully');
+    } catch (error) {
+      console.error('Failed to clear library:', error);
+      throw error;
+    }
+  }
+
   async vacuum(): Promise<void> {
     if (!this.db) return;
     this.db.exec('VACUUM');
