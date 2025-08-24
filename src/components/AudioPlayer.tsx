@@ -674,6 +674,24 @@ const AudioPlayerComponent = () => {
             </CardContent>
           </LoadingCard>
 
+          {visualEffectsEnabled && (
+            <Suspense fallback={<div>Loading effects...</div>}>
+              <VisualEffectsMenu
+                isOpen={showVisualEffects}
+                onClose={handleCloseVisualEffects}
+                accentColor={accentColor}
+                filters={albumFilters}
+                onFilterChange={handleFilterChange}
+                onResetFilters={handleResetFilters}
+                glowIntensity={glowIntensity}
+                setGlowIntensity={handleGlowIntensityChange}
+                glowRate={glowRate}
+                setGlowRate={handleGlowRateChange}
+                effectiveGlow={effectiveGlow}
+              />
+            </Suspense>
+          )}
+
           {showLibrary && (
             <Suspense fallback={<div style={{ position: 'fixed', top: 0, left: 0, bottom: 0, width: '400px', background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.7)' }}>Loading library...</div>}>
               <LibraryNavigation
