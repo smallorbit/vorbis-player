@@ -56,6 +56,7 @@ export interface ElectronAPI {
     totalArtists: number;
     totalDuration: number;
   }>;
+  dbUpdatePlayCount(trackId: string): Promise<void>;
   
   // Enhanced Phase 2 database operations
   dbSearchTracks(options: {

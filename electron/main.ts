@@ -898,6 +898,26 @@ function setupIpcHandlers() {
     }
   });
 
+  ipcMain.handle('db-update-play-count', async (event, trackId: string) => {
+    try {
+      if (!database) {
+        throw new Error('Database not initialized');
+      }
+
+      const stmt = database.prepare(`
+        UPDATE tracks 
+        SET play_count = play_count + 1, last_played = ?
+        WHERE id = ?
+      `);
+      
+      stmt.run(new Date().toISOString(), trackId);
+      console.log(`📊 Updated play count for track: ${trackId}`);
+    } catch (error) {
+      console.error('Failed to update play count:', error);
+      throw error;
+    }
+  });
+
   // Scanner IPC handlers - moved from renderer process
   ipcMain.handle('scanner-get-settings', async () => {
     return scannerSettings;

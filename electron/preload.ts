@@ -40,6 +40,7 @@ const electronAPI: ElectronAPI = {
   dbGetAllArtists: () => ipcRenderer.invoke('db-get-all-artists'),
   dbClearLibrary: () => ipcRenderer.invoke('db-clear-library'),
   dbGetStats: () => ipcRenderer.invoke('db-get-stats'),
+  dbUpdatePlayCount: (trackId: string) => ipcRenderer.invoke('db-update-play-count', trackId),
   
   // Scanner operations
   scannerGetSettings: () => ipcRenderer.invoke('scanner-get-settings'),

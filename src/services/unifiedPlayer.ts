@@ -1,7 +1,7 @@
 import type { LocalTrack, EnhancedTrack } from '../types/spotify.d.ts';
 import { localAudioPlayer } from './localAudioPlayer';
 import { spotifyPlayer } from './spotifyPlayer';
-import { localLibraryDatabase } from './localLibraryDatabaseIPC';
+import { enhancedLocalLibraryDatabaseIPC } from './enhancedLocalLibraryDatabaseIPC';
 
 export type PlaybackSource = 'spotify' | 'local';
 
@@ -70,7 +70,7 @@ export class UnifiedPlayerService {
       
       // Update play count for local tracks
       if (track && track.id) {
-        await localLibraryDatabase.updatePlayCount(track.id);
+        await enhancedLocalLibraryDatabaseIPC.updatePlayCount(track.id);
       }
       
       // Auto-advance to next track

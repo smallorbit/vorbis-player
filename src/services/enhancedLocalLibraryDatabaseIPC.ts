@@ -473,6 +473,25 @@ export class EnhancedLocalLibraryDatabaseIPCService {
     }
   }
 
+  /**
+   * Update play count for a track
+   */
+  async updatePlayCount(trackId: string): Promise<void> {
+    if (!window.electronAPI) {
+      throw new Error('Electron API not available');
+    }
+
+    await this.ensureInitialized();
+
+    try {
+      await window.electronAPI.dbUpdatePlayCount(trackId);
+      console.log(`📊 Updated play count for track: ${trackId}`);
+    } catch (error) {
+      console.error('Failed to update play count:', error);
+      throw error;
+    }
+  }
+
   // Cleanup
   close(): void {
     this.initialized = false;
