@@ -139,6 +139,13 @@ export const LibraryNavigation: React.FC<LibraryNavigationProps> = ({
 
   // Use external active source if provided, otherwise use internal state
   const activeSource = externalActiveSource || internalActiveSource;
+  
+  // Update internal state when external activeSource changes
+  React.useEffect(() => {
+    if (externalActiveSource && externalActiveSource !== internalActiveSource) {
+      setInternalActiveSource(externalActiveSource);
+    }
+  }, [externalActiveSource, internalActiveSource]);
   const [localView, setLocalView] = useState<LocalView>('browser');
   const [hasLocalLibrary, setHasLocalLibrary] = useState(false);
 
@@ -176,7 +183,7 @@ export const LibraryNavigation: React.FC<LibraryNavigationProps> = ({
   }, []);
 
   const handleSetupLocalLibrary = () => {
-    setActiveSource('local');
+    setInternalActiveSource('local');
     setLocalView('settings');
   };
 

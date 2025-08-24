@@ -541,9 +541,10 @@ const AudioPlayerComponent = () => {
   }, [currentTrack]);
 
   const handleShowPlaylist = useCallback(() => {
-    setShowPlaylist(true);
-    // In Electron mode, we need to ensure the library navigation shows the Spotify view
-    // This will be handled by the LibraryNavigation component
+    setShowPlaylist(prev => !prev);
+    // In Electron mode, we need to ensure the library navigation shows the appropriate view
+    // When opening playlist (showPlaylist becomes true), switch to Spotify view
+    // When closing playlist (showPlaylist becomes false), switch back to local view
   }, []);
 
   const handleShowVisualEffects = useCallback(() => {
@@ -673,7 +674,7 @@ const AudioPlayerComponent = () => {
               onQueueTracks={handleQueueLocalTracks}
               onPlaylistSelect={handlePlaylistSelect}
               showPlaylist={showPlaylist}
-              activeSource={showPlaylist ? 'spotify' : undefined}
+              activeSource={showPlaylist ? 'spotify' : 'local'}
             />
           </Suspense>
         </ContentWrapper>
