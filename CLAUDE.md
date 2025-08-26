@@ -4,116 +4,80 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is **Vorbis Player** - a React-based Spotify music player with customizable visual effects and a sleek, unified interface. The app streams music from a user's Spotify account with beautiful album artwork, dynamic color theming, and customizable visual effects for an enhanced music listening experience.
-
-## Recent Major Updates
-
-### 🎵 Liked Songs Feature (Latest)
-- **New Playlist Type**: Added support for playing user's Spotify Liked Songs collection
-- **Automatic Shuffle**: Liked Songs are automatically shuffled for music discovery experience
-- **Enhanced UI**: Special heart icon and styling for Liked Songs option in playlist selection
-- **API Integration**: New functions `getLikedSongs()`, `checkTrackSaved()`, `saveTrack()`, `unsaveTrack()` in spotify.ts
-- **Playlist Manager**: Updated `usePlaylistManager.ts` to handle liked songs with shuffle functionality
-
-### 🚀 Performance Optimizations
-- **Button Responsiveness**: 70-80% improvement in button click response (200-500ms → 50-100ms)
-- **Glow Feature Performance**: 75% improvement in glow animation overhead (40-60% degradation → 10-15% impact)
-- **GPU-Accelerated Animations**: CSS variables with hardware acceleration for smooth 60fps glow effects in `glow-animations.css`
-- **Web Worker Canvas Processing**: 80-90% reduction in main thread blocking during image processing with `imageProcessor.worker.ts`
-- **Optimized Re-renders**: 30-40% reduction in unnecessary component re-renders with enhanced React.memo patterns
-- **Virtual Scrolling**: 20-30% improvement in visual effects menu responsiveness using react-window
-- **Debounced State Updates**: 150ms debouncing prevents excessive re-renders during rapid user interactions
-- **Bundle Size Reduction**: 35-45% smaller bundle through code splitting and lazy loading
-- **Loading Performance**: 30-40% faster initial load times with resource preloading and caching
-- **Color Extraction**: 50-60% faster track transitions with intelligent caching system in `colorExtractor.ts`
-- **Memory Usage**: 20-30% reduction in memory footprint through optimized animations and worker processing
-
-### 🎨 UI/UX Improvements
-- **Updated Screenshots**: New interface screenshots showing current design
-- **Enhanced Styling**: Improved responsive design and visual consistency
-- **Better Error Handling**: More graceful error states and user feedback
-- **Optimized Icons**: Consistent 1.5rem sizing across all control icons
+**Vorbis Player** is a hybrid music player that supports both Spotify streaming and local music file playback. It features a unified interface with customizable visual effects, dynamic color theming, and seamless switching between Spotify and local music libraries.
 
 ## Development Commands
 
 ```bash
-# Start development server
-npm run dev
-
-# Build for production
-tsc -b && vite build
-
-# Lint code
-npm run lint
-
-# Preview production build
-npm run preview
+# Core Development
+npm run dev                  # Start development server
+npm run build               # Build for production (tsc -b && vite build)
+npm run lint                # Run ESLint
+npm run preview             # Preview production build
 
 # Testing
-npm run test           # Run tests in watch mode
-npm run test:run       # Run tests once
-npm run test:ui        # Run tests with UI
-npm run test:coverage  # Run tests with coverage
+npm run test                # Run tests in watch mode
+npm run test:run            # Run tests once
+npm run test:ui             # Run tests with UI
+npm run test:coverage       # Run tests with coverage
 
+# Electron (Desktop App)
+npm run electron:dev        # Run Electron app in development
+npm run electron:build      # Build Electron assets
+npm run electron:pack       # Package Electron app
+npm run electron:dist       # Create distributable
+
+# Deployment
+npm run deploy              # Deploy to production (Vercel)
+npm run deploy:preview      # Deploy preview build
 ```
 
-## Architecture
+## High-Level Architecture
 
-### Core Components Flow
+### Dual Playback System
+The app features a **unified player service** (`unifiedPlayer.ts`) that abstracts two playback sources:
+- **Spotify Streaming**: Via Web Playback SDK (requires Premium)
+- **Local Files**: Via Web Audio API with Electron file system access
 
-1. **App.tsx** - Handles Spotify OAuth authentication flow and renders the main AudioPlayerComponent
-2. **AudioPlayerComponent** - Main orchestrator that manages audio playback, track selection, and album art display with consistent 1.5rem control icons
-3. **AlbumArt** - Displays album artwork with customizable visual effects and filters
-4. **PlaylistSelection** - Enhanced playlist selection interface with Liked Songs support and automatic shuffle
-5. **PlaylistIcon** - Spotify-inspired queue icon integrated into player controls with accessibility features and responsive design (1.5rem sizing)
-6. **SettingsIcon** - Settings gear icon integrated into player controls for accessing configuration options (1.5rem sizing)
-7. **VolumeIcon** - Volume trigger icon integrated into player controls with consistent 1.5rem sizing for visual uniformity
-8. **PaintbrushIcon** - Visual effects trigger icon integrated into player controls for accessing shimmer and glow effects (1.5rem sizing)
-9. **SettingsModal** - Unified settings interface with visual effects and configuration options
-10. **VolumeModal** - Responsive volume control modal with slider (desktop) and toggle buttons (mobile)
-11. **VisualEffectsMenu** - Side sliding menu for controlling visual effects with real-time sliders
-12. **LikeButton** - Heart-shaped toggle button for saving/removing tracks from user's Spotify Liked Songs library with smooth animations, loading states, and consistent 1.5rem sizing
-13. **Playlist** - Collapsible drawer interface showing track listing with current track highlighting
+### Core Application Flow
 
-### Key State Management
+```
+App.tsx
+├── Spotify OAuth Authentication
+├── ElectronTitleBar (if in Electron)
+└── AudioPlayerComponent
+    ├── LibraryNavigation (Spotify/Local toggle)
+    ├── PlaylistSelection / LocalLibraryDrawer
+    ├── AlbumArt (with visual effects)
+    ├── SpotifyPlayerControls
+    └── Various modals (Settings, Volume, Visual Effects)
+```
 
-- `currentTrackIndex`: Tracks which song is currently selected/playing
-- `selectedPlaylistId`: Tracks current playlist ID ('liked-songs' for Liked Songs)
-- `showPlaylist`: Controls visibility of the sliding playlist drawer
-- `showSettings`: Controls visibility of the settings modal interface
-- `showVolumeModal`: Controls visibility of the volume control modal
-- `showVisualEffects`: Controls visibility of the visual effects menu
-- `shimmerIntensity`: Controls shimmer effect intensity (0-100) with localStorage persistence
-- `glowIntensity`: Controls glow effect intensity (0-100) with localStorage persistence
-- `accentColor`: Dynamically extracted dominant color from album artwork
-- `volume`: Current volume level (0-100) for Spotify player integration
-- `isMuted`: Boolean state for mute/unmute functionality
-- `isInitialLoad`: Prevents auto-play from triggering multiple times
-- `albumFilters`: Visual effects filters applied to album artwork with localStorage persistence
-- Track selection sync: When users click playlist items vs. use audio player next/prev buttons
-- Auto-play progression: Seamless advancement between tracks with end-of-song detection
+### Key Services Architecture
 
-### Authentication & Data Flow
+1. **Unified Player** (`unifiedPlayer.ts`)
+   - Manages both Spotify and local playback
+   - Emits unified events for UI updates
+   - Maintains consistent state across sources
 
-- **Spotify Integration**: Uses PKCE OAuth flow for secure authentication with required scopes
-- **Music Streaming**: Streams from user's Spotify playlists and Liked Songs using Web Playback SDK (Premium required)
-- **Liked Songs Access**: Full access to user's Spotify Liked Songs collection with automatic shuffle
-- **Visual Effects**: Customizable shimmer, glow, and filter effects applied to album artwork
-- **Color Extraction**: Dynamic color theming based on album artwork dominant colors
-- **Persistent Settings**: Visual effects and user preferences stored in localStorage
+2. **Spotify Services**
+   - `spotify.ts`: API integration, auth, playlists, liked songs
+   - `spotifyPlayer.ts`: Web Playback SDK wrapper
 
-### Visual Effects Architecture
+3. **Local Music Services** (Electron-only)
+   - `localAudioPlayer.ts`: Web Audio API playback
+   - `localLibraryScanner.ts`: File system scanning
+   - `localLibraryDatabase.ts`: SQLite database for metadata
+   - `albumArtManager.ts`: Album art extraction/management
 
-- **Color Extraction Service**: Extracts dominant colors from album artwork with LRU caching for performance
-- **Visual Effects System**: Real-time CSS filters applied to album artwork (brightness, contrast, saturation, etc.)
-- **Filter Persistence**: Visual effects settings stored in localStorage with cross-session memory
-- **Dynamic Theming**: UI elements adapt to extracted album colors for cohesive visual experience
-- **Performance Optimization**: Hardware-accelerated CSS filters with smooth transitions
+4. **Visual Effects System**
+   - `colorExtractor.ts`: LRU-cached color extraction
+   - Real-time CSS filters on album artwork
+   - Hardware-accelerated animations
 
 ## Environment Configuration
 
-Required environment variables in `.env.local`:
-
+Required `.env.local`:
 ```
 VITE_SPOTIFY_CLIENT_ID="your_spotify_client_id"
 VITE_SPOTIFY_REDIRECT_URI="http://127.0.0.1:3000/auth/spotify/callback"
@@ -121,225 +85,97 @@ VITE_SPOTIFY_REDIRECT_URI="http://127.0.0.1:3000/auth/spotify/callback"
 
 ## Critical Implementation Details
 
-### Liked Songs System (New Feature)
+### Local Music Library (Electron Mode)
 
-- **Playlist Selection**: 'liked-songs' special playlist ID for Liked Songs
-- **Automatic Shuffle**: Liked Songs are automatically shuffled using `shuffleArray()` helper function
-- **API Integration**: New Spotify API functions for liked songs management:
-  - `getLikedSongs(limit)`: Fetches user's liked songs with pagination
-  - `checkTrackSaved(trackId)`: Checks if track is in user's library
-  - `saveTrack(trackId)`: Adds track to user's library
-  - `unsaveTrack(trackId)`: Removes track from user's library
-- **UI Integration**: Special heart icon and "Shuffle enabled" indicator in playlist selection
-- **Performance**: Limits to 200 tracks for optimal performance
+- **Database**: SQLite with better-sqlite3 for track metadata
+- **File Scanning**: Chokidar for real-time file monitoring
+- **Metadata Extraction**: music-metadata library for audio file parsing
+- **Album Art**: Sharp for image processing and caching
+- **IPC Communication**: Electron IPC for main/renderer process communication
+- **Supported Formats**: MP3, M4A, FLAC, OGG, WAV
 
-### Auto-Play System
+### State Management Patterns
 
-- **Initial Auto-Play**: First song automatically starts when tracks are loaded
-- **Auto-Advance**: Detects song end via Spotify player state (within 1s of completion) and advances to next track
-- **Infinite Loop**: Returns to first track after last song for continuous playback
-- **State Management**: Uses `isInitialLoad` flag and proper useEffect dependency ordering to prevent initialization errors
-
-### Visual Effects Settings System
-
-- **Global Persistence**: Visual effects settings stored in localStorage as 'vorbis-player-album-filters'
-- **Real-time Application**: Filter changes applied immediately to album artwork with smooth transitions
-- **Cross-Session Memory**: Visual effects preferences survive browser restarts and page refreshes
-- **Dynamic Theming**: UI elements adapt to filter changes and extracted colors
-- **Performance Optimization**: Hardware-accelerated CSS filters with efficient update cycles
+- **Playback State**: Managed by `usePlayerState` hook
+- **Playlist Management**: `usePlaylistManager` hook with Liked Songs shuffle
+- **Visual Effects**: Persisted in localStorage
+- **Volume**: Cross-session persistence
+- **Library Mode**: Toggle between Spotify and Local sources
 
 ### Performance Optimizations
 
-- **Color Extraction Caching**: LRU cache in `colorExtractor.ts` with 100 item limit for 50-60% faster transitions
-- **Component Memoization**: React.memo applied to heavy components like AlbumArt and VisualEffectsMenu
-- **Lazy Loading**: VisualEffectsMenu and other heavy components loaded on-demand
-- **Resource Hints**: DNS prefetch and preconnect for Spotify API and image CDNs
-- **Bundle Optimization**: Code splitting and tree-shaking for reduced bundle size
+- **Component Memoization**: React.memo on heavy components
+- **Lazy Loading**: Dynamic imports for modals and drawers
+- **Color Extraction Cache**: LRU cache (100 items) for 50-60% faster transitions
+- **Web Worker Processing**: For image processing in glow effects
+- **Debounced Updates**: 150ms debounce on rapid state changes
+- **Virtual Scrolling**: react-window for large lists
 
-### Volume Modal System
+### Testing Strategy
 
-- **Responsive Interface**: Modal with different controls based on device type
-- **Desktop Experience**: Full volume slider (0-100%) with real-time visual feedback
-- **Mobile Experience**: Volume adjustment buttons (+10/-10) with current level display
-- **Smart State Management**: Auto-mute at 0%, auto-unmute when increasing volume
-- **Keyboard Accessibility**: Arrow keys for volume adjustment, space for mute, escape to close
-- **Glass Morphism Styling**: Backdrop blur with semi-transparent background matching app design
-- **Accent Color Integration**: Dynamic theming using album artwork dominant colors
+- **Unit Tests**: Vitest with React Testing Library
+- **Integration Tests**: API mocking with vi.fn()
+- **Performance Tests**: Visual effects performance monitoring
+- **Test Coverage**: Available via `npm run test:coverage`
 
-### Settings Modal System
+## Common Development Tasks
 
-- **Integrated Icon**: Settings gear icon integrated into audio player controls alongside playlist and volume buttons
-- **Unified Interface**: Modal dialog with organized sections for different configuration areas
-- **Visual Effects Management**: Complete visual effects and filter configuration embedded within settings
-- **Responsive Design**: 500px width on desktop with max-height constraints, full-width on mobile
-- **Glass Morphism Styling**: Backdrop blur with semi-transparent background matching app design
-- **Keyboard Navigation**: Full accessibility with escape key support and focus management
-- **Sectioned Layout**: Organized into Visual Effects, Playback, and Interface categories
-- **Expandable Settings**: Advanced settings sections can be collapsed/expanded for better organization
-- **Consistent Icon Sizing**: All control icons (settings, playlist, volume, visual effects) standardized to 1.5rem for visual consistency
+### Adding a New Visual Effect
+1. Update `AlbumArtFilters` interface in types
+2. Add filter controls to `VisualEffectsMenu`
+3. Apply CSS filter in `AlbumArt` component
+4. Ensure localStorage persistence
 
-### Playlist Drawer System
+### Modifying Playback Logic
+1. Update both `spotifyPlayer.ts` and `localAudioPlayer.ts` if needed
+2. Ensure `unifiedPlayer.ts` properly handles both sources
+3. Update UI components listening to player events
 
-- **Integrated Icon**: Spotify-inspired queue icon integrated into audio player controls with consistent 1.5rem sizing
-- **Sliding Drawer**: Fixed-position drawer slides from right with smooth animations
-- **Responsive Design**: 400px width on desktop, full-width on mobile
-- **Overlay Backdrop**: Click-to-close overlay with blur effects
-- **Auto-Close**: Drawer closes automatically when user selects a track
-- **Space Optimization**: Icon integration maximizes album artwork viewing area while keeping playlist accessible
-- **Accessibility**: Full keyboard navigation and screen reader support with track count announcements
-- **Touch Optimized**: Larger touch targets on mobile with appropriate hover state handling
+### Working with Electron Features
+1. Check `isElectron()` utility before using Electron APIs
+2. Add IPC handlers in `electron/main.ts`
+3. Expose APIs via `electron/preload.ts`
+4. Type definitions in `src/types/electron.d.ts`
 
-### Like Songs System
+## Known Issues & Solutions
 
-- **Real-time State Sync**: Checks current like status when tracks load and updates UI immediately
-- **Optimistic Updates**: UI responds instantly to like/unlike actions with smooth heart animations
-- **Error Handling**: Graceful fallback and retry logic for failed API calls with user feedback
-- **Heart Animation**: Custom keyframe animations including heartbeat effect and scale transitions
-- **Loading States**: Spinner overlay during API calls prevents double-clicks and provides visual feedback
-- **Consistent Integration**: 1.5rem sizing matches other control buttons with proper accessibility
-- **Keyboard Support**: Full keyboard navigation with Enter/Space key support and focus indicators
-- **ARIA Compliance**: Proper labeling and role attributes for screen reader compatibility
+### Electron Mode Database Issues
+- Ensure better-sqlite3 is properly built for your platform
+- Run `npm run postinstall` after dependency changes
 
-### Visual Effects System
-
-- **Paintbrush Integration**: Paintbrush icon integrated into audio player controls alongside settings, playlist, and volume buttons
-- **Side Sliding Menu**: Visual effects menu slides from right side with smooth animations and glass morphism styling
-- **Album Art Filters**: Real-time CSS filters applied to album artwork including:
-  - Brightness, contrast, saturation, hue rotation
-  - Blur, sepia, grayscale, invert effects
-  - Smooth transitions with 0.3s ease timing
-- **Filter Controls**: Individual sliders for each filter type with real-time preview
-- **Persistent Settings**: All filter values stored in localStorage with key 'vorbis-player-album-filters'
-- **Dynamic Theming**: Slider thumbs and accents use extracted dominant color for visual consistency
-- **Reset Functionality**: One-click reset to restore default filter values
-- **Performance Optimized**: CSS filters applied directly to DOM elements for hardware acceleration
-- **CRITICAL**: AlbumArt component must receive `albumFilters` prop to apply filter changes
-- **Type Consistency**: Filter `invert` property expects boolean in AlbumArtFilters but number in VisualEffectsMenu interface
+### Spotify Playback Not Working
+- Verify Premium account status
+- Check device transfer in `spotifyPlayer.ts`
+- Ensure proper scopes in authentication
 
 ### Visual Effects Performance
+- Monitor with React DevTools Profiler
+- Check hardware acceleration in browser
+- Verify CSS filter optimization
 
-- **Hardware Acceleration**: CSS filters utilize GPU acceleration for smooth performance
-- **Efficient Updates**: Filter changes batched and applied with optimized rendering cycles
-- **Memory Management**: Color extraction cache prevents memory leaks with LRU eviction
-- **Transition Optimization**: Smooth 0.3s ease transitions between filter states
+## Project-Specific Conventions
 
-### Spotify Integration
+- **Icon Sizing**: All control icons use consistent 1.5rem sizing
+- **Glass Morphism**: Backdrop blur with semi-transparent backgrounds
+- **Accent Colors**: Dynamically extracted from album artwork
+- **Error Handling**: Graceful fallbacks with user-friendly messages
+- **Accessibility**: Full keyboard navigation and ARIA compliance
 
-- **Web Playback SDK**: High-quality music streaming with full playback controls
-- **Liked Songs Access**: Full access to user's Spotify Liked Songs collection with automatic shuffle
-- **Player State Monitoring**: Real-time state changes for auto-advance and track synchronization
-- **Premium Requirement**: Playback functionality requires Spotify Premium subscription
-- **Token Management**: Automatic token refresh for long-term authentication sessions
-- **Authentication Flow**: Handles callback at `http://127.0.0.1:3000/auth/spotify/callback`
-- **Required Scopes**: streaming, user-read-email, user-read-private, user-read-playback-state, user-library-read, user-library-modify
+## Recent Major Features
 
-## Tech Stack
+### Local Music Library Support
+- Full local file playback with metadata extraction
+- SQLite database for library management
+- Real-time file system monitoring
+- Album art extraction and caching
 
-- **Frontend**: React 18 + TypeScript + Vite
-- **Styling**: styled-components with custom theme system and Radix UI components
-- **Audio**: Spotify Web Playback SDK with Liked Songs support
-- **Visual Effects**: Hardware-accelerated CSS filters with real-time application
-- **Authentication**: Spotify Web API with PKCE OAuth
-- **Color Intelligence**: Advanced color extraction and dynamic theming algorithms
-- **Storage**: localStorage for persistent visual effects and user preferences
-- **UI Components**: Radix UI primitives with custom styled-components
-- **State Management**: React hooks with localStorage persistence
-- **Build Tool**: Vite with HMR and optimized development experience
-- **Testing**: Vitest with React Testing Library and jsdom
-- **Performance**: Optimized with lazy loading, caching, and component memoization
+### Enhanced Visual Effects
+- GPU-accelerated glow animations
+- Web Worker image processing
+- Optimized filter performance
+- Persistent user preferences
 
-## Service Layer Architecture
-
-### Visual Effects Services
-
-- **colorExtractor.ts**: Optimized color extraction with LRU caching for improved performance
-- **visualEffects.ts**: Real-time CSS filter application and management
-- **filterPersistence.ts**: LocalStorage management for visual effects settings
-- **themeManager.ts**: Dynamic color theming based on extracted album colors
-
-### Spotify Services
-
-- **spotify.ts**: Spotify Web API integration for playlists and authentication, includes comprehensive track library management functions:
-  - `getUserPlaylists()`: Gets user's playlists
-  - `getPlaylistTracks(playlistId)`: Gets tracks from specific playlist
-  - `getLikedSongs(limit)`: Gets user's liked songs with pagination
-  - `checkTrackSaved(trackId)`: Checks if track is saved in user's library
-  - `saveTrack(trackId)`: Saves track to user's library
-  - `unsaveTrack(trackId)`: Removes track from user's library
-- **spotifyPlayer.ts**: Spotify Web Playback SDK wrapper with state management
-
-### Support Services
-
-- **adminService.ts**: Admin panel functionality (legacy from previous version)
-- **dropbox.ts**: Dropbox integration (legacy, kept for backward compatibility)
-- **settingsService.ts**: User preferences and settings management
-- **uiStateService.ts**: UI state management utilities
-
-### Utility Services
-
-- **colorExtractor.ts**: Optimized color extraction with LRU caching for improved performance
-- **usePlaylistManager.ts**: Enhanced playlist management hook with Liked Songs support and shuffle functionality
-- **useSpotifyControls.ts**: Spotify playback controls management
-
-## Visual Effects Integration
-
-The application includes comprehensive visual effects management throughout the interface:
-
-- **Purpose**: Provides customizable visual experience with real-time filter application
-- **Development**: All effects are client-side with hardware acceleration for smooth performance
-- **Persistence**: Visual effects settings persist across browser sessions via localStorage
-- **Performance**: Optimized with LRU caching and efficient update cycles
-
-## Common Issues & Solutions
-
-### Liked Songs Not Loading
-
-- **Root Cause**: Missing user-library-read scope or no liked songs in account
-- **Solution**: Verify Spotify app scopes and ensure user has liked songs
-- **Location**: Check `spotify.ts` getLikedSongs() function
-
-### Album Art Filters Not Working
-
-- **Root Cause**: Missing `albumFilters` prop in AlbumArt component
-- **Solution**: Always pass `albumFilters={albumFilters}` to AlbumArt component
-- **Location**: AudioPlayer.tsx line ~704
-
-### Performance Issues
-
-- **Color Extraction**: Ensure colorExtractor.ts cache is properly implemented
-- **Component Re-renders**: Verify React.memo is applied to heavy components
-- **Bundle Size**: Check that lazy loading is properly configured
-
-### Type Inconsistencies
-
-- **Filter Types**: Ensure filter interfaces match between components
-- **Invert Property**: AlbumArtFilters expects boolean, VisualEffectsMenu uses number
-- **Solution**: Standardize on single type across all filter components
-
-### Development Workflow
-
-- **Single server**: Use `npm run dev` for development
-- **Visual effects testing**: Test all filter combinations for performance
-- **Component hierarchy**: AudioPlayer → AlbumArt → AlbumArtFilters for filter application
-- **Performance monitoring**: Use React DevTools Profiler for performance analysis
-
-## Performance Monitoring
-
-### Key Metrics to Track
-- **First Contentful Paint (FCP)**: Target < 1.5s
-- **Largest Contentful Paint (LCP)**: Target < 2.5s
-- **Time to Interactive (TTI)**: Target < 3.5s
-- **Bundle Size**: Target < 500KB gzipped
-- **Track Transition Time**: Target < 200ms
-
-### Tools for Monitoring
-- **Lighthouse**: For Core Web Vitals monitoring
-- **Bundle Analyzer**: For bundle size analysis
-- **React DevTools Profiler**: For component performance
-- **Web Vitals Library**: For real-user monitoring
-
-# Command Instructions
-
-- /commit means you are to commit the current working changes to the current branch.   unless otherwise instructed, you should split the changes into logically related commits in the correct sequential order
-- /doc means you need to update README.md
-- /comdoc means you need to do everything from /doc, then everything from /commit (in that order)
+### Unified Player Interface
+- Seamless switching between Spotify and local playback
+- Consistent controls and UI regardless of source
+- Unified event system for state management
