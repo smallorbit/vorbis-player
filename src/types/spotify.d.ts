@@ -1,3 +1,41 @@
+/**
+ * @fileoverview Spotify and Local Music Type Definitions
+ * 
+ * Comprehensive type definitions for the Vorbis Player application,
+ * supporting both Spotify Web Playback SDK integration and local music
+ * library management. Provides unified interfaces for cross-platform
+ * music playback.
+ * 
+ * @architecture
+ * This file defines the core data structures used throughout the application:
+ * - Spotify Web Playback SDK interfaces
+ * - Local music library types
+ * - Enhanced unified track interface
+ * - Database and API response types
+ * 
+ * @relationships
+ * - SpotifyTrack: Base interface for Spotify track data
+ * - LocalTrack: Detailed interface for local music metadata
+ * - EnhancedTrack: Unified interface extending SpotifyTrack with local properties
+ * - SpotifyPlaybackState: Real-time playback state from Spotify SDK
+ * 
+ * @usage
+ * ```typescript
+ * import type { EnhancedTrack, LocalTrack, SpotifyTrack } from './types/spotify';
+ * 
+ * // Use unified track interface for any music source
+ * const track: EnhancedTrack = {
+ *   id: 'spotify:track:123',
+ *   name: 'Song Title',
+ *   source: 'spotify',
+ *   // ... other properties
+ * };
+ * ```
+ * 
+ * @author Vorbis Player Team
+ * @version 2.0.0
+ */
+
 declare global {
   interface Window {
     onSpotifyWebPlaybackSDKReady: () => void;
@@ -11,78 +49,138 @@ declare global {
   }
 
   interface SpotifyPlayer {
-  connect(): Promise<boolean>;
-  disconnect(): void;
-  getCurrentState(): Promise<SpotifyPlaybackState | null>;
-  getVolume(): Promise<number>;
-  nextTrack(): Promise<void>;
-  pause(): Promise<void>;
-  previousTrack(): Promise<void>;
-  resume(): Promise<void>;
-  seek(position_ms: number): Promise<void>;
-  setName(name: string): Promise<void>;
-  setVolume(volume: number): Promise<void>;
-  togglePlay(): Promise<void>;
-  
-  addListener(event: 'ready', callback: (data: { device_id: string }) => void): void;
-  addListener(event: 'not_ready', callback: (data: { device_id: string }) => void): void;
-  addListener(event: 'initialization_error', callback: (data: { message: string }) => void): void;
-  addListener(event: 'authentication_error', callback: (data: { message: string }) => void): void;
-  addListener(event: 'account_error', callback: (data: { message: string }) => void): void;
-  addListener(event: 'playback_error', callback: (data: { message: string }) => void): void;
-  addListener(event: 'player_state_changed', callback: (state: SpotifyPlaybackState | null) => void): void;
-  
-  removeListener(event: string, callback?: (...args: unknown[]) => void): void;
-}
+    connect(): Promise<boolean>;
+    disconnect(): void;
+    getCurrentState(): Promise<SpotifyPlaybackState | null>;
+    getVolume(): Promise<number>;
+    nextTrack(): Promise<void>;
+    pause(): Promise<void>;
+    previousTrack(): Promise<void>;
+    resume(): Promise<void>;
+    seek(position_ms: number): Promise<void>;
+    setName(name: string): Promise<void>;
+    setVolume(volume: number): Promise<void>;
+    togglePlay(): Promise<void>;
+    
+    addListener(event: 'ready', callback: (data: { device_id: string }) => void): void;
+    addListener(event: 'not_ready', callback: (data: { device_id: string }) => void): void;
+    addListener(event: 'initialization_error', callback: (data: { message: string }) => void): void;
+    addListener(event: 'authentication_error', callback: (data: { message: string }) => void): void;
+    addListener(event: 'account_error', callback: (data: { message: string }) => void): void;
+    addListener(event: 'playback_error', callback: (data: { message: string }) => void): void;
+    addListener(event: 'player_state_changed', callback: (state: SpotifyPlaybackState | null) => void): void;
+    
+    removeListener(event: string, callback?: (...args: unknown[]) => void): void;
+  }
 
   interface SpotifyPlaybackState {
-  context: {
-    uri: string;
-    metadata: Record<string, unknown>;
-  };
-  disallows: {
-    pausing: boolean;
-    peeking_next: boolean;
-    peeking_prev: boolean;
-    resuming: boolean;
-    seeking: boolean;
-    skipping_next: boolean;
-    skipping_prev: boolean;
-  };
-  paused: boolean;
-  position: number;
-  repeat_mode: number;
-  shuffle: boolean;
-  track_window: {
-    current_track: SpotifyTrack;
-    next_tracks: SpotifyTrack[];
-    previous_tracks: SpotifyTrack[];
-  };
-}
+    context: {
+      uri: string;
+      metadata: Record<string, unknown>;
+    };
+    disallows: {
+      pausing: boolean;
+      peeking_next: boolean;
+      peeking_prev: boolean;
+      resuming: boolean;
+      seeking: boolean;
+      skipping_next: boolean;
+      skipping_prev: boolean;
+    };
+    paused: boolean;
+    position: number;
+    repeat_mode: number;
+    shuffle: boolean;
+    track_window: {
+      current_track: SpotifyTrack;
+      next_tracks: SpotifyTrack[];
+      previous_tracks: SpotifyTrack[];
+    };
+  }
 
   interface SpotifyTrack {
-  id: string;
-  uri: string;
-  name: string;
-  duration_ms: number;
-  artists: Array<{
-    name: string;
+    id: string;
     uri: string;
-  }>;
-  album: {
     name: string;
-    uri: string;
-    images: Array<{
-      url: string;
-      height: number;
-      width: number;
+    duration_ms: number;
+    artists: Array<{
+      name: string;
+      uri: string;
     }>;
-  };
+    album: {
+      name: string;
+      uri: string;
+      images: Array<{
+        url: string;
+        height: number;
+        width: number;
+      }>;
+    };
+  }
 }
 
-}
-
-// Local music library types
+/**
+ * Local music library track interface
+ * 
+ * Represents a track from the local music library with comprehensive
+ * metadata extracted from audio files. Includes file system information
+ * and audio format details.
+ * 
+ * @interface LocalTrack
+ * 
+ * @property {string} id - Unique track identifier (generated)
+ * @property {string} name - Track name from metadata
+ * @property {string} artist - Primary artist name
+ * @property {string} album - Album name
+ * @property {number} duration - Track duration in milliseconds
+ * @property {string} filePath - Full file system path
+ * @property {string} fileName - Original filename
+ * @property {number} fileSize - File size in bytes
+ * @property {string} format - Audio format (mp3, flac, wav, m4a, etc.)
+ * @property {string} [codec] - Audio codec (ALAC, AAC, MP3, FLAC, etc.)
+ * @property {number} [bitrate] - Audio bitrate in kbps
+ * @property {number} [sampleRate] - Audio sample rate in Hz
+ * @property {number} [trackNumber] - Track number on album
+ * @property {number} [year] - Release year
+ * @property {string} [genre] - Genre
+ * @property {string} [albumArtist] - Album artist
+ * @property {string} [composer] - Composer
+ * @property {string} [comment] - User comments
+ * @property {string} [lyrics] - Track lyrics
+ * @property {string} [albumArt] - Album artwork data
+ * @property {Date} dateAdded - When track was added to library
+ * @property {Date} dateModified - When track metadata was last modified
+ * @property {number} playCount - Number of times track has been played
+ * @property {Date} [lastPlayed] - When track was last played
+ * @property {'local'} source - Source identifier (always 'local')
+ * 
+ * @example
+ * ```typescript
+ * const localTrack: LocalTrack = {
+ *   id: 'local_abc123',
+ *   name: 'Bohemian Rhapsody',
+ *   artist: 'Queen',
+ *   album: 'A Night at the Opera',
+ *   duration: 354000,
+ *   filePath: '/Music/Queen/A Night at the Opera/01 Bohemian Rhapsody.flac',
+ *   fileName: '01 Bohemian Rhapsody.flac',
+ *   fileSize: 45678901,
+ *   format: 'flac',
+ *   codec: 'FLAC',
+ *   bitrate: 1000,
+ *   sampleRate: 44100,
+ *   trackNumber: 1,
+ *   year: 1975,
+ *   genre: 'Rock',
+ *   albumArtist: 'Queen',
+ *   dateAdded: new Date('2024-01-15'),
+ *   dateModified: new Date('2024-01-15'),
+ *   playCount: 42,
+ *   lastPlayed: new Date('2024-01-20'),
+ *   source: 'local'
+ * };
+ * ```
+ */
 export interface LocalTrack {
   id: string;
   name: string;

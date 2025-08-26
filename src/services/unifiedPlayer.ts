@@ -1,10 +1,80 @@
+/**
+ * @fileoverview Unified Player Service
+ * 
+ * Central orchestration service that manages playback across multiple sources
+ * (Spotify and local music). Provides a unified interface for player controls,
+ * state management, and event handling regardless of the music source.
+ * 
+ * @architecture
+ * This service acts as the central coordinator between:
+ * - Spotify Web Playback SDK (spotifyPlayer)
+ * - Local audio engine (localAudioPlayer)
+ * - Database services (enhancedLocalLibraryDatabaseIPC)
+ * - UI components (AudioPlayer, SpotifyPlayerControls)
+ * 
+ * @responsibilities
+ * - Unified state management for all playback sources
+ * - Event routing and normalization between different audio engines
+ * - Queue management and track progression
+ * - Volume control and audio settings
+ * - Error handling and recovery
+ * 
+ * @events
+ * - playbackStarted: Fired when any track starts playing
+ * - playbackPaused: Fired when playback is paused
+ * - trackEnded: Fired when a track finishes (triggers auto-advance)
+ * - volumeChanged: Fired when volume is adjusted
+ * - error: Fired when playback errors occur
+ * 
+ * @usage
+ * ```typescript
+ * const player = new UnifiedPlayerService();
+ * player.on('playbackStarted', ({ track, source }) => {
+ *   console.log(`Playing ${track.name} from ${source}`);
+ * });
+ * await player.play(track);
+ * ```
+ * 
+ * @dependencies
+ * - localAudioPlayer: Local file playback engine
+ * - spotifyPlayer: Spotify Web Playback SDK wrapper
+ * - enhancedLocalLibraryDatabaseIPC: Database operations
+ * 
+ * @author Vorbis Player Team
+ * @version 2.0.0
+ */
+
 import type { LocalTrack, EnhancedTrack } from '../types/spotify.d.ts';
 import { localAudioPlayer } from './localAudioPlayer';
 import { spotifyPlayer } from './spotifyPlayer';
 import { enhancedLocalLibraryDatabaseIPC } from './enhancedLocalLibraryDatabaseIPC';
 
+/**
+ * Playback source identifier
+ * 
+ * Indicates which audio engine is currently handling playback.
+ * Used for routing events and managing state transitions.
+ */
 export type PlaybackSource = 'spotify' | 'local';
 
+/**
+ * Unified player state interface
+ * 
+ * Centralized state that tracks the current playback status across
+ * all music sources. Provides a single source of truth for UI components.
+ * 
+ * @interface UnifiedPlayerState
+ * 
+ * @property {EnhancedTrack | null} currentTrack - Currently playing track
+ * @property {boolean} isPlaying - Whether audio is currently playing
+ * @property {boolean} isPaused - Whether playback is paused
+ * @property {number} currentPosition - Current playback position in milliseconds
+ * @property {number} duration - Total track duration in milliseconds
+ * @property {number} volume - Current volume level (0-1)
+ * @property {PlaybackSource | null} source - Active playback source
+ * @property {EnhancedTrack[]} queue - Current playback queue
+ * @property {number} currentIndex - Index of current track in queue
+ */
 export interface UnifiedPlayerState {
   currentTrack: EnhancedTrack | null;
   isPlaying: boolean;
@@ -17,6 +87,59 @@ export interface UnifiedPlayerState {
   currentIndex: number;
 }
 
+/**
+ * UnifiedPlayerService - Central playback orchestration service
+ * 
+ * Manages playback across multiple music sources (Spotify and local files)
+ * with unified state management and event handling. Provides a consistent
+ * API regardless of the underlying audio engine.
+ * 
+ * @class
+ * 
+ * @example
+ * ```typescript
+ * const player = new UnifiedPlayerService();
+ * 
+ * // Play a track from any source
+ * await player.play(track);
+ * 
+ * // Listen for playback events
+ * player.on('playbackStarted', ({ track, source }) => {
+ *   console.log(`Now playing: ${track.name} from ${source}`);
+ * });
+ * 
+ * // Control playback
+ * await player.pause();
+ * await player.resume();
+ * await player.seek(30000); // Seek to 30 seconds
+ * ```
+ * 
+ * @state
+ * - state: Internal player state
+ * - listeners: Event listener registry
+ * 
+ * @methods
+ * - play(track): Start playback of a track
+ * - pause(): Pause current playback
+ * - resume(): Resume paused playback
+ * - stop(): Stop playback completely
+ * - seek(position): Seek to position in current track
+ * - setVolume(volume): Adjust playback volume
+ * - next(): Play next track in queue
+ * - previous(): Play previous track in queue
+ * - on(event, callback): Register event listener
+ * - off(event, callback): Remove event listener
+ * 
+ * @events
+ * - playbackStarted: Track started playing
+ * - playbackPaused: Playback was paused
+ * - playbackStopped: Playback was stopped
+ * - trackEnded: Track finished playing
+ * - volumeChanged: Volume was adjusted
+ * - seeked: Playback position changed
+ * - error: Playback error occurred
+ * - durationChanged: Track duration updated
+ */
 export class UnifiedPlayerService {
   private state: UnifiedPlayerState = {
     currentTrack: null,
@@ -38,6 +161,14 @@ export class UnifiedPlayerService {
     this.loadVolume();
   }
 
+  /**
+   * Sets up event listeners for local audio player
+   * 
+   * Routes local audio player events to unified event system
+   * and updates internal state accordingly.
+   * 
+   * @private
+   */
   private setupLocalPlayerListeners(): void {
     localAudioPlayer.on('trackLoaded', ({ track, duration }) => {
       this.state.duration = duration;
@@ -97,6 +228,14 @@ export class UnifiedPlayerService {
     });
   }
 
+  /**
+   * Sets up event listeners for Spotify player
+   * 
+   * Routes Spotify Web Playback SDK events to unified event system
+   * and updates internal state accordingly.
+   * 
+   * @private
+   */
   private setupSpotifyPlayerListeners(): void {
     // Note: Spotify player listeners would be set up here
     // For now, we'll integrate with existing Spotify functionality

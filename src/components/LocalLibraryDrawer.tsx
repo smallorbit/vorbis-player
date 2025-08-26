@@ -1,3 +1,30 @@
+/**
+ * @fileoverview LocalLibraryDrawer Component
+ * 
+ * A modal drawer component for browsing and managing local music library.
+ * Integrates with the unified player system to provide seamless local/Spotify
+ * music playback experience.
+ * 
+ * @dependencies
+ * - LocalLibraryBrowser: Core library browsing interface
+ * - localLibraryDatabaseIPC: Database operations for local music
+ * - usePlayerState: Global player state management
+ * 
+ * @features
+ * - Responsive drawer with touch/swipe support
+ * - Keyboard navigation and accessibility
+ * - Library statistics display
+ * - Track selection and queue management
+ * 
+ * @state
+ * - isOpen: Controls drawer visibility
+ * - stats: Library statistics (tracks, albums, artists, duration)
+ * - touchStart/touchEnd: Mobile swipe gesture handling
+ * 
+ * @author Vorbis Player Team
+ * @version 2.0.0
+ */
+
 import React, { Suspense, memo, useEffect, useState, useCallback, useRef } from 'react';
 import styled from 'styled-components';
 import type { LocalTrack } from '../types/spotify.d.ts';
@@ -161,6 +188,42 @@ const LoadingFallback = styled.div`
   font-size: 1rem;
 `;
 
+/**
+ * LocalLibraryDrawer - Modal drawer for local music library management
+ * 
+ * This component provides a full-screen modal interface for browsing and
+ * managing the local music library. It integrates with the unified player
+ * system to provide seamless switching between local and Spotify music sources.
+ * 
+ * @component
+ * @example
+ * ```tsx
+ * <LocalLibraryDrawer
+ *   isOpen={showLibrary}
+ *   onClose={() => setShowLibrary(false)}
+ *   onTrackSelect={handleTrackSelect}
+ *   currentTrackId={currentTrack?.id}
+ *   accentColor={accentColor}
+ * />
+ * ```
+ * 
+ * @props {boolean} isOpen - Controls drawer visibility
+ * @props {() => void} onClose - Callback when drawer should close
+ * @props {(track: LocalTrack) => void} onTrackSelect - Track selection handler
+ * @props {(tracks: LocalTrack[], startIndex?: number) => void} onQueueTracks - Queue management handler
+ * @props {string} currentTrackId - Currently playing track ID for highlighting
+ * @props {string} accentColor - Theme accent color for visual consistency
+ * 
+ * @state
+ * - stats: Library statistics loaded from database
+ * - touchStart/touchEnd: Mobile swipe gesture coordinates
+ * - lastFocusedElement: Accessibility focus management
+ * 
+ * @dependencies
+ * - LocalLibraryBrowser: Core browsing interface
+ * - localLibraryDatabaseIPC: Database operations
+ * - theme: Design system tokens
+ */
 interface LocalLibraryDrawerProps {
   isOpen: boolean;
   onClose: () => void;
@@ -170,16 +233,39 @@ interface LocalLibraryDrawerProps {
   accentColor?: string;
 }
 
+/**
+ * Formats total duration in milliseconds to human-readable format
+ * 
+ * Converts milliseconds to hours and minutes display format.
+ * Shows hours only when duration exceeds 1 hour for cleaner display.
+ * 
+ * @param ms - Duration in milliseconds
+ * @returns Formatted duration string (e.g., "2h 30m" or "45m")
+ * 
+ * @example
+ * formatTotalDuration(9000000) // "2h 30m"
+ * formatTotalDuration(2700000) // "45m"
+ */
 const formatTotalDuration = (ms: number): string => {
   const hours = Math.floor(ms / (1000 * 60 * 60));
   const minutes = Math.floor((ms % (1000 * 60 * 60)) / (1000 * 60));
-  
+
   if (hours > 0) {
     return `${hours}h ${minutes}m`;
   }
   return `${minutes}m`;
 };
 
+/**
+ * Custom equality check for memo optimization
+ * 
+ * Compares only the props that affect component rendering to prevent
+ * unnecessary re-renders when other props change.
+ * 
+ * @param prevProps - Previous component props
+ * @param nextProps - Next component props
+ * @returns True if props are equal for rendering purposes
+ */
 const arePropsEqual = (
   prevProps: LocalLibraryDrawerProps,
   nextProps: LocalLibraryDrawerProps
@@ -187,15 +273,15 @@ const arePropsEqual = (
   if (prevProps.isOpen !== nextProps.isOpen) {
     return false;
   }
-  
+
   if (prevProps.currentTrackId !== nextProps.currentTrackId) {
     return false;
   }
-  
+
   if (prevProps.accentColor !== nextProps.accentColor) {
     return false;
   }
-  
+
   return true;
 };
 
@@ -213,12 +299,12 @@ export const LocalLibraryDrawer = memo<LocalLibraryDrawerProps>(({
     totalArtists: 0,
     totalDuration: 0
   });
-  
+
   // Focus management
   const drawerRef = useRef<HTMLDivElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const lastFocusedElement = useRef<HTMLElement | null>(null);
-  
+
   // Load library stats
   useEffect(() => {
     const loadStats = async () => {
@@ -229,17 +315,17 @@ export const LocalLibraryDrawer = memo<LocalLibraryDrawerProps>(({
         console.error('Failed to load library stats:', error);
       }
     };
-    
+
     if (isOpen) {
       loadStats();
     }
   }, [isOpen]);
-  
+
   // Enhanced keyboard navigation and focus management
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (!isOpen) return;
-      
+
       switch (event.key) {
         case 'Escape':
           event.preventDefault();
@@ -250,11 +336,11 @@ export const LocalLibraryDrawer = memo<LocalLibraryDrawerProps>(({
           const focusableElements = drawerRef.current?.querySelectorAll(
             'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
           ) as NodeListOf<HTMLElement>;
-          
+
           if (focusableElements && focusableElements.length > 0) {
             const firstElement = focusableElements[0];
             const lastElement = focusableElements[focusableElements.length - 1];
-            
+
             if (event.shiftKey && document.activeElement === firstElement) {
               event.preventDefault();
               lastElement.focus();
@@ -266,13 +352,13 @@ export const LocalLibraryDrawer = memo<LocalLibraryDrawerProps>(({
           break;
       }
     };
-    
+
     if (isOpen) {
       // Store the currently focused element
       lastFocusedElement.current = document.activeElement as HTMLElement;
-      
+
       document.addEventListener('keydown', handleKeyDown);
-      
+
       // Focus the close button when drawer opens
       setTimeout(() => {
         closeButtonRef.current?.focus();
@@ -283,36 +369,36 @@ export const LocalLibraryDrawer = memo<LocalLibraryDrawerProps>(({
         lastFocusedElement.current.focus();
       }
     }
-    
+
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
     };
   }, [isOpen, onClose]);
-  
+
   // Handle swipe down to close on mobile
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
-  
+
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
     setTouchEnd(null);
     setTouchStart(e.targetTouches[0].clientY);
   }, []);
-  
+
   const handleTouchMove = useCallback((e: React.TouchEvent) => {
     setTouchEnd(e.targetTouches[0].clientY);
   }, []);
-  
+
   const handleTouchEnd = useCallback(() => {
     if (!touchStart || !touchEnd) return;
-    
+
     const distance = touchStart - touchEnd;
     const isSwipeDown = distance < -50;
-    
+
     if (isSwipeDown) {
       onClose();
     }
   }, [touchStart, touchEnd, onClose]);
-  
+
   return (
     <>
       <DrawerOverlay
@@ -320,7 +406,7 @@ export const LocalLibraryDrawer = memo<LocalLibraryDrawerProps>(({
         onClick={onClose}
         aria-hidden={!isOpen}
       />
-      
+
       <DrawerContainer
         ref={drawerRef}
         $isOpen={isOpen}
@@ -333,13 +419,13 @@ export const LocalLibraryDrawer = memo<LocalLibraryDrawerProps>(({
         onTouchEnd={handleTouchEnd}
       >
         <DragHandle />
-        
+
         <DrawerHeader>
           <DrawerTitle id="local-library-title">
             <LibraryIcon>📚</LibraryIcon>
             Local Music Library
           </DrawerTitle>
-          
+
           <LibraryStats>
             <StatItem>
               <span>{stats.totalTracks}</span>
@@ -357,7 +443,7 @@ export const LocalLibraryDrawer = memo<LocalLibraryDrawerProps>(({
               <span>{formatTotalDuration(stats.totalDuration)}</span>
             </StatItem>
           </LibraryStats>
-          
+
           <CloseButton
             ref={closeButtonRef}
             onClick={onClose}
@@ -369,12 +455,12 @@ export const LocalLibraryDrawer = memo<LocalLibraryDrawerProps>(({
             </svg>
           </CloseButton>
         </DrawerHeader>
-        
+
         {/* Hidden description for screen readers */}
         <div id="local-library-description" style={{ display: 'none' }}>
           Browse your local music collection. Use arrow keys to navigate, Enter to select tracks, and Escape to close.
         </div>
-        
+
         <DrawerContent>
           <Suspense fallback={
             <LoadingFallback>
