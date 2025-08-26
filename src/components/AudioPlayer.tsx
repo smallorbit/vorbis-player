@@ -10,6 +10,7 @@ import { extractDominantColor } from '../utils/colorExtractor';
 const VisualEffectsMenu = lazy(() => import('./VisualEffectsMenu'));
 const PlaylistDrawer = lazy(() => import('./PlaylistDrawer'));
 const LibraryNavigation = lazy(() => import('./LibraryNavigation'));
+const LocalLibraryDrawer = lazy(() => import('./LocalLibraryDrawer'));
 const SpotifyPlayerControls = lazy(() => import('./SpotifyPlayerControls'));
 import PlayerStateRenderer from './PlayerStateRenderer';
 import { usePlayerState } from '../hooks/usePlayerState';
@@ -102,6 +103,9 @@ const LoadingCard = styled.div.withConfig({
 
 
 const AudioPlayerComponent = () => {
+  const [showLocalLibraryDrawer, setShowLocalLibraryDrawer] = useState(false);
+  const [isLocalMode, setIsLocalMode] = useState(false);
+  
   const {
     tracks,
     currentTrackIndex,
@@ -272,7 +276,7 @@ const AudioPlayerComponent = () => {
     }
   }, [tracks, setCurrentTrackIndex]);
 
-  const { handlePlaylistSelect } = usePlaylistManager({
+  const { handlePlaylistSelect: originalHandlePlaylistSelect } = usePlaylistManager({
     setError,
     setIsLoading,
     setSelectedPlaylistId,
@@ -280,9 +284,15 @@ const AudioPlayerComponent = () => {
     setCurrentTrackIndex,
     playTrack
   });
+  
+  const handlePlaylistSelect = useCallback(async (playlistId: string) => {
+    setIsLocalMode(false);
+    return originalHandlePlaylistSelect(playlistId);
+  }, [originalHandlePlaylistSelect]);
 
   // Handle local music track selection
   const handleLocalTrackSelect = useCallback(async (track: LocalTrack) => {
+    setIsLocalMode(true);
     try {
       const enhancedTrack: EnhancedTrack = {
         ...track,
@@ -379,6 +389,7 @@ const AudioPlayerComponent = () => {
       setTracks(uiTracks);
       setCurrentTrackIndex(startIndex);
       setSelectedPlaylistId('local-library'); // Set a playlist ID for local tracks
+      setIsLocalMode(true);
 
     } catch (error) {
       console.error('Failed to queue local tracks:', error);
@@ -543,11 +554,16 @@ const AudioPlayerComponent = () => {
   }, [currentTrack]);
 
   const handleShowPlaylist = useCallback(() => {
-    setShowPlaylist(prev => !prev);
+    // If in local mode, show the local library drawer instead
+    if (isLocalMode) {
+      setShowLocalLibraryDrawer(prev => !prev);
+    } else {
+      setShowPlaylist(prev => !prev);
+    }
     // In Electron mode, we need to ensure the library navigation shows the appropriate view
     // When opening playlist (showPlaylist becomes true), switch to Spotify view
     // When closing playlist (showPlaylist becomes false), switch back to local view
-  }, []);
+  }, [isLocalMode]);
 
   const handleShowVisualEffects = useCallback(() => {
     setShowVisualEffects(true);
@@ -578,6 +594,10 @@ const AudioPlayerComponent = () => {
 
   const handleCloseLibrary = useCallback(() => {
     setShowLibrary(false);
+  }, []);
+
+  const handleCloseLocalLibraryDrawer = useCallback(() => {
+    setShowLocalLibraryDrawer(false);
   }, []);
 
   const handleAccentColorChange = useCallback((color: string) => {
@@ -669,6 +689,7 @@ const AudioPlayerComponent = () => {
                   onShowVisualEffects={handleShowVisualEffects}
                   glowEnabled={visualEffectsEnabled}
                   onGlowToggle={handleVisualEffectsToggle}
+                  isLocalMode={isLocalMode}
                 />
               </Suspense>
             </CardContent>
@@ -704,6 +725,17 @@ const AudioPlayerComponent = () => {
               />
             </Suspense>
           )}
+
+          <Suspense fallback={<div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, height: '80vh', background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.7)' }}>Loading library...</div>}>
+            <LocalLibraryDrawer
+              isOpen={showLocalLibraryDrawer}
+              onClose={handleCloseLocalLibraryDrawer}
+              onTrackSelect={handleLocalTrackSelect}
+              onQueueTracks={handleQueueLocalTracks}
+              currentTrackId={currentTrack?.id}
+              accentColor={accentColor}
+            />
+          </Suspense>
         </ContentWrapper>
       );
     }
@@ -748,6 +780,7 @@ const AudioPlayerComponent = () => {
                 onShowVisualEffects={handleShowVisualEffects}
                 glowEnabled={visualEffectsEnabled}
                 onGlowToggle={handleVisualEffectsToggle}
+                isLocalMode={isLocalMode}
               />
             </Suspense>
           </CardContent>

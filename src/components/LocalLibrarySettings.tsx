@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import styled from 'styled-components';
 import type { LocalLibrarySettings as SettingsType } from '../types/spotify.d.ts';
 import { localLibraryScanner } from '../services/localLibraryScannerIPC';
+import { localLibraryDatabase } from '../services/localLibraryDatabaseIPC';
 import { Button } from './styled/Button';
 import { Card } from './styled/Card';
 import { ScrollArea } from './ui/scroll-area';
@@ -220,6 +221,27 @@ const ScanButton = styled(Button)`
   }
 `;
 
+const DangerButton = styled(Button)`
+  background: rgba(220, 53, 69, 0.2);
+  border: 1px solid rgba(220, 53, 69, 0.4);
+  color: #dc3545;
+  
+  &:hover {
+    background: rgba(220, 53, 69, 0.3);
+    border-color: rgba(220, 53, 69, 0.6);
+  }
+  
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    
+    &:hover {
+      background: rgba(220, 53, 69, 0.2);
+      border-color: rgba(220, 53, 69, 0.4);
+    }
+  }
+`;
+
 const ErrorMessage = styled.div`
   color: #dc3545;
   font-size: 12px;
@@ -251,6 +273,7 @@ export const LocalLibrarySettings: React.FC = () => {
   });
 
   const [isAddingDirectory, setIsAddingDirectory] = useState(false);
+  const [isClearing, setIsClearing] = useState(false);
 
   useEffect(() => {
     // Load current settings from main process
@@ -342,6 +365,39 @@ export const LocalLibrarySettings: React.FC = () => {
     } catch (error) {
       console.error('Failed to start scan:', error);
       alert('Failed to start library scan. Please try again.');
+    }
+  }, []);
+
+  const handleClearAndRescan = useCallback(async () => {
+    if (!window.confirm('This will clear your entire music library and rescan all directories. This may take several minutes. Continue?')) {
+      return;
+    }
+
+    setIsClearing(true);
+    try {
+      console.log('🗑️ Clearing library and rescanning...');
+      
+      // Clear the library
+      await localLibraryDatabase.clearLibrary();
+      
+      // Trigger a full rescan
+      if (window.electronAPI) {
+        await window.electronAPI.scannerScanDirectories({
+          extractArtwork: true,
+          parallel: true,
+          batchSize: 50
+        });
+      } else {
+        await localLibraryScanner.scanAllDirectories();
+      }
+      
+      console.log('✅ Library cleared and rescanned successfully');
+      alert('Library has been cleared and rescanned successfully!');
+    } catch (error) {
+      console.error('Failed to clear and rescan:', error);
+      alert('Failed to clear and rescan library. Please try again.');
+    } finally {
+      setIsClearing(false);
     }
   }, []);
 
@@ -503,6 +559,45 @@ export const LocalLibrarySettings: React.FC = () => {
                     ... and {scanProgress.errors.length - 5} more errors
                   </div>
                 )}
+              </div>
+            )}
+          </SettingsSection>
+
+          <SettingsSection>
+            <SectionTitle>Library Maintenance</SectionTitle>
+            <SectionDescription>
+              Advanced maintenance options for your music library. Use with caution.
+            </SectionDescription>
+
+            <div style={{ 
+              padding: '16px',
+              background: 'rgba(220, 53, 69, 0.1)',
+              border: '1px solid rgba(220, 53, 69, 0.3)',
+              borderRadius: '8px',
+              marginBottom: '16px'
+            }}>
+              <div style={{ color: '#ff6b6b', fontWeight: 500, marginBottom: '8px' }}>
+                ⚠️ Clear & Rescan Library
+              </div>
+              <div style={{ color: 'rgba(255, 255, 255, 0.7)', fontSize: '14px', marginBottom: '12px' }}>
+                This will completely remove all tracks from your library database and perform a fresh scan of all configured directories. 
+                Your music files will not be affected, only the library index will be rebuilt.
+              </div>
+              <DangerButton
+                onClick={handleClearAndRescan}
+                disabled={isClearing || scanProgress.isScanning || settings.musicDirectories.length === 0}
+              >
+                {isClearing ? 'Clearing & Rescanning...' : '🗑️ Clear & Rescan Library'}
+              </DangerButton>
+            </div>
+
+            {settings.musicDirectories.length === 0 && (
+              <div style={{
+                color: 'rgba(255, 255, 255, 0.6)',
+                fontSize: '14px',
+                fontStyle: 'italic'
+              }}>
+                Add music directories first before using maintenance options.
               </div>
             )}
           </SettingsSection>

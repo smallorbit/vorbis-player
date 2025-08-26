@@ -203,10 +203,12 @@ interface SpotifyPlayerControlsProps {
   // Add glow control props
   glowEnabled?: boolean;
   onGlowToggle?: () => void;
+  // Add local mode prop
+  isLocalMode?: boolean;
 }
 
 // --- SpotifyPlayerControls Component ---
-const SpotifyPlayerControls = memo<SpotifyPlayerControlsProps>(({ currentTrack, accentColor, onPlay, onPause, onNext, onPrevious, onShowPlaylist, onAccentColorChange, onShowVisualEffects, showVisualEffects, glowEnabled, onGlowToggle }) => {
+const SpotifyPlayerControls = memo<SpotifyPlayerControlsProps>(({ currentTrack, accentColor, onPlay, onPause, onNext, onPrevious, onShowPlaylist, onAccentColorChange, onShowVisualEffects, showVisualEffects, glowEnabled, onGlowToggle, isLocalMode = false }) => {
   // Custom accent color per track (from eyedropper)
   const [customAccentColorOverrides, setCustomAccentColorOverrides] = useState<Record<string, string>>({});
 
@@ -329,10 +331,16 @@ const SpotifyPlayerControls = memo<SpotifyPlayerControlsProps>(({ currentTrack, 
           </ControlButton>
         </TrackInfoCenter>
         <TrackInfoRight>
-          <ControlButton accentColor={accentColor} onClick={onShowPlaylist} title="Show Playlist">
-            <svg viewBox="0 0 24 24" role="img" aria-hidden="true">
-              <path d="M3 6h18v2H3V6zm0 5h18v2H3v-2zm0 5h18v2H3v-2z" />
-            </svg>
+          <ControlButton accentColor={accentColor} onClick={onShowPlaylist} title={isLocalMode ? "Show Local Library" : "Show Playlist"}>
+            {isLocalMode ? (
+              <svg viewBox="0 0 24 24" role="img" aria-hidden="true">
+                <path d="M6 2c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6H6zm7 7V3.5L18.5 9H13z"/>
+              </svg>
+            ) : (
+              <svg viewBox="0 0 24 24" role="img" aria-hidden="true">
+                <path d="M3 6h18v2H3V6zm0 5h18v2H3v-2zm0 5h18v2H3v-2z" />
+              </svg>
+            )}
           </ControlButton>
         </TrackInfoRight>
       </TrackInfoRow>

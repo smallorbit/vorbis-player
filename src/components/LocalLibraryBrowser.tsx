@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, memo } from 'react';
 import styled from 'styled-components';
 import type { LocalTrack, DbAlbum, DbArtist } from '../types/spotify.d.ts';
 import { localLibraryDatabase } from '../services/localLibraryDatabaseIPC';
@@ -8,21 +8,21 @@ import { unifiedPlayer } from '../services/unifiedPlayer';
 import { Button } from './styled/Button';
 import { Card } from './styled/Card';
 
-const LibraryContainer = styled.div`
+const LibraryContainer = styled.div<{ $isDrawerMode?: boolean }>`
   display: flex;
   flex-direction: column;
   height: 100%;
-  background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(20px);
-  border-radius: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: ${props => props.$isDrawerMode ? 'transparent' : 'rgba(255, 255, 255, 0.05)'};
+  backdrop-filter: ${props => props.$isDrawerMode ? 'none' : 'blur(20px)'};
+  border-radius: ${props => props.$isDrawerMode ? '0' : '16px'};
+  border: ${props => props.$isDrawerMode ? 'none' : '1px solid rgba(255, 255, 255, 0.1)'};
   overflow: hidden;
 `;
 
-const LibraryHeader = styled.div`
-  padding: 20px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  display: flex;
+const LibraryHeader = styled.div<{ $isDrawerMode?: boolean }>`
+  padding: ${props => props.$isDrawerMode ? '0 20px 16px' : '20px'};
+  border-bottom: ${props => props.$isDrawerMode ? 'none' : '1px solid rgba(255, 255, 255, 0.1)'};
+  display: ${props => props.$isDrawerMode ? 'none' : 'flex'};
   justify-content: space-between;
   align-items: center;
 `;
@@ -116,19 +116,44 @@ const TrackList = styled.div`
 `;
 
 const TrackItem = styled.div.withConfig({
-  shouldForwardProp: (prop) => !['isSelected'].includes(prop),
-}) <{ isSelected?: boolean }>`
+  shouldForwardProp: (prop) => !['isSelected', 'accentColor'].includes(prop),
+}) <{ isSelected?: boolean; accentColor?: string }>`
   display: grid;
-  grid-template-columns: 40px 1fr auto auto;
+  grid-template-columns: 48px 1fr auto auto;
   gap: 12px;
-  padding: 8px 12px;
+  padding: 10px 12px;
   border-radius: 8px;
   cursor: pointer;
   align-items: center;
-  background: ${props => props.isSelected ? 'rgba(255, 255, 255, 0.1)' : 'transparent'};
+  background: ${props => props.isSelected 
+    ? `linear-gradient(90deg, ${props.accentColor}22 0%, transparent 100%)`
+    : 'transparent'};
+  border-left: 3px solid ${props => props.isSelected ? props.accentColor : 'transparent'};
+  transition: all 0.2s ease;
   
   &:hover {
-    background: rgba(255, 255, 255, 0.08);
+    background: ${props => props.isSelected 
+      ? `linear-gradient(90deg, ${props.accentColor}33 0%, transparent 100%)`
+      : 'rgba(255, 255, 255, 0.08)'};
+  }
+`;
+
+const AlbumThumbnail = styled.div<{ src?: string }>`
+  width: 48px;
+  height: 48px;
+  background: ${props => props.src 
+    ? `url(${props.src}) center/cover`
+    : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'};
+  border-radius: 4px;
+  flex-shrink: 0;
+  position: relative;
+  overflow: hidden;
+  
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, transparent 0%, rgba(0,0,0,0.1) 100%);
   }
 `;
 
@@ -161,13 +186,43 @@ const TrackArtist = styled.div`
   text-overflow: ellipsis;
 `;
 
-const TrackFormat = styled.div`
-  color: rgba(255, 255, 255, 0.5);
-  font-size: 12px;
+const TrackFormat = styled.div<{ format?: string }>`
+  color: ${props => {
+    switch(props.format?.toLowerCase()) {
+      case 'flac': return '#00d4ff';
+      case 'wav': return '#ff6b6b';
+      case 'mp3': return '#4ecdc4';
+      case 'm4a': return '#f7b731';
+      case 'ogg': return '#a55eea';
+      default: return 'rgba(255, 255, 255, 0.7)';
+    }
+  }};
+  font-size: 11px;
+  font-weight: 600;
   text-transform: uppercase;
-  padding: 2px 6px;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 4px;
+  padding: 3px 8px;
+  background: ${props => {
+    switch(props.format?.toLowerCase()) {
+      case 'flac': return 'rgba(0, 212, 255, 0.15)';
+      case 'wav': return 'rgba(255, 107, 107, 0.15)';
+      case 'mp3': return 'rgba(78, 205, 196, 0.15)';
+      case 'm4a': return 'rgba(247, 183, 49, 0.15)';
+      case 'ogg': return 'rgba(165, 94, 234, 0.15)';
+      default: return 'rgba(255, 255, 255, 0.1)';
+    }
+  }};
+  border: 1px solid ${props => {
+    switch(props.format?.toLowerCase()) {
+      case 'flac': return 'rgba(0, 212, 255, 0.3)';
+      case 'wav': return 'rgba(255, 107, 107, 0.3)';
+      case 'mp3': return 'rgba(78, 205, 196, 0.3)';
+      case 'm4a': return 'rgba(247, 183, 49, 0.3)';
+      case 'ogg': return 'rgba(165, 94, 234, 0.3)';
+      default: return 'rgba(255, 255, 255, 0.2)';
+    }
+  }};
+  border-radius: 12px;
+  letter-spacing: 0.5px;
 `;
 
 const TrackDuration = styled.div`
@@ -273,11 +328,116 @@ type ViewMode = 'tracks' | 'albums' | 'artists';
 interface LocalLibraryBrowserProps {
   onTrackSelect?: (track: LocalTrack) => void;
   onQueueTracks?: (tracks: LocalTrack[], startIndex?: number) => void;
+  isDrawerMode?: boolean;
+  currentTrackId?: string | null;
+  accentColor?: string;
 }
 
-export const LocalLibraryBrowser: React.FC<LocalLibraryBrowserProps> = ({
+// Memoized Track Item Component
+const MemoizedTrackItem = memo<{
+  track: LocalTrack;
+  index: number;
+  isSelected: boolean;
+  accentColor: string;
+  onSelect: (track: LocalTrack, index: number) => void;
+}>(({ track, index, isSelected, accentColor, onSelect }) => {
+  const formatDuration = useCallback((ms: number): string => {
+    const seconds = Math.floor(ms / 1000);
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+  }, []);
+
+  const handleClick = useCallback(() => {
+    onSelect(track, index);
+  }, [track, index, onSelect]);
+
+  return (
+    <TrackItem
+      isSelected={isSelected}
+      accentColor={accentColor}
+      onClick={handleClick}
+      role="button"
+      tabIndex={0}
+      aria-label={`Play ${track.name} by ${track.artist} from ${track.album}. Duration: ${formatDuration(track.duration)}. Format: ${track.format}`}
+      aria-pressed={isSelected}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          handleClick();
+        }
+      }}
+    >
+      <AlbumThumbnail 
+        src={track.albumArt} 
+        role="img"
+        aria-label={`Album artwork for ${track.album}`}
+      />
+      <TrackInfo>
+        <TrackName>{track.name}</TrackName>
+        <TrackArtist>{track.artist} • {track.album}</TrackArtist>
+      </TrackInfo>
+      <TrackFormat format={track.format}>{track.format}</TrackFormat>
+      <TrackDuration>{formatDuration(track.duration)}</TrackDuration>
+    </TrackItem>
+  );
+});
+
+MemoizedTrackItem.displayName = 'MemoizedTrackItem';
+
+// Memoized Album Card Component
+const MemoizedAlbumCard = memo<{
+  album: DbAlbum;
+  onSelect: (album: DbAlbum) => void;
+}>(({ album, onSelect }) => {
+  const handleClick = useCallback(() => {
+    onSelect(album);
+  }, [album, onSelect]);
+
+  return (
+    <AlbumCard 
+      onClick={handleClick}
+      role="button"
+      tabIndex={0}
+      aria-label={`Play album ${album.name} by ${album.artist}`}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          handleClick();
+        }
+      }}
+    >
+      <AlbumArt 
+        src={album.album_art} 
+        role="img"
+        aria-label={`Album artwork for ${album.name}`}
+      />
+      <AlbumName>{album.name}</AlbumName>
+      <AlbumArtist>{album.artist}</AlbumArtist>
+    </AlbumCard>
+  );
+});
+
+MemoizedAlbumCard.displayName = 'MemoizedAlbumCard';
+
+// Custom comparison function for LocalLibraryBrowser memo optimization
+const arePropsEqual = (
+  prevProps: LocalLibraryBrowserProps,
+  nextProps: LocalLibraryBrowserProps
+): boolean => {
+  return (
+    prevProps.isDrawerMode === nextProps.isDrawerMode &&
+    prevProps.currentTrackId === nextProps.currentTrackId &&
+    prevProps.accentColor === nextProps.accentColor
+  );
+};
+
+export const LocalLibraryBrowser: React.FC<LocalLibraryBrowserProps> = memo(({
   onTrackSelect,
-  onQueueTracks
+  onQueueTracks,
+  isDrawerMode = false,
+  currentTrackId = null,
+  accentColor = '#1db954'
 }) => {
   const [viewMode, setViewMode] = useState<ViewMode>('tracks');
   const [searchQuery, setSearchQuery] = useState('');
@@ -494,21 +654,14 @@ export const LocalLibraryBrowser: React.FC<LocalLibraryBrowserProps> = ({
               Showing {filteredTracks.length} tracks
             </div>
             {filteredTracks.map((track, index) => (
-              <TrackItem
+              <MemoizedTrackItem
                 key={track.id}
-                isSelected={track.id === selectedTrackId}
-                onClick={() => handleTrackClick(track, index)}
-              >
-                <TrackNumber>
-                  {track.trackNumber || index + 1}
-                </TrackNumber>
-                <TrackInfo>
-                  <TrackName>{track.name}</TrackName>
-                  <TrackArtist>{track.artist} • {track.album}</TrackArtist>
-                </TrackInfo>
-                <TrackFormat>{track.format}</TrackFormat>
-                <TrackDuration>{formatDuration(track.duration)}</TrackDuration>
-              </TrackItem>
+                track={track}
+                index={index}
+                isSelected={currentTrackId ? track.id === currentTrackId : track.id === selectedTrackId}
+                accentColor={accentColor}
+                onSelect={handleTrackClick}
+              />
             ))}
           </>
         )}
@@ -525,11 +678,11 @@ export const LocalLibraryBrowser: React.FC<LocalLibraryBrowserProps> = ({
         </EmptyState>
       ) : (
         filteredAlbums.map((album) => (
-          <AlbumCard key={album.id} onClick={() => handleAlbumClick(album)}>
-            <AlbumArt src={album.album_art} />
-            <AlbumName>{album.name}</AlbumName>
-            <AlbumArtist>{album.artist}</AlbumArtist>
-          </AlbumCard>
+          <MemoizedAlbumCard 
+            key={album.id} 
+            album={album}
+            onSelect={handleAlbumClick}
+          />
         ))
       )}
     </AlbumGrid>
@@ -558,8 +711,8 @@ export const LocalLibraryBrowser: React.FC<LocalLibraryBrowserProps> = ({
   );
 
   return (
-    <LibraryContainer>
-      <LibraryHeader>
+    <LibraryContainer $isDrawerMode={isDrawerMode}>
+      <LibraryHeader $isDrawerMode={isDrawerMode}>
         <LibraryTitle>Local Music Library</LibraryTitle>
         <LibraryStats>
           <div>{stats.totalTracks} tracks</div>
@@ -569,22 +722,31 @@ export const LocalLibraryBrowser: React.FC<LocalLibraryBrowserProps> = ({
         </LibraryStats>
       </LibraryHeader>
 
-      <ViewSelector>
+      <ViewSelector role="tablist" aria-label="View selection">
         <ViewButton
           active={viewMode === 'tracks'}
           onClick={() => setViewMode('tracks')}
+          role="tab"
+          aria-selected={viewMode === 'tracks'}
+          aria-controls="library-content"
         >
           Tracks
         </ViewButton>
         <ViewButton
           active={viewMode === 'albums'}
           onClick={() => setViewMode('albums')}
+          role="tab"
+          aria-selected={viewMode === 'albums'}
+          aria-controls="library-content"
         >
           Albums
         </ViewButton>
         <ViewButton
           active={viewMode === 'artists'}
           onClick={() => setViewMode('artists')}
+          role="tab"
+          aria-selected={viewMode === 'artists'}
+          aria-controls="library-content"
         >
           Artists
         </ViewButton>
@@ -595,38 +757,40 @@ export const LocalLibraryBrowser: React.FC<LocalLibraryBrowserProps> = ({
             loadData();
             loadStats();
           }}
+          aria-label="Refresh library data"
         >
           🔄 Refresh
         </ViewButton>
-        <ViewButton
-          active={false}
-          onClick={() => {
-            if (window.confirm('Clear entire library and rescan? This will take a few minutes.')) {
-              clearAndRescan();
-            }
-          }}
-          style={{ color: '#ff6b6b' }}
-        >
-          🗑️ Clear & Rescan
-        </ViewButton>
       </ViewSelector>
 
-      <SearchContainer>
+      <SearchContainer role="search">
         <SearchInput
           type="text"
           placeholder={`Search ${viewMode}...`}
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
+          aria-label={`Search ${viewMode} in your local library`}
+          aria-describedby="search-description"
         />
+        <div id="search-description" style={{ display: 'none' }}>
+          Type to search through your {viewMode}. Results will filter automatically as you type.
+        </div>
       </SearchContainer>
 
-      <ContentArea>
+      <ContentArea 
+        id="library-content" 
+        role="tabpanel" 
+        aria-label={`${viewMode} view`}
+        aria-live="polite"
+      >
         {viewMode === 'tracks' && renderTracksView()}
         {viewMode === 'albums' && renderAlbumsView()}
         {viewMode === 'artists' && renderArtistsView()}
       </ContentArea>
     </LibraryContainer>
   );
-};
+}, arePropsEqual);
+
+LocalLibraryBrowser.displayName = 'LocalLibraryBrowser';
 
 export default LocalLibraryBrowser;
