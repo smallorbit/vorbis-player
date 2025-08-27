@@ -324,22 +324,35 @@ export async function extractDominantColor(imageUrl: string): Promise<ExtractedC
           const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
           const data = imageData.data;
           
+          // Color clustering map to group similar colors together
+          // This reduces the number of unique colors for analysis
           const colorMap = new Map<string, ColorData>();
           
+          // Process pixels in chunks of 4 (RGBA) for performance
+          // Skip every 4th pixel to reduce processing time while maintaining accuracy
           for (let i = 0; i < data.length; i += 16) {
             const r = data[i];
             const g = data[i + 1];
             const b = data[i + 2];
             const a = data[i + 3];
             
+            // Skip transparent or semi-transparent pixels
+            // Alpha values below 128 are considered too transparent for color analysis
             if (a < 128) continue;
             
+            // Quantize colors into buckets to group similar colors
+            // This reduces color variation and improves clustering accuracy
+            // Bucket size of 8 provides good balance between precision and performance
             const rBucket = Math.floor(r / 8) * 8;
             const gBucket = Math.floor(g / 8) * 8;
             const bBucket = Math.floor(b / 8) * 8;
             
+            // Create unique key for color bucket
+            // This allows efficient lookup and counting of similar colors
             const key = `${rBucket}-${gBucket}-${bBucket}`;
             
+            // Increment count for existing color or create new entry
+            // This builds a histogram of color frequencies in the image
             if (colorMap.has(key)) {
               colorMap.get(key)!.count++;
             } else {
@@ -347,35 +360,68 @@ export async function extractDominantColor(imageUrl: string): Promise<ExtractedC
             }
           }
           
+          // Find the best color based on multiple criteria
+          // This ensures the selected color is both prominent and suitable for UI use
           let bestColor: ColorData | null = null;
           let bestScore = 0;
           
+          // Evaluate each color cluster for suitability
+          // Colors are scored based on contrast, vibrancy, and frequency
           for (const color of colorMap.values()) {
+            // Filter out colors that don't meet basic criteria
+            // This ensures only suitable colors are considered for UI use
             if (!isGoodContrast(color.r, color.g, color.b) || !isVibrant(color.r, color.g, color.b)) {
               continue;
             }
             
+            // Calculate color properties for scoring
+            // HSL values are used for more intuitive color analysis
             const [, saturation, lightness] = rgbToHsl(color.r, color.g, color.b);
+            
+            // Calculate vibrancy score (0-1)
+            // Higher saturation means more vibrant, visually appealing colors
             const vibrancyScore = saturation / 100;
+            
+            // Calculate contrast score (0-1)
+            // Colors closer to 50% lightness provide optimal contrast
+            // This ensures text readability and visual hierarchy
             const contrastScore = 1 - Math.abs(lightness - 50) / 50;
+            
+            // Combined score considers frequency, vibrancy, and contrast
+            // Frequency (count) is weighted heavily as it indicates prominence
+            // Vibrancy and contrast scores ensure UI suitability
             const score = color.count * vibrancyScore * contrastScore;
             
+            // Track the highest scoring color
+            // This will be the most prominent and suitable color in the image
             if (score > bestScore) {
               bestScore = score;
               bestColor = color;
             }
           }
           
+          // Return the best color in multiple formats for flexibility
+          // Different UI components may prefer different color representations
           if (bestColor) {
+            // Convert to hexadecimal format for CSS usage
             const hex = rgbToHex(bestColor.r, bestColor.g, bestColor.b);
+            
+            // Convert to RGB format for programmatic use
             const rgb = `rgb(${bestColor.r}, ${bestColor.g}, ${bestColor.b})`;
+            
+            // Convert to HSL format for color manipulation
             const [h, s, l] = rgbToHsl(bestColor.r, bestColor.g, bestColor.b);
             const hsl = `hsl(${Math.round(h)}, ${Math.round(s)}%, ${Math.round(l)}%)`;
             
             const result = { hex, rgb, hsl };
+            
+            // Cache the result to avoid reprocessing the same image
+            // This significantly improves performance for repeated requests
             addToCache(imageUrl, result);
             resolve(result);
           } else {
+            // No suitable color found, cache null result
+            // This prevents repeated processing of images without suitable colors
             addToCache(imageUrl, null);
             resolve(null);
           }

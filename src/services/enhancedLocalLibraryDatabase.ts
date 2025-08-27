@@ -991,7 +991,21 @@ export class EnhancedLocalLibraryDatabaseService {
           genreBreakdown: [],
           yearBreakdown: [],
           averageBitrate: 0,
-          databaseSize: 0,
+          databaseSize: 0, // TODO: Get actual database file size
+          // TODO: Implement database size calculation
+          // 
+          // @priority: Low
+          // @context: Database statistics and monitoring
+          // @dependencies: File system access, database file path
+          // @requirements:
+          // - Get database file size from file system
+          // - Handle database file not found scenarios
+          // - Update size calculation on database changes
+          // - Cache size information for performance
+          // 
+          // @issue: Database size monitoring and statistics
+          // @estimated-effort: 0.5 days
+          // @impact: Better database monitoring and maintenance
           performanceMetrics: { averageSearchTime: 0, slowestOperations: [] }
         };
       }
@@ -1068,6 +1082,20 @@ export class EnhancedLocalLibraryDatabaseService {
         yearBreakdown,
         averageBitrate: Math.round(basicStats.average_bitrate || 0),
         databaseSize: 0, // TODO: Get actual database file size
+        // TODO: Implement database size calculation
+        // 
+        // @priority: Low
+        // @context: Database statistics and monitoring
+        // @dependencies: File system access, database file path
+        // @requirements:
+        // - Get database file size from file system
+        // - Handle database file not found scenarios
+        // - Update size calculation on database changes
+        // - Cache size information for performance
+        // 
+        // @issue: Database size monitoring and statistics
+        // @estimated-effort: 0.5 days
+        // @impact: Better database monitoring and maintenance
         performanceMetrics: {
           averageSearchTime: Math.round(avgSearchTime.avg_duration || 0),
           slowestOperations: slowestOps.map(op => ({

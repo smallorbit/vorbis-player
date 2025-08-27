@@ -563,6 +563,22 @@ export class EnhancedLocalLibraryScannerService {
         }
       }
 
+      /**
+       * TODO: Cleanup orphaned artwork entries
+       * 
+       * @priority: Medium
+       * @context: Database maintenance and cleanup
+       * @dependencies: Additional database methods for artwork management
+       * @requirements:
+       * - Query database for artwork entries without associated tracks
+       * - Remove orphaned artwork files from storage
+       * - Update database to remove orphaned artwork records
+       * - Handle artwork that may be shared across multiple tracks
+       * 
+       * @issue: Database cleanup and storage optimization
+       * @estimated-effort: 1-2 days
+       * @impact: Storage optimization and database integrity
+       */
       // TODO: Cleanup orphaned artwork entries
       // This would require additional database methods
 
@@ -574,24 +590,60 @@ export class EnhancedLocalLibraryScannerService {
     return { removedTracks, removedArtwork };
   }
 
-  // Utility methods (keeping existing ones with enhancements)
+  /**
+   * Generates a unique track ID from file path
+   * 
+   * Creates a deterministic but unique identifier for tracks based on their
+   * file path. Uses base64 encoding with URL-safe character replacement
+   * to ensure compatibility with database storage and URL usage.
+   * 
+   * @param filePath - Full file system path to the audio file
+   * @returns Unique track identifier prefixed with 'local_'
+   * 
+   * @example
+   * generateTrackId('/Music/Album/Track.mp3') // Returns: 'local_L011aWMvYmljL0FsYnVtL1RyYWNrLm1wMw'
+   */
   private generateTrackId(filePath: string): string {
     return 'local_' + btoa(filePath).replace(/[+/=]/g, '');
   }
 
+  /**
+   * Extracts track title from filename using pattern matching
+   * 
+   * Attempts to extract a clean track title from various filename formats
+   * commonly used in music libraries. Uses multiple regex patterns to handle
+   * different naming conventions and removes track numbers, artist names,
+   * and other metadata from the filename.
+   * 
+   * @param filePath - Full file system path to the audio file
+   * @returns Cleaned track title extracted from filename
+   * 
+   * @patterns
+   * - Track number - Title: "01 - Song Title.mp3" → "Song Title"
+   * - Title - Artist: "Song Title - Artist Name.mp3" → "Song Title"
+   * - Track number Title: "01 Song Title.mp3" → "Song Title"
+   * - Title_number: "Song Title_01.mp3" → "Song Title"
+   * - Plain filename: "Song Title.mp3" → "Song Title"
+   * 
+   * @example
+   * extractTitleFromFilename('/Music/01 - Bohemian Rhapsody.mp3') // Returns: "Bohemian Rhapsody"
+   * extractTitleFromFilename('/Music/Song Title - Queen.mp3') // Returns: "Song Title"
+   */
   private extractTitleFromFilename(filePath: string): string {
     const filename = filePath.split(/[/\\]/).pop() || '';
     const nameWithoutExtension = filename.replace(/\.[^/.]+$/, '');
     
-    // Enhanced pattern matching for common formats
+    // Enhanced pattern matching for common filename formats
+    // Each pattern attempts to extract the clean title from different naming conventions
     const patterns = [
-      /^\d+\s*[-.\s]\s*(.+)$/, // Track number - Title
-      /^(.+?)\s*[-]\s*.+$/, // Title - Artist
-      /^\d+\s+(.+)$/, // Track number Title
-      /^(.+?)_\d+$/, // Title_number
-      /^(.+)$/ // Just the filename
+      /^\d+\s*[-.\s]\s*(.+)$/, // Track number - Title (e.g., "01 - Song Title")
+      /^(.+?)\s*[-]\s*.+$/, // Title - Artist (e.g., "Song Title - Artist Name")
+      /^\d+\s+(.+)$/, // Track number Title (e.g., "01 Song Title")
+      /^(.+?)_\d+$/, // Title_number (e.g., "Song Title_01")
+      /^(.+)$/ // Just the filename (fallback pattern)
     ];
 
+    // Try each pattern in order until a match is found
     for (const pattern of patterns) {
       const match = nameWithoutExtension.match(pattern);
       if (match && match[1]) {
@@ -602,6 +654,22 @@ export class EnhancedLocalLibraryScannerService {
     return nameWithoutExtension;
   }
 
+  /**
+   * Checks if a file is a supported audio format
+   * 
+   * Validates file extension against the list of supported audio formats
+   * configured in the scanner settings. Case-insensitive comparison.
+   * 
+   * @param filePath - Full file system path to check
+   * @returns True if file extension is in supported formats list
+   * 
+   * @supported-formats
+   * - mp3, flac, wav, ogg, m4a, aac, wma, alac
+   * 
+   * @example
+   * isAudioFile('/Music/song.mp3') // Returns: true
+   * isAudioFile('/Music/image.jpg') // Returns: false
+   */
   private isAudioFile(filePath: string): boolean {
     const extension = filePath.split('.').pop()?.toLowerCase();
     return extension ? this.settings.supportedFormats.includes(extension) : false;

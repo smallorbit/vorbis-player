@@ -117,10 +117,24 @@ export class EnhancedLocalLibraryDatabaseIPCService {
         });
       }
 
+      /**
+       * TODO: Implement album and artist search in main process
+       * 
+       * @priority: Medium
+       * @context: Search functionality enhancement
+       * @dependencies: Main process database methods, IPC communication
+       * @requirements:
+       * - Add album search method to main process database service
+       * - Add artist search method to main process database service
+       * - Implement IPC handlers for search requests
+       * - Add search result caching for performance
+       * - Handle fuzzy matching and partial searches
+       * 
+       * @issue: Search functionality for albums and artists
+       * @estimated-effort: 2-3 days
+       * @impact: Improved search capabilities and user experience
+       */
       // TODO: Implement album and artist search in main process
-      if (options.type === 'albums' || options.type === 'all') {
-        // albums = await this.searchAlbums(options);
-      }
 
       if (options.type === 'artists' || options.type === 'all') {
         // artists = await this.searchArtists(options);

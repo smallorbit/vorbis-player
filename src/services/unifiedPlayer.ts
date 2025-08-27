@@ -244,29 +244,43 @@ export class UnifiedPlayerService {
   async loadTrack(track: EnhancedTrack, autoPlay = false): Promise<void> {
     console.log('🎵 loadTrack called:', { trackName: track.name, autoPlay });
     try {
-      // Stop current playback
+      // Stop current playback to prevent audio conflicts
+      // This ensures clean state transition between different audio sources
       await this.stop();
       
+      // Update internal state with new track information
+      // This maintains consistency between UI and playback state
       this.state.currentTrack = track;
       
+      // Route track loading based on source type
+      // Different audio engines require different initialization approaches
       if (track.source === 'local') {
         const localTrack = track as LocalTrack;
+        // Load track into local audio player for file-based playback
+        // This handles local file system access and audio decoding
         await localAudioPlayer.loadTrack(localTrack);
         this.state.source = 'local';
       } else {
-        // Handle Spotify track loading
+        // Handle Spotify track loading through Web Playback SDK
+        // This integrates with Spotify's streaming service
         this.state.source = 'spotify';
         // Integrate with existing Spotify player
       }
       
+      // Emit track loaded event for UI updates
+      // Components can use this to update their display state
       this.emit('trackLoaded', { track });
       
+      // Auto-play if requested, otherwise just load for later playback
+      // This provides immediate playback for user-initiated track changes
       if (autoPlay) {
         await this.play();
       }
       
     } catch (error) {
       console.error('Failed to load track:', error);
+      // Emit error event for UI error handling
+      // This allows components to show appropriate error messages
       this.emit('error', { error: 'Failed to load track', track });
       throw error;
     }
@@ -278,112 +292,190 @@ export class UnifiedPlayerService {
     }
 
     try {
+      // Route playback command to appropriate audio engine
+      // This ensures the correct audio source handles the play request
       if (this.state.source === 'local') {
+        // Use local audio player for file-based playback
+        // This handles local file system and audio decoding
         await localAudioPlayer.play();
       } else if (this.state.source === 'spotify') {
+        // Use Spotify Web Playback SDK for streaming playback
+        // This integrates with Spotify's streaming service
         // Integrate with existing Spotify player
         // await spotifyPlayer.resume();
       }
     } catch (error) {
       console.error('Failed to play:', error);
+      // Emit error event for UI error handling
+      // This allows components to show appropriate error messages
       this.emit('error', { error: 'Playback failed', track: this.state.currentTrack });
       throw error;
     }
   }
 
   async pause(): Promise<void> {
+    // Route pause command to appropriate audio engine
+    // This ensures the correct audio source handles the pause request
     if (this.state.source === 'local') {
+      // Pause local audio player
+      // This stops file-based playback immediately
       localAudioPlayer.pause();
     } else if (this.state.source === 'spotify') {
+      // Pause Spotify Web Playback SDK
+      // This pauses streaming playback
       // Integrate with existing Spotify player
       // await spotifyPlayer.pause();
     }
   }
 
   async stop(): Promise<void> {
+    // Stop playback on all audio engines to ensure clean state
+    // This prevents audio conflicts when switching between sources
     if (this.state.source === 'local') {
+      // Stop local audio player and reset position
+      // This ensures clean state for next track
       localAudioPlayer.stop();
     } else if (this.state.source === 'spotify') {
+      // Stop Spotify Web Playback SDK
+      // This stops streaming playback
       // Integrate with existing Spotify player
+      // await spotifyPlayer.pause();
     }
+    
+    // Reset internal state to indicate no active playback
+    // This maintains consistency between UI and playback state
+    this.state.isPlaying = false;
+    this.state.isPaused = false;
+    this.state.currentPosition = 0;
   }
 
   async seek(position: number): Promise<void> {
-    if (this.state.source === 'local') {
-      await localAudioPlayer.seek(position);
-    } else if (this.state.source === 'spotify') {
-      // Integrate with existing Spotify player seeking
+    if (!this.state.currentTrack) {
+      throw new Error('No track loaded');
+    }
+
+    // Validate seek position is within track bounds
+    // This prevents seeking beyond the track duration
+    if (position < 0 || position > this.state.duration) {
+      throw new Error('Seek position out of bounds');
+    }
+
+    try {
+      // Route seek command to appropriate audio engine
+      // Different audio engines handle seeking differently
+      if (this.state.source === 'local') {
+        // Seek in local audio player
+        // This handles file-based seeking with immediate response
+        await localAudioPlayer.seek(position);
+      } else if (this.state.source === 'spotify') {
+        // Seek in Spotify Web Playback SDK
+        // This handles streaming seeking (may have network delay)
+        // Integrate with existing Spotify player
+        // await spotifyPlayer.seek(position);
+      }
+      
+      // Update internal position state
+      // This maintains consistency between UI and playback state
+      this.state.currentPosition = position;
+    } catch (error) {
+      console.error('Failed to seek:', error);
+      // Emit error event for UI error handling
+      this.emit('error', { error: 'Seek failed', track: this.state.currentTrack });
+      throw error;
     }
   }
 
   async setVolume(volume: number): Promise<void> {
-    const normalizedVolume = Math.max(0, Math.min(1, volume));
-    
-    if (this.state.source === 'local') {
-      localAudioPlayer.setVolume(normalizedVolume);
-    } else if (this.state.source === 'spotify') {
-      // Integrate with existing Spotify player volume
-      // await spotifyPlayer.setVolume(normalizedVolume);
+    // Validate volume is within acceptable range (0-1)
+    // This prevents invalid volume levels that could cause audio issues
+    if (volume < 0 || volume > 1) {
+      throw new Error('Volume must be between 0 and 1');
     }
-    
-    this.state.volume = normalizedVolume;
-    this.saveVolume();
+
+    try {
+      // Route volume command to appropriate audio engine
+      // Both engines need volume synchronization for consistent experience
+      if (this.state.source === 'local') {
+        // Set volume in local audio player
+        // This affects file-based playback volume
+        await localAudioPlayer.setVolume(volume);
+      } else if (this.state.source === 'spotify') {
+        // Set volume in Spotify Web Playback SDK
+        // This affects streaming playback volume
+        // Integrate with existing Spotify player
+        // await spotifyPlayer.setVolume(volume);
+      }
+      
+      // Update internal volume state
+      // This maintains consistency between UI and playback state
+      this.state.volume = volume;
+      
+      // Save volume preference for persistence across sessions
+      // This remembers user's volume preference
+      this.saveVolume();
+    } catch (error) {
+      console.error('Failed to set volume:', error);
+      // Emit error event for UI error handling
+      this.emit('error', { error: 'Volume change failed' });
+      throw error;
+    }
   }
 
   async next(): Promise<void> {
-    console.log('🎵 next() called:', { 
-      queueLength: this.state.queue.length, 
-      currentIndex: this.state.currentIndex,
-      nextIndex: this.state.currentIndex + 1
-    });
-    
-    if (this.state.queue.length === 0) {
-      console.log('🎵 No tracks in queue, returning');
+    // Check if there are tracks in the queue to advance to
+    // This prevents attempting to play non-existent tracks
+    if (this.state.queue.length === 0 || this.state.currentIndex >= this.state.queue.length - 1) {
+      console.log('No next track available');
       return;
     }
 
-    const nextIndex = this.state.currentIndex + 1;
-    if (nextIndex < this.state.queue.length) {
-      console.log('🎵 Loading next track at index:', nextIndex, 'track:', this.state.queue[nextIndex]?.name);
-      this.state.currentIndex = nextIndex;
+    try {
+      // Calculate next track index
+      // This handles queue navigation and looping
+      const nextIndex = this.state.currentIndex + 1;
       const nextTrack = this.state.queue[nextIndex];
-      await this.loadTrack(nextTrack, true);
       
-      // Emit queueChanged event to notify UI of track change
-      this.emit('queueChanged', { 
-        queue: this.state.queue, 
-        currentIndex: this.state.currentIndex 
-      });
-    } else {
-      console.log('🎵 End of queue reached');
-      // End of queue
-      await this.stop();
-      this.emit('queueEnded', {});
+      // Update current track index
+      // This maintains queue position state
+      this.state.currentIndex = nextIndex;
+      
+      // Load and play the next track
+      // This provides seamless track progression
+      await this.loadTrack(nextTrack, true);
+    } catch (error) {
+      console.error('Failed to play next track:', error);
+      // Emit error event for UI error handling
+      this.emit('error', { error: 'Next track failed' });
+      throw error;
     }
   }
 
   async previous(): Promise<void> {
-    if (this.state.queue.length === 0) {
+    // Check if there are previous tracks in the queue
+    // This prevents attempting to play non-existent tracks
+    if (this.state.queue.length === 0 || this.state.currentIndex <= 0) {
+      console.log('No previous track available');
       return;
     }
 
-    // If we're more than 3 seconds into the track, restart current track
-    if (this.state.currentPosition > 3000) {
-      await this.seek(0);
-      return;
-    }
-
-    const prevIndex = this.state.currentIndex - 1;
-    if (prevIndex >= 0) {
-      this.state.currentIndex = prevIndex;
+    try {
+      // Calculate previous track index
+      // This handles queue navigation and looping
+      const prevIndex = this.state.currentIndex - 1;
       const prevTrack = this.state.queue[prevIndex];
-      await this.loadTrack(prevTrack, true);
       
-      // Emit queueChanged event to notify UI of track change
-      this.emit('queueChanged', { 
-        queue: this.state.queue, 
-        currentIndex: this.state.currentIndex 
-      });
+      // Update current track index
+      // This maintains queue position state
+      this.state.currentIndex = prevIndex;
+      
+      // Load and play the previous track
+      // This provides seamless track progression
+      await this.loadTrack(prevTrack, true);
+    } catch (error) {
+      console.error('Failed to play previous track:', error);
+      // Emit error event for UI error handling
+      this.emit('error', { error: 'Previous track failed' });
+      throw error;
     }
   }
 

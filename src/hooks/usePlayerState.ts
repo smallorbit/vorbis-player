@@ -259,20 +259,25 @@ export const usePlayerState = () => {
   const [accentColorOverrides, setAccentColorOverrides] = useState<Record<string, string>>({});
   
   // Album filters with persistence and fallback defaults
+  // This ensures user preferences are maintained across sessions
   const [albumFilters, setAlbumFilters] = useState<AlbumFilters>(() => {
     const saved = localStorage.getItem('vorbis-player-album-filters');
     if (saved) {
       try {
+        // Parse saved filters with fallback values for missing properties
+        // This handles cases where the saved data structure has changed
         const parsed = JSON.parse(saved);
         return {
-          brightness: parsed.brightness ?? 100,
-          contrast: parsed.contrast ?? 100,
-          saturation: parsed.saturation ?? 100,
-          hue: parsed.hue ?? 0,
-          blur: parsed.blur ?? 0,
-          sepia: parsed.sepia ?? 0
+          brightness: parsed.brightness ?? 100,  // Default to normal brightness
+          contrast: parsed.contrast ?? 100,      // Default to normal contrast
+          saturation: parsed.saturation ?? 100,  // Default to normal saturation
+          hue: parsed.hue ?? 0,                  // Default to no hue shift
+          blur: parsed.blur ?? 0,                // Default to no blur
+          sepia: parsed.sepia ?? 0               // Default to no sepia effect
         };
       } catch (e) {
+        // If parsing fails, return default values
+        // This prevents crashes from corrupted localStorage data
         return {
           brightness: 100,
           contrast: 100,
@@ -283,6 +288,8 @@ export const usePlayerState = () => {
         };
       }
     }
+    // No saved data, return default values
+    // These represent neutral filter settings
     return {
       brightness: 100,
       contrast: 100,
@@ -293,34 +300,104 @@ export const usePlayerState = () => {
     };
   });
 
-  // Saved filter preset
+  // Saved filter preset for quick restoration
+  // This allows users to save and restore custom filter configurations
   const [savedAlbumFilters, setSavedAlbumFilters] = useState<AlbumFilters | null>(null);
 
   // Load accent color overrides from localStorage on mount
+  // This restores user's manual color preferences across sessions
   useEffect(() => {
     const stored = localStorage.getItem('accentColorOverrides');
     if (stored) {
-      setAccentColorOverrides(JSON.parse(stored));
+      try {
+        // Parse stored color overrides with error handling
+        // This prevents crashes from corrupted localStorage data
+        setAccentColorOverrides(JSON.parse(stored));
+      } catch (error) {
+        console.warn('Failed to load accent color overrides:', error);
+        // Continue with empty overrides if parsing fails
+      }
     }
   }, []);
 
+  // Persist visual effects enabled state to localStorage
+  // This ensures user's visual effects preference is remembered
+  useEffect(() => {
+    localStorage.setItem('vorbis-player-visual-effects-enabled', JSON.stringify(visualEffectsEnabled));
+  }, [visualEffectsEnabled]);
+
+  // Persist per-album glow settings to localStorage
+  // This maintains custom glow settings for each album across sessions
+  useEffect(() => {
+    localStorage.setItem('vorbis-player-per-album-glow', JSON.stringify(perAlbumGlow));
+  }, [perAlbumGlow]);
+
+  // Persist album filters to localStorage with debouncing
+  // This prevents excessive localStorage writes during rapid filter changes
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      localStorage.setItem('vorbis-player-album-filters', JSON.stringify(albumFilters));
+    }, 150); // 150ms debounce delay
+
+    return () => clearTimeout(timeoutId);
+  }, [albumFilters]);
+
+  // Persist accent color overrides to localStorage
+  // This saves user's manual color customizations
   useEffect(() => {
     localStorage.setItem('accentColorOverrides', JSON.stringify(accentColorOverrides));
   }, [accentColorOverrides]);
 
-  useEffect(() => {
-    localStorage.setItem('vorbis-player-album-filters', JSON.stringify(albumFilters));
-  }, [albumFilters]);
+  // Memoized setter for album filters with validation
+  // This ensures filter values stay within acceptable ranges
+  const setAlbumFiltersWithValidation = useCallback((filters: Partial<AlbumFilters>) => {
+    setAlbumFilters(prev => {
+      const newFilters = { ...prev, ...filters };
+      
+      // Validate and clamp filter values to prevent invalid states
+      // This ensures UI components receive valid filter values
+      return {
+        brightness: Math.max(0, Math.min(200, newFilters.brightness)),    // 0-200 range
+        contrast: Math.max(0, Math.min(200, newFilters.contrast)),        // 0-200 range
+        saturation: Math.max(0, Math.min(200, newFilters.saturation)),    // 0-200 range
+        hue: ((newFilters.hue % 360) + 360) % 360,                        // 0-360 range with wrapping
+        blur: Math.max(0, Math.min(20, newFilters.blur)),                 // 0-20 range
+        sepia: Math.max(0, Math.min(100, newFilters.sepia))               // 0-100 range
+      };
+    });
+  }, []);
 
-  useEffect(() => {
-    localStorage.setItem('vorbis-player-visual-effects-enabled', JSON.stringify(visualEffectsEnabled));
-  }, [visualEffectsEnabled]);
-  
+  // Memoized setter for per-album glow settings
+  // This optimizes performance by preventing unnecessary re-renders
+  const setPerAlbumGlowWithValidation = useCallback((
+    albumId: string, 
+    settings: { intensity: number; rate: number }
+  ) => {
+    setPerAlbumGlow(prev => {
+      const newSettings = { ...prev };
+      
+      // Validate and clamp glow settings to prevent invalid states
+      // This ensures visual effects receive valid parameters
+      newSettings[albumId] = {
+        intensity: Math.max(0, Math.min(1, settings.intensity)),  // 0-1 range
+        rate: Math.max(0.1, Math.min(5, settings.rate))           // 0.1-5 range
+      };
+      
+      return newSettings;
+    });
+  }, []);
 
-  
-  useEffect(() => {
-    localStorage.setItem('vorbis-player-per-album-glow', JSON.stringify(perAlbumGlow));
-  }, [perAlbumGlow]);
+  // Memoized setter for accent color with validation
+  // This ensures color values are valid hex colors
+  const setAccentColorWithValidation = useCallback((color: string) => {
+    // Validate hex color format
+    // This prevents invalid colors from being applied
+    if (/^#[0-9A-F]{6}$/i.test(color)) {
+      setAccentColor(color);
+    } else {
+      console.warn('Invalid accent color format:', color);
+    }
+  }, []);
 
   const handleFilterChange = useCallback((filterName: string, value: number | boolean) => {
     setAlbumFilters(prev => {
