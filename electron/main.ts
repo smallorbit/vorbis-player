@@ -304,7 +304,7 @@ function setupIpcHandlers() {
           `);
           
           searchResults = stmt.all(query, limit, offset);
-        } catch (ftsError) {
+        } catch {
           // Fallback to LIKE search
           const searchTerm = `%${options.query}%`;
           const stmt = database.prepare(`
@@ -318,7 +318,7 @@ function setupIpcHandlers() {
         }
       }
       
-      return searchResults.map((row: any) => ({
+      return searchResults.map((row: Record<string, unknown>) => ({
         id: row.id,
         name: row.name,
         artist: row.artist,
@@ -351,12 +351,12 @@ function setupIpcHandlers() {
   });
 
   // Advanced filtering
-  ipcMain.handle('db-filter-tracks', async (_event, criteria: any, limit = 1000, offset = 0) => {
+  ipcMain.handle('db-filter-tracks', async (_event, criteria: Record<string, unknown>, limit = 1000, offset = 0) => {
     await initializeDatabase();
     
     try {
       let sql = 'SELECT * FROM tracks WHERE 1=1';
-      const params: any[] = [];
+      const params: unknown[] = [];
 
       // Build WHERE clause based on criteria
       if (criteria.artists && criteria.artists.length > 0) {
@@ -424,7 +424,7 @@ function setupIpcHandlers() {
       const stmt = database.prepare(sql);
       const rows = stmt.all(...params);
 
-      return rows.map((row: any) => ({
+      return rows.map((row: Record<string, unknown>) => ({
         id: row.id,
         name: row.name,
         artist: row.artist,
@@ -583,7 +583,7 @@ function setupIpcHandlers() {
   });
 
   // Database operations - these run in main process
-  let database: any = null;
+  let database: import('better-sqlite3').Database | null = null;
   
   // File scanning functionality - moved from renderer
   let scannerSettings = {
@@ -609,7 +609,7 @@ function setupIpcHandlers() {
       const loadedSettings = JSON.parse(settingsData);
       scannerSettings = { ...scannerSettings, ...loadedSettings };
       console.log('📂 Scanner settings loaded:', scannerSettings);
-    } catch (error) {
+    } catch {
       console.log('📂 No saved settings found, using defaults');
     }
   };
@@ -637,11 +637,11 @@ function setupIpcHandlers() {
     try {
       if (database) return true;
       
-      const Database = require('better-sqlite3');
+      const Database = await import('better-sqlite3');
       const userDataPath = app.getPath('userData');
       const dbPath = path.join(userDataPath, 'music-library.db');
       
-      database = new Database(dbPath);
+      database = new Database.default(dbPath);
       
       // Enable WAL mode for better performance
       database.pragma('journal_mode = WAL');
@@ -713,7 +713,7 @@ function setupIpcHandlers() {
       // Migration: Add codec column if it doesn't exist
       try {
         const tableInfo = database.prepare("PRAGMA table_info(tracks)").all();
-        const hasCodecColumn = tableInfo.some((col: any) => col.name === 'codec');
+        const hasCodecColumn = tableInfo.some((col: Record<string, unknown>) => col.name === 'codec');
         
         if (!hasCodecColumn) {
           console.log('🔄 Migrating database: Adding codec column to tracks table');
@@ -757,7 +757,7 @@ function setupIpcHandlers() {
         });
       }
       
-      const tracks = rows.map((row: any) => ({
+      const tracks = rows.map((row: Record<string, unknown>) => ({
         id: row.id,
         name: row.name,
         artist: row.artist,
@@ -857,7 +857,7 @@ function setupIpcHandlers() {
       // Delete from FTS if it exists
       try {
         database.exec('DELETE FROM tracks_fts');
-      } catch (e) {
+      } catch {
         // FTS table might not exist
       }
       
@@ -865,14 +865,14 @@ function setupIpcHandlers() {
       try {
         database.exec('DELETE FROM playlists');
         database.exec('DELETE FROM playlist_tracks');
-      } catch (e) {
+      } catch {
         // Playlist tables might not exist
       }
       
       // Delete from album artwork if it exists
       try {
         database.exec('DELETE FROM album_artwork');
-      } catch (e) {
+      } catch {
         // Album artwork table might not exist
       }
       
@@ -997,7 +997,8 @@ function setupIpcHandlers() {
   };
 
   // Helper function to extract metadata and create track object
-  const processAudioFile = async (filePath: string): Promise<any> => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const processAudioFile = async (filePath: string): Promise<Record<string, unknown> | null> => {
     try {
       const metadata = await musicMetadata.parseFile(filePath);
       const stats = await fs.stat(filePath);
@@ -1148,13 +1149,13 @@ function setupIpcHandlers() {
   };
 
   // Enhanced audio file processing with artwork extraction
-  const processAudioFileEnhanced = async (filePath: string, extractArtwork: boolean): Promise<any> => {
+  const processAudioFileEnhanced = async (filePath: string, extractArtwork: boolean): Promise<Record<string, unknown> | null> => {
     try {
       const metadata = await musicMetadata.parseFile(filePath);
       const stats = await fs.stat(filePath);
       
       let albumArt: string | undefined;
-      let artworkInfo: any = null;
+      let artworkInfo: Record<string, unknown> | null = null;
 
       // Extract album artwork if enabled
       if (extractArtwork && metadata.common.picture && metadata.common.picture.length > 0) {
@@ -1178,7 +1179,7 @@ function setupIpcHandlers() {
             originalSize: picture.data.length,
             source: 'embedded'
           };
-        } catch (artError: any) {
+        } catch (artError: unknown) {
           console.warn(`Failed to process artwork for ${filePath}:`, artError);
           scanProgress.errors.push(`Artwork processing failed for ${filePath}: ${artError.message}`);
         }
@@ -1229,7 +1230,7 @@ function setupIpcHandlers() {
   };
 
   // Enhanced database save function
-  const saveTrackToDatabase = async (track: any) => {
+  const saveTrackToDatabase = async (track: Record<string, unknown>) => {
     try {
       // Insert or update track in database
       const stmt = database.prepare(`
@@ -1272,7 +1273,7 @@ function setupIpcHandlers() {
   };
 
   // Directory artwork detection
-  const findDirectoryArtwork = async (directoryPath: string): Promise<{ data: string; info: any } | null> => {
+  const findDirectoryArtwork = async (directoryPath: string): Promise<{ data: string; info: Record<string, unknown> } | null> => {
     try {
       const files = await fs.readdir(directoryPath);
       const artworkPatterns = [
@@ -1367,7 +1368,7 @@ function setupIpcHandlers() {
   };
 
   // Save album artwork to separate table
-  const saveAlbumArtwork = async (trackId: string, albumId: string, artworkData: string, artworkInfo: any) => {
+  const saveAlbumArtwork = async (trackId: string, albumId: string, artworkData: string, artworkInfo: Record<string, unknown>) => {
     try {
       // Create artwork table if it doesn't exist
       database.exec(`
