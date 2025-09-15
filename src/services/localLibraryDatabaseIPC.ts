@@ -1,4 +1,4 @@
-import type { LocalTrack, DbTrack, DbAlbum, DbArtist } from '../types/spotify.d.ts';
+import type { LocalTrack, DbAlbum, DbArtist } from '../types/spotify.d.ts';
 
 // IPC-based database service for renderer process
 // This uses the electronAPI bridge instead of importing better-sqlite3 directly
@@ -175,17 +175,17 @@ export class LocalLibraryDatabaseService {
    */
   // TODO: Implement when needed
 
-  async addTrack(track: LocalTrack): Promise<void> {
+  async addTrack(): Promise<void> {
     // TODO: Implement when needed
     throw new Error('Not implemented yet');
   }
 
-  async updateTrack(track: LocalTrack): Promise<void> {
+  async updateTrack(): Promise<void> {
     // TODO: Implement when needed
     throw new Error('Not implemented yet');
   }
 
-  async deleteTrack(id: string): Promise<void> {
+  async deleteTrack(): Promise<void> {
     // TODO: Implement when needed
     throw new Error('Not implemented yet');
   }

@@ -1,4 +1,85 @@
 // Electron API interface for local music library functionality
+// Note: Types imported inline to avoid circular dependency with spotify.d.ts
+
+interface LocalTrackBase {
+  id: string;
+  name: string;
+  artist: string;
+  album: string;
+  duration: number;
+  filePath: string;
+  fileName: string;
+  fileSize: number;
+  format: string;
+  source: 'local';
+}
+
+interface DbAlbumBase {
+  id: string;
+  name: string;
+  artist: string;
+  year?: number;
+  genre?: string;
+  album_art?: string;
+  track_count: number;
+  total_duration: number;
+  date_added: string;
+}
+
+interface DbArtistBase {
+  id: string;
+  name: string;
+  album_count: number;
+  track_count: number;
+  total_duration: number;
+  date_added: string;
+}
+
+interface DbAlbumArtworkBase {
+  id: string;
+  track_id?: string;
+  album_id?: string;
+  data: string;
+  format: string;
+  width: number;
+  height: number;
+  file_size: number;
+  source: string;
+  file_path?: string;
+  date_added: string;
+}
+
+interface DbPerformanceMetricBase {
+  id: string;
+  operation: string;
+  duration: number;
+  timestamp: string;
+  metadata?: string;
+}
+
+interface LocalLibrarySettingsBase {
+  musicDirectories: string[];
+  watchForChanges: boolean;
+  scanOnStartup: boolean;
+  autoIndexNewFiles: boolean;
+  supportedFormats: string[];
+  excludePatterns: string[];
+  includeSubdirectories: boolean;
+}
+
+interface AdvancedFilterCriteriaBase {
+  artists?: string[];
+  albums?: string[];
+  genres?: string[];
+  years?: { min?: number; max?: number };
+  duration?: { min?: number; max?: number };
+  bitrate?: { min?: number; max?: number };
+  formats?: string[];
+  playCount?: { min?: number; max?: number };
+  dateAdded?: { from?: string; to?: string };
+  hasLyrics?: boolean;
+  hasAlbumArt?: boolean;
+}
 export interface ElectronAPI {
   // File system operations
   getAudioFiles(directory: string, options: {
@@ -46,9 +127,9 @@ export interface ElectronAPI {
   
   // Basic database operations
   dbInitialize(): Promise<boolean>;
-  dbGetAllTracks(): Promise<LocalTrack[]>;
-  dbGetAllAlbums(): Promise<any[]>;
-  dbGetAllArtists(): Promise<any[]>;
+  dbGetAllTracks(): Promise<LocalTrackBase[]>;
+  dbGetAllAlbums(): Promise<DbAlbumBase[]>;
+  dbGetAllArtists(): Promise<DbArtistBase[]>;
   dbClearLibrary(): Promise<void>;
   dbGetStats(): Promise<{
     totalTracks: number;
@@ -65,13 +146,13 @@ export interface ElectronAPI {
     limit?: number;
     offset?: number;
     fuzzyMatch?: boolean;
-  }): Promise<LocalTrack[]>;
+  }): Promise<LocalTrackBase[]>;
   
-  dbFilterTracks(criteria: any, limit?: number, offset?: number): Promise<LocalTrack[]>;
-  dbGetAlbumArtwork(trackId: string): Promise<any>;
+  dbFilterTracks(criteria: AdvancedFilterCriteriaBase, limit?: number, offset?: number): Promise<LocalTrackBase[]>;
+  dbGetAlbumArtwork(trackId: string): Promise<DbAlbumArtworkBase | null>;
   dbVacuum(): Promise<{ success: boolean }>;
   dbAnalyze(): Promise<{ success: boolean }>;
-  dbGetPerformanceMetrics(limit?: number): Promise<any[]>;
+  dbGetPerformanceMetrics(limit?: number): Promise<DbPerformanceMetricBase[]>;
   dbGetDetailedStats(): Promise<{
     totalTracks: number;
     totalAlbums: number;
@@ -85,16 +166,8 @@ export interface ElectronAPI {
   }>;
   
   // Scanner operations
-  scannerGetSettings(): Promise<{
-    musicDirectories: string[];
-    watchForChanges: boolean;
-    scanOnStartup: boolean;
-    autoIndexNewFiles: boolean;
-    supportedFormats: string[];
-    excludePatterns: string[];
-    includeSubdirectories: boolean;
-  }>;
-  scannerUpdateSettings(settings: any): Promise<any>;
+  scannerGetSettings(): Promise<LocalLibrarySettingsBase>;
+  scannerUpdateSettings(settings: Partial<LocalLibrarySettingsBase>): Promise<{ success: boolean; message?: string }>;
   scannerAddDirectory(directory: string): Promise<void>;
   scannerRemoveDirectory(directory: string): Promise<void>;
   scannerGetProgress(): Promise<{

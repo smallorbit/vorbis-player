@@ -29,7 +29,7 @@ export class LocalLibraryScannerService {
     errors: []
   };
 
-  private listeners: Map<string, Function[]> = new Map();
+  private listeners: Map<string, ((...args: unknown[]) => void)[]> = new Map();
 
   constructor() {
     this.loadSettings();
@@ -374,14 +374,14 @@ export class LocalLibraryScannerService {
   }
 
   // Event system
-  on(event: string, callback: Function): void {
+  on(event: string, callback: (...args: unknown[]) => void): void {
     if (!this.listeners.has(event)) {
       this.listeners.set(event, []);
     }
     this.listeners.get(event)!.push(callback);
   }
 
-  off(event: string, callback: Function): void {
+  off(event: string, callback: (...args: unknown[]) => void): void {
     const callbacks = this.listeners.get(event);
     if (callbacks) {
       const index = callbacks.indexOf(callback);
@@ -391,7 +391,7 @@ export class LocalLibraryScannerService {
     }
   }
 
-  private emit(event: string, data?: any): void {
+  private emit(event: string, data?: unknown): void {
     const callbacks = this.listeners.get(event);
     if (callbacks) {
       callbacks.forEach(callback => {
@@ -435,7 +435,7 @@ export const localLibraryScanner = new LocalLibraryScannerService();
 
 // Expose for debugging in browser console
 if (typeof window !== 'undefined') {
-  (window as any).debugClearAndRescan = () => localLibraryScanner.clearAndRescan();
-  (window as any).debugClearLibrary = () => localLibraryDatabase.clearLibrary();
-  (window as any).debugScanLibrary = () => localLibraryScanner.scanAllDirectories(true);
+  (window as Window & typeof globalThis & { debugClearAndRescan: () => Promise<void>; debugClearLibrary: () => Promise<void>; debugScanLibrary: () => Promise<void> }).debugClearAndRescan = () => localLibraryScanner.clearAndRescan();
+  (window as Window & typeof globalThis & { debugClearAndRescan: () => Promise<void>; debugClearLibrary: () => Promise<void>; debugScanLibrary: () => Promise<void> }).debugClearLibrary = () => localLibraryDatabase.clearLibrary();
+  (window as Window & typeof globalThis & { debugClearAndRescan: () => Promise<void>; debugClearLibrary: () => Promise<void>; debugScanLibrary: () => Promise<void> }).debugScanLibrary = () => localLibraryScanner.scanAllDirectories(true);
 }

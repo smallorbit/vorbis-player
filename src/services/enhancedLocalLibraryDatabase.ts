@@ -4,10 +4,8 @@ import type {
   DbTrack, 
   DbAlbum, 
   DbArtist, 
-  DbPlaylist,
   DbSearchHistory,
   DbSavedFilter,
-  DbMigration,
   DbAlbumArtwork,
   DbPerformanceMetric,
   AdvancedFilterCriteria,
@@ -291,7 +289,7 @@ export class EnhancedLocalLibraryDatabaseService {
   private async withPerformanceTracking<T>(
     operation: string, 
     fn: () => Promise<T> | T, 
-    metadata?: any
+    metadata?: Record<string, unknown>
   ): Promise<T> {
     const startTime = Date.now();
     try {
@@ -314,7 +312,7 @@ export class EnhancedLocalLibraryDatabaseService {
     }
   }
 
-  private async recordPerformanceMetric(operation: string, duration: number, metadata?: any): Promise<void> {
+  private async recordPerformanceMetric(operation: string, duration: number, metadata?: Record<string, unknown>): Promise<void> {
     if (!this.db || !this.initialized) return;
     
     try {
@@ -549,7 +547,7 @@ export class EnhancedLocalLibraryDatabaseService {
       if (!this.db || !this.initialized) return [];
 
       let sql = 'SELECT * FROM tracks WHERE 1=1';
-      const params: any[] = [];
+      const params: unknown[] = [];
 
       // Build WHERE clause based on criteria
       if (criteria.artists && criteria.artists.length > 0) {
@@ -1020,7 +1018,14 @@ export class EnhancedLocalLibraryDatabaseService {
           COUNT(DISTINCT album) as total_albums,
           COUNT(DISTINCT artist) as total_artists
         FROM tracks
-      `).get() as any;
+      `).get() as {
+        total_tracks: number;
+        total_duration: number;
+        total_file_size: number;
+        average_bitrate: number;
+        total_albums: number;
+        total_artists: number;
+      };
 
       // Format breakdown
       const formatBreakdown = this.db.prepare(`
