@@ -1,5 +1,4 @@
 import { albumArtManager } from './albumArtManager';
-import { enhancedLocalLibraryDatabaseIPC } from './enhancedLocalLibraryDatabaseIPC';
 import type { LocalTrack } from '../types/spotify.d.ts';
 
 /**
@@ -313,7 +312,8 @@ export class VisualEffectsAlbumArtIntegrationService {
 
     const max = Math.max(r, g, b);
     const min = Math.min(r, g, b);
-    let h = 0, s = 0, l = (max + min) / 2;
+    let h = 0, s = 0;
+    const l = (max + min) / 2;
 
     if (max === min) {
       h = s = 0; // achromatic

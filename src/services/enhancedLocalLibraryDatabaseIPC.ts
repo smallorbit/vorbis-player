@@ -104,8 +104,8 @@ export class EnhancedLocalLibraryDatabaseIPCService {
       const startTime = Date.now();
       
       let tracks: LocalTrack[] = [];
-      let albums: DbAlbum[] = [];
-      let artists: DbArtist[] = [];
+      const albums: DbAlbum[] = [];
+      const artists: DbArtist[] = [];
 
       if (options.type === 'tracks' || options.type === 'all') {
         tracks = await window.electronAPI.dbSearchTracks({
@@ -298,7 +298,7 @@ export class EnhancedLocalLibraryDatabaseIPCService {
   /**
    * Get performance metrics
    */
-  async getPerformanceMetrics(limit = 100): Promise<any[]> {
+  async getPerformanceMetrics(limit = 100): Promise<Record<string, unknown>[]> {
     if (!window.electronAPI) {
       throw new Error('Electron API not available');
     }
@@ -417,7 +417,7 @@ export class EnhancedLocalLibraryDatabaseIPCService {
   async healthCheck(): Promise<{
     connected: boolean;
     initialized: boolean;
-    basicStats: any;
+    basicStats: Record<string, unknown> | null;
     performanceScore: number;
   }> {
     try {

@@ -50,7 +50,7 @@ export class EnhancedLocalLibraryScannerService {
     duplicatesFound: 0
   };
 
-  private listeners: Map<string, Function[]> = new Map();
+  private listeners: Map<string, ((...args: unknown[]) => void)[]> = new Map();
   private scanStartTime = 0;
   private lastProgressUpdate = 0;
 
@@ -236,7 +236,6 @@ export class EnhancedLocalLibraryScannerService {
         this.scanProgress.currentOperation = 'processing_artwork';
         
         try {
-          const picture = metadata.common.picture[0];
           
           // Use album art manager for processing
           const track = this.createTrackObject(metadata, filePath, fileStats, undefined);
@@ -298,7 +297,7 @@ export class EnhancedLocalLibraryScannerService {
   private createTrackObject(
     metadata: musicMetadata.IAudioMetadata,
     filePath: string,
-    fileStats: any,
+    fileStats: { size: number; mtime: Date; isFile?: boolean },
     albumArt?: string,
     existingTrack?: LocalTrack
   ): LocalTrack {
@@ -542,7 +541,7 @@ export class EnhancedLocalLibraryScannerService {
     }
 
     let removedTracks = 0;
-    let removedArtwork = 0;
+    const removedArtwork = 0;
 
     try {
       // Get all tracks from database
@@ -556,7 +555,7 @@ export class EnhancedLocalLibraryScannerService {
             await enhancedLocalLibraryDatabase.removeTrackByPath(track.filePath);
             removedTracks++;
           }
-        } catch (error) {
+        } catch {
           // File doesn't exist, remove from database
           await enhancedLocalLibraryDatabase.removeTrackByPath(track.filePath);
           removedTracks++;
@@ -745,14 +744,14 @@ export class EnhancedLocalLibraryScannerService {
   }
 
   // Event system (unchanged)
-  on(event: string, callback: Function): void {
+  on(event: string, callback: (...args: unknown[]) => void): void {
     if (!this.listeners.has(event)) {
       this.listeners.set(event, []);
     }
     this.listeners.get(event)!.push(callback);
   }
 
-  off(event: string, callback: Function): void {
+  off(event: string, callback: (...args: unknown[]) => void): void {
     const callbacks = this.listeners.get(event);
     if (callbacks) {
       const index = callbacks.indexOf(callback);
@@ -762,7 +761,7 @@ export class EnhancedLocalLibraryScannerService {
     }
   }
 
-  private emit(event: string, data?: any): void {
+  private emit(event: string, data?: unknown): void {
     const callbacks = this.listeners.get(event);
     if (callbacks) {
       callbacks.forEach(callback => {

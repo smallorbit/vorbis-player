@@ -25,7 +25,7 @@ export class LocalAudioPlayerService {
     gaplessPlayback: true
   };
 
-  private listeners: Map<string, Function[]> = new Map();
+  private listeners: Map<string, ((...args: unknown[]) => void)[]> = new Map();
 
   constructor() {
     this.initializeAudioContext();
@@ -34,7 +34,7 @@ export class LocalAudioPlayerService {
 
   private async initializeAudioContext(): Promise<void> {
     try {
-      this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      this.audioContext = new (window.AudioContext || (window as Window & typeof globalThis & { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
       
       // Setup audio nodes
       this.gainNode = this.audioContext.createGain();
@@ -477,14 +477,14 @@ export class LocalAudioPlayerService {
   }
 
   // Event system
-  on(event: string, callback: Function): void {
+  on(event: string, callback: (...args: unknown[]) => void): void {
     if (!this.listeners.has(event)) {
       this.listeners.set(event, []);
     }
     this.listeners.get(event)!.push(callback);
   }
 
-  off(event: string, callback: Function): void {
+  off(event: string, callback: (...args: unknown[]) => void): void {
     const callbacks = this.listeners.get(event);
     if (callbacks) {
       const index = callbacks.indexOf(callback);
@@ -494,7 +494,7 @@ export class LocalAudioPlayerService {
     }
   }
 
-  private emit(event: string, data?: any): void {
+  private emit(event: string, data?: unknown): void {
     const callbacks = this.listeners.get(event);
     if (callbacks) {
       callbacks.forEach(callback => {

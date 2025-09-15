@@ -154,7 +154,7 @@ export class LocalLibraryDatabaseService {
 
     // Check if codec column exists
     const tableInfo = this.db.prepare("PRAGMA table_info(tracks)").all();
-    const hasCodecColumn = tableInfo.some((col: any) => col.name === 'codec');
+    const hasCodecColumn = tableInfo.some((col: { name: string }) => col.name === 'codec');
     
     if (!hasCodecColumn) {
       console.log('🔄 Migrating database: Adding codec column to tracks table');
