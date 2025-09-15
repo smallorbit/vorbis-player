@@ -331,7 +331,7 @@ export const LocalLibraryDrawer = memo<LocalLibraryDrawerProps>(({
           event.preventDefault();
           onClose();
           break;
-        case 'Tab':
+        case 'Tab': {
           // Focus trapping within the drawer
           const focusableElements = drawerRef.current?.querySelectorAll(
             'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
@@ -350,6 +350,7 @@ export const LocalLibraryDrawer = memo<LocalLibraryDrawerProps>(({
             }
           }
           break;
+        }
       }
     };
 

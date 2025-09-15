@@ -4,7 +4,6 @@ import type { LocalLibrarySettings as SettingsType } from '../types/spotify.d.ts
 import { localLibraryScanner } from '../services/localLibraryScannerIPC';
 import { localLibraryDatabase } from '../services/localLibraryDatabaseIPC';
 import { Button } from './styled/Button';
-import { Card } from './styled/Card';
 import { ScrollArea } from './ui/scroll-area';
 
 const SettingsContainer = styled.div`
@@ -353,7 +352,7 @@ export const LocalLibrarySettings: React.FC = () => {
     }
   }, []);
 
-  const handleSettingChange = useCallback((key: keyof SettingsType, value: any) => {
+  const handleSettingChange = useCallback((key: keyof SettingsType, value: SettingsType[keyof SettingsType]) => {
     const newSettings = { ...settings, [key]: value };
     setSettings(newSettings);
     localLibraryScanner.updateSettings({ [key]: value });

@@ -2,8 +2,8 @@ import React, { useState, useEffect, useCallback, useMemo, memo } from 'react';
 import styled from 'styled-components';
 import type { LocalTrack, DbAlbum, DbArtist } from '../types/spotify.d.ts';
 import { localLibraryDatabase } from '../services/localLibraryDatabaseIPC';
-import { localLibraryScanner } from '../services/localLibraryScannerIPC';
-import { unifiedPlayer } from '../services/unifiedPlayer';
+// import { localLibraryScanner } from '../services/localLibraryScannerIPC';
+// import { unifiedPlayer } from '../services/unifiedPlayer';
 // import { ScrollArea } from './ui/scroll-area';
 import { Button } from './styled/Button';
 import { Card } from './styled/Card';
@@ -157,6 +157,7 @@ const AlbumThumbnail = styled.div<{ src?: string }>`
   }
 `;
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const TrackNumber = styled.div`
   color: rgba(255, 255, 255, 0.6);
   font-size: 14px;
@@ -462,7 +463,7 @@ export const LocalLibraryBrowser: React.FC<LocalLibraryBrowserProps> = memo(({
   });
 
   // Debug functions for clearing and rescanning
-  const clearAndRescan = async () => {
+  const clearAndRescan = useCallback(async () => {
     try {
       console.log('🗑️ Clearing library and rescanning...');
       setIsLoading(true);
@@ -488,7 +489,7 @@ export const LocalLibraryBrowser: React.FC<LocalLibraryBrowserProps> = memo(({
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [setIsLoading]);
 
   // Load initial data
   useEffect(() => {
@@ -496,19 +497,19 @@ export const LocalLibraryBrowser: React.FC<LocalLibraryBrowserProps> = memo(({
     loadStats();
 
     // Expose debug functions to window
-    (window as any).debugClearAndRescan = clearAndRescan;
-    (window as any).debugClearLibrary = () => localLibraryDatabase.clearLibrary();
-    (window as any).debugLoadData = loadData;
-    (window as any).debugLoadStats = loadStats;
+    (window as Record<string, unknown>).debugClearAndRescan = clearAndRescan;
+    (window as Record<string, unknown>).debugClearLibrary = () => localLibraryDatabase.clearLibrary();
+    (window as Record<string, unknown>).debugLoadData = loadData;
+    (window as Record<string, unknown>).debugLoadStats = loadStats;
 
     return () => {
       // Cleanup debug functions
-      delete (window as any).debugClearAndRescan;
-      delete (window as any).debugClearLibrary;
-      delete (window as any).debugLoadData;
-      delete (window as any).debugLoadStats;
+      delete (window as Record<string, unknown>).debugClearAndRescan;
+      delete (window as Record<string, unknown>).debugClearLibrary;
+      delete (window as Record<string, unknown>).debugLoadData;
+      delete (window as Record<string, unknown>).debugLoadStats;
     };
-  }, []);
+  }, [clearAndRescan]);
 
   const loadData = async () => {
     setIsLoading(true);
@@ -622,6 +623,7 @@ export const LocalLibraryBrowser: React.FC<LocalLibraryBrowserProps> = memo(({
     }
   }, [onQueueTracks]);
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const formatDuration = (ms: number): string => {
     const seconds = Math.floor(ms / 1000);
     const minutes = Math.floor(seconds / 60);
