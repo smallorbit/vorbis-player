@@ -50,8 +50,9 @@ import PlayerStateRenderer from './PlayerStateRenderer';
 import { usePlayerState } from '../hooks/usePlayerState';
 import { usePlaylistManager } from '../hooks/usePlaylistManager';
 import { theme } from '@/styles/theme';
-import { DEFAULT_GLOW_RATE, DEFAULT_GLOW_INTENSITY } from './AccentColorGlowOverlay';
+import { DEFAULT_GLOW_RATE, DEFAULT_GLOW_INTENSITY } from '../utils/colorUtils';
 import type { LocalTrack, EnhancedTrack } from '../types/spotify';
+import type { DefaultTheme } from 'styled-components';
 import { unifiedPlayer, type PlaybackSource } from '../services/unifiedPlayer';
 import { isElectron } from '../utils/environment';
 
@@ -59,10 +60,10 @@ import { isElectron } from '../utils/environment';
 const Container = styled.div`
   width: 100%;
   ${flexCenter};
-  padding: ${({ theme }: any) => theme.spacing.sm};
+  padding: ${({ theme }: { theme: DefaultTheme }) => theme.spacing.sm};
   
-  @media (min-width: ${({ theme }: any) => theme.breakpoints.sm}) {
-    padding: ${({ theme }: any) => theme.spacing.sm};
+  @media (min-width: ${({ theme }: { theme: DefaultTheme }) => theme.breakpoints.sm}) {
+    padding: ${({ theme }: { theme: DefaultTheme }) => theme.spacing.sm};
   }
 `;
 
@@ -216,17 +217,17 @@ const AudioPlayerComponent = () => {
     };
 
     // Subscribe to unified player events
-    unifiedPlayer.on('queueChanged', handleQueueChanged);
-    unifiedPlayer.on('playbackStarted', handlePlaybackStarted);
-    unifiedPlayer.on('playbackPaused', handlePlaybackPaused);
-    unifiedPlayer.on('playbackStopped', handlePlaybackStopped);
+    unifiedPlayer.on('queueChanged', handleQueueChanged as (...args: unknown[]) => void);
+    unifiedPlayer.on('playbackStarted', handlePlaybackStarted as (...args: unknown[]) => void);
+    unifiedPlayer.on('playbackPaused', handlePlaybackPaused as (...args: unknown[]) => void);
+    unifiedPlayer.on('playbackStopped', handlePlaybackStopped as (...args: unknown[]) => void);
 
     return () => {
       // Cleanup event listeners
-      unifiedPlayer.off('queueChanged', handleQueueChanged);
-      unifiedPlayer.off('playbackStarted', handlePlaybackStarted);
-      unifiedPlayer.off('playbackPaused', handlePlaybackPaused);
-      unifiedPlayer.off('playbackStopped', handlePlaybackStopped);
+      unifiedPlayer.off('queueChanged', handleQueueChanged as (...args: unknown[]) => void);
+      unifiedPlayer.off('playbackStarted', handlePlaybackStarted as (...args: unknown[]) => void);
+      unifiedPlayer.off('playbackPaused', handlePlaybackPaused as (...args: unknown[]) => void);
+      unifiedPlayer.off('playbackStopped', handlePlaybackStopped as (...args: unknown[]) => void);
     };
   }, [setCurrentTrackIndex, setTracks]);
 
@@ -370,7 +371,7 @@ const AudioPlayerComponent = () => {
       console.error('Failed to play local track:', error);
       setError('Failed to play local music file');
     }
-  }, [setCurrentTrackIndex, setTracks, setError]);
+  }, [setCurrentTrackIndex, setTracks, setError, setSelectedPlaylistId, setIsLocalMode]);
 
   // Handle queuing multiple local tracks
   const handleQueueLocalTracks = useCallback(async (localTracks: LocalTrack[], startIndex = 0) => {
@@ -429,7 +430,7 @@ const AudioPlayerComponent = () => {
       console.error('Failed to queue local tracks:', error);
       setError('Failed to load local music tracks');
     }
-  }, [setTracks, setCurrentTrackIndex, setError]);
+  }, [setTracks, setCurrentTrackIndex, setError, setSelectedPlaylistId, setIsLocalMode]);
 
   useEffect(() => {
     // Skip Spotify authentication in Electron mode
@@ -446,7 +447,7 @@ const AudioPlayerComponent = () => {
     };
 
     handleAuthRedirect();
-  }, []);
+  }, [setError]);
 
   useEffect(() => {
     const handlePlayerStateChange = (state: SpotifyPlaybackState | null) => {
@@ -461,7 +462,7 @@ const AudioPlayerComponent = () => {
     };
 
     spotifyPlayer.onPlayerStateChanged(handlePlayerStateChange);
-  }, [tracks, currentTrackIndex]);
+  }, [tracks, currentTrackIndex, setCurrentTrackIndex]);
 
   useEffect(() => {
     let pollInterval: NodeJS.Timeout;
@@ -492,7 +493,8 @@ const AudioPlayerComponent = () => {
             }
           }
         }
-      } catch (error) {
+      } catch {
+        // Silently handle errors during song end detection
       }
     };
 
@@ -513,7 +515,7 @@ const AudioPlayerComponent = () => {
     if (tracks.length === 0) return;
 
     // Check if current track is local
-    if (currentTrack && (currentTrack as any).source === 'local') {
+    if (currentTrack && (currentTrack as EnhancedTrack).source === 'local') {
       // Use unified player for local tracks
       unifiedPlayer.next();
     } else {
@@ -527,7 +529,7 @@ const AudioPlayerComponent = () => {
     if (tracks.length === 0) return;
 
     // Check if current track is local
-    if (currentTrack && (currentTrack as any).source === 'local') {
+    if (currentTrack && (currentTrack as EnhancedTrack).source === 'local') {
       // Use unified player for local tracks
       unifiedPlayer.previous();
     } else {
@@ -551,7 +553,7 @@ const AudioPlayerComponent = () => {
           } else {
             setAccentColor(theme.colors.accent);
           }
-        } catch (error) {
+        } catch {
           setAccentColor(theme.colors.accent);
         }
       } else {
@@ -559,12 +561,12 @@ const AudioPlayerComponent = () => {
       }
     };
     extractColor();
-  }, [currentTrack?.id, currentTrack?.image, accentColorOverrides, theme.colors.accent]);
+  }, [currentTrack?.id, currentTrack?.image, accentColorOverrides, setAccentColor]);
 
   const handlePlay = useCallback(() => {
     if (currentTrack) {
       // Check if it's a local track
-      if ((currentTrack as any).source === 'local') {
+      if ((currentTrack as EnhancedTrack).source === 'local') {
         // Use unified player for local tracks
         unifiedPlayer.play();
       } else {
@@ -578,7 +580,7 @@ const AudioPlayerComponent = () => {
 
   const handlePause = useCallback(() => {
     // Check if current track is local
-    if (currentTrack && (currentTrack as any).source === 'local') {
+    if (currentTrack && (currentTrack as EnhancedTrack).source === 'local') {
       // Use unified player for local tracks
       unifiedPlayer.pause();
     } else {
@@ -597,15 +599,15 @@ const AudioPlayerComponent = () => {
     // In Electron mode, we need to ensure the library navigation shows the appropriate view
     // When opening playlist (showPlaylist becomes true), switch to Spotify view
     // When closing playlist (showPlaylist becomes false), switch back to local view
-  }, [isLocalMode]);
+  }, [isLocalMode, setShowPlaylist]);
 
   const handleShowVisualEffects = useCallback(() => {
     setShowVisualEffects(true);
-  }, []);
+  }, [setShowVisualEffects]);
 
   const handleCloseVisualEffects = useCallback(() => {
     setShowVisualEffects(false);
-  }, []);
+  }, [setShowVisualEffects]);
 
   const handleVisualEffectsToggle = useCallback(() => {
     if (visualEffectsEnabled) {
@@ -620,15 +622,15 @@ const AudioPlayerComponent = () => {
         setGlowRate(savedGlowRate);
       }
     }
-  }, [visualEffectsEnabled, restoreSavedFilters, savedGlowIntensity, savedGlowRate]);
+  }, [visualEffectsEnabled, restoreSavedFilters, savedGlowIntensity, savedGlowRate, setVisualEffectsEnabled]);
 
   const handleClosePlaylist = useCallback(() => {
     setShowPlaylist(false);
-  }, []);
+  }, [setShowPlaylist]);
 
   const handleCloseLibrary = useCallback(() => {
     setShowLibrary(false);
-  }, []);
+  }, [setShowLibrary]);
 
   const handleCloseLocalLibraryDrawer = useCallback(() => {
     setShowLocalLibraryDrawer(false);
@@ -665,7 +667,7 @@ const AudioPlayerComponent = () => {
     } else {
       setAccentColor(color);
     }
-  }, [currentTrack?.id, currentTrack?.image, setAccentColorOverrides, setAccentColor, theme.colors.accent]);
+  }, [currentTrack?.id, currentTrack?.image, setAccentColorOverrides, setAccentColor]);
 
   const renderContent = () => {
     const stateRenderer = (
