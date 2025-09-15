@@ -44,7 +44,7 @@ const electronAPI: ElectronAPI = {
   
   // Scanner operations
   scannerGetSettings: () => ipcRenderer.invoke('scanner-get-settings'),
-  scannerUpdateSettings: (settings: any) => ipcRenderer.invoke('scanner-update-settings', settings),
+  scannerUpdateSettings: (settings: Record<string, unknown>) => ipcRenderer.invoke('scanner-update-settings', settings),
   scannerAddDirectory: (directory: string) => ipcRenderer.invoke('scanner-add-directory', directory),
   scannerRemoveDirectory: (directory: string) => ipcRenderer.invoke('scanner-remove-directory', directory),
   scannerGetProgress: () => ipcRenderer.invoke('scanner-get-progress'),
@@ -65,6 +65,6 @@ window.addEventListener('DOMContentLoaded', () => {
   };
 
   for (const type of ['chrome', 'node', 'electron']) {
-    replaceText(`${type}-version`, (process.versions as any)[type]);
+    replaceText(`${type}-version`, (process.versions as Record<string, string>)[type]);
   }
 });
