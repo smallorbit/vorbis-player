@@ -338,16 +338,6 @@ export const VisualEffectsMenu: React.FC<VisualEffectsMenuProps> = memo(({
   ];
 
 
-  const getCurrentFilterOptionLabel = useCallback((key: string, value: number) => {
-    const config = filterConfig.find(f => f.key === key);
-    if (config?.type === 'options') {
-      const closest = config.options.reduce((prev, curr) =>
-        Math.abs(curr.value - value) < Math.abs(prev.value - value) ? curr : prev
-      );
-      return closest.label;
-    }
-    return value.toString();
-  }, [filterConfig]);
 
   const handleFilterChange = useCallback((key: string, value: number) => {
     onFilterChange(key, value);
@@ -396,7 +386,7 @@ export const VisualEffectsMenu: React.FC<VisualEffectsMenuProps> = memo(({
 
     // Should not reach here since all filters are options type
     return null;
-  }, [filterConfig, accentColor, handleFilterChange, getFilterValue, getCurrentFilterOptionLabel]);
+  }, [filterConfig, accentColor, handleFilterChange, getFilterValue]);
 
   return (
     <PerformanceProfilerComponent id="visual-effects-menu">

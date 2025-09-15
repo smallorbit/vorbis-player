@@ -2,7 +2,8 @@ import React, { memo, useEffect, useState, useCallback } from 'react';
 import styled, { keyframes } from 'styled-components';
 import type { Track } from '../services/spotify';
 import AlbumArtFilters from './AlbumArtFilters';
-import AccentColorGlowOverlay, { hexToRgb, DEFAULT_GLOW_RATE, DEFAULT_GLOW_INTENSITY } from './AccentColorGlowOverlay';
+import AccentColorGlowOverlay from './AccentColorGlowOverlay';
+import { hexToRgb, DEFAULT_GLOW_RATE, DEFAULT_GLOW_INTENSITY } from '../utils/colorUtils';
 import { useImageProcessingWorker } from '../hooks/useImageProcessingWorker';
 
 const spin = keyframes`

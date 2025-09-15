@@ -167,7 +167,7 @@ interface PlayerStateRendererProps {
   isLoading: boolean;
   error: string | null;
   selectedPlaylistId: string | null;
-  tracks: any[];
+  tracks: Record<string, unknown>[];
   onPlaylistSelect: (playlistId: string) => void;
 }
 

@@ -205,7 +205,7 @@ export const PerformanceTestSuite: React.FC<PerformanceTestSuiteProps> = ({
 
   const runMemoryLeakTest = useCallback(async () => {
     return runSingleTest('Memory Usage Stability', async () => {
-      const initialMemory = (performance as any).memory?.usedJSHeapSize || 0;
+      const initialMemory = (performance as Record<string, unknown>).memory ? ((performance as Record<string, unknown>).memory as { usedJSHeapSize: number }).usedJSHeapSize : 0;
 
       // Perform multiple operations that could cause memory leaks
       for (let i = 0; i < 20; i++) {
@@ -220,11 +220,12 @@ export const PerformanceTestSuite: React.FC<PerformanceTestSuiteProps> = ({
       }
 
       // Force garbage collection if available
-      if ((window as any).gc) {
-        (window as any).gc();
+      const windowGlobal = window as Record<string, unknown>;
+      if (windowGlobal.gc && typeof windowGlobal.gc === 'function') {
+        (windowGlobal.gc as () => void)();
       }
 
-      const finalMemory = (performance as any).memory?.usedJSHeapSize || 0;
+      const finalMemory = (performance as Record<string, unknown>).memory ? ((performance as Record<string, unknown>).memory as { usedJSHeapSize: number }).usedJSHeapSize : 0;
       const memoryIncrease = (finalMemory - initialMemory) / 1024 / 1024; // MB
 
       if (memoryIncrease > 5) { // More than 5MB increase is concerning

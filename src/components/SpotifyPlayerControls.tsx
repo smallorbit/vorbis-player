@@ -1,6 +1,7 @@
 import { useState, useEffect, memo, lazy, Suspense, useCallback } from 'react';
 import styled from 'styled-components';
 import type { Track } from '../services/spotify';
+import type { DefaultTheme } from 'styled-components';
 import LikeButton from './LikeButton';
 import { TimelineRow, TimelineSlider } from './TimelineSlider';
 
@@ -18,7 +19,7 @@ const PlayerControlsContainer = styled.div`
   z-index: 2;
   display: flex;
   flex-direction: column;
-  gap: ${({ theme }: any) => theme.spacing.sm};
+  gap: ${({ theme }: { theme: DefaultTheme }) => theme.spacing.sm};
   padding: ${sm} ${lg} ${lg} ${lg};
 `;
 
@@ -28,16 +29,16 @@ const TrackInfoOnlyRow = styled.div`
   flex-direction: column;
   align-items: center;
   text-align: center;
-  gap: ${({ theme }: any) => theme.spacing.xs};
+  gap: ${({ theme }: { theme: DefaultTheme }) => theme.spacing.xs};
   // width: 100%;
-  padding: 0 ${({ theme }: any) => theme.spacing.md};
+  padding: 0 ${({ theme }: { theme: DefaultTheme }) => theme.spacing.md};
 `;
 
 const PlayerTrackName = styled.div`
-  font-weight: ${({ theme }: any) => theme.fontWeight.semibold};
-  font-size: ${({ theme }: any) => theme.fontSize['2xl']};
-  line-height: ${({ theme }: any) => theme.fontSize['3xl']};
-  color: ${({ theme }: any) => theme.colors.white};
+  font-weight: ${({ theme }: { theme: DefaultTheme }) => theme.fontWeight.semibold};
+  font-size: ${({ theme }: { theme: DefaultTheme }) => theme.fontSize['2xl']};
+  line-height: ${({ theme }: { theme: DefaultTheme }) => theme.fontSize['3xl']};
+  color: ${({ theme }: { theme: DefaultTheme }) => theme.colors.white};
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -45,9 +46,9 @@ const PlayerTrackName = styled.div`
 `;
 
 const PlayerTrackArtist = styled.div`
-  font-size: ${({ theme }: any) => theme.fontSize.sm};
-  line-height: ${({ theme }: any) => theme.fontSize.sm};
-  color: ${({ theme }: any) => theme.colors.gray[300]};
+  font-size: ${({ theme }: { theme: DefaultTheme }) => theme.fontSize.sm};
+  line-height: ${({ theme }: { theme: DefaultTheme }) => theme.fontSize.sm};
+  color: ${({ theme }: { theme: DefaultTheme }) => theme.colors.gray[300]};
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -58,7 +59,7 @@ const TrackInfoRow = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: ${({ theme }: any) => theme.spacing.sm};
+  gap: ${({ theme }: { theme: DefaultTheme }) => theme.spacing.sm};
   width: 100%;
 `;
 
@@ -76,7 +77,7 @@ const TrackInfoCenter = styled.div`
   align-items: center;
   justify-content: center;
   min-width: 8.5rem;
-  gap: ${({ theme }: any) => theme.spacing.xs};
+  gap: ${({ theme }: { theme: DefaultTheme }) => theme.spacing.xs};
   position: absolute;
   left: 50%;
   transform: translateX(-50%);
@@ -86,7 +87,7 @@ const TrackInfoRight = styled.div`
   flex: 0 0 auto;
   display: flex;
   align-items: center;
-  gap: ${({ theme }: any) => theme.spacing.xs};
+  gap: ${({ theme }: { theme: DefaultTheme }) => theme.spacing.xs};
 `;
 
 const ControlButton = styled.button.withConfig({
@@ -143,13 +144,13 @@ const VolumeButton = styled.button`
 const TimelineLeft = styled.div`
   display: flex;
   align-items: center;
-  gap: ${({ theme }: any) => theme.spacing.xs};
+  gap: ${({ theme }: { theme: DefaultTheme }) => theme.spacing.xs};
 `;
 
 const TimelineRight = styled.div`
   display: flex;
   align-items: center;
-  gap: ${({ theme }: any) => theme.spacing.xs};
+  gap: ${({ theme }: { theme: DefaultTheme }) => theme.spacing.xs};
 `;
 
 // Custom comparison function for SpotifyPlayerControls memo optimization
@@ -242,7 +243,7 @@ const SpotifyPlayerControls = memo<SpotifyPlayerControlsProps>(({ currentTrack, 
     if (stored) {
       try {
         setCustomAccentColorOverrides(JSON.parse(stored));
-      } catch (e) {
+      } catch {
         // ignore parse errors
       }
     }
