@@ -1,11 +1,14 @@
 import React, { Suspense, memo } from 'react';
 import styled from 'styled-components';
 import type { Track } from '../services/spotify';
+import type { DefaultTheme } from 'styled-components';
 import { theme } from '../styles/theme';
 
 const Playlist = React.lazy(() => import('./Playlist'));
 
-const PlaylistDrawerContainer = styled.div<{ isOpen: boolean }>`
+const PlaylistDrawerContainer = styled.div.withConfig({
+  shouldForwardProp: (prop) => prop !== 'isOpen',
+}) <{ isOpen: boolean }>`
   position: fixed;
   top: 0;
   right: 0;
@@ -41,7 +44,9 @@ const PlaylistContent = styled.div`
   }
 `;
 
-const PlaylistOverlay = styled.div<{ isOpen: boolean }>`
+const PlaylistOverlay = styled.div.withConfig({
+  shouldForwardProp: (prop) => prop !== 'isOpen',
+}) <{ isOpen: boolean }>`
   position: fixed;
   top: 0;
   left: 0;
@@ -91,14 +96,14 @@ const CloseButton = styled.button`
 
 const PlaylistFallback = styled.div`
   width: 100%;
-  margin-top: ${({ theme }: any) => theme.spacing.lg};
+  margin-top: ${({ theme }: { theme: DefaultTheme }) => theme.spacing.lg};
 `;
 
 const PlaylistFallbackCard = styled.div`
-  background-color: ${({ theme }: any) => theme.colors.gray[800]};
+  background-color: ${({ theme }: { theme: DefaultTheme }) => theme.colors.gray[800]};
   border-radius: 1.25rem;
-  padding: ${({ theme }: any) => theme.spacing.md};
-  border: 1px solid ${({ theme }: any) => theme.colors.gray[700]};
+  padding: ${({ theme }: { theme: DefaultTheme }) => theme.spacing.md};
+  border: 1px solid ${({ theme }: { theme: DefaultTheme }) => theme.colors.gray[700]};
 `;
 
 interface PlaylistDrawerProps {
