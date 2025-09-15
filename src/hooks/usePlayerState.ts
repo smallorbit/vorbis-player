@@ -275,7 +275,7 @@ export const usePlayerState = () => {
           blur: parsed.blur ?? 0,                // Default to no blur
           sepia: parsed.sepia ?? 0               // Default to no sepia effect
         };
-      } catch (e) {
+      } catch {
         // If parsing fails, return default values
         // This prevents crashes from corrupted localStorage data
         return {
@@ -350,6 +350,7 @@ export const usePlayerState = () => {
 
   // Memoized setter for album filters with validation
   // This ensures filter values stay within acceptable ranges
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const setAlbumFiltersWithValidation = useCallback((filters: Partial<AlbumFilters>) => {
     setAlbumFilters(prev => {
       const newFilters = { ...prev, ...filters };
@@ -369,6 +370,7 @@ export const usePlayerState = () => {
 
   // Memoized setter for per-album glow settings
   // This optimizes performance by preventing unnecessary re-renders
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const setPerAlbumGlowWithValidation = useCallback((
     albumId: string, 
     settings: { intensity: number; rate: number }
@@ -389,6 +391,7 @@ export const usePlayerState = () => {
 
   // Memoized setter for accent color with validation
   // This ensures color values are valid hex colors
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const setAccentColorWithValidation = useCallback((color: string) => {
     // Validate hex color format
     // This prevents invalid colors from being applied

@@ -1,6 +1,6 @@
 import { useState, useCallback, useMemo } from 'react';
 import { useDebounce, useDebouncedCallback } from './useDebounce';
-import { DEFAULT_GLOW_RATE } from '../components/AccentColorGlowOverlay';
+import { DEFAULT_GLOW_RATE } from '../utils/colorUtils';
 
 export interface GlowSettings {
   enabled: boolean;

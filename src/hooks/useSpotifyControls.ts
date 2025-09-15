@@ -32,7 +32,7 @@ export const useSpotifyControls = ({
   useEffect(() => {
     const checkPlaybackState = async () => {
       // Skip Spotify API calls for local tracks
-      if (currentTrack && (currentTrack as any).source === 'local') {
+      if (currentTrack && (currentTrack as Track & { source?: string }).source === 'local') {
         return;
       }
 
@@ -54,21 +54,21 @@ export const useSpotifyControls = ({
 
   // Listen to unified player events for local tracks
   useEffect(() => {
-    if (!currentTrack || (currentTrack as any).source !== 'local') {
+    if (!currentTrack || (currentTrack as Track & { source?: string }).source !== 'local') {
       return;
     }
 
-    const handlePlaybackStarted = ({ track }: { track: any }) => {
+    const handlePlaybackStarted = ({ track }: { track: Record<string, unknown> }) => {
       console.log('🎵 Local playback started:', { trackName: track?.name });
       setIsPlaying(true);
     };
 
-    const handlePlaybackPaused = ({ track }: { track: any }) => {
+    const handlePlaybackPaused = ({ track }: { track: Record<string, unknown> }) => {
       console.log('🎵 Local playback paused:', { trackName: track?.name });
       setIsPlaying(false);
     };
 
-    const handlePlaybackStopped = ({ track }: { track: any }) => {
+    const handlePlaybackStopped = ({ track }: { track: Record<string, unknown> }) => {
       console.log('🎵 Local playback stopped:', { trackName: track?.name });
       setIsPlaying(false);
     };
@@ -116,11 +116,11 @@ export const useSpotifyControls = ({
       // Skip Spotify API calls for local tracks
       console.log('🔍 Checking track source:', { 
         trackId: currentTrack.id, 
-        source: (currentTrack as any).source,
-        isLocal: (currentTrack as any).source === 'local'
+        source: (currentTrack as Track & { source?: string }).source,
+        isLocal: (currentTrack as Track & { source?: string }).source === 'local'
       });
       
-      if ((currentTrack as any).source === 'local') {
+      if ((currentTrack as Track & { source?: string }).source === 'local') {
         console.log('🎵 Skipping Spotify API for local track');
         setIsLiked(false);
         return;
@@ -139,11 +139,11 @@ export const useSpotifyControls = ({
     };
 
     checkLikeStatus();
-  }, [currentTrack?.id]);
+  }, [currentTrack?.id, currentTrack]);
 
   const handlePlayPause = useCallback(async () => {
     // For local tracks, just call the appropriate callback
-    if (currentTrack && (currentTrack as any).source === 'local') {
+    if (currentTrack && (currentTrack as Track & { source?: string }).source === 'local') {
       if (isPlaying) {
         onPause();
       } else {
@@ -175,7 +175,7 @@ export const useSpotifyControls = ({
 
     if (newMutedState) {
       setPreviousVolume(volume);
-      if (currentTrack && (currentTrack as any).source === 'local') {
+      if (currentTrack && (currentTrack as Track & { source?: string }).source === 'local') {
         unifiedPlayer.setVolume(0);
       } else {
         spotifyPlayer.setVolume(0);
@@ -183,7 +183,7 @@ export const useSpotifyControls = ({
     } else {
       const volumeToRestore = previousVolume > 0 ? previousVolume : 50;
       setVolume(volumeToRestore);
-      if (currentTrack && (currentTrack as any).source === 'local') {
+      if (currentTrack && (currentTrack as Track & { source?: string }).source === 'local') {
         unifiedPlayer.setVolume(volumeToRestore / 100);
       } else {
         spotifyPlayer.setVolume(volumeToRestore / 100);
@@ -199,7 +199,7 @@ export const useSpotifyControls = ({
     if (!currentTrack?.id || isLikePending) return;
 
     // Skip Spotify API calls for local tracks
-    if ((currentTrack as any).source === 'local') {
+    if ((currentTrack as Track & { source?: string }).source === 'local') {
       return;
     }
 
@@ -220,11 +220,11 @@ export const useSpotifyControls = ({
     } finally {
       setIsLikePending(false);
     }
-  }, [currentTrack?.id, isLikePending, isLiked]);
+  }, [currentTrack, isLikePending, isLiked]);
 
   const handleSeek = useCallback(async (position: number) => {
     // For local tracks, use unified player
-    if (currentTrack && (currentTrack as any).source === 'local') {
+    if (currentTrack && (currentTrack as Track & { source?: string }).source === 'local') {
       unifiedPlayer.seek(position);
       return;
     }
@@ -267,7 +267,7 @@ export const useSpotifyControls = ({
 
   const handleVolumeChange = useCallback((newVolume: number) => {
     setVolume(newVolume);
-    if (currentTrack && (currentTrack as any).source === 'local') {
+    if (currentTrack && (currentTrack as Track & { source?: string }).source === 'local') {
       unifiedPlayer.setVolume(newVolume / 100);
     } else {
       spotifyPlayer.setVolume(newVolume / 100);
