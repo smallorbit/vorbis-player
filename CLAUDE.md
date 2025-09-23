@@ -15,11 +15,6 @@ npm run build               # Build for production (tsc -b && vite build)
 npm run lint                # Run ESLint
 npm run preview             # Preview production build
 
-# Testing
-npm run test                # Run tests in watch mode
-npm run test:run            # Run tests once
-npm run test:ui             # Run tests with UI
-npm run test:coverage       # Run tests with coverage
 
 # Electron (Desktop App)
 npm run electron:dev        # Run Electron app in development
@@ -66,8 +61,8 @@ App.tsx
 
 3. **Local Music Services** (Electron-only)
    - `localAudioPlayer.ts`: Web Audio API playback
-   - `localLibraryScanner.ts`: File system scanning
-   - `localLibraryDatabase.ts`: SQLite database for metadata
+   - `enhancedLocalLibraryScanner.ts`: File system scanning with real-time monitoring
+   - `enhancedLocalLibraryDatabase.ts`: SQLite database for metadata with IPC
    - `albumArtManager.ts`: Album art extraction/management
 
 4. **Visual Effects System**
@@ -82,6 +77,7 @@ Required `.env.local`:
 VITE_SPOTIFY_CLIENT_ID="your_spotify_client_id"
 VITE_SPOTIFY_REDIRECT_URI="http://127.0.0.1:3000/auth/spotify/callback"
 ```
+
 
 ## Critical Implementation Details
 
@@ -111,12 +107,11 @@ VITE_SPOTIFY_REDIRECT_URI="http://127.0.0.1:3000/auth/spotify/callback"
 - **Debounced Updates**: 150ms debounce on rapid state changes
 - **Virtual Scrolling**: react-window for large lists
 
-### Testing Strategy
+### Development Setup
 
-- **Unit Tests**: Vitest with React Testing Library
-- **Integration Tests**: API mocking with vi.fn()
-- **Performance Tests**: Visual effects performance monitoring
-- **Test Coverage**: Available via `npm run test:coverage`
+- **Environment Detection**: Automatic Electron vs Web browser detection
+- **Performance Monitoring**: Built-in visual effects performance monitoring
+- **Development Tools**: ESLint for code quality, TypeScript for type safety
 
 ## Common Development Tasks
 
@@ -130,12 +125,14 @@ VITE_SPOTIFY_REDIRECT_URI="http://127.0.0.1:3000/auth/spotify/callback"
 1. Update both `spotifyPlayer.ts` and `localAudioPlayer.ts` if needed
 2. Ensure `unifiedPlayer.ts` properly handles both sources
 3. Update UI components listening to player events
+4. Test both Electron (local) and Web (Spotify) environments
 
 ### Working with Electron Features
-1. Check `isElectron()` utility before using Electron APIs
+1. Check `isElectron()` utility from `src/utils/environment.ts` before using Electron APIs
 2. Add IPC handlers in `electron/main.ts`
 3. Expose APIs via `electron/preload.ts`
 4. Type definitions in `src/types/electron.d.ts`
+5. Use `enhancedLocalLibraryDatabaseIPC.ts` for database operations
 
 ## Known Issues & Solutions
 

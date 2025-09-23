@@ -28,7 +28,7 @@ Convert the current standalone "Manage Videos" button into a settings icon integ
 - Maintain all existing video management features:
   - Current video display and metadata
   - Video search and selection interface
-  - Custom YouTube URL input
+  - Custom URL input
   - Settings toggles (remember choices, auto-play, backup)
 - Update state management and prop threading
 

@@ -20,9 +20,9 @@ const LoadingIndicator: React.FC<LoadingIndicatorProps> = ({
   const getDefaultMessage = () => {
     switch (variant) {
       case 'search':
-        return 'Searching YouTube...';
+        return 'Searching...';
       case 'quality':
-        return 'Testing video quality...';
+        return 'Testing quality...';
       default:
         return 'Loading...';
     }
@@ -39,13 +39,13 @@ const LoadingIndicator: React.FC<LoadingIndicatorProps> = ({
           <div className="absolute -inset-2 border-2 border-gray-100 border-b-blue-300 rounded-full animate-spin-slow opacity-50"></div>
         )}
       </div>
-      
+
       {/* Main message */}
       <div className="text-center">
         <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
           {displayMessage}
         </p>
-        
+
         {/* Phase indicator for multi-step processes */}
         {phase && (
           <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
@@ -53,17 +53,17 @@ const LoadingIndicator: React.FC<LoadingIndicatorProps> = ({
           </p>
         )}
       </div>
-      
+
       {/* Progress bar */}
       {typeof progress === 'number' && progress >= 0 && progress <= 100 && (
         <div className="w-full max-w-xs bg-gray-200 rounded-full h-2 dark:bg-gray-700">
-          <div 
+          <div
             className="bg-blue-500 h-2 rounded-full transition-all duration-300 ease-out"
             style={{ width: `${progress}%` }}
           />
         </div>
       )}
-      
+
       {/* Search-specific indicators */}
       {variant === 'search' && (
         <div className="flex space-x-1">
@@ -86,9 +86,9 @@ const SearchPhaseIndicator: React.FC<SearchPhaseIndicatorProps> = ({
   className
 }) => {
   const phases = [
-    { key: 'searching', label: 'Searching YouTube', icon: '🔍' },
+    { key: 'searching', label: 'Searching', icon: '🔍' },
     { key: 'filtering', label: 'Filtering content', icon: '🔧' },
-    { key: 'scoring', label: 'Scoring videos', icon: '⭐' },
+    { key: 'scoring', label: 'Scoring results', icon: '⭐' },
     { key: 'selecting', label: 'Selecting best', icon: '✨' }
   ];
 
@@ -98,11 +98,11 @@ const SearchPhaseIndicator: React.FC<SearchPhaseIndicatorProps> = ({
     <div className={cn("flex items-center justify-center space-x-4", className)}>
       {phases.map((phase, index) => (
         <div key={phase.key} className="flex flex-col items-center space-y-1">
-          <div 
+          <div
             className={cn(
               "w-8 h-8 rounded-full flex items-center justify-center text-sm border-2",
-              index <= currentIndex 
-                ? "bg-blue-500 border-blue-500 text-white" 
+              index <= currentIndex
+                ? "bg-blue-500 border-blue-500 text-white"
                 : "bg-gray-100 border-gray-300 text-gray-400"
             )}
           >
@@ -138,7 +138,7 @@ const VideoSkeleton: React.FC<VideoSkeletonProps> = ({ count = 1, className }) =
         <div key={index} className="space-y-3">
           {/* Video player skeleton */}
           <Skeleton className="w-full aspect-video rounded-lg" />
-          
+
           {/* Video title and info skeleton */}
           <div className="space-y-2">
             <Skeleton className="h-4 w-3/4" />
