@@ -1,26 +1,153 @@
+/**
+ * @fileoverview Spotify Authentication and API Service
+ * 
+ * Handles Spotify OAuth 2.0 authentication flow and provides access to
+ * Spotify Web API endpoints. Manages token refresh, user authentication,
+ * and API request handling for the Vorbis Player application.
+ * 
+ * @architecture
+ * This service implements the OAuth 2.0 PKCE (Proof Key for Code Exchange)
+ * flow for secure authentication with Spotify's API. It manages token
+ * lifecycle including storage, refresh, and automatic renewal.
+ * 
+ * @responsibilities
+ * - OAuth 2.0 PKCE authentication flow
+ * - Token management and refresh
+ * - Spotify Web API request handling
+ * - User profile and library data retrieval
+ * - Playlist management and playback control
+ * 
+ * @security
+ * - Uses PKCE flow for enhanced security
+ * - Tokens stored in localStorage with expiration checks
+ * - Automatic token refresh before expiration
+ * - Secure code verifier generation and validation
+ * 
+ * @usage
+ * ```typescript
+ * import { spotifyAuth } from './services/spotify';
+ * 
+ * // Start authentication flow
+ * const authUrl = await spotifyAuth.getAuthUrl();
+ * window.location.href = authUrl;
+ * 
+ * // Handle callback
+ * await spotifyAuth.handleAuthCallback(code);
+ * 
+ * // Make API requests
+ * const profile = await spotifyAuth.getUserProfile();
+ * ```
+ * 
+ * @dependencies
+ * - Environment variables: VITE_SPOTIFY_CLIENT_ID, VITE_SPOTIFY_REDIRECT_URI
+ * - Web Crypto API: For PKCE code challenge generation
+ * - localStorage: Token persistence
+ * 
+ * @author Vorbis Player Team
+ * @version 2.0.0
+ */
+
 const SPOTIFY_CLIENT_ID = import.meta.env.VITE_SPOTIFY_CLIENT_ID;
 const SPOTIFY_REDIRECT_URI = import.meta.env.VITE_SPOTIFY_REDIRECT_URI;
 
+/**
+ * Spotify OAuth scopes required for the application
+ * 
+ * Defines the permissions requested from users during authentication.
+ * These scopes enable playback control, library access, and user data retrieval.
+ * 
+ * @constant
+ * @type {string[]}
+ */
 const SCOPES = [
-  'streaming',
-  'user-read-email',
-  'user-read-private',
-  'user-read-playback-state',
-  'user-modify-playback-state',
-  'user-read-currently-playing',
-  'playlist-read-private',
-  'playlist-read-collaborative',
-  'user-library-read',
-  'user-library-modify',
-  'user-top-read'
+  'streaming',                    // Control playback on user's devices
+  'user-read-email',             // Read user's email address
+  'user-read-private',           // Read user's private information
+  'user-read-playback-state',    // Read user's current playback state
+  'user-modify-playback-state',  // Control playback on user's devices
+  'user-read-currently-playing', // Read user's currently playing track
+  'playlist-read-private',       // Read user's private playlists
+  'playlist-read-collaborative', // Read user's collaborative playlists
+  'user-library-read',           // Read user's saved tracks and albums
+  'user-library-modify',         // Modify user's saved tracks and albums
+  'user-top-read'                // Read user's top tracks and artists
 ];
 
+/**
+ * Token data interface for Spotify OAuth tokens
+ * 
+ * Represents the authentication tokens received from Spotify's OAuth flow.
+ * Includes access token, optional refresh token, and expiration timestamp.
+ * 
+ * @interface TokenData
+ * 
+ * @property {string} access_token - OAuth access token for API requests
+ * @property {string} [refresh_token] - Optional refresh token for token renewal
+ * @property {number} expires_at - Timestamp when access token expires
+ * 
+ * @example
+ * ```typescript
+ * const tokenData: TokenData = {
+ *   access_token: 'BQ...',
+ *   refresh_token: 'AQ...',
+ *   expires_at: 1640995200000
+ * };
+ * ```
+ */
 interface TokenData {
   access_token: string;
   refresh_token?: string;
   expires_at: number;
 }
 
+/**
+ * SpotifyAuth - Spotify OAuth 2.0 PKCE Authentication Service
+ * 
+ * Handles the complete OAuth 2.0 PKCE authentication flow with Spotify.
+ * Manages token lifecycle, automatic refresh, and secure token storage.
+ * 
+ * @class
+ * 
+ * @example
+ * ```typescript
+ * const auth = new SpotifyAuth();
+ * 
+ * // Start authentication
+ * const authUrl = await auth.getAuthUrl();
+ * window.location.href = authUrl;
+ * 
+ * // Handle callback (called after user authorizes)
+ * await auth.handleAuthCallback(authorizationCode);
+ * 
+ * // Check authentication status
+ * if (auth.isAuthenticated()) {
+ *   const profile = await auth.getUserProfile();
+ * }
+ * ```
+ * 
+ * @methods
+ * - getAuthUrl(): Generate OAuth authorization URL
+ * - handleAuthCallback(code): Process OAuth callback
+ * - isAuthenticated(): Check if user is authenticated
+ * - getAccessToken(): Get current access token
+ * - refreshToken(): Refresh expired access token
+ * - logout(): Clear authentication data
+ * - getUserProfile(): Get user profile information
+ * - getUserPlaylists(): Get user's playlists
+ * - getUserTopTracks(): Get user's top tracks
+ * - getUserSavedTracks(): Get user's saved tracks
+ * 
+ * @events
+ * - tokenRefreshed: Fired when access token is refreshed
+ * - authenticationChanged: Fired when authentication state changes
+ * - error: Fired when authentication errors occur
+ * 
+ * @security
+ * - Implements OAuth 2.0 PKCE flow
+ * - Secure token storage with expiration checks
+ * - Automatic token refresh
+ * - Code verifier validation
+ */
 class SpotifyAuth {
   private tokenData: TokenData | null = null;
 
@@ -28,6 +155,14 @@ class SpotifyAuth {
     this.loadTokenFromStorage();
   }
 
+  /**
+   * Loads authentication token from localStorage
+   * 
+   * Retrieves stored token data and validates expiration.
+   * Removes expired tokens automatically.
+   * 
+   * @private
+   */
   private loadTokenFromStorage() {
     const stored = localStorage.getItem('spotify_token');
     if (stored) {
@@ -44,11 +179,34 @@ class SpotifyAuth {
     }
   }
 
+  /**
+   * Saves authentication token to localStorage
+   * 
+   * Stores token data securely with expiration information.
+   * 
+   * @private
+   * @param tokenData - Token data to store
+   */
   private saveTokenToStorage(tokenData: TokenData) {
     this.tokenData = tokenData;
     localStorage.setItem('spotify_token', JSON.stringify(tokenData));
   }
 
+  /**
+   * Generates a secure random code verifier for PKCE
+   * 
+   * Creates a cryptographically secure random string used
+   * in the OAuth 2.0 PKCE flow for enhanced security.
+   * 
+   * @private
+   * @returns Base64URL-encoded code verifier
+   * 
+   * @example
+   * ```typescript
+   * const verifier = this.generateCodeVerifier();
+   * // Returns: "dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk"
+   * ```
+   */
   private generateCodeVerifier(): string {
     const array = new Uint8Array(32);
     crypto.getRandomValues(array);
@@ -58,6 +216,23 @@ class SpotifyAuth {
       .replace(/=/g, '');
   }
 
+  /**
+   * Generates code challenge from code verifier using SHA-256
+   * 
+   * Creates a SHA-256 hash of the code verifier for the PKCE flow.
+   * This provides additional security by preventing authorization code
+   * interception attacks.
+   * 
+   * @private
+   * @param verifier - Code verifier string
+   * @returns Promise resolving to Base64URL-encoded code challenge
+   * 
+   * @example
+   * ```typescript
+   * const challenge = await this.generateCodeChallenge(verifier);
+   * // Returns: "E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM"
+   * ```
+   */
   private async generateCodeChallenge(verifier: string): Promise<string> {
     const encoder = new TextEncoder();
     const data = encoder.encode(verifier);
@@ -68,6 +243,22 @@ class SpotifyAuth {
       .replace(/=/g, '');
   }
 
+  /**
+   * Generates Spotify OAuth authorization URL
+   * 
+   * Creates the authorization URL that users visit to grant
+   * permissions to the application. Implements PKCE flow
+   * for enhanced security.
+   * 
+   * @returns Promise resolving to authorization URL
+   * @throws {Error} If client ID is not configured
+   * 
+   * @example
+   * ```typescript
+   * const authUrl = await spotifyAuth.getAuthUrl();
+   * window.location.href = authUrl;
+   * ```
+   */
   public async getAuthUrl(): Promise<string> {
     if (!SPOTIFY_CLIENT_ID) {
       throw new Error('VITE_SPOTIFY_CLIENT_ID is not defined. Please set it in your .env.local file.');
@@ -90,6 +281,22 @@ class SpotifyAuth {
     return `https://accounts.spotify.com/authorize?${params.toString()}`;
   }
 
+  /**
+   * Handles OAuth callback and exchanges authorization code for tokens
+   * 
+   * Processes the authorization code returned by Spotify after user
+   * grants permissions. Exchanges the code for access and refresh tokens.
+   * 
+   * @param code - Authorization code from Spotify callback
+   * @returns Promise that resolves when token exchange is complete
+   * @throws {Error} If client ID is missing or code verifier not found
+   * 
+   * @example
+   * ```typescript
+   * // Called after user authorizes the application
+   * await spotifyAuth.handleAuthCallback(authorizationCode);
+   * ```
+   */
   public async handleAuthCallback(code: string): Promise<void> {
     if (!SPOTIFY_CLIENT_ID) {
       throw new Error('VITE_SPOTIFY_CLIENT_ID is not defined.');
