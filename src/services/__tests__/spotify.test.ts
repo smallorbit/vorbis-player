@@ -19,7 +19,7 @@ vi.mock('../spotify', () => {
 });
 
 // Import mocked functions
-import { checkTrackSaved, saveTrack, unsaveTrack, spotifyAuth } from '../spotify';
+import { checkTrackSaved, saveTrack, unsaveTrack } from '../spotify';
 
 describe('Spotify API Functions', () => {
   const mockToken = 'mock-access-token';

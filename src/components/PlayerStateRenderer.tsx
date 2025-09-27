@@ -1,6 +1,6 @@
 import React, { Suspense } from 'react';
 import styled, { keyframes } from 'styled-components';
-import { spotifyAuth } from '../services/spotify';
+import { spotifyAuth, type Track } from '../services/spotify';
 import { Card, CardHeader, CardContent } from '../components/styled';
 import { Button } from '../components/styled';
 import { Alert, AlertDescription } from '../components/styled';
@@ -166,7 +166,7 @@ interface PlayerStateRendererProps {
   isLoading: boolean;
   error: string | null;
   selectedPlaylistId: string | null;
-  tracks: any[];
+  tracks: Track[];
   onPlaylistSelect: (playlistId: string) => void;
 }
 

@@ -1,10 +1,6 @@
 import { spotifyAuth } from './spotify';
 
-if (typeof window !== 'undefined') {
-  window.onSpotifyWebPlaybackSDKReady = () => {
-    console.log('Spotify Web Playback SDK is ready');
-  };
-}
+// SDK ready callback will be set during initialization
 
 export class SpotifyPlayerService {
   private player: SpotifyPlayer | null = null;
@@ -32,16 +28,24 @@ export class SpotifyPlayerService {
         }
       };
 
-      if (window.Spotify) {
+      if (typeof window !== 'undefined' && window.Spotify) {
+        console.log('Spotify SDK already available, initializing player');
         initPlayer();
-      } else {
-        window.onSpotifyWebPlaybackSDKReady = initPlayer;
+      } else if (typeof window !== 'undefined') {
+        console.log('Waiting for Spotify SDK to load...');
+        window.onSpotifyWebPlaybackSDKReady = () => {
+          console.log('Spotify SDK ready callback triggered');
+          initPlayer();
+        };
         
         setTimeout(() => {
           if (!this.player) {
+            console.error('Spotify SDK failed to load within timeout');
             reject(new Error('Spotify SDK failed to load within timeout'));
           }
         }, 10000);
+      } else {
+        reject(new Error('Window object not available'));
       }
     });
   }

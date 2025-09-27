@@ -87,14 +87,14 @@ const CloseButton = styled.button`
 
 const PlaylistFallback = styled.div`
   width: 100%;
-  margin-top: ${({ theme }: any) => theme.spacing.lg};
+  margin-top: ${({ theme }) => theme.spacing.lg};
 `;
 
 const PlaylistFallbackCard = styled.div`
-  background-color: ${({ theme }: any) => theme.colors.gray[800]};
+  background-color: ${({ theme }) => theme.colors.gray[800]};
   border-radius: 1.25rem;
-  padding: ${({ theme }: any) => theme.spacing.md};
-  border: 1px solid ${({ theme }: any) => theme.colors.gray[700]};
+  padding: ${({ theme }) => theme.spacing.md};
+  border: 1px solid ${({ theme }) => theme.colors.gray[700]};
 `;
 
 interface PlaylistDrawerProps {

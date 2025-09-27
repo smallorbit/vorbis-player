@@ -105,7 +105,7 @@ export class MainThreadMonitor {
 
       try {
         this.observer.observe({ entryTypes: ['longtask'] });
-      } catch (e) {
+      } catch {
         console.warn('Long task observer not supported');
       }
     }
@@ -133,7 +133,7 @@ export class MainThreadMonitor {
 export class MemoryMonitor {
   static getCurrentUsage(): number | undefined {
     if ('memory' in performance) {
-      const memory = (performance as any).memory;
+      const memory = (performance as unknown as { memory: { usedJSHeapSize: number } }).memory;
       return memory.usedJSHeapSize / 1024 / 1024; // MB
     }
     return undefined;

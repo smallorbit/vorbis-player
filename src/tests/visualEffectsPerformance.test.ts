@@ -5,8 +5,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { 
   VisualEffectsProfiler,
-  VISUAL_EFFECTS_THRESHOLDS,
-  runVisualEffectsPerformanceTests
+  VISUAL_EFFECTS_THRESHOLDS
 } from '../utils/visualEffectsPerformance';
 
 // Mock performance API
@@ -26,7 +25,7 @@ const mockRAF = vi.fn((callback: FrameRequestCallback) => {
 });
 
 // Mock PerformanceObserver
-const mockPerformanceObserver = vi.fn().mockImplementation((callback) => ({
+const mockPerformanceObserver = vi.fn().mockImplementation(() => ({
   observe: vi.fn(),
   disconnect: vi.fn()
 }));
@@ -38,9 +37,9 @@ describe('VisualEffectsPerformance', () => {
 
   beforeEach(() => {
     // Setup mocks
-    global.performance = mockPerformance as any;
+    global.performance = mockPerformance as unknown as Performance;
     global.requestAnimationFrame = mockRAF;
-    (global as any).PerformanceObserver = mockPerformanceObserver;
+    (global as unknown as { PerformanceObserver: unknown }).PerformanceObserver = mockPerformanceObserver;
     
     profiler = new VisualEffectsProfiler();
     
@@ -226,7 +225,7 @@ describe('VisualEffectsPerformance', () => {
   describe('Integration Tests', () => {
     it('should run complete performance test suite', async () => {
       // Mock the async operations
-      const originalRun = profiler.runPerformanceTest;
+      // Store original method for cleanup
       profiler.runPerformanceTest = vi.fn().mockResolvedValue({
         interactionTime: 150,
         renderTime: 10,
@@ -253,7 +252,7 @@ describe('VisualEffectsPerformance', () => {
 
   describe('Memory Management', () => {
     it('should track memory usage accurately', () => {
-      const memoryUsage = (performance as any).memory.usedJSHeapSize / 1024 / 1024;
+      const memoryUsage = (performance as unknown as { memory: { usedJSHeapSize: number } }).memory.usedJSHeapSize / 1024 / 1024;
       
       expect(memoryUsage).toBe(50); // 50MB as set in mock
     });

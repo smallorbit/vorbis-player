@@ -37,7 +37,7 @@ export const useImageProcessingWorker = (): UseImageProcessingWorkerReturn => {
         // Handle worker messages
         workerRef.current.onmessage = (event: MessageEvent<WorkerResponse>) => {
           const { type } = event.data;
-          const requestId = (event.data as any).requestId;
+          const requestId = (event.data as WorkerResponse & { requestId: string }).requestId;
           const pendingPromise = pendingPromisesRef.current.get(requestId);
           
           if (!pendingPromise) {
@@ -126,13 +126,14 @@ export const useImageProcessingWorker = (): UseImageProcessingWorkerReturn => {
 
   // Cleanup worker on unmount
   useEffect(() => {
+    const pendingPromises = pendingPromisesRef.current;
     return () => {
       if (workerRef.current) {
         // Reject all pending promises
-        pendingPromisesRef.current.forEach((promise) => {
+        pendingPromises.forEach((promise) => {
           promise.reject(new Error('Component unmounted'));
         });
-        pendingPromisesRef.current.clear();
+        pendingPromises.clear();
         
         // Terminate worker
         workerRef.current.terminate();

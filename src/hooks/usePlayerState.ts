@@ -270,7 +270,7 @@ export const usePlayerState = () => {
           blur: parsed.blur ?? 0,
           sepia: parsed.sepia ?? 0
         };
-      } catch (e) {
+      } catch {
         return {
           brightness: 100,
           contrast: 100,

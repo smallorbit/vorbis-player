@@ -4,16 +4,9 @@
 
 import React, { Profiler, useCallback, useState } from 'react';
 import type { ProfilerOnRenderCallback } from 'react';
+import type { ProfilerData } from '../hooks/useProfilerData';
 
-export interface ProfilerData {
-  id: string;
-  phase: 'mount' | 'update' | 'nested-update';
-  actualDuration: number;
-  baseDuration: number;
-  startTime: number;
-  commitTime: number;
-  interactions: Set<any>;
-}
+
 
 interface PerformanceProfilerProps {
   id: string;
@@ -26,7 +19,7 @@ export const PerformanceProfilerComponent: React.FC<PerformanceProfilerProps> = 
   id, 
   children, 
   onRender,
-  enabled = process.env.NODE_ENV === 'development'
+  enabled = import.meta.env.DEV
 }) => {
   const handleRender: ProfilerOnRenderCallback = useCallback((
     id: string,
@@ -67,40 +60,7 @@ export const PerformanceProfilerComponent: React.FC<PerformanceProfilerProps> = 
   );
 };
 
-/**
- * Hook for accessing profile data
- */
-export const useProfilerData = (id: string) => {
-  const [data, setData] = useState<ProfilerData[]>([]);
 
-  const addProfileData = useCallback((profileData: ProfilerData) => {
-    if (profileData.id === id) {
-      setData(prev => [...prev.slice(-9), profileData]);
-    }
-  }, [id]);
-
-  const getAverageRenderTime = useCallback(() => {
-    if (data.length === 0) return 0;
-    return data.reduce((sum, d) => sum + d.actualDuration, 0) / data.length;
-  }, [data]);
-
-  const getLastRenderTime = useCallback(() => {
-    return data.length > 0 ? data[data.length - 1].actualDuration : 0;
-  }, [data]);
-
-  const getSlowRenders = useCallback((threshold = 16.67) => {
-    return data.filter(d => d.actualDuration > threshold);
-  }, [data]);
-
-  return {
-    data,
-    addProfileData,
-    getAverageRenderTime,
-    getLastRenderTime,
-    getSlowRenders,
-    clear: () => setData([])
-  };
-};
 
 /**
  * Performance debugging component
@@ -109,7 +69,7 @@ export const PerformanceDebugger: React.FC<{
   visible?: boolean;
   position?: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
 }> = ({ 
-  visible = process.env.NODE_ENV === 'development',
+  visible = import.meta.env.DEV,
   position = 'bottom-right'
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -155,8 +115,8 @@ export const PerformanceDebugger: React.FC<{
       
       {isExpanded && (
         <div style={{ marginTop: '0.5rem' }}>
-          <div>Memory: {(performance as any).memory ? 
-            `${((performance as any).memory.usedJSHeapSize / 1024 / 1024).toFixed(1)}MB` : 
+          <div>Memory: {(performance as unknown as { memory?: { usedJSHeapSize: number } }).memory ? 
+            `${(((performance as unknown as { memory: { usedJSHeapSize: number } }).memory.usedJSHeapSize / 1024 / 1024).toFixed(1))}MB` : 
             'N/A'
           }</div>
           <div>Frame Rate: ~{Math.round(1000 / 16.67)}fps target</div>
