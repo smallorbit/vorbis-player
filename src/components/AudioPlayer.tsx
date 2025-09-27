@@ -20,10 +20,10 @@ import { DEFAULT_GLOW_RATE, DEFAULT_GLOW_INTENSITY } from './AccentColorGlowOver
 const Container = styled.div`
   width: 100%;
   ${flexCenter};
-  padding: ${({ theme }: any) => theme.spacing.sm};
+  padding: ${({ theme }) => theme.spacing.sm};
   
-  @media (min-width: ${({ theme }: any) => theme.breakpoints.sm}) {
-    padding: ${({ theme }: any) => theme.spacing.sm};
+  @media (min-width: ${({ theme }) => theme.breakpoints.sm}) {
+    padding: ${({ theme }) => theme.spacing.sm};
   }
 `;
 
@@ -47,7 +47,9 @@ const ContentWrapper = styled.div`
 `;
 
 
-const LoadingCard = styled.div<{
+const LoadingCard = styled.div.withConfig({
+  shouldForwardProp: (prop) => !['backgroundImage', 'standalone', 'accentColor', 'glowEnabled', 'glowIntensity', 'glowRate'].includes(prop),
+}) <{
   backgroundImage?: string;
   standalone?: boolean;
   accentColor?: string;
@@ -219,7 +221,7 @@ const AudioPlayerComponent = () => {
     };
 
     handleAuthRedirect();
-  }, []);
+  }, [setError]);
 
   useEffect(() => {
     const handlePlayerStateChange = (state: SpotifyPlaybackState | null) => {
@@ -234,10 +236,10 @@ const AudioPlayerComponent = () => {
     };
 
     spotifyPlayer.onPlayerStateChanged(handlePlayerStateChange);
-  }, [tracks, currentTrackIndex]);
+  }, [tracks, currentTrackIndex, setCurrentTrackIndex]);
 
   useEffect(() => {
-    let pollInterval: NodeJS.Timeout;
+    let pollInterval: number;
     let hasEnded = false;
 
     const checkForSongEnd = async () => {
@@ -265,12 +267,13 @@ const AudioPlayerComponent = () => {
             }
           }
         }
-      } catch (error) {
+      } catch {
+        // Ignore polling errors
       }
     };
 
     if (tracks.length > 0) {
-      pollInterval = setInterval(checkForSongEnd, 2000);
+      pollInterval = setInterval(checkForSongEnd, 2000) as unknown as number;
     }
 
     return () => {
@@ -308,7 +311,7 @@ const AudioPlayerComponent = () => {
           } else {
             setAccentColor(theme.colors.accent);
           }
-        } catch (error) {
+        } catch {
           setAccentColor(theme.colors.accent);
         }
       } else {
@@ -316,7 +319,7 @@ const AudioPlayerComponent = () => {
       }
     };
     extractColor();
-  }, [currentTrack?.id, currentTrack?.image, accentColorOverrides, theme.colors.accent]);
+  }, [currentTrack?.id, currentTrack?.image, accentColorOverrides, setAccentColor]);
 
   const handlePlay = useCallback(() => {
     if (currentTrack) {
@@ -332,15 +335,15 @@ const AudioPlayerComponent = () => {
 
   const handleShowPlaylist = useCallback(() => {
     setShowPlaylist(true);
-  }, []);
+  }, [setShowPlaylist]);
 
   const handleShowVisualEffects = useCallback(() => {
     setShowVisualEffects(true);
-  }, []);
+  }, [setShowVisualEffects]);
 
   const handleCloseVisualEffects = useCallback(() => {
     setShowVisualEffects(false);
-  }, []);
+  }, [setShowVisualEffects]);
 
   const handleVisualEffectsToggle = useCallback(() => {
     if (visualEffectsEnabled) {
@@ -355,11 +358,11 @@ const AudioPlayerComponent = () => {
         setGlowRate(savedGlowRate);
       }
     }
-  }, [visualEffectsEnabled, restoreSavedFilters, savedGlowIntensity, savedGlowRate]);
+  }, [visualEffectsEnabled, restoreSavedFilters, savedGlowIntensity, savedGlowRate, setVisualEffectsEnabled]);
 
   const handleClosePlaylist = useCallback(() => {
     setShowPlaylist(false);
-  }, []);
+  }, [setShowPlaylist]);
 
   const handleAccentColorChange = useCallback((color: string) => {
     if (color === 'RESET_TO_DEFAULT' && currentTrack?.id) {
@@ -392,7 +395,7 @@ const AudioPlayerComponent = () => {
     } else {
       setAccentColor(color);
     }
-  }, [currentTrack?.id, currentTrack?.image, setAccentColorOverrides, setAccentColor, theme.colors.accent]);
+  }, [currentTrack?.id, currentTrack?.image, setAccentColorOverrides, setAccentColor]);
 
   const renderContent = () => {
     const stateRenderer = (

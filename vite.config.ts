@@ -39,7 +39,10 @@
 
 import { defineConfig } from 'vitest/config'
 import react from '@vitejs/plugin-react'
-import path from 'path'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 export default defineConfig({
   plugins: [react()],
@@ -49,22 +52,9 @@ export default defineConfig({
         manualChunks: {
           vendor: ['react', 'react-dom'],
           radix: [
-            '@radix-ui/react-dialog',
-            '@radix-ui/react-slider', 
-            '@radix-ui/react-scroll-area',
-            '@radix-ui/react-tabs',
-            '@radix-ui/react-avatar',
-            '@radix-ui/react-aspect-ratio',
-            '@radix-ui/react-alert-dialog',
-            '@radix-ui/react-dropdown-menu',
-            '@radix-ui/react-separator',
-            '@radix-ui/react-slot',
-            '@radix-ui/react-toggle',
-            '@radix-ui/react-toggle-group',
-            '@radix-ui/react-checkbox'
+            '@radix-ui/react-scroll-area'
           ],
-          styled: ['styled-components'],
-          icons: ['lucide-react']
+          styled: ['styled-components']
         }
       }
     },

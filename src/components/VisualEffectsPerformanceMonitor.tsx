@@ -138,7 +138,7 @@ const ResultsContainer = styled.div`
 `;
 
 export const VisualEffectsPerformanceMonitor: React.FC<VisualEffectsPerformanceMonitorProps> = ({
-  isEnabled = process.env.NODE_ENV === 'development',
+  isEnabled = import.meta.env.DEV,
   onMetricsUpdate,
   filterCount
 }) => {

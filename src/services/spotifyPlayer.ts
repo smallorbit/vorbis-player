@@ -1,8 +1,15 @@
 import { spotifyAuth } from './spotify';
 
+// Global callback for Spotify SDK ready event
+let spotifySDKReadyCallback: (() => void) | null = null;
+
+// Define the global callback that the Spotify SDK will call
 if (typeof window !== 'undefined') {
   window.onSpotifyWebPlaybackSDKReady = () => {
-    console.log('Spotify Web Playback SDK is ready');
+    console.log('Spotify SDK ready callback triggered');
+    if (spotifySDKReadyCallback) {
+      spotifySDKReadyCallback();
+    }
   };
 }
 
@@ -32,16 +39,23 @@ export class SpotifyPlayerService {
         }
       };
 
-      if (window.Spotify) {
+      if (typeof window !== 'undefined' && window.Spotify) {
+        console.log('Spotify SDK already available, initializing player');
         initPlayer();
-      } else {
-        window.onSpotifyWebPlaybackSDKReady = initPlayer;
+      } else if (typeof window !== 'undefined') {
+        console.log('Waiting for Spotify SDK to load...');
+        // Set the callback that will be called by the global onSpotifyWebPlaybackSDKReady
+        spotifySDKReadyCallback = initPlayer;
         
         setTimeout(() => {
           if (!this.player) {
+            console.error('Spotify SDK failed to load within timeout');
+            spotifySDKReadyCallback = null; // Clear the callback
             reject(new Error('Spotify SDK failed to load within timeout'));
           }
         }, 10000);
+      } else {
+        reject(new Error('Window object not available'));
       }
     });
   }
@@ -195,6 +209,8 @@ export class SpotifyPlayerService {
       this.deviceId = null;
       this.isReady = false;
     }
+    // Clear the global callback
+    spotifySDKReadyCallback = null;
   }
 
   getDeviceId(): string | null {

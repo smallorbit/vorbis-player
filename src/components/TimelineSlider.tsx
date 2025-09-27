@@ -1,7 +1,9 @@
 import React, { memo } from 'react';
 import styled from 'styled-components';
 
-const TimelineSliderInput = styled.input.attrs<{ accentColor: string; value: number; max: number }>(
+const TimelineSliderInput = styled.input.withConfig({
+  shouldForwardProp: (prop) => !['accentColor'].includes(prop),
+}).attrs<{ accentColor: string; value: number; max: number }>(
   ({ accentColor, value, max }: { accentColor: string; value: number; max: number }) => ({
     style: {
       background: `linear-gradient(
@@ -13,7 +15,7 @@ const TimelineSliderInput = styled.input.attrs<{ accentColor: string; value: num
       )`
     }
   })
-)<{ accentColor: string; value: number; max: number }>`
+) <{ accentColor: string; value: number; max: number }>`
   flex: 1;
   height: 4px;
   border-radius: 2px;
@@ -54,8 +56,8 @@ const TimelineSliderInput = styled.input.attrs<{ accentColor: string; value: num
 `;
 
 const TimeLabel = styled.span`
-  color: ${({ theme }: any) => theme.colors.gray[400]};
-  font-size: ${({ theme }: any) => theme.fontSize.sm};
+  color: ${({ theme }) => theme.colors.gray[400]};
+  font-size: ${({ theme }) => theme.fontSize.sm};
   font-family: monospace;
   min-width: 40px;
   text-align: center;
@@ -64,7 +66,7 @@ const TimeLabel = styled.span`
 export const TimelineRow = styled.div`
   display: flex;
   align-items: center;
-  gap: ${({ theme }: any) => theme.spacing.sm};
+  gap: ${({ theme }) => theme.spacing.sm};
   width: 100%;
   margin: 0;
 `;
