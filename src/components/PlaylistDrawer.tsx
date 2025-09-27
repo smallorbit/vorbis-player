@@ -5,7 +5,9 @@ import { theme } from '../styles/theme';
 
 const Playlist = React.lazy(() => import('./Playlist'));
 
-const PlaylistDrawerContainer = styled.div<{ isOpen: boolean }>`
+const PlaylistDrawerContainer = styled.div.withConfig({
+  shouldForwardProp: (prop) => !['isOpen'].includes(prop),
+}) <{ isOpen: boolean }>`
   position: fixed;
   top: 0;
   right: 0;
@@ -39,7 +41,9 @@ const PlaylistContent = styled.div`
   }
 `;
 
-const PlaylistOverlay = styled.div<{ isOpen: boolean }>`
+const PlaylistOverlay = styled.div.withConfig({
+  shouldForwardProp: (prop) => !['isOpen'].includes(prop),
+}) <{ isOpen: boolean }>`
   position: fixed;
   top: 0;
   left: 0;
@@ -115,22 +119,22 @@ const arePlaylistDrawerPropsEqual = (
   if (prevProps.isOpen !== nextProps.isOpen) {
     return false;
   }
-  
+
   // Check if current track changed
   if (prevProps.currentTrackIndex !== nextProps.currentTrackIndex) {
     return false;
   }
-  
+
   // Check accent color
   if (prevProps.accentColor !== nextProps.accentColor) {
     return false;
   }
-  
+
   // Check if tracks array length changed (shallow check for performance)
   if (prevProps.tracks.length !== nextProps.tracks.length) {
     return false;
   }
-  
+
   // For callbacks, we assume they're stable (parent should use useCallback)
   return true;
 };
@@ -160,10 +164,10 @@ export const PlaylistDrawer = memo<PlaylistDrawerProps>(({
           <Suspense fallback={
             <PlaylistFallback>
               <PlaylistFallbackCard>
-                <div style={{ 
-                  animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite', 
-                  color: 'rgba(255, 255, 255, 0.6)', 
-                  textAlign: 'center' 
+                <div style={{
+                  animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                  color: 'rgba(255, 255, 255, 0.6)',
+                  textAlign: 'center'
                 }}>
                   Loading playlist...
                 </div>

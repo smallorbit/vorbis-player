@@ -47,7 +47,9 @@ const ContentWrapper = styled.div`
 `;
 
 
-const LoadingCard = styled.div<{
+const LoadingCard = styled.div.withConfig({
+  shouldForwardProp: (prop) => !['backgroundImage', 'standalone', 'accentColor', 'glowEnabled', 'glowIntensity', 'glowRate'].includes(prop),
+}) <{
   backgroundImage?: string;
   standalone?: boolean;
   accentColor?: string;

@@ -7,7 +7,9 @@ import type { ExtractedColor } from '../utils/colorExtractor';
 import type { Track } from '../services/spotify';
 import { theme } from '../styles/theme';
 
-const ControlButton = styled.button<{ isActive?: boolean; accentColor: string }>`
+const ControlButton = styled.button.withConfig({
+  shouldForwardProp: (prop) => !['isActive', 'accentColor'].includes(prop),
+}) <{ isActive?: boolean; accentColor: string }>`
   border: none;
   display: flex;
   align-items: center;
@@ -57,21 +59,21 @@ const areColorPickerPropsEqual = (
   if (prevProps.currentTrack?.id !== nextProps.currentTrack?.id) {
     return false;
   }
-  
+
   // Check accent color
   if (prevProps.accentColor !== nextProps.accentColor) {
     return false;
   }
-  
+
   // Check if custom overrides for current track changed
   const currentTrackId = prevProps.currentTrack?.id;
   if (currentTrackId) {
-    if (prevProps.customAccentColorOverrides[currentTrackId] !== 
-        nextProps.customAccentColorOverrides[currentTrackId]) {
+    if (prevProps.customAccentColorOverrides[currentTrackId] !==
+      nextProps.customAccentColorOverrides[currentTrackId]) {
       return false;
     }
   }
-  
+
   // For callbacks, we assume they're stable (parent should use useCallback)
   return true;
 };
@@ -158,9 +160,9 @@ export const ColorPickerPopover = memo<ColorPickerPopoverProps>(({
         style={{ position: 'relative' }}
       >
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M18.37 2.63 14 7l-1.59-1.59a2 2 0 0 0-2.82 0L8 7l9 9 1.59-1.59a2 2 0 0 0 0-2.82L17 10l4.37-4.37a2.12 2.12 0 1 0-3-3Z"/>
-          <path d="M9 8c-2 3-4 3.5-7 4l8 10c2-1 6-5 6-7"/>
-          <path d="M14.5 17.5 4.5 15"/>
+          <path d="M18.37 2.63 14 7l-1.59-1.59a2 2 0 0 0-2.82 0L8 7l9 9 1.59-1.59a2 2 0 0 0 0-2.82L17 10l4.37-4.37a2.12 2.12 0 1 0-3-3Z" />
+          <path d="M9 8c-2 3-4 3.5-7 4l8 10c2-1 6-5 6-7" />
+          <path d="M14.5 17.5 4.5 15" />
         </svg>
       </ControlButton>
 
@@ -263,9 +265,9 @@ export const ColorPickerPopover = memo<ColorPickerPopoverProps>(({
                   }}
                 >
                   <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M18.37 2.63 14 7l-1.59-1.59a2 2 0 0 0-2.82 0L8 7l9 9 1.59-1.59a2 2 0 0 0 0-2.82L17 10l4.37-4.37a2.12 2.12 0 1 0-3-3Z"/>
-                    <path d="M9 8c-2 3-4 3.5-7 4l8 10c2-1 6-5 6-7"/>
-                    <path d="M14.5 17.5 4.5 15"/>
+                    <path d="M18.37 2.63 14 7l-1.59-1.59a2 2 0 0 0-2.82 0L8 7l9 9 1.59-1.59a2 2 0 0 0 0-2.82L17 10l4.37-4.37a2.12 2.12 0 1 0-3-3Z" />
+                    <path d="M9 8c-2 3-4 3.5-7 4l8 10c2-1 6-5 6-7" />
+                    <path d="M14.5 17.5 4.5 15" />
                   </svg>
                 </ControlButton>
               )}
@@ -279,7 +281,7 @@ export const ColorPickerPopover = memo<ColorPickerPopoverProps>(({
                 const newOverrides = { ...customAccentColorOverrides };
                 delete newOverrides[currentTrack.id];
                 onCustomAccentColor(''); // This will trigger a re-extraction
-                
+
                 // We need to call the parent's reset function to force color re-extraction
                 // Since we don't have direct access to it, we'll use a placeholder color
                 // and let the parent component handle the reset

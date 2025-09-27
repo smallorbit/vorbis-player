@@ -52,7 +52,9 @@ interface AlbumArtProps {
 }
 
 
-const AlbumArtContainer = styled.div<{
+const AlbumArtContainer = styled.div.withConfig({
+  shouldForwardProp: (prop) => !['accentColor', 'glowIntensity', 'glowRate'].includes(prop),
+}) <{
   accentColor?: string;
   glowIntensity?: number;
   glowRate?: number;

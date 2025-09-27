@@ -1,7 +1,9 @@
 import React, { memo } from 'react';
 import styled from 'styled-components';
 
-const TimelineSliderInput = styled.input.attrs<{ accentColor: string; value: number; max: number }>(
+const TimelineSliderInput = styled.input.withConfig({
+  shouldForwardProp: (prop) => !['accentColor'].includes(prop),
+}).attrs<{ accentColor: string; value: number; max: number }>(
   ({ accentColor, value, max }: { accentColor: string; value: number; max: number }) => ({
     style: {
       background: `linear-gradient(
@@ -13,7 +15,7 @@ const TimelineSliderInput = styled.input.attrs<{ accentColor: string; value: num
       )`
     }
   })
-)<{ accentColor: string; value: number; max: number }>`
+) <{ accentColor: string; value: number; max: number }>`
   flex: 1;
   height: 4px;
   border-radius: 2px;
