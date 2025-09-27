@@ -1,37 +1,3 @@
-/**
- * @fileoverview AudioPlayer Component
- * 
- * Main audio player interface that orchestrates the entire music playback experience.
- * Integrates Spotify Web Playback SDK, local audio playback, visual effects, and
- * library management into a unified user interface.
- * 
- * @dependencies
- * - unifiedPlayer: Central playback orchestration service
- * - usePlayerState: Global player state management
- * - usePlaylistManager: Playlist and queue management
- * - AlbumArt: Album artwork display with color extraction
- * - VisualEffectsMenu: Visual effects and filters interface
- * - PlaylistDrawer: Playlist browsing and management
- * - LocalLibraryDrawer: Local music library interface
- * 
- * @features
- * - Unified Spotify and local music playback
- * - Dynamic visual effects and color themes
- * - Responsive design with mobile support
- * - Keyboard shortcuts and accessibility
- * - Performance monitoring and optimization
- * 
- * @state
- * - tracks: Current playlist/track collection
- * - currentTrackIndex: Currently playing track position
- * - visualEffectsEnabled: Visual effects toggle state
- * - accentColor: Dynamic theme color from album art
- * - showPlaylist/showLibrary: UI drawer visibility states
- * 
- * @author Vorbis Player Team
- * @version 2.0.0
- */
-
 import { useEffect, useMemo, useCallback, lazy, Suspense, useState } from 'react';
 import styled from 'styled-components';
 import { spotifyAuth } from '../services/spotify';
