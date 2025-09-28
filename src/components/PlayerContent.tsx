@@ -3,10 +3,10 @@ import styled from 'styled-components';
 import { CardContent } from './styled';
 import AlbumArt from './AlbumArt';
 import PlayerControls from './PlayerControls';
+import VisualEffectsContainer from './VisualEffectsContainer';
 import { theme } from '@/styles/theme';
 import { cardBase } from '../styles/utils';
 
-const VisualEffectsMenu = lazy(() => import('./VisualEffectsMenu'));
 const PlaylistDrawer = lazy(() => import('./PlaylistDrawer'));
 
 interface AlbumArtFilters {
@@ -127,9 +127,6 @@ const ControlsLoadingFallback = () => (
   </div>
 );
 
-const EffectsLoadingFallback = () => (
-  <div>Loading effects...</div>
-);
 
 const PlaylistLoadingFallback = () => (
   <div style={{ position: 'fixed', top: 0, right: 0, bottom: 0, width: '400px', background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.7)' }}>
@@ -189,23 +186,16 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
           </Suspense>
         </CardContent>
 
-        {effects.enabled && (
-          <Suspense fallback={<EffectsLoadingFallback />}>
-            <VisualEffectsMenu
-              isOpen={ui.showVisualEffects}
-              onClose={handlers.onCloseVisualEffects}
-              accentColor={ui.accentColor}
-              filters={effects.filters}
-              onFilterChange={handlers.onFilterChange}
-              onResetFilters={handlers.onResetFilters}
-              glowIntensity={effects.glow.intensity}
-              setGlowIntensity={handlers.onGlowIntensityChange}
-              glowRate={effects.glow.rate}
-              setGlowRate={handlers.onGlowRateChange}
-              effectiveGlow={effects.glow}
-            />
-          </Suspense>
-        )}
+        <VisualEffectsContainer
+          enabled={effects.enabled}
+          isMenuOpen={ui.showVisualEffects}
+          accentColor={ui.accentColor}
+          filters={effects.filters}
+          onMenuClose={handlers.onCloseVisualEffects}
+          onFilterChange={handlers.onFilterChange}
+          onResetFilters={handlers.onResetFilters}
+          onToggleEffects={handlers.onGlowToggle}
+        />
       </LoadingCard>
 
       <Suspense fallback={<PlaylistLoadingFallback />}>
