@@ -16,7 +16,6 @@ import { useVisualEffectsState } from '../hooks/useVisualEffectsState';
 const Container = styled.div`
   width: 100%;
   ${flexCenter};
-  padding: ${({ theme }) => theme.spacing.sm};
   
   @media (min-width: ${({ theme }) => theme.breakpoints.sm}) {
     padding: ${({ theme }) => theme.spacing.sm};

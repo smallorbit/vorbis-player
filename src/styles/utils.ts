@@ -3,7 +3,6 @@ import { theme } from './theme';
 
 export const flexCenter = css`
   display: flex;
-  align-items: center;
   justify-content: center;
 `;
 
@@ -107,6 +106,8 @@ export const cardBase = css`
   border: 1px solid ${theme.colors.border};
   border-radius: ${theme.borderRadius.md};
   padding: ${theme.spacing.sm};
+  margin: ${theme.spacing.sm};
+  margin-top: -${theme.spacing.md}; negative margin for top of player controls
   box-shadow: ${theme.shadows.sm};
 `;
 

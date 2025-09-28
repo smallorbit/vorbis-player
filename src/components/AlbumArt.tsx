@@ -64,12 +64,15 @@ const AlbumArtContainer = styled.div.withConfig({
 }>`
   border-radius: 1.25rem;
   position: relative;
-  width: -webkit-fill-available;
-  margin: 1rem;
+  width: 100%;
+  max-width: 768px;
+  aspect-ratio: 1;
+  margin: 0 auto;
   overflow: hidden;
   background: transparent;
   box-shadow: 0 8px 24px rgba(23, 22, 22, 0.7), 0 2px 8px rgba(22, 21, 21, 0.6);
   z-index: 2;
+  
 `;
 
 const arePropsEqual = (prevProps: AlbumArtProps, nextProps: AlbumArtProps): boolean => {
@@ -209,7 +212,7 @@ const AlbumArt: React.FC<AlbumArtProps> = memo(({ currentTrack = null, accentCol
             src={glowIntensity === 0 || !canvasUrl ? currentTrack.image : canvasUrl}
             alt={currentTrack?.name}
             style={{
-              width: '-webkit-fill-available',
+              width: '100%',
               objectFit: 'cover',
               overflow: 'hidden',
               borderRadius: '1.25rem',
@@ -228,7 +231,6 @@ const AlbumArt: React.FC<AlbumArtProps> = memo(({ currentTrack = null, accentCol
         ) : (
           <div style={{
             width: '100%',
-            height: '100%',
             backgroundColor: '#1a1a1a',
             display: 'flex',
             alignItems: 'center',

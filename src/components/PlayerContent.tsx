@@ -58,7 +58,7 @@ interface PlayerContentProps {
 }
 
 const ContentWrapper = styled.div.withConfig({
-  shouldForwardProp: (prop) => !['width', 'height', 'padding', 'useFluidSizing', 'transitionDuration', 'transitionEasing'].includes(prop),
+  shouldForwardProp: (prop) => !['width', 'height', 'padding', 'useFluidSizing', 'transitionDuration', 'transitionEasing', 'aspectRatio'].includes(prop),
 }) <{
   width: number;
   height: number;
@@ -66,9 +66,13 @@ const ContentWrapper = styled.div.withConfig({
   useFluidSizing: boolean;
   transitionDuration: number;
   transitionEasing: string;
+  aspectRatio: number;
 }>`
+  /* Maintain consistent aspect ratio */
+  aspect-ratio: ${props => props.aspectRatio};
+  
   width: ${props => props.useFluidSizing ? '100%' : `${props.width}px`};
-  height: ${props => props.useFluidSizing ? '100vh' : `${props.height}px`};
+  height: ${props => props.useFluidSizing ? 'auto' : `${props.height}px`};
   max-width: ${props => props.width}px;
   max-height: ${props => props.height}px;
   
@@ -92,7 +96,7 @@ const ContentWrapper = styled.div.withConfig({
   /* Container query responsive adjustments */
   @container player (max-width: 480px) {
     width: 100%;
-    height: 100vh;
+    height: auto;
     max-width: 100vw;
     max-height: 100vh;
     padding: 8px;
@@ -100,7 +104,7 @@ const ContentWrapper = styled.div.withConfig({
   
   @container player (min-width: 480px) and (max-width: 768px) {
     width: 100%;
-    height: 100vh;
+    height: auto;
     max-width: 100vw;
     max-height: 100vh;
     padding: 12px;
@@ -108,7 +112,7 @@ const ContentWrapper = styled.div.withConfig({
   
   @container player (min-width: 768px) and (max-width: 1024px) {
     width: 100%;
-    height: 100vh;
+    height: auto;
     max-width: 100vw;
     max-height: 100vh;
     padding: 16px;
@@ -118,7 +122,7 @@ const ContentWrapper = styled.div.withConfig({
   @supports not (container-type: inline-size) {
     @media (max-width: ${theme.breakpoints.sm}) {
       width: 100%;
-      height: 100vh;
+      height: auto;
       max-width: 100vw;
       max-height: 100vh;
       padding: 8px;
@@ -126,7 +130,7 @@ const ContentWrapper = styled.div.withConfig({
     
     @media (min-width: ${theme.breakpoints.sm}) and (max-width: ${theme.breakpoints.md}) {
       width: 100%;
-      height: 100vh;
+      height: auto;
       max-width: 100vw;
       max-height: 100vh;
       padding: 12px;
@@ -134,7 +138,7 @@ const ContentWrapper = styled.div.withConfig({
     
     @media (min-width: ${theme.breakpoints.md}) and (max-width: ${theme.breakpoints.lg}) {
       width: 100%;
-      height: 100vh;
+      height: auto;
       max-width: 100vw;
       max-height: 100vh;
       padding: 16px;
@@ -153,11 +157,9 @@ const LoadingCard = styled.div.withConfig({
   glowRate?: number;
 }>`
   ${cardBase};
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  position: relative;
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
   border-radius: 1.25rem;
   border: 1px solid rgba(34, 36, 36, 0.68);
@@ -213,7 +215,7 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
   };
 
   // Use responsive sizing hook
-  const { dimensions, useFluidSizing, padding, transitionDuration, transitionEasing } = usePlayerSizing();
+  const { dimensions, useFluidSizing, padding, transitionDuration, transitionEasing, aspectRatio } = usePlayerSizing();
 
   return (
     <ContentWrapper
@@ -223,7 +225,24 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
       useFluidSizing={useFluidSizing}
       transitionDuration={transitionDuration}
       transitionEasing={transitionEasing}
+      aspectRatio={aspectRatio}
     >
+      {/* Album Art Zone - Takes up most of the space */}
+      <CardContent style={{
+        position: 'relative',
+        zIndex: 2,
+        minHeight: 0,
+        alignItems: 'center',
+        paddingTop: '1rem'
+      }}>
+        <AlbumArt
+          currentTrack={track.current}
+          accentColor={ui.accentColor}
+          glowIntensity={effects.enabled ? effects.glow.intensity : 0}
+          glowRate={effects.glow.rate}
+          albumFilters={effects.enabled ? effects.filters : defaultFilters}
+        />
+      </CardContent>
       <LoadingCard
         backgroundImage={track.current?.image}
         accentColor={ui.accentColor}
@@ -231,17 +250,18 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
         glowIntensity={effects.glow.intensity}
         glowRate={effects.glow.rate}
       >
-        <CardContent style={{ position: 'relative', zIndex: 2, marginTop: '-0.25rem' }}>
-          <AlbumArt
-            currentTrack={track.current}
-            accentColor={ui.accentColor}
-            glowIntensity={effects.enabled ? effects.glow.intensity : 0}
-            glowRate={effects.glow.rate}
-            albumFilters={effects.enabled ? effects.filters : defaultFilters}
-          />
-        </CardContent>
 
-        <CardContent style={{ position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 2 }}>
+
+        {/* Controls Zone - Fixed height at bottom */}
+        <CardContent style={{
+          position: 'relative',
+          zIndex: 2,
+          flex: '0 0 auto',
+          minHeight: '120px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
+        }}>
           <Suspense fallback={<ControlsLoadingFallback />}>
             <PlayerControls
               currentTrack={track.current}

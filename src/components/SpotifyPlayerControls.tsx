@@ -19,10 +19,12 @@ const PlayerControlsContainer = styled.div<{ $isMobile: boolean; $isTablet: bool
   flex-direction: column;
   gap: ${({ theme, $isMobile }) => $isMobile ? theme.spacing.xs : theme.spacing.sm};
   padding: ${({ $isMobile, $isTablet }) => {
-    if ($isMobile) return `${theme.spacing.xs} ${theme.spacing.sm} ${theme.spacing.sm} ${theme.spacing.sm}`;
-    if ($isTablet) return `${theme.spacing.sm} ${theme.spacing.md} ${theme.spacing.md} ${theme.spacing.md}`;
-    return `${theme.spacing.sm} ${theme.spacing.lg} ${theme.spacing.lg} ${theme.spacing.lg}`;
+    if ($isMobile) return `${theme.spacing.sm} ${theme.spacing.sm}`;
+    if ($isTablet) return `${theme.spacing.sm} ${theme.spacing.md}`;
+    return `${theme.spacing.sm} ${theme.spacing.lg}`;
   }};
+  width: 100%;
+  max-width: 100%;
   
   /* Enable container queries */
   container-type: inline-size;
@@ -33,21 +35,21 @@ const PlayerControlsContainer = styled.div<{ $isMobile: boolean; $isTablet: bool
     flex-direction: column;
     align-items: center;
     gap: ${({ theme }) => theme.spacing.xs};
-    padding: ${({ theme }) => `${theme.spacing.xs} ${theme.spacing.sm} ${theme.spacing.sm} ${theme.spacing.sm}`};
+    padding: ${({ theme }) => `${theme.spacing.sm} ${theme.spacing.sm}`};
   }
   
   @container controls (min-width: 480px) and (max-width: 768px) {
-    flex-direction: row;
+    flex-direction: column;
     align-items: center;
     gap: ${({ theme }) => theme.spacing.sm};
-    padding: ${({ theme }) => `${theme.spacing.sm} ${theme.spacing.md} ${theme.spacing.md} ${theme.spacing.md}`};
+    padding: ${({ theme }) => `${theme.spacing.sm} ${theme.spacing.md}`};
   }
   
   @container controls (min-width: 768px) {
-    flex-direction: row;
+    flex-direction: column;
     align-items: center;
-    gap: ${({ theme }) => theme.spacing.lg};
-    padding: ${({ theme }) => `${theme.spacing.sm} ${theme.spacing.lg} ${theme.spacing.lg} ${theme.spacing.lg}`};
+    gap: ${({ theme }) => theme.spacing.sm};
+    padding: ${({ theme }) => `${theme.spacing.sm} ${theme.spacing.lg}`};
   }
 `;
 
@@ -58,8 +60,8 @@ const TrackInfoOnlyRow = styled.div`
   align-items: center;
   text-align: center;
   gap: ${({ theme }) => theme.spacing.xs};
-  // width: 100%;
-  padding: 0 ${({ theme }) => theme.spacing.md};
+  padding: ${({ theme }) => `${theme.spacing.sm} ${theme.spacing.md}`};
+  margin-bottom: ${({ theme }) => theme.spacing.sm};
 `;
 
 const PlayerTrackName = styled.div<{ $isMobile: boolean; $isTablet: boolean }>`
