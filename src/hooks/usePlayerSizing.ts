@@ -9,7 +9,9 @@ import {
   calculatePlayerDimensions,
   getResponsiveBreakpoint,
   shouldUseFluidSizing,
-  calculateOptimalPadding
+  calculateOptimalPadding,
+  getOptimalAspectRatio,
+  calculateAspectRatioConstraints
 } from '../utils/sizingUtils';
 
 export interface UsePlayerSizingReturn {
@@ -22,6 +24,9 @@ export interface UsePlayerSizingReturn {
   breakpoint: string;
   useFluidSizing: boolean;
   padding: number;
+  aspectRatio: number;
+  optimalAspectRatio: number;
+  aspectRatioConstraints: { min: number; max: number };
   updateDimensions: () => void;
 }
 
@@ -79,6 +84,9 @@ export const usePlayerSizing = (constraints?: SizingConstraints): UsePlayerSizin
   const breakpoint = getResponsiveBreakpoint(viewport);
   const useFluidSizing = shouldUseFluidSizing(viewport);
   const padding = calculateOptimalPadding(viewport);
+  const aspectRatio = dimensions.aspectRatio;
+  const optimalAspectRatio = getOptimalAspectRatio(viewport);
+  const aspectRatioConstraints = calculateAspectRatioConstraints(viewport);
 
   return {
     dimensions,
@@ -90,6 +98,9 @@ export const usePlayerSizing = (constraints?: SizingConstraints): UsePlayerSizin
     breakpoint,
     useFluidSizing,
     padding,
+    aspectRatio,
+    optimalAspectRatio,
+    aspectRatioConstraints,
     updateDimensions
   };
 };
