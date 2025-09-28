@@ -14,6 +14,7 @@ import PlayerStateRenderer from './PlayerStateRenderer';
 import { usePlayerState } from '../hooks/usePlayerState';
 import { usePlaylistManager } from '../hooks/usePlaylistManager';
 import { useSpotifyPlayback } from '../hooks/useSpotifyPlayback';
+import { useAutoAdvance } from '../hooks/useAutoAdvance';
 import { theme } from '@/styles/theme';
 import { DEFAULT_GLOW_RATE, DEFAULT_GLOW_INTENSITY } from './AccentColorGlowOverlay';
 
@@ -165,6 +166,13 @@ const AudioPlayerComponent = () => {
     playTrack
   });
 
+  useAutoAdvance({
+    tracks,
+    currentTrackIndex,
+    playTrack,
+    enabled: true
+  });
+
   useEffect(() => {
     const handleAuthRedirect = async () => {
       try {
@@ -192,50 +200,6 @@ const AudioPlayerComponent = () => {
     spotifyPlayer.onPlayerStateChanged(handlePlayerStateChange);
   }, [tracks, currentTrackIndex, setCurrentTrackIndex]);
 
-  useEffect(() => {
-    let pollInterval: number;
-    let hasEnded = false;
-
-    const checkForSongEnd = async () => {
-      try {
-        const state = await spotifyPlayer.getCurrentState();
-        if (state && state.track_window.current_track && tracks.length > 0) {
-          const currentTrack = state.track_window.current_track;
-          const duration = currentTrack.duration_ms;
-          const position = state.position;
-          const timeRemaining = duration - position;
-
-          if (!hasEnded && duration > 0 && position > 0 && (
-            timeRemaining <= 2000 ||
-            position >= duration - 1000
-          )) {
-
-            hasEnded = true;
-
-            const nextIndex = (currentTrackIndex + 1) % tracks.length;
-            if (tracks[nextIndex]) {
-              setTimeout(() => {
-                playTrack(nextIndex);
-                hasEnded = false;
-              }, 500);
-            }
-          }
-        }
-      } catch {
-        // Ignore polling errors
-      }
-    };
-
-    if (tracks.length > 0) {
-      pollInterval = setInterval(checkForSongEnd, 2000) as unknown as number;
-    }
-
-    return () => {
-      if (pollInterval) {
-        clearInterval(pollInterval);
-      }
-    };
-  }, [tracks, currentTrackIndex, playTrack]);
 
   const handleNext = useCallback(() => {
     if (tracks.length === 0) return;
