@@ -6,6 +6,7 @@ import PlayerControls from './PlayerControls';
 import VisualEffectsContainer from './VisualEffectsContainer';
 import { theme } from '@/styles/theme';
 import { cardBase } from '../styles/utils';
+import { usePlayerSizing } from '../hooks/usePlayerSizing';
 import type { Track } from '../services/spotify';
 
 const PlaylistDrawer = lazy(() => import('./PlaylistDrawer'));
@@ -56,23 +57,47 @@ interface PlayerContentProps {
   handlers: PlayerContentHandlers;
 }
 
-const ContentWrapper = styled.div`
-  width: 1024px;
-  height: 1186px;
-
-  @media (max-height: ${theme.breakpoints.lg}) {
-    width: 768px;
-    height: 922px;
-  }
-
+const ContentWrapper = styled.div<{
+  width: number;
+  height: number;
+  padding: number;
+  useFluidSizing: boolean;
+}>`
+  width: ${props => props.useFluidSizing ? '100%' : `${props.width}px`};
+  height: ${props => props.useFluidSizing ? '100vh' : `${props.height}px`};
+  max-width: ${props => props.width}px;
+  max-height: ${props => props.height}px;
+  
   margin: 0 auto;
-  padding-top: 0.5rem;
-  padding-bottom: 0.5rem;
-  padding-left: 0.5rem;
-  padding-right: 0.5rem;
+  padding: ${props => props.padding}px;
   box-sizing: border-box;
   position: absolute;
   z-index: 1000;
+  
+  /* Responsive adjustments */
+  @media (max-width: ${theme.breakpoints.sm}) {
+    width: 100%;
+    height: 100vh;
+    max-width: 100vw;
+    max-height: 100vh;
+    padding: 8px;
+  }
+  
+  @media (min-width: ${theme.breakpoints.sm}) and (max-width: ${theme.breakpoints.md}) {
+    width: 100%;
+    height: 100vh;
+    max-width: 100vw;
+    max-height: 100vh;
+    padding: 12px;
+  }
+  
+  @media (min-width: ${theme.breakpoints.md}) and (max-width: ${theme.breakpoints.lg}) {
+    width: 100%;
+    height: 100vh;
+    max-width: 100vw;
+    max-height: 100vh;
+    padding: 16px;
+  }
 `;
 
 const LoadingCard = styled.div.withConfig({
@@ -145,8 +170,16 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
     sepia: 0
   };
 
+  // Use responsive sizing hook
+  const { dimensions, useFluidSizing, padding } = usePlayerSizing();
+
   return (
-    <ContentWrapper>
+    <ContentWrapper
+      width={dimensions.width}
+      height={dimensions.height}
+      padding={padding}
+      useFluidSizing={useFluidSizing}
+    >
       <LoadingCard
         backgroundImage={track.current?.image}
         accentColor={ui.accentColor}

@@ -135,12 +135,25 @@ export const theme = {
   },
   
   breakpoints: {
-    xs: '370px',
-    sm: '620px',
+    // Mobile devices
+    xs: '320px',
+    sm: '480px',
     md: '768px',
     lg: '1024px',
     xl: '1280px',
-    '2xl': '1536px'
+    '2xl': '1536px',
+    '3xl': '1920px'
+  },
+  
+  // Enhanced responsive breakpoints for player sizing
+  playerBreakpoints: {
+    mobile: '320px',
+    mobileLarge: '480px',
+    tablet: '768px',
+    tabletLarge: '1024px',
+    desktop: '1280px',
+    desktopLarge: '1440px',
+    desktopXLarge: '1920px'
   },
   
   zIndex: {
