@@ -28,6 +28,8 @@ export interface UsePlayerSizingReturn {
   optimalAspectRatio: number;
   aspectRatioConstraints: { min: number; max: number };
   updateDimensions: () => void;
+  transitionDuration: number;
+  transitionEasing: string;
 }
 
 // Debounce utility
@@ -56,9 +58,9 @@ export const usePlayerSizing = (constraints?: SizingConstraints): UsePlayerSizin
     setDimensions(newDimensions);
   }, [constraints]);
 
-  // Debounced resize handler
+  // Debounced resize handler with smooth transitions
   const handleResize = useCallback(
-    debounce(updateDimensions, 100),
+    debounce(updateDimensions, 150), // Slightly longer debounce for smoother transitions
     [updateDimensions]
   );
 
@@ -87,6 +89,10 @@ export const usePlayerSizing = (constraints?: SizingConstraints): UsePlayerSizin
   const aspectRatio = dimensions.aspectRatio;
   const optimalAspectRatio = getOptimalAspectRatio(viewport);
   const aspectRatioConstraints = calculateAspectRatioConstraints(viewport);
+  
+  // Transition configuration
+  const transitionDuration = 300; // 300ms for smooth transitions
+  const transitionEasing = 'cubic-bezier(0.4, 0, 0.2, 1)'; // Material Design easing
 
   return {
     dimensions,
@@ -101,6 +107,8 @@ export const usePlayerSizing = (constraints?: SizingConstraints): UsePlayerSizin
     aspectRatio,
     optimalAspectRatio,
     aspectRatioConstraints,
-    updateDimensions
+    updateDimensions,
+    transitionDuration,
+    transitionEasing
   };
 };

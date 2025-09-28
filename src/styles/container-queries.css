@@ -24,6 +24,61 @@
   }
 }
 
+/* Smooth Transitions for Responsive Sizing */
+.player-container,
+.playlist-container,
+.visual-effects-container,
+.controls-container {
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+            height 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+            padding 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+            transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Smooth transitions for player content */
+.player-content {
+  transition: padding 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+            font-size 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Smooth transitions for player controls */
+.player-controls {
+  transition: gap 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+            flex-direction 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Smooth transitions for track info */
+.player-track-info {
+  transition: font-size 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Smooth transitions for playlist drawer */
+.playlist-drawer {
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+            padding 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.playlist-item {
+  transition: padding 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+            font-size 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Smooth transitions for visual effects menu */
+.visual-effects-menu {
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+            padding 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.effects-controls {
+  transition: flex-direction 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+            gap 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Smooth transitions for control buttons */
+.control-buttons {
+  transition: gap 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
 /* Container query responsive styles for player components */
 
 /* Player Content Container Queries */

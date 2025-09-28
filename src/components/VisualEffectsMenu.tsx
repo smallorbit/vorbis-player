@@ -41,7 +41,7 @@ const DrawerOverlay = styled.div<{ $isOpen: boolean }>`
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 `;
 
-const DrawerContainer = styled.div<{ $isOpen: boolean; $width: number }>`
+const DrawerContainer = styled.div<{ $isOpen: boolean; $width: number; $transitionDuration: number; $transitionEasing: string }>`
   position: fixed;
   top: 0;
   right: 0;
@@ -51,7 +51,8 @@ const DrawerContainer = styled.div<{ $isOpen: boolean; $width: number }>`
   backdrop-filter: blur(20px);
   border-left: 1px solid ${theme.colors.popover.border};
   transform: translateX(${({ $isOpen }) => ($isOpen ? '0' : '100%')});
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all ${({ $transitionDuration }) => $transitionDuration}ms ${({ $transitionEasing }) => $transitionEasing},
+            width ${({ $transitionDuration }) => $transitionDuration}ms ${({ $transitionEasing }) => $transitionEasing};
   z-index: ${theme.zIndex.modal};
   overflow-y: auto;
   
@@ -279,7 +280,7 @@ export const VisualEffectsMenu: React.FC<VisualEffectsMenuProps> = memo(({
   setGlowRate
 }) => {
   // Get responsive sizing information
-  const { viewport, isMobile, isTablet } = usePlayerSizing();
+  const { viewport, isMobile, isTablet, transitionDuration, transitionEasing } = usePlayerSizing();
 
   // Calculate responsive width for the drawer
   const drawerWidth = useMemo(() => {
@@ -422,7 +423,12 @@ export const VisualEffectsMenu: React.FC<VisualEffectsMenuProps> = memo(({
         isEnabled={import.meta.env.DEV}
       />
       <DrawerOverlay $isOpen={isOpen} onClick={onClose} />
-      <DrawerContainer $isOpen={isOpen} $width={drawerWidth}>
+      <DrawerContainer
+        $isOpen={isOpen}
+        $width={drawerWidth}
+        $transitionDuration={transitionDuration}
+        $transitionEasing={transitionEasing}
+      >
         <DrawerHeader>
           <DrawerTitle>Visual Effects</DrawerTitle>
           <CloseButton onClick={onClose} aria-label="Close visual effects drawer">

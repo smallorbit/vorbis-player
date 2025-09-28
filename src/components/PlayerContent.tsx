@@ -58,12 +58,14 @@ interface PlayerContentProps {
 }
 
 const ContentWrapper = styled.div.withConfig({
-  shouldForwardProp: (prop) => !['width', 'height', 'padding', 'useFluidSizing'].includes(prop),
+  shouldForwardProp: (prop) => !['width', 'height', 'padding', 'useFluidSizing', 'transitionDuration', 'transitionEasing'].includes(prop),
 }) <{
   width: number;
   height: number;
   padding: number;
   useFluidSizing: boolean;
+  transitionDuration: number;
+  transitionEasing: string;
 }>`
   width: ${props => props.useFluidSizing ? '100%' : `${props.width}px`};
   height: ${props => props.useFluidSizing ? '100vh' : `${props.height}px`};
@@ -75,6 +77,13 @@ const ContentWrapper = styled.div.withConfig({
   box-sizing: border-box;
   position: absolute;
   z-index: 1000;
+  
+  /* Smooth transitions for responsive sizing */
+  transition: width ${props => props.transitionDuration}ms ${props => props.transitionEasing},
+            height ${props => props.transitionDuration}ms ${props => props.transitionEasing},
+            padding ${props => props.transitionDuration}ms ${props => props.transitionEasing},
+            max-width ${props => props.transitionDuration}ms ${props => props.transitionEasing},
+            max-height ${props => props.transitionDuration}ms ${props => props.transitionEasing};
   
   /* Enable container queries */
   container-type: inline-size;
@@ -204,7 +213,7 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
   };
 
   // Use responsive sizing hook
-  const { dimensions, useFluidSizing, padding } = usePlayerSizing();
+  const { dimensions, useFluidSizing, padding, transitionDuration, transitionEasing } = usePlayerSizing();
 
   return (
     <ContentWrapper
@@ -212,6 +221,8 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
       height={dimensions.height}
       padding={padding}
       useFluidSizing={useFluidSizing}
+      transitionDuration={transitionDuration}
+      transitionEasing={transitionEasing}
     >
       <LoadingCard
         backgroundImage={track.current?.image}
