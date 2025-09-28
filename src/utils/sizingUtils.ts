@@ -24,8 +24,19 @@ export interface SizingConstraints {
 }
 
 export const getViewportInfo = (): ViewportInfo => {
-  const width = window.innerWidth;
-  const height = window.innerHeight;
+  // Use visual viewport API if available (better for mobile browsers)
+  let width: number;
+  let height: number;
+  
+  if ('visualViewport' in window && (window as any).visualViewport) {
+    const visualViewport = (window as any).visualViewport;
+    width = visualViewport.width || window.innerWidth;
+    height = visualViewport.height || window.innerHeight;
+  } else {
+    width = window.innerWidth;
+    height = window.innerHeight;
+  }
+  
   const orientation = width > height ? 'landscape' : 'portrait';
   
   return {
@@ -112,6 +123,8 @@ export const calculatePlayerDimensions = (
 };
 
 export const getResponsiveBreakpoint = (viewport: ViewportInfo): string => {
+  // Enhanced mobile breakpoints for better mobile experience
+  if (viewport.width < 320) return 'mobile-xs'; // Very small phones
   if (viewport.width < 480) return 'mobile';
   if (viewport.width < 768) return 'mobile-large';
   if (viewport.width < 1024) return 'tablet';
@@ -125,7 +138,8 @@ export const shouldUseFluidSizing = (viewport: ViewportInfo): boolean => {
 };
 
 export const calculateOptimalPadding = (viewport: ViewportInfo): number => {
-  // Responsive padding based on screen size
+  // Responsive padding based on screen size with mobile optimizations
+  if (viewport.width < 320) return 4; // Very small screens
   if (viewport.width < 480) return 8;
   if (viewport.width < 768) return 12;
   if (viewport.width < 1024) return 16;

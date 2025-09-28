@@ -96,6 +96,21 @@
   }
 }
 
+/* Mobile-specific optimizations */
+@container player (max-width: 320px) {
+  .player-content {
+    padding: 4px;
+  }
+  
+  .player-controls {
+    gap: 0.125rem;
+  }
+  
+  .player-track-info {
+    font-size: 0.75rem;
+  }
+}
+
 @container player (min-width: 480px) {
   .player-content {
     padding: 12px;
@@ -249,6 +264,36 @@
   .control-buttons {
     flex-direction: row;
     gap: 1.5rem;
+  }
+}
+
+/* Mobile touch optimizations */
+@media (max-width: 768px) {
+  .player-controls button,
+  .control-buttons button,
+  .playlist-item,
+  .effects-controls button {
+    /* Improve touch targets on mobile */
+    min-height: 44px;
+    min-width: 44px;
+    touch-action: manipulation;
+  }
+  
+  /* Prevent text selection on touch */
+  .player-controls,
+  .control-buttons,
+  .playlist-item {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+  }
+  
+  /* Improve touch scrolling */
+  .playlist-drawer,
+  .visual-effects-menu {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
   }
 }
 

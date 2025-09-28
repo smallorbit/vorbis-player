@@ -68,14 +68,31 @@ export const usePlayerSizing = (constraints?: SizingConstraints): UsePlayerSizin
     // Initial calculation
     updateDimensions();
 
-    // Add event listeners
+    // Add event listeners for viewport changes
     window.addEventListener('resize', handleResize);
     window.addEventListener('orientationchange', handleResize);
+    
+    // Add visual viewport API support for mobile browsers
+    if ('visualViewport' in window) {
+      const visualViewport = (window as any).visualViewport;
+      if (visualViewport) {
+        visualViewport.addEventListener('resize', handleResize);
+        visualViewport.addEventListener('scroll', handleResize);
+      }
+    }
     
     // Cleanup
     return () => {
       window.removeEventListener('resize', handleResize);
       window.removeEventListener('orientationchange', handleResize);
+      
+      if ('visualViewport' in window) {
+        const visualViewport = (window as any).visualViewport;
+        if (visualViewport) {
+          visualViewport.removeEventListener('resize', handleResize);
+          visualViewport.removeEventListener('scroll', handleResize);
+        }
+      }
     };
   }, [handleResize, updateDimensions]);
 

@@ -31,6 +31,17 @@ body {
   margin: 0;
   min-width: 585px;
   min-height: 100vh;
+  
+  /* Mobile viewport optimizations */
+  -webkit-text-size-adjust: 100%;
+  -ms-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  
+  /* Prevent horizontal scroll on mobile */
+  overflow-x: hidden;
+  
+  /* Improve touch scrolling on iOS */
+  -webkit-overflow-scrolling: touch;
 }
 
 h1 {
@@ -109,6 +120,59 @@ input[type="range"]::-moz-range-thumb:hover {
 input[type="range"]::-moz-range-track {
   background: transparent;
   border: none;
+}
+
+/* Mobile viewport optimizations */
+@media (max-width: 768px) {
+  body {
+    min-width: 320px; /* Allow smaller minimum width on mobile */
+  }
+  
+  #root {
+    /* Ensure full viewport usage on mobile */
+    min-height: 100vh;
+    min-height: 100dvh; /* Dynamic viewport height for mobile browsers */
+  }
+}
+
+/* Handle mobile browser UI changes */
+@media (max-width: 768px) and (orientation: landscape) {
+  #root {
+    /* Account for mobile browser UI in landscape */
+    min-height: 100vh;
+    min-height: 100dvh;
+  }
+}
+
+/* iOS Safari specific optimizations */
+@supports (-webkit-touch-callout: none) {
+  body {
+    /* Prevent iOS Safari from zooming on input focus */
+    -webkit-text-size-adjust: 100%;
+  }
+  
+  input, textarea, select {
+    /* Prevent iOS Safari zoom on input focus */
+    font-size: 16px;
+  }
+}
+
+/* Android Chrome specific optimizations */
+@media screen and (-webkit-min-device-pixel-ratio: 0) {
+  body {
+    /* Improve text rendering on Android */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+/* High DPI display optimizations */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  body {
+    /* Improve text rendering on high DPI displays */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
 }
 
 
