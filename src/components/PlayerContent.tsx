@@ -2,12 +2,12 @@ import React, { Suspense, lazy } from 'react';
 import styled from 'styled-components';
 import { CardContent } from './styled';
 import AlbumArt from './AlbumArt';
+import PlayerControls from './PlayerControls';
 import { theme } from '@/styles/theme';
 import { cardBase } from '../styles/utils';
 
 const VisualEffectsMenu = lazy(() => import('./VisualEffectsMenu'));
 const PlaylistDrawer = lazy(() => import('./PlaylistDrawer'));
-const SpotifyPlayerControls = lazy(() => import('./SpotifyPlayerControls'));
 
 interface AlbumArtFilters {
   brightness: number;
@@ -168,19 +168,23 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
 
         <CardContent style={{ position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 2 }}>
           <Suspense fallback={<ControlsLoadingFallback />}>
-            <SpotifyPlayerControls
+            <PlayerControls
               currentTrack={track.current}
               accentColor={ui.accentColor}
-              onPlay={handlers.onPlay}
-              onPause={handlers.onPause}
-              onNext={handlers.onNext}
-              onPrevious={handlers.onPrevious}
-              onShowPlaylist={handlers.onShowPlaylist}
               trackCount={track.list.length}
+              visualEffectsEnabled={effects.enabled}
+              onPlayback={{
+                play: handlers.onPlay,
+                pause: handlers.onPause,
+                next: handlers.onNext,
+                previous: handlers.onPrevious
+              }}
+              onUI={{
+                showPlaylist: handlers.onShowPlaylist,
+                showVisualEffects: handlers.onShowVisualEffects,
+                toggleVisualEffects: handlers.onGlowToggle
+              }}
               onAccentColorChange={handlers.onAccentColorChange}
-              onShowVisualEffects={handlers.onShowVisualEffects}
-              glowEnabled={effects.enabled}
-              onGlowToggle={handlers.onGlowToggle}
             />
           </Suspense>
         </CardContent>
