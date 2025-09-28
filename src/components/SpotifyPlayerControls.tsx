@@ -7,19 +7,22 @@ import { TimelineRow, TimelineSlider } from './TimelineSlider';
 // Lazy load ColorPickerPopover for better performance
 const ColorPickerPopover = lazy(() => import('./ColorPickerPopover'));
 import { useSpotifyControls } from '../hooks/useSpotifyControls';
+import { usePlayerSizing } from '../hooks/usePlayerSizing';
 import { theme } from '../styles/theme';
 
-const sm = theme.spacing.sm;
-const lg = theme.spacing.lg;
 
 // --- Styled Components ---
-const PlayerControlsContainer = styled.div`
+const PlayerControlsContainer = styled.div<{ $isMobile: boolean; $isTablet: boolean }>`
   position: relative;
   z-index: 2;
   display: flex;
   flex-direction: column;
-  gap: ${({ theme }) => theme.spacing.sm};
-  padding: ${sm} ${lg} ${lg} ${lg};
+  gap: ${({ theme, $isMobile }) => $isMobile ? theme.spacing.xs : theme.spacing.sm};
+  padding: ${({ $isMobile, $isTablet }) => {
+    if ($isMobile) return `${theme.spacing.xs} ${theme.spacing.sm} ${theme.spacing.sm} ${theme.spacing.sm}`;
+    if ($isTablet) return `${theme.spacing.sm} ${theme.spacing.md} ${theme.spacing.md} ${theme.spacing.md}`;
+    return `${theme.spacing.sm} ${theme.spacing.lg} ${theme.spacing.lg} ${theme.spacing.lg}`;
+  }};
 `;
 
 // New components for the track info row
@@ -33,10 +36,18 @@ const TrackInfoOnlyRow = styled.div`
   padding: 0 ${({ theme }) => theme.spacing.md};
 `;
 
-const PlayerTrackName = styled.div`
+const PlayerTrackName = styled.div<{ $isMobile: boolean; $isTablet: boolean }>`
   font-weight: ${({ theme }) => theme.fontWeight.semibold};
-  font-size: ${({ theme }) => theme.fontSize['2xl']};
-  line-height: ${({ theme }) => theme.fontSize['3xl']};
+  font-size: ${({ $isMobile, $isTablet, theme }) => {
+    if ($isMobile) return theme.fontSize.lg;
+    if ($isTablet) return theme.fontSize.xl;
+    return theme.fontSize['2xl'];
+  }};
+  line-height: ${({ $isMobile, $isTablet, theme }) => {
+    if ($isMobile) return theme.fontSize.xl;
+    if ($isTablet) return theme.fontSize['2xl'];
+    return theme.fontSize['3xl'];
+  }};
   color: ${({ theme }) => theme.colors.white};
   overflow: hidden;
   text-overflow: ellipsis;
@@ -90,32 +101,48 @@ const TrackInfoRight = styled.div`
 `;
 
 const ControlButton = styled.button.withConfig({
-  shouldForwardProp: (prop) => !['isActive', 'accentColor'].includes(prop),
-}) <{ isActive?: boolean; accentColor: string }>`
+  shouldForwardProp: (prop) => !['isActive', 'accentColor', '$isMobile', '$isTablet'].includes(prop),
+}) <{ isActive?: boolean; accentColor: string; $isMobile: boolean; $isTablet: boolean }>`
   border: none;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   transition: all 0.2s ease;
-  padding: ${theme.spacing.sm};
-  border-radius: ${theme.borderRadius.md};
+  padding: ${({ $isMobile, $isTablet, theme }) => {
+    if ($isMobile) return theme.spacing.xs;
+    if ($isTablet) return theme.spacing.sm;
+    return theme.spacing.sm;
+  }};
+  border-radius: ${({ $isMobile, $isTablet, theme }) => {
+    if ($isMobile) return theme.borderRadius.sm;
+    if ($isTablet) return theme.borderRadius.md;
+    return theme.borderRadius.md;
+  }};
   
   svg {
-  width: 1.5rem;
-  height: 1.5rem;
-  fill: currentColor;
-}
+    width: ${({ $isMobile, $isTablet }) => {
+    if ($isMobile) return '1.25rem';
+    if ($isTablet) return '1.375rem';
+    return '1.5rem';
+  }};
+    height: ${({ $isMobile, $isTablet }) => {
+    if ($isMobile) return '1.25rem';
+    if ($isTablet) return '1.375rem';
+    return '1.5rem';
+  }};
+    fill: currentColor;
+  }
 
-background: ${({ isActive, accentColor }: { isActive?: boolean; accentColor: string }) => isActive ? accentColor : theme.colors.control.background};
-color: ${theme.colors.white};
-  
+  background: ${({ isActive, accentColor }: { isActive?: boolean; accentColor: string }) => isActive ? accentColor : theme.colors.control.background};
+  color: ${theme.colors.white};
+    
   &:hover {
-  background: ${({ isActive, accentColor }: { isActive?: boolean; accentColor: string }) => isActive ? `${accentColor}4D` : theme.colors.control.backgroundHover};
-}
+    background: ${({ isActive, accentColor }: { isActive?: boolean; accentColor: string }) => isActive ? `${accentColor}4D` : theme.colors.control.backgroundHover};
+  }
 `;
 
-const VolumeButton = styled.button`
+const VolumeButton = styled.button<{ $isMobile: boolean; $isTablet: boolean }>`
   border: none;
   background: transparent;
   color: ${theme.colors.gray[400]};
@@ -123,8 +150,16 @@ const VolumeButton = styled.button`
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  padding: ${theme.spacing.xs};
-  border-radius: ${theme.borderRadius.md};
+  padding: ${({ $isMobile, $isTablet, theme }) => {
+    if ($isMobile) return theme.spacing.xs;
+    if ($isTablet) return theme.spacing.sm;
+    return theme.spacing.xs;
+  }};
+  border-radius: ${({ $isMobile, $isTablet, theme }) => {
+    if ($isMobile) return theme.borderRadius.sm;
+    if ($isTablet) return theme.borderRadius.md;
+    return theme.borderRadius.md;
+  }};
   transition: all 0.2s ease;
   
   &:hover {
@@ -133,8 +168,16 @@ const VolumeButton = styled.button`
   }
   
   svg {
-    width: 1.5rem;
-    height: 1.5rem;
+    width: ${({ $isMobile, $isTablet }) => {
+    if ($isMobile) return '1.25rem';
+    if ($isTablet) return '1.375rem';
+    return '1.5rem';
+  }};
+    height: ${({ $isMobile, $isTablet }) => {
+    if ($isMobile) return '1.25rem';
+    if ($isTablet) return '1.375rem';
+    return '1.5rem';
+  }};
     fill: currentColor;
   }
 `;
@@ -209,6 +252,9 @@ interface SpotifyPlayerControlsProps {
 const SpotifyPlayerControls = memo<SpotifyPlayerControlsProps>(({ currentTrack, accentColor, onPlay, onPause, onNext, onPrevious, onShowPlaylist, onAccentColorChange, onShowVisualEffects, showVisualEffects, glowEnabled, onGlowToggle }) => {
   // Custom accent color per track (from eyedropper)
   const [customAccentColorOverrides, setCustomAccentColorOverrides] = useState<Record<string, string>>({});
+
+  // Get responsive sizing information
+  const { isMobile, isTablet } = usePlayerSizing();
 
   // Use Spotify controls hook
   const {
@@ -293,10 +339,10 @@ const SpotifyPlayerControls = memo<SpotifyPlayerControlsProps>(({ currentTrack, 
 
 
   return (
-    <PlayerControlsContainer>
+    <PlayerControlsContainer $isMobile={isMobile} $isTablet={isTablet}>
       {/* New Track Info Row - Song name and artist only */}
       <TrackInfoOnlyRow>
-        <PlayerTrackName>{currentTrack?.name || 'No track selected'}</PlayerTrackName>
+        <PlayerTrackName $isMobile={isMobile} $isTablet={isTablet}>{currentTrack?.name || 'No track selected'}</PlayerTrackName>
         <PlayerTrackArtist>{currentTrack?.artists || ''}</PlayerTrackArtist>
       </TrackInfoOnlyRow>
 
@@ -306,12 +352,12 @@ const SpotifyPlayerControls = memo<SpotifyPlayerControlsProps>(({ currentTrack, 
           {/* Left side is now empty - could be used for other controls if needed */}
         </TrackInfoLeft>
         <TrackInfoCenter>
-          <ControlButton accentColor={accentColor} onClick={onPrevious}>
+          <ControlButton $isMobile={isMobile} $isTablet={isTablet} accentColor={accentColor} onClick={onPrevious}>
             <svg viewBox="0 0 24 24">
               <path d="M6 6h2v12H6zm3.5 6l8.5 6V6z" />
             </svg>
           </ControlButton>
-          <ControlButton accentColor={accentColor} isActive={isPlaying} onClick={handlePlayPause}>
+          <ControlButton $isMobile={isMobile} $isTablet={isTablet} accentColor={accentColor} isActive={isPlaying} onClick={handlePlayPause}>
             {isPlaying ? (
               <svg viewBox="0 0 24 24">
                 <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
@@ -322,14 +368,14 @@ const SpotifyPlayerControls = memo<SpotifyPlayerControlsProps>(({ currentTrack, 
               </svg>
             )}
           </ControlButton>
-          <ControlButton accentColor={accentColor} onClick={onNext}>
+          <ControlButton $isMobile={isMobile} $isTablet={isTablet} accentColor={accentColor} onClick={onNext}>
             <svg viewBox="0 0 24 24">
               <path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z" />
             </svg>
           </ControlButton>
         </TrackInfoCenter>
         <TrackInfoRight>
-          <ControlButton accentColor={accentColor} onClick={onShowPlaylist} title="Show Playlist">
+          <ControlButton $isMobile={isMobile} $isTablet={isTablet} accentColor={accentColor} onClick={onShowPlaylist} title="Show Playlist">
             <svg viewBox="0 0 24 24" role="img" aria-hidden="true">
               <path d="M3 6h18v2H3V6zm0 5h18v2H3v-2zm0 5h18v2H3v-2z" />
             </svg>
@@ -342,6 +388,8 @@ const SpotifyPlayerControls = memo<SpotifyPlayerControlsProps>(({ currentTrack, 
         <TimelineLeft>
           {onGlowToggle && (
             <ControlButton
+              $isMobile={isMobile}
+              $isTablet={isTablet}
               accentColor={accentColor}
               isActive={glowEnabled}
               title={`Visual Effects ${glowEnabled ? 'enabled' : 'disabled'} `}
@@ -356,6 +404,8 @@ const SpotifyPlayerControls = memo<SpotifyPlayerControlsProps>(({ currentTrack, 
             </ControlButton>
           )}
           <ControlButton
+            $isMobile={isMobile}
+            $isTablet={isTablet}
             accentColor={accentColor}
             onClick={onShowVisualEffects}
             isActive={showVisualEffects}
@@ -382,7 +432,7 @@ const SpotifyPlayerControls = memo<SpotifyPlayerControlsProps>(({ currentTrack, 
               onCustomAccentColor={handleCustomAccentColor}
             />
           </Suspense>
-          <VolumeButton onClick={handleVolumeButtonClick} title={isMuted ? 'Unmute' : 'Mute'}>
+          <VolumeButton $isMobile={isMobile} $isTablet={isTablet} onClick={handleVolumeButtonClick} title={isMuted ? 'Unmute' : 'Mute'}>
             {isMuted ? (
               <svg viewBox="0 0 24 24">
                 <path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L22.46 25L23.87 23.59L2.41 2.13Z" />
