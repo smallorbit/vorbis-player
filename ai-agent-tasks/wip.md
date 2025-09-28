@@ -22,9 +22,10 @@
 - [x] ~~Task 1: useSpotifyPlayback hook~~ ✅ (Already implemented)
 - [x] ~~Task 2: useAutoAdvance hook~~ ✅ (Just completed)
 - [x] ~~Task 3: useAccentColor hook~~ ✅ (Just completed)
+- [x] ~~Task 4: useVisualEffectsState hook~~ ✅ (Just completed)
 
 **Next Task:**
-- [ ] Task 4: useVisualEffects hook
+- [ ] Task 5: useVolume hook (next in Phase 1)
 
 All refactoring tasks have been documented with comprehensive implementation plans.
 

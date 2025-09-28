@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useCallback, lazy, Suspense, useState } from 'react';
+import { useEffect, useMemo, useCallback, lazy, Suspense } from 'react';
 import styled from 'styled-components';
 import { spotifyAuth } from '../services/spotify';
 import { spotifyPlayer } from '../services/spotifyPlayer';
@@ -15,8 +15,8 @@ import { usePlaylistManager } from '../hooks/usePlaylistManager';
 import { useSpotifyPlayback } from '../hooks/useSpotifyPlayback';
 import { useAutoAdvance } from '../hooks/useAutoAdvance';
 import { useAccentColor } from '../hooks/useAccentColor';
+import { useVisualEffectsState } from '../hooks/useVisualEffectsState';
 import { theme } from '@/styles/theme';
-import { DEFAULT_GLOW_RATE, DEFAULT_GLOW_INTENSITY } from './AccentColorGlowOverlay';
 
 
 const Container = styled.div`
@@ -132,25 +132,15 @@ const AudioPlayerComponent = () => {
     restoreSavedFilters,
   } = usePlayerState();
 
-  // Global glow state (these will be managed by the VisualEffectsMenu)
-  const [glowIntensity, setGlowIntensity] = useState(DEFAULT_GLOW_INTENSITY); // Medium
-  const [glowRate, setGlowRate] = useState(DEFAULT_GLOW_RATE);
-  const [savedGlowIntensity, setSavedGlowIntensity] = useState<number | null>(null);
-  const [savedGlowRate, setSavedGlowRate] = useState<number | null>(null);
-
-  // Use global glow settings
-  const effectiveGlow = { intensity: glowIntensity, rate: glowRate };
-
-  // Wrapper functions that save settings when glow values change
-  const handleGlowIntensityChange = useCallback((intensity: number) => {
-    setGlowIntensity(intensity);
-    setSavedGlowIntensity(intensity);
-  }, []);
-
-  const handleGlowRateChange = useCallback((rate: number) => {
-    setGlowRate(rate);
-    setSavedGlowRate(rate);
-  }, []);
+  // Visual effects state management
+  const {
+    glowIntensity,
+    glowRate,
+    effectiveGlow,
+    handleGlowIntensityChange,
+    handleGlowRateChange,
+    restoreGlowSettings
+  } = useVisualEffectsState();
 
   const { playTrack } = useSpotifyPlayback({
     tracks,
@@ -254,14 +244,9 @@ const AudioPlayerComponent = () => {
     } else {
       setVisualEffectsEnabled(true);
       restoreSavedFilters();
-      if (savedGlowIntensity !== null) {
-        setGlowIntensity(savedGlowIntensity);
-      }
-      if (savedGlowRate !== null) {
-        setGlowRate(savedGlowRate);
-      }
+      restoreGlowSettings();
     }
-  }, [visualEffectsEnabled, restoreSavedFilters, savedGlowIntensity, savedGlowRate, setVisualEffectsEnabled]);
+  }, [visualEffectsEnabled, restoreSavedFilters, restoreGlowSettings, setVisualEffectsEnabled]);
 
   const handleClosePlaylist = useCallback(() => {
     setShowPlaylist(false);
