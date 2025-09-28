@@ -26,12 +26,6 @@ const Container = styled.div`
 
 const AudioPlayerComponent = () => {
   const {
-    // Grouped state
-    track,
-    playlist,
-    color,
-    visualEffects,
-    actions,
     // Legacy individual state (for backward compatibility)
     tracks,
     currentTrackIndex,
@@ -61,8 +55,6 @@ const AudioPlayerComponent = () => {
 
   // Visual effects state management
   const {
-    glowIntensity,
-    glowRate,
     effectiveGlow,
     handleGlowIntensityChange,
     handleGlowRateChange,

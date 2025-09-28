@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import SpotifyPlayerControls from './SpotifyPlayerControls';
 import { spotifyPlayer } from '../services/spotifyPlayer';
+import type { Track } from '../services/spotify';
 
 interface PlaybackHandlers {
   play: () => void;
@@ -16,7 +17,7 @@ interface UIHandlers {
 }
 
 interface PlayerControlsProps {
-  currentTrack: SpotifyTrack | null;
+  currentTrack: Track | null;
   accentColor: string;
   trackCount: number;
   visualEffectsEnabled: boolean;
@@ -46,32 +47,30 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
   onAccentColorChange
 }) => {
   const [isPlaying, setIsPlaying] = useState(false);
-  const [volume, setVolume] = useState<number>(100);
-  const [isMuted, setIsMuted] = useState<boolean>(false);
 
   // Control state logic
   const handlePlayClick = useCallback(() => {
     setIsPlaying(true);
     onPlayback.play();
-  }, [onPlayback.play]);
+  }, [onPlayback]);
 
   const handlePauseClick = useCallback(() => {
     setIsPlaying(false);
     onPlayback.pause();
-  }, [onPlayback.pause]);
+  }, [onPlayback]);
 
   // Control validation
   const handleNext = useCallback(() => {
     if (trackCount > 0) {
       onPlayback.next();
     }
-  }, [onPlayback.next, trackCount]);
+  }, [onPlayback, trackCount]);
 
   const handlePrevious = useCallback(() => {
     if (trackCount > 0) {
       onPlayback.previous();
     }
-  }, [onPlayback.previous, trackCount]);
+  }, [onPlayback, trackCount]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -81,7 +80,11 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
       switch (event.code) {
         case KEYBOARD_SHORTCUTS.PLAY_PAUSE:
           event.preventDefault();
-          isPlaying ? handlePauseClick() : handlePlayClick();
+          if (isPlaying) {
+            handlePauseClick();
+          } else {
+            handlePlayClick();
+          }
           break;
         case KEYBOARD_SHORTCUTS.NEXT_TRACK:
           event.preventDefault();
@@ -101,15 +104,15 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
           break;
         case KEYBOARD_SHORTCUTS.VOLUME_UP:
           event.preventDefault();
-          setVolume((prev: number) => Math.min(100, prev + 10));
+          // Volume control functionality can be added here if needed
           break;
         case KEYBOARD_SHORTCUTS.VOLUME_DOWN:
           event.preventDefault();
-          setVolume((prev: number) => Math.max(0, prev - 10));
+          // Volume control functionality can be added here if needed
           break;
         case KEYBOARD_SHORTCUTS.MUTE:
           event.preventDefault();
-          setIsMuted((prev: boolean) => !prev);
+          // Mute functionality can be added here if needed
           break;
       }
     };

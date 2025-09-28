@@ -6,6 +6,7 @@ import PlayerControls from './PlayerControls';
 import VisualEffectsContainer from './VisualEffectsContainer';
 import { theme } from '@/styles/theme';
 import { cardBase } from '../styles/utils';
+import type { Track } from '../services/spotify';
 
 const PlaylistDrawer = lazy(() => import('./PlaylistDrawer'));
 
@@ -38,8 +39,8 @@ interface PlayerContentHandlers {
 
 interface PlayerContentProps {
   track: {
-    current: SpotifyTrack | null;
-    list: SpotifyTrack[];
+    current: Track | null;
+    list: Track[];
     currentIndex: number;
   };
   ui: {
