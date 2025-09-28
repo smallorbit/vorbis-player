@@ -5,7 +5,6 @@ import { spotifyPlayer } from '../services/spotifyPlayer';
 import { CardContent } from '../components/styled';
 import { flexCenter, cardBase } from '../styles/utils';
 import AlbumArt from './AlbumArt';
-import { extractDominantColor } from '../utils/colorExtractor';
 
 const VisualEffectsMenu = lazy(() => import('./VisualEffectsMenu'));
 const PlaylistDrawer = lazy(() => import('./PlaylistDrawer'));
@@ -15,6 +14,7 @@ import { usePlayerState } from '../hooks/usePlayerState';
 import { usePlaylistManager } from '../hooks/usePlaylistManager';
 import { useSpotifyPlayback } from '../hooks/useSpotifyPlayback';
 import { useAutoAdvance } from '../hooks/useAutoAdvance';
+import { useAccentColor } from '../hooks/useAccentColor';
 import { theme } from '@/styles/theme';
 import { DEFAULT_GLOW_RATE, DEFAULT_GLOW_INTENSITY } from './AccentColorGlowOverlay';
 
@@ -173,6 +173,16 @@ const AudioPlayerComponent = () => {
     enabled: true
   });
 
+  const currentTrack = useMemo(() => tracks[currentTrackIndex] || null, [tracks, currentTrackIndex]);
+
+  // Extract accent color from album artwork
+  const { handleAccentColorChange: handleAccentColorChangeHook } = useAccentColor(
+    currentTrack,
+    accentColorOverrides,
+    setAccentColor,
+    setAccentColorOverrides
+  );
+
   useEffect(() => {
     const handleAuthRedirect = async () => {
       try {
@@ -213,31 +223,6 @@ const AudioPlayerComponent = () => {
     playTrack(prevIndex);
   }, [currentTrackIndex, tracks.length, playTrack]);
 
-  const currentTrack = useMemo(() => tracks[currentTrackIndex] || null, [tracks, currentTrackIndex]);
-
-  useEffect(() => {
-    const extractColor = async () => {
-      if (currentTrack?.id && accentColorOverrides[currentTrack.id]) {
-        setAccentColor(accentColorOverrides[currentTrack.id]);
-        return;
-      }
-      if (currentTrack?.image) {
-        try {
-          const dominantColor = await extractDominantColor(currentTrack.image);
-          if (dominantColor) {
-            setAccentColor(dominantColor.hex);
-          } else {
-            setAccentColor(theme.colors.accent);
-          }
-        } catch {
-          setAccentColor(theme.colors.accent);
-        }
-      } else {
-        setAccentColor(theme.colors.accent);
-      }
-    };
-    extractColor();
-  }, [currentTrack?.id, currentTrack?.image, accentColorOverrides, setAccentColor]);
 
   const handlePlay = useCallback(() => {
     if (currentTrack) {
@@ -283,37 +268,10 @@ const AudioPlayerComponent = () => {
   }, [setShowPlaylist]);
 
   const handleAccentColorChange = useCallback((color: string) => {
-    if (color === 'RESET_TO_DEFAULT' && currentTrack?.id) {
-      setAccentColorOverrides(prev => {
-        const newOverrides = { ...prev };
-        delete newOverrides[currentTrack.id!];
-        return newOverrides;
-      });
-      if (currentTrack?.image) {
-        extractDominantColor(currentTrack.image)
-          .then(dominantColor => {
-            if (dominantColor) {
-              setAccentColor(dominantColor.hex);
-            } else {
-              setAccentColor(theme.colors.accent);
-            }
-          })
-          .catch(() => {
-            setAccentColor(theme.colors.accent);
-          });
-      } else {
-        setAccentColor(theme.colors.accent);
-      }
-      return;
-    }
-
-    if (currentTrack?.id) {
-      setAccentColorOverrides(prev => ({ ...prev, [currentTrack.id]: color }));
-      setAccentColor(color);
-    } else {
-      setAccentColor(color);
-    }
-  }, [currentTrack?.id, currentTrack?.image, setAccentColorOverrides, setAccentColor]);
+    // Map legacy 'RESET_TO_DEFAULT' to 'auto' for the hook
+    const mappedColor = color === 'RESET_TO_DEFAULT' ? 'auto' : color;
+    handleAccentColorChangeHook(mappedColor);
+  }, [handleAccentColorChangeHook]);
 
   const renderContent = () => {
     const stateRenderer = (
