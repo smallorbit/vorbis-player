@@ -1,3 +1,6 @@
+/* Import progressive enhancement styles */
+@import './styles/progressive-enhancement.css';
+
 :root {
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
@@ -51,9 +54,18 @@ h1 {
 
 
 
+/* Backdrop filter support with fallbacks */
 @supports (backdrop-filter: blur(20px)) {
   .backdrop-blur-lg {
     backdrop-filter: blur(20px);
+  }
+}
+
+/* Fallback for browsers without backdrop-filter support */
+@supports not (backdrop-filter: blur(20px)) {
+  .backdrop-blur-lg {
+    /* Use semi-transparent background as fallback */
+    background-color: rgba(0, 0, 0, 0.3);
   }
 }
 

@@ -304,8 +304,12 @@
   .visual-effects-container,
   .controls-container {
     /* Use traditional media queries as fallback */
+    /* Ensure containers have basic responsive behavior */
+    width: 100%;
+    max-width: 100%;
   }
   
+  /* Player Content Fallbacks */
   @media (min-width: 320px) {
     .player-content {
       padding: 8px;
@@ -313,6 +317,10 @@
     
     .player-controls {
       gap: 0.25rem;
+    }
+    
+    .player-track-info {
+      font-size: 0.875rem;
     }
   }
   
@@ -324,6 +332,10 @@
     .player-controls {
       gap: 0.5rem;
     }
+    
+    .player-track-info {
+      font-size: 1rem;
+    }
   }
   
   @media (min-width: 768px) {
@@ -334,6 +346,10 @@
     .player-controls {
       gap: 0.75rem;
     }
+    
+    .player-track-info {
+      font-size: 1.125rem;
+    }
   }
   
   @media (min-width: 1024px) {
@@ -343,6 +359,124 @@
     
     .player-controls {
       gap: 1rem;
+    }
+    
+    .player-track-info {
+      font-size: 1.25rem;
+    }
+  }
+  
+  /* Playlist Drawer Fallbacks */
+  @media (min-width: 320px) {
+    .playlist-drawer {
+      width: 100%;
+      padding: 8px;
+    }
+    
+    .playlist-item {
+      padding: 8px;
+      font-size: 0.875rem;
+    }
+  }
+  
+  @media (min-width: 480px) {
+    .playlist-drawer {
+      width: 400px;
+      padding: 12px;
+    }
+    
+    .playlist-item {
+      padding: 12px;
+      font-size: 1rem;
+    }
+  }
+  
+  @media (min-width: 768px) {
+    .playlist-drawer {
+      width: 450px;
+      padding: 16px;
+    }
+    
+    .playlist-item {
+      padding: 16px;
+      font-size: 1.125rem;
+    }
+  }
+  
+  /* Visual Effects Menu Fallbacks */
+  @media (min-width: 320px) {
+    .visual-effects-menu {
+      width: 100%;
+      padding: 8px;
+    }
+    
+    .effects-controls {
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+  }
+  
+  @media (min-width: 480px) {
+    .visual-effects-menu {
+      width: 400px;
+      padding: 12px;
+    }
+    
+    .effects-controls {
+      flex-direction: row;
+      gap: 1rem;
+    }
+  }
+  
+  @media (min-width: 768px) {
+    .visual-effects-menu {
+      width: 500px;
+      padding: 16px;
+    }
+    
+    .effects-controls {
+      flex-direction: row;
+      gap: 1.5rem;
+    }
+  }
+  
+  /* Controls Fallbacks */
+  @media (min-width: 320px) {
+    .player-controls {
+      flex-direction: column;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    
+    .control-buttons {
+      flex-direction: row;
+      gap: 0.5rem;
+    }
+  }
+  
+  @media (min-width: 480px) {
+    .player-controls {
+      flex-direction: row;
+      align-items: center;
+      gap: 1rem;
+    }
+    
+    .control-buttons {
+      flex-direction: row;
+      gap: 1rem;
+    }
+  }
+  
+  @media (min-width: 768px) {
+    .player-controls {
+      flex-direction: row;
+      align-items: center;
+      gap: 1.5rem;
+    }
+    
+    .control-buttons {
+      flex-direction: row;
+      gap: 1.5rem;
     }
   }
 }

@@ -1,0 +1,400 @@
+/* Progressive Enhancement CSS - Fallbacks for Modern Features */
+
+/* CSS Custom Properties Fallbacks */
+:root {
+  /* Fallback values for browsers without CSS custom properties support */
+  --player-padding-xs: 4px;
+  --player-padding-sm: 8px;
+  --player-padding-md: 12px;
+  --player-padding-lg: 16px;
+  --player-padding-xl: 20px;
+  
+  --player-gap-xs: 0.125rem;
+  --player-gap-sm: 0.25rem;
+  --player-gap-md: 0.5rem;
+  --player-gap-lg: 0.75rem;
+  --player-gap-xl: 1rem;
+  
+  --player-font-xs: 0.75rem;
+  --player-font-sm: 0.875rem;
+  --player-font-md: 1rem;
+  --player-font-lg: 1.125rem;
+  --player-font-xl: 1.25rem;
+  
+  --transition-duration: 300ms;
+  --transition-easing: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Fallback for browsers without CSS custom properties */
+@supports not (--css: variables) {
+  /* Use hardcoded values as fallbacks */
+  .player-content {
+    padding: 8px; /* fallback for --player-padding-sm */
+  }
+  
+  .player-controls {
+    gap: 0.25rem; /* fallback for --player-gap-sm */
+  }
+  
+  .player-track-info {
+    font-size: 0.875rem; /* fallback for --player-font-sm */
+  }
+  
+  .playlist-drawer {
+    padding: 8px; /* fallback for --player-padding-sm */
+  }
+  
+  .playlist-item {
+    padding: 8px; /* fallback for --player-padding-sm */
+    font-size: 0.875rem; /* fallback for --player-font-sm */
+  }
+  
+  .visual-effects-menu {
+    padding: 8px; /* fallback for --player-padding-sm */
+  }
+  
+  .effects-controls {
+    gap: 0.5rem; /* fallback for --player-gap-md */
+  }
+}
+
+/* Enhanced backdrop-filter fallbacks */
+@supports not (backdrop-filter: blur(10px)) {
+  /* Fallback for all backdrop-filter usage */
+  .player-content,
+  .playlist-drawer,
+  .visual-effects-menu,
+  .playlist-selection,
+  .visual-effects-performance-monitor,
+  .player-state-renderer {
+    /* Use semi-transparent backgrounds instead of backdrop-filter */
+    background-color: rgba(0, 0, 0, 0.2);
+  }
+  
+  /* Specific fallbacks for different blur levels */
+  .backdrop-blur-sm {
+    background-color: rgba(0, 0, 0, 0.1);
+  }
+  
+  .backdrop-blur-md {
+    background-color: rgba(0, 0, 0, 0.2);
+  }
+  
+  .backdrop-blur-lg {
+    background-color: rgba(0, 0, 0, 0.3);
+  }
+  
+  .backdrop-blur-xl {
+    background-color: rgba(0, 0, 0, 0.4);
+  }
+}
+
+/* Enhanced container query fallbacks */
+@supports not (container-type: inline-size) {
+  /* Ensure all container elements have proper fallback behavior */
+  .player-container,
+  .playlist-container,
+  .visual-effects-container,
+  .controls-container {
+    /* Use flexbox for basic responsive behavior */
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-width: 100%;
+  }
+  
+  /* Enhanced mobile fallbacks */
+  @media (max-width: 320px) {
+    .player-content {
+      padding: 4px;
+    }
+    
+    .player-controls {
+      gap: 0.125rem;
+      flex-direction: column;
+    }
+    
+    .player-track-info {
+      font-size: 0.75rem;
+    }
+    
+    .playlist-drawer {
+      width: 100%;
+      padding: 4px;
+    }
+    
+    .playlist-item {
+      padding: 4px;
+      font-size: 0.75rem;
+    }
+    
+    .visual-effects-menu {
+      width: 100%;
+      padding: 4px;
+    }
+    
+    .effects-controls {
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+  }
+}
+
+/* CSS Grid fallbacks for older browsers */
+@supports not (display: grid) {
+  .player-content,
+  .playlist-drawer,
+  .visual-effects-menu {
+    /* Use flexbox as fallback for grid layouts */
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .player-controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .effects-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+}
+
+/* Flexbox gap fallbacks for older browsers */
+@supports not (gap: 1rem) {
+  .player-controls > * + * {
+    margin-left: 0.5rem;
+  }
+  
+  .effects-controls > * + * {
+    margin-left: 0.5rem;
+  }
+  
+  .control-buttons > * + * {
+    margin-left: 0.5rem;
+  }
+  
+  .playlist-item + .playlist-item {
+    margin-top: 0.5rem;
+  }
+}
+
+/* CSS clamp() fallbacks for older browsers */
+@supports not (font-size: clamp(1rem, 2vw, 2rem)) {
+  .player-track-info {
+    font-size: 1rem; /* fallback for clamp() */
+  }
+  
+  .playlist-item {
+    font-size: 0.875rem; /* fallback for clamp() */
+  }
+}
+
+/* CSS aspect-ratio fallbacks for older browsers */
+@supports not (aspect-ratio: 16/9) {
+  .player-container {
+    /* Use padding-bottom trick for aspect ratio */
+    position: relative;
+    height: 0;
+    padding-bottom: 56.25%; /* 16:9 aspect ratio */
+  }
+  
+  .player-container > * {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+  }
+}
+
+/* CSS logical properties fallbacks */
+@supports not (margin-inline-start: 1rem) {
+  .player-content {
+    margin-left: 1rem; /* fallback for margin-inline-start */
+  }
+  
+  .playlist-drawer {
+    margin-left: 1rem; /* fallback for margin-inline-start */
+  }
+}
+
+/* CSS scroll-behavior fallbacks */
+@supports not (scroll-behavior: smooth) {
+  /* Use JavaScript-based smooth scrolling as fallback */
+  .playlist-drawer,
+  .visual-effects-menu {
+    scroll-behavior: auto;
+  }
+}
+
+/* CSS focus-visible fallbacks */
+@supports not (selector(:focus-visible)) {
+  /* Use :focus as fallback for :focus-visible */
+  button:focus,
+  input:focus,
+  select:focus {
+    outline: 2px solid #646cff;
+    outline-offset: 2px;
+  }
+}
+
+/* CSS :is() and :where() fallbacks */
+@supports not (selector(:is(button, input))) {
+  /* Use individual selectors as fallback */
+  button,
+  input,
+  select {
+    /* Individual selector rules */
+  }
+}
+
+/* CSS :has() fallbacks */
+@supports not (selector(:has(button))) {
+  /* Use JavaScript-based solutions as fallback */
+  .player-container:has(.player-controls) {
+    /* Fallback behavior */
+  }
+}
+
+/* CSS color-mix() fallbacks */
+@supports not (color: color-mix(in srgb, red, blue)) {
+  .accent-color {
+    /* Use pre-calculated color values as fallback */
+    color: #646cff; /* fallback for color-mix() */
+  }
+}
+
+/* CSS relative color syntax fallbacks */
+@supports not (color: rgb(from red r g b)) {
+  .dynamic-color {
+    /* Use static color values as fallback */
+    color: #646cff;
+  }
+}
+
+/* CSS anchor positioning fallbacks */
+@supports not (anchor-name: --anchor) {
+  .anchored-element {
+    /* Use absolute positioning as fallback */
+    position: absolute;
+    top: 0;
+    left: 0;
+  }
+}
+
+/* CSS viewport units fallbacks */
+@supports not (height: 100dvh) {
+  #root {
+    /* Use 100vh as fallback for 100dvh */
+    min-height: 100vh;
+  }
+}
+
+/* CSS subgrid fallbacks */
+@supports not (display: subgrid) {
+  .subgrid-container {
+    /* Use regular grid as fallback */
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  }
+}
+
+/* CSS container queries fallbacks with enhanced media queries */
+@supports not (container-type: inline-size) {
+  /* Enhanced responsive design with more breakpoints */
+  @media (min-width: 240px) and (max-width: 319px) {
+    /* Very small screens */
+    .player-content {
+      padding: 2px;
+    }
+    
+    .player-controls {
+      gap: 0.125rem;
+      flex-direction: column;
+    }
+    
+    .player-track-info {
+      font-size: 0.625rem;
+    }
+  }
+  
+  @media (min-width: 320px) and (max-width: 479px) {
+    /* Small mobile screens */
+    .player-content {
+      padding: 8px;
+    }
+    
+    .player-controls {
+      gap: 0.25rem;
+    }
+    
+    .player-track-info {
+      font-size: 0.875rem;
+    }
+  }
+  
+  @media (min-width: 480px) and (max-width: 767px) {
+    /* Large mobile screens */
+    .player-content {
+      padding: 12px;
+    }
+    
+    .player-controls {
+      gap: 0.5rem;
+    }
+    
+    .player-track-info {
+      font-size: 1rem;
+    }
+  }
+  
+  @media (min-width: 768px) and (max-width: 1023px) {
+    /* Tablet screens */
+    .player-content {
+      padding: 16px;
+    }
+    
+    .player-controls {
+      gap: 0.75rem;
+    }
+    
+    .player-track-info {
+      font-size: 1.125rem;
+    }
+  }
+  
+  @media (min-width: 1024px) and (max-width: 1279px) {
+    /* Small desktop screens */
+    .player-content {
+      padding: 20px;
+    }
+    
+    .player-controls {
+      gap: 1rem;
+    }
+    
+    .player-track-info {
+      font-size: 1.25rem;
+    }
+  }
+  
+  @media (min-width: 1280px) {
+    /* Large desktop screens */
+    .player-content {
+      padding: 24px;
+    }
+    
+    .player-controls {
+      gap: 1.25rem;
+    }
+    
+    .player-track-info {
+      font-size: 1.375rem;
+    }
+  }
+}

@@ -13,6 +13,13 @@ import {
   getOptimalAspectRatio,
   calculateAspectRatioConstraints
 } from '../utils/sizingUtils';
+import {
+  detectBrowserFeatures,
+  getEnhancedViewportInfo,
+  createEnhancedEventListeners,
+  getFallbackStrategy,
+  type BrowserFeatures
+} from '../utils/featureDetection';
 
 export interface UsePlayerSizingReturn {
   dimensions: PlayerDimensions;
@@ -30,6 +37,13 @@ export interface UsePlayerSizingReturn {
   updateDimensions: () => void;
   transitionDuration: number;
   transitionEasing: string;
+  // Progressive enhancement features
+  browserFeatures: BrowserFeatures;
+  compatibilityScore: number;
+  fallbackStrategy: 'modern' | 'enhanced' | 'balanced' | 'conservative';
+  supportsContainerQueries: boolean;
+  supportsBackdropFilter: boolean;
+  supportsVisualViewport: boolean;
 }
 
 // Debounce utility
@@ -45,18 +59,30 @@ const debounce = <T extends (...args: any[]) => any>(
 };
 
 export const usePlayerSizing = (constraints?: SizingConstraints): UsePlayerSizingReturn => {
-  const [viewport, setViewport] = useState<ViewportInfo>(() => getViewportInfo());
+  // Detect browser features once
+  const [browserFeatures] = useState<BrowserFeatures>(() => detectBrowserFeatures());
+  
+  // Get enhanced viewport info with fallbacks
+  const [viewport, setViewport] = useState<ViewportInfo>(() => {
+    if (browserFeatures.visualViewport || browserFeatures.devicePixelRatio) {
+      return getEnhancedViewportInfo(browserFeatures);
+    }
+    return getViewportInfo();
+  });
+  
   const [dimensions, setDimensions] = useState<PlayerDimensions>(() => 
-    calculatePlayerDimensions(getViewportInfo(), constraints)
+    calculatePlayerDimensions(viewport, constraints)
   );
 
   const updateDimensions = useCallback(() => {
-    const newViewport = getViewportInfo();
+    const newViewport: ViewportInfo = browserFeatures.visualViewport || browserFeatures.devicePixelRatio 
+      ? getEnhancedViewportInfo(browserFeatures)
+      : getViewportInfo();
     const newDimensions = calculatePlayerDimensions(newViewport, constraints);
     
     setViewport(newViewport);
     setDimensions(newDimensions);
-  }, [constraints]);
+  }, [constraints, browserFeatures]);
 
   // Debounced resize handler with smooth transitions
   const handleResize = useCallback(
@@ -68,33 +94,12 @@ export const usePlayerSizing = (constraints?: SizingConstraints): UsePlayerSizin
     // Initial calculation
     updateDimensions();
 
-    // Add event listeners for viewport changes
-    window.addEventListener('resize', handleResize);
-    window.addEventListener('orientationchange', handleResize);
-    
-    // Add visual viewport API support for mobile browsers
-    if ('visualViewport' in window) {
-      const visualViewport = (window as any).visualViewport;
-      if (visualViewport) {
-        visualViewport.addEventListener('resize', handleResize);
-        visualViewport.addEventListener('scroll', handleResize);
-      }
-    }
+    // Use enhanced event listeners with fallbacks
+    const cleanup = createEnhancedEventListeners(browserFeatures, handleResize);
     
     // Cleanup
-    return () => {
-      window.removeEventListener('resize', handleResize);
-      window.removeEventListener('orientationchange', handleResize);
-      
-      if ('visualViewport' in window) {
-        const visualViewport = (window as any).visualViewport;
-        if (visualViewport) {
-          visualViewport.removeEventListener('resize', handleResize);
-          visualViewport.removeEventListener('scroll', handleResize);
-        }
-      }
-    };
-  }, [handleResize, updateDimensions]);
+    return cleanup;
+  }, [handleResize, updateDimensions, browserFeatures]);
 
   // Calculate derived values
   const isMobile = viewport.width < 768;
@@ -111,6 +116,15 @@ export const usePlayerSizing = (constraints?: SizingConstraints): UsePlayerSizin
   const transitionDuration = 300; // 300ms for smooth transitions
   const transitionEasing = 'cubic-bezier(0.4, 0, 0.2, 1)'; // Material Design easing
 
+  // Progressive enhancement features
+  const compatibilityScore = Math.round(
+    (Object.values(browserFeatures).filter(Boolean).length / Object.keys(browserFeatures).length) * 100
+  );
+  const fallbackStrategy = getFallbackStrategy(browserFeatures);
+  const supportsContainerQueries = browserFeatures.containerQueries;
+  const supportsBackdropFilter = browserFeatures.backdropFilter;
+  const supportsVisualViewport = browserFeatures.visualViewport;
+
   return {
     dimensions,
     viewport,
@@ -126,6 +140,13 @@ export const usePlayerSizing = (constraints?: SizingConstraints): UsePlayerSizin
     aspectRatioConstraints,
     updateDimensions,
     transitionDuration,
-    transitionEasing
+    transitionEasing,
+    // Progressive enhancement features
+    browserFeatures,
+    compatibilityScore,
+    fallbackStrategy,
+    supportsContainerQueries,
+    supportsBackdropFilter,
+    supportsVisualViewport
   };
 };
