@@ -26,6 +26,13 @@ const Container = styled.div`
 
 const AudioPlayerComponent = () => {
   const {
+    // Grouped state
+    track,
+    playlist,
+    color,
+    visualEffects,
+    actions,
+    // Legacy individual state (for backward compatibility)
     tracks,
     currentTrackIndex,
     isLoading,
@@ -35,11 +42,6 @@ const AudioPlayerComponent = () => {
     accentColor,
     showVisualEffects,
     visualEffectsEnabled,
-    setVisualEffectsEnabled,
-
-
-
-
     accentColorOverrides,
     albumFilters,
     setTracks,
@@ -50,9 +52,7 @@ const AudioPlayerComponent = () => {
     setShowPlaylist,
     setAccentColor,
     setShowVisualEffects,
-
-
-
+    setVisualEffectsEnabled,
     setAccentColorOverrides,
     handleFilterChange,
     handleResetFilters,

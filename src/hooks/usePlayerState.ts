@@ -105,73 +105,91 @@ export interface AlbumFilters {
 }
 
 /**
- * Player state interface
+ * Track and Playback State
  * 
- * Comprehensive state object containing all player-related data
- * including tracks, UI state, visual effects, and user preferences.
- * 
- * @interface PlayerState
- * 
- * @property {Track[]} tracks - Current playlist/track collection
- * @property {number} currentTrackIndex - Currently playing track position
- * @property {boolean} isLoading - Loading state for async operations
- * @property {string | null} error - Error state for failed operations
- * @property {string | null} selectedPlaylistId - Active playlist identifier
- * @property {boolean} showPlaylist - Playlist drawer visibility
- * @property {boolean} showLibrary - Library navigation visibility
- * @property {string} accentColor - Dynamic theme color from album art
- * @property {boolean} showVisualEffects - Visual effects menu visibility
- * @property {boolean} visualEffectsEnabled - Visual effects toggle state
- * @property {Record<string, { intensity: number; rate: number }>} perAlbumGlow - Per-album glow settings
- * @property {Record<string, string>} accentColorOverrides - Manual accent color overrides
- * @property {AlbumFilters} albumFilters - Current image processing filters
- * @property {AlbumFilters | null} savedAlbumFilters - Saved filter preset
- * 
- * @example
- * ```typescript
- * const playerState: PlayerState = {
- *   tracks: [track1, track2, track3],
- *   currentTrackIndex: 1,
- *   isLoading: false,
- *   error: null,
- *   selectedPlaylistId: 'playlist_123',
- *   showPlaylist: false,
- *   showLibrary: true,
- *   accentColor: '#1db954',
- *   showVisualEffects: false,
- *   visualEffectsEnabled: true,
- *   perAlbumGlow: {
- *     'album_123': { intensity: 0.8, rate: 2.0 }
- *   },
- *   accentColorOverrides: {
- *     'album_456': '#ff6b6b'
- *   },
- *   albumFilters: {
- *     brightness: 100,
- *     contrast: 100,
- *     saturation: 100,
- *     hue: 0,
- *     blur: 0,
- *     sepia: 0
- *   },
- *   savedAlbumFilters: null
- * };
- * ```
+ * Contains all state related to track management and playback.
  */
-export interface PlayerState {
+export interface TrackState {
   tracks: Track[];
-  currentTrackIndex: number;
+  currentIndex: number;
   isLoading: boolean;
   error: string | null;
-  selectedPlaylistId: string | null;
-  showPlaylist: boolean;
-  accentColor: string;
-  showVisualEffects: boolean;
-  visualEffectsEnabled: boolean;
+}
+
+/**
+ * Playlist State
+ * 
+ * Contains state related to playlist management and UI.
+ */
+export interface PlaylistState {
+  selectedId: string | null;
+  isVisible: boolean;
+}
+
+/**
+ * Color and Theme State
+ * 
+ * Contains state related to accent colors and theme customization.
+ */
+export interface ColorState {
+  current: string;
+  overrides: Record<string, string>;
+}
+
+/**
+ * Visual Effects State
+ * 
+ * Contains state related to visual effects and image processing.
+ */
+export interface VisualEffectsState {
+  enabled: boolean;
+  menuVisible: boolean;
+  filters: AlbumFilters;
   perAlbumGlow: Record<string, { intensity: number; rate: number }>;
-  accentColorOverrides: Record<string, string>;
-  albumFilters: AlbumFilters;
-  savedAlbumFilters: AlbumFilters | null;
+  savedFilters: AlbumFilters | null;
+}
+
+/**
+ * Grouped Player State
+ * 
+ * Organized state object with logical groupings for better maintainability.
+ */
+export interface GroupedPlayerState {
+  track: TrackState;
+  playlist: PlaylistState;
+  color: ColorState;
+  visualEffects: VisualEffectsState;
+}
+
+/**
+ * Player Actions
+ * 
+ * Grouped action functions for state management.
+ */
+export interface PlayerActions {
+  track: {
+    setTracks: (tracks: Track[]) => void;
+    setCurrentIndex: (index: number) => void;
+    setLoading: (loading: boolean) => void;
+    setError: (error: string | null) => void;
+  };
+  playlist: {
+    setSelectedId: (id: string | null) => void;
+    setVisible: (visible: boolean) => void;
+  };
+  color: {
+    setCurrent: (color: string) => void;
+    setOverrides: (overrides: Record<string, string>) => void;
+  };
+  visualEffects: {
+    setEnabled: (enabled: boolean) => void;
+    setMenuVisible: (visible: boolean) => void;
+    setFilters: (filters: AlbumFilters) => void;
+    setPerAlbumGlow: (glow: Record<string, { intensity: number; rate: number }>) => void;
+    handleFilterChange: (filterName: string, value: number | boolean) => void;
+    handleResetFilters: () => void;
+    restoreSavedFilters: () => void;
+  };
 }
 
 /**
@@ -349,7 +367,73 @@ export const usePlayerState = () => {
     }
   }, [savedAlbumFilters]);
 
+  // Group related state for external consumption
+  const trackState: TrackState = {
+    tracks,
+    currentIndex: currentTrackIndex,
+    isLoading,
+    error
+  };
+
+  const playlistState: PlaylistState = {
+    selectedId: selectedPlaylistId,
+    isVisible: showPlaylist
+  };
+
+  const colorState: ColorState = {
+    current: accentColor,
+    overrides: accentColorOverrides
+  };
+
+  const visualEffectsState: VisualEffectsState = {
+    enabled: visualEffectsEnabled,
+    menuVisible: showVisualEffects,
+    filters: albumFilters,
+    perAlbumGlow,
+    savedFilters: savedAlbumFilters
+  };
+
+  // Group related actions
+  const trackActions = {
+    setTracks,
+    setCurrentIndex: setCurrentTrackIndex,
+    setLoading: setIsLoading,
+    setError
+  };
+
+  const playlistActions = {
+    setSelectedId: setSelectedPlaylistId,
+    setVisible: setShowPlaylist
+  };
+
+  const colorActions = {
+    setCurrent: setAccentColor,
+    setOverrides: setAccentColorOverrides
+  };
+
+  const visualEffectsActions = {
+    setEnabled: setVisualEffectsEnabled,
+    setMenuVisible: setShowVisualEffects,
+    setFilters: setAlbumFilters,
+    setPerAlbumGlow,
+    handleFilterChange,
+    handleResetFilters,
+    restoreSavedFilters
+  };
+
   return {
+    // Grouped state
+    track: trackState,
+    playlist: playlistState,
+    color: colorState,
+    visualEffects: visualEffectsState,
+    actions: {
+      track: trackActions,
+      playlist: playlistActions,
+      color: colorActions,
+      visualEffects: visualEffectsActions
+    },
+    // Legacy individual state (for backward compatibility during migration)
     tracks,
     currentTrackIndex,
     isLoading,
@@ -372,7 +456,6 @@ export const usePlayerState = () => {
     setAccentColor,
     setShowVisualEffects,
     setVisualEffectsEnabled,
-
     setPerAlbumGlow,
     setAccentColorOverrides,
     setAlbumFilters,
