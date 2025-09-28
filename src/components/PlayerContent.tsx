@@ -76,8 +76,12 @@ const ContentWrapper = styled.div.withConfig({
   position: absolute;
   z-index: 1000;
   
-  /* Responsive adjustments */
-  @media (max-width: ${theme.breakpoints.sm}) {
+  /* Enable container queries */
+  container-type: inline-size;
+  container-name: player;
+  
+  /* Container query responsive adjustments */
+  @container player (max-width: 480px) {
     width: 100%;
     height: 100vh;
     max-width: 100vw;
@@ -85,7 +89,7 @@ const ContentWrapper = styled.div.withConfig({
     padding: 8px;
   }
   
-  @media (min-width: ${theme.breakpoints.sm}) and (max-width: ${theme.breakpoints.md}) {
+  @container player (min-width: 480px) and (max-width: 768px) {
     width: 100%;
     height: 100vh;
     max-width: 100vw;
@@ -93,12 +97,39 @@ const ContentWrapper = styled.div.withConfig({
     padding: 12px;
   }
   
-  @media (min-width: ${theme.breakpoints.md}) and (max-width: ${theme.breakpoints.lg}) {
+  @container player (min-width: 768px) and (max-width: 1024px) {
     width: 100%;
     height: 100vh;
     max-width: 100vw;
     max-height: 100vh;
     padding: 16px;
+  }
+  
+  /* Fallback for browsers without container query support */
+  @supports not (container-type: inline-size) {
+    @media (max-width: ${theme.breakpoints.sm}) {
+      width: 100%;
+      height: 100vh;
+      max-width: 100vw;
+      max-height: 100vh;
+      padding: 8px;
+    }
+    
+    @media (min-width: ${theme.breakpoints.sm}) and (max-width: ${theme.breakpoints.md}) {
+      width: 100%;
+      height: 100vh;
+      max-width: 100vw;
+      max-height: 100vh;
+      padding: 12px;
+    }
+    
+    @media (min-width: ${theme.breakpoints.md}) and (max-width: ${theme.breakpoints.lg}) {
+      width: 100%;
+      height: 100vh;
+      max-width: 100vw;
+      max-height: 100vh;
+      padding: 16px;
+    }
   }
 `;
 

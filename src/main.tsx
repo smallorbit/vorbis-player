@@ -1,6 +1,7 @@
 import { createRoot } from 'react-dom/client'
 import './index.css'
 import './styles/glow-animations.css'
+import './styles/container-queries.css'
 import App from './App.tsx'
 
 if ('serviceWorker' in navigator && import.meta.env.PROD) {

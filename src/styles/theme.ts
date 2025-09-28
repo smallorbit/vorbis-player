@@ -156,6 +156,16 @@ export const theme = {
     desktopXLarge: '1920px'
   },
   
+  // Container query breakpoints for component-level responsive behavior
+  containerBreakpoints: {
+    xs: '320px',
+    sm: '480px',
+    md: '768px',
+    lg: '1024px',
+    xl: '1280px',
+    '2xl': '1536px'
+  },
+  
   zIndex: {
     auto: 'auto',
     base: '0',
@@ -182,4 +192,14 @@ export const mediaQuery = {
   lg: `@media (min-width: ${theme.breakpoints.lg})`,
   xl: `@media (min-width: ${theme.breakpoints.xl})`,
   '2xl': `@media (min-width: ${theme.breakpoints['2xl']})`
+};
+
+// Container query utilities for component-level responsive behavior
+export const containerQuery = {
+  xs: `@container (min-width: ${theme.containerBreakpoints.xs})`,
+  sm: `@container (min-width: ${theme.containerBreakpoints.sm})`,
+  md: `@container (min-width: ${theme.containerBreakpoints.md})`,
+  lg: `@container (min-width: ${theme.containerBreakpoints.lg})`,
+  xl: `@container (min-width: ${theme.containerBreakpoints.xl})`,
+  '2xl': `@container (min-width: ${theme.containerBreakpoints['2xl']})`
 };

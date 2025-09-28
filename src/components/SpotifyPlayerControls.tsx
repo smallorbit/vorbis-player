@@ -23,6 +23,32 @@ const PlayerControlsContainer = styled.div<{ $isMobile: boolean; $isTablet: bool
     if ($isTablet) return `${theme.spacing.sm} ${theme.spacing.md} ${theme.spacing.md} ${theme.spacing.md}`;
     return `${theme.spacing.sm} ${theme.spacing.lg} ${theme.spacing.lg} ${theme.spacing.lg}`;
   }};
+  
+  /* Enable container queries */
+  container-type: inline-size;
+  container-name: controls;
+  
+  /* Container query responsive adjustments */
+  @container controls (max-width: 480px) {
+    flex-direction: column;
+    align-items: center;
+    gap: ${({ theme }) => theme.spacing.xs};
+    padding: ${({ theme }) => `${theme.spacing.xs} ${theme.spacing.sm} ${theme.spacing.sm} ${theme.spacing.sm}`};
+  }
+  
+  @container controls (min-width: 480px) and (max-width: 768px) {
+    flex-direction: row;
+    align-items: center;
+    gap: ${({ theme }) => theme.spacing.sm};
+    padding: ${({ theme }) => `${theme.spacing.sm} ${theme.spacing.md} ${theme.spacing.md} ${theme.spacing.md}`};
+  }
+  
+  @container controls (min-width: 768px) {
+    flex-direction: row;
+    align-items: center;
+    gap: ${({ theme }) => theme.spacing.lg};
+    padding: ${({ theme }) => `${theme.spacing.sm} ${theme.spacing.lg} ${theme.spacing.lg} ${theme.spacing.lg}`};
+  }
 `;
 
 // New components for the track info row

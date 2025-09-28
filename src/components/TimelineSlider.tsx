@@ -56,7 +56,9 @@ const TimelineSliderInput = styled.input.withConfig({
   }
 `;
 
-const TimeLabel = styled.span<{ minWidth: number }>`
+const TimeLabel = styled.span.withConfig({
+  shouldForwardProp: (prop) => !['minWidth'].includes(prop),
+}) <{ minWidth: number }>`
   color: ${({ theme }) => theme.colors.gray[400]};
   font-size: ${({ theme }) => theme.fontSize.sm};
   font-family: monospace;

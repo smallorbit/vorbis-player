@@ -55,8 +55,28 @@ const DrawerContainer = styled.div<{ $isOpen: boolean; $width: number }>`
   z-index: ${theme.zIndex.modal};
   overflow-y: auto;
   
-  @media (max-width: ${theme.breakpoints.md}) {
+  /* Enable container queries */
+  container-type: inline-size;
+  container-name: visual-effects;
+  
+  /* Container query responsive adjustments */
+  @container visual-effects (max-width: 768px) {
     width: 100vw;
+  }
+  
+  @container visual-effects (min-width: 768px) and (max-width: 1024px) {
+    width: 400px;
+  }
+  
+  @container visual-effects (min-width: 1024px) {
+    width: 500px;
+  }
+  
+  /* Fallback for browsers without container query support */
+  @supports not (container-type: inline-size) {
+    @media (max-width: ${theme.breakpoints.md}) {
+      width: 100vw;
+    }
   }
 `;
 

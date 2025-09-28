@@ -24,8 +24,31 @@ const PlaylistDrawerContainer = styled.div.withConfig({
   padding: ${theme.spacing.md};
   box-sizing: border-box;
   
-  @media (max-width: ${theme.breakpoints.sm}) {
+  /* Enable container queries */
+  container-type: inline-size;
+  container-name: playlist;
+  
+  /* Container query responsive adjustments */
+  @container playlist (max-width: 480px) {
     width: 100vw;
+    padding: ${theme.spacing.sm};
+  }
+  
+  @container playlist (min-width: 480px) and (max-width: 768px) {
+    width: 400px;
+    padding: ${theme.spacing.md};
+  }
+  
+  @container playlist (min-width: 768px) {
+    width: 450px;
+    padding: ${theme.spacing.lg};
+  }
+  
+  /* Fallback for browsers without container query support */
+  @supports not (container-type: inline-size) {
+    @media (max-width: ${theme.breakpoints.sm}) {
+      width: 100vw;
+    }
   }
 `;
 

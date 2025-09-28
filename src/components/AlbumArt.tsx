@@ -12,7 +12,9 @@ const spin = keyframes`
   100% { transform: rotate(360deg); }
 `;
 
-const ProcessingSpinner = styled.div<{ size: number; innerSize: number }>`
+const ProcessingSpinner = styled.div.withConfig({
+  shouldForwardProp: (prop) => !['size', 'innerSize'].includes(prop),
+}) <{ size: number; innerSize: number }>`
   position: absolute;
   top: 8px;
   right: 8px;
