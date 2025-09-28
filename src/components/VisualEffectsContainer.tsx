@@ -1,5 +1,4 @@
 import React, { Suspense, lazy, useEffect } from 'react';
-import { useVisualEffectsState } from '../hooks/useVisualEffectsState';
 
 const VisualEffectsMenu = lazy(() => import('./VisualEffectsMenu'));
 
@@ -21,49 +20,13 @@ interface VisualEffectsContainerProps {
   onFilterChange: (filter: string, value: number) => void;
   onResetFilters: () => void;
   onToggleEffects: () => void;
+  // Glow controls from parent
+  glowIntensity: number;
+  setGlowIntensity: (intensity: number) => void;
+  glowRate: number;
+  setGlowRate: (rate: number) => void;
+  effectiveGlow: { intensity: number; rate: number };
 }
-
-// interface EffectsPreset {
-//   id: string;
-//   name: string;
-//   filters: AlbumArtFilters;
-//   glow: { intensity: number; rate: number };
-// }
-
-// interface VisualEffectsState {
-//   glow: {
-//     intensity: number;
-//     rate: number;
-//     enabled: boolean;
-//   };
-//   filters: AlbumArtFilters;
-//   menu: {
-//     isOpen: boolean;
-//     activeTab: string;
-//   };
-// }
-
-// Default presets can be used for future preset functionality
-// const DEFAULT_PRESETS: EffectsPreset[] = [
-//   {
-//     id: 'default',
-//     name: 'Default',
-//     filters: { brightness: 110, contrast: 100, saturation: 100, hue: 0, blur: 0, sepia: 0 },
-//     glow: { intensity: 50, rate: 2 }
-//   },
-//   {
-//     id: 'vibrant',
-//     name: 'Vibrant',
-//     filters: { brightness: 120, contrast: 110, saturation: 130, hue: 0, blur: 0, sepia: 0 },
-//     glow: { intensity: 70, rate: 3 }
-//   },
-//   {
-//     id: 'vintage',
-//     name: 'Vintage',
-//     filters: { brightness: 95, contrast: 105, saturation: 80, hue: 15, blur: 1, sepia: 30 },
-//     glow: { intensity: 30, rate: 1 }
-//   }
-// ];
 
 const EffectsLoadingFallback: React.FC = () => (
   <div style={{
@@ -91,85 +54,15 @@ const VisualEffectsContainer: React.FC<VisualEffectsContainerProps> = ({
   onMenuClose,
   onFilterChange,
   onResetFilters,
-  onToggleEffects
+  onToggleEffects,
+  glowIntensity,
+  setGlowIntensity,
+  glowRate,
+  setGlowRate,
+  effectiveGlow
 }) => {
-  const {
-    glowIntensity,
-    glowRate,
-    effectiveGlow,
-    handleGlowIntensityChange,
-    handleGlowRateChange
-  } = useVisualEffectsState();
 
-  // State management for future use
-  // const [effectsState, setEffectsState] = useState<VisualEffectsState>({
-  //   glow: { intensity: 50, rate: 2, enabled },
-  //   filters,
-  //   menu: { isOpen: isMenuOpen, activeTab: 'filters' }
-  // });
 
-  // const [performanceMetrics, setPerformanceMetrics] = useState<{
-  //   renderTime: number;
-  //   filterApplicationTime: number;
-  //   glowRenderTime: number;
-  // }>({
-  //   renderTime: 0,
-  //   filterApplicationTime: 0,
-  //   glowRenderTime: 0
-  // });
-
-  // Sync with props (for future use)
-  // useEffect(() => {
-  //   setEffectsState((prev: VisualEffectsState) => ({
-  //     ...prev,
-  //     glow: { ...prev.glow, enabled },
-  //     menu: { ...prev.menu, isOpen: isMenuOpen }
-  //   }));
-  // }, [enabled, isMenuOpen]);
-
-  // Apply preset (for future use)
-  // const applyPreset = useCallback((preset: EffectsPreset) => {
-  //   // Apply filters
-  //   Object.entries(preset.filters).forEach(([filter, value]) => {
-  //     onFilterChange(filter, value);
-  //   });
-
-  //   // Apply glow settings
-  //   handleGlowIntensityChange(preset.glow.intensity);
-  //   handleGlowRateChange(preset.glow.rate);
-  // }, [onFilterChange, handleGlowIntensityChange, handleGlowRateChange]);
-
-  // Save custom preset (for future use)
-  // const saveCustomPreset = useCallback((name: string) => {
-  //   const customPreset: EffectsPreset = {
-  //     id: `custom-${Date.now()}`,
-  //     name,
-  //     filters,
-  //     glow: { intensity: glowIntensity, rate: glowRate }
-  //   };
-
-  //   const savedPresets = JSON.parse(
-  //     localStorage.getItem('vorbis-player-custom-presets') || '[]'
-  //   );
-
-  //   savedPresets.push(customPreset);
-  //   localStorage.setItem('vorbis-player-custom-presets', JSON.stringify(savedPresets));
-  // }, [filters, glowIntensity, glowRate]);
-
-  // Performance monitoring (for future use)
-  // const measureFilterPerformance = useCallback((filterName: string, value: number) => {
-  //   const startTime = performance.now();
-
-  //   onFilterChange(filterName, value);
-
-  //   requestAnimationFrame(() => {
-  //     const endTime = performance.now();
-  //     setPerformanceMetrics((prev: { renderTime: number; filterApplicationTime: number; glowRenderTime: number }) => ({
-  //       ...prev,
-  //       filterApplicationTime: endTime - startTime
-  //     }));
-  //   });
-  // }, [onFilterChange]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -220,9 +113,9 @@ const VisualEffectsContainer: React.FC<VisualEffectsContainerProps> = ({
         onFilterChange={handleFilterChangeWrapper}
         onResetFilters={onResetFilters}
         glowIntensity={glowIntensity}
-        setGlowIntensity={handleGlowIntensityChange}
+        setGlowIntensity={setGlowIntensity}
         glowRate={glowRate}
-        setGlowRate={handleGlowRateChange}
+        setGlowRate={setGlowRate}
         effectiveGlow={effectiveGlow}
       />
     </Suspense>

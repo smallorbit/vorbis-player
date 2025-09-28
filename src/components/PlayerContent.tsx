@@ -196,6 +196,11 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
           onFilterChange={handlers.onFilterChange}
           onResetFilters={handlers.onResetFilters}
           onToggleEffects={handlers.onGlowToggle}
+          glowIntensity={effects.glow.intensity}
+          setGlowIntensity={handlers.onGlowIntensityChange}
+          glowRate={effects.glow.rate}
+          setGlowRate={handlers.onGlowRateChange}
+          effectiveGlow={effects.glow}
         />
       </LoadingCard>
 
