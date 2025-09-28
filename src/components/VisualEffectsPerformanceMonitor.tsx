@@ -2,14 +2,15 @@
  * Real-time performance monitoring component for VisualEffectsMenu
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import styled from 'styled-components';
 import { PerformanceProfilerComponent } from './PerformanceProfiler';
-import { 
+import {
   useVisualEffectsPerformance,
   type VisualEffectsPerformanceMetrics,
   VISUAL_EFFECTS_THRESHOLDS
 } from '../utils/visualEffectsPerformance';
+import { usePlayerSizing } from '../hooks/usePlayerSizing';
 
 interface VisualEffectsPerformanceMonitorProps {
   isEnabled?: boolean;
@@ -17,7 +18,7 @@ interface VisualEffectsPerformanceMonitorProps {
   filterCount: number;
 }
 
-const MonitorContainer = styled.div<{ $visible: boolean }>`
+const MonitorContainer = styled.div<{ $visible: boolean; $width: number }>`
   position: fixed;
   top: 1rem;
   right: 1rem;
@@ -27,8 +28,7 @@ const MonitorContainer = styled.div<{ $visible: boolean }>`
   border-radius: 0.5rem;
   font-family: 'Monaco', 'Menlo', monospace;
   font-size: 0.75rem;
-  min-width: 300px;
-  max-width: 400px;
+  width: ${({ $width }) => $width}px;
   z-index: 10001;
   backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -150,6 +150,16 @@ export const VisualEffectsPerformanceMonitor: React.FC<VisualEffectsPerformanceM
 
   const { runTest, validateMetrics, generateReport } = useVisualEffectsPerformance();
 
+  // Get responsive sizing information
+  const { viewport, isMobile, isTablet } = usePlayerSizing();
+
+  // Calculate responsive width for the monitor
+  const monitorWidth = useMemo(() => {
+    if (isMobile) return Math.min(viewport.width * 0.9, 300);
+    if (isTablet) return Math.min(viewport.width * 0.4, 350);
+    return Math.min(viewport.width * 0.25, 400);
+  }, [viewport.width, isMobile, isTablet]);
+
   // Toggle visibility with keyboard shortcut
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -167,16 +177,16 @@ export const VisualEffectsPerformanceMonitor: React.FC<VisualEffectsPerformanceM
 
   const runPerformanceTest = useCallback(async () => {
     if (isTesting) return;
-    
+
     setIsTesting(true);
     try {
       const metrics = await runTest(filterCount);
       setCurrentMetrics(metrics);
-      
+
       if (onMetricsUpdate) {
         onMetricsUpdate(metrics);
       }
-      
+
       console.log('Visual Effects Performance Test Results:');
       console.log(generateReport(metrics));
     } catch (error) {
@@ -188,10 +198,10 @@ export const VisualEffectsPerformanceMonitor: React.FC<VisualEffectsPerformanceM
 
   const getMetricStatus = (value: number, threshold: number, isReverse = false): 'good' | 'warning' | 'error' => {
     const isGood = isReverse ? value >= threshold : value <= threshold;
-    const isWarning = isReverse ? 
-      value >= threshold * 0.9 : 
+    const isWarning = isReverse ?
+      value >= threshold * 0.9 :
       value <= threshold * 1.2;
-    
+
     if (isGood) return 'good';
     if (isWarning) return 'warning';
     return 'error';
@@ -207,7 +217,7 @@ export const VisualEffectsPerformanceMonitor: React.FC<VisualEffectsPerformanceM
 
   return (
     <PerformanceProfilerComponent id="visual-effects-performance-monitor">
-      <MonitorContainer $visible={isVisible}>
+      <MonitorContainer $visible={isVisible} $width={monitorWidth}>
         <MonitorHeader>
           <MonitorTitle>VFX Performance Monitor</MonitorTitle>
           <ToggleButton onClick={() => setIsExpanded(!isExpanded)}>
@@ -272,8 +282,8 @@ export const VisualEffectsPerformanceMonitor: React.FC<VisualEffectsPerformanceM
               </div>
             )}
 
-            <TestButton 
-              onClick={runPerformanceTest} 
+            <TestButton
+              onClick={runPerformanceTest}
               disabled={isTesting}
             >
               {isTesting ? 'Running Test...' : 'Run Performance Test'}
@@ -285,8 +295,8 @@ export const VisualEffectsPerformanceMonitor: React.FC<VisualEffectsPerformanceM
                   Test completed at {new Date(currentMetrics.timestamp).toLocaleTimeString()}
                 </div>
                 <div style={{ fontSize: '0.7rem', marginTop: '0.5rem' }}>
-                  Status: {validateMetrics(currentMetrics).passed ? 
-                    <span style={{ color: '#00ff88' }}>✅ PASSED</span> : 
+                  Status: {validateMetrics(currentMetrics).passed ?
+                    <span style={{ color: '#00ff88' }}>✅ PASSED</span> :
                     <span style={{ color: '#ff4444' }}>❌ NEEDS OPTIMIZATION</span>
                   }
                 </div>

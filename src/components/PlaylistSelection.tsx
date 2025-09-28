@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import styled from 'styled-components';
 import { getUserPlaylists, getLikedSongs, type PlaylistInfo, spotifyAuth } from '../services/spotify';
 import { Card, CardHeader, CardContent } from './styled';
@@ -6,6 +6,7 @@ import { Button } from './styled';
 import { Skeleton } from './styled';
 import { Alert, AlertDescription } from './styled';
 import { theme } from '@/styles/theme';
+import { usePlayerSizing } from '../hooks/usePlayerSizing';
 
 interface PlaylistSelectionProps {
   onPlaylistSelect: (playlistId: string, playlistName: string) => void;
@@ -21,9 +22,9 @@ const Container = styled.div`
   background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #1a1a2e 100%);
 `;
 
-const SelectionCard = styled(Card)`
+const SelectionCard = styled(Card) <{ $maxWidth: number }>`
   width: 100%;
-  max-width: 600px;
+  max-width: ${({ $maxWidth }) => $maxWidth}px;
   background: rgba(38, 38, 38, 0.8);
   backdrop-filter: blur(12px);
   border: 1px solid rgba(115, 115, 115, 0.5);
@@ -79,8 +80,8 @@ const PlaylistImage = styled.div<{ $imageUrl?: string }>`
   width: 60px;
   height: 60px;
   border-radius: 0.5rem;
-  background: ${props => props.$imageUrl ? 
-    `url(${props.$imageUrl}) center/cover` : 
+  background: ${props => props.$imageUrl ?
+    `url(${props.$imageUrl}) center/cover` :
     'linear-gradient(45deg, #333, #555)'
   };
   flex-shrink: 0;
@@ -130,27 +131,37 @@ const PlaylistSelection: React.FC<PlaylistSelectionProps> = ({ onPlaylistSelect 
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [likedSongsCount, setLikedSongsCount] = useState<number>(0);
 
+  // Get responsive sizing information
+  const { viewport, isMobile, isTablet } = usePlayerSizing();
+
+  // Calculate responsive max width for the selection card
+  const maxWidth = useMemo(() => {
+    if (isMobile) return Math.min(viewport.width * 0.95, 400);
+    if (isTablet) return Math.min(viewport.width * 0.8, 500);
+    return Math.min(viewport.width * 0.6, 600);
+  }, [viewport.width, isMobile, isTablet]);
+
   useEffect(() => {
     const checkAuthAndFetchPlaylists = async () => {
       try {
         setIsLoading(true);
         setError(null);
-        
+
         // Check if user is authenticated
         if (!spotifyAuth.isAuthenticated()) {
           setIsAuthenticated(false);
           setIsLoading(false);
           return;
         }
-        
+
         setIsAuthenticated(true);
-        
+
         // Fetch playlists and liked songs count in parallel
         const [userPlaylists, likedSongs] = await Promise.all([
           getUserPlaylists(),
           getLikedSongs(1) // Just fetch one to get count without loading all
         ]);
-        
+
         if (userPlaylists.length === 0 && likedSongs.length === 0) {
           setError("No playlists or liked songs found. Please create some playlists or like some songs in Spotify first.");
         } else {
@@ -197,12 +208,12 @@ const PlaylistSelection: React.FC<PlaylistSelectionProps> = ({ onPlaylistSelect 
 
   return (
     <Container>
-      <SelectionCard>
+      <SelectionCard $maxWidth={maxWidth}>
         <Header>
           <Title>Choose Your Music</Title>
           <Subtitle>Select a playlist or your liked songs to start listening</Subtitle>
         </Header>
-        
+
         <CardContent>
           {isLoading && (
             <LoadingState>
@@ -212,16 +223,16 @@ const PlaylistSelection: React.FC<PlaylistSelectionProps> = ({ onPlaylistSelect 
               <p style={{ textAlign: 'center', color: 'white' }}>Loading your playlists...</p>
             </LoadingState>
           )}
-          
+
           {!isLoading && !isAuthenticated && (
             <div style={{ textAlign: 'center', padding: '2rem' }}>
               <p style={{ color: 'rgba(255, 255, 255, 0.7)', marginBottom: '1.5rem', fontSize: '1.1rem' }}>
                 Connect your Spotify account to access your playlists
               </p>
-              <Button 
+              <Button
                 onClick={handleLogin}
-                style={{ 
-                  background: '#1db954', 
+                style={{
+                  background: '#1db954',
                   color: 'white',
                   border: 'none',
                   padding: '0.75rem 2rem',
@@ -237,7 +248,7 @@ const PlaylistSelection: React.FC<PlaylistSelectionProps> = ({ onPlaylistSelect 
               </Button>
             </div>
           )}
-          
+
           {error && (
             <Alert variant="destructive">
               <AlertDescription style={{ color: '#fecaca' }}>
@@ -245,7 +256,7 @@ const PlaylistSelection: React.FC<PlaylistSelectionProps> = ({ onPlaylistSelect 
               </AlertDescription>
             </Alert>
           )}
-          
+
           {!isLoading && isAuthenticated && !error && (playlists.length > 0 || likedSongsCount > 0) && (
             <PlaylistGrid>
               {/* Liked Songs Option */}
@@ -274,21 +285,21 @@ const PlaylistSelection: React.FC<PlaylistSelectionProps> = ({ onPlaylistSelect 
                   </PlaylistInfo>
                 </PlaylistItem>
               )}
-              
+
               {/* Regular Playlists */}
               {playlists.map((playlist) => (
-                <PlaylistItem 
-                  key={playlist.id} 
+                <PlaylistItem
+                  key={playlist.id}
                   onClick={() => handlePlaylistClick(playlist)}
                 >
-                  <PlaylistImage 
+                  <PlaylistImage
                     $imageUrl={playlist.images[0]?.url}
                   />
                   <PlaylistInfo>
                     <PlaylistName>{playlist.name}</PlaylistName>
                     <PlaylistDetails>
                       {playlist.tracks.total} tracks
-                      {playlist.owner.display_name && 
+                      {playlist.owner.display_name &&
                         ` • by ${playlist.owner.display_name}`
                       }
                     </PlaylistDetails>

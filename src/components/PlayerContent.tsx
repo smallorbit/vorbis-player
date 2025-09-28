@@ -57,7 +57,9 @@ interface PlayerContentProps {
   handlers: PlayerContentHandlers;
 }
 
-const ContentWrapper = styled.div<{
+const ContentWrapper = styled.div.withConfig({
+  shouldForwardProp: (prop) => !['width', 'height', 'padding', 'useFluidSizing'].includes(prop),
+}) <{
   width: number;
   height: number;
   padding: number;

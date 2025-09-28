@@ -1,9 +1,10 @@
-import React, { memo } from 'react';
+import React, { memo, useMemo } from 'react';
 import styled from 'styled-components';
+import { usePlayerSizing } from '../hooks/usePlayerSizing';
 
 const TimelineSliderInput = styled.input.withConfig({
-  shouldForwardProp: (prop) => !['accentColor'].includes(prop),
-}).attrs<{ accentColor: string; value: number; max: number }>(
+  shouldForwardProp: (prop) => !['accentColor', 'sliderHeight', 'thumbSize'].includes(prop),
+}).attrs<{ accentColor: string; value: number; max: number; sliderHeight: number; thumbSize: number }>(
   ({ accentColor, value, max }: { accentColor: string; value: number; max: number }) => ({
     style: {
       background: `linear-gradient(
@@ -15,18 +16,18 @@ const TimelineSliderInput = styled.input.withConfig({
       )`
     }
   })
-) <{ accentColor: string; value: number; max: number }>`
+) <{ accentColor: string; value: number; max: number; sliderHeight: number; thumbSize: number }>`
   flex: 1;
-  height: 4px;
-  border-radius: 2px;
+  height: ${({ sliderHeight }) => sliderHeight}px;
+  border-radius: ${({ sliderHeight }) => sliderHeight / 2}px;
   outline: none;
   cursor: pointer;
   
   &::-webkit-slider-thumb {
     -webkit-appearance: none;
     appearance: none;
-    width: 12px;
-    height: 12px;
+    width: ${({ thumbSize }) => thumbSize}px;
+    height: ${({ thumbSize }) => thumbSize}px;
     background: ${props => props.accentColor} !important;
     border-radius: 50%;
     cursor: pointer;
@@ -40,8 +41,8 @@ const TimelineSliderInput = styled.input.withConfig({
   }
   
   &::-moz-range-thumb {
-    width: 12px;
-    height: 12px;
+    width: ${({ thumbSize }) => thumbSize}px;
+    height: ${({ thumbSize }) => thumbSize}px;
     background: ${props => props.accentColor} !important;
     border-radius: 50%;
     cursor: pointer;
@@ -55,11 +56,11 @@ const TimelineSliderInput = styled.input.withConfig({
   }
 `;
 
-const TimeLabel = styled.span`
+const TimeLabel = styled.span<{ minWidth: number }>`
   color: ${({ theme }) => theme.colors.gray[400]};
   font-size: ${({ theme }) => theme.fontSize.sm};
   font-family: monospace;
-  min-width: 40px;
+  min-width: ${({ minWidth }) => minWidth}px;
   text-align: center;
 `;
 
@@ -106,21 +107,48 @@ export const TimelineSlider = memo<TimelineSliderProps>(({
   onSliderMouseUp,
   children
 }) => {
+  // Get responsive sizing information
+  const { isMobile, isTablet } = usePlayerSizing();
+
+  // Calculate responsive dimensions
+  const dimensions = useMemo(() => {
+    if (isMobile) {
+      return {
+        sliderHeight: 3,
+        thumbSize: 10,
+        minWidth: 35
+      };
+    }
+    if (isTablet) {
+      return {
+        sliderHeight: 4,
+        thumbSize: 12,
+        minWidth: 40
+      };
+    }
+    return {
+      sliderHeight: 4,
+      thumbSize: 12,
+      minWidth: 40
+    };
+  }, [isMobile, isTablet]);
   return (
     <TimelineRow>
       {children}
-      <TimeLabel>{formatTime(currentPosition)}</TimeLabel>
+      <TimeLabel minWidth={dimensions.minWidth}>{formatTime(currentPosition)}</TimeLabel>
       <TimelineSliderInput
         type="range"
         min="0"
         max={duration}
         value={currentPosition}
         accentColor={accentColor}
+        sliderHeight={dimensions.sliderHeight}
+        thumbSize={dimensions.thumbSize}
         onChange={onSliderChange}
         onMouseDown={onSliderMouseDown}
         onMouseUp={onSliderMouseUp}
       />
-      <TimeLabel>{formatTime(duration)}</TimeLabel>
+      <TimeLabel minWidth={dimensions.minWidth}>{formatTime(duration)}</TimeLabel>
     </TimelineRow>
   );
 }, areTimelineSliderPropsEqual);

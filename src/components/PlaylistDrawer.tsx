@@ -1,17 +1,18 @@
-import React, { Suspense, memo } from 'react';
+import React, { Suspense, memo, useMemo } from 'react';
 import styled from 'styled-components';
 import type { Track } from '../services/spotify';
 import { theme } from '../styles/theme';
+import { usePlayerSizing } from '../hooks/usePlayerSizing';
 
 const Playlist = React.lazy(() => import('./Playlist'));
 
 const PlaylistDrawerContainer = styled.div.withConfig({
-  shouldForwardProp: (prop) => !['isOpen'].includes(prop),
-}) <{ isOpen: boolean }>`
+  shouldForwardProp: (prop) => !['isOpen', 'width'].includes(prop),
+}) <{ isOpen: boolean; width: number }>`
   position: fixed;
   top: 0;
   right: 0;
-  width: 400px;
+  width: ${({ width }) => width}px;
   height: 100vh;
   background: ${theme.colors.overlay.dark};
   backdrop-filter: blur(10px);
@@ -147,6 +148,15 @@ export const PlaylistDrawer = memo<PlaylistDrawerProps>(({
   accentColor,
   onTrackSelect
 }) => {
+  // Get responsive sizing information
+  const { viewport, isMobile, isTablet } = usePlayerSizing();
+
+  // Calculate responsive width for the drawer
+  const drawerWidth = useMemo(() => {
+    if (isMobile) return Math.min(viewport.width, 320);
+    if (isTablet) return Math.min(viewport.width * 0.4, 400);
+    return Math.min(viewport.width * 0.3, 400);
+  }, [viewport.width, isMobile, isTablet]);
   return (
     <>
       <PlaylistOverlay
@@ -154,7 +164,7 @@ export const PlaylistDrawer = memo<PlaylistDrawerProps>(({
         onClick={onClose}
       />
 
-      <PlaylistDrawerContainer isOpen={isOpen}>
+      <PlaylistDrawerContainer isOpen={isOpen} width={drawerWidth}>
         <PlaylistHeader>
           <PlaylistTitle>Playlist ({tracks.length} tracks)</PlaylistTitle>
           <CloseButton onClick={onClose}>×</CloseButton>
