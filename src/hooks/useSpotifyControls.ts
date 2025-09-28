@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { spotifyPlayer } from '../services/spotifyPlayer';
 import { spotifyAuth, checkTrackSaved, saveTrack, unsaveTrack } from '../services/spotify';
 import type { Track } from '../services/spotify';
+import { useVolume } from './useVolume';
 
 interface UseSpotifyControlsProps {
   currentTrack: Track | null;
@@ -19,14 +20,14 @@ export const useSpotifyControls = ({
   onPrevious
 }: UseSpotifyControlsProps) => {
   const [isPlaying, setIsPlaying] = useState(false);
-  const [isMuted, setIsMuted] = useState(false);
-  const [volume, setVolume] = useState(50);
-  const [previousVolume, setPreviousVolume] = useState(50);
   const [currentPosition, setCurrentPosition] = useState(0);
   const [duration, setDuration] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const [isLiked, setIsLiked] = useState(false);
   const [isLikePending, setIsLikePending] = useState(false);
+
+  // Use volume hook for volume-related functionality
+  const { isMuted, volume, handleMuteToggle, handleVolumeButtonClick } = useVolume();
 
   useEffect(() => {
     const checkPlaybackState = async () => {
@@ -46,11 +47,6 @@ export const useSpotifyControls = ({
     return () => clearInterval(interval);
   }, [isDragging]);
 
-  useEffect(() => {
-    spotifyPlayer.setVolume(0.5);
-    setVolume(50);
-    setPreviousVolume(50);
-  }, []);
 
   useEffect(() => {
     const checkLikeStatus = async () => {
@@ -91,23 +87,6 @@ export const useSpotifyControls = ({
     }
   }, [isPlaying, onPlay, onPause, currentTrack]);
 
-  const handleMuteToggle = useCallback(() => {
-    const newMutedState = !isMuted;
-    setIsMuted(newMutedState);
-
-    if (newMutedState) {
-      setPreviousVolume(volume);
-      spotifyPlayer.setVolume(0);
-    } else {
-      const volumeToRestore = previousVolume > 0 ? previousVolume : 50;
-      setVolume(volumeToRestore);
-      spotifyPlayer.setVolume(volumeToRestore / 100);
-    }
-  }, [isMuted, volume, previousVolume]);
-
-  const handleVolumeButtonClick = useCallback(() => {
-    handleMuteToggle();
-  }, [handleMuteToggle]);
 
   const handleLikeToggle = useCallback(async () => {
     if (!currentTrack?.id || isLikePending) return;

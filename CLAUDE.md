@@ -343,3 +343,4 @@ The application includes comprehensive visual effects management throughout the 
 - /commit means you are to commit the current working changes to the current branch.   unless otherwise instructed, you should split the changes into logically related commits in the correct sequential order
 - /doc means you need to update README.md
 - /comdoc means you need to do everything from /doc, then everything from /commit (in that order)
+- as you work, keep track of the latest todos and state in @ai-agent-tasks/wip.md
