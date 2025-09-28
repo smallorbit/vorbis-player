@@ -1,0 +1,482 @@
+/* Container Query Support for Component-Level Responsive Behavior */
+
+/* Container query polyfill support check */
+@supports (container-type: inline-size) {
+  /* Enable container queries for player components */
+  .player-container {
+    container-type: inline-size;
+    container-name: player;
+  }
+  
+  .playlist-container {
+    container-type: inline-size;
+    container-name: playlist;
+  }
+  
+  .visual-effects-container {
+    container-type: inline-size;
+    container-name: visual-effects;
+  }
+  
+  .controls-container {
+    container-type: inline-size;
+    container-name: controls;
+  }
+}
+
+/* Smooth Transitions for Responsive Sizing */
+.player-container,
+.playlist-container,
+.visual-effects-container,
+.controls-container {
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+            height 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+            padding 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+            transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Smooth transitions for player content */
+.player-content {
+  transition: padding 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+            font-size 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Smooth transitions for player controls */
+.player-controls {
+  transition: gap 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+            flex-direction 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Smooth transitions for track info */
+.player-track-info {
+  transition: font-size 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Smooth transitions for playlist drawer */
+.playlist-drawer {
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+            padding 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.playlist-item {
+  transition: padding 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+            font-size 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Smooth transitions for visual effects menu */
+.visual-effects-menu {
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+            padding 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.effects-controls {
+  transition: flex-direction 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+            gap 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Smooth transitions for control buttons */
+.control-buttons {
+  transition: gap 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Container query responsive styles for player components */
+
+/* Player Content Container Queries */
+@container player (min-width: 320px) {
+  .player-content {
+    padding: 8px;
+  }
+  
+  .player-controls {
+    gap: 0.25rem;
+  }
+  
+  .player-track-info {
+    font-size: 0.875rem;
+  }
+}
+
+/* Mobile-specific optimizations */
+@container player (max-width: 320px) {
+  .player-content {
+    padding: 4px;
+  }
+  
+  .player-controls {
+    gap: 0.125rem;
+  }
+  
+  .player-track-info {
+    font-size: 0.75rem;
+  }
+}
+
+@container player (min-width: 480px) {
+  .player-content {
+    padding: 12px;
+  }
+  
+  .player-controls {
+    gap: 0.5rem;
+  }
+  
+  .player-track-info {
+    font-size: 1rem;
+  }
+}
+
+@container player (min-width: 768px) {
+  .player-content {
+    padding: 16px;
+  }
+  
+  .player-controls {
+    gap: 0.75rem;
+  }
+  
+  .player-track-info {
+    font-size: 1.125rem;
+  }
+}
+
+@container player (min-width: 1024px) {
+  .player-content {
+    padding: 20px;
+  }
+  
+  .player-controls {
+    gap: 1rem;
+  }
+  
+  .player-track-info {
+    font-size: 1.25rem;
+  }
+}
+
+/* Playlist Container Queries */
+@container playlist (min-width: 320px) {
+  .playlist-drawer {
+    width: 100%;
+    padding: 8px;
+  }
+  
+  .playlist-item {
+    padding: 8px;
+    font-size: 0.875rem;
+  }
+}
+
+@container playlist (min-width: 480px) {
+  .playlist-drawer {
+    width: 400px;
+    padding: 12px;
+  }
+  
+  .playlist-item {
+    padding: 12px;
+    font-size: 1rem;
+  }
+}
+
+@container playlist (min-width: 768px) {
+  .playlist-drawer {
+    width: 450px;
+    padding: 16px;
+  }
+  
+  .playlist-item {
+    padding: 16px;
+    font-size: 1.125rem;
+  }
+}
+
+/* Visual Effects Container Queries */
+@container visual-effects (min-width: 320px) {
+  .visual-effects-menu {
+    width: 100%;
+    padding: 8px;
+  }
+  
+  .effects-controls {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+}
+
+@container visual-effects (min-width: 480px) {
+  .visual-effects-menu {
+    width: 400px;
+    padding: 12px;
+  }
+  
+  .effects-controls {
+    flex-direction: row;
+    gap: 1rem;
+  }
+}
+
+@container visual-effects (min-width: 768px) {
+  .visual-effects-menu {
+    width: 500px;
+    padding: 16px;
+  }
+  
+  .effects-controls {
+    flex-direction: row;
+    gap: 1.5rem;
+  }
+}
+
+/* Controls Container Queries */
+@container controls (min-width: 320px) {
+  .player-controls {
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  
+  .control-buttons {
+    flex-direction: row;
+    gap: 0.5rem;
+  }
+}
+
+@container controls (min-width: 480px) {
+  .player-controls {
+    flex-direction: row;
+    align-items: center;
+    gap: 1rem;
+  }
+  
+  .control-buttons {
+    flex-direction: row;
+    gap: 1rem;
+  }
+}
+
+@container controls (min-width: 768px) {
+  .player-controls {
+    flex-direction: row;
+    align-items: center;
+    gap: 1.5rem;
+  }
+  
+  .control-buttons {
+    flex-direction: row;
+    gap: 1.5rem;
+  }
+}
+
+/* Mobile touch optimizations */
+@media (max-width: 768px) {
+  .player-controls button,
+  .control-buttons button,
+  .playlist-item,
+  .effects-controls button {
+    /* Improve touch targets on mobile */
+    min-height: 44px;
+    min-width: 44px;
+    touch-action: manipulation;
+  }
+  
+  /* Prevent text selection on touch */
+  .player-controls,
+  .control-buttons,
+  .playlist-item {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+  }
+  
+  /* Improve touch scrolling */
+  .playlist-drawer,
+  .visual-effects-menu {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
+}
+
+/* Fallback for browsers without container query support */
+@supports not (container-type: inline-size) {
+  .player-container,
+  .playlist-container,
+  .visual-effects-container,
+  .controls-container {
+    /* Use traditional media queries as fallback */
+    /* Ensure containers have basic responsive behavior */
+    width: 100%;
+    max-width: 100%;
+  }
+  
+  /* Player Content Fallbacks */
+  @media (min-width: 320px) {
+    .player-content {
+      padding: 8px;
+    }
+    
+    .player-controls {
+      gap: 0.25rem;
+    }
+    
+    .player-track-info {
+      font-size: 0.875rem;
+    }
+  }
+  
+  @media (min-width: 480px) {
+    .player-content {
+      padding: 12px;
+    }
+    
+    .player-controls {
+      gap: 0.5rem;
+    }
+    
+    .player-track-info {
+      font-size: 1rem;
+    }
+  }
+  
+  @media (min-width: 768px) {
+    .player-content {
+      padding: 16px;
+    }
+    
+    .player-controls {
+      gap: 0.75rem;
+    }
+    
+    .player-track-info {
+      font-size: 1.125rem;
+    }
+  }
+  
+  @media (min-width: 1024px) {
+    .player-content {
+      padding: 20px;
+    }
+    
+    .player-controls {
+      gap: 1rem;
+    }
+    
+    .player-track-info {
+      font-size: 1.25rem;
+    }
+  }
+  
+  /* Playlist Drawer Fallbacks */
+  @media (min-width: 320px) {
+    .playlist-drawer {
+      width: 100%;
+      padding: 8px;
+    }
+    
+    .playlist-item {
+      padding: 8px;
+      font-size: 0.875rem;
+    }
+  }
+  
+  @media (min-width: 480px) {
+    .playlist-drawer {
+      width: 400px;
+      padding: 12px;
+    }
+    
+    .playlist-item {
+      padding: 12px;
+      font-size: 1rem;
+    }
+  }
+  
+  @media (min-width: 768px) {
+    .playlist-drawer {
+      width: 450px;
+      padding: 16px;
+    }
+    
+    .playlist-item {
+      padding: 16px;
+      font-size: 1.125rem;
+    }
+  }
+  
+  /* Visual Effects Menu Fallbacks */
+  @media (min-width: 320px) {
+    .visual-effects-menu {
+      width: 100%;
+      padding: 8px;
+    }
+    
+    .effects-controls {
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+  }
+  
+  @media (min-width: 480px) {
+    .visual-effects-menu {
+      width: 400px;
+      padding: 12px;
+    }
+    
+    .effects-controls {
+      flex-direction: row;
+      gap: 1rem;
+    }
+  }
+  
+  @media (min-width: 768px) {
+    .visual-effects-menu {
+      width: 500px;
+      padding: 16px;
+    }
+    
+    .effects-controls {
+      flex-direction: row;
+      gap: 1.5rem;
+    }
+  }
+  
+  /* Controls Fallbacks */
+  @media (min-width: 320px) {
+    .player-controls {
+      flex-direction: column;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    
+    .control-buttons {
+      flex-direction: row;
+      gap: 0.5rem;
+    }
+  }
+  
+  @media (min-width: 480px) {
+    .player-controls {
+      flex-direction: row;
+      align-items: center;
+      gap: 1rem;
+    }
+    
+    .control-buttons {
+      flex-direction: row;
+      gap: 1rem;
+    }
+  }
+  
+  @media (min-width: 768px) {
+    .player-controls {
+      flex-direction: row;
+      align-items: center;
+      gap: 1.5rem;
+    }
+    
+    .control-buttons {
+      flex-direction: row;
+      gap: 1.5rem;
+    }
+  }
+}

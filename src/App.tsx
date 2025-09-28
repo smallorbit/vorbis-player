@@ -7,7 +7,6 @@ import { ThemeProvider } from './styles/ThemeProvider';
 import { flexCenter, buttonPrimary } from './styles/utils';
 
 const AppContainer = styled.div`
-  background-color: ${({ theme }) => theme.colors.background};
   color: ${({ theme }) => theme.colors.foreground};
   min-height: 100vh;
   ${flexCenter}

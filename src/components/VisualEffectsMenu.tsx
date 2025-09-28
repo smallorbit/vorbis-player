@@ -5,6 +5,7 @@ import { FixedSizeList as List } from 'react-window';
 import { theme } from '../styles/theme';
 import { PerformanceProfilerComponent } from './PerformanceProfiler';
 import VisualEffectsPerformanceMonitor from './VisualEffectsPerformanceMonitor';
+import { usePlayerSizing } from '../hooks/usePlayerSizing';
 
 interface VisualEffectsMenuProps {
   isOpen: boolean;
@@ -40,22 +41,43 @@ const DrawerOverlay = styled.div<{ $isOpen: boolean }>`
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 `;
 
-const DrawerContainer = styled.div<{ $isOpen: boolean }>`
+const DrawerContainer = styled.div<{ $isOpen: boolean; $width: number; $transitionDuration: number; $transitionEasing: string }>`
   position: fixed;
   top: 0;
   right: 0;
   bottom: 0;
-  width: 400px;
+  width: ${({ $width }) => $width}px;
   background: ${theme.colors.overlay.dark};
   backdrop-filter: blur(20px);
   border-left: 1px solid ${theme.colors.popover.border};
   transform: translateX(${({ $isOpen }) => ($isOpen ? '0' : '100%')});
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all ${({ $transitionDuration }) => $transitionDuration}ms ${({ $transitionEasing }) => $transitionEasing},
+            width ${({ $transitionDuration }) => $transitionDuration}ms ${({ $transitionEasing }) => $transitionEasing};
   z-index: ${theme.zIndex.modal};
   overflow-y: auto;
   
-  @media (max-width: ${theme.breakpoints.md}) {
+  /* Enable container queries */
+  container-type: inline-size;
+  container-name: visual-effects;
+  
+  /* Container query responsive adjustments */
+  @container visual-effects (max-width: 768px) {
     width: 100vw;
+  }
+  
+  @container visual-effects (min-width: 768px) and (max-width: 1024px) {
+    width: 400px;
+  }
+  
+  @container visual-effects (min-width: 1024px) {
+    width: 500px;
+  }
+  
+  /* Fallback for browsers without container query support */
+  @supports not (container-type: inline-size) {
+    @media (max-width: ${theme.breakpoints.md}) {
+      width: 100vw;
+    }
   }
 `;
 
@@ -257,6 +279,15 @@ export const VisualEffectsMenu: React.FC<VisualEffectsMenuProps> = memo(({
   glowRate,
   setGlowRate
 }) => {
+  // Get responsive sizing information
+  const { viewport, isMobile, isTablet, transitionDuration, transitionEasing } = usePlayerSizing();
+
+  // Calculate responsive width for the drawer
+  const drawerWidth = useMemo(() => {
+    if (isMobile) return Math.min(viewport.width, 320);
+    if (isTablet) return Math.min(viewport.width * 0.4, 400);
+    return Math.min(viewport.width * 0.3, 400);
+  }, [viewport.width, isMobile, isTablet]);
   // Add ESC key support to close the drawer
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -392,7 +423,12 @@ export const VisualEffectsMenu: React.FC<VisualEffectsMenuProps> = memo(({
         isEnabled={import.meta.env.DEV}
       />
       <DrawerOverlay $isOpen={isOpen} onClick={onClose} />
-      <DrawerContainer $isOpen={isOpen}>
+      <DrawerContainer
+        $isOpen={isOpen}
+        $width={drawerWidth}
+        $transitionDuration={transitionDuration}
+        $transitionEasing={transitionEasing}
+      >
         <DrawerHeader>
           <DrawerTitle>Visual Effects</DrawerTitle>
           <CloseButton onClick={onClose} aria-label="Close visual effects drawer">

@@ -6,6 +6,7 @@ import PlayerControls from './PlayerControls';
 import VisualEffectsContainer from './VisualEffectsContainer';
 import { theme } from '@/styles/theme';
 import { cardBase } from '../styles/utils';
+import { usePlayerSizing } from '../hooks/usePlayerSizing';
 import type { Track } from '../services/spotify';
 
 const PlaylistDrawer = lazy(() => import('./PlaylistDrawer'));
@@ -56,23 +57,93 @@ interface PlayerContentProps {
   handlers: PlayerContentHandlers;
 }
 
-const ContentWrapper = styled.div`
-  width: 1024px;
-  height: 1186px;
-
-  @media (max-height: ${theme.breakpoints.lg}) {
-    width: 768px;
-    height: 922px;
-  }
-
+const ContentWrapper = styled.div.withConfig({
+  shouldForwardProp: (prop) => !['width', 'height', 'padding', 'useFluidSizing', 'transitionDuration', 'transitionEasing', 'aspectRatio'].includes(prop),
+}) <{
+  width: number;
+  height: number;
+  padding: number;
+  useFluidSizing: boolean;
+  transitionDuration: number;
+  transitionEasing: string;
+  aspectRatio: number;
+}>`
+  /* Maintain consistent aspect ratio */
+  aspect-ratio: ${props => props.aspectRatio};
+  
+  width: ${props => props.useFluidSizing ? '100%' : `${props.width}px`};
+  height: ${props => props.useFluidSizing ? 'auto' : `${props.height}px`};
+  max-width: ${props => props.width}px;
+  max-height: ${props => props.height}px;
+  
   margin: 0 auto;
-  padding-top: 0.5rem;
-  padding-bottom: 0.5rem;
-  padding-left: 0.5rem;
-  padding-right: 0.5rem;
+  padding: ${props => props.padding}px;
   box-sizing: border-box;
   position: absolute;
   z-index: 1000;
+  
+  /* Smooth transitions for responsive sizing */
+  transition: width ${props => props.transitionDuration}ms ${props => props.transitionEasing},
+            height ${props => props.transitionDuration}ms ${props => props.transitionEasing},
+            padding ${props => props.transitionDuration}ms ${props => props.transitionEasing},
+            max-width ${props => props.transitionDuration}ms ${props => props.transitionEasing},
+            max-height ${props => props.transitionDuration}ms ${props => props.transitionEasing};
+  
+  /* Enable container queries */
+  container-type: inline-size;
+  container-name: player;
+  
+  /* Container query responsive adjustments */
+  @container player (max-width: 480px) {
+    width: 100%;
+    height: auto;
+    max-width: 100vw;
+    max-height: 100vh;
+    padding: 8px;
+  }
+  
+  @container player (min-width: 480px) and (max-width: 768px) {
+    width: 100%;
+    height: auto;
+    max-width: 100vw;
+    max-height: 100vh;
+    padding: 12px;
+  }
+  
+  @container player (min-width: 768px) and (max-width: 1024px) {
+    width: 100%;
+    height: auto;
+    max-width: 100vw;
+    max-height: 100vh;
+    padding: 16px;
+  }
+  
+  /* Fallback for browsers without container query support */
+  @supports not (container-type: inline-size) {
+    @media (max-width: ${theme.breakpoints.sm}) {
+      width: 100%;
+      height: auto;
+      max-width: 100vw;
+      max-height: 100vh;
+      padding: 8px;
+    }
+    
+    @media (min-width: ${theme.breakpoints.sm}) and (max-width: ${theme.breakpoints.md}) {
+      width: 100%;
+      height: auto;
+      max-width: 100vw;
+      max-height: 100vh;
+      padding: 12px;
+    }
+    
+    @media (min-width: ${theme.breakpoints.md}) and (max-width: ${theme.breakpoints.lg}) {
+      width: 100%;
+      height: auto;
+      max-width: 100vw;
+      max-height: 100vh;
+      padding: 16px;
+    }
+  }
 `;
 
 const LoadingCard = styled.div.withConfig({
@@ -86,11 +157,9 @@ const LoadingCard = styled.div.withConfig({
   glowRate?: number;
 }>`
   ${cardBase};
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  position: relative;
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
   border-radius: 1.25rem;
   border: 1px solid rgba(34, 36, 36, 0.68);
@@ -145,8 +214,35 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
     sepia: 0
   };
 
+  // Use responsive sizing hook
+  const { dimensions, useFluidSizing, padding, transitionDuration, transitionEasing, aspectRatio } = usePlayerSizing();
+
   return (
-    <ContentWrapper>
+    <ContentWrapper
+      width={dimensions.width}
+      height={dimensions.height}
+      padding={padding}
+      useFluidSizing={useFluidSizing}
+      transitionDuration={transitionDuration}
+      transitionEasing={transitionEasing}
+      aspectRatio={aspectRatio}
+    >
+      {/* Album Art Zone - Takes up most of the space */}
+      <CardContent style={{
+        position: 'relative',
+        zIndex: 2,
+        minHeight: 0,
+        alignItems: 'center',
+        paddingTop: '1rem'
+      }}>
+        <AlbumArt
+          currentTrack={track.current}
+          accentColor={ui.accentColor}
+          glowIntensity={effects.enabled ? effects.glow.intensity : 0}
+          glowRate={effects.glow.rate}
+          albumFilters={effects.enabled ? effects.filters : defaultFilters}
+        />
+      </CardContent>
       <LoadingCard
         backgroundImage={track.current?.image}
         accentColor={ui.accentColor}
@@ -154,17 +250,18 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
         glowIntensity={effects.glow.intensity}
         glowRate={effects.glow.rate}
       >
-        <CardContent style={{ position: 'relative', zIndex: 2, marginTop: '-0.25rem' }}>
-          <AlbumArt
-            currentTrack={track.current}
-            accentColor={ui.accentColor}
-            glowIntensity={effects.enabled ? effects.glow.intensity : 0}
-            glowRate={effects.glow.rate}
-            albumFilters={effects.enabled ? effects.filters : defaultFilters}
-          />
-        </CardContent>
 
-        <CardContent style={{ position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 2 }}>
+
+        {/* Controls Zone - Fixed height at bottom */}
+        <CardContent style={{
+          position: 'relative',
+          zIndex: 2,
+          flex: '0 0 auto',
+          minHeight: '120px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
+        }}>
           <Suspense fallback={<ControlsLoadingFallback />}>
             <PlayerControls
               currentTrack={track.current}

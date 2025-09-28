@@ -1,24 +1,27 @@
-import React, { memo, useEffect, useState, useCallback } from 'react';
+import React, { memo, useEffect, useState, useCallback, useMemo } from 'react';
 import styled, { keyframes } from 'styled-components';
 import type { Track } from '../services/spotify';
 import AlbumArtFilters from './AlbumArtFilters';
 import AccentColorGlowOverlay, { DEFAULT_GLOW_RATE, DEFAULT_GLOW_INTENSITY } from './AccentColorGlowOverlay';
 import { hexToRgb } from '../utils/colorUtils';
 import { useImageProcessingWorker } from '../hooks/useImageProcessingWorker';
+import { usePlayerSizing } from '../hooks/usePlayerSizing';
 
 const spin = keyframes`
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
 `;
 
-const ProcessingSpinner = styled.div`
+const ProcessingSpinner = styled.div.withConfig({
+  shouldForwardProp: (prop) => !['size', 'innerSize'].includes(prop),
+}) <{ size: number; innerSize: number }>`
   position: absolute;
   top: 8px;
   right: 8px;
   background: rgba(0, 0, 0, 0.7);
   border-radius: 50%;
-  width: 24px;
-  height: 24px;
+  width: ${({ size }) => size}px;
+  height: ${({ size }) => size}px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -26,8 +29,8 @@ const ProcessingSpinner = styled.div`
 
   &::after {
     content: '';
-    width: 12px;
-    height: 12px;
+    width: ${({ innerSize }) => innerSize}px;
+    height: ${({ innerSize }) => innerSize}px;
     border: 2px solid #fff;
     border-top: 2px solid transparent;
     border-radius: 50%;
@@ -61,12 +64,15 @@ const AlbumArtContainer = styled.div.withConfig({
 }>`
   border-radius: 1.25rem;
   position: relative;
-  width: -webkit-fill-available;
-  margin: 1rem;
+  width: 100%;
+  max-width: 768px;
+  aspect-ratio: 1;
+  margin: 0 auto;
   overflow: hidden;
   background: transparent;
   box-shadow: 0 8px 24px rgba(23, 22, 22, 0.7), 0 2px 8px rgba(22, 21, 21, 0.6);
   z-index: 2;
+  
 `;
 
 const arePropsEqual = (prevProps: AlbumArtProps, nextProps: AlbumArtProps): boolean => {
@@ -104,6 +110,20 @@ const AlbumArt: React.FC<AlbumArtProps> = memo(({ currentTrack = null, accentCol
   const [canvasUrl, setCanvasUrl] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const { processImage } = useImageProcessingWorker();
+
+  // Get responsive sizing information
+  const { isMobile, isTablet } = usePlayerSizing();
+
+  // Calculate responsive dimensions for the processing spinner
+  const spinnerDimensions = useMemo(() => {
+    if (isMobile) {
+      return { size: 20, innerSize: 10 };
+    }
+    if (isTablet) {
+      return { size: 22, innerSize: 11 };
+    }
+    return { size: 24, innerSize: 12 };
+  }, [isMobile, isTablet]);
 
   useEffect(() => {
     if (accentColor && glowIntensity !== undefined && glowRate !== undefined) {
@@ -192,7 +212,7 @@ const AlbumArt: React.FC<AlbumArtProps> = memo(({ currentTrack = null, accentCol
             src={glowIntensity === 0 || !canvasUrl ? currentTrack.image : canvasUrl}
             alt={currentTrack?.name}
             style={{
-              width: '-webkit-fill-available',
+              width: '100%',
               objectFit: 'cover',
               overflow: 'hidden',
               borderRadius: '1.25rem',
@@ -211,7 +231,6 @@ const AlbumArt: React.FC<AlbumArtProps> = memo(({ currentTrack = null, accentCol
         ) : (
           <div style={{
             width: '100%',
-            height: '100%',
             backgroundColor: '#1a1a1a',
             display: 'flex',
             alignItems: 'center',
@@ -222,7 +241,7 @@ const AlbumArt: React.FC<AlbumArtProps> = memo(({ currentTrack = null, accentCol
             <p>No image</p>
           </div>
         )}
-        {isProcessing && <ProcessingSpinner />}
+        {isProcessing && <ProcessingSpinner size={spinnerDimensions.size} innerSize={spinnerDimensions.innerSize} />}
       </AlbumArtFilters>
     </AlbumArtContainer>
 

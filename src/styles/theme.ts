@@ -1,7 +1,7 @@
 export const theme = {
   colors: {
     // Base colors
-    background: 'rgba(85, 78, 78, 0.56)',
+    background: 'rgba(22, 21, 21, 0.56)',
     backgroundLight: '#c2b85e',
     foreground: 'rgba(255, 255, 255, 0.87)',
     foregroundDark: '#213547',
@@ -135,8 +135,31 @@ export const theme = {
   },
   
   breakpoints: {
-    xs: '370px',
-    sm: '620px',
+    // Mobile devices
+    xs: '320px',
+    sm: '480px',
+    md: '768px',
+    lg: '1024px',
+    xl: '1280px',
+    '2xl': '1536px',
+    '3xl': '1920px'
+  },
+  
+  // Enhanced responsive breakpoints for player sizing
+  playerBreakpoints: {
+    mobile: '320px',
+    mobileLarge: '480px',
+    tablet: '768px',
+    tabletLarge: '1024px',
+    desktop: '1280px',
+    desktopLarge: '1440px',
+    desktopXLarge: '1920px'
+  },
+  
+  // Container query breakpoints for component-level responsive behavior
+  containerBreakpoints: {
+    xs: '320px',
+    sm: '480px',
     md: '768px',
     lg: '1024px',
     xl: '1280px',
@@ -169,4 +192,14 @@ export const mediaQuery = {
   lg: `@media (min-width: ${theme.breakpoints.lg})`,
   xl: `@media (min-width: ${theme.breakpoints.xl})`,
   '2xl': `@media (min-width: ${theme.breakpoints['2xl']})`
+};
+
+// Container query utilities for component-level responsive behavior
+export const containerQuery = {
+  xs: `@container (min-width: ${theme.containerBreakpoints.xs})`,
+  sm: `@container (min-width: ${theme.containerBreakpoints.sm})`,
+  md: `@container (min-width: ${theme.containerBreakpoints.md})`,
+  lg: `@container (min-width: ${theme.containerBreakpoints.lg})`,
+  xl: `@container (min-width: ${theme.containerBreakpoints.xl})`,
+  '2xl': `@container (min-width: ${theme.containerBreakpoints['2xl']})`
 };

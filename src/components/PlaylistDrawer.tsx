@@ -1,30 +1,55 @@
-import React, { Suspense, memo } from 'react';
+import React, { Suspense, memo, useMemo } from 'react';
 import styled from 'styled-components';
 import type { Track } from '../services/spotify';
 import { theme } from '../styles/theme';
+import { usePlayerSizing } from '../hooks/usePlayerSizing';
 
 const Playlist = React.lazy(() => import('./Playlist'));
 
 const PlaylistDrawerContainer = styled.div.withConfig({
-  shouldForwardProp: (prop) => !['isOpen'].includes(prop),
-}) <{ isOpen: boolean }>`
+  shouldForwardProp: (prop) => !['isOpen', 'width', 'transitionDuration', 'transitionEasing'].includes(prop),
+}) <{ isOpen: boolean; width: number; transitionDuration: number; transitionEasing: string }>`
   position: fixed;
   top: 0;
   right: 0;
-  width: 400px;
+  width: ${({ width }) => width}px;
   height: 100vh;
   background: ${theme.colors.overlay.dark};
   backdrop-filter: blur(10px);
   border-left: 1px solid ${theme.colors.popover.border};
   transform: translateX(${props => props.isOpen ? '0' : '100%'});
-  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: transform ${({ transitionDuration }) => transitionDuration}ms ${({ transitionEasing }) => transitionEasing},
+            width ${({ transitionDuration }) => transitionDuration}ms ${({ transitionEasing }) => transitionEasing};
   z-index: ${theme.zIndex.modal};
   overflow-y: auto;
   padding: ${theme.spacing.md};
   box-sizing: border-box;
   
-  @media (max-width: ${theme.breakpoints.sm}) {
+  /* Enable container queries */
+  container-type: inline-size;
+  container-name: playlist;
+  
+  /* Container query responsive adjustments */
+  @container playlist (max-width: 480px) {
     width: 100vw;
+    padding: ${theme.spacing.sm};
+  }
+  
+  @container playlist (min-width: 480px) and (max-width: 768px) {
+    width: 400px;
+    padding: ${theme.spacing.md};
+  }
+  
+  @container playlist (min-width: 768px) {
+    width: 450px;
+    padding: ${theme.spacing.lg};
+  }
+  
+  /* Fallback for browsers without container query support */
+  @supports not (container-type: inline-size) {
+    @media (max-width: ${theme.breakpoints.sm}) {
+      width: 100vw;
+    }
   }
 `;
 
@@ -147,6 +172,15 @@ export const PlaylistDrawer = memo<PlaylistDrawerProps>(({
   accentColor,
   onTrackSelect
 }) => {
+  // Get responsive sizing information
+  const { viewport, isMobile, isTablet, transitionDuration, transitionEasing } = usePlayerSizing();
+
+  // Calculate responsive width for the drawer
+  const drawerWidth = useMemo(() => {
+    if (isMobile) return Math.min(viewport.width, 320);
+    if (isTablet) return Math.min(viewport.width * 0.4, 400);
+    return Math.min(viewport.width * 0.3, 400);
+  }, [viewport.width, isMobile, isTablet]);
   return (
     <>
       <PlaylistOverlay
@@ -154,7 +188,12 @@ export const PlaylistDrawer = memo<PlaylistDrawerProps>(({
         onClick={onClose}
       />
 
-      <PlaylistDrawerContainer isOpen={isOpen}>
+      <PlaylistDrawerContainer
+        isOpen={isOpen}
+        width={drawerWidth}
+        transitionDuration={transitionDuration}
+        transitionEasing={transitionEasing}
+      >
         <PlaylistHeader>
           <PlaylistTitle>Playlist ({tracks.length} tracks)</PlaylistTitle>
           <CloseButton onClick={onClose}>×</CloseButton>
