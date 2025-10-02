@@ -1,0 +1,51 @@
+/* Theme Breakpoints as CSS Custom Properties */
+:root {
+  /* Mobile devices */
+  --breakpoint-xs: 320px;
+  --breakpoint-sm: 375px;
+  --breakpoint-md: 480px;
+  --breakpoint-lg: 700px;
+  --breakpoint-xl: 1280px;
+  --breakpoint-2xl: 1536px;
+  --breakpoint-3xl: 1920px;
+  
+  /* Container query breakpoints */
+  --container-breakpoint-xs: 320px;
+  --container-breakpoint-sm: 480px;
+  --container-breakpoint-md: 700px;
+  --container-breakpoint-lg: 1024px;
+  --container-breakpoint-xl: 1280px;
+  --container-breakpoint-2xl: 1536px;
+}
+
+/* Media Query Utilities */
+@media (max-width: calc(var(--breakpoint-lg) - 1px)) {
+  /* Mobile styles */
+}
+
+@media (min-width: var(--breakpoint-lg)) and (max-width: calc(var(--breakpoint-xl) - 1px)) {
+  /* Tablet styles */
+}
+
+@media (min-width: var(--breakpoint-xl)) {
+  /* Desktop styles */
+}
+
+/* Container Query Utilities */
+@supports (container-type: inline-size) {
+  @container player (max-width: calc(var(--container-breakpoint-md) - 1px)) {
+    /* Small player container */
+  }
+  
+  @container player (min-width: var(--container-breakpoint-md)) {
+    /* Large player container */
+  }
+  
+  @container controls (max-width: calc(var(--container-breakpoint-sm) - 1px)) {
+    /* Small controls container */
+  }
+  
+  @container controls (min-width: var(--container-breakpoint-sm)) {
+    /* Large controls container */
+  }
+}

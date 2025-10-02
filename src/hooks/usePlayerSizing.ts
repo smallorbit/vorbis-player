@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import type { 
   ViewportInfo, 
   PlayerDimensions, 
@@ -7,7 +7,6 @@ import type {
 import {
   getViewportInfo,
   calculatePlayerDimensions,
-  getResponsiveBreakpoint,
   shouldUseFluidSizing,
   calculateOptimalPadding,
   getOptimalAspectRatio,
@@ -17,7 +16,6 @@ import {
   detectBrowserFeatures,
   getEnhancedViewportInfo,
   createEnhancedEventListeners,
-  getFallbackStrategy,
   type BrowserFeatures
 } from '../utils/featureDetection';
 
@@ -28,7 +26,6 @@ export interface UsePlayerSizingReturn {
   isTablet: boolean;
   isDesktop: boolean;
   orientation: 'portrait' | 'landscape';
-  breakpoint: string;
   useFluidSizing: boolean;
   padding: number;
   aspectRatio: number;
@@ -40,23 +37,10 @@ export interface UsePlayerSizingReturn {
   // Progressive enhancement features
   browserFeatures: BrowserFeatures;
   compatibilityScore: number;
-  fallbackStrategy: 'modern' | 'enhanced' | 'balanced' | 'conservative';
   supportsContainerQueries: boolean;
   supportsBackdropFilter: boolean;
   supportsVisualViewport: boolean;
 }
-
-// Debounce utility
-const debounce = <T extends (...args: any[]) => any>(
-  func: T,
-  wait: number
-): ((...args: Parameters<T>) => void) => {
-  let timeout: NodeJS.Timeout;
-  return (...args: Parameters<T>) => {
-    clearTimeout(timeout);
-    timeout = setTimeout(() => func(...args), wait);
-  };
-};
 
 export const usePlayerSizing = (constraints?: SizingConstraints): UsePlayerSizingReturn => {
   // Detect browser features once
@@ -85,27 +69,42 @@ export const usePlayerSizing = (constraints?: SizingConstraints): UsePlayerSizin
   }, [constraints, browserFeatures]);
 
   // Debounced resize handler with smooth transitions
-  const handleResize = useCallback(
-    debounce(updateDimensions, 150), // Slightly longer debounce for smoother transitions
-    [updateDimensions]
-  );
+  const debouncedUpdateDimensions = useCallback(() => {
+    const newViewport: ViewportInfo = browserFeatures.visualViewport || browserFeatures.devicePixelRatio 
+      ? getEnhancedViewportInfo(browserFeatures)
+      : getViewportInfo();
+    const newDimensions = calculatePlayerDimensions(newViewport, constraints);
+    
+    setViewport(newViewport);
+    setDimensions(newDimensions);
+  }, [constraints, browserFeatures]);
+
+  const timeoutRef = useRef<NodeJS.Timeout>();
 
   useEffect(() => {
     // Initial calculation
     updateDimensions();
 
     // Use enhanced event listeners with fallbacks
-    const cleanup = createEnhancedEventListeners(browserFeatures, handleResize);
+    const cleanup = createEnhancedEventListeners(browserFeatures, debouncedUpdateDimensions);
     
     // Cleanup
     return cleanup;
-  }, [handleResize, updateDimensions, browserFeatures]);
+  }, [debouncedUpdateDimensions, updateDimensions, browserFeatures]);
+
+  // Cleanup timeout on unmount to prevent memory leaks
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
 
   // Calculate derived values
-  const isMobile = viewport.width < 768;
-  const isTablet = viewport.width >= 768 && viewport.width < 1024;
+  const isMobile = viewport.width < 700;
+  const isTablet = viewport.width >= 700 && viewport.width < 1024;
   const isDesktop = viewport.width >= 1024;
-  const breakpoint = getResponsiveBreakpoint(viewport);
   const useFluidSizing = shouldUseFluidSizing(viewport);
   const padding = calculateOptimalPadding(viewport);
   const aspectRatio = dimensions.aspectRatio;
@@ -120,7 +119,6 @@ export const usePlayerSizing = (constraints?: SizingConstraints): UsePlayerSizin
   const compatibilityScore = Math.round(
     (Object.values(browserFeatures).filter(Boolean).length / Object.keys(browserFeatures).length) * 100
   );
-  const fallbackStrategy = getFallbackStrategy(browserFeatures);
   const supportsContainerQueries = browserFeatures.containerQueries;
   const supportsBackdropFilter = browserFeatures.backdropFilter;
   const supportsVisualViewport = browserFeatures.visualViewport;
@@ -132,7 +130,6 @@ export const usePlayerSizing = (constraints?: SizingConstraints): UsePlayerSizin
     isTablet,
     isDesktop,
     orientation: viewport.orientation,
-    breakpoint,
     useFluidSizing,
     padding,
     aspectRatio,
@@ -144,7 +141,6 @@ export const usePlayerSizing = (constraints?: SizingConstraints): UsePlayerSizin
     // Progressive enhancement features
     browserFeatures,
     compatibilityScore,
-    fallbackStrategy,
     supportsContainerQueries,
     supportsBackdropFilter,
     supportsVisualViewport

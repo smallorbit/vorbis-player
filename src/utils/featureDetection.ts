@@ -5,6 +5,11 @@
 
 import type { ViewportInfo } from './sizingUtils';
 
+// Type definition for Window with Visual Viewport API support
+interface WindowWithVisualViewport extends Window {
+  visualViewport: VisualViewport | null;
+}
+
 export interface BrowserFeatures {
   visualViewport: boolean;
   containerQueries: boolean;
@@ -38,7 +43,7 @@ export interface BrowserFeatures {
 export const detectBrowserFeatures = (): BrowserFeatures => {
   const features: BrowserFeatures = {
     // Visual Viewport API
-    visualViewport: 'visualViewport' in window && !!(window as any).visualViewport,
+    visualViewport: 'visualViewport' in window && !!(window as WindowWithVisualViewport).visualViewport,
     
     // CSS Container Queries
     containerQueries: CSS.supports('container-type', 'inline-size'),
@@ -112,15 +117,15 @@ export const getFallbackValues = (features: BrowserFeatures) => {
   return {
     // Viewport fallbacks
     getViewportWidth: () => {
-      if (features.visualViewport && (window as any).visualViewport) {
-        return (window as any).visualViewport.width || window.innerWidth;
+      if (features.visualViewport && (window as WindowWithVisualViewport).visualViewport) {
+        return (window as WindowWithVisualViewport).visualViewport!.width || window.innerWidth;
       }
       return window.innerWidth;
     },
     
     getViewportHeight: () => {
-      if (features.visualViewport && (window as any).visualViewport) {
-        return (window as any).visualViewport.height || window.innerHeight;
+      if (features.visualViewport && (window as WindowWithVisualViewport).visualViewport) {
+        return (window as WindowWithVisualViewport).visualViewport!.height || window.innerHeight;
       }
       return window.innerHeight;
     },
@@ -195,7 +200,7 @@ export const createEnhancedEventListeners = (
   features: BrowserFeatures,
   callback: () => void
 ) => {
-  const listeners: Array<{ element: any; event: string; handler: () => void }> = [];
+  const listeners: Array<{ element: EventTarget; event: string; handler: () => void }> = [];
   
   // Standard resize listener
   const resizeHandler = () => callback();
@@ -208,8 +213,8 @@ export const createEnhancedEventListeners = (
   listeners.push({ element: window, event: 'orientationchange', handler: orientationHandler });
   
   // Visual Viewport API listener (if supported)
-  if (features.visualViewport && (window as any).visualViewport) {
-    const visualViewport = (window as any).visualViewport;
+  if (features.visualViewport && (window as WindowWithVisualViewport).visualViewport) {
+    const visualViewport = (window as WindowWithVisualViewport).visualViewport!;
     const visualViewportHandler = () => callback();
     visualViewport.addEventListener('resize', visualViewportHandler);
     visualViewport.addEventListener('scroll', visualViewportHandler);
@@ -221,7 +226,7 @@ export const createEnhancedEventListeners = (
   if (features.resizeObserver) {
     const resizeObserver = new ResizeObserver(() => callback());
     resizeObserver.observe(document.body);
-    listeners.push({ element: resizeObserver, event: 'observe', handler: () => resizeObserver.disconnect() });
+    listeners.push({ element: document.body, event: 'observe', handler: () => resizeObserver.disconnect() });
   }
   
   // Return cleanup function
@@ -229,8 +234,8 @@ export const createEnhancedEventListeners = (
     listeners.forEach(({ element, event, handler }) => {
       if (event === 'observe') {
         handler();
-      } else {
-        element.removeEventListener(event, handler);
+      } else if (element && typeof element === 'object' && 'removeEventListener' in element) {
+        (element as { removeEventListener: (event: string, handler: () => void) => void }).removeEventListener(event, handler);
       }
     });
   };
@@ -252,21 +257,4 @@ export const getBrowserCompatibilityScore = (): number => {
   const totalFeatures = Object.keys(features).length;
   const supportedFeatures = Object.values(features).filter(Boolean).length;
   return Math.round((supportedFeatures / totalFeatures) * 100);
-};
-
-/**
- * Get recommended fallback strategy based on browser capabilities
- */
-export const getFallbackStrategy = (_features: BrowserFeatures) => {
-  const score = getBrowserCompatibilityScore();
-  
-  if (score >= 90) {
-    return 'modern'; // Use all modern features
-  } else if (score >= 70) {
-    return 'enhanced'; // Use most modern features with some fallbacks
-  } else if (score >= 50) {
-    return 'balanced'; // Use moderate features with good fallbacks
-  } else {
-    return 'conservative'; // Use minimal features with extensive fallbacks
-  }
 };

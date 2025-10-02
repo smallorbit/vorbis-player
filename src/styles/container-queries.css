@@ -125,7 +125,7 @@
   }
 }
 
-@container player (min-width: 768px) {
+@container player (min-width: 700px) {
   .player-content {
     padding: 16px;
   }
@@ -178,7 +178,7 @@
   }
 }
 
-@container playlist (min-width: 768px) {
+@container playlist (min-width: 700px) {
   .playlist-drawer {
     width: 450px;
     padding: 16px;
@@ -215,7 +215,7 @@
   }
 }
 
-@container visual-effects (min-width: 768px) {
+@container visual-effects (min-width: 700px) {
   .visual-effects-menu {
     width: 500px;
     padding: 16px;
@@ -254,7 +254,7 @@
   }
 }
 
-@container controls (min-width: 768px) {
+@container controls (min-width: 700px) {
   .player-controls {
     flex-direction: row;
     align-items: center;
@@ -268,7 +268,7 @@
 }
 
 /* Mobile touch optimizations */
-@media (max-width: 768px) {
+@media (max-width: 700px) {
   .player-controls button,
   .control-buttons button,
   .playlist-item,
@@ -338,7 +338,7 @@
     }
   }
   
-  @media (min-width: 768px) {
+  @media (min-width: 700px) {
     .player-content {
       padding: 16px;
     }
@@ -391,7 +391,7 @@
     }
   }
   
-  @media (min-width: 768px) {
+  @media (min-width: 700px) {
     .playlist-drawer {
       width: 450px;
       padding: 16px;
@@ -428,7 +428,7 @@
     }
   }
   
-  @media (min-width: 768px) {
+  @media (min-width: 700px) {
     .visual-effects-menu {
       width: 500px;
       padding: 16px;
@@ -467,7 +467,7 @@
     }
   }
   
-  @media (min-width: 768px) {
+  @media (min-width: 700px) {
     .player-controls {
       flex-direction: row;
       align-items: center;

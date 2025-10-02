@@ -1,3 +1,13 @@
+// TypeScript interface for player constraints
+export interface PlayerConstraints {
+  minHeight: number;
+  maxHeight: number;
+  viewportUsage: {
+    width: number;
+    height: number;
+  };
+}
+
 export const theme = {
   colors: {
     // Base colors
@@ -125,6 +135,7 @@ export const theme = {
     xl: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
     '2xl': '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
     inner: 'inset 0 2px 4px 0 rgba(0, 0, 0, 0.06)',
+    albumArt: '0 8px 24px rgba(23, 22, 22, 0.7), 0 2px 8px rgba(22, 21, 21, 0.6)',
     none: 'none'
   },
   
@@ -134,33 +145,29 @@ export const theme = {
     slow: '0.35s ease'
   },
   
+  animations: {
+    pulse: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+    fadeIn: 'fadeIn 0.3s ease-in-out',
+    slideIn: 'slideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+  },
+  
   breakpoints: {
     // Mobile devices
     xs: '320px',
-    sm: '480px',
-    md: '768px',
-    lg: '1024px',
+    sm: '375px',
+    md: '480px',
+    lg: '700px',
     xl: '1280px',
     '2xl': '1536px',
     '3xl': '1920px'
   },
   
-  // Enhanced responsive breakpoints for player sizing
-  playerBreakpoints: {
-    mobile: '320px',
-    mobileLarge: '480px',
-    tablet: '768px',
-    tabletLarge: '1024px',
-    desktop: '1280px',
-    desktopLarge: '1440px',
-    desktopXLarge: '1920px'
-  },
   
   // Container query breakpoints for component-level responsive behavior
   containerBreakpoints: {
     xs: '320px',
     sm: '480px',
-    md: '768px',
+    md: '700px',
     lg: '1024px',
     xl: '1280px',
     '2xl': '1536px'
@@ -179,10 +186,54 @@ export const theme = {
     skipLink: '1600',
     toast: '1700',
     tooltip: '1800'
+  },
+  
+  // Player-specific sizing constraints
+  playerConstraints: {
+    minHeight: 400,
+    maxHeight: 1186,
+    viewportUsage: {
+      width: 0.9,
+      height: 0.9
+    }
+  },
+  
+  // Drawer-specific sizing and behavior
+  drawer: {
+    widths: {
+      mobile: '100vw',
+      tablet: '400px', 
+      desktop: '500px'
+    },
+    breakpoints: {
+      mobile: '700px',
+      tablet: '1024px'
+    },
+    backdropBlur: '20px',
+    transitionDuration: 300,
+    transitionEasing: 'cubic-bezier(0.4, 0, 0.2, 1)'
+  },
+  
+  // Player controls sizing and behavior
+  controls: {
+    minHeight: 120, // Base minimum height in pixels
+    maxHeight: 200, // Maximum height for animation container
+    padding: {
+      mobile: 8,    // 8px padding on mobile
+      tablet: 12,   // 12px padding on tablet  
+      desktop: 16   // 16px padding on desktop
+    },
+    transitionDuration: 300,
+    transitionEasing: 'cubic-bezier(0.4, 0, 0.2, 1)'
   }
 } as const;
 
 export type Theme = typeof theme;
+
+// Ensure playerConstraints conforms to the interface
+export type ThemeWithPlayerConstraints = Omit<Theme, 'playerConstraints'> & {
+  playerConstraints: PlayerConstraints;
+};
 
 // Helper function for responsive design
 export const mediaQuery = {

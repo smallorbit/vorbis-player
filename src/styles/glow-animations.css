@@ -15,16 +15,16 @@
 @keyframes pulse-glow {
   0%, 100% {
     filter: 
-      drop-shadow(0 8px 12px rgba(23, 22, 22, 0.5))
-      drop-shadow(0 2px 8px rgba(22, 21, 21, 0.6))
-      drop-shadow(0 2px 158px rgba(var(--accent-rgb), calc(var(--glow-intensity) /150)));
+      drop-shadow(0 8px 12px rgba(23, 22, 22, 0.2))
+      drop-shadow(0 2px 8px rgba(22, 21, 21, 0.3))
+      drop-shadow(0 2px 40px rgba(var(--accent-rgb), calc(var(--glow-intensity) / 200)));
       transform: scale(1);
   }
   50% {
     filter: 
-      drop-shadow(0 12px 12px rgba(23, 22, 22, 0.4))
-      drop-shadow(0 4px 8px rgba(22, 21, 21, 0.8))
-      drop-shadow(0 4px 188px rgba(var(--accent-rgb), calc(var(--glow-intensity) / 500)));
+      drop-shadow(0 12px 12px rgba(23, 22, 22, 0.1))
+      drop-shadow(0 4px 8px rgba(22, 21, 21, 0.2))
+      drop-shadow(0 4px 60px rgba(var(--accent-rgb), calc(var(--glow-intensity) / 750)));
       transform: scale(0.999);
   }
 }

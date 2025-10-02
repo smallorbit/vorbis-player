@@ -15,7 +15,7 @@ const PlaylistDrawerContainer = styled.div.withConfig({
   width: ${({ width }) => width}px;
   height: 100vh;
   background: ${theme.colors.overlay.dark};
-  backdrop-filter: blur(10px);
+  backdrop-filter: blur(${theme.drawer.backdropBlur});
   border-left: 1px solid ${theme.colors.popover.border};
   transform: translateX(${props => props.isOpen ? '0' : '100%'});
   transition: transform ${({ transitionDuration }) => transitionDuration}ms ${({ transitionEasing }) => transitionEasing},
@@ -30,31 +30,31 @@ const PlaylistDrawerContainer = styled.div.withConfig({
   container-name: playlist;
   
   /* Container query responsive adjustments */
-  @container playlist (max-width: 480px) {
-    width: 100vw;
+  @container playlist (max-width: ${theme.breakpoints.md}) {
+    width: ${theme.drawer.widths.mobile};
     padding: ${theme.spacing.sm};
   }
   
-  @container playlist (min-width: 480px) and (max-width: 768px) {
-    width: 400px;
+  @container playlist (min-width: ${theme.breakpoints.md}) and (max-width: ${theme.drawer.breakpoints.mobile}) {
+    width: ${theme.drawer.widths.tablet};
     padding: ${theme.spacing.md};
   }
   
-  @container playlist (min-width: 768px) {
-    width: 450px;
+  @container playlist (min-width: ${theme.drawer.breakpoints.mobile}) {
+    width: ${theme.drawer.widths.desktop};
     padding: ${theme.spacing.lg};
   }
   
   /* Fallback for browsers without container query support */
   @supports not (container-type: inline-size) {
     @media (max-width: ${theme.breakpoints.sm}) {
-      width: 100vw;
+      width: ${theme.drawer.widths.mobile};
     }
   }
 `;
 
 const PlaylistContent = styled.div`
-  padding: 0.5rem 0 1rem 0;
+  padding: ${theme.spacing.sm} 0 ${theme.spacing.md} 0;
   
   /* Ensure playlist cards have proper spacing from top and bottom */
   > div:first-child {
@@ -78,7 +78,7 @@ const PlaylistOverlay = styled.div.withConfig({
   backdrop-filter: blur(2px);
   opacity: ${props => props.isOpen ? 1 : 0};
   visibility: ${props => props.isOpen ? 'visible' : 'hidden'};
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all ${theme.drawer.transitionDuration}ms ${theme.drawer.transitionEasing};
   z-index: ${theme.zIndex.overlay};
 `;
 
@@ -106,7 +106,7 @@ const CloseButton = styled.button`
   cursor: pointer;
   padding: ${theme.spacing.sm};
   border-radius: ${theme.borderRadius.md};
-  transition: all 0.2s ease;
+  transition: all ${theme.transitions.fast};
   
   &:hover {
     background: ${theme.colors.muted.background};
@@ -121,7 +121,7 @@ const PlaylistFallback = styled.div`
 
 const PlaylistFallbackCard = styled.div`
   background-color: ${({ theme }) => theme.colors.gray[800]};
-  border-radius: 1.25rem;
+  border-radius: ${theme.borderRadius['2xl']};
   padding: ${({ theme }) => theme.spacing.md};
   border: 1px solid ${({ theme }) => theme.colors.gray[700]};
 `;
@@ -177,9 +177,9 @@ export const PlaylistDrawer = memo<PlaylistDrawerProps>(({
 
   // Calculate responsive width for the drawer
   const drawerWidth = useMemo(() => {
-    if (isMobile) return Math.min(viewport.width, 320);
-    if (isTablet) return Math.min(viewport.width * 0.4, 400);
-    return Math.min(viewport.width * 0.3, 400);
+    if (isMobile) return Math.min(viewport.width, parseInt(theme.breakpoints.xs));
+    if (isTablet) return Math.min(viewport.width * 0.4, parseInt(theme.drawer.widths.tablet));
+    return Math.min(viewport.width * 0.3, parseInt(theme.drawer.widths.desktop));
   }, [viewport.width, isMobile, isTablet]);
   return (
     <>
@@ -204,8 +204,8 @@ export const PlaylistDrawer = memo<PlaylistDrawerProps>(({
             <PlaylistFallback>
               <PlaylistFallbackCard>
                 <div style={{
-                  animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-                  color: 'rgba(255, 255, 255, 0.6)',
+                  animation: theme.animations.pulse,
+                  color: theme.colors.muted.foreground,
                   textAlign: 'center'
                 }}>
                   Loading playlist...

@@ -1,4 +1,4 @@
-import React, { Suspense, lazy } from 'react';
+import React, { Suspense, lazy, useState, useCallback } from 'react';
 import styled from 'styled-components';
 import { CardContent } from './styled';
 import AlbumArt from './AlbumArt';
@@ -94,28 +94,28 @@ const ContentWrapper = styled.div.withConfig({
   container-name: player;
   
   /* Container query responsive adjustments */
-  @container player (max-width: 480px) {
+  @container player (max-width: ${theme.breakpoints.sm}) {
     width: 100%;
     height: auto;
     max-width: 100vw;
     max-height: 100vh;
-    padding: 8px;
+    padding: ${theme.spacing.sm};
   }
   
-  @container player (min-width: 480px) and (max-width: 768px) {
+  @container player (min-width: ${theme.breakpoints.sm}) and (max-width: ${theme.breakpoints.md}) {
     width: 100%;
     height: auto;
     max-width: 100vw;
     max-height: 100vh;
-    padding: 12px;
+    padding: ${theme.spacing.md};
   }
   
-  @container player (min-width: 768px) and (max-width: 1024px) {
+  @container player (min-width: ${theme.breakpoints.md}) and (max-width: ${theme.breakpoints.lg}) {
     width: 100%;
     height: auto;
     max-width: 100vw;
     max-height: 100vh;
-    padding: 16px;
+    padding: ${theme.spacing.lg};
   }
   
   /* Fallback for browsers without container query support */
@@ -125,7 +125,7 @@ const ContentWrapper = styled.div.withConfig({
       height: auto;
       max-width: 100vw;
       max-height: 100vh;
-      padding: 8px;
+      padding: ${theme.spacing.sm};
     }
     
     @media (min-width: ${theme.breakpoints.sm}) and (max-width: ${theme.breakpoints.md}) {
@@ -133,7 +133,7 @@ const ContentWrapper = styled.div.withConfig({
       height: auto;
       max-width: 100vw;
       max-height: 100vh;
-      padding: 12px;
+      padding: ${theme.spacing.md};
     }
     
     @media (min-width: ${theme.breakpoints.md}) and (max-width: ${theme.breakpoints.lg}) {
@@ -141,7 +141,7 @@ const ContentWrapper = styled.div.withConfig({
       height: auto;
       max-width: 100vw;
       max-height: 100vh;
-      padding: 16px;
+      padding: ${theme.spacing.lg};
     }
   }
 `;
@@ -166,7 +166,6 @@ const LoadingCard = styled.div.withConfig({
   box-shadow: 0 8px 24px rgba(38, 36, 37, 0.7), 0 2px 8px rgba(22, 21, 21, 0.6);
   ${({ backgroundImage }) => backgroundImage ? `
     &::after {
-      content: '';
       position: absolute;
       inset: 0.1rem;
       background-image: url(${backgroundImage});
@@ -177,7 +176,6 @@ const LoadingCard = styled.div.withConfig({
       z-index: 0;
     }
     &::before {
-      content: '';
       position: absolute;
       inset: 0;
       background: rgba(32, 30, 30, 0.7);
@@ -204,6 +202,72 @@ const PlaylistLoadingFallback = () => (
   </div>
 );
 
+// Animated controls container
+const AnimatedControlsContainer = styled.div.withConfig({
+  shouldForwardProp: (prop) => !['isVisible', 'transitionDuration', 'transitionEasing', 'maxHeight'].includes(prop),
+}) <{
+  isVisible: boolean;
+  transitionDuration: number;
+  transitionEasing: string;
+  maxHeight: number;
+}>`
+  overflow: hidden;
+  isolation: isolate;
+  transition: max-height ${props => props.transitionDuration}ms ${props => props.transitionEasing},
+              opacity ${props => props.transitionDuration}ms ${props => props.transitionEasing},
+              transform ${props => props.transitionDuration}ms ${props => props.transitionEasing};
+  max-height: ${props => props.isVisible ? `${props.maxHeight}px` : '0'};
+  opacity: ${props => props.isVisible ? '1' : '0'};
+  transform: ${props => props.isVisible ? 'translateY(0)' : 'translateY(-10px)'};
+`;
+
+// Main player container with stacked layout
+const PlayerContainer = styled.div.withConfig({
+  shouldForwardProp: (prop) => !['controlsVisible', 'transitionDuration', 'transitionEasing'].includes(prop),
+}) <{
+  controlsVisible: boolean;
+  transitionDuration: number;
+  transitionEasing: string;
+}>`
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  transition: transform ${props => props.transitionDuration}ms ${props => props.transitionEasing};
+  transform: ${props => props.controlsVisible ? 'translateY(-1rem)' : 'translateY(0)'};
+`;
+
+// Album art container with click handler
+const ClickableAlbumArtContainer = styled.div`
+  position: relative;
+  cursor: pointer;
+  transition: filter 0.2s ease;
+  z-index: 3;
+  
+  &:hover {
+    filter: brightness(1.05);
+  }
+  
+  &::after {
+    content: '';
+    position: absolute;
+    bottom: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 6px solid transparent;
+    border-right: 6px solid transparent;
+    border-top: 8px solid rgba(255, 255, 255, 0.7);
+    transition: opacity 0.2s ease;
+    opacity: 0;
+  }
+  
+  &:hover::after {
+    opacity: 1;
+  }
+`;
+
 const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handlers }) => {
   const defaultFilters = {
     brightness: 110,
@@ -213,6 +277,14 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
     blur: 0,
     sepia: 0
   };
+
+  // Controls visibility state (default: hidden)
+  const [controlsVisible, setControlsVisible] = useState(true);
+
+  // Toggle controls visibility
+  const toggleControls = useCallback(() => {
+    setControlsVisible(prev => !prev);
+  }, []);
 
   // Use responsive sizing hook
   const { dimensions, useFluidSizing, padding, transitionDuration, transitionEasing, aspectRatio } = usePlayerSizing();
@@ -227,80 +299,94 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
       transitionEasing={transitionEasing}
       aspectRatio={aspectRatio}
     >
-      {/* Album Art Zone - Takes up most of the space */}
-      <CardContent style={{
-        position: 'relative',
-        zIndex: 2,
-        minHeight: 0,
-        alignItems: 'center',
-        paddingTop: '1rem'
-      }}>
-        <AlbumArt
-          currentTrack={track.current}
-          accentColor={ui.accentColor}
-          glowIntensity={effects.enabled ? effects.glow.intensity : 0}
-          glowRate={effects.glow.rate}
-          albumFilters={effects.enabled ? effects.filters : defaultFilters}
-        />
-      </CardContent>
-      <LoadingCard
-        backgroundImage={track.current?.image}
-        accentColor={ui.accentColor}
-        glowEnabled={effects.enabled}
-        glowIntensity={effects.glow.intensity}
-        glowRate={effects.glow.rate}
+      <PlayerContainer
+        controlsVisible={controlsVisible}
+        transitionDuration={transitionDuration}
+        transitionEasing={transitionEasing}
       >
 
-
-        {/* Controls Zone - Fixed height at bottom */}
+        {/* Album Art Zone - Clickable to toggle controls */}
         <CardContent style={{
           position: 'relative',
           zIndex: 2,
-          flex: '0 0 auto',
-          minHeight: '120px',
-          display: 'flex',
+          minHeight: 0,
           alignItems: 'center',
-          justifyContent: 'center'
+          paddingTop: '1rem'
         }}>
-          <Suspense fallback={<ControlsLoadingFallback />}>
-            <PlayerControls
+          <ClickableAlbumArtContainer onClick={toggleControls}>
+            <AlbumArt
               currentTrack={track.current}
               accentColor={ui.accentColor}
-              trackCount={track.list.length}
-              visualEffectsEnabled={effects.enabled}
-              onPlayback={{
-                play: handlers.onPlay,
-                pause: handlers.onPause,
-                next: handlers.onNext,
-                previous: handlers.onPrevious
-              }}
-              onUI={{
-                showPlaylist: handlers.onShowPlaylist,
-                showVisualEffects: handlers.onShowVisualEffects,
-                toggleVisualEffects: handlers.onGlowToggle
-              }}
-              onAccentColorChange={handlers.onAccentColorChange}
+              glowIntensity={effects.enabled ? effects.glow.intensity : 0}
+              glowRate={effects.glow.rate}
+              albumFilters={effects.enabled ? effects.filters : defaultFilters}
             />
-          </Suspense>
+          </ClickableAlbumArtContainer>
         </CardContent>
-
-        <VisualEffectsContainer
-          enabled={effects.enabled}
-          isMenuOpen={ui.showVisualEffects}
+        <LoadingCard
+          backgroundImage={track.current?.image}
           accentColor={ui.accentColor}
-          filters={effects.filters}
-          onMenuClose={handlers.onCloseVisualEffects}
-          onFilterChange={handlers.onFilterChange}
-          onResetFilters={handlers.onResetFilters}
-          onToggleEffects={handlers.onGlowToggle}
+          glowEnabled={effects.enabled}
           glowIntensity={effects.glow.intensity}
-          setGlowIntensity={handlers.onGlowIntensityChange}
           glowRate={effects.glow.rate}
-          setGlowRate={handlers.onGlowRateChange}
-          effectiveGlow={effects.glow}
-        />
-      </LoadingCard>
+        >
+          {/* Animated Controls Zone - Slides down when visible */}
+          <AnimatedControlsContainer
+            isVisible={controlsVisible}
+            transitionDuration={transitionDuration}
+            transitionEasing={transitionEasing}
+            maxHeight={theme.controls.maxHeight}
+          >
+            <CardContent style={{
+              position: 'relative',
+              zIndex: 2,
+              flex: '0 0 auto',
+              minHeight: `${theme.controls.minHeight}px`,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}>
+              <Suspense fallback={<ControlsLoadingFallback />}>
+                <PlayerControls
+                  currentTrack={track.current}
+                  accentColor={ui.accentColor}
+                  trackCount={track.list.length}
+                  visualEffectsEnabled={effects.enabled}
+                  onPlayback={{
+                    play: handlers.onPlay,
+                    pause: handlers.onPause,
+                    next: handlers.onNext,
+                    previous: handlers.onPrevious
+                  }}
+                  onUI={{
+                    showPlaylist: handlers.onShowPlaylist,
+                    showVisualEffects: handlers.onShowVisualEffects,
+                    toggleVisualEffects: handlers.onGlowToggle
+                  }}
+                  onAccentColorChange={handlers.onAccentColorChange}
+                />
+              </Suspense>
+            </CardContent>
+          </AnimatedControlsContainer>
 
+
+        </LoadingCard>
+      </PlayerContainer>
+      <VisualEffectsContainer
+        enabled={effects.enabled}
+        isMenuOpen={ui.showVisualEffects}
+        accentColor={ui.accentColor}
+        filters={effects.filters}
+        onMenuClose={handlers.onCloseVisualEffects}
+        onFilterChange={handlers.onFilterChange}
+        onResetFilters={handlers.onResetFilters}
+        onToggleEffects={handlers.onGlowToggle}
+        glowIntensity={effects.glow.intensity}
+        setGlowIntensity={handlers.onGlowIntensityChange}
+        glowRate={effects.glow.rate}
+        setGlowRate={handlers.onGlowRateChange}
+        effectiveGlow={effects.glow}
+      />
       <Suspense fallback={<PlaylistLoadingFallback />}>
         <PlaylistDrawer
           isOpen={ui.showPlaylist}
