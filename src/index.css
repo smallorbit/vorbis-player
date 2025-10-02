@@ -1,6 +1,9 @@
 /* Import progressive enhancement styles */
 @import './styles/progressive-enhancement.css';
 
+/* Import theme breakpoints */
+@import './styles/breakpoints.css';
+
 :root {
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
@@ -135,9 +138,9 @@ input[type="range"]::-moz-range-track {
 }
 
 /* Mobile viewport optimizations */
-@media (max-width: 768px) {
+@media (max-width: calc(var(--breakpoint-lg) - 1px)) {
   body {
-    min-width: 320px; /* Allow smaller minimum width on mobile */
+    min-width: var(--breakpoint-xs); /* Allow smaller minimum width on mobile */
   }
   
   #root {
@@ -147,10 +150,32 @@ input[type="range"]::-moz-range-track {
   }
 }
 
+/* Tablet viewport optimizations */
+@media (min-width: var(--breakpoint-lg)) and (max-width: calc(var(--breakpoint-xl) - 1px)) {
+  body {
+    min-width: var(--breakpoint-md); /* Slightly larger minimum width for tablets */
+  }
+  
+  #root {
+    /* Optimize viewport usage for tablets */
+    min-height: 100vh;
+    min-height: 100dvh;
+  }
+}
+
 /* Handle mobile browser UI changes */
-@media (max-width: 768px) and (orientation: landscape) {
+@media (max-width: calc(var(--breakpoint-lg) - 1px)) and (orientation: landscape) {
   #root {
     /* Account for mobile browser UI in landscape */
+    min-height: 100vh;
+    min-height: 100dvh;
+  }
+}
+
+/* Handle tablet browser UI changes */
+@media (min-width: var(--breakpoint-lg)) and (max-width: calc(var(--breakpoint-xl) - 1px)) and (orientation: landscape) {
+  #root {
+    /* Account for tablet browser UI in landscape */
     min-height: 100vh;
     min-height: 100dvh;
   }
@@ -184,6 +209,39 @@ input[type="range"]::-moz-range-track {
     /* Improve text rendering on high DPI displays */
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+/* Container Query Support */
+@supports (container-type: inline-size) {
+  /* Enable container queries for responsive components */
+  .player-content {
+    container-type: inline-size;
+    container-name: player;
+  }
+  
+  .player-controls {
+    container-type: inline-size;
+    container-name: controls;
+  }
+  
+  .playlist-drawer {
+    container-type: inline-size;
+    container-name: playlist;
+  }
+  
+  .visual-effects-menu {
+    container-type: inline-size;
+    container-name: effects;
+  }
+}
+
+/* Container Query Fallbacks */
+@supports not (container-type: inline-size) {
+  /* Fallback to media queries when container queries aren't supported */
+  .player-content {
+    /* Use existing media query fallbacks - no additional styles needed */
+    display: block;
   }
 }
 
