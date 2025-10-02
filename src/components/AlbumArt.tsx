@@ -6,6 +6,7 @@ import AccentColorGlowOverlay, { DEFAULT_GLOW_RATE, DEFAULT_GLOW_INTENSITY } fro
 import { hexToRgb } from '../utils/colorUtils';
 import { useImageProcessingWorker } from '../hooks/useImageProcessingWorker';
 import { usePlayerSizing } from '../hooks/usePlayerSizing';
+import { theme } from '../styles/theme';
 
 const spin = keyframes`
   0% { transform: rotate(0deg); }
@@ -16,22 +17,22 @@ const ProcessingSpinner = styled.div.withConfig({
   shouldForwardProp: (prop) => !['size', 'innerSize'].includes(prop),
 }) <{ size: number; innerSize: number }>`
   position: absolute;
-  top: 8px;
-  right: 8px;
-  background: rgba(0, 0, 0, 0.7);
+  top: ${theme.spacing.sm};
+  right: ${theme.spacing.sm};
+  background: ${theme.colors.overlay.dark};
   border-radius: 50%;
   width: ${({ size }) => size}px;
   height: ${({ size }) => size}px;
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 10;
+  z-index: ${theme.zIndex.dropdown};
 
   &::after {
     content: '';
     width: ${({ innerSize }) => innerSize}px;
     height: ${({ innerSize }) => innerSize}px;
-    border: 2px solid #fff;
+    border: 2px solid ${theme.colors.white};
     border-top: 2px solid transparent;
     border-radius: 50%;
     animation: ${spin} 1s linear infinite;
@@ -62,16 +63,16 @@ const AlbumArtContainer = styled.div.withConfig({
   glowIntensity?: number;
   glowRate?: number;
 }>`
-  border-radius: 1.25rem;
+  border-radius: ${theme.borderRadius['3xl']};
   position: relative;
   width: 100%;
-  max-width: 768px;
+  max-width: ${theme.breakpoints.lg};
   aspect-ratio: 1;
   margin: 0 auto;
   overflow: hidden;
   background: transparent;
-  box-shadow: 0 8px 24px rgba(23, 22, 22, 0.7), 0 2px 8px rgba(22, 21, 21, 0.6);
-  z-index: 2;
+  box-shadow: ${theme.shadows.albumArt};
+  z-index: ${theme.zIndex.docked};
   
 `;
 
@@ -215,11 +216,11 @@ const AlbumArt: React.FC<AlbumArtProps> = memo(({ currentTrack = null, accentCol
               width: '100%',
               objectFit: 'cover',
               overflow: 'hidden',
-              borderRadius: '1.25rem',
+              borderRadius: theme.borderRadius['3xl'],
               display: 'block',
-              zIndex: 2,
+              zIndex: theme.zIndex.docked,
               opacity: isProcessing ? 0.9 : 1,
-              transition: 'opacity 0.2s ease-in-out',
+              transition: theme.transitions.normal,
               transform: 'scale(1.01)',
             }}
             loading="lazy"
@@ -231,12 +232,12 @@ const AlbumArt: React.FC<AlbumArtProps> = memo(({ currentTrack = null, accentCol
         ) : (
           <div style={{
             width: '100%',
-            backgroundColor: '#1a1a1a',
+            backgroundColor: theme.colors.gray[900],
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            color: '#666',
-            borderRadius: '1.25rem'
+            color: theme.colors.gray[500],
+            borderRadius: theme.borderRadius['3xl']
           }}>
             <p>No image</p>
           </div>

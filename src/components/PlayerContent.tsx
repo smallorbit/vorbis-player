@@ -94,28 +94,28 @@ const ContentWrapper = styled.div.withConfig({
   container-name: player;
   
   /* Container query responsive adjustments */
-  @container player (max-width: 480px) {
+  @container player (max-width: ${theme.breakpoints.sm}) {
     width: 100%;
     height: auto;
     max-width: 100vw;
     max-height: 100vh;
-    padding: 8px;
+    padding: ${theme.spacing.sm};
   }
   
-  @container player (min-width: 480px) and (max-width: 768px) {
+  @container player (min-width: ${theme.breakpoints.sm}) and (max-width: ${theme.breakpoints.md}) {
     width: 100%;
     height: auto;
     max-width: 100vw;
     max-height: 100vh;
-    padding: 12px;
+    padding: ${theme.spacing.md};
   }
   
-  @container player (min-width: 768px) and (max-width: 1024px) {
+  @container player (min-width: ${theme.breakpoints.md}) and (max-width: ${theme.breakpoints.lg}) {
     width: 100%;
     height: auto;
     max-width: 100vw;
     max-height: 100vh;
-    padding: 16px;
+    padding: ${theme.spacing.lg};
   }
   
   /* Fallback for browsers without container query support */
@@ -125,7 +125,7 @@ const ContentWrapper = styled.div.withConfig({
       height: auto;
       max-width: 100vw;
       max-height: 100vh;
-      padding: 8px;
+      padding: ${theme.spacing.sm};
     }
     
     @media (min-width: ${theme.breakpoints.sm}) and (max-width: ${theme.breakpoints.md}) {
@@ -133,7 +133,7 @@ const ContentWrapper = styled.div.withConfig({
       height: auto;
       max-width: 100vw;
       max-height: 100vh;
-      padding: 12px;
+      padding: ${theme.spacing.md};
     }
     
     @media (min-width: ${theme.breakpoints.md}) and (max-width: ${theme.breakpoints.lg}) {
@@ -141,7 +141,7 @@ const ContentWrapper = styled.div.withConfig({
       height: auto;
       max-width: 100vw;
       max-height: 100vh;
-      padding: 16px;
+      padding: ${theme.spacing.lg};
     }
   }
 `;

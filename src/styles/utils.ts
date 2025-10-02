@@ -201,13 +201,13 @@ export const srOnly = css`
 `;
 
 export const hideOnMobile = css`
-  @media (max-width: ${theme.breakpoints.md}) {
+  @media (max-width: ${theme.breakpoints.lg}) {
     display: none;
   }
 `;
 
 export const showOnMobile = css`
-  @media (min-width: ${theme.breakpoints.md}) {
+  @media (min-width: ${theme.breakpoints.lg}) {
     display: none;
   }
 `;

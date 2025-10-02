@@ -75,7 +75,7 @@ const DrawerContainer = styled.div<{ $isOpen: boolean; $width: number; $transiti
   
   /* Fallback for browsers without container query support */
   @supports not (container-type: inline-size) {
-    @media (max-width: ${theme.breakpoints.md}) {
+    @media (max-width: ${theme.breakpoints.lg}) {
       width: 100vw;
     }
   }

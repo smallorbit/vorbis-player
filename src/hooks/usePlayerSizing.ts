@@ -7,7 +7,6 @@ import type {
 import {
   getViewportInfo,
   calculatePlayerDimensions,
-  getResponsiveBreakpoint,
   shouldUseFluidSizing,
   calculateOptimalPadding,
   getOptimalAspectRatio,
@@ -28,7 +27,6 @@ export interface UsePlayerSizingReturn {
   isTablet: boolean;
   isDesktop: boolean;
   orientation: 'portrait' | 'landscape';
-  breakpoint: string;
   useFluidSizing: boolean;
   padding: number;
   aspectRatio: number;
@@ -105,7 +103,6 @@ export const usePlayerSizing = (constraints?: SizingConstraints): UsePlayerSizin
   const isMobile = viewport.width < 768;
   const isTablet = viewport.width >= 768 && viewport.width < 1024;
   const isDesktop = viewport.width >= 1024;
-  const breakpoint = getResponsiveBreakpoint(viewport);
   const useFluidSizing = shouldUseFluidSizing(viewport);
   const padding = calculateOptimalPadding(viewport);
   const aspectRatio = dimensions.aspectRatio;
@@ -132,7 +129,6 @@ export const usePlayerSizing = (constraints?: SizingConstraints): UsePlayerSizin
     isTablet,
     isDesktop,
     orientation: viewport.orientation,
-    breakpoint,
     useFluidSizing,
     padding,
     aspectRatio,

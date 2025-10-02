@@ -1,3 +1,5 @@
+import { theme } from '../styles/theme';
+
 export interface ViewportInfo {
   width: number;
   height: number;
@@ -52,10 +54,10 @@ export const calculatePlayerDimensions = (
   constraints: SizingConstraints = {}
 ): PlayerDimensions => {
   const {
-    minWidth = 320,
-    maxWidth = Math.min(viewport.width * 0.9, 1024),
-    minHeight = 400,
-    maxHeight = Math.min(viewport.height * 0.9, 1186),
+    minWidth = parseInt(theme.breakpoints.xs),
+    maxWidth = Math.min(viewport.width * theme.playerConstraints.viewportUsage.width, parseInt(theme.breakpoints.lg)),
+    minHeight = theme.playerConstraints.minHeight,
+    maxHeight = Math.min(viewport.height * theme.playerConstraints.viewportUsage.height, theme.playerConstraints.maxHeight),
     preferredAspectRatio,
     allowAspectRatioAdjustment = true,
     minAspectRatio,
@@ -76,22 +78,22 @@ export const calculatePlayerDimensions = (
 
   if (viewport.orientation === 'portrait') {
     // Portrait: prioritize height, calculate width from aspect ratio
-    height = Math.min(viewport.height * 0.85, maxHeight);
+    height = Math.min(viewport.height * theme.playerConstraints.viewportUsage.height, maxHeight);
     width = height * optimalAspectRatio;
     
     // Ensure width fits within viewport
-    if (width > viewport.width * 0.9) {
-      width = viewport.width * 0.9;
+    if (width > viewport.width * theme.playerConstraints.viewportUsage.width) {
+      width = viewport.width * theme.playerConstraints.viewportUsage.width;
       height = width / optimalAspectRatio;
     }
   } else {
     // Landscape: prioritize width, calculate height from aspect ratio
-    width = Math.min(viewport.width * 0.8, maxWidth);
+    width = Math.min(viewport.width * theme.playerConstraints.viewportUsage.width, maxWidth);
     height = width / optimalAspectRatio;
     
     // Ensure height fits within viewport
-    if (height > viewport.height * 0.85) {
-      height = viewport.height * 0.85;
+    if (height > viewport.height * theme.playerConstraints.viewportUsage.height) {
+      height = viewport.height * theme.playerConstraints.viewportUsage.height;
       width = height * optimalAspectRatio;
     }
   }
@@ -112,7 +114,7 @@ export const calculatePlayerDimensions = (
   }
 
   // Calculate scale factor for responsive adjustments
-  const scale = Math.min(1, viewport.width / 1024);
+  const scale = Math.min(1, viewport.width / parseInt(theme.breakpoints.lg));
 
   return {
     width: Math.round(width),
@@ -122,28 +124,19 @@ export const calculatePlayerDimensions = (
   };
 };
 
-export const getResponsiveBreakpoint = (viewport: ViewportInfo): string => {
-  // Enhanced mobile breakpoints for better mobile experience
-  if (viewport.width < 320) return 'mobile-xs'; // Very small phones
-  if (viewport.width < 480) return 'mobile';
-  if (viewport.width < 768) return 'mobile-large';
-  if (viewport.width < 1024) return 'tablet';
-  if (viewport.width < 1280) return 'desktop';
-  return 'desktop-large';
-};
 
 export const shouldUseFluidSizing = (viewport: ViewportInfo): boolean => {
   // Use fluid sizing for screens smaller than desktop or very large screens
-  return viewport.width < 1024 || viewport.width > 1920;
+  return viewport.width < parseInt(theme.breakpoints.lg) || viewport.width > parseInt(theme.breakpoints['3xl']);
 };
 
 export const calculateOptimalPadding = (viewport: ViewportInfo): number => {
   // Responsive padding based on screen size with mobile optimizations
-  if (viewport.width < 320) return 4; // Very small screens
-  if (viewport.width < 480) return 8;
-  if (viewport.width < 768) return 12;
-  if (viewport.width < 1024) return 16;
-  return 20;
+  if (viewport.width < parseInt(theme.breakpoints.xs)) return parseInt(theme.spacing.xs); // Very small screens
+  if (viewport.width < parseInt(theme.breakpoints.sm)) return parseInt(theme.spacing.sm);
+  if (viewport.width < parseInt(theme.breakpoints.md)) return parseInt(theme.spacing.md);
+  if (viewport.width < parseInt(theme.breakpoints.lg)) return parseInt(theme.spacing.lg);
+  return parseInt(theme.spacing.xl);
 };
 
 // Enhanced aspect ratio utilities

@@ -125,6 +125,7 @@ export const theme = {
     xl: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
     '2xl': '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
     inner: 'inset 0 2px 4px 0 rgba(0, 0, 0, 0.06)',
+    albumArt: '0 8px 24px rgba(23, 22, 22, 0.7), 0 2px 8px rgba(22, 21, 21, 0.6)',
     none: 'none'
   },
   
@@ -137,24 +138,14 @@ export const theme = {
   breakpoints: {
     // Mobile devices
     xs: '320px',
-    sm: '480px',
-    md: '768px',
-    lg: '1024px',
+    sm: '375px',
+    md: '480px',
+    lg: '768px',
     xl: '1280px',
     '2xl': '1536px',
     '3xl': '1920px'
   },
   
-  // Enhanced responsive breakpoints for player sizing
-  playerBreakpoints: {
-    mobile: '320px',
-    mobileLarge: '480px',
-    tablet: '768px',
-    tabletLarge: '1024px',
-    desktop: '1280px',
-    desktopLarge: '1440px',
-    desktopXLarge: '1920px'
-  },
   
   // Container query breakpoints for component-level responsive behavior
   containerBreakpoints: {
@@ -179,6 +170,16 @@ export const theme = {
     skipLink: '1600',
     toast: '1700',
     tooltip: '1800'
+  },
+  
+  // Player-specific sizing constraints
+  playerConstraints: {
+    minHeight: 400,
+    maxHeight: 1186,
+    viewportUsage: {
+      width: 0.9,
+      height: 0.9
+    }
   }
 } as const;
 

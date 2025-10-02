@@ -2,7 +2,6 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { 
   getViewportInfo, 
   calculatePlayerDimensions, 
-  getResponsiveBreakpoint,
   shouldUseFluidSizing,
   calculateOptimalPadding
 } from '../sizingUtils';
@@ -84,28 +83,6 @@ describe('sizingUtils', () => {
     });
   });
 
-  describe('getResponsiveBreakpoint', () => {
-    it('should return correct breakpoint for mobile', () => {
-      mockWindow(375, 667);
-      const viewport = getViewportInfo();
-      const breakpoint = getResponsiveBreakpoint(viewport);
-      expect(breakpoint).toBe('mobile');
-    });
-
-    it('should return correct breakpoint for tablet', () => {
-      mockWindow(768, 1024);
-      const viewport = getViewportInfo();
-      const breakpoint = getResponsiveBreakpoint(viewport);
-      expect(breakpoint).toBe('tablet');
-    });
-
-    it('should return correct breakpoint for desktop', () => {
-      mockWindow(1280, 720);
-      const viewport = getViewportInfo();
-      const breakpoint = getResponsiveBreakpoint(viewport);
-      expect(breakpoint).toBe('desktop-large');
-    });
-  });
 
   describe('shouldUseFluidSizing', () => {
     it('should return true for mobile', () => {

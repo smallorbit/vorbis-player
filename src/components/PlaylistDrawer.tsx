@@ -47,7 +47,7 @@ const PlaylistDrawerContainer = styled.div.withConfig({
   
   /* Fallback for browsers without container query support */
   @supports not (container-type: inline-size) {
-    @media (max-width: ${theme.breakpoints.sm}) {
+    @media (max-width: ${theme.breakpoints.md}) {
       width: 100vw;
     }
   }

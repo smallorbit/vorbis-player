@@ -31,21 +31,21 @@ const PlayerControlsContainer = styled.div<{ $isMobile: boolean; $isTablet: bool
   container-name: controls;
   
   /* Container query responsive adjustments */
-  @container controls (max-width: 480px) {
+  @container controls (max-width: ${({ theme }) => theme.breakpoints.sm}) {
     flex-direction: column;
     align-items: center;
     gap: ${({ theme }) => theme.spacing.xs};
     padding: ${({ theme }) => `${theme.spacing.sm} ${theme.spacing.sm}`};
   }
   
-  @container controls (min-width: 480px) and (max-width: 768px) {
+  @container controls (min-width: ${({ theme }) => theme.breakpoints.sm}) and (max-width: ${({ theme }) => theme.breakpoints.md}) {
     flex-direction: column;
     align-items: center;
     gap: ${({ theme }) => theme.spacing.sm};
     padding: ${({ theme }) => `${theme.spacing.sm} ${theme.spacing.md}`};
   }
   
-  @container controls (min-width: 768px) {
+  @container controls (min-width: ${({ theme }) => theme.breakpoints.md}) {
     flex-direction: column;
     align-items: center;
     gap: ${({ theme }) => theme.spacing.sm};
