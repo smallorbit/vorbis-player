@@ -307,7 +307,7 @@
 /* CSS container queries fallbacks with enhanced media queries */
 @supports not (container-type: inline-size) {
   /* Enhanced responsive design with more breakpoints */
-  @media (min-width: 240px) and (max-width: 319px) {
+  @media (min-width: 240px) and (max-width: calc(var(--breakpoint-xs) - 1px)) {
     /* Very small screens */
     .player-content {
       padding: 2px;
@@ -323,7 +323,7 @@
     }
   }
   
-  @media (min-width: 320px) and (max-width: 479px) {
+  @media (min-width: var(--breakpoint-xs)) and (max-width: calc(var(--breakpoint-md) - 1px)) {
     /* Small mobile screens */
     .player-content {
       padding: 8px;
@@ -338,7 +338,7 @@
     }
   }
   
-  @media (min-width: 480px) and (max-width: 767px) {
+  @media (min-width: var(--breakpoint-md)) and (max-width: calc(var(--breakpoint-lg) - 1px)) {
     /* Large mobile screens */
     .player-content {
       padding: 12px;
@@ -353,7 +353,7 @@
     }
   }
   
-  @media (min-width: 768px) and (max-width: 1023px) {
+  @media (min-width: var(--breakpoint-lg)) and (max-width: calc(var(--breakpoint-xl) - 1px)) {
     /* Tablet screens */
     .player-content {
       padding: 16px;
@@ -366,9 +366,27 @@
     .player-track-info {
       font-size: 1.125rem;
     }
+    
+    /* Tablet-specific optimizations */
+    .playlist-drawer {
+      padding: 12px;
+    }
+    
+    .playlist-item {
+      padding: 12px;
+      font-size: 1rem;
+    }
+    
+    .visual-effects-menu {
+      padding: 16px;
+    }
+    
+    .performance-monitor {
+      padding: 12px;
+    }
   }
   
-  @media (min-width: 1024px) and (max-width: 1279px) {
+  @media (min-width: var(--breakpoint-xl)) and (max-width: calc(var(--breakpoint-2xl) - 1px)) {
     /* Small desktop screens */
     .player-content {
       padding: 20px;
@@ -383,7 +401,7 @@
     }
   }
   
-  @media (min-width: 1280px) {
+  @media (min-width: var(--breakpoint-2xl)) {
     /* Large desktop screens */
     .player-content {
       padding: 24px;
