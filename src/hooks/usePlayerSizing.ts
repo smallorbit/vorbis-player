@@ -117,7 +117,7 @@ export const usePlayerSizing = (constraints?: SizingConstraints): UsePlayerSizin
   const compatibilityScore = Math.round(
     (Object.values(browserFeatures).filter(Boolean).length / Object.keys(browserFeatures).length) * 100
   );
-  const fallbackStrategy = getFallbackStrategy(browserFeatures);
+  const fallbackStrategy = getFallbackStrategy();
   const supportsContainerQueries = browserFeatures.containerQueries;
   const supportsBackdropFilter = browserFeatures.backdropFilter;
   const supportsVisualViewport = browserFeatures.visualViewport;

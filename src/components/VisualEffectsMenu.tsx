@@ -47,6 +47,7 @@ const DrawerContainer = styled.div<{ $isOpen: boolean; $width: number; $transiti
   right: 0;
   bottom: 0;
   width: ${({ $width }) => $width}px;
+  max-width: 95vw; 
   background: ${theme.colors.overlay.dark};
   backdrop-filter: blur(${theme.drawer.backdropBlur});
   border-left: 1px solid ${theme.colors.popover.border};
@@ -55,6 +56,7 @@ const DrawerContainer = styled.div<{ $isOpen: boolean; $width: number; $transiti
             width ${({ $transitionDuration }) => $transitionDuration}ms ${({ $transitionEasing }) => $transitionEasing};
   z-index: ${theme.zIndex.modal};
   overflow-y: auto;
+  overflow-x: hidden; 
   
   /* Enable container queries */
   container-type: inline-size;
@@ -87,6 +89,8 @@ const DrawerHeader = styled.div`
   justify-content: space-between;
   padding: 1.5rem 1.5rem 1rem;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  min-height: 60px; 
+  flex-shrink: 0; /* Prevent header from shrinking */
 `;
 
 const DrawerTitle = styled.h3`
@@ -101,7 +105,7 @@ const CloseButton = styled.button`
   border: none;
   color: ${theme.colors.muted.foreground};
   cursor: pointer;
-  padding: ${theme.spacing.xs};
+  padding: ${theme.spacing.sm};
   border-radius: ${theme.borderRadius.md};
   transition: all 0.2s ease;
   
