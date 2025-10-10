@@ -38,7 +38,7 @@ const DrawerOverlay = styled.div<{ $isOpen: boolean }>`
   z-index: ${theme.zIndex.overlay};
   opacity: ${({ $isOpen }) => ($isOpen ? '1' : '0')};
   pointer-events: ${({ $isOpen }) => ($isOpen ? 'auto' : 'none')};
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all ${theme.drawer.transitionDuration}ms ${theme.drawer.transitionEasing};
 `;
 
 const DrawerContainer = styled.div<{ $isOpen: boolean; $width: number; $transitionDuration: number; $transitionEasing: string }>`
@@ -48,7 +48,7 @@ const DrawerContainer = styled.div<{ $isOpen: boolean; $width: number; $transiti
   bottom: 0;
   width: ${({ $width }) => $width}px;
   background: ${theme.colors.overlay.dark};
-  backdrop-filter: blur(20px);
+  backdrop-filter: blur(${theme.drawer.backdropBlur});
   border-left: 1px solid ${theme.colors.popover.border};
   transform: translateX(${({ $isOpen }) => ($isOpen ? '0' : '100%')});
   transition: all ${({ $transitionDuration }) => $transitionDuration}ms ${({ $transitionEasing }) => $transitionEasing},
@@ -61,22 +61,22 @@ const DrawerContainer = styled.div<{ $isOpen: boolean; $width: number; $transiti
   container-name: visual-effects;
   
   /* Container query responsive adjustments */
-  @container visual-effects (max-width: 768px) {
-    width: 100vw;
+  @container visual-effects (max-width: ${theme.drawer.breakpoints.mobile}) {
+    width: ${theme.drawer.widths.mobile};
   }
   
-  @container visual-effects (min-width: 768px) and (max-width: 1024px) {
-    width: 400px;
+  @container visual-effects (min-width: ${theme.drawer.breakpoints.mobile}) and (max-width: ${theme.drawer.breakpoints.tablet}) {
+    width: ${theme.drawer.widths.tablet};
   }
   
-  @container visual-effects (min-width: 1024px) {
-    width: 500px;
+  @container visual-effects (min-width: ${theme.drawer.breakpoints.tablet}) {
+    width: ${theme.drawer.widths.desktop};
   }
   
   /* Fallback for browsers without container query support */
   @supports not (container-type: inline-size) {
-    @media (max-width: ${theme.breakpoints.lg}) {
-      width: 100vw;
+    @media (max-width: ${theme.breakpoints.md}) {
+      width: ${theme.drawer.widths.mobile};
     }
   }
 `;
@@ -189,7 +189,7 @@ const ResetButton = styled.button<{ $accentColor: string }>`
   cursor: pointer;
   font-size: 0.875rem;
   font-weight: 500;
-  transition: all 0.2s ease;
+  transition: all ${theme.transitions.fast};
   width: 100%;
   margin-top: 0.75rem;
   
@@ -284,9 +284,9 @@ export const VisualEffectsMenu: React.FC<VisualEffectsMenuProps> = memo(({
 
   // Calculate responsive width for the drawer
   const drawerWidth = useMemo(() => {
-    if (isMobile) return Math.min(viewport.width, 320);
-    if (isTablet) return Math.min(viewport.width * 0.4, 400);
-    return Math.min(viewport.width * 0.3, 400);
+    if (isMobile) return Math.min(viewport.width, parseInt(theme.breakpoints.xs));
+    if (isTablet) return Math.min(viewport.width * 0.4, parseInt(theme.drawer.widths.tablet));
+    return Math.min(viewport.width * 0.3, parseInt(theme.drawer.widths.desktop));
   }, [viewport.width, isMobile, isTablet]);
   // Add ESC key support to close the drawer
   useEffect(() => {

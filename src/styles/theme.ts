@@ -145,6 +145,12 @@ export const theme = {
     slow: '0.35s ease'
   },
   
+  animations: {
+    pulse: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+    fadeIn: 'fadeIn 0.3s ease-in-out',
+    slideIn: 'slideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+  },
+  
   breakpoints: {
     // Mobile devices
     xs: '320px',
@@ -190,6 +196,22 @@ export const theme = {
       width: 0.9,
       height: 0.9
     }
+  },
+  
+  // Drawer-specific sizing and behavior
+  drawer: {
+    widths: {
+      mobile: '100vw',
+      tablet: '400px', 
+      desktop: '500px'
+    },
+    breakpoints: {
+      mobile: '768px',
+      tablet: '1024px'
+    },
+    backdropBlur: '20px',
+    transitionDuration: 300,
+    transitionEasing: 'cubic-bezier(0.4, 0, 0.2, 1)'
   }
 } as const;
 
