@@ -38,7 +38,7 @@ export interface BrowserFeatures {
 export const detectBrowserFeatures = (): BrowserFeatures => {
   const features: BrowserFeatures = {
     // Visual Viewport API
-    visualViewport: 'visualViewport' in window && !!(window as any).visualViewport,
+    visualViewport: 'visualViewport' in window && !!(window as unknown as { visualViewport: unknown }).visualViewport,
     
     // CSS Container Queries
     containerQueries: CSS.supports('container-type', 'inline-size'),
@@ -112,15 +112,15 @@ export const getFallbackValues = (features: BrowserFeatures) => {
   return {
     // Viewport fallbacks
     getViewportWidth: () => {
-      if (features.visualViewport && (window as any).visualViewport) {
-        return (window as any).visualViewport.width || window.innerWidth;
+      if (features.visualViewport && (window as unknown as { visualViewport: { width: number } }).visualViewport) {
+        return (window as unknown as { visualViewport: { width: number } }).visualViewport.width || window.innerWidth;
       }
       return window.innerWidth;
     },
     
     getViewportHeight: () => {
-      if (features.visualViewport && (window as any).visualViewport) {
-        return (window as any).visualViewport.height || window.innerHeight;
+      if (features.visualViewport && (window as unknown as { visualViewport: { height: number } }).visualViewport) {
+        return (window as unknown as { visualViewport: { height: number } }).visualViewport.height || window.innerHeight;
       }
       return window.innerHeight;
     },
@@ -195,7 +195,7 @@ export const createEnhancedEventListeners = (
   features: BrowserFeatures,
   callback: () => void
 ) => {
-  const listeners: Array<{ element: any; event: string; handler: () => void }> = [];
+  const listeners: Array<{ element: unknown; event: string; handler: () => void }> = [];
   
   // Standard resize listener
   const resizeHandler = () => callback();
@@ -208,8 +208,8 @@ export const createEnhancedEventListeners = (
   listeners.push({ element: window, event: 'orientationchange', handler: orientationHandler });
   
   // Visual Viewport API listener (if supported)
-  if (features.visualViewport && (window as any).visualViewport) {
-    const visualViewport = (window as any).visualViewport;
+  if (features.visualViewport && (window as unknown as { visualViewport: { addEventListener: (event: string, handler: () => void) => void } }).visualViewport) {
+    const visualViewport = (window as unknown as { visualViewport: { addEventListener: (event: string, handler: () => void) => void } }).visualViewport;
     const visualViewportHandler = () => callback();
     visualViewport.addEventListener('resize', visualViewportHandler);
     visualViewport.addEventListener('scroll', visualViewportHandler);
@@ -229,8 +229,8 @@ export const createEnhancedEventListeners = (
     listeners.forEach(({ element, event, handler }) => {
       if (event === 'observe') {
         handler();
-      } else {
-        element.removeEventListener(event, handler);
+      } else if (element && typeof element === 'object' && 'removeEventListener' in element) {
+        (element as { removeEventListener: (event: string, handler: () => void) => void }).removeEventListener(event, handler);
       }
     });
   };
@@ -257,7 +257,7 @@ export const getBrowserCompatibilityScore = (): number => {
 /**
  * Get recommended fallback strategy based on browser capabilities
  */
-export const getFallbackStrategy = (_features: BrowserFeatures) => {
+export const getFallbackStrategy = () => {
   const score = getBrowserCompatibilityScore();
   
   if (score >= 90) {

@@ -1,3 +1,13 @@
+// TypeScript interface for player constraints
+export interface PlayerConstraints {
+  minHeight: number;
+  maxHeight: number;
+  viewportUsage: {
+    width: number;
+    height: number;
+  };
+}
+
 export const theme = {
   colors: {
     // Base colors
@@ -184,6 +194,11 @@ export const theme = {
 } as const;
 
 export type Theme = typeof theme;
+
+// Ensure playerConstraints conforms to the interface
+export type ThemeWithPlayerConstraints = Omit<Theme, 'playerConstraints'> & {
+  playerConstraints: PlayerConstraints;
+};
 
 // Helper function for responsive design
 export const mediaQuery = {

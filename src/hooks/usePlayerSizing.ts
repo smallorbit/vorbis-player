@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import type { 
   ViewportInfo, 
   PlayerDimensions, 
@@ -45,7 +45,7 @@ export interface UsePlayerSizingReturn {
 }
 
 // Debounce utility
-const debounce = <T extends (...args: any[]) => any>(
+const debounce = <T extends (...args: unknown[]) => unknown>(
   func: T,
   wait: number
 ): ((...args: Parameters<T>) => void) => {
@@ -83,7 +83,7 @@ export const usePlayerSizing = (constraints?: SizingConstraints): UsePlayerSizin
   }, [constraints, browserFeatures]);
 
   // Debounced resize handler with smooth transitions
-  const handleResize = useCallback(
+  const debouncedUpdateDimensions = useMemo(() => 
     debounce(updateDimensions, 150), // Slightly longer debounce for smoother transitions
     [updateDimensions]
   );
@@ -93,11 +93,11 @@ export const usePlayerSizing = (constraints?: SizingConstraints): UsePlayerSizin
     updateDimensions();
 
     // Use enhanced event listeners with fallbacks
-    const cleanup = createEnhancedEventListeners(browserFeatures, handleResize);
+    const cleanup = createEnhancedEventListeners(browserFeatures, debouncedUpdateDimensions);
     
     // Cleanup
     return cleanup;
-  }, [handleResize, updateDimensions, browserFeatures]);
+  }, [debouncedUpdateDimensions, updateDimensions, browserFeatures]);
 
   // Calculate derived values
   const isMobile = viewport.width < 768;

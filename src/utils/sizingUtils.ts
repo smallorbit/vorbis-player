@@ -25,13 +25,36 @@ export interface SizingConstraints {
   maxAspectRatio?: number;
 }
 
+/**
+ * Creates default SizingConstraints from theme configuration
+ * This bridges the gap between hardcoded theme values and the flexible SizingConstraints interface
+ */
+export const createDefaultSizingConstraints = (viewport: ViewportInfo): SizingConstraints & { 
+  viewportUsageWidth: number; 
+  viewportUsageHeight: number; 
+} => {
+  return {
+    minWidth: parseInt(theme.breakpoints.xs),
+    maxWidth: Math.min(viewport.width * theme.playerConstraints.viewportUsage.width, parseInt(theme.breakpoints.lg)),
+    minHeight: theme.playerConstraints.minHeight,
+    maxHeight: Math.min(viewport.height * theme.playerConstraints.viewportUsage.height, theme.playerConstraints.maxHeight),
+    allowAspectRatioAdjustment: true,
+    viewportUsageWidth: theme.playerConstraints.viewportUsage.width,
+    viewportUsageHeight: theme.playerConstraints.viewportUsage.height,
+    // These will be calculated by getOptimalAspectRatio and calculateAspectRatioConstraints
+    preferredAspectRatio: undefined,
+    minAspectRatio: undefined,
+    maxAspectRatio: undefined
+  };
+};
+
 export const getViewportInfo = (): ViewportInfo => {
   // Use visual viewport API if available (better for mobile browsers)
   let width: number;
   let height: number;
   
-  if ('visualViewport' in window && (window as any).visualViewport) {
-    const visualViewport = (window as any).visualViewport;
+  if ('visualViewport' in window && (window as unknown as { visualViewport: { width: number; height: number } }).visualViewport) {
+    const visualViewport = (window as unknown as { visualViewport: { width: number; height: number } }).visualViewport;
     width = visualViewport.width || window.innerWidth;
     height = visualViewport.height || window.innerHeight;
   } else {
@@ -53,24 +76,19 @@ export const calculatePlayerDimensions = (
   viewport: ViewportInfo,
   constraints: SizingConstraints = {}
 ): PlayerDimensions => {
-  const {
-    minWidth = parseInt(theme.breakpoints.xs),
-    maxWidth = Math.min(viewport.width * theme.playerConstraints.viewportUsage.width, parseInt(theme.breakpoints.lg)),
-    minHeight = theme.playerConstraints.minHeight,
-    maxHeight = Math.min(viewport.height * theme.playerConstraints.viewportUsage.height, theme.playerConstraints.maxHeight),
-    preferredAspectRatio,
-    allowAspectRatioAdjustment = true,
-    minAspectRatio,
-    maxAspectRatio
-  } = constraints;
+  // Merge provided constraints with theme-based defaults
+  const defaultConstraints = createDefaultSizingConstraints(viewport);
+  const mergedConstraints = { ...defaultConstraints, ...constraints };
+  
+  
 
   // Get optimal aspect ratio for this viewport
-  const optimalAspectRatio = preferredAspectRatio ?? getOptimalAspectRatio(viewport);
+  const optimalAspectRatio = mergedConstraints.preferredAspectRatio ?? getOptimalAspectRatio(viewport);
   
   // Get aspect ratio constraints
   const aspectRatioConstraints = calculateAspectRatioConstraints(viewport);
-  const finalMinAspectRatio = minAspectRatio ?? aspectRatioConstraints.min;
-  const finalMaxAspectRatio = maxAspectRatio ?? aspectRatioConstraints.max;
+  const finalMinAspectRatio = mergedConstraints.minAspectRatio ?? aspectRatioConstraints.min;
+  const finalMaxAspectRatio = mergedConstraints.maxAspectRatio ?? aspectRatioConstraints.max;
 
   // Calculate base dimensions based on viewport
   let width: number;
@@ -78,32 +96,32 @@ export const calculatePlayerDimensions = (
 
   if (viewport.orientation === 'portrait') {
     // Portrait: prioritize height, calculate width from aspect ratio
-    height = Math.min(viewport.height * theme.playerConstraints.viewportUsage.height, maxHeight);
+    height = Math.min(viewport.height * mergedConstraints.viewportUsageHeight, mergedConstraints.maxHeight ?? 0);
     width = height * optimalAspectRatio;
     
     // Ensure width fits within viewport
-    if (width > viewport.width * theme.playerConstraints.viewportUsage.width) {
-      width = viewport.width * theme.playerConstraints.viewportUsage.width;
+    if (width > viewport.width * mergedConstraints.viewportUsageWidth) {
+      width = viewport.width * mergedConstraints.viewportUsageWidth;
       height = width / optimalAspectRatio;
     }
   } else {
     // Landscape: prioritize width, calculate height from aspect ratio
-    width = Math.min(viewport.width * theme.playerConstraints.viewportUsage.width, maxWidth);
+    width = Math.min(viewport.width * mergedConstraints.viewportUsageWidth, mergedConstraints.maxWidth ?? 0);
     height = width / optimalAspectRatio;
     
     // Ensure height fits within viewport
-    if (height > viewport.height * theme.playerConstraints.viewportUsage.height) {
-      height = viewport.height * theme.playerConstraints.viewportUsage.height;
+    if (height > viewport.height * mergedConstraints.viewportUsageHeight) {
+      height = viewport.height * mergedConstraints.viewportUsageHeight;
       width = height * optimalAspectRatio;
     }
   }
 
   // Apply basic constraints
-  width = Math.max(minWidth, Math.min(width, maxWidth));
-  height = Math.max(minHeight, Math.min(height, maxHeight));
+  width = Math.max(mergedConstraints.minWidth ?? 0, Math.min(width, mergedConstraints.maxWidth ?? 0));
+  height = Math.max(mergedConstraints.minHeight ?? 0, Math.min(height, mergedConstraints.maxHeight ?? 0));
 
   // Apply aspect ratio adjustments if enabled
-  if (allowAspectRatioAdjustment) {
+  if (mergedConstraints.allowAspectRatioAdjustment) {
     const adjusted = adjustDimensionsForAspectRatio(
       width,
       height,
