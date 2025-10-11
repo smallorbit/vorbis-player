@@ -458,6 +458,8 @@ const SpotifyPlayerControls = memo<SpotifyPlayerControlsProps>(({ currentTrack, 
               onAccentColorChange={handleAccentColorChange}
               customAccentColorOverrides={customAccentColorOverrides}
               onCustomAccentColor={handleCustomAccentColor}
+              isMobile={isMobile}
+              isTablet={isTablet}
             />
           </Suspense>
           <VolumeButton $isMobile={isMobile} $isTablet={isTablet} onClick={handleVolumeButtonClick} title={isMuted ? 'Unmute' : 'Mute'}>
@@ -498,6 +500,8 @@ const SpotifyPlayerControls = memo<SpotifyPlayerControlsProps>(({ currentTrack, 
             isLoading={isLikePending}
             accentColor={accentColor}
             onToggleLike={handleLikeToggle}
+            isMobile={isMobile}
+            isTablet={isTablet}
           />
 
 

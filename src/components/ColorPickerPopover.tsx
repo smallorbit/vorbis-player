@@ -8,20 +8,36 @@ import type { Track } from '../services/spotify';
 import { theme } from '../styles/theme';
 
 const ControlButton = styled.button.withConfig({
-  shouldForwardProp: (prop) => !['isActive', 'accentColor'].includes(prop),
-}) <{ isActive?: boolean; accentColor: string }>`
+  shouldForwardProp: (prop) => !['isActive', 'accentColor', '$isMobile', '$isTablet'].includes(prop),
+}) <{ isActive?: boolean; accentColor: string; $isMobile?: boolean; $isTablet?: boolean }>`
   border: none;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   transition: all 0.2s ease;
-  padding: ${theme.spacing.sm};
-  border-radius: ${theme.borderRadius.md};
+  padding: ${({ $isMobile, $isTablet }) => {
+    if ($isMobile) return theme.spacing.xs;
+    if ($isTablet) return theme.spacing.sm;
+    return theme.spacing.sm;
+  }};
+  border-radius: ${({ $isMobile, $isTablet }) => {
+    if ($isMobile) return theme.borderRadius.sm;
+    if ($isTablet) return theme.borderRadius.md;
+    return theme.borderRadius.md;
+  }};
   
   svg {
-    width: 1.5rem;
-    height: 1.5rem;
+    width: ${({ $isMobile, $isTablet }) => {
+      if ($isMobile) return '1.25rem';
+      if ($isTablet) return '1.375rem';
+      return '1.5rem';
+    }};
+    height: ${({ $isMobile, $isTablet }) => {
+      if ($isMobile) return '1.25rem';
+      if ($isTablet) return '1.375rem';
+      return '1.5rem';
+    }};
     fill: currentColor;
   }
   
@@ -48,6 +64,8 @@ interface ColorPickerPopoverProps {
   onAccentColorChange?: (color: string) => void;
   customAccentColorOverrides: Record<string, string>;
   onCustomAccentColor: (color: string) => void;
+  isMobile?: boolean;
+  isTablet?: boolean;
 }
 
 // Custom comparison function for ColorPickerPopover memo optimization
@@ -83,7 +101,9 @@ export const ColorPickerPopover = memo<ColorPickerPopoverProps>(({
   currentTrack,
   onAccentColorChange,
   customAccentColorOverrides,
-  onCustomAccentColor
+  onCustomAccentColor,
+  isMobile = false,
+  isTablet = false
 }) => {
   const [colorOptions, setColorOptions] = useState<ExtractedColor[] | null>(null);
   const [isExtracting, setIsExtracting] = useState(false);
@@ -154,6 +174,8 @@ export const ColorPickerPopover = memo<ColorPickerPopoverProps>(({
     <>
       <ControlButton
         accentColor={accentColor}
+        $isMobile={isMobile}
+        $isTablet={isTablet}
         onClick={() => setShowColorPopover(v => !v)}
         title="Theme options"
         ref={paletteBtnRef}
