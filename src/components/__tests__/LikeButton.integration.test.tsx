@@ -29,7 +29,7 @@ const mockTheme = {
     border: '#282828'
   },
   breakpoints: {
-    mobile: '768px'
+    mobile: '700px'
   }
 };
 
@@ -52,7 +52,7 @@ const LikeButtonIntegration: React.FC<{
   React.useEffect(() => {
     const checkInitialStatus = async () => {
       if (!trackId) return;
-      
+
       try {
         setIsLoading(true);
         const liked = await spotifyService.checkTrackSaved(trackId);
@@ -72,7 +72,7 @@ const LikeButtonIntegration: React.FC<{
 
     try {
       setIsLoading(true);
-      
+
       if (isLiked) {
         await spotifyService.unsaveTrack(trackId);
         setIsLiked(false);
@@ -101,7 +101,7 @@ const LikeButtonIntegration: React.FC<{
 
 describe('LikeButton Integration Tests', () => {
   const mockTrackId = 'spotify-track-123';
-  
+
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -153,7 +153,7 @@ describe('LikeButton Integration Tests', () => {
         new Error('API Error')
       );
 
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
 
       render(
         <TestWrapper>
@@ -178,7 +178,7 @@ describe('LikeButton Integration Tests', () => {
   describe('Like/Unlike Workflow', () => {
     it('should complete full like workflow', async () => {
       const user = userEvent.setup();
-      
+
       // Mock initial state as not liked
       vi.mocked(spotifyService.checkTrackSaved).mockResolvedValue(false);
       vi.mocked(spotifyService.saveTrack).mockResolvedValue();
@@ -211,7 +211,7 @@ describe('LikeButton Integration Tests', () => {
 
     it('should complete full unlike workflow', async () => {
       const user = userEvent.setup();
-      
+
       // Mock initial state as liked
       vi.mocked(spotifyService.checkTrackSaved).mockResolvedValue(true);
       vi.mocked(spotifyService.unsaveTrack).mockResolvedValue();
@@ -244,9 +244,9 @@ describe('LikeButton Integration Tests', () => {
 
     it('should handle multiple rapid clicks gracefully', async () => {
       const user = userEvent.setup();
-      
+
       vi.mocked(spotifyService.checkTrackSaved).mockResolvedValue(false);
-      vi.mocked(spotifyService.saveTrack).mockImplementation(() => 
+      vi.mocked(spotifyService.saveTrack).mockImplementation(() =>
         new Promise(resolve => setTimeout(resolve, 100))
       );
 
@@ -262,7 +262,7 @@ describe('LikeButton Integration Tests', () => {
       });
 
       const button = screen.getByRole('button');
-      
+
       // Click multiple times rapidly
       await user.click(button);
       await user.click(button);
@@ -278,13 +278,13 @@ describe('LikeButton Integration Tests', () => {
   describe('Error Handling', () => {
     it('should handle like operation errors', async () => {
       const user = userEvent.setup();
-      
+
       vi.mocked(spotifyService.checkTrackSaved).mockResolvedValue(false);
       vi.mocked(spotifyService.saveTrack).mockRejectedValue(
         new Error('Like failed')
       );
 
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
 
       render(
         <TestWrapper>
@@ -316,13 +316,13 @@ describe('LikeButton Integration Tests', () => {
 
     it('should handle unlike operation errors', async () => {
       const user = userEvent.setup();
-      
+
       vi.mocked(spotifyService.checkTrackSaved).mockResolvedValue(true);
       vi.mocked(spotifyService.unsaveTrack).mockRejectedValue(
         new Error('Unlike failed')
       );
 
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
 
       render(
         <TestWrapper>
@@ -354,13 +354,13 @@ describe('LikeButton Integration Tests', () => {
 
     it('should handle network errors gracefully', async () => {
       const user = userEvent.setup();
-      
+
       vi.mocked(spotifyService.checkTrackSaved).mockResolvedValue(false);
       vi.mocked(spotifyService.saveTrack).mockRejectedValue(
         new Error('Network error')
       );
 
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
 
       render(
         <TestWrapper>
@@ -390,7 +390,7 @@ describe('LikeButton Integration Tests', () => {
   describe('Authentication Integration', () => {
     it('should handle authentication token refresh', async () => {
       const user = userEvent.setup();
-      
+
       vi.mocked(spotifyService.checkTrackSaved).mockResolvedValue(false);
       vi.mocked(spotifyService.saveTrack).mockResolvedValue();
 
@@ -422,13 +422,13 @@ describe('LikeButton Integration Tests', () => {
 
     it('should handle authentication errors', async () => {
       const user = userEvent.setup();
-      
+
       vi.mocked(spotifyService.checkTrackSaved).mockResolvedValue(false);
       vi.mocked(spotifyService.saveTrack).mockRejectedValue(
         new Error('Token expired')
       );
 
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
 
       render(
         <TestWrapper>
@@ -460,7 +460,7 @@ describe('LikeButton Integration Tests', () => {
   describe('State Persistence', () => {
     it('should maintain state across component updates', async () => {
       const user = userEvent.setup();
-      
+
       vi.mocked(spotifyService.checkTrackSaved).mockResolvedValue(false);
       vi.mocked(spotifyService.saveTrack).mockResolvedValue();
 

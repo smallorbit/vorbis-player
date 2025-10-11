@@ -17,7 +17,7 @@ const mockTheme = {
     border: '#282828'
   },
   breakpoints: {
-    mobile: '768px'
+    mobile: '700px'
   }
 };
 
@@ -52,7 +52,7 @@ describe('LikeButton Component', () => {
       const button = screen.getByRole('button');
       expect(button).toBeInTheDocument();
       expect(button).toHaveAttribute('aria-label', 'Add to Liked Songs');
-      
+
       // Check that the heart icon is rendered (outline version)
       const svg = button.querySelector('svg');
       expect(svg).toBeInTheDocument();
@@ -67,7 +67,7 @@ describe('LikeButton Component', () => {
 
       const button = screen.getByRole('button');
       expect(button).toHaveAttribute('aria-label', 'Remove from Liked Songs');
-      
+
       // Check that the filled heart icon is rendered
       const svg = button.querySelector('svg');
       expect(svg).toBeInTheDocument();
@@ -83,7 +83,7 @@ describe('LikeButton Component', () => {
       const button = screen.getByRole('button');
       expect(button).toHaveAttribute('aria-label', 'Loading...');
       expect(button).toBeDisabled();
-      
+
       // Check that loading spinner is rendered instead of heart
       const spinner = button.querySelector('[class*="LoadingSpinner"]');
       expect(spinner).toBeInTheDocument();
@@ -123,7 +123,7 @@ describe('LikeButton Component', () => {
 
       const button = screen.getByRole('button');
       expect(button).toBeInTheDocument();
-      
+
       // The accent color is applied through styled-components props
       // We can test that the component renders without error with custom accent color
     });
@@ -189,7 +189,7 @@ describe('LikeButton Component', () => {
       );
 
       const button = screen.getByRole('button');
-      
+
       // Simulate rapid clicks
       await user.click(button);
       await user.click(button);
@@ -355,7 +355,7 @@ describe('LikeButton Component', () => {
       );
 
       const button = screen.getByRole('button');
-      
+
       // Trigger click to start animation
       fireEvent.click(button);
       expect(mockToggle).toHaveBeenCalled();
@@ -375,7 +375,7 @@ describe('LikeButton Component', () => {
 
       const button = screen.getByRole('button');
       const svg = button.querySelector('svg');
-      
+
       // Animation is applied via styled-components CSS
       // We can verify the component renders correctly with the liked state
       expect(svg).toBeInTheDocument();
@@ -417,7 +417,7 @@ describe('LikeButton Component', () => {
       const button = screen.getByRole('button');
       expect(button).toBeDisabled();
       expect(button).toHaveAttribute('aria-label', 'Loading...');
-      
+
       // Should show spinner, not heart
       const spinner = button.querySelector('[class*="LoadingSpinner"]');
       expect(spinner).toBeInTheDocument();
@@ -425,7 +425,7 @@ describe('LikeButton Component', () => {
 
     it('should handle invalid accent colors gracefully', () => {
       const invalidColor = 'not-a-color';
-      
+
       expect(() => {
         render(
           <TestWrapper>
@@ -466,7 +466,7 @@ describe('LikeButton Component', () => {
 
       let button = screen.getByRole('button');
       expect(button).not.toBeDisabled();
-      
+
       rerender(
         <TestWrapper>
           <LikeButton {...defaultProps} isLoading={true} />

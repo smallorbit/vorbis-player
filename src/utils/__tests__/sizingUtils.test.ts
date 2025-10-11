@@ -28,25 +28,25 @@ const mockWindow = (width: number, height: number, devicePixelRatio = 1) => {
 describe('sizingUtils', () => {
   beforeEach(() => {
     // Reset window mock
-    mockWindow(1024, 768);
+    mockWindow(1024, 700);
   });
 
   describe('getViewportInfo', () => {
     it('should return correct viewport info for landscape', () => {
-      mockWindow(1024, 768);
+      mockWindow(1024, 700);
       const viewport = getViewportInfo();
       
       expect(viewport.width).toBe(1024);
-      expect(viewport.height).toBe(768);
+      expect(viewport.height).toBe(700);
       expect(viewport.orientation).toBe('landscape');
       expect(viewport.devicePixelRatio).toBe(1);
     });
 
     it('should return correct viewport info for portrait', () => {
-      mockWindow(768, 1024);
+      mockWindow(700, 1024);
       const viewport = getViewportInfo();
       
-      expect(viewport.width).toBe(768);
+      expect(viewport.width).toBe(700);
       expect(viewport.height).toBe(1024);
       expect(viewport.orientation).toBe('portrait');
     });
@@ -113,7 +113,7 @@ describe('sizingUtils', () => {
     });
 
     it('should return correct padding for tablet', () => {
-      mockWindow(768, 1024);
+      mockWindow(700, 1024);
       const viewport = getViewportInfo();
       const padding = calculateOptimalPadding(viewport);
       expect(padding).toBe(16);

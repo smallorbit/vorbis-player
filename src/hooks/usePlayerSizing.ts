@@ -100,8 +100,8 @@ export const usePlayerSizing = (constraints?: SizingConstraints): UsePlayerSizin
   }, [debouncedUpdateDimensions, updateDimensions, browserFeatures]);
 
   // Calculate derived values
-  const isMobile = viewport.width < 768;
-  const isTablet = viewport.width >= 768 && viewport.width < 1024;
+  const isMobile = viewport.width < 700;
+  const isTablet = viewport.width >= 700 && viewport.width < 1024;
   const isDesktop = viewport.width >= 1024;
   const useFluidSizing = shouldUseFluidSizing(viewport);
   const padding = calculateOptimalPadding(viewport);

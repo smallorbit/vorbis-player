@@ -156,7 +156,7 @@ export const theme = {
     xs: '320px',
     sm: '375px',
     md: '480px',
-    lg: '768px',
+    lg: '700px',
     xl: '1280px',
     '2xl': '1536px',
     '3xl': '1920px'
@@ -167,7 +167,7 @@ export const theme = {
   containerBreakpoints: {
     xs: '320px',
     sm: '480px',
-    md: '768px',
+    md: '700px',
     lg: '1024px',
     xl: '1280px',
     '2xl': '1536px'
@@ -206,7 +206,7 @@ export const theme = {
       desktop: '500px'
     },
     breakpoints: {
-      mobile: '768px',
+      mobile: '700px',
       tablet: '1024px'
     },
     backdropBlur: '20px',
