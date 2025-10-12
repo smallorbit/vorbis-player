@@ -8,36 +8,56 @@ import type { Track } from '../services/spotify';
 import { theme } from '../styles/theme';
 
 const ControlButton = styled.button.withConfig({
-  shouldForwardProp: (prop) => !['isActive', 'accentColor'].includes(prop),
-}) <{ isActive?: boolean; accentColor: string }>`
+  shouldForwardProp: (prop) => !['isActive', 'accentColor', '$isMobile', '$isTablet'].includes(prop),
+}) <{ isActive?: boolean; accentColor: string; $isMobile?: boolean; $isTablet?: boolean }>`
   border: none;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   transition: all 0.2s ease;
-  padding: ${theme.spacing.sm};
-  border-radius: ${theme.borderRadius.md};
-  
+  padding: ${({ $isMobile, $isTablet }) => {
+    if ($isMobile) return theme.spacing.xs;
+    if ($isTablet) return theme.spacing.sm;
+    return theme.spacing.sm;
+  }};
+  border-radius: ${({ $isMobile, $isTablet }) => {
+    if ($isMobile) return theme.borderRadius.sm;
+    if ($isTablet) return theme.borderRadius.md;
+    return theme.borderRadius.md;
+  }};
+
   svg {
-    width: 1.5rem;
-    height: 1.5rem;
+    width: ${({ $isMobile, $isTablet }) => {
+      if ($isMobile) return '1.25rem';
+      if ($isTablet) return '1.375rem';
+      return '1.5rem';
+    }};
+    height: ${({ $isMobile, $isTablet }) => {
+      if ($isMobile) return '1.25rem';
+      if ($isTablet) return '1.375rem';
+      return '1.5rem';
+    }};
     fill: currentColor;
   }
-  
+
   ${({ isActive, accentColor }: { isActive?: boolean; accentColor: string }) => isActive ? `
     background: ${accentColor};
     color: ${theme.colors.white};
-    
+
     &:hover {
       background: ${accentColor}4D;
+      color: ${theme.colors.white};
+      transform: translateY(-1px);
     }
   ` : `
     background: ${theme.colors.control.background};
     color: ${theme.colors.white};
-    
+
     &:hover {
       background: ${theme.colors.control.backgroundHover};
+      color: ${theme.colors.white};
+      transform: translateY(-1px);
     }
   `}
 `;
@@ -48,6 +68,8 @@ interface ColorPickerPopoverProps {
   onAccentColorChange?: (color: string) => void;
   customAccentColorOverrides: Record<string, string>;
   onCustomAccentColor: (color: string) => void;
+  $isMobile?: boolean;
+  $isTablet?: boolean;
 }
 
 // Custom comparison function for ColorPickerPopover memo optimization
@@ -62,6 +84,15 @@ const areColorPickerPropsEqual = (
 
   // Check accent color
   if (prevProps.accentColor !== nextProps.accentColor) {
+    return false;
+  }
+
+  // Check responsive sizing
+  if (prevProps.$isMobile !== nextProps.$isMobile) {
+    return false;
+  }
+
+  if (prevProps.$isTablet !== nextProps.$isTablet) {
     return false;
   }
 
@@ -83,7 +114,9 @@ export const ColorPickerPopover = memo<ColorPickerPopoverProps>(({
   currentTrack,
   onAccentColorChange,
   customAccentColorOverrides,
-  onCustomAccentColor
+  onCustomAccentColor,
+  $isMobile = false,
+  $isTablet = false
 }) => {
   const [colorOptions, setColorOptions] = useState<ExtractedColor[] | null>(null);
   const [isExtracting, setIsExtracting] = useState(false);
@@ -157,7 +190,8 @@ export const ColorPickerPopover = memo<ColorPickerPopoverProps>(({
         onClick={() => setShowColorPopover(v => !v)}
         title="Theme options"
         ref={paletteBtnRef}
-        style={{ position: 'relative' }}
+        $isMobile={$isMobile}
+        $isTablet={$isTablet}
       >
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <path d="M18.37 2.63 14 7l-1.59-1.59a2 2 0 0 0-2.82 0L8 7l9 9 1.59-1.59a2 2 0 0 0 0-2.82L17 10l4.37-4.37a2.12 2.12 0 1 0-3-3Z" />
