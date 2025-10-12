@@ -29,15 +29,15 @@ const ControlButton = styled.button.withConfig({
   
   svg {
     width: ${({ $isMobile, $isTablet }) => {
-      if ($isMobile) return '1.25rem';
-      if ($isTablet) return '1.375rem';
-      return '1.5rem';
-    }};
+    if ($isMobile) return theme.fontSize.xl;
+    if ($isTablet) return theme.fontSize['2xl'];
+    return theme.fontSize['3xl'];
+  }};
     height: ${({ $isMobile, $isTablet }) => {
-      if ($isMobile) return '1.25rem';
-      if ($isTablet) return '1.375rem';
-      return '1.5rem';
-    }};
+    if ($isMobile) return theme.fontSize.xl;
+    if ($isTablet) return theme.fontSize['2xl'];
+    return theme.fontSize['3xl'];
+  }};
     fill: currentColor;
   }
   
