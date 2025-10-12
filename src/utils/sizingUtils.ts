@@ -1,3 +1,8 @@
+// Type definition for Window with Visual Viewport API support
+interface WindowWithVisualViewport extends Window {
+  visualViewport: VisualViewport | null;
+}
+
 export interface ViewportInfo {
   width: number;
   height: number;
@@ -28,8 +33,8 @@ export const getViewportInfo = (): ViewportInfo => {
   let width: number;
   let height: number;
   
-  if ('visualViewport' in window && (window as any).visualViewport) {
-    const visualViewport = (window as any).visualViewport;
+  if ('visualViewport' in window && (window as WindowWithVisualViewport).visualViewport) {
+    const visualViewport = (window as WindowWithVisualViewport).visualViewport!;
     width = visualViewport.width || window.innerWidth;
     height = visualViewport.height || window.innerHeight;
   } else {
