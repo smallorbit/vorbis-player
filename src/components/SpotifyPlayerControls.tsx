@@ -498,6 +498,8 @@ const SpotifyPlayerControls = memo<SpotifyPlayerControlsProps>(({ currentTrack, 
             isLoading={isLikePending}
             accentColor={accentColor}
             onToggleLike={handleLikeToggle}
+            $isMobile={isMobile}
+            $isTablet={isTablet}
           />
 
 

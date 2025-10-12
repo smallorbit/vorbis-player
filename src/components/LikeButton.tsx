@@ -10,6 +10,8 @@ interface LikeButtonProps {
   accentColor: string;
   onToggleLike: () => void;
   className?: string;
+  $isMobile?: boolean;
+  $isTablet?: boolean;
 }
 
 // Loading animation for the spinner
@@ -27,64 +29,80 @@ const heartBeat = keyframes`
   70% { transform: scale(1); }
 `;
 
-// Styled button component following the ToggleButton pattern
-const StyledLikeButton = styled.button<{ 
-  $isLiked: boolean; 
-  $accentColor: string; 
-  $isLoading: boolean; 
+// Styled button component following the ControlButton pattern with responsive sizing
+const StyledLikeButton = styled.button<{
+  $isLiked: boolean;
+  $accentColor: string;
+  $isLoading: boolean;
+  $isMobile: boolean;
+  $isTablet: boolean;
 }>`
-  border: 1px solid ${({ $isLiked, $accentColor }: { $isLiked: boolean; $accentColor: string }) => $isLiked ? $accentColor : theme.colors.border};
+  border: none;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: ${({ $isLoading }) => $isLoading ? 'default' : 'pointer'};
   transition: all 0.2s ease;
-  padding: 0.5rem;
-  border-radius: ${theme.borderRadius.md};
+  padding: ${({ $isMobile, $isTablet }) => {
+    if ($isMobile) return theme.spacing.xs;
+    if ($isTablet) return theme.spacing.sm;
+    return theme.spacing.sm;
+  }};
+  border-radius: ${({ $isMobile, $isTablet }) => {
+    if ($isMobile) return theme.borderRadius.sm;
+    if ($isTablet) return theme.borderRadius.md;
+    return theme.borderRadius.md;
+  }};
   position: relative;
   opacity: ${({ $isLoading }) => $isLoading ? 0.6 : 1};
-  
-  /* Consistent sizing with other control buttons */
+
+  /* Responsive sizing matching other control buttons */
   svg {
-    width: 1.5rem;
-    height: 1.5rem;
+    width: ${({ $isMobile, $isTablet }) => {
+      if ($isMobile) return '1.25rem';
+      if ($isTablet) return '1.375rem';
+      return '1.5rem';
+    }};
+    height: ${({ $isMobile, $isTablet }) => {
+      if ($isMobile) return '1.25rem';
+      if ($isTablet) return '1.375rem';
+      return '1.5rem';
+    }};
     fill: currentColor;
     transition: all 0.2s ease;
   }
-  
-  /* Styling for liked state - matching ToggleButton active state */
+
+  /* Styling for liked state - matching ControlButton active state */
   ${({ $isLiked, $accentColor }) => $isLiked ? css`
     background: ${$accentColor};
-    color: ${theme.colors.white  };
-    
+    color: ${theme.colors.white};
+
     &:hover:not(:disabled) {
       background: ${$accentColor}4D;
-      border-color: ${$accentColor};
       color: ${theme.colors.white};
       transform: translateY(-1px);
     }
-    
+
     svg {
       animation: ${heartBeat} 0.6s ease-in-out;
     }
   ` : css`
-    background: ${theme.colors.muted.background};
-    color: ${theme.colors.muted.foreground};
-    
+    background: ${theme.colors.control.background};
+    color: ${theme.colors.white};
+
     &:hover:not(:disabled) {
-      background: ${$accentColor}22;
-      border-color: ${$accentColor};
+      background: ${theme.colors.control.backgroundHover};
       color: ${theme.colors.white};
       transform: translateY(-1px);
     }
   `}
-  
+
   /* Disabled state for loading */
   &:disabled {
     cursor: default;
     pointer-events: none;
   }
-  
+
   /* Focus styles for accessibility */
   &:focus-visible {
     outline: 2px solid ${({ $accentColor }) => $accentColor};
@@ -120,7 +138,7 @@ HeartIcon.displayName = 'HeartIcon';
 
 // Custom comparison function for memo optimization
 const areLikeButtonPropsEqual = (
-  prevProps: LikeButtonProps, 
+  prevProps: LikeButtonProps,
   nextProps: LikeButtonProps
 ): boolean => {
   return (
@@ -128,7 +146,9 @@ const areLikeButtonPropsEqual = (
     prevProps.isLiked === nextProps.isLiked &&
     prevProps.isLoading === nextProps.isLoading &&
     prevProps.accentColor === nextProps.accentColor &&
-    prevProps.className === nextProps.className
+    prevProps.className === nextProps.className &&
+    prevProps.$isMobile === nextProps.$isMobile &&
+    prevProps.$isTablet === nextProps.$isTablet
     // Note: onToggleLike is excluded from comparison as it should be memoized by parent
   );
 };
@@ -140,7 +160,9 @@ const LikeButton = memo<LikeButtonProps>(({
   isLoading = false,
   accentColor,
   onToggleLike,
-  className
+  className,
+  $isMobile = false,
+  $isTablet = false
 }) => {
   const handleClick = useCallback(() => {
     if (isLoading || !trackId) return;
@@ -167,6 +189,8 @@ const LikeButton = memo<LikeButtonProps>(({
       $isLiked={isLiked}
       $accentColor={accentColor}
       $isLoading={isLoading}
+      $isMobile={$isMobile}
+      $isTablet={$isTablet}
       disabled={isLoading || !trackId}
       onClick={handleClick}
       onKeyDown={handleKeyDown}
