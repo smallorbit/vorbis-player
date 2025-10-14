@@ -153,13 +153,26 @@ export const shouldUseFluidSizing = (viewport: ViewportInfo): boolean => {
   return viewport.width < parseInt(theme.breakpoints.lg) || viewport.width > parseInt(theme.breakpoints['3xl']);
 };
 
+// Helper function to convert rem values to pixels
+const remToPixels = (remValue: string): number => {
+  const numericValue = parseFloat(remValue);
+  return numericValue * 16; // 1rem = 16px
+};
+
 export const calculateOptimalPadding = (viewport: ViewportInfo): number => {
   // Responsive padding based on screen size with mobile optimizations
-  if (viewport.width < parseInt(theme.breakpoints.xs)) return parseInt(theme.spacing.xs); // Very small screens
-  if (viewport.width < parseInt(theme.breakpoints.sm)) return parseInt(theme.spacing.sm);
-  if (viewport.width < parseInt(theme.breakpoints.md)) return parseInt(theme.spacing.md);
-  if (viewport.width < parseInt(theme.breakpoints.lg)) return parseInt(theme.spacing.lg);
-  return parseInt(theme.spacing.xl);
+  const breakpoints = {
+    xs: parseInt(theme.breakpoints.xs),
+    sm: parseInt(theme.breakpoints.sm),
+    md: parseInt(theme.breakpoints.md),
+    lg: parseInt(theme.breakpoints.lg),
+  };
+  
+  if (viewport.width < breakpoints.xs) return remToPixels(theme.spacing.xs); // 4px
+  if (viewport.width < breakpoints.sm) return remToPixels(theme.spacing.sm); // 8px
+  if (viewport.width < breakpoints.md) return remToPixels(theme.spacing.md); // 16px
+  if (viewport.width < breakpoints.lg) return remToPixels(theme.spacing.lg); // 24px
+  return remToPixels(theme.spacing.xl); // 32px
 };
 
 // Enhanced aspect ratio utilities
