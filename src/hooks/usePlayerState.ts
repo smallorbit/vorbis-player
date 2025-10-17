@@ -367,6 +367,26 @@ export const usePlayerState = () => {
     }
   }, [savedAlbumFilters]);
 
+  // Accent color helper methods
+  const handleSetAccentColorOverride = useCallback((trackId: string, color: string) => {
+    setAccentColorOverrides(prev => ({
+      ...prev,
+      [trackId]: color
+    }));
+  }, []);
+
+  const handleRemoveAccentColorOverride = useCallback((trackId: string) => {
+    setAccentColorOverrides(prev => {
+      const newOverrides = { ...prev };
+      delete newOverrides[trackId];
+      return newOverrides;
+    });
+  }, []);
+
+  const handleResetAccentColorOverride = useCallback((trackId: string) => {
+    handleRemoveAccentColorOverride(trackId);
+  }, [handleRemoveAccentColorOverride]);
+
   // Group related state for external consumption
   const trackState: TrackState = {
     tracks,
@@ -408,7 +428,10 @@ export const usePlayerState = () => {
 
   const colorActions = {
     setCurrent: setAccentColor,
-    setOverrides: setAccentColorOverrides
+    setOverrides: setAccentColorOverrides,
+    handleSetAccentColorOverride,
+    handleRemoveAccentColorOverride,
+    handleResetAccentColorOverride
   };
 
   const visualEffectsActions = {
@@ -462,5 +485,8 @@ export const usePlayerState = () => {
     handleFilterChange,
     handleResetFilters,
     restoreSavedFilters,
+    handleSetAccentColorOverride,
+    handleRemoveAccentColorOverride,
+    handleResetAccentColorOverride,
   };
 };
