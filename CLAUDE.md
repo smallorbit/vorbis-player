@@ -232,6 +232,16 @@ VITE_SPOTIFY_CLIENT_ID="your_spotify_client_id"
 VITE_SPOTIFY_REDIRECT_URI="http://127.0.0.1:3000/auth/spotify/callback"
 ```
 
+## AI Workflow Rules
+
+For structured feature development workflows, see detailed rules in `.claude/rules/`:
+
+- **`.claude/rules/generate_prd.md`** - Guide for creating Product Requirements Documents (PRDs) through clarifying questions and structured documentation
+- **`.claude/rules/generate_tasks_from_prd.md`** - Breaking PRDs into parent/sub-task hierarchies with two-phase generation (parent tasks → sub-tasks)
+- **`.claude/rules/process_tasks.md`** - Step-by-step task execution protocol with git commits after completing parent tasks
+
+These rules define workflows for PRD creation, task breakdown, and implementation tracking when working on larger features.
+
 ## Command Instructions
 
 - /commit means you are to commit the current working changes to the current branch. unless otherwise instructed, you should split the changes into logically related commits in the correct sequential order
