@@ -66,7 +66,7 @@ A modern Spotify music player with a sleek, unified interface designed for enjoy
 1. **Clone and install dependencies**
 
    ```bash
-   git clone git@github.com:rmpacheco/vorbis-player.git
+   git clone git@github.com:smallorbit/vorbis-player.git
    cd vorbis-player
    npm install
    ```
