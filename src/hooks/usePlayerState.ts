@@ -316,12 +316,21 @@ export const usePlayerState = () => {
   useEffect(() => {
     const stored = localStorage.getItem('accentColorOverrides');
     if (stored) {
-      setAccentColorOverrides(JSON.parse(stored));
+      try {
+        setAccentColorOverrides(JSON.parse(stored));
+      } catch (error) {
+        console.warn('Failed to parse accent color overrides from localStorage:', error);
+        setAccentColorOverrides({});
+      }
     }
   }, []);
 
   useEffect(() => {
-    localStorage.setItem('accentColorOverrides', JSON.stringify(accentColorOverrides));
+    try {
+      localStorage.setItem('accentColorOverrides', JSON.stringify(accentColorOverrides));
+    } catch (error) {
+      console.warn('Failed to save accent color overrides to localStorage:', error);
+    }
   }, [accentColorOverrides]);
 
   useEffect(() => {
