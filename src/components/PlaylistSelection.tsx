@@ -19,7 +19,6 @@ const Container = styled.div`
   align-items: center;
   justify-content: center;
   padding: 1rem;
-  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #1a1a2e 100%);
 `;
 
 const SelectionCard = styled(Card) <{ $maxWidth: number }>`
