@@ -3,7 +3,6 @@ import { TimelineLeft, TimelineRight, TimelineControlsContainer } from './styled
 import VolumeControl from './VolumeControl';
 import LikeButton from '../LikeButton';
 import { TimelineSlider } from '../TimelineSlider';
-import type { Track } from '../../services/spotify';
 
 interface TimelineControlsProps {
     // Volume control props
