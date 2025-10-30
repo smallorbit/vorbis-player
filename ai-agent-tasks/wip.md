@@ -4,10 +4,35 @@
 
 *This file tracks the current state of all AI agent initiatives. Update as work progresses.*
 
-## Current Active Initiative: Player Sizing Strategy Overhaul
+## Current Active Initiative: Fix Mobile Centering Issue (GitHub Issue #59)
+
+**Status**: Complete ✅  
+**Start Date**: 2025-10-30  
+**Objective**: Fix player horizontal centering on mobile devices with very narrow widths
+
+### Issue Summary
+Player was not centered properly on mobile devices with narrow screen widths due to:
+1. `body` element having `min-width: 585px` causing horizontal overflow
+2. `flexCenter` utility missing `align-items: center`
+3. Excessive padding on `#root` element
+
+### Changes Made
+- ✅ Removed `min-width: 585px` from body element in index.css
+- ✅ Added `align-items: center` to flexCenter utility in styles/utils.ts
+- ✅ Reduced padding on #root from 2rem to 1rem, and 0.5rem on screens < 480px
+- ✅ Cleaned up mobile and tablet viewport media queries to remove problematic min-width constraints
+
+### Build Status
+- ✅ TypeScript compilation successful
+- ✅ Vite build successful
+- ✅ No errors or warnings
+
+---
+
+## Previous Initiative: Player Sizing Strategy Overhaul
 
 **Status**: Planning Phase Complete - Ready for Implementation  
-**Start Date**: Current Session  
+**Start Date**: Previous Session  
 **Objective**: Replace hardcoded player dimensions with fluid, responsive sizing system
 
 ### Phase 1: Analysis & Foundation Setup
