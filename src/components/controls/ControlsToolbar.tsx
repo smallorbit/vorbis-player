@@ -12,8 +12,6 @@ interface ControlsToolbarProps {
     accentColor: string;
     isMobile: boolean;
     isTablet: boolean;
-    // Playlist button props
-    onShowPlaylist: () => void;
 }
 
 // Custom comparison function for memo optimization
@@ -38,8 +36,7 @@ export const ControlsToolbar = memo<ControlsToolbarProps>(({
     isPlaying,
     accentColor,
     isMobile,
-    isTablet,
-    onShowPlaylist
+    isTablet
 }) => {
     return (
         <TrackInfoRow style={{ position: 'relative' }}>

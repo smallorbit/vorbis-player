@@ -144,7 +144,6 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
       onPause={handlePauseClick}
       onNext={handleNext}
       onPrevious={handlePrevious}
-      onShowPlaylist={onUI.showPlaylist}
       trackCount={trackCount}
       onAccentColorChange={onAccentColorChange}
       onShowVisualEffects={onUI.showVisualEffects}

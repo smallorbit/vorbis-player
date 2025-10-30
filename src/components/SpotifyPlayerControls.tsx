@@ -53,7 +53,6 @@ interface SpotifyPlayerControlsProps {
   onPause: () => void;
   onNext: () => void;
   onPrevious: () => void;
-  onShowPlaylist: () => void;
   trackCount: number;
   onAccentColorChange?: (color: string) => void;
   onShowVisualEffects?: () => void;
@@ -71,7 +70,6 @@ const SpotifyPlayerControls = memo<SpotifyPlayerControlsProps>(({
   onPause,
   onNext,
   onPrevious,
-  onShowPlaylist,
   onAccentColorChange,
   onShowVisualEffects,
   showVisualEffects,
@@ -127,14 +125,9 @@ const SpotifyPlayerControls = memo<SpotifyPlayerControlsProps>(({
         accentColor={accentColor}
         isMobile={isMobile}
         isTablet={isTablet}
-        onShowPlaylist={onShowPlaylist}
       />
 
       <TimelineControls
-        glowEnabled={glowEnabled}
-        onGlowToggle={onGlowToggle}
-        showVisualEffects={showVisualEffects}
-        onShowVisualEffects={onShowVisualEffects}
         isMuted={isMuted}
         volume={volume}
         onVolumeButtonClick={handleVolumeButtonClick}
@@ -149,10 +142,6 @@ const SpotifyPlayerControls = memo<SpotifyPlayerControlsProps>(({
         isLikePending={isLikePending}
         onLikeToggle={handleLikeToggle}
         accentColor={accentColor}
-        currentTrack={currentTrack}
-        onAccentColorChange={handleAccentColorChange}
-        customAccentColorOverrides={customAccentColorOverrides}
-        onCustomAccentColor={handleCustomAccentColor}
         isMobile={isMobile}
         isTablet={isTablet}
       />
