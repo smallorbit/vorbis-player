@@ -1,5 +1,5 @@
 import { memo } from 'react';
-import { TrackInfoRow, TrackInfoLeft, TrackInfoCenter, TrackInfoRight, ControlButton } from './styled';
+import { TrackInfoRow, TrackInfoLeft, TrackInfoCenter, TrackInfoRight } from './styled';
 import PlaybackControls from './PlaybackControls';
 
 interface ControlsToolbarProps {
@@ -59,11 +59,7 @@ export const ControlsToolbar = memo<ControlsToolbarProps>(({
                 />
             </TrackInfoCenter>
             <TrackInfoRight>
-                <ControlButton $isMobile={isMobile} $isTablet={isTablet} accentColor={accentColor} onClick={onShowPlaylist} title="Show Playlist">
-                    <svg viewBox="0 0 24 24" role="img" aria-hidden="true">
-                        <path d="M3 6h18v2H3V6zm0 5h18v2H3v-2zm0 5h18v2H3v-2z" />
-                    </svg>
-                </ControlButton>
+                {/* Quick actions moved to right-side panel */}
             </TrackInfoRight>
         </TrackInfoRow>
     );

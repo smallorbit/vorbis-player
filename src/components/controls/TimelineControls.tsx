@@ -1,10 +1,8 @@
-import { memo, Suspense } from 'react';
+import { memo } from 'react';
 import { TimelineLeft, TimelineRight, TimelineControlsContainer } from './styled';
-import EffectsControls from './EffectsControls';
 import VolumeControl from './VolumeControl';
 import LikeButton from '../LikeButton';
 import { TimelineSlider } from '../TimelineSlider';
-import ColorPickerPopover from '../ColorPickerPopover';
 import type { Track } from '../../services/spotify';
 
 interface TimelineControlsProps {
@@ -92,28 +90,6 @@ export const TimelineControls = memo<TimelineControlsProps>(({
     return (
         <TimelineControlsContainer>
             <TimelineLeft>
-                <EffectsControls
-                    glowEnabled={glowEnabled}
-                    onGlowToggle={onGlowToggle}
-                    showVisualEffects={showVisualEffects}
-                    onShowVisualEffects={onShowVisualEffects}
-                    accentColor={accentColor}
-                    isMobile={isMobile}
-                    isTablet={isTablet}
-                />
-
-                <Suspense fallback={<div style={{ width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>⚡</div>}>
-                    <ColorPickerPopover
-                        accentColor={accentColor}
-                        currentTrack={currentTrack}
-                        onAccentColorChange={onAccentColorChange}
-                        customAccentColorOverrides={customAccentColorOverrides}
-                        onCustomAccentColor={onCustomAccentColor}
-                        $isMobile={isMobile}
-                        $isTablet={isTablet}
-                    />
-                </Suspense>
-
                 <VolumeControl
                     isMuted={isMuted}
                     volume={volume}
