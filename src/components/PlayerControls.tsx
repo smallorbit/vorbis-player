@@ -41,11 +41,8 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
   currentTrack,
   accentColor,
   trackCount,
-  visualEffectsEnabled,
   onPlayback,
-  onUI,
-  onAccentColorChange
-}) => {
+  onUI}) => {
   const [isPlaying, setIsPlaying] = useState(false);
 
   // Control state logic
@@ -144,12 +141,7 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
       onPause={handlePauseClick}
       onNext={handleNext}
       onPrevious={handlePrevious}
-      onShowPlaylist={onUI.showPlaylist}
       trackCount={trackCount}
-      onAccentColorChange={onAccentColorChange}
-      onShowVisualEffects={onUI.showVisualEffects}
-      glowEnabled={visualEffectsEnabled}
-      onGlowToggle={onUI.toggleVisualEffects}
     />
   );
 };

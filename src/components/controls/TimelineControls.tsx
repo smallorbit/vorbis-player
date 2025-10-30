@@ -1,18 +1,10 @@
-import { memo, Suspense } from 'react';
+import { memo } from 'react';
 import { TimelineLeft, TimelineRight, TimelineControlsContainer } from './styled';
-import EffectsControls from './EffectsControls';
 import VolumeControl from './VolumeControl';
 import LikeButton from '../LikeButton';
 import { TimelineSlider } from '../TimelineSlider';
-import ColorPickerPopover from '../ColorPickerPopover';
-import type { Track } from '../../services/spotify';
 
 interface TimelineControlsProps {
-    // Effects controls props
-    glowEnabled?: boolean;
-    onGlowToggle?: () => void;
-    showVisualEffects?: boolean;
-    onShowVisualEffects?: () => void;
     // Volume control props
     isMuted: boolean;
     volume: number;
@@ -29,12 +21,8 @@ interface TimelineControlsProps {
     isLiked: boolean;
     isLikePending: boolean;
     onLikeToggle: () => void;
-    // Color picker props
+    // Accent color for slider/theming
     accentColor: string;
-    currentTrack: Track | null;
-    onAccentColorChange?: (color: string) => void;
-    customAccentColorOverrides: Record<string, string>;
-    onCustomAccentColor: (color: string) => void;
     // Responsive props
     isMobile: boolean;
     isTablet: boolean;
@@ -46,8 +34,7 @@ const areTimelineControlsPropsEqual = (
     nextProps: TimelineControlsProps
 ): boolean => {
     return (
-        prevProps.glowEnabled === nextProps.glowEnabled &&
-        prevProps.showVisualEffects === nextProps.showVisualEffects &&
+        // Removed effects/color picker props
         prevProps.isMuted === nextProps.isMuted &&
         prevProps.volume === nextProps.volume &&
         prevProps.currentPosition === nextProps.currentPosition &&
@@ -56,18 +43,13 @@ const areTimelineControlsPropsEqual = (
         prevProps.isLiked === nextProps.isLiked &&
         prevProps.isLikePending === nextProps.isLikePending &&
         prevProps.accentColor === nextProps.accentColor &&
-        prevProps.currentTrack?.id === nextProps.currentTrack?.id &&
         prevProps.isMobile === nextProps.isMobile &&
         prevProps.isTablet === nextProps.isTablet
         // Callbacks are excluded as they should be memoized by parent
     );
 };
 
-export const TimelineControls = memo<TimelineControlsProps>(({
-    glowEnabled,
-    onGlowToggle,
-    showVisualEffects,
-    onShowVisualEffects,
+export const TimelineControls = memo<TimelineControlsProps>(({ 
     isMuted,
     volume,
     onVolumeButtonClick,
@@ -82,38 +64,12 @@ export const TimelineControls = memo<TimelineControlsProps>(({
     isLikePending,
     onLikeToggle,
     accentColor,
-    currentTrack,
-    onAccentColorChange,
-    customAccentColorOverrides,
-    onCustomAccentColor,
     isMobile,
     isTablet
 }) => {
     return (
         <TimelineControlsContainer>
             <TimelineLeft>
-                <EffectsControls
-                    glowEnabled={glowEnabled}
-                    onGlowToggle={onGlowToggle}
-                    showVisualEffects={showVisualEffects}
-                    onShowVisualEffects={onShowVisualEffects}
-                    accentColor={accentColor}
-                    isMobile={isMobile}
-                    isTablet={isTablet}
-                />
-
-                <Suspense fallback={<div style={{ width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>⚡</div>}>
-                    <ColorPickerPopover
-                        accentColor={accentColor}
-                        currentTrack={currentTrack}
-                        onAccentColorChange={onAccentColorChange}
-                        customAccentColorOverrides={customAccentColorOverrides}
-                        onCustomAccentColor={onCustomAccentColor}
-                        $isMobile={isMobile}
-                        $isTablet={isTablet}
-                    />
-                </Suspense>
-
                 <VolumeControl
                     isMuted={isMuted}
                     volume={volume}

@@ -2,7 +2,6 @@ import { memo } from 'react';
 import type { Track } from '../services/spotify';
 import { useSpotifyControls } from '../hooks/useSpotifyControls';
 import { usePlayerSizing } from '../hooks/usePlayerSizing';
-import { useCustomAccentColors } from '../hooks/useCustomAccentColors';
 import { PlayerControlsContainer } from './controls/styled';
 import TrackInfo from './controls/TrackInfo';
 import ControlsToolbar from './controls/ControlsToolbar';
@@ -25,15 +24,7 @@ const areControlsPropsEqual = (
     return false;
   }
 
-  // Check glow settings
-  if (prevProps.glowEnabled !== nextProps.glowEnabled) {
-    return false;
-  }
-
-  // Check visual effects state
-  if (prevProps.showVisualEffects !== nextProps.showVisualEffects) {
-    return false;
-  }
+  // Visual effects and glow are handled by the quick actions panel now
 
   // Check track count for playlist display
   if (prevProps.trackCount !== nextProps.trackCount) {
@@ -53,14 +44,7 @@ interface SpotifyPlayerControlsProps {
   onPause: () => void;
   onNext: () => void;
   onPrevious: () => void;
-  onShowPlaylist: () => void;
   trackCount: number;
-  onAccentColorChange?: (color: string) => void;
-  onShowVisualEffects?: () => void;
-  showVisualEffects?: boolean;
-  // Add glow control props
-  glowEnabled?: boolean;
-  onGlowToggle?: () => void;
 }
 
 // --- SpotifyPlayerControls Component ---
@@ -71,21 +55,11 @@ const SpotifyPlayerControls = memo<SpotifyPlayerControlsProps>(({
   onPause,
   onNext,
   onPrevious,
-  onShowPlaylist,
-  onAccentColorChange,
-  onShowVisualEffects,
-  showVisualEffects,
-  glowEnabled,
-  onGlowToggle
 }) => {
   // Get responsive sizing information
   const { isMobile, isTablet } = usePlayerSizing();
 
-  // Use custom accent colors hook
-  const { customAccentColorOverrides, handleCustomAccentColor, handleAccentColorChange } = useCustomAccentColors({
-    currentTrackId: currentTrack?.id,
-    onAccentColorChange
-  });
+  // Color picker and overrides are managed in the quick actions panel
 
   // Use Spotify controls hook
   const {
@@ -127,14 +101,9 @@ const SpotifyPlayerControls = memo<SpotifyPlayerControlsProps>(({
         accentColor={accentColor}
         isMobile={isMobile}
         isTablet={isTablet}
-        onShowPlaylist={onShowPlaylist}
       />
 
       <TimelineControls
-        glowEnabled={glowEnabled}
-        onGlowToggle={onGlowToggle}
-        showVisualEffects={showVisualEffects}
-        onShowVisualEffects={onShowVisualEffects}
         isMuted={isMuted}
         volume={volume}
         onVolumeButtonClick={handleVolumeButtonClick}
@@ -149,10 +118,6 @@ const SpotifyPlayerControls = memo<SpotifyPlayerControlsProps>(({
         isLikePending={isLikePending}
         onLikeToggle={handleLikeToggle}
         accentColor={accentColor}
-        currentTrack={currentTrack}
-        onAccentColorChange={handleAccentColorChange}
-        customAccentColorOverrides={customAccentColorOverrides}
-        onCustomAccentColor={handleCustomAccentColor}
         isMobile={isMobile}
         isTablet={isTablet}
       />
