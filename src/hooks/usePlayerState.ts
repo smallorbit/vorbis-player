@@ -316,12 +316,21 @@ export const usePlayerState = () => {
   useEffect(() => {
     const stored = localStorage.getItem('accentColorOverrides');
     if (stored) {
-      setAccentColorOverrides(JSON.parse(stored));
+      try {
+        setAccentColorOverrides(JSON.parse(stored));
+      } catch (error) {
+        console.warn('Failed to parse accent color overrides from localStorage:', error);
+        setAccentColorOverrides({});
+      }
     }
   }, []);
 
   useEffect(() => {
-    localStorage.setItem('accentColorOverrides', JSON.stringify(accentColorOverrides));
+    try {
+      localStorage.setItem('accentColorOverrides', JSON.stringify(accentColorOverrides));
+    } catch (error) {
+      console.warn('Failed to save accent color overrides to localStorage:', error);
+    }
   }, [accentColorOverrides]);
 
   useEffect(() => {
@@ -367,6 +376,26 @@ export const usePlayerState = () => {
     }
   }, [savedAlbumFilters]);
 
+  // Accent color helper methods
+  const handleSetAccentColorOverride = useCallback((trackId: string, color: string) => {
+    setAccentColorOverrides(prev => ({
+      ...prev,
+      [trackId]: color
+    }));
+  }, []);
+
+  const handleRemoveAccentColorOverride = useCallback((trackId: string) => {
+    setAccentColorOverrides(prev => {
+      const newOverrides = { ...prev };
+      delete newOverrides[trackId];
+      return newOverrides;
+    });
+  }, []);
+
+  const handleResetAccentColorOverride = useCallback((trackId: string) => {
+    handleRemoveAccentColorOverride(trackId);
+  }, [handleRemoveAccentColorOverride]);
+
   // Group related state for external consumption
   const trackState: TrackState = {
     tracks,
@@ -408,7 +437,10 @@ export const usePlayerState = () => {
 
   const colorActions = {
     setCurrent: setAccentColor,
-    setOverrides: setAccentColorOverrides
+    setOverrides: setAccentColorOverrides,
+    handleSetAccentColorOverride,
+    handleRemoveAccentColorOverride,
+    handleResetAccentColorOverride
   };
 
   const visualEffectsActions = {
@@ -462,5 +494,8 @@ export const usePlayerState = () => {
     handleFilterChange,
     handleResetFilters,
     restoreSavedFilters,
+    handleSetAccentColorOverride,
+    handleRemoveAccentColorOverride,
+    handleResetAccentColorOverride,
   };
 };

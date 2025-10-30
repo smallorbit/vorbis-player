@@ -6,6 +6,33 @@ import './services/spotifyPlayer';
 import { ThemeProvider } from './styles/ThemeProvider';
 import { flexCenter, buttonPrimary } from './styles/utils';
 
+/**
+ * Cleanup function to remove deprecated localStorage keys
+ * 
+ * This function removes the old 'customAccentColorOverrides' key from localStorage
+ * as part of the migration to unified accent color state management in usePlayerState.
+ * 
+ * @function cleanupDeprecatedLocalStorage
+ * @returns {void}
+ * 
+ * @throws {Error} If localStorage access fails
+ * 
+ * @example
+ * ```typescript
+ * // Called on app initialization
+ * cleanupDeprecatedLocalStorage();
+ * ```
+ */
+const cleanupDeprecatedLocalStorage = () => {
+  try {
+    // Remove the deprecated customAccentColorOverrides key
+    localStorage.removeItem('customAccentColorOverrides');
+    console.log('Cleaned up deprecated localStorage key: customAccentColorOverrides');
+  } catch (error) {
+    console.warn('Failed to clean up deprecated localStorage keys:', error);
+  }
+};
+
 const AppContainer = styled.div`
   color: ${({ theme }) => theme.colors.foreground};
   min-height: 100vh;
@@ -49,6 +76,9 @@ function App() {
   const [authError, setAuthError] = useState<string | null>(null);
 
   useEffect(() => {
+    // Clean up deprecated localStorage keys on app initialization
+    cleanupDeprecatedLocalStorage();
+
     const authenticate = async () => {
       try {
         if (window.location.pathname.includes('/auth/spotify/callback')) {

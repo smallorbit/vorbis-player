@@ -1,0 +1,572 @@
+{
+  "metadata": {
+    "project_name": "vorbis-player",
+    "scan_date": "2025-10-17T00:00:00Z",
+    "languages": ["TypeScript", "TSX", "JavaScript"],
+    "frameworks": ["React", "Vite", "styled-components", "Spotify Web API"],
+    "total_files_analyzed": 68,
+    "analysis_focus": "Anti-patterns, Code Smells, and Problematic Patterns"
+  },
+  "patterns": [
+    {
+      "category": "state-management",
+      "pattern_name": "Excessive State Fragmentation",
+      "pattern_type": "anti-pattern",
+      "description": "usePlayerState hook returns both grouped state objects AND individual legacy state variables, creating dual APIs and confusion about which to use",
+      "occurrences": 1,
+      "confidence": "high",
+      "severity": "high",
+      "examples": [
+        {
+          "file": "/Users/roman/src/vorbis-player/src/hooks/usePlayerState.ts",
+          "line_range": "424-465",
+          "code_snippet": "return {\n  // Grouped state\n  track: trackState,\n  playlist: playlistState,\n  color: colorState,\n  visualEffects: visualEffectsState,\n  actions: {...},\n  // Legacy individual state (for backward compatibility during migration)\n  tracks,\n  currentTrackIndex,\n  isLoading,\n  error,\n  selectedPlaylistId,\n  showPlaylist,\n  accentColor,\n  showVisualEffects,\n  visualEffectsEnabled,\n  perAlbumGlow,\n  accentColorOverrides,\n  albumFilters,\n  savedAlbumFilters,\n  setTracks,\n  setCurrentTrackIndex,\n  setIsLoading,\n  setError,\n  setSelectedPlaylistId,\n  setShowPlaylist,\n  setAccentColor,\n  setShowVisualEffects,\n  setVisualEffectsEnabled,\n  setPerAlbumGlow,\n  setAccentColorOverrides,\n  setAlbumFilters,\n  handleFilterChange,\n  handleResetFilters,\n  restoreSavedFilters,\n};"
+        }
+      ],
+      "variations": [],
+      "related_patterns": ["Incomplete Refactoring", "Dual API Pattern"],
+      "impact": "Creates confusion about which API to use, makes the codebase harder to maintain, increases bundle size",
+      "recommendation": "Complete the migration: either use only grouped state objects or remove them entirely. Avoid maintaining both APIs simultaneously. Consider a phased migration with clear deprecation warnings."
+    },
+    {
+      "category": "performance",
+      "pattern_name": "Excessive localStorage Access",
+      "pattern_type": "anti-pattern",
+      "description": "Multiple hooks independently access localStorage for similar data, causing redundant reads/writes and potential synchronization issues",
+      "occurrences": 23,
+      "confidence": "high",
+      "severity": "high",
+      "examples": [
+        {
+          "file": "/Users/roman/src/vorbis-player/src/hooks/usePlayerState.ts",
+          "line_range": "316-339",
+          "code_snippet": "useEffect(() => {\n  const stored = localStorage.getItem('accentColorOverrides');\n  if (stored) {\n    setAccentColorOverrides(JSON.parse(stored));\n  }\n}, []);\n\nuseEffect(() => {\n  localStorage.setItem('accentColorOverrides', JSON.stringify(accentColorOverrides));\n}, [accentColorOverrides]);\n\nuseEffect(() => {\n  localStorage.setItem('vorbis-player-album-filters', JSON.stringify(albumFilters));\n}, [albumFilters]);\n\nuseEffect(() => {\n  localStorage.setItem('vorbis-player-visual-effects-enabled', JSON.stringify(visualEffectsEnabled));\n}, [visualEffectsEnabled]);\n\nuseEffect(() => {\n  localStorage.setItem('vorbis-player-per-album-glow', JSON.stringify(perAlbumGlow));\n}, [perAlbumGlow]);"
+        },
+        {
+          "file": "/Users/roman/src/vorbis-player/src/hooks/useCustomAccentColors.ts",
+          "line_range": "14-29",
+          "code_snippet": "useEffect(() => {\n  const stored = localStorage.getItem('customAccentColorOverrides');\n  if (stored) {\n    try {\n      setCustomAccentColorOverrides(JSON.parse(stored));\n    } catch {\n      // ignore parse errors\n    }\n  }\n}, []);\n\nuseEffect(() => {\n  localStorage.setItem('customAccentColorOverrides', JSON.stringify(customAccentColorOverrides));\n}, [customAccentColorOverrides]);"
+        },
+        {
+          "file": "/Users/roman/src/vorbis-player/src/hooks/useVisualEffectsState.ts",
+          "line_range": "14-44",
+          "code_snippet": "const [glowIntensity, setGlowIntensity] = useState(() => {\n  const saved = localStorage.getItem('vorbis-player-glow-intensity');\n  return saved ? parseInt(saved, 10) : initialGlowIntensity;\n});\n\nconst [glowRate, setGlowRate] = useState(() => {\n  const saved = localStorage.getItem('vorbis-player-glow-rate');\n  return saved ? parseInt(saved, 10) : initialGlowRate;\n});\n\nconst handleGlowIntensityChange = useCallback((intensity: number) => {\n  setGlowIntensity(intensity);\n  setSavedGlowIntensity(intensity);\n  localStorage.setItem('vorbis-player-glow-intensity', intensity.toString());\n}, []);\n\nconst handleGlowRateChange = useCallback((rate: number) => {\n  setGlowRate(rate);\n  setSavedGlowRate(rate);\n  localStorage.setItem('vorbis-player-glow-rate', rate.toString());\n}, []);"
+        }
+      ],
+      "variations": ["Direct localStorage access in useState initializers", "Separate useEffect for each localStorage write", "Inconsistent key naming conventions"],
+      "related_patterns": ["Scattered Persistence Logic", "Missing Centralized Storage"],
+      "impact": "Performance degradation from excessive reads/writes, potential race conditions, difficult to debug storage issues, no storage quota management",
+      "recommendation": "Create a centralized storage hook (useLocalStorage) that provides a unified API, implements debouncing, handles errors consistently, and provides storage quota management. Consider using a library like 'use-local-storage-state' or implementing a custom solution with proper batching."
+    },
+    {
+      "category": "state-management",
+      "pattern_name": "Duplicate State Management",
+      "pattern_type": "anti-pattern",
+      "description": "Accent color overrides are managed in BOTH usePlayerState and useCustomAccentColors hooks, leading to potential synchronization issues",
+      "occurrences": 2,
+      "confidence": "high",
+      "severity": "critical",
+      "examples": [
+        {
+          "file": "/Users/roman/src/vorbis-player/src/hooks/usePlayerState.ts",
+          "line_range": "275-325",
+          "code_snippet": "const [accentColorOverrides, setAccentColorOverrides] = useState<Record<string, string>>({});\n\nuseEffect(() => {\n  const stored = localStorage.getItem('accentColorOverrides');\n  if (stored) {\n    setAccentColorOverrides(JSON.parse(stored));\n  }\n}, []);\n\nuseEffect(() => {\n  localStorage.setItem('accentColorOverrides', JSON.stringify(accentColorOverrides));\n}, [accentColorOverrides]);"
+        },
+        {
+          "file": "/Users/roman/src/vorbis-player/src/hooks/useCustomAccentColors.ts",
+          "line_range": "12-29",
+          "code_snippet": "const [customAccentColorOverrides, setCustomAccentColorOverrides] = useState<Record<string, string>>({});\n\nuseEffect(() => {\n  const stored = localStorage.getItem('customAccentColorOverrides');\n  if (stored) {\n    try {\n      setCustomAccentColorOverrides(JSON.parse(stored));\n    } catch {\n      // ignore parse errors\n    }\n  }\n}, []);\n\nuseEffect(() => {\n  localStorage.setItem('customAccentColorOverrides', JSON.stringify(customAccentColorOverrides));\n}, [customAccentColorOverrides]);"
+        }
+      ],
+      "variations": ["Different localStorage keys ('accentColorOverrides' vs 'customAccentColorOverrides')", "Different hook implementations for same data"],
+      "related_patterns": ["State Duplication", "Single Source of Truth Violation"],
+      "impact": "CRITICAL - Data can become out of sync, causing bugs where color changes don't persist correctly. Users may experience inconsistent behavior depending on which component they interact with.",
+      "recommendation": "IMMEDIATE FIX REQUIRED: Choose one hook to be the source of truth. Remove accent color override management from one of the hooks. Consider making useCustomAccentColors consume data from usePlayerState instead of managing its own state."
+    },
+    {
+      "category": "error-handling",
+      "pattern_name": "Silent Error Swallowing",
+      "pattern_type": "anti-pattern",
+      "description": "Multiple try-catch blocks that silently catch errors without proper logging or user notification",
+      "occurrences": 15,
+      "confidence": "high",
+      "severity": "medium",
+      "examples": [
+        {
+          "file": "/Users/roman/src/vorbis-player/src/hooks/useAutoAdvance.ts",
+          "line_range": "54-56",
+          "code_snippet": "} catch {\n  // Ignore polling errors\n}"
+        },
+        {
+          "file": "/Users/roman/src/vorbis-player/src/hooks/useCustomAccentColors.ts",
+          "line_range": "20-22",
+          "code_snippet": "} catch {\n  // ignore parse errors\n}"
+        },
+        {
+          "file": "/Users/roman/src/vorbis-player/src/hooks/usePlayerState.ts",
+          "line_range": "291-299",
+          "code_snippet": "try {\n  const parsed = JSON.parse(saved);\n  return {\n    brightness: parsed.brightness ?? 100,\n    contrast: parsed.contrast ?? 100,\n    saturation: parsed.saturation ?? 100,\n    hue: parsed.hue ?? 0,\n    blur: parsed.blur ?? 0,\n    sepia: parsed.sepia ?? 0\n  };\n} catch {\n  return {\n    brightness: 100,\n    contrast: 100,\n    saturation: 100,\n    hue: 0,\n    blur: 0,\n    sepia: 0\n  };\n}"
+        }
+      ],
+      "variations": ["Empty catch blocks", "Catch with only comment", "No error logging"],
+      "related_patterns": ["Missing Error Boundaries", "Poor Debugging Experience"],
+      "impact": "Makes debugging extremely difficult, users don't know when things fail, corrupted data can persist silently",
+      "recommendation": "Implement proper error logging with a logging service or at minimum console.error. Add error boundaries for component-level failures. Consider adding Sentry or similar for production error tracking. At minimum, log errors to console.error with context."
+    },
+    {
+      "category": "performance",
+      "pattern_name": "Polling Anti-Pattern",
+      "pattern_type": "anti-pattern",
+      "description": "Multiple setInterval polling mechanisms running simultaneously without coordination",
+      "occurrences": 3,
+      "confidence": "high",
+      "severity": "high",
+      "examples": [
+        {
+          "file": "/Users/roman/src/vorbis-player/src/hooks/useAutoAdvance.ts",
+          "line_range": "62",
+          "code_snippet": "pollIntervalRef.current = setInterval(checkForSongEnd, pollInterval) as unknown as number;"
+        },
+        {
+          "file": "/Users/roman/src/vorbis-player/src/hooks/useSpotifyControls.ts",
+          "line_range": "46",
+          "code_snippet": "const interval = setInterval(checkPlaybackState, 1000);"
+        }
+      ],
+      "variations": ["Different polling intervals (1000ms, 2000ms)", "Uncoordinated polling", "No shared state between pollers"],
+      "related_patterns": ["Excessive API Calls", "Battery Drain Pattern"],
+      "impact": "Unnecessary API calls, battery drain on mobile devices, potential race conditions, performance degradation",
+      "recommendation": "Implement a single centralized polling mechanism that coordinates all playback state checks. Use the Spotify SDK's event system instead of polling where possible. Consider using Web Workers for background polling. Add visibility API checks to stop polling when tab is hidden."
+    },
+    {
+      "category": "architectural",
+      "pattern_name": "Massive Hook Return Object",
+      "pattern_type": "code-smell",
+      "description": "usePlayerState hook returns 35+ values, making it difficult to use and maintain",
+      "occurrences": 1,
+      "confidence": "high",
+      "severity": "high",
+      "examples": [
+        {
+          "file": "/Users/roman/src/vorbis-player/src/hooks/usePlayerState.ts",
+          "line_range": "424-465",
+          "code_snippet": "return { /* 35+ properties */ }"
+        }
+      ],
+      "variations": [],
+      "related_patterns": ["God Object", "Single Responsibility Violation"],
+      "impact": "Difficult to understand what the hook does, encourages tight coupling, makes testing harder, increases re-render surface area",
+      "recommendation": "Split into smaller, focused hooks: useTrackState, usePlaylistState, useColorState, useVisualEffectsState. Each should have a clear, single responsibility. Components should only consume the hooks they need."
+    },
+    {
+      "category": "react-specific",
+      "pattern_name": "useEffect Dependency Array Issues",
+      "pattern_type": "anti-pattern",
+      "description": "Multiple useEffect hooks with incomplete or missing dependencies, causing stale closures and bugs",
+      "occurrences": 49,
+      "confidence": "medium",
+      "severity": "high",
+      "examples": [
+        {
+          "file": "/Users/roman/src/vorbis-player/src/components/AudioPlayer.tsx",
+          "line_range": "106-119",
+          "code_snippet": "useEffect(() => {\n  const handlePlayerStateChange = (state: SpotifyPlaybackState | null) => {\n    if (state && state.track_window.current_track) {\n      const currentTrack = state.track_window.current_track;\n      const trackIndex = tracks.findIndex(track => track.id === currentTrack.id);\n\n      if (trackIndex !== -1 && trackIndex !== currentTrackIndex) {\n        setCurrentTrackIndex(trackIndex);\n      }\n    }\n  };\n\n  spotifyPlayer.onPlayerStateChanged(handlePlayerStateChange);\n}, [tracks, currentTrackIndex, setCurrentTrackIndex]);"
+        }
+      ],
+      "variations": ["Missing cleanup functions", "Stale closure captures", "Re-registering listeners unnecessarily"],
+      "related_patterns": ["Stale Closure Pattern", "Memory Leaks"],
+      "impact": "Causes bugs with stale data, memory leaks from uncleaned listeners, unnecessary re-renders, difficult to debug timing issues",
+      "recommendation": "Audit all useEffect hooks with ESLint's exhaustive-deps rule. Add proper cleanup functions for event listeners and subscriptions. Consider using useCallback for stable function references. Use useRef for values that shouldn't trigger re-renders."
+    },
+    {
+      "category": "architectural",
+      "pattern_name": "Prop Drilling",
+      "pattern_type": "anti-pattern",
+      "description": "Deep prop drilling through multiple component layers, especially for handlers and UI state",
+      "occurrences": 8,
+      "confidence": "high",
+      "severity": "medium",
+      "examples": [
+        {
+          "file": "/Users/roman/src/vorbis-player/src/components/AudioPlayer.tsx",
+          "line_range": "194-229",
+          "code_snippet": "return (\n  <PlayerContent\n    track={{...}}\n    ui={{...}}\n    effects={{...}}\n    handlers={{\n      onPlay: handlePlay,\n      onPause: handlePause,\n      onNext: handleNext,\n      onPrevious: handlePrevious,\n      onShowPlaylist: handleShowPlaylist,\n      onShowVisualEffects: handleShowVisualEffects,\n      onCloseVisualEffects: handleCloseVisualEffects,\n      onClosePlaylist: handleClosePlaylist,\n      onTrackSelect: playTrack,\n      onAccentColorChange: handleAccentColorChange,\n      onGlowToggle: handleVisualEffectsToggle,\n      onFilterChange: handleFilterChange,\n      onResetFilters: handleResetFilters,\n      onGlowIntensityChange: handleGlowIntensityChange,\n      onGlowRateChange: handleGlowRateChange\n    }}\n  />\n);"
+        }
+      ],
+      "variations": ["Handler prop drilling", "State prop drilling", "Grouped props for organization"],
+      "related_patterns": ["Missing Context API Usage", "Over-Componentization"],
+      "impact": "Makes components tightly coupled, difficult to refactor, props become difficult to track, increases chance of bugs when component tree changes",
+      "recommendation": "Implement React Context for widely-used state like UI state (showPlaylist, showVisualEffects). Consider using a state management library (Zustand, Jotai) for global state. Group related handlers into context providers."
+    },
+    {
+      "category": "error-handling",
+      "pattern_name": "Excessive Console.log/error Usage",
+      "pattern_type": "code-smell",
+      "description": "59 console.log/error statements scattered throughout the codebase, many in production code",
+      "occurrences": 59,
+      "confidence": "high",
+      "severity": "medium",
+      "examples": [
+        {
+          "file": "/Users/roman/src/vorbis-player/src/services/spotifyPlayer.ts",
+          "line_range": "9-79",
+          "code_snippet": "console.log('Spotify SDK ready callback triggered');\nconsole.log('Spotify SDK already available, initializing player');\nconsole.log('Waiting for Spotify SDK to load...');\nconsole.error('Spotify SDK failed to load within timeout');\nconsole.log('🎵 Spotify player ready with device ID:', device_id);\nconsole.log('Device ID has gone offline', device_id);\nconsole.error('Failed to initialize', message);\nconsole.error('Failed to authenticate', message);\nconsole.error('Failed to validate Spotify account', message);\nconsole.error('Failed to perform playback', message);"
+        }
+      ],
+      "variations": ["Debug logs left in production", "No log levels", "Emoji logs", "Inconsistent error reporting"],
+      "related_patterns": ["Missing Logging Framework", "Debug Code in Production"],
+      "impact": "Performance overhead in production, console clutter, potential security issues (logging sensitive data), no ability to filter logs",
+      "recommendation": "Implement a proper logging service with log levels (debug, info, warn, error). Use environment variables to control logging in production. Consider using a library like 'loglevel' or 'winston'. Remove or gate debug logs behind development mode checks."
+    },
+    {
+      "category": "async-patterns",
+      "pattern_name": "Callback Hell / Nested Timeouts",
+      "pattern_type": "anti-pattern",
+      "description": "Deeply nested setTimeout calls and try-catch blocks creating callback hell",
+      "occurrences": 5,
+      "confidence": "high",
+      "severity": "high",
+      "examples": [
+        {
+          "file": "/Users/roman/src/vorbis-player/src/hooks/usePlaylistManager.ts",
+          "line_range": "71-105",
+          "code_snippet": "setTimeout(async () => {\n  try {\n    await playTrack(0);\n  } catch (error) {\n    console.error('Failed to start playback:', error);\n    try {\n      const token = await spotifyAuth.ensureValidToken();\n      const deviceId = spotifyPlayer.getDeviceId();\n\n      if (deviceId) {\n        await fetch('https://api.spotify.com/v1/me/player', {\n          method: 'PUT',\n          headers: {\n            'Authorization': `Bearer ${token}`,\n            'Content-Type': 'application/json'\n          },\n          body: JSON.stringify({\n            device_ids: [deviceId],\n            play: true\n          })\n        });\n\n        setTimeout(async () => {\n          try {\n            await playTrack(0);\n          } catch (retryError) {\n            console.error('Failed to play track after recovery attempt:', retryError);\n          }\n        }, 1000);\n      }\n    } catch (recoveryError) {\n      console.error('Recovery attempt failed:', recoveryError);\n    }\n  }\n}, 1000);"
+        },
+        {
+          "file": "/Users/roman/src/vorbis-player/src/hooks/useSpotifyPlayback.ts",
+          "line_range": "64-66",
+          "code_snippet": "setTimeout(async () => {\n  await handlePlaybackResume();\n}, 1500);"
+        }
+      ],
+      "variations": ["Arbitrary timeout values (500ms, 1000ms, 1500ms)", "Nested error handling", "No cancellation mechanism"],
+      "related_patterns": ["Race Conditions", "Missing Promise Composition"],
+      "impact": "Unpredictable behavior, race conditions, difficult to test, can't cancel in-flight operations, hard to reason about timing",
+      "recommendation": "Replace setTimeout chains with proper async/await patterns. Implement retry logic with exponential backoff. Use Promise.race for timeout handling. Consider using a state machine for complex async flows. Add cancellation tokens for cleanup."
+    },
+    {
+      "category": "typescript",
+      "pattern_name": "Type Assertion Overuse",
+      "pattern_type": "code-smell",
+      "description": "Excessive use of 'as unknown as number' and other type assertions to bypass type checking",
+      "occurrences": 6,
+      "confidence": "high",
+      "severity": "medium",
+      "examples": [
+        {
+          "file": "/Users/roman/src/vorbis-player/src/hooks/useAutoAdvance.ts",
+          "line_range": "62",
+          "code_snippet": "pollIntervalRef.current = setInterval(checkForSongEnd, pollInterval) as unknown as number;"
+        }
+      ],
+      "variations": ["'as unknown as type' double assertion", "Browser API type mismatches"],
+      "related_patterns": ["Type Safety Bypass", "Missing Type Definitions"],
+      "impact": "Defeats the purpose of TypeScript, can hide real type errors, makes refactoring dangerous",
+      "recommendation": "Fix the root type issues rather than using assertions. For setInterval, use proper NodeJS.Timeout type or number type depending on environment. Create proper type definitions for browser APIs. Use type guards instead of assertions where possible."
+    },
+    {
+      "category": "testing",
+      "pattern_name": "Severely Inadequate Test Coverage",
+      "pattern_type": "anti-pattern",
+      "description": "Only 3 test files for 68 source files, critical hooks and components completely untested",
+      "occurrences": 1,
+      "confidence": "high",
+      "severity": "critical",
+      "examples": [
+        {
+          "file": "/Users/roman/src/vorbis-player/src",
+          "line_range": "N/A",
+          "code_snippet": "Test files: 3\nSource files: 68\nCoverage estimate: < 5%\n\nNo tests for:\n- usePlayerState (465 lines, critical)\n- useSpotifyPlayback\n- useAutoAdvance\n- AudioPlayer component\n- PlayerContent component\n- All control components"
+        }
+      ],
+      "variations": [],
+      "related_patterns": ["Untestable Code", "High Risk Refactoring"],
+      "impact": "CRITICAL - Any refactoring is extremely risky, bugs likely to go unnoticed, difficult to maintain, regression risk is very high",
+      "recommendation": "URGENT: Implement comprehensive test suite. Start with critical paths: playback logic, state management hooks, error handling. Use React Testing Library for components. Mock Spotify API calls. Aim for at least 70% coverage on hooks and 50% on components. Add integration tests for key user flows."
+    },
+    {
+      "category": "architectural",
+      "pattern_name": "Service Singleton Pattern Without Dependency Injection",
+      "pattern_type": "anti-pattern",
+      "description": "SpotifyAuth and SpotifyPlayer exported as singletons, making testing difficult and creating hidden dependencies",
+      "occurrences": 2,
+      "confidence": "high",
+      "severity": "medium",
+      "examples": [
+        {
+          "file": "/Users/roman/src/vorbis-player/src/services/spotify.ts",
+          "line_range": "443",
+          "code_snippet": "export const spotifyAuth = new SpotifyAuth();"
+        },
+        {
+          "file": "/Users/roman/src/vorbis-player/src/services/spotifyPlayer.ts",
+          "line_range": "257",
+          "code_snippet": "export const spotifyPlayer = new SpotifyPlayerService();"
+        }
+      ],
+      "variations": ["Module-level singleton instantiation", "No way to inject mock instances"],
+      "related_patterns": ["Untestable Code", "Hidden Dependencies"],
+      "impact": "Makes unit testing extremely difficult, can't mock for tests, can't have multiple instances if needed, tight coupling throughout the app",
+      "recommendation": "Implement dependency injection using React Context. Create SpotifyAuthProvider and SpotifyPlayerProvider components. Export hooks (useSpotifyAuth, useSpotifyPlayer) instead of singletons. This will make testing much easier and reduce coupling."
+    },
+    {
+      "category": "performance",
+      "pattern_name": "Missing Memoization for Expensive Computations",
+      "pattern_type": "code-smell",
+      "description": "Expensive operations like color extraction and image processing not properly memoized at component level",
+      "occurrences": 8,
+      "confidence": "medium",
+      "severity": "medium",
+      "examples": [
+        {
+          "file": "/Users/roman/src/vorbis-player/src/hooks/useAccentColor.ts",
+          "line_range": "110-138",
+          "code_snippet": "useEffect(() => {\n  if (!currentTrack) {\n    setAccentColor(theme.colors.accent);\n    return;\n  }\n\n  if (currentTrack.id && accentColorOverrides[currentTrack.id]) {\n    setAccentColor(accentColorOverrides[currentTrack.id]);\n    return;\n  }\n\n  if (currentTrack.image) {\n    extractDominantColor(currentTrack.image)\n      .then(dominantColor => {\n        if (dominantColor) {\n          setAccentColor(dominantColor.hex);\n        } else {\n          setAccentColor(theme.colors.accent);\n        }\n      })\n      .catch(() => {\n        setAccentColor(theme.colors.accent);\n      });\n  } else {\n    setAccentColor(theme.colors.accent);\n  }\n}, [currentTrack, accentColorOverrides, setAccentColor]);"
+        }
+      ],
+      "variations": ["Re-extracting colors on every component mount", "No React.memo on expensive components"],
+      "related_patterns": ["Unnecessary Re-renders", "Performance Degradation"],
+      "impact": "Unnecessary work being repeated, slower UI interactions, battery drain, poor mobile performance",
+      "recommendation": "Add React.memo to expensive components with custom comparison functions. Use useMemo for expensive calculations. Ensure color extraction cache is properly utilized. Profile with React DevTools to identify hot paths."
+    },
+    {
+      "category": "code-organization",
+      "pattern_name": "Inconsistent File Naming and Organization",
+      "pattern_type": "code-smell",
+      "description": "Mix of naming conventions and unclear component organization",
+      "occurrences": 10,
+      "confidence": "medium",
+      "severity": "low",
+      "examples": [
+        {
+          "file": "/Users/roman/src/vorbis-player/src/components",
+          "line_range": "N/A",
+          "code_snippet": "Components mixed with sub-folders:\n- /components/AudioPlayer.tsx\n- /components/controls/ControlsToolbar.tsx\n- /components/styled/Button.tsx\n- /components/ui/scroll-area.tsx\n\nInconsistent naming:\n- Some use PascalCase folders (ThemeProvider)\n- Some use kebab-case (scroll-area)\n- Some use camelCase (styled)"
+        }
+      ],
+      "variations": ["Mix of folder structures", "Inconsistent file naming", "No clear hierarchy"],
+      "related_patterns": ["Poor Code Organization", "Difficult Navigation"],
+      "impact": "Harder to find files, inconsistent developer experience, difficult for new developers to onboard",
+      "recommendation": "Establish and document a clear file organization convention. Use consistent naming (e.g., all PascalCase for components, all kebab-case for utilities). Group related components in feature folders. Consider using barrel exports (index.ts) for cleaner imports."
+    },
+    {
+      "category": "react-specific",
+      "pattern_name": "Missing Error Boundaries",
+      "pattern_type": "anti-pattern",
+      "description": "No error boundaries implemented, meaning any component error crashes the entire app",
+      "occurrences": 0,
+      "confidence": "high",
+      "severity": "high",
+      "examples": [
+        {
+          "file": "/Users/roman/src/vorbis-player/src",
+          "line_range": "N/A",
+          "code_snippet": "No ErrorBoundary components found in the codebase. Any unhandled error will crash the entire app."
+        }
+      ],
+      "variations": [],
+      "related_patterns": ["Poor Error Handling", "Bad User Experience"],
+      "impact": "Any runtime error crashes the entire app, poor user experience, no graceful degradation, difficult to debug production issues",
+      "recommendation": "Implement error boundaries at key component boundaries (AudioPlayer, PlayerContent, VisualEffectsMenu). Add a global error boundary at the app root. Log errors to a monitoring service. Show user-friendly error messages with recovery options."
+    },
+    {
+      "category": "async-patterns",
+      "pattern_name": "Race Conditions in State Updates",
+      "pattern_type": "anti-pattern",
+      "description": "Multiple async operations updating the same state without coordination, leading to race conditions",
+      "occurrences": 7,
+      "confidence": "high",
+      "severity": "high",
+      "examples": [
+        {
+          "file": "/Users/roman/src/vorbis-player/src/hooks/useAccentColor.ts",
+          "line_range": "149-186",
+          "code_snippet": "const handleAccentColorChange = useCallback((color: string) => {\n  if (color === 'auto') {\n    if (currentTrack?.id) {\n      setAccentColorOverrides(prev => {\n        const newOverrides = { ...prev };\n        delete newOverrides[currentTrack.id];\n        return newOverrides;\n      });\n    }\n\n    if (currentTrack?.image) {\n      extractDominantColor(currentTrack.image)\n        .then(dominantColor => {\n          if (dominantColor) {\n            setAccentColor(dominantColor.hex);\n          } else {\n            setAccentColor(theme.colors.accent);\n          }\n        })\n        .catch(() => {\n          setAccentColor(theme.colors.accent);\n        });\n    } else {\n      setAccentColor(theme.colors.accent);\n    }\n    return;\n  }\n\n  if (currentTrack?.id) {\n    setAccentColorOverrides(prev => ({ ...prev, [currentTrack.id]: color }));\n    setAccentColor(color);\n  } else {\n    setAccentColor(color);\n  }\n}, [currentTrack?.id, currentTrack?.image, setAccentColorOverrides, setAccentColor]);"
+        }
+      ],
+      "variations": ["No cancellation of in-flight async operations", "State updates from multiple sources", "No request deduplication"],
+      "related_patterns": ["Stale State", "Inconsistent UI"],
+      "impact": "UI flickering, inconsistent state, user sees outdated data, difficult to reproduce bugs",
+      "recommendation": "Implement proper async state management with cancellation. Use AbortController for fetch requests. Add request deduplication for color extraction. Consider using a state machine library (XState) for complex async flows. Add loading states to prevent conflicting updates."
+    }
+  ],
+  "conventions": {
+    "naming": {
+      "hooks": "Consistent use of 'use' prefix for hooks",
+      "components": "Mix of default and named exports",
+      "files": "Inconsistent - mix of PascalCase and kebab-case",
+      "localStorage_keys": "Inconsistent - 'vorbis-player-*' prefix sometimes used, sometimes not"
+    },
+    "file_organization": {
+      "structure": "Mixed - some components in folders, some flat",
+      "imports": "Mix of absolute and relative imports",
+      "exports": "Inconsistent - some default, some named",
+      "index_files": "Missing barrel exports in most folders"
+    },
+    "imports": {
+      "style": "Mix of destructured and namespace imports",
+      "ordering": "No consistent import ordering pattern",
+      "aliases": "Uses '@' alias for 'src', but not consistently"
+    }
+  },
+  "inconsistencies": [
+    {
+      "type": "state-management",
+      "description": "Two different localStorage keys for the same accent color data: 'accentColorOverrides' and 'customAccentColorOverrides'",
+      "locations": [
+        "/Users/roman/src/vorbis-player/src/hooks/usePlayerState.ts",
+        "/Users/roman/src/vorbis-player/src/hooks/useCustomAccentColors.ts"
+      ],
+      "severity": "critical"
+    },
+    {
+      "type": "api-interface",
+      "description": "usePlayerState returns both grouped state objects (track, playlist, color, visualEffects) AND individual legacy properties, creating confusion",
+      "locations": [
+        "/Users/roman/src/vorbis-player/src/hooks/usePlayerState.ts"
+      ],
+      "severity": "high"
+    },
+    {
+      "type": "error-handling",
+      "description": "Inconsistent error handling - some places use console.error, some silently swallow errors, no unified error reporting",
+      "locations": [
+        "/Users/roman/src/vorbis-player/src/hooks/useAutoAdvance.ts",
+        "/Users/roman/src/vorbis-player/src/hooks/useCustomAccentColors.ts",
+        "/Users/roman/src/vorbis-player/src/hooks/usePlayerState.ts"
+      ],
+      "severity": "high"
+    },
+    {
+      "type": "naming-convention",
+      "description": "localStorage keys inconsistently prefixed - some with 'vorbis-player-', some without",
+      "locations": [
+        "/Users/roman/src/vorbis-player/src/hooks/usePlayerState.ts",
+        "/Users/roman/src/vorbis-player/src/hooks/useVisualEffectsState.ts",
+        "/Users/roman/src/vorbis-player/src/hooks/useCustomAccentColors.ts"
+      ],
+      "severity": "low"
+    },
+    {
+      "type": "polling-pattern",
+      "description": "Multiple uncoordinated polling intervals - useAutoAdvance polls every 2s, useSpotifyControls polls every 1s",
+      "locations": [
+        "/Users/roman/src/vorbis-player/src/hooks/useAutoAdvance.ts",
+        "/Users/roman/src/vorbis-player/src/hooks/useSpotifyControls.ts"
+      ],
+      "severity": "high"
+    },
+    {
+      "type": "component-structure",
+      "description": "Inconsistent component structure - some use default exports, some use named exports with memo",
+      "locations": [
+        "/Users/roman/src/vorbis-player/src/components/AudioPlayer.tsx",
+        "/Users/roman/src/vorbis-player/src/components/SpotifyPlayerControls.tsx"
+      ],
+      "severity": "low"
+    }
+  ],
+  "recommendations": [
+    {
+      "area": "Critical State Management Bug",
+      "suggestion": "IMMEDIATE: Fix duplicate accent color override state in usePlayerState and useCustomAccentColors. Choose one as the source of truth.",
+      "priority": "critical",
+      "estimated_effort": "2-4 hours",
+      "risk": "high"
+    },
+    {
+      "area": "Test Coverage",
+      "suggestion": "URGENT: Add comprehensive test coverage starting with critical hooks (usePlayerState, useSpotifyPlayback, useAutoAdvance). Target 70% coverage minimum.",
+      "priority": "critical",
+      "estimated_effort": "2-3 weeks",
+      "risk": "low"
+    },
+    {
+      "area": "localStorage Management",
+      "suggestion": "Create centralized useLocalStorage hook to manage all persistent state with proper error handling, batching, and quota management.",
+      "priority": "high",
+      "estimated_effort": "1 week",
+      "risk": "medium"
+    },
+    {
+      "area": "Polling Coordination",
+      "suggestion": "Implement single coordinated polling mechanism for playback state instead of multiple uncoordinated intervals.",
+      "priority": "high",
+      "estimated_effort": "3-5 days",
+      "risk": "medium"
+    },
+    {
+      "area": "Error Boundaries",
+      "suggestion": "Add error boundaries at key component boundaries with proper error logging and user feedback.",
+      "priority": "high",
+      "estimated_effort": "2-3 days",
+      "risk": "low"
+    },
+    {
+      "area": "State Hook Refactoring",
+      "suggestion": "Split usePlayerState into smaller, focused hooks (useTrackState, usePlaylistState, etc.) OR remove the grouped state objects entirely.",
+      "priority": "high",
+      "estimated_effort": "1 week",
+      "risk": "high"
+    },
+    {
+      "area": "Dependency Injection",
+      "suggestion": "Refactor singleton services (spotifyAuth, spotifyPlayer) to use React Context for better testability and flexibility.",
+      "priority": "medium",
+      "estimated_effort": "1 week",
+      "risk": "medium"
+    },
+    {
+      "area": "Async Flow Management",
+      "suggestion": "Replace nested setTimeout callbacks with proper async/await patterns and implement request cancellation.",
+      "priority": "medium",
+      "estimated_effort": "1 week",
+      "risk": "medium"
+    },
+    {
+      "area": "Logging Infrastructure",
+      "suggestion": "Implement proper logging service with log levels, remove console.log from production, add production error monitoring.",
+      "priority": "medium",
+      "estimated_effort": "3-5 days",
+      "risk": "low"
+    },
+    {
+      "area": "Performance Optimization",
+      "suggestion": "Add React.memo to expensive components, profile with React DevTools, optimize re-render patterns.",
+      "priority": "medium",
+      "estimated_effort": "1 week",
+      "risk": "low"
+    },
+    {
+      "area": "Code Organization",
+      "suggestion": "Establish and document consistent file naming and organization conventions. Add barrel exports for cleaner imports.",
+      "priority": "low",
+      "estimated_effort": "2-3 days",
+      "risk": "low"
+    },
+    {
+      "area": "TypeScript Strictness",
+      "suggestion": "Remove type assertions, fix root type issues, enable stricter TypeScript compiler options.",
+      "priority": "low",
+      "estimated_effort": "1 week",
+      "risk": "low"
+    }
+  ],
+  "summary": {
+    "critical_issues": 3,
+    "high_severity_issues": 10,
+    "medium_severity_issues": 6,
+    "low_severity_issues": 2,
+    "total_anti_patterns": 17,
+    "test_coverage_estimate": "< 5%",
+    "maintainability_score": "3/10",
+    "technical_debt_level": "High",
+    "refactoring_risk": "Very High (due to lack of tests)",
+    "most_problematic_areas": [
+      "State management duplication and fragmentation",
+      "Inadequate test coverage",
+      "Uncoordinated polling mechanisms",
+      "Missing error boundaries and poor error handling",
+      "Excessive localStorage access without coordination"
+    ]
+  }
+}
