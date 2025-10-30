@@ -37,6 +37,8 @@ const PanelContainer = styled.div`
   border-right: none;
   border-top-left-radius: ${theme.borderRadius.lg};
   border-bottom-left-radius: ${theme.borderRadius.lg};
+  border-top-right-radius: ${theme.borderRadius.lg};
+  border-bottom-right-radius: ${theme.borderRadius.lg};
   box-shadow: 0 4px 20px rgba(0,0,0,0.35);
   backdrop-filter: blur(${theme.drawer.backdropBlur});
 `;
