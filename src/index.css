@@ -35,7 +35,6 @@ a:hover {
 
 body {
   margin: 0;
-  min-width: 585px;
   min-height: 100vh;
   
   /* Mobile viewport optimizations */
@@ -139,10 +138,6 @@ input[type="range"]::-moz-range-track {
 
 /* Mobile viewport optimizations */
 @media (max-width: calc(var(--breakpoint-lg) - 1px)) {
-  body {
-    min-width: var(--breakpoint-xs); /* Allow smaller minimum width on mobile */
-  }
-  
   #root {
     /* Ensure full viewport usage on mobile */
     min-height: 100vh;
@@ -152,10 +147,6 @@ input[type="range"]::-moz-range-track {
 
 /* Tablet viewport optimizations */
 @media (min-width: var(--breakpoint-lg)) and (max-width: calc(var(--breakpoint-xl) - 1px)) {
-  body {
-    min-width: var(--breakpoint-md); /* Slightly larger minimum width for tablets */
-  }
-  
   #root {
     /* Optimize viewport usage for tablets */
     min-height: 100vh;
