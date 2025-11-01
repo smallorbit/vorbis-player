@@ -2,8 +2,9 @@
 
 A React-based Spotify music player with visual effects and album art display.
 
-<img src="src/assets/screenshot-player.png" alt="Vorbis Player" width="600">
-<img src="src/assets/screenshot-playlist.png" alt="Vorbis Player - Playlist" width="600">
+<img src="src/assets/vorbis-player-full-screenshot.png" alt="Vorbis Player (Full)" width="600">
+<img src="src/assets/vorbis-player-playlist-screenshot.png" alt="Vorbis Player - Playlist" width="600">
+<img src="src/assets/vorbis-player-art-only-screenshot.png" alt="Vorbis Player - Playlist" width="600">
 
 ## Features
 
