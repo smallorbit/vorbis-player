@@ -235,7 +235,7 @@ const PlayerContainer = styled.div.withConfig({
   flex-direction: column;
   width: 100%;
   transition: transform ${props => props.transitionDuration}ms ${props => props.transitionEasing};
-  transform: ${props => props.controlsVisible ? 'translateY(-1rem)' : 'translateY(0)'};
+  transform: ${props => props.controlsVisible ? 'translateY(-3rem)' : 'translateY(0)'};
 `;
 
 // Album art container with click handler
