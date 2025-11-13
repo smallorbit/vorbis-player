@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useCallback } from 'react';
+import { useEffect, useMemo, useCallback, useState } from 'react';
 import styled from 'styled-components';
 import { spotifyAuth } from '../services/spotify';
 import { spotifyPlayer } from '../services/spotifyPlayer';
 import { flexCenter } from '../styles/utils';
 import PlayerStateRenderer from './PlayerStateRenderer';
 import PlayerContent from './PlayerContent';
+import BackgroundVisualizer from './BackgroundVisualizer';
 import { usePlayerState } from '../hooks/usePlayerState';
 import { usePlaylistManager } from '../hooks/usePlaylistManager';
 import { useSpotifyPlayback } from '../hooks/useSpotifyPlayback';
@@ -37,6 +38,9 @@ const AudioPlayerComponent = () => {
     visualEffectsEnabled,
     accentColorOverrides,
     albumFilters,
+    backgroundVisualizerEnabled,
+    backgroundVisualizerStyle,
+    backgroundVisualizerIntensity,
     setTracks,
     setCurrentTrackIndex,
     setIsLoading,
@@ -51,6 +55,10 @@ const AudioPlayerComponent = () => {
     handleResetFilters,
     restoreSavedFilters,
   } = usePlayerState();
+
+  // Playback state for visualizer
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [playbackPosition, setPlaybackPosition] = useState(0);
 
   // Visual effects state management
   const {
@@ -105,17 +113,37 @@ const AudioPlayerComponent = () => {
 
   useEffect(() => {
     const handlePlayerStateChange = (state: SpotifyPlaybackState | null) => {
-      if (state && state.track_window.current_track) {
-        const currentTrack = state.track_window.current_track;
-        const trackIndex = tracks.findIndex(track => track.id === currentTrack.id);
+      if (state) {
+        // Update playback state for visualizer
+        setIsPlaying(!state.paused);
+        setPlaybackPosition(state.position);
 
-        if (trackIndex !== -1 && trackIndex !== currentTrackIndex) {
-          setCurrentTrackIndex(trackIndex);
+        // Update track index if track changed
+        if (state.track_window.current_track) {
+          const currentTrack = state.track_window.current_track;
+          const trackIndex = tracks.findIndex(track => track.id === currentTrack.id);
+
+          if (trackIndex !== -1 && trackIndex !== currentTrackIndex) {
+            setCurrentTrackIndex(trackIndex);
+          }
         }
+      } else {
+        setIsPlaying(false);
+        setPlaybackPosition(0);
       }
     };
 
     spotifyPlayer.onPlayerStateChanged(handlePlayerStateChange);
+
+    // Also check initial state
+    const checkInitialState = async () => {
+      const state = await spotifyPlayer.getCurrentState();
+      if (state) {
+        setIsPlaying(!state.paused);
+        setPlaybackPosition(state.position);
+      }
+    };
+    checkInitialState();
   }, [tracks, currentTrackIndex, setCurrentTrackIndex]);
 
 
@@ -231,6 +259,14 @@ const AudioPlayerComponent = () => {
 
   return (
     <Container>
+      <BackgroundVisualizer
+        enabled={backgroundVisualizerEnabled}
+        style={backgroundVisualizerStyle}
+        intensity={backgroundVisualizerIntensity}
+        accentColor={accentColor}
+        isPlaying={isPlaying}
+        playbackPosition={playbackPosition}
+      />
       {renderContent()}
     </Container>
   );

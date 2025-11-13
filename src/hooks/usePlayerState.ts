@@ -67,6 +67,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { Track } from '../services/spotify';
 import { theme } from '@/styles/theme';
+import type { VisualizerStyle } from '../types/visualizer';
 
 /**
  * Album image processing filters interface
@@ -312,6 +313,22 @@ export const usePlayerState = () => {
   // Saved filter preset
   const [savedAlbumFilters, setSavedAlbumFilters] = useState<AlbumFilters | null>(null);
 
+  // Background visualizer state with persistence
+  const [backgroundVisualizerEnabled, setBackgroundVisualizerEnabled] = useState<boolean>(() => {
+    const saved = localStorage.getItem('vorbis-player-background-visualizer-enabled');
+    return saved ? JSON.parse(saved) : false;
+  });
+
+  const [backgroundVisualizerStyle, setBackgroundVisualizerStyle] = useState<VisualizerStyle>(() => {
+    const saved = localStorage.getItem('vorbis-player-background-visualizer-style');
+    return (saved as VisualizerStyle) || 'particles';
+  });
+
+  const [backgroundVisualizerIntensity, setBackgroundVisualizerIntensity] = useState<number>(() => {
+    const saved = localStorage.getItem('vorbis-player-background-visualizer-intensity');
+    return saved ? parseInt(saved, 10) : 60;
+  });
+
   // Load accent color overrides from localStorage on mount
   useEffect(() => {
     const stored = localStorage.getItem('accentColorOverrides');
@@ -346,6 +363,19 @@ export const usePlayerState = () => {
   useEffect(() => {
     localStorage.setItem('vorbis-player-per-album-glow', JSON.stringify(perAlbumGlow));
   }, [perAlbumGlow]);
+
+  // Background visualizer persistence
+  useEffect(() => {
+    localStorage.setItem('vorbis-player-background-visualizer-enabled', JSON.stringify(backgroundVisualizerEnabled));
+  }, [backgroundVisualizerEnabled]);
+
+  useEffect(() => {
+    localStorage.setItem('vorbis-player-background-visualizer-style', backgroundVisualizerStyle);
+  }, [backgroundVisualizerStyle]);
+
+  useEffect(() => {
+    localStorage.setItem('vorbis-player-background-visualizer-intensity', backgroundVisualizerIntensity.toString());
+  }, [backgroundVisualizerIntensity]);
 
   const handleFilterChange = useCallback((filterName: string, value: number | boolean) => {
     setAlbumFilters(prev => {
@@ -479,6 +509,9 @@ export const usePlayerState = () => {
     accentColorOverrides,
     albumFilters,
     savedAlbumFilters,
+    backgroundVisualizerEnabled,
+    backgroundVisualizerStyle,
+    backgroundVisualizerIntensity,
     setTracks,
     setCurrentTrackIndex,
     setIsLoading,
@@ -491,6 +524,9 @@ export const usePlayerState = () => {
     setPerAlbumGlow,
     setAccentColorOverrides,
     setAlbumFilters,
+    setBackgroundVisualizerEnabled,
+    setBackgroundVisualizerStyle,
+    setBackgroundVisualizerIntensity,
     handleFilterChange,
     handleResetFilters,
     restoreSavedFilters,
