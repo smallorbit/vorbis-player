@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import styled from 'styled-components';
 import type { VisualizerStyle } from '../types/visualizer';
+import { ParticleVisualizer } from './visualizers/ParticleVisualizer';
 
 interface BackgroundVisualizerProps {
   enabled: boolean;
@@ -26,8 +27,7 @@ const VisualizerContainer = styled.div`
  * BackgroundVisualizer Component
  * 
  * Renders an optional background animation visualizer behind the music player.
- * Currently a placeholder component that will be extended with actual visualizer
- * implementations in Phase 2.
+ * Supports multiple visualizer styles that can be switched dynamically.
  * 
  * @component
  * 
@@ -41,33 +41,31 @@ const VisualizerContainer = styled.div`
  */
 export const BackgroundVisualizer: React.FC<BackgroundVisualizerProps> = ({
   enabled,
-  style: _style, // Will be used in Phase 2
+  style,
   intensity,
   accentColor,
-  isPlaying: _isPlaying, // Will be used in Phase 2
-  playbackPosition: _playbackPosition // Will be used in Phase 2
+  isPlaying,
+  playbackPosition
 }) => {
-  // Placeholder: Will be replaced with actual visualizer components in Phase 2
   const VisualizerComponent = useMemo(() => {
     if (!enabled) return null;
     
-    // For Phase 1, return a simple placeholder
-    // In Phase 2, this will switch between actual visualizer components:
-    // - ParticleVisualizer
-    // - WaveformVisualizer
-    // - GeometricVisualizer
-    // - GradientFlowVisualizer
-    
-    return () => (
-      <div style={{
-        width: '100%',
-        height: '100%',
-        background: `linear-gradient(135deg, ${accentColor}15 0%, ${accentColor}05 100%)`,
-        opacity: intensity / 100,
-        transition: 'opacity 0.3s ease'
-      }} />
-    );
-  }, [enabled, accentColor, intensity]);
+    switch (style) {
+      case 'particles':
+        return ParticleVisualizer;
+      case 'waveform':
+        // TODO: Implement in Phase 3 - fallback to particles for now
+        return ParticleVisualizer;
+      case 'geometric':
+        // TODO: Implement in Phase 3 - fallback to particles for now
+        return ParticleVisualizer;
+      case 'gradient-flow':
+        // TODO: Implement in Phase 3 - fallback to particles for now
+        return ParticleVisualizer;
+      default:
+        return ParticleVisualizer;
+    }
+  }, [enabled, style]);
 
   if (!enabled || !VisualizerComponent) {
     return null;
@@ -75,7 +73,12 @@ export const BackgroundVisualizer: React.FC<BackgroundVisualizerProps> = ({
 
   return (
     <VisualizerContainer>
-      <VisualizerComponent />
+      <VisualizerComponent
+        intensity={intensity}
+        accentColor={accentColor}
+        isPlaying={isPlaying}
+        playbackPosition={playbackPosition}
+      />
     </VisualizerContainer>
   );
 };
