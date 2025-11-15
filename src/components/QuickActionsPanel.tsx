@@ -6,6 +6,7 @@ import { ControlButton } from './controls/styled';
 import ColorPickerPopover from './ColorPickerPopover';
 import { useCustomAccentColors } from '@/hooks/useCustomAccentColors';
 import type { Track } from '@/services/spotify';
+import type { VisualizerStyle } from '@/types/visualizer';
 
 interface QuickActionsPanelProps {
   accentColor: string;
@@ -15,6 +16,12 @@ interface QuickActionsPanelProps {
   onShowVisualEffects: () => void;
   onGlowToggle: () => void;
   onAccentColorChange: (color: string) => void;
+  onBackgroundVisualizerToggle?: () => void; // Temporary test handler
+  onBackgroundVisualizerIntensityChange?: (delta: number) => void; // Temporary debug handler
+  onBackgroundVisualizerStyleChange?: (style: VisualizerStyle) => void; // Temporary debug handler
+  backgroundVisualizerEnabled?: boolean; // Temporary debug prop
+  backgroundVisualizerStyle?: string; // Temporary debug prop
+  backgroundVisualizerIntensity?: number; // Temporary debug prop
   isVisible?: boolean;
 }
 
@@ -57,6 +64,57 @@ const ToggleHandle = styled.button<{ $accentColor: string }>`
   cursor: pointer;
 `;
 
+const DebugSection = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: ${theme.spacing.xs};
+  padding: ${theme.spacing.xs};
+  margin-top: ${theme.spacing.xs};
+  border-top: 1px dashed rgba(255, 255, 255, 0.2);
+  border-bottom: 1px dashed rgba(255, 255, 255, 0.2);
+`;
+
+const DebugLabel = styled.div`
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.6);
+  text-align: center;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+`;
+
+const DebugButtonGroup = styled.div`
+  display: flex;
+  gap: ${theme.spacing.xs};
+  flex-wrap: wrap;
+`;
+
+const DebugButton = styled.button<{ $accentColor: string; $isActive?: boolean }>`
+  flex: 1;
+  min-width: 40px;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.7rem;
+  background: ${({ $isActive, $accentColor }) => $isActive ? $accentColor : 'rgba(255, 255, 255, 0.1)'};
+  border: 1px solid ${({ $isActive, $accentColor }) => $isActive ? $accentColor : 'rgba(255, 255, 255, 0.2)'};
+  color: ${({ $isActive }) => $isActive ? '#000' : 'rgba(255, 255, 255, 0.8)'};
+  border-radius: ${theme.borderRadius.sm};
+  cursor: pointer;
+  transition: all 0.2s ease;
+  
+  &:hover {
+    background: ${({ $accentColor }) => $accentColor}44;
+    border-color: ${({ $accentColor }) => $accentColor};
+    color: rgba(255, 255, 255, 0.9);
+  }
+`;
+
+const IntensityDisplay = styled.div`
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.8);
+  text-align: center;
+  padding: 0.25rem;
+`;
+
 export const QuickActionsPanel: React.FC<QuickActionsPanelProps> = ({
   accentColor,
   currentTrack,
@@ -65,6 +123,12 @@ export const QuickActionsPanel: React.FC<QuickActionsPanelProps> = ({
   onShowVisualEffects,
   onGlowToggle,
   onAccentColorChange,
+  onBackgroundVisualizerToggle,
+  onBackgroundVisualizerIntensityChange,
+  onBackgroundVisualizerStyleChange,
+  backgroundVisualizerEnabled,
+  backgroundVisualizerStyle,
+  backgroundVisualizerIntensity,
   isVisible = true
 }) => {
   const { isMobile, isTablet, transitionDuration, transitionEasing } = usePlayerSizing();
@@ -138,6 +202,89 @@ export const QuickActionsPanel: React.FC<QuickActionsPanelProps> = ({
           $isMobile={isMobile}
           $isTablet={isTablet}
         />
+
+        {/* Temporary debug controls for background visualizer */}
+        {onBackgroundVisualizerToggle && (
+          <>
+            <DebugSection>
+              <DebugLabel>Visualizer Debug</DebugLabel>
+              
+              {/* Toggle Button */}
+              <ControlButton
+                $isMobile={isMobile}
+                $isTablet={isTablet}
+                accentColor={accentColor}
+                isActive={backgroundVisualizerEnabled}
+                onClick={onBackgroundVisualizerToggle}
+                title={`Background Visualizer ${backgroundVisualizerEnabled ? 'ON' : 'OFF'}`}
+                style={{ border: '2px dashed rgba(255,255,255,0.3)' }}
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10" />
+                  <path d="M12 6v6l4 2" />
+                </svg>
+              </ControlButton>
+
+              {/* Style Selector */}
+              {backgroundVisualizerEnabled && onBackgroundVisualizerStyleChange && (
+                <>
+                  <DebugLabel>Style</DebugLabel>
+                  <DebugButtonGroup>
+                    {(['particles', 'waveform', 'geometric', 'gradient-flow'] as VisualizerStyle[]).map((style) => (
+                      <DebugButton
+                        key={style}
+                        $accentColor={accentColor}
+                        $isActive={backgroundVisualizerStyle === style}
+                        onClick={() => onBackgroundVisualizerStyleChange(style)}
+                        title={style}
+                      >
+                        {style.charAt(0).toUpperCase()}
+                      </DebugButton>
+                    ))}
+                  </DebugButtonGroup>
+                </>
+              )}
+
+              {/* Intensity Controls */}
+              {backgroundVisualizerEnabled && onBackgroundVisualizerIntensityChange && (
+                <>
+                  <DebugLabel>Intensity</DebugLabel>
+                  <IntensityDisplay>{backgroundVisualizerIntensity ?? 60}%</IntensityDisplay>
+                  <DebugButtonGroup>
+                    <DebugButton
+                      $accentColor={accentColor}
+                      onClick={() => onBackgroundVisualizerIntensityChange(-10)}
+                      title="Decrease intensity"
+                    >
+                      -10
+                    </DebugButton>
+                    <DebugButton
+                      $accentColor={accentColor}
+                      onClick={() => onBackgroundVisualizerIntensityChange(-5)}
+                      title="Decrease intensity"
+                    >
+                      -5
+                    </DebugButton>
+                    <DebugButton
+                      $accentColor={accentColor}
+                      onClick={() => onBackgroundVisualizerIntensityChange(5)}
+                      title="Increase intensity"
+                    >
+                      +5
+                    </DebugButton>
+                    <DebugButton
+                      $accentColor={accentColor}
+                      onClick={() => onBackgroundVisualizerIntensityChange(10)}
+                      title="Increase intensity"
+                    >
+                      +10
+                    </DebugButton>
+                  </DebugButtonGroup>
+                </>
+              )}
+            </DebugSection>
+          </>
+        )}
       </PanelContainer>
 
       <ToggleHandle $accentColor={accentColor} aria-label={isOpen ? 'Collapse quick actions' : 'Expand quick actions'} onClick={() => setIsOpen(v => !v)} />

@@ -92,8 +92,8 @@ export const ParticleVisualizer: React.FC<ParticleVisualizerProps> = ({
     height: number,
     baseColor: string
   ): Particle[] => {
-    const minRadius = 1;
-    const maxRadius = 4;
+    const minRadius = 3;
+    const maxRadius = 8;
     
     return Array.from({ length: count }, () => ({
       x: Math.random() * width,
@@ -136,9 +136,10 @@ export const ParticleVisualizer: React.FC<ParticleVisualizerProps> = ({
       if (particle.pulsePhase > Math.PI * 2) particle.pulsePhase -= Math.PI * 2;
       
       // Calculate pulsing radius and opacity
-      const pulseValue = Math.sin(particle.pulsePhase);
-      particle.radius = particle.baseRadius + pulseValue * 2;
-      particle.opacity = Math.max(0.1, Math.min(1.0, particle.baseOpacity + pulseValue * 0.2));
+      // Use normalized sin value (0 to 1) to ensure radius never goes negative
+      const pulseValue = (Math.sin(particle.pulsePhase) + 1) / 2; // Normalize to 0-1
+      particle.radius = Math.max(1.5, particle.baseRadius + (pulseValue - 0.5) * 3); // Pulse around baseRadius with larger variation
+      particle.opacity = Math.max(0.1, Math.min(1.0, particle.baseOpacity + (pulseValue - 0.5) * 0.4));
     });
   }, []);
 

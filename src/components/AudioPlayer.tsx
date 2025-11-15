@@ -51,6 +51,9 @@ const AudioPlayerComponent = () => {
     setShowVisualEffects,
     setVisualEffectsEnabled,
     setAccentColorOverrides,
+    setBackgroundVisualizerEnabled,
+    setBackgroundVisualizerStyle,
+    setBackgroundVisualizerIntensity,
     handleFilterChange,
     handleResetFilters,
     restoreSavedFilters,
@@ -204,6 +207,19 @@ const AudioPlayerComponent = () => {
     handleAccentColorChangeHook(mappedColor);
   }, [handleAccentColorChangeHook]);
 
+  // Temporary test handlers for background visualizer
+  const handleBackgroundVisualizerToggle = useCallback(() => {
+    setBackgroundVisualizerEnabled(prev => !prev);
+  }, [setBackgroundVisualizerEnabled]);
+
+  const handleBackgroundVisualizerIntensityChange = useCallback((delta: number) => {
+    setBackgroundVisualizerIntensity(prev => Math.max(0, Math.min(100, prev + delta)));
+  }, [setBackgroundVisualizerIntensity]);
+
+  const handleBackgroundVisualizerStyleChange = useCallback((style: 'particles' | 'waveform' | 'geometric' | 'gradient-flow') => {
+    setBackgroundVisualizerStyle(style);
+  }, [setBackgroundVisualizerStyle]);
+
   const renderContent = () => {
     const stateRenderer = (
       <PlayerStateRenderer
@@ -251,7 +267,13 @@ const AudioPlayerComponent = () => {
           onFilterChange: handleFilterChange,
           onResetFilters: handleResetFilters,
           onGlowIntensityChange: handleGlowIntensityChange,
-          onGlowRateChange: handleGlowRateChange
+          onGlowRateChange: handleGlowRateChange,
+          onBackgroundVisualizerToggle: handleBackgroundVisualizerToggle,
+          onBackgroundVisualizerIntensityChange: handleBackgroundVisualizerIntensityChange,
+          onBackgroundVisualizerStyleChange: handleBackgroundVisualizerStyleChange,
+          backgroundVisualizerEnabled,
+          backgroundVisualizerStyle,
+          backgroundVisualizerIntensity
         }}
       />
     );

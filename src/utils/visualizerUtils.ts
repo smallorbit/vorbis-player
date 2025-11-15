@@ -30,10 +30,14 @@ function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
  * @returns Hex color string (e.g., '#FF5733')
  */
 function rgbToHex(r: number, g: number, b: number): string {
-  return `#${[r, g, b].map(x => {
-    const hex = x.toString(16);
+  // Ensure values are integers and clamped to valid range
+  const clamp = (value: number) => Math.max(0, Math.min(255, Math.round(value)));
+  const toHex = (value: number) => {
+    const hex = clamp(value).toString(16);
     return hex.length === 1 ? '0' + hex : hex;
-  }).join('')}`;
+  };
+  
+  return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
 }
 
 /**

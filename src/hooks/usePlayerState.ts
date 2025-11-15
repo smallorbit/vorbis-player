@@ -321,7 +321,7 @@ export const usePlayerState = () => {
 
   const [backgroundVisualizerStyle, setBackgroundVisualizerStyle] = useState<VisualizerStyle>(() => {
     const saved = localStorage.getItem('vorbis-player-background-visualizer-style');
-    return (saved as VisualizerStyle) || 'particles';
+    return (saved as VisualizerStyle) || 'waveform';
   });
 
   const [backgroundVisualizerIntensity, setBackgroundVisualizerIntensity] = useState<number>(() => {

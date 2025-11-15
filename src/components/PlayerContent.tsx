@@ -37,6 +37,12 @@ interface PlayerContentHandlers {
   onResetFilters: () => void;
   onGlowIntensityChange: (intensity: number) => void;
   onGlowRateChange: (rate: number) => void;
+  onBackgroundVisualizerToggle?: () => void; // Temporary test handler
+  onBackgroundVisualizerIntensityChange?: (delta: number) => void; // Temporary debug handler
+  onBackgroundVisualizerStyleChange?: (style: 'particles' | 'waveform' | 'geometric' | 'gradient-flow') => void; // Temporary debug handler
+  backgroundVisualizerEnabled?: boolean; // Temporary debug prop
+  backgroundVisualizerStyle?: string; // Temporary debug prop
+  backgroundVisualizerIntensity?: number; // Temporary debug prop
 }
 
 interface PlayerContentProps {
@@ -331,6 +337,12 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
               onShowVisualEffects={handlers.onShowVisualEffects}
               onGlowToggle={handlers.onGlowToggle}
               onAccentColorChange={handlers.onAccentColorChange}
+              onBackgroundVisualizerToggle={handlers.onBackgroundVisualizerToggle}
+              onBackgroundVisualizerIntensityChange={handlers.onBackgroundVisualizerIntensityChange}
+              onBackgroundVisualizerStyleChange={handlers.onBackgroundVisualizerStyleChange}
+              backgroundVisualizerEnabled={handlers.backgroundVisualizerEnabled}
+              backgroundVisualizerStyle={handlers.backgroundVisualizerStyle}
+              backgroundVisualizerIntensity={handlers.backgroundVisualizerIntensity}
               isVisible={controlsVisible}
             />
           </ClickableAlbumArtContainer>
