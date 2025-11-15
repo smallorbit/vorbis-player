@@ -6,6 +6,7 @@ import { flexCenter } from '../styles/utils';
 import PlayerStateRenderer from './PlayerStateRenderer';
 import PlayerContent from './PlayerContent';
 import BackgroundVisualizer from './BackgroundVisualizer';
+import AccentColorBackground from './AccentColorBackground';
 import { usePlayerState } from '../hooks/usePlayerState';
 import { usePlaylistManager } from '../hooks/usePlaylistManager';
 import { useSpotifyPlayback } from '../hooks/useSpotifyPlayback';
@@ -41,6 +42,7 @@ const AudioPlayerComponent = () => {
     backgroundVisualizerEnabled,
     backgroundVisualizerStyle,
     backgroundVisualizerIntensity,
+    accentColorBackgroundEnabled,
     setTracks,
     setCurrentTrackIndex,
     setIsLoading,
@@ -54,6 +56,7 @@ const AudioPlayerComponent = () => {
     setBackgroundVisualizerEnabled,
     setBackgroundVisualizerStyle,
     setBackgroundVisualizerIntensity,
+    setAccentColorBackgroundEnabled,
     handleFilterChange,
     handleResetFilters,
     restoreSavedFilters,
@@ -273,7 +276,9 @@ const AudioPlayerComponent = () => {
           onBackgroundVisualizerStyleChange: handleBackgroundVisualizerStyleChange,
           backgroundVisualizerEnabled,
           backgroundVisualizerStyle,
-          backgroundVisualizerIntensity
+          backgroundVisualizerIntensity,
+          accentColorBackgroundEnabled,
+          onAccentColorBackgroundToggle: () => setAccentColorBackgroundEnabled(prev => !prev)
         }}
       />
     );
@@ -281,6 +286,10 @@ const AudioPlayerComponent = () => {
 
   return (
     <Container>
+      <AccentColorBackground
+        enabled={accentColorBackgroundEnabled}
+        accentColor={accentColor}
+      />
       <BackgroundVisualizer
         enabled={backgroundVisualizerEnabled}
         style={backgroundVisualizerStyle}

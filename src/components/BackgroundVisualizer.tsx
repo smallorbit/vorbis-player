@@ -2,9 +2,7 @@ import React, { useMemo } from 'react';
 import styled from 'styled-components';
 import type { VisualizerStyle } from '../types/visualizer';
 import { ParticleVisualizer } from './visualizers/ParticleVisualizer';
-import { WaveformVisualizer } from './visualizers/WaveformVisualizer';
 import { GeometricVisualizer } from './visualizers/GeometricVisualizer';
-import { GradientFlowVisualizer } from './visualizers/GradientFlowVisualizer';
 
 interface BackgroundVisualizerProps {
   enabled: boolean;
@@ -56,14 +54,16 @@ export const BackgroundVisualizer: React.FC<BackgroundVisualizerProps> = ({
     switch (style) {
       case 'particles':
         return ParticleVisualizer;
-      case 'waveform':
-        return WaveformVisualizer;
       case 'geometric':
         return GeometricVisualizer;
+      case 'waveform':
+        // Deprecated - fallback to particles
+        return ParticleVisualizer;
       case 'gradient-flow':
-        return GradientFlowVisualizer;
+        // Deprecated - fallback to particles
+        return ParticleVisualizer;
       default:
-        return WaveformVisualizer;
+        return ParticleVisualizer;
     }
   }, [enabled, style]);
 

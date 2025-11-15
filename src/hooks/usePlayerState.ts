@@ -321,7 +321,13 @@ export const usePlayerState = () => {
 
   const [backgroundVisualizerStyle, setBackgroundVisualizerStyle] = useState<VisualizerStyle>(() => {
     const saved = localStorage.getItem('vorbis-player-background-visualizer-style');
-    return (saved as VisualizerStyle) || 'waveform';
+    return (saved as VisualizerStyle) || 'particles';
+  });
+
+  // Accent color background state with persistence
+  const [accentColorBackgroundEnabled, setAccentColorBackgroundEnabled] = useState<boolean>(() => {
+    const saved = localStorage.getItem('vorbis-player-accent-color-background-enabled');
+    return saved ? JSON.parse(saved) : false;
   });
 
   const [backgroundVisualizerIntensity, setBackgroundVisualizerIntensity] = useState<number>(() => {
@@ -376,6 +382,11 @@ export const usePlayerState = () => {
   useEffect(() => {
     localStorage.setItem('vorbis-player-background-visualizer-intensity', backgroundVisualizerIntensity.toString());
   }, [backgroundVisualizerIntensity]);
+
+  // Accent color background persistence
+  useEffect(() => {
+    localStorage.setItem('vorbis-player-accent-color-background-enabled', JSON.stringify(accentColorBackgroundEnabled));
+  }, [accentColorBackgroundEnabled]);
 
   const handleFilterChange = useCallback((filterName: string, value: number | boolean) => {
     setAlbumFilters(prev => {
@@ -512,6 +523,7 @@ export const usePlayerState = () => {
     backgroundVisualizerEnabled,
     backgroundVisualizerStyle,
     backgroundVisualizerIntensity,
+    accentColorBackgroundEnabled,
     setTracks,
     setCurrentTrackIndex,
     setIsLoading,
@@ -527,6 +539,7 @@ export const usePlayerState = () => {
     setBackgroundVisualizerEnabled,
     setBackgroundVisualizerStyle,
     setBackgroundVisualizerIntensity,
+    setAccentColorBackgroundEnabled,
     handleFilterChange,
     handleResetFilters,
     restoreSavedFilters,

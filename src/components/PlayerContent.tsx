@@ -43,6 +43,8 @@ interface PlayerContentHandlers {
   backgroundVisualizerEnabled?: boolean; // Temporary debug prop
   backgroundVisualizerStyle?: string; // Temporary debug prop
   backgroundVisualizerIntensity?: number; // Temporary debug prop
+  accentColorBackgroundEnabled?: boolean; // Accent color background toggle
+  onAccentColorBackgroundToggle?: () => void; // Accent color background toggle handler
 }
 
 interface PlayerContentProps {
@@ -343,6 +345,8 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
               backgroundVisualizerEnabled={handlers.backgroundVisualizerEnabled}
               backgroundVisualizerStyle={handlers.backgroundVisualizerStyle}
               backgroundVisualizerIntensity={handlers.backgroundVisualizerIntensity}
+              accentColorBackgroundEnabled={handlers.accentColorBackgroundEnabled}
+              onAccentColorBackgroundToggle={handlers.onAccentColorBackgroundToggle}
               isVisible={controlsVisible}
             />
           </ClickableAlbumArtContainer>

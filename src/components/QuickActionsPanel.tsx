@@ -22,6 +22,8 @@ interface QuickActionsPanelProps {
   backgroundVisualizerEnabled?: boolean; // Temporary debug prop
   backgroundVisualizerStyle?: string; // Temporary debug prop
   backgroundVisualizerIntensity?: number; // Temporary debug prop
+  accentColorBackgroundEnabled?: boolean; // Accent color background toggle
+  onAccentColorBackgroundToggle?: () => void; // Accent color background toggle handler
   isVisible?: boolean;
 }
 
@@ -129,6 +131,8 @@ export const QuickActionsPanel: React.FC<QuickActionsPanelProps> = ({
   backgroundVisualizerEnabled,
   backgroundVisualizerStyle,
   backgroundVisualizerIntensity,
+  accentColorBackgroundEnabled,
+  onAccentColorBackgroundToggle,
   isVisible = true
 }) => {
   const { isMobile, isTablet, transitionDuration, transitionEasing } = usePlayerSizing();
@@ -207,9 +211,27 @@ export const QuickActionsPanel: React.FC<QuickActionsPanelProps> = ({
         {onBackgroundVisualizerToggle && (
           <>
             <DebugSection>
-              <DebugLabel>Visualizer Debug</DebugLabel>
+              <DebugLabel>Background Options</DebugLabel>
               
-              {/* Toggle Button */}
+              {/* Accent Color Background Toggle */}
+              {onAccentColorBackgroundToggle && (
+                <ControlButton
+                  $isMobile={isMobile}
+                  $isTablet={isTablet}
+                  accentColor={accentColor}
+                  isActive={accentColorBackgroundEnabled}
+                  onClick={onAccentColorBackgroundToggle}
+                  title={`Accent Color Background ${accentColorBackgroundEnabled ? 'ON' : 'OFF'}`}
+                  style={{ border: '2px dashed rgba(255,255,255,0.3)' }}
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="3" y="3" width="18" height="18" rx="2" />
+                    <path d="M9 9h6v6H9z" />
+                  </svg>
+                </ControlButton>
+              )}
+
+              {/* Visualizer Toggle Button */}
               <ControlButton
                 $isMobile={isMobile}
                 $isTablet={isTablet}
@@ -230,7 +252,7 @@ export const QuickActionsPanel: React.FC<QuickActionsPanelProps> = ({
                 <>
                   <DebugLabel>Style</DebugLabel>
                   <DebugButtonGroup>
-                    {(['particles', 'waveform', 'geometric', 'gradient-flow'] as VisualizerStyle[]).map((style) => (
+                    {(['particles', 'geometric'] as VisualizerStyle[]).map((style) => (
                       <DebugButton
                         key={style}
                         $accentColor={accentColor}
