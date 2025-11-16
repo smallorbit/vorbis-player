@@ -14,6 +14,27 @@ import { useAutoAdvance } from '../hooks/useAutoAdvance';
 import { useAccentColor } from '../hooks/useAccentColor';
 import { useVisualEffectsState } from '../hooks/useVisualEffectsState';
 
+// Debug mode keyboard shortcut handler
+const useDebugModeShortcut = (debugModeEnabled: boolean, setDebugModeEnabled: (enabled: boolean) => void) => {
+  useEffect(() => {
+    const handleKeyPress = (event: KeyboardEvent) => {
+      // Press 'D' key to toggle debug mode (only when not typing in an input)
+      if (event.key === 'd' || event.key === 'D') {
+        const target = event.target as HTMLElement;
+        const isInput = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable;
+        if (!isInput) {
+          event.preventDefault();
+          setDebugModeEnabled(!debugModeEnabled);
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+    return () => {
+      window.removeEventListener('keydown', handleKeyPress);
+    };
+  }, [debugModeEnabled, setDebugModeEnabled]);
+};
 
 const Container = styled.div`
   width: 100%;
@@ -43,6 +64,7 @@ const AudioPlayerComponent = () => {
     backgroundVisualizerStyle,
     backgroundVisualizerIntensity,
     accentColorBackgroundEnabled,
+    debugModeEnabled,
     setTracks,
     setCurrentTrackIndex,
     setIsLoading,
@@ -57,10 +79,14 @@ const AudioPlayerComponent = () => {
     setBackgroundVisualizerStyle,
     setBackgroundVisualizerIntensity,
     setAccentColorBackgroundEnabled,
+    setDebugModeEnabled,
     handleFilterChange,
     handleResetFilters,
     restoreSavedFilters,
   } = usePlayerState();
+
+  // Enable debug mode keyboard shortcut (press 'D' to toggle)
+  useDebugModeShortcut(debugModeEnabled, setDebugModeEnabled);
 
   // Playback state for visualizer
   const [isPlaying, setIsPlaying] = useState(false);
@@ -278,7 +304,8 @@ const AudioPlayerComponent = () => {
           backgroundVisualizerStyle,
           backgroundVisualizerIntensity,
           accentColorBackgroundEnabled,
-          onAccentColorBackgroundToggle: () => setAccentColorBackgroundEnabled(prev => !prev)
+          onAccentColorBackgroundToggle: () => setAccentColorBackgroundEnabled(prev => !prev),
+          debugModeEnabled
         }}
       />
     );

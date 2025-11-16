@@ -45,6 +45,7 @@ interface PlayerContentHandlers {
   backgroundVisualizerIntensity?: number; // Temporary debug prop
   accentColorBackgroundEnabled?: boolean; // Accent color background toggle
   onAccentColorBackgroundToggle?: () => void; // Accent color background toggle handler
+  debugModeEnabled?: boolean; // Debug mode toggle
 }
 
 interface PlayerContentProps {
@@ -171,8 +172,15 @@ const LoadingCard = styled.div.withConfig({
   flex-direction: column;
   overflow: hidden;
   border-radius: 1.25rem;
-  border: 1px solid rgba(34, 36, 36, 0.68);
-  box-shadow: 0 8px 24px rgba(38, 36, 37, 0.7), 0 2px 8px rgba(22, 21, 21, 0.6);
+  /* Enhanced border with subtle highlight */
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  /* Multi-layer shadows for depth */
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.9),
+    0 4px 16px rgba(0, 0, 0, 0.8),
+    0 2px 8px rgba(0, 0, 0, 0.7),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  transition: box-shadow 0.3s ease, border-color 0.3s ease;
   ${({ backgroundImage }) => backgroundImage ? `
     &::after {
       position: absolute;
@@ -187,14 +195,20 @@ const LoadingCard = styled.div.withConfig({
     &::before {
       position: absolute;
       inset: 0;
-      background: rgba(32, 30, 30, 0.7);
-      backdrop-filter: blur(40px);
+      background: rgba(20, 18, 18, 0.85);
+      backdrop-filter: blur(40px) saturate(180%);
+      -webkit-backdrop-filter: blur(40px) saturate(180%);
       border-radius: 1.25rem;
       z-index: 1;
     }
   ` : `
-    background: rgba(38, 38, 38, 0.5);
-    backdrop-filter: blur(12px);
+    background: linear-gradient(
+      to bottom,
+      rgba(28, 28, 28, 0.95) 0%,
+      rgba(20, 20, 20, 0.98) 100%
+    );
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
   `}
 `;
 
@@ -250,11 +264,14 @@ const PlayerContainer = styled.div.withConfig({
 const ClickableAlbumArtContainer = styled.div`
   position: relative;
   cursor: pointer;
-  transition: filter 0.2s ease;
+  transition: filter 0.2s ease, transform 0.2s ease;
   z-index: 3;
+  /* Add subtle outer glow/shadow for separation from background */
+  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.4));
   
   &:hover {
-    filter: brightness(1.05);
+    filter: brightness(1.05) drop-shadow(0 6px 16px rgba(0, 0, 0, 0.5));
+    transform: translateY(-2px);
   }
   
   &::after {
@@ -347,6 +364,7 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
               backgroundVisualizerIntensity={handlers.backgroundVisualizerIntensity}
               accentColorBackgroundEnabled={handlers.accentColorBackgroundEnabled}
               onAccentColorBackgroundToggle={handlers.onAccentColorBackgroundToggle}
+              debugModeEnabled={handlers.debugModeEnabled}
               isVisible={controlsVisible}
             />
           </ClickableAlbumArtContainer>

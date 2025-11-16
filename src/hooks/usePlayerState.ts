@@ -330,6 +330,12 @@ export const usePlayerState = () => {
     return saved ? JSON.parse(saved) : false;
   });
 
+  // Debug mode state with persistence (hidden by default, toggle with 'D' key)
+  const [debugModeEnabled, setDebugModeEnabled] = useState<boolean>(() => {
+    const saved = localStorage.getItem('vorbis-player-debug-mode-enabled');
+    return saved ? JSON.parse(saved) : false;
+  });
+
   const [backgroundVisualizerIntensity, setBackgroundVisualizerIntensity] = useState<number>(() => {
     const saved = localStorage.getItem('vorbis-player-background-visualizer-intensity');
     return saved ? parseInt(saved, 10) : 60;
@@ -387,6 +393,11 @@ export const usePlayerState = () => {
   useEffect(() => {
     localStorage.setItem('vorbis-player-accent-color-background-enabled', JSON.stringify(accentColorBackgroundEnabled));
   }, [accentColorBackgroundEnabled]);
+
+  // Debug mode persistence
+  useEffect(() => {
+    localStorage.setItem('vorbis-player-debug-mode-enabled', JSON.stringify(debugModeEnabled));
+  }, [debugModeEnabled]);
 
   const handleFilterChange = useCallback((filterName: string, value: number | boolean) => {
     setAlbumFilters(prev => {
@@ -524,6 +535,7 @@ export const usePlayerState = () => {
     backgroundVisualizerStyle,
     backgroundVisualizerIntensity,
     accentColorBackgroundEnabled,
+    debugModeEnabled,
     setTracks,
     setCurrentTrackIndex,
     setIsLoading,
@@ -540,6 +552,7 @@ export const usePlayerState = () => {
     setBackgroundVisualizerStyle,
     setBackgroundVisualizerIntensity,
     setAccentColorBackgroundEnabled,
+    setDebugModeEnabled,
     handleFilterChange,
     handleResetFilters,
     restoreSavedFilters,

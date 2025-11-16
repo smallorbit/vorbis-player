@@ -52,6 +52,11 @@ export const TrackInfoOnlyRow = styled.div`
   gap: ${({ theme }) => theme.spacing.xs};
   padding: ${({ theme }) => `${theme.spacing.sm} ${theme.spacing.md}`};
   margin-bottom: ${({ theme }) => theme.spacing.sm};
+  margin-top: ${({ theme }) => theme.spacing.md};
+  position: relative;
+  z-index: 10;
+  /* Add subtle text shadow for better readability against shadows */
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 `;
 
 export const PlayerTrackName = styled.div<{ $isMobile: boolean; $isTablet: boolean }>`
@@ -71,6 +76,10 @@ export const PlayerTrackName = styled.div<{ $isMobile: boolean; $isTablet: boole
   text-overflow: ellipsis;
   white-space: nowrap;
   width: 100%;
+  position: relative;
+  z-index: 11;
+  /* Enhanced text shadow for better contrast */
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
 `;
 
 export const PlayerTrackArtist = styled.div`
@@ -81,6 +90,10 @@ export const PlayerTrackArtist = styled.div`
   text-overflow: ellipsis;
   white-space: nowrap;
   width: 100%;
+  position: relative;
+  z-index: 11;
+  /* Enhanced text shadow for better contrast */
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
 `;
 
 // --- Track Info Row Layout ---

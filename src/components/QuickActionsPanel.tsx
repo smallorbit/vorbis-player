@@ -24,6 +24,7 @@ interface QuickActionsPanelProps {
   backgroundVisualizerIntensity?: number; // Temporary debug prop
   accentColorBackgroundEnabled?: boolean; // Accent color background toggle
   onAccentColorBackgroundToggle?: () => void; // Accent color background toggle handler
+  debugModeEnabled?: boolean; // Debug mode toggle
   isVisible?: boolean;
 }
 
@@ -133,6 +134,7 @@ export const QuickActionsPanel: React.FC<QuickActionsPanelProps> = ({
   backgroundVisualizerIntensity,
   accentColorBackgroundEnabled,
   onAccentColorBackgroundToggle,
+  debugModeEnabled = false,
   isVisible = true
 }) => {
   const { isMobile, isTablet, transitionDuration, transitionEasing } = usePlayerSizing();
@@ -207,11 +209,11 @@ export const QuickActionsPanel: React.FC<QuickActionsPanelProps> = ({
           $isTablet={isTablet}
         />
 
-        {/* Temporary debug controls for background visualizer */}
-        {onBackgroundVisualizerToggle && (
+        {/* Debug controls - only shown when debug mode is enabled (press 'D' to toggle) */}
+        {debugModeEnabled && onBackgroundVisualizerToggle && (
           <>
             <DebugSection>
-              <DebugLabel>Background Options</DebugLabel>
+              <DebugLabel>Background Options (Debug Mode)</DebugLabel>
               
               {/* Accent Color Background Toggle */}
               {onAccentColorBackgroundToggle && (
