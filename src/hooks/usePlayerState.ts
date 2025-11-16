@@ -67,6 +67,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import type { Track } from '../services/spotify';
 import { theme } from '@/styles/theme';
+import type { VisualizerStyle } from '../types/visualizer';
 
 /**
  * Album image processing filters interface
@@ -312,6 +313,41 @@ export const usePlayerState = () => {
   // Saved filter preset
   const [savedAlbumFilters, setSavedAlbumFilters] = useState<AlbumFilters | null>(null);
 
+  // Background visualizer state with persistence
+  const [backgroundVisualizerEnabled, setBackgroundVisualizerEnabled] = useState<boolean>(() => {
+    const saved = localStorage.getItem('vorbis-player-background-visualizer-enabled');
+    return saved ? JSON.parse(saved) : false;
+  });
+
+  const [backgroundVisualizerStyle, setBackgroundVisualizerStyle] = useState<VisualizerStyle>(() => {
+    const saved = localStorage.getItem('vorbis-player-background-visualizer-style');
+    return (saved as VisualizerStyle) || 'particles';
+  });
+
+  // Accent color background state with persistence
+  // Preferred accent color background state (user's preference from VFX menu)
+  const [accentColorBackgroundPreferred, setAccentColorBackgroundPreferred] = useState<boolean>(() => {
+    const saved = localStorage.getItem('vorbis-player-accent-color-background-enabled');
+    return saved ? JSON.parse(saved) : false;
+  });
+
+  // Actual accent color background enabled state (respects glow state)
+  const [accentColorBackgroundEnabled, setAccentColorBackgroundEnabled] = useState<boolean>(() => {
+    const saved = localStorage.getItem('vorbis-player-accent-color-background-enabled');
+    return saved ? JSON.parse(saved) : false;
+  });
+
+  // Debug mode state with persistence (hidden by default, toggle with 'D' key)
+  const [debugModeEnabled, setDebugModeEnabled] = useState<boolean>(() => {
+    const saved = localStorage.getItem('vorbis-player-debug-mode-enabled');
+    return saved ? JSON.parse(saved) : false;
+  });
+
+  const [backgroundVisualizerIntensity, setBackgroundVisualizerIntensity] = useState<number>(() => {
+    const saved = localStorage.getItem('vorbis-player-background-visualizer-intensity');
+    return saved ? parseInt(saved, 10) : 60;
+  });
+
   // Load accent color overrides from localStorage on mount
   useEffect(() => {
     const stored = localStorage.getItem('accentColorOverrides');
@@ -340,12 +376,48 @@ export const usePlayerState = () => {
   useEffect(() => {
     localStorage.setItem('vorbis-player-visual-effects-enabled', JSON.stringify(visualEffectsEnabled));
   }, [visualEffectsEnabled]);
+
+  // Sync accent color background with glow effect
+  // When glow is disabled, accent color background is also disabled (visually)
+  // When glow is enabled, restore the user's preferred setting from VFX menu
+  useEffect(() => {
+    if (!visualEffectsEnabled) {
+      // When glow is disabled, disable accent color background visually
+      setAccentColorBackgroundEnabled(false);
+    } else {
+      // When glow is enabled, restore the user's preferred setting
+      setAccentColorBackgroundEnabled(accentColorBackgroundPreferred);
+    }
+  }, [visualEffectsEnabled, accentColorBackgroundPreferred]);
   
 
   
   useEffect(() => {
     localStorage.setItem('vorbis-player-per-album-glow', JSON.stringify(perAlbumGlow));
   }, [perAlbumGlow]);
+
+  // Background visualizer persistence
+  useEffect(() => {
+    localStorage.setItem('vorbis-player-background-visualizer-enabled', JSON.stringify(backgroundVisualizerEnabled));
+  }, [backgroundVisualizerEnabled]);
+
+  useEffect(() => {
+    localStorage.setItem('vorbis-player-background-visualizer-style', backgroundVisualizerStyle);
+  }, [backgroundVisualizerStyle]);
+
+  useEffect(() => {
+    localStorage.setItem('vorbis-player-background-visualizer-intensity', backgroundVisualizerIntensity.toString());
+  }, [backgroundVisualizerIntensity]);
+
+  // Accent color background persistence (save preferred state, not the actual enabled state)
+  useEffect(() => {
+    localStorage.setItem('vorbis-player-accent-color-background-enabled', JSON.stringify(accentColorBackgroundPreferred));
+  }, [accentColorBackgroundPreferred]);
+
+  // Debug mode persistence
+  useEffect(() => {
+    localStorage.setItem('vorbis-player-debug-mode-enabled', JSON.stringify(debugModeEnabled));
+  }, [debugModeEnabled]);
 
   const handleFilterChange = useCallback((filterName: string, value: number | boolean) => {
     setAlbumFilters(prev => {
@@ -479,6 +551,12 @@ export const usePlayerState = () => {
     accentColorOverrides,
     albumFilters,
     savedAlbumFilters,
+    backgroundVisualizerEnabled,
+    backgroundVisualizerStyle,
+    backgroundVisualizerIntensity,
+    accentColorBackgroundEnabled,
+    accentColorBackgroundPreferred, // Expose preferred state for VFX menu display
+    debugModeEnabled,
     setTracks,
     setCurrentTrackIndex,
     setIsLoading,
@@ -491,6 +569,11 @@ export const usePlayerState = () => {
     setPerAlbumGlow,
     setAccentColorOverrides,
     setAlbumFilters,
+    setBackgroundVisualizerEnabled,
+    setBackgroundVisualizerStyle,
+    setBackgroundVisualizerIntensity,
+    setAccentColorBackgroundEnabled: setAccentColorBackgroundPreferred, // VFX menu updates preferred state
+    setDebugModeEnabled,
     handleFilterChange,
     handleResetFilters,
     restoreSavedFilters,

@@ -5,10 +5,12 @@ import AlbumArt from './AlbumArt';
 import PlayerControls from './PlayerControls';
 import VisualEffectsContainer from './VisualEffectsContainer';
 import QuickActionsPanel from './QuickActionsPanel';
+import LeftQuickActionsPanel from './LeftQuickActionsPanel';
 import { theme } from '@/styles/theme';
 import { cardBase } from '../styles/utils';
 import { usePlayerSizing } from '../hooks/usePlayerSizing';
 import type { Track } from '../services/spotify';
+import type { VisualizerStyle } from '../types/visualizer';
 
 const PlaylistDrawer = lazy(() => import('./PlaylistDrawer'));
 
@@ -37,6 +39,15 @@ interface PlayerContentHandlers {
   onResetFilters: () => void;
   onGlowIntensityChange: (intensity: number) => void;
   onGlowRateChange: (rate: number) => void;
+  onBackgroundVisualizerToggle?: () => void; // Background visualizer toggle handler
+  onBackgroundVisualizerIntensityChange?: (intensity: number) => void; // Background visualizer intensity change handler (direct value, not delta)
+  onBackgroundVisualizerStyleChange?: (style: 'particles' | 'waveform' | 'geometric' | 'gradient-flow') => void; // Background visualizer style change handler
+  backgroundVisualizerEnabled?: boolean; // Background visualizer enabled state
+  backgroundVisualizerStyle?: string; // Background visualizer style
+  backgroundVisualizerIntensity?: number; // Background visualizer intensity
+  accentColorBackgroundEnabled?: boolean; // Accent color background toggle
+  onAccentColorBackgroundToggle?: () => void; // Accent color background toggle handler
+  debugModeEnabled?: boolean; // Debug mode toggle
 }
 
 interface PlayerContentProps {
@@ -163,8 +174,15 @@ const LoadingCard = styled.div.withConfig({
   flex-direction: column;
   overflow: hidden;
   border-radius: 1.25rem;
-  border: 1px solid rgba(34, 36, 36, 0.68);
-  box-shadow: 0 8px 24px rgba(38, 36, 37, 0.7), 0 2px 8px rgba(22, 21, 21, 0.6);
+  /* Enhanced border with subtle highlight */
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  /* Multi-layer shadows for depth */
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.9),
+    0 4px 16px rgba(0, 0, 0, 0.8),
+    0 2px 8px rgba(0, 0, 0, 0.7),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  transition: box-shadow 0.3s ease, border-color 0.3s ease;
   ${({ backgroundImage }) => backgroundImage ? `
     &::after {
       position: absolute;
@@ -179,14 +197,20 @@ const LoadingCard = styled.div.withConfig({
     &::before {
       position: absolute;
       inset: 0;
-      background: rgba(32, 30, 30, 0.7);
-      backdrop-filter: blur(40px);
+      background: rgba(20, 18, 18, 0.85);
+      backdrop-filter: blur(40px) saturate(180%);
+      -webkit-backdrop-filter: blur(40px) saturate(180%);
       border-radius: 1.25rem;
       z-index: 1;
     }
   ` : `
-    background: rgba(38, 38, 38, 0.5);
-    backdrop-filter: blur(12px);
+    background: linear-gradient(
+      to bottom,
+      rgba(28, 28, 28, 0.95) 0%,
+      rgba(20, 20, 20, 0.98) 100%
+    );
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
   `}
 `;
 
@@ -235,38 +259,16 @@ const PlayerContainer = styled.div.withConfig({
   flex-direction: column;
   width: 100%;
   transition: transform ${props => props.transitionDuration}ms ${props => props.transitionEasing};
-  transform: ${props => props.controlsVisible ? 'translateY(-3rem)' : 'translateY(0)'};
+  transform: ${props => props.controlsVisible ? 'translateY(-4rem)' : 'translateY(0)'};
 `;
 
 // Album art container with click handler
 const ClickableAlbumArtContainer = styled.div`
   position: relative;
   cursor: pointer;
-  transition: filter 0.2s ease;
   z-index: 3;
-  
-  &:hover {
-    filter: brightness(1.05);
-  }
-  
-  &::after {
-    content: '';
-    position: absolute;
-    bottom: 8px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 0;
-    height: 0;
-    border-left: 6px solid transparent;
-    border-right: 6px solid transparent;
-    border-top: 8px solid rgba(255, 255, 255, 0.7);
-    transition: opacity 0.2s ease;
-    opacity: 0;
-  }
-  
-  &:hover::after {
-    opacity: 1;
-  }
+  /* Add subtle outer glow/shadow for separation from background */
+  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.4));
 `;
 
 const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handlers }) => {
@@ -315,6 +317,16 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
           paddingTop: '1rem'
         }}>
           <ClickableAlbumArtContainer onClick={toggleControls}>
+            {/* Left-side quick actions panel for glow and visualizer toggles */}
+            <LeftQuickActionsPanel
+              accentColor={ui.accentColor}
+              glowEnabled={effects.enabled}
+              onGlowToggle={handlers.onGlowToggle}
+              onBackgroundVisualizerToggle={handlers.onBackgroundVisualizerToggle}
+              backgroundVisualizerEnabled={handlers.backgroundVisualizerEnabled}
+              isVisible={controlsVisible}
+            />
+
             <AlbumArt
               currentTrack={track.current}
               accentColor={ui.accentColor}
@@ -322,6 +334,7 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
               glowRate={effects.glow.rate}
               albumFilters={effects.enabled ? effects.filters : defaultFilters}
             />
+
             {/* Right-side quick actions panel next to album art, docked to its right edge */}
             <QuickActionsPanel
               accentColor={ui.accentColor}
@@ -331,6 +344,9 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
               onShowVisualEffects={handlers.onShowVisualEffects}
               onGlowToggle={handlers.onGlowToggle}
               onAccentColorChange={handlers.onAccentColorChange}
+              onBackgroundVisualizerToggle={handlers.onBackgroundVisualizerToggle}
+              backgroundVisualizerEnabled={handlers.backgroundVisualizerEnabled}
+              debugModeEnabled={handlers.debugModeEnabled}
               isVisible={controlsVisible}
             />
           </ClickableAlbumArtContainer>
@@ -398,6 +414,12 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
         glowRate={effects.glow.rate}
         setGlowRate={handlers.onGlowRateChange}
         effectiveGlow={effects.glow}
+        backgroundVisualizerStyle={(handlers.backgroundVisualizerStyle as VisualizerStyle) || 'particles'}
+        onBackgroundVisualizerStyleChange={handlers.onBackgroundVisualizerStyleChange || (() => { })}
+        backgroundVisualizerIntensity={handlers.backgroundVisualizerIntensity || 60}
+        onBackgroundVisualizerIntensityChange={handlers.onBackgroundVisualizerIntensityChange || (() => { })}
+        accentColorBackgroundEnabled={handlers.accentColorBackgroundEnabled || false}
+        onAccentColorBackgroundToggle={handlers.onAccentColorBackgroundToggle || (() => { })}
       />
       <Suspense fallback={<PlaylistLoadingFallback />}>
         <PlaylistDrawer

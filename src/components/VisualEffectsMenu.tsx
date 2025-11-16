@@ -6,6 +6,7 @@ import { theme } from '../styles/theme';
 import { PerformanceProfilerComponent } from './PerformanceProfiler';
 import VisualEffectsPerformanceMonitor from './VisualEffectsPerformanceMonitor';
 import { usePlayerSizing } from '../hooks/usePlayerSizing';
+import type { VisualizerStyle } from '../types/visualizer';
 
 interface VisualEffectsMenuProps {
   isOpen: boolean;
@@ -26,6 +27,13 @@ interface VisualEffectsMenuProps {
   glowRate: number;
   setGlowRate: (v: number) => void;
   effectiveGlow: { intensity: number; rate: number };
+  // Background visualizer controls
+  backgroundVisualizerStyle: VisualizerStyle;
+  onBackgroundVisualizerStyleChange: (style: VisualizerStyle) => void;
+  backgroundVisualizerIntensity: number;
+  onBackgroundVisualizerIntensityChange: (intensity: number) => void;
+  accentColorBackgroundEnabled: boolean;
+  onAccentColorBackgroundToggle: () => void;
 }
 
 const DrawerOverlay = styled.div<{ $isOpen: boolean }>`
@@ -232,6 +240,81 @@ const OptionButton = styled.button<{ $accentColor: string; $isActive: boolean }>
   }
 `;
 
+const IntensitySlider = styled.input<{ $accentColor: string }>`
+  width: 100%;
+  height: 4px;
+  border-radius: 2px;
+  background: ${theme.colors.gray[600]};
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+  
+  &::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: ${({ $accentColor }) => $accentColor};
+    border: 2px solid ${theme.colors.white};
+    cursor: pointer;
+    transition: transform 0.1s ease;
+    margin-top: -6px; /* Center the thumb vertically: (16px thumb - 4px track) / 2 = 6px */
+    
+    &:hover {
+      transform: scale(1.1);
+    }
+  }
+  
+  &::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: ${({ $accentColor }) => $accentColor};
+    border: 2px solid ${theme.colors.white};
+    cursor: pointer;
+    transition: transform 0.1s ease;
+    border: none; /* Remove default border for Firefox */
+    box-shadow: 0 0 0 2px ${theme.colors.white}; /* Use box-shadow instead for better centering */
+    
+    &:hover {
+      transform: scale(1.1);
+    }
+  }
+  
+  &::-webkit-slider-runnable-track {
+    height: 4px;
+    background: linear-gradient(
+      to right,
+      ${({ $accentColor }) => $accentColor} 0%,
+      ${({ $accentColor }) => $accentColor} var(--slider-value, 0%),
+      ${theme.colors.gray[600]} var(--slider-value, 0%),
+      ${theme.colors.gray[600]} 100%
+    );
+    border-radius: 2px;
+  }
+  
+  &::-moz-range-track {
+    height: 4px;
+    background: ${theme.colors.gray[600]};
+    border-radius: 2px;
+  }
+  
+  &::-moz-range-progress {
+    height: 4px;
+    background: ${({ $accentColor }) => $accentColor};
+    border-radius: 2px;
+  }
+`;
+
+const IntensityValue = styled.span`
+  font-size: 0.875rem;
+  color: rgba(255, 255, 255, 0.7);
+  font-weight: 500;
+  min-width: 3rem;
+  text-align: right;
+`;
+
 // Custom comparison function for memo optimization
 const areVisualEffectsPropsEqual = (
   prevProps: VisualEffectsMenuProps,
@@ -266,7 +349,14 @@ const areVisualEffectsPropsEqual = (
     return false;
   }
 
-
+  // Check background visualizer props
+  if (
+    prevProps.backgroundVisualizerStyle !== nextProps.backgroundVisualizerStyle ||
+    prevProps.backgroundVisualizerIntensity !== nextProps.backgroundVisualizerIntensity ||
+    prevProps.accentColorBackgroundEnabled !== nextProps.accentColorBackgroundEnabled
+  ) {
+    return false;
+  }
 
   return true;
 };
@@ -281,7 +371,13 @@ export const VisualEffectsMenu: React.FC<VisualEffectsMenuProps> = memo(({
   glowIntensity,
   setGlowIntensity,
   glowRate,
-  setGlowRate
+  setGlowRate,
+  backgroundVisualizerStyle,
+  onBackgroundVisualizerStyleChange,
+  backgroundVisualizerIntensity,
+  onBackgroundVisualizerIntensityChange,
+  accentColorBackgroundEnabled,
+  onAccentColorBackgroundToggle
 }) => {
   // Get responsive sizing information
   const { viewport, isMobile, isTablet, transitionDuration, transitionEasing } = usePlayerSizing();
@@ -483,8 +579,66 @@ export const VisualEffectsMenu: React.FC<VisualEffectsMenuProps> = memo(({
                   ))}
                 </OptionButtonGroup>
               </ControlGroup>
+              <ControlGroup>
+                <ControlLabel>
+                  Accent Color Background
+                </ControlLabel>
+                <OptionButtonGroup>
+                  <OptionButton
+                    $accentColor={accentColor}
+                    $isActive={accentColorBackgroundEnabled}
+                    onClick={onAccentColorBackgroundToggle}
+                  >
+                    {accentColorBackgroundEnabled ? 'On' : 'Off'}
+                  </OptionButton>
+                </OptionButtonGroup>
+              </ControlGroup>
             </FilterGrid>
           </FilterSection>
+          
+          {/* Background Visualizer Options Section */}
+          <FilterSection>
+            <SectionTitle>Background Visualizer</SectionTitle>
+            <FilterGrid>
+              <ControlGroup>
+                <ControlLabel>
+                  Visualizer Style
+                </ControlLabel>
+                <OptionButtonGroup>
+                  {(['particles', 'geometric'] as VisualizerStyle[]).map((style) => (
+                    <OptionButton
+                      key={style}
+                      $accentColor={accentColor}
+                      $isActive={backgroundVisualizerStyle === style}
+                      onClick={() => onBackgroundVisualizerStyleChange(style)}
+                    >
+                      {style.charAt(0).toUpperCase() + style.slice(1)}
+                    </OptionButton>
+                  ))}
+                </OptionButtonGroup>
+              </ControlGroup>
+              
+              <ControlGroup>
+                <ControlLabel style={{ justifyContent: 'space-between' }}>
+                  <span>Visualizer Intensity</span>
+                  <IntensityValue>{backgroundVisualizerIntensity}%</IntensityValue>
+                </ControlLabel>
+                <IntensitySlider
+                  type="range"
+                  min={0}
+                  max={100}
+                  step={5}
+                  value={backgroundVisualizerIntensity}
+                  onChange={(e) => onBackgroundVisualizerIntensityChange(parseInt(e.target.value))}
+                  $accentColor={accentColor}
+                  style={{
+                    '--slider-value': `${backgroundVisualizerIntensity}%`
+                  } as React.CSSProperties}
+                />
+              </ControlGroup>
+            </FilterGrid>
+          </FilterSection>
+          
           <FilterSection>
             <SectionTitle>Album Art Filters</SectionTitle>
             <VirtualListContainer data-testid="filter-scroll-container">

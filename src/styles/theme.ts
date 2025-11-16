@@ -57,7 +57,7 @@ export const theme = {
     
     // Muted colors
     muted: {
-      background: 'rgba(0, 0, 0, 0.93)',
+      background: 'rgba(40, 40, 40, 0.83)',
       foreground: 'rgba(255, 255, 255, 0.7)'
     },
     

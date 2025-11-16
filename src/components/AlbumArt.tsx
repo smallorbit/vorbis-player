@@ -71,8 +71,17 @@ const AlbumArtContainer = styled.div.withConfig({
   margin: 0 auto;
   overflow: hidden;
   background: transparent;
-  box-shadow: ${theme.shadows.albumArt};
+  /* Enhanced shadow for better contrast against backgrounds */
+  /* Reduced downward shadow spread to prevent overlap with track info */
+  box-shadow: 
+    0 8px 24px rgba(0, 0, 0, 0.85),
+    0 4px 12px rgba(0, 0, 0, 0.75),
+    0 2px 6px rgba(0, 0, 0, 0.65),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  /* Subtle border for definition */
+  border: 1px solid rgba(255, 255, 255, 0.15);
   z-index: ${theme.zIndex.docked};
+  transition: box-shadow 0.3s ease, border-color 0.3s ease;
   
 `;
 

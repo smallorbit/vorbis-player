@@ -10,11 +10,14 @@ import type { Track } from '@/services/spotify';
 interface QuickActionsPanelProps {
   accentColor: string;
   currentTrack: Track | null;
-  glowEnabled: boolean;
+  glowEnabled: boolean; // Keep for debug mode display
   onShowPlaylist: () => void;
   onShowVisualEffects: () => void;
-  onGlowToggle: () => void;
+  onGlowToggle: () => void; // Keep for debug mode
   onAccentColorChange: (color: string) => void;
+  onBackgroundVisualizerToggle?: () => void; // Background visualizer toggle handler (kept for debug mode)
+  backgroundVisualizerEnabled?: boolean; // Background visualizer enabled state (kept for debug mode)
+  debugModeEnabled?: boolean; // Debug mode toggle
   isVisible?: boolean;
 }
 
@@ -57,14 +60,37 @@ const ToggleHandle = styled.button<{ $accentColor: string }>`
   cursor: pointer;
 `;
 
+const DebugSection = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: ${theme.spacing.xs};
+  padding: ${theme.spacing.xs};
+  margin-top: ${theme.spacing.xs};
+  border-top: 1px dashed rgba(255, 255, 255, 0.2);
+  border-bottom: 1px dashed rgba(255, 255, 255, 0.2);
+`;
+
+const DebugLabel = styled.div`
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.6);
+  text-align: center;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+`;
+
+
 export const QuickActionsPanel: React.FC<QuickActionsPanelProps> = ({
   accentColor,
   currentTrack,
-  glowEnabled,
+  glowEnabled: _glowEnabled, // Kept for debug mode but not used in main UI
   onShowPlaylist,
   onShowVisualEffects,
-  onGlowToggle,
+  onGlowToggle: _onGlowToggle, // Kept for debug mode but not used in main UI
   onAccentColorChange,
+  onBackgroundVisualizerToggle: _onBackgroundVisualizerToggle, // Kept for debug mode but not used in main UI
+  backgroundVisualizerEnabled: _backgroundVisualizerEnabled, // Kept for debug mode but not used in main UI
+  debugModeEnabled = false,
   isVisible = true
 }) => {
   const { isMobile, isTablet, transitionDuration, transitionEasing } = usePlayerSizing();
@@ -98,21 +124,6 @@ export const QuickActionsPanel: React.FC<QuickActionsPanelProps> = ({
           $isMobile={isMobile}
           $isTablet={isTablet}
           accentColor={accentColor}
-          isActive={glowEnabled}
-          onClick={onGlowToggle}
-          title={`Visual Effects ${glowEnabled ? 'enabled' : 'disabled'}`}
-        >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="12" cy="12" r="9" />
-            <circle cx="12" cy="12" r="3" />
-            <path d="M12 3v4m0 10v4m9-9h-4m-10 0H3" />
-          </svg>
-        </ControlButton>
-
-        <ControlButton
-          $isMobile={isMobile}
-          $isTablet={isTablet}
-          accentColor={accentColor}
           isActive={false}
           onClick={onShowVisualEffects}
           title="Visual effects"
@@ -138,6 +149,14 @@ export const QuickActionsPanel: React.FC<QuickActionsPanelProps> = ({
           $isMobile={isMobile}
           $isTablet={isTablet}
         />
+
+        {/* Debug controls - only shown when debug mode is enabled (press 'D' to toggle) */}
+        {debugModeEnabled && (
+          <DebugSection>
+            <DebugLabel>Debug Mode</DebugLabel>
+            {/* Future debug tools can go here */}
+          </DebugSection>
+        )}
       </PanelContainer>
 
       <ToggleHandle $accentColor={accentColor} aria-label={isOpen ? 'Collapse quick actions' : 'Expand quick actions'} onClick={() => setIsOpen(v => !v)} />

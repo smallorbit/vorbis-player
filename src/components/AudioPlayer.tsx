@@ -1,10 +1,12 @@
-import { useEffect, useMemo, useCallback } from 'react';
+import { useEffect, useMemo, useCallback, useState } from 'react';
 import styled from 'styled-components';
 import { spotifyAuth } from '../services/spotify';
 import { spotifyPlayer } from '../services/spotifyPlayer';
 import { flexCenter } from '../styles/utils';
 import PlayerStateRenderer from './PlayerStateRenderer';
 import PlayerContent from './PlayerContent';
+import BackgroundVisualizer from './BackgroundVisualizer';
+import AccentColorBackground from './AccentColorBackground';
 import { usePlayerState } from '../hooks/usePlayerState';
 import { usePlaylistManager } from '../hooks/usePlaylistManager';
 import { useSpotifyPlayback } from '../hooks/useSpotifyPlayback';
@@ -12,6 +14,27 @@ import { useAutoAdvance } from '../hooks/useAutoAdvance';
 import { useAccentColor } from '../hooks/useAccentColor';
 import { useVisualEffectsState } from '../hooks/useVisualEffectsState';
 
+// Debug mode keyboard shortcut handler
+const useDebugModeShortcut = (debugModeEnabled: boolean, setDebugModeEnabled: (enabled: boolean) => void) => {
+  useEffect(() => {
+    const handleKeyPress = (event: KeyboardEvent) => {
+      // Press 'D' key to toggle debug mode (only when not typing in an input)
+      if (event.key === 'd' || event.key === 'D') {
+        const target = event.target as HTMLElement;
+        const isInput = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable;
+        if (!isInput) {
+          event.preventDefault();
+          setDebugModeEnabled(!debugModeEnabled);
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+    return () => {
+      window.removeEventListener('keydown', handleKeyPress);
+    };
+  }, [debugModeEnabled, setDebugModeEnabled]);
+};
 
 const Container = styled.div`
   width: 100%;
@@ -37,6 +60,12 @@ const AudioPlayerComponent = () => {
     visualEffectsEnabled,
     accentColorOverrides,
     albumFilters,
+    backgroundVisualizerEnabled,
+    backgroundVisualizerStyle,
+    backgroundVisualizerIntensity,
+    accentColorBackgroundEnabled,
+    accentColorBackgroundPreferred,
+    debugModeEnabled,
     setTracks,
     setCurrentTrackIndex,
     setIsLoading,
@@ -47,10 +76,22 @@ const AudioPlayerComponent = () => {
     setShowVisualEffects,
     setVisualEffectsEnabled,
     setAccentColorOverrides,
+    setBackgroundVisualizerEnabled,
+    setBackgroundVisualizerStyle,
+    setBackgroundVisualizerIntensity,
+    setAccentColorBackgroundEnabled,
+    setDebugModeEnabled,
     handleFilterChange,
     handleResetFilters,
     restoreSavedFilters,
   } = usePlayerState();
+
+  // Enable debug mode keyboard shortcut (press 'D' to toggle)
+  useDebugModeShortcut(debugModeEnabled, setDebugModeEnabled);
+
+  // Playback state for visualizer
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [playbackPosition, setPlaybackPosition] = useState(0);
 
   // Visual effects state management
   const {
@@ -105,17 +146,37 @@ const AudioPlayerComponent = () => {
 
   useEffect(() => {
     const handlePlayerStateChange = (state: SpotifyPlaybackState | null) => {
-      if (state && state.track_window.current_track) {
-        const currentTrack = state.track_window.current_track;
-        const trackIndex = tracks.findIndex(track => track.id === currentTrack.id);
+      if (state) {
+        // Update playback state for visualizer
+        setIsPlaying(!state.paused);
+        setPlaybackPosition(state.position);
 
-        if (trackIndex !== -1 && trackIndex !== currentTrackIndex) {
-          setCurrentTrackIndex(trackIndex);
+        // Update track index if track changed
+        if (state.track_window.current_track) {
+          const currentTrack = state.track_window.current_track;
+          const trackIndex = tracks.findIndex(track => track.id === currentTrack.id);
+
+          if (trackIndex !== -1 && trackIndex !== currentTrackIndex) {
+            setCurrentTrackIndex(trackIndex);
+          }
         }
+      } else {
+        setIsPlaying(false);
+        setPlaybackPosition(0);
       }
     };
 
     spotifyPlayer.onPlayerStateChanged(handlePlayerStateChange);
+
+    // Also check initial state
+    const checkInitialState = async () => {
+      const state = await spotifyPlayer.getCurrentState();
+      if (state) {
+        setIsPlaying(!state.paused);
+        setPlaybackPosition(state.position);
+      }
+    };
+    checkInitialState();
   }, [tracks, currentTrackIndex, setCurrentTrackIndex]);
 
 
@@ -159,8 +220,11 @@ const AudioPlayerComponent = () => {
   const handleVisualEffectsToggle = useCallback(() => {
     if (visualEffectsEnabled) {
       setVisualEffectsEnabled(false);
+      // Accent color background will be disabled by the sync effect in usePlayerState
     } else {
       setVisualEffectsEnabled(true);
+      // Don't automatically enable accent color background - honor the VFX menu setting
+      // If it's enabled in the menu, it will show when glow is enabled
       restoreSavedFilters();
       restoreGlowSettings();
     }
@@ -175,6 +239,19 @@ const AudioPlayerComponent = () => {
     const mappedColor = color === 'RESET_TO_DEFAULT' ? 'auto' : color;
     handleAccentColorChangeHook(mappedColor);
   }, [handleAccentColorChangeHook]);
+
+  // Temporary test handlers for background visualizer
+  const handleBackgroundVisualizerToggle = useCallback(() => {
+    setBackgroundVisualizerEnabled(prev => !prev);
+  }, [setBackgroundVisualizerEnabled]);
+
+  const handleBackgroundVisualizerIntensityChange = useCallback((intensity: number) => {
+    setBackgroundVisualizerIntensity(Math.max(0, Math.min(100, intensity)));
+  }, [setBackgroundVisualizerIntensity]);
+
+  const handleBackgroundVisualizerStyleChange = useCallback((style: 'particles' | 'waveform' | 'geometric' | 'gradient-flow') => {
+    setBackgroundVisualizerStyle(style);
+  }, [setBackgroundVisualizerStyle]);
 
   const renderContent = () => {
     const stateRenderer = (
@@ -223,7 +300,19 @@ const AudioPlayerComponent = () => {
           onFilterChange: handleFilterChange,
           onResetFilters: handleResetFilters,
           onGlowIntensityChange: handleGlowIntensityChange,
-          onGlowRateChange: handleGlowRateChange
+          onGlowRateChange: handleGlowRateChange,
+          onBackgroundVisualizerToggle: handleBackgroundVisualizerToggle,
+          onBackgroundVisualizerIntensityChange: handleBackgroundVisualizerIntensityChange,
+          onBackgroundVisualizerStyleChange: handleBackgroundVisualizerStyleChange,
+          backgroundVisualizerEnabled,
+          backgroundVisualizerStyle,
+          backgroundVisualizerIntensity,
+          accentColorBackgroundEnabled: accentColorBackgroundPreferred, // Pass preferred state to VFX menu
+          onAccentColorBackgroundToggle: () => {
+            // Update preferred state (which will sync to enabled state via useEffect)
+            setAccentColorBackgroundEnabled(prev => !prev);
+          },
+          debugModeEnabled
         }}
       />
     );
@@ -231,6 +320,18 @@ const AudioPlayerComponent = () => {
 
   return (
     <Container>
+      <AccentColorBackground
+        enabled={accentColorBackgroundEnabled}
+        accentColor={accentColor}
+      />
+      <BackgroundVisualizer
+        enabled={backgroundVisualizerEnabled}
+        style={backgroundVisualizerStyle}
+        intensity={backgroundVisualizerIntensity}
+        accentColor={accentColor}
+        isPlaying={isPlaying}
+        playbackPosition={playbackPosition}
+      />
       {renderContent()}
     </Container>
   );
