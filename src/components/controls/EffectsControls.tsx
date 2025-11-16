@@ -47,10 +47,8 @@ export const EffectsControls = memo<EffectsControlsProps>(({
                     onClick={onGlowToggle}
                     style={{ marginLeft: 8 }}
                 >
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <circle cx="12" cy="12" r="9" />
-                        <circle cx="12" cy="12" r="3" />
-                        <path d="M12 3v4m0 10v4m9-9h-4m-10 0H3" />
+                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M21 12H22M18.5 5.5L19.5 4.5M12 3V2M5.5 5.5L4.5 4.5M3 12H2M10 22H14M17 12C17 9.23858 14.7614 7 12 7C9.23858 7 7 9.23858 7 12C7 14.0503 8.2341 15.8124 10 16.584V19H14V16.584C15.7659 15.8124 17 14.0503 17 12Z" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
                     </svg>
                 </ControlButton>
             )}
