@@ -221,6 +221,7 @@ export const TimelineControlsContainer = styled.div`
   align-items: center;
   justify-content: space-between;
   gap: ${({ theme }) => theme.spacing.xs};
+  margin-top: ${({ theme }) => theme.spacing.sm};
 `;
 
 export const TimelineLeft = styled.div`
