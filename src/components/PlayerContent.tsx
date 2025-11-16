@@ -9,6 +9,7 @@ import { theme } from '@/styles/theme';
 import { cardBase } from '../styles/utils';
 import { usePlayerSizing } from '../hooks/usePlayerSizing';
 import type { Track } from '../services/spotify';
+import type { VisualizerStyle } from '../types/visualizer';
 
 const PlaylistDrawer = lazy(() => import('./PlaylistDrawer'));
 
@@ -37,12 +38,12 @@ interface PlayerContentHandlers {
   onResetFilters: () => void;
   onGlowIntensityChange: (intensity: number) => void;
   onGlowRateChange: (rate: number) => void;
-  onBackgroundVisualizerToggle?: () => void; // Temporary test handler
-  onBackgroundVisualizerIntensityChange?: (delta: number) => void; // Temporary debug handler
-  onBackgroundVisualizerStyleChange?: (style: 'particles' | 'waveform' | 'geometric' | 'gradient-flow') => void; // Temporary debug handler
-  backgroundVisualizerEnabled?: boolean; // Temporary debug prop
-  backgroundVisualizerStyle?: string; // Temporary debug prop
-  backgroundVisualizerIntensity?: number; // Temporary debug prop
+  onBackgroundVisualizerToggle?: () => void; // Background visualizer toggle handler
+  onBackgroundVisualizerIntensityChange?: (intensity: number) => void; // Background visualizer intensity change handler (direct value, not delta)
+  onBackgroundVisualizerStyleChange?: (style: 'particles' | 'waveform' | 'geometric' | 'gradient-flow') => void; // Background visualizer style change handler
+  backgroundVisualizerEnabled?: boolean; // Background visualizer enabled state
+  backgroundVisualizerStyle?: string; // Background visualizer style
+  backgroundVisualizerIntensity?: number; // Background visualizer intensity
   accentColorBackgroundEnabled?: boolean; // Accent color background toggle
   onAccentColorBackgroundToggle?: () => void; // Accent color background toggle handler
   debugModeEnabled?: boolean; // Debug mode toggle
@@ -357,13 +358,7 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
               onGlowToggle={handlers.onGlowToggle}
               onAccentColorChange={handlers.onAccentColorChange}
               onBackgroundVisualizerToggle={handlers.onBackgroundVisualizerToggle}
-              onBackgroundVisualizerIntensityChange={handlers.onBackgroundVisualizerIntensityChange}
-              onBackgroundVisualizerStyleChange={handlers.onBackgroundVisualizerStyleChange}
               backgroundVisualizerEnabled={handlers.backgroundVisualizerEnabled}
-              backgroundVisualizerStyle={handlers.backgroundVisualizerStyle}
-              backgroundVisualizerIntensity={handlers.backgroundVisualizerIntensity}
-              accentColorBackgroundEnabled={handlers.accentColorBackgroundEnabled}
-              onAccentColorBackgroundToggle={handlers.onAccentColorBackgroundToggle}
               debugModeEnabled={handlers.debugModeEnabled}
               isVisible={controlsVisible}
             />
@@ -432,6 +427,12 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
         glowRate={effects.glow.rate}
         setGlowRate={handlers.onGlowRateChange}
         effectiveGlow={effects.glow}
+        backgroundVisualizerStyle={(handlers.backgroundVisualizerStyle as VisualizerStyle) || 'particles'}
+        onBackgroundVisualizerStyleChange={handlers.onBackgroundVisualizerStyleChange || (() => { })}
+        backgroundVisualizerIntensity={handlers.backgroundVisualizerIntensity || 60}
+        onBackgroundVisualizerIntensityChange={handlers.onBackgroundVisualizerIntensityChange || (() => { })}
+        accentColorBackgroundEnabled={handlers.accentColorBackgroundEnabled || false}
+        onAccentColorBackgroundToggle={handlers.onAccentColorBackgroundToggle || (() => { })}
       />
       <Suspense fallback={<PlaylistLoadingFallback />}>
         <PlaylistDrawer

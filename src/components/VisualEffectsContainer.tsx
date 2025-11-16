@@ -1,4 +1,5 @@
 import React, { Suspense, lazy, useEffect } from 'react';
+import type { VisualizerStyle } from '../types/visualizer';
 
 const VisualEffectsMenu = lazy(() => import('./VisualEffectsMenu'));
 
@@ -26,6 +27,13 @@ interface VisualEffectsContainerProps {
   glowRate: number;
   setGlowRate: (rate: number) => void;
   effectiveGlow: { intensity: number; rate: number };
+  // Background visualizer controls
+  backgroundVisualizerStyle: VisualizerStyle;
+  onBackgroundVisualizerStyleChange: (style: VisualizerStyle) => void;
+  backgroundVisualizerIntensity: number;
+  onBackgroundVisualizerIntensityChange: (intensity: number) => void;
+  accentColorBackgroundEnabled: boolean;
+  onAccentColorBackgroundToggle: () => void;
 }
 
 const EffectsLoadingFallback: React.FC = () => (
@@ -59,7 +67,13 @@ const VisualEffectsContainer: React.FC<VisualEffectsContainerProps> = ({
   setGlowIntensity,
   glowRate,
   setGlowRate,
-  effectiveGlow
+  effectiveGlow,
+  backgroundVisualizerStyle,
+  onBackgroundVisualizerStyleChange,
+  backgroundVisualizerIntensity,
+  onBackgroundVisualizerIntensityChange,
+  accentColorBackgroundEnabled,
+  onAccentColorBackgroundToggle
 }) => {
 
 
@@ -117,6 +131,12 @@ const VisualEffectsContainer: React.FC<VisualEffectsContainerProps> = ({
         glowRate={glowRate}
         setGlowRate={setGlowRate}
         effectiveGlow={effectiveGlow}
+        backgroundVisualizerStyle={backgroundVisualizerStyle}
+        onBackgroundVisualizerStyleChange={onBackgroundVisualizerStyleChange}
+        backgroundVisualizerIntensity={backgroundVisualizerIntensity}
+        onBackgroundVisualizerIntensityChange={onBackgroundVisualizerIntensityChange}
+        accentColorBackgroundEnabled={accentColorBackgroundEnabled}
+        onAccentColorBackgroundToggle={onAccentColorBackgroundToggle}
       />
     </Suspense>
   ) : null;

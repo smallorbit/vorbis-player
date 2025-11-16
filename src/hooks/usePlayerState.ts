@@ -369,6 +369,16 @@ export const usePlayerState = () => {
   useEffect(() => {
     localStorage.setItem('vorbis-player-visual-effects-enabled', JSON.stringify(visualEffectsEnabled));
   }, [visualEffectsEnabled]);
+
+  // Sync accent color background with glow effect
+  // When glow is disabled, accent color background is also disabled
+  // When glow is enabled, accent color background can be toggled independently
+  useEffect(() => {
+    if (!visualEffectsEnabled) {
+      // When glow is disabled, always disable accent color background
+      setAccentColorBackgroundEnabled(false);
+    }
+  }, [visualEffectsEnabled, setAccentColorBackgroundEnabled]);
   
 
   

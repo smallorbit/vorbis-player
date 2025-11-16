@@ -219,12 +219,15 @@ const AudioPlayerComponent = () => {
   const handleVisualEffectsToggle = useCallback(() => {
     if (visualEffectsEnabled) {
       setVisualEffectsEnabled(false);
+      // Accent color background will be disabled by the sync effect in usePlayerState
     } else {
       setVisualEffectsEnabled(true);
+      // Enable accent color background when glow is enabled
+      setAccentColorBackgroundEnabled(true);
       restoreSavedFilters();
       restoreGlowSettings();
     }
-  }, [visualEffectsEnabled, restoreSavedFilters, restoreGlowSettings, setVisualEffectsEnabled]);
+  }, [visualEffectsEnabled, restoreSavedFilters, restoreGlowSettings, setVisualEffectsEnabled, setAccentColorBackgroundEnabled]);
 
   const handleClosePlaylist = useCallback(() => {
     setShowPlaylist(false);
@@ -241,8 +244,8 @@ const AudioPlayerComponent = () => {
     setBackgroundVisualizerEnabled(prev => !prev);
   }, [setBackgroundVisualizerEnabled]);
 
-  const handleBackgroundVisualizerIntensityChange = useCallback((delta: number) => {
-    setBackgroundVisualizerIntensity(prev => Math.max(0, Math.min(100, prev + delta)));
+  const handleBackgroundVisualizerIntensityChange = useCallback((intensity: number) => {
+    setBackgroundVisualizerIntensity(Math.max(0, Math.min(100, intensity)));
   }, [setBackgroundVisualizerIntensity]);
 
   const handleBackgroundVisualizerStyleChange = useCallback((style: 'particles' | 'waveform' | 'geometric' | 'gradient-flow') => {

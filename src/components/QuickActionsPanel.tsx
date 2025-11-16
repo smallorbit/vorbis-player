@@ -6,7 +6,6 @@ import { ControlButton } from './controls/styled';
 import ColorPickerPopover from './ColorPickerPopover';
 import { useCustomAccentColors } from '@/hooks/useCustomAccentColors';
 import type { Track } from '@/services/spotify';
-import type { VisualizerStyle } from '@/types/visualizer';
 
 interface QuickActionsPanelProps {
   accentColor: string;
@@ -16,14 +15,8 @@ interface QuickActionsPanelProps {
   onShowVisualEffects: () => void;
   onGlowToggle: () => void;
   onAccentColorChange: (color: string) => void;
-  onBackgroundVisualizerToggle?: () => void; // Temporary test handler
-  onBackgroundVisualizerIntensityChange?: (delta: number) => void; // Temporary debug handler
-  onBackgroundVisualizerStyleChange?: (style: VisualizerStyle) => void; // Temporary debug handler
-  backgroundVisualizerEnabled?: boolean; // Temporary debug prop
-  backgroundVisualizerStyle?: string; // Temporary debug prop
-  backgroundVisualizerIntensity?: number; // Temporary debug prop
-  accentColorBackgroundEnabled?: boolean; // Accent color background toggle
-  onAccentColorBackgroundToggle?: () => void; // Accent color background toggle handler
+  onBackgroundVisualizerToggle?: () => void; // Background visualizer toggle handler
+  backgroundVisualizerEnabled?: boolean; // Background visualizer enabled state
   debugModeEnabled?: boolean; // Debug mode toggle
   isVisible?: boolean;
 }
@@ -86,37 +79,6 @@ const DebugLabel = styled.div`
   letter-spacing: 0.05em;
 `;
 
-const DebugButtonGroup = styled.div`
-  display: flex;
-  gap: ${theme.spacing.xs};
-  flex-wrap: wrap;
-`;
-
-const DebugButton = styled.button<{ $accentColor: string; $isActive?: boolean }>`
-  flex: 1;
-  min-width: 40px;
-  padding: 0.25rem 0.5rem;
-  font-size: 0.7rem;
-  background: ${({ $isActive, $accentColor }) => $isActive ? $accentColor : 'rgba(255, 255, 255, 0.1)'};
-  border: 1px solid ${({ $isActive, $accentColor }) => $isActive ? $accentColor : 'rgba(255, 255, 255, 0.2)'};
-  color: ${({ $isActive }) => $isActive ? '#000' : 'rgba(255, 255, 255, 0.8)'};
-  border-radius: ${theme.borderRadius.sm};
-  cursor: pointer;
-  transition: all 0.2s ease;
-  
-  &:hover {
-    background: ${({ $accentColor }) => $accentColor}44;
-    border-color: ${({ $accentColor }) => $accentColor};
-    color: rgba(255, 255, 255, 0.9);
-  }
-`;
-
-const IntensityDisplay = styled.div`
-  font-size: 0.75rem;
-  color: rgba(255, 255, 255, 0.8);
-  text-align: center;
-  padding: 0.25rem;
-`;
 
 export const QuickActionsPanel: React.FC<QuickActionsPanelProps> = ({
   accentColor,
@@ -127,13 +89,7 @@ export const QuickActionsPanel: React.FC<QuickActionsPanelProps> = ({
   onGlowToggle,
   onAccentColorChange,
   onBackgroundVisualizerToggle,
-  onBackgroundVisualizerIntensityChange,
-  onBackgroundVisualizerStyleChange,
   backgroundVisualizerEnabled,
-  backgroundVisualizerStyle,
-  backgroundVisualizerIntensity,
-  accentColorBackgroundEnabled,
-  onAccentColorBackgroundToggle,
   debugModeEnabled = false,
   isVisible = true
 }) => {
@@ -209,105 +165,29 @@ export const QuickActionsPanel: React.FC<QuickActionsPanelProps> = ({
           $isTablet={isTablet}
         />
 
+        {/* Background Visualizer - Quick Toggle */}
+        {onBackgroundVisualizerToggle && (
+          <ControlButton
+            $isMobile={isMobile}
+            $isTablet={isTablet}
+            accentColor={accentColor}
+            isActive={backgroundVisualizerEnabled}
+            onClick={onBackgroundVisualizerToggle}
+            title={`Background Visualizer ${backgroundVisualizerEnabled ? 'ON' : 'OFF'}`}
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10" />
+              <path d="M12 6v6l4 2" />
+            </svg>
+          </ControlButton>
+        )}
+
         {/* Debug controls - only shown when debug mode is enabled (press 'D' to toggle) */}
-        {debugModeEnabled && onBackgroundVisualizerToggle && (
-          <>
-            <DebugSection>
-              <DebugLabel>Background Options (Debug Mode)</DebugLabel>
-              
-              {/* Accent Color Background Toggle */}
-              {onAccentColorBackgroundToggle && (
-                <ControlButton
-                  $isMobile={isMobile}
-                  $isTablet={isTablet}
-                  accentColor={accentColor}
-                  isActive={accentColorBackgroundEnabled}
-                  onClick={onAccentColorBackgroundToggle}
-                  title={`Accent Color Background ${accentColorBackgroundEnabled ? 'ON' : 'OFF'}`}
-                  style={{ border: '2px dashed rgba(255,255,255,0.3)' }}
-                >
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <rect x="3" y="3" width="18" height="18" rx="2" />
-                    <path d="M9 9h6v6H9z" />
-                  </svg>
-                </ControlButton>
-              )}
-
-              {/* Visualizer Toggle Button */}
-              <ControlButton
-                $isMobile={isMobile}
-                $isTablet={isTablet}
-                accentColor={accentColor}
-                isActive={backgroundVisualizerEnabled}
-                onClick={onBackgroundVisualizerToggle}
-                title={`Background Visualizer ${backgroundVisualizerEnabled ? 'ON' : 'OFF'}`}
-                style={{ border: '2px dashed rgba(255,255,255,0.3)' }}
-              >
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="12" cy="12" r="10" />
-                  <path d="M12 6v6l4 2" />
-                </svg>
-              </ControlButton>
-
-              {/* Style Selector */}
-              {backgroundVisualizerEnabled && onBackgroundVisualizerStyleChange && (
-                <>
-                  <DebugLabel>Style</DebugLabel>
-                  <DebugButtonGroup>
-                    {(['particles', 'geometric'] as VisualizerStyle[]).map((style) => (
-                      <DebugButton
-                        key={style}
-                        $accentColor={accentColor}
-                        $isActive={backgroundVisualizerStyle === style}
-                        onClick={() => onBackgroundVisualizerStyleChange(style)}
-                        title={style}
-                      >
-                        {style.charAt(0).toUpperCase()}
-                      </DebugButton>
-                    ))}
-                  </DebugButtonGroup>
-                </>
-              )}
-
-              {/* Intensity Controls */}
-              {backgroundVisualizerEnabled && onBackgroundVisualizerIntensityChange && (
-                <>
-                  <DebugLabel>Intensity</DebugLabel>
-                  <IntensityDisplay>{backgroundVisualizerIntensity ?? 60}%</IntensityDisplay>
-                  <DebugButtonGroup>
-                    <DebugButton
-                      $accentColor={accentColor}
-                      onClick={() => onBackgroundVisualizerIntensityChange(-10)}
-                      title="Decrease intensity"
-                    >
-                      -10
-                    </DebugButton>
-                    <DebugButton
-                      $accentColor={accentColor}
-                      onClick={() => onBackgroundVisualizerIntensityChange(-5)}
-                      title="Decrease intensity"
-                    >
-                      -5
-                    </DebugButton>
-                    <DebugButton
-                      $accentColor={accentColor}
-                      onClick={() => onBackgroundVisualizerIntensityChange(5)}
-                      title="Increase intensity"
-                    >
-                      +5
-                    </DebugButton>
-                    <DebugButton
-                      $accentColor={accentColor}
-                      onClick={() => onBackgroundVisualizerIntensityChange(10)}
-                      title="Increase intensity"
-                    >
-                      +10
-                    </DebugButton>
-                  </DebugButtonGroup>
-                </>
-              )}
-            </DebugSection>
-          </>
+        {debugModeEnabled && (
+          <DebugSection>
+            <DebugLabel>Debug Mode</DebugLabel>
+            {/* Future debug tools can go here */}
+          </DebugSection>
         )}
       </PanelContainer>
 
