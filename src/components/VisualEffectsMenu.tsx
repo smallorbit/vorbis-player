@@ -259,6 +259,7 @@ const IntensitySlider = styled.input<{ $accentColor: string }>`
     border: 2px solid ${theme.colors.white};
     cursor: pointer;
     transition: transform 0.1s ease;
+    margin-top: -6px; /* Center the thumb vertically: (16px thumb - 4px track) / 2 = 6px */
     
     &:hover {
       transform: scale(1.1);
@@ -273,6 +274,8 @@ const IntensitySlider = styled.input<{ $accentColor: string }>`
     border: 2px solid ${theme.colors.white};
     cursor: pointer;
     transition: transform 0.1s ease;
+    border: none; /* Remove default border for Firefox */
+    box-shadow: 0 0 0 2px ${theme.colors.white}; /* Use box-shadow instead for better centering */
     
     &:hover {
       transform: scale(1.1);

@@ -64,6 +64,7 @@ const AudioPlayerComponent = () => {
     backgroundVisualizerStyle,
     backgroundVisualizerIntensity,
     accentColorBackgroundEnabled,
+    accentColorBackgroundPreferred,
     debugModeEnabled,
     setTracks,
     setCurrentTrackIndex,
@@ -222,12 +223,12 @@ const AudioPlayerComponent = () => {
       // Accent color background will be disabled by the sync effect in usePlayerState
     } else {
       setVisualEffectsEnabled(true);
-      // Enable accent color background when glow is enabled
-      setAccentColorBackgroundEnabled(true);
+      // Don't automatically enable accent color background - honor the VFX menu setting
+      // If it's enabled in the menu, it will show when glow is enabled
       restoreSavedFilters();
       restoreGlowSettings();
     }
-  }, [visualEffectsEnabled, restoreSavedFilters, restoreGlowSettings, setVisualEffectsEnabled, setAccentColorBackgroundEnabled]);
+  }, [visualEffectsEnabled, restoreSavedFilters, restoreGlowSettings, setVisualEffectsEnabled]);
 
   const handleClosePlaylist = useCallback(() => {
     setShowPlaylist(false);
@@ -306,8 +307,11 @@ const AudioPlayerComponent = () => {
           backgroundVisualizerEnabled,
           backgroundVisualizerStyle,
           backgroundVisualizerIntensity,
-          accentColorBackgroundEnabled,
-          onAccentColorBackgroundToggle: () => setAccentColorBackgroundEnabled(prev => !prev),
+          accentColorBackgroundEnabled: accentColorBackgroundPreferred, // Pass preferred state to VFX menu
+          onAccentColorBackgroundToggle: () => {
+            // Update preferred state (which will sync to enabled state via useEffect)
+            setAccentColorBackgroundEnabled(prev => !prev);
+          },
           debugModeEnabled
         }}
       />

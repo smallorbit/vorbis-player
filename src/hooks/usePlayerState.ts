@@ -325,6 +325,13 @@ export const usePlayerState = () => {
   });
 
   // Accent color background state with persistence
+  // Preferred accent color background state (user's preference from VFX menu)
+  const [accentColorBackgroundPreferred, setAccentColorBackgroundPreferred] = useState<boolean>(() => {
+    const saved = localStorage.getItem('vorbis-player-accent-color-background-enabled');
+    return saved ? JSON.parse(saved) : false;
+  });
+
+  // Actual accent color background enabled state (respects glow state)
   const [accentColorBackgroundEnabled, setAccentColorBackgroundEnabled] = useState<boolean>(() => {
     const saved = localStorage.getItem('vorbis-player-accent-color-background-enabled');
     return saved ? JSON.parse(saved) : false;
@@ -371,14 +378,17 @@ export const usePlayerState = () => {
   }, [visualEffectsEnabled]);
 
   // Sync accent color background with glow effect
-  // When glow is disabled, accent color background is also disabled
-  // When glow is enabled, accent color background can be toggled independently
+  // When glow is disabled, accent color background is also disabled (visually)
+  // When glow is enabled, restore the user's preferred setting from VFX menu
   useEffect(() => {
     if (!visualEffectsEnabled) {
-      // When glow is disabled, always disable accent color background
+      // When glow is disabled, disable accent color background visually
       setAccentColorBackgroundEnabled(false);
+    } else {
+      // When glow is enabled, restore the user's preferred setting
+      setAccentColorBackgroundEnabled(accentColorBackgroundPreferred);
     }
-  }, [visualEffectsEnabled, setAccentColorBackgroundEnabled]);
+  }, [visualEffectsEnabled, accentColorBackgroundPreferred]);
   
 
   
@@ -399,10 +409,10 @@ export const usePlayerState = () => {
     localStorage.setItem('vorbis-player-background-visualizer-intensity', backgroundVisualizerIntensity.toString());
   }, [backgroundVisualizerIntensity]);
 
-  // Accent color background persistence
+  // Accent color background persistence (save preferred state, not the actual enabled state)
   useEffect(() => {
-    localStorage.setItem('vorbis-player-accent-color-background-enabled', JSON.stringify(accentColorBackgroundEnabled));
-  }, [accentColorBackgroundEnabled]);
+    localStorage.setItem('vorbis-player-accent-color-background-enabled', JSON.stringify(accentColorBackgroundPreferred));
+  }, [accentColorBackgroundPreferred]);
 
   // Debug mode persistence
   useEffect(() => {
@@ -545,6 +555,7 @@ export const usePlayerState = () => {
     backgroundVisualizerStyle,
     backgroundVisualizerIntensity,
     accentColorBackgroundEnabled,
+    accentColorBackgroundPreferred, // Expose preferred state for VFX menu display
     debugModeEnabled,
     setTracks,
     setCurrentTrackIndex,
@@ -561,7 +572,7 @@ export const usePlayerState = () => {
     setBackgroundVisualizerEnabled,
     setBackgroundVisualizerStyle,
     setBackgroundVisualizerIntensity,
-    setAccentColorBackgroundEnabled,
+    setAccentColorBackgroundEnabled: setAccentColorBackgroundPreferred, // VFX menu updates preferred state
     setDebugModeEnabled,
     handleFilterChange,
     handleResetFilters,

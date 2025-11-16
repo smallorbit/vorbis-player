@@ -55,7 +55,7 @@ const EffectsLoadingFallback: React.FC = () => (
 );
 
 const VisualEffectsContainer: React.FC<VisualEffectsContainerProps> = ({
-  enabled,
+  enabled: _enabled, // Not used for menu visibility, but kept for API compatibility
   isMenuOpen,
   accentColor,
   filters,
@@ -97,7 +97,7 @@ const VisualEffectsContainer: React.FC<VisualEffectsContainerProps> = ({
           }
           break;
         case 'KeyR':
-          if (event.ctrlKey || event.metaKey && enabled) {
+          if (event.ctrlKey || event.metaKey) {
             event.preventDefault();
             onResetFilters();
           }
@@ -107,7 +107,7 @@ const VisualEffectsContainer: React.FC<VisualEffectsContainerProps> = ({
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [enabled, onToggleEffects, onMenuClose, onResetFilters]);
+  }, [onToggleEffects, onMenuClose, onResetFilters]);
 
   // Wrapper function to handle type mismatch between onFilterChange signatures
   const handleFilterChangeWrapper = (filterName: string, value: number | boolean) => {
@@ -117,7 +117,9 @@ const VisualEffectsContainer: React.FC<VisualEffectsContainerProps> = ({
     // Ignore boolean values for now as they're not used in the current implementation
   };
 
-  return enabled ? (
+  // Always render menu when open, regardless of enabled state
+  // The enabled prop controls whether effects are applied, not menu accessibility
+  return isMenuOpen ? (
     <Suspense fallback={<EffectsLoadingFallback />}>
       <VisualEffectsMenu
         isOpen={isMenuOpen}

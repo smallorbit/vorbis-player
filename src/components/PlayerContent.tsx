@@ -266,34 +266,9 @@ const PlayerContainer = styled.div.withConfig({
 const ClickableAlbumArtContainer = styled.div`
   position: relative;
   cursor: pointer;
-  transition: filter 0.2s ease, transform 0.2s ease;
   z-index: 3;
   /* Add subtle outer glow/shadow for separation from background */
   filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.4));
-  
-  &:hover {
-    filter: brightness(1.05) drop-shadow(0 6px 16px rgba(0, 0, 0, 0.5));
-    transform: translateY(-2px);
-  }
-  
-  &::after {
-    content: '';
-    position: absolute;
-    bottom: 8px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 0;
-    height: 0;
-    border-left: 6px solid transparent;
-    border-right: 6px solid transparent;
-    border-top: 8px solid rgba(255, 255, 255, 0.7);
-    transition: opacity 0.2s ease;
-    opacity: 0;
-  }
-  
-  &:hover::after {
-    opacity: 1;
-  }
 `;
 
 const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handlers }) => {
