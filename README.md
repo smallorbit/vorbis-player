@@ -11,6 +11,7 @@ A React-based Spotify music player with visual effects and album art display.
 - **Spotify Integration**: Stream music from your Spotify account (Premium required)
 - **Playlist Support**: Access playlists and Liked Songs with shuffle support
 - **Visual Effects**: Dynamic album art with customizable filters and glow effects
+- **Background Visualizer**: Animated particle and geometric visualizers
 - **Three-Column Layout**: Track info, controls, and settings in a fixed 768px x 880px layout
 - **Responsive Design**: Mobile-optimized with touch-friendly controls
 
@@ -63,6 +64,52 @@ A React-based Spotify music player with visual effects and album art display.
    - Open <http://127.0.0.1:3000>
    - Click "Connect Spotify" to authenticate
    - Choose from your playlists or select "Liked Songs" for shuffled playback
+
+## User Interface
+
+### Quick Actions Panel (Left Side)
+
+The left quick actions panel provides quick access to visual effects controls:
+
+- **Visual Effects Toggle** (✨): Enable or disable glow effects on the album art
+- **Background Visualizer Toggle** (💠): Enable or disable the animated background visualizer
+
+The panel can be collapsed/expanded by clicking the accent-colored handle on the right edge.
+
+### Control Toolbar
+
+The main control toolbar includes:
+
+- **Playback Controls**: Previous track, Play/Pause, Next track
+- **Visual Effects Toggle** (✨): Quick toggle for glow effects
+- **Visual Effects Menu** (⚙️): Opens the visual effects configuration drawer
+
+### Visual Effects Menu
+
+The visual effects menu (opened via the ⚙️ button) provides comprehensive control over all visual effects:
+
+#### Glow Effect
+- **Intensity**: Adjust glow intensity (Less/Normal/More)
+- **Rate**: Control animation speed (Slower/Normal/Faster)
+- **Accent Color Background**: Toggle accent color background overlay (On/Off)
+
+#### Background Visualizer
+- **Visualizer Style**: Choose between Particles or Geometric patterns
+- **Visualizer Intensity**: Adjust intensity from 0-100% using a slider
+
+#### Album Art Filters
+- **Brightness**: Less/Normal/More
+- **Saturation**: Less/Normal/More
+- **Sepia**: None/Some/More
+- **Contrast**: Less/Normal/More
+- **Reset All Filters**: Restore all filters to default values
+
+### Keyboard Shortcuts
+
+- `Space`: Play/Pause
+- `←` / `→`: Previous/Next track
+- `P`: Toggle playlist drawer
+- `V`: Toggle visual effects
 
 ## Development
 
@@ -152,3 +199,4 @@ The `dist/` folder contains static files that can be deployed to any web hosting
 - If visual effects aren't working, try refreshing the page
 - Clear localStorage to reset visual settings to defaults
 - Ensure your browser supports CSS filters and backdrop-blur effects
+- Background visualizer requires WebGL support - check your browser compatibility
