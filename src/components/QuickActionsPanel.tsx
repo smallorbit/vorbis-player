@@ -10,13 +10,13 @@ import type { Track } from '@/services/spotify';
 interface QuickActionsPanelProps {
   accentColor: string;
   currentTrack: Track | null;
-  glowEnabled: boolean;
+  glowEnabled: boolean; // Keep for debug mode display
   onShowPlaylist: () => void;
   onShowVisualEffects: () => void;
-  onGlowToggle: () => void;
+  onGlowToggle: () => void; // Keep for debug mode
   onAccentColorChange: (color: string) => void;
-  onBackgroundVisualizerToggle?: () => void; // Background visualizer toggle handler
-  backgroundVisualizerEnabled?: boolean; // Background visualizer enabled state
+  onBackgroundVisualizerToggle?: () => void; // Background visualizer toggle handler (kept for debug mode)
+  backgroundVisualizerEnabled?: boolean; // Background visualizer enabled state (kept for debug mode)
   debugModeEnabled?: boolean; // Debug mode toggle
   isVisible?: boolean;
 }
@@ -83,13 +83,13 @@ const DebugLabel = styled.div`
 export const QuickActionsPanel: React.FC<QuickActionsPanelProps> = ({
   accentColor,
   currentTrack,
-  glowEnabled,
+  glowEnabled: _glowEnabled, // Kept for debug mode but not used in main UI
   onShowPlaylist,
   onShowVisualEffects,
-  onGlowToggle,
+  onGlowToggle: _onGlowToggle, // Kept for debug mode but not used in main UI
   onAccentColorChange,
-  onBackgroundVisualizerToggle,
-  backgroundVisualizerEnabled,
+  onBackgroundVisualizerToggle: _onBackgroundVisualizerToggle, // Kept for debug mode but not used in main UI
+  backgroundVisualizerEnabled: _backgroundVisualizerEnabled, // Kept for debug mode but not used in main UI
   debugModeEnabled = false,
   isVisible = true
 }) => {
@@ -124,21 +124,6 @@ export const QuickActionsPanel: React.FC<QuickActionsPanelProps> = ({
           $isMobile={isMobile}
           $isTablet={isTablet}
           accentColor={accentColor}
-          isActive={glowEnabled}
-          onClick={onGlowToggle}
-          title={`Visual Effects ${glowEnabled ? 'enabled' : 'disabled'}`}
-        >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="12" cy="12" r="9" />
-            <circle cx="12" cy="12" r="3" />
-            <path d="M12 3v4m0 10v4m9-9h-4m-10 0H3" />
-          </svg>
-        </ControlButton>
-
-        <ControlButton
-          $isMobile={isMobile}
-          $isTablet={isTablet}
-          accentColor={accentColor}
           isActive={false}
           onClick={onShowVisualEffects}
           title="Visual effects"
@@ -164,23 +149,6 @@ export const QuickActionsPanel: React.FC<QuickActionsPanelProps> = ({
           $isMobile={isMobile}
           $isTablet={isTablet}
         />
-
-        {/* Background Visualizer - Quick Toggle */}
-        {onBackgroundVisualizerToggle && (
-          <ControlButton
-            $isMobile={isMobile}
-            $isTablet={isTablet}
-            accentColor={accentColor}
-            isActive={backgroundVisualizerEnabled}
-            onClick={onBackgroundVisualizerToggle}
-            title={`Background Visualizer ${backgroundVisualizerEnabled ? 'ON' : 'OFF'}`}
-          >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="10" />
-              <path d="M12 6v6l4 2" />
-            </svg>
-          </ControlButton>
-        )}
 
         {/* Debug controls - only shown when debug mode is enabled (press 'D' to toggle) */}
         {debugModeEnabled && (

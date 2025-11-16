@@ -5,6 +5,7 @@ import AlbumArt from './AlbumArt';
 import PlayerControls from './PlayerControls';
 import VisualEffectsContainer from './VisualEffectsContainer';
 import QuickActionsPanel from './QuickActionsPanel';
+import LeftQuickActionsPanel from './LeftQuickActionsPanel';
 import { theme } from '@/styles/theme';
 import { cardBase } from '../styles/utils';
 import { usePlayerSizing } from '../hooks/usePlayerSizing';
@@ -341,6 +342,16 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
           paddingTop: '1rem'
         }}>
           <ClickableAlbumArtContainer onClick={toggleControls}>
+            {/* Left-side quick actions panel for glow and visualizer toggles */}
+            <LeftQuickActionsPanel
+              accentColor={ui.accentColor}
+              glowEnabled={effects.enabled}
+              onGlowToggle={handlers.onGlowToggle}
+              onBackgroundVisualizerToggle={handlers.onBackgroundVisualizerToggle}
+              backgroundVisualizerEnabled={handlers.backgroundVisualizerEnabled}
+              isVisible={controlsVisible}
+            />
+
             <AlbumArt
               currentTrack={track.current}
               accentColor={ui.accentColor}
@@ -348,6 +359,7 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
               glowRate={effects.glow.rate}
               albumFilters={effects.enabled ? effects.filters : defaultFilters}
             />
+
             {/* Right-side quick actions panel next to album art, docked to its right edge */}
             <QuickActionsPanel
               accentColor={ui.accentColor}
