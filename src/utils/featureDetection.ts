@@ -241,20 +241,4 @@ export const createEnhancedEventListeners = (
   };
 };
 
-/**
- * Check if a specific feature is supported
- */
-export const isFeatureSupported = (feature: keyof BrowserFeatures): boolean => {
-  const features = detectBrowserFeatures();
-  return features[feature];
-};
 
-/**
- * Get browser compatibility score (0-100)
- */
-export const getBrowserCompatibilityScore = (): number => {
-  const features = detectBrowserFeatures();
-  const totalFeatures = Object.keys(features).length;
-  const supportedFeatures = Object.values(features).filter(Boolean).length;
-  return Math.round((supportedFeatures / totalFeatures) * 100);
-};

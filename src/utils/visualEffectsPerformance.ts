@@ -283,31 +283,3 @@ export const useVisualEffectsPerformance = () => {
   };
 };
 
-/**
- * Performance test runner for automated testing
- */
-export const runVisualEffectsPerformanceTests = async (): Promise<VisualEffectsPerformanceMetrics[]> => {
-  const profiler = new VisualEffectsProfiler();
-  const results: VisualEffectsPerformanceMetrics[] = [];
-
-  // Test with different filter counts
-  const filterCounts = [7, 10, 15, 20];
-  
-  for (const filterCount of filterCounts) {
-    console.log(`Running performance test with ${filterCount} filters...`);
-    const metrics = await profiler.runPerformanceTest(filterCount);
-    results.push(metrics);
-    
-    // Add delay between tests
-    await new Promise(resolve => setTimeout(resolve, 100));
-  }
-
-  // Generate summary report
-  console.log('\n=== Visual Effects Performance Test Summary ===');
-  results.forEach((metrics, index) => {
-    console.log(`\nTest ${index + 1} (${filterCounts[index]} filters):`);
-    console.log(profiler.generateVisualEffectsReport(metrics));
-  });
-
-  return results;
-};

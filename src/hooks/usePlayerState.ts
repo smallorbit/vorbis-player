@@ -96,7 +96,7 @@ import type { VisualizerStyle } from '../types/visualizer';
  * };
  * ```
  */
-export interface AlbumFilters {
+interface AlbumFilters {
   brightness: number;
   contrast: number;
   saturation: number;
@@ -105,92 +105,34 @@ export interface AlbumFilters {
   sepia: number;
 }
 
+
+
 /**
- * Track and Playback State
- * 
- * Contains all state related to track management and playback.
+ * Internal state type definitions
  */
-export interface TrackState {
+interface TrackState {
   tracks: Track[];
   currentIndex: number;
   isLoading: boolean;
   error: string | null;
 }
 
-/**
- * Playlist State
- * 
- * Contains state related to playlist management and UI.
- */
-export interface PlaylistState {
+interface PlaylistState {
   selectedId: string | null;
   isVisible: boolean;
 }
 
-/**
- * Color and Theme State
- * 
- * Contains state related to accent colors and theme customization.
- */
-export interface ColorState {
+interface ColorState {
   current: string;
   overrides: Record<string, string>;
 }
 
-/**
- * Visual Effects State
- * 
- * Contains state related to visual effects and image processing.
- */
-export interface VisualEffectsState {
+interface VisualEffectsState {
   enabled: boolean;
   menuVisible: boolean;
   filters: AlbumFilters;
   perAlbumGlow: Record<string, { intensity: number; rate: number }>;
   savedFilters: AlbumFilters | null;
-}
-
-/**
- * Grouped Player State
- * 
- * Organized state object with logical groupings for better maintainability.
- */
-export interface GroupedPlayerState {
-  track: TrackState;
-  playlist: PlaylistState;
-  color: ColorState;
-  visualEffects: VisualEffectsState;
-}
-
-/**
- * Player Actions
- * 
- * Grouped action functions for state management.
- */
-export interface PlayerActions {
-  track: {
-    setTracks: (tracks: Track[]) => void;
-    setCurrentIndex: (index: number) => void;
-    setLoading: (loading: boolean) => void;
-    setError: (error: string | null) => void;
-  };
-  playlist: {
-    setSelectedId: (id: string | null) => void;
-    setVisible: (visible: boolean) => void;
-  };
-  color: {
-    setCurrent: (color: string) => void;
-    setOverrides: (overrides: Record<string, string>) => void;
-  };
-  visualEffects: {
-    setEnabled: (enabled: boolean) => void;
-    setMenuVisible: (visible: boolean) => void;
-    setFilters: (filters: AlbumFilters) => void;
-    setPerAlbumGlow: (glow: Record<string, { intensity: number; rate: number }>) => void;
-    handleFilterChange: (filterName: string, value: number | boolean) => void;
-    handleResetFilters: () => void;
-    restoreSavedFilters: () => void;
-  };
 }
 
 /**
