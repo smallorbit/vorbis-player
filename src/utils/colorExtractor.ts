@@ -400,29 +400,6 @@ export async function extractDominantColor(imageUrl: string): Promise<ExtractedC
   });
 }
 
-export function getLighterVariant(color: string, amount = 0.2): string {
-  let r: number, g: number, b: number;
-  
-  if (color.startsWith('#')) {
-    const hex = color.slice(1);
-    r = parseInt(hex.substr(0, 2), 16);
-    g = parseInt(hex.substr(2, 2), 16);
-    b = parseInt(hex.substr(4, 2), 16);
-  } else if (color.startsWith('rgb')) {
-    const matches = color.match(/\d+/g);
-    if (!matches) return color;
-    [r, g, b] = matches.map(Number);
-  } else {
-    return color;
-  }
-  
-  r = Math.min(255, Math.floor(r + (255 - r) * amount));
-  g = Math.min(255, Math.floor(g + (255 - g) * amount));
-  b = Math.min(255, Math.floor(b + (255 - b) * amount));
-  
-  return `rgb(${r}, ${g}, ${b})`;
-}
-
 export function getTransparentVariant(color: string, opacity = 0.2): string {
   let r: number, g: number, b: number;
   
