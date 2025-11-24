@@ -94,9 +94,10 @@ export const usePlayerSizing = (constraints?: SizingConstraints): UsePlayerSizin
 
   // Cleanup timeout on unmount to prevent memory leaks
   useEffect(() => {
+    const timeoutId = timeoutRef.current;
     return () => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
+      if (timeoutId) {
+        clearTimeout(timeoutId);
       }
     };
   }, []);

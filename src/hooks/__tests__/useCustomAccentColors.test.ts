@@ -32,10 +32,16 @@ describe('useCustomAccentColors - Refactored Adapter Hook', () => {
     
     // Setup default mock return values
     mockUsePlayerState.mockReturnValue({
-      accentColorOverrides: mockAccentColorOverrides,
-      handleSetAccentColorOverride: mockHandleSetAccentColorOverride,
-      handleRemoveAccentColorOverride: mockHandleRemoveAccentColorOverride,
-      handleResetAccentColorOverride: mockHandleResetAccentColorOverride
+      color: {
+        overrides: mockAccentColorOverrides
+      },
+      actions: {
+        color: {
+          handleSetAccentColorOverride: mockHandleSetAccentColorOverride,
+          handleRemoveAccentColorOverride: mockHandleRemoveAccentColorOverride,
+          handleResetAccentColorOverride: mockHandleResetAccentColorOverride
+        }
+      }
     });
   });
 
@@ -271,7 +277,7 @@ describe('useCustomAccentColors - Refactored Adapter Hook', () => {
 
     it('should handle null currentTrackId', () => {
       const { result } = renderHook(() => useCustomAccentColors({
-        currentTrackId: null as any,
+        currentTrackId: null as unknown as string,
         onAccentColorChange: vi.fn()
       }));
       
@@ -305,10 +311,16 @@ describe('useCustomAccentColors - Refactored Adapter Hook', () => {
       };
       
       mockUsePlayerState.mockReturnValue({
-        accentColorOverrides: customOverrides,
-        handleSetAccentColorOverride: mockHandleSetAccentColorOverride,
-        handleRemoveAccentColorOverride: mockHandleRemoveAccentColorOverride,
-        handleResetAccentColorOverride: mockHandleResetAccentColorOverride
+        color: {
+          overrides: customOverrides
+        },
+        actions: {
+          color: {
+            handleSetAccentColorOverride: mockHandleSetAccentColorOverride,
+            handleRemoveAccentColorOverride: mockHandleRemoveAccentColorOverride,
+            handleResetAccentColorOverride: mockHandleResetAccentColorOverride
+          }
+        }
       });
       
       const { result } = renderHook(() => useCustomAccentColors({
@@ -321,10 +333,16 @@ describe('useCustomAccentColors - Refactored Adapter Hook', () => {
 
     it('should handle empty overrides object from usePlayerState', () => {
       mockUsePlayerState.mockReturnValue({
-        accentColorOverrides: {},
-        handleSetAccentColorOverride: mockHandleSetAccentColorOverride,
-        handleRemoveAccentColorOverride: mockHandleRemoveAccentColorOverride,
-        handleResetAccentColorOverride: mockHandleResetAccentColorOverride
+        color: {
+          overrides: {}
+        },
+        actions: {
+          color: {
+            handleSetAccentColorOverride: mockHandleSetAccentColorOverride,
+            handleRemoveAccentColorOverride: mockHandleRemoveAccentColorOverride,
+            handleResetAccentColorOverride: mockHandleResetAccentColorOverride
+          }
+        }
       });
       
       const { result } = renderHook(() => useCustomAccentColors({

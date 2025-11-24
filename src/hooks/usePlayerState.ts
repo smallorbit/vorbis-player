@@ -68,6 +68,7 @@ import { useState, useEffect, useCallback } from 'react';
 import type { Track } from '../services/spotify';
 import { theme } from '@/styles/theme';
 import type { VisualizerStyle } from '../types/visualizer';
+import { useLocalStorage } from './useLocalStorage';
 
 /**
  * Album image processing filters interface
@@ -133,6 +134,19 @@ interface VisualEffectsState {
   filters: AlbumFilters;
   perAlbumGlow: Record<string, { intensity: number; rate: number }>;
   savedFilters: AlbumFilters | null;
+  backgroundVisualizer: {
+    enabled: boolean;
+    style: VisualizerStyle;
+    intensity: number;
+  };
+  accentColorBackground: {
+    enabled: boolean;
+    preferred: boolean;
+  };
+}
+
+interface DebugState {
+  enabled: boolean;
 }
 
 /**
@@ -169,12 +183,12 @@ interface VisualEffectsState {
  * @usage
  * ```typescript
  * const {
- *   tracks,
- *   currentTrackIndex,
- *   setTracks,
- *   setCurrentTrackIndex,
- *   visualEffectsEnabled,
- *   setVisualEffectsEnabled
+ *   track,
+ *   playlist,
+ *   color,
+ *   visualEffects,
+ *   debug,
+ *   actions
  * } = usePlayerState();
  * ```
  * 
@@ -186,10 +200,8 @@ interface VisualEffectsState {
  * - localStorage reads/writes on state changes
  * - Theme color updates on accent color changes
  * - Visual effects re-renders on filter changes
- * 
- * @returns {PlayerState & PlayerStateSetters} Object containing all state and setter functions
  */
-export const usePlayerState = () => {
+export const usePlayerState = (): PlayerState & PlayerStateSetters => {
   // Track and playback state
   const [tracks, setTracks] = useState<Track[]>([]);
   const [currentTrackIndex, setCurrentTrackIndex] = useState(0);
@@ -202,122 +214,73 @@ export const usePlayerState = () => {
   const [accentColor, setAccentColor] = useState<string>(theme.colors.accent);
   const [showVisualEffects, setShowVisualEffects] = useState(false);
   
-  // Visual effects state with persistence
-  const [visualEffectsEnabled, setVisualEffectsEnabled] = useState<boolean>(() => {
-    const saved = localStorage.getItem('vorbis-player-visual-effects-enabled');
-    return saved ? JSON.parse(saved) : true;
-  });
+  // Default album filters
+  const defaultAlbumFilters: AlbumFilters = {
+    brightness: 100,
+    contrast: 100,
+    saturation: 100,
+    hue: 0,
+    blur: 0,
+    sepia: 0
+  };
+
+  // Visual effects state with persistence (using useLocalStorage)
+  const [visualEffectsEnabled, setVisualEffectsEnabled] = useLocalStorage<boolean>(
+    'vorbis-player-visual-effects-enabled',
+    true
+  );
   
   // Per-album glow settings with persistence
-  const [perAlbumGlow, setPerAlbumGlow] = useState<Record<string, { intensity: number; rate: number }>>(() => {
-    const saved = localStorage.getItem('vorbis-player-per-album-glow');
-    return saved ? JSON.parse(saved) : {};
-  });
+  const [perAlbumGlow, setPerAlbumGlow] = useLocalStorage<Record<string, { intensity: number; rate: number }>>(
+    'vorbis-player-per-album-glow',
+    {}
+  );
   
   // Accent color overrides
-  const [accentColorOverrides, setAccentColorOverrides] = useState<Record<string, string>>({});
+  const [accentColorOverrides, setAccentColorOverrides] = useLocalStorage<Record<string, string>>(
+    'accentColorOverrides',
+    {}
+  );
   
-  // Album filters with persistence and fallback defaults
-  const [albumFilters, setAlbumFilters] = useState<AlbumFilters>(() => {
-    const saved = localStorage.getItem('vorbis-player-album-filters');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        return {
-          brightness: parsed.brightness ?? 100,
-          contrast: parsed.contrast ?? 100,
-          saturation: parsed.saturation ?? 100,
-          hue: parsed.hue ?? 0,
-          blur: parsed.blur ?? 0,
-          sepia: parsed.sepia ?? 0
-        };
-      } catch {
-        return {
-          brightness: 100,
-          contrast: 100,
-          saturation: 100,
-          hue: 0,
-          blur: 0,
-          sepia: 0
-        };
-      }
-    }
-    return {
-      brightness: 100,
-      contrast: 100,
-      saturation: 100,
-      hue: 0,
-      blur: 0,
-      sepia: 0
-    };
-  });
+  // Album filters with persistence
+  const [albumFilters, setAlbumFilters] = useLocalStorage<AlbumFilters>(
+    'vorbis-player-album-filters',
+    defaultAlbumFilters
+  );
 
   // Saved filter preset
   const [savedAlbumFilters, setSavedAlbumFilters] = useState<AlbumFilters | null>(null);
 
   // Background visualizer state with persistence
-  const [backgroundVisualizerEnabled, setBackgroundVisualizerEnabled] = useState<boolean>(() => {
-    const saved = localStorage.getItem('vorbis-player-background-visualizer-enabled');
-    return saved ? JSON.parse(saved) : false;
-  });
+  const [backgroundVisualizerEnabled, setBackgroundVisualizerEnabled] = useLocalStorage<boolean>(
+    'vorbis-player-background-visualizer-enabled',
+    false
+  );
 
-  const [backgroundVisualizerStyle, setBackgroundVisualizerStyle] = useState<VisualizerStyle>(() => {
-    const saved = localStorage.getItem('vorbis-player-background-visualizer-style');
-    return (saved as VisualizerStyle) || 'particles';
-  });
+  const [backgroundVisualizerStyle, setBackgroundVisualizerStyle] = useLocalStorage<VisualizerStyle>(
+    'vorbis-player-background-visualizer-style',
+    'particles'
+  );
 
-  // Accent color background state with persistence
   // Preferred accent color background state (user's preference from VFX menu)
-  const [accentColorBackgroundPreferred, setAccentColorBackgroundPreferred] = useState<boolean>(() => {
-    const saved = localStorage.getItem('vorbis-player-accent-color-background-enabled');
-    return saved ? JSON.parse(saved) : false;
-  });
+  const [accentColorBackgroundPreferred, setAccentColorBackgroundPreferred] = useLocalStorage<boolean>(
+    'vorbis-player-accent-color-background-preferred',
+    false
+  );
 
   // Actual accent color background enabled state (respects glow state)
-  const [accentColorBackgroundEnabled, setAccentColorBackgroundEnabled] = useState<boolean>(() => {
-    const saved = localStorage.getItem('vorbis-player-accent-color-background-enabled');
-    return saved ? JSON.parse(saved) : false;
-  });
+  const [accentColorBackgroundEnabled, setAccentColorBackgroundEnabled] = useState<boolean>(false);
 
   // Debug mode state with persistence (hidden by default, toggle with 'D' key)
-  const [debugModeEnabled, setDebugModeEnabled] = useState<boolean>(() => {
-    const saved = localStorage.getItem('vorbis-player-debug-mode-enabled');
-    return saved ? JSON.parse(saved) : false;
-  });
+  const [debugModeEnabled, setDebugModeEnabled] = useLocalStorage<boolean>(
+    'vorbis-player-debug-mode-enabled',
+    false
+  );
 
-  const [backgroundVisualizerIntensity, setBackgroundVisualizerIntensity] = useState<number>(() => {
-    const saved = localStorage.getItem('vorbis-player-background-visualizer-intensity');
-    return saved ? parseInt(saved, 10) : 60;
-  });
-
-  // Load accent color overrides from localStorage on mount
-  useEffect(() => {
-    const stored = localStorage.getItem('accentColorOverrides');
-    if (stored) {
-      try {
-        setAccentColorOverrides(JSON.parse(stored));
-      } catch (error) {
-        console.warn('Failed to parse accent color overrides from localStorage:', error);
-        setAccentColorOverrides({});
-      }
-    }
-  }, []);
-
-  useEffect(() => {
-    try {
-      localStorage.setItem('accentColorOverrides', JSON.stringify(accentColorOverrides));
-    } catch (error) {
-      console.warn('Failed to save accent color overrides to localStorage:', error);
-    }
-  }, [accentColorOverrides]);
-
-  useEffect(() => {
-    localStorage.setItem('vorbis-player-album-filters', JSON.stringify(albumFilters));
-  }, [albumFilters]);
-
-  useEffect(() => {
-    localStorage.setItem('vorbis-player-visual-effects-enabled', JSON.stringify(visualEffectsEnabled));
-  }, [visualEffectsEnabled]);
+  const [backgroundVisualizerIntensity, setBackgroundVisualizerIntensity] = useLocalStorage<number>(
+    'vorbis-player-background-visualizer-intensity',
+    60
+  );
 
   // Sync accent color background with glow effect
   // When glow is disabled, accent color background is also disabled (visually)
@@ -331,35 +294,6 @@ export const usePlayerState = () => {
       setAccentColorBackgroundEnabled(accentColorBackgroundPreferred);
     }
   }, [visualEffectsEnabled, accentColorBackgroundPreferred]);
-  
-
-  
-  useEffect(() => {
-    localStorage.setItem('vorbis-player-per-album-glow', JSON.stringify(perAlbumGlow));
-  }, [perAlbumGlow]);
-
-  // Background visualizer persistence
-  useEffect(() => {
-    localStorage.setItem('vorbis-player-background-visualizer-enabled', JSON.stringify(backgroundVisualizerEnabled));
-  }, [backgroundVisualizerEnabled]);
-
-  useEffect(() => {
-    localStorage.setItem('vorbis-player-background-visualizer-style', backgroundVisualizerStyle);
-  }, [backgroundVisualizerStyle]);
-
-  useEffect(() => {
-    localStorage.setItem('vorbis-player-background-visualizer-intensity', backgroundVisualizerIntensity.toString());
-  }, [backgroundVisualizerIntensity]);
-
-  // Accent color background persistence (save preferred state, not the actual enabled state)
-  useEffect(() => {
-    localStorage.setItem('vorbis-player-accent-color-background-enabled', JSON.stringify(accentColorBackgroundPreferred));
-  }, [accentColorBackgroundPreferred]);
-
-  // Debug mode persistence
-  useEffect(() => {
-    localStorage.setItem('vorbis-player-debug-mode-enabled', JSON.stringify(debugModeEnabled));
-  }, [debugModeEnabled]);
 
   const handleFilterChange = useCallback((filterName: string, value: number | boolean) => {
     setAlbumFilters(prev => {
@@ -371,7 +305,7 @@ export const usePlayerState = () => {
       setSavedAlbumFilters(newFilters);
       return newFilters;
     });
-  }, []);
+  }, [setAlbumFilters]);
 
   const handleResetFilters = useCallback(() => {
     setAlbumFilters({
@@ -382,13 +316,13 @@ export const usePlayerState = () => {
       blur: 0,
       sepia: 0
     });
-  }, []);
+  }, [setAlbumFilters]);
 
   const restoreSavedFilters = useCallback(() => {
     if (savedAlbumFilters) {
       setAlbumFilters(savedAlbumFilters);
     }
-  }, [savedAlbumFilters]);
+  }, [savedAlbumFilters, setAlbumFilters]);
 
   // Accent color helper methods
   const handleSetAccentColorOverride = useCallback((trackId: string, color: string) => {
@@ -396,7 +330,7 @@ export const usePlayerState = () => {
       ...prev,
       [trackId]: color
     }));
-  }, []);
+  }, [setAccentColorOverrides]);
 
   const handleRemoveAccentColorOverride = useCallback((trackId: string) => {
     setAccentColorOverrides(prev => {
@@ -404,7 +338,7 @@ export const usePlayerState = () => {
       delete newOverrides[trackId];
       return newOverrides;
     });
-  }, []);
+  }, [setAccentColorOverrides]);
 
   const handleResetAccentColorOverride = useCallback((trackId: string) => {
     handleRemoveAccentColorOverride(trackId);
@@ -433,7 +367,20 @@ export const usePlayerState = () => {
     menuVisible: showVisualEffects,
     filters: albumFilters,
     perAlbumGlow,
-    savedFilters: savedAlbumFilters
+    savedFilters: savedAlbumFilters,
+    backgroundVisualizer: {
+      enabled: backgroundVisualizerEnabled,
+      style: backgroundVisualizerStyle,
+      intensity: backgroundVisualizerIntensity
+    },
+    accentColorBackground: {
+      enabled: accentColorBackgroundEnabled,
+      preferred: accentColorBackgroundPreferred
+    }
+  };
+
+  const debugState: DebugState = {
+    enabled: debugModeEnabled
   };
 
   // Group related actions
@@ -464,7 +411,19 @@ export const usePlayerState = () => {
     setPerAlbumGlow,
     handleFilterChange,
     handleResetFilters,
-    restoreSavedFilters
+    restoreSavedFilters,
+    backgroundVisualizer: {
+      setEnabled: setBackgroundVisualizerEnabled,
+      setStyle: setBackgroundVisualizerStyle,
+      setIntensity: setBackgroundVisualizerIntensity
+    },
+    accentColorBackground: {
+      setPreferred: setAccentColorBackgroundPreferred
+    }
+  };
+
+  const debugActions = {
+    setEnabled: setDebugModeEnabled
   };
 
   return {
@@ -473,54 +432,13 @@ export const usePlayerState = () => {
     playlist: playlistState,
     color: colorState,
     visualEffects: visualEffectsState,
+    debug: debugState,
     actions: {
       track: trackActions,
       playlist: playlistActions,
       color: colorActions,
-      visualEffects: visualEffectsActions
-    },
-    // Legacy individual state (for backward compatibility during migration)
-    tracks,
-    currentTrackIndex,
-    isLoading,
-    error,
-    selectedPlaylistId,
-    showPlaylist,
-    accentColor,
-    showVisualEffects,
-    visualEffectsEnabled,
-    perAlbumGlow,
-    accentColorOverrides,
-    albumFilters,
-    savedAlbumFilters,
-    backgroundVisualizerEnabled,
-    backgroundVisualizerStyle,
-    backgroundVisualizerIntensity,
-    accentColorBackgroundEnabled,
-    accentColorBackgroundPreferred, // Expose preferred state for VFX menu display
-    debugModeEnabled,
-    setTracks,
-    setCurrentTrackIndex,
-    setIsLoading,
-    setError,
-    setSelectedPlaylistId,
-    setShowPlaylist,
-    setAccentColor,
-    setShowVisualEffects,
-    setVisualEffectsEnabled,
-    setPerAlbumGlow,
-    setAccentColorOverrides,
-    setAlbumFilters,
-    setBackgroundVisualizerEnabled,
-    setBackgroundVisualizerStyle,
-    setBackgroundVisualizerIntensity,
-    setAccentColorBackgroundEnabled: setAccentColorBackgroundPreferred, // VFX menu updates preferred state
-    setDebugModeEnabled,
-    handleFilterChange,
-    handleResetFilters,
-    restoreSavedFilters,
-    handleSetAccentColorOverride,
-    handleRemoveAccentColorOverride,
-    handleResetAccentColorOverride,
+      visualEffects: visualEffectsActions,
+      debug: debugActions
+    }
   };
 };
