@@ -7,6 +7,7 @@ import { useSpotifyPlayback } from '@/hooks/useSpotifyPlayback';
 import { useAutoAdvance } from '@/hooks/useAutoAdvance';
 import { useAccentColor } from '@/hooks/useAccentColor';
 import { useVisualEffectsState } from '@/hooks/useVisualEffectsState';
+import type { Track } from '@/services/spotify';
 
 // Debug mode keyboard shortcut handler
 const useDebugModeShortcut = (debugModeEnabled: boolean, setDebugModeEnabled: (enabled: boolean) => void) => {
@@ -141,7 +142,7 @@ export const usePlayerLogic = () => {
         // Update track index if track changed
         if (state.track_window.current_track) {
           const currentTrack = state.track_window.current_track;
-          const trackIndex = tracks.findIndex(track => track.id === currentTrack.id);
+          const trackIndex = tracks.findIndex((track: Track) => track.id === currentTrack.id);
 
           if (trackIndex !== -1 && trackIndex !== currentTrackIndex) {
             setCurrentTrackIndex(trackIndex);

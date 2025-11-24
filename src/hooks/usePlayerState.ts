@@ -149,6 +149,66 @@ interface DebugState {
   enabled: boolean;
 }
 
+interface TrackActions {
+  setTracks: (tracks: Track[] | ((prev: Track[]) => Track[])) => void;
+  setCurrentIndex: (index: number | ((prev: number) => number)) => void;
+  setLoading: (loading: boolean | ((prev: boolean) => boolean)) => void;
+  setError: (error: string | null | ((prev: string | null) => string | null)) => void;
+}
+
+interface PlaylistActions {
+  setSelectedId: (id: string | null | ((prev: string | null) => string | null)) => void;
+  setVisible: (visible: boolean | ((prev: boolean) => boolean)) => void;
+}
+
+interface ColorActions {
+  setCurrent: (color: string | ((prev: string) => string)) => void;
+  setOverrides: (overrides: Record<string, string> | ((prev: Record<string, string>) => Record<string, string>)) => void;
+  handleSetAccentColorOverride: (trackId: string, color: string) => void;
+  handleRemoveAccentColorOverride: (trackId: string) => void;
+  handleResetAccentColorOverride: (trackId: string) => void;
+}
+
+interface VisualEffectsActions {
+  setEnabled: (enabled: boolean | ((prev: boolean) => boolean)) => void;
+  setMenuVisible: (visible: boolean | ((prev: boolean) => boolean)) => void;
+  setFilters: (filters: AlbumFilters | ((prev: AlbumFilters) => AlbumFilters)) => void;
+  setPerAlbumGlow: (glow: Record<string, { intensity: number; rate: number }> | ((prev: Record<string, { intensity: number; rate: number }>) => Record<string, { intensity: number; rate: number }>)) => void;
+  handleFilterChange: (filterName: string, value: number | boolean) => void;
+  handleResetFilters: () => void;
+  restoreSavedFilters: () => void;
+  backgroundVisualizer: {
+    setEnabled: (enabled: boolean | ((prev: boolean) => boolean)) => void;
+    setStyle: (style: VisualizerStyle | ((prev: VisualizerStyle) => VisualizerStyle)) => void;
+    setIntensity: (intensity: number | ((prev: number) => number)) => void;
+  };
+  accentColorBackground: {
+    setPreferred: (preferred: boolean | ((prev: boolean) => boolean)) => void;
+  };
+}
+
+interface DebugActions {
+  setEnabled: (enabled: boolean | ((prev: boolean) => boolean)) => void;
+}
+
+interface PlayerState {
+  track: TrackState;
+  playlist: PlaylistState;
+  color: ColorState;
+  visualEffects: VisualEffectsState;
+  debug: DebugState;
+}
+
+interface PlayerStateSetters {
+  actions: {
+    track: TrackActions;
+    playlist: PlaylistActions;
+    color: ColorActions;
+    visualEffects: VisualEffectsActions;
+    debug: DebugActions;
+  };
+}
+
 /**
  * usePlayerState - Global player state management hook
  * 
