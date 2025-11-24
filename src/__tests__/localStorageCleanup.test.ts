@@ -106,7 +106,7 @@ describe('localStorage Cleanup Functionality', () => {
   describe('Edge Cases', () => {
     it('should handle undefined localStorage gracefully', () => {
       const originalLocalStorage = window.localStorage;
-      delete (window as any).localStorage;
+      delete (window as Record<string, unknown>).localStorage;
       
       const cleanupDeprecatedLocalStorage = () => {
         try {
@@ -124,12 +124,12 @@ describe('localStorage Cleanup Functionality', () => {
       expect(console.warn).toHaveBeenCalled();
       
       // Restore localStorage
-      (window as any).localStorage = originalLocalStorage;
+      (window as Record<string, unknown>).localStorage = originalLocalStorage;
     });
 
     it('should handle null localStorage gracefully', () => {
       const originalLocalStorage = window.localStorage;
-      (window as any).localStorage = null;
+      (window as Record<string, unknown>).localStorage = null;
       
       const cleanupDeprecatedLocalStorage = () => {
         try {
@@ -147,7 +147,7 @@ describe('localStorage Cleanup Functionality', () => {
       expect(console.warn).toHaveBeenCalled();
       
       // Restore localStorage
-      (window as any).localStorage = originalLocalStorage;
+      (window as Record<string, unknown>).localStorage = originalLocalStorage;
     });
   });
 });

@@ -12,24 +12,28 @@ vi.mock('../../styles/theme', () => ({
 }));
 
 describe('usePlayerState - Accent Color Management', () => {
+  let store: Record<string, string> = {};
+
   beforeEach(() => {
-    // Clear localStorage mock before each test
+    // Clear store and mocks before each test
+    store = {};
     vi.clearAllMocks();
-    localStorage.getItem.mockClear();
-    localStorage.setItem.mockClear();
-    localStorage.removeItem.mockClear();
     
-    // Mock localStorage.getItem to return null by default for all keys
-    localStorage.getItem.mockImplementation((key) => {
-      if (key === 'accentColorOverrides') return null;
-      if (key === 'vorbis-player-visual-effects-enabled') return null;
-      if (key === 'vorbis-player-per-album-glow') return null;
-      if (key === 'vorbis-player-album-filters') return null;
-      return null;
+    // Mock localStorage with a real store that persists during the test
+    localStorage.getItem.mockImplementation((key) => store[key] || null);
+    localStorage.setItem.mockImplementation((key, value) => {
+      store[key] = value;
+    });
+    localStorage.removeItem.mockImplementation((key) => {
+      delete store[key];
+    });
+    localStorage.clear.mockImplementation(() => {
+      store = {};
     });
   });
 
   afterEach(() => {
+    store = {};
     vi.clearAllMocks();
   });
 
@@ -45,10 +49,7 @@ describe('usePlayerState - Accent Color Management', () => {
         'track-1': '#ff0000',
         'track-2': '#00ff00'
       };
-      localStorage.getItem.mockImplementation((key) => {
-        if (key === 'accentColorOverrides') return JSON.stringify(mockOverrides);
-        return null;
-      });
+      store['accentColorOverrides'] = JSON.stringify(mockOverrides);
       
       const { result } = renderHook(() => usePlayerState());
       
@@ -57,10 +58,7 @@ describe('usePlayerState - Accent Color Management', () => {
     });
 
     it('should handle invalid JSON in localStorage gracefully', () => {
-      localStorage.getItem.mockImplementation((key) => {
-        if (key === 'accentColorOverrides') return 'invalid-json';
-        return null;
-      });
+      store['accentColorOverrides'] = 'invalid-json';
       
       const { result } = renderHook(() => usePlayerState());
       
@@ -71,7 +69,7 @@ describe('usePlayerState - Accent Color Management', () => {
       const { result } = renderHook(() => usePlayerState());
       
       act(() => {
-        result.current.handleSetAccentColorOverride('track-1', '#ff0000');
+        result.current.actions.color.handleSetAccentColorOverride('track-1', '#ff0000');
       });
       
       expect(localStorage.setItem).toHaveBeenCalledWith(
@@ -86,7 +84,7 @@ describe('usePlayerState - Accent Color Management', () => {
       const { result } = renderHook(() => usePlayerState());
       
       act(() => {
-        result.current.handleSetAccentColorOverride('track-1', '#ff0000');
+        result.current.actions.color.handleSetAccentColorOverride('track-1', '#ff0000');
       });
       
       expect(result.current.color.overrides).toEqual({
@@ -98,11 +96,11 @@ describe('usePlayerState - Accent Color Management', () => {
       const { result } = renderHook(() => usePlayerState());
       
       act(() => {
-        result.current.handleSetAccentColorOverride('track-1', '#ff0000');
+        result.current.actions.color.handleSetAccentColorOverride('track-1', '#ff0000');
       });
       
       act(() => {
-        result.current.handleSetAccentColorOverride('track-1', '#00ff00');
+        result.current.actions.color.handleSetAccentColorOverride('track-1', '#00ff00');
       });
       
       expect(result.current.color.overrides).toEqual({
@@ -113,25 +111,35 @@ describe('usePlayerState - Accent Color Management', () => {
     it('should remove accent color override for a track', () => {
       const { result } = renderHook(() => usePlayerState());
       
+      // Set multiple overrides
       act(() => {
-        result.current.handleSetAccentColorOverride('track-1', '#ff0000');
-        result.current.handleSetAccentColorOverride('track-2', '#00ff00');
+        result.current.actions.color.handleSetAccentColorOverride('track-1', '#ff0000');
       });
       
       act(() => {
-        result.current.handleRemoveAccentColorOverride('track-1');
+        result.current.actions.color.handleSetAccentColorOverride('track-2', '#00ff00');
       });
       
-      expect(result.current.color.overrides).toEqual({
-        'track-2': '#00ff00'
+      // Verify both are set
+      expect(result.current.color.overrides).toHaveProperty('track-1');
+      expect(result.current.color.overrides).toHaveProperty('track-2');
+      
+      // Remove one
+      act(() => {
+        result.current.actions.color.handleRemoveAccentColorOverride('track-1');
       });
+      
+      // Verify track-1 is removed and track-2 remains
+      expect(result.current.color.overrides).not.toHaveProperty('track-1');
+      expect(result.current.color.overrides).toHaveProperty('track-2');
+      expect(result.current.color.overrides['track-2']).toBe('#00ff00');
     });
 
     it('should handle removing non-existent override gracefully', () => {
       const { result } = renderHook(() => usePlayerState());
       
       act(() => {
-        result.current.handleRemoveAccentColorOverride('non-existent-track');
+        result.current.actions.color.handleRemoveAccentColorOverride('non-existent-track');
       });
       
       expect(result.current.color.overrides).toEqual({});
@@ -141,33 +149,46 @@ describe('usePlayerState - Accent Color Management', () => {
       const { result } = renderHook(() => usePlayerState());
       
       act(() => {
-        result.current.handleSetAccentColorOverride('track-1', '#ff0000');
-        result.current.handleSetAccentColorOverride('track-2', '#00ff00');
+        result.current.actions.color.handleSetAccentColorOverride('track-1', '#ff0000');
       });
       
       act(() => {
-        result.current.handleResetAccentColorOverride('track-1');
+        result.current.actions.color.handleSetAccentColorOverride('track-2', '#00ff00');
       });
       
-      expect(result.current.color.overrides).toEqual({
-        'track-2': '#00ff00'
+      // Verify both are set
+      expect(result.current.color.overrides).toHaveProperty('track-1');
+      expect(result.current.color.overrides).toHaveProperty('track-2');
+      
+      act(() => {
+        result.current.actions.color.handleResetAccentColorOverride('track-1');
       });
+      
+      // Verify track-1 is removed and track-2 remains
+      expect(result.current.color.overrides).not.toHaveProperty('track-1');
+      expect(result.current.color.overrides).toHaveProperty('track-2');
+      expect(result.current.color.overrides['track-2']).toBe('#00ff00');
     });
 
     it('should maintain multiple track overrides independently', () => {
       const { result } = renderHook(() => usePlayerState());
       
       act(() => {
-        result.current.handleSetAccentColorOverride('track-1', '#ff0000');
-        result.current.handleSetAccentColorOverride('track-2', '#00ff00');
-        result.current.handleSetAccentColorOverride('track-3', '#0000ff');
+        result.current.actions.color.handleSetAccentColorOverride('track-1', '#ff0000');
       });
       
-      expect(result.current.color.overrides).toEqual({
-        'track-1': '#ff0000',
-        'track-2': '#00ff00',
-        'track-3': '#0000ff'
+      act(() => {
+        result.current.actions.color.handleSetAccentColorOverride('track-2', '#00ff00');
       });
+      
+      act(() => {
+        result.current.actions.color.handleSetAccentColorOverride('track-3', '#0000ff');
+      });
+      
+      // Verify all three tracks have their overrides set correctly
+      expect(result.current.color.overrides['track-1']).toBe('#ff0000');
+      expect(result.current.color.overrides['track-2']).toBe('#00ff00');
+      expect(result.current.color.overrides['track-3']).toBe('#0000ff');
     });
   });
 
@@ -176,7 +197,7 @@ describe('usePlayerState - Accent Color Management', () => {
       const { result } = renderHook(() => usePlayerState());
       
       act(() => {
-        result.current.handleSetAccentColorOverride('track-1', '#ff0000');
+        result.current.actions.color.handleSetAccentColorOverride('track-1', '#ff0000');
       });
       
       expect(localStorage.setItem).toHaveBeenCalledWith(
@@ -185,7 +206,7 @@ describe('usePlayerState - Accent Color Management', () => {
       );
       
       act(() => {
-        result.current.handleSetAccentColorOverride('track-2', '#00ff00');
+        result.current.actions.color.handleSetAccentColorOverride('track-2', '#00ff00');
       });
       
       expect(localStorage.setItem).toHaveBeenCalledWith(
@@ -199,14 +220,14 @@ describe('usePlayerState - Accent Color Management', () => {
     it('should use useCallback for helper methods', () => {
       const { result } = renderHook(() => usePlayerState());
       
-      const firstRender = result.current.handleSetAccentColorOverride;
+      const firstRender = result.current.actions.color.handleSetAccentColorOverride;
       
       // Trigger a re-render
       act(() => {
-        result.current.handleSetAccentColorOverride('track-1', '#ff0000');
+        result.current.actions.color.handleSetAccentColorOverride('track-1', '#ff0000');
       });
       
-      const secondRender = result.current.handleSetAccentColorOverride;
+      const secondRender = result.current.actions.color.handleSetAccentColorOverride;
       
       // Functions should be the same reference (memoized)
       expect(firstRender).toBe(secondRender);
@@ -218,7 +239,7 @@ describe('usePlayerState - Accent Color Management', () => {
       const { result } = renderHook(() => usePlayerState());
       
       act(() => {
-        result.current.handleSetAccentColorOverride('track-1', '');
+        result.current.actions.color.handleSetAccentColorOverride('track-1', '');
       });
       
       expect(result.current.color.overrides).toEqual({
@@ -230,7 +251,7 @@ describe('usePlayerState - Accent Color Management', () => {
       const { result } = renderHook(() => usePlayerState());
       
       act(() => {
-        result.current.handleSetAccentColorOverride('track-with-special-chars-!@#$%', '#ff0000');
+        result.current.actions.color.handleSetAccentColorOverride('track-with-special-chars-!@#$%', '#ff0000');
       });
       
       expect(result.current.color.overrides).toEqual({

@@ -35,88 +35,14 @@ interface GeometricShape {
 export const GeometricVisualizer: React.FC<GeometricVisualizerProps> = ({
   intensity,
   accentColor,
-  isPlaying,
-  playbackPosition: _playbackPosition // Will be used for more accurate sync in future
+  isPlaying
+  // playbackPosition will be used for more accurate sync in future
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const shapesRef = useRef<GeometricShape[]>([]);
   const lastFrameTimeRef = useRef<number>(0);
 
-  // Initialize geometric shapes
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const resizeCanvas = () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-      
-      // Reinitialize shapes on resize
-      const shapeCount = getShapeCount(canvas.width, canvas.height);
-      shapesRef.current = initializeGeometricShapes(shapeCount, canvas.width, canvas.height, accentColor);
-    };
-
-    resizeCanvas();
-    window.addEventListener('resize', resizeCanvas);
-
-    return () => {
-      window.removeEventListener('resize', resizeCanvas);
-    };
-  }, [accentColor]);
-
-  // Update colors when accent color changes
-  useEffect(() => {
-    shapesRef.current.forEach(shape => {
-      shape.color = generateColorVariant(accentColor, Math.random() * 0.5 + 0.3);
-    });
-  }, [accentColor]);
-
-  // Calculate shape count based on viewport size
-  const getShapeCount = useCallback((width: number, height: number): number => {
-    const pixelCount = width * height;
-    const isMobile = width < 768;
-    
-    if (isMobile) {
-      return Math.min(15, Math.floor(pixelCount / 50000));
-    }
-    
-    return Math.min(40, Math.floor(pixelCount / 30000));
-  }, []);
-
-  // Initialize geometric shapes
-  const initializeGeometricShapes = useCallback((
-    count: number,
-    width: number,
-    height: number,
-    baseColor: string
-  ): GeometricShape[] => {
-    const types: ('circle' | 'triangle' | 'hexagon')[] = ['circle', 'triangle', 'hexagon'];
-    const minRadius = 15;
-    const maxRadius = 50;
-    const pulseSpeed = 0.01;
-    
-    return Array.from({ length: count }, () => {
-      const type = types[Math.floor(Math.random() * types.length)];
-      const baseRadius = minRadius + Math.random() * (maxRadius - minRadius);
-      
-      return {
-        type,
-        x: Math.random() * width,
-        y: Math.random() * height,
-        baseRadius,
-        currentRadius: baseRadius,
-        rotation: Math.random() * Math.PI * 2,
-        rotationSpeed: (Math.random() - 0.5) * 0.02,
-        opacity: 0.2 + Math.random() * 0.3,
-        baseOpacity: 0.2 + Math.random() * 0.3,
-        color: generateColorVariant(baseColor, Math.random() * 0.5 + 0.3),
-        pulsePhase: Math.random() * Math.PI * 2,
-        pulseSpeed: pulseSpeed + Math.random() * 0.01
-      };
-    });
-  }, []);
-
-  // Draw shape helper
+  // Draw shape helper (moved up to be used in dependencies)
   const drawShape = useCallback((
     ctx: CanvasRenderingContext2D,
     shape: GeometricShape
@@ -166,15 +92,91 @@ export const GeometricVisualizer: React.FC<GeometricVisualizerProps> = ({
     ctx.restore();
   }, []);
 
+  // Calculate shape count based on viewport size
+  const getShapeCount = useCallback((width: number, height: number): number => {
+    const pixelCount = width * height;
+    const isMobile = width < 768;
+    
+    if (isMobile) {
+      return Math.min(15, Math.floor(pixelCount / 50000));
+    }
+    
+    return Math.min(40, Math.floor(pixelCount / 30000));
+  }, []);
+
+  // Initialize geometric shapes
+  const initializeGeometricShapes = useCallback((
+    count: number,
+    width: number,
+    height: number,
+    baseColor: string
+  ): GeometricShape[] => {
+    const types: ('circle' | 'triangle' | 'hexagon')[] = ['circle', 'triangle', 'hexagon'];
+    const minRadius = 15;
+    const maxRadius = 50;
+    const pulseSpeed = 0.01;
+    
+    return Array.from({ length: count }, () => {
+      const type = types[Math.floor(Math.random() * types.length)];
+      const baseRadius = minRadius + Math.random() * (maxRadius - minRadius);
+      
+      return {
+        type,
+        x: Math.random() * width,
+        y: Math.random() * height,
+        baseRadius,
+        currentRadius: baseRadius,
+        rotation: Math.random() * Math.PI * 2,
+        rotationSpeed: (Math.random() - 0.5) * 0.02,
+        opacity: 0.2 + Math.random() * 0.3,
+        baseOpacity: 0.2 + Math.random() * 0.3,
+        color: generateColorVariant(baseColor, Math.random() * 0.5 + 0.3),
+        pulsePhase: Math.random() * Math.PI * 2,
+        pulseSpeed: pulseSpeed + Math.random() * 0.01
+      };
+    });
+  }, []);
+
+  // Initialize geometric shapes
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const resizeCanvas = () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      
+      // Reinitialize shapes on resize
+      const shapeCount = getShapeCount(canvas.width, canvas.height);
+      shapesRef.current = initializeGeometricShapes(shapeCount, canvas.width, canvas.height, accentColor);
+    };
+
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+
+    return () => {
+      window.removeEventListener('resize', resizeCanvas);
+    };
+  }, [accentColor, getShapeCount, initializeGeometricShapes]);
+
+  // Update colors when accent color changes
+  useEffect(() => {
+    shapesRef.current.forEach(shape => {
+      shape.color = generateColorVariant(accentColor, Math.random() * 0.5 + 0.3);
+    });
+  }, [accentColor]);
+
+
+
   // Update geometric shapes
   const updateGeometricShapes = useCallback((
     shapes: GeometricShape[],
     deltaTime: number,
-    isPlaying: boolean,
+    isPlayingParam: boolean,
     width: number,
     height: number
   ): void => {
-    const speedMultiplier = isPlaying ? 1.0 : 0.3;
+    const speedMultiplier = isPlayingParam ? 1.0 : 0.3;
     const normalizedDelta = isFinite(deltaTime) ? Math.min(deltaTime / 16, 10) : 1;
     
     shapes.forEach(shape => {
@@ -207,7 +209,7 @@ export const GeometricVisualizer: React.FC<GeometricVisualizerProps> = ({
     shapes: GeometricShape[],
     width: number,
     height: number,
-    intensity: number
+    intensityParam: number
   ): void => {
     ctx.clearRect(0, 0, width, height);
     
@@ -226,7 +228,7 @@ export const GeometricVisualizer: React.FC<GeometricVisualizerProps> = ({
       
       // Apply intensity to opacity
       const originalOpacity = shape.opacity;
-      shape.opacity = originalOpacity * (intensity / 100);
+      shape.opacity = originalOpacity * (intensityParam / 100);
       
       drawShape(ctx, shape);
       

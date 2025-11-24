@@ -41,38 +41,6 @@ export const ParticleVisualizer: React.FC<ParticleVisualizerProps> = ({
   const lastFrameTimeRef = useRef<number>(0);
   const animationFrameRef = useRef<number>();
 
-  // Initialize particles
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const resizeCanvas = () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-      
-      // Reinitialize particles on resize
-      const particleCount = getParticleCount(canvas.width, canvas.height);
-      particlesRef.current = initializeParticles(particleCount, canvas.width, canvas.height, accentColor);
-    };
-
-    resizeCanvas();
-    window.addEventListener('resize', resizeCanvas);
-
-    return () => {
-      window.removeEventListener('resize', resizeCanvas);
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-      }
-    };
-  }, [accentColor]);
-
-  // Update particles when accent color changes
-  useEffect(() => {
-    particlesRef.current.forEach(particle => {
-      particle.color = generateColorVariant(accentColor, Math.random() * 0.5 + 0.3);
-    });
-  }, [accentColor]);
-
   // Calculate particle count based on viewport size
   const getParticleCount = useCallback((width: number, height: number): number => {
     const pixelCount = width * height;
@@ -109,6 +77,39 @@ export const ParticleVisualizer: React.FC<ParticleVisualizerProps> = ({
       pulseSpeed: 0.01 + Math.random() * 0.02
     }));
   }, []);
+
+  // Initialize particles resize
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const resizeCanvas = () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      
+      // Reinitialize particles on resize
+      const particleCount = getParticleCount(canvas.width, canvas.height);
+      particlesRef.current = initializeParticles(particleCount, canvas.width, canvas.height, accentColor);
+    };
+
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+
+    const animId = animationFrameRef.current;
+    return () => {
+      window.removeEventListener('resize', resizeCanvas);
+      if (animId) {
+        cancelAnimationFrame(animId);
+      }
+    };
+  }, [accentColor, getParticleCount, initializeParticles]);
+
+  // Update particles when accent color changes
+  useEffect(() => {
+    particlesRef.current.forEach(particle => {
+      particle.color = generateColorVariant(accentColor, Math.random() * 0.5 + 0.3);
+    });
+  }, [accentColor]);
 
   // Update particles
   const updateParticles = useCallback((

@@ -11,7 +11,16 @@ export const useCustomAccentColors = ({
   onAccentColorChange
 }: UseCustomAccentColorsProps) => {
   // Get accent color state and helper methods from usePlayerState
-  const { accentColorOverrides, handleSetAccentColorOverride, handleRemoveAccentColorOverride, handleResetAccentColorOverride } = usePlayerState();
+  const {
+    color: { overrides: accentColorOverrides },
+    actions: {
+      color: {
+        handleSetAccentColorOverride,
+        handleRemoveAccentColorOverride,
+        handleResetAccentColorOverride
+      }
+    }
+  } = usePlayerState();
 
   // When user picks a color with the eyedropper, store it as the custom color for this track
   const handleCustomAccentColor = useCallback((color: string) => {
