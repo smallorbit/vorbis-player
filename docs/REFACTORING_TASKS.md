@@ -4,7 +4,7 @@ This document outlines the specific tasks required to execute the refactoring pl
 
 ## Phase 1: Foundation & Cleanup
 
-### Task 1.1: Implement `useLocalStorage` Hook
+### Task 1.1: Implement `useLocalStorage` Hook (COMPLETED)
 **Goal**: Create a reusable hook for persistent state.
 1.  Create `src/hooks/useLocalStorage.ts`.
 2.  Implement the hook to handle:
@@ -14,7 +14,7 @@ This document outlines the specific tasks required to execute the refactoring pl
     - Listening for `storage` events (optional, but good for multi-tab sync).
 3.  Add tests in `src/hooks/__tests__/useLocalStorage.test.ts`.
 
-### Task 1.2: Fix Linting Errors
+### Task 1.2: Fix Linting Errors (COMPLETED)
 **Goal**: Ensure a clean working state.
 1.  Run `npm run lint`.
 2.  Fix `VisualEffectsContainer.tsx`: Remove or rename `_enabled`.
@@ -24,14 +24,14 @@ This document outlines the specific tasks required to execute the refactoring pl
     - Use `useCallback` for functions used in effects.
     - Remove unused `_playbackPosition`.
 
-### Task 1.3: Standardize Imports
+### Task 1.3: Standardize Imports (PARTIALLY COMPLETED)
 **Goal**: Prepare for file moves.
 1.  Update `tsconfig.json` to ensure paths `@/*` are correctly configured (if not already).
-2.  Replace relative imports like `../../components` with `@/components` where appropriate in `src/components` and `src/hooks`.
+2.  Replace relative imports like `../../components` with `@/components` where appropriate in `src/components` and `src/hooks`. (Done for `AudioPlayer.tsx` and `usePlayerLogic.ts`)
 
 ## Phase 2: State Management Refactoring
 
-### Task 2.1: Refactor `usePlayerState` Persistence
+### Task 2.1: Refactor `usePlayerState` Persistence (COMPLETED)
 **Goal**: Simplify `usePlayerState` internals.
 1.  Import `useLocalStorage`.
 2.  Replace manual `useState` + `useEffect` pairs with `useLocalStorage` for:
@@ -41,7 +41,7 @@ This document outlines the specific tasks required to execute the refactoring pl
     - `backgroundVisualizerEnabled`, etc.
 3.  Verify that the behavior (default values, persistence) remains the same.
 
-### Task 2.2: Enforce Grouped State in `usePlayerState`
+### Task 2.2: Enforce Grouped State in `usePlayerState` (COMPLETED)
 **Goal**: Clean up the public API of the hook.
 1.  Modify the return statement of `usePlayerState`.
 2.  Ensure the `GroupedPlayerState` structure (`track`, `playlist`, `color`, `visualEffects`, `actions`) contains *all* necessary data.
@@ -50,7 +50,7 @@ This document outlines the specific tasks required to execute the refactoring pl
 
 ## Phase 3: Component Architecture
 
-### Task 3.1: Extract `AudioPlayer` Logic
+### Task 3.1: Extract `AudioPlayer` Logic (COMPLETED)
 **Goal**: Slim down `AudioPlayer.tsx`.
 1.  Create `src/hooks/usePlayerLogic.ts`.
 2.  Move the following logic from `AudioPlayer.tsx` to this new hook:
@@ -62,13 +62,13 @@ This document outlines the specific tasks required to execute the refactoring pl
     - `useEffect` for `spotifyPlayer.onPlayerStateChanged`
 3.  Return the necessary state and handlers from `usePlayerLogic`.
 
-### Task 3.2: Refactor `AudioPlayer` Component
+### Task 3.2: Refactor `AudioPlayer` Component (COMPLETED)
 **Goal**: Make `AudioPlayer` purely presentational (or close to it).
 1.  Update `AudioPlayer.tsx` to use `usePlayerLogic`.
 2.  Update `AudioPlayer.tsx` to use the new Grouped State from `usePlayerState` (if not done in Task 2.2).
 3.  Verify that all props passed to `PlayerContent` and `PlayerStateRenderer` are still correct.
 
-### Task 3.3: Memoization Audit
+### Task 3.3: Memoization Audit (PENDING)
 **Goal**: Optimize performance.
 1.  Review `AudioPlayer.tsx` and `PlayerContent.tsx`.
 2.  Ensure all event handlers passed as props are wrapped in `useCallback`.
@@ -77,9 +77,9 @@ This document outlines the specific tasks required to execute the refactoring pl
 ## Validation
 
 ### Verification Steps
-1.  Run `npm run build` to ensure no type errors.
-2.  Run `npm run lint` to ensure no lint errors.
-3.  Run `npm test` to verify no regressions in existing tests.
+1.  Run `npm run build` to ensure no type errors. (Done - Passed)
+2.  Run `npm run lint` to ensure no lint errors. (Done - Passed with minor warnings in other files)
+3.  Run `npm test` to verify no regressions in existing tests. (Done - Passed)
 4.  Manual QA:
     - Check if settings (Visual Effects, filters) persist after refresh.
     - Check if Spotify playback works.
