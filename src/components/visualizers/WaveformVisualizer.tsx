@@ -29,42 +29,13 @@ interface WaveformBar {
 export const WaveformVisualizer: React.FC<WaveformVisualizerProps> = ({
   intensity,
   accentColor,
-  isPlaying,
-  playbackPosition: _playbackPosition // Will be used for more accurate rhythm sync in future
+  isPlaying
+  // playbackPosition will be used for more accurate rhythm sync in future
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const barsRef = useRef<WaveformBar[]>([]);
   const lastFrameTimeRef = useRef<number>(0);
   const animationTimeRef = useRef<number>(0);
-
-  // Initialize waveform bars
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const resizeCanvas = () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-      
-      // Reinitialize bars on resize
-      const barCount = getBarCount(canvas.width);
-      barsRef.current = initializeWaveformBars(barCount, canvas.width, accentColor);
-    };
-
-    resizeCanvas();
-    window.addEventListener('resize', resizeCanvas);
-
-    return () => {
-      window.removeEventListener('resize', resizeCanvas);
-    };
-  }, [accentColor]);
-
-  // Update colors when accent color changes
-  useEffect(() => {
-    barsRef.current.forEach((bar, index) => {
-      bar.color = generateColorVariant(accentColor, index / barsRef.current.length);
-    });
-  }, [accentColor]);
 
   // Calculate bar count based on viewport width
   const getBarCount = useCallback((width: number): number => {
@@ -114,14 +85,42 @@ export const WaveformVisualizer: React.FC<WaveformVisualizerProps> = ({
     }));
   }, [generateRhythmPattern]);
 
+  // Initialize waveform bars
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const resizeCanvas = () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      
+      // Reinitialize bars on resize
+      const barCount = getBarCount(canvas.width);
+      barsRef.current = initializeWaveformBars(barCount, canvas.width, accentColor);
+    };
+
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+
+    return () => {
+      window.removeEventListener('resize', resizeCanvas);
+    };
+  }, [accentColor, getBarCount, initializeWaveformBars]);
+
+  // Update colors when accent color changes
+  useEffect(() => {
+    barsRef.current.forEach((bar, index) => {
+      bar.color = generateColorVariant(accentColor, index / barsRef.current.length);
+    });
+  }, [accentColor]);
+
   // Update waveform bars
   const updateWaveformBars = useCallback((
     bars: WaveformBar[],
     deltaTime: number,
-    isPlaying: boolean,
-    _height: number
+    isPlayingParam: boolean
   ): void => {
-    const speedMultiplier = isPlaying ? 1.0 : 0.2;
+    const speedMultiplier = isPlayingParam ? 1.0 : 0.2;
     animationTimeRef.current += deltaTime * speedMultiplier;
     const time = animationTimeRef.current / 1000; // Convert to seconds
     
@@ -200,7 +199,7 @@ export const WaveformVisualizer: React.FC<WaveformVisualizerProps> = ({
     }
 
     // Update waveform bars
-    updateWaveformBars(barsRef.current, deltaTime, isPlaying, canvas.height);
+    updateWaveformBars(barsRef.current, deltaTime, isPlaying);
 
     // Render waveform bars
     renderWaveformBars(ctx, barsRef.current, canvas.width, canvas.height, intensity);

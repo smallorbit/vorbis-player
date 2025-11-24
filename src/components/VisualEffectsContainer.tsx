@@ -55,7 +55,7 @@ const EffectsLoadingFallback: React.FC = () => (
 );
 
 const VisualEffectsContainer: React.FC<VisualEffectsContainerProps> = ({
-  enabled: _enabled, // Not used for menu visibility, but kept for API compatibility
+  // enabled prop not used for menu visibility, but kept for API compatibility
   isMenuOpen,
   accentColor,
   filters,

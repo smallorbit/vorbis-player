@@ -34,48 +34,15 @@ interface GradientStop {
 export const GradientFlowVisualizer: React.FC<GradientFlowVisualizerProps> = ({
   intensity,
   accentColor,
-  isPlaying,
-  playbackPosition: _playbackPosition // Will be used for more accurate sync in future
+  isPlaying
+  // playbackPosition will be used for more accurate sync in future
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const layersRef = useRef<GradientLayer[]>([]);
   const lastFrameTimeRef = useRef<number>(0);
 
-  // Initialize gradient layers
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const resizeCanvas = () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-      
-      // Reinitialize layers on resize
-      const layerCount = getLayerCount(canvas.width, canvas.height);
-      layersRef.current = initializeGradientLayers(layerCount, accentColor);
-    };
-
-    resizeCanvas();
-    window.addEventListener('resize', resizeCanvas);
-
-    return () => {
-      window.removeEventListener('resize', resizeCanvas);
-    };
-  }, [accentColor]);
-
-  // Update colors when accent color changes
-  useEffect(() => {
-    layersRef.current.forEach((layer, index) => {
-      layer.stops = [
-        { color: accentColor, position: 0 },
-        { color: generateColorVariant(accentColor, 0.3 + (index / layersRef.current.length) * 0.2), position: 0.5 },
-        { color: generateColorVariant(accentColor, 0.6 + (index / layersRef.current.length) * 0.2), position: 1 }
-      ];
-    });
-  }, [accentColor]);
-
   // Calculate layer count based on viewport size
-  const getLayerCount = useCallback((width: number, _height: number): number => {
+  const getLayerCount = useCallback((width: number): number => {
     const isMobile = width < 768;
     return isMobile ? 3 : 5;
   }, []);
@@ -99,15 +66,46 @@ export const GradientFlowVisualizer: React.FC<GradientFlowVisualizerProps> = ({
     }));
   }, []);
 
+  // Initialize gradient layers
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const resizeCanvas = () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      
+      // Reinitialize layers on resize
+      const layerCount = getLayerCount(canvas.width);
+      layersRef.current = initializeGradientLayers(layerCount, accentColor);
+    };
+
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+
+    return () => {
+      window.removeEventListener('resize', resizeCanvas);
+    };
+  }, [accentColor, getLayerCount, initializeGradientLayers]);
+
+  // Update colors when accent color changes
+  useEffect(() => {
+    layersRef.current.forEach((layer, index) => {
+      layer.stops = [
+        { color: accentColor, position: 0 },
+        { color: generateColorVariant(accentColor, 0.3 + (index / layersRef.current.length) * 0.2), position: 0.5 },
+        { color: generateColorVariant(accentColor, 0.6 + (index / layersRef.current.length) * 0.2), position: 1 }
+      ];
+    });
+  }, [accentColor]);
+
   // Update gradient layers
   const updateGradientLayers = useCallback((
     layers: GradientLayer[],
     deltaTime: number,
-    isPlaying: boolean,
-    _width: number,
-    _height: number
+    isPlayingParam: boolean
   ): void => {
-    const speedMultiplier = isPlaying ? 1.0 : 0.2;
+    const speedMultiplier = isPlayingParam ? 1.0 : 0.2;
     const normalizedDelta = isFinite(deltaTime) ? Math.min(deltaTime / 16, 10) : 1;
     const animationSpeed = 0.001 * normalizedDelta;
     const phaseSpeed = 0.002 * normalizedDelta;
@@ -208,7 +206,7 @@ export const GradientFlowVisualizer: React.FC<GradientFlowVisualizerProps> = ({
     }
 
     // Update gradient layers
-    updateGradientLayers(layersRef.current, deltaTime, isPlaying, canvas.width, canvas.height);
+    updateGradientLayers(layersRef.current, deltaTime, isPlaying);
 
     // Render gradient flow
     renderGradientFlow(ctx, layersRef.current, canvas.width, canvas.height, intensity);

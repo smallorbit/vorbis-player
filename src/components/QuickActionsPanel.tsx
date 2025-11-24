@@ -83,13 +83,10 @@ const DebugLabel = styled.div`
 export const QuickActionsPanel: React.FC<QuickActionsPanelProps> = ({
   accentColor,
   currentTrack,
-  glowEnabled: _glowEnabled, // Kept for debug mode but not used in main UI
+  // glowEnabled, onGlowToggle, onBackgroundVisualizerToggle, backgroundVisualizerEnabled kept for API compatibility
   onShowPlaylist,
   onShowVisualEffects,
-  onGlowToggle: _onGlowToggle, // Kept for debug mode but not used in main UI
   onAccentColorChange,
-  onBackgroundVisualizerToggle: _onBackgroundVisualizerToggle, // Kept for debug mode but not used in main UI
-  backgroundVisualizerEnabled: _backgroundVisualizerEnabled, // Kept for debug mode but not used in main UI
   debugModeEnabled = false,
   isVisible = true
 }) => {
