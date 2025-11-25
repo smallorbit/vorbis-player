@@ -247,4 +247,4 @@ These rules define workflows for PRD creation, task breakdown, and implementatio
 - /commit means you are to commit the current working changes to the current branch. unless otherwise instructed, you should split the changes into logically related commits in the correct sequential order
 - /doc means you need to update README.md
 - /comdoc means you need to do everything from /doc, then everything from /commit (in that order)
-- as you work, keep track of the latest todos and state in @ai-agent-tasks/wip.md
+- as you work, keep track of the latest todos and state in `docs/development/ai-agent-wip.md`

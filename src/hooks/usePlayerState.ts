@@ -68,43 +68,9 @@ import { useState, useEffect, useCallback } from 'react';
 import type { Track } from '../services/spotify';
 import { theme } from '@/styles/theme';
 import type { VisualizerStyle } from '../types/visualizer';
+import type { AlbumFilters } from '../types/filters';
+import { DEFAULT_ALBUM_FILTERS } from '../types/filters';
 import { useLocalStorage } from './useLocalStorage';
-
-/**
- * Album image processing filters interface
- * 
- * Defines the available image processing filters that can be applied
- * to album artwork for visual effects and customization.
- * 
- * @interface AlbumFilters
- * 
- * @property {number} brightness - Brightness adjustment (0-200, 100 = normal)
- * @property {number} contrast - Contrast adjustment (0-200, 100 = normal)
- * @property {number} saturation - Saturation adjustment (0-200, 100 = normal)
- * @property {number} hue - Hue rotation in degrees (0-360)
- * @property {number} blur - Blur radius in pixels (0-20)
- * @property {number} sepia - Sepia effect intensity (0-100)
- * 
- * @example
- * ```typescript
- * const filters: AlbumFilters = {
- *   brightness: 110,  // 10% brighter
- *   contrast: 120,    // 20% more contrast
- *   saturation: 90,   // 10% less saturation
- *   hue: 180,         // 180° hue rotation
- *   blur: 2,          // 2px blur
- *   sepia: 30         // 30% sepia effect
- * };
- * ```
- */
-interface AlbumFilters {
-  brightness: number;
-  contrast: number;
-  saturation: number;
-  hue: number;
-  blur: number;
-  sepia: number;
-}
 
 
 
@@ -273,16 +239,6 @@ export const usePlayerState = (): PlayerState & PlayerStateSetters => {
   const [showPlaylist, setShowPlaylist] = useState(false);
   const [accentColor, setAccentColor] = useState<string>(theme.colors.accent);
   const [showVisualEffects, setShowVisualEffects] = useState(false);
-  
-  // Default album filters
-  const defaultAlbumFilters: AlbumFilters = {
-    brightness: 100,
-    contrast: 100,
-    saturation: 100,
-    hue: 0,
-    blur: 0,
-    sepia: 0
-  };
 
   // Visual effects state with persistence (using useLocalStorage)
   const [visualEffectsEnabled, setVisualEffectsEnabled] = useLocalStorage<boolean>(
@@ -305,7 +261,7 @@ export const usePlayerState = (): PlayerState & PlayerStateSetters => {
   // Album filters with persistence
   const [albumFilters, setAlbumFilters] = useLocalStorage<AlbumFilters>(
     'vorbis-player-album-filters',
-    defaultAlbumFilters
+    DEFAULT_ALBUM_FILTERS
   );
 
   // Saved filter preset

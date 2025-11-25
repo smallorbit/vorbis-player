@@ -19,7 +19,7 @@ interface VisualEffectsMenuProps {
     hue: number;
     sepia: number;
   };
-  onFilterChange: (filterName: string, value: number | boolean) => void;
+  onFilterChange: (filterName: string, value: number) => void;
   onResetFilters: () => void;
   // Glow controls
   glowIntensity: number;
