@@ -1,4 +1,4 @@
-import React, { useEffect, memo, useCallback, useMemo } from 'react';
+import React, { memo, useCallback, useMemo } from 'react';
 import styled from 'styled-components';
 import { FixedSizeList as List } from 'react-window';
 
@@ -6,6 +6,7 @@ import { theme } from '../styles/theme';
 import { PerformanceProfilerComponent } from './PerformanceProfiler';
 import VisualEffectsPerformanceMonitor from './VisualEffectsPerformanceMonitor';
 import { usePlayerSizing } from '../hooks/usePlayerSizing';
+import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
 import type { VisualizerStyle } from '../types/visualizer';
 
 interface VisualEffectsMenuProps {
@@ -388,24 +389,11 @@ export const VisualEffectsMenu: React.FC<VisualEffectsMenuProps> = memo(({
     if (isTablet) return Math.min(viewport.width * 0.4, parseInt(theme.drawer.widths.tablet));
     return Math.min(viewport.width * 0.3, parseInt(theme.drawer.widths.desktop));
   }, [viewport.width, isMobile, isTablet]);
-  // Add ESC key support to close the drawer
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && isOpen) {
-        onClose();
-      }
-    };
 
-    // Only add event listener when drawer is open
-    if (isOpen) {
-      document.addEventListener('keydown', handleKeyDown);
-    }
-
-    // Cleanup function to remove event listener
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [isOpen, onClose]);
+  // Use centralized keyboard shortcuts for Escape key
+  useKeyboardShortcuts({
+    onCloseVisualEffects: isOpen ? onClose : undefined
+  });
 
   // Simplified filter configuration with 3-option selections
   const filterConfig = useMemo(() => [

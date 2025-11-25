@@ -2,7 +2,7 @@
  * Real-time performance monitoring component for VisualEffectsMenu
  */
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import styled from 'styled-components';
 import { PerformanceProfilerComponent } from './PerformanceProfiler';
 import {
@@ -11,6 +11,7 @@ import {
   VISUAL_EFFECTS_THRESHOLDS
 } from '../utils/visualEffectsPerformance';
 import { usePlayerSizing } from '../hooks/usePlayerSizing';
+import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
 
 interface VisualEffectsPerformanceMonitorProps {
   isEnabled?: boolean;
@@ -160,20 +161,15 @@ export const VisualEffectsPerformanceMonitor: React.FC<VisualEffectsPerformanceM
     return Math.min(viewport.width * 0.25, 400);
   }, [viewport.width, isMobile, isTablet]);
 
-  // Toggle visibility with keyboard shortcut
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.ctrlKey && event.shiftKey && event.key === 'P') {
-        event.preventDefault();
+  // Toggle visibility with keyboard shortcut (Ctrl+Shift+P)
+  useKeyboardShortcuts(
+    {
+      onTogglePerformanceMonitor: useCallback(() => {
         setIsVisible(prev => !prev);
-      }
-    };
-
-    if (isEnabled) {
-      document.addEventListener('keydown', handleKeyDown);
-      return () => document.removeEventListener('keydown', handleKeyDown);
-    }
-  }, [isEnabled]);
+      }, [])
+    },
+    { enablePerformanceMonitor: isEnabled || false }
+  );
 
   const runPerformanceTest = useCallback(async () => {
     if (isTesting) return;

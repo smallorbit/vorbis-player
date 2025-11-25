@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import SpotifyPlayerControls from './SpotifyPlayerControls';
 import { spotifyPlayer } from '../services/spotifyPlayer';
+import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
 import type { Track } from '../services/spotify';
 
 interface PlaybackHandlers {
@@ -25,17 +26,6 @@ interface PlayerControlsProps {
   onUI: UIHandlers;
   onAccentColorChange: (color: string) => void;
 }
-
-const KEYBOARD_SHORTCUTS = {
-  PLAY_PAUSE: 'Space',
-  NEXT_TRACK: 'ArrowRight',
-  PREVIOUS_TRACK: 'ArrowLeft',
-  TOGGLE_PLAYLIST: 'KeyP',
-  TOGGLE_VISUAL_EFFECTS: 'KeyV',
-  VOLUME_UP: 'ArrowUp',
-  VOLUME_DOWN: 'ArrowDown',
-  MUTE: 'KeyM'
-} as const;
 
 const PlayerControls: React.FC<PlayerControlsProps> = ({
   currentTrack,
@@ -69,54 +59,23 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
     }
   }, [onPlayback, trackCount]);
 
-  // Keyboard shortcuts
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.target instanceof HTMLInputElement) return;
+  // Handle play/pause shortcut
+  const handlePlayPause = useCallback(() => {
+    if (isPlaying) {
+      handlePauseClick();
+    } else {
+      handlePlayClick();
+    }
+  }, [isPlaying, handlePlayClick, handlePauseClick]);
 
-      switch (event.code) {
-        case KEYBOARD_SHORTCUTS.PLAY_PAUSE:
-          event.preventDefault();
-          if (isPlaying) {
-            handlePauseClick();
-          } else {
-            handlePlayClick();
-          }
-          break;
-        case KEYBOARD_SHORTCUTS.NEXT_TRACK:
-          event.preventDefault();
-          handleNext();
-          break;
-        case KEYBOARD_SHORTCUTS.PREVIOUS_TRACK:
-          event.preventDefault();
-          handlePrevious();
-          break;
-        case KEYBOARD_SHORTCUTS.TOGGLE_PLAYLIST:
-          event.preventDefault();
-          onUI.showPlaylist();
-          break;
-        case KEYBOARD_SHORTCUTS.TOGGLE_VISUAL_EFFECTS:
-          event.preventDefault();
-          onUI.toggleVisualEffects();
-          break;
-        case KEYBOARD_SHORTCUTS.VOLUME_UP:
-          event.preventDefault();
-          // Volume control functionality can be added here if needed
-          break;
-        case KEYBOARD_SHORTCUTS.VOLUME_DOWN:
-          event.preventDefault();
-          // Volume control functionality can be added here if needed
-          break;
-        case KEYBOARD_SHORTCUTS.MUTE:
-          event.preventDefault();
-          // Mute functionality can be added here if needed
-          break;
-      }
-    };
-
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [isPlaying, handlePlayClick, handlePauseClick, handleNext, handlePrevious, onUI]);
+  // Use centralized keyboard shortcuts
+  useKeyboardShortcuts({
+    onPlayPause: handlePlayPause,
+    onNext: handleNext,
+    onPrevious: handlePrevious,
+    onTogglePlaylist: onUI.showPlaylist,
+    onToggleVisualEffects: onUI.toggleVisualEffects
+  });
 
   // Sync with actual Spotify player state
   useEffect(() => {

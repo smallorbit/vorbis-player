@@ -8,7 +8,7 @@ import LeftQuickActionsPanel from './LeftQuickActionsPanel';
 import { theme } from '@/styles/theme';
 import { cardBase } from '../styles/utils';
 import { usePlayerSizing } from '../hooks/usePlayerSizing';
-import { useVisualEffectsShortcuts } from '@/hooks/useVisualEffectsShortcuts';
+import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
 import type { Track } from '../services/spotify';
 import type { VisualizerStyle } from '../types/visualizer';
 import type { AlbumFilters } from '../types/filters';
@@ -286,9 +286,9 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
   const { dimensions, useFluidSizing, padding, transitionDuration, transitionEasing, aspectRatio } = usePlayerSizing();
 
   // Set up visual effects keyboard shortcuts
-  useVisualEffectsShortcuts({
-    onToggleEffects: handlers.onGlowToggle,
-    onCloseMenu: handlers.onCloseVisualEffects,
+  useKeyboardShortcuts({
+    onToggleVisualEffects: handlers.onGlowToggle,
+    onCloseVisualEffects: handlers.onCloseVisualEffects,
     onResetFilters: handlers.onResetFilters
   });
 
