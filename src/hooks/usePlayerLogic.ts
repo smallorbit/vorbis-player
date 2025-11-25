@@ -7,29 +7,8 @@ import { useSpotifyPlayback } from '@/hooks/useSpotifyPlayback';
 import { useAutoAdvance } from '@/hooks/useAutoAdvance';
 import { useAccentColor } from '@/hooks/useAccentColor';
 import { useVisualEffectsState } from '@/hooks/useVisualEffectsState';
+import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
 import type { Track } from '@/services/spotify';
-
-// Debug mode keyboard shortcut handler
-const useDebugModeShortcut = (debugModeEnabled: boolean, setDebugModeEnabled: (enabled: boolean) => void) => {
-  useEffect(() => {
-    const handleKeyPress = (event: KeyboardEvent) => {
-      // Press 'D' key to toggle debug mode (only when not typing in an input)
-      if (event.key === 'd' || event.key === 'D') {
-        const target = event.target as HTMLElement;
-        const isInput = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable;
-        if (!isInput) {
-          event.preventDefault();
-          setDebugModeEnabled(!debugModeEnabled);
-        }
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyPress);
-    return () => {
-      window.removeEventListener('keydown', handleKeyPress);
-    };
-  }, [debugModeEnabled, setDebugModeEnabled]);
-};
 
 export const usePlayerLogic = () => {
   const {
@@ -74,8 +53,15 @@ export const usePlayerLogic = () => {
     }
   } = usePlayerState();
 
-  // Enable debug mode keyboard shortcut (press 'D' to toggle)
-  useDebugModeShortcut(debugModeEnabled, setDebugModeEnabled);
+  // Use centralized keyboard shortcuts for debug mode
+  useKeyboardShortcuts(
+    {
+      onToggleDebugMode: useCallback(() => {
+        setDebugModeEnabled(!debugModeEnabled);
+      }, [debugModeEnabled, setDebugModeEnabled])
+    },
+    { enableDebugMode: true }
+  );
 
   // Playback state for visualizer
   const [isPlaying, setIsPlaying] = useState(false);
