@@ -4,8 +4,9 @@ import { useSpotifyControls } from '../hooks/useSpotifyControls';
 import { usePlayerSizing } from '../hooks/usePlayerSizing';
 import { PlayerControlsContainer } from './controls/styled';
 import TrackInfo from './controls/TrackInfo';
-import ControlsToolbar from './controls/ControlsToolbar';
+import PlaybackControls from './controls/PlaybackControls';
 import TimelineControls from './controls/TimelineControls';
+import { TrackInfoRow, TrackInfoLeft, TrackInfoCenter, TrackInfoRight } from './controls/styled';
 
 
 
@@ -92,16 +93,26 @@ const SpotifyPlayerControls = memo<SpotifyPlayerControlsProps>(({
         isTablet={isTablet}
       />
 
-      <ControlsToolbar
-        onPrevious={onPrevious}
-        onPlay={onPlay}
-        onPause={onPause}
-        onNext={onNext}
-        isPlaying={isPlaying}
-        accentColor={accentColor}
-        isMobile={isMobile}
-        isTablet={isTablet}
-      />
+      <TrackInfoRow style={{ position: 'relative' }}>
+        <TrackInfoLeft>
+          {/* Left side is empty - could be used for other controls if needed */}
+        </TrackInfoLeft>
+        <TrackInfoCenter>
+          <PlaybackControls
+            onPrevious={onPrevious}
+            onPlay={onPlay}
+            onPause={onPause}
+            onNext={onNext}
+            isPlaying={isPlaying}
+            accentColor={accentColor}
+            isMobile={isMobile}
+            isTablet={isTablet}
+          />
+        </TrackInfoCenter>
+        <TrackInfoRight>
+          {/* Quick actions moved to right-side panel */}
+        </TrackInfoRight>
+      </TrackInfoRow>
 
       <TimelineControls
         isMuted={isMuted}

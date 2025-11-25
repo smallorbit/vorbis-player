@@ -3,17 +3,18 @@ import styled from 'styled-components';
 import { CardContent } from './styled';
 import AlbumArt from './AlbumArt';
 import PlayerControls from './PlayerControls';
-import VisualEffectsContainer from './VisualEffectsContainer';
 import QuickActionsPanel from './QuickActionsPanel';
 import LeftQuickActionsPanel from './LeftQuickActionsPanel';
 import { theme } from '@/styles/theme';
 import { cardBase } from '../styles/utils';
 import { usePlayerSizing } from '../hooks/usePlayerSizing';
+import { useVisualEffectsShortcuts } from '@/hooks/useVisualEffectsShortcuts';
 import type { Track } from '../services/spotify';
 import type { VisualizerStyle } from '../types/visualizer';
 import type { AlbumFilters } from '../types/filters';
 
 const PlaylistDrawer = lazy(() => import('./PlaylistDrawer'));
+const VisualEffectsMenu = lazy(() => import('./VisualEffectsMenu'));
 
 interface PlayerContentHandlers {
   onPlay: () => void;
@@ -284,6 +285,13 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
   // Use responsive sizing hook
   const { dimensions, useFluidSizing, padding, transitionDuration, transitionEasing, aspectRatio } = usePlayerSizing();
 
+  // Set up visual effects keyboard shortcuts
+  useVisualEffectsShortcuts({
+    onToggleEffects: handlers.onGlowToggle,
+    onCloseMenu: handlers.onCloseVisualEffects,
+    onResetFilters: handlers.onResetFilters
+  });
+
   return (
     <ContentWrapper
       width={dimensions.width}
@@ -392,27 +400,45 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
 
         </LoadingCard>
       </PlayerContainer>
-      <VisualEffectsContainer
-        enabled={effects.enabled}
-        isMenuOpen={ui.showVisualEffects}
-        accentColor={ui.accentColor}
-        filters={effects.filters}
-        onMenuClose={handlers.onCloseVisualEffects}
-        onFilterChange={handlers.onFilterChange}
-        onResetFilters={handlers.onResetFilters}
-        onToggleEffects={handlers.onGlowToggle}
-        glowIntensity={effects.glow.intensity}
-        setGlowIntensity={handlers.onGlowIntensityChange}
-        glowRate={effects.glow.rate}
-        setGlowRate={handlers.onGlowRateChange}
-        effectiveGlow={effects.glow}
-        backgroundVisualizerStyle={(handlers.backgroundVisualizerStyle as VisualizerStyle) || 'particles'}
-        onBackgroundVisualizerStyleChange={handlers.onBackgroundVisualizerStyleChange || (() => { })}
-        backgroundVisualizerIntensity={handlers.backgroundVisualizerIntensity || 60}
-        onBackgroundVisualizerIntensityChange={handlers.onBackgroundVisualizerIntensityChange || (() => { })}
-        accentColorBackgroundEnabled={handlers.accentColorBackgroundEnabled || false}
-        onAccentColorBackgroundToggle={handlers.onAccentColorBackgroundToggle || (() => { })}
-      />
+      {ui.showVisualEffects && (
+        <Suspense fallback={
+          <div style={{
+            position: 'fixed',
+            top: 0,
+            right: 0,
+            width: '350px',
+            height: '100vh',
+            background: 'rgba(0,0,0,0.8)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: 'rgba(255,255,255,0.7)',
+            fontSize: '14px'
+          }}>
+            Loading effects...
+          </div>
+        }>
+          <VisualEffectsMenu
+            isOpen={ui.showVisualEffects}
+            onClose={handlers.onCloseVisualEffects}
+            accentColor={ui.accentColor}
+            filters={effects.filters}
+            onFilterChange={handlers.onFilterChange}
+            onResetFilters={handlers.onResetFilters}
+            glowIntensity={effects.glow.intensity}
+            setGlowIntensity={handlers.onGlowIntensityChange}
+            glowRate={effects.glow.rate}
+            setGlowRate={handlers.onGlowRateChange}
+            effectiveGlow={effects.glow}
+            backgroundVisualizerStyle={(handlers.backgroundVisualizerStyle as VisualizerStyle) || 'particles'}
+            onBackgroundVisualizerStyleChange={handlers.onBackgroundVisualizerStyleChange || (() => { })}
+            backgroundVisualizerIntensity={handlers.backgroundVisualizerIntensity || 60}
+            onBackgroundVisualizerIntensityChange={handlers.onBackgroundVisualizerIntensityChange || (() => { })}
+            accentColorBackgroundEnabled={handlers.accentColorBackgroundEnabled || false}
+            onAccentColorBackgroundToggle={handlers.onAccentColorBackgroundToggle || (() => { })}
+          />
+        </Suspense>
+      )}
       <Suspense fallback={<PlaylistLoadingFallback />}>
         <PlaylistDrawer
           isOpen={ui.showPlaylist}
