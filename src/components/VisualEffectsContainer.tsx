@@ -1,22 +1,14 @@
 import React, { Suspense, lazy, useEffect } from 'react';
 import type { VisualizerStyle } from '../types/visualizer';
+import type { AlbumFilters } from '../types/filters';
 
 const VisualEffectsMenu = lazy(() => import('./VisualEffectsMenu'));
-
-interface AlbumArtFilters {
-  brightness: number;
-  contrast: number;
-  saturation: number;
-  hue: number;
-  blur: number;
-  sepia: number;
-}
 
 interface VisualEffectsContainerProps {
   enabled: boolean;
   isMenuOpen: boolean;
   accentColor: string;
-  filters: AlbumArtFilters;
+  filters: AlbumFilters;
   onMenuClose: () => void;
   onFilterChange: (filter: string, value: number) => void;
   onResetFilters: () => void;

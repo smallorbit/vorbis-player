@@ -11,17 +11,9 @@ import { cardBase } from '../styles/utils';
 import { usePlayerSizing } from '../hooks/usePlayerSizing';
 import type { Track } from '../services/spotify';
 import type { VisualizerStyle } from '../types/visualizer';
+import type { AlbumFilters } from '../types/filters';
 
 const PlaylistDrawer = lazy(() => import('./PlaylistDrawer'));
-
-interface AlbumArtFilters {
-  brightness: number;
-  contrast: number;
-  saturation: number;
-  hue: number;
-  blur: number;
-  sepia: number;
-}
 
 interface PlayerContentHandlers {
   onPlay: () => void;
@@ -64,7 +56,7 @@ interface PlayerContentProps {
   effects: {
     enabled: boolean;
     glow: { intensity: number; rate: number };
-    filters: AlbumArtFilters;
+    filters: AlbumFilters;
   };
   handlers: PlayerContentHandlers;
 }
