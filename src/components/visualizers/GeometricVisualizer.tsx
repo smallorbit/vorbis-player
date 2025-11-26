@@ -1,6 +1,6 @@
-import React, { useEffect, useRef, useCallback } from 'react';
-import { useAnimationFrame } from '../../hooks/useAnimationFrame';
+import React, { useCallback } from 'react';
 import { generateColorVariant } from '../../utils/visualizerUtils';
+import { useCanvasVisualizer } from '../../hooks/useCanvasVisualizer';
 
 interface GeometricVisualizerProps {
   intensity: number;
@@ -38,10 +38,6 @@ export const GeometricVisualizer: React.FC<GeometricVisualizerProps> = ({
   isPlaying
   // playbackPosition will be used for more accurate sync in future
 }) => {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const shapesRef = useRef<GeometricShape[]>([]);
-  const lastFrameTimeRef = useRef<number>(0);
-
   // Draw shape helper (moved up to be used in dependencies)
   const drawShape = useCallback((
     ctx: CanvasRenderingContext2D,
@@ -137,37 +133,6 @@ export const GeometricVisualizer: React.FC<GeometricVisualizerProps> = ({
     });
   }, []);
 
-  // Initialize geometric shapes
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const resizeCanvas = () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-      
-      // Reinitialize shapes on resize
-      const shapeCount = getShapeCount(canvas.width, canvas.height);
-      shapesRef.current = initializeGeometricShapes(shapeCount, canvas.width, canvas.height, accentColor);
-    };
-
-    resizeCanvas();
-    window.addEventListener('resize', resizeCanvas);
-
-    return () => {
-      window.removeEventListener('resize', resizeCanvas);
-    };
-  }, [accentColor, getShapeCount, initializeGeometricShapes]);
-
-  // Update colors when accent color changes
-  useEffect(() => {
-    shapesRef.current.forEach(shape => {
-      shape.color = generateColorVariant(accentColor, Math.random() * 0.5 + 0.3);
-    });
-  }, [accentColor]);
-
-
-
   // Update geometric shapes
   const updateGeometricShapes = useCallback((
     shapes: GeometricShape[],
@@ -237,30 +202,23 @@ export const GeometricVisualizer: React.FC<GeometricVisualizerProps> = ({
     });
   }, [drawShape]);
 
-  // Animation loop
-  const animate = useCallback((currentTime: number) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
+  // Handle color changes
+  const handleColorChange = useCallback((shapes: GeometricShape[], color: string) => {
+    shapes.forEach(shape => {
+      shape.color = generateColorVariant(color, Math.random() * 0.5 + 0.3);
+    });
+  }, []);
 
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    const deltaTime = currentTime - lastFrameTimeRef.current;
-    lastFrameTimeRef.current = currentTime;
-
-    // Skip if deltaTime is too large (tab was hidden)
-    if (deltaTime > 1000) {
-      return;
-    }
-
-    // Update geometric shapes
-    updateGeometricShapes(shapesRef.current, deltaTime, isPlaying, canvas.width, canvas.height);
-
-    // Render geometric shapes
-    renderGeometricShapes(ctx, shapesRef.current, canvas.width, canvas.height, intensity);
-  }, [isPlaying, intensity, updateGeometricShapes, renderGeometricShapes]);
-
-  useAnimationFrame(animate);
+  const canvasRef = useCanvasVisualizer<GeometricShape>({
+    accentColor,
+    isPlaying,
+    intensity,
+    getItemCount: getShapeCount,
+    initializeItems: initializeGeometricShapes,
+    updateItems: updateGeometricShapes,
+    renderItems: renderGeometricShapes,
+    onColorChange: handleColorChange
+  });
 
   return (
     <canvas

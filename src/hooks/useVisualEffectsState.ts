@@ -1,5 +1,6 @@
 import { useState, useCallback, useMemo } from 'react';
 import { DEFAULT_GLOW_INTENSITY, DEFAULT_GLOW_RATE } from '../components/AccentColorGlowOverlay';
+import { useLocalStorage } from './useLocalStorage';
 
 interface UseVisualEffectsStateProps {
   initialGlowIntensity?: number;
@@ -11,15 +12,15 @@ export const useVisualEffectsState = ({
   initialGlowRate = DEFAULT_GLOW_RATE
 }: UseVisualEffectsStateProps = {}) => {
   // Glow state management with localStorage persistence
-  const [glowIntensity, setGlowIntensity] = useState(() => {
-    const saved = localStorage.getItem('vorbis-player-glow-intensity');
-    return saved ? parseInt(saved, 10) : initialGlowIntensity;
-  });
+  const [glowIntensity, setGlowIntensity] = useLocalStorage<number>(
+    'vorbis-player-glow-intensity',
+    initialGlowIntensity
+  );
 
-  const [glowRate, setGlowRate] = useState(() => {
-    const saved = localStorage.getItem('vorbis-player-glow-rate');
-    return saved ? parseInt(saved, 10) : initialGlowRate;
-  });
+  const [glowRate, setGlowRate] = useLocalStorage<number>(
+    'vorbis-player-glow-rate',
+    initialGlowRate
+  );
 
   // Saved state for restoration when visual effects are re-enabled
   const [savedGlowIntensity, setSavedGlowIntensity] = useState<number | null>(null);
@@ -35,14 +36,12 @@ export const useVisualEffectsState = ({
   const handleGlowIntensityChange = useCallback((intensity: number) => {
     setGlowIntensity(intensity);
     setSavedGlowIntensity(intensity);
-    localStorage.setItem('vorbis-player-glow-intensity', intensity.toString());
-  }, []);
+  }, [setGlowIntensity]);
 
   const handleGlowRateChange = useCallback((rate: number) => {
     setGlowRate(rate);
     setSavedGlowRate(rate);
-    localStorage.setItem('vorbis-player-glow-rate', rate.toString());
-  }, []);
+  }, [setGlowRate]);
 
   // State restoration function
   const restoreGlowSettings = useCallback(() => {
@@ -52,7 +51,7 @@ export const useVisualEffectsState = ({
     if (savedGlowRate !== null) {
       setGlowRate(savedGlowRate);
     }
-  }, [savedGlowIntensity, savedGlowRate]);
+  }, [savedGlowIntensity, savedGlowRate, setGlowIntensity, setGlowRate]);
 
   return {
     glowIntensity,

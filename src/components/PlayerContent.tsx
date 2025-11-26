@@ -14,7 +14,7 @@ import type { VisualizerStyle } from '../types/visualizer';
 import type { AlbumFilters } from '../types/filters';
 
 const PlaylistDrawer = lazy(() => import('./PlaylistDrawer'));
-const VisualEffectsMenu = lazy(() => import('./VisualEffectsMenu'));
+const VisualEffectsMenu = lazy(() => import('./VisualEffectsMenu/index'));
 
 interface PlayerContentHandlers {
   onPlay: () => void;
