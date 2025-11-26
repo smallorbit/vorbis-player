@@ -1,6 +1,6 @@
-import React, { useEffect, useRef, useCallback } from 'react';
-import { useAnimationFrame } from '../../hooks/useAnimationFrame';
+import React, { useCallback } from 'react';
 import { generateColorVariant } from '../../utils/visualizerUtils';
+import { useCanvasVisualizer } from '../../hooks/useCanvasVisualizer';
 
 interface ParticleVisualizerProps {
   intensity: number;
@@ -36,11 +36,6 @@ export const ParticleVisualizer: React.FC<ParticleVisualizerProps> = ({
   accentColor,
   isPlaying
 }) => {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const particlesRef = useRef<Particle[]>([]);
-  const lastFrameTimeRef = useRef<number>(0);
-  const animationFrameRef = useRef<number>();
-
   // Calculate particle count based on viewport size
   const getParticleCount = useCallback((width: number, height: number): number => {
     const pixelCount = width * height;
@@ -77,39 +72,6 @@ export const ParticleVisualizer: React.FC<ParticleVisualizerProps> = ({
       pulseSpeed: 0.01 + Math.random() * 0.02
     }));
   }, []);
-
-  // Initialize particles resize
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const resizeCanvas = () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-      
-      // Reinitialize particles on resize
-      const particleCount = getParticleCount(canvas.width, canvas.height);
-      particlesRef.current = initializeParticles(particleCount, canvas.width, canvas.height, accentColor);
-    };
-
-    resizeCanvas();
-    window.addEventListener('resize', resizeCanvas);
-
-    const animId = animationFrameRef.current;
-    return () => {
-      window.removeEventListener('resize', resizeCanvas);
-      if (animId) {
-        cancelAnimationFrame(animId);
-      }
-    };
-  }, [accentColor, getParticleCount, initializeParticles]);
-
-  // Update particles when accent color changes
-  useEffect(() => {
-    particlesRef.current.forEach(particle => {
-      particle.color = generateColorVariant(accentColor, Math.random() * 0.5 + 0.3);
-    });
-  }, [accentColor]);
 
   // Update particles
   const updateParticles = useCallback((
@@ -165,30 +127,23 @@ export const ParticleVisualizer: React.FC<ParticleVisualizerProps> = ({
     });
   }, []);
 
-  // Animation loop
-  const animate = useCallback((currentTime: number) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
+  // Handle color changes
+  const handleColorChange = useCallback((particles: Particle[], color: string) => {
+    particles.forEach(particle => {
+      particle.color = generateColorVariant(color, Math.random() * 0.5 + 0.3);
+    });
+  }, []);
 
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    const deltaTime = currentTime - lastFrameTimeRef.current;
-    lastFrameTimeRef.current = currentTime;
-
-    // Skip if deltaTime is too large (tab was hidden)
-    if (deltaTime > 1000) {
-      return;
-    }
-
-    // Update particles
-    updateParticles(particlesRef.current, deltaTime, isPlaying, canvas.width, canvas.height);
-
-    // Render particles
-    renderParticles(ctx, particlesRef.current, canvas.width, canvas.height, intensity);
-  }, [isPlaying, intensity, updateParticles, renderParticles]);
-
-  useAnimationFrame(animate);
+  const canvasRef = useCanvasVisualizer<Particle>({
+    accentColor,
+    isPlaying,
+    intensity,
+    getItemCount: getParticleCount,
+    initializeItems: initializeParticles,
+    updateItems: updateParticles,
+    renderItems: renderParticles,
+    onColorChange: handleColorChange
+  });
 
   return (
     <canvas

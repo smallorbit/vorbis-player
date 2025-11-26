@@ -2,6 +2,30 @@
 
 This document outlines the specific tasks required to execute the refactoring plan. These tasks are designed to be executed sequentially.
 
+## ✅ Completed Tasks (Session: Nov 26, 2025)
+
+### Task 1.0: Consolidate Duplicated `AlbumFilters` Interface (COMPLETED)
+- Created `src/types/filters.ts` with centralized `AlbumFilters` interface
+- Removed duplicate definitions from 3 files (usePlayerState, PlayerContent, VisualEffectsContainer)
+- Established single source of truth for filter types
+- All tests pass, zero lint errors
+
+### Task 2.0: Eliminate Redundant Wrapper Components (COMPLETED)
+- Removed `VisualEffectsContainer.tsx` (139 lines) - moved logic to PlayerContent
+- Removed `ControlsToolbar.tsx` (68 lines) - inlined PlaybackControls directly
+- Created `useVisualEffectsShortcuts.ts` hook (later consolidated into useKeyboardShortcuts)
+- Fixed VisualEffectsMenu type signatures
+- Net removal: 207 lines
+
+### Task 3.0: Consolidate Keyboard Shortcuts (COMPLETED)
+- Created `useKeyboardShortcuts.ts` - unified keyboard handler for 15+ shortcuts
+- Consolidated from 4 files: PlayerControls, VisualEffectsMenu, VisualEffectsPerformanceMonitor, usePlayerLogic
+- Removed duplicate event listeners and redundant hooks
+- Single source of truth for all keyboard shortcuts
+- All tests pass, zero lint errors
+
+---
+
 ## Phase 1: Foundation & Cleanup
 
 ### Task 1.1: Implement `useLocalStorage` Hook (COMPLETED)
@@ -74,13 +98,85 @@ This document outlines the specific tasks required to execute the refactoring pl
 2.  Ensure all event handlers passed as props are wrapped in `useCallback`.
 3.  Ensure expensive components (like `VisualEffectsMenu` or large lists) are wrapped in `React.memo`.
 
+---
+
+## 📋 Remaining Tasks (Pending)
+
+### Task 4.0: Fix Inconsistent localStorage Usage (COMPLETED)
+**Status**: DONE
+**Branch**: `refactor/fix-localstorage-consistency`
+
+**Goal**: Migrate `useVisualEffectsState.ts` to use centralized `useLocalStorage` hook
+**Files Affected**: `src/hooks/useVisualEffectsState.ts`
+**Effort**: 1 hour
+
+**Details**:
+- Currently uses raw `localStorage.getItem/setItem` calls
+- Should use `useLocalStorage` hook for consistency with rest of codebase
+- Update: glowIntensity, glowRate, and other visual effect settings
+- Verify persistence still works after refactor
+
+**Verification**:
+- Run `npm run build` and `npm run lint`
+- Run `npm run test:run` to verify no regressions
+- Manual test: Visual effects glow settings persist after page refresh
+
+---
+
+### Task 5.0: Abstract Common Visualizer Pattern (COMPLETED)
+**Status**: DONE
+**Branch**: `refactor/abstract-visualizer-pattern`
+
+**Goal**: Create shared hook for canvas-based visualizers
+**Files Affected**: `ParticleVisualizer.tsx`, `GeometricVisualizer.tsx`, `src/hooks/useCanvasVisualizer.ts`
+**Effort**: 4 hours
+
+**Details**:
+- Created `useCanvasVisualizer` hook to handle:
+  - Canvas ref & resize handling
+  - Animation loop with delta time
+  - Color update effects
+  - Initialization logic
+- Refactored `ParticleVisualizer.tsx` to use the hook
+- Refactored `GeometricVisualizer.tsx` to use the hook
+- Reduced code duplication significantly (~50 lines per file)
+
+**Verification**:
+- Run full build/lint/test suite
+- Visual effects still render correctly
+- Performance metrics remain similar
+
+---
+
+### Task 6.0: Extract Styled Components from VisualEffectsMenu (COMPLETED)
+**Status**: DONE
+**Branch**: `refactor/extract-styled-components`
+
+**Goal**: Move ~300 lines of styled components to separate file
+**Files Affected**: `src/components/VisualEffectsMenu.tsx` → split into `VisualEffectsMenu/index.tsx` + `VisualEffectsMenu/styled.ts`
+**Effort**: 2 hours
+
+**Details**:
+- Created `src/components/VisualEffectsMenu/` directory
+- Moved styled components to `src/components/VisualEffectsMenu/styled.ts`
+- Moved component logic to `src/components/VisualEffectsMenu/index.tsx`
+- Updated import in `PlayerContent.tsx`
+- Verified functionality remains unchanged
+
+**Verification**:
+- Run full build/lint/test suite
+- Menu renders correctly with all styles applied
+- No visual regressions
+
+---
+
 ## Validation
 
 ### Verification Steps
 1.  Run `npm run build` to ensure no type errors. (Done - Passed)
-2.  Run `npm run lint` to ensure no lint errors. (Done - Passed with minor warnings in other files)
-3.  Run `npm test` to verify no regressions in existing tests. (Done - Passed)
+2.  Run `npm run lint` to ensure no lint errors. (Done - Passed)
+3.  Run `npm test:run` to verify no regressions in existing tests. (Done - 107 tests pass)
 4.  Manual QA:
-    - Check if settings (Visual Effects, filters) persist after refresh.
-    - Check if Spotify playback works.
-    - Check if Playlist navigation works.
+     - Check if settings (Visual Effects, filters) persist after refresh.
+     - Check if Spotify playback works.
+     - Check if Playlist navigation works.
