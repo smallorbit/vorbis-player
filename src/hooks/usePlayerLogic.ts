@@ -73,7 +73,7 @@ export const usePlayerLogic = () => {
   const [isLikePending, setIsLikePending] = useState(false);
 
   // Volume/mute controls
-  const { handleMuteToggle } = useVolume();
+  const { handleMuteToggle, isMuted, volume } = useVolume();
 
   // Visual effects state management
   const {
@@ -315,7 +315,9 @@ export const usePlayerLogic = () => {
       effectiveGlow,
       currentTrack,
       isLiked,
-      isLikePending
+      isLikePending,
+      isMuted,
+      volume
     },
     handlers: {
         handlePlaylistSelect,

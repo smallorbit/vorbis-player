@@ -41,7 +41,9 @@ const AudioPlayerComponent = () => {
           currentIndex: state.currentTrackIndex,
           isPlaying: state.isPlaying,
           isLiked: state.isLiked,
-          isLikePending: state.isLikePending
+          isLikePending: state.isLikePending,
+          isMuted: state.isMuted,
+          volume: state.volume
         }}
         ui={{
           accentColor: state.accentColor,

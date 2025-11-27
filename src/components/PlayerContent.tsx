@@ -56,6 +56,8 @@ interface PlayerContentProps {
     isPlaying: boolean;
     isLiked?: boolean;
     isLikePending?: boolean;
+    isMuted?: boolean;
+    volume?: number;
   };
   ui: {
     accentColor: string;
@@ -427,6 +429,8 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
                   trackCount={track.list.length}
                   isLiked={track.isLiked}
                   isLikePending={track.isLikePending}
+                  isMuted={track.isMuted}
+                  volume={track.volume}
                   onMuteToggle={handlers.onMuteToggle}
                   onPlayback={{
                     play: handlers.onPlay,
