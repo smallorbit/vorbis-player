@@ -52,6 +52,7 @@ interface PlayerContentProps {
     current: Track | null;
     list: Track[];
     currentIndex: number;
+    isPlaying: boolean;
   };
   ui: {
     accentColor: string;
@@ -311,9 +312,12 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
 
   // Combine play/pause for Space key
   const handlePlayPause = useCallback(() => {
-    // For now, just call play - the player will handle toggling based on current state
-    handlers.onPlay();
-  }, [handlers]);
+    if (track.isPlaying) {
+      handlers.onPause();
+    } else {
+      handlers.onPlay();
+    }
+  }, [handlers, track.isPlaying]);
 
   // Set up keyboard shortcuts
   useKeyboardShortcuts({

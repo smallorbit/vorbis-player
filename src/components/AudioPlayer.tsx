@@ -38,7 +38,8 @@ const AudioPlayerComponent = () => {
         track={{
           current: state.currentTrack,
           list: state.tracks,
-          currentIndex: state.currentTrackIndex
+          currentIndex: state.currentTrackIndex,
+          isPlaying: state.isPlaying
         }}
         ui={{
           accentColor: state.accentColor,
