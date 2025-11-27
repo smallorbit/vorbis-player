@@ -108,25 +108,31 @@ export const usePlayerLogic = () => {
 
   // Check like status when track changes
   useEffect(() => {
+    let isMounted = true;
+
     const checkLikeStatus = async () => {
       if (!currentTrack?.id) {
-        setIsLiked(false);
+        if (isMounted) setIsLiked(false);
         return;
       }
 
       try {
-        setIsLikePending(true);
+        if (isMounted) setIsLikePending(true);
         const liked = await checkTrackSaved(currentTrack.id);
-        setIsLiked(liked);
+        if (isMounted) setIsLiked(liked);
       } catch (error) {
         console.error('Failed to check like status:', error);
-        setIsLiked(false);
+        if (isMounted) setIsLiked(false);
       } finally {
-        setIsLikePending(false);
+        if (isMounted) setIsLikePending(false);
       }
     };
 
     checkLikeStatus();
+
+    return () => {
+      isMounted = false;
+    };
   }, [currentTrack?.id]);
 
   // Like toggle handler
@@ -307,7 +313,9 @@ export const usePlayerLogic = () => {
       isPlaying,
       playbackPosition,
       effectiveGlow,
-      currentTrack
+      currentTrack,
+      isLiked,
+      isLikePending
     },
     handlers: {
         handlePlaylistSelect,

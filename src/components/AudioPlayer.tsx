@@ -39,7 +39,9 @@ const AudioPlayerComponent = () => {
           current: state.currentTrack,
           list: state.tracks,
           currentIndex: state.currentTrackIndex,
-          isPlaying: state.isPlaying
+          isPlaying: state.isPlaying,
+          isLiked: state.isLiked,
+          isLikePending: state.isLikePending
         }}
         ui={{
           accentColor: state.accentColor,
@@ -78,7 +80,8 @@ const AudioPlayerComponent = () => {
           accentColorBackgroundEnabled: state.accentColorBackgroundPreferred, // Pass preferred state to VFX menu
           onAccentColorBackgroundToggle: handlers.handleAccentColorBackgroundToggle,
           debugModeEnabled: state.debugModeEnabled,
-          onMuteToggle: handlers.handleMuteToggle
+          onMuteToggle: handlers.handleMuteToggle,
+          onToggleLike: handlers.handleLikeToggle
         }}
       />
     );

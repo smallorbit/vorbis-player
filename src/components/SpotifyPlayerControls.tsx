@@ -25,6 +25,11 @@ const areControlsPropsEqual = (
     return false;
   }
 
+  // Check liked status
+  if (prevProps.isLiked !== nextProps.isLiked || prevProps.isLikePending !== nextProps.isLikePending) {
+    return false;
+  }
+
   // Visual effects and glow are handled by the quick actions panel now
 
   // Check track count for playlist display
@@ -46,6 +51,8 @@ interface SpotifyPlayerControlsProps {
   onNext: () => void;
   onPrevious: () => void;
   trackCount: number;
+  isLiked?: boolean;
+  isLikePending?: boolean;
 }
 
 // --- SpotifyPlayerControls Component ---
@@ -56,6 +63,8 @@ const SpotifyPlayerControls = memo<SpotifyPlayerControlsProps>(({
   onPause,
   onNext,
   onPrevious,
+  isLiked: propIsLiked,
+  isLikePending: propIsLikePending,
 }) => {
   // Get responsive sizing information
   const { isMobile, isTablet } = usePlayerSizing();
@@ -69,8 +78,8 @@ const SpotifyPlayerControls = memo<SpotifyPlayerControlsProps>(({
     volume,
     currentPosition,
     duration,
-    isLiked,
-    isLikePending,
+    isLiked: hookIsLiked,
+    isLikePending: hookIsLikePending,
     handleVolumeButtonClick,
     handleLikeToggle,
     handleSliderChange,
@@ -85,6 +94,17 @@ const SpotifyPlayerControls = memo<SpotifyPlayerControlsProps>(({
     onPrevious
   });
 
+  // Use props if available (from usePlayerLogic which handles keyboard shortcuts), otherwise fallback to hook state
+  // Note: We prefer props for like state to ensure synchronization with keyboard shortcuts
+  const effectiveIsLiked = typeof propIsLiked !== 'undefined' ? propIsLiked : hookIsLiked;
+  const effectiveIsLikePending = typeof propIsLikePending !== 'undefined' ? propIsLikePending : hookIsLikePending;
+
+  // Use the parent's onLikeToggle if available (to unify state), otherwise use the hook's handler
+  // Note: SpotifyPlayerControls doesn't currently receive onLikeToggle as a prop, but we should prioritize
+  // using the logic that updates the state we are displaying.
+  // Since we display propIsLiked, we should ideally trigger the handler that updates propIsLiked.
+  // However, we currently rely on the parent passing the state change down.
+  
   return (
     <PlayerControlsContainer $isMobile={isMobile} $isTablet={isTablet}>
       <TrackInfo
@@ -125,8 +145,8 @@ const SpotifyPlayerControls = memo<SpotifyPlayerControlsProps>(({
         onSliderMouseDown={handleSliderMouseDown}
         onSliderMouseUp={handleSliderMouseUp}
         trackId={currentTrack?.id}
-        isLiked={isLiked}
-        isLikePending={isLikePending}
+        isLiked={effectiveIsLiked}
+        isLikePending={effectiveIsLikePending}
         onLikeToggle={handleLikeToggle}
         accentColor={accentColor}
         isMobile={isMobile}

@@ -16,6 +16,7 @@
   * - ArrowUp: Volume up (placeholder)
   * - ArrowDown: Volume down (placeholder)
   * - D: Toggle debug mode
+  * - L: Like/Unlike track
   */
 
 import { useEffect } from 'react';
@@ -48,6 +49,7 @@ export interface KeyboardShortcutHandlers {
   onMute?: () => void;
   onVolumeUp?: () => void;
   onVolumeDown?: () => void;
+  onToggleLike?: () => void;
 }
 
 interface UseKeyboardShortcutsOptions {
@@ -81,6 +83,7 @@ export const useKeyboardShortcuts = (
     onMute,
     onVolumeUp,
     onVolumeDown,
+    onToggleLike,
   } = handlers;
 
   useEffect(() => {
@@ -168,6 +171,14 @@ export const useKeyboardShortcuts = (
           onMute?.();
           break;
 
+        case 'KeyL':
+          // L toggles like/unlike
+          if (!event.ctrlKey && !event.metaKey) {
+            event.preventDefault();
+            onToggleLike?.();
+          }
+          break;
+
         case 'ArrowUp':
           // Prevent default only if we have a handler
           if (onVolumeUp) {
@@ -211,6 +222,7 @@ export const useKeyboardShortcuts = (
     onMute,
     onVolumeUp,
     onVolumeDown,
+    onToggleLike,
     options.enableDebugMode,
   ]);
 };

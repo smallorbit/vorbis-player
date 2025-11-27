@@ -152,6 +152,7 @@ describe('Keyboard Shortcuts Integration', () => {
       onToggleBackgroundVisualizer: vi.fn(),
       onToggleGlow: vi.fn(),
       onMute: vi.fn(),
+      onToggleLike: vi.fn(),
       onToggleHelp: vi.fn()
     };
 
@@ -168,6 +169,7 @@ describe('Keyboard Shortcuts Integration', () => {
       { key: 'ArrowRight', handler: handlers.onNext },
       { key: 'KeyP', handler: handlers.onTogglePlaylist },
       { key: 'KeyM', handler: handlers.onMute },
+      { key: 'KeyL', handler: handlers.onToggleLike },
       { key: 'KeyG', handler: handlers.onToggleGlow },
       { key: 'KeyV', handler: handlers.onToggleBackgroundVisualizer },
       { key: 'KeyO', handler: handlers.onToggleVisualEffectsMenu },

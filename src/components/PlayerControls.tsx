@@ -13,6 +13,8 @@ interface PlayerControlsProps {
   currentTrack: Track | null;
   accentColor: string;
   trackCount: number;
+  isLiked?: boolean;
+  isLikePending?: boolean;
   onPlayback: PlaybackHandlers;
 }
 
@@ -20,6 +22,8 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
   currentTrack,
   accentColor,
   trackCount,
+  isLiked,
+  isLikePending,
   onPlayback
 }) => {
   // Control state logic
@@ -56,6 +60,8 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
       onNext={handleNext}
       onPrevious={handlePrevious}
       trackCount={trackCount}
+      isLiked={isLiked}
+      isLikePending={isLikePending}
     />
   );
 };

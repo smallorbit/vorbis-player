@@ -45,6 +45,7 @@ interface PlayerContentHandlers {
   onAccentColorBackgroundToggle?: () => void; // Accent color background toggle handler
   debugModeEnabled?: boolean; // Debug mode toggle
   onMuteToggle?: () => void; // Mute toggle handler
+  onToggleLike?: () => void; // Like toggle handler
 }
 
 interface PlayerContentProps {
@@ -53,6 +54,8 @@ interface PlayerContentProps {
     list: Track[];
     currentIndex: number;
     isPlaying: boolean;
+    isLiked?: boolean;
+    isLikePending?: boolean;
   };
   ui: {
     accentColor: string;
@@ -331,6 +334,7 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
     onToggleBackgroundVisualizer: handlers.onBackgroundVisualizerToggle,
     onToggleGlow: handlers.onGlowToggle,
     onMute: handlers.onMuteToggle,
+    onToggleLike: handlers.onToggleLike,
     onToggleHelp: toggleHelp
   });
 
@@ -421,6 +425,8 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
                   currentTrack={track.current}
                   accentColor={ui.accentColor}
                   trackCount={track.list.length}
+                  isLiked={track.isLiked}
+                  isLikePending={track.isLikePending}
                   onPlayback={{
                     play: handlers.onPlay,
                     pause: handlers.onPause,
