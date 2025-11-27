@@ -15,6 +15,9 @@ interface PlayerControlsProps {
   trackCount: number;
   isLiked?: boolean;
   isLikePending?: boolean;
+  isMuted?: boolean;
+  volume?: number;
+  onMuteToggle?: () => void;
   onPlayback: PlaybackHandlers;
 }
 
@@ -24,6 +27,9 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
   trackCount,
   isLiked,
   isLikePending,
+  isMuted,
+  volume,
+  onMuteToggle,
   onPlayback
 }) => {
   // Control state logic
@@ -62,6 +68,9 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
       trackCount={trackCount}
       isLiked={isLiked}
       isLikePending={isLikePending}
+      isMuted={isMuted}
+      volume={volume}
+      onMuteToggle={onMuteToggle}
     />
   );
 };

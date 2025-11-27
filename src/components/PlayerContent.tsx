@@ -427,6 +427,7 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
                   trackCount={track.list.length}
                   isLiked={track.isLiked}
                   isLikePending={track.isLikePending}
+                  onMuteToggle={handlers.onMuteToggle}
                   onPlayback={{
                     play: handlers.onPlay,
                     pause: handlers.onPause,

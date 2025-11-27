@@ -30,6 +30,11 @@ const areControlsPropsEqual = (
     return false;
   }
 
+  // Check volume status
+  if (prevProps.isMuted !== nextProps.isMuted || prevProps.volume !== nextProps.volume) {
+    return false;
+  }
+
   // Visual effects and glow are handled by the quick actions panel now
 
   // Check track count for playlist display
@@ -53,6 +58,9 @@ interface SpotifyPlayerControlsProps {
   trackCount: number;
   isLiked?: boolean;
   isLikePending?: boolean;
+  isMuted?: boolean;
+  volume?: number;
+  onMuteToggle?: () => void;
 }
 
 // --- SpotifyPlayerControls Component ---
@@ -65,6 +73,9 @@ const SpotifyPlayerControls = memo<SpotifyPlayerControlsProps>(({
   onPrevious,
   isLiked: propIsLiked,
   isLikePending: propIsLikePending,
+  isMuted: propIsMuted,
+  volume: propVolume,
+  onMuteToggle: propOnMuteToggle,
 }) => {
   // Get responsive sizing information
   const { isMobile, isTablet } = usePlayerSizing();
@@ -80,7 +91,7 @@ const SpotifyPlayerControls = memo<SpotifyPlayerControlsProps>(({
     duration,
     isLiked: hookIsLiked,
     isLikePending: hookIsLikePending,
-    handleVolumeButtonClick,
+    handleVolumeButtonClick: hookHandleVolumeButtonClick,
     handleLikeToggle,
     handleSliderChange,
     handleSliderMouseDown,
@@ -98,6 +109,9 @@ const SpotifyPlayerControls = memo<SpotifyPlayerControlsProps>(({
   // Note: We prefer props for like state to ensure synchronization with keyboard shortcuts
   const effectiveIsLiked = typeof propIsLiked !== 'undefined' ? propIsLiked : hookIsLiked;
   const effectiveIsLikePending = typeof propIsLikePending !== 'undefined' ? propIsLikePending : hookIsLikePending;
+  const effectiveIsMuted = typeof propIsMuted !== 'undefined' ? propIsMuted : isMuted;
+  const effectiveVolume = typeof propVolume !== 'undefined' ? propVolume : volume;
+  const effectiveHandleVolumeButtonClick = propOnMuteToggle || hookHandleVolumeButtonClick;
 
   // Use the parent's onLikeToggle if available (to unify state), otherwise use the hook's handler
   // Note: SpotifyPlayerControls doesn't currently receive onLikeToggle as a prop, but we should prioritize
@@ -135,9 +149,9 @@ const SpotifyPlayerControls = memo<SpotifyPlayerControlsProps>(({
       </TrackInfoRow>
 
       <TimelineControls
-        isMuted={isMuted}
-        volume={volume}
-        onVolumeButtonClick={handleVolumeButtonClick}
+        isMuted={effectiveIsMuted}
+        volume={effectiveVolume}
+        onVolumeButtonClick={effectiveHandleVolumeButtonClick}
         currentPosition={currentPosition}
         duration={duration}
         formatTime={formatTime}
