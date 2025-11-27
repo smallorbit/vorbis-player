@@ -40,11 +40,24 @@ vi.mock('../useVisualEffectsState', () => ({
   }))
 }));
 
+vi.mock('../useVolume', () => ({
+  useVolume: vi.fn(() => ({
+    handleMuteToggle: vi.fn()
+  }))
+}));
+
+vi.mock('../useKeyboardShortcuts', () => ({
+  useKeyboardShortcuts: vi.fn()
+}));
+
 // Mock services
 vi.mock('../../services/spotify', () => ({
   spotifyAuth: {
     handleRedirect: vi.fn().mockResolvedValue(undefined)
-  }
+  },
+  checkTrackSaved: vi.fn().mockResolvedValue(false),
+  saveTrack: vi.fn().mockResolvedValue(undefined),
+  unsaveTrack: vi.fn().mockResolvedValue(undefined)
 }));
 
 vi.mock('../../services/spotifyPlayer', () => ({
@@ -122,5 +135,19 @@ describe('usePlayerLogic', () => {
     const { result } = renderHook(() => usePlayerLogic());
 
     expect(result.current.state.tracks).toEqual(tracks);
+  });
+
+  it('should expose handleLikeToggle handler', () => {
+    const { result } = renderHook(() => usePlayerLogic());
+
+    expect(result.current.handlers).toHaveProperty('handleLikeToggle');
+    expect(typeof result.current.handlers.handleLikeToggle).toBe('function');
+  });
+
+  it('should expose handleMuteToggle handler', () => {
+    const { result } = renderHook(() => usePlayerLogic());
+
+    expect(result.current.handlers).toHaveProperty('handleMuteToggle');
+    expect(typeof result.current.handlers.handleMuteToggle).toBe('function');
   });
 });

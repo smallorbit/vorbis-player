@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { spotifyAuth } from '@/services/spotify';
+import { spotifyAuth, checkTrackSaved, saveTrack, unsaveTrack } from '@/services/spotify';
 import { spotifyPlayer } from '@/services/spotifyPlayer';
 import { usePlayerState } from '@/hooks/usePlayerState';
 import { usePlaylistManager } from '@/hooks/usePlaylistManager';
@@ -8,6 +8,7 @@ import { useAutoAdvance } from '@/hooks/useAutoAdvance';
 import { useAccentColor } from '@/hooks/useAccentColor';
 import { useVisualEffectsState } from '@/hooks/useVisualEffectsState';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
+import { useVolume } from '@/hooks/useVolume';
 import type { Track } from '@/services/spotify';
 
 export const usePlayerLogic = () => {
@@ -67,6 +68,13 @@ export const usePlayerLogic = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [playbackPosition, setPlaybackPosition] = useState(0);
 
+  // Like state
+  const [isLiked, setIsLiked] = useState(false);
+  const [isLikePending, setIsLikePending] = useState(false);
+
+  // Volume/mute controls
+  const { handleMuteToggle, isMuted, volume } = useVolume();
+
   // Visual effects state management
   const {
     effectiveGlow,
@@ -97,6 +105,57 @@ export const usePlayerLogic = () => {
   });
 
   const currentTrack = useMemo(() => tracks[currentTrackIndex] || null, [tracks, currentTrackIndex]);
+
+  // Check like status when track changes
+  useEffect(() => {
+    let isMounted = true;
+
+    const checkLikeStatus = async () => {
+      if (!currentTrack?.id) {
+        if (isMounted) setIsLiked(false);
+        return;
+      }
+
+      try {
+        if (isMounted) setIsLikePending(true);
+        const liked = await checkTrackSaved(currentTrack.id);
+        if (isMounted) setIsLiked(liked);
+      } catch (error) {
+        console.error('Failed to check like status:', error);
+        if (isMounted) setIsLiked(false);
+      } finally {
+        if (isMounted) setIsLikePending(false);
+      }
+    };
+
+    checkLikeStatus();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [currentTrack?.id]);
+
+  // Like toggle handler
+  const handleLikeToggle = useCallback(async () => {
+    if (!currentTrack?.id || isLikePending) return;
+
+    try {
+      setIsLikePending(true);
+      const newLikedState = !isLiked;
+      setIsLiked(newLikedState);
+
+      if (newLikedState) {
+        await saveTrack(currentTrack.id);
+      } else {
+        await unsaveTrack(currentTrack.id);
+      }
+    } catch (error) {
+      console.error('Failed to toggle like status:', error);
+      setIsLiked(!isLiked);
+    } finally {
+      setIsLikePending(false);
+    }
+  }, [currentTrack, isLikePending, isLiked]);
 
   // Extract accent color from album artwork
   const { handleAccentColorChange: handleAccentColorChangeHook } = useAccentColor(
@@ -166,12 +225,8 @@ export const usePlayerLogic = () => {
   }, [currentTrackIndex, tracks.length, playTrack]);
 
   const handlePlay = useCallback(() => {
-    if (currentTrack) {
-      playTrack(currentTrackIndex);
-    } else {
-      spotifyPlayer.resume();
-    }
-  }, [currentTrack, playTrack, currentTrackIndex]);
+    spotifyPlayer.resume();
+  }, []);
 
   const handlePause = useCallback(() => {
     spotifyPlayer.pause();
@@ -181,12 +236,20 @@ export const usePlayerLogic = () => {
     setShowPlaylist(true);
   }, [setShowPlaylist]);
 
+  const handleTogglePlaylist = useCallback(() => {
+    setShowPlaylist(prev => !prev);
+  }, [setShowPlaylist]);
+
   const handleShowVisualEffects = useCallback(() => {
     setShowVisualEffects(true);
   }, [setShowVisualEffects]);
 
   const handleCloseVisualEffects = useCallback(() => {
     setShowVisualEffects(false);
+  }, [setShowVisualEffects]);
+
+  const handleToggleVisualEffectsMenu = useCallback(() => {
+    setShowVisualEffects(prev => !prev);
   }, [setShowVisualEffects]);
 
   const handleVisualEffectsToggle = useCallback(() => {
@@ -250,7 +313,11 @@ export const usePlayerLogic = () => {
       isPlaying,
       playbackPosition,
       effectiveGlow,
-      currentTrack
+      currentTrack,
+      isLiked,
+      isLikePending,
+      isMuted,
+      volume
     },
     handlers: {
         handlePlaylistSelect,
@@ -259,8 +326,10 @@ export const usePlayerLogic = () => {
         handleNext,
         handlePrevious,
         handleShowPlaylist,
+        handleTogglePlaylist,
         handleShowVisualEffects,
         handleCloseVisualEffects,
+        handleToggleVisualEffectsMenu,
         handleClosePlaylist,
         playTrack,
         handleAccentColorChange,
@@ -272,7 +341,9 @@ export const usePlayerLogic = () => {
         handleBackgroundVisualizerToggle,
         handleBackgroundVisualizerIntensityChange,
         handleBackgroundVisualizerStyleChange,
-        handleAccentColorBackgroundToggle
+        handleAccentColorBackgroundToggle,
+        handleLikeToggle,
+        handleMuteToggle
     }
   };
 };

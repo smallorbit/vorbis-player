@@ -5,7 +5,6 @@ import { theme } from '../../styles/theme';
 import { PerformanceProfilerComponent } from '../PerformanceProfiler';
 import VisualEffectsPerformanceMonitor from '../VisualEffectsPerformanceMonitor';
 import { usePlayerSizing } from '../../hooks/usePlayerSizing';
-import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
 import type { VisualizerStyle } from '../../types/visualizer';
 
 import {
@@ -131,10 +130,7 @@ export const VisualEffectsMenu: React.FC<VisualEffectsMenuProps> = memo(({
     return Math.min(viewport.width * 0.3, parseInt(theme.drawer.widths.desktop));
   }, [viewport.width, isMobile, isTablet]);
 
-  // Use centralized keyboard shortcuts for Escape key
-  useKeyboardShortcuts({
-    onCloseVisualEffects: isOpen ? onClose : undefined
-  });
+  // Note: Keyboard shortcuts (Escape key) are handled in PlayerContent via useKeyboardShortcuts
 
   // Simplified filter configuration with 3-option selections
   const filterConfig = useMemo(() => [

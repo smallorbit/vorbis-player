@@ -38,7 +38,12 @@ const AudioPlayerComponent = () => {
         track={{
           current: state.currentTrack,
           list: state.tracks,
-          currentIndex: state.currentTrackIndex
+          currentIndex: state.currentTrackIndex,
+          isPlaying: state.isPlaying,
+          isLiked: state.isLiked,
+          isLikePending: state.isLikePending,
+          isMuted: state.isMuted,
+          volume: state.volume
         }}
         ui={{
           accentColor: state.accentColor,
@@ -56,8 +61,10 @@ const AudioPlayerComponent = () => {
           onNext: handlers.handleNext,
           onPrevious: handlers.handlePrevious,
           onShowPlaylist: handlers.handleShowPlaylist,
+          onTogglePlaylist: handlers.handleTogglePlaylist,
           onShowVisualEffects: handlers.handleShowVisualEffects,
           onCloseVisualEffects: handlers.handleCloseVisualEffects,
+          onToggleVisualEffectsMenu: handlers.handleToggleVisualEffectsMenu,
           onClosePlaylist: handlers.handleClosePlaylist,
           onTrackSelect: handlers.playTrack,
           onAccentColorChange: handlers.handleAccentColorChange,
@@ -74,20 +81,25 @@ const AudioPlayerComponent = () => {
           backgroundVisualizerIntensity: state.backgroundVisualizerIntensity,
           accentColorBackgroundEnabled: state.accentColorBackgroundPreferred, // Pass preferred state to VFX menu
           onAccentColorBackgroundToggle: handlers.handleAccentColorBackgroundToggle,
-          debugModeEnabled: state.debugModeEnabled
+          debugModeEnabled: state.debugModeEnabled,
+          onMuteToggle: handlers.handleMuteToggle,
+          onToggleLike: handlers.handleLikeToggle
         }}
       />
     );
   };
 
+  // Only show visualizers when main player is active (not on sign-in or playlist selection screens)
+  const isMainPlayerActive = !state.isLoading && !state.error && !!state.selectedPlaylistId && state.tracks.length > 0;
+
   return (
     <Container>
       <AccentColorBackground
-        enabled={state.accentColorBackgroundEnabled}
+        enabled={state.accentColorBackgroundEnabled && isMainPlayerActive}
         accentColor={state.accentColor}
       />
       <BackgroundVisualizer
-        enabled={state.backgroundVisualizerEnabled}
+        enabled={state.backgroundVisualizerEnabled && isMainPlayerActive}
         style={state.backgroundVisualizerStyle}
         intensity={state.backgroundVisualizerIntensity}
         accentColor={state.accentColor}
