@@ -1,23 +1,22 @@
 /**
- * Centralized keyboard shortcuts hook for the player
- * Consolidates all keyboard event handling in one place
- * 
- * Supported shortcuts:
- * - Space: Play/Pause
- * - ArrowRight: Next track
- * - ArrowLeft: Previous track
- * - P: Toggle playlist
- * - V: Toggle visual effects menu
- * - Ctrl+V: Toggle visual effects (visual effects container compatibility)
- * - Ctrl+E: Close visual effects menu
- * - Ctrl+R: Reset filters
- * - Escape: Close menus
- * - M: Mute (placeholder)
- * - ArrowUp: Volume up (placeholder)
- * - ArrowDown: Volume down (placeholder)
- * - D: Toggle debug mode
- * - Ctrl+Shift+P: Toggle performance monitor visibility
- */
+  * Centralized keyboard shortcuts hook for the player
+  * Consolidates all keyboard event handling in one place
+  * 
+  * Supported shortcuts:
+  * - Space: Play/Pause
+  * - ArrowRight: Next track
+  * - ArrowLeft: Previous track
+  * - P: Toggle playlist
+  * - V: Toggle background visualizations
+  * - O: Toggle visual effects menu
+  * - G: Toggle glow effect
+  * - ?: Show keyboard shortcuts help
+  * - Escape: Close menus (playlist drawer and visual effects)
+  * - M: Mute (placeholder)
+  * - ArrowUp: Volume up (placeholder)
+  * - ArrowDown: Volume down (placeholder)
+  * - D: Toggle debug mode
+  */
 
 import { useEffect } from 'react';
 
@@ -29,15 +28,21 @@ export interface KeyboardShortcutHandlers {
   
   // Menu toggles
   onTogglePlaylist?: () => void;
-  onToggleVisualEffects?: () => void;
-  
-  // Visual effects menu
+  onClosePlaylist?: () => void;
+  onToggleVisualEffectsMenu?: () => void;
   onCloseVisualEffects?: () => void;
-  onResetFilters?: () => void;
+  
+  // Background visualizer
+  onToggleBackgroundVisualizer?: () => void;
+  
+  // Glow effect
+  onToggleGlow?: () => void;
+  
+  // Help
+  onToggleHelp?: () => void;
   
   // Debug/monitoring
   onToggleDebugMode?: () => void;
-  onTogglePerformanceMonitor?: () => void;
   
   // Other
   onMute?: () => void;
@@ -47,7 +52,6 @@ export interface KeyboardShortcutHandlers {
 
 interface UseKeyboardShortcutsOptions {
   enableDebugMode?: boolean;
-  enablePerformanceMonitor?: boolean;
 }
 
 /**
@@ -67,11 +71,13 @@ export const useKeyboardShortcuts = (
     onNext,
     onPrevious,
     onTogglePlaylist,
-    onToggleVisualEffects,
+    onClosePlaylist,
+    onToggleVisualEffectsMenu,
     onCloseVisualEffects,
-    onResetFilters,
+    onToggleBackgroundVisualizer,
+    onToggleGlow,
+    onToggleHelp,
     onToggleDebugMode,
-    onTogglePerformanceMonitor,
     onMute,
     onVolumeUp,
     onVolumeDown,
@@ -87,7 +93,7 @@ export const useKeyboardShortcuts = (
 
       // Check if target is contentEditable
       const target = event.target as HTMLElement;
-      if (target.isContentEditable) {
+      if (target && target.isContentEditable) {
         return;
       }
 
@@ -111,40 +117,41 @@ export const useKeyboardShortcuts = (
 
         // Menu toggles
         case 'KeyP':
-          // Check if this is for performance monitor (Ctrl+Shift+P) first
-          if (event.ctrlKey && event.shiftKey && options.enablePerformanceMonitor) {
-            event.preventDefault();
-            onTogglePerformanceMonitor?.();
-          } else if (!event.ctrlKey && !event.shiftKey) {
-            // Regular P for playlist toggle
+          if (!event.ctrlKey && !event.shiftKey && !event.metaKey) {
             event.preventDefault();
             onTogglePlaylist?.();
           }
           break;
 
         case 'KeyV':
-          // Handle both plain V and Ctrl+V
+          // V toggles background visualizations
           if (!event.ctrlKey && !event.metaKey) {
             event.preventDefault();
-            onToggleVisualEffects?.();
-          } else if (event.ctrlKey || event.metaKey) {
-            event.preventDefault();
-            onToggleVisualEffects?.();
+            onToggleBackgroundVisualizer?.();
           }
           break;
 
-        // Visual effects menu
-        case 'KeyE':
-          if (event.ctrlKey || event.metaKey) {
+        case 'KeyO':
+          // O toggles visual effects menu
+          if (!event.ctrlKey && !event.metaKey) {
             event.preventDefault();
-            onCloseVisualEffects?.();
+            onToggleVisualEffectsMenu?.();
           }
           break;
 
-        case 'KeyR':
-          if (event.ctrlKey || event.metaKey) {
+        case 'KeyG':
+          // G toggles glow effect
+          if (!event.ctrlKey && !event.metaKey) {
             event.preventDefault();
-            onResetFilters?.();
+            onToggleGlow?.();
+          }
+          break;
+
+        case 'Slash':
+          // / or ? (Shift+/) shows help modal
+          if (!event.ctrlKey && !event.metaKey) {
+            event.preventDefault();
+            onToggleHelp?.();
           }
           break;
 
@@ -152,6 +159,7 @@ export const useKeyboardShortcuts = (
         case 'Escape':
           event.preventDefault();
           onCloseVisualEffects?.();
+          onClosePlaylist?.();
           break;
 
         // Volume controls
@@ -193,15 +201,16 @@ export const useKeyboardShortcuts = (
     onNext,
     onPrevious,
     onTogglePlaylist,
-    onToggleVisualEffects,
+    onClosePlaylist,
+    onToggleVisualEffectsMenu,
     onCloseVisualEffects,
-    onResetFilters,
+    onToggleBackgroundVisualizer,
+    onToggleGlow,
+    onToggleHelp,
     onToggleDebugMode,
-    onTogglePerformanceMonitor,
     onMute,
     onVolumeUp,
     onVolumeDown,
     options.enableDebugMode,
-    options.enablePerformanceMonitor,
   ]);
 };

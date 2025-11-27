@@ -15,6 +15,7 @@ import type { AlbumFilters } from '../types/filters';
 
 const PlaylistDrawer = lazy(() => import('./PlaylistDrawer'));
 const VisualEffectsMenu = lazy(() => import('./VisualEffectsMenu/index'));
+const KeyboardShortcutsHelp = lazy(() => import('./KeyboardShortcutsHelp'));
 
 interface PlayerContentHandlers {
   onPlay: () => void;
@@ -22,8 +23,10 @@ interface PlayerContentHandlers {
   onNext: () => void;
   onPrevious: () => void;
   onShowPlaylist: () => void;
+  onTogglePlaylist: () => void;
   onShowVisualEffects: () => void;
   onCloseVisualEffects: () => void;
+  onToggleVisualEffectsMenu: () => void;
   onClosePlaylist: () => void;
   onTrackSelect: (index: number) => void;
   onAccentColorChange: (color: string) => void;
@@ -41,6 +44,7 @@ interface PlayerContentHandlers {
   accentColorBackgroundEnabled?: boolean; // Accent color background toggle
   onAccentColorBackgroundToggle?: () => void; // Accent color background toggle handler
   debugModeEnabled?: boolean; // Debug mode toggle
+  onMuteToggle?: () => void; // Mute toggle handler
 }
 
 interface PlayerContentProps {
@@ -276,20 +280,54 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
 
   // Controls visibility state (default: hidden)
   const [controlsVisible, setControlsVisible] = useState(true);
+  
+  // Help modal state
+  const [showHelp, setShowHelp] = useState(false);
 
   // Toggle controls visibility
   const toggleControls = useCallback(() => {
     setControlsVisible(prev => !prev);
   }, []);
 
+  // Toggle help modal
+  const toggleHelp = useCallback(() => {
+    setShowHelp(prev => !prev);
+  }, []);
+
+  const closeHelp = useCallback(() => {
+    setShowHelp(false);
+  }, []);
+
   // Use responsive sizing hook
   const { dimensions, useFluidSizing, padding, transitionDuration, transitionEasing, aspectRatio } = usePlayerSizing();
 
-  // Set up visual effects keyboard shortcuts
+  // Combined close handler for Escape key (closes VFX menu and help modal)
+  const handleEscapeClose = useCallback(() => {
+    handlers.onCloseVisualEffects();
+    if (showHelp) {
+      closeHelp();
+    }
+  }, [handlers, showHelp, closeHelp]);
+
+  // Combine play/pause for Space key
+  const handlePlayPause = useCallback(() => {
+    // For now, just call play - the player will handle toggling based on current state
+    handlers.onPlay();
+  }, [handlers]);
+
+  // Set up keyboard shortcuts
   useKeyboardShortcuts({
-    onToggleVisualEffects: handlers.onGlowToggle,
-    onCloseVisualEffects: handlers.onCloseVisualEffects,
-    onResetFilters: handlers.onResetFilters
+    onPlayPause: handlePlayPause,
+    onNext: handlers.onNext,
+    onPrevious: handlers.onPrevious,
+    onTogglePlaylist: handlers.onTogglePlaylist,
+    onClosePlaylist: handlers.onClosePlaylist,
+    onToggleVisualEffectsMenu: handlers.onToggleVisualEffectsMenu,
+    onCloseVisualEffects: handleEscapeClose,
+    onToggleBackgroundVisualizer: handlers.onBackgroundVisualizerToggle,
+    onToggleGlow: handlers.onGlowToggle,
+    onMute: handlers.onMuteToggle,
+    onToggleHelp: toggleHelp
   });
 
   return (
@@ -379,19 +417,12 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
                   currentTrack={track.current}
                   accentColor={ui.accentColor}
                   trackCount={track.list.length}
-                  visualEffectsEnabled={effects.enabled}
                   onPlayback={{
                     play: handlers.onPlay,
                     pause: handlers.onPause,
                     next: handlers.onNext,
                     previous: handlers.onPrevious
                   }}
-                  onUI={{
-                    showPlaylist: handlers.onShowPlaylist,
-                    showVisualEffects: handlers.onShowVisualEffects,
-                    toggleVisualEffects: handlers.onGlowToggle
-                  }}
-                  onAccentColorChange={handlers.onAccentColorChange}
                 />
               </Suspense>
             </CardContent>
@@ -448,6 +479,9 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
           accentColor={ui.accentColor}
           onTrackSelect={handlers.onTrackSelect}
         />
+      </Suspense>
+      <Suspense fallback={null}>
+        <KeyboardShortcutsHelp isOpen={showHelp} onClose={closeHelp} />
       </Suspense>
     </ContentWrapper>
   );
