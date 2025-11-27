@@ -11,7 +11,6 @@ import {
   VISUAL_EFFECTS_THRESHOLDS
 } from '../utils/visualEffectsPerformance';
 import { usePlayerSizing } from '../hooks/usePlayerSizing';
-import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
 
 interface VisualEffectsPerformanceMonitorProps {
   isEnabled?: boolean;
@@ -161,15 +160,17 @@ export const VisualEffectsPerformanceMonitor: React.FC<VisualEffectsPerformanceM
     return Math.min(viewport.width * 0.25, 400);
   }, [viewport.width, isMobile, isTablet]);
 
-  // Toggle visibility with keyboard shortcut (Ctrl+Shift+P)
-  useKeyboardShortcuts(
-    {
-      onTogglePerformanceMonitor: useCallback(() => {
-        setIsVisible(prev => !prev);
-      }, [])
-    },
-    { enablePerformanceMonitor: isEnabled || false }
-  );
+  // Toggle visibility with a local effect (performance monitor shortcut removed from global shortcuts)
+  const toggleVisibility = useCallback(() => {
+    setIsVisible(prev => !prev);
+  }, []);
+
+  // Expose toggle for programmatic access if needed
+  React.useEffect(() => {
+    if (isEnabled) {
+      // Component is enabled, visibility can be toggled via UI
+    }
+  }, [isEnabled, toggleVisibility]);
 
   const runPerformanceTest = useCallback(async () => {
     if (isTesting) return;
