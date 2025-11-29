@@ -223,6 +223,43 @@ The application uses a centralized state management approach with the `usePlayer
 - **Resource Hints**: DNS prefetch and preconnect for Spotify API and image CDNs
 - **Bundle Optimization**: Code splitting and tree-shaking for reduced bundle size
 
+## Testing & Test Coverage
+
+### Active Tests
+The project maintains the following test suites:
+
+- **src/hooks/__tests__/useKeyboardShortcuts.test.ts** - Keyboard shortcut handling and event delegation
+- **src/hooks/__tests__/useLocalStorage.test.ts** - localStorage hook functionality and error handling
+- **src/hooks/__tests__/useCustomAccentColors.test.ts** - Custom accent color management and overrides
+- **src/hooks/__tests__/usePlayerState.test.ts** - Central state management and color persistence
+- **src/utils/__tests__/sizingUtils.test.ts** - Responsive sizing calculations across breakpoints
+- **src/components/__tests__/KeyboardShortcutsIntegration.test.tsx** - Keyboard integration with UI
+
+### Removed Tests (Stale/Unreliable)
+As of November 28, 2025, the following outdated test files were removed to improve codebase health:
+
+- **src/services/__tests__/spotify-api.test.ts** - Tested mock implementations instead of real code
+- **src/tests/visualEffectsPerformance.test.ts** - Artificial performance tests with unreliable mocks
+- **src/hooks/__tests__/usePlayerLogic.test.ts** - Only 3 trivial tests without meaningful coverage
+- **src/__tests__/localStorageCleanup.test.ts** - Cleanup functionality no longer relevant
+- **src/components/__tests__/PlayerContent.test.tsx** - Minimal assertions, incomplete tests
+
+These removals eliminate false test coverage and reduce maintenance burden.
+
+### Running Tests
+```bash
+npm run test           # Run tests in watch mode
+npm run test:run       # Run tests once
+npm run test:ui        # Run tests with UI
+npm run test:coverage  # Run tests with coverage
+```
+
+### Testing Guidelines
+- Tests should verify actual behavior, not mock implementations
+- Performance tests should use real browser APIs when possible
+- Every test should have meaningful assertions
+- Remove tests that don't provide value
+
 ## Environment Configuration
 
 Required environment variables in `.env.local`:
