@@ -4,6 +4,38 @@
 
 *This file tracks the current state of all AI agent initiatives. Update as work progresses.*
 
+## Recently Completed: Cleanup - Remove Stale Test Files
+
+**Status**: Complete  
+**Date**: November 28, 2025  
+**Objective**: Identify and remove outdated test files to improve codebase health
+
+### Files Removed (1154 lines deleted)
+- `src/services/__tests__/spotify-api.test.ts` - Tested mock implementations instead of real code
+- `src/tests/visualEffectsPerformance.test.ts` - Artificial performance tests with unreliable mocks
+- `src/hooks/__tests__/usePlayerLogic.test.ts` - Only 3 trivial tests without meaningful coverage
+- `src/__tests__/localStorageCleanup.test.ts` - Cleanup functionality no longer relevant
+- `src/components/__tests__/PlayerContent.test.tsx` - Minimal assertions, incomplete tests
+
+### Remaining Active Tests
+- `useKeyboardShortcuts.test.ts` (comprehensive, functional)
+- `useLocalStorage.test.ts` (comprehensive, functional)
+- `useCustomAccentColors.test.ts` (comprehensive, functional)
+- `usePlayerState.test.ts` (comprehensive, functional)
+- `sizingUtils.test.ts` (comprehensive, functional)
+- `KeyboardShortcutsIntegration.test.tsx` (functional, can be expanded)
+
+### Documentation Updated
+- Added "Testing & Test Coverage" section to `docs/development/CLAUDE.md`
+- Created `DOCUMENTATION_AUDIT.md` with full audit results
+
+### Branch & PR
+- Branch: `cleanup/remove-stale-tests`
+- Commit: `39923bc`
+- PR: https://github.com/smallorbit/vorbis-player/pull/new/cleanup/remove-stale-tests
+
+---
+
 ## Current Active Initiative: Fix GitHub Issue #58 - Quick Actions Panel Rounded Corners
 
 **Status**: Complete  
