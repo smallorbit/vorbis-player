@@ -61,6 +61,7 @@ interface SpotifyPlayerControlsProps {
   isMuted?: boolean;
   volume?: number;
   onMuteToggle?: () => void;
+  onToggleLike?: () => void;
 }
 
 // --- SpotifyPlayerControls Component ---
@@ -76,6 +77,7 @@ const SpotifyPlayerControls = memo<SpotifyPlayerControlsProps>(({
   isMuted: propIsMuted,
   volume: propVolume,
   onMuteToggle: propOnMuteToggle,
+  onToggleLike: propOnToggleLike,
 }) => {
   // Get responsive sizing information
   const { isMobile, isTablet } = usePlayerSizing();
@@ -113,11 +115,9 @@ const SpotifyPlayerControls = memo<SpotifyPlayerControlsProps>(({
   const effectiveVolume = typeof propVolume !== 'undefined' ? propVolume : volume;
   const effectiveHandleVolumeButtonClick = propOnMuteToggle || hookHandleVolumeButtonClick;
 
-  // Use the parent's onLikeToggle if available (to unify state), otherwise use the hook's handler
-  // Note: SpotifyPlayerControls doesn't currently receive onLikeToggle as a prop, but we should prioritize
-  // using the logic that updates the state we are displaying.
-  // Since we display propIsLiked, we should ideally trigger the handler that updates propIsLiked.
-  // However, we currently rely on the parent passing the state change down.
+  // Use parent's onToggleLike handler if provided, otherwise use hook's handler
+  // This ensures like state is synchronized with parent component (usePlayerLogic)
+  const effectiveHandleLikeToggle = propOnToggleLike || handleLikeToggle;
   
   return (
     <PlayerControlsContainer $isMobile={isMobile} $isTablet={isTablet}>
@@ -161,7 +161,7 @@ const SpotifyPlayerControls = memo<SpotifyPlayerControlsProps>(({
         trackId={currentTrack?.id}
         isLiked={effectiveIsLiked}
         isLikePending={effectiveIsLikePending}
-        onLikeToggle={handleLikeToggle}
+        onLikeToggle={effectiveHandleLikeToggle}
         accentColor={accentColor}
         isMobile={isMobile}
         isTablet={isTablet}

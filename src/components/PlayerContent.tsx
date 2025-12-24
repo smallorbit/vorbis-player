@@ -432,6 +432,7 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
                   isMuted={track.isMuted}
                   volume={track.volume}
                   onMuteToggle={handlers.onMuteToggle}
+                  onToggleLike={handlers.onToggleLike}
                   onPlayback={{
                     play: handlers.onPlay,
                     pause: handlers.onPause,

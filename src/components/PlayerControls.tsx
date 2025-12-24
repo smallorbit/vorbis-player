@@ -18,6 +18,7 @@ interface PlayerControlsProps {
   isMuted?: boolean;
   volume?: number;
   onMuteToggle?: () => void;
+  onToggleLike?: () => void;
   onPlayback: PlaybackHandlers;
 }
 
@@ -30,6 +31,7 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
   isMuted,
   volume,
   onMuteToggle,
+  onToggleLike,
   onPlayback
 }) => {
   // Control state logic
@@ -71,6 +73,7 @@ const PlayerControls: React.FC<PlayerControlsProps> = ({
       isMuted={isMuted}
       volume={volume}
       onMuteToggle={onMuteToggle}
+      onToggleLike={onToggleLike}
     />
   );
 };
