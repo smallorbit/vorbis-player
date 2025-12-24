@@ -9,7 +9,7 @@ This file provides guidance to Claude Code (claude.ai/code) and other AI assista
 ### Key Features
 - **Spotify Integration**: Full Web Playback SDK integration with playlist and Liked Songs support
 - **Visual Effects System**: Customizable glow effects, album art filters (brightness, contrast, saturation, sepia, hue rotation, blur)
-- **Background Visualizers**: 4 different visualizer types (Particles, Geometric, Gradient Flow, Waveform)
+- **Background Visualizers**: 2 active visualizer types (Particles, Geometric) - 2 deprecated visualizers exist but are not used
 - **Responsive Design**: Fixed 768px x 880px layout with mobile optimization
 - **Keyboard Shortcuts**: Comprehensive keyboard control system
 - **Performance Optimized**: Web Workers, LRU caching, lazy loading, hardware-accelerated animations
@@ -260,61 +260,71 @@ The application uses a centralized state management approach with custom React h
 
 ### Background Visualizers
 
-Four visualizer types with WebGL/Canvas rendering:
+The application includes 2 active visualizer types (4 files exist, but 2 are deprecated):
+
+**Active Visualizers**:
 
 **ParticleVisualizer** (`src/components/visualizers/ParticleVisualizer.tsx`):
 - Animated particle system with physics simulation
 - Particles respond to music tempo and accent colors
 - Configurable density and animation speed
+- Default fallback for deprecated visualizers
 
 **GeometricVisualizer** (`src/components/visualizers/GeometricVisualizer.tsx`):
 - Rotating geometric shapes and patterns
 - Synchronized with album accent colors
 - Smooth rotation and scaling animations
 
+**Deprecated Visualizers** (files exist but fallback to ParticleVisualizer):
+
 **GradientFlowVisualizer** (`src/components/visualizers/GradientFlowVisualizer.tsx`):
-- Flowing gradient animations
-- Dynamic color blending based on album artwork
-- Smooth, organic movement patterns
+- Deprecated - currently falls back to ParticleVisualizer (line 63-64 in BackgroundVisualizer.tsx)
+- File exists but not actively used
 
 **WaveformVisualizer** (`src/components/visualizers/WaveformVisualizer.tsx`):
-- Audio-reactive waveform visualization
-- Real-time frequency analysis
-- Synchronized with playback position
+- Deprecated - currently falls back to ParticleVisualizer (line 59-61 in BackgroundVisualizer.tsx)
+- File exists but not actively used
 
 **Configuration**:
 - Toggle on/off via LeftQuickActionsPanel or VisualEffectsMenu
 - Intensity slider (0-100%) for animation strength
-- Style selection in VisualEffectsMenu
+- Style selection in VisualEffectsMenu (only 'particles' and 'geometric' are active)
 - Performance: Uses requestAnimationFrame and Canvas API for smooth 60fps rendering
+- Managed by `BackgroundVisualizer.tsx` component (lines 51-68)
 
 ### Keyboard Shortcuts System
 
-Comprehensive keyboard control system managed by `useKeyboardShortcuts` hook:
+Comprehensive keyboard control system managed by `useKeyboardShortcuts` hook (lines 66-228):
 
 **Playback Controls**:
-- `Space`: Play/Pause toggle
-- `←` / `→`: Previous/Next track
-- `↑` / `↓`: Volume up/down (5% increments)
+- `Space` (line 106-109): Play/Pause toggle
+- `←` ArrowLeft (line 116-119): Previous track
+- `→` ArrowRight (line 111-114): Next track
+- `↑` ArrowUp (line 182-188): Volume up (if handler provided)
+- `↓` ArrowDown (line 190-196): Volume down (if handler provided)
 
-**UI Controls**:
-- `P`: Toggle playlist drawer
-- `V`: Toggle visual effects (glow)
-- `B`: Toggle background visualizer
-- `?` or `H`: Show keyboard shortcuts help overlay
+**Menu & UI Controls**:
+- `P` (line 122-127): Toggle playlist drawer
+- `O` (line 137-143): Open visual effects menu
+- `Escape` (line 162-166): Close all menus (playlist drawer and visual effects)
+- `/` or `?` (line 153-159): Show keyboard shortcuts help overlay
 
-**Advanced Controls**:
-- `M`: Mute/unmute
-- `F`: Toggle fullscreen (where supported)
-- `L`: Like/unlike current track
-- `Shift + R`: Reset all visual filters
+**Visual Effects Controls**:
+- `G` (line 145-151): Toggle glow effect
+- `V` (line 129-135): Toggle background visualizer (NOT visual effects menu)
+
+**Other Controls**:
+- `L` (line 174-180): Like/unlike current track
+- `M` (line 169-172): Mute/unmute
+- `D` (line 199-204): Toggle debug mode (only if `enableDebugMode` option is enabled)
 
 **Implementation Details**:
 - Centralized in `src/hooks/useKeyboardShortcuts.ts`
 - Event delegation for optimal performance
-- Prevents conflicts with text input fields
+- Prevents conflicts with text input fields, textareas, and contentEditable elements (lines 92-101)
 - Visual help overlay component: `KeyboardShortcutsHelp.tsx`
-- Accessibility-friendly with proper ARIA labels
+- Prevents default browser behavior for all handled keys
+- Does not interfere with Ctrl/Cmd+Key browser shortcuts
 
 ### Playlist Management
 
