@@ -72,12 +72,24 @@ export const usePlaylistManager = ({
         return;
       }
 
+      // Update state with new tracks FIRST
       setTracks(fetchedTracks);
       setCurrentTrackIndex(0);
 
+      // Play the first track directly from fetchedTracks to avoid stale closure
       setTimeout(async () => {
         try {
-          await playTrack(0);
+          if (fetchedTracks.length > 0) {
+            await spotifyPlayer.playTrack(fetchedTracks[0].uri);
+
+            // Wait before checking playback state
+            setTimeout(async () => {
+              const state = await spotifyPlayer.getCurrentState();
+              if (!state || state.paused) {
+                await spotifyPlayer.resume();
+              }
+            }, 1500);
+          }
         } catch (error) {
           console.error('Failed to start playback:', error);
           try {
@@ -99,7 +111,9 @@ export const usePlaylistManager = ({
 
               setTimeout(async () => {
                 try {
-                  await playTrack(0);
+                  if (fetchedTracks.length > 0) {
+                    await spotifyPlayer.playTrack(fetchedTracks[0].uri);
+                  }
                 } catch (retryError) {
                   console.error('Failed to play track after recovery attempt:', retryError);
                 }
