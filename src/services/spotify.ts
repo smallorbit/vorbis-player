@@ -447,6 +447,8 @@ export interface Track {
   name: string;
   artists: string;
   album: string;
+  album_id?: string;
+  track_number?: number;
   duration_ms: number;
   uri: string;
   preview_url?: string;
@@ -460,6 +462,17 @@ export interface PlaylistInfo {
   images: { url: string; height: number | null; width: number | null }[];
   tracks: { total: number };
   owner: { display_name: string };
+}
+
+export interface AlbumInfo {
+  id: string;
+  name: string;
+  artists: string;
+  images: { url: string; height: number | null; width: number | null }[];
+  release_date: string;
+  total_tracks: number;
+  uri: string;
+  album_type?: string;
 }
 
 interface SpotifyPlaylistResponse {
@@ -498,6 +511,45 @@ export const getUserPlaylists = async (): Promise<PlaylistInfo[]> => {
     tracks: { total: playlist.tracks.total },
     owner: { display_name: playlist.owner.display_name }
   }));
+};
+
+export const getUserAlbums = async (): Promise<AlbumInfo[]> => {
+  const token = await spotifyAuth.ensureValidToken();
+
+  const albums: AlbumInfo[] = [];
+  let nextUrl = 'https://api.spotify.com/v1/me/albums?limit=50';
+
+  while (nextUrl) {
+    const response = await fetch(nextUrl, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch albums: ${response.status} ${response.statusText}`);
+    }
+
+    const data = await response.json();
+
+    for (const item of data.items || []) {
+      const album = item.album;
+      albums.push({
+        id: album.id,
+        name: album.name,
+        artists: album.artists?.map((a: { name: string }) => a.name).join(', ') || 'Unknown Artist',
+        images: album.images || [],
+        release_date: album.release_date || '',
+        total_tracks: album.total_tracks || 0,
+        uri: album.uri,
+        album_type: album.album_type
+      });
+    }
+
+    nextUrl = data.next;
+  }
+
+  return albums;
 };
 
 export const getPlaylistTracks = async (playlistId: string): Promise<Track[]> => {
@@ -541,6 +593,46 @@ export const getPlaylistTracks = async (playlistId: string): Promise<Track[]> =>
   }
 
   return tracks;
+};
+
+export const getAlbumTracks = async (albumId: string): Promise<Track[]> => {
+  const token = await spotifyAuth.ensureValidToken();
+
+  const response = await fetch(
+    `https://api.spotify.com/v1/albums/${albumId}`,
+    {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch album: ${response.status} ${response.statusText}`);
+  }
+
+  const album = await response.json();
+  const tracks: Track[] = [];
+
+  for (const track of album.tracks.items || []) {
+    if (track.id && track.type === 'track') {
+      tracks.push({
+        id: track.id,
+        name: track.name,
+        artists: track.artists?.map((a: { name: string }) => a.name).join(', ') || 'Unknown Artist',
+        album: album.name,
+        album_id: album.id,
+        track_number: track.track_number,
+        duration_ms: track.duration_ms || 0,
+        uri: track.uri,
+        preview_url: track.preview_url,
+        image: album.images?.[0]?.url
+      });
+    }
+  }
+
+  // Sort by track number to ensure correct album order
+  return tracks.sort((a, b) => (a.track_number || 0) - (b.track_number || 0));
 };
 
 export const getSpotifyUserPlaylists = async (): Promise<Track[]> => {

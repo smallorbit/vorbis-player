@@ -1,12 +1,14 @@
 import { useState, useEffect, useMemo } from 'react';
 import styled from 'styled-components';
-import { getUserPlaylists, getLikedSongs, type PlaylistInfo, spotifyAuth } from '../services/spotify';
+import { getUserPlaylists, getUserAlbums, getLikedSongs, type PlaylistInfo, type AlbumInfo, spotifyAuth } from '../services/spotify';
 import { Card, CardHeader, CardContent } from './styled';
 import { Button } from './styled';
 import { Skeleton } from './styled';
 import { Alert, AlertDescription } from './styled';
 import { theme } from '@/styles/theme';
 import { usePlayerSizing } from '../hooks/usePlayerSizing';
+
+type ViewMode = 'playlists' | 'albums';
 
 interface PlaylistSelectionProps {
   onPlaylistSelect: (playlistId: string, playlistName: string) => void;
@@ -123,8 +125,44 @@ const LoadingState = styled.div`
   padding: 2rem;
 `;
 
+const TabsContainer = styled.div`
+  display: flex;
+  gap: 0;
+  margin-bottom: 1.5rem;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+`;
+
+const TabButton = styled.button<{ $active: boolean }>`
+  flex: 1;
+  padding: 1rem;
+  background: none;
+  border: none;
+  color: ${props => props.$active ? '#1db954' : 'rgba(255, 255, 255, 0.6)'};
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  border-bottom: 2px solid ${props => props.$active ? '#1db954' : 'transparent'};
+  margin-bottom: -2px;
+  position: relative;
+
+  &:hover {
+    color: ${props => props.$active ? '#1db954' : 'rgba(255, 255, 255, 0.9)'};
+  }
+
+  &:focus {
+    outline: none;
+  }
+`;
+
 const PlaylistSelection: React.FC<PlaylistSelectionProps> = ({ onPlaylistSelect }) => {
+  // Load view mode from localStorage, default to 'playlists'
+  const [viewMode, setViewMode] = useState<ViewMode>(() => {
+    const saved = localStorage.getItem('vorbis-player-view-mode');
+    return (saved === 'albums' ? 'albums' : 'playlists') as ViewMode;
+  });
   const [playlists, setPlaylists] = useState<PlaylistInfo[]>([]);
+  const [albums, setAlbums] = useState<AlbumInfo[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -139,6 +177,11 @@ const PlaylistSelection: React.FC<PlaylistSelectionProps> = ({ onPlaylistSelect 
     if (isTablet) return Math.min(viewport.width * 0.8, 500);
     return Math.min(viewport.width * 0.6, 600);
   }, [viewport.width, isMobile, isTablet]);
+
+  // Save view mode to localStorage when it changes
+  useEffect(() => {
+    localStorage.setItem('vorbis-player-view-mode', viewMode);
+  }, [viewMode]);
 
   useEffect(() => {
     const checkAuthAndFetchPlaylists = async () => {
@@ -155,16 +198,18 @@ const PlaylistSelection: React.FC<PlaylistSelectionProps> = ({ onPlaylistSelect 
 
         setIsAuthenticated(true);
 
-        // Fetch playlists and liked songs count in parallel
-        const [userPlaylists, likedSongs] = await Promise.all([
+        // Fetch playlists, albums, and liked songs count in parallel
+        const [userPlaylists, userAlbums, likedSongs] = await Promise.all([
           getUserPlaylists(),
+          getUserAlbums(),
           getLikedSongs(1) // Just fetch one to get count without loading all
         ]);
 
-        if (userPlaylists.length === 0 && likedSongs.length === 0) {
-          setError("No playlists or liked songs found. Please create some playlists or like some songs in Spotify first.");
+        if (userPlaylists.length === 0 && userAlbums.length === 0 && likedSongs.length === 0) {
+          setError("No playlists, albums, or liked songs found. Please create some playlists, save some albums, or like some songs in Spotify first.");
         } else {
           setPlaylists(userPlaylists);
+          setAlbums(userAlbums);
           // Get actual count from API
           const token = await spotifyAuth.ensureValidToken();
           const response = await fetch('https://api.spotify.com/v1/me/tracks?limit=1', {
@@ -191,9 +236,18 @@ const PlaylistSelection: React.FC<PlaylistSelectionProps> = ({ onPlaylistSelect 
     onPlaylistSelect(playlist.id, playlist.name);
   };
 
+  const handleAlbumClick = (album: AlbumInfo) => {
+    console.log('🎵 Selected album:', album.name);
+    onPlaylistSelect(`album:${album.id}`, album.name);
+  };
+
   const handleLikedSongsClick = () => {
     console.log('🎵 Selected liked songs');
     onPlaylistSelect('liked-songs', 'Liked Songs');
+  };
+
+  const handleViewModeChange = (mode: ViewMode) => {
+    setViewMode(mode);
   };
 
   const handleLogin = async () => {
@@ -210,7 +264,7 @@ const PlaylistSelection: React.FC<PlaylistSelectionProps> = ({ onPlaylistSelect 
       <SelectionCard $maxWidth={maxWidth}>
         <Header>
           <Title>Choose Your Music</Title>
-          <Subtitle>Select a playlist or your liked songs to start listening</Subtitle>
+          <Subtitle>Select a playlist, album, or your liked songs to start listening</Subtitle>
         </Header>
 
         <CardContent>
@@ -256,56 +310,111 @@ const PlaylistSelection: React.FC<PlaylistSelectionProps> = ({ onPlaylistSelect 
             </Alert>
           )}
 
-          {!isLoading && isAuthenticated && !error && (playlists.length > 0 || likedSongsCount > 0) && (
-            <PlaylistGrid>
-              {/* Liked Songs Option */}
-              {likedSongsCount > 0 && (
-                <PlaylistItem onClick={handleLikedSongsClick}>
-                  <PlaylistImage>
-                    <div style={{
-                      background: 'linear-gradient(135deg, #1DB954 0%, #1ed760 100%)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      width: '100%',
-                      height: '100%',
-                      borderRadius: '0.5rem',
-                      fontSize: '1.5rem',
-                      color: 'white'
-                    }}>
-                      ♥
+          {!isLoading && isAuthenticated && !error && (playlists.length > 0 || albums.length > 0 || likedSongsCount > 0) && (
+            <>
+              {/* Tab Switcher */}
+              <TabsContainer>
+                <TabButton
+                  $active={viewMode === 'playlists'}
+                  onClick={() => handleViewModeChange('playlists')}
+                >
+                  Playlists
+                </TabButton>
+                <TabButton
+                  $active={viewMode === 'albums'}
+                  onClick={() => handleViewModeChange('albums')}
+                >
+                  Albums
+                </TabButton>
+              </TabsContainer>
+
+              {/* Playlists View */}
+              {viewMode === 'playlists' && (
+                <PlaylistGrid>
+                  {/* Liked Songs Option */}
+                  {likedSongsCount > 0 && (
+                    <PlaylistItem onClick={handleLikedSongsClick}>
+                      <PlaylistImage>
+                        <div style={{
+                          background: 'linear-gradient(135deg, #1DB954 0%, #1ed760 100%)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          width: '100%',
+                          height: '100%',
+                          borderRadius: '0.5rem',
+                          fontSize: '1.5rem',
+                          color: 'white'
+                        }}>
+                          ♥
+                        </div>
+                      </PlaylistImage>
+                      <PlaylistInfo>
+                        <PlaylistName>Liked Songs</PlaylistName>
+                        <PlaylistDetails>
+                          {likedSongsCount} tracks • Shuffle enabled
+                        </PlaylistDetails>
+                      </PlaylistInfo>
+                    </PlaylistItem>
+                  )}
+
+                  {/* Regular Playlists */}
+                  {playlists.map((playlist) => (
+                    <PlaylistItem
+                      key={playlist.id}
+                      onClick={() => handlePlaylistClick(playlist)}
+                    >
+                      <PlaylistImage
+                        $imageUrl={playlist.images[0]?.url}
+                      />
+                      <PlaylistInfo>
+                        <PlaylistName>{playlist.name}</PlaylistName>
+                        <PlaylistDetails>
+                          {playlist.tracks.total} tracks
+                          {playlist.owner.display_name &&
+                            ` • by ${playlist.owner.display_name}`
+                          }
+                        </PlaylistDetails>
+                      </PlaylistInfo>
+                    </PlaylistItem>
+                  ))}
+
+                  {playlists.length === 0 && likedSongsCount === 0 && (
+                    <div style={{ padding: '2rem', textAlign: 'center', color: 'rgba(255, 255, 255, 0.6)' }}>
+                      No playlists found. Create some playlists in Spotify or save some songs!
                     </div>
-                  </PlaylistImage>
-                  <PlaylistInfo>
-                    <PlaylistName>Liked Songs</PlaylistName>
-                    <PlaylistDetails>
-                      {likedSongsCount} tracks • Shuffle enabled
-                    </PlaylistDetails>
-                  </PlaylistInfo>
-                </PlaylistItem>
+                  )}
+                </PlaylistGrid>
               )}
 
-              {/* Regular Playlists */}
-              {playlists.map((playlist) => (
-                <PlaylistItem
-                  key={playlist.id}
-                  onClick={() => handlePlaylistClick(playlist)}
-                >
-                  <PlaylistImage
-                    $imageUrl={playlist.images[0]?.url}
-                  />
-                  <PlaylistInfo>
-                    <PlaylistName>{playlist.name}</PlaylistName>
-                    <PlaylistDetails>
-                      {playlist.tracks.total} tracks
-                      {playlist.owner.display_name &&
-                        ` • by ${playlist.owner.display_name}`
-                      }
-                    </PlaylistDetails>
-                  </PlaylistInfo>
-                </PlaylistItem>
-              ))}
-            </PlaylistGrid>
+              {/* Albums View */}
+              {viewMode === 'albums' && (
+                <PlaylistGrid>
+                  {albums.map((album) => (
+                    <PlaylistItem
+                      key={album.id}
+                      onClick={() => handleAlbumClick(album)}
+                    >
+                      <PlaylistImage
+                        $imageUrl={album.images[0]?.url}
+                      />
+                      <PlaylistInfo>
+                        <PlaylistName>{album.name}</PlaylistName>
+                        <PlaylistDetails>
+                          {album.artists} • {album.total_tracks} tracks
+                        </PlaylistDetails>
+                      </PlaylistInfo>
+                    </PlaylistItem>
+                  ))}
+
+                  {albums.length === 0 && (
+                    <div style={{ padding: '2rem', textAlign: 'center', color: 'rgba(255, 255, 255, 0.6)' }}>
+                      No albums found. Save some albums in Spotify to see them here!
+                    </div>
+                  )}
+                </PlaylistGrid>
+              )}
+            </>
           )}
         </CardContent>
       </SelectionCard>
