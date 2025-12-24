@@ -486,35 +486,57 @@ interface SpotifyPlaylistResponse {
 
 // Cache configuration
 const CACHE_DURATION_MS = 5 * 60 * 1000; // 5 minutes
+const CACHE_KEY_PREFIX = 'vorbis-player-cache-';
 
 interface CacheEntry<T> {
   data: T;
   timestamp: number;
 }
 
-// In-memory cache for playlists and albums
-const cache: {
-  playlists?: CacheEntry<PlaylistInfo[]>;
-  albums?: CacheEntry<AlbumInfo[]>;
-} = {};
+function getCacheFromStorage<T>(key: string): CacheEntry<T> | null {
+  try {
+    const stored = localStorage.getItem(CACHE_KEY_PREFIX + key);
+    if (!stored) return null;
+    return JSON.parse(stored) as CacheEntry<T>;
+  } catch (error) {
+    console.warn('Failed to read cache from localStorage:', error);
+    return null;
+  }
+}
 
-function isCacheValid<T>(entry: CacheEntry<T> | undefined): entry is CacheEntry<T> {
+function setCacheToStorage<T>(key: string, data: T): void {
+  try {
+    const entry: CacheEntry<T> = {
+      data,
+      timestamp: Date.now()
+    };
+    localStorage.setItem(CACHE_KEY_PREFIX + key, JSON.stringify(entry));
+  } catch (error) {
+    console.warn('Failed to write cache to localStorage:', error);
+  }
+}
+
+function isCacheValid<T>(entry: CacheEntry<T> | null): entry is CacheEntry<T> {
   if (!entry) return false;
-  return Date.now() - entry.timestamp < CACHE_DURATION_MS;
+  const age = Date.now() - entry.timestamp;
+  return age < CACHE_DURATION_MS;
 }
 
 // Export function to manually clear cache if needed
 export function clearLibraryCache() {
-  cache.playlists = undefined;
-  cache.albums = undefined;
+  localStorage.removeItem(CACHE_KEY_PREFIX + 'playlists');
+  localStorage.removeItem(CACHE_KEY_PREFIX + 'albums');
   console.log('🗑️ Library cache cleared');
 }
 
 export const getUserPlaylists = async (): Promise<PlaylistInfo[]> => {
-  // Check cache first
-  if (isCacheValid(cache.playlists)) {
-    console.log('📦 Using cached playlists');
-    return cache.playlists.data;
+  // Check localStorage cache first
+  const cachedPlaylists = getCacheFromStorage<PlaylistInfo[]>('playlists');
+
+  if (isCacheValid(cachedPlaylists)) {
+    const age = Date.now() - cachedPlaylists.timestamp;
+    console.log(`📦 Using cached playlists (${Math.floor(age / 1000)}s old)`);
+    return cachedPlaylists.data;
   }
 
   console.log('🌐 Fetching playlists from Spotify API');
@@ -546,20 +568,20 @@ export const getUserPlaylists = async (): Promise<PlaylistInfo[]> => {
     owner: { display_name: playlist.owner.display_name }
   }));
 
-  // Store in cache
-  cache.playlists = {
-    data: playlists,
-    timestamp: Date.now()
-  };
+  // Store in localStorage cache
+  setCacheToStorage('playlists', playlists);
 
   return playlists;
 };
 
 export const getUserAlbums = async (): Promise<AlbumInfo[]> => {
-  // Check cache first
-  if (isCacheValid(cache.albums)) {
-    console.log('📦 Using cached albums');
-    return cache.albums.data;
+  // Check localStorage cache first
+  const cachedAlbums = getCacheFromStorage<AlbumInfo[]>('albums');
+
+  if (isCacheValid(cachedAlbums)) {
+    const age = Date.now() - cachedAlbums.timestamp;
+    console.log(`📦 Using cached albums (${Math.floor(age / 1000)}s old)`);
+    return cachedAlbums.data;
   }
 
   console.log('🌐 Fetching albums from Spotify API');
@@ -598,11 +620,8 @@ export const getUserAlbums = async (): Promise<AlbumInfo[]> => {
     nextUrl = data.next;
   }
 
-  // Store in cache
-  cache.albums = {
-    data: albums,
-    timestamp: Date.now()
-  };
+  // Store in localStorage cache
+  setCacheToStorage('albums', albums);
 
   return albums;
 };
