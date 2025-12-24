@@ -484,7 +484,41 @@ interface SpotifyPlaylistResponse {
   owner: { display_name: string };
 }
 
+// Cache configuration
+const CACHE_DURATION_MS = 5 * 60 * 1000; // 5 minutes
+
+interface CacheEntry<T> {
+  data: T;
+  timestamp: number;
+}
+
+// In-memory cache for playlists and albums
+const cache: {
+  playlists?: CacheEntry<PlaylistInfo[]>;
+  albums?: CacheEntry<AlbumInfo[]>;
+} = {};
+
+function isCacheValid<T>(entry: CacheEntry<T> | undefined): entry is CacheEntry<T> {
+  if (!entry) return false;
+  return Date.now() - entry.timestamp < CACHE_DURATION_MS;
+}
+
+// Export function to manually clear cache if needed
+export function clearLibraryCache() {
+  cache.playlists = undefined;
+  cache.albums = undefined;
+  console.log('🗑️ Library cache cleared');
+}
+
 export const getUserPlaylists = async (): Promise<PlaylistInfo[]> => {
+  // Check cache first
+  if (isCacheValid(cache.playlists)) {
+    console.log('📦 Using cached playlists');
+    return cache.playlists.data;
+  }
+
+  console.log('🌐 Fetching playlists from Spotify API');
+
   const token = await spotifyAuth.ensureValidToken();
 
   const response = await fetch('https://api.spotify.com/v1/me/playlists?limit=50', {
@@ -503,7 +537,7 @@ export const getUserPlaylists = async (): Promise<PlaylistInfo[]> => {
     return [];
   }
 
-  return data.items.map((playlist: SpotifyPlaylistResponse): PlaylistInfo => ({
+  const playlists = data.items.map((playlist: SpotifyPlaylistResponse): PlaylistInfo => ({
     id: playlist.id,
     name: playlist.name,
     description: playlist.description,
@@ -511,9 +545,24 @@ export const getUserPlaylists = async (): Promise<PlaylistInfo[]> => {
     tracks: { total: playlist.tracks.total },
     owner: { display_name: playlist.owner.display_name }
   }));
+
+  // Store in cache
+  cache.playlists = {
+    data: playlists,
+    timestamp: Date.now()
+  };
+
+  return playlists;
 };
 
 export const getUserAlbums = async (): Promise<AlbumInfo[]> => {
+  // Check cache first
+  if (isCacheValid(cache.albums)) {
+    console.log('📦 Using cached albums');
+    return cache.albums.data;
+  }
+
+  console.log('🌐 Fetching albums from Spotify API');
   const token = await spotifyAuth.ensureValidToken();
 
   const albums: AlbumInfo[] = [];
@@ -548,6 +597,12 @@ export const getUserAlbums = async (): Promise<AlbumInfo[]> => {
 
     nextUrl = data.next;
   }
+
+  // Store in cache
+  cache.albums = {
+    data: albums,
+    timestamp: Date.now()
+  };
 
   return albums;
 };
