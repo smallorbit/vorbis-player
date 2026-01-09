@@ -46,6 +46,7 @@ interface PlayerContentHandlers {
   debugModeEnabled?: boolean; // Debug mode toggle
   onMuteToggle?: () => void; // Mute toggle handler
   onToggleLike?: () => void; // Like toggle handler
+  onBackToLibrary?: () => void; // Back to library navigation handler
 }
 
 interface PlayerContentProps {
@@ -394,6 +395,7 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
               onAccentColorChange={handlers.onAccentColorChange}
               onBackgroundVisualizerToggle={handlers.onBackgroundVisualizerToggle}
               backgroundVisualizerEnabled={handlers.backgroundVisualizerEnabled}
+              onBackToLibrary={handlers.onBackToLibrary}
               debugModeEnabled={handlers.debugModeEnabled}
               isVisible={controlsVisible}
             />

@@ -338,6 +338,15 @@ export const usePlayerLogic = () => {
      setAccentColorBackgroundEnabled(prev => !prev);
   }, [setAccentColorBackgroundEnabled]);
 
+  const handleBackToLibrary = useCallback(() => {
+    handlePause();
+    setSelectedPlaylistId(null);
+    setTracks([]);
+    setCurrentTrackIndex(0);
+    setShowPlaylist(false);
+    setShowVisualEffects(false);
+  }, [handlePause, setSelectedPlaylistId, setTracks, setCurrentTrackIndex, setShowPlaylist, setShowVisualEffects]);
+
   return {
     state: {
       tracks,
@@ -389,7 +398,8 @@ export const usePlayerLogic = () => {
         handleBackgroundVisualizerStyleChange,
         handleAccentColorBackgroundToggle,
         handleLikeToggle,
-        handleMuteToggle
+        handleMuteToggle,
+        handleBackToLibrary
     }
   };
 };
