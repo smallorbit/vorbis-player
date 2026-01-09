@@ -14,6 +14,21 @@ interface PlaylistSelectionProps {
   onPlaylistSelect: (playlistId: string, playlistName: string) => void;
 }
 
+const selectOptimalImage = (
+  images: { url: string; width: number | null; height: number | null }[],
+  targetSize: number = 64
+): string | undefined => {
+  if (!images?.length) return undefined;
+
+  // Spotify provides: [640x640, 300x300, 64x64]
+  // Find smallest image >= target size
+  const suitable = images
+    .filter(img => (img.width || 0) >= targetSize)
+    .sort((a, b) => (a.width || 0) - (b.width || 0));
+
+  return suitable[0]?.url || images[images.length - 1]?.url;
+};
+
 const Container = styled.div`
   min-height: 100vh;
   width: 100%;
@@ -77,25 +92,22 @@ const PlaylistItem = styled.div`
   }
 `;
 
-const PlaylistImage = styled.div<{ $imageUrl?: string }>`
+const PlaylistImageWrapper = styled.div`
   width: 60px;
   height: 60px;
   border-radius: 0.5rem;
-  background: ${props => props.$imageUrl ?
-    `url(${props.$imageUrl}) center/cover` :
-    'linear-gradient(45deg, #333, #555)'
-  };
+  overflow: hidden;
+  background: linear-gradient(45deg, #333, #555);
   flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  
-  ${props => !props.$imageUrl && `
-    &::after {
-      content: '🎵';
-      font-size: 1.5rem;
-    }
-  `}
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
 `;
 
 const PlaylistInfo = styled.div`
@@ -154,6 +166,24 @@ const TabButton = styled.button<{ $active: boolean }>`
     outline: none;
   }
 `;
+
+const PlaylistImage: React.FC<{ images: { url: string; width: number | null; height: number | null }[]; alt: string }> = ({ images, alt }) => {
+  const imageUrl = selectOptimalImage(images, 64);
+
+  return (
+    <PlaylistImageWrapper>
+      {imageUrl ? (
+        <img
+          src={imageUrl}
+          alt={alt}
+          loading="lazy"
+        />
+      ) : (
+        <span style={{ fontSize: '1.5rem' }}>🎵</span>
+      )}
+    </PlaylistImageWrapper>
+  );
+};
 
 const PlaylistSelection: React.FC<PlaylistSelectionProps> = ({ onPlaylistSelect }) => {
   // Load view mode from localStorage, default to 'playlists'
@@ -334,7 +364,7 @@ const PlaylistSelection: React.FC<PlaylistSelectionProps> = ({ onPlaylistSelect 
                   {/* Liked Songs Option */}
                   {likedSongsCount > 0 && (
                     <PlaylistItem onClick={handleLikedSongsClick}>
-                      <PlaylistImage>
+                      <PlaylistImageWrapper>
                         <div style={{
                           background: 'linear-gradient(135deg, #1DB954 0%, #1ed760 100%)',
                           display: 'flex',
@@ -348,7 +378,7 @@ const PlaylistSelection: React.FC<PlaylistSelectionProps> = ({ onPlaylistSelect 
                         }}>
                           ♥
                         </div>
-                      </PlaylistImage>
+                      </PlaylistImageWrapper>
                       <PlaylistInfo>
                         <PlaylistName>Liked Songs</PlaylistName>
                         <PlaylistDetails>
@@ -365,7 +395,8 @@ const PlaylistSelection: React.FC<PlaylistSelectionProps> = ({ onPlaylistSelect 
                       onClick={() => handlePlaylistClick(playlist)}
                     >
                       <PlaylistImage
-                        $imageUrl={playlist.images[0]?.url}
+                        images={playlist.images}
+                        alt={playlist.name}
                       />
                       <PlaylistInfo>
                         <PlaylistName>{playlist.name}</PlaylistName>
@@ -396,7 +427,8 @@ const PlaylistSelection: React.FC<PlaylistSelectionProps> = ({ onPlaylistSelect 
                       onClick={() => handleAlbumClick(album)}
                     >
                       <PlaylistImage
-                        $imageUrl={album.images[0]?.url}
+                        images={album.images}
+                        alt={`${album.name} by ${album.artists}`}
                       />
                       <PlaylistInfo>
                         <PlaylistName>{album.name}</PlaylistName>
