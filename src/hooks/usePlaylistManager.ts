@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import { getPlaylistTracks, getLikedSongs, spotifyAuth } from '../services/spotify';
+import { getPlaylistTracks, getAlbumTracks, getLikedSongs, spotifyAuth } from '../services/spotify';
 import { spotifyPlayer } from '../services/spotifyPlayer';
 import type { Track } from '../services/spotify';
 
@@ -48,8 +48,13 @@ export const usePlaylistManager = ({
       await waitForSpotifyReady();
       await spotifyPlayer.transferPlaybackToDevice();
       let fetchedTracks: Track[] = [];
-      
-      if (playlistId === 'liked-songs') {
+
+      // Check if this is an album selection
+      if (playlistId.startsWith('album:')) {
+        const albumId = playlistId.replace('album:', '');
+        fetchedTracks = await getAlbumTracks(albumId);
+        // Albums are already sorted by track number, don't shuffle
+      } else if (playlistId === 'liked-songs') {
         fetchedTracks = await getLikedSongs(200);
         fetchedTracks = shuffleArray(fetchedTracks);
       } else {
@@ -57,7 +62,9 @@ export const usePlaylistManager = ({
       }
 
       if (fetchedTracks.length === 0) {
-        if (playlistId === 'liked-songs') {
+        if (playlistId.startsWith('album:')) {
+          setError("No tracks found in this album.");
+        } else if (playlistId === 'liked-songs') {
           setError("No liked songs found. Please like some songs in Spotify first.");
         } else {
           setError("No tracks found in this playlist.");
@@ -65,12 +72,24 @@ export const usePlaylistManager = ({
         return;
       }
 
+      // Update state with new tracks FIRST
       setTracks(fetchedTracks);
       setCurrentTrackIndex(0);
 
+      // Play the first track directly from fetchedTracks to avoid stale closure
       setTimeout(async () => {
         try {
-          await playTrack(0);
+          if (fetchedTracks.length > 0) {
+            await spotifyPlayer.playTrack(fetchedTracks[0].uri);
+
+            // Wait before checking playback state
+            setTimeout(async () => {
+              const state = await spotifyPlayer.getCurrentState();
+              if (!state || state.paused) {
+                await spotifyPlayer.resume();
+              }
+            }, 1500);
+          }
         } catch (error) {
           console.error('Failed to start playback:', error);
           try {
@@ -92,7 +111,9 @@ export const usePlaylistManager = ({
 
               setTimeout(async () => {
                 try {
-                  await playTrack(0);
+                  if (fetchedTracks.length > 0) {
+                    await spotifyPlayer.playTrack(fetchedTracks[0].uri);
+                  }
                 } catch (retryError) {
                   console.error('Failed to play track after recovery attempt:', retryError);
                 }

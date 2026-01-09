@@ -83,7 +83,8 @@ const AudioPlayerComponent = () => {
           onAccentColorBackgroundToggle: handlers.handleAccentColorBackgroundToggle,
           debugModeEnabled: state.debugModeEnabled,
           onMuteToggle: handlers.handleMuteToggle,
-          onToggleLike: handlers.handleLikeToggle
+          onToggleLike: handlers.handleLikeToggle,
+          onBackToLibrary: handlers.handleBackToLibrary
         }}
       />
     );

@@ -447,6 +447,8 @@ export interface Track {
   name: string;
   artists: string;
   album: string;
+  album_id?: string;
+  track_number?: number;
   duration_ms: number;
   uri: string;
   preview_url?: string;
@@ -462,42 +464,161 @@ export interface PlaylistInfo {
   owner: { display_name: string };
 }
 
-interface SpotifyPlaylistResponse {
+export interface AlbumInfo {
   id: string;
   name: string;
-  description: string | null;
+  artists: string;
   images: { url: string; height: number | null; width: number | null }[];
-  tracks: { total: number };
-  owner: { display_name: string };
+  release_date: string;
+  total_tracks: number;
+  uri: string;
+  album_type?: string;
+}
+
+// Cache configuration
+const CACHE_DURATION_MS = 5 * 60 * 1000; // 5 minutes
+const CACHE_KEY_PREFIX = 'vorbis-player-cache-';
+
+interface CacheEntry<T> {
+  data: T;
+  timestamp: number;
+}
+
+function getCacheFromStorage<T>(key: string): CacheEntry<T> | null {
+  try {
+    const stored = localStorage.getItem(CACHE_KEY_PREFIX + key);
+    if (!stored) return null;
+    return JSON.parse(stored) as CacheEntry<T>;
+  } catch (error) {
+    console.warn('Failed to read cache from localStorage:', error);
+    return null;
+  }
+}
+
+function setCacheToStorage<T>(key: string, data: T): void {
+  try {
+    const entry: CacheEntry<T> = {
+      data,
+      timestamp: Date.now()
+    };
+    localStorage.setItem(CACHE_KEY_PREFIX + key, JSON.stringify(entry));
+  } catch (error) {
+    console.warn('Failed to write cache to localStorage:', error);
+  }
+}
+
+function isCacheValid<T>(entry: CacheEntry<T> | null): entry is CacheEntry<T> {
+  if (!entry) return false;
+  const age = Date.now() - entry.timestamp;
+  return age < CACHE_DURATION_MS;
+}
+
+// Export function to manually clear cache if needed
+export function clearLibraryCache() {
+  localStorage.removeItem(CACHE_KEY_PREFIX + 'playlists');
+  localStorage.removeItem(CACHE_KEY_PREFIX + 'albums');
+  console.log('🗑️ Library cache cleared');
 }
 
 export const getUserPlaylists = async (): Promise<PlaylistInfo[]> => {
+  // Check localStorage cache first
+  const cachedPlaylists = getCacheFromStorage<PlaylistInfo[]>('playlists');
+
+  if (isCacheValid(cachedPlaylists)) {
+    const age = Date.now() - cachedPlaylists.timestamp;
+    console.log(`📦 Using cached playlists (${Math.floor(age / 1000)}s old)`);
+    return cachedPlaylists.data;
+  }
+
+  console.log('🌐 Fetching playlists from Spotify API');
   const token = await spotifyAuth.ensureValidToken();
 
-  const response = await fetch('https://api.spotify.com/v1/me/playlists?limit=50', {
-    headers: {
-      'Authorization': `Bearer ${token}`,
-    },
-  });
+  const playlists: PlaylistInfo[] = [];
+  let nextUrl = 'https://api.spotify.com/v1/me/playlists?limit=50';
 
-  if (!response.ok) {
-    throw new Error(`Failed to fetch playlists: ${response.status} ${response.statusText}`);
+  while (nextUrl) {
+    const response = await fetch(nextUrl, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch playlists: ${response.status} ${response.statusText}`);
+    }
+
+    const data = await response.json();
+
+    for (const playlist of data.items || []) {
+      playlists.push({
+        id: playlist.id,
+        name: playlist.name,
+        description: playlist.description,
+        images: playlist.images || [],
+        tracks: { total: playlist.tracks.total },
+        owner: { display_name: playlist.owner.display_name }
+      });
+    }
+
+    nextUrl = data.next;
   }
 
-  const data = await response.json();
+  // Store in localStorage cache
+  setCacheToStorage('playlists', playlists);
 
-  if (!data.items || data.items.length === 0) {
-    return [];
+  return playlists;
+};
+
+export const getUserAlbums = async (): Promise<AlbumInfo[]> => {
+  // Check localStorage cache first
+  const cachedAlbums = getCacheFromStorage<AlbumInfo[]>('albums');
+
+  if (isCacheValid(cachedAlbums)) {
+    const age = Date.now() - cachedAlbums.timestamp;
+    console.log(`📦 Using cached albums (${Math.floor(age / 1000)}s old)`);
+    return cachedAlbums.data;
   }
 
-  return data.items.map((playlist: SpotifyPlaylistResponse): PlaylistInfo => ({
-    id: playlist.id,
-    name: playlist.name,
-    description: playlist.description,
-    images: playlist.images || [],
-    tracks: { total: playlist.tracks.total },
-    owner: { display_name: playlist.owner.display_name }
-  }));
+  console.log('🌐 Fetching albums from Spotify API');
+  const token = await spotifyAuth.ensureValidToken();
+
+  const albums: AlbumInfo[] = [];
+  let nextUrl = 'https://api.spotify.com/v1/me/albums?limit=50';
+
+  while (nextUrl) {
+    const response = await fetch(nextUrl, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch albums: ${response.status} ${response.statusText}`);
+    }
+
+    const data = await response.json();
+
+    for (const item of data.items || []) {
+      const album = item.album;
+      albums.push({
+        id: album.id,
+        name: album.name,
+        artists: album.artists?.map((a: { name: string }) => a.name).join(', ') || 'Unknown Artist',
+        images: album.images || [],
+        release_date: album.release_date || '',
+        total_tracks: album.total_tracks || 0,
+        uri: album.uri,
+        album_type: album.album_type
+      });
+    }
+
+    nextUrl = data.next;
+  }
+
+  // Store in localStorage cache
+  setCacheToStorage('albums', albums);
+
+  return albums;
 };
 
 export const getPlaylistTracks = async (playlistId: string): Promise<Track[]> => {
@@ -541,6 +662,46 @@ export const getPlaylistTracks = async (playlistId: string): Promise<Track[]> =>
   }
 
   return tracks;
+};
+
+export const getAlbumTracks = async (albumId: string): Promise<Track[]> => {
+  const token = await spotifyAuth.ensureValidToken();
+
+  const response = await fetch(
+    `https://api.spotify.com/v1/albums/${albumId}`,
+    {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch album: ${response.status} ${response.statusText}`);
+  }
+
+  const album = await response.json();
+  const tracks: Track[] = [];
+
+  for (const track of album.tracks.items || []) {
+    if (track.id && track.type === 'track') {
+      tracks.push({
+        id: track.id,
+        name: track.name,
+        artists: track.artists?.map((a: { name: string }) => a.name).join(', ') || 'Unknown Artist',
+        album: album.name,
+        album_id: album.id,
+        track_number: track.track_number,
+        duration_ms: track.duration_ms || 0,
+        uri: track.uri,
+        preview_url: track.preview_url,
+        image: album.images?.[0]?.url
+      });
+    }
+  }
+
+  // Sort by track number to ensure correct album order
+  return tracks.sort((a, b) => (a.track_number || 0) - (b.track_number || 0));
 };
 
 export const getSpotifyUserPlaylists = async (): Promise<Track[]> => {

@@ -49,25 +49,38 @@ export const useSpotifyPlayback = ({ tracks, setCurrentTrackIndex }: UseSpotifyP
   }, [activateDevice]);
 
   const playTrack = useCallback(async (index: number) => {
-    if (tracks[index]) {
-      try {
-        const isAuthenticated = spotifyAuth.isAuthenticated();
+    console.log('[DEBUG] playTrack called', {
+      index,
+      tracksLength: tracks.length,
+      hasTrack: !!tracks[index],
+      trackUri: tracks[index]?.uri,
+      trackName: tracks[index]?.name
+    });
 
-        if (!isAuthenticated) {
-          return;
-        }
+    if (!tracks[index]) {
+      console.error('[DEBUG] playTrack: No track at index', index, 'tracks length:', tracks.length);
+      return;
+    }
 
-        await spotifyPlayer.playTrack(tracks[index].uri);
-        setCurrentTrackIndex(index);
+    try {
+      const isAuthenticated = spotifyAuth.isAuthenticated();
 
-        // Wait before checking playback state and resuming if needed
-        setTimeout(async () => {
-          await handlePlaybackResume();
-        }, 1500);
-
-      } catch (error) {
-        console.error('Failed to play track:', error);
+      if (!isAuthenticated) {
+        console.warn('[DEBUG] playTrack: Not authenticated');
+        return;
       }
+
+      console.log('[DEBUG] playTrack: Playing track', tracks[index].name);
+      await spotifyPlayer.playTrack(tracks[index].uri);
+      setCurrentTrackIndex(index);
+
+      // Wait before checking playback state and resuming if needed
+      setTimeout(async () => {
+        await handlePlaybackResume();
+      }, 1500);
+
+    } catch (error) {
+      console.error('Failed to play track:', error);
     }
   }, [tracks, setCurrentTrackIndex, handlePlaybackResume]);
 

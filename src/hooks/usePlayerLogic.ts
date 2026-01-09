@@ -137,17 +137,37 @@ export const usePlayerLogic = () => {
 
   // Like toggle handler
   const handleLikeToggle = useCallback(async () => {
-    if (!currentTrack?.id || isLikePending) return;
+    console.log('[DEBUG] handleLikeToggle called', {
+      hasCurrentTrack: !!currentTrack,
+      trackId: currentTrack?.id,
+      isLikePending,
+      isLiked
+    });
+
+    if (!currentTrack?.id) {
+      console.warn('[DEBUG] No current track or track ID, aborting like toggle');
+      return;
+    }
+
+    if (isLikePending) {
+      console.warn('[DEBUG] Like already pending, aborting');
+      return;
+    }
 
     try {
       setIsLikePending(true);
       const newLikedState = !isLiked;
+      console.log(`[DEBUG] Toggling like: ${isLiked} -> ${newLikedState}`);
       setIsLiked(newLikedState);
 
       if (newLikedState) {
+        console.log('[DEBUG] Saving track:', currentTrack.id);
         await saveTrack(currentTrack.id);
+        console.log('[DEBUG] Track saved successfully');
       } else {
+        console.log('[DEBUG] Unsaving track:', currentTrack.id);
         await unsaveTrack(currentTrack.id);
+        console.log('[DEBUG] Track unsaved successfully');
       }
     } catch (error) {
       console.error('Failed to toggle like status:', error);
@@ -213,16 +233,42 @@ export const usePlayerLogic = () => {
   }, [tracks, currentTrackIndex, setCurrentTrackIndex]);
 
   const handleNext = useCallback(() => {
-    if (tracks.length === 0) return;
-    const nextIndex = (currentTrackIndex + 1) % tracks.length;
-    playTrack(nextIndex);
-  }, [currentTrackIndex, tracks.length, playTrack]);
+    if (tracks.length === 0) {
+      console.warn('[DEBUG] handleNext: No tracks available');
+      return;
+    }
+
+    // Use functional update to get the current index value
+    setCurrentTrackIndex((prevIndex) => {
+      const nextIndex = (prevIndex + 1) % tracks.length;
+      console.log('[DEBUG] handleNext: prevIndex =', prevIndex, 'nextIndex =', nextIndex);
+
+      // Play the next track
+      playTrack(nextIndex);
+
+      // Return the new index (playTrack will also set it, but this ensures immediate update)
+      return nextIndex;
+    });
+  }, [tracks.length, playTrack, setCurrentTrackIndex]);
 
   const handlePrevious = useCallback(() => {
-    if (tracks.length === 0) return;
-    const prevIndex = currentTrackIndex === 0 ? tracks.length - 1 : currentTrackIndex - 1;
-    playTrack(prevIndex);
-  }, [currentTrackIndex, tracks.length, playTrack]);
+    if (tracks.length === 0) {
+      console.warn('[DEBUG] handlePrevious: No tracks available');
+      return;
+    }
+
+    // Use functional update to get the current index value
+    setCurrentTrackIndex((prevIndex) => {
+      const newIndex = prevIndex === 0 ? tracks.length - 1 : prevIndex - 1;
+      console.log('[DEBUG] handlePrevious: prevIndex =', prevIndex, 'newIndex =', newIndex);
+
+      // Play the previous track
+      playTrack(newIndex);
+
+      // Return the new index
+      return newIndex;
+    });
+  }, [tracks.length, playTrack, setCurrentTrackIndex]);
 
   const handlePlay = useCallback(() => {
     spotifyPlayer.resume();
@@ -292,6 +338,15 @@ export const usePlayerLogic = () => {
      setAccentColorBackgroundEnabled(prev => !prev);
   }, [setAccentColorBackgroundEnabled]);
 
+  const handleBackToLibrary = useCallback(() => {
+    handlePause();
+    setSelectedPlaylistId(null);
+    setTracks([]);
+    setCurrentTrackIndex(0);
+    setShowPlaylist(false);
+    setShowVisualEffects(false);
+  }, [handlePause, setSelectedPlaylistId, setTracks, setCurrentTrackIndex, setShowPlaylist, setShowVisualEffects]);
+
   return {
     state: {
       tracks,
@@ -343,7 +398,8 @@ export const usePlayerLogic = () => {
         handleBackgroundVisualizerStyleChange,
         handleAccentColorBackgroundToggle,
         handleLikeToggle,
-        handleMuteToggle
+        handleMuteToggle,
+        handleBackToLibrary
     }
   };
 };

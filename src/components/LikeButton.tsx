@@ -165,8 +165,18 @@ const LikeButton = memo<LikeButtonProps>(({
   $isTablet = false
 }) => {
   const handleClick = useCallback(() => {
-    if (isLoading || !trackId) return;
-    
+    console.log('[DEBUG] LikeButton handleClick', {
+      isLoading,
+      trackId,
+      hasOnToggleLike: !!onToggleLike
+    });
+
+    if (isLoading || !trackId) {
+      console.warn('[DEBUG] LikeButton click ignored:', { isLoading, trackId });
+      return;
+    }
+
+    console.log('[DEBUG] LikeButton calling onToggleLike');
     onToggleLike();
   }, [isLoading, trackId, onToggleLike]);
 
