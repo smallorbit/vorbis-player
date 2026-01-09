@@ -475,15 +475,6 @@ export interface AlbumInfo {
   album_type?: string;
 }
 
-interface SpotifyPlaylistResponse {
-  id: string;
-  name: string;
-  description: string | null;
-  images: { url: string; height: number | null; width: number | null }[];
-  tracks: { total: number };
-  owner: { display_name: string };
-}
-
 // Cache configuration
 const CACHE_DURATION_MS = 5 * 60 * 1000; // 5 minutes
 const CACHE_KEY_PREFIX = 'vorbis-player-cache-';
@@ -540,33 +531,37 @@ export const getUserPlaylists = async (): Promise<PlaylistInfo[]> => {
   }
 
   console.log('🌐 Fetching playlists from Spotify API');
-
   const token = await spotifyAuth.ensureValidToken();
 
-  const response = await fetch('https://api.spotify.com/v1/me/playlists?limit=50', {
-    headers: {
-      'Authorization': `Bearer ${token}`,
-    },
-  });
+  const playlists: PlaylistInfo[] = [];
+  let nextUrl = 'https://api.spotify.com/v1/me/playlists?limit=50';
 
-  if (!response.ok) {
-    throw new Error(`Failed to fetch playlists: ${response.status} ${response.statusText}`);
+  while (nextUrl) {
+    const response = await fetch(nextUrl, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch playlists: ${response.status} ${response.statusText}`);
+    }
+
+    const data = await response.json();
+
+    for (const playlist of data.items || []) {
+      playlists.push({
+        id: playlist.id,
+        name: playlist.name,
+        description: playlist.description,
+        images: playlist.images || [],
+        tracks: { total: playlist.tracks.total },
+        owner: { display_name: playlist.owner.display_name }
+      });
+    }
+
+    nextUrl = data.next;
   }
-
-  const data = await response.json();
-
-  if (!data.items || data.items.length === 0) {
-    return [];
-  }
-
-  const playlists = data.items.map((playlist: SpotifyPlaylistResponse): PlaylistInfo => ({
-    id: playlist.id,
-    name: playlist.name,
-    description: playlist.description,
-    images: playlist.images || [],
-    tracks: { total: playlist.tracks.total },
-    owner: { display_name: playlist.owner.display_name }
-  }));
 
   // Store in localStorage cache
   setCacheToStorage('playlists', playlists);
