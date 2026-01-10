@@ -26,7 +26,6 @@ interface UsePlaylistManagerProps {
   setSelectedPlaylistId: (id: string | null) => void;
   setTracks: (tracks: Track[]) => void;
   setCurrentTrackIndex: (index: number) => void;
-  playTrack: (index: number) => Promise<void>;
 }
 
 export const usePlaylistManager = ({
@@ -34,8 +33,7 @@ export const usePlaylistManager = ({
   setIsLoading,
   setSelectedPlaylistId,
   setTracks,
-  setCurrentTrackIndex,
-  playTrack
+  setCurrentTrackIndex
 }: UsePlaylistManagerProps) => {
   
   const handlePlaylistSelect = useCallback(async (playlistId: string) => {
@@ -47,6 +45,11 @@ export const usePlaylistManager = ({
       await spotifyPlayer.initialize();
       await waitForSpotifyReady();
       await spotifyPlayer.transferPlaybackToDevice();
+      
+      // Wait for device to become active
+      console.log('🎵 Waiting for device to become active...');
+      await spotifyPlayer.ensureDeviceIsActive();
+      
       let fetchedTracks: Track[] = [];
 
       // Check if this is an album selection
@@ -76,54 +79,57 @@ export const usePlaylistManager = ({
       setTracks(fetchedTracks);
       setCurrentTrackIndex(0);
 
-      // Play the first track directly from fetchedTracks to avoid stale closure
-      setTimeout(async () => {
+      // Play the first track with retry logic for 403 errors
+      const playWithRetry = async (trackUri: string, retryCount = 0, maxRetries = 3) => {
         try {
-          if (fetchedTracks.length > 0) {
-            await spotifyPlayer.playTrack(fetchedTracks[0].uri);
-
-            // Wait before checking playback state
-            setTimeout(async () => {
-              const state = await spotifyPlayer.getCurrentState();
-              if (!state || state.paused) {
-                await spotifyPlayer.resume();
-              }
-            }, 1500);
-          }
-        } catch (error) {
-          console.error('Failed to start playback:', error);
-          try {
-            const token = await spotifyAuth.ensureValidToken();
-            const deviceId = spotifyPlayer.getDeviceId();
-
-            if (deviceId) {
-              await fetch('https://api.spotify.com/v1/me/player', {
-                method: 'PUT',
-                headers: {
-                  'Authorization': `Bearer ${token}`,
-                  'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                  device_ids: [deviceId],
-                  play: true
-                })
-              });
-
-              setTimeout(async () => {
-                try {
-                  if (fetchedTracks.length > 0) {
-                    await spotifyPlayer.playTrack(fetchedTracks[0].uri);
-                  }
-                } catch (retryError) {
-                  console.error('Failed to play track after recovery attempt:', retryError);
+          await spotifyPlayer.playTrack(trackUri);
+          
+          // Wait before checking playback state
+          setTimeout(() => {
+            void (async () => {
+              try {
+                const state = await spotifyPlayer.getCurrentState();
+                if (!state || state.paused) {
+                  await spotifyPlayer.resume();
                 }
-              }, 1000);
-            }
-          } catch (recoveryError) {
-            console.error('Recovery attempt failed:', recoveryError);
+              } catch (error) {
+                console.error('Failed to check/resume playback state:', error);
+              }
+            })();
+          }, 1000);
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : String(error);
+          
+          // Check if it's a 403 restriction error
+          if (errorMessage.includes('403') && retryCount < maxRetries) {
+            console.log(`🎵 Got 403 error, retrying (attempt ${retryCount + 1}/${maxRetries})...`);
+            
+            // Re-transfer playback and wait longer
+            await spotifyPlayer.transferPlaybackToDevice();
+            await new Promise(resolve => setTimeout(resolve, 1500));
+            await spotifyPlayer.ensureDeviceIsActive();
+            
+            // Retry playing
+            await playWithRetry(trackUri, retryCount + 1, maxRetries);
+          } else {
+            console.error('Failed to start playback:', error);
+            throw error;
           }
         }
-      }, 1000);
+      };
+
+      // Start playback after a short delay
+      setTimeout(() => {
+        void (async () => {
+          try {
+            if (fetchedTracks.length > 0) {
+              await playWithRetry(fetchedTracks[0].uri);
+            }
+          } catch (error) {
+            console.error('Failed to start playback after all retries:', error);
+          }
+        })();
+      }, 1500);
 
     } catch (err: unknown) {
       if (err instanceof Error && err.message.includes('authenticated')) {
@@ -135,7 +141,7 @@ export const usePlaylistManager = ({
     } finally {
       setIsLoading(false);
     }
-  }, [setError, setIsLoading, setSelectedPlaylistId, setTracks, setCurrentTrackIndex, playTrack]);
+  }, [setError, setIsLoading, setSelectedPlaylistId, setTracks, setCurrentTrackIndex]);
 
   return {
     handlePlaylistSelect

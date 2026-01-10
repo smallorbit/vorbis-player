@@ -93,8 +93,7 @@ export const usePlayerLogic = () => {
     setIsLoading,
     setSelectedPlaylistId,
     setTracks,
-    setCurrentTrackIndex,
-    playTrack
+    setCurrentTrackIndex
   });
 
   useAutoAdvance({
