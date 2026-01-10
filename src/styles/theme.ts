@@ -64,7 +64,7 @@ export const theme = {
     // Common overlay and control colors (consolidating hardcoded values)
     overlay: {
       light: 'rgba(0, 0, 0, 0.5)',
-      dark: 'rgba(0, 0, 0, 0.95)',
+      dark: 'rgba(40, 40, 40, 0.50)',
       backdrop: 'rgba(0, 0, 0, 0.9)'
     },
     
@@ -79,7 +79,7 @@ export const theme = {
     // Popover colors
     popover: {
       background: '#232323',
-      border: 'rgba(255, 255, 255, 0.1)'
+      border: 'rgba(255, 255, 255, 0.05)'
     }
   },
   
