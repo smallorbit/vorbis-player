@@ -89,10 +89,12 @@ const AlbumArtContainer = styled.div.withConfig({
         box-shadow:
           /* White edge for definition */
           0 0 0 2px rgba(255, 255, 255, 0.4),
-          /* Animated accent color glow layers - more contained spread */
-          0 0 16px rgba(${r}, ${g}, ${b}, calc(0.7 * var(--glow-opacity, 1))),
+          /* Animated accent color glow layers using CSS variable */
+          0 0 16px rgba(${r}, ${g}, ${b}, calc(0.6 * var(--glow-opacity, 1))),
           0 0 32px rgba(${r}, ${g}, ${b}, calc(0.5 * var(--glow-opacity, 1))),
-          0 0 48px rgba(${r}, ${g}, ${b}, calc(0.3 * var(--glow-opacity, 1))),
+          0 0 48px rgba(${r}, ${g}, ${b}, calc(0.4 * var(--glow-opacity, 1))),
+          0 0 72px rgba(${r}, ${g}, ${b}, calc(0.3 * var(--glow-opacity, 1))),
+        
           /* Depth shadow */
           0 8px 24px rgba(0, 0, 0, 0.5);
         animation: breathe-border-glow var(--glow-rate, ${DEFAULT_GLOW_RATE}s) linear infinite;
