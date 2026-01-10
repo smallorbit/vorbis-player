@@ -184,7 +184,23 @@ export class SpotifyPlayerService {
     if (!response.ok) {
       const errorText = await response.text();
       console.error('🎵 Spotify API error response:', errorText);
-      throw new Error(`Spotify API error: ${response.status} ${response.statusText} - ${errorText}`);
+      
+      // Try to parse the error as JSON to extract the reason
+      let errorReason = '';
+      try {
+        const errorJson = JSON.parse(errorText);
+        if (errorJson.error?.reason) {
+          errorReason = ` (${errorJson.error.reason})`;
+        }
+        if (errorJson.error?.message) {
+          errorReason = ` - ${errorJson.error.message}${errorReason}`;
+        }
+      } catch {
+        // If not JSON, use the raw error text
+        errorReason = errorText ? ` - ${errorText}` : '';
+      }
+      
+      throw new Error(`Spotify API error: ${response.status}${errorReason}`);
     }
   }
 

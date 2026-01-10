@@ -242,8 +242,8 @@ export const usePlayerLogic = () => {
       const nextIndex = (prevIndex + 1) % tracks.length;
       console.log('[DEBUG] handleNext: prevIndex =', prevIndex, 'nextIndex =', nextIndex);
 
-      // Play the next track
-      playTrack(nextIndex);
+      // Play the next track with auto-skip enabled for unavailable tracks
+      playTrack(nextIndex, true);
 
       // Return the new index (playTrack will also set it, but this ensures immediate update)
       return nextIndex;
@@ -261,8 +261,8 @@ export const usePlayerLogic = () => {
       const newIndex = prevIndex === 0 ? tracks.length - 1 : prevIndex - 1;
       console.log('[DEBUG] handlePrevious: prevIndex =', prevIndex, 'newIndex =', newIndex);
 
-      // Play the previous track
-      playTrack(newIndex);
+      // Play the previous track with auto-skip enabled for unavailable tracks
+      playTrack(newIndex, true);
 
       // Return the new index
       return newIndex;
