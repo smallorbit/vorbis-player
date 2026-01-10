@@ -148,7 +148,13 @@ export class SpotifyPlayerService {
 
     const token = await spotifyAuth.ensureValidToken();
     
-    await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${this.deviceId}`, {
+    console.log('🎵 Making Spotify API call to play playlist:', {
+      deviceId: this.deviceId,
+      tracksCount: uris.length,
+      hasToken: !!token
+    });
+    
+    const response = await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${this.deviceId}`, {
       method: 'PUT',
       body: JSON.stringify({ uris }),
       headers: {
@@ -156,6 +162,18 @@ export class SpotifyPlayerService {
         'Authorization': `Bearer ${token}`
       },
     });
+    
+    console.log('🎵 Spotify API response:', {
+      status: response.status,
+      statusText: response.statusText,
+      ok: response.ok
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('🎵 Spotify API error response:', errorText);
+      throw new Error(`Spotify API error: ${response.status} ${response.statusText} - ${errorText}`);
+    }
   }
 
   async pause(): Promise<void> {
@@ -251,6 +269,43 @@ export class SpotifyPlayerService {
       console.error('🎵 Failed to transfer playback to device:', error);
       throw error;
     }
+  }
+
+  async ensureDeviceIsActive(maxRetries = 10, delayMs = 500): Promise<boolean> {
+    const token = await spotifyAuth.ensureValidToken();
+    
+    for (let i = 0; i < maxRetries; i++) {
+      try {
+        const response = await fetch('https://api.spotify.com/v1/me/player', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        if (response.status === 200) {
+          const data = await response.json();
+          if (data.device?.id === this.deviceId && data.device?.is_active) {
+            console.log('🎵 Device is active and ready');
+            return true;
+          }
+        } else if (response.status === 204) {
+          // No active devices yet, continue polling
+          console.log(`🎵 No active device yet, attempt ${i + 1}/${maxRetries}`);
+        }
+
+        if (i < maxRetries - 1) {
+          await new Promise(resolve => setTimeout(resolve, delayMs));
+        }
+      } catch (error) {
+        console.warn(`🎵 Error checking device status (attempt ${i + 1}):`, error);
+        if (i < maxRetries - 1) {
+          await new Promise(resolve => setTimeout(resolve, delayMs));
+        }
+      }
+    }
+
+    console.warn('🎵 Device not confirmed active after polling, proceeding anyway');
+    return false;
   }
 }
 

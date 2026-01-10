@@ -71,12 +71,43 @@ export const useSpotifyPlayback = ({ tracks, setCurrentTrackIndex }: UseSpotifyP
       }
 
       console.log('[DEBUG] playTrack: Playing track', tracks[index].name);
-      await spotifyPlayer.playTrack(tracks[index].uri);
+      
+      // Retry logic for 403 errors
+      const playWithRetry = async (trackUri: string, retryCount = 0, maxRetries = 2) => {
+        try {
+          await spotifyPlayer.playTrack(trackUri);
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : String(error);
+          
+          // Check if it's a 403 restriction error
+          if (errorMessage.includes('403') && retryCount < maxRetries) {
+            console.log(`🎵 Got 403 error while switching songs, retrying (attempt ${retryCount + 1}/${maxRetries})...`);
+            
+            // Re-transfer playback and wait
+            await spotifyPlayer.transferPlaybackToDevice();
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            await spotifyPlayer.ensureDeviceIsActive(5, 300);
+            
+            // Retry playing
+            await playWithRetry(trackUri, retryCount + 1, maxRetries);
+          } else {
+            throw error;
+          }
+        }
+      };
+
+      await playWithRetry(tracks[index].uri);
       setCurrentTrackIndex(index);
 
       // Wait before checking playback state and resuming if needed
-      setTimeout(async () => {
-        await handlePlaybackResume();
+      setTimeout(() => {
+        void (async () => {
+          try {
+            await handlePlaybackResume();
+          } catch (error) {
+            console.error('Failed to resume playback:', error);
+          }
+        })();
       }, 1500);
 
     } catch (error) {
