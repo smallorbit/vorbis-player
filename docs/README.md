@@ -10,7 +10,6 @@ Code analysis and assessment documents:
 
 ### `/development`
 Development guides and work-in-progress tracking:
-- `CLAUDE.md` - Guidance for Claude Code when working with this repository
 - `ai-agent-wip.md` - Current work-in-progress tracking for AI agent tasks
 
 ### `/refactoring`
@@ -27,6 +26,6 @@ Deployment guides and procedures:
 ## Quick Links
 
 - **For AI Agents**: See `AGENTS.md` in the project root for commands and conventions
-- **For Developers**: See `development/CLAUDE.md` for project overview and development guidelines
+- **For Developers**: See `CLAUDE.md` in the project root for project overview and development guidelines
 - **For Refactoring**: See `refactoring/REFACTORING_OPPORTUNITIES.md` for cleanup opportunities
 

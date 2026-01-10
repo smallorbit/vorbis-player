@@ -155,7 +155,7 @@ Related UI:
 - Create feature branches from main
 - Make logical commits with clear messages
 - Use `/commit` command to handle multiple related changes
-- Update `docs/development/CLAUDE.md` if adding new concepts/patterns
+- Update `CLAUDE.md` (root directory) if adding new concepts/patterns
 - Update `docs/development/ai-agent-wip.md` with current progress
 
 ## Environment Variables
