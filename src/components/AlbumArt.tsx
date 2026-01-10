@@ -45,6 +45,7 @@ interface AlbumArtProps {
   accentColor?: string;
   glowIntensity?: number;
   glowRate?: number;
+  glowEnabled?: boolean;
   albumFilters?: {
     brightness: number;
     contrast: number;
@@ -57,11 +58,12 @@ interface AlbumArtProps {
 
 
 const AlbumArtContainer = styled.div.withConfig({
-  shouldForwardProp: (prop) => !['accentColor', 'glowIntensity', 'glowRate'].includes(prop),
+  shouldForwardProp: (prop) => !['accentColor', 'glowIntensity', 'glowRate', 'glowEnabled'].includes(prop),
 }) <{
   accentColor?: string;
   glowIntensity?: number;
   glowRate?: number;
+  glowEnabled?: boolean;
 }>`
   border-radius: ${theme.borderRadius['3xl']};
   position: relative;
@@ -72,11 +74,19 @@ const AlbumArtContainer = styled.div.withConfig({
   overflow: hidden;
   background: transparent;
   /* Accent color glow for floating effect */
-  ${({ accentColor }) => {
+  ${({ accentColor, glowEnabled }) => {
+    // If glow is disabled, use simple shadow only
+    if (glowEnabled === false) {
+      return `
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+      `;
+    }
+
+    // If glow is enabled (or not specified, for backwards compatibility)
     if (accentColor) {
       const [r, g, b] = hexToRgb(accentColor);
       return `
-        box-shadow: 
+        box-shadow:
           /* White edge for definition */
           0 0 0 2px rgba(255, 255, 255, 0.4),
           /* Accent color inner glow */
@@ -90,7 +100,7 @@ const AlbumArtContainer = styled.div.withConfig({
       `;
     }
     return `
-      box-shadow: 
+      box-shadow:
         0 0 0 2px rgba(255, 255, 255, 0.5),
         0 0 16px rgba(255, 255, 255, 0.4),
         0 0 32px rgba(255, 255, 255, 0.3),
@@ -116,7 +126,8 @@ const arePropsEqual = (prevProps: AlbumArtProps, nextProps: AlbumArtProps): bool
     return false;
   }
   if (prevProps.glowIntensity !== nextProps.glowIntensity ||
-    prevProps.glowRate !== nextProps.glowRate) {
+    prevProps.glowRate !== nextProps.glowRate ||
+    prevProps.glowEnabled !== nextProps.glowEnabled) {
     return false;
   }
   if (!prevProps.albumFilters && !nextProps.albumFilters) {
@@ -136,7 +147,7 @@ const arePropsEqual = (prevProps: AlbumArtProps, nextProps: AlbumArtProps): bool
   return true;
 };
 
-const AlbumArt: React.FC<AlbumArtProps> = memo(({ currentTrack = null, accentColor, glowIntensity, glowRate, albumFilters }) => {
+const AlbumArt: React.FC<AlbumArtProps> = memo(({ currentTrack = null, accentColor, glowIntensity, glowRate, glowEnabled, albumFilters }) => {
   const [canvasUrl, setCanvasUrl] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const { processImage } = useImageProcessingWorker();
@@ -223,6 +234,7 @@ const AlbumArt: React.FC<AlbumArtProps> = memo(({ currentTrack = null, accentCol
       accentColor={accentColor}
       glowIntensity={glowIntensity}
       glowRate={glowRate}
+      glowEnabled={glowEnabled}
       className={glowClasses}
     >
       <AlbumArtFilters filters={albumFilters ? albumFilters : {

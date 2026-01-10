@@ -381,6 +381,7 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
               accentColor={ui.accentColor}
               glowIntensity={effects.enabled ? effects.glow.intensity : 0}
               glowRate={effects.glow.rate}
+              glowEnabled={effects.enabled}
               albumFilters={effects.enabled ? effects.filters : defaultFilters}
             />
 
