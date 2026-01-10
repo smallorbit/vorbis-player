@@ -5,7 +5,7 @@ import type { Track } from '../services/spotify';
 interface UseAutoAdvanceProps {
   tracks: Track[];
   currentTrackIndex: number;
-  playTrack: (index: number) => void;
+  playTrack: (index: number, skipOnError?: boolean) => void;
   enabled?: boolean;
   pollInterval?: number;
   endThreshold?: number;
@@ -45,7 +45,7 @@ export const useAutoAdvance = ({
             const nextIndex = (currentTrackIndex + 1) % tracks.length;
             if (tracks[nextIndex]) {
               setTimeout(() => {
-                playTrack(nextIndex);
+                playTrack(nextIndex, true); // Enable auto-skip for unavailable tracks
                 hasEnded.current = false;
               }, 500);
             }

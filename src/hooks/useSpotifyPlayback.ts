@@ -48,13 +48,14 @@ export const useSpotifyPlayback = ({ tracks, setCurrentTrackIndex }: UseSpotifyP
     }
   }, [activateDevice]);
 
-  const playTrack = useCallback(async (index: number) => {
+  const playTrack = useCallback(async (index: number, skipOnError = false) => {
     console.log('[DEBUG] playTrack called', {
       index,
       tracksLength: tracks.length,
       hasTrack: !!tracks[index],
       trackUri: tracks[index]?.uri,
-      trackName: tracks[index]?.name
+      trackName: tracks[index]?.name,
+      skipOnError
     });
 
     if (!tracks[index]) {
@@ -73,30 +74,56 @@ export const useSpotifyPlayback = ({ tracks, setCurrentTrackIndex }: UseSpotifyP
       console.log('[DEBUG] playTrack: Playing track', tracks[index].name);
       
       // Retry logic for 403 errors
-      const playWithRetry = async (trackUri: string, retryCount = 0, maxRetries = 2) => {
+      const playWithRetry = async (trackUri: string, retryCount = 0, maxRetries = 2): Promise<boolean> => {
         try {
           await spotifyPlayer.playTrack(trackUri);
+          return true; // Success
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : String(error);
           
           // Check if it's a 403 restriction error
-          if (errorMessage.includes('403') && retryCount < maxRetries) {
-            console.log(`🎵 Got 403 error while switching songs, retrying (attempt ${retryCount + 1}/${maxRetries})...`);
+          if (errorMessage.includes('403')) {
+            // Parse the error to check if it's a "Restriction violated" error
+            const isRestrictionViolated = errorMessage.includes('Restriction violated');
             
-            // Re-transfer playback and wait
-            await spotifyPlayer.transferPlaybackToDevice();
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            await spotifyPlayer.ensureDeviceIsActive(5, 300);
+            if (isRestrictionViolated) {
+              console.warn(`⚠️ Track "${tracks[index].name}" is unavailable (region-locked or removed)`);
+              return false; // Unrecoverable error
+            }
             
-            // Retry playing
-            await playWithRetry(trackUri, retryCount + 1, maxRetries);
-          } else {
-            throw error;
+            // For other 403 errors, try to recover by re-transferring playback
+            if (retryCount < maxRetries) {
+              console.log(`🎵 Got 403 error while switching songs, retrying (attempt ${retryCount + 1}/${maxRetries})...`);
+              
+              // Re-transfer playback and wait
+              await spotifyPlayer.transferPlaybackToDevice();
+              await new Promise(resolve => setTimeout(resolve, 1000));
+              await spotifyPlayer.ensureDeviceIsActive(5, 300);
+              
+              // Retry playing
+              return await playWithRetry(trackUri, retryCount + 1, maxRetries);
+            }
           }
+          
+          throw error; // Other errors or max retries exceeded
         }
       };
 
-      await playWithRetry(tracks[index].uri);
+      const success = await playWithRetry(tracks[index].uri);
+      
+      if (!success) {
+        // Track is unavailable, skip to next if enabled
+        if (skipOnError && index < tracks.length - 1) {
+          console.log('🎵 Skipping unavailable track, moving to next...');
+          setTimeout(() => {
+            playTrack(index + 1, skipOnError);
+          }, 500);
+          return;
+        } else {
+          throw new Error(`Track "${tracks[index].name}" is unavailable for playback`);
+        }
+      }
+      
       setCurrentTrackIndex(index);
 
       // Wait before checking playback state and resuming if needed
@@ -112,6 +139,14 @@ export const useSpotifyPlayback = ({ tracks, setCurrentTrackIndex }: UseSpotifyP
 
     } catch (error) {
       console.error('Failed to play track:', error);
+      
+      // If skipOnError is enabled and we have more tracks, try the next one
+      if (skipOnError && index < tracks.length - 1) {
+        console.log('🎵 Error playing track, trying next track...');
+        setTimeout(() => {
+          playTrack(index + 1, skipOnError);
+        }, 500);
+      }
     }
   }, [tracks, setCurrentTrackIndex, handlePlaybackResume]);
 

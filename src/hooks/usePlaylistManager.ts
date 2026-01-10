@@ -80,7 +80,13 @@ export const usePlaylistManager = ({
       setCurrentTrackIndex(0);
 
       // Play the first track with retry logic for 403 errors
-      const playWithRetry = async (trackUri: string, retryCount = 0, maxRetries = 3) => {
+      const playWithRetry = async (trackIndex: number, retryCount = 0, maxRetries = 3): Promise<boolean> => {
+        const trackUri = fetchedTracks[trackIndex]?.uri;
+        if (!trackUri) {
+          console.error('No track URI at index', trackIndex);
+          return false;
+        }
+
         try {
           await spotifyPlayer.playTrack(trackUri);
           
@@ -97,24 +103,45 @@ export const usePlaylistManager = ({
               }
             })();
           }, 1000);
+          
+          return true; // Success
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : String(error);
           
           // Check if it's a 403 restriction error
-          if (errorMessage.includes('403') && retryCount < maxRetries) {
-            console.log(`🎵 Got 403 error, retrying (attempt ${retryCount + 1}/${maxRetries})...`);
+          if (errorMessage.includes('403')) {
+            // Check if it's specifically a "Restriction violated" error
+            const isRestrictionViolated = errorMessage.includes('Restriction violated');
             
-            // Re-transfer playback and wait longer
-            await spotifyPlayer.transferPlaybackToDevice();
-            await new Promise(resolve => setTimeout(resolve, 1500));
-            await spotifyPlayer.ensureDeviceIsActive();
+            if (isRestrictionViolated) {
+              console.warn(`⚠️ Track "${fetchedTracks[trackIndex]?.name}" is unavailable (region-locked or removed)`);
+              
+              // Try the next track if available
+              if (trackIndex < fetchedTracks.length - 1) {
+                console.log('🎵 Trying next track...');
+                setCurrentTrackIndex(trackIndex + 1);
+                return await playWithRetry(trackIndex + 1, 0, maxRetries);
+              }
+              
+              return false; // No more tracks to try
+            }
             
-            // Retry playing
-            await playWithRetry(trackUri, retryCount + 1, maxRetries);
-          } else {
-            console.error('Failed to start playback:', error);
-            throw error;
+            // For other 403 errors, try to recover
+            if (retryCount < maxRetries) {
+              console.log(`🎵 Got 403 error, retrying (attempt ${retryCount + 1}/${maxRetries})...`);
+              
+              // Re-transfer playback and wait longer
+              await spotifyPlayer.transferPlaybackToDevice();
+              await new Promise(resolve => setTimeout(resolve, 1500));
+              await spotifyPlayer.ensureDeviceIsActive();
+              
+              // Retry playing the same track
+              return await playWithRetry(trackIndex, retryCount + 1, maxRetries);
+            }
           }
+          
+          console.error('Failed to start playback:', error);
+          throw error;
         }
       };
 
@@ -123,7 +150,11 @@ export const usePlaylistManager = ({
         void (async () => {
           try {
             if (fetchedTracks.length > 0) {
-              await playWithRetry(fetchedTracks[0].uri);
+              const success = await playWithRetry(0); // Start with first track
+              if (!success) {
+                console.error('Failed to play any track from the playlist');
+                setError('Unable to play any tracks from this playlist. They may be unavailable in your region.');
+              }
             }
           } catch (error) {
             console.error('Failed to start playback after all retries:', error);
