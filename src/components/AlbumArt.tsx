@@ -74,7 +74,7 @@ const AlbumArtContainer = styled.div.withConfig({
   overflow: hidden;
   background: transparent;
   /* Accent color glow for floating effect */
-  ${({ accentColor, glowEnabled }) => {
+  ${({ accentColor, glowEnabled, glowIntensity }) => {
     // If glow is disabled, use simple shadow only
     if (glowEnabled === false) {
       return `
@@ -82,7 +82,26 @@ const AlbumArtContainer = styled.div.withConfig({
       `;
     }
 
-    // If glow is enabled (or not specified, for backwards compatibility)
+    // If glow is enabled with intensity > 0, use animated breathing glow
+    if (glowEnabled && glowIntensity && glowIntensity > 0 && accentColor) {
+      const [r, g, b] = hexToRgb(accentColor);
+      return `
+        box-shadow:
+          /* White edge for definition */
+          0 0 0 2px rgba(255, 255, 255, 0.4),
+          /* Animated accent color glow layers using CSS variable */
+          0 0 16px rgba(${r}, ${g}, ${b}, calc(0.6 * var(--glow-opacity, 1))),
+          0 0 32px rgba(${r}, ${g}, ${b}, calc(0.5 * var(--glow-opacity, 1))),
+          0 0 48px rgba(${r}, ${g}, ${b}, calc(0.4 * var(--glow-opacity, 1))),
+          0 0 72px rgba(${r}, ${g}, ${b}, calc(0.3 * var(--glow-opacity, 1))),
+          0 0 96px rgba(${r}, ${g}, ${b}, calc(0.2 * var(--glow-opacity, 1))),
+          /* Depth shadow */
+          0 8px 24px rgba(0, 0, 0, 0.5);
+        animation: breathe-border-glow var(--glow-rate, ${DEFAULT_GLOW_RATE}s) linear infinite;
+      `;
+    }
+
+    // If glow is enabled but intensity is 0, or not specified, use full static glow
     if (accentColor) {
       const [r, g, b] = hexToRgb(accentColor);
       return `
@@ -112,36 +131,6 @@ const AlbumArtContainer = styled.div.withConfig({
   border: none;
   z-index: ${theme.zIndex.docked};
   transition: box-shadow 0.5s ease;
-
-  /* Breathing border glow pseudo-element */
-  ${({ accentColor, glowIntensity, glowRate, glowEnabled }) => {
-    // Only render the breathing border when glow is enabled and intensity > 0
-    if (glowEnabled === false || !glowIntensity || glowIntensity === 0 || !accentColor) {
-      return '';
-    }
-
-    const [r, g, b] = hexToRgb(accentColor);
-    return `
-      &::after {
-        content: '';
-        position: absolute;
-        inset: 0;
-        border-radius: ${theme.borderRadius['3xl']};
-        pointer-events: none;
-        z-index: -1;
-        box-shadow:
-          0 0 0 2px rgba(255, 255, 255, 0.4),
-          0 0 16px rgba(${r}, ${g}, ${b}, 0.6),
-          0 0 32px rgba(${r}, ${g}, ${b}, 0.45),
-          0 0 48px rgba(${r}, ${g}, ${b}, 0.18),
-          0 0 72px rgba(${r}, ${g}, ${b}, 0.1),
-          0 8px 24px rgba(0, 0, 0, 0.5);
-        animation: breathe-border var(--glow-rate, ${glowRate || DEFAULT_GLOW_RATE}s) linear infinite;
-        will-change: opacity;
-        transform: translateZ(0);
-      }
-    `;
-  }}
 `;
 
 const arePropsEqual = (prevProps: AlbumArtProps, nextProps: AlbumArtProps): boolean => {
