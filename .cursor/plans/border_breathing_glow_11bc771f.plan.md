@@ -4,13 +4,13 @@ overview: Add a breathing glow animation to the album art border that synchroniz
 todos:
   - id: add-keyframes
     content: Add `@keyframes breathe-border` animation to glow-animations.css
-    status: pending
+    status: completed
   - id: add-pseudo-element
     content: Add `::after` pseudo-element with breathing animation to AlbumArtContainer
-    status: pending
+    status: completed
   - id: add-reduced-motion
     content: Update reduced-motion media query to include border animation
-    status: pending
+    status: completed
 ---
 
 # Border Breathing Glow Effect
