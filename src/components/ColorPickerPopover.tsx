@@ -30,15 +30,15 @@ const ControlButton = styled.button.withConfig({
 
   svg {
     width: ${({ $isMobile, $isTablet }) => {
-      if ($isMobile) return '1.25rem';
-      if ($isTablet) return '1.375rem';
-      return '1.5rem';
-    }};
+    if ($isMobile) return '1.25rem';
+    if ($isTablet) return '1.375rem';
+    return '1.5rem';
+  }};
     height: ${({ $isMobile, $isTablet }) => {
-      if ($isMobile) return '1.25rem';
-      if ($isTablet) return '1.375rem';
-      return '1.5rem';
-    }};
+    if ($isMobile) return '1.25rem';
+    if ($isTablet) return '1.375rem';
+    return '1.5rem';
+  }};
     fill: currentColor;
   }
 
@@ -47,16 +47,16 @@ const ControlButton = styled.button.withConfig({
     color: ${getContrastColor(accentColor)};
 
     &:hover {
-      background: ${accentColor}4D;
+      background: ${accentColor}DD;
       color: ${getContrastColor(accentColor)};
       transform: translateY(-1px);
     }
   ` : `
-    background: ${theme.colors.control.background};
+    background: ${accentColor}33;
     color: ${theme.colors.white};
 
     &:hover {
-      background: ${theme.colors.control.backgroundHover};
+      background: ${accentColor}4D;
       color: ${theme.colors.white};
       transform: translateY(-1px);
     }
