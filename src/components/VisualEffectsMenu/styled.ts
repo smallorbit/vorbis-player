@@ -1,5 +1,6 @@
 import styled from 'styled-components';
 import { theme } from '../../styles/theme';
+import { getContrastColor } from '../../utils/colorUtils';
 
 export const DrawerOverlay = styled.div<{ $isOpen: boolean }>`
   position: fixed;
@@ -186,7 +187,7 @@ export const OptionButtonGroup = styled.div`
 export const OptionButton = styled.button<{ $accentColor: string; $isActive: boolean }>`
   background: ${({ $isActive, $accentColor }: { $isActive: boolean; $accentColor: string }) => $isActive ? $accentColor : theme.colors.muted.background};
   border: 1px solid ${({ $isActive, $accentColor }: { $isActive: boolean; $accentColor: string }) => $isActive ? $accentColor : theme.colors.border};
-  color: ${({ $isActive }: { $isActive: boolean }) => $isActive ? theme.colors.black : theme.colors.muted.foreground};
+  color: ${({ $isActive, $accentColor }: { $isActive: boolean; $accentColor: string }) => $isActive ? getContrastColor($accentColor) : theme.colors.muted.foreground};
   padding: 0.375rem 0.75rem;
   border-radius: ${theme.borderRadius.sm};
   cursor: pointer;
@@ -198,7 +199,7 @@ export const OptionButton = styled.button<{ $accentColor: string; $isActive: boo
   &:hover {
     background: ${({ $isActive, $accentColor }: { $isActive: boolean; $accentColor: string }) => $isActive ? $accentColor + 'DD' : $accentColor + '22'};
     border-color: ${({ $accentColor }: { $accentColor: string }) => $accentColor};
-    color: ${({ $isActive }: { $isActive: boolean }) => $isActive ? theme.colors.black : theme.colors.white};
+    color: ${({ $isActive, $accentColor }: { $isActive: boolean; $accentColor: string }) => $isActive ? getContrastColor($accentColor) : theme.colors.white};
     transform: translateY(-1px);
   }
 `;

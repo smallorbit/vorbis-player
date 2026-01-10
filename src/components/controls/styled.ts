@@ -1,5 +1,6 @@
 import styled from 'styled-components';
 import { theme } from '../../styles/theme';
+import { getContrastColor } from '../../utils/colorUtils';
 
 // --- Main Container ---
 export const PlayerControlsContainer = styled.div<{ $isMobile: boolean; $isTablet: boolean }>`
@@ -168,7 +169,7 @@ export const ControlButton = styled.button.withConfig({
   }
 
   background: ${({ isActive, accentColor }: { isActive?: boolean; accentColor: string }) => isActive ? accentColor : theme.colors.control.background};
-  color: ${theme.colors.white};
+  color: ${({ isActive, accentColor }: { isActive?: boolean; accentColor: string }) => isActive ? getContrastColor(accentColor) : theme.colors.white};
     
   &:hover {
     background: ${({ isActive, accentColor }: { isActive?: boolean; accentColor: string }) => isActive ? `${accentColor}4D` : theme.colors.control.backgroundHover};
