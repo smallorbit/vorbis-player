@@ -25,6 +25,15 @@
   }
 }
 
+@keyframes breathe-border {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
 .glow-active {
   animation: pulse-glow var(--glow-rate) linear infinite;
   transform: translateZ(0);
@@ -55,6 +64,11 @@
     animation: none;
     transform: none;
     will-change: auto;
+  }
+
+  /* Disable border breathing animation for accessibility */
+  *::after {
+    animation: none !important;
   }
 }
 

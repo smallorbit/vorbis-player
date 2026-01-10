@@ -112,7 +112,36 @@ const AlbumArtContainer = styled.div.withConfig({
   border: none;
   z-index: ${theme.zIndex.docked};
   transition: box-shadow 0.5s ease;
-  
+
+  /* Breathing border glow pseudo-element */
+  ${({ accentColor, glowIntensity, glowRate, glowEnabled }) => {
+    // Only render the breathing border when glow is enabled and intensity > 0
+    if (glowEnabled === false || !glowIntensity || glowIntensity === 0 || !accentColor) {
+      return '';
+    }
+
+    const [r, g, b] = hexToRgb(accentColor);
+    return `
+      &::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        border-radius: ${theme.borderRadius['3xl']};
+        pointer-events: none;
+        z-index: -1;
+        box-shadow:
+          0 0 0 2px rgba(255, 255, 255, 0.4),
+          0 0 16px rgba(${r}, ${g}, ${b}, 0.6),
+          0 0 32px rgba(${r}, ${g}, ${b}, 0.45),
+          0 0 48px rgba(${r}, ${g}, ${b}, 0.18),
+          0 0 72px rgba(${r}, ${g}, ${b}, 0.1),
+          0 8px 24px rgba(0, 0, 0, 0.5);
+        animation: breathe-border var(--glow-rate, ${glowRate || DEFAULT_GLOW_RATE}s) linear infinite;
+        will-change: opacity;
+        transform: translateZ(0);
+      }
+    `;
+  }}
 `;
 
 const arePropsEqual = (prevProps: AlbumArtProps, nextProps: AlbumArtProps): boolean => {
