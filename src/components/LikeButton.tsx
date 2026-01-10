@@ -1,6 +1,7 @@
 import React, { memo, useCallback } from 'react';
 import styled, { keyframes, css } from 'styled-components';
 import { theme } from '../styles/theme';
+import { getContrastColor } from '../utils/colorUtils';
 
 // Define the component interface
 interface LikeButtonProps {
@@ -75,11 +76,11 @@ const StyledLikeButton = styled.button<{
   /* Styling for liked state - matching ControlButton active state */
   ${({ $isLiked, $accentColor }) => $isLiked ? css`
     background: ${$accentColor};
-    color: ${theme.colors.white};
+    color: ${getContrastColor($accentColor)};
 
     &:hover:not(:disabled) {
       background: ${$accentColor}4D;
-      color: ${theme.colors.white};
+      color: ${getContrastColor($accentColor)};
       transform: translateY(-1px);
     }
 

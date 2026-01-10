@@ -25,9 +25,9 @@ export const theme = {
     secondaryHover: '#646cff',
     
     // Accent colors
-    accent: '#fb923c',
-    accentHover: '#f59e0b',
-    accentDark: '#d97706',
+    accent: '#f5f5f0',
+    accentHover: '#ffffff',
+    accentDark: '#e8e8e0',
     
     // Status colors
     success: '#10b981',

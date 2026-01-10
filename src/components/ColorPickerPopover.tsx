@@ -6,6 +6,7 @@ import { extractTopVibrantColors } from '../utils/colorExtractor';
 import type { ExtractedColor } from '../utils/colorExtractor';
 import type { Track } from '../services/spotify';
 import { theme } from '../styles/theme';
+import { getContrastColor } from '../utils/colorUtils';
 
 const ControlButton = styled.button.withConfig({
   shouldForwardProp: (prop) => !['isActive', 'accentColor', '$isMobile', '$isTablet'].includes(prop),
@@ -43,11 +44,11 @@ const ControlButton = styled.button.withConfig({
 
   ${({ isActive, accentColor }: { isActive?: boolean; accentColor: string }) => isActive ? `
     background: ${accentColor};
-    color: ${theme.colors.white};
+    color: ${getContrastColor(accentColor)};
 
     &:hover {
       background: ${accentColor}4D;
-      color: ${theme.colors.white};
+      color: ${getContrastColor(accentColor)};
       transform: translateY(-1px);
     }
   ` : `
