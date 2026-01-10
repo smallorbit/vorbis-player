@@ -60,15 +60,15 @@ const StyledLikeButton = styled.button<{
   /* Responsive sizing matching other control buttons */
   svg {
     width: ${({ $isMobile, $isTablet }) => {
-      if ($isMobile) return '1.25rem';
-      if ($isTablet) return '1.375rem';
-      return '1.5rem';
-    }};
+    if ($isMobile) return '1.25rem';
+    if ($isTablet) return '1.375rem';
+    return '1.5rem';
+  }};
     height: ${({ $isMobile, $isTablet }) => {
-      if ($isMobile) return '1.25rem';
-      if ($isTablet) return '1.375rem';
-      return '1.5rem';
-    }};
+    if ($isMobile) return '1.25rem';
+    if ($isTablet) return '1.375rem';
+    return '1.5rem';
+  }};
     fill: currentColor;
     transition: all 0.2s ease;
   }
@@ -79,7 +79,7 @@ const StyledLikeButton = styled.button<{
     color: ${getContrastColor($accentColor)};
 
     &:hover:not(:disabled) {
-      background: ${$accentColor}4D;
+      background: ${$accentColor}DD;
       color: ${getContrastColor($accentColor)};
       transform: translateY(-1px);
     }
@@ -88,11 +88,11 @@ const StyledLikeButton = styled.button<{
       animation: ${heartBeat} 0.6s ease-in-out;
     }
   ` : css`
-    background: ${theme.colors.control.background};
+    background: ${$accentColor}33;
     color: ${theme.colors.white};
 
     &:hover:not(:disabled) {
-      background: ${theme.colors.control.backgroundHover};
+      background: ${$accentColor}4D;
       color: ${theme.colors.white};
       transform: translateY(-1px);
     }

@@ -168,11 +168,11 @@ export const ControlButton = styled.button.withConfig({
     fill: currentColor;
   }
 
-  background: ${({ isActive, accentColor }: { isActive?: boolean; accentColor: string }) => isActive ? accentColor : theme.colors.control.background};
+  background: ${({ isActive, accentColor }: { isActive?: boolean; accentColor: string }) => isActive ? accentColor : `${accentColor}33`};
   color: ${({ isActive, accentColor }: { isActive?: boolean; accentColor: string }) => isActive ? getContrastColor(accentColor) : theme.colors.white};
     
   &:hover {
-    background: ${({ isActive, accentColor }: { isActive?: boolean; accentColor: string }) => isActive ? `${accentColor}4D` : theme.colors.control.backgroundHover};
+    background: ${({ isActive, accentColor }: { isActive?: boolean; accentColor: string }) => isActive ? `${accentColor}DD` : `${accentColor}4D`};
   }
 `;
 
