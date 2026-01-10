@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React from 'react';
 import styled from 'styled-components';
 import { theme } from '@/styles/theme';
 import { usePlayerSizing } from '@/hooks/usePlayerSizing';
@@ -22,11 +22,11 @@ interface QuickActionsPanelProps {
   isVisible?: boolean;
 }
 
-const PanelWrapper = styled.div<{ $isOpen: boolean; $transitionDuration: number; $transitionEasing: string }>`
+const PanelWrapper = styled.div<{ $transitionDuration: number; $transitionEasing: string }>`
   position: absolute;
   top: 50%;
   left: 100%;
-  transform: translateY(-50%) translateX(${({ $isOpen }) => ($isOpen ? '0' : 'calc(-12px)')});
+  transform: translateY(-50%);
   transition: transform ${({ $transitionDuration }) => $transitionDuration}ms ${({ $transitionEasing }) => $transitionEasing};
   z-index: ${theme.zIndex.popover};
 `;
@@ -45,20 +45,6 @@ const PanelContainer = styled.div`
   border-bottom-right-radius: ${theme.borderRadius.lg};
   box-shadow: 0 4px 20px rgba(0,0,0,0.35);
   backdrop-filter: blur(${theme.drawer.backdropBlur});
-`;
-
-const ToggleHandle = styled.button<{ $accentColor: string }>`
-  position: absolute;
-  top: 50%;
-  left: -12px;
-  transform: translateY(-50%);
-  width: 12px;
-  height: 48px;
-  border: none;
-  border-top-left-radius: ${theme.borderRadius.md};
-  border-bottom-left-radius: ${theme.borderRadius.md};
-  background: ${({ $accentColor }) => $accentColor};
-  cursor: pointer;
 `;
 
 const DebugSection = styled.div`
@@ -94,9 +80,6 @@ export const QuickActionsPanel: React.FC<QuickActionsPanelProps> = ({
 }) => {
   const { isMobile, isTablet, transitionDuration, transitionEasing } = usePlayerSizing();
 
-  const defaultOpen = useMemo(() => !isMobile, [isMobile]);
-  const [isOpen, setIsOpen] = useState<boolean>(defaultOpen);
-
   const { customAccentColorOverrides, handleCustomAccentColor, handleAccentColorChange } = useCustomAccentColors({
     currentTrackId: currentTrack?.id,
     onAccentColorChange
@@ -105,7 +88,7 @@ export const QuickActionsPanel: React.FC<QuickActionsPanelProps> = ({
   if (!isVisible) return null;
 
   return (
-    <PanelWrapper $isOpen={isOpen} $transitionDuration={transitionDuration} $transitionEasing={transitionEasing} onClick={(e) => e.stopPropagation()}>
+    <PanelWrapper $transitionDuration={transitionDuration} $transitionEasing={transitionEasing} onClick={(e) => e.stopPropagation()}>
       <PanelContainer>
         {onBackToLibrary && (
           <ControlButton
@@ -116,10 +99,10 @@ export const QuickActionsPanel: React.FC<QuickActionsPanelProps> = ({
             title="Back to Library"
           >
             <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <rect x="3" y="3" width="7" height="7" rx="1" stroke="currentColor" strokeWidth="2"/>
-              <rect x="3" y="14" width="7" height="7" rx="1" stroke="currentColor" strokeWidth="2"/>
-              <rect x="14" y="3" width="7" height="7" rx="1" stroke="currentColor" strokeWidth="2"/>
-              <rect x="14" y="14" width="7" height="7" rx="1" stroke="currentColor" strokeWidth="2"/>
+              <rect x="3" y="3" width="7" height="7" rx="1" stroke="currentColor" strokeWidth="2" />
+              <rect x="3" y="14" width="7" height="7" rx="1" stroke="currentColor" strokeWidth="2" />
+              <rect x="14" y="3" width="7" height="7" rx="1" stroke="currentColor" strokeWidth="2" />
+              <rect x="14" y="14" width="7" height="7" rx="1" stroke="currentColor" strokeWidth="2" />
             </svg>
           </ControlButton>
         )}
@@ -174,8 +157,6 @@ export const QuickActionsPanel: React.FC<QuickActionsPanelProps> = ({
           </DebugSection>
         )}
       </PanelContainer>
-
-      <ToggleHandle $accentColor={accentColor} aria-label={isOpen ? 'Collapse quick actions' : 'Expand quick actions'} onClick={() => setIsOpen(v => !v)} />
     </PanelWrapper>
   );
 };
