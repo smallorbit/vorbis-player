@@ -71,17 +71,37 @@ const AlbumArtContainer = styled.div.withConfig({
   margin: 0 auto;
   overflow: hidden;
   background: transparent;
-  /* Enhanced shadow for better contrast against backgrounds */
-  /* Reduced downward shadow spread to prevent overlap with track info */
-  box-shadow: 
-    0 8px 24px rgba(0, 0, 0, 0.85),
-    0 4px 12px rgba(0, 0, 0, 0.75),
-    0 2px 6px rgba(0, 0, 0, 0.65),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1);
-  /* Subtle border for definition */
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  /* Accent color glow for floating effect */
+  ${({ accentColor }) => {
+    if (accentColor) {
+      const [r, g, b] = hexToRgb(accentColor);
+      return `
+        box-shadow: 
+          /* White edge for definition */
+          0 0 0 2px rgba(255, 255, 255, 0.4),
+          /* Accent color inner glow */
+          0 0 16px rgba(${r}, ${g}, ${b}, 0.6),
+          0 0 32px rgba(${r}, ${g}, ${b}, 0.45),
+          /* Accent color wide glow - subtle */
+          0 0 48px rgba(${r}, ${g}, ${b}, 0.18),
+          0 0 72px rgba(${r}, ${g}, ${b}, 0.1),
+          /* Depth shadow */
+          0 8px 24px rgba(0, 0, 0, 0.5);
+      `;
+    }
+    return `
+      box-shadow: 
+        0 0 0 2px rgba(255, 255, 255, 0.5),
+        0 0 16px rgba(255, 255, 255, 0.4),
+        0 0 32px rgba(255, 255, 255, 0.3),
+        0 0 48px rgba(255, 255, 255, 0.2),
+        0 0 64px rgba(255, 255, 255, 0.1),
+        0 8px 24px rgba(0, 0, 0, 0.5);
+    `;
+  }}
+  border: none;
   z-index: ${theme.zIndex.docked};
-  transition: box-shadow 0.3s ease, border-color 0.3s ease;
+  transition: box-shadow 0.5s ease;
   
 `;
 

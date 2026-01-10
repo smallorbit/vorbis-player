@@ -287,7 +287,7 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
 
   // Controls visibility state (default: hidden)
   const [controlsVisible, setControlsVisible] = useState(true);
-  
+
   // Help modal state
   const [showHelp, setShowHelp] = useState(false);
 
