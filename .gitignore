@@ -60,3 +60,4 @@ Thumbs.db
 
 .env
 .cursor/commands/
+.cursor/plans/
