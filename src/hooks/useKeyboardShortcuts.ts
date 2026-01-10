@@ -17,6 +17,7 @@
   * - ArrowDown: Volume down (placeholder)
   * - D: Toggle debug mode
   * - L: Like/Unlike track
+  * - H: Toggle controls visibility
   */
 
 import { useEffect } from 'react';
@@ -50,6 +51,7 @@ export interface KeyboardShortcutHandlers {
   onVolumeUp?: () => void;
   onVolumeDown?: () => void;
   onToggleLike?: () => void;
+  onToggleControls?: () => void;
 }
 
 interface UseKeyboardShortcutsOptions {
@@ -84,6 +86,7 @@ export const useKeyboardShortcuts = (
     onVolumeUp,
     onVolumeDown,
     onToggleLike,
+    onToggleControls,
   } = handlers;
 
   useEffect(() => {
@@ -179,6 +182,14 @@ export const useKeyboardShortcuts = (
           }
           break;
 
+        case 'KeyH':
+          // H toggles controls visibility
+          if (!event.ctrlKey && !event.metaKey) {
+            event.preventDefault();
+            onToggleControls?.();
+          }
+          break;
+
         case 'ArrowUp':
           // Prevent default only if we have a handler
           if (onVolumeUp) {
@@ -223,6 +234,7 @@ export const useKeyboardShortcuts = (
     onVolumeUp,
     onVolumeDown,
     onToggleLike,
+    onToggleControls,
     options.enableDebugMode,
   ]);
 };

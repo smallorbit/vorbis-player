@@ -338,7 +338,8 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
     onToggleGlow: handlers.onGlowToggle,
     onMute: handlers.onMuteToggle,
     onToggleLike: handlers.onToggleLike,
-    onToggleHelp: toggleHelp
+    onToggleHelp: toggleHelp,
+    onToggleControls: toggleControls
   });
 
   return (
