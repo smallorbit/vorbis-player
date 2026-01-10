@@ -26,7 +26,7 @@
 - `KeyboardShortcutsIntegration.test.tsx` (functional, can be expanded)
 
 ### Documentation Updated
-- Added "Testing & Test Coverage" section to `docs/development/CLAUDE.md`
+- Added "Testing & Test Coverage" section to `CLAUDE.md` (root directory)
 - Created `DOCUMENTATION_AUDIT.md` with full audit results
 
 ### Branch & PR

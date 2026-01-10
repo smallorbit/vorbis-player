@@ -1,6 +1,7 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
+import * as React from 'react';
 import styled from 'styled-components';
-import { getUserPlaylists, getUserAlbums, getLikedSongs, type PlaylistInfo, type AlbumInfo, spotifyAuth } from '../services/spotify';
+import { getUserPlaylists, getUserAlbums, getLikedSongsCount, getCachedData, type PlaylistInfo, type AlbumInfo, spotifyAuth } from '../services/spotify';
 import { Card, CardHeader, CardContent } from './styled';
 import { Button } from './styled';
 import { Skeleton } from './styled';
@@ -167,23 +168,60 @@ const TabButton = styled.button<{ $active: boolean }>`
   }
 `;
 
-const PlaylistImage: React.FC<{ images: { url: string; width: number | null; height: number | null }[]; alt: string }> = ({ images, alt }) => {
-  const imageUrl = selectOptimalImage(images, 64);
+const PlaylistImage: React.FC<{ images: { url: string; width: number | null; height: number | null }[]; alt: string }> = React.memo(({ images, alt }) => {
+  const [imageUrl, setImageUrl] = useState<string | undefined>(undefined);
+  const [isVisible, setIsVisible] = useState(false);
+  const imgRef = useRef<HTMLDivElement>(null);
+
+  // Use Intersection Observer for better lazy loading
+  useEffect(() => {
+    if (!imgRef.current) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setIsVisible(true);
+            observer.disconnect();
+          }
+        });
+      },
+      {
+        rootMargin: '50px', // Start loading 50px before entering viewport
+        threshold: 0.01
+      }
+    );
+
+    observer.observe(imgRef.current);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, []);
+
+  // Only select and set image URL when visible
+  useEffect(() => {
+    if (isVisible && images) {
+      const optimalUrl = selectOptimalImage(images, 64);
+      setImageUrl(optimalUrl);
+    }
+  }, [isVisible, images]);
 
   return (
-    <PlaylistImageWrapper>
+    <PlaylistImageWrapper ref={imgRef}>
       {imageUrl ? (
         <img
           src={imageUrl}
           alt={alt}
           loading="lazy"
+          decoding="async"
         />
       ) : (
         <span style={{ fontSize: '1.5rem' }}>🎵</span>
       )}
     </PlaylistImageWrapper>
   );
-};
+});
 
 const PlaylistSelection: React.FC<PlaylistSelectionProps> = ({ onPlaylistSelect }) => {
   // Load view mode from localStorage, default to 'playlists'
@@ -214,9 +252,11 @@ const PlaylistSelection: React.FC<PlaylistSelectionProps> = ({ onPlaylistSelect 
   }, [viewMode]);
 
   useEffect(() => {
+    const abortController = new AbortController();
+    let isMounted = true;
+
     const checkAuthAndFetchPlaylists = async () => {
       try {
-        setIsLoading(true);
         setError(null);
 
         // Check if user is authenticated
@@ -228,37 +268,111 @@ const PlaylistSelection: React.FC<PlaylistSelectionProps> = ({ onPlaylistSelect 
 
         setIsAuthenticated(true);
 
-        // Fetch playlists, albums, and liked songs count in parallel
-        const [userPlaylists, userAlbums, likedSongs] = await Promise.all([
-          getUserPlaylists(),
-          getUserAlbums(),
-          getLikedSongs(1) // Just fetch one to get count without loading all
-        ]);
+        // PROGRESSIVE LOADING: Try to load cached data first for instant display
+        // Load cached data immediately if available
+        const cachedPlaylists = getCachedData<PlaylistInfo[]>('playlists');
+        const cachedAlbums = getCachedData<AlbumInfo[]>('albums');
 
-        if (userPlaylists.length === 0 && userAlbums.length === 0 && likedSongs.length === 0) {
-          setError("No playlists, albums, or liked songs found. Please create some playlists, save some albums, or like some songs in Spotify first.");
+        if (cachedPlaylists && isMounted) {
+          setPlaylists(cachedPlaylists);
+          setIsLoading(false); // Show UI immediately with cached data
         } else {
-          setPlaylists(userPlaylists);
-          setAlbums(userAlbums);
-          // Get actual count from API
-          const token = await spotifyAuth.ensureValidToken();
-          const response = await fetch('https://api.spotify.com/v1/me/tracks?limit=1', {
-            headers: { 'Authorization': `Bearer ${token}` }
-          });
-          if (response.ok) {
-            const data = await response.json();
-            setLikedSongsCount(data.total);
+          setIsLoading(true);
+        }
+
+        if (cachedAlbums && isMounted) {
+          setAlbums(cachedAlbums);
+        }
+
+        // Fetch fresh data in the background (non-blocking)
+        const fetchFreshData = async () => {
+          try {
+            // Fetch playlists, albums, and liked songs count in parallel
+            // Pass abort signal to enable request cancellation
+            const [userPlaylists, userAlbums] = await Promise.all([
+              getUserPlaylists(abortController.signal),
+              getUserAlbums(abortController.signal),
+            ]);
+
+            // Only update state if component is still mounted
+            if (!isMounted) return;
+
+            // Update with fresh data
+            setPlaylists(userPlaylists);
+            setAlbums(userAlbums);
+
+            // Get liked songs count (lightweight request)
+            let likedSongsCount = 0;
+            try {
+              likedSongsCount = await getLikedSongsCount(abortController.signal);
+              if (isMounted) {
+                setLikedSongsCount(likedSongsCount);
+              }
+            } catch (err) {
+              // Ignore abort errors - they're expected on unmount
+              if (err instanceof DOMException && err.name === 'AbortError') {
+                return;
+              }
+              console.warn('Failed to fetch liked songs count:', err);
+              // Don't fail the whole load if this fails
+            }
+
+            // Check for empty state AFTER fetching liked songs count
+            // Only show error if we have no playlists, albums, AND no liked songs
+            if (userPlaylists.length === 0 && userAlbums.length === 0 && likedSongsCount === 0) {
+              // Only show error if we don't have cached data showing
+              if (!cachedPlaylists && !cachedAlbums && isMounted) {
+                setError("No playlists, albums, or liked songs found. Please create some playlists, save some albums, or like some songs in Spotify first.");
+              }
+            } else if (isMounted) {
+              // Clear error if we have any content (playlists, albums, or liked songs)
+              setError(null);
+            }
+          } catch (err) {
+            // Ignore abort errors - they're expected on unmount
+            if (err instanceof DOMException && err.name === 'AbortError') {
+              return;
+            }
+            if (abortController.signal.aborted) return;
+            console.error('Failed to fetch playlists:', err);
+            // Only show error if we don't have cached data to display
+            if (!cachedPlaylists && !cachedAlbums && isMounted) {
+              setError(err instanceof Error ? err.message : 'Failed to load playlists');
+            }
+          } finally {
+            if (isMounted) {
+              setIsLoading(false);
+            }
           }
+        };
+
+        // If we have cached data, fetch fresh data in background
+        // Otherwise, wait for fresh data
+        if (cachedPlaylists || cachedAlbums) {
+          fetchFreshData(); // Non-blocking background refresh
+        } else {
+          await fetchFreshData(); // Blocking initial load
         }
       } catch (err) {
-        console.error('Failed to fetch playlists:', err);
-        setError(err instanceof Error ? err.message : 'Failed to load playlists');
-      } finally {
-        setIsLoading(false);
+        // Ignore abort errors - they're expected on unmount
+        if (err instanceof DOMException && err.name === 'AbortError') {
+          return;
+        }
+        if (abortController.signal.aborted) return;
+        console.error('Failed to initialize:', err);
+        if (isMounted) {
+          setError(err instanceof Error ? err.message : 'Failed to load playlists');
+          setIsLoading(false);
+        }
       }
     };
 
     checkAuthAndFetchPlaylists();
+
+    return () => {
+      isMounted = false;
+      abortController.abort();
+    };
   }, []);
 
   const handlePlaylistClick = (playlist: PlaylistInfo) => {

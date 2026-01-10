@@ -35,6 +35,10 @@ This file provides guidance to Claude Code (claude.ai/code) and other AI assista
 - **Loading Performance**: 30-40% faster initial load times with resource preloading and caching
 - **Color Extraction**: 50-60% faster track transitions with intelligent caching system in `colorExtractor.ts`
 - **Memory Usage**: 20-30% reduction in memory footprint through optimized animations and worker processing
+- **Playlist Selection Progressive Loading**: Near-instant display of cached playlist/album data with background refresh in `PlaylistSelection.tsx`
+- **Image Lazy Loading**: Intersection Observer-based image loading for playlist/album artwork (50px viewport margin)
+- **Request Cancellation**: AbortController implementation prevents memory leaks and unnecessary network requests on component unmount
+- **Optimized API Calls**: Separate `getLikedSongsCount()` function for lightweight count-only requests
 
 ### 🎨 UI/UX Improvements
 - **Updated Screenshots**: New interface screenshots showing current design
@@ -114,10 +118,10 @@ vorbis-player/
 │   └── test/                # Test setup
 ├── docs/
 │   ├── development/         # Developer documentation
-│   │   ├── CLAUDE.md        # This file
 │   │   └── ai-agent-wip.md  # Current work tracking
 │   ├── deployment/          # Deployment guides
 │   └── analysis/            # Analysis documents
+├── CLAUDE.md                # This file (AI assistant guidance - root directory per Anthropic best practices)
 ├── .claude/
 │   └── rules/               # AI workflow rules
 │       ├── generate_prd.md
@@ -491,8 +495,11 @@ import { extractColors } from '@/utils/colorExtractor'
 
 ### Implemented Optimizations
 - **Color Extraction Caching**: LRU cache in `colorExtractor.ts` with 100 item limit for 50-60% faster transitions
-- **Component Memoization**: React.memo applied to heavy components like AlbumArt and VisualEffectsMenu
+- **Component Memoization**: React.memo applied to heavy components like AlbumArt, VisualEffectsMenu, and PlaylistImage
 - **Lazy Loading**: VisualEffectsMenu and other heavy components loaded on-demand
+- **Progressive Loading**: PlaylistSelection shows cached data immediately, then refreshes in background (see `getCachedData()` in `spotify.ts`)
+- **Intersection Observer**: Image lazy loading in PlaylistSelection with 50px viewport margin for optimal performance
+- **Request Cancellation**: AbortController pattern prevents memory leaks and unnecessary API calls
 - **Resource Hints**: DNS prefetch and preconnect for Spotify API and image CDNs
 - **Bundle Optimization**: Code splitting and tree-shaking for reduced bundle size
 
@@ -753,7 +760,7 @@ describe('useKeyboardShortcuts', () => {
 - `/comdoc` - Update README.md, then commit changes (/doc + /commit in that order)
 
 ### Documentation Updates
-- Update `docs/development/CLAUDE.md` (this file) when adding new patterns, conventions, or architectural decisions
+- Update `CLAUDE.md` (this file, in root directory) when adding new patterns, conventions, or architectural decisions
 - Update `docs/development/ai-agent-wip.md` with current progress and task status
 - Update `README.md` for user-facing features and setup instructions
 

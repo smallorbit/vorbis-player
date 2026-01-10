@@ -520,7 +520,16 @@ export function clearLibraryCache() {
   console.log('🗑️ Library cache cleared');
 }
 
-export const getUserPlaylists = async (): Promise<PlaylistInfo[]> => {
+// Export cache utilities for progressive loading
+export function getCachedData<T>(key: string): T | null {
+  const cached = getCacheFromStorage<T>(key);
+  if (isCacheValid(cached)) {
+    return cached.data;
+  }
+  return null;
+}
+
+export const getUserPlaylists = async (signal?: AbortSignal): Promise<PlaylistInfo[]> => {
   // Check localStorage cache first
   const cachedPlaylists = getCacheFromStorage<PlaylistInfo[]>('playlists');
 
@@ -537,10 +546,16 @@ export const getUserPlaylists = async (): Promise<PlaylistInfo[]> => {
   let nextUrl = 'https://api.spotify.com/v1/me/playlists?limit=50';
 
   while (nextUrl) {
+    // Check if request was aborted before each fetch
+    if (signal?.aborted) {
+      throw new DOMException('Request aborted', 'AbortError');
+    }
+
     const response = await fetch(nextUrl, {
       headers: {
         'Authorization': `Bearer ${token}`,
       },
+      signal,
     });
 
     if (!response.ok) {
@@ -569,7 +584,7 @@ export const getUserPlaylists = async (): Promise<PlaylistInfo[]> => {
   return playlists;
 };
 
-export const getUserAlbums = async (): Promise<AlbumInfo[]> => {
+export const getUserAlbums = async (signal?: AbortSignal): Promise<AlbumInfo[]> => {
   // Check localStorage cache first
   const cachedAlbums = getCacheFromStorage<AlbumInfo[]>('albums');
 
@@ -586,10 +601,16 @@ export const getUserAlbums = async (): Promise<AlbumInfo[]> => {
   let nextUrl = 'https://api.spotify.com/v1/me/albums?limit=50';
 
   while (nextUrl) {
+    // Check if request was aborted before each fetch
+    if (signal?.aborted) {
+      throw new DOMException('Request aborted', 'AbortError');
+    }
+
     const response = await fetch(nextUrl, {
       headers: {
         'Authorization': `Bearer ${token}`,
       },
+      signal,
     });
 
     if (!response.ok) {
@@ -838,6 +859,21 @@ export const unsaveTrack = async (trackId: string): Promise<void> => {
   if (!response.ok) {
     throw new Error(`Failed to unsave track: ${response.status}`);
   }
+};
+
+export const getLikedSongsCount = async (signal?: AbortSignal): Promise<number> => {
+  const token = await spotifyAuth.ensureValidToken();
+  const response = await fetch('https://api.spotify.com/v1/me/tracks?limit=1', {
+    headers: { 'Authorization': `Bearer ${token}` },
+    signal,
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch liked songs count: ${response.status} ${response.statusText}`);
+  }
+
+  const data = await response.json();
+  return data.total || 0;
 };
 
 export const getLikedSongs = async (limit: number = 50): Promise<Track[]> => {
