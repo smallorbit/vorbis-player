@@ -239,8 +239,8 @@ export const PlayerStateRenderer: React.FC<PlayerStateRendererProps> = ({
           <LoadingContainer>
             <SpotifyIcon />
             <LoadingText>
-              <LoadingTitle>Loading Playlists</LoadingTitle>
-              <LoadingSubtext>Discovering your music collection</LoadingSubtext>
+              <LoadingTitle>Loading Your Library</LoadingTitle>
+              <LoadingSubtext>Discovering your playlists and albums</LoadingSubtext>
             </LoadingText>
             <ProgressBar />
           </LoadingContainer>

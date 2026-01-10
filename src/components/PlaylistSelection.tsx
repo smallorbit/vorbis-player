@@ -417,7 +417,7 @@ const PlaylistSelection: React.FC<PlaylistSelectionProps> = ({ onPlaylistSelect 
               <Skeleton style={{ height: '60px' }} />
               <Skeleton style={{ height: '60px' }} />
               <Skeleton style={{ height: '60px' }} />
-              <p style={{ textAlign: 'center', color: 'white' }}>Loading your playlists...</p>
+              <p style={{ textAlign: 'center', color: 'white' }}>Loading your library...</p>
             </LoadingState>
           )}
 
