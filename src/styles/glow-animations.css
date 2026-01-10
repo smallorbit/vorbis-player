@@ -4,6 +4,13 @@
   --glow-intensity: 50;
   --glow-rate: 3.5s;
   --accent-rgb: 0, 0, 0;
+  --glow-opacity: 1;
+}
+
+@property --glow-opacity {
+  syntax: '<number>';
+  initial-value: 1;
+  inherits: true;
 }
 
 .glow-container {
@@ -22,6 +29,24 @@
     filter: brightness(0.9);
     opacity: calc(var(--glow-intensity) / 100);
     transform: translateZ(0);
+  }
+}
+
+@keyframes breathe-border {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}
+
+@keyframes breathe-border-glow {
+  0%, 100% {
+    --glow-opacity: 1;
+  }
+  50% {
+    --glow-opacity: 0.2;
   }
 }
 
@@ -55,6 +80,11 @@
     animation: none;
     transform: none;
     will-change: auto;
+  }
+
+  /* Disable border breathing animation for accessibility */
+  * {
+    animation-name: none !important;
   }
 }
 
