@@ -94,7 +94,7 @@ const AlbumArtContainer = styled.div.withConfig({
           0 0 32px rgba(${r}, ${g}, ${b}, calc(0.5 * var(--glow-opacity, 1))),
           0 0 48px rgba(${r}, ${g}, ${b}, calc(0.4 * var(--glow-opacity, 1))),
           0 0 72px rgba(${r}, ${g}, ${b}, calc(0.3 * var(--glow-opacity, 1))),
-          0 0 96px rgba(${r}, ${g}, ${b}, calc(0.2 * var(--glow-opacity, 1))),
+        
           /* Depth shadow */
           0 8px 24px rgba(0, 0, 0, 0.5);
         animation: breathe-border-glow var(--glow-rate, ${DEFAULT_GLOW_RATE}s) linear infinite;
@@ -108,12 +108,10 @@ const AlbumArtContainer = styled.div.withConfig({
         box-shadow:
           /* White edge for definition */
           0 0 0 2px rgba(255, 255, 255, 0.4),
-          /* Accent color inner glow */
-          0 0 16px rgba(${r}, ${g}, ${b}, 0.6),
-          0 0 32px rgba(${r}, ${g}, ${b}, 0.45),
-          /* Accent color wide glow - subtle */
-          0 0 48px rgba(${r}, ${g}, ${b}, 0.18),
-          0 0 72px rgba(${r}, ${g}, ${b}, 0.1),
+          /* Accent color inner glow - more contained */
+          0 0 16px rgba(${r}, ${g}, ${b}, 0.7),
+          0 0 32px rgba(${r}, ${g}, ${b}, 0.5),
+          0 0 48px rgba(${r}, ${g}, ${b}, 0.25),
           /* Depth shadow */
           0 8px 24px rgba(0, 0, 0, 0.5);
       `;
@@ -121,10 +119,9 @@ const AlbumArtContainer = styled.div.withConfig({
     return `
       box-shadow:
         0 0 0 2px rgba(255, 255, 255, 0.5),
-        0 0 16px rgba(255, 255, 255, 0.4),
-        0 0 32px rgba(255, 255, 255, 0.3),
+        0 0 16px rgba(255, 255, 255, 0.5),
+        0 0 32px rgba(255, 255, 255, 0.4),
         0 0 48px rgba(255, 255, 255, 0.2),
-        0 0 64px rgba(255, 255, 255, 0.1),
         0 8px 24px rgba(0, 0, 0, 0.5);
     `;
   }}
