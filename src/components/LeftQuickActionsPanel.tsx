@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React from 'react';
 import styled from 'styled-components';
 import { theme } from '@/styles/theme';
 import { usePlayerSizing } from '@/hooks/usePlayerSizing';
@@ -13,11 +13,11 @@ interface LeftQuickActionsPanelProps {
   isVisible?: boolean;
 }
 
-const PanelWrapper = styled.div<{ $isOpen: boolean; $transitionDuration: number; $transitionEasing: string }>`
+const PanelWrapper = styled.div<{ $transitionDuration: number; $transitionEasing: string }>`
   position: absolute;
   top: 50%;
   right: 100%;
-  transform: translateY(-50%) translateX(${({ $isOpen }) => ($isOpen ? '0' : '12px')});
+  transform: translateY(-50%);
   transition: transform ${({ $transitionDuration }) => $transitionDuration}ms ${({ $transitionEasing }) => $transitionEasing};
   z-index: ${theme.zIndex.popover};
 `;
@@ -38,20 +38,6 @@ const PanelContainer = styled.div`
   backdrop-filter: blur(${theme.drawer.backdropBlur});
 `;
 
-const ToggleHandle = styled.button<{ $accentColor: string }>`
-  position: absolute;
-  top: 50%;
-  right: -12px;
-  transform: translateY(-50%);
-  width: 12px;
-  height: 48px;
-  border: none;
-  border-top-right-radius: ${theme.borderRadius.md};
-  border-bottom-right-radius: ${theme.borderRadius.md};
-  background: ${({ $accentColor }) => $accentColor};
-  cursor: pointer;
-`;
-
 export const LeftQuickActionsPanel: React.FC<LeftQuickActionsPanelProps> = ({
   accentColor,
   glowEnabled,
@@ -62,13 +48,10 @@ export const LeftQuickActionsPanel: React.FC<LeftQuickActionsPanelProps> = ({
 }) => {
   const { isMobile, isTablet, transitionDuration, transitionEasing } = usePlayerSizing();
 
-  const defaultOpen = useMemo(() => !isMobile, [isMobile]);
-  const [isOpen, setIsOpen] = useState<boolean>(defaultOpen);
-
   if (!isVisible) return null;
 
   return (
-    <PanelWrapper $isOpen={isOpen} $transitionDuration={transitionDuration} $transitionEasing={transitionEasing} onClick={(e) => e.stopPropagation()}>
+    <PanelWrapper $transitionDuration={transitionDuration} $transitionEasing={transitionEasing} onClick={(e) => e.stopPropagation()}>
       <PanelContainer>
         <ControlButton
           $isMobile={isMobile}
@@ -99,8 +82,6 @@ export const LeftQuickActionsPanel: React.FC<LeftQuickActionsPanelProps> = ({
           </ControlButton>
         )}
       </PanelContainer>
-
-      <ToggleHandle $accentColor={accentColor} aria-label={isOpen ? 'Collapse quick actions' : 'Expand quick actions'} onClick={() => setIsOpen(v => !v)} />
     </PanelWrapper>
   );
 };
