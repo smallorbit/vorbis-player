@@ -51,7 +51,7 @@ export const TrackInfoOnlyRow = styled.div`
   text-align: center;
   gap: ${({ theme }) => theme.spacing.xs};
   padding: ${({ theme }) => `${theme.spacing.sm} ${theme.spacing.md}`};
-  margin-bottom: ${({ theme }) => theme.spacing.sm};
+  margin-bottom: ${({ theme }) => theme.spacing.md};
   margin-top: ${({ theme }) => theme.spacing.md};
   position: relative;
   z-index: 10;
