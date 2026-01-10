@@ -13,12 +13,56 @@ if (typeof window !== 'undefined') {
   };
 }
 
-export class SpotifyPlayerService {
-  private player: SpotifyPlayer | null = null;
-  private deviceId: string | null = null;
-  private isReady = false;
+// HMR-safe storage for player state
+interface HMRPlayerState {
+  player: SpotifyPlayer | null;
+  deviceId: string | null;
+  isReady: boolean;
+}
 
-  constructor() {}
+// Use Vite's HMR data API to preserve state across hot reloads
+const getHMRState = (): HMRPlayerState => {
+  if (import.meta.hot?.data.playerState) {
+    console.log('🔥 Restoring player state from HMR');
+    return import.meta.hot.data.playerState;
+  }
+  return {
+    player: null,
+    deviceId: null,
+    isReady: false
+  };
+};
+
+const saveHMRState = (state: HMRPlayerState) => {
+  if (import.meta.hot) {
+    import.meta.hot.data.playerState = state;
+  }
+};
+
+export class SpotifyPlayerService {
+  private player: SpotifyPlayer | null;
+  private deviceId: string | null;
+  private isReady: boolean;
+
+  constructor() {
+    // Restore state from HMR if available
+    const hmrState = getHMRState();
+    this.player = hmrState.player;
+    this.deviceId = hmrState.deviceId;
+    this.isReady = hmrState.isReady;
+
+    if (this.isReady) {
+      console.log('🔥 Player was already ready, device ID:', this.deviceId);
+    }
+  }
+
+  private saveState() {
+    saveHMRState({
+      player: this.player,
+      deviceId: this.deviceId,
+      isReady: this.isReady
+    });
+  }
 
   async initialize(): Promise<void> {
     if (!spotifyAuth.isAuthenticated()) {
@@ -79,11 +123,13 @@ export class SpotifyPlayerService {
       console.log('🎵 Spotify player ready with device ID:', device_id);
       this.deviceId = device_id;
       this.isReady = true;
+      this.saveState();
     });
 
     this.player.addListener('not_ready', ({ device_id }: { device_id: string }) => {
       console.log('Device ID has gone offline', device_id);
       this.isReady = false;
+      this.saveState();
     });
 
     this.player.addListener('initialization_error', ({ message }: { message: string }) => {
@@ -104,6 +150,7 @@ export class SpotifyPlayerService {
     });
 
     this.player.connect();
+    this.saveState();
   }
 
   async playTrack(uri: string): Promise<void> {
@@ -226,6 +273,7 @@ export class SpotifyPlayerService {
       this.player = null;
       this.deviceId = null;
       this.isReady = false;
+      this.saveState();
     }
     // Clear the global callback
     spotifySDKReadyCallback = null;
