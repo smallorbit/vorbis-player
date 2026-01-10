@@ -4,6 +4,13 @@
   --glow-intensity: 50;
   --glow-rate: 3.5s;
   --accent-rgb: 0, 0, 0;
+  --glow-opacity: 1;
+}
+
+@property --glow-opacity {
+  syntax: '<number>';
+  initial-value: 1;
+  inherits: true;
 }
 
 .glow-container {
@@ -30,7 +37,16 @@
     opacity: 1;
   }
   50% {
-    opacity: 0.5;
+    opacity: 0;
+  }
+}
+
+@keyframes breathe-border-glow {
+  0%, 100% {
+    --glow-opacity: 1;
+  }
+  50% {
+    --glow-opacity: 0.2;
   }
 }
 
@@ -67,8 +83,8 @@
   }
 
   /* Disable border breathing animation for accessibility */
-  *::after {
-    animation: none !important;
+  * {
+    animation-name: none !important;
   }
 }
 
