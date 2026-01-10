@@ -19,7 +19,8 @@ const PanelWrapper = styled.div<{ $transitionDuration: number; $transitionEasing
   right: 100%;
   transform: translateY(-50%);
   transition: transform ${({ $transitionDuration }) => $transitionDuration}ms ${({ $transitionEasing }) => $transitionEasing};
-  z-index: ${theme.zIndex.popover};
+  z-index: ${theme.zIndex.uiOverlay};
+  isolation: isolate;
 `;
 
 const PanelContainer = styled.div`
