@@ -1,11 +1,16 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import * as React from 'react';
 import styled from 'styled-components';
-import { getUserPlaylists, getUserAlbums, getLikedSongsCount, getCachedData, type PlaylistInfo, type AlbumInfo, spotifyAuth } from '../services/spotify';
-import { Card, CardHeader, CardContent } from './styled';
-import { Button } from './styled';
-import { Skeleton } from './styled';
-import { Alert, AlertDescription } from './styled';
+import {
+  getUserPlaylists,
+  getUserAlbums,
+  getLikedSongsCount,
+  getCachedData,
+  spotifyAuth,
+  type PlaylistInfo,
+  type AlbumInfo
+} from '../services/spotify';
+import { Card, CardHeader, CardContent, Button, Skeleton, Alert, AlertDescription } from './styled';
 import { theme } from '@/styles/theme';
 import { usePlayerSizing } from '../hooks/usePlayerSizing';
 import { useLocalStorage } from '../hooks/useLocalStorage';
@@ -24,20 +29,20 @@ interface PlaylistSelectionProps {
   onPlaylistSelect: (playlistId: string, playlistName: string) => void;
 }
 
-const selectOptimalImage = (
+function selectOptimalImage(
   images: { url: string; width: number | null; height: number | null }[],
   targetSize: number = 64
-): string | undefined => {
-  if (!images?.length) return undefined;
+): string | undefined {
+  if (!images?.length) {
+    return undefined;
+  }
 
-  // Spotify provides: [640x640, 300x300, 64x64]
-  // Find smallest image >= target size
   const suitable = images
     .filter(img => (img.width || 0) >= targetSize)
     .sort((a, b) => (a.width || 0) - (b.width || 0));
 
   return suitable[0]?.url || images[images.length - 1]?.url;
-};
+}
 
 const Container = styled.div`
   min-height: 100vh;
@@ -248,14 +253,20 @@ const ClearButton = styled.button`
   }
 `;
 
-const PlaylistImage: React.FC<{ images: { url: string; width: number | null; height: number | null }[]; alt: string }> = React.memo(({ images, alt }) => {
+interface PlaylistImageProps {
+  images: { url: string; width: number | null; height: number | null }[];
+  alt: string;
+}
+
+const PlaylistImage: React.FC<PlaylistImageProps> = React.memo(function PlaylistImage({ images, alt }) {
   const [imageUrl, setImageUrl] = useState<string | undefined>(undefined);
   const [isVisible, setIsVisible] = useState(false);
   const imgRef = useRef<HTMLDivElement>(null);
 
-  // Use Intersection Observer for better lazy loading
   useEffect(() => {
-    if (!imgRef.current) return;
+    if (!imgRef.current) {
+      return;
+    }
 
     const observer = new IntersectionObserver(
       (entries) => {
@@ -267,7 +278,7 @@ const PlaylistImage: React.FC<{ images: { url: string; width: number | null; hei
         });
       },
       {
-        rootMargin: '50px', // Start loading 50px before entering viewport
+        rootMargin: '50px',
         threshold: 0.01
       }
     );
@@ -279,7 +290,6 @@ const PlaylistImage: React.FC<{ images: { url: string; width: number | null; hei
     };
   }, []);
 
-  // Only select and set image URL when visible
   useEffect(() => {
     if (isVisible && images) {
       const optimalUrl = selectOptimalImage(images, 64);
@@ -303,8 +313,7 @@ const PlaylistImage: React.FC<{ images: { url: string; width: number | null; hei
   );
 });
 
-const PlaylistSelection: React.FC<PlaylistSelectionProps> = ({ onPlaylistSelect }) => {
-  // Load view mode from localStorage, default to 'playlists'
+function PlaylistSelection({ onPlaylistSelect }: PlaylistSelectionProps): JSX.Element {
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
     const saved = localStorage.getItem('vorbis-player-view-mode');
     return (saved === 'albums' ? 'albums' : 'playlists') as ViewMode;
@@ -315,11 +324,7 @@ const PlaylistSelection: React.FC<PlaylistSelectionProps> = ({ onPlaylistSelect 
   const [error, setError] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [likedSongsCount, setLikedSongsCount] = useState<number>(0);
-
-  // Search state (transient - cleared on reload)
   const [searchQuery, setSearchQuery] = useState('');
-
-  // Sort state (persisted separately for playlists and albums)
   const [playlistSort, setPlaylistSort] = useLocalStorage<PlaylistSortOption>(
     'vorbis-player-playlist-sort',
     'recently-added'
@@ -328,41 +333,36 @@ const PlaylistSelection: React.FC<PlaylistSelectionProps> = ({ onPlaylistSelect 
     'vorbis-player-album-sort',
     'recently-added'
   );
-
-  // Year filter state (transient)
   const [yearFilter, setYearFilter] = useState<YearFilterOption>('all');
 
-  // Get responsive sizing information
   const { viewport, isMobile, isTablet } = usePlayerSizing();
 
-  // Calculate responsive max width for the selection card
   const maxWidth = useMemo(() => {
-    if (isMobile) return Math.min(viewport.width * 0.95, 400);
-    if (isTablet) return Math.min(viewport.width * 0.8, 500);
+    if (isMobile) {
+      return Math.min(viewport.width * 0.95, 400);
+    }
+    if (isTablet) {
+      return Math.min(viewport.width * 0.8, 500);
+    }
     return Math.min(viewport.width * 0.6, 600);
   }, [viewport.width, isMobile, isTablet]);
 
-  // Save view mode to localStorage when it changes
   useEffect(() => {
     localStorage.setItem('vorbis-player-view-mode', viewMode);
   }, [viewMode]);
 
-  // Memoized filtered/sorted playlists
   const filteredPlaylists = useMemo(() => {
     return filterAndSortPlaylists(playlists, searchQuery, playlistSort);
   }, [playlists, searchQuery, playlistSort]);
 
-  // Memoized filtered/sorted albums
   const filteredAlbums = useMemo(() => {
     return filterAndSortAlbums(albums, searchQuery, albumSort, yearFilter);
   }, [albums, searchQuery, albumSort, yearFilter]);
 
-  // Available decades for filter dropdown
   const availableDecades = useMemo(() => {
     return getAvailableDecades(albums);
   }, [albums]);
 
-  // Reset year filter when switching to playlists view
   useEffect(() => {
     if (viewMode === 'playlists' && yearFilter !== 'all') {
       setYearFilter('all');
@@ -373,11 +373,10 @@ const PlaylistSelection: React.FC<PlaylistSelectionProps> = ({ onPlaylistSelect 
     const abortController = new AbortController();
     let isMounted = true;
 
-    const checkAuthAndFetchPlaylists = async () => {
+    async function checkAuthAndFetchPlaylists(): Promise<void> {
       try {
         setError(null);
 
-        // Check if user is authenticated
         if (!spotifyAuth.isAuthenticated()) {
           setIsAuthenticated(false);
           setIsLoading(false);
@@ -386,14 +385,12 @@ const PlaylistSelection: React.FC<PlaylistSelectionProps> = ({ onPlaylistSelect 
 
         setIsAuthenticated(true);
 
-        // PROGRESSIVE LOADING: Try to load cached data first for instant display
-        // Load cached data immediately if available
         const cachedPlaylists = getCachedData<PlaylistInfo[]>('playlists');
         const cachedAlbums = getCachedData<AlbumInfo[]>('albums');
 
         if (cachedPlaylists && isMounted) {
           setPlaylists(cachedPlaylists);
-          setIsLoading(false); // Show UI immediately with cached data
+          setIsLoading(false);
         } else {
           setIsLoading(true);
         }
@@ -402,24 +399,20 @@ const PlaylistSelection: React.FC<PlaylistSelectionProps> = ({ onPlaylistSelect 
           setAlbums(cachedAlbums);
         }
 
-        // Fetch fresh data in the background (non-blocking)
-        const fetchFreshData = async () => {
+        async function fetchFreshData(): Promise<void> {
           try {
-            // Fetch playlists, albums, and liked songs count in parallel
-            // Pass abort signal to enable request cancellation
             const [userPlaylists, userAlbums] = await Promise.all([
               getUserPlaylists(abortController.signal),
               getUserAlbums(abortController.signal),
             ]);
 
-            // Only update state if component is still mounted
-            if (!isMounted) return;
+            if (!isMounted) {
+              return;
+            }
 
-            // Update with fresh data
             setPlaylists(userPlaylists);
             setAlbums(userAlbums);
 
-            // Get liked songs count (lightweight request)
             let likedSongsCount = 0;
             try {
               likedSongsCount = await getLikedSongsCount(abortController.signal);
@@ -427,33 +420,27 @@ const PlaylistSelection: React.FC<PlaylistSelectionProps> = ({ onPlaylistSelect 
                 setLikedSongsCount(likedSongsCount);
               }
             } catch (err) {
-              // Ignore abort errors - they're expected on unmount
               if (err instanceof DOMException && err.name === 'AbortError') {
                 return;
               }
               console.warn('Failed to fetch liked songs count:', err);
-              // Don't fail the whole load if this fails
             }
 
-            // Check for empty state AFTER fetching liked songs count
-            // Only show error if we have no playlists, albums, AND no liked songs
             if (userPlaylists.length === 0 && userAlbums.length === 0 && likedSongsCount === 0) {
-              // Only show error if we don't have cached data showing
               if (!cachedPlaylists && !cachedAlbums && isMounted) {
                 setError("No playlists, albums, or liked songs found. Please create some playlists, save some albums, or like some songs in Spotify first.");
               }
             } else if (isMounted) {
-              // Clear error if we have any content (playlists, albums, or liked songs)
               setError(null);
             }
           } catch (err) {
-            // Ignore abort errors - they're expected on unmount
             if (err instanceof DOMException && err.name === 'AbortError') {
               return;
             }
-            if (abortController.signal.aborted) return;
+            if (abortController.signal.aborted) {
+              return;
+            }
             console.error('Failed to fetch playlists:', err);
-            // Only show error if we don't have cached data to display
             if (!cachedPlaylists && !cachedAlbums && isMounted) {
               setError(err instanceof Error ? err.message : 'Failed to load playlists');
             }
@@ -462,28 +449,27 @@ const PlaylistSelection: React.FC<PlaylistSelectionProps> = ({ onPlaylistSelect 
               setIsLoading(false);
             }
           }
-        };
+        }
 
-        // If we have cached data, fetch fresh data in background
-        // Otherwise, wait for fresh data
         if (cachedPlaylists || cachedAlbums) {
-          fetchFreshData(); // Non-blocking background refresh
+          fetchFreshData();
         } else {
-          await fetchFreshData(); // Blocking initial load
+          await fetchFreshData();
         }
       } catch (err) {
-        // Ignore abort errors - they're expected on unmount
         if (err instanceof DOMException && err.name === 'AbortError') {
           return;
         }
-        if (abortController.signal.aborted) return;
+        if (abortController.signal.aborted) {
+          return;
+        }
         console.error('Failed to initialize:', err);
         if (isMounted) {
           setError(err instanceof Error ? err.message : 'Failed to load playlists');
           setIsLoading(false);
         }
       }
-    };
+    }
 
     checkAuthAndFetchPlaylists();
 
@@ -493,33 +479,33 @@ const PlaylistSelection: React.FC<PlaylistSelectionProps> = ({ onPlaylistSelect 
     };
   }, []);
 
-  const handlePlaylistClick = (playlist: PlaylistInfo) => {
+  function handlePlaylistClick(playlist: PlaylistInfo): void {
     console.log('🎵 Selected playlist:', playlist.name);
     onPlaylistSelect(playlist.id, playlist.name);
-  };
+  }
 
-  const handleAlbumClick = (album: AlbumInfo) => {
+  function handleAlbumClick(album: AlbumInfo): void {
     console.log('🎵 Selected album:', album.name);
     onPlaylistSelect(`album:${album.id}`, album.name);
-  };
+  }
 
-  const handleLikedSongsClick = () => {
+  function handleLikedSongsClick(): void {
     console.log('🎵 Selected liked songs');
     onPlaylistSelect('liked-songs', 'Liked Songs');
-  };
+  }
 
-  const handleViewModeChange = (mode: ViewMode) => {
+  function handleViewModeChange(mode: ViewMode): void {
     setViewMode(mode);
-  };
+  }
 
-  const handleLogin = async () => {
+  async function handleLogin(): Promise<void> {
     try {
       await spotifyAuth.redirectToAuth();
     } catch (err) {
       console.error('Failed to redirect to Spotify auth:', err);
       setError('Failed to redirect to Spotify login');
     }
-  };
+  }
 
   return (
     <Container>
@@ -556,8 +542,12 @@ const PlaylistSelection: React.FC<PlaylistSelectionProps> = ({ onPlaylistSelect 
                   cursor: 'pointer',
                   transition: 'background 0.2s ease'
                 }}
-                onMouseEnter={(e: React.MouseEvent<HTMLButtonElement>) => { (e.target as HTMLButtonElement).style.background = '#1ed760'; }}
-                onMouseLeave={(e: React.MouseEvent<HTMLButtonElement>) => { (e.target as HTMLButtonElement).style.background = '#1db954'; }}
+                onMouseEnter={(e: React.MouseEvent<HTMLButtonElement>) => {
+                  (e.target as HTMLButtonElement).style.background = '#1ed760';
+                }}
+                onMouseLeave={(e: React.MouseEvent<HTMLButtonElement>) => {
+                  (e.target as HTMLButtonElement).style.background = '#1db954';
+                }}
               >
                 Connect Spotify
               </Button>
@@ -574,7 +564,6 @@ const PlaylistSelection: React.FC<PlaylistSelectionProps> = ({ onPlaylistSelect 
 
           {!isLoading && isAuthenticated && !error && (playlists.length > 0 || albums.length > 0 || likedSongsCount > 0) && (
             <>
-              {/* Search/Sort/Filter Controls */}
               <ControlsContainer>
                 <SearchInput
                   type="text"
@@ -633,7 +622,6 @@ const PlaylistSelection: React.FC<PlaylistSelectionProps> = ({ onPlaylistSelect 
                 )}
               </ControlsContainer>
 
-              {/* Tab Switcher */}
               <TabsContainer>
                 <TabButton
                   $active={viewMode === 'playlists'}
@@ -649,10 +637,8 @@ const PlaylistSelection: React.FC<PlaylistSelectionProps> = ({ onPlaylistSelect 
                 </TabButton>
               </TabsContainer>
 
-              {/* Playlists View */}
               {viewMode === 'playlists' && (
                 <PlaylistGrid>
-                  {/* Liked Songs Option */}
                   {likedSongsCount > 0 && (
                     <PlaylistItem onClick={handleLikedSongsClick}>
                       <PlaylistImageWrapper>
@@ -679,7 +665,6 @@ const PlaylistSelection: React.FC<PlaylistSelectionProps> = ({ onPlaylistSelect 
                     </PlaylistItem>
                   )}
 
-                  {/* Regular Playlists */}
                   {filteredPlaylists.map((playlist) => (
                     <PlaylistItem
                       key={playlist.id}
@@ -693,9 +678,7 @@ const PlaylistSelection: React.FC<PlaylistSelectionProps> = ({ onPlaylistSelect 
                         <PlaylistName>{playlist.name}</PlaylistName>
                         <PlaylistDetails>
                           {playlist.tracks.total} tracks
-                          {playlist.owner.display_name &&
-                            ` • by ${playlist.owner.display_name}`
-                          }
+                          {playlist.owner.display_name && ` • by ${playlist.owner.display_name}`}
                         </PlaylistDetails>
                       </PlaylistInfo>
                     </PlaylistItem>
@@ -712,7 +695,6 @@ const PlaylistSelection: React.FC<PlaylistSelectionProps> = ({ onPlaylistSelect 
                 </PlaylistGrid>
               )}
 
-              {/* Albums View */}
               {viewMode === 'albums' && (
                 <PlaylistGrid>
                   {filteredAlbums.map((album) => (
