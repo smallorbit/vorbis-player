@@ -55,6 +55,7 @@ export interface PlaylistInfo {
   images: SpotifyImage[];
   tracks: { total: number };
   owner: { display_name: string };
+  added_at?: string; // ISO 8601 timestamp when added to library
 }
 
 export interface AlbumInfo {
@@ -66,6 +67,7 @@ export interface AlbumInfo {
   total_tracks: number;
   uri: string;
   album_type?: string;
+  added_at?: string; // ISO 8601 timestamp when saved to library
 }
 
 interface SpotifyArtist {
@@ -476,7 +478,11 @@ export async function getUserPlaylists(signal?: AbortSignal): Promise<PlaylistIn
     'https://api.spotify.com/v1/me/playlists?limit=50',
     token,
     function (playlist) {
-      return playlist;
+      // Spotify doesn't provide added_at for playlists, use current timestamp as fallback
+      return {
+        ...playlist,
+        added_at: new Date().toISOString(),
+      };
     },
     { signal }
   );
@@ -494,6 +500,7 @@ export async function getUserAlbums(signal?: AbortSignal): Promise<AlbumInfo[]> 
   const token = await spotifyAuth.ensureValidToken();
 
   interface SavedAlbumItem {
+    added_at: string;
     album: SpotifyAlbum;
   }
 
@@ -508,6 +515,7 @@ export async function getUserAlbums(signal?: AbortSignal): Promise<AlbumInfo[]> 
       total_tracks: album.total_tracks ?? 0,
       uri: album.uri ?? '',
       album_type: album.album_type,
+      added_at: item.added_at, // Capture from API response
     };
   }
 
