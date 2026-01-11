@@ -8,6 +8,15 @@ import { Skeleton } from './styled';
 import { Alert, AlertDescription } from './styled';
 import { theme } from '@/styles/theme';
 import { usePlayerSizing } from '../hooks/usePlayerSizing';
+import { useLocalStorage } from '../hooks/useLocalStorage';
+import {
+  filterAndSortPlaylists,
+  filterAndSortAlbums,
+  getAvailableDecades,
+  type PlaylistSortOption,
+  type AlbumSortOption,
+  type YearFilterOption
+} from '../utils/playlistFilters';
 
 type ViewMode = 'playlists' | 'albums';
 
@@ -168,6 +177,77 @@ const TabButton = styled.button<{ $active: boolean }>`
   }
 `;
 
+const ControlsContainer = styled.div`
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+`;
+
+const SearchInput = styled.input`
+  flex: 1;
+  min-width: 180px;
+  padding: 0.5rem 0.75rem;
+  background: rgba(115, 115, 115, 0.2);
+  border: 1px solid rgba(115, 115, 115, 0.4);
+  border-radius: 0.5rem;
+  color: white;
+  font-size: 0.875rem;
+  outline: none;
+  transition: border-color 0.2s, background 0.2s;
+
+  &::placeholder {
+    color: rgba(255, 255, 255, 0.5);
+  }
+
+  &:focus {
+    background: rgba(115, 115, 115, 0.3);
+    border-color: ${theme.colors.accent};
+  }
+`;
+
+const SelectDropdown = styled.select`
+  padding: 0.5rem 0.75rem;
+  background: rgba(115, 115, 115, 0.2);
+  border: 1px solid rgba(115, 115, 115, 0.4);
+  border-radius: 0.5rem;
+  color: white;
+  font-size: 0.875rem;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.2s, background 0.2s;
+
+  &:hover {
+    background: rgba(115, 115, 115, 0.3);
+  }
+
+  &:focus {
+    border-color: ${theme.colors.accent};
+  }
+
+  option {
+    background: #262626;
+    color: white;
+  }
+`;
+
+const ClearButton = styled.button`
+  padding: 0.5rem 0.75rem;
+  background: rgba(115, 115, 115, 0.2);
+  border: 1px solid rgba(115, 115, 115, 0.4);
+  border-radius: 0.5rem;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover {
+    background: rgba(115, 115, 115, 0.3);
+    color: white;
+  }
+`;
+
 const PlaylistImage: React.FC<{ images: { url: string; width: number | null; height: number | null }[]; alt: string }> = React.memo(({ images, alt }) => {
   const [imageUrl, setImageUrl] = useState<string | undefined>(undefined);
   const [isVisible, setIsVisible] = useState(false);
@@ -236,6 +316,22 @@ const PlaylistSelection: React.FC<PlaylistSelectionProps> = ({ onPlaylistSelect 
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [likedSongsCount, setLikedSongsCount] = useState<number>(0);
 
+  // Search state (transient - cleared on reload)
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // Sort state (persisted separately for playlists and albums)
+  const [playlistSort, setPlaylistSort] = useLocalStorage<PlaylistSortOption>(
+    'vorbis-player-playlist-sort',
+    'recently-added'
+  );
+  const [albumSort, setAlbumSort] = useLocalStorage<AlbumSortOption>(
+    'vorbis-player-album-sort',
+    'recently-added'
+  );
+
+  // Year filter state (transient)
+  const [yearFilter, setYearFilter] = useState<YearFilterOption>('all');
+
   // Get responsive sizing information
   const { viewport, isMobile, isTablet } = usePlayerSizing();
 
@@ -250,6 +346,28 @@ const PlaylistSelection: React.FC<PlaylistSelectionProps> = ({ onPlaylistSelect 
   useEffect(() => {
     localStorage.setItem('vorbis-player-view-mode', viewMode);
   }, [viewMode]);
+
+  // Memoized filtered/sorted playlists
+  const filteredPlaylists = useMemo(() => {
+    return filterAndSortPlaylists(playlists, searchQuery, playlistSort);
+  }, [playlists, searchQuery, playlistSort]);
+
+  // Memoized filtered/sorted albums
+  const filteredAlbums = useMemo(() => {
+    return filterAndSortAlbums(albums, searchQuery, albumSort, yearFilter);
+  }, [albums, searchQuery, albumSort, yearFilter]);
+
+  // Available decades for filter dropdown
+  const availableDecades = useMemo(() => {
+    return getAvailableDecades(albums);
+  }, [albums]);
+
+  // Reset year filter when switching to playlists view
+  useEffect(() => {
+    if (viewMode === 'playlists' && yearFilter !== 'all') {
+      setYearFilter('all');
+    }
+  }, [viewMode, yearFilter]);
 
   useEffect(() => {
     const abortController = new AbortController();
@@ -456,6 +574,65 @@ const PlaylistSelection: React.FC<PlaylistSelectionProps> = ({ onPlaylistSelect 
 
           {!isLoading && isAuthenticated && !error && (playlists.length > 0 || albums.length > 0 || likedSongsCount > 0) && (
             <>
+              {/* Search/Sort/Filter Controls */}
+              <ControlsContainer>
+                <SearchInput
+                  type="text"
+                  placeholder={viewMode === 'playlists' ? 'Search playlists...' : 'Search albums...'}
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+
+                {viewMode === 'playlists' ? (
+                  <SelectDropdown
+                    value={playlistSort}
+                    onChange={(e) => setPlaylistSort(e.target.value as PlaylistSortOption)}
+                  >
+                    <option value="recently-added">Recently Added</option>
+                    <option value="name-asc">Name (A-Z)</option>
+                    <option value="name-desc">Name (Z-A)</option>
+                  </SelectDropdown>
+                ) : (
+                  <SelectDropdown
+                    value={albumSort}
+                    onChange={(e) => setAlbumSort(e.target.value as AlbumSortOption)}
+                  >
+                    <option value="recently-added">Recently Added</option>
+                    <option value="name-asc">Name (A-Z)</option>
+                    <option value="name-desc">Name (Z-A)</option>
+                    <option value="artist-asc">Artist (A-Z)</option>
+                    <option value="artist-desc">Artist (Z-A)</option>
+                    <option value="release-newest">Release (Newest)</option>
+                    <option value="release-oldest">Release (Oldest)</option>
+                  </SelectDropdown>
+                )}
+
+                {viewMode === 'albums' && availableDecades.length > 0 && (
+                  <SelectDropdown
+                    value={yearFilter}
+                    onChange={(e) => setYearFilter(e.target.value as YearFilterOption)}
+                  >
+                    <option value="all">All Years</option>
+                    {availableDecades.map(decade => (
+                      <option key={decade} value={decade}>
+                        {decade === 'older' ? 'Before 1980' : decade}
+                      </option>
+                    ))}
+                  </SelectDropdown>
+                )}
+
+                {(searchQuery || yearFilter !== 'all') && (
+                  <ClearButton
+                    onClick={() => {
+                      setSearchQuery('');
+                      setYearFilter('all');
+                    }}
+                  >
+                    Clear
+                  </ClearButton>
+                )}
+              </ControlsContainer>
+
               {/* Tab Switcher */}
               <TabsContainer>
                 <TabButton
@@ -503,7 +680,7 @@ const PlaylistSelection: React.FC<PlaylistSelectionProps> = ({ onPlaylistSelect 
                   )}
 
                   {/* Regular Playlists */}
-                  {playlists.map((playlist) => (
+                  {filteredPlaylists.map((playlist) => (
                     <PlaylistItem
                       key={playlist.id}
                       onClick={() => handlePlaylistClick(playlist)}
@@ -524,9 +701,12 @@ const PlaylistSelection: React.FC<PlaylistSelectionProps> = ({ onPlaylistSelect 
                     </PlaylistItem>
                   ))}
 
-                  {playlists.length === 0 && likedSongsCount === 0 && (
+                  {filteredPlaylists.length === 0 && likedSongsCount === 0 && (
                     <div style={{ padding: '2rem', textAlign: 'center', color: 'rgba(255, 255, 255, 0.6)' }}>
-                      No playlists found. Create some playlists in Spotify or save some songs!
+                      {searchQuery
+                        ? `No playlists match "${searchQuery}"`
+                        : 'No playlists found. Create some playlists in Spotify or save some songs!'
+                      }
                     </div>
                   )}
                 </PlaylistGrid>
@@ -535,7 +715,7 @@ const PlaylistSelection: React.FC<PlaylistSelectionProps> = ({ onPlaylistSelect 
               {/* Albums View */}
               {viewMode === 'albums' && (
                 <PlaylistGrid>
-                  {albums.map((album) => (
+                  {filteredAlbums.map((album) => (
                     <PlaylistItem
                       key={album.id}
                       onClick={() => handleAlbumClick(album)}
@@ -553,9 +733,12 @@ const PlaylistSelection: React.FC<PlaylistSelectionProps> = ({ onPlaylistSelect 
                     </PlaylistItem>
                   ))}
 
-                  {albums.length === 0 && (
+                  {filteredAlbums.length === 0 && (
                     <div style={{ padding: '2rem', textAlign: 'center', color: 'rgba(255, 255, 255, 0.6)' }}>
-                      No albums found. Save some albums in Spotify to see them here!
+                      {searchQuery || yearFilter !== 'all'
+                        ? 'No albums match your filters.'
+                        : 'No albums found. Save some albums in Spotify to see them here!'
+                      }
                     </div>
                   )}
                 </PlaylistGrid>
