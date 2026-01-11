@@ -474,14 +474,32 @@ export async function getUserPlaylists(signal?: AbortSignal): Promise<PlaylistIn
 
   const token = await spotifyAuth.ensureValidToken();
 
+  // Create a map of cached playlist IDs to their added_at timestamps
+  // This preserves stable timestamps across fetches, even when cache expires
+  const cachedPlaylistMap = new Map<string, string>();
+  // Access cached data before type narrowing - check if it exists and extract data
+  const cachedEntry = cached as CacheEntry<PlaylistInfo[]> | null;
+  if (cachedEntry && cachedEntry.data) {
+    for (const cachedPlaylist of cachedEntry.data) {
+      if (cachedPlaylist.added_at) {
+        cachedPlaylistMap.set(cachedPlaylist.id, cachedPlaylist.added_at);
+      }
+    }
+  }
+
+  const fetchTimestamp = new Date().toISOString();
+
   const playlists = await fetchAllPaginated<PlaylistInfo, PlaylistInfo>(
     'https://api.spotify.com/v1/me/playlists?limit=50',
     token,
     function (playlist) {
-      // Spotify doesn't provide added_at for playlists, use current timestamp as fallback
+      // Spotify doesn't provide added_at for playlists
+      // Preserve existing timestamp from cache if available, otherwise use fetch time
+      // This ensures stable sort order across fetches
+      const addedAt = cachedPlaylistMap.get(playlist.id) || fetchTimestamp;
       return {
         ...playlist,
-        added_at: new Date().toISOString(),
+        added_at: addedAt,
       };
     },
     { signal }
