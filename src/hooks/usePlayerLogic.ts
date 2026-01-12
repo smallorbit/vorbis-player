@@ -113,9 +113,11 @@ export function usePlayerLogic() {
     tracks: queue,
     currentTrackIndex: currentIndex,
     playTrack: async (index: number) => {
-      jumpToTrack(index);
+      // First play the track, THEN update the index
+      // This avoids the Spotify state change handler from interfering
       if (queue[index]) {
         await spotifyPlayer.playTrack(queue[index].uri);
+        jumpToTrack(index);
       }
     },
     enabled: true
@@ -195,16 +197,25 @@ export function usePlayerLogic() {
   }, [setError]);
 
   useEffect(() => {
+    let isManualChange = false;
+    let manualChangeTimeout: NodeJS.Timeout | null = null;
+
     function handlePlayerStateChange(state: SpotifyPlaybackState | null) {
       if (state) {
         setIsPlaying(!state.paused);
         setPlaybackPosition(state.position);
 
-        if (state.track_window.current_track) {
+        // Only sync the index if we're not in the middle of a manual change
+        // This prevents race conditions when manually navigating tracks
+        if (!isManualChange && state.track_window.current_track) {
           const spotifyTrack = state.track_window.current_track;
           const trackIndex = queue.findIndex((track: Track) => track.id === spotifyTrack.id);
 
-          if (trackIndex !== -1 && trackIndex !== currentIndex) {
+          // Only update if we found the track and it's different from current
+          // Also check that the current track in queue matches what Spotify is playing
+          if (trackIndex !== -1 && trackIndex !== currentIndex && 
+              queue[currentIndex]?.id !== spotifyTrack.id) {
+            console.log(`🎵 Syncing index: Spotify playing track at index ${trackIndex}, current index was ${currentIndex}`);
             jumpToTrack(trackIndex);
           }
         }
@@ -225,6 +236,12 @@ export function usePlayerLogic() {
     }
 
     checkInitialState();
+
+    return () => {
+      if (manualChangeTimeout) {
+        clearTimeout(manualChangeTimeout);
+      }
+    };
   }, [queue, currentIndex, jumpToTrack]);
 
   const handleNext = useCallback(async () => {
@@ -232,9 +249,14 @@ export function usePlayerLogic() {
       return;
     }
 
-    const success = nextTrack();
-    if (success && queue[(currentIndex + 1) % queue.length]) {
-      const nextIndex = (currentIndex + 1) % queue.length;
+    // Calculate next index BEFORE updating state
+    const nextIndex = (currentIndex + 1) % queue.length;
+    
+    // Update state first
+    nextTrack();
+    
+    // Then play the track
+    if (queue[nextIndex]) {
       await spotifyPlayer.playTrack(queue[nextIndex].uri).catch(err => {
         console.error('Failed to play next track:', err);
       });
@@ -246,14 +268,17 @@ export function usePlayerLogic() {
       return;
     }
 
-    const success = previousTrack();
-    if (success) {
-      const prevIndex = currentIndex === 0 ? queue.length - 1 : currentIndex - 1;
-      if (queue[prevIndex]) {
-        await spotifyPlayer.playTrack(queue[prevIndex].uri).catch(err => {
-          console.error('Failed to play previous track:', err);
-        });
-      }
+    // Calculate previous index BEFORE updating state
+    const prevIndex = currentIndex === 0 ? queue.length - 1 : currentIndex - 1;
+    
+    // Update state first
+    previousTrack();
+    
+    // Then play the track
+    if (queue[prevIndex]) {
+      await spotifyPlayer.playTrack(queue[prevIndex].uri).catch(err => {
+        console.error('Failed to play previous track:', err);
+      });
     }
   }, [queue, currentIndex, previousTrack]);
 
