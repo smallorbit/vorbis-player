@@ -102,16 +102,16 @@ const PlaylistTitle = styled.h3`
 const CloseButton = styled.button`
   background: none;
   border: none;
-  color: ${theme.colors.muted.foreground};
-  font-size: ${theme.fontSize.xl};
+  color: ${({ theme }) => theme.colors.muted.foreground};
+  font-size: ${({ theme }) => theme.fontSize.xl};
   cursor: pointer;
-  padding: ${theme.spacing.sm};
-  border-radius: ${theme.borderRadius.md};
-  transition: all ${theme.transitions.fast};
+  padding: ${({ theme }) => theme.spacing.sm};
+  border-radius: ${({ theme }) => theme.borderRadius.md};
+  transition: all ${({ theme }) => theme.transitions.fast};
   
   &:hover {
-    background: ${theme.colors.muted.background};
-    color: ${theme.colors.white};
+    background: ${({ theme }) => theme.colors.muted.background};
+    color: ${({ theme }) => theme.colors.white};
   }
 `;
 
@@ -122,7 +122,7 @@ const PlaylistFallback = styled.div`
 
 const PlaylistFallbackCard = styled.div`
   background-color: ${({ theme }) => theme.colors.gray[800]};
-  border-radius: ${theme.borderRadius['2xl']};
+  border-radius: ${({ theme }) => theme.borderRadius['2xl']};
   padding: ${({ theme }) => theme.spacing.md};
   border: 1px solid ${({ theme }) => theme.colors.gray[700]};
 `;
