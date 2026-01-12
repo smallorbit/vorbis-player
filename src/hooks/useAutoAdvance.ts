@@ -11,6 +11,9 @@ interface UseAutoAdvanceProps {
   endThreshold?: number;
 }
 
+/**
+ * Auto-advance hook - automatically plays the next track in the queue when the current track ends.
+ */
 export const useAutoAdvance = ({
   tracks,
   currentTrackIndex,
@@ -42,13 +45,14 @@ export const useAutoAdvance = ({
           )) {
             hasEnded.current = true;
 
-            const nextIndex = (currentTrackIndex + 1) % tracks.length;
-            if (tracks[nextIndex]) {
-              setTimeout(() => {
+            setTimeout(() => {
+              // Advance to next track in queue
+              const nextIndex = (currentTrackIndex + 1) % tracks.length;
+              if (tracks[nextIndex]) {
                 playTrack(nextIndex, true); // Enable auto-skip for unavailable tracks
-                hasEnded.current = false;
-              }, 500);
-            }
+              }
+              hasEnded.current = false;
+            }, 500);
           }
         }
       } catch {

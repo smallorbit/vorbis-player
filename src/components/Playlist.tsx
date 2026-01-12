@@ -237,8 +237,8 @@ const Playlist = memo<PlaylistProps>(({ tracks, currentTrackIndex, accentColor, 
     <PlaylistContainer>
       <PlaylistCard>
         <PlaylistHeader>
-          <PlaylistTitle>Up Next</PlaylistTitle>
-          <PlaylistDescription>{sortedTracks.length} tracks</PlaylistDescription>
+          <PlaylistTitle>Queue</PlaylistTitle>
+          <PlaylistDescription>{sortedTracks.length} track{sortedTracks.length !== 1 ? 's' : ''}</PlaylistDescription>
         </PlaylistHeader>
         
         <PlaylistContent>

@@ -5,6 +5,9 @@ import PlayerContent from './PlayerContent';
 import BackgroundVisualizer from './BackgroundVisualizer';
 import AccentColorBackground from './AccentColorBackground';
 import { usePlayerLogic } from '@/hooks/usePlayerLogic';
+import { Suspense, lazy } from 'react';
+
+const LibraryDrawer = lazy(() => import('./LibraryDrawer'));
 
 const Container = styled.div`
   width: 100%;
@@ -84,7 +87,12 @@ const AudioPlayerComponent = () => {
           debugModeEnabled: state.debugModeEnabled,
           onMuteToggle: handlers.handleMuteToggle,
           onToggleLike: handlers.handleLikeToggle,
-          onBackToLibrary: handlers.handleBackToLibrary
+          onBackToLibrary: handlers.handleBackToLibrary,
+          onShowLibrary: handlers.handleShowLibrary
+        }}
+        queue={{
+          tracks: [],  // No separate queue display - everything is in the main queue
+          onClear: handlers.clearQueue
         }}
       />
     );
@@ -108,6 +116,22 @@ const AudioPlayerComponent = () => {
         playbackPosition={state.playbackPosition}
       />
       {renderContent()}
+      <Suspense fallback={null}>
+        <LibraryDrawer
+          isOpen={state.showLibraryDrawer}
+          onClose={handlers.handleCloseLibrary}
+          onAlbumQueue={handlers.handleQueueAlbum}
+          currentTrack={state.currentTrack}
+          isPlaying={state.isPlaying}
+          onPlayPause={() => {
+            if (state.isPlaying) {
+              handlers.handlePause();
+            } else {
+              handlers.handlePlay();
+            }
+          }}
+        />
+      </Suspense>
     </Container>
   );
 };

@@ -55,6 +55,10 @@ interface DebugState {
   enabled: boolean;
 }
 
+interface LibraryState {
+  drawerVisible: boolean;
+}
+
 interface TrackActions {
   setTracks: (tracks: Track[] | ((prev: Track[]) => Track[])) => void;
   setCurrentIndex: (index: number | ((prev: number) => number)) => void;
@@ -97,12 +101,17 @@ interface DebugActions {
   setEnabled: (enabled: boolean | ((prev: boolean) => boolean)) => void;
 }
 
+interface LibraryActions {
+  setDrawerVisible: (visible: boolean | ((prev: boolean) => boolean)) => void;
+}
+
 interface PlayerState {
   track: TrackState;
   playlist: PlaylistState;
   color: ColorState;
   visualEffects: VisualEffectsState;
   debug: DebugState;
+  library: LibraryState;
 }
 
 interface PlayerStateSetters {
@@ -112,6 +121,7 @@ interface PlayerStateSetters {
     color: ColorActions;
     visualEffects: VisualEffectsActions;
     debug: DebugActions;
+    library: LibraryActions;
   };
 }
 
@@ -174,6 +184,7 @@ export function usePlayerState(): PlayerState & PlayerStateSetters {
     'vorbis-player-background-visualizer-intensity',
     60
   );
+  const [showLibraryDrawer, setShowLibraryDrawer] = useState(false);
 
   useEffect(() => {
     if (!visualEffectsEnabled) {
@@ -268,6 +279,10 @@ export function usePlayerState(): PlayerState & PlayerStateSetters {
     enabled: debugModeEnabled
   };
 
+  const libraryState: LibraryState = {
+    drawerVisible: showLibraryDrawer
+  };
+
   const trackActions: TrackActions = {
     setTracks,
     setCurrentIndex: setCurrentTrackIndex,
@@ -310,18 +325,24 @@ export function usePlayerState(): PlayerState & PlayerStateSetters {
     setEnabled: setDebugModeEnabled
   };
 
+  const libraryActions: LibraryActions = {
+    setDrawerVisible: setShowLibraryDrawer
+  };
+
   return {
     track: trackState,
     playlist: playlistState,
     color: colorState,
     visualEffects: visualEffectsState,
     debug: debugState,
+    library: libraryState,
     actions: {
       track: trackActions,
       playlist: playlistActions,
       color: colorActions,
       visualEffects: visualEffectsActions,
-      debug: debugActions
+      debug: debugActions,
+      library: libraryActions
     }
   };
 }

@@ -47,6 +47,7 @@ interface PlayerContentHandlers {
   onMuteToggle?: () => void; // Mute toggle handler
   onToggleLike?: () => void; // Like toggle handler
   onBackToLibrary?: () => void; // Back to library navigation handler
+  onShowLibrary?: () => void; // Show library drawer handler
 }
 
 interface PlayerContentProps {
@@ -71,6 +72,10 @@ interface PlayerContentProps {
     filters: AlbumFilters;
   };
   handlers: PlayerContentHandlers;
+  queue?: {
+    tracks: Track[];
+    onClear: () => void;
+  };
 }
 
 const ContentWrapper = styled.div.withConfig({
@@ -275,7 +280,7 @@ const ClickableAlbumArtContainer = styled.div`
   filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.4));
 `;
 
-const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handlers }) => {
+const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handlers, queue }) => {
   const defaultFilters = {
     brightness: 110,
     contrast: 100,
@@ -398,8 +403,10 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
               onBackgroundVisualizerToggle={handlers.onBackgroundVisualizerToggle}
               backgroundVisualizerEnabled={handlers.backgroundVisualizerEnabled}
               onBackToLibrary={handlers.onBackToLibrary}
+              onShowLibrary={handlers.onShowLibrary}
               debugModeEnabled={handlers.debugModeEnabled}
               isVisible={controlsVisible}
+              queueCount={0}  // No separate queue count - all tracks are in the main queue
             />
           </ClickableAlbumArtContainer>
         </CardContent>
@@ -498,6 +505,8 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
           currentTrackIndex={track.currentIndex}
           accentColor={ui.accentColor}
           onTrackSelect={handlers.onTrackSelect}
+          queuedTracks={queue?.tracks}
+          onClearQueue={queue?.onClear}
         />
       </Suspense>
       <Suspense fallback={null}>
