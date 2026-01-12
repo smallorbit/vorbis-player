@@ -108,13 +108,10 @@ export function usePlayerLogic() {
     setCurrentTrackIndex: (index) => jumpToTrack(index)
   });
 
-  // Auto-advance to next track in queue
   useAutoAdvance({
     tracks: queue,
     currentTrackIndex: currentIndex,
-    playTrack: async (index: number) => {
-      // First play the track, THEN update the index
-      // This avoids the Spotify state change handler from interfering
+    playTrack: async (index: number): Promise<void> => {
       if (queue[index]) {
         await spotifyPlayer.playTrack(queue[index].uri);
         jumpToTrack(index);
@@ -122,8 +119,6 @@ export function usePlayerLogic() {
     },
     enabled: true
   });
-
-  // currentTrack is already provided by queue manager
 
   useEffect(() => {
     let isMounted = true;
@@ -235,56 +230,34 @@ export function usePlayerLogic() {
     checkInitialState();
   }, [queue, jumpToTrack, getCurrentIndex]);
 
-  const handleNext = useCallback(async () => {
-    // Get the LATEST index value via ref (avoids stale closure)
+  const handleNext = useCallback(async (): Promise<void> => {
+    if (queue.length === 0) return;
+    
     const latestIndex = getCurrentIndex();
-    console.log(`🎵 [NEXT] handleNext called, latestIndex=${latestIndex}, queueLength=${queue.length}`);
-    
-    if (queue.length === 0) {
-      console.log(`🎵 [NEXT] Queue is empty, aborting`);
-      return;
-    }
-
-    // Calculate next index using the latest value
     const nextIndex = (latestIndex + 1) % queue.length;
-    console.log(`🎵 [NEXT] Calculated nextIndex=${nextIndex}, will play: ${queue[nextIndex]?.name}`);
+    const nextTrackUri = queue[nextIndex]?.uri;
     
-    // Update state first
     nextTrack();
-    console.log(`🎵 [NEXT] State updated via nextTrack()`);
     
-    // Then play the track
-    if (queue[nextIndex]) {
-      console.log(`🎵 [NEXT] Playing track at index ${nextIndex}`);
-      await spotifyPlayer.playTrack(queue[nextIndex].uri).catch(err => {
-        console.error('🎵 [NEXT] Failed to play next track:', err);
+    if (nextTrackUri) {
+      await spotifyPlayer.playTrack(nextTrackUri).catch(err => {
+        console.error('Failed to play next track:', err);
       });
     }
   }, [queue, getCurrentIndex, nextTrack]);
 
-  const handlePrevious = useCallback(async () => {
-    // Get the LATEST index value via ref (avoids stale closure)
+  const handlePrevious = useCallback(async (): Promise<void> => {
+    if (queue.length === 0) return;
+    
     const latestIndex = getCurrentIndex();
-    console.log(`🎵 [PREV] handlePrevious called, latestIndex=${latestIndex}, queueLength=${queue.length}`);
-    
-    if (queue.length === 0) {
-      console.log(`🎵 [PREV] Queue is empty, aborting`);
-      return;
-    }
-
-    // Calculate previous index using the latest value
     const prevIndex = latestIndex === 0 ? queue.length - 1 : latestIndex - 1;
-    console.log(`🎵 [PREV] Calculated prevIndex=${prevIndex}, will play: ${queue[prevIndex]?.name}`);
+    const prevTrackUri = queue[prevIndex]?.uri;
     
-    // Update state first
     previousTrack();
-    console.log(`🎵 [PREV] State updated via previousTrack()`);
     
-    // Then play the track
-    if (queue[prevIndex]) {
-      console.log(`🎵 [PREV] Playing track at index ${prevIndex}`);
-      await spotifyPlayer.playTrack(queue[prevIndex].uri).catch(err => {
-        console.error('🎵 [PREV] Failed to play previous track:', err);
+    if (prevTrackUri) {
+      await spotifyPlayer.playTrack(prevTrackUri).catch(err => {
+        console.error('Failed to play previous track:', err);
       });
     }
   }, [queue, getCurrentIndex, previousTrack]);
@@ -317,7 +290,7 @@ export function usePlayerLogic() {
     setShowVisualEffects(prev => !prev);
   }, [setShowVisualEffects]);
 
-  const handleVisualEffectsToggle = useCallback(() => {
+  const handleVisualEffectsToggle = useCallback((): void => {
     if (visualEffectsEnabled) {
       setVisualEffectsEnabled(false);
     } else {
@@ -369,16 +342,13 @@ export function usePlayerLogic() {
     setShowLibraryDrawer(false);
   }, [setShowLibraryDrawer]);
 
-  const handleQueueAlbum = useCallback(async (albumId: string) => {
+  const handleQueueAlbum = useCallback(async (albumId: string): Promise<void> => {
     try {
       setIsLoading(true);
       const albumTracks = await getAlbumTracks(albumId);
       if (albumTracks.length > 0) {
         addToQueue(albumTracks);
-        console.log(`🎵 Queued ${albumTracks.length} tracks from album to end of queue`);
         handleCloseLibrary();
-      } else {
-        console.warn('No tracks found in album');
       }
     } catch (error) {
       console.error('Failed to queue album:', error);

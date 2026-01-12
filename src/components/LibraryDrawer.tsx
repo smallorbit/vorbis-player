@@ -111,57 +111,51 @@ export const LibraryDrawer = memo<LibraryDrawerProps>(({
   const currentYRef = useRef<number>(0);
   const isDraggingRef = useRef<boolean>(false);
 
-  // Calculate drawer height (70% of viewport, with min/max constraints)
   const drawerHeight = useMemo(() => {
     const maxHeight = Math.floor(viewport.height * 0.7);
-    const minHeight = 300;
-    return Math.max(minHeight, Math.min(maxHeight, 600));
+    return Math.max(300, Math.min(maxHeight, 600));
   }, [viewport.height]);
 
-  // Handle drag-to-close gesture
   useEffect(() => {
     if (!isOpen || !drawerRef.current) return;
 
     const drawer = drawerRef.current;
 
-    const handleTouchStart = (e: TouchEvent) => {
+    const handleTouchStart = (e: TouchEvent): void => {
       if (e.touches.length !== 1) return;
       const touch = e.touches[0];
-      if (touch.clientY < drawer.getBoundingClientRect().top + 50) {
-        // Only allow drag from top area
+      const topOffset = drawer.getBoundingClientRect().top;
+      if (touch.clientY < topOffset + 50) {
         startYRef.current = touch.clientY;
         currentYRef.current = touch.clientY;
         isDraggingRef.current = true;
       }
     };
 
-    const handleTouchMove = (e: TouchEvent) => {
+    const handleTouchMove = (e: TouchEvent): void => {
       if (!isDraggingRef.current) return;
       e.preventDefault();
       const touch = e.touches[0];
       currentYRef.current = touch.clientY;
       const deltaY = currentYRef.current - startYRef.current;
       
-      if (deltaY > 0 && drawer) {
+      if (deltaY > 0) {
         const translateY = Math.min(deltaY, drawerHeight);
         drawer.style.transform = `translateY(${translateY}px)`;
       }
     };
 
-    const handleTouchEnd = () => {
+    const handleTouchEnd = (): void => {
       if (!isDraggingRef.current) return;
       isDraggingRef.current = false;
       
       const deltaY = currentYRef.current - startYRef.current;
-      const threshold = drawerHeight * 0.3; // Close if dragged down more than 30%
+      const threshold = drawerHeight * 0.3;
       
       if (deltaY > threshold) {
         onClose();
       } else {
-        // Reset position
-        if (drawer) {
-          drawer.style.transform = '';
-        }
+        drawer.style.transform = '';
       }
     };
 
@@ -176,7 +170,6 @@ export const LibraryDrawer = memo<LibraryDrawerProps>(({
     };
   }, [isOpen, drawerHeight, onClose]);
 
-  // Reset transform when drawer closes
   useEffect(() => {
     if (!isOpen && drawerRef.current) {
       drawerRef.current.style.transform = '';

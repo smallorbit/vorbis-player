@@ -146,8 +146,7 @@ export const MiniPlayer: React.FC<MiniPlayerProps> = ({
     return null;
   }
 
-  // Simple progress calculation (could be enhanced with actual playback position)
-  const progress = 0; // Placeholder - would need playback position from state
+  const progress = 0;
 
   return (
     <MiniPlayerContainer>

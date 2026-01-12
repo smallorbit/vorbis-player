@@ -401,7 +401,6 @@ export const LibraryContent: React.FC<LibraryContentProps> = ({ onAlbumQueue }) 
   }, []);
 
   function handleAlbumQueue(album: AlbumInfo): void {
-    console.log('🎵 Queueing album:', album.name);
     onAlbumQueue(album.id);
   }
 
