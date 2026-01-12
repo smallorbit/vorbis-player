@@ -517,11 +517,11 @@ export const LibraryContent: React.FC<LibraryContentProps> = ({ onAlbumQueue }) 
             ))}
 
             {filteredAlbums.length === 0 && (
-              <div style={{ 
-                gridColumn: '1 / -1', 
-                padding: theme.spacing.xl, 
-                textAlign: 'center', 
-                color: 'rgba(255, 255, 255, 0.6)' 
+              <div style={{
+                gridColumn: '1 / -1',
+                padding: theme.spacing.xl,
+                textAlign: 'center',
+                color: 'rgba(255, 255, 255, 0.6)'
               }}>
                 {searchQuery || yearFilter !== 'all'
                   ? 'No albums match your filters.'
@@ -534,10 +534,10 @@ export const LibraryContent: React.FC<LibraryContentProps> = ({ onAlbumQueue }) 
       )}
 
       {!isLoading && !error && albums.length === 0 && (
-        <div style={{ 
-          padding: theme.spacing.xl, 
-          textAlign: 'center', 
-          color: 'rgba(255, 255, 255, 0.6)' 
+        <div style={{
+          padding: theme.spacing.xl,
+          textAlign: 'center',
+          color: 'rgba(255, 255, 255, 0.6)'
         }}>
           No albums found. Save some albums in Spotify to see them here!
         </div>
