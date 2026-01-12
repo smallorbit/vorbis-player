@@ -11,7 +11,7 @@ import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
 import { useVolume } from '@/hooks/useVolume';
 import type { Track } from '@/services/spotify';
 
-export const usePlayerLogic = () => {
+export function usePlayerLogic() {
   const {
     track: { tracks, currentIndex: currentTrackIndex, isLoading, error },
     playlist: { selectedId: selectedPlaylistId, isVisible: showPlaylist },
@@ -47,19 +47,18 @@ export const usePlayerLogic = () => {
           setIntensity: setBackgroundVisualizerIntensity
         },
         accentColorBackground: {
-          setPreferred: setAccentColorBackgroundEnabled
+          setPreferred: setAccentColorBackgroundPreferred
         }
       },
       debug: { setEnabled: setDebugModeEnabled }
     }
   } = usePlayerState();
 
-  // Use centralized keyboard shortcuts for debug mode
   useKeyboardShortcuts(
     {
       onToggleDebugMode: useCallback(() => {
-        setDebugModeEnabled(!debugModeEnabled);
-      }, [debugModeEnabled, setDebugModeEnabled])
+        setDebugModeEnabled(prev => !prev);
+      }, [setDebugModeEnabled])
     },
     { enableDebugMode: true }
   );
@@ -105,11 +104,10 @@ export const usePlayerLogic = () => {
 
   const currentTrack = useMemo(() => tracks[currentTrackIndex] || null, [tracks, currentTrackIndex]);
 
-  // Check like status when track changes
   useEffect(() => {
     let isMounted = true;
 
-    const checkLikeStatus = async () => {
+    async function checkLikeStatus() {
       if (!currentTrack?.id) {
         if (isMounted) setIsLiked(false);
         return;
@@ -125,7 +123,7 @@ export const usePlayerLogic = () => {
       } finally {
         if (isMounted) setIsLikePending(false);
       }
-    };
+    }
 
     checkLikeStatus();
 
@@ -134,47 +132,28 @@ export const usePlayerLogic = () => {
     };
   }, [currentTrack?.id]);
 
-  // Like toggle handler
   const handleLikeToggle = useCallback(async () => {
-    console.log('[DEBUG] handleLikeToggle called', {
-      hasCurrentTrack: !!currentTrack,
-      trackId: currentTrack?.id,
-      isLikePending,
-      isLiked
-    });
-
-    if (!currentTrack?.id) {
-      console.warn('[DEBUG] No current track or track ID, aborting like toggle');
+    if (!currentTrack?.id || isLikePending) {
       return;
     }
 
-    if (isLikePending) {
-      console.warn('[DEBUG] Like already pending, aborting');
-      return;
-    }
+    const newLikedState = !isLiked;
+    setIsLikePending(true);
+    setIsLiked(newLikedState);
 
     try {
-      setIsLikePending(true);
-      const newLikedState = !isLiked;
-      console.log(`[DEBUG] Toggling like: ${isLiked} -> ${newLikedState}`);
-      setIsLiked(newLikedState);
-
       if (newLikedState) {
-        console.log('[DEBUG] Saving track:', currentTrack.id);
         await saveTrack(currentTrack.id);
-        console.log('[DEBUG] Track saved successfully');
       } else {
-        console.log('[DEBUG] Unsaving track:', currentTrack.id);
         await unsaveTrack(currentTrack.id);
-        console.log('[DEBUG] Track unsaved successfully');
       }
     } catch (error) {
       console.error('Failed to toggle like status:', error);
-      setIsLiked(!isLiked);
+      setIsLiked(isLiked);
     } finally {
       setIsLikePending(false);
     }
-  }, [currentTrack, isLikePending, isLiked]);
+  }, [currentTrack?.id, isLikePending, isLiked]);
 
   // Extract accent color from album artwork
   const { handleAccentColorChange: handleAccentColorChangeHook } = useAccentColor(
@@ -185,25 +164,23 @@ export const usePlayerLogic = () => {
   );
 
   useEffect(() => {
-    const handleAuthRedirect = async () => {
+    async function handleAuthRedirect() {
       try {
         await spotifyAuth.handleRedirect();
       } catch (error) {
         setError(error instanceof Error ? error.message : 'Authentication failed');
       }
-    };
+    }
 
     handleAuthRedirect();
   }, [setError]);
 
   useEffect(() => {
-    const handlePlayerStateChange = (state: SpotifyPlaybackState | null) => {
+    function handlePlayerStateChange(state: SpotifyPlaybackState | null) {
       if (state) {
-        // Update playback state for visualizer
         setIsPlaying(!state.paused);
         setPlaybackPosition(state.position);
 
-        // Update track index if track changed
         if (state.track_window.current_track) {
           const currentTrack = state.track_window.current_track;
           const trackIndex = tracks.findIndex((track: Track) => track.id === currentTrack.id);
@@ -216,55 +193,41 @@ export const usePlayerLogic = () => {
         setIsPlaying(false);
         setPlaybackPosition(0);
       }
-    };
+    }
 
     spotifyPlayer.onPlayerStateChanged(handlePlayerStateChange);
 
-    // Also check initial state
-    const checkInitialState = async () => {
+    async function checkInitialState() {
       const state = await spotifyPlayer.getCurrentState();
       if (state) {
         setIsPlaying(!state.paused);
         setPlaybackPosition(state.position);
       }
-    };
+    }
+
     checkInitialState();
   }, [tracks, currentTrackIndex, setCurrentTrackIndex]);
 
   const handleNext = useCallback(() => {
     if (tracks.length === 0) {
-      console.warn('[DEBUG] handleNext: No tracks available');
       return;
     }
 
-    // Use functional update to get the current index value
     setCurrentTrackIndex((prevIndex) => {
       const nextIndex = (prevIndex + 1) % tracks.length;
-      console.log('[DEBUG] handleNext: prevIndex =', prevIndex, 'nextIndex =', nextIndex);
-
-      // Play the next track with auto-skip enabled for unavailable tracks
       playTrack(nextIndex, true);
-
-      // Return the new index (playTrack will also set it, but this ensures immediate update)
       return nextIndex;
     });
   }, [tracks.length, playTrack, setCurrentTrackIndex]);
 
   const handlePrevious = useCallback(() => {
     if (tracks.length === 0) {
-      console.warn('[DEBUG] handlePrevious: No tracks available');
       return;
     }
 
-    // Use functional update to get the current index value
     setCurrentTrackIndex((prevIndex) => {
       const newIndex = prevIndex === 0 ? tracks.length - 1 : prevIndex - 1;
-      console.log('[DEBUG] handlePrevious: prevIndex =', prevIndex, 'newIndex =', newIndex);
-
-      // Play the previous track with auto-skip enabled for unavailable tracks
       playTrack(newIndex, true);
-
-      // Return the new index
       return newIndex;
     });
   }, [tracks.length, playTrack, setCurrentTrackIndex]);
@@ -300,11 +263,8 @@ export const usePlayerLogic = () => {
   const handleVisualEffectsToggle = useCallback(() => {
     if (visualEffectsEnabled) {
       setVisualEffectsEnabled(false);
-      // Accent color background will be disabled by the sync effect in usePlayerState
     } else {
       setVisualEffectsEnabled(true);
-      // Don't automatically enable accent color background - honor the VFX menu setting
-      // If it's enabled in the menu, it will show when glow is enabled
       restoreSavedFilters();
       restoreGlowSettings();
     }
@@ -315,7 +275,6 @@ export const usePlayerLogic = () => {
   }, [setShowPlaylist]);
 
   const handleAccentColorChange = useCallback((color: string) => {
-    // Map legacy 'RESET_TO_DEFAULT' to 'auto' for the hook
     const mappedColor = color === 'RESET_TO_DEFAULT' ? 'auto' : color;
     handleAccentColorChangeHook(mappedColor);
   }, [handleAccentColorChangeHook]);
@@ -325,7 +284,8 @@ export const usePlayerLogic = () => {
   }, [setBackgroundVisualizerEnabled]);
 
   const handleBackgroundVisualizerIntensityChange = useCallback((intensity: number) => {
-    setBackgroundVisualizerIntensity(Math.max(0, Math.min(100, intensity)));
+    const clampedIntensity = Math.max(0, Math.min(100, intensity));
+    setBackgroundVisualizerIntensity(clampedIntensity);
   }, [setBackgroundVisualizerIntensity]);
 
   const handleBackgroundVisualizerStyleChange = useCallback((style: 'particles' | 'waveform' | 'geometric' | 'gradient-flow') => {
@@ -333,9 +293,8 @@ export const usePlayerLogic = () => {
   }, [setBackgroundVisualizerStyle]);
 
   const handleAccentColorBackgroundToggle = useCallback(() => {
-     // Update preferred state (which will sync to enabled state via useEffect)
-     setAccentColorBackgroundEnabled(prev => !prev);
-  }, [setAccentColorBackgroundEnabled]);
+    setAccentColorBackgroundPreferred(prev => !prev);
+  }, [setAccentColorBackgroundPreferred]);
 
   const handleBackToLibrary = useCallback(() => {
     handlePause();

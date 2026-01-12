@@ -1,67 +1,9 @@
 /**
- * @fileoverview usePlayerState Hook
- * 
  * Centralized state management hook for the entire Vorbis Player application.
+ * 
  * Manages tracks, playback state, visual effects, and user preferences with
- * persistent storage and performance optimizations.
- * 
- * @architecture
- * This hook serves as the single source of truth for all player-related state.
- * It integrates with localStorage for persistence and provides memoized
- * state updates to prevent unnecessary re-renders.
- * 
- * @responsibilities
- * - Global player state management
- * - Track and playlist state
- * - Visual effects and theme settings
- * - User preferences persistence
- * - Performance optimization
- * 
- * @state
- * - tracks: Current playlist/track collection
- * - currentTrackIndex: Currently playing track position
- * - isLoading: Loading state for async operations
- * - error: Error state for failed operations
- * - selectedPlaylistId: Active playlist identifier
- * - showPlaylist: Playlist drawer visibility
- * - showLibrary: Library navigation visibility
- * - accentColor: Dynamic theme color from album art
- * - visualEffectsEnabled: Visual effects toggle state
- * - albumFilters: Image processing filters
- * 
- * @persistence
- * - Visual effects settings stored in localStorage
- * - Album filters persisted across sessions
- * - Per-album glow settings cached locally
- * 
- * @performance
- * - Memoized state updates to prevent unnecessary re-renders
- * - Debounced filter updates (150ms delay)
- * - Lazy loading of non-critical state
- * 
- * @usage
- * ```typescript
- * const {
- *   tracks,
- *   currentTrackIndex,
- *   setTracks,
- *   setCurrentTrackIndex,
- *   visualEffectsEnabled,
- *   setVisualEffectsEnabled
- * } = usePlayerState();
- * ```
- * 
- * @dependencies
- * - localStorage: Persistent storage
- * - theme: Design system tokens
- * 
- * @sideEffects
- * - localStorage reads/writes on state changes
- * - Theme color updates on accent color changes
- * - Visual effects re-renders on filter changes
- * 
- * @author Vorbis Player Team
- * @version 2.0.0
+ * persistent storage and performance optimizations. Serves as the single source
+ * of truth for all player-related state.
  */
 
 import { useState, useEffect, useCallback } from 'react';
@@ -71,8 +13,6 @@ import type { VisualizerStyle } from '../types/visualizer';
 import type { AlbumFilters } from '../types/filters';
 import { DEFAULT_ALBUM_FILTERS } from '../types/filters';
 import { useLocalStorage } from './useLocalStorage';
-
-
 
 /**
  * Internal state type definitions
@@ -176,137 +116,69 @@ interface PlayerStateSetters {
 }
 
 /**
- * usePlayerState - Global player state management hook
+ * Global player state management hook.
  * 
  * Centralized state management for the entire player application.
  * Manages tracks, playback state, visual effects, and user preferences
  * with persistent storage and performance optimizations.
- * 
- * @hook
- * 
- * @state
- * - tracks: Current playlist/track collection
- * - currentTrackIndex: Currently playing track position
- * - isLoading: Loading state for async operations
- * - error: Error state for failed operations
- * - selectedPlaylistId: Active playlist identifier
- * - showPlaylist: Playlist drawer visibility
- * - showLibrary: Library navigation visibility
- * - accentColor: Dynamic theme color from album art
- * - visualEffectsEnabled: Visual effects toggle state
- * - albumFilters: Image processing filters (brightness, contrast, saturation, etc.)
- * 
- * @persistence
- * - Visual effects settings stored in localStorage
- * - Album filters persisted across sessions
- * - Per-album glow settings cached locally
- * 
- * @performance
- * - Memoized state updates to prevent unnecessary re-renders
- * - Debounced filter updates (150ms delay)
- * - Lazy loading of non-critical state
- * 
- * @usage
- * ```typescript
- * const {
- *   track,
- *   playlist,
- *   color,
- *   visualEffects,
- *   debug,
- *   actions
- * } = usePlayerState();
- * ```
- * 
- * @dependencies
- * - localStorage: Persistent storage
- * - theme: Design system tokens
- * 
- * @sideEffects
- * - localStorage reads/writes on state changes
- * - Theme color updates on accent color changes
- * - Visual effects re-renders on filter changes
  */
-export const usePlayerState = (): PlayerState & PlayerStateSetters => {
-  // Track and playback state
+export function usePlayerState(): PlayerState & PlayerStateSetters {
   const [tracks, setTracks] = useState<Track[]>([]);
   const [currentTrackIndex, setCurrentTrackIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedPlaylistId, setSelectedPlaylistId] = useState<string | null>(null);
-  
-  // UI state
   const [showPlaylist, setShowPlaylist] = useState(false);
   const [accentColor, setAccentColor] = useState<string>(theme.colors.accent);
   const [showVisualEffects, setShowVisualEffects] = useState(false);
 
-  // Visual effects state with persistence (using useLocalStorage)
   const [visualEffectsEnabled, setVisualEffectsEnabled] = useLocalStorage<boolean>(
     'vorbis-player-visual-effects-enabled',
     true
   );
   
-  // Per-album glow settings with persistence
   const [perAlbumGlow, setPerAlbumGlow] = useLocalStorage<Record<string, { intensity: number; rate: number }>>(
     'vorbis-player-per-album-glow',
     {}
   );
   
-  // Accent color overrides
   const [accentColorOverrides, setAccentColorOverrides] = useLocalStorage<Record<string, string>>(
     'accentColorOverrides',
     {}
   );
   
-  // Album filters with persistence
   const [albumFilters, setAlbumFilters] = useLocalStorage<AlbumFilters>(
     'vorbis-player-album-filters',
     DEFAULT_ALBUM_FILTERS
   );
 
-  // Saved filter preset
   const [savedAlbumFilters, setSavedAlbumFilters] = useState<AlbumFilters | null>(null);
-
-  // Background visualizer state with persistence
   const [backgroundVisualizerEnabled, setBackgroundVisualizerEnabled] = useLocalStorage<boolean>(
     'vorbis-player-background-visualizer-enabled',
     false
   );
-
   const [backgroundVisualizerStyle, setBackgroundVisualizerStyle] = useLocalStorage<VisualizerStyle>(
     'vorbis-player-background-visualizer-style',
     'particles'
   );
-
-  // Preferred accent color background state (user's preference from VFX menu)
   const [accentColorBackgroundPreferred, setAccentColorBackgroundPreferred] = useLocalStorage<boolean>(
     'vorbis-player-accent-color-background-preferred',
     false
   );
-
-  // Actual accent color background enabled state (respects glow state)
   const [accentColorBackgroundEnabled, setAccentColorBackgroundEnabled] = useState<boolean>(false);
-
-  // Debug mode state with persistence (hidden by default, toggle with 'D' key)
   const [debugModeEnabled, setDebugModeEnabled] = useLocalStorage<boolean>(
     'vorbis-player-debug-mode-enabled',
     false
   );
-
   const [backgroundVisualizerIntensity, setBackgroundVisualizerIntensity] = useLocalStorage<number>(
     'vorbis-player-background-visualizer-intensity',
     60
   );
 
-  // Sync accent color background with glow effect
-  // When glow is disabled, accent color background is also disabled (visually)
-  // When glow is enabled, restore the user's preferred setting from VFX menu
   useEffect(() => {
     if (!visualEffectsEnabled) {
-      // When glow is disabled, disable accent color background visually
       setAccentColorBackgroundEnabled(false);
     } else {
-      // When glow is enabled, restore the user's preferred setting
       setAccentColorBackgroundEnabled(accentColorBackgroundPreferred);
     }
   }, [visualEffectsEnabled, accentColorBackgroundPreferred]);
@@ -317,7 +189,6 @@ export const usePlayerState = (): PlayerState & PlayerStateSetters => {
         ...prev,
         [filterName]: value
       };
-      // Save the updated filters as the current settings
       setSavedAlbumFilters(newFilters);
       return newFilters;
     });
@@ -340,7 +211,6 @@ export const usePlayerState = (): PlayerState & PlayerStateSetters => {
     }
   }, [savedAlbumFilters, setAlbumFilters]);
 
-  // Accent color helper methods
   const handleSetAccentColorOverride = useCallback((trackId: string, color: string) => {
     setAccentColorOverrides(prev => ({
       ...prev,
@@ -360,7 +230,6 @@ export const usePlayerState = (): PlayerState & PlayerStateSetters => {
     handleRemoveAccentColorOverride(trackId);
   }, [handleRemoveAccentColorOverride]);
 
-  // Group related state for external consumption
   const trackState: TrackState = {
     tracks,
     currentIndex: currentTrackIndex,
@@ -399,20 +268,19 @@ export const usePlayerState = (): PlayerState & PlayerStateSetters => {
     enabled: debugModeEnabled
   };
 
-  // Group related actions
-  const trackActions = {
+  const trackActions: TrackActions = {
     setTracks,
     setCurrentIndex: setCurrentTrackIndex,
     setLoading: setIsLoading,
     setError
   };
 
-  const playlistActions = {
+  const playlistActions: PlaylistActions = {
     setSelectedId: setSelectedPlaylistId,
     setVisible: setShowPlaylist
   };
 
-  const colorActions = {
+  const colorActions: ColorActions = {
     setCurrent: setAccentColor,
     setOverrides: setAccentColorOverrides,
     handleSetAccentColorOverride,
@@ -420,7 +288,7 @@ export const usePlayerState = (): PlayerState & PlayerStateSetters => {
     handleResetAccentColorOverride
   };
 
-  const visualEffectsActions = {
+  const visualEffectsActions: VisualEffectsActions = {
     setEnabled: setVisualEffectsEnabled,
     setMenuVisible: setShowVisualEffects,
     setFilters: setAlbumFilters,
@@ -438,12 +306,11 @@ export const usePlayerState = (): PlayerState & PlayerStateSetters => {
     }
   };
 
-  const debugActions = {
+  const debugActions: DebugActions = {
     setEnabled: setDebugModeEnabled
   };
 
   return {
-    // Grouped state
     track: trackState,
     playlist: playlistState,
     color: colorState,
@@ -457,4 +324,4 @@ export const usePlayerState = (): PlayerState & PlayerStateSetters => {
       debug: debugActions
     }
   };
-};
+}
