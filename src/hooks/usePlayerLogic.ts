@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
-import { spotifyAuth, checkTrackSaved, saveTrack, unsaveTrack } from '@/services/spotify';
+import { useState, useEffect, useCallback } from 'react';
+import { spotifyAuth, checkTrackSaved, saveTrack, unsaveTrack, getAlbumTracks } from '@/services/spotify';
 import { spotifyPlayer } from '@/services/spotifyPlayer';
 import { usePlayerState } from '@/hooks/usePlayerState';
 import { usePlaylistManager } from '@/hooks/usePlaylistManager';
@@ -9,11 +9,12 @@ import { useAccentColor } from '@/hooks/useAccentColor';
 import { useVisualEffectsState } from '@/hooks/useVisualEffectsState';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
 import { useVolume } from '@/hooks/useVolume';
+import { useQueueManager } from '@/hooks/useQueueManager';
 import type { Track } from '@/services/spotify';
 
 export function usePlayerLogic() {
   const {
-    track: { tracks, currentIndex: currentTrackIndex, isLoading, error },
+    track: { isLoading, error },
     playlist: { selectedId: selectedPlaylistId, isVisible: showPlaylist },
     color: { current: accentColor, overrides: accentColorOverrides },
     visualEffects: {
@@ -31,6 +32,7 @@ export function usePlayerLogic() {
       }
     },
     debug: { enabled: debugModeEnabled },
+    library: { drawerVisible: showLibraryDrawer },
     actions: {
       track: { setTracks, setCurrentIndex: setCurrentTrackIndex, setLoading: setIsLoading, setError },
       playlist: { setSelectedId: setSelectedPlaylistId, setVisible: setShowPlaylist },
@@ -50,7 +52,8 @@ export function usePlayerLogic() {
           setPreferred: setAccentColorBackgroundPreferred
         }
       },
-      debug: { setEnabled: setDebugModeEnabled }
+      debug: { setEnabled: setDebugModeEnabled },
+      library: { setDrawerVisible: setShowLibraryDrawer }
     }
   } = usePlayerState();
 
@@ -82,27 +85,40 @@ export function usePlayerLogic() {
     restoreGlowSettings
   } = useVisualEffectsState();
 
+  // Queue management - single source of truth for all tracks
+  const queueManager = useQueueManager();
+  const { queue, currentIndex, currentTrack, setQueueTracks, addToQueue, nextTrack, previousTrack, jumpToTrack, clearQueue, getCurrentIndex } = queueManager;
+
+  // Update the global state to reflect queue state (for compatibility with existing UI)
+  useEffect(() => {
+    setTracks(queue);
+    setCurrentTrackIndex(currentIndex);
+  }, [queue, currentIndex, setTracks, setCurrentTrackIndex]);
+
   const { playTrack } = useSpotifyPlayback({
-    tracks,
-    setCurrentTrackIndex
+    tracks: queue,
+    setCurrentTrackIndex: (index) => jumpToTrack(index)
   });
 
   const { handlePlaylistSelect } = usePlaylistManager({
     setError,
     setIsLoading,
     setSelectedPlaylistId,
-    setTracks,
-    setCurrentTrackIndex
+    setTracks: setQueueTracks,
+    setCurrentTrackIndex: (index) => jumpToTrack(index)
   });
 
   useAutoAdvance({
-    tracks,
-    currentTrackIndex,
-    playTrack,
+    tracks: queue,
+    currentTrackIndex: currentIndex,
+    playTrack: async (index: number): Promise<void> => {
+      if (queue[index]) {
+        await spotifyPlayer.playTrack(queue[index].uri);
+        jumpToTrack(index);
+      }
+    },
     enabled: true
   });
-
-  const currentTrack = useMemo(() => tracks[currentTrackIndex] || null, [tracks, currentTrackIndex]);
 
   useEffect(() => {
     let isMounted = true;
@@ -181,12 +197,18 @@ export function usePlayerLogic() {
         setIsPlaying(!state.paused);
         setPlaybackPosition(state.position);
 
+        // Simplified sync - only when track actually changes
         if (state.track_window.current_track) {
-          const currentTrack = state.track_window.current_track;
-          const trackIndex = tracks.findIndex((track: Track) => track.id === currentTrack.id);
+          const spotifyTrack = state.track_window.current_track;
+          const trackIndex = queue.findIndex((track: Track) => track.id === spotifyTrack.id);
+          const currentActualIndex = getCurrentIndex();
 
-          if (trackIndex !== -1 && trackIndex !== currentTrackIndex) {
-            setCurrentTrackIndex(trackIndex);
+          // Only update if we found the track and it's different from current
+          // Also check that the current track in queue matches what Spotify is playing
+          if (trackIndex !== -1 && trackIndex !== currentActualIndex && 
+              queue[currentActualIndex]?.id !== spotifyTrack.id) {
+            console.log(`🎵 Syncing index: Spotify playing track at index ${trackIndex}, current index was ${currentActualIndex}`);
+            jumpToTrack(trackIndex);
           }
         }
       } else {
@@ -206,31 +228,39 @@ export function usePlayerLogic() {
     }
 
     checkInitialState();
-  }, [tracks, currentTrackIndex, setCurrentTrackIndex]);
+  }, [queue, jumpToTrack, getCurrentIndex]);
 
-  const handleNext = useCallback(() => {
-    if (tracks.length === 0) {
-      return;
+  const handleNext = useCallback(async (): Promise<void> => {
+    if (queue.length === 0) return;
+    
+    const latestIndex = getCurrentIndex();
+    const nextIndex = (latestIndex + 1) % queue.length;
+    const nextTrackUri = queue[nextIndex]?.uri;
+    
+    nextTrack();
+    
+    if (nextTrackUri) {
+      await spotifyPlayer.playTrack(nextTrackUri).catch(err => {
+        console.error('Failed to play next track:', err);
+      });
     }
+  }, [queue, getCurrentIndex, nextTrack]);
 
-    setCurrentTrackIndex((prevIndex) => {
-      const nextIndex = (prevIndex + 1) % tracks.length;
-      playTrack(nextIndex, true);
-      return nextIndex;
-    });
-  }, [tracks.length, playTrack, setCurrentTrackIndex]);
-
-  const handlePrevious = useCallback(() => {
-    if (tracks.length === 0) {
-      return;
+  const handlePrevious = useCallback(async (): Promise<void> => {
+    if (queue.length === 0) return;
+    
+    const latestIndex = getCurrentIndex();
+    const prevIndex = latestIndex === 0 ? queue.length - 1 : latestIndex - 1;
+    const prevTrackUri = queue[prevIndex]?.uri;
+    
+    previousTrack();
+    
+    if (prevTrackUri) {
+      await spotifyPlayer.playTrack(prevTrackUri).catch(err => {
+        console.error('Failed to play previous track:', err);
+      });
     }
-
-    setCurrentTrackIndex((prevIndex) => {
-      const newIndex = prevIndex === 0 ? tracks.length - 1 : prevIndex - 1;
-      playTrack(newIndex, true);
-      return newIndex;
-    });
-  }, [tracks.length, playTrack, setCurrentTrackIndex]);
+  }, [queue, getCurrentIndex, previousTrack]);
 
   const handlePlay = useCallback(() => {
     spotifyPlayer.resume();
@@ -260,7 +290,7 @@ export function usePlayerLogic() {
     setShowVisualEffects(prev => !prev);
   }, [setShowVisualEffects]);
 
-  const handleVisualEffectsToggle = useCallback(() => {
+  const handleVisualEffectsToggle = useCallback((): void => {
     if (visualEffectsEnabled) {
       setVisualEffectsEnabled(false);
     } else {
@@ -299,20 +329,44 @@ export function usePlayerLogic() {
   const handleBackToLibrary = useCallback(() => {
     handlePause();
     setSelectedPlaylistId(null);
-    setTracks([]);
-    setCurrentTrackIndex(0);
+    clearQueue();
     setShowPlaylist(false);
     setShowVisualEffects(false);
-  }, [handlePause, setSelectedPlaylistId, setTracks, setCurrentTrackIndex, setShowPlaylist, setShowVisualEffects]);
+  }, [handlePause, setSelectedPlaylistId, clearQueue, setShowPlaylist, setShowVisualEffects]);
+
+  const handleShowLibrary = useCallback(() => {
+    setShowLibraryDrawer(true);
+  }, [setShowLibraryDrawer]);
+
+  const handleCloseLibrary = useCallback(() => {
+    setShowLibraryDrawer(false);
+  }, [setShowLibraryDrawer]);
+
+  const handleQueueAlbum = useCallback(async (albumId: string): Promise<void> => {
+    try {
+      setIsLoading(true);
+      const albumTracks = await getAlbumTracks(albumId);
+      if (albumTracks.length > 0) {
+        addToQueue(albumTracks);
+        handleCloseLibrary();
+      }
+    } catch (error) {
+      console.error('Failed to queue album:', error);
+      setError(error instanceof Error ? error.message : 'Failed to queue album');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [addToQueue, handleCloseLibrary, setIsLoading, setError]);
 
   return {
     state: {
-      tracks,
-      currentTrackIndex,
+      tracks: queue,
+      currentTrackIndex: currentIndex,
       isLoading,
       error,
       selectedPlaylistId,
       showPlaylist,
+      showLibraryDrawer,
       accentColor,
       showVisualEffects,
       visualEffectsEnabled,
@@ -330,7 +384,8 @@ export function usePlayerLogic() {
       isLiked,
       isLikePending,
       isMuted,
-      volume
+      volume,
+      queuedTracks: [] // No separate queue anymore - everything is in the main queue
     },
     handlers: {
         handlePlaylistSelect,
@@ -357,7 +412,11 @@ export function usePlayerLogic() {
         handleAccentColorBackgroundToggle,
         handleLikeToggle,
         handleMuteToggle,
-        handleBackToLibrary
+        handleBackToLibrary,
+        handleShowLibrary,
+        handleCloseLibrary,
+        handleQueueAlbum,
+        clearQueue
     }
   };
 };

@@ -19,7 +19,9 @@ interface QuickActionsPanelProps {
   backgroundVisualizerEnabled?: boolean; // Background visualizer enabled state (kept for debug mode)
   debugModeEnabled?: boolean; // Debug mode toggle
   onBackToLibrary?: () => void; // Back to library navigation handler
+  onShowLibrary?: () => void; // Show library drawer handler
   isVisible?: boolean;
+  queueCount?: number; // Number of tracks in queue
 }
 
 const PanelWrapper = styled.div<{ $transitionDuration: number; $transitionEasing: string }>`
@@ -67,6 +69,30 @@ const DebugLabel = styled.div`
   letter-spacing: 0.05em;
 `;
 
+const QueueBadge = styled.div<{ $accentColor: string }>`
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  background: ${({ $accentColor }) => $accentColor};
+  color: ${theme.colors.black};
+  border-radius: 9px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid ${theme.colors.overlay.dark};
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+`;
+
+const PlaylistButtonWrapper = styled.div`
+  position: relative;
+  display: inline-block;
+`;
+
 
 export const QuickActionsPanel: React.FC<QuickActionsPanelProps> = ({
   accentColor,
@@ -76,8 +102,10 @@ export const QuickActionsPanel: React.FC<QuickActionsPanelProps> = ({
   onShowVisualEffects,
   onAccentColorChange,
   onBackToLibrary,
+  onShowLibrary,
   debugModeEnabled = false,
-  isVisible = true
+  isVisible = true,
+  queueCount = 0
 }) => {
   const { isMobile, isTablet, transitionDuration, transitionEasing } = usePlayerSizing();
 
@@ -108,17 +136,41 @@ export const QuickActionsPanel: React.FC<QuickActionsPanelProps> = ({
           </ControlButton>
         )}
 
-        <ControlButton
-          $isMobile={isMobile}
-          $isTablet={isTablet}
-          accentColor={accentColor}
-          onClick={onShowPlaylist}
-          title="Show Playlist"
-        >
-          <svg viewBox="0 0 24 24" role="img" aria-hidden="true">
-            <path d="M3 6h18v2H3V6zm0 5h18v2H3v-2zm0 5h18v2H3v-2z" />
-          </svg>
-        </ControlButton>
+        {onShowLibrary && (
+          <ControlButton
+            $isMobile={isMobile}
+            $isTablet={isTablet}
+            accentColor={accentColor}
+            onClick={onShowLibrary}
+            title="Browse Library"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <rect x="3" y="3" width="7" height="7" rx="1" />
+              <rect x="3" y="14" width="7" height="7" rx="1" />
+              <rect x="14" y="3" width="7" height="7" rx="1" />
+              <rect x="14" y="14" width="7" height="7" rx="1" />
+            </svg>
+          </ControlButton>
+        )}
+
+        <PlaylistButtonWrapper>
+          <ControlButton
+            $isMobile={isMobile}
+            $isTablet={isTablet}
+            accentColor={accentColor}
+            onClick={onShowPlaylist}
+            title={queueCount > 0 ? `Show Playlist (${queueCount} queued)` : "Show Playlist"}
+          >
+            <svg viewBox="0 0 24 24" role="img" aria-hidden="true">
+              <path d="M3 6h18v2H3V6zm0 5h18v2H3v-2zm0 5h18v2H3v-2z" />
+            </svg>
+          </ControlButton>
+          {queueCount > 0 && (
+            <QueueBadge $accentColor={accentColor}>
+              {queueCount > 99 ? '99+' : queueCount}
+            </QueueBadge>
+          )}
+        </PlaylistButtonWrapper>
 
         <ControlButton
           $isMobile={isMobile}

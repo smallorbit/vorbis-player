@@ -1,8 +1,9 @@
-import React, { Suspense, memo, useMemo } from 'react';
+import { Suspense, memo, useMemo } from 'react';
 import styled from 'styled-components';
 import type { Track } from '../services/spotify';
 import { theme } from '../styles/theme';
 import { usePlayerSizing } from '../hooks/usePlayerSizing';
+import React from 'react';
 
 const Playlist = React.lazy(() => import('./Playlist'));
 
@@ -101,16 +102,16 @@ const PlaylistTitle = styled.h3`
 const CloseButton = styled.button`
   background: none;
   border: none;
-  color: ${theme.colors.muted.foreground};
-  font-size: ${theme.fontSize.xl};
+  color: ${({ theme }) => theme.colors.muted.foreground};
+  font-size: ${({ theme }) => theme.fontSize.xl};
   cursor: pointer;
-  padding: ${theme.spacing.sm};
-  border-radius: ${theme.borderRadius.md};
-  transition: all ${theme.transitions.fast};
+  padding: ${({ theme }) => theme.spacing.sm};
+  border-radius: ${({ theme }) => theme.borderRadius.md};
+  transition: all ${({ theme }) => theme.transitions.fast};
   
   &:hover {
-    background: ${theme.colors.muted.background};
-    color: ${theme.colors.white};
+    background: ${({ theme }) => theme.colors.muted.background};
+    color: ${({ theme }) => theme.colors.white};
   }
 `;
 
@@ -121,7 +122,7 @@ const PlaylistFallback = styled.div`
 
 const PlaylistFallbackCard = styled.div`
   background-color: ${({ theme }) => theme.colors.gray[800]};
-  border-radius: ${theme.borderRadius['2xl']};
+  border-radius: ${({ theme }) => theme.borderRadius['2xl']};
   padding: ${({ theme }) => theme.spacing.md};
   border: 1px solid ${({ theme }) => theme.colors.gray[700]};
 `;
@@ -133,6 +134,8 @@ interface PlaylistDrawerProps {
   currentTrackIndex: number;
   accentColor: string;
   onTrackSelect: (index: number) => void;
+  queuedTracks?: Track[];
+  onClearQueue?: () => void;
 }
 
 // Custom comparison function for PlaylistDrawer memo optimization
@@ -157,6 +160,11 @@ const arePlaylistDrawerPropsEqual = (
 
   // Check if tracks array length changed (shallow check for performance)
   if (prevProps.tracks.length !== nextProps.tracks.length) {
+    return false;
+  }
+
+  // Check if queue length changed
+  if ((prevProps.queuedTracks?.length || 0) !== (nextProps.queuedTracks?.length || 0)) {
     return false;
   }
 
@@ -195,7 +203,7 @@ export const PlaylistDrawer = memo<PlaylistDrawerProps>(({
         transitionEasing={transitionEasing}
       >
         <PlaylistHeader>
-          <PlaylistTitle>Playlist ({tracks.length} tracks)</PlaylistTitle>
+          <PlaylistTitle>Queue ({tracks.length} track{tracks.length !== 1 ? 's' : ''})</PlaylistTitle>
           <CloseButton onClick={onClose}>×</CloseButton>
         </PlaylistHeader>
 

@@ -162,11 +162,29 @@ async function spotifyApiRequest<T>(
     throw new Error(`Spotify API error: ${response.status} ${response.statusText}`);
   }
 
+  // Handle 204 No Content (empty response body)
   if (response.status === 204) {
     return undefined as T;
   }
 
-  return response.json();
+  // Try to parse JSON, but handle empty responses gracefully
+  try {
+    const text = await response.text();
+    // If response body is empty, return undefined
+    if (!text.trim()) {
+      return undefined as T;
+    }
+    // Parse JSON from text
+    return JSON.parse(text) as T;
+  } catch (error) {
+    // If JSON parsing fails due to empty/invalid body, return undefined
+    // This handles cases where API returns 200 OK but with empty body
+    if (error instanceof SyntaxError) {
+      return undefined as T;
+    }
+    // Re-throw other errors
+    throw error;
+  }
 }
 
 async function fetchAllPaginated<TItem, TResult>(
