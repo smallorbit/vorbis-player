@@ -245,39 +245,51 @@ export function usePlayerLogic() {
   }, [queue, currentIndex, jumpToTrack]);
 
   const handleNext = useCallback(async () => {
+    console.log(`🎵 [NEXT] handleNext called, currentIndex=${currentIndex}, queueLength=${queue.length}`);
+    
     if (queue.length === 0) {
+      console.log(`🎵 [NEXT] Queue is empty, aborting`);
       return;
     }
 
     // Calculate next index BEFORE updating state
     const nextIndex = (currentIndex + 1) % queue.length;
+    console.log(`🎵 [NEXT] Calculated nextIndex=${nextIndex}, will play: ${queue[nextIndex]?.name}`);
     
     // Update state first
     nextTrack();
+    console.log(`🎵 [NEXT] State updated via nextTrack()`);
     
     // Then play the track
     if (queue[nextIndex]) {
+      console.log(`🎵 [NEXT] Playing track at index ${nextIndex}`);
       await spotifyPlayer.playTrack(queue[nextIndex].uri).catch(err => {
-        console.error('Failed to play next track:', err);
+        console.error('🎵 [NEXT] Failed to play next track:', err);
       });
     }
   }, [queue, currentIndex, nextTrack]);
 
   const handlePrevious = useCallback(async () => {
+    console.log(`🎵 [PREV] handlePrevious called, currentIndex=${currentIndex}, queueLength=${queue.length}`);
+    
     if (queue.length === 0) {
+      console.log(`🎵 [PREV] Queue is empty, aborting`);
       return;
     }
 
     // Calculate previous index BEFORE updating state
     const prevIndex = currentIndex === 0 ? queue.length - 1 : currentIndex - 1;
+    console.log(`🎵 [PREV] Calculated prevIndex=${prevIndex}, will play: ${queue[prevIndex]?.name}`);
     
     // Update state first
     previousTrack();
+    console.log(`🎵 [PREV] State updated via previousTrack()`);
     
     // Then play the track
     if (queue[prevIndex]) {
+      console.log(`🎵 [PREV] Playing track at index ${prevIndex}`);
       await spotifyPlayer.playTrack(queue[prevIndex].uri).catch(err => {
-        console.error('Failed to play previous track:', err);
+        console.error('🎵 [PREV] Failed to play previous track:', err);
       });
     }
   }, [queue, currentIndex, previousTrack]);

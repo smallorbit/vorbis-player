@@ -19,9 +19,10 @@ export function useQueueManager() {
    * Replaces the current queue with new tracks.
    */
   const setQueueTracks = useCallback((tracks: Track[], startIndex: number = 0) => {
+    console.log(`🎵 [QUEUE] setQueueTracks called: ${tracks.length} tracks, startIndex=${startIndex}`);
     setQueue(tracks);
     setCurrentIndex(startIndex);
-    console.log(`🎵 Queue set with ${tracks.length} track(s), starting at index ${startIndex}`);
+    console.log(`🎵 [QUEUE] Queue set complete`);
   }, []);
 
   /**
@@ -43,14 +44,15 @@ export function useQueueManager() {
    * Returns true if successful, false if at end of queue.
    */
   const nextTrack = useCallback((): boolean => {
+    console.log(`🎵 [QUEUE] nextTrack() called`);
     setCurrentIndex(prev => {
       const nextIndex = prev + 1;
       if (nextIndex >= queue.length) {
         // Loop back to start
-        console.log('🎵 End of queue, looping to start');
+        console.log(`🎵 [QUEUE] End of queue (${prev} + 1 >= ${queue.length}), looping to start (index 0)`);
         return 0;
       }
-      console.log(`🎵 Moving to next track (${nextIndex + 1}/${queue.length})`);
+      console.log(`🎵 [QUEUE] nextTrack: ${prev} -> ${nextIndex} (${nextIndex + 1}/${queue.length})`);
       return nextIndex;
     });
     return true;
@@ -61,14 +63,15 @@ export function useQueueManager() {
    * Returns true if successful, false if at beginning of queue.
    */
   const previousTrack = useCallback((): boolean => {
+    console.log(`🎵 [QUEUE] previousTrack() called`);
     setCurrentIndex(prev => {
       const prevIndex = prev - 1;
       if (prevIndex < 0) {
         // Loop to end
-        console.log('🎵 At start of queue, looping to end');
+        console.log(`🎵 [QUEUE] At start of queue (${prev} - 1 < 0), looping to end (index ${queue.length - 1})`);
         return queue.length - 1;
       }
-      console.log(`🎵 Moving to previous track (${prevIndex + 1}/${queue.length})`);
+      console.log(`🎵 [QUEUE] previousTrack: ${prev} -> ${prevIndex} (${prevIndex + 1}/${queue.length})`);
       return prevIndex;
     });
     return true;
@@ -79,13 +82,14 @@ export function useQueueManager() {
    */
   const jumpToTrack = useCallback((index: number) => {
     if (index < 0 || index >= queue.length) {
-      console.error(`🎵 Invalid track index: ${index}`);
+      console.error(`🎵 [QUEUE] Invalid track index: ${index} (queue length: ${queue.length})`);
       return false;
     }
+    console.log(`🎵 [QUEUE] jumpToTrack(${index}) - ${queue[index]?.name}`);
     setCurrentIndex(index);
-    console.log(`🎵 Jumped to track ${index + 1}/${queue.length}`);
+    console.log(`🎵 [QUEUE] Jumped to track ${index + 1}/${queue.length}`);
     return true;
-  }, [queue.length]);
+  }, [queue, queue.length]);
 
   /**
    * Clear all tracks from the queue.
