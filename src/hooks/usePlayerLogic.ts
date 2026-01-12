@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { spotifyAuth, checkTrackSaved, saveTrack, unsaveTrack, getAlbumTracks } from '@/services/spotify';
 import { spotifyPlayer } from '@/services/spotifyPlayer';
 import { usePlayerState } from '@/hooks/usePlayerState';
@@ -197,18 +197,13 @@ export function usePlayerLogic() {
   }, [setError]);
 
   useEffect(() => {
-    const lastManualChange = useRef<number>(0);
-
     function handlePlayerStateChange(state: SpotifyPlaybackState | null) {
       if (state) {
         setIsPlaying(!state.paused);
         setPlaybackPosition(state.position);
 
-        // Only sync if enough time has passed since last manual change (500ms)
-        const timeSinceManualChange = Date.now() - lastManualChange.current;
-        const shouldSync = timeSinceManualChange > 500;
-
-        if (shouldSync && state.track_window.current_track) {
+        // Simplified sync - only when track actually changes
+        if (state.track_window.current_track) {
           const spotifyTrack = state.track_window.current_track;
           const trackIndex = queue.findIndex((track: Track) => track.id === spotifyTrack.id);
           const currentActualIndex = getCurrentIndex();
