@@ -110,6 +110,7 @@ const shortcuts = [
   { key: '←', description: 'Previous track' },
   { key: '→', description: 'Next track' },
   { key: 'P', description: 'Toggle playlist' },
+  { key: 'B', description: 'Browse library' },
   { key: 'L', description: 'Like / Unlike track' },
   { key: 'M', description: 'Mute / Unmute' },
   { key: 'G', description: 'Toggle glow effect' },

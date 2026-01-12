@@ -48,7 +48,8 @@ const AudioPlayerComponent = () => {
         ui={{
           accentColor: state.accentColor,
           showVisualEffects: state.showVisualEffects,
-          showPlaylist: state.showPlaylist
+          showPlaylist: state.showPlaylist,
+          showLibrary: state.showLibraryDrawer
         }}
         effects={{
           enabled: state.visualEffectsEnabled,
@@ -67,6 +68,9 @@ const AudioPlayerComponent = () => {
           onToggleVisualEffectsMenu: handlers.handleToggleVisualEffectsMenu,
           onClosePlaylist: handlers.handleClosePlaylist,
           onTrackSelect: handlers.playTrack,
+          onToggleLibrary: handlers.handleToggleLibrary,
+          onCloseLibrary: handlers.handleCloseLibrary,
+          onLibraryPlaylistSelect: handlers.handleLibraryPlaylistSelect,
           onAccentColorChange: handlers.handleAccentColorChange,
           onGlowToggle: handlers.handleVisualEffectsToggle,
           onFilterChange: handlers.handleFilterChange,
@@ -83,8 +87,7 @@ const AudioPlayerComponent = () => {
           onAccentColorBackgroundToggle: handlers.handleAccentColorBackgroundToggle,
           debugModeEnabled: state.debugModeEnabled,
           onMuteToggle: handlers.handleMuteToggle,
-          onToggleLike: handlers.handleLikeToggle,
-          onBackToLibrary: handlers.handleBackToLibrary
+          onToggleLike: handlers.handleLikeToggle
         }}
       />
     );

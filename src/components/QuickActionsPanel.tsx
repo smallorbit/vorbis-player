@@ -18,7 +18,7 @@ interface QuickActionsPanelProps {
   onBackgroundVisualizerToggle?: () => void; // Background visualizer toggle handler (kept for debug mode)
   backgroundVisualizerEnabled?: boolean; // Background visualizer enabled state (kept for debug mode)
   debugModeEnabled?: boolean; // Debug mode toggle
-  onBackToLibrary?: () => void; // Back to library navigation handler
+  onToggleLibrary?: () => void; // Library drawer toggle handler
   isVisible?: boolean;
 }
 
@@ -75,7 +75,7 @@ export const QuickActionsPanel: React.FC<QuickActionsPanelProps> = ({
   onShowPlaylist,
   onShowVisualEffects,
   onAccentColorChange,
-  onBackToLibrary,
+  onToggleLibrary,
   debugModeEnabled = false,
   isVisible = true
 }) => {
@@ -91,13 +91,13 @@ export const QuickActionsPanel: React.FC<QuickActionsPanelProps> = ({
   return (
     <PanelWrapper $transitionDuration={transitionDuration} $transitionEasing={transitionEasing} onClick={(e) => e.stopPropagation()}>
       <PanelContainer>
-        {onBackToLibrary && (
+        {onToggleLibrary && (
           <ControlButton
             $isMobile={isMobile}
             $isTablet={isTablet}
             accentColor={accentColor}
-            onClick={onBackToLibrary}
-            title="Back to Library"
+            onClick={onToggleLibrary}
+            title="Browse Library"
           >
             <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
               <rect x="3" y="3" width="7" height="7" rx="1" stroke="currentColor" strokeWidth="2" />

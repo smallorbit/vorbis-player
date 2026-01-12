@@ -29,6 +29,10 @@ interface PlaylistState {
   isVisible: boolean;
 }
 
+interface LibraryDrawerState {
+  isOpen: boolean;
+}
+
 interface ColorState {
   current: string;
   overrides: Record<string, string>;
@@ -67,6 +71,10 @@ interface PlaylistActions {
   setVisible: (visible: boolean | ((prev: boolean) => boolean)) => void;
 }
 
+interface LibraryDrawerActions {
+  setOpen: (open: boolean | ((prev: boolean) => boolean)) => void;
+}
+
 interface ColorActions {
   setCurrent: (color: string | ((prev: string) => string)) => void;
   setOverrides: (overrides: Record<string, string> | ((prev: Record<string, string>) => Record<string, string>)) => void;
@@ -100,6 +108,7 @@ interface DebugActions {
 interface PlayerState {
   track: TrackState;
   playlist: PlaylistState;
+  libraryDrawer: LibraryDrawerState;
   color: ColorState;
   visualEffects: VisualEffectsState;
   debug: DebugState;
@@ -109,6 +118,7 @@ interface PlayerStateSetters {
   actions: {
     track: TrackActions;
     playlist: PlaylistActions;
+    libraryDrawer: LibraryDrawerActions;
     color: ColorActions;
     visualEffects: VisualEffectsActions;
     debug: DebugActions;
@@ -129,6 +139,7 @@ export function usePlayerState(): PlayerState & PlayerStateSetters {
   const [error, setError] = useState<string | null>(null);
   const [selectedPlaylistId, setSelectedPlaylistId] = useState<string | null>(null);
   const [showPlaylist, setShowPlaylist] = useState(false);
+  const [showLibraryDrawer, setShowLibraryDrawer] = useState(false);
   const [accentColor, setAccentColor] = useState<string>(theme.colors.accent);
   const [showVisualEffects, setShowVisualEffects] = useState(false);
 
@@ -242,6 +253,10 @@ export function usePlayerState(): PlayerState & PlayerStateSetters {
     isVisible: showPlaylist
   };
 
+  const libraryDrawerState: LibraryDrawerState = {
+    isOpen: showLibraryDrawer
+  };
+
   const colorState: ColorState = {
     current: accentColor,
     overrides: accentColorOverrides
@@ -280,6 +295,10 @@ export function usePlayerState(): PlayerState & PlayerStateSetters {
     setVisible: setShowPlaylist
   };
 
+  const libraryDrawerActions: LibraryDrawerActions = {
+    setOpen: setShowLibraryDrawer
+  };
+
   const colorActions: ColorActions = {
     setCurrent: setAccentColor,
     setOverrides: setAccentColorOverrides,
@@ -313,12 +332,14 @@ export function usePlayerState(): PlayerState & PlayerStateSetters {
   return {
     track: trackState,
     playlist: playlistState,
+    libraryDrawer: libraryDrawerState,
     color: colorState,
     visualEffects: visualEffectsState,
     debug: debugState,
     actions: {
       track: trackActions,
       playlist: playlistActions,
+      libraryDrawer: libraryDrawerActions,
       color: colorActions,
       visualEffects: visualEffectsActions,
       debug: debugActions
