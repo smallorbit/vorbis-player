@@ -7,11 +7,12 @@
   * - ArrowRight: Next track
   * - ArrowLeft: Previous track
   * - P: Toggle playlist
+  * - B: Toggle library drawer
   * - V: Toggle background visualizations
   * - O: Toggle visual effects menu
   * - G: Toggle glow effect
   * - ?: Show keyboard shortcuts help
-  * - Escape: Close menus (playlist drawer and visual effects)
+  * - Escape: Close menus (playlist drawer, library drawer, and visual effects)
   * - M: Mute (placeholder)
   * - ArrowUp: Volume up (placeholder)
   * - ArrowDown: Volume down (placeholder)
@@ -31,6 +32,8 @@ export interface KeyboardShortcutHandlers {
   // Menu toggles
   onTogglePlaylist?: () => void;
   onClosePlaylist?: () => void;
+  onToggleLibrary?: () => void;
+  onCloseLibrary?: () => void;
   onToggleVisualEffectsMenu?: () => void;
   onCloseVisualEffects?: () => void;
   
@@ -76,6 +79,8 @@ export const useKeyboardShortcuts = (
     onPrevious,
     onTogglePlaylist,
     onClosePlaylist,
+    onToggleLibrary,
+    onCloseLibrary,
     onToggleVisualEffectsMenu,
     onCloseVisualEffects,
     onToggleBackgroundVisualizer,
@@ -129,6 +134,14 @@ export const useKeyboardShortcuts = (
           }
           break;
 
+        case 'KeyB':
+          // B toggles library drawer
+          if (!event.ctrlKey && !event.metaKey) {
+            event.preventDefault();
+            onToggleLibrary?.();
+          }
+          break;
+
         case 'KeyV':
           // V toggles background visualizations
           if (!event.ctrlKey && !event.metaKey) {
@@ -166,6 +179,7 @@ export const useKeyboardShortcuts = (
           event.preventDefault();
           onCloseVisualEffects?.();
           onClosePlaylist?.();
+          onCloseLibrary?.();
           break;
 
         // Volume controls
@@ -224,6 +238,8 @@ export const useKeyboardShortcuts = (
     onPrevious,
     onTogglePlaylist,
     onClosePlaylist,
+    onToggleLibrary,
+    onCloseLibrary,
     onToggleVisualEffectsMenu,
     onCloseVisualEffects,
     onToggleBackgroundVisualizer,

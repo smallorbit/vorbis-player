@@ -14,6 +14,7 @@ import type { VisualizerStyle } from '../types/visualizer';
 import type { AlbumFilters } from '../types/filters';
 
 const PlaylistDrawer = lazy(() => import('./PlaylistDrawer'));
+const LibraryDrawer = lazy(() => import('./LibraryDrawer'));
 const VisualEffectsMenu = lazy(() => import('./VisualEffectsMenu/index'));
 const KeyboardShortcutsHelp = lazy(() => import('./KeyboardShortcutsHelp'));
 
@@ -29,6 +30,9 @@ interface PlayerContentHandlers {
   onToggleVisualEffectsMenu: () => void;
   onClosePlaylist: () => void;
   onTrackSelect: (index: number) => void;
+  onToggleLibrary: () => void;
+  onCloseLibrary: () => void;
+  onLibraryPlaylistSelect: (id: string, name: string) => void;
   onAccentColorChange: (color: string) => void;
   onGlowToggle: () => void;
   onFilterChange: (filter: string, value: number) => void;
@@ -46,7 +50,6 @@ interface PlayerContentHandlers {
   debugModeEnabled?: boolean; // Debug mode toggle
   onMuteToggle?: () => void; // Mute toggle handler
   onToggleLike?: () => void; // Like toggle handler
-  onBackToLibrary?: () => void; // Back to library navigation handler
 }
 
 interface PlayerContentProps {
@@ -64,6 +67,7 @@ interface PlayerContentProps {
     accentColor: string;
     showVisualEffects: boolean;
     showPlaylist: boolean;
+    showLibrary: boolean;
   };
   effects: {
     enabled: boolean;
@@ -332,6 +336,8 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
     onPrevious: handlers.onPrevious,
     onTogglePlaylist: handlers.onTogglePlaylist,
     onClosePlaylist: handlers.onClosePlaylist,
+    onToggleLibrary: handlers.onToggleLibrary,
+    onCloseLibrary: handlers.onCloseLibrary,
     onToggleVisualEffectsMenu: handlers.onToggleVisualEffectsMenu,
     onCloseVisualEffects: handleEscapeClose,
     onToggleBackgroundVisualizer: handlers.onBackgroundVisualizerToggle,
@@ -397,7 +403,7 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
               onAccentColorChange={handlers.onAccentColorChange}
               onBackgroundVisualizerToggle={handlers.onBackgroundVisualizerToggle}
               backgroundVisualizerEnabled={handlers.backgroundVisualizerEnabled}
-              onBackToLibrary={handlers.onBackToLibrary}
+              onToggleLibrary={handlers.onToggleLibrary}
               debugModeEnabled={handlers.debugModeEnabled}
               isVisible={controlsVisible}
             />
@@ -498,6 +504,13 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
           currentTrackIndex={track.currentIndex}
           accentColor={ui.accentColor}
           onTrackSelect={handlers.onTrackSelect}
+        />
+      </Suspense>
+      <Suspense fallback={<PlaylistLoadingFallback />}>
+        <LibraryDrawer
+          isOpen={ui.showLibrary}
+          onClose={handlers.onCloseLibrary}
+          onPlaylistSelect={handlers.onLibraryPlaylistSelect}
         />
       </Suspense>
       <Suspense fallback={null}>

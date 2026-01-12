@@ -15,6 +15,7 @@ export function usePlayerLogic() {
   const {
     track: { tracks, currentIndex: currentTrackIndex, isLoading, error },
     playlist: { selectedId: selectedPlaylistId, isVisible: showPlaylist },
+    libraryDrawer: { isOpen: showLibraryDrawer },
     color: { current: accentColor, overrides: accentColorOverrides },
     visualEffects: {
       enabled: visualEffectsEnabled,
@@ -34,6 +35,7 @@ export function usePlayerLogic() {
     actions: {
       track: { setTracks, setCurrentIndex: setCurrentTrackIndex, setLoading: setIsLoading, setError },
       playlist: { setSelectedId: setSelectedPlaylistId, setVisible: setShowPlaylist },
+      libraryDrawer: { setOpen: setShowLibraryDrawer },
       color: { setCurrent: setAccentColor, setOverrides: setAccentColorOverrides },
       visualEffects: {
         setEnabled: setVisualEffectsEnabled,
@@ -241,12 +243,18 @@ export function usePlayerLogic() {
   }, []);
 
   const handleShowPlaylist = useCallback(() => {
+    setShowLibraryDrawer(false); // Close library drawer when opening playlist drawer
     setShowPlaylist(true);
-  }, [setShowPlaylist]);
+  }, [setShowPlaylist, setShowLibraryDrawer]);
 
   const handleTogglePlaylist = useCallback(() => {
-    setShowPlaylist(prev => !prev);
-  }, [setShowPlaylist]);
+    if (showPlaylist) {
+      setShowPlaylist(false);
+    } else {
+      setShowLibraryDrawer(false); // Close library drawer when opening playlist drawer
+      setShowPlaylist(true);
+    }
+  }, [showPlaylist, setShowPlaylist, setShowLibraryDrawer]);
 
   const handleShowVisualEffects = useCallback(() => {
     setShowVisualEffects(true);
@@ -274,6 +282,25 @@ export function usePlayerLogic() {
     setShowPlaylist(false);
   }, [setShowPlaylist]);
 
+  const handleToggleLibrary = useCallback(() => {
+    if (showLibraryDrawer) {
+      setShowLibraryDrawer(false);
+    } else {
+      setShowPlaylist(false); // Close playlist drawer when opening library drawer
+      setShowLibraryDrawer(true);
+    }
+  }, [showLibraryDrawer, setShowLibraryDrawer, setShowPlaylist]);
+
+  const handleCloseLibrary = useCallback(() => {
+    setShowLibraryDrawer(false);
+  }, [setShowLibraryDrawer]);
+
+  const handleLibraryPlaylistSelect = useCallback((id: string, name: string) => {
+    // Immediately switch to the selected playlist/album
+    handlePlaylistSelect(id);
+    // Keep drawer open for continued browsing (as per plan)
+  }, [handlePlaylistSelect]);
+
   const handleAccentColorChange = useCallback((color: string) => {
     const mappedColor = color === 'RESET_TO_DEFAULT' ? 'auto' : color;
     handleAccentColorChangeHook(mappedColor);
@@ -296,14 +323,6 @@ export function usePlayerLogic() {
     setAccentColorBackgroundPreferred(prev => !prev);
   }, [setAccentColorBackgroundPreferred]);
 
-  const handleBackToLibrary = useCallback(() => {
-    handlePause();
-    setSelectedPlaylistId(null);
-    setTracks([]);
-    setCurrentTrackIndex(0);
-    setShowPlaylist(false);
-    setShowVisualEffects(false);
-  }, [handlePause, setSelectedPlaylistId, setTracks, setCurrentTrackIndex, setShowPlaylist, setShowVisualEffects]);
 
   return {
     state: {
@@ -313,6 +332,7 @@ export function usePlayerLogic() {
       error,
       selectedPlaylistId,
       showPlaylist,
+      showLibraryDrawer,
       accentColor,
       showVisualEffects,
       visualEffectsEnabled,
@@ -344,6 +364,9 @@ export function usePlayerLogic() {
         handleCloseVisualEffects,
         handleToggleVisualEffectsMenu,
         handleClosePlaylist,
+        handleToggleLibrary,
+        handleCloseLibrary,
+        handleLibraryPlaylistSelect,
         playTrack,
         handleAccentColorChange,
         handleVisualEffectsToggle,
@@ -356,8 +379,7 @@ export function usePlayerLogic() {
         handleBackgroundVisualizerStyleChange,
         handleAccentColorBackgroundToggle,
         handleLikeToggle,
-        handleMuteToggle,
-        handleBackToLibrary
+        handleMuteToggle
     }
   };
 };
