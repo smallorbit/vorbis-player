@@ -75,9 +75,8 @@ export const usePlaylistManager = ({
         return;
       }
 
-      // Update state with new tracks FIRST
-      setTracks(fetchedTracks);
-      setCurrentTrackIndex(0);
+      // Update state with new tracks (setTracks atomically sets both queue and index)
+      setTracks(fetchedTracks, 0);
 
       // Play the first track with retry logic for 403 errors
       const playWithRetry = async (trackIndex: number, retryCount = 0, maxRetries = 3): Promise<boolean> => {
