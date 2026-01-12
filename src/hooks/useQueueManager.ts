@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import type { Track } from '../services/spotify';
 
 /**
@@ -13,6 +13,12 @@ import type { Track } from '../services/spotify';
 export function useQueueManager() {
   const [queue, setQueue] = useState<Track[]>([]);
   const [currentIndex, setCurrentIndex] = useState<number>(0);
+  const currentIndexRef = useRef<number>(0);
+
+  // Keep ref in sync with state
+  useEffect(() => {
+    currentIndexRef.current = currentIndex;
+  }, [currentIndex]);
 
   /**
    * Set the entire queue (used when loading a playlist/album).
@@ -107,6 +113,13 @@ export function useQueueManager() {
     return queue[currentIndex] || null;
   }, [queue, currentIndex]);
 
+  /**
+   * Get the current index (always returns latest value via ref).
+   */
+  const getCurrentIndex = useCallback((): number => {
+    return currentIndexRef.current;
+  }, []);
+
   return {
     // State
     queue,
@@ -119,6 +132,7 @@ export function useQueueManager() {
     nextTrack,
     previousTrack,
     jumpToTrack,
-    clearQueue
+    clearQueue,
+    getCurrentIndex
   };
 }

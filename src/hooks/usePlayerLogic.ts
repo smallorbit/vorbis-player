@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { spotifyAuth, checkTrackSaved, saveTrack, unsaveTrack, getAlbumTracks } from '@/services/spotify';
 import { spotifyPlayer } from '@/services/spotifyPlayer';
 import { usePlayerState } from '@/hooks/usePlayerState';
@@ -87,7 +87,7 @@ export function usePlayerLogic() {
 
   // Queue management - single source of truth for all tracks
   const queueManager = useQueueManager();
-  const { queue, currentIndex, currentTrack, setQueueTracks, addToQueue, nextTrack, previousTrack, jumpToTrack, clearQueue } = queueManager;
+  const { queue, currentIndex, currentTrack, setQueueTracks, addToQueue, nextTrack, previousTrack, jumpToTrack, clearQueue, getCurrentIndex } = queueManager;
 
   // Update the global state to reflect queue state (for compatibility with existing UI)
   useEffect(() => {
@@ -197,25 +197,27 @@ export function usePlayerLogic() {
   }, [setError]);
 
   useEffect(() => {
-    let isManualChange = false;
-    let manualChangeTimeout: NodeJS.Timeout | null = null;
+    const lastManualChange = useRef<number>(0);
 
     function handlePlayerStateChange(state: SpotifyPlaybackState | null) {
       if (state) {
         setIsPlaying(!state.paused);
         setPlaybackPosition(state.position);
 
-        // Only sync the index if we're not in the middle of a manual change
-        // This prevents race conditions when manually navigating tracks
-        if (!isManualChange && state.track_window.current_track) {
+        // Only sync if enough time has passed since last manual change (500ms)
+        const timeSinceManualChange = Date.now() - lastManualChange.current;
+        const shouldSync = timeSinceManualChange > 500;
+
+        if (shouldSync && state.track_window.current_track) {
           const spotifyTrack = state.track_window.current_track;
           const trackIndex = queue.findIndex((track: Track) => track.id === spotifyTrack.id);
+          const currentActualIndex = getCurrentIndex();
 
           // Only update if we found the track and it's different from current
           // Also check that the current track in queue matches what Spotify is playing
-          if (trackIndex !== -1 && trackIndex !== currentIndex && 
-              queue[currentIndex]?.id !== spotifyTrack.id) {
-            console.log(`🎵 Syncing index: Spotify playing track at index ${trackIndex}, current index was ${currentIndex}`);
+          if (trackIndex !== -1 && trackIndex !== currentActualIndex && 
+              queue[currentActualIndex]?.id !== spotifyTrack.id) {
+            console.log(`🎵 Syncing index: Spotify playing track at index ${trackIndex}, current index was ${currentActualIndex}`);
             jumpToTrack(trackIndex);
           }
         }
@@ -236,24 +238,20 @@ export function usePlayerLogic() {
     }
 
     checkInitialState();
-
-    return () => {
-      if (manualChangeTimeout) {
-        clearTimeout(manualChangeTimeout);
-      }
-    };
-  }, [queue, currentIndex, jumpToTrack]);
+  }, [queue, jumpToTrack, getCurrentIndex]);
 
   const handleNext = useCallback(async () => {
-    console.log(`🎵 [NEXT] handleNext called, currentIndex=${currentIndex}, queueLength=${queue.length}`);
+    // Get the LATEST index value via ref (avoids stale closure)
+    const latestIndex = getCurrentIndex();
+    console.log(`🎵 [NEXT] handleNext called, latestIndex=${latestIndex}, queueLength=${queue.length}`);
     
     if (queue.length === 0) {
       console.log(`🎵 [NEXT] Queue is empty, aborting`);
       return;
     }
 
-    // Calculate next index BEFORE updating state
-    const nextIndex = (currentIndex + 1) % queue.length;
+    // Calculate next index using the latest value
+    const nextIndex = (latestIndex + 1) % queue.length;
     console.log(`🎵 [NEXT] Calculated nextIndex=${nextIndex}, will play: ${queue[nextIndex]?.name}`);
     
     // Update state first
@@ -267,18 +265,20 @@ export function usePlayerLogic() {
         console.error('🎵 [NEXT] Failed to play next track:', err);
       });
     }
-  }, [queue, currentIndex, nextTrack]);
+  }, [queue, getCurrentIndex, nextTrack]);
 
   const handlePrevious = useCallback(async () => {
-    console.log(`🎵 [PREV] handlePrevious called, currentIndex=${currentIndex}, queueLength=${queue.length}`);
+    // Get the LATEST index value via ref (avoids stale closure)
+    const latestIndex = getCurrentIndex();
+    console.log(`🎵 [PREV] handlePrevious called, latestIndex=${latestIndex}, queueLength=${queue.length}`);
     
     if (queue.length === 0) {
       console.log(`🎵 [PREV] Queue is empty, aborting`);
       return;
     }
 
-    // Calculate previous index BEFORE updating state
-    const prevIndex = currentIndex === 0 ? queue.length - 1 : currentIndex - 1;
+    // Calculate previous index using the latest value
+    const prevIndex = latestIndex === 0 ? queue.length - 1 : latestIndex - 1;
     console.log(`🎵 [PREV] Calculated prevIndex=${prevIndex}, will play: ${queue[prevIndex]?.name}`);
     
     // Update state first
@@ -292,7 +292,7 @@ export function usePlayerLogic() {
         console.error('🎵 [PREV] Failed to play previous track:', err);
       });
     }
-  }, [queue, currentIndex, previousTrack]);
+  }, [queue, getCurrentIndex, previousTrack]);
 
   const handlePlay = useCallback(() => {
     spotifyPlayer.resume();
