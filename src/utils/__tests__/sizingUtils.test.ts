@@ -105,46 +105,53 @@ describe('sizingUtils', () => {
   });
 
   describe('calculateOptimalPadding', () => {
-    it('should return correct padding for very small screens', () => {
+    it('should return minimal padding for very small screens', () => {
       mockWindow(300, 500);
       const viewport = getViewportInfo();
       const padding = calculateOptimalPadding(viewport);
-      expect(padding).toBe(4); // 300px < 320px (xs), so theme.spacing.xs = 0.25rem = 4px
+      expect(padding).toBe(2); // 300px < 320px (xs), minimal 2px
     });
 
     it('should return correct padding for small mobile', () => {
       mockWindow(350, 600);
       const viewport = getViewportInfo();
       const padding = calculateOptimalPadding(viewport);
-      expect(padding).toBe(8); // 350px < 375px (sm), so theme.spacing.sm = 0.5rem = 8px
+      expect(padding).toBe(4); // 350px < 375px (sm), 4px
     });
 
     it('should return correct padding for mobile', () => {
       mockWindow(375, 667);
       const viewport = getViewportInfo();
       const padding = calculateOptimalPadding(viewport);
-      expect(padding).toBe(16); // 375px < 480px (md), so theme.spacing.md = 1rem = 16px
+      expect(padding).toBe(6); // 375px < 480px (md), 6px to maximize album art
     });
 
-    it('should return correct padding for tablet', () => {
+    it('should return correct padding for large mobile', () => {
+      mockWindow(500, 900);
+      const viewport = getViewportInfo();
+      const padding = calculateOptimalPadding(viewport);
+      expect(padding).toBe(10); // 500px < 700px (lg), 10px
+    });
+
+    it('should return correct padding for tablet and desktop', () => {
       mockWindow(700, 1024);
       const viewport = getViewportInfo();
       const padding = calculateOptimalPadding(viewport);
-      expect(padding).toBe(32); // 700px >= 700px (lg), so theme.spacing.xl = 2rem = 32px
+      expect(padding).toBe(16); // 700px >= 700px (lg), 1rem = 16px
     });
 
     it('should return correct padding for desktop', () => {
       mockWindow(1280, 720);
       const viewport = getViewportInfo();
       const padding = calculateOptimalPadding(viewport);
-      expect(padding).toBe(32); // 1280px >= 700px (lg), so theme.spacing.xl = 2rem = 32px
+      expect(padding).toBe(16); // 1280px >= 700px (lg), 1rem = 16px
     });
 
     it('should return correct padding for large desktop', () => {
       mockWindow(1920, 1080);
       const viewport = getViewportInfo();
       const padding = calculateOptimalPadding(viewport);
-      expect(padding).toBe(32); // 1920px >= 700px (lg), so theme.spacing.xl = 2rem = 32px
+      expect(padding).toBe(16); // 1920px >= 700px (lg), 1rem = 16px
     });
   });
 });

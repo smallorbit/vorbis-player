@@ -36,6 +36,7 @@ const cleanupDeprecatedLocalStorage = () => {
 const AppContainer = styled.div`
   color: ${({ theme }) => theme.colors.foreground};
   min-height: 100vh;
+  min-height: 100dvh;
   ${flexCenter}
 `;
 

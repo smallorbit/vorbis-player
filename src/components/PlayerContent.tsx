@@ -95,8 +95,8 @@ const ContentWrapper = styled.div.withConfig({
   margin: 0 auto;
   padding: ${props => props.padding}px;
   box-sizing: border-box;
-  position: absolute;
-  z-index: 1000;
+  position: relative;
+  z-index: 2;
   
   /* Smooth transitions for responsive sizing */
   transition: width ${props => props.transitionDuration}ms ${props => props.transitionEasing},
@@ -114,26 +114,23 @@ const ContentWrapper = styled.div.withConfig({
     width: 100%;
     height: auto;
     max-width: 100vw;
-    max-height: 100vh;
-    padding: ${theme.spacing.sm};
+    max-height: 100dvh;
   }
-  
+
   @container player (min-width: ${theme.breakpoints.sm}) and (max-width: ${theme.breakpoints.md}) {
     width: 100%;
     height: auto;
     max-width: 100vw;
-    max-height: 100vh;
-    padding: ${theme.spacing.md};
+    max-height: 100dvh;
   }
-  
+
   @container player (min-width: ${theme.breakpoints.md}) and (max-width: ${theme.breakpoints.lg}) {
     width: 100%;
     height: auto;
     max-width: 100vw;
-    max-height: 100vh;
-    padding: ${theme.spacing.lg};
+    max-height: 100dvh;
   }
-  
+
   /* Fallback for browsers without container query support */
   @supports not (container-type: inline-size) {
     @media (max-width: ${theme.breakpoints.sm}) {
@@ -141,23 +138,20 @@ const ContentWrapper = styled.div.withConfig({
       height: auto;
       max-width: 100vw;
       max-height: 100vh;
-      padding: ${theme.spacing.sm};
     }
-    
+
     @media (min-width: ${theme.breakpoints.sm}) and (max-width: ${theme.breakpoints.md}) {
       width: 100%;
       height: auto;
       max-width: 100vw;
       max-height: 100vh;
-      padding: ${theme.spacing.md};
     }
-    
+
     @media (min-width: ${theme.breakpoints.md}) and (max-width: ${theme.breakpoints.lg}) {
       width: 100%;
       height: auto;
       max-width: 100vw;
       max-height: 100vh;
-      padding: ${theme.spacing.lg};
     }
   }
 `;
@@ -262,8 +256,6 @@ const PlayerContainer = styled.div.withConfig({
   display: flex;
   flex-direction: column;
   width: 100%;
-  transition: transform ${props => props.transitionDuration}ms ${props => props.transitionEasing};
-  transform: ${props => props.controlsVisible ? 'translateY(-4rem)' : 'translateY(0)'};
 `;
 
 // Album art container with click handler
@@ -306,7 +298,7 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
   }, []);
 
   // Use responsive sizing hook
-  const { dimensions, useFluidSizing, padding, transitionDuration, transitionEasing, aspectRatio } = usePlayerSizing();
+  const { dimensions, useFluidSizing, padding, transitionDuration, transitionEasing, aspectRatio, isMobile } = usePlayerSizing();
 
   // Combined close handler for Escape key (closes VFX menu and help modal)
   const handleEscapeClose = useCallback(() => {
@@ -364,7 +356,7 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
           zIndex: 2,
           minHeight: 0,
           alignItems: 'center',
-          paddingTop: '1rem'
+          paddingTop: isMobile ? '0.25rem' : '1rem'
         }}>
           <ClickableAlbumArtContainer onClick={toggleControls}>
             {/* Left-side quick actions panel for glow and visualizer toggles */}
