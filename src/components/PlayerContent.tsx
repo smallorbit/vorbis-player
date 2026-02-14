@@ -97,7 +97,8 @@ const ContentWrapper = styled.div.withConfig({
   box-sizing: border-box;
   position: relative;
   z-index: 2;
-  
+  overflow: visible;
+
   /* Smooth transitions for responsive sizing */
   transition: width ${props => props.transitionDuration}ms ${props => props.transitionEasing},
             height ${props => props.transitionDuration}ms ${props => props.transitionEasing},
@@ -256,6 +257,8 @@ const PlayerContainer = styled.div.withConfig({
   display: flex;
   flex-direction: column;
   width: 100%;
+  transition: transform ${props => props.transitionDuration}ms ${props => props.transitionEasing};
+  transform: ${props => props.controlsVisible ? 'translateY(-4rem)' : 'translateY(0)'};
 `;
 
 // Album art container with click handler
