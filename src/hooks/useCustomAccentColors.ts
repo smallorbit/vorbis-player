@@ -2,15 +2,14 @@ import { useCallback } from 'react';
 import { usePlayerState } from './usePlayerState';
 
 interface UseCustomAccentColorsProps {
-  currentTrackId?: string;
+  currentAlbumId?: string;
   onAccentColorChange?: (color: string) => void;
 }
 
 export const useCustomAccentColors = ({
-  currentTrackId,
+  currentAlbumId,
   onAccentColorChange
 }: UseCustomAccentColorsProps) => {
-  // Get accent color state and helper methods from usePlayerState
   const {
     color: { overrides: accentColorOverrides },
     actions: {
@@ -22,37 +21,32 @@ export const useCustomAccentColors = ({
     }
   } = usePlayerState();
 
-  // When user picks a color with the eyedropper, store it as the custom color for this track
   const handleCustomAccentColor = useCallback((color: string) => {
-    if (currentTrackId) {
+    if (currentAlbumId) {
       if (color === '') {
-        // Empty string means reset - remove the override
-        handleRemoveAccentColorOverride(currentTrackId);
+        handleRemoveAccentColorOverride(currentAlbumId);
       } else {
-        handleSetAccentColorOverride(currentTrackId, color);
+        handleSetAccentColorOverride(currentAlbumId, color);
       }
       onAccentColorChange?.(color);
     } else {
       onAccentColorChange?.(color);
     }
-  }, [currentTrackId, onAccentColorChange, handleSetAccentColorOverride, handleRemoveAccentColorOverride]);
+  }, [currentAlbumId, onAccentColorChange, handleSetAccentColorOverride, handleRemoveAccentColorOverride]);
 
-  // Handle accent color changes, including reset
   const handleAccentColorChange = useCallback((color: string) => {
-    if (color === 'RESET_TO_DEFAULT' && currentTrackId) {
-      // Remove custom color override for this track
-      handleResetAccentColorOverride(currentTrackId);
-      // Don't call onAccentColorChange here - let the parent re-extract the color
+    if (color === 'RESET_TO_DEFAULT' && currentAlbumId) {
+      handleResetAccentColorOverride(currentAlbumId);
       return;
     }
 
-    if (currentTrackId) {
-      handleSetAccentColorOverride(currentTrackId, color);
+    if (currentAlbumId) {
+      handleSetAccentColorOverride(currentAlbumId, color);
       onAccentColorChange?.(color);
     } else {
       onAccentColorChange?.(color);
     }
-  }, [currentTrackId, onAccentColorChange, handleSetAccentColorOverride, handleResetAccentColorOverride]);
+  }, [currentAlbumId, onAccentColorChange, handleSetAccentColorOverride, handleResetAccentColorOverride]);
 
   return {
     customAccentColorOverrides: accentColorOverrides,

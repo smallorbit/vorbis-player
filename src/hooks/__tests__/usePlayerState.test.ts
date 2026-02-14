@@ -46,19 +46,19 @@ describe('usePlayerState - Accent Color Management', () => {
 
     it('should load accent color overrides from localStorage on mount', () => {
       const mockOverrides = {
-        'track-1': '#ff0000',
-        'track-2': '#00ff00'
+        'album-1': '#ff0000',
+        'album-2': '#00ff00'
       };
-      store['accentColorOverrides'] = JSON.stringify(mockOverrides);
-      
+      store['vorbis-player-accent-color-overrides'] = JSON.stringify(mockOverrides);
+
       const { result } = renderHook(() => usePlayerState());
-      
+
       expect(result.current.color.overrides).toEqual(mockOverrides);
-      expect(localStorage.getItem).toHaveBeenCalledWith('accentColorOverrides');
+      expect(localStorage.getItem).toHaveBeenCalledWith('vorbis-player-accent-color-overrides');
     });
 
     it('should handle invalid JSON in localStorage gracefully', () => {
-      store['accentColorOverrides'] = 'invalid-json';
+      store['vorbis-player-accent-color-overrides'] = 'invalid-json';
       
       const { result } = renderHook(() => usePlayerState());
       
@@ -67,151 +67,144 @@ describe('usePlayerState - Accent Color Management', () => {
 
     it('should save accent color overrides to localStorage when state changes', () => {
       const { result } = renderHook(() => usePlayerState());
-      
+
       act(() => {
-        result.current.actions.color.handleSetAccentColorOverride('track-1', '#ff0000');
+        result.current.actions.color.handleSetAccentColorOverride('album-1', '#ff0000');
       });
-      
+
       expect(localStorage.setItem).toHaveBeenCalledWith(
-        'accentColorOverrides',
-        JSON.stringify({ 'track-1': '#ff0000' })
+        'vorbis-player-accent-color-overrides',
+        JSON.stringify({ 'album-1': '#ff0000' })
       );
     });
   });
 
   describe('Accent Color Helper Methods', () => {
-    it('should set accent color override for a track', () => {
+    it('should set accent color override for an album', () => {
       const { result } = renderHook(() => usePlayerState());
-      
+
       act(() => {
-        result.current.actions.color.handleSetAccentColorOverride('track-1', '#ff0000');
+        result.current.actions.color.handleSetAccentColorOverride('album-1', '#ff0000');
       });
-      
+
       expect(result.current.color.overrides).toEqual({
-        'track-1': '#ff0000'
+        'album-1': '#ff0000'
       });
     });
 
-    it('should update existing accent color override for a track', () => {
+    it('should update existing accent color override for an album', () => {
       const { result } = renderHook(() => usePlayerState());
-      
+
       act(() => {
-        result.current.actions.color.handleSetAccentColorOverride('track-1', '#ff0000');
+        result.current.actions.color.handleSetAccentColorOverride('album-1', '#ff0000');
       });
-      
+
       act(() => {
-        result.current.actions.color.handleSetAccentColorOverride('track-1', '#00ff00');
+        result.current.actions.color.handleSetAccentColorOverride('album-1', '#00ff00');
       });
-      
+
       expect(result.current.color.overrides).toEqual({
-        'track-1': '#00ff00'
+        'album-1': '#00ff00'
       });
     });
 
-    it('should remove accent color override for a track', () => {
+    it('should remove accent color override for an album', () => {
       const { result } = renderHook(() => usePlayerState());
-      
-      // Set multiple overrides
+
       act(() => {
-        result.current.actions.color.handleSetAccentColorOverride('track-1', '#ff0000');
+        result.current.actions.color.handleSetAccentColorOverride('album-1', '#ff0000');
       });
-      
+
       act(() => {
-        result.current.actions.color.handleSetAccentColorOverride('track-2', '#00ff00');
+        result.current.actions.color.handleSetAccentColorOverride('album-2', '#00ff00');
       });
-      
-      // Verify both are set
-      expect(result.current.color.overrides).toHaveProperty('track-1');
-      expect(result.current.color.overrides).toHaveProperty('track-2');
-      
-      // Remove one
+
+      expect(result.current.color.overrides).toHaveProperty('album-1');
+      expect(result.current.color.overrides).toHaveProperty('album-2');
+
       act(() => {
-        result.current.actions.color.handleRemoveAccentColorOverride('track-1');
+        result.current.actions.color.handleRemoveAccentColorOverride('album-1');
       });
-      
-      // Verify track-1 is removed and track-2 remains
-      expect(result.current.color.overrides).not.toHaveProperty('track-1');
-      expect(result.current.color.overrides).toHaveProperty('track-2');
-      expect(result.current.color.overrides['track-2']).toBe('#00ff00');
+
+      expect(result.current.color.overrides).not.toHaveProperty('album-1');
+      expect(result.current.color.overrides).toHaveProperty('album-2');
+      expect(result.current.color.overrides['album-2']).toBe('#00ff00');
     });
 
     it('should handle removing non-existent override gracefully', () => {
       const { result } = renderHook(() => usePlayerState());
-      
+
       act(() => {
-        result.current.actions.color.handleRemoveAccentColorOverride('non-existent-track');
+        result.current.actions.color.handleRemoveAccentColorOverride('non-existent-album');
       });
-      
+
       expect(result.current.color.overrides).toEqual({});
     });
 
-    it('should reset accent color override for a track', () => {
+    it('should reset accent color override for an album', () => {
       const { result } = renderHook(() => usePlayerState());
-      
+
       act(() => {
-        result.current.actions.color.handleSetAccentColorOverride('track-1', '#ff0000');
+        result.current.actions.color.handleSetAccentColorOverride('album-1', '#ff0000');
       });
-      
+
       act(() => {
-        result.current.actions.color.handleSetAccentColorOverride('track-2', '#00ff00');
+        result.current.actions.color.handleSetAccentColorOverride('album-2', '#00ff00');
       });
-      
-      // Verify both are set
-      expect(result.current.color.overrides).toHaveProperty('track-1');
-      expect(result.current.color.overrides).toHaveProperty('track-2');
-      
+
+      expect(result.current.color.overrides).toHaveProperty('album-1');
+      expect(result.current.color.overrides).toHaveProperty('album-2');
+
       act(() => {
-        result.current.actions.color.handleResetAccentColorOverride('track-1');
+        result.current.actions.color.handleResetAccentColorOverride('album-1');
       });
-      
-      // Verify track-1 is removed and track-2 remains
-      expect(result.current.color.overrides).not.toHaveProperty('track-1');
-      expect(result.current.color.overrides).toHaveProperty('track-2');
-      expect(result.current.color.overrides['track-2']).toBe('#00ff00');
+
+      expect(result.current.color.overrides).not.toHaveProperty('album-1');
+      expect(result.current.color.overrides).toHaveProperty('album-2');
+      expect(result.current.color.overrides['album-2']).toBe('#00ff00');
     });
 
-    it('should maintain multiple track overrides independently', () => {
+    it('should maintain multiple album overrides independently', () => {
       const { result } = renderHook(() => usePlayerState());
-      
+
       act(() => {
-        result.current.actions.color.handleSetAccentColorOverride('track-1', '#ff0000');
+        result.current.actions.color.handleSetAccentColorOverride('album-1', '#ff0000');
       });
-      
+
       act(() => {
-        result.current.actions.color.handleSetAccentColorOverride('track-2', '#00ff00');
+        result.current.actions.color.handleSetAccentColorOverride('album-2', '#00ff00');
       });
-      
+
       act(() => {
-        result.current.actions.color.handleSetAccentColorOverride('track-3', '#0000ff');
+        result.current.actions.color.handleSetAccentColorOverride('album-3', '#0000ff');
       });
-      
-      // Verify all three tracks have their overrides set correctly
-      expect(result.current.color.overrides['track-1']).toBe('#ff0000');
-      expect(result.current.color.overrides['track-2']).toBe('#00ff00');
-      expect(result.current.color.overrides['track-3']).toBe('#0000ff');
+
+      expect(result.current.color.overrides['album-1']).toBe('#ff0000');
+      expect(result.current.color.overrides['album-2']).toBe('#00ff00');
+      expect(result.current.color.overrides['album-3']).toBe('#0000ff');
     });
   });
 
   describe('localStorage Integration', () => {
     it('should persist overrides across multiple state changes', () => {
       const { result } = renderHook(() => usePlayerState());
-      
+
       act(() => {
-        result.current.actions.color.handleSetAccentColorOverride('track-1', '#ff0000');
+        result.current.actions.color.handleSetAccentColorOverride('album-1', '#ff0000');
       });
-      
+
       expect(localStorage.setItem).toHaveBeenCalledWith(
-        'accentColorOverrides',
-        JSON.stringify({ 'track-1': '#ff0000' })
+        'vorbis-player-accent-color-overrides',
+        JSON.stringify({ 'album-1': '#ff0000' })
       );
-      
+
       act(() => {
-        result.current.actions.color.handleSetAccentColorOverride('track-2', '#00ff00');
+        result.current.actions.color.handleSetAccentColorOverride('album-2', '#00ff00');
       });
-      
+
       expect(localStorage.setItem).toHaveBeenCalledWith(
-        'accentColorOverrides',
-        JSON.stringify({ 'track-1': '#ff0000', 'track-2': '#00ff00' })
+        'vorbis-player-accent-color-overrides',
+        JSON.stringify({ 'album-1': '#ff0000', 'album-2': '#00ff00' })
       );
     });
   });
@@ -219,12 +212,11 @@ describe('usePlayerState - Accent Color Management', () => {
   describe('Performance and Optimization', () => {
     it('should use useCallback for helper methods', () => {
       const { result } = renderHook(() => usePlayerState());
-      
+
       const firstRender = result.current.actions.color.handleSetAccentColorOverride;
-      
-      // Trigger a re-render
+
       act(() => {
-        result.current.actions.color.handleSetAccentColorOverride('track-1', '#ff0000');
+        result.current.actions.color.handleSetAccentColorOverride('album-1', '#ff0000');
       });
       
       const secondRender = result.current.actions.color.handleSetAccentColorOverride;
@@ -237,25 +229,25 @@ describe('usePlayerState - Accent Color Management', () => {
   describe('Edge Cases', () => {
     it('should handle empty string color values', () => {
       const { result } = renderHook(() => usePlayerState());
-      
+
       act(() => {
-        result.current.actions.color.handleSetAccentColorOverride('track-1', '');
+        result.current.actions.color.handleSetAccentColorOverride('album-1', '');
       });
-      
+
       expect(result.current.color.overrides).toEqual({
-        'track-1': ''
+        'album-1': ''
       });
     });
 
-    it('should handle special characters in track IDs', () => {
+    it('should handle special characters in album IDs', () => {
       const { result } = renderHook(() => usePlayerState());
-      
+
       act(() => {
-        result.current.actions.color.handleSetAccentColorOverride('track-with-special-chars-!@#$%', '#ff0000');
+        result.current.actions.color.handleSetAccentColorOverride('album-with-special-chars-!@#$%', '#ff0000');
       });
-      
+
       expect(result.current.color.overrides).toEqual({
-        'track-with-special-chars-!@#$%': '#ff0000'
+        'album-with-special-chars-!@#$%': '#ff0000'
       });
     });
   });

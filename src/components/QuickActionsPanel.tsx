@@ -58,7 +58,7 @@ export const QuickActionsPanel = ({
   const { isMobile, isTablet, transitionDuration, transitionEasing } = usePlayerSizing();
 
   const { customAccentColorOverrides, handleCustomAccentColor, handleAccentColorChange } = useCustomAccentColors({
-    currentTrackId: currentTrack?.id,
+    currentAlbumId: currentTrack?.album_id,
     onAccentColorChange
   });
 

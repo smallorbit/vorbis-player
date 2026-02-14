@@ -113,9 +113,9 @@ export const useAccentColor = (
       return;
     }
 
-    // Check if we have a manual override for this track
-    if (currentTrack.id && accentColorOverrides[currentTrack.id]) {
-      setAccentColor(accentColorOverrides[currentTrack.id]);
+    // Check if we have a manual override for this album
+    if (currentTrack.album_id && accentColorOverrides[currentTrack.album_id]) {
+      setAccentColor(accentColorOverrides[currentTrack.album_id]);
       return;
     }
 
@@ -147,17 +147,17 @@ export const useAccentColor = (
    * @param color - The new accent color ('auto' for extraction, or hex color)
    */
   const handleAccentColorChange = useCallback((color: string) => {
+    const albumId = currentTrack?.album_id;
+
     if (color === 'auto') {
-      // Remove any override and re-extract from image
-      if (currentTrack?.id) {
+      if (albumId) {
         setAccentColorOverrides(prev => {
           const newOverrides = { ...prev };
-          delete newOverrides[currentTrack.id];
+          delete newOverrides[albumId];
           return newOverrides;
         });
       }
 
-      // Re-extract color from current track
       if (currentTrack?.image) {
         extractDominantColor(currentTrack.image)
           .then(dominantColor => {
@@ -176,14 +176,13 @@ export const useAccentColor = (
       return;
     }
 
-    // Set manual color override
-    if (currentTrack?.id) {
-      setAccentColorOverrides(prev => ({ ...prev, [currentTrack.id]: color }));
+    if (albumId) {
+      setAccentColorOverrides(prev => ({ ...prev, [albumId]: color }));
       setAccentColor(color);
     } else {
       setAccentColor(color);
     }
-  }, [currentTrack?.id, currentTrack?.image, setAccentColorOverrides, setAccentColor]);
+  }, [currentTrack?.album_id, currentTrack?.image, setAccentColorOverrides, setAccentColor]);
 
   /**
    * Reset to automatically extracted color

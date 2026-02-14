@@ -70,9 +70,9 @@ interface PlaylistActions {
 interface ColorActions {
   setCurrent: (color: string | ((prev: string) => string)) => void;
   setOverrides: (overrides: Record<string, string> | ((prev: Record<string, string>) => Record<string, string>)) => void;
-  handleSetAccentColorOverride: (trackId: string, color: string) => void;
-  handleRemoveAccentColorOverride: (trackId: string) => void;
-  handleResetAccentColorOverride: (trackId: string) => void;
+  handleSetAccentColorOverride: (albumId: string, color: string) => void;
+  handleRemoveAccentColorOverride: (albumId: string) => void;
+  handleResetAccentColorOverride: (albumId: string) => void;
 }
 
 interface VisualEffectsActions {
@@ -143,7 +143,7 @@ export function usePlayerState(): PlayerState & PlayerStateSetters {
   );
   
   const [accentColorOverrides, setAccentColorOverrides] = useLocalStorage<Record<string, string>>(
-    'accentColorOverrides',
+    'vorbis-player-accent-color-overrides',
     {}
   );
   
@@ -211,23 +211,23 @@ export function usePlayerState(): PlayerState & PlayerStateSetters {
     }
   }, [savedAlbumFilters, setAlbumFilters]);
 
-  const handleSetAccentColorOverride = useCallback((trackId: string, color: string) => {
+  const handleSetAccentColorOverride = useCallback((albumId: string, color: string) => {
     setAccentColorOverrides(prev => ({
       ...prev,
-      [trackId]: color
+      [albumId]: color
     }));
   }, [setAccentColorOverrides]);
 
-  const handleRemoveAccentColorOverride = useCallback((trackId: string) => {
+  const handleRemoveAccentColorOverride = useCallback((albumId: string) => {
     setAccentColorOverrides(prev => {
       const newOverrides = { ...prev };
-      delete newOverrides[trackId];
+      delete newOverrides[albumId];
       return newOverrides;
     });
   }, [setAccentColorOverrides]);
 
-  const handleResetAccentColorOverride = useCallback((trackId: string) => {
-    handleRemoveAccentColorOverride(trackId);
+  const handleResetAccentColorOverride = useCallback((albumId: string) => {
+    handleRemoveAccentColorOverride(albumId);
   }, [handleRemoveAccentColorOverride]);
 
   const trackState: TrackState = {
