@@ -58,6 +58,12 @@ export const TrackInfoOnlyRow = styled.div`
   z-index: 10;
   /* Add subtle text shadow for better readability against shadows */
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+
+  @media (max-width: ${theme.breakpoints.lg}) {
+    margin-top: ${theme.spacing.sm};
+    margin-bottom: ${theme.spacing.sm};
+    padding: ${theme.spacing.xs} ${theme.spacing.sm};
+  }
 `;
 
 export const PlayerTrackName = styled.div<{ $isMobile: boolean; $isTablet: boolean }>`

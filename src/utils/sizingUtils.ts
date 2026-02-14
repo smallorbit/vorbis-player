@@ -34,18 +34,22 @@ export interface SizingConstraints {
  * Creates default SizingConstraints from theme configuration
  * This bridges the gap between hardcoded theme values and the flexible SizingConstraints interface
  */
-export const createDefaultSizingConstraints = (viewport: ViewportInfo): SizingConstraints & { 
-  viewportUsageWidth: number; 
-  viewportUsageHeight: number; 
+export const createDefaultSizingConstraints = (viewport: ViewportInfo): SizingConstraints & {
+  viewportUsageWidth: number;
+  viewportUsageHeight: number;
 } => {
+  const isMobile = viewport.width < parseInt(theme.breakpoints.lg);
+  const viewportUsageWidth = isMobile ? 0.98 : theme.playerConstraints.viewportUsage.width;
+  const viewportUsageHeight = isMobile ? 0.95 : theme.playerConstraints.viewportUsage.height;
+
   return {
     minWidth: parseInt(theme.breakpoints.xs),
-    maxWidth: Math.min(viewport.width * theme.playerConstraints.viewportUsage.width, parseInt(theme.breakpoints.lg)),
+    maxWidth: Math.min(viewport.width * viewportUsageWidth, isMobile ? viewport.width : parseInt(theme.breakpoints.lg)),
     minHeight: theme.playerConstraints.minHeight,
-    maxHeight: Math.min(viewport.height * theme.playerConstraints.viewportUsage.height, theme.playerConstraints.maxHeight),
+    maxHeight: Math.min(viewport.height * viewportUsageHeight, theme.playerConstraints.maxHeight),
     allowAspectRatioAdjustment: true,
-    viewportUsageWidth: theme.playerConstraints.viewportUsage.width,
-    viewportUsageHeight: theme.playerConstraints.viewportUsage.height,
+    viewportUsageWidth,
+    viewportUsageHeight,
     // These will be calculated by getOptimalAspectRatio and calculateAspectRatioConstraints
     preferredAspectRatio: undefined,
     minAspectRatio: undefined,
@@ -160,19 +164,19 @@ const remToPixels = (remValue: string): number => {
 };
 
 export const calculateOptimalPadding = (viewport: ViewportInfo): number => {
-  // Responsive padding based on screen size with mobile optimizations
+  // Responsive padding based on screen size — minimize on mobile to maximize album art
   const breakpoints = {
     xs: parseInt(theme.breakpoints.xs),
     sm: parseInt(theme.breakpoints.sm),
     md: parseInt(theme.breakpoints.md),
     lg: parseInt(theme.breakpoints.lg),
   };
-  
-  if (viewport.width < breakpoints.xs) return remToPixels(theme.spacing.xs); // 4px
-  if (viewport.width < breakpoints.sm) return remToPixels(theme.spacing.sm); // 8px
-  if (viewport.width < breakpoints.md) return remToPixels(theme.spacing.md); // 16px
-  if (viewport.width < breakpoints.lg) return remToPixels(theme.spacing.lg); // 24px
-  return remToPixels(theme.spacing.xl); // 32px
+
+  if (viewport.width < breakpoints.xs) return 2;  // 2px for very small screens
+  if (viewport.width < breakpoints.sm) return 4;   // 4px for small phones
+  if (viewport.width < breakpoints.md) return 6;   // 6px for standard phones
+  if (viewport.width < breakpoints.lg) return 10;  // 10px for large phones / small tablets
+  return remToPixels(theme.spacing.md);             // 16px for desktop
 };
 
 // Enhanced aspect ratio utilities

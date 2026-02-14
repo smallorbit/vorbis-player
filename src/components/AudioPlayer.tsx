@@ -8,11 +8,9 @@ import { usePlayerLogic } from '@/hooks/usePlayerLogic';
 
 const Container = styled.div`
   width: 100%;
+  min-height: 100vh;
+  min-height: 100dvh;
   ${flexCenter};
-  
-  @media (min-width: ${({ theme }) => theme.breakpoints.sm}) {
-    padding: ${({ theme }) => theme.spacing.sm};
-  }
 `;
 
 const AudioPlayerComponent = () => {

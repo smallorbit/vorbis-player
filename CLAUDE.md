@@ -7,45 +7,13 @@ This file provides guidance to Claude Code (claude.ai/code) and other AI assista
 **Vorbis Player** is a React-based Spotify music player with customizable visual effects, background visualizers, and a sleek, unified interface. The app streams music from a user's Spotify account (Premium required) with beautiful album artwork, dynamic color theming, customizable visual effects, and animated background visualizers for an immersive music listening experience.
 
 ### Key Features
-- **Spotify Integration**: Full Web Playback SDK integration with playlist and Liked Songs support
+- **Spotify Integration**: Full Web Playback SDK integration with playlist, album, and Liked Songs support
 - **Visual Effects System**: Customizable glow effects, album art filters (brightness, contrast, saturation, sepia, hue rotation, blur)
-- **Background Visualizers**: 2 active visualizer types (Particles, Geometric) - 2 deprecated visualizers exist but are not used
-- **Responsive Design**: Fixed 768px x 880px layout with mobile optimization
-- **Keyboard Shortcuts**: Comprehensive keyboard control system
+- **Background Visualizers**: 2 active visualizer types (Particles, Geometric)
+- **Fully Responsive Design**: Fluid sizing with aspect-ratio calculations, container queries, and mobile-optimized layout
+- **Playlist Management**: Search, sort, and filter playlists and albums with multiple sort criteria
+- **Keyboard Shortcuts**: Comprehensive keyboard control system (17 shortcuts)
 - **Performance Optimized**: Web Workers, LRU caching, lazy loading, hardware-accelerated animations
-
-## Recent Major Updates
-
-### 🎵 Liked Songs Feature (Latest)
-- **New Playlist Type**: Added support for playing user's Spotify Liked Songs collection
-- **Automatic Shuffle**: Liked Songs are automatically shuffled for music discovery experience
-- **Enhanced UI**: Special heart icon and styling for Liked Songs option in playlist selection
-- **API Integration**: New functions `getLikedSongs()`, `checkTrackSaved()`, `saveTrack()`, `unsaveTrack()` in spotify.ts
-- **Playlist Manager**: Updated `usePlaylistManager.ts` to handle liked songs with shuffle functionality
-
-### 🚀 Performance Optimizations
-- **Button Responsiveness**: 70-80% improvement in button click response (200-500ms → 50-100ms)
-- **Glow Feature Performance**: 75% improvement in glow animation overhead (40-60% degradation → 10-15% impact)
-- **GPU-Accelerated Animations**: CSS variables with hardware acceleration for smooth 60fps glow effects
-- **Web Worker Canvas Processing**: 80-90% reduction in main thread blocking during image processing with `imageProcessor.worker.ts`
-- **Optimized Re-renders**: 30-40% reduction in unnecessary component re-renders with enhanced React.memo patterns
-- **Virtual Scrolling**: 20-30% improvement in visual effects menu responsiveness using react-window
-- **Debounced State Updates**: 150ms debouncing prevents excessive re-renders during rapid user interactions
-- **Bundle Size Reduction**: 35-45% smaller bundle through code splitting and lazy loading
-- **Loading Performance**: 30-40% faster initial load times with resource preloading and caching
-- **Color Extraction**: 50-60% faster track transitions with intelligent caching system in `colorExtractor.ts`
-- **Memory Usage**: 20-30% reduction in memory footprint through optimized animations and worker processing
-- **Playlist Selection Progressive Loading**: Near-instant display of cached playlist/album data with background refresh in `PlaylistSelection.tsx`
-- **Image Lazy Loading**: Intersection Observer-based image loading for playlist/album artwork (50px viewport margin)
-- **Request Cancellation**: AbortController implementation prevents memory leaks and unnecessary network requests on component unmount
-- **Optimized API Calls**: Separate `getLikedSongsCount()` function for lightweight count-only requests
-
-### 🎨 UI/UX Improvements
-- **Updated Screenshots**: New interface screenshots showing current design
-- **Enhanced Styling**: Improved responsive design and visual consistency
-- **Better Error Handling**: More graceful error states and user feedback
-- **Optimized Icons**: Consistent sizing across all control icons
-- **Component Refactoring**: SpotifyPlayerControls decomposed into focused sub-components
 
 ## Development Commands
 
@@ -80,87 +48,229 @@ npm run deploy:preview # Deploy preview
 ```
 vorbis-player/
 ├── src/
-│   ├── components/           # React components
-│   │   ├── controls/        # Refactored player control sub-components
+│   ├── components/              # React components (43 files)
+│   │   ├── controls/            # Player control sub-components
 │   │   │   ├── EffectsControls.tsx
 │   │   │   ├── PlaybackControls.tsx
 │   │   │   ├── TimelineControls.tsx
 │   │   │   ├── TrackInfo.tsx
 │   │   │   ├── VolumeControl.tsx
 │   │   │   └── styled.ts
-│   │   ├── styled/          # styled-components UI library
-│   │   ├── ui/              # Radix UI component wrappers
-│   │   ├── visualizers/     # Background visualizer components
-│   │   │   ├── ParticleVisualizer.tsx
-│   │   │   ├── GeometricVisualizer.tsx
-│   │   │   ├── GradientFlowVisualizer.tsx
-│   │   │   └── WaveformVisualizer.tsx
+│   │   ├── styled/              # styled-components UI library
+│   │   │   ├── Alert.tsx
+│   │   │   ├── Avatar.tsx
+│   │   │   ├── Button.tsx
+│   │   │   ├── Card.tsx
+│   │   │   ├── ScrollArea.tsx
+│   │   │   ├── Skeleton.tsx
+│   │   │   ├── Slider.tsx
+│   │   │   └── index.ts
+│   │   ├── ui/                  # Radix UI component wrappers
+│   │   │   └── scroll-area.tsx
+│   │   ├── visualizers/         # Background visualizer components
+│   │   │   ├── ParticleVisualizer.tsx   (active)
+│   │   │   ├── GeometricVisualizer.tsx  (active)
+│   │   │   ├── GradientFlowVisualizer.tsx (deprecated)
+│   │   │   └── WaveformVisualizer.tsx   (deprecated)
 │   │   ├── VisualEffectsMenu/
-│   │   ├── __tests__/       # Component tests
-│   │   └── [other components]
-│   ├── hooks/               # Custom React hooks (17 hooks total)
-│   │   └── __tests__/       # Hook tests
-│   ├── services/            # External service integrations
-│   │   ├── spotify.ts       # Spotify Web API
-│   │   └── spotifyPlayer.ts # Spotify Web Playback SDK
-│   ├── utils/               # Utility functions
+│   │   │   ├── index.tsx
+│   │   │   └── styled.ts
+│   │   ├── __tests__/
+│   │   │   └── KeyboardShortcutsIntegration.test.tsx
+│   │   ├── AccentColorBackground.tsx
+│   │   ├── AccentColorGlowOverlay.tsx
+│   │   ├── AlbumArt.tsx
+│   │   ├── AlbumArtFilters.tsx
+│   │   ├── AudioPlayer.tsx
+│   │   ├── BackgroundVisualizer.tsx
+│   │   ├── ColorPickerPopover.tsx
+│   │   ├── EyedropperOverlay.tsx
+│   │   ├── KeyboardShortcutsHelp.tsx
+│   │   ├── LeftQuickActionsPanel.tsx
+│   │   ├── LikeButton.tsx
+│   │   ├── PerformanceProfiler.tsx
+│   │   ├── PlayerContent.tsx
+│   │   ├── PlayerControls.tsx
+│   │   ├── PlayerStateRenderer.tsx
+│   │   ├── Playlist.tsx
+│   │   ├── PlaylistDrawer.tsx
+│   │   ├── PlaylistSelection.tsx
+│   │   ├── QuickActionsPanel.tsx
+│   │   ├── SpotifyPlayerControls.tsx
+│   │   ├── TimelineSlider.tsx
+│   │   └── VisualEffectsPerformanceMonitor.tsx
+│   ├── hooks/                   # Custom React hooks (17 hooks)
+│   │   ├── __tests__/
+│   │   │   ├── useCustomAccentColors.test.ts
+│   │   │   ├── useKeyboardShortcuts.test.ts
+│   │   │   ├── useLocalStorage.test.ts
+│   │   │   └── usePlayerState.test.ts
+│   │   ├── useAccentColor.ts
+│   │   ├── useAnimationFrame.ts
+│   │   ├── useAutoAdvance.ts
+│   │   ├── useCanvasVisualizer.ts
+│   │   ├── useCustomAccentColors.ts
+│   │   ├── useImageProcessingWorker.ts
+│   │   ├── useKeyboardShortcuts.ts
+│   │   ├── useLocalStorage.ts
+│   │   ├── usePlaylistManager.ts
+│   │   ├── usePlayerLogic.ts
+│   │   ├── usePlayerSizing.ts
+│   │   ├── usePlayerState.ts
+│   │   ├── useProfilerData.ts
+│   │   ├── useSpotifyControls.ts
+│   │   ├── useSpotifyPlayback.ts
+│   │   ├── useVisualEffectsState.ts
+│   │   └── useVolume.ts
+│   ├── services/                # External service integrations
+│   │   ├── spotify.ts           # Spotify Web API
+│   │   └── spotifyPlayer.ts     # Spotify Web Playback SDK
+│   ├── utils/                   # Utility functions
+│   │   ├── __tests__/
+│   │   │   ├── colorUtils.test.ts
+│   │   │   ├── playlistFilters.test.ts
+│   │   │   └── sizingUtils.test.ts
 │   │   ├── colorExtractor.ts
+│   │   ├── colorUtils.ts
+│   │   ├── featureDetection.ts
 │   │   ├── performanceMonitor.ts
+│   │   ├── playlistFilters.ts
 │   │   ├── sizingUtils.ts
 │   │   ├── visualEffectsPerformance.ts
-│   │   └── __tests__/
-│   ├── workers/             # Web Workers
+│   │   └── visualizerUtils.ts
+│   ├── workers/                 # Web Workers
 │   │   └── imageProcessor.worker.ts
-│   ├── types/               # TypeScript definitions
-│   ├── styles/              # Global styles & theme
-│   ├── lib/                 # Helper functions
-│   ├── assets/              # Static assets
-│   └── test/                # Test setup
+│   ├── types/                   # TypeScript definitions
+│   │   ├── filters.ts
+│   │   ├── spotify.d.ts
+│   │   ├── styled.d.ts
+│   │   └── visualizer.d.ts
+│   ├── styles/                  # Global styles & theme
+│   │   ├── modules/
+│   │   │   ├── Button.module.css
+│   │   │   └── Card.module.css
+│   │   ├── ThemeProvider.tsx
+│   │   ├── theme.ts
+│   │   ├── utils.ts
+│   │   ├── breakpoints.css
+│   │   ├── container-queries.css
+│   │   ├── glow-animations.css
+│   │   └── progressive-enhancement.css
+│   ├── lib/                     # Helper functions
+│   │   └── utils.ts
+│   ├── assets/                  # Static assets
+│   └── test/                    # Test setup
+│       └── setup.ts
 ├── docs/
-│   ├── development/         # Developer documentation
-│   │   └── ai-agent-wip.md  # Current work tracking
-│   ├── deployment/          # Deployment guides
-│   └── analysis/            # Analysis documents
-├── CLAUDE.md                # This file (AI assistant guidance - root directory per Anthropic best practices)
+│   ├── development/
+│   │   └── ai-agent-wip.md
+│   ├── deployment/
+│   │   └── deploy-to-vercel.md
+│   ├── analysis/
+│   │   └── ANALYSIS.md
+│   └── implementation-plans/
+│       └── library-sort-search-filter.md
+├── CLAUDE.md                    # This file
 ├── .claude/
-│   └── rules/               # AI workflow rules
+│   └── rules/
 │       ├── generate_prd.md
 │       ├── generate_tasks_from_prd.md
 │       └── process_tasks.md
-├── proxy-server/            # Proxy server for development
+├── proxy-server/                # Proxy server for development
 └── [config files]
 ```
 
 ### Component Hierarchy
 
 ```
-App.tsx (OAuth authentication)
-└── AudioPlayer (main orchestrator with centralized state)
-    └── PlayerStateRenderer (loading/error/playlist selection states)
+App.tsx (OAuth authentication, AppContainer with flex centering)
+└── AudioPlayer (Container with min-height: 100dvh + flex centering)
+    ├── AccentColorBackground (position: fixed, z-index: 0)
+    ├── BackgroundVisualizer (position: fixed, z-index: 1)
+    │   ├── ParticleVisualizer (active)
+    │   └── GeometricVisualizer (active)
+    └── PlayerStateRenderer (loading/error/playlist selection)
+        ├── PlaylistSelection (search, sort, filter, lazy-loaded images)
         └── PlayerContent (main playing interface)
-            ├── BackgroundVisualizer (animated background)
-            │   ├── ParticleVisualizer
-            │   ├── GeometricVisualizer
-            │   ├── GradientFlowVisualizer
-            │   └── WaveformVisualizer
-            ├── LeftQuickActionsPanel (quick visual effects toggles)
-            ├── AlbumArt (artwork with filters & effects)
-            │   ├── AlbumArtFilters (CSS filter application)
-            │   └── AccentColorGlowOverlay (glow effect)
-            ├── SpotifyPlayerControls (three-column layout)
-            │   ├── TrackInfo (left - song/artist)
-            │   ├── ControlsToolbar (center - play/pause/skip)
-            │   │   ├── PlaybackControls
-            │   │   └── EffectsControls
-            │   └── TimelineControls (bottom - timeline/volume/like)
-            │       ├── TimelineSlider
-            │       ├── VolumeControl
-            │       ├── LikeButton
-            │       └── ColorPickerPopover
-            ├── PlaylistDrawer (sliding track list)
-            ├── VisualEffectsMenu (visual effects configuration)
-            └── KeyboardShortcutsHelp (help overlay)
+            └── ContentWrapper (position: relative, overflow: visible, container queries)
+                └── PlayerContainer (translateY(-4rem) when controls visible)
+                    ├── CardContent (album art zone)
+                    │   ├── LeftQuickActionsPanel (absolute, right: 100%)
+                    │   │   ├── Glow Toggle
+                    │   │   └── Visualizer Toggle
+                    │   ├── ClickableAlbumArtContainer
+                    │   │   └── AlbumArt (aspect-ratio: 1, max-width: 700px)
+                    │   │       ├── AlbumArtFilters (CSS filter application)
+                    │   │       └── AccentColorGlowOverlay
+                    │   └── QuickActionsPanel (absolute, left: 100%)
+                    │       ├── Back to Library
+                    │       ├── Playlist Drawer Toggle
+                    │       ├── Visual Effects Menu Toggle
+                    │       └── ColorPickerPopover
+                    └── AnimatedControlsContainer (slide-down animation)
+                        └── SpotifyPlayerControls
+                            ├── TrackInfo (song name/artist)
+                            ├── PlaybackControls (prev/play/next)
+                            └── TimelineControls
+                                ├── TimelineSlider
+                                ├── VolumeControl
+                                └── LikeButton
 ```
+
+### Layout Architecture (Critical)
+
+The centering system uses a flex chain from root to player content:
+
+```
+AppContainer (flexCenter, min-height: 100dvh)
+  → Container/AudioPlayer (flexCenter, min-height: 100dvh)
+    → ContentWrapper (position: relative, z-index: 2, overflow: visible)
+      → PlayerContainer (translateY(-4rem) when expanded)
+```
+
+**Important layout callouts:**
+- **`ContentWrapper` must use `position: relative`** (not absolute) so parent flex containers can center it
+- **`overflow: visible` is required on ContentWrapper** because `container-type: inline-size` establishes containment that would clip the absolutely-positioned side panels
+- **`translateY(-4rem)`** on PlayerContainer is an intentional design pattern that shifts the expanded view upward to create breathing room for the controls panel below
+- **`100dvh`** (dynamic viewport height) is used throughout to account for iOS/mobile browser address bar changes
+- **Side panels** (LeftQuickActionsPanel, QuickActionsPanel) use `position: absolute` with `right: 100%` / `left: 100%` to extend outside the album art container
+- **BackgroundVisualizer and AccentColorBackground** are `position: fixed` with low z-index values and do not affect layout flow
+
+### Responsive Sizing System
+
+The app uses a fluid responsive sizing system via `usePlayerSizing` hook and `sizingUtils.ts`:
+
+**Breakpoints** (from `theme.ts`):
+- xs: 320px (very small phones)
+- sm: 375px (standard phones)
+- md: 480px (large phones)
+- lg: 700px (tablets / desktop threshold)
+- xl: 1280px (desktop)
+- 2xl: 1536px (large desktop)
+- 3xl: 1920px (ultra-wide)
+
+**Device Detection** (`usePlayerSizing.ts`):
+- Mobile: viewport width < 700px
+- Tablet: viewport width 700px - 1024px
+- Desktop: viewport width >= 1024px
+
+**Viewport Usage**:
+- Mobile: 98% width / 95% height (maximizes album art for immersive experience)
+- Desktop/Tablet: 90% width / 90% height
+
+**Padding** (`calculateOptimalPadding` in `sizingUtils.ts`):
+- < 320px: 2px
+- < 375px: 4px
+- < 480px: 6px
+- < 700px: 10px
+- >= 700px: 16px (1rem)
+
+**Aspect Ratio** (calculated dynamically based on viewport ratio):
+- Very tall (< 0.75): 0.6
+- Portrait (< 1.0): 0.8
+- Square/landscape tablet (< 1.5): 0.86
+- Landscape (< 2.0): 0.9
+- Ultra-wide (>= 2.0): 1.2
 
 ### Hook-Based State Management
 
@@ -186,7 +296,7 @@ The application uses a centralized state management approach with custom React h
 - **useVisualEffectsState.ts** - Glow and filter state management
 
 **Performance & Processing Hooks**:
-- **useImageProcessingWorker.ts** - Web Worker integration for image processing (80-90% reduction in main thread blocking)
+- **useImageProcessingWorker.ts** - Web Worker integration for image processing
 - **useProfilerData.ts** - Performance profiling and metrics collection
 - **useCanvasVisualizer.ts** - Canvas-based visualizer management
 - **useAnimationFrame.ts** - RequestAnimationFrame wrapper for smooth animations
@@ -198,578 +308,236 @@ The application uses a centralized state management approach with custom React h
 ### Service Layer
 
 **Spotify Services**:
-- **spotify.ts** - Spotify Web API integration for playlists and authentication, includes comprehensive track library management functions:
+- **spotify.ts** - Spotify Web API integration:
   - `getUserPlaylists()`: Gets user's playlists
   - `getPlaylistTracks(playlistId)`: Gets tracks from specific playlist
   - `getLikedSongs(limit)`: Gets user's liked songs with pagination
+  - `getLikedSongsCount()`: Lightweight count-only request
   - `checkTrackSaved(trackId)`: Checks if track is saved in user's library
   - `saveTrack(trackId)`: Saves track to user's library
   - `unsaveTrack(trackId)`: Removes track from user's library
+  - `getCachedData()`: Returns cached playlist/album data for progressive loading
 - **spotifyPlayer.ts** - Spotify Web Playback SDK wrapper with state management
 
 ### Utilities
 
-**Core Utilities** (from src/utils/):
-- **colorExtractor.ts** - LRU-cached color extraction with improved performance
-- **colorUtils.ts** - Color manipulation utilities
-- **sizingUtils.ts** - Responsive sizing calculations
-- **performanceMonitor.ts** - Performance tracking
+- **colorExtractor.ts** - LRU-cached color extraction from album artwork (100 item cache limit)
+- **colorUtils.ts** - Color manipulation utilities (contrast calculation, hex conversion)
+- **sizingUtils.ts** - Responsive sizing calculations (viewport info, player dimensions, padding, fluid sizing)
+- **playlistFilters.ts** - Playlist/album search, sort, and filter logic
+- **visualizerUtils.ts** - Visualizer helper functions
+- **performanceMonitor.ts** - Performance tracking utilities
 - **visualEffectsPerformance.ts** - Visual effects performance utilities
-- **featureDetection.ts** - Browser feature detection
+- **featureDetection.ts** - Browser feature detection (WebGL, backdrop-filter, etc.)
 
 ## Key Implementation Details
 
 ### Authentication Flow
 
-- **Spotify Integration**: Uses PKCE OAuth flow for secure authentication with required scopes
-- **Music Streaming**: Streams from user's Spotify playlists and Liked Songs using Web Playback SDK (Premium required)
-- **Liked Songs Access**: Full access to user's Spotify Liked Songs collection with automatic shuffle
-- **Token Management**: Automatic token refresh for long-term authentication sessions
-- **Authentication Flow**: Handles callback at `http://127.0.0.1:3000/auth/spotify/callback`
+- **PKCE OAuth Flow**: Secure authentication with Spotify
 - **Required Scopes**: streaming, user-read-email, user-read-private, user-read-playback-state, user-library-read, user-library-modify
+- **Callback URL**: `http://127.0.0.1:3000/auth/spotify/callback`
+- **Token Management**: Automatic token refresh for long-term sessions
 
 ### Playback System
 
 - **Auto-Play & Continuous Playback**: Automatically starts first song and seamlessly advances through tracks
-- **Infinite Playlist**: Loops back to beginning when reaching the end of your music collection
-- **Track Selection Sync**: When users click playlist items vs. use audio player next/prev buttons
-- **Auto-play progression**: Seamless advancement between tracks with end-of-song detection
-- **State Management**: Uses `isInitialLoad` flag and proper useEffect dependency ordering to prevent initialization errors
+- **Infinite Playlist**: Loops back to beginning when reaching the end
+- **Auto-Skip**: Automatically skips unavailable tracks with 403 Restriction Violated errors
+- **Track Selection Sync**: Handles playlist item clicks vs. next/prev controls
+- **State Management**: Uses `isInitialLoad` flag and proper useEffect dependency ordering
 
 ### Visual Effects System
 
 **Glow Effects**:
-- Controlled via `useVisualEffectsState` hook with per-album settings stored in localStorage
-- GPU-accelerated CSS animations for smooth 60fps performance
+- Controlled via `useVisualEffectsState` hook
+- GPU-accelerated CSS animations for smooth 60fps
 - Configurable intensity (Less/Normal/More) and rate (Slower/Normal/Faster)
 - Optional accent color background overlay
-- 75% improvement in performance overhead (40-60% → 10-15% impact)
+- Per-album settings stored in localStorage
 
 **Album Art Filters**:
-- Real-time CSS filters applied to album artwork:
-  - Brightness, contrast, saturation, hue rotation
-  - Blur, sepia effects
-  - Smooth transitions with 0.3s ease timing
-- Individual sliders for each filter type with real-time preview
+- Real-time CSS filters: brightness, contrast, saturation, hue rotation, blur, sepia
+- Individual sliders with real-time preview
 - Persistent settings in localStorage (key: 'vorbis-player-album-filters')
 - Dynamic theming: slider thumbs use extracted dominant color
-- One-click reset to restore default filter values
-- Hardware-accelerated for optimal performance
+- One-click reset to defaults
 
 **Color System**:
 - **ColorPickerPopover**: Custom accent colors per track with visual color picker
 - **EyedropperOverlay**: Interactive color picking directly from album art
-- **Dynamic Extraction**: Automatic dominant color extraction with LRU caching (50-60% faster transitions)
+- **Dynamic Extraction**: Automatic dominant color extraction with LRU caching
 - **Color Persistence**: Per-track color overrides saved in localStorage
 
 ### Background Visualizers
 
-The application includes 2 active visualizer types (4 files exist, but 2 are deprecated):
-
 **Active Visualizers**:
+- **ParticleVisualizer**: Animated particle system with physics, responds to accent colors
+- **GeometricVisualizer**: Rotating geometric shapes synchronized with accent colors
 
-**ParticleVisualizer** (`src/components/visualizers/ParticleVisualizer.tsx`):
-- Animated particle system with physics simulation
-- Particles respond to music tempo and accent colors
-- Configurable density and animation speed
-- Default fallback for deprecated visualizers
+**Deprecated** (files exist but fall back to ParticleVisualizer):
+- GradientFlowVisualizer, WaveformVisualizer
 
-**GeometricVisualizer** (`src/components/visualizers/GeometricVisualizer.tsx`):
-- Rotating geometric shapes and patterns
-- Synchronized with album accent colors
-- Smooth rotation and scaling animations
+**Configuration**: Toggle on/off, intensity slider (0-100%), style selection. Uses requestAnimationFrame and Canvas API.
 
-**Deprecated Visualizers** (files exist but fallback to ParticleVisualizer):
+### Keyboard Shortcuts
 
-**GradientFlowVisualizer** (`src/components/visualizers/GradientFlowVisualizer.tsx`):
-- Deprecated - currently falls back to ParticleVisualizer (line 63-64 in BackgroundVisualizer.tsx)
-- File exists but not actively used
+| Key | Action |
+|-----|--------|
+| `Space` | Play/Pause |
+| `ArrowRight` | Next track |
+| `ArrowLeft` | Previous track |
+| `ArrowUp` | Volume up |
+| `ArrowDown` | Volume down |
+| `P` | Toggle playlist drawer |
+| `V` | Toggle background visualizer |
+| `G` | Toggle glow effect |
+| `O` | Open visual effects menu |
+| `L` | Like/unlike current track |
+| `M` | Mute/unmute |
+| `/` or `?` | Show keyboard shortcuts help |
+| `Escape` | Close all menus |
+| `D` | Toggle debug mode (if enabled) |
 
-**WaveformVisualizer** (`src/components/visualizers/WaveformVisualizer.tsx`):
-- Deprecated - currently falls back to ParticleVisualizer (line 59-61 in BackgroundVisualizer.tsx)
-- File exists but not actively used
-
-**Configuration**:
-- Toggle on/off via LeftQuickActionsPanel or VisualEffectsMenu
-- Intensity slider (0-100%) for animation strength
-- Style selection in VisualEffectsMenu (only 'particles' and 'geometric' are active)
-- Performance: Uses requestAnimationFrame and Canvas API for smooth 60fps rendering
-- Managed by `BackgroundVisualizer.tsx` component (lines 51-68)
-
-### Keyboard Shortcuts System
-
-Comprehensive keyboard control system managed by `useKeyboardShortcuts` hook (lines 66-228):
-
-**Playback Controls**:
-- `Space` (line 106-109): Play/Pause toggle
-- `←` ArrowLeft (line 116-119): Previous track
-- `→` ArrowRight (line 111-114): Next track
-- `↑` ArrowUp (line 182-188): Volume up (if handler provided)
-- `↓` ArrowDown (line 190-196): Volume down (if handler provided)
-
-**Menu & UI Controls**:
-- `P` (line 122-127): Toggle playlist drawer
-- `O` (line 137-143): Open visual effects menu
-- `Escape` (line 162-166): Close all menus (playlist drawer and visual effects)
-- `/` or `?` (line 153-159): Show keyboard shortcuts help overlay
-
-**Visual Effects Controls**:
-- `G` (line 145-151): Toggle glow effect
-- `V` (line 129-135): Toggle background visualizer (NOT visual effects menu)
-
-**Other Controls**:
-- `L` (line 174-180): Like/unlike current track
-- `M` (line 169-172): Mute/unmute
-- `D` (line 199-204): Toggle debug mode (only if `enableDebugMode` option is enabled)
-
-**Implementation Details**:
-- Centralized in `src/hooks/useKeyboardShortcuts.ts`
-- Event delegation for optimal performance
-- Prevents conflicts with text input fields, textareas, and contentEditable elements (lines 92-101)
-- Visual help overlay component: `KeyboardShortcutsHelp.tsx`
-- Prevents default browser behavior for all handled keys
-- Does not interfere with Ctrl/Cmd+Key browser shortcuts
+Centralized in `useKeyboardShortcuts.ts`. Prevents conflicts with text inputs and Ctrl/Cmd shortcuts.
 
 ### Playlist Management
 
-- **Playlist Selection**: 'liked-songs' special playlist ID for Liked Songs
-- **Automatic Shuffle**: Liked Songs are automatically shuffled using `shuffleArray()` helper function
-- **API Integration**: New Spotify API functions for liked songs management
-- **UI Integration**: Special heart icon and "Shuffle enabled" indicator in playlist selection
-- **Performance**: Limits to 200 tracks for optimal performance
+- **Search**: Real-time search across playlist/album names with debouncing
+- **Sort (Playlists)**: Recently added, Name (A-Z), Name (Z-A)
+- **Sort (Albums)**: Recently added, Name, Artist, Release date (newest/oldest)
+- **Filter (Albums)**: Filter by decade (1980s through present)
+- **View Modes**: Toggle between Playlists and Albums tabs
+- **Liked Songs**: Special playlist with automatic shuffle, heart icon indicator
+- **Progressive Loading**: Shows cached data immediately, refreshes in background
+- **Lazy Images**: Intersection Observer-based image loading (50px margin)
 
 ## Tech Stack
 
-**Frontend Framework**:
-- **React 18.3.1**: Functional components with hooks, React.memo for optimization
-- **TypeScript 5.8.3**: Full type safety with strict mode enabled
-- **Vite 6.3.5**: Build tool with HMR, ES2020 target, optimized chunking
+**Core**:
+- React 18.3.1, TypeScript 5.8.3, Vite 6.3.5
+- styled-components 6.1.12, Radix UI (@radix-ui/react-scroll-area)
+- react-window 1.8.11 (virtual scrolling)
 
-**Styling & UI**:
-- **styled-components 6.1.12**: CSS-in-JS with TypeScript support and theme system
-- **Radix UI**: Accessible component primitives (@radix-ui/react-scroll-area)
-- **CSS Features**: Custom properties, backdrop-filter, hardware-accelerated transforms
+**Audio**: Spotify Web Playback SDK + Web API with PKCE OAuth 2.0
 
-**Audio & Music**:
-- **Spotify Web Playback SDK**: Premium audio streaming
-- **Spotify Web API**: Playlist management, track library, user data
-- **Authentication**: PKCE OAuth 2.0 flow
+**Testing**: Vitest 3.2.4, @testing-library/react 16.3.0, jsdom 26.1.0, @vitest/coverage-v8
 
-**Visual Effects**:
-- **Canvas API**: Background visualizers with requestAnimationFrame
-- **CSS Filters**: Hardware-accelerated brightness, contrast, saturation, blur, sepia
-- **Web Workers**: Image processing (imageProcessor.worker.ts)
-- **Color Extraction**: LRU-cached dominant color extraction
+**Linting**: ESLint 9.25.0, typescript-eslint 8.30.1
 
-**State Management**:
-- **React Hooks**: 17 custom hooks for feature-specific state
-- **localStorage**: Persistent user preferences and visual settings
-- **Centralized State**: usePlayerState hook for global app state
-
-**Performance**:
-- **Lazy Loading**: Code splitting for heavy components
-- **LRU Caching**: Color extraction cache (100 item limit)
-- **Debouncing**: 150ms debounce for rapid state updates
-- **Memoization**: React.memo on AlbumArt, VisualEffectsMenu, heavy components
-- **Bundle Optimization**: Manual chunking (vendor, radix, styled)
-
-**Testing**:
-- **Vitest 3.2.4**: Fast unit testing with Vite integration
-- **@testing-library/react 16.3.0**: Component testing utilities
-- **jsdom 26.1.0**: DOM simulation for tests
-- **@vitest/coverage-v8**: Code coverage reporting
-
-**Development Tools**:
-- **ESLint 9.25.0**: Code linting with TypeScript support
-- **Concurrently 8.2.2**: Run multiple dev servers
-- **TypeScript ESLint**: Type-aware linting rules
-
-**Build Configuration**:
-- **Target**: ES2020 for modern browser features
-- **Minification**: esbuild for fast builds
-- **Sourcemaps**: Disabled in production for smaller bundles
-- **Asset Inlining**: <4KB files inlined as base64
-- **CSS Code Splitting**: Separate CSS chunks for faster loads
+**Build**: ES2020 target, esbuild minification, manual chunks (vendor, radix, styled), CSS code splitting
 
 ## Build & Configuration
 
 ### Vite Configuration (`vite.config.ts`)
 
-**Manual Chunk Splitting**:
-```javascript
-manualChunks: {
-  vendor: ['react', 'react-dom'],           // Core React bundle
-  radix: ['@radix-ui/react-scroll-area'],   // Radix UI components
-  styled: ['styled-components']              // Styling library
-}
-```
-
-**Development Server**:
-- Host: `127.0.0.1` (required for Spotify OAuth)
-- Port: `3000`
-- HMR enabled for fast development
-
-**Build Optimizations**:
+- Host: `127.0.0.1`, Port: `3000` (required for Spotify OAuth)
+- Manual chunks: vendor (react, react-dom), radix, styled
 - CSS code splitting enabled
-- Minification: esbuild (faster than terser)
-- Chunk size warning limit: 1000KB
 - Asset inline limit: 4KB
+- Chunk size warning limit: 1000KB
 
 ### TypeScript Configuration
 
 **Path Aliases** (`tsconfig.json`):
 ```json
-{
-  "baseUrl": ".",
-  "paths": {
-    "@/*": ["./src/*"]
-  }
-}
+{ "baseUrl": ".", "paths": { "@/*": ["./src/*"] } }
 ```
+Use `@/` prefix for clean imports: `import { usePlayerState } from '@/hooks/usePlayerState'`
 
-**Usage**: Import with `@/` prefix for clean imports:
-```typescript
-import { usePlayerState } from '@/hooks/usePlayerState'
-import { extractColors } from '@/utils/colorExtractor'
-```
+## Testing
 
-**Project References**:
-- `tsconfig.app.json` - Application code configuration
-- `tsconfig.node.json` - Node.js configuration for build scripts
+### Active Test Suites (8 files)
 
-### ESLint Configuration (`eslint.config.js`)
+**Hook Tests**:
+- `src/hooks/__tests__/useKeyboardShortcuts.test.ts` - Keyboard shortcut handling and event delegation
+- `src/hooks/__tests__/useLocalStorage.test.ts` - localStorage hook functionality and error handling
+- `src/hooks/__tests__/useCustomAccentColors.test.ts` - Custom accent color management
+- `src/hooks/__tests__/usePlayerState.test.ts` - Central state management and color persistence
 
-**Plugins**:
-- `@eslint/js` - Core JavaScript rules
-- `typescript-eslint` - TypeScript-specific rules
-- `eslint-plugin-react-hooks` - React Hooks rules
-- `eslint-plugin-react-refresh` - React Fast Refresh rules
+**Utility Tests**:
+- `src/utils/__tests__/sizingUtils.test.ts` - Responsive sizing calculations across breakpoints
+- `src/utils/__tests__/colorUtils.test.ts` - Color manipulation utilities
+- `src/utils/__tests__/playlistFilters.test.ts` - Playlist search/sort/filter logic
 
-**Rules**:
-- React Hooks rules enforced (dependencies, exhaustive-deps)
-- React Refresh: warn on non-component exports
-- TypeScript: recommended rules enabled
-
-## Common Issues & Solutions
-
-### Liked Songs Not Loading
-- **Root Cause**: Missing user-library-read scope or no liked songs in account
-- **Solution**: Verify Spotify app scopes and ensure user has liked songs
-- **Location**: Check `spotify.ts` getLikedSongs() function
-
-### Album Art Filters Not Working
-- **Root Cause**: Missing `albumFilters` prop in AlbumArt component
-- **Solution**: Always pass `albumFilters={albumFilters}` to AlbumArt component
-- **Location**: AudioPlayer.tsx line ~704
-
-### Performance Issues
-- **Color Extraction**: Ensure colorExtractor.ts cache is properly implemented
-- **Component Re-renders**: Verify React.memo is applied to heavy components
-- **Bundle Size**: Check that lazy loading is properly configured
-
-### Type Inconsistencies
-- **Filter Types**: Ensure filter interfaces match between components
-- **Invert Property**: AlbumArtFilters expects boolean, VisualEffectsMenu uses number
-- **Solution**: Standardize on single type across all filter components
-
-### Development Workflow
-- **Single server**: Use `npm run dev` for development
-- **Visual effects testing**: Test all filter combinations for performance
-- **Component hierarchy**: AudioPlayer → AlbumArt → AlbumArtFilters for filter application
-- **Performance monitoring**: Use React DevTools Profiler for performance analysis
-
-## Performance Optimizations
-
-### Key Metrics to Track
-- **First Contentful Paint (FCP)**: Target < 1.5s
-- **Largest Contentful Paint (LCP)**: Target < 2.5s
-- **Time to Interactive (TTI)**: Target < 3.5s
-- **Bundle Size**: Target < 500KB gzipped
-- **Track Transition Time**: Target < 200ms
-
-### Tools for Monitoring
-- **Lighthouse**: For Core Web Vitals monitoring
-- **Bundle Analyzer**: For bundle size analysis
-- **React DevTools Profiler**: For component performance
-- **Web Vitals Library**: For real-user monitoring
-
-### Implemented Optimizations
-- **Color Extraction Caching**: LRU cache in `colorExtractor.ts` with 100 item limit for 50-60% faster transitions
-- **Component Memoization**: React.memo applied to heavy components like AlbumArt, VisualEffectsMenu, and PlaylistImage
-- **Lazy Loading**: VisualEffectsMenu and other heavy components loaded on-demand
-- **Progressive Loading**: PlaylistSelection shows cached data immediately, then refreshes in background (see `getCachedData()` in `spotify.ts`)
-- **Intersection Observer**: Image lazy loading in PlaylistSelection with 50px viewport margin for optimal performance
-- **Request Cancellation**: AbortController pattern prevents memory leaks and unnecessary API calls
-- **Resource Hints**: DNS prefetch and preconnect for Spotify API and image CDNs
-- **Bundle Optimization**: Code splitting and tree-shaking for reduced bundle size
-
-## Testing & Test Coverage
-
-### Active Tests
-The project maintains the following test suites:
-
-- **src/hooks/__tests__/useKeyboardShortcuts.test.ts** - Keyboard shortcut handling and event delegation
-- **src/hooks/__tests__/useLocalStorage.test.ts** - localStorage hook functionality and error handling
-- **src/hooks/__tests__/useCustomAccentColors.test.ts** - Custom accent color management and overrides
-- **src/hooks/__tests__/usePlayerState.test.ts** - Central state management and color persistence
-- **src/utils/__tests__/sizingUtils.test.ts** - Responsive sizing calculations across breakpoints
-- **src/components/__tests__/KeyboardShortcutsIntegration.test.tsx** - Keyboard integration with UI
-
-### Removed Tests (Stale/Unreliable)
-As of November 28, 2025, the following outdated test files were removed to improve codebase health:
-
-- **src/services/__tests__/spotify-api.test.ts** - Tested mock implementations instead of real code
-- **src/tests/visualEffectsPerformance.test.ts** - Artificial performance tests with unreliable mocks
-- **src/hooks/__tests__/usePlayerLogic.test.ts** - Only 3 trivial tests without meaningful coverage
-- **src/__tests__/localStorageCleanup.test.ts** - Cleanup functionality no longer relevant
-- **src/components/__tests__/PlayerContent.test.tsx** - Minimal assertions, incomplete tests
-
-These removals eliminate false test coverage and reduce maintenance burden.
-
-### Running Tests
-```bash
-npm run test           # Run tests in watch mode
-npm run test:run       # Run tests once
-npm run test:ui        # Run tests with UI
-npm run test:coverage  # Run tests with coverage
-```
+**Component Tests**:
+- `src/components/__tests__/KeyboardShortcutsIntegration.test.tsx` - Keyboard integration with UI
 
 ### Testing Guidelines
 - Tests should verify actual behavior, not mock implementations
-- Performance tests should use real browser APIs when possible
 - Every test should have meaningful assertions
 - Remove tests that don't provide value
 
+## Common Issues & Solutions
+
+### Layout & Centering
+- **Side panels clipped**: Ensure `overflow: visible` is set on ContentWrapper. The `container-type: inline-size` creates containment that can clip absolutely-positioned children.
+- **Player not centered**: ContentWrapper must use `position: relative` (not absolute) so parent flex containers can center it.
+- **Mobile viewport bouncing**: Use `100dvh` instead of `100vh` to account for iOS address bar changes.
+
+### Spotify Integration
+- **Liked Songs not loading**: Verify user-library-read scope and that user has liked songs
+- **Authentication issues**: Use `127.0.0.1` not `localhost` for OAuth callback
+- **Track skipping**: Auto-skip handles 403 Restriction Violated errors for unavailable tracks
+
+### Visual Effects
+- **Album art filters not working**: Always pass `albumFilters={albumFilters}` to AlbumArt component
+- **Glow bleed**: Quick access panels render above album art glow (z-index hierarchy)
+
+### Performance
+- **Color extraction**: Ensure LRU cache in colorExtractor.ts is functioning (100 item limit)
+- **Re-renders**: Verify React.memo with custom comparison functions on heavy components
+- **Bundle size**: Check lazy loading and code splitting configuration
+
 ## Environment Configuration
 
-Required environment variables in `.env.local`:
-
+Required in `.env.local`:
 ```
 VITE_SPOTIFY_CLIENT_ID="your_spotify_client_id"
 VITE_SPOTIFY_REDIRECT_URI="http://127.0.0.1:3000/auth/spotify/callback"
 ```
 
-## AI Workflow Rules
+## Coding Conventions
 
-For structured feature development workflows, see detailed rules in `.claude/rules/`:
-
-- **`.claude/rules/generate_prd.md`** - Guide for creating Product Requirements Documents (PRDs) through clarifying questions and structured documentation
-- **`.claude/rules/generate_tasks_from_prd.md`** - Breaking PRDs into parent/sub-task hierarchies with two-phase generation (parent tasks → sub-tasks)
-- **`.claude/rules/process_tasks.md`** - Step-by-step task execution protocol with git commits after completing parent tasks
-
-These rules define workflows for PRD creation, task breakdown, and implementation tracking when working on larger features.
-
-## Coding Conventions & Best Practices
-
-### React Component Patterns
-
-**Functional Components with Hooks**:
-```typescript
-import React from 'react';
-import { usePlayerState } from '@/hooks/usePlayerState';
-
-export const MyComponent: React.FC = () => {
-  const { trackState, setTrackState } = usePlayerState();
-
-  return <div>{/* component JSX */}</div>;
-};
-```
-
-**Performance Optimization**:
-- Apply `React.memo()` to heavy components (AlbumArt, VisualEffectsMenu)
-- Use `useMemo()` for expensive calculations
-- Use `useCallback()` for event handlers passed to child components
-- Minimize prop drilling via `usePlayerState` centralized hook
-
-**Component Organization**:
-- One component per file
+### React Patterns
+- Functional components with hooks, React.memo for optimization
+- One component per file, named exports
 - Co-locate sub-components in dedicated directories
-- Export components as named exports
-- Keep component files under 500 lines (refactor if larger)
+- Keep component files under 500 lines
 
-### State Management Patterns
+### State Management
+- Grouped state objects to reduce re-renders
+- `useLocalStorage` hook for persistence with 'vorbis-player-' key prefix
+- Props vs hook state hierarchy for keyboard shortcut synchronization
 
-**Grouped State for Related Data**:
-```typescript
-// Good: Grouped state reduces re-renders
-const [trackState, setTrackState] = useState({
-  currentTrack: null,
-  isPlaying: false,
-  progress: 0
-});
+### Styling
+- styled-components with theme system (`theme.ts`)
+- Hardware-accelerated animations (`transform: translateZ(0)`, `will-change`)
+- CSS custom properties for dynamic colors
+- Container queries as primary responsive strategy, media queries as fallback
 
-// Avoid: Separate state causes multiple re-renders
-const [currentTrack, setCurrentTrack] = useState(null);
-const [isPlaying, setIsPlaying] = useState(false);
-const [progress, setProgress] = useState(0);
-```
-
-**localStorage Persistence**:
-- Use `useLocalStorage` hook for type-safe persistence
-- Prefix keys with 'vorbis-player-' for namespacing
-- Handle parse errors gracefully
-- Provide sensible defaults
-
-### Styling Conventions
-
-**styled-components Best Practices**:
-```typescript
-import styled from 'styled-components';
-
-// Use theme for consistency
-const Button = styled.button`
-  background: ${({ theme }) => theme.colors.primary};
-  border-radius: ${({ theme }) => theme.borderRadius.md};
-  padding: ${({ theme }) => theme.spacing.md};
-`;
-
-// Hardware acceleration for animations
-const AnimatedBox = styled.div`
-  transform: translateZ(0);
-  will-change: transform, opacity;
-  transition: transform 0.3s ease;
-`;
-```
-
-**CSS Custom Properties for Dynamic Colors**:
-```typescript
-// Set CSS variables from extracted colors
-document.documentElement.style.setProperty('--accent-color', accentColor);
-
-// Use in styled-components
-const AccentBox = styled.div`
-  background: var(--accent-color, #3b82f6);
-`;
-```
-
-### Performance Best Practices
-
-**Debouncing Rapid Updates**:
-```typescript
-import { debounce } from 'lodash';
-
-const debouncedUpdate = useMemo(
-  () => debounce((value) => setState(value), 150),
-  []
-);
-```
-
-**Lazy Loading Components**:
-```typescript
-const VisualEffectsMenu = lazy(() => import('./VisualEffectsMenu'));
-
-<Suspense fallback={<Skeleton />}>
-  <VisualEffectsMenu />
-</Suspense>
-```
-
-**LRU Cache Pattern** (see `colorExtractor.ts`):
-- Limit cache size (100 items)
-- Use Map for O(1) lookups
-- Evict least recently used items
-
-### TypeScript Conventions
-
-**Strict Type Safety**:
-- Enable strict mode in tsconfig.json
-- Avoid `any` types (use `unknown` if needed)
-- Define interfaces for component props
-- Use type guards for runtime checks
-
-**Type Definitions**:
-- Place types in `src/types/` directory
-- Use `.d.ts` files for declaration-only types
-- Import types with `import type` syntax when possible
-
-### Error Handling
-
-**Spotify API Errors**:
-```typescript
-try {
-  const data = await spotify.getUserPlaylists();
-} catch (error) {
-  console.error('Failed to fetch playlists:', error);
-  // Show user-friendly error message
-  setError('Could not load playlists. Please try again.');
-}
-```
-
-**Graceful Degradation**:
-- Provide fallbacks for missing features
-- Handle localStorage quota errors
-- Detect WebGL support for visualizers
-- Use feature detection (see `featureDetection.ts`)
-
-### Testing Guidelines
-
-**What to Test**:
-- Custom hooks (state management, side effects)
-- Utility functions (color extraction, sizing calculations)
-- User interactions (keyboard shortcuts, click handlers)
-- Integration points (localStorage, Spotify API mocks)
-
-**What NOT to Test**:
-- Mock implementations instead of real code
-- Trivial getter/setter functions
-- Third-party library internals
-- Purely visual styling
-
-**Test Structure**:
-```typescript
-describe('useKeyboardShortcuts', () => {
-  it('should play/pause on spacebar', () => {
-    // Arrange
-    const { result } = renderHook(() => useKeyboardShortcuts());
-
-    // Act
-    fireEvent.keyDown(window, { key: ' ' });
-
-    // Assert
-    expect(mockTogglePlayback).toHaveBeenCalled();
-  });
-});
-```
-
-## Recent Activity & Changes
-
-### Latest Commits (December 2025)
-- **31b7227**: docs: Add testing section and update WIP tracking (#76)
-- **4b4130b**: Remove stale and outdated test files (#75)
-- **a7994c2**: cleanup: remove temporary task planning and refactoring docs (#74)
-- **e8d3e54**: enhance support for keyboard shortcuts
-- **de7ac84**: refactor: vfx components and state management (#72)
-- **3b6fb0a**: refactor: consolidate keyboard shortcuts into centralized hook (#71)
-
-### Current WIP (from `ai-agent-wip.md`)
-- **Completed**: Quick Actions Panel rounded corners fix (Issue #58)
-- **Completed**: Player sizing strategy overhaul (responsive design)
-- **In Progress**: Background color consistency across screens (Issue #60)
-- **Testing Phase**: Cross-device testing for responsive design
-
-### Major Refactorings
-1. **Keyboard Shortcuts Consolidation**: Centralized all shortcuts into `useKeyboardShortcuts` hook
-2. **VFX Components**: Refactored visual effects into modular components
-3. **Player Controls**: Decomposed into sub-components (TrackInfo, PlaybackControls, TimelineControls)
-4. **State Management**: Migrated to centralized `usePlayerState` hook
+### TypeScript
+- Strict mode enabled
+- Types in `src/types/` directory
+- Interfaces for component props
+- `import type` syntax when possible
 
 ## Command Instructions
 
 ### Special Commands
-- `/commit` - Commit current working changes to the current branch. Split into logically related commits in correct sequential order
+- `/commit` - Commit current working changes, split into logical commits
 - `/doc` - Update README.md with changes
-- `/comdoc` - Update README.md, then commit changes (/doc + /commit in that order)
+- `/comdoc` - Update README.md, then commit changes
 
 ### Documentation Updates
-- Update `CLAUDE.md` (this file, in root directory) when adding new patterns, conventions, or architectural decisions
-- Update `docs/development/ai-agent-wip.md` with current progress and task status
+- Update `CLAUDE.md` (this file) when adding new patterns, conventions, or architectural decisions
+- Update `docs/development/ai-agent-wip.md` with current progress
 - Update `README.md` for user-facing features and setup instructions
 
 ### Git Workflow
-- Create feature branches from main
-- Use descriptive branch names: `feature/name`, `fix/name`, `refactor/name`
-- Make logical, atomic commits with clear messages
-- Reference issue numbers in commits: `fix: correct glow animation (#58)`
-- Update documentation before committing large features
+- Feature branches from main: `feature/name`, `fix/name`, `refactor/name`
+- Logical, atomic commits with clear messages
+- Reference issue numbers: `fix: correct glow animation (#58)`
 
 ## AI Assistant Guidelines
 
@@ -777,49 +545,21 @@ describe('useKeyboardShortcuts', () => {
 1. **Read First**: Always read files before editing
 2. **Understand Context**: Review related components and hooks
 3. **Check Types**: Ensure TypeScript types are correct
-4. **Test Locally**: Run `npm run test` and `npm run build`
-5. **Follow Patterns**: Match existing code style and conventions
+4. **Test Locally**: Run `npm run test:run` and `tsc -b && vite build`
+5. **Follow Patterns**: Match existing code style
 6. **Update Docs**: Update CLAUDE.md if adding new patterns
 
-### Common Workflows
-
-**Adding a New Feature**:
-1. Read relevant existing code (components, hooks, services)
-2. Create/update necessary hooks in `src/hooks/`
-3. Create/update components in `src/components/`
-4. Add TypeScript types in `src/types/`
-5. Add tests in `__tests__/` directories
-6. Update documentation (README.md, CLAUDE.md)
-7. Test build and lint: `npm run build && npm run lint`
-8. Commit changes with clear message
-
-**Fixing a Bug**:
-1. Reproduce and understand the issue
-2. Locate the bug in relevant files
-3. Fix with minimal changes
-4. Add test to prevent regression
-5. Verify fix doesn't break other features
-6. Commit with descriptive message
-
-**Performance Optimization**:
-1. Profile with React DevTools and Lighthouse
-2. Identify bottlenecks (re-renders, expensive calculations)
-3. Apply optimizations (memoization, lazy loading, caching)
-4. Measure improvement
-5. Document optimization in code comments
-6. Update CLAUDE.md if introducing new patterns
-
 ### Files to Reference
+- **Layout Architecture**: `src/components/PlayerContent.tsx` (ContentWrapper, PlayerContainer)
+- **Responsive Sizing**: `src/hooks/usePlayerSizing.ts`, `src/utils/sizingUtils.ts`
+- **Component Structure**: `src/components/AudioPlayer.tsx`
+- **Hook Patterns**: `src/hooks/usePlayerState.ts`
+- **Spotify Integration**: `src/services/spotify.ts`, `src/services/spotifyPlayer.ts`
+- **Theme & Styling**: `src/styles/theme.ts`, `src/styles/utils.ts`
+- **Playlist Features**: `src/components/PlaylistSelection.tsx`, `src/utils/playlistFilters.ts`
 
-**For Component Structure**: `src/components/AudioPlayer.tsx`
-**For Hook Patterns**: `src/hooks/usePlayerState.ts`
-**For Spotify Integration**: `src/services/spotify.ts`, `src/services/spotifyPlayer.ts`
-**For Performance**: `src/utils/colorExtractor.ts`, `src/utils/performanceMonitor.ts`
-**For Styling**: `src/components/styled/`, theme files
-**For Testing**: `src/hooks/__tests__/usePlayerState.test.ts`
-
-### Related Documentation
-- **AGENTS.md**: Quick reference for AI agent commands and conventions
-- **README.md**: User-facing documentation and setup guide
-- **ai-agent-wip.md**: Current work in progress tracking
-- **.claude/rules/**: Structured workflow rules for PRD generation and task processing
+### AI Workflow Rules
+For structured feature development workflows, see `.claude/rules/`:
+- `generate_prd.md` - Product Requirements Document creation
+- `generate_tasks_from_prd.md` - Task breakdown from PRDs
+- `process_tasks.md` - Task execution protocol with git commits

@@ -46,11 +46,16 @@ function selectOptimalImage(
 
 const Container = styled.div`
   min-height: 100vh;
+  min-height: 100dvh;
   width: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 1rem;
+
+  @media (max-width: ${theme.breakpoints.lg}) {
+    padding: 0.5rem;
+  }
 `;
 
 const SelectionCard = styled(Card) <{ $maxWidth: number }>`
