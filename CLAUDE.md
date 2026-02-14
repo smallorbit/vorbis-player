@@ -188,7 +188,7 @@ App.tsx (OAuth authentication, AppContainer with flex centering)
         ├── PlaylistSelection (search, sort, filter, lazy-loaded images)
         └── PlayerContent (main playing interface)
             └── ContentWrapper (position: relative, overflow: visible, container queries)
-                └── PlayerContainer (translateY(-4rem) when controls visible)
+                └── PlayerContainer (flex column, always centered)
                     ├── CardContent (album art zone)
                     │   ├── LeftQuickActionsPanel (absolute, right: 100%)
                     │   │   ├── Glow Toggle
@@ -226,7 +226,7 @@ AppContainer (flexCenter, min-height: 100dvh)
 **Important layout callouts:**
 - **`ContentWrapper` must use `position: relative`** (not absolute) so parent flex containers can center it
 - **`overflow: visible` is required on ContentWrapper** because `container-type: inline-size` establishes containment that would clip the absolutely-positioned side panels
-- **`translateY(-4rem)`** on PlayerContainer is an intentional design pattern that shifts the expanded view upward to create breathing room for the controls panel below
+- **Vertical centering** relies on the flex chain from root to ContentWrapper — the player (album art + controls) is always centered as a unit
 - **`100dvh`** (dynamic viewport height) is used throughout to account for iOS/mobile browser address bar changes
 - **Side panels** (LeftQuickActionsPanel, QuickActionsPanel) use `position: absolute` with `right: 100%` / `left: 100%` to extend outside the album art container
 - **BackgroundVisualizer and AccentColorBackground** are `position: fixed` with low z-index values and do not affect layout flow
