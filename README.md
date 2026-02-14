@@ -1,19 +1,22 @@
 # Vorbis Player
 
-A React-based Spotify music player with visual effects and album art display.
+A visually immersive Spotify music player built with React, featuring customizable visual effects, animated background visualizers, and a fully responsive design.
 
 <img src="src/assets/vorbis-player-full-screenshot.png" alt="Vorbis Player (Full)" width="600">
 <img src="src/assets/vorbis-player-playlist-screenshot.png" alt="Vorbis Player - Playlist" width="600">
-<img src="src/assets/vorbis-player-art-only-screenshot.png" alt="Vorbis Player - Playlist" width="600">
+<img src="src/assets/vorbis-player-art-only-screenshot.png" alt="Vorbis Player - Art Only" width="600">
 
 ## Features
 
 - **Spotify Integration**: Stream music from your Spotify account (Premium required)
-- **Playlist Support**: Access playlists and Liked Songs with shuffle support
-- **Visual Effects**: Dynamic album art with customizable filters and glow effects
-- **Background Visualizer**: Animated particle and geometric visualizers
-- **Three-Column Layout**: Track info, controls, and settings in a fixed 768px x 880px layout
-- **Responsive Design**: Mobile-optimized with touch-friendly controls
+- **Playlists & Albums**: Browse, search, sort, and filter your playlists and albums
+- **Liked Songs**: Play your Liked Songs collection with automatic shuffle
+- **Visual Effects**: Dynamic glow effects with configurable intensity and animation rate
+- **Album Art Filters**: Real-time CSS filters (brightness, contrast, saturation, sepia, hue rotation, blur)
+- **Background Visualizers**: Animated particle and geometric visualizer backgrounds
+- **Custom Colors**: Pick accent colors per track from a color picker or eyedropper tool
+- **Responsive Design**: Fluid layout that adapts from mobile phones to ultra-wide desktops
+- **Keyboard Shortcuts**: Full keyboard control for playback, effects, and navigation
 
 ## Quick Start
 
@@ -21,11 +24,11 @@ A React-based Spotify music player with visual effects and album art display.
 
 - Node.js 18+ and npm
 - A Spotify Premium account
-- Access to Spotify Developer Dashboard
+- Access to [Spotify Developer Dashboard](https://developer.spotify.com/dashboard)
 
 ### Installation
 
-1. **Clone and install dependencies**
+1. **Clone and install**
 
    ```bash
    git clone git@github.com:smallorbit/vorbis-player.git
@@ -63,53 +66,67 @@ A React-based Spotify music player with visual effects and album art display.
 5. **First run**
    - Open <http://127.0.0.1:3000>
    - Click "Connect Spotify" to authenticate
-   - Choose from your playlists or select "Liked Songs" for shuffled playback
+   - Choose from your playlists, albums, or select "Liked Songs" for shuffled playback
 
 ## User Interface
 
-### Quick Actions Panel (Left Side)
+### Compact Mode
+Click on the album art to toggle between Compact mode (album art only) and Expanded mode. In Compact mode, the player shows just the album artwork for a clean, immersive view.
 
-The left quick actions panel provides quick access to visual effects controls:
+### Expanded Mode
+In Expanded mode, side panels and bottom controls are visible:
 
-- **Visual Effects Toggle** (✨): Enable or disable glow effects on the album art
-- **Background Visualizer Toggle** (💠): Enable or disable the animated background visualizer
+**Left Panel** - Quick visual effect toggles:
+- Glow effect toggle
+- Background visualizer toggle
 
-The panel can be collapsed/expanded by clicking the accent-colored handle on the right edge.
+**Right Panel** - Navigation and settings:
+- Back to library
+- Playlist drawer toggle
+- Visual effects menu
+- Color picker for accent color
 
-### Control Toolbar
+**Bottom Controls**:
+- Track name and artist
+- Playback controls (previous, play/pause, next)
+- Timeline slider, volume control, and like button
 
-The main control toolbar includes:
+### Playlist Selection
 
-- **Playback Controls**: Previous track, Play/Pause, Next track
-- **Visual Effects Toggle** (✨): Quick toggle for glow effects
-- **Visual Effects Menu** (⚙️): Opens the visual effects configuration drawer
+The playlist selection screen supports:
+- **Search**: Filter playlists and albums by name
+- **Sort**: Sort by recently added, name, artist, or release date
+- **Filter**: Filter albums by decade
+- **View Modes**: Toggle between Playlists and Albums tabs
+- **Liked Songs**: Special entry with shuffle indicator
 
 ### Visual Effects Menu
 
-The visual effects menu (opened via the ⚙️ button) provides comprehensive control over all visual effects:
+The visual effects menu (opened via the gear icon) provides control over:
 
-#### Glow Effect
-- **Intensity**: Adjust glow intensity (Less/Normal/More)
-- **Rate**: Control animation speed (Slower/Normal/Faster)
-- **Accent Color Background**: Toggle accent color background overlay (On/Off)
+**Glow Effect**: Intensity (Less/Normal/More), Rate (Slower/Normal/Faster), Accent color background toggle
 
-#### Background Visualizer
-- **Visualizer Style**: Choose between Particles or Geometric patterns
-- **Visualizer Intensity**: Adjust intensity from 0-100% using a slider
+**Background Visualizer**: Style (Particles or Geometric), Intensity (0-100%)
 
-#### Album Art Filters
-- **Brightness**: Less/Normal/More
-- **Saturation**: Less/Normal/More
-- **Sepia**: None/Some/More
-- **Contrast**: Less/Normal/More
-- **Reset All Filters**: Restore all filters to default values
+**Album Art Filters**: Brightness, Saturation, Sepia, Contrast with one-click reset
 
 ### Keyboard Shortcuts
 
-- `Space`: Play/Pause
-- `←` / `→`: Previous/Next track
-- `P`: Toggle playlist drawer
-- `V`: Toggle visual effects
+| Key | Action |
+|-----|--------|
+| `Space` | Play/Pause |
+| `ArrowRight` / `ArrowLeft` | Next / Previous track |
+| `ArrowUp` / `ArrowDown` | Volume up / down |
+| `P` | Toggle playlist drawer |
+| `V` | Toggle background visualizer |
+| `G` | Toggle glow effect |
+| `O` | Open visual effects menu |
+| `L` | Like/unlike current track |
+| `M` | Mute/unmute |
+| `/` or `?` | Show keyboard shortcuts help |
+| `Escape` | Close all menus |
+
+Press `/` or `?` in the app to see the full shortcuts overlay.
 
 ## Development
 
@@ -117,7 +134,7 @@ The visual effects menu (opened via the ⚙️ button) provides comprehensive co
 
 ```bash
 npm run dev          # Start development server
-npm run build        # Build for production  
+npm run build        # Build for production (tsc -b && vite build)
 npm run lint         # Run ESLint
 npm run preview      # Preview production build
 npm run test         # Run tests in watch mode
@@ -130,38 +147,45 @@ npm run test:coverage # Run tests with coverage
 
 ```
 src/
-├── components/           # React components
-│   ├── AudioPlayer.tsx  # Main audio player orchestrator
-│   ├── AlbumArt.tsx     # Album artwork display with visual effects
-│   ├── Playlist.tsx     # Collapsible track listing drawer
-│   ├── PlaylistSelection.tsx # Playlist selection interface
-│   ├── LikeButton.tsx    # Heart-shaped button for liking/unliking tracks
-│   ├── SpotifyPlayerControls.tsx # Three-column player control interface
-│   ├── VisualEffectsMenu.tsx # Visual effects control menu
-│   ├── styled/          # styled-components UI library
-│   └── ui/              # Radix UI components and utilities
-├── hooks/               # Custom React hooks
-├── services/            # External service integrations
-│   ├── spotify.ts      # Spotify Web API integration
-│   └── spotifyPlayer.ts # Spotify Web Playback SDK
-├── styles/             # Styling system
-├── utils/              # Utilities
-└── lib/                # Helper functions
+├── components/              # React components (43 files)
+│   ├── AudioPlayer.tsx      # Main orchestrator with centralized state
+│   ├── PlayerContent.tsx    # Main player layout (centering, responsive sizing)
+│   ├── PlayerStateRenderer.tsx  # Loading/error/playlist selection states
+│   ├── AlbumArt.tsx         # Album artwork with filters & glow effects
+│   ├── PlaylistSelection.tsx    # Playlist/album browser with search/sort/filter
+│   ├── SpotifyPlayerControls.tsx # Player control interface
+│   ├── PlaylistDrawer.tsx   # Sliding track list drawer
+│   ├── LeftQuickActionsPanel.tsx # Left-side quick toggles
+│   ├── QuickActionsPanel.tsx    # Right-side actions panel
+│   ├── ColorPickerPopover.tsx   # Per-track color picker
+│   ├── controls/            # Player control sub-components
+│   ├── styled/              # Reusable styled-components library
+│   ├── ui/                  # Radix UI component wrappers
+│   ├── visualizers/         # Background visualizer components
+│   └── VisualEffectsMenu/   # Visual effects configuration panel
+├── hooks/                   # 17 custom React hooks
+├── services/                # Spotify API & Playback SDK integration
+├── utils/                   # Utility functions (color, sizing, filters)
+├── styles/                  # Theme, global styles, CSS animations
+├── types/                   # TypeScript definitions
+├── workers/                 # Web Workers (image processing)
+└── lib/                     # Helper functions
 ```
 
 ### Tech Stack
 
 - **Frontend**: React 18 + TypeScript + Vite
-- **Styling**: styled-components with Radix UI primitives
-- **Audio**: Spotify Web Playback SDK
-- **Authentication**: Spotify Web API with PKCE OAuth
-- **Testing**: Vitest with React Testing Library
+- **Styling**: styled-components with theme system + Radix UI primitives
+- **Audio**: Spotify Web Playback SDK + Web API
+- **Authentication**: PKCE OAuth 2.0 flow
+- **Testing**: Vitest + React Testing Library
+- **Performance**: Web Workers, LRU caching, lazy loading, container queries
 
 ## Deployment
 
 ### Deploy to Vercel (Recommended)
 
-For detailed step-by-step instructions, see [deploy-to-vercel.md](./docs/deployment/deploy-to-vercel.md).
+For detailed instructions, see [deploy-to-vercel.md](./docs/deployment/deploy-to-vercel.md).
 
 **Quick Deploy:**
 1. Push your code to GitHub/GitLab/Bitbucket
@@ -177,26 +201,22 @@ For detailed step-by-step instructions, see [deploy-to-vercel.md](./docs/deploym
 npm run build
 ```
 
-The `dist/` folder contains static files that can be deployed to any web hosting service.
+The `dist/` folder contains static files deployable to any web hosting service.
 
-**Important**: 
-- Update the Spotify redirect URI in your app settings to match your production domain
-- Set up environment variables on your hosting platform
+**Important**: Update the Spotify redirect URI in your app settings to match your production domain.
 
 ## Troubleshooting
 
 ### "No tracks found"
 - Ensure you have a Spotify Premium subscription
 - Create playlists with music or like some songs in Spotify
-- Check that your Spotify account has music accessible
 
 ### Authentication Issues
 - Double-check your Client ID in `.env.local`
 - Ensure redirect URI matches exactly in both `.env.local` and Spotify app settings
-- Use `127.0.0.1` instead of `localhost` for Spotify OAuth compatibility
+- Use `127.0.0.1` instead of `localhost`
 
 ### Visual Effects Issues
-- If visual effects aren't working, try refreshing the page
 - Clear localStorage to reset visual settings to defaults
-- Ensure your browser supports CSS filters and backdrop-blur effects
-- Background visualizer requires WebGL support - check your browser compatibility
+- Background visualizer requires Canvas API support
+- CSS filters require a modern browser
