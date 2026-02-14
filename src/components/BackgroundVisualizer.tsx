@@ -26,15 +26,15 @@ const VisualizerContainer = styled.div`
 
 /**
  * BackgroundVisualizer Component
- * 
+ *
  * Renders an optional background animation visualizer behind the music player.
  * Supports multiple visualizer styles that can be switched dynamically.
- * 
+ *
  * @component
- * 
+ *
  * @props
  * - enabled: Whether the visualizer is enabled
- * - style: The visualizer style to render ('particles', 'waveform', 'geometric', 'gradient-flow')
+ * - style: The visualizer style to render ('particles', 'geometric')
  * - intensity: Visualizer intensity (0-100)
  * - accentColor: Current track's accent color
  * - isPlaying: Whether music is currently playing
@@ -56,12 +56,6 @@ export const BackgroundVisualizer: React.FC<BackgroundVisualizerProps> = ({
         return ParticleVisualizer;
       case 'geometric':
         return GeometricVisualizer;
-      case 'waveform':
-        // Deprecated - fallback to particles
-        return ParticleVisualizer;
-      case 'gradient-flow':
-        // Deprecated - fallback to particles
-        return ParticleVisualizer;
       default:
         return ParticleVisualizer;
     }

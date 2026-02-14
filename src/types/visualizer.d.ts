@@ -5,11 +5,9 @@
  * Defines visualizer styles and configuration interfaces.
  */
 
-export type VisualizerStyle = 
+export type VisualizerStyle =
   | 'particles'
-  | 'waveform'
-  | 'geometric'
-  | 'gradient-flow';
+  | 'geometric';
 
 export interface VisualizerConfig {
   particleCount?: number;

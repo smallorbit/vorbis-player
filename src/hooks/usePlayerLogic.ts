@@ -288,7 +288,7 @@ export function usePlayerLogic() {
     setBackgroundVisualizerIntensity(clampedIntensity);
   }, [setBackgroundVisualizerIntensity]);
 
-  const handleBackgroundVisualizerStyleChange = useCallback((style: 'particles' | 'waveform' | 'geometric' | 'gradient-flow') => {
+  const handleBackgroundVisualizerStyleChange = useCallback((style: 'particles' | 'geometric') => {
     setBackgroundVisualizerStyle(style);
   }, [setBackgroundVisualizerStyle]);
 

@@ -63,15 +63,10 @@ vorbis-player/
 │   │   │   ├── Card.tsx
 │   │   │   ├── ScrollArea.tsx
 │   │   │   ├── Skeleton.tsx
-│   │   │   ├── Slider.tsx
 │   │   │   └── index.ts
-│   │   ├── ui/                  # Radix UI component wrappers
-│   │   │   └── scroll-area.tsx
 │   │   ├── visualizers/         # Background visualizer components
-│   │   │   ├── ParticleVisualizer.tsx   (active)
-│   │   │   ├── GeometricVisualizer.tsx  (active)
-│   │   │   ├── GradientFlowVisualizer.tsx (deprecated)
-│   │   │   └── WaveformVisualizer.tsx   (deprecated)
+│   │   │   ├── ParticleVisualizer.tsx
+│   │   │   └── GeometricVisualizer.tsx
 │   │   ├── VisualEffectsMenu/
 │   │   │   ├── index.tsx
 │   │   │   └── styled.ts
@@ -371,12 +366,9 @@ The application uses a centralized state management approach with custom React h
 
 ### Background Visualizers
 
-**Active Visualizers**:
+**Available Visualizers**:
 - **ParticleVisualizer**: Animated particle system with physics, responds to accent colors
 - **GeometricVisualizer**: Rotating geometric shapes synchronized with accent colors
-
-**Deprecated** (files exist but fall back to ParticleVisualizer):
-- GradientFlowVisualizer, WaveformVisualizer
 
 **Configuration**: Toggle on/off, intensity slider (0-100%), style selection. Uses requestAnimationFrame and Canvas API.
 
