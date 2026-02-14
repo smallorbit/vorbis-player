@@ -106,56 +106,9 @@ const ContentWrapper = styled.div.withConfig({
             padding ${props => props.transitionDuration}ms ${props => props.transitionEasing},
             max-width ${props => props.transitionDuration}ms ${props => props.transitionEasing},
             max-height ${props => props.transitionDuration}ms ${props => props.transitionEasing};
-  
-  /* Enable container queries */
+
   container-type: inline-size;
   container-name: player;
-  
-  /* Container query responsive adjustments */
-  @container player (max-width: ${theme.breakpoints.sm}) {
-    width: 100%;
-    height: auto;
-    max-width: 100vw;
-    max-height: 100dvh;
-  }
-
-  @container player (min-width: ${theme.breakpoints.sm}) and (max-width: ${theme.breakpoints.md}) {
-    width: 100%;
-    height: auto;
-    max-width: 100vw;
-    max-height: 100dvh;
-  }
-
-  @container player (min-width: ${theme.breakpoints.md}) and (max-width: ${theme.breakpoints.lg}) {
-    width: 100%;
-    height: auto;
-    max-width: 100vw;
-    max-height: 100dvh;
-  }
-
-  /* Fallback for browsers without container query support */
-  @supports not (container-type: inline-size) {
-    @media (max-width: ${theme.breakpoints.sm}) {
-      width: 100%;
-      height: auto;
-      max-width: 100vw;
-      max-height: 100vh;
-    }
-
-    @media (min-width: ${theme.breakpoints.sm}) and (max-width: ${theme.breakpoints.md}) {
-      width: 100%;
-      height: auto;
-      max-width: 100vw;
-      max-height: 100vh;
-    }
-
-    @media (min-width: ${theme.breakpoints.md}) and (max-width: ${theme.breakpoints.lg}) {
-      width: 100%;
-      height: auto;
-      max-width: 100vw;
-      max-height: 100vh;
-    }
-  }
 `;
 
 const LoadingCard = styled.div.withConfig({
@@ -281,26 +234,18 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
     sepia: 0
   };
 
-  // Controls visibility state (default: hidden)
   const [controlsVisible, setControlsVisible] = useState(true);
-
-  // Mobile quick actions drawer state (slides out from bottom of controls)
   const [mobileDrawerExpanded, setMobileDrawerExpanded] = useState(false);
-
-  // Help modal state
   const [showHelp, setShowHelp] = useState(false);
 
-  // Toggle controls visibility
   const toggleControls = useCallback(() => {
     setControlsVisible(prev => !prev);
   }, []);
 
-  // Toggle mobile quick actions drawer
   const toggleMobileDrawer = useCallback(() => {
     setMobileDrawerExpanded(prev => !prev);
   }, []);
 
-  // Toggle help modal
   const toggleHelp = useCallback(() => {
     setShowHelp(prev => !prev);
   }, []);
@@ -371,7 +316,6 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
           paddingTop: isMobile ? '0.25rem' : '1rem'
         }}>
           <ClickableAlbumArtContainer onClick={toggleControls}>
-            {/* Left-side quick actions panel - desktop/tablet only; on mobile, consolidated into bottom drawer */}
             {!isMobile && (
               <LeftQuickActionsPanel
                 accentColor={ui.accentColor}
@@ -392,18 +336,13 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
               albumFilters={effects.enabled ? effects.filters : defaultFilters}
             />
 
-            {/* Right-side quick actions panel - desktop/tablet only; on mobile, consolidated into bottom drawer */}
             {!isMobile && (
               <QuickActionsPanel
                 accentColor={ui.accentColor}
                 currentTrack={track.current}
-                glowEnabled={effects.enabled}
                 onShowPlaylist={handlers.onShowPlaylist}
                 onShowVisualEffects={handlers.onShowVisualEffects}
-                onGlowToggle={handlers.onGlowToggle}
                 onAccentColorChange={handlers.onAccentColorChange}
-                onBackgroundVisualizerToggle={handlers.onBackgroundVisualizerToggle}
-                backgroundVisualizerEnabled={handlers.backgroundVisualizerEnabled}
                 onBackToLibrary={handlers.onBackToLibrary}
                 debugModeEnabled={handlers.debugModeEnabled}
                 isVisible={controlsVisible}
@@ -456,7 +395,6 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
             </CardContent>
           </AnimatedControlsContainer>
 
-          {/* Mobile: sub drawer slides out from underneath the controls panel (sibling, not embedded) */}
           {isMobile && controlsVisible && (
             <MobileQuickActionsDrawer
               accentColor={ui.accentColor}
@@ -472,6 +410,8 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
               debugModeEnabled={handlers.debugModeEnabled}
               isExpanded={mobileDrawerExpanded}
               onToggleExpand={toggleMobileDrawer}
+              transitionDuration={transitionDuration}
+              transitionEasing={transitionEasing}
             />
           )}
         </LoadingCard>

@@ -1,67 +1,12 @@
 import { useState, useEffect, useRef, useLayoutEffect, memo } from 'react';
 import { createPortal } from 'react-dom';
-import styled from 'styled-components';
 import EyedropperOverlay from './EyedropperOverlay';
 import { extractTopVibrantColors } from '../utils/colorExtractor';
 import type { ExtractedColor } from '../utils/colorExtractor';
 import type { Track } from '../services/spotify';
 import { theme } from '../styles/theme';
-import { getContrastColor } from '../utils/colorUtils';
-
-const ControlButton = styled.button.withConfig({
-  shouldForwardProp: (prop) => !['isActive', 'accentColor', '$isMobile', '$isTablet'].includes(prop),
-}) <{ isActive?: boolean; accentColor: string; $isMobile?: boolean; $isTablet?: boolean }>`
-  border: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  padding: ${({ $isMobile, $isTablet }) => {
-    if ($isMobile) return theme.spacing.xs;
-    if ($isTablet) return theme.spacing.sm;
-    return theme.spacing.sm;
-  }};
-  border-radius: ${({ $isMobile, $isTablet }) => {
-    if ($isMobile) return theme.borderRadius.sm;
-    if ($isTablet) return theme.borderRadius.md;
-    return theme.borderRadius.md;
-  }};
-
-  svg {
-    width: ${({ $isMobile, $isTablet }) => {
-    if ($isMobile) return '1.25rem';
-    if ($isTablet) return '1.375rem';
-    return '1.5rem';
-  }};
-    height: ${({ $isMobile, $isTablet }) => {
-    if ($isMobile) return '1.25rem';
-    if ($isTablet) return '1.375rem';
-    return '1.5rem';
-  }};
-    fill: currentColor;
-  }
-
-  ${({ isActive, accentColor }: { isActive?: boolean; accentColor: string }) => isActive ? `
-    background: ${accentColor};
-    color: ${getContrastColor(accentColor)};
-
-    &:hover {
-      background: ${accentColor}DD;
-      color: ${getContrastColor(accentColor)};
-      transform: translateY(-1px);
-    }
-  ` : `
-    background: ${accentColor}33;
-    color: ${theme.colors.white};
-
-    &:hover {
-      background: ${accentColor}4D;
-      color: ${theme.colors.white};
-      transform: translateY(-1px);
-    }
-  `}
-`;
+import { ControlButton } from './controls/styled';
+import { ColorPickerIcon } from './icons/QuickActionIcons';
 
 interface ColorPickerPopoverProps {
   accentColor: string;
@@ -194,11 +139,7 @@ export const ColorPickerPopover = memo<ColorPickerPopoverProps>(({
         $isMobile={$isMobile}
         $isTablet={$isTablet}
       >
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M18.37 2.63 14 7l-1.59-1.59a2 2 0 0 0-2.82 0L8 7l9 9 1.59-1.59a2 2 0 0 0 0-2.82L17 10l4.37-4.37a2.12 2.12 0 1 0-3-3Z" />
-          <path d="M9 8c-2 3-4 3.5-7 4l8 10c2-1 6-5 6-7" />
-          <path d="M14.5 17.5 4.5 15" />
-        </svg>
+        <ColorPickerIcon />
       </ControlButton>
 
       {/* Popover menu rendered in portal */}
@@ -281,8 +222,7 @@ export const ColorPickerPopover = memo<ColorPickerPopoverProps>(({
               </button>
               {/* Always show eyedropper button if album art is available */}
               {currentTrack?.image && (
-                <ControlButton
-                  accentColor={accentColor}
+                <button
                   onClick={() => setShowEyedropper(true)}
                   title="Pick color from album art"
                   aria-label="Pick color from album art"
@@ -297,14 +237,12 @@ export const ColorPickerPopover = memo<ColorPickerPopoverProps>(({
                     justifyContent: 'center',
                     transition: 'box-shadow 0.2s, border 0.2s',
                     color: '#fff',
+                    background: 'transparent',
+                    padding: 0,
                   }}
                 >
-                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M18.37 2.63 14 7l-1.59-1.59a2 2 0 0 0-2.82 0L8 7l9 9 1.59-1.59a2 2 0 0 0 0-2.82L17 10l4.37-4.37a2.12 2.12 0 1 0-3-3Z" />
-                    <path d="M9 8c-2 3-4 3.5-7 4l8 10c2-1 6-5 6-7" />
-                    <path d="M14.5 17.5 4.5 15" />
-                  </svg>
-                </ControlButton>
+                  <ColorPickerIcon />
+                </button>
               )}
             </div>
           )}
