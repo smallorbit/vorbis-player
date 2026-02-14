@@ -23,8 +23,8 @@ const areColorPickerPropsEqual = (
   prevProps: ColorPickerPopoverProps,
   nextProps: ColorPickerPopoverProps
 ): boolean => {
-  // Check if track changed (most important check)
-  if (prevProps.currentTrack?.id !== nextProps.currentTrack?.id) {
+  // Check if album changed (accent colors are per-album)
+  if (prevProps.currentTrack?.album_id !== nextProps.currentTrack?.album_id) {
     return false;
   }
 
@@ -42,11 +42,11 @@ const areColorPickerPropsEqual = (
     return false;
   }
 
-  // Check if custom overrides for current track changed
-  const currentTrackId = prevProps.currentTrack?.id;
-  if (currentTrackId) {
-    if (prevProps.customAccentColorOverrides[currentTrackId] !==
-      nextProps.customAccentColorOverrides[currentTrackId]) {
+  // Check if custom overrides for current album changed
+  const currentAlbumId = prevProps.currentTrack?.album_id;
+  if (currentAlbumId) {
+    if (prevProps.customAccentColorOverrides[currentAlbumId] !==
+      nextProps.customAccentColorOverrides[currentAlbumId]) {
       return false;
     }
   }
@@ -73,9 +73,8 @@ export const ColorPickerPopover = memo<ColorPickerPopoverProps>(({
   const paletteBtnRef = useRef<HTMLButtonElement>(null);
   const [popoverPos, setPopoverPos] = useState<{ left: number; top: number } | null>(null);
 
-  // Get the last chosen custom color for the current track
   const getLastCustomColor = () => {
-    return currentTrack?.id ? customAccentColorOverrides[currentTrack.id] : null;
+    return currentTrack?.album_id ? customAccentColorOverrides[currentTrack.album_id] : null;
   };
 
   // Extract colors when popover opens or track changes
@@ -249,15 +248,8 @@ export const ColorPickerPopover = memo<ColorPickerPopoverProps>(({
           {/* Reset button */}
           <button
             onClick={() => {
-              if (currentTrack?.id) {
-                // Remove custom color override for this track
-                const newOverrides = { ...customAccentColorOverrides };
-                delete newOverrides[currentTrack.id];
-                onCustomAccentColor(''); // This will trigger a re-extraction
-
-                // We need to call the parent's reset function to force color re-extraction
-                // Since we don't have direct access to it, we'll use a placeholder color
-                // and let the parent component handle the reset
+              if (currentTrack?.album_id) {
+                onCustomAccentColor('');
                 onAccentColorChange?.('RESET_TO_DEFAULT');
               }
               setShowColorPopover(false);

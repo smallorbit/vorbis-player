@@ -117,7 +117,7 @@ export const MobileQuickActionsDrawer = ({
   const isTablet = false;
 
   const { customAccentColorOverrides, handleCustomAccentColor, handleAccentColorChange } = useCustomAccentColors({
-    currentTrackId: currentTrack?.id,
+    currentAlbumId: currentTrack?.album_id,
     onAccentColorChange,
   });
 
