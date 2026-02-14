@@ -5,6 +5,7 @@ import AlbumArt from './AlbumArt';
 import PlayerControls from './PlayerControls';
 import QuickActionsPanel from './QuickActionsPanel';
 import LeftQuickActionsPanel from './LeftQuickActionsPanel';
+import MobileQuickActionsDrawer from './MobileQuickActionsDrawer';
 import { theme } from '@/styles/theme';
 import { cardBase } from '../styles/utils';
 import { usePlayerSizing } from '../hooks/usePlayerSizing';
@@ -283,12 +284,20 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
   // Controls visibility state (default: hidden)
   const [controlsVisible, setControlsVisible] = useState(true);
 
+  // Mobile quick actions drawer state (slides out from bottom of controls)
+  const [mobileDrawerExpanded, setMobileDrawerExpanded] = useState(false);
+
   // Help modal state
   const [showHelp, setShowHelp] = useState(false);
 
   // Toggle controls visibility
   const toggleControls = useCallback(() => {
     setControlsVisible(prev => !prev);
+  }, []);
+
+  // Toggle mobile quick actions drawer
+  const toggleMobileDrawer = useCallback(() => {
+    setMobileDrawerExpanded(prev => !prev);
   }, []);
 
   // Toggle help modal
@@ -362,15 +371,17 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
           paddingTop: isMobile ? '0.25rem' : '1rem'
         }}>
           <ClickableAlbumArtContainer onClick={toggleControls}>
-            {/* Left-side quick actions panel for glow and visualizer toggles */}
-            <LeftQuickActionsPanel
-              accentColor={ui.accentColor}
-              glowEnabled={effects.enabled}
-              onGlowToggle={handlers.onGlowToggle}
-              onBackgroundVisualizerToggle={handlers.onBackgroundVisualizerToggle}
-              backgroundVisualizerEnabled={handlers.backgroundVisualizerEnabled}
-              isVisible={controlsVisible}
-            />
+            {/* Left-side quick actions panel - desktop/tablet only; on mobile, consolidated into bottom drawer */}
+            {!isMobile && (
+              <LeftQuickActionsPanel
+                accentColor={ui.accentColor}
+                glowEnabled={effects.enabled}
+                onGlowToggle={handlers.onGlowToggle}
+                onBackgroundVisualizerToggle={handlers.onBackgroundVisualizerToggle}
+                backgroundVisualizerEnabled={handlers.backgroundVisualizerEnabled}
+                isVisible={controlsVisible}
+              />
+            )}
 
             <AlbumArt
               currentTrack={track.current}
@@ -381,21 +392,23 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
               albumFilters={effects.enabled ? effects.filters : defaultFilters}
             />
 
-            {/* Right-side quick actions panel next to album art, docked to its right edge */}
-            <QuickActionsPanel
-              accentColor={ui.accentColor}
-              currentTrack={track.current}
-              glowEnabled={effects.enabled}
-              onShowPlaylist={handlers.onShowPlaylist}
-              onShowVisualEffects={handlers.onShowVisualEffects}
-              onGlowToggle={handlers.onGlowToggle}
-              onAccentColorChange={handlers.onAccentColorChange}
-              onBackgroundVisualizerToggle={handlers.onBackgroundVisualizerToggle}
-              backgroundVisualizerEnabled={handlers.backgroundVisualizerEnabled}
-              onBackToLibrary={handlers.onBackToLibrary}
-              debugModeEnabled={handlers.debugModeEnabled}
-              isVisible={controlsVisible}
-            />
+            {/* Right-side quick actions panel - desktop/tablet only; on mobile, consolidated into bottom drawer */}
+            {!isMobile && (
+              <QuickActionsPanel
+                accentColor={ui.accentColor}
+                currentTrack={track.current}
+                glowEnabled={effects.enabled}
+                onShowPlaylist={handlers.onShowPlaylist}
+                onShowVisualEffects={handlers.onShowVisualEffects}
+                onGlowToggle={handlers.onGlowToggle}
+                onAccentColorChange={handlers.onAccentColorChange}
+                onBackgroundVisualizerToggle={handlers.onBackgroundVisualizerToggle}
+                backgroundVisualizerEnabled={handlers.backgroundVisualizerEnabled}
+                onBackToLibrary={handlers.onBackToLibrary}
+                debugModeEnabled={handlers.debugModeEnabled}
+                isVisible={controlsVisible}
+              />
+            )}
           </ClickableAlbumArtContainer>
         </CardContent>
         <LoadingCard
@@ -443,7 +456,24 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
             </CardContent>
           </AnimatedControlsContainer>
 
-
+          {/* Mobile: sub drawer slides out from underneath the controls panel (sibling, not embedded) */}
+          {isMobile && controlsVisible && (
+            <MobileQuickActionsDrawer
+              accentColor={ui.accentColor}
+              currentTrack={track.current}
+              glowEnabled={effects.enabled}
+              backgroundVisualizerEnabled={handlers.backgroundVisualizerEnabled}
+              onShowPlaylist={handlers.onShowPlaylist}
+              onShowVisualEffects={handlers.onShowVisualEffects}
+              onGlowToggle={handlers.onGlowToggle}
+              onBackgroundVisualizerToggle={handlers.onBackgroundVisualizerToggle}
+              onAccentColorChange={handlers.onAccentColorChange}
+              onBackToLibrary={handlers.onBackToLibrary}
+              debugModeEnabled={handlers.debugModeEnabled}
+              isExpanded={mobileDrawerExpanded}
+              onToggleExpand={toggleMobileDrawer}
+            />
+          )}
         </LoadingCard>
       </PlayerContainer>
       {ui.showVisualEffects && (
