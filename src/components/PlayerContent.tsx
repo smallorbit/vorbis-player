@@ -75,24 +75,17 @@ interface PlayerContentProps {
 }
 
 const ContentWrapper = styled.div.withConfig({
-  shouldForwardProp: (prop) => !['width', 'height', 'padding', 'useFluidSizing', 'transitionDuration', 'transitionEasing', 'aspectRatio'].includes(prop),
+  shouldForwardProp: (prop) => !['width', 'padding', 'useFluidSizing', 'transitionDuration', 'transitionEasing'].includes(prop),
 }) <{
   width: number;
-  height: number;
   padding: number;
   useFluidSizing: boolean;
   transitionDuration: number;
   transitionEasing: string;
-  aspectRatio: number;
 }>`
-  /* Maintain consistent aspect ratio */
-  aspect-ratio: ${props => props.aspectRatio};
-  
   width: ${props => props.useFluidSizing ? '100%' : `${props.width}px`};
-  height: ${props => props.useFluidSizing ? 'auto' : `${props.height}px`};
   max-width: ${props => props.width}px;
-  max-height: ${props => props.height}px;
-  
+
   margin: 0 auto;
   padding: ${props => props.padding}px;
   box-sizing: border-box;
@@ -100,12 +93,9 @@ const ContentWrapper = styled.div.withConfig({
   z-index: 2;
   overflow: visible;
 
-  /* Smooth transitions for responsive sizing */
   transition: width ${props => props.transitionDuration}ms ${props => props.transitionEasing},
-            height ${props => props.transitionDuration}ms ${props => props.transitionEasing},
             padding ${props => props.transitionDuration}ms ${props => props.transitionEasing},
-            max-width ${props => props.transitionDuration}ms ${props => props.transitionEasing},
-            max-height ${props => props.transitionDuration}ms ${props => props.transitionEasing};
+            max-width ${props => props.transitionDuration}ms ${props => props.transitionEasing};
 
   container-type: inline-size;
   container-name: player;
@@ -180,39 +170,28 @@ const PlaylistLoadingFallback = () => (
   </div>
 );
 
-// Animated controls container
 const AnimatedControlsContainer = styled.div.withConfig({
-  shouldForwardProp: (prop) => !['isVisible', 'transitionDuration', 'transitionEasing', 'maxHeight'].includes(prop),
+  shouldForwardProp: (prop) => !['isVisible'].includes(prop),
 }) <{
   isVisible: boolean;
-  transitionDuration: number;
-  transitionEasing: string;
-  maxHeight: number;
 }>`
-  overflow: hidden;
-  isolation: isolate;
-  transition: max-height ${props => props.transitionDuration}ms ${props => props.transitionEasing},
-              opacity ${props => props.transitionDuration}ms ${props => props.transitionEasing},
-              transform ${props => props.transitionDuration}ms ${props => props.transitionEasing};
-  max-height: ${props => props.isVisible ? `${props.maxHeight}px` : '0'};
+  display: grid;
+  grid-template-rows: ${props => props.isVisible ? '1fr' : '0fr'};
   opacity: ${props => props.isVisible ? '1' : '0'};
-  transform: ${props => props.isVisible ? 'translateY(0)' : 'translateY(-10px)'};
+  transition: grid-template-rows 150ms ease-out,
+              opacity 150ms ease-out;
+
+  > * {
+    overflow: hidden;
+    will-change: transform;
+  }
 `;
 
-// Main player container with stacked layout
-const PlayerContainer = styled.div.withConfig({
-  shouldForwardProp: (prop) => !['controlsVisible', 'transitionDuration', 'transitionEasing'].includes(prop),
-}) <{
-  controlsVisible: boolean;
-  transitionDuration: number;
-  transitionEasing: string;
-}>`
+const PlayerContainer = styled.div`
   position: relative;
   display: flex;
   flex-direction: column;
   width: 100%;
-  transition: transform ${props => props.transitionDuration}ms ${props => props.transitionEasing};
-  transform: ${props => props.controlsVisible ? 'translateY(-4rem)' : 'translateY(0)'};
 `;
 
 // Album art container with click handler
@@ -255,7 +234,7 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
   }, []);
 
   // Use responsive sizing hook
-  const { dimensions, useFluidSizing, padding, transitionDuration, transitionEasing, aspectRatio, isMobile } = usePlayerSizing();
+  const { dimensions, useFluidSizing, padding, transitionDuration, transitionEasing, isMobile } = usePlayerSizing();
 
   // Combined close handler for Escape key (closes VFX menu and help modal)
   const handleEscapeClose = useCallback(() => {
@@ -294,18 +273,12 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
   return (
     <ContentWrapper
       width={dimensions.width}
-      height={dimensions.height}
       padding={padding}
       useFluidSizing={useFluidSizing}
       transitionDuration={transitionDuration}
       transitionEasing={transitionEasing}
-      aspectRatio={aspectRatio}
     >
-      <PlayerContainer
-        controlsVisible={controlsVisible}
-        transitionDuration={transitionDuration}
-        transitionEasing={transitionEasing}
-      >
+      <PlayerContainer>
 
         {/* Album Art Zone - Clickable to toggle controls */}
         <CardContent style={{
@@ -350,19 +323,13 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
             )}
           </ClickableAlbumArtContainer>
         </CardContent>
-        <LoadingCard
-          backgroundImage={track.current?.image}
-          accentColor={ui.accentColor}
-          glowEnabled={effects.enabled}
-          glowIntensity={effects.glow.intensity}
-          glowRate={effects.glow.rate}
-        >
-          {/* Animated Controls Zone - Slides down when visible */}
-          <AnimatedControlsContainer
-            isVisible={controlsVisible}
-            transitionDuration={transitionDuration}
-            transitionEasing={transitionEasing}
-            maxHeight={theme.controls.maxHeight}
+        <AnimatedControlsContainer isVisible={controlsVisible}>
+          <LoadingCard
+            backgroundImage={track.current?.image}
+            accentColor={ui.accentColor}
+            glowEnabled={effects.enabled}
+            glowIntensity={effects.glow.intensity}
+            glowRate={effects.glow.rate}
           >
             <CardContent style={{
               position: 'relative',
@@ -393,28 +360,28 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
                 />
               </Suspense>
             </CardContent>
-          </AnimatedControlsContainer>
 
-          {isMobile && controlsVisible && (
-            <MobileQuickActionsDrawer
-              accentColor={ui.accentColor}
-              currentTrack={track.current}
-              glowEnabled={effects.enabled}
-              backgroundVisualizerEnabled={handlers.backgroundVisualizerEnabled}
-              onShowPlaylist={handlers.onShowPlaylist}
-              onShowVisualEffects={handlers.onShowVisualEffects}
-              onGlowToggle={handlers.onGlowToggle}
-              onBackgroundVisualizerToggle={handlers.onBackgroundVisualizerToggle}
-              onAccentColorChange={handlers.onAccentColorChange}
-              onBackToLibrary={handlers.onBackToLibrary}
-              debugModeEnabled={handlers.debugModeEnabled}
-              isExpanded={mobileDrawerExpanded}
-              onToggleExpand={toggleMobileDrawer}
-              transitionDuration={transitionDuration}
-              transitionEasing={transitionEasing}
-            />
-          )}
-        </LoadingCard>
+            {isMobile && controlsVisible && (
+              <MobileQuickActionsDrawer
+                accentColor={ui.accentColor}
+                currentTrack={track.current}
+                glowEnabled={effects.enabled}
+                backgroundVisualizerEnabled={handlers.backgroundVisualizerEnabled}
+                onShowPlaylist={handlers.onShowPlaylist}
+                onShowVisualEffects={handlers.onShowVisualEffects}
+                onGlowToggle={handlers.onGlowToggle}
+                onBackgroundVisualizerToggle={handlers.onBackgroundVisualizerToggle}
+                onAccentColorChange={handlers.onAccentColorChange}
+                onBackToLibrary={handlers.onBackToLibrary}
+                debugModeEnabled={handlers.debugModeEnabled}
+                isExpanded={mobileDrawerExpanded}
+                onToggleExpand={toggleMobileDrawer}
+                transitionDuration={transitionDuration}
+                transitionEasing={transitionEasing}
+              />
+            )}
+          </LoadingCard>
+        </AnimatedControlsContainer>
       </PlayerContainer>
       {ui.showVisualEffects && (
         <Suspense fallback={
