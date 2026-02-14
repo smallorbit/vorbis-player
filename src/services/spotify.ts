@@ -166,7 +166,11 @@ async function spotifyApiRequest<T>(
     return undefined as T;
   }
 
-  return response.json();
+  const text = await response.text();
+  if (!text) {
+    return undefined as T;
+  }
+  return JSON.parse(text);
 }
 
 async function fetchAllPaginated<TItem, TResult>(
