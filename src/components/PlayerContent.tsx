@@ -38,7 +38,7 @@ interface PlayerContentHandlers {
   onGlowRateChange: (rate: number) => void;
   onBackgroundVisualizerToggle?: () => void; // Background visualizer toggle handler
   onBackgroundVisualizerIntensityChange?: (intensity: number) => void; // Background visualizer intensity change handler (direct value, not delta)
-  onBackgroundVisualizerStyleChange?: (style: 'particles' | 'waveform' | 'geometric' | 'gradient-flow') => void; // Background visualizer style change handler
+  onBackgroundVisualizerStyleChange?: (style: 'particles' | 'geometric') => void; // Background visualizer style change handler
   backgroundVisualizerEnabled?: boolean; // Background visualizer enabled state
   backgroundVisualizerStyle?: string; // Background visualizer style
   backgroundVisualizerIntensity?: number; // Background visualizer intensity

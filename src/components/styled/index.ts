@@ -4,4 +4,3 @@ export { Skeleton } from './Skeleton';
 export { Alert, AlertDescription } from './Alert';
 export { ScrollArea } from './ScrollArea';
 export { Avatar, AvatarImage, AvatarFallback } from './Avatar';
-export { Slider } from './Slider';

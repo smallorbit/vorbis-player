@@ -15,13 +15,7 @@
     "deploy": "node scripts/deploy.js --prod",
     "deploy:preview": "node scripts/deploy.js",
     "deploy:quick": "vercel --prod",
-    "deploy:env": "vercel env pull .env.local",
-    "proxy:install": "cd proxy-server && npm install",
-    "proxy:start": "cd proxy-server && npm start",
-    "proxy:dev": "cd proxy-server && npm run dev",
-    "proxy:test": "curl -s http://127.0.0.1:3001/health || echo 'Proxy server not running'",
-    "dev:all": "concurrently \"npm run proxy:start\" \"npm run dev\"",
-    "start:all": "concurrently \"npm run proxy:start\" \"npm run preview\""
+    "deploy:env": "vercel env pull .env.local"
   },
   "dependencies": {
     "@radix-ui/react-scroll-area": "^1.2.9",

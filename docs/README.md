@@ -11,13 +11,7 @@ Code analysis and assessment documents:
 ### `/development`
 Development guides and work-in-progress tracking:
 - `ai-agent-wip.md` - Current work-in-progress tracking for AI agent tasks
-
-### `/refactoring`
-Refactoring planning and tracking documents:
-- `REFACTORING_FINDINGS.md` - Initial refactoring findings
-- `REFACTORING_OPPORTUNITIES.md` - Detailed refactoring opportunities and recommendations
-- `REFACTORING_PLAN.md` - Refactoring implementation plan
-- `REFACTORING_TASKS.md` - Task breakdown for refactoring work
+- `dynamic-contrast-implementation.md` - Documentation for dynamic contrast feature implementation
 
 ### `/deployment`
 Deployment guides and procedures:
@@ -27,5 +21,5 @@ Deployment guides and procedures:
 
 - **For AI Agents**: See `AGENTS.md` in the project root for commands and conventions
 - **For Developers**: See `CLAUDE.md` in the project root for project overview and development guidelines
-- **For Refactoring**: See `refactoring/REFACTORING_OPPORTUNITIES.md` for cleanup opportunities
+- **For Analysis**: See `analysis/ANALYSIS.md` for codebase analysis and improvement recommendations
 
