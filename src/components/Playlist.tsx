@@ -1,7 +1,7 @@
 import React, { memo, useMemo, useCallback, useRef, useEffect } from 'react';
 import styled from 'styled-components';
 import type { Track } from '../services/spotify';
-import { Card, CardHeader, CardContent, CardTitle, CardDescription } from '../components/styled';
+import { Card, CardHeader, CardContent, CardDescription } from '../components/styled';
 import { ScrollArea } from '../components/styled';
 import { Avatar } from '../components/styled';
 import { getTransparentVariant } from '../utils/colorExtractor';
@@ -9,41 +9,52 @@ import { getTransparentVariant } from '../utils/colorExtractor';
 // Styled components
 const PlaylistContainer = styled.div`
   width: 100%;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
 `;
 
 const PlaylistCard = styled(Card)`
-  background: rgba(38, 38, 38, 0.5);
+  background: rgba(38, 38, 38, 0.8);
   backdrop-filter: blur(12px);
   border: 1px solid rgba(115, 115, 115, 0.5);
-  border-radius: ${({ theme }) => theme.borderRadius.lg};
+  border-radius: 1.25rem;
+  overflow: hidden;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 `;
 
 const PlaylistHeader = styled(CardHeader)`
-  border-bottom: 1px solid rgba(115, 115, 115, 0.5);
-`;
-
-const PlaylistTitle = styled(CardTitle)`
-  font-size: ${({ theme }) => theme.fontSize.lg};
-  font-weight: ${({ theme }) => theme.fontWeight.semibold};
-  color: ${({ theme }) => theme.colors.white};
+  padding: ${({ theme }) => theme.spacing.sm} ${({ theme }) => theme.spacing.md} ${({ theme }) => theme.spacing.sm};
+  flex-shrink: 0;
 `;
 
 const PlaylistDescription = styled(CardDescription)`
   font-size: ${({ theme }) => theme.fontSize.sm};
   color: ${({ theme }) => theme.colors.gray[400]};
+  margin: 0;
 `;
 
 const PlaylistContent = styled(CardContent)`
   padding: 0;
+  overflow: hidden;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
 `;
 
 const PlaylistScrollArea = styled(ScrollArea)`
-  height: calc(100vh - 240px);
-  min-height: 300px;
+  flex: 1;
+  min-height: 0;
 `;
 
 const PlaylistItems = styled.div`
-  padding: ${({ theme }) => theme.spacing.sm};
+  padding: 1rem ${({ theme }) => theme.spacing.md};
   display: flex;
   flex-direction: column;
   gap: ${({ theme }) => theme.spacing.sm};
@@ -237,7 +248,6 @@ const Playlist = memo<PlaylistProps>(({ tracks, currentTrackIndex, accentColor, 
     <PlaylistContainer>
       <PlaylistCard>
         <PlaylistHeader>
-          <PlaylistTitle>Up Next</PlaylistTitle>
           <PlaylistDescription>{sortedTracks.length} tracks</PlaylistDescription>
         </PlaylistHeader>
         
