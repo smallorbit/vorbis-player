@@ -91,7 +91,9 @@ export function useVerticalSwipeGesture(
         setIsDragging(true);
       }
 
-      e.preventDefault();
+      if (e.cancelable) {
+        e.preventDefault();
+      }
       currentDeltaYRef.current = deltaY;
       setDragOffset(deltaY);
       onDragRef.current?.(deltaY);
