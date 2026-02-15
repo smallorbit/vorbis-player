@@ -207,6 +207,43 @@ async function fetchAllPaginated<TItem, TResult>(
   return results;
 }
 
+async function fetchPaginatedIncremental<TItem, TResult>(
+  initialUrl: string,
+  token: string,
+  transformItem: (item: TItem) => TResult | null,
+  onPageLoaded: (allResultsSoFar: TResult[], isComplete: boolean) => void,
+  options?: { signal?: AbortSignal; maxItems?: number }
+): Promise<TResult[]> {
+  const results: TResult[] = [];
+  let nextUrl: string | null = initialUrl;
+
+  while (nextUrl) {
+    if (options?.signal?.aborted) {
+      throw new DOMException('Request aborted', 'AbortError');
+    }
+
+    const data: PaginatedResponse<TItem> = await spotifyApiRequest<PaginatedResponse<TItem>>(nextUrl, token, {
+      signal: options?.signal,
+    });
+
+    for (const item of data.items ?? []) {
+      if (options?.maxItems && results.length >= options.maxItems) {
+        onPageLoaded(results, true);
+        return results;
+      }
+      const transformed = transformItem(item);
+      if (transformed !== null) {
+        results.push(transformed);
+      }
+    }
+
+    nextUrl = data.next;
+    onPageLoaded([...results], nextUrl === null);
+  }
+
+  return results;
+}
+
 // =============================================================================
 // Cache Management
 // =============================================================================
@@ -550,6 +587,94 @@ export async function getUserAlbums(signal?: AbortSignal): Promise<AlbumInfo[]> 
 
   setCacheToStorage('albums', albums);
   return albums;
+}
+
+export type PlaylistsIncrementalCallback = (playlistsSoFar: PlaylistInfo[], isComplete: boolean) => void;
+export type AlbumsIncrementalCallback = (albumsSoFar: AlbumInfo[], isComplete: boolean) => void;
+
+export async function getUserPlaylistsIncremental(
+  onUpdate: PlaylistsIncrementalCallback,
+  signal?: AbortSignal
+): Promise<void> {
+  const cached = getCacheFromStorage<PlaylistInfo[]>('playlists');
+  if (isCacheValid(cached)) {
+    onUpdate(cached.data, true);
+    return;
+  }
+
+  const token = await spotifyAuth.ensureValidToken();
+
+  const cachedPlaylistMap = new Map<string, string>();
+  const cachedEntry = cached as CacheEntry<PlaylistInfo[]> | null;
+  if (cachedEntry?.data) {
+    for (const p of cachedEntry.data) {
+      if (p.added_at) cachedPlaylistMap.set(p.id, p.added_at);
+    }
+  }
+
+  const fetchTimestamp = new Date().toISOString();
+
+  await fetchPaginatedIncremental<PlaylistInfo, PlaylistInfo>(
+    'https://api.spotify.com/v1/me/playlists?limit=50',
+    token,
+    (playlist) => {
+      const addedAt = cachedPlaylistMap.get(playlist.id) || fetchTimestamp;
+      return { ...playlist, added_at: addedAt };
+    },
+    (playlistsSoFar, isComplete) => {
+      onUpdate(playlistsSoFar, isComplete);
+      if (isComplete) {
+        setCacheToStorage('playlists', playlistsSoFar);
+      }
+    },
+    { signal }
+  );
+}
+
+export async function getUserAlbumsIncremental(
+  onUpdate: AlbumsIncrementalCallback,
+  signal?: AbortSignal
+): Promise<void> {
+  const cached = getCacheFromStorage<AlbumInfo[]>('albums');
+  if (isCacheValid(cached)) {
+    onUpdate(cached.data, true);
+    return;
+  }
+
+  const token = await spotifyAuth.ensureValidToken();
+
+  interface SavedAlbumItem {
+    added_at: string;
+    album: SpotifyAlbum;
+  }
+
+  function transformSavedAlbum(item: SavedAlbumItem): AlbumInfo {
+    const album = item.album;
+    return {
+      id: album.id ?? '',
+      name: album.name ?? 'Unknown Album',
+      artists: formatArtists(album.artists),
+      images: album.images ?? [],
+      release_date: album.release_date ?? '',
+      total_tracks: album.total_tracks ?? 0,
+      uri: album.uri ?? '',
+      album_type: album.album_type,
+      added_at: item.added_at,
+    };
+  }
+
+  await fetchPaginatedIncremental<SavedAlbumItem, AlbumInfo>(
+    'https://api.spotify.com/v1/me/albums?limit=50',
+    token,
+    transformSavedAlbum,
+    (albumsSoFar, isComplete) => {
+      onUpdate(albumsSoFar, isComplete);
+      if (isComplete) {
+        setCacheToStorage('albums', albumsSoFar);
+      }
+    },
+    { signal }
+  );
 }
 
 export async function getPlaylistTracks(playlistId: string): Promise<Track[]> {
