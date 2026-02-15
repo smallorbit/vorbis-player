@@ -12,7 +12,7 @@ const TRANSITION_EASING = 'cubic-bezier(0.4, 0, 0.2, 1)';
 
 const DrawerOverlay = styled.div.withConfig({
   shouldForwardProp: (prop) => prop !== '$isOpen',
-})<{ $isOpen: boolean }>`
+}) <{ $isOpen: boolean }>`
   position: fixed;
   inset: 0;
   z-index: ${theme.zIndex.modal};
@@ -24,7 +24,7 @@ const DrawerOverlay = styled.div.withConfig({
 
 const DrawerContainer = styled.div.withConfig({
   shouldForwardProp: (prop) => !['$isOpen', '$isDragging', '$dragOffset'].includes(prop),
-})<{
+}) <{
   $isOpen: boolean;
   $isDragging: boolean;
   $dragOffset: number;
@@ -33,8 +33,8 @@ const DrawerContainer = styled.div.withConfig({
   left: 0;
   right: 0;
   bottom: 0;
-  height: 50vh;
-  max-height: 50vh;
+  height: 80vh;
+  max-height: 80vh;
   z-index: ${theme.zIndex.modal};
   background: ${theme.colors.overlay.dark};
   backdrop-filter: blur(${theme.drawer.backdropBlur});

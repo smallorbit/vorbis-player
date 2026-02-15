@@ -37,8 +37,8 @@ const DrawerContainer = styled.div.withConfig({
   top: 0;
   left: 0;
   right: 0;
-  height: 80vh;
-  max-height: 80vh;
+  height: 90vh;
+  max-height: 90vh;
   z-index: ${theme.zIndex.modal};
   display: flex;
   flex-direction: column;
