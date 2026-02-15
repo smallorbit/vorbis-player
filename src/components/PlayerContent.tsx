@@ -107,6 +107,8 @@ const ContentWrapper = styled.div.withConfig({
 
   container-type: inline-size;
   container-name: player;
+  display: flex;
+  flex-direction: column;
 `;
 
 const LoadingCard = styled.div.withConfig({
@@ -197,9 +199,18 @@ const AnimatedControlsContainer = styled.div.withConfig({
 
 const PlayerContainer = styled.div`
   position: relative;
+  z-index: 1;
   display: flex;
   flex-direction: column;
   width: 100%;
+`;
+
+/** Full-viewport tappable layer behind the player; tap toggles the mobile quick-actions menu */
+const BackgroundTapArea = styled.div`
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  cursor: pointer;
 `;
 
 // Album art container with click handler
@@ -228,6 +239,7 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
 
   const [controlsVisible, setControlsVisible] = useState(true);
   const [showHelp, setShowHelp] = useState(false);
+  const [mobileMenuExpanded, setMobileMenuExpanded] = useState(false);
 
   const toggleControls = useCallback(() => {
     setControlsVisible(prev => !prev);
@@ -235,6 +247,14 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
 
   const toggleHelp = useCallback(() => {
     setShowHelp(prev => !prev);
+  }, []);
+
+  const toggleMobileMenu = useCallback(() => {
+    setMobileMenuExpanded(prev => !prev);
+  }, []);
+
+  const closeMobileMenu = useCallback(() => {
+    setMobileMenuExpanded(false);
   }, []);
 
   const closeHelp = useCallback(() => {
@@ -399,8 +419,16 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
         </AnimatedControlsContainer>
       </PlayerContainer>
       {isMobile && (
+        <BackgroundTapArea
+          onClick={toggleMobileMenu}
+          aria-label="Toggle quick actions menu"
+        />
+      )}
+      {isMobile && (
         <MobileBottomMenu
           accentColor={ui.accentColor}
+          isExpanded={mobileMenuExpanded}
+          onCollapse={closeMobileMenu}
           currentTrack={track.current}
           glowEnabled={effects.enabled}
           backgroundVisualizerEnabled={handlers.backgroundVisualizerEnabled}
@@ -480,8 +508,8 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
       </Suspense>
       <LibraryDrawer
         isOpen={ui.showLibraryDrawer}
-        onClose={handlers.onCloseLibraryDrawer || (() => {})}
-        onPlaylistSelect={handlers.onPlaylistSelect || (() => {})}
+        onClose={handlers.onCloseLibraryDrawer || (() => { })}
+        onPlaylistSelect={handlers.onPlaylistSelect || (() => { })}
       />
     </ContentWrapper>
   );

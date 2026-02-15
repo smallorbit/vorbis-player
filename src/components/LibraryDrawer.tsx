@@ -16,7 +16,7 @@ const TRANSITION_EASING = 'cubic-bezier(0.4, 0, 0.2, 1)';
 
 const DrawerOverlay = styled.div.withConfig({
   shouldForwardProp: (prop) => prop !== '$isOpen',
-})<{ $isOpen: boolean }>`
+}) <{ $isOpen: boolean }>`
   position: fixed;
   inset: 0;
   z-index: ${theme.zIndex.modal};
@@ -28,7 +28,7 @@ const DrawerOverlay = styled.div.withConfig({
 
 const DrawerContainer = styled.div.withConfig({
   shouldForwardProp: (prop) => !['$isOpen', '$isDragging', '$dragOffset'].includes(prop),
-})<{
+}) <{
   $isOpen: boolean;
   $isDragging: boolean;
   $dragOffset: number;
@@ -37,12 +37,15 @@ const DrawerContainer = styled.div.withConfig({
   top: 0;
   left: 0;
   right: 0;
-  bottom: 0;
+  height: 80vh;
+  max-height: 80vh;
   z-index: ${theme.zIndex.modal};
-  background: rgba(22, 21, 21, 0.98);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: ${theme.colors.overlay.dark};
+  backdrop-filter: blur(${theme.drawer.backdropBlur});
+  -webkit-backdrop-filter: blur(${theme.drawer.backdropBlur});
   pointer-events: ${({ $isOpen }) => ($isOpen ? 'auto' : 'none')};
   transform: ${({ $isOpen, $isDragging, $dragOffset }) => {
     if ($isDragging) {
@@ -55,23 +58,49 @@ const DrawerContainer = styled.div.withConfig({
   will-change: ${({ $isDragging }) => ($isDragging ? 'transform' : 'auto')};
 `;
 
-const DismissHandle = styled.div`
-  position: sticky;
-  top: 0;
-  z-index: 1;
+/** Dedicated swipe-to-close zone; spans full width so edge swipes work. touch-action: none so gesture captures. */
+const DrawerHeader = styled.div`
+  flex-shrink: 0;
+  padding: ${theme.spacing.md} ${theme.spacing.lg} ${theme.spacing.sm};
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  touch-action: none;
+`;
+
+const DrawerTitle = styled.h3`
+  color: ${theme.colors.white};
+  margin: 0;
+  font-size: ${theme.fontSize.xl};
+  font-weight: ${theme.fontWeight.semibold};
+`;
+
+const DrawerContent = styled.div`
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+`;
+
+/** Grip handle at bottom; swipe up to dismiss. touch-action: none so gesture captures. */
+const DrawerHandle = styled.div`
+  flex-shrink: 0;
   width: 100%;
-  height: 48px;
+  min-height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
+  padding: ${theme.spacing.sm} 0;
+  cursor: grab;
   touch-action: none;
-  padding: 12px 0;
-  background: rgba(22, 21, 21, 0.98);
-  flex-shrink: 0;
+
+  &:active {
+    cursor: grabbing;
+  }
 `;
 
-const HandlePill = styled.div`
+const GripPill = styled.div`
   width: 40px;
   height: 4px;
   background: rgba(255, 255, 255, 0.3);
@@ -118,10 +147,27 @@ export function LibraryDrawer({ isOpen, onClose, onPlaylistSelect }: LibraryDraw
         aria-modal="true"
         aria-label="Library selection"
       >
-        <DismissHandle ref={handleRef} onClick={onClose} role="button" aria-label="Close library">
-          <HandlePill />
-        </DismissHandle>
-        {isOpen && <PlaylistSelection onPlaylistSelect={handlePlaylistSelectWrapper} />}
+        {isOpen && (
+          <>
+            <DrawerHeader>
+              <DrawerTitle>Library</DrawerTitle>
+            </DrawerHeader>
+            <DrawerContent>
+              <PlaylistSelection
+                onPlaylistSelect={handlePlaylistSelectWrapper}
+                inDrawer
+              />
+            </DrawerContent>
+            <DrawerHandle
+              ref={handleRef}
+              role="button"
+              aria-label="Swipe up or tap to close library"
+              onClick={onClose}
+            >
+              <GripPill />
+            </DrawerHandle>
+          </>
+        )}
       </DrawerContainer>
     </>,
     document.body

@@ -33,7 +33,8 @@ const DrawerContainer = styled.div.withConfig({
   left: 0;
   right: 0;
   bottom: 0;
-  max-height: 85vh;
+  height: 50vh;
+  max-height: 50vh;
   z-index: ${theme.zIndex.modal};
   background: ${theme.colors.overlay.dark};
   backdrop-filter: blur(${theme.drawer.backdropBlur});
@@ -45,6 +46,7 @@ const DrawerContainer = styled.div.withConfig({
   pointer-events: ${({ $isOpen }) => ($isOpen ? 'auto' : 'none')};
   display: flex;
   flex-direction: column;
+  touch-action: pan-y;
   transform: ${({ $isOpen, $isDragging, $dragOffset }) => {
     if ($isDragging) {
       return `translateY(${$dragOffset}px)`;
@@ -56,23 +58,24 @@ const DrawerContainer = styled.div.withConfig({
   will-change: ${({ $isDragging }) => ($isDragging ? 'transform' : 'auto')};
 `;
 
-const DismissHandle = styled.div`
-  position: sticky;
-  top: 0;
-  z-index: 1;
+/** Grip handle at top; swipe down to dismiss. touch-action: none so gesture captures. */
+const SheetHandle = styled.div`
+  flex-shrink: 0;
   width: 100%;
-  height: 48px;
+  min-height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
+  padding: ${theme.spacing.sm} 0;
+  cursor: grab;
   touch-action: none;
-  padding: 12px 0;
-  background: ${theme.colors.overlay.dark};
-  flex-shrink: 0;
+
+  &:active {
+    cursor: grabbing;
+  }
 `;
 
-const HandlePill = styled.div`
+const GripPill = styled.div`
   width: 40px;
   height: 4px;
   background: rgba(255, 255, 255, 0.3);
@@ -81,40 +84,25 @@ const HandlePill = styled.div`
 
 const SheetHeader = styled.div`
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0 ${theme.spacing.md} ${theme.spacing.md};
+  flex-direction: column;
   flex-shrink: 0;
 `;
 
 const SheetTitle = styled.h3`
-  color: ${theme.colors.white};
   margin: 0;
+  padding: 0 ${theme.spacing.lg} ${theme.spacing.md};
+  color: ${theme.colors.white};
   font-size: ${theme.fontSize.xl};
   font-weight: ${theme.fontWeight.semibold};
 `;
 
-const CloseButton = styled.button`
-  background: none;
-  border: none;
-  color: ${theme.colors.muted.foreground};
-  font-size: ${theme.fontSize.xl};
-  cursor: pointer;
-  padding: ${theme.spacing.sm};
-  border-radius: ${theme.borderRadius.md};
-  transition: all ${theme.transitions.fast};
-
-  &:hover {
-    background: ${theme.colors.muted.background};
-    color: ${theme.colors.white};
-  }
-`;
-
 const SheetContent = styled.div`
   flex: 1;
-  overflow-y: auto;
+  overflow: hidden;
   padding: 0 ${theme.spacing.md} ${theme.spacing.md};
   min-height: 0;
+  display: flex;
+  flex-direction: column;
 
   > div:first-child {
     margin-top: 0;
@@ -154,7 +142,7 @@ export const PlaylistBottomSheet = memo<PlaylistBottomSheetProps>(function Playl
   accentColor,
   onTrackSelect,
 }) {
-  const { ref: handleRef, isDragging, dragOffset } = useVerticalSwipeGesture({
+  const { ref: headerRef, isDragging, dragOffset } = useVerticalSwipeGesture({
     onSwipeDown: onClose,
     threshold: 80,
     enabled: isOpen,
@@ -173,12 +161,16 @@ export const PlaylistBottomSheet = memo<PlaylistBottomSheetProps>(function Playl
         aria-modal="true"
         aria-label="Playlist"
       >
-        <DismissHandle ref={handleRef} onClick={onClose} role="button" aria-label="Close playlist">
-          <HandlePill />
-        </DismissHandle>
         <SheetHeader>
-          <SheetTitle>Playlist ({tracks.length} tracks)</SheetTitle>
-          <CloseButton onClick={onClose}>×</CloseButton>
+          <SheetHandle
+            ref={headerRef}
+            role="button"
+            aria-label="Swipe down or tap to close playlist"
+            onClick={onClose}
+          >
+            <GripPill />
+          </SheetHandle>
+          <SheetTitle>Playlist</SheetTitle>
         </SheetHeader>
         <SheetContent>
           {isOpen && (

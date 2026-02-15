@@ -195,7 +195,7 @@ export const PlaylistDrawer = memo<PlaylistDrawerProps>(({
         transitionEasing={transitionEasing}
       >
         <PlaylistHeader>
-          <PlaylistTitle>Playlist ({tracks.length} tracks)</PlaylistTitle>
+          <PlaylistTitle>Playlist</PlaylistTitle>
           <CloseButton onClick={onClose}>×</CloseButton>
         </PlaylistHeader>
 
