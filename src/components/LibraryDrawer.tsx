@@ -43,10 +43,9 @@ const DrawerContainer = styled.div.withConfig({
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  background: rgba(22, 21, 21, 0.98);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  touch-action: pan-y;
+  background: ${theme.colors.overlay.dark};
+  backdrop-filter: blur(${theme.drawer.backdropBlur});
+  -webkit-backdrop-filter: blur(${theme.drawer.backdropBlur});
   pointer-events: ${({ $isOpen }) => ($isOpen ? 'auto' : 'none')};
   transform: ${({ $isOpen, $isDragging, $dragOffset }) => {
     if ($isDragging) {
@@ -59,28 +58,53 @@ const DrawerContainer = styled.div.withConfig({
   will-change: ${({ $isDragging }) => ($isDragging ? 'transform' : 'auto')};
 `;
 
-const CloseButton = styled.button`
-  position: absolute;
-  bottom: ${theme.spacing.sm};
-  right: ${theme.spacing.sm};
-  width: 28px;
-  height: 28px;
+/** Dedicated swipe-to-close zone; spans full width so edge swipes work. touch-action: none so gesture captures. */
+const DrawerHeader = styled.div`
+  flex-shrink: 0;
+  padding: ${theme.spacing.md} ${theme.spacing.lg} ${theme.spacing.sm};
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  touch-action: none;
+`;
+
+const DrawerTitle = styled.h3`
+  color: ${theme.colors.white};
+  margin: 0;
+  font-size: ${theme.fontSize.xl};
+  font-weight: ${theme.fontWeight.semibold};
+`;
+
+const DrawerContent = styled.div`
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+`;
+
+/** Grip handle at bottom; swipe up to dismiss. touch-action: none so gesture captures. */
+const DrawerHandle = styled.div`
+  flex-shrink: 0;
+  width: 100%;
+  min-height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: ${theme.borderRadius.md};
-  color: ${theme.colors.muted.foreground};
-  font-size: 1rem;
-  cursor: pointer;
-  transition: all ${theme.transitions.fast};
-  z-index: 1;
+  padding: ${theme.spacing.sm} 0;
+  cursor: grab;
+  touch-action: none;
 
-  &:hover {
-    background: rgba(255, 255, 255, 0.15);
-    color: ${theme.colors.white};
+  &:active {
+    cursor: grabbing;
   }
+`;
+
+const GripPill = styled.div`
+  width: 40px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 2px;
 `;
 
 export function LibraryDrawer({ isOpen, onClose, onPlaylistSelect }: LibraryDrawerProps) {
@@ -104,7 +128,7 @@ export function LibraryDrawer({ isOpen, onClose, onPlaylistSelect }: LibraryDraw
     };
   }, []);
 
-  const { ref: drawerRef, isDragging, dragOffset } = useVerticalSwipeGesture({
+  const { ref: handleRef, isDragging, dragOffset } = useVerticalSwipeGesture({
     onSwipeUp: onClose,
     threshold: 80,
     enabled: isOpen,
@@ -125,14 +149,23 @@ export function LibraryDrawer({ isOpen, onClose, onPlaylistSelect }: LibraryDraw
       >
         {isOpen && (
           <>
-            <PlaylistSelection
-              onPlaylistSelect={handlePlaylistSelectWrapper}
-              inDrawer
-              swipeZoneRef={drawerRef}
-            />
-            <CloseButton onClick={onClose} aria-label="Close library">
-              ×
-            </CloseButton>
+            <DrawerHeader>
+              <DrawerTitle>Library</DrawerTitle>
+            </DrawerHeader>
+            <DrawerContent>
+              <PlaylistSelection
+                onPlaylistSelect={handlePlaylistSelectWrapper}
+                inDrawer
+              />
+            </DrawerContent>
+            <DrawerHandle
+              ref={handleRef}
+              role="button"
+              aria-label="Swipe up or tap to close library"
+              onClick={onClose}
+            >
+              <GripPill />
+            </DrawerHandle>
           </>
         )}
       </DrawerContainer>
