@@ -61,11 +61,32 @@ const DrawerContainer = styled.div.withConfig({
 /** Dedicated swipe-to-close zone; spans full width so edge swipes work. touch-action: none so gesture captures. */
 const DrawerHeader = styled.div`
   flex-shrink: 0;
-  padding: ${theme.spacing.md} ${theme.spacing.lg} ${theme.spacing.sm};
+  padding: ${theme.spacing.sm} ${theme.spacing.md};
   min-height: 48px;
-  display: flex;
+  display: grid;
+  grid-template-columns: 40px 1fr 40px;
   align-items: center;
   touch-action: none;
+`;
+
+const CloseButton = styled.button`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: none;
+  background: none;
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 1.25rem;
+  cursor: pointer;
+  border-radius: 50%;
+  transition: background 0.15s ease;
+  padding: 0;
+
+  &:active {
+    background: rgba(255, 255, 255, 0.1);
+  }
 `;
 
 const DrawerTitle = styled.h3`
@@ -73,6 +94,7 @@ const DrawerTitle = styled.h3`
   margin: 0;
   font-size: ${theme.fontSize.xl};
   font-weight: ${theme.fontWeight.semibold};
+  text-align: center;
 `;
 
 const DrawerContent = styled.div`
@@ -150,7 +172,13 @@ export function LibraryDrawer({ isOpen, onClose, onPlaylistSelect }: LibraryDraw
         {isOpen && (
           <>
             <DrawerHeader>
+              <CloseButton onClick={onClose} aria-label="Close library">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                  <path d="M4 7L10 13L16 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </CloseButton>
               <DrawerTitle>Library</DrawerTitle>
+              <div />
             </DrawerHeader>
             <DrawerContent>
               <PlaylistSelection

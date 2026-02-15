@@ -55,9 +55,10 @@ const Container = styled.div<{ $inDrawer?: boolean }>`
       ? `
     flex: 1;
     min-height: 0;
+    flex-direction: column;
     align-items: stretch;
     justify-content: flex-start;
-    padding: ${theme.spacing.xl} ${theme.spacing.lg} ${theme.spacing.md};
+    padding: 0 ${theme.spacing.lg} ${theme.spacing.md};
     box-sizing: border-box;
   `
       : `
@@ -76,19 +77,29 @@ const Container = styled.div<{ $inDrawer?: boolean }>`
 const SelectionCard = styled(Card) <{ $maxWidth: number; $inDrawer?: boolean }>`
   width: 100%;
   max-width: ${({ $maxWidth, $inDrawer }) => ($inDrawer ? 'none' : `${$maxWidth}px`)};
-  background: rgba(38, 38, 38, 0.8);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(115, 115, 115, 0.5);
-  border-radius: 1.25rem;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
   ${({ $inDrawer }) =>
-    $inDrawer &&
-    `
+    $inDrawer
+      ? `
     flex: 1;
     min-height: 0;
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    background: none;
+    background-color: transparent;
+    backdrop-filter: none;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    padding: 0;
+    margin: 0;
+  `
+      : `
+    background: rgba(38, 38, 38, 0.8);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(115, 115, 115, 0.5);
+    border-radius: 1.25rem;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
   `}
 `;
 
@@ -123,6 +134,7 @@ const DrawerContentWrapper = styled.div`
   min-height: 0;
   display: flex;
   flex-direction: column;
+  padding: 0 ${theme.spacing.md};
   overflow: hidden;
 `;
 
@@ -142,6 +154,74 @@ const PlaylistGrid = styled.div<{ $inDrawer?: boolean }>`
       : `
     max-height: 400px;
   `}
+`;
+
+/* ── Mobile grid card layout (2-column, prominent album art) ── */
+
+const MobileGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.75rem;
+  padding: 0.25rem 0 1rem;
+  overflow-y: auto;
+  flex: 1 1 0px;
+  min-height: 0;
+  -webkit-overflow-scrolling: touch;
+  align-content: start;
+`;
+
+const GridCard = styled.div`
+  display: flex;
+  flex-direction: column;
+  cursor: pointer;
+  border-radius: 0.5rem;
+  transition: transform 0.15s ease, background 0.15s ease;
+  min-width: 0;
+
+  &:active {
+    transform: scale(0.97);
+    background: rgba(255, 255, 255, 0.04);
+  }
+`;
+
+const GridCardArtWrapper = styled.div`
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 0.5rem;
+  overflow: hidden;
+  background: linear-gradient(135deg, #222, #333);
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+`;
+
+const GridCardTextArea = styled.div`
+  padding: 0.5rem 0.125rem 0;
+`;
+
+const GridCardTitle = styled.div`
+  font-weight: 600;
+  font-size: 0.8125rem;
+  color: white;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 1.3;
+`;
+
+const GridCardSubtitle = styled.div`
+  font-size: 0.6875rem;
+  color: rgba(255, 255, 255, 0.55);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 1.4;
+  margin-top: 1px;
 `;
 
 const PlaylistItem = styled.div`
@@ -394,6 +474,62 @@ const PlaylistImage: React.FC<PlaylistImageProps> = React.memo(function Playlist
   );
 });
 
+/** Larger lazy-loaded image for the mobile grid card layout */
+interface GridCardImageProps {
+  images: { url: string; width: number | null; height: number | null }[];
+  alt: string;
+}
+
+const GridCardImageComponent: React.FC<GridCardImageProps> = React.memo(function GridCardImageComponent({ images, alt }) {
+  const [imageUrl, setImageUrl] = useState<string | undefined>(undefined);
+  const [isVisible, setIsVisible] = useState(false);
+  const imgRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!imgRef.current) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setIsVisible(true);
+            observer.disconnect();
+          }
+        });
+      },
+      { rootMargin: '100px', threshold: 0.01 }
+    );
+    observer.observe(imgRef.current);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (isVisible && images) {
+      // Request a larger image for the grid card (≈300px for 2-col on mobile)
+      const optimalUrl = selectOptimalImage(images, 300);
+      setImageUrl(optimalUrl);
+    }
+  }, [isVisible, images]);
+
+  return (
+    <GridCardArtWrapper ref={imgRef}>
+      {imageUrl ? (
+        <img src={imageUrl} alt={alt} loading="lazy" decoding="async" />
+      ) : (
+        <div style={{
+          width: '100%',
+          height: '100%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontSize: '2rem',
+        }}>
+          🎵
+        </div>
+      )}
+    </GridCardArtWrapper>
+  );
+});
+
 function PlaylistSelection({ onPlaylistSelect, inDrawer = false, swipeZoneRef }: PlaylistSelectionProps): JSX.Element {
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
     const saved = localStorage.getItem('vorbis-player-view-mode');
@@ -594,6 +730,7 @@ function PlaylistSelection({ onPlaylistSelect, inDrawer = false, swipeZoneRef }:
 
   const hasAnyContent = playlists.length > 0 || albums.length > 0 || likedSongsCount > 0;
   const showMainContent = isAuthenticated && !error && (hasAnyContent || (!isLoading && !libraryFullyLoaded));
+
   const mainContent = showMainContent ? (
     <>
       <div ref={inDrawer ? swipeZoneRef : undefined} style={inDrawer ? { flexShrink: 0, touchAction: 'pan-y' } : undefined}>
@@ -671,8 +808,65 @@ function PlaylistSelection({ onPlaylistSelect, inDrawer = false, swipeZoneRef }:
       </TabsContainer>
       </div>
 
-      {viewMode === 'playlists' && (
-        <PlaylistGrid $inDrawer={inDrawer}>
+      {viewMode === 'playlists' && inDrawer && (
+        <MobileGrid>
+          {likedSongsCount > 0 && (
+            <GridCard onClick={handleLikedSongsClick}>
+              <GridCardArtWrapper>
+                <div
+                  style={{
+                    background: 'linear-gradient(135deg, #1DB954 0%, #1ed760 100%)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: '100%',
+                    height: '100%',
+                    fontSize: '3rem',
+                    color: 'white',
+                  }}
+                >
+                  ♥
+                </div>
+              </GridCardArtWrapper>
+              <GridCardTextArea>
+                <GridCardTitle>Liked Songs</GridCardTitle>
+                <GridCardSubtitle>{likedSongsCount} tracks</GridCardSubtitle>
+              </GridCardTextArea>
+            </GridCard>
+          )}
+
+          {filteredPlaylists.map((playlist) => (
+            <GridCard key={playlist.id} onClick={() => handlePlaylistClick(playlist)}>
+              <GridCardImageComponent images={playlist.images} alt={playlist.name} />
+              <GridCardTextArea>
+                <GridCardTitle>{playlist.name}</GridCardTitle>
+                <GridCardSubtitle>
+                  {playlist.tracks.total} tracks
+                  {playlist.owner.display_name && ` • ${playlist.owner.display_name}`}
+                </GridCardSubtitle>
+              </GridCardTextArea>
+            </GridCard>
+          ))}
+
+          {filteredPlaylists.length === 0 && likedSongsCount === 0 && playlistsLoaded && (
+            <div
+              style={{
+                gridColumn: '1 / -1',
+                padding: '2rem',
+                textAlign: 'center',
+                color: 'rgba(255, 255, 255, 0.6)',
+              }}
+            >
+              {searchQuery
+                ? `No playlists match "${searchQuery}"`
+                : 'No playlists found. Create some playlists in Spotify or save some songs!'}
+            </div>
+          )}
+        </MobileGrid>
+      )}
+
+      {viewMode === 'playlists' && !inDrawer && (
+        <PlaylistGrid $inDrawer={false}>
           {likedSongsCount > 0 && (
             <PlaylistItem onClick={handleLikedSongsClick}>
               <PlaylistImageWrapper>
@@ -730,8 +924,40 @@ function PlaylistSelection({ onPlaylistSelect, inDrawer = false, swipeZoneRef }:
         </PlaylistGrid>
       )}
 
-      {viewMode === 'albums' && (
-        <PlaylistGrid $inDrawer={inDrawer}>
+      {viewMode === 'albums' && inDrawer && (
+        <MobileGrid>
+          {filteredAlbums.map((album) => (
+            <GridCard key={album.id} onClick={() => handleAlbumClick(album)}>
+              <GridCardImageComponent
+                images={album.images}
+                alt={`${album.name} by ${album.artists}`}
+              />
+              <GridCardTextArea>
+                <GridCardTitle>{album.name}</GridCardTitle>
+                <GridCardSubtitle>{album.artists}</GridCardSubtitle>
+              </GridCardTextArea>
+            </GridCard>
+          ))}
+
+          {filteredAlbums.length === 0 && albumsLoaded && (
+            <div
+              style={{
+                gridColumn: '1 / -1',
+                padding: '2rem',
+                textAlign: 'center',
+                color: 'rgba(255, 255, 255, 0.6)',
+              }}
+            >
+              {searchQuery || yearFilter !== 'all'
+                ? 'No albums match your filters.'
+                : 'No albums found. Save some albums in Spotify to see them here!'}
+            </div>
+          )}
+        </MobileGrid>
+      )}
+
+      {viewMode === 'albums' && !inDrawer && (
+        <PlaylistGrid $inDrawer={false}>
           {filteredAlbums.map((album) => (
             <PlaylistItem key={album.id} onClick={() => handleAlbumClick(album)}>
               <PlaylistImage
@@ -765,17 +991,65 @@ function PlaylistSelection({ onPlaylistSelect, inDrawer = false, swipeZoneRef }:
     </>
   ) : null;
 
-  return (
-    <Container $inDrawer={inDrawer}>
-      <SelectionCard $maxWidth={maxWidth} $inDrawer={inDrawer}>
-        {!inDrawer && (
-          <Header $inDrawer={inDrawer}>
-            <Title>Choose Your Music</Title>
-            <Subtitle>Select a playlist, album, or your liked songs to start listening</Subtitle>
-          </Header>
+  // When inDrawer, use a flat structure — one flex-column wrapper, no extra nesting.
+  // This avoids the deep flex containment chain that breaks height propagation.
+  if (inDrawer) {
+    return (
+      <DrawerContentWrapper>
+        {isLoading && (
+          <LoadingState>
+            <Skeleton style={{ height: '60px' }} />
+            <Skeleton style={{ height: '60px' }} />
+            <Skeleton style={{ height: '60px' }} />
+            <p style={{ textAlign: 'center', color: 'white' }}>Loading your library...</p>
+          </LoadingState>
         )}
 
-        <CardContent style={inDrawer ? { flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' } : undefined}>
+        {!isLoading && !isAuthenticated && (
+          <div style={{ textAlign: 'center', padding: '2rem' }}>
+            <p style={{ color: 'rgba(255, 255, 255, 0.7)', marginBottom: '1.5rem', fontSize: '1.1rem' }}>
+              Connect your Spotify account to access your playlists
+            </p>
+            <Button
+              onClick={handleLogin}
+              style={{
+                background: '#1db954',
+                color: 'white',
+                border: 'none',
+                padding: '0.75rem 2rem',
+                fontSize: '1rem',
+                borderRadius: '0.5rem',
+                cursor: 'pointer',
+                transition: 'background 0.2s ease'
+              }}
+            >
+              Connect Spotify
+            </Button>
+          </div>
+        )}
+
+        {error && (
+          <Alert variant="destructive">
+            <AlertDescription style={{ color: '#fecaca' }}>
+              {error}
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {mainContent}
+      </DrawerContentWrapper>
+    );
+  }
+
+  return (
+    <Container $inDrawer={false}>
+      <SelectionCard $maxWidth={maxWidth} $inDrawer={false}>
+        <Header $inDrawer={false}>
+          <Title>Choose Your Music</Title>
+          <Subtitle>Select a playlist, album, or your liked songs to start listening</Subtitle>
+        </Header>
+
+        <CardContent>
           {isLoading && (
             <LoadingState>
               <Skeleton style={{ height: '60px' }} />
@@ -822,7 +1096,7 @@ function PlaylistSelection({ onPlaylistSelect, inDrawer = false, swipeZoneRef }:
             </Alert>
           )}
 
-          {mainContent && (inDrawer ? <DrawerContentWrapper>{mainContent}</DrawerContentWrapper> : mainContent)}
+          {mainContent}
         </CardContent>
       </SelectionCard>
     </Container>
