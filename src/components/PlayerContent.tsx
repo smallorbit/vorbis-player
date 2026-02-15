@@ -18,6 +18,7 @@ import type { VisualizerStyle } from '../types/visualizer';
 import type { AlbumFilters } from '../types/filters';
 
 const PlaylistDrawer = lazy(() => import('./PlaylistDrawer'));
+const PlaylistBottomSheet = lazy(() => import('./PlaylistBottomSheet'));
 const VisualEffectsMenu = lazy(() => import('./VisualEffectsMenu/index'));
 const KeyboardShortcutsHelp = lazy(() => import('./KeyboardShortcutsHelp'));
 
@@ -249,9 +250,10 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
     onSwipeRight: handlers.onPrevious,
   }, { enabled: !isDesktop });
 
-  // Vertical swipe down on album art opens library drawer (mobile only)
+  // Vertical swipe on album art (mobile only): down = library, up = playlist
   const { ref: albumArtRef } = useVerticalSwipeGesture({
     onSwipeDown: handlers.onOpenLibraryDrawer,
+    onSwipeUp: handlers.onShowPlaylist,
     threshold: 80,
     enabled: isMobile,
   });
@@ -453,14 +455,25 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
         </Suspense>
       )}
       <Suspense fallback={<PlaylistLoadingFallback />}>
-        <PlaylistDrawer
-          isOpen={ui.showPlaylist}
-          onClose={handlers.onClosePlaylist}
-          tracks={track.list}
-          currentTrackIndex={track.currentIndex}
-          accentColor={ui.accentColor}
-          onTrackSelect={handlers.onTrackSelect}
-        />
+        {isMobile ? (
+          <PlaylistBottomSheet
+            isOpen={ui.showPlaylist}
+            onClose={handlers.onClosePlaylist}
+            tracks={track.list}
+            currentTrackIndex={track.currentIndex}
+            accentColor={ui.accentColor}
+            onTrackSelect={handlers.onTrackSelect}
+          />
+        ) : (
+          <PlaylistDrawer
+            isOpen={ui.showPlaylist}
+            onClose={handlers.onClosePlaylist}
+            tracks={track.list}
+            currentTrackIndex={track.currentIndex}
+            accentColor={ui.accentColor}
+            onTrackSelect={handlers.onTrackSelect}
+          />
+        )}
       </Suspense>
       <Suspense fallback={null}>
         <KeyboardShortcutsHelp isOpen={showHelp} onClose={closeHelp} />
