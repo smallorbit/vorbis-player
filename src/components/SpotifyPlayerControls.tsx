@@ -84,15 +84,13 @@ const SpotifyPlayerControls = memo<SpotifyPlayerControlsProps>(({
 
   // Color picker and overrides are managed in the quick actions panel
 
-  // Use Spotify controls hook
+  // Use Spotify controls hook — like state is always provided via props from usePlayerLogic
   const {
     isPlaying,
     isMuted,
     volume,
     currentPosition,
     duration,
-    isLiked: hookIsLiked,
-    isLikePending: hookIsLikePending,
     handleVolumeButtonClick: hookHandleVolumeButtonClick,
     handleLikeToggle,
     handleSliderChange,
@@ -101,23 +99,21 @@ const SpotifyPlayerControls = memo<SpotifyPlayerControlsProps>(({
     formatTime,
   } = useSpotifyControls({
     currentTrack,
+    isLiked: propIsLiked ?? false,
+    isLikePending: propIsLikePending ?? false,
     onPlay,
     onPause,
     onNext,
-    onPrevious
+    onPrevious,
+    onLikeToggle: propOnToggleLike ?? (() => {}),
   });
 
-  // Use props if available (from usePlayerLogic which handles keyboard shortcuts), otherwise fallback to hook state
-  // Note: We prefer props for like state to ensure synchronization with keyboard shortcuts
-  const effectiveIsLiked = typeof propIsLiked !== 'undefined' ? propIsLiked : hookIsLiked;
-  const effectiveIsLikePending = typeof propIsLikePending !== 'undefined' ? propIsLikePending : hookIsLikePending;
+  const effectiveIsLiked = propIsLiked ?? false;
+  const effectiveIsLikePending = propIsLikePending ?? false;
   const effectiveIsMuted = typeof propIsMuted !== 'undefined' ? propIsMuted : isMuted;
   const effectiveVolume = typeof propVolume !== 'undefined' ? propVolume : volume;
   const effectiveHandleVolumeButtonClick = propOnMuteToggle || hookHandleVolumeButtonClick;
-
-  // Use parent's onToggleLike handler if provided, otherwise use hook's handler
-  // This ensures like state is synchronized with parent component (usePlayerLogic)
-  const effectiveHandleLikeToggle = propOnToggleLike || handleLikeToggle;
+  const effectiveHandleLikeToggle = handleLikeToggle;
   
   return (
     <PlayerControlsContainer $isMobile={isMobile} $isTablet={isTablet}>

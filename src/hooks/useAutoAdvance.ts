@@ -7,7 +7,6 @@ interface UseAutoAdvanceProps {
   currentTrackIndex: number;
   playTrack: (index: number, skipOnError?: boolean) => void;
   enabled?: boolean;
-  pollInterval?: number;
   endThreshold?: number;
 }
 
@@ -16,55 +15,56 @@ export const useAutoAdvance = ({
   currentTrackIndex,
   playTrack,
   enabled = true,
-  pollInterval = 2000,
   endThreshold = 2000
 }: UseAutoAdvanceProps) => {
-  const pollIntervalRef = useRef<number>();
   const hasEnded = useRef(false);
+  const tracksRef = useRef(tracks);
+  const currentTrackIndexRef = useRef(currentTrackIndex);
+  const playTrackRef = useRef(playTrack);
 
+  // Keep refs up to date so the event callback always has fresh values
+  useEffect(() => { tracksRef.current = tracks; }, [tracks]);
+  useEffect(() => { currentTrackIndexRef.current = currentTrackIndex; }, [currentTrackIndex]);
+  useEffect(() => { playTrackRef.current = playTrack; }, [playTrack]);
+
+  // Reset hasEnded flag when track changes
+  useEffect(() => {
+    hasEnded.current = false;
+  }, [currentTrackIndex]);
+
+  // Use event-based detection instead of polling
   useEffect(() => {
     if (!enabled || tracks.length === 0) {
       return;
     }
 
-    const checkForSongEnd = async () => {
-      try {
-        const state = await spotifyPlayer.getCurrentState();
-        if (state && state.track_window.current_track && tracks.length > 0) {
-          const currentTrack = state.track_window.current_track;
-          const duration = currentTrack.duration_ms;
-          const position = state.position;
-          const timeRemaining = duration - position;
+    function handleStateChange(state: SpotifyPlaybackState | null) {
+      if (!state || !state.track_window.current_track || tracksRef.current.length === 0) {
+        return;
+      }
 
-          if (!hasEnded.current && duration > 0 && position > 0 && (
-            timeRemaining <= endThreshold ||
-            position >= duration - 1000
-          )) {
-            hasEnded.current = true;
+      const duration = state.track_window.current_track.duration_ms;
+      const position = state.position;
+      const timeRemaining = duration - position;
 
-            const nextIndex = (currentTrackIndex + 1) % tracks.length;
-            if (tracks[nextIndex]) {
-              setTimeout(() => {
-                playTrack(nextIndex, true); // Enable auto-skip for unavailable tracks
-                hasEnded.current = false;
-              }, 500);
-            }
-          }
+      if (!hasEnded.current && duration > 0 && position > 0 && (
+        timeRemaining <= endThreshold ||
+        position >= duration - 1000
+      )) {
+        hasEnded.current = true;
+
+        const nextIndex = (currentTrackIndexRef.current + 1) % tracksRef.current.length;
+        if (tracksRef.current[nextIndex]) {
+          setTimeout(() => {
+            playTrackRef.current(nextIndex, true);
+            hasEnded.current = false;
+          }, 500);
         }
-      } catch {
-        // Ignore polling errors
       }
-    };
+    }
 
-    // Reset hasEnded flag when track changes
-    hasEnded.current = false;
+    const unsubscribe = spotifyPlayer.onPlayerStateChanged(handleStateChange);
 
-    pollIntervalRef.current = setInterval(checkForSongEnd, pollInterval) as unknown as number;
-
-    return () => {
-      if (pollIntervalRef.current) {
-        clearInterval(pollIntervalRef.current);
-      }
-    };
-  }, [tracks, currentTrackIndex, playTrack, enabled, pollInterval, endThreshold]);
+    return unsubscribe;
+  }, [enabled, tracks.length, endThreshold]);
 };

@@ -1,74 +1,93 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { spotifyPlayer } from '../services/spotifyPlayer';
-import { spotifyAuth, checkTrackSaved, saveTrack, unsaveTrack } from '../services/spotify';
+import { spotifyAuth } from '../services/spotify';
 import type { Track } from '../services/spotify';
 import { useVolume } from './useVolume';
 
 interface UseSpotifyControlsProps {
   currentTrack: Track | null;
+  isLiked: boolean;
+  isLikePending: boolean;
   onPlay: () => void;
   onPause: () => void;
   onNext: () => void;
   onPrevious: () => void;
+  onLikeToggle: () => void;
 }
 
 export const useSpotifyControls = ({
   currentTrack,
+  isLiked,
+  isLikePending,
   onPlay,
   onPause,
   onNext,
-  onPrevious
+  onPrevious,
+  onLikeToggle
 }: UseSpotifyControlsProps) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentPosition, setCurrentPosition] = useState(0);
   const [duration, setDuration] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
-  const [isLiked, setIsLiked] = useState(false);
-  const [isLikePending, setIsLikePending] = useState(false);
+  const isDraggingRef = useRef(false);
 
   // Use volume hook for volume-related functionality
   const { isMuted, volume, handleMuteToggle, handleVolumeButtonClick } = useVolume();
 
+  // Keep ref in sync so the event handler always has the latest value
   useEffect(() => {
-    const checkPlaybackState = async () => {
-      const state = await spotifyPlayer.getCurrentState();
+    isDraggingRef.current = isDragging;
+  }, [isDragging]);
+
+  // Use event-based playback state updates instead of polling
+  useEffect(() => {
+    function handlePlayerStateChange(state: SpotifyPlaybackState | null) {
       if (state) {
         setIsPlaying(!state.paused);
-        if (!isDragging) {
+        if (!isDraggingRef.current) {
           setCurrentPosition(state.position);
         }
         if (state.track_window.current_track) {
           setDuration(state.track_window.current_track.duration_ms);
         }
       }
-    };
+    }
 
-    const interval = setInterval(checkPlaybackState, 1000);
-    return () => clearInterval(interval);
-  }, [isDragging]);
+    const unsubscribe = spotifyPlayer.onPlayerStateChanged(handlePlayerStateChange);
 
+    // Also check initial state once
+    (async () => {
+      const state = await spotifyPlayer.getCurrentState();
+      if (state) {
+        setIsPlaying(!state.paused);
+        if (!isDraggingRef.current) {
+          setCurrentPosition(state.position);
+        }
+        if (state.track_window.current_track) {
+          setDuration(state.track_window.current_track.duration_ms);
+        }
+      }
+    })();
 
+    return unsubscribe;
+  }, []);
+
+  // Lightweight position poll — only to update the timeline slider smoothly.
+  // The event listener above handles play/pause/track changes;
+  // this just fills in sub-second position ticks during active playback.
   useEffect(() => {
-    const checkLikeStatus = async () => {
-      if (!currentTrack?.id) {
-        setIsLiked(false);
-        return;
-      }
+    if (!isPlaying) return;
 
-      try {
-        setIsLikePending(true);
-        const liked = await checkTrackSaved(currentTrack.id);
-        setIsLiked(liked);
-      } catch (error) {
-        console.error('Failed to check like status:', error);
-        setIsLiked(false);
-      } finally {
-        setIsLikePending(false);
+    const interval = setInterval(async () => {
+      if (isDraggingRef.current) return;
+      const state = await spotifyPlayer.getCurrentState();
+      if (state) {
+        setCurrentPosition(state.position);
       }
-    };
+    }, 1000);
 
-    checkLikeStatus();
-  }, [currentTrack?.id]);
+    return () => clearInterval(interval);
+  }, [isPlaying]);
 
   const handlePlayPause = useCallback(async () => {
     if (isPlaying) {
@@ -86,29 +105,6 @@ export const useSpotifyControls = ({
       }
     }
   }, [isPlaying, onPlay, onPause, currentTrack]);
-
-
-  const handleLikeToggle = useCallback(async () => {
-    if (!currentTrack?.id || isLikePending) return;
-
-    try {
-      setIsLikePending(true);
-      
-      const newLikedState = !isLiked;
-      setIsLiked(newLikedState);
-
-      if (newLikedState) {
-        await saveTrack(currentTrack.id);
-      } else {
-        await unsaveTrack(currentTrack.id);
-      }
-    } catch (error) {
-      console.error('Failed to toggle like status:', error);
-      setIsLiked(!isLiked);
-    } finally {
-      setIsLikePending(false);
-    }
-  }, [currentTrack?.id, isLikePending, isLiked]);
 
   const handleSeek = useCallback(async (position: number) => {
     try {
@@ -165,7 +161,7 @@ export const useSpotifyControls = ({
     handlePlayPause,
     handleMuteToggle,
     handleVolumeButtonClick,
-    handleLikeToggle,
+    handleLikeToggle: onLikeToggle,
     handleSeek,
     handleSliderChange,
     handleSliderMouseDown,

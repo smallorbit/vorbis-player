@@ -43,6 +43,8 @@ export class SpotifyPlayerService {
   private player: SpotifyPlayer | null;
   private deviceId: string | null;
   private isReady: boolean;
+  private stateChangeCallbacks = new Set<(state: SpotifyPlaybackState | null) => void>();
+  private masterListenerAttached = false;
 
   constructor() {
     // Restore state from HMR if available
@@ -276,11 +278,41 @@ export class SpotifyPlayerService {
     return null;
   }
 
-  onPlayerStateChanged(callback: (state: SpotifyPlaybackState | null) => void): void {
-    if (this.player) {
-      this.player.removeListener('player_state_changed');
-      this.player.addListener('player_state_changed', callback);
-    }
+  /**
+   * Register a callback for player state changes.
+   * Multiple callbacks are supported — all registered callbacks are invoked.
+   * Returns an unsubscribe function to remove the listener.
+   */
+  onPlayerStateChanged(callback: (state: SpotifyPlaybackState | null) => void): () => void {
+    this.stateChangeCallbacks.add(callback);
+    this.syncPlayerStateListener();
+
+    return () => {
+      this.stateChangeCallbacks.delete(callback);
+      // If no more callbacks, remove the SDK listener to avoid overhead
+      if (this.stateChangeCallbacks.size === 0 && this.player) {
+        this.player.removeListener('player_state_changed');
+        this.masterListenerAttached = false;
+      }
+    };
+  }
+
+  /**
+   * Attach a single master SDK listener that fans out to all registered callbacks.
+   */
+  private syncPlayerStateListener(): void {
+    if (this.masterListenerAttached || !this.player) return;
+    this.player.removeListener('player_state_changed');
+    this.player.addListener('player_state_changed', (state: SpotifyPlaybackState | null) => {
+      for (const cb of this.stateChangeCallbacks) {
+        try {
+          cb(state);
+        } catch (err) {
+          console.error('[spotifyPlayer] state change callback error:', err);
+        }
+      }
+    });
+    this.masterListenerAttached = true;
   }
 
   disconnect(): void {
@@ -335,7 +367,7 @@ export class SpotifyPlayerService {
     }
   }
 
-  async ensureDeviceIsActive(maxRetries = 10, delayMs = 500): Promise<boolean> {
+  async ensureDeviceIsActive(maxRetries = 5, initialDelayMs = 800): Promise<boolean> {
     const token = await spotifyAuth.ensureValidToken();
     
     for (let i = 0; i < maxRetries; i++) {
@@ -358,12 +390,15 @@ export class SpotifyPlayerService {
         }
 
         if (i < maxRetries - 1) {
-          await new Promise(resolve => setTimeout(resolve, delayMs));
+          // Exponential backoff: 800ms, 1600ms, 3200ms, ...
+          const delay = initialDelayMs * Math.pow(2, i);
+          await new Promise(resolve => setTimeout(resolve, delay));
         }
       } catch (error) {
         console.warn(`🎵 Error checking device status (attempt ${i + 1}):`, error);
         if (i < maxRetries - 1) {
-          await new Promise(resolve => setTimeout(resolve, delayMs));
+          const delay = initialDelayMs * Math.pow(2, i);
+          await new Promise(resolve => setTimeout(resolve, delay));
         }
       }
     }

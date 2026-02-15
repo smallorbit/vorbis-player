@@ -80,7 +80,7 @@ export const usePlaylistManager = ({
       setCurrentTrackIndex(0);
 
       // Play the first track with retry logic for 403 errors
-      const playWithRetry = async (trackIndex: number, retryCount = 0, maxRetries = 3): Promise<boolean> => {
+      const playWithRetry = async (trackIndex: number, retryCount = 0, maxRetries = 2): Promise<boolean> => {
         const trackUri = fetchedTracks[trackIndex]?.uri;
         if (!trackUri) {
           console.error('No track URI at index', trackIndex);
@@ -102,7 +102,7 @@ export const usePlaylistManager = ({
                 console.error('Failed to check/resume playback state:', error);
               }
             })();
-          }, 1000);
+          }, 1500);
           
           return true; // Success
         } catch (error) {
@@ -126,14 +126,14 @@ export const usePlaylistManager = ({
               return false; // No more tracks to try
             }
             
-            // For other 403 errors, try to recover
+            // For other 403 errors, try to recover with exponential backoff
             if (retryCount < maxRetries) {
-              console.log(`🎵 Got 403 error, retrying (attempt ${retryCount + 1}/${maxRetries})...`);
+              const backoffMs = 2000 * Math.pow(2, retryCount);
+              console.log(`🎵 Got 403 error, retrying in ${backoffMs}ms (attempt ${retryCount + 1}/${maxRetries})...`);
               
-              // Re-transfer playback and wait longer
               await spotifyPlayer.transferPlaybackToDevice();
-              await new Promise(resolve => setTimeout(resolve, 1500));
-              await spotifyPlayer.ensureDeviceIsActive();
+              await new Promise(resolve => setTimeout(resolve, backoffMs));
+              await spotifyPlayer.ensureDeviceIsActive(3, 1000);
               
               // Retry playing the same track
               return await playWithRetry(trackIndex, retryCount + 1, maxRetries);

@@ -2,8 +2,7 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import * as React from 'react';
 import styled from 'styled-components';
 import {
-  getUserPlaylistsIncremental,
-  getUserAlbumsIncremental,
+  getUserLibraryInterleaved,
   getLikedSongsCount,
   getCachedData,
   spotifyAuth,
@@ -208,6 +207,32 @@ const LoadingState = styled.div`
   padding: 2rem;
 `;
 
+const spinnerKeyframes = `
+  @keyframes vorbis-spinner-spin {
+    to { transform: rotate(360deg); }
+  }
+`;
+
+// Inject the keyframes once
+if (typeof document !== 'undefined' && !document.getElementById('vorbis-spinner-keyframes')) {
+  const style = document.createElement('style');
+  style.id = 'vorbis-spinner-keyframes';
+  style.textContent = spinnerKeyframes;
+  document.head.appendChild(style);
+}
+
+const TabSpinner = styled.span`
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.15);
+  border-top-color: #1db954;
+  border-radius: 50%;
+  animation: vorbis-spinner-spin 0.8s linear infinite;
+  margin-left: 0.4rem;
+  vertical-align: middle;
+`;
+
 const TabsContainer = styled.div`
   display: flex;
   gap: 0;
@@ -390,7 +415,10 @@ function PlaylistSelection({ onPlaylistSelect, inDrawer = false, swipeZoneRef }:
     'recently-added'
   );
   const [yearFilter, setYearFilter] = useState<YearFilterOption>('all');
-  const [libraryFullyLoaded, setLibraryFullyLoaded] = useState(false);
+  const [playlistsLoaded, setPlaylistsLoaded] = useState(false);
+  const [albumsLoaded, setAlbumsLoaded] = useState(false);
+  const [likedSongsDone, setLikedSongsDone] = useState(false);
+  const libraryFullyLoaded = playlistsLoaded && albumsLoaded && likedSongsDone;
 
   const { viewport, isMobile, isTablet } = usePlayerSizing();
 
@@ -440,7 +468,6 @@ function PlaylistSelection({ onPlaylistSelect, inDrawer = false, swipeZoneRef }:
   useEffect(() => {
     const abortController = new AbortController();
     let isMounted = true;
-    const completedRef = { playlistsDone: false, albumsDone: false, likedDone: false };
 
     async function checkAuthAndFetchPlaylists(): Promise<void> {
       try {
@@ -460,6 +487,7 @@ function PlaylistSelection({ onPlaylistSelect, inDrawer = false, swipeZoneRef }:
 
         if (cachedPlaylists && isMounted) {
           setPlaylists(cachedPlaylists);
+          setPlaylistsLoaded(true);
           setIsLoading(false);
         } else {
           setIsLoading(true);
@@ -467,54 +495,46 @@ function PlaylistSelection({ onPlaylistSelect, inDrawer = false, swipeZoneRef }:
 
         if (cachedAlbums && isMounted) {
           setAlbums(cachedAlbums);
-        }
-
-        function maybeSetLibraryFullyLoaded(): void {
-          if (completedRef.playlistsDone && completedRef.albumsDone && completedRef.likedDone && isMounted) {
-            setLibraryFullyLoaded(true);
-          }
+          setAlbumsLoaded(true);
         }
 
         getLikedSongsCount(abortController.signal)
           .then((count) => {
             if (isMounted) {
               setLikedSongsCount(count);
-              completedRef.likedDone = true;
-              maybeSetLibraryFullyLoaded();
+              setLikedSongsDone(true);
             }
           })
           .catch((err) => {
             if (err instanceof DOMException && err.name === 'AbortError') return;
             console.warn('Failed to fetch liked songs count:', err);
-            completedRef.likedDone = true;
-            maybeSetLibraryFullyLoaded();
+            if (isMounted) setLikedSongsDone(true);
           });
 
         const onPlaylistsUpdate = (playlistsSoFar: PlaylistInfo[], isComplete: boolean): void => {
           if (!isMounted) return;
-          if (!hasCache || isComplete) setPlaylists(playlistsSoFar);
-          if (!hasCache) setIsLoading(false);
+          setPlaylists(playlistsSoFar);
+          setIsLoading(false);
           if (isComplete) {
-            completedRef.playlistsDone = true;
-            maybeSetLibraryFullyLoaded();
+            setPlaylistsLoaded(true);
           }
         };
 
         const onAlbumsUpdate = (albumsSoFar: AlbumInfo[], isComplete: boolean): void => {
           if (!isMounted) return;
-          if (!hasCache || isComplete) setAlbums(albumsSoFar);
-          if (!hasCache) setIsLoading(false);
+          setAlbums(albumsSoFar);
+          setIsLoading(false);
           if (isComplete) {
-            completedRef.albumsDone = true;
-            maybeSetLibraryFullyLoaded();
+            setAlbumsLoaded(true);
           }
         };
 
         try {
-          await Promise.all([
-            getUserPlaylistsIncremental(onPlaylistsUpdate, abortController.signal),
-            getUserAlbumsIncremental(onAlbumsUpdate, abortController.signal),
-          ]);
+          await getUserLibraryInterleaved(
+            onPlaylistsUpdate,
+            onAlbumsUpdate,
+            abortController.signal
+          );
         } catch (err) {
           if (err instanceof DOMException && err.name === 'AbortError') return;
           if (abortController.signal.aborted) return;
@@ -572,7 +592,9 @@ function PlaylistSelection({ onPlaylistSelect, inDrawer = false, swipeZoneRef }:
     }
   }
 
-  const mainContent = !isLoading && isAuthenticated && !error && (playlists.length > 0 || albums.length > 0 || likedSongsCount > 0) ? (
+  const hasAnyContent = playlists.length > 0 || albums.length > 0 || likedSongsCount > 0;
+  const showMainContent = isAuthenticated && !error && (hasAnyContent || (!isLoading && !libraryFullyLoaded));
+  const mainContent = showMainContent ? (
     <>
       <div ref={inDrawer ? swipeZoneRef : undefined} style={inDrawer ? { flexShrink: 0, touchAction: 'pan-y' } : undefined}>
       <ControlsContainer>
@@ -638,13 +660,13 @@ function PlaylistSelection({ onPlaylistSelect, inDrawer = false, swipeZoneRef }:
           $active={viewMode === 'playlists'}
           onClick={() => handleViewModeChange('playlists')}
         >
-          Playlists
+          Playlists{!playlistsLoaded && <TabSpinner />}
         </TabButton>
         <TabButton
           $active={viewMode === 'albums'}
           onClick={() => handleViewModeChange('albums')}
         >
-          Albums
+          Albums{!albumsLoaded && <TabSpinner />}
         </TabButton>
       </TabsContainer>
       </div>
@@ -692,7 +714,7 @@ function PlaylistSelection({ onPlaylistSelect, inDrawer = false, swipeZoneRef }:
             </PlaylistItem>
           ))}
 
-          {filteredPlaylists.length === 0 && likedSongsCount === 0 && (
+          {filteredPlaylists.length === 0 && likedSongsCount === 0 && playlistsLoaded && (
             <div
               style={{
                 padding: '2rem',
@@ -725,7 +747,7 @@ function PlaylistSelection({ onPlaylistSelect, inDrawer = false, swipeZoneRef }:
             </PlaylistItem>
           ))}
 
-          {filteredAlbums.length === 0 && (
+          {filteredAlbums.length === 0 && albumsLoaded && (
             <div
               style={{
                 padding: '2rem',

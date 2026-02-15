@@ -91,14 +91,14 @@ export const useSpotifyPlayback = ({ tracks, setCurrentTrackIndex }: UseSpotifyP
               return false; // Unrecoverable error
             }
             
-            // For other 403 errors, try to recover by re-transferring playback
+            // For other 403 errors, try to recover with exponential backoff
             if (retryCount < maxRetries) {
-              console.log(`🎵 Got 403 error while switching songs, retrying (attempt ${retryCount + 1}/${maxRetries})...`);
+              const backoffMs = 1500 * Math.pow(2, retryCount);
+              console.log(`🎵 Got 403 error while switching songs, retrying in ${backoffMs}ms (attempt ${retryCount + 1}/${maxRetries})...`);
               
-              // Re-transfer playback and wait
               await spotifyPlayer.transferPlaybackToDevice();
-              await new Promise(resolve => setTimeout(resolve, 1000));
-              await spotifyPlayer.ensureDeviceIsActive(5, 300);
+              await new Promise(resolve => setTimeout(resolve, backoffMs));
+              await spotifyPlayer.ensureDeviceIsActive(3, 1000);
               
               // Retry playing
               return await playWithRetry(trackUri, retryCount + 1, maxRetries);

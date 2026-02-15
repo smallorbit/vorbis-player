@@ -198,7 +198,7 @@ export function usePlayerLogic() {
       }
     }
 
-    spotifyPlayer.onPlayerStateChanged(handlePlayerStateChange);
+    const unsubscribe = spotifyPlayer.onPlayerStateChanged(handlePlayerStateChange);
 
     async function checkInitialState() {
       const state = await spotifyPlayer.getCurrentState();
@@ -209,6 +209,8 @@ export function usePlayerLogic() {
     }
 
     checkInitialState();
+
+    return unsubscribe;
   }, [tracks, currentTrackIndex, setCurrentTrackIndex]);
 
   const handleNext = useCallback(() => {
