@@ -207,6 +207,41 @@ const LoadingState = styled.div`
   padding: 2rem;
 `;
 
+const spinnerKeyframes = `
+  @keyframes vorbis-spinner-spin {
+    to { transform: rotate(360deg); }
+  }
+`;
+
+// Inject the keyframes once
+if (typeof document !== 'undefined' && !document.getElementById('vorbis-spinner-keyframes')) {
+  const style = document.createElement('style');
+  style.id = 'vorbis-spinner-keyframes';
+  style.textContent = spinnerKeyframes;
+  document.head.appendChild(style);
+}
+
+const LoadingIndicator = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 1rem;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.85rem;
+
+  &::before {
+    content: '';
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255, 255, 255, 0.15);
+    border-top-color: #1db954;
+    border-radius: 50%;
+    animation: vorbis-spinner-spin 0.8s linear infinite;
+  }
+`;
+
 const TabsContainer = styled.div`
   display: flex;
   gap: 0;
@@ -572,7 +607,9 @@ function PlaylistSelection({ onPlaylistSelect, inDrawer = false, swipeZoneRef }:
     }
   }
 
-  const mainContent = !isLoading && isAuthenticated && !error && (playlists.length > 0 || albums.length > 0 || likedSongsCount > 0) ? (
+  const hasAnyContent = playlists.length > 0 || albums.length > 0 || likedSongsCount > 0;
+  const showMainContent = isAuthenticated && !error && (hasAnyContent || (!isLoading && !libraryFullyLoaded));
+  const mainContent = showMainContent ? (
     <>
       <div ref={inDrawer ? swipeZoneRef : undefined} style={inDrawer ? { flexShrink: 0, touchAction: 'pan-y' } : undefined}>
       <ControlsContainer>
@@ -692,7 +729,11 @@ function PlaylistSelection({ onPlaylistSelect, inDrawer = false, swipeZoneRef }:
             </PlaylistItem>
           ))}
 
-          {filteredPlaylists.length === 0 && likedSongsCount === 0 && (
+          {filteredPlaylists.length === 0 && likedSongsCount === 0 && !libraryFullyLoaded && (
+            <LoadingIndicator>Loading playlists…</LoadingIndicator>
+          )}
+
+          {filteredPlaylists.length === 0 && likedSongsCount === 0 && libraryFullyLoaded && (
             <div
               style={{
                 padding: '2rem',
@@ -704,6 +745,10 @@ function PlaylistSelection({ onPlaylistSelect, inDrawer = false, swipeZoneRef }:
                 ? `No playlists match "${searchQuery}"`
                 : 'No playlists found. Create some playlists in Spotify or save some songs!'}
             </div>
+          )}
+
+          {(filteredPlaylists.length > 0 || likedSongsCount > 0) && !libraryFullyLoaded && (
+            <LoadingIndicator>Loading more…</LoadingIndicator>
           )}
         </PlaylistGrid>
       )}
@@ -725,7 +770,11 @@ function PlaylistSelection({ onPlaylistSelect, inDrawer = false, swipeZoneRef }:
             </PlaylistItem>
           ))}
 
-          {filteredAlbums.length === 0 && (
+          {filteredAlbums.length === 0 && !libraryFullyLoaded && (
+            <LoadingIndicator>Loading albums…</LoadingIndicator>
+          )}
+
+          {filteredAlbums.length === 0 && libraryFullyLoaded && (
             <div
               style={{
                 padding: '2rem',
@@ -737,6 +786,10 @@ function PlaylistSelection({ onPlaylistSelect, inDrawer = false, swipeZoneRef }:
                 ? 'No albums match your filters.'
                 : 'No albums found. Save some albums in Spotify to see them here!'}
             </div>
+          )}
+
+          {filteredAlbums.length > 0 && !libraryFullyLoaded && (
+            <LoadingIndicator>Loading more…</LoadingIndicator>
           )}
         </PlaylistGrid>
       )}
