@@ -5,7 +5,7 @@ import AlbumArt from './AlbumArt';
 import PlayerControls from './PlayerControls';
 import QuickActionsPanel from './QuickActionsPanel';
 import LeftQuickActionsPanel from './LeftQuickActionsPanel';
-import MobileQuickActionsDrawer from './MobileQuickActionsDrawer';
+import MobileBottomMenu from './MobileBottomMenu';
 import { theme } from '@/styles/theme';
 import { cardBase } from '../styles/utils';
 import { usePlayerSizing } from '../hooks/usePlayerSizing';
@@ -220,15 +220,10 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
   };
 
   const [controlsVisible, setControlsVisible] = useState(true);
-  const [mobileDrawerExpanded, setMobileDrawerExpanded] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
 
   const toggleControls = useCallback(() => {
     setControlsVisible(prev => !prev);
-  }, []);
-
-  const toggleMobileDrawer = useCallback(() => {
-    setMobileDrawerExpanded(prev => !prev);
   }, []);
 
   const toggleHelp = useCallback(() => {
@@ -246,7 +241,6 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
   const { offsetX, isSwiping, isAnimating, gestureHandlers } = useSwipeGesture({
     onSwipeLeft: handlers.onNext,
     onSwipeRight: handlers.onPrevious,
-    onTap: toggleControls,
   }, { enabled: !isDesktop });
 
   // Combined close handler for Escape key (closes VFX menu and help modal)
@@ -303,7 +297,8 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
         }}>
           <ClickableAlbumArtContainer
             $swipeEnabled={!isDesktop}
-            {...(isDesktop ? { onClick: toggleControls } : gestureHandlers)}
+            {...(!isDesktop ? gestureHandlers : {})}
+            onClick={!isSwiping && !isAnimating ? toggleControls : undefined}
             style={{
               transform: `translateX(${offsetX}px)`,
               transition: isAnimating ? 'transform 300ms cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
@@ -382,28 +377,26 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
               </Suspense>
             </CardContent>
 
-            {isMobile && controlsVisible && (
-              <MobileQuickActionsDrawer
-                accentColor={ui.accentColor}
-                currentTrack={track.current}
-                glowEnabled={effects.enabled}
-                backgroundVisualizerEnabled={handlers.backgroundVisualizerEnabled}
-                onShowPlaylist={handlers.onShowPlaylist}
-                onShowVisualEffects={handlers.onShowVisualEffects}
-                onGlowToggle={handlers.onGlowToggle}
-                onBackgroundVisualizerToggle={handlers.onBackgroundVisualizerToggle}
-                onAccentColorChange={handlers.onAccentColorChange}
-                onBackToLibrary={handlers.onBackToLibrary}
-                debugModeEnabled={handlers.debugModeEnabled}
-                isExpanded={mobileDrawerExpanded}
-                onToggleExpand={toggleMobileDrawer}
-                transitionDuration={transitionDuration}
-                transitionEasing={transitionEasing}
-              />
-            )}
           </LoadingCard>
         </AnimatedControlsContainer>
       </PlayerContainer>
+      {isMobile && (
+        <MobileBottomMenu
+          accentColor={ui.accentColor}
+          currentTrack={track.current}
+          glowEnabled={effects.enabled}
+          backgroundVisualizerEnabled={handlers.backgroundVisualizerEnabled}
+          onShowPlaylist={handlers.onShowPlaylist}
+          onShowVisualEffects={handlers.onShowVisualEffects}
+          onGlowToggle={handlers.onGlowToggle}
+          onBackgroundVisualizerToggle={handlers.onBackgroundVisualizerToggle}
+          onAccentColorChange={handlers.onAccentColorChange}
+          onBackToLibrary={handlers.onBackToLibrary}
+          debugModeEnabled={handlers.debugModeEnabled}
+          transitionDuration={transitionDuration}
+          transitionEasing={transitionEasing}
+        />
+      )}
       {ui.showVisualEffects && (
         <Suspense fallback={
           <div style={{

@@ -181,6 +181,7 @@ export const theme = {
     sticky: '1100',
     banner: '1200',
     overlay: '1300',
+    mobileMenu: '1350',
     modal: '1400',
     popover: '1500',
     skipLink: '1600',
@@ -214,14 +215,14 @@ export const theme = {
     transitionDuration: 300,
     transitionEasing: 'cubic-bezier(0.4, 0, 0.2, 1)'
   },
-  
+
   // Player controls sizing and behavior
   controls: {
     minHeight: 120, // Base minimum height in pixels
     maxHeight: 200, // Maximum height for animation container
     padding: {
       mobile: 8,    // 8px padding on mobile
-      tablet: 12,   // 12px padding on tablet  
+      tablet: 12,   // 12px padding on tablet
       desktop: 16   // 16px padding on desktop
     },
     transitionDuration: 300,
