@@ -33,7 +33,8 @@ const DrawerContainer = styled.div.withConfig({
   left: 0;
   right: 0;
   bottom: 0;
-  max-height: 85vh;
+  height: 50vh;
+  max-height: 50vh;
   z-index: ${theme.zIndex.modal};
   background: ${theme.colors.overlay.dark};
   backdrop-filter: blur(${theme.drawer.backdropBlur});
@@ -45,6 +46,7 @@ const DrawerContainer = styled.div.withConfig({
   pointer-events: ${({ $isOpen }) => ($isOpen ? 'auto' : 'none')};
   display: flex;
   flex-direction: column;
+  touch-action: pan-y;
   transform: ${({ $isOpen, $isDragging, $dragOffset }) => {
     if ($isDragging) {
       return `translateY(${$dragOffset}px)`;
@@ -56,34 +58,10 @@ const DrawerContainer = styled.div.withConfig({
   will-change: ${({ $isDragging }) => ($isDragging ? 'transform' : 'auto')};
 `;
 
-const DismissHandle = styled.div`
-  position: sticky;
-  top: 0;
-  z-index: 1;
-  width: 100%;
-  height: 48px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  touch-action: none;
-  padding: 12px 0;
-  background: ${theme.colors.overlay.dark};
-  flex-shrink: 0;
-`;
-
-const HandlePill = styled.div`
-  width: 40px;
-  height: 4px;
-  background: rgba(255, 255, 255, 0.3);
-  border-radius: 2px;
-`;
-
 const SheetHeader = styled.div`
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding: 0 ${theme.spacing.md} ${theme.spacing.md};
+  padding: ${theme.spacing.md} ${theme.spacing.lg} ${theme.spacing.sm};
   flex-shrink: 0;
 `;
 
@@ -95,17 +73,25 @@ const SheetTitle = styled.h3`
 `;
 
 const CloseButton = styled.button`
-  background: none;
-  border: none;
-  color: ${theme.colors.muted.foreground};
-  font-size: ${theme.fontSize.xl};
-  cursor: pointer;
-  padding: ${theme.spacing.sm};
+  position: absolute;
+  bottom: ${theme.spacing.sm};
+  right: ${theme.spacing.sm};
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: ${theme.borderRadius.md};
+  color: ${theme.colors.muted.foreground};
+  font-size: 1rem;
+  cursor: pointer;
   transition: all ${theme.transitions.fast};
+  z-index: 1;
 
   &:hover {
-    background: ${theme.colors.muted.background};
+    background: rgba(255, 255, 255, 0.15);
     color: ${theme.colors.white};
   }
 `;
@@ -154,7 +140,7 @@ export const PlaylistBottomSheet = memo<PlaylistBottomSheetProps>(function Playl
   accentColor,
   onTrackSelect,
 }) {
-  const { ref: handleRef, isDragging, dragOffset } = useVerticalSwipeGesture({
+  const { ref: headerRef, isDragging, dragOffset } = useVerticalSwipeGesture({
     onSwipeDown: onClose,
     threshold: 80,
     enabled: isOpen,
@@ -173,12 +159,8 @@ export const PlaylistBottomSheet = memo<PlaylistBottomSheetProps>(function Playl
         aria-modal="true"
         aria-label="Playlist"
       >
-        <DismissHandle ref={handleRef} onClick={onClose} role="button" aria-label="Close playlist">
-          <HandlePill />
-        </DismissHandle>
-        <SheetHeader>
+        <SheetHeader ref={headerRef}>
           <SheetTitle>Playlist ({tracks.length} tracks)</SheetTitle>
-          <CloseButton onClick={onClose}>×</CloseButton>
         </SheetHeader>
         <SheetContent>
           {isOpen && (
@@ -212,6 +194,9 @@ export const PlaylistBottomSheet = memo<PlaylistBottomSheetProps>(function Playl
             </Suspense>
           )}
         </SheetContent>
+        <CloseButton onClick={onClose} aria-label="Close playlist">
+          ×
+        </CloseButton>
       </DrawerContainer>
     </>,
     document.body

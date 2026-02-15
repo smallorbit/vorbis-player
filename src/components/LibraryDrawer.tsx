@@ -16,7 +16,7 @@ const TRANSITION_EASING = 'cubic-bezier(0.4, 0, 0.2, 1)';
 
 const DrawerOverlay = styled.div.withConfig({
   shouldForwardProp: (prop) => prop !== '$isOpen',
-})<{ $isOpen: boolean }>`
+}) <{ $isOpen: boolean }>`
   position: fixed;
   inset: 0;
   z-index: ${theme.zIndex.modal};
@@ -28,7 +28,7 @@ const DrawerOverlay = styled.div.withConfig({
 
 const DrawerContainer = styled.div.withConfig({
   shouldForwardProp: (prop) => !['$isOpen', '$isDragging', '$dragOffset'].includes(prop),
-})<{
+}) <{
   $isOpen: boolean;
   $isDragging: boolean;
   $dragOffset: number;
@@ -37,12 +37,16 @@ const DrawerContainer = styled.div.withConfig({
   top: 0;
   left: 0;
   right: 0;
-  bottom: 0;
+  height: 80vh;
+  max-height: 80vh;
   z-index: ${theme.zIndex.modal};
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   background: rgba(22, 21, 21, 0.98);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  overflow-y: auto;
+  touch-action: pan-y;
   pointer-events: ${({ $isOpen }) => ($isOpen ? 'auto' : 'none')};
   transform: ${({ $isOpen, $isDragging, $dragOffset }) => {
     if ($isDragging) {
@@ -55,27 +59,28 @@ const DrawerContainer = styled.div.withConfig({
   will-change: ${({ $isDragging }) => ($isDragging ? 'transform' : 'auto')};
 `;
 
-const DismissHandle = styled.div`
-  position: sticky;
-  top: 0;
-  z-index: 1;
-  width: 100%;
-  height: 48px;
+const CloseButton = styled.button`
+  position: absolute;
+  bottom: ${theme.spacing.sm};
+  right: ${theme.spacing.sm};
+  width: 28px;
+  height: 28px;
   display: flex;
   align-items: center;
   justify-content: center;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: ${theme.borderRadius.md};
+  color: ${theme.colors.muted.foreground};
+  font-size: 1rem;
   cursor: pointer;
-  touch-action: none;
-  padding: 12px 0;
-  background: rgba(22, 21, 21, 0.98);
-  flex-shrink: 0;
-`;
+  transition: all ${theme.transitions.fast};
+  z-index: 1;
 
-const HandlePill = styled.div`
-  width: 40px;
-  height: 4px;
-  background: rgba(255, 255, 255, 0.3);
-  border-radius: 2px;
+  &:hover {
+    background: rgba(255, 255, 255, 0.15);
+    color: ${theme.colors.white};
+  }
 `;
 
 export function LibraryDrawer({ isOpen, onClose, onPlaylistSelect }: LibraryDrawerProps) {
@@ -99,7 +104,7 @@ export function LibraryDrawer({ isOpen, onClose, onPlaylistSelect }: LibraryDraw
     };
   }, []);
 
-  const { ref: handleRef, isDragging, dragOffset } = useVerticalSwipeGesture({
+  const { ref: drawerRef, isDragging, dragOffset } = useVerticalSwipeGesture({
     onSwipeUp: onClose,
     threshold: 80,
     enabled: isOpen,
@@ -118,10 +123,18 @@ export function LibraryDrawer({ isOpen, onClose, onPlaylistSelect }: LibraryDraw
         aria-modal="true"
         aria-label="Library selection"
       >
-        <DismissHandle ref={handleRef} onClick={onClose} role="button" aria-label="Close library">
-          <HandlePill />
-        </DismissHandle>
-        {isOpen && <PlaylistSelection onPlaylistSelect={handlePlaylistSelectWrapper} />}
+        {isOpen && (
+          <>
+            <PlaylistSelection
+              onPlaylistSelect={handlePlaylistSelectWrapper}
+              inDrawer
+              swipeZoneRef={drawerRef}
+            />
+            <CloseButton onClick={onClose} aria-label="Close library">
+              ×
+            </CloseButton>
+          </>
+        )}
       </DrawerContainer>
     </>,
     document.body
