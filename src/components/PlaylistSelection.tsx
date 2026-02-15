@@ -398,6 +398,16 @@ const SelectDropdown = styled.select`
   }
 `;
 
+const DrawerBottomControls = styled.div`
+  flex-shrink: 0;
+  padding: ${theme.spacing.sm} 0 0;
+
+  /* Remove bottom margin from ControlsContainer when at bottom of drawer */
+  & > div {
+    margin-bottom: 0;
+  }
+`;
+
 const ClearButton = styled.button`
   padding: 0.5rem 0.75rem;
   background: rgba(115, 115, 115, 0.2);
@@ -731,81 +741,88 @@ function PlaylistSelection({ onPlaylistSelect, inDrawer = false, swipeZoneRef }:
   const hasAnyContent = playlists.length > 0 || albums.length > 0 || likedSongsCount > 0;
   const showMainContent = isAuthenticated && !error && (hasAnyContent || (!isLoading && !libraryFullyLoaded));
 
+  const searchAndSortControls = (
+    <ControlsContainer>
+      <SearchInput
+        type="text"
+        placeholder={viewMode === 'playlists' ? 'Search playlists...' : 'Search albums...'}
+        value={searchQuery}
+        onChange={(e) => setSearchQuery(e.target.value)}
+      />
+
+      {viewMode === 'playlists' ? (
+        <SelectDropdown
+          value={playlistSort}
+          onChange={(e) => setPlaylistSort(e.target.value as PlaylistSortOption)}
+        >
+          <option value="recently-added">Recently Added</option>
+          <option value="name-asc">Name (A-Z)</option>
+          <option value="name-desc">Name (Z-A)</option>
+        </SelectDropdown>
+      ) : (
+        <SelectDropdown
+          value={albumSort}
+          onChange={(e) => setAlbumSort(e.target.value as AlbumSortOption)}
+        >
+          <option value="recently-added">Recently Added</option>
+          <option value="name-asc">Name (A-Z)</option>
+          <option value="name-desc">Name (Z-A)</option>
+          <option value="artist-asc">Artist (A-Z)</option>
+          <option value="artist-desc">Artist (Z-A)</option>
+          <option value="release-newest">Release (Newest)</option>
+          <option value="release-oldest">Release (Oldest)</option>
+        </SelectDropdown>
+      )}
+
+      {viewMode === 'albums' && availableDecades.length > 0 && (
+        <SelectDropdown
+          value={yearFilter}
+          onChange={(e) => setYearFilter(e.target.value as YearFilterOption)}
+        >
+          <option value="all">All Years</option>
+          {availableDecades.map((decade) => (
+            <option key={decade} value={decade}>
+              {decade === 'older' ? 'Before 1980' : decade}
+            </option>
+          ))}
+        </SelectDropdown>
+      )}
+
+      {(searchQuery || yearFilter !== 'all') && (
+        <ClearButton
+          onClick={() => {
+            setSearchQuery('');
+            setYearFilter('all');
+          }}
+        >
+          Clear
+        </ClearButton>
+      )}
+    </ControlsContainer>
+  );
+
+  const tabsBar = (
+    <TabsContainer>
+      <TabButton
+        $active={viewMode === 'playlists'}
+        onClick={() => handleViewModeChange('playlists')}
+      >
+        Playlists{!playlistsLoaded && <TabSpinner />}
+      </TabButton>
+      <TabButton
+        $active={viewMode === 'albums'}
+        onClick={() => handleViewModeChange('albums')}
+      >
+        Albums{!albumsLoaded && <TabSpinner />}
+      </TabButton>
+    </TabsContainer>
+  );
+
   const mainContent = showMainContent ? (
     <>
       <div ref={inDrawer ? swipeZoneRef : undefined} style={inDrawer ? { flexShrink: 0, touchAction: 'pan-y' } : undefined}>
-      <ControlsContainer>
-        <SearchInput
-          type="text"
-          placeholder={viewMode === 'playlists' ? 'Search playlists...' : 'Search albums...'}
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-        />
-
-        {viewMode === 'playlists' ? (
-          <SelectDropdown
-            value={playlistSort}
-            onChange={(e) => setPlaylistSort(e.target.value as PlaylistSortOption)}
-          >
-            <option value="recently-added">Recently Added</option>
-            <option value="name-asc">Name (A-Z)</option>
-            <option value="name-desc">Name (Z-A)</option>
-          </SelectDropdown>
-        ) : (
-          <SelectDropdown
-            value={albumSort}
-            onChange={(e) => setAlbumSort(e.target.value as AlbumSortOption)}
-          >
-            <option value="recently-added">Recently Added</option>
-            <option value="name-asc">Name (A-Z)</option>
-            <option value="name-desc">Name (Z-A)</option>
-            <option value="artist-asc">Artist (A-Z)</option>
-            <option value="artist-desc">Artist (Z-A)</option>
-            <option value="release-newest">Release (Newest)</option>
-            <option value="release-oldest">Release (Oldest)</option>
-          </SelectDropdown>
-        )}
-
-        {viewMode === 'albums' && availableDecades.length > 0 && (
-          <SelectDropdown
-            value={yearFilter}
-            onChange={(e) => setYearFilter(e.target.value as YearFilterOption)}
-          >
-            <option value="all">All Years</option>
-            {availableDecades.map((decade) => (
-              <option key={decade} value={decade}>
-                {decade === 'older' ? 'Before 1980' : decade}
-              </option>
-            ))}
-          </SelectDropdown>
-        )}
-
-        {(searchQuery || yearFilter !== 'all') && (
-          <ClearButton
-            onClick={() => {
-              setSearchQuery('');
-              setYearFilter('all');
-            }}
-          >
-            Clear
-          </ClearButton>
-        )}
-      </ControlsContainer>
-
-      <TabsContainer>
-        <TabButton
-          $active={viewMode === 'playlists'}
-          onClick={() => handleViewModeChange('playlists')}
-        >
-          Playlists{!playlistsLoaded && <TabSpinner />}
-        </TabButton>
-        <TabButton
-          $active={viewMode === 'albums'}
-          onClick={() => handleViewModeChange('albums')}
-        >
-          Albums{!albumsLoaded && <TabSpinner />}
-        </TabButton>
-      </TabsContainer>
+      {!inDrawer && searchAndSortControls}
+      {tabsBar}
       </div>
 
       {viewMode === 'playlists' && inDrawer && (
@@ -987,6 +1004,12 @@ function PlaylistSelection({ onPlaylistSelect, inDrawer = false, swipeZoneRef }:
             </div>
           )}
         </PlaylistGrid>
+      )}
+
+      {inDrawer && (
+        <DrawerBottomControls>
+          {searchAndSortControls}
+        </DrawerBottomControls>
       )}
     </>
   ) : null;
