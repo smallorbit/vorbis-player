@@ -2,8 +2,8 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import * as React from 'react';
 import styled from 'styled-components';
 import {
-  getUserPlaylists,
-  getUserAlbums,
+  getUserPlaylistsIncremental,
+  getUserAlbumsIncremental,
   getLikedSongsCount,
   getCachedData,
   spotifyAuth,
@@ -390,6 +390,7 @@ function PlaylistSelection({ onPlaylistSelect, inDrawer = false, swipeZoneRef }:
     'recently-added'
   );
   const [yearFilter, setYearFilter] = useState<YearFilterOption>('all');
+  const [libraryFullyLoaded, setLibraryFullyLoaded] = useState(false);
 
   const { viewport, isMobile, isTablet } = usePlayerSizing();
 
@@ -426,8 +427,20 @@ function PlaylistSelection({ onPlaylistSelect, inDrawer = false, swipeZoneRef }:
   }, [viewMode, yearFilter]);
 
   useEffect(() => {
+    if (!libraryFullyLoaded) return;
+    if (playlists.length === 0 && albums.length === 0 && likedSongsCount === 0) {
+      setError(
+        "No playlists, albums, or liked songs found. Please create some playlists, save some albums, or like some songs in Spotify first."
+      );
+    } else {
+      setError(null);
+    }
+  }, [libraryFullyLoaded, playlists.length, albums.length, likedSongsCount]);
+
+  useEffect(() => {
     const abortController = new AbortController();
     let isMounted = true;
+    const completedRef = { playlistsDone: false, albumsDone: false, likedDone: false };
 
     async function checkAuthAndFetchPlaylists(): Promise<void> {
       try {
@@ -443,6 +456,7 @@ function PlaylistSelection({ onPlaylistSelect, inDrawer = false, swipeZoneRef }:
 
         const cachedPlaylists = getCachedData<PlaylistInfo[]>('playlists');
         const cachedAlbums = getCachedData<AlbumInfo[]>('albums');
+        const hasCache = !!(cachedPlaylists || cachedAlbums);
 
         if (cachedPlaylists && isMounted) {
           setPlaylists(cachedPlaylists);
@@ -455,70 +469,65 @@ function PlaylistSelection({ onPlaylistSelect, inDrawer = false, swipeZoneRef }:
           setAlbums(cachedAlbums);
         }
 
-        async function fetchFreshData(): Promise<void> {
-          try {
-            const [userPlaylists, userAlbums] = await Promise.all([
-              getUserPlaylists(abortController.signal),
-              getUserAlbums(abortController.signal),
-            ]);
-
-            if (!isMounted) {
-              return;
-            }
-
-            setPlaylists(userPlaylists);
-            setAlbums(userAlbums);
-
-            let likedSongsCount = 0;
-            try {
-              likedSongsCount = await getLikedSongsCount(abortController.signal);
-              if (isMounted) {
-                setLikedSongsCount(likedSongsCount);
-              }
-            } catch (err) {
-              if (err instanceof DOMException && err.name === 'AbortError') {
-                return;
-              }
-              console.warn('Failed to fetch liked songs count:', err);
-            }
-
-            if (userPlaylists.length === 0 && userAlbums.length === 0 && likedSongsCount === 0) {
-              if (!cachedPlaylists && !cachedAlbums && isMounted) {
-                setError("No playlists, albums, or liked songs found. Please create some playlists, save some albums, or like some songs in Spotify first.");
-              }
-            } else if (isMounted) {
-              setError(null);
-            }
-          } catch (err) {
-            if (err instanceof DOMException && err.name === 'AbortError') {
-              return;
-            }
-            if (abortController.signal.aborted) {
-              return;
-            }
-            console.error('Failed to fetch playlists:', err);
-            if (!cachedPlaylists && !cachedAlbums && isMounted) {
-              setError(err instanceof Error ? err.message : 'Failed to load playlists');
-            }
-          } finally {
-            if (isMounted) {
-              setIsLoading(false);
-            }
+        function maybeSetLibraryFullyLoaded(): void {
+          if (completedRef.playlistsDone && completedRef.albumsDone && completedRef.likedDone && isMounted) {
+            setLibraryFullyLoaded(true);
           }
         }
 
-        if (cachedPlaylists || cachedAlbums) {
-          fetchFreshData();
-        } else {
-          await fetchFreshData();
+        getLikedSongsCount(abortController.signal)
+          .then((count) => {
+            if (isMounted) {
+              setLikedSongsCount(count);
+              completedRef.likedDone = true;
+              maybeSetLibraryFullyLoaded();
+            }
+          })
+          .catch((err) => {
+            if (err instanceof DOMException && err.name === 'AbortError') return;
+            console.warn('Failed to fetch liked songs count:', err);
+            completedRef.likedDone = true;
+            maybeSetLibraryFullyLoaded();
+          });
+
+        const onPlaylistsUpdate = (playlistsSoFar: PlaylistInfo[], isComplete: boolean): void => {
+          if (!isMounted) return;
+          if (!hasCache || isComplete) setPlaylists(playlistsSoFar);
+          if (!hasCache) setIsLoading(false);
+          if (isComplete) {
+            completedRef.playlistsDone = true;
+            maybeSetLibraryFullyLoaded();
+          }
+        };
+
+        const onAlbumsUpdate = (albumsSoFar: AlbumInfo[], isComplete: boolean): void => {
+          if (!isMounted) return;
+          if (!hasCache || isComplete) setAlbums(albumsSoFar);
+          if (!hasCache) setIsLoading(false);
+          if (isComplete) {
+            completedRef.albumsDone = true;
+            maybeSetLibraryFullyLoaded();
+          }
+        };
+
+        try {
+          await Promise.all([
+            getUserPlaylistsIncremental(onPlaylistsUpdate, abortController.signal),
+            getUserAlbumsIncremental(onAlbumsUpdate, abortController.signal),
+          ]);
+        } catch (err) {
+          if (err instanceof DOMException && err.name === 'AbortError') return;
+          if (abortController.signal.aborted) return;
+          console.error('Failed to fetch playlists:', err);
+          if (!hasCache && isMounted) {
+            setError(err instanceof Error ? err.message : 'Failed to load playlists');
+          }
+        } finally {
+          if (isMounted) setIsLoading(false);
         }
       } catch (err) {
-        if (err instanceof DOMException && err.name === 'AbortError') {
-          return;
-        }
-        if (abortController.signal.aborted) {
-          return;
-        }
+        if (err instanceof DOMException && err.name === 'AbortError') return;
+        if (abortController.signal.aborted) return;
         console.error('Failed to initialize:', err);
         if (isMounted) {
           setError(err instanceof Error ? err.message : 'Failed to load playlists');
