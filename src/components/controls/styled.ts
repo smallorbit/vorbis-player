@@ -8,11 +8,11 @@ export const PlayerControlsContainer = styled.div<{ $isMobile: boolean; $isTable
   z-index: 2;
   display: flex;
   flex-direction: column;
-  gap: ${({ theme, $isMobile }) => $isMobile ? theme.spacing.xs : theme.spacing.sm};
+  gap: ${({ theme, $isMobile }) => $isMobile ? theme.spacing.sm : theme.spacing.md};
   padding: ${({ $isMobile, $isTablet }) => {
-    if ($isMobile) return `${theme.spacing.sm} ${theme.spacing.sm}`;
-    if ($isTablet) return `${theme.spacing.sm} ${theme.spacing.md}`;
-    return `${theme.spacing.sm} ${theme.spacing.lg}`;
+    if ($isMobile) return `${theme.spacing.md} ${theme.spacing.sm}`;
+    if ($isTablet) return `${theme.spacing.md} ${theme.spacing.md}`;
+    return `${theme.spacing.md} ${theme.spacing.lg}`;
   }};
   width: 100%;
   max-width: 100%;
@@ -25,22 +25,22 @@ export const PlayerControlsContainer = styled.div<{ $isMobile: boolean; $isTable
   @container controls (max-width: ${({ theme }) => theme.breakpoints.sm}) {
     flex-direction: column;
     align-items: center;
-    gap: ${({ theme }) => theme.spacing.xs};
-    padding: ${({ theme }) => `${theme.spacing.sm} ${theme.spacing.sm}`};
+    gap: ${({ theme }) => theme.spacing.sm};
+    padding: ${({ theme }) => `${theme.spacing.md} ${theme.spacing.sm}`};
   }
   
   @container controls (min-width: ${({ theme }) => theme.breakpoints.sm}) and (max-width: ${({ theme }) => theme.breakpoints.md}) {
     flex-direction: column;
     align-items: center;
-    gap: ${({ theme }) => theme.spacing.sm};
-    padding: ${({ theme }) => `${theme.spacing.sm} ${theme.spacing.md}`};
+    gap: ${({ theme }) => theme.spacing.md};
+    padding: ${({ theme }) => `${theme.spacing.md} ${theme.spacing.md}`};
   }
   
   @container controls (min-width: ${({ theme }) => theme.breakpoints.md}) {
     flex-direction: column;
     align-items: center;
-    gap: ${({ theme }) => theme.spacing.sm};
-    padding: ${({ theme }) => `${theme.spacing.sm} ${theme.spacing.lg}`};
+    gap: ${({ theme }) => theme.spacing.md};
+    padding: ${({ theme }) => `${theme.spacing.md} ${theme.spacing.lg}`};
   }
 `;
 
@@ -52,16 +52,16 @@ export const TrackInfoOnlyRow = styled.div`
   text-align: center;
   gap: ${({ theme }) => theme.spacing.xs};
   padding: ${({ theme }) => `${theme.spacing.sm} ${theme.spacing.md}`};
-  margin-bottom: ${({ theme }) => theme.spacing.md};
-  margin-top: ${({ theme }) => theme.spacing.md};
+  margin-bottom: ${({ theme }) => theme.spacing.xl};
+  margin-top: ${({ theme }) => theme.spacing.sm};
   position: relative;
   z-index: 10;
   /* Add subtle text shadow for better readability against shadows */
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 
   @media (max-width: ${theme.breakpoints.lg}) {
-    margin-top: ${theme.spacing.sm};
-    margin-bottom: ${theme.spacing.sm};
+    margin-top: ${theme.spacing.xs};
+    margin-bottom: ${theme.spacing.lg};
     padding: ${theme.spacing.xs} ${theme.spacing.sm};
   }
 `;
@@ -126,7 +126,7 @@ export const TrackInfoCenter = styled.div`
   align-items: center;
   justify-content: center;
   min-width: 8.5rem;
-  gap: ${({ theme }) => theme.spacing.xs};
+  gap: ${({ theme }) => theme.spacing.sm};
   position: absolute;
   left: 50%;
   transform: translateX(-50%);
@@ -150,26 +150,26 @@ export const ControlButton = styled.button.withConfig({
   cursor: pointer;
   transition: all 0.2s ease;
   padding: ${({ $isMobile, $isTablet, theme }) => {
-    if ($isMobile) return theme.spacing.xs;
-    if ($isTablet) return theme.spacing.sm;
-    return theme.spacing.sm;
+    if ($isMobile) return theme.spacing.sm;
+    if ($isTablet) return theme.spacing.md;
+    return theme.spacing.md;
   }};
   border-radius: ${({ $isMobile, $isTablet, theme }) => {
-    if ($isMobile) return theme.borderRadius.sm;
-    if ($isTablet) return theme.borderRadius.md;
-    return theme.borderRadius.md;
+    if ($isMobile) return theme.borderRadius.md;
+    if ($isTablet) return theme.borderRadius.lg;
+    return theme.borderRadius.lg;
   }};
   
   svg {
     width: ${({ $isMobile, $isTablet }) => {
-    if ($isMobile) return '1.25rem';
-    if ($isTablet) return '1.375rem';
-    return '1.5rem';
+    if ($isMobile) return '1.625rem';
+    if ($isTablet) return '1.75rem';
+    return '1.875rem';
   }};
     height: ${({ $isMobile, $isTablet }) => {
-    if ($isMobile) return '1.25rem';
-    if ($isTablet) return '1.375rem';
-    return '1.5rem';
+    if ($isMobile) return '1.625rem';
+    if ($isTablet) return '1.75rem';
+    return '1.875rem';
   }};
     fill: currentColor;
   }
@@ -228,7 +228,7 @@ export const TimelineControlsContainer = styled.div`
   align-items: center;
   justify-content: space-between;
   gap: ${({ theme }) => theme.spacing.xs};
-  margin-top: ${({ theme }) => theme.spacing.sm};
+  margin-top: ${({ theme }) => theme.spacing.lg};
 `;
 
 export const TimelineLeft = styled.div`

@@ -16,7 +16,6 @@ interface QuickActionsPanelProps {
   onAccentColorChange: (color: string) => void;
   debugModeEnabled?: boolean;
   onBackToLibrary?: () => void;
-  isVisible?: boolean;
 }
 
 const PanelWrapper = styled.div<{ $transitionDuration: number; $transitionEasing: string }>`
@@ -53,7 +52,6 @@ export const QuickActionsPanel = ({
   onAccentColorChange,
   onBackToLibrary,
   debugModeEnabled = false,
-  isVisible = true
 }: QuickActionsPanelProps) => {
   const { isMobile, isTablet, transitionDuration, transitionEasing } = usePlayerSizing();
 
@@ -61,8 +59,6 @@ export const QuickActionsPanel = ({
     currentAlbumId: currentTrack?.album_id,
     onAccentColorChange
   });
-
-  if (!isVisible) return null;
 
   return (
     <PanelWrapper $transitionDuration={transitionDuration} $transitionEasing={transitionEasing} onClick={(e) => e.stopPropagation()}>

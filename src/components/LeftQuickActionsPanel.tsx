@@ -10,7 +10,6 @@ interface LeftQuickActionsPanelProps {
   onGlowToggle: () => void;
   onBackgroundVisualizerToggle?: () => void;
   backgroundVisualizerEnabled?: boolean;
-  isVisible?: boolean;
 }
 
 const PanelWrapper = styled.div<{ $transitionDuration: number; $transitionEasing: string }>`
@@ -45,11 +44,8 @@ export const LeftQuickActionsPanel = ({
   onGlowToggle,
   onBackgroundVisualizerToggle,
   backgroundVisualizerEnabled,
-  isVisible = true
 }: LeftQuickActionsPanelProps) => {
   const { isMobile, isTablet, transitionDuration, transitionEasing } = usePlayerSizing();
-
-  if (!isVisible) return null;
 
   return (
     <PanelWrapper $transitionDuration={transitionDuration} $transitionEasing={transitionEasing} onClick={(e) => e.stopPropagation()}>
