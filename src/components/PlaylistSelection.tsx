@@ -415,7 +415,10 @@ function PlaylistSelection({ onPlaylistSelect, inDrawer = false, swipeZoneRef }:
     'recently-added'
   );
   const [yearFilter, setYearFilter] = useState<YearFilterOption>('all');
-  const [libraryFullyLoaded, setLibraryFullyLoaded] = useState(false);
+  const [playlistsLoaded, setPlaylistsLoaded] = useState(false);
+  const [albumsLoaded, setAlbumsLoaded] = useState(false);
+  const [likedSongsDone, setLikedSongsDone] = useState(false);
+  const libraryFullyLoaded = playlistsLoaded && albumsLoaded && likedSongsDone;
 
   const { viewport, isMobile, isTablet } = usePlayerSizing();
 
@@ -465,7 +468,6 @@ function PlaylistSelection({ onPlaylistSelect, inDrawer = false, swipeZoneRef }:
   useEffect(() => {
     const abortController = new AbortController();
     let isMounted = true;
-    const completedRef = { playlistsDone: false, albumsDone: false, likedDone: false };
 
     async function checkAuthAndFetchPlaylists(): Promise<void> {
       try {
@@ -485,6 +487,7 @@ function PlaylistSelection({ onPlaylistSelect, inDrawer = false, swipeZoneRef }:
 
         if (cachedPlaylists && isMounted) {
           setPlaylists(cachedPlaylists);
+          setPlaylistsLoaded(true);
           setIsLoading(false);
         } else {
           setIsLoading(true);
@@ -492,27 +495,20 @@ function PlaylistSelection({ onPlaylistSelect, inDrawer = false, swipeZoneRef }:
 
         if (cachedAlbums && isMounted) {
           setAlbums(cachedAlbums);
-        }
-
-        function maybeSetLibraryFullyLoaded(): void {
-          if (completedRef.playlistsDone && completedRef.albumsDone && completedRef.likedDone && isMounted) {
-            setLibraryFullyLoaded(true);
-          }
+          setAlbumsLoaded(true);
         }
 
         getLikedSongsCount(abortController.signal)
           .then((count) => {
             if (isMounted) {
               setLikedSongsCount(count);
-              completedRef.likedDone = true;
-              maybeSetLibraryFullyLoaded();
+              setLikedSongsDone(true);
             }
           })
           .catch((err) => {
             if (err instanceof DOMException && err.name === 'AbortError') return;
             console.warn('Failed to fetch liked songs count:', err);
-            completedRef.likedDone = true;
-            maybeSetLibraryFullyLoaded();
+            if (isMounted) setLikedSongsDone(true);
           });
 
         const onPlaylistsUpdate = (playlistsSoFar: PlaylistInfo[], isComplete: boolean): void => {
@@ -520,8 +516,7 @@ function PlaylistSelection({ onPlaylistSelect, inDrawer = false, swipeZoneRef }:
           if (!hasCache || isComplete) setPlaylists(playlistsSoFar);
           if (!hasCache) setIsLoading(false);
           if (isComplete) {
-            completedRef.playlistsDone = true;
-            maybeSetLibraryFullyLoaded();
+            setPlaylistsLoaded(true);
           }
         };
 
@@ -530,8 +525,7 @@ function PlaylistSelection({ onPlaylistSelect, inDrawer = false, swipeZoneRef }:
           if (!hasCache || isComplete) setAlbums(albumsSoFar);
           if (!hasCache) setIsLoading(false);
           if (isComplete) {
-            completedRef.albumsDone = true;
-            maybeSetLibraryFullyLoaded();
+            setAlbumsLoaded(true);
           }
         };
 
@@ -666,13 +660,13 @@ function PlaylistSelection({ onPlaylistSelect, inDrawer = false, swipeZoneRef }:
           $active={viewMode === 'playlists'}
           onClick={() => handleViewModeChange('playlists')}
         >
-          Playlists{!libraryFullyLoaded && <TabSpinner />}
+          Playlists{!playlistsLoaded && <TabSpinner />}
         </TabButton>
         <TabButton
           $active={viewMode === 'albums'}
           onClick={() => handleViewModeChange('albums')}
         >
-          Albums{!libraryFullyLoaded && <TabSpinner />}
+          Albums{!albumsLoaded && <TabSpinner />}
         </TabButton>
       </TabsContainer>
       </div>
@@ -720,7 +714,7 @@ function PlaylistSelection({ onPlaylistSelect, inDrawer = false, swipeZoneRef }:
             </PlaylistItem>
           ))}
 
-          {filteredPlaylists.length === 0 && likedSongsCount === 0 && libraryFullyLoaded && (
+          {filteredPlaylists.length === 0 && likedSongsCount === 0 && playlistsLoaded && (
             <div
               style={{
                 padding: '2rem',
@@ -753,7 +747,7 @@ function PlaylistSelection({ onPlaylistSelect, inDrawer = false, swipeZoneRef }:
             </PlaylistItem>
           ))}
 
-          {filteredAlbums.length === 0 && libraryFullyLoaded && (
+          {filteredAlbums.length === 0 && albumsLoaded && (
             <div
               style={{
                 padding: '2rem',
