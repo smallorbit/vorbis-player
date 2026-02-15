@@ -4,10 +4,9 @@ import { useCustomAccentColors } from '@/hooks/useCustomAccentColors';
 import type { Track } from '@/services/spotify';
 import {
   GlowIcon,
-  BackgroundVisualizerIcon,
-  PlaylistIcon,
   VisualEffectsIcon,
   BackToLibraryIcon,
+  PlaylistIcon,
 } from '../icons/QuickActionIcons';
 import { DebugSection, DebugLabel } from '../styled/DebugComponents';
 
@@ -15,13 +14,11 @@ interface MenuContentProps {
   accentColor: string;
   currentTrack: Track | null;
   glowEnabled: boolean;
-  backgroundVisualizerEnabled?: boolean;
-  onShowPlaylist: () => void;
   onShowVisualEffects: () => void;
   onGlowToggle: () => void;
-  onBackgroundVisualizerToggle?: () => void;
   onAccentColorChange: (color: string) => void;
   onBackToLibrary?: () => void;
+  onShowPlaylist: () => void;
   debugModeEnabled?: boolean;
 }
 
@@ -29,13 +26,11 @@ export const MenuContent = ({
   accentColor,
   currentTrack,
   glowEnabled,
-  backgroundVisualizerEnabled,
-  onShowPlaylist,
   onShowVisualEffects,
   onGlowToggle,
-  onBackgroundVisualizerToggle,
   onAccentColorChange,
   onBackToLibrary,
+  onShowPlaylist,
   debugModeEnabled = false,
 }: MenuContentProps) => {
   const isMobile = true;
@@ -48,6 +43,7 @@ export const MenuContent = ({
 
   return (
     <>
+      {/* 1. Glow toggle */}
       <ControlButton
         $isMobile={isMobile}
         $isTablet={isTablet}
@@ -59,29 +55,7 @@ export const MenuContent = ({
         <GlowIcon />
       </ControlButton>
 
-      {onBackgroundVisualizerToggle && (
-        <ControlButton
-          $isMobile={isMobile}
-          $isTablet={isTablet}
-          accentColor={accentColor}
-          isActive={backgroundVisualizerEnabled}
-          onClick={onBackgroundVisualizerToggle}
-          title={`Background Visualizer ${backgroundVisualizerEnabled ? 'ON' : 'OFF'}`}
-        >
-          <BackgroundVisualizerIcon />
-        </ControlButton>
-      )}
-
-      <ControlButton
-        $isMobile={isMobile}
-        $isTablet={isTablet}
-        accentColor={accentColor}
-        onClick={onShowPlaylist}
-        title="Show Playlist"
-      >
-        <PlaylistIcon />
-      </ControlButton>
-
+      {/* 2. VFX menu toggle */}
       <ControlButton
         $isMobile={isMobile}
         $isTablet={isTablet}
@@ -93,6 +67,7 @@ export const MenuContent = ({
         <VisualEffectsIcon />
       </ControlButton>
 
+      {/* 3. Color picker */}
       <ColorPickerPopover
         accentColor={accentColor}
         currentTrack={currentTrack}
@@ -103,6 +78,7 @@ export const MenuContent = ({
         $isTablet={isTablet}
       />
 
+      {/* 4. Library */}
       {onBackToLibrary && (
         <ControlButton
           $isMobile={isMobile}
@@ -114,6 +90,17 @@ export const MenuContent = ({
           <BackToLibraryIcon />
         </ControlButton>
       )}
+
+      {/* 5. Playlist */}
+      <ControlButton
+        $isMobile={isMobile}
+        $isTablet={isTablet}
+        accentColor={accentColor}
+        onClick={onShowPlaylist}
+        title="Show Playlist"
+      >
+        <PlaylistIcon />
+      </ControlButton>
 
       {debugModeEnabled && (
         <DebugSection>

@@ -17,6 +17,7 @@ import type { Track } from '../services/spotify';
 import type { VisualizerStyle } from '../types/visualizer';
 import type { AlbumFilters } from '../types/filters';
 
+
 const PlaylistDrawer = lazy(() => import('./PlaylistDrawer'));
 const PlaylistBottomSheet = lazy(() => import('./PlaylistBottomSheet'));
 const VisualEffectsMenu = lazy(() => import('./VisualEffectsMenu/index'));
@@ -180,37 +181,12 @@ const PlaylistLoadingFallback = () => (
   </div>
 );
 
-const AnimatedControlsContainer = styled.div.withConfig({
-  shouldForwardProp: (prop) => !['isVisible'].includes(prop),
-}) <{
-  isVisible: boolean;
-}>`
-  display: grid;
-  grid-template-rows: ${props => props.isVisible ? '1fr' : '0fr'};
-  opacity: ${props => props.isVisible ? '1' : '0'};
-  transition: grid-template-rows 150ms ease-out,
-              opacity 150ms ease-out;
-
-  > * {
-    overflow: hidden;
-    will-change: transform;
-  }
-`;
-
 const PlayerContainer = styled.div`
   position: relative;
   z-index: 1;
   display: flex;
   flex-direction: column;
   width: 100%;
-`;
-
-/** Full-viewport tappable layer behind the player; tap toggles the mobile quick-actions menu */
-const BackgroundTapArea = styled.div`
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  cursor: pointer;
 `;
 
 // Album art container with click handler
@@ -237,24 +213,10 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
     sepia: 0
   };
 
-  const [controlsVisible, setControlsVisible] = useState(true);
   const [showHelp, setShowHelp] = useState(false);
-  const [mobileMenuExpanded, setMobileMenuExpanded] = useState(false);
-
-  const toggleControls = useCallback(() => {
-    setControlsVisible(prev => !prev);
-  }, []);
 
   const toggleHelp = useCallback(() => {
     setShowHelp(prev => !prev);
-  }, []);
-
-  const toggleMobileMenu = useCallback(() => {
-    setMobileMenuExpanded(prev => !prev);
-  }, []);
-
-  const closeMobileMenu = useCallback(() => {
-    setMobileMenuExpanded(false);
   }, []);
 
   const closeHelp = useCallback(() => {
@@ -310,7 +272,6 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
     onMute: handlers.onMuteToggle,
     onToggleLike: handlers.onToggleLike,
     onToggleHelp: toggleHelp,
-    onToggleControls: toggleControls
   });
 
   return (
@@ -323,7 +284,7 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
     >
       <PlayerContainer>
 
-        {/* Album Art Zone - Clickable to toggle controls */}
+        {/* Album Art Zone - Clickable to toggle play/pause */}
         <CardContent style={{
           position: 'relative',
           zIndex: 2,
@@ -336,7 +297,7 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
             $swipeEnabled={!isDesktop}
             $bothGestures={isMobile}
             {...(!isDesktop ? gestureHandlers : {})}
-            onClick={!isSwiping && !isAnimating ? toggleControls : undefined}
+            onClick={!isSwiping && !isAnimating ? handlePlayPause : undefined}
             style={{
               transform: `translateX(${offsetX}px)`,
               transition: isAnimating ? 'transform 300ms cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
@@ -350,7 +311,6 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
                 onGlowToggle={handlers.onGlowToggle}
                 onBackgroundVisualizerToggle={handlers.onBackgroundVisualizerToggle}
                 backgroundVisualizerEnabled={handlers.backgroundVisualizerEnabled}
-                isVisible={controlsVisible}
               />
             )}
 
@@ -372,75 +332,59 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
                 onAccentColorChange={handlers.onAccentColorChange}
                 onBackToLibrary={handlers.onBackToLibrary}
                 debugModeEnabled={handlers.debugModeEnabled}
-                isVisible={controlsVisible}
               />
             )}
           </ClickableAlbumArtContainer>
         </CardContent>
-        <AnimatedControlsContainer isVisible={controlsVisible}>
-          <LoadingCard
-            backgroundImage={track.current?.image}
-            accentColor={ui.accentColor}
-            glowEnabled={effects.enabled}
-            glowIntensity={effects.glow.intensity}
-            glowRate={effects.glow.rate}
-          >
-            <CardContent style={{
-              position: 'relative',
-              zIndex: 2,
-              flex: '0 0 auto',
-              minHeight: `${theme.controls.minHeight}px`,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}>
-              <Suspense fallback={<ControlsLoadingFallback />}>
-                <PlayerControls
-                  currentTrack={track.current}
-                  accentColor={ui.accentColor}
-                  trackCount={track.list.length}
-                  isLiked={track.isLiked}
-                  isLikePending={track.isLikePending}
-                  isMuted={track.isMuted}
-                  volume={track.volume}
-                  onMuteToggle={handlers.onMuteToggle}
-                  onToggleLike={handlers.onToggleLike}
-                  onPlayback={{
-                    play: handlers.onPlay,
-                    pause: handlers.onPause,
-                    next: handlers.onNext,
-                    previous: handlers.onPrevious
-                  }}
-                />
-              </Suspense>
-            </CardContent>
-
-          </LoadingCard>
-        </AnimatedControlsContainer>
+        <LoadingCard
+          backgroundImage={track.current?.image}
+          accentColor={ui.accentColor}
+          glowEnabled={effects.enabled}
+          glowIntensity={effects.glow.intensity}
+          glowRate={effects.glow.rate}
+        >
+          <CardContent style={{
+            position: 'relative',
+            zIndex: 2,
+            flex: '0 0 auto',
+            minHeight: `${theme.controls.minHeight}px`,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}>
+            <Suspense fallback={<ControlsLoadingFallback />}>
+              <PlayerControls
+                currentTrack={track.current}
+                accentColor={ui.accentColor}
+                trackCount={track.list.length}
+                isLiked={track.isLiked}
+                isLikePending={track.isLikePending}
+                isMuted={track.isMuted}
+                volume={track.volume}
+                onMuteToggle={handlers.onMuteToggle}
+                onToggleLike={handlers.onToggleLike}
+                onPlayback={{
+                  play: handlers.onPlay,
+                  pause: handlers.onPause,
+                  next: handlers.onNext,
+                  previous: handlers.onPrevious
+                }}
+              />
+            </Suspense>
+          </CardContent>
+        </LoadingCard>
       </PlayerContainer>
-      {isMobile && (
-        <BackgroundTapArea
-          onClick={toggleMobileMenu}
-          aria-label="Toggle quick actions menu"
-        />
-      )}
       {isMobile && (
         <MobileBottomMenu
           accentColor={ui.accentColor}
-          isExpanded={mobileMenuExpanded}
-          onCollapse={closeMobileMenu}
           currentTrack={track.current}
           glowEnabled={effects.enabled}
-          backgroundVisualizerEnabled={handlers.backgroundVisualizerEnabled}
-          onShowPlaylist={handlers.onShowPlaylist}
           onShowVisualEffects={handlers.onShowVisualEffects}
           onGlowToggle={handlers.onGlowToggle}
-          onBackgroundVisualizerToggle={handlers.onBackgroundVisualizerToggle}
           onAccentColorChange={handlers.onAccentColorChange}
           onBackToLibrary={handlers.onBackToLibrary}
+          onShowPlaylist={handlers.onShowPlaylist}
           debugModeEnabled={handlers.debugModeEnabled}
-          transitionDuration={transitionDuration}
-          transitionEasing={transitionEasing}
         />
       )}
       {ui.showVisualEffects && (
