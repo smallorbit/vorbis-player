@@ -79,7 +79,7 @@ export const cardBase = css`
   border-radius: ${theme.borderRadius.md};
   padding: ${theme.spacing.sm};
   margin: ${theme.spacing.sm};
-  margin-top: -${theme.spacing.md}; negative margin for top of player controls
+  margin-top: ${theme.spacing.md}; 
   box-shadow: ${theme.shadows.sm};
 `;
 
