@@ -83,7 +83,7 @@ const AudioPlayerComponent = () => {
           debugModeEnabled: state.debugModeEnabled,
           onMuteToggle: handlers.handleMuteToggle,
           onToggleLike: handlers.handleLikeToggle,
-          onBackToLibrary: handlers.handleBackToLibrary,
+          onBackToLibrary: handlers.handleOpenLibraryDrawer,
           onOpenLibraryDrawer: handlers.handleOpenLibraryDrawer,
           onCloseLibraryDrawer: handlers.handleCloseLibraryDrawer,
           onPlaylistSelect: handlers.handlePlaylistSelect

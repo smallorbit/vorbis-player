@@ -310,8 +310,13 @@ export function usePlayerLogic() {
   }, [setAccentColorBackgroundPreferred]);
 
   const handleBackToLibrary = useCallback(() => {
-    handleOpenLibraryDrawer();
-  }, [handleOpenLibraryDrawer]);
+    handlePause();
+    setSelectedPlaylistId(null);
+    setTracks([]);
+    setCurrentTrackIndex(0);
+    setShowPlaylist(false);
+    setShowVisualEffects(false);
+  }, [handlePause, setSelectedPlaylistId, setTracks, setCurrentTrackIndex, setShowPlaylist, setShowVisualEffects]);
 
   return {
     state: {

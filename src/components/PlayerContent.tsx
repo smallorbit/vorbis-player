@@ -465,13 +465,11 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
       <Suspense fallback={null}>
         <KeyboardShortcutsHelp isOpen={showHelp} onClose={closeHelp} />
       </Suspense>
-      {isMobile && (
-        <LibraryDrawer
-          isOpen={ui.showLibraryDrawer}
-          onClose={handlers.onCloseLibraryDrawer || (() => {})}
-          onPlaylistSelect={handlers.onPlaylistSelect || (() => {})}
-        />
-      )}
+      <LibraryDrawer
+        isOpen={ui.showLibraryDrawer}
+        onClose={handlers.onCloseLibraryDrawer || (() => {})}
+        onPlaylistSelect={handlers.onPlaylistSelect || (() => {})}
+      />
     </ContentWrapper>
   );
 };
