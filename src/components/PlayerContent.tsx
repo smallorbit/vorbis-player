@@ -11,6 +11,8 @@ import { cardBase } from '../styles/utils';
 import { usePlayerSizing } from '../hooks/usePlayerSizing';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
 import { useSwipeGesture } from '@/hooks/useSwipeGesture';
+import { useVerticalSwipeGesture } from '@/hooks/useVerticalSwipeGesture';
+import LibraryDrawer from './LibraryDrawer';
 import type { Track } from '../services/spotify';
 import type { VisualizerStyle } from '../types/visualizer';
 import type { AlbumFilters } from '../types/filters';
@@ -49,6 +51,9 @@ interface PlayerContentHandlers {
   onMuteToggle?: () => void; // Mute toggle handler
   onToggleLike?: () => void; // Like toggle handler
   onBackToLibrary?: () => void; // Back to library navigation handler
+  onOpenLibraryDrawer?: () => void;
+  onCloseLibraryDrawer?: () => void;
+  onPlaylistSelect?: (playlistId: string, playlistName: string) => void;
 }
 
 interface PlayerContentProps {
@@ -66,6 +71,7 @@ interface PlayerContentProps {
     accentColor: string;
     showVisualEffects: boolean;
     showPlaylist: boolean;
+    showLibraryDrawer: boolean;
   };
   effects: {
     enabled: boolean;
@@ -196,14 +202,14 @@ const PlayerContainer = styled.div`
 `;
 
 // Album art container with click handler
-const ClickableAlbumArtContainer = styled.div<{ $swipeEnabled?: boolean }>`
+const ClickableAlbumArtContainer = styled.div<{ $swipeEnabled?: boolean; $bothGestures?: boolean }>`
   position: relative;
   cursor: pointer;
   z-index: 3;
   /* Add subtle outer glow/shadow for separation from background */
   filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.4));
-  ${({ $swipeEnabled }) => $swipeEnabled && `
-    touch-action: pan-y;
+  ${({ $swipeEnabled, $bothGestures }) => $swipeEnabled && `
+    touch-action: ${$bothGestures ? 'none' : 'pan-y'};
     user-select: none;
     -webkit-user-select: none;
   `}
@@ -243,8 +249,16 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
     onSwipeRight: handlers.onPrevious,
   }, { enabled: !isDesktop });
 
-  // Combined close handler for Escape key (closes VFX menu and help modal)
+  // Vertical swipe down on album art opens library drawer (mobile only)
+  const { ref: albumArtRef } = useVerticalSwipeGesture({
+    onSwipeDown: handlers.onOpenLibraryDrawer,
+    threshold: 80,
+    enabled: isMobile,
+  });
+
+  // Combined close handler for Escape key (closes VFX menu, library drawer, and help modal)
   const handleEscapeClose = useCallback(() => {
+    handlers.onCloseLibraryDrawer?.();
     handlers.onCloseVisualEffects();
     if (showHelp) {
       closeHelp();
@@ -296,7 +310,9 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
           paddingTop: isMobile ? '0.25rem' : '1rem'
         }}>
           <ClickableAlbumArtContainer
+            ref={isMobile ? albumArtRef : undefined}
             $swipeEnabled={!isDesktop}
+            $bothGestures={isMobile}
             {...(!isDesktop ? gestureHandlers : {})}
             onClick={!isSwiping && !isAnimating ? toggleControls : undefined}
             style={{
@@ -449,6 +465,11 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
       <Suspense fallback={null}>
         <KeyboardShortcutsHelp isOpen={showHelp} onClose={closeHelp} />
       </Suspense>
+      <LibraryDrawer
+        isOpen={ui.showLibraryDrawer}
+        onClose={handlers.onCloseLibraryDrawer || (() => {})}
+        onPlaylistSelect={handlers.onPlaylistSelect || (() => {})}
+      />
     </ContentWrapper>
   );
 };

@@ -67,6 +67,9 @@ export function usePlayerLogic() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [playbackPosition, setPlaybackPosition] = useState(0);
 
+  // Mobile library drawer (full-screen playlist/album selection)
+  const [showLibraryDrawer, setShowLibraryDrawer] = useState(false);
+
   // Like state
   const [isLiked, setIsLiked] = useState(false);
   const [isLikePending, setIsLikePending] = useState(false);
@@ -274,6 +277,16 @@ export function usePlayerLogic() {
     setShowPlaylist(false);
   }, [setShowPlaylist]);
 
+  const handleOpenLibraryDrawer = useCallback(() => {
+    setShowLibraryDrawer(true);
+    setShowPlaylist(false);
+    setShowVisualEffects(false);
+  }, [setShowPlaylist, setShowVisualEffects]);
+
+  const handleCloseLibraryDrawer = useCallback(() => {
+    setShowLibraryDrawer(false);
+  }, []);
+
   const handleAccentColorChange = useCallback((color: string) => {
     const mappedColor = color === 'RESET_TO_DEFAULT' ? 'auto' : color;
     handleAccentColorChangeHook(mappedColor);
@@ -313,6 +326,7 @@ export function usePlayerLogic() {
       error,
       selectedPlaylistId,
       showPlaylist,
+      showLibraryDrawer,
       accentColor,
       showVisualEffects,
       visualEffectsEnabled,
@@ -344,6 +358,8 @@ export function usePlayerLogic() {
         handleCloseVisualEffects,
         handleToggleVisualEffectsMenu,
         handleClosePlaylist,
+        handleOpenLibraryDrawer,
+        handleCloseLibraryDrawer,
         playTrack,
         handleAccentColorChange,
         handleVisualEffectsToggle,
