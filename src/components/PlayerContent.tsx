@@ -10,6 +10,7 @@ import { theme } from '@/styles/theme';
 import { cardBase } from '../styles/utils';
 import { usePlayerSizing } from '../hooks/usePlayerSizing';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
+import { useSwipeGesture } from '@/hooks/useSwipeGesture';
 import type { Track } from '../services/spotify';
 import type { VisualizerStyle } from '../types/visualizer';
 import type { AlbumFilters } from '../types/filters';
@@ -195,12 +196,17 @@ const PlayerContainer = styled.div`
 `;
 
 // Album art container with click handler
-const ClickableAlbumArtContainer = styled.div`
+const ClickableAlbumArtContainer = styled.div<{ $swipeEnabled?: boolean }>`
   position: relative;
   cursor: pointer;
   z-index: 3;
   /* Add subtle outer glow/shadow for separation from background */
   filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.4));
+  ${({ $swipeEnabled }) => $swipeEnabled && `
+    touch-action: pan-y;
+    user-select: none;
+    -webkit-user-select: none;
+  `}
 `;
 
 const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handlers }) => {
@@ -234,7 +240,14 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
   }, []);
 
   // Use responsive sizing hook
-  const { dimensions, useFluidSizing, padding, transitionDuration, transitionEasing, isMobile } = usePlayerSizing();
+  const { dimensions, useFluidSizing, padding, transitionDuration, transitionEasing, isMobile, isDesktop } = usePlayerSizing();
+
+  // Swipe gesture for mobile/tablet track navigation
+  const { offsetX, isSwiping, isAnimating, gestureHandlers } = useSwipeGesture({
+    onSwipeLeft: handlers.onNext,
+    onSwipeRight: handlers.onPrevious,
+    onTap: toggleControls,
+  }, { enabled: !isDesktop });
 
   // Combined close handler for Escape key (closes VFX menu and help modal)
   const handleEscapeClose = useCallback(() => {
@@ -288,7 +301,15 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
           alignItems: 'center',
           paddingTop: isMobile ? '0.25rem' : '1rem'
         }}>
-          <ClickableAlbumArtContainer onClick={toggleControls}>
+          <ClickableAlbumArtContainer
+            $swipeEnabled={!isDesktop}
+            {...(isDesktop ? { onClick: toggleControls } : gestureHandlers)}
+            style={{
+              transform: `translateX(${offsetX}px)`,
+              transition: isAnimating ? 'transform 300ms cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
+              willChange: isSwiping ? 'transform' : undefined,
+            }}
+          >
             {!isMobile && (
               <LeftQuickActionsPanel
                 accentColor={ui.accentColor}
