@@ -26,6 +26,68 @@ const CACHE_DURATION_MS = 5 * 60 * 1000;
 const CACHE_KEY_PREFIX = 'vorbis-player-cache-';
 
 // =============================================================================
+// Rate Limiting & Request Deduplication
+// =============================================================================
+
+/**
+ * In-flight request deduplication: if the same URL+method combo is already
+ * being fetched, return the existing promise instead of firing a second request.
+ */
+const inflightRequests = new Map<string, Promise<unknown>>();
+
+function getInflightKey(url: string, method: string): string {
+  return `${method}:${url}`;
+}
+
+/**
+ * Rate-limit state: tracks 429 back-off per domain.
+ * When we receive a 429, we record a "retry-after" timestamp and
+ * reject immediately until that timestamp has passed.
+ */
+let rateLimitedUntil = 0;
+
+function isRateLimited(): boolean {
+  return Date.now() < rateLimitedUntil;
+}
+
+function handleRateLimitResponse(response: Response): void {
+  if (response.status === 429) {
+    const retryAfter = response.headers.get('Retry-After');
+    const waitSeconds = retryAfter ? parseInt(retryAfter, 10) : 5;
+    const waitMs = (isNaN(waitSeconds) ? 5 : Math.max(waitSeconds, 1)) * 1000;
+    rateLimitedUntil = Date.now() + waitMs;
+    console.warn(`[spotify] 429 rate-limited — backing off for ${waitMs}ms`);
+  }
+}
+
+// =============================================================================
+// In-Memory Caches (short-lived, session-scoped)
+// =============================================================================
+
+/** Cache for checkTrackSaved results — keyed by track ID */
+const trackSavedCache = new Map<string, { value: boolean; timestamp: number }>();
+const TRACK_SAVED_CACHE_TTL = 60 * 1000; // 1 minute
+
+/** Cache for playlist/album track lists — keyed by playlist/album ID */
+const trackListCache = new Map<string, { data: Track[]; timestamp: number }>();
+const TRACK_LIST_CACHE_TTL = 10 * 60 * 1000; // 10 minutes
+
+/** Cache for liked songs count */
+let likedSongsCountCache: { count: number; timestamp: number } | null = null;
+const LIKED_SONGS_COUNT_TTL = 2 * 60 * 1000; // 2 minutes
+
+/** Cache for liked songs list */
+let likedSongsCache: { data: Track[]; limit: number; timestamp: number } | null = null;
+const LIKED_SONGS_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+/**
+ * Invalidate track-saved cache for a given track (called on save/unsave).
+ */
+function invalidateTrackSavedCache(trackId: string): void {
+  trackSavedCache.delete(trackId);
+}
+
+// =============================================================================
 // Types
 // =============================================================================
 
@@ -150,6 +212,38 @@ async function spotifyApiRequest<T>(
   token: string,
   options: RequestInit = {}
 ): Promise<T> {
+  // Reject immediately if we're in a rate-limit back-off window
+  if (isRateLimited()) {
+    const waitMs = rateLimitedUntil - Date.now();
+    console.warn(`[spotify] Rate-limited — waiting ${waitMs}ms before retrying`);
+    await new Promise(resolve => setTimeout(resolve, waitMs));
+  }
+
+  const method = (options.method ?? 'GET').toUpperCase();
+
+  // Deduplicate concurrent GET requests for the same URL
+  if (method === 'GET') {
+    const key = getInflightKey(url, method);
+    const existing = inflightRequests.get(key);
+    if (existing) {
+      return existing as Promise<T>;
+    }
+
+    const promise = executeApiRequest<T>(url, token, options).finally(() => {
+      inflightRequests.delete(key);
+    });
+    inflightRequests.set(key, promise);
+    return promise;
+  }
+
+  return executeApiRequest<T>(url, token, options);
+}
+
+async function executeApiRequest<T>(
+  url: string,
+  token: string,
+  options: RequestInit = {}
+): Promise<T> {
   const response = await fetch(url, {
     ...options,
     headers: {
@@ -157,6 +251,9 @@ async function spotifyApiRequest<T>(
       ...options.headers,
     },
   });
+
+  // Track 429s and set backoff
+  handleRateLimitResponse(response);
 
   if (!response.ok) {
     throw new Error(`Spotify API error: ${response.status} ${response.statusText}`);
@@ -678,6 +775,12 @@ export async function getUserAlbumsIncremental(
 }
 
 export async function getPlaylistTracks(playlistId: string): Promise<Track[]> {
+  const cacheKey = `playlist:${playlistId}`;
+  const cached = trackListCache.get(cacheKey);
+  if (cached && Date.now() - cached.timestamp < TRACK_LIST_CACHE_TTL) {
+    return cached.data;
+  }
+
   const token = await spotifyAuth.ensureValidToken();
 
   interface PlaylistTrackItem {
@@ -691,14 +794,23 @@ export async function getPlaylistTracks(playlistId: string): Promise<Track[]> {
     return transformTrackItem(item.track);
   }
 
-  return fetchAllPaginated<PlaylistTrackItem, Track>(
+  const tracks = await fetchAllPaginated<PlaylistTrackItem, Track>(
     `https://api.spotify.com/v1/playlists/${playlistId}/tracks?limit=50`,
     token,
     transformPlaylistTrack
   );
+
+  trackListCache.set(cacheKey, { data: tracks, timestamp: Date.now() });
+  return tracks;
 }
 
 export async function getAlbumTracks(albumId: string): Promise<Track[]> {
+  const cacheKey = `album:${albumId}`;
+  const cached = trackListCache.get(cacheKey);
+  if (cached && Date.now() - cached.timestamp < TRACK_LIST_CACHE_TTL) {
+    return cached.data;
+  }
+
   const token = await spotifyAuth.ensureValidToken();
 
   interface AlbumResponse {
@@ -727,10 +839,16 @@ export async function getAlbumTracks(albumId: string): Promise<Track[]> {
     }
   }
 
-  return tracks.sort((a, b) => (a.track_number ?? 0) - (b.track_number ?? 0));
+  const sorted = tracks.sort((a, b) => (a.track_number ?? 0) - (b.track_number ?? 0));
+  trackListCache.set(cacheKey, { data: sorted, timestamp: Date.now() });
+  return sorted;
 }
 
 export async function getLikedSongs(limit: number = 50): Promise<Track[]> {
+  if (likedSongsCache && likedSongsCache.limit >= limit && Date.now() - likedSongsCache.timestamp < LIKED_SONGS_CACHE_TTL) {
+    return likedSongsCache.data.slice(0, limit);
+  }
+
   const token = await spotifyAuth.ensureValidToken();
 
   interface SavedTrackItem {
@@ -745,15 +863,22 @@ export async function getLikedSongs(limit: number = 50): Promise<Track[]> {
   }
 
   const maxLimit = Math.min(limit, 50);
-  return fetchAllPaginated<SavedTrackItem, Track>(
+  const tracks = await fetchAllPaginated<SavedTrackItem, Track>(
     `https://api.spotify.com/v1/me/tracks?limit=${maxLimit}`,
     token,
     transformSavedTrack,
     { maxItems: limit }
   );
+
+  likedSongsCache = { data: tracks, limit, timestamp: Date.now() };
+  return tracks;
 }
 
 export async function getLikedSongsCount(signal?: AbortSignal): Promise<number> {
+  if (likedSongsCountCache && Date.now() - likedSongsCountCache.timestamp < LIKED_SONGS_COUNT_TTL) {
+    return likedSongsCountCache.count;
+  }
+
   const token = await spotifyAuth.ensureValidToken();
 
   interface LikedSongsResponse {
@@ -766,16 +891,25 @@ export async function getLikedSongsCount(signal?: AbortSignal): Promise<number> 
     { signal }
   );
 
-  return data.total ?? 0;
+  const count = data.total ?? 0;
+  likedSongsCountCache = { count, timestamp: Date.now() };
+  return count;
 }
 
 export async function checkTrackSaved(trackId: string): Promise<boolean> {
+  const cached = trackSavedCache.get(trackId);
+  if (cached && Date.now() - cached.timestamp < TRACK_SAVED_CACHE_TTL) {
+    return cached.value;
+  }
+
   const token = await spotifyAuth.ensureValidToken();
   const data = await spotifyApiRequest<boolean[]>(
     `https://api.spotify.com/v1/me/tracks/contains?ids=${trackId}`,
     token
   );
-  return data[0] ?? false;
+  const result = data[0] ?? false;
+  trackSavedCache.set(trackId, { value: result, timestamp: Date.now() });
+  return result;
 }
 
 async function modifyTrackSaved(trackId: string, save: boolean): Promise<void> {
@@ -786,6 +920,14 @@ async function modifyTrackSaved(trackId: string, save: boolean): Promise<void> {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ ids: [trackId] }),
   });
+
+  // Optimistically update the saved-track cache
+  invalidateTrackSavedCache(trackId);
+  trackSavedCache.set(trackId, { value: save, timestamp: Date.now() });
+
+  // Also invalidate liked songs caches since the list changed
+  likedSongsCache = null;
+  likedSongsCountCache = null;
 }
 
 export async function saveTrack(trackId: string): Promise<void> {
