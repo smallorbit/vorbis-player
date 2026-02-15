@@ -513,8 +513,8 @@ function PlaylistSelection({ onPlaylistSelect, inDrawer = false, swipeZoneRef }:
 
         const onPlaylistsUpdate = (playlistsSoFar: PlaylistInfo[], isComplete: boolean): void => {
           if (!isMounted) return;
-          if (!hasCache || isComplete) setPlaylists(playlistsSoFar);
-          if (!hasCache) setIsLoading(false);
+          setPlaylists(playlistsSoFar);
+          setIsLoading(false);
           if (isComplete) {
             setPlaylistsLoaded(true);
           }
@@ -522,8 +522,8 @@ function PlaylistSelection({ onPlaylistSelect, inDrawer = false, swipeZoneRef }:
 
         const onAlbumsUpdate = (albumsSoFar: AlbumInfo[], isComplete: boolean): void => {
           if (!isMounted) return;
-          if (!hasCache || isComplete) setAlbums(albumsSoFar);
-          if (!hasCache) setIsLoading(false);
+          setAlbums(albumsSoFar);
+          setIsLoading(false);
           if (isComplete) {
             setAlbumsLoaded(true);
           }
