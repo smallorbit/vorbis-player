@@ -774,6 +774,144 @@ export async function getUserAlbumsIncremental(
   );
 }
 
+/**
+ * Load playlists and albums with interleaved pagination.
+ *
+ * Instead of fetching all playlist pages then all album pages (or relying on
+ * Promise.all which can still starve one stream), this fetches one page of each
+ * alternately: playlist page 1, album page 1, playlist page 2, album page 2, …
+ * Both lists populate at roughly the same rate regardless of library size.
+ *
+ * Streams that are served from cache resolve immediately and don't slow the other.
+ */
+export async function getUserLibraryInterleaved(
+  onPlaylistsUpdate: PlaylistsIncrementalCallback,
+  onAlbumsUpdate: AlbumsIncrementalCallback,
+  signal?: AbortSignal
+): Promise<void> {
+  // --- Check caches first ---
+  const cachedPlaylists = getCacheFromStorage<PlaylistInfo[]>('playlists');
+  const cachedAlbums = getCacheFromStorage<AlbumInfo[]>('albums');
+
+  const playlistsCached = isCacheValid(cachedPlaylists);
+  const albumsCached = isCacheValid(cachedAlbums);
+
+  // If both are cached, return immediately
+  if (playlistsCached && albumsCached) {
+    onPlaylistsUpdate(cachedPlaylists!.data, true);
+    onAlbumsUpdate(cachedAlbums!.data, true);
+    return;
+  }
+
+  // If one is cached, emit it immediately and only fetch the other
+  if (playlistsCached) {
+    onPlaylistsUpdate(cachedPlaylists!.data, true);
+    await getUserAlbumsIncremental(onAlbumsUpdate, signal);
+    return;
+  }
+  if (albumsCached) {
+    onAlbumsUpdate(cachedAlbums!.data, true);
+    await getUserPlaylistsIncremental(onPlaylistsUpdate, signal);
+    return;
+  }
+
+  // --- Neither is cached: interleave pagination ---
+  const token = await spotifyAuth.ensureValidToken();
+
+  // Playlist transform setup
+  const cachedPlaylistMap = new Map<string, string>();
+  const cachedPlaylistEntry = cachedPlaylists as CacheEntry<PlaylistInfo[]> | null;
+  if (cachedPlaylistEntry?.data) {
+    for (const p of cachedPlaylistEntry.data) {
+      if (p.added_at) cachedPlaylistMap.set(p.id, p.added_at);
+    }
+  }
+  const fetchTimestamp = new Date().toISOString();
+
+  function transformPlaylist(playlist: PlaylistInfo): PlaylistInfo {
+    const addedAt = cachedPlaylistMap.get(playlist.id) || fetchTimestamp;
+    return { ...playlist, added_at: addedAt };
+  }
+
+  interface SavedAlbumItem {
+    added_at: string;
+    album: SpotifyAlbum;
+  }
+
+  function transformAlbum(item: SavedAlbumItem): AlbumInfo {
+    const album = item.album;
+    return {
+      id: album.id ?? '',
+      name: album.name ?? 'Unknown Album',
+      artists: formatArtists(album.artists),
+      images: album.images ?? [],
+      release_date: album.release_date ?? '',
+      total_tracks: album.total_tracks ?? 0,
+      uri: album.uri ?? '',
+      album_type: album.album_type,
+      added_at: item.added_at,
+    };
+  }
+
+  // Pagination state
+  let playlistNextUrl: string | null = 'https://api.spotify.com/v1/me/playlists?limit=50';
+  let albumNextUrl: string | null = 'https://api.spotify.com/v1/me/albums?limit=50';
+  const playlistResults: PlaylistInfo[] = [];
+  const albumResults: AlbumInfo[] = [];
+
+  // Interleave: fetch one page of each per round
+  while (playlistNextUrl || albumNextUrl) {
+    if (signal?.aborted) {
+      throw new DOMException('Request aborted', 'AbortError');
+    }
+
+    // Fetch one page of each concurrently (max 2 requests at a time)
+    const fetches: Promise<void>[] = [];
+
+    if (playlistNextUrl) {
+      const url = playlistNextUrl;
+      fetches.push(
+        spotifyApiRequest<PaginatedResponse<PlaylistInfo>>(url, token, { signal })
+          .then((data) => {
+            for (const item of data.items ?? []) {
+              const transformed = transformPlaylist(item);
+              playlistResults.push(transformed);
+            }
+            playlistNextUrl = data.next;
+            const isComplete = playlistNextUrl === null;
+            onPlaylistsUpdate([...playlistResults], isComplete);
+            if (isComplete) {
+              setCacheToStorage('playlists', playlistResults);
+            }
+          })
+      );
+    }
+
+    if (albumNextUrl) {
+      const url = albumNextUrl;
+      fetches.push(
+        spotifyApiRequest<PaginatedResponse<SavedAlbumItem>>(url, token, { signal })
+          .then((data) => {
+            for (const item of data.items ?? []) {
+              const transformed = transformAlbum(item);
+              albumResults.push(transformed);
+            }
+            albumNextUrl = data.next;
+            const isComplete = albumNextUrl === null;
+            onAlbumsUpdate([...albumResults], isComplete);
+            if (isComplete) {
+              setCacheToStorage('albums', albumResults);
+            }
+          })
+      );
+    }
+
+    // Wait for both pages of this round to complete before starting the next round.
+    // This keeps the two streams in lockstep: neither can race ahead and starve the other.
+    await Promise.all(fetches);
+  }
+}
+
 export async function getPlaylistTracks(playlistId: string): Promise<Track[]> {
   const cacheKey = `playlist:${playlistId}`;
   const cached = trackListCache.get(cacheKey);

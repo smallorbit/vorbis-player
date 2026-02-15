@@ -2,8 +2,7 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import * as React from 'react';
 import styled from 'styled-components';
 import {
-  getUserPlaylistsIncremental,
-  getUserAlbumsIncremental,
+  getUserLibraryInterleaved,
   getLikedSongsCount,
   getCachedData,
   spotifyAuth,
@@ -511,10 +510,11 @@ function PlaylistSelection({ onPlaylistSelect, inDrawer = false, swipeZoneRef }:
         };
 
         try {
-          await Promise.all([
-            getUserPlaylistsIncremental(onPlaylistsUpdate, abortController.signal),
-            getUserAlbumsIncremental(onAlbumsUpdate, abortController.signal),
-          ]);
+          await getUserLibraryInterleaved(
+            onPlaylistsUpdate,
+            onAlbumsUpdate,
+            abortController.signal
+          );
         } catch (err) {
           if (err instanceof DOMException && err.name === 'AbortError') return;
           if (abortController.signal.aborted) return;
