@@ -211,6 +211,10 @@ const AlbumArt: React.FC<AlbumArtProps> = memo(({ currentTrack = null, accentCol
       ctx.putImageData(processedImageData, 0, 0);
       setCanvasUrl(canvas.toDataURL());
     } catch (error) {
+      // Ignore expected errors from component unmounting during processing
+      if (error instanceof Error && error.message === 'Component unmounted') {
+        return;
+      }
       console.error('Image processing failed:', error);
       setCanvasUrl(null);
     } finally {
