@@ -221,25 +221,16 @@ if (typeof document !== 'undefined' && !document.getElementById('vorbis-spinner-
   document.head.appendChild(style);
 }
 
-const LoadingIndicator = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  padding: 1rem;
-  color: rgba(255, 255, 255, 0.5);
-  font-size: 0.85rem;
-
-  &::before {
-    content: '';
-    display: inline-block;
-    width: 16px;
-    height: 16px;
-    border: 2px solid rgba(255, 255, 255, 0.15);
-    border-top-color: #1db954;
-    border-radius: 50%;
-    animation: vorbis-spinner-spin 0.8s linear infinite;
-  }
+const TabSpinner = styled.span`
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.15);
+  border-top-color: #1db954;
+  border-radius: 50%;
+  animation: vorbis-spinner-spin 0.8s linear infinite;
+  margin-left: 0.4rem;
+  vertical-align: middle;
 `;
 
 const TabsContainer = styled.div`
@@ -675,13 +666,13 @@ function PlaylistSelection({ onPlaylistSelect, inDrawer = false, swipeZoneRef }:
           $active={viewMode === 'playlists'}
           onClick={() => handleViewModeChange('playlists')}
         >
-          Playlists
+          Playlists{!libraryFullyLoaded && <TabSpinner />}
         </TabButton>
         <TabButton
           $active={viewMode === 'albums'}
           onClick={() => handleViewModeChange('albums')}
         >
-          Albums
+          Albums{!libraryFullyLoaded && <TabSpinner />}
         </TabButton>
       </TabsContainer>
       </div>
@@ -729,10 +720,6 @@ function PlaylistSelection({ onPlaylistSelect, inDrawer = false, swipeZoneRef }:
             </PlaylistItem>
           ))}
 
-          {filteredPlaylists.length === 0 && likedSongsCount === 0 && !libraryFullyLoaded && (
-            <LoadingIndicator>Loading playlists…</LoadingIndicator>
-          )}
-
           {filteredPlaylists.length === 0 && likedSongsCount === 0 && libraryFullyLoaded && (
             <div
               style={{
@@ -745,10 +732,6 @@ function PlaylistSelection({ onPlaylistSelect, inDrawer = false, swipeZoneRef }:
                 ? `No playlists match "${searchQuery}"`
                 : 'No playlists found. Create some playlists in Spotify or save some songs!'}
             </div>
-          )}
-
-          {(filteredPlaylists.length > 0 || likedSongsCount > 0) && !libraryFullyLoaded && (
-            <LoadingIndicator>Loading more…</LoadingIndicator>
           )}
         </PlaylistGrid>
       )}
@@ -770,10 +753,6 @@ function PlaylistSelection({ onPlaylistSelect, inDrawer = false, swipeZoneRef }:
             </PlaylistItem>
           ))}
 
-          {filteredAlbums.length === 0 && !libraryFullyLoaded && (
-            <LoadingIndicator>Loading albums…</LoadingIndicator>
-          )}
-
           {filteredAlbums.length === 0 && libraryFullyLoaded && (
             <div
               style={{
@@ -786,10 +765,6 @@ function PlaylistSelection({ onPlaylistSelect, inDrawer = false, swipeZoneRef }:
                 ? 'No albums match your filters.'
                 : 'No albums found. Save some albums in Spotify to see them here!'}
             </div>
-          )}
-
-          {filteredAlbums.length > 0 && !libraryFullyLoaded && (
-            <LoadingIndicator>Loading more…</LoadingIndicator>
           )}
         </PlaylistGrid>
       )}
