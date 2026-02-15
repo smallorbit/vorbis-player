@@ -52,6 +52,7 @@ export interface KeyboardShortcutHandlers {
   onVolumeDown?: () => void;
   onToggleLike?: () => void;
   onToggleControls?: () => void;
+  onCloseMobileMenu?: () => void;
 }
 
 interface UseKeyboardShortcutsOptions {
@@ -87,6 +88,7 @@ export const useKeyboardShortcuts = (
     onVolumeDown,
     onToggleLike,
     onToggleControls,
+    onCloseMobileMenu,
   } = handlers;
 
   useEffect(() => {
@@ -166,6 +168,7 @@ export const useKeyboardShortcuts = (
           event.preventDefault();
           onCloseVisualEffects?.();
           onClosePlaylist?.();
+          onCloseMobileMenu?.();
           break;
 
         // Volume controls
@@ -235,6 +238,7 @@ export const useKeyboardShortcuts = (
     onVolumeDown,
     onToggleLike,
     onToggleControls,
+    onCloseMobileMenu,
     options.enableDebugMode,
   ]);
 };
