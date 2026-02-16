@@ -16,6 +16,7 @@ interface ColorPickerPopoverProps {
   onCustomAccentColor: (color: string) => void;
   $isMobile?: boolean;
   $isTablet?: boolean;
+  onOpenChange?: (isOpen: boolean) => void;
 }
 
 // Custom comparison function for ColorPickerPopover memo optimization
@@ -62,7 +63,8 @@ export const ColorPickerPopover = memo<ColorPickerPopoverProps>(({
   customAccentColorOverrides,
   onCustomAccentColor,
   $isMobile = false,
-  $isTablet = false
+  $isTablet = false,
+  onOpenChange
 }) => {
   const [colorOptions, setColorOptions] = useState<ExtractedColor[] | null>(null);
   const [isExtracting, setIsExtracting] = useState(false);
@@ -127,6 +129,10 @@ export const ColorPickerPopover = memo<ColorPickerPopoverProps>(({
       });
     }
   }, [showColorPopover]);
+
+  useEffect(() => {
+    onOpenChange?.(showColorPopover);
+  }, [showColorPopover, onOpenChange]);
 
   return (
     <>
