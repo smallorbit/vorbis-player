@@ -89,6 +89,32 @@ export const PlayerTrackName = styled.div<{ $isMobile: boolean; $isTablet: boole
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
 `;
 
+export const PlayerTrackAlbum = styled.div`
+  font-size: ${({ theme }) => theme.fontSize.xs};
+  line-height: ${({ theme }) => theme.fontSize.sm};
+  color: ${({ theme }) => theme.colors.gray[400]};
+  font-weight: ${({ theme }) => theme.fontWeight.medium};
+  letter-spacing: 0.02em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  width: 100%;
+  position: relative;
+  z-index: 11;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+`;
+
+export const AlbumLink = styled.a`
+  color: inherit;
+  text-decoration: none;
+  transition: opacity 0.15s ease;
+
+  &:hover {
+    opacity: 0.8;
+    text-decoration: underline;
+  }
+`;
+
 export const PlayerTrackArtist = styled.div`
   font-size: ${({ theme }) => theme.fontSize.sm};
   line-height: ${({ theme }) => theme.fontSize.sm};
