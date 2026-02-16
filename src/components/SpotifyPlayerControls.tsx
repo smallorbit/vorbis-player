@@ -42,6 +42,14 @@ const areControlsPropsEqual = (
     return false;
   }
 
+  // Check artist/album browse callbacks
+  if (prevProps.onArtistBrowse !== nextProps.onArtistBrowse) {
+    return false;
+  }
+  if (prevProps.onAlbumPlay !== nextProps.onAlbumPlay) {
+    return false;
+  }
+
   // For callbacks, we assume they're stable (parent should use useCallback)
   // This prevents unnecessary re-renders due to function reference changes
 
@@ -62,6 +70,8 @@ interface SpotifyPlayerControlsProps {
   volume?: number;
   onMuteToggle?: () => void;
   onToggleLike?: () => void;
+  onArtistBrowse?: (artistName: string) => void;
+  onAlbumPlay?: (albumId: string, albumName: string) => void;
 }
 
 // --- SpotifyPlayerControls Component ---
@@ -78,6 +88,8 @@ const SpotifyPlayerControls = memo<SpotifyPlayerControlsProps>(({
   volume: propVolume,
   onMuteToggle: propOnMuteToggle,
   onToggleLike: propOnToggleLike,
+  onArtistBrowse,
+  onAlbumPlay,
 }) => {
   // Get responsive sizing information
   const { isMobile, isTablet } = usePlayerSizing();
@@ -121,6 +133,8 @@ const SpotifyPlayerControls = memo<SpotifyPlayerControlsProps>(({
         track={currentTrack}
         isMobile={isMobile}
         isTablet={isTablet}
+        onArtistBrowse={onArtistBrowse}
+        onAlbumPlay={onAlbumPlay}
       />
 
       <TrackInfoRow style={{ position: 'relative' }}>

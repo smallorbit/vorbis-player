@@ -56,6 +56,7 @@ interface PlayerContentHandlers {
   onOpenLibraryDrawer?: () => void;
   onCloseLibraryDrawer?: () => void;
   onPlaylistSelect?: (playlistId: string, playlistName: string) => void;
+  onAlbumPlay?: (albumId: string, albumName: string) => void;
 }
 
 interface PlayerContentProps {
@@ -217,6 +218,8 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
   };
 
   const [showHelp, setShowHelp] = useState(false);
+  const [librarySearchQuery, setLibrarySearchQuery] = useState<string | undefined>(undefined);
+  const [libraryViewMode, setLibraryViewMode] = useState<'playlists' | 'albums' | undefined>(undefined);
 
   const toggleHelp = useCallback(() => {
     setShowHelp(prev => !prev);
@@ -225,6 +228,28 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
   const closeHelp = useCallback(() => {
     setShowHelp(false);
   }, []);
+
+  // Handler: artist name clicked → open library drawer filtered to albums by that artist
+  const handleArtistBrowse = useCallback((artistName: string) => {
+    setLibrarySearchQuery(artistName);
+    setLibraryViewMode('albums');
+    handlers.onOpenLibraryDrawer?.();
+  }, [handlers]);
+
+  // Handler: album name clicked → play that album
+  const handleAlbumPlay = useCallback((albumId: string, albumName: string) => {
+    handlers.onAlbumPlay?.(albumId, albumName);
+  }, [handlers]);
+
+  // Reset library filter state when drawer closes
+  const handleCloseLibraryDrawer = useCallback(() => {
+    handlers.onCloseLibraryDrawer?.();
+    // Clear after transition so the drawer doesn't flash with stale query
+    setTimeout(() => {
+      setLibrarySearchQuery(undefined);
+      setLibraryViewMode(undefined);
+    }, 350);
+  }, [handlers]);
 
   // Use responsive sizing hook
   const { dimensions, useFluidSizing, padding, transitionDuration, transitionEasing, isMobile, isDesktop } = usePlayerSizing();
@@ -245,12 +270,12 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
 
   // Combined close handler for Escape key (closes VFX menu, library drawer, and help modal)
   const handleEscapeClose = useCallback(() => {
-    handlers.onCloseLibraryDrawer?.();
+    handleCloseLibraryDrawer();
     handlers.onCloseVisualEffects();
     if (showHelp) {
       closeHelp();
     }
-  }, [handlers, showHelp, closeHelp]);
+  }, [handleCloseLibraryDrawer, handlers, showHelp, closeHelp]);
 
   // Combine play/pause for Space key
   const handlePlayPause = useCallback(() => {
@@ -349,6 +374,8 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
                 onPause={handlers.onPause}
                 onNext={handlers.onNext}
                 onPrevious={handlers.onPrevious}
+                onArtistBrowse={handleArtistBrowse}
+                onAlbumPlay={handleAlbumPlay}
               />
             </Suspense>
           </CardContent>
@@ -446,8 +473,10 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
       </Suspense>
       <LibraryDrawer
         isOpen={ui.showLibraryDrawer}
-        onClose={handlers.onCloseLibraryDrawer || (() => { })}
+        onClose={handleCloseLibraryDrawer}
         onPlaylistSelect={handlers.onPlaylistSelect || (() => { })}
+        initialSearchQuery={librarySearchQuery}
+        initialViewMode={libraryViewMode}
       />
     </ContentWrapper>
   );

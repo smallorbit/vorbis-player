@@ -31,6 +31,10 @@ interface PlaylistSelectionProps {
   inDrawer?: boolean;
   /** Ref for swipe-to-close gesture zone (search/filters area only, not the scrollable list) */
   swipeZoneRef?: React.RefObject<HTMLDivElement>;
+  /** Pre-populate the search input when the drawer opens */
+  initialSearchQuery?: string;
+  /** Set the active tab when the drawer opens */
+  initialViewMode?: 'playlists' | 'albums';
 }
 
 function selectOptimalImage(
@@ -515,8 +519,9 @@ const GridCardImageComponent: React.FC<LazyImageProps> = React.memo(function Gri
   );
 });
 
-function PlaylistSelection({ onPlaylistSelect, inDrawer = false, swipeZoneRef }: PlaylistSelectionProps): JSX.Element {
+function PlaylistSelection({ onPlaylistSelect, inDrawer = false, swipeZoneRef, initialSearchQuery, initialViewMode }: PlaylistSelectionProps): JSX.Element {
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
+    if (initialViewMode) return initialViewMode;
     const saved = localStorage.getItem('vorbis-player-view-mode');
     return (saved === 'albums' ? 'albums' : 'playlists') as ViewMode;
   });
@@ -526,7 +531,7 @@ function PlaylistSelection({ onPlaylistSelect, inDrawer = false, swipeZoneRef }:
   const [error, setError] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [likedSongsCount, setLikedSongsCount] = useState<number>(0);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState(initialSearchQuery || '');
   const [playlistSort, setPlaylistSort] = useLocalStorage<PlaylistSortOption>(
     'vorbis-player-playlist-sort',
     'recently-added'
@@ -552,6 +557,19 @@ function PlaylistSelection({ onPlaylistSelect, inDrawer = false, swipeZoneRef }:
     }
     return Math.min(viewport.width * 0.6, 600);
   }, [viewport.width, isMobile, isTablet]);
+
+  // Sync when initial props change (e.g., drawer re-opened with new filter)
+  useEffect(() => {
+    if (initialSearchQuery !== undefined) {
+      setSearchQuery(initialSearchQuery);
+    }
+  }, [initialSearchQuery]);
+
+  useEffect(() => {
+    if (initialViewMode) {
+      setViewMode(initialViewMode);
+    }
+  }, [initialViewMode]);
 
   useEffect(() => {
     localStorage.setItem('vorbis-player-view-mode', viewMode);
