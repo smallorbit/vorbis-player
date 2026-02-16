@@ -4,6 +4,7 @@ import { useCustomAccentColors } from '@/hooks/useCustomAccentColors';
 import type { Track } from '@/services/spotify';
 import {
   GlowIcon,
+  BackgroundVisualizerIcon,
   VisualEffectsIcon,
   BackToLibraryIcon,
   PlaylistIcon,
@@ -14,8 +15,10 @@ interface MenuContentProps {
   accentColor: string;
   currentTrack: Track | null;
   glowEnabled: boolean;
+  backgroundVisualizerEnabled?: boolean;
   onShowVisualEffects: () => void;
   onGlowToggle: () => void;
+  onBackgroundVisualizerToggle?: () => void;
   onAccentColorChange: (color: string) => void;
   onBackToLibrary?: () => void;
   onShowPlaylist: () => void;
@@ -26,8 +29,10 @@ export const MenuContent = ({
   accentColor,
   currentTrack,
   glowEnabled,
+  backgroundVisualizerEnabled,
   onShowVisualEffects,
   onGlowToggle,
+  onBackgroundVisualizerToggle,
   onAccentColorChange,
   onBackToLibrary,
   onShowPlaylist,
@@ -55,7 +60,21 @@ export const MenuContent = ({
         <GlowIcon />
       </ControlButton>
 
-      {/* 2. VFX menu toggle */}
+      {/* 2. Background Visualizer toggle */}
+      {onBackgroundVisualizerToggle && (
+        <ControlButton
+          $isMobile={isMobile}
+          $isTablet={isTablet}
+          accentColor={accentColor}
+          isActive={backgroundVisualizerEnabled}
+          onClick={onBackgroundVisualizerToggle}
+          title={`Background Visualizer ${backgroundVisualizerEnabled ? 'ON' : 'OFF'}`}
+        >
+          <BackgroundVisualizerIcon />
+        </ControlButton>
+      )}
+
+      {/* 3. VFX menu toggle */}
       <ControlButton
         $isMobile={isMobile}
         $isTablet={isTablet}
@@ -67,7 +86,7 @@ export const MenuContent = ({
         <VisualEffectsIcon />
       </ControlButton>
 
-      {/* 3. Color picker */}
+      {/* 4. Color picker */}
       <ColorPickerPopover
         accentColor={accentColor}
         currentTrack={currentTrack}
@@ -78,7 +97,7 @@ export const MenuContent = ({
         $isTablet={isTablet}
       />
 
-      {/* 4. Library */}
+      {/* 5. Library */}
       {onBackToLibrary && (
         <ControlButton
           $isMobile={isMobile}
@@ -91,7 +110,7 @@ export const MenuContent = ({
         </ControlButton>
       )}
 
-      {/* 5. Playlist */}
+      {/* 6. Playlist */}
       <ControlButton
         $isMobile={isMobile}
         $isTablet={isTablet}
