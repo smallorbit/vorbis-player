@@ -6,6 +6,7 @@ import PlayerControls from './PlayerControls';
 import QuickActionsPanel from './QuickActionsPanel';
 import LeftQuickActionsPanel from './LeftQuickActionsPanel';
 import MobileBottomMenu from './MobileBottomMenu';
+import { MOBILE_BOTTOM_MENU_HEIGHT } from './MobileBottomMenu/styled';
 import { theme } from '@/styles/theme';
 import { cardBase } from '../styles/utils';
 import { usePlayerSizing } from '../hooks/usePlayerSizing';
@@ -84,19 +85,23 @@ interface PlayerContentProps {
 }
 
 const ContentWrapper = styled.div.withConfig({
-  shouldForwardProp: (prop) => !['width', 'padding', 'useFluidSizing', 'transitionDuration', 'transitionEasing'].includes(prop),
+  shouldForwardProp: (prop) => !['width', 'padding', 'useFluidSizing', 'transitionDuration', 'transitionEasing', '$isMobile'].includes(prop),
 }) <{
   width: number;
   padding: number;
   useFluidSizing: boolean;
   transitionDuration: number;
   transitionEasing: string;
+  $isMobile: boolean;
 }>`
   width: ${props => props.useFluidSizing ? '100%' : `${props.width}px`};
   max-width: ${props => props.width}px;
 
   margin: 0 auto;
   padding: ${props => props.padding}px;
+  padding-bottom: ${props => props.$isMobile
+    ? `calc(${props.padding}px + ${MOBILE_BOTTOM_MENU_HEIGHT} + env(safe-area-inset-bottom, 0px))`
+    : `${props.padding}px`};
   box-sizing: border-box;
   position: relative;
   z-index: 2;
@@ -281,6 +286,7 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
       useFluidSizing={useFluidSizing}
       transitionDuration={transitionDuration}
       transitionEasing={transitionEasing}
+      $isMobile={isMobile}
     >
       <PlayerContainer>
 
