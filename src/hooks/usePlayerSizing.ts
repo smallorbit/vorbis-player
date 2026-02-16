@@ -25,6 +25,8 @@ export interface UsePlayerSizingReturn {
   isMobile: boolean;
   isTablet: boolean;
   isDesktop: boolean;
+  /** True when primary input is pointer (mouse/stylus) or device can hover; enables arrow-key drawer shortcuts */
+  hasPointerInput: boolean;
   orientation: 'portrait' | 'landscape';
   useFluidSizing: boolean;
   padding: number;
@@ -102,6 +104,31 @@ export const usePlayerSizing = (constraints?: SizingConstraints): UsePlayerSizin
     };
   }, []);
 
+  // Pointer/touch input detection: true when user has mouse or precise pointer (not touch-only)
+  const [hasPointerInput, setHasPointerInput] = useState(() => {
+    if (typeof window === 'undefined' || !window.matchMedia) return true;
+    return (
+      window.matchMedia('(pointer: fine)').matches ||
+      window.matchMedia('(hover: hover)').matches
+    );
+  });
+
+  useEffect(() => {
+    if (!browserFeatures.matchMedia) return;
+    const pointerFine = window.matchMedia('(pointer: fine)');
+    const hoverHover = window.matchMedia('(hover: hover)');
+    const update = () => {
+      setHasPointerInput(pointerFine.matches || hoverHover.matches);
+    };
+    pointerFine.addEventListener('change', update);
+    hoverHover.addEventListener('change', update);
+    update(); // sync initial state
+    return () => {
+      pointerFine.removeEventListener('change', update);
+      hoverHover.removeEventListener('change', update);
+    };
+  }, [browserFeatures.matchMedia]);
+
   // Calculate derived values
   const isMobile = viewport.width < 700;
   const isTablet = viewport.width >= 700 && viewport.width < 1024;
@@ -130,6 +157,7 @@ export const usePlayerSizing = (constraints?: SizingConstraints): UsePlayerSizin
     isMobile,
     isTablet,
     isDesktop,
+    hasPointerInput,
     orientation: viewport.orientation,
     useFluidSizing,
     padding,

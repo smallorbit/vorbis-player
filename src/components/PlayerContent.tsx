@@ -247,7 +247,7 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
   }, [handlers]);
 
   // Use responsive sizing hook
-  const { dimensions, useFluidSizing, padding, transitionDuration, transitionEasing, isMobile, isDesktop } = usePlayerSizing();
+  const { dimensions, useFluidSizing, padding, transitionDuration, transitionEasing, isMobile, isDesktop, hasPointerInput } = usePlayerSizing();
 
   // Swipe gesture for mobile/tablet track navigation
   const { offsetX, isSwiping, isAnimating, gestureHandlers } = useSwipeGesture({
@@ -281,12 +281,34 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
     }
   }, [handlers, track.isPlaying]);
 
+  // ArrowUp/ArrowDown (desktop): toggle drawers, cross-dismiss (up dismisses library→playlist, down dismisses playlist→library)
+  const handleArrowUp = useCallback(() => {
+    if (ui.showLibraryDrawer) {
+      handlers.onCloseLibraryDrawer?.();
+      handlers.onShowPlaylist();
+    } else if (ui.showPlaylist) {
+      handlers.onClosePlaylist();
+    } else {
+      handlers.onShowPlaylist();
+    }
+  }, [handlers, ui.showLibraryDrawer, ui.showPlaylist]);
+
+  const handleArrowDown = useCallback(() => {
+    if (ui.showPlaylist) {
+      handlers.onClosePlaylist();
+      handlers.onOpenLibraryDrawer?.();
+    } else if (ui.showLibraryDrawer) {
+      handlers.onCloseLibraryDrawer?.();
+    } else {
+      handlers.onOpenLibraryDrawer?.();
+    }
+  }, [handlers, ui.showPlaylist, ui.showLibraryDrawer]);
+
   // Set up keyboard shortcuts
   useKeyboardShortcuts({
     onPlayPause: handlePlayPause,
     onNext: handlers.onNext,
     onPrevious: handlers.onPrevious,
-    onTogglePlaylist: handlers.onTogglePlaylist,
     onClosePlaylist: handlers.onClosePlaylist,
     onToggleVisualEffectsMenu: handlers.onToggleVisualEffectsMenu,
     onCloseVisualEffects: handleEscapeClose,
@@ -295,7 +317,9 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
     onMute: handlers.onMuteToggle,
     onToggleLike: handlers.onToggleLike,
     onToggleHelp: toggleHelp,
-  });
+    onShowPlaylist: handleArrowUp,
+    onOpenLibraryDrawer: handleArrowDown,
+  }, { prefersPointerInput: hasPointerInput });
 
   return (
     <ContentWrapper
