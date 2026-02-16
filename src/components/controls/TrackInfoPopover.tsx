@@ -87,7 +87,7 @@ export function TrackInfoPopover({ options, anchorRect, onClose }: TrackInfoPopo
   const containerRef = useRef<HTMLDivElement>(null);
 
   const positionPopover = useCallback(() => {
-    if (!anchorRect || !containerRef.current) return { x: 0, y: 0 };
+    if (!anchorRect) return { x: 0, y: 0 };
     const x = anchorRect.left + anchorRect.width / 2;
     const y = anchorRect.bottom + 8;
     return { x, y };
