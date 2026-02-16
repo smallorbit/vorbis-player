@@ -6,19 +6,23 @@
   * - Space: Play/Pause
   * - ArrowRight: Next track
   * - ArrowLeft: Previous track
-  * - P: Toggle playlist
-  * - V: Toggle background visualizations
+ * - V: Toggle background visualizations
   * - O: Toggle visual effects menu
   * - G: Toggle glow effect
   * - ?: Show keyboard shortcuts help
   * - Escape: Close menus (playlist drawer and visual effects)
   * - M: Mute
-  * - ArrowUp: Volume up
-  * - ArrowDown: Volume down
+ * - ArrowUp: (Pointer device) Toggle playlist drawer; (Touch) Volume up
+ * - ArrowDown: (Pointer device) Toggle library drawer; (Touch) Volume down
   * - L: Like/Unlike track
   */
 
 import { useEffect } from 'react';
+
+export interface KeyboardShortcutOptions {
+  /** When true, ArrowUp/ArrowDown open drawers (set when user has pointer input, not touch-only) */
+  prefersPointerInput?: boolean;
+}
 
 export interface KeyboardShortcutHandlers {
   // Playback controls
@@ -27,7 +31,6 @@ export interface KeyboardShortcutHandlers {
   onPrevious?: () => void;
   
   // Menu toggles
-  onTogglePlaylist?: () => void;
   onClosePlaylist?: () => void;
   onToggleVisualEffectsMenu?: () => void;
   onCloseVisualEffects?: () => void;
@@ -47,6 +50,10 @@ export interface KeyboardShortcutHandlers {
   onVolumeDown?: () => void;
   onToggleLike?: () => void;
   onCloseMobileMenu?: () => void;
+  /** Open playlist drawer (desktop: ArrowUp) */
+  onShowPlaylist?: () => void;
+  /** Open library drawer (desktop: ArrowDown) */
+  onOpenLibraryDrawer?: () => void;
 }
 
 /**
@@ -54,15 +61,19 @@ export interface KeyboardShortcutHandlers {
  * Prevents handler duplication across multiple components
  * 
  * @param handlers - Object containing callback functions for each shortcut
- * @param options - Configuration options
+ * @param options - Configuration options (e.g. prefersPointerInput for drawer shortcuts)
  */
-export const useKeyboardShortcuts = (handlers: KeyboardShortcutHandlers) => {
+export const useKeyboardShortcuts = (
+  handlers: KeyboardShortcutHandlers,
+  options?: KeyboardShortcutOptions
+) => {
+  const prefersPointerInput = options?.prefersPointerInput ?? false;
+
   // Destructure handlers to avoid capturing entire object
   const {
     onPlayPause,
     onNext,
     onPrevious,
-    onTogglePlaylist,
     onClosePlaylist,
     onToggleVisualEffectsMenu,
     onCloseVisualEffects,
@@ -74,6 +85,8 @@ export const useKeyboardShortcuts = (handlers: KeyboardShortcutHandlers) => {
     onVolumeDown,
     onToggleLike,
     onCloseMobileMenu,
+    onShowPlaylist,
+    onOpenLibraryDrawer,
   } = handlers;
 
   useEffect(() => {
@@ -109,13 +122,6 @@ export const useKeyboardShortcuts = (handlers: KeyboardShortcutHandlers) => {
           break;
 
         // Menu toggles
-        case 'KeyP':
-          if (!event.ctrlKey && !event.shiftKey && !event.metaKey) {
-            event.preventDefault();
-            onTogglePlaylist?.();
-          }
-          break;
-
         case 'KeyV':
           // V toggles background visualizations
           if (!event.ctrlKey && !event.metaKey) {
@@ -171,16 +177,20 @@ export const useKeyboardShortcuts = (handlers: KeyboardShortcutHandlers) => {
           break;
 
         case 'ArrowUp':
-          // Prevent default only if we have a handler
-          if (onVolumeUp) {
+          if (prefersPointerInput && onShowPlaylist) {
+            event.preventDefault();
+            onShowPlaylist();
+          } else if (onVolumeUp) {
             event.preventDefault();
             onVolumeUp();
           }
           break;
 
         case 'ArrowDown':
-          // Prevent default only if we have a handler
-          if (onVolumeDown) {
+          if (prefersPointerInput && onOpenLibraryDrawer) {
+            event.preventDefault();
+            onOpenLibraryDrawer();
+          } else if (onVolumeDown) {
             event.preventDefault();
             onVolumeDown();
           }
@@ -194,7 +204,6 @@ export const useKeyboardShortcuts = (handlers: KeyboardShortcutHandlers) => {
     onPlayPause,
     onNext,
     onPrevious,
-    onTogglePlaylist,
     onClosePlaylist,
     onToggleVisualEffectsMenu,
     onCloseVisualEffects,
@@ -206,5 +215,8 @@ export const useKeyboardShortcuts = (handlers: KeyboardShortcutHandlers) => {
     onVolumeDown,
     onToggleLike,
     onCloseMobileMenu,
+    onShowPlaylist,
+    onOpenLibraryDrawer,
+    prefersPointerInput,
   ]);
 };

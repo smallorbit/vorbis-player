@@ -91,20 +91,6 @@ describe('useKeyboardShortcuts', () => {
     addEventListenerSpy.mockRestore();
   });
 
-  it('should call onTogglePlaylist when KeyP is pressed', () => {
-    const onTogglePlaylist = vi.fn();
-    const addEventListenerSpy = vi.spyOn(document, 'addEventListener');
-    
-    renderHook(() => useKeyboardShortcuts({ onTogglePlaylist }));
-    
-    const handler = addEventListenerSpy.mock.calls[0][1] as EventListener;
-    const event = createKeyboardEvent('KeyP');
-    handler(event);
-    
-    expect(onTogglePlaylist).toHaveBeenCalled();
-    addEventListenerSpy.mockRestore();
-  });
-
   it('should call onToggleGlow when KeyG is pressed', () => {
     const onToggleGlow = vi.fn();
     const addEventListenerSpy = vi.spyOn(document, 'addEventListener');

@@ -143,7 +143,6 @@ describe('Keyboard Shortcuts Integration', () => {
       onPlayPause: vi.fn(),
       onNext: vi.fn(),
       onPrevious: vi.fn(),
-      onTogglePlaylist: vi.fn(),
       onClosePlaylist: vi.fn(),
       onToggleVisualEffectsMenu: vi.fn(),
       onCloseVisualEffects: vi.fn(),
@@ -165,7 +164,6 @@ describe('Keyboard Shortcuts Integration', () => {
       { key: 'Space', handler: handlers.onPlayPause },
       { key: 'ArrowLeft', handler: handlers.onPrevious },
       { key: 'ArrowRight', handler: handlers.onNext },
-      { key: 'KeyP', handler: handlers.onTogglePlaylist },
       { key: 'KeyM', handler: handlers.onMute },
       { key: 'KeyL', handler: handlers.onToggleLike },
       { key: 'KeyG', handler: handlers.onToggleGlow },
@@ -186,7 +184,7 @@ describe('Keyboard Shortcuts Integration', () => {
   it('should not trigger shortcuts when typing in form fields', () => {
     const handlers = {
       onToggleLike: vi.fn(),
-      onTogglePlaylist: vi.fn(),
+      onToggleGlow: vi.fn(),
       onPlayPause: vi.fn()
     };
 
@@ -207,10 +205,10 @@ describe('Keyboard Shortcuts Integration', () => {
     expect(handlers.onPlayPause).not.toHaveBeenCalled();
 
     // Test textarea field
-    const textareaEvent = new KeyboardEvent('keydown', { code: 'KeyP', bubbles: true });
+    const textareaEvent = new KeyboardEvent('keydown', { code: 'KeyG', bubbles: true });
     Object.defineProperty(textareaEvent, 'target', { value: textarea, enumerable: true });
     handler(textareaEvent);
-    expect(handlers.onTogglePlaylist).not.toHaveBeenCalled();
+    expect(handlers.onToggleGlow).not.toHaveBeenCalled();
 
     // Test that normal element still works
     const bodyEvent = new KeyboardEvent('keydown', { code: 'Space', bubbles: true });
