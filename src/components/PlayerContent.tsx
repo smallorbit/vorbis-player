@@ -2,7 +2,7 @@ import React, { Suspense, lazy, useState, useCallback } from 'react';
 import styled from 'styled-components';
 import { CardContent } from './styled';
 import AlbumArt from './AlbumArt';
-import PlayerControls from './PlayerControls';
+import SpotifyPlayerControls from './SpotifyPlayerControls';
 import MobileBottomMenu from './MobileBottomMenu';
 import DesktopBottomMenu from './DesktopBottomMenu';
 import { MOBILE_BOTTOM_MENU_HEIGHT } from './MobileBottomMenu/styled';
@@ -336,7 +336,7 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
             justifyContent: 'center'
           }}>
             <Suspense fallback={<ControlsLoadingFallback />}>
-              <PlayerControls
+              <SpotifyPlayerControls
                 currentTrack={track.current}
                 accentColor={ui.accentColor}
                 trackCount={track.list.length}
@@ -346,12 +346,10 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
                 volume={track.volume}
                 onMuteToggle={handlers.onMuteToggle}
                 onToggleLike={handlers.onToggleLike}
-                onPlayback={{
-                  play: handlers.onPlay,
-                  pause: handlers.onPause,
-                  next: handlers.onNext,
-                  previous: handlers.onPrevious
-                }}
+                onPlay={handlers.onPlay}
+                onPause={handlers.onPause}
+                onNext={handlers.onNext}
+                onPrevious={handlers.onPrevious}
               />
             </Suspense>
           </CardContent>

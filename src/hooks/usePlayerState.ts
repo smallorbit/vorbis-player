@@ -226,102 +226,78 @@ export function usePlayerState(): PlayerState & PlayerStateSetters {
     });
   }, [setAccentColorOverrides]);
 
-  const handleResetAccentColorOverride = useCallback((albumId: string) => {
-    handleRemoveAccentColorOverride(albumId);
-  }, [handleRemoveAccentColorOverride]);
-
-  const trackState: TrackState = {
-    tracks,
-    currentIndex: currentTrackIndex,
-    isLoading,
-    error
-  };
-
-  const playlistState: PlaylistState = {
-    selectedId: selectedPlaylistId,
-    isVisible: showPlaylist
-  };
-
-  const colorState: ColorState = {
-    current: accentColor,
-    overrides: accentColorOverrides
-  };
-
-  const visualEffectsState: VisualEffectsState = {
-    enabled: visualEffectsEnabled,
-    menuVisible: showVisualEffects,
-    filters: albumFilters,
-    perAlbumGlow,
-    savedFilters: savedAlbumFilters,
-    backgroundVisualizer: {
-      enabled: backgroundVisualizerEnabled,
-      style: backgroundVisualizerStyle,
-      intensity: backgroundVisualizerIntensity
-    },
-    accentColorBackground: {
-      enabled: accentColorBackgroundEnabled,
-      preferred: accentColorBackgroundPreferred
-    }
-  };
-
-  const debugState: DebugState = {
-    enabled: debugModeEnabled
-  };
-
-  const trackActions: TrackActions = {
-    setTracks,
-    setCurrentIndex: setCurrentTrackIndex,
-    setLoading: setIsLoading,
-    setError
-  };
-
-  const playlistActions: PlaylistActions = {
-    setSelectedId: setSelectedPlaylistId,
-    setVisible: setShowPlaylist
-  };
-
-  const colorActions: ColorActions = {
-    setCurrent: setAccentColor,
-    setOverrides: setAccentColorOverrides,
-    handleSetAccentColorOverride,
-    handleRemoveAccentColorOverride,
-    handleResetAccentColorOverride
-  };
-
-  const visualEffectsActions: VisualEffectsActions = {
-    setEnabled: setVisualEffectsEnabled,
-    setMenuVisible: setShowVisualEffects,
-    setFilters: setAlbumFilters,
-    setPerAlbumGlow,
-    handleFilterChange,
-    handleResetFilters,
-    restoreSavedFilters,
-    backgroundVisualizer: {
-      setEnabled: setBackgroundVisualizerEnabled,
-      setStyle: setBackgroundVisualizerStyle,
-      setIntensity: setBackgroundVisualizerIntensity
-    },
-    accentColorBackground: {
-      setPreferred: setAccentColorBackgroundPreferred
-    }
-  };
-
-  const debugActions: DebugActions = {
-    setEnabled: setDebugModeEnabled
-  };
-
   return {
-    track: trackState,
-    playlist: playlistState,
-    color: colorState,
-    visualEffects: visualEffectsState,
-    debug: debugState,
+    track: {
+      tracks,
+      currentIndex: currentTrackIndex,
+      isLoading,
+      error
+    },
+    playlist: {
+      selectedId: selectedPlaylistId,
+      isVisible: showPlaylist
+    },
+    color: {
+      current: accentColor,
+      overrides: accentColorOverrides
+    },
+    visualEffects: {
+      enabled: visualEffectsEnabled,
+      menuVisible: showVisualEffects,
+      filters: albumFilters,
+      perAlbumGlow,
+      savedFilters: savedAlbumFilters,
+      backgroundVisualizer: {
+        enabled: backgroundVisualizerEnabled,
+        style: backgroundVisualizerStyle,
+        intensity: backgroundVisualizerIntensity
+      },
+      accentColorBackground: {
+        enabled: accentColorBackgroundEnabled,
+        preferred: accentColorBackgroundPreferred
+      }
+    },
+    debug: {
+      enabled: debugModeEnabled
+    },
     actions: {
-      track: trackActions,
-      playlist: playlistActions,
-      color: colorActions,
-      visualEffects: visualEffectsActions,
-      debug: debugActions
+      track: {
+        setTracks,
+        setCurrentIndex: setCurrentTrackIndex,
+        setLoading: setIsLoading,
+        setError
+      },
+      playlist: {
+        setSelectedId: setSelectedPlaylistId,
+        setVisible: setShowPlaylist
+      },
+      color: {
+        setCurrent: setAccentColor,
+        setOverrides: setAccentColorOverrides,
+        handleSetAccentColorOverride,
+        handleRemoveAccentColorOverride,
+        handleResetAccentColorOverride: handleRemoveAccentColorOverride
+      },
+      visualEffects: {
+        setEnabled: setVisualEffectsEnabled,
+        setMenuVisible: setShowVisualEffects,
+        setFilters: setAlbumFilters,
+        setPerAlbumGlow,
+        handleFilterChange,
+        handleResetFilters,
+        restoreSavedFilters,
+        backgroundVisualizer: {
+          setEnabled: setBackgroundVisualizerEnabled,
+          setStyle: setBackgroundVisualizerStyle,
+          setIntensity: setBackgroundVisualizerIntensity
+        },
+        accentColorBackground: {
+          setPreferred: setAccentColorBackgroundPreferred
+        }
+      },
+      debug: {
+        setEnabled: setDebugModeEnabled
+      }
     }
   };
 }
