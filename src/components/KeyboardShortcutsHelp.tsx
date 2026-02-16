@@ -115,7 +115,6 @@ const shortcuts = [
   { key: 'G', description: 'Toggle glow effect' },
   { key: 'V', description: 'Toggle background visualizations' },
   { key: 'O', description: 'Open visual effects menu' },
-  { key: 'H', description: 'Toggle controls visibility' },
   { key: 'Esc', description: 'Close menus' },
   { key: '/', description: 'Show this help' },
 ];
