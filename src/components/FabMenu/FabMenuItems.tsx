@@ -29,8 +29,8 @@ interface FabMenuItemsProps {
   onColorPickerOpenChange?: (isOpen: boolean) => void;
 }
 
-const ARC_START = (100 * Math.PI) / 180;
-const ARC_END = (210 * Math.PI) / 180;
+const ARC_START = (10 * Math.PI) / 180;
+const ARC_END = (100 * Math.PI) / 180;
 const RADIUS_DESKTOP = 80;
 const RADIUS_MOBILE = 70;
 const STAGGER_DELAY = 30;
