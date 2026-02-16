@@ -50,6 +50,17 @@ const DrawerContainer = styled.div.withConfig({
   transition: ${({ $isDragging }) =>
     $isDragging ? 'none' : `transform ${DRAWER_TRANSITION_DURATION}ms ${DRAWER_TRANSITION_EASING}`};
   will-change: ${({ $isDragging }) => ($isDragging ? 'transform' : 'auto')};
+
+  /* Constrain width on desktop to match player content area */
+  @media (min-width: ${theme.breakpoints.lg}) {
+    max-width: 700px;
+    margin-left: auto;
+    margin-right: auto;
+    border-radius: 0 0 ${theme.borderRadius.xl} ${theme.borderRadius.xl};
+    border-left: 1px solid ${theme.colors.popover.border};
+    border-right: 1px solid ${theme.colors.popover.border};
+    border-bottom: 1px solid ${theme.colors.popover.border};
+  }
 `;
 
 const DrawerHeader = styled.div`
