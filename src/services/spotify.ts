@@ -99,10 +99,16 @@ interface TokenData {
   expires_at: number;
 }
 
+export interface ArtistInfo {
+  name: string;
+  spotifyUrl: string;
+}
+
 export interface Track {
   id: string;
   name: string;
   artists: string;
+  artistsData?: ArtistInfo[];
   album: string;
   album_id?: string;
   track_number?: number;
@@ -135,7 +141,9 @@ export interface AlbumInfo {
 }
 
 interface SpotifyArtist {
+  id?: string;
   name: string;
+  external_urls?: { spotify?: string };
 }
 
 export interface SpotifyImage {
@@ -187,6 +195,20 @@ function formatArtists(artists?: SpotifyArtist[]): string {
   }).join(', ');
 }
 
+function buildArtistsData(artists?: SpotifyArtist[]): ArtistInfo[] | undefined {
+  if (!artists || artists.length === 0) return undefined;
+
+  const data: ArtistInfo[] = [];
+  for (const artist of artists) {
+    const url = artist.external_urls?.spotify
+      ?? (artist.id ? `https://open.spotify.com/artist/${artist.id}` : '');
+    if (url) {
+      data.push({ name: artist.name, spotifyUrl: url });
+    }
+  }
+  return data.length > 0 ? data : undefined;
+}
+
 function transformTrackItem(
   item: SpotifyTrackItem,
   albumOverride?: { name: string; id?: string; image?: string }
@@ -199,6 +221,7 @@ function transformTrackItem(
     id: item.id,
     name: item.name,
     artists: formatArtists(item.artists),
+    artistsData: buildArtistsData(item.artists),
     album: albumOverride?.name ?? item.album?.name ?? 'Unknown Album',
     album_id: albumOverride?.id ?? item.album?.id,
     track_number: item.track_number,

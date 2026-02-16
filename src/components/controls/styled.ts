@@ -103,6 +103,17 @@ export const PlayerTrackArtist = styled.div`
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
 `;
 
+export const ArtistLink = styled.a`
+  color: inherit;
+  text-decoration: none;
+  transition: opacity 0.15s ease;
+
+  &:hover {
+    opacity: 0.8;
+    text-decoration: underline;
+  }
+`;
+
 // --- Track Info Row Layout ---
 export const TrackInfoRow = styled.div`
   display: flex;
