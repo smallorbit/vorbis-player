@@ -224,7 +224,7 @@ const GridCardTitle = styled.div`
   line-height: 1.3;
 `;
 
-const GridCardSubtitle = styled.div`
+const GridCardSubtitle = styled.div<{ $clickable?: boolean }>`
   font-size: 0.6875rem;
   color: rgba(255, 255, 255, 0.55);
   overflow: hidden;
@@ -232,6 +232,19 @@ const GridCardSubtitle = styled.div`
   white-space: nowrap;
   line-height: 1.4;
   margin-top: 1px;
+  ${({ $clickable }) => $clickable && `
+    cursor: pointer;
+    transition: color 0.15s ease;
+
+    &:hover {
+      color: ${theme.colors.accent};
+      text-decoration: underline;
+    }
+
+    &:active {
+      color: rgba(218, 165, 32, 0.8);
+    }
+  `}
 `;
 
 const PlaylistItem = styled.div`
@@ -288,6 +301,20 @@ const PlaylistName = styled.div`
 const PlaylistDetails = styled.div`
   font-size: 0.875rem;
   color: rgba(255, 255, 255, 0.6);
+`;
+
+const ClickableArtist = styled.span`
+  cursor: pointer;
+  transition: color 0.15s ease;
+
+  &:hover {
+    color: ${theme.colors.accent};
+    text-decoration: underline;
+  }
+
+  &:active {
+    color: rgba(218, 165, 32, 0.8);
+  }
 `;
 
 const LoadingState = styled.div`
@@ -541,6 +568,7 @@ function PlaylistSelection({ onPlaylistSelect, inDrawer = false, swipeZoneRef, i
     'recently-added'
   );
   const [yearFilter, setYearFilter] = useState<YearFilterOption>('all');
+  const [artistFilter, setArtistFilter] = useState<string>('');
   const [playlistsLoaded, setPlaylistsLoaded] = useState(false);
   const [albumsLoaded, setAlbumsLoaded] = useState(false);
   const [likedSongsDone, setLikedSongsDone] = useState(false);
@@ -580,18 +608,23 @@ function PlaylistSelection({ onPlaylistSelect, inDrawer = false, swipeZoneRef, i
   }, [playlists, searchQuery, playlistSort]);
 
   const filteredAlbums = useMemo(() => {
-    return filterAndSortAlbums(albums, searchQuery, albumSort, yearFilter);
-  }, [albums, searchQuery, albumSort, yearFilter]);
+    return filterAndSortAlbums(albums, searchQuery, albumSort, yearFilter, artistFilter);
+  }, [albums, searchQuery, albumSort, yearFilter, artistFilter]);
 
   const availableDecades = useMemo(() => {
     return getAvailableDecades(albums);
   }, [albums]);
 
   useEffect(() => {
-    if (viewMode === 'playlists' && yearFilter !== 'all') {
-      setYearFilter('all');
+    if (viewMode === 'playlists') {
+      if (yearFilter !== 'all') {
+        setYearFilter('all');
+      }
+      if (artistFilter !== '') {
+        setArtistFilter('');
+      }
     }
-  }, [viewMode, yearFilter]);
+  }, [viewMode, yearFilter, artistFilter]);
 
   useEffect(() => {
     if (!libraryFullyLoaded) return;
@@ -722,6 +755,11 @@ function PlaylistSelection({ onPlaylistSelect, inDrawer = false, swipeZoneRef, i
     setViewMode(mode);
   }
 
+  function handleArtistClick(artistName: string, event: React.MouseEvent): void {
+    event.stopPropagation(); // Prevent album click from triggering
+    setArtistFilter(artistName);
+  }
+
   async function handleLogin(): Promise<void> {
     try {
       await spotifyAuth.redirectToAuth();
@@ -781,11 +819,12 @@ function PlaylistSelection({ onPlaylistSelect, inDrawer = false, swipeZoneRef, i
         </SelectDropdown>
       )}
 
-      {(searchQuery || yearFilter !== 'all') && (
+      {(searchQuery || yearFilter !== 'all' || artistFilter) && (
         <ClearButton
           onClick={() => {
             setSearchQuery('');
             setYearFilter('all');
+            setArtistFilter('');
           }}
         >
           Clear
@@ -886,7 +925,12 @@ function PlaylistSelection({ onPlaylistSelect, inDrawer = false, swipeZoneRef, i
             <GridCardImageComponent images={album.images} alt={`${album.name} by ${album.artists}`} />
             <GridCardTextArea>
               <GridCardTitle>{album.name}</GridCardTitle>
-              <GridCardSubtitle>{album.artists}</GridCardSubtitle>
+              <GridCardSubtitle
+                $clickable={true}
+                onClick={(e) => handleArtistClick(album.artists, e)}
+              >
+                {album.artists}
+              </GridCardSubtitle>
             </GridCardTextArea>
           </GridCard>
         ) : (
@@ -894,7 +938,12 @@ function PlaylistSelection({ onPlaylistSelect, inDrawer = false, swipeZoneRef, i
             <PlaylistImage images={album.images} alt={`${album.name} by ${album.artists}`} />
             <PlaylistInfo>
               <PlaylistName>{album.name}</PlaylistName>
-              <PlaylistDetails>{album.artists} • {album.total_tracks} tracks</PlaylistDetails>
+              <PlaylistDetails>
+                <ClickableArtist onClick={(e) => handleArtistClick(album.artists, e)}>
+                  {album.artists}
+                </ClickableArtist>
+                {' • '}{album.total_tracks} tracks
+              </PlaylistDetails>
             </PlaylistInfo>
           </PlaylistItem>
         ));
