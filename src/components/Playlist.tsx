@@ -1,4 +1,4 @@
-import React, { memo, useMemo, useCallback, useRef, useEffect } from 'react';
+import React, { memo, useRef, useEffect } from 'react';
 import styled from 'styled-components';
 import type { Track } from '../services/spotify';
 import { Card, CardHeader, CardContent, CardDescription } from '../components/styled';
@@ -211,27 +211,11 @@ const PlaylistItem = memo<PlaylistItemProps>(({
 });
 
 const Playlist = memo<PlaylistProps>(({ tracks, currentTrackIndex, accentColor, onTrackSelect, isOpen = false }) => {
-  const sortedTracks = useMemo(() => tracks, [tracks]);
   const currentTrackRef = useRef<HTMLDivElement>(null);
-  
-  const currentTrack = tracks[currentTrackIndex];
-  const sortedCurrentTrackIndex = useMemo(() => {
-    if (!currentTrack) return -1;
-    return sortedTracks.findIndex((track: Track) => track === currentTrack);
-  }, [sortedTracks, currentTrack]);
-
-  const handleTrackSelect = useCallback((sortedIndex: number) => {
-    const selectedTrack = sortedTracks[sortedIndex];
-    const originalIndex = tracks.findIndex((track: Track) => track === selectedTrack);
-    if (originalIndex !== -1) {
-      onTrackSelect(originalIndex);
-    }
-  }, [sortedTracks, tracks, onTrackSelect]);
 
   // Auto-scroll to current track when playlist opens
   useEffect(() => {
-    if (isOpen && currentTrackRef.current && sortedCurrentTrackIndex >= 0) {
-      // Add a slight delay to ensure the playlist is fully rendered
+    if (isOpen && currentTrackRef.current && currentTrackIndex >= 0) {
       const timeoutId = setTimeout(() => {
         currentTrackRef.current?.scrollIntoView({
           behavior: 'smooth',
@@ -242,27 +226,27 @@ const Playlist = memo<PlaylistProps>(({ tracks, currentTrackIndex, accentColor, 
 
       return () => clearTimeout(timeoutId);
     }
-  }, [isOpen, sortedCurrentTrackIndex]);
+  }, [isOpen, currentTrackIndex]);
 
   return (
     <PlaylistContainer>
       <PlaylistCard>
         <PlaylistHeader>
-          <PlaylistDescription>{sortedTracks.length} tracks</PlaylistDescription>
+          <PlaylistDescription>{tracks.length} tracks</PlaylistDescription>
         </PlaylistHeader>
-        
+
         <PlaylistContent>
           <PlaylistScrollArea>
             <PlaylistItems>
-              {sortedTracks.map((track: Track, index: number) => (
+              {tracks.map((track: Track, index: number) => (
                 <PlaylistItem
                   key={`${track.name}-${track.id}`}
                   track={track}
                   index={index}
-                  isSelected={index === sortedCurrentTrackIndex}
+                  isSelected={index === currentTrackIndex}
                   accentColor={accentColor}
-                  onSelect={handleTrackSelect}
-                  itemRef={index === sortedCurrentTrackIndex ? currentTrackRef : undefined}
+                  onSelect={onTrackSelect}
+                  itemRef={index === currentTrackIndex ? currentTrackRef : undefined}
                 />
               ))}
             </PlaylistItems>

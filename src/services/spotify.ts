@@ -4,6 +4,8 @@
  * Handles OAuth 2.0 PKCE authentication and Spotify Web API requests.
  */
 
+import { ALBUM_ID_PREFIX } from '../constants/playlist';
+
 const SPOTIFY_CLIENT_ID = import.meta.env.VITE_SPOTIFY_CLIENT_ID;
 const SPOTIFY_REDIRECT_URI = import.meta.env.VITE_SPOTIFY_REDIRECT_URI;
 
@@ -943,7 +945,7 @@ export async function getPlaylistTracks(playlistId: string): Promise<Track[]> {
 }
 
 export async function getAlbumTracks(albumId: string): Promise<Track[]> {
-  const cacheKey = `album:${albumId}`;
+  const cacheKey = `${ALBUM_ID_PREFIX}${albumId}`;
   const cached = trackListCache.get(cacheKey);
   if (cached && Date.now() - cached.timestamp < TRACK_LIST_CACHE_TTL) {
     return cached.data;
@@ -1076,72 +1078,3 @@ export async function unsaveTrack(trackId: string): Promise<void> {
   return modifyTrackSaved(trackId, false);
 }
 
-/**
- * @deprecated Use getUserPlaylists() and getPlaylistTracks() instead.
- * This function loads tracks from multiple playlists which is inefficient.
- */
-export async function getSpotifyUserPlaylists(): Promise<Track[]> {
-  try {
-    const token = await spotifyAuth.ensureValidToken();
-
-    const response = await fetch('https://api.spotify.com/v1/me/playlists?limit=50', {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    if (!response.ok) {
-      throw new Error(`Failed to fetch playlists: ${response.status} ${response.statusText}`);
-    }
-
-    const data = await response.json();
-
-    if (!data.items || data.items.length === 0) {
-      return [];
-    }
-
-    const tracks: Track[] = [];
-
-    for (const playlist of (data.items || []).slice(0, 10)) {
-      if (!playlist.tracks?.href) continue;
-
-      const tracksResponse = await fetch(playlist.tracks.href + '?limit=50', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (tracksResponse.ok) {
-        const tracksData = await tracksResponse.json();
-
-        for (const item of tracksData.items ?? []) {
-          if (item.track && item.track.id && !item.track.is_local && item.track.type === 'track') {
-            const track = transformTrackItem(item.track);
-            if (track) tracks.push(track);
-          }
-        }
-      }
-    }
-
-    if (tracks.length === 0) {
-      const likedResponse = await fetch('https://api.spotify.com/v1/me/tracks?limit=50', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (likedResponse.ok) {
-        const likedData = await likedResponse.json();
-
-        for (const item of likedData.items ?? []) {
-          if (item.track && item.track.id && !item.track.is_local && item.track.type === 'track') {
-            const track = transformTrackItem(item.track);
-            if (track) tracks.push(track);
-          }
-        }
-      }
-    }
-
-    return tracks;
-  } catch (error) {
-    if (error instanceof Error && error.message === 'No authentication token available') {
-      spotifyAuth.redirectToAuth();
-      throw new Error('Redirecting to Spotify login...');
-    }
-    throw error;
-  }
-}

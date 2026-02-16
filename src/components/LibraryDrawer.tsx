@@ -3,6 +3,13 @@ import { createPortal } from 'react-dom';
 import styled from 'styled-components';
 import { useVerticalSwipeGesture } from '@/hooks/useVerticalSwipeGesture';
 import { theme } from '@/styles/theme';
+import {
+  DrawerOverlay,
+  GripPill,
+  SwipeHandle,
+  DRAWER_TRANSITION_DURATION,
+  DRAWER_TRANSITION_EASING
+} from './styled';
 import PlaylistSelection from './PlaylistSelection';
 
 interface LibraryDrawerProps {
@@ -11,24 +18,9 @@ interface LibraryDrawerProps {
   onPlaylistSelect: (playlistId: string, playlistName: string) => void;
 }
 
-const TRANSITION_DURATION = 300;
-const TRANSITION_EASING = 'cubic-bezier(0.4, 0, 0.2, 1)';
-
-const DrawerOverlay = styled.div.withConfig({
-  shouldForwardProp: (prop) => prop !== '$isOpen',
-}) <{ $isOpen: boolean }>`
-  position: fixed;
-  inset: 0;
-  z-index: ${theme.zIndex.modal};
-  background: rgba(0, 0, 0, 0.6);
-  opacity: ${({ $isOpen }) => ($isOpen ? 1 : 0)};
-  pointer-events: ${({ $isOpen }) => ($isOpen ? 'auto' : 'none')};
-  transition: opacity ${TRANSITION_DURATION}ms ${TRANSITION_EASING};
-`;
-
 const DrawerContainer = styled.div.withConfig({
   shouldForwardProp: (prop) => !['$isOpen', '$isDragging', '$dragOffset'].includes(prop),
-}) <{
+})<{
   $isOpen: boolean;
   $isDragging: boolean;
   $dragOffset: number;
@@ -54,11 +46,10 @@ const DrawerContainer = styled.div.withConfig({
     return $isOpen ? 'translateY(0)' : 'translateY(-100%)';
   }};
   transition: ${({ $isDragging }) =>
-    $isDragging ? 'none' : `transform ${TRANSITION_DURATION}ms ${TRANSITION_EASING}`};
+    $isDragging ? 'none' : `transform ${DRAWER_TRANSITION_DURATION}ms ${DRAWER_TRANSITION_EASING}`};
   will-change: ${({ $isDragging }) => ($isDragging ? 'transform' : 'auto')};
 `;
 
-/** Dedicated swipe-to-close zone; spans full width so edge swipes work. touch-action: none so gesture captures. */
 const DrawerHeader = styled.div`
   flex-shrink: 0;
   padding: ${theme.spacing.sm} ${theme.spacing.md};
@@ -103,30 +94,6 @@ const DrawerContent = styled.div`
   overflow: hidden;
   display: flex;
   flex-direction: column;
-`;
-
-/** Grip handle at bottom; swipe up to dismiss. touch-action: none so gesture captures. */
-const DrawerHandle = styled.div`
-  flex-shrink: 0;
-  width: 100%;
-  min-height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: ${theme.spacing.sm} 0;
-  cursor: grab;
-  touch-action: none;
-
-  &:active {
-    cursor: grabbing;
-  }
-`;
-
-const GripPill = styled.div`
-  width: 40px;
-  height: 4px;
-  background: rgba(255, 255, 255, 0.3);
-  border-radius: 2px;
 `;
 
 export function LibraryDrawer({ isOpen, onClose, onPlaylistSelect }: LibraryDrawerProps) {
@@ -186,14 +153,14 @@ export function LibraryDrawer({ isOpen, onClose, onPlaylistSelect }: LibraryDraw
                 inDrawer
               />
             </DrawerContent>
-            <DrawerHandle
+            <SwipeHandle
               ref={handleRef}
               role="button"
               aria-label="Swipe up or tap to close library"
               onClick={onClose}
             >
               <GripPill />
-            </DrawerHandle>
+            </SwipeHandle>
           </>
         )}
       </DrawerContainer>
