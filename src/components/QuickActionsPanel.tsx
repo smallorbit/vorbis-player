@@ -6,7 +6,6 @@ import ColorPickerPopover from './ColorPickerPopover';
 import { useCustomAccentColors } from '@/hooks/useCustomAccentColors';
 import type { Track } from '@/services/spotify';
 import { BackToLibraryIcon, PlaylistIcon, VisualEffectsIcon } from './icons/QuickActionIcons';
-import { DebugSection, DebugLabel } from './styled/DebugComponents';
 
 interface QuickActionsPanelProps {
   accentColor: string;
@@ -14,7 +13,6 @@ interface QuickActionsPanelProps {
   onShowPlaylist: () => void;
   onShowVisualEffects: () => void;
   onAccentColorChange: (color: string) => void;
-  debugModeEnabled?: boolean;
   onBackToLibrary?: () => void;
 }
 
@@ -51,7 +49,6 @@ export const QuickActionsPanel = ({
   onShowVisualEffects,
   onAccentColorChange,
   onBackToLibrary,
-  debugModeEnabled = false,
 }: QuickActionsPanelProps) => {
   const { isMobile, isTablet, transitionDuration, transitionEasing } = usePlayerSizing();
 
@@ -105,12 +102,6 @@ export const QuickActionsPanel = ({
           $isMobile={isMobile}
           $isTablet={isTablet}
         />
-
-        {debugModeEnabled && (
-          <DebugSection $withBorderBottom>
-            <DebugLabel>Debug Mode</DebugLabel>
-          </DebugSection>
-        )}
       </PanelContainer>
     </PanelWrapper>
   );

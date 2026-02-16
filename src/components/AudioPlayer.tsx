@@ -80,7 +80,6 @@ const AudioPlayerComponent = () => {
           backgroundVisualizerIntensity: state.backgroundVisualizerIntensity,
           accentColorBackgroundEnabled: state.accentColorBackgroundPreferred, // Pass preferred state to VFX menu
           onAccentColorBackgroundToggle: handlers.handleAccentColorBackgroundToggle,
-          debugModeEnabled: state.debugModeEnabled,
           onMuteToggle: handlers.handleMuteToggle,
           onToggleLike: handlers.handleLikeToggle,
           onBackToLibrary: handlers.handleOpenLibraryDrawer,

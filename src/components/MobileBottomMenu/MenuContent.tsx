@@ -9,7 +9,6 @@ import {
   BackToLibraryIcon,
   PlaylistIcon,
 } from '../icons/QuickActionIcons';
-import { DebugSection, DebugLabel } from '../styled/DebugComponents';
 
 interface MenuContentProps {
   accentColor: string;
@@ -22,7 +21,6 @@ interface MenuContentProps {
   onAccentColorChange: (color: string) => void;
   onBackToLibrary?: () => void;
   onShowPlaylist: () => void;
-  debugModeEnabled?: boolean;
 }
 
 export const MenuContent = ({
@@ -36,7 +34,6 @@ export const MenuContent = ({
   onAccentColorChange,
   onBackToLibrary,
   onShowPlaylist,
-  debugModeEnabled = false,
 }: MenuContentProps) => {
   const isMobile = true;
   const isTablet = false;
@@ -120,12 +117,6 @@ export const MenuContent = ({
       >
         <PlaylistIcon />
       </ControlButton>
-
-      {debugModeEnabled && (
-        <DebugSection>
-          <DebugLabel>Debug Mode</DebugLabel>
-        </DebugSection>
-      )}
     </>
   );
 };

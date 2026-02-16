@@ -51,10 +51,6 @@ interface VisualEffectsState {
   };
 }
 
-interface DebugState {
-  enabled: boolean;
-}
-
 interface TrackActions {
   setTracks: (tracks: Track[] | ((prev: Track[]) => Track[])) => void;
   setCurrentIndex: (index: number | ((prev: number) => number)) => void;
@@ -93,16 +89,11 @@ interface VisualEffectsActions {
   };
 }
 
-interface DebugActions {
-  setEnabled: (enabled: boolean | ((prev: boolean) => boolean)) => void;
-}
-
 interface PlayerState {
   track: TrackState;
   playlist: PlaylistState;
   color: ColorState;
   visualEffects: VisualEffectsState;
-  debug: DebugState;
 }
 
 interface PlayerStateSetters {
@@ -111,7 +102,6 @@ interface PlayerStateSetters {
     playlist: PlaylistActions;
     color: ColorActions;
     visualEffects: VisualEffectsActions;
-    debug: DebugActions;
   };
 }
 
@@ -166,10 +156,6 @@ export function usePlayerState(): PlayerState & PlayerStateSetters {
     false
   );
   const [accentColorBackgroundEnabled, setAccentColorBackgroundEnabled] = useState<boolean>(false);
-  const [debugModeEnabled, setDebugModeEnabled] = useLocalStorage<boolean>(
-    'vorbis-player-debug-mode-enabled',
-    false
-  );
   const [backgroundVisualizerIntensity, setBackgroundVisualizerIntensity] = useLocalStorage<number>(
     'vorbis-player-background-visualizer-intensity',
     60
@@ -257,9 +243,6 @@ export function usePlayerState(): PlayerState & PlayerStateSetters {
         preferred: accentColorBackgroundPreferred
       }
     },
-    debug: {
-      enabled: debugModeEnabled
-    },
     actions: {
       track: {
         setTracks,
@@ -294,9 +277,6 @@ export function usePlayerState(): PlayerState & PlayerStateSetters {
         accentColorBackground: {
           setPreferred: setAccentColorBackgroundPreferred
         }
-      },
-      debug: {
-        setEnabled: setDebugModeEnabled
       }
     }
   };

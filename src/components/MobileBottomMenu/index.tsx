@@ -14,7 +14,6 @@ interface MobileBottomMenuProps {
   onAccentColorChange: (color: string) => void;
   onBackToLibrary?: () => void;
   onShowPlaylist: () => void;
-  debugModeEnabled?: boolean;
 }
 
 export const MobileBottomMenu = ({
@@ -28,7 +27,6 @@ export const MobileBottomMenu = ({
   onAccentColorChange,
   onBackToLibrary,
   onShowPlaylist,
-  debugModeEnabled = false,
 }: MobileBottomMenuProps) => {
   return createPortal(
     <MenuWrapper
@@ -47,7 +45,6 @@ export const MobileBottomMenu = ({
           onAccentColorChange={onAccentColorChange}
           onBackToLibrary={onBackToLibrary}
           onShowPlaylist={onShowPlaylist}
-          debugModeEnabled={debugModeEnabled}
         />
       </ContentArea>
     </MenuWrapper>,

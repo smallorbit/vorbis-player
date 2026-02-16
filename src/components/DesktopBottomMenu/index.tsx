@@ -14,7 +14,6 @@ interface DesktopBottomMenuProps {
   onAccentColorChange: (color: string) => void;
   onBackToLibrary?: () => void;
   onShowPlaylist: () => void;
-  debugModeEnabled?: boolean;
 }
 
 export const DesktopBottomMenu = ({
@@ -28,7 +27,6 @@ export const DesktopBottomMenu = ({
   onAccentColorChange,
   onBackToLibrary,
   onShowPlaylist,
-  debugModeEnabled = false,
 }: DesktopBottomMenuProps) => {
   return createPortal(
     <MenuWrapper
@@ -47,7 +45,6 @@ export const DesktopBottomMenu = ({
           onAccentColorChange={onAccentColorChange}
           onBackToLibrary={onBackToLibrary}
           onShowPlaylist={onShowPlaylist}
-          debugModeEnabled={debugModeEnabled}
         />
       </ContentArea>
     </MenuWrapper>,

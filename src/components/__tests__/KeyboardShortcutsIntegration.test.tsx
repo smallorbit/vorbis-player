@@ -95,7 +95,6 @@ describe('Keyboard Shortcuts Integration', () => {
       perAlbumGlow: {},
       savedFilters: null
     },
-    debug: { enabled: false },
     actions: {
       track: { 
         setTracks: vi.fn(), 
@@ -121,8 +120,7 @@ describe('Keyboard Shortcuts Integration', () => {
         accentColorBackground: {
           setPreferred: vi.fn()
         }
-      },
-      debug: { setEnabled: vi.fn() }
+      }
     }
   };
 

@@ -410,7 +410,6 @@ The application uses a centralized state management approach with custom React h
 | `M` | Mute/unmute |
 | `/` or `?` | Show keyboard shortcuts help |
 | `Escape` | Close all menus |
-| `D` | Toggle debug mode (if enabled) |
 
 Centralized in `useKeyboardShortcuts.ts`. Prevents conflicts with text inputs and Ctrl/Cmd shortcuts.
 

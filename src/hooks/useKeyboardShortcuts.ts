@@ -12,12 +12,10 @@
   * - G: Toggle glow effect
   * - ?: Show keyboard shortcuts help
   * - Escape: Close menus (playlist drawer and visual effects)
-  * - M: Mute (placeholder)
-  * - ArrowUp: Volume up (placeholder)
-  * - ArrowDown: Volume down (placeholder)
-  * - D: Toggle debug mode
+  * - M: Mute
+  * - ArrowUp: Volume up
+  * - ArrowDown: Volume down
   * - L: Like/Unlike track
-  * - H: Toggle controls visibility
   */
 
 import { useEffect } from 'react';
@@ -43,20 +41,12 @@ export interface KeyboardShortcutHandlers {
   // Help
   onToggleHelp?: () => void;
   
-  // Debug/monitoring
-  onToggleDebugMode?: () => void;
-  
   // Other
   onMute?: () => void;
   onVolumeUp?: () => void;
   onVolumeDown?: () => void;
   onToggleLike?: () => void;
-  onToggleControls?: () => void;
   onCloseMobileMenu?: () => void;
-}
-
-interface UseKeyboardShortcutsOptions {
-  enableDebugMode?: boolean;
 }
 
 /**
@@ -66,10 +56,7 @@ interface UseKeyboardShortcutsOptions {
  * @param handlers - Object containing callback functions for each shortcut
  * @param options - Configuration options
  */
-export const useKeyboardShortcuts = (
-  handlers: KeyboardShortcutHandlers,
-  options: UseKeyboardShortcutsOptions = {}
-) => {
+export const useKeyboardShortcuts = (handlers: KeyboardShortcutHandlers) => {
   // Destructure handlers to avoid capturing entire object
   const {
     onPlayPause,
@@ -82,12 +69,10 @@ export const useKeyboardShortcuts = (
     onToggleBackgroundVisualizer,
     onToggleGlow,
     onToggleHelp,
-    onToggleDebugMode,
     onMute,
     onVolumeUp,
     onVolumeDown,
     onToggleLike,
-    onToggleControls,
     onCloseMobileMenu,
   } = handlers;
 
@@ -185,14 +170,6 @@ export const useKeyboardShortcuts = (
           }
           break;
 
-        case 'KeyH':
-          // H toggles controls visibility
-          if (!event.ctrlKey && !event.metaKey) {
-            event.preventDefault();
-            onToggleControls?.();
-          }
-          break;
-
         case 'ArrowUp':
           // Prevent default only if we have a handler
           if (onVolumeUp) {
@@ -206,14 +183,6 @@ export const useKeyboardShortcuts = (
           if (onVolumeDown) {
             event.preventDefault();
             onVolumeDown();
-          }
-          break;
-
-        // Debug mode
-        case 'KeyD':
-          if (options.enableDebugMode) {
-            event.preventDefault();
-            onToggleDebugMode?.();
           }
           break;
       }
@@ -232,13 +201,10 @@ export const useKeyboardShortcuts = (
     onToggleBackgroundVisualizer,
     onToggleGlow,
     onToggleHelp,
-    onToggleDebugMode,
     onMute,
     onVolumeUp,
     onVolumeDown,
     onToggleLike,
-    onToggleControls,
     onCloseMobileMenu,
-    options.enableDebugMode,
   ]);
 };

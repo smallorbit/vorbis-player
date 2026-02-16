@@ -50,7 +50,6 @@ interface PlayerContentHandlers {
   backgroundVisualizerIntensity?: number; // Background visualizer intensity
   accentColorBackgroundEnabled?: boolean; // Accent color background toggle
   onAccentColorBackgroundToggle?: () => void; // Accent color background toggle handler
-  debugModeEnabled?: boolean; // Debug mode toggle
   onMuteToggle?: () => void; // Mute toggle handler
   onToggleLike?: () => void; // Like toggle handler
   onBackToLibrary?: () => void; // Back to library navigation handler
@@ -367,7 +366,6 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
           onAccentColorChange={handlers.onAccentColorChange}
           onBackToLibrary={handlers.onBackToLibrary}
           onShowPlaylist={handlers.onShowPlaylist}
-          debugModeEnabled={handlers.debugModeEnabled}
         />
       ) : (
         <DesktopBottomMenu
@@ -381,7 +379,6 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
           onAccentColorChange={handlers.onAccentColorChange}
           onBackToLibrary={handlers.onBackToLibrary}
           onShowPlaylist={handlers.onShowPlaylist}
-          debugModeEnabled={handlers.debugModeEnabled}
         />
       )}
       {ui.showVisualEffects && (

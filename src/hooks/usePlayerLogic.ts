@@ -7,7 +7,6 @@ import { useSpotifyPlayback } from '@/hooks/useSpotifyPlayback';
 import { useAutoAdvance } from '@/hooks/useAutoAdvance';
 import { useAccentColor } from '@/hooks/useAccentColor';
 import { useVisualEffectsState } from '@/hooks/useVisualEffectsState';
-import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
 import { useVolume } from '@/hooks/useVolume';
 import { useLikeTrack } from '@/hooks/useLikeTrack';
 import type { Track } from '@/services/spotify';
@@ -31,7 +30,6 @@ export function usePlayerLogic() {
         preferred: accentColorBackgroundPreferred
       }
     },
-    debug: { enabled: debugModeEnabled },
     actions: {
       track: { setTracks, setCurrentIndex: setCurrentTrackIndex, setLoading: setIsLoading, setError },
       playlist: { setSelectedId: setSelectedPlaylistId, setVisible: setShowPlaylist },
@@ -50,19 +48,9 @@ export function usePlayerLogic() {
         accentColorBackground: {
           setPreferred: setAccentColorBackgroundPreferred
         }
-      },
-      debug: { setEnabled: setDebugModeEnabled }
+      }
     }
   } = usePlayerState();
-
-  useKeyboardShortcuts(
-    {
-      onToggleDebugMode: useCallback(() => {
-        setDebugModeEnabled(prev => !prev);
-      }, [setDebugModeEnabled])
-    },
-    { enableDebugMode: true }
-  );
 
   // Playback state for visualizer
   const [isPlaying, setIsPlaying] = useState(false);
@@ -287,7 +275,6 @@ export function usePlayerLogic() {
       backgroundVisualizerIntensity,
       accentColorBackgroundEnabled,
       accentColorBackgroundPreferred,
-      debugModeEnabled,
       isPlaying,
       playbackPosition,
       effectiveGlow,
