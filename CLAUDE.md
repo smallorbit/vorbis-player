@@ -70,6 +70,14 @@ vorbis-player/
 │   │   ├── VisualEffectsMenu/
 │   │   │   ├── index.tsx
 │   │   │   └── styled.ts
+│   │   ├── MobileBottomMenu/       # Mobile bottom menu components
+│   │   │   ├── index.tsx
+│   │   │   ├── MenuContent.tsx
+│   │   │   └── styled.ts
+│   │   ├── DesktopBottomMenu/      # Desktop bottom menu components
+│   │   │   ├── index.tsx
+│   │   │   ├── MenuContent.tsx
+│   │   │   └── styled.ts
 │   │   ├── __tests__/
 │   │   │   └── KeyboardShortcutsIntegration.test.tsx
 │   │   ├── AccentColorBackground.tsx
@@ -188,28 +196,34 @@ App.tsx (OAuth authentication, AppContainer with flex centering)
         ├── PlaylistSelection (search, sort, filter, lazy-loaded images)
         └── PlayerContent (main playing interface)
             └── ContentWrapper (position: relative, overflow: visible, container queries)
-                └── PlayerContainer (flex column, always centered)
-                    ├── CardContent (album art zone)
-                    │   ├── LeftQuickActionsPanel (absolute, right: 100%)
-                    │   │   ├── Glow Toggle
-                    │   │   └── Visualizer Toggle
-                    │   ├── ClickableAlbumArtContainer
-                    │   │   └── AlbumArt (aspect-ratio: 1, max-width: 700px)
-                    │   │       ├── AlbumArtFilters (CSS filter application)
-                    │   │       └── AccentColorGlowOverlay
-                    │   └── QuickActionsPanel (absolute, left: 100%)
-                    │       ├── Back to Library
-                    │       ├── Playlist Drawer Toggle
-                    │       ├── Visual Effects Menu Toggle
-                    │       └── ColorPickerPopover
-                    └── AnimatedControlsContainer (slide-down animation)
-                        └── SpotifyPlayerControls
-                            ├── TrackInfo (song name/artist)
-                            ├── PlaybackControls (prev/play/next)
-                            └── TimelineControls
-                                ├── TimelineSlider
-                                ├── VolumeControl
-                                └── LikeButton
+                ├── PlayerContainer (flex column, always centered)
+                │   ├── CardContent (album art zone)
+                │   │   └── ClickableAlbumArtContainer
+                │   │       └── AlbumArt (aspect-ratio: 1, max-width: 700px)
+                │   │           ├── AlbumArtFilters (CSS filter application)
+                │   │           └── AccentColorGlowOverlay
+                │   └── AnimatedControlsContainer (slide-down animation)
+                │       └── SpotifyPlayerControls
+                │           ├── TrackInfo (song name/artist)
+                │           ├── PlaybackControls (prev/play/next)
+                │           └── TimelineControls
+                │               ├── TimelineSlider
+                │               ├── VolumeControl
+                │               └── LikeButton
+                └── BottomMenu (fixed bottom, portaled to body)
+                    ├── MobileBottomMenu (mobile only)
+                    │   ├── Glow Toggle
+                    │   ├── Visual Effects Menu Toggle
+                    │   ├── ColorPickerPopover
+                    │   ├── Back to Library
+                    │   └── Playlist Drawer Toggle
+                    └── DesktopBottomMenu (desktop/tablet)
+                        ├── Glow Toggle
+                        ├── Background Visualizer Toggle
+                        ├── Visual Effects Menu Toggle
+                        ├── ColorPickerPopover
+                        ├── Back to Library
+                        └── Playlist Drawer Toggle
 ```
 
 ### Layout Architecture (Critical)
@@ -225,11 +239,18 @@ AppContainer (flexCenter, min-height: 100dvh)
 
 **Important layout callouts:**
 - **`ContentWrapper` must use `position: relative`** (not absolute) so parent flex containers can center it
-- **`overflow: visible` is required on ContentWrapper** because `container-type: inline-size` establishes containment that would clip the absolutely-positioned side panels
+- **`overflow: visible` is required on ContentWrapper** because `container-type: inline-size` establishes containment that would clip absolutely-positioned elements
 - **Vertical centering** relies on the flex chain from root to ContentWrapper — the player (album art + controls) is always centered as a unit
 - **`100dvh`** (dynamic viewport height) is used throughout to account for iOS/mobile browser address bar changes
-- **Side panels** (LeftQuickActionsPanel, QuickActionsPanel) use `position: absolute` with `right: 100%` / `left: 100%` to extend outside the album art container
+- **Bottom menus** (MobileBottomMenu, DesktopBottomMenu) use `position: fixed` at the bottom with React portals to `document.body`, centered horizontally
+- **ContentWrapper padding-bottom** automatically includes space for the bottom menu height plus safe area insets to prevent content overlap
 - **BackgroundVisualizer and AccentColorBackground** are `position: fixed` with low z-index values and do not affect layout flow
+
+**UI Control Layout Changes (v2.0)**:
+- **Desktop/Tablet**: Quick action buttons moved from side panels to fixed bottom menu, matching mobile layout pattern
+- **Mobile**: Quick action buttons remain in fixed bottom menu (unchanged)
+- **Removed**: LeftQuickActionsPanel and QuickActionsPanel side panels (desktop only)
+- **New**: DesktopBottomMenu component providing unified bottom menu experience across all devices
 
 ### Responsive Sizing System
 

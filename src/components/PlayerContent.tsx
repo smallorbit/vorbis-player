@@ -3,10 +3,10 @@ import styled from 'styled-components';
 import { CardContent } from './styled';
 import AlbumArt from './AlbumArt';
 import PlayerControls from './PlayerControls';
-import QuickActionsPanel from './QuickActionsPanel';
-import LeftQuickActionsPanel from './LeftQuickActionsPanel';
 import MobileBottomMenu from './MobileBottomMenu';
+import DesktopBottomMenu from './DesktopBottomMenu';
 import { MOBILE_BOTTOM_MENU_HEIGHT } from './MobileBottomMenu/styled';
+import { DESKTOP_BOTTOM_MENU_HEIGHT } from './DesktopBottomMenu/styled';
 import { theme } from '@/styles/theme';
 import { cardBase } from '../styles/utils';
 import { usePlayerSizing } from '../hooks/usePlayerSizing';
@@ -99,9 +99,8 @@ const ContentWrapper = styled.div.withConfig({
 
   margin: 0 auto;
   padding: ${props => props.padding}px;
-  padding-bottom: ${props => props.$isMobile
-    ? `calc(${props.padding}px + ${MOBILE_BOTTOM_MENU_HEIGHT} + env(safe-area-inset-bottom, 0px))`
-    : `${props.padding}px`};
+  padding-bottom: ${props => 
+    `calc(${props.padding}px + ${props.$isMobile ? MOBILE_BOTTOM_MENU_HEIGHT : DESKTOP_BOTTOM_MENU_HEIGHT} + env(safe-area-inset-bottom, 0px))`};
   box-sizing: border-box;
   position: relative;
   z-index: 2;
@@ -310,16 +309,6 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
               willChange: isSwiping ? 'transform' : undefined,
             }}
           >
-            {!isMobile && (
-              <LeftQuickActionsPanel
-                accentColor={ui.accentColor}
-                glowEnabled={effects.enabled}
-                onGlowToggle={handlers.onGlowToggle}
-                onBackgroundVisualizerToggle={handlers.onBackgroundVisualizerToggle}
-                backgroundVisualizerEnabled={handlers.backgroundVisualizerEnabled}
-              />
-            )}
-
             <AlbumArt
               currentTrack={track.current}
               accentColor={ui.accentColor}
@@ -328,18 +317,6 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
               glowEnabled={effects.enabled}
               albumFilters={effects.enabled ? effects.filters : defaultFilters}
             />
-
-            {!isMobile && (
-              <QuickActionsPanel
-                accentColor={ui.accentColor}
-                currentTrack={track.current}
-                onShowPlaylist={handlers.onShowPlaylist}
-                onShowVisualEffects={handlers.onShowVisualEffects}
-                onAccentColorChange={handlers.onAccentColorChange}
-                onBackToLibrary={handlers.onBackToLibrary}
-                debugModeEnabled={handlers.debugModeEnabled}
-              />
-            )}
           </ClickableAlbumArtContainer>
         </CardContent>
         <LoadingCard
@@ -380,13 +357,27 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
           </CardContent>
         </LoadingCard>
       </PlayerContainer>
-      {isMobile && (
+      {isMobile ? (
         <MobileBottomMenu
           accentColor={ui.accentColor}
           currentTrack={track.current}
           glowEnabled={effects.enabled}
           onShowVisualEffects={handlers.onShowVisualEffects}
           onGlowToggle={handlers.onGlowToggle}
+          onAccentColorChange={handlers.onAccentColorChange}
+          onBackToLibrary={handlers.onBackToLibrary}
+          onShowPlaylist={handlers.onShowPlaylist}
+          debugModeEnabled={handlers.debugModeEnabled}
+        />
+      ) : (
+        <DesktopBottomMenu
+          accentColor={ui.accentColor}
+          currentTrack={track.current}
+          glowEnabled={effects.enabled}
+          backgroundVisualizerEnabled={handlers.backgroundVisualizerEnabled}
+          onShowVisualEffects={handlers.onShowVisualEffects}
+          onGlowToggle={handlers.onGlowToggle}
+          onBackgroundVisualizerToggle={handlers.onBackgroundVisualizerToggle}
           onAccentColorChange={handlers.onAccentColorChange}
           onBackToLibrary={handlers.onBackToLibrary}
           onShowPlaylist={handlers.onShowPlaylist}
