@@ -7,8 +7,10 @@ interface MobileBottomMenuProps {
   accentColor: string;
   currentTrack: Track | null;
   glowEnabled: boolean;
+  backgroundVisualizerEnabled?: boolean;
   onShowVisualEffects: () => void;
   onGlowToggle: () => void;
+  onBackgroundVisualizerToggle?: () => void;
   onAccentColorChange: (color: string) => void;
   onBackToLibrary?: () => void;
   onShowPlaylist: () => void;
@@ -19,8 +21,10 @@ export const MobileBottomMenu = ({
   accentColor,
   currentTrack,
   glowEnabled,
+  backgroundVisualizerEnabled,
   onShowVisualEffects,
   onGlowToggle,
+  onBackgroundVisualizerToggle,
   onAccentColorChange,
   onBackToLibrary,
   onShowPlaylist,
@@ -36,8 +40,10 @@ export const MobileBottomMenu = ({
           accentColor={accentColor}
           currentTrack={currentTrack}
           glowEnabled={glowEnabled}
+          backgroundVisualizerEnabled={backgroundVisualizerEnabled}
           onShowVisualEffects={onShowVisualEffects}
           onGlowToggle={onGlowToggle}
+          onBackgroundVisualizerToggle={onBackgroundVisualizerToggle}
           onAccentColorChange={onAccentColorChange}
           onBackToLibrary={onBackToLibrary}
           onShowPlaylist={onShowPlaylist}
