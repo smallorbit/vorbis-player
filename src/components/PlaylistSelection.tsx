@@ -2,9 +2,6 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import * as React from 'react';
 import styled from 'styled-components';
 import {
-  getUserLibraryInterleaved,
-  getLikedSongsCount,
-  getCachedData,
   spotifyAuth,
   type PlaylistInfo,
   type AlbumInfo
@@ -13,6 +10,7 @@ import { Card, CardHeader, CardContent, Button, Skeleton, Alert, AlertDescriptio
 import { theme } from '@/styles/theme';
 import { usePlayerSizing } from '../hooks/usePlayerSizing';
 import { useLocalStorage } from '../hooks/useLocalStorage';
+import { useLibrarySync } from '../hooks/useLibrarySync';
 import {
   filterAndSortPlaylists,
   filterAndSortAlbums,
@@ -552,12 +550,15 @@ function PlaylistSelection({ onPlaylistSelect, inDrawer = false, swipeZoneRef, i
     const saved = localStorage.getItem('vorbis-player-view-mode');
     return (saved === 'albums' ? 'albums' : 'playlists') as ViewMode;
   });
-  const [playlists, setPlaylists] = useState<PlaylistInfo[]>([]);
-  const [albums, setAlbums] = useState<AlbumInfo[]>([]);
+  const {
+    playlists,
+    albums,
+    likedSongsCount,
+    isInitialLoadComplete,
+  } = useLibrarySync();
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [likedSongsCount, setLikedSongsCount] = useState<number>(0);
   const [searchQuery, setSearchQuery] = useState(initialSearchQuery || '');
   const [playlistSort, setPlaylistSort] = useLocalStorage<PlaylistSortOption>(
     'vorbis-player-playlist-sort',
@@ -569,10 +570,7 @@ function PlaylistSelection({ onPlaylistSelect, inDrawer = false, swipeZoneRef, i
   );
   const [yearFilter, setYearFilter] = useState<YearFilterOption>('all');
   const [artistFilter, setArtistFilter] = useState<string>('');
-  const [playlistsLoaded, setPlaylistsLoaded] = useState(false);
-  const [albumsLoaded, setAlbumsLoaded] = useState(false);
-  const [likedSongsDone, setLikedSongsDone] = useState(false);
-  const libraryFullyLoaded = playlistsLoaded && albumsLoaded && likedSongsDone;
+  const libraryFullyLoaded = isInitialLoadComplete;
 
   const { viewport, isMobile, isTablet } = usePlayerSizing();
 
@@ -637,104 +635,22 @@ function PlaylistSelection({ onPlaylistSelect, inDrawer = false, swipeZoneRef, i
     }
   }, [libraryFullyLoaded, playlists.length, albums.length, likedSongsCount]);
 
+  // Auth check — the sync engine handles all data fetching
   useEffect(() => {
-    const abortController = new AbortController();
-    let isMounted = true;
-
-    async function checkAuthAndFetchPlaylists(): Promise<void> {
-      try {
-        setError(null);
-
-        if (!spotifyAuth.isAuthenticated()) {
-          setIsAuthenticated(false);
-          setIsLoading(false);
-          return;
-        }
-
-        setIsAuthenticated(true);
-
-        const cachedPlaylists = getCachedData<PlaylistInfo[]>('playlists');
-        const cachedAlbums = getCachedData<AlbumInfo[]>('albums');
-        const hasCache = !!(cachedPlaylists || cachedAlbums);
-
-        if (cachedPlaylists && isMounted) {
-          setPlaylists(cachedPlaylists);
-          setPlaylistsLoaded(true);
-          setIsLoading(false);
-        } else {
-          setIsLoading(true);
-        }
-
-        if (cachedAlbums && isMounted) {
-          setAlbums(cachedAlbums);
-          setAlbumsLoaded(true);
-        }
-
-        getLikedSongsCount(abortController.signal)
-          .then((count) => {
-            if (isMounted) {
-              setLikedSongsCount(count);
-              setLikedSongsDone(true);
-            }
-          })
-          .catch((err) => {
-            if (err instanceof DOMException && err.name === 'AbortError') return;
-            console.warn('Failed to fetch liked songs count:', err);
-            if (isMounted) setLikedSongsDone(true);
-          });
-
-        const onPlaylistsUpdate = (playlistsSoFar: PlaylistInfo[], isComplete: boolean): void => {
-          if (!isMounted) return;
-          setPlaylists(playlistsSoFar);
-          setIsLoading(false);
-          if (isComplete) {
-            setPlaylistsLoaded(true);
-          }
-        };
-
-        const onAlbumsUpdate = (albumsSoFar: AlbumInfo[], isComplete: boolean): void => {
-          if (!isMounted) return;
-          setAlbums(albumsSoFar);
-          setIsLoading(false);
-          if (isComplete) {
-            setAlbumsLoaded(true);
-          }
-        };
-
-        try {
-          await getUserLibraryInterleaved(
-            onPlaylistsUpdate,
-            onAlbumsUpdate,
-            abortController.signal
-          );
-        } catch (err) {
-          if (err instanceof DOMException && err.name === 'AbortError') return;
-          if (abortController.signal.aborted) return;
-          console.error('Failed to fetch playlists:', err);
-          if (!hasCache && isMounted) {
-            setError(err instanceof Error ? err.message : 'Failed to load playlists');
-          }
-        } finally {
-          if (isMounted) setIsLoading(false);
-        }
-      } catch (err) {
-        if (err instanceof DOMException && err.name === 'AbortError') return;
-        if (abortController.signal.aborted) return;
-        console.error('Failed to initialize:', err);
-        if (isMounted) {
-          setError(err instanceof Error ? err.message : 'Failed to load playlists');
-          setIsLoading(false);
-        }
-      }
+    if (spotifyAuth.isAuthenticated()) {
+      setIsAuthenticated(true);
+    } else {
+      setIsAuthenticated(false);
+      setIsLoading(false);
     }
-
-    checkAuthAndFetchPlaylists();
-
-    return () => {
-      isMounted = false;
-      abortController.abort();
-    };
   }, []);
+
+  // Sync loading state with the library sync engine
+  useEffect(() => {
+    if (isInitialLoadComplete || playlists.length > 0 || albums.length > 0) {
+      setIsLoading(false);
+    }
+  }, [isInitialLoadComplete, playlists.length, albums.length]);
 
   function handlePlaylistClick(playlist: PlaylistInfo): void {
     console.log('🎵 Selected playlist:', playlist.name);
@@ -839,13 +755,13 @@ function PlaylistSelection({ onPlaylistSelect, inDrawer = false, swipeZoneRef, i
         $active={viewMode === 'playlists'}
         onClick={() => handleViewModeChange('playlists')}
       >
-        Playlists{!playlistsLoaded && <TabSpinner />}
+        Playlists{!isInitialLoadComplete && <TabSpinner />}
       </TabButton>
       <TabButton
         $active={viewMode === 'albums'}
         onClick={() => handleViewModeChange('albums')}
       >
-        Albums{!albumsLoaded && <TabSpinner />}
+        Albums{!isInitialLoadComplete && <TabSpinner />}
       </TabButton>
     </TabsContainer>
   );
@@ -904,7 +820,7 @@ function PlaylistSelection({ onPlaylistSelect, inDrawer = false, swipeZoneRef, i
           </PlaylistItem>
         ));
 
-        const emptyState = filteredPlaylists.length === 0 && likedSongsCount === 0 && playlistsLoaded && (
+        const emptyState = filteredPlaylists.length === 0 && likedSongsCount === 0 && isInitialLoadComplete && (
           <EmptyState $fullWidth={inDrawer}>
             {searchQuery
               ? `No playlists match "${searchQuery}"`
@@ -948,7 +864,7 @@ function PlaylistSelection({ onPlaylistSelect, inDrawer = false, swipeZoneRef, i
           </PlaylistItem>
         ));
 
-        const emptyState = filteredAlbums.length === 0 && albumsLoaded && (
+        const emptyState = filteredAlbums.length === 0 && isInitialLoadComplete && (
           <EmptyState $fullWidth={inDrawer}>
             {searchQuery || yearFilter !== 'all'
               ? 'No albums match your filters.'
