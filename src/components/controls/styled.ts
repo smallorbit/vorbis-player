@@ -10,7 +10,7 @@ export const PlayerControlsContainer = styled.div<{ $isMobile: boolean; $isTable
   flex-direction: column;
   gap: ${({ theme, $isMobile }) => $isMobile ? theme.spacing.sm : theme.spacing.md};
   padding: ${({ $isMobile, $isTablet }) => {
-    if ($isMobile) return `${theme.spacing.md} ${theme.spacing.sm}`;
+    if ($isMobile) return `${theme.spacing.xs} ${theme.spacing.sm}`;
     if ($isTablet) return `${theme.spacing.md} ${theme.spacing.md}`;
     return `${theme.spacing.md} ${theme.spacing.lg}`;
   }};
