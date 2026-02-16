@@ -21,6 +21,7 @@ import {
   type AlbumSortOption,
   type YearFilterOption
 } from '../utils/playlistFilters';
+import { LIKED_SONGS_ID, LIKED_SONGS_NAME, toAlbumPlaylistId } from '../constants/playlist';
 
 type ViewMode = 'playlists' | 'albums';
 
@@ -429,21 +430,27 @@ const ClearButton = styled.button`
   }
 `;
 
-interface PlaylistImageProps {
-  images: { url: string; width: number | null; height: number | null }[];
-  alt: string;
-}
+const EmptyState = styled.div<{ $fullWidth?: boolean }>`
+  ${({ $fullWidth }) => $fullWidth && 'grid-column: 1 / -1;'}
+  padding: 2rem;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.6);
+`;
 
-const PlaylistImage: React.FC<PlaylistImageProps> = React.memo(function PlaylistImage({ images, alt }) {
+const LIKED_SONGS_GRADIENT = 'linear-gradient(135deg, #1DB954 0%, #1ed760 100%)';
+
+/** Shared hook for lazy-loading images via IntersectionObserver */
+function useLazyImage(
+  images: { url: string; width: number | null; height: number | null }[],
+  targetSize: number,
+  rootMargin: string
+) {
   const [imageUrl, setImageUrl] = useState<string | undefined>(undefined);
   const [isVisible, setIsVisible] = useState(false);
-  const imgRef = useRef<HTMLDivElement>(null);
+  const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!imgRef.current) {
-      return;
-    }
-
+    if (!ref.current) return;
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
@@ -453,35 +460,32 @@ const PlaylistImage: React.FC<PlaylistImageProps> = React.memo(function Playlist
           }
         });
       },
-      {
-        rootMargin: '50px',
-        threshold: 0.01
-      }
+      { rootMargin, threshold: 0.01 }
     );
-
-    observer.observe(imgRef.current);
-
-    return () => {
-      observer.disconnect();
-    };
-  }, []);
+    observer.observe(ref.current);
+    return () => observer.disconnect();
+  }, [rootMargin]);
 
   useEffect(() => {
     if (isVisible && images) {
-      const optimalUrl = selectOptimalImage(images, 64);
-      setImageUrl(optimalUrl);
+      setImageUrl(selectOptimalImage(images, targetSize));
     }
-  }, [isVisible, images]);
+  }, [isVisible, images, targetSize]);
 
+  return { ref, imageUrl };
+}
+
+interface LazyImageProps {
+  images: { url: string; width: number | null; height: number | null }[];
+  alt: string;
+}
+
+const PlaylistImage: React.FC<LazyImageProps> = React.memo(function PlaylistImage({ images, alt }) {
+  const { ref, imageUrl } = useLazyImage(images, 64, '50px');
   return (
-    <PlaylistImageWrapper ref={imgRef}>
+    <PlaylistImageWrapper ref={ref}>
       {imageUrl ? (
-        <img
-          src={imageUrl}
-          alt={alt}
-          loading="lazy"
-          decoding="async"
-        />
+        <img src={imageUrl} alt={alt} loading="lazy" decoding="async" />
       ) : (
         <span style={{ fontSize: '1.5rem' }}>🎵</span>
       )}
@@ -489,44 +493,10 @@ const PlaylistImage: React.FC<PlaylistImageProps> = React.memo(function Playlist
   );
 });
 
-/** Larger lazy-loaded image for the mobile grid card layout */
-interface GridCardImageProps {
-  images: { url: string; width: number | null; height: number | null }[];
-  alt: string;
-}
-
-const GridCardImageComponent: React.FC<GridCardImageProps> = React.memo(function GridCardImageComponent({ images, alt }) {
-  const [imageUrl, setImageUrl] = useState<string | undefined>(undefined);
-  const [isVisible, setIsVisible] = useState(false);
-  const imgRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!imgRef.current) return;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            setIsVisible(true);
-            observer.disconnect();
-          }
-        });
-      },
-      { rootMargin: '100px', threshold: 0.01 }
-    );
-    observer.observe(imgRef.current);
-    return () => observer.disconnect();
-  }, []);
-
-  useEffect(() => {
-    if (isVisible && images) {
-      // Request a larger image for the grid card (≈300px for 2-col on mobile)
-      const optimalUrl = selectOptimalImage(images, 300);
-      setImageUrl(optimalUrl);
-    }
-  }, [isVisible, images]);
-
+const GridCardImageComponent: React.FC<LazyImageProps> = React.memo(function GridCardImageComponent({ images, alt }) {
+  const { ref, imageUrl } = useLazyImage(images, 300, '100px');
   return (
-    <GridCardArtWrapper ref={imgRef}>
+    <GridCardArtWrapper ref={ref}>
       {imageUrl ? (
         <img src={imageUrl} alt={alt} loading="lazy" decoding="async" />
       ) : (
@@ -722,12 +692,12 @@ function PlaylistSelection({ onPlaylistSelect, inDrawer = false, swipeZoneRef }:
 
   function handleAlbumClick(album: AlbumInfo): void {
     console.log('🎵 Selected album:', album.name);
-    onPlaylistSelect(`album:${album.id}`, album.name);
+    onPlaylistSelect(toAlbumPlaylistId(album.id), album.name);
   }
 
   function handleLikedSongsClick(): void {
     console.log('🎵 Selected liked songs');
-    onPlaylistSelect('liked-songs', 'Liked Songs');
+    onPlaylistSelect(LIKED_SONGS_ID, LIKED_SONGS_NAME);
   }
 
   function handleViewModeChange(mode: ViewMode): void {
@@ -830,186 +800,103 @@ function PlaylistSelection({ onPlaylistSelect, inDrawer = false, swipeZoneRef }:
       {tabsBar}
       </div>
 
-      {viewMode === 'playlists' && inDrawer && (
-        <MobileGrid>
-          {likedSongsCount > 0 && (
-            <GridCard onClick={handleLikedSongsClick}>
-              <GridCardArtWrapper>
-                <div
-                  style={{
-                    background: 'linear-gradient(135deg, #1DB954 0%, #1ed760 100%)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    width: '100%',
-                    height: '100%',
-                    fontSize: '3rem',
-                    color: 'white',
-                  }}
-                >
-                  ♥
-                </div>
-              </GridCardArtWrapper>
-              <GridCardTextArea>
-                <GridCardTitle>Liked Songs</GridCardTitle>
-                <GridCardSubtitle>{likedSongsCount} tracks</GridCardSubtitle>
-              </GridCardTextArea>
-            </GridCard>
-          )}
+      {viewMode === 'playlists' && (() => {
+        const likedSongsItem = likedSongsCount > 0 && (inDrawer ? (
+          <GridCard onClick={handleLikedSongsClick}>
+            <GridCardArtWrapper>
+              <div style={{ background: LIKED_SONGS_GRADIENT, display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', fontSize: '3rem', color: 'white' }}>♥</div>
+            </GridCardArtWrapper>
+            <GridCardTextArea>
+              <GridCardTitle>{LIKED_SONGS_NAME}</GridCardTitle>
+              <GridCardSubtitle>{likedSongsCount} tracks</GridCardSubtitle>
+            </GridCardTextArea>
+          </GridCard>
+        ) : (
+          <PlaylistItem onClick={handleLikedSongsClick}>
+            <PlaylistImageWrapper>
+              <div style={{ background: LIKED_SONGS_GRADIENT, display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', borderRadius: '0.5rem', fontSize: '1.5rem', color: 'white' }}>♥</div>
+            </PlaylistImageWrapper>
+            <PlaylistInfo>
+              <PlaylistName>{LIKED_SONGS_NAME}</PlaylistName>
+              <PlaylistDetails>{likedSongsCount} tracks • Shuffle enabled</PlaylistDetails>
+            </PlaylistInfo>
+          </PlaylistItem>
+        ));
 
-          {filteredPlaylists.map((playlist) => (
-            <GridCard key={playlist.id} onClick={() => handlePlaylistClick(playlist)}>
-              <GridCardImageComponent images={playlist.images} alt={playlist.name} />
-              <GridCardTextArea>
-                <GridCardTitle>{playlist.name}</GridCardTitle>
-                <GridCardSubtitle>
-                  {playlist.tracks.total} tracks
-                  {playlist.owner.display_name && ` • ${playlist.owner.display_name}`}
-                </GridCardSubtitle>
-              </GridCardTextArea>
-            </GridCard>
-          ))}
+        const playlistItems = filteredPlaylists.map((playlist) => inDrawer ? (
+          <GridCard key={playlist.id} onClick={() => handlePlaylistClick(playlist)}>
+            <GridCardImageComponent images={playlist.images} alt={playlist.name} />
+            <GridCardTextArea>
+              <GridCardTitle>{playlist.name}</GridCardTitle>
+              <GridCardSubtitle>
+                {playlist.tracks.total} tracks
+                {playlist.owner.display_name && ` • ${playlist.owner.display_name}`}
+              </GridCardSubtitle>
+            </GridCardTextArea>
+          </GridCard>
+        ) : (
+          <PlaylistItem key={playlist.id} onClick={() => handlePlaylistClick(playlist)}>
+            <PlaylistImage images={playlist.images} alt={playlist.name} />
+            <PlaylistInfo>
+              <PlaylistName>{playlist.name}</PlaylistName>
+              <PlaylistDetails>
+                {playlist.tracks.total} tracks
+                {playlist.owner.display_name && ` • by ${playlist.owner.display_name}`}
+              </PlaylistDetails>
+            </PlaylistInfo>
+          </PlaylistItem>
+        ));
 
-          {filteredPlaylists.length === 0 && likedSongsCount === 0 && playlistsLoaded && (
-            <div
-              style={{
-                gridColumn: '1 / -1',
-                padding: '2rem',
-                textAlign: 'center',
-                color: 'rgba(255, 255, 255, 0.6)',
-              }}
-            >
-              {searchQuery
-                ? `No playlists match "${searchQuery}"`
-                : 'No playlists found. Create some playlists in Spotify or save some songs!'}
-            </div>
-          )}
-        </MobileGrid>
-      )}
+        const emptyState = filteredPlaylists.length === 0 && likedSongsCount === 0 && playlistsLoaded && (
+          <EmptyState $fullWidth={inDrawer}>
+            {searchQuery
+              ? `No playlists match "${searchQuery}"`
+              : 'No playlists found. Create some playlists in Spotify or save some songs!'}
+          </EmptyState>
+        );
 
-      {viewMode === 'playlists' && !inDrawer && (
-        <PlaylistGrid $inDrawer={false}>
-          {likedSongsCount > 0 && (
-            <PlaylistItem onClick={handleLikedSongsClick}>
-              <PlaylistImageWrapper>
-                <div
-                  style={{
-                    background: 'linear-gradient(135deg, #1DB954 0%, #1ed760 100%)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    width: '100%',
-                    height: '100%',
-                    borderRadius: '0.5rem',
-                    fontSize: '1.5rem',
-                    color: 'white',
-                  }}
-                >
-                  ♥
-                </div>
-              </PlaylistImageWrapper>
-              <PlaylistInfo>
-                <PlaylistName>Liked Songs</PlaylistName>
-                <PlaylistDetails>
-                  {likedSongsCount} tracks • Shuffle enabled
-                </PlaylistDetails>
-              </PlaylistInfo>
-            </PlaylistItem>
-          )}
+        return inDrawer ? (
+          <MobileGrid>{likedSongsItem}{playlistItems}{emptyState}</MobileGrid>
+        ) : (
+          <PlaylistGrid $inDrawer={false}>{likedSongsItem}{playlistItems}{emptyState}</PlaylistGrid>
+        );
+      })()}
 
-          {filteredPlaylists.map((playlist) => (
-            <PlaylistItem key={playlist.id} onClick={() => handlePlaylistClick(playlist)}>
-              <PlaylistImage images={playlist.images} alt={playlist.name} />
-              <PlaylistInfo>
-                <PlaylistName>{playlist.name}</PlaylistName>
-                <PlaylistDetails>
-                  {playlist.tracks.total} tracks
-                  {playlist.owner.display_name && ` • by ${playlist.owner.display_name}`}
-                </PlaylistDetails>
-              </PlaylistInfo>
-            </PlaylistItem>
-          ))}
+      {viewMode === 'albums' && (() => {
+        const albumItems = filteredAlbums.map((album) => inDrawer ? (
+          <GridCard key={album.id} onClick={() => handleAlbumClick(album)}>
+            <GridCardImageComponent images={album.images} alt={`${album.name} by ${album.artists}`} />
+            <GridCardTextArea>
+              <GridCardTitle>{album.name}</GridCardTitle>
+              <GridCardSubtitle>{album.artists}</GridCardSubtitle>
+            </GridCardTextArea>
+          </GridCard>
+        ) : (
+          <PlaylistItem key={album.id} onClick={() => handleAlbumClick(album)}>
+            <PlaylistImage images={album.images} alt={`${album.name} by ${album.artists}`} />
+            <PlaylistInfo>
+              <PlaylistName>{album.name}</PlaylistName>
+              <PlaylistDetails>{album.artists} • {album.total_tracks} tracks</PlaylistDetails>
+            </PlaylistInfo>
+          </PlaylistItem>
+        ));
 
-          {filteredPlaylists.length === 0 && likedSongsCount === 0 && playlistsLoaded && (
-            <div
-              style={{
-                padding: '2rem',
-                textAlign: 'center',
-                color: 'rgba(255, 255, 255, 0.6)',
-              }}
-            >
-              {searchQuery
-                ? `No playlists match "${searchQuery}"`
-                : 'No playlists found. Create some playlists in Spotify or save some songs!'}
-            </div>
-          )}
-        </PlaylistGrid>
-      )}
+        const emptyState = filteredAlbums.length === 0 && albumsLoaded && (
+          <EmptyState $fullWidth={inDrawer}>
+            {searchQuery || yearFilter !== 'all'
+              ? 'No albums match your filters.'
+              : 'No albums found. Save some albums in Spotify to see them here!'}
+          </EmptyState>
+        );
 
-      {viewMode === 'albums' && inDrawer && (
-        <MobileGrid>
-          {filteredAlbums.map((album) => (
-            <GridCard key={album.id} onClick={() => handleAlbumClick(album)}>
-              <GridCardImageComponent
-                images={album.images}
-                alt={`${album.name} by ${album.artists}`}
-              />
-              <GridCardTextArea>
-                <GridCardTitle>{album.name}</GridCardTitle>
-                <GridCardSubtitle>{album.artists}</GridCardSubtitle>
-              </GridCardTextArea>
-            </GridCard>
-          ))}
-
-          {filteredAlbums.length === 0 && albumsLoaded && (
-            <div
-              style={{
-                gridColumn: '1 / -1',
-                padding: '2rem',
-                textAlign: 'center',
-                color: 'rgba(255, 255, 255, 0.6)',
-              }}
-            >
-              {searchQuery || yearFilter !== 'all'
-                ? 'No albums match your filters.'
-                : 'No albums found. Save some albums in Spotify to see them here!'}
-            </div>
-          )}
-        </MobileGrid>
-      )}
-
-      {viewMode === 'albums' && !inDrawer && (
-        <PlaylistGrid $inDrawer={false}>
-          {filteredAlbums.map((album) => (
-            <PlaylistItem key={album.id} onClick={() => handleAlbumClick(album)}>
-              <PlaylistImage
-                images={album.images}
-                alt={`${album.name} by ${album.artists}`}
-              />
-              <PlaylistInfo>
-                <PlaylistName>{album.name}</PlaylistName>
-                <PlaylistDetails>
-                  {album.artists} • {album.total_tracks} tracks
-                </PlaylistDetails>
-              </PlaylistInfo>
-            </PlaylistItem>
-          ))}
-
-          {filteredAlbums.length === 0 && albumsLoaded && (
-            <div
-              style={{
-                padding: '2rem',
-                textAlign: 'center',
-                color: 'rgba(255, 255, 255, 0.6)',
-              }}
-            >
-              {searchQuery || yearFilter !== 'all'
-                ? 'No albums match your filters.'
-                : 'No albums found. Save some albums in Spotify to see them here!'}
-            </div>
-          )}
-        </PlaylistGrid>
-      )}
+        const Grid = inDrawer ? MobileGrid : PlaylistGrid;
+        return (
+          <Grid $inDrawer={inDrawer ? undefined : false}>
+            {albumItems}
+            {emptyState}
+          </Grid>
+        );
+      })()}
 
       {inDrawer && (
         <DrawerBottomControls>
@@ -1019,51 +906,56 @@ function PlaylistSelection({ onPlaylistSelect, inDrawer = false, swipeZoneRef }:
     </>
   ) : null;
 
+  const statusContent = (
+    <>
+      {isLoading && (
+        <LoadingState>
+          <Skeleton style={{ height: '60px' }} />
+          <Skeleton style={{ height: '60px' }} />
+          <Skeleton style={{ height: '60px' }} />
+          <p style={{ textAlign: 'center', color: 'white' }}>Loading your library...</p>
+        </LoadingState>
+      )}
+
+      {!isLoading && !isAuthenticated && (
+        <div style={{ textAlign: 'center', padding: '2rem' }}>
+          <p style={{ color: 'rgba(255, 255, 255, 0.7)', marginBottom: '1.5rem', fontSize: '1.1rem' }}>
+            Connect your Spotify account to access your playlists
+          </p>
+          <Button
+            onClick={handleLogin}
+            style={{
+              background: '#1db954',
+              color: 'white',
+              border: 'none',
+              padding: '0.75rem 2rem',
+              fontSize: '1rem',
+              borderRadius: '0.5rem',
+              cursor: 'pointer',
+              transition: 'background 0.2s ease'
+            }}
+          >
+            Connect Spotify
+          </Button>
+        </div>
+      )}
+
+      {error && (
+        <Alert variant="destructive">
+          <AlertDescription style={{ color: '#fecaca' }}>
+            {error}
+          </AlertDescription>
+        </Alert>
+      )}
+    </>
+  );
+
   // When inDrawer, use a flat structure — one flex-column wrapper, no extra nesting.
   // This avoids the deep flex containment chain that breaks height propagation.
   if (inDrawer) {
     return (
       <DrawerContentWrapper>
-        {isLoading && (
-          <LoadingState>
-            <Skeleton style={{ height: '60px' }} />
-            <Skeleton style={{ height: '60px' }} />
-            <Skeleton style={{ height: '60px' }} />
-            <p style={{ textAlign: 'center', color: 'white' }}>Loading your library...</p>
-          </LoadingState>
-        )}
-
-        {!isLoading && !isAuthenticated && (
-          <div style={{ textAlign: 'center', padding: '2rem' }}>
-            <p style={{ color: 'rgba(255, 255, 255, 0.7)', marginBottom: '1.5rem', fontSize: '1.1rem' }}>
-              Connect your Spotify account to access your playlists
-            </p>
-            <Button
-              onClick={handleLogin}
-              style={{
-                background: '#1db954',
-                color: 'white',
-                border: 'none',
-                padding: '0.75rem 2rem',
-                fontSize: '1rem',
-                borderRadius: '0.5rem',
-                cursor: 'pointer',
-                transition: 'background 0.2s ease'
-              }}
-            >
-              Connect Spotify
-            </Button>
-          </div>
-        )}
-
-        {error && (
-          <Alert variant="destructive">
-            <AlertDescription style={{ color: '#fecaca' }}>
-              {error}
-            </AlertDescription>
-          </Alert>
-        )}
-
+        {statusContent}
         {mainContent}
       </DrawerContentWrapper>
     );
@@ -1078,52 +970,7 @@ function PlaylistSelection({ onPlaylistSelect, inDrawer = false, swipeZoneRef }:
         </Header>
 
         <CardContent>
-          {isLoading && (
-            <LoadingState>
-              <Skeleton style={{ height: '60px' }} />
-              <Skeleton style={{ height: '60px' }} />
-              <Skeleton style={{ height: '60px' }} />
-              <p style={{ textAlign: 'center', color: 'white' }}>Loading your library...</p>
-            </LoadingState>
-          )}
-
-          {!isLoading && !isAuthenticated && (
-            <div style={{ textAlign: 'center', padding: '2rem' }}>
-              <p style={{ color: 'rgba(255, 255, 255, 0.7)', marginBottom: '1.5rem', fontSize: '1.1rem' }}>
-                Connect your Spotify account to access your playlists
-              </p>
-              <Button
-                onClick={handleLogin}
-                style={{
-                  background: '#1db954',
-                  color: 'white',
-                  border: 'none',
-                  padding: '0.75rem 2rem',
-                  fontSize: '1rem',
-                  borderRadius: '0.5rem',
-                  cursor: 'pointer',
-                  transition: 'background 0.2s ease'
-                }}
-                onMouseEnter={(e: React.MouseEvent<HTMLButtonElement>) => {
-                  (e.target as HTMLButtonElement).style.background = '#1ed760';
-                }}
-                onMouseLeave={(e: React.MouseEvent<HTMLButtonElement>) => {
-                  (e.target as HTMLButtonElement).style.background = '#1db954';
-                }}
-              >
-                Connect Spotify
-              </Button>
-            </div>
-          )}
-
-          {error && (
-            <Alert variant="destructive">
-              <AlertDescription style={{ color: '#fecaca' }}>
-                {error}
-              </AlertDescription>
-            </Alert>
-          )}
-
+          {statusContent}
           {mainContent}
         </CardContent>
       </SelectionCard>

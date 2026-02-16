@@ -117,7 +117,7 @@ export function filterAndSortPlaylists(
   sortOption: PlaylistSortOption
 ): PlaylistInfo[] {
   // Step 1: Filter by search query
-  let result = playlists.filter(p => matchesSearch(p, searchQuery));
+  const result = playlists.filter(p => matchesSearch(p, searchQuery));
 
   // Step 2: Sort
   switch (sortOption) {

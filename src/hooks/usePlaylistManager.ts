@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 import { getPlaylistTracks, getAlbumTracks, getLikedSongs, spotifyAuth } from '../services/spotify';
 import { spotifyPlayer } from '../services/spotifyPlayer';
+import { isAlbumId, extractAlbumId, LIKED_SONGS_ID } from '../constants/playlist';
 import type { Track } from '../services/spotify';
 
 async function waitForSpotifyReady(timeout = 10000): Promise<void> {
@@ -53,11 +54,10 @@ export const usePlaylistManager = ({
       let fetchedTracks: Track[] = [];
 
       // Check if this is an album selection
-      if (playlistId.startsWith('album:')) {
-        const albumId = playlistId.replace('album:', '');
-        fetchedTracks = await getAlbumTracks(albumId);
+      if (isAlbumId(playlistId)) {
+        fetchedTracks = await getAlbumTracks(extractAlbumId(playlistId));
         // Albums are already sorted by track number, don't shuffle
-      } else if (playlistId === 'liked-songs') {
+      } else if (playlistId === LIKED_SONGS_ID) {
         fetchedTracks = await getLikedSongs(200);
         fetchedTracks = shuffleArray(fetchedTracks);
       } else {
@@ -65,9 +65,9 @@ export const usePlaylistManager = ({
       }
 
       if (fetchedTracks.length === 0) {
-        if (playlistId.startsWith('album:')) {
+        if (isAlbumId(playlistId)) {
           setError("No tracks found in this album.");
-        } else if (playlistId === 'liked-songs') {
+        } else if (playlistId === LIKED_SONGS_ID) {
           setError("No liked songs found. Please like some songs in Spotify first.");
         } else {
           setError("No tracks found in this playlist.");

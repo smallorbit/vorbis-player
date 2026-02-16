@@ -2,6 +2,7 @@ import React, { Suspense, memo, useMemo } from 'react';
 import styled from 'styled-components';
 import type { Track } from '../services/spotify';
 import { theme } from '../styles/theme';
+import { DrawerFallback, DrawerFallbackCard } from './styled';
 import { usePlayerSizing } from '../hooks/usePlayerSizing';
 
 const Playlist = React.lazy(() => import('./Playlist'));
@@ -114,18 +115,6 @@ const CloseButton = styled.button`
   }
 `;
 
-const PlaylistFallback = styled.div`
-  width: 100%;
-  margin-top: ${theme.spacing.lg};
-`;
-
-const PlaylistFallbackCard = styled.div`
-  background-color: ${theme.colors.gray[800]};
-  border-radius: ${theme.borderRadius['2xl']};
-  padding: ${theme.spacing.md};
-  border: 1px solid ${theme.colors.gray[700]};
-`;
-
 interface PlaylistDrawerProps {
   isOpen: boolean;
   onClose: () => void;
@@ -201,8 +190,8 @@ export const PlaylistDrawer = memo<PlaylistDrawerProps>(({
 
         <PlaylistContent>
           <Suspense fallback={
-            <PlaylistFallback>
-              <PlaylistFallbackCard>
+            <DrawerFallback>
+              <DrawerFallbackCard>
                 <div style={{
                   animation: theme.animations.pulse,
                   color: theme.colors.muted.foreground,
@@ -210,8 +199,8 @@ export const PlaylistDrawer = memo<PlaylistDrawerProps>(({
                 }}>
                   Loading playlist...
                 </div>
-              </PlaylistFallbackCard>
-            </PlaylistFallback>
+              </DrawerFallbackCard>
+            </DrawerFallback>
           }>
             <Playlist
               tracks={tracks}
