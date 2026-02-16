@@ -1,3 +1,4 @@
+import { useCallback } from 'react';
 import styled from 'styled-components';
 import { flexCenter } from '@/styles/utils';
 import PlayerStateRenderer from './PlayerStateRenderer';
@@ -5,6 +6,7 @@ import PlayerContent from './PlayerContent';
 import BackgroundVisualizer from './BackgroundVisualizer';
 import AccentColorBackground from './AccentColorBackground';
 import { usePlayerLogic } from '@/hooks/usePlayerLogic';
+import { toAlbumPlaylistId } from '@/constants/playlist';
 
 const Container = styled.div`
   width: 100%;
@@ -15,6 +17,10 @@ const Container = styled.div`
 
 const AudioPlayerComponent = () => {
   const { state, handlers } = usePlayerLogic();
+
+  const handleAlbumPlay = useCallback((albumId: string, _albumName: string) => {
+    handlers.handlePlaylistSelect(toAlbumPlaylistId(albumId));
+  }, [handlers]);
 
   const renderContent = () => {
     const stateRenderer = (
@@ -85,7 +91,8 @@ const AudioPlayerComponent = () => {
           onBackToLibrary: handlers.handleOpenLibraryDrawer,
           onOpenLibraryDrawer: handlers.handleOpenLibraryDrawer,
           onCloseLibraryDrawer: handlers.handleCloseLibraryDrawer,
-          onPlaylistSelect: handlers.handlePlaylistSelect
+          onPlaylistSelect: handlers.handlePlaylistSelect,
+          onAlbumPlay: handleAlbumPlay
         }}
       />
     );

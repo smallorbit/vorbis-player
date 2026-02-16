@@ -16,6 +16,8 @@ interface LibraryDrawerProps {
   isOpen: boolean;
   onClose: () => void;
   onPlaylistSelect: (playlistId: string, playlistName: string) => void;
+  initialSearchQuery?: string;
+  initialViewMode?: 'playlists' | 'albums';
 }
 
 const DrawerContainer = styled.div.withConfig({
@@ -96,7 +98,7 @@ const DrawerContent = styled.div`
   flex-direction: column;
 `;
 
-export function LibraryDrawer({ isOpen, onClose, onPlaylistSelect }: LibraryDrawerProps) {
+export function LibraryDrawer({ isOpen, onClose, onPlaylistSelect, initialSearchQuery, initialViewMode }: LibraryDrawerProps) {
   const selectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handlePlaylistSelectWrapper = useCallback(
@@ -151,6 +153,8 @@ export function LibraryDrawer({ isOpen, onClose, onPlaylistSelect }: LibraryDraw
               <PlaylistSelection
                 onPlaylistSelect={handlePlaylistSelectWrapper}
                 inDrawer
+                initialSearchQuery={initialSearchQuery}
+                initialViewMode={initialViewMode}
               />
             </DrawerContent>
             <SwipeHandle

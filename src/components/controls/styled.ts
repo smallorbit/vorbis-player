@@ -108,6 +108,11 @@ export const AlbumLink = styled.a`
   color: inherit;
   text-decoration: none;
   transition: opacity 0.15s ease;
+  background: none;
+  border: none;
+  font: inherit;
+  padding: 0;
+  cursor: pointer;
 
   &:hover {
     opacity: 0.8;
@@ -133,6 +138,11 @@ export const ArtistLink = styled.a`
   color: inherit;
   text-decoration: none;
   transition: opacity 0.15s ease;
+  background: none;
+  border: none;
+  font: inherit;
+  padding: 0;
+  cursor: pointer;
 
   &:hover {
     opacity: 0.8;
