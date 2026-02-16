@@ -3,10 +3,7 @@ import styled from 'styled-components';
 import { CardContent } from './styled';
 import AlbumArt from './AlbumArt';
 import SpotifyPlayerControls from './SpotifyPlayerControls';
-import MobileBottomMenu from './MobileBottomMenu';
-import DesktopBottomMenu from './DesktopBottomMenu';
-import { MOBILE_BOTTOM_MENU_HEIGHT } from './MobileBottomMenu/styled';
-import { DESKTOP_BOTTOM_MENU_HEIGHT } from './DesktopBottomMenu/styled';
+import FabMenu from './FabMenu';
 import { theme } from '@/styles/theme';
 import { cardBase } from '../styles/utils';
 import { usePlayerSizing } from '../hooks/usePlayerSizing';
@@ -85,22 +82,20 @@ interface PlayerContentProps {
 }
 
 const ContentWrapper = styled.div.withConfig({
-  shouldForwardProp: (prop) => !['width', 'padding', 'useFluidSizing', 'transitionDuration', 'transitionEasing', '$isMobile'].includes(prop),
+  shouldForwardProp: (prop) => !['width', 'padding', 'useFluidSizing', 'transitionDuration', 'transitionEasing'].includes(prop),
 }) <{
   width: number;
   padding: number;
   useFluidSizing: boolean;
   transitionDuration: number;
   transitionEasing: string;
-  $isMobile: boolean;
 }>`
   width: ${props => props.useFluidSizing ? '100%' : `${props.width}px`};
   max-width: ${props => props.width}px;
 
   margin: 0 auto;
   padding: ${props => props.padding}px;
-  padding-bottom: ${props => 
-    `calc(${props.padding}px + ${props.$isMobile ? MOBILE_BOTTOM_MENU_HEIGHT : DESKTOP_BOTTOM_MENU_HEIGHT} + env(safe-area-inset-bottom, 0px))`};
+  padding-bottom: ${props => props.padding}px;
   box-sizing: border-box;
   position: relative;
   z-index: 2;
@@ -309,7 +304,6 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
       useFluidSizing={useFluidSizing}
       transitionDuration={transitionDuration}
       transitionEasing={transitionEasing}
-      $isMobile={isMobile}
     >
       <PlayerContainer>
 
@@ -381,33 +375,18 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
           </CardContent>
         </LoadingCard>
       </PlayerContainer>
-      {isMobile ? (
-        <MobileBottomMenu
-          accentColor={ui.accentColor}
-          currentTrack={track.current}
-          glowEnabled={effects.enabled}
-          backgroundVisualizerEnabled={handlers.backgroundVisualizerEnabled}
-          onShowVisualEffects={handlers.onShowVisualEffects}
-          onGlowToggle={handlers.onGlowToggle}
-          onBackgroundVisualizerToggle={handlers.onBackgroundVisualizerToggle}
-          onAccentColorChange={handlers.onAccentColorChange}
-          onBackToLibrary={handlers.onBackToLibrary}
-          onShowPlaylist={handlers.onShowPlaylist}
-        />
-      ) : (
-        <DesktopBottomMenu
-          accentColor={ui.accentColor}
-          currentTrack={track.current}
-          glowEnabled={effects.enabled}
-          backgroundVisualizerEnabled={handlers.backgroundVisualizerEnabled}
-          onShowVisualEffects={handlers.onShowVisualEffects}
-          onGlowToggle={handlers.onGlowToggle}
-          onBackgroundVisualizerToggle={handlers.onBackgroundVisualizerToggle}
-          onAccentColorChange={handlers.onAccentColorChange}
-          onBackToLibrary={handlers.onBackToLibrary}
-          onShowPlaylist={handlers.onShowPlaylist}
-        />
-      )}
+      <FabMenu
+        accentColor={ui.accentColor}
+        currentTrack={track.current}
+        glowEnabled={effects.enabled}
+        backgroundVisualizerEnabled={handlers.backgroundVisualizerEnabled}
+        onShowVisualEffects={handlers.onShowVisualEffects}
+        onGlowToggle={handlers.onGlowToggle}
+        onBackgroundVisualizerToggle={handlers.onBackgroundVisualizerToggle}
+        onAccentColorChange={handlers.onAccentColorChange}
+        onBackToLibrary={handlers.onBackToLibrary}
+        onShowPlaylist={handlers.onShowPlaylist}
+      />
       {ui.showVisualEffects && (
         <Suspense fallback={
           <div style={{
