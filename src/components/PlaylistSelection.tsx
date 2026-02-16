@@ -136,6 +136,11 @@ const DrawerContentWrapper = styled.div`
   flex-direction: column;
   padding: 0 ${theme.spacing.md};
   overflow: hidden;
+  max-width: 1000px;
+  margin-left: auto;
+  margin-right: auto;
+  width: 100%;
+  box-sizing: border-box;
 `;
 
 const PlaylistGrid = styled.div<{ $inDrawer?: boolean }>`
@@ -160,7 +165,7 @@ const PlaylistGrid = styled.div<{ $inDrawer?: boolean }>`
 
 const MobileGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(auto-fill, minmax(135px, 1fr));
   gap: 0.75rem;
   padding: 0.25rem 0 1rem;
   overflow-y: auto;
