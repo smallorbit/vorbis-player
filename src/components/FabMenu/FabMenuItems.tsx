@@ -189,7 +189,7 @@ export const FabMenuItems = ({
   return (
     <>
       {items.map((item, i) => (
-        <FabMenuItem key={item.key} $index={i} $isOpen={isOpen} $delay={i * STAGGER_DELAY}>
+        <FabMenuItem key={item.key} $isOpen={isOpen} $delay={i * STAGGER_DELAY}>
           {item.content}
           <FabMenuItemTooltip>{item.label}</FabMenuItemTooltip>
         </FabMenuItem>

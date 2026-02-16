@@ -12,6 +12,9 @@ export const FabContainer = styled.div`
   bottom: 24px;
   right: 24px;
   z-index: ${parseInt(theme.zIndex.mobileMenu) + 1};
+  display: flex;
+  align-items: center;
+  gap: ${theme.spacing.sm};
 `;
 
 export const FabButton = styled.button<{ $isOpen: boolean; $accentColor: string }>`
@@ -40,13 +43,10 @@ export const FabButton = styled.button<{ $isOpen: boolean; $accentColor: string 
 `;
 
 export const FabMenuItem = styled.div<{
-  $index: number;
   $isOpen: boolean;
   $delay: number;
 }>`
-  position: absolute;
-  bottom: 0;
-  right: ${({ $index }) => ($index + 1) * 52}px;
+  position: relative;
   transform: ${({ $isOpen }) => ($isOpen ? 'scale(1)' : 'scale(0)')};
   opacity: ${({ $isOpen }) => ($isOpen ? 1 : 0)};
   transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1),
