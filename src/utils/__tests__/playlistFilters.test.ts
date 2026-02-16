@@ -3,9 +3,7 @@ import {
   filterAndSortPlaylists,
   filterAndSortAlbums,
   getAvailableDecades,
-  type PlaylistSortOption,
-  type AlbumSortOption,
-  type YearFilterOption
+  partitionByPinned,
 } from '../playlistFilters';
 import type { PlaylistInfo, AlbumInfo } from '../../services/spotify';
 
@@ -273,6 +271,48 @@ describe('filterAndSortAlbums', () => {
 // ============================================================
 // UTILITY TESTS
 // ============================================================
+
+// ============================================================
+// PARTITION BY PINNED TESTS
+// ============================================================
+
+describe('partitionByPinned', () => {
+  it('returns pinned items first in pin order, then remaining in original order', () => {
+    const result = partitionByPinned(mockPlaylists, ['3', '1'], (p) => p.id);
+    expect(result.pinned.map(p => p.id)).toEqual(['3', '1']);
+    expect(result.unpinned.map(p => p.id)).toEqual(['2']);
+  });
+
+  it('returns all items as unpinned when pinnedIds is empty', () => {
+    const result = partitionByPinned(mockPlaylists, [], (p) => p.id);
+    expect(result.pinned).toEqual([]);
+    expect(result.unpinned).toEqual(mockPlaylists);
+  });
+
+  it('ignores pinnedIds that do not exist in the items array', () => {
+    const result = partitionByPinned(mockPlaylists, ['nonexistent', '2'], (p) => p.id);
+    expect(result.pinned.map(p => p.id)).toEqual(['2']);
+    expect(result.unpinned.map(p => p.id)).toEqual(['1', '3']);
+  });
+
+  it('returns empty arrays when items is empty', () => {
+    const result = partitionByPinned([], ['1', '2'], (p: PlaylistInfo) => p.id);
+    expect(result.pinned).toEqual([]);
+    expect(result.unpinned).toEqual([]);
+  });
+
+  it('works with albums using getId callback', () => {
+    const result = partitionByPinned(mockAlbums, ['2'], (a) => a.id);
+    expect(result.pinned.map(a => a.name)).toEqual(['Thriller']);
+    expect(result.unpinned.map(a => a.name)).toEqual(['Abbey Road', 'Random Access Memories']);
+  });
+
+  it('preserves unpinned items in their original order', () => {
+    const result = partitionByPinned(mockAlbums, ['2'], (a) => a.id);
+    expect(result.unpinned[0].name).toBe('Abbey Road');
+    expect(result.unpinned[1].name).toBe('Random Access Memories');
+  });
+});
 
 describe('getAvailableDecades', () => {
   it('returns unique decades from album collection', () => {

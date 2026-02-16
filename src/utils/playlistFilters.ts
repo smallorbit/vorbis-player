@@ -230,3 +230,41 @@ export function getAvailableDecades(albums: AlbumInfo[]): YearFilterOption[] {
   const order: YearFilterOption[] = ['2020s', '2010s', '2000s', '1990s', '1980s', 'older'];
   return order.filter(d => decades.has(d));
 }
+
+/**
+ * Partition items into pinned (in pin order) and unpinned (in original order).
+ * Pinned items that don't exist in the items array are silently ignored.
+ */
+export function partitionByPinned<T>(
+  items: T[],
+  pinnedIds: string[],
+  getId: (item: T) => string
+): { pinned: T[]; unpinned: T[] } {
+  if (pinnedIds.length === 0) {
+    return { pinned: [], unpinned: items };
+  }
+
+  const pinnedSet = new Set(pinnedIds);
+  const pinnedMap = new Map<string, T>();
+  const unpinned: T[] = [];
+
+  for (const item of items) {
+    const id = getId(item);
+    if (pinnedSet.has(id)) {
+      pinnedMap.set(id, item);
+    } else {
+      unpinned.push(item);
+    }
+  }
+
+  // Preserve pin insertion order
+  const pinned: T[] = [];
+  for (const id of pinnedIds) {
+    const item = pinnedMap.get(id);
+    if (item) {
+      pinned.push(item);
+    }
+  }
+
+  return { pinned, unpinned };
+}
