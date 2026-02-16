@@ -177,6 +177,36 @@ describe('filterAndSortAlbums', () => {
     });
   });
 
+  describe('artist filtering', () => {
+    it('returns all albums when artist filter is empty', () => {
+      const result = filterAndSortAlbums(mockAlbums, '', 'recently-added', 'all', '');
+      expect(result).toHaveLength(3);
+    });
+
+    it('filters by exact artist name', () => {
+      const result = filterAndSortAlbums(mockAlbums, '', 'recently-added', 'all', 'The Beatles');
+      expect(result).toHaveLength(1);
+      expect(result[0].name).toBe('Abbey Road');
+    });
+
+    it('filters by partial artist name (case-insensitive)', () => {
+      const result = filterAndSortAlbums(mockAlbums, '', 'recently-added', 'all', 'daft');
+      expect(result).toHaveLength(1);
+      expect(result[0].name).toBe('Random Access Memories');
+    });
+
+    it('filters by artist name (case-insensitive uppercase)', () => {
+      const result = filterAndSortAlbums(mockAlbums, '', 'recently-added', 'all', 'MICHAEL JACKSON');
+      expect(result).toHaveLength(1);
+      expect(result[0].name).toBe('Thriller');
+    });
+
+    it('returns empty array when artist not found', () => {
+      const result = filterAndSortAlbums(mockAlbums, '', 'recently-added', 'all', 'Nonexistent Artist');
+      expect(result).toHaveLength(0);
+    });
+  });
+
   describe('sorting', () => {
     it('sorts by artist ascending', () => {
       const result = filterAndSortAlbums(mockAlbums, '', 'artist-asc');
@@ -212,6 +242,30 @@ describe('filterAndSortAlbums', () => {
       const result = filterAndSortAlbums(mockAlbums, '', 'name-asc', '1980s');
       expect(result).toHaveLength(1);
       expect(result[0].name).toBe('Thriller');
+    });
+
+    it('applies search, year filter, artist filter, and sort together', () => {
+      // Add an album by The Beatles from the 1960s
+      const extendedMockAlbums: AlbumInfo[] = [
+        ...mockAlbums,
+        {
+          id: '4',
+          name: 'Let It Be',
+          artists: 'The Beatles',
+          images: [],
+          release_date: '1970-05-08',
+          total_tracks: 12,
+          uri: 'spotify:album:4',
+          added_at: '2024-03-10T10:00:00Z'
+        }
+      ];
+
+      // Filter by artist "The Beatles" (should get 2 Beatles albums)
+      // Filter by decade "older" (should only get pre-1980 albums)
+      const result = filterAndSortAlbums(extendedMockAlbums, '', 'name-asc', 'older', 'The Beatles');
+      expect(result).toHaveLength(2);
+      expect(result[0].name).toBe('Abbey Road');
+      expect(result[1].name).toBe('Let It Be');
     });
   });
 });

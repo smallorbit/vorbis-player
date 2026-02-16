@@ -141,13 +141,14 @@ export function filterAndSortPlaylists(
 }
 
 /**
- * Filter and sort albums based on search query, sort option, and year filter
+ * Filter and sort albums based on search query, sort option, year filter, and artist filter
  */
 export function filterAndSortAlbums(
   albums: AlbumInfo[],
   searchQuery: string,
   sortOption: AlbumSortOption,
-  yearFilter: YearFilterOption = 'all'
+  yearFilter: YearFilterOption = 'all',
+  artistFilter: string = ''
 ): AlbumInfo[] {
   // Step 1: Filter by search query
   let result = albums.filter(a => matchesSearch(a, searchQuery));
@@ -160,7 +161,13 @@ export function filterAndSortAlbums(
     });
   }
 
-  // Step 3: Sort
+  // Step 3: Filter by artist
+  if (artistFilter) {
+    const normalizedArtistFilter = normalizeText(artistFilter);
+    result = result.filter(a => normalizeText(a.artists).includes(normalizedArtistFilter));
+  }
+
+  // Step 4: Sort
   switch (sortOption) {
     case 'name-asc':
       result.sort((a, b) => a.name.localeCompare(b.name));
