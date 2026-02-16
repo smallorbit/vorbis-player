@@ -155,7 +155,7 @@ export function usePlayerState(): PlayerState & PlayerStateSetters {
   const [savedAlbumFilters, setSavedAlbumFilters] = useState<AlbumFilters | null>(null);
   const [backgroundVisualizerEnabled, setBackgroundVisualizerEnabled] = useLocalStorage<boolean>(
     'vorbis-player-background-visualizer-enabled',
-    false
+    true
   );
   const [backgroundVisualizerStyle, setBackgroundVisualizerStyle] = useLocalStorage<VisualizerStyle>(
     'vorbis-player-background-visualizer-style',
