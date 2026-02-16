@@ -45,8 +45,8 @@ export const FabMenuItem = styled.div<{
   $delay: number;
 }>`
   position: absolute;
-  bottom: ${({ $index }) => ($index + 1) * 52}px;
-  right: 0;
+  bottom: 0;
+  right: ${({ $index }) => ($index + 1) * 52}px;
   transform: ${({ $isOpen }) => ($isOpen ? 'scale(1)' : 'scale(0)')};
   opacity: ${({ $isOpen }) => ($isOpen ? 1 : 0)};
   transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1),
@@ -61,11 +61,11 @@ export const FabMenuItem = styled.div<{
 
 export const FabMenuItemTooltip = styled.span`
   position: absolute;
-  right: 100%;
-  top: 50%;
-  transform: translateY(-50%);
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
   white-space: nowrap;
-  margin-right: 8px;
+  margin-bottom: 8px;
   padding: 4px 8px;
   background: ${theme.colors.popover.background};
   border-radius: ${theme.borderRadius.md};
