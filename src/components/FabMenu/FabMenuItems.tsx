@@ -29,10 +29,6 @@ interface FabMenuItemsProps {
   onColorPickerOpenChange?: (isOpen: boolean) => void;
 }
 
-const ARC_START = (5 * Math.PI) / 180;
-const ARC_END = (130 * Math.PI) / 180;
-const RADIUS_DESKTOP = 110;
-const RADIUS_MOBILE = 90;
 const STAGGER_DELAY = 30;
 
 export const FabMenuItems = ({
@@ -52,7 +48,6 @@ export const FabMenuItems = ({
 }: FabMenuItemsProps) => {
   const { isMobile } = usePlayerSizing();
   const isTablet = false;
-  const radius = isMobile ? RADIUS_MOBILE : RADIUS_DESKTOP;
 
   const { customAccentColorOverrides, handleCustomAccentColor, handleAccentColorChange } =
     useCustomAccentColors({
@@ -64,27 +59,24 @@ export const FabMenuItems = ({
     const list: Array<{
       key: string;
       label: string;
-      render: (angle: number, radius: number, delay: number) => React.ReactNode;
+      content: React.ReactNode;
     }> = [];
 
     list.push({
       key: 'glow',
       label: `Visual Effects ${glowEnabled ? 'enabled' : 'disabled'}`,
-      render: (angle, r, delay) => (
-        <FabMenuItem $angle={angle} $radius={r} $isOpen={isOpen} $delay={delay}>
-          <ControlButton
-            $isMobile={isMobile}
-            $isTablet={isTablet}
-            accentColor={accentColor}
-            isActive={glowEnabled}
-            onClick={onItemAction(onGlowToggle)}
-            title={`Visual Effects ${glowEnabled ? 'enabled' : 'disabled'}`}
-            aria-pressed={glowEnabled}
-          >
-            <GlowIcon />
-          </ControlButton>
-          <FabMenuItemTooltip>{`Visual Effects ${glowEnabled ? 'enabled' : 'disabled'}`}</FabMenuItemTooltip>
-        </FabMenuItem>
+      content: (
+        <ControlButton
+          $isMobile={isMobile}
+          $isTablet={isTablet}
+          accentColor={accentColor}
+          isActive={glowEnabled}
+          onClick={onItemAction(onGlowToggle)}
+          title={`Visual Effects ${glowEnabled ? 'enabled' : 'disabled'}`}
+          aria-pressed={glowEnabled}
+        >
+          <GlowIcon />
+        </ControlButton>
       ),
     });
 
@@ -92,21 +84,18 @@ export const FabMenuItems = ({
       list.push({
         key: 'visualizer',
         label: `Background Visualizer ${backgroundVisualizerEnabled ? 'ON' : 'OFF'}`,
-        render: (angle, r, delay) => (
-          <FabMenuItem $angle={angle} $radius={r} $isOpen={isOpen} $delay={delay}>
-            <ControlButton
-              $isMobile={isMobile}
-              $isTablet={isTablet}
-              accentColor={accentColor}
-              isActive={backgroundVisualizerEnabled}
-              onClick={onItemAction(onBackgroundVisualizerToggle)}
-              title={`Background Visualizer ${backgroundVisualizerEnabled ? 'ON' : 'OFF'}`}
-              aria-pressed={backgroundVisualizerEnabled}
-            >
-              <BackgroundVisualizerIcon />
-            </ControlButton>
-            <FabMenuItemTooltip>{`Background Visualizer ${backgroundVisualizerEnabled ? 'ON' : 'OFF'}`}</FabMenuItemTooltip>
-          </FabMenuItem>
+        content: (
+          <ControlButton
+            $isMobile={isMobile}
+            $isTablet={isTablet}
+            accentColor={accentColor}
+            isActive={backgroundVisualizerEnabled}
+            onClick={onItemAction(onBackgroundVisualizerToggle)}
+            title={`Background Visualizer ${backgroundVisualizerEnabled ? 'ON' : 'OFF'}`}
+            aria-pressed={backgroundVisualizerEnabled}
+          >
+            <BackgroundVisualizerIcon />
+          </ControlButton>
         ),
       });
     }
@@ -114,39 +103,33 @@ export const FabMenuItems = ({
     list.push({
       key: 'effects',
       label: 'Visual effects',
-      render: (angle, r, delay) => (
-        <FabMenuItem $angle={angle} $radius={r} $isOpen={isOpen} $delay={delay}>
-          <ControlButton
-            $isMobile={isMobile}
-            $isTablet={isTablet}
-            accentColor={accentColor}
-            onClick={onItemAction(onShowVisualEffects)}
-            title="Visual effects"
-          >
-            <VisualEffectsIcon />
-          </ControlButton>
-          <FabMenuItemTooltip>Visual effects</FabMenuItemTooltip>
-        </FabMenuItem>
+      content: (
+        <ControlButton
+          $isMobile={isMobile}
+          $isTablet={isTablet}
+          accentColor={accentColor}
+          onClick={onItemAction(onShowVisualEffects)}
+          title="Visual effects"
+        >
+          <VisualEffectsIcon />
+        </ControlButton>
       ),
     });
 
     list.push({
       key: 'color',
       label: 'Theme options',
-      render: (angle, r, delay) => (
-        <FabMenuItem $angle={angle} $radius={r} $isOpen={isOpen} $delay={delay}>
-          <ColorPickerPopover
-            accentColor={accentColor}
-            currentTrack={currentTrack}
-            onAccentColorChange={handleAccentColorChange}
-            customAccentColorOverrides={customAccentColorOverrides}
-            onCustomAccentColor={handleCustomAccentColor}
-            $isMobile={isMobile}
-            $isTablet={isTablet}
-            onOpenChange={onColorPickerOpenChange}
-          />
-          <FabMenuItemTooltip>Theme options</FabMenuItemTooltip>
-        </FabMenuItem>
+      content: (
+        <ColorPickerPopover
+          accentColor={accentColor}
+          currentTrack={currentTrack}
+          onAccentColorChange={handleAccentColorChange}
+          customAccentColorOverrides={customAccentColorOverrides}
+          onCustomAccentColor={handleCustomAccentColor}
+          $isMobile={isMobile}
+          $isTablet={isTablet}
+          onOpenChange={onColorPickerOpenChange}
+        />
       ),
     });
 
@@ -154,19 +137,16 @@ export const FabMenuItems = ({
       list.push({
         key: 'library',
         label: 'Back to Library',
-        render: (angle, r, delay) => (
-          <FabMenuItem $angle={angle} $radius={r} $isOpen={isOpen} $delay={delay}>
-            <ControlButton
-              $isMobile={isMobile}
-              $isTablet={isTablet}
-              accentColor={accentColor}
-              onClick={onItemAction(onBackToLibrary)}
-              title="Back to Library"
-            >
-              <BackToLibraryIcon />
-            </ControlButton>
-            <FabMenuItemTooltip>Back to Library</FabMenuItemTooltip>
-          </FabMenuItem>
+        content: (
+          <ControlButton
+            $isMobile={isMobile}
+            $isTablet={isTablet}
+            accentColor={accentColor}
+            onClick={onItemAction(onBackToLibrary)}
+            title="Back to Library"
+          >
+            <BackToLibraryIcon />
+          </ControlButton>
         ),
       });
     }
@@ -174,19 +154,16 @@ export const FabMenuItems = ({
     list.push({
       key: 'playlist',
       label: 'Show Playlist',
-      render: (angle, r, delay) => (
-        <FabMenuItem $angle={angle} $radius={r} $isOpen={isOpen} $delay={delay}>
-          <ControlButton
-            $isMobile={isMobile}
-            $isTablet={isTablet}
-            accentColor={accentColor}
-            onClick={onItemAction(onShowPlaylist)}
-            title="Show Playlist"
-          >
-            <PlaylistIcon />
-          </ControlButton>
-          <FabMenuItemTooltip>Show Playlist</FabMenuItemTooltip>
-        </FabMenuItem>
+      content: (
+        <ControlButton
+          $isMobile={isMobile}
+          $isTablet={isTablet}
+          accentColor={accentColor}
+          onClick={onItemAction(onShowPlaylist)}
+          title="Show Playlist"
+        >
+          <PlaylistIcon />
+        </ControlButton>
       ),
     });
 
@@ -197,7 +174,6 @@ export const FabMenuItems = ({
     glowEnabled,
     backgroundVisualizerEnabled,
     isMobile,
-    isOpen,
     customAccentColorOverrides,
     handleCustomAccentColor,
     handleAccentColorChange,
@@ -210,20 +186,14 @@ export const FabMenuItems = ({
     onColorPickerOpenChange,
   ]);
 
-  const arcSpan = ARC_END - ARC_START;
-  const step = items.length > 1 ? arcSpan / (items.length - 1) : 0;
-
   return (
     <>
-      {items.map((item, i) => {
-        const angle = ARC_START + step * i;
-        const delay = i * STAGGER_DELAY;
-        return (
-          <div key={item.key}>
-            {item.render(angle, radius, delay)}
-          </div>
-        );
-      })}
+      {items.map((item, i) => (
+        <FabMenuItem key={item.key} $index={i} $isOpen={isOpen} $delay={i * STAGGER_DELAY}>
+          {item.content}
+          <FabMenuItemTooltip>{item.label}</FabMenuItemTooltip>
+        </FabMenuItem>
+      ))}
     </>
   );
 };

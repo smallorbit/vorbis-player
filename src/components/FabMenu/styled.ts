@@ -40,18 +40,14 @@ export const FabButton = styled.button<{ $isOpen: boolean; $accentColor: string 
 `;
 
 export const FabMenuItem = styled.div<{
-  $angle: number;
-  $radius: number;
+  $index: number;
   $isOpen: boolean;
   $delay: number;
 }>`
   position: absolute;
-  bottom: 0;
+  bottom: ${({ $index }) => ($index + 1) * 52}px;
   right: 0;
-  transform: ${({ $isOpen, $angle, $radius }) =>
-    $isOpen
-      ? `translate(${-Math.cos($angle) * $radius}px, ${-Math.sin($angle) * $radius}px) scale(1)`
-      : 'translate(0, 0) scale(0)'};
+  transform: ${({ $isOpen }) => ($isOpen ? 'scale(1)' : 'scale(0)')};
   opacity: ${({ $isOpen }) => ($isOpen ? 1 : 0)};
   transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1),
     opacity 0.2s ease;
