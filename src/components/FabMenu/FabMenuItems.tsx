@@ -29,10 +29,10 @@ interface FabMenuItemsProps {
   onColorPickerOpenChange?: (isOpen: boolean) => void;
 }
 
-const ARC_START = (10 * Math.PI) / 180;
-const ARC_END = (100 * Math.PI) / 180;
-const RADIUS_DESKTOP = 80;
-const RADIUS_MOBILE = 70;
+const ARC_START = (5 * Math.PI) / 180;
+const ARC_END = (130 * Math.PI) / 180;
+const RADIUS_DESKTOP = 110;
+const RADIUS_MOBILE = 90;
 const STAGGER_DELAY = 30;
 
 export const FabMenuItems = ({
