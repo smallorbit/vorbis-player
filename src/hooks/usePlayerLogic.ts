@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { spotifyAuth, checkTrackSaved, saveTrack, unsaveTrack } from '@/services/spotify';
+import { spotifyAuth } from '@/services/spotify';
 import { spotifyPlayer } from '@/services/spotifyPlayer';
 import { usePlayerState } from '@/hooks/usePlayerState';
 import { usePlaylistManager } from '@/hooks/usePlaylistManager';
@@ -9,6 +9,7 @@ import { useAccentColor } from '@/hooks/useAccentColor';
 import { useVisualEffectsState } from '@/hooks/useVisualEffectsState';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
 import { useVolume } from '@/hooks/useVolume';
+import { useLikeTrack } from '@/hooks/useLikeTrack';
 import type { Track } from '@/services/spotify';
 
 export function usePlayerLogic() {
@@ -70,10 +71,6 @@ export function usePlayerLogic() {
   // Mobile library drawer (full-screen playlist/album selection)
   const [showLibraryDrawer, setShowLibraryDrawer] = useState(false);
 
-  // Like state
-  const [isLiked, setIsLiked] = useState(false);
-  const [isLikePending, setIsLikePending] = useState(false);
-
   // Volume/mute controls
   const { handleMuteToggle, isMuted, volume } = useVolume();
 
@@ -107,56 +104,8 @@ export function usePlayerLogic() {
 
   const currentTrack = useMemo(() => tracks[currentTrackIndex] || null, [tracks, currentTrackIndex]);
 
-  useEffect(() => {
-    let isMounted = true;
-
-    async function checkLikeStatus() {
-      if (!currentTrack?.id) {
-        if (isMounted) setIsLiked(false);
-        return;
-      }
-
-      try {
-        if (isMounted) setIsLikePending(true);
-        const liked = await checkTrackSaved(currentTrack.id);
-        if (isMounted) setIsLiked(liked);
-      } catch (error) {
-        console.error('Failed to check like status:', error);
-        if (isMounted) setIsLiked(false);
-      } finally {
-        if (isMounted) setIsLikePending(false);
-      }
-    }
-
-    checkLikeStatus();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [currentTrack?.id]);
-
-  const handleLikeToggle = useCallback(async () => {
-    if (!currentTrack?.id || isLikePending) {
-      return;
-    }
-
-    const newLikedState = !isLiked;
-    setIsLikePending(true);
-    setIsLiked(newLikedState);
-
-    try {
-      if (newLikedState) {
-        await saveTrack(currentTrack.id);
-      } else {
-        await unsaveTrack(currentTrack.id);
-      }
-    } catch (error) {
-      console.error('Failed to toggle like status:', error);
-      setIsLiked(isLiked);
-    } finally {
-      setIsLikePending(false);
-    }
-  }, [currentTrack?.id, isLikePending, isLiked]);
+  // Like/save track management
+  const { isLiked, isLikePending, handleLikeToggle } = useLikeTrack(currentTrack?.id);
 
   // Extract accent color from album artwork
   const { handleAccentColorChange: handleAccentColorChangeHook } = useAccentColor(
