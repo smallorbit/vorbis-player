@@ -80,7 +80,7 @@ export const FabMenuItems = ({
       ),
     });
 
-    if (onBackgroundVisualizerToggle) {
+    if (onBackgroundVisualizerToggle && !isMobile) {
       list.push({
         key: 'visualizer',
         label: `Background Visualizer ${backgroundVisualizerEnabled ? 'ON' : 'OFF'}`,
