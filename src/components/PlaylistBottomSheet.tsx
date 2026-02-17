@@ -27,8 +27,8 @@ const DrawerContainer = styled.div.withConfig({
   left: 0;
   right: 0;
   bottom: 0;
-  height: 80vh;
-  max-height: 80vh;
+  height: 50dvh;
+  max-height: 50dvh;
   z-index: ${theme.zIndex.modal};
   background: ${theme.colors.overlay.dark};
   backdrop-filter: blur(${theme.drawer.backdropBlur});
