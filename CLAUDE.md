@@ -9,11 +9,15 @@ This file provides guidance to Claude Code (claude.ai/code) and other AI assista
 ### Key Features
 - **Spotify Integration**: Full Web Playback SDK integration with playlist, album, and Liked Songs support
 - **Visual Effects System**: Customizable glow effects, album art filters (brightness, contrast, saturation, sepia, hue rotation, blur)
-- **Background Visualizers**: 2 active visualizer types (Particles, Geometric)
+- **Background Visualizers**: 2 active visualizer types (Particles, Geometric), enabled by default
 - **Fully Responsive Design**: Fluid sizing with aspect-ratio calculations, container queries, and mobile-optimized layout
-- **Playlist Management**: Search, sort, and filter playlists and albums with multiple sort criteria
-- **Keyboard Shortcuts**: Comprehensive keyboard control system (17 shortcuts)
-- **Performance Optimized**: Web Workers, LRU caching, lazy loading, hardware-accelerated animations
+- **Playlist Management**: Search, sort, filter, and pin playlists and albums with multiple sort criteria
+- **FAB Menu**: Expandable floating action button replacing traditional menus, unified across all devices
+- **Swipe Gestures**: Horizontal swipe for track navigation, vertical swipe for drawer toggles (mobile)
+- **Interactive Track Info**: Clickable artist/album names with popovers linking to Spotify and library filtering
+- **IndexedDB Caching**: Persistent library cache with background sync engine for instant startup
+- **Keyboard Shortcuts**: Context-aware keyboard control system (12 shortcuts with device-specific behavior)
+- **Performance Optimized**: Web Workers, LRU caching, IndexedDB persistence, lazy loading, hardware-accelerated animations
 
 ## Development Commands
 
@@ -48,12 +52,13 @@ npm run deploy:preview # Deploy preview
 ```
 vorbis-player/
 ├── src/
-│   ├── components/              # React components (43 files)
+│   ├── components/              # React components (~42 files)
 │   │   ├── controls/            # Player control sub-components
 │   │   │   ├── EffectsControls.tsx
 │   │   │   ├── PlaybackControls.tsx
 │   │   │   ├── TimelineControls.tsx
 │   │   │   ├── TrackInfo.tsx
+│   │   │   ├── TrackInfoPopover.tsx  # Artist/album context menu popover
 │   │   │   ├── VolumeControl.tsx
 │   │   │   └── styled.ts
 │   │   ├── styled/              # styled-components UI library
@@ -61,23 +66,22 @@ vorbis-player/
 │   │   │   ├── Avatar.tsx
 │   │   │   ├── Button.tsx
 │   │   │   ├── Card.tsx
+│   │   │   ├── Drawer.tsx       # Shared drawer primitives (overlay, grip, transitions)
 │   │   │   ├── ScrollArea.tsx
 │   │   │   ├── Skeleton.tsx
 │   │   │   └── index.ts
 │   │   ├── visualizers/         # Background visualizer components
 │   │   │   ├── ParticleVisualizer.tsx
 │   │   │   └── GeometricVisualizer.tsx
+│   │   ├── FabMenu/             # Expandable floating action button menu
+│   │   │   ├── index.tsx        # FAB with portal rendering, overlay management
+│   │   │   ├── FabMenuItems.tsx # Menu items with staggered animation
+│   │   │   └── styled.ts
 │   │   ├── VisualEffectsMenu/
 │   │   │   ├── index.tsx
 │   │   │   └── styled.ts
-│   │   ├── MobileBottomMenu/       # Mobile bottom menu components
-│   │   │   ├── index.tsx
-│   │   │   ├── MenuContent.tsx
-│   │   │   └── styled.ts
-│   │   ├── DesktopBottomMenu/      # Desktop bottom menu components
-│   │   │   ├── index.tsx
-│   │   │   ├── MenuContent.tsx
-│   │   │   └── styled.ts
+│   │   ├── icons/
+│   │   │   └── QuickActionIcons.tsx  # SVG icon components for FAB menu items
 │   │   ├── __tests__/
 │   │   │   └── KeyboardShortcutsIntegration.test.tsx
 │   │   ├── AccentColorBackground.tsx
@@ -89,25 +93,29 @@ vorbis-player/
 │   │   ├── ColorPickerPopover.tsx
 │   │   ├── EyedropperOverlay.tsx
 │   │   ├── KeyboardShortcutsHelp.tsx
-│   │   ├── LeftQuickActionsPanel.tsx
+│   │   ├── LibraryDrawer.tsx    # Full-screen library browser (top drawer)
 │   │   ├── LikeButton.tsx
 │   │   ├── PerformanceProfiler.tsx
 │   │   ├── PlayerContent.tsx
-│   │   ├── PlayerControls.tsx
 │   │   ├── PlayerStateRenderer.tsx
 │   │   ├── Playlist.tsx
+│   │   ├── PlaylistBottomSheet.tsx  # Mobile playlist view (bottom sheet)
 │   │   ├── PlaylistDrawer.tsx
 │   │   ├── PlaylistSelection.tsx
-│   │   ├── QuickActionsPanel.tsx
 │   │   ├── SpotifyPlayerControls.tsx
 │   │   ├── TimelineSlider.tsx
 │   │   └── VisualEffectsPerformanceMonitor.tsx
-│   ├── hooks/                   # Custom React hooks (17 hooks)
+│   ├── constants/               # Shared constants
+│   │   └── playlist.ts         # ALBUM_ID_PREFIX, LIKED_SONGS_ID, helpers
+│   ├── hooks/                   # Custom React hooks (22 hooks)
 │   │   ├── __tests__/
 │   │   │   ├── useCustomAccentColors.test.ts
 │   │   │   ├── useKeyboardShortcuts.test.ts
+│   │   │   ├── useLibrarySync.test.ts
 │   │   │   ├── useLocalStorage.test.ts
-│   │   │   └── usePlayerState.test.ts
+│   │   │   ├── usePinnedItems.test.ts
+│   │   │   ├── usePlayerState.test.ts
+│   │   │   └── useSwipeGesture.test.ts
 │   │   ├── useAccentColor.ts
 │   │   ├── useAnimationFrame.ts
 │   │   ├── useAutoAdvance.ts
@@ -115,19 +123,31 @@ vorbis-player/
 │   │   ├── useCustomAccentColors.ts
 │   │   ├── useImageProcessingWorker.ts
 │   │   ├── useKeyboardShortcuts.ts
+│   │   ├── useLibrarySync.ts    # Background library sync with IndexedDB cache
+│   │   ├── useLikeTrack.ts      # Like/unlike track with optimistic UI
 │   │   ├── useLocalStorage.ts
 │   │   ├── usePlaylistManager.ts
+│   │   ├── usePinnedItems.ts    # Pin/unpin playlists and albums (max 4 per tab)
 │   │   ├── usePlayerLogic.ts
 │   │   ├── usePlayerSizing.ts
 │   │   ├── usePlayerState.ts
 │   │   ├── useProfilerData.ts
 │   │   ├── useSpotifyControls.ts
 │   │   ├── useSpotifyPlayback.ts
+│   │   ├── useSwipeGesture.ts           # Horizontal swipe for track navigation
+│   │   ├── useVerticalSwipeGesture.ts   # Vertical swipe for drawer toggles
 │   │   ├── useVisualEffectsState.ts
 │   │   └── useVolume.ts
 │   ├── services/                # External service integrations
 │   │   ├── spotify.ts           # Spotify Web API
-│   │   └── spotifyPlayer.ts     # Spotify Web Playback SDK
+│   │   ├── spotifyPlayer.ts     # Spotify Web Playback SDK
+│   │   └── cache/               # IndexedDB-based library caching
+│   │       ├── __tests__/
+│   │       │   ├── libraryCache.test.ts
+│   │       │   └── librarySyncEngine.test.ts
+│   │       ├── cacheTypes.ts    # Cache type definitions
+│   │       ├── libraryCache.ts  # IndexedDB persistence layer
+│   │       └── librarySyncEngine.ts  # Background sync engine
 │   ├── utils/                   # Utility functions
 │   │   ├── __tests__/
 │   │   │   ├── colorUtils.test.ts
@@ -166,20 +186,25 @@ vorbis-player/
 │       └── setup.ts
 ├── docs/
 │   ├── development/
-│   │   └── ai-agent-wip.md
+│   │   ├── ai-agent-wip.md
+│   │   └── dynamic-contrast-implementation.md
 │   ├── deployment/
 │   │   └── deploy-to-vercel.md
 │   ├── analysis/
 │   │   └── ANALYSIS.md
 │   └── implementation-plans/
-│       └── library-sort-search-filter.md
+│       ├── expandable-fab-menu.md
+│       ├── library-sort-search-filter.md
+│       ├── mobile-bottom-menu.md
+│       ├── mobile-library-drawer.md
+│       └── swipe-album-navigation.md
 ├── CLAUDE.md                    # This file
 ├── .claude/
 │   └── rules/
 │       ├── generate_prd.md
 │       ├── generate_tasks_from_prd.md
 │       └── process_tasks.md
-├── proxy-server/                # Proxy server for development
+├── scripts/                     # Build and deployment scripts
 └── [config files]
 ```
 
@@ -193,37 +218,36 @@ App.tsx (OAuth authentication, AppContainer with flex centering)
     │   ├── ParticleVisualizer (active)
     │   └── GeometricVisualizer (active)
     └── PlayerStateRenderer (loading/error/playlist selection)
-        ├── PlaylistSelection (search, sort, filter, lazy-loaded images)
+        ├── PlaylistSelection (search, sort, filter, pin, lazy-loaded images)
         └── PlayerContent (main playing interface)
             └── ContentWrapper (position: relative, overflow: visible, container queries)
                 ├── PlayerContainer (flex column, always centered)
-                │   ├── CardContent (album art zone)
+                │   ├── CardContent (album art zone, swipe gestures)
                 │   │   └── ClickableAlbumArtContainer
                 │   │       └── AlbumArt (aspect-ratio: 1, max-width: 700px)
                 │   │           ├── AlbumArtFilters (CSS filter application)
                 │   │           └── AccentColorGlowOverlay
-                │   └── AnimatedControlsContainer (slide-down animation)
-                │       └── SpotifyPlayerControls
-                │           ├── TrackInfo (song name/artist)
-                │           ├── PlaybackControls (prev/play/next)
-                │           └── TimelineControls
-                │               ├── TimelineSlider
-                │               ├── VolumeControl
-                │               └── LikeButton
-                └── BottomMenu (fixed bottom, portaled to body)
-                    ├── MobileBottomMenu (mobile only)
-                    │   ├── Glow Toggle
-                    │   ├── Visual Effects Menu Toggle
-                    │   ├── ColorPickerPopover
-                    │   ├── Back to Library
-                    │   └── Playlist Drawer Toggle
-                    └── DesktopBottomMenu (desktop/tablet)
-                        ├── Glow Toggle
-                        ├── Background Visualizer Toggle
-                        ├── Visual Effects Menu Toggle
-                        ├── ColorPickerPopover
-                        ├── Back to Library
-                        └── Playlist Drawer Toggle
+                │   └── SpotifyPlayerControls (always visible)
+                │       ├── TrackInfo (clickable artist/album with popovers)
+                │       ├── PlaybackControls (prev/play/next)
+                │       └── TimelineControls
+                │           ├── TimelineSlider
+                │           ├── VolumeControl
+                │           └── LikeButton
+                ├── FabMenu (portal to document.body, bottom-right)
+                │   ├── Glow Toggle
+                │   ├── Background Visualizer Toggle
+                │   ├── Visual Effects Menu Toggle
+                │   ├── ColorPickerPopover
+                │   ├── Back to Library
+                │   └── Show Playlist Toggle
+                ├── VisualEffectsMenu (lazy loaded)
+                ├── LibraryDrawer (top drawer, lazy loaded)
+                │   └── PlaylistSelection (search, sort, filter, pin)
+                ├── PlaylistBottomSheet (mobile only, bottom sheet, lazy loaded)
+                │   └── Playlist (current tracks)
+                ├── PlaylistDrawer (desktop/tablet, lazy loaded)
+                └── KeyboardShortcutsHelp (lazy loaded)
 ```
 
 ### Layout Architecture (Critical)
@@ -234,7 +258,7 @@ The centering system uses a flex chain from root to player content:
 AppContainer (flexCenter, min-height: 100dvh)
   → Container/AudioPlayer (flexCenter, min-height: 100dvh)
     → ContentWrapper (position: relative, z-index: 2, overflow: visible)
-      → PlayerContainer (translateY(-4rem) when expanded)
+      → PlayerContainer (flex column, centered)
 ```
 
 **Important layout callouts:**
@@ -242,15 +266,15 @@ AppContainer (flexCenter, min-height: 100dvh)
 - **`overflow: visible` is required on ContentWrapper** because `container-type: inline-size` establishes containment that would clip absolutely-positioned elements
 - **Vertical centering** relies on the flex chain from root to ContentWrapper — the player (album art + controls) is always centered as a unit
 - **`100dvh`** (dynamic viewport height) is used throughout to account for iOS/mobile browser address bar changes
-- **Bottom menus** (MobileBottomMenu, DesktopBottomMenu) use `position: fixed` at the bottom with React portals to `document.body`, centered horizontally
-- **ContentWrapper padding-bottom** automatically includes space for the bottom menu height plus safe area insets to prevent content overlap
+- **FabMenu** uses `createPortal()` to render to `document.body`, positioned fixed at bottom-right
+- **Drawers** (LibraryDrawer, PlaylistDrawer, PlaylistBottomSheet) use fixed positioning with smooth slide animations and swipe-to-dismiss
 - **BackgroundVisualizer and AccentColorBackground** are `position: fixed` with low z-index values and do not affect layout flow
 
-**UI Control Layout Changes (v2.0)**:
-- **Desktop/Tablet**: Quick action buttons moved from side panels to fixed bottom menu, matching mobile layout pattern
-- **Mobile**: Quick action buttons remain in fixed bottom menu (unchanged)
-- **Removed**: LeftQuickActionsPanel and QuickActionsPanel side panels (desktop only)
-- **New**: DesktopBottomMenu component providing unified bottom menu experience across all devices
+**UI Control Layout (FAB Menu)**:
+- **All devices**: Quick action buttons consolidated into a single expandable FAB (floating action button) in the bottom-right corner
+- **Removed**: LeftQuickActionsPanel, QuickActionsPanel side panels, MobileBottomMenu, DesktopBottomMenu
+- **FAB items** fan out horizontally to the left with staggered animation (30ms delay per item)
+- **Controls always visible**: Player controls (track info, playback, timeline) are always shown — no compact/expanded toggle
 
 ### Responsive Sizing System
 
@@ -290,7 +314,7 @@ The app uses a fluid responsive sizing system via `usePlayerSizing` hook and `si
 
 ### Hook-Based State Management
 
-The application uses a centralized state management approach with custom React hooks (17 total):
+The application uses a centralized state management approach with custom React hooks (22 total):
 
 **Core State Hooks**:
 - **usePlayerState.ts** - Central state management with grouped state objects (track, playlist, color, visualEffects)
@@ -300,15 +324,16 @@ The application uses a centralized state management approach with custom React h
 **Spotify Integration Hooks**:
 - **usePlaylistManager.ts** - Playlist loading & Liked Songs management with shuffle functionality
 - **useSpotifyPlayback.ts** - Spotify Web Playback SDK control and track management
-- **useSpotifyControls.ts** - Volume, like, timeline, and playback controls
+- **useSpotifyControls.ts** - Volume, timeline, and playback controls
 
 **Playback & Audio Hooks**:
 - **useAutoAdvance.ts** - Auto-advance logic for seamless track progression
 - **useVolume.ts** - Volume state management with localStorage persistence
+- **useLikeTrack.ts** - Like/unlike track with optimistic UI updates
 
 **Visual Effects Hooks**:
 - **useAccentColor.ts** - Dynamic color extraction from album artwork using LRU cache
-- **useCustomAccentColors.ts** - Per-track color overrides with localStorage persistence
+- **useCustomAccentColors.ts** - Per-album color overrides with localStorage persistence
 - **useVisualEffectsState.ts** - Glow and filter state management
 
 **Performance & Processing Hooks**:
@@ -318,8 +343,14 @@ The application uses a centralized state management approach with custom React h
 - **useAnimationFrame.ts** - RequestAnimationFrame wrapper for smooth animations
 
 **UI & Interaction Hooks**:
-- **useKeyboardShortcuts.ts** - Centralized keyboard shortcut handling system
+- **useKeyboardShortcuts.ts** - Context-aware keyboard shortcut handling with pointer input detection
 - **useLocalStorage.ts** - Generic localStorage hook with error handling and type safety
+- **useSwipeGesture.ts** - Horizontal swipe gesture detection for track navigation (mobile/tablet)
+- **useVerticalSwipeGesture.ts** - Vertical swipe gesture detection for drawer toggles (mobile)
+
+**Library & Data Hooks**:
+- **useLibrarySync.ts** - Background library sync with IndexedDB cache, exposes playlists/albums/sync state
+- **usePinnedItems.ts** - Pin/unpin playlists and albums (max 4 per tab), persisted in localStorage
 
 ### Service Layer
 
@@ -335,16 +366,25 @@ The application uses a centralized state management approach with custom React h
   - `getCachedData()`: Returns cached playlist/album data for progressive loading
 - **spotifyPlayer.ts** - Spotify Web Playback SDK wrapper with state management
 
+**Cache Services** (`services/cache/`):
+- **libraryCache.ts** - IndexedDB-based persistent cache for playlists, albums, and track lists. Falls back to in-memory Maps if IndexedDB is unavailable. Supports incremental updates.
+- **librarySyncEngine.ts** - Background sync engine that polls Spotify API every ~90 seconds. Uses lightweight change detection (count comparison, snapshot IDs) before fetching full data. Two-tier track caching: in-memory L1 (10 min TTL) + IndexedDB L2 (24 hour TTL).
+- **cacheTypes.ts** - TypeScript interfaces: `CachedPlaylistInfo`, `CachedTrackList`, `LibraryCacheMeta`, `LibraryChanges`, `SyncState`
+
 ### Utilities
 
 - **colorExtractor.ts** - LRU-cached color extraction from album artwork (100 item cache limit)
 - **colorUtils.ts** - Color manipulation utilities (contrast calculation, hex conversion)
 - **sizingUtils.ts** - Responsive sizing calculations (viewport info, player dimensions, padding, fluid sizing)
-- **playlistFilters.ts** - Playlist/album search, sort, and filter logic
+- **playlistFilters.ts** - Playlist/album search, sort, filter, and pin partitioning logic (`partitionByPinned`)
 - **visualizerUtils.ts** - Visualizer helper functions
 - **performanceMonitor.ts** - Performance tracking utilities
 - **visualEffectsPerformance.ts** - Visual effects performance utilities
 - **featureDetection.ts** - Browser feature detection (WebGL, backdrop-filter, etc.)
+
+### Constants
+
+- **constants/playlist.ts** - Shared playlist constants: `ALBUM_ID_PREFIX`, `LIKED_SONGS_ID`, `LIKED_SONGS_NAME`, and helper functions (`isAlbumId`, `extractAlbumId`, `toAlbumPlaylistId`)
 
 ## Key Implementation Details
 
@@ -361,6 +401,8 @@ The application uses a centralized state management approach with custom React h
 - **Infinite Playlist**: Loops back to beginning when reaching the end
 - **Auto-Skip**: Automatically skips unavailable tracks with 403 Restriction Violated errors
 - **Track Selection Sync**: Handles playlist item clicks vs. next/prev controls
+- **Swipe Navigation**: Horizontal swipe on album art to navigate tracks (mobile/tablet), with direction locking, velocity detection, and snap-back animation
+- **Tap to Play/Pause**: Tap album art to toggle playback on mobile
 - **State Management**: Uses `isInitialLoad` flag and proper useEffect dependency ordering
 
 ### Visual Effects System
@@ -380,10 +422,10 @@ The application uses a centralized state management approach with custom React h
 - One-click reset to defaults
 
 **Color System**:
-- **ColorPickerPopover**: Custom accent colors per track with visual color picker
+- **ColorPickerPopover**: Custom accent colors per album with visual color picker
 - **EyedropperOverlay**: Interactive color picking directly from album art
 - **Dynamic Extraction**: Automatic dominant color extraction with LRU caching
-- **Color Persistence**: Per-track color overrides saved in localStorage
+- **Color Persistence**: Per-album color overrides saved in localStorage (changed from per-track)
 
 ### Background Visualizers
 
@@ -395,34 +437,36 @@ The application uses a centralized state management approach with custom React h
 
 ### Keyboard Shortcuts
 
-| Key | Action |
-|-----|--------|
-| `Space` | Play/Pause |
-| `ArrowRight` | Next track |
-| `ArrowLeft` | Previous track |
-| `ArrowUp` | Volume up |
-| `ArrowDown` | Volume down |
-| `P` | Toggle playlist drawer |
-| `V` | Toggle background visualizer |
-| `G` | Toggle glow effect |
-| `O` | Open visual effects menu |
-| `L` | Like/unlike current track |
-| `M` | Mute/unmute |
-| `/` or `?` | Show keyboard shortcuts help |
-| `Escape` | Close all menus |
+| Key | Action (Desktop) | Action (Touch-only) |
+|-----|-------------------|---------------------|
+| `Space` | Play/Pause | Play/Pause |
+| `ArrowRight` | Next track | Next track |
+| `ArrowLeft` | Previous track | Previous track |
+| `ArrowUp` | Toggle playlist drawer | Volume up |
+| `ArrowDown` | Toggle library drawer | Volume down |
+| `V` | Toggle background visualizer | Toggle background visualizer |
+| `G` | Toggle glow effect | Toggle glow effect |
+| `O` | Open visual effects menu | Open visual effects menu |
+| `L` | Like/unlike current track | Like/unlike current track |
+| `M` | Mute/unmute | Mute/unmute |
+| `/` or `?` | Show keyboard shortcuts help | Show keyboard shortcuts help |
+| `Escape` | Close all menus | Close all menus |
 
-Centralized in `useKeyboardShortcuts.ts`. Prevents conflicts with text inputs and Ctrl/Cmd shortcuts.
+Centralized in `useKeyboardShortcuts.ts`. Uses pointer input detection (`pointer: fine` / `hover: hover` media queries) instead of viewport width to determine device type. ArrowUp/ArrowDown have cross-dismiss behavior: opening one drawer closes the other. Prevents conflicts with text inputs and Ctrl/Cmd shortcuts.
 
 ### Playlist Management
 
 - **Search**: Real-time search across playlist/album names with debouncing
 - **Sort (Playlists)**: Recently added, Name (A-Z), Name (Z-A)
 - **Sort (Albums)**: Recently added, Name, Artist, Release date (newest/oldest)
-- **Filter (Albums)**: Filter by decade (1980s through present)
+- **Filter (Albums)**: Filter by decade (1980s through present), filter by artist (click artist name in album grid)
 - **View Modes**: Toggle between Playlists and Albums tabs
+- **Pinning**: Pin up to 4 playlists and 4 albums to the top of their respective tabs, persisted in localStorage
 - **Liked Songs**: Special playlist with automatic shuffle, heart icon indicator
-- **Progressive Loading**: Shows cached data immediately, refreshes in background
+- **IndexedDB Caching**: Persistent library cache with background sync engine (replaces localStorage TTL cache). Warm start from IndexedDB, background polling every ~90 seconds.
 - **Lazy Images**: Intersection Observer-based image loading (50px margin)
+- **Library Drawer**: Full-screen top drawer for browsing playlists/albums with swipe-to-dismiss, 2-column album art grid on mobile, max-width constrained on desktop
+- **Interactive Track Info**: Clickable artist names show popover with "Browse albums in library" and "View on Spotify" options. Clickable album names show "Play album" and "View on Spotify" options.
 
 ## Tech Stack
 
@@ -459,13 +503,20 @@ Use `@/` prefix for clean imports: `import { usePlayerState } from '@/hooks/useP
 
 ## Testing
 
-### Active Test Suites (8 files)
+### Active Test Suites (13 files)
 
 **Hook Tests**:
 - `src/hooks/__tests__/useKeyboardShortcuts.test.ts` - Keyboard shortcut handling and event delegation
 - `src/hooks/__tests__/useLocalStorage.test.ts` - localStorage hook functionality and error handling
 - `src/hooks/__tests__/useCustomAccentColors.test.ts` - Custom accent color management
 - `src/hooks/__tests__/usePlayerState.test.ts` - Central state management and color persistence
+- `src/hooks/__tests__/useLibrarySync.test.ts` - Background library sync with IndexedDB cache
+- `src/hooks/__tests__/usePinnedItems.test.ts` - Pin/unpin playlists and albums
+- `src/hooks/__tests__/useSwipeGesture.test.ts` - Swipe gesture detection
+
+**Service Tests**:
+- `src/services/cache/__tests__/libraryCache.test.ts` - IndexedDB cache layer operations
+- `src/services/cache/__tests__/librarySyncEngine.test.ts` - Background sync engine logic
 
 **Utility Tests**:
 - `src/utils/__tests__/sizingUtils.test.ts` - Responsive sizing calculations across breakpoints
@@ -483,9 +534,10 @@ Use `@/` prefix for clean imports: `import { usePlayerState } from '@/hooks/useP
 ## Common Issues & Solutions
 
 ### Layout & Centering
-- **Side panels clipped**: Ensure `overflow: visible` is set on ContentWrapper. The `container-type: inline-size` creates containment that can clip absolutely-positioned children.
 - **Player not centered**: ContentWrapper must use `position: relative` (not absolute) so parent flex containers can center it.
+- **Elements clipped**: Ensure `overflow: visible` is set on ContentWrapper. The `container-type: inline-size` creates containment that can clip absolutely-positioned children.
 - **Mobile viewport bouncing**: Use `100dvh` instead of `100vh` to account for iOS address bar changes.
+- **FAB menu z-index**: FabMenu renders via portal to `document.body` — ensure z-index doesn't conflict with drawer overlays.
 
 ### Spotify Integration
 - **Liked Songs not loading**: Verify user-library-read scope and that user has liked songs
@@ -494,12 +546,12 @@ Use `@/` prefix for clean imports: `import { usePlayerState } from '@/hooks/useP
 
 ### Visual Effects
 - **Album art filters not working**: Always pass `albumFilters={albumFilters}` to AlbumArt component
-- **Glow bleed**: Quick access panels render above album art glow (z-index hierarchy)
 
 ### Performance
 - **Color extraction**: Ensure LRU cache in colorExtractor.ts is functioning (100 item limit)
 - **Re-renders**: Verify React.memo with custom comparison functions on heavy components
 - **Bundle size**: Check lazy loading and code splitting configuration
+- **IndexedDB cache**: If library data is stale, check `useLibrarySync` hook and `librarySyncEngine` for sync errors. Cache falls back to in-memory if IndexedDB is unavailable.
 
 ## Environment Configuration
 
@@ -567,8 +619,13 @@ VITE_SPOTIFY_REDIRECT_URI="http://127.0.0.1:3000/auth/spotify/callback"
 - **Component Structure**: `src/components/AudioPlayer.tsx`
 - **Hook Patterns**: `src/hooks/usePlayerState.ts`
 - **Spotify Integration**: `src/services/spotify.ts`, `src/services/spotifyPlayer.ts`
+- **Cache Layer**: `src/services/cache/libraryCache.ts`, `src/services/cache/librarySyncEngine.ts`
 - **Theme & Styling**: `src/styles/theme.ts`, `src/styles/utils.ts`
 - **Playlist Features**: `src/components/PlaylistSelection.tsx`, `src/utils/playlistFilters.ts`
+- **FAB Menu**: `src/components/FabMenu/index.tsx`, `src/components/FabMenu/FabMenuItems.tsx`
+- **Drawers**: `src/components/LibraryDrawer.tsx`, `src/components/PlaylistBottomSheet.tsx`, `src/components/styled/Drawer.tsx`
+- **Gestures**: `src/hooks/useSwipeGesture.ts`, `src/hooks/useVerticalSwipeGesture.ts`
+- **Constants**: `src/constants/playlist.ts`
 
 ### AI Workflow Rules
 For structured feature development workflows, see `.claude/rules/`:
