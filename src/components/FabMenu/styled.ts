@@ -15,6 +15,11 @@ export const FabContainer = styled.div`
   display: flex;
   align-items: center;
   gap: ${theme.spacing.sm};
+
+  @media (max-width: ${theme.breakpoints.lg}) {
+    right: 12px;
+    bottom: 16px;
+  }
 `;
 
 export const FabButton = styled.button<{ $isOpen: boolean; $accentColor: string }>`
