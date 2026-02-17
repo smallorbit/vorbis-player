@@ -255,12 +255,13 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
     onSwipeRight: handlers.onPrevious,
   }, { enabled: !isDesktop });
 
-  // Vertical swipe on album art (mobile only): down = library, up = playlist
-  const { ref: albumArtRef } = useVerticalSwipeGesture({
+  // Vertical swipe on the full player area (mobile only): down = library, up = playlist
+  // Disabled when a drawer is open so swipe-to-dismiss on the drawer itself works without conflict
+  const { ref: verticalSwipeRef } = useVerticalSwipeGesture({
     onSwipeDown: handlers.onOpenLibraryDrawer,
     onSwipeUp: handlers.onShowPlaylist,
     threshold: 80,
-    enabled: isMobile,
+    enabled: isMobile && !ui.showPlaylist && !ui.showLibraryDrawer,
   });
 
   // Combined close handler for Escape key (closes VFX menu, library drawer, and help modal)
@@ -323,11 +324,13 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
 
   return (
     <ContentWrapper
+      ref={isMobile ? verticalSwipeRef : undefined}
       width={dimensions.width}
       padding={padding}
       useFluidSizing={useFluidSizing}
       transitionDuration={transitionDuration}
       transitionEasing={transitionEasing}
+      style={{ touchAction: isMobile ? 'pan-x' : undefined }}
     >
       <PlayerContainer>
 
@@ -340,9 +343,8 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
           paddingTop: isMobile ? '0.25rem' : '1rem'
         }}>
           <ClickableAlbumArtContainer
-            ref={isMobile ? albumArtRef : undefined}
             $swipeEnabled={!isDesktop}
-            $bothGestures={isMobile}
+            $bothGestures={false}
             {...(!isDesktop ? gestureHandlers : {})}
             onClick={!isSwiping && !isAnimating ? handlePlayPause : undefined}
             style={{
