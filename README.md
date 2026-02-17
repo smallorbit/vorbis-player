@@ -9,14 +9,17 @@ A visually immersive Spotify music player built with React, featuring customizab
 ## Features
 
 - **Spotify Integration**: Stream music from your Spotify account (Premium required)
-- **Playlists & Albums**: Browse, search, sort, and filter your playlists and albums
+- **Playlists & Albums**: Browse, search, sort, filter, and pin your playlists and albums
 - **Liked Songs**: Play your Liked Songs collection with automatic shuffle
 - **Visual Effects**: Dynamic glow effects with configurable intensity and animation rate
 - **Album Art Filters**: Real-time CSS filters (brightness, contrast, saturation, sepia, hue rotation, blur)
-- **Background Visualizers**: Animated particle and geometric visualizer backgrounds
-- **Custom Colors**: Pick accent colors per track from a color picker or eyedropper tool
+- **Background Visualizers**: Animated particle and geometric visualizer backgrounds (enabled by default)
+- **Custom Colors**: Pick accent colors per album from a color picker or eyedropper tool
+- **Swipe Gestures**: Swipe album art horizontally to change tracks, vertically to open drawers (mobile)
+- **Interactive Track Info**: Click artist/album names for Spotify links and library filtering
+- **Instant Startup**: IndexedDB-based library cache with background sync for fast loading
 - **Responsive Design**: Fluid layout that adapts from mobile phones to ultra-wide desktops
-- **Keyboard Shortcuts**: Full keyboard control for playback, effects, and navigation
+- **Keyboard Shortcuts**: Context-aware keyboard controls with device-specific behavior
 
 ## Quick Start
 
@@ -70,39 +73,42 @@ A visually immersive Spotify music player built with React, featuring customizab
 
 ## User Interface
 
-### Compact Mode
-Click on the album art to toggle between Compact mode (album art only) and Expanded mode. In Compact mode, the player shows just the album artwork for a clean, immersive view.
+### Player View
 
-### Expanded Mode
-In Expanded mode, side panels and bottom controls are visible:
+The player displays album artwork with controls always visible below:
 
-**Left Panel** - Quick visual effect toggles:
+**FAB Menu** (bottom-right floating action button):
 - Glow effect toggle
 - Background visualizer toggle
-
-**Right Panel** - Navigation and settings:
-- Back to library
-- Playlist drawer toggle
 - Visual effects menu
 - Color picker for accent color
+- Back to library
+- Playlist drawer toggle
 
-**Bottom Controls**:
-- Track name and artist
+**Controls** (always visible below album art):
+- Track name with clickable artist and album links
 - Playback controls (previous, play/pause, next)
 - Timeline slider, volume control, and like button
 
-### Playlist Selection
+**Touch Gestures** (mobile/tablet):
+- Tap album art to play/pause
+- Swipe album art left/right to change tracks
+- Swipe up on album art to open playlist
+- Swipe down on album art to open library
 
-The playlist selection screen supports:
+### Library
+
+The library drawer supports:
 - **Search**: Filter playlists and albums by name
 - **Sort**: Sort by recently added, name, artist, or release date
-- **Filter**: Filter albums by decade
+- **Filter**: Filter albums by decade or by artist (click artist name in album grid)
 - **View Modes**: Toggle between Playlists and Albums tabs
+- **Pinning**: Pin up to 4 playlists and 4 albums to the top of their tabs
 - **Liked Songs**: Special entry with shuffle indicator
 
 ### Visual Effects Menu
 
-The visual effects menu (opened via the gear icon) provides control over:
+The visual effects menu (opened via the gear icon in the FAB menu) provides control over:
 
 **Glow Effect**: Intensity (Less/Normal/More), Rate (Slower/Normal/Faster), Accent color background toggle
 
@@ -112,19 +118,19 @@ The visual effects menu (opened via the gear icon) provides control over:
 
 ### Keyboard Shortcuts
 
-| Key | Action |
-|-----|--------|
-| `Space` | Play/Pause |
-| `ArrowRight` / `ArrowLeft` | Next / Previous track |
-| `ArrowUp` / `ArrowDown` | Volume up / down |
-| `P` | Toggle playlist drawer |
-| `V` | Toggle background visualizer |
-| `G` | Toggle glow effect |
-| `O` | Open visual effects menu |
-| `L` | Like/unlike current track |
-| `M` | Mute/unmute |
-| `/` or `?` | Show keyboard shortcuts help |
-| `Escape` | Close all menus |
+| Key | Action (Desktop) | Action (Touch-only) |
+|-----|-------------------|---------------------|
+| `Space` | Play/Pause | Play/Pause |
+| `ArrowRight` / `ArrowLeft` | Next / Previous track | Next / Previous track |
+| `ArrowUp` | Toggle playlist drawer | Volume up |
+| `ArrowDown` | Toggle library drawer | Volume down |
+| `V` | Toggle background visualizer | Toggle background visualizer |
+| `G` | Toggle glow effect | Toggle glow effect |
+| `O` | Open visual effects menu | Open visual effects menu |
+| `L` | Like/unlike current track | Like/unlike current track |
+| `M` | Mute/unmute | Mute/unmute |
+| `/` or `?` | Show keyboard shortcuts help | Show keyboard shortcuts help |
+| `Escape` | Close all menus | Close all menus |
 
 Press `/` or `?` in the app to see the full shortcuts overlay.
 
@@ -147,24 +153,26 @@ npm run test:coverage # Run tests with coverage
 
 ```
 src/
-├── components/              # React components (43 files)
+├── components/              # React components (~42 files)
 │   ├── AudioPlayer.tsx      # Main orchestrator with centralized state
 │   ├── PlayerContent.tsx    # Main player layout (centering, responsive sizing)
 │   ├── PlayerStateRenderer.tsx  # Loading/error/playlist selection states
 │   ├── AlbumArt.tsx         # Album artwork with filters & glow effects
-│   ├── PlaylistSelection.tsx    # Playlist/album browser with search/sort/filter
+│   ├── PlaylistSelection.tsx    # Playlist/album browser with search/sort/filter/pin
 │   ├── SpotifyPlayerControls.tsx # Player control interface
-│   ├── PlaylistDrawer.tsx   # Sliding track list drawer
-│   ├── LeftQuickActionsPanel.tsx # Left-side quick toggles
-│   ├── QuickActionsPanel.tsx    # Right-side actions panel
-│   ├── ColorPickerPopover.tsx   # Per-track color picker
+│   ├── LibraryDrawer.tsx    # Full-screen library browser drawer
+│   ├── PlaylistDrawer.tsx   # Sliding track list drawer (desktop/tablet)
+│   ├── PlaylistBottomSheet.tsx  # Mobile playlist bottom sheet
+│   ├── ColorPickerPopover.tsx   # Per-album color picker
+│   ├── FabMenu/             # Expandable floating action button menu
 │   ├── controls/            # Player control sub-components
 │   ├── styled/              # Reusable styled-components library
-│   ├── ui/                  # Radix UI component wrappers
+│   ├── icons/               # SVG icon components
 │   ├── visualizers/         # Background visualizer components
 │   └── VisualEffectsMenu/   # Visual effects configuration panel
-├── hooks/                   # 17 custom React hooks
-├── services/                # Spotify API & Playback SDK integration
+├── constants/               # Shared constants (playlist IDs, prefixes)
+├── hooks/                   # 22 custom React hooks
+├── services/                # Spotify API, Playback SDK, IndexedDB cache
 ├── utils/                   # Utility functions (color, sizing, filters)
 ├── styles/                  # Theme, global styles, CSS animations
 ├── types/                   # TypeScript definitions
@@ -179,7 +187,7 @@ src/
 - **Audio**: Spotify Web Playback SDK + Web API
 - **Authentication**: PKCE OAuth 2.0 flow
 - **Testing**: Vitest + React Testing Library
-- **Performance**: Web Workers, LRU caching, lazy loading, container queries
+- **Performance**: Web Workers, LRU caching, IndexedDB persistence, lazy loading, container queries
 
 ## Deployment
 
