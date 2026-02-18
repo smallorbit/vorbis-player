@@ -92,7 +92,7 @@ const SpotifyPlayerControls = memo<SpotifyPlayerControlsProps>(({
   onAlbumPlay,
 }) => {
   // Get responsive sizing information
-  const { isMobile, isTablet } = usePlayerSizing();
+  const { isMobile, isTablet, isDesktop } = usePlayerSizing();
 
   // Color picker and overrides are managed in the quick actions panel
 
@@ -128,7 +128,7 @@ const SpotifyPlayerControls = memo<SpotifyPlayerControlsProps>(({
   const effectiveHandleLikeToggle = handleLikeToggle;
   
   return (
-    <PlayerControlsContainer $isMobile={isMobile} $isTablet={isTablet}>
+    <PlayerControlsContainer $isMobile={isMobile} $isTablet={isTablet} $compact={!isDesktop}>
       <TrackInfo
         track={currentTrack}
         isMobile={isMobile}
@@ -137,26 +137,24 @@ const SpotifyPlayerControls = memo<SpotifyPlayerControlsProps>(({
         onAlbumPlay={onAlbumPlay}
       />
 
-      <TrackInfoRow style={{ position: 'relative' }}>
-        <TrackInfoLeft>
-          {/* Left side is empty - could be used for other controls if needed */}
-        </TrackInfoLeft>
-        <TrackInfoCenter>
-          <PlaybackControls
-            onPrevious={onPrevious}
-            onPlay={onPlay}
-            onPause={onPause}
-            onNext={onNext}
-            isPlaying={isPlaying}
-            accentColor={accentColor}
-            isMobile={isMobile}
-            isTablet={isTablet}
-          />
-        </TrackInfoCenter>
-        <TrackInfoRight>
-          {/* Quick actions moved to right-side panel */}
-        </TrackInfoRight>
-      </TrackInfoRow>
+      {isDesktop && (
+        <TrackInfoRow style={{ position: 'relative' }}>
+          <TrackInfoLeft />
+          <TrackInfoCenter>
+            <PlaybackControls
+              onPrevious={onPrevious}
+              onPlay={onPlay}
+              onPause={onPause}
+              onNext={onNext}
+              isPlaying={isPlaying}
+              accentColor={accentColor}
+              isMobile={isMobile}
+              isTablet={isTablet}
+            />
+          </TrackInfoCenter>
+          <TrackInfoRight />
+        </TrackInfoRow>
+      )}
 
       <TimelineControls
         isMuted={effectiveIsMuted}

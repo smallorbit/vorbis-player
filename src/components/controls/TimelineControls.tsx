@@ -68,7 +68,7 @@ export const TimelineControls = memo<TimelineControlsProps>(({
     isTablet
 }) => {
     return (
-        <TimelineControlsContainer>
+        <TimelineControlsContainer $isMobile={isMobile}>
             <TimelineLeft>
                 <VolumeControl
                     isMuted={isMuted}
