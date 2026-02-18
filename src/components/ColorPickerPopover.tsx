@@ -75,9 +75,9 @@ export const ColorPickerPopover = memo<ColorPickerPopoverProps>(({
   const paletteBtnRef = useRef<HTMLButtonElement>(null);
   const [popoverPos, setPopoverPos] = useState<{ left: number; top: number } | null>(null);
 
-  const getLastCustomColor = () => {
-    return currentTrack?.album_id ? customAccentColorOverrides[currentTrack.album_id] : null;
-  };
+  const lastCustomColor = currentTrack?.album_id
+    ? customAccentColorOverrides[currentTrack.album_id]
+    : null;
 
   // Extract colors when popover opens or track changes
   useEffect(() => {
@@ -86,7 +86,7 @@ export const ColorPickerPopover = memo<ColorPickerPopoverProps>(({
       setIsExtracting(true);
       setExtractError(null);
       setColorOptions(null);
-      extractTopVibrantColors(currentTrack.image, 3)
+      extractTopVibrantColors(currentTrack.image, 2)
         .then(colors => {
           console.log('[AccentColor] Extracted colors:', colors);
           setColorOptions(colors);
@@ -158,7 +158,7 @@ export const ColorPickerPopover = memo<ColorPickerPopoverProps>(({
             transform: 'translate(-50%, -100%)',
             background: theme.colors.popover.background,
             borderRadius: theme.borderRadius.xl,
-            boxShadow: '0 4px 24px rgba(0,0,0,0.25)',
+            boxShadow: '0 12px 40px rgba(0,0,0,0.45), 0 4px 12px rgba(0,0,0,0.3)',
             padding: `${theme.spacing.md} ${theme.spacing.lg}`,
             zIndex: theme.zIndex.popover,
             minWidth: 160,
@@ -197,34 +197,31 @@ export const ColorPickerPopover = memo<ColorPickerPopoverProps>(({
                   aria-label={`Choose color ${color.hex}`}
                 />
               ))}
-              {/* Custom color button - uses last chosen custom color for this track */}
-              <button
-                onClick={() => {
-                  const lastCustomColor = getLastCustomColor();
-                  if (lastCustomColor) {
+              {/* Custom color swatch - only shown when user has picked a custom color for this album */}
+              {lastCustomColor && (
+                <button
+                  onClick={() => {
                     onAccentColorChange?.(lastCustomColor);
                     setShowColorPopover(false);
-                  }
-                }}
-                style={{
-                  width: 32,
-                  height: 32,
-                  borderRadius: '10%',
-                  border: '2px solid #888',
-                  background: getLastCustomColor() || '#181818',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  transition: 'box-shadow 0.2s, border 0.2s',
-                  opacity: getLastCustomColor() ? 1 : 0.5,
-                  color: getLastCustomColor() ? '#fff' : '#aaa',
-                }}
-                title="Use custom color"
-                aria-label="Use custom color"
-                disabled={!getLastCustomColor()}
-              >
-              </button>
+                  }}
+                  style={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: '10%',
+                    border: lastCustomColor === accentColor ? '3px solid #fff' : '2px solid #888',
+                    background: lastCustomColor,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    transition: 'box-shadow 0.2s, border 0.2s',
+                    outline: lastCustomColor === accentColor ? '2px solid #ffd700' : 'none',
+                    boxShadow: lastCustomColor === accentColor ? '0 0 0 2px #ffd700' : 'none',
+                  }}
+                  title="Use custom color"
+                  aria-label="Use custom color"
+                />
+              )}
               {/* Always show eyedropper button if album art is available */}
               {currentTrack?.image && (
                 <button
