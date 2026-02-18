@@ -135,7 +135,7 @@ export const TrackInfo = memo<TrackInfoProps>(({ track, isMobile, isTablet, onAr
 
     return (
         <>
-            <TrackInfoOnlyRow>
+            <TrackInfoOnlyRow $compact={isMobile || isTablet}>
                 <PlayerTrackName $isMobile={isMobile} $isTablet={isTablet}>
                     {track?.name || 'No track selected'}
                 </PlayerTrackName>

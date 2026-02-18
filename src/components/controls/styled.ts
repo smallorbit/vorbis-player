@@ -3,12 +3,12 @@ import { theme } from '../../styles/theme';
 import { getContrastColor } from '../../utils/colorUtils';
 
 // --- Main Container ---
-export const PlayerControlsContainer = styled.div<{ $isMobile: boolean; $isTablet: boolean }>`
+export const PlayerControlsContainer = styled.div<{ $isMobile: boolean; $isTablet: boolean; $compact?: boolean }>`
   position: relative;
   z-index: 2;
   display: flex;
   flex-direction: column;
-  gap: ${({ theme, $isMobile }) => $isMobile ? theme.spacing.sm : theme.spacing.md};
+  gap: ${({ theme, $isMobile, $compact }) => $compact ? theme.spacing.xs : $isMobile ? theme.spacing.sm : theme.spacing.md};
   padding: ${({ $isMobile, $isTablet }) => {
     if ($isMobile) return `${theme.spacing.xs} ${theme.spacing.sm}`;
     if ($isTablet) return `${theme.spacing.md} ${theme.spacing.md}`;
@@ -45,14 +45,14 @@ export const PlayerControlsContainer = styled.div<{ $isMobile: boolean; $isTable
 `;
 
 // --- Track Info Components ---
-export const TrackInfoOnlyRow = styled.div`
+export const TrackInfoOnlyRow = styled.div<{ $compact?: boolean }>`
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
   gap: ${({ theme }) => theme.spacing.xs};
   padding: ${({ theme }) => `${theme.spacing.sm} ${theme.spacing.md}`};
-  margin-bottom: ${({ theme }) => theme.spacing.xl};
+  margin-bottom: ${({ $compact }) => $compact ? '0' : theme.spacing.xl};
   margin-top: ${({ theme }) => theme.spacing.sm};
   position: relative;
   z-index: 10;
@@ -61,7 +61,7 @@ export const TrackInfoOnlyRow = styled.div`
 
   @media (max-width: ${theme.breakpoints.lg}) {
     margin-top: ${theme.spacing.xs};
-    margin-bottom: ${theme.spacing.lg};
+    margin-bottom: ${({ $compact }) => $compact ? '0' : theme.spacing.lg};
     padding: ${theme.spacing.xs} ${theme.spacing.sm};
   }
 `;
@@ -90,8 +90,8 @@ export const PlayerTrackName = styled.div<{ $isMobile: boolean; $isTablet: boole
 `;
 
 export const PlayerTrackAlbum = styled.div`
-  font-size: ${({ theme }) => theme.fontSize.xs};
-  line-height: ${({ theme }) => theme.fontSize.sm};
+  font-size: ${({ theme }) => theme.fontSize.sm};
+  line-height: ${({ theme }) => theme.fontSize.base};
   color: ${({ theme }) => theme.colors.gray[400]};
   font-weight: ${({ theme }) => theme.fontWeight.medium};
   letter-spacing: 0.02em;
@@ -121,8 +121,8 @@ export const AlbumLink = styled.a`
 `;
 
 export const PlayerTrackArtist = styled.div`
-  font-size: ${({ theme }) => theme.fontSize.sm};
-  line-height: ${({ theme }) => theme.fontSize.sm};
+  font-size: ${({ theme }) => theme.fontSize.base};
+  line-height: ${({ theme }) => theme.fontSize.base};
   color: ${({ theme }) => theme.colors.gray[300]};
   overflow: hidden;
   text-overflow: ellipsis;
@@ -270,12 +270,12 @@ export const VolumeButton = styled.button<{ $isMobile: boolean; $isTablet: boole
 `;
 
 // --- Timeline Components ---
-export const TimelineControlsContainer = styled.div`
+export const TimelineControlsContainer = styled.div<{ $isMobile?: boolean }>`
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: ${({ theme }) => theme.spacing.xs};
-  margin-top: ${({ theme }) => theme.spacing.lg};
+  margin-top: ${({ $isMobile }) => $isMobile ? '0' : theme.spacing.lg};
 `;
 
 export const TimelineLeft = styled.div`
