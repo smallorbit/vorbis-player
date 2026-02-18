@@ -29,7 +29,7 @@ interface FabMenuItemsProps {
   onColorPickerOpenChange?: (isOpen: boolean) => void;
 }
 
-const STAGGER_DELAY = 30;
+const STAGGER_DELAY = 15;
 
 export const FabMenuItems = ({
   accentColor,
@@ -133,7 +133,7 @@ export const FabMenuItems = ({
       ),
     });
 
-    if (onBackToLibrary) {
+    if (!isMobile && onBackToLibrary) {
       list.push({
         key: 'library',
         label: 'Back to Library',
@@ -151,21 +151,23 @@ export const FabMenuItems = ({
       });
     }
 
-    list.push({
-      key: 'playlist',
-      label: 'Show Playlist',
-      content: (
-        <ControlButton
-          $isMobile={isMobile}
-          $isTablet={isTablet}
-          accentColor={accentColor}
-          onClick={onItemAction(onShowPlaylist)}
-          title="Show Playlist"
-        >
-          <PlaylistIcon />
-        </ControlButton>
-      ),
-    });
+    if (!isMobile) {
+      list.push({
+        key: 'playlist',
+        label: 'Show Playlist',
+        content: (
+          <ControlButton
+            $isMobile={isMobile}
+            $isTablet={isTablet}
+            accentColor={accentColor}
+            onClick={onItemAction(onShowPlaylist)}
+            title="Show Playlist"
+          >
+            <PlaylistIcon />
+          </ControlButton>
+        ),
+      });
+    }
 
     return list;
   }, [

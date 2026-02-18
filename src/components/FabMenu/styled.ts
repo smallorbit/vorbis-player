@@ -55,8 +55,8 @@ export const FabMenuItem = styled.div<{
   position: relative;
   transform: ${({ $isOpen }) => ($isOpen ? 'scale(1)' : 'scale(0)')};
   opacity: ${({ $isOpen }) => ($isOpen ? 1 : 0)};
-  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1),
-    opacity 0.2s ease;
+  transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 0.12s ease;
   transition-delay: ${({ $isOpen, $openDelay, $closeDelay }) =>
     $isOpen ? `${$openDelay}ms` : `${$closeDelay}ms`};
 
