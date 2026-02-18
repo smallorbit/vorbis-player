@@ -101,22 +101,6 @@ export const FabMenuItems = ({
     }
 
     list.push({
-      key: 'effects',
-      label: 'Visual effects',
-      content: (
-        <ControlButton
-          $isMobile={isMobile}
-          $isTablet={isTablet}
-          accentColor={accentColor}
-          onClick={onItemAction(onShowVisualEffects)}
-          title="Visual effects"
-        >
-          <VisualEffectsIcon />
-        </ControlButton>
-      ),
-    });
-
-    list.push({
       key: 'color',
       label: 'Theme options',
       content: (
@@ -130,6 +114,22 @@ export const FabMenuItems = ({
           $isTablet={isTablet}
           onOpenChange={onColorPickerOpenChange}
         />
+      ),
+    });
+
+    list.push({
+      key: 'effects',
+      label: 'Visual effects',
+      content: (
+        <ControlButton
+          $isMobile={isMobile}
+          $isTablet={isTablet}
+          accentColor={accentColor}
+          onClick={onItemAction(onShowVisualEffects)}
+          title="Visual effects"
+        >
+          <VisualEffectsIcon />
+        </ControlButton>
       ),
     });
 
