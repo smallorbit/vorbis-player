@@ -5,6 +5,7 @@ import { usePlayerSizing } from '../hooks/usePlayerSizing';
 import { PlayerControlsContainer } from './controls/styled';
 import TrackInfo from './controls/TrackInfo';
 import PlaybackControls from './controls/PlaybackControls';
+import LikeButton from './LikeButton';
 import TimelineControls from './controls/TimelineControls';
 import { TrackInfoRow, TrackInfoLeft, TrackInfoCenter, TrackInfoRight } from './controls/styled';
 
@@ -66,6 +67,7 @@ interface SpotifyPlayerControlsProps {
   trackCount: number;
   isLiked?: boolean;
   isLikePending?: boolean;
+  trackId?: string;
   isMuted?: boolean;
   volume?: number;
   onMuteToggle?: () => void;
@@ -117,7 +119,7 @@ const SpotifyPlayerControls = memo<SpotifyPlayerControlsProps>(({
     onPause,
     onNext,
     onPrevious,
-    onLikeToggle: propOnToggleLike ?? (() => {}),
+    onLikeToggle: propOnToggleLike ?? (() => { }),
   });
 
   const effectiveIsLiked = propIsLiked ?? false;
@@ -126,7 +128,7 @@ const SpotifyPlayerControls = memo<SpotifyPlayerControlsProps>(({
   const effectiveVolume = typeof propVolume !== 'undefined' ? propVolume : volume;
   const effectiveHandleVolumeButtonClick = propOnMuteToggle || hookHandleVolumeButtonClick;
   const effectiveHandleLikeToggle = handleLikeToggle;
-  
+
   return (
     <PlayerControlsContainer $isMobile={isMobile} $isTablet={isTablet}>
       <TrackInfo
@@ -141,7 +143,7 @@ const SpotifyPlayerControls = memo<SpotifyPlayerControlsProps>(({
         <TrackInfoLeft>
           {/* Left side is empty - could be used for other controls if needed */}
         </TrackInfoLeft>
-        <TrackInfoCenter>
+        {/* <TrackInfoCenter>
           <PlaybackControls
             onPrevious={onPrevious}
             onPlay={onPlay}
@@ -152,9 +154,9 @@ const SpotifyPlayerControls = memo<SpotifyPlayerControlsProps>(({
             isMobile={isMobile}
             isTablet={isTablet}
           />
-        </TrackInfoCenter>
+        </TrackInfoCenter> */}
         <TrackInfoRight>
-          {/* Quick actions moved to right-side panel */}
+
         </TrackInfoRight>
       </TrackInfoRow>
 
@@ -168,10 +170,6 @@ const SpotifyPlayerControls = memo<SpotifyPlayerControlsProps>(({
         onSliderChange={handleSliderChange}
         onSliderMouseDown={handleSliderMouseDown}
         onSliderMouseUp={handleSliderMouseUp}
-        trackId={currentTrack?.id}
-        isLiked={effectiveIsLiked}
-        isLikePending={effectiveIsLikePending}
-        onLikeToggle={effectiveHandleLikeToggle}
         accentColor={accentColor}
         isMobile={isMobile}
         isTablet={isTablet}

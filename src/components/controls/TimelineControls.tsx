@@ -1,7 +1,6 @@
 import { memo } from 'react';
 import { TimelineLeft, TimelineRight, TimelineControlsContainer } from './styled';
 import VolumeControl from './VolumeControl';
-import LikeButton from '../LikeButton';
 import { TimelineSlider } from '../TimelineSlider';
 
 interface TimelineControlsProps {
@@ -16,11 +15,7 @@ interface TimelineControlsProps {
     onSliderChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
     onSliderMouseDown: () => void;
     onSliderMouseUp: (e: React.MouseEvent<HTMLInputElement>) => void;
-    // Like button props
-    trackId?: string;
-    isLiked: boolean;
-    isLikePending: boolean;
-    onLikeToggle: () => void;
+
     // Accent color for slider/theming
     accentColor: string;
     // Responsive props
@@ -49,7 +44,7 @@ const areTimelineControlsPropsEqual = (
     );
 };
 
-export const TimelineControls = memo<TimelineControlsProps>(({ 
+export const TimelineControls = memo<TimelineControlsProps>(({
     isMuted,
     volume,
     onVolumeButtonClick,
@@ -90,15 +85,7 @@ export const TimelineControls = memo<TimelineControlsProps>(({
             />
 
             <TimelineRight>
-                <LikeButton
-                    trackId={trackId}
-                    isLiked={isLiked}
-                    isLoading={isLikePending}
-                    accentColor={accentColor}
-                    onToggleLike={onLikeToggle}
-                    $isMobile={isMobile}
-                    $isTablet={isTablet}
-                />
+
             </TimelineRight>
         </TimelineControlsContainer>
     );

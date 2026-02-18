@@ -74,12 +74,7 @@ export const buttonGhost = css`
 `;
 
 export const cardBase = css`
-  background-color: ${theme.colors.muted.background};
-  border: 1px solid ${theme.colors.border};
-  border-radius: ${theme.borderRadius.md};
-  padding: ${theme.spacing.sm};
-  margin: ${theme.spacing.sm};
-  margin-top: ${theme.spacing.md}; 
+  
   box-shadow: ${theme.shadows.sm};
 `;
 

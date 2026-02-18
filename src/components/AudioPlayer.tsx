@@ -10,9 +10,10 @@ import { toAlbumPlaylistId } from '@/constants/playlist';
 
 const Container = styled.div`
   width: 100%;
-  min-height: 100vh;
-  min-height: 100dvh;
+  height: 100vh;
+  height: 100dvh;
   ${flexCenter};
+  overflow: hidden;
 `;
 
 const AudioPlayerComponent = () => {

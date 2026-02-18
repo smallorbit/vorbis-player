@@ -93,6 +93,7 @@ const ContentWrapper = styled.div.withConfig({
   width: ${props => props.useFluidSizing ? '100%' : `${props.width}px`};
   max-width: ${props => props.width}px;
 
+  height: 100%;
   margin: 0 auto;
   padding: ${props => props.padding}px;
   padding-bottom: ${props => props.padding}px;
@@ -126,15 +127,7 @@ const LoadingCard = styled.div.withConfig({
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  border-radius: 1.25rem;
-  /* Enhanced border with subtle highlight */
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  /* Multi-layer shadows for depth */
-  box-shadow: 
-    0 8px 32px rgba(0, 0, 0, 0.9),
-    0 4px 16px rgba(0, 0, 0, 0.8),
-    0 2px 8px rgba(0, 0, 0, 0.7),
-    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  
   transition: box-shadow 0.3s ease, border-color 0.3s ease;
   ${({ backgroundImage }) => backgroundImage ? `
     &::after {
@@ -186,6 +179,8 @@ const PlayerContainer = styled.div`
   display: flex;
   flex-direction: column;
   width: 100%;
+  flex: 1;
+  min-height: 0;
 `;
 
 // Album art container with click handler
@@ -193,6 +188,10 @@ const ClickableAlbumArtContainer = styled.div<{ $swipeEnabled?: boolean; $bothGe
   position: relative;
   cursor: pointer;
   z-index: 3;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   /* Add subtle outer glow/shadow for separation from background */
   filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.4));
   ${({ $swipeEnabled, $bothGestures }) => $swipeEnabled && `
@@ -338,8 +337,11 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
         <CardContent style={{
           position: 'relative',
           zIndex: 2,
+          flex: 1,
           minHeight: 0,
+          display: 'flex',
           alignItems: 'center',
+          justifyContent: 'center',
           paddingTop: isMobile ? '0.25rem' : '1rem'
         }}>
           <ClickableAlbumArtContainer
@@ -400,19 +402,19 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
             </Suspense>
           </CardContent>
         </LoadingCard>
+        <FabMenu
+          accentColor={ui.accentColor}
+          currentTrack={track.current}
+          glowEnabled={effects.enabled}
+          backgroundVisualizerEnabled={handlers.backgroundVisualizerEnabled}
+          onShowVisualEffects={handlers.onShowVisualEffects}
+          onGlowToggle={handlers.onGlowToggle}
+          onBackgroundVisualizerToggle={handlers.onBackgroundVisualizerToggle}
+          onAccentColorChange={handlers.onAccentColorChange}
+          onBackToLibrary={handlers.onBackToLibrary}
+          onShowPlaylist={handlers.onShowPlaylist}
+        />
       </PlayerContainer>
-      <FabMenu
-        accentColor={ui.accentColor}
-        currentTrack={track.current}
-        glowEnabled={effects.enabled}
-        backgroundVisualizerEnabled={handlers.backgroundVisualizerEnabled}
-        onShowVisualEffects={handlers.onShowVisualEffects}
-        onGlowToggle={handlers.onGlowToggle}
-        onBackgroundVisualizerToggle={handlers.onBackgroundVisualizerToggle}
-        onAccentColorChange={handlers.onAccentColorChange}
-        onBackToLibrary={handlers.onBackToLibrary}
-        onShowPlaylist={handlers.onShowPlaylist}
-      />
       {ui.showVisualEffects && (
         <Suspense fallback={
           <div style={{

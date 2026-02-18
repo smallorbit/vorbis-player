@@ -25,11 +25,8 @@ interface FabMenuItemsProps {
   onBackToLibrary?: () => void;
   onShowPlaylist: () => void;
   onItemAction: (action: () => void) => () => void;
-  isOpen: boolean;
   onColorPickerOpenChange?: (isOpen: boolean) => void;
 }
-
-const STAGGER_DELAY = 30;
 
 export const FabMenuItems = ({
   accentColor,
@@ -43,7 +40,6 @@ export const FabMenuItems = ({
   onBackToLibrary,
   onShowPlaylist,
   onItemAction,
-  isOpen,
   onColorPickerOpenChange,
 }: FabMenuItemsProps) => {
   const { isMobile } = usePlayerSizing();
@@ -62,43 +58,43 @@ export const FabMenuItems = ({
       content: React.ReactNode;
     }> = [];
 
-    list.push({
-      key: 'glow',
-      label: `Visual Effects ${glowEnabled ? 'enabled' : 'disabled'}`,
-      content: (
-        <ControlButton
-          $isMobile={isMobile}
-          $isTablet={isTablet}
-          accentColor={accentColor}
-          isActive={glowEnabled}
-          onClick={onItemAction(onGlowToggle)}
-          title={`Visual Effects ${glowEnabled ? 'enabled' : 'disabled'}`}
-          aria-pressed={glowEnabled}
-        >
-          <GlowIcon />
-        </ControlButton>
-      ),
-    });
+    // list.push({
+    //   key: 'glow',
+    //   label: `Visual Effects ${glowEnabled ? 'enabled' : 'disabled'}`,
+    //   content: (
+    //     <ControlButton
+    //       $isMobile={isMobile}
+    //       $isTablet={isTablet}
+    //       accentColor={accentColor}
+    //       isActive={glowEnabled}
+    //       onClick={onItemAction(onGlowToggle)}
+    //       title={`Visual Effects ${glowEnabled ? 'enabled' : 'disabled'}`}
+    //       aria-pressed={glowEnabled}
+    //     >
+    //       <GlowIcon />
+    //     </ControlButton>
+    //   ),
+    // });
 
-    if (onBackgroundVisualizerToggle && !isMobile) {
-      list.push({
-        key: 'visualizer',
-        label: `Background Visualizer ${backgroundVisualizerEnabled ? 'ON' : 'OFF'}`,
-        content: (
-          <ControlButton
-            $isMobile={isMobile}
-            $isTablet={isTablet}
-            accentColor={accentColor}
-            isActive={backgroundVisualizerEnabled}
-            onClick={onItemAction(onBackgroundVisualizerToggle)}
-            title={`Background Visualizer ${backgroundVisualizerEnabled ? 'ON' : 'OFF'}`}
-            aria-pressed={backgroundVisualizerEnabled}
-          >
-            <BackgroundVisualizerIcon />
-          </ControlButton>
-        ),
-      });
-    }
+    // if (onBackgroundVisualizerToggle && !isMobile) {
+    //   list.push({
+    //     key: 'visualizer',
+    //     label: `Background Visualizer ${backgroundVisualizerEnabled ? 'ON' : 'OFF'}`,
+    //     content: (
+    //       <ControlButton
+    //         $isMobile={isMobile}
+    //         $isTablet={isTablet}
+    //         accentColor={accentColor}
+    //         isActive={backgroundVisualizerEnabled}
+    //         onClick={onItemAction(onBackgroundVisualizerToggle)}
+    //         title={`Background Visualizer ${backgroundVisualizerEnabled ? 'ON' : 'OFF'}`}
+    //         aria-pressed={backgroundVisualizerEnabled}
+    //       >
+    //         <BackgroundVisualizerIcon />
+    //       </ControlButton>
+    //     ),
+    //   });
+    // }
 
     list.push({
       key: 'effects',
@@ -133,39 +129,39 @@ export const FabMenuItems = ({
       ),
     });
 
-    if (onBackToLibrary) {
-      list.push({
-        key: 'library',
-        label: 'Back to Library',
-        content: (
-          <ControlButton
-            $isMobile={isMobile}
-            $isTablet={isTablet}
-            accentColor={accentColor}
-            onClick={onItemAction(onBackToLibrary)}
-            title="Back to Library"
-          >
-            <BackToLibraryIcon />
-          </ControlButton>
-        ),
-      });
-    }
+    // if (onBackToLibrary) {
+    //   list.push({
+    //     key: 'library',
+    //     label: 'Back to Library',
+    //     content: (
+    //       <ControlButton
+    //         $isMobile={isMobile}
+    //         $isTablet={isTablet}
+    //         accentColor={accentColor}
+    //         onClick={onItemAction(onBackToLibrary)}
+    //         title="Back to Library"
+    //       >
+    //         <BackToLibraryIcon />
+    //       </ControlButton>
+    //     ),
+    //   });
+    // }
 
-    list.push({
-      key: 'playlist',
-      label: 'Show Playlist',
-      content: (
-        <ControlButton
-          $isMobile={isMobile}
-          $isTablet={isTablet}
-          accentColor={accentColor}
-          onClick={onItemAction(onShowPlaylist)}
-          title="Show Playlist"
-        >
-          <PlaylistIcon />
-        </ControlButton>
-      ),
-    });
+    // list.push({
+    //   key: 'playlist',
+    //   label: 'Show Playlist',
+    //   content: (
+    //     <ControlButton
+    //       $isMobile={isMobile}
+    //       $isTablet={isTablet}
+    //       accentColor={accentColor}
+    //       onClick={onItemAction(onShowPlaylist)}
+    //       title="Show Playlist"
+    //     >
+    //       <PlaylistIcon />
+    //     </ControlButton>
+    //   ),
+    // });
 
     return list;
   }, [
@@ -188,13 +184,8 @@ export const FabMenuItems = ({
 
   return (
     <>
-      {items.map((item, i) => (
-        <FabMenuItem
-          key={item.key}
-          $isOpen={isOpen}
-          $openDelay={(items.length - 1 - i) * STAGGER_DELAY}
-          $closeDelay={i * STAGGER_DELAY}
-        >
+      {items.map((item) => (
+        <FabMenuItem key={item.key}>
           {item.content}
           <FabMenuItemTooltip>{item.label}</FabMenuItemTooltip>
         </FabMenuItem>

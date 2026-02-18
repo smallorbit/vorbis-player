@@ -1,6 +1,5 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
-import { createPortal } from 'react-dom';
-import { FabOverlay, FabContainer, FabButton } from './styled';
+import { useState, useCallback, useRef, useEffect } from 'react';
+import { ToolbarContainer } from './styled';
 import FabMenuItems from './FabMenuItems';
 import type { Track } from '@/services/spotify';
 
@@ -29,92 +28,45 @@ export default function FabMenu({
   onBackToLibrary,
   onShowPlaylist,
 }: FabMenuProps) {
-  const [isOpen, setIsOpen] = useState(false);
   const [colorPickerActive, setColorPickerActive] = useState(false);
   const prevColorPickerActive = useRef(false);
+  const [colorPickerJustClosed, setColorPickerJustClosed] = useState(false);
 
-  const toggle = useCallback(() => {
-    setIsOpen((prev) => !prev);
-  }, []);
-
-  const collapse = useCallback(() => {
-    if (!colorPickerActive) {
-      setIsOpen(false);
+  useEffect(() => {
+    if (prevColorPickerActive.current && !colorPickerActive) {
+      setColorPickerJustClosed(true);
+      const timer = setTimeout(() => setColorPickerJustClosed(false), 100);
+      return () => clearTimeout(timer);
     }
+    prevColorPickerActive.current = colorPickerActive;
   }, [colorPickerActive]);
 
   const handleItemAction = useCallback(
     (action: () => void) => {
       return () => {
+        if (colorPickerJustClosed) return;
         action();
-        collapse();
       };
     },
-    [collapse]
+    [colorPickerJustClosed]
   );
 
-  useEffect(() => {
-    if (!isOpen) return;
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        setIsOpen(false);
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen]);
-
-  useEffect(() => {
-    if (prevColorPickerActive.current && !colorPickerActive && isOpen) {
-      setIsOpen(false);
-    }
-    prevColorPickerActive.current = colorPickerActive;
-  }, [colorPickerActive, isOpen]);
-
-  return createPortal(
-    <>
-      {isOpen && <FabOverlay onClick={collapse} />}
-      <FabContainer>
-        <FabMenuItems
-          isOpen={isOpen}
-          accentColor={accentColor}
-          currentTrack={currentTrack}
-          glowEnabled={glowEnabled}
-          backgroundVisualizerEnabled={backgroundVisualizerEnabled}
-          onShowVisualEffects={onShowVisualEffects}
-          onGlowToggle={onGlowToggle}
-          onBackgroundVisualizerToggle={onBackgroundVisualizerToggle}
-          onAccentColorChange={onAccentColorChange}
-          onBackToLibrary={onBackToLibrary}
-          onShowPlaylist={onShowPlaylist}
-          onItemAction={handleItemAction}
-          onColorPickerOpenChange={setColorPickerActive}
-        />
-        <FabButton
-          $isOpen={isOpen}
-          $accentColor={accentColor}
-          onClick={toggle}
-          aria-label={isOpen ? 'Close menu' : 'Open menu'}
-          aria-expanded={isOpen}
-          aria-haspopup="true"
-        >
-          <svg
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-          >
-            <line x1="12" y1="5" x2="12" y2="19" />
-            <line x1="5" y1="12" x2="19" y2="12" />
-          </svg>
-        </FabButton>
-      </FabContainer>
-    </>,
-    document.body
+  return (
+    <ToolbarContainer>
+      <FabMenuItems
+        accentColor={accentColor}
+        currentTrack={currentTrack}
+        glowEnabled={glowEnabled}
+        backgroundVisualizerEnabled={backgroundVisualizerEnabled}
+        onShowVisualEffects={onShowVisualEffects}
+        onGlowToggle={onGlowToggle}
+        onBackgroundVisualizerToggle={onBackgroundVisualizerToggle}
+        onAccentColorChange={onAccentColorChange}
+        onBackToLibrary={onBackToLibrary}
+        onShowPlaylist={onShowPlaylist}
+        onItemAction={handleItemAction}
+        onColorPickerOpenChange={setColorPickerActive}
+      />
+    </ToolbarContainer>
   );
 }
