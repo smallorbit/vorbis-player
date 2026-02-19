@@ -12,11 +12,12 @@
     "test:ui": "vitest --ui",
     "test:run": "vitest run",
     "test:coverage": "vitest run --coverage",
-    "deploy": "node scripts/deploy.js --prod",
-    "deploy:preview": "node scripts/deploy.js",
+    "deploy": "node scripts/deploy.cjs --prod",
+    "deploy:preview": "node scripts/deploy.cjs",
     "deploy:quick": "vercel --prod",
     "deploy:env": "vercel env pull .env.local",
-    "favicon": "node scripts/generate-favicon.js"
+    "favicon": "node scripts/generate-favicon.js",
+    "knip": "knip"
   },
   "dependencies": {
     "@radix-ui/react-scroll-area": "^1.2.9",
@@ -33,7 +34,7 @@
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^14.6.1",
-    "@types/node": "^24.5.2",
+    "@types/node": "^24.10.13",
     "@types/react": "^18.3.9",
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react": "^4.4.1",
@@ -46,6 +47,7 @@
     "fake-indexeddb": "^6.2.5",
     "globals": "^16.0.0",
     "jsdom": "^26.1.0",
+    "knip": "^5.84.1",
     "sharp": "^0.34.5",
     "sharp-ico": "^0.1.5",
     "typescript": "~5.8.3",
