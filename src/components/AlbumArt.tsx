@@ -73,10 +73,6 @@ const AlbumArtContainer = styled.div.withConfig({
   margin: 0 auto;
   overflow: hidden;
   background: transparent;
-  /* iOS Safari fix: border-radius + overflow: hidden doesn't clip children that
-     use CSS filter or transform. This mask forces a compositing layer that
-     correctly clips all descendants on WebKit (iPad, iPhone). */
-  -webkit-mask-image: -webkit-radial-gradient(white, black);
   /* Accent color glow for floating effect */
   ${({ accentColor, glowEnabled, glowIntensity }) => {
     // If glow is disabled, use simple shadow only
