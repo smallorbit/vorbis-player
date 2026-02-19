@@ -19,6 +19,11 @@ const FilterContainer = styled.div<{ $filters: string }>`
   width: 100%;
   height: 100%;
   position: relative;
+  /* Clip children to match the parent AlbumArtContainer's rounded corners.
+     CSS filter creates a new compositing context that can bypass ancestor
+     overflow: hidden on iOS Safari without this. */
+  overflow: hidden;
+  border-radius: inherit;
 `;
 
 export const AlbumArtFilters: React.FC<AlbumArtFiltersProps> = ({
