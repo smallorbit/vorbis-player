@@ -5,6 +5,7 @@ import PlayerStateRenderer from './PlayerStateRenderer';
 import PlayerContent from './PlayerContent';
 import BackgroundVisualizer from './BackgroundVisualizer';
 import AccentColorBackground from './AccentColorBackground';
+import DebugOverlay, { useDebugActivator } from './DebugOverlay';
 import { usePlayerLogic } from '@/hooks/usePlayerLogic';
 import { toAlbumPlaylistId } from '@/constants/playlist';
 
@@ -17,6 +18,7 @@ const Container = styled.div`
 
 const AudioPlayerComponent = () => {
   const { state, handlers } = usePlayerLogic();
+  const { debugActive, handleActivatorTap } = useDebugActivator();
 
   const handleAlbumPlay = useCallback((albumId: string, _albumName: string) => {
     handlers.handlePlaylistSelect(toAlbumPlaylistId(albumId));
@@ -103,6 +105,12 @@ const AudioPlayerComponent = () => {
 
   return (
     <Container>
+      <DebugOverlay active={debugActive} />
+      {/* 5 rapid taps in top-left corner toggles debug overlay */}
+      <div
+        onClick={handleActivatorTap}
+        style={{ position: 'fixed', top: 0, left: 0, width: 44, height: 44, zIndex: 999990 }}
+      />
       <AccentColorBackground
         enabled={state.accentColorBackgroundEnabled && isMainPlayerActive}
         accentColor={state.accentColor}
