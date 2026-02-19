@@ -201,7 +201,7 @@ const AlbumArt: React.FC<AlbumArtProps> = memo(({ currentTrack = null, accentCol
       const canvas = document.createElement('canvas');
       canvas.width = imageElement.width;
       canvas.height = imageElement.height;
-      const ctx = canvas.getContext('2d');
+      const ctx = canvas.getContext('2d', { willReadFrequently: true });
       if (!ctx) {
         throw new Error('Failed to get canvas context');
       }
