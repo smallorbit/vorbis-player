@@ -27,6 +27,15 @@ export interface UsePlayerSizingReturn {
   isDesktop: boolean;
   /** True when primary input is pointer (mouse/stylus) or device can hover; enables arrow-key drawer shortcuts */
   hasPointerInput: boolean;
+  /**
+   * True when the device's primary input is touch (finger), not a mouse or fine pointer.
+   * Use this for interaction decisions: enabling swipe gestures, touch-action styles, etc.
+   * Derived from CSS media queries (pointer: coarse / hover: none), so it correctly identifies
+   * high-resolution tablets as touch devices regardless of their viewport width.
+   * Contrast with isMobile/isTablet/isDesktop, which are viewport-based and should be used
+   * only for layout/spacing decisions.
+   */
+  isTouchDevice: boolean;
   orientation: 'portrait' | 'landscape';
   useFluidSizing: boolean;
   padding: number;
@@ -158,6 +167,7 @@ export const usePlayerSizing = (constraints?: SizingConstraints): UsePlayerSizin
     isTablet,
     isDesktop,
     hasPointerInput,
+    isTouchDevice: !hasPointerInput,
     orientation: viewport.orientation,
     useFluidSizing,
     padding,

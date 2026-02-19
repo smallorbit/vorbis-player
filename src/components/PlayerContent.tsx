@@ -247,21 +247,25 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
   }, [handlers]);
 
   // Use responsive sizing hook
-  const { dimensions, useFluidSizing, padding, transitionDuration, transitionEasing, isMobile, isDesktop, hasPointerInput } = usePlayerSizing();
+  // isTouchDevice: pointer-capability-based (true on any touch-primary device regardless of viewport size)
+  // isMobile: viewport-width-based (use only for layout/spacing decisions)
+  const { dimensions, useFluidSizing, padding, transitionDuration, transitionEasing, isMobile, hasPointerInput, isTouchDevice } = usePlayerSizing();
 
-  // Swipe gesture for mobile/tablet track navigation
+  // Swipe gesture for track navigation: enabled on any touch-primary device (finger input),
+  // regardless of viewport width — a high-res tablet is still a touch device.
   const { offsetX, isSwiping, isAnimating, gestureHandlers } = useSwipeGesture({
     onSwipeLeft: handlers.onNext,
     onSwipeRight: handlers.onPrevious,
-  }, { enabled: !isDesktop });
+  }, { enabled: isTouchDevice });
 
-  // Vertical swipe on the full player area (mobile only): down = library, up = playlist
-  // Disabled when a drawer is open so swipe-to-dismiss on the drawer itself works without conflict
+  // Vertical swipe on the full player area: down = library, up = playlist.
+  // Enabled for any touch-primary device; disabled when a drawer is open so
+  // swipe-to-dismiss on the drawer itself works without conflict.
   const { ref: verticalSwipeRef } = useVerticalSwipeGesture({
     onSwipeDown: handlers.onOpenLibraryDrawer,
     onSwipeUp: handlers.onShowPlaylist,
     threshold: 80,
-    enabled: isMobile && !ui.showPlaylist && !ui.showLibraryDrawer,
+    enabled: isTouchDevice && !ui.showPlaylist && !ui.showLibraryDrawer,
   });
 
   // Combined close handler for Escape key (closes VFX menu, library drawer, and help modal)
@@ -324,13 +328,13 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
 
   return (
     <ContentWrapper
-      ref={isMobile ? verticalSwipeRef : undefined}
+      ref={isTouchDevice ? verticalSwipeRef : undefined}
       width={dimensions.width}
       padding={padding}
       useFluidSizing={useFluidSizing}
       transitionDuration={transitionDuration}
       transitionEasing={transitionEasing}
-      style={{ touchAction: isMobile ? 'pan-x' : undefined }}
+      style={{ touchAction: isTouchDevice ? 'pan-x' : undefined }}
     >
       <PlayerContainer>
 
@@ -343,9 +347,9 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
           paddingTop: isMobile ? '0.25rem' : '1rem'
         }}>
           <ClickableAlbumArtContainer
-            $swipeEnabled={!isDesktop}
+            $swipeEnabled={isTouchDevice}
             $bothGestures={false}
-            {...(!isDesktop ? gestureHandlers : {})}
+            {...(isTouchDevice ? gestureHandlers : {})}
             onClick={!isSwiping && !isAnimating ? handlePlayPause : undefined}
             style={{
               transform: `translateX(${offsetX}px)`,
