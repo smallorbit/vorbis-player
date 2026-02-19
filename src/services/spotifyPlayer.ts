@@ -45,6 +45,7 @@ export class SpotifyPlayerService {
   private isReady: boolean;
   private stateChangeCallbacks = new Set<(state: SpotifyPlaybackState | null) => void>();
   private masterListenerAttached = false;
+  lastPlayTrackTime = 0;
 
   constructor() {
     // Restore state from HMR if available
@@ -159,6 +160,7 @@ export class SpotifyPlayerService {
     if (!this.deviceId || !this.isReady) {
       throw new Error('Spotify player not ready');
     }
+    this.lastPlayTrackTime = Date.now();
 
     const token = await spotifyAuth.ensureValidToken();
     

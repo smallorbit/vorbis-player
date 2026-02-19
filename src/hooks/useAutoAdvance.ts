@@ -10,6 +10,8 @@ interface UseAutoAdvanceProps {
   endThreshold?: number;
 }
 
+const PLAY_COOLDOWN_MS = 5000;
+
 export const useAutoAdvance = ({
   tracks,
   currentTrackIndex,
@@ -68,13 +70,14 @@ export const useAutoAdvance = ({
         advanceToNext();
       }
 
-      // Detect track naturally finished: was playing, now paused at position 0
-      // This catches the case where Spotify resets to the start after finishing
-      if (!hasEnded.current && wasPlayingRef.current && isPaused && position === 0 && duration > 0) {
+      // Detect track naturally finished: was playing, now paused at position 0.
+      // Guard: skip if a track was recently loaded — mobile Spotify SDK briefly
+      // pauses at position 0 during buffering, which would falsely trigger advance.
+      const msSinceLastPlay = Date.now() - spotifyPlayer.lastPlayTrackTime;
+      if (!hasEnded.current && wasPlayingRef.current && isPaused && position === 0 && duration > 0 && msSinceLastPlay > PLAY_COOLDOWN_MS) {
         advanceToNext();
       }
 
-      // Track whether we were playing so we can detect the transition to paused at 0
       wasPlayingRef.current = !isPaused;
     }
 
