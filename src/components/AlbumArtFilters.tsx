@@ -19,6 +19,14 @@ const FilterContainer = styled.div<{ $filters: string }>`
   width: 100%;
   height: 100%;
   position: relative;
+  /* Clip children to the parent's rounded corners.
+     CSS filter creates a new compositing context that can cause WebKit to
+     ignore the ancestor overflow: hidden. The mask forces a proper compositing
+     layer here (on the filter element itself) rather than on AlbumArtContainer,
+     so the glow box-shadow on the outer container is not affected. */
+  overflow: hidden;
+  border-radius: inherit;
+  -webkit-mask-image: -webkit-radial-gradient(white, black);
 `;
 
 export const AlbumArtFilters: React.FC<AlbumArtFiltersProps> = ({

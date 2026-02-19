@@ -275,13 +275,10 @@ const AlbumArt: React.FC<AlbumArtProps> = memo(({ currentTrack = null, accentCol
             style={{
               width: '100%',
               objectFit: 'cover',
-              overflow: 'hidden',
-              borderRadius: theme.borderRadius['3xl'],
               display: 'block',
               zIndex: theme.zIndex.docked,
               opacity: isProcessing ? 0.9 : 1,
               transition: theme.transitions.normal,
-              transform: 'scale(1.01)',
             }}
             loading="lazy"
             onError={(e) => {
