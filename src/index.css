@@ -44,11 +44,8 @@ body {
   -ms-text-size-adjust: 100%;
   text-size-adjust: 100%;
   
-  /* Prevent horizontal scroll on mobile */
-  overflow-x: hidden;
-  
-  /* Improve touch scrolling on iOS */
-  -webkit-overflow-scrolling: touch;
+  /* Prevent all scrolling — player is designed to fit within viewport */
+  overflow: hidden;
 }
 
 h1 {
