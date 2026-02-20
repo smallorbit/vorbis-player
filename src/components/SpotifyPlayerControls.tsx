@@ -6,7 +6,6 @@ import { PlayerControlsContainer } from './controls/styled';
 import TrackInfo from './controls/TrackInfo';
 import PlaybackControls from './controls/PlaybackControls';
 import TimelineControls from './controls/TimelineControls';
-import { TrackInfoRow, TrackInfoLeft, TrackInfoCenter, TrackInfoRight } from './controls/styled';
 
 
 
@@ -137,24 +136,18 @@ const SpotifyPlayerControls = memo<SpotifyPlayerControlsProps>(({
         onAlbumPlay={onAlbumPlay}
       />
 
-      {isDesktop && (
-        <TrackInfoRow style={{ position: 'relative' }}>
-          <TrackInfoLeft />
-          <TrackInfoCenter>
-            <PlaybackControls
-              onPrevious={onPrevious}
-              onPlay={onPlay}
-              onPause={onPause}
-              onNext={onNext}
-              isPlaying={isPlaying}
-              accentColor={accentColor}
-              isMobile={isMobile}
-              isTablet={isTablet}
-            />
-          </TrackInfoCenter>
-          <TrackInfoRight />
-        </TrackInfoRow>
-      )}
+      <div style={{ display: 'flex', justifyContent: 'center', width: '100%', gap: '0.5rem' }}>
+        <PlaybackControls
+          onPrevious={onPrevious}
+          onPlay={onPlay}
+          onPause={onPause}
+          onNext={onNext}
+          isPlaying={isPlaying}
+          accentColor={accentColor}
+          isMobile={isMobile}
+          isTablet={isTablet}
+        />
+      </div>
 
       <TimelineControls
         isMuted={effectiveIsMuted}

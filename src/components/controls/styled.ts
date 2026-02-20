@@ -16,6 +16,7 @@ export const PlayerControlsContainer = styled.div<{ $isMobile: boolean; $isTable
   }};
   width: 100%;
   max-width: 100%;
+  box-sizing: border-box;
   
   /* Enable container queries */
   container-type: inline-size;
