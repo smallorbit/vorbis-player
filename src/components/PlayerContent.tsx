@@ -259,13 +259,14 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
   }, { enabled: isTouchDevice });
 
   // Vertical swipe on the full player area: down = library, up = playlist.
-  // Enabled for any touch-primary device; disabled when a drawer is open so
-  // swipe-to-dismiss on the drawer itself works without conflict.
+  // Enabled for any touch-primary device; disabled when a drawer or menu is open so
+  // swipe-to-dismiss on the drawer works without conflict, and scrolling within the
+  // visual effects menu scrolls the menu instead of triggering drawer animations.
   const { ref: verticalSwipeRef } = useVerticalSwipeGesture({
     onSwipeDown: handlers.onOpenLibraryDrawer,
     onSwipeUp: handlers.onShowPlaylist,
     threshold: 80,
-    enabled: isTouchDevice && !ui.showPlaylist && !ui.showLibraryDrawer,
+    enabled: isTouchDevice && !ui.showPlaylist && !ui.showLibraryDrawer && !ui.showVisualEffects,
   });
 
   // Combined close handler for Escape key (closes VFX menu, library drawer, and help modal)
