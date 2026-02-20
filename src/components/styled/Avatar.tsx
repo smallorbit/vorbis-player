@@ -68,6 +68,3 @@ export const Avatar: React.FC<AvatarProps> = ({ src, alt, fallback, style }) => 
   );
 };
 
-// Keep these exports for backward compatibility but mark as deprecated
-export const AvatarImage = StyledAvatarImage;
-export const AvatarFallback = StyledAvatarFallback;

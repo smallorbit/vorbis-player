@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 
-export interface UseVerticalSwipeGestureOptions {
+interface UseVerticalSwipeGestureOptions {
   onSwipeUp?: () => void;
   onSwipeDown?: () => void;
   onDrag?: (deltaY: number) => void;
@@ -9,7 +9,7 @@ export interface UseVerticalSwipeGestureOptions {
   enabled?: boolean;
 }
 
-export interface UseVerticalSwipeGestureReturn {
+interface UseVerticalSwipeGestureReturn {
   ref: React.RefObject<HTMLDivElement>;
   isDragging: boolean;
   dragOffset: number;

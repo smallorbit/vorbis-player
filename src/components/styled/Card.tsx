@@ -57,5 +57,4 @@ Card.Description = CardDescription;
 Card.Content = CardContent;
 Card.Footer = CardFooter;
 
-// Export individual components as well for direct import
-export { CardHeader, CardTitle, CardDescription, CardContent, CardFooter };
+export { CardHeader, CardDescription, CardContent };

@@ -2,7 +2,7 @@ import { memo, Fragment, useState, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import type { ArtistInfo } from '../../services/spotify';
 import { PlayerTrackName, PlayerTrackAlbum, AlbumLink, PlayerTrackArtist, TrackInfoOnlyRow, ArtistLink } from './styled';
-import { TrackInfoPopover, LibraryIcon, SpotifyIcon, PlayIcon } from './TrackInfoPopover';
+import TrackInfoPopover, { LibraryIcon, SpotifyIcon, PlayIcon } from './TrackInfoPopover';
 
 interface TrackInfoProps {
     track: {
@@ -40,7 +40,7 @@ type PopoverState =
     | { type: 'album'; albumId: string; albumName: string; rect: DOMRect }
     | null;
 
-export const TrackInfo = memo<TrackInfoProps>(({ track, isMobile, isTablet, onArtistBrowse, onAlbumPlay }) => {
+const TrackInfo = memo<TrackInfoProps>(({ track, isMobile, isTablet, onArtistBrowse, onAlbumPlay }) => {
     const [popover, setPopover] = useState<PopoverState>(null);
     const artistRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
     const albumRef = useRef<HTMLButtonElement>(null);

@@ -23,7 +23,7 @@ const areVolumeControlPropsEqual = (
     );
 };
 
-export const VolumeControl = memo<VolumeControlProps>(({
+const VolumeControl = memo<VolumeControlProps>(({
     isMuted,
     volume,
     onClick,

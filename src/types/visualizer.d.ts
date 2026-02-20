@@ -9,7 +9,7 @@ export type VisualizerStyle =
   | 'particles'
   | 'geometric';
 
-export interface VisualizerConfig {
+interface VisualizerConfig {
   particleCount?: number;
   animationSpeed?: number;
   colorVariation?: number;

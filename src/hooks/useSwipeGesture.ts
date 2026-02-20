@@ -1,12 +1,12 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 
-export interface SwipeGestureHandlers {
+interface SwipeGestureHandlers {
   onSwipeLeft?: () => void;
   onSwipeRight?: () => void;
   onTap?: () => void;
 }
 
-export interface SwipeGestureOptions {
+interface SwipeGestureOptions {
   swipeThreshold?: number;
   velocityThreshold?: number;
   tapMaxDuration?: number;
@@ -15,7 +15,7 @@ export interface SwipeGestureOptions {
   animationDuration?: number;
 }
 
-export interface SwipeGestureReturn {
+interface SwipeGestureReturn {
   offsetX: number;
   isSwiping: boolean;
   isAnimating: boolean;

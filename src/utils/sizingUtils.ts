@@ -34,7 +34,7 @@ export interface SizingConstraints {
  * Creates default SizingConstraints from theme configuration
  * This bridges the gap between hardcoded theme values and the flexible SizingConstraints interface
  */
-export const createDefaultSizingConstraints = (viewport: ViewportInfo): SizingConstraints & {
+const createDefaultSizingConstraints = (viewport: ViewportInfo): SizingConstraints & {
   viewportUsageWidth: number;
   viewportUsageHeight: number;
 } => {
@@ -224,7 +224,7 @@ export const calculateAspectRatioConstraints = (viewport: ViewportInfo): { min: 
   }
 };
 
-export const adjustDimensionsForAspectRatio = (
+const adjustDimensionsForAspectRatio = (
   width: number,
   height: number,
   constraints: { min: number; max: number }

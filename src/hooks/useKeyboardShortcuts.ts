@@ -19,12 +19,12 @@
 
 import { useEffect } from 'react';
 
-export interface KeyboardShortcutOptions {
+interface KeyboardShortcutOptions {
   /** When true, ArrowUp/ArrowDown open drawers (set when user has pointer input, not touch-only) */
   prefersPointerInput?: boolean;
 }
 
-export interface KeyboardShortcutHandlers {
+interface KeyboardShortcutHandlers {
   // Playback controls
   onPlayPause?: () => void;
   onNext?: () => void;

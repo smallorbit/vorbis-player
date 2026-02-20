@@ -13,7 +13,7 @@ import { librarySyncEngine } from '../services/cache/librarySyncEngine';
 import type { CachedPlaylistInfo, SyncState } from '../services/cache/cacheTypes';
 import type { AlbumInfo } from '../services/spotify';
 
-export interface UseLibrarySyncResult {
+interface UseLibrarySyncResult {
   playlists: CachedPlaylistInfo[];
   albums: AlbumInfo[];
   likedSongsCount: number;

@@ -92,7 +92,7 @@ interface PlaylistBottomSheetProps {
   onTrackSelect: (index: number) => void;
 }
 
-export const PlaylistBottomSheet = memo<PlaylistBottomSheetProps>(function PlaylistBottomSheet({
+const PlaylistBottomSheet = memo<PlaylistBottomSheetProps>(function PlaylistBottomSheet({
   isOpen,
   onClose,
   tracks,

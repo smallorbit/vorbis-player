@@ -2,7 +2,7 @@ import { useEffect, useRef, useCallback } from 'react';
 import styled from 'styled-components';
 import { theme } from '../../styles/theme';
 
-export type PopoverType = 'artist' | 'album';
+type PopoverType = 'artist' | 'album';
 
 interface PopoverOption {
   label: string;
@@ -83,7 +83,7 @@ const OptionButton = styled.button`
   }
 `;
 
-export function TrackInfoPopover({ options, anchorRect, onClose }: TrackInfoPopoverProps) {
+function TrackInfoPopover({ options, anchorRect, onClose }: TrackInfoPopoverProps) {
   const containerRef = useRef<HTMLDivElement>(null);
 
   const positionPopover = useCallback(() => {

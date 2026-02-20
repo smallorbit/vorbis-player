@@ -170,7 +170,7 @@ interface PlayerStateRendererProps {
   onPlaylistSelect: (playlistId: string) => void;
 }
 
-export const PlayerStateRenderer: React.FC<PlayerStateRendererProps> = ({
+const PlayerStateRenderer: React.FC<PlayerStateRendererProps> = ({
   isLoading,
   error,
   selectedPlaylistId,
