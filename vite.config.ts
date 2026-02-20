@@ -51,10 +51,7 @@ export default defineConfig({
       output: {
         manualChunks: {
           vendor: ['react', 'react-dom'],
-          radix: [
-            '@radix-ui/react-scroll-area'
-          ],
-          styled: ['styled-components']
+styled: ['styled-components']
         }
       }
     },
