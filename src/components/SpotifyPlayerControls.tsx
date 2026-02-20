@@ -136,7 +136,7 @@ const SpotifyPlayerControls = memo<SpotifyPlayerControlsProps>(({
         onAlbumPlay={onAlbumPlay}
       />
 
-      <div style={{ display: 'flex', justifyContent: 'center', width: '100%', gap: '0.75rem' }}>
+      <div style={{ display: 'flex', justifyContent: 'center', width: '100%', gap: '0.5rem' }}>
         <PlaybackControls
           onPrevious={onPrevious}
           onPlay={onPlay}
