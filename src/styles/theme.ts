@@ -1,12 +1,3 @@
-// TypeScript interface for player constraints
-export interface PlayerConstraints {
-  minHeight: number;
-  maxHeight: number;
-  viewportUsage: {
-    width: number;
-    height: number;
-  };
-}
 
 export const theme = {
   colors: {
@@ -230,29 +221,3 @@ export const theme = {
   }
 } as const;
 
-export type Theme = typeof theme;
-
-// Ensure playerConstraints conforms to the interface
-export type ThemeWithPlayerConstraints = Omit<Theme, 'playerConstraints'> & {
-  playerConstraints: PlayerConstraints;
-};
-
-// Helper function for responsive design
-export const mediaQuery = {
-  xs: `@media (min-width: ${theme.breakpoints.xs})`,
-  sm: `@media (min-width: ${theme.breakpoints.sm})`,
-  md: `@media (min-width: ${theme.breakpoints.md})`,
-  lg: `@media (min-width: ${theme.breakpoints.lg})`,
-  xl: `@media (min-width: ${theme.breakpoints.xl})`,
-  '2xl': `@media (min-width: ${theme.breakpoints['2xl']})`
-};
-
-// Container query utilities for component-level responsive behavior
-export const containerQuery = {
-  xs: `@container (min-width: ${theme.containerBreakpoints.xs})`,
-  sm: `@container (min-width: ${theme.containerBreakpoints.sm})`,
-  md: `@container (min-width: ${theme.containerBreakpoints.md})`,
-  lg: `@container (min-width: ${theme.containerBreakpoints.lg})`,
-  xl: `@container (min-width: ${theme.containerBreakpoints.xl})`,
-  '2xl': `@container (min-width: ${theme.containerBreakpoints['2xl']})`
-};

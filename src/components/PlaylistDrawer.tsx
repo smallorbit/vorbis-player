@@ -153,7 +153,7 @@ const arePlaylistDrawerPropsEqual = (
   return true;
 };
 
-export const PlaylistDrawer = memo<PlaylistDrawerProps>(({
+const PlaylistDrawer = memo<PlaylistDrawerProps>(({
   isOpen,
   onClose,
   tracks,

@@ -19,7 +19,7 @@ import {
   type BrowserFeatures
 } from '../utils/featureDetection';
 
-export interface UsePlayerSizingReturn {
+interface UsePlayerSizingReturn {
   dimensions: PlayerDimensions;
   viewport: ViewportInfo;
   isMobile: boolean;

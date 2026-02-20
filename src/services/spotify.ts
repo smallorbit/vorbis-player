@@ -550,8 +550,8 @@ export const spotifyAuth = new SpotifyAuth();
 // API Functions
 // =============================================================================
 
-export type PlaylistsIncrementalCallback = (playlistsSoFar: PlaylistInfo[], isComplete: boolean) => void;
-export type AlbumsIncrementalCallback = (albumsSoFar: AlbumInfo[], isComplete: boolean) => void;
+type PlaylistsIncrementalCallback = (playlistsSoFar: PlaylistInfo[], isComplete: boolean) => void;
+type AlbumsIncrementalCallback = (albumsSoFar: AlbumInfo[], isComplete: boolean) => void;
 
 /**
  * Load playlists and albums with interleaved pagination.

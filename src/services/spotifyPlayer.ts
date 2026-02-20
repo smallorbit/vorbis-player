@@ -39,7 +39,7 @@ const saveHMRState = (state: HMRPlayerState) => {
   }
 };
 
-export class SpotifyPlayerService {
+class SpotifyPlayerService {
   private player: SpotifyPlayer | null;
   private deviceId: string | null;
   private isReady: boolean;

@@ -26,7 +26,7 @@ const arePlaybackControlsPropsEqual = (
     );
 };
 
-export const PlaybackControls = memo<PlaybackControlsProps>(({
+const PlaybackControls = memo<PlaybackControlsProps>(({
     onPrevious,
     onPlay,
     onPause,

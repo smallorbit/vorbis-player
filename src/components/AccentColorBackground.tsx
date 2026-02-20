@@ -32,7 +32,7 @@ const BackgroundGradient = styled.div<{ $accentColor: string }>`
  * 
  * @component
  */
-export const AccentColorBackground: React.FC<AccentColorBackgroundProps> = ({
+const AccentColorBackground: React.FC<AccentColorBackgroundProps> = ({
   enabled,
   accentColor
 }) => {

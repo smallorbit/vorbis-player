@@ -66,7 +66,7 @@ const TimeLabel = styled.span.withConfig({
   text-align: center;
 `;
 
-export const TimelineRow = styled.div`
+const TimelineRow = styled.div`
   display: flex;
   align-items: center;
   gap: ${({ theme }) => theme.spacing.sm};
@@ -99,7 +99,7 @@ const areTimelineSliderPropsEqual = (
   );
 };
 
-export const TimelineSlider = memo<TimelineSliderProps>(({
+const TimelineSlider = memo<TimelineSliderProps>(({
   currentPosition,
   duration,
   accentColor,

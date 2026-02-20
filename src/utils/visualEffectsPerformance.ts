@@ -11,7 +11,7 @@ export interface VisualEffectsPerformanceMetrics extends PerformanceMetrics {
   virtualListRenderTime: number;
 }
 
-export interface VisualEffectsThresholds {
+interface VisualEffectsThresholds {
   maxInteractionTime: number; // Target < 200ms for filter adjustments
   maxRenderTime: number; // Target < 16.67ms for 60fps
   maxMainThreadBlocking: number; // Target < 50ms
@@ -32,7 +32,7 @@ export const VISUAL_EFFECTS_THRESHOLDS: VisualEffectsThresholds = {
 /**
  * Specialized performance profiler for visual effects
  */
-export class VisualEffectsProfiler extends PerformanceProfiler {
+class VisualEffectsProfiler extends PerformanceProfiler {
   private scrollStartTime: number = 0;
   private glowFrameCount: number = 0;
   private glowStartTime: number = 0;

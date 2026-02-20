@@ -109,7 +109,7 @@ const DrawerContent = styled.div`
   flex-direction: column;
 `;
 
-export function LibraryDrawer({ isOpen, onClose, onPlaylistSelect, initialSearchQuery, initialViewMode }: LibraryDrawerProps) {
+function LibraryDrawer({ isOpen, onClose, onPlaylistSelect, initialSearchQuery, initialViewMode }: LibraryDrawerProps) {
   const selectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handlePlaylistSelectWrapper = useCallback(

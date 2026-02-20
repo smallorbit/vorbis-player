@@ -39,7 +39,7 @@ const areGlowPropsEqual = (
   );
 };
 
-export const AccentColorGlowOverlay = React.memo<React.FC<AccentColorGlowOverlayProps>>(({
+const AccentColorGlowOverlay = React.memo<React.FC<AccentColorGlowOverlayProps>>(({
   glowIntensity = DEFAULT_GLOW_INTENSITY,
   glowRate = DEFAULT_GLOW_RATE,
   accentColor,

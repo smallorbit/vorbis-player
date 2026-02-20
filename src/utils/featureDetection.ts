@@ -113,7 +113,7 @@ export const detectBrowserFeatures = (): BrowserFeatures => {
 /**
  * Get fallback values for unsupported features
  */
-export const getFallbackValues = (features: BrowserFeatures) => {
+const getFallbackValues = (features: BrowserFeatures) => {
   return {
     // Viewport fallbacks
     getViewportWidth: () => {

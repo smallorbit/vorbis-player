@@ -2,7 +2,7 @@ import { memo } from 'react';
 import { TimelineLeft, TimelineRight, TimelineControlsContainer } from './styled';
 import VolumeControl from './VolumeControl';
 import LikeButton from '../LikeButton';
-import { TimelineSlider } from '../TimelineSlider';
+import TimelineSlider from '../TimelineSlider';
 
 interface TimelineControlsProps {
     // Volume control props
@@ -49,7 +49,7 @@ const areTimelineControlsPropsEqual = (
     );
 };
 
-export const TimelineControls = memo<TimelineControlsProps>(({ 
+const TimelineControls = memo<TimelineControlsProps>(({ 
     isMuted,
     volume,
     onVolumeButtonClick,

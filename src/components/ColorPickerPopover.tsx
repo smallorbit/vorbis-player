@@ -56,7 +56,7 @@ const areColorPickerPropsEqual = (
   return true;
 };
 
-export const ColorPickerPopover = memo<ColorPickerPopoverProps>(({
+const ColorPickerPopover = memo<ColorPickerPopoverProps>(({
   accentColor,
   currentTrack,
   onAccentColorChange,

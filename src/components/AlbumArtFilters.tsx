@@ -29,7 +29,7 @@ const FilterContainer = styled.div<{ $filters: string }>`
   -webkit-mask-image: -webkit-radial-gradient(white, black);
 `;
 
-export const AlbumArtFilters: React.FC<AlbumArtFiltersProps> = ({
+const AlbumArtFilters: React.FC<AlbumArtFiltersProps> = ({
   filters,
   children,
   className

@@ -102,7 +102,7 @@ const areVisualEffectsPropsEqual = (
   return true;
 };
 
-export const VisualEffectsMenu: React.FC<VisualEffectsMenuProps> = memo(({
+const VisualEffectsMenu: React.FC<VisualEffectsMenuProps> = memo(({
   isOpen,
   onClose,
   accentColor,

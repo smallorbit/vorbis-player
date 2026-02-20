@@ -137,7 +137,7 @@ const ResultsContainer = styled.div`
   overflow-y: auto;
 `;
 
-export const VisualEffectsPerformanceMonitor: React.FC<VisualEffectsPerformanceMonitorProps> = ({
+const VisualEffectsPerformanceMonitor: React.FC<VisualEffectsPerformanceMonitorProps> = ({
   isEnabled = import.meta.env.DEV,
   onMetricsUpdate,
   filterCount

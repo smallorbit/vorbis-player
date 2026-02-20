@@ -31,7 +31,7 @@ interface FabMenuItemsProps {
 
 const STAGGER_DELAY = 15;
 
-export const FabMenuItems = ({
+const FabMenuItems = ({
   accentColor,
   currentTrack,
   glowEnabled,

@@ -1,7 +1,7 @@
 import { useRef, useEffect, useCallback } from 'react';
 import { useAnimationFrame } from './useAnimationFrame';
 
-export interface UseCanvasVisualizerProps<T> {
+interface UseCanvasVisualizerProps<T> {
   accentColor: string;
   isPlaying: boolean;
   intensity: number;

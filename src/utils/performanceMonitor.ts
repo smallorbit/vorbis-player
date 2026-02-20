@@ -10,13 +10,13 @@ export interface PerformanceMetrics {
   timestamp: number;
 }
 
-export interface PerformanceThresholds {
+interface PerformanceThresholds {
   maxInteractionTime: number; // Target < 200ms
   maxRenderTime: number; // Target < 16.67ms (60fps)
   maxMainThreadBlocking: number; // Target < 50ms
 }
 
-export const DEFAULT_THRESHOLDS: PerformanceThresholds = {
+const DEFAULT_THRESHOLDS: PerformanceThresholds = {
   maxInteractionTime: 200,
   maxRenderTime: 16.67,
   maxMainThreadBlocking: 50
@@ -25,7 +25,7 @@ export const DEFAULT_THRESHOLDS: PerformanceThresholds = {
 /**
  * Measures interaction time from start to end
  */
-export class InteractionTimer {
+class InteractionTimer {
   private startTime: number = 0;
   private endTime: number = 0;
 
@@ -46,7 +46,7 @@ export class InteractionTimer {
 /**
  * Measures frame rate and render performance
  */
-export class FrameRateMonitor {
+class FrameRateMonitor {
   private frameCount: number = 0;
   private lastTime: number = 0;
   private frameRate: number = 0;
@@ -88,7 +88,7 @@ export class FrameRateMonitor {
 /**
  * Monitors main thread blocking time
  */
-export class MainThreadMonitor {
+class MainThreadMonitor {
   private observer: PerformanceObserver | null = null;
   private blockingTimes: number[] = [];
 
@@ -130,7 +130,7 @@ export class MainThreadMonitor {
 /**
  * Memory usage monitor
  */
-export class MemoryMonitor {
+class MemoryMonitor {
   static getCurrentUsage(): number | undefined {
     if ('memory' in performance) {
       const memory = (performance as unknown as { memory: { usedJSHeapSize: number } }).memory;
@@ -232,18 +232,3 @@ Validation: ${this.validateMetrics(latest) ? '✅ PASSED' : '❌ FAILED'}
   }
 }
 
-/**
- * Hook for performance monitoring in React components
- */
-export const usePerformanceProfiler = () => {
-  const profiler = new PerformanceProfiler();
-
-  return {
-    startProfiling: () => profiler.startProfiling(),
-    endProfiling: () => profiler.endProfiling(),
-    validateMetrics: (metrics: PerformanceMetrics, thresholds?: PerformanceThresholds) => 
-      profiler.validateMetrics(metrics, thresholds),
-    getReport: () => profiler.generateReport(),
-    clearHistory: () => profiler.clearHistory()
-  };
-};
