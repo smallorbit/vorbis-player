@@ -188,6 +188,14 @@ const PlayerContainer = styled.div`
   width: 100%;
 `;
 
+const PlayerStack = styled.div`
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: min(${theme.breakpoints.lg}, calc(100dvh - 350px));
+  margin: 0 auto;
+`;
+
 // Album art container with click handler
 const ClickableAlbumArtContainer = styled.div<{ $swipeEnabled?: boolean; $bothGestures?: boolean }>`
   position: relative;
@@ -339,72 +347,74 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
     >
       <PlayerContainer>
 
-        {/* Album Art Zone - Clickable to toggle play/pause */}
-        <CardContent style={{
-          position: 'relative',
-          zIndex: 2,
-          minHeight: 0,
-          alignItems: 'center',
-          paddingTop: isMobile ? '0.25rem' : '1rem'
-        }}>
-          <ClickableAlbumArtContainer
-            $swipeEnabled={isTouchDevice}
-            $bothGestures={false}
-            {...(isTouchDevice ? gestureHandlers : {})}
-            onClick={!isSwiping && !isAnimating ? handlePlayPause : undefined}
-            style={{
-              transform: `translateX(${offsetX}px)`,
-              transition: isAnimating ? 'transform 300ms cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
-              willChange: isSwiping ? 'transform' : undefined,
-            }}
-          >
-            <AlbumArt
-              currentTrack={track.current}
-              accentColor={ui.accentColor}
-              glowIntensity={effects.enabled ? effects.glow.intensity : 0}
-              glowRate={effects.glow.rate}
-              glowEnabled={effects.enabled}
-              albumFilters={effects.enabled ? effects.filters : defaultFilters}
-            />
-          </ClickableAlbumArtContainer>
-        </CardContent>
-        <LoadingCard
-          backgroundImage={track.current?.image}
-          accentColor={ui.accentColor}
-          glowEnabled={effects.enabled}
-          glowIntensity={effects.glow.intensity}
-          glowRate={effects.glow.rate}
-        >
+        <PlayerStack>
+          {/* Album Art Zone - Clickable to toggle play/pause */}
           <CardContent style={{
             position: 'relative',
             zIndex: 2,
-            flex: '0 0 auto',
-            minHeight: `${theme.controls.minHeight}px`,
-            display: 'flex',
+            minHeight: 0,
             alignItems: 'center',
-            justifyContent: 'center'
+            paddingTop: isMobile ? '0.25rem' : '1rem'
           }}>
-            <Suspense fallback={<ControlsLoadingFallback />}>
-              <SpotifyPlayerControls
+            <ClickableAlbumArtContainer
+              $swipeEnabled={isTouchDevice}
+              $bothGestures={false}
+              {...(isTouchDevice ? gestureHandlers : {})}
+              onClick={!isSwiping && !isAnimating ? handlePlayPause : undefined}
+              style={{
+                transform: `translateX(${offsetX}px)`,
+                transition: isAnimating ? 'transform 300ms cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
+                willChange: isSwiping ? 'transform' : undefined,
+              }}
+            >
+              <AlbumArt
                 currentTrack={track.current}
                 accentColor={ui.accentColor}
-                trackCount={track.list.length}
-                isLiked={track.isLiked}
-                isLikePending={track.isLikePending}
-                isMuted={track.isMuted}
-                volume={track.volume}
-                onMuteToggle={handlers.onMuteToggle}
-                onToggleLike={handlers.onToggleLike}
-                onPlay={handlers.onPlay}
-                onPause={handlers.onPause}
-                onNext={handlers.onNext}
-                onPrevious={handlers.onPrevious}
-                onArtistBrowse={handleArtistBrowse}
-                onAlbumPlay={handleAlbumPlay}
+                glowIntensity={effects.enabled ? effects.glow.intensity : 0}
+                glowRate={effects.glow.rate}
+                glowEnabled={effects.enabled}
+                albumFilters={effects.enabled ? effects.filters : defaultFilters}
               />
-            </Suspense>
+            </ClickableAlbumArtContainer>
           </CardContent>
-        </LoadingCard>
+          <LoadingCard
+            backgroundImage={track.current?.image}
+            accentColor={ui.accentColor}
+            glowEnabled={effects.enabled}
+            glowIntensity={effects.glow.intensity}
+            glowRate={effects.glow.rate}
+          >
+            <CardContent style={{
+              position: 'relative',
+              zIndex: 2,
+              flex: '0 0 auto',
+              minHeight: `${theme.controls.minHeight}px`,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}>
+              <Suspense fallback={<ControlsLoadingFallback />}>
+                <SpotifyPlayerControls
+                  currentTrack={track.current}
+                  accentColor={ui.accentColor}
+                  trackCount={track.list.length}
+                  isLiked={track.isLiked}
+                  isLikePending={track.isLikePending}
+                  isMuted={track.isMuted}
+                  volume={track.volume}
+                  onMuteToggle={handlers.onMuteToggle}
+                  onToggleLike={handlers.onToggleLike}
+                  onPlay={handlers.onPlay}
+                  onPause={handlers.onPause}
+                  onNext={handlers.onNext}
+                  onPrevious={handlers.onPrevious}
+                  onArtistBrowse={handleArtistBrowse}
+                  onAlbumPlay={handleAlbumPlay}
+                />
+              </Suspense>
+            </CardContent>
+          </LoadingCard>
+        </PlayerStack>
       </PlayerContainer>
       <FabMenu
         accentColor={ui.accentColor}
