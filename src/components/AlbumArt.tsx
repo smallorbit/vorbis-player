@@ -68,7 +68,7 @@ const AlbumArtContainer = styled.div.withConfig({
   border-radius: ${theme.borderRadius['3xl']};
   position: relative;
   width: 100%;
-  max-width: min(${theme.breakpoints.lg}, calc(100dvh - 350px));
+  max-width: min(${theme.breakpoints.lg}, calc(100dvh - 410px));
   aspect-ratio: 1;
   margin: 0 auto;
   overflow: hidden;
