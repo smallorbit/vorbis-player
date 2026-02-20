@@ -3,7 +3,8 @@ import styled from 'styled-components';
 import { CardContent } from './styled';
 import AlbumArt from './AlbumArt';
 import SpotifyPlayerControls from './SpotifyPlayerControls';
-import FabMenu from './FabMenu';
+import BottomBar from './BottomBar';
+import { BOTTOM_BAR_HEIGHT } from './BottomBar/styled';
 import { theme } from '@/styles/theme';
 import { cardBase } from '../styles/utils';
 import { usePlayerSizing } from '../hooks/usePlayerSizing';
@@ -95,7 +96,7 @@ const ContentWrapper = styled.div.withConfig({
 
   margin: 0 auto;
   padding: ${props => props.padding}px;
-  padding-bottom: ${props => props.padding}px;
+  padding-bottom: ${props => props.padding + BOTTOM_BAR_HEIGHT}px;
   box-sizing: border-box;
   position: relative;
   z-index: 2;
@@ -192,7 +193,7 @@ const PlayerStack = styled.div`
   display: flex;
   flex-direction: column;
   width: 100%;
-  max-width: min(${theme.breakpoints.lg}, calc(100dvh - 350px));
+  max-width: min(${theme.breakpoints.lg}, calc(100dvh - 350px - ${BOTTOM_BAR_HEIGHT}px));
   margin: 0 auto;
 `;
 
@@ -416,7 +417,7 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
           </LoadingCard>
         </PlayerStack>
       </PlayerContainer>
-      <FabMenu
+      <BottomBar
         accentColor={ui.accentColor}
         currentTrack={track.current}
         glowEnabled={effects.enabled}
