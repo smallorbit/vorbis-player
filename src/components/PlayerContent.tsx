@@ -221,23 +221,31 @@ const PlayerStack = styled.div.withConfig({
 const ZenControlsWrapper = styled.div.withConfig({
   shouldForwardProp: (prop) => !['$zenMode'].includes(prop),
 })<{ $zenMode: boolean }>`
+  display: grid;
+  grid-template-rows: ${({ $zenMode }) => $zenMode ? '0fr' : '1fr'};
   opacity: ${({ $zenMode }) => $zenMode ? 0 : 1};
-  max-height: ${({ $zenMode }) => $zenMode ? '0px' : '500px'};
   transform: ${({ $zenMode }) => $zenMode ? 'scale(0.95) translateY(-8px)' : 'scale(1) translateY(0)'};
   transform-origin: top center;
-  overflow: ${({ $zenMode }) => $zenMode ? 'hidden' : 'visible'};
   /*
-   * Entering zen: controls fade out first (300ms), then art expands (with 300ms delay).
-   * Exiting zen: max-height snaps instantly so controls claim layout space at opacity 0,
-   * letting the ResizeObserver immediately set --player-controls-height to the correct value
-   * so album art knows its final size before it starts animating. Controls only become
-   * visible (opacity/transform) after album art finishes shrinking (1000ms delay).
+   * grid-template-rows animates over the actual element height (unlike max-height which
+   * animates over an arbitrary 500px range, causing non-linear perceived speed).
+   * Entering zen: controls collapse + fade in 300ms, then art expands (300ms delay).
+   * Exiting zen: art shrinks first (1000ms), then controls expand + fade in (350ms).
+   * --player-controls-height is pre-set synchronously via stableControlsHeightRef before
+   * the state flip, so PlayerStack has the correct target from the first animation frame.
    */
   transition: ${({ $zenMode }) => $zenMode
-    ? 'opacity 300ms ease, max-height 300ms ease, transform 300ms ease'
-    : 'opacity 350ms ease 1000ms, transform 350ms ease 1000ms'
+    ? 'grid-template-rows 300ms ease, opacity 300ms ease, transform 300ms ease'
+    : 'grid-template-rows 500ms ease 500ms, opacity 1200ms ease 1200ms, transform 300ms ease 300ms'
   };
   pointer-events: ${({ $zenMode }) => $zenMode ? 'none' : 'auto'};
+`;
+
+// Direct grid item — min-height: 0 allows the grid row to collapse to 0fr,
+// overflow: hidden clips content during the collapse animation.
+const ZenControlsInner = styled.div`
+  min-height: 0;
+  overflow: hidden;
 `;
 
 // Album art container with click handler
@@ -305,14 +313,19 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
 
   // Measure the controls card height so album art can fill exactly the remaining space.
   // We set --player-controls-height on :root so AlbumArt can reference it in CSS.
+  // stableControlsHeightRef preserves the last fully-visible height so we can restore it
+  // synchronously before exiting zen, avoiding a ResizeObserver race with the CSS transition.
   const controlsRef = useRef<HTMLDivElement>(null);
+  const stableControlsHeightRef = useRef<number>(220);
   useEffect(() => {
     const el = controlsRef.current;
     if (!el) return;
     const update = () => {
       const h = Math.ceil(el.getBoundingClientRect().height);
-      // Only update when controls are visible (non-zero height = not in zen mode)
-      if (h > 0) {
+      // Only store when controls are clearly visible — avoids capturing near-zero values
+      // that appear mid-animation as controls collapse into zen mode.
+      if (h > 50) {
+        stableControlsHeightRef.current = h;
         document.documentElement.style.setProperty('--player-controls-height', `${h}px`);
       }
     };
@@ -321,6 +334,19 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
     update();
     return () => observer.disconnect();
   }, []);
+
+  // Wraps the zen toggle to pre-set --player-controls-height synchronously before exiting zen.
+  // This ensures PlayerStack/AlbumArtContainer start their max-width transitions toward the
+  // correct target immediately, rather than after a ResizeObserver callback arrives.
+  const handleZenModeToggle = useCallback(() => {
+    if (ui.zenMode) {
+      document.documentElement.style.setProperty(
+        '--player-controls-height',
+        `${stableControlsHeightRef.current}px`
+      );
+    }
+    handlers.onZenModeToggle?.();
+  }, [ui.zenMode, handlers.onZenModeToggle]);
 
   // Swipe gesture for track navigation: enabled on any touch-primary device (finger input),
   // regardless of viewport width — a high-res tablet is still a touch device.
@@ -332,11 +358,11 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
   // Vertical swipe on album art: up = exit zen (zen→normal), down = enter zen (normal→zen).
   // Drawers are controlled only by menu buttons, not gestures.
   const handleZenSwipeUp = useCallback(() => {
-    if (ui.zenMode) handlers.onZenModeToggle?.();
-  }, [ui.zenMode, handlers.onZenModeToggle]);
+    if (ui.zenMode) handleZenModeToggle();
+  }, [ui.zenMode, handleZenModeToggle]);
   const handleZenSwipeDown = useCallback(() => {
-    if (!ui.zenMode) handlers.onZenModeToggle?.();
-  }, [ui.zenMode, handlers.onZenModeToggle]);
+    if (!ui.zenMode) handleZenModeToggle();
+  }, [ui.zenMode, handleZenModeToggle]);
   const { ref: zenVerticalSwipeRef } = useVerticalSwipeGesture({
     onSwipeUp: handleZenSwipeUp,
     onSwipeDown: handleZenSwipeDown,
@@ -400,7 +426,7 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
     onToggleHelp: toggleHelp,
     onShowPlaylist: handleArrowUp,
     onOpenLibraryDrawer: handleArrowDown,
-    onToggleZenMode: handlers.onZenModeToggle,
+    onToggleZenMode: handleZenModeToggle,
   }, { prefersPointerInput: hasPointerInput });
 
   return (
@@ -446,44 +472,46 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
               />
             </ClickableAlbumArtContainer>
           </CardContent>
-          <ZenControlsWrapper ref={controlsRef} $zenMode={ui.zenMode}>
-            <LoadingCard
-              backgroundImage={track.current?.image}
-              accentColor={ui.accentColor}
-              glowEnabled={effects.enabled}
-              glowIntensity={effects.glow.intensity}
-              glowRate={effects.glow.rate}
-            >
-              <CardContent style={{
-                position: 'relative',
-                zIndex: 2,
-                flex: '0 0 auto',
-                minHeight: 'auto',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}>
-                <Suspense fallback={<ControlsLoadingFallback />}>
-                  <SpotifyPlayerControls
-                    currentTrack={track.current}
-                    accentColor={ui.accentColor}
-                    trackCount={track.list.length}
-                    isLiked={track.isLiked}
-                    isLikePending={track.isLikePending}
-                    isMuted={track.isMuted}
-                    volume={track.volume}
-                    onMuteToggle={handlers.onMuteToggle}
-                    onToggleLike={handlers.onToggleLike}
-                    onPlay={handlers.onPlay}
-                    onPause={handlers.onPause}
-                    onNext={handlers.onNext}
-                    onPrevious={handlers.onPrevious}
-                    onArtistBrowse={handleArtistBrowse}
-                    onAlbumPlay={handleAlbumPlay}
-                  />
-                </Suspense>
-              </CardContent>
-            </LoadingCard>
+          <ZenControlsWrapper $zenMode={ui.zenMode}>
+            <ZenControlsInner ref={controlsRef}>
+              <LoadingCard
+                backgroundImage={track.current?.image}
+                accentColor={ui.accentColor}
+                glowEnabled={effects.enabled}
+                glowIntensity={effects.glow.intensity}
+                glowRate={effects.glow.rate}
+              >
+                <CardContent style={{
+                  position: 'relative',
+                  zIndex: 2,
+                  flex: '0 0 auto',
+                  minHeight: 'auto',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}>
+                  <Suspense fallback={<ControlsLoadingFallback />}>
+                    <SpotifyPlayerControls
+                      currentTrack={track.current}
+                      accentColor={ui.accentColor}
+                      trackCount={track.list.length}
+                      isLiked={track.isLiked}
+                      isLikePending={track.isLikePending}
+                      isMuted={track.isMuted}
+                      volume={track.volume}
+                      onMuteToggle={handlers.onMuteToggle}
+                      onToggleLike={handlers.onToggleLike}
+                      onPlay={handlers.onPlay}
+                      onPause={handlers.onPause}
+                      onNext={handlers.onNext}
+                      onPrevious={handlers.onPrevious}
+                      onArtistBrowse={handleArtistBrowse}
+                      onAlbumPlay={handleAlbumPlay}
+                    />
+                  </Suspense>
+                </CardContent>
+              </LoadingCard>
+            </ZenControlsInner>
           </ZenControlsWrapper>
         </PlayerStack>
       </PlayerContainer>
@@ -499,7 +527,7 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
         onAccentColorChange={handlers.onAccentColorChange}
         onBackToLibrary={handlers.onBackToLibrary}
         onShowPlaylist={handlers.onShowPlaylist}
-        onZenModeToggle={handlers.onZenModeToggle}
+        onZenModeToggle={handleZenModeToggle}
       />
       {ui.showVisualEffects && (
         <Suspense fallback={
