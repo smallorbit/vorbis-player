@@ -201,8 +201,8 @@ const PlayerStack = styled.div.withConfig({
   flex-direction: column;
   width: 100%;
   max-width: ${({ $zenMode }) => $zenMode
-    ? `min(calc(100vw - 48px), calc(100dvh - 48px))`
-    : `min(${theme.breakpoints.lg}, calc(100dvh - 350px - ${BOTTOM_BAR_HEIGHT}px))`
+    ? `min(${theme.breakpoints.lg}, calc(100dvh - 350px - ${BOTTOM_BAR_HEIGHT}px))`
+    : `min(calc(100vw - 48px), calc(100dvh - 48px))`
   };
   margin: 0 auto;
   /* Entering zen: art grows after controls fade out (300ms delay). Exiting zen: art shrinks immediately. */
