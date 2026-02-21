@@ -13,7 +13,7 @@ This file provides guidance to Claude Code (claude.ai/code) and other AI assista
 - **Fully Responsive Design**: Fluid sizing with aspect-ratio calculations, container queries, and mobile-optimized layout
 - **Playlist Management**: Search, sort, filter, and pin playlists and albums with multiple sort criteria
 - **FAB Menu**: Expandable floating action button replacing traditional menus, unified across all devices
-- **Swipe Gestures**: Horizontal swipe for track navigation, vertical swipe for drawer toggles (mobile)
+- **Swipe Gestures**: Horizontal swipe on album art for track navigation; vertical swipe on album art for zen mode (up = exit zen, down = enter zen). Drawers are controlled by menu buttons only.
 - **Interactive Track Info**: Clickable artist/album names with popovers linking to Spotify and library filtering
 - **IndexedDB Caching**: Persistent library cache with background sync engine for instant startup
 - **Keyboard Shortcuts**: Context-aware keyboard control system (12 shortcuts with device-specific behavior)
@@ -135,7 +135,7 @@ vorbis-player/
 │   │   ├── useSpotifyControls.ts
 │   │   ├── useSpotifyPlayback.ts
 │   │   ├── useSwipeGesture.ts           # Horizontal swipe for track navigation
-│   │   ├── useVerticalSwipeGesture.ts   # Vertical swipe for drawer toggles
+│   │   ├── useVerticalSwipeGesture.ts   # Vertical swipe for zen mode on album art
 │   │   ├── useVisualEffectsState.ts
 │   │   └── useVolume.ts
 │   ├── services/                # External service integrations
@@ -346,7 +346,7 @@ The application uses a centralized state management approach with custom React h
 - **useKeyboardShortcuts.ts** - Context-aware keyboard shortcut handling with pointer input detection
 - **useLocalStorage.ts** - Generic localStorage hook with error handling and type safety
 - **useSwipeGesture.ts** - Horizontal swipe gesture detection for track navigation (mobile/tablet)
-- **useVerticalSwipeGesture.ts** - Vertical swipe gesture detection for drawer toggles (mobile)
+- **useVerticalSwipeGesture.ts** - Vertical swipe gesture detection for zen mode on album art (up = exit zen, down = enter zen)
 
 **Library & Data Hooks**:
 - **useLibrarySync.ts** - Background library sync with IndexedDB cache, exposes playlists/albums/sync state
