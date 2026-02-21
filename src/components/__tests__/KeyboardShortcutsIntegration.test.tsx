@@ -95,12 +95,13 @@ describe('Keyboard Shortcuts Integration', () => {
       perAlbumGlow: {},
       savedFilters: null
     },
+    zenMode: { enabled: false },
     actions: {
-      track: { 
-        setTracks: vi.fn(), 
-        setCurrentIndex: vi.fn(), 
-        setLoading: vi.fn(), 
-        setError: vi.fn() 
+      track: {
+        setTracks: vi.fn(),
+        setCurrentIndex: vi.fn(),
+        setLoading: vi.fn(),
+        setError: vi.fn()
       },
       playlist: { setSelectedId: vi.fn(), setVisible: vi.fn() },
       color: { setCurrent: vi.fn(), setOverrides: vi.fn() },
@@ -120,6 +121,9 @@ describe('Keyboard Shortcuts Integration', () => {
         accentColorBackground: {
           setPreferred: vi.fn()
         }
+      },
+      zenMode: {
+        setEnabled: vi.fn()
       }
     }
   };

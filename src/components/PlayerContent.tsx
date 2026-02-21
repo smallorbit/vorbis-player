@@ -51,6 +51,8 @@ interface PlayerContentHandlers {
   onMuteToggle?: () => void; // Mute toggle handler
   onToggleLike?: () => void; // Like toggle handler
   onBackToLibrary?: () => void; // Back to library navigation handler
+  onZenModeToggle?: () => void; // Zen mode toggle handler
+  zenModeEnabled?: boolean; // Zen mode state
   onOpenLibraryDrawer?: () => void;
   onCloseLibraryDrawer?: () => void;
   onPlaylistSelect?: (playlistId: string, playlistName: string) => void;
@@ -73,6 +75,7 @@ interface PlayerContentProps {
     showVisualEffects: boolean;
     showPlaylist: boolean;
     showLibraryDrawer: boolean;
+    zenMode: boolean;
   };
   effects: {
     enabled: boolean;
@@ -83,28 +86,30 @@ interface PlayerContentProps {
 }
 
 const ContentWrapper = styled.div.withConfig({
-  shouldForwardProp: (prop) => !['width', 'padding', 'useFluidSizing', 'transitionDuration', 'transitionEasing'].includes(prop),
+  shouldForwardProp: (prop) => !['width', 'padding', 'useFluidSizing', 'transitionDuration', 'transitionEasing', '$zenMode'].includes(prop),
 }) <{
   width: number;
   padding: number;
   useFluidSizing: boolean;
   transitionDuration: number;
   transitionEasing: string;
+  $zenMode?: boolean;
 }>`
-  width: ${props => props.useFluidSizing ? '100%' : `${props.width}px`};
-  max-width: ${props => props.width}px;
+  width: ${props => props.$zenMode ? '100%' : props.useFluidSizing ? '100%' : `${props.width}px`};
+  max-width: ${props => props.$zenMode ? '100%' : `${props.width}px`};
 
   margin: 0 auto;
   padding: ${props => props.padding}px;
-  padding-bottom: ${props => props.padding + BOTTOM_BAR_HEIGHT}px;
+  padding-bottom: ${props => props.$zenMode ? props.padding : props.padding + BOTTOM_BAR_HEIGHT}px;
   box-sizing: border-box;
   position: relative;
   z-index: 2;
   overflow: visible;
 
-  transition: width ${props => props.transitionDuration}ms ${props => props.transitionEasing},
+  transition: width ${props => props.$zenMode ? '1000ms cubic-bezier(0.4, 0, 0.2, 1) 300ms' : '1000ms cubic-bezier(0.4, 0, 0.2, 1)'},
             padding ${props => props.transitionDuration}ms ${props => props.transitionEasing},
-            max-width ${props => props.transitionDuration}ms ${props => props.transitionEasing};
+            padding-bottom ${props => props.$zenMode ? '1000ms cubic-bezier(0.4, 0, 0.2, 1) 300ms' : '1000ms cubic-bezier(0.4, 0, 0.2, 1)'},
+            max-width ${props => props.$zenMode ? '1000ms cubic-bezier(0.4, 0, 0.2, 1) 300ms' : '1000ms cubic-bezier(0.4, 0, 0.2, 1)'};
 
   container-type: inline-size;
   container-name: player;
@@ -189,12 +194,38 @@ const PlayerContainer = styled.div`
   width: 100%;
 `;
 
-const PlayerStack = styled.div`
+const PlayerStack = styled.div.withConfig({
+  shouldForwardProp: (prop) => !['$zenMode'].includes(prop),
+})<{ $zenMode?: boolean }>`
   display: flex;
   flex-direction: column;
   width: 100%;
-  max-width: min(${theme.breakpoints.lg}, calc(100dvh - 350px - ${BOTTOM_BAR_HEIGHT}px));
+  max-width: ${({ $zenMode }) => $zenMode
+    ? `min(calc(100vw - 48px), calc(100dvh - 48px))`
+    : `min(${theme.breakpoints.lg}, calc(100dvh - 350px - ${BOTTOM_BAR_HEIGHT}px))`
+  };
   margin: 0 auto;
+  /* Entering zen: art grows after controls fade out (300ms delay). Exiting zen: art shrinks immediately. */
+  transition: ${({ $zenMode }) => $zenMode
+    ? 'max-width 1000ms cubic-bezier(0.4, 0, 0.2, 1) 300ms'
+    : 'max-width 1000ms cubic-bezier(0.4, 0, 0.2, 1)'
+  };
+`;
+
+const ZenControlsWrapper = styled.div.withConfig({
+  shouldForwardProp: (prop) => !['$zenMode'].includes(prop),
+})<{ $zenMode: boolean }>`
+  opacity: ${({ $zenMode }) => $zenMode ? 0 : 1};
+  max-height: ${({ $zenMode }) => $zenMode ? '0px' : '500px'};
+  transform: ${({ $zenMode }) => $zenMode ? 'scale(0.95) translateY(-8px)' : 'scale(1) translateY(0)'};
+  transform-origin: top center;
+  overflow: ${({ $zenMode }) => $zenMode ? 'hidden' : 'visible'};
+  /* Entering zen: controls fade out first. Exiting zen: controls appear after art finishes shrinking. */
+  transition: ${({ $zenMode }) => $zenMode
+    ? 'opacity 300ms ease, max-height 300ms ease, transform 300ms ease'
+    : 'opacity 500ms ease 1000ms, max-height 500ms ease 1000ms, transform 500ms ease 1000ms'
+  };
+  pointer-events: ${({ $zenMode }) => $zenMode ? 'none' : 'auto'};
 `;
 
 // Album art container with click handler
@@ -334,6 +365,7 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
     onToggleHelp: toggleHelp,
     onShowPlaylist: handleArrowUp,
     onOpenLibraryDrawer: handleArrowDown,
+    onToggleZenMode: handlers.onZenModeToggle,
   }, { prefersPointerInput: hasPointerInput });
 
   return (
@@ -344,18 +376,19 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
       useFluidSizing={useFluidSizing}
       transitionDuration={transitionDuration}
       transitionEasing={transitionEasing}
+      $zenMode={ui.zenMode}
       style={{ touchAction: isTouchDevice ? 'pan-x' : undefined }}
     >
       <PlayerContainer>
 
-        <PlayerStack>
+        <PlayerStack $zenMode={ui.zenMode}>
           {/* Album Art Zone - Clickable to toggle play/pause */}
           <CardContent style={{
             position: 'relative',
             zIndex: 2,
             minHeight: 0,
             alignItems: 'center',
-            paddingTop: isMobile ? '0.25rem' : '1rem'
+            paddingTop: ui.zenMode ? '0' : (isMobile ? '0.25rem' : '1rem')
           }}>
             <ClickableAlbumArtContainer
               $swipeEnabled={isTouchDevice}
@@ -375,46 +408,49 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
                 glowRate={effects.glow.rate}
                 glowEnabled={effects.enabled}
                 albumFilters={effects.enabled ? effects.filters : defaultFilters}
+                zenMode={ui.zenMode}
               />
             </ClickableAlbumArtContainer>
           </CardContent>
-          <LoadingCard
-            backgroundImage={track.current?.image}
-            accentColor={ui.accentColor}
-            glowEnabled={effects.enabled}
-            glowIntensity={effects.glow.intensity}
-            glowRate={effects.glow.rate}
-          >
-            <CardContent style={{
-              position: 'relative',
-              zIndex: 2,
-              flex: '0 0 auto',
-              minHeight: `${theme.controls.minHeight}px`,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}>
-              <Suspense fallback={<ControlsLoadingFallback />}>
-                <SpotifyPlayerControls
-                  currentTrack={track.current}
-                  accentColor={ui.accentColor}
-                  trackCount={track.list.length}
-                  isLiked={track.isLiked}
-                  isLikePending={track.isLikePending}
-                  isMuted={track.isMuted}
-                  volume={track.volume}
-                  onMuteToggle={handlers.onMuteToggle}
-                  onToggleLike={handlers.onToggleLike}
-                  onPlay={handlers.onPlay}
-                  onPause={handlers.onPause}
-                  onNext={handlers.onNext}
-                  onPrevious={handlers.onPrevious}
-                  onArtistBrowse={handleArtistBrowse}
-                  onAlbumPlay={handleAlbumPlay}
-                />
-              </Suspense>
-            </CardContent>
-          </LoadingCard>
+          <ZenControlsWrapper $zenMode={ui.zenMode}>
+            <LoadingCard
+              backgroundImage={track.current?.image}
+              accentColor={ui.accentColor}
+              glowEnabled={effects.enabled}
+              glowIntensity={effects.glow.intensity}
+              glowRate={effects.glow.rate}
+            >
+              <CardContent style={{
+                position: 'relative',
+                zIndex: 2,
+                flex: '0 0 auto',
+                minHeight: `${theme.controls.minHeight}px`,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}>
+                <Suspense fallback={<ControlsLoadingFallback />}>
+                  <SpotifyPlayerControls
+                    currentTrack={track.current}
+                    accentColor={ui.accentColor}
+                    trackCount={track.list.length}
+                    isLiked={track.isLiked}
+                    isLikePending={track.isLikePending}
+                    isMuted={track.isMuted}
+                    volume={track.volume}
+                    onMuteToggle={handlers.onMuteToggle}
+                    onToggleLike={handlers.onToggleLike}
+                    onPlay={handlers.onPlay}
+                    onPause={handlers.onPause}
+                    onNext={handlers.onNext}
+                    onPrevious={handlers.onPrevious}
+                    onArtistBrowse={handleArtistBrowse}
+                    onAlbumPlay={handleAlbumPlay}
+                  />
+                </Suspense>
+              </CardContent>
+            </LoadingCard>
+          </ZenControlsWrapper>
         </PlayerStack>
       </PlayerContainer>
       <BottomBar
@@ -422,12 +458,14 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
         currentTrack={track.current}
         glowEnabled={effects.enabled}
         backgroundVisualizerEnabled={handlers.backgroundVisualizerEnabled}
+        zenModeEnabled={ui.zenMode}
         onShowVisualEffects={handlers.onShowVisualEffects}
         onGlowToggle={handlers.onGlowToggle}
         onBackgroundVisualizerToggle={handlers.onBackgroundVisualizerToggle}
         onAccentColorChange={handlers.onAccentColorChange}
         onBackToLibrary={handlers.onBackToLibrary}
         onShowPlaylist={handlers.onShowPlaylist}
+        onZenModeToggle={handlers.onZenModeToggle}
       />
       {ui.showVisualEffects && (
         <Suspense fallback={

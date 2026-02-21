@@ -11,6 +11,7 @@ interface BackgroundVisualizerProps {
   accentColor: string;
   isPlaying: boolean;
   playbackPosition?: number;
+  zenMode?: boolean;
 }
 
 const VisualizerContainer = styled.div`
@@ -46,7 +47,8 @@ const BackgroundVisualizer: React.FC<BackgroundVisualizerProps> = ({
   intensity,
   accentColor,
   isPlaying,
-  playbackPosition
+  playbackPosition,
+  zenMode
 }) => {
   const VisualizerComponent = useMemo(() => {
     if (!enabled) return null;
@@ -72,6 +74,7 @@ const BackgroundVisualizer: React.FC<BackgroundVisualizerProps> = ({
         accentColor={accentColor}
         isPlaying={isPlaying}
         playbackPosition={playbackPosition}
+        zenMode={zenMode}
       />
     </VisualizerContainer>
   );

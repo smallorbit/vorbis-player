@@ -30,6 +30,7 @@ export function usePlayerLogic() {
         preferred: accentColorBackgroundPreferred
       }
     },
+    zenMode: { enabled: zenModeEnabled },
     actions: {
       track: { setTracks, setCurrentIndex: setCurrentTrackIndex, setLoading: setIsLoading, setError },
       playlist: { setSelectedId: setSelectedPlaylistId, setVisible: setShowPlaylist },
@@ -48,7 +49,8 @@ export function usePlayerLogic() {
         accentColorBackground: {
           setPreferred: setAccentColorBackgroundPreferred
         }
-      }
+      },
+      zenMode: { setEnabled: setZenModeEnabled }
     }
   } = usePlayerState();
 
@@ -248,6 +250,10 @@ export function usePlayerLogic() {
     setAccentColorBackgroundPreferred(prev => !prev);
   }, [setAccentColorBackgroundPreferred]);
 
+  const handleZenModeToggle = useCallback(() => {
+    setZenModeEnabled(prev => !prev);
+  }, [setZenModeEnabled]);
+
   const handleBackToLibrary = useCallback(() => {
     handlePause();
     setSelectedPlaylistId(null);
@@ -282,7 +288,8 @@ export function usePlayerLogic() {
       isLiked,
       isLikePending,
       isMuted,
-      volume
+      volume,
+      zenModeEnabled
     },
     handlers: {
         handlePlaylistSelect,
@@ -311,7 +318,8 @@ export function usePlayerLogic() {
         handleAccentColorBackgroundToggle,
         handleLikeToggle,
         handleMuteToggle,
-        handleBackToLibrary
+        handleBackToLibrary,
+        handleZenModeToggle
     }
   };
 };

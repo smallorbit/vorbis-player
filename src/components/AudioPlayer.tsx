@@ -55,7 +55,8 @@ const AudioPlayerComponent = () => {
           accentColor: state.accentColor,
           showVisualEffects: state.showVisualEffects,
           showPlaylist: state.showPlaylist,
-          showLibraryDrawer: state.showLibraryDrawer
+          showLibraryDrawer: state.showLibraryDrawer,
+          zenMode: state.zenModeEnabled
         }}
         effects={{
           enabled: state.visualEffectsEnabled,
@@ -94,7 +95,9 @@ const AudioPlayerComponent = () => {
           onOpenLibraryDrawer: handlers.handleOpenLibraryDrawer,
           onCloseLibraryDrawer: handlers.handleCloseLibraryDrawer,
           onPlaylistSelect: handlers.handlePlaylistSelect,
-          onAlbumPlay: handleAlbumPlay
+          onAlbumPlay: handleAlbumPlay,
+          onZenModeToggle: handlers.handleZenModeToggle,
+          zenModeEnabled: state.zenModeEnabled
         }}
       />
     );
@@ -122,6 +125,7 @@ const AudioPlayerComponent = () => {
         accentColor={state.accentColor}
         isPlaying={state.isPlaying}
         playbackPosition={state.playbackPosition}
+        zenMode={state.zenModeEnabled}
       />
       {renderContent()}
     </Container>
