@@ -111,8 +111,8 @@ export const GeometricVisualizer: React.FC<GeometricVisualizerProps> = ({
     baseColor: string
   ): GeometricShape[] => {
     const types: ('circle' | 'triangle' | 'hexagon')[] = ['circle', 'triangle', 'hexagon'];
-    const minRadius = zenMode ? 10 : 15;
-    const maxRadius = zenMode ? 70 : 50;
+    const minRadius = zenMode ? 20 : 10;
+    const maxRadius = zenMode ? 50 : 30;
     const basePulseSpeed = zenMode ? 0.02 : 0.01;
 
     return Array.from({ length: count }, () => {
@@ -144,8 +144,8 @@ export const GeometricVisualizer: React.FC<GeometricVisualizerProps> = ({
     width: number,
     height: number
   ): void => {
-    const baseSpeed = isPlayingParam ? 1.0 : 0.3;
-    const speedMultiplier = zenMode ? baseSpeed * 1.2 : baseSpeed;
+    const baseSpeed = isPlayingParam ? 1.0 : 0.5;
+    const speedMultiplier = zenMode ? baseSpeed * .7 : baseSpeed;
     const normalizedDelta = isFinite(deltaTime) ? Math.min(deltaTime / 16, 10) : 1;
 
     shapes.forEach(shape => {
