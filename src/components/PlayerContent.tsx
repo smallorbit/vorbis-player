@@ -298,15 +298,19 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
     onSwipeRight: handlers.onPrevious,
   }, { enabled: isTouchDevice });
 
-  // Vertical swipe on the full player area: down = library, up = playlist.
-  // Enabled for any touch-primary device; disabled when a drawer or menu is open so
-  // swipe-to-dismiss on the drawer works without conflict, and scrolling within the
-  // visual effects menu scrolls the menu instead of triggering drawer animations.
-  const { ref: verticalSwipeRef } = useVerticalSwipeGesture({
-    onSwipeDown: handlers.onOpenLibraryDrawer,
-    onSwipeUp: handlers.onShowPlaylist,
+  // Vertical swipe on album art: up = exit zen (zen→normal), down = enter zen (normal→zen).
+  // Drawers are controlled only by menu buttons, not gestures.
+  const handleZenSwipeUp = useCallback(() => {
+    if (ui.zenMode) handlers.onZenModeToggle?.();
+  }, [ui.zenMode, handlers.onZenModeToggle]);
+  const handleZenSwipeDown = useCallback(() => {
+    if (!ui.zenMode) handlers.onZenModeToggle?.();
+  }, [ui.zenMode, handlers.onZenModeToggle]);
+  const { ref: zenVerticalSwipeRef } = useVerticalSwipeGesture({
+    onSwipeUp: handleZenSwipeUp,
+    onSwipeDown: handleZenSwipeDown,
     threshold: 80,
-    enabled: isTouchDevice && !ui.showPlaylist && !ui.showLibraryDrawer && !ui.showVisualEffects,
+    enabled: isTouchDevice,
   });
 
   // Combined close handler for Escape key (closes VFX menu, library drawer, and help modal)
@@ -370,14 +374,12 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
 
   return (
     <ContentWrapper
-      ref={isTouchDevice ? verticalSwipeRef : undefined}
       width={dimensions.width}
       padding={padding}
       useFluidSizing={useFluidSizing}
       transitionDuration={transitionDuration}
       transitionEasing={transitionEasing}
       $zenMode={ui.zenMode}
-      style={{ touchAction: isTouchDevice ? 'pan-x' : undefined }}
     >
       <PlayerContainer>
 
@@ -391,8 +393,9 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
             paddingTop: ui.zenMode ? '0' : (isMobile ? '0.25rem' : '1rem')
           }}>
             <ClickableAlbumArtContainer
+              ref={isTouchDevice ? zenVerticalSwipeRef : undefined}
               $swipeEnabled={isTouchDevice}
-              $bothGestures={false}
+              $bothGestures={isTouchDevice}
               {...(isTouchDevice ? gestureHandlers : {})}
               onClick={!isSwiping && !isAnimating ? handlePlayPause : undefined}
               style={{

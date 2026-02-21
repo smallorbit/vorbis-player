@@ -15,7 +15,7 @@ A visually immersive Spotify music player built with React, featuring customizab
 - **Album Art Filters**: Real-time CSS filters (brightness, contrast, saturation, sepia, hue rotation, blur)
 - **Background Visualizers**: Animated particle and geometric visualizer backgrounds (enabled by default)
 - **Custom Colors**: Pick accent colors per album from a color picker or eyedropper tool
-- **Swipe Gestures**: Swipe album art horizontally to change tracks, vertically to open drawers (mobile)
+- **Swipe Gestures**: Swipe album art horizontally to change tracks; swipe up to exit zen mode, down to enter zen mode. Library and playlist drawers are opened via the FAB menu.
 - **Interactive Track Info**: Click artist/album names for Spotify links and library filtering
 - **Instant Startup**: IndexedDB-based library cache with background sync for fast loading
 - **Responsive Design**: Fluid layout that adapts from mobile phones to ultra-wide desktops
@@ -93,8 +93,9 @@ The player displays album artwork with controls always visible below:
 **Touch Gestures** (mobile/tablet):
 - Tap album art to play/pause
 - Swipe album art left/right to change tracks
-- Swipe up on album art to open playlist
-- Swipe down on album art to open library
+- Swipe up on album art to exit zen mode
+- Swipe down on album art to enter zen mode
+- Library and playlist drawers: use FAB menu buttons
 
 ### Library
 
