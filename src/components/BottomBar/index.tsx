@@ -10,6 +10,7 @@ import {
   VisualEffectsIcon,
   BackToLibraryIcon,
   PlaylistIcon,
+  ZenModeIcon,
 } from '../icons/QuickActionIcons';
 import type { Track } from '@/services/spotify';
 
@@ -18,12 +19,14 @@ interface BottomBarProps {
   currentTrack: Track | null;
   glowEnabled: boolean;
   backgroundVisualizerEnabled?: boolean;
+  zenModeEnabled?: boolean;
   onShowVisualEffects: () => void;
   onGlowToggle: () => void;
   onBackgroundVisualizerToggle?: () => void;
   onAccentColorChange: (color: string) => void;
   onBackToLibrary?: () => void;
   onShowPlaylist: () => void;
+  onZenModeToggle?: () => void;
 }
 
 export default function BottomBar({
@@ -31,12 +34,14 @@ export default function BottomBar({
   currentTrack,
   glowEnabled,
   backgroundVisualizerEnabled,
+  zenModeEnabled,
   onShowVisualEffects,
   onGlowToggle,
   onBackgroundVisualizerToggle,
   onAccentColorChange,
   onBackToLibrary,
   onShowPlaylist,
+  onZenModeToggle,
 }: BottomBarProps) {
   const { isMobile, isTablet } = usePlayerSizing();
 
@@ -116,6 +121,20 @@ export default function BottomBar({
         >
           <PlaylistIcon />
         </ControlButton>
+
+        {onZenModeToggle && (
+          <ControlButton
+            $isMobile={isMobile}
+            $isTablet={isTablet}
+            accentColor={accentColor}
+            isActive={zenModeEnabled}
+            onClick={onZenModeToggle}
+            title={`Zen Mode ${zenModeEnabled ? 'ON' : 'OFF'}`}
+            aria-pressed={zenModeEnabled}
+          >
+            <ZenModeIcon />
+          </ControlButton>
+        )}
       </BottomBarInner>
     </BottomBarContainer>,
     document.body

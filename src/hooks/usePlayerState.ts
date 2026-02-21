@@ -89,11 +89,20 @@ interface VisualEffectsActions {
   };
 }
 
+interface ZenModeState {
+  enabled: boolean;
+}
+
+interface ZenModeActions {
+  setEnabled: (enabled: boolean | ((prev: boolean) => boolean)) => void;
+}
+
 interface PlayerState {
   track: TrackState;
   playlist: PlaylistState;
   color: ColorState;
   visualEffects: VisualEffectsState;
+  zenMode: ZenModeState;
 }
 
 interface PlayerStateSetters {
@@ -102,6 +111,7 @@ interface PlayerStateSetters {
     playlist: PlaylistActions;
     color: ColorActions;
     visualEffects: VisualEffectsActions;
+    zenMode: ZenModeActions;
   };
 }
 
@@ -153,6 +163,10 @@ export function usePlayerState(): PlayerState & PlayerStateSetters {
   );
   const [accentColorBackgroundPreferred, setAccentColorBackgroundPreferred] = useLocalStorage<boolean>(
     'vorbis-player-accent-color-background-preferred',
+    false
+  );
+  const [zenModeEnabled, setZenModeEnabled] = useLocalStorage<boolean>(
+    'vorbis-player-zen-mode-enabled',
     false
   );
   const [accentColorBackgroundEnabled, setAccentColorBackgroundEnabled] = useState<boolean>(false);
@@ -243,6 +257,9 @@ export function usePlayerState(): PlayerState & PlayerStateSetters {
         preferred: accentColorBackgroundPreferred
       }
     },
+    zenMode: {
+      enabled: zenModeEnabled
+    },
     actions: {
       track: {
         setTracks,
@@ -277,6 +294,9 @@ export function usePlayerState(): PlayerState & PlayerStateSetters {
         accentColorBackground: {
           setPreferred: setAccentColorBackgroundPreferred
         }
+      },
+      zenMode: {
+        setEnabled: setZenModeEnabled
       }
     }
   };

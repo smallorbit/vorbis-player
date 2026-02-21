@@ -51,6 +51,8 @@ interface PlayerContentHandlers {
   onMuteToggle?: () => void; // Mute toggle handler
   onToggleLike?: () => void; // Like toggle handler
   onBackToLibrary?: () => void; // Back to library navigation handler
+  onZenModeToggle?: () => void; // Zen mode toggle handler
+  zenModeEnabled?: boolean; // Zen mode state
   onOpenLibraryDrawer?: () => void;
   onCloseLibraryDrawer?: () => void;
   onPlaylistSelect?: (playlistId: string, playlistName: string) => void;
@@ -73,6 +75,7 @@ interface PlayerContentProps {
     showVisualEffects: boolean;
     showPlaylist: boolean;
     showLibraryDrawer: boolean;
+    zenMode: boolean;
   };
   effects: {
     enabled: boolean;
@@ -189,12 +192,18 @@ const PlayerContainer = styled.div`
   width: 100%;
 `;
 
-const PlayerStack = styled.div`
+const PlayerStack = styled.div.withConfig({
+  shouldForwardProp: (prop) => !['$zenMode'].includes(prop),
+})<{ $zenMode?: boolean }>`
   display: flex;
   flex-direction: column;
   width: 100%;
-  max-width: min(${theme.breakpoints.lg}, calc(100dvh - 350px - ${BOTTOM_BAR_HEIGHT}px));
+  max-width: ${({ $zenMode }) => $zenMode
+    ? `min(${theme.breakpoints.lg}, calc(100dvh - ${BOTTOM_BAR_HEIGHT}px - 32px))`
+    : `min(${theme.breakpoints.lg}, calc(100dvh - 350px - ${BOTTOM_BAR_HEIGHT}px))`
+  };
   margin: 0 auto;
+  transition: max-width 400ms ease;
 `;
 
 // Album art container with click handler
@@ -334,6 +343,7 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
     onToggleHelp: toggleHelp,
     onShowPlaylist: handleArrowUp,
     onOpenLibraryDrawer: handleArrowDown,
+    onToggleZenMode: handlers.onZenModeToggle,
   }, { prefersPointerInput: hasPointerInput });
 
   return (
@@ -348,7 +358,7 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
     >
       <PlayerContainer>
 
-        <PlayerStack>
+        <PlayerStack $zenMode={ui.zenMode}>
           {/* Album Art Zone - Clickable to toggle play/pause */}
           <CardContent style={{
             position: 'relative',
@@ -375,46 +385,49 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
                 glowRate={effects.glow.rate}
                 glowEnabled={effects.enabled}
                 albumFilters={effects.enabled ? effects.filters : defaultFilters}
+                zenMode={ui.zenMode}
               />
             </ClickableAlbumArtContainer>
           </CardContent>
-          <LoadingCard
-            backgroundImage={track.current?.image}
-            accentColor={ui.accentColor}
-            glowEnabled={effects.enabled}
-            glowIntensity={effects.glow.intensity}
-            glowRate={effects.glow.rate}
-          >
-            <CardContent style={{
-              position: 'relative',
-              zIndex: 2,
-              flex: '0 0 auto',
-              minHeight: `${theme.controls.minHeight}px`,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}>
-              <Suspense fallback={<ControlsLoadingFallback />}>
-                <SpotifyPlayerControls
-                  currentTrack={track.current}
-                  accentColor={ui.accentColor}
-                  trackCount={track.list.length}
-                  isLiked={track.isLiked}
-                  isLikePending={track.isLikePending}
-                  isMuted={track.isMuted}
-                  volume={track.volume}
-                  onMuteToggle={handlers.onMuteToggle}
-                  onToggleLike={handlers.onToggleLike}
-                  onPlay={handlers.onPlay}
-                  onPause={handlers.onPause}
-                  onNext={handlers.onNext}
-                  onPrevious={handlers.onPrevious}
-                  onArtistBrowse={handleArtistBrowse}
-                  onAlbumPlay={handleAlbumPlay}
-                />
-              </Suspense>
-            </CardContent>
-          </LoadingCard>
+          {!ui.zenMode && (
+            <LoadingCard
+              backgroundImage={track.current?.image}
+              accentColor={ui.accentColor}
+              glowEnabled={effects.enabled}
+              glowIntensity={effects.glow.intensity}
+              glowRate={effects.glow.rate}
+            >
+              <CardContent style={{
+                position: 'relative',
+                zIndex: 2,
+                flex: '0 0 auto',
+                minHeight: `${theme.controls.minHeight}px`,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}>
+                <Suspense fallback={<ControlsLoadingFallback />}>
+                  <SpotifyPlayerControls
+                    currentTrack={track.current}
+                    accentColor={ui.accentColor}
+                    trackCount={track.list.length}
+                    isLiked={track.isLiked}
+                    isLikePending={track.isLikePending}
+                    isMuted={track.isMuted}
+                    volume={track.volume}
+                    onMuteToggle={handlers.onMuteToggle}
+                    onToggleLike={handlers.onToggleLike}
+                    onPlay={handlers.onPlay}
+                    onPause={handlers.onPause}
+                    onNext={handlers.onNext}
+                    onPrevious={handlers.onPrevious}
+                    onArtistBrowse={handleArtistBrowse}
+                    onAlbumPlay={handleAlbumPlay}
+                  />
+                </Suspense>
+              </CardContent>
+            </LoadingCard>
+          )}
         </PlayerStack>
       </PlayerContainer>
       <BottomBar
@@ -422,12 +435,14 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
         currentTrack={track.current}
         glowEnabled={effects.enabled}
         backgroundVisualizerEnabled={handlers.backgroundVisualizerEnabled}
+        zenModeEnabled={ui.zenMode}
         onShowVisualEffects={handlers.onShowVisualEffects}
         onGlowToggle={handlers.onGlowToggle}
         onBackgroundVisualizerToggle={handlers.onBackgroundVisualizerToggle}
         onAccentColorChange={handlers.onAccentColorChange}
         onBackToLibrary={handlers.onBackToLibrary}
         onShowPlaylist={handlers.onShowPlaylist}
+        onZenModeToggle={handlers.onZenModeToggle}
       />
       {ui.showVisualEffects && (
         <Suspense fallback={

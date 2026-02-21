@@ -46,6 +46,7 @@ interface AlbumArtProps {
   glowIntensity?: number;
   glowRate?: number;
   glowEnabled?: boolean;
+  zenMode?: boolean;
   albumFilters?: {
     brightness: number;
     contrast: number;
@@ -58,17 +59,22 @@ interface AlbumArtProps {
 
 
 const AlbumArtContainer = styled.div.withConfig({
-  shouldForwardProp: (prop) => !['accentColor', 'glowIntensity', 'glowRate', 'glowEnabled'].includes(prop),
+  shouldForwardProp: (prop) => !['accentColor', 'glowIntensity', 'glowRate', 'glowEnabled', '$zenMode'].includes(prop),
 }) <{
   accentColor?: string;
   glowIntensity?: number;
   glowRate?: number;
   glowEnabled?: boolean;
+  $zenMode?: boolean;
 }>`
   border-radius: ${theme.borderRadius['3xl']};
   position: relative;
   width: 100%;
-  max-width: min(${theme.breakpoints.lg}, calc(100dvh - 410px));
+  max-width: ${({ $zenMode }) => $zenMode
+    ? `min(${theme.breakpoints.lg}, calc(100dvh - 120px))`
+    : `min(${theme.breakpoints.lg}, calc(100dvh - 410px))`
+  };
+  transition: max-width 400ms ease;
   aspect-ratio: 1;
   margin: 0 auto;
   overflow: hidden;
@@ -145,6 +151,9 @@ const arePropsEqual = (prevProps: AlbumArtProps, nextProps: AlbumArtProps): bool
     prevProps.glowEnabled !== nextProps.glowEnabled) {
     return false;
   }
+  if (prevProps.zenMode !== nextProps.zenMode) {
+    return false;
+  }
   if (!prevProps.albumFilters && !nextProps.albumFilters) {
     return true;
   }
@@ -162,7 +171,7 @@ const arePropsEqual = (prevProps: AlbumArtProps, nextProps: AlbumArtProps): bool
   return true;
 };
 
-const AlbumArt: React.FC<AlbumArtProps> = memo(({ currentTrack = null, accentColor, glowIntensity, glowRate, glowEnabled, albumFilters }) => {
+const AlbumArt: React.FC<AlbumArtProps> = memo(({ currentTrack = null, accentColor, glowIntensity, glowRate, glowEnabled, albumFilters, zenMode }) => {
   const [canvasUrl, setCanvasUrl] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const { processImage } = useImageProcessingWorker();
@@ -254,6 +263,7 @@ const AlbumArt: React.FC<AlbumArtProps> = memo(({ currentTrack = null, accentCol
       glowIntensity={glowIntensity}
       glowRate={glowRate}
       glowEnabled={glowEnabled}
+      $zenMode={zenMode}
       className={glowClasses}
     >
       <AlbumArtFilters filters={albumFilters ? albumFilters : {

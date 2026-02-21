@@ -54,6 +54,8 @@ interface KeyboardShortcutHandlers {
   onShowPlaylist?: () => void;
   /** Open library drawer (desktop: ArrowDown) */
   onOpenLibraryDrawer?: () => void;
+  /** Toggle zen mode */
+  onToggleZenMode?: () => void;
 }
 
 /**
@@ -87,6 +89,7 @@ export const useKeyboardShortcuts = (
     onCloseMobileMenu,
     onShowPlaylist,
     onOpenLibraryDrawer,
+    onToggleZenMode,
   } = handlers;
 
   useEffect(() => {
@@ -176,6 +179,14 @@ export const useKeyboardShortcuts = (
           }
           break;
 
+        case 'KeyZ':
+          // Z toggles zen mode
+          if (!event.ctrlKey && !event.metaKey) {
+            event.preventDefault();
+            onToggleZenMode?.();
+          }
+          break;
+
         case 'ArrowUp':
           if (prefersPointerInput && onShowPlaylist) {
             event.preventDefault();
@@ -217,6 +228,7 @@ export const useKeyboardShortcuts = (
     onCloseMobileMenu,
     onShowPlaylist,
     onOpenLibraryDrawer,
+    onToggleZenMode,
     prefersPointerInput,
   ]);
 };
