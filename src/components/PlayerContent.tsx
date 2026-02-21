@@ -204,7 +204,7 @@ const PlayerStack = styled.div.withConfig({
     : `min(${theme.breakpoints.lg}, calc(100dvh - 350px - ${BOTTOM_BAR_HEIGHT}px))`
   };
   margin: 0 auto;
-  transition: max-width 400ms ease;
+  transition: max-width 500ms cubic-bezier(0.4, 0, 0.2, 1);
 `;
 
 const ZenControlsWrapper = styled.div.withConfig({
@@ -215,7 +215,11 @@ const ZenControlsWrapper = styled.div.withConfig({
   transform: ${({ $zenMode }) => $zenMode ? 'scale(0.95) translateY(-8px)' : 'scale(1) translateY(0)'};
   transform-origin: top center;
   overflow: ${({ $zenMode }) => $zenMode ? 'hidden' : 'visible'};
-  transition: opacity 350ms ease, max-height 400ms ease, transform 350ms ease;
+  /* Entering zen: controls hide quickly. Exiting zen: controls appear after art finishes shrinking. */
+  transition: ${({ $zenMode }) => $zenMode
+    ? 'opacity 250ms ease, max-height 300ms ease, transform 250ms ease'
+    : 'opacity 400ms ease 500ms, max-height 450ms ease 450ms, transform 400ms ease 500ms'
+  };
   pointer-events: ${({ $zenMode }) => $zenMode ? 'none' : 'auto'};
 `;
 
