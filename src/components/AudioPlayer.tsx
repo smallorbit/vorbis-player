@@ -125,6 +125,7 @@ const AudioPlayerComponent = () => {
         accentColor={state.accentColor}
         isPlaying={state.isPlaying}
         playbackPosition={state.playbackPosition}
+        zenMode={state.zenModeEnabled}
       />
       {renderContent()}
     </Container>

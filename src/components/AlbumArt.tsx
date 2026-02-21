@@ -71,7 +71,7 @@ const AlbumArtContainer = styled.div.withConfig({
   position: relative;
   width: 100%;
   max-width: ${({ $zenMode }) => $zenMode
-    ? `min(${theme.breakpoints.lg}, calc(100dvh - 120px))`
+    ? `min(calc(100vw - 48px), calc(100dvh - 108px))`
     : `min(${theme.breakpoints.lg}, calc(100dvh - 410px))`
   };
   transition: max-width 400ms ease;

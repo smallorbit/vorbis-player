@@ -7,6 +7,7 @@ interface ParticleVisualizerProps {
   accentColor: string;
   isPlaying: boolean;
   playbackPosition?: number;
+  zenMode?: boolean;
 }
 
 interface Particle {
@@ -25,28 +26,31 @@ interface Particle {
 
 /**
  * ParticleVisualizer Component
- * 
+ *
  * Renders a particle system visualizer with floating particles that drift,
  * pulse, and change opacity based on playback state.
- * 
+ * In zen mode, particles are more numerous, larger, faster, and more vibrant.
+ *
  * @component
  */
 export const ParticleVisualizer: React.FC<ParticleVisualizerProps> = ({
   intensity,
   accentColor,
-  isPlaying
+  isPlaying,
+  zenMode
 }) => {
   // Calculate particle count based on viewport size
   const getParticleCount = useCallback((width: number, height: number): number => {
     const pixelCount = width * height;
     const isMobile = width < 768;
-    
+    const zenMultiplier = zenMode ? 2.5 : 1;
+
     if (isMobile) {
-      return Math.min(30, Math.floor(pixelCount / 20000));
+      return Math.min(Math.round(50 * zenMultiplier), Math.floor(pixelCount / (zenMode ? 12000 : 20000)));
     }
-    
-    return Math.min(80, Math.floor(pixelCount / 15000));
-  }, []);
+
+    return Math.min(Math.round(80 * zenMultiplier), Math.floor(pixelCount / (zenMode ? 8000 : 15000)));
+  }, [zenMode]);
 
   // Initialize particles
   const initializeParticles = useCallback((
@@ -55,23 +59,24 @@ export const ParticleVisualizer: React.FC<ParticleVisualizerProps> = ({
     height: number,
     baseColor: string
   ): Particle[] => {
-    const minRadius = 3;
-    const maxRadius = 8;
-    
+    const minRadius = zenMode ? 2 : 3;
+    const maxRadius = zenMode ? 14 : 8;
+    const speedRange = zenMode ? 1.2 : 0.5;
+
     return Array.from({ length: count }, () => ({
       x: Math.random() * width,
       y: Math.random() * height,
-      vx: (Math.random() - 0.5) * 0.5,
-      vy: (Math.random() - 0.5) * 0.5,
+      vx: (Math.random() - 0.5) * speedRange,
+      vy: (Math.random() - 0.5) * speedRange,
       radius: minRadius + Math.random() * (maxRadius - minRadius),
       baseRadius: minRadius + Math.random() * (maxRadius - minRadius),
-      opacity: 0.3 + Math.random() * 0.4,
-      baseOpacity: 0.3 + Math.random() * 0.4,
+      opacity: (zenMode ? 0.4 : 0.3) + Math.random() * (zenMode ? 0.5 : 0.4),
+      baseOpacity: (zenMode ? 0.4 : 0.3) + Math.random() * (zenMode ? 0.5 : 0.4),
       color: generateColorVariant(baseColor, Math.random() * 0.5 + 0.3),
       pulsePhase: Math.random() * Math.PI * 2,
-      pulseSpeed: 0.01 + Math.random() * 0.02
+      pulseSpeed: (zenMode ? 0.02 : 0.01) + Math.random() * (zenMode ? 0.04 : 0.02)
     }));
-  }, []);
+  }, [zenMode]);
 
   // Update particles
   const updateParticles = useCallback((
@@ -81,30 +86,32 @@ export const ParticleVisualizer: React.FC<ParticleVisualizerProps> = ({
     width: number,
     height: number
   ): void => {
-    const speedMultiplier = isPlaying ? 1.0 : 0.3; // Slow down when paused
-    
+    const baseSpeed = isPlaying ? 1.0 : 0.3;
+    const speedMultiplier = zenMode ? baseSpeed * 1.8 : baseSpeed;
+
     particles.forEach(particle => {
       // Update position
-      particle.x += particle.vx * speedMultiplier * (deltaTime / 16); // Normalize to ~60fps
+      particle.x += particle.vx * speedMultiplier * (deltaTime / 16);
       particle.y += particle.vy * speedMultiplier * (deltaTime / 16);
-      
+
       // Wrap around screen edges
       if (particle.x < 0) particle.x = width;
       if (particle.x > width) particle.x = 0;
       if (particle.y < 0) particle.y = height;
       if (particle.y > height) particle.y = 0;
-      
+
       // Update pulse phase
       particle.pulsePhase += particle.pulseSpeed * speedMultiplier;
       if (particle.pulsePhase > Math.PI * 2) particle.pulsePhase -= Math.PI * 2;
-      
+
       // Calculate pulsing radius and opacity
-      // Use normalized sin value (0 to 1) to ensure radius never goes negative
-      const pulseValue = (Math.sin(particle.pulsePhase) + 1) / 2; // Normalize to 0-1
-      particle.radius = Math.max(1.5, particle.baseRadius + (pulseValue - 0.5) * 3); // Pulse around baseRadius with larger variation
-      particle.opacity = Math.max(0.1, Math.min(1.0, particle.baseOpacity + (pulseValue - 0.5) * 0.4));
+      const pulseValue = (Math.sin(particle.pulsePhase) + 1) / 2;
+      const pulseVariation = zenMode ? 5 : 3;
+      particle.radius = Math.max(1.5, particle.baseRadius + (pulseValue - 0.5) * pulseVariation);
+      const opacityVariation = zenMode ? 0.6 : 0.4;
+      particle.opacity = Math.max(0.1, Math.min(1.0, particle.baseOpacity + (pulseValue - 0.5) * opacityVariation));
     });
-  }, []);
+  }, [zenMode]);
 
   // Render particles
   const renderParticles = useCallback((
@@ -115,7 +122,7 @@ export const ParticleVisualizer: React.FC<ParticleVisualizerProps> = ({
     intensity: number
   ): void => {
     ctx.clearRect(0, 0, width, height);
-    
+
     particles.forEach(particle => {
       ctx.save();
       ctx.globalAlpha = particle.opacity * (intensity / 100);
@@ -123,9 +130,18 @@ export const ParticleVisualizer: React.FC<ParticleVisualizerProps> = ({
       ctx.beginPath();
       ctx.arc(particle.x, particle.y, particle.radius, 0, Math.PI * 2);
       ctx.fill();
+
+      // Add a soft glow effect in zen mode
+      if (zenMode && particle.radius > 4) {
+        ctx.globalAlpha = particle.opacity * (intensity / 100) * 0.3;
+        ctx.beginPath();
+        ctx.arc(particle.x, particle.y, particle.radius * 2.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
       ctx.restore();
     });
-  }, []);
+  }, [zenMode]);
 
   // Handle color changes
   const handleColorChange = useCallback((particles: Particle[], color: string) => {
@@ -156,4 +172,3 @@ export const ParticleVisualizer: React.FC<ParticleVisualizerProps> = ({
     />
   );
 };
-

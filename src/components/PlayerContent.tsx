@@ -86,16 +86,17 @@ interface PlayerContentProps {
 }
 
 const ContentWrapper = styled.div.withConfig({
-  shouldForwardProp: (prop) => !['width', 'padding', 'useFluidSizing', 'transitionDuration', 'transitionEasing'].includes(prop),
+  shouldForwardProp: (prop) => !['width', 'padding', 'useFluidSizing', 'transitionDuration', 'transitionEasing', '$zenMode'].includes(prop),
 }) <{
   width: number;
   padding: number;
   useFluidSizing: boolean;
   transitionDuration: number;
   transitionEasing: string;
+  $zenMode?: boolean;
 }>`
-  width: ${props => props.useFluidSizing ? '100%' : `${props.width}px`};
-  max-width: ${props => props.width}px;
+  width: ${props => props.$zenMode ? '100%' : props.useFluidSizing ? '100%' : `${props.width}px`};
+  max-width: ${props => props.$zenMode ? '100%' : `${props.width}px`};
 
   margin: 0 auto;
   padding: ${props => props.padding}px;
@@ -199,11 +200,23 @@ const PlayerStack = styled.div.withConfig({
   flex-direction: column;
   width: 100%;
   max-width: ${({ $zenMode }) => $zenMode
-    ? `min(${theme.breakpoints.lg}, calc(100dvh - ${BOTTOM_BAR_HEIGHT}px - 32px))`
+    ? `min(calc(100vw - 48px), calc(100dvh - ${BOTTOM_BAR_HEIGHT}px - 48px))`
     : `min(${theme.breakpoints.lg}, calc(100dvh - 350px - ${BOTTOM_BAR_HEIGHT}px))`
   };
   margin: 0 auto;
   transition: max-width 400ms ease;
+`;
+
+const ZenControlsWrapper = styled.div.withConfig({
+  shouldForwardProp: (prop) => !['$zenMode'].includes(prop),
+})<{ $zenMode: boolean }>`
+  opacity: ${({ $zenMode }) => $zenMode ? 0 : 1};
+  max-height: ${({ $zenMode }) => $zenMode ? '0px' : '300px'};
+  transform: ${({ $zenMode }) => $zenMode ? 'scale(0.95) translateY(-8px)' : 'scale(1) translateY(0)'};
+  transform-origin: top center;
+  overflow: hidden;
+  transition: opacity 350ms ease, max-height 400ms ease, transform 350ms ease;
+  pointer-events: ${({ $zenMode }) => $zenMode ? 'none' : 'auto'};
 `;
 
 // Album art container with click handler
@@ -354,6 +367,7 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
       useFluidSizing={useFluidSizing}
       transitionDuration={transitionDuration}
       transitionEasing={transitionEasing}
+      $zenMode={ui.zenMode}
       style={{ touchAction: isTouchDevice ? 'pan-x' : undefined }}
     >
       <PlayerContainer>
@@ -389,7 +403,7 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
               />
             </ClickableAlbumArtContainer>
           </CardContent>
-          {!ui.zenMode && (
+          <ZenControlsWrapper $zenMode={ui.zenMode}>
             <LoadingCard
               backgroundImage={track.current?.image}
               accentColor={ui.accentColor}
@@ -427,7 +441,7 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
                 </Suspense>
               </CardContent>
             </LoadingCard>
-          )}
+          </ZenControlsWrapper>
         </PlayerStack>
       </PlayerContainer>
       <BottomBar
