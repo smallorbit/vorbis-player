@@ -106,10 +106,10 @@ const ContentWrapper = styled.div.withConfig({
   z-index: 2;
   overflow: visible;
 
-  transition: width ${props => props.transitionDuration}ms ${props => props.transitionEasing},
+  transition: width ${props => props.$zenMode ? '1000ms cubic-bezier(0.4, 0, 0.2, 1) 300ms' : '1000ms cubic-bezier(0.4, 0, 0.2, 1)'},
             padding ${props => props.transitionDuration}ms ${props => props.transitionEasing},
             padding-bottom ${props => props.$zenMode ? '1000ms cubic-bezier(0.4, 0, 0.2, 1) 300ms' : '1000ms cubic-bezier(0.4, 0, 0.2, 1)'},
-            max-width ${props => props.transitionDuration}ms ${props => props.transitionEasing};
+            max-width ${props => props.$zenMode ? '1000ms cubic-bezier(0.4, 0, 0.2, 1) 300ms' : '1000ms cubic-bezier(0.4, 0, 0.2, 1)'};
 
   container-type: inline-size;
   container-name: player;
