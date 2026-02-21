@@ -74,7 +74,7 @@ const AlbumArtContainer = styled.div.withConfig({
     ? `min(calc(100vw - 48px), calc(100dvh - 48px))`
     : `min(${theme.breakpoints.lg}, calc(100dvh - 410px))`
   };
-  transition: max-width 500ms cubic-bezier(0.4, 0, 0.2, 1);
+  transition: max-width 1000ms cubic-bezier(0.4, 0, 0.2, 1);
   aspect-ratio: 1;
   margin: 0 auto;
   overflow: hidden;
