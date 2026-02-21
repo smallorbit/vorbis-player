@@ -15,7 +15,7 @@ import {
 } from '../icons/QuickActionIcons';
 import type { Track } from '@/services/spotify';
 
-const ZEN_HIDE_DELAY = 4000;
+const ZEN_HIDE_DELAY = 3000;
 
 interface BottomBarProps {
   accentColor: string;
