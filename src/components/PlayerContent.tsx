@@ -211,10 +211,10 @@ const ZenControlsWrapper = styled.div.withConfig({
   shouldForwardProp: (prop) => !['$zenMode'].includes(prop),
 })<{ $zenMode: boolean }>`
   opacity: ${({ $zenMode }) => $zenMode ? 0 : 1};
-  max-height: ${({ $zenMode }) => $zenMode ? '0px' : '300px'};
+  max-height: ${({ $zenMode }) => $zenMode ? '0px' : '500px'};
   transform: ${({ $zenMode }) => $zenMode ? 'scale(0.95) translateY(-8px)' : 'scale(1) translateY(0)'};
   transform-origin: top center;
-  overflow: hidden;
+  overflow: ${({ $zenMode }) => $zenMode ? 'hidden' : 'visible'};
   transition: opacity 350ms ease, max-height 400ms ease, transform 350ms ease;
   pointer-events: ${({ $zenMode }) => $zenMode ? 'none' : 'auto'};
 `;

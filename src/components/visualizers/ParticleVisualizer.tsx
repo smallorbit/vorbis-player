@@ -61,7 +61,7 @@ export const ParticleVisualizer: React.FC<ParticleVisualizerProps> = ({
   ): Particle[] => {
     const minRadius = zenMode ? 2 : 3;
     const maxRadius = zenMode ? 14 : 8;
-    const speedRange = zenMode ? 1.2 : 0.5;
+    const speedRange = zenMode ? 0.6 : 0.5;
 
     return Array.from({ length: count }, () => ({
       x: Math.random() * width,
@@ -87,7 +87,7 @@ export const ParticleVisualizer: React.FC<ParticleVisualizerProps> = ({
     height: number
   ): void => {
     const baseSpeed = isPlaying ? 1.0 : 0.3;
-    const speedMultiplier = zenMode ? baseSpeed * 1.8 : baseSpeed;
+    const speedMultiplier = zenMode ? baseSpeed * 1.2 : baseSpeed;
 
     particles.forEach(particle => {
       // Update position
@@ -130,18 +130,9 @@ export const ParticleVisualizer: React.FC<ParticleVisualizerProps> = ({
       ctx.beginPath();
       ctx.arc(particle.x, particle.y, particle.radius, 0, Math.PI * 2);
       ctx.fill();
-
-      // Add a soft glow effect in zen mode
-      if (zenMode && particle.radius > 4) {
-        ctx.globalAlpha = particle.opacity * (intensity / 100) * 0.3;
-        ctx.beginPath();
-        ctx.arc(particle.x, particle.y, particle.radius * 2.5, 0, Math.PI * 2);
-        ctx.fill();
-      }
-
       ctx.restore();
     });
-  }, [zenMode]);
+  }, []);
 
   // Handle color changes
   const handleColorChange = useCallback((particles: Particle[], color: string) => {

@@ -87,16 +87,8 @@ export const GeometricVisualizer: React.FC<GeometricVisualizerProps> = ({
         break;
     }
 
-    // Soft glow halo in zen mode for larger shapes
-    if (zenMode && shape.currentRadius > 20) {
-      ctx.globalAlpha = shape.opacity * 0.15;
-      ctx.beginPath();
-      ctx.arc(0, 0, shape.currentRadius * 2, 0, Math.PI * 2);
-      ctx.fill();
-    }
-
     ctx.restore();
-  }, [zenMode]);
+  }, []);
 
   // Calculate shape count based on viewport size
   const getShapeCount = useCallback((width: number, height: number): number => {
@@ -134,7 +126,7 @@ export const GeometricVisualizer: React.FC<GeometricVisualizerProps> = ({
         baseRadius,
         currentRadius: baseRadius,
         rotation: Math.random() * Math.PI * 2,
-        rotationSpeed: (Math.random() - 0.5) * (zenMode ? 0.05 : 0.02),
+        rotationSpeed: (Math.random() - 0.5) * 0.02,
         opacity: (zenMode ? 0.25 : 0.2) + Math.random() * (zenMode ? 0.4 : 0.3),
         baseOpacity: (zenMode ? 0.25 : 0.2) + Math.random() * (zenMode ? 0.4 : 0.3),
         color: generateColorVariant(baseColor, Math.random() * 0.5 + 0.3),
@@ -153,7 +145,7 @@ export const GeometricVisualizer: React.FC<GeometricVisualizerProps> = ({
     height: number
   ): void => {
     const baseSpeed = isPlayingParam ? 1.0 : 0.3;
-    const speedMultiplier = zenMode ? baseSpeed * 1.8 : baseSpeed;
+    const speedMultiplier = zenMode ? baseSpeed * 1.2 : baseSpeed;
     const normalizedDelta = isFinite(deltaTime) ? Math.min(deltaTime / 16, 10) : 1;
 
     shapes.forEach(shape => {
