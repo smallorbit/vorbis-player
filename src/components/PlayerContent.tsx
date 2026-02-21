@@ -108,6 +108,7 @@ const ContentWrapper = styled.div.withConfig({
 
   transition: width ${props => props.transitionDuration}ms ${props => props.transitionEasing},
             padding ${props => props.transitionDuration}ms ${props => props.transitionEasing},
+            padding-bottom ${props => props.$zenMode ? '1000ms cubic-bezier(0.4, 0, 0.2, 1) 300ms' : '1000ms cubic-bezier(0.4, 0, 0.2, 1)'},
             max-width ${props => props.transitionDuration}ms ${props => props.transitionEasing};
 
   container-type: inline-size;
@@ -204,7 +205,11 @@ const PlayerStack = styled.div.withConfig({
     : `min(${theme.breakpoints.lg}, calc(100dvh - 350px - ${BOTTOM_BAR_HEIGHT}px))`
   };
   margin: 0 auto;
-  transition: max-width 1000ms cubic-bezier(0.4, 0, 0.2, 1);
+  /* Entering zen: art grows after controls fade out (300ms delay). Exiting zen: art shrinks immediately. */
+  transition: ${({ $zenMode }) => $zenMode
+    ? 'max-width 1000ms cubic-bezier(0.4, 0, 0.2, 1) 300ms'
+    : 'max-width 1000ms cubic-bezier(0.4, 0, 0.2, 1)'
+  };
 `;
 
 const ZenControlsWrapper = styled.div.withConfig({
@@ -215,10 +220,10 @@ const ZenControlsWrapper = styled.div.withConfig({
   transform: ${({ $zenMode }) => $zenMode ? 'scale(0.95) translateY(-8px)' : 'scale(1) translateY(0)'};
   transform-origin: top center;
   overflow: ${({ $zenMode }) => $zenMode ? 'hidden' : 'visible'};
-  /* Entering zen: controls hide quickly. Exiting zen: controls appear after art finishes shrinking (1s). */
+  /* Entering zen: controls fade out first. Exiting zen: controls appear after art finishes shrinking. */
   transition: ${({ $zenMode }) => $zenMode
-    ? 'opacity 250ms ease, max-height 300ms ease, transform 250ms ease'
-    : 'opacity 400ms ease 1000ms, max-height 450ms ease 950ms, transform 400ms ease 1000ms'
+    ? 'opacity 300ms ease, max-height 300ms ease, transform 300ms ease'
+    : 'opacity 500ms ease 1000ms, max-height 500ms ease 1000ms, transform 500ms ease 1000ms'
   };
   pointer-events: ${({ $zenMode }) => $zenMode ? 'none' : 'auto'};
 `;
