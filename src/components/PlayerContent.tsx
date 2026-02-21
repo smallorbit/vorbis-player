@@ -100,7 +100,7 @@ const ContentWrapper = styled.div.withConfig({
 
   margin: 0 auto;
   padding: ${props => props.padding}px;
-  padding-bottom: ${props => props.padding + BOTTOM_BAR_HEIGHT}px;
+  padding-bottom: ${props => props.$zenMode ? props.padding : props.padding + BOTTOM_BAR_HEIGHT}px;
   box-sizing: border-box;
   position: relative;
   z-index: 2;
@@ -200,7 +200,7 @@ const PlayerStack = styled.div.withConfig({
   flex-direction: column;
   width: 100%;
   max-width: ${({ $zenMode }) => $zenMode
-    ? `min(calc(100vw - 48px), calc(100dvh - ${BOTTOM_BAR_HEIGHT}px - 48px))`
+    ? `min(calc(100vw - 48px), calc(100dvh - 48px))`
     : `min(${theme.breakpoints.lg}, calc(100dvh - 350px - ${BOTTOM_BAR_HEIGHT}px))`
   };
   margin: 0 auto;
@@ -379,7 +379,7 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
             zIndex: 2,
             minHeight: 0,
             alignItems: 'center',
-            paddingTop: isMobile ? '0.25rem' : '1rem'
+            paddingTop: ui.zenMode ? '0' : (isMobile ? '0.25rem' : '1rem')
           }}>
             <ClickableAlbumArtContainer
               $swipeEnabled={isTouchDevice}
