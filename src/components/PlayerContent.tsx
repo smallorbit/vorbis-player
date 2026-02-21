@@ -223,7 +223,7 @@ const ZenControlsWrapper = styled.div.withConfig({
   /* Entering zen: controls fade out first. Exiting zen: controls appear after art finishes shrinking. */
   transition: ${({ $zenMode }) => $zenMode
     ? 'opacity 300ms ease, max-height 300ms ease, transform 300ms ease'
-    : 'opacity 500ms ease 1000ms, max-height 500ms ease 1000ms, transform 500ms ease 1000ms'
+    : 'opacity 350ms ease 500ms, max-height 350ms ease 500ms, transform 350ms ease 500ms'
   };
   pointer-events: ${({ $zenMode }) => $zenMode ? 'none' : 'auto'};
 `;
