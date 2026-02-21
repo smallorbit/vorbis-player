@@ -8,11 +8,11 @@ export const PlayerControlsContainer = styled.div<{ $isMobile: boolean; $isTable
   z-index: 2;
   display: flex;
   flex-direction: column;
-  gap: ${({ theme, $isMobile, $compact }) => $compact ? theme.spacing.xs : $isMobile ? theme.spacing.sm : theme.spacing.md};
+  gap: ${({ theme, $isMobile, $compact }) => $compact ? theme.spacing.xs : $isMobile ? theme.spacing.sm : theme.spacing.sm};
   padding: ${({ $isMobile, $isTablet }) => {
     if ($isMobile) return `${theme.spacing.xs} ${theme.spacing.sm}`;
-    if ($isTablet) return `${theme.spacing.md} ${theme.spacing.md}`;
-    return `${theme.spacing.md} ${theme.spacing.lg}`;
+    if ($isTablet) return `${theme.spacing.sm} ${theme.spacing.md}`;
+    return `${theme.spacing.sm} ${theme.spacing.md}`;
   }};
   width: 100%;
   max-width: 100%;
@@ -26,22 +26,22 @@ export const PlayerControlsContainer = styled.div<{ $isMobile: boolean; $isTable
   @container controls (max-width: ${({ theme }) => theme.breakpoints.sm}) {
     flex-direction: column;
     align-items: center;
-    gap: ${({ theme }) => theme.spacing.sm};
-    padding: ${({ theme }) => `${theme.spacing.md} ${theme.spacing.sm}`};
+    gap: ${({ theme }) => theme.spacing.xs};
+    padding: ${({ theme }) => `${theme.spacing.xs} ${theme.spacing.sm}`};
   }
   
   @container controls (min-width: ${({ theme }) => theme.breakpoints.sm}) and (max-width: ${({ theme }) => theme.breakpoints.md}) {
     flex-direction: column;
     align-items: center;
-    gap: ${({ theme }) => theme.spacing.md};
-    padding: ${({ theme }) => `${theme.spacing.md} ${theme.spacing.md}`};
+    gap: ${({ theme }) => theme.spacing.xs};
+    padding: ${({ theme }) => `${theme.spacing.sm} ${theme.spacing.md}`};
   }
   
   @container controls (min-width: ${({ theme }) => theme.breakpoints.md}) {
     flex-direction: column;
     align-items: center;
-    gap: ${({ theme }) => theme.spacing.md};
-    padding: ${({ theme }) => `${theme.spacing.md} ${theme.spacing.lg}`};
+    gap: ${({ theme }) => theme.spacing.sm};
+    padding: ${({ theme }) => `${theme.spacing.sm} ${theme.spacing.md}`};
   }
 `;
 
@@ -53,16 +53,16 @@ export const TrackInfoOnlyRow = styled.div<{ $compact?: boolean }>`
   text-align: center;
   gap: ${({ theme }) => theme.spacing.xs};
   padding: ${({ theme }) => `${theme.spacing.sm} ${theme.spacing.md}`};
-  margin-bottom: ${({ $compact }) => $compact ? '0' : theme.spacing.xl};
-  margin-top: ${({ theme }) => theme.spacing.sm};
+  margin-bottom: 0;
+  margin-top: 0;
   position: relative;
   z-index: 10;
   /* Add subtle text shadow for better readability against shadows */
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 
   @media (max-width: ${theme.breakpoints.lg}) {
-    margin-top: ${theme.spacing.xs};
-    margin-bottom: ${({ $compact }) => $compact ? '0' : theme.spacing.lg};
+    margin-top: 0;
+    margin-bottom: 0;
     padding: ${theme.spacing.xs} ${theme.spacing.sm};
   }
 `;
@@ -276,7 +276,7 @@ export const TimelineControlsContainer = styled.div<{ $isMobile?: boolean }>`
   align-items: center;
   justify-content: space-between;
   gap: ${({ theme }) => theme.spacing.xs};
-  margin-top: ${({ $isMobile }) => $isMobile ? '0' : theme.spacing.lg};
+  margin-top: 0;
 `;
 
 export const TimelineLeft = styled.div`

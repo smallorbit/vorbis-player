@@ -1,11 +1,10 @@
-import React, { Suspense, lazy, useState, useCallback } from 'react';
+import React, { Suspense, lazy, useState, useCallback, useRef, useEffect } from 'react';
 import styled from 'styled-components';
 import { CardContent } from './styled';
 import AlbumArt from './AlbumArt';
 import SpotifyPlayerControls from './SpotifyPlayerControls';
 import BottomBar from './BottomBar';
 import { BOTTOM_BAR_HEIGHT } from './BottomBar/styled';
-import { theme } from '@/styles/theme';
 import { cardBase } from '../styles/utils';
 import { usePlayerSizing } from '../hooks/usePlayerSizing';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
@@ -100,7 +99,7 @@ const ContentWrapper = styled.div.withConfig({
 
   margin: 0 auto;
   padding: ${props => props.padding}px;
-  padding-bottom: ${props => props.$zenMode ? props.padding : props.padding + BOTTOM_BAR_HEIGHT}px;
+  padding-bottom: ${props => props.$zenMode ? props.padding : `calc(${props.padding + BOTTOM_BAR_HEIGHT}px + env(safe-area-inset-bottom, 0px))`};
   box-sizing: border-box;
   position: relative;
   z-index: 2;
@@ -115,6 +114,8 @@ const ContentWrapper = styled.div.withConfig({
   container-name: player;
   display: flex;
   flex-direction: column;
+  /* Prevent overflow on tablets; content must fit above bottom bar + safe area */
+  max-height: ${props => props.$zenMode ? 'none' : '100dvh'};
 `;
 
 const LoadingCard = styled.div.withConfig({
@@ -128,6 +129,10 @@ const LoadingCard = styled.div.withConfig({
   glowRate?: number;
 }>`
   ${cardBase};
+  margin-top: 0.5rem;
+  margin-bottom: 0.25rem;
+  margin-left: 0.25rem;
+  margin-right: 0.25rem;
   position: relative;
   display: flex;
   flex-direction: column;
@@ -200,9 +205,10 @@ const PlayerStack = styled.div.withConfig({
   display: flex;
   flex-direction: column;
   width: 100%;
+  min-height: 0; /* Allow flex shrink so content fits above bottom bar */
   max-width: ${({ $zenMode }) => $zenMode
-    ? `min(${theme.breakpoints.lg}, calc(100dvh - 350px - ${BOTTOM_BAR_HEIGHT}px))`
-    : `min(calc(100vw - 48px), calc(100dvh - 48px))`
+    ? `min(calc(100vw - 32px), calc(100dvh - 80px))`
+    : `min(calc(100vw - 48px), calc(100dvh - var(--player-controls-height, 220px) - 120px))`
   };
   margin: 0 auto;
   /* Entering zen: art grows after controls fade out (300ms delay). Exiting zen: art shrinks immediately. */
@@ -220,10 +226,16 @@ const ZenControlsWrapper = styled.div.withConfig({
   transform: ${({ $zenMode }) => $zenMode ? 'scale(0.95) translateY(-8px)' : 'scale(1) translateY(0)'};
   transform-origin: top center;
   overflow: ${({ $zenMode }) => $zenMode ? 'hidden' : 'visible'};
-  /* Entering zen: controls fade out first. Exiting zen: controls appear after art finishes shrinking. */
+  /*
+   * Entering zen: controls fade out first (300ms), then art expands (with 300ms delay).
+   * Exiting zen: max-height snaps instantly so controls claim layout space at opacity 0,
+   * letting the ResizeObserver immediately set --player-controls-height to the correct value
+   * so album art knows its final size before it starts animating. Controls only become
+   * visible (opacity/transform) after album art finishes shrinking (1000ms delay).
+   */
   transition: ${({ $zenMode }) => $zenMode
     ? 'opacity 300ms ease, max-height 300ms ease, transform 300ms ease'
-    : 'opacity 350ms ease 500ms, max-height 350ms ease 500ms, transform 350ms ease 500ms'
+    : 'opacity 350ms ease 1000ms, transform 350ms ease 1000ms'
   };
   pointer-events: ${({ $zenMode }) => $zenMode ? 'none' : 'auto'};
 `;
@@ -290,6 +302,25 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
   // isTouchDevice: pointer-capability-based (true on any touch-primary device regardless of viewport size)
   // isMobile: viewport-width-based (use only for layout/spacing decisions)
   const { dimensions, useFluidSizing, padding, transitionDuration, transitionEasing, isMobile, hasPointerInput, isTouchDevice } = usePlayerSizing();
+
+  // Measure the controls card height so album art can fill exactly the remaining space.
+  // We set --player-controls-height on :root so AlbumArt can reference it in CSS.
+  const controlsRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = controlsRef.current;
+    if (!el) return;
+    const update = () => {
+      const h = Math.ceil(el.getBoundingClientRect().height);
+      // Only update when controls are visible (non-zero height = not in zen mode)
+      if (h > 0) {
+        document.documentElement.style.setProperty('--player-controls-height', `${h}px`);
+      }
+    };
+    const observer = new ResizeObserver(update);
+    observer.observe(el);
+    update();
+    return () => observer.disconnect();
+  }, []);
 
   // Swipe gesture for track navigation: enabled on any touch-primary device (finger input),
   // regardless of viewport width — a high-res tablet is still a touch device.
@@ -390,7 +421,7 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
             zIndex: 2,
             minHeight: 0,
             alignItems: 'center',
-            paddingTop: ui.zenMode ? '0' : (isMobile ? '0.25rem' : '1rem')
+            paddingTop: ui.zenMode ? '0' : (isMobile ? '0.25rem' : '0.5rem')
           }}>
             <ClickableAlbumArtContainer
               ref={isTouchDevice ? zenVerticalSwipeRef : undefined}
@@ -415,7 +446,7 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
               />
             </ClickableAlbumArtContainer>
           </CardContent>
-          <ZenControlsWrapper $zenMode={ui.zenMode}>
+          <ZenControlsWrapper ref={controlsRef} $zenMode={ui.zenMode}>
             <LoadingCard
               backgroundImage={track.current?.image}
               accentColor={ui.accentColor}
@@ -427,7 +458,7 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
                 position: 'relative',
                 zIndex: 2,
                 flex: '0 0 auto',
-                minHeight: `${theme.controls.minHeight}px`,
+                minHeight: 'auto',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center'
