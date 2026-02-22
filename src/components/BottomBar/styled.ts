@@ -26,8 +26,8 @@ export const BottomBarInner = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: ${theme.spacing.sm};
-  padding: ${theme.spacing.sm} ${theme.spacing.md};
+  gap: ${theme.spacing.xs};
+  padding: ${theme.spacing.xs} ${theme.spacing.md};
   height: ${BOTTOM_BAR_HEIGHT}px;
 `;
 

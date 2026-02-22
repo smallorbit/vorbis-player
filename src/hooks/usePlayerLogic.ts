@@ -62,7 +62,7 @@ export function usePlayerLogic() {
   const [showLibraryDrawer, setShowLibraryDrawer] = useState(false);
 
   // Volume/mute controls
-  const { handleMuteToggle, isMuted, volume } = useVolume();
+  const { handleMuteToggle, isMuted, volume, setVolumeLevel } = useVolume();
 
   // Visual effects state management
   const {
@@ -318,6 +318,7 @@ export function usePlayerLogic() {
         handleAccentColorBackgroundToggle,
         handleLikeToggle,
         handleMuteToggle,
+        setVolumeLevel,
         handleBackToLibrary,
         handleZenModeToggle
     }

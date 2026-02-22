@@ -189,35 +189,39 @@ export const TrackInfoRight = styled.div`
 
 // --- Control Buttons ---
 export const ControlButton = styled.button.withConfig({
-  shouldForwardProp: (prop) => !['isActive', 'accentColor', '$isMobile', '$isTablet'].includes(prop),
-}) <{ isActive?: boolean; accentColor: string; $isMobile: boolean; $isTablet: boolean }>`
+  shouldForwardProp: (prop) => !['isActive', 'accentColor', '$isMobile', '$isTablet', '$compact'].includes(prop),
+}) <{ isActive?: boolean; accentColor: string; $isMobile: boolean; $isTablet: boolean; $compact?: boolean }>`
   border: none;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   transition: all 0.2s ease;
-  padding: ${({ $isMobile, $isTablet, theme }) => {
+  padding: ${({ $isMobile, $isTablet, $compact, theme }) => {
+    if ($compact) return theme.spacing.sm;
     if ($isMobile) return theme.spacing.sm;
-    if ($isTablet) return theme.spacing.md;
-    return theme.spacing.md;
+    if ($isTablet) return theme.spacing.sm;
+    return theme.spacing.sm;
   }};
-  border-radius: ${({ $isMobile, $isTablet, theme }) => {
+  border-radius: ${({ $isMobile, $isTablet, $compact, theme }) => {
+    if ($compact) return theme.borderRadius.md;
     if ($isMobile) return theme.borderRadius.md;
-    if ($isTablet) return theme.borderRadius.lg;
-    return theme.borderRadius.lg;
+    if ($isTablet) return theme.borderRadius.md;
+    return theme.borderRadius.md;
   }};
   
   svg {
-    width: ${({ $isMobile, $isTablet }) => {
-    if ($isMobile) return '1.625rem';
-    if ($isTablet) return '1.75rem';
-    return '1.875rem';
+    width: ${({ $isMobile, $isTablet, $compact }) => {
+    if ($compact) return '1.5rem';
+    if ($isMobile) return '1.5rem';
+    if ($isTablet) return '1.5rem';
+    return '1.5rem';
   }};
-    height: ${({ $isMobile, $isTablet }) => {
-    if ($isMobile) return '1.625rem';
-    if ($isTablet) return '1.75rem';
-    return '1.875rem';
+    height: ${({ $isMobile, $isTablet, $compact }) => {
+    if ($compact) return '1.5rem';
+    if ($isMobile) return '1.5rem';
+    if ($isTablet) return '1.5rem';
+    return '1.5rem';
   }};
     fill: currentColor;
   }
@@ -230,46 +234,6 @@ export const ControlButton = styled.button.withConfig({
   }
 `;
 
-export const VolumeButton = styled.button<{ $isMobile: boolean; $isTablet: boolean }>`
-  border: none;
-  background: transparent;
-  color: ${theme.colors.gray[400]};
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  padding: ${({ $isMobile, $isTablet, theme }) => {
-    if ($isMobile) return theme.spacing.xs;
-    if ($isTablet) return theme.spacing.sm;
-    return theme.spacing.xs;
-  }};
-  border-radius: ${({ $isMobile, $isTablet, theme }) => {
-    if ($isMobile) return theme.borderRadius.sm;
-    if ($isTablet) return theme.borderRadius.md;
-    return theme.borderRadius.md;
-  }};
-  transition: all 0.2s ease;
-  
-  &:hover {
-    background: ${theme.colors.control.background};
-    color: ${theme.colors.white};
-  }
-  
-  svg {
-    width: ${({ $isMobile, $isTablet }) => {
-    if ($isMobile) return '1.25rem';
-    if ($isTablet) return '1.375rem';
-    return '1.5rem';
-  }};
-    height: ${({ $isMobile, $isTablet }) => {
-    if ($isMobile) return '1.25rem';
-    if ($isTablet) return '1.375rem';
-    return '1.5rem';
-  }};
-    fill: currentColor;
-  }
-`;
-
 // --- Timeline Components ---
 export const TimelineControlsContainer = styled.div<{ $isMobile?: boolean }>`
   display: flex;
@@ -277,12 +241,6 @@ export const TimelineControlsContainer = styled.div<{ $isMobile?: boolean }>`
   justify-content: space-between;
   gap: ${({ theme }) => theme.spacing.xs};
   margin-top: 0;
-`;
-
-export const TimelineLeft = styled.div`
-  display: flex;
-  align-items: center;
-  gap: ${({ theme }) => theme.spacing.xs};
 `;
 
 export const TimelineRight = styled.div`

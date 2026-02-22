@@ -29,11 +29,6 @@ const areControlsPropsEqual = (
     return false;
   }
 
-  // Check volume status
-  if (prevProps.isMuted !== nextProps.isMuted || prevProps.volume !== nextProps.volume) {
-    return false;
-  }
-
   // Visual effects and glow are handled by the quick actions panel now
 
   // Check track count for playlist display
@@ -65,9 +60,6 @@ interface SpotifyPlayerControlsProps {
   trackCount: number;
   isLiked?: boolean;
   isLikePending?: boolean;
-  isMuted?: boolean;
-  volume?: number;
-  onMuteToggle?: () => void;
   onToggleLike?: () => void;
   onArtistBrowse?: (artistName: string) => void;
   onAlbumPlay?: (albumId: string, albumName: string) => void;
@@ -83,9 +75,6 @@ const SpotifyPlayerControls = memo<SpotifyPlayerControlsProps>(({
   onPrevious,
   isLiked: propIsLiked,
   isLikePending: propIsLikePending,
-  isMuted: propIsMuted,
-  volume: propVolume,
-  onMuteToggle: propOnMuteToggle,
   onToggleLike: propOnToggleLike,
   onArtistBrowse,
   onAlbumPlay,
@@ -98,11 +87,8 @@ const SpotifyPlayerControls = memo<SpotifyPlayerControlsProps>(({
   // Use Spotify controls hook — like state is always provided via props from usePlayerLogic
   const {
     isPlaying,
-    isMuted,
-    volume,
     currentPosition,
     duration,
-    handleVolumeButtonClick: hookHandleVolumeButtonClick,
     handleLikeToggle,
     handleSliderChange,
     handleSliderMouseDown,
@@ -121,9 +107,6 @@ const SpotifyPlayerControls = memo<SpotifyPlayerControlsProps>(({
 
   const effectiveIsLiked = propIsLiked ?? false;
   const effectiveIsLikePending = propIsLikePending ?? false;
-  const effectiveIsMuted = typeof propIsMuted !== 'undefined' ? propIsMuted : isMuted;
-  const effectiveVolume = typeof propVolume !== 'undefined' ? propVolume : volume;
-  const effectiveHandleVolumeButtonClick = propOnMuteToggle || hookHandleVolumeButtonClick;
   const effectiveHandleLikeToggle = handleLikeToggle;
   
   return (
@@ -150,9 +133,6 @@ const SpotifyPlayerControls = memo<SpotifyPlayerControlsProps>(({
       </div>
 
       <TimelineControls
-        isMuted={effectiveIsMuted}
-        volume={effectiveVolume}
-        onVolumeButtonClick={effectiveHandleVolumeButtonClick}
         currentPosition={currentPosition}
         duration={duration}
         formatTime={formatTime}

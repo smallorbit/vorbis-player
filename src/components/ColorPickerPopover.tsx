@@ -16,6 +16,7 @@ interface ColorPickerPopoverProps {
   onCustomAccentColor: (color: string) => void;
   $isMobile?: boolean;
   $isTablet?: boolean;
+  $compact?: boolean;
   onOpenChange?: (isOpen: boolean) => void;
 }
 
@@ -64,6 +65,7 @@ const ColorPickerPopover = memo<ColorPickerPopoverProps>(({
   onCustomAccentColor,
   $isMobile = false,
   $isTablet = false,
+  $compact,
   onOpenChange
 }) => {
   const [colorOptions, setColorOptions] = useState<ExtractedColor[] | null>(null);
@@ -143,6 +145,7 @@ const ColorPickerPopover = memo<ColorPickerPopoverProps>(({
         ref={paletteBtnRef}
         $isMobile={$isMobile}
         $isTablet={$isTablet}
+        $compact={$compact}
       >
         <ColorPickerIcon />
       </ControlButton>

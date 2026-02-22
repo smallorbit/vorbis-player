@@ -2,6 +2,7 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { BottomBarContainer, BottomBarInner, ZenTriggerZone } from './styled';
 import { ControlButton } from '../controls/styled';
+import VolumeControl from '../controls/VolumeControl';
 import ColorPickerPopover from '../ColorPickerPopover';
 import { useCustomAccentColors } from '@/hooks/useCustomAccentColors';
 import { usePlayerSizing } from '@/hooks/usePlayerSizing';
@@ -23,6 +24,10 @@ interface BottomBarProps {
   glowEnabled: boolean;
   backgroundVisualizerEnabled?: boolean;
   zenModeEnabled?: boolean;
+  isMuted: boolean;
+  volume: number;
+  onMuteToggle?: () => void;
+  onVolumeChange?: (volume: number) => void;
   onShowVisualEffects: () => void;
   onGlowToggle: () => void;
   onBackgroundVisualizerToggle?: () => void;
@@ -38,6 +43,10 @@ export default function BottomBar({
   glowEnabled,
   backgroundVisualizerEnabled,
   zenModeEnabled,
+  isMuted,
+  volume,
+  onMuteToggle,
+  onVolumeChange,
   onShowVisualEffects,
   onGlowToggle,
   onBackgroundVisualizerToggle,
@@ -86,14 +95,12 @@ export default function BottomBar({
     startHideTimer();
   }, [zenModeEnabled, startHideTimer]);
 
-  // Any interaction on the bar resets the hide timer
   const handleBarInteraction = useCallback(() => {
     if (!zenModeEnabled) return;
     clearHideTimer();
     startHideTimer();
   }, [zenModeEnabled, clearHideTimer, startHideTimer]);
 
-  // Reset visibility when zen mode is toggled off
   useEffect(() => {
     if (!zenModeEnabled) {
       setZenBarVisible(false);
@@ -101,7 +108,6 @@ export default function BottomBar({
     }
   }, [zenModeEnabled, clearHideTimer]);
 
-  // Cleanup timer on unmount
   useEffect(() => {
     return () => clearHideTimer();
   }, [clearHideTimer]);
@@ -123,9 +129,20 @@ export default function BottomBar({
         onClick={handleBarInteraction}
       >
         <BottomBarInner>
+          <VolumeControl
+            isMuted={isMuted}
+            volume={volume}
+            accentColor={accentColor}
+            onClick={onMuteToggle ?? (() => {})}
+            onVolumeChange={onVolumeChange ?? (() => {})}
+            isMobile={isMobile}
+            isTablet={isTablet}
+          />
+
           <ControlButton
             $isMobile={isMobile}
             $isTablet={isTablet}
+            $compact
             accentColor={accentColor}
             isActive={glowEnabled}
             onClick={onGlowToggle}
@@ -139,6 +156,7 @@ export default function BottomBar({
             <ControlButton
               $isMobile={isMobile}
               $isTablet={isTablet}
+              $compact
               accentColor={accentColor}
               isActive={backgroundVisualizerEnabled}
               onClick={onBackgroundVisualizerToggle}
@@ -157,11 +175,13 @@ export default function BottomBar({
             onCustomAccentColor={handleCustomAccentColor}
             $isMobile={isMobile}
             $isTablet={isTablet}
+            $compact
           />
 
           <ControlButton
             $isMobile={isMobile}
             $isTablet={isTablet}
+            $compact
             accentColor={accentColor}
             onClick={onShowVisualEffects}
             title="Visual effects"
@@ -173,6 +193,7 @@ export default function BottomBar({
             <ControlButton
               $isMobile={isMobile}
               $isTablet={isTablet}
+              $compact
               accentColor={accentColor}
               onClick={onBackToLibrary}
               title="Back to Library"
@@ -184,6 +205,7 @@ export default function BottomBar({
           <ControlButton
             $isMobile={isMobile}
             $isTablet={isTablet}
+            $compact
             accentColor={accentColor}
             onClick={onShowPlaylist}
             title="Show Playlist"
@@ -191,10 +213,11 @@ export default function BottomBar({
             <PlaylistIcon />
           </ControlButton>
 
-          {onZenModeToggle && (
+          {!isMobile && onZenModeToggle && (
             <ControlButton
               $isMobile={isMobile}
               $isTablet={isTablet}
+              $compact
               accentColor={accentColor}
               isActive={zenModeEnabled}
               onClick={onZenModeToggle}

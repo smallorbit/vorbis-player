@@ -48,6 +48,7 @@ interface PlayerContentHandlers {
   accentColorBackgroundEnabled?: boolean; // Accent color background toggle
   onAccentColorBackgroundToggle?: () => void; // Accent color background toggle handler
   onMuteToggle?: () => void; // Mute toggle handler
+  onVolumeChange?: (volume: number) => void; // Volume slider change handler
   onToggleLike?: () => void; // Like toggle handler
   onBackToLibrary?: () => void; // Back to library navigation handler
   onZenModeToggle?: () => void; // Zen mode toggle handler
@@ -411,6 +412,16 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
     }
   }, [handlers, ui.showPlaylist, ui.showLibraryDrawer]);
 
+  const handleVolumeUp = useCallback(() => {
+    const newVolume = Math.min(100, (track.volume ?? 50) + 5);
+    handlers.onVolumeChange?.(newVolume);
+  }, [track.volume, handlers]);
+
+  const handleVolumeDown = useCallback(() => {
+    const newVolume = Math.max(0, (track.volume ?? 50) - 5);
+    handlers.onVolumeChange?.(newVolume);
+  }, [track.volume, handlers]);
+
   // Set up keyboard shortcuts
   useKeyboardShortcuts({
     onPlayPause: handlePlayPause,
@@ -422,6 +433,8 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
     onToggleBackgroundVisualizer: handlers.onBackgroundVisualizerToggle,
     onToggleGlow: handlers.onGlowToggle,
     onMute: handlers.onMuteToggle,
+    onVolumeUp: handleVolumeUp,
+    onVolumeDown: handleVolumeDown,
     onToggleLike: handlers.onToggleLike,
     onToggleHelp: toggleHelp,
     onShowPlaylist: handleArrowUp,
@@ -497,9 +510,6 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
                       trackCount={track.list.length}
                       isLiked={track.isLiked}
                       isLikePending={track.isLikePending}
-                      isMuted={track.isMuted}
-                      volume={track.volume}
-                      onMuteToggle={handlers.onMuteToggle}
                       onToggleLike={handlers.onToggleLike}
                       onPlay={handlers.onPlay}
                       onPause={handlers.onPause}
@@ -521,6 +531,10 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
         glowEnabled={effects.enabled}
         backgroundVisualizerEnabled={handlers.backgroundVisualizerEnabled}
         zenModeEnabled={ui.zenMode}
+        isMuted={track.isMuted ?? false}
+        volume={track.volume ?? 50}
+        onMuteToggle={handlers.onMuteToggle}
+        onVolumeChange={handlers.onVolumeChange}
         onShowVisualEffects={handlers.onShowVisualEffects}
         onGlowToggle={handlers.onGlowToggle}
         onBackgroundVisualizerToggle={handlers.onBackgroundVisualizerToggle}
