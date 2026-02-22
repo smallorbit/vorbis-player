@@ -268,8 +268,46 @@ class SpotifyPlayerService {
   }
 
   async setVolume(volume: number): Promise<void> {
-    if (this.player) {
+    if (!this.player) return;
+
+    // Spotify Web Playback SDK's setVolume() does not work on iOS Safari/Chrome.
+    // Use the Web API as a fallback on iOS devices.
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+    if (isIOS && this.deviceId) {
+      await this.setVolumeViaWebAPI(Math.round(volume * 100));
+      return;
+    }
+
+    try {
       await this.player.setVolume(volume);
+    } catch {
+      // Fallback to Web API if SDK fails (e.g. on other platforms with issues)
+      if (this.deviceId) {
+        await this.setVolumeViaWebAPI(Math.round(volume * 100));
+      }
+    }
+  }
+
+  /**
+   * Set volume via Spotify Web API. Works on iOS where SDK setVolume() fails.
+   * @param volumePercent 0-100
+   */
+  private async setVolumeViaWebAPI(volumePercent: number): Promise<void> {
+    if (!this.deviceId) return;
+
+    const clamped = Math.max(0, Math.min(100, Math.round(volumePercent)));
+    const token = await spotifyAuth.ensureValidToken();
+    const url = `https://api.spotify.com/v1/me/player/volume?device_id=${this.deviceId}&volume_percent=${clamped}`;
+
+    const response = await fetch(url, {
+      method: 'PUT',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    if (!response.ok && response.status !== 204) {
+      console.warn('[spotifyPlayer] Web API setVolume failed:', response.status);
     }
   }
 

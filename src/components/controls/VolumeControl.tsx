@@ -66,6 +66,7 @@ const MuteButton = styled.button<{ $isMuted: boolean; $accentColor: string }>`
   padding: ${({ theme }) => theme.spacing.xs};
   border-radius: ${({ theme }) => theme.borderRadius.md};
   transition: all ${({ theme }) => theme.transitions.fast} ease;
+  touch-action: manipulation; /* Remove 300ms tap delay on iOS */
 
   &:hover {
     background: ${theme.colors.control.background};
@@ -177,16 +178,19 @@ const VolumeControl = memo<VolumeControlProps>(({
 
     useEffect(() => {
         if (!isOpen) return;
-        const handleClick = (e: MouseEvent) => {
-            if (
-                popoverRef.current && !popoverRef.current.contains(e.target as Node) &&
-                buttonRef.current && !buttonRef.current.contains(e.target as Node)
-            ) {
-                setIsOpen(false);
-            }
+        const isOutside = (target: EventTarget | null) =>
+            popoverRef.current && !popoverRef.current.contains(target as Node) &&
+            buttonRef.current && !buttonRef.current.contains(target as Node);
+        const handlePointer = (e: MouseEvent | TouchEvent) => {
+            const target = 'touches' in e ? (e as TouchEvent).target : (e as MouseEvent).target;
+            if (isOutside(target)) setIsOpen(false);
         };
-        document.addEventListener('mousedown', handleClick);
-        return () => document.removeEventListener('mousedown', handleClick);
+        document.addEventListener('mousedown', handlePointer);
+        document.addEventListener('touchstart', handlePointer, { passive: true });
+        return () => {
+            document.removeEventListener('mousedown', handlePointer);
+            document.removeEventListener('touchstart', handlePointer);
+        };
     }, [isOpen]);
 
     const volumeFromY = useCallback((clientY: number) => {

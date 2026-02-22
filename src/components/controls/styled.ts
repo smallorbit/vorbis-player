@@ -193,6 +193,7 @@ export const ControlButton = styled.button.withConfig({
   align-items: center;
   justify-content: center;
   cursor: pointer;
+  touch-action: manipulation; /* Remove 300ms tap delay on iOS */
   transition: all 0.2s ease;
   padding: ${({ $isMobile, $isTablet, $compact, theme }) => {
     if ($compact) return theme.spacing.sm;
