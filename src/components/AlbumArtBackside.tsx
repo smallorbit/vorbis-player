@@ -187,11 +187,11 @@ const AlbumArtBackside = ({
   }, [currentTrack?.image]);
 
   return (
-    <BacksideRoot onClick={(e) => e.stopPropagation()}>
+    <BacksideRoot onClick={onClose}>
       <BlurredBg $image={currentTrack?.image} />
       <DarkOverlay />
 
-      <CloseBtn onClick={onClose} title="Close" aria-label="Close">
+      <CloseBtn onClick={(e) => { e.stopPropagation(); onClose(); }} title="Close" aria-label="Close">
         &times;
       </CloseBtn>
 
@@ -205,7 +205,7 @@ const AlbumArtBackside = ({
                 key={color.hex}
                 $color={color.hex}
                 $isActive={color.hex === accentColor}
-                onClick={() => onAccentColorChange(color.hex)}
+                onClick={(e) => { e.stopPropagation(); onAccentColorChange(color.hex); }}
                 title={color.hex}
                 aria-label={`Choose color ${color.hex}`}
               />
@@ -215,7 +215,7 @@ const AlbumArtBackside = ({
               <SwatchButton
                 $color={customColor}
                 $isActive={customColor === accentColor}
-                onClick={() => onAccentColorChange(customColor)}
+                onClick={(e) => { e.stopPropagation(); onAccentColorChange(customColor); }}
                 title="Custom color"
                 aria-label="Use custom color"
               />
@@ -223,7 +223,7 @@ const AlbumArtBackside = ({
 
             {currentTrack?.image && (
               <EyedropperButton
-                onClick={() => setShowEyedropper(true)}
+                onClick={(e) => { e.stopPropagation(); setShowEyedropper(true); }}
                 title="Pick color from album art"
                 aria-label="Pick color from album art"
               >
@@ -246,7 +246,8 @@ const AlbumArtBackside = ({
             )}
 
             <ResetBtn
-              onClick={() => {
+              onClick={(e) => {
+                e.stopPropagation();
                 onCustomAccentColor('');
                 onAccentColorChange('RESET_TO_DEFAULT');
               }}
@@ -266,14 +267,14 @@ const AlbumArtBackside = ({
               <OptionButton
                 $accentColor={accentColor}
                 $isActive={glowEnabled}
-                onClick={onGlowToggle}
+                onClick={(e) => { e.stopPropagation(); onGlowToggle(); }}
               >
                 On
               </OptionButton>
               <OptionButton
                 $accentColor={accentColor}
                 $isActive={!glowEnabled}
-                onClick={onGlowToggle}
+                onClick={(e) => { e.stopPropagation(); onGlowToggle(); }}
               >
                 Off
               </OptionButton>
@@ -290,14 +291,14 @@ const AlbumArtBackside = ({
               <OptionButton
                 $accentColor={accentColor}
                 $isActive={backgroundVisualizerEnabled}
-                onClick={onBackgroundVisualizerToggle}
+                onClick={(e) => { e.stopPropagation(); onBackgroundVisualizerToggle(); }}
               >
                 On
               </OptionButton>
               <OptionButton
                 $accentColor={accentColor}
                 $isActive={!backgroundVisualizerEnabled}
-                onClick={onBackgroundVisualizerToggle}
+                onClick={(e) => { e.stopPropagation(); onBackgroundVisualizerToggle(); }}
               >
                 Off
               </OptionButton>
@@ -315,14 +316,14 @@ const AlbumArtBackside = ({
                 <OptionButton
                   $accentColor={accentColor}
                   $isActive={backgroundVisualizerStyle === 'particles'}
-                  onClick={() => onBackgroundVisualizerStyleChange('particles')}
+                  onClick={(e) => { e.stopPropagation(); onBackgroundVisualizerStyleChange('particles'); }}
                 >
                   Particles
                 </OptionButton>
                 <OptionButton
                   $accentColor={accentColor}
                   $isActive={backgroundVisualizerStyle === 'geometric'}
-                  onClick={() => onBackgroundVisualizerStyleChange('geometric')}
+                  onClick={(e) => { e.stopPropagation(); onBackgroundVisualizerStyleChange('geometric'); }}
                 >
                   Geometric
                 </OptionButton>
