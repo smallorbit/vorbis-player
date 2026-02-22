@@ -303,11 +303,24 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
 
   const [isFlipped, setIsFlipped] = useState(false);
   const toggleFlip = useCallback(() => setIsFlipped(f => !f), []);
+  const flipContainerRef = useRef<HTMLDivElement>(null);
 
   // Reset flip when track changes
   useEffect(() => {
     setIsFlipped(false);
   }, [track.current?.id]);
+
+  // Close flip when clicking outside the album art area
+  useEffect(() => {
+    if (!isFlipped) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (flipContainerRef.current && !flipContainerRef.current.contains(e.target as Node)) {
+        setIsFlipped(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isFlipped]);
 
   const { customAccentColorOverrides, handleCustomAccentColor, handleAccentColorChange } = useCustomAccentColors({
     currentAlbumId: track.current?.album_id,
@@ -492,12 +505,13 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
             alignItems: 'center',
             paddingTop: ui.zenMode ? '0' : (isMobile ? '0.25rem' : '0.5rem')
           }}>
+            <div ref={flipContainerRef} style={{ width: '100%' }}>
             <ClickableAlbumArtContainer
               ref={isTouchDevice ? zenVerticalSwipeRef : undefined}
               $swipeEnabled={isTouchDevice}
               $bothGestures={isTouchDevice}
               {...(isTouchDevice ? gestureHandlers : {})}
-              onClick={!isSwiping && !isAnimating ? toggleFlip : undefined}
+              onClick={!isSwiping && !isAnimating ? (ui.zenMode ? handlePlayPause : (!isFlipped ? toggleFlip : undefined)) : undefined}
               style={{
                 transform: `translateX(${offsetX}px)`,
                 transition: isAnimating ? 'transform 300ms cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
@@ -530,6 +544,7 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
                 />
               </FlipInner>
             </ClickableAlbumArtContainer>
+            </div>
           </CardContent>
           <ZenControlsWrapper $zenMode={ui.zenMode}>
             <ZenControlsInner ref={controlsRef}>

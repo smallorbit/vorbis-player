@@ -187,7 +187,7 @@ const AlbumArtBackside = ({
   }, [currentTrack?.image]);
 
   return (
-    <BacksideRoot>
+    <BacksideRoot onClick={(e) => e.stopPropagation()}>
       <BlurredBg $image={currentTrack?.image} />
       <DarkOverlay />
 
