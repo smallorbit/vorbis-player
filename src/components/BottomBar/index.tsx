@@ -7,8 +7,6 @@ import ColorPickerPopover from '../ColorPickerPopover';
 import { useCustomAccentColors } from '@/hooks/useCustomAccentColors';
 import { usePlayerSizing } from '@/hooks/usePlayerSizing';
 import {
-  GlowIcon,
-  BackgroundVisualizerIcon,
   VisualEffectsIcon,
   BackToLibraryIcon,
   PlaylistIcon,
@@ -22,16 +20,12 @@ const ZEN_HIDE_DELAY = 3000;
 interface BottomBarProps {
   accentColor: string;
   currentTrack: Track | null;
-  glowEnabled: boolean;
-  backgroundVisualizerEnabled?: boolean;
   zenModeEnabled?: boolean;
   isMuted: boolean;
   volume: number;
   onMuteToggle?: () => void;
   onVolumeChange?: (volume: number) => void;
   onShowVisualEffects: () => void;
-  onGlowToggle: () => void;
-  onBackgroundVisualizerToggle?: () => void;
   onAccentColorChange: (color: string) => void;
   onBackToLibrary?: () => void;
   onShowPlaylist: () => void;
@@ -43,16 +37,12 @@ interface BottomBarProps {
 export default function BottomBar({
   accentColor,
   currentTrack,
-  glowEnabled,
-  backgroundVisualizerEnabled,
   zenModeEnabled,
   isMuted,
   volume,
   onMuteToggle,
   onVolumeChange,
   onShowVisualEffects,
-  onGlowToggle,
-  onBackgroundVisualizerToggle,
   onAccentColorChange,
   onBackToLibrary,
   onShowPlaylist,
@@ -155,34 +145,6 @@ export default function BottomBar({
               aria-pressed={shuffleEnabled}
             >
               <ShuffleIcon />
-            </ControlButton>
-          )}
-
-          <ControlButton
-            $isMobile={isMobile}
-            $isTablet={isTablet}
-            $compact
-            accentColor={accentColor}
-            isActive={glowEnabled}
-            onClick={onGlowToggle}
-            title={`Visual Effects ${glowEnabled ? 'enabled' : 'disabled'}`}
-            aria-pressed={glowEnabled}
-          >
-            <GlowIcon />
-          </ControlButton>
-
-          {onBackgroundVisualizerToggle && (
-            <ControlButton
-              $isMobile={isMobile}
-              $isTablet={isTablet}
-              $compact
-              accentColor={accentColor}
-              isActive={backgroundVisualizerEnabled}
-              onClick={onBackgroundVisualizerToggle}
-              title={`Background Visualizer ${backgroundVisualizerEnabled ? 'ON' : 'OFF'}`}
-              aria-pressed={backgroundVisualizerEnabled}
-            >
-              <BackgroundVisualizerIcon />
             </ControlButton>
           )}
 

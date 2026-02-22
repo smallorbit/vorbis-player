@@ -40,12 +40,16 @@ interface VisualEffectsMenuProps {
   onFilterChange: (filterName: string, value: number) => void;
   onResetFilters: () => void;
   // Glow controls
+  glowEnabled: boolean;
+  onGlowToggle: () => void;
   glowIntensity: number;
   setGlowIntensity: (v: number) => void;
   glowRate: number;
   setGlowRate: (v: number) => void;
   effectiveGlow: { intensity: number; rate: number };
   // Background visualizer controls
+  backgroundVisualizerEnabled: boolean;
+  onBackgroundVisualizerToggle: () => void;
   backgroundVisualizerStyle: VisualizerStyle;
   onBackgroundVisualizerStyleChange: (style: VisualizerStyle) => void;
   backgroundVisualizerIntensity: number;
@@ -63,8 +67,10 @@ const areVisualEffectsPropsEqual = (
   if (
     prevProps.isOpen !== nextProps.isOpen ||
     prevProps.accentColor !== nextProps.accentColor ||
+    prevProps.glowEnabled !== nextProps.glowEnabled ||
     prevProps.glowIntensity !== nextProps.glowIntensity ||
-    prevProps.glowRate !== nextProps.glowRate
+    prevProps.glowRate !== nextProps.glowRate ||
+    prevProps.backgroundVisualizerEnabled !== nextProps.backgroundVisualizerEnabled
   ) {
     return false;
   }
@@ -107,10 +113,14 @@ const VisualEffectsMenu: React.FC<VisualEffectsMenuProps> = memo(({
   filters,
   onFilterChange,
   onResetFilters,
+  glowEnabled,
+  onGlowToggle,
   glowIntensity,
   setGlowIntensity,
   glowRate,
   setGlowRate,
+  backgroundVisualizerEnabled,
+  onBackgroundVisualizerToggle,
   backgroundVisualizerStyle,
   onBackgroundVisualizerStyleChange,
   backgroundVisualizerIntensity,
@@ -272,6 +282,20 @@ const VisualEffectsMenu: React.FC<VisualEffectsMenuProps> = memo(({
             <FilterGrid>
               <ControlGroup>
                 <ControlLabel>
+                  Glow
+                </ControlLabel>
+                <OptionButtonGroup>
+                  <OptionButton
+                    $accentColor={accentColor}
+                    $isActive={glowEnabled}
+                    onClick={onGlowToggle}
+                  >
+                    {glowEnabled ? 'On' : 'Off'}
+                  </OptionButton>
+                </OptionButtonGroup>
+              </ControlGroup>
+              <ControlGroup>
+                <ControlLabel>
                   Intensity
                   {/* <ControlValue>{getCurrentGlowIntensityLabel(glowIntensity)}</ControlValue> */}
                 </ControlLabel>
@@ -327,6 +351,20 @@ const VisualEffectsMenu: React.FC<VisualEffectsMenuProps> = memo(({
           <FilterSection>
             <SectionTitle>Background Visualizer</SectionTitle>
             <FilterGrid>
+              <ControlGroup>
+                <ControlLabel>
+                  Visualizer
+                </ControlLabel>
+                <OptionButtonGroup>
+                  <OptionButton
+                    $accentColor={accentColor}
+                    $isActive={backgroundVisualizerEnabled}
+                    onClick={onBackgroundVisualizerToggle}
+                  >
+                    {backgroundVisualizerEnabled ? 'On' : 'Off'}
+                  </OptionButton>
+                </OptionButtonGroup>
+              </ControlGroup>
               <ControlGroup>
                 <ControlLabel>
                   Visualizer Style

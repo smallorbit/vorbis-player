@@ -530,16 +530,12 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
       <BottomBar
         accentColor={ui.accentColor}
         currentTrack={track.current}
-        glowEnabled={effects.enabled}
-        backgroundVisualizerEnabled={handlers.backgroundVisualizerEnabled}
         zenModeEnabled={ui.zenMode}
         isMuted={track.isMuted ?? false}
         volume={track.volume ?? 50}
         onMuteToggle={handlers.onMuteToggle}
         onVolumeChange={handlers.onVolumeChange}
         onShowVisualEffects={handlers.onShowVisualEffects}
-        onGlowToggle={handlers.onGlowToggle}
-        onBackgroundVisualizerToggle={handlers.onBackgroundVisualizerToggle}
         onAccentColorChange={handlers.onAccentColorChange}
         onBackToLibrary={handlers.onBackToLibrary}
         onShowPlaylist={handlers.onShowPlaylist}
@@ -572,11 +568,15 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
             filters={effects.filters}
             onFilterChange={handlers.onFilterChange}
             onResetFilters={handlers.onResetFilters}
+            glowEnabled={effects.enabled}
+            onGlowToggle={handlers.onGlowToggle}
             glowIntensity={effects.glow.intensity}
             setGlowIntensity={handlers.onGlowIntensityChange}
             glowRate={effects.glow.rate}
             setGlowRate={handlers.onGlowRateChange}
             effectiveGlow={effects.glow}
+            backgroundVisualizerEnabled={handlers.backgroundVisualizerEnabled || false}
+            onBackgroundVisualizerToggle={handlers.onBackgroundVisualizerToggle || (() => {})}
             backgroundVisualizerStyle={(handlers.backgroundVisualizerStyle as VisualizerStyle) || 'particles'}
             onBackgroundVisualizerStyleChange={handlers.onBackgroundVisualizerStyleChange || (() => { })}
             backgroundVisualizerIntensity={handlers.backgroundVisualizerIntensity || 60}
