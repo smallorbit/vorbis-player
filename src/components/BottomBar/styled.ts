@@ -25,16 +25,10 @@ export const BottomBarContainer = styled.div.withConfig({
 export const BottomBarInner = styled.div`
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: ${theme.spacing.xs};
   padding: ${theme.spacing.xs} ${theme.spacing.md};
   height: ${BOTTOM_BAR_HEIGHT}px;
-`;
-
-export const BottomBarActions = styled.div`
-  display: flex;
-  align-items: center;
-  gap: ${theme.spacing.xs};
-  margin-left: auto;
 `;
 
 /** Invisible hover/touch zone at the bottom of the viewport to reveal the bar in zen mode */

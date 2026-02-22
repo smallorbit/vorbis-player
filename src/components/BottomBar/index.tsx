@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { BottomBarContainer, BottomBarInner, BottomBarActions, ZenTriggerZone } from './styled';
+import { BottomBarContainer, BottomBarInner, ZenTriggerZone } from './styled';
 import { ControlButton } from '../controls/styled';
 import VolumeControl from '../controls/VolumeControl';
 import ColorPickerPopover from '../ColorPickerPopover';
@@ -95,14 +95,12 @@ export default function BottomBar({
     startHideTimer();
   }, [zenModeEnabled, startHideTimer]);
 
-  // Any interaction on the bar resets the hide timer
   const handleBarInteraction = useCallback(() => {
     if (!zenModeEnabled) return;
     clearHideTimer();
     startHideTimer();
   }, [zenModeEnabled, clearHideTimer, startHideTimer]);
 
-  // Reset visibility when zen mode is toggled off
   useEffect(() => {
     if (!zenModeEnabled) {
       setZenBarVisible(false);
@@ -110,7 +108,6 @@ export default function BottomBar({
     }
   }, [zenModeEnabled, clearHideTimer]);
 
-  // Cleanup timer on unmount
   useEffect(() => {
     return () => clearHideTimer();
   }, [clearHideTimer]);
@@ -142,96 +139,94 @@ export default function BottomBar({
             isTablet={isTablet}
           />
 
-          <BottomBarActions>
+          <ControlButton
+            $isMobile={isMobile}
+            $isTablet={isTablet}
+            $compact
+            accentColor={accentColor}
+            isActive={glowEnabled}
+            onClick={onGlowToggle}
+            title={`Visual Effects ${glowEnabled ? 'enabled' : 'disabled'}`}
+            aria-pressed={glowEnabled}
+          >
+            <GlowIcon />
+          </ControlButton>
+
+          {onBackgroundVisualizerToggle && (
             <ControlButton
               $isMobile={isMobile}
               $isTablet={isTablet}
               $compact
               accentColor={accentColor}
-              isActive={glowEnabled}
-              onClick={onGlowToggle}
-              title={`Visual Effects ${glowEnabled ? 'enabled' : 'disabled'}`}
-              aria-pressed={glowEnabled}
+              isActive={backgroundVisualizerEnabled}
+              onClick={onBackgroundVisualizerToggle}
+              title={`Background Visualizer ${backgroundVisualizerEnabled ? 'ON' : 'OFF'}`}
+              aria-pressed={backgroundVisualizerEnabled}
             >
-              <GlowIcon />
+              <BackgroundVisualizerIcon />
             </ControlButton>
+          )}
 
-            {onBackgroundVisualizerToggle && (
-              <ControlButton
-                $isMobile={isMobile}
-                $isTablet={isTablet}
-                $compact
-                accentColor={accentColor}
-                isActive={backgroundVisualizerEnabled}
-                onClick={onBackgroundVisualizerToggle}
-                title={`Background Visualizer ${backgroundVisualizerEnabled ? 'ON' : 'OFF'}`}
-                aria-pressed={backgroundVisualizerEnabled}
-              >
-                <BackgroundVisualizerIcon />
-              </ControlButton>
-            )}
+          <ColorPickerPopover
+            accentColor={accentColor}
+            currentTrack={currentTrack}
+            onAccentColorChange={handleAccentColorChange}
+            customAccentColorOverrides={customAccentColorOverrides}
+            onCustomAccentColor={handleCustomAccentColor}
+            $isMobile={isMobile}
+            $isTablet={isTablet}
+            $compact
+          />
 
-            <ColorPickerPopover
-              accentColor={accentColor}
-              currentTrack={currentTrack}
-              onAccentColorChange={handleAccentColorChange}
-              customAccentColorOverrides={customAccentColorOverrides}
-              onCustomAccentColor={handleCustomAccentColor}
-              $isMobile={isMobile}
-              $isTablet={isTablet}
-              $compact
-            />
+          <ControlButton
+            $isMobile={isMobile}
+            $isTablet={isTablet}
+            $compact
+            accentColor={accentColor}
+            onClick={onShowVisualEffects}
+            title="Visual effects"
+          >
+            <VisualEffectsIcon />
+          </ControlButton>
 
+          {onBackToLibrary && (
             <ControlButton
               $isMobile={isMobile}
               $isTablet={isTablet}
               $compact
               accentColor={accentColor}
-              onClick={onShowVisualEffects}
-              title="Visual effects"
+              onClick={onBackToLibrary}
+              title="Back to Library"
             >
-              <VisualEffectsIcon />
+              <BackToLibraryIcon />
             </ControlButton>
+          )}
 
-            {onBackToLibrary && (
-              <ControlButton
-                $isMobile={isMobile}
-                $isTablet={isTablet}
-                $compact
-                accentColor={accentColor}
-                onClick={onBackToLibrary}
-                title="Back to Library"
-              >
-                <BackToLibraryIcon />
-              </ControlButton>
-            )}
+          <ControlButton
+            $isMobile={isMobile}
+            $isTablet={isTablet}
+            $compact
+            accentColor={accentColor}
+            onClick={onShowPlaylist}
+            title="Show Playlist"
+          >
+            <PlaylistIcon />
+          </ControlButton>
 
+          {!isMobile && onZenModeToggle && (
             <ControlButton
               $isMobile={isMobile}
               $isTablet={isTablet}
               $compact
               accentColor={accentColor}
-              onClick={onShowPlaylist}
-              title="Show Playlist"
+              isActive={zenModeEnabled}
+              onClick={onZenModeToggle}
+              title={`Zen Mode ${zenModeEnabled ? 'ON' : 'OFF'}`}
+              aria-pressed={zenModeEnabled}
             >
-              <PlaylistIcon />
+              <ZenModeIcon />
             </ControlButton>
-
-            {onZenModeToggle && (
-              <ControlButton
-                $isMobile={isMobile}
-                $isTablet={isTablet}
-                $compact
-                accentColor={accentColor}
-                isActive={zenModeEnabled}
-                onClick={onZenModeToggle}
-                title={`Zen Mode ${zenModeEnabled ? 'ON' : 'OFF'}`}
-                aria-pressed={zenModeEnabled}
-              >
-                <ZenModeIcon />
-              </ControlButton>
-            )}
-          </BottomBarActions>
+          )}
         </BottomBarInner>
       </BottomBarContainer>
     </>,
