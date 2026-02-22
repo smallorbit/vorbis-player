@@ -46,7 +46,7 @@ export default function BottomBar({
   onShowPlaylist,
   onZenModeToggle,
 }: BottomBarProps) {
-  const { isMobile, isTablet } = usePlayerSizing();
+  const { isMobile, isTablet, isDesktop } = usePlayerSizing();
   const [zenBarVisible, setZenBarVisible] = useState(false);
   const hideTimerRef = useRef<ReturnType<typeof setTimeout>>();
 
@@ -191,7 +191,7 @@ export default function BottomBar({
             <PlaylistIcon />
           </ControlButton>
 
-          {onZenModeToggle && (
+          {onZenModeToggle && isDesktop && (
             <ControlButton
               $isMobile={isMobile}
               $isTablet={isTablet}
