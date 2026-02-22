@@ -249,6 +249,7 @@ export const VolumeButton = styled.button<{ $isMobile: boolean; $isTablet: boole
     return theme.borderRadius.md;
   }};
   transition: all 0.2s ease;
+  flex-shrink: 0;
   
   &:hover {
     background: ${theme.colors.control.background};
@@ -267,6 +268,69 @@ export const VolumeButton = styled.button<{ $isMobile: boolean; $isTablet: boole
     return '1.5rem';
   }};
     fill: currentColor;
+  }
+`;
+
+export const VolumeControlWrapper = styled.div<{ $isMobile: boolean }>`
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing.xs};
+`;
+
+export const VolumeSliderInput = styled.input.withConfig({
+  shouldForwardProp: (prop) => !['$accentColor', '$sliderWidth'].includes(prop),
+}).attrs<{ $accentColor: string; value: number; max: number }>(
+  ({ $accentColor, value, max }) => ({
+    style: {
+      background: `linear-gradient(
+        to right,
+        ${$accentColor} 0%,
+        ${$accentColor} ${max ? (Number(value) / Number(max)) * 100 : 0}%,
+        rgba(115, 115, 115, 0.3) ${max ? (Number(value) / Number(max)) * 100 : 0}%,
+        rgba(115, 115, 115, 0.3) 100%
+      )`
+    }
+  })
+)<{ $accentColor: string; $sliderWidth: number }>`
+  width: ${({ $sliderWidth }) => $sliderWidth}px;
+  height: 3px;
+  border-radius: 1.5px;
+  outline: none;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+  transition: opacity 0.2s ease;
+
+  &::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 10px;
+    height: 10px;
+    background: ${({ $accentColor }) => $accentColor};
+    border-radius: 50%;
+    cursor: pointer;
+    border: none;
+    box-shadow: none;
+    transition: transform 0.15s ease;
+
+    &:hover {
+      transform: scale(1.3);
+    }
+  }
+
+  &::-moz-range-thumb {
+    width: 10px;
+    height: 10px;
+    background: ${({ $accentColor }) => $accentColor};
+    border-radius: 50%;
+    cursor: pointer;
+    border: none;
+    box-shadow: none;
+    transition: transform 0.15s ease;
+
+    &:hover {
+      transform: scale(1.3);
+    }
   }
 `;
 

@@ -32,7 +32,7 @@ export const useSpotifyControls = ({
   const isDraggingRef = useRef(false);
 
   // Use volume hook for volume-related functionality
-  const { isMuted, volume, handleMuteToggle, handleVolumeButtonClick } = useVolume();
+  const { isMuted, volume, handleMuteToggle, handleVolumeButtonClick, setVolumeLevel } = useVolume();
 
   // Keep ref in sync so the event handler always has the latest value
   useEffect(() => {
@@ -161,6 +161,7 @@ export const useSpotifyControls = ({
     handlePlayPause,
     handleMuteToggle,
     handleVolumeButtonClick,
+    setVolumeLevel,
     handleLikeToggle: onLikeToggle,
     handleSeek,
     handleSliderChange,

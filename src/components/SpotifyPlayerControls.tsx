@@ -68,6 +68,7 @@ interface SpotifyPlayerControlsProps {
   isMuted?: boolean;
   volume?: number;
   onMuteToggle?: () => void;
+  onVolumeChange?: (volume: number) => void;
   onToggleLike?: () => void;
   onArtistBrowse?: (artistName: string) => void;
   onAlbumPlay?: (albumId: string, albumName: string) => void;
@@ -86,6 +87,7 @@ const SpotifyPlayerControls = memo<SpotifyPlayerControlsProps>(({
   isMuted: propIsMuted,
   volume: propVolume,
   onMuteToggle: propOnMuteToggle,
+  onVolumeChange: propOnVolumeChange,
   onToggleLike: propOnToggleLike,
   onArtistBrowse,
   onAlbumPlay,
@@ -103,6 +105,7 @@ const SpotifyPlayerControls = memo<SpotifyPlayerControlsProps>(({
     currentPosition,
     duration,
     handleVolumeButtonClick: hookHandleVolumeButtonClick,
+    setVolumeLevel: hookSetVolumeLevel,
     handleLikeToggle,
     handleSliderChange,
     handleSliderMouseDown,
@@ -124,6 +127,7 @@ const SpotifyPlayerControls = memo<SpotifyPlayerControlsProps>(({
   const effectiveIsMuted = typeof propIsMuted !== 'undefined' ? propIsMuted : isMuted;
   const effectiveVolume = typeof propVolume !== 'undefined' ? propVolume : volume;
   const effectiveHandleVolumeButtonClick = propOnMuteToggle || hookHandleVolumeButtonClick;
+  const effectiveHandleVolumeChange = propOnVolumeChange || hookSetVolumeLevel;
   const effectiveHandleLikeToggle = handleLikeToggle;
   
   return (
@@ -153,6 +157,7 @@ const SpotifyPlayerControls = memo<SpotifyPlayerControlsProps>(({
         isMuted={effectiveIsMuted}
         volume={effectiveVolume}
         onVolumeButtonClick={effectiveHandleVolumeButtonClick}
+        onVolumeChange={effectiveHandleVolumeChange}
         currentPosition={currentPosition}
         duration={duration}
         formatTime={formatTime}

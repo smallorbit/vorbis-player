@@ -1,51 +1,52 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useRef } from 'react';
 import { spotifyPlayer } from '../services/spotifyPlayer';
+import { useLocalStorage } from './useLocalStorage';
+
+const VOLUME_KEY = 'vorbis-player-volume';
+const MUTED_KEY = 'vorbis-player-muted';
+const DEFAULT_VOLUME = 50;
 
 export const useVolume = () => {
-  const [isMuted, setIsMuted] = useState(false);
-  const [volume, setVolume] = useState(50);
-  const [previousVolume, setPreviousVolume] = useState(50);
+  const [volume, setVolume] = useLocalStorage<number>(VOLUME_KEY, DEFAULT_VOLUME);
+  const [isMuted, setIsMuted] = useLocalStorage<boolean>(MUTED_KEY, false);
+  const previousVolumeRef = useRef(volume > 0 ? volume : DEFAULT_VOLUME);
+  const initialVolumeRef = useRef(isMuted ? 0 : volume / 100);
 
-  // Initialize volume on mount
   useEffect(() => {
-    spotifyPlayer.setVolume(0.5);
-    setVolume(50);
-    setPreviousVolume(50);
+    spotifyPlayer.setVolume(initialVolumeRef.current);
   }, []);
 
   const handleMuteToggle = useCallback(() => {
-    const newMutedState = !isMuted;
-    setIsMuted(newMutedState);
-
-    if (newMutedState) {
-      setPreviousVolume(volume);
-      spotifyPlayer.setVolume(0);
-    } else {
-      const volumeToRestore = previousVolume > 0 ? previousVolume : 50;
-      setVolume(volumeToRestore);
-      spotifyPlayer.setVolume(volumeToRestore / 100);
-    }
-  }, [isMuted, volume, previousVolume]);
+    setIsMuted((prev) => {
+      const newMuted = !prev;
+      if (newMuted) {
+        previousVolumeRef.current = volume > 0 ? volume : DEFAULT_VOLUME;
+        spotifyPlayer.setVolume(0);
+      } else {
+        const restore = previousVolumeRef.current > 0 ? previousVolumeRef.current : DEFAULT_VOLUME;
+        setVolume(restore);
+        spotifyPlayer.setVolume(restore / 100);
+      }
+      return newMuted;
+    });
+  }, [volume, setIsMuted, setVolume]);
 
   const handleVolumeButtonClick = useCallback(() => {
     handleMuteToggle();
   }, [handleMuteToggle]);
 
   const setVolumeLevel = useCallback((newVolume: number) => {
-    const clampedVolume = Math.max(0, Math.min(100, newVolume));
-    setVolume(clampedVolume);
-    spotifyPlayer.setVolume(clampedVolume / 100);
+    const clamped = Math.max(0, Math.min(100, Math.round(newVolume)));
+    setVolume(clamped);
+    spotifyPlayer.setVolume(clamped / 100);
 
-    // Auto-unmute if volume is increased from 0
-    if (clampedVolume > 0 && isMuted) {
+    if (clamped > 0 && isMuted) {
       setIsMuted(false);
     }
-
-    // Auto-mute if volume is set to 0
-    if (clampedVolume === 0 && !isMuted) {
+    if (clamped === 0 && !isMuted) {
       setIsMuted(true);
     }
-  }, [isMuted]);
+  }, [isMuted, setVolume, setIsMuted]);
 
   return {
     isMuted,

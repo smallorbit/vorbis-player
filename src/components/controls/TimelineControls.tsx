@@ -9,6 +9,7 @@ interface TimelineControlsProps {
     isMuted: boolean;
     volume: number;
     onVolumeButtonClick: () => void;
+    onVolumeChange: (volume: number) => void;
     // Timeline slider props
     currentPosition: number;
     duration: number;
@@ -53,6 +54,7 @@ const TimelineControls = memo<TimelineControlsProps>(({
     isMuted,
     volume,
     onVolumeButtonClick,
+    onVolumeChange,
     currentPosition,
     duration,
     formatTime,
@@ -73,7 +75,9 @@ const TimelineControls = memo<TimelineControlsProps>(({
                 <VolumeControl
                     isMuted={isMuted}
                     volume={volume}
+                    accentColor={accentColor}
                     onClick={onVolumeButtonClick}
+                    onVolumeChange={onVolumeChange}
                     isMobile={isMobile}
                     isTablet={isTablet}
                 />
