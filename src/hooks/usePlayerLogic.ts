@@ -1,81 +1,51 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { spotifyAuth } from '@/services/spotify';
 import { spotifyPlayer } from '@/services/spotifyPlayer';
-import { usePlayerState } from '@/hooks/usePlayerState';
+import { useTrackContext } from '@/contexts/TrackContext';
+import { useVisualEffectsContext } from '@/contexts/VisualEffectsContext';
+import { useColorContext } from '@/contexts/ColorContext';
 import { usePlaylistManager } from '@/hooks/usePlaylistManager';
 import { useSpotifyPlayback } from '@/hooks/useSpotifyPlayback';
 import { useAutoAdvance } from '@/hooks/useAutoAdvance';
 import { useAccentColor } from '@/hooks/useAccentColor';
-import { useVisualEffectsState } from '@/hooks/useVisualEffectsState';
-import { useVolume } from '@/hooks/useVolume';
-import { useLikeTrack } from '@/hooks/useLikeTrack';
 import type { Track } from '@/services/spotify';
 
 export function usePlayerLogic() {
   const {
-    track: { tracks, originalTracks, currentIndex: currentTrackIndex, isLoading, error, shuffleEnabled },
-    playlist: { selectedId: selectedPlaylistId, isVisible: showPlaylist },
-    color: { current: accentColor, overrides: accentColorOverrides },
-    visualEffects: {
-      enabled: visualEffectsEnabled,
-      menuVisible: showVisualEffects,
-      filters: albumFilters,
-      backgroundVisualizer: {
-        enabled: backgroundVisualizerEnabled,
-        style: backgroundVisualizerStyle,
-        intensity: backgroundVisualizerIntensity
-      },
-      accentColorBackground: {
-        enabled: accentColorBackgroundEnabled,
-        preferred: accentColorBackgroundPreferred
-      }
-    },
-    zenMode: { enabled: zenModeEnabled },
-    actions: {
-      track: { setTracks, setOriginalTracks, setCurrentIndex: setCurrentTrackIndex, setLoading: setIsLoading, setError, setShuffleEnabled },
-      playlist: { setSelectedId: setSelectedPlaylistId, setVisible: setShowPlaylist },
-      color: { setCurrent: setAccentColor, setOverrides: setAccentColorOverrides },
-      visualEffects: {
-        setEnabled: setVisualEffectsEnabled,
-        setMenuVisible: setShowVisualEffects,
-        handleFilterChange,
-        handleResetFilters,
-        restoreSavedFilters,
-        backgroundVisualizer: {
-          setEnabled: setBackgroundVisualizerEnabled,
-          setStyle: setBackgroundVisualizerStyle,
-          setIntensity: setBackgroundVisualizerIntensity
-        },
-        accentColorBackground: {
-          setPreferred: setAccentColorBackgroundPreferred
-        }
-      },
-      zenMode: { setEnabled: setZenModeEnabled }
-    }
-  } = usePlayerState();
+    tracks,
+    currentTrackIndex,
+    isLoading,
+    error,
+    shuffleEnabled,
+    selectedPlaylistId,
+    currentTrack,
+    setTracks,
+    setOriginalTracks,
+    setCurrentTrackIndex,
+    setIsLoading,
+    setError,
+    setSelectedPlaylistId,
+    setShowPlaylist,
+  } = useTrackContext();
 
-  // Playback state for visualizer
+  const {
+    setShowVisualEffects,
+  } = useVisualEffectsContext();
+
+  const {
+    accentColorOverrides,
+    setAccentColor,
+    setAccentColorOverrides,
+  } = useColorContext();
+
+  // Playback state from Spotify SDK events (local — not shared via context)
   const [isPlaying, setIsPlaying] = useState(false);
   const [playbackPosition, setPlaybackPosition] = useState(0);
 
-  // Mobile library drawer (full-screen playlist/album selection)
+  // Library drawer visibility (local UI state)
   const [showLibraryDrawer, setShowLibraryDrawer] = useState(false);
 
-  // Volume/mute controls
-  const { handleMuteToggle, isMuted, volume, setVolumeLevel } = useVolume();
-
-  // Visual effects state management
-  const {
-    effectiveGlow,
-    handleGlowIntensityChange,
-    handleGlowRateChange,
-    restoreGlowSettings
-  } = useVisualEffectsState();
-
-  const { playTrack } = useSpotifyPlayback({
-    tracks,
-    setCurrentTrackIndex
-  });
+  const { playTrack } = useSpotifyPlayback({ tracks, setCurrentTrackIndex });
 
   const { handlePlaylistSelect } = usePlaylistManager({
     setError,
@@ -84,28 +54,13 @@ export function usePlayerLogic() {
     setTracks,
     setOriginalTracks,
     setCurrentTrackIndex,
-    shuffleEnabled
+    shuffleEnabled,
   });
 
-  useAutoAdvance({
-    tracks,
-    currentTrackIndex,
-    playTrack,
-    enabled: true
-  });
+  useAutoAdvance({ tracks, currentTrackIndex, playTrack, enabled: true });
 
-  const currentTrack = useMemo(() => tracks[currentTrackIndex] || null, [tracks, currentTrackIndex]);
-
-  // Like/save track management
-  const { isLiked, isLikePending, handleLikeToggle } = useLikeTrack(currentTrack?.id);
-
-  // Extract accent color from album artwork
-  const { handleAccentColorChange: handleAccentColorChangeHook } = useAccentColor(
-    currentTrack,
-    accentColorOverrides,
-    setAccentColor,
-    setAccentColorOverrides
-  );
+  // Auto-extract accent color from album artwork; respects overrides in ColorContext
+  useAccentColor(currentTrack, accentColorOverrides, setAccentColor, setAccentColorOverrides);
 
   useEffect(() => {
     async function handleAuthRedirect() {
@@ -115,7 +70,6 @@ export function usePlayerLogic() {
         setError(error instanceof Error ? error.message : 'Authentication failed');
       }
     }
-
     handleAuthRedirect();
   }, [setError]);
 
@@ -126,9 +80,8 @@ export function usePlayerLogic() {
         setPlaybackPosition(state.position);
 
         if (state.track_window.current_track) {
-          const currentTrack = state.track_window.current_track;
-          const trackIndex = tracks.findIndex((track: Track) => track.id === currentTrack.id);
-
+          const trackId = state.track_window.current_track.id;
+          const trackIndex = tracks.findIndex((t: Track) => t.id === trackId);
           if (trackIndex !== -1 && trackIndex !== currentTrackIndex) {
             setCurrentTrackIndex(trackIndex);
           }
@@ -148,18 +101,14 @@ export function usePlayerLogic() {
         setPlaybackPosition(state.position);
       }
     }
-
     checkInitialState();
 
     return unsubscribe;
   }, [tracks, currentTrackIndex, setCurrentTrackIndex]);
 
   const handleNext = useCallback(() => {
-    if (tracks.length === 0) {
-      return;
-    }
-
-    setCurrentTrackIndex((prevIndex) => {
+    if (tracks.length === 0) return;
+    setCurrentTrackIndex(prevIndex => {
       const nextIndex = (prevIndex + 1) % tracks.length;
       playTrack(nextIndex, true);
       return nextIndex;
@@ -167,58 +116,16 @@ export function usePlayerLogic() {
   }, [tracks.length, playTrack, setCurrentTrackIndex]);
 
   const handlePrevious = useCallback(() => {
-    if (tracks.length === 0) {
-      return;
-    }
-
-    setCurrentTrackIndex((prevIndex) => {
+    if (tracks.length === 0) return;
+    setCurrentTrackIndex(prevIndex => {
       const newIndex = prevIndex === 0 ? tracks.length - 1 : prevIndex - 1;
       playTrack(newIndex, true);
       return newIndex;
     });
   }, [tracks.length, playTrack, setCurrentTrackIndex]);
 
-  const handlePlay = useCallback(() => {
-    spotifyPlayer.resume();
-  }, []);
-
-  const handlePause = useCallback(() => {
-    spotifyPlayer.pause();
-  }, []);
-
-  const handleShowPlaylist = useCallback(() => {
-    setShowPlaylist(true);
-  }, [setShowPlaylist]);
-
-  const handleTogglePlaylist = useCallback(() => {
-    setShowPlaylist(prev => !prev);
-  }, [setShowPlaylist]);
-
-  const handleShowVisualEffects = useCallback(() => {
-    setShowVisualEffects(true);
-  }, [setShowVisualEffects]);
-
-  const handleCloseVisualEffects = useCallback(() => {
-    setShowVisualEffects(false);
-  }, [setShowVisualEffects]);
-
-  const handleToggleVisualEffectsMenu = useCallback(() => {
-    setShowVisualEffects(prev => !prev);
-  }, [setShowVisualEffects]);
-
-  const handleVisualEffectsToggle = useCallback(() => {
-    if (visualEffectsEnabled) {
-      setVisualEffectsEnabled(false);
-    } else {
-      setVisualEffectsEnabled(true);
-      restoreSavedFilters();
-      restoreGlowSettings();
-    }
-  }, [visualEffectsEnabled, restoreSavedFilters, restoreGlowSettings, setVisualEffectsEnabled]);
-
-  const handleClosePlaylist = useCallback(() => {
-    setShowPlaylist(false);
-  }, [setShowPlaylist]);
+  const handlePlay = useCallback(() => { spotifyPlayer.resume(); }, []);
+  const handlePause = useCallback(() => { spotifyPlayer.pause(); }, []);
 
   const handleOpenLibraryDrawer = useCallback(() => {
     setShowLibraryDrawer(true);
@@ -229,61 +136,6 @@ export function usePlayerLogic() {
   const handleCloseLibraryDrawer = useCallback(() => {
     setShowLibraryDrawer(false);
   }, []);
-
-  const handleAccentColorChange = useCallback((color: string) => {
-    const mappedColor = color === 'RESET_TO_DEFAULT' ? 'auto' : color;
-    handleAccentColorChangeHook(mappedColor);
-  }, [handleAccentColorChangeHook]);
-
-  const handleBackgroundVisualizerToggle = useCallback(() => {
-    setBackgroundVisualizerEnabled(prev => !prev);
-  }, [setBackgroundVisualizerEnabled]);
-
-  const handleBackgroundVisualizerIntensityChange = useCallback((intensity: number) => {
-    const clampedIntensity = Math.max(0, Math.min(100, intensity));
-    setBackgroundVisualizerIntensity(clampedIntensity);
-  }, [setBackgroundVisualizerIntensity]);
-
-  const handleBackgroundVisualizerStyleChange = useCallback((style: 'particles' | 'geometric') => {
-    setBackgroundVisualizerStyle(style);
-  }, [setBackgroundVisualizerStyle]);
-
-  const handleAccentColorBackgroundToggle = useCallback(() => {
-    setAccentColorBackgroundPreferred(prev => !prev);
-  }, [setAccentColorBackgroundPreferred]);
-
-  const handleZenModeToggle = useCallback(() => {
-    setZenModeEnabled(prev => !prev);
-  }, [setZenModeEnabled]);
-
-  const handleShuffleToggle = useCallback(() => {
-    if (originalTracks.length === 0) return;
-
-    const currentTrack = tracks[currentTrackIndex];
-
-    if (!shuffleEnabled) {
-      // Turning shuffle ON: shuffle originalTracks, place currentTrack first
-      const rest = originalTracks.filter(t => t.id !== currentTrack?.id);
-      const shuffled = [...rest];
-      for (let i = shuffled.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-      }
-      const newTracks = currentTrack ? [currentTrack, ...shuffled] : shuffled;
-      setTracks(newTracks);
-      setCurrentTrackIndex(0);
-    } else {
-      // Turning shuffle OFF: restore original order, seek to current track's position
-      const currentTrackId = currentTrack?.id;
-      const restoredIndex = currentTrackId
-        ? originalTracks.findIndex(t => t.id === currentTrackId)
-        : 0;
-      setTracks(originalTracks);
-      setCurrentTrackIndex(restoredIndex >= 0 ? restoredIndex : 0);
-    }
-
-    setShuffleEnabled(!shuffleEnabled);
-  }, [shuffleEnabled, tracks, currentTrackIndex, originalTracks, setTracks, setCurrentTrackIndex, setShuffleEnabled]);
 
   const handleBackToLibrary = useCallback(() => {
     handlePause();
@@ -296,64 +148,24 @@ export function usePlayerLogic() {
 
   return {
     state: {
-      tracks,
-      currentTrackIndex,
       isLoading,
       error,
       selectedPlaylistId,
-      showPlaylist,
+      tracks,
       showLibraryDrawer,
-      accentColor,
-      showVisualEffects,
-      visualEffectsEnabled,
-      albumFilters,
-      backgroundVisualizerEnabled,
-      backgroundVisualizerStyle,
-      backgroundVisualizerIntensity,
-      accentColorBackgroundEnabled,
-      accentColorBackgroundPreferred,
       isPlaying,
       playbackPosition,
-      effectiveGlow,
-      currentTrack,
-      isLiked,
-      isLikePending,
-      isMuted,
-      volume,
-      zenModeEnabled,
-      shuffleEnabled
     },
     handlers: {
-        handlePlaylistSelect,
-        handlePlay,
-        handlePause,
-        handleNext,
-        handlePrevious,
-        handleShowPlaylist,
-        handleTogglePlaylist,
-        handleShowVisualEffects,
-        handleCloseVisualEffects,
-        handleToggleVisualEffectsMenu,
-        handleClosePlaylist,
-        handleOpenLibraryDrawer,
-        handleCloseLibraryDrawer,
-        playTrack,
-        handleAccentColorChange,
-        handleVisualEffectsToggle,
-        handleFilterChange,
-        handleResetFilters,
-        handleGlowIntensityChange,
-        handleGlowRateChange,
-        handleBackgroundVisualizerToggle,
-        handleBackgroundVisualizerIntensityChange,
-        handleBackgroundVisualizerStyleChange,
-        handleAccentColorBackgroundToggle,
-        handleLikeToggle,
-        handleMuteToggle,
-        setVolumeLevel,
-        handleBackToLibrary,
-        handleZenModeToggle,
-        handleShuffleToggle
-    }
+      handlePlaylistSelect,
+      handlePlay,
+      handlePause,
+      handleNext,
+      handlePrevious,
+      playTrack,
+      handleOpenLibraryDrawer,
+      handleCloseLibraryDrawer,
+      handleBackToLibrary,
+    },
   };
-};
+}
