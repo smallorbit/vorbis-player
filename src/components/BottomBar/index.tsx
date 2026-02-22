@@ -191,7 +191,7 @@ export default function BottomBar({
             <PlaylistIcon />
           </ControlButton>
 
-          {onZenModeToggle && (
+          {onZenModeToggle && !isMobile && (
             <ControlButton
               $isMobile={isMobile}
               $isTablet={isTablet}
