@@ -10,24 +10,24 @@ export const BottomBarContainer = styled.div.withConfig({
   bottom: 0;
   left: 0;
   right: 0;
-  z-index: ${theme.zIndex.mobileMenu};
-  background: rgba(0, 0, 0, 0.6);
+  z-index: ${({ theme }) => theme.zIndex.mobileMenu};
+  background: ${({ theme }) => theme.colors.overlay.bar};
   backdrop-filter: blur(20px) saturate(180%);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-top: 1px solid ${({ theme }) => theme.colors.popover.border};
   padding-bottom: env(safe-area-inset-bottom, 0px);
   opacity: ${({ $zenHidden }) => $zenHidden ? 0 : 1};
   transform: ${({ $zenHidden }) => $zenHidden ? 'translateY(100%)' : 'translateY(0)'};
   pointer-events: ${({ $zenHidden }) => $zenHidden ? 'none' : 'auto'};
-  transition: opacity 350ms ease, transform 350ms ease;
+  transition: opacity ${({ theme }) => theme.transitions.slow} ease, transform ${({ theme }) => theme.transitions.slow} ease;
 `;
 
 export const BottomBarInner = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: ${theme.spacing.xs};
-  padding: ${theme.spacing.xs} ${theme.spacing.md};
+  gap: ${({ theme }) => theme.spacing.xs};
+  padding: ${({ theme }) => theme.spacing.xs} ${theme.spacing.md};
   height: ${BOTTOM_BAR_HEIGHT}px;
 `;
 

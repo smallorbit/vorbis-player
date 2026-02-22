@@ -16,9 +16,9 @@ const PlaylistContainer = styled.div`
 `;
 
 const PlaylistCard = styled(Card)`
-  background: rgba(38, 38, 38, 0.8);
+  background: ${({ theme }) => theme.colors.muted.background};
   backdrop-filter: blur(12px);
-  border: 1px solid rgba(115, 115, 115, 0.5);
+  border: 1px solid ${({ theme }) => theme.colors.control.border};
   border-radius: 1.25rem;
   overflow: hidden;
   padding: 0;
@@ -72,12 +72,12 @@ const PlaylistItemContainer = styled.div.withConfig({
   transition: all 0.2s ease;
   border: 1px solid transparent;
   
-  ${({ isSelected, accentColor }) => isSelected ? `
+  ${({ theme, isSelected, accentColor }) => isSelected ? `
     background: ${getTransparentVariant(accentColor, 0.2)};
     border-color: ${accentColor};
   ` : `
     &:hover {
-      background: rgba(115, 115, 115, 0.3);
+      background: ${theme.colors.control.backgroundHover};
     }
   `}
 `;
@@ -90,7 +90,7 @@ const AlbumArtContainer = styled.div`
 const PlayIcon = styled.div`
   position: absolute;
   inset: 0;
-  background: rgba(0, 0, 0, 0.4);
+  background: ${({ theme }) => theme.colors.overlay.light};
   border-radius: 50%;
   display: flex;
   align-items: center;

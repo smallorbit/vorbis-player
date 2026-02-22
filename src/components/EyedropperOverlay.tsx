@@ -1,4 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
+import { useTheme } from 'styled-components';
 
 interface EyedropperOverlayProps {
   image: string;
@@ -7,6 +8,7 @@ interface EyedropperOverlayProps {
 }
 
 const EyedropperOverlay: React.FC<EyedropperOverlayProps> = ({ image, onPick, onClose }) => {
+  const theme = useTheme();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [hoverColor, setHoverColor] = useState<string | null>(null);
 
@@ -57,36 +59,82 @@ const EyedropperOverlay: React.FC<EyedropperOverlayProps> = ({ image, onPick, on
       style={{
         position: 'fixed',
         top: 0, left: 0, right: 0, bottom: 0,
-        background: 'rgba(0,0,0,0.85)',
-        zIndex: 10000,
+        background: theme.colors.overlay.eyedropper,
+        zIndex: theme.zIndex.eyedropper,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         flexDirection: 'column',
       }}>
-      <div style={{ position: 'relative', background: '#222', borderRadius: 16, padding: 16, boxShadow: '0 4px 32px #0008' }}>
+      <div style={{
+        position: 'relative',
+        background: theme.colors.gray[800],
+        borderRadius: theme.borderRadius['2xl'],
+        padding: theme.spacing.md,
+        boxShadow: theme.shadows.lg,
+      }}>
         <canvas
           ref={canvasRef}
           style={{
             maxWidth: 400,
             maxHeight: 400,
-            borderRadius: 12,
+            borderRadius: theme.borderRadius.xl,
             cursor: 'crosshair',
-            boxShadow: '0 2px 16px #0006',
+            boxShadow: theme.shadows.md,
             display: 'block',
           }}
           onClick={handleClick}
           onMouseMove={handleMouseMove}
         />
-        <button onClick={onClose} style={{ position: 'absolute', top: 8, right: 8, background: '#111', color: '#fff', border: 'none', borderRadius: 6, padding: '4px 10px', cursor: 'pointer', fontSize: 16 }}>×</button>
+        <button
+          onClick={onClose}
+          style={{
+            position: 'absolute',
+            top: theme.spacing.sm,
+            right: theme.spacing.sm,
+            background: theme.colors.gray[900],
+            color: theme.colors.white,
+            border: 'none',
+            borderRadius: theme.borderRadius.md,
+            padding: `${theme.spacing.xs} 10px`,
+            cursor: 'pointer',
+            fontSize: theme.fontSize.base,
+          }}
+        >
+          ×
+        </button>
         {hoverColor && (
-          <div style={{ position: 'absolute', left: 16, bottom: 16, background: '#111c', color: '#fff', padding: '4px 10px', borderRadius: 6, fontSize: 14, border: `2px solid ${hoverColor}` }}>
+          <div style={{
+            position: 'absolute',
+            left: theme.spacing.md,
+            bottom: theme.spacing.md,
+            background: theme.colors.popover.background,
+            color: theme.colors.white,
+            padding: `${theme.spacing.xs} 10px`,
+            borderRadius: theme.borderRadius.md,
+            fontSize: theme.fontSize.sm,
+            border: `2px solid ${hoverColor}`,
+          }}>
             {hoverColor}
-            <span style={{ display: 'inline-block', width: 16, height: 16, background: hoverColor, borderRadius: 4, marginLeft: 8, border: '1px solid #fff' }} />
+            <span style={{
+              display: 'inline-block',
+              width: 16,
+              height: 16,
+              background: hoverColor,
+              borderRadius: theme.borderRadius.xs,
+              marginLeft: theme.spacing.sm,
+              border: `1px solid ${theme.colors.white}`,
+            }} />
           </div>
         )}
       </div>
-      <div style={{ color: '#fff', marginTop: 18, fontSize: 15 }}>Click a pixel on the album art to pick a color</div>
+      <div style={{
+        color: theme.colors.white,
+        marginTop: theme.spacing.lg,
+        fontSize: theme.fontSize.lg,
+      }}>
+        Click a pixel on the album art to pick a color
+      </div>
     </div>
   );
 };

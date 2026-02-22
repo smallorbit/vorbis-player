@@ -9,18 +9,18 @@ export const DrawerOverlay = styled.div.withConfig({
 })<{ $isOpen: boolean }>`
   position: fixed;
   inset: 0;
-  z-index: ${theme.zIndex.modal};
-  background: rgba(0, 0, 0, 0.6);
+  z-index: ${({ theme }) => theme.zIndex.modal};
+  background: ${({ theme }) => theme.colors.overlay.bar};
   opacity: ${({ $isOpen }) => ($isOpen ? 1 : 0)};
   pointer-events: ${({ $isOpen }) => ($isOpen ? 'auto' : 'none')};
-  transition: opacity ${DRAWER_TRANSITION_DURATION}ms ${DRAWER_TRANSITION_EASING};
+  transition: opacity ${theme.drawer.transitionDuration}ms ${theme.drawer.transitionEasing};
 `;
 
 export const GripPill = styled.div`
   width: 40px;
   height: 4px;
-  background: rgba(255, 255, 255, 0.3);
-  border-radius: 2px;
+  background: ${({ theme }) => theme.colors.control.backgroundHover};
+  border-radius: ${({ theme }) => theme.borderRadius.sm};
 `;
 
 export const SwipeHandle = styled.div`

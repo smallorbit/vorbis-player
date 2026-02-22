@@ -1,5 +1,5 @@
 import React, { Suspense, lazy, useState, useCallback, useRef, useEffect } from 'react';
-import styled from 'styled-components';
+import styled, { useTheme } from 'styled-components';
 import { CardContent } from './styled';
 import AlbumArt from './AlbumArt';
 import SpotifyPlayerControls from './SpotifyPlayerControls';
@@ -97,16 +97,10 @@ const LoadingCard = styled.div.withConfig({
   flex-direction: column;
   overflow: hidden;
   border-radius: 1.25rem;
-  /* Enhanced border with subtle highlight */
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  /* Multi-layer shadows for depth */
-  box-shadow:
-    0 8px 32px rgba(0, 0, 0, 0.9),
-    0 4px 16px rgba(0, 0, 0, 0.8),
-    0 2px 8px rgba(0, 0, 0, 0.7),
-    inset 0 1px 0 rgba(255, 255, 255, 0.08);
-  transition: box-shadow 0.3s ease, border-color 0.3s ease;
-  ${({ backgroundImage }) => backgroundImage ? `
+  border: 1px solid ${({ theme }) => theme.colors.borderSubtle};
+  box-shadow: ${({ theme }) => theme.shadows.card};
+  transition: box-shadow ${({ theme }) => theme.transitions.normal}, border-color ${({ theme }) => theme.transitions.normal};
+  ${({ theme, backgroundImage }) => backgroundImage ? `
     &::after {
       position: absolute;
       inset: 0.1rem;
@@ -120,7 +114,7 @@ const LoadingCard = styled.div.withConfig({
     &::before {
       position: absolute;
       inset: 0;
-      background: rgba(20, 18, 18, 0.85);
+      background: ${theme.colors.card.overlay};
       backdrop-filter: blur(40px) saturate(180%);
       -webkit-backdrop-filter: blur(40px) saturate(180%);
       border-radius: 1.25rem;
@@ -129,25 +123,69 @@ const LoadingCard = styled.div.withConfig({
   ` : `
     background: linear-gradient(
       to bottom,
-      rgba(28, 28, 28, 0.95) 0%,
-      rgba(20, 20, 20, 0.98) 100%
+      ${theme.colors.card.gradientTop} 0%,
+      ${theme.colors.card.gradientBottom} 100%
     );
     backdrop-filter: blur(20px) saturate(180%);
     -webkit-backdrop-filter: blur(20px) saturate(180%);
   `}
 `;
 
-const ControlsLoadingFallback = () => (
-  <div style={{ height: '80px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.7)' }}>
-    Loading controls...
-  </div>
-);
+function ControlsLoadingFallback() {
+  const theme = useTheme();
+  return (
+    <div style={{
+      height: '80px',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      color: theme.colors.muted.foreground
+    }}>
+      Loading controls...
+    </div>
+  );
+}
 
-const PlaylistLoadingFallback = () => (
-  <div style={{ position: 'fixed', top: 0, right: 0, bottom: 0, width: '400px', background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.7)' }}>
-    Loading playlist...
-  </div>
-);
+function PlaylistLoadingFallback() {
+  const theme = useTheme();
+  return (
+    <div style={{
+      position: 'fixed',
+      top: 0,
+      right: 0,
+      bottom: 0,
+      width: theme.drawer.widths.tablet,
+      background: theme.colors.overlay.panel,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      color: theme.colors.muted.foreground
+    }}>
+      Loading playlist...
+    </div>
+  );
+}
+
+function VisualEffectsLoadingFallback() {
+  const theme = useTheme();
+  return (
+    <div style={{
+      position: 'fixed',
+      top: 0,
+      right: 0,
+      width: '350px',
+      height: '100vh',
+      background: theme.colors.overlay.panel,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      color: theme.colors.muted.foreground,
+      fontSize: theme.fontSize.sm
+    }}>
+      Loading effects...
+    </div>
+  );
+}
 
 const PlayerContainer = styled.div`
   position: relative;
@@ -212,8 +250,7 @@ const ClickableAlbumArtContainer = styled.div<{ $swipeEnabled?: boolean; $bothGe
   cursor: pointer;
   z-index: 3;
   perspective: 1200px;
-  /* Add subtle outer glow/shadow for separation from background */
-  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.4));
+  filter: drop-shadow(${({ theme }) => theme.shadows.drop});
   ${({ $swipeEnabled, $bothGestures }) => $swipeEnabled && `
     touch-action: ${$bothGestures ? 'none' : 'pan-y'};
     user-select: none;
@@ -627,30 +664,14 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ isPlaying, showLibraryDra
         onMuteToggle={handleMuteToggle}
         onVolumeChange={setVolumeLevel}
         onShowVisualEffects={handleShowVisualEffects}
-        onBackToLibrary={handlers.onBackToLibrary}
+        onBackToLibrary={handlers.onOpenLibraryDrawer}
         onShowPlaylist={handleShowPlaylist}
         onZenModeToggle={handleZenModeToggle}
         shuffleEnabled={shuffleEnabled}
         onShuffleToggle={handleShuffleToggle}
       />
       {showVisualEffects && (
-        <Suspense fallback={
-          <div style={{
-            position: 'fixed',
-            top: 0,
-            right: 0,
-            width: '350px',
-            height: '100vh',
-            background: 'rgba(0,0,0,0.8)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: 'rgba(255,255,255,0.7)',
-            fontSize: '14px'
-          }}>
-            Loading effects...
-          </div>
-        }>
+        <Suspense fallback={<VisualEffectsLoadingFallback />}>
           <VisualEffectsMenu
             isOpen={showVisualEffects}
             onClose={handleCloseVisualEffects}

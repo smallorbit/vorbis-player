@@ -88,7 +88,7 @@ const AlbumArtContainer = styled.div.withConfig({
     // If glow is disabled, use simple shadow only
     if (glowEnabled === false) {
       return `
-        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+        box-shadow: ${theme.shadows.albumArtDepth};
       `;
     }
 
@@ -106,7 +106,7 @@ const AlbumArtContainer = styled.div.withConfig({
           0 0 72px rgba(${r}, ${g}, ${b}, calc(0.3 * var(--glow-opacity, 1))),
         
           /* Depth shadow */
-          0 8px 24px rgba(0, 0, 0, 0.5);
+          ${theme.shadows.albumArtDepth};
         animation: breathe-border-glow var(--glow-rate, ${DEFAULT_GLOW_RATE}s) linear infinite;
       `;
     }
@@ -123,7 +123,7 @@ const AlbumArtContainer = styled.div.withConfig({
           0 0 32px rgba(${r}, ${g}, ${b}, 0.5),
           0 0 48px rgba(${r}, ${g}, ${b}, 0.25),
           /* Depth shadow */
-          0 8px 24px rgba(0, 0, 0, 0.5);
+          ${theme.shadows.albumArtDepth};
       `;
     }
     return `
@@ -132,7 +132,7 @@ const AlbumArtContainer = styled.div.withConfig({
         0 0 16px rgba(255, 255, 255, 0.5),
         0 0 32px rgba(255, 255, 255, 0.4),
         0 0 48px rgba(255, 255, 255, 0.2),
-        0 8px 24px rgba(0, 0, 0, 0.5);
+        ${theme.shadows.albumArtDepth};
     `;
   }}
   border: none;

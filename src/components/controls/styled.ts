@@ -57,8 +57,7 @@ export const TrackInfoOnlyRow = styled.div<{ $compact?: boolean }>`
   margin-top: 0;
   position: relative;
   z-index: 10;
-  /* Add subtle text shadow for better readability against shadows */
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  text-shadow: ${({ theme }) => theme.shadows.textSm};
 
   @media (max-width: ${theme.breakpoints.lg}) {
     margin-top: 0;
@@ -86,8 +85,7 @@ export const PlayerTrackName = styled.div<{ $isMobile: boolean; $isTablet: boole
   width: 100%;
   position: relative;
   z-index: 11;
-  /* Enhanced text shadow for better contrast */
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+  text-shadow: ${({ theme }) => theme.shadows.textMd};
 `;
 
 export const PlayerTrackAlbum = styled.div`
@@ -102,13 +100,13 @@ export const PlayerTrackAlbum = styled.div`
   width: 100%;
   position: relative;
   z-index: 11;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+  text-shadow: ${({ theme }) => theme.shadows.textControl};
 `;
 
 export const AlbumLink = styled.a`
   color: inherit;
   text-decoration: none;
-  transition: opacity 0.15s ease;
+  transition: opacity ${({ theme }) => theme.transitions.fast} ease;
   background: none;
   border: none;
   font: inherit;
@@ -131,14 +129,13 @@ export const PlayerTrackArtist = styled.div`
   width: 100%;
   position: relative;
   z-index: 11;
-  /* Enhanced text shadow for better contrast */
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+  text-shadow: ${({ theme }) => theme.shadows.textControl};
 `;
 
 export const ArtistLink = styled.a`
   color: inherit;
   text-decoration: none;
-  transition: opacity 0.15s ease;
+  transition: opacity ${({ theme }) => theme.transitions.fast} ease;
   background: none;
   border: none;
   font: inherit;

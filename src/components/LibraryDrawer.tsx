@@ -81,15 +81,15 @@ const CloseButton = styled.button`
   height: 36px;
   border: none;
   background: none;
-  color: rgba(255, 255, 255, 0.85);
-  font-size: 1.25rem;
+  color: ${({ theme }) => theme.colors.foreground};
+  font-size: ${({ theme }) => theme.fontSize.xl};
   cursor: pointer;
   border-radius: 50%;
-  transition: background 0.15s ease;
+  transition: background ${({ theme }) => theme.transitions.fast} ease;
   padding: 0;
 
   &:active {
-    background: rgba(255, 255, 255, 0.1);
+    background: ${({ theme }) => theme.colors.control.background};
   }
 `;
 

@@ -42,65 +42,65 @@ const Header = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.875rem 1.25rem 0.75rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding: ${({ theme }) => theme.spacing.sm} ${theme.spacing.xl} ${theme.spacing.lg};
+  border-bottom: 1px solid ${({ theme }) => theme.colors.popover.border};
 `;
 
 const Title = styled.h3`
   margin: 0;
-  font-size: 1rem;
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.9);
+  font-size: ${({ theme }) => theme.fontSize.base};
+  font-weight: ${({ theme }) => theme.fontWeight.semibold};
+  color: ${({ theme }) => theme.colors.foreground};
 `;
 
 const CloseButton = styled.button`
   background: none;
   border: none;
-  color: ${theme.colors.muted.foreground};
+  color: ${({ theme }) => theme.colors.muted.foreground};
   cursor: pointer;
-  padding: ${theme.spacing.sm};
-  border-radius: ${theme.borderRadius.md};
-  transition: all 0.2s ease;
+  padding: ${({ theme }) => theme.spacing.sm};
+  border-radius: ${({ theme }) => theme.borderRadius.md};
+  transition: all ${({ theme }) => theme.transitions.fast} ease;
   display: flex;
   align-items: center;
   justify-content: center;
   
   &:hover {
-    color: ${theme.colors.white};
-    background: ${theme.colors.muted.background};
+    color: ${({ theme }) => theme.colors.white};
+    background: ${({ theme }) => theme.colors.muted.background};
   }
 `;
 
 const Content = styled.div`
-  padding: 0.75rem 1.25rem 1rem;
+  padding: ${({ theme }) => theme.spacing.lg} ${theme.spacing.xl} ${theme.spacing.md};
 `;
 
 const ShortcutList = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: ${({ theme }) => theme.spacing.xs};
 `;
 
 const ShortcutItem = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.3rem 0;
+  padding: ${({ theme }) => theme.spacing.xs} 0;
 `;
 
 const ShortcutDescription = styled.span`
-  color: rgba(255, 255, 255, 0.8);
-  font-size: 0.8125rem;
+  color: ${({ theme }) => theme.colors.muted.foreground};
+  font-size: ${({ theme }) => theme.fontSize.sm};
 `;
 
 const ShortcutKey = styled.kbd`
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 4px;
-  padding: 0.2rem 0.4rem;
+  background: ${({ theme }) => theme.colors.control.background};
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: ${({ theme }) => theme.borderRadius.xs};
+  padding: ${({ theme }) => theme.spacing.xs} ${theme.spacing.xs};
   font-family: 'Monaco', 'Menlo', monospace;
-  font-size: 0.7rem;
-  color: rgba(255, 255, 255, 0.9);
+  font-size: ${({ theme }) => theme.fontSize.xs};
+  color: ${({ theme }) => theme.colors.foreground};
   min-width: 1.75rem;
   text-align: center;
 `;

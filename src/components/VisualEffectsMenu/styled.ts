@@ -61,17 +61,17 @@ export const DrawerHeader = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 1.5rem 1.5rem 1rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding: ${({ theme }) => theme.spacing.lg} ${theme.spacing.lg} ${theme.spacing.md};
+  border-bottom: 1px solid ${({ theme }) => theme.colors.popover.border};
   min-height: 60px; 
   flex-shrink: 0; /* Prevent header from shrinking */
 `;
 
 export const DrawerTitle = styled.h3`
   margin: 0;
-  font-size: 1.125rem;
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.9);
+  font-size: ${({ theme }) => theme.fontSize.lg};
+  font-weight: ${({ theme }) => theme.fontWeight.semibold};
+  color: ${({ theme }) => theme.colors.foreground};
 `;
 
 export const CloseButton = styled.button`
@@ -81,7 +81,7 @@ export const CloseButton = styled.button`
   cursor: pointer;
   padding: ${theme.spacing.sm};
   border-radius: ${theme.borderRadius.md};
-  transition: all 0.2s ease;
+  transition: all ${({ theme }) => theme.transitions.fast} ease;
   
   &:hover {
     color: ${theme.colors.white};
@@ -95,38 +95,38 @@ export const CloseButton = styled.button`
 `;
 
 export const DrawerContent = styled.div`
-  padding: 1rem 1.5rem 1.5rem;
+  padding: ${({ theme }) => theme.spacing.md} ${theme.spacing.lg} ${theme.spacing.lg};
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: ${({ theme }) => theme.spacing.md};
 `;
 
 export const ControlGroup = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: ${({ theme }) => theme.spacing.sm};
 `;
 
 export const ControlLabel = styled.label`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: 0.875rem;
-  color: rgba(255, 255, 255, 0.8);
-  font-weight: 500;
+  font-size: ${({ theme }) => theme.fontSize.sm};
+  color: ${({ theme }) => theme.colors.muted.foreground};
+  font-weight: ${({ theme }) => theme.fontWeight.medium};
 `;
 
 export const FilterSection = styled.div`
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-  padding-top: 1rem;
-  margin-top: 0.5rem;
+  border-top: 1px solid ${({ theme }) => theme.colors.popover.border};
+  padding-top: ${({ theme }) => theme.spacing.md};
+  margin-top: ${({ theme }) => theme.spacing.sm};
 `;
 
 export const SectionTitle = styled.h4`
-  margin: 0 0 0.75rem 0;
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.9);
+  margin: 0 0 ${({ theme }) => theme.spacing.lg} 0;
+  font-size: ${({ theme }) => theme.fontSize.sm};
+  font-weight: ${({ theme }) => theme.fontWeight.semibold};
+  color: ${({ theme }) => theme.colors.muted.foreground};
   text-transform: uppercase;
   letter-spacing: 0.05em;
 `;
@@ -134,23 +134,22 @@ export const SectionTitle = styled.h4`
 export const FilterGrid = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: ${({ theme }) => theme.spacing.lg};
 `;
 
 export const VirtualListContainer = styled.div`
   width: 100%;
   height: 100%;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 0.5rem;
+  border: 1px solid ${({ theme }) => theme.colors.popover.border};
+  border-radius: ${({ theme }) => theme.borderRadius.lg};
   overflow: hidden;
-  /* Hardware acceleration for smooth scrolling */
   transform: translateZ(0);
   will-change: scroll-position;
 `;
 
 export const FilterItem = styled.div`
-  padding: 0.5rem 0.75rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  padding: ${({ theme }) => theme.spacing.sm} ${theme.spacing.lg};
+  border-bottom: 1px solid ${({ theme }) => theme.colors.popover.border};
   
   &:last-child {
     border-bottom: none;
@@ -158,22 +157,22 @@ export const FilterItem = styled.div`
 `;
 
 export const ResetButton = styled.button<{ $accentColor: string }>`
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  color: rgba(255, 255, 255, 0.7);
-  padding: 0.5rem 1rem;
-  border-radius: 0.5rem;
+  background: ${({ theme }) => theme.colors.control.background};
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  color: ${({ theme }) => theme.colors.muted.foreground};
+  padding: ${({ theme }) => theme.spacing.sm} ${theme.spacing.md};
+  border-radius: ${({ theme }) => theme.borderRadius.lg};
   cursor: pointer;
-  font-size: 0.875rem;
-  font-weight: 500;
-  transition: all ${theme.transitions.fast};
+  font-size: ${({ theme }) => theme.fontSize.sm};
+  font-weight: ${({ theme }) => theme.fontWeight.medium};
+  transition: all ${({ theme }) => theme.transitions.fast};
   width: 100%;
-  margin-top: 0.75rem;
+  margin-top: ${({ theme }) => theme.spacing.lg};
   
   &:hover {
     background: ${({ $accentColor }) => $accentColor}22;
     border-color: ${({ $accentColor }) => $accentColor}44;
-    color: rgba(255, 255, 255, 0.9);
+    color: ${({ theme }) => theme.colors.foreground};
     transform: translateY(-1px);
   }
 `;
@@ -193,7 +192,7 @@ export const OptionButton = styled.button<{ $accentColor: string; $isActive: boo
   cursor: pointer;
   font-size: 0.75rem;
   font-weight: ${theme.fontWeight.medium};
-  transition: all 0.2s ease;
+  transition: all ${({ theme }) => theme.transitions.fast} ease;
   min-width: 60px;
   
   &:hover {

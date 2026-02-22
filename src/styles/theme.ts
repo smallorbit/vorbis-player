@@ -24,6 +24,7 @@ export const theme = {
     success: '#10b981',
     warning: '#f59e0b',
     error: '#ef4444',
+    errorText: '#fecaca',
     info: '#3b82f6',
     
     // Neutral colors
@@ -56,8 +57,22 @@ export const theme = {
     overlay: {
       light: 'rgba(0, 0, 0, 0.5)',
       dark: 'rgba(40, 40, 40, 0.50)',
-      backdrop: 'rgba(0, 0, 0, 0.9)'
+      backdrop: 'rgba(0, 0, 0, 0.9)',
+      panel: 'rgba(0, 0, 0, 0.8)',
+      eyedropper: 'rgba(0, 0, 0, 0.85)',
+      mid: 'rgba(0, 0, 0, 0.75)',
+      bar: 'rgba(0, 0, 0, 0.6)'
     },
+    borderSubtle: 'rgba(255, 255, 255, 0.12)',
+    // Card loading state (gradient and overlay)
+    card: {
+      overlay: 'rgba(20, 18, 18, 0.85)',
+      gradientTop: 'rgba(28, 28, 28, 0.95)',
+      gradientBottom: 'rgba(20, 20, 20, 0.98)'
+    },
+    spotify: '#1db954',
+    spotifyLight: '#1ed760',
+    selection: '#ffd700',
     
     // Common control colors
     control: {
@@ -127,7 +142,15 @@ export const theme = {
     '2xl': '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
     inner: 'inset 0 2px 4px 0 rgba(0, 0, 0, 0.06)',
     albumArt: '0 8px 24px rgba(23, 22, 22, 0.7), 0 2px 8px rgba(22, 21, 21, 0.6)',
-    none: 'none'
+    none: 'none',
+    popover: '0 8px 32px rgba(0, 0, 0, 0.5), 0 2px 8px rgba(0, 0, 0, 0.4)',
+    card: '0 8px 32px rgba(0, 0, 0, 0.9), 0 4px 16px rgba(0, 0, 0, 0.8), 0 2px 8px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.08)',
+    drop: '0 4px 12px rgba(0, 0, 0, 0.4)',
+    albumArtDepth: '0 8px 24px rgba(0, 0, 0, 0.5)',
+    textSm: '0 1px 2px rgba(0, 0, 0, 0.3)',
+    textMd: '0 2px 4px rgba(0, 0, 0, 0.5)',
+    textControl: '0 1px 3px rgba(0, 0, 0, 0.5)',
+    spotify: '0 8px 32px rgba(29, 185, 84, 0.3)'
   },
   
   transitions: {
@@ -178,7 +201,8 @@ export const theme = {
     skipLink: '1600',
     toast: '1700',
     tooltip: '1800',
-    uiOverlay: '2000'
+    uiOverlay: '2000',
+    eyedropper: '10000'
   },
   
   // Player-specific sizing constraints

@@ -20,29 +20,29 @@ interface TrackInfoPopoverProps {
 const Overlay = styled.div`
   position: fixed;
   inset: 0;
-  z-index: ${theme.zIndex.modal};
+  z-index: ${({ theme }) => theme.zIndex.modal};
 `;
 
 const PopoverContainer = styled.div<{ $x: number; $y: number }>`
   position: fixed;
   left: ${({ $x }) => $x}px;
   top: ${({ $y }) => $y}px;
-  z-index: ${theme.zIndex.modal + 1};
+  z-index: ${({ theme }) => theme.zIndex.popover};
   min-width: 200px;
-  background: rgba(30, 30, 30, 0.95);
+  background: ${({ theme }) => theme.colors.popover.background};
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 0.75rem;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), 0 2px 8px rgba(0, 0, 0, 0.4);
-  padding: 0.375rem;
-  animation: popoverFadeIn 0.15s ease-out;
+  border: 1px solid ${({ theme }) => theme.colors.borderSubtle};
+  border-radius: ${({ theme }) => theme.borderRadius.xl};
+  box-shadow: ${({ theme }) => theme.shadows.popover};
+  padding: ${({ theme }) => theme.spacing.xs};
+  animation: popoverFadeIn ${({ theme }) => theme.transitions.fast} ease-out;
   transform: translateX(-50%);
 
   @keyframes popoverFadeIn {
     from {
       opacity: 0;
-      transform: translateX(-50%) translateY(4px);
+      transform: translateX(-50%) translateY(${({ theme }) => theme.spacing.xs});
     }
     to {
       opacity: 1;
@@ -56,30 +56,30 @@ const OptionButton = styled.button`
   align-items: center;
   gap: 0.625rem;
   width: 100%;
-  padding: 0.625rem 0.75rem;
+  padding: ${({ theme }) => theme.spacing.sm} ${theme.spacing.lg};
   background: none;
   border: none;
-  color: rgba(255, 255, 255, 0.9);
-  font-size: 0.8125rem;
-  font-weight: 500;
+  color: ${({ theme }) => theme.colors.foreground};
+  font-size: ${({ theme }) => theme.fontSize.sm};
+  font-weight: ${({ theme }) => theme.fontWeight.medium};
   cursor: pointer;
-  border-radius: 0.5rem;
-  transition: background 0.12s ease;
+  border-radius: ${({ theme }) => theme.borderRadius.lg};
+  transition: background ${({ theme }) => theme.transitions.fast} ease;
   white-space: nowrap;
 
   &:hover {
-    background: rgba(255, 255, 255, 0.1);
+    background: ${({ theme }) => theme.colors.control.background};
   }
 
   &:active {
-    background: rgba(255, 255, 255, 0.15);
+    background: ${({ theme }) => theme.colors.control.backgroundHover};
   }
 
   svg {
     flex-shrink: 0;
     width: 16px;
     height: 16px;
-    color: rgba(255, 255, 255, 0.6);
+    color: ${({ theme }) => theme.colors.muted.foreground};
   }
 `;
 
