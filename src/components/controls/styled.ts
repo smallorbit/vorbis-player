@@ -189,32 +189,36 @@ export const TrackInfoRight = styled.div`
 
 // --- Control Buttons ---
 export const ControlButton = styled.button.withConfig({
-  shouldForwardProp: (prop) => !['isActive', 'accentColor', '$isMobile', '$isTablet'].includes(prop),
-}) <{ isActive?: boolean; accentColor: string; $isMobile: boolean; $isTablet: boolean }>`
+  shouldForwardProp: (prop) => !['isActive', 'accentColor', '$isMobile', '$isTablet', '$compact'].includes(prop),
+}) <{ isActive?: boolean; accentColor: string; $isMobile: boolean; $isTablet: boolean; $compact?: boolean }>`
   border: none;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   transition: all 0.2s ease;
-  padding: ${({ $isMobile, $isTablet, theme }) => {
+  padding: ${({ $isMobile, $isTablet, $compact, theme }) => {
+    if ($compact) return theme.spacing.xs;
     if ($isMobile) return theme.spacing.sm;
     if ($isTablet) return theme.spacing.md;
     return theme.spacing.md;
   }};
-  border-radius: ${({ $isMobile, $isTablet, theme }) => {
+  border-radius: ${({ $isMobile, $isTablet, $compact, theme }) => {
+    if ($compact) return theme.borderRadius.md;
     if ($isMobile) return theme.borderRadius.md;
     if ($isTablet) return theme.borderRadius.lg;
     return theme.borderRadius.lg;
   }};
   
   svg {
-    width: ${({ $isMobile, $isTablet }) => {
+    width: ${({ $isMobile, $isTablet, $compact }) => {
+    if ($compact) return '1.125rem';
     if ($isMobile) return '1.625rem';
     if ($isTablet) return '1.75rem';
     return '1.875rem';
   }};
-    height: ${({ $isMobile, $isTablet }) => {
+    height: ${({ $isMobile, $isTablet, $compact }) => {
+    if ($compact) return '1.125rem';
     if ($isMobile) return '1.625rem';
     if ($isTablet) return '1.75rem';
     return '1.875rem';
