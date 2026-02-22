@@ -21,8 +21,6 @@ import {
   ControlLabel,
   OptionButtonGroup,
   OptionButton,
-  IntensityValue,
-  IntensitySlider,
   VirtualListContainer,
   FilterItem,
   ResetButton
@@ -189,7 +187,11 @@ const VisualEffectsMenu: React.FC<VisualEffectsMenuProps> = memo(({
     { label: 'Faster', value: 3.0 }
   ];
 
-
+  const visualizerIntensityOptions = [
+    { label: 'Less', value: 30 },
+    { label: 'Normal', value: 60 },
+    { label: 'More', value: 90 }
+  ];
 
 
   const handleFilterChange = useCallback((key: string, value: number) => {
@@ -344,22 +346,21 @@ const VisualEffectsMenu: React.FC<VisualEffectsMenuProps> = memo(({
               </ControlGroup>
               
               <ControlGroup>
-                <ControlLabel style={{ justifyContent: 'space-between' }}>
-                  <span>Visualizer Intensity</span>
-                  <IntensityValue>{backgroundVisualizerIntensity}%</IntensityValue>
+                <ControlLabel>
+                  Intensity
                 </ControlLabel>
-                <IntensitySlider
-                  type="range"
-                  min={0}
-                  max={100}
-                  step={5}
-                  value={backgroundVisualizerIntensity}
-                  onChange={(e) => onBackgroundVisualizerIntensityChange(parseInt(e.target.value))}
-                  $accentColor={accentColor}
-                  style={{
-                    '--slider-value': `${backgroundVisualizerIntensity}%`
-                  } as React.CSSProperties}
-                />
+                <OptionButtonGroup>
+                  {visualizerIntensityOptions.map((option) => (
+                    <OptionButton
+                      key={`viz-intensity-${option.value}`}
+                      $accentColor={accentColor}
+                      $isActive={backgroundVisualizerIntensity === option.value}
+                      onClick={() => onBackgroundVisualizerIntensityChange(option.value)}
+                    >
+                      {option.label}
+                    </OptionButton>
+                  ))}
+                </OptionButtonGroup>
               </ControlGroup>
             </FilterGrid>
           </FilterSection>
