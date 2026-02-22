@@ -11,6 +11,8 @@ import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
 import { useSwipeGesture } from '@/hooks/useSwipeGesture';
 import { useVerticalSwipeGesture } from '@/hooks/useVerticalSwipeGesture';
 import LibraryDrawer from './LibraryDrawer';
+import AlbumArtBackside from './AlbumArtBackside';
+import { useCustomAccentColors } from '@/hooks/useCustomAccentColors';
 import type { Track } from '../services/spotify';
 import type { VisualizerStyle } from '../types/visualizer';
 import type { AlbumFilters } from '../types/filters';
@@ -256,6 +258,7 @@ const ClickableAlbumArtContainer = styled.div<{ $swipeEnabled?: boolean; $bothGe
   position: relative;
   cursor: pointer;
   z-index: 3;
+  perspective: 1200px;
   /* Add subtle outer glow/shadow for separation from background */
   filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.4));
   ${({ $swipeEnabled, $bothGestures }) => $swipeEnabled && `
@@ -263,6 +266,17 @@ const ClickableAlbumArtContainer = styled.div<{ $swipeEnabled?: boolean; $bothGe
     user-select: none;
     -webkit-user-select: none;
   `}
+`;
+
+const FlipInner = styled.div.withConfig({
+  shouldForwardProp: (prop) => !['$isFlipped'].includes(prop),
+})<{ $isFlipped: boolean }>`
+  width: 100%;
+  aspect-ratio: 1;
+  position: relative;
+  transform-style: preserve-3d;
+  transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  transform: ${({ $isFlipped }) => $isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)'};
 `;
 
 const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handlers }) => {
@@ -286,6 +300,19 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
   const closeHelp = useCallback(() => {
     setShowHelp(false);
   }, []);
+
+  const [isFlipped, setIsFlipped] = useState(false);
+  const toggleFlip = useCallback(() => setIsFlipped(f => !f), []);
+
+  // Reset flip when track changes
+  useEffect(() => {
+    setIsFlipped(false);
+  }, [track.current?.id]);
+
+  const { customAccentColorOverrides, handleCustomAccentColor, handleAccentColorChange } = useCustomAccentColors({
+    currentAlbumId: track.current?.album_id,
+    onAccentColorChange: handlers.onAccentColorChange,
+  });
 
   // Handler: artist name clicked → open library drawer filtered to albums by that artist
   const handleArtistBrowse = useCallback((artistName: string) => {
@@ -373,13 +400,14 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
     enabled: isTouchDevice,
   });
 
-  // Combined close handler for Escape key (closes VFX menu, library drawer, and help modal)
+  // Combined close handler for Escape key (closes VFX menu, library drawer, help modal, and flip)
   const handleEscapeClose = useCallback(() => {
     handleCloseLibraryDrawer();
     handlers.onCloseVisualEffects();
     if (showHelp) {
       closeHelp();
     }
+    setIsFlipped(false);
   }, [handleCloseLibraryDrawer, handlers, showHelp, closeHelp]);
 
   // Combine play/pause for Space key
@@ -469,22 +497,38 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
               $swipeEnabled={isTouchDevice}
               $bothGestures={isTouchDevice}
               {...(isTouchDevice ? gestureHandlers : {})}
-              onClick={!isSwiping && !isAnimating ? handlePlayPause : undefined}
+              onClick={!isSwiping && !isAnimating ? toggleFlip : undefined}
               style={{
                 transform: `translateX(${offsetX}px)`,
                 transition: isAnimating ? 'transform 300ms cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
                 willChange: isSwiping ? 'transform' : undefined,
               }}
             >
-              <AlbumArt
-                currentTrack={track.current}
-                accentColor={ui.accentColor}
-                glowIntensity={effects.enabled ? effects.glow.intensity : 0}
-                glowRate={effects.glow.rate}
-                glowEnabled={effects.enabled}
-                albumFilters={effects.enabled ? effects.filters : defaultFilters}
-                zenMode={ui.zenMode}
-              />
+              <FlipInner $isFlipped={isFlipped}>
+                <AlbumArt
+                  currentTrack={track.current}
+                  accentColor={ui.accentColor}
+                  glowIntensity={effects.enabled ? effects.glow.intensity : 0}
+                  glowRate={effects.glow.rate}
+                  glowEnabled={effects.enabled}
+                  albumFilters={effects.enabled ? effects.filters : defaultFilters}
+                  zenMode={ui.zenMode}
+                />
+                <AlbumArtBackside
+                  currentTrack={track.current}
+                  accentColor={ui.accentColor}
+                  onAccentColorChange={handleAccentColorChange}
+                  customAccentColorOverrides={customAccentColorOverrides}
+                  onCustomAccentColor={handleCustomAccentColor}
+                  glowEnabled={effects.enabled}
+                  onGlowToggle={handlers.onGlowToggle}
+                  backgroundVisualizerEnabled={handlers.backgroundVisualizerEnabled ?? false}
+                  onBackgroundVisualizerToggle={handlers.onBackgroundVisualizerToggle ?? (() => {})}
+                  backgroundVisualizerStyle={handlers.backgroundVisualizerStyle ?? 'particles'}
+                  onBackgroundVisualizerStyleChange={handlers.onBackgroundVisualizerStyleChange ?? (() => {})}
+                  onClose={() => setIsFlipped(false)}
+                />
+              </FlipInner>
             </ClickableAlbumArtContainer>
           </CardContent>
           <ZenControlsWrapper $zenMode={ui.zenMode}>
