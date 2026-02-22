@@ -10,83 +10,37 @@ import { usePlayerSizing } from '../hooks/usePlayerSizing';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
 import { useSwipeGesture } from '@/hooks/useSwipeGesture';
 import { useVerticalSwipeGesture } from '@/hooks/useVerticalSwipeGesture';
+import { useVisualEffectsState } from '@/hooks/useVisualEffectsState';
+import { useVolume } from '@/hooks/useVolume';
+import { useLikeTrack } from '@/hooks/useLikeTrack';
+import { useTrackContext } from '@/contexts/TrackContext';
+import { useColorContext } from '@/contexts/ColorContext';
+import { useVisualEffectsContext } from '@/contexts/VisualEffectsContext';
 import LibraryDrawer from './LibraryDrawer';
 import AlbumArtBackside from './AlbumArtBackside';
-import { useCustomAccentColors } from '@/hooks/useCustomAccentColors';
-import type { Track } from '../services/spotify';
-import type { VisualizerStyle } from '../types/visualizer';
-import type { AlbumFilters } from '../types/filters';
-
 
 const PlaylistDrawer = lazy(() => import('./PlaylistDrawer'));
 const PlaylistBottomSheet = lazy(() => import('./PlaylistBottomSheet'));
 const VisualEffectsMenu = lazy(() => import('./VisualEffectsMenu/index'));
 const KeyboardShortcutsHelp = lazy(() => import('./KeyboardShortcutsHelp'));
 
-interface PlayerContentHandlers {
+interface PlaybackHandlers {
   onPlay: () => void;
   onPause: () => void;
   onNext: () => void;
   onPrevious: () => void;
-  onShowPlaylist: () => void;
-  onTogglePlaylist: () => void;
-  onShowVisualEffects: () => void;
-  onCloseVisualEffects: () => void;
-  onToggleVisualEffectsMenu: () => void;
-  onClosePlaylist: () => void;
   onTrackSelect: (index: number) => void;
-  onAccentColorChange: (color: string) => void;
-  onGlowToggle: () => void;
-  onFilterChange: (filter: string, value: number) => void;
-  onResetFilters: () => void;
-  onGlowIntensityChange: (intensity: number) => void;
-  onGlowRateChange: (rate: number) => void;
-  onBackgroundVisualizerToggle?: () => void; // Background visualizer toggle handler
-  onBackgroundVisualizerIntensityChange?: (intensity: number) => void; // Background visualizer intensity change handler (direct value, not delta)
-  onBackgroundVisualizerStyleChange?: (style: 'particles' | 'geometric') => void; // Background visualizer style change handler
-  backgroundVisualizerEnabled?: boolean; // Background visualizer enabled state
-  backgroundVisualizerStyle?: string; // Background visualizer style
-  backgroundVisualizerIntensity?: number; // Background visualizer intensity
-  accentColorBackgroundEnabled?: boolean; // Accent color background toggle
-  onAccentColorBackgroundToggle?: () => void; // Accent color background toggle handler
-  onMuteToggle?: () => void; // Mute toggle handler
-  onVolumeChange?: (volume: number) => void; // Volume slider change handler
-  onToggleLike?: () => void; // Like toggle handler
-  onBackToLibrary?: () => void; // Back to library navigation handler
-  onZenModeToggle?: () => void; // Zen mode toggle handler
-  zenModeEnabled?: boolean; // Zen mode state
-  onShuffleToggle?: () => void; // Shuffle toggle handler
-  shuffleEnabled?: boolean; // Shuffle enabled state
-  onOpenLibraryDrawer?: () => void;
-  onCloseLibraryDrawer?: () => void;
-  onPlaylistSelect?: (playlistId: string, playlistName: string) => void;
-  onAlbumPlay?: (albumId: string, albumName: string) => void;
+  onOpenLibraryDrawer: () => void;
+  onCloseLibraryDrawer: () => void;
+  onPlaylistSelect: (playlistId: string, playlistName: string) => void;
+  onAlbumPlay: (albumId: string, albumName: string) => void;
+  onBackToLibrary: () => void;
 }
 
 interface PlayerContentProps {
-  track: {
-    current: Track | null;
-    list: Track[];
-    currentIndex: number;
-    isPlaying: boolean;
-    isLiked?: boolean;
-    isLikePending?: boolean;
-    isMuted?: boolean;
-    volume?: number;
-  };
-  ui: {
-    accentColor: string;
-    showVisualEffects: boolean;
-    showPlaylist: boolean;
-    showLibraryDrawer: boolean;
-    zenMode: boolean;
-  };
-  effects: {
-    enabled: boolean;
-    glow: { intensity: number; rate: number };
-    filters: AlbumFilters;
-  };
-  handlers: PlayerContentHandlers;
+  isPlaying: boolean;
+  showLibraryDrawer: boolean;
+  handlers: PlaybackHandlers;
 }
 
 const ContentWrapper = styled.div.withConfig({
@@ -146,7 +100,7 @@ const LoadingCard = styled.div.withConfig({
   /* Enhanced border with subtle highlight */
   border: 1px solid rgba(255, 255, 255, 0.12);
   /* Multi-layer shadows for depth */
-  box-shadow: 
+  box-shadow:
     0 8px 32px rgba(0, 0, 0, 0.9),
     0 4px 16px rgba(0, 0, 0, 0.8),
     0 2px 8px rgba(0, 0, 0, 0.7),
@@ -188,7 +142,6 @@ const ControlsLoadingFallback = () => (
     Loading controls...
   </div>
 );
-
 
 const PlaylistLoadingFallback = () => (
   <div style={{ position: 'fixed', top: 0, right: 0, bottom: 0, width: '400px', background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.7)' }}>
@@ -279,27 +232,69 @@ const FlipInner = styled.div.withConfig({
   transform: ${({ $isFlipped }) => $isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)'};
 `;
 
-const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handlers }) => {
-  const defaultFilters = {
-    brightness: 110,
-    contrast: 100,
-    saturation: 100,
-    hue: 0,
-    blur: 0,
-    sepia: 0
-  };
+const defaultFilters = {
+  brightness: 110,
+  contrast: 100,
+  saturation: 100,
+  hue: 0,
+  blur: 0,
+  sepia: 0,
+};
 
+const PlayerContent: React.FC<PlayerContentProps> = ({ isPlaying, showLibraryDrawer, handlers }) => {
+  // --- Context hooks ---
+  const {
+    tracks,
+    currentTrack,
+    currentTrackIndex,
+    showPlaylist,
+    setShowPlaylist,
+    shuffleEnabled,
+    handleShuffleToggle,
+  } = useTrackContext();
+
+  const {
+    accentColor,
+    accentColorOverrides,
+    setAccentColor,
+    handleSetAccentColorOverride,
+    handleRemoveAccentColorOverride,
+    handleResetAccentColorOverride,
+  } = useColorContext();
+
+  const {
+    visualEffectsEnabled,
+    setVisualEffectsEnabled,
+    albumFilters,
+    handleFilterChange,
+    handleResetFilters,
+    restoreSavedFilters,
+    backgroundVisualizerEnabled,
+    setBackgroundVisualizerEnabled,
+    backgroundVisualizerStyle,
+    setBackgroundVisualizerStyle,
+    backgroundVisualizerIntensity,
+    setBackgroundVisualizerIntensity,
+    accentColorBackgroundPreferred,
+    setAccentColorBackgroundPreferred,
+    zenModeEnabled,
+    setZenModeEnabled,
+    showVisualEffects,
+    setShowVisualEffects,
+  } = useVisualEffectsContext();
+
+  // --- Leaf hooks (self-contained, fine to call here) ---
+  const { effectiveGlow, handleGlowIntensityChange, handleGlowRateChange, restoreGlowSettings } = useVisualEffectsState();
+  const { handleMuteToggle, isMuted, volume, setVolumeLevel } = useVolume();
+  const { isLiked, isLikePending, handleLikeToggle } = useLikeTrack(currentTrack?.id);
+
+  // --- Local UI state ---
   const [showHelp, setShowHelp] = useState(false);
   const [librarySearchQuery, setLibrarySearchQuery] = useState<string | undefined>(undefined);
   const [libraryViewMode, setLibraryViewMode] = useState<'playlists' | 'albums' | undefined>(undefined);
 
-  const toggleHelp = useCallback(() => {
-    setShowHelp(prev => !prev);
-  }, []);
-
-  const closeHelp = useCallback(() => {
-    setShowHelp(false);
-  }, []);
+  const toggleHelp = useCallback(() => setShowHelp(prev => !prev), []);
+  const closeHelp = useCallback(() => setShowHelp(false), []);
 
   const [isFlipped, setIsFlipped] = useState(false);
   const toggleFlip = useCallback(() => setIsFlipped(f => !f), []);
@@ -308,14 +303,13 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
   // Reset flip when track changes
   useEffect(() => {
     setIsFlipped(false);
-  }, [track.current?.id]);
+  }, [currentTrack?.id]);
 
   // Close flip when clicking outside the album art area
   useEffect(() => {
     if (!isFlipped) return;
     const handleClickOutside = (e: MouseEvent) => {
       const target = e.target as Element;
-      // Don't dismiss while the eyedropper portal is open
       if (target.closest?.('[data-eyedropper-overlay]')) return;
       if (flipContainerRef.current && !flipContainerRef.current.contains(target)) {
         setIsFlipped(false);
@@ -325,42 +319,90 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isFlipped]);
 
-  const { customAccentColorOverrides, handleCustomAccentColor, handleAccentColorChange } = useCustomAccentColors({
-    currentAlbumId: track.current?.album_id,
-    onAccentColorChange: handlers.onAccentColorChange,
-  });
+  // --- Color handlers (replaces useCustomAccentColors) ---
+  const handleCustomAccentColor = useCallback((color: string) => {
+    if (currentTrack?.album_id) {
+      if (color === '') {
+        handleRemoveAccentColorOverride(currentTrack.album_id);
+      } else {
+        handleSetAccentColorOverride(currentTrack.album_id, color);
+        setAccentColor(color);
+      }
+    }
+  }, [currentTrack?.album_id, handleSetAccentColorOverride, handleRemoveAccentColorOverride, setAccentColor]);
 
-  // Handler: artist name clicked → open library drawer filtered to albums by that artist
+  const handleAccentColorChange = useCallback((color: string) => {
+    if (color === 'RESET_TO_DEFAULT' && currentTrack?.album_id) {
+      handleResetAccentColorOverride(currentTrack.album_id);
+      // useAccentColor effect in usePlayerLogic will re-extract from artwork automatically
+      return;
+    }
+    if (currentTrack?.album_id) {
+      handleSetAccentColorOverride(currentTrack.album_id, color);
+    }
+    setAccentColor(color);
+  }, [currentTrack?.album_id, handleSetAccentColorOverride, handleResetAccentColorOverride, setAccentColor]);
+
+  // --- Playlist visibility ---
+  const handleShowPlaylist = useCallback(() => setShowPlaylist(true), [setShowPlaylist]);
+  const handleClosePlaylist = useCallback(() => setShowPlaylist(false), [setShowPlaylist]);
+
+  // --- VFX menu visibility ---
+  const handleShowVisualEffects = useCallback(() => setShowVisualEffects(true), [setShowVisualEffects]);
+  const handleCloseVisualEffects = useCallback(() => setShowVisualEffects(false), [setShowVisualEffects]);
+  const handleToggleVisualEffectsMenu = useCallback(() => setShowVisualEffects(prev => !prev), [setShowVisualEffects]);
+
+  // --- Glow toggle (re-enables VFX + restores saved state) ---
+  const handleGlowToggle = useCallback(() => {
+    if (visualEffectsEnabled) {
+      setVisualEffectsEnabled(false);
+    } else {
+      setVisualEffectsEnabled(true);
+      restoreSavedFilters();
+      restoreGlowSettings();
+    }
+  }, [visualEffectsEnabled, setVisualEffectsEnabled, restoreSavedFilters, restoreGlowSettings]);
+
+  // --- Background visualizer controls ---
+  const handleBackgroundVisualizerToggle = useCallback(() => {
+    setBackgroundVisualizerEnabled(prev => !prev);
+  }, [setBackgroundVisualizerEnabled]);
+
+  const handleBackgroundVisualizerStyleChange = useCallback((style: 'particles' | 'geometric') => {
+    setBackgroundVisualizerStyle(style);
+  }, [setBackgroundVisualizerStyle]);
+
+  const handleBackgroundVisualizerIntensityChange = useCallback((intensity: number) => {
+    setBackgroundVisualizerIntensity(Math.max(0, Math.min(100, intensity)));
+  }, [setBackgroundVisualizerIntensity]);
+
+  const handleAccentColorBackgroundToggle = useCallback(() => {
+    setAccentColorBackgroundPreferred(prev => !prev);
+  }, [setAccentColorBackgroundPreferred]);
+
+  // --- Library drawer ---
   const handleArtistBrowse = useCallback((artistName: string) => {
     setLibrarySearchQuery(artistName);
     setLibraryViewMode('albums');
-    handlers.onOpenLibraryDrawer?.();
+    handlers.onOpenLibraryDrawer();
   }, [handlers]);
 
-  // Handler: album name clicked → play that album
   const handleAlbumPlay = useCallback((albumId: string, albumName: string) => {
-    handlers.onAlbumPlay?.(albumId, albumName);
+    handlers.onAlbumPlay(albumId, albumName);
   }, [handlers]);
 
-  // Reset library filter state when drawer closes
   const handleCloseLibraryDrawer = useCallback(() => {
-    handlers.onCloseLibraryDrawer?.();
-    // Clear after transition so the drawer doesn't flash with stale query
+    handlers.onCloseLibraryDrawer();
     setTimeout(() => {
       setLibrarySearchQuery(undefined);
       setLibraryViewMode(undefined);
     }, 350);
   }, [handlers]);
 
-  // Use responsive sizing hook
-  // isTouchDevice: pointer-capability-based (true on any touch-primary device regardless of viewport size)
-  // isMobile: viewport-width-based (use only for layout/spacing decisions)
+  // --- Responsive sizing ---
   const { dimensions, useFluidSizing, padding, transitionDuration, transitionEasing, isMobile, hasPointerInput, isTouchDevice } = usePlayerSizing();
 
-  // Measure the controls card height so album art can fill exactly the remaining space.
-  // We set --player-controls-height on :root so AlbumArt can reference it in CSS.
-  // stableControlsHeightRef preserves the last fully-visible height so we can restore it
-  // synchronously before exiting zen, avoiding a ResizeObserver race with the CSS transition.
+  // Measure controls card height so album art fills remaining space exactly.
   const controlsRef = useRef<HTMLDivElement>(null);
   const stableControlsHeightRef = useRef<number>(220);
   useEffect(() => {
@@ -368,8 +410,6 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
     if (!el) return;
     const update = () => {
       const h = Math.ceil(el.getBoundingClientRect().height);
-      // Only store when controls are clearly visible — avoids capturing near-zero values
-      // that appear mid-animation as controls collapse into zen mode.
       if (h > 50) {
         stableControlsHeightRef.current = h;
         document.documentElement.style.setProperty('--player-controls-height', `${h}px`);
@@ -381,34 +421,32 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
     return () => observer.disconnect();
   }, []);
 
-  // Wraps the zen toggle to pre-set --player-controls-height synchronously before exiting zen.
-  // This ensures PlayerStack/AlbumArtContainer start their max-width transitions toward the
-  // correct target immediately, rather than after a ResizeObserver callback arrives.
+  // Pre-set --player-controls-height synchronously before exiting zen so the
+  // transition starts toward the correct target immediately.
   const handleZenModeToggle = useCallback(() => {
-    if (ui.zenMode) {
+    if (zenModeEnabled) {
       document.documentElement.style.setProperty(
         '--player-controls-height',
         `${stableControlsHeightRef.current}px`
       );
     }
-    handlers.onZenModeToggle?.();
-  }, [ui.zenMode, handlers.onZenModeToggle]);
+    setZenModeEnabled(prev => !prev);
+  }, [zenModeEnabled, setZenModeEnabled]);
 
-  // Swipe gesture for track navigation: enabled on any touch-primary device (finger input),
-  // regardless of viewport width — a high-res tablet is still a touch device.
+  // --- Swipe gestures ---
   const { offsetX, isSwiping, isAnimating, gestureHandlers } = useSwipeGesture({
     onSwipeLeft: handlers.onNext,
     onSwipeRight: handlers.onPrevious,
   }, { enabled: isTouchDevice });
 
-  // Vertical swipe on album art: up = exit zen (zen→normal), down = enter zen (normal→zen).
-  // Drawers are controlled only by menu buttons, not gestures.
   const handleZenSwipeUp = useCallback(() => {
-    if (ui.zenMode) handleZenModeToggle();
-  }, [ui.zenMode, handleZenModeToggle]);
+    if (zenModeEnabled) handleZenModeToggle();
+  }, [zenModeEnabled, handleZenModeToggle]);
+
   const handleZenSwipeDown = useCallback(() => {
-    if (!ui.zenMode) handleZenModeToggle();
-  }, [ui.zenMode, handleZenModeToggle]);
+    if (!zenModeEnabled) handleZenModeToggle();
+  }, [zenModeEnabled, handleZenModeToggle]);
+
   const { ref: zenVerticalSwipeRef } = useVerticalSwipeGesture({
     onSwipeUp: handleZenSwipeUp,
     onSwipeDown: handleZenSwipeDown,
@@ -416,72 +454,65 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
     enabled: isTouchDevice,
   });
 
-  // Combined close handler for Escape key (closes VFX menu, library drawer, help modal, and flip)
+  // --- Keyboard shortcut helpers ---
   const handleEscapeClose = useCallback(() => {
     handleCloseLibraryDrawer();
-    handlers.onCloseVisualEffects();
-    if (showHelp) {
-      closeHelp();
-    }
+    handleCloseVisualEffects();
+    if (showHelp) closeHelp();
     setIsFlipped(false);
-  }, [handleCloseLibraryDrawer, handlers, showHelp, closeHelp]);
+  }, [handleCloseLibraryDrawer, handleCloseVisualEffects, showHelp, closeHelp]);
 
-  // Combine play/pause for Space key
   const handlePlayPause = useCallback(() => {
-    if (track.isPlaying) {
+    if (isPlaying) {
       handlers.onPause();
     } else {
       handlers.onPlay();
     }
-  }, [handlers, track.isPlaying]);
+  }, [handlers, isPlaying]);
 
-  // ArrowUp/ArrowDown (desktop): toggle drawers, cross-dismiss (up dismisses library→playlist, down dismisses playlist→library)
   const handleArrowUp = useCallback(() => {
-    if (ui.showLibraryDrawer) {
-      handlers.onCloseLibraryDrawer?.();
-      handlers.onShowPlaylist();
-    } else if (ui.showPlaylist) {
-      handlers.onClosePlaylist();
+    if (showLibraryDrawer) {
+      handlers.onCloseLibraryDrawer();
+      handleShowPlaylist();
+    } else if (showPlaylist) {
+      handleClosePlaylist();
     } else {
-      handlers.onShowPlaylist();
+      handleShowPlaylist();
     }
-  }, [handlers, ui.showLibraryDrawer, ui.showPlaylist]);
+  }, [handlers, showLibraryDrawer, showPlaylist, handleShowPlaylist, handleClosePlaylist]);
 
   const handleArrowDown = useCallback(() => {
-    if (ui.showPlaylist) {
-      handlers.onClosePlaylist();
-      handlers.onOpenLibraryDrawer?.();
-    } else if (ui.showLibraryDrawer) {
-      handlers.onCloseLibraryDrawer?.();
+    if (showPlaylist) {
+      handleClosePlaylist();
+      handlers.onOpenLibraryDrawer();
+    } else if (showLibraryDrawer) {
+      handlers.onCloseLibraryDrawer();
     } else {
-      handlers.onOpenLibraryDrawer?.();
+      handlers.onOpenLibraryDrawer();
     }
-  }, [handlers, ui.showPlaylist, ui.showLibraryDrawer]);
+  }, [handlers, showPlaylist, showLibraryDrawer, handleClosePlaylist]);
 
   const handleVolumeUp = useCallback(() => {
-    const newVolume = Math.min(100, (track.volume ?? 50) + 5);
-    handlers.onVolumeChange?.(newVolume);
-  }, [track.volume, handlers]);
+    setVolumeLevel(Math.min(100, (volume ?? 50) + 5));
+  }, [volume, setVolumeLevel]);
 
   const handleVolumeDown = useCallback(() => {
-    const newVolume = Math.max(0, (track.volume ?? 50) - 5);
-    handlers.onVolumeChange?.(newVolume);
-  }, [track.volume, handlers]);
+    setVolumeLevel(Math.max(0, (volume ?? 50) - 5));
+  }, [volume, setVolumeLevel]);
 
-  // Set up keyboard shortcuts
   useKeyboardShortcuts({
     onPlayPause: handlePlayPause,
     onNext: handlers.onNext,
     onPrevious: handlers.onPrevious,
-    onClosePlaylist: handlers.onClosePlaylist,
-    onToggleVisualEffectsMenu: handlers.onToggleVisualEffectsMenu,
+    onClosePlaylist: handleClosePlaylist,
+    onToggleVisualEffectsMenu: handleToggleVisualEffectsMenu,
     onCloseVisualEffects: handleEscapeClose,
-    onToggleBackgroundVisualizer: handlers.onBackgroundVisualizerToggle,
-    onToggleGlow: handlers.onGlowToggle,
-    onMute: handlers.onMuteToggle,
+    onToggleBackgroundVisualizer: handleBackgroundVisualizerToggle,
+    onToggleGlow: handleGlowToggle,
+    onMute: handleMuteToggle,
     onVolumeUp: handleVolumeUp,
     onVolumeDown: handleVolumeDown,
-    onToggleLike: handlers.onToggleLike,
+    onToggleLike: handleLikeToggle,
     onToggleHelp: toggleHelp,
     onShowPlaylist: handleArrowUp,
     onOpenLibraryDrawer: handleArrowDown,
@@ -495,68 +526,67 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
       useFluidSizing={useFluidSizing}
       transitionDuration={transitionDuration}
       transitionEasing={transitionEasing}
-      $zenMode={ui.zenMode}
+      $zenMode={zenModeEnabled}
     >
       <PlayerContainer>
-
-        <PlayerStack $zenMode={ui.zenMode}>
-          {/* Album Art Zone - Clickable to toggle play/pause */}
+        <PlayerStack $zenMode={zenModeEnabled}>
+          {/* Album Art Zone */}
           <CardContent style={{
             position: 'relative',
             zIndex: 2,
             minHeight: 0,
             alignItems: 'center',
-            paddingTop: ui.zenMode ? '0' : (isMobile ? '0.25rem' : '0.5rem')
+            paddingTop: zenModeEnabled ? '0' : (isMobile ? '0.25rem' : '0.5rem')
           }}>
             <div ref={flipContainerRef} style={{ width: '100%' }}>
-            <ClickableAlbumArtContainer
-              ref={isTouchDevice ? zenVerticalSwipeRef : undefined}
-              $swipeEnabled={isTouchDevice}
-              $bothGestures={isTouchDevice}
-              {...(isTouchDevice ? gestureHandlers : {})}
-              onClick={!isSwiping && !isAnimating ? (ui.zenMode ? handlePlayPause : (!isFlipped ? toggleFlip : undefined)) : undefined}
-              style={{
-                transform: `translateX(${offsetX}px)`,
-                transition: isAnimating ? 'transform 300ms cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
-                willChange: isSwiping ? 'transform' : undefined,
-              }}
-            >
-              <FlipInner $isFlipped={isFlipped}>
-                <AlbumArt
-                  currentTrack={track.current}
-                  accentColor={ui.accentColor}
-                  glowIntensity={effects.enabled ? effects.glow.intensity : 0}
-                  glowRate={effects.glow.rate}
-                  glowEnabled={effects.enabled}
-                  albumFilters={effects.enabled ? effects.filters : defaultFilters}
-                  zenMode={ui.zenMode}
-                />
-                <AlbumArtBackside
-                  currentTrack={track.current}
-                  accentColor={ui.accentColor}
-                  onAccentColorChange={handleAccentColorChange}
-                  customAccentColorOverrides={customAccentColorOverrides}
-                  onCustomAccentColor={handleCustomAccentColor}
-                  glowEnabled={effects.enabled}
-                  onGlowToggle={handlers.onGlowToggle}
-                  backgroundVisualizerEnabled={handlers.backgroundVisualizerEnabled ?? false}
-                  onBackgroundVisualizerToggle={handlers.onBackgroundVisualizerToggle ?? (() => {})}
-                  backgroundVisualizerStyle={handlers.backgroundVisualizerStyle ?? 'particles'}
-                  onBackgroundVisualizerStyleChange={handlers.onBackgroundVisualizerStyleChange ?? (() => {})}
-                  onClose={() => setIsFlipped(false)}
-                />
-              </FlipInner>
-            </ClickableAlbumArtContainer>
+              <ClickableAlbumArtContainer
+                ref={isTouchDevice ? zenVerticalSwipeRef : undefined}
+                $swipeEnabled={isTouchDevice}
+                $bothGestures={isTouchDevice}
+                {...(isTouchDevice ? gestureHandlers : {})}
+                onClick={!isSwiping && !isAnimating ? (zenModeEnabled ? handlePlayPause : (!isFlipped ? toggleFlip : undefined)) : undefined}
+                style={{
+                  transform: `translateX(${offsetX}px)`,
+                  transition: isAnimating ? 'transform 300ms cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
+                  willChange: isSwiping ? 'transform' : undefined,
+                }}
+              >
+                <FlipInner $isFlipped={isFlipped}>
+                  <AlbumArt
+                    currentTrack={currentTrack}
+                    accentColor={accentColor}
+                    glowIntensity={visualEffectsEnabled ? effectiveGlow.intensity : 0}
+                    glowRate={effectiveGlow.rate}
+                    glowEnabled={visualEffectsEnabled}
+                    albumFilters={visualEffectsEnabled ? albumFilters : defaultFilters}
+                    zenMode={zenModeEnabled}
+                  />
+                  <AlbumArtBackside
+                    currentTrack={currentTrack}
+                    accentColor={accentColor}
+                    onAccentColorChange={handleAccentColorChange}
+                    customAccentColorOverrides={accentColorOverrides}
+                    onCustomAccentColor={handleCustomAccentColor}
+                    glowEnabled={visualEffectsEnabled}
+                    onGlowToggle={handleGlowToggle}
+                    backgroundVisualizerEnabled={backgroundVisualizerEnabled}
+                    onBackgroundVisualizerToggle={handleBackgroundVisualizerToggle}
+                    backgroundVisualizerStyle={backgroundVisualizerStyle}
+                    onBackgroundVisualizerStyleChange={handleBackgroundVisualizerStyleChange}
+                    onClose={() => setIsFlipped(false)}
+                  />
+                </FlipInner>
+              </ClickableAlbumArtContainer>
             </div>
           </CardContent>
-          <ZenControlsWrapper $zenMode={ui.zenMode}>
+          <ZenControlsWrapper $zenMode={zenModeEnabled}>
             <ZenControlsInner ref={controlsRef}>
               <LoadingCard
-                backgroundImage={track.current?.image}
-                accentColor={ui.accentColor}
-                glowEnabled={effects.enabled}
-                glowIntensity={effects.glow.intensity}
-                glowRate={effects.glow.rate}
+                backgroundImage={currentTrack?.image}
+                accentColor={accentColor}
+                glowEnabled={visualEffectsEnabled}
+                glowIntensity={effectiveGlow.intensity}
+                glowRate={effectiveGlow.rate}
               >
                 <CardContent style={{
                   position: 'relative',
@@ -569,12 +599,12 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
                 }}>
                   <Suspense fallback={<ControlsLoadingFallback />}>
                     <SpotifyPlayerControls
-                      currentTrack={track.current}
-                      accentColor={ui.accentColor}
-                      trackCount={track.list.length}
-                      isLiked={track.isLiked}
-                      isLikePending={track.isLikePending}
-                      onToggleLike={handlers.onToggleLike}
+                      currentTrack={currentTrack}
+                      accentColor={accentColor}
+                      trackCount={tracks.length}
+                      isLiked={isLiked}
+                      isLikePending={isLikePending}
+                      onToggleLike={handleLikeToggle}
                       onPlay={handlers.onPlay}
                       onPause={handlers.onPause}
                       onNext={handlers.onNext}
@@ -590,20 +620,20 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
         </PlayerStack>
       </PlayerContainer>
       <BottomBar
-        accentColor={ui.accentColor}
-        zenModeEnabled={ui.zenMode}
-        isMuted={track.isMuted ?? false}
-        volume={track.volume ?? 50}
-        onMuteToggle={handlers.onMuteToggle}
-        onVolumeChange={handlers.onVolumeChange}
-        onShowVisualEffects={handlers.onShowVisualEffects}
+        accentColor={accentColor}
+        zenModeEnabled={zenModeEnabled}
+        isMuted={isMuted}
+        volume={volume}
+        onMuteToggle={handleMuteToggle}
+        onVolumeChange={setVolumeLevel}
+        onShowVisualEffects={handleShowVisualEffects}
         onBackToLibrary={handlers.onBackToLibrary}
-        onShowPlaylist={handlers.onShowPlaylist}
+        onShowPlaylist={handleShowPlaylist}
         onZenModeToggle={handleZenModeToggle}
-        shuffleEnabled={handlers.shuffleEnabled}
-        onShuffleToggle={handlers.onShuffleToggle}
+        shuffleEnabled={shuffleEnabled}
+        onShuffleToggle={handleShuffleToggle}
       />
-      {ui.showVisualEffects && (
+      {showVisualEffects && (
         <Suspense fallback={
           <div style={{
             position: 'fixed',
@@ -622,47 +652,47 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
           </div>
         }>
           <VisualEffectsMenu
-            isOpen={ui.showVisualEffects}
-            onClose={handlers.onCloseVisualEffects}
-            accentColor={ui.accentColor}
-            filters={effects.filters}
-            onFilterChange={handlers.onFilterChange}
-            onResetFilters={handlers.onResetFilters}
-            glowEnabled={effects.enabled}
-            onGlowToggle={handlers.onGlowToggle}
-            glowIntensity={effects.glow.intensity}
-            setGlowIntensity={handlers.onGlowIntensityChange}
-            glowRate={effects.glow.rate}
-            setGlowRate={handlers.onGlowRateChange}
-            effectiveGlow={effects.glow}
-            backgroundVisualizerEnabled={handlers.backgroundVisualizerEnabled || false}
-            onBackgroundVisualizerToggle={handlers.onBackgroundVisualizerToggle || (() => {})}
-            backgroundVisualizerStyle={(handlers.backgroundVisualizerStyle as VisualizerStyle) || 'particles'}
-            onBackgroundVisualizerStyleChange={handlers.onBackgroundVisualizerStyleChange || (() => { })}
-            backgroundVisualizerIntensity={handlers.backgroundVisualizerIntensity || 60}
-            onBackgroundVisualizerIntensityChange={handlers.onBackgroundVisualizerIntensityChange || (() => { })}
-            accentColorBackgroundEnabled={handlers.accentColorBackgroundEnabled || false}
-            onAccentColorBackgroundToggle={handlers.onAccentColorBackgroundToggle || (() => { })}
+            isOpen={showVisualEffects}
+            onClose={handleCloseVisualEffects}
+            accentColor={accentColor}
+            filters={albumFilters}
+            onFilterChange={handleFilterChange}
+            onResetFilters={handleResetFilters}
+            glowEnabled={visualEffectsEnabled}
+            onGlowToggle={handleGlowToggle}
+            glowIntensity={effectiveGlow.intensity}
+            setGlowIntensity={handleGlowIntensityChange}
+            glowRate={effectiveGlow.rate}
+            setGlowRate={handleGlowRateChange}
+            effectiveGlow={effectiveGlow}
+            backgroundVisualizerEnabled={backgroundVisualizerEnabled}
+            onBackgroundVisualizerToggle={handleBackgroundVisualizerToggle}
+            backgroundVisualizerStyle={backgroundVisualizerStyle}
+            onBackgroundVisualizerStyleChange={handleBackgroundVisualizerStyleChange}
+            backgroundVisualizerIntensity={backgroundVisualizerIntensity}
+            onBackgroundVisualizerIntensityChange={handleBackgroundVisualizerIntensityChange}
+            accentColorBackgroundEnabled={accentColorBackgroundPreferred}
+            onAccentColorBackgroundToggle={handleAccentColorBackgroundToggle}
           />
         </Suspense>
       )}
       <Suspense fallback={<PlaylistLoadingFallback />}>
         {isMobile ? (
           <PlaylistBottomSheet
-            isOpen={ui.showPlaylist}
-            onClose={handlers.onClosePlaylist}
-            tracks={track.list}
-            currentTrackIndex={track.currentIndex}
-            accentColor={ui.accentColor}
+            isOpen={showPlaylist}
+            onClose={handleClosePlaylist}
+            tracks={tracks}
+            currentTrackIndex={currentTrackIndex}
+            accentColor={accentColor}
             onTrackSelect={handlers.onTrackSelect}
           />
         ) : (
           <PlaylistDrawer
-            isOpen={ui.showPlaylist}
-            onClose={handlers.onClosePlaylist}
-            tracks={track.list}
-            currentTrackIndex={track.currentIndex}
-            accentColor={ui.accentColor}
+            isOpen={showPlaylist}
+            onClose={handleClosePlaylist}
+            tracks={tracks}
+            currentTrackIndex={currentTrackIndex}
+            accentColor={accentColor}
             onTrackSelect={handlers.onTrackSelect}
           />
         )}
@@ -671,9 +701,9 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
         <KeyboardShortcutsHelp isOpen={showHelp} onClose={closeHelp} />
       </Suspense>
       <LibraryDrawer
-        isOpen={ui.showLibraryDrawer}
+        isOpen={showLibraryDrawer}
         onClose={handleCloseLibraryDrawer}
-        onPlaylistSelect={handlers.onPlaylistSelect || (() => { })}
+        onPlaylistSelect={handlers.onPlaylistSelect}
         initialSearchQuery={librarySearchQuery}
         initialViewMode={libraryViewMode}
       />

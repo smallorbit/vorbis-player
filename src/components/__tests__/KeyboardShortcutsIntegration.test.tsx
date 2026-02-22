@@ -1,13 +1,11 @@
+import React from 'react';
 import { renderHook } from '@testing-library/react';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import { usePlayerLogic } from '../../hooks/usePlayerLogic';
 import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts';
-import { usePlayerState } from '../../hooks/usePlayerState';
-
-// Mock all dependencies
-vi.mock('../../hooks/usePlayerState', () => ({
-  usePlayerState: vi.fn()
-}));
+import { TrackProvider } from '../../contexts/TrackContext';
+import { VisualEffectsProvider } from '../../contexts/VisualEffectsContext';
+import { ColorProvider } from '../../contexts/ColorContext';
 
 vi.mock('../../hooks/usePlaylistManager', () => ({
   usePlaylistManager: vi.fn(() => ({
@@ -26,24 +24,7 @@ vi.mock('../../hooks/useAutoAdvance', () => ({
 }));
 
 vi.mock('../../hooks/useAccentColor', () => ({
-  useAccentColor: vi.fn(() => ({
-    handleAccentColorChange: vi.fn()
-  }))
-}));
-
-vi.mock('../../hooks/useVisualEffectsState', () => ({
-  useVisualEffectsState: vi.fn(() => ({
-    effectiveGlow: { intensity: 50, rate: 50 },
-    handleGlowIntensityChange: vi.fn(),
-    handleGlowRateChange: vi.fn(),
-    restoreGlowSettings: vi.fn()
-  }))
-}));
-
-vi.mock('../../hooks/useVolume', () => ({
-  useVolume: vi.fn(() => ({
-    handleMuteToggle: vi.fn()
-  }))
+  useAccentColor: vi.fn()
 }));
 
 vi.mock('../../services/spotify', () => ({
@@ -57,90 +38,42 @@ vi.mock('../../services/spotify', () => ({
 
 vi.mock('../../services/spotifyPlayer', () => ({
   spotifyPlayer: {
-    onPlayerStateChanged: vi.fn(),
+    onPlayerStateChanged: vi.fn(() => vi.fn()),
     getCurrentState: vi.fn().mockResolvedValue(null),
     resume: vi.fn(),
     pause: vi.fn()
   }
 }));
 
+// Wrap renderHook with all 3 providers
+const AllProviders = ({ children }: { children: React.ReactNode }) => (
+  <TrackProvider>
+    <VisualEffectsProvider>
+      <ColorProvider>
+        {children}
+      </ColorProvider>
+    </VisualEffectsProvider>
+  </TrackProvider>
+);
+
 describe('Keyboard Shortcuts Integration', () => {
-  const mockUsePlayerState = usePlayerState as ReturnType<typeof vi.fn>;
-
-  const defaultState = {
-    track: { 
-      tracks: [
-        { 
-          id: 'track-1', 
-          name: 'Test Track', 
-          artists: 'Test Artist',
-          album: 'Test Album',
-          duration_ms: 180000,
-          uri: 'spotify:track:123',
-          image: 'https://example.com/image.jpg'
-        }
-      ], 
-      currentIndex: 0, 
-      isLoading: false, 
-      error: null 
-    },
-    playlist: { selectedId: 'playlist-1', isVisible: false },
-    color: { current: '#000000', overrides: {} },
-    visualEffects: {
-      enabled: true,
-      menuVisible: false,
-      filters: { brightness: 110, contrast: 100, saturation: 100, hue: 0, blur: 0, sepia: 0 },
-      backgroundVisualizer: { enabled: false, style: 'particles', intensity: 60 },
-      accentColorBackground: { enabled: false, preferred: false },
-      perAlbumGlow: {},
-      savedFilters: null
-    },
-    zenMode: { enabled: false },
-    actions: {
-      track: {
-        setTracks: vi.fn(),
-        setCurrentIndex: vi.fn(),
-        setLoading: vi.fn(),
-        setError: vi.fn()
-      },
-      playlist: { setSelectedId: vi.fn(), setVisible: vi.fn() },
-      color: { setCurrent: vi.fn(), setOverrides: vi.fn() },
-      visualEffects: {
-        setEnabled: vi.fn(),
-        setMenuVisible: vi.fn(),
-        handleFilterChange: vi.fn(),
-        handleResetFilters: vi.fn(),
-        restoreSavedFilters: vi.fn(),
-        setPerAlbumGlow: vi.fn(),
-        setFilters: vi.fn(),
-        backgroundVisualizer: {
-          setEnabled: vi.fn(),
-          setStyle: vi.fn(),
-          setIntensity: vi.fn()
-        },
-        accentColorBackground: {
-          setPreferred: vi.fn()
-        }
-      },
-      zenMode: {
-        setEnabled: vi.fn()
-      }
-    }
-  };
-
   beforeEach(() => {
     vi.clearAllMocks();
-    mockUsePlayerState.mockReturnValue(defaultState);
   });
 
-  it('should expose handleLikeToggle from usePlayerLogic', () => {
-    const { result } = renderHook(() => usePlayerLogic());
-    
-    expect(result.current.handlers).toHaveProperty('handleLikeToggle');
-    expect(typeof result.current.handlers.handleLikeToggle).toBe('function');
+  it('should expose core playback handlers from usePlayerLogic', () => {
+    const { result } = renderHook(() => usePlayerLogic(), { wrapper: AllProviders });
+
+    expect(result.current.handlers).toHaveProperty('handlePlay');
+    expect(result.current.handlers).toHaveProperty('handlePause');
+    expect(result.current.handlers).toHaveProperty('handleNext');
+    expect(result.current.handlers).toHaveProperty('handlePrevious');
+    expect(result.current.handlers).toHaveProperty('handlePlaylistSelect');
+    expect(result.current.handlers).toHaveProperty('handleOpenLibraryDrawer');
+    expect(result.current.handlers).toHaveProperty('handleBackToLibrary');
+    expect(typeof result.current.handlers.handlePlay).toBe('function');
+    expect(typeof result.current.handlers.handleNext).toBe('function');
   });
-
-
 
   it('should handle all keyboard shortcuts in PlayerContent context', () => {
     const handlers = {
@@ -158,11 +91,11 @@ describe('Keyboard Shortcuts Integration', () => {
     };
 
     const addEventListenerSpy = vi.spyOn(document, 'addEventListener');
-    
+
     renderHook(() => useKeyboardShortcuts(handlers));
-    
+
     const handler = addEventListenerSpy.mock.calls[0][1] as EventListener;
-    
+
     // Test each shortcut
     const tests = [
       { key: 'Space', handler: handlers.onPlayPause },
@@ -193,9 +126,9 @@ describe('Keyboard Shortcuts Integration', () => {
     };
 
     const addEventListenerSpy = vi.spyOn(document, 'addEventListener');
-    
+
     renderHook(() => useKeyboardShortcuts(handlers));
-    
+
     const handler = addEventListenerSpy.mock.calls[0][1] as EventListener;
 
     // Create input and textarea elements

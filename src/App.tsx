@@ -5,6 +5,9 @@ import { spotifyAuth } from './services/spotify';
 import './services/spotifyPlayer';
 import { ThemeProvider } from './styles/ThemeProvider';
 import { flexCenter, buttonPrimary } from './styles/utils';
+import { TrackProvider } from './contexts/TrackContext';
+import { VisualEffectsProvider } from './contexts/VisualEffectsContext';
+import { ColorProvider } from './contexts/ColorContext';
 
 /**
  * Cleanup function to remove deprecated localStorage keys
@@ -131,10 +134,15 @@ function App() {
 
   return (
     <ThemeProvider>
-      <AppContainer>
-        <AudioPlayerComponent />
-
-      </AppContainer>
+      <TrackProvider>
+        <VisualEffectsProvider>
+          <ColorProvider>
+            <AppContainer>
+              <AudioPlayerComponent />
+            </AppContainer>
+          </ColorProvider>
+        </VisualEffectsProvider>
+      </TrackProvider>
     </ThemeProvider>
   );
 }
