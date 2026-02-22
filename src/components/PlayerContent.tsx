@@ -314,7 +314,10 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
   useEffect(() => {
     if (!isFlipped) return;
     const handleClickOutside = (e: MouseEvent) => {
-      if (flipContainerRef.current && !flipContainerRef.current.contains(e.target as Node)) {
+      const target = e.target as Element;
+      // Don't dismiss while the eyedropper portal is open
+      if (target.closest?.('[data-eyedropper-overlay]')) return;
+      if (flipContainerRef.current && !flipContainerRef.current.contains(target)) {
         setIsFlipped(false);
       }
     };
@@ -588,14 +591,12 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
       </PlayerContainer>
       <BottomBar
         accentColor={ui.accentColor}
-        currentTrack={track.current}
         zenModeEnabled={ui.zenMode}
         isMuted={track.isMuted ?? false}
         volume={track.volume ?? 50}
         onMuteToggle={handlers.onMuteToggle}
         onVolumeChange={handlers.onVolumeChange}
         onShowVisualEffects={handlers.onShowVisualEffects}
-        onAccentColorChange={handlers.onAccentColorChange}
         onBackToLibrary={handlers.onBackToLibrary}
         onShowPlaylist={handlers.onShowPlaylist}
         onZenModeToggle={handleZenModeToggle}
