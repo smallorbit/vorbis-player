@@ -1,7 +1,8 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { BottomBarContainer, BottomBarInner, ZenTriggerZone } from './styled';
+import { BottomBarContainer, BottomBarInner, ZenTriggerZone, BottomBarDivider } from './styled';
 import { ControlButton } from '../controls/styled';
+import VolumeControl from '../controls/VolumeControl';
 import ColorPickerPopover from '../ColorPickerPopover';
 import { useCustomAccentColors } from '@/hooks/useCustomAccentColors';
 import { usePlayerSizing } from '@/hooks/usePlayerSizing';
@@ -23,6 +24,10 @@ interface BottomBarProps {
   glowEnabled: boolean;
   backgroundVisualizerEnabled?: boolean;
   zenModeEnabled?: boolean;
+  isMuted: boolean;
+  volume: number;
+  onMuteToggle?: () => void;
+  onVolumeChange?: (volume: number) => void;
   onShowVisualEffects: () => void;
   onGlowToggle: () => void;
   onBackgroundVisualizerToggle?: () => void;
@@ -38,6 +43,10 @@ export default function BottomBar({
   glowEnabled,
   backgroundVisualizerEnabled,
   zenModeEnabled,
+  isMuted,
+  volume,
+  onMuteToggle,
+  onVolumeChange,
   onShowVisualEffects,
   onGlowToggle,
   onBackgroundVisualizerToggle,
@@ -123,6 +132,18 @@ export default function BottomBar({
         onClick={handleBarInteraction}
       >
         <BottomBarInner>
+          <VolumeControl
+            isMuted={isMuted}
+            volume={volume}
+            accentColor={accentColor}
+            onClick={onMuteToggle ?? (() => {})}
+            onVolumeChange={onVolumeChange ?? (() => {})}
+            isMobile={isMobile}
+            isTablet={isTablet}
+          />
+
+          <BottomBarDivider />
+
           <ControlButton
             $isMobile={isMobile}
             $isTablet={isTablet}

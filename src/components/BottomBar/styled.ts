@@ -31,6 +31,13 @@ export const BottomBarInner = styled.div`
   height: ${BOTTOM_BAR_HEIGHT}px;
 `;
 
+export const BottomBarDivider = styled.div`
+  width: 1px;
+  height: 24px;
+  background: rgba(255, 255, 255, 0.15);
+  flex-shrink: 0;
+`;
+
 /** Invisible hover/touch zone at the bottom of the viewport to reveal the bar in zen mode */
 export const ZenTriggerZone = styled.div`
   position: fixed;

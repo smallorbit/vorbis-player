@@ -343,12 +343,6 @@ export const TimelineControlsContainer = styled.div<{ $isMobile?: boolean }>`
   margin-top: 0;
 `;
 
-export const TimelineLeft = styled.div`
-  display: flex;
-  align-items: center;
-  gap: ${({ theme }) => theme.spacing.xs};
-`;
-
 export const TimelineRight = styled.div`
   display: flex;
   align-items: center;
