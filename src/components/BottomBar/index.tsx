@@ -3,8 +3,6 @@ import { createPortal } from 'react-dom';
 import { BottomBarContainer, BottomBarInner, ZenTriggerZone } from './styled';
 import { ControlButton } from '../controls/styled';
 import VolumeControl from '../controls/VolumeControl';
-import ColorPickerPopover from '../ColorPickerPopover';
-import { useCustomAccentColors } from '@/hooks/useCustomAccentColors';
 import { usePlayerSizing } from '@/hooks/usePlayerSizing';
 import {
   VisualEffectsIcon,
@@ -13,20 +11,17 @@ import {
   ZenModeIcon,
   ShuffleIcon,
 } from '../icons/QuickActionIcons';
-import type { Track } from '@/services/spotify';
 
 const ZEN_HIDE_DELAY = 3000;
 
 interface BottomBarProps {
   accentColor: string;
-  currentTrack: Track | null;
   zenModeEnabled?: boolean;
   isMuted: boolean;
   volume: number;
   onMuteToggle?: () => void;
   onVolumeChange?: (volume: number) => void;
   onShowVisualEffects: () => void;
-  onAccentColorChange: (color: string) => void;
   onBackToLibrary?: () => void;
   onShowPlaylist: () => void;
   onZenModeToggle?: () => void;
@@ -36,14 +31,12 @@ interface BottomBarProps {
 
 export default function BottomBar({
   accentColor,
-  currentTrack,
   zenModeEnabled,
   isMuted,
   volume,
   onMuteToggle,
   onVolumeChange,
   onShowVisualEffects,
-  onAccentColorChange,
   onBackToLibrary,
   onShowPlaylist,
   onZenModeToggle,
@@ -53,12 +46,6 @@ export default function BottomBar({
   const { isMobile, isTablet } = usePlayerSizing();
   const [zenBarVisible, setZenBarVisible] = useState(false);
   const hideTimerRef = useRef<ReturnType<typeof setTimeout>>();
-
-  const { customAccentColorOverrides, handleCustomAccentColor, handleAccentColorChange } =
-    useCustomAccentColors({
-      currentAlbumId: currentTrack?.album_id,
-      onAccentColorChange,
-    });
 
   const clearHideTimer = useCallback(() => {
     if (hideTimerRef.current) {
@@ -147,17 +134,6 @@ export default function BottomBar({
               <ShuffleIcon />
             </ControlButton>
           )}
-
-          <ColorPickerPopover
-            accentColor={accentColor}
-            currentTrack={currentTrack}
-            onAccentColorChange={handleAccentColorChange}
-            customAccentColorOverrides={customAccentColorOverrides}
-            onCustomAccentColor={handleCustomAccentColor}
-            $isMobile={isMobile}
-            $isTablet={isTablet}
-            $compact
-          />
 
           <ControlButton
             $isMobile={isMobile}

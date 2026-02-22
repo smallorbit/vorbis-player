@@ -52,16 +52,18 @@ const EyedropperOverlay: React.FC<EyedropperOverlayProps> = ({ image, onPick, on
   };
 
   return (
-    <div style={{
-      position: 'fixed',
-      top: 0, left: 0, right: 0, bottom: 0,
-      background: 'rgba(0,0,0,0.85)',
-      zIndex: 10000,
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      flexDirection: 'column',
-    }}>
+    <div
+      data-eyedropper-overlay="true"
+      style={{
+        position: 'fixed',
+        top: 0, left: 0, right: 0, bottom: 0,
+        background: 'rgba(0,0,0,0.85)',
+        zIndex: 10000,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        flexDirection: 'column',
+      }}>
       <div style={{ position: 'relative', background: '#222', borderRadius: 16, padding: 16, boxShadow: '0 4px 32px #0008' }}>
         <canvas
           ref={canvasRef}

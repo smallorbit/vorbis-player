@@ -138,6 +138,8 @@ const AlbumArtContainer = styled.div.withConfig({
   border: none;
   z-index: ${theme.zIndex.docked};
   transition: box-shadow 0.5s ease;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
 `;
 
 const arePropsEqual = (prevProps: AlbumArtProps, nextProps: AlbumArtProps): boolean => {
