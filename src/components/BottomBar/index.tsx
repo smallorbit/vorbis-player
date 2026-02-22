@@ -13,6 +13,7 @@ import {
   BackToLibraryIcon,
   PlaylistIcon,
   ZenModeIcon,
+  ShuffleIcon,
 } from '../icons/QuickActionIcons';
 import type { Track } from '@/services/spotify';
 
@@ -35,6 +36,8 @@ interface BottomBarProps {
   onBackToLibrary?: () => void;
   onShowPlaylist: () => void;
   onZenModeToggle?: () => void;
+  shuffleEnabled?: boolean;
+  onShuffleToggle?: () => void;
 }
 
 export default function BottomBar({
@@ -54,6 +57,8 @@ export default function BottomBar({
   onBackToLibrary,
   onShowPlaylist,
   onZenModeToggle,
+  shuffleEnabled,
+  onShuffleToggle,
 }: BottomBarProps) {
   const { isMobile, isTablet } = usePlayerSizing();
   const [zenBarVisible, setZenBarVisible] = useState(false);
@@ -138,6 +143,20 @@ export default function BottomBar({
             isMobile={isMobile}
             isTablet={isTablet}
           />
+
+          {onShuffleToggle && (
+            <ControlButton
+              $isMobile={isMobile}
+              $isTablet={isTablet}
+              accentColor={accentColor}
+              isActive={shuffleEnabled}
+              onClick={onShuffleToggle}
+              title={`Shuffle ${shuffleEnabled ? 'ON' : 'OFF'}`}
+              aria-pressed={shuffleEnabled}
+            >
+              <ShuffleIcon />
+            </ControlButton>
+          )}
 
           <ControlButton
             $isMobile={isMobile}

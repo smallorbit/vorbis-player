@@ -519,8 +519,6 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
                       onPrevious={handlers.onPrevious}
                       onArtistBrowse={handleArtistBrowse}
                       onAlbumPlay={handleAlbumPlay}
-                      shuffleEnabled={handlers.shuffleEnabled}
-                      onShuffleToggle={handlers.onShuffleToggle}
                     />
                   </Suspense>
                 </CardContent>
@@ -546,6 +544,8 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
         onBackToLibrary={handlers.onBackToLibrary}
         onShowPlaylist={handlers.onShowPlaylist}
         onZenModeToggle={handleZenModeToggle}
+        shuffleEnabled={handlers.shuffleEnabled}
+        onShuffleToggle={handlers.onShuffleToggle}
       />
       {ui.showVisualEffects && (
         <Suspense fallback={
