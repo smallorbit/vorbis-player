@@ -45,7 +45,6 @@ const areControlsPropsEqual = (
   }
 
   // For callbacks, we assume they're stable (parent should use useCallback)
-  // This prevents unnecessary re-renders due to function reference changes
 
   return true;
 };

@@ -19,9 +19,11 @@ import { useLocalStorage } from './useLocalStorage';
  */
 interface TrackState {
   tracks: Track[];
+  originalTracks: Track[];
   currentIndex: number;
   isLoading: boolean;
   error: string | null;
+  shuffleEnabled: boolean;
 }
 
 interface PlaylistState {
@@ -53,9 +55,11 @@ interface VisualEffectsState {
 
 interface TrackActions {
   setTracks: (tracks: Track[] | ((prev: Track[]) => Track[])) => void;
+  setOriginalTracks: (tracks: Track[]) => void;
   setCurrentIndex: (index: number | ((prev: number) => number)) => void;
   setLoading: (loading: boolean | ((prev: boolean) => boolean)) => void;
   setError: (error: string | null | ((prev: string | null) => string | null)) => void;
+  setShuffleEnabled: (enabled: boolean) => void;
 }
 
 interface PlaylistActions {
@@ -124,9 +128,14 @@ interface PlayerStateSetters {
  */
 export function usePlayerState(): PlayerState & PlayerStateSetters {
   const [tracks, setTracks] = useState<Track[]>([]);
+  const [originalTracks, setOriginalTracks] = useState<Track[]>([]);
   const [currentTrackIndex, setCurrentTrackIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [shuffleEnabled, setShuffleEnabled] = useLocalStorage<boolean>(
+    'vorbis-player-shuffle-enabled',
+    false
+  );
   const [selectedPlaylistId, setSelectedPlaylistId] = useState<string | null>(null);
   const [showPlaylist, setShowPlaylist] = useState(false);
   const [accentColor, setAccentColor] = useState<string>(theme.colors.accent);
@@ -229,9 +238,11 @@ export function usePlayerState(): PlayerState & PlayerStateSetters {
   return {
     track: {
       tracks,
+      originalTracks,
       currentIndex: currentTrackIndex,
       isLoading,
-      error
+      error,
+      shuffleEnabled
     },
     playlist: {
       selectedId: selectedPlaylistId,
@@ -263,9 +274,11 @@ export function usePlayerState(): PlayerState & PlayerStateSetters {
     actions: {
       track: {
         setTracks,
+        setOriginalTracks,
         setCurrentIndex: setCurrentTrackIndex,
         setLoading: setIsLoading,
-        setError
+        setError,
+        setShuffleEnabled
       },
       playlist: {
         setSelectedId: setSelectedPlaylistId,

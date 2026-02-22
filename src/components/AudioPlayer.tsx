@@ -98,7 +98,9 @@ const AudioPlayerComponent = () => {
           onPlaylistSelect: handlers.handlePlaylistSelect,
           onAlbumPlay: handleAlbumPlay,
           onZenModeToggle: handlers.handleZenModeToggle,
-          zenModeEnabled: state.zenModeEnabled
+          zenModeEnabled: state.zenModeEnabled,
+          onShuffleToggle: handlers.handleShuffleToggle,
+          shuffleEnabled: state.shuffleEnabled
         }}
       />
     );

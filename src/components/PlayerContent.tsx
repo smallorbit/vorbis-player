@@ -53,6 +53,8 @@ interface PlayerContentHandlers {
   onBackToLibrary?: () => void; // Back to library navigation handler
   onZenModeToggle?: () => void; // Zen mode toggle handler
   zenModeEnabled?: boolean; // Zen mode state
+  onShuffleToggle?: () => void; // Shuffle toggle handler
+  shuffleEnabled?: boolean; // Shuffle enabled state
   onOpenLibraryDrawer?: () => void;
   onCloseLibraryDrawer?: () => void;
   onPlaylistSelect?: (playlistId: string, playlistName: string) => void;
@@ -542,6 +544,8 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ track, ui, effects, handl
         onBackToLibrary={handlers.onBackToLibrary}
         onShowPlaylist={handlers.onShowPlaylist}
         onZenModeToggle={handleZenModeToggle}
+        shuffleEnabled={handlers.shuffleEnabled}
+        onShuffleToggle={handlers.onShuffleToggle}
       />
       {ui.showVisualEffects && (
         <Suspense fallback={
