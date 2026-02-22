@@ -15,7 +15,8 @@ A visually immersive Spotify music player built with React, featuring customizab
 - **Album Art Filters**: Real-time CSS filters (brightness, contrast, saturation, sepia, hue rotation, blur)
 - **Background Visualizers**: Animated particle and geometric visualizer backgrounds (enabled by default)
 - **Custom Colors**: Pick accent colors per album from a color picker or eyedropper tool
-- **Swipe Gestures**: Swipe album art horizontally to change tracks; swipe up to exit zen mode, down to enter zen mode. Library and playlist drawers are opened via the FAB menu.
+- **Album Art Flip Menu**: Tap album art to flip and reveal quick-access controls (color chooser, glow toggle, visualizer toggle, visualizer style)
+- **Swipe Gestures**: Swipe album art horizontally to change tracks; swipe up to exit zen mode, down to enter zen mode. Library and playlist drawers are opened via the bottom bar.
 - **Interactive Track Info**: Click artist/album names for Spotify links and library filtering
 - **Instant Startup**: IndexedDB-based library cache with background sync for fast loading
 - **Responsive Design**: Fluid layout that adapts from mobile phones to ultra-wide desktops
@@ -77,13 +78,19 @@ A visually immersive Spotify music player built with React, featuring customizab
 
 The player displays album artwork with controls always visible below:
 
-**FAB Menu** (bottom-right floating action button):
+**Album Art Flip Menu** (tap album art to reveal):
+- Accent color swatches (extracted from art, custom, eyedropper, reset)
 - Glow effect toggle
 - Background visualizer toggle
-- Visual effects menu
-- Color picker for accent color
+- Visualizer style selector (Particles / Geometric)
+
+**Bottom Bar** (fixed at bottom):
+- Volume control
+- Shuffle toggle
+- Visual effects menu (gear icon for full controls)
 - Back to library
 - Playlist drawer toggle
+- Zen mode toggle (desktop/tablet)
 
 **Controls** (always visible below album art):
 - Track name with clickable artist and album links
@@ -91,11 +98,11 @@ The player displays album artwork with controls always visible below:
 - Timeline slider, volume control, and like button
 
 **Touch Gestures** (mobile/tablet):
-- Tap album art to play/pause
+- Tap album art to flip and reveal quick-access controls (or play/pause when in zen mode)
 - Swipe album art left/right to change tracks
 - Swipe up on album art to exit zen mode
 - Swipe down on album art to enter zen mode
-- Library and playlist drawers: use FAB menu buttons
+- Library and playlist drawers: use bottom bar buttons
 
 ### Library
 
@@ -109,7 +116,7 @@ The library drawer supports:
 
 ### Visual Effects Menu
 
-The visual effects menu (opened via the gear icon in the FAB menu) provides control over:
+The visual effects menu (opened via the gear icon in the bottom bar) provides full control over:
 
 **Glow Effect**: Intensity (Less/Normal/More), Rate (Slower/Normal/Faster), Accent color background toggle
 
@@ -165,7 +172,8 @@ src/
 │   ├── PlaylistDrawer.tsx   # Sliding track list drawer (desktop/tablet)
 │   ├── PlaylistBottomSheet.tsx  # Mobile playlist bottom sheet
 │   ├── ColorPickerPopover.tsx   # Per-album color picker
-│   ├── FabMenu/             # Expandable floating action button menu
+│   ├── AlbumArtBackside.tsx     # Flip menu back face (color, glow, visualizer controls)
+│   ├── BottomBar/               # Bottom bar (volume, shuffle, visual effects, library, playlist)
 │   ├── controls/            # Player control sub-components
 │   ├── styled/              # Reusable styled-components library
 │   ├── icons/               # SVG icon components

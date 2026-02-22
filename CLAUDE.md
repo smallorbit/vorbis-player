@@ -12,7 +12,8 @@ This file provides guidance to Claude Code (claude.ai/code) and other AI assista
 - **Background Visualizers**: 2 active visualizer types (Particles, Geometric), enabled by default
 - **Fully Responsive Design**: Fluid sizing with aspect-ratio calculations, container queries, and mobile-optimized layout
 - **Playlist Management**: Search, sort, filter, and pin playlists and albums with multiple sort criteria
-- **FAB Menu**: Expandable floating action button replacing traditional menus, unified across all devices
+- **Album Art Flip Menu**: Tap album art to flip and reveal quick-access controls (color chooser, glow toggle, visualizer toggle, visualizer style selector)
+- **Bottom Bar**: Fixed bar with volume, shuffle, visual effects menu, back to library, playlist, zen mode
 - **Swipe Gestures**: Horizontal swipe on album art for track navigation; vertical swipe on album art for zen mode (up = exit zen, down = enter zen). Drawers are controlled by menu buttons only.
 - **Interactive Track Info**: Clickable artist/album names with popovers linking to Spotify and library filtering
 - **IndexedDB Caching**: Persistent library cache with background sync engine for instant startup
@@ -73,15 +74,15 @@ vorbis-player/
 │   │   ├── visualizers/         # Background visualizer components
 │   │   │   ├── ParticleVisualizer.tsx
 │   │   │   └── GeometricVisualizer.tsx
-│   │   ├── FabMenu/             # Expandable floating action button menu
-│   │   │   ├── index.tsx        # FAB with portal rendering, overlay management
-│   │   │   ├── FabMenuItems.tsx # Menu items with staggered animation
+│   │   ├── AlbumArtBackside.tsx # Flip menu back face (color, glow, visualizer controls)
+│   │   ├── BottomBar/          # Bottom bar (volume, shuffle, visual effects, library, playlist)
+│   │   │   ├── index.tsx
 │   │   │   └── styled.ts
 │   │   ├── VisualEffectsMenu/
 │   │   │   ├── index.tsx
 │   │   │   └── styled.ts
 │   │   ├── icons/
-│   │   │   └── QuickActionIcons.tsx  # SVG icon components for FAB menu items
+│   │   │   └── QuickActionIcons.tsx  # SVG icon components for bottom bar and shared UI
 │   │   ├── __tests__/
 │   │   │   └── KeyboardShortcutsIntegration.test.tsx
 │   │   ├── AccentColorBackground.tsx
@@ -223,10 +224,12 @@ App.tsx (OAuth authentication, AppContainer with flex centering)
             └── ContentWrapper (position: relative, overflow: visible, container queries)
                 ├── PlayerContainer (flex column, always centered)
                 │   ├── CardContent (album art zone, swipe gestures)
-                │   │   └── ClickableAlbumArtContainer
-                │   │       └── AlbumArt (aspect-ratio: 1, max-width: 700px)
-                │   │           ├── AlbumArtFilters (CSS filter application)
-                │   │           └── AccentColorGlowOverlay
+                │   │   └── ClickableAlbumArtContainer (3D flip on tap)
+                │   │       └── FlipInner
+                │   │           ├── AlbumArt (front face, aspect-ratio: 1, max-width: 700px)
+                │   │           │   ├── AlbumArtFilters (CSS filter application)
+                │   │           │   └── AccentColorGlowOverlay
+                │   │           └── AlbumArtBackside (back face: color, glow, visualizer controls)
                 │   └── SpotifyPlayerControls (always visible)
                 │       ├── TrackInfo (clickable artist/album with popovers)
                 │       ├── PlaybackControls (prev/play/next)
@@ -234,13 +237,13 @@ App.tsx (OAuth authentication, AppContainer with flex centering)
                 │           ├── TimelineSlider
                 │           ├── VolumeControl
                 │           └── LikeButton
-                ├── FabMenu (portal to document.body, bottom-right)
-                │   ├── Glow Toggle
-                │   ├── Background Visualizer Toggle
-                │   ├── Visual Effects Menu Toggle
-                │   ├── ColorPickerPopover
+                ├── BottomBar (portal to document.body, fixed at bottom)
+                │   ├── VolumeControl
+                │   ├── Shuffle Toggle
+                │   ├── Visual Effects Menu (gear icon)
                 │   ├── Back to Library
-                │   └── Show Playlist Toggle
+                │   ├── Show Playlist Toggle
+                │   └── Zen Mode Toggle (desktop/tablet)
                 ├── VisualEffectsMenu (lazy loaded)
                 ├── LibraryDrawer (top drawer, lazy loaded)
                 │   └── PlaylistSelection (search, sort, filter, pin)
@@ -266,14 +269,13 @@ AppContainer (flexCenter, min-height: 100dvh)
 - **`overflow: visible` is required on ContentWrapper** because `container-type: inline-size` establishes containment that would clip absolutely-positioned elements
 - **Vertical centering** relies on the flex chain from root to ContentWrapper — the player (album art + controls) is always centered as a unit
 - **`100dvh`** (dynamic viewport height) is used throughout to account for iOS/mobile browser address bar changes
-- **FabMenu** uses `createPortal()` to render to `document.body`, positioned fixed at bottom-right
+- **BottomBar** uses `createPortal()` to render to `document.body`, positioned fixed at bottom
 - **Drawers** (LibraryDrawer, PlaylistDrawer, PlaylistBottomSheet) use fixed positioning with smooth slide animations and swipe-to-dismiss
 - **BackgroundVisualizer and AccentColorBackground** are `position: fixed` with low z-index values and do not affect layout flow
 
-**UI Control Layout (FAB Menu)**:
-- **All devices**: Quick action buttons consolidated into a single expandable FAB (floating action button) in the bottom-right corner
-- **Removed**: LeftQuickActionsPanel, QuickActionsPanel side panels, MobileBottomMenu, DesktopBottomMenu
-- **FAB items** fan out horizontally to the left with staggered animation (30ms delay per item)
+**UI Control Layout**:
+- **Album Art Flip Menu**: Tap album art to trigger 3D flip (rotateY 180deg); back face shows AlbumArtBackside with color swatches, glow toggle, visualizer toggle, visualizer style selector. In zen mode, tap does play/pause instead.
+- **Bottom Bar**: Fixed bar with volume, shuffle, visual effects (gear), back to library, playlist, zen mode. Renders via portal to document.body.
 - **Controls always visible**: Player controls (track info, playback, timeline) are always shown — no compact/expanded toggle
 
 ### Responsive Sizing System
@@ -402,7 +404,7 @@ The application uses a centralized state management approach with custom React h
 - **Auto-Skip**: Automatically skips unavailable tracks with 403 Restriction Violated errors
 - **Track Selection Sync**: Handles playlist item clicks vs. next/prev controls
 - **Swipe Navigation**: Horizontal swipe on album art to navigate tracks (mobile/tablet), with direction locking, velocity detection, and snap-back animation
-- **Tap to Play/Pause**: Tap album art to toggle playback on mobile
+- **Album Art Tap**: Tap album art to flip and show quick-access controls (color, glow, visualizer). In zen mode, tap does play/pause instead. Flip resets on track change.
 - **State Management**: Uses `isInitialLoad` flag and proper useEffect dependency ordering
 
 ### Visual Effects System
@@ -537,7 +539,7 @@ Use `@/` prefix for clean imports: `import { usePlayerState } from '@/hooks/useP
 - **Player not centered**: ContentWrapper must use `position: relative` (not absolute) so parent flex containers can center it.
 - **Elements clipped**: Ensure `overflow: visible` is set on ContentWrapper. The `container-type: inline-size` creates containment that can clip absolutely-positioned children.
 - **Mobile viewport bouncing**: Use `100dvh` instead of `100vh` to account for iOS address bar changes.
-- **FAB menu z-index**: FabMenu renders via portal to `document.body` — ensure z-index doesn't conflict with drawer overlays.
+- **Bottom bar z-index**: BottomBar renders via portal to `document.body` — ensure z-index doesn't conflict with drawer overlays.
 
 ### Spotify Integration
 - **Liked Songs not loading**: Verify user-library-read scope and that user has liked songs
@@ -622,7 +624,8 @@ VITE_SPOTIFY_REDIRECT_URI="http://127.0.0.1:3000/auth/spotify/callback"
 - **Cache Layer**: `src/services/cache/libraryCache.ts`, `src/services/cache/librarySyncEngine.ts`
 - **Theme & Styling**: `src/styles/theme.ts`, `src/styles/utils.ts`
 - **Playlist Features**: `src/components/PlaylistSelection.tsx`, `src/utils/playlistFilters.ts`
-- **FAB Menu**: `src/components/FabMenu/index.tsx`, `src/components/FabMenu/FabMenuItems.tsx`
+- **Album Art Flip Menu**: `src/components/AlbumArtBackside.tsx`, flip logic in `src/components/PlayerContent.tsx`
+- **Bottom Bar**: `src/components/BottomBar/index.tsx`, `src/components/BottomBar/styled.ts`
 - **Drawers**: `src/components/LibraryDrawer.tsx`, `src/components/PlaylistBottomSheet.tsx`, `src/components/styled/Drawer.tsx`
 - **Gestures**: `src/hooks/useSwipeGesture.ts`, `src/hooks/useVerticalSwipeGesture.ts`
 - **Constants**: `src/constants/playlist.ts`
