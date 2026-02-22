@@ -46,7 +46,7 @@ const BlurredBg = styled.div<{ $image?: string }>`
 const DarkOverlay = styled.div`
   position: absolute;
   inset: 0;
-  background: rgba(0, 0, 0, 0.75);
+  background: ${({ theme }) => theme.colors.overlay.mid};
 `;
 
 const Content = styled.div`
@@ -56,23 +56,23 @@ const Content = styled.div`
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 16px;
-  padding: 16px;
+  gap: ${({ theme }) => theme.spacing.md};
+  padding: ${({ theme }) => theme.spacing.md};
   height: 100%;
   box-sizing: border-box;
 `;
 
 const SectionLabel = styled.div`
   font-size: 11px;
-  color: rgba(255, 255, 255, 0.7);
+  color: ${({ theme }) => theme.colors.muted.foreground};
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  margin-bottom: 4px;
+  margin-bottom: ${({ theme }) => theme.spacing.xs};
 `;
 
 const SwatchRow = styled.div`
   display: flex;
-  gap: 8px;
+  gap: ${({ theme }) => theme.spacing.sm};
   flex-wrap: wrap;
   justify-content: center;
 `;
@@ -87,22 +87,22 @@ const CloseBtn = styled.button`
   position: absolute;
   top: 12px;
   right: 12px;
-  background: rgba(0, 0, 0, 0.4);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: ${({ theme }) => theme.colors.overlay.light};
+  border: 1px solid ${({ theme }) => theme.colors.border};
   border-radius: 50%;
   width: 32px;
   height: 32px;
-  color: #fff;
+  color: ${({ theme }) => theme.colors.white};
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 16px;
-  z-index: 2;
-  transition: background 0.2s ease;
+  font-size: ${({ theme }) => theme.fontSize.base};
+  z-index: ${({ theme }) => theme.zIndex.docked};
+  transition: background ${({ theme }) => theme.transitions.fast};
 
   &:hover {
-    background: rgba(0, 0, 0, 0.6);
+    background: ${({ theme }) => theme.colors.overlay.mid};
   }
 `;
 
@@ -111,11 +111,11 @@ const SwatchButton = styled.button<{ $color: string; $isActive: boolean }>`
   height: 36px;
   border-radius: 50%;
   background: ${({ $color }) => $color};
-  border: ${({ $isActive }) =>
-    $isActive ? '3px solid #fff' : '2px solid rgba(255, 255, 255, 0.4)'};
-  outline: ${({ $isActive }) => ($isActive ? '2px solid #ffd700' : 'none')};
+  border: ${({ theme, $isActive }) =>
+    $isActive ? `3px solid ${theme.colors.white}` : `2px solid ${theme.colors.control.border}`};
+  outline: ${({ theme, $isActive }) => ($isActive ? `2px solid ${theme.colors.selection}` : 'none')};
   cursor: pointer;
-  transition: box-shadow 0.2s, border 0.2s;
+  transition: box-shadow ${({ theme }) => theme.transitions.fast}, border ${({ theme }) => theme.transitions.fast};
   padding: 0;
 `;
 
@@ -123,39 +123,39 @@ const EyedropperButton = styled.button`
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  border: 2px solid rgba(255, 255, 255, 0.4);
+  border: 2px solid ${({ theme }) => theme.colors.control.border};
   background: transparent;
-  color: #fff;
+  color: ${({ theme }) => theme.colors.white};
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 0;
-  transition: background 0.2s ease;
+  transition: background ${({ theme }) => theme.transitions.fast};
 
   &:hover {
-    background: rgba(255, 255, 255, 0.1);
+    background: ${({ theme }) => theme.colors.control.backgroundHover};
   }
 `;
 
 const ResetBtn = styled.button`
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 6px;
-  color: #fff;
+  background: ${({ theme }) => theme.colors.control.background};
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: ${({ theme }) => theme.borderRadius.md};
+  color: ${({ theme }) => theme.colors.white};
   font-size: 11px;
-  padding: 4px 10px;
+  padding: ${({ theme }) => theme.spacing.xs} 10px;
   cursor: pointer;
-  transition: background 0.2s ease;
+  transition: background ${({ theme }) => theme.transitions.fast};
 
   &:hover {
-    background: rgba(255, 255, 255, 0.2);
+    background: ${({ theme }) => theme.colors.control.backgroundHover};
   }
 `;
 
 const ToggleLabel = styled.span`
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.8);
+  font-size: ${({ theme }) => theme.fontSize.xs};
+  color: ${({ theme }) => theme.colors.muted.foreground};
   min-width: 60px;
 `;
 

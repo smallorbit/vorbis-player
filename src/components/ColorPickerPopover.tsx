@@ -161,7 +161,7 @@ const ColorPickerPopover = memo<ColorPickerPopoverProps>(({
             transform: 'translate(-50%, -100%)',
             background: theme.colors.popover.background,
             borderRadius: theme.borderRadius.xl,
-            boxShadow: '0 12px 40px rgba(0,0,0,0.45), 0 4px 12px rgba(0,0,0,0.3)',
+            boxShadow: theme.shadows.popover,
             padding: `${theme.spacing.md} ${theme.spacing.lg}`,
             zIndex: theme.zIndex.popover,
             minWidth: 160,
@@ -171,13 +171,13 @@ const ColorPickerPopover = memo<ColorPickerPopoverProps>(({
             gap: theme.spacing.xs,
           }}
         >
-          <div style={{ color: '#fff', fontWeight: 600, marginBottom: 8, fontSize: 15 }}>
+          <div style={{ color: theme.colors.white, fontWeight: theme.fontWeight.semibold, marginBottom: theme.spacing.sm, fontSize: theme.fontSize.lg }}>
             Choose Accent Color
           </div>
-          {isExtracting && <p style={{ color: '#888', fontSize: 14 }}>Extracting colors...</p>}
-          {extractError && <p style={{ color: 'red', fontSize: 14 }}>{extractError}</p>}
+          {isExtracting && <p style={{ color: theme.colors.gray[500], fontSize: theme.fontSize.sm }}>Extracting colors...</p>}
+          {extractError && <p style={{ color: theme.colors.error, fontSize: theme.fontSize.sm }}>{extractError}</p>}
           {!isExtracting && !extractError && (
-            <div style={{ display: 'flex', gap: 12 }}>
+            <div style={{ display: 'flex', gap: theme.spacing.md }}>
               {(colorOptions ?? []).map((color) => (
                 <button
                   key={color.hex}
@@ -189,12 +189,12 @@ const ColorPickerPopover = memo<ColorPickerPopoverProps>(({
                     width: 32,
                     height: 32,
                     borderRadius: '10%',
-                    border: color.hex === accentColor ? '3px solid #fff' : '2px solid #888',
+                    border: color.hex === accentColor ? `3px solid ${theme.colors.white}` : `2px solid ${theme.colors.gray[500]}`,
                     background: color.hex,
                     cursor: 'pointer',
-                    outline: color.hex === accentColor ? '2px solid #ffd700' : 'none',
-                    boxShadow: color.hex === accentColor ? '0 0 0 2px #ffd700' : 'none',
-                    transition: 'box-shadow 0.2s, border 0.2s',
+                    outline: color.hex === accentColor ? `2px solid ${theme.colors.selection}` : 'none',
+                    boxShadow: color.hex === accentColor ? `0 0 0 2px ${theme.colors.selection}` : 'none',
+                    transition: `box-shadow ${theme.transitions.fast}, border ${theme.transitions.fast}`,
                   }}
                   title={color.hex}
                   aria-label={`Choose color ${color.hex}`}
@@ -211,15 +211,15 @@ const ColorPickerPopover = memo<ColorPickerPopoverProps>(({
                     width: 32,
                     height: 32,
                     borderRadius: '10%',
-                    border: lastCustomColor === accentColor ? '3px solid #fff' : '2px solid #888',
+                    border: lastCustomColor === accentColor ? `3px solid ${theme.colors.white}` : `2px solid ${theme.colors.gray[500]}`,
                     background: lastCustomColor,
                     cursor: 'pointer',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    transition: 'box-shadow 0.2s, border 0.2s',
-                    outline: lastCustomColor === accentColor ? '2px solid #ffd700' : 'none',
-                    boxShadow: lastCustomColor === accentColor ? '0 0 0 2px #ffd700' : 'none',
+                    transition: `box-shadow ${theme.transitions.fast}, border ${theme.transitions.fast}`,
+                    outline: lastCustomColor === accentColor ? `2px solid ${theme.colors.selection}` : 'none',
+                    boxShadow: lastCustomColor === accentColor ? `0 0 0 2px ${theme.colors.selection}` : 'none',
                   }}
                   title="Use custom color"
                   aria-label="Use custom color"
@@ -235,13 +235,13 @@ const ColorPickerPopover = memo<ColorPickerPopoverProps>(({
                     width: 32,
                     height: 32,
                     borderRadius: '10%',
-                    border: '2px solid #888',
+                    border: `2px solid ${theme.colors.gray[500]}`,
                     cursor: 'pointer',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    transition: 'box-shadow 0.2s, border 0.2s',
-                    color: '#fff',
+                    transition: `box-shadow ${theme.transitions.fast}, border ${theme.transitions.fast}`,
+                    color: theme.colors.white,
                     background: 'transparent',
                     padding: 0,
                   }}
@@ -261,21 +261,21 @@ const ColorPickerPopover = memo<ColorPickerPopoverProps>(({
               setShowColorPopover(false);
             }}
             style={{
-              marginTop: '8px',
-              padding: '6px 12px',
-              background: 'rgba(255, 255, 255, 0.1)',
-              border: '1px solid rgba(255, 255, 255, 0.2)',
-              borderRadius: '6px',
-              color: '#fff',
-              fontSize: '12px',
+              marginTop: theme.spacing.sm,
+              padding: `${theme.spacing.sm} ${theme.spacing.md}`,
+              background: theme.colors.control.background,
+              border: `1px solid ${theme.colors.border}`,
+              borderRadius: theme.borderRadius.md,
+              color: theme.colors.white,
+              fontSize: theme.fontSize.xs,
               cursor: 'pointer',
-              transition: 'all 0.2s ease',
+              transition: `all ${theme.transitions.fast} ease`,
             }}
             onMouseEnter={(e) => {
-              (e.target as HTMLElement).style.background = 'rgba(255, 255, 255, 0.2)';
+              (e.target as HTMLElement).style.background = theme.colors.control.backgroundHover;
             }}
             onMouseLeave={(e) => {
-              (e.target as HTMLElement).style.background = 'rgba(255, 255, 255, 0.1)';
+              (e.target as HTMLElement).style.background = theme.colors.control.background;
             }}
             title="Reset to default color"
           >

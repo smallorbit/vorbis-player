@@ -100,11 +100,11 @@ const SelectionCard = styled(Card) <{ $maxWidth: number; $inDrawer?: boolean }>`
     margin: 0;
   `
       : `
-    background: rgba(38, 38, 38, 0.8);
+    background: ${theme.colors.muted.background};
     backdrop-filter: blur(12px);
-    border: 1px solid rgba(115, 115, 115, 0.5);
+    border: 1px solid ${theme.colors.control.border};
     border-radius: 1.25rem;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+    box-shadow: ${theme.shadows.albumArt};
   `}
 `;
 
@@ -130,8 +130,8 @@ const Title = styled.h1`
 `;
 
 const Subtitle = styled.p`
-  color: rgba(255, 255, 255, 0.7);
-  font-size: 1rem;
+  color: ${({ theme }) => theme.colors.muted.foreground};
+  font-size: ${({ theme }) => theme.fontSize.base};
 `;
 
 const DrawerContentWrapper = styled.div`
@@ -200,7 +200,7 @@ const GridCardArtWrapper = styled.div`
   aspect-ratio: 1;
   border-radius: 0.5rem;
   overflow: hidden;
-  background: linear-gradient(135deg, #222, #333);
+  background: linear-gradient(135deg, ${({ theme }) => theme.colors.gray[800]}, ${({ theme }) => theme.colors.gray[700]});
 
   img {
     width: 100%;
@@ -215,9 +215,9 @@ const GridCardTextArea = styled.div`
 `;
 
 const GridCardTitle = styled.div`
-  font-weight: 600;
-  font-size: 0.8125rem;
-  color: white;
+  font-weight: ${({ theme }) => theme.fontWeight.semibold};
+  font-size: ${({ theme }) => theme.fontSize.sm};
+  color: ${({ theme }) => theme.colors.white};
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -226,15 +226,15 @@ const GridCardTitle = styled.div`
 
 const GridCardSubtitle = styled.div<{ $clickable?: boolean }>`
   font-size: 0.6875rem;
-  color: rgba(255, 255, 255, 0.55);
+  color: ${({ theme }) => theme.colors.muted.foreground};
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   line-height: 1.4;
   margin-top: 1px;
-  ${({ $clickable }) => $clickable && `
+  ${({ theme, $clickable }) => $clickable && `
     cursor: pointer;
-    transition: color 0.15s ease;
+    transition: color ${theme.transitions.fast} ease;
 
     &:hover {
       color: ${theme.colors.accent};
@@ -242,7 +242,7 @@ const GridCardSubtitle = styled.div<{ $clickable?: boolean }>`
     }
 
     &:active {
-      color: rgba(218, 165, 32, 0.8);
+      color: ${theme.colors.selection};
     }
   `}
 `;
@@ -250,17 +250,17 @@ const GridCardSubtitle = styled.div<{ $clickable?: boolean }>`
 const PlaylistItem = styled.div`
   display: flex;
   align-items: center;
-  gap: 1rem;
-  padding: 1rem;
-  background: rgba(115, 115, 115, 0.1);
-  border: 1px solid rgba(115, 115, 115, 0.3);
-  border-radius: 0.75rem;
+  gap: ${({ theme }) => theme.spacing.md};
+  padding: ${({ theme }) => theme.spacing.md};
+  background: ${({ theme }) => theme.colors.control.background};
+  border: 1px solid ${({ theme }) => theme.colors.control.border};
+  border-radius: ${({ theme }) => theme.borderRadius.xl};
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all ${({ theme }) => theme.transitions.fast} ease;
   
   &:hover {
-    background: rgba(218, 165, 32, 0.1);
-    border-color: ${theme.colors.accent};
+    background: ${({ theme }) => theme.colors.control.backgroundHover};
+    border-color: ${({ theme }) => theme.colors.accent};
     transform: translateY(-2px);
   }
 `;
@@ -270,7 +270,7 @@ const PlaylistImageWrapper = styled.div`
   height: 60px;
   border-radius: 0.5rem;
   overflow: hidden;
-  background: linear-gradient(45deg, #333, #555);
+  background: linear-gradient(45deg, ${({ theme }) => theme.colors.gray[700]}, ${({ theme }) => theme.colors.gray[600]});
   flex-shrink: 0;
   display: flex;
   align-items: center;
@@ -289,9 +289,9 @@ const PlaylistInfo = styled.div`
 `;
 
 const PlaylistName = styled.div`
-  font-weight: 600;
-  font-size: 1rem;
-  color: white;
+  font-weight: ${({ theme }) => theme.fontWeight.semibold};
+  font-size: ${({ theme }) => theme.fontSize.base};
+  color: ${({ theme }) => theme.colors.white};
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -354,25 +354,25 @@ const TabsContainer = styled.div`
   display: flex;
   gap: 0;
   margin-bottom: 1.5rem;
-  border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 2px solid ${({ theme }) => theme.colors.popover.border};
 `;
 
 const TabButton = styled.button<{ $active: boolean }>`
   flex: 1;
-  padding: 1rem;
+  padding: ${({ theme }) => theme.spacing.md};
   background: none;
   border: none;
-  color: ${props => props.$active ? '#1db954' : 'rgba(255, 255, 255, 0.6)'};
-  font-size: 1rem;
-  font-weight: 600;
+  color: ${({ theme, $active }) => ($active ? theme.colors.spotify : theme.colors.muted.foreground)};
+  font-size: ${({ theme }) => theme.fontSize.base};
+  font-weight: ${({ theme }) => theme.fontWeight.semibold};
   cursor: pointer;
-  transition: all 0.2s;
-  border-bottom: 2px solid ${props => props.$active ? '#1db954' : 'transparent'};
+  transition: all ${({ theme }) => theme.transitions.fast};
+  border-bottom: 2px solid ${({ theme, $active }) => ($active ? theme.colors.spotify : 'transparent')};
   margin-bottom: -2px;
   position: relative;
 
   &:hover {
-    color: ${props => props.$active ? '#1db954' : 'rgba(255, 255, 255, 0.9)'};
+    color: ${({ theme, $active }) => ($active ? theme.colors.spotify : theme.colors.foreground)};
   }
 
   &:focus {
@@ -391,47 +391,47 @@ const ControlsContainer = styled.div`
 const SearchInput = styled.input`
   flex: 1;
   min-width: 180px;
-  padding: 0.5rem 0.75rem;
-  background: rgba(115, 115, 115, 0.2);
-  border: 1px solid rgba(115, 115, 115, 0.4);
-  border-radius: 0.5rem;
-  color: white;
-  font-size: 0.875rem;
+  padding: ${({ theme }) => theme.spacing.sm} ${theme.spacing.lg};
+  background: ${({ theme }) => theme.colors.control.background};
+  border: 1px solid ${({ theme }) => theme.colors.control.borderHover};
+  border-radius: ${({ theme }) => theme.borderRadius.lg};
+  color: ${({ theme }) => theme.colors.white};
+  font-size: ${({ theme }) => theme.fontSize.sm};
   outline: none;
-  transition: border-color 0.2s, background 0.2s;
+  transition: border-color ${({ theme }) => theme.transitions.fast}, background ${({ theme }) => theme.transitions.fast};
 
   &::placeholder {
-    color: rgba(255, 255, 255, 0.5);
+    color: ${({ theme }) => theme.colors.muted.foreground};
   }
 
   &:focus {
-    background: rgba(115, 115, 115, 0.3);
-    border-color: ${theme.colors.accent};
+    background: ${({ theme }) => theme.colors.control.backgroundHover};
+    border-color: ${({ theme }) => theme.colors.accent};
   }
 `;
 
 const SelectDropdown = styled.select`
-  padding: 0.5rem 0.75rem;
-  background: rgba(115, 115, 115, 0.2);
-  border: 1px solid rgba(115, 115, 115, 0.4);
-  border-radius: 0.5rem;
-  color: white;
-  font-size: 0.875rem;
+  padding: ${({ theme }) => theme.spacing.sm} ${theme.spacing.lg};
+  background: ${({ theme }) => theme.colors.control.background};
+  border: 1px solid ${({ theme }) => theme.colors.control.borderHover};
+  border-radius: ${({ theme }) => theme.borderRadius.lg};
+  color: ${({ theme }) => theme.colors.white};
+  font-size: ${({ theme }) => theme.fontSize.sm};
   cursor: pointer;
   outline: none;
-  transition: border-color 0.2s, background 0.2s;
+  transition: border-color ${({ theme }) => theme.transitions.fast}, background ${({ theme }) => theme.transitions.fast};
 
   &:hover {
-    background: rgba(115, 115, 115, 0.3);
+    background: ${({ theme }) => theme.colors.control.backgroundHover};
   }
 
   &:focus {
-    border-color: ${theme.colors.accent};
+    border-color: ${({ theme }) => theme.colors.accent};
   }
 
   option {
-    background: #262626;
-    color: white;
+    background: ${({ theme }) => theme.colors.popover.background};
+    color: ${({ theme }) => theme.colors.white};
   }
 `;
 
@@ -446,39 +446,39 @@ const DrawerBottomControls = styled.div`
 `;
 
 const ClearButton = styled.button`
-  padding: 0.5rem 0.75rem;
-  background: rgba(115, 115, 115, 0.2);
-  border: 1px solid rgba(115, 115, 115, 0.4);
-  border-radius: 0.5rem;
-  color: rgba(255, 255, 255, 0.7);
-  font-size: 0.875rem;
+  padding: ${({ theme }) => theme.spacing.sm} ${theme.spacing.lg};
+  background: ${({ theme }) => theme.colors.control.background};
+  border: 1px solid ${({ theme }) => theme.colors.control.borderHover};
+  border-radius: ${({ theme }) => theme.borderRadius.lg};
+  color: ${({ theme }) => theme.colors.muted.foreground};
+  font-size: ${({ theme }) => theme.fontSize.sm};
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all ${({ theme }) => theme.transitions.fast};
 
   &:hover {
-    background: rgba(115, 115, 115, 0.3);
-    color: white;
+    background: ${({ theme }) => theme.colors.control.backgroundHover};
+    color: ${({ theme }) => theme.colors.white};
   }
 `;
 
 const EmptyState = styled.div<{ $fullWidth?: boolean }>`
   ${({ $fullWidth }) => $fullWidth && 'grid-column: 1 / -1;'}
-  padding: 2rem;
+  padding: ${({ theme }) => theme.spacing.xl};
   text-align: center;
-  color: rgba(255, 255, 255, 0.6);
+  color: ${({ theme }) => theme.colors.muted.foreground};
 `;
 
 const PinButton = styled.button<{ $isPinned: boolean; $disabled?: boolean }>`
   background: none;
   border: none;
   cursor: ${({ $disabled }) => ($disabled ? 'default' : 'pointer')};
-  padding: 4px;
+  padding: ${({ theme }) => theme.spacing.xs};
   display: flex;
   align-items: center;
   justify-content: center;
   opacity: ${({ $isPinned, $disabled }) => ($isPinned ? 1 : $disabled ? 0.3 : 0)};
-  color: ${({ $isPinned }) => ($isPinned ? '#1db954' : 'rgba(255, 255, 255, 0.6)')};
-  transition: all 0.15s ease;
+  color: ${({ theme, $isPinned }) => ($isPinned ? theme.colors.spotify : theme.colors.muted.foreground)};
+  transition: all ${({ theme }) => theme.transitions.fast} ease;
   flex-shrink: 0;
 
   @media (hover: none) {
@@ -499,10 +499,10 @@ const PinnableListItem = styled(PlaylistItem)`
 
 const GridCardPinOverlay = styled.div<{ $isPinned: boolean }>`
   position: absolute;
-  top: 6px;
-  right: 6px;
+  top: ${({ theme }) => theme.spacing.sm};
+  right: ${({ theme }) => theme.spacing.sm};
   z-index: 2;
-  background: rgba(0, 0, 0, 0.6);
+  background: ${({ theme }) => theme.colors.overlay.bar};
   border-radius: 50%;
   width: 28px;
   height: 28px;
@@ -510,9 +510,9 @@ const GridCardPinOverlay = styled.div<{ $isPinned: boolean }>`
   align-items: center;
   justify-content: center;
   opacity: ${({ $isPinned }) => ($isPinned ? 1 : 0)};
-  transition: opacity 0.15s ease;
+  transition: opacity ${({ theme }) => theme.transitions.fast} ease;
   cursor: pointer;
-  color: ${({ $isPinned }) => ($isPinned ? '#1db954' : 'rgba(255, 255, 255, 0.8)')};
+  color: ${({ theme, $isPinned }) => ($isPinned ? theme.colors.spotify : theme.colors.foreground)};
 
   @media (hover: none) {
     opacity: 1;
@@ -534,11 +534,11 @@ const PinnedSectionLabel = styled.div`
   grid-column: 1 / -1;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.25rem 0;
-  color: rgba(255, 255, 255, 0.35);
+  gap: ${({ theme }) => theme.spacing.sm};
+  padding: ${({ theme }) => theme.spacing.xs} 0;
+  color: ${({ theme }) => theme.colors.gray[500]};
   font-size: 0.6875rem;
-  font-weight: 600;
+  font-weight: ${({ theme }) => theme.fontWeight.semibold};
   text-transform: uppercase;
   letter-spacing: 0.05em;
 
@@ -546,7 +546,7 @@ const PinnedSectionLabel = styled.div`
     content: '';
     flex: 1;
     height: 1px;
-    background: rgba(255, 255, 255, 0.08);
+    background: ${({ theme }) => theme.colors.popover.border};
   }
 `;
 
@@ -560,7 +560,7 @@ const PinIcon: React.FC<{ filled?: boolean }> = ({ filled = false }) => (
   </svg>
 );
 
-const LIKED_SONGS_GRADIENT = 'linear-gradient(135deg, #1DB954 0%, #1ed760 100%)';
+const LIKED_SONGS_GRADIENT = `linear-gradient(135deg, ${theme.colors.spotify} 0%, ${theme.colors.spotifyLight} 100%)`;
 
 /** Shared hook for lazy-loading images via IntersectionObserver */
 function useLazyImage(
@@ -1111,20 +1111,20 @@ function PlaylistSelection({ onPlaylistSelect, inDrawer = false, swipeZoneRef, i
 
       {!isLoading && !isAuthenticated && (
         <div style={{ textAlign: 'center', padding: '2rem' }}>
-          <p style={{ color: 'rgba(255, 255, 255, 0.7)', marginBottom: '1.5rem', fontSize: '1.1rem' }}>
+          <p style={{ color: theme.colors.muted.foreground, marginBottom: theme.spacing.lg, fontSize: theme.fontSize.lg }}>
             Connect your Spotify account to access your playlists
           </p>
           <Button
             onClick={handleLogin}
             style={{
-              background: '#1db954',
-              color: 'white',
+              background: theme.colors.spotify,
+              color: theme.colors.white,
               border: 'none',
-              padding: '0.75rem 2rem',
-              fontSize: '1rem',
-              borderRadius: '0.5rem',
+              padding: `${theme.spacing.lg} ${theme.spacing.xl}`,
+              fontSize: theme.fontSize.base,
+              borderRadius: theme.borderRadius.lg,
               cursor: 'pointer',
-              transition: 'background 0.2s ease'
+              transition: `background ${theme.transitions.fast} ease`
             }}
           >
             Connect Spotify
@@ -1134,7 +1134,7 @@ function PlaylistSelection({ onPlaylistSelect, inDrawer = false, swipeZoneRef, i
 
       {error && (
         <Alert variant="destructive">
-          <AlertDescription style={{ color: '#fecaca' }}>
+          <AlertDescription style={{ color: theme.colors.errorText }}>
             {error}
           </AlertDescription>
         </Alert>

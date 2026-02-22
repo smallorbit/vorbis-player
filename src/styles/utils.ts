@@ -85,7 +85,7 @@ export const cardBase = css`
 
 export const customScrollbar = css`
   &::-webkit-scrollbar {
-    width: 8px;
+    width: ${theme.spacing.sm};
   }
   
   &::-webkit-scrollbar-track {

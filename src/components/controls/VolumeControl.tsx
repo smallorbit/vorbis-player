@@ -6,16 +6,16 @@ import { theme } from '@/styles/theme';
 
 const PopoverContainer = styled.div`
   position: fixed;
-  z-index: ${theme.zIndex.popover};
+  z-index: ${({ theme }) => theme.zIndex.popover};
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 12px 8px;
-  gap: 8px;
-  background: ${theme.colors.popover.background};
-  border: 1px solid ${theme.colors.popover.border};
-  border-radius: ${theme.borderRadius.xl};
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  padding: 12px ${({ theme }) => theme.spacing.sm};
+  gap: ${({ theme }) => theme.spacing.sm};
+  background: ${({ theme }) => theme.colors.popover.background};
+  border: 1px solid ${({ theme }) => theme.colors.popover.border};
+  border-radius: ${({ theme }) => theme.borderRadius.xl};
+  box-shadow: ${({ theme }) => theme.shadows.popover};
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
 `;
@@ -24,8 +24,8 @@ const SliderTrack = styled.div<{ $accentColor: string; $fillPercent: number }>`
   position: relative;
   width: 4px;
   height: 120px;
-  background: rgba(115, 115, 115, 0.3);
-  border-radius: 2px;
+  background: ${({ theme }) => theme.colors.control.backgroundHover};
+  border-radius: ${({ theme }) => theme.borderRadius.sm};
   cursor: pointer;
   touch-action: none;
 
@@ -37,7 +37,7 @@ const SliderTrack = styled.div<{ $accentColor: string; $fillPercent: number }>`
     right: 0;
     height: ${({ $fillPercent }) => $fillPercent}%;
     background: ${({ $accentColor }) => $accentColor};
-    border-radius: 2px;
+    border-radius: ${({ theme }) => theme.borderRadius.sm};
     pointer-events: none;
   }
 `;
@@ -52,7 +52,7 @@ const SliderThumb = styled.div<{ $accentColor: string; $percent: number }>`
   background: ${({ $accentColor }) => $accentColor};
   border-radius: 50%;
   pointer-events: none;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+  box-shadow: ${({ theme }) => theme.shadows.xs};
 `;
 
 const MuteButton = styled.button<{ $isMuted: boolean; $accentColor: string }>`
@@ -63,9 +63,9 @@ const MuteButton = styled.button<{ $isMuted: boolean; $accentColor: string }>`
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  padding: 4px;
-  border-radius: ${theme.borderRadius.md};
-  transition: all 0.15s ease;
+  padding: ${({ theme }) => theme.spacing.xs};
+  border-radius: ${({ theme }) => theme.borderRadius.md};
+  transition: all ${({ theme }) => theme.transitions.fast} ease;
 
   &:hover {
     background: ${theme.colors.control.background};

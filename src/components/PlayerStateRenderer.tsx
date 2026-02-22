@@ -50,10 +50,10 @@ const LoadingCard = styled(Card)<{ backgroundImage?: string; standalone?: boolea
   bottom: 0;
   overflow: hidden;
   border-radius: 1.25rem;
-  border: 1px solid rgba(34, 36, 36, 0.68);
-  box-shadow: 0 8px 24px rgba(38, 36, 37, 0.7), 0 2px 8px rgba(22, 21, 21, 0.6);
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  box-shadow: ${({ theme }) => theme.shadows.albumArt};
   
-  ${({ backgroundImage }) => backgroundImage ? `
+  ${({ theme, backgroundImage }) => backgroundImage ? `
     &::after {
       content: '';
       position: absolute;
@@ -70,13 +70,13 @@ const LoadingCard = styled(Card)<{ backgroundImage?: string; standalone?: boolea
       content: '';
       position: absolute;
       inset: 0;
-      background: rgba(32, 30, 30, 0.7);
+      background: ${theme.colors.card.overlay};
       backdrop-filter: blur(24px);
       border-radius: 1.25rem;
       z-index: 1;
     }
   ` : `
-    background: rgba(38, 38, 38, 0.5);
+    background: ${theme.colors.muted.background};
     backdrop-filter: blur(12px);
   `}
 `;
@@ -95,19 +95,19 @@ const SpotifyIcon = styled.div`
   width: 4rem;
   height: 4rem;
   border-radius: 50%;
-  background: linear-gradient(135deg, #1db954, #1ed760);
+  background: linear-gradient(135deg, ${({ theme }) => theme.colors.spotify}, ${({ theme }) => theme.colors.spotifyLight});
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 1.5rem;
+  margin-bottom: ${({ theme }) => theme.spacing.lg};
   animation: ${pulseWave} 2s ease-in-out infinite;
-  box-shadow: 0 8px 32px rgba(29, 185, 84, 0.3);
+  box-shadow: ${({ theme }) => theme.shadows.spotify};
   
   &::before {
     content: '♪';
-    color: white;
-    font-size: 1.5rem;
-    font-weight: bold;
+    color: ${({ theme }) => theme.colors.white};
+    font-size: ${({ theme }) => theme.fontSize['2xl']};
+    font-weight: ${({ theme }) => theme.fontWeight.bold};
   }
 `;
 
@@ -117,15 +117,15 @@ const LoadingText = styled.div`
 `;
 
 const LoadingTitle = styled.h3`
-  color: white;
-  font-size: 1.25rem;
-  font-weight: 600;
-  margin: 0 0 0.5rem 0;
+  color: ${({ theme }) => theme.colors.white};
+  font-size: ${({ theme }) => theme.fontSize.xl};
+  font-weight: ${({ theme }) => theme.fontWeight.semibold};
+  margin: 0 0 ${({ theme }) => theme.spacing.sm} 0;
   background: linear-gradient(
     90deg,
-    rgba(255, 255, 255, 0.8),
-    rgba(255, 255, 255, 1),
-    rgba(255, 255, 255, 0.8)
+    ${({ theme }) => theme.colors.muted.foreground},
+    ${({ theme }) => theme.colors.white},
+    ${({ theme }) => theme.colors.muted.foreground}
   );
   background-size: 200px 100%;
   background-clip: text;
@@ -135,8 +135,8 @@ const LoadingTitle = styled.h3`
 `;
 
 const LoadingSubtext = styled.p`
-  color: rgba(255, 255, 255, 0.7);
-  font-size: 0.875rem;
+  color: ${({ theme }) => theme.colors.muted.foreground};
+  font-size: ${({ theme }) => theme.fontSize.sm};
   margin: 0;
   line-height: 1.4;
 `;
@@ -144,7 +144,7 @@ const LoadingSubtext = styled.p`
 const ProgressBar = styled.div`
   width: 200px;
   height: 3px;
-  background: rgba(255, 255, 255, 0.2);
+  background: ${({ theme }) => theme.colors.control.background};
   border-radius: 1.5px;
   margin-top: 1.5rem;
   position: relative;
@@ -208,7 +208,7 @@ const PlayerStateRenderer: React.FC<PlayerStateRendererProps> = ({
             </h2>
           </CardHeader>
           <CardContent style={{ textAlign: 'center' }}>
-            <p style={{ color: '#d1d5db', marginBottom: '1.5rem' }}>
+            <p style={{ color: theme.colors.gray[300], marginBottom: theme.spacing.lg }}>
               Sign in to your Spotify account to access your music. Requires Spotify Premium.
             </p>
             <Button
@@ -224,7 +224,7 @@ const PlayerStateRenderer: React.FC<PlayerStateRendererProps> = ({
 
     return (
       <Alert variant="destructive" style={{ width: '100%' }}>
-        <AlertDescription style={{ color: '#fecaca' }}>
+        <AlertDescription style={{ color: theme.colors.errorText }}>
           Error: {error}
         </AlertDescription>
       </Alert>
