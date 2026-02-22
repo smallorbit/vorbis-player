@@ -26,7 +26,9 @@ interface UsePlaylistManagerProps {
   setIsLoading: (loading: boolean) => void;
   setSelectedPlaylistId: (id: string | null) => void;
   setTracks: (tracks: Track[]) => void;
+  setOriginalTracks: (tracks: Track[]) => void;
   setCurrentTrackIndex: (index: number) => void;
+  shuffleEnabled: boolean;
 }
 
 export const usePlaylistManager = ({
@@ -34,7 +36,9 @@ export const usePlaylistManager = ({
   setIsLoading,
   setSelectedPlaylistId,
   setTracks,
-  setCurrentTrackIndex
+  setOriginalTracks,
+  setCurrentTrackIndex,
+  shuffleEnabled
 }: UsePlaylistManagerProps) => {
   
   const handlePlaylistSelect = useCallback(async (playlistId: string) => {
@@ -56,10 +60,8 @@ export const usePlaylistManager = ({
       // Check if this is an album selection
       if (isAlbumId(playlistId)) {
         fetchedTracks = await getAlbumTracks(extractAlbumId(playlistId));
-        // Albums are already sorted by track number, don't shuffle
       } else if (playlistId === LIKED_SONGS_ID) {
         fetchedTracks = await getLikedSongs(200);
-        fetchedTracks = shuffleArray(fetchedTracks);
       } else {
         fetchedTracks = await getPlaylistTracks(playlistId);
       }
@@ -75,13 +77,19 @@ export const usePlaylistManager = ({
         return;
       }
 
+      // Always store original (unshuffled) track order
+      setOriginalTracks(fetchedTracks);
+
+      // Apply shuffle if enabled, otherwise use original order
+      const tracksToPlay = shuffleEnabled ? shuffleArray(fetchedTracks) : fetchedTracks;
+
       // Update state with new tracks FIRST
-      setTracks(fetchedTracks);
+      setTracks(tracksToPlay);
       setCurrentTrackIndex(0);
 
       // Play the first track with retry logic for 403 errors
       const playWithRetry = async (trackIndex: number, retryCount = 0, maxRetries = 2): Promise<boolean> => {
-        const trackUri = fetchedTracks[trackIndex]?.uri;
+        const trackUri = tracksToPlay[trackIndex]?.uri;
         if (!trackUri) {
           console.error('No track URI at index', trackIndex);
           return false;
@@ -114,10 +122,10 @@ export const usePlaylistManager = ({
             const isRestrictionViolated = errorMessage.includes('Restriction violated');
             
             if (isRestrictionViolated) {
-              console.warn(`⚠️ Track "${fetchedTracks[trackIndex]?.name}" is unavailable (region-locked or removed)`);
-              
+              console.warn(`⚠️ Track "${tracksToPlay[trackIndex]?.name}" is unavailable (region-locked or removed)`);
+
               // Try the next track if available
-              if (trackIndex < fetchedTracks.length - 1) {
+              if (trackIndex < tracksToPlay.length - 1) {
                 console.log('🎵 Trying next track...');
                 setCurrentTrackIndex(trackIndex + 1);
                 return await playWithRetry(trackIndex + 1, 0, maxRetries);
@@ -149,7 +157,7 @@ export const usePlaylistManager = ({
       setTimeout(() => {
         void (async () => {
           try {
-            if (fetchedTracks.length > 0) {
+            if (tracksToPlay.length > 0) {
               const success = await playWithRetry(0); // Start with first track
               if (!success) {
                 console.error('Failed to play any track from the playlist');
@@ -172,7 +180,7 @@ export const usePlaylistManager = ({
     } finally {
       setIsLoading(false);
     }
-  }, [setError, setIsLoading, setSelectedPlaylistId, setTracks, setCurrentTrackIndex]);
+  }, [setError, setIsLoading, setSelectedPlaylistId, setTracks, setOriginalTracks, setCurrentTrackIndex, shuffleEnabled]);
 
   return {
     handlePlaylistSelect

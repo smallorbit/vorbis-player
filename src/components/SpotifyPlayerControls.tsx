@@ -44,6 +44,11 @@ const areControlsPropsEqual = (
     return false;
   }
 
+  // Check shuffle state
+  if (prevProps.shuffleEnabled !== nextProps.shuffleEnabled) {
+    return false;
+  }
+
   // For callbacks, we assume they're stable (parent should use useCallback)
   // This prevents unnecessary re-renders due to function reference changes
 
@@ -63,6 +68,8 @@ interface SpotifyPlayerControlsProps {
   onToggleLike?: () => void;
   onArtistBrowse?: (artistName: string) => void;
   onAlbumPlay?: (albumId: string, albumName: string) => void;
+  shuffleEnabled?: boolean;
+  onShuffleToggle?: () => void;
 }
 
 // --- SpotifyPlayerControls Component ---
@@ -78,6 +85,8 @@ const SpotifyPlayerControls = memo<SpotifyPlayerControlsProps>(({
   onToggleLike: propOnToggleLike,
   onArtistBrowse,
   onAlbumPlay,
+  shuffleEnabled,
+  onShuffleToggle,
 }) => {
   // Get responsive sizing information
   const { isMobile, isTablet, isDesktop } = usePlayerSizing();
@@ -129,6 +138,8 @@ const SpotifyPlayerControls = memo<SpotifyPlayerControlsProps>(({
           accentColor={accentColor}
           isMobile={isMobile}
           isTablet={isTablet}
+          shuffleEnabled={shuffleEnabled}
+          onShuffleToggle={onShuffleToggle}
         />
       </div>
 

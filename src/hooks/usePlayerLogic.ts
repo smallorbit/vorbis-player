@@ -13,7 +13,7 @@ import type { Track } from '@/services/spotify';
 
 export function usePlayerLogic() {
   const {
-    track: { tracks, currentIndex: currentTrackIndex, isLoading, error },
+    track: { tracks, originalTracks, currentIndex: currentTrackIndex, isLoading, error, shuffleEnabled },
     playlist: { selectedId: selectedPlaylistId, isVisible: showPlaylist },
     color: { current: accentColor, overrides: accentColorOverrides },
     visualEffects: {
@@ -32,7 +32,7 @@ export function usePlayerLogic() {
     },
     zenMode: { enabled: zenModeEnabled },
     actions: {
-      track: { setTracks, setCurrentIndex: setCurrentTrackIndex, setLoading: setIsLoading, setError },
+      track: { setTracks, setOriginalTracks, setCurrentIndex: setCurrentTrackIndex, setLoading: setIsLoading, setError, setShuffleEnabled },
       playlist: { setSelectedId: setSelectedPlaylistId, setVisible: setShowPlaylist },
       color: { setCurrent: setAccentColor, setOverrides: setAccentColorOverrides },
       visualEffects: {
@@ -82,7 +82,9 @@ export function usePlayerLogic() {
     setIsLoading,
     setSelectedPlaylistId,
     setTracks,
-    setCurrentTrackIndex
+    setOriginalTracks,
+    setCurrentTrackIndex,
+    shuffleEnabled
   });
 
   useAutoAdvance({
@@ -254,6 +256,35 @@ export function usePlayerLogic() {
     setZenModeEnabled(prev => !prev);
   }, [setZenModeEnabled]);
 
+  const handleShuffleToggle = useCallback(() => {
+    if (originalTracks.length === 0) return;
+
+    const currentTrack = tracks[currentTrackIndex];
+
+    if (!shuffleEnabled) {
+      // Turning shuffle ON: shuffle originalTracks, place currentTrack first
+      const rest = originalTracks.filter(t => t.id !== currentTrack?.id);
+      const shuffled = [...rest];
+      for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+      }
+      const newTracks = currentTrack ? [currentTrack, ...shuffled] : shuffled;
+      setTracks(newTracks);
+      setCurrentTrackIndex(0);
+    } else {
+      // Turning shuffle OFF: restore original order, seek to current track's position
+      const currentTrackId = currentTrack?.id;
+      const restoredIndex = currentTrackId
+        ? originalTracks.findIndex(t => t.id === currentTrackId)
+        : 0;
+      setTracks(originalTracks);
+      setCurrentTrackIndex(restoredIndex >= 0 ? restoredIndex : 0);
+    }
+
+    setShuffleEnabled(!shuffleEnabled);
+  }, [shuffleEnabled, tracks, currentTrackIndex, originalTracks, setTracks, setCurrentTrackIndex, setShuffleEnabled]);
+
   const handleBackToLibrary = useCallback(() => {
     handlePause();
     setSelectedPlaylistId(null);
@@ -289,7 +320,8 @@ export function usePlayerLogic() {
       isLikePending,
       isMuted,
       volume,
-      zenModeEnabled
+      zenModeEnabled,
+      shuffleEnabled
     },
     handlers: {
         handlePlaylistSelect,
@@ -320,7 +352,8 @@ export function usePlayerLogic() {
         handleMuteToggle,
         setVolumeLevel,
         handleBackToLibrary,
-        handleZenModeToggle
+        handleZenModeToggle,
+        handleShuffleToggle
     }
   };
 };
