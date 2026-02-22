@@ -198,30 +198,30 @@ export const ControlButton = styled.button.withConfig({
   cursor: pointer;
   transition: all 0.2s ease;
   padding: ${({ $isMobile, $isTablet, $compact, theme }) => {
-    if ($compact) return theme.spacing.xs;
+    if ($compact) return theme.spacing.sm;
     if ($isMobile) return theme.spacing.sm;
-    if ($isTablet) return theme.spacing.md;
-    return theme.spacing.md;
+    if ($isTablet) return theme.spacing.sm;
+    return theme.spacing.sm;
   }};
   border-radius: ${({ $isMobile, $isTablet, $compact, theme }) => {
     if ($compact) return theme.borderRadius.md;
     if ($isMobile) return theme.borderRadius.md;
-    if ($isTablet) return theme.borderRadius.lg;
-    return theme.borderRadius.lg;
+    if ($isTablet) return theme.borderRadius.md;
+    return theme.borderRadius.md;
   }};
   
   svg {
     width: ${({ $isMobile, $isTablet, $compact }) => {
-    if ($compact) return '1.125rem';
-    if ($isMobile) return '1.625rem';
-    if ($isTablet) return '1.75rem';
-    return '1.875rem';
+    if ($compact) return '1.5rem';
+    if ($isMobile) return '1.5rem';
+    if ($isTablet) return '1.5rem';
+    return '1.5rem';
   }};
     height: ${({ $isMobile, $isTablet, $compact }) => {
-    if ($compact) return '1.125rem';
-    if ($isMobile) return '1.625rem';
-    if ($isTablet) return '1.75rem';
-    return '1.875rem';
+    if ($compact) return '1.5rem';
+    if ($isMobile) return '1.5rem';
+    if ($isTablet) return '1.5rem';
+    return '1.5rem';
   }};
     fill: currentColor;
   }
