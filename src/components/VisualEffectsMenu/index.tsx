@@ -370,7 +370,7 @@ const VisualEffectsMenu: React.FC<VisualEffectsMenuProps> = memo(({
                   Visualizer Style
                 </ControlLabel>
                 <OptionButtonGroup>
-                  {(['particles', 'geometric', 'trail'] as VisualizerStyle[]).map((style) => (
+                  {(['fireflies', 'comet'] as VisualizerStyle[]).map((style) => (
                     <OptionButton
                       key={style}
                       $accentColor={accentColor}

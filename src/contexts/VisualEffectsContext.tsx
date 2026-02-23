@@ -41,12 +41,27 @@ export function VisualEffectsProvider({ children }: { children: React.ReactNode 
   const [perAlbumGlow, setPerAlbumGlow] = useLocalStorage<Record<string, { intensity: number; rate: number }>>('vorbis-player-per-album-glow', {});
   const [savedAlbumFilters, setSavedAlbumFilters] = useState<AlbumFilters | null>(null);
   const [backgroundVisualizerEnabled, setBackgroundVisualizerEnabled] = useLocalStorage<boolean>('vorbis-player-background-visualizer-enabled', true);
-  const [backgroundVisualizerStyle, setBackgroundVisualizerStyle] = useLocalStorage<VisualizerStyle>('vorbis-player-background-visualizer-style', 'particles');
+  const [backgroundVisualizerStyle, setBackgroundVisualizerStyle] = useLocalStorage<VisualizerStyle>('vorbis-player-background-visualizer-style', 'fireflies');
   const [backgroundVisualizerIntensity, setBackgroundVisualizerIntensity] = useLocalStorage<number>('vorbis-player-background-visualizer-intensity', 60);
   const [accentColorBackgroundPreferred, setAccentColorBackgroundPreferred] = useLocalStorage<boolean>('vorbis-player-accent-color-background-preferred', false);
   const [accentColorBackgroundEnabled, setAccentColorBackgroundEnabled] = useState<boolean>(false);
   const [zenModeEnabled, setZenModeEnabled] = useLocalStorage<boolean>('vorbis-player-zen-mode-enabled', false);
   const [showVisualEffects, setShowVisualEffects] = useState<boolean>(false);
+
+  // One-time migration: rename old visualizer style values; remove geometric
+  useEffect(() => {
+    const raw = localStorage.getItem('vorbis-player-background-visualizer-style');
+    if (raw === 'particles') {
+      setBackgroundVisualizerStyle('fireflies');
+      localStorage.setItem('vorbis-player-background-visualizer-style', 'fireflies');
+    } else if (raw === 'trail') {
+      setBackgroundVisualizerStyle('comet');
+      localStorage.setItem('vorbis-player-background-visualizer-style', 'comet');
+    } else if (raw === 'geometric') {
+      setBackgroundVisualizerStyle('fireflies');
+      localStorage.setItem('vorbis-player-background-visualizer-style', 'fireflies');
+    }
+  }, [setBackgroundVisualizerStyle]);
 
   useEffect(() => {
     if (!visualEffectsEnabled) {

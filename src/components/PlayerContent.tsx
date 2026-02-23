@@ -1,4 +1,4 @@
-import React, { Suspense, lazy, useState, useCallback, useRef, useEffect } from 'react';
+import React, { Suspense, lazy, useState, useCallback, useRef, useEffect, useLayoutEffect } from 'react';
 import styled, { useTheme } from 'styled-components';
 import { CardContent } from './styled';
 import AlbumArt from './AlbumArt';
@@ -37,9 +37,17 @@ interface PlaybackHandlers {
   onBackToLibrary: () => void;
 }
 
+export interface AlbumArtBounds {
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+}
+
 interface PlayerContentProps {
   isPlaying: boolean;
   showLibraryDrawer: boolean;
+  onAlbumArtBoundsChange?: (bounds: AlbumArtBounds | null) => void;
   handlers: PlaybackHandlers;
 }
 
@@ -278,7 +286,7 @@ const defaultFilters = {
   sepia: 0,
 };
 
-const PlayerContent: React.FC<PlayerContentProps> = ({ isPlaying, showLibraryDrawer, handlers }) => {
+const PlayerContent: React.FC<PlayerContentProps> = ({ isPlaying, showLibraryDrawer, onAlbumArtBoundsChange, handlers }) => {
   // --- Context hooks ---
   const {
     tracks,
@@ -336,6 +344,32 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ isPlaying, showLibraryDra
   const [isFlipped, setIsFlipped] = useState(false);
   const toggleFlip = useCallback(() => setIsFlipped(f => !f), []);
   const flipContainerRef = useRef<HTMLDivElement>(null);
+  const albumArtContainerRef = useRef<HTMLDivElement | null>(null);
+
+  // Report album art bounds for trail visualizer (head stays inside art)
+  useEffect(() => {
+    if (!onAlbumArtBoundsChange) return;
+    const el = albumArtContainerRef.current;
+    if (!el) {
+      onAlbumArtBoundsChange(null);
+      return;
+    }
+    const report = () => {
+      const r = el.getBoundingClientRect();
+      if (r.width > 0 && r.height > 0) {
+        onAlbumArtBoundsChange({ left: r.left, top: r.top, width: r.width, height: r.height });
+      } else {
+        onAlbumArtBoundsChange(null);
+      }
+    };
+    report();
+    const ro = new ResizeObserver(report);
+    ro.observe(el);
+    return () => {
+      ro.disconnect();
+      onAlbumArtBoundsChange(null);
+    };
+  }, [onAlbumArtBoundsChange]);
 
   // Reset flip when track changes
   useEffect(() => {
@@ -405,7 +439,7 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ isPlaying, showLibraryDra
     setBackgroundVisualizerEnabled(prev => !prev);
   }, [setBackgroundVisualizerEnabled]);
 
-  const handleBackgroundVisualizerStyleChange = useCallback((style: 'particles' | 'geometric' | 'trail') => {
+  const handleBackgroundVisualizerStyleChange = useCallback((style: 'fireflies' | 'comet') => {
     setBackgroundVisualizerStyle(style);
   }, [setBackgroundVisualizerStyle]);
 
@@ -577,7 +611,14 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ isPlaying, showLibraryDra
           }}>
             <div ref={flipContainerRef} style={{ width: '100%' }}>
               <ClickableAlbumArtContainer
-                ref={isTouchDevice ? zenVerticalSwipeRef : undefined}
+                ref={(el) => {
+                  albumArtContainerRef.current = el;
+                  if (isTouchDevice && zenVerticalSwipeRef && typeof zenVerticalSwipeRef !== 'function') {
+                    (zenVerticalSwipeRef as React.MutableRefObject<HTMLDivElement | null>).current = el;
+                  } else if (isTouchDevice && typeof zenVerticalSwipeRef === 'function') {
+                    (zenVerticalSwipeRef as (instance: HTMLDivElement | null) => void)(el);
+                  }
+                }}
                 $swipeEnabled={isTouchDevice}
                 $bothGestures={isTouchDevice}
                 {...(isTouchDevice ? gestureHandlers : {})}
