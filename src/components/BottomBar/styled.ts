@@ -19,7 +19,11 @@ export const BottomBarContainer = styled.div.withConfig({
   opacity: ${({ $zenHidden }) => $zenHidden ? 0 : 1};
   transform: ${({ $zenHidden }) => $zenHidden ? 'translateY(100%)' : 'translateY(0)'};
   pointer-events: ${({ $zenHidden }) => $zenHidden ? 'none' : 'auto'};
-  transition: opacity ${({ theme }) => theme.transitions.slow} ease, transform ${({ theme }) => theme.transitions.slow} ease;
+  /* When revealing (exiting zen): longer fade-in with short delay so it’s not jarring. When hiding: quick. */
+  transition: ${({ $zenHidden, theme }) =>
+    $zenHidden
+      ? `opacity ${theme.transitions.slow} ease, transform ${theme.transitions.slow} ease`
+      : `opacity 0.5s ease-out 0.15s, transform 0.5s ease-out 0.15s`};
 `;
 
 export const BottomBarInner = styled.div`
