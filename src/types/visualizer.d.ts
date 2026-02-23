@@ -6,9 +6,8 @@
  */
 
 export type VisualizerStyle =
-  | 'particles'
-  | 'geometric'
-  | 'trail';
+  | 'fireflies'
+  | 'comet';
 
 interface VisualizerConfig {
   particleCount?: number;

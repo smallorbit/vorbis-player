@@ -2,8 +2,14 @@ import React, { useMemo } from 'react';
 import styled from 'styled-components';
 import type { VisualizerStyle } from '../types/visualizer';
 import { ParticleVisualizer } from './visualizers/ParticleVisualizer';
-import { GeometricVisualizer } from './visualizers/GeometricVisualizer';
 import { TrailVisualizer } from './visualizers/TrailVisualizer';
+
+export interface AlbumArtBounds {
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+}
 
 interface BackgroundVisualizerProps {
   enabled: boolean;
@@ -13,6 +19,8 @@ interface BackgroundVisualizerProps {
   isPlaying: boolean;
   playbackPosition?: number;
   zenMode?: boolean;
+  /** When style is 'comet', the trail head is constrained to this rect so it appears to come from the album art */
+  albumArtBounds?: AlbumArtBounds | null;
 }
 
 const VisualizerContainer = styled.div`
@@ -36,7 +44,7 @@ const VisualizerContainer = styled.div`
  *
  * @props
  * - enabled: Whether the visualizer is enabled
- * - style: The visualizer style to render ('particles', 'geometric')
+ * - style: The visualizer style to render ('fireflies', 'comet')
  * - intensity: Visualizer intensity (0-100)
  * - accentColor: Current track's accent color
  * - isPlaying: Whether music is currently playing
@@ -49,17 +57,16 @@ const BackgroundVisualizer: React.FC<BackgroundVisualizerProps> = ({
   accentColor,
   isPlaying,
   playbackPosition,
-  zenMode
+  zenMode,
+  albumArtBounds,
 }) => {
   const VisualizerComponent = useMemo(() => {
     if (!enabled) return null;
 
     switch (style) {
-      case 'particles':
+      case 'fireflies':
         return ParticleVisualizer;
-      case 'geometric':
-        return GeometricVisualizer;
-      case 'trail':
+      case 'comet':
         return TrailVisualizer;
       default:
         return ParticleVisualizer;
@@ -78,6 +85,7 @@ const BackgroundVisualizer: React.FC<BackgroundVisualizerProps> = ({
         isPlaying={isPlaying}
         playbackPosition={playbackPosition}
         zenMode={zenMode}
+        {...(style === 'comet' && albumArtBounds != null ? { albumArtBounds } : {})}
       />
     </VisualizerContainer>
   );

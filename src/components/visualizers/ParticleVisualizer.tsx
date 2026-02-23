@@ -43,13 +43,13 @@ export const ParticleVisualizer: React.FC<ParticleVisualizerProps> = ({
   const getParticleCount = useCallback((width: number, height: number): number => {
     const pixelCount = width * height;
     const isMobile = width < 768;
-    const zenMultiplier = zenMode ? 2.5 : 1;
+    const zenMultiplier = zenMode ? 1.25 : 1;
 
     if (isMobile) {
-      return Math.min(Math.round(50 * zenMultiplier), Math.floor(pixelCount / (zenMode ? 12000 : 20000)));
+      return Math.min(Math.round(50 * zenMultiplier), Math.floor(pixelCount / (zenMode ? 6000 : 10000)));
     }
 
-    return Math.min(Math.round(80 * zenMultiplier), Math.floor(pixelCount / (zenMode ? 8000 : 15000)));
+    return Math.min(Math.round(80 * zenMultiplier), Math.floor(pixelCount / (zenMode ? 4000 : 7500)));
   }, [zenMode]);
 
   // Initialize particles
@@ -60,7 +60,7 @@ export const ParticleVisualizer: React.FC<ParticleVisualizerProps> = ({
     baseColor: string
   ): Particle[] => {
     const minRadius = zenMode ? 2 : 3;
-    const maxRadius = zenMode ? 14 : 8;
+    const maxRadius = zenMode ? 14 : 11;
     const speedRange = zenMode ? 0.6 : 0.5;
 
     return Array.from({ length: count }, () => ({
