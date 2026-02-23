@@ -173,7 +173,7 @@ export const TrailVisualizer: React.FC<TrailVisualizerProps> = ({
 
     // Each particle either drifts or is respawned at the ship (large divisor = long trail; 50% longer life)
     const lifeDrain = (deltaTime / 14250) * speedMult;
-    const particleSpeedMult = zenMode ? 1.55 : 1;
+    const particleSpeedMult = zenMode ? 1.15 : 1;
 
     particles.forEach(particle => {
       particle.life -= lifeDrain;
