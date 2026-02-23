@@ -19,7 +19,7 @@ interface AlbumArtBacksideProps {
   backgroundVisualizerEnabled: boolean;
   onBackgroundVisualizerToggle: () => void;
   backgroundVisualizerStyle: string;
-  onBackgroundVisualizerStyleChange: (style: 'particles' | 'geometric') => void;
+  onBackgroundVisualizerStyleChange: (style: 'fireflies' | 'comet') => void;
   onClose: () => void;
 }
 
@@ -315,17 +315,17 @@ const AlbumArtBackside = ({
               <OptionButtonGroup>
                 <OptionButton
                   $accentColor={accentColor}
-                  $isActive={backgroundVisualizerStyle === 'particles'}
-                  onClick={(e) => { e.stopPropagation(); onBackgroundVisualizerStyleChange('particles'); }}
+                  $isActive={backgroundVisualizerStyle === 'fireflies'}
+                  onClick={(e) => { e.stopPropagation(); onBackgroundVisualizerStyleChange('fireflies'); }}
                 >
-                  Particles
+                  Fireflies
                 </OptionButton>
                 <OptionButton
                   $accentColor={accentColor}
-                  $isActive={backgroundVisualizerStyle === 'geometric'}
-                  onClick={(e) => { e.stopPropagation(); onBackgroundVisualizerStyleChange('geometric'); }}
+                  $isActive={backgroundVisualizerStyle === 'comet'}
+                  onClick={(e) => { e.stopPropagation(); onBackgroundVisualizerStyleChange('comet'); }}
                 >
-                  Geometric
+                  Comet
                 </OptionButton>
               </OptionButtonGroup>
             </ToggleRow>

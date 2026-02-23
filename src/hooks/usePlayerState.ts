@@ -168,7 +168,7 @@ export function usePlayerState(): PlayerState & PlayerStateSetters {
   );
   const [backgroundVisualizerStyle, setBackgroundVisualizerStyle] = useLocalStorage<VisualizerStyle>(
     'vorbis-player-background-visualizer-style',
-    'particles'
+    'fireflies'
   );
   const [accentColorBackgroundPreferred, setAccentColorBackgroundPreferred] = useLocalStorage<boolean>(
     'vorbis-player-accent-color-background-preferred',
