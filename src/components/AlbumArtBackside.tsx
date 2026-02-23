@@ -19,7 +19,7 @@ interface AlbumArtBacksideProps {
   backgroundVisualizerEnabled: boolean;
   onBackgroundVisualizerToggle: () => void;
   backgroundVisualizerStyle: string;
-  onBackgroundVisualizerStyleChange: (style: 'particles' | 'geometric') => void;
+  onBackgroundVisualizerStyleChange: (style: 'particles' | 'geometric' | 'trail') => void;
   onClose: () => void;
 }
 
@@ -326,6 +326,13 @@ const AlbumArtBackside = ({
                   onClick={(e) => { e.stopPropagation(); onBackgroundVisualizerStyleChange('geometric'); }}
                 >
                   Geometric
+                </OptionButton>
+                <OptionButton
+                  $accentColor={accentColor}
+                  $isActive={backgroundVisualizerStyle === 'trail'}
+                  onClick={(e) => { e.stopPropagation(); onBackgroundVisualizerStyleChange('trail'); }}
+                >
+                  Trail
                 </OptionButton>
               </OptionButtonGroup>
             </ToggleRow>

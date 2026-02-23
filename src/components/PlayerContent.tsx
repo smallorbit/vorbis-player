@@ -405,7 +405,7 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ isPlaying, showLibraryDra
     setBackgroundVisualizerEnabled(prev => !prev);
   }, [setBackgroundVisualizerEnabled]);
 
-  const handleBackgroundVisualizerStyleChange = useCallback((style: 'particles' | 'geometric') => {
+  const handleBackgroundVisualizerStyleChange = useCallback((style: 'particles' | 'geometric' | 'trail') => {
     setBackgroundVisualizerStyle(style);
   }, [setBackgroundVisualizerStyle]);
 

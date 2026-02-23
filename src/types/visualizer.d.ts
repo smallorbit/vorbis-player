@@ -7,7 +7,8 @@
 
 export type VisualizerStyle =
   | 'particles'
-  | 'geometric';
+  | 'geometric'
+  | 'trail';
 
 interface VisualizerConfig {
   particleCount?: number;

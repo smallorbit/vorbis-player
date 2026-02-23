@@ -3,6 +3,7 @@ import styled from 'styled-components';
 import type { VisualizerStyle } from '../types/visualizer';
 import { ParticleVisualizer } from './visualizers/ParticleVisualizer';
 import { GeometricVisualizer } from './visualizers/GeometricVisualizer';
+import { TrailVisualizer } from './visualizers/TrailVisualizer';
 
 interface BackgroundVisualizerProps {
   enabled: boolean;
@@ -58,6 +59,8 @@ const BackgroundVisualizer: React.FC<BackgroundVisualizerProps> = ({
         return ParticleVisualizer;
       case 'geometric':
         return GeometricVisualizer;
+      case 'trail':
+        return TrailVisualizer;
       default:
         return ParticleVisualizer;
     }
