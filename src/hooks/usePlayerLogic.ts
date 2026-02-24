@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { spotifyAuth } from '@/services/spotify';
 import { spotifyPlayer } from '@/services/spotifyPlayer';
 import { useTrackContext } from '@/contexts/TrackContext';
@@ -146,6 +146,31 @@ export function usePlayerLogic() {
     setShowVisualEffects(false);
   }, [handlePause, setSelectedPlaylistId, setTracks, setCurrentTrackIndex, setShowPlaylist, setShowVisualEffects]);
 
+  const handlers = useMemo(
+    () => ({
+      handlePlaylistSelect,
+      handlePlay,
+      handlePause,
+      handleNext,
+      handlePrevious,
+      playTrack,
+      handleOpenLibraryDrawer,
+      handleCloseLibraryDrawer,
+      handleBackToLibrary,
+    }),
+    [
+      handlePlaylistSelect,
+      handlePlay,
+      handlePause,
+      handleNext,
+      handlePrevious,
+      playTrack,
+      handleOpenLibraryDrawer,
+      handleCloseLibraryDrawer,
+      handleBackToLibrary,
+    ]
+  );
+
   return {
     state: {
       isLoading,
@@ -156,16 +181,6 @@ export function usePlayerLogic() {
       isPlaying,
       playbackPosition,
     },
-    handlers: {
-      handlePlaylistSelect,
-      handlePlay,
-      handlePause,
-      handleNext,
-      handlePrevious,
-      playTrack,
-      handleOpenLibraryDrawer,
-      handleCloseLibraryDrawer,
-      handleBackToLibrary,
-    },
+    handlers,
   };
 }
