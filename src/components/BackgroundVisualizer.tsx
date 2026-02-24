@@ -50,7 +50,7 @@ const VisualizerContainer = styled.div`
  * - isPlaying: Whether music is currently playing
  * - playbackPosition: Current playback position in milliseconds (optional)
  */
-const BackgroundVisualizer: React.FC<BackgroundVisualizerProps> = ({
+const BackgroundVisualizer: React.FC<BackgroundVisualizerProps> = React.memo(({
   enabled,
   style,
   intensity,
@@ -89,7 +89,9 @@ const BackgroundVisualizer: React.FC<BackgroundVisualizerProps> = ({
       />
     </VisualizerContainer>
   );
-};
+});
+
+BackgroundVisualizer.displayName = 'BackgroundVisualizer';
 
 export default BackgroundVisualizer;
 

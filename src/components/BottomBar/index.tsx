@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useEffect } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { BottomBarContainer, BottomBarInner, ZenTriggerZone } from './styled';
 import { ControlButton } from '../controls/styled';
@@ -29,7 +29,7 @@ interface BottomBarProps {
   onShuffleToggle?: () => void;
 }
 
-export default function BottomBar({
+const BottomBar = React.memo(function BottomBar({
   accentColor,
   zenModeEnabled,
   isMuted,
@@ -189,4 +189,6 @@ export default function BottomBar({
     </>,
     document.body
   );
-}
+});
+
+export default BottomBar;

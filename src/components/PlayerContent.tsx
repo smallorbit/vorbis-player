@@ -287,7 +287,7 @@ const defaultFilters = {
   sepia: 0,
 };
 
-const PlayerContent: React.FC<PlayerContentProps> = ({ isPlaying, showLibraryDrawer, onAlbumArtBoundsChange, handlers }) => {
+const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, showLibraryDrawer, onAlbumArtBoundsChange, handlers }) => {
   // --- Context hooks ---
   const {
     tracks,
@@ -784,6 +784,8 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ isPlaying, showLibraryDra
       </ProfiledComponent>
     </ContentWrapper>
   );
-};
+});
+
+PlayerContent.displayName = 'PlayerContent';
 
 export default PlayerContent;

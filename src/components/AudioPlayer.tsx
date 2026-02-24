@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import styled from 'styled-components';
 import { flexCenter } from '@/styles/utils';
 import PlayerStateRenderer from './PlayerStateRenderer';
@@ -39,6 +39,19 @@ const AudioPlayerComponent = () => {
     handlers.handlePlaylistSelect(toAlbumPlaylistId(albumId));
   }, [handlers]);
 
+  const playbackHandlers = useMemo(() => ({
+    onPlay: handlers.handlePlay,
+    onPause: handlers.handlePause,
+    onNext: handlers.handleNext,
+    onPrevious: handlers.handlePrevious,
+    onTrackSelect: handlers.playTrack,
+    onOpenLibraryDrawer: handlers.handleOpenLibraryDrawer,
+    onCloseLibraryDrawer: handlers.handleCloseLibraryDrawer,
+    onPlaylistSelect: handlers.handlePlaylistSelect,
+    onAlbumPlay: handleAlbumPlay,
+    onBackToLibrary: handlers.handleBackToLibrary,
+  }), [handlers, handleAlbumPlay]);
+
   const isMainPlayerActive = !state.isLoading && !state.error && !!selectedPlaylistId && tracks.length > 0;
 
   const renderContent = () => {
@@ -61,19 +74,8 @@ const AudioPlayerComponent = () => {
         <PlayerContent
           isPlaying={state.isPlaying}
           showLibraryDrawer={state.showLibraryDrawer}
-          handlers={{
-          onPlay: handlers.handlePlay,
-          onPause: handlers.handlePause,
-          onNext: handlers.handleNext,
-          onPrevious: handlers.handlePrevious,
-          onTrackSelect: handlers.playTrack,
-          onOpenLibraryDrawer: handlers.handleOpenLibraryDrawer,
-          onCloseLibraryDrawer: handlers.handleCloseLibraryDrawer,
-          onPlaylistSelect: handlers.handlePlaylistSelect,
-          onAlbumPlay: handleAlbumPlay,
-          onBackToLibrary: handlers.handleBackToLibrary,
-        }}
-      />
+          handlers={playbackHandlers}
+        />
       </ProfiledComponent>
     );
   };
