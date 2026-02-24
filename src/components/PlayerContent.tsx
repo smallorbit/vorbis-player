@@ -430,19 +430,22 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
     setIsControlsFlipped(false);
   }, [currentTrack?.id]);
 
-  // Close flip when clicking outside the album art area
+  // Close all flipped panels when clicking outside them
   useEffect(() => {
-    if (!isFlipped) return;
+    if (!isFlipped && !isControlsFlipped) return;
     const handleClickOutside = (e: MouseEvent) => {
       const target = e.target as Element;
       if (target.closest?.('[data-eyedropper-overlay]')) return;
-      if (flipContainerRef.current && !flipContainerRef.current.contains(target)) {
+      const insideAlbumArt = flipContainerRef.current?.contains(target);
+      const insideControls = controlsRef.current?.contains(target);
+      if (!insideAlbumArt && !insideControls) {
         setIsFlipped(false);
+        setIsControlsFlipped(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [isFlipped]);
+  }, [isFlipped, isControlsFlipped]);
 
   // --- Color handlers (replaces useCustomAccentColors) ---
   const handleCustomAccentColor = useCallback((color: string) => {

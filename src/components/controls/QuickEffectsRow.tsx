@@ -26,12 +26,19 @@ export interface QuickEffectsRowProps {
 
 const QuickRow = styled.div`
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
   gap: ${theme.spacing.sm};
   width: 100%;
   margin-top: ${theme.spacing.xs};
+`;
+
+const RowLine = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: ${theme.spacing.sm};
+  flex-wrap: wrap;
 `;
 
 const QuickLabel = styled.span`
@@ -110,6 +117,31 @@ const ToggleGroup = styled.div`
   flex-wrap: wrap;
 `;
 
+const SwitchTrack = styled.button<{ $on: boolean; $accent: string }>`
+  position: relative;
+  width: 36px;
+  height: 20px;
+  border-radius: 10px;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  background: ${({ $on, $accent }) => ($on ? $accent : 'rgba(255, 255, 255, 0.15)')};
+  transition: background 0.2s ease;
+  flex-shrink: 0;
+`;
+
+const SwitchKnob = styled.span<{ $on: boolean }>`
+  position: absolute;
+  top: 2px;
+  left: ${({ $on }) => ($on ? '18px' : '2px')};
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: ${theme.colors.white};
+  transition: left 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+`;
+
 function QuickEffectsRow({
   currentTrack,
   accentColor,
@@ -145,8 +177,8 @@ function QuickEffectsRow({
 
   return (
     <QuickRow>
-      {/* Accent: swatches + pick + reset */}
-      <ToggleGroup>
+      {/* Row 1: Color swatches + eyedropper + reset */}
+      <RowLine>
         <QuickLabel>Color</QuickLabel>
         <SwatchRow>
           {colorOptions.map((color) => (
@@ -186,44 +218,27 @@ function QuickEffectsRow({
             Reset
           </ResetBtn>
         </SwatchRow>
-      </ToggleGroup>
+      </RowLine>
 
-      {/* Glow */}
-      <ToggleGroup>
-        <QuickLabel>Glow</QuickLabel>
-        <OptionButtonGroup>
-          <OptionButton $accentColor={accentColor} $isActive={glowEnabled} onClick={onGlowToggle}>
-            On
-          </OptionButton>
-          <OptionButton $accentColor={accentColor} $isActive={!glowEnabled} onClick={onGlowToggle}>
-            Off
-          </OptionButton>
-        </OptionButtonGroup>
-      </ToggleGroup>
+      {/* Row 2: Glow + Visualizer toggles */}
+      <RowLine>
+        <ToggleGroup>
+          <QuickLabel>Glow</QuickLabel>
+          <SwitchTrack $on={glowEnabled} $accent={accentColor} onClick={onGlowToggle} aria-label="Toggle glow" role="switch" aria-checked={glowEnabled}>
+            <SwitchKnob $on={glowEnabled} />
+          </SwitchTrack>
+        </ToggleGroup>
 
-      {/* Visualizer */}
-      <ToggleGroup>
-        <QuickLabel>Viz</QuickLabel>
-        <OptionButtonGroup>
-          <OptionButton
-            $accentColor={accentColor}
-            $isActive={backgroundVisualizerEnabled}
-            onClick={onBackgroundVisualizerToggle}
-          >
-            On
-          </OptionButton>
-          <OptionButton
-            $accentColor={accentColor}
-            $isActive={!backgroundVisualizerEnabled}
-            onClick={onBackgroundVisualizerToggle}
-          >
-            Off
-          </OptionButton>
-        </OptionButtonGroup>
-      </ToggleGroup>
+        <ToggleGroup>
+          <QuickLabel>Viz</QuickLabel>
+          <SwitchTrack $on={backgroundVisualizerEnabled} $accent={accentColor} onClick={onBackgroundVisualizerToggle} aria-label="Toggle visualizer" role="switch" aria-checked={backgroundVisualizerEnabled}>
+            <SwitchKnob $on={backgroundVisualizerEnabled} />
+          </SwitchTrack>
+        </ToggleGroup>
+      </RowLine>
 
-      {/* Style (when viz on) */}
-      {backgroundVisualizerEnabled && (
+      {/* Row 3: Visualizer style (always present to prevent layout shift) */}
+      <RowLine style={{ visibility: backgroundVisualizerEnabled ? 'visible' : 'hidden' }}>
         <ToggleGroup>
           <QuickLabel>Style</QuickLabel>
           <OptionButtonGroup>
@@ -243,7 +258,7 @@ function QuickEffectsRow({
             </OptionButton>
           </OptionButtonGroup>
         </ToggleGroup>
-      )}
+      </RowLine>
 
       {showEyedropper &&
         currentTrack?.image &&
