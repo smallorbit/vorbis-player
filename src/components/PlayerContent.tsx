@@ -1,4 +1,4 @@
-import React, { Suspense, lazy, useState, useCallback, useRef, useEffect } from 'react';
+import React, { Suspense, lazy, useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import styled, { useTheme } from 'styled-components';
 import { CardContent } from './styled';
 import AlbumArt from './AlbumArt';
@@ -18,7 +18,8 @@ import { useTrackContext } from '@/contexts/TrackContext';
 import { useColorContext } from '@/contexts/ColorContext';
 import { useVisualEffectsContext } from '@/contexts/VisualEffectsContext';
 import LibraryDrawer from './LibraryDrawer';
-import AlbumArtBackside from './AlbumArtBackside';
+import AlbumArtQuickSwapBack from './AlbumArtQuickSwapBack';
+import QuickEffectsRow from './controls/QuickEffectsRow';
 
 const PlaylistDrawer = lazy(() => import('./PlaylistDrawer'));
 const PlaylistBottomSheet = lazy(() => import('./PlaylistBottomSheet'));
@@ -278,6 +279,50 @@ const FlipInner = styled.div.withConfig({
   transform: ${({ $isFlipped }) => $isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)'};
 `;
 
+// Controls panel flip (front = playback/timeline, back = quick VFX)
+const ControlsFlipWrapper = styled.div`
+  position: relative;
+  width: 100%;
+  min-height: 180px;
+  perspective: 1000px;
+  cursor: pointer;
+`;
+
+const ControlsFlipInner = styled.div.withConfig({
+  shouldForwardProp: (prop) => !['$isFlipped'].includes(prop),
+})<{ $isFlipped: boolean }>`
+  position: relative;
+  width: 100%;
+  min-height: 180px;
+  transform-style: preserve-3d;
+  transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  transform: ${({ $isFlipped }) => ($isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)')};
+`;
+
+const ControlsFace = styled.div`
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 180px;
+  box-sizing: border-box;
+`;
+
+const ControlsFrontFace = styled(ControlsFace)`
+  z-index: 1;
+`;
+
+const ControlsBackFace = styled(ControlsFace)`
+  transform: rotateY(180deg);
+  z-index: 0;
+  padding: ${({ theme }) => theme.spacing.md};
+`;
+
 const defaultFilters = {
   brightness: 110,
   contrast: 100,
@@ -347,6 +392,9 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
   const flipContainerRef = useRef<HTMLDivElement>(null);
   const albumArtContainerRef = useRef<HTMLDivElement | null>(null);
 
+  const [isControlsFlipped, setIsControlsFlipped] = useState(false);
+  const toggleControlsFlip = useCallback(() => setIsControlsFlipped(f => !f), []);
+
   // Report album art bounds for trail visualizer (head stays inside art)
   useEffect(() => {
     if (!onAlbumArtBoundsChange) return;
@@ -375,6 +423,11 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
   // Reset flip when track changes
   useEffect(() => {
     setIsFlipped(false);
+  }, [currentTrack?.id]);
+
+  // Reset controls flip when track changes
+  useEffect(() => {
+    setIsControlsFlipped(false);
   }, [currentTrack?.id]);
 
   // Close flip when clicking outside the album art area
@@ -444,6 +497,32 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
     setBackgroundVisualizerStyle(style);
   }, [setBackgroundVisualizerStyle]);
 
+  // Stable quick-effects prop for SpotifyPlayerControls (compact color/glow/viz row)
+  const quickEffects = useMemo(
+    () => ({
+      customAccentColorOverrides: accentColorOverrides,
+      onAccentColorChange: handleAccentColorChange,
+      onCustomAccentColor: handleCustomAccentColor,
+      glowEnabled: visualEffectsEnabled,
+      onGlowToggle: handleGlowToggle,
+      backgroundVisualizerEnabled: backgroundVisualizerEnabled,
+      onBackgroundVisualizerToggle: handleBackgroundVisualizerToggle,
+      backgroundVisualizerStyle: backgroundVisualizerStyle as 'fireflies' | 'comet',
+      onBackgroundVisualizerStyleChange: handleBackgroundVisualizerStyleChange,
+    }),
+    [
+      accentColorOverrides,
+      handleAccentColorChange,
+      handleCustomAccentColor,
+      visualEffectsEnabled,
+      handleGlowToggle,
+      backgroundVisualizerEnabled,
+      handleBackgroundVisualizerToggle,
+      backgroundVisualizerStyle,
+      handleBackgroundVisualizerStyleChange,
+    ]
+  );
+
   const handleBackgroundVisualizerIntensityChange = useCallback((intensity: number) => {
     setBackgroundVisualizerIntensity(Math.max(0, Math.min(100, intensity)));
   }, [setBackgroundVisualizerIntensity]);
@@ -472,7 +551,7 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
   }, [handlers]);
 
   // --- Responsive sizing ---
-  const { dimensions, useFluidSizing, padding, transitionDuration, transitionEasing, isMobile, hasPointerInput, isTouchDevice } = usePlayerSizing();
+  const { dimensions, useFluidSizing, padding, transitionDuration, transitionEasing, isMobile, isTablet, hasPointerInput, isTouchDevice } = usePlayerSizing();
 
   // Measure controls card height so album art fills remaining space exactly.
   const controlsRef = useRef<HTMLDivElement>(null);
@@ -532,7 +611,24 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
     handleCloseVisualEffects();
     if (showHelp) closeHelp();
     setIsFlipped(false);
+    setIsControlsFlipped(false);
   }, [handleCloseLibraryDrawer, handleCloseVisualEffects, showHelp, closeHelp]);
+
+  // Only flip when tapping non-interactive area. Skip real <button>, <input>, <a>, and [role="slider"].
+  // Do NOT include [role="button"] here: the flip wrapper itself has role="button" for accessibility,
+  // so that would make every tap inside the panel skip and prevent flipping.
+  const handleControlsFlipClick = useCallback((e: React.MouseEvent) => {
+    const target = e.target as Element;
+    if (target.closest('button, input, a, [role="slider"]')) return;
+    toggleControlsFlip();
+  }, [toggleControlsFlip]);
+
+  const handleControlsFlipKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      toggleControlsFlip();
+    }
+  }, [toggleControlsFlip]);
 
   const handlePlayPause = useCallback(() => {
     if (isPlaying) {
@@ -623,7 +719,7 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
                 $swipeEnabled={isTouchDevice}
                 $bothGestures={isTouchDevice}
                 {...(isTouchDevice ? gestureHandlers : {})}
-                onClick={!isSwiping && !isAnimating ? (zenModeEnabled ? handlePlayPause : (!isFlipped ? toggleFlip : undefined)) : undefined}
+                onClick={!isSwiping && !isAnimating ? (zenModeEnabled ? handlePlayPause : (isFlipped ? () => setIsFlipped(false) : toggleFlip)) : undefined}
                 style={{
                   transform: `translateX(${offsetX}px)`,
                   transition: isAnimating ? 'transform 300ms cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
@@ -642,18 +738,9 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
                       zenMode={zenModeEnabled}
                     />
                   </ProfiledComponent>
-                  <AlbumArtBackside
+                  <AlbumArtQuickSwapBack
                     currentTrack={currentTrack}
-                    accentColor={accentColor}
-                    onAccentColorChange={handleAccentColorChange}
-                    customAccentColorOverrides={accentColorOverrides}
-                    onCustomAccentColor={handleCustomAccentColor}
-                    glowEnabled={visualEffectsEnabled}
-                    onGlowToggle={handleGlowToggle}
-                    backgroundVisualizerEnabled={backgroundVisualizerEnabled}
-                    onBackgroundVisualizerToggle={handleBackgroundVisualizerToggle}
-                    backgroundVisualizerStyle={backgroundVisualizerStyle}
-                    onBackgroundVisualizerStyleChange={handleBackgroundVisualizerStyleChange}
+                    onPlaylistSelect={handlers.onPlaylistSelect}
                     onClose={() => setIsFlipped(false)}
                   />
                 </FlipInner>
@@ -678,24 +765,50 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
                   alignItems: 'center',
                   justifyContent: 'center'
                 }}>
-                  <Suspense fallback={<ControlsLoadingFallback />}>
-                    <ProfiledComponent id="SpotifyPlayerControls">
-                    <SpotifyPlayerControls
-                      currentTrack={currentTrack}
-                      accentColor={accentColor}
-                      trackCount={tracks.length}
-                      isLiked={isLiked}
-                      isLikePending={isLikePending}
-                      onToggleLike={handleLikeToggle}
-                      onPlay={handlers.onPlay}
-                      onPause={handlers.onPause}
-                      onNext={handlers.onNext}
-                      onPrevious={handlers.onPrevious}
-                      onArtistBrowse={handleArtistBrowse}
-                      onAlbumPlay={handleAlbumPlay}
-                    />
-                    </ProfiledComponent>
-                  </Suspense>
+                  <ControlsFlipWrapper onClick={handleControlsFlipClick} onKeyDown={handleControlsFlipKeyDown} role="button" tabIndex={0} aria-label={isControlsFlipped ? 'Tap to show playback controls' : 'Tap to show quick effects'}>
+                    <ControlsFlipInner $isFlipped={isControlsFlipped}>
+                      <ControlsFrontFace>
+                        <Suspense fallback={<ControlsLoadingFallback />}>
+                          <ProfiledComponent id="SpotifyPlayerControls">
+                            <SpotifyPlayerControls
+                              currentTrack={currentTrack}
+                              accentColor={accentColor}
+                              trackCount={tracks.length}
+                              isLiked={isLiked}
+                              isLikePending={isLikePending}
+                              onToggleLike={handleLikeToggle}
+                              onPlay={handlers.onPlay}
+                              onPause={handlers.onPause}
+                              onNext={handlers.onNext}
+                              onPrevious={handlers.onPrevious}
+                              onArtistBrowse={handleArtistBrowse}
+                              onAlbumPlay={handleAlbumPlay}
+                            />
+                          </ProfiledComponent>
+                        </Suspense>
+                      </ControlsFrontFace>
+                      <ControlsBackFace>
+                        {quickEffects && (
+                          <QuickEffectsRow
+                            currentTrack={currentTrack}
+                            accentColor={accentColor}
+                            onAccentColorChange={quickEffects.onAccentColorChange}
+                            customAccentColorOverrides={quickEffects.customAccentColorOverrides}
+                            onCustomAccentColor={quickEffects.onCustomAccentColor}
+                            glowEnabled={quickEffects.glowEnabled}
+                            onGlowToggle={quickEffects.onGlowToggle}
+                            backgroundVisualizerEnabled={quickEffects.backgroundVisualizerEnabled}
+                            onBackgroundVisualizerToggle={quickEffects.onBackgroundVisualizerToggle}
+                            backgroundVisualizerStyle={quickEffects.backgroundVisualizerStyle}
+                            onBackgroundVisualizerStyleChange={quickEffects.onBackgroundVisualizerStyleChange}
+                            isMobile={isMobile}
+                            isTablet={isTablet}
+                          />
+                        )}
+                        <p style={{ fontSize: '10px', color: 'rgba(255,255,255,0.5)', marginTop: '8px', marginBottom: 0 }}>Tap panel to return</p>
+                      </ControlsBackFace>
+                    </ControlsFlipInner>
+                  </ControlsFlipWrapper>
                 </CardContent>
               </LoadingCard>
             </ZenControlsInner>

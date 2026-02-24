@@ -81,8 +81,6 @@ const SpotifyPlayerControls = memo<SpotifyPlayerControlsProps>(({
   // Get responsive sizing information
   const { isMobile, isTablet, isDesktop } = usePlayerSizing();
 
-  // Color picker and overrides are managed in the quick actions panel
-
   // Use Spotify controls hook — like state is always provided via props from usePlayerLogic
   const {
     isPlaying,
