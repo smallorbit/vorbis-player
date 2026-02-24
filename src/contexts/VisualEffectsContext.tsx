@@ -1,8 +1,9 @@
-import React, { createContext, useContext, useState, useCallback, useEffect, useMemo } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import type { VisualizerStyle } from '@/types/visualizer';
 import type { AlbumFilters } from '@/types/filters';
 import { DEFAULT_ALBUM_FILTERS } from '@/types/filters';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
+import { isProfilingEnabled } from '@/contexts/ProfilingContext';
 
 interface VisualEffectsContextValue {
   // State
@@ -138,6 +139,13 @@ export function VisualEffectsProvider({ children }: { children: React.ReactNode 
     handleResetFilters,
     restoreSavedFilters,
   ]);
+
+  const profilingRef = useRef(0);
+  useEffect(() => {
+    if (!isProfilingEnabled()) return;
+    profilingRef.current += 1;
+    console.debug(`[Profiling] VisualEffectsContext update #${profilingRef.current}`);
+  }, [value]);
 
   return (
     <VisualEffectsContext.Provider value={value}>

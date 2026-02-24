@@ -6,6 +6,9 @@ import PlayerContent from './PlayerContent';
 import BackgroundVisualizer from './BackgroundVisualizer';
 import AccentColorBackground from './AccentColorBackground';
 import DebugOverlay, { useDebugActivator } from './DebugOverlay';
+import { ProfilingProvider } from '@/contexts/ProfilingContext';
+import { ProfilingOverlay } from '@/components/ProfilingOverlay';
+import { ProfiledComponent } from '@/components/ProfiledComponent';
 import { usePlayerLogic } from '@/hooks/usePlayerLogic';
 import { useColorContext } from '@/contexts/ColorContext';
 import { useVisualEffectsContext } from '@/contexts/VisualEffectsContext';
@@ -41,21 +44,24 @@ const AudioPlayerComponent = () => {
   const renderContent = () => {
     if (state.isLoading || state.error || !selectedPlaylistId || tracks.length === 0) {
       return (
-        <PlayerStateRenderer
-          isLoading={state.isLoading}
-          error={state.error}
-          selectedPlaylistId={selectedPlaylistId}
-          tracks={tracks}
-          onPlaylistSelect={handlers.handlePlaylistSelect}
-        />
+        <ProfiledComponent id="PlayerStateRenderer">
+          <PlayerStateRenderer
+            isLoading={state.isLoading}
+            error={state.error}
+            selectedPlaylistId={selectedPlaylistId}
+            tracks={tracks}
+            onPlaylistSelect={handlers.handlePlaylistSelect}
+          />
+        </ProfiledComponent>
       );
     }
 
     return (
-      <PlayerContent
-        isPlaying={state.isPlaying}
-        showLibraryDrawer={state.showLibraryDrawer}
-        handlers={{
+      <ProfiledComponent id="PlayerContent">
+        <PlayerContent
+          isPlaying={state.isPlaying}
+          showLibraryDrawer={state.showLibraryDrawer}
+          handlers={{
           onPlay: handlers.handlePlay,
           onPause: handlers.handlePause,
           onNext: handlers.handleNext,
@@ -68,32 +74,40 @@ const AudioPlayerComponent = () => {
           onBackToLibrary: handlers.handleBackToLibrary,
         }}
       />
+      </ProfiledComponent>
     );
   };
 
   return (
-    <Container>
-      <DebugOverlay active={debugActive} />
-      {/* 5 rapid taps in top-left corner toggles debug overlay */}
-      <div
-        onClick={handleActivatorTap}
-        style={{ position: 'fixed', top: 0, left: 0, width: 44, height: 44, zIndex: 999990 }}
-      />
-      <AccentColorBackground
-        enabled={accentColorBackgroundEnabled && isMainPlayerActive}
-        accentColor={accentColor}
-      />
-      <BackgroundVisualizer
-        enabled={backgroundVisualizerEnabled && isMainPlayerActive}
-        style={backgroundVisualizerStyle}
-        intensity={backgroundVisualizerIntensity}
-        accentColor={accentColor}
-        isPlaying={state.isPlaying}
-        playbackPosition={state.playbackPosition}
-        zenMode={zenModeEnabled}
-      />
-      {renderContent()}
-    </Container>
+    <ProfilingProvider>
+      <Container>
+        <DebugOverlay active={debugActive} />
+        <ProfilingOverlay />
+        {/* 5 rapid taps in top-left corner toggles debug overlay */}
+        <div
+          onClick={handleActivatorTap}
+          style={{ position: 'fixed', top: 0, left: 0, width: 44, height: 44, zIndex: 999990 }}
+        />
+        <ProfiledComponent id="AccentColorBackground">
+          <AccentColorBackground
+            enabled={accentColorBackgroundEnabled && isMainPlayerActive}
+            accentColor={accentColor}
+          />
+        </ProfiledComponent>
+        <ProfiledComponent id="BackgroundVisualizer">
+          <BackgroundVisualizer
+            enabled={backgroundVisualizerEnabled && isMainPlayerActive}
+            style={backgroundVisualizerStyle}
+            intensity={backgroundVisualizerIntensity}
+            accentColor={accentColor}
+            isPlaying={state.isPlaying}
+            playbackPosition={state.playbackPosition}
+            zenMode={zenModeEnabled}
+          />
+        </ProfiledComponent>
+        {renderContent()}
+      </Container>
+    </ProfilingProvider>
   );
 };
 

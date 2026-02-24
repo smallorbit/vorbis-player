@@ -1,6 +1,7 @@
-import React, { createContext, useContext, useState, useCallback, useMemo } from 'react';
+import React, { createContext, useContext, useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { theme } from '@/styles/theme';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
+import { isProfilingEnabled } from '@/contexts/ProfilingContext';
 
 interface ColorContextValue {
   accentColor: string;
@@ -42,6 +43,13 @@ export function ColorProvider({ children }: { children: React.ReactNode }) {
     handleRemoveAccentColorOverride,
     handleResetAccentColorOverride: handleRemoveAccentColorOverride,
   }), [accentColor, accentColorOverrides, setAccentColor, setAccentColorOverrides, handleSetAccentColorOverride, handleRemoveAccentColorOverride]);
+
+  const profilingRef = useRef(0);
+  useEffect(() => {
+    if (!isProfilingEnabled()) return;
+    profilingRef.current += 1;
+    console.debug(`[Profiling] ColorContext update #${profilingRef.current}`);
+  }, [value]);
 
   return <ColorContext.Provider value={value}>{children}</ColorContext.Provider>;
 }
