@@ -47,6 +47,7 @@
 import { useCallback, useEffect } from 'react';
 import { extractDominantColor } from '../utils/colorExtractor';
 import { theme } from '@/styles/theme';
+import { isProfilingEnabled } from '@/contexts/ProfilingContext';
 import type { Track } from '../services/spotify';
 
 /**
@@ -121,8 +122,12 @@ export const useAccentColor = (
 
     // Extract color from album artwork if available
     if (currentTrack.image) {
+      const extractStart = isProfilingEnabled() ? performance.now() : 0;
       extractDominantColor(currentTrack.image)
         .then(dominantColor => {
+          if (extractStart > 0) {
+            console.debug(`[Profiling] useAccentColor.extract: ${(performance.now() - extractStart).toFixed(1)}ms`);
+          }
           if (dominantColor) {
             setAccentColor(dominantColor.hex);
           } else {

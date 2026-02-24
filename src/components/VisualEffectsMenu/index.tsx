@@ -2,7 +2,7 @@ import React, { memo, useCallback, useMemo } from 'react';
 import { FixedSizeList as List } from 'react-window';
 
 import { theme } from '../../styles/theme';
-import { PerformanceProfilerComponent } from '../PerformanceProfiler';
+import { ProfiledComponent } from '@/components/ProfiledComponent';
 import VisualEffectsPerformanceMonitor from '../VisualEffectsPerformanceMonitor';
 import { usePlayerSizing } from '../../hooks/usePlayerSizing';
 import type { VisualizerStyle } from '../../types/visualizer';
@@ -254,7 +254,7 @@ const VisualEffectsMenu: React.FC<VisualEffectsMenuProps> = memo(({
   }, [filterConfig, accentColor, handleFilterChange, getFilterValue]);
 
   return (
-    <PerformanceProfilerComponent id="visual-effects-menu">
+    <ProfiledComponent id="visual-effects-menu">
       <VisualEffectsPerformanceMonitor
         filterCount={filterConfig.length}
         isEnabled={import.meta.env.DEV}
@@ -423,7 +423,7 @@ const VisualEffectsMenu: React.FC<VisualEffectsMenuProps> = memo(({
           </FilterSection>
         </DrawerContent>
       </DrawerContainer>
-    </PerformanceProfilerComponent>
+    </ProfiledComponent>
   );
 }, areVisualEffectsPropsEqual);
 

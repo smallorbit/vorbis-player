@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import styled from 'styled-components';
 import { flexCenter } from '@/styles/utils';
 import PlayerStateRenderer from './PlayerStateRenderer';
@@ -6,6 +6,9 @@ import PlayerContent from './PlayerContent';
 import BackgroundVisualizer from './BackgroundVisualizer';
 import AccentColorBackground from './AccentColorBackground';
 import DebugOverlay, { useDebugActivator } from './DebugOverlay';
+import { ProfilingProvider } from '@/contexts/ProfilingContext';
+import { ProfilingOverlay } from '@/components/ProfilingOverlay';
+import { ProfiledComponent } from '@/components/ProfiledComponent';
 import { usePlayerLogic } from '@/hooks/usePlayerLogic';
 import { useColorContext } from '@/contexts/ColorContext';
 import { useVisualEffectsContext } from '@/contexts/VisualEffectsContext';
@@ -36,64 +39,77 @@ const AudioPlayerComponent = () => {
     handlers.handlePlaylistSelect(toAlbumPlaylistId(albumId));
   }, [handlers]);
 
+  const playbackHandlers = useMemo(() => ({
+    onPlay: handlers.handlePlay,
+    onPause: handlers.handlePause,
+    onNext: handlers.handleNext,
+    onPrevious: handlers.handlePrevious,
+    onTrackSelect: handlers.playTrack,
+    onOpenLibraryDrawer: handlers.handleOpenLibraryDrawer,
+    onCloseLibraryDrawer: handlers.handleCloseLibraryDrawer,
+    onPlaylistSelect: handlers.handlePlaylistSelect,
+    onAlbumPlay: handleAlbumPlay,
+    onBackToLibrary: handlers.handleBackToLibrary,
+  }), [handlers, handleAlbumPlay]);
+
   const isMainPlayerActive = !state.isLoading && !state.error && !!selectedPlaylistId && tracks.length > 0;
 
   const renderContent = () => {
     if (state.isLoading || state.error || !selectedPlaylistId || tracks.length === 0) {
       return (
-        <PlayerStateRenderer
-          isLoading={state.isLoading}
-          error={state.error}
-          selectedPlaylistId={selectedPlaylistId}
-          tracks={tracks}
-          onPlaylistSelect={handlers.handlePlaylistSelect}
-        />
+        <ProfiledComponent id="PlayerStateRenderer">
+          <PlayerStateRenderer
+            isLoading={state.isLoading}
+            error={state.error}
+            selectedPlaylistId={selectedPlaylistId}
+            tracks={tracks}
+            onPlaylistSelect={handlers.handlePlaylistSelect}
+          />
+        </ProfiledComponent>
       );
     }
 
     return (
-      <PlayerContent
-        isPlaying={state.isPlaying}
-        showLibraryDrawer={state.showLibraryDrawer}
-        handlers={{
-          onPlay: handlers.handlePlay,
-          onPause: handlers.handlePause,
-          onNext: handlers.handleNext,
-          onPrevious: handlers.handlePrevious,
-          onTrackSelect: handlers.playTrack,
-          onOpenLibraryDrawer: handlers.handleOpenLibraryDrawer,
-          onCloseLibraryDrawer: handlers.handleCloseLibraryDrawer,
-          onPlaylistSelect: handlers.handlePlaylistSelect,
-          onAlbumPlay: handleAlbumPlay,
-          onBackToLibrary: handlers.handleBackToLibrary,
-        }}
-      />
+      <ProfiledComponent id="PlayerContent">
+        <PlayerContent
+          isPlaying={state.isPlaying}
+          showLibraryDrawer={state.showLibraryDrawer}
+          handlers={playbackHandlers}
+        />
+      </ProfiledComponent>
     );
   };
 
   return (
-    <Container>
-      <DebugOverlay active={debugActive} />
-      {/* 5 rapid taps in top-left corner toggles debug overlay */}
-      <div
-        onClick={handleActivatorTap}
-        style={{ position: 'fixed', top: 0, left: 0, width: 44, height: 44, zIndex: 999990 }}
-      />
-      <AccentColorBackground
-        enabled={accentColorBackgroundEnabled && isMainPlayerActive}
-        accentColor={accentColor}
-      />
-      <BackgroundVisualizer
-        enabled={backgroundVisualizerEnabled && isMainPlayerActive}
-        style={backgroundVisualizerStyle}
-        intensity={backgroundVisualizerIntensity}
-        accentColor={accentColor}
-        isPlaying={state.isPlaying}
-        playbackPosition={state.playbackPosition}
-        zenMode={zenModeEnabled}
-      />
-      {renderContent()}
-    </Container>
+    <ProfilingProvider>
+      <Container>
+        <DebugOverlay active={debugActive} />
+        <ProfilingOverlay />
+        {/* 5 rapid taps in top-left corner toggles debug overlay */}
+        <div
+          onClick={handleActivatorTap}
+          style={{ position: 'fixed', top: 0, left: 0, width: 44, height: 44, zIndex: 999990 }}
+        />
+        <ProfiledComponent id="AccentColorBackground">
+          <AccentColorBackground
+            enabled={accentColorBackgroundEnabled && isMainPlayerActive}
+            accentColor={accentColor}
+          />
+        </ProfiledComponent>
+        <ProfiledComponent id="BackgroundVisualizer">
+          <BackgroundVisualizer
+            enabled={backgroundVisualizerEnabled && isMainPlayerActive}
+            style={backgroundVisualizerStyle}
+            intensity={backgroundVisualizerIntensity}
+            accentColor={accentColor}
+            isPlaying={state.isPlaying}
+            playbackPosition={state.playbackPosition}
+            zenMode={zenModeEnabled}
+          />
+        </ProfiledComponent>
+        {renderContent()}
+      </Container>
+    </ProfilingProvider>
   );
 };
 

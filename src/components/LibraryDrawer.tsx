@@ -1,4 +1,4 @@
-import { useCallback, useRef, useEffect } from 'react';
+import React, { useCallback, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import styled from 'styled-components';
 import { useVerticalSwipeGesture } from '@/hooks/useVerticalSwipeGesture';
@@ -109,7 +109,7 @@ const DrawerContent = styled.div`
   flex-direction: column;
 `;
 
-function LibraryDrawer({ isOpen, onClose, onPlaylistSelect, initialSearchQuery, initialViewMode }: LibraryDrawerProps) {
+const LibraryDrawer = React.memo(function LibraryDrawer({ isOpen, onClose, onPlaylistSelect, initialSearchQuery, initialViewMode }: LibraryDrawerProps) {
   const selectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handlePlaylistSelectWrapper = useCallback(
@@ -182,6 +182,6 @@ function LibraryDrawer({ isOpen, onClose, onPlaylistSelect, initialSearchQuery, 
     </>,
     document.body
   );
-}
+});
 
 export default LibraryDrawer;

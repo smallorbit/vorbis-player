@@ -6,6 +6,7 @@ import SpotifyPlayerControls from './SpotifyPlayerControls';
 import BottomBar from './BottomBar';
 import { BOTTOM_BAR_HEIGHT } from './BottomBar/styled';
 import { cardBase } from '../styles/utils';
+import { ProfiledComponent } from '@/components/ProfiledComponent';
 import { usePlayerSizing } from '../hooks/usePlayerSizing';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
 import { useSwipeGesture } from '@/hooks/useSwipeGesture';
@@ -286,7 +287,7 @@ const defaultFilters = {
   sepia: 0,
 };
 
-const PlayerContent: React.FC<PlayerContentProps> = ({ isPlaying, showLibraryDrawer, onAlbumArtBoundsChange, handlers }) => {
+const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, showLibraryDrawer, onAlbumArtBoundsChange, handlers }) => {
   // --- Context hooks ---
   const {
     tracks,
@@ -630,15 +631,17 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ isPlaying, showLibraryDra
                 }}
               >
                 <FlipInner $isFlipped={isFlipped}>
-                  <AlbumArt
-                    currentTrack={currentTrack}
-                    accentColor={accentColor}
-                    glowIntensity={visualEffectsEnabled ? effectiveGlow.intensity : 0}
-                    glowRate={effectiveGlow.rate}
-                    glowEnabled={visualEffectsEnabled}
-                    albumFilters={visualEffectsEnabled ? albumFilters : defaultFilters}
-                    zenMode={zenModeEnabled}
-                  />
+                  <ProfiledComponent id="AlbumArt">
+                    <AlbumArt
+                      currentTrack={currentTrack}
+                      accentColor={accentColor}
+                      glowIntensity={visualEffectsEnabled ? effectiveGlow.intensity : 0}
+                      glowRate={effectiveGlow.rate}
+                      glowEnabled={visualEffectsEnabled}
+                      albumFilters={visualEffectsEnabled ? albumFilters : defaultFilters}
+                      zenMode={zenModeEnabled}
+                    />
+                  </ProfiledComponent>
                   <AlbumArtBackside
                     currentTrack={currentTrack}
                     accentColor={accentColor}
@@ -676,6 +679,7 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ isPlaying, showLibraryDra
                   justifyContent: 'center'
                 }}>
                   <Suspense fallback={<ControlsLoadingFallback />}>
+                    <ProfiledComponent id="SpotifyPlayerControls">
                     <SpotifyPlayerControls
                       currentTrack={currentTrack}
                       accentColor={accentColor}
@@ -690,6 +694,7 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ isPlaying, showLibraryDra
                       onArtistBrowse={handleArtistBrowse}
                       onAlbumPlay={handleAlbumPlay}
                     />
+                    </ProfiledComponent>
                   </Suspense>
                 </CardContent>
               </LoadingCard>
@@ -697,6 +702,7 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ isPlaying, showLibraryDra
           </ZenControlsWrapper>
         </PlayerStack>
       </PlayerContainer>
+      <ProfiledComponent id="BottomBar">
       <BottomBar
         accentColor={accentColor}
         zenModeEnabled={zenModeEnabled}
@@ -711,6 +717,7 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ isPlaying, showLibraryDra
         shuffleEnabled={shuffleEnabled}
         onShuffleToggle={handleShuffleToggle}
       />
+      </ProfiledComponent>
       {showVisualEffects && (
         <Suspense fallback={<VisualEffectsLoadingFallback />}>
           <VisualEffectsMenu
@@ -740,37 +747,45 @@ const PlayerContent: React.FC<PlayerContentProps> = ({ isPlaying, showLibraryDra
       )}
       <Suspense fallback={<PlaylistLoadingFallback />}>
         {isMobile ? (
-          <PlaylistBottomSheet
-            isOpen={showPlaylist}
-            onClose={handleClosePlaylist}
-            tracks={tracks}
-            currentTrackIndex={currentTrackIndex}
-            accentColor={accentColor}
-            onTrackSelect={handlers.onTrackSelect}
-          />
+          <ProfiledComponent id="PlaylistBottomSheet">
+            <PlaylistBottomSheet
+              isOpen={showPlaylist}
+              onClose={handleClosePlaylist}
+              tracks={tracks}
+              currentTrackIndex={currentTrackIndex}
+              accentColor={accentColor}
+              onTrackSelect={handlers.onTrackSelect}
+            />
+          </ProfiledComponent>
         ) : (
-          <PlaylistDrawer
-            isOpen={showPlaylist}
-            onClose={handleClosePlaylist}
-            tracks={tracks}
-            currentTrackIndex={currentTrackIndex}
-            accentColor={accentColor}
-            onTrackSelect={handlers.onTrackSelect}
-          />
+          <ProfiledComponent id="PlaylistDrawer">
+            <PlaylistDrawer
+              isOpen={showPlaylist}
+              onClose={handleClosePlaylist}
+              tracks={tracks}
+              currentTrackIndex={currentTrackIndex}
+              accentColor={accentColor}
+              onTrackSelect={handlers.onTrackSelect}
+            />
+          </ProfiledComponent>
         )}
       </Suspense>
       <Suspense fallback={null}>
         <KeyboardShortcutsHelp isOpen={showHelp} onClose={closeHelp} />
       </Suspense>
-      <LibraryDrawer
-        isOpen={showLibraryDrawer}
-        onClose={handleCloseLibraryDrawer}
-        onPlaylistSelect={handlers.onPlaylistSelect}
-        initialSearchQuery={librarySearchQuery}
-        initialViewMode={libraryViewMode}
-      />
+      <ProfiledComponent id="LibraryDrawer">
+        <LibraryDrawer
+          isOpen={showLibraryDrawer}
+          onClose={handleCloseLibraryDrawer}
+          onPlaylistSelect={handlers.onPlaylistSelect}
+          initialSearchQuery={librarySearchQuery}
+          initialViewMode={libraryViewMode}
+        />
+      </ProfiledComponent>
     </ContentWrapper>
   );
-};
+});
+
+PlayerContent.displayName = 'PlayerContent';
 
 export default PlayerContent;

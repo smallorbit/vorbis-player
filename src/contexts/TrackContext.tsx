@@ -1,6 +1,7 @@
-import React, { createContext, useContext, useState, useMemo, useCallback } from 'react';
+import React, { createContext, useContext, useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import type { Track } from '@/services/spotify';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
+import { isProfilingEnabled } from '@/contexts/ProfilingContext';
 
 interface TrackContextValue {
   // State
@@ -102,6 +103,13 @@ export function TrackProvider({ children }: { children: React.ReactNode }) {
     setShuffleEnabled,
     handleShuffleToggle,
   ]);
+
+  const profilingRef = useRef(0);
+  useEffect(() => {
+    if (!isProfilingEnabled()) return;
+    profilingRef.current += 1;
+    console.debug(`[Profiling] TrackContext update #${profilingRef.current}`);
+  }, [value]);
 
   return <TrackContext.Provider value={value}>{children}</TrackContext.Provider>;
 }
