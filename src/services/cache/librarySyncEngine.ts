@@ -14,8 +14,8 @@ import {
   getPlaylistCount,
   getAlbumCount,
   getLikedSongsCount,
-  getPlaylistsPage,
-  getAlbumsPage,
+  getAllUserPlaylists,
+  getAllUserAlbums,
   getUserLibraryInterleaved,
   invalidateLikedSongsCaches,
   spotifyAuth,
@@ -333,7 +333,6 @@ export class LibrarySyncEngine {
     this.notifyListeners(playlists, albums, changes.newLikedSongsCount);
   }
 
-  // getPlaylistsPage only fetches from offset 0; libraries > 50 playlists get a partial sync
   private async syncPlaylists(newTotal: number, signal: AbortSignal): Promise<CachedPlaylistInfo[]> {
     const [cachedPlaylists, meta] = await Promise.all([
       cache.getAllPlaylists(),
@@ -345,7 +344,9 @@ export class LibrarySyncEngine {
     );
 
     if (signal.aborted) throw new DOMException('Request aborted', 'AbortError');
-    const { playlists } = await getPlaylistsPage(50, signal);
+
+    // Fetch ALL pages so libraries with >50 playlists are fully synced
+    const playlists = await getAllUserPlaylists(signal);
     const allFetched = playlists as CachedPlaylistInfo[];
 
     const fetchTimestamp = new Date().toISOString();
@@ -385,10 +386,11 @@ export class LibrarySyncEngine {
     return allFetched;
   }
 
-  // getAlbumsPage only fetches from offset 0; libraries > 50 albums get a partial sync
   private async syncAlbums(newTotal: number, signal: AbortSignal): Promise<AlbumInfo[]> {
     const cachedAlbums = await cache.getAllAlbums();
-    const { albums: allFetched } = await getAlbumsPage(50, signal);
+
+    // Fetch ALL pages so libraries with >50 albums are fully synced
+    const allFetched = await getAllUserAlbums(signal);
 
     const fetchedIds = new Set(allFetched.map(a => a.id));
 

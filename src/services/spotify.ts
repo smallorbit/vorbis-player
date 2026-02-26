@@ -933,6 +933,62 @@ export async function getAlbumsPage(
   };
 }
 
+/** Fetch ALL user playlists with full pagination (not capped at 50). */
+export async function getAllUserPlaylists(signal?: AbortSignal): Promise<PlaylistInfo[]> {
+  const token = await spotifyAuth.ensureValidToken();
+  const fetchTimestamp = new Date().toISOString();
+  const playlists: PlaylistInfo[] = [];
+  let nextUrl: string | null = 'https://api.spotify.com/v1/me/playlists?limit=50';
+
+  while (nextUrl) {
+    if (signal?.aborted) throw new DOMException('Request aborted', 'AbortError');
+    const url = nextUrl;
+    const data: PaginatedResponse<PlaylistInfo> = await spotifyApiRequest(url, token, { signal });
+    for (const item of data.items ?? []) {
+      playlists.push({ ...item, added_at: item.added_at || fetchTimestamp });
+    }
+    nextUrl = data.next;
+  }
+
+  return playlists;
+}
+
+/** Fetch ALL user saved albums with full pagination (not capped at 50). */
+export async function getAllUserAlbums(signal?: AbortSignal): Promise<AlbumInfo[]> {
+  const token = await spotifyAuth.ensureValidToken();
+
+  interface SavedAlbumItem {
+    added_at: string;
+    album: SpotifyAlbum;
+  }
+
+  const albums: AlbumInfo[] = [];
+  let nextUrl: string | null = 'https://api.spotify.com/v1/me/albums?limit=50';
+
+  while (nextUrl) {
+    if (signal?.aborted) throw new DOMException('Request aborted', 'AbortError');
+    const url = nextUrl;
+    const data: PaginatedResponse<SavedAlbumItem> = await spotifyApiRequest(url, token, { signal });
+    for (const item of data.items ?? []) {
+      const album = item.album;
+      albums.push({
+        id: album.id ?? '',
+        name: album.name ?? 'Unknown Album',
+        artists: formatArtists(album.artists),
+        images: album.images ?? [],
+        release_date: album.release_date ?? '',
+        total_tracks: album.total_tracks ?? 0,
+        uri: album.uri ?? '',
+        album_type: album.album_type,
+        added_at: item.added_at,
+      });
+    }
+    nextUrl = data.next;
+  }
+
+  return albums;
+}
+
 /** Invalidate the in-memory liked songs caches (used by sync engine). */
 export function invalidateLikedSongsCaches(): void {
   likedSongsCache = null;

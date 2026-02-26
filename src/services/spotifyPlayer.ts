@@ -208,6 +208,53 @@ class SpotifyPlayerService {
     }
   }
 
+  /**
+   * Play a Spotify context (playlist, album, artist) by its URI.
+   * This lets Spotify manage the track queue, useful for playlists where
+   * the API may not return individual tracks (e.g. Spotify-made playlists).
+   */
+  async playContext(contextUri: string, offsetPosition?: number): Promise<void> {
+    if (!this.deviceId || !this.isReady) {
+      throw new Error('Spotify player not ready');
+    }
+    this.lastPlayTrackTime = Date.now();
+
+    const token = await spotifyAuth.ensureValidToken();
+
+    const body: Record<string, unknown> = { context_uri: contextUri };
+    if (offsetPosition !== undefined) {
+      body.offset = { position: offsetPosition };
+    }
+
+    console.log('🎵 Playing context:', { contextUri, offsetPosition, deviceId: this.deviceId });
+
+    const response = await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${this.deviceId}`, {
+      method: 'PUT',
+      body: JSON.stringify(body),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('🎵 Context playback error:', errorText);
+
+      let errorReason = '';
+      try {
+        const errorJson = JSON.parse(errorText);
+        if (errorJson.error?.message) {
+          errorReason = ` - ${errorJson.error.message}`;
+        }
+      } catch {
+        errorReason = errorText ? ` - ${errorText}` : '';
+      }
+
+      throw new Error(`Spotify API error: ${response.status}${errorReason}`);
+    }
+  }
+
   async playPlaylist(uris: string[]): Promise<void> {
     if (!this.deviceId || !this.isReady) {
       throw new Error('Spotify player not ready');
