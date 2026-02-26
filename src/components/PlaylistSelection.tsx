@@ -727,11 +727,11 @@ function PlaylistSelection({ onPlaylistSelect, inDrawer = false, swipeZoneRef, i
   }, [filteredPlaylists, pinnedPlaylistIds, hasActiveFilters]);
 
   const { pinned: pinnedAlbums, unpinned: unpinnedAlbums } = useMemo(() => {
-    if (hasActiveFilters || pinnedAlbumIds.length === 0) {
+    if (pinnedAlbumIds.length === 0) {
       return { pinned: [] as AlbumInfo[], unpinned: filteredAlbums };
     }
     return partitionByPinned(filteredAlbums, pinnedAlbumIds, (a) => a.id);
-  }, [filteredAlbums, pinnedAlbumIds, hasActiveFilters]);
+  }, [filteredAlbums, pinnedAlbumIds]);
 
   useEffect(() => {
     if (viewMode === 'playlists') {
