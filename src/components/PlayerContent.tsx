@@ -347,10 +347,13 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
   const {
     accentColor,
     accentColorOverrides,
+    customAccentColors,
     setAccentColor,
     handleSetAccentColorOverride,
     handleRemoveAccentColorOverride,
     handleResetAccentColorOverride,
+    handleSetCustomAccentColor,
+    handleRemoveCustomAccentColor,
   } = useColorContext();
 
   const {
@@ -452,12 +455,14 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
     if (currentTrack?.album_id) {
       if (color === '') {
         handleRemoveAccentColorOverride(currentTrack.album_id);
+        handleRemoveCustomAccentColor(currentTrack.album_id);
       } else {
         handleSetAccentColorOverride(currentTrack.album_id, color);
+        handleSetCustomAccentColor(currentTrack.album_id, color);
         setAccentColor(color);
       }
     }
-  }, [currentTrack?.album_id, handleSetAccentColorOverride, handleRemoveAccentColorOverride, setAccentColor]);
+  }, [currentTrack?.album_id, handleSetAccentColorOverride, handleRemoveAccentColorOverride, handleSetCustomAccentColor, handleRemoveCustomAccentColor, setAccentColor]);
 
   const handleAccentColorChange = useCallback((color: string) => {
     if (color === 'RESET_TO_DEFAULT' && currentTrack?.album_id) {
@@ -503,7 +508,7 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
   // Stable quick-effects prop for SpotifyPlayerControls (compact color/glow/viz row)
   const quickEffects = useMemo(
     () => ({
-      customAccentColorOverrides: accentColorOverrides,
+      customAccentColorOverrides: customAccentColors,
       onAccentColorChange: handleAccentColorChange,
       onCustomAccentColor: handleCustomAccentColor,
       glowEnabled: visualEffectsEnabled,
@@ -514,7 +519,7 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
       onBackgroundVisualizerStyleChange: handleBackgroundVisualizerStyleChange,
     }),
     [
-      accentColorOverrides,
+      customAccentColors,
       handleAccentColorChange,
       handleCustomAccentColor,
       visualEffectsEnabled,
