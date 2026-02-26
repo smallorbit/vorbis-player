@@ -346,7 +346,6 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
 
   const {
     accentColor,
-    accentColorOverrides,
     customAccentColors,
     setAccentColor,
     handleSetAccentColorOverride,
