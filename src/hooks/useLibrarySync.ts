@@ -54,7 +54,11 @@ export function useLibrarySync(): UseLibrarySyncResult {
 
     return () => {
       unsubscribe();
-      engine.stop();
+      // Do not stop the singleton engine here — it should keep running in the
+      // background (polling every ~90s) regardless of which component is mounted.
+      // Stopping it caused a race where isInitialLoadComplete stayed true in the
+      // engine's state but the next subscriber got no data, showing a false
+      // "no playlists found" error until the async IndexedDB read completed.
     };
   }, []);
 

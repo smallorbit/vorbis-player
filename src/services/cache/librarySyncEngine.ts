@@ -52,6 +52,12 @@ export class LibrarySyncEngine {
     error: null,
   };
 
+  // Last-known data, kept in memory so new subscribers get data immediately
+  // instead of seeing an empty state while IndexedDB is read asynchronously.
+  private lastKnownPlaylists: CachedPlaylistInfo[] | undefined;
+  private lastKnownAlbums: AlbumInfo[] | undefined;
+  private lastKnownLikedCount: number | undefined;
+
   // =========================================================================
   // Public API
   // =========================================================================
@@ -122,8 +128,10 @@ export class LibrarySyncEngine {
   /** Subscribe to state and data changes. Returns unsubscribe function. */
   subscribe(listener: SyncListener): () => void {
     this.listeners.add(listener);
-    // Immediately emit current state
-    listener(this.state);
+    // Immediately emit current state AND last-known data so new subscribers
+    // (e.g. when LibraryDrawer reopens and remounts PlaylistSelection) don't
+    // see an empty list while isInitialLoadComplete is already true.
+    listener(this.state, this.lastKnownPlaylists, this.lastKnownAlbums, this.lastKnownLikedCount);
     return () => {
       this.listeners.delete(listener);
     };
@@ -429,6 +437,11 @@ export class LibrarySyncEngine {
     albums?: AlbumInfo[],
     likedSongsCount?: number,
   ): void {
+    // Cache the data so it can be replayed to future subscribers immediately.
+    if (playlists !== undefined) this.lastKnownPlaylists = playlists;
+    if (albums !== undefined) this.lastKnownAlbums = albums;
+    if (likedSongsCount !== undefined) this.lastKnownLikedCount = likedSongsCount;
+
     for (const listener of this.listeners) {
       try {
         listener(this.state, playlists, albums, likedSongsCount);
