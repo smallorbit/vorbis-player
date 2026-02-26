@@ -61,7 +61,7 @@ export const usePlaylistManager = ({
       if (isAlbumId(playlistId)) {
         fetchedTracks = await getAlbumTracks(extractAlbumId(playlistId));
       } else if (playlistId === LIKED_SONGS_ID) {
-        fetchedTracks = await getLikedSongs(200);
+        fetchedTracks = await getLikedSongs();
       } else {
         fetchedTracks = await getPlaylistTracks(playlistId);
       }

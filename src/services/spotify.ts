@@ -79,7 +79,7 @@ const TRACK_LIST_PERSIST_TTL = 24 * 60 * 60 * 1000; // 24 hours (IndexedDB L2)
 let likedSongsCountCache: { count: number; timestamp: number } | null = null;
 const LIKED_SONGS_COUNT_TTL = 2 * 60 * 1000; // 2 minutes
 
-/** Cache for liked songs list */
+/** Cache for liked songs list — limit is Infinity when all songs were fetched */
 let likedSongsCache: { data: Track[]; limit: number; timestamp: number } | null = null;
 const LIKED_SONGS_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
@@ -752,9 +752,14 @@ export async function getAlbumTracks(albumId: string): Promise<Track[]> {
   return sorted;
 }
 
-export async function getLikedSongs(limit: number = 50): Promise<Track[]> {
-  if (likedSongsCache && likedSongsCache.limit >= limit && Date.now() - likedSongsCache.timestamp < LIKED_SONGS_CACHE_TTL) {
-    return likedSongsCache.data.slice(0, limit);
+export async function getLikedSongs(limit?: number): Promise<Track[]> {
+  if (likedSongsCache && Date.now() - likedSongsCache.timestamp < LIKED_SONGS_CACHE_TTL) {
+    if (limit === undefined && likedSongsCache.limit === Infinity) {
+      return likedSongsCache.data;
+    }
+    if (limit !== undefined && likedSongsCache.limit >= limit) {
+      return likedSongsCache.data.slice(0, limit);
+    }
   }
 
   const token = await spotifyAuth.ensureValidToken();
@@ -770,15 +775,14 @@ export async function getLikedSongs(limit: number = 50): Promise<Track[]> {
     return transformTrackItem(item.track);
   }
 
-  const maxLimit = Math.min(limit, 50);
   const tracks = await fetchAllPaginated<SavedTrackItem, Track>(
-    `https://api.spotify.com/v1/me/tracks?limit=${maxLimit}`,
+    'https://api.spotify.com/v1/me/tracks?limit=50',
     token,
     transformSavedTrack,
-    { maxItems: limit }
+    limit !== undefined ? { maxItems: limit } : undefined
   );
 
-  likedSongsCache = { data: tracks, limit, timestamp: Date.now() };
+  likedSongsCache = { data: tracks, limit: limit ?? Infinity, timestamp: Date.now() };
   return tracks;
 }
 
