@@ -12,6 +12,45 @@ async function waitForSpotifyReady(timeout = 10000): Promise<void> {
   }
 }
 
+/**
+ * Build a Track[] from the Spotify SDK's track window state.
+ * Used as a fallback when the API can't return the full track list
+ * (e.g. for Spotify-made playlists with restricted track access).
+ */
+function buildTracksFromWindow(state: SpotifyPlaybackState): Track[] {
+  const tracks: Track[] = [];
+
+  function toTrack(item: SpotifyTrack): Track {
+    return {
+      id: item.id || '',
+      name: item.name,
+      artists: item.artists.map(a => a.name).join(', '),
+      album: item.album?.name ?? 'Unknown Album',
+      album_id: item.album?.uri?.split(':').pop(),
+      duration_ms: item.duration_ms ?? 0,
+      uri: item.uri,
+      image: item.album?.images?.[0]?.url,
+    };
+  }
+
+  // Build from previous + current + next tracks in the window
+  for (const t of state.track_window.previous_tracks ?? []) {
+    tracks.push(toTrack(t));
+  }
+  tracks.push(toTrack(state.track_window.current_track));
+  for (const t of state.track_window.next_tracks ?? []) {
+    tracks.push(toTrack(t));
+  }
+
+  // Deduplicate by id (SDK can return duplicates)
+  const seen = new Set<string>();
+  return tracks.filter(t => {
+    if (!t.id || seen.has(t.id)) return false;
+    seen.add(t.id);
+    return true;
+  });
+}
+
 function shuffleArray<T>(array: T[]): T[] {
   const shuffled = [...array];
   for (let i = shuffled.length - 1; i > 0; i--) {
@@ -63,7 +102,41 @@ export const usePlaylistManager = ({
       } else if (playlistId === LIKED_SONGS_ID) {
         fetchedTracks = await getLikedSongs();
       } else {
-        fetchedTracks = await getPlaylistTracks(playlistId);
+        try {
+          fetchedTracks = await getPlaylistTracks(playlistId);
+        } catch (trackError) {
+          // Track fetching may fail for non-owned playlists (e.g. Spotify-made)
+          // due to API restrictions — will fall through to context playback below
+          console.warn('Failed to fetch playlist tracks, will try context playback:', trackError);
+          fetchedTracks = [];
+        }
+      }
+
+      // For regular playlists where tracks couldn't be fetched (e.g. Spotify-made
+      // playlists), fall back to context-based playback which lets Spotify manage
+      // the track queue directly.
+      if (fetchedTracks.length === 0 && !isAlbumId(playlistId) && playlistId !== LIKED_SONGS_ID) {
+        try {
+          console.log('🎵 Trying context-based playback for playlist:', playlistId);
+          await spotifyPlayer.playContext(`spotify:playlist:${playlistId}`);
+
+          // Wait for SDK to start playing and report the first track
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          const state = await spotifyPlayer.getCurrentState();
+
+          if (state?.track_window?.current_track) {
+            const tracksFromWindow = buildTracksFromWindow(state);
+            setOriginalTracks(tracksFromWindow);
+            setTracks(tracksFromWindow);
+            setCurrentTrackIndex(0);
+          }
+          // Playback started successfully via context — return without error
+          return;
+        } catch (contextError) {
+          console.error('Context playback also failed:', contextError);
+          setError("No tracks found in this playlist. It may be empty or unavailable.");
+          return;
+        }
       }
 
       if (fetchedTracks.length === 0) {

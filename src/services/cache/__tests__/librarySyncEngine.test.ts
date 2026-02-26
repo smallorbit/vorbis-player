@@ -12,6 +12,8 @@ vi.mock('../../spotify', () => ({
   getLikedSongsCount: vi.fn(),
   getPlaylistsPage: vi.fn(),
   getAlbumsPage: vi.fn(),
+  getAllUserPlaylists: vi.fn(),
+  getAllUserAlbums: vi.fn(),
   getUserLibraryInterleaved: vi.fn(),
   invalidateLikedSongsCaches: vi.fn(),
   spotifyAuth: {
@@ -24,8 +26,8 @@ import {
   getPlaylistCount,
   getAlbumCount,
   getLikedSongsCount,
-  getPlaylistsPage,
-  getAlbumsPage,
+  getAllUserPlaylists,
+  getAllUserAlbums,
   getUserLibraryInterleaved,
   invalidateLikedSongsCaches,
 } from '../../spotify';
@@ -33,8 +35,8 @@ import {
 const mockGetPlaylistCount = vi.mocked(getPlaylistCount);
 const mockGetAlbumCount = vi.mocked(getAlbumCount);
 const mockGetLikedSongsCount = vi.mocked(getLikedSongsCount);
-const mockGetPlaylistsPage = vi.mocked(getPlaylistsPage);
-const mockGetAlbumsPage = vi.mocked(getAlbumsPage);
+const mockGetAllUserPlaylists = vi.mocked(getAllUserPlaylists);
+const mockGetAllUserAlbums = vi.mocked(getAllUserAlbums);
 const mockGetUserLibraryInterleaved = vi.mocked(getUserLibraryInterleaved);
 const mockInvalidateLikedSongsCaches = vi.mocked(invalidateLikedSongsCaches);
 
@@ -188,8 +190,8 @@ describe('LibrarySyncEngine', () => {
 
       await engine.syncNow();
 
-      expect(mockGetPlaylistsPage).not.toHaveBeenCalled();
-      expect(mockGetAlbumsPage).not.toHaveBeenCalled();
+      expect(mockGetAllUserPlaylists).not.toHaveBeenCalled();
+      expect(mockGetAllUserAlbums).not.toHaveBeenCalled();
       expect(mockInvalidateLikedSongsCaches).not.toHaveBeenCalled();
     });
 
@@ -212,18 +214,14 @@ describe('LibrarySyncEngine', () => {
       mockGetPlaylistCount.mockResolvedValue(2);
       mockGetAlbumCount.mockResolvedValue(0);
       mockGetLikedSongsCount.mockResolvedValue(0);
-      mockGetPlaylistsPage.mockResolvedValue({
-        playlists: [
-          makePlaylist('p1', 'Existing', 'snap1'),
-          makePlaylist('p2', 'New Playlist', 'snap2'),
-        ],
-        total: 2,
-        hasMore: false,
-      });
+      mockGetAllUserPlaylists.mockResolvedValue([
+        makePlaylist('p1', 'Existing', 'snap1'),
+        makePlaylist('p2', 'New Playlist', 'snap2'),
+      ]);
 
       await engine.syncNow();
 
-      expect(mockGetPlaylistsPage).toHaveBeenCalled();
+      expect(mockGetAllUserPlaylists).toHaveBeenCalled();
       const cachedPlaylists = await cache.getAllPlaylists();
       expect(cachedPlaylists).toHaveLength(2);
       expect(cachedPlaylists.find(p => p.id === 'p2')?.name).toBe('New Playlist');
@@ -278,11 +276,9 @@ describe('LibrarySyncEngine', () => {
       mockGetPlaylistCount.mockResolvedValue(1);
       mockGetAlbumCount.mockResolvedValue(0);
       mockGetLikedSongsCount.mockResolvedValue(0);
-      mockGetPlaylistsPage.mockResolvedValue({
-        playlists: [makePlaylist('p1', 'Keep', 'snap1')],
-        total: 1,
-        hasMore: false,
-      });
+      mockGetAllUserPlaylists.mockResolvedValue([
+        makePlaylist('p1', 'Keep', 'snap1'),
+      ]);
 
       await engine.syncNow();
 
@@ -312,14 +308,10 @@ describe('LibrarySyncEngine', () => {
       mockGetPlaylistCount.mockResolvedValue(2);
       mockGetAlbumCount.mockResolvedValue(0);
       mockGetLikedSongsCount.mockResolvedValue(0);
-      mockGetPlaylistsPage.mockResolvedValue({
-        playlists: [
-          makePlaylist('p1', 'Modified', 'snap-new'),
-          makePlaylist('p2', 'New', 'snap2'),
-        ],
-        total: 2,
-        hasMore: false,
-      });
+      mockGetAllUserPlaylists.mockResolvedValue([
+        makePlaylist('p1', 'Modified', 'snap-new'),
+        makePlaylist('p2', 'New', 'snap2'),
+      ]);
 
       await engine.syncNow();
 
