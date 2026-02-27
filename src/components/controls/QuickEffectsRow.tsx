@@ -20,6 +20,8 @@ export interface QuickEffectsRowProps {
   onBackgroundVisualizerToggle: () => void;
   backgroundVisualizerStyle: 'fireflies' | 'comet';
   onBackgroundVisualizerStyleChange: (style: 'fireflies' | 'comet') => void;
+  translucenceEnabled: boolean;
+  onTranslucenceToggle: () => void;
   isMobile: boolean;
   isTablet: boolean;
 }
@@ -154,6 +156,8 @@ function QuickEffectsRow({
   onBackgroundVisualizerToggle,
   backgroundVisualizerStyle,
   onBackgroundVisualizerStyleChange,
+  translucenceEnabled,
+  onTranslucenceToggle,
 }: QuickEffectsRowProps) {
   const [colorOptions, setColorOptions] = useState<ExtractedColor[]>([]);
   const [showEyedropper, setShowEyedropper] = useState(false);
@@ -233,6 +237,13 @@ function QuickEffectsRow({
           <QuickLabel>Viz</QuickLabel>
           <SwitchTrack $on={backgroundVisualizerEnabled} $accent={accentColor} onClick={onBackgroundVisualizerToggle} aria-label="Toggle visualizer" role="switch" aria-checked={backgroundVisualizerEnabled}>
             <SwitchKnob $on={backgroundVisualizerEnabled} />
+          </SwitchTrack>
+        </ToggleGroup>
+
+        <ToggleGroup>
+          <QuickLabel>Translucent</QuickLabel>
+          <SwitchTrack $on={translucenceEnabled} $accent={accentColor} onClick={onTranslucenceToggle} aria-label="Toggle translucence" role="switch" aria-checked={translucenceEnabled}>
+            <SwitchKnob $on={translucenceEnabled} />
           </SwitchTrack>
         </ToggleGroup>
       </RowLine>

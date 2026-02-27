@@ -375,6 +375,10 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
     setBackgroundVisualizerIntensity,
     accentColorBackgroundPreferred,
     setAccentColorBackgroundPreferred,
+    translucenceEnabled,
+    setTranslucenceEnabled,
+    translucenceOpacity,
+    setTranslucenceOpacity,
     zenModeEnabled,
     setZenModeEnabled,
     showVisualEffects,
@@ -509,6 +513,14 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
     setBackgroundVisualizerStyle(style);
   }, [setBackgroundVisualizerStyle]);
 
+  const handleTranslucenceToggle = useCallback(() => {
+    setTranslucenceEnabled(prev => !prev);
+  }, [setTranslucenceEnabled]);
+
+  const handleTranslucenceOpacityChange = useCallback((v: number) => {
+    setTranslucenceOpacity(v);
+  }, [setTranslucenceOpacity]);
+
   // Stable quick-effects prop for SpotifyPlayerControls (compact color/glow/viz row)
   const quickEffects = useMemo(
     () => ({
@@ -521,6 +533,8 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
       onBackgroundVisualizerToggle: handleBackgroundVisualizerToggle,
       backgroundVisualizerStyle: backgroundVisualizerStyle as 'fireflies' | 'comet',
       onBackgroundVisualizerStyleChange: handleBackgroundVisualizerStyleChange,
+      translucenceEnabled: translucenceEnabled,
+      onTranslucenceToggle: handleTranslucenceToggle,
     }),
     [
       customAccentColors,
@@ -532,6 +546,8 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
       handleBackgroundVisualizerToggle,
       backgroundVisualizerStyle,
       handleBackgroundVisualizerStyleChange,
+      translucenceEnabled,
+      handleTranslucenceToggle,
     ]
   );
 
@@ -747,6 +763,8 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
                       glowRate={effectiveGlow.rate}
                       glowEnabled={visualEffectsEnabled}
                       albumFilters={visualEffectsEnabled ? albumFilters : defaultFilters}
+                      translucenceEnabled={visualEffectsEnabled && translucenceEnabled}
+                      translucenceOpacity={translucenceOpacity}
                       zenMode={zenModeEnabled}
                     />
                   </ProfiledComponent>
@@ -813,6 +831,8 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
                             onBackgroundVisualizerToggle={quickEffects.onBackgroundVisualizerToggle}
                             backgroundVisualizerStyle={quickEffects.backgroundVisualizerStyle}
                             onBackgroundVisualizerStyleChange={quickEffects.onBackgroundVisualizerStyleChange}
+                            translucenceEnabled={quickEffects.translucenceEnabled}
+                            onTranslucenceToggle={quickEffects.onTranslucenceToggle}
                             isMobile={isMobile}
                             isTablet={isTablet}
                           />
@@ -867,6 +887,10 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
             onBackgroundVisualizerIntensityChange={handleBackgroundVisualizerIntensityChange}
             accentColorBackgroundEnabled={accentColorBackgroundPreferred}
             onAccentColorBackgroundToggle={handleAccentColorBackgroundToggle}
+            translucenceEnabled={translucenceEnabled}
+            onTranslucenceToggle={handleTranslucenceToggle}
+            translucenceOpacity={translucenceOpacity}
+            onTranslucenceOpacityChange={handleTranslucenceOpacityChange}
           />
         </Suspense>
       )}
