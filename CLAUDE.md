@@ -17,7 +17,7 @@ This file provides guidance to Claude Code (claude.ai/code) and other AI assista
 - **Swipe Gestures**: Horizontal swipe on album art for track navigation; vertical swipe on album art for zen mode (up = exit zen, down = enter zen). Drawers are controlled by menu buttons only.
 - **Interactive Track Info**: Clickable artist/album names with popovers linking to Spotify and library filtering
 - **IndexedDB Caching**: Persistent library cache with background sync engine for instant startup
-- **Keyboard Shortcuts**: Context-aware keyboard control system (12 shortcuts with device-specific behavior)
+- **Keyboard Shortcuts**: Context-aware keyboard control system (13 shortcuts with device-specific behavior)
 - **Performance Optimized**: Web Workers, LRU caching, IndexedDB persistence, lazy loading, hardware-accelerated animations
 
 ## Development Commands
@@ -448,6 +448,7 @@ The application uses a centralized state management approach with custom React h
 | `ArrowDown` / `L` | Toggle library drawer | Volume down (ArrowDown only) |
 | `V` | Toggle background visualizer | Toggle background visualizer |
 | `G` | Toggle glow effect | Toggle glow effect |
+| `S` | Toggle shuffle | Toggle shuffle |
 | `T` | Toggle translucence | Toggle translucence |
 | `O` | Open visual effects menu | Open visual effects menu |
 | `K` | Like/unlike current track | Like/unlike current track |

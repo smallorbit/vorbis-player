@@ -9,6 +9,7 @@
   * - V: Toggle background visualizations
   * - O: Toggle visual effects menu
   * - G: Toggle glow effect
+  * - S: Toggle shuffle
   * - ?: Show keyboard shortcuts help
   * - Escape: Close menus (playlist drawer and visual effects)
   * - M: Mute
@@ -52,6 +53,7 @@ interface KeyboardShortcutHandlers {
   onVolumeUp?: () => void;
   onVolumeDown?: () => void;
   onToggleLike?: () => void;
+  onToggleShuffle?: () => void;
   onCloseMobileMenu?: () => void;
   /** Open playlist drawer (desktop: ArrowUp) */
   onShowPlaylist?: () => void;
@@ -90,6 +92,7 @@ export const useKeyboardShortcuts = (
     onVolumeUp,
     onVolumeDown,
     onToggleLike,
+    onToggleShuffle,
     onCloseMobileMenu,
     onShowPlaylist,
     onOpenLibraryDrawer,
@@ -199,6 +202,14 @@ export const useKeyboardShortcuts = (
           }
           break;
 
+        case 'KeyS':
+          // S toggles shuffle
+          if (!event.ctrlKey && !event.metaKey) {
+            event.preventDefault();
+            onToggleShuffle?.();
+          }
+          break;
+
         case 'KeyP':
           // P toggles playlist drawer (alternative to ArrowUp on pointer devices)
           if (!event.ctrlKey && !event.metaKey) {
@@ -254,6 +265,7 @@ export const useKeyboardShortcuts = (
     onVolumeUp,
     onVolumeDown,
     onToggleLike,
+    onToggleShuffle,
     onCloseMobileMenu,
     onShowPlaylist,
     onOpenLibraryDrawer,
