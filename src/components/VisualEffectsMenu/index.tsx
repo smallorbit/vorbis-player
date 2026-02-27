@@ -56,6 +56,11 @@ interface VisualEffectsMenuProps {
   onBackgroundVisualizerIntensityChange: (intensity: number) => void;
   accentColorBackgroundEnabled: boolean;
   onAccentColorBackgroundToggle: () => void;
+  // Translucence controls
+  translucenceEnabled: boolean;
+  onTranslucenceToggle: () => void;
+  translucenceOpacity: number;
+  onTranslucenceOpacityChange: (v: number) => void;
 }
 
 // Custom comparison function for memo optimization
@@ -70,7 +75,9 @@ const areVisualEffectsPropsEqual = (
     prevProps.glowEnabled !== nextProps.glowEnabled ||
     prevProps.glowIntensity !== nextProps.glowIntensity ||
     prevProps.glowRate !== nextProps.glowRate ||
-    prevProps.backgroundVisualizerEnabled !== nextProps.backgroundVisualizerEnabled
+    prevProps.backgroundVisualizerEnabled !== nextProps.backgroundVisualizerEnabled ||
+    prevProps.translucenceEnabled !== nextProps.translucenceEnabled ||
+    prevProps.translucenceOpacity !== nextProps.translucenceOpacity
   ) {
     return false;
   }
@@ -126,7 +133,11 @@ const VisualEffectsMenu: React.FC<VisualEffectsMenuProps> = memo(({
   backgroundVisualizerIntensity,
   onBackgroundVisualizerIntensityChange,
   accentColorBackgroundEnabled,
-  onAccentColorBackgroundToggle
+  onAccentColorBackgroundToggle,
+  translucenceEnabled,
+  onTranslucenceToggle,
+  translucenceOpacity,
+  onTranslucenceOpacityChange
 }) => {
   // Get responsive sizing information
   const { viewport, isMobile, isTablet, transitionDuration, transitionEasing } = usePlayerSizing();
@@ -346,7 +357,45 @@ const VisualEffectsMenu: React.FC<VisualEffectsMenuProps> = memo(({
               </ControlGroup>
             </FilterGrid>
           </FilterSection>
-          
+
+          {/* Translucence Section */}
+          <FilterSection>
+            <SectionTitle>Translucence</SectionTitle>
+            <FilterGrid>
+              <ControlGroup>
+                <ControlLabel>Translucence</ControlLabel>
+                <OptionButtonGroup>
+                  <OptionButton
+                    $accentColor={accentColor}
+                    $isActive={translucenceEnabled}
+                    onClick={onTranslucenceToggle}
+                  >
+                    {translucenceEnabled ? 'On' : 'Off'}
+                  </OptionButton>
+                </OptionButtonGroup>
+              </ControlGroup>
+              <ControlGroup>
+                <ControlLabel>Opacity</ControlLabel>
+                <OptionButtonGroup>
+                  {[
+                    { label: 'Light', value: 0.8 },
+                    { label: 'Medium', value: 0.6 },
+                    { label: 'Strong', value: 0.4 },
+                  ].map((option) => (
+                    <OptionButton
+                      key={`translucence-${option.value}`}
+                      $accentColor={accentColor}
+                      $isActive={translucenceOpacity === option.value}
+                      onClick={() => onTranslucenceOpacityChange(option.value)}
+                    >
+                      {option.label}
+                    </OptionButton>
+                  ))}
+                </OptionButtonGroup>
+              </ControlGroup>
+            </FilterGrid>
+          </FilterSection>
+
           {/* Background Visualizer Options Section */}
           <FilterSection>
             <SectionTitle>Background Visualizer</SectionTitle>

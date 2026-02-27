@@ -55,17 +55,20 @@ interface AlbumArtProps {
     blur: number;
     sepia: number;
   };
+  translucenceEnabled?: boolean;
+  translucenceOpacity?: number;
 }
 
 
 const AlbumArtContainer = styled.div.withConfig({
-  shouldForwardProp: (prop) => !['accentColor', 'glowIntensity', 'glowRate', 'glowEnabled', '$zenMode'].includes(prop),
+  shouldForwardProp: (prop) => !['accentColor', 'glowIntensity', 'glowRate', 'glowEnabled', '$zenMode', '$translucenceOpacity'].includes(prop),
 }) <{
   accentColor?: string;
   glowIntensity?: number;
   glowRate?: number;
   glowEnabled?: boolean;
   $zenMode?: boolean;
+  $translucenceOpacity?: number;
 }>`
   border-radius: ${theme.borderRadius['3xl']};
   position: relative;
@@ -137,7 +140,8 @@ const AlbumArtContainer = styled.div.withConfig({
   }}
   border: none;
   z-index: ${theme.zIndex.docked};
-  transition: box-shadow 0.5s ease;
+  transition: box-shadow 0.5s ease, opacity 0.5s ease;
+  opacity: ${({ $translucenceOpacity }) => $translucenceOpacity ?? 1};
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
 `;
@@ -160,6 +164,10 @@ const arePropsEqual = (prevProps: AlbumArtProps, nextProps: AlbumArtProps): bool
   if (prevProps.zenMode !== nextProps.zenMode) {
     return false;
   }
+  if (prevProps.translucenceEnabled !== nextProps.translucenceEnabled ||
+      prevProps.translucenceOpacity !== nextProps.translucenceOpacity) {
+    return false;
+  }
   if (!prevProps.albumFilters && !nextProps.albumFilters) {
     return true;
   }
@@ -177,7 +185,7 @@ const arePropsEqual = (prevProps: AlbumArtProps, nextProps: AlbumArtProps): bool
   return true;
 };
 
-const AlbumArt: React.FC<AlbumArtProps> = memo(({ currentTrack = null, accentColor, glowIntensity, glowRate, glowEnabled, albumFilters, zenMode }) => {
+const AlbumArt: React.FC<AlbumArtProps> = memo(({ currentTrack = null, accentColor, glowIntensity, glowRate, glowEnabled, albumFilters, zenMode, translucenceEnabled, translucenceOpacity }) => {
   const [canvasUrl, setCanvasUrl] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const { processImage } = useImageProcessingWorker();
@@ -270,6 +278,7 @@ const AlbumArt: React.FC<AlbumArtProps> = memo(({ currentTrack = null, accentCol
       glowRate={glowRate}
       glowEnabled={glowEnabled}
       $zenMode={zenMode}
+      $translucenceOpacity={translucenceEnabled ? (translucenceOpacity ?? 0.6) : 1}
       className={glowClasses}
     >
       <AlbumArtFilters filters={albumFilters ? albumFilters : {

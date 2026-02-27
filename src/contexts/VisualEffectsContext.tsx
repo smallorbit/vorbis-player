@@ -16,6 +16,8 @@ interface VisualEffectsContextValue {
   backgroundVisualizerIntensity: number;
   accentColorBackgroundPreferred: boolean;
   accentColorBackgroundEnabled: boolean;
+  translucenceEnabled: boolean;
+  translucenceOpacity: number;
   zenModeEnabled: boolean;
   showVisualEffects: boolean;
   // Setters
@@ -26,6 +28,8 @@ interface VisualEffectsContextValue {
   setBackgroundVisualizerStyle: (style: VisualizerStyle | ((prev: VisualizerStyle) => VisualizerStyle)) => void;
   setBackgroundVisualizerIntensity: (intensity: number | ((prev: number) => number)) => void;
   setAccentColorBackgroundPreferred: (preferred: boolean | ((prev: boolean) => boolean)) => void;
+  setTranslucenceEnabled: (enabled: boolean | ((prev: boolean) => boolean)) => void;
+  setTranslucenceOpacity: (opacity: number | ((prev: number) => number)) => void;
   setZenModeEnabled: (enabled: boolean | ((prev: boolean) => boolean)) => void;
   setShowVisualEffects: (visible: boolean | ((prev: boolean) => boolean)) => void;
   // Handlers
@@ -46,6 +50,8 @@ export function VisualEffectsProvider({ children }: { children: React.ReactNode 
   const [backgroundVisualizerIntensity, setBackgroundVisualizerIntensity] = useLocalStorage<number>('vorbis-player-background-visualizer-intensity', 60);
   const [accentColorBackgroundPreferred, setAccentColorBackgroundPreferred] = useLocalStorage<boolean>('vorbis-player-accent-color-background-preferred', false);
   const [accentColorBackgroundEnabled, setAccentColorBackgroundEnabled] = useState<boolean>(false);
+  const [translucenceEnabled, setTranslucenceEnabled] = useLocalStorage<boolean>('vorbis-player-translucence-enabled', false);
+  const [translucenceOpacity, setTranslucenceOpacity] = useLocalStorage<number>('vorbis-player-translucence-opacity', 0.6);
   const [zenModeEnabled, setZenModeEnabled] = useLocalStorage<boolean>('vorbis-player-zen-mode-enabled', false);
   const [showVisualEffects, setShowVisualEffects] = useState<boolean>(false);
 
@@ -100,6 +106,8 @@ export function VisualEffectsProvider({ children }: { children: React.ReactNode 
     backgroundVisualizerIntensity,
     accentColorBackgroundPreferred,
     accentColorBackgroundEnabled,
+    translucenceEnabled,
+    translucenceOpacity,
     zenModeEnabled,
     showVisualEffects,
     setVisualEffectsEnabled,
@@ -109,6 +117,8 @@ export function VisualEffectsProvider({ children }: { children: React.ReactNode 
     setBackgroundVisualizerStyle,
     setBackgroundVisualizerIntensity,
     setAccentColorBackgroundPreferred,
+    setTranslucenceEnabled,
+    setTranslucenceOpacity,
     setZenModeEnabled,
     setShowVisualEffects,
     handleFilterChange,
@@ -124,6 +134,8 @@ export function VisualEffectsProvider({ children }: { children: React.ReactNode 
     backgroundVisualizerIntensity,
     accentColorBackgroundPreferred,
     accentColorBackgroundEnabled,
+    translucenceEnabled,
+    translucenceOpacity,
     zenModeEnabled,
     showVisualEffects,
     setVisualEffectsEnabled,
@@ -133,6 +145,8 @@ export function VisualEffectsProvider({ children }: { children: React.ReactNode 
     setBackgroundVisualizerStyle,
     setBackgroundVisualizerIntensity,
     setAccentColorBackgroundPreferred,
+    setTranslucenceEnabled,
+    setTranslucenceOpacity,
     setZenModeEnabled,
     setShowVisualEffects,
     handleFilterChange,
