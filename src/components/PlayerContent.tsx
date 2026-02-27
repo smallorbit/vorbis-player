@@ -710,6 +710,7 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
     onVolumeUp: handleVolumeUp,
     onVolumeDown: handleVolumeDown,
     onToggleLike: handleLikeToggle,
+    onToggleShuffle: handleShuffleToggle,
     onToggleHelp: toggleHelp,
     onShowPlaylist: handleArrowUp,
     onOpenLibraryDrawer: handleArrowDown,
