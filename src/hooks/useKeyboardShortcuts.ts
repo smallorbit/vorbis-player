@@ -40,7 +40,10 @@ interface KeyboardShortcutHandlers {
   
   // Glow effect
   onToggleGlow?: () => void;
-  
+
+  // Translucence
+  onToggleTranslucence?: () => void;
+
   // Help
   onToggleHelp?: () => void;
   
@@ -81,6 +84,7 @@ export const useKeyboardShortcuts = (
     onCloseVisualEffects,
     onToggleBackgroundVisualizer,
     onToggleGlow,
+    onToggleTranslucence,
     onToggleHelp,
     onMute,
     onVolumeUp,
@@ -146,6 +150,14 @@ export const useKeyboardShortcuts = (
           if (!event.ctrlKey && !event.metaKey) {
             event.preventDefault();
             onToggleGlow?.();
+          }
+          break;
+
+        case 'KeyT':
+          // T toggles translucence
+          if (!event.ctrlKey && !event.metaKey) {
+            event.preventDefault();
+            onToggleTranslucence?.();
           }
           break;
 
@@ -236,6 +248,7 @@ export const useKeyboardShortcuts = (
     onCloseVisualEffects,
     onToggleBackgroundVisualizer,
     onToggleGlow,
+    onToggleTranslucence,
     onToggleHelp,
     onMute,
     onVolumeUp,

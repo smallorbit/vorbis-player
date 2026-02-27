@@ -705,6 +705,7 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
     onCloseVisualEffects: handleEscapeClose,
     onToggleBackgroundVisualizer: handleBackgroundVisualizerToggle,
     onToggleGlow: handleGlowToggle,
+    onToggleTranslucence: handleTranslucenceToggle,
     onMute: handleMuteToggle,
     onVolumeUp: handleVolumeUp,
     onVolumeDown: handleVolumeDown,
