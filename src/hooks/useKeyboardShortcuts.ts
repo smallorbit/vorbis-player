@@ -131,6 +131,17 @@ export const useKeyboardShortcuts = (
           onPrevious?.();
           break;
 
+        // Media keys (F7 = previous, F9 = next on macOS)
+        case 'F7':
+          event.preventDefault();
+          onPrevious?.();
+          break;
+
+        case 'F9':
+          event.preventDefault();
+          onNext?.();
+          break;
+
         // Menu toggles
         case 'KeyV':
           // V toggles background visualizations

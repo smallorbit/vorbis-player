@@ -9,6 +9,7 @@ import { cardBase } from '../styles/utils';
 import { ProfiledComponent } from '@/components/ProfiledComponent';
 import { usePlayerSizing } from '../hooks/usePlayerSizing';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
+import { useMediaSession } from '@/hooks/useMediaSession';
 import { useSwipeGesture } from '@/hooks/useSwipeGesture';
 import { useVerticalSwipeGesture } from '@/hooks/useVerticalSwipeGesture';
 import { useVisualEffectsState } from '@/hooks/useVisualEffectsState';
@@ -712,6 +713,12 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
     onOpenLibraryDrawer: handleArrowDown,
     onToggleZenMode: handleZenModeToggle,
   }, { prefersPointerInput: hasPointerInput });
+
+  useMediaSession(currentTrack, isPlaying, {
+    onPlayPause: handlePlayPause,
+    onNext: handlers.onNext,
+    onPrevious: handlers.onPrevious,
+  });
 
   return (
     <ContentWrapper
