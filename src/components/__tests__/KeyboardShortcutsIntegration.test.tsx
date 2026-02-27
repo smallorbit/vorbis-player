@@ -102,7 +102,7 @@ describe('Keyboard Shortcuts Integration', () => {
       { key: 'ArrowLeft', handler: handlers.onPrevious },
       { key: 'ArrowRight', handler: handlers.onNext },
       { key: 'KeyM', handler: handlers.onMute },
-      { key: 'KeyL', handler: handlers.onToggleLike },
+      { key: 'KeyK', handler: handlers.onToggleLike },
       { key: 'KeyG', handler: handlers.onToggleGlow },
       { key: 'KeyV', handler: handlers.onToggleBackgroundVisualizer },
       { key: 'KeyO', handler: handlers.onToggleVisualEffectsMenu },

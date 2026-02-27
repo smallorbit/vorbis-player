@@ -130,12 +130,12 @@ The visual effects menu (opened via the gear icon in the bottom bar) provides fu
 |-----|-------------------|---------------------|
 | `Space` | Play/Pause | Play/Pause |
 | `ArrowRight` / `ArrowLeft` | Next / Previous track | Next / Previous track |
-| `ArrowUp` | Toggle playlist drawer | Volume up |
-| `ArrowDown` | Toggle library drawer | Volume down |
+| `ArrowUp` / `P` | Toggle playlist drawer | Volume up (ArrowUp only) |
+| `ArrowDown` / `L` | Toggle library drawer | Volume down (ArrowDown only) |
 | `V` | Toggle background visualizer | Toggle background visualizer |
 | `G` | Toggle glow effect | Toggle glow effect |
 | `O` | Open visual effects menu | Open visual effects menu |
-| `L` | Like/unlike current track | Like/unlike current track |
+| `K` | Like/unlike current track | Like/unlike current track |
 | `M` | Mute/unmute | Mute/unmute |
 | `/` or `?` | Show keyboard shortcuts help | Show keyboard shortcuts help |
 | `Escape` | Close all menus | Close all menus |
