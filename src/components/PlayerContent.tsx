@@ -763,7 +763,7 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
                       glowRate={effectiveGlow.rate}
                       glowEnabled={visualEffectsEnabled}
                       albumFilters={visualEffectsEnabled ? albumFilters : defaultFilters}
-                      translucenceEnabled={visualEffectsEnabled && translucenceEnabled}
+                      translucenceEnabled={translucenceEnabled}
                       translucenceOpacity={translucenceOpacity}
                       zenMode={zenModeEnabled}
                     />
