@@ -1,6 +1,8 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
+import React from 'react';
 import { usePinnedItems } from '../usePinnedItems';
+import { PinnedItemsProvider } from '@/contexts/PinnedItemsContext';
 
 const localStorageMock = (() => {
   let store: Record<string, string> = {};
@@ -19,6 +21,9 @@ const localStorageMock = (() => {
   };
 })();
 
+const wrapper = ({ children }: { children: React.ReactNode }) =>
+  React.createElement(PinnedItemsProvider, null, children);
+
 describe('usePinnedItems', () => {
   beforeEach(() => {
     Object.defineProperty(window, 'localStorage', {
@@ -34,7 +39,7 @@ describe('usePinnedItems', () => {
   });
 
   it('should initialize with empty arrays', () => {
-    const { result } = renderHook(() => usePinnedItems());
+    const { result } = renderHook(() => usePinnedItems(), { wrapper });
     expect(result.current.pinnedPlaylistIds).toEqual([]);
     expect(result.current.pinnedAlbumIds).toEqual([]);
   });
@@ -43,13 +48,13 @@ describe('usePinnedItems', () => {
     localStorageMock.setItem('vorbis-player-pinned-playlists', JSON.stringify(['p1', 'p2']));
     localStorageMock.setItem('vorbis-player-pinned-albums', JSON.stringify(['a1']));
 
-    const { result } = renderHook(() => usePinnedItems());
+    const { result } = renderHook(() => usePinnedItems(), { wrapper });
     expect(result.current.pinnedPlaylistIds).toEqual(['p1', 'p2']);
     expect(result.current.pinnedAlbumIds).toEqual(['a1']);
   });
 
   it('should pin an unpinned playlist', () => {
-    const { result } = renderHook(() => usePinnedItems());
+    const { result } = renderHook(() => usePinnedItems(), { wrapper });
 
     act(() => {
       result.current.togglePinPlaylist('p1');
@@ -61,7 +66,7 @@ describe('usePinnedItems', () => {
 
   it('should unpin a pinned playlist', () => {
     localStorageMock.setItem('vorbis-player-pinned-playlists', JSON.stringify(['p1', 'p2']));
-    const { result } = renderHook(() => usePinnedItems());
+    const { result } = renderHook(() => usePinnedItems(), { wrapper });
 
     act(() => {
       result.current.togglePinPlaylist('p1');
@@ -73,7 +78,7 @@ describe('usePinnedItems', () => {
 
   it('should not pin beyond 4 playlists', () => {
     localStorageMock.setItem('vorbis-player-pinned-playlists', JSON.stringify(['p1', 'p2', 'p3', 'p4']));
-    const { result } = renderHook(() => usePinnedItems());
+    const { result } = renderHook(() => usePinnedItems(), { wrapper });
 
     act(() => {
       result.current.togglePinPlaylist('p5');
@@ -84,7 +89,7 @@ describe('usePinnedItems', () => {
   });
 
   it('should pin an unpinned album', () => {
-    const { result } = renderHook(() => usePinnedItems());
+    const { result } = renderHook(() => usePinnedItems(), { wrapper });
 
     act(() => {
       result.current.togglePinAlbum('a1');
@@ -96,7 +101,7 @@ describe('usePinnedItems', () => {
 
   it('should unpin a pinned album', () => {
     localStorageMock.setItem('vorbis-player-pinned-albums', JSON.stringify(['a1', 'a2']));
-    const { result } = renderHook(() => usePinnedItems());
+    const { result } = renderHook(() => usePinnedItems(), { wrapper });
 
     act(() => {
       result.current.togglePinAlbum('a1');
@@ -108,7 +113,7 @@ describe('usePinnedItems', () => {
 
   it('should not pin beyond 4 albums', () => {
     localStorageMock.setItem('vorbis-player-pinned-albums', JSON.stringify(['a1', 'a2', 'a3', 'a4']));
-    const { result } = renderHook(() => usePinnedItems());
+    const { result } = renderHook(() => usePinnedItems(), { wrapper });
 
     act(() => {
       result.current.togglePinAlbum('a5');
@@ -119,7 +124,7 @@ describe('usePinnedItems', () => {
   });
 
   it('should report canPinMore correctly', () => {
-    const { result } = renderHook(() => usePinnedItems());
+    const { result } = renderHook(() => usePinnedItems(), { wrapper });
 
     expect(result.current.canPinMorePlaylists).toBe(true);
     expect(result.current.canPinMoreAlbums).toBe(true);
@@ -140,7 +145,7 @@ describe('usePinnedItems', () => {
   });
 
   it('should persist to localStorage on change', () => {
-    const { result } = renderHook(() => usePinnedItems());
+    const { result } = renderHook(() => usePinnedItems(), { wrapper });
 
     act(() => {
       result.current.togglePinPlaylist('p1');
@@ -157,7 +162,7 @@ describe('usePinnedItems', () => {
 
   it('should allow unpinning even when at max capacity', () => {
     localStorageMock.setItem('vorbis-player-pinned-playlists', JSON.stringify(['p1', 'p2', 'p3', 'p4']));
-    const { result } = renderHook(() => usePinnedItems());
+    const { result } = renderHook(() => usePinnedItems(), { wrapper });
 
     act(() => {
       result.current.togglePinPlaylist('p2');
@@ -168,7 +173,7 @@ describe('usePinnedItems', () => {
   });
 
   it('should preserve pin order (appended at end)', () => {
-    const { result } = renderHook(() => usePinnedItems());
+    const { result } = renderHook(() => usePinnedItems(), { wrapper });
 
     act(() => {
       result.current.togglePinPlaylist('p3');

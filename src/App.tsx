@@ -8,6 +8,7 @@ import { flexCenter, buttonPrimary } from './styles/utils';
 import { TrackProvider } from './contexts/TrackContext';
 import { VisualEffectsProvider } from './contexts/VisualEffectsContext';
 import { ColorProvider } from './contexts/ColorContext';
+import { PinnedItemsProvider } from './contexts/PinnedItemsContext';
 
 /**
  * Cleanup function to remove deprecated localStorage keys
@@ -137,9 +138,11 @@ function App() {
       <TrackProvider>
         <VisualEffectsProvider>
           <ColorProvider>
-            <AppContainer>
-              <AudioPlayerComponent />
-            </AppContainer>
+            <PinnedItemsProvider>
+              <AppContainer>
+                <AudioPlayerComponent />
+              </AppContainer>
+            </PinnedItemsProvider>
           </ColorProvider>
         </VisualEffectsProvider>
       </TrackProvider>
