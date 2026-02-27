@@ -170,7 +170,7 @@ const BottomBar = React.memo(function BottomBar({
             <PlaylistIcon />
           </ControlButton>
 
-          {!isMobile && onZenModeToggle && (
+          {onZenModeToggle && (
             <ControlButton
               $isMobile={isMobile}
               $isTablet={isTablet}
