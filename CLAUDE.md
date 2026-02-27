@@ -448,6 +448,7 @@ The application uses a centralized state management approach with custom React h
 | `ArrowDown` / `L` | Toggle library drawer | Volume down (ArrowDown only) |
 | `V` | Toggle background visualizer | Toggle background visualizer |
 | `G` | Toggle glow effect | Toggle glow effect |
+| `T` | Toggle translucence | Toggle translucence |
 | `O` | Open visual effects menu | Open visual effects menu |
 | `K` | Like/unlike current track | Like/unlike current track |
 | `M` | Mute/unmute | Mute/unmute |
