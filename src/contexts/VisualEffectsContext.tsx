@@ -51,7 +51,7 @@ export function VisualEffectsProvider({ children }: { children: React.ReactNode 
   const [accentColorBackgroundPreferred, setAccentColorBackgroundPreferred] = useLocalStorage<boolean>('vorbis-player-accent-color-background-preferred', false);
   const [accentColorBackgroundEnabled, setAccentColorBackgroundEnabled] = useState<boolean>(false);
   const [translucenceEnabled, setTranslucenceEnabled] = useLocalStorage<boolean>('vorbis-player-translucence-enabled', false);
-  const [translucenceOpacity, setTranslucenceOpacity] = useLocalStorage<number>('vorbis-player-translucence-opacity', 0.6);
+  const [translucenceOpacity, setTranslucenceOpacity] = useLocalStorage<number>('vorbis-player-translucence-opacity', 0.8);
   const [zenModeEnabled, setZenModeEnabled] = useLocalStorage<boolean>('vorbis-player-zen-mode-enabled', false);
   const [showVisualEffects, setShowVisualEffects] = useState<boolean>(false);
 

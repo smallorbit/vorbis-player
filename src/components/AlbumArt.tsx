@@ -278,7 +278,7 @@ const AlbumArt: React.FC<AlbumArtProps> = memo(({ currentTrack = null, accentCol
       glowRate={glowRate}
       glowEnabled={glowEnabled}
       $zenMode={zenMode}
-      $translucenceOpacity={translucenceEnabled ? (translucenceOpacity ?? 0.6) : 1}
+      $translucenceOpacity={translucenceEnabled ? (translucenceOpacity ?? 0.8) : 1}
       className={glowClasses}
     >
       <AlbumArtFilters filters={albumFilters ? albumFilters : {
