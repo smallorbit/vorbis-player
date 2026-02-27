@@ -1,20 +1,20 @@
 /**
   * Centralized keyboard shortcuts hook for the player
   * Consolidates all keyboard event handling in one place
-  * 
+  *
   * Supported shortcuts:
   * - Space: Play/Pause
   * - ArrowRight: Next track
   * - ArrowLeft: Previous track
- * - V: Toggle background visualizations
+  * - V: Toggle background visualizations
   * - O: Toggle visual effects menu
   * - G: Toggle glow effect
   * - ?: Show keyboard shortcuts help
   * - Escape: Close menus (playlist drawer and visual effects)
   * - M: Mute
- * - ArrowUp: (Pointer device) Toggle playlist drawer; (Touch) Volume up
- * - ArrowDown: (Pointer device) Toggle library drawer; (Touch) Volume down
-  * - L: Like/Unlike track
+  * - ArrowUp / P: (Pointer device) Toggle playlist drawer; (Touch) ArrowUp = Volume up
+  * - ArrowDown / L: (Pointer device) Toggle library drawer; (Touch) ArrowDown = Volume down
+  * - K: Like/Unlike track
   */
 
 import { useEffect } from 'react';
@@ -172,10 +172,26 @@ export const useKeyboardShortcuts = (
           break;
 
         case 'KeyL':
-          // L toggles like/unlike
+          // L toggles library drawer (alternative to ArrowDown on pointer devices)
+          if (!event.ctrlKey && !event.metaKey) {
+            event.preventDefault();
+            onOpenLibraryDrawer?.();
+          }
+          break;
+
+        case 'KeyK':
+          // K toggles like/unlike
           if (!event.ctrlKey && !event.metaKey) {
             event.preventDefault();
             onToggleLike?.();
+          }
+          break;
+
+        case 'KeyP':
+          // P toggles playlist drawer (alternative to ArrowUp on pointer devices)
+          if (!event.ctrlKey && !event.metaKey) {
+            event.preventDefault();
+            onShowPlaylist?.();
           }
           break;
 

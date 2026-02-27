@@ -444,17 +444,17 @@ The application uses a centralized state management approach with custom React h
 | `Space` | Play/Pause | Play/Pause |
 | `ArrowRight` | Next track | Next track |
 | `ArrowLeft` | Previous track | Previous track |
-| `ArrowUp` | Toggle playlist drawer | Volume up |
-| `ArrowDown` | Toggle library drawer | Volume down |
+| `ArrowUp` / `P` | Toggle playlist drawer | Volume up (ArrowUp only) |
+| `ArrowDown` / `L` | Toggle library drawer | Volume down (ArrowDown only) |
 | `V` | Toggle background visualizer | Toggle background visualizer |
 | `G` | Toggle glow effect | Toggle glow effect |
 | `O` | Open visual effects menu | Open visual effects menu |
-| `L` | Like/unlike current track | Like/unlike current track |
+| `K` | Like/unlike current track | Like/unlike current track |
 | `M` | Mute/unmute | Mute/unmute |
 | `/` or `?` | Show keyboard shortcuts help | Show keyboard shortcuts help |
 | `Escape` | Close all menus | Close all menus |
 
-Centralized in `useKeyboardShortcuts.ts`. Uses pointer input detection (`pointer: fine` / `hover: hover` media queries) instead of viewport width to determine device type. ArrowUp/ArrowDown have cross-dismiss behavior: opening one drawer closes the other. Prevents conflicts with text inputs and Ctrl/Cmd shortcuts.
+Centralized in `useKeyboardShortcuts.ts`. Uses pointer input detection (`pointer: fine` / `hover: hover` media queries) instead of viewport width to determine device type. `P` and `L` are always-available alternatives for playlist/library toggles (not device-dependent like ArrowUp/ArrowDown). ArrowUp/ArrowDown have cross-dismiss behavior: opening one drawer closes the other. Prevents conflicts with text inputs and Ctrl/Cmd shortcuts.
 
 ### Playlist Management
 
