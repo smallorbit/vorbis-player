@@ -287,10 +287,6 @@ const ControlsFlipWrapper = styled.div`
   perspective: 1000px;
   cursor: pointer;
   outline: none;
-  &:focus-visible {
-    outline: 2px solid rgba(255, 255, 255, 0.4);
-    border-radius: 1.25rem;
-  }
 `;
 
 const ControlsFlipInner = styled.div.withConfig({
