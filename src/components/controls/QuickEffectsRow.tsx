@@ -171,13 +171,14 @@ const SectionTitle = styled.span`
 const SubSettings = styled.div`
   display: flex;
   flex-direction: column;
+  align-items: center;
   gap: 5px;
-  padding-left: 2px;
 `;
 
 const SubSettingRow = styled.div`
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: ${theme.spacing.sm};
   flex-wrap: wrap;
 `;
