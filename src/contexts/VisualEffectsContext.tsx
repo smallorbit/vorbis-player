@@ -87,7 +87,7 @@ export function VisualEffectsProvider({ children }: { children: React.ReactNode 
   }, [setAlbumFilters]);
 
   const handleResetFilters = useCallback(() => {
-    setAlbumFilters({ brightness: 100, contrast: 100, saturation: 100, hue: 0, blur: 0, sepia: 0 });
+    setAlbumFilters({ brightness: 100, contrast: 100, saturation: 100, sepia: 0 });
   }, [setAlbumFilters]);
 
   const restoreSavedFilters = useCallback(() => {

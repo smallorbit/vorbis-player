@@ -328,8 +328,6 @@ const defaultFilters = {
   brightness: 110,
   contrast: 100,
   saturation: 100,
-  hue: 0,
-  blur: 0,
   sepia: 0,
 };
 
