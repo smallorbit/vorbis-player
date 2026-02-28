@@ -2,7 +2,7 @@ import React, { useCallback, useRef, useEffect } from 'react';
 import { generateColorVariant } from '../../utils/visualizerUtils';
 import { useCanvasVisualizer } from '../../hooks/useCanvasVisualizer';
 
-export interface AlbumArtBounds {
+interface AlbumArtBounds {
   left: number;
   top: number;
   width: number;

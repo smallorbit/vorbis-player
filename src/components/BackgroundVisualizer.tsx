@@ -4,7 +4,7 @@ import type { VisualizerStyle } from '../types/visualizer';
 import { ParticleVisualizer } from './visualizers/ParticleVisualizer';
 import { TrailVisualizer } from './visualizers/TrailVisualizer';
 
-export interface AlbumArtBounds {
+interface AlbumArtBounds {
   left: number;
   top: number;
   width: number;

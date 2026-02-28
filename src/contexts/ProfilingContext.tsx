@@ -28,14 +28,14 @@ export interface ProfilingSnapshot {
   recentEvents: RenderEvent[];
 }
 
-export interface ProfilingContextValue {
+interface ProfilingContextValue {
   enabled: boolean; collector: MetricsCollector | null; toggle: () => void;
 }
 
 const STORAGE_KEY = 'vorbis-player-profiling';
 const HAS_WINDOW = typeof window !== 'undefined';
 
-export class MetricsCollector {
+class MetricsCollector {
   private sessionStart: number;
   private components = new Map<string, RenderStats>();
   private contexts = new Map<string, ContextStats>();

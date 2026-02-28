@@ -18,10 +18,3 @@ export function TestWrapper({ children }: { children: React.ReactNode }) {
   );
 }
 
-export function createWrapper(
-  _options?: Record<string, unknown>
-): ({ children }: { children: React.ReactNode }) => React.JSX.Element {
-  return ({ children }: { children: React.ReactNode }) => (
-    <TestWrapper>{children}</TestWrapper>
-  );
-}

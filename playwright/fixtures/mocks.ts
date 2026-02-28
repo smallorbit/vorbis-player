@@ -1,6 +1,6 @@
 import type { Page } from '@playwright/test';
 
-export const mockPlaylists = {
+const mockPlaylists = {
   items: [
     {
       id: 'playlist-1',
@@ -27,7 +27,7 @@ export const mockPlaylists = {
   next: null,
 };
 
-export const mockAlbums = {
+const mockAlbums = {
   items: [
     {
       added_at: '2024-01-01T00:00:00Z',
@@ -62,7 +62,7 @@ export const mockAlbums = {
   next: null,
 };
 
-export const mockLikedSongsCount = {
+const mockLikedSongsCount = {
   items: [],
   total: 25,
   limit: 1,
