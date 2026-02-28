@@ -36,6 +36,24 @@ When asked to implement a UI change, make the minimal change first, confirm it w
 
 When creating PRs, always run the full test suite first. The project uses Vitest for unit tests. Run `npm test` before `git push` and before creating any PR.
 
+## Worktree Setup
+
+When creating or working in a git worktree, perform these setup steps immediately to ensure the environment is ready for development and testing:
+
+```bash
+# 1. Install dependencies
+npm install
+
+# 2. Copy environment variables from main repo
+cp ../.env .env.local
+```
+
+These setup steps are required because:
+- **npm install**: Worktrees don't inherit `node_modules` from the main repository; each worktree needs its own dependency installation
+- **Environment file**: The `.env.local` file contains Spotify API credentials needed for authentication, local development, and tests. Copy it from the main repo directory (use `../` to reference the main repo from the worktree)
+
+After completing these steps, you can proceed with development commands and running tests. Verify the setup by running `npm run test:run` to confirm the test suite passes.
+
 ## Development Commands
 
 ```bash
