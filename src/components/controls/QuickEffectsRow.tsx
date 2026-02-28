@@ -374,11 +374,11 @@ function QuickEffectsRow({
         </SubSettings>
       </SectionCard>
 
-      {/* Translucent section — only applicable when visualizer is enabled */}
-      <SectionCard style={{ opacity: backgroundVisualizerEnabled ? 1 : 0.4, pointerEvents: backgroundVisualizerEnabled ? 'auto' : 'none' }}>
+      {/* Translucent section */}
+      <SectionCard>
         <SectionHeader>
           <SectionTitle>Translucent</SectionTitle>
-          <SwitchTrack $on={translucenceEnabled} $accent={accentColor} onClick={onTranslucenceToggle} aria-label="Toggle translucence" role="switch" aria-checked={translucenceEnabled} disabled={!backgroundVisualizerEnabled}>
+          <SwitchTrack $on={translucenceEnabled} $accent={accentColor} onClick={onTranslucenceToggle} aria-label="Toggle translucence" role="switch" aria-checked={translucenceEnabled}>
             <SwitchKnob $on={translucenceEnabled} />
           </SwitchTrack>
         </SectionHeader>
