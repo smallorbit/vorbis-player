@@ -39,7 +39,7 @@ interface PlaybackHandlers {
   onBackToLibrary: () => void;
 }
 
-export interface AlbumArtBounds {
+interface AlbumArtBounds {
   left: number;
   top: number;
   width: number;

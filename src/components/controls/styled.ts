@@ -148,42 +148,6 @@ export const ArtistLink = styled.a`
   }
 `;
 
-// --- Track Info Row Layout ---
-export const TrackInfoRow = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: ${({ theme }) => theme.spacing.sm};
-  width: 100%;
-`;
-
-export const TrackInfoLeft = styled.div`
-  flex: 1 1 0;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-`;
-
-export const TrackInfoCenter = styled.div`
-  flex: 0 0 auto;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 8.5rem;
-  gap: ${({ theme }) => theme.spacing.sm};
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
-`;
-
-export const TrackInfoRight = styled.div`
-  flex: 0 0 auto;
-  display: flex;
-  align-items: center;
-  gap: ${({ theme }) => theme.spacing.xs};
-`;
-
 // --- Control Buttons ---
 export const ControlButton = styled.button.withConfig({
   shouldForwardProp: (prop) => !['isActive', 'accentColor', '$isMobile', '$isTablet', '$compact'].includes(prop),

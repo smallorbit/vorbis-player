@@ -8,7 +8,7 @@ import { OptionButton, OptionButtonGroup } from '@/components/VisualEffectsMenu/
 import EyedropperOverlay from '@/components/EyedropperOverlay';
 import { theme } from '@/styles/theme';
 
-export interface QuickEffectsRowProps {
+interface QuickEffectsRowProps {
   currentTrack: Track | null;
   accentColor: string;
   onAccentColorChange: (color: string) => void;
