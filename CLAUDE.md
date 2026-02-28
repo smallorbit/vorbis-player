@@ -20,6 +20,22 @@ This file provides guidance to Claude Code (claude.ai/code) and other AI assista
 - **Keyboard Shortcuts**: Context-aware keyboard control system (13 shortcuts with device-specific behavior)
 - **Performance Optimized**: Web Workers, LRU caching, IndexedDB persistence, lazy loading, hardware-accelerated animations
 
+## Build Verification
+
+Always verify the build compiles cleanly (`npm run build` or equivalent) after removing dependencies, refactoring imports, or making multi-file changes. Check for dangling references in config files like `vite.config.ts`, `tsconfig.json`, etc.
+
+This is a TypeScript project. After any refactor or feature implementation, ensure there are no TypeScript compilation errors before committing. Run `npx tsc --noEmit` as a verification step.
+
+## UI & CSS Guidelines
+
+When modifying CSS layout or styling, avoid making additional 'clever' adjustments beyond what was requested. If the user asks to constrain width or center an element, do exactly that — don't add spacers, override calculated dimensions, or restructure containers unless explicitly asked. If multiple approaches may be needed, describe them first before implementing.
+
+When asked to implement a UI change, make the minimal change first, confirm it works visually, then iterate. Do not combine multiple layout changes (e.g., centering + animation + spacing) into a single large edit.
+
+## Git & PR Workflow
+
+When creating PRs, always run the full test suite first. The project uses Vitest for unit tests. Run `npm test` before `git push` and before creating any PR.
+
 ## Development Commands
 
 ```bash

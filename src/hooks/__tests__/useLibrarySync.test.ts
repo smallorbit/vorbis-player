@@ -93,13 +93,13 @@ describe('useLibrarySync', () => {
     expect(mockStart).toHaveBeenCalledOnce();
   });
 
-  it('should unsubscribe and stop engine on unmount', () => {
+  it('should unsubscribe on unmount but keep engine running', () => {
     const { unmount } = renderHook(() => useLibrarySync());
 
     unmount();
 
     expect(unsubscribeFn).toHaveBeenCalledOnce();
-    expect(mockStop).toHaveBeenCalledOnce();
+    expect(mockStop).not.toHaveBeenCalled();
   });
 
   it('should update state when engine emits data', async () => {
