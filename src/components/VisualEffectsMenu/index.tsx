@@ -34,7 +34,6 @@ interface VisualEffectsMenuProps {
     brightness: number;
     contrast: number;
     saturation: number;
-    hue: number;
     sepia: number;
   };
   onFilterChange: (filterName: string, value: number) => void;

@@ -51,8 +51,6 @@ interface AlbumArtProps {
     brightness: number;
     contrast: number;
     saturation: number;
-    hue: number;
-    blur: number;
     sepia: number;
   };
   translucenceEnabled?: boolean;
@@ -175,7 +173,7 @@ const arePropsEqual = (prevProps: AlbumArtProps, nextProps: AlbumArtProps): bool
     return false;
   }
   const filterKeys: (keyof typeof prevProps.albumFilters)[] = [
-    'brightness', 'contrast', 'saturation', 'blur', 'sepia'
+    'brightness', 'contrast', 'saturation', 'sepia'
   ];
   for (const key of filterKeys) {
     if (prevProps.albumFilters[key] !== nextProps.albumFilters[key]) {
