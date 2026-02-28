@@ -16,10 +16,16 @@ interface QuickEffectsRowProps {
   onCustomAccentColor: (color: string) => void;
   glowEnabled: boolean;
   onGlowToggle: () => void;
+  glowIntensity?: number;
+  onGlowIntensityChange?: (v: number) => void;
+  glowRate?: number;
+  onGlowRateChange?: (v: number) => void;
   backgroundVisualizerEnabled: boolean;
   onBackgroundVisualizerToggle: () => void;
   backgroundVisualizerStyle: 'fireflies' | 'comet';
   onBackgroundVisualizerStyleChange: (style: 'fireflies' | 'comet') => void;
+  backgroundVisualizerIntensity?: number;
+  onBackgroundVisualizerIntensityChange?: (intensity: number) => void;
   translucenceEnabled: boolean;
   onTranslucenceToggle: () => void;
   isMobile: boolean;
@@ -152,10 +158,16 @@ function QuickEffectsRow({
   onCustomAccentColor,
   glowEnabled,
   onGlowToggle,
+  glowIntensity,
+  onGlowIntensityChange,
+  glowRate,
+  onGlowRateChange,
   backgroundVisualizerEnabled,
   onBackgroundVisualizerToggle,
   backgroundVisualizerStyle,
   onBackgroundVisualizerStyleChange,
+  backgroundVisualizerIntensity,
+  onBackgroundVisualizerIntensityChange,
   translucenceEnabled,
   onTranslucenceToggle,
 }: QuickEffectsRowProps) {
@@ -248,7 +260,33 @@ function QuickEffectsRow({
         </ToggleGroup>
       </RowLine>
 
-      {/* Row 3: Visualizer style (always present to prevent layout shift) */}
+      {/* Row 2b: Glow intensity + rate (shown when glow props provided) */}
+      {glowIntensity !== undefined && onGlowIntensityChange && (
+        <RowLine style={{ visibility: glowEnabled ? 'visible' : 'hidden' }}>
+          <ToggleGroup>
+            <QuickLabel>Intensity</QuickLabel>
+            <OptionButtonGroup>
+              <OptionButton $accentColor={accentColor} $isActive={glowIntensity === 95} onClick={() => onGlowIntensityChange(95)}>Less</OptionButton>
+              <OptionButton $accentColor={accentColor} $isActive={glowIntensity === 110} onClick={() => onGlowIntensityChange(110)}>Normal</OptionButton>
+              <OptionButton $accentColor={accentColor} $isActive={glowIntensity === 125} onClick={() => onGlowIntensityChange(125)}>More</OptionButton>
+            </OptionButtonGroup>
+          </ToggleGroup>
+        </RowLine>
+      )}
+      {glowRate !== undefined && onGlowRateChange && (
+        <RowLine style={{ visibility: glowEnabled ? 'visible' : 'hidden' }}>
+          <ToggleGroup>
+            <QuickLabel>Rate</QuickLabel>
+            <OptionButtonGroup>
+              <OptionButton $accentColor={accentColor} $isActive={glowRate === 5.0} onClick={() => onGlowRateChange(5.0)}>Slower</OptionButton>
+              <OptionButton $accentColor={accentColor} $isActive={glowRate === 4.0} onClick={() => onGlowRateChange(4.0)}>Normal</OptionButton>
+              <OptionButton $accentColor={accentColor} $isActive={glowRate === 3.0} onClick={() => onGlowRateChange(3.0)}>Faster</OptionButton>
+            </OptionButtonGroup>
+          </ToggleGroup>
+        </RowLine>
+      )}
+
+      {/* Row 3: Visualizer style + intensity (always present to prevent layout shift) */}
       <RowLine style={{ visibility: backgroundVisualizerEnabled ? 'visible' : 'hidden' }}>
         <ToggleGroup>
           <QuickLabel>Style</QuickLabel>
@@ -270,6 +308,36 @@ function QuickEffectsRow({
           </OptionButtonGroup>
         </ToggleGroup>
       </RowLine>
+      {backgroundVisualizerIntensity !== undefined && onBackgroundVisualizerIntensityChange && (
+        <RowLine style={{ visibility: backgroundVisualizerEnabled ? 'visible' : 'hidden' }}>
+          <ToggleGroup>
+            <QuickLabel>Intensity</QuickLabel>
+            <OptionButtonGroup>
+              <OptionButton
+                $accentColor={accentColor}
+                $isActive={backgroundVisualizerIntensity === 30}
+                onClick={() => onBackgroundVisualizerIntensityChange(30)}
+              >
+                Less
+              </OptionButton>
+              <OptionButton
+                $accentColor={accentColor}
+                $isActive={backgroundVisualizerIntensity === 60}
+                onClick={() => onBackgroundVisualizerIntensityChange(60)}
+              >
+                Normal
+              </OptionButton>
+              <OptionButton
+                $accentColor={accentColor}
+                $isActive={backgroundVisualizerIntensity === 90}
+                onClick={() => onBackgroundVisualizerIntensityChange(90)}
+              >
+                More
+              </OptionButton>
+            </OptionButtonGroup>
+          </ToggleGroup>
+        </RowLine>
+      )}
 
       {showEyedropper &&
         currentTrack?.image &&
