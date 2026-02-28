@@ -39,25 +39,20 @@ export const ParticleVisualizer: React.FC<ParticleVisualizerProps> = ({
   isPlaying,
   zenMode,
 }) => {
-  const debugConfig = useVisualizerDebugConfig();
-  const cfg = debugConfig?.particle;
+  const config = useVisualizerDebugConfig();
+  const p = config.particle;
 
   // Calculate particle count based on viewport size
   const getParticleCount = useCallback((width: number, height: number): number => {
     const pixelCount = width * height;
     const isMobile = width < 768;
-    const zenMultiplier = zenMode ? (cfg?.countZenMultiplier ?? 1.25) : 1;
+    const zenMultiplier = zenMode ? p.countZenMultiplier : 1;
 
     if (isMobile) {
-      const base = cfg?.countBaseMobile ?? 50;
-      const div = zenMode ? (cfg?.countPixelDivisorMobileZen ?? 6000) : (cfg?.countPixelDivisorMobile ?? 10000);
-      return Math.min(Math.round(base * zenMultiplier), Math.floor(pixelCount / div));
+      return Math.min(Math.round(p.countBaseMobile * zenMultiplier), Math.floor(pixelCount / (zenMode ? p.countPixelDivisorMobileZen : p.countPixelDivisorMobile)));
     }
-
-    const base = cfg?.countBaseDesktop ?? 80;
-    const div = zenMode ? (cfg?.countPixelDivisorZen ?? 4000) : (cfg?.countPixelDivisor ?? 7500);
-    return Math.min(Math.round(base * zenMultiplier), Math.floor(pixelCount / div));
-  }, [zenMode, cfg]);
+    return Math.min(Math.round(p.countBaseDesktop * zenMultiplier), Math.floor(pixelCount / (zenMode ? p.countPixelDivisorZen : p.countPixelDivisor)));
+  }, [zenMode, p]);
 
   // Initialize particles
   const initializeParticles = useCallback((
@@ -66,13 +61,13 @@ export const ParticleVisualizer: React.FC<ParticleVisualizerProps> = ({
     height: number,
     baseColor: string
   ): Particle[] => {
-    const minRadius = zenMode ? (cfg?.minRadiusZen ?? 2) : (cfg?.minRadius ?? 3);
-    const maxRadius = zenMode ? (cfg?.maxRadiusZen ?? 14) : (cfg?.maxRadius ?? 11);
-    const speedRange = zenMode ? (cfg?.speedRangeZen ?? 0.6) : (cfg?.speedRange ?? 0.5);
-    const opacityBase = zenMode ? (cfg?.opacityBaseZen ?? 0.4) : (cfg?.opacityBase ?? 0.3);
-    const opacitySpread = zenMode ? (cfg?.opacitySpreadZen ?? 0.5) : (cfg?.opacitySpread ?? 0.4);
-    const pulseSpeedMin = zenMode ? (cfg?.pulseSpeedMinZen ?? 0.02) : (cfg?.pulseSpeedMin ?? 0.01);
-    const pulseSpeedSpread = zenMode ? (cfg?.pulseSpeedSpreadZen ?? 0.04) : (cfg?.pulseSpeedSpread ?? 0.02);
+    const minRadius = zenMode ? p.minRadiusZen : p.minRadius;
+    const maxRadius = zenMode ? p.maxRadiusZen : p.maxRadius;
+    const speedRange = zenMode ? p.speedRangeZen : p.speedRange;
+    const opacityBase = zenMode ? p.opacityBaseZen : p.opacityBase;
+    const opacitySpread = zenMode ? p.opacitySpreadZen : p.opacitySpread;
+    const pulseSpeedMin = zenMode ? p.pulseSpeedMinZen : p.pulseSpeedMin;
+    const pulseSpeedSpread = zenMode ? p.pulseSpeedSpreadZen : p.pulseSpeedSpread;
 
     return Array.from({ length: count }, () => ({
       x: Math.random() * width,
@@ -87,7 +82,7 @@ export const ParticleVisualizer: React.FC<ParticleVisualizerProps> = ({
       pulsePhase: Math.random() * Math.PI * 2,
       pulseSpeed: pulseSpeedMin + Math.random() * pulseSpeedSpread
     }));
-  }, [zenMode, cfg]);
+  }, [zenMode, p]);
 
   // Update particles
   const updateParticles = useCallback((
@@ -97,13 +92,10 @@ export const ParticleVisualizer: React.FC<ParticleVisualizerProps> = ({
     width: number,
     height: number
   ): void => {
-    const pausedSpeed = cfg?.pausedSpeed ?? 0.3;
-    const baseSpeed = isPlaying ? 1.0 : pausedSpeed;
-    const zenMult = cfg?.zenSpeedMultiplier ?? 1.2;
-    const speedMultiplier = zenMode ? baseSpeed * zenMult : baseSpeed;
-
-    const pulseVariation = zenMode ? (cfg?.pulseVariationZen ?? 5) : (cfg?.pulseVariation ?? 3);
-    const opacityVariation = zenMode ? (cfg?.opacityVariationZen ?? 0.6) : (cfg?.opacityVariation ?? 0.4);
+    const baseSpeed = isPlaying ? 1.0 : p.pausedSpeed;
+    const speedMultiplier = zenMode ? baseSpeed * p.zenSpeedMultiplier : baseSpeed;
+    const pulseVariation = zenMode ? p.pulseVariationZen : p.pulseVariation;
+    const opacityVariation = zenMode ? p.opacityVariationZen : p.opacityVariation;
 
     particles.forEach(particle => {
       particle.x += particle.vx * speedMultiplier * (deltaTime / 16);
@@ -121,7 +113,7 @@ export const ParticleVisualizer: React.FC<ParticleVisualizerProps> = ({
       particle.radius = Math.max(1.5, particle.baseRadius + (pulseValue - 0.5) * pulseVariation);
       particle.opacity = Math.max(0.1, Math.min(1.0, particle.baseOpacity + (pulseValue - 0.5) * opacityVariation));
     });
-  }, [zenMode, cfg]);
+  }, [zenMode, p]);
 
   // Render particles
   const renderParticles = useCallback((

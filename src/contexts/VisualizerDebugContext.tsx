@@ -169,9 +169,10 @@ export function useVisualizerDebug(): VisualizerDebugContextValue | null {
   return useContext(VisualizerDebugContext);
 }
 
-/** Returns merged config when debug mode is on and overrides exist; otherwise null so components use their built-in defaults. */
-export function useVisualizerDebugConfig(): VisualizerDebugConfig | null {
+/** Returns the effective visualizer config: defaults from constants when debug is off, merged with overrides when ?debug=visualizer is on. */
+export function useVisualizerDebugConfig(): VisualizerDebugConfig {
   const ctx = useContext(VisualizerDebugContext);
-  if (!ctx?.isDebugMode) return null;
+  if (!ctx) return DEFAULT_VISUALIZER_DEBUG_CONFIG;
+  if (!ctx.isDebugMode) return DEFAULT_VISUALIZER_DEBUG_CONFIG;
   return ctx.config;
 }

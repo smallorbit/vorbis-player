@@ -1,8 +1,15 @@
 /**
  * Default visualization parameters for background visualizers.
- * Used as the single source of truth; can be overridden at runtime when
- * debug mode is enabled (?debug=visualizer) for tuning. Export the merged
- * config to promote chosen values back into these defaults.
+ *
+ * This file is the app’s single source of truth for Fireflies (Particle) and
+ * Comet (Trail) behavior. The debug panel (?debug=visualizer) can override
+ * these at runtime; otherwise the app always uses the values below.
+ *
+ * To use your own defaults (e.g. from the debug panel export):
+ * 1. Open the app with ?debug=visualizer, tune, then use "Download JSON" or "Copy JSON".
+ * 2. Replace DEFAULT_PARTICLE and DEFAULT_TRAIL below with the "particle" and
+ *    "trail" objects from that JSON (keep the same property names and types).
+ * 3. Save this file; the app will use the new defaults on next load.
  */
 
 export interface ParticleVisualizerConfig {
@@ -91,29 +98,29 @@ export interface VisualizerDebugOverrides {
 }
 
 const DEFAULT_PARTICLE: ParticleVisualizerConfig = {
-  minRadius: 3,
-  maxRadius: 11,
+  minRadius: 2,
+  maxRadius: 20,
   minRadiusZen: 2,
-  maxRadiusZen: 14,
-  speedRange: 0.5,
+  maxRadiusZen: 20,
+  speedRange: 0.6,
   speedRangeZen: 0.6,
   opacityBase: 0.3,
-  opacitySpread: 0.4,
+  opacitySpread: 0.7,
   opacityBaseZen: 0.4,
   opacitySpreadZen: 0.5,
   pulseSpeedMin: 0.01,
   pulseSpeedSpread: 0.02,
   pulseSpeedMinZen: 0.02,
   pulseSpeedSpreadZen: 0.04,
-  pulseVariation: 3,
-  pulseVariationZen: 5,
+  pulseVariation: 8,
+  pulseVariationZen: 8,
   opacityVariation: 0.4,
   opacityVariationZen: 0.6,
   pausedSpeed: 0.3,
-  zenSpeedMultiplier: 1.2,
-  countBaseMobile: 50,
-  countBaseDesktop: 80,
-  countZenMultiplier: 1.25,
+  zenSpeedMultiplier: 1,
+  countBaseMobile: 80,
+  countBaseDesktop: 100,
+  countZenMultiplier: 1,
   countPixelDivisor: 7500,
   countPixelDivisorZen: 4000,
   countPixelDivisorMobile: 10000,
@@ -121,28 +128,28 @@ const DEFAULT_PARTICLE: ParticleVisualizerConfig = {
 };
 
 const DEFAULT_TRAIL: TrailVisualizerConfig = {
-  particleMinRadius: 6,
-  particleMaxRadius: 18,
-  particleMaxRadiusZen: 24,
-  lifeDrainDivisor: 14250,
+  particleMinRadius: 7.5,
+  particleMaxRadius: 30,
+  particleMaxRadiusZen: 30,
+  lifeDrainDivisor: 17000,
   lifeRespawnMin: 0.8,
   lifeRespawnSpread: 0.2,
-  shipTurnRate: 0.00012,
-  shipSpeedBase: 2.7,
-  shipSpeedSpread: 0.5,
+  shipTurnRate: 0.00037,
+  shipSpeedBase: 5.3,
+  shipSpeedSpread: 0.45,
   shipWobble: 0.025,
-  pausedSpeedMult: 0.15,
-  oppositeMult: 0.4,
-  oppositeMultZen: 0.55,
-  perpSpread: 2.2,
-  perpSpreadZen: 2.6,
+  pausedSpeedMult: 0.1,
+  oppositeMult: 0.05,
+  oppositeMultZen: 0.2,
+  perpSpread: 0.5,
+  perpSpreadZen: 0.5,
   respawnRandomSpread: 0.8,
   particleSpeedMultZen: 1.15,
   driftDecay: 0.9992,
-  glowRadius: 44,
-  minVisibleRadius: 5,
-  countBaseMobile: 85,
-  countBaseDesktop: 140,
+  glowRadius: 42,
+  minVisibleRadius: 11,
+  countBaseMobile: 200,
+  countBaseDesktop: 200,
   countZenMultiplier: 5.5,
   countPixelDivisor: 5000,
   countPixelDivisorZen: 3000,

@@ -85,29 +85,30 @@ export function VisualizerDebugPanel() {
   const ctx = useVisualizerDebug();
   const [loadJson, setLoadJson] = useState('');
   const [loadStatus, setLoadStatus] = useState<'idle' | 'ok' | 'err'>('idle');
+  const [particleOpen, setParticleOpen] = useState(true);
+  const [trailOpen, setTrailOpen] = useState(true);
+
+  const handleDownload = useCallback(() => {
+    if (!ctx) return;
+    const blob = new Blob([ctx.exportAsJson()], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'vorbis-visualizer-config.json';
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }, [ctx]);
+
+  const handleLoad = useCallback(() => {
+    if (!ctx) return;
+    const ok = ctx.loadOverridesFromJson(loadJson);
+    setLoadStatus(ok ? 'ok' : 'err');
+  }, [ctx, loadJson]);
 
   if (!ctx?.isDebugMode) return null;
 
   const { config, setParticleOverride, setTrailOverride, reset, exportAsJson, copyExportToClipboard, loadOverridesFromJson } = ctx;
   const p = config.particle;
   const t = config.trail;
-
-  const handleDownload = useCallback(() => {
-    const blob = new Blob([exportAsJson()], { type: 'application/json' });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = 'vorbis-visualizer-config.json';
-    a.click();
-    URL.revokeObjectURL(a.href);
-  }, [exportAsJson]);
-
-  const handleLoad = useCallback(() => {
-    const ok = loadOverridesFromJson(loadJson);
-    setLoadStatus(ok ? 'ok' : 'err');
-  }, [loadJson, loadOverridesFromJson]);
-
-  const [particleOpen, setParticleOpen] = useState(true);
-  const [trailOpen, setTrailOpen] = useState(true);
 
   return (
     <Panel>
