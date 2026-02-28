@@ -58,7 +58,7 @@ export const ParticleVisualizer: React.FC<ParticleVisualizerProps> = ({
   ): Particle[] => {
     const minRadius = 2;
     const maxRadius = 14;
-    const speedRange = 0.6;
+    const speedRange = 0.3;
 
     return Array.from({ length: count }, () => ({
       x: Math.random() * width,
@@ -71,7 +71,7 @@ export const ParticleVisualizer: React.FC<ParticleVisualizerProps> = ({
       baseOpacity: 0.4 + Math.random() * 0.5,
       color: generateColorVariant(baseColor, Math.random() * 0.5 + 0.3),
       pulsePhase: Math.random() * Math.PI * 2,
-      pulseSpeed: 0.02 + Math.random() * 0.04
+      pulseSpeed: 0.01 + Math.random() * 0.02
     }));
   }, []);
 
@@ -84,7 +84,7 @@ export const ParticleVisualizer: React.FC<ParticleVisualizerProps> = ({
     height: number
   ): void => {
     const baseSpeed = isPlaying ? 1.0 : 0.3;
-    const speedMultiplier = baseSpeed * 1.2;
+    const speedMultiplier = baseSpeed * 0.6;
 
     particles.forEach(particle => {
       // Update position
