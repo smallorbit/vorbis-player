@@ -118,13 +118,6 @@ const ResetBtn = styled.button`
   }
 `;
 
-const ToggleGroup = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-wrap: wrap;
-`;
-
 const SwitchTrack = styled.button<{ $on: boolean; $accent: string }>`
   position: relative;
   width: 36px;
@@ -148,6 +141,53 @@ const SwitchKnob = styled.span<{ $on: boolean }>`
   background: ${theme.colors.white};
   transition: left 0.2s ease;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+`;
+
+/* Section card that groups a feature toggle with its sub-settings */
+const SectionCard = styled.div`
+  width: 100%;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: ${theme.borderRadius.lg};
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+`;
+
+const SectionHeader = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+`;
+
+const SectionTitle = styled.span`
+  font-size: 11px;
+  font-weight: ${theme.fontWeight.semibold};
+  color: rgba(255, 255, 255, 0.85);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+`;
+
+const SubSettings = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding-left: 2px;
+`;
+
+const SubSettingRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: ${theme.spacing.sm};
+  flex-wrap: wrap;
+`;
+
+const SubLabel = styled.span`
+  font-size: 10px;
+  color: ${({ theme }) => theme.colors.muted.foreground};
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  min-width: 52px;
 `;
 
 function QuickEffectsRow({
@@ -191,9 +231,13 @@ function QuickEffectsRow({
     onAccentColorChange('RESET_TO_DEFAULT');
   };
 
+  const hasGlowSubSettings = glowIntensity !== undefined && onGlowIntensityChange;
+  const hasGlowRate = glowRate !== undefined && onGlowRateChange;
+  const hasVizIntensity = backgroundVisualizerIntensity !== undefined && onBackgroundVisualizerIntensityChange;
+
   return (
     <QuickRow>
-      {/* Row 1: Color swatches + eyedropper + reset */}
+      {/* Color swatches + eyedropper + reset */}
       <RowLine>
         <QuickLabel>Color</QuickLabel>
         <SwatchRow>
@@ -236,108 +280,108 @@ function QuickEffectsRow({
         </SwatchRow>
       </RowLine>
 
-      {/* Row 2: Glow + Visualizer toggles */}
-      <RowLine>
-        <ToggleGroup>
-          <QuickLabel>Glow</QuickLabel>
+      {/* Glow section */}
+      <SectionCard>
+        <SectionHeader>
+          <SectionTitle>Glow</SectionTitle>
           <SwitchTrack $on={glowEnabled} $accent={accentColor} onClick={onGlowToggle} aria-label="Toggle glow" role="switch" aria-checked={glowEnabled}>
             <SwitchKnob $on={glowEnabled} />
           </SwitchTrack>
-        </ToggleGroup>
+        </SectionHeader>
+        {(hasGlowSubSettings || hasGlowRate) && (
+          <SubSettings style={{ visibility: glowEnabled ? 'visible' : 'hidden' }}>
+            {hasGlowSubSettings && (
+              <SubSettingRow>
+                <SubLabel>Intensity</SubLabel>
+                <OptionButtonGroup>
+                  <OptionButton $accentColor={accentColor} $isActive={glowIntensity === 95} onClick={() => onGlowIntensityChange(95)}>Less</OptionButton>
+                  <OptionButton $accentColor={accentColor} $isActive={glowIntensity === 110} onClick={() => onGlowIntensityChange(110)}>Normal</OptionButton>
+                  <OptionButton $accentColor={accentColor} $isActive={glowIntensity === 125} onClick={() => onGlowIntensityChange(125)}>More</OptionButton>
+                </OptionButtonGroup>
+              </SubSettingRow>
+            )}
+            {hasGlowRate && (
+              <SubSettingRow>
+                <SubLabel>Rate</SubLabel>
+                <OptionButtonGroup>
+                  <OptionButton $accentColor={accentColor} $isActive={glowRate === 5.0} onClick={() => onGlowRateChange(5.0)}>Slower</OptionButton>
+                  <OptionButton $accentColor={accentColor} $isActive={glowRate === 4.0} onClick={() => onGlowRateChange(4.0)}>Normal</OptionButton>
+                  <OptionButton $accentColor={accentColor} $isActive={glowRate === 3.0} onClick={() => onGlowRateChange(3.0)}>Faster</OptionButton>
+                </OptionButtonGroup>
+              </SubSettingRow>
+            )}
+          </SubSettings>
+        )}
+      </SectionCard>
 
-        <ToggleGroup>
-          <QuickLabel>Viz</QuickLabel>
+      {/* Visualizer section */}
+      <SectionCard>
+        <SectionHeader>
+          <SectionTitle>Visualizer</SectionTitle>
           <SwitchTrack $on={backgroundVisualizerEnabled} $accent={accentColor} onClick={onBackgroundVisualizerToggle} aria-label="Toggle visualizer" role="switch" aria-checked={backgroundVisualizerEnabled}>
             <SwitchKnob $on={backgroundVisualizerEnabled} />
           </SwitchTrack>
-        </ToggleGroup>
+        </SectionHeader>
+        <SubSettings style={{ visibility: backgroundVisualizerEnabled ? 'visible' : 'hidden' }}>
+          <SubSettingRow>
+            <SubLabel>Style</SubLabel>
+            <OptionButtonGroup>
+              <OptionButton
+                $accentColor={accentColor}
+                $isActive={backgroundVisualizerStyle === 'fireflies'}
+                onClick={() => onBackgroundVisualizerStyleChange('fireflies')}
+              >
+                Fireflies
+              </OptionButton>
+              <OptionButton
+                $accentColor={accentColor}
+                $isActive={backgroundVisualizerStyle === 'comet'}
+                onClick={() => onBackgroundVisualizerStyleChange('comet')}
+              >
+                Comet
+              </OptionButton>
+            </OptionButtonGroup>
+          </SubSettingRow>
+          {hasVizIntensity && (
+            <SubSettingRow>
+              <SubLabel>Intensity</SubLabel>
+              <OptionButtonGroup>
+                <OptionButton
+                  $accentColor={accentColor}
+                  $isActive={backgroundVisualizerIntensity === 30}
+                  onClick={() => onBackgroundVisualizerIntensityChange(30)}
+                >
+                  Less
+                </OptionButton>
+                <OptionButton
+                  $accentColor={accentColor}
+                  $isActive={backgroundVisualizerIntensity === 60}
+                  onClick={() => onBackgroundVisualizerIntensityChange(60)}
+                >
+                  Normal
+                </OptionButton>
+                <OptionButton
+                  $accentColor={accentColor}
+                  $isActive={backgroundVisualizerIntensity === 90}
+                  onClick={() => onBackgroundVisualizerIntensityChange(90)}
+                >
+                  More
+                </OptionButton>
+              </OptionButtonGroup>
+            </SubSettingRow>
+          )}
+        </SubSettings>
+      </SectionCard>
 
-        <ToggleGroup>
-          <QuickLabel>Translucent</QuickLabel>
+      {/* Translucent section */}
+      <SectionCard>
+        <SectionHeader>
+          <SectionTitle>Translucent</SectionTitle>
           <SwitchTrack $on={translucenceEnabled} $accent={accentColor} onClick={onTranslucenceToggle} aria-label="Toggle translucence" role="switch" aria-checked={translucenceEnabled}>
             <SwitchKnob $on={translucenceEnabled} />
           </SwitchTrack>
-        </ToggleGroup>
-      </RowLine>
-
-      {/* Row 2b: Glow intensity + rate (shown when glow props provided) */}
-      {glowIntensity !== undefined && onGlowIntensityChange && (
-        <RowLine style={{ visibility: glowEnabled ? 'visible' : 'hidden' }}>
-          <ToggleGroup>
-            <QuickLabel>Intensity</QuickLabel>
-            <OptionButtonGroup>
-              <OptionButton $accentColor={accentColor} $isActive={glowIntensity === 95} onClick={() => onGlowIntensityChange(95)}>Less</OptionButton>
-              <OptionButton $accentColor={accentColor} $isActive={glowIntensity === 110} onClick={() => onGlowIntensityChange(110)}>Normal</OptionButton>
-              <OptionButton $accentColor={accentColor} $isActive={glowIntensity === 125} onClick={() => onGlowIntensityChange(125)}>More</OptionButton>
-            </OptionButtonGroup>
-          </ToggleGroup>
-        </RowLine>
-      )}
-      {glowRate !== undefined && onGlowRateChange && (
-        <RowLine style={{ visibility: glowEnabled ? 'visible' : 'hidden' }}>
-          <ToggleGroup>
-            <QuickLabel>Rate</QuickLabel>
-            <OptionButtonGroup>
-              <OptionButton $accentColor={accentColor} $isActive={glowRate === 5.0} onClick={() => onGlowRateChange(5.0)}>Slower</OptionButton>
-              <OptionButton $accentColor={accentColor} $isActive={glowRate === 4.0} onClick={() => onGlowRateChange(4.0)}>Normal</OptionButton>
-              <OptionButton $accentColor={accentColor} $isActive={glowRate === 3.0} onClick={() => onGlowRateChange(3.0)}>Faster</OptionButton>
-            </OptionButtonGroup>
-          </ToggleGroup>
-        </RowLine>
-      )}
-
-      {/* Row 3: Visualizer style + intensity (always present to prevent layout shift) */}
-      <RowLine style={{ visibility: backgroundVisualizerEnabled ? 'visible' : 'hidden' }}>
-        <ToggleGroup>
-          <QuickLabel>Style</QuickLabel>
-          <OptionButtonGroup>
-            <OptionButton
-              $accentColor={accentColor}
-              $isActive={backgroundVisualizerStyle === 'fireflies'}
-              onClick={() => onBackgroundVisualizerStyleChange('fireflies')}
-            >
-              Fireflies
-            </OptionButton>
-            <OptionButton
-              $accentColor={accentColor}
-              $isActive={backgroundVisualizerStyle === 'comet'}
-              onClick={() => onBackgroundVisualizerStyleChange('comet')}
-            >
-              Comet
-            </OptionButton>
-          </OptionButtonGroup>
-        </ToggleGroup>
-      </RowLine>
-      {backgroundVisualizerIntensity !== undefined && onBackgroundVisualizerIntensityChange && (
-        <RowLine style={{ visibility: backgroundVisualizerEnabled ? 'visible' : 'hidden' }}>
-          <ToggleGroup>
-            <QuickLabel>Intensity</QuickLabel>
-            <OptionButtonGroup>
-              <OptionButton
-                $accentColor={accentColor}
-                $isActive={backgroundVisualizerIntensity === 30}
-                onClick={() => onBackgroundVisualizerIntensityChange(30)}
-              >
-                Less
-              </OptionButton>
-              <OptionButton
-                $accentColor={accentColor}
-                $isActive={backgroundVisualizerIntensity === 60}
-                onClick={() => onBackgroundVisualizerIntensityChange(60)}
-              >
-                Normal
-              </OptionButton>
-              <OptionButton
-                $accentColor={accentColor}
-                $isActive={backgroundVisualizerIntensity === 90}
-                onClick={() => onBackgroundVisualizerIntensityChange(90)}
-              >
-                More
-              </OptionButton>
-            </OptionButtonGroup>
-          </ToggleGroup>
-        </RowLine>
-      )}
+        </SectionHeader>
+      </SectionCard>
 
       {showEyedropper &&
         currentTrack?.image &&
