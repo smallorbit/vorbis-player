@@ -106,7 +106,7 @@ export function VisualizerDebugPanel() {
 
   if (!ctx?.isDebugMode) return null;
 
-  const { config, setParticleOverride, setTrailOverride, reset, exportAsJson, copyExportToClipboard, loadOverridesFromJson } = ctx;
+  const { config, setParticleOverride, setTrailOverride, reset, copyExportToClipboard } = ctx;
   const p = config.particle;
   const t = config.trail;
 
