@@ -644,7 +644,7 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
                 $swipeEnabled={isTouchDevice}
                 $bothGestures={isTouchDevice}
                 {...(isTouchDevice ? gestureHandlers : {})}
-                onClick={!isSwiping && !isAnimating ? (isFlipped ? () => setIsFlipped(false) : toggleFlip) : undefined}
+                onClick={!isSwiping && !isAnimating && !isFlipped ? toggleFlip : undefined}
                 style={{
                   transform: `translateX(${offsetX}px)`,
                   transition: isAnimating ? 'transform 300ms cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
@@ -687,6 +687,7 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
                     onTranslucenceToggle={handleTranslucenceToggle}
                     isMobile={isMobile}
                     isTablet={isTablet}
+                    onClose={() => setIsFlipped(false)}
                   />
                 </FlipInner>
               </ClickableAlbumArtContainer>

@@ -25,6 +25,7 @@ interface AlbumArtQuickSwapBackProps {
   onTranslucenceToggle: () => void;
   isMobile: boolean;
   isTablet: boolean;
+  onClose: () => void;
 }
 
 const BacksideRoot = styled.div`
@@ -96,14 +97,16 @@ function AlbumArtQuickSwapBack({
   onTranslucenceToggle,
   isMobile,
   isTablet,
+  onClose,
 }: AlbumArtQuickSwapBackProps) {
   return (
     <BacksideRoot>
       <BlurredBg $image={currentTrack?.image} />
       <DarkOverlay />
 
-      <Content>
+      <Content onClick={onClose}>
         <Title>Visual Effects</Title>
+        <div onClick={(e) => e.stopPropagation()}>
         <QuickEffectsRow
           currentTrack={currentTrack}
           accentColor={accentColor}
@@ -127,6 +130,7 @@ function AlbumArtQuickSwapBack({
           isMobile={isMobile}
           isTablet={isTablet}
         />
+        </div>
       </Content>
     </BacksideRoot>
   );
