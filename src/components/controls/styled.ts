@@ -238,6 +238,7 @@ export const TimelineControlsContainer = styled.div<{ $isMobile?: boolean }>`
   align-items: center;
   justify-content: space-between;
   gap: ${({ theme }) => theme.spacing.xs};
+  padding-bottom: ${({ theme }) => theme.spacing.sm};
   margin-top: 0;
 `;
 
