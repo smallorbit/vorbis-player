@@ -7,8 +7,10 @@ import { ThemeProvider } from './styles/ThemeProvider';
 import { flexCenter, buttonPrimary } from './styles/utils';
 import { TrackProvider } from './contexts/TrackContext';
 import { VisualEffectsProvider } from './contexts/VisualEffectsContext';
+import { VisualizerDebugProvider } from './contexts/VisualizerDebugContext';
 import { ColorProvider } from './contexts/ColorContext';
 import { PinnedItemsProvider } from './contexts/PinnedItemsContext';
+import { VisualizerDebugPanel } from './components/VisualizerDebugPanel';
 
 /**
  * Cleanup function to remove deprecated localStorage keys
@@ -135,17 +137,20 @@ function App() {
 
   return (
     <ThemeProvider>
-      <TrackProvider>
-        <VisualEffectsProvider>
-          <ColorProvider>
-            <PinnedItemsProvider>
+      <VisualizerDebugProvider>
+        <TrackProvider>
+          <VisualEffectsProvider>
+            <ColorProvider>
+              <PinnedItemsProvider>
               <AppContainer>
                 <AudioPlayerComponent />
               </AppContainer>
             </PinnedItemsProvider>
+            <VisualizerDebugPanel />
           </ColorProvider>
         </VisualEffectsProvider>
       </TrackProvider>
+    </VisualizerDebugProvider>
     </ThemeProvider>
   );
 }

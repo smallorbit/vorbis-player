@@ -1,6 +1,7 @@
 import React, { useCallback, useRef, useEffect } from 'react';
 import { generateColorVariant } from '../../utils/visualizerUtils';
 import { useCanvasVisualizer } from '../../hooks/useCanvasVisualizer';
+import { useVisualizerDebugConfig } from '../../contexts/VisualizerDebugContext';
 
 interface AlbumArtBounds {
   left: number;
@@ -43,9 +44,9 @@ interface ShipState {
  *
  * Renders a "ship flying through space" effect: a simulated ship travels
  * on a curving path across the canvas, leaving a trail of particles that
- * fade out behind it. Particle count and size scale match ParticleVisualizer.
+ * fade out behind it.
  *
- * Pausing slows the ship and trail to a gentle drift (~15% speed).
+ * Pausing slows the ship and trail to a gentle drift.
  *
  * @component
  */
@@ -53,7 +54,6 @@ export const TrailVisualizer: React.FC<TrailVisualizerProps> = ({
   intensity,
   accentColor,
   isPlaying,
-  zenMode,
   albumArtBounds,
 }) => {
   const albumArtBoundsRef = useRef<AlbumArtBounds | null>(null);
@@ -61,7 +61,9 @@ export const TrailVisualizer: React.FC<TrailVisualizerProps> = ({
     albumArtBoundsRef.current = albumArtBounds ?? null;
   }, [albumArtBounds]);
 
-  // Ship state lives outside the particle pool so it persists across re-inits
+  const config = useVisualizerDebugConfig();
+  const t = config.trail;
+
   const shipRef = useRef<ShipState>({
     x: 0,
     y: 0,
@@ -71,18 +73,14 @@ export const TrailVisualizer: React.FC<TrailVisualizerProps> = ({
     inited: false,
   });
 
-  // Particle count: higher than ParticleVisualizer so trail fills the background
   const getParticleCount = useCallback((width: number, height: number): number => {
     const pixelCount = width * height;
     const isMobile = width < 768;
-    const zenMultiplier = zenMode ? 5.5 : 1;
-
     if (isMobile) {
-      return Math.min(Math.round(85 * zenMultiplier), Math.floor(pixelCount / (zenMode ? 4500 : 8000)));
+      return Math.min(Math.round(t.countBaseMobile), Math.floor(pixelCount / t.countPixelDivisorMobile));
     }
-
-    return Math.min(Math.round(140 * zenMultiplier), Math.floor(pixelCount / (zenMode ? 3000 : 5000)));
-  }, [zenMode]);
+    return Math.min(Math.round(t.countBaseDesktop), Math.floor(pixelCount / t.countPixelDivisor));
+  }, [t]);
 
   const initializeParticles = useCallback((
     count: number,
@@ -96,11 +94,11 @@ export const TrailVisualizer: React.FC<TrailVisualizerProps> = ({
       if (bounds && bounds.width > 0 && bounds.height > 0) {
         const inset = Math.min(bounds.width, bounds.height) * 0.08;
         const l = bounds.left + inset;
-        const t = bounds.top + inset;
+        const top = bounds.top + inset;
         const w = bounds.width - inset * 2;
         const h = bounds.height - inset * 2;
         ship.x = l + w / 2;
-        ship.y = t + h / 2;
+        ship.y = top + h / 2;
       } else {
         ship.x = width / 2;
         ship.y = height / 2;
@@ -108,10 +106,6 @@ export const TrailVisualizer: React.FC<TrailVisualizerProps> = ({
       ship.inited = true;
     }
 
-    // Spread initial life so not all particles are born/dead at the same time.
-    // Large radius range for a bold, visible trail.
-    const minR = 6;
-    const maxR = zenMode ? 24 : 18;
     return Array.from({ length: count }, () => ({
       x: ship.x + (Math.random() - 0.5) * 60,
       y: ship.y + (Math.random() - 0.5) * 60,
@@ -119,9 +113,9 @@ export const TrailVisualizer: React.FC<TrailVisualizerProps> = ({
       vy: (Math.random() - 0.5) * 2,
       life: Math.random(),
       color: generateColorVariant(baseColor, Math.random() * 0.5 + 0.3),
-      radius: minR + Math.random() * (maxR - minR),
+      radius: t.particleMinRadius + Math.random() * (t.particleMaxRadius - t.particleMinRadius),
     }));
-  }, [zenMode]);
+  }, [t]);
 
   const updateParticles = useCallback((
     particles: TrailParticle[],
@@ -132,37 +126,33 @@ export const TrailVisualizer: React.FC<TrailVisualizerProps> = ({
   ): void => {
     const ship = shipRef.current;
 
-    // Re-center ship if it has somehow ended up outside the canvas
-    // (e.g. after a resize that drastically changed dimensions)
     if (!ship.inited || ship.x > width * 1.5 || ship.y > height * 1.5) {
       ship.x = width / 2;
       ship.y = height / 2;
       ship.inited = true;
     }
 
-    const speedMult = playing ? 1.0 : 0.15;
-    const dt = deltaTime / 16; // normalize to ~60fps
+    const speedMult = playing ? 1.0 : t.pausedSpeedMult;
+    const dt = deltaTime / 16;
 
-    // Update ship heading: smooth curve + random wobble so path isn't predictable
-    const turnRate = 0.00012 * deltaTime + (Math.random() - 0.5) * 0.025;
+    const turnRate = t.shipTurnRate * deltaTime + (Math.random() - 0.5) * t.shipWobble;
     ship.angle += turnRate;
-    const shipSpeed = 2.0 + (Math.random() - 0.5) * 0.3;
+    const shipSpeed = t.shipSpeedBase + (Math.random() - 0.5) * t.shipSpeedSpread;
     ship.vx = Math.cos(ship.angle) * shipSpeed + (Math.random() - 0.5) * 0.2;
     ship.vy = Math.sin(ship.angle) * shipSpeed + (Math.random() - 0.5) * 0.2;
 
     ship.x += ship.vx * speedMult * dt;
     ship.y += ship.vy * speedMult * dt;
 
-    // Keep trail head inside inset album art bounds when provided; otherwise wrap at canvas edges
     const bounds = albumArtBoundsRef.current;
     if (bounds && bounds.width > 0 && bounds.height > 0) {
       const inset = Math.min(bounds.width, bounds.height) * 0.08;
       const l = bounds.left + inset;
-      const t = bounds.top + inset;
+      const top = bounds.top + inset;
       const r = bounds.left + bounds.width - inset;
       const b = bounds.top + bounds.height - inset;
       ship.x = Math.max(l, Math.min(r, ship.x));
-      ship.y = Math.max(t, Math.min(b, ship.y));
+      ship.y = Math.max(top, Math.min(b, ship.y));
     } else {
       const margin = 40;
       if (ship.x < -margin) ship.x = width + margin;
@@ -171,37 +161,30 @@ export const TrailVisualizer: React.FC<TrailVisualizerProps> = ({
       else if (ship.y > height + margin) ship.y = -margin;
     }
 
-    // Each particle either drifts or is respawned at the ship (large divisor = long trail; 50% longer life)
-    const lifeDrain = (deltaTime / 14250) * speedMult;
-    const particleSpeedMult = zenMode ? 1.15 : 1;
+    const lifeDrain = (deltaTime / t.lifeDrainDivisor) * speedMult;
 
     particles.forEach(particle => {
       particle.life -= lifeDrain;
 
       if (particle.life <= 0) {
-        // Respawn at ship: velocity opposite to ship + strong perpendicular spread so trail fans out
         particle.x = ship.x;
         particle.y = ship.y;
-        const opposite = zenMode ? 0.55 : 0.4;
-        const perp = (Math.random() - 0.5) * (zenMode ? 2.6 : 2.2);
+        const perp = (Math.random() - 0.5) * t.perpSpread;
         const perpX = -ship.vy;
         const perpY = ship.vx;
-        particle.vx = (-ship.vx * opposite + perpX * perp + (Math.random() - 0.5) * 0.8) * particleSpeedMult;
-        particle.vy = (-ship.vy * opposite + perpY * perp + (Math.random() - 0.5) * 0.8) * particleSpeedMult;
-        particle.life = 0.8 + Math.random() * 0.2; // start near full life
-        const minR = 6;
-        const maxR = 24;
-        particle.radius = minR + Math.random() * (maxR - minR);
+        particle.vx = (-ship.vx * t.oppositeMult + perpX * perp + (Math.random() - 0.5) * t.respawnRandomSpread) * t.particleSpeedMult;
+        particle.vy = (-ship.vy * t.oppositeMult + perpY * perp + (Math.random() - 0.5) * t.respawnRandomSpread) * t.particleSpeedMult;
+        particle.life = t.lifeRespawnMin + Math.random() * t.lifeRespawnSpread;
+        particle.radius = t.particleMinRadius + Math.random() * (t.particleMaxRadius - t.particleMinRadius);
       } else {
-        // Drift (very slow deceleration so particles spread across the background; faster in zen)
-        const move = speedMult * particleSpeedMult * dt;
+        const move = speedMult * t.particleSpeedMult * dt;
         particle.x += particle.vx * move;
         particle.y += particle.vy * move;
-        particle.vx *= 0.9992;
-        particle.vy *= 0.9992;
+        particle.vx *= t.driftDecay;
+        particle.vy *= t.driftDecay;
       }
     });
-  }, [zenMode]);
+  }, [t]);
 
   const renderParticles = useCallback((
     ctx: CanvasRenderingContext2D,
@@ -218,8 +201,7 @@ export const TrailVisualizer: React.FC<TrailVisualizerProps> = ({
     particles.forEach(particle => {
       if (particle.life <= 0) return;
       const alpha = Math.max(0, particle.life) * intensityFactor;
-      // Radius shrinks as the particle ages; keep minimum visible size for long trail
-      const r = Math.max(5, particle.radius * particle.life);
+      const r = Math.max(t.minVisibleRadius, particle.radius * particle.life);
 
       ctx.save();
       ctx.globalAlpha = alpha;
@@ -230,21 +212,19 @@ export const TrailVisualizer: React.FC<TrailVisualizerProps> = ({
       ctx.restore();
     });
 
-    // Draw a subtle glow at the ship position to give it a focal point
-    if (ship.inited && intensityFactor > 0) {
-      const glowRadius = 44;
-      const glow = ctx.createRadialGradient(ship.x, ship.y, 0, ship.x, ship.y, glowRadius);
+    if (ship.inited && intensityFactor > 0 && t.glowRadius > 0) {
+      const glow = ctx.createRadialGradient(ship.x, ship.y, 0, ship.x, ship.y, t.glowRadius);
       glow.addColorStop(0, `rgba(255,255,255,${0.5 * intensityFactor})`);
       glow.addColorStop(1, 'rgba(255,255,255,0)');
       ctx.save();
       ctx.globalAlpha = 1;
       ctx.fillStyle = glow;
       ctx.beginPath();
-      ctx.arc(ship.x, ship.y, glowRadius, 0, Math.PI * 2);
+      ctx.arc(ship.x, ship.y, t.glowRadius, 0, Math.PI * 2);
       ctx.fill();
       ctx.restore();
     }
-  }, []);
+  }, [t]);
 
   const handleColorChange = useCallback((particles: TrailParticle[], color: string) => {
     particles.forEach(particle => {
