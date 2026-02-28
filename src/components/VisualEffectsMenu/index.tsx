@@ -304,56 +304,58 @@ const VisualEffectsMenu: React.FC<VisualEffectsMenuProps> = memo(({
                   </OptionButton>
                 </OptionButtonGroup>
               </ControlGroup>
-              <ControlGroup>
-                <ControlLabel>
-                  Intensity
-                  {/* <ControlValue>{getCurrentGlowIntensityLabel(glowIntensity)}</ControlValue> */}
-                </ControlLabel>
-                <OptionButtonGroup>
-                  {glowIntensityOptions.map((option) => (
-                    <OptionButton
-                      key={`global-intensity-${option.value}`}
-                      $accentColor={accentColor}
-                      $isActive={glowIntensity === option.value}
-                      onClick={() => setGlowIntensity(option.value)}
-                    >
-                      {option.label}
-                    </OptionButton>
-                  ))}
-                </OptionButtonGroup>
-              </ControlGroup>
-              <ControlGroup>
-                <ControlLabel>
-                  Rate
-                  {/* <ControlValue>{getCurrentGlowRateLabel(glowRate)}</ControlValue> */}
-                </ControlLabel>
-                <OptionButtonGroup>
-                  {glowRateOptions.map((option) => (
-                    <OptionButton
-                      key={`global-rate-${option.value}`}
-                      $accentColor={accentColor}
-                      $isActive={glowRate === option.value}
-                      onClick={() => setGlowRate(option.value)}
-                    >
-                      {option.label}
-                    </OptionButton>
-                  ))}
-                </OptionButtonGroup>
-              </ControlGroup>
-              <ControlGroup>
-                <ControlLabel>
-                  Accent Color Background
-                </ControlLabel>
-                <OptionButtonGroup>
-                  <OptionButton
-                    $accentColor={accentColor}
-                    $isActive={accentColorBackgroundEnabled}
-                    onClick={onAccentColorBackgroundToggle}
-                  >
-                    {accentColorBackgroundEnabled ? 'On' : 'Off'}
-                  </OptionButton>
-                </OptionButtonGroup>
-              </ControlGroup>
+              {glowEnabled && (
+                <>
+                  <ControlGroup>
+                    <ControlLabel>
+                      Intensity
+                    </ControlLabel>
+                    <OptionButtonGroup>
+                      {glowIntensityOptions.map((option) => (
+                        <OptionButton
+                          key={`global-intensity-${option.value}`}
+                          $accentColor={accentColor}
+                          $isActive={glowIntensity === option.value}
+                          onClick={() => setGlowIntensity(option.value)}
+                        >
+                          {option.label}
+                        </OptionButton>
+                      ))}
+                    </OptionButtonGroup>
+                  </ControlGroup>
+                  <ControlGroup>
+                    <ControlLabel>
+                      Rate
+                    </ControlLabel>
+                    <OptionButtonGroup>
+                      {glowRateOptions.map((option) => (
+                        <OptionButton
+                          key={`global-rate-${option.value}`}
+                          $accentColor={accentColor}
+                          $isActive={glowRate === option.value}
+                          onClick={() => setGlowRate(option.value)}
+                        >
+                          {option.label}
+                        </OptionButton>
+                      ))}
+                    </OptionButtonGroup>
+                  </ControlGroup>
+                  <ControlGroup>
+                    <ControlLabel>
+                      Accent Color Background
+                    </ControlLabel>
+                    <OptionButtonGroup>
+                      <OptionButton
+                        $accentColor={accentColor}
+                        $isActive={accentColorBackgroundEnabled}
+                        onClick={onAccentColorBackgroundToggle}
+                      >
+                        {accentColorBackgroundEnabled ? 'On' : 'Off'}
+                      </OptionButton>
+                    </OptionButtonGroup>
+                  </ControlGroup>
+                </>
+              )}
             </FilterGrid>
           </FilterSection>
 
@@ -373,25 +375,27 @@ const VisualEffectsMenu: React.FC<VisualEffectsMenuProps> = memo(({
                   </OptionButton>
                 </OptionButtonGroup>
               </ControlGroup>
-              <ControlGroup>
-                <ControlLabel>Opacity</ControlLabel>
-                <OptionButtonGroup>
-                  {[
-                    { label: 'Light', value: 0.8 },
-                    { label: 'Medium', value: 0.6 },
-                    { label: 'Strong', value: 0.4 },
-                  ].map((option) => (
-                    <OptionButton
-                      key={`translucence-${option.value}`}
-                      $accentColor={accentColor}
-                      $isActive={translucenceOpacity === option.value}
-                      onClick={() => onTranslucenceOpacityChange(option.value)}
-                    >
-                      {option.label}
-                    </OptionButton>
-                  ))}
-                </OptionButtonGroup>
-              </ControlGroup>
+              {translucenceEnabled && (
+                <ControlGroup>
+                  <ControlLabel>Opacity</ControlLabel>
+                  <OptionButtonGroup>
+                    {[
+                      { label: 'Light', value: 0.8 },
+                      { label: 'Medium', value: 0.6 },
+                      { label: 'Strong', value: 0.4 },
+                    ].map((option) => (
+                      <OptionButton
+                        key={`translucence-${option.value}`}
+                        $accentColor={accentColor}
+                        $isActive={translucenceOpacity === option.value}
+                        onClick={() => onTranslucenceOpacityChange(option.value)}
+                      >
+                        {option.label}
+                      </OptionButton>
+                    ))}
+                  </OptionButtonGroup>
+                </ControlGroup>
+              )}
             </FilterGrid>
           </FilterSection>
 
@@ -413,41 +417,44 @@ const VisualEffectsMenu: React.FC<VisualEffectsMenuProps> = memo(({
                   </OptionButton>
                 </OptionButtonGroup>
               </ControlGroup>
-              <ControlGroup>
-                <ControlLabel>
-                  Visualizer Style
-                </ControlLabel>
-                <OptionButtonGroup>
-                  {(['fireflies', 'comet'] as VisualizerStyle[]).map((style) => (
-                    <OptionButton
-                      key={style}
-                      $accentColor={accentColor}
-                      $isActive={backgroundVisualizerStyle === style}
-                      onClick={() => onBackgroundVisualizerStyleChange(style)}
-                    >
-                      {style.charAt(0).toUpperCase() + style.slice(1)}
-                    </OptionButton>
-                  ))}
-                </OptionButtonGroup>
-              </ControlGroup>
-              
-              <ControlGroup>
-                <ControlLabel>
-                  Intensity
-                </ControlLabel>
-                <OptionButtonGroup>
-                  {visualizerIntensityOptions.map((option) => (
-                    <OptionButton
-                      key={`viz-intensity-${option.value}`}
-                      $accentColor={accentColor}
-                      $isActive={backgroundVisualizerIntensity === option.value}
-                      onClick={() => onBackgroundVisualizerIntensityChange(option.value)}
-                    >
-                      {option.label}
-                    </OptionButton>
-                  ))}
-                </OptionButtonGroup>
-              </ControlGroup>
+              {backgroundVisualizerEnabled && (
+                <>
+                  <ControlGroup>
+                    <ControlLabel>
+                      Visualizer Style
+                    </ControlLabel>
+                    <OptionButtonGroup>
+                      {(['fireflies', 'comet'] as VisualizerStyle[]).map((style) => (
+                        <OptionButton
+                          key={style}
+                          $accentColor={accentColor}
+                          $isActive={backgroundVisualizerStyle === style}
+                          onClick={() => onBackgroundVisualizerStyleChange(style)}
+                        >
+                          {style.charAt(0).toUpperCase() + style.slice(1)}
+                        </OptionButton>
+                      ))}
+                    </OptionButtonGroup>
+                  </ControlGroup>
+                  <ControlGroup>
+                    <ControlLabel>
+                      Intensity
+                    </ControlLabel>
+                    <OptionButtonGroup>
+                      {visualizerIntensityOptions.map((option) => (
+                        <OptionButton
+                          key={`viz-intensity-${option.value}`}
+                          $accentColor={accentColor}
+                          $isActive={backgroundVisualizerIntensity === option.value}
+                          onClick={() => onBackgroundVisualizerIntensityChange(option.value)}
+                        >
+                          {option.label}
+                        </OptionButton>
+                      ))}
+                    </OptionButtonGroup>
+                  </ControlGroup>
+                </>
+              )}
             </FilterGrid>
           </FilterSection>
           
