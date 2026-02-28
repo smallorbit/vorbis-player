@@ -90,7 +90,7 @@ export const PlayerTrackName = styled.div<{ $isMobile: boolean; $isTablet: boole
 
 export const PlayerTrackAlbum = styled.div`
   font-size: ${({ theme }) => theme.fontSize.sm};
-  line-height: ${({ theme }) => theme.fontSize.base};
+  line-height: 1.4;
   color: ${({ theme }) => theme.colors.gray[400]};
   font-weight: ${({ theme }) => theme.fontWeight.medium};
   letter-spacing: 0.02em;
@@ -121,7 +121,7 @@ export const AlbumLink = styled.a`
 
 export const PlayerTrackArtist = styled.div`
   font-size: ${({ theme }) => theme.fontSize.base};
-  line-height: ${({ theme }) => theme.fontSize.base};
+  line-height: 1.4;
   color: ${({ theme }) => theme.colors.gray[300]};
   overflow: hidden;
   text-overflow: ellipsis;
