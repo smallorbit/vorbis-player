@@ -146,7 +146,7 @@ export const TrailVisualizer: React.FC<TrailVisualizerProps> = ({
     // Update ship heading: smooth curve + random wobble so path isn't predictable
     const turnRate = 0.00012 * deltaTime + (Math.random() - 0.5) * 0.025;
     ship.angle += turnRate;
-    const shipSpeed = 1.35 + (Math.random() - 0.5) * 0.25;
+    const shipSpeed = 2.0 + (Math.random() - 0.5) * 0.3;
     ship.vx = Math.cos(ship.angle) * shipSpeed + (Math.random() - 0.5) * 0.2;
     ship.vy = Math.sin(ship.angle) * shipSpeed + (Math.random() - 0.5) * 0.2;
 
