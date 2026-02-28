@@ -245,4 +245,5 @@ export const TimelineRight = styled.div`
   display: flex;
   align-items: center;
   gap: ${({ theme }) => theme.spacing.xs};
+  padding-right: ${({ theme }) => theme.spacing.sm};
 `;
