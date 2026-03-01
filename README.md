@@ -181,7 +181,7 @@ src/
 │   └── VisualEffectsMenu/   # Visual effects configuration panel
 ├── constants/               # Shared constants (playlist IDs, prefixes)
 ├── hooks/                   # 22 custom React hooks
-├── services/                # Spotify API, Playback SDK, IndexedDB cache
+├── services/                # Spotify API, Playback SDK, IndexedDB cache, error logging
 ├── utils/                   # Utility functions (color, sizing, filters)
 ├── styles/                  # Theme, global styles, CSS animations
 ├── types/                   # TypeScript definitions
@@ -237,3 +237,12 @@ The `dist/` folder contains static files deployable to any web hosting service.
 - Clear localStorage to reset visual settings to defaults
 - Background visualizer requires Canvas API support
 - CSS filters require a modern browser
+
+### Error Logs & Debugging
+The app includes a built-in persistent logging system that captures errors, warnings, and Spotify network requests in IndexedDB:
+
+- **View logs in-app**: Open the DebugOverlay → tap the badge → click "Persistent Logs" to open the ErrorLogViewer
+- **Export logs**: Click "Export error.log" in the viewer to download all logs as a text file
+- **Log levels**: ERROR (red), WARN (amber), NETWORK (blue) — filter by keyword in the viewer
+- **Network tracing**: All Spotify API requests/responses are logged with timing, status codes, and redacted auth headers
+- Logs persist across page reloads (stored in IndexedDB, max 5000 entries)

@@ -126,6 +126,7 @@ vorbis-player/
 │   │   ├── AudioPlayer.tsx
 │   │   ├── BackgroundVisualizer.tsx
 │   │   ├── ColorPickerPopover.tsx
+│   │   ├── ErrorLogViewer.tsx     # In-app log viewer (ERROR/WARN/NETWORK)
 │   │   ├── EyedropperOverlay.tsx
 │   │   ├── KeyboardShortcutsHelp.tsx
 │   │   ├── LibraryDrawer.tsx    # Full-screen library browser (top drawer)
@@ -174,8 +175,9 @@ vorbis-player/
 │   │   ├── useVisualEffectsState.ts
 │   │   └── useVolume.ts
 │   ├── services/                # External service integrations
-│   │   ├── spotify.ts           # Spotify Web API
-│   │   ├── spotifyPlayer.ts     # Spotify Web Playback SDK
+│   │   ├── errorLogger.ts       # Centralized logging (ERROR/WARN/NETWORK → IndexedDB)
+│   │   ├── spotify.ts           # Spotify Web API (with network request logging)
+│   │   ├── spotifyPlayer.ts     # Spotify Web Playback SDK (with network request logging)
 │   │   └── cache/               # IndexedDB-based library caching
 │   │       ├── __tests__/
 │   │       │   ├── libraryCache.test.ts
@@ -407,6 +409,14 @@ The application uses a centralized state management approach with custom React h
 - **librarySyncEngine.ts** - Background sync engine that polls Spotify API every ~90 seconds. Uses lightweight change detection (count comparison, snapshot IDs) before fetching full data. Two-tier track caching: in-memory L1 (10 min TTL) + IndexedDB L2 (24 hour TTL).
 - **cacheTypes.ts** - TypeScript interfaces: `CachedPlaylistInfo`, `CachedTrackList`, `LibraryCacheMeta`, `LibraryChanges`, `SyncState`
 
+**Logging Service**:
+- **errorLogger.ts** - Centralized logging service backed by IndexedDB (`vorbis-player-logs` database). Three log levels: `ERROR`, `WARN`, `NETWORK`. Global interceptors capture `console.error` and `console.warn` automatically. Falls back to in-memory array when IndexedDB is unavailable. Max 5000 entries with automatic pruning.
+  - `logError(message, context?)`: Log errors (outputs to console.error + IndexedDB)
+  - `logWarn(message, context?)`: Log warnings (outputs to console.warn + IndexedDB)
+  - `logNetwork(message, context?)`: Log network requests/responses (outputs to console.debug + IndexedDB)
+  - `getLogs(limit?)`, `clearLogs()`, `exportLogs()`: Retrieve, clear, or download logs
+  - `initErrorLogger()`: Called once at app startup to open IndexedDB and install interceptors
+
 ### Utilities
 
 - **colorExtractor.ts** - LRU-cached color extraction from album artwork (100 item cache limit)
@@ -505,6 +515,35 @@ Centralized in `useKeyboardShortcuts.ts`. Uses pointer input detection (`pointer
 - **Lazy Images**: Intersection Observer-based image loading (50px margin)
 - **Library Drawer**: Full-screen top drawer for browsing playlists/albums with swipe-to-dismiss, 2-column album art grid on mobile, max-width constrained on desktop
 - **Interactive Track Info**: Clickable artist names show popover with "Browse albums in library" and "View on Spotify" options. Clickable album names show "Play album" and "View on Spotify" options.
+
+### Logging & Debugging
+
+**Error Logging System** (`services/errorLogger.ts`):
+- Centralized, persistent logging backed by IndexedDB (`vorbis-player-logs` database, separate from library cache)
+- Three log levels: `ERROR` (red), `WARN` (amber), `NETWORK` (blue)
+- Log format: `[mm/dd/yyyy - hh:mm:ss.ms] - LEVEL - [context] message`
+- `logError()` / `logWarn()` output to both browser console and IndexedDB (dual output)
+- `logNetwork()` outputs to `console.debug` + IndexedDB (used for Spotify API request/response tracing)
+- Global interceptors capture `console.error` and `console.warn` from third-party code automatically
+- Global handlers for `window.onerror` and `unhandledrejection`
+- Max 5000 entries with automatic pruning; falls back to in-memory array if IndexedDB unavailable
+- Initialized once at app startup via `initErrorLogger()` before React renders
+
+**Network Request Logging**:
+- All Spotify API calls in `spotify.ts` and `spotifyPlayer.ts` are logged at `NETWORK` level
+- Request logs include method, URL, headers (with `Authorization` redacted), and body
+- Response logs include status, duration (ms), headers, and response body
+- Sensitive headers are automatically redacted (`Bearer [REDACTED]`)
+
+**ErrorLogViewer** (`components/ErrorLogViewer.tsx`):
+- In-app log viewer accessible from the DebugOverlay
+- Auto-refreshes every 3 seconds, case-insensitive text filter, export to `error.log`, clear all
+- Color-coded by level: ERROR (red), WARN (amber), NETWORK (blue)
+
+**When to use each level**:
+- `logError()`: Failures that prevent functionality — SDK load failures, auth failures, playback errors, worker crashes
+- `logWarn()`: Non-critical issues with graceful fallbacks — rate-limit backoffs, localStorage fallbacks, unavailable tracks, IndexedDB-to-memory fallback
+- `logNetwork()`: Spotify API request/response tracing for debugging API interactions
 
 ## Tech Stack
 
@@ -665,6 +704,7 @@ VITE_SPOTIFY_REDIRECT_URI="http://127.0.0.1:3000/auth/spotify/callback"
 - **Drawers**: `src/components/LibraryDrawer.tsx`, `src/components/PlaylistBottomSheet.tsx`, `src/components/styled/Drawer.tsx`
 - **Gestures**: `src/hooks/useSwipeGesture.ts`, `src/hooks/useVerticalSwipeGesture.ts`
 - **Constants**: `src/constants/playlist.ts`
+- **Logging**: `src/services/errorLogger.ts`, `src/components/ErrorLogViewer.tsx`, `docs/development/error-logging-system.md`
 
 ### AI Workflow Rules
 For structured feature development workflows, see `.claude/rules/`:
