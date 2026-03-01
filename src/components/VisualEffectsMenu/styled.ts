@@ -164,6 +164,49 @@ export const OptionButtonGroup = styled.div`
   flex-wrap: wrap;
 `;
 
+export const ProviderButton = styled.button<{ $accentColor: string; $isActive: boolean }>`
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: ${({ $isActive, $accentColor }) => $isActive ? $accentColor + '22' : theme.colors.muted.background};
+  border: 1px solid ${({ $isActive, $accentColor }) => $isActive ? $accentColor : theme.colors.border};
+  color: ${({ $isActive }) => $isActive ? theme.colors.white : theme.colors.muted.foreground};
+  padding: 0.5rem 0.75rem;
+  border-radius: ${theme.borderRadius.md};
+  cursor: pointer;
+  font-size: 0.8125rem;
+  font-weight: ${theme.fontWeight.medium};
+  transition: all ${theme.transitions.default} ease;
+  width: 100%;
+  text-align: left;
+
+  &:hover {
+    background: ${({ $accentColor }) => $accentColor + '22'};
+    border-color: ${({ $accentColor }) => $accentColor};
+    color: ${() => theme.colors.white};
+  }
+`;
+
+export const ProviderStatusDot = styled.span<{ $isConnected: boolean; $accentColor: string }>`
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: ${({ $isConnected, $accentColor }) => $isConnected ? $accentColor : theme.colors.muted.foreground};
+  flex-shrink: 0;
+`;
+
+export const ProviderName = styled.span`
+  flex: 1;
+`;
+
+export const ProviderActiveLabel = styled.span`
+  font-size: 0.6875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  opacity: 0.7;
+`;
+
 export const OptionButton = styled.button<{ $accentColor: string; $isActive: boolean }>`
   background: ${({ $isActive, $accentColor }: { $isActive: boolean; $accentColor: string }) => $isActive ? $accentColor : theme.colors.muted.background};
   border: 1px solid ${({ $isActive, $accentColor }: { $isActive: boolean; $accentColor: string }) => $isActive ? $accentColor : theme.colors.border};
