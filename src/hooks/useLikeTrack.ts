@@ -1,34 +1,40 @@
 import { useState, useEffect, useCallback } from 'react';
-import { checkTrackSaved, saveTrack, unsaveTrack } from '@/services/spotify';
+import { useProviderContext } from '@/contexts/ProviderContext';
 
 interface UseLikeTrackResult {
   isLiked: boolean;
   isLikePending: boolean;
   handleLikeToggle: () => void;
+  /** Whether the active provider supports save/like. */
+  canSaveTrack: boolean;
 }
 
 /**
- * Manages like/save state for a Spotify track.
- * 
- * Checks save status when trackId changes, and provides an optimistic
- * toggle handler that updates UI immediately before the API call completes.
+ * Manages like/save state for a track via the active provider's catalog.
+ *
+ * If the active provider doesn't support save/like (e.g. Dropbox),
+ * canSaveTrack is false and the hook is a no-op.
  */
 export function useLikeTrack(trackId: string | undefined): UseLikeTrackResult {
   const [isLiked, setIsLiked] = useState(false);
   const [isLikePending, setIsLikePending] = useState(false);
 
+  const { activeDescriptor } = useProviderContext();
+  const catalog = activeDescriptor?.catalog;
+  const canSaveTrack = activeDescriptor?.capabilities.hasSaveTrack ?? false;
+
   useEffect(() => {
     let isMounted = true;
 
     async function checkLikeStatus() {
-      if (!trackId) {
+      if (!trackId || !catalog?.isTrackSaved) {
         if (isMounted) setIsLiked(false);
         return;
       }
 
       try {
         if (isMounted) setIsLikePending(true);
-        const liked = await checkTrackSaved(trackId);
+        const liked = await catalog.isTrackSaved(trackId);
         if (isMounted) setIsLiked(liked);
       } catch (error) {
         console.error('Failed to check like status:', error);
@@ -43,28 +49,24 @@ export function useLikeTrack(trackId: string | undefined): UseLikeTrackResult {
     return () => {
       isMounted = false;
     };
-  }, [trackId]);
+  }, [trackId, catalog]);
 
   const handleLikeToggle = useCallback(async () => {
-    if (!trackId || isLikePending) return;
+    if (!trackId || isLikePending || !catalog?.setTrackSaved) return;
 
     const newLikedState = !isLiked;
     setIsLikePending(true);
     setIsLiked(newLikedState);
 
     try {
-      if (newLikedState) {
-        await saveTrack(trackId);
-      } else {
-        await unsaveTrack(trackId);
-      }
+      await catalog.setTrackSaved(trackId, newLikedState);
     } catch (error) {
       console.error('Failed to toggle like status:', error);
       setIsLiked(isLiked);
     } finally {
       setIsLikePending(false);
     }
-  }, [trackId, isLikePending, isLiked]);
+  }, [trackId, isLikePending, isLiked, catalog]);
 
-  return { isLiked, isLikePending, handleLikeToggle };
+  return { isLiked, isLikePending, handleLikeToggle, canSaveTrack };
 }

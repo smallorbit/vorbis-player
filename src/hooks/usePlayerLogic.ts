@@ -1,14 +1,15 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { spotifyAuth } from '@/services/spotify';
-import { spotifyPlayer } from '@/services/spotifyPlayer';
 import { useTrackContext } from '@/contexts/TrackContext';
 import { useVisualEffectsContext } from '@/contexts/VisualEffectsContext';
 import { useColorContext } from '@/contexts/ColorContext';
+import { useProviderContext } from '@/contexts/ProviderContext';
 import { usePlaylistManager } from '@/hooks/usePlaylistManager';
 import { useSpotifyPlayback } from '@/hooks/useSpotifyPlayback';
 import { useAutoAdvance } from '@/hooks/useAutoAdvance';
 import { useAccentColor } from '@/hooks/useAccentColor';
 import type { Track } from '@/services/spotify';
+import type { PlaybackState } from '@/types/domain';
 
 export function usePlayerLogic() {
   const {
@@ -38,7 +39,9 @@ export function usePlayerLogic() {
     setAccentColorOverrides,
   } = useColorContext();
 
-  // Playback state from Spotify SDK events (local — not shared via context)
+  const { activeDescriptor } = useProviderContext();
+
+  // Playback state from provider events (local — not shared via context)
   const [isPlaying, setIsPlaying] = useState(false);
   const [playbackPosition, setPlaybackPosition] = useState(0);
 
@@ -73,14 +76,18 @@ export function usePlayerLogic() {
     handleAuthRedirect();
   }, [setError]);
 
+  // Subscribe to the active provider's playback state
   useEffect(() => {
-    function handlePlayerStateChange(state: SpotifyPlaybackState | null) {
-      if (state) {
-        setIsPlaying(!state.paused);
-        setPlaybackPosition(state.position);
+    const playback = activeDescriptor?.playback;
+    if (!playback) return;
 
-        if (state.track_window.current_track) {
-          const trackId = state.track_window.current_track.id;
+    function handleProviderStateChange(state: PlaybackState | null) {
+      if (state) {
+        setIsPlaying(state.isPlaying);
+        setPlaybackPosition(state.positionMs);
+
+        if (state.currentTrackId) {
+          const trackId = state.currentTrackId;
           const trackIndex = tracks.findIndex((t: Track) => t.id === trackId);
           if (trackIndex !== -1 && trackIndex !== currentTrackIndex) {
             setCurrentTrackIndex(trackIndex);
@@ -92,19 +99,18 @@ export function usePlayerLogic() {
       }
     }
 
-    const unsubscribe = spotifyPlayer.onPlayerStateChanged(handlePlayerStateChange);
+    const unsubscribe = playback.subscribe(handleProviderStateChange);
 
-    async function checkInitialState() {
-      const state = await spotifyPlayer.getCurrentState();
+    // Check initial state
+    playback.getState().then((state) => {
       if (state) {
-        setIsPlaying(!state.paused);
-        setPlaybackPosition(state.position);
+        setIsPlaying(state.isPlaying);
+        setPlaybackPosition(state.positionMs);
       }
-    }
-    checkInitialState();
+    });
 
     return unsubscribe;
-  }, [tracks, currentTrackIndex, setCurrentTrackIndex]);
+  }, [activeDescriptor, tracks, currentTrackIndex, setCurrentTrackIndex]);
 
   const handleNext = useCallback(() => {
     if (tracks.length === 0) return;
@@ -124,8 +130,13 @@ export function usePlayerLogic() {
     });
   }, [tracks.length, playTrack, setCurrentTrackIndex]);
 
-  const handlePlay = useCallback(() => { spotifyPlayer.resume(); }, []);
-  const handlePause = useCallback(() => { spotifyPlayer.pause(); }, []);
+  const handlePlay = useCallback(() => {
+    activeDescriptor?.playback.resume();
+  }, [activeDescriptor]);
+
+  const handlePause = useCallback(() => {
+    activeDescriptor?.playback.pause();
+  }, [activeDescriptor]);
 
   const handleOpenLibraryDrawer = useCallback(() => {
     setShowLibraryDrawer(true);
