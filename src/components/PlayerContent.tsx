@@ -314,12 +314,9 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
     setBackgroundVisualizerStyle,
     backgroundVisualizerIntensity,
     setBackgroundVisualizerIntensity,
-    accentColorBackgroundPreferred,
-    setAccentColorBackgroundPreferred,
     translucenceEnabled,
     setTranslucenceEnabled,
     translucenceOpacity,
-    setTranslucenceOpacity,
     zenModeEnabled,
     setZenModeEnabled,
     showVisualEffects,
@@ -471,18 +468,9 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
     setTranslucenceEnabled(prev => !prev);
   }, [setTranslucenceEnabled]);
 
-  const handleTranslucenceOpacityChange = useCallback((v: number) => {
-    setTranslucenceOpacity(v);
-  }, [setTranslucenceOpacity]);
-
-
   const handleBackgroundVisualizerIntensityChange = useCallback((intensity: number) => {
     setBackgroundVisualizerIntensity(Math.max(0, Math.min(100, intensity)));
   }, [setBackgroundVisualizerIntensity]);
-
-  const handleAccentColorBackgroundToggle = useCallback(() => {
-    setAccentColorBackgroundPreferred(prev => !prev);
-  }, [setAccentColorBackgroundPreferred]);
 
   // --- Library drawer ---
   const handleArtistBrowse = useCallback((artistName: string) => {
