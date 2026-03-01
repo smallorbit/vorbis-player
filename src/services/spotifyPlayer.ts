@@ -1,4 +1,5 @@
 import { spotifyAuth } from './spotify';
+import { logError } from './errorLogger';
 
 // Global callback for Spotify SDK ready event
 let spotifySDKReadyCallback: (() => void) | null = null;
@@ -96,8 +97,8 @@ class SpotifyPlayerService {
         
         setTimeout(() => {
           if (!this.player) {
-            console.error('Spotify SDK failed to load within timeout');
-            spotifySDKReadyCallback = null; // Clear the callback
+            logError('Spotify SDK failed to load within timeout', 'spotifyPlayer');
+            spotifySDKReadyCallback = null;
             reject(new Error('Spotify SDK failed to load within timeout'));
           }
         }, 10000);
@@ -136,20 +137,20 @@ class SpotifyPlayerService {
     });
 
     this.player.addListener('initialization_error', ({ message }: { message: string }) => {
-      console.error('Failed to initialize', message);
+      logError(`Failed to initialize: ${message}`, 'spotifyPlayer');
     });
 
     this.player.addListener('authentication_error', ({ message }: { message: string }) => {
-      console.error('Failed to authenticate', message);
+      logError(`Failed to authenticate: ${message}`, 'spotifyPlayer');
       spotifyAuth.redirectToAuth();
     });
 
     this.player.addListener('account_error', ({ message }: { message: string }) => {
-      console.error('Failed to validate Spotify account', message);
+      logError(`Failed to validate Spotify account: ${message}`, 'spotifyPlayer');
     });
 
     this.player.addListener('playback_error', ({ message }: { message: string }) => {
-      console.error('Failed to perform playback', message);
+      logError(`Failed to perform playback: ${message}`, 'spotifyPlayer');
     });
 
     this.player.connect();
@@ -187,7 +188,7 @@ class SpotifyPlayerService {
     
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('🎵 Spotify API error response:', errorText);
+      logError(`Spotify API error response (playTrack): ${errorText}`, 'spotifyPlayer');
       
       // Try to parse the error as JSON to extract the reason
       let errorReason = '';
@@ -239,7 +240,7 @@ class SpotifyPlayerService {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('🎵 Context playback error:', errorText);
+      logError(`Context playback error: ${errorText}`, 'spotifyPlayer');
 
       let errorReason = '';
       try {
@@ -285,7 +286,7 @@ class SpotifyPlayerService {
     
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('🎵 Spotify API error response:', errorText);
+      logError(`Spotify API error response: ${errorText}`, 'spotifyPlayer');
       throw new Error(`Spotify API error: ${response.status} ${response.statusText} - ${errorText}`);
     }
   }
@@ -354,7 +355,7 @@ class SpotifyPlayerService {
     });
 
     if (!response.ok && response.status !== 204) {
-      console.warn('[spotifyPlayer] Web API setVolume failed:', response.status);
+      logError(`Web API setVolume failed: ${response.status}`, 'spotifyPlayer');
     }
   }
 
@@ -395,7 +396,7 @@ class SpotifyPlayerService {
         try {
           cb(state);
         } catch (err) {
-          console.error('[spotifyPlayer] state change callback error:', err);
+          logError(`State change callback error: ${err instanceof Error ? err.message : String(err)}`, 'spotifyPlayer');
         }
       }
     });
@@ -444,12 +445,12 @@ class SpotifyPlayerService {
 
       if (!response.ok && response.status !== 204) {
         const errorText = await response.text();
-        console.warn('Transfer playback response:', response.status, errorText);
+        logError(`Transfer playback failed: ${response.status} ${errorText}`, 'spotifyPlayer');
       } else {
         console.log('🎵 Successfully transferred playback to device');
       }
     } catch (error) {
-      console.error('🎵 Failed to transfer playback to device:', error);
+      logError(`Failed to transfer playback to device: ${error instanceof Error ? error.message : String(error)}`, 'spotifyPlayer');
       throw error;
     }
   }
@@ -482,7 +483,7 @@ class SpotifyPlayerService {
           await new Promise(resolve => setTimeout(resolve, delay));
         }
       } catch (error) {
-        console.warn(`🎵 Error checking device status (attempt ${i + 1}):`, error);
+        logError(`Error checking device status (attempt ${i + 1}): ${error instanceof Error ? error.message : String(error)}`, 'spotifyPlayer');
         if (i < maxRetries - 1) {
           const delay = initialDelayMs * Math.pow(2, i);
           await new Promise(resolve => setTimeout(resolve, delay));
@@ -490,7 +491,7 @@ class SpotifyPlayerService {
       }
     }
 
-    console.warn('🎵 Device not confirmed active after polling, proceeding anyway');
+    logError('Device not confirmed active after polling, proceeding anyway', 'spotifyPlayer');
     return false;
   }
 }

@@ -1,4 +1,5 @@
 import { useRef, useEffect, useCallback } from 'react';
+import { logError } from '../services/errorLogger';
 import type { 
   WorkerResponse, 
   ImageProcessingRequest, 
@@ -41,7 +42,7 @@ export const useImageProcessingWorker = (): UseImageProcessingWorkerReturn => {
           const pendingPromise = pendingPromisesRef.current.get(requestId);
           
           if (!pendingPromise) {
-            console.warn('Received response for unknown request ID:', requestId);
+            logError(`Received response for unknown request ID: ${requestId}`, 'imageProcessingWorker');
             return;
           }
 
@@ -60,7 +61,7 @@ export const useImageProcessingWorker = (): UseImageProcessingWorkerReturn => {
 
         // Handle worker errors
         workerRef.current.onerror = (error) => {
-          console.error('Image processing worker error:', error);
+          logError(`Image processing worker error: ${error instanceof Error ? error.message : String(error)}`, 'imageProcessingWorker');
           // Reject all pending promises
           pendingPromisesRef.current.forEach((promise) => {
             promise.reject(new Error('Worker encountered an error'));
@@ -70,7 +71,7 @@ export const useImageProcessingWorker = (): UseImageProcessingWorkerReturn => {
         };
 
       } catch (error) {
-        console.error('Failed to initialize image processing worker:', error);
+        logError(`Failed to initialize image processing worker: ${error instanceof Error ? error.message : String(error)}`, 'imageProcessingWorker');
         throw error;
       }
     }

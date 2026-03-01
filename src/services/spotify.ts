@@ -6,6 +6,7 @@
 
 import { ALBUM_ID_PREFIX } from '../constants/playlist';
 import * as libraryCache from './cache/libraryCache';
+import { logError } from './errorLogger';
 
 const SPOTIFY_CLIENT_ID = import.meta.env.VITE_SPOTIFY_CLIENT_ID;
 const SPOTIFY_REDIRECT_URI = import.meta.env.VITE_SPOTIFY_REDIRECT_URI;
@@ -58,7 +59,7 @@ function handleRateLimitResponse(response: Response): void {
     const waitSeconds = retryAfter ? parseInt(retryAfter, 10) : 5;
     const waitMs = (isNaN(waitSeconds) ? 5 : Math.max(waitSeconds, 1)) * 1000;
     rateLimitedUntil = Date.now() + waitMs;
-    console.warn(`[spotify] 429 rate-limited — backing off for ${waitMs}ms`);
+    logError(`429 rate-limited — backing off for ${waitMs}ms`, 'spotify');
   }
 }
 
@@ -242,7 +243,7 @@ async function spotifyApiRequest<T>(
   // Reject immediately if we're in a rate-limit back-off window
   if (isRateLimited()) {
     const waitMs = rateLimitedUntil - Date.now();
-    console.warn(`[spotify] Rate-limited — waiting ${waitMs}ms before retrying`);
+    logError(`Rate-limited — waiting ${waitMs}ms before retrying`, 'spotify');
     await new Promise(resolve => setTimeout(resolve, waitMs));
   }
 

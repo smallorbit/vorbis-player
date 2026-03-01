@@ -2,6 +2,8 @@
  * Performance monitoring utilities for measuring and validating UI performance
  */
 
+import { logError } from '../services/errorLogger';
+
 export interface PerformanceMetrics {
   interactionTime: number;
   renderTime: number;
@@ -106,7 +108,7 @@ class MainThreadMonitor {
       try {
         this.observer.observe({ entryTypes: ['longtask'] });
       } catch {
-        console.warn('Long task observer not supported');
+        logError('Long task observer not supported', 'performanceMonitor');
       }
     }
   }

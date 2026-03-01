@@ -10,6 +10,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { librarySyncEngine } from '../services/cache/librarySyncEngine';
+import { logError } from '../services/errorLogger';
 import type { CachedPlaylistInfo, SyncState } from '../services/cache/cacheTypes';
 import type { AlbumInfo } from '../services/spotify';
 
@@ -49,7 +50,7 @@ export function useLibrarySync(): UseLibrarySyncResult {
     });
 
     engine.start().catch((err) => {
-      console.error('[useLibrarySync] Failed to start sync engine:', err);
+      logError(`Failed to start sync engine: ${err instanceof Error ? err.message : String(err)}`, 'useLibrarySync');
     });
 
     return () => {

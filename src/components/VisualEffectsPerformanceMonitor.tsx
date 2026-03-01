@@ -3,6 +3,7 @@
  */
 
 import React, { useState, useCallback, useMemo } from 'react';
+import { logError } from '../services/errorLogger';
 import styled from 'styled-components';
 import { PerformanceProfilerComponent } from './PerformanceProfiler';
 import {
@@ -187,7 +188,7 @@ const VisualEffectsPerformanceMonitor: React.FC<VisualEffectsPerformanceMonitorP
       console.log('Visual Effects Performance Test Results:');
       console.log(generateReport(metrics));
     } catch (error) {
-      console.error('Performance test failed:', error);
+      logError(`Performance test failed: ${error instanceof Error ? error.message : String(error)}`, 'VisualEffectsPerformanceMonitor');
     } finally {
       setIsTesting(false);
     }

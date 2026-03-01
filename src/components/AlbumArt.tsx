@@ -6,6 +6,7 @@ import AccentColorGlowOverlay, { DEFAULT_GLOW_RATE, DEFAULT_GLOW_INTENSITY } fro
 import { hexToRgb } from '../utils/colorUtils';
 import { useImageProcessingWorker } from '../hooks/useImageProcessingWorker';
 import { usePlayerSizing } from '../hooks/usePlayerSizing';
+import { logError } from '../services/errorLogger';
 import { theme } from '../styles/theme';
 
 const spin = keyframes`
@@ -236,7 +237,7 @@ const AlbumArt: React.FC<AlbumArtProps> = memo(({ currentTrack = null, accentCol
       if (error instanceof Error && error.message === 'Component unmounted') {
         return;
       }
-      console.error('Image processing failed:', error);
+      logError(`Image processing failed: ${error instanceof Error ? error.message : String(error)}`, 'AlbumArt');
       setCanvasUrl(null);
     } finally {
       setIsProcessing(false);
@@ -256,7 +257,7 @@ const AlbumArt: React.FC<AlbumArtProps> = memo(({ currentTrack = null, accentCol
       processImageWithWorker(image, accentColorRgb);
     };
     image.onerror = () => {
-      console.error('Failed to load image:', currentTrack.image);
+      logError(`Failed to load image: ${currentTrack.image}`, 'AlbumArt');
       setCanvasUrl(null);
       setIsProcessing(false);
     };

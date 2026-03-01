@@ -16,6 +16,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
+import { logError } from '../services/errorLogger';
 
 /**
  * useLocalStorage - Generic hook for persistent state with localStorage
@@ -46,7 +47,7 @@ export const useLocalStorage = <T>(key: string, initialValue: T): [T, (value: T 
       }
       return initialValue;
     } catch (error) {
-      console.warn(`Failed to read "${key}" from localStorage:`, error);
+      logError(`Failed to read "${key}" from localStorage: ${error instanceof Error ? error.message : String(error)}`, 'useLocalStorage');
       return initialValue;
     }
   });
@@ -63,7 +64,7 @@ export const useLocalStorage = <T>(key: string, initialValue: T): [T, (value: T 
           // Save to local storage
           window.localStorage.setItem(key, JSON.stringify(valueToStore));
         } catch (error) {
-          console.warn(`Failed to write "${key}" to localStorage:`, error);
+          logError(`Failed to write "${key}" to localStorage: ${error instanceof Error ? error.message : String(error)}`, 'useLocalStorage');
         }
         
         return valueToStore;
@@ -79,7 +80,7 @@ export const useLocalStorage = <T>(key: string, initialValue: T): [T, (value: T 
         try {
           setStoredValue(JSON.parse(e.newValue));
         } catch (error) {
-          console.warn(`Failed to parse "${key}" from storage event:`, error);
+          logError(`Failed to parse "${key}" from storage event: ${error instanceof Error ? error.message : String(error)}`, 'useLocalStorage');
         }
       }
     };

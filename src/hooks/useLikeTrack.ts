@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { checkTrackSaved, saveTrack, unsaveTrack } from '@/services/spotify';
+import { logError } from '@/services/errorLogger';
 
 interface UseLikeTrackResult {
   isLiked: boolean;
@@ -31,7 +32,7 @@ export function useLikeTrack(trackId: string | undefined): UseLikeTrackResult {
         const liked = await checkTrackSaved(trackId);
         if (isMounted) setIsLiked(liked);
       } catch (error) {
-        console.error('Failed to check like status:', error);
+        logError(`Failed to check like status: ${error instanceof Error ? error.message : String(error)}`, 'useLikeTrack');
         if (isMounted) setIsLiked(false);
       } finally {
         if (isMounted) setIsLikePending(false);
@@ -59,7 +60,7 @@ export function useLikeTrack(trackId: string | undefined): UseLikeTrackResult {
         await unsaveTrack(trackId);
       }
     } catch (error) {
-      console.error('Failed to toggle like status:', error);
+      logError(`Failed to toggle like status: ${error instanceof Error ? error.message : String(error)}`, 'useLikeTrack');
       setIsLiked(isLiked);
     } finally {
       setIsLikePending(false);

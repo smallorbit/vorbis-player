@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 import { spotifyAuth } from '../services/spotify';
 import { spotifyPlayer } from '../services/spotifyPlayer';
+import { logError } from '../services/errorLogger';
 import type { Track } from '../services/spotify';
 
 interface UseSpotifyPlaybackProps {
@@ -29,7 +30,7 @@ export const useSpotifyPlayback = ({ tracks, setCurrentTrackIndex }: UseSpotifyP
         });
       }
     } catch (error) {
-      console.error('Failed to activate device:', error);
+      logError(`Failed to activate device: ${error instanceof Error ? error.message : String(error)}`, 'useSpotifyPlayback');
     }
   }, []);
 
@@ -40,7 +41,7 @@ export const useSpotifyPlayback = ({ tracks, setCurrentTrackIndex }: UseSpotifyP
         try {
           await spotifyPlayer.resume();
         } catch (resumeError) {
-          console.error('Failed to resume after playback attempt:', resumeError);
+          logError(`Failed to resume after playback attempt: ${resumeError instanceof Error ? resumeError.message : String(resumeError)}`, 'useSpotifyPlayback');
         }
       }
     } else {
@@ -59,7 +60,7 @@ export const useSpotifyPlayback = ({ tracks, setCurrentTrackIndex }: UseSpotifyP
     });
 
     if (!tracks[index]) {
-      console.error('[DEBUG] playTrack: No track at index', index, 'tracks length:', tracks.length);
+      logError(`playTrack: No track at index ${index}, tracks length: ${tracks.length}`, 'useSpotifyPlayback');
       return;
     }
 
@@ -67,7 +68,7 @@ export const useSpotifyPlayback = ({ tracks, setCurrentTrackIndex }: UseSpotifyP
       const isAuthenticated = spotifyAuth.isAuthenticated();
 
       if (!isAuthenticated) {
-        console.warn('[DEBUG] playTrack: Not authenticated');
+        logError('playTrack: Not authenticated', 'useSpotifyPlayback');
         return;
       }
 
@@ -87,7 +88,7 @@ export const useSpotifyPlayback = ({ tracks, setCurrentTrackIndex }: UseSpotifyP
             const isRestrictionViolated = errorMessage.includes('Restriction violated');
             
             if (isRestrictionViolated) {
-              console.warn(`⚠️ Track "${tracks[index].name}" is unavailable (region-locked or removed)`);
+              logError(`Track "${tracks[index].name}" is unavailable (region-locked or removed)`, 'useSpotifyPlayback');
               return false; // Unrecoverable error
             }
             
@@ -132,13 +133,13 @@ export const useSpotifyPlayback = ({ tracks, setCurrentTrackIndex }: UseSpotifyP
           try {
             await handlePlaybackResume();
           } catch (error) {
-            console.error('Failed to resume playback:', error);
+            logError(`Failed to resume playback: ${error instanceof Error ? error.message : String(error)}`, 'useSpotifyPlayback');
           }
         })();
       }, 1500);
 
     } catch (error) {
-      console.error('Failed to play track:', error);
+      logError(`Failed to play track: ${error instanceof Error ? error.message : String(error)}`, 'useSpotifyPlayback');
       
       // If skipOnError is enabled and we have more tracks, try the next one
       if (skipOnError && index < tracks.length - 1) {
@@ -154,7 +155,7 @@ export const useSpotifyPlayback = ({ tracks, setCurrentTrackIndex }: UseSpotifyP
     try {
       await spotifyPlayer.resume();
     } catch (error) {
-      console.error('Failed to resume playback:', error);
+      logError(`Failed to resume playback: ${error instanceof Error ? error.message : String(error)}`, 'useSpotifyPlayback');
     }
   }, []);
 
