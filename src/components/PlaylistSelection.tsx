@@ -109,31 +109,6 @@ const SelectionCard = styled(Card) <{ $maxWidth: number; $inDrawer?: boolean }>`
   `}
 `;
 
-const Header = styled(CardHeader) <{ $inDrawer?: boolean }>`
-  ${({ $inDrawer }) =>
-    $inDrawer
-      ? `
-    text-align: left;
-    padding: ${theme.spacing.sm} 0 ${theme.spacing.md};
-    flex-shrink: 0;
-  `
-      : `
-    text-align: center;
-    padding: 2rem 1.5rem 1rem;
-  `}
-`;
-
-const Title = styled.h1`
-  font-size: 2rem;
-  font-weight: bold;
-  color: white;
-  margin-bottom: 0.5rem;
-`;
-
-const Subtitle = styled.p`
-  color: ${({ theme }) => theme.colors.muted.foreground};
-  font-size: ${({ theme }) => theme.fontSize.base};
-`;
 
 const DrawerContentWrapper = styled.div`
   flex: 1;
@@ -1052,7 +1027,7 @@ function PlaylistSelection({ onPlaylistSelect, inDrawer = false, swipeZoneRef, i
 
         const emptyState = filteredAlbums.length === 0 && isInitialLoadComplete && (
           <EmptyState $fullWidth={inDrawer}>
-            {searchQuery || yearFilter !== 'all'
+            {searchQuery || artistFilter
               ? 'No albums match your filters.'
               : 'No albums found. Save some albums in Spotify to see them here!'}
           </EmptyState>
