@@ -3,7 +3,7 @@ import styled from 'styled-components';
 export const Panel = styled.div`
   position: fixed;
   top: ${({ theme }) => theme.spacing.md};
-  right: ${({ theme }) => theme.spacing.md};
+  left: ${({ theme }) => theme.spacing.md};
   width: min(420px, calc(100vw - 2 * ${({ theme }) => theme.spacing.md}));
   max-height: calc(100dvh - 2 * ${({ theme }) => theme.spacing.md});
   overflow: auto;

@@ -48,6 +48,7 @@ function writeStoredOverrides(overrides: VisualizerDebugOverrides | null): void 
 
 interface VisualizerDebugContextValue {
   isDebugMode: boolean;
+  setIsDebugMode: (enabled: boolean | ((prev: boolean) => boolean)) => void;
   config: VisualizerDebugConfig;
   overrides: VisualizerDebugOverrides | null;
   setOverrides: (next: VisualizerDebugOverrides | null | ((prev: VisualizerDebugOverrides | null) => VisualizerDebugOverrides | null)) => void;
@@ -134,6 +135,7 @@ export function VisualizerDebugProvider({ children }: { children: React.ReactNod
   const value = useMemo<VisualizerDebugContextValue>(
     () => ({
       isDebugMode,
+      setIsDebugMode,
       config,
       overrides,
       setOverrides,
@@ -146,6 +148,7 @@ export function VisualizerDebugProvider({ children }: { children: React.ReactNod
     }),
     [
       isDebugMode,
+      setIsDebugMode,
       config,
       overrides,
       setOverrides,

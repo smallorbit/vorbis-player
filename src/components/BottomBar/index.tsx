@@ -141,7 +141,7 @@ const BottomBar = React.memo(function BottomBar({
             $compact
             accentColor={accentColor}
             onClick={onShowVisualEffects}
-            title="Visual effects"
+            title="App settings"
           >
             <VisualEffectsIcon />
           </ControlButton>

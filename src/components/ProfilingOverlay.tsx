@@ -57,7 +57,7 @@ export function ProfilingOverlay(): React.ReactElement | null {
 
   return (
     <div style={{
-      position: 'fixed', top: 8, right: 8, zIndex: 999980,
+      position: 'fixed', top: 8, left: 8, zIndex: 999980,
       background: 'rgba(0,0,0,0.85)', color: '#fff', borderRadius: 8,
       padding: 8, fontSize: 11, fontFamily: 'monospace',
       maxWidth: 360, maxHeight: '80vh', overflow: 'auto', userSelect: 'none',

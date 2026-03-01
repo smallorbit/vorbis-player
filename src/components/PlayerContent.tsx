@@ -1,4 +1,5 @@
 import React, { Suspense, lazy, useState, useCallback, useRef, useEffect } from 'react';
+import { clearAll } from '@/services/cache/libraryCache';
 import styled, { useTheme } from 'styled-components';
 import { CardContent } from './styled';
 import AlbumArt from './AlbumArt';
@@ -17,6 +18,8 @@ import { useLikeTrack } from '@/hooks/useLikeTrack';
 import { useTrackContext } from '@/contexts/TrackContext';
 import { useColorContext } from '@/contexts/ColorContext';
 import { useVisualEffectsContext } from '@/contexts/VisualEffectsContext';
+import { useProfilingContext } from '@/contexts/ProfilingContext';
+import { useVisualizerDebug } from '@/contexts/VisualizerDebugContext';
 import LibraryDrawer from './LibraryDrawer';
 import AlbumArtQuickSwapBack from './AlbumArtQuickSwapBack';
 
@@ -279,13 +282,6 @@ const FlipInner = styled.div.withConfig({
 `;
 
 
-const defaultFilters = {
-  brightness: 110,
-  contrast: 100,
-  saturation: 100,
-  sepia: 0,
-};
-
 const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, showLibraryDrawer, onAlbumArtBoundsChange, handlers }) => {
   // --- Context hooks ---
   const {
@@ -312,27 +308,24 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
   const {
     visualEffectsEnabled,
     setVisualEffectsEnabled,
-    albumFilters,
-    handleFilterChange,
-    handleResetFilters,
-    restoreSavedFilters,
     backgroundVisualizerEnabled,
     setBackgroundVisualizerEnabled,
     backgroundVisualizerStyle,
     setBackgroundVisualizerStyle,
     backgroundVisualizerIntensity,
     setBackgroundVisualizerIntensity,
-    accentColorBackgroundPreferred,
-    setAccentColorBackgroundPreferred,
     translucenceEnabled,
     setTranslucenceEnabled,
     translucenceOpacity,
-    setTranslucenceOpacity,
     zenModeEnabled,
     setZenModeEnabled,
     showVisualEffects,
     setShowVisualEffects,
   } = useVisualEffectsContext();
+
+  const { enabled: profilerEnabled, toggle: profilerToggle } = useProfilingContext();
+  const vizDebugCtx = useVisualizerDebug();
+  const visualizerDebugEnabled = vizDebugCtx?.isDebugMode ?? false;
 
   // --- Leaf hooks (self-contained, fine to call here) ---
   const { effectiveGlow, handleGlowIntensityChange, handleGlowRateChange, restoreGlowSettings } = useVisualEffectsState();
@@ -428,6 +421,25 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
   const handleShowPlaylist = useCallback(() => setShowPlaylist(true), [setShowPlaylist]);
   const handleClosePlaylist = useCallback(() => setShowPlaylist(false), [setShowPlaylist]);
 
+  // --- App settings handlers ---
+  const handleClearCache = useCallback(async () => {
+    await clearAll();
+  }, []);
+
+  const handleProfilerToggle = useCallback(() => {
+    if (!profilerEnabled) {
+      vizDebugCtx?.setIsDebugMode(false);
+    }
+    profilerToggle();
+  }, [profilerEnabled, profilerToggle, vizDebugCtx]);
+
+  const handleVisualizerDebugToggle = useCallback(() => {
+    if (!visualizerDebugEnabled && profilerEnabled) {
+      profilerToggle();
+    }
+    vizDebugCtx?.setIsDebugMode(prev => !prev);
+  }, [visualizerDebugEnabled, profilerEnabled, profilerToggle, vizDebugCtx]);
+
   // --- VFX menu visibility ---
   const handleShowVisualEffects = useCallback(() => setShowVisualEffects(true), [setShowVisualEffects]);
   const handleCloseVisualEffects = useCallback(() => setShowVisualEffects(false), [setShowVisualEffects]);
@@ -439,10 +451,9 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
       setVisualEffectsEnabled(false);
     } else {
       setVisualEffectsEnabled(true);
-      restoreSavedFilters();
       restoreGlowSettings();
     }
-  }, [visualEffectsEnabled, setVisualEffectsEnabled, restoreSavedFilters, restoreGlowSettings]);
+  }, [visualEffectsEnabled, setVisualEffectsEnabled, restoreGlowSettings]);
 
   // --- Background visualizer controls ---
   const handleBackgroundVisualizerToggle = useCallback(() => {
@@ -457,18 +468,9 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
     setTranslucenceEnabled(prev => !prev);
   }, [setTranslucenceEnabled]);
 
-  const handleTranslucenceOpacityChange = useCallback((v: number) => {
-    setTranslucenceOpacity(v);
-  }, [setTranslucenceOpacity]);
-
-
   const handleBackgroundVisualizerIntensityChange = useCallback((intensity: number) => {
     setBackgroundVisualizerIntensity(Math.max(0, Math.min(100, intensity)));
   }, [setBackgroundVisualizerIntensity]);
-
-  const handleAccentColorBackgroundToggle = useCallback(() => {
-    setAccentColorBackgroundPreferred(prev => !prev);
-  }, [setAccentColorBackgroundPreferred]);
 
   // --- Library drawer ---
   const handleArtistBrowse = useCallback((artistName: string) => {
@@ -659,7 +661,6 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
                       glowIntensity={visualEffectsEnabled ? effectiveGlow.intensity : 0}
                       glowRate={effectiveGlow.rate}
                       glowEnabled={visualEffectsEnabled}
-                      albumFilters={visualEffectsEnabled ? albumFilters : defaultFilters}
                       translucenceEnabled={translucenceEnabled}
                       translucenceOpacity={translucenceOpacity}
                       zenMode={zenModeEnabled}
@@ -757,28 +758,11 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
             isOpen={showVisualEffects}
             onClose={handleCloseVisualEffects}
             accentColor={accentColor}
-            filters={albumFilters}
-            onFilterChange={handleFilterChange}
-            onResetFilters={handleResetFilters}
-            glowEnabled={visualEffectsEnabled}
-            onGlowToggle={handleGlowToggle}
-            glowIntensity={effectiveGlow.intensity}
-            setGlowIntensity={handleGlowIntensityChange}
-            glowRate={effectiveGlow.rate}
-            setGlowRate={handleGlowRateChange}
-            effectiveGlow={effectiveGlow}
-            backgroundVisualizerEnabled={backgroundVisualizerEnabled}
-            onBackgroundVisualizerToggle={handleBackgroundVisualizerToggle}
-            backgroundVisualizerStyle={backgroundVisualizerStyle}
-            onBackgroundVisualizerStyleChange={handleBackgroundVisualizerStyleChange}
-            backgroundVisualizerIntensity={backgroundVisualizerIntensity}
-            onBackgroundVisualizerIntensityChange={handleBackgroundVisualizerIntensityChange}
-            accentColorBackgroundEnabled={accentColorBackgroundPreferred}
-            onAccentColorBackgroundToggle={handleAccentColorBackgroundToggle}
-            translucenceEnabled={translucenceEnabled}
-            onTranslucenceToggle={handleTranslucenceToggle}
-            translucenceOpacity={translucenceOpacity}
-            onTranslucenceOpacityChange={handleTranslucenceOpacityChange}
+            onClearCache={handleClearCache}
+            profilerEnabled={profilerEnabled}
+            onProfilerToggle={handleProfilerToggle}
+            visualizerDebugEnabled={visualizerDebugEnabled}
+            onVisualizerDebugToggle={handleVisualizerDebugToggle}
           />
         </Suspense>
       )}

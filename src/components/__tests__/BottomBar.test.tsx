@@ -53,7 +53,7 @@ function renderBottomBar(overrides?: Partial<typeof defaultProps>) {
 describe('BottomBar', () => {
   it('renders into document.body via portal', () => {
     renderBottomBar();
-    const bar = document.body.querySelector('[title="Visual effects"]');
+    const bar = document.body.querySelector('[title="App settings"]');
     expect(bar).toBeTruthy();
   });
 
@@ -90,7 +90,7 @@ describe('BottomBar', () => {
 
   it('visual effects button calls onShowVisualEffects when clicked', () => {
     const { props } = renderBottomBar();
-    fireEvent.click(screen.getByTitle('Visual effects'));
+    fireEvent.click(screen.getByTitle('App settings'));
     expect(props.onShowVisualEffects).toHaveBeenCalledOnce();
   });
 

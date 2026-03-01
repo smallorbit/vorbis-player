@@ -137,25 +137,6 @@ export const FilterGrid = styled.div`
   gap: ${({ theme }) => theme.spacing.lg};
 `;
 
-export const VirtualListContainer = styled.div`
-  width: 100%;
-  height: 100%;
-  border: 1px solid ${({ theme }) => theme.colors.popover.border};
-  border-radius: ${({ theme }) => theme.borderRadius.lg};
-  overflow: hidden;
-  transform: translateZ(0);
-  will-change: scroll-position;
-`;
-
-export const FilterItem = styled.div`
-  padding: ${({ theme }) => theme.spacing.sm} ${theme.spacing.lg};
-  border-bottom: 1px solid ${({ theme }) => theme.colors.popover.border};
-  
-  &:last-child {
-    border-bottom: none;
-  }
-`;
-
 export const ResetButton = styled.button<{ $accentColor: string }>`
   background: ${({ theme }) => theme.colors.control.background};
   border: 1px solid ${({ theme }) => theme.colors.border};
