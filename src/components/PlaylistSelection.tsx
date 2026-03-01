@@ -103,6 +103,9 @@ const SelectionCard = styled(Card) <{ $maxWidth: number; $inDrawer?: boolean }>`
     border: 1px solid ${theme.colors.control.border};
     border-radius: 1.25rem;
     box-shadow: ${theme.shadows.albumArt};
+    display: flex;
+    flex-direction: column;
+    max-height: min(90dvh, 900px);
   `}
 `;
 
@@ -160,7 +163,8 @@ const PlaylistGrid = styled.div<{ $inDrawer?: boolean }>`
     -webkit-overflow-scrolling: touch;
   `
       : `
-    max-height: 400px;
+    flex: 1;
+    min-height: 0;
   `}
 `;
 
@@ -1137,7 +1141,7 @@ function PlaylistSelection({ onPlaylistSelect, inDrawer = false, swipeZoneRef, i
   return (
     <Container $inDrawer={false}>
       <SelectionCard $maxWidth={maxWidth} $inDrawer={false}>
-        <CardContent>
+        <CardContent style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
           {statusContent}
           {mainContent}
         </CardContent>
