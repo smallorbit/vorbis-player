@@ -5,6 +5,18 @@ import type { ErrorLogEntry } from '../services/errorLogger';
 const MAX_DISPLAY = 500;
 const POLL_INTERVAL_MS = 3000;
 
+function getLevelColor(level: ErrorLogEntry['level']): string {
+  if (level === 'NETWORK') return '#6cf';
+  if (level === 'WARN') return '#c90';
+  return '#c44';
+}
+
+function getEntryColor(level: ErrorLogEntry['level']): string {
+  if (level === 'NETWORK') return '#9ddcff';
+  if (level === 'WARN') return '#fa3';
+  return '#f55';
+}
+
 export default function ErrorLogViewer({ onClose }: { onClose: () => void }) {
   const [logs, setLogs] = useState<ErrorLogEntry[]>([]);
   const [filter, setFilter] = useState('');
@@ -87,23 +99,21 @@ export default function ErrorLogViewer({ onClose }: { onClose: () => void }) {
       </div>
 
       {/* Log entries (oldest first = reversed from getLogs which returns newest first) */}
-      {[...filtered].reverse().map((entry, i) => {
-        const isWarn = entry.level === 'WARN';
-        return (
-          <div key={entry.id ?? i} style={{
-            borderBottom: '1px solid rgba(255,255,255,0.06)',
-            padding: '3px 0', color: isWarn ? '#fa3' : '#f55',
-          }}>
-            <span style={{ color: '#888', fontSize: 9 }}>[{entry.timestamp}]</span>{' '}
-            <span style={{ color: isWarn ? '#c90' : '#c44', fontSize: 9 }}>{entry.level}</span>{' '}
-            <span style={{ wordBreak: 'break-all' }}>{entry.message}</span>
-          </div>
-        );
-      })}
+      {[...filtered].reverse().map((entry, i) => (
+        <div key={entry.id ?? i} style={{
+          borderBottom: '1px solid rgba(255,255,255,0.06)',
+          padding: '3px 0',
+          color: getEntryColor(entry.level),
+        }}>
+          <span style={{ color: '#888', fontSize: 9 }}>[{entry.timestamp}]</span>{' '}
+          <span style={{ color: getLevelColor(entry.level), fontSize: 9 }}>{entry.level}</span>{' '}
+          <span style={{ wordBreak: 'break-all' }}>{entry.message}</span>
+        </div>
+      ))}
 
       {filtered.length === 0 && (
         <div style={{ color: '#555', textAlign: 'center', marginTop: 40, fontSize: 12 }}>
-          {logs.length === 0 ? 'No log entries yet.' : 'No entries match filter.'}
+          {logs.length === 0 ? 'No logs captured yet.' : 'No entries match filter.'}
         </div>
       )}
 

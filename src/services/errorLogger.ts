@@ -13,7 +13,7 @@ const DB_VERSION = 1;
 const STORE_NAME = 'errorLogs';
 const MAX_ENTRIES = 5000;
 
-export type LogLevel = 'ERROR' | 'WARN';
+export type LogLevel = 'ERROR' | 'WARN' | 'NETWORK';
 
 export interface ErrorLogEntry {
   id?: number;
@@ -125,41 +125,41 @@ function pruneOldEntries(): void {
  * Log an error. Outputs to both the browser console and IndexedDB.
  * Safe to call before `initErrorLogger()` — entries go to the memory buffer.
  */
-export function logError(message: string, context?: string): void {
+function logWithLevel(level: LogLevel, message: string, context?: string): void {
   const ts = formatTimestamp();
   const fullMessage = context ? `[${context}] ${message}` : message;
   const entry: ErrorLogEntry = {
     timestamp: ts,
-    level: 'ERROR',
+    level,
     message: fullMessage,
-    raw: formatRaw(ts, 'ERROR', fullMessage),
+    raw: formatRaw(ts, level, fullMessage),
   };
 
-  // Use originalConsoleError to bypass the interceptor (avoids double IDB write)
-  const consoleFn = originalConsoleError ?? console.error;
-  consoleFn(entry.raw);
+  // Bypass interceptors to avoid double IDB writes
+  if (level === 'WARN') {
+    const consoleFn = originalConsoleWarn ?? console.warn;
+    consoleFn(entry.raw);
+  } else if (level === 'NETWORK') {
+    // Network logs go to console.debug (no interceptor, avoids noise)
+    console.debug(entry.raw);
+  } else {
+    const consoleFn = originalConsoleError ?? console.error;
+    consoleFn(entry.raw);
+  }
 
   idbPut(entry);
 }
 
-/**
- * Log a warning. Outputs to both the browser console and IndexedDB.
- * Use for non-critical issues like rate-limit backoffs, fallback paths, etc.
- */
 export function logWarn(message: string, context?: string): void {
-  const ts = formatTimestamp();
-  const fullMessage = context ? `[${context}] ${message}` : message;
-  const entry: ErrorLogEntry = {
-    timestamp: ts,
-    level: 'WARN',
-    message: fullMessage,
-    raw: formatRaw(ts, 'WARN', fullMessage),
-  };
+  logWithLevel('WARN', message, context);
+}
 
-  const consoleFn = originalConsoleWarn ?? console.warn;
-  consoleFn(entry.raw);
+export function logError(message: string, context?: string): void {
+  logWithLevel('ERROR', message, context);
+}
 
-  idbPut(entry);
+export function logNetwork(message: string, context?: string): void {
+  logWithLevel('NETWORK', message, context);
 }
 
 /** Retrieve stored log entries, newest first. */

@@ -6,7 +6,7 @@
 
 import { ALBUM_ID_PREFIX } from '../constants/playlist';
 import * as libraryCache from './cache/libraryCache';
-import { logWarn } from './errorLogger';
+import { logWarn, logNetwork } from './errorLogger';
 
 const SPOTIFY_CLIENT_ID = import.meta.env.VITE_SPOTIFY_CLIENT_ID;
 const SPOTIFY_REDIRECT_URI = import.meta.env.VITE_SPOTIFY_REDIRECT_URI;
@@ -235,6 +235,81 @@ function transformTrackItem(
   };
 }
 
+function safeStringify(value: unknown): string {
+  try {
+    const text = JSON.stringify(value);
+    return text ?? String(value);
+  } catch {
+    return String(value);
+  }
+}
+
+function toHeadersObject(headers?: HeadersInit): Record<string, string> {
+  if (!headers) return {};
+  if (headers instanceof Headers) {
+    return Object.fromEntries(headers.entries());
+  }
+  if (Array.isArray(headers)) {
+    return Object.fromEntries(headers);
+  }
+  return { ...headers };
+}
+
+function redactSensitiveHeaders(headers: Record<string, string>): Record<string, string> {
+  const redacted: Record<string, string> = {};
+  for (const [key, value] of Object.entries(headers)) {
+    if (key.toLowerCase() === 'authorization') {
+      redacted[key] = 'Bearer [REDACTED]';
+      continue;
+    }
+    redacted[key] = value;
+  }
+  return redacted;
+}
+
+function requestBodyToLogValue(body: RequestInit['body']): string | null {
+  if (body === undefined || body === null) return null;
+  if (typeof body === 'string') return body;
+  if (body instanceof URLSearchParams) return body.toString();
+  if (body instanceof FormData) {
+    const pairs: Array<[string, FormDataEntryValue]> = [];
+    body.forEach((value, key) => {
+      pairs.push([key, value]);
+    });
+    return safeStringify(pairs);
+  }
+  return '[non-text body]';
+}
+
+function logSpotifyRequest(url: string, method: string, options: RequestInit): void {
+  const payload = {
+    method,
+    url,
+    headers: redactSensitiveHeaders(toHeadersObject(options.headers)),
+    body: requestBodyToLogValue(options.body),
+  };
+  logNetwork(`[REQ] ${method} ${url} ${safeStringify(payload)}`, 'spotify');
+}
+
+function logSpotifyResponse(
+  url: string,
+  method: string,
+  response: Response,
+  responseBody: string,
+  durationMs: number
+): void {
+  const payload = {
+    method,
+    url,
+    status: response.status,
+    statusText: response.statusText,
+    durationMs,
+    headers: toHeadersObject(response.headers),
+    body: responseBody || null,
+  };
+  logNetwork(`[RESP] ${response.status} ${method} ${url} ${safeStringify(payload)}`, 'spotify');
+}
+
 async function spotifyApiRequest<T>(
   url: string,
   token: string,
@@ -272,13 +347,21 @@ async function executeApiRequest<T>(
   token: string,
   options: RequestInit = {}
 ): Promise<T> {
-  const response = await fetch(url, {
+  const method = (options.method ?? 'GET').toUpperCase();
+  const requestInit: RequestInit = {
     ...options,
     headers: {
       Authorization: `Bearer ${token}`,
       ...options.headers,
     },
-  });
+  };
+
+  logSpotifyRequest(url, method, requestInit);
+  const startedAt = Date.now();
+  const response = await fetch(url, requestInit);
+  const responseBody = response.status === 204 ? '' : await response.text();
+  const durationMs = Date.now() - startedAt;
+  logSpotifyResponse(url, method, response, responseBody, durationMs);
 
   // Track 429s and set backoff
   handleRateLimitResponse(response);
@@ -291,11 +374,10 @@ async function executeApiRequest<T>(
     return undefined as T;
   }
 
-  const text = await response.text();
-  if (!text) {
+  if (!responseBody) {
     return undefined as T;
   }
-  return JSON.parse(text);
+  return JSON.parse(responseBody);
 }
 
 async function fetchAllPaginated<TItem, TResult>(
@@ -414,24 +496,30 @@ class SpotifyAuth {
       throw new Error('Code verifier not found. Please restart the authentication flow.');
     }
 
-    const response = await fetch('https://accounts.spotify.com/api/token', {
+    const tokenUrl = 'https://accounts.spotify.com/api/token';
+    const body = new URLSearchParams({
+      client_id: SPOTIFY_CLIENT_ID,
+      grant_type: 'authorization_code',
+      code,
+      redirect_uri: SPOTIFY_REDIRECT_URI,
+      code_verifier: codeVerifier,
+    });
+    const requestInit: RequestInit = {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({
-        client_id: SPOTIFY_CLIENT_ID,
-        grant_type: 'authorization_code',
-        code,
-        redirect_uri: SPOTIFY_REDIRECT_URI,
-        code_verifier: codeVerifier,
-      }),
-    });
+      body,
+    };
+    logSpotifyRequest(tokenUrl, 'POST', requestInit);
+    const startedAt = Date.now();
+    const response = await fetch(tokenUrl, requestInit);
+    const responseText = await response.text();
+    logSpotifyResponse(tokenUrl, 'POST', response, responseText, Date.now() - startedAt);
 
     if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Token exchange failed: ${response.statusText} - ${errorText}`);
+      throw new Error(`Token exchange failed: ${response.statusText} - ${responseText}`);
     }
 
-    const data = await response.json();
+    const data = JSON.parse(responseText);
     this.saveTokenToStorage({
       access_token: data.access_token,
       refresh_token: data.refresh_token,
@@ -450,21 +538,28 @@ class SpotifyAuth {
       throw new Error('VITE_SPOTIFY_CLIENT_ID is not defined.');
     }
 
-    const response = await fetch('https://accounts.spotify.com/api/token', {
+    const tokenUrl = 'https://accounts.spotify.com/api/token';
+    const body = new URLSearchParams({
+      grant_type: 'refresh_token',
+      refresh_token: this.tokenData.refresh_token,
+      client_id: SPOTIFY_CLIENT_ID,
+    });
+    const requestInit: RequestInit = {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({
-        grant_type: 'refresh_token',
-        refresh_token: this.tokenData.refresh_token,
-        client_id: SPOTIFY_CLIENT_ID,
-      }),
-    });
+      body,
+    };
+    logSpotifyRequest(tokenUrl, 'POST', requestInit);
+    const startedAt = Date.now();
+    const response = await fetch(tokenUrl, requestInit);
+    const responseText = await response.text();
+    logSpotifyResponse(tokenUrl, 'POST', response, responseText, Date.now() - startedAt);
 
     if (!response.ok) {
       throw new Error(`Token refresh failed: ${response.statusText}`);
     }
 
-    const data = await response.json();
+    const data = JSON.parse(responseText);
     this.saveTokenToStorage({
       access_token: data.access_token,
       refresh_token: data.refresh_token || this.tokenData.refresh_token,

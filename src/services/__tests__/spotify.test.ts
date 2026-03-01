@@ -1,9 +1,16 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import * as libraryCache from '@/services/cache/libraryCache';
+import { logNetwork } from '@/services/errorLogger';
 
 vi.mock('@/services/cache/libraryCache', () => ({
   getTrackList: vi.fn().mockResolvedValue(null),
   putTrackList: vi.fn().mockResolvedValue(undefined),
+}));
+
+vi.mock('@/services/errorLogger', () => ({
+  logError: vi.fn(),
+  logWarn: vi.fn(),
+  logNetwork: vi.fn(),
 }));
 
 function mockFetchResponse(body: unknown, status = 200, headers?: Record<string, string>) {
@@ -46,6 +53,19 @@ describe('Spotify API', () => {
   });
 
   describe('rate limiting', () => {
+    it('logs request and response entries at NETWORK level format', async () => {
+      const mod = await freshSpotify();
+      mockFetchResponse({ items: [], next: null, total: 3 });
+
+      await mod.getPlaylistCount();
+
+      const messages = vi.mocked(logNetwork).mock.calls.map(([message]) => String(message));
+      expect(messages.some((m) => m.includes('[REQ] GET https://api.spotify.com/v1/me/playlists?limit=1&offset=0'))).toBe(true);
+      expect(messages.some((m) => m.includes('[RESP] 200 GET https://api.spotify.com/v1/me/playlists?limit=1&offset=0'))).toBe(true);
+      expect(messages.some((m) => m.includes('Bearer [REDACTED]'))).toBe(true);
+      expect(messages.some((m) => m.includes('test-token'))).toBe(false);
+    });
+
     it('sets backoff when receiving 429 with Retry-After header', async () => {
       const mod = await freshSpotify();
 
