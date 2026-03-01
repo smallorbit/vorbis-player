@@ -2,10 +2,10 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import * as React from 'react';
 import styled from 'styled-components';
 import {
-  spotifyAuth,
   type PlaylistInfo,
   type AlbumInfo
 } from '../services/spotify';
+import { useProviderContext } from '@/contexts/ProviderContext';
 import { Card, CardContent, Button, Skeleton, Alert, AlertDescription } from './styled';
 import { theme } from '@/styles/theme';
 import { usePlayerSizing } from '../hooks/usePlayerSizing';
@@ -616,6 +616,7 @@ const GridCardImageComponent: React.FC<LazyImageProps> = React.memo(function Gri
 });
 
 function PlaylistSelection({ onPlaylistSelect, inDrawer = false, swipeZoneRef, initialSearchQuery, initialViewMode }: PlaylistSelectionProps): JSX.Element {
+  const { activeDescriptor } = useProviderContext();
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
     if (initialViewMode) return initialViewMode;
     const saved = localStorage.getItem('vorbis-player-view-mode');
@@ -716,8 +717,9 @@ function PlaylistSelection({ onPlaylistSelect, inDrawer = false, swipeZoneRef, i
   useEffect(() => {
     if (!libraryFullyLoaded) return;
     if (playlists.length === 0 && albums.length === 0 && likedSongsCount === 0) {
+      const providerName = activeDescriptor?.name ?? 'your music service';
       setError(
-        "No playlists, albums, or liked songs found. Please create some playlists, save some albums, or like some songs in Spotify first."
+        `No playlists, albums, or liked songs found. Please add some music to ${providerName} first.`
       );
     } else {
       setError(null);
@@ -726,13 +728,13 @@ function PlaylistSelection({ onPlaylistSelect, inDrawer = false, swipeZoneRef, i
 
   // Auth check — the sync engine handles all data fetching
   useEffect(() => {
-    if (spotifyAuth.isAuthenticated()) {
+    if (activeDescriptor?.auth.isAuthenticated()) {
       setIsAuthenticated(true);
     } else {
       setIsAuthenticated(false);
       setIsLoading(false);
     }
-  }, []);
+  }, [activeDescriptor]);
 
   // Sync loading state with the library sync engine
   useEffect(() => {
@@ -777,10 +779,10 @@ function PlaylistSelection({ onPlaylistSelect, inDrawer = false, swipeZoneRef, i
 
   async function handleLogin(): Promise<void> {
     try {
-      await spotifyAuth.redirectToAuth();
+      await activeDescriptor?.auth.beginLogin();
     } catch (err) {
-      console.error('Failed to redirect to Spotify auth:', err);
-      setError('Failed to redirect to Spotify login');
+      console.error('Failed to redirect to auth:', err);
+      setError('Failed to redirect to login');
     }
   }
 
