@@ -14,11 +14,9 @@ import { useLibrarySync } from '../hooks/useLibrarySync';
 import {
   filterAndSortPlaylists,
   filterAndSortAlbums,
-  getAvailableDecades,
   partitionByPinned,
   type PlaylistSortOption,
-  type AlbumSortOption,
-  type YearFilterOption
+  type AlbumSortOption
 } from '../utils/playlistFilters';
 import { usePinnedItems } from '../hooks/usePinnedItems';
 import { LIKED_SONGS_ID, LIKED_SONGS_NAME, toAlbumPlaylistId } from '../constants/playlist';
@@ -662,7 +660,6 @@ function PlaylistSelection({ onPlaylistSelect, inDrawer = false, swipeZoneRef, i
     'vorbis-player-album-sort',
     'recently-added'
   );
-  const [yearFilter, setYearFilter] = useState<YearFilterOption>('all');
   const [artistFilter, setArtistFilter] = useState<string>('');
   const libraryFullyLoaded = isInitialLoadComplete;
 
@@ -710,14 +707,10 @@ function PlaylistSelection({ onPlaylistSelect, inDrawer = false, swipeZoneRef, i
   }, [playlists, searchQuery, playlistSort]);
 
   const filteredAlbums = useMemo(() => {
-    return filterAndSortAlbums(albums, searchQuery, albumSort, yearFilter, artistFilter);
-  }, [albums, searchQuery, albumSort, yearFilter, artistFilter]);
+    return filterAndSortAlbums(albums, searchQuery, albumSort, 'all', artistFilter);
+  }, [albums, searchQuery, albumSort, artistFilter]);
 
-  const availableDecades = useMemo(() => {
-    return getAvailableDecades(albums);
-  }, [albums]);
-
-  const hasActiveFilters = searchQuery !== '' || yearFilter !== 'all' || artistFilter !== '';
+  const hasActiveFilters = searchQuery !== '' || artistFilter !== '';
 
   const { pinned: pinnedPlaylists, unpinned: unpinnedPlaylists } = useMemo(() => {
     if (hasActiveFilters || pinnedPlaylistIds.length === 0) {
@@ -735,14 +728,11 @@ function PlaylistSelection({ onPlaylistSelect, inDrawer = false, swipeZoneRef, i
 
   useEffect(() => {
     if (viewMode === 'playlists') {
-      if (yearFilter !== 'all') {
-        setYearFilter('all');
-      }
       if (artistFilter !== '') {
         setArtistFilter('');
       }
     }
-  }, [viewMode, yearFilter, artistFilter]);
+  }, [viewMode, artistFilter]);
 
   useEffect(() => {
     if (!libraryFullyLoaded) return;
@@ -851,25 +841,11 @@ function PlaylistSelection({ onPlaylistSelect, inDrawer = false, swipeZoneRef, i
         </SelectDropdown>
       )}
 
-      {viewMode === 'albums' && availableDecades.length > 0 && (
-        <SelectDropdown
-          value={yearFilter}
-          onChange={(e) => setYearFilter(e.target.value as YearFilterOption)}
-        >
-          <option value="all">All Years</option>
-          {availableDecades.map((decade) => (
-            <option key={decade} value={decade}>
-              {decade === 'older' ? 'Before 1980' : decade}
-            </option>
-          ))}
-        </SelectDropdown>
-      )}
 
-      {(searchQuery || yearFilter !== 'all' || artistFilter) && (
+      {(searchQuery || artistFilter) && (
         <ClearButton
           onClick={() => {
             setSearchQuery('');
-            setYearFilter('all');
             setArtistFilter('');
           }}
         >
@@ -899,7 +875,6 @@ function PlaylistSelection({ onPlaylistSelect, inDrawer = false, swipeZoneRef, i
   const mainContent = showMainContent ? (
     <>
       <div ref={inDrawer ? swipeZoneRef : undefined} style={inDrawer ? { flexShrink: 0, touchAction: 'pan-y' } : undefined}>
-      {!inDrawer && searchAndSortControls}
       {tabsBar}
       </div>
 
@@ -1095,6 +1070,12 @@ function PlaylistSelection({ onPlaylistSelect, inDrawer = false, swipeZoneRef, i
           {searchAndSortControls}
         </DrawerBottomControls>
       )}
+
+      {!inDrawer && (
+        <div style={{ marginTop: '1.5rem' }}>
+          {searchAndSortControls}
+        </div>
+      )}
     </>
   ) : null;
 
@@ -1156,11 +1137,6 @@ function PlaylistSelection({ onPlaylistSelect, inDrawer = false, swipeZoneRef, i
   return (
     <Container $inDrawer={false}>
       <SelectionCard $maxWidth={maxWidth} $inDrawer={false}>
-        <Header $inDrawer={false}>
-          <Title>Choose Your Music</Title>
-          <Subtitle>Select a playlist, album, or your liked songs to start listening</Subtitle>
-        </Header>
-
         <CardContent>
           {statusContent}
           {mainContent}
