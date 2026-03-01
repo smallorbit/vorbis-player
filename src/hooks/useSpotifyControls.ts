@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { spotifyPlayer } from '../services/spotifyPlayer';
 import type { Track } from '../services/spotify';
 import { useVolume } from './useVolume';
 import { useProviderContext } from '@/contexts/ProviderContext';

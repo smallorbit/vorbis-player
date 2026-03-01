@@ -176,7 +176,7 @@ export const ProviderButton = styled.button<{ $accentColor: string; $isActive: b
   cursor: pointer;
   font-size: 0.8125rem;
   font-weight: ${theme.fontWeight.medium};
-  transition: all ${theme.transitions.default} ease;
+  transition: all ${theme.transitions.normal};
   width: 100%;
   text-align: left;
 

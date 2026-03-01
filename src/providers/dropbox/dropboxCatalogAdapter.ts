@@ -49,8 +49,11 @@ function parseFilename(filename: string): { name: string; trackNumber?: number }
 
 export class DropboxCatalogAdapter implements CatalogProvider {
   readonly providerId: ProviderId = 'dropbox';
+  private auth: DropboxAuthAdapter;
 
-  constructor(private auth: DropboxAuthAdapter) {}
+  constructor(auth: DropboxAuthAdapter) {
+    this.auth = auth;
+  }
 
   private async dropboxApi<T>(
     endpoint: string,
@@ -129,6 +132,7 @@ export class DropboxCatalogAdapter implements CatalogProvider {
 
   async listTracks(collectionRef: CollectionRef, signal?: AbortSignal): Promise<MediaTrack[]> {
     if (collectionRef.provider !== 'dropbox') return [];
+    if (collectionRef.kind === 'liked') return []; // Dropbox has no liked collection
 
     const folderPath = collectionRef.id;
     const tracks: MediaTrack[] = [];

@@ -14,7 +14,11 @@ export class DropboxPlaybackAdapter implements PlaybackProvider {
   private listeners = new Set<(state: PlaybackState | null) => void>();
   private updateInterval: ReturnType<typeof setInterval> | null = null;
 
-  constructor(private catalog: DropboxCatalogAdapter) {}
+  private catalog: DropboxCatalogAdapter;
+
+  constructor(catalog: DropboxCatalogAdapter) {
+    this.catalog = catalog;
+  }
 
   async initialize(): Promise<void> {
     if (!this.audio) {

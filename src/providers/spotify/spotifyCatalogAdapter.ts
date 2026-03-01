@@ -18,7 +18,7 @@ import {
   type PlaylistInfo,
   type AlbumInfo,
 } from '@/services/spotify';
-import { ALBUM_ID_PREFIX, LIKED_SONGS_ID, LIKED_SONGS_NAME } from '@/constants/playlist';
+import { ALBUM_ID_PREFIX } from '@/constants/playlist';
 
 /** Map a Spotify Track to a MediaTrack. */
 export function spotifyTrackToMediaTrack(track: Track): MediaTrack {
@@ -97,17 +97,19 @@ export class SpotifyCatalogAdapter implements CatalogProvider {
     const collections: MediaCollection[] = [];
 
     await getUserLibraryInterleaved(
-      (playlists) => {
-        // We'll collect and return at the end
+      (fetchedPlaylists, _isComplete) => {
+        for (const p of fetchedPlaylists) {
+          collections.push(spotifyPlaylistToMediaCollection(p as PlaylistInfo));
+        }
       },
-      (albums) => {
-        // We'll collect and return at the end
+      (fetchedAlbums, _isComplete) => {
+        for (const a of fetchedAlbums) {
+          collections.push(spotifyAlbumToMediaCollection(a));
+        }
       },
       signal,
     );
 
-    // For the adapter, we do a simpler approach: collect all and return
-    // This is used when the catalog is queried directly (not via the sync engine)
     return collections;
   }
 
