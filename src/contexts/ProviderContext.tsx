@@ -11,8 +11,9 @@ import { providerRegistry } from '@/providers/registry';
 import type { ProviderId } from '@/types/domain';
 import type { ProviderDescriptor, ProviderRegistry } from '@/types/providers';
 
-// Ensure Spotify is registered before the context is used
+// Ensure providers are registered before the context is used
 import '@/providers/spotify/spotifyProvider';
+import '@/providers/dropbox/dropboxProvider'; // conditionally registers if VITE_DROPBOX_CLIENT_ID is set
 
 const ACTIVE_PROVIDER_KEY = 'vorbis-player-active-provider';
 const DEFAULT_PROVIDER: ProviderId = 'spotify';
