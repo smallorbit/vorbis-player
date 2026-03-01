@@ -6,7 +6,7 @@ import {
   type PlaylistInfo,
   type AlbumInfo
 } from '../services/spotify';
-import { Card, CardHeader, CardContent, Button, Skeleton, Alert, AlertDescription } from './styled';
+import { Card, CardContent, Button, Skeleton, Alert, AlertDescription } from './styled';
 import { theme } from '@/styles/theme';
 import { usePlayerSizing } from '../hooks/usePlayerSizing';
 import { useLocalStorage } from '../hooks/useLocalStorage';
@@ -14,11 +14,9 @@ import { useLibrarySync } from '../hooks/useLibrarySync';
 import {
   filterAndSortPlaylists,
   filterAndSortAlbums,
-  getAvailableDecades,
   partitionByPinned,
   type PlaylistSortOption,
-  type AlbumSortOption,
-  type YearFilterOption
+  type AlbumSortOption
 } from '../utils/playlistFilters';
 import { usePinnedItems } from '../hooks/usePinnedItems';
 import { LIKED_SONGS_ID, LIKED_SONGS_NAME, toAlbumPlaylistId } from '../constants/playlist';
@@ -105,34 +103,12 @@ const SelectionCard = styled(Card) <{ $maxWidth: number; $inDrawer?: boolean }>`
     border: 1px solid ${theme.colors.control.border};
     border-radius: 1.25rem;
     box-shadow: ${theme.shadows.albumArt};
+    display: flex;
+    flex-direction: column;
+    max-height: min(90dvh, 900px);
   `}
 `;
 
-const Header = styled(CardHeader) <{ $inDrawer?: boolean }>`
-  ${({ $inDrawer }) =>
-    $inDrawer
-      ? `
-    text-align: left;
-    padding: ${theme.spacing.sm} 0 ${theme.spacing.md};
-    flex-shrink: 0;
-  `
-      : `
-    text-align: center;
-    padding: 2rem 1.5rem 1rem;
-  `}
-`;
-
-const Title = styled.h1`
-  font-size: 2rem;
-  font-weight: bold;
-  color: white;
-  margin-bottom: 0.5rem;
-`;
-
-const Subtitle = styled.p`
-  color: ${({ theme }) => theme.colors.muted.foreground};
-  font-size: ${({ theme }) => theme.fontSize.base};
-`;
 
 const DrawerContentWrapper = styled.div`
   flex: 1;
@@ -162,7 +138,8 @@ const PlaylistGrid = styled.div<{ $inDrawer?: boolean }>`
     -webkit-overflow-scrolling: touch;
   `
       : `
-    max-height: 400px;
+    flex: 1;
+    min-height: 0;
   `}
 `;
 
@@ -662,7 +639,6 @@ function PlaylistSelection({ onPlaylistSelect, inDrawer = false, swipeZoneRef, i
     'vorbis-player-album-sort',
     'recently-added'
   );
-  const [yearFilter, setYearFilter] = useState<YearFilterOption>('all');
   const [artistFilter, setArtistFilter] = useState<string>('');
   const libraryFullyLoaded = isInitialLoadComplete;
 
@@ -710,14 +686,10 @@ function PlaylistSelection({ onPlaylistSelect, inDrawer = false, swipeZoneRef, i
   }, [playlists, searchQuery, playlistSort]);
 
   const filteredAlbums = useMemo(() => {
-    return filterAndSortAlbums(albums, searchQuery, albumSort, yearFilter, artistFilter);
-  }, [albums, searchQuery, albumSort, yearFilter, artistFilter]);
+    return filterAndSortAlbums(albums, searchQuery, albumSort, 'all', artistFilter);
+  }, [albums, searchQuery, albumSort, artistFilter]);
 
-  const availableDecades = useMemo(() => {
-    return getAvailableDecades(albums);
-  }, [albums]);
-
-  const hasActiveFilters = searchQuery !== '' || yearFilter !== 'all' || artistFilter !== '';
+  const hasActiveFilters = searchQuery !== '' || artistFilter !== '';
 
   const { pinned: pinnedPlaylists, unpinned: unpinnedPlaylists } = useMemo(() => {
     if (hasActiveFilters || pinnedPlaylistIds.length === 0) {
@@ -735,14 +707,11 @@ function PlaylistSelection({ onPlaylistSelect, inDrawer = false, swipeZoneRef, i
 
   useEffect(() => {
     if (viewMode === 'playlists') {
-      if (yearFilter !== 'all') {
-        setYearFilter('all');
-      }
       if (artistFilter !== '') {
         setArtistFilter('');
       }
     }
-  }, [viewMode, yearFilter, artistFilter]);
+  }, [viewMode, artistFilter]);
 
   useEffect(() => {
     if (!libraryFullyLoaded) return;
@@ -851,25 +820,11 @@ function PlaylistSelection({ onPlaylistSelect, inDrawer = false, swipeZoneRef, i
         </SelectDropdown>
       )}
 
-      {viewMode === 'albums' && availableDecades.length > 0 && (
-        <SelectDropdown
-          value={yearFilter}
-          onChange={(e) => setYearFilter(e.target.value as YearFilterOption)}
-        >
-          <option value="all">All Years</option>
-          {availableDecades.map((decade) => (
-            <option key={decade} value={decade}>
-              {decade === 'older' ? 'Before 1980' : decade}
-            </option>
-          ))}
-        </SelectDropdown>
-      )}
 
-      {(searchQuery || yearFilter !== 'all' || artistFilter) && (
+      {(searchQuery || artistFilter) && (
         <ClearButton
           onClick={() => {
             setSearchQuery('');
-            setYearFilter('all');
             setArtistFilter('');
           }}
         >
@@ -899,7 +854,6 @@ function PlaylistSelection({ onPlaylistSelect, inDrawer = false, swipeZoneRef, i
   const mainContent = showMainContent ? (
     <>
       <div ref={inDrawer ? swipeZoneRef : undefined} style={inDrawer ? { flexShrink: 0, touchAction: 'pan-y' } : undefined}>
-      {!inDrawer && searchAndSortControls}
       {tabsBar}
       </div>
 
@@ -1073,7 +1027,7 @@ function PlaylistSelection({ onPlaylistSelect, inDrawer = false, swipeZoneRef, i
 
         const emptyState = filteredAlbums.length === 0 && isInitialLoadComplete && (
           <EmptyState $fullWidth={inDrawer}>
-            {searchQuery || yearFilter !== 'all'
+            {searchQuery || artistFilter
               ? 'No albums match your filters.'
               : 'No albums found. Save some albums in Spotify to see them here!'}
           </EmptyState>
@@ -1094,6 +1048,12 @@ function PlaylistSelection({ onPlaylistSelect, inDrawer = false, swipeZoneRef, i
         <DrawerBottomControls>
           {searchAndSortControls}
         </DrawerBottomControls>
+      )}
+
+      {!inDrawer && (
+        <div style={{ marginTop: '1.5rem' }}>
+          {searchAndSortControls}
+        </div>
       )}
     </>
   ) : null;
@@ -1156,12 +1116,7 @@ function PlaylistSelection({ onPlaylistSelect, inDrawer = false, swipeZoneRef, i
   return (
     <Container $inDrawer={false}>
       <SelectionCard $maxWidth={maxWidth} $inDrawer={false}>
-        <Header $inDrawer={false}>
-          <Title>Choose Your Music</Title>
-          <Subtitle>Select a playlist, album, or your liked songs to start listening</Subtitle>
-        </Header>
-
-        <CardContent>
+        <CardContent style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
           {statusContent}
           {mainContent}
         </CardContent>
