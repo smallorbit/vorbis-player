@@ -144,7 +144,7 @@ export const theme = {
     albumArt: '0 8px 24px rgba(23, 22, 22, 0.7), 0 2px 8px rgba(22, 21, 21, 0.6)',
     none: 'none',
     popover: '0 8px 32px rgba(0, 0, 0, 0.5), 0 2px 8px rgba(0, 0, 0, 0.4)',
-    card: '0 8px 32px rgba(0, 0, 0, 0.9), 0 4px 16px rgba(0, 0, 0, 0.8), 0 2px 8px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.08)',
+    card: '0 8px 32px rgba(0, 0, 0, 0.35), 0 4px 16px rgba(0, 0, 0, 0.25), 0 2px 8px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.08)',
     drop: '0 4px 12px rgba(0, 0, 0, 0.4)',
     albumArtDepth: '0 8px 24px rgba(0, 0, 0, 0.5)',
     textSm: '0 1px 2px rgba(0, 0, 0, 0.3)',
