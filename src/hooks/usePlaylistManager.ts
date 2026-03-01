@@ -2,6 +2,7 @@ import { useCallback } from 'react';
 import { getPlaylistTracks, getAlbumTracks, getLikedSongs, spotifyAuth } from '../services/spotify';
 import { spotifyPlayer } from '../services/spotifyPlayer';
 import { isAlbumId, extractAlbumId, LIKED_SONGS_ID } from '../constants/playlist';
+import { logError } from '../services/errorLogger';
 import type { Track } from '../services/spotify';
 
 async function waitForSpotifyReady(timeout = 10000): Promise<void> {
@@ -107,7 +108,7 @@ export const usePlaylistManager = ({
         } catch (trackError) {
           // Track fetching may fail for non-owned playlists (e.g. Spotify-made)
           // due to API restrictions — will fall through to context playback below
-          console.warn('Failed to fetch playlist tracks, will try context playback:', trackError);
+          logError(`Failed to fetch playlist tracks, will try context playback: ${trackError instanceof Error ? trackError.message : String(trackError)}`, 'usePlaylistManager');
           fetchedTracks = [];
         }
       }
@@ -133,7 +134,7 @@ export const usePlaylistManager = ({
           // Playback started successfully via context — return without error
           return;
         } catch (contextError) {
-          console.error('Context playback also failed:', contextError);
+          logError(`Context playback also failed: ${contextError instanceof Error ? contextError.message : String(contextError)}`, 'usePlaylistManager');
           setError("No tracks found in this playlist. It may be empty or unavailable.");
           return;
         }
@@ -164,7 +165,7 @@ export const usePlaylistManager = ({
       const playWithRetry = async (trackIndex: number, retryCount = 0, maxRetries = 2): Promise<boolean> => {
         const trackUri = tracksToPlay[trackIndex]?.uri;
         if (!trackUri) {
-          console.error('No track URI at index', trackIndex);
+          logError(`No track URI at index ${trackIndex}`, 'usePlaylistManager');
           return false;
         }
 
@@ -180,7 +181,7 @@ export const usePlaylistManager = ({
                   await spotifyPlayer.resume();
                 }
               } catch (error) {
-                console.error('Failed to check/resume playback state:', error);
+                logError(`Failed to check/resume playback state: ${error instanceof Error ? error.message : String(error)}`, 'usePlaylistManager');
               }
             })();
           }, 1500);
@@ -195,7 +196,7 @@ export const usePlaylistManager = ({
             const isRestrictionViolated = errorMessage.includes('Restriction violated');
             
             if (isRestrictionViolated) {
-              console.warn(`⚠️ Track "${tracksToPlay[trackIndex]?.name}" is unavailable (region-locked or removed)`);
+              logError(`Track "${tracksToPlay[trackIndex]?.name}" is unavailable (region-locked or removed)`, 'usePlaylistManager');
 
               // Try the next track if available
               if (trackIndex < tracksToPlay.length - 1) {
@@ -221,7 +222,7 @@ export const usePlaylistManager = ({
             }
           }
           
-          console.error('Failed to start playback:', error);
+          logError(`Failed to start playback: ${error instanceof Error ? error.message : String(error)}`, 'usePlaylistManager');
           throw error;
         }
       };
@@ -233,12 +234,12 @@ export const usePlaylistManager = ({
             if (tracksToPlay.length > 0) {
               const success = await playWithRetry(0); // Start with first track
               if (!success) {
-                console.error('Failed to play any track from the playlist');
+                logError('Failed to play any track from the playlist', 'usePlaylistManager');
                 setError('Unable to play any tracks from this playlist. They may be unavailable in your region.');
               }
             }
           } catch (error) {
-            console.error('Failed to start playback after all retries:', error);
+            logError(`Failed to start playback after all retries: ${error instanceof Error ? error.message : String(error)}`, 'usePlaylistManager');
           }
         })();
       }, 1500);

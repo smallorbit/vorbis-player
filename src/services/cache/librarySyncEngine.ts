@@ -10,6 +10,7 @@
  */
 
 import type { AlbumInfo } from '../spotify';
+import { logError } from '../errorLogger';
 import {
   getPlaylistCount,
   getAlbumCount,
@@ -114,7 +115,7 @@ export class LibrarySyncEngine {
       });
     } catch (err) {
       if (err instanceof DOMException && err.name === 'AbortError') return;
-      console.warn('[librarySyncEngine] Sync failed:', err);
+      logError(`Sync failed: ${err instanceof Error ? err.message : String(err)}`, 'librarySyncEngine');
       this.updateState({
         isSyncing: false,
         error: err instanceof Error ? err.message : 'Sync failed',
@@ -179,7 +180,7 @@ export class LibrarySyncEngine {
       // Then validate cache against Spotify (awaited so start() resolves
       // only after the initial validation is complete)
       await this.syncNow().catch((err) => {
-        console.warn('[librarySyncEngine] Background sync after warm start failed:', err);
+        logError(`Background sync after warm start failed: ${err instanceof Error ? err.message : String(err)}`, 'librarySyncEngine');
       });
     } else {
       // Cold start: no cached data, use progressive loading
@@ -258,7 +259,7 @@ export class LibrarySyncEngine {
       this.notifyListeners(allPlaylists, allAlbums, likedCount);
     } catch (err) {
       if (err instanceof DOMException && err.name === 'AbortError') return;
-      console.error('[librarySyncEngine] Cold start load failed:', err);
+      logError(`Cold start load failed: ${err instanceof Error ? err.message : String(err)}`, 'librarySyncEngine');
       this.updateState({
         isInitialLoadComplete: true, // Mark complete even on error so UI isn't stuck loading
         isSyncing: false,
@@ -425,7 +426,7 @@ export class LibrarySyncEngine {
   private startPollingInterval(): void {
     this.intervalId = setInterval(() => {
       this.syncNow().catch((err) => {
-        console.warn('[librarySyncEngine] Background sync error:', err);
+        logError(`Background sync error: ${err instanceof Error ? err.message : String(err)}`, 'librarySyncEngine');
       });
     }, this.pollIntervalMs);
   }
@@ -448,7 +449,7 @@ export class LibrarySyncEngine {
       try {
         listener(this.state, playlists, albums, likedSongsCount);
       } catch (err) {
-        console.warn('[librarySyncEngine] Listener error:', err);
+        logError(`Listener error: ${err instanceof Error ? err.message : String(err)}`, 'librarySyncEngine');
       }
     }
   }
@@ -466,7 +467,7 @@ export class LibrarySyncEngine {
         this.startPollingInterval();
       }
       this.syncNow().catch((err) => {
-        console.warn('[librarySyncEngine] Sync on focus failed:', err);
+        logError(`Sync on focus failed: ${err instanceof Error ? err.message : String(err)}`, 'librarySyncEngine');
       });
     }
   };

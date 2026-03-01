@@ -1,4 +1,6 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, lazy, Suspense } from 'react';
+
+const ErrorLogViewer = lazy(() => import('./ErrorLogViewer'));
 
 interface LogEntry {
   time: string;
@@ -45,6 +47,7 @@ export function useDebugActivator() {
 export default function DebugOverlay({ active }: { active: boolean }) {
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [visible, setVisible] = useState(false);
+  const [showPersistentLogs, setShowPersistentLogs] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -124,6 +127,9 @@ export default function DebugOverlay({ active }: { active: boolean }) {
             <button onClick={() => setVisible(false)} style={btnStyle}>Close</button>
             <button onClick={clear} style={btnStyle}>Clear</button>
             <button onClick={copyAll} style={btnStyle}>Copy</button>
+            <button onClick={() => setShowPersistentLogs(true)} style={{ ...btnStyle, background: 'rgba(180,60,60,0.8)', borderColor: '#a44' }}>
+              Persistent Logs
+            </button>
             <span style={{ marginLeft: 'auto', color: '#666', fontSize: 10, alignSelf: 'center' }}>
               {logs.length} entries
             </span>
@@ -141,6 +147,11 @@ export default function DebugOverlay({ active }: { active: boolean }) {
           ))}
           <div ref={bottomRef} />
         </div>
+      )}
+      {showPersistentLogs && (
+        <Suspense fallback={null}>
+          <ErrorLogViewer onClose={() => setShowPersistentLogs(false)} />
+        </Suspense>
       )}
     </>
   );

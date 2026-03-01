@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import * as React from 'react';
 import styled from 'styled-components';
+import { logError } from '../services/errorLogger';
 import {
   spotifyAuth,
   type PlaylistInfo,
@@ -810,7 +811,7 @@ function PlaylistSelection({ onPlaylistSelect, inDrawer = false, swipeZoneRef, i
     try {
       await spotifyAuth.redirectToAuth();
     } catch (err) {
-      console.error('Failed to redirect to Spotify auth:', err);
+      logError(`Failed to redirect to Spotify auth: ${err instanceof Error ? err.message : String(err)}`, 'PlaylistSelection');
       setError('Failed to redirect to Spotify login');
     }
   }

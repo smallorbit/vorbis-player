@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { spotifyPlayer } from '../services/spotifyPlayer';
 import { spotifyAuth } from '../services/spotify';
+import { logError } from '../services/errorLogger';
 import type { Track } from '../services/spotify';
 import { useVolume } from './useVolume';
 
@@ -112,7 +113,7 @@ export const useSpotifyControls = ({
       const deviceId = spotifyPlayer.getDeviceId();
 
       if (!deviceId) {
-        console.error('No device ID available for seeking');
+        logError('No device ID available for seeking', 'useSpotifyControls');
         return;
       }
 
@@ -123,7 +124,7 @@ export const useSpotifyControls = ({
         }
       });
     } catch (error) {
-      console.error('Failed to seek:', error);
+      logError(`Failed to seek: ${error instanceof Error ? error.message : String(error)}`, 'useSpotifyControls');
     }
   }, []);
 

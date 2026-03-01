@@ -66,6 +66,8 @@
  * };
  * ```
  */
+import { logError } from '../services/errorLogger';
+
 interface ColorData {
   r: number;
   g: number;
@@ -380,20 +382,21 @@ export async function extractDominantColor(imageUrl: string): Promise<ExtractedC
             resolve(null);
           }
         } catch (error) {
-          console.error('Error processing image data:', error);
+          logError(`Error processing image data: ${error instanceof Error ? error.message : String(error)}`, 'colorExtractor');
           addToCache(imageUrl, null);
           resolve(null);
         }
       };
       
       img.onerror = () => {
+        logError(`Image load failed for color extraction: ${imageUrl}`, 'colorExtractor');
         addToCache(imageUrl, null);
         resolve(null);
       };
       
       img.src = imageUrl;
     } catch (error) {
-      console.error('Error loading image:', error);
+      logError(`Error loading image: ${error instanceof Error ? error.message : String(error)}`, 'colorExtractor');
       addToCache(imageUrl, null);
       resolve(null);
     }
@@ -503,18 +506,19 @@ export async function extractTopVibrantColors(imageUrl: string, count = 3): Prom
 
           resolve(result);
         } catch (error) {
-          console.error('Error processing image data:', error);
+          logError(`Error processing image data (palette): ${error instanceof Error ? error.message : String(error)}`, 'colorExtractor');
           resolve([]);
         }
       };
 
       img.onerror = () => {
+        logError(`Image load failed for palette extraction: ${imageUrl}`, 'colorExtractor');
         resolve([]);
       };
 
       img.src = imageUrl;
     } catch (error) {
-      console.error('Error loading image:', error);
+      logError(`Error loading image (palette): ${error instanceof Error ? error.message : String(error)}`, 'colorExtractor');
       resolve([]);
     }
   });

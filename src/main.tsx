@@ -1,8 +1,11 @@
 import { createRoot } from 'react-dom/client'
+import { initErrorLogger, logError } from './services/errorLogger'
 import './index.css'
 import './styles/glow-animations.css'
 import './styles/container-queries.css'
 import App from './App.tsx'
+
+initErrorLogger();
 
 if ('serviceWorker' in navigator && import.meta.env.PROD) {
   window.addEventListener('load', () => {
@@ -11,7 +14,10 @@ if ('serviceWorker' in navigator && import.meta.env.PROD) {
         console.log('SW registered: ', registration);
       })
       .catch((registrationError) => {
-        console.log('SW registration failed: ', registrationError);
+        logError(
+          `SW registration failed: ${registrationError instanceof Error ? registrationError.message : String(registrationError)}`,
+          'main'
+        );
       });
   });
 }

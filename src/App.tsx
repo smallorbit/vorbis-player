@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import styled, { keyframes } from 'styled-components';
 import AudioPlayerComponent from './components/AudioPlayer';
 import { spotifyAuth } from './services/spotify';
+import { logError } from './services/errorLogger';
 import './services/spotifyPlayer';
 import { ThemeProvider } from './styles/ThemeProvider';
 import { flexCenter, buttonPrimary } from './styles/utils';
@@ -35,7 +36,7 @@ const cleanupDeprecatedLocalStorage = () => {
     localStorage.removeItem('customAccentColorOverrides');
     console.log('Cleaned up deprecated localStorage key: customAccentColorOverrides');
   } catch (error) {
-    console.warn('Failed to clean up deprecated localStorage keys:', error);
+    logError(`Failed to clean up deprecated localStorage keys: ${error instanceof Error ? error.message : String(error)}`, 'App');
   }
 };
 
