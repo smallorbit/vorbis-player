@@ -1,7 +1,7 @@
 import React, { memo, useEffect, useState, useCallback, useMemo } from 'react';
 import styled, { keyframes } from 'styled-components';
 import type { Track } from '../services/spotify';
-import AlbumArtFilters from './AlbumArtFilters';
+
 import AccentColorGlowOverlay, { DEFAULT_GLOW_RATE, DEFAULT_GLOW_INTENSITY } from './AccentColorGlowOverlay';
 import { hexToRgb } from '../utils/colorUtils';
 import { useImageProcessingWorker } from '../hooks/useImageProcessingWorker';
@@ -47,12 +47,6 @@ interface AlbumArtProps {
   glowRate?: number;
   glowEnabled?: boolean;
   zenMode?: boolean;
-  albumFilters?: {
-    brightness: number;
-    contrast: number;
-    saturation: number;
-    sepia: number;
-  };
   translucenceEnabled?: boolean;
   translucenceOpacity?: number;
 }
@@ -166,24 +160,10 @@ const arePropsEqual = (prevProps: AlbumArtProps, nextProps: AlbumArtProps): bool
       prevProps.translucenceOpacity !== nextProps.translucenceOpacity) {
     return false;
   }
-  if (!prevProps.albumFilters && !nextProps.albumFilters) {
-    return true;
-  }
-  if (!prevProps.albumFilters || !nextProps.albumFilters) {
-    return false;
-  }
-  const filterKeys: (keyof typeof prevProps.albumFilters)[] = [
-    'brightness', 'contrast', 'saturation', 'sepia'
-  ];
-  for (const key of filterKeys) {
-    if (prevProps.albumFilters[key] !== nextProps.albumFilters[key]) {
-      return false;
-    }
-  }
   return true;
 };
 
-const AlbumArt: React.FC<AlbumArtProps> = memo(({ currentTrack = null, accentColor, glowIntensity, glowRate, glowEnabled, albumFilters, zenMode, translucenceEnabled, translucenceOpacity }) => {
+const AlbumArt: React.FC<AlbumArtProps> = memo(({ currentTrack = null, accentColor, glowIntensity, glowRate, glowEnabled, zenMode, translucenceEnabled, translucenceOpacity }) => {
   const [canvasUrl, setCanvasUrl] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const { processImage } = useImageProcessingWorker();
@@ -279,12 +259,7 @@ const AlbumArt: React.FC<AlbumArtProps> = memo(({ currentTrack = null, accentCol
       $translucenceOpacity={translucenceEnabled ? (translucenceOpacity ?? 0.8) : 1}
       className={glowClasses}
     >
-      <AlbumArtFilters filters={albumFilters ? albumFilters : {
-        brightness: 110,
-        contrast: 100,
-        saturation: 100,
-        sepia: 0
-      }}>
+      <>
         <AccentColorGlowOverlay
           glowIntensity={glowIntensity ?? DEFAULT_GLOW_INTENSITY}
           glowRate={glowRate ?? DEFAULT_GLOW_RATE}
@@ -323,7 +298,7 @@ const AlbumArt: React.FC<AlbumArtProps> = memo(({ currentTrack = null, accentCol
           </div>
         )}
         {isProcessing && <ProcessingSpinner size={spinnerDimensions.size} innerSize={spinnerDimensions.innerSize} />}
-      </AlbumArtFilters>
+      </>
     </AlbumArtContainer>
 
   );
