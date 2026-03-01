@@ -21,8 +21,21 @@ vi.mock('../../services/cache/librarySyncEngine', () => ({
   },
 }));
 
+vi.mock('@/services/spotifyPlayer', () => ({
+  spotifyPlayer: {
+    setVolume: vi.fn().mockResolvedValue(undefined),
+    onPlayerStateChanged: vi.fn(() => vi.fn()),
+    getCurrentState: vi.fn().mockResolvedValue(null),
+    initialize: vi.fn().mockResolvedValue(undefined),
+    playTrack: vi.fn().mockResolvedValue(undefined),
+    getDeviceId: vi.fn().mockReturnValue(null),
+    getIsReady: vi.fn().mockReturnValue(false),
+  },
+}));
+
 // Import after mocking
 import { useLibrarySync } from '../useLibrarySync';
+import { ProviderWrapper } from '@/test/providerTestUtils';
 
 function makePlaylist(id: string, name?: string): CachedPlaylistInfo {
   return {
@@ -77,7 +90,7 @@ describe('useLibrarySync', () => {
   });
 
   it('should start with empty state', () => {
-    const { result } = renderHook(() => useLibrarySync());
+    const { result } = renderHook(() => useLibrarySync(), { wrapper: ProviderWrapper });
 
     expect(result.current.playlists).toEqual([]);
     expect(result.current.albums).toEqual([]);
@@ -87,14 +100,14 @@ describe('useLibrarySync', () => {
   });
 
   it('should subscribe to engine and start on mount', () => {
-    renderHook(() => useLibrarySync());
+    renderHook(() => useLibrarySync(), { wrapper: ProviderWrapper });
 
     expect(mockSubscribe).toHaveBeenCalledOnce();
     expect(mockStart).toHaveBeenCalledOnce();
   });
 
   it('should unsubscribe on unmount but keep engine running', () => {
-    const { unmount } = renderHook(() => useLibrarySync());
+    const { unmount } = renderHook(() => useLibrarySync(), { wrapper: ProviderWrapper });
 
     unmount();
 
@@ -103,7 +116,7 @@ describe('useLibrarySync', () => {
   });
 
   it('should update state when engine emits data', async () => {
-    const { result } = renderHook(() => useLibrarySync());
+    const { result } = renderHook(() => useLibrarySync(), { wrapper: ProviderWrapper });
 
     const playlists = [makePlaylist('p1', 'My Playlist')];
     const albums = [makeAlbum('a1', 'My Album')];
@@ -127,7 +140,7 @@ describe('useLibrarySync', () => {
   });
 
   it('should expose refreshNow that calls syncNow', async () => {
-    const { result } = renderHook(() => useLibrarySync());
+    const { result } = renderHook(() => useLibrarySync(), { wrapper: ProviderWrapper });
 
     await result.current.refreshNow();
 
@@ -135,7 +148,7 @@ describe('useLibrarySync', () => {
   });
 
   it('should handle sync errors', async () => {
-    const { result } = renderHook(() => useLibrarySync());
+    const { result } = renderHook(() => useLibrarySync(), { wrapper: ProviderWrapper });
 
     capturedListener!(
       { isInitialLoadComplete: true, isSyncing: false, lastSyncTimestamp: null, error: 'Network error' },
