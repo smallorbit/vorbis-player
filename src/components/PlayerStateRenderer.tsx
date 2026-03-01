@@ -1,11 +1,12 @@
-import React, { Suspense } from 'react';
+import React, { Suspense, useCallback } from 'react';
 import styled, { keyframes } from 'styled-components';
-import { spotifyAuth, type Track } from '../services/spotify';
+import type { Track } from '../services/spotify';
 import { Card, CardHeader, CardContent } from '../components/styled';
 import { Button } from '../components/styled';
 import { Alert, AlertDescription } from '../components/styled';
 import { flexColumn, cardBase } from '../styles/utils';
 import { theme } from '@/styles/theme';
+import { useProviderContext } from '@/contexts/ProviderContext';
 
 const PlaylistSelection = React.lazy(() => import('./PlaylistSelection'));
 
@@ -177,6 +178,13 @@ const PlayerStateRenderer: React.FC<PlayerStateRendererProps> = ({
   tracks,
   onPlaylistSelect
 }) => {
+  const { activeDescriptor } = useProviderContext();
+  const providerName = activeDescriptor?.name ?? 'Music Service';
+
+  const handleConnectClick = useCallback(() => {
+    activeDescriptor?.auth.beginLogin();
+  }, [activeDescriptor]);
+
   // Show loading state
   if (isLoading) {
     return (
@@ -185,7 +193,7 @@ const PlayerStateRenderer: React.FC<PlayerStateRendererProps> = ({
           <SpotifyIcon />
           <LoadingText>
             <LoadingTitle>Loading Your Music</LoadingTitle>
-            <LoadingSubtext>Connecting to Spotify and preparing your tracks</LoadingSubtext>
+            <LoadingSubtext>Connecting to {providerName} and preparing your tracks</LoadingSubtext>
           </LoadingText>
           <ProgressBar />
         </LoadingContainer>
@@ -204,18 +212,19 @@ const PlayerStateRenderer: React.FC<PlayerStateRendererProps> = ({
         <LoadingCard standalone>
           <CardHeader>
             <h2 style={{ fontSize: '1.25rem', fontWeight: 'bold', color: 'white', textAlign: 'center' }}>
-              Connect to Spotify
+              Connect to {providerName}
             </h2>
           </CardHeader>
           <CardContent style={{ textAlign: 'center' }}>
             <p style={{ color: theme.colors.gray[300], marginBottom: theme.spacing.lg }}>
-              Sign in to your Spotify account to access your music. Requires Spotify Premium.
+              Sign in to your {providerName} account to access your music.
+              {activeDescriptor?.id === 'spotify' && ' Requires Spotify Premium.'}
             </p>
             <Button
-              onClick={() => spotifyAuth.redirectToAuth()}
+              onClick={handleConnectClick}
               style={{ backgroundColor: theme.colors.accent }}
             >
-              Connect Spotify
+              Connect {providerName}
             </Button>
           </CardContent>
         </LoadingCard>
