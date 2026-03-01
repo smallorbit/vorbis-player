@@ -1,11 +1,8 @@
-import React, { memo, useCallback, useMemo } from 'react';
-import { FixedSizeList as List } from 'react-window';
+import React, { memo, useCallback, useState, useMemo } from 'react';
 
 import { theme } from '../../styles/theme';
 import { ProfiledComponent } from '@/components/ProfiledComponent';
-import VisualEffectsPerformanceMonitor from '../VisualEffectsPerformanceMonitor';
 import { usePlayerSizing } from '../../hooks/usePlayerSizing';
-import type { VisualizerStyle } from '../../types/visualizer';
 
 import {
   DrawerOverlay,
@@ -16,95 +13,33 @@ import {
   DrawerContent,
   FilterSection,
   SectionTitle,
-  FilterGrid,
   ControlGroup,
   ControlLabel,
   OptionButtonGroup,
   OptionButton,
-  VirtualListContainer,
-  FilterItem,
   ResetButton
 } from './styled';
 
-interface VisualEffectsMenuProps {
+interface AppSettingsMenuProps {
   isOpen: boolean;
   onClose: () => void;
   accentColor: string;
-  filters: {
-    brightness: number;
-    contrast: number;
-    saturation: number;
-    sepia: number;
-  };
-  onFilterChange: (filterName: string, value: number) => void;
-  onResetFilters: () => void;
-  // Glow controls
-  glowEnabled: boolean;
-  onGlowToggle: () => void;
-  glowIntensity: number;
-  setGlowIntensity: (v: number) => void;
-  glowRate: number;
-  setGlowRate: (v: number) => void;
-  effectiveGlow: { intensity: number; rate: number };
-  // Background visualizer controls
-  backgroundVisualizerEnabled: boolean;
-  onBackgroundVisualizerToggle: () => void;
-  backgroundVisualizerStyle: VisualizerStyle;
-  onBackgroundVisualizerStyleChange: (style: VisualizerStyle) => void;
-  backgroundVisualizerIntensity: number;
-  onBackgroundVisualizerIntensityChange: (intensity: number) => void;
-  accentColorBackgroundEnabled: boolean;
-  onAccentColorBackgroundToggle: () => void;
-  // Translucence controls
-  translucenceEnabled: boolean;
-  onTranslucenceToggle: () => void;
-  translucenceOpacity: number;
-  onTranslucenceOpacityChange: (v: number) => void;
+  onClearCache: () => Promise<void>;
+  profilerEnabled: boolean;
+  onProfilerToggle: () => void;
+  visualizerDebugEnabled: boolean;
+  onVisualizerDebugToggle: () => void;
 }
 
-// Custom comparison function for memo optimization
-const areVisualEffectsPropsEqual = (
-  prevProps: VisualEffectsMenuProps,
-  nextProps: VisualEffectsMenuProps
+const arePropsEqual = (
+  prevProps: AppSettingsMenuProps,
+  nextProps: AppSettingsMenuProps
 ): boolean => {
-  // Check simple props first
   if (
     prevProps.isOpen !== nextProps.isOpen ||
     prevProps.accentColor !== nextProps.accentColor ||
-    prevProps.glowEnabled !== nextProps.glowEnabled ||
-    prevProps.glowIntensity !== nextProps.glowIntensity ||
-    prevProps.glowRate !== nextProps.glowRate ||
-    prevProps.backgroundVisualizerEnabled !== nextProps.backgroundVisualizerEnabled ||
-    prevProps.translucenceEnabled !== nextProps.translucenceEnabled ||
-    prevProps.translucenceOpacity !== nextProps.translucenceOpacity
-  ) {
-    return false;
-  }
-
-  // Check filters object
-  const filterKeys: (keyof typeof prevProps.filters)[] = [
-    'brightness', 'contrast', 'saturation', 'sepia'
-  ];
-
-  for (const key of filterKeys) {
-    if (prevProps.filters[key] !== nextProps.filters[key]) {
-      return false;
-    }
-  }
-
-  // Check effective glow
-  if (
-    prevProps.effectiveGlow.intensity !== nextProps.effectiveGlow.intensity ||
-    prevProps.effectiveGlow.rate !== nextProps.effectiveGlow.rate
-  ) {
-    return false;
-  }
-
-  // Check background visualizer props
-  if (
-    prevProps.backgroundVisualizerStyle !== nextProps.backgroundVisualizerStyle ||
-    prevProps.backgroundVisualizerIntensity !== nextProps.backgroundVisualizerIntensity ||
-    prevProps.accentColorBackgroundEnabled !== nextProps.accentColorBackgroundEnabled
+    prevProps.profilerEnabled !== nextProps.profilerEnabled ||
+    prevProps.visualizerDebugEnabled !== nextProps.visualizerDebugEnabled
   ) {
     return false;
   }
@@ -112,163 +47,33 @@ const areVisualEffectsPropsEqual = (
   return true;
 };
 
-const VisualEffectsMenu: React.FC<VisualEffectsMenuProps> = memo(({
+const AppSettingsMenu: React.FC<AppSettingsMenuProps> = memo(({
   isOpen,
   onClose,
   accentColor,
-  filters,
-  onFilterChange,
-  onResetFilters,
-  glowEnabled,
-  onGlowToggle,
-  glowIntensity,
-  setGlowIntensity,
-  glowRate,
-  setGlowRate,
-  backgroundVisualizerEnabled,
-  onBackgroundVisualizerToggle,
-  backgroundVisualizerStyle,
-  onBackgroundVisualizerStyleChange,
-  backgroundVisualizerIntensity,
-  onBackgroundVisualizerIntensityChange,
-  accentColorBackgroundEnabled,
-  onAccentColorBackgroundToggle,
-  translucenceEnabled,
-  onTranslucenceToggle,
-  translucenceOpacity,
-  onTranslucenceOpacityChange
+  onClearCache,
+  profilerEnabled,
+  onProfilerToggle,
+  visualizerDebugEnabled,
+  onVisualizerDebugToggle
 }) => {
-  // Get responsive sizing information
   const { viewport, isMobile, isTablet, transitionDuration, transitionEasing } = usePlayerSizing();
+  const [clearState, setClearState] = useState<'idle' | 'success'>('idle');
 
-  // Calculate responsive width for the drawer
   const drawerWidth = useMemo(() => {
     if (isMobile) return Math.min(viewport.width, parseInt(theme.breakpoints.xs));
     if (isTablet) return Math.min(viewport.width * 0.4, parseInt(theme.drawer.widths.tablet));
     return Math.min(viewport.width * 0.3, parseInt(theme.drawer.widths.desktop));
   }, [viewport.width, isMobile, isTablet]);
 
-  // Note: Keyboard shortcuts (Escape key) are handled in PlayerContent via useKeyboardShortcuts
-
-  // Simplified filter configuration with 3-option selections
-  const filterConfig = useMemo(() => [
-    {
-      key: 'brightness',
-      label: 'Brightness',
-      type: 'options' as const,
-      options: [
-        { label: 'Less', value: 90 },
-        { label: 'Normal', value: 100 },
-        { label: 'More', value: 110 }
-      ]
-    },
-    {
-      key: 'saturation',
-      label: 'Saturation',
-      type: 'options' as const,
-      options: [
-        { label: 'Less', value: 80 },
-        { label: 'Normal', value: 100 },
-        { label: 'More', value: 120 }
-      ]
-    },
-    {
-      key: 'sepia',
-      label: 'Sepia',
-      type: 'options' as const,
-      options: [
-        { label: 'None', value: 0 },
-        { label: 'Some', value: 20 },
-        { label: 'More', value: 40 }
-      ]
-    },
-    {
-      key: 'contrast',
-      label: 'Contrast',
-      type: 'options' as const,
-      options: [
-        { label: 'Less', value: 85 },
-        { label: 'Normal', value: 100 },
-        { label: 'More', value: 115 }
-      ]
-    }
-  ], []);
-
-  // Glow intensity and rate option mappings
-  const glowIntensityOptions = [
-    { label: 'Less', value: 95 },
-    { label: 'Normal', value: 110 },
-    { label: 'More', value: 125 }
-  ];
-
-  const glowRateOptions = [
-    { label: 'Slower', value: 5.0 },
-    { label: 'Normal', value: 4.0 },
-    { label: 'Faster', value: 3.0 }
-  ];
-
-  const visualizerIntensityOptions = [
-    { label: 'Less', value: 30 },
-    { label: 'Normal', value: 60 },
-    { label: 'More', value: 90 }
-  ];
-
-
-  const handleFilterChange = useCallback((key: string, value: number) => {
-    onFilterChange(key, value);
-  }, [onFilterChange]);
-
-  // Optimized filter value getter for performance
-  const getFilterValue = useCallback((key: string) => {
-    return filters[key as keyof typeof filters];
-  }, [filters]);
-
-  // Optimized render function for virtual list items with minimal re-renders
-  const renderFilterItem = useCallback(({ index, style }: { index: number; style: React.CSSProperties }) => {
-    const config = filterConfig[index];
-    const { key, label, type } = config;
-
-    // Use optimized filter value getter
-    const currentValue = getFilterValue(key);
-
-    if (type === 'options') {
-      return (
-        <div style={style} key={`filter-${key}`}>
-          <FilterItem>
-            <ControlGroup>
-              <ControlLabel>
-                {label}
-                {/* <ControlValue>{getCurrentFilterOptionLabel(key, currentValue)}</ControlValue> */}
-              </ControlLabel>
-              <OptionButtonGroup>
-                {config.options.map((option) => (
-                  <OptionButton
-                    key={`${key}-${option.value}`}
-                    $accentColor={accentColor}
-                    $isActive={currentValue === option.value}
-                    onClick={() => handleFilterChange(key, option.value)}
-                    aria-label={`Set ${label} to ${option.label}`}
-                  >
-                    {option.label}
-                  </OptionButton>
-                ))}
-              </OptionButtonGroup>
-            </ControlGroup>
-          </FilterItem>
-        </div>
-      );
-    }
-
-    // Should not reach here since all filters are options type
-    return null;
-  }, [filterConfig, accentColor, handleFilterChange, getFilterValue]);
+  const handleClearCache = useCallback(async () => {
+    await onClearCache();
+    setClearState('success');
+    setTimeout(() => setClearState('idle'), 1500);
+  }, [onClearCache]);
 
   return (
-    <ProfiledComponent id="visual-effects-menu">
-      <VisualEffectsPerformanceMonitor
-        filterCount={filterConfig.length}
-        isEnabled={import.meta.env.DEV}
-      />
+    <ProfiledComponent id="app-settings-menu">
       <DrawerOverlay $isOpen={isOpen} onClick={onClose} />
       <DrawerContainer
         $isOpen={isOpen}
@@ -277,8 +82,8 @@ const VisualEffectsMenu: React.FC<VisualEffectsMenuProps> = memo(({
         $transitionEasing={transitionEasing}
       >
         <DrawerHeader>
-          <DrawerTitle>Visual Effects</DrawerTitle>
-          <CloseButton onClick={onClose} aria-label="Close visual effects drawer">
+          <DrawerTitle>App Settings</DrawerTitle>
+          <CloseButton onClick={onClose} aria-label="Close app settings drawer">
             <svg viewBox="0 0 24 24" fill="currentColor">
               <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
             </svg>
@@ -286,203 +91,59 @@ const VisualEffectsMenu: React.FC<VisualEffectsMenuProps> = memo(({
         </DrawerHeader>
 
         <DrawerContent>
-          {/* Glow Controls Section */}
           <FilterSection>
-            <SectionTitle>Glow Effect</SectionTitle>
-            <FilterGrid>
-              <ControlGroup>
-                <ControlLabel>
-                  Glow
-                </ControlLabel>
-                <OptionButtonGroup>
-                  <OptionButton
-                    $accentColor={accentColor}
-                    $isActive={glowEnabled}
-                    onClick={onGlowToggle}
-                  >
-                    {glowEnabled ? 'On' : 'Off'}
-                  </OptionButton>
-                </OptionButtonGroup>
-              </ControlGroup>
-              {glowEnabled && (
-                <>
-                  <ControlGroup>
-                    <ControlLabel>
-                      Intensity
-                    </ControlLabel>
-                    <OptionButtonGroup>
-                      {glowIntensityOptions.map((option) => (
-                        <OptionButton
-                          key={`global-intensity-${option.value}`}
-                          $accentColor={accentColor}
-                          $isActive={glowIntensity === option.value}
-                          onClick={() => setGlowIntensity(option.value)}
-                        >
-                          {option.label}
-                        </OptionButton>
-                      ))}
-                    </OptionButtonGroup>
-                  </ControlGroup>
-                  <ControlGroup>
-                    <ControlLabel>
-                      Rate
-                    </ControlLabel>
-                    <OptionButtonGroup>
-                      {glowRateOptions.map((option) => (
-                        <OptionButton
-                          key={`global-rate-${option.value}`}
-                          $accentColor={accentColor}
-                          $isActive={glowRate === option.value}
-                          onClick={() => setGlowRate(option.value)}
-                        >
-                          {option.label}
-                        </OptionButton>
-                      ))}
-                    </OptionButtonGroup>
-                  </ControlGroup>
-                  <ControlGroup>
-                    <ControlLabel>
-                      Accent Color Background
-                    </ControlLabel>
-                    <OptionButtonGroup>
-                      <OptionButton
-                        $accentColor={accentColor}
-                        $isActive={accentColorBackgroundEnabled}
-                        onClick={onAccentColorBackgroundToggle}
-                      >
-                        {accentColorBackgroundEnabled ? 'On' : 'Off'}
-                      </OptionButton>
-                    </OptionButtonGroup>
-                  </ControlGroup>
-                </>
-              )}
-            </FilterGrid>
-          </FilterSection>
-
-          {/* Translucence Section */}
-          <FilterSection>
-            <SectionTitle>Translucence</SectionTitle>
-            <FilterGrid>
-              <ControlGroup>
-                <ControlLabel>Translucence</ControlLabel>
-                <OptionButtonGroup>
-                  <OptionButton
-                    $accentColor={accentColor}
-                    $isActive={translucenceEnabled}
-                    onClick={onTranslucenceToggle}
-                  >
-                    {translucenceEnabled ? 'On' : 'Off'}
-                  </OptionButton>
-                </OptionButtonGroup>
-              </ControlGroup>
-              {translucenceEnabled && (
-                <ControlGroup>
-                  <ControlLabel>Opacity</ControlLabel>
-                  <OptionButtonGroup>
-                    {[
-                      { label: 'Light', value: 0.8 },
-                      { label: 'Medium', value: 0.6 },
-                      { label: 'Strong', value: 0.4 },
-                    ].map((option) => (
-                      <OptionButton
-                        key={`translucence-${option.value}`}
-                        $accentColor={accentColor}
-                        $isActive={translucenceOpacity === option.value}
-                        onClick={() => onTranslucenceOpacityChange(option.value)}
-                      >
-                        {option.label}
-                      </OptionButton>
-                    ))}
-                  </OptionButtonGroup>
-                </ControlGroup>
-              )}
-            </FilterGrid>
-          </FilterSection>
-
-          {/* Background Visualizer Options Section */}
-          <FilterSection>
-            <SectionTitle>Background Visualizer</SectionTitle>
-            <FilterGrid>
-              <ControlGroup>
-                <ControlLabel>
-                  Visualizer
-                </ControlLabel>
-                <OptionButtonGroup>
-                  <OptionButton
-                    $accentColor={accentColor}
-                    $isActive={backgroundVisualizerEnabled}
-                    onClick={onBackgroundVisualizerToggle}
-                  >
-                    {backgroundVisualizerEnabled ? 'On' : 'Off'}
-                  </OptionButton>
-                </OptionButtonGroup>
-              </ControlGroup>
-              {backgroundVisualizerEnabled && (
-                <>
-                  <ControlGroup>
-                    <ControlLabel>
-                      Visualizer Style
-                    </ControlLabel>
-                    <OptionButtonGroup>
-                      {(['fireflies', 'comet'] as VisualizerStyle[]).map((style) => (
-                        <OptionButton
-                          key={style}
-                          $accentColor={accentColor}
-                          $isActive={backgroundVisualizerStyle === style}
-                          onClick={() => onBackgroundVisualizerStyleChange(style)}
-                        >
-                          {style.charAt(0).toUpperCase() + style.slice(1)}
-                        </OptionButton>
-                      ))}
-                    </OptionButtonGroup>
-                  </ControlGroup>
-                  <ControlGroup>
-                    <ControlLabel>
-                      Intensity
-                    </ControlLabel>
-                    <OptionButtonGroup>
-                      {visualizerIntensityOptions.map((option) => (
-                        <OptionButton
-                          key={`viz-intensity-${option.value}`}
-                          $accentColor={accentColor}
-                          $isActive={backgroundVisualizerIntensity === option.value}
-                          onClick={() => onBackgroundVisualizerIntensityChange(option.value)}
-                        >
-                          {option.label}
-                        </OptionButton>
-                      ))}
-                    </OptionButtonGroup>
-                  </ControlGroup>
-                </>
-              )}
-            </FilterGrid>
-          </FilterSection>
-          
-          <FilterSection>
-            <SectionTitle>Album Art Filters</SectionTitle>
-            <VirtualListContainer data-testid="filter-scroll-container">
-              <List
-                height={100 * filterConfig.length}
-                itemCount={filterConfig.length}
-                itemSize={90}
-                itemData={filterConfig}
-                overscanCount={1} // Pre-render 1 item outside visible area for smooth scrolling
-                width="100%"
-              >
-                {renderFilterItem}
-              </List>
-            </VirtualListContainer>
-            <ResetButton onClick={onResetFilters} $accentColor={accentColor}>
-              Reset All Filters
-            </ResetButton>
+            <SectionTitle>Advanced</SectionTitle>
+            <ControlGroup>
+              <ControlLabel>Clear Library Cache</ControlLabel>
+              <ResetButton onClick={handleClearCache} $accentColor={accentColor}>
+                {clearState === 'success' ? 'Cleared!' : 'Clear Cache'}
+              </ResetButton>
+            </ControlGroup>
+            <ControlGroup>
+              <ControlLabel>Performance Profiler</ControlLabel>
+              <OptionButtonGroup>
+                <OptionButton
+                  $accentColor={accentColor}
+                  $isActive={profilerEnabled}
+                  onClick={onProfilerToggle}
+                >
+                  On
+                </OptionButton>
+                <OptionButton
+                  $accentColor={accentColor}
+                  $isActive={!profilerEnabled}
+                  onClick={onProfilerToggle}
+                >
+                  Off
+                </OptionButton>
+              </OptionButtonGroup>
+            </ControlGroup>
+            <ControlGroup>
+              <ControlLabel>Visualizer Debug</ControlLabel>
+              <OptionButtonGroup>
+                <OptionButton
+                  $accentColor={accentColor}
+                  $isActive={visualizerDebugEnabled}
+                  onClick={onVisualizerDebugToggle}
+                >
+                  On
+                </OptionButton>
+                <OptionButton
+                  $accentColor={accentColor}
+                  $isActive={!visualizerDebugEnabled}
+                  onClick={onVisualizerDebugToggle}
+                >
+                  Off
+                </OptionButton>
+              </OptionButtonGroup>
+            </ControlGroup>
           </FilterSection>
         </DrawerContent>
       </DrawerContainer>
     </ProfiledComponent>
   );
-}, areVisualEffectsPropsEqual);
+}, arePropsEqual);
 
-VisualEffectsMenu.displayName = 'VisualEffectsMenu';
+AppSettingsMenu.displayName = 'AppSettingsMenu';
 
-export default VisualEffectsMenu;
-
+export default AppSettingsMenu;
