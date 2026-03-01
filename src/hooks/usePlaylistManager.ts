@@ -2,7 +2,7 @@ import { useCallback } from 'react';
 import { getPlaylistTracks, getAlbumTracks, getLikedSongs, spotifyAuth } from '../services/spotify';
 import { spotifyPlayer } from '../services/spotifyPlayer';
 import { isAlbumId, extractAlbumId, LIKED_SONGS_ID } from '../constants/playlist';
-import { logError } from '../services/errorLogger';
+import { logError, logWarn } from '../services/errorLogger';
 import type { Track } from '../services/spotify';
 
 async function waitForSpotifyReady(timeout = 10000): Promise<void> {
@@ -108,7 +108,7 @@ export const usePlaylistManager = ({
         } catch (trackError) {
           // Track fetching may fail for non-owned playlists (e.g. Spotify-made)
           // due to API restrictions — will fall through to context playback below
-          logError(`Failed to fetch playlist tracks, will try context playback: ${trackError instanceof Error ? trackError.message : String(trackError)}`, 'usePlaylistManager');
+          logWarn(`Failed to fetch playlist tracks, will try context playback: ${trackError instanceof Error ? trackError.message : String(trackError)}`, 'usePlaylistManager');
           fetchedTracks = [];
         }
       }
@@ -196,7 +196,7 @@ export const usePlaylistManager = ({
             const isRestrictionViolated = errorMessage.includes('Restriction violated');
             
             if (isRestrictionViolated) {
-              logError(`Track "${tracksToPlay[trackIndex]?.name}" is unavailable (region-locked or removed)`, 'usePlaylistManager');
+              logWarn(`Track "${tracksToPlay[trackIndex]?.name}" is unavailable (region-locked or removed)`, 'usePlaylistManager');
 
               // Try the next track if available
               if (trackIndex < tracksToPlay.length - 1) {

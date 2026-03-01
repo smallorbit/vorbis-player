@@ -2,7 +2,7 @@
  * Performance monitoring utilities for measuring and validating UI performance
  */
 
-import { logError } from '../services/errorLogger';
+import { logWarn } from '../services/errorLogger';
 
 export interface PerformanceMetrics {
   interactionTime: number;
@@ -108,7 +108,7 @@ class MainThreadMonitor {
       try {
         this.observer.observe({ entryTypes: ['longtask'] });
       } catch {
-        logError('Long task observer not supported', 'performanceMonitor');
+        logWarn('Long task observer not supported', 'performanceMonitor');
       }
     }
   }

@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import { spotifyAuth } from '../services/spotify';
 import { spotifyPlayer } from '../services/spotifyPlayer';
-import { logError } from '../services/errorLogger';
+import { logError, logWarn } from '../services/errorLogger';
 import type { Track } from '../services/spotify';
 
 interface UseSpotifyPlaybackProps {
@@ -68,7 +68,7 @@ export const useSpotifyPlayback = ({ tracks, setCurrentTrackIndex }: UseSpotifyP
       const isAuthenticated = spotifyAuth.isAuthenticated();
 
       if (!isAuthenticated) {
-        logError('playTrack: Not authenticated', 'useSpotifyPlayback');
+        logWarn('playTrack: Not authenticated', 'useSpotifyPlayback');
         return;
       }
 
@@ -88,7 +88,7 @@ export const useSpotifyPlayback = ({ tracks, setCurrentTrackIndex }: UseSpotifyP
             const isRestrictionViolated = errorMessage.includes('Restriction violated');
             
             if (isRestrictionViolated) {
-              logError(`Track "${tracks[index].name}" is unavailable (region-locked or removed)`, 'useSpotifyPlayback');
+              logWarn(`Track "${tracks[index].name}" is unavailable (region-locked or removed)`, 'useSpotifyPlayback');
               return false; // Unrecoverable error
             }
             

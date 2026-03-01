@@ -1,5 +1,5 @@
 import { useRef, useEffect, useCallback } from 'react';
-import { logError } from '../services/errorLogger';
+import { logError, logWarn } from '../services/errorLogger';
 import type { 
   WorkerResponse, 
   ImageProcessingRequest, 
@@ -42,7 +42,7 @@ export const useImageProcessingWorker = (): UseImageProcessingWorkerReturn => {
           const pendingPromise = pendingPromisesRef.current.get(requestId);
           
           if (!pendingPromise) {
-            logError(`Received response for unknown request ID: ${requestId}`, 'imageProcessingWorker');
+            logWarn(`Received response for unknown request ID: ${requestId}`, 'imageProcessingWorker');
             return;
           }
 

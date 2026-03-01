@@ -48,7 +48,7 @@ import { useCallback, useEffect } from 'react';
 import { extractDominantColor } from '../utils/colorExtractor';
 import { theme } from '@/styles/theme';
 import { isProfilingEnabled } from '@/contexts/ProfilingContext';
-import { logError } from '@/services/errorLogger';
+import { logWarn } from '@/services/errorLogger';
 import type { Track } from '../services/spotify';
 
 /**
@@ -136,7 +136,7 @@ export const useAccentColor = (
           }
         })
         .catch((err) => {
-          logError(`Color extraction failed: ${err instanceof Error ? err.message : String(err)}`, 'useAccentColor');
+          logWarn(`Color extraction failed: ${err instanceof Error ? err.message : String(err)}`, 'useAccentColor');
           setAccentColor(theme.colors.accent);
         });
     } else {
@@ -175,7 +175,7 @@ export const useAccentColor = (
             }
           })
           .catch((err) => {
-            logError(`Color re-extraction failed: ${err instanceof Error ? err.message : String(err)}`, 'useAccentColor');
+            logWarn(`Color re-extraction failed: ${err instanceof Error ? err.message : String(err)}`, 'useAccentColor');
             setAccentColor(theme.colors.accent);
           });
       } else {

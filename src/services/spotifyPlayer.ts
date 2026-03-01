@@ -1,5 +1,5 @@
 import { spotifyAuth } from './spotify';
-import { logError } from './errorLogger';
+import { logError, logWarn } from './errorLogger';
 
 // Global callback for Spotify SDK ready event
 let spotifySDKReadyCallback: (() => void) | null = null;
@@ -355,7 +355,7 @@ class SpotifyPlayerService {
     });
 
     if (!response.ok && response.status !== 204) {
-      logError(`Web API setVolume failed: ${response.status}`, 'spotifyPlayer');
+      logWarn(`Web API setVolume failed: ${response.status}`, 'spotifyPlayer');
     }
   }
 
@@ -445,7 +445,7 @@ class SpotifyPlayerService {
 
       if (!response.ok && response.status !== 204) {
         const errorText = await response.text();
-        logError(`Transfer playback failed: ${response.status} ${errorText}`, 'spotifyPlayer');
+        logWarn(`Transfer playback failed: ${response.status} ${errorText}`, 'spotifyPlayer');
       } else {
         console.log('🎵 Successfully transferred playback to device');
       }
@@ -483,7 +483,7 @@ class SpotifyPlayerService {
           await new Promise(resolve => setTimeout(resolve, delay));
         }
       } catch (error) {
-        logError(`Error checking device status (attempt ${i + 1}): ${error instanceof Error ? error.message : String(error)}`, 'spotifyPlayer');
+        logWarn(`Error checking device status (attempt ${i + 1}): ${error instanceof Error ? error.message : String(error)}`, 'spotifyPlayer');
         if (i < maxRetries - 1) {
           const delay = initialDelayMs * Math.pow(2, i);
           await new Promise(resolve => setTimeout(resolve, delay));
@@ -491,7 +491,7 @@ class SpotifyPlayerService {
       }
     }
 
-    logError('Device not confirmed active after polling, proceeding anyway', 'spotifyPlayer');
+    logWarn('Device not confirmed active after polling, proceeding anyway', 'spotifyPlayer');
     return false;
   }
 }

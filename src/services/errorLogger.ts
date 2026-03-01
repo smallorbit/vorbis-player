@@ -13,10 +13,12 @@ const DB_VERSION = 1;
 const STORE_NAME = 'errorLogs';
 const MAX_ENTRIES = 5000;
 
+export type LogLevel = 'ERROR' | 'WARN';
+
 export interface ErrorLogEntry {
   id?: number;
   timestamp: string;
-  level: 'ERROR';
+  level: LogLevel;
   message: string;
   raw: string;
 }
@@ -30,6 +32,7 @@ let fallbackMode = false;
 const memoryLogs: ErrorLogEntry[] = [];
 let initialized = false;
 let originalConsoleError: ((...args: unknown[]) => void) | null = null;
+let originalConsoleWarn: ((...args: unknown[]) => void) | null = null;
 
 // ---------------------------------------------------------------------------
 // Timestamp Formatting
@@ -46,8 +49,8 @@ export function formatTimestamp(date: Date = new Date()): string {
   return `${mm}/${dd}/${yyyy} - ${hh}:${min}:${ss}.${ms}`;
 }
 
-function formatRaw(timestamp: string, message: string): string {
-  return `[${timestamp}] - ERROR - ${message}`;
+function formatRaw(timestamp: string, level: LogLevel, message: string): string {
+  return `[${timestamp}] - ${level} - ${message}`;
 }
 
 // ---------------------------------------------------------------------------
@@ -119,7 +122,7 @@ function pruneOldEntries(): void {
 // ---------------------------------------------------------------------------
 
 /**
- * Log an error with the required format.
+ * Log an error. Outputs to both the browser console and IndexedDB.
  * Safe to call before `initErrorLogger()` — entries go to the memory buffer.
  */
 export function logError(message: string, context?: string): void {
@@ -129,8 +132,33 @@ export function logError(message: string, context?: string): void {
     timestamp: ts,
     level: 'ERROR',
     message: fullMessage,
-    raw: formatRaw(ts, fullMessage),
+    raw: formatRaw(ts, 'ERROR', fullMessage),
   };
+
+  // Use originalConsoleError to bypass the interceptor (avoids double IDB write)
+  const consoleFn = originalConsoleError ?? console.error;
+  consoleFn(entry.raw);
+
+  idbPut(entry);
+}
+
+/**
+ * Log a warning. Outputs to both the browser console and IndexedDB.
+ * Use for non-critical issues like rate-limit backoffs, fallback paths, etc.
+ */
+export function logWarn(message: string, context?: string): void {
+  const ts = formatTimestamp();
+  const fullMessage = context ? `[${context}] ${message}` : message;
+  const entry: ErrorLogEntry = {
+    timestamp: ts,
+    level: 'WARN',
+    message: fullMessage,
+    raw: formatRaw(ts, 'WARN', fullMessage),
+  };
+
+  const consoleFn = originalConsoleWarn ?? console.warn;
+  consoleFn(entry.raw);
+
   idbPut(entry);
 }
 
@@ -224,6 +252,7 @@ function argsToMessage(args: unknown[]): string {
 
 function installConsoleInterceptor(): void {
   originalConsoleError = console.error.bind(console);
+  originalConsoleWarn = console.warn.bind(console);
 
   console.error = (...args: unknown[]) => {
     originalConsoleError!(...args);
@@ -233,7 +262,19 @@ function installConsoleInterceptor(): void {
       timestamp: ts,
       level: 'ERROR',
       message,
-      raw: formatRaw(ts, message),
+      raw: formatRaw(ts, 'ERROR', message),
+    });
+  };
+
+  console.warn = (...args: unknown[]) => {
+    originalConsoleWarn!(...args);
+    const message = argsToMessage(args);
+    const ts = formatTimestamp();
+    idbPut({
+      timestamp: ts,
+      level: 'WARN',
+      message,
+      raw: formatRaw(ts, 'WARN', message),
     });
   };
 }

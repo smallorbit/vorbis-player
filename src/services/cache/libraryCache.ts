@@ -13,7 +13,7 @@ import type {
   CachedTrackList,
   LibraryCacheMeta,
 } from './cacheTypes';
-import { logError } from '../errorLogger';
+import { logWarn } from '../errorLogger';
 
 const DB_NAME = 'vorbis-player-library';
 const DB_VERSION = 1;
@@ -98,7 +98,7 @@ export async function initCache(): Promise<void> {
       db = await openIDB();
       await migrateFromLocalStorage();
     } catch (err) {
-      logError(`IndexedDB unavailable, using in-memory fallback: ${err instanceof Error ? err.message : String(err)}`, 'libraryCache');
+      logWarn(`IndexedDB unavailable, using in-memory fallback: ${err instanceof Error ? err.message : String(err)}`, 'libraryCache');
       fallbackMode = true;
       db = null;
     }
@@ -433,7 +433,7 @@ async function migrateFromLocalStorage(): Promise<void> {
       }
     }
   } catch (err) {
-    logError(`localStorage migration failed: ${err instanceof Error ? err.message : String(err)}`, 'libraryCache');
+    logWarn(`localStorage migration failed: ${err instanceof Error ? err.message : String(err)}`, 'libraryCache');
   }
 }
 
