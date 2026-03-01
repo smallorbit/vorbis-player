@@ -289,8 +289,8 @@ function QuickEffectsRow({
             <SwitchKnob $on={glowEnabled} />
           </SwitchTrack>
         </SectionHeader>
-        {(hasGlowSubSettings || hasGlowRate) && (
-          <SubSettings style={{ visibility: glowEnabled ? 'visible' : 'hidden' }}>
+        {(hasGlowSubSettings || hasGlowRate) && glowEnabled && (
+          <SubSettings>
             {hasGlowSubSettings && (
               <SubSettingRow>
                 <SubLabel>Intensity</SubLabel>
@@ -323,7 +323,7 @@ function QuickEffectsRow({
             <SwitchKnob $on={backgroundVisualizerEnabled} />
           </SwitchTrack>
         </SectionHeader>
-        <SubSettings style={{ visibility: backgroundVisualizerEnabled ? 'visible' : 'hidden' }}>
+        {backgroundVisualizerEnabled && <SubSettings>
           <SubSettingRow>
             <SubLabel>Style</SubLabel>
             <OptionButtonGroup>
@@ -371,7 +371,7 @@ function QuickEffectsRow({
               </OptionButtonGroup>
             </SubSettingRow>
           )}
-        </SubSettings>
+        </SubSettings>}
       </SectionCard>
 
       {/* Translucent section */}
