@@ -16,10 +16,12 @@ const MAX_ENTRIES = 5000;
 export interface ErrorLogEntry {
   id?: number;
   timestamp: string;
-  level: 'ERROR';
+  level: LogLevel;
   message: string;
   raw: string;
 }
+
+export type LogLevel = 'ERROR' | 'NETWORK';
 
 // ---------------------------------------------------------------------------
 // State
@@ -46,8 +48,8 @@ export function formatTimestamp(date: Date = new Date()): string {
   return `${mm}/${dd}/${yyyy} - ${hh}:${min}:${ss}.${ms}`;
 }
 
-function formatRaw(timestamp: string, message: string): string {
-  return `[${timestamp}] - ERROR - ${message}`;
+function formatRaw(timestamp: string, level: LogLevel, message: string): string {
+  return `[${timestamp}] - ${level} - ${message}`;
 }
 
 // ---------------------------------------------------------------------------
@@ -122,16 +124,24 @@ function pruneOldEntries(): void {
  * Log an error with the required format.
  * Safe to call before `initErrorLogger()` — entries go to the memory buffer.
  */
-export function logError(message: string, context?: string): void {
+function logWithLevel(level: LogLevel, message: string, context?: string): void {
   const ts = formatTimestamp();
   const fullMessage = context ? `[${context}] ${message}` : message;
   const entry: ErrorLogEntry = {
     timestamp: ts,
-    level: 'ERROR',
+    level,
     message: fullMessage,
-    raw: formatRaw(ts, fullMessage),
+    raw: formatRaw(ts, level, fullMessage),
   };
   idbPut(entry);
+}
+
+export function logError(message: string, context?: string): void {
+  logWithLevel('ERROR', message, context);
+}
+
+export function logNetwork(message: string, context?: string): void {
+  logWithLevel('NETWORK', message, context);
 }
 
 /** Retrieve stored log entries, newest first. */
@@ -233,7 +243,7 @@ function installConsoleInterceptor(): void {
       timestamp: ts,
       level: 'ERROR',
       message,
-      raw: formatRaw(ts, message),
+      raw: formatRaw(ts, 'ERROR', message),
     });
   };
 }

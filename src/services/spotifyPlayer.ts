@@ -1,5 +1,75 @@
 import { spotifyAuth } from './spotify';
-import { logError } from './errorLogger';
+import { logError, logNetwork } from './errorLogger';
+
+function safeStringify(value: unknown): string {
+  try {
+    const text = JSON.stringify(value);
+    return text ?? String(value);
+  } catch {
+    return String(value);
+  }
+}
+
+function toHeadersObject(headers?: HeadersInit): Record<string, string> {
+  if (!headers) return {};
+  if (headers instanceof Headers) {
+    return Object.fromEntries(headers.entries());
+  }
+  if (Array.isArray(headers)) {
+    return Object.fromEntries(headers);
+  }
+  return { ...headers };
+}
+
+function redactSensitiveHeaders(headers: Record<string, string>): Record<string, string> {
+  const redacted: Record<string, string> = {};
+  for (const [key, value] of Object.entries(headers)) {
+    if (key.toLowerCase() === 'authorization') {
+      redacted[key] = 'Bearer [REDACTED]';
+      continue;
+    }
+    redacted[key] = value;
+  }
+  return redacted;
+}
+
+function requestBodyToLogValue(body: RequestInit['body']): string | null {
+  if (body === undefined || body === null) return null;
+  if (typeof body === 'string') return body;
+  if (body instanceof URLSearchParams) return body.toString();
+  return '[non-text body]';
+}
+
+async function fetchSpotifyWithNetworkLogging(
+  url: string,
+  init: RequestInit,
+  context: string = 'spotifyPlayer'
+): Promise<{ response: Response; responseBody: string }> {
+  const method = (init.method ?? 'GET').toUpperCase();
+  const requestPayload = {
+    method,
+    url,
+    headers: redactSensitiveHeaders(toHeadersObject(init.headers)),
+    body: requestBodyToLogValue(init.body),
+  };
+  logNetwork(`[REQ] ${method} ${url} ${safeStringify(requestPayload)}`, context);
+
+  const startedAt = Date.now();
+  const response = await fetch(url, init);
+  const responseBody = response.status === 204 ? '' : await response.text();
+  const responsePayload = {
+    method,
+    url,
+    status: response.status,
+    statusText: response.statusText,
+    durationMs: Date.now() - startedAt,
+    headers: toHeadersObject(response.headers),
+    body: responseBody || null,
+  };
+  logNetwork(`[RESP] ${response.status} ${method} ${url} ${safeStringify(responsePayload)}`, context);
+
+  return { response, responseBody };
+}
 
 // Global callback for Spotify SDK ready event
 let spotifySDKReadyCallback: (() => void) | null = null;
@@ -171,14 +241,17 @@ class SpotifyPlayerService {
       hasToken: !!token
     });
     
-    const response = await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${this.deviceId}`, {
+    const { response, responseBody: errorBody } = await fetchSpotifyWithNetworkLogging(
+      `https://api.spotify.com/v1/me/player/play?device_id=${this.deviceId}`,
+      {
       method: 'PUT',
       body: JSON.stringify({ uris: [uri] }),
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`
       },
-    });
+      }
+    );
     
     console.log('🎵 Spotify API response:', {
       status: response.status,
@@ -187,7 +260,7 @@ class SpotifyPlayerService {
     });
     
     if (!response.ok) {
-      const errorText = await response.text();
+      const errorText = errorBody;
       logError(`Spotify API error response (playTrack): ${errorText}`, 'spotifyPlayer');
       
       // Try to parse the error as JSON to extract the reason
@@ -229,17 +302,20 @@ class SpotifyPlayerService {
 
     console.log('🎵 Playing context:', { contextUri, offsetPosition, deviceId: this.deviceId });
 
-    const response = await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${this.deviceId}`, {
+    const { response, responseBody: errorBody } = await fetchSpotifyWithNetworkLogging(
+      `https://api.spotify.com/v1/me/player/play?device_id=${this.deviceId}`,
+      {
       method: 'PUT',
       body: JSON.stringify(body),
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`
       },
-    });
+      }
+    );
 
     if (!response.ok) {
-      const errorText = await response.text();
+      const errorText = errorBody;
       logError(`Context playback error: ${errorText}`, 'spotifyPlayer');
 
       let errorReason = '';
@@ -269,14 +345,17 @@ class SpotifyPlayerService {
       hasToken: !!token
     });
     
-    const response = await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${this.deviceId}`, {
+    const { response, responseBody: errorBody } = await fetchSpotifyWithNetworkLogging(
+      `https://api.spotify.com/v1/me/player/play?device_id=${this.deviceId}`,
+      {
       method: 'PUT',
       body: JSON.stringify({ uris }),
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`
       },
-    });
+      }
+    );
     
     console.log('🎵 Spotify API response:', {
       status: response.status,
@@ -285,7 +364,7 @@ class SpotifyPlayerService {
     });
     
     if (!response.ok) {
-      const errorText = await response.text();
+      const errorText = errorBody;
       logError(`Spotify API error response: ${errorText}`, 'spotifyPlayer');
       throw new Error(`Spotify API error: ${response.status} ${response.statusText} - ${errorText}`);
     }
@@ -349,7 +428,7 @@ class SpotifyPlayerService {
     const token = await spotifyAuth.ensureValidToken();
     const url = `https://api.spotify.com/v1/me/player/volume?device_id=${this.deviceId}&volume_percent=${clamped}`;
 
-    const response = await fetch(url, {
+    const { response } = await fetchSpotifyWithNetworkLogging(url, {
       method: 'PUT',
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -431,7 +510,9 @@ class SpotifyPlayerService {
     const token = await spotifyAuth.ensureValidToken();
     
     try {
-      const response = await fetch('https://api.spotify.com/v1/me/player', {
+      const { response, responseBody: errorBody } = await fetchSpotifyWithNetworkLogging(
+        'https://api.spotify.com/v1/me/player',
+        {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -441,10 +522,11 @@ class SpotifyPlayerService {
           device_ids: [this.deviceId],
           play: false
         })
-      });
+        }
+      );
 
       if (!response.ok && response.status !== 204) {
-        const errorText = await response.text();
+        const errorText = errorBody;
         logError(`Transfer playback failed: ${response.status} ${errorText}`, 'spotifyPlayer');
       } else {
         console.log('🎵 Successfully transferred playback to device');
@@ -460,14 +542,17 @@ class SpotifyPlayerService {
     
     for (let i = 0; i < maxRetries; i++) {
       try {
-        const response = await fetch('https://api.spotify.com/v1/me/player', {
-          headers: {
-            'Authorization': `Bearer ${token}`
+        const { response, responseBody } = await fetchSpotifyWithNetworkLogging(
+          'https://api.spotify.com/v1/me/player',
+          {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
           }
-        });
+        );
 
         if (response.status === 200) {
-          const data = await response.json();
+          const data = responseBody ? JSON.parse(responseBody) : null;
           if (data.device?.id === this.deviceId && data.device?.is_active) {
             console.log('🎵 Device is active and ready');
             return true;

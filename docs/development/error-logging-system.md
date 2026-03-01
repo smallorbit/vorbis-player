@@ -1,13 +1,13 @@
 # Error Logging System
 
-Centralized, persistent error logging for the Vorbis Player application. All errors are captured, formatted with timestamps, stored in IndexedDB, and can be viewed in-app or exported as a downloadable `error.log` file.
+Centralized, persistent application logging for the Vorbis Player application. Error and Spotify network logs are captured, formatted with timestamps, stored in IndexedDB, and can be viewed in-app or exported as a downloadable `error.log` file.
 
 ## Log Format
 
-Every error entry uses the following format:
+Every log entry uses the following format:
 
 ```
-[mm/dd/yyyy - hh:mm:ss.ms] - ERROR - error message
+[mm/dd/yyyy - hh:mm:ss.ms] - LEVEL - message
 ```
 
 Example output:
@@ -18,6 +18,8 @@ Example output:
 [02/28/2026 - 14:23:05.012] - ERROR - [libraryCache] IndexedDB unavailable, using in-memory fallback: SecurityError
 [02/28/2026 - 14:23:07.334] - ERROR - [uncaught] TypeError: Cannot read properties of undefined
 [02/28/2026 - 14:23:09.101] - ERROR - [unhandledrejection] Error: Network request failed
+[02/28/2026 - 14:23:10.004] - NETWORK - [spotify] [REQ] GET https://api.spotify.com/v1/me/tracks?limit=1 {"method":"GET","url":"https://api.spotify.com/v1/me/tracks?limit=1","headers":{"Authorization":"Bearer [REDACTED]"},"body":null}
+[02/28/2026 - 14:23:10.142] - NETWORK - [spotify] [RESP] 200 GET https://api.spotify.com/v1/me/tracks?limit=1 {"method":"GET","url":"https://api.spotify.com/v1/me/tracks?limit=1","status":200,"statusText":"OK","durationMs":138,"headers":{"content-type":"application/json; charset=utf-8"},"body":"{\"href\":\"https://api.spotify.com/v1/me/tracks?...\"}"}
 ```
 
 When `logError()` is called with a `context` parameter, the context appears in brackets before the message: `[context] message`. This makes it easy to grep for errors from a specific module.
@@ -141,9 +143,9 @@ This is a separate database from the library cache (`vorbis-player-library`) to 
 interface ErrorLogEntry {
   id?: number;        // auto-increment primary key
   timestamp: string;  // "mm/dd/yyyy - hh:mm:ss.ms"
-  level: 'ERROR';     // always "ERROR"
-  message: string;    // the error message, optionally prefixed with [context]
-  raw: string;        // full formatted line: "[mm/dd/yyyy - hh:mm:ss.ms] - ERROR - message"
+  level: 'ERROR' | 'NETWORK';
+  message: string;    // log message, optionally prefixed with [context]
+  raw: string;        // full formatted line: "[mm/dd/yyyy - hh:mm:ss.ms] - LEVEL - message"
 }
 ```
 
@@ -180,6 +182,18 @@ logError('Something went wrong');
 ```
 
 Safe to call before `initErrorLogger()` -- entries are buffered in memory and flushed to IndexedDB once initialization completes.
+
+### `logNetwork(message: string, context?: string): void`
+
+Log a network entry at level `NETWORK`. Used for Spotify request/response tracing.
+
+```typescript
+logNetwork('[REQ] GET https://api.spotify.com/v1/me/tracks?limit=1 {"method":"GET"}', 'spotify');
+// Stores: "[02/28/2026 - 14:23:01.456] - NETWORK - [spotify] [REQ] GET ..."
+
+logNetwork('[RESP] 200 GET https://api.spotify.com/v1/me/tracks?limit=1 {"status":200}', 'spotify');
+// Stores: "[02/28/2026 - 14:23:01.789] - NETWORK - [spotify] [RESP] 200 GET ..."
+```
 
 ### `getLogs(limit?: number): Promise<ErrorLogEntry[]>`
 
@@ -220,7 +234,7 @@ Catches unhandled promise rejections. These are logged with context `[unhandledr
 ### Features
 
 - **Auto-refresh:** Polls IndexedDB every 3 seconds for new entries
-- **Text filter:** Case-insensitive search across error messages; filter input stops keyboard event propagation so shortcuts don't interfere
+- **Text filter:** Case-insensitive search across log messages; filter input stops keyboard event propagation so shortcuts don't interfere
 - **Export:** Downloads all logs as `error.log` with the standard format
 - **Clear:** Purges all entries from IndexedDB
 - **Entry count:** Shows `filtered / total` counts in the toolbar
@@ -235,7 +249,7 @@ The ErrorLogViewer is accessible from the existing **DebugOverlay**:
 3. Tap the badge to expand the session log view
 4. Click the red **"Persistent Logs"** button in the toolbar to open the ErrorLogViewer
 
-## How Errors Flow Through the System
+## How Logs Flow Through the System
 
 ### Path 1: Explicit `logError()` call
 
@@ -245,6 +259,15 @@ Code calls logError("API failed", "spotify")
   → Entry created: { timestamp, level: "ERROR", message: "[spotify] API failed", raw: "[02/28/2026 - ...] - ERROR - [spotify] API failed" }
   → idbPut() writes to IndexedDB (or memory buffer if DB not ready)
   → pruneOldEntries() trims if > 5000 entries
+```
+
+### Path 1b: Explicit `logNetwork()` call
+
+```
+Code calls logNetwork("[REQ] GET https://api.spotify.com/v1/me/tracks?limit=1 {...}", "spotify")
+  → formatTimestamp() generates "02/28/2026 - 14:23:01.456"
+  → Entry created: { timestamp, level: "NETWORK", message: "[spotify] [REQ] GET ...", raw: "[02/28/2026 - ...] - NETWORK - [spotify] [REQ] GET ..." }
+  → idbPut() writes to IndexedDB (or memory buffer if DB not ready)
 ```
 
 ### Path 2: console.error interceptor
