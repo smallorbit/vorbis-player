@@ -6,7 +6,7 @@ import {
   type PlaylistInfo,
   type AlbumInfo
 } from '../services/spotify';
-import { Card, CardHeader, CardContent, Button, Skeleton, Alert, AlertDescription } from './styled';
+import { Card, CardContent, Button, Skeleton, Alert, AlertDescription } from './styled';
 import { theme } from '@/styles/theme';
 import { usePlayerSizing } from '../hooks/usePlayerSizing';
 import { useLocalStorage } from '../hooks/useLocalStorage';
