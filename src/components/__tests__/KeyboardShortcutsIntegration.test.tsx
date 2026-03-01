@@ -6,6 +6,7 @@ import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts';
 import { TrackProvider } from '../../contexts/TrackContext';
 import { VisualEffectsProvider } from '../../contexts/VisualEffectsContext';
 import { ColorProvider } from '../../contexts/ColorContext';
+import { ProviderProvider } from '../../contexts/ProviderContext';
 
 vi.mock('../../hooks/usePlaylistManager', () => ({
   usePlaylistManager: vi.fn(() => ({
@@ -29,11 +30,21 @@ vi.mock('../../hooks/useAccentColor', () => ({
 
 vi.mock('../../services/spotify', () => ({
   spotifyAuth: {
-    handleRedirect: vi.fn().mockResolvedValue(undefined)
+    handleRedirect: vi.fn().mockResolvedValue(undefined),
+    isAuthenticated: vi.fn().mockReturnValue(true),
+    getAccessToken: vi.fn().mockReturnValue('test-token'),
+    ensureValidToken: vi.fn().mockResolvedValue('test-token'),
+    redirectToAuth: vi.fn(),
+    logout: vi.fn(),
   },
   checkTrackSaved: vi.fn().mockResolvedValue(false),
   saveTrack: vi.fn().mockResolvedValue(undefined),
-  unsaveTrack: vi.fn().mockResolvedValue(undefined)
+  unsaveTrack: vi.fn().mockResolvedValue(undefined),
+  getUserLibraryInterleaved: vi.fn(),
+  getPlaylistTracks: vi.fn(),
+  getAlbumTracks: vi.fn(),
+  getLikedSongs: vi.fn(),
+  getLikedSongsCount: vi.fn(),
 }));
 
 vi.mock('../../services/spotifyPlayer', () => ({
@@ -41,19 +52,26 @@ vi.mock('../../services/spotifyPlayer', () => ({
     onPlayerStateChanged: vi.fn(() => vi.fn()),
     getCurrentState: vi.fn().mockResolvedValue(null),
     resume: vi.fn(),
-    pause: vi.fn()
+    pause: vi.fn(),
+    setVolume: vi.fn().mockResolvedValue(undefined),
+    initialize: vi.fn().mockResolvedValue(undefined),
+    playTrack: vi.fn().mockResolvedValue(undefined),
+    getDeviceId: vi.fn().mockReturnValue(null),
+    getIsReady: vi.fn().mockReturnValue(false),
   }
 }));
 
-// Wrap renderHook with all 3 providers
+// Wrap renderHook with all providers
 const AllProviders = ({ children }: { children: React.ReactNode }) => (
-  <TrackProvider>
-    <VisualEffectsProvider>
-      <ColorProvider>
-        {children}
-      </ColorProvider>
-    </VisualEffectsProvider>
-  </TrackProvider>
+  <ProviderProvider>
+    <TrackProvider>
+      <VisualEffectsProvider>
+        <ColorProvider>
+          {children}
+        </ColorProvider>
+      </VisualEffectsProvider>
+    </TrackProvider>
+  </ProviderProvider>
 );
 
 describe('Keyboard Shortcuts Integration', () => {

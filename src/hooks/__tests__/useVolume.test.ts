@@ -9,6 +9,7 @@ vi.mock('@/services/spotifyPlayer', () => ({
 
 import { useVolume } from '../useVolume';
 import { spotifyPlayer } from '@/services/spotifyPlayer';
+import { ProviderWrapper } from '@/test/providerTestUtils';
 
 describe('useVolume', () => {
   beforeEach(() => {
@@ -17,7 +18,7 @@ describe('useVolume', () => {
   });
 
   it('defaults volume to 50 when localStorage is empty', () => {
-    const { result } = renderHook(() => useVolume());
+    const { result } = renderHook(() => useVolume(), { wrapper: ProviderWrapper });
 
     expect(result.current.volume).toBe(50);
     expect(result.current.isMuted).toBe(false);
@@ -31,14 +32,14 @@ describe('useVolume', () => {
     });
 
     // #when
-    const { result } = renderHook(() => useVolume());
+    const { result } = renderHook(() => useVolume(), { wrapper: ProviderWrapper });
 
     // #then
     expect(result.current.volume).toBe(75);
   });
 
   it('mute toggle sets volume to 0 and isMuted to true', () => {
-    const { result } = renderHook(() => useVolume());
+    const { result } = renderHook(() => useVolume(), { wrapper: ProviderWrapper });
 
     // #when
     act(() => {
@@ -51,7 +52,7 @@ describe('useVolume', () => {
   });
 
   it('unmute toggle restores previous volume', () => {
-    const { result } = renderHook(() => useVolume());
+    const { result } = renderHook(() => useVolume(), { wrapper: ProviderWrapper });
 
     // #given - mute first
     act(() => {
@@ -70,7 +71,7 @@ describe('useVolume', () => {
   });
 
   it('setVolumeLevel(0) auto-sets isMuted to true', () => {
-    const { result } = renderHook(() => useVolume());
+    const { result } = renderHook(() => useVolume(), { wrapper: ProviderWrapper });
 
     // #when
     act(() => {
@@ -83,7 +84,7 @@ describe('useVolume', () => {
   });
 
   it('setVolumeLevel(50) clears muted state', () => {
-    const { result } = renderHook(() => useVolume());
+    const { result } = renderHook(() => useVolume(), { wrapper: ProviderWrapper });
 
     // #given - mute first
     act(() => {
@@ -101,7 +102,7 @@ describe('useVolume', () => {
   });
 
   it('clamps volume to [0, 100]', () => {
-    const { result } = renderHook(() => useVolume());
+    const { result } = renderHook(() => useVolume(), { wrapper: ProviderWrapper });
 
     // #when - set above 100
     act(() => {
@@ -117,13 +118,13 @@ describe('useVolume', () => {
   });
 
   it('calls spotifyPlayer.setVolume on initial mount', () => {
-    renderHook(() => useVolume());
+    renderHook(() => useVolume(), { wrapper: ProviderWrapper });
 
     expect(spotifyPlayer.setVolume).toHaveBeenCalled();
   });
 
   it('saves volume to localStorage on change', () => {
-    const { result } = renderHook(() => useVolume());
+    const { result } = renderHook(() => useVolume(), { wrapper: ProviderWrapper });
 
     // #when
     act(() => {
