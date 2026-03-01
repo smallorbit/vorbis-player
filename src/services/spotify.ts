@@ -124,8 +124,8 @@ export interface PlaylistInfo {
   name: string;
   description: string | null;
   images: SpotifyImage[];
-  tracks: { total: number };
-  owner: { display_name: string };
+  tracks: { total: number } | null;
+  owner: { display_name: string } | null;
   added_at?: string; // ISO 8601 timestamp when added to library
   snapshot_id?: string; // Spotify revision identifier for change detection
 }
@@ -573,7 +573,12 @@ export async function getUserLibraryInterleaved(
   const fetchTimestamp = new Date().toISOString();
 
   function transformPlaylist(playlist: PlaylistInfo): PlaylistInfo {
-    return { ...playlist, added_at: playlist.added_at || fetchTimestamp };
+    return {
+      ...playlist,
+      added_at: playlist.added_at || fetchTimestamp,
+      tracks: playlist.tracks ?? { total: 0 },
+      owner: playlist.owner ?? { display_name: '' },
+    };
   }
 
   interface SavedAlbumItem {

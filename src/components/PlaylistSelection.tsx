@@ -958,8 +958,8 @@ function PlaylistSelection({ onPlaylistSelect, inDrawer = false, swipeZoneRef, i
               <GridCardTextArea>
                 <GridCardTitle>{playlist.name}</GridCardTitle>
                 <GridCardSubtitle>
-                  {playlist.tracks.total} tracks
-                  {playlist.owner.display_name && ` • ${playlist.owner.display_name}`}
+                  {playlist.tracks?.total ?? 0} tracks
+                  {playlist.owner?.display_name && ` • ${playlist.owner.display_name}`}
                 </GridCardSubtitle>
               </GridCardTextArea>
             </PinnableGridCard>
@@ -974,8 +974,8 @@ function PlaylistSelection({ onPlaylistSelect, inDrawer = false, swipeZoneRef, i
               <PlaylistInfo>
                 <PlaylistName>{playlist.name}</PlaylistName>
                 <PlaylistDetails>
-                  {playlist.tracks.total} tracks
-                  {playlist.owner.display_name && ` • by ${playlist.owner.display_name}`}
+                  {playlist.tracks?.total ?? 0} tracks
+                  {playlist.owner?.display_name && ` • by ${playlist.owner.display_name}`}
                 </PlaylistDetails>
               </PlaylistInfo>
               <PinButton
