@@ -10,8 +10,6 @@ import { useState, useEffect, useCallback } from 'react';
 import type { Track } from '../services/spotify';
 import { theme } from '@/styles/theme';
 import type { VisualizerStyle } from '../types/visualizer';
-import type { AlbumFilters } from '../types/filters';
-import { DEFAULT_ALBUM_FILTERS } from '../types/filters';
 import { useLocalStorage } from './useLocalStorage';
 
 /**
@@ -39,9 +37,7 @@ interface ColorState {
 interface VisualEffectsState {
   enabled: boolean;
   menuVisible: boolean;
-  filters: AlbumFilters;
   perAlbumGlow: Record<string, { intensity: number; rate: number }>;
-  savedFilters: AlbumFilters | null;
   backgroundVisualizer: {
     enabled: boolean;
     style: VisualizerStyle;
@@ -78,11 +74,7 @@ interface ColorActions {
 interface VisualEffectsActions {
   setEnabled: (enabled: boolean | ((prev: boolean) => boolean)) => void;
   setMenuVisible: (visible: boolean | ((prev: boolean) => boolean)) => void;
-  setFilters: (filters: AlbumFilters | ((prev: AlbumFilters) => AlbumFilters)) => void;
   setPerAlbumGlow: (glow: Record<string, { intensity: number; rate: number }> | ((prev: Record<string, { intensity: number; rate: number }>) => Record<string, { intensity: number; rate: number }>)) => void;
-  handleFilterChange: (filterName: string, value: number | boolean) => void;
-  handleResetFilters: () => void;
-  restoreSavedFilters: () => void;
   backgroundVisualizer: {
     setEnabled: (enabled: boolean | ((prev: boolean) => boolean)) => void;
     setStyle: (style: VisualizerStyle | ((prev: VisualizerStyle) => VisualizerStyle)) => void;
@@ -156,12 +148,6 @@ export function usePlayerState(): PlayerState & PlayerStateSetters {
     {}
   );
   
-  const [albumFilters, setAlbumFilters] = useLocalStorage<AlbumFilters>(
-    'vorbis-player-album-filters',
-    DEFAULT_ALBUM_FILTERS
-  );
-
-  const [savedAlbumFilters, setSavedAlbumFilters] = useState<AlbumFilters | null>(null);
   const [backgroundVisualizerEnabled, setBackgroundVisualizerEnabled] = useLocalStorage<boolean>(
     'vorbis-player-background-visualizer-enabled',
     true
@@ -192,31 +178,7 @@ export function usePlayerState(): PlayerState & PlayerStateSetters {
     }
   }, [visualEffectsEnabled, accentColorBackgroundPreferred]);
 
-  const handleFilterChange = useCallback((filterName: string, value: number | boolean) => {
-    setAlbumFilters(prev => {
-      const newFilters = {
-        ...prev,
-        [filterName]: value
-      };
-      setSavedAlbumFilters(newFilters);
-      return newFilters;
-    });
-  }, [setAlbumFilters]);
-
-  const handleResetFilters = useCallback(() => {
-    setAlbumFilters({
-      brightness: 100,
-      contrast: 100,
-      saturation: 100,
-      sepia: 0
-    });
-  }, [setAlbumFilters]);
-
-  const restoreSavedFilters = useCallback(() => {
-    if (savedAlbumFilters) {
-      setAlbumFilters(savedAlbumFilters);
-    }
-  }, [savedAlbumFilters, setAlbumFilters]);
+  useEffect(() => { localStorage.removeItem('vorbis-player-album-filters'); }, []);
 
   const handleSetAccentColorOverride = useCallback((albumId: string, color: string) => {
     setAccentColorOverrides(prev => ({
@@ -253,9 +215,7 @@ export function usePlayerState(): PlayerState & PlayerStateSetters {
     visualEffects: {
       enabled: visualEffectsEnabled,
       menuVisible: showVisualEffects,
-      filters: albumFilters,
       perAlbumGlow,
-      savedFilters: savedAlbumFilters,
       backgroundVisualizer: {
         enabled: backgroundVisualizerEnabled,
         style: backgroundVisualizerStyle,
@@ -292,11 +252,7 @@ export function usePlayerState(): PlayerState & PlayerStateSetters {
       visualEffects: {
         setEnabled: setVisualEffectsEnabled,
         setMenuVisible: setShowVisualEffects,
-        setFilters: setAlbumFilters,
         setPerAlbumGlow,
-        handleFilterChange,
-        handleResetFilters,
-        restoreSavedFilters,
         backgroundVisualizer: {
           setEnabled: setBackgroundVisualizerEnabled,
           setStyle: setBackgroundVisualizerStyle,
