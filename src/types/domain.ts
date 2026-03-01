@@ -79,6 +79,9 @@ export interface PlaybackState {
 
 /** Serializable form of CollectionRef for storage/URL (e.g. "spotify:playlist:xxx", "dropbox:folder:/Music"). */
 export function collectionRefToKey(ref: CollectionRef): string {
+  if (ref.kind === 'liked') {
+    return `${ref.provider}:liked:`;
+  }
   return `${ref.provider}:${ref.kind}:${ref.id}`;
 }
 
