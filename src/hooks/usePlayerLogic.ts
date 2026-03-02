@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useState, useEffect, useLayoutEffect, useCallback, useMemo, useRef } from 'react';
 import { spotifyAuth } from '@/services/spotify';
 import { useTrackContext } from '@/contexts/TrackContext';
 import { useVisualEffectsContext } from '@/contexts/VisualEffectsContext';
@@ -61,6 +61,19 @@ export function usePlayerLogic() {
   /** When provider is Dropbox, holds the MediaTrack[] for playback; otherwise empty. */
   const mediaTracksRef = useRef<MediaTrack[]>([]);
 
+  // Keep mediaTracksRef.current in the same order as `tracks` so index-based
+  // playback is always correct, even after shuffle is toggled.
+  useLayoutEffect(() => {
+    if (activeDescriptor?.id !== 'dropbox') return;
+    const mediaTracks = mediaTracksRef.current;
+    if (mediaTracks.length === 0 || mediaTracks.length !== tracks.length) return;
+    const idToMedia = new Map(mediaTracks.map(m => [m.id, m]));
+    const reordered = tracks.map(t => idToMedia.get(t.id)).filter((m): m is MediaTrack => m !== undefined);
+    if (reordered.length === tracks.length) {
+      mediaTracksRef.current = reordered;
+    }
+  }, [tracks, activeDescriptor?.id]);
+
   // Playback state from provider events (local — not shared via context)
   const [isPlaying, setIsPlaying] = useState(false);
   const [playbackPosition, setPlaybackPosition] = useState(0);
@@ -106,10 +119,21 @@ export function usePlayerLogic() {
             setIsLoading(false);
             return;
           }
-          mediaTracksRef.current = list;
           const trackList = list.map(mediaTrackToTrack);
           setOriginalTracks(trackList);
-          setTracks(trackList);
+          if (shuffleEnabled) {
+            // Shuffle both the Track[] and MediaTrack[] together so indices stay aligned.
+            const indices = list.map((_, i) => i);
+            for (let i = indices.length - 1; i > 0; i--) {
+              const j = Math.floor(Math.random() * (i + 1));
+              [indices[i], indices[j]] = [indices[j], indices[i]];
+            }
+            mediaTracksRef.current = indices.map(i => list[i]);
+            setTracks(indices.map(i => trackList[i]));
+          } else {
+            mediaTracksRef.current = list;
+            setTracks(trackList);
+          }
           setCurrentTrackIndex(0);
           setIsLoading(false);
           await playTrack(0);
@@ -126,6 +150,7 @@ export function usePlayerLogic() {
     },
     [
       activeDescriptor,
+      shuffleEnabled,
       setError,
       setIsLoading,
       setSelectedPlaylistId,
