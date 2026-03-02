@@ -4,7 +4,7 @@
  * Key format: "${providerId}:${type}" (e.g. "spotify:playlists", "dropbox:albums").
  */
 
-import { STORE_NAMES, settingsGet, settingsPut } from './settingsDb';
+import { STORE_NAMES, settingsGet, settingsPut, settingsClearStore } from './settingsDb';
 
 export const MAX_PINS = 4;
 
@@ -28,6 +28,11 @@ export async function setPins(providerId: string, type: 'playlists' | 'albums', 
 
 const LS_PINNED_PLAYLISTS = 'vorbis-player-pinned-playlists';
 const LS_PINNED_ALBUMS = 'vorbis-player-pinned-albums';
+
+/** Clear all pinned items for all providers. */
+export async function clearAllPins(): Promise<void> {
+  await settingsClearStore(STORE_NAMES.PINS);
+}
 
 /**
  * One-time migration: move pinned playlists/albums from localStorage into IDB

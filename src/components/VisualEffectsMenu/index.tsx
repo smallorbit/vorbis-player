@@ -25,13 +25,25 @@ import {
   ProviderStatusDot,
   ProviderName,
   ProviderActiveLabel,
+  CacheOptionsList,
+  CacheOptionItem,
+  CacheCheckbox,
+  CacheOptionLabel,
+  CacheConfirmButtons,
+  CacheCancelButton,
 } from './styled';
+
+export interface ClearCacheOptions {
+  clearLikes: boolean;
+  clearPins: boolean;
+  clearAccentColors: boolean;
+}
 
 interface AppSettingsMenuProps {
   isOpen: boolean;
   onClose: () => void;
   accentColor: string;
-  onClearCache: () => Promise<void>;
+  onClearCache: (options: ClearCacheOptions) => Promise<void>;
   profilerEnabled: boolean;
   onProfilerToggle: () => void;
   visualizerDebugEnabled: boolean;
@@ -149,7 +161,10 @@ const AppSettingsMenu: React.FC<AppSettingsMenuProps> = memo(({
   onVisualizerDebugToggle
 }) => {
   const { viewport, isMobile, isTablet, transitionDuration, transitionEasing } = usePlayerSizing();
-  const [clearState, setClearState] = useState<'idle' | 'success'>('idle');
+  const [clearState, setClearState] = useState<'idle' | 'confirming' | 'success'>('idle');
+  const [clearLikes, setClearLikes] = useState(false);
+  const [clearPins, setClearPins] = useState(false);
+  const [clearAccentColors, setClearAccentColors] = useState(false);
 
   const drawerWidth = useMemo(() => {
     if (isMobile) return Math.min(viewport.width, parseInt(theme.breakpoints.xs));
@@ -157,11 +172,25 @@ const AppSettingsMenu: React.FC<AppSettingsMenuProps> = memo(({
     return Math.min(viewport.width * 0.3, parseInt(theme.drawer.widths.desktop));
   }, [viewport.width, isMobile, isTablet]);
 
-  const handleClearCache = useCallback(async () => {
-    await onClearCache();
+  const handleClearCacheClick = useCallback(() => {
+    setClearState('confirming');
+  }, []);
+
+  const handleClearCacheCancel = useCallback(() => {
+    setClearState('idle');
+    setClearLikes(false);
+    setClearPins(false);
+    setClearAccentColors(false);
+  }, []);
+
+  const handleClearCacheConfirm = useCallback(async () => {
+    await onClearCache({ clearLikes, clearPins, clearAccentColors });
     setClearState('success');
+    setClearLikes(false);
+    setClearPins(false);
+    setClearAccentColors(false);
     setTimeout(() => setClearState('idle'), 1500);
-  }, [onClearCache]);
+  }, [onClearCache, clearLikes, clearPins, clearAccentColors]);
 
   return (
     <ProfiledComponent id="app-settings-menu">
@@ -193,9 +222,54 @@ const AppSettingsMenu: React.FC<AppSettingsMenuProps> = memo(({
             <SectionTitle>Advanced</SectionTitle>
             <ControlGroup>
               <ControlLabel>Clear Library Cache</ControlLabel>
-              <ResetButton onClick={handleClearCache} $accentColor={accentColor}>
-                {clearState === 'success' ? 'Cleared!' : 'Clear Cache'}
-              </ResetButton>
+              {clearState === 'confirming' ? (
+                <>
+                  <CacheOptionsList>
+                    <CacheOptionItem>
+                      <CacheCheckbox
+                        id="clear-likes"
+                        type="checkbox"
+                        checked={clearLikes}
+                        onChange={(e) => setClearLikes(e.target.checked)}
+                        $accentColor={accentColor}
+                      />
+                      <CacheOptionLabel htmlFor="clear-likes">Also clear Likes</CacheOptionLabel>
+                    </CacheOptionItem>
+                    <CacheOptionItem>
+                      <CacheCheckbox
+                        id="clear-pins"
+                        type="checkbox"
+                        checked={clearPins}
+                        onChange={(e) => setClearPins(e.target.checked)}
+                        $accentColor={accentColor}
+                      />
+                      <CacheOptionLabel htmlFor="clear-pins">Also clear Pins</CacheOptionLabel>
+                    </CacheOptionItem>
+                    <CacheOptionItem>
+                      <CacheCheckbox
+                        id="clear-accent-colors"
+                        type="checkbox"
+                        checked={clearAccentColors}
+                        onChange={(e) => setClearAccentColors(e.target.checked)}
+                        $accentColor={accentColor}
+                      />
+                      <CacheOptionLabel htmlFor="clear-accent-colors">Also clear Accent Colors</CacheOptionLabel>
+                    </CacheOptionItem>
+                  </CacheOptionsList>
+                  <CacheConfirmButtons>
+                    <CacheCancelButton onClick={handleClearCacheCancel} $accentColor={accentColor}>
+                      Cancel
+                    </CacheCancelButton>
+                    <ResetButton onClick={handleClearCacheConfirm} $accentColor={accentColor}>
+                      Confirm Clear
+                    </ResetButton>
+                  </CacheConfirmButtons>
+                </>
+              ) : (
+                <ResetButton onClick={clearState === 'success' ? undefined : handleClearCacheClick} $accentColor={accentColor}>
+                  {clearState === 'success' ? 'Cleared!' : 'Clear Cache'}
+                </ResetButton>
+              )}
             </ControlGroup>
             <ControlGroup>
               <ControlLabel>Performance Profiler</ControlLabel>
