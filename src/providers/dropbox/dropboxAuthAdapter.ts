@@ -16,6 +16,7 @@ function getRedirectUri(): string {
 const TOKEN_KEY = 'vorbis-player-dropbox-token';
 const REFRESH_TOKEN_KEY = 'vorbis-player-dropbox-refresh-token';
 const CODE_VERIFIER_KEY = 'vorbis-player-dropbox-code-verifier';
+const OAUTH_STATE_KEY = 'vorbis-player-dropbox-oauth-state';
 
 function generateRandomString(length: number): string {
   const array = new Uint8Array(length);
@@ -66,6 +67,9 @@ export class DropboxAuthAdapter implements AuthProvider {
     const codeVerifier = generateRandomString(64);
     localStorage.setItem(CODE_VERIFIER_KEY, codeVerifier);
 
+    const state = generateRandomString(32);
+    sessionStorage.setItem(OAUTH_STATE_KEY, state);
+
     const challengeBuffer = await sha256(codeVerifier);
     const codeChallenge = base64urlEncode(challengeBuffer);
 
@@ -77,6 +81,7 @@ export class DropboxAuthAdapter implements AuthProvider {
       code_challenge: codeChallenge,
       code_challenge_method: 'S256',
       token_access_type: 'offline',
+      state,
     });
 
     window.location.href = `https://www.dropbox.com/oauth2/authorize?${params.toString()}`;
@@ -89,6 +94,7 @@ export class DropboxAuthAdapter implements AuthProvider {
 
     const code = url.searchParams.get('code');
     const error = url.searchParams.get('error');
+    const returnedState = url.searchParams.get('state');
 
     if (error) {
       throw new Error(`Dropbox auth error: ${error}`);
@@ -96,6 +102,12 @@ export class DropboxAuthAdapter implements AuthProvider {
 
     if (!code) {
       return false;
+    }
+
+    const expectedState = sessionStorage.getItem(OAUTH_STATE_KEY);
+    sessionStorage.removeItem(OAUTH_STATE_KEY);
+    if (!expectedState || returnedState !== expectedState) {
+      throw new Error('OAuth state mismatch — possible CSRF attack');
     }
 
     const codeVerifier = localStorage.getItem(CODE_VERIFIER_KEY);
@@ -143,6 +155,7 @@ export class DropboxAuthAdapter implements AuthProvider {
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(REFRESH_TOKEN_KEY);
     localStorage.removeItem(CODE_VERIFIER_KEY);
+    sessionStorage.removeItem(OAUTH_STATE_KEY);
   }
 
   /** Refresh the access token using the stored refresh token. */
