@@ -15,6 +15,7 @@ function getRedirectUri(): string {
 
 const TOKEN_KEY = 'vorbis-player-dropbox-token';
 const REFRESH_TOKEN_KEY = 'vorbis-player-dropbox-refresh-token';
+const TOKEN_EXPIRY_KEY = 'vorbis-player-dropbox-token-expiry';
 const CODE_VERIFIER_KEY = 'vorbis-player-dropbox-code-verifier';
 const OAUTH_STATE_KEY = 'vorbis-player-dropbox-oauth-state';
 
@@ -40,14 +41,20 @@ function base64urlEncode(buffer: ArrayBuffer): string {
   return btoa(str).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 
+/** How many seconds before expiry to proactively refresh the token. */
+const TOKEN_EXPIRY_BUFFER_MS = 60 * 1000;
+
 export class DropboxAuthAdapter implements AuthProvider {
   readonly providerId: ProviderId = 'dropbox';
   private accessToken: string | null = null;
   private refreshToken: string | null = null;
+  private tokenExpiresAt: number | null = null;
 
   constructor() {
     this.accessToken = localStorage.getItem(TOKEN_KEY);
     this.refreshToken = localStorage.getItem(REFRESH_TOKEN_KEY);
+    const stored = localStorage.getItem(TOKEN_EXPIRY_KEY);
+    this.tokenExpiresAt = stored ? parseInt(stored, 10) : null;
   }
 
   isAuthenticated(): boolean {
@@ -139,10 +146,16 @@ export class DropboxAuthAdapter implements AuthProvider {
     const data = await response.json();
     this.accessToken = data.access_token;
     this.refreshToken = data.refresh_token ?? null;
+    this.tokenExpiresAt = data.expires_in
+      ? Date.now() + data.expires_in * 1000
+      : null;
 
     localStorage.setItem(TOKEN_KEY, data.access_token);
     if (data.refresh_token) {
       localStorage.setItem(REFRESH_TOKEN_KEY, data.refresh_token);
+    }
+    if (this.tokenExpiresAt !== null) {
+      localStorage.setItem(TOKEN_EXPIRY_KEY, String(this.tokenExpiresAt));
     }
     localStorage.removeItem(CODE_VERIFIER_KEY);
 
@@ -152,8 +165,10 @@ export class DropboxAuthAdapter implements AuthProvider {
   logout(): void {
     this.accessToken = null;
     this.refreshToken = null;
+    this.tokenExpiresAt = null;
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(REFRESH_TOKEN_KEY);
+    localStorage.removeItem(TOKEN_EXPIRY_KEY);
     localStorage.removeItem(CODE_VERIFIER_KEY);
     sessionStorage.removeItem(OAUTH_STATE_KEY);
   }
@@ -182,13 +197,29 @@ export class DropboxAuthAdapter implements AuthProvider {
 
     const data = await response.json();
     this.accessToken = data.access_token;
+    this.tokenExpiresAt = data.expires_in
+      ? Date.now() + data.expires_in * 1000
+      : null;
+
     localStorage.setItem(TOKEN_KEY, data.access_token);
+    if (this.tokenExpiresAt !== null) {
+      localStorage.setItem(TOKEN_EXPIRY_KEY, String(this.tokenExpiresAt));
+    }
     return data.access_token;
   }
 
-  /** Get a valid token, refreshing if the current one is expired/invalid. */
+  /** Get a valid token, refreshing proactively if it is expired or near expiry. */
   async ensureValidToken(): Promise<string | null> {
     if (!this.accessToken) return null;
+
+    const isExpiredOrExpiringSoon =
+      this.tokenExpiresAt !== null &&
+      Date.now() >= this.tokenExpiresAt - TOKEN_EXPIRY_BUFFER_MS;
+
+    if (isExpiredOrExpiringSoon) {
+      return await this.refreshAccessToken();
+    }
+
     return this.accessToken;
   }
 }
