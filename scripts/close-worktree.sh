@@ -15,7 +15,7 @@ fi
 # Resolve paths relative to the main worktree, not the current directory
 REPO_ROOT="$(git worktree list | head -1 | awk '{print $1}')"
 REPO_NAME="$(basename "$REPO_ROOT")"
-NAME="$1"
+NAME="${1#wt/}"
 
 WT_BRANCH="wt/${NAME}"
 WORKTREE_PATH="${REPO_ROOT}/../${REPO_NAME}-${NAME}"
