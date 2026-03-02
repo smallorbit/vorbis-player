@@ -530,9 +530,9 @@ const PinnedSectionLabel = styled.div`
 const PinIcon: React.FC<{ filled?: boolean }> = ({ filled = false }) => (
   <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
     {filled ? (
-      <path d="M16 3a1 1 0 0 0-1.4-.2L12 5l-3-1.5a1 1 0 0 0-1.2.3L6 6.5a1 1 0 0 0 .1 1.3L9 10l-1 4-3.3 3.3a1 1 0 0 0 0 1.4 1 1 0 0 0 1.4 0L9.5 15l4-1 2.2 2.9a1 1 0 0 0 1.3.1l2.7-1.8a1 1 0 0 0 .3-1.2L18.5 11l2.2-2.6a1 1 0 0 0-.2-1.4L16 3z" fill="currentColor"/>
+      <path d="M16 3a1 1 0 0 0-1.4-.2L12 5l-3-1.5a1 1 0 0 0-1.2.3L6 6.5a1 1 0 0 0 .1 1.3L9 10l-1 4-3.3 3.3a1 1 0 0 0 0 1.4 1 1 0 0 0 1.4 0L9.5 15l4-1 2.2 2.9a1 1 0 0 0 1.3.1l2.7-1.8a1 1 0 0 0 .3-1.2L18.5 11l2.2-2.6a1 1 0 0 0-.2-1.4L16 3z" fill="currentColor" />
     ) : (
-      <path d="M16 3a1 1 0 0 0-1.4-.2L12 5l-3-1.5a1 1 0 0 0-1.2.3L6 6.5a1 1 0 0 0 .1 1.3L9 10l-1 4-3.3 3.3a1 1 0 0 0 0 1.4 1 1 0 0 0 1.4 0L9.5 15l4-1 2.2 2.9a1 1 0 0 0 1.3.1l2.7-1.8a1 1 0 0 0 .3-1.2L18.5 11l2.2-2.6a1 1 0 0 0-.2-1.4L16 3z" stroke="currentColor" strokeWidth="1.5" fill="none"/>
+      <path d="M16 3a1 1 0 0 0-1.4-.2L12 5l-3-1.5a1 1 0 0 0-1.2.3L6 6.5a1 1 0 0 0 .1 1.3L9 10l-1 4-3.3 3.3a1 1 0 0 0 0 1.4 1 1 0 0 0 1.4 0L9.5 15l4-1 2.2 2.9a1 1 0 0 0 1.3.1l2.7-1.8a1 1 0 0 0 .3-1.2L18.5 11l2.2-2.6a1 1 0 0 0-.2-1.4L16 3z" stroke="currentColor" strokeWidth="1.5" fill="none" />
     )}
   </svg>
 );
@@ -724,7 +724,7 @@ function PlaylistSelection({ onPlaylistSelect, inDrawer = false, swipeZoneRef, i
     } else {
       setError(null);
     }
-  }, [libraryFullyLoaded, playlists.length, albums.length, likedSongsCount]);
+  }, [libraryFullyLoaded, playlists.length, albums.length, likedSongsCount, activeDescriptor]);
 
   // Auth check — the sync engine handles all data fetching
   useEffect(() => {
@@ -856,7 +856,7 @@ function PlaylistSelection({ onPlaylistSelect, inDrawer = false, swipeZoneRef, i
   const mainContent = showMainContent ? (
     <>
       <div ref={inDrawer ? swipeZoneRef : undefined} style={inDrawer ? { flexShrink: 0, touchAction: 'pan-y' } : undefined}>
-      {tabsBar}
+        {tabsBar}
       </div>
 
       {viewMode === 'playlists' && (() => {
@@ -1074,7 +1074,7 @@ function PlaylistSelection({ onPlaylistSelect, inDrawer = false, swipeZoneRef, i
       {!isLoading && !isAuthenticated && (
         <div style={{ textAlign: 'center', padding: '2rem' }}>
           <p style={{ color: theme.colors.muted.foreground, marginBottom: theme.spacing.lg, fontSize: theme.fontSize.lg }}>
-            Connect your Spotify account to access your playlists
+            Connect your {activeDescriptor?.name ?? 'music provider'} account to access your playlists
           </p>
           <Button
             onClick={handleLogin}
@@ -1089,7 +1089,7 @@ function PlaylistSelection({ onPlaylistSelect, inDrawer = false, swipeZoneRef, i
               transition: `background ${theme.transitions.fast} ease`
             }}
           >
-            Connect Spotify
+            Connect {activeDescriptor?.name ?? 'account'}
           </Button>
         </div>
       )}

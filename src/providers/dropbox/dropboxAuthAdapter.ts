@@ -7,7 +7,11 @@ import type { AuthProvider } from '@/types/providers';
 import type { ProviderId } from '@/types/domain';
 
 const DROPBOX_CLIENT_ID = import.meta.env.VITE_DROPBOX_CLIENT_ID ?? '';
-const REDIRECT_URI = import.meta.env.VITE_DROPBOX_REDIRECT_URI ?? `${window.location.origin}/auth/dropbox/callback`;
+/** Redirect URI must match the current origin so the callback lands where we stored the PKCE verifier. */
+function getRedirectUri(): string {
+  if (typeof window === 'undefined') return import.meta.env.VITE_DROPBOX_REDIRECT_URI ?? '';
+  return `${window.location.origin}/auth/dropbox/callback`;
+}
 
 const TOKEN_KEY = 'vorbis-player-dropbox-token';
 const REFRESH_TOKEN_KEY = 'vorbis-player-dropbox-refresh-token';
@@ -65,10 +69,11 @@ export class DropboxAuthAdapter implements AuthProvider {
     const challengeBuffer = await sha256(codeVerifier);
     const codeChallenge = base64urlEncode(challengeBuffer);
 
+    const redirectUri = getRedirectUri();
     const params = new URLSearchParams({
       client_id: DROPBOX_CLIENT_ID,
       response_type: 'code',
-      redirect_uri: REDIRECT_URI,
+      redirect_uri: redirectUri,
       code_challenge: codeChallenge,
       code_challenge_method: 'S256',
       token_access_type: 'offline',
@@ -98,12 +103,13 @@ export class DropboxAuthAdapter implements AuthProvider {
       throw new Error('Missing code verifier for Dropbox PKCE');
     }
 
-    // Exchange code for token
+    // Exchange code for token (use same redirect_uri as beginLogin so Dropbox accepts it)
+    const redirectUri = getRedirectUri();
     const body = new URLSearchParams({
       code,
       grant_type: 'authorization_code',
       client_id: DROPBOX_CLIENT_ID,
-      redirect_uri: REDIRECT_URI,
+      redirect_uri: redirectUri,
       code_verifier: codeVerifier,
     });
 
