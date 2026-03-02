@@ -46,11 +46,13 @@ export function ProviderProvider({ children }: { children: React.ReactNode }) {
 
   const setActiveProviderId = useCallback(
     (id: ProviderId) => {
-      if (providerRegistry.has(id)) {
+      if (providerRegistry.has(id) && id !== validProviderId) {
+        // Stop playback on the outgoing provider before switching
+        activeDescriptor?.playback.pause().catch(() => {});
         setActiveProviderIdRaw(id);
       }
     },
-    [setActiveProviderIdRaw],
+    [setActiveProviderIdRaw, validProviderId, activeDescriptor],
   );
 
   const value = useMemo<ProviderContextValue>(
