@@ -69,6 +69,7 @@ export function usePlayerLogic() {
   tracksRef.current = tracks;
   const currentTrackIndexRef = useRef(currentTrackIndex);
   currentTrackIndexRef.current = currentTrackIndex;
+  const expectedTrackIdRef = useRef<string | null>(null);
 
   // Keep mediaTracksRef.current in the same order as `tracks` so index-based
   // playback is always correct, even after shuffle is toggled.
@@ -201,7 +202,12 @@ export function usePlayerLogic() {
           const trackId = state.currentTrackId;
           const currentTracks = tracksRef.current;
           const trackIndex = currentTracks.findIndex((t: Track) => t.id === trackId);
-          if (trackIndex !== -1 && trackIndex !== currentTrackIndexRef.current) {
+          if (expectedTrackIdRef.current !== null) {
+            if (trackId === expectedTrackIdRef.current) {
+              expectedTrackIdRef.current = null;
+            }
+            // while waiting for the expected track, ignore provider index updates
+          } else if (trackIndex !== -1 && trackIndex !== currentTrackIndexRef.current) {
             setCurrentTrackIndex(trackIndex);
           }
 
@@ -256,6 +262,7 @@ export function usePlayerLogic() {
   const handleNext = useCallback(() => {
     if (tracks.length === 0) return;
     const nextIndex = (currentTrackIndexRef.current + 1) % tracks.length;
+    expectedTrackIdRef.current = tracksRef.current[nextIndex]?.id ?? null;
     setCurrentTrackIndex(nextIndex);
     playTrack(nextIndex, true);
   }, [tracks.length, playTrack, setCurrentTrackIndex]);
@@ -263,6 +270,7 @@ export function usePlayerLogic() {
   const handlePrevious = useCallback(() => {
     if (tracks.length === 0) return;
     const newIndex = currentTrackIndexRef.current === 0 ? tracks.length - 1 : currentTrackIndexRef.current - 1;
+    expectedTrackIdRef.current = tracksRef.current[newIndex]?.id ?? null;
     setCurrentTrackIndex(newIndex);
     playTrack(newIndex, true);
   }, [tracks.length, playTrack, setCurrentTrackIndex]);
