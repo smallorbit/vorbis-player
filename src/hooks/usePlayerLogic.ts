@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { spotifyAuth } from '@/services/spotify';
 import { useTrackContext } from '@/contexts/TrackContext';
 import { useVisualEffectsContext } from '@/contexts/VisualEffectsContext';
@@ -10,6 +10,21 @@ import { useAutoAdvance } from '@/hooks/useAutoAdvance';
 import { useAccentColor } from '@/hooks/useAccentColor';
 import type { Track } from '@/services/spotify';
 import type { PlaybackState } from '@/types/domain';
+import type { MediaTrack } from '@/types/domain';
+
+/** Convert MediaTrack to Track for UI; Dropbox tracks use empty uri (playback via ref). */
+function mediaTrackToTrack(m: MediaTrack): Track {
+  return {
+    id: m.id,
+    name: m.name,
+    artists: m.artists,
+    album: m.album,
+    track_number: m.trackNumber,
+    duration_ms: m.durationMs,
+    uri: m.provider === 'dropbox' ? '' : m.playbackRef.ref,
+    image: m.image,
+  };
+}
 
 export function usePlayerLogic() {
   const {
@@ -41,6 +56,9 @@ export function usePlayerLogic() {
 
   const { activeDescriptor } = useProviderContext();
 
+  /** When provider is Dropbox, holds the MediaTrack[] for playback; otherwise empty. */
+  const mediaTracksRef = useRef<MediaTrack[]>([]);
+
   // Playback state from provider events (local — not shared via context)
   const [isPlaying, setIsPlaying] = useState(false);
   const [playbackPosition, setPlaybackPosition] = useState(0);
@@ -48,9 +66,14 @@ export function usePlayerLogic() {
   // Library drawer visibility (local UI state)
   const [showLibraryDrawer, setShowLibraryDrawer] = useState(false);
 
-  const { playTrack } = useSpotifyPlayback({ tracks, setCurrentTrackIndex });
+  const { playTrack } = useSpotifyPlayback({
+    tracks,
+    setCurrentTrackIndex,
+    activeDescriptor,
+    mediaTracksRef,
+  });
 
-  const { handlePlaylistSelect } = usePlaylistManager({
+  const { handlePlaylistSelect: spotifyHandlePlaylistSelect } = usePlaylistManager({
     setError,
     setIsLoading,
     setSelectedPlaylistId,
@@ -59,6 +82,56 @@ export function usePlayerLogic() {
     setCurrentTrackIndex,
     shuffleEnabled,
   });
+
+  const handlePlaylistSelect = useCallback(
+    async (playlistId: string) => {
+      if (activeDescriptor?.id === 'dropbox') {
+        setError(null);
+        setIsLoading(true);
+        setSelectedPlaylistId(playlistId);
+        mediaTracksRef.current = [];
+        try {
+          const catalog = activeDescriptor.catalog;
+          const collectionRef = { provider: 'dropbox' as const, kind: 'folder' as const, id: playlistId };
+          const list = await catalog.listTracks(collectionRef);
+          if (list.length === 0) {
+            setError('No tracks found in this folder.');
+            setTracks([]);
+            setOriginalTracks([]);
+            setCurrentTrackIndex(0);
+            setIsLoading(false);
+            return;
+          }
+          mediaTracksRef.current = list;
+          const trackList = list.map(mediaTrackToTrack);
+          setOriginalTracks(trackList);
+          setTracks(trackList);
+          setCurrentTrackIndex(0);
+          setIsLoading(false);
+          await playTrack(0);
+        } catch (err) {
+          setError(err instanceof Error ? err.message : 'Failed to load folder.');
+          setTracks([]);
+          setOriginalTracks([]);
+          setCurrentTrackIndex(0);
+          setIsLoading(false);
+        }
+        return;
+      }
+      await spotifyHandlePlaylistSelect(playlistId);
+    },
+    [
+      activeDescriptor,
+      setError,
+      setIsLoading,
+      setSelectedPlaylistId,
+      setTracks,
+      setOriginalTracks,
+      setCurrentTrackIndex,
+      playTrack,
+      spotifyHandlePlaylistSelect,
+    ]
+  );
 
   useAutoAdvance({ tracks, currentTrackIndex, playTrack, enabled: true });
 
@@ -153,6 +226,7 @@ export function usePlayerLogic() {
     setSelectedPlaylistId(null);
     setTracks([]);
     setCurrentTrackIndex(0);
+    mediaTracksRef.current = [];
     setShowPlaylist(false);
     setShowVisualEffects(false);
   }, [handlePause, setSelectedPlaylistId, setTracks, setCurrentTrackIndex, setShowPlaylist, setShowVisualEffects]);
