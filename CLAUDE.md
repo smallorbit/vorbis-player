@@ -4,10 +4,12 @@ This file provides guidance to Claude Code (claude.ai/code) and other AI assista
 
 ## Project Overview
 
-**Vorbis Player** is a React-based Spotify music player with customizable visual effects, background visualizers, and a sleek, unified interface. The app streams music from a user's Spotify account (Premium required) with beautiful album artwork, dynamic color theming, customizable visual effects, and animated background visualizers for an immersive music listening experience.
+**Vorbis Player** is a React-based music player with customizable visual effects, background visualizers, and a sleek, unified interface. It supports multiple music providers — currently **Spotify** (streaming, Premium required) and **Dropbox** (personal music files) — with a pluggable provider architecture that allows adding more sources without app-level coupling.
 
 ### Key Features
+- **Multi-Provider Architecture**: Pluggable `AuthProvider` / `CatalogProvider` / `PlaybackProvider` interfaces; Spotify and Dropbox ship as first-party adapters
 - **Spotify Integration**: Full Web Playback SDK integration with playlist, album, and Liked Songs support
+- **Dropbox Integration**: OAuth 2.0 PKCE auth; folder-based album discovery; HTML5 Audio streaming via temporary links; ID3 tag metadata enrichment; IndexedDB art + catalog cache
 - **Visual Effects System**: Customizable glow effects, album art filters (brightness, contrast, saturation, sepia, hue rotation, blur)
 - **Background Visualizers**: 2 active visualizer types (Particles, Geometric), enabled by default
 - **Fully Responsive Design**: Fluid sizing with aspect-ratio calculations, container queries, and mobile-optimized layout
@@ -142,6 +144,27 @@ vorbis-player/
 │   │   └── VisualEffectsPerformanceMonitor.tsx
 │   ├── constants/               # Shared constants
 │   │   └── playlist.ts         # ALBUM_ID_PREFIX, LIKED_SONGS_ID, helpers
+│   ├── providers/               # Multi-provider system
+│   │   ├── registry.ts          # ProviderRegistryImpl singleton — providers register on import
+│   │   ├── __tests__/
+│   │   │   ├── registry.test.ts
+│   │   │   └── dropboxAdapters.test.ts
+│   │   ├── spotify/             # Spotify provider adapters
+│   │   │   ├── spotifyAuthAdapter.ts
+│   │   │   ├── spotifyCatalogAdapter.ts
+│   │   │   ├── spotifyPlaybackAdapter.ts
+│   │   │   ├── spotifyProvider.ts   # Builds & registers ProviderDescriptor for Spotify
+│   │   │   └── index.ts
+│   │   └── dropbox/             # Dropbox provider adapters
+│   │       ├── dropboxAuthAdapter.ts    # OAuth 2.0 PKCE flow, token storage/refresh
+│   │       ├── dropboxCatalogAdapter.ts # Folder scan → MediaCollection/MediaTrack; art fetching
+│   │       ├── dropboxPlaybackAdapter.ts # HTML5 Audio streaming; ID3 enrichment; link refresh
+│   │       ├── dropboxProvider.ts       # Builds & registers ProviderDescriptor for Dropbox
+│   │       ├── dropboxArtCache.ts       # IndexedDB cache for album art data URLs (7-day TTL)
+│   │       ├── dropboxCatalogCache.ts   # IndexedDB cache for collection list (1-hour TTL)
+│   │       ├── __tests__/
+│   │       │   └── dropboxCatalogCache.test.ts
+│   │       └── index.ts
 │   ├── hooks/                   # Custom React hooks (22 hooks)
 │   │   ├── __tests__/
 │   │   │   ├── useCustomAccentColors.test.ts
@@ -199,6 +222,8 @@ vorbis-player/
 │   ├── workers/                 # Web Workers
 │   │   └── imageProcessor.worker.ts
 │   ├── types/                   # TypeScript definitions
+│   │   ├── domain.ts            # ProviderId, MediaTrack, MediaCollection, CollectionRef, PlaybackState
+│   │   ├── providers.ts         # AuthProvider, CatalogProvider, PlaybackProvider, ProviderDescriptor, ProviderRegistry
 │   │   ├── filters.ts
 │   │   ├── spotify.d.ts
 │   │   ├── styled.d.ts
@@ -388,6 +413,53 @@ The application uses a centralized state management approach with custom React h
 - **useLibrarySync.ts** - Background library sync with IndexedDB cache, exposes playlists/albums/sync state
 - **usePinnedItems.ts** - Pin/unpin playlists and albums (max 4 per tab), persisted in localStorage
 
+### Multi-Provider Architecture
+
+The app uses a pluggable provider system defined in `src/types/providers.ts` and `src/types/domain.ts`. Each music source implements three adapter interfaces and is registered with the singleton `ProviderRegistry`.
+
+**Domain types** (`src/types/domain.ts`):
+- `ProviderId` — `'spotify' | 'dropbox'` (union extended per new provider)
+- `MediaTrack` — provider-agnostic track (id, name, artists, album, albumId, durationMs, image, playbackRef)
+- `MediaCollection` — provider-agnostic collection (id, provider, kind, name, trackCount, imageUrl, ownerName)
+- `CollectionRef` — stable key for a collection `{ provider, kind, id }`; serialised via `collectionRefToKey` / `keyToCollectionRef`
+- `PlaybackState` — current position, duration, isPlaying, currentTrackId, trackMetadata (for live ID3 updates)
+
+**Provider contracts** (`src/types/providers.ts`):
+- `AuthProvider` — `isAuthenticated()`, `getAccessToken()`, `ensureValidToken()`, `beginLogin()`, `handleCallback(url)`, `logout()`
+- `CatalogProvider` — `listCollections(signal?)`, `listTracks(collectionRef, signal?)`
+- `PlaybackProvider` — `initialize()`, `playTrack(track)`, `pause()`, `resume()`, `seek(ms)`, `setVolume(0-1)`, `getState()`, `subscribe(listener)`, `destroy()`
+- `ProviderDescriptor` — `{ id, name, capabilities, auth, catalog, playback }`. Capabilities: `hasLikedCollection`, `hasSaveTrack`, `hasExternalLink`
+- `ProviderRegistry` — `register(descriptor)`, `get(id)`, `getAll()`, `has(id)`
+
+**Provider registration** (`src/providers/registry.ts`):
+- Singleton `providerRegistry` instance
+- Providers register themselves at module load time (imported from `src/providers/spotify/index.ts` and `src/providers/dropbox/index.ts`)
+- Dropbox is only registered if `VITE_DROPBOX_CLIENT_ID` is set in the environment
+
+**Dropbox Provider** (`src/providers/dropbox/`):
+
+| File | Responsibility |
+|------|---------------|
+| `dropboxAuthAdapter.ts` | OAuth 2.0 PKCE: generates code verifier/challenge, redirects to Dropbox, exchanges code for token, stores tokens in `localStorage` (`vorbis-player-dropbox-token`, `vorbis-player-dropbox-refresh-token`), refreshes on 401 |
+| `dropboxCatalogAdapter.ts` | Recursively lists Dropbox app root via `files/list_folder`; maps folders containing audio files to `MediaCollection` (kind `album`); fetches and caches cover art as base64 data URLs; parses track number and name from filenames |
+| `dropboxPlaybackAdapter.ts` | Resolves `playbackRef.ref` (Dropbox path) to a temporary link via `files/get_temporary_link`; plays via HTML5 `Audio`; enriches metadata in background by fetching first 256 KB and parsing ID3 tags (`src/utils/id3Parser.ts`); polls every 250 ms for timeline updates |
+| `dropboxArtCache.ts` | IndexedDB (`vorbis-dropbox-art`, store `art`) for album art data URLs with 7-day TTL |
+| `dropboxCatalogCache.ts` | IndexedDB (same DB, store `catalog`) for collection list with 1-hour TTL |
+| `dropboxProvider.ts` | Assembles adapters into `ProviderDescriptor`; capabilities: `hasLikedCollection: false`, `hasSaveTrack: false`, `hasExternalLink: false`; registers with `providerRegistry` |
+
+**Expected Dropbox folder structure**:
+```
+Dropbox root/
+└── <Artist>/
+    └── <Album>/
+        ├── cover.jpg       # album art (also: album.jpg, folder.jpg, front.jpg)
+        ├── 01 - Track.mp3
+        └── 02 - Track.mp3
+```
+Folders that directly contain audio files are treated as albums; their parent folder name becomes the artist. A synthetic "All Music" collection (kind `folder`, id `''`) is always prepended.
+
+**Capability-aware UI**: components check `activeDescriptor.capabilities` before rendering provider-specific controls. `hasSaveTrack: false` hides the Like button; `hasExternalLink: false` hides "Open in Spotify"-style links.
+
 ### Service Layer
 
 **Spotify Services**:
@@ -541,7 +613,12 @@ Use `@/` prefix for clean imports: `import { usePlayerState } from '@/hooks/useP
 
 ## Testing
 
-### Active Test Suites (13 files)
+### Active Test Suites (16 files)
+
+**Provider Tests**:
+- `src/providers/__tests__/registry.test.ts` - ProviderRegistry get/getAll/has logic
+- `src/providers/__tests__/dropboxAdapters.test.ts` - Dropbox auth, catalog, and playback adapter behaviour
+- `src/providers/dropbox/__tests__/dropboxCatalogCache.test.ts` - IndexedDB catalog cache TTL and CRUD
 
 **Hook Tests**:
 - `src/hooks/__tests__/useKeyboardShortcuts.test.ts` - Keyboard shortcut handling and event delegation
@@ -582,6 +659,14 @@ Use `@/` prefix for clean imports: `import { usePlayerState } from '@/hooks/useP
 - **Authentication issues**: Use `127.0.0.1` not `localhost` for OAuth callback
 - **Track skipping**: Auto-skip handles 403 Restriction Violated errors for unavailable tracks
 
+### Dropbox Integration
+- **Dropbox option not visible**: `VITE_DROPBOX_CLIENT_ID` must be set in `.env.local`; the provider is only registered when this var is present. Restart the dev server after adding it.
+- **Auth callback fails**: Ensure `http://127.0.0.1:3000/auth/dropbox/callback` (or the production equivalent) is listed in the Dropbox app's **Redirect URIs** in the developer console.
+- **No collections / no tracks**: Confirm the Dropbox account contains audio files (`.mp3`, `.flac`, `.ogg`, `.m4a`, `.wav`, `.aac`, `.opus`) in folders. Files at the root level without a parent folder are skipped by the album-detection logic.
+- **Art not loading**: Place `cover.jpg` (or `folder.jpg`, `album.jpg`, `front.jpg`) in the same directory as audio files. Art is cached in IndexedDB (`vorbis-dropbox-art`) with a 7-day TTL; clearing site data forces a re-fetch.
+- **Stale catalog**: The collection list is cached in IndexedDB for 1 hour. To force a refresh, call `clearCatalogCache()` from `src/providers/dropbox/dropboxCatalogCache.ts` or clear site data.
+- **Token expired**: `DropboxAuthAdapter.refreshAccessToken()` is called automatically on 401. If refresh fails (e.g. refresh token revoked), the user is logged out and must reconnect from App Settings.
+
 ### Visual Effects
 - **Album art filters not working**: Always pass `albumFilters={albumFilters}` to AlbumArt component
 
@@ -598,6 +683,13 @@ Required in `.env.local`:
 VITE_SPOTIFY_CLIENT_ID="your_spotify_client_id"
 VITE_SPOTIFY_REDIRECT_URI="http://127.0.0.1:3000/auth/spotify/callback"
 ```
+
+Optional — add to enable Dropbox:
+```
+VITE_DROPBOX_CLIENT_ID="your_dropbox_app_key"
+```
+
+When `VITE_DROPBOX_CLIENT_ID` is absent the Dropbox provider module is not registered and the setting to connect Dropbox does not appear in the UI. The redirect URI for Dropbox is derived at runtime from `window.location.origin` (e.g. `http://127.0.0.1:3000/auth/dropbox/callback`) — this must be added to the Dropbox app's allowed redirect URIs in the [Dropbox Developer Console](https://www.dropbox.com/developers/apps).
 
 ## Coding Conventions
 
@@ -665,6 +757,10 @@ VITE_SPOTIFY_REDIRECT_URI="http://127.0.0.1:3000/auth/spotify/callback"
 - **Drawers**: `src/components/LibraryDrawer.tsx`, `src/components/PlaylistBottomSheet.tsx`, `src/components/styled/Drawer.tsx`
 - **Gestures**: `src/hooks/useSwipeGesture.ts`, `src/hooks/useVerticalSwipeGesture.ts`
 - **Constants**: `src/constants/playlist.ts`
+- **Provider contracts**: `src/types/domain.ts`, `src/types/providers.ts`
+- **Provider registry**: `src/providers/registry.ts`
+- **Dropbox provider**: `src/providers/dropbox/` (auth, catalog, playback adapters + art/catalog cache)
+- **Spotify provider**: `src/providers/spotify/` (auth, catalog, playback adapters)
 
 ### AI Workflow Rules
 For structured feature development workflows, see `.claude/rules/`:

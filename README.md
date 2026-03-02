@@ -8,7 +8,9 @@ A visually immersive Spotify music player built with React, featuring customizab
 
 ## Features
 
+- **Multi-Provider Support**: Stream from Spotify or your personal Dropbox music library; switch providers from app settings
 - **Spotify Integration**: Stream music from your Spotify account (Premium required)
+- **Dropbox Integration**: Browse and play audio files (MP3, FLAC, OGG, M4A, WAV) stored in your Dropbox
 - **Playlists & Albums**: Browse, search, sort, filter, and pin your playlists and albums
 - **Liked Songs**: Play your Liked Songs collection with automatic shuffle
 - **Visual Effects**: Dynamic glow effects with configurable intensity and animation rate
@@ -27,8 +29,9 @@ A visually immersive Spotify music player built with React, featuring customizab
 ### Prerequisites
 
 - Node.js 18+ and npm
-- A Spotify Premium account
-- Access to [Spotify Developer Dashboard](https://developer.spotify.com/dashboard)
+- A Spotify Premium account and/or a Dropbox account with music files
+- Access to [Spotify Developer Dashboard](https://developer.spotify.com/dashboard) (for Spotify)
+- Access to [Dropbox Developer Console](https://www.dropbox.com/developers/apps) (for Dropbox)
 
 ### Installation
 
@@ -40,18 +43,25 @@ A visually immersive Spotify music player built with React, featuring customizab
    npm install
    ```
 
-2. **Set up Spotify App**
+2. **Set up Spotify App** *(required for Spotify playback)*
    - Create a new app at [Spotify Developer Dashboard](https://developer.spotify.com/dashboard)
    - Choose "Web Playback SDK" for planned API usage
    - Add redirect URI: `http://127.0.0.1:3000/auth/spotify/callback`
    - **Important**: Use `127.0.0.1` instead of `localhost` for Spotify OAuth compatibility
    - Copy your Client ID
 
-3. **Configure environment**
+3. **Set up Dropbox App** *(optional — only needed for Dropbox playback)*
+   - Create a new app at [Dropbox Developer Console](https://www.dropbox.com/developers/apps)
+   - Choose **Scoped access** → **Full Dropbox** (or App folder)
+   - Under **Permissions**, enable: `files.metadata.read`, `files.content.read`
+   - Under **Settings**, add redirect URI: `http://127.0.0.1:3000/auth/dropbox/callback`
+   - Copy your App Key
+
+4. **Configure environment**
 
    ```bash
    cp .env.example .env.local
-   # Edit .env.local with your Spotify Client ID
+   # Edit .env.local with your credentials
    ```
 
    Required in `.env.local`:
@@ -61,16 +71,24 @@ A visually immersive Spotify music player built with React, featuring customizab
    VITE_SPOTIFY_REDIRECT_URI="http://127.0.0.1:3000/auth/spotify/callback"
    ```
 
-4. **Start the app**
+   Add this line to also enable Dropbox:
+
+   ```
+   VITE_DROPBOX_CLIENT_ID="your_dropbox_app_key_here"
+   ```
+
+   If `VITE_DROPBOX_CLIENT_ID` is omitted, the Dropbox provider is disabled and the app runs Spotify-only.
+
+5. **Start the app**
 
    ```bash
    npm run dev
    ```
 
-5. **First run**
+6. **First run**
    - Open <http://127.0.0.1:3000>
-   - Click "Connect Spotify" to authenticate
-   - Choose from your playlists, albums, or select "Liked Songs" for shuffled playback
+   - Click "Connect Spotify" to authenticate with Spotify, **or** open App Settings (gear icon) and connect Dropbox
+   - Choose from your playlists/albums (Spotify) or browse your Dropbox folders
 
 ## User Interface
 
@@ -113,6 +131,21 @@ The library drawer supports:
 - **View Modes**: Toggle between Playlists and Albums tabs
 - **Pinning**: Pin up to 4 playlists and 4 albums to the top of their tabs
 - **Liked Songs**: Special entry with shuffle indicator
+
+### Provider Selection
+
+Open the App Settings drawer (gear icon → App Settings or a dedicated section) to manage music sources:
+
+- **Connect / Disconnect**: Authenticate or revoke each provider independently
+- **Use this source**: Switch the active provider; the library and playback context update in-place without a full page reload
+- **Persistence**: Your active provider choice is saved in localStorage and restored on next visit
+
+When Dropbox is active:
+- The library shows your Dropbox folders as albums, discovered from your Dropbox file hierarchy
+- Supported audio formats: MP3, FLAC, OGG/Vorbis, M4A/AAC, WAV (unsupported formats are skipped)
+- Album art is read from image files (`cover.jpg`, `folder.png`, etc.) found alongside your audio files
+- Track metadata (title, artist, album, cover art) is read from ID3 tags embedded in MP3 files
+- Provider-specific actions (Like, "Open in Spotify") are hidden for Dropbox tracks
 
 ### Visual Effects Menu
 
@@ -181,10 +214,14 @@ src/
 │   └── VisualEffectsMenu/   # Visual effects configuration panel
 ├── constants/               # Shared constants (playlist IDs, prefixes)
 ├── hooks/                   # 22 custom React hooks
+├── providers/               # Multi-provider system
+│   ├── registry.ts          # Singleton ProviderRegistry
+│   ├── spotify/             # Spotify auth, catalog, playback adapters
+│   └── dropbox/             # Dropbox auth, catalog, playback adapters + art/catalog cache
 ├── services/                # Spotify API, Playback SDK, IndexedDB cache
 ├── utils/                   # Utility functions (color, sizing, filters)
 ├── styles/                  # Theme, global styles, CSS animations
-├── types/                   # TypeScript definitions
+├── types/                   # TypeScript definitions (domain.ts, providers.ts)
 ├── workers/                 # Web Workers (image processing)
 └── lib/                     # Helper functions
 ```
@@ -193,8 +230,8 @@ src/
 
 - **Frontend**: React 18 + TypeScript + Vite
 - **Styling**: styled-components with theme system + Radix UI primitives
-- **Audio**: Spotify Web Playback SDK + Web API
-- **Authentication**: PKCE OAuth 2.0 flow
+- **Audio**: Spotify Web Playback SDK + Web API; HTML5 Audio for Dropbox streams
+- **Authentication**: PKCE OAuth 2.0 (Spotify and Dropbox)
 - **Testing**: Vitest + React Testing Library
 - **Performance**: Web Workers, LRU caching, IndexedDB persistence, lazy loading, container queries
 
@@ -210,6 +247,8 @@ For detailed instructions, see [deploy-to-vercel.md](./docs/deployment/deploy-to
 3. Set environment variables:
    - `VITE_SPOTIFY_CLIENT_ID`: Your Spotify app's Client ID
    - `VITE_SPOTIFY_REDIRECT_URI`: `https://your-app.vercel.app/auth/spotify/callback`
+   - `VITE_DROPBOX_CLIENT_ID`: Your Dropbox app key *(optional — omit to disable Dropbox)*
+   - Update the Dropbox app's redirect URI to `https://your-app.vercel.app/auth/dropbox/callback`
 4. Deploy!
 
 ### Manual Build
@@ -224,14 +263,33 @@ The `dist/` folder contains static files deployable to any web hosting service.
 
 ## Troubleshooting
 
-### "No tracks found"
+### "No tracks found" (Spotify)
 - Ensure you have a Spotify Premium subscription
 - Create playlists with music or like some songs in Spotify
 
-### Authentication Issues
+### Authentication Issues (Spotify)
 - Double-check your Client ID in `.env.local`
 - Ensure redirect URI matches exactly in both `.env.local` and Spotify app settings
 - Use `127.0.0.1` instead of `localhost`
+
+### Dropbox Not Appearing in Settings
+- Make sure `VITE_DROPBOX_CLIENT_ID` is set in `.env.local` (the Dropbox provider is only registered when this variable is present)
+- Restart the dev server after changing `.env.local`
+
+### Dropbox Authentication Issues
+- Verify that the redirect URI `http://127.0.0.1:3000/auth/dropbox/callback` is added in your Dropbox app's **Settings** tab
+- Confirm the Dropbox app has `files.metadata.read` and `files.content.read` permissions enabled
+- Try disconnecting and reconnecting from App Settings; this clears stale tokens
+
+### Dropbox: No Albums / No Tracks
+- Ensure your Dropbox contains audio files (MP3, FLAC, OGG, M4A, WAV) organized in folders
+- Expected structure: `/<Artist>/<Album>/<track.mp3>` or `/<Album>/<track.mp3>`
+- Folders with no audio files are not listed as albums
+- After connecting, give the app a moment to scan your Dropbox (the first load enumerates all files recursively)
+
+### Dropbox: Album Art Not Showing
+- Place an image file (`cover.jpg`, `folder.png`, `album.jpg`, etc.) in the same folder as your audio files
+- Art is cached in IndexedDB with a 7-day TTL; clearing site data forces a fresh download
 
 ### Visual Effects Issues
 - Clear localStorage to reset visual settings to defaults
