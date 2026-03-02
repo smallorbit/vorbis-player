@@ -1,6 +1,17 @@
 /**
  * Dropbox CatalogProvider adapter.
  * Scans Dropbox folders for audio files and maps them to domain types.
+ *
+ * Expected folder layout (up to 2 levels of nesting):
+ *   <app-root>/
+ *     <Artist>/
+ *       <Album>/
+ *         cover.jpg
+ *         01 - Track.mp3
+ *         ...
+ *
+ * A folder that directly contains audio files is treated as an album.
+ * Its parent folder (if not the root) is used as the artist name.
  */
 
 import type { CatalogProvider } from '@/types/providers';
@@ -9,13 +20,7 @@ import { DropboxAuthAdapter } from './dropboxAuthAdapter';
 
 const AUDIO_EXTENSIONS = ['.mp3', '.flac', '.ogg', '.m4a', '.wav', '.aac', '.wma', '.opus'];
 const IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.webp'];
-/**
- * Preferred names for album art: filename (without extension) equals or contains one of these.
- * Store one image file (e.g. cover.jpg or "Album Name - album cover.jpeg") in the same folder
- * as the tracks; the player will use it for all tracks in that folder.
- */
 const ALBUM_ART_NAMES = ['cover', 'album', 'folder', 'front', 'album cover', 'album_cover', 'artwork'];
-const MUSIC_ROOT = import.meta.env.VITE_DROPBOX_MUSIC_ROOT ?? '/Music';
 
 interface DropboxFileEntry {
   '.tag': 'file' | 'folder';
@@ -42,13 +47,10 @@ function isImageFile(name: string): boolean {
   return IMAGE_EXTENSIONS.some((ext) => lower.endsWith(ext));
 }
 
-/** Base name without extension, lowercased. */
-function baseName(pathOrName: string): string {
-  const name = pathOrName.split('/').pop() ?? pathOrName;
+function baseName(name: string): string {
   return name.replace(/\.[^/.]+$/, '').toLowerCase().trim();
 }
 
-/** Pick the best album-art path from a list of file entries (prefer standard names). */
 function pickAlbumArtPath(entries: DropboxFileEntry[]): string | null {
   if (entries.length === 0) return null;
   for (const preferred of ALBUM_ART_NAMES) {
@@ -58,20 +60,12 @@ function pickAlbumArtPath(entries: DropboxFileEntry[]): string | null {
   return entries[0].path_lower;
 }
 
-/**
- * Parses a filename like "02 - Song Title.mp3" or "Song Title.mp3"
- * into a track name and optional track number.
- */
 function parseFilename(filename: string): { name: string; trackNumber?: number } {
-  // Remove extension
   const base = filename.replace(/\.[^/.]+$/, '');
-
-  // Try to extract leading track number: "02 - Song" or "02. Song" or "02 Song"
   const match = base.match(/^(\d{1,3})\s*[-.\s]\s*(.+)$/);
   if (match) {
     return { name: match[2].trim(), trackNumber: parseInt(match[1], 10) };
   }
-
   return { name: base };
 }
 
@@ -101,7 +95,6 @@ export class DropboxCatalogAdapter implements CatalogProvider {
       signal,
     });
 
-    // If 401, try refreshing the token once
     if (response.status === 401) {
       token = await this.auth.refreshAccessToken();
       if (!token) throw new Error('Dropbox authentication expired');
@@ -125,67 +118,97 @@ export class DropboxCatalogAdapter implements CatalogProvider {
     return response.json();
   }
 
+  /**
+   * Recursively scans the app root to discover albums (folders containing audio files).
+   * Each such folder becomes an album collection; its parent folder name is the artist.
+   * Also returns a single "All Music" playlist with the total track count.
+   */
   async listCollections(signal?: AbortSignal): Promise<MediaCollection[]> {
     try {
-      let result: DropboxListFolderResult;
-      let listPath = MUSIC_ROOT;
+      let result = await this.dropboxApi<DropboxListFolderResult>(
+        '/files/list_folder',
+        { path: '', recursive: true },
+        signal,
+      );
 
-      try {
+      // path_lower → display name / parent path
+      const dirDisplayName = new Map<string, string>();
+      const dirParent = new Map<string, string>();
+      // path_lower → audio file count
+      const audioCount = new Map<string, number>();
+      // path_lower → image file entries
+      const imagesByDir = new Map<string, DropboxFileEntry[]>();
+
+      const processBatch = (entries: DropboxFileEntry[]) => {
+        for (const entry of entries) {
+          if (entry['.tag'] === 'folder') {
+            dirDisplayName.set(entry.path_lower, entry.name);
+            const parent = entry.path_lower.split('/').slice(0, -1).join('/');
+            dirParent.set(entry.path_lower, parent);
+          } else if (entry['.tag'] === 'file') {
+            const dir = entry.path_lower.split('/').slice(0, -1).join('/') || '/';
+            if (isAudioFile(entry.name)) {
+              audioCount.set(dir, (audioCount.get(dir) ?? 0) + 1);
+            } else if (isImageFile(entry.name)) {
+              const list = imagesByDir.get(dir) ?? [];
+              list.push(entry);
+              imagesByDir.set(dir, list);
+            }
+          }
+        }
+      };
+
+      processBatch(result.entries);
+      while (result.has_more) {
+        if (signal?.aborted) throw new DOMException('Request aborted', 'AbortError');
         result = await this.dropboxApi<DropboxListFolderResult>(
-          '/files/list_folder',
-          { path: listPath, recursive: false },
+          '/files/list_folder/continue',
+          { cursor: result.cursor },
           signal,
         );
-      } catch (firstErr) {
-        if (!this.isPathNotFound(firstErr)) throw firstErr;
-        listPath = '';
-        result = await this.dropboxApi<DropboxListFolderResult>(
-          '/files/list_folder',
-          { path: '', recursive: false },
-          signal,
-        );
+        processBatch(result.entries);
       }
 
-      const folders = result.entries
-        .filter((e) => e['.tag'] === 'folder')
-        .map((folder): MediaCollection => ({
-          id: folder.path_lower,
-          provider: 'dropbox',
-          kind: 'folder',
-          name: folder.name,
-        }));
+      let totalTracks = 0;
+      const albums: MediaCollection[] = [];
 
-      const rootLabel = listPath ? 'All Music' : 'All (root)';
-      const rootId = listPath ? listPath.toLowerCase() : '';
-      folders.unshift({
-        id: rootId,
+      for (const [dirPath, count] of audioCount) {
+        totalTracks += count;
+
+        const name = dirDisplayName.get(dirPath) ?? (dirPath.split('/').pop() || 'Unknown Album');
+        const parentPath = dirParent.get(dirPath) ?? '';
+        const artistName = parentPath ? (dirDisplayName.get(parentPath) ?? undefined) : undefined;
+
+        albums.push({
+          id: dirPath,
+          provider: 'dropbox',
+          kind: 'album',
+          name,
+          trackCount: count,
+          ownerName: artistName ?? null,
+        });
+      }
+
+      albums.sort((a, b) => a.name.localeCompare(b.name));
+
+      const allMusic: MediaCollection = {
+        id: '',
         provider: 'dropbox',
         kind: 'folder',
-        name: rootLabel,
-      });
+        name: 'All Music',
+        trackCount: totalTracks,
+      };
 
-      return folders;
+      return [allMusic, ...albums];
     } catch (error) {
       console.error('[DropboxCatalog] Failed to list collections:', error);
       return [];
     }
   }
 
-  private isPathNotFound(error: unknown): boolean {
-    if (!(error instanceof Error)) return false;
-    if (!error.message.includes('409')) return false;
-    try {
-      const match = error.message.match(/\{[\s\S]*\}/);
-      const body = match ? (JSON.parse(match[0]) as { error?: { '.tag'?: string; path?: { '.tag'?: string } } }) : null;
-      return body?.error?.['.tag'] === 'path' && body?.error?.path?.['.tag'] === 'not_found';
-    } catch {
-      return error.message.includes('path/not_found') || error.message.includes('not_found');
-    }
-  }
-
   async listTracks(collectionRef: CollectionRef, signal?: AbortSignal): Promise<MediaTrack[]> {
     if (collectionRef.provider !== 'dropbox') return [];
-    if (collectionRef.kind === 'liked') return []; // Dropbox has no liked collection
+    if (collectionRef.kind === 'liked') return [];
 
     const folderPath = collectionRef.id;
 
@@ -199,7 +222,7 @@ export class DropboxCatalogAdapter implements CatalogProvider {
       const audioEntries: DropboxFileEntry[] = [];
       const imagesByDir = new Map<string, DropboxFileEntry[]>();
 
-      function processBatch(entries: DropboxFileEntry[]) {
+      const processBatch = (entries: DropboxFileEntry[]) => {
         for (const entry of entries) {
           if (entry['.tag'] !== 'file') continue;
           if (isAudioFile(entry.name)) {
@@ -211,10 +234,9 @@ export class DropboxCatalogAdapter implements CatalogProvider {
             imagesByDir.set(dir, list);
           }
         }
-      }
+      };
 
       processBatch(result.entries);
-
       while (result.has_more) {
         if (signal?.aborted) throw new DOMException('Request aborted', 'AbortError');
         result = await this.dropboxApi<DropboxListFolderResult>(
@@ -238,7 +260,7 @@ export class DropboxCatalogAdapter implements CatalogProvider {
             const url = await this.getTemporaryLink(path);
             dirToImageUrl.set(dir, url);
           } catch {
-            // Skip if temp link fails (e.g. unsupported format)
+            // Skip if temp link fails
           }
         }),
       );
@@ -246,7 +268,7 @@ export class DropboxCatalogAdapter implements CatalogProvider {
       const tracks: MediaTrack[] = audioEntries.map((entry) => {
         const dir = entry.path_lower.split('/').slice(0, -1).join('/') || '/';
         const imageUrl = dirToImageUrl.get(dir) ?? undefined;
-        return this.entryToMediaTrack(entry, folderPath, imageUrl);
+        return this.entryToMediaTrack(entry, imageUrl);
       });
 
       tracks.sort((a, b) => {
@@ -262,35 +284,28 @@ export class DropboxCatalogAdapter implements CatalogProvider {
     }
   }
 
-  private entryToMediaTrack(entry: DropboxFileEntry, folderPath: string, imageUrl?: string): MediaTrack {
+  private entryToMediaTrack(entry: DropboxFileEntry, imageUrl?: string): MediaTrack {
     const { name, trackNumber } = parseFilename(entry.name);
 
-    // Infer album from the immediate parent folder name
-    const pathParts = entry.path_display.split('/');
-    const albumFolder = pathParts.length > 2 ? pathParts[pathParts.length - 2] : 'Unknown Album';
-
-    // Use the path-based folder as "artist" if deeper than root
-    const relativePath = entry.path_lower.replace(folderPath, '');
-    const relParts = relativePath.split('/').filter(Boolean);
-    const artistFolder = relParts.length > 2 ? relParts[0] : undefined;
+    // Derive album and artist from the path hierarchy.
+    // Expected: /<artist>/<album>/<track> or /<album>/<track>
+    const displayParts = entry.path_display.split('/').filter(Boolean);
+    const albumName = displayParts.length >= 2 ? displayParts[displayParts.length - 2] : 'Unknown Album';
+    const artistName = displayParts.length >= 3 ? displayParts[displayParts.length - 3] : undefined;
 
     return {
       id: entry.id,
       provider: 'dropbox',
       playbackRef: { provider: 'dropbox', ref: entry.path_lower },
       name,
-      artists: artistFolder ?? 'Unknown Artist',
-      album: albumFolder,
+      artists: artistName ?? 'Unknown Artist',
+      album: albumName,
       trackNumber,
-      durationMs: 0, // Will be determined during playback
+      durationMs: 0,
       image: imageUrl,
     };
   }
 
-  /**
-   * Get a temporary link for streaming an audio file from Dropbox.
-   * Links are valid for 4 hours.
-   */
   async getTemporaryLink(path: string): Promise<string> {
     const result = await this.dropboxApi<{ link: string }>(
       '/files/get_temporary_link',
