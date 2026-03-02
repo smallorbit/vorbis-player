@@ -61,6 +61,15 @@ export function usePlayerLogic() {
   /** When provider is Dropbox, holds the MediaTrack[] for playback; otherwise empty. */
   const mediaTracksRef = useRef<MediaTrack[]>([]);
 
+  // Refs so the provider subscription handler always sees the latest values
+  // without needing them in the effect's dependency array (which would cause
+  // the subscription to tear down and recreate on every track change, triggering
+  // a getState() call that can briefly reset currentTrackIndex to the old track).
+  const tracksRef = useRef(tracks);
+  tracksRef.current = tracks;
+  const currentTrackIndexRef = useRef(currentTrackIndex);
+  currentTrackIndexRef.current = currentTrackIndex;
+
   // Keep mediaTracksRef.current in the same order as `tracks` so index-based
   // playback is always correct, even after shuffle is toggled.
   useLayoutEffect(() => {
@@ -190,8 +199,9 @@ export function usePlayerLogic() {
 
         if (state.currentTrackId) {
           const trackId = state.currentTrackId;
-          const trackIndex = tracks.findIndex((t: Track) => t.id === trackId);
-          if (trackIndex !== -1 && trackIndex !== currentTrackIndex) {
+          const currentTracks = tracksRef.current;
+          const trackIndex = currentTracks.findIndex((t: Track) => t.id === trackId);
+          if (trackIndex !== -1 && trackIndex !== currentTrackIndexRef.current) {
             setCurrentTrackIndex(trackIndex);
           }
 
@@ -237,24 +247,24 @@ export function usePlayerLogic() {
     });
 
     return unsubscribe;
-  }, [activeDescriptor, tracks, currentTrackIndex, setCurrentTrackIndex]);
+  // Intentionally omit `tracks` and `currentTrackIndex` from deps — we read
+  // them via refs so the subscription is only recreated when the active
+  // provider changes, not on every track transition.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeDescriptor, setCurrentTrackIndex, setTracks]);
 
   const handleNext = useCallback(() => {
     if (tracks.length === 0) return;
-    setCurrentTrackIndex(prevIndex => {
-      const nextIndex = (prevIndex + 1) % tracks.length;
-      playTrack(nextIndex, true);
-      return nextIndex;
-    });
+    const nextIndex = (currentTrackIndexRef.current + 1) % tracks.length;
+    setCurrentTrackIndex(nextIndex);
+    playTrack(nextIndex, true);
   }, [tracks.length, playTrack, setCurrentTrackIndex]);
 
   const handlePrevious = useCallback(() => {
     if (tracks.length === 0) return;
-    setCurrentTrackIndex(prevIndex => {
-      const newIndex = prevIndex === 0 ? tracks.length - 1 : prevIndex - 1;
-      playTrack(newIndex, true);
-      return newIndex;
-    });
+    const newIndex = currentTrackIndexRef.current === 0 ? tracks.length - 1 : currentTrackIndexRef.current - 1;
+    setCurrentTrackIndex(newIndex);
+    playTrack(newIndex, true);
   }, [tracks.length, playTrack, setCurrentTrackIndex]);
 
   const handlePlay = useCallback(() => {
