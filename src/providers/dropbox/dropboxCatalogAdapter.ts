@@ -17,10 +17,12 @@
 import type { CatalogProvider } from '@/types/providers';
 import type { ProviderId, MediaTrack, MediaCollection, CollectionRef } from '@/types/domain';
 import { DropboxAuthAdapter } from './dropboxAuthAdapter';
+import { getArt, putArt, clearArt } from './dropboxArtCache';
 
 const AUDIO_EXTENSIONS = ['.mp3', '.flac', '.ogg', '.m4a', '.wav', '.aac', '.wma', '.opus'];
 const IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.webp'];
 const ALBUM_ART_NAMES = ['cover', 'album', 'folder', 'front', 'album cover', 'album_cover', 'artwork'];
+const THUMBNAIL_ART_NAMES = ['thumb', 'thumbnail'];
 
 interface DropboxFileEntry {
   '.tag': 'file' | 'folder';
@@ -51,13 +53,22 @@ function baseName(name: string): string {
   return name.replace(/\.[^/.]+$/, '').toLowerCase().trim();
 }
 
-function pickAlbumArtPath(entries: DropboxFileEntry[]): string | null {
-  if (entries.length === 0) return null;
-  for (const preferred of ALBUM_ART_NAMES) {
+function findArtByNames(entries: DropboxFileEntry[], names: string[]): string | null {
+  for (const preferred of names) {
     const found = entries.find((e) => baseName(e.name) === preferred || baseName(e.name).includes(preferred));
     if (found) return found.path_lower;
   }
-  return entries[0].path_lower;
+  return null;
+}
+
+function pickAlbumArtPath(entries: DropboxFileEntry[]): string | null {
+  if (entries.length === 0) return null;
+  return findArtByNames(entries, ALBUM_ART_NAMES) ?? entries[0].path_lower;
+}
+
+function pickThumbnailArtPath(entries: DropboxFileEntry[]): string | null {
+  if (entries.length === 0) return null;
+  return findArtByNames(entries, THUMBNAIL_ART_NAMES) ?? pickAlbumArtPath(entries);
 }
 
 function parseFilename(filename: string): { name: string; trackNumber?: number } {
@@ -72,9 +83,59 @@ function parseFilename(filename: string): { name: string; trackNumber?: number }
 export class DropboxCatalogAdapter implements CatalogProvider {
   readonly providerId: ProviderId = 'dropbox';
   private auth: DropboxAuthAdapter;
+  // Deduplicates concurrent fetch requests for the same image path
+  private pendingArtFetches = new Map<string, Promise<string | null>>();
 
   constructor(auth: DropboxAuthAdapter) {
     this.auth = auth;
+  }
+
+  /**
+   * Fetches an image from Dropbox and caches it as a data URL in IndexedDB.
+   * Subsequent calls for the same path return the cached value instantly.
+   * Concurrent calls for the same path are deduplicated.
+   */
+  private fetchArtDataUrl(path: string): Promise<string | null> {
+    const pending = this.pendingArtFetches.get(path);
+    if (pending) return pending;
+
+    const promise = this.doFetchArtDataUrl(path).finally(() => {
+      this.pendingArtFetches.delete(path);
+    });
+    this.pendingArtFetches.set(path, promise);
+    return promise;
+  }
+
+  private async doFetchArtDataUrl(path: string): Promise<string | null> {
+    const cached = await getArt(path);
+    if (cached) return cached;
+
+    try {
+      const tempUrl = await this.getTemporaryLink(path);
+      const resp = await fetch(tempUrl);
+      if (!resp.ok) return null;
+
+      const mimeType = resp.headers.get('Content-Type') ?? 'image/jpeg';
+      const buffer = await resp.arrayBuffer();
+      const bytes = new Uint8Array(buffer);
+
+      const CHUNK = 8192;
+      let binary = '';
+      for (let i = 0; i < bytes.length; i += CHUNK) {
+        binary += String.fromCharCode(...bytes.subarray(i, i + CHUNK));
+      }
+      const dataUrl = `data:${mimeType};base64,${btoa(binary)}`;
+
+      await putArt(path, dataUrl);
+      return dataUrl;
+    } catch {
+      return null;
+    }
+  }
+
+  /** Clears all cached album art, forcing a fresh download on next library load. */
+  async clearArtCache(): Promise<void> {
+    await clearArt();
   }
 
   private async dropboxApi<T>(
@@ -169,6 +230,22 @@ export class DropboxCatalogAdapter implements CatalogProvider {
         processBatch(result.entries);
       }
 
+      // Fetch and cache art data URLs for each album directory in parallel
+      const dirImagePaths = new Map<string, string>();
+      for (const dirPath of audioCount.keys()) {
+        const entries = imagesByDir.get(dirPath) ?? [];
+        const path = pickThumbnailArtPath(entries);
+        if (path) dirImagePaths.set(dirPath, path);
+      }
+
+      const dirToImageUrl = new Map<string, string>();
+      await Promise.all(
+        Array.from(dirImagePaths.entries()).map(async ([dir, path]) => {
+          const url = await this.fetchArtDataUrl(path);
+          if (url) dirToImageUrl.set(dir, url);
+        }),
+      );
+
       let totalTracks = 0;
       const albums: MediaCollection[] = [];
 
@@ -186,6 +263,7 @@ export class DropboxCatalogAdapter implements CatalogProvider {
           name,
           trackCount: count,
           ownerName: artistName ?? null,
+          imageUrl: dirToImageUrl.get(dirPath),
         });
       }
 
@@ -256,12 +334,8 @@ export class DropboxCatalogAdapter implements CatalogProvider {
       const dirToImageUrl = new Map<string, string>();
       await Promise.all(
         Array.from(dirToImagePath.entries()).map(async ([dir, path]) => {
-          try {
-            const url = await this.getTemporaryLink(path);
-            dirToImageUrl.set(dir, url);
-          } catch {
-            // Skip if temp link fails
-          }
+          const url = await this.fetchArtDataUrl(path);
+          if (url) dirToImageUrl.set(dir, url);
         }),
       );
 
