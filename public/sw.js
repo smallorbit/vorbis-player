@@ -81,6 +81,9 @@ self.addEventListener('fetch', (event) => {
   // Skip Vite dev server artifacts — these have unstable hashes and must never be served stale
   if (url.includes('/node_modules/.vite/') || url.includes('/@vite/') || url.includes('/@fs/')) return;
 
+  // Skip Dropbox URLs — short-lived authenticated temporary links must not be cached
+  if (url.includes('dl.dropboxusercontent.com') || url.includes('dropbox.com')) return;
+
   event.respondWith(handleRequest(request));
 });
 
