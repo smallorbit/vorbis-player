@@ -1,7 +1,6 @@
-import React, { createContext, useContext, useCallback, useMemo } from 'react';
-import { useLocalStorage } from '@/hooks/useLocalStorage';
-
-const MAX_PINS_PER_TAB = 4;
+import React, { createContext, useContext, useCallback, useMemo, useState, useEffect } from 'react';
+import { useProviderContext } from '@/contexts/ProviderContext';
+import { getPins, setPins, migratePinsFromLocalStorage, MAX_PINS } from '@/services/settings/pinnedItemsStorage';
 
 interface PinnedItemsContextValue {
   pinnedPlaylistIds: string[];
@@ -17,14 +16,25 @@ interface PinnedItemsContextValue {
 const PinnedItemsContext = createContext<PinnedItemsContextValue | null>(null);
 
 export function PinnedItemsProvider({ children }: { children: React.ReactNode }) {
-  const [pinnedPlaylistIds, setPinnedPlaylistIds] = useLocalStorage<string[]>(
-    'vorbis-player-pinned-playlists',
-    []
-  );
-  const [pinnedAlbumIds, setPinnedAlbumIds] = useLocalStorage<string[]>(
-    'vorbis-player-pinned-albums',
-    []
-  );
+  const { activeProviderId } = useProviderContext();
+  const [pinnedPlaylistIds, setPinnedPlaylistIds] = useState<string[]>([]);
+  const [pinnedAlbumIds, setPinnedAlbumIds] = useState<string[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      await migratePinsFromLocalStorage();
+      const [playlists, albums] = await Promise.all([
+        getPins(activeProviderId, 'playlists'),
+        getPins(activeProviderId, 'albums'),
+      ]);
+      if (cancelled) return;
+      setPinnedPlaylistIds(playlists);
+      setPinnedAlbumIds(albums);
+    }
+    load().catch(err => console.warn('[PinnedItemsContext] Failed to load pins:', err));
+    return () => { cancelled = true; };
+  }, [activeProviderId]);
 
   const isPlaylistPinned = useCallback(
     (id: string) => pinnedPlaylistIds.includes(id),
@@ -38,22 +48,22 @@ export function PinnedItemsProvider({ children }: { children: React.ReactNode })
 
   const togglePinPlaylist = useCallback((id: string) => {
     setPinnedPlaylistIds(prev => {
-      if (prev.includes(id)) return prev.filter(pid => pid !== id);
-      if (prev.length >= MAX_PINS_PER_TAB) return prev;
-      return [...prev, id];
+      const next = prev.includes(id) ? prev.filter(pid => pid !== id) : prev.length >= MAX_PINS ? prev : [...prev, id];
+      setPins(activeProviderId, 'playlists', next).catch(err => console.warn('[PinnedItemsContext] pin write failed:', err));
+      return next;
     });
-  }, [setPinnedPlaylistIds]);
+  }, [activeProviderId]);
 
   const togglePinAlbum = useCallback((id: string) => {
     setPinnedAlbumIds(prev => {
-      if (prev.includes(id)) return prev.filter(pid => pid !== id);
-      if (prev.length >= MAX_PINS_PER_TAB) return prev;
-      return [...prev, id];
+      const next = prev.includes(id) ? prev.filter(pid => pid !== id) : prev.length >= MAX_PINS ? prev : [...prev, id];
+      setPins(activeProviderId, 'albums', next).catch(err => console.warn('[PinnedItemsContext] pin write failed:', err));
+      return next;
     });
-  }, [setPinnedAlbumIds]);
+  }, [activeProviderId]);
 
-  const canPinMorePlaylists = pinnedPlaylistIds.length < MAX_PINS_PER_TAB;
-  const canPinMoreAlbums = pinnedAlbumIds.length < MAX_PINS_PER_TAB;
+  const canPinMorePlaylists = pinnedPlaylistIds.length < MAX_PINS;
+  const canPinMoreAlbums = pinnedAlbumIds.length < MAX_PINS;
 
   const value = useMemo<PinnedItemsContextValue>(() => ({
     pinnedPlaylistIds,
