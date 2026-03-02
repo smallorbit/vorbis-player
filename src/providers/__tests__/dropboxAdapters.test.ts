@@ -164,3 +164,96 @@ describe('DropboxPlaybackAdapter', () => {
     unsub();
   });
 });
+
+describe('DropboxCatalogAdapter - listTracks', () => {
+  let auth: DropboxAuthAdapter;
+  let adapter: DropboxCatalogAdapter;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    auth = new DropboxAuthAdapter();
+    vi.spyOn(auth, 'ensureValidToken').mockResolvedValue('test-token');
+    adapter = new DropboxCatalogAdapter(auth);
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('sets albumId to the parent directory path on each returned track', async () => {
+    // #given — a folder with two audio files, no images
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: () => Promise.resolve({
+        entries: [
+          {
+            '.tag': 'file',
+            name: '01 - Song One.mp3',
+            id: 'id:001',
+            path_lower: '/artist/album/01 - song one.mp3',
+            path_display: '/Artist/Album/01 - Song One.mp3',
+            size: 5000000,
+          },
+          {
+            '.tag': 'file',
+            name: '02 - Song Two.mp3',
+            id: 'id:002',
+            path_lower: '/artist/album/02 - song two.mp3',
+            path_display: '/Artist/Album/02 - Song Two.mp3',
+            size: 5000000,
+          },
+        ],
+        cursor: 'cursor-1',
+        has_more: false,
+      }),
+    }));
+
+    // #when
+    const tracks = await adapter.listTracks({ provider: 'dropbox', kind: 'album', id: '/artist/album' });
+
+    // #then — both tracks must carry the album directory as albumId
+    expect(tracks).toHaveLength(2);
+    expect(tracks[0].albumId).toBe('/artist/album');
+    expect(tracks[1].albumId).toBe('/artist/album');
+  });
+
+  it('assigns distinct albumIds when tracks come from different sub-directories', async () => {
+    // #given — an "All Music" folder scan with two sub-albums
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: () => Promise.resolve({
+        entries: [
+          {
+            '.tag': 'file',
+            name: 'track.mp3',
+            id: 'id:a1',
+            path_lower: '/artist/album-a/track.mp3',
+            path_display: '/Artist/Album-A/track.mp3',
+            size: 5000000,
+          },
+          {
+            '.tag': 'file',
+            name: 'track.mp3',
+            id: 'id:b1',
+            path_lower: '/artist/album-b/track.mp3',
+            path_display: '/Artist/Album-B/track.mp3',
+            size: 5000000,
+          },
+        ],
+        cursor: 'cursor-1',
+        has_more: false,
+      }),
+    }));
+
+    // #when
+    const tracks = await adapter.listTracks({ provider: 'dropbox', kind: 'folder', id: '/artist' });
+
+    // #then — each track carries its own album's directory as albumId
+    const albumIds = tracks.map(t => t.albumId);
+    expect(albumIds).toContain('/artist/album-a');
+    expect(albumIds).toContain('/artist/album-b');
+    expect(new Set(albumIds).size).toBe(2);
+  });
+});

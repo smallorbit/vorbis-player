@@ -14,12 +14,13 @@ import type { MediaTrack } from '@/types/domain';
 import { isAlbumId, extractAlbumId } from '@/constants/playlist';
 
 /** Convert MediaTrack to Track for UI; Dropbox tracks use empty uri (playback via ref). */
-function mediaTrackToTrack(m: MediaTrack): Track {
+export function mediaTrackToTrack(m: MediaTrack): Track {
   return {
     id: m.id,
     name: m.name,
     artists: m.artists,
     album: m.album,
+    album_id: m.albumId,
     track_number: m.trackNumber,
     duration_ms: m.durationMs,
     uri: m.provider === 'dropbox' ? '' : m.playbackRef.ref,

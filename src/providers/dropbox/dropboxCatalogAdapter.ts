@@ -367,6 +367,9 @@ export class DropboxCatalogAdapter implements CatalogProvider {
     const albumName = displayParts.length >= 2 ? displayParts[displayParts.length - 2] : 'Unknown Album';
     const artistName = displayParts.length >= 3 ? displayParts[displayParts.length - 3] : undefined;
 
+    // Album ID is the parent directory path — stable per-album identifier used for color overrides.
+    const albumId = entry.path_lower.split('/').slice(0, -1).join('/') || '/';
+
     return {
       id: entry.id,
       provider: 'dropbox',
@@ -374,6 +377,7 @@ export class DropboxCatalogAdapter implements CatalogProvider {
       name,
       artists: artistName ?? 'Unknown Artist',
       album: albumName,
+      albumId,
       trackNumber,
       durationMs: 0,
       image: imageUrl,
