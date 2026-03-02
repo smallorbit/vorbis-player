@@ -275,8 +275,12 @@ export function usePlayerLogic() {
     playTrack(newIndex, true);
   }, [tracks.length, playTrack, setCurrentTrackIndex]);
 
-  const handlePlay = useCallback(() => {
-    activeDescriptor?.playback.resume();
+  const handlePlay = useCallback(async () => {
+    try {
+      await activeDescriptor?.playback.resume();
+    } catch {
+      // Autoplay policy or network errors are handled by the playback adapter
+    }
   }, [activeDescriptor]);
 
   const handlePause = useCallback(() => {
