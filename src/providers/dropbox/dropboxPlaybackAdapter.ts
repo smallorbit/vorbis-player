@@ -15,6 +15,7 @@ export class DropboxPlaybackAdapter implements PlaybackProvider {
   private listeners = new Set<(state: PlaybackState | null) => void>();
   private updateInterval: ReturnType<typeof setInterval> | null = null;
   private pendingMetadataUpdate: PlaybackState['trackMetadata'] | null = null;
+  private pendingError: PlaybackState['playbackError'] | null = null;
 
   private catalog: DropboxCatalogAdapter;
 
@@ -32,8 +33,13 @@ export class DropboxPlaybackAdapter implements PlaybackProvider {
       this.audio.addEventListener('ended', () => this.notifyListeners());
       this.audio.addEventListener('timeupdate', () => this.notifyListeners());
       this.audio.addEventListener('loadedmetadata', () => this.notifyListeners());
-      this.audio.addEventListener('error', (e) => {
-        console.error('[DropboxPlayback] Audio error:', e);
+      this.audio.addEventListener('error', () => {
+        const mediaError = this.audio?.error;
+        this.pendingError = {
+          code: mediaError?.code ?? 0,
+          message: mediaError?.message || `MediaError code ${mediaError?.code ?? 0}`,
+        };
+        console.error('[DropboxPlayback] Audio error:', mediaError);
         this.notifyListeners();
       });
     }
@@ -199,6 +205,11 @@ export class DropboxPlaybackAdapter implements PlaybackProvider {
     if (this.pendingMetadataUpdate) {
       state.trackMetadata = this.pendingMetadataUpdate;
       this.pendingMetadataUpdate = null;
+    }
+
+    if (this.pendingError) {
+      state.playbackError = this.pendingError;
+      this.pendingError = null;
     }
 
     return state;

@@ -77,6 +77,8 @@ export interface PlaybackState {
   currentPlaybackRef: PlaybackItemRef | null;
   /** Enriched metadata read from audio file tags (e.g. ID3). Overrides filename-derived values. */
   trackMetadata?: Partial<Pick<MediaTrack, 'name' | 'artists' | 'album' | 'image'>>;
+  /** Set when the provider encounters a playback error; cleared after one notification cycle. */
+  playbackError?: { code: number; message: string };
 }
 
 /** Serializable form of CollectionRef for storage/URL (e.g. "spotify:playlist:xxx", "dropbox:folder:/Music"). */
