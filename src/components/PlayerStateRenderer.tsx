@@ -241,7 +241,7 @@ const PlayerStateRenderer: React.FC<PlayerStateRendererProps> = ({
   }
 
   // Show playlist selection when no playlist is selected
-  if (!selectedPlaylistId || tracks.length === 0) {
+  if (selectedPlaylistId === null || tracks.length === 0) {
     return (
       <Suspense fallback={
         <LoadingCard standalone>
