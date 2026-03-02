@@ -1,5 +1,5 @@
 // Advanced Service Worker for 40-50% faster repeat visits
-const CACHE_VERSION = 'v2.0.0';
+const CACHE_VERSION = 'v2.1.0';
 const STATIC_CACHE_NAME = `vap-static-${CACHE_VERSION}`;
 const DYNAMIC_CACHE_NAME = `vap-dynamic-${CACHE_VERSION}`;
 const RUNTIME_CACHE_NAME = `vap-runtime-${CACHE_VERSION}`;
@@ -78,6 +78,9 @@ self.addEventListener('fetch', (event) => {
   // Skip chrome-extension requests
   if (url.startsWith('chrome-extension://')) return;
 
+  // Skip Vite dev server artifacts — these have unstable hashes and must never be served stale
+  if (url.includes('/node_modules/.vite/') || url.includes('/@vite/') || url.includes('/@fs/')) return;
+
   event.respondWith(handleRequest(request));
 });
 
@@ -117,7 +120,7 @@ async function cacheFirst(request, config) {
   
   try {
     const fresh = await fetch(request);
-    if (fresh.ok) {
+    if (fresh.status === 200) {
       cache.put(request, fresh.clone());
     }
     return fresh;
@@ -133,7 +136,7 @@ async function networkFirst(request, config) {
   
   try {
     const fresh = await fetch(request);
-    if (fresh.ok) {
+    if (fresh.status === 200) {
       cache.put(request, fresh.clone());
     }
     return fresh;
@@ -153,7 +156,7 @@ async function staleWhileRevalidate(request, config) {
   
   // Start background fetch
   const fetchPromise = fetch(request).then(fresh => {
-    if (fresh.ok) {
+    if (fresh.status === 200) {
       cache.put(request, fresh.clone());
     }
     return fresh;

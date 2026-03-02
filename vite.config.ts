@@ -65,7 +65,8 @@ styled: ['styled-components']
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src')
-    }
+    },
+    dedupe: ['react', 'react-dom', 'styled-components'],
   },
   server: {
     host: '127.0.0.1',
