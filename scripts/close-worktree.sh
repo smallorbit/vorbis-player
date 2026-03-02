@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Usage: ./scripts/close-worktree.sh <name>
-# Merges a wt/<name> branch into the current branch, removes the worktree, and deletes the branch.
+# Rebases a wt/<name> branch onto the current branch, removes the worktree, and deletes the branch.
 set -e
 
 if [ -z "$1" ]; then
@@ -32,8 +32,8 @@ if ! git show-ref --verify --quiet "refs/heads/${WT_BRANCH}"; then
 fi
 
 CURRENT_BRANCH="$(git rev-parse --abbrev-ref HEAD)"
-echo "Merging $WT_BRANCH → $CURRENT_BRANCH..."
-git merge "$WT_BRANCH"
+echo "Rebasing $WT_BRANCH onto $CURRENT_BRANCH..."
+git rebase "$WT_BRANCH"
 
 echo "Removing worktree..."
 git worktree remove "$WORKTREE_PATH"
@@ -42,4 +42,4 @@ echo "Deleting branch $WT_BRANCH..."
 git branch -d "$WT_BRANCH"
 
 echo ""
-echo "Done! Worktree '$NAME' has been merged and cleaned up."
+echo "Done! Worktree '$NAME' has been rebased and cleaned up."

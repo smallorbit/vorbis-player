@@ -1,11 +1,11 @@
 ---
 name: close-worktree
-description: Merge a wt/* worktree branch back into the current branch, remove the worktree directory, and delete the temporary branch. Use when the user is done with parallel work in a worktree.
+description: Rebase a wt/* worktree branch onto the current branch, remove the worktree directory, and delete the temporary branch. Use when the user is done with parallel work in a worktree.
 ---
 
 # Close Worktree
 
-Run the cleanup script from the main repo, then confirm what was merged.
+Run the cleanup script from the main repo, then confirm what was rebased.
 
 ## Usage
 
