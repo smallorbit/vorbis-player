@@ -33,7 +33,11 @@ fi
 
 CURRENT_BRANCH="$(git rev-parse --abbrev-ref HEAD)"
 echo "Rebasing $WT_BRANCH onto $CURRENT_BRANCH..."
-git rebase "$WT_BRANCH"
+git rebase "$CURRENT_BRANCH" "$WT_BRANCH"
+
+echo "Fast-forwarding $CURRENT_BRANCH..."
+git checkout "$CURRENT_BRANCH"
+git merge --ff-only "$WT_BRANCH"
 
 echo "Removing worktree..."
 git worktree remove "$WORKTREE_PATH"
