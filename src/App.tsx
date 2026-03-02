@@ -11,6 +11,8 @@ import { VisualizerDebugProvider } from './contexts/VisualizerDebugContext';
 import { ColorProvider } from './contexts/ColorContext';
 import { PinnedItemsProvider } from './contexts/PinnedItemsContext';
 import { VisualizerDebugPanel } from './components/VisualizerDebugPanel';
+import { ProviderProvider } from './contexts/ProviderContext';
+import { providerRegistry } from './providers/registry';
 
 /**
  * Cleanup function to remove deprecated localStorage keys
@@ -88,8 +90,31 @@ function App() {
 
     const authenticate = async () => {
       try {
-        if (window.location.pathname.includes('/auth/spotify/callback')) {
-          await spotifyAuth.handleRedirect();
+        // Route auth callbacks through registered providers
+        const currentUrl = new URL(window.location.href);
+        const isAuthCallback = currentUrl.pathname.startsWith('/auth/');
+
+        if (isAuthCallback) {
+          let handled = false;
+          for (const descriptor of providerRegistry.getAll()) {
+            try {
+              const result = await descriptor.auth.handleCallback(currentUrl);
+              if (result) {
+                handled = true;
+                // Clear the callback URL
+                window.history.replaceState({}, document.title, '/');
+                break;
+              }
+            } catch (providerError) {
+              // This provider threw during callback handling — report and stop
+              throw providerError;
+            }
+          }
+
+          // Fall back to legacy Spotify handling if no provider handled it
+          if (!handled && currentUrl.pathname.includes('/auth/spotify/callback')) {
+            await spotifyAuth.handleRedirect();
+          }
         }
       } catch (error) {
         setAuthError(error instanceof Error ? error.message : 'An unknown error occurred.');
@@ -137,20 +162,22 @@ function App() {
 
   return (
     <ThemeProvider>
-      <VisualizerDebugProvider>
-        <TrackProvider>
-          <VisualEffectsProvider>
-            <ColorProvider>
-              <PinnedItemsProvider>
-              <AppContainer>
-                <AudioPlayerComponent />
-              </AppContainer>
-            </PinnedItemsProvider>
-            <VisualizerDebugPanel />
-          </ColorProvider>
-        </VisualEffectsProvider>
-      </TrackProvider>
-    </VisualizerDebugProvider>
+      <ProviderProvider>
+        <VisualizerDebugProvider>
+          <TrackProvider>
+            <VisualEffectsProvider>
+              <ColorProvider>
+                <PinnedItemsProvider>
+                <AppContainer>
+                  <AudioPlayerComponent />
+                </AppContainer>
+              </PinnedItemsProvider>
+              <VisualizerDebugPanel />
+            </ColorProvider>
+          </VisualEffectsProvider>
+        </TrackProvider>
+      </VisualizerDebugProvider>
+      </ProviderProvider>
     </ThemeProvider>
   );
 }

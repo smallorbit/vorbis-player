@@ -37,12 +37,31 @@ vi.mock('@/services/spotify', () => ({
     isAuthenticated: vi.fn(() => true),
     handleRedirect: vi.fn().mockResolvedValue(undefined),
     getAccessToken: vi.fn().mockReturnValue('mock-token'),
+    ensureValidToken: vi.fn().mockResolvedValue('mock-token'),
     redirectToAuth: vi.fn(),
+    logout: vi.fn(),
   },
   getUserPlaylists: vi.fn(),
   getPlaylistTracks: vi.fn(),
+  getAlbumTracks: vi.fn(),
   getLikedSongs: vi.fn(),
   getLikedSongsCount: vi.fn(),
+  checkTrackSaved: vi.fn(),
+  saveTrack: vi.fn(),
+  unsaveTrack: vi.fn(),
+  getUserLibraryInterleaved: vi.fn(),
+}));
+
+vi.mock('@/services/spotifyPlayer', () => ({
+  spotifyPlayer: {
+    setVolume: vi.fn().mockResolvedValue(undefined),
+    onPlayerStateChanged: vi.fn(() => vi.fn()),
+    getCurrentState: vi.fn().mockResolvedValue(null),
+    initialize: vi.fn().mockResolvedValue(undefined),
+    playTrack: vi.fn().mockResolvedValue(undefined),
+    getDeviceId: vi.fn().mockReturnValue(null),
+    getIsReady: vi.fn().mockReturnValue(false),
+  },
 }));
 
 const mockPlaylists = [

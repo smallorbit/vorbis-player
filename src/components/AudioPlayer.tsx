@@ -52,10 +52,10 @@ const AudioPlayerComponent = () => {
     onBackToLibrary: handlers.handleBackToLibrary,
   }), [handlers, handleAlbumPlay]);
 
-  const isMainPlayerActive = !state.isLoading && !state.error && !!selectedPlaylistId && tracks.length > 0;
+  const isMainPlayerActive = !state.isLoading && !state.error && selectedPlaylistId !== null && tracks.length > 0;
 
   const renderContent = () => {
-    if (state.isLoading || state.error || !selectedPlaylistId || tracks.length === 0) {
+    if (state.isLoading || state.error || selectedPlaylistId === null || tracks.length === 0) {
       return (
         <ProfiledComponent id="PlayerStateRenderer">
           <PlayerStateRenderer

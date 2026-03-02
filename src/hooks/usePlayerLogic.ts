@@ -1,14 +1,31 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { spotifyAuth } from '@/services/spotify';
-import { spotifyPlayer } from '@/services/spotifyPlayer';
 import { useTrackContext } from '@/contexts/TrackContext';
 import { useVisualEffectsContext } from '@/contexts/VisualEffectsContext';
 import { useColorContext } from '@/contexts/ColorContext';
+import { useProviderContext } from '@/contexts/ProviderContext';
 import { usePlaylistManager } from '@/hooks/usePlaylistManager';
 import { useSpotifyPlayback } from '@/hooks/useSpotifyPlayback';
 import { useAutoAdvance } from '@/hooks/useAutoAdvance';
 import { useAccentColor } from '@/hooks/useAccentColor';
 import type { Track } from '@/services/spotify';
+import type { PlaybackState } from '@/types/domain';
+import type { MediaTrack } from '@/types/domain';
+import { isAlbumId, extractAlbumId } from '@/constants/playlist';
+
+/** Convert MediaTrack to Track for UI; Dropbox tracks use empty uri (playback via ref). */
+function mediaTrackToTrack(m: MediaTrack): Track {
+  return {
+    id: m.id,
+    name: m.name,
+    artists: m.artists,
+    album: m.album,
+    track_number: m.trackNumber,
+    duration_ms: m.durationMs,
+    uri: m.provider === 'dropbox' ? '' : m.playbackRef.ref,
+    image: m.image,
+  };
+}
 
 export function usePlayerLogic() {
   const {
@@ -38,16 +55,26 @@ export function usePlayerLogic() {
     setAccentColorOverrides,
   } = useColorContext();
 
-  // Playback state from Spotify SDK events (local — not shared via context)
+  const { activeDescriptor } = useProviderContext();
+
+  /** When provider is Dropbox, holds the MediaTrack[] for playback; otherwise empty. */
+  const mediaTracksRef = useRef<MediaTrack[]>([]);
+
+  // Playback state from provider events (local — not shared via context)
   const [isPlaying, setIsPlaying] = useState(false);
   const [playbackPosition, setPlaybackPosition] = useState(0);
 
   // Library drawer visibility (local UI state)
   const [showLibraryDrawer, setShowLibraryDrawer] = useState(false);
 
-  const { playTrack } = useSpotifyPlayback({ tracks, setCurrentTrackIndex });
+  const { playTrack } = useSpotifyPlayback({
+    tracks,
+    setCurrentTrackIndex,
+    activeDescriptor,
+    mediaTracksRef,
+  });
 
-  const { handlePlaylistSelect } = usePlaylistManager({
+  const { handlePlaylistSelect: spotifyHandlePlaylistSelect } = usePlaylistManager({
     setError,
     setIsLoading,
     setSelectedPlaylistId,
@@ -56,6 +83,58 @@ export function usePlayerLogic() {
     setCurrentTrackIndex,
     shuffleEnabled,
   });
+
+  const handlePlaylistSelect = useCallback(
+    async (playlistId: string) => {
+      if (activeDescriptor?.id === 'dropbox') {
+        setError(null);
+        setIsLoading(true);
+        setSelectedPlaylistId(playlistId);
+        mediaTracksRef.current = [];
+        try {
+          const catalog = activeDescriptor.catalog;
+          const collectionId = isAlbumId(playlistId) ? extractAlbumId(playlistId) : playlistId;
+          const collectionKind = isAlbumId(playlistId) ? 'album' as const : 'folder' as const;
+          const collectionRef = { provider: 'dropbox' as const, kind: collectionKind, id: collectionId };
+          const list = await catalog.listTracks(collectionRef);
+          if (list.length === 0) {
+            setError('No tracks found in this folder.');
+            setTracks([]);
+            setOriginalTracks([]);
+            setCurrentTrackIndex(0);
+            setIsLoading(false);
+            return;
+          }
+          mediaTracksRef.current = list;
+          const trackList = list.map(mediaTrackToTrack);
+          setOriginalTracks(trackList);
+          setTracks(trackList);
+          setCurrentTrackIndex(0);
+          setIsLoading(false);
+          await playTrack(0);
+        } catch (err) {
+          setError(err instanceof Error ? err.message : 'Failed to load folder.');
+          setTracks([]);
+          setOriginalTracks([]);
+          setCurrentTrackIndex(0);
+          setIsLoading(false);
+        }
+        return;
+      }
+      await spotifyHandlePlaylistSelect(playlistId);
+    },
+    [
+      activeDescriptor,
+      setError,
+      setIsLoading,
+      setSelectedPlaylistId,
+      setTracks,
+      setOriginalTracks,
+      setCurrentTrackIndex,
+      playTrack,
+      spotifyHandlePlaylistSelect,
+    ]
+  );
 
   useAutoAdvance({ tracks, currentTrackIndex, playTrack, enabled: true });
 
@@ -73,14 +152,18 @@ export function usePlayerLogic() {
     handleAuthRedirect();
   }, [setError]);
 
+  // Subscribe to the active provider's playback state
   useEffect(() => {
-    function handlePlayerStateChange(state: SpotifyPlaybackState | null) {
-      if (state) {
-        setIsPlaying(!state.paused);
-        setPlaybackPosition(state.position);
+    const playback = activeDescriptor?.playback;
+    if (!playback) return;
 
-        if (state.track_window.current_track) {
-          const trackId = state.track_window.current_track.id;
+    function handleProviderStateChange(state: PlaybackState | null) {
+      if (state) {
+        setIsPlaying(state.isPlaying);
+        setPlaybackPosition(state.positionMs);
+
+        if (state.currentTrackId) {
+          const trackId = state.currentTrackId;
           const trackIndex = tracks.findIndex((t: Track) => t.id === trackId);
           if (trackIndex !== -1 && trackIndex !== currentTrackIndex) {
             setCurrentTrackIndex(trackIndex);
@@ -92,19 +175,18 @@ export function usePlayerLogic() {
       }
     }
 
-    const unsubscribe = spotifyPlayer.onPlayerStateChanged(handlePlayerStateChange);
+    const unsubscribe = playback.subscribe(handleProviderStateChange);
 
-    async function checkInitialState() {
-      const state = await spotifyPlayer.getCurrentState();
+    // Check initial state
+    playback.getState().then((state) => {
       if (state) {
-        setIsPlaying(!state.paused);
-        setPlaybackPosition(state.position);
+        setIsPlaying(state.isPlaying);
+        setPlaybackPosition(state.positionMs);
       }
-    }
-    checkInitialState();
+    });
 
     return unsubscribe;
-  }, [tracks, currentTrackIndex, setCurrentTrackIndex]);
+  }, [activeDescriptor, tracks, currentTrackIndex, setCurrentTrackIndex]);
 
   const handleNext = useCallback(() => {
     if (tracks.length === 0) return;
@@ -124,8 +206,13 @@ export function usePlayerLogic() {
     });
   }, [tracks.length, playTrack, setCurrentTrackIndex]);
 
-  const handlePlay = useCallback(() => { spotifyPlayer.resume(); }, []);
-  const handlePause = useCallback(() => { spotifyPlayer.pause(); }, []);
+  const handlePlay = useCallback(() => {
+    activeDescriptor?.playback.resume();
+  }, [activeDescriptor]);
+
+  const handlePause = useCallback(() => {
+    activeDescriptor?.playback.pause();
+  }, [activeDescriptor]);
 
   const handleOpenLibraryDrawer = useCallback(() => {
     setShowLibraryDrawer(true);
@@ -142,6 +229,7 @@ export function usePlayerLogic() {
     setSelectedPlaylistId(null);
     setTracks([]);
     setCurrentTrackIndex(0);
+    mediaTracksRef.current = [];
     setShowPlaylist(false);
     setShowVisualEffects(false);
   }, [handlePause, setSelectedPlaylistId, setTracks, setCurrentTrackIndex, setShowPlaylist, setShowVisualEffects]);

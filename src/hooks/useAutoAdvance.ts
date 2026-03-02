@@ -1,6 +1,8 @@
 import { useEffect, useRef } from 'react';
 import { spotifyPlayer } from '../services/spotifyPlayer';
 import type { Track } from '../services/spotify';
+import { useProviderContext } from '@/contexts/ProviderContext';
+import type { PlaybackState } from '@/types/domain';
 
 interface UseAutoAdvanceProps {
   tracks: Track[];
@@ -25,6 +27,8 @@ export const useAutoAdvance = ({
   const currentTrackIndexRef = useRef(currentTrackIndex);
   const playTrackRef = useRef(playTrack);
 
+  const { activeDescriptor, activeProviderId } = useProviderContext();
+
   // Keep refs up to date so the event callback always has fresh values
   useEffect(() => { tracksRef.current = tracks; }, [tracks]);
   useEffect(() => { currentTrackIndexRef.current = currentTrackIndex; }, [currentTrackIndex]);
@@ -35,9 +39,9 @@ export const useAutoAdvance = ({
     hasEnded.current = false;
   }, [currentTrackIndex]);
 
-  // Use event-based detection instead of polling
+  // Use event-based detection via the provider's playback subscribe
   useEffect(() => {
-    if (!enabled || tracks.length === 0) {
+    if (!enabled || tracks.length === 0 || !activeDescriptor) {
       return;
     }
 
@@ -52,15 +56,15 @@ export const useAutoAdvance = ({
       }
     }
 
-    function handleStateChange(state: SpotifyPlaybackState | null) {
-      if (!state || !state.track_window.current_track || tracksRef.current.length === 0) {
+    function handleProviderStateChange(state: PlaybackState | null) {
+      if (!state || !state.currentTrackId || tracksRef.current.length === 0) {
         return;
       }
 
-      const duration = state.track_window.current_track.duration_ms;
-      const position = state.position;
+      const duration = state.durationMs;
+      const position = state.positionMs;
       const timeRemaining = duration - position;
-      const isPaused = state.paused;
+      const isPaused = !state.isPlaying;
 
       // Detect near-end of track while still playing
       if (!hasEnded.current && duration > 0 && position > 0 && (
@@ -71,9 +75,14 @@ export const useAutoAdvance = ({
       }
 
       // Detect track naturally finished: was playing, now paused at position 0.
-      // Guard: skip if a track was recently loaded — mobile Spotify SDK briefly
+      // Guard: skip if a track was recently loaded — Spotify SDK briefly
       // pauses at position 0 during buffering, which would falsely trigger advance.
-      const msSinceLastPlay = Date.now() - spotifyPlayer.lastPlayTrackTime;
+      // For Spotify, use spotifyPlayer.lastPlayTrackTime; for other providers, skip cooldown check.
+      let msSinceLastPlay = PLAY_COOLDOWN_MS + 1; // default: allow advance
+      if (activeProviderId === 'spotify') {
+        msSinceLastPlay = Date.now() - spotifyPlayer.lastPlayTrackTime;
+      }
+
       if (!hasEnded.current && wasPlayingRef.current && isPaused && position === 0 && duration > 0 && msSinceLastPlay > PLAY_COOLDOWN_MS) {
         advanceToNext();
       }
@@ -81,8 +90,8 @@ export const useAutoAdvance = ({
       wasPlayingRef.current = !isPaused;
     }
 
-    const unsubscribe = spotifyPlayer.onPlayerStateChanged(handleStateChange);
+    const unsubscribe = activeDescriptor.playback.subscribe(handleProviderStateChange);
 
     return unsubscribe;
-  }, [enabled, tracks.length, endThreshold]);
+  }, [enabled, tracks.length, endThreshold, activeDescriptor, activeProviderId]);
 };

@@ -3,6 +3,7 @@ import React, { memo, useCallback, useState, useMemo } from 'react';
 import { theme } from '../../styles/theme';
 import { ProfiledComponent } from '@/components/ProfiledComponent';
 import { usePlayerSizing } from '../../hooks/usePlayerSizing';
+import { useProviderContext } from '@/contexts/ProviderContext';
 
 import {
   DrawerOverlay,
@@ -17,7 +18,12 @@ import {
   ControlLabel,
   OptionButtonGroup,
   OptionButton,
-  ResetButton
+  ResetButton,
+  FilterGrid,
+  ProviderButton,
+  ProviderStatusDot,
+  ProviderName,
+  ProviderActiveLabel,
 } from './styled';
 
 interface AppSettingsMenuProps {
@@ -46,6 +52,42 @@ const arePropsEqual = (
 
   return true;
 };
+
+/** Music Sources section rendered at the top of the settings drawer. */
+const MusicSourcesSection = memo(({ accentColor }: { accentColor: string }) => {
+  const { activeProviderId, setActiveProviderId, registry } = useProviderContext();
+  const providers = useMemo(() => registry.getAll(), [registry]);
+
+  // Only show if there are 2+ providers registered
+  if (providers.length < 2) return null;
+
+  return (
+    <FilterSection>
+      <SectionTitle>Music Source</SectionTitle>
+      <FilterGrid>
+        {providers.map((descriptor) => {
+          const isActive = descriptor.id === activeProviderId;
+          const isConnected = descriptor.auth.isAuthenticated();
+          return (
+            <ProviderButton
+              key={descriptor.id}
+              $accentColor={accentColor}
+              $isActive={isActive}
+              onClick={() => setActiveProviderId(descriptor.id)}
+              aria-label={`Switch to ${descriptor.name}`}
+            >
+              <ProviderStatusDot $isConnected={isConnected} $accentColor={accentColor} />
+              <ProviderName>{descriptor.name}</ProviderName>
+              {isActive && <ProviderActiveLabel>Active</ProviderActiveLabel>}
+            </ProviderButton>
+          );
+        })}
+      </FilterGrid>
+    </FilterSection>
+  );
+});
+MusicSourcesSection.displayName = 'MusicSourcesSection';
+
 
 const AppSettingsMenu: React.FC<AppSettingsMenuProps> = memo(({
   isOpen,
@@ -82,8 +124,8 @@ const AppSettingsMenu: React.FC<AppSettingsMenuProps> = memo(({
         $transitionEasing={transitionEasing}
       >
         <DrawerHeader>
-          <DrawerTitle>App Settings</DrawerTitle>
-          <CloseButton onClick={onClose} aria-label="Close app settings drawer">
+          <DrawerTitle>Settings</DrawerTitle>
+          <CloseButton onClick={onClose} aria-label="Close settings drawer">
             <svg viewBox="0 0 24 24" fill="currentColor">
               <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
             </svg>
@@ -91,6 +133,10 @@ const AppSettingsMenu: React.FC<AppSettingsMenuProps> = memo(({
         </DrawerHeader>
 
         <DrawerContent>
+          {/* Music Sources Section */}
+          <MusicSourcesSection accentColor={accentColor} />
+
+          {/* Advanced Section */}
           <FilterSection>
             <SectionTitle>Advanced</SectionTitle>
             <ControlGroup>

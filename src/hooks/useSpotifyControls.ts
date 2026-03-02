@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { spotifyPlayer } from '../services/spotifyPlayer';
-import { spotifyAuth } from '../services/spotify';
 import type { Track } from '../services/spotify';
 import { useVolume } from './useVolume';
+import { useProviderContext } from '@/contexts/ProviderContext';
+import type { PlaybackState } from '@/types/domain';
 
 interface UseSpotifyControlsProps {
   currentTrack: Track | null;
@@ -31,6 +31,8 @@ export const useSpotifyControls = ({
   const [isDragging, setIsDragging] = useState(false);
   const isDraggingRef = useRef(false);
 
+  const { activeDescriptor } = useProviderContext();
+
   // Use volume hook for volume-related functionality
   const { isMuted, volume, handleMuteToggle, handleVolumeButtonClick, setVolumeLevel } = useVolume();
 
@@ -39,93 +41,88 @@ export const useSpotifyControls = ({
     isDraggingRef.current = isDragging;
   }, [isDragging]);
 
-  // Use event-based playback state updates instead of polling
+  // Use event-based playback state updates via the provider adapter
   useEffect(() => {
-    function handlePlayerStateChange(state: SpotifyPlaybackState | null) {
+    const playback = activeDescriptor?.playback;
+    if (!playback) return;
+
+    function handleProviderStateChange(state: PlaybackState | null) {
       if (state) {
-        setIsPlaying(!state.paused);
+        setIsPlaying(state.isPlaying);
         if (!isDraggingRef.current) {
-          setCurrentPosition(state.position);
+          setCurrentPosition(state.positionMs);
         }
-        if (state.track_window.current_track) {
-          setDuration(state.track_window.current_track.duration_ms);
+        if (state.durationMs) {
+          setDuration(state.durationMs);
         }
       }
     }
 
-    const unsubscribe = spotifyPlayer.onPlayerStateChanged(handlePlayerStateChange);
+    const unsubscribe = playback.subscribe(handleProviderStateChange);
 
     // Also check initial state once
-    (async () => {
-      const state = await spotifyPlayer.getCurrentState();
+    playback.getState().then((state) => {
       if (state) {
-        setIsPlaying(!state.paused);
+        setIsPlaying(state.isPlaying);
         if (!isDraggingRef.current) {
-          setCurrentPosition(state.position);
+          setCurrentPosition(state.positionMs);
         }
-        if (state.track_window.current_track) {
-          setDuration(state.track_window.current_track.duration_ms);
+        if (state.durationMs) {
+          setDuration(state.durationMs);
         }
       }
-    })();
+    });
 
     return unsubscribe;
-  }, []);
+  }, [activeDescriptor]);
 
   // Lightweight position poll — only to update the timeline slider smoothly.
-  // The event listener above handles play/pause/track changes;
-  // this just fills in sub-second position ticks during active playback.
   useEffect(() => {
     if (!isPlaying) return;
+    const playback = activeDescriptor?.playback;
+    if (!playback) return;
 
     const interval = setInterval(async () => {
       if (isDraggingRef.current) return;
-      const state = await spotifyPlayer.getCurrentState();
+      const state = await playback.getState();
       if (state) {
-        setCurrentPosition(state.position);
+        setCurrentPosition(state.positionMs);
       }
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [isPlaying]);
+  }, [isPlaying, activeDescriptor]);
 
   const handlePlayPause = useCallback(async () => {
+    const playback = activeDescriptor?.playback;
+    if (!playback) return;
+
     if (isPlaying) {
       onPause();
     } else {
-      const state = await spotifyPlayer.getCurrentState();
-      
-      if (!state || !state.track_window?.current_track || 
-          (currentTrack && state.track_window.current_track.id !== currentTrack.id)) {
+      // Check if there's a track loaded in the player
+      const state = await playback.getState();
+
+      if (!state || !state.currentTrackId ||
+          (currentTrack && state.currentTrackId !== currentTrack.id)) {
         onPlay();
       } else {
-        if (state.paused) {
-          await spotifyPlayer.resume();
+        if (!state.isPlaying) {
+          await playback.resume();
         }
       }
     }
-  }, [isPlaying, onPlay, onPause, currentTrack]);
+  }, [isPlaying, onPlay, onPause, currentTrack, activeDescriptor]);
 
   const handleSeek = useCallback(async (position: number) => {
     try {
-      const token = await spotifyAuth.ensureValidToken();
-      const deviceId = spotifyPlayer.getDeviceId();
-
-      if (!deviceId) {
-        console.error('No device ID available for seeking');
-        return;
-      }
-
-      await fetch(`https://api.spotify.com/v1/me/player/seek?position_ms=${Math.floor(position)}&device_id=${deviceId}`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
+      const playback = activeDescriptor?.playback;
+      if (!playback) return;
+      await playback.seek(position);
     } catch (error) {
       console.error('Failed to seek:', error);
     }
-  }, []);
+  }, [activeDescriptor]);
 
   const handleSliderChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const position = parseInt(e.target.value);

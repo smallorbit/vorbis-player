@@ -11,6 +11,9 @@ vi.mock('@/services/spotifyPlayer', () => ({
 import { useAutoAdvance } from '../useAutoAdvance';
 import { spotifyPlayer } from '@/services/spotifyPlayer';
 import { makeTrack, makeSpotifyPlaybackState } from '@/test/fixtures';
+import { ProviderWrapper } from '@/test/providerTestUtils';
+
+const opts = { wrapper: ProviderWrapper };
 
 describe('useAutoAdvance', () => {
   const playTrack = vi.fn();
@@ -28,15 +31,19 @@ describe('useAutoAdvance', () => {
 
   it('does not subscribe when enabled=false', () => {
     renderHook(() =>
-      useAutoAdvance({ tracks, currentTrackIndex: 0, playTrack, enabled: false })
+      useAutoAdvance({ tracks, currentTrackIndex: 0, playTrack, enabled: false }),
+      opts
     );
 
+    // The hook should not have called spotifyPlayer.onPlayerStateChanged
+    // (it now goes through the provider adapter, but the adapter wraps the same mock)
     expect(spotifyPlayer.onPlayerStateChanged).not.toHaveBeenCalled();
   });
 
   it('does not subscribe when tracks is empty', () => {
     renderHook(() =>
-      useAutoAdvance({ tracks: [], currentTrackIndex: 0, playTrack })
+      useAutoAdvance({ tracks: [], currentTrackIndex: 0, playTrack }),
+      opts
     );
 
     expect(spotifyPlayer.onPlayerStateChanged).not.toHaveBeenCalled();
@@ -44,13 +51,18 @@ describe('useAutoAdvance', () => {
 
   it('advances when timeRemaining <= endThreshold', () => {
     renderHook(() =>
-      useAutoAdvance({ tracks, currentTrackIndex: 0, playTrack, endThreshold: 2000 })
+      useAutoAdvance({ tracks, currentTrackIndex: 0, playTrack, endThreshold: 2000 }),
+      opts
     );
 
-    const callback = vi.mocked(spotifyPlayer.onPlayerStateChanged).mock.calls[0][0];
+    // The provider adapter subscribe wraps spotifyPlayer.onPlayerStateChanged,
+    // so the last call to the mock has our callback
+    const subscribeCalls = vi.mocked(spotifyPlayer.onPlayerStateChanged).mock.calls;
+    expect(subscribeCalls.length).toBeGreaterThan(0);
+    const sdkCallback = subscribeCalls[subscribeCalls.length - 1][0];
 
     // Simulate near-end: position 208500, duration 210000, timeRemaining = 1500ms
-    callback(makeSpotifyPlaybackState({
+    sdkCallback(makeSpotifyPlaybackState({
       paused: false,
       position: 208500,
       track_window: {
@@ -73,16 +85,18 @@ describe('useAutoAdvance', () => {
 
   it('advances on pause-at-position-0 (natural track end)', () => {
     renderHook(() =>
-      useAutoAdvance({ tracks, currentTrackIndex: 0, playTrack })
+      useAutoAdvance({ tracks, currentTrackIndex: 0, playTrack }),
+      opts
     );
 
-    const callback = vi.mocked(spotifyPlayer.onPlayerStateChanged).mock.calls[0][0];
+    const subscribeCalls = vi.mocked(spotifyPlayer.onPlayerStateChanged).mock.calls;
+    const sdkCallback = subscribeCalls[subscribeCalls.length - 1][0];
 
     // Simulate "was playing" state first
-    callback(makeSpotifyPlaybackState({ paused: false, position: 100000 }));
+    sdkCallback(makeSpotifyPlaybackState({ paused: false, position: 100000 }));
 
     // Then simulate natural end: paused at position 0
-    callback(makeSpotifyPlaybackState({ paused: true, position: 0 }));
+    sdkCallback(makeSpotifyPlaybackState({ paused: true, position: 0 }));
 
     vi.advanceTimersByTime(500);
     expect(playTrack).toHaveBeenCalledWith(1, true);
@@ -93,16 +107,18 @@ describe('useAutoAdvance', () => {
     (spotifyPlayer as unknown as { lastPlayTrackTime: number }).lastPlayTrackTime = Date.now();
 
     renderHook(() =>
-      useAutoAdvance({ tracks, currentTrackIndex: 0, playTrack })
+      useAutoAdvance({ tracks, currentTrackIndex: 0, playTrack }),
+      opts
     );
 
-    const callback = vi.mocked(spotifyPlayer.onPlayerStateChanged).mock.calls[0][0];
+    const subscribeCalls = vi.mocked(spotifyPlayer.onPlayerStateChanged).mock.calls;
+    const sdkCallback = subscribeCalls[subscribeCalls.length - 1][0];
 
     // Simulate "was playing"
-    callback(makeSpotifyPlaybackState({ paused: false, position: 100000 }));
+    sdkCallback(makeSpotifyPlaybackState({ paused: false, position: 100000 }));
 
     // Then simulate pause at 0 (but within cooldown)
-    callback(makeSpotifyPlaybackState({ paused: true, position: 0 }));
+    sdkCallback(makeSpotifyPlaybackState({ paused: true, position: 0 }));
 
     vi.advanceTimersByTime(500);
     expect(playTrack).not.toHaveBeenCalled();
@@ -110,12 +126,14 @@ describe('useAutoAdvance', () => {
 
   it('wraps from last track to index 0', () => {
     renderHook(() =>
-      useAutoAdvance({ tracks, currentTrackIndex: 2, playTrack, endThreshold: 2000 })
+      useAutoAdvance({ tracks, currentTrackIndex: 2, playTrack, endThreshold: 2000 }),
+      opts
     );
 
-    const callback = vi.mocked(spotifyPlayer.onPlayerStateChanged).mock.calls[0][0];
+    const subscribeCalls = vi.mocked(spotifyPlayer.onPlayerStateChanged).mock.calls;
+    const sdkCallback = subscribeCalls[subscribeCalls.length - 1][0];
 
-    callback(makeSpotifyPlaybackState({
+    sdkCallback(makeSpotifyPlaybackState({
       paused: false,
       position: 209000,
       track_window: {

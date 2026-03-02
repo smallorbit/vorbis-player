@@ -1,6 +1,6 @@
 import { useEffect, useCallback, useRef } from 'react';
-import { spotifyPlayer } from '../services/spotifyPlayer';
 import { useLocalStorage } from './useLocalStorage';
+import { useProviderContext } from '@/contexts/ProviderContext';
 
 const VOLUME_KEY = 'vorbis-player-volume';
 const MUTED_KEY = 'vorbis-player-muted';
@@ -12,24 +12,26 @@ export const useVolume = () => {
   const previousVolumeRef = useRef(volume > 0 ? volume : DEFAULT_VOLUME);
   const initialVolumeRef = useRef(isMuted ? 0 : volume / 100);
 
+  const { activeDescriptor } = useProviderContext();
+
   useEffect(() => {
-    spotifyPlayer.setVolume(initialVolumeRef.current);
-  }, []);
+    activeDescriptor?.playback.setVolume(initialVolumeRef.current);
+  }, [activeDescriptor]);
 
   const handleMuteToggle = useCallback(() => {
     setIsMuted((prev) => {
       const newMuted = !prev;
       if (newMuted) {
         previousVolumeRef.current = volume > 0 ? volume : DEFAULT_VOLUME;
-        spotifyPlayer.setVolume(0);
+        activeDescriptor?.playback.setVolume(0);
       } else {
         const restore = previousVolumeRef.current > 0 ? previousVolumeRef.current : DEFAULT_VOLUME;
         setVolume(restore);
-        spotifyPlayer.setVolume(restore / 100);
+        activeDescriptor?.playback.setVolume(restore / 100);
       }
       return newMuted;
     });
-  }, [volume, setIsMuted, setVolume]);
+  }, [volume, setIsMuted, setVolume, activeDescriptor]);
 
   const handleVolumeButtonClick = useCallback(() => {
     handleMuteToggle();
@@ -38,7 +40,7 @@ export const useVolume = () => {
   const setVolumeLevel = useCallback((newVolume: number) => {
     const clamped = Math.max(0, Math.min(100, Math.round(newVolume)));
     setVolume(clamped);
-    spotifyPlayer.setVolume(clamped / 100);
+    activeDescriptor?.playback.setVolume(clamped / 100);
 
     if (clamped > 0 && isMuted) {
       setIsMuted(false);
@@ -46,7 +48,7 @@ export const useVolume = () => {
     if (clamped === 0 && !isMuted) {
       setIsMuted(true);
     }
-  }, [isMuted, setVolume, setIsMuted]);
+  }, [isMuted, setVolume, setIsMuted, activeDescriptor]);
 
   return {
     isMuted,
