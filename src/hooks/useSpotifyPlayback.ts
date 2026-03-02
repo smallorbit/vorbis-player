@@ -59,22 +59,26 @@ export const useSpotifyPlayback = ({
   }, [activateDevice]);
 
   const playTrack = useCallback(async (index: number, skipOnError = false) => {
-    if (!tracks[index]) {
-      console.error('[DEBUG] playTrack: No track at index', index, 'tracks length:', tracks.length);
-      return;
-    }
-
-    if (activeDescriptor?.id === 'dropbox' && mediaTracksRef?.current?.length && mediaTracksRef.current[index]) {
+    if (activeDescriptor?.id === 'dropbox') {
+      const mediaTracks = mediaTracksRef?.current ?? [];
+      if (!mediaTracks[index]) {
+        console.error('[DEBUG] playTrack: No Dropbox track at index', index, 'mediaTracks length:', mediaTracks.length);
+        return;
+      }
       try {
-        const mediaTrack = mediaTracksRef.current[index];
-        await activeDescriptor.playback.playTrack(mediaTrack);
+        await activeDescriptor.playback.playTrack(mediaTracks[index]);
         setCurrentTrackIndex(index);
       } catch (error) {
         console.error('[Dropbox] Failed to play track:', error);
-        if (skipOnError && index < tracks.length - 1) {
+        if (skipOnError && index < mediaTracks.length - 1) {
           setTimeout(() => playTrack(index + 1, skipOnError), 500);
         }
       }
+      return;
+    }
+
+    if (!tracks[index]) {
+      console.error('[DEBUG] playTrack: No track at index', index, 'tracks length:', tracks.length);
       return;
     }
 

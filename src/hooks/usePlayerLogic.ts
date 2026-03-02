@@ -11,6 +11,7 @@ import { useAccentColor } from '@/hooks/useAccentColor';
 import type { Track } from '@/services/spotify';
 import type { PlaybackState } from '@/types/domain';
 import type { MediaTrack } from '@/types/domain';
+import { isAlbumId, extractAlbumId } from '@/constants/playlist';
 
 /** Convert MediaTrack to Track for UI; Dropbox tracks use empty uri (playback via ref). */
 function mediaTrackToTrack(m: MediaTrack): Track {
@@ -92,7 +93,9 @@ export function usePlayerLogic() {
         mediaTracksRef.current = [];
         try {
           const catalog = activeDescriptor.catalog;
-          const collectionRef = { provider: 'dropbox' as const, kind: 'folder' as const, id: playlistId };
+          const collectionId = isAlbumId(playlistId) ? extractAlbumId(playlistId) : playlistId;
+          const collectionKind = isAlbumId(playlistId) ? 'album' as const : 'folder' as const;
+          const collectionRef = { provider: 'dropbox' as const, kind: collectionKind, id: collectionId };
           const list = await catalog.listTracks(collectionRef);
           if (list.length === 0) {
             setError('No tracks found in this folder.');
