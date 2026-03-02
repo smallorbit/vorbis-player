@@ -5,30 +5,22 @@ description: Rebase a wt/* worktree branch onto the current branch, remove the w
 
 # Close Worktree
 
-Run the cleanup script, then confirm what was rebased.
-
-Works correctly whether invoked from inside the worktree or from the main repo.
+Run the cleanup script from the **main repo session** (not from inside the worktree). The script needs to run `git merge` and `git worktree remove` from the main repo context.
 
 ## Usage
 
 ```
-/close-worktree [name]
+/close-worktree <name>
 ```
 
-`name` is optional — if omitted and the current branch is a `wt/*` branch, the name is auto-detected.
+`name` is the same name used when the worktree was created with `/new-worktree`.
 
 ## Steps
 
-1. Run the script via Bash. This captures the current branch name first (before cding to the main worktree), strips the `wt/` prefix, then runs the cleanup from the correct location:
+1. Run the script via Bash, passing the worktree name:
 
 ```bash
-cd "$(git worktree list --porcelain | awk '/^worktree/{print $2; exit}')" && bash scripts/close-worktree.sh "$(git rev-parse --abbrev-ref HEAD | sed 's|^wt/||')"
-```
-
-If `name` was passed as an argument, use it directly instead of auto-detecting:
-
-```bash
-cd "$(git worktree list --porcelain | awk '/^worktree/{print $2; exit}')" && bash scripts/close-worktree.sh <name>
+cd "$(git worktree list | head -1 | awk '{print $1}')" && bash scripts/close-worktree.sh <name>
 ```
 
 2. Confirm to the user that the branch was merged and the worktree was removed.

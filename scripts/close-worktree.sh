@@ -1,28 +1,21 @@
 #!/usr/bin/env bash
-# Usage: ./scripts/close-worktree.sh [name]
+# Usage: ./scripts/close-worktree.sh <name>
 # Rebases a wt/<name> branch onto the current branch, removes the worktree, and deletes the branch.
-# If <name> is omitted and the current branch is a wt/* branch, it is auto-detected.
+# Must be run from the main repo, not from inside the worktree.
 set -e
 
-# Always resolve paths relative to the main worktree, not the current worktree
-REPO_ROOT="$(git worktree list --porcelain | awk '/^worktree/{print $2; exit}')"
-REPO_NAME="$(basename "$REPO_ROOT")"
-
 if [ -z "$1" ]; then
-  CURRENT_BRANCH="$(git rev-parse --abbrev-ref HEAD)"
-  if [[ "$CURRENT_BRANCH" == wt/* ]]; then
-    NAME="${CURRENT_BRANCH#wt/}"
-    echo "Auto-detected worktree name: $NAME"
-  else
-    echo "Usage: ./scripts/close-worktree.sh <name>"
-    echo ""
-    echo "Available worktree branches:"
-    git branch --list 'wt/*' | sed 's/^/  /'
-    exit 1
-  fi
-else
-  NAME="$1"
+  echo "Usage: ./scripts/close-worktree.sh <name>"
+  echo ""
+  echo "Available worktree branches:"
+  git branch --list 'wt/*' | sed 's/^/  /'
+  exit 1
 fi
+
+# Resolve paths relative to the main worktree, not the current directory
+REPO_ROOT="$(git worktree list | head -1 | awk '{print $1}')"
+REPO_NAME="$(basename "$REPO_ROOT")"
+NAME="$1"
 
 WT_BRANCH="wt/${NAME}"
 WORKTREE_PATH="${REPO_ROOT}/../${REPO_NAME}-${NAME}"
