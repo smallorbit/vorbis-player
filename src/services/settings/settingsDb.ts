@@ -84,6 +84,19 @@ export async function settingsPut<T extends { key: string }>(store: string, valu
   }
 }
 
+export async function settingsClearStore(store: string): Promise<void> {
+  await initSettingsDb();
+  if (fallbackMode) {
+    fallbackStores[store]?.clear();
+    return;
+  }
+  try {
+    await idbClear(store);
+  } catch {
+    fallbackStores[store]?.clear();
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Internal IDB helpers
 // ---------------------------------------------------------------------------
@@ -105,6 +118,17 @@ function idbPut<T>(storeName: string, value: T): Promise<void> {
     const tx = db.transaction(storeName, 'readwrite');
     const store = tx.objectStore(storeName);
     const request = store.put(value);
+    request.onsuccess = () => resolve();
+    request.onerror = () => reject(request.error);
+  });
+}
+
+function idbClear(storeName: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (!db) { reject(new Error('DB not initialized')); return; }
+    const tx = db.transaction(storeName, 'readwrite');
+    const store = tx.objectStore(storeName);
+    const request = store.clear();
     request.onsuccess = () => resolve();
     request.onerror = () => reject(request.error);
   });

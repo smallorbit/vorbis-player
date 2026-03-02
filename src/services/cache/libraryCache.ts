@@ -440,6 +440,32 @@ async function migrateFromLocalStorage(): Promise<void> {
 // Clear All
 // =============================================================================
 
+const LIKED_SONGS_TRACK_LIST_ID = 'liked-songs';
+
+export interface ClearCacheOptions {
+  /** When true, liked songs track list is also cleared. Default: false (preserve). */
+  clearLikes?: boolean;
+}
+
+/**
+ * Clear the library cache with optional preservation of liked songs data.
+ * By default, liked songs are preserved so they don't need to be re-fetched.
+ */
+export async function clearCacheWithOptions(options: ClearCacheOptions = {}): Promise<void> {
+  const { clearLikes = false } = options;
+
+  let savedLikedSongs: CachedTrackList | undefined;
+  if (!clearLikes) {
+    savedLikedSongs = await getTrackList(LIKED_SONGS_TRACK_LIST_ID);
+  }
+
+  await clearAll();
+
+  if (!clearLikes && savedLikedSongs) {
+    await putTrackList(LIKED_SONGS_TRACK_LIST_ID, savedLikedSongs.tracks, savedLikedSongs.snapshotId);
+  }
+}
+
 export async function clearAll(): Promise<void> {
   await initCache();
   if (fallbackMode) {
