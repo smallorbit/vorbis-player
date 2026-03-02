@@ -1,19 +1,22 @@
 #!/usr/bin/env bash
 # Usage: ./scripts/new-worktree.sh [name]
-# Creates a new git worktree from the current branch, installs deps, and copies env.
+# Creates a new git worktree on a short-lived branch off the current HEAD.
+# When done, push or merge the wt/* branch back into the main branch.
 set -e
 
 REPO_ROOT="$(git rev-parse --show-toplevel)"
 REPO_NAME="$(basename "$REPO_ROOT")"
-BRANCH="$(git rev-parse --abbrev-ref HEAD)"
+PARENT_BRANCH="$(git rev-parse --abbrev-ref HEAD)"
 NAME="${1:-wt-$(date +%s)}"
+WT_BRANCH="wt/${NAME}"
 WORKTREE_PATH="${REPO_ROOT}/../${REPO_NAME}-${NAME}"
 
 echo "Creating worktree: $WORKTREE_PATH"
-echo "Branch: $BRANCH"
+echo "Parent branch:     $PARENT_BRANCH"
+echo "Worktree branch:   $WT_BRANCH"
 echo ""
 
-git worktree add "$WORKTREE_PATH" "$BRANCH"
+git worktree add -b "$WT_BRANCH" "$WORKTREE_PATH" HEAD
 
 echo ""
 echo "Installing dependencies..."
@@ -31,4 +34,10 @@ echo ""
 echo "Done! Open a new terminal and run:"
 echo ""
 echo "  cd \"$WORKTREE_PATH\" && claude"
+echo ""
+echo "When finished, merge your work back:"
+echo ""
+echo "  git merge $WT_BRANCH          # from your main worktree"
+echo "  git worktree remove \"$WORKTREE_PATH\""
+echo "  git branch -d $WT_BRANCH"
 echo ""
