@@ -97,6 +97,9 @@ describe('DropboxPlaybackAdapter', () => {
 
     vi.spyOn(window, 'Audio').mockImplementation(() => mockAudio as unknown as HTMLAudioElement);
 
+    // Stub fetch so background metadata enrichment doesn't throw in tests
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 404 }));
+
     const auth = new DropboxAuthAdapter();
     catalog = new DropboxCatalogAdapter(auth);
     vi.spyOn(catalog, 'getTemporaryLink').mockResolvedValue('https://dl.dropbox.com/temp/song.mp3');

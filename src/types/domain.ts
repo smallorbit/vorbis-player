@@ -75,6 +75,8 @@ export interface PlaybackState {
   durationMs: number;
   currentTrackId: string | null;
   currentPlaybackRef: PlaybackItemRef | null;
+  /** Enriched metadata read from audio file tags (e.g. ID3). Overrides filename-derived values. */
+  trackMetadata?: Partial<Pick<MediaTrack, 'name' | 'artists' | 'album'>>;
 }
 
 /** Serializable form of CollectionRef for storage/URL (e.g. "spotify:playlist:xxx", "dropbox:folder:/Music"). */

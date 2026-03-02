@@ -168,6 +168,30 @@ export function usePlayerLogic() {
           if (trackIndex !== -1 && trackIndex !== currentTrackIndex) {
             setCurrentTrackIndex(trackIndex);
           }
+
+          if (state.trackMetadata && trackIndex !== -1) {
+            const meta = state.trackMetadata;
+            if (meta.name !== undefined || meta.artists !== undefined || meta.album !== undefined) {
+              setTracks((prev: Track[]) =>
+                prev.map((t, i) =>
+                  i === trackIndex
+                    ? {
+                        ...t,
+                        ...(meta.name !== undefined && { name: meta.name }),
+                        ...(meta.artists !== undefined && { artists: meta.artists }),
+                        ...(meta.album !== undefined && { album: meta.album }),
+                      }
+                    : t
+                )
+              );
+              const mediaIdx = mediaTracksRef.current.findIndex((m) => m.id === trackId);
+              if (mediaIdx !== -1) {
+                mediaTracksRef.current = mediaTracksRef.current.map((m, i) =>
+                  i === mediaIdx ? { ...m, ...meta } : m
+                );
+              }
+            }
+          }
         }
       } else {
         setIsPlaying(false);

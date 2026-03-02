@@ -6,6 +6,7 @@
 import type { PlaybackProvider } from '@/types/providers';
 import type { ProviderId, MediaTrack, PlaybackState, CollectionRef } from '@/types/domain';
 import { DropboxCatalogAdapter } from './dropboxCatalogAdapter';
+import { parseID3 } from '@/utils/id3Parser';
 
 export class DropboxPlaybackAdapter implements PlaybackProvider {
   readonly providerId: ProviderId = 'dropbox';
@@ -13,6 +14,7 @@ export class DropboxPlaybackAdapter implements PlaybackProvider {
   private currentTrack: MediaTrack | null = null;
   private listeners = new Set<(state: PlaybackState | null) => void>();
   private updateInterval: ReturnType<typeof setInterval> | null = null;
+  private pendingMetadataUpdate: PlaybackState['trackMetadata'] | null = null;
 
   private catalog: DropboxCatalogAdapter;
 
@@ -44,10 +46,64 @@ export class DropboxPlaybackAdapter implements PlaybackProvider {
     const streamUrl = await this.catalog.getTemporaryLink(dropboxPath);
 
     this.currentTrack = track;
+    this.pendingMetadataUpdate = null;
     this.audio!.src = streamUrl;
     await this.audio!.play();
 
     this.startUpdateInterval();
+    this.enrichMetadataInBackground(track, streamUrl);
+  }
+
+  private enrichMetadataInBackground(track: MediaTrack, streamUrl: string): void {
+    const doEnrich = async () => {
+      let res: Response;
+      try {
+        res = await fetch(streamUrl);
+      } catch {
+        return;
+      }
+
+      if (!res.ok || !res.body) return;
+
+      // Read only the first 64KB to cover the ID3 header without downloading the full file
+      const reader = res.body.getReader();
+      const chunks: Uint8Array[] = [];
+      let totalBytes = 0;
+      try {
+        while (totalBytes < 65536) {
+          const { done, value } = await reader.read();
+          if (done || !value) break;
+          chunks.push(value);
+          totalBytes += value.length;
+        }
+      } finally {
+        reader.cancel();
+      }
+
+      if (this.currentTrack?.id !== track.id) return;
+
+      const combined = new Uint8Array(totalBytes);
+      let offset = 0;
+      for (const chunk of chunks) {
+        combined.set(chunk, offset);
+        offset += chunk.length;
+      }
+
+      const { title, artist, album } = parseID3(combined.buffer as ArrayBuffer);
+      const update: PlaybackState['trackMetadata'] = {};
+      if (title && title !== track.name) update.name = title;
+      if (artist && artist !== track.artists) update.artists = artist;
+      if (album && album !== track.album) update.album = album;
+      if (Object.keys(update).length > 0) {
+        this.currentTrack = { ...track, ...update };
+        this.pendingMetadataUpdate = update;
+        this.notifyListeners();
+      }
+    };
+
+    doEnrich().catch(() => {
+      // Metadata enrichment is best-effort; ignore failures
+    });
   }
 
   async playCollection(
@@ -122,13 +178,20 @@ export class DropboxPlaybackAdapter implements PlaybackProvider {
   private getStateSync(): PlaybackState | null {
     if (!this.audio || !this.currentTrack) return null;
 
-    return {
+    const state: PlaybackState = {
       isPlaying: !this.audio.paused && !this.audio.ended,
       positionMs: Math.floor(this.audio.currentTime * 1000),
       durationMs: isNaN(this.audio.duration) ? 0 : Math.floor(this.audio.duration * 1000),
       currentTrackId: this.currentTrack.id,
       currentPlaybackRef: this.currentTrack.playbackRef,
     };
+
+    if (this.pendingMetadataUpdate) {
+      state.trackMetadata = this.pendingMetadataUpdate;
+      this.pendingMetadataUpdate = null;
+    }
+
+    return state;
   }
 
   private startUpdateInterval(): void {
