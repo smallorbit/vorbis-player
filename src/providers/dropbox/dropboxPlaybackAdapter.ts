@@ -55,22 +55,23 @@ export class DropboxPlaybackAdapter implements PlaybackProvider {
   }
 
   private enrichMetadataInBackground(track: MediaTrack, streamUrl: string): void {
+    const FETCH_LIMIT = 262144; // 256KB — enough to cover large embedded cover art in ID3 headers
+
     const doEnrich = async () => {
       let res: Response;
       try {
-        res = await fetch(streamUrl);
+        res = await fetch(streamUrl, { headers: { Range: `bytes=0-${FETCH_LIMIT - 1}` } });
       } catch {
         return;
       }
 
-      if (!res.ok || !res.body) return;
+      if ((!res.ok && res.status !== 206) || !res.body) return;
 
-      // Read only the first 64KB to cover the ID3 header without downloading the full file
       const reader = res.body.getReader();
       const chunks: Uint8Array[] = [];
       let totalBytes = 0;
       try {
-        while (totalBytes < 65536) {
+        while (totalBytes < FETCH_LIMIT) {
           const { done, value } = await reader.read();
           if (done || !value) break;
           chunks.push(value);
@@ -89,11 +90,20 @@ export class DropboxPlaybackAdapter implements PlaybackProvider {
         offset += chunk.length;
       }
 
-      const { title, artist, album } = parseID3(combined.buffer as ArrayBuffer);
+      const { title, artist, album, coverArt } = parseID3(combined.buffer as ArrayBuffer);
       const update: PlaybackState['trackMetadata'] = {};
       if (title && title !== track.name) update.name = title;
       if (artist && artist !== track.artists) update.artists = artist;
       if (album && album !== track.album) update.album = album;
+      if (coverArt && !track.image) {
+        // Build base64 in chunks to avoid stack overflow on large images
+        const CHUNK = 8192;
+        let binary = '';
+        for (let i = 0; i < coverArt.data.length; i += CHUNK) {
+          binary += String.fromCharCode(...coverArt.data.subarray(i, i + CHUNK));
+        }
+        update.image = `data:${coverArt.mimeType};base64,${btoa(binary)}`;
+      }
       if (Object.keys(update).length > 0) {
         this.currentTrack = { ...track, ...update };
         this.pendingMetadataUpdate = update;
