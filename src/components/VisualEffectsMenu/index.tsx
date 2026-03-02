@@ -4,6 +4,7 @@ import { theme } from '../../styles/theme';
 import { ProfiledComponent } from '@/components/ProfiledComponent';
 import { usePlayerSizing } from '../../hooks/usePlayerSizing';
 import { useProviderContext } from '@/contexts/ProviderContext';
+import type { DropboxCatalogAdapter } from '@/providers/dropbox/dropboxCatalogAdapter';
 
 import {
   DrawerOverlay,
@@ -89,6 +90,54 @@ const MusicSourcesSection = memo(({ accentColor }: { accentColor: string }) => {
 MusicSourcesSection.displayName = 'MusicSourcesSection';
 
 
+/** Album art cache controls — only rendered when Dropbox is the active provider. */
+const AlbumArtCacheSection = memo(({ accentColor }: { accentColor: string }) => {
+  const { activeProviderId, activeDescriptor } = useProviderContext();
+  const [status, setStatus] = useState<'idle' | 'working' | 'done'>('idle');
+
+  if (activeProviderId !== 'dropbox') return null;
+
+  const catalog = activeDescriptor?.catalog as DropboxCatalogAdapter | undefined;
+  if (!catalog?.clearArtCache) return null;
+
+  const handleClear = async () => {
+    setStatus('working');
+    await catalog.clearArtCache();
+    setStatus('done');
+    setTimeout(() => setStatus('idle'), 1500);
+  };
+
+  const handleRefresh = async () => {
+    setStatus('working');
+    await catalog.clearArtCache();
+    // Re-fetch in background to warm the cache; don't await completion
+    catalog.listCollections().catch(() => {});
+    setStatus('done');
+    setTimeout(() => setStatus('idle'), 1500);
+  };
+
+  const busy = status === 'working';
+
+  return (
+    <FilterSection>
+      <SectionTitle>Album Art Cache</SectionTitle>
+      <ControlGroup>
+        <ControlLabel>Clear cached art so it re-downloads on next library load</ControlLabel>
+        <ResetButton onClick={handleClear} $accentColor={accentColor} disabled={busy}>
+          {status === 'done' ? 'Cleared!' : busy ? 'Working…' : 'Clear Cache'}
+        </ResetButton>
+      </ControlGroup>
+      <ControlGroup>
+        <ControlLabel>Clear and immediately re-fetch fresh art in the background</ControlLabel>
+        <ResetButton onClick={handleRefresh} $accentColor={accentColor} disabled={busy}>
+          {status === 'done' ? 'Started!' : busy ? 'Working…' : 'Refresh Art'}
+        </ResetButton>
+      </ControlGroup>
+    </FilterSection>
+  );
+});
+AlbumArtCacheSection.displayName = 'AlbumArtCacheSection';
+
 const AppSettingsMenu: React.FC<AppSettingsMenuProps> = memo(({
   isOpen,
   onClose,
@@ -135,6 +184,9 @@ const AppSettingsMenu: React.FC<AppSettingsMenuProps> = memo(({
         <DrawerContent>
           {/* Music Sources Section */}
           <MusicSourcesSection accentColor={accentColor} />
+
+          {/* Dropbox Album Art Cache Section */}
+          <AlbumArtCacheSection accentColor={accentColor} />
 
           {/* Advanced Section */}
           <FilterSection>
