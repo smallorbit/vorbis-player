@@ -1,10 +1,3 @@
-/**
- * ProviderContext — exposes the active music provider and registry to the app.
- *
- * Active provider is persisted to localStorage so it survives reloads.
- * Default is 'spotify' if no valid provider is stored.
- */
-
 import React, { createContext, useContext, useMemo, useCallback } from 'react';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { providerRegistry } from '@/providers/registry';
@@ -16,53 +9,63 @@ import '@/providers/spotify/spotifyProvider';
 import '@/providers/dropbox/dropboxProvider'; // conditionally registers if VITE_DROPBOX_CLIENT_ID is set
 
 const ACTIVE_PROVIDER_KEY = 'vorbis-player-active-provider';
-const DEFAULT_PROVIDER: ProviderId = 'spotify';
 
 interface ProviderContextValue {
-  /** Currently active provider id. */
+  /** Raw stored value — null means never chosen (show picker). */
+  chosenProviderId: ProviderId | null;
+  /** Validated, non-null provider id for hooks that always need one. Falls back to first registered. */
   activeProviderId: ProviderId;
   /** Descriptor for the active provider (undefined if not registered). */
   activeDescriptor: ProviderDescriptor | undefined;
-  /** Switch active provider. */
-  setActiveProviderId: (id: ProviderId) => void;
+  /** Switch active provider. Pass null to reset to the provider picker. */
+  setActiveProviderId: (id: ProviderId | null) => void;
   /** The global provider registry. */
   registry: ProviderRegistry;
+  /** True when no provider has been chosen or the stored one is no longer registered. */
+  needsProviderSelection: boolean;
 }
 
 const ProviderContext = createContext<ProviderContextValue | null>(null);
 
 export function ProviderProvider({ children }: { children: React.ReactNode }) {
-  const [activeProviderId, setActiveProviderIdRaw] = useLocalStorage<ProviderId>(
+  const [storedProviderId, setStoredProviderId] = useLocalStorage<ProviderId | null>(
     ACTIVE_PROVIDER_KEY,
-    DEFAULT_PROVIDER,
+    null,
   );
 
-  // Validate: if stored value isn't a registered provider, fall back to default
-  const validProviderId = providerRegistry.has(activeProviderId)
-    ? activeProviderId
-    : DEFAULT_PROVIDER;
+  const needsProviderSelection =
+    storedProviderId === null || !providerRegistry.has(storedProviderId);
+
+  const validProviderId: ProviderId =
+    storedProviderId !== null && providerRegistry.has(storedProviderId)
+      ? storedProviderId
+      : (providerRegistry.getAll()[0]?.id ?? 'spotify');
 
   const activeDescriptor = providerRegistry.get(validProviderId);
 
   const setActiveProviderId = useCallback(
-    (id: ProviderId) => {
-      if (providerRegistry.has(id) && id !== validProviderId) {
-        // Stop playback on the outgoing provider before switching
+    (id: ProviderId | null) => {
+      if (id === null) {
         activeDescriptor?.playback.pause().catch(() => {});
-        setActiveProviderIdRaw(id);
+        setStoredProviderId(null);
+      } else if (providerRegistry.has(id) && id !== storedProviderId) {
+        activeDescriptor?.playback.pause().catch(() => {});
+        setStoredProviderId(id);
       }
     },
-    [setActiveProviderIdRaw, validProviderId, activeDescriptor],
+    [setStoredProviderId, validProviderId, activeDescriptor],
   );
 
   const value = useMemo<ProviderContextValue>(
     () => ({
+      chosenProviderId: storedProviderId,
       activeProviderId: validProviderId,
       activeDescriptor,
       setActiveProviderId,
       registry: providerRegistry,
+      needsProviderSelection,
     }),
-    [validProviderId, activeDescriptor, setActiveProviderId],
+    [storedProviderId, validProviderId, activeDescriptor, setActiveProviderId, needsProviderSelection],
   );
 
   return (
