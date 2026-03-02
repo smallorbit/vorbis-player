@@ -14,19 +14,18 @@ test.describe('Player Controls', () => {
     // Navigate into the player by selecting a playlist
     await expect(page.getByText('Chill Vibes')).toBeVisible({ timeout: 10000 });
     await page.getByText('Chill Vibes').click();
-    // Wait for player view to appear (search input goes away)
+    // Wait for player view to appear (search input goes away, then track info loads)
     await expect(page.getByPlaceholder('Search playlists...')).not.toBeVisible({ timeout: 10000 });
+    // Wait for the player to finish loading (track info becomes visible)
+    await expect(page.getByText('Test Song').first()).toBeVisible({ timeout: 10000 });
   });
 
   test('play/pause button is present in the player UI', async ({ page }) => {
-    // PlaybackControls renders SVG buttons without aria-labels,
-    // so we look for the play icon path (M8 5v14l11-7z) inside the controls area
+    // PlaybackControls renders inline SVG buttons without aria-labels
     const playSvg = page.locator('svg path[d="M8 5v14l11-7z"]');
     const pauseSvg = page.locator('svg path[d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"]');
     // One of play or pause should be visible
-    const playVisible = await playSvg.isVisible().catch(() => false);
-    const pauseVisible = await pauseSvg.isVisible().catch(() => false);
-    expect(playVisible || pauseVisible).toBe(true);
+    await expect(playSvg.or(pauseSvg).first()).toBeVisible({ timeout: 5000 });
   });
 
   test('next track button is present and clickable', async ({ page }) => {
@@ -44,14 +43,14 @@ test.describe('Player Controls', () => {
   });
 
   test('track info displays current track name', async ({ page }) => {
-    // The first track from our mock data should be shown
-    await expect(page.getByText('Test Song')).toBeVisible({ timeout: 5000 });
+    // "Test Song" appears in both the player track info and the playlist panel.
+    // Using .first() targets the player track info element (first in DOM order).
+    await expect(page.getByText('Test Song').first()).toBeVisible({ timeout: 5000 });
   });
 
   test('volume control is present in the bottom bar', async ({ page }) => {
-    // The bottom bar renders a VolumeControl with a mute/unmute button
-    // Look for a button with title containing volume-related text
-    const volumeButton = page.locator('button[title="Visual effects"]');
-    await expect(volumeButton).toBeVisible({ timeout: 5000 });
+    // The bottom bar has an "App settings" button (visual effects / gear icon)
+    const settingsButton = page.locator('button[title="App settings"]');
+    await expect(settingsButton).toBeVisible({ timeout: 5000 });
   });
 });
