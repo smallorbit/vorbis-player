@@ -53,7 +53,7 @@ export function ProviderProvider({ children }: { children: React.ReactNode }) {
         setStoredProviderId(id);
       }
     },
-    [setStoredProviderId, validProviderId, activeDescriptor],
+    [setStoredProviderId, storedProviderId, activeDescriptor],
   );
 
   const value = useMemo<ProviderContextValue>(
