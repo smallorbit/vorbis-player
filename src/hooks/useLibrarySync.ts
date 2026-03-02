@@ -119,21 +119,38 @@ export function useLibrarySync(): UseLibrarySyncResult {
 
     async function loadCollections() {
       setSyncState(prev => ({ ...prev, isSyncing: true, error: null }));
+
+      const { getCachedCatalog, putCatalogCache } = await import('@/providers/dropbox/dropboxCatalogCache');
+      const cached = await getCachedCatalog();
+
+      if (cached && !cancelled) {
+        const playlistItems: CachedPlaylistInfo[] = [];
+        const albumItems: AlbumInfo[] = [];
+        for (const c of cached.collections) {
+          if (c.kind === 'album') albumItems.push(collectionToAlbumInfo(c));
+          else playlistItems.push(collectionToPlaylistInfo(c));
+        }
+        setPlaylists(playlistItems);
+        setAlbums(albumItems);
+        setSyncState({
+          isInitialLoadComplete: true,
+          isSyncing: cached.isStale,
+          lastSyncTimestamp: cached.cachedAt,
+          error: null,
+        });
+        if (!cached.isStale) return;
+      }
+
       try {
         const collections = await catalog!.listCollections(controller.signal);
         if (cancelled) return;
 
         const playlistItems: CachedPlaylistInfo[] = [];
         const albumItems: AlbumInfo[] = [];
-
         for (const c of collections) {
-          if (c.kind === 'album') {
-            albumItems.push(collectionToAlbumInfo(c));
-          } else {
-            playlistItems.push(collectionToPlaylistInfo(c));
-          }
+          if (c.kind === 'album') albumItems.push(collectionToAlbumInfo(c));
+          else playlistItems.push(collectionToPlaylistInfo(c));
         }
-
         setPlaylists(playlistItems);
         setAlbums(albumItems);
 
@@ -148,6 +165,7 @@ export function useLibrarySync(): UseLibrarySyncResult {
           lastSyncTimestamp: Date.now(),
           error: null,
         });
+        putCatalogCache(collections);
       } catch (err) {
         if (cancelled) return;
         if (err instanceof DOMException && err.name === 'AbortError') return;
@@ -199,6 +217,7 @@ export function useLibrarySync(): UseLibrarySyncResult {
           lastSyncTimestamp: Date.now(),
           error: null,
         });
+        import('@/providers/dropbox/dropboxCatalogCache').then(m => m.putCatalogCache(collections));
       } catch (err) {
         setSyncState(prev => ({
           ...prev,
