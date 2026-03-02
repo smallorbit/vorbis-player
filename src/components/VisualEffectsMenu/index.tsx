@@ -86,7 +86,12 @@ const MusicSourcesSection = memo(({ accentColor }: { accentColor: string }) => {
               key={descriptor.id}
               $accentColor={accentColor}
               $isActive={isActive}
-              onClick={() => setActiveProviderId(descriptor.id)}
+              onClick={() => {
+                if (descriptor.id !== activeProviderId) {
+                  setActiveProviderId(descriptor.id);
+                  window.location.reload();
+                }
+              }}
               aria-label={`Switch to ${descriptor.name}`}
             >
               <ProviderStatusDot $isConnected={isConnected} $accentColor={accentColor} />
