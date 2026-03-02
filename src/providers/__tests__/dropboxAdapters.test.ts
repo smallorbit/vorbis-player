@@ -165,6 +165,42 @@ describe('DropboxPlaybackAdapter', () => {
   });
 });
 
+describe('DropboxCatalogAdapter - listCollections', () => {
+  let auth: DropboxAuthAdapter;
+  let adapter: DropboxCatalogAdapter;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    auth = new DropboxAuthAdapter();
+    vi.spyOn(auth, 'ensureValidToken').mockResolvedValue('test-token');
+    adapter = new DropboxCatalogAdapter(auth);
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('propagates network errors instead of returning []', async () => {
+    // #given
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('Network failure')));
+
+    // #when / #then
+    await expect(adapter.listCollections()).rejects.toThrow('Network failure');
+  });
+
+  it('propagates API error responses instead of returning []', async () => {
+    // #given
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: false,
+      status: 429,
+      json: () => Promise.resolve({ error_summary: 'too_many_requests' }),
+    }));
+
+    // #when / #then
+    await expect(adapter.listCollections()).rejects.toThrow();
+  });
+});
+
 describe('DropboxCatalogAdapter - listTracks', () => {
   let auth: DropboxAuthAdapter;
   let adapter: DropboxCatalogAdapter;
@@ -255,5 +291,29 @@ describe('DropboxCatalogAdapter - listTracks', () => {
     expect(albumIds).toContain('/artist/album-a');
     expect(albumIds).toContain('/artist/album-b');
     expect(new Set(albumIds).size).toBe(2);
+  });
+
+  it('propagates network errors instead of returning []', async () => {
+    // #given
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('Network failure')));
+
+    // #when / #then
+    await expect(
+      adapter.listTracks({ provider: 'dropbox', kind: 'album', id: '/artist/album' }),
+    ).rejects.toThrow('Network failure');
+  });
+
+  it('propagates API error responses instead of returning []', async () => {
+    // #given
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: false,
+      status: 401,
+      json: () => Promise.resolve({ error_summary: 'invalid_access_token' }),
+    }));
+
+    // #when / #then
+    await expect(
+      adapter.listTracks({ provider: 'dropbox', kind: 'album', id: '/artist/album' }),
+    ).rejects.toThrow();
   });
 });

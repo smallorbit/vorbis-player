@@ -280,7 +280,7 @@ export class DropboxCatalogAdapter implements CatalogProvider {
       return [allMusic, ...albums];
     } catch (error) {
       console.error('[DropboxCatalog] Failed to list collections:', error);
-      return [];
+      throw error;
     }
   }
 
@@ -354,7 +354,7 @@ export class DropboxCatalogAdapter implements CatalogProvider {
       return tracks;
     } catch (error) {
       console.error('[DropboxCatalog] Failed to list tracks:', error);
-      return [];
+      throw error;
     }
   }
 
