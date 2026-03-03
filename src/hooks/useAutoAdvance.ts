@@ -26,6 +26,8 @@ export const useAutoAdvance = ({
   const tracksRef = useRef(tracks);
   const currentTrackIndexRef = useRef(currentTrackIndex);
   const playTrackRef = useRef(playTrack);
+  /** Tracks when advanceToNext last initiated playback (used as cooldown for non-Spotify). */
+  const lastPlayInitiatedRef = useRef(0);
 
   const { activeDescriptor, activeProviderId } = useProviderContext();
 
@@ -50,8 +52,12 @@ export const useAutoAdvance = ({
       const nextIndex = (currentTrackIndexRef.current + 1) % tracksRef.current.length;
       if (tracksRef.current[nextIndex]) {
         setTimeout(() => {
+          lastPlayInitiatedRef.current = Date.now();
           playTrackRef.current(nextIndex, true);
-          hasEnded.current = false;
+          // Don't reset hasEnded here — playTrack is async and the audio element
+          // still has the old track's ended state until the new track loads.
+          // The useEffect on currentTrackIndex resets hasEnded when the track
+          // actually changes (after playTrack succeeds and calls setCurrentTrackIndex).
         }, 500);
       }
     }
@@ -75,12 +81,14 @@ export const useAutoAdvance = ({
       }
 
       // Detect track naturally finished: was playing, now paused at position 0.
-      // Guard: skip if a track was recently loaded — Spotify SDK briefly
-      // pauses at position 0 during buffering, which would falsely trigger advance.
-      // For Spotify, use spotifyPlayer.lastPlayTrackTime; for other providers, skip cooldown check.
-      let msSinceLastPlay = PLAY_COOLDOWN_MS + 1; // default: allow advance
+      // Guard: skip if a track was recently loaded — both Spotify SDK and HTML5
+      // Audio briefly pause at position 0 during buffering, which would falsely
+      // trigger advance.
+      let msSinceLastPlay: number;
       if (activeProviderId === 'spotify') {
         msSinceLastPlay = Date.now() - spotifyPlayer.lastPlayTrackTime;
+      } else {
+        msSinceLastPlay = Date.now() - lastPlayInitiatedRef.current;
       }
 
       if (!hasEnded.current && wasPlayingRef.current && isPaused && position === 0 && duration > 0 && msSinceLastPlay > PLAY_COOLDOWN_MS) {
