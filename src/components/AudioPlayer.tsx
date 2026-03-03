@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import styled from 'styled-components';
 import { flexCenter } from '@/styles/utils';
 import PlayerStateRenderer from './PlayerStateRenderer';
@@ -56,6 +56,17 @@ const AudioPlayerComponent = () => {
 
   const { chosenProviderId, activeDescriptor } = useProviderContext();
   const needsSetup = chosenProviderId === null || !activeDescriptor?.auth.isAuthenticated();
+
+  const autoSelectFired = useRef(false);
+  useEffect(() => {
+    if (needsSetup || autoSelectFired.current || selectedPlaylistId !== null) return;
+    const params = new URLSearchParams(window.location.search);
+    const playlistParam = params.get('playlist');
+    if (!playlistParam) return;
+    autoSelectFired.current = true;
+    window.history.replaceState({}, '', '/');
+    handlers.handlePlaylistSelect(playlistParam);
+  }, [needsSetup, selectedPlaylistId, handlers]);
 
   const isMainPlayerActive = !state.isLoading && !state.error && selectedPlaylistId !== null && tracks.length > 0;
 

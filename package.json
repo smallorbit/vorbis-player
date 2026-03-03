@@ -19,7 +19,11 @@
     "favicon": "node scripts/generate-favicon.js",
     "knip": "knip",
     "test:e2e": "playwright test",
-    "test:e2e:ui": "playwright test --ui"
+    "test:e2e:ui": "playwright test --ui",
+    "capture:auth": "node playwright/capture/auth.mjs",
+    "capture": "playwright test --config playwright/capture/capture.config.ts --project desktop --project mobile",
+    "capture:desktop": "playwright test --config playwright/capture/capture.config.ts --project desktop",
+    "capture:mobile": "playwright test --config playwright/capture/capture.config.ts --project mobile"
   },
   "dependencies": {
     "@types/react-window": "^1.8.8",

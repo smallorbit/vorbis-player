@@ -62,3 +62,11 @@ Thumbs.db
 .cursor/commands/
 .cursor/plans/
 .certs/
+
+# Playwright
+test-results/
+
+# Capture toolkit
+playwright/capture/output/
+playwright/capture/.auth-state.json
+playwright/capture/.chrome-profile/
