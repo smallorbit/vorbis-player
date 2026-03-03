@@ -8,6 +8,7 @@ export const test = base.extend({
         expires_at: Date.now() + 3600 * 1000,
         refresh_token: 'fake-refresh-token',
       }));
+      localStorage.setItem('vorbis-player-active-provider', JSON.stringify('spotify'));
     });
     await use(page);
   },
