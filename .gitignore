@@ -63,6 +63,9 @@ Thumbs.db
 .cursor/plans/
 .certs/
 
+# Playwright
+test-results/
+
 # Capture toolkit
 playwright/capture/output/
 playwright/capture/.auth-state.json
