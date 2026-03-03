@@ -46,6 +46,7 @@ const BottomBar = React.memo(function BottomBar({
   const { isMobile, isTablet } = usePlayerSizing();
   const [zenBarVisible, setZenBarVisible] = useState(false);
   const hideTimerRef = useRef<ReturnType<typeof setTimeout>>();
+  const zenEntryGuardRef = useRef(false);
 
   const clearHideTimer = useCallback(() => {
     if (hideTimerRef.current) {
@@ -62,6 +63,7 @@ const BottomBar = React.memo(function BottomBar({
   }, [clearHideTimer]);
 
   const showBar = useCallback(() => {
+    if (zenEntryGuardRef.current) return;
     setZenBarVisible(true);
     startHideTimer();
   }, [startHideTimer]);
@@ -84,7 +86,14 @@ const BottomBar = React.memo(function BottomBar({
   }, [zenModeEnabled, clearHideTimer, startHideTimer]);
 
   useEffect(() => {
-    if (!zenModeEnabled) {
+    if (zenModeEnabled) {
+      zenEntryGuardRef.current = true;
+      const guardTimer = setTimeout(() => {
+        zenEntryGuardRef.current = false;
+      }, 500);
+      return () => clearTimeout(guardTimer);
+    } else {
+      zenEntryGuardRef.current = false;
       setZenBarVisible(false);
       clearHideTimer();
     }
