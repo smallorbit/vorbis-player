@@ -44,18 +44,12 @@ A visually immersive Spotify music player built with React, featuring customizab
    ```
 
 2. **Set up Spotify App** *(required for Spotify playback)*
-   - Create a new app at [Spotify Developer Dashboard](https://developer.spotify.com/dashboard)
-   - Choose "Web Playback SDK" for planned API usage
-   - Add redirect URI: `http://127.0.0.1:3000/auth/spotify/callback`
-   - **Important**: Use `127.0.0.1` instead of `localhost` for Spotify OAuth compatibility
-   - Copy your Client ID
+   - See the full [Spotify Setup Guide](./docs/providers/spotify-setup.md) for step-by-step instructions
+   - Short version: create an app at [Spotify Developer Dashboard](https://developer.spotify.com/dashboard), add redirect URI `http://127.0.0.1:3000/auth/spotify/callback`, copy your Client ID
 
 3. **Set up Dropbox App** *(optional — only needed for Dropbox playback)*
-   - Create a new app at [Dropbox Developer Console](https://www.dropbox.com/developers/apps)
-   - Choose **Scoped access** → **Full Dropbox** (or App folder)
-   - Under **Permissions**, enable: `files.metadata.read`, `files.content.read`
-   - Under **Settings**, add redirect URI: `http://127.0.0.1:3000/auth/dropbox/callback`
-   - Copy your App Key
+   - See the full [Dropbox Setup Guide](./docs/providers/dropbox-setup.md) for step-by-step instructions
+   - Short version: create an app at [Dropbox Developer Console](https://www.dropbox.com/developers/apps), enable `files.metadata.read` and `files.content.read` permissions, add redirect URI `http://127.0.0.1:3000/auth/dropbox/callback`, copy your App Key
 
 4. **Configure environment**
 
