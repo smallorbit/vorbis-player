@@ -1,0 +1,97 @@
+/**
+ * Persistent cache for Dropbox album art images.
+ * Stores image data URLs in IndexedDB so art loads instantly across sessions
+ * without hitting the Dropbox API.
+ */
+
+const DB_NAME = 'vorbis-dropbox-art';
+const DB_VERSION = 2;
+const STORE = 'art';
+export const ART_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+
+interface CachedArt {
+  path: string;
+  dataUrl: string;
+  cachedAt: number;
+}
+
+let db: IDBDatabase | null = null;
+let dbPromise: Promise<IDBDatabase | null> | null = null;
+
+function openDb(): Promise<IDBDatabase | null> {
+  if (dbPromise) return dbPromise;
+  dbPromise = new Promise((resolve) => {
+    if (typeof indexedDB === 'undefined') {
+      resolve(null);
+      return;
+    }
+    const req = indexedDB.open(DB_NAME, DB_VERSION);
+    req.onerror = () => resolve(null);
+    req.onsuccess = () => {
+      db = req.result;
+      resolve(db);
+    };
+    req.onupgradeneeded = (e) => {
+      const database = (e.target as IDBOpenDBRequest).result;
+      if (!database.objectStoreNames.contains(STORE)) {
+        database.createObjectStore(STORE, { keyPath: 'path' });
+      }
+      if (!database.objectStoreNames.contains('catalog')) {
+        database.createObjectStore('catalog', { keyPath: 'key' });
+      }
+    };
+  });
+  return dbPromise;
+}
+
+export async function getDb(): Promise<IDBDatabase | null> {
+  return db ?? openDb();
+}
+
+export async function getArt(path: string): Promise<string | null> {
+  const database = await getDb();
+  if (!database) return null;
+  return new Promise((resolve) => {
+    try {
+      const req = database.transaction(STORE, 'readonly').objectStore(STORE).get(path);
+      req.onsuccess = () => {
+        const entry = req.result as CachedArt | undefined;
+        resolve(entry && Date.now() - entry.cachedAt < ART_TTL_MS ? entry.dataUrl : null);
+      };
+      req.onerror = () => resolve(null);
+    } catch {
+      resolve(null);
+    }
+  });
+}
+
+export async function putArt(path: string, dataUrl: string): Promise<void> {
+  const database = await getDb();
+  if (!database) return;
+  return new Promise((resolve) => {
+    try {
+      const entry: CachedArt = { path, dataUrl, cachedAt: Date.now() };
+      const tx = database.transaction(STORE, 'readwrite');
+      tx.objectStore(STORE).put(entry);
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => resolve();
+    } catch {
+      resolve();
+    }
+  });
+}
+
+export async function clearArt(): Promise<void> {
+  const database = await getDb();
+  if (!database) return;
+  return new Promise((resolve) => {
+    try {
+      const tx = database.transaction(STORE, 'readwrite');
+      tx.objectStore(STORE).clear();
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => resolve();
+    } catch {
+      resolve();
+    }
+  });
+}

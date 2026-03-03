@@ -3,18 +3,21 @@ import { TrackProvider } from '@/contexts/TrackContext';
 import { ColorProvider } from '@/contexts/ColorContext';
 import { VisualEffectsProvider } from '@/contexts/VisualEffectsContext';
 import { PinnedItemsProvider } from '@/contexts/PinnedItemsContext';
+import { ProviderProvider } from '@/contexts/ProviderContext';
 
 export function TestWrapper({ children }: { children: React.ReactNode }) {
   return (
-    <TrackProvider>
-      <ColorProvider>
-        <VisualEffectsProvider>
-          <PinnedItemsProvider>
-            {children}
-          </PinnedItemsProvider>
-        </VisualEffectsProvider>
-      </ColorProvider>
-    </TrackProvider>
+    <ProviderProvider>
+      <TrackProvider>
+        <ColorProvider>
+          <VisualEffectsProvider>
+            <PinnedItemsProvider>
+              {children}
+            </PinnedItemsProvider>
+          </VisualEffectsProvider>
+        </ColorProvider>
+      </TrackProvider>
+    </ProviderProvider>
   );
 }
 

@@ -1,14 +1,42 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
 
+vi.mock('@/services/spotifyPlayer', () => ({
+  spotifyPlayer: {
+    setVolume: vi.fn().mockResolvedValue(undefined),
+    onPlayerStateChanged: vi.fn(() => vi.fn()),
+    getCurrentState: vi.fn().mockResolvedValue(null),
+    initialize: vi.fn().mockResolvedValue(undefined),
+    playTrack: vi.fn().mockResolvedValue(undefined),
+    getDeviceId: vi.fn().mockReturnValue(null),
+    getIsReady: vi.fn().mockReturnValue(false),
+  },
+}));
+
 vi.mock('@/services/spotify', () => ({
   checkTrackSaved: vi.fn(),
   saveTrack: vi.fn(),
   unsaveTrack: vi.fn(),
+  spotifyAuth: {
+    isAuthenticated: vi.fn().mockReturnValue(true),
+    getAccessToken: vi.fn().mockReturnValue('test-token'),
+    ensureValidToken: vi.fn().mockResolvedValue('test-token'),
+    handleRedirect: vi.fn().mockResolvedValue(undefined),
+    redirectToAuth: vi.fn(),
+    logout: vi.fn(),
+  },
+  getUserLibraryInterleaved: vi.fn(),
+  getPlaylistTracks: vi.fn(),
+  getAlbumTracks: vi.fn(),
+  getLikedSongs: vi.fn(),
+  getLikedSongsCount: vi.fn(),
 }));
 
 import { useLikeTrack } from '../useLikeTrack';
 import { checkTrackSaved, saveTrack, unsaveTrack } from '@/services/spotify';
+import { ProviderWrapper } from '@/test/providerTestUtils';
+
+const opts = { wrapper: ProviderWrapper };
 
 describe('useLikeTrack', () => {
   beforeEach(() => {
@@ -19,7 +47,7 @@ describe('useLikeTrack', () => {
   });
 
   it('isLiked is false when trackId is undefined', () => {
-    const { result } = renderHook(() => useLikeTrack(undefined));
+    const { result } = renderHook(() => useLikeTrack(undefined), opts);
 
     expect(result.current.isLiked).toBe(false);
     expect(checkTrackSaved).not.toHaveBeenCalled();
@@ -28,7 +56,7 @@ describe('useLikeTrack', () => {
   it('calls checkTrackSaved when trackId changes', async () => {
     vi.mocked(checkTrackSaved).mockResolvedValue(true);
 
-    const { result } = renderHook(() => useLikeTrack('track-1'));
+    const { result } = renderHook(() => useLikeTrack('track-1'), opts);
 
     await waitFor(() => {
       expect(result.current.isLiked).toBe(true);
@@ -41,7 +69,7 @@ describe('useLikeTrack', () => {
 
     const { result, rerender } = renderHook(
       ({ id }) => useLikeTrack(id),
-      { initialProps: { id: 'track-1' } }
+      { ...opts, initialProps: { id: 'track-1' } }
     );
 
     await waitFor(() => {
@@ -63,7 +91,7 @@ describe('useLikeTrack', () => {
       () => new Promise<void>(resolve => { resolveSave = resolve; })
     );
 
-    const { result } = renderHook(() => useLikeTrack('track-1'));
+    const { result } = renderHook(() => useLikeTrack('track-1'), opts);
 
     await waitFor(() => {
       expect(result.current.isLikePending).toBe(false);
@@ -90,7 +118,7 @@ describe('useLikeTrack', () => {
     vi.mocked(checkTrackSaved).mockResolvedValue(false);
     vi.mocked(saveTrack).mockRejectedValue(new Error('API error'));
 
-    const { result } = renderHook(() => useLikeTrack('track-1'));
+    const { result } = renderHook(() => useLikeTrack('track-1'), opts);
 
     await waitFor(() => {
       expect(result.current.isLikePending).toBe(false);
@@ -113,7 +141,7 @@ describe('useLikeTrack', () => {
       () => new Promise<void>(resolve => { resolveSave = resolve; })
     );
 
-    const { result } = renderHook(() => useLikeTrack('track-1'));
+    const { result } = renderHook(() => useLikeTrack('track-1'), opts);
 
     await waitFor(() => {
       expect(result.current.isLikePending).toBe(false);
@@ -141,7 +169,7 @@ describe('useLikeTrack', () => {
   it('calls unsaveTrack when unliking', async () => {
     vi.mocked(checkTrackSaved).mockResolvedValue(true);
 
-    const { result } = renderHook(() => useLikeTrack('track-1'));
+    const { result } = renderHook(() => useLikeTrack('track-1'), opts);
 
     await waitFor(() => {
       expect(result.current.isLiked).toBe(true);
@@ -157,7 +185,7 @@ describe('useLikeTrack', () => {
   it('sets isLiked to false on checkTrackSaved error', async () => {
     vi.mocked(checkTrackSaved).mockRejectedValue(new Error('Network error'));
 
-    const { result } = renderHook(() => useLikeTrack('track-1'));
+    const { result } = renderHook(() => useLikeTrack('track-1'), opts);
 
     await waitFor(() => {
       expect(result.current.isLikePending).toBe(false);

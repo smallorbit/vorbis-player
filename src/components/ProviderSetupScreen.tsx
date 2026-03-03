@@ -1,0 +1,188 @@
+import styled, { keyframes } from 'styled-components';
+import { useProviderContext } from '@/contexts/ProviderContext';
+import { flexCenter, flexColumn, cardBase } from '@/styles/utils';
+import type { ProviderId } from '@/types/domain';
+
+const fadeInUp = keyframes`
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+`;
+
+const SetupCard = styled.div`
+  ${cardBase};
+  ${flexColumn};
+  align-items: center;
+  width: min(440px, 90vw);
+  padding: 2.5rem 2rem;
+  border-radius: 1.25rem;
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  background: ${({ theme }) => theme.colors.muted.background};
+  backdrop-filter: blur(12px);
+  box-shadow: ${({ theme }) => theme.shadows.albumArt};
+  animation: ${fadeInUp} 0.4s ease-out;
+  gap: ${({ theme }) => theme.spacing.lg};
+`;
+
+const Title = styled.h1`
+  color: ${({ theme }) => theme.colors.white};
+  font-size: ${({ theme }) => theme.fontSize['2xl']};
+  font-weight: ${({ theme }) => theme.fontWeight.bold};
+  margin: 0;
+  text-align: center;
+`;
+
+const Subtitle = styled.p`
+  color: ${({ theme }) => theme.colors.muted.foreground};
+  font-size: ${({ theme }) => theme.fontSize.sm};
+  margin: 0;
+  text-align: center;
+  line-height: 1.5;
+`;
+
+const ProviderGrid = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: ${({ theme }) => theme.spacing.md};
+  width: 100%;
+`;
+
+const ProviderCard = styled.button<{ $accentColor: string }>`
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing.md};
+  width: 100%;
+  padding: ${({ theme }) => theme.spacing.md} ${({ theme }) => theme.spacing.lg};
+  background: ${({ theme }) => theme.colors.control.background};
+  border: 1px solid ${({ theme }) => theme.colors.borderSubtle};
+  border-radius: ${({ theme }) => theme.borderRadius['2xl']};
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.15s ease, background 0.15s ease;
+
+  &:hover {
+    border-color: ${({ $accentColor }) => $accentColor};
+    background: ${({ theme }) => theme.colors.control.backgroundHover};
+  }
+`;
+
+const ProviderIcon = styled.div<{ $accentColor: string }>`
+  width: 3rem;
+  height: 3rem;
+  border-radius: 50%;
+  background: ${({ $accentColor }) => $accentColor};
+  ${flexCenter};
+  flex-shrink: 0;
+  font-size: 1.25rem;
+`;
+
+const ProviderInfo = styled.div`
+  ${flexColumn};
+  gap: 0.25rem;
+`;
+
+const ProviderName = styled.span`
+  color: ${({ theme }) => theme.colors.white};
+  font-size: ${({ theme }) => theme.fontSize.base};
+  font-weight: ${({ theme }) => theme.fontWeight.semibold};
+`;
+
+const ProviderNote = styled.span`
+  color: ${({ theme }) => theme.colors.muted.foreground};
+  font-size: ${({ theme }) => theme.fontSize.xs};
+`;
+
+const ActionButton = styled.button`
+  width: 100%;
+  padding: ${({ theme }) => theme.spacing.md} ${({ theme }) => theme.spacing.lg};
+  background: ${({ theme }) => theme.colors.accent};
+  color: ${({ theme }) => theme.colors.foregroundDark};
+  border: none;
+  border-radius: ${({ theme }) => theme.borderRadius['2xl']};
+  font-size: ${({ theme }) => theme.fontSize.base};
+  font-weight: ${({ theme }) => theme.fontWeight.semibold};
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+
+  &:hover {
+    opacity: 0.9;
+  }
+`;
+
+const SwitchLink = styled.button`
+  background: none;
+  border: none;
+  color: ${({ theme }) => theme.colors.muted.foreground};
+  font-size: ${({ theme }) => theme.fontSize.sm};
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 0;
+
+  &:hover {
+    color: ${({ theme }) => theme.colors.white};
+  }
+`;
+
+const PROVIDER_META: Record<ProviderId, { icon: string; accentColor: string; note: string }> = {
+  spotify: { icon: '♫', accentColor: '#1db954', note: 'Requires Spotify Premium' },
+  dropbox: { icon: '📁', accentColor: '#0061ff', note: 'Play files from your Dropbox' },
+};
+
+const Wrapper = styled.div`
+  ${flexCenter};
+  width: 100%;
+  min-height: 100dvh;
+`;
+
+export default function ProviderSetupScreen() {
+  const { chosenProviderId, activeDescriptor, setActiveProviderId, registry } = useProviderContext();
+  const providers = registry.getAll();
+
+  if (chosenProviderId === null) {
+    return (
+      <Wrapper>
+        <SetupCard>
+          <Title>Welcome to Vorbis Player</Title>
+          <Subtitle>Choose a music provider to get started</Subtitle>
+          <ProviderGrid>
+            {providers.map((descriptor) => {
+              const meta = PROVIDER_META[descriptor.id] ?? { icon: '♪', accentColor: '#646cff', note: '' };
+              return (
+                <ProviderCard
+                  key={descriptor.id}
+                  $accentColor={meta.accentColor}
+                  onClick={() => {
+                    setActiveProviderId(descriptor.id);
+                    descriptor.auth.beginLogin();
+                  }}
+                >
+                  <ProviderIcon $accentColor={meta.accentColor}>{meta.icon}</ProviderIcon>
+                  <ProviderInfo>
+                    <ProviderName>{descriptor.name}</ProviderName>
+                    {meta.note && <ProviderNote>{meta.note}</ProviderNote>}
+                  </ProviderInfo>
+                </ProviderCard>
+              );
+            })}
+          </ProviderGrid>
+        </SetupCard>
+      </Wrapper>
+    );
+  }
+
+  return (
+    <Wrapper>
+      <SetupCard>
+        <Title>Reconnect to {activeDescriptor?.name}</Title>
+        <Subtitle>Your session has expired. Reconnect to continue listening.</Subtitle>
+        <ActionButton onClick={() => activeDescriptor?.auth.beginLogin()}>
+          Reconnect {activeDescriptor?.name}
+        </ActionButton>
+        {providers.length >= 2 && (
+          <SwitchLink onClick={() => setActiveProviderId(null)}>
+            Switch provider
+          </SwitchLink>
+        )}
+      </SetupCard>
+    </Wrapper>
+  );
+}

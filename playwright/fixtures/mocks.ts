@@ -151,16 +151,62 @@ export async function setupPlaybackApiMocks(page: Page): Promise<void> {
   );
 
   await page.route('**/v1/me/player', (route) => {
-    if (route.request().method() === 'PUT') {
-      return route.fulfill({ status: 204 });
-    }
+    const method = route.request().method();
+    if (method === 'PUT') return route.fulfill({ status: 204 });
+    if (method === 'GET')
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ is_playing: false, device: { id: 'fake-device-id', is_active: true } }),
+      });
     return route.continue();
   });
+
 }
 
 export async function setupSpotifySdkMock(page: Page): Promise<void> {
+  // Intercept the real Spotify SDK script so it never loads and overwrites window.Spotify.
+  // The stub polls until onSpotifyWebPlaybackSDKReady is defined (React app may not have
+  // set it yet when the script tag in index.html first executes), then calls it.
+  await page.route('**/sdk.scdn.co/**', (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/javascript',
+      body: `(function poll(){
+        if(typeof window.onSpotifyWebPlaybackSDKReady==='function'){
+          window.onSpotifyWebPlaybackSDKReady();
+        } else {
+          setTimeout(poll, 50);
+        }
+      })();`,
+    })
+  );
+
   await page.addInitScript(() => {
     const listeners: Record<string, Array<(...args: unknown[]) => void>> = {};
+
+    const mockTrackState = {
+      track_window: {
+        current_track: {
+          id: 'track-1',
+          name: 'Test Song',
+          uri: 'spotify:track:track-1',
+          duration_ms: 210000,
+          artists: [{ name: 'Test Artist', uri: 'spotify:artist:test' }],
+          album: {
+            name: 'Test Album',
+            images: [{ url: 'https://via.placeholder.com/300' }],
+          },
+        },
+        next_tracks: [],
+        previous_tracks: [],
+      },
+      paused: false,
+      position: 0,
+      duration: 210000,
+      shuffle: false,
+      repeat_mode: 0,
+    };
 
     const mockPlayer = {
       connect: () => Promise.resolve(true),
@@ -169,7 +215,16 @@ export async function setupSpotifySdkMock(page: Page): Promise<void> {
         if (!listeners[event]) listeners[event] = [];
         listeners[event].push(callback);
         if (event === 'ready') {
-          setTimeout(() => callback({ device_id: 'fake-device-id' }), 100);
+          setTimeout(() => {
+            callback({ device_id: 'fake-device-id' });
+            // After ready, emit an initial player_state_changed so the app
+            // knows what track is playing without waiting for real SDK events.
+            setTimeout(() => {
+              (listeners['player_state_changed'] ?? []).forEach((cb) =>
+                cb(mockTrackState)
+              );
+            }, 150);
+          }, 100);
         }
         return true;
       },
@@ -177,7 +232,7 @@ export async function setupSpotifySdkMock(page: Page): Promise<void> {
         delete listeners[event];
         return true;
       },
-      getCurrentState: () => Promise.resolve(null),
+      getCurrentState: () => Promise.resolve(mockTrackState),
       setName: () => Promise.resolve(),
       getVolume: () => Promise.resolve(0.5),
       setVolume: () => Promise.resolve(),
@@ -196,12 +251,6 @@ export async function setupSpotifySdkMock(page: Page): Promise<void> {
         return mockPlayer;
       },
     };
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    if (typeof (window as any).onSpotifyWebPlaybackSDKReady === 'function') {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (window as any).onSpotifyWebPlaybackSDKReady();
-    }
   });
 }
 

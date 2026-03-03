@@ -2,13 +2,23 @@ import { useCallback } from 'react';
 import { spotifyAuth } from '../services/spotify';
 import { spotifyPlayer } from '../services/spotifyPlayer';
 import type { Track } from '../services/spotify';
+import type { ProviderDescriptor } from '@/types/providers';
+import type { MediaTrack } from '@/types/domain';
 
 interface UseSpotifyPlaybackProps {
   tracks: Track[];
   setCurrentTrackIndex: (index: number) => void;
+  /** When set, playTrack uses this for Dropbox playback instead of Spotify URI. */
+  activeDescriptor?: ProviderDescriptor | null;
+  mediaTracksRef?: React.MutableRefObject<MediaTrack[]>;
 }
 
-export const useSpotifyPlayback = ({ tracks, setCurrentTrackIndex }: UseSpotifyPlaybackProps) => {
+export const useSpotifyPlayback = ({
+  tracks,
+  setCurrentTrackIndex,
+  activeDescriptor,
+  mediaTracksRef,
+}: UseSpotifyPlaybackProps) => {
 
   const activateDevice = useCallback(async () => {
     try {
@@ -49,14 +59,23 @@ export const useSpotifyPlayback = ({ tracks, setCurrentTrackIndex }: UseSpotifyP
   }, [activateDevice]);
 
   const playTrack = useCallback(async (index: number, skipOnError = false) => {
-    console.log('[DEBUG] playTrack called', {
-      index,
-      tracksLength: tracks.length,
-      hasTrack: !!tracks[index],
-      trackUri: tracks[index]?.uri,
-      trackName: tracks[index]?.name,
-      skipOnError
-    });
+    if (activeDescriptor?.id === 'dropbox') {
+      const mediaTracks = mediaTracksRef?.current ?? [];
+      if (!mediaTracks[index]) {
+        console.error('[DEBUG] playTrack: No Dropbox track at index', index, 'mediaTracks length:', mediaTracks.length);
+        return;
+      }
+      try {
+        await activeDescriptor.playback.playTrack(mediaTracks[index]);
+        setCurrentTrackIndex(index);
+      } catch (error) {
+        console.error('[Dropbox] Failed to play track:', error);
+        if (skipOnError && index < mediaTracks.length - 1) {
+          setTimeout(() => playTrack(index + 1, skipOnError), 500);
+        }
+      }
+      return;
+    }
 
     if (!tracks[index]) {
       console.error('[DEBUG] playTrack: No track at index', index, 'tracks length:', tracks.length);
@@ -148,7 +167,7 @@ export const useSpotifyPlayback = ({ tracks, setCurrentTrackIndex }: UseSpotifyP
         }, 500);
       }
     }
-  }, [tracks, setCurrentTrackIndex, handlePlaybackResume]);
+  }, [tracks, setCurrentTrackIndex, handlePlaybackResume, activeDescriptor, mediaTracksRef]);
 
   const resumePlayback = useCallback(async () => {
     try {

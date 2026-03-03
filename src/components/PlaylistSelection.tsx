@@ -2,10 +2,10 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import * as React from 'react';
 import styled from 'styled-components';
 import {
-  spotifyAuth,
   type PlaylistInfo,
   type AlbumInfo
 } from '../services/spotify';
+import { useProviderContext } from '@/contexts/ProviderContext';
 import { Card, CardContent, Button, Skeleton, Alert, AlertDescription } from './styled';
 import { theme } from '@/styles/theme';
 import { usePlayerSizing } from '../hooks/usePlayerSizing';
@@ -530,9 +530,9 @@ const PinnedSectionLabel = styled.div`
 const PinIcon: React.FC<{ filled?: boolean }> = ({ filled = false }) => (
   <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
     {filled ? (
-      <path d="M16 3a1 1 0 0 0-1.4-.2L12 5l-3-1.5a1 1 0 0 0-1.2.3L6 6.5a1 1 0 0 0 .1 1.3L9 10l-1 4-3.3 3.3a1 1 0 0 0 0 1.4 1 1 0 0 0 1.4 0L9.5 15l4-1 2.2 2.9a1 1 0 0 0 1.3.1l2.7-1.8a1 1 0 0 0 .3-1.2L18.5 11l2.2-2.6a1 1 0 0 0-.2-1.4L16 3z" fill="currentColor"/>
+      <path d="M16 3a1 1 0 0 0-1.4-.2L12 5l-3-1.5a1 1 0 0 0-1.2.3L6 6.5a1 1 0 0 0 .1 1.3L9 10l-1 4-3.3 3.3a1 1 0 0 0 0 1.4 1 1 0 0 0 1.4 0L9.5 15l4-1 2.2 2.9a1 1 0 0 0 1.3.1l2.7-1.8a1 1 0 0 0 .3-1.2L18.5 11l2.2-2.6a1 1 0 0 0-.2-1.4L16 3z" fill="currentColor" />
     ) : (
-      <path d="M16 3a1 1 0 0 0-1.4-.2L12 5l-3-1.5a1 1 0 0 0-1.2.3L6 6.5a1 1 0 0 0 .1 1.3L9 10l-1 4-3.3 3.3a1 1 0 0 0 0 1.4 1 1 0 0 0 1.4 0L9.5 15l4-1 2.2 2.9a1 1 0 0 0 1.3.1l2.7-1.8a1 1 0 0 0 .3-1.2L18.5 11l2.2-2.6a1 1 0 0 0-.2-1.4L16 3z" stroke="currentColor" strokeWidth="1.5" fill="none"/>
+      <path d="M16 3a1 1 0 0 0-1.4-.2L12 5l-3-1.5a1 1 0 0 0-1.2.3L6 6.5a1 1 0 0 0 .1 1.3L9 10l-1 4-3.3 3.3a1 1 0 0 0 0 1.4 1 1 0 0 0 1.4 0L9.5 15l4-1 2.2 2.9a1 1 0 0 0 1.3.1l2.7-1.8a1 1 0 0 0 .3-1.2L18.5 11l2.2-2.6a1 1 0 0 0-.2-1.4L16 3z" stroke="currentColor" strokeWidth="1.5" fill="none" />
     )}
   </svg>
 );
@@ -616,6 +616,7 @@ const GridCardImageComponent: React.FC<LazyImageProps> = React.memo(function Gri
 });
 
 function PlaylistSelection({ onPlaylistSelect, inDrawer = false, swipeZoneRef, initialSearchQuery, initialViewMode }: PlaylistSelectionProps): JSX.Element {
+  const { activeDescriptor } = useProviderContext();
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
     if (initialViewMode) return initialViewMode;
     const saved = localStorage.getItem('vorbis-player-view-mode');
@@ -716,23 +717,24 @@ function PlaylistSelection({ onPlaylistSelect, inDrawer = false, swipeZoneRef, i
   useEffect(() => {
     if (!libraryFullyLoaded) return;
     if (playlists.length === 0 && albums.length === 0 && likedSongsCount === 0) {
+      const providerName = activeDescriptor?.name ?? 'your music service';
       setError(
-        "No playlists, albums, or liked songs found. Please create some playlists, save some albums, or like some songs in Spotify first."
+        `No playlists, albums, or liked songs found. Please add some music to ${providerName} first.`
       );
     } else {
       setError(null);
     }
-  }, [libraryFullyLoaded, playlists.length, albums.length, likedSongsCount]);
+  }, [libraryFullyLoaded, playlists.length, albums.length, likedSongsCount, activeDescriptor]);
 
   // Auth check — the sync engine handles all data fetching
   useEffect(() => {
-    if (spotifyAuth.isAuthenticated()) {
+    if (activeDescriptor?.auth.isAuthenticated()) {
       setIsAuthenticated(true);
     } else {
       setIsAuthenticated(false);
       setIsLoading(false);
     }
-  }, []);
+  }, [activeDescriptor]);
 
   // Sync loading state with the library sync engine
   useEffect(() => {
@@ -777,10 +779,10 @@ function PlaylistSelection({ onPlaylistSelect, inDrawer = false, swipeZoneRef, i
 
   async function handleLogin(): Promise<void> {
     try {
-      await spotifyAuth.redirectToAuth();
+      await activeDescriptor?.auth.beginLogin();
     } catch (err) {
-      console.error('Failed to redirect to Spotify auth:', err);
-      setError('Failed to redirect to Spotify login');
+      console.error('Failed to redirect to auth:', err);
+      setError('Failed to redirect to login');
     }
   }
 
@@ -854,7 +856,7 @@ function PlaylistSelection({ onPlaylistSelect, inDrawer = false, swipeZoneRef, i
   const mainContent = showMainContent ? (
     <>
       <div ref={inDrawer ? swipeZoneRef : undefined} style={inDrawer ? { flexShrink: 0, touchAction: 'pan-y' } : undefined}>
-      {tabsBar}
+        {tabsBar}
       </div>
 
       {viewMode === 'playlists' && (() => {
@@ -1072,7 +1074,7 @@ function PlaylistSelection({ onPlaylistSelect, inDrawer = false, swipeZoneRef, i
       {!isLoading && !isAuthenticated && (
         <div style={{ textAlign: 'center', padding: '2rem' }}>
           <p style={{ color: theme.colors.muted.foreground, marginBottom: theme.spacing.lg, fontSize: theme.fontSize.lg }}>
-            Connect your Spotify account to access your playlists
+            Connect your {activeDescriptor?.name ?? 'music provider'} account to access your playlists
           </p>
           <Button
             onClick={handleLogin}
@@ -1087,7 +1089,7 @@ function PlaylistSelection({ onPlaylistSelect, inDrawer = false, swipeZoneRef, i
               transition: `background ${theme.transitions.fast} ease`
             }}
           >
-            Connect Spotify
+            Connect {activeDescriptor?.name ?? 'account'}
           </Button>
         </div>
       )}

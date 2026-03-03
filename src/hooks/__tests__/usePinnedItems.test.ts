@@ -1,60 +1,62 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { renderHook, act } from '@testing-library/react';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { renderHook, act, waitFor } from '@testing-library/react';
 import React from 'react';
 import { usePinnedItems } from '../usePinnedItems';
 import { PinnedItemsProvider } from '@/contexts/PinnedItemsContext';
 
-const localStorageMock = (() => {
-  let store: Record<string, string> = {};
+vi.mock('@/services/settings/pinnedItemsStorage', () => ({
+  getPins: vi.fn().mockResolvedValue([]),
+  setPins: vi.fn().mockResolvedValue(undefined),
+  migratePinsFromLocalStorage: vi.fn().mockResolvedValue(undefined),
+  MAX_PINS: 4,
+}));
 
-  return {
-    getItem: (key: string) => store[key] || null,
-    setItem: (key: string, value: string) => {
-      store[key] = value.toString();
-    },
-    removeItem: (key: string) => {
-      delete store[key];
-    },
-    clear: () => {
-      store = {};
-    }
-  };
-})();
+vi.mock('@/contexts/ProviderContext', () => ({
+  useProviderContext: vi.fn().mockReturnValue({ activeProviderId: 'spotify' }),
+}));
+
+import { getPins, setPins } from '@/services/settings/pinnedItemsStorage';
 
 const wrapper = ({ children }: { children: React.ReactNode }) =>
   React.createElement(PinnedItemsProvider, null, children);
 
 describe('usePinnedItems', () => {
   beforeEach(() => {
-    Object.defineProperty(window, 'localStorage', {
-      value: localStorageMock,
-      writable: true
-    });
-    localStorageMock.clear();
     vi.clearAllMocks();
+    (getPins as ReturnType<typeof vi.fn>).mockResolvedValue([]);
+    (setPins as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
   });
 
-  afterEach(() => {
-    localStorageMock.clear();
-  });
-
-  it('should initialize with empty arrays', () => {
+  it('should initialize with empty arrays', async () => {
     const { result } = renderHook(() => usePinnedItems(), { wrapper });
-    expect(result.current.pinnedPlaylistIds).toEqual([]);
-    expect(result.current.pinnedAlbumIds).toEqual([]);
+
+    await waitFor(() => {
+      expect(result.current.pinnedPlaylistIds).toEqual([]);
+      expect(result.current.pinnedAlbumIds).toEqual([]);
+    });
   });
 
-  it('should read existing pinned IDs from localStorage', () => {
-    localStorageMock.setItem('vorbis-player-pinned-playlists', JSON.stringify(['p1', 'p2']));
-    localStorageMock.setItem('vorbis-player-pinned-albums', JSON.stringify(['a1']));
+  it('should read existing pinned IDs from storage', async () => {
+    (getPins as ReturnType<typeof vi.fn>).mockImplementation(
+      (_provider: string, type: string) => {
+        if (type === 'playlists') return Promise.resolve(['p1', 'p2']);
+        if (type === 'albums') return Promise.resolve(['a1']);
+        return Promise.resolve([]);
+      }
+    );
 
     const { result } = renderHook(() => usePinnedItems(), { wrapper });
-    expect(result.current.pinnedPlaylistIds).toEqual(['p1', 'p2']);
-    expect(result.current.pinnedAlbumIds).toEqual(['a1']);
+
+    await waitFor(() => {
+      expect(result.current.pinnedPlaylistIds).toEqual(['p1', 'p2']);
+      expect(result.current.pinnedAlbumIds).toEqual(['a1']);
+    });
   });
 
-  it('should pin an unpinned playlist', () => {
+  it('should pin an unpinned playlist', async () => {
     const { result } = renderHook(() => usePinnedItems(), { wrapper });
+
+    await waitFor(() => expect(result.current.pinnedPlaylistIds).toEqual([]));
 
     act(() => {
       result.current.togglePinPlaylist('p1');
@@ -62,11 +64,17 @@ describe('usePinnedItems', () => {
 
     expect(result.current.pinnedPlaylistIds).toEqual(['p1']);
     expect(result.current.isPlaylistPinned('p1')).toBe(true);
+    expect(setPins).toHaveBeenCalledWith('spotify', 'playlists', ['p1']);
   });
 
-  it('should unpin a pinned playlist', () => {
-    localStorageMock.setItem('vorbis-player-pinned-playlists', JSON.stringify(['p1', 'p2']));
+  it('should unpin a pinned playlist', async () => {
+    (getPins as ReturnType<typeof vi.fn>).mockImplementation(
+      (_provider: string, type: string) =>
+        type === 'playlists' ? Promise.resolve(['p1', 'p2']) : Promise.resolve([])
+    );
     const { result } = renderHook(() => usePinnedItems(), { wrapper });
+
+    await waitFor(() => expect(result.current.pinnedPlaylistIds).toEqual(['p1', 'p2']));
 
     act(() => {
       result.current.togglePinPlaylist('p1');
@@ -74,11 +82,17 @@ describe('usePinnedItems', () => {
 
     expect(result.current.pinnedPlaylistIds).toEqual(['p2']);
     expect(result.current.isPlaylistPinned('p1')).toBe(false);
+    expect(setPins).toHaveBeenCalledWith('spotify', 'playlists', ['p2']);
   });
 
-  it('should not pin beyond 4 playlists', () => {
-    localStorageMock.setItem('vorbis-player-pinned-playlists', JSON.stringify(['p1', 'p2', 'p3', 'p4']));
+  it('should not pin beyond 4 playlists', async () => {
+    (getPins as ReturnType<typeof vi.fn>).mockImplementation(
+      (_provider: string, type: string) =>
+        type === 'playlists' ? Promise.resolve(['p1', 'p2', 'p3', 'p4']) : Promise.resolve([])
+    );
     const { result } = renderHook(() => usePinnedItems(), { wrapper });
+
+    await waitFor(() => expect(result.current.pinnedPlaylistIds).toEqual(['p1', 'p2', 'p3', 'p4']));
 
     act(() => {
       result.current.togglePinPlaylist('p5');
@@ -88,8 +102,10 @@ describe('usePinnedItems', () => {
     expect(result.current.canPinMorePlaylists).toBe(false);
   });
 
-  it('should pin an unpinned album', () => {
+  it('should pin an unpinned album', async () => {
     const { result } = renderHook(() => usePinnedItems(), { wrapper });
+
+    await waitFor(() => expect(result.current.pinnedAlbumIds).toEqual([]));
 
     act(() => {
       result.current.togglePinAlbum('a1');
@@ -97,11 +113,17 @@ describe('usePinnedItems', () => {
 
     expect(result.current.pinnedAlbumIds).toEqual(['a1']);
     expect(result.current.isAlbumPinned('a1')).toBe(true);
+    expect(setPins).toHaveBeenCalledWith('spotify', 'albums', ['a1']);
   });
 
-  it('should unpin a pinned album', () => {
-    localStorageMock.setItem('vorbis-player-pinned-albums', JSON.stringify(['a1', 'a2']));
+  it('should unpin a pinned album', async () => {
+    (getPins as ReturnType<typeof vi.fn>).mockImplementation(
+      (_provider: string, type: string) =>
+        type === 'albums' ? Promise.resolve(['a1', 'a2']) : Promise.resolve([])
+    );
     const { result } = renderHook(() => usePinnedItems(), { wrapper });
+
+    await waitFor(() => expect(result.current.pinnedAlbumIds).toEqual(['a1', 'a2']));
 
     act(() => {
       result.current.togglePinAlbum('a1');
@@ -109,11 +131,17 @@ describe('usePinnedItems', () => {
 
     expect(result.current.pinnedAlbumIds).toEqual(['a2']);
     expect(result.current.isAlbumPinned('a1')).toBe(false);
+    expect(setPins).toHaveBeenCalledWith('spotify', 'albums', ['a2']);
   });
 
-  it('should not pin beyond 4 albums', () => {
-    localStorageMock.setItem('vorbis-player-pinned-albums', JSON.stringify(['a1', 'a2', 'a3', 'a4']));
+  it('should not pin beyond 4 albums', async () => {
+    (getPins as ReturnType<typeof vi.fn>).mockImplementation(
+      (_provider: string, type: string) =>
+        type === 'albums' ? Promise.resolve(['a1', 'a2', 'a3', 'a4']) : Promise.resolve([])
+    );
     const { result } = renderHook(() => usePinnedItems(), { wrapper });
+
+    await waitFor(() => expect(result.current.pinnedAlbumIds).toEqual(['a1', 'a2', 'a3', 'a4']));
 
     act(() => {
       result.current.togglePinAlbum('a5');
@@ -123,8 +151,10 @@ describe('usePinnedItems', () => {
     expect(result.current.canPinMoreAlbums).toBe(false);
   });
 
-  it('should report canPinMore correctly', () => {
+  it('should report canPinMore correctly', async () => {
     const { result } = renderHook(() => usePinnedItems(), { wrapper });
+
+    await waitFor(() => expect(result.current.pinnedPlaylistIds).toEqual([]));
 
     expect(result.current.canPinMorePlaylists).toBe(true);
     expect(result.current.canPinMoreAlbums).toBe(true);
@@ -144,25 +174,32 @@ describe('usePinnedItems', () => {
     expect(result.current.canPinMorePlaylists).toBe(false);
   });
 
-  it('should persist to localStorage on change', () => {
+  it('should persist to storage on change', async () => {
     const { result } = renderHook(() => usePinnedItems(), { wrapper });
+
+    await waitFor(() => expect(result.current.pinnedPlaylistIds).toEqual([]));
 
     act(() => {
       result.current.togglePinPlaylist('p1');
     });
 
-    expect(localStorageMock.getItem('vorbis-player-pinned-playlists')).toBe(JSON.stringify(['p1']));
+    expect(setPins).toHaveBeenCalledWith('spotify', 'playlists', ['p1']);
 
     act(() => {
       result.current.togglePinAlbum('a1');
     });
 
-    expect(localStorageMock.getItem('vorbis-player-pinned-albums')).toBe(JSON.stringify(['a1']));
+    expect(setPins).toHaveBeenCalledWith('spotify', 'albums', ['a1']);
   });
 
-  it('should allow unpinning even when at max capacity', () => {
-    localStorageMock.setItem('vorbis-player-pinned-playlists', JSON.stringify(['p1', 'p2', 'p3', 'p4']));
+  it('should allow unpinning even when at max capacity', async () => {
+    (getPins as ReturnType<typeof vi.fn>).mockImplementation(
+      (_provider: string, type: string) =>
+        type === 'playlists' ? Promise.resolve(['p1', 'p2', 'p3', 'p4']) : Promise.resolve([])
+    );
     const { result } = renderHook(() => usePinnedItems(), { wrapper });
+
+    await waitFor(() => expect(result.current.pinnedPlaylistIds).toEqual(['p1', 'p2', 'p3', 'p4']));
 
     act(() => {
       result.current.togglePinPlaylist('p2');
@@ -172,8 +209,10 @@ describe('usePinnedItems', () => {
     expect(result.current.canPinMorePlaylists).toBe(true);
   });
 
-  it('should preserve pin order (appended at end)', () => {
+  it('should preserve pin order (appended at end)', async () => {
     const { result } = renderHook(() => usePinnedItems(), { wrapper });
+
+    await waitFor(() => expect(result.current.pinnedPlaylistIds).toEqual([]));
 
     act(() => {
       result.current.togglePinPlaylist('p3');

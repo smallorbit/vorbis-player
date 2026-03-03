@@ -164,6 +164,129 @@ export const OptionButtonGroup = styled.div`
   flex-wrap: wrap;
 `;
 
+export const ProviderButton = styled.button<{ $accentColor: string; $isActive: boolean }>`
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: ${({ $isActive, $accentColor }) => $isActive ? $accentColor + '22' : theme.colors.muted.background};
+  border: 1px solid ${({ $isActive, $accentColor }) => $isActive ? $accentColor : theme.colors.border};
+  color: ${({ $isActive }) => $isActive ? theme.colors.white : theme.colors.muted.foreground};
+  padding: 0.5rem 0.75rem;
+  border-radius: ${theme.borderRadius.md};
+  cursor: pointer;
+  font-size: 0.8125rem;
+  font-weight: ${theme.fontWeight.medium};
+  transition: all ${theme.transitions.normal};
+  width: 100%;
+  text-align: left;
+
+  &:hover {
+    background: ${({ $accentColor }) => $accentColor + '22'};
+    border-color: ${({ $accentColor }) => $accentColor};
+    color: ${() => theme.colors.white};
+  }
+`;
+
+export const ProviderStatusDot = styled.span<{ $isConnected: boolean; $accentColor: string }>`
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: ${({ $isConnected, $accentColor }) => $isConnected ? $accentColor : theme.colors.muted.foreground};
+  flex-shrink: 0;
+`;
+
+export const ProviderName = styled.span`
+  flex: 1;
+`;
+
+export const ProviderActiveLabel = styled.span`
+  font-size: 0.6875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  opacity: 0.7;
+`;
+
+export const CacheOptionsList = styled.ul`
+  list-style: none;
+  margin: ${({ theme }) => theme.spacing.sm} 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: ${({ theme }) => theme.spacing.sm};
+`;
+
+export const CacheOptionItem = styled.li`
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing.sm};
+`;
+
+export const CacheCheckbox = styled.input<{ $accentColor: string }>`
+  appearance: none;
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: ${({ theme }) => theme.borderRadius.sm};
+  background: ${({ theme }) => theme.colors.control.background};
+  cursor: pointer;
+  flex-shrink: 0;
+  position: relative;
+  transition: all ${({ theme }) => theme.transitions.fast};
+
+  &:checked {
+    background: ${({ $accentColor }) => $accentColor};
+    border-color: ${({ $accentColor }) => $accentColor};
+  }
+
+  &:checked::after {
+    content: '';
+    position: absolute;
+    left: 4px;
+    top: 1px;
+    width: 5px;
+    height: 9px;
+    border: 2px solid #fff;
+    border-top: none;
+    border-left: none;
+    transform: rotate(45deg);
+  }
+`;
+
+export const CacheOptionLabel = styled.label`
+  font-size: ${({ theme }) => theme.fontSize.sm};
+  color: ${({ theme }) => theme.colors.muted.foreground};
+  cursor: pointer;
+  user-select: none;
+`;
+
+export const CacheConfirmButtons = styled.div`
+  display: flex;
+  gap: ${({ theme }) => theme.spacing.sm};
+  margin-top: ${({ theme }) => theme.spacing.sm};
+`;
+
+export const CacheCancelButton = styled.button<{ $accentColor: string }>`
+  background: ${({ theme }) => theme.colors.control.background};
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  color: ${({ theme }) => theme.colors.muted.foreground};
+  padding: ${({ theme }) => theme.spacing.sm} ${theme.spacing.md};
+  border-radius: ${({ theme }) => theme.borderRadius.lg};
+  cursor: pointer;
+  font-size: ${({ theme }) => theme.fontSize.sm};
+  font-weight: ${({ theme }) => theme.fontWeight.medium};
+  transition: all ${({ theme }) => theme.transitions.fast};
+  flex: 1;
+  margin-top: ${({ theme }) => theme.spacing.lg};
+
+  &:hover {
+    background: ${({ theme }) => theme.colors.muted.background};
+    color: ${({ theme }) => theme.colors.foreground};
+    transform: translateY(-1px);
+  }
+`;
+
 export const OptionButton = styled.button<{ $accentColor: string; $isActive: boolean }>`
   background: ${({ $isActive, $accentColor }: { $isActive: boolean; $accentColor: string }) => $isActive ? $accentColor : theme.colors.muted.background};
   border: 1px solid ${({ $isActive, $accentColor }: { $isActive: boolean; $accentColor: string }) => $isActive ? $accentColor : theme.colors.border};

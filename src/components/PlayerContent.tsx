@@ -1,5 +1,7 @@
 import React, { Suspense, lazy, useState, useCallback, useRef, useEffect } from 'react';
-import { clearAll } from '@/services/cache/libraryCache';
+import { clearCacheWithOptions } from '@/services/cache/libraryCache';
+import { clearAllPins } from '@/services/settings/pinnedItemsStorage';
+import type { ClearCacheOptions } from '@/components/VisualEffectsMenu';
 import styled, { useTheme } from 'styled-components';
 import { CardContent } from './styled';
 import AlbumArt from './AlbumArt';
@@ -422,8 +424,15 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
   const handleClosePlaylist = useCallback(() => setShowPlaylist(false), [setShowPlaylist]);
 
   // --- App settings handlers ---
-  const handleClearCache = useCallback(async () => {
-    await clearAll();
+  const handleClearCache = useCallback(async (options: ClearCacheOptions) => {
+    await clearCacheWithOptions({ clearLikes: options.clearLikes });
+    if (options.clearPins) {
+      await clearAllPins();
+    }
+    if (options.clearAccentColors) {
+      localStorage.removeItem('vorbis-player-accent-color-overrides');
+      localStorage.removeItem('vorbis-player-custom-accent-colors');
+    }
   }, []);
 
   const handleProfilerToggle = useCallback(() => {

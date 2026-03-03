@@ -6,6 +6,7 @@ import PlayerContent from './PlayerContent';
 import BackgroundVisualizer from './BackgroundVisualizer';
 import AccentColorBackground from './AccentColorBackground';
 import DebugOverlay, { useDebugActivator } from './DebugOverlay';
+import ProviderSetupScreen from './ProviderSetupScreen';
 import { ProfilingProvider } from '@/contexts/ProfilingContext';
 import { ProfilingOverlay } from '@/components/ProfilingOverlay';
 import { ProfiledComponent } from '@/components/ProfiledComponent';
@@ -13,6 +14,7 @@ import { usePlayerLogic } from '@/hooks/usePlayerLogic';
 import { useColorContext } from '@/contexts/ColorContext';
 import { useVisualEffectsContext } from '@/contexts/VisualEffectsContext';
 import { useTrackContext } from '@/contexts/TrackContext';
+import { useProviderContext } from '@/contexts/ProviderContext';
 import { toAlbumPlaylistId } from '@/constants/playlist';
 
 const Container = styled.div`
@@ -52,10 +54,17 @@ const AudioPlayerComponent = () => {
     onBackToLibrary: handlers.handleBackToLibrary,
   }), [handlers, handleAlbumPlay]);
 
-  const isMainPlayerActive = !state.isLoading && !state.error && !!selectedPlaylistId && tracks.length > 0;
+  const { chosenProviderId, activeDescriptor } = useProviderContext();
+  const needsSetup = chosenProviderId === null || !activeDescriptor?.auth.isAuthenticated();
+
+  const isMainPlayerActive = !state.isLoading && !state.error && selectedPlaylistId !== null && tracks.length > 0;
 
   const renderContent = () => {
-    if (state.isLoading || state.error || !selectedPlaylistId || tracks.length === 0) {
+    if (needsSetup) {
+      return <ProviderSetupScreen />;
+    }
+
+    if (state.isLoading || state.error || selectedPlaylistId === null || tracks.length === 0) {
       return (
         <ProfiledComponent id="PlayerStateRenderer">
           <PlayerStateRenderer
