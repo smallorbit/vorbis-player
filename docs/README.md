@@ -13,6 +13,11 @@ Development guides and work-in-progress tracking:
 - `ai-agent-wip.md` - Current work-in-progress tracking for AI agent tasks
 - `dynamic-contrast-implementation.md` - Documentation for dynamic contrast feature implementation
 
+### `/providers`
+Step-by-step setup guides for each supported music provider:
+- `spotify-setup.md` - Create a Spotify developer app and connect your account
+- `dropbox-setup.md` - Create a Dropbox app, organize your music files, and connect
+
 ### `/deployment`
 Deployment guides and procedures:
 - `deploy-to-vercel.md` - Vercel deployment instructions
