@@ -2,7 +2,8 @@ import { memo, Fragment, useState, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import type { ArtistInfo } from '../../services/spotify';
 import { PlayerTrackName, PlayerTrackAlbum, AlbumLink, PlayerTrackArtist, TrackInfoOnlyRow, ArtistLink } from './styled';
-import TrackInfoPopover, { LibraryIcon, SpotifyIcon, PlayIcon } from './TrackInfoPopover';
+import TrackInfoPopover, { LibraryIcon, SpotifyIcon, PlayIcon, DiscogsIcon } from './TrackInfoPopover';
+import { useProviderContext } from '@/contexts/ProviderContext';
 
 interface TrackInfoProps {
     track: {
@@ -44,6 +45,8 @@ const TrackInfo = memo<TrackInfoProps>(({ track, isMobile, isTablet, onArtistBro
     const [popover, setPopover] = useState<PopoverState>(null);
     const artistRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
     const albumRef = useRef<HTMLButtonElement>(null);
+    const { activeDescriptor } = useProviderContext();
+    const capabilities = activeDescriptor?.capabilities;
 
     const closePopover = useCallback(() => setPopover(null), []);
 
@@ -112,22 +115,36 @@ const TrackInfo = memo<TrackInfoProps>(({ track, isMobile, isTablet, onArtistBro
                     icon: <LibraryIcon />,
                     onClick: () => onArtistBrowse?.(popover.artistName),
                 },
-                {
-                    label: 'View artist on Spotify',
-                    icon: <SpotifyIcon />,
-                    onClick: () => window.open(popover.artistUrl, '_blank', 'noopener,noreferrer'),
-                },
+                ...(capabilities?.hasExternalLink ? [{
+                    label: activeDescriptor?.getExternalUrl
+                        ? (capabilities.externalLinkLabel ?? 'Search Discogs')
+                        : 'View artist on Spotify',
+                    icon: activeDescriptor?.getExternalUrl ? <DiscogsIcon /> : <SpotifyIcon />,
+                    onClick: () => {
+                        const url = activeDescriptor?.getExternalUrl
+                            ? activeDescriptor.getExternalUrl({ type: 'artist', name: popover.artistName })
+                            : popover.artistUrl;
+                        window.open(url, '_blank', 'noopener,noreferrer');
+                    },
+                }] : []),
             ] : [
                 {
                     label: `Play ${popover.albumName}`,
                     icon: <PlayIcon />,
                     onClick: () => onAlbumPlay?.(popover.albumId, popover.albumName),
                 },
-                {
-                    label: 'View album on Spotify',
-                    icon: <SpotifyIcon />,
-                    onClick: () => window.open(`https://open.spotify.com/album/${popover.albumId}`, '_blank', 'noopener,noreferrer'),
-                },
+                ...(capabilities?.hasExternalLink ? [{
+                    label: activeDescriptor?.getExternalUrl
+                        ? (capabilities.externalLinkLabel ?? 'Search Discogs')
+                        : 'View album on Spotify',
+                    icon: activeDescriptor?.getExternalUrl ? <DiscogsIcon /> : <SpotifyIcon />,
+                    onClick: () => {
+                        const url = activeDescriptor?.getExternalUrl
+                            ? activeDescriptor.getExternalUrl({ type: 'album', name: popover.albumName, artistName: track?.artists })
+                            : `https://open.spotify.com/album/${popover.albumId}`;
+                        window.open(url, '_blank', 'noopener,noreferrer');
+                    },
+                }] : []),
             ]}
         />,
         document.body

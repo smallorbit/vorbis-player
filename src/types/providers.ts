@@ -78,6 +78,8 @@ export interface ProviderDescriptor {
   auth: AuthProvider;
   catalog: CatalogProvider;
   playback: PlaybackProvider;
+  /** Build an external URL for an artist or album (e.g. Discogs search). */
+  getExternalUrl?(info: { type: 'artist' | 'album'; name: string; artistName?: string }): string;
 }
 
 /** Registry of available providers; used by app to resolve active provider by id. */

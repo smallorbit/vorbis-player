@@ -26,11 +26,19 @@ if (DROPBOX_CLIENT_ID) {
     capabilities: {
       hasLikedCollection: true,
       hasSaveTrack: true,
-      hasExternalLink: false,
+      hasExternalLink: true,
+      externalLinkLabel: 'Search Discogs',
     },
     auth,
     catalog,
     playback,
+    getExternalUrl({ type, name, artistName }) {
+      if (type === 'artist') {
+        return `https://www.discogs.com/search/?q=${encodeURIComponent(name)}&type=artist`;
+      }
+      const query = artistName ? `${artistName} ${name}` : name;
+      return `https://www.discogs.com/search/?q=${encodeURIComponent(query)}&type=release`;
+    },
   };
 
   providerRegistry.register(dropboxDescriptor);
