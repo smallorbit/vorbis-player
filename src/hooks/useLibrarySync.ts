@@ -12,6 +12,7 @@ import type { CachedPlaylistInfo, SyncState } from '../services/cache/cacheTypes
 import type { AlbumInfo } from '../services/spotify';
 import { useProviderContext } from '../contexts/ProviderContext';
 import type { MediaCollection } from '../types/domain';
+import { LIKES_CHANGED_EVENT } from '../providers/dropbox/dropboxLikesCache';
 
 interface UseLibrarySyncResult {
   playlists: CachedPlaylistInfo[];
@@ -160,11 +161,6 @@ export function useLibrarySync(): UseLibrarySyncResult {
         setPlaylists(playlistItems);
         setAlbums(albumItems);
 
-        const likedCount = catalog!.getLikedCount
-          ? await catalog!.getLikedCount(controller.signal)
-          : 0;
-        if (!cancelled) setLikedSongsCount(likedCount);
-
         setSyncState({
           isInitialLoadComplete: true,
           isSyncing: false,
@@ -203,8 +199,8 @@ export function useLibrarySync(): UseLibrarySyncResult {
       catalog.getLikedCount!().then(setLikedSongsCount).catch(() => {});
     };
 
-    window.addEventListener('vorbis-dropbox-likes-changed', handleLikesChanged);
-    return () => window.removeEventListener('vorbis-dropbox-likes-changed', handleLikesChanged);
+    window.addEventListener(LIKES_CHANGED_EVENT, handleLikesChanged);
+    return () => window.removeEventListener(LIKES_CHANGED_EVENT, handleLikesChanged);
   }, [activeProviderId, activeDescriptor]);
 
   const refreshNow = useCallback(async () => {

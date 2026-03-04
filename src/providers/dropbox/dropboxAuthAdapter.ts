@@ -165,13 +165,18 @@ export class DropboxAuthAdapter implements AuthProvider {
     return true;
   }
 
-  logout(): void {
+  /** Clear the access token and expiry while preserving the refresh token for retry. */
+  private clearAccessToken(): void {
     this.accessToken = null;
-    this.refreshToken = null;
     this.tokenExpiresAt = null;
     localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem(REFRESH_TOKEN_KEY);
     localStorage.removeItem(TOKEN_EXPIRY_KEY);
+  }
+
+  logout(): void {
+    this.clearAccessToken();
+    this.refreshToken = null;
+    localStorage.removeItem(REFRESH_TOKEN_KEY);
     localStorage.removeItem(CODE_VERIFIER_KEY);
     sessionStorage.removeItem(OAUTH_STATE_KEY);
   }
@@ -196,10 +201,7 @@ export class DropboxAuthAdapter implements AuthProvider {
     } catch (error) {
       // Network error — preserve refresh token for future retry.
       console.warn('[DropboxAuth] Token refresh network error:', error);
-      this.accessToken = null;
-      localStorage.removeItem(TOKEN_KEY);
-      this.tokenExpiresAt = null;
-      localStorage.removeItem(TOKEN_EXPIRY_KEY);
+      this.clearAccessToken();
       return null;
     }
 
@@ -210,10 +212,7 @@ export class DropboxAuthAdapter implements AuthProvider {
         this.logout();
       } else {
         // Transient failure — clear access token but keep refresh token for retry.
-        this.accessToken = null;
-        localStorage.removeItem(TOKEN_KEY);
-        this.tokenExpiresAt = null;
-        localStorage.removeItem(TOKEN_EXPIRY_KEY);
+        this.clearAccessToken();
       }
       return null;
     }

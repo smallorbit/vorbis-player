@@ -32,6 +32,7 @@ class SpotifyPlayerService {
   private isReady: boolean;
   private stateChangeCallbacks = new Set<(state: SpotifyPlaybackState | null) => void>();
   private masterListenerAttached = false;
+  private pendingSDKLoad: Promise<void> | null = null;
   lastPlayTrackTime = 0;
 
   constructor() {
@@ -68,13 +69,20 @@ class SpotifyPlayerService {
       return Promise.resolve();
     }
 
-    return new Promise((resolve, reject) => {
+    // Deduplicate concurrent calls — reuse the pending promise
+    if (this.pendingSDKLoad) {
+      return this.pendingSDKLoad;
+    }
+
+    this.pendingSDKLoad = new Promise<void>((resolve, reject) => {
       const timeout = setTimeout(() => {
+        this.pendingSDKLoad = null;
         reject(new Error('Spotify SDK failed to load within timeout'));
       }, 10000);
 
       window.onSpotifyWebPlaybackSDKReady = () => {
         clearTimeout(timeout);
+        this.pendingSDKLoad = null;
         resolve();
       };
 
@@ -83,10 +91,13 @@ class SpotifyPlayerService {
       script.async = true;
       script.onerror = () => {
         clearTimeout(timeout);
+        this.pendingSDKLoad = null;
         reject(new Error('Failed to load Spotify SDK script'));
       };
       document.body.appendChild(script);
     });
+
+    return this.pendingSDKLoad;
   }
 
   async initialize(): Promise<void> {

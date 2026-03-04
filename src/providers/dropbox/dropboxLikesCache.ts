@@ -18,49 +18,54 @@ interface LikedEntry {
   likedAt: number;
 }
 
-export async function getLikedTracks(): Promise<MediaTrack[]> {
+/**
+ * Open a transaction on the likes store and run the callback.
+ * Returns `fallback` if the database is unavailable or the transaction fails.
+ */
+async function withStore<T>(
+  mode: IDBTransactionMode,
+  fallback: T,
+  fn: (store: IDBObjectStore, resolve: (value: T) => void) => void,
+): Promise<T> {
   const database = await getDb();
-  if (!database) return [];
+  if (!database) return fallback;
   return new Promise((resolve) => {
     try {
-      const req = database.transaction(STORE, 'readonly').objectStore(STORE).getAll();
-      req.onsuccess = () => {
-        const entries = (req.result as LikedEntry[]) ?? [];
-        entries.sort((a, b) => b.likedAt - a.likedAt);
-        resolve(entries.map((e) => e.track));
-      };
-      req.onerror = () => resolve([]);
+      const tx = database.transaction(STORE, mode);
+      const store = tx.objectStore(STORE);
+      fn(store, resolve);
+      tx.onerror = () => resolve(fallback);
     } catch {
-      resolve([]);
+      resolve(fallback);
     }
+  });
+}
+
+export async function getLikedTracks(): Promise<MediaTrack[]> {
+  return withStore<MediaTrack[]>('readonly', [], (store, resolve) => {
+    const req = store.getAll();
+    req.onsuccess = () => {
+      const entries = (req.result as LikedEntry[]) ?? [];
+      entries.sort((a, b) => b.likedAt - a.likedAt);
+      resolve(entries.map((e) => e.track));
+    };
+    req.onerror = () => resolve([]);
   });
 }
 
 export async function getLikedCount(): Promise<number> {
-  const database = await getDb();
-  if (!database) return 0;
-  return new Promise((resolve) => {
-    try {
-      const req = database.transaction(STORE, 'readonly').objectStore(STORE).count();
-      req.onsuccess = () => resolve(req.result);
-      req.onerror = () => resolve(0);
-    } catch {
-      resolve(0);
-    }
+  return withStore('readonly', 0, (store, resolve) => {
+    const req = store.count();
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => resolve(0);
   });
 }
 
 export async function isTrackLiked(trackId: string): Promise<boolean> {
-  const database = await getDb();
-  if (!database) return false;
-  return new Promise((resolve) => {
-    try {
-      const req = database.transaction(STORE, 'readonly').objectStore(STORE).get(trackId);
-      req.onsuccess = () => resolve(req.result !== undefined);
-      req.onerror = () => resolve(false);
-    } catch {
-      resolve(false);
-    }
+  return withStore('readonly', false, (store, resolve) => {
+    const req = store.get(trackId);
+    req.onsuccess = () => resolve(req.result !== undefined);
+    req.onerror = () => resolve(false);
   });
 }
 
@@ -69,59 +74,35 @@ export async function setTrackLiked(
   track: MediaTrack | null,
   liked: boolean,
 ): Promise<void> {
-  const database = await getDb();
-  if (!database) return;
-  return new Promise((resolve) => {
-    try {
-      const tx = database.transaction(STORE, 'readwrite');
-      const store = tx.objectStore(STORE);
-      if (liked && track) {
-        const entry: LikedEntry = { trackId, track, likedAt: Date.now() };
-        store.put(entry);
-      } else {
-        store.delete(trackId);
-      }
-      tx.oncomplete = () => { notifyLikesChanged(); resolve(); };
-      tx.onerror = () => resolve();
-    } catch {
-      resolve();
+  return withStore('readwrite', undefined, (store, resolve) => {
+    const tx = store.transaction;
+    if (liked && track) {
+      const entry: LikedEntry = { trackId, track, likedAt: Date.now() };
+      store.put(entry);
+    } else {
+      store.delete(trackId);
     }
+    tx.oncomplete = () => { notifyLikesChanged(); resolve(undefined); };
   });
 }
 
 export async function clearLikes(): Promise<void> {
-  const database = await getDb();
-  if (!database) return;
-  return new Promise((resolve) => {
-    try {
-      const tx = database.transaction(STORE, 'readwrite');
-      tx.objectStore(STORE).clear();
-      tx.oncomplete = () => { notifyLikesChanged(); resolve(); };
-      tx.onerror = () => resolve();
-    } catch {
-      resolve();
-    }
+  return withStore('readwrite', undefined, (store, resolve) => {
+    const tx = store.transaction;
+    store.clear();
+    tx.oncomplete = () => { notifyLikesChanged(); resolve(undefined); };
   });
 }
 
 export async function exportLikes(): Promise<string> {
-  const database = await getDb();
-  if (!database) return '[]';
-  return new Promise((resolve) => {
-    try {
-      const req = database.transaction(STORE, 'readonly').objectStore(STORE).getAll();
-      req.onsuccess = () => resolve(JSON.stringify(req.result ?? []));
-      req.onerror = () => resolve('[]');
-    } catch {
-      resolve('[]');
-    }
+  return withStore('readonly', '[]', (store, resolve) => {
+    const req = store.getAll();
+    req.onsuccess = () => resolve(JSON.stringify(req.result ?? []));
+    req.onerror = () => resolve('[]');
   });
 }
 
 export async function importLikes(json: string): Promise<number> {
-  const database = await getDb();
-  if (!database) return 0;
-
   let entries: LikedEntry[];
   try {
     entries = JSON.parse(json);
@@ -130,22 +111,16 @@ export async function importLikes(json: string): Promise<number> {
     return 0;
   }
 
-  return new Promise((resolve) => {
-    try {
-      const tx = database.transaction(STORE, 'readwrite');
-      const store = tx.objectStore(STORE);
-      let count = 0;
-      for (const entry of entries) {
-        if (entry.trackId && entry.track) {
-          store.put(entry);
-          count++;
-        }
+  return withStore('readwrite', 0, (store, resolve) => {
+    const tx = store.transaction;
+    let count = 0;
+    for (const entry of entries) {
+      if (entry.trackId && entry.track) {
+        store.put(entry);
+        count++;
       }
-      tx.oncomplete = () => { notifyLikesChanged(); resolve(count); };
-      tx.onerror = () => resolve(0);
-    } catch {
-      resolve(0);
     }
+    tx.oncomplete = () => { notifyLikesChanged(); resolve(count); };
   });
 }
 
@@ -157,37 +132,28 @@ export async function importLikes(json: string): Promise<number> {
 export async function refreshLikedTrackMetadata(
   freshTracks: MediaTrack[],
 ): Promise<{ updated: number; removed: number }> {
-  const database = await getDb();
-  if (!database) return { updated: 0, removed: 0 };
-
   const freshMap = new Map(freshTracks.map((t) => [t.id, t]));
 
-  return new Promise((resolve) => {
-    try {
-      const tx = database.transaction(STORE, 'readwrite');
-      const store = tx.objectStore(STORE);
-      const req = store.getAll();
-      let updated = 0;
-      let removed = 0;
+  return withStore('readwrite', { updated: 0, removed: 0 }, (store, resolve) => {
+    const tx = store.transaction;
+    const req = store.getAll();
+    let updated = 0;
+    let removed = 0;
 
-      req.onsuccess = () => {
-        const entries = (req.result as LikedEntry[]) ?? [];
-        for (const entry of entries) {
-          const fresh = freshMap.get(entry.trackId);
-          if (fresh) {
-            store.put({ ...entry, track: fresh });
-            updated++;
-          } else {
-            store.delete(entry.trackId);
-            removed++;
-          }
+    req.onsuccess = () => {
+      const entries = (req.result as LikedEntry[]) ?? [];
+      for (const entry of entries) {
+        const fresh = freshMap.get(entry.trackId);
+        if (fresh) {
+          store.put({ ...entry, track: fresh });
+          updated++;
+        } else {
+          store.delete(entry.trackId);
+          removed++;
         }
-      };
+      }
+    };
 
-      tx.oncomplete = () => { if (updated > 0 || removed > 0) notifyLikesChanged(); resolve({ updated, removed }); };
-      tx.onerror = () => resolve({ updated: 0, removed: 0 });
-    } catch {
-      resolve({ updated: 0, removed: 0 });
-    }
+    tx.oncomplete = () => { if (updated > 0 || removed > 0) notifyLikesChanged(); resolve({ updated, removed }); };
   });
 }
