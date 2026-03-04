@@ -62,7 +62,8 @@ export class DropboxAuthAdapter implements AuthProvider {
   }
 
   async getAccessToken(): Promise<string | null> {
-    return this.accessToken;
+    if (!this.accessToken) return null;
+    return this.ensureValidToken();
   }
 
   async beginLogin(): Promise<void> {
@@ -183,15 +184,35 @@ export class DropboxAuthAdapter implements AuthProvider {
       client_id: DROPBOX_CLIENT_ID,
     });
 
-    const response = await fetch('https://api.dropboxapi.com/oauth2/token', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: body.toString(),
-    });
+    let response: Response;
+    try {
+      response = await fetch('https://api.dropboxapi.com/oauth2/token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: body.toString(),
+      });
+    } catch (error) {
+      // Network error — preserve refresh token for future retry.
+      console.warn('[DropboxAuth] Token refresh network error:', error);
+      this.accessToken = null;
+      localStorage.removeItem(TOKEN_KEY);
+      this.tokenExpiresAt = null;
+      localStorage.removeItem(TOKEN_EXPIRY_KEY);
+      return null;
+    }
 
     if (!response.ok) {
       console.warn('[DropboxAuth] Token refresh failed:', response.status);
-      this.logout();
+      if (response.status === 400 || response.status === 401) {
+        // Invalid or revoked grant — full logout.
+        this.logout();
+      } else {
+        // Transient failure — clear access token but keep refresh token for retry.
+        this.accessToken = null;
+        localStorage.removeItem(TOKEN_KEY);
+        this.tokenExpiresAt = null;
+        localStorage.removeItem(TOKEN_EXPIRY_KEY);
+      }
       return null;
     }
 

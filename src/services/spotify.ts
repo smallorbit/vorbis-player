@@ -349,7 +349,13 @@ class SpotifyAuth {
     try {
       const tokenData = JSON.parse(stored);
       if (tokenData.expires_at && Date.now() > tokenData.expires_at) {
-        localStorage.removeItem('spotify_token');
+        if (tokenData.refresh_token) {
+          // Access token expired but refresh token is still valid.
+          // Keep the data so ensureValidToken() can refresh on first API call.
+          this.tokenData = tokenData;
+        } else {
+          localStorage.removeItem('spotify_token');
+        }
         return;
       }
       this.tokenData = tokenData;
@@ -486,7 +492,7 @@ class SpotifyAuth {
   }
 
   public isAuthenticated(): boolean {
-    return !!this.tokenData?.access_token;
+    return !!(this.tokenData?.access_token || this.tokenData?.refresh_token);
   }
 
   public async redirectToAuth(): Promise<void> {

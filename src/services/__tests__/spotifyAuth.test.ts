@@ -44,10 +44,21 @@ describe('SpotifyAuth', () => {
       expect(auth.isAuthenticated()).toBe(true);
     });
 
-    it('returns false when token is expired', async () => {
+    it('returns true when token is expired but refresh token exists', async () => {
       const token = {
         access_token: 'expired-token',
         refresh_token: 'refresh',
+        expires_at: Date.now() - 1000,
+      };
+      vi.mocked(localStorage.getItem).mockReturnValue(JSON.stringify(token));
+      const auth = await freshAuth();
+      expect(auth.isAuthenticated()).toBe(true);
+      expect(localStorage.removeItem).not.toHaveBeenCalledWith('spotify_token');
+    });
+
+    it('returns false and clears storage when token is expired without refresh token', async () => {
+      const token = {
+        access_token: 'expired-token',
         expires_at: Date.now() - 1000,
       };
       vi.mocked(localStorage.getItem).mockReturnValue(JSON.stringify(token));
@@ -78,6 +89,26 @@ describe('SpotifyAuth', () => {
       const result = await auth.ensureValidToken();
       expect(result).toBe('my-token');
       expect(global.fetch).not.toHaveBeenCalled();
+    });
+
+    it('refreshes token when access token is already expired', async () => {
+      const token = {
+        access_token: 'expired-token',
+        refresh_token: 'my-refresh',
+        expires_at: Date.now() - 1000,
+      };
+      vi.mocked(localStorage.getItem).mockReturnValue(JSON.stringify(token));
+      const auth = await freshAuth();
+
+      mockFetchResponse({
+        access_token: 'new-token',
+        refresh_token: 'new-refresh',
+        expires_in: 3600,
+      });
+
+      const result = await auth.ensureValidToken();
+      expect(result).toBe('new-token');
+      expect(global.fetch).toHaveBeenCalledTimes(1);
     });
 
     it('calls refresh when within 5-minute buffer of expiry', async () => {
