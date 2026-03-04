@@ -18,6 +18,7 @@ import type { CatalogProvider } from '@/types/providers';
 import type { ProviderId, MediaTrack, MediaCollection, CollectionRef } from '@/types/domain';
 import { DropboxAuthAdapter } from './dropboxAuthAdapter';
 import { getArt, putArt, clearArt } from './dropboxArtCache';
+import { bytesToDataUrl } from '@/utils/bytesToDataUrl';
 import {
   getLikedTracks,
   getLikedCount as getLikedCountFromCache,
@@ -81,6 +82,10 @@ function pickThumbnailArtPath(entries: DropboxFileEntry[]): string | null {
   return findArtByNames(entries, THUMBNAIL_ART_NAMES) ?? pickAlbumArtPath(entries);
 }
 
+function parentDir(path: string): string {
+  return path.split('/').slice(0, -1).join('/') || '/';
+}
+
 function parseFilename(filename: string): { name: string; trackNumber?: number } {
   const base = filename.replace(/\.[^/.]+$/, '');
   const match = base.match(/^(\d{1,3})\s*[-.\s]\s*(.+)$/);
@@ -131,12 +136,7 @@ export class DropboxCatalogAdapter implements CatalogProvider {
       const buffer = await resp.arrayBuffer();
       const bytes = new Uint8Array(buffer);
 
-      const CHUNK = 8192;
-      let binary = '';
-      for (let i = 0; i < bytes.length; i += CHUNK) {
-        binary += String.fromCharCode(...bytes.subarray(i, i + CHUNK));
-      }
-      const dataUrl = `data:${mimeType};base64,${btoa(binary)}`;
+      const dataUrl = bytesToDataUrl(bytes, mimeType);
 
       await putArt(path, dataUrl);
       return dataUrl;
@@ -216,10 +216,10 @@ export class DropboxCatalogAdapter implements CatalogProvider {
         for (const entry of entries) {
           if (entry['.tag'] === 'folder') {
             dirDisplayName.set(entry.path_lower, entry.name);
-            const parent = entry.path_lower.split('/').slice(0, -1).join('/');
+            const parent = parentDir(entry.path_lower);
             dirParent.set(entry.path_lower, parent);
           } else if (entry['.tag'] === 'file') {
-            const dir = entry.path_lower.split('/').slice(0, -1).join('/') || '/';
+            const dir = parentDir(entry.path_lower);
             if (isAudioFile(entry.name)) {
               audioCount.set(dir, (audioCount.get(dir) ?? 0) + 1);
             } else if (isImageFile(entry.name)) {
@@ -318,7 +318,7 @@ export class DropboxCatalogAdapter implements CatalogProvider {
           if (isAudioFile(entry.name)) {
             audioEntries.push(entry);
           } else if (isImageFile(entry.name)) {
-            const dir = entry.path_lower.split('/').slice(0, -1).join('/') || '/';
+            const dir = parentDir(entry.path_lower);
             const list = imagesByDir.get(dir) ?? [];
             list.push(entry);
             imagesByDir.set(dir, list);
@@ -352,7 +352,7 @@ export class DropboxCatalogAdapter implements CatalogProvider {
       );
 
       const tracks: MediaTrack[] = audioEntries.map((entry) => {
-        const dir = entry.path_lower.split('/').slice(0, -1).join('/') || '/';
+        const dir = parentDir(entry.path_lower);
         const imageUrl = dirToImageUrl.get(dir) ?? undefined;
         return this.entryToMediaTrack(entry, imageUrl);
       });
@@ -382,7 +382,7 @@ export class DropboxCatalogAdapter implements CatalogProvider {
     const artistName = displayParts.length >= 3 ? displayParts[displayParts.length - 3] : undefined;
 
     // Album ID is the parent directory path — stable per-album identifier used for color overrides.
-    const albumId = entry.path_lower.split('/').slice(0, -1).join('/') || '/';
+    const albumId = parentDir(entry.path_lower);
 
     return {
       id: entry.id,

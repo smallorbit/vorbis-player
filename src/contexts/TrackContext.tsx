@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useMemo, useCallback, useEf
 import type { Track } from '@/services/spotify';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { isProfilingEnabled } from '@/contexts/ProfilingContext';
+import { shuffleArray } from '@/utils/shuffleArray';
 
 interface TrackContextValue {
   // State
@@ -51,11 +52,7 @@ export function TrackProvider({ children }: { children: React.ReactNode }) {
 
     if (!shuffleEnabled) {
       const rest = originalTracks.filter(t => t.id !== current?.id);
-      const shuffled = [...rest];
-      for (let i = shuffled.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-      }
+      const shuffled = shuffleArray(rest);
       const newTracks = current ? [current, ...shuffled] : shuffled;
       setTracks(newTracks);
       setCurrentTrackIndex(0);

@@ -9,7 +9,6 @@ export { SpotifyCatalogAdapter } from './spotifyCatalogAdapter';
 export { SpotifyPlaybackAdapter } from './spotifyPlaybackAdapter';
 export {
   spotifyTrackToMediaTrack,
-  mediaTrackToSpotifyTrack,
   spotifyPlaylistToMediaCollection,
   spotifyAlbumToMediaCollection,
 } from './spotifyCatalogAdapter';

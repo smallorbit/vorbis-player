@@ -7,6 +7,7 @@ import type { PlaybackProvider } from '@/types/providers';
 import type { ProviderId, MediaTrack, PlaybackState, CollectionRef } from '@/types/domain';
 import { DropboxCatalogAdapter } from './dropboxCatalogAdapter';
 import { parseID3 } from '@/utils/id3Parser';
+import { bytesToDataUrl } from '@/utils/bytesToDataUrl';
 
 export class DropboxPlaybackAdapter implements PlaybackProvider {
   readonly providerId: ProviderId = 'dropbox';
@@ -102,13 +103,7 @@ export class DropboxPlaybackAdapter implements PlaybackProvider {
       if (artist && artist !== track.artists) update.artists = artist;
       if (album && album !== track.album) update.album = album;
       if (coverArt && !track.image) {
-        // Build base64 in chunks to avoid stack overflow on large images
-        const CHUNK = 8192;
-        let binary = '';
-        for (let i = 0; i < coverArt.data.length; i += CHUNK) {
-          binary += String.fromCharCode(...coverArt.data.subarray(i, i + CHUNK));
-        }
-        update.image = `data:${coverArt.mimeType};base64,${btoa(binary)}`;
+        update.image = bytesToDataUrl(coverArt.data, coverArt.mimeType);
       }
       if (Object.keys(update).length > 0) {
         this.currentTrack = { ...track, ...update };
@@ -159,15 +154,7 @@ export class DropboxPlaybackAdapter implements PlaybackProvider {
   }
 
   async getState(): Promise<PlaybackState | null> {
-    if (!this.audio || !this.currentTrack) return null;
-
-    return {
-      isPlaying: !this.audio.paused && !this.audio.ended,
-      positionMs: Math.floor(this.audio.currentTime * 1000),
-      durationMs: isNaN(this.audio.duration) ? 0 : Math.floor(this.audio.duration * 1000),
-      currentTrackId: this.currentTrack.id,
-      currentPlaybackRef: this.currentTrack.playbackRef,
-    };
+    return this.getStateSync();
   }
 
   subscribe(listener: (state: PlaybackState | null) => void): () => void {

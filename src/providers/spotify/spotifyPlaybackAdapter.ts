@@ -6,6 +6,7 @@
 import type { PlaybackProvider } from '@/types/providers';
 import type { ProviderId, MediaTrack, PlaybackState, CollectionRef } from '@/types/domain';
 import { spotifyPlayer } from '@/services/spotifyPlayer';
+import { isAlbumId, extractAlbumId } from '@/constants/playlist';
 
 /** Map a SpotifyPlaybackState to the provider-agnostic PlaybackState. */
 function mapPlaybackState(state: SpotifyPlaybackState | null): PlaybackState | null {
@@ -45,8 +46,8 @@ export class SpotifyPlaybackAdapter implements PlaybackProvider {
         options?.offset,
       );
     } else if (collectionRef.kind === 'album') {
-      const albumId = collectionRef.id.startsWith('album:')
-        ? collectionRef.id.slice(6)
+      const albumId = isAlbumId(collectionRef.id)
+        ? extractAlbumId(collectionRef.id)
         : collectionRef.id;
       await spotifyPlayer.playContext(
         `spotify:album:${albumId}`,

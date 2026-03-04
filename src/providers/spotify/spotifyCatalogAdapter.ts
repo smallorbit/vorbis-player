@@ -18,7 +18,7 @@ import {
   type PlaylistInfo,
   type AlbumInfo,
 } from '@/services/spotify';
-import { ALBUM_ID_PREFIX } from '@/constants/playlist';
+import { ALBUM_ID_PREFIX, isAlbumId, extractAlbumId } from '@/constants/playlist';
 
 /** Map a Spotify Track to a MediaTrack. */
 export function spotifyTrackToMediaTrack(track: Track): MediaTrack {
@@ -40,25 +40,6 @@ export function spotifyTrackToMediaTrack(track: Track): MediaTrack {
     externalUrl: track.uri
       ? `https://open.spotify.com/track/${track.id}`
       : undefined,
-  };
-}
-
-/** Map a MediaTrack back to a legacy Spotify Track (for TrackContext compatibility). */
-export function mediaTrackToSpotifyTrack(mt: MediaTrack): Track {
-  return {
-    id: mt.id,
-    name: mt.name,
-    artists: mt.artists,
-    artistsData: mt.artistsData?.map((a) => ({
-      name: a.name,
-      spotifyUrl: a.url ?? '',
-    })),
-    album: mt.album,
-    album_id: mt.albumId,
-    track_number: mt.trackNumber,
-    duration_ms: mt.durationMs,
-    uri: mt.playbackRef.ref,
-    image: mt.image,
   };
 }
 
@@ -123,9 +104,8 @@ export class SpotifyCatalogAdapter implements CatalogProvider {
         tracks = await getPlaylistTracks(collectionRef.id);
         break;
       case 'album': {
-        // Remove album: prefix if present
-        const albumId = collectionRef.id.startsWith(ALBUM_ID_PREFIX)
-          ? collectionRef.id.slice(ALBUM_ID_PREFIX.length)
+        const albumId = isAlbumId(collectionRef.id)
+          ? extractAlbumId(collectionRef.id)
           : collectionRef.id;
         tracks = await getAlbumTracks(albumId);
         break;

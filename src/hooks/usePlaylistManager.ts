@@ -2,6 +2,7 @@ import { useCallback } from 'react';
 import { getPlaylistTracks, getAlbumTracks, getLikedSongs, spotifyAuth } from '../services/spotify';
 import { spotifyPlayer } from '../services/spotifyPlayer';
 import { isAlbumId, extractAlbumId, LIKED_SONGS_ID } from '../constants/playlist';
+import { shuffleArray } from '../utils/shuffleArray';
 import type { Track } from '../services/spotify';
 
 async function waitForSpotifyReady(timeout = 10000): Promise<void> {
@@ -49,15 +50,6 @@ function buildTracksFromWindow(state: SpotifyPlaybackState): Track[] {
     seen.add(t.id);
     return true;
   });
-}
-
-function shuffleArray<T>(array: T[]): T[] {
-  const shuffled = [...array];
-  for (let i = shuffled.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-  }
-  return shuffled;
 }
 
 interface UsePlaylistManagerProps {

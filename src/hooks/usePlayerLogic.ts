@@ -12,6 +12,7 @@ import type { Track } from '@/services/spotify';
 import type { PlaybackState } from '@/types/domain';
 import type { MediaTrack } from '@/types/domain';
 import { isAlbumId, extractAlbumId, LIKED_SONGS_ID } from '@/constants/playlist';
+import { shuffleArray } from '@/utils/shuffleArray';
 
 /** Convert MediaTrack to Track for UI; Dropbox tracks use empty uri (playback via ref). */
 export function mediaTrackToTrack(m: MediaTrack): Track {
@@ -134,11 +135,7 @@ export function usePlayerLogic() {
           setOriginalTracks(trackList);
           if (shuffleEnabled) {
             // Shuffle both the Track[] and MediaTrack[] together so indices stay aligned.
-            const indices = list.map((_, i) => i);
-            for (let i = indices.length - 1; i > 0; i--) {
-              const j = Math.floor(Math.random() * (i + 1));
-              [indices[i], indices[j]] = [indices[j], indices[i]];
-            }
+            const indices = shuffleArray(list.map((_, i) => i));
             mediaTracksRef.current = indices.map(i => list[i]);
             setTracks(indices.map(i => trackList[i]));
           } else {
@@ -230,9 +227,7 @@ export function usePlayerLogic() {
               );
               const mediaIdx = mediaTracksRef.current.findIndex((m) => m.id === trackId);
               if (mediaIdx !== -1) {
-                mediaTracksRef.current = mediaTracksRef.current.map((m, i) =>
-                  i === mediaIdx ? { ...m, ...meta } : m
-                );
+                mediaTracksRef.current[mediaIdx] = { ...mediaTracksRef.current[mediaIdx], ...meta };
               }
             }
           }

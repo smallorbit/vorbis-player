@@ -4,6 +4,7 @@ import {
   getPins,
   setPins,
   migratePinsFromLocalStorage,
+  _resetMigrationFlag,
 } from '../pinnedItemsStorage';
 import { _settingsDbTesting, STORE_NAMES, initSettingsDb } from '../settingsDb';
 
@@ -28,6 +29,7 @@ async function resetDb(): Promise<void> {
 
 beforeEach(async () => {
   await resetDb();
+  _resetMigrationFlag();
   vi.mocked(localStorage.getItem).mockReturnValue(null);
   vi.mocked(localStorage.removeItem).mockClear();
 });
