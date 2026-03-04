@@ -1,18 +1,5 @@
 import { spotifyAuth } from './spotify';
 
-// Global callback for Spotify SDK ready event
-let spotifySDKReadyCallback: (() => void) | null = null;
-
-// Define the global callback that the Spotify SDK will call
-if (typeof window !== 'undefined') {
-  window.onSpotifyWebPlaybackSDKReady = () => {
-    console.log('Spotify SDK ready callback triggered');
-    if (spotifySDKReadyCallback) {
-      spotifySDKReadyCallback();
-    }
-  };
-}
-
 // HMR-safe storage for player state
 interface HMRPlayerState {
   player: SpotifyPlayer | null;
@@ -67,6 +54,41 @@ class SpotifyPlayerService {
     });
   }
 
+  /**
+   * Dynamically load the Spotify Web Playback SDK script.
+   * Resolves once the SDK is ready (window.Spotify is available).
+   */
+  private loadSDK(): Promise<void> {
+    if (typeof window === 'undefined') {
+      return Promise.reject(new Error('Window object not available'));
+    }
+
+    // Already loaded
+    if (window.Spotify) {
+      return Promise.resolve();
+    }
+
+    return new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        reject(new Error('Spotify SDK failed to load within timeout'));
+      }, 10000);
+
+      window.onSpotifyWebPlaybackSDKReady = () => {
+        clearTimeout(timeout);
+        resolve();
+      };
+
+      const script = document.createElement('script');
+      script.src = 'https://sdk.scdn.co/spotify-player.js';
+      script.async = true;
+      script.onerror = () => {
+        clearTimeout(timeout);
+        reject(new Error('Failed to load Spotify SDK script'));
+      };
+      document.body.appendChild(script);
+    });
+  }
+
   async initialize(): Promise<void> {
     if (!spotifyAuth.isAuthenticated()) {
       throw new Error('User must be authenticated before initializing player');
@@ -76,35 +98,8 @@ class SpotifyPlayerService {
       return;
     }
 
-    return new Promise((resolve, reject) => {
-      const initPlayer = () => {
-        try {
-          this.setupPlayer();
-          resolve();
-        } catch (error) {
-          reject(error);
-        }
-      };
-
-      if (typeof window !== 'undefined' && window.Spotify) {
-        console.log('Spotify SDK already available, initializing player');
-        initPlayer();
-      } else if (typeof window !== 'undefined') {
-        console.log('Waiting for Spotify SDK to load...');
-        // Set the callback that will be called by the global onSpotifyWebPlaybackSDKReady
-        spotifySDKReadyCallback = initPlayer;
-        
-        setTimeout(() => {
-          if (!this.player) {
-            console.error('Spotify SDK failed to load within timeout');
-            spotifySDKReadyCallback = null; // Clear the callback
-            reject(new Error('Spotify SDK failed to load within timeout'));
-          }
-        }, 10000);
-      } else {
-        reject(new Error('Window object not available'));
-      }
-    });
+    await this.loadSDK();
+    this.setupPlayer();
   }
 
   private setupPlayer(): void {
@@ -410,8 +405,6 @@ class SpotifyPlayerService {
       this.isReady = false;
       this.saveState();
     }
-    // Clear the global callback
-    spotifySDKReadyCallback = null;
   }
 
   getDeviceId(): string | null {
