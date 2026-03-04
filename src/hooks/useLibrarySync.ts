@@ -123,6 +123,12 @@ export function useLibrarySync(): UseLibrarySyncResult {
       const { getCachedCatalog, putCatalogCache } = await import('@/providers/dropbox/dropboxCatalogCache');
       const cached = await getCachedCatalog();
 
+      // Always fetch liked count (it's local IndexedDB, so fast)
+      if (catalog!.getLikedCount && !cancelled) {
+        const likedCount = await catalog!.getLikedCount(controller.signal);
+        if (!cancelled) setLikedSongsCount(likedCount);
+      }
+
       if (cached && !cancelled) {
         const playlistItems: CachedPlaylistInfo[] = [];
         const albumItems: AlbumInfo[] = [];
@@ -185,6 +191,20 @@ export function useLibrarySync(): UseLibrarySyncResult {
       cancelled = true;
       controller.abort();
     };
+  }, [activeProviderId, activeDescriptor]);
+
+  // ── Listen for likes-changed events to update count in real-time ──────
+  useEffect(() => {
+    if (activeProviderId === 'spotify') return;
+    const catalog = activeDescriptor?.catalog;
+    if (!catalog?.getLikedCount) return;
+
+    const handleLikesChanged = () => {
+      catalog.getLikedCount!().then(setLikedSongsCount).catch(() => {});
+    };
+
+    window.addEventListener('vorbis-dropbox-likes-changed', handleLikesChanged);
+    return () => window.removeEventListener('vorbis-dropbox-likes-changed', handleLikesChanged);
   }, [activeProviderId, activeDescriptor]);
 
   const refreshNow = useCallback(async () => {

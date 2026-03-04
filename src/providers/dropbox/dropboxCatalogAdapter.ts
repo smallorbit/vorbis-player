@@ -18,6 +18,16 @@ import type { CatalogProvider } from '@/types/providers';
 import type { ProviderId, MediaTrack, MediaCollection, CollectionRef } from '@/types/domain';
 import { DropboxAuthAdapter } from './dropboxAuthAdapter';
 import { getArt, putArt, clearArt } from './dropboxArtCache';
+import {
+  getLikedTracks,
+  getLikedCount as getLikedCountFromCache,
+  isTrackLiked,
+  setTrackLiked,
+  clearLikes,
+  exportLikes as exportLikesFromCache,
+  importLikes as importLikesFromCache,
+  refreshLikedTrackMetadata,
+} from './dropboxLikesCache';
 
 const AUDIO_EXTENSIONS = ['.mp3', '.flac', '.ogg', '.m4a', '.wav', '.aac', '.wma', '.opus'];
 const IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.webp'];
@@ -85,6 +95,8 @@ export class DropboxCatalogAdapter implements CatalogProvider {
   private auth: DropboxAuthAdapter;
   // Deduplicates concurrent fetch requests for the same image path
   private pendingArtFetches = new Map<string, Promise<string | null>>();
+  // Tracks seen during listTracks calls, used to provide full MediaTrack data when liking
+  private knownTracks = new Map<string, MediaTrack>();
 
   constructor(auth: DropboxAuthAdapter) {
     this.auth = auth;
@@ -286,7 +298,7 @@ export class DropboxCatalogAdapter implements CatalogProvider {
 
   async listTracks(collectionRef: CollectionRef, signal?: AbortSignal): Promise<MediaTrack[]> {
     if (collectionRef.provider !== 'dropbox') return [];
-    if (collectionRef.kind === 'liked') return [];
+    if (collectionRef.kind === 'liked') return getLikedTracks();
 
     const folderPath = collectionRef.id;
 
@@ -351,6 +363,8 @@ export class DropboxCatalogAdapter implements CatalogProvider {
         return aPath.localeCompare(bPath);
       });
 
+      for (const t of tracks) this.knownTracks.set(t.id, t);
+
       return tracks;
     } catch (error) {
       console.error('[DropboxCatalog] Failed to list tracks:', error);
@@ -390,5 +404,39 @@ export class DropboxCatalogAdapter implements CatalogProvider {
       { path },
     );
     return result.link;
+  }
+
+  // ── Liked songs ──────────────────────────────────────────────────────
+
+  async getLikedCount(): Promise<number> {
+    return getLikedCountFromCache();
+  }
+
+  async isTrackSaved(trackId: string): Promise<boolean> {
+    return isTrackLiked(trackId);
+  }
+
+  async setTrackSaved(trackId: string, saved: boolean): Promise<void> {
+    const track = saved ? (this.knownTracks.get(trackId) ?? null) : null;
+    await setTrackLiked(trackId, track, saved);
+  }
+
+  async clearLikesCache(): Promise<void> {
+    await clearLikes();
+  }
+
+  async exportLikes(): Promise<string> {
+    return exportLikesFromCache();
+  }
+
+  async importLikes(json: string): Promise<number> {
+    return importLikesFromCache(json);
+  }
+
+  async refreshLikedMetadata(): Promise<{ updated: number; removed: number }> {
+    // Scan all Dropbox tracks to get fresh metadata
+    const allMusicRef: CollectionRef = { provider: 'dropbox', kind: 'folder', id: '' };
+    const freshTracks = await this.listTracks(allMusicRef);
+    return refreshLikedTrackMetadata(freshTracks);
   }
 }
