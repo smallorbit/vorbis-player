@@ -540,17 +540,25 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
     onSwipeRight: handlers.onPrevious,
   }, { enabled: isTouchDevice });
 
-  const handleZenSwipeUp = useCallback(() => {
-    if (zenModeEnabled) handleZenModeToggle();
-  }, [zenModeEnabled, handleZenModeToggle]);
+  const handleSwipeUp = useCallback(() => {
+    if (showPlaylist) {
+      handleClosePlaylist();
+    } else {
+      handleShowPlaylist();
+    }
+  }, [showPlaylist, handleShowPlaylist, handleClosePlaylist]);
 
-  const handleZenSwipeDown = useCallback(() => {
-    if (!zenModeEnabled) handleZenModeToggle();
-  }, [zenModeEnabled, handleZenModeToggle]);
+  const handleSwipeDown = useCallback(() => {
+    if (showLibraryDrawer) {
+      handlers.onCloseLibraryDrawer();
+    } else {
+      handlers.onOpenLibraryDrawer();
+    }
+  }, [showLibraryDrawer, handlers]);
 
-  const { ref: zenVerticalSwipeRef } = useVerticalSwipeGesture({
-    onSwipeUp: handleZenSwipeUp,
-    onSwipeDown: handleZenSwipeDown,
+  const { ref: drawerSwipeRef } = useVerticalSwipeGesture({
+    onSwipeUp: handleSwipeUp,
+    onSwipeDown: handleSwipeDown,
     threshold: 80,
     enabled: isTouchDevice,
   });
@@ -646,10 +654,10 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
               <ClickableAlbumArtContainer
                 ref={(el) => {
                   albumArtContainerRef.current = el;
-                  if (isTouchDevice && zenVerticalSwipeRef && typeof zenVerticalSwipeRef !== 'function') {
-                    (zenVerticalSwipeRef as React.MutableRefObject<HTMLDivElement | null>).current = el;
-                  } else if (isTouchDevice && typeof zenVerticalSwipeRef === 'function') {
-                    (zenVerticalSwipeRef as (instance: HTMLDivElement | null) => void)(el);
+                  if (isTouchDevice && drawerSwipeRef && typeof drawerSwipeRef !== 'function') {
+                    (drawerSwipeRef as React.MutableRefObject<HTMLDivElement | null>).current = el;
+                  } else if (isTouchDevice && typeof drawerSwipeRef === 'function') {
+                    (drawerSwipeRef as (instance: HTMLDivElement | null) => void)(el);
                   }
                 }}
                 $swipeEnabled={isTouchDevice}
