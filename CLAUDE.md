@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) and other AI assista
 
 **Vorbis Player** is a React/TypeScript music player with customizable visual effects and a pluggable provider architecture. Supports **Spotify** (streaming, Premium required) and **Dropbox** (personal files via HTML5 Audio).
 
-Key capabilities: multi-provider auth/catalog/playback adapters, background visualizers, album art flip menu, bottom bar, swipe gestures, keyboard shortcuts, IndexedDB caching, responsive layout.
+Key capabilities: multi-provider auth/catalog/playback adapters, background visualizers, album art flip menu, bottom bar, swipe gestures (drawer toggles), keyboard shortcuts, IndexedDB caching, responsive layout.
 
 ## Build Verification
 
@@ -63,7 +63,7 @@ src/
 ├── constants/       # playlist.ts — ALBUM_ID_PREFIX, LIKED_SONGS_ID, helpers
 ├── providers/       # Multi-provider system; spotify/ and dropbox/ subdirs
 ├── hooks/           # 22 custom hooks
-├── services/        # spotify.ts, spotifyPlayer.ts, cache/ (IndexedDB)
+├── services/        # spotify.ts (auth + API), spotifyPlayer.ts (lazy SDK loading + playback), cache/ (IndexedDB)
 ├── utils/           # colorExtractor, colorUtils, sizingUtils, playlistFilters, etc.
 ├── workers/         # imageProcessor.worker.ts
 ├── types/           # domain.ts, providers.ts, filters.ts
@@ -86,7 +86,7 @@ AppContainer (flexCenter, min-height: 100dvh)
 - **`overflow: visible` is required on ContentWrapper** — `container-type: inline-size` creates containment that clips absolutely-positioned children
 - **`100dvh`** throughout to handle iOS address bar changes
 - **BottomBar** renders via `createPortal()` to `document.body`, fixed at bottom
-- **Drawers** use fixed positioning with slide animations and swipe-to-dismiss
+- **Drawers** use fixed positioning with slide animations and swipe-to-dismiss; vertical swipes on album art toggle playlist (up) and library (down) drawers
 - **BackgroundVisualizer and AccentColorBackground** are `position: fixed` with low z-index, don't affect layout
 
 ### Multi-Provider Architecture
@@ -102,7 +102,7 @@ Defined in `src/types/providers.ts` and `src/types/domain.ts`.
 - `MediaCollection` — provider-agnostic collection (playlist or album)
 - `CollectionRef` — `{ provider, kind, id }`; serialized via `collectionRefToKey` / `keyToCollectionRef`
 
-**Capability-aware UI**: check `activeDescriptor.capabilities` before rendering provider-specific controls (`hasSaveTrack`, `hasExternalLink`, `hasLikedCollection`).
+**Capability-aware UI**: check `activeDescriptor.capabilities` before rendering provider-specific controls (`hasSaveTrack`, `hasExternalLink`, `hasLikedCollection`). Both Spotify and Dropbox support `hasSaveTrack` and `hasLikedCollection`.
 
 **Dropbox folder structure**:
 ```
@@ -112,6 +112,12 @@ Dropbox root/
     └── 01 - Track.mp3
 ```
 Folders containing audio files become albums; parent folder = artist. A synthetic "All Music" collection is always prepended.
+
+**Dropbox Liked Songs**: Stored in IndexedDB (`vorbis-dropbox-art` database v3, `likes` store). Mutations dispatch `vorbis-dropbox-likes-changed` events for real-time UI updates. Settings menu exposes Export/Import (JSON) and Refresh Metadata operations.
+
+**Token refresh**: Both providers preserve refresh tokens during transient failures and proactively refresh before expiry. Spotify uses a 5-minute buffer; Dropbox uses a 60-second buffer. On 401/400 errors Dropbox performs full logout; on 5xx or network errors it preserves the refresh token for retry.
+
+**Spotify SDK loading**: The Spotify Web Playback SDK is loaded lazily by `SpotifyPlayerService.loadSDK()` — no global script tag in `index.html`. The SDK is only injected when the Spotify provider activates.
 
 ### Responsive Sizing
 
@@ -178,12 +184,15 @@ Path alias: `@/` → `./src/` (e.g. `import { x } from '@/hooks/usePlayerState'`
 **Spotify:**
 - Auth issues → use `127.0.0.1` not `localhost`
 - Track skipping → auto-skip handles 403 Restriction Violated errors
+- Expired tokens → refresh token is preserved; `isAuthenticated()` returns true if refresh token exists
 
 **Dropbox:**
 - Provider not visible → `VITE_DROPBOX_CLIENT_ID` must be set; restart dev server
 - No collections → audio files must be in subfolders (root-level files are skipped)
 - Stale catalog → 1-hour IndexedDB TTL; clear site data to force refresh
 - Art missing → place `cover.jpg` (or `folder.jpg`, `album.jpg`, `front.jpg`) alongside audio files
+- Liked songs missing → check IndexedDB `likes` store; use Settings → Refresh Metadata to re-sync
+- Auth loop → on 401/400 Dropbox performs full logout; on 5xx/network errors refresh token is preserved for retry
 
 **Visual Effects:**
 - Album art filters not working → always pass `albumFilters={albumFilters}` to `AlbumArt`
