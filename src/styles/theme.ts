@@ -74,6 +74,8 @@ export const theme = {
     spotifyLight: '#1ed760',
     dropbox: '#0061FF',
     dropboxLight: '#0090FF',
+    appleMusic: '#fc3c44',
+    appleMusicLight: '#ff5c64',
     selection: '#ffd700',
     
     // Common control colors
@@ -152,7 +154,8 @@ export const theme = {
     textSm: '0 1px 2px rgba(0, 0, 0, 0.3)',
     textMd: '0 2px 4px rgba(0, 0, 0, 0.5)',
     textControl: '0 1px 3px rgba(0, 0, 0, 0.5)',
-    spotify: '0 8px 32px rgba(29, 185, 84, 0.3)'
+    spotify: '0 8px 32px rgba(29, 185, 84, 0.3)',
+    appleMusic: '0 8px 32px rgba(252, 60, 68, 0.3)'
   },
   
   transitions: {

@@ -541,6 +541,9 @@ function getLikedSongsGradient(providerId?: string): string {
   if (providerId === 'dropbox') {
     return `linear-gradient(135deg, ${theme.colors.dropbox} 0%, ${theme.colors.dropboxLight} 100%)`;
   }
+  if (providerId === 'apple-music') {
+    return `linear-gradient(135deg, ${theme.colors.appleMusic} 0%, ${theme.colors.appleMusicLight} 100%)`;
+  }
   return `linear-gradient(135deg, ${theme.colors.spotify} 0%, ${theme.colors.spotifyLight} 100%)`;
 }
 

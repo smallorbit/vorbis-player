@@ -4,7 +4,7 @@
  */
 
 /** Unique identifier for a music provider (e.g. 'spotify', 'dropbox'). */
-export type ProviderId = 'spotify' | 'dropbox';
+export type ProviderId = 'spotify' | 'dropbox' | 'apple-music';
 
 /** Reference to a track for playback. Opaque to the app; provider resolves to stream URL or API call. */
 export interface PlaybackItemRef {
@@ -95,7 +95,7 @@ export function keyToCollectionRef(key: string): CollectionRef | null {
   if (parts.length < 3) return null;
   const [provider, kind, ...idParts] = parts;
   const id = idParts.join(':');
-  if (provider !== 'spotify' && provider !== 'dropbox') return null;
+  if (provider !== 'spotify' && provider !== 'dropbox' && provider !== 'apple-music') return null;
   if (!['playlist', 'album', 'folder', 'liked'].includes(kind)) return null;
   return { provider: provider as ProviderId, kind: kind as CollectionRef['kind'], id };
 }

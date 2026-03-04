@@ -121,8 +121,12 @@ export function useLibrarySync(): UseLibrarySyncResult {
     async function loadCollections() {
       setSyncState(prev => ({ ...prev, isSyncing: true, error: null }));
 
-      const { getCachedCatalog, putCatalogCache } = await import('@/providers/dropbox/dropboxCatalogCache');
-      const cached = await getCachedCatalog();
+      // Dropbox-specific catalog caching (IndexedDB)
+      const isDropbox = activeProviderId === 'dropbox';
+      const dropboxCache = isDropbox
+        ? await import('@/providers/dropbox/dropboxCatalogCache')
+        : null;
+      const cached = isDropbox ? await dropboxCache!.getCachedCatalog() : null;
 
       // Always fetch liked count (it's local IndexedDB, so fast)
       if (catalog!.getLikedCount && !cancelled) {
@@ -167,7 +171,7 @@ export function useLibrarySync(): UseLibrarySyncResult {
           lastSyncTimestamp: Date.now(),
           error: null,
         });
-        putCatalogCache(collections);
+        if (dropboxCache) dropboxCache.putCatalogCache(collections);
       } catch (err) {
         if (cancelled) return;
         if (err instanceof DOMException && err.name === 'AbortError') return;
@@ -189,9 +193,9 @@ export function useLibrarySync(): UseLibrarySyncResult {
     };
   }, [activeProviderId, activeDescriptor]);
 
-  // ── Listen for likes-changed events to update count in real-time ──────
+  // ── Listen for Dropbox likes-changed events to update count in real-time ──
   useEffect(() => {
-    if (activeProviderId === 'spotify') return;
+    if (activeProviderId !== 'dropbox') return;
     const catalog = activeDescriptor?.catalog;
     if (!catalog?.getLikedCount) return;
 
@@ -233,7 +237,9 @@ export function useLibrarySync(): UseLibrarySyncResult {
           lastSyncTimestamp: Date.now(),
           error: null,
         });
-        import('@/providers/dropbox/dropboxCatalogCache').then(m => m.putCatalogCache(collections));
+        if (activeProviderId === 'dropbox') {
+          import('@/providers/dropbox/dropboxCatalogCache').then(m => m.putCatalogCache(collections));
+        }
       } catch (err) {
         setSyncState(prev => ({
           ...prev,
