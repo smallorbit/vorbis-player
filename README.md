@@ -12,13 +12,13 @@ A visually immersive Spotify music player built with React, featuring customizab
 - **Spotify Integration**: Stream music from your Spotify account (Premium required)
 - **Dropbox Integration**: Browse and play audio files (MP3, FLAC, OGG, M4A, WAV) stored in your Dropbox
 - **Playlists & Albums**: Browse, search, sort, filter, and pin your playlists and albums
-- **Liked Songs**: Play your Liked Songs collection with automatic shuffle
+- **Liked Songs**: Play your Liked Songs collection with automatic shuffle (both Spotify and Dropbox)
 - **Visual Effects**: Dynamic glow effects with configurable intensity and animation rate
 - **Album Art Filters**: Real-time CSS filters (brightness, contrast, saturation, sepia, hue rotation, blur)
 - **Background Visualizers**: Animated particle and geometric visualizer backgrounds (enabled by default)
 - **Custom Colors**: Pick accent colors per album from a color picker or eyedropper tool
 - **Album Art Flip Menu**: Tap album art to flip and reveal quick-access controls (color chooser, glow toggle, visualizer toggle, visualizer style)
-- **Swipe Gestures**: Swipe album art horizontally to change tracks; swipe up to exit zen mode, down to enter zen mode. Library and playlist drawers are opened via the bottom bar.
+- **Swipe Gestures**: Swipe album art horizontally to change tracks; swipe up to toggle the playlist drawer, swipe down to toggle the library drawer
 - **Interactive Track Info**: Click artist/album names for Spotify links and library filtering
 - **Instant Startup**: IndexedDB-based library cache with background sync for fast loading
 - **Responsive Design**: Fluid layout that adapts from mobile phones to ultra-wide desktops
@@ -112,9 +112,8 @@ The player displays album artwork with controls always visible below:
 **Touch Gestures** (mobile/tablet):
 - Tap album art to flip and reveal quick-access controls (or play/pause when in zen mode)
 - Swipe album art left/right to change tracks
-- Swipe up on album art to exit zen mode
-- Swipe down on album art to enter zen mode
-- Library and playlist drawers: use bottom bar buttons
+- Swipe up on album art to toggle the playlist drawer
+- Swipe down on album art to toggle the library drawer
 
 ### Library
 
@@ -139,7 +138,8 @@ When Dropbox is active:
 - Supported audio formats: MP3, FLAC, OGG/Vorbis, M4A/AAC, WAV (unsupported formats are skipped)
 - Album art is read from image files (`cover.jpg`, `folder.png`, etc.) found alongside your audio files
 - Track metadata (title, artist, album, cover art) is read from ID3 tags embedded in MP3 files
-- Provider-specific actions (Like, "Open in Spotify") are hidden for Dropbox tracks
+- Liked Songs are supported for Dropbox — like/unlike tracks, browse your liked collection, and manage via Export/Import and Refresh Metadata in settings
+- "Open in Spotify" links are hidden for Dropbox tracks
 
 ### Visual Effects Menu
 
@@ -224,7 +224,7 @@ src/
 
 - **Frontend**: React 18 + TypeScript + Vite
 - **Styling**: styled-components with theme system + Radix UI primitives
-- **Audio**: Spotify Web Playback SDK + Web API; HTML5 Audio for Dropbox streams
+- **Audio**: Spotify Web Playback SDK (lazy-loaded on demand) + Web API; HTML5 Audio for Dropbox streams
 - **Authentication**: PKCE OAuth 2.0 (Spotify and Dropbox)
 - **Testing**: Vitest + React Testing Library
 - **Performance**: Web Workers, LRU caching, IndexedDB persistence, lazy loading, container queries
