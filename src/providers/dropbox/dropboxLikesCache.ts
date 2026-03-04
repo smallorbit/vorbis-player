@@ -3,6 +3,15 @@ import { getDb } from './dropboxArtCache';
 
 const STORE = 'likes';
 
+/** Custom event name dispatched when likes change (add/remove/clear/import). */
+export const LIKES_CHANGED_EVENT = 'vorbis-dropbox-likes-changed';
+
+function notifyLikesChanged(): void {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new Event(LIKES_CHANGED_EVENT));
+  }
+}
+
 interface LikedEntry {
   trackId: string;
   track: MediaTrack;
@@ -72,7 +81,7 @@ export async function setTrackLiked(
       } else {
         store.delete(trackId);
       }
-      tx.oncomplete = () => resolve();
+      tx.oncomplete = () => { notifyLikesChanged(); resolve(); };
       tx.onerror = () => resolve();
     } catch {
       resolve();
@@ -87,7 +96,7 @@ export async function clearLikes(): Promise<void> {
     try {
       const tx = database.transaction(STORE, 'readwrite');
       tx.objectStore(STORE).clear();
-      tx.oncomplete = () => resolve();
+      tx.oncomplete = () => { notifyLikesChanged(); resolve(); };
       tx.onerror = () => resolve();
     } catch {
       resolve();
@@ -132,7 +141,7 @@ export async function importLikes(json: string): Promise<number> {
           count++;
         }
       }
-      tx.oncomplete = () => resolve(count);
+      tx.oncomplete = () => { notifyLikesChanged(); resolve(count); };
       tx.onerror = () => resolve(0);
     } catch {
       resolve(0);
@@ -175,7 +184,7 @@ export async function refreshLikedTrackMetadata(
         }
       };
 
-      tx.oncomplete = () => resolve({ updated, removed });
+      tx.oncomplete = () => { if (updated > 0 || removed > 0) notifyLikesChanged(); resolve({ updated, removed }); };
       tx.onerror = () => resolve({ updated: 0, removed: 0 });
     } catch {
       resolve({ updated: 0, removed: 0 });
