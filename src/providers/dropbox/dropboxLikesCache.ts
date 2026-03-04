@@ -1,0 +1,184 @@
+import type { MediaTrack } from '@/types/domain';
+import { getDb } from './dropboxArtCache';
+
+const STORE = 'likes';
+
+interface LikedEntry {
+  trackId: string;
+  track: MediaTrack;
+  likedAt: number;
+}
+
+export async function getLikedTracks(): Promise<MediaTrack[]> {
+  const database = await getDb();
+  if (!database) return [];
+  return new Promise((resolve) => {
+    try {
+      const req = database.transaction(STORE, 'readonly').objectStore(STORE).getAll();
+      req.onsuccess = () => {
+        const entries = (req.result as LikedEntry[]) ?? [];
+        entries.sort((a, b) => b.likedAt - a.likedAt);
+        resolve(entries.map((e) => e.track));
+      };
+      req.onerror = () => resolve([]);
+    } catch {
+      resolve([]);
+    }
+  });
+}
+
+export async function getLikedCount(): Promise<number> {
+  const database = await getDb();
+  if (!database) return 0;
+  return new Promise((resolve) => {
+    try {
+      const req = database.transaction(STORE, 'readonly').objectStore(STORE).count();
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => resolve(0);
+    } catch {
+      resolve(0);
+    }
+  });
+}
+
+export async function isTrackLiked(trackId: string): Promise<boolean> {
+  const database = await getDb();
+  if (!database) return false;
+  return new Promise((resolve) => {
+    try {
+      const req = database.transaction(STORE, 'readonly').objectStore(STORE).get(trackId);
+      req.onsuccess = () => resolve(req.result !== undefined);
+      req.onerror = () => resolve(false);
+    } catch {
+      resolve(false);
+    }
+  });
+}
+
+export async function setTrackLiked(
+  trackId: string,
+  track: MediaTrack | null,
+  liked: boolean,
+): Promise<void> {
+  const database = await getDb();
+  if (!database) return;
+  return new Promise((resolve) => {
+    try {
+      const tx = database.transaction(STORE, 'readwrite');
+      const store = tx.objectStore(STORE);
+      if (liked && track) {
+        const entry: LikedEntry = { trackId, track, likedAt: Date.now() };
+        store.put(entry);
+      } else {
+        store.delete(trackId);
+      }
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => resolve();
+    } catch {
+      resolve();
+    }
+  });
+}
+
+export async function clearLikes(): Promise<void> {
+  const database = await getDb();
+  if (!database) return;
+  return new Promise((resolve) => {
+    try {
+      const tx = database.transaction(STORE, 'readwrite');
+      tx.objectStore(STORE).clear();
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => resolve();
+    } catch {
+      resolve();
+    }
+  });
+}
+
+export async function exportLikes(): Promise<string> {
+  const database = await getDb();
+  if (!database) return '[]';
+  return new Promise((resolve) => {
+    try {
+      const req = database.transaction(STORE, 'readonly').objectStore(STORE).getAll();
+      req.onsuccess = () => resolve(JSON.stringify(req.result ?? []));
+      req.onerror = () => resolve('[]');
+    } catch {
+      resolve('[]');
+    }
+  });
+}
+
+export async function importLikes(json: string): Promise<number> {
+  const database = await getDb();
+  if (!database) return 0;
+
+  let entries: LikedEntry[];
+  try {
+    entries = JSON.parse(json);
+    if (!Array.isArray(entries)) return 0;
+  } catch {
+    return 0;
+  }
+
+  return new Promise((resolve) => {
+    try {
+      const tx = database.transaction(STORE, 'readwrite');
+      const store = tx.objectStore(STORE);
+      let count = 0;
+      for (const entry of entries) {
+        if (entry.trackId && entry.track) {
+          store.put(entry);
+          count++;
+        }
+      }
+      tx.oncomplete = () => resolve(count);
+      tx.onerror = () => resolve(0);
+    } catch {
+      resolve(0);
+    }
+  });
+}
+
+/**
+ * Updates metadata for liked tracks using freshly scanned track data.
+ * Returns the number of liked tracks that were updated. Tracks whose IDs
+ * are no longer found in `freshTracks` are removed from likes.
+ */
+export async function refreshLikedTrackMetadata(
+  freshTracks: MediaTrack[],
+): Promise<{ updated: number; removed: number }> {
+  const database = await getDb();
+  if (!database) return { updated: 0, removed: 0 };
+
+  const freshMap = new Map(freshTracks.map((t) => [t.id, t]));
+
+  return new Promise((resolve) => {
+    try {
+      const tx = database.transaction(STORE, 'readwrite');
+      const store = tx.objectStore(STORE);
+      const req = store.getAll();
+      let updated = 0;
+      let removed = 0;
+
+      req.onsuccess = () => {
+        const entries = (req.result as LikedEntry[]) ?? [];
+        for (const entry of entries) {
+          const fresh = freshMap.get(entry.trackId);
+          if (fresh) {
+            store.put({ ...entry, track: fresh });
+            updated++;
+          } else {
+            store.delete(entry.trackId);
+            removed++;
+          }
+        }
+      };
+
+      tx.oncomplete = () => resolve({ updated, removed });
+      tx.onerror = () => resolve({ updated: 0, removed: 0 });
+    } catch {
+      resolve({ updated: 0, removed: 0 });
+    }
+  });
+}

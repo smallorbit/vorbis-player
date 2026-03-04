@@ -155,6 +155,103 @@ const AlbumArtCacheSection = memo(({ accentColor }: { accentColor: string }) => 
 });
 AlbumArtCacheSection.displayName = 'AlbumArtCacheSection';
 
+/** Liked Songs management — only rendered when Dropbox is the active provider. */
+const LikedSongsSection = memo(({ accentColor }: { accentColor: string }) => {
+  const { activeProviderId, activeDescriptor } = useProviderContext();
+  const [status, setStatus] = useState<'idle' | 'working' | 'done'>('idle');
+  const [resultMessage, setResultMessage] = useState('');
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+  if (activeProviderId !== 'dropbox') return null;
+
+  const catalog = activeDescriptor?.catalog as DropboxCatalogAdapter | undefined;
+  if (!catalog?.exportLikes) return null;
+
+  const busy = status === 'working';
+
+  const handleExport = async () => {
+    setStatus('working');
+    try {
+      const json = await catalog.exportLikes();
+      const blob = new Blob([json], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `vorbis-liked-songs-${new Date().toISOString().slice(0, 10)}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      setResultMessage('Exported!');
+    } catch {
+      setResultMessage('Export failed');
+    }
+    setStatus('done');
+    setTimeout(() => { setStatus('idle'); setResultMessage(''); }, 1500);
+  };
+
+  const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setStatus('working');
+    try {
+      const json = await file.text();
+      const count = await catalog.importLikes(json);
+      setResultMessage(`Imported ${count} tracks`);
+    } catch {
+      setResultMessage('Import failed');
+    }
+    setStatus('done');
+    if (fileInputRef.current) fileInputRef.current.value = '';
+    setTimeout(() => { setStatus('idle'); setResultMessage(''); }, 2000);
+  };
+
+  const handleRefreshMetadata = async () => {
+    setStatus('working');
+    try {
+      const result = await catalog.refreshLikedMetadata();
+      const parts: string[] = [];
+      if (result.updated > 0) parts.push(`${result.updated} updated`);
+      if (result.removed > 0) parts.push(`${result.removed} removed`);
+      setResultMessage(parts.length > 0 ? parts.join(', ') : 'No changes');
+    } catch {
+      setResultMessage('Refresh failed');
+    }
+    setStatus('done');
+    setTimeout(() => { setStatus('idle'); setResultMessage(''); }, 2000);
+  };
+
+  return (
+    <FilterSection>
+      <SectionTitle>Liked Songs</SectionTitle>
+      <ControlGroup>
+        <ControlLabel>Export liked songs to a JSON file for backup</ControlLabel>
+        <ResetButton onClick={handleExport} $accentColor={accentColor} disabled={busy}>
+          {status === 'done' && resultMessage === 'Exported!' ? 'Exported!' : busy ? 'Working…' : 'Export Likes'}
+        </ResetButton>
+      </ControlGroup>
+      <ControlGroup>
+        <ControlLabel>Import liked songs from a previously exported JSON file</ControlLabel>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".json"
+          onChange={handleImport}
+          style={{ display: 'none' }}
+        />
+        <ResetButton onClick={() => fileInputRef.current?.click()} $accentColor={accentColor} disabled={busy}>
+          {status === 'done' && resultMessage.startsWith('Imported') ? resultMessage : busy ? 'Working…' : 'Import Likes'}
+        </ResetButton>
+      </ControlGroup>
+      <ControlGroup>
+        <ControlLabel>Re-scan Dropbox to update metadata for liked tracks</ControlLabel>
+        <ResetButton onClick={handleRefreshMetadata} $accentColor={accentColor} disabled={busy}>
+          {status === 'done' ? resultMessage || 'Done!' : busy ? 'Scanning…' : 'Refresh Metadata'}
+        </ResetButton>
+      </ControlGroup>
+    </FilterSection>
+  );
+});
+LikedSongsSection.displayName = 'LikedSongsSection';
+
 const AppSettingsMenu: React.FC<AppSettingsMenuProps> = memo(({
   isOpen,
   onClose,
@@ -166,6 +263,8 @@ const AppSettingsMenu: React.FC<AppSettingsMenuProps> = memo(({
   onVisualizerDebugToggle
 }) => {
   const { viewport, isMobile, isTablet, transitionDuration, transitionEasing } = usePlayerSizing();
+  const { activeProviderId } = useProviderContext();
+  const isDropbox = activeProviderId === 'dropbox';
   const [clearState, setClearState] = useState<'idle' | 'confirming' | 'success'>('idle');
   const [clearLikes, setClearLikes] = useState(false);
   const [clearPins, setClearPins] = useState(false);
@@ -222,6 +321,9 @@ const AppSettingsMenu: React.FC<AppSettingsMenuProps> = memo(({
           {/* Dropbox Album Art Cache Section */}
           <AlbumArtCacheSection accentColor={accentColor} />
 
+          {/* Dropbox Liked Songs Section */}
+          <LikedSongsSection accentColor={accentColor} />
+
           {/* Advanced Section */}
           <FilterSection>
             <SectionTitle>Advanced</SectionTitle>
@@ -230,16 +332,18 @@ const AppSettingsMenu: React.FC<AppSettingsMenuProps> = memo(({
               {clearState === 'confirming' ? (
                 <>
                   <CacheOptionsList>
-                    <CacheOptionItem>
-                      <CacheCheckbox
-                        id="clear-likes"
-                        type="checkbox"
-                        checked={clearLikes}
-                        onChange={(e) => setClearLikes(e.target.checked)}
-                        $accentColor={accentColor}
-                      />
-                      <CacheOptionLabel htmlFor="clear-likes">Also clear Likes</CacheOptionLabel>
-                    </CacheOptionItem>
+                    {!isDropbox && (
+                      <CacheOptionItem>
+                        <CacheCheckbox
+                          id="clear-likes"
+                          type="checkbox"
+                          checked={clearLikes}
+                          onChange={(e) => setClearLikes(e.target.checked)}
+                          $accentColor={accentColor}
+                        />
+                        <CacheOptionLabel htmlFor="clear-likes">Also clear Likes</CacheOptionLabel>
+                      </CacheOptionItem>
+                    )}
                     <CacheOptionItem>
                       <CacheCheckbox
                         id="clear-pins"

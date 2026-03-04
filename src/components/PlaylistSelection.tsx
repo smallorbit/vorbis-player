@@ -537,7 +537,12 @@ const PinIcon: React.FC<{ filled?: boolean }> = ({ filled = false }) => (
   </svg>
 );
 
-const LIKED_SONGS_GRADIENT = `linear-gradient(135deg, ${theme.colors.spotify} 0%, ${theme.colors.spotifyLight} 100%)`;
+function getLikedSongsGradient(providerId?: string): string {
+  if (providerId === 'dropbox') {
+    return `linear-gradient(135deg, ${theme.colors.dropbox} 0%, ${theme.colors.dropboxLight} 100%)`;
+  }
+  return `linear-gradient(135deg, ${theme.colors.spotify} 0%, ${theme.colors.spotifyLight} 100%)`;
+}
 
 /** Shared hook for lazy-loading images via IntersectionObserver */
 function useLazyImage(
@@ -876,7 +881,7 @@ function PlaylistSelection({ onPlaylistSelect, inDrawer = false, swipeZoneRef, i
         const likedSongsGridCard = likedSongsCount > 0 && (
           <PinnableGridCard key="liked-songs" onClick={handleLikedSongsClick}>
             <GridCardArtWrapper style={{ position: 'relative' }}>
-              <div style={{ background: LIKED_SONGS_GRADIENT, display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', fontSize: '3rem', color: 'white' }}>♥</div>
+              <div style={{ background: getLikedSongsGradient(activeDescriptor?.id), display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', fontSize: '3rem', color: 'white' }}>♥</div>
               <GridCardPinOverlay $isPinned={likedSongsPinned} onClick={(e) => handlePinPlaylistClick(LIKED_SONGS_ID, e)}>
                 <PinIcon filled={likedSongsPinned} />
               </GridCardPinOverlay>
@@ -891,7 +896,7 @@ function PlaylistSelection({ onPlaylistSelect, inDrawer = false, swipeZoneRef, i
         const likedSongsListItem = likedSongsCount > 0 && (
           <PinnableListItem key="liked-songs" onClick={handleLikedSongsClick}>
             <PlaylistImageWrapper>
-              <div style={{ background: LIKED_SONGS_GRADIENT, display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', borderRadius: '0.5rem', fontSize: '1.5rem', color: 'white' }}>♥</div>
+              <div style={{ background: getLikedSongsGradient(activeDescriptor?.id), display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', borderRadius: '0.5rem', fontSize: '1.5rem', color: 'white' }}>♥</div>
             </PlaylistImageWrapper>
             <PlaylistInfo>
               <PlaylistName>{LIKED_SONGS_NAME}</PlaylistName>

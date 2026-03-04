@@ -5,7 +5,7 @@
  */
 
 const DB_NAME = 'vorbis-dropbox-art';
-const DB_VERSION = 2;
+const DB_VERSION = 3;
 const STORE = 'art';
 export const ART_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
@@ -38,6 +38,9 @@ function openDb(): Promise<IDBDatabase | null> {
       }
       if (!database.objectStoreNames.contains('catalog')) {
         database.createObjectStore('catalog', { keyPath: 'key' });
+      }
+      if (!database.objectStoreNames.contains('likes')) {
+        database.createObjectStore('likes', { keyPath: 'trackId' });
       }
     };
   });

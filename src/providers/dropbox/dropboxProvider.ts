@@ -24,8 +24,8 @@ if (DROPBOX_CLIENT_ID) {
     id: 'dropbox',
     name: 'Dropbox',
     capabilities: {
-      hasLikedCollection: false,
-      hasSaveTrack: false,
+      hasLikedCollection: true,
+      hasSaveTrack: true,
       hasExternalLink: false,
     },
     auth,

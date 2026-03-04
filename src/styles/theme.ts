@@ -72,6 +72,8 @@ export const theme = {
     },
     spotify: '#1db954',
     spotifyLight: '#1ed760',
+    dropbox: '#0061FF',
+    dropboxLight: '#0090FF',
     selection: '#ffd700',
     
     // Common control colors
