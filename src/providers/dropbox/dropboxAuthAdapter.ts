@@ -6,7 +6,9 @@
 import type { AuthProvider } from '@/types/providers';
 import type { ProviderId } from '@/types/domain';
 
-const DROPBOX_CLIENT_ID = import.meta.env.VITE_DROPBOX_CLIENT_ID ?? '';
+function getDropboxClientId(): string {
+  return import.meta.env.VITE_DROPBOX_CLIENT_ID ?? '';
+}
 /** Redirect URI must match the current origin so the callback lands where we stored the PKCE verifier. */
 function getRedirectUri(): string {
   if (typeof window === 'undefined') return import.meta.env.VITE_DROPBOX_REDIRECT_URI ?? '';
@@ -67,7 +69,7 @@ export class DropboxAuthAdapter implements AuthProvider {
   }
 
   async beginLogin(): Promise<void> {
-    if (!DROPBOX_CLIENT_ID) {
+    if (!getDropboxClientId()) {
       console.warn('[DropboxAuth] No VITE_DROPBOX_CLIENT_ID configured');
       return;
     }
@@ -83,7 +85,7 @@ export class DropboxAuthAdapter implements AuthProvider {
 
     const redirectUri = getRedirectUri();
     const params = new URLSearchParams({
-      client_id: DROPBOX_CLIENT_ID,
+      client_id: getDropboxClientId(),
       response_type: 'code',
       redirect_uri: redirectUri,
       code_challenge: codeChallenge,
@@ -128,7 +130,7 @@ export class DropboxAuthAdapter implements AuthProvider {
     const body = new URLSearchParams({
       code,
       grant_type: 'authorization_code',
-      client_id: DROPBOX_CLIENT_ID,
+      client_id: getDropboxClientId(),
       redirect_uri: redirectUri,
       code_verifier: codeVerifier,
     });
@@ -176,12 +178,12 @@ export class DropboxAuthAdapter implements AuthProvider {
 
   /** Refresh the access token using the stored refresh token. */
   async refreshAccessToken(): Promise<string | null> {
-    if (!this.refreshToken || !DROPBOX_CLIENT_ID) return null;
+    if (!this.refreshToken || !getDropboxClientId()) return null;
 
     const body = new URLSearchParams({
       grant_type: 'refresh_token',
       refresh_token: this.refreshToken,
-      client_id: DROPBOX_CLIENT_ID,
+      client_id: getDropboxClientId(),
     });
 
     let response: Response;
