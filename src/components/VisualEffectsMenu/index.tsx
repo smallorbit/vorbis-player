@@ -108,14 +108,8 @@ MusicSourcesSection.displayName = 'MusicSourcesSection';
 
 
 /** Album art cache controls — only rendered when Dropbox is the active provider. */
-const AlbumArtCacheSection = memo(({ accentColor }: { accentColor: string }) => {
-  const { activeProviderId, activeDescriptor } = useProviderContext();
+const AlbumArtCacheSection = memo(({ accentColor, catalog }: { accentColor: string; catalog: DropboxCatalogAdapter }) => {
   const [status, setStatus] = useState<'idle' | 'working' | 'done'>('idle');
-
-  if (activeProviderId !== 'dropbox') return null;
-
-  const catalog = activeDescriptor?.catalog as DropboxCatalogAdapter | undefined;
-  if (!catalog?.clearArtCache) return null;
 
   const handleClear = async () => {
     setStatus('working');
@@ -156,16 +150,10 @@ const AlbumArtCacheSection = memo(({ accentColor }: { accentColor: string }) => 
 AlbumArtCacheSection.displayName = 'AlbumArtCacheSection';
 
 /** Liked Songs management — only rendered when Dropbox is the active provider. */
-const LikedSongsSection = memo(({ accentColor }: { accentColor: string }) => {
-  const { activeProviderId, activeDescriptor } = useProviderContext();
+const LikedSongsSection = memo(({ accentColor, catalog }: { accentColor: string; catalog: DropboxCatalogAdapter }) => {
   const [status, setStatus] = useState<'idle' | 'working' | 'done'>('idle');
   const [resultMessage, setResultMessage] = useState('');
   const fileInputRef = React.useRef<HTMLInputElement>(null);
-
-  if (activeProviderId !== 'dropbox') return null;
-
-  const catalog = activeDescriptor?.catalog as DropboxCatalogAdapter | undefined;
-  if (!catalog?.exportLikes) return null;
 
   const busy = status === 'working';
 
@@ -263,8 +251,11 @@ const AppSettingsMenu: React.FC<AppSettingsMenuProps> = memo(({
   onVisualizerDebugToggle
 }) => {
   const { viewport, isMobile, isTablet, transitionDuration, transitionEasing } = usePlayerSizing();
-  const { activeProviderId } = useProviderContext();
+  const { activeProviderId, activeDescriptor } = useProviderContext();
   const isDropbox = activeProviderId === 'dropbox';
+  const dropboxCatalog = isDropbox
+    ? (activeDescriptor?.catalog as DropboxCatalogAdapter | undefined)
+    : undefined;
   const [clearState, setClearState] = useState<'idle' | 'confirming' | 'success'>('idle');
   const [clearLikes, setClearLikes] = useState(false);
   const [clearPins, setClearPins] = useState(false);
@@ -319,10 +310,14 @@ const AppSettingsMenu: React.FC<AppSettingsMenuProps> = memo(({
           <MusicSourcesSection accentColor={accentColor} />
 
           {/* Dropbox Album Art Cache Section */}
-          <AlbumArtCacheSection accentColor={accentColor} />
+          {dropboxCatalog?.clearArtCache && (
+            <AlbumArtCacheSection accentColor={accentColor} catalog={dropboxCatalog} />
+          )}
 
           {/* Dropbox Liked Songs Section */}
-          <LikedSongsSection accentColor={accentColor} />
+          {dropboxCatalog?.exportLikes && (
+            <LikedSongsSection accentColor={accentColor} catalog={dropboxCatalog} />
+          )}
 
           {/* Advanced Section */}
           <FilterSection>
