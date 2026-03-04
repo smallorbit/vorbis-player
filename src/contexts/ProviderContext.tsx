@@ -7,6 +7,7 @@ import type { ProviderDescriptor, ProviderRegistry } from '@/types/providers';
 // Ensure providers are registered before the context is used
 import '@/providers/spotify/spotifyProvider';
 import '@/providers/dropbox/dropboxProvider'; // conditionally registers if VITE_DROPBOX_CLIENT_ID is set
+import '@/providers/apple-music/appleMusicProvider'; // always registered
 
 const ACTIVE_PROVIDER_KEY = 'vorbis-player-active-provider';
 

@@ -125,6 +125,7 @@ const SwitchLink = styled.button`
 const PROVIDER_META: Record<ProviderId, { icon: string; accentColor: string; note: string }> = {
   spotify: { icon: '♫', accentColor: '#1db954', note: 'Requires Spotify Premium' },
   dropbox: { icon: '📁', accentColor: '#0061ff', note: 'Play files from your Dropbox' },
+  'apple-music': { icon: '🎵', accentColor: '#fc3c44', note: 'Requires Apple Music subscription' },
 };
 
 const Wrapper = styled.div`

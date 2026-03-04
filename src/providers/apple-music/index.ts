@@ -1,0 +1,1 @@
+export { appleMusicDescriptor } from './appleMusicProvider';
