@@ -243,19 +243,10 @@ export class DropboxCatalogAdapter implements CatalogProvider {
       }
 
       // Fetch and cache art data URLs for each album directory in parallel
-      const dirImagePaths = new Map<string, string>();
-      for (const dirPath of audioCount.keys()) {
-        const entries = imagesByDir.get(dirPath) ?? [];
-        const path = pickThumbnailArtPath(entries);
-        if (path) dirImagePaths.set(dirPath, path);
-      }
-
-      const dirToImageUrl = new Map<string, string>();
-      await Promise.all(
-        Array.from(dirImagePaths.entries()).map(async ([dir, path]) => {
-          const url = await this.fetchArtDataUrl(path);
-          if (url) dirToImageUrl.set(dir, url);
-        }),
+      const dirToImageUrl = await this.resolveArtUrls(
+        audioCount.keys(),
+        imagesByDir,
+        pickThumbnailArtPath,
       );
 
       let totalTracks = 0;
@@ -337,18 +328,10 @@ export class DropboxCatalogAdapter implements CatalogProvider {
         processBatch(result.entries);
       }
 
-      const dirToImagePath = new Map<string, string>();
-      for (const [dir, entries] of imagesByDir) {
-        const path = pickAlbumArtPath(entries);
-        if (path) dirToImagePath.set(dir, path);
-      }
-
-      const dirToImageUrl = new Map<string, string>();
-      await Promise.all(
-        Array.from(dirToImagePath.entries()).map(async ([dir, path]) => {
-          const url = await this.fetchArtDataUrl(path);
-          if (url) dirToImageUrl.set(dir, url);
-        }),
+      const dirToImageUrl = await this.resolveArtUrls(
+        imagesByDir.keys(),
+        imagesByDir,
+        pickAlbumArtPath,
       );
 
       const tracks: MediaTrack[] = audioEntries.map((entry) => {
@@ -372,6 +355,11 @@ export class DropboxCatalogAdapter implements CatalogProvider {
         }
       }
 
+      // Replace knownTracks with the latest collection to bound memory.
+      // Only the most recently loaded collection's tracks are needed for
+      // setTrackSaved() lookups (the currently playing track is always in
+      // the last loaded collection in normal usage).
+      this.knownTracks.clear();
       for (const t of tracks) this.knownTracks.set(t.id, t);
 
       return tracks;
@@ -407,6 +395,33 @@ export class DropboxCatalogAdapter implements CatalogProvider {
       durationMs: 0,
       image: imageUrl,
     };
+  }
+
+  /**
+   * Resolves art data URLs for a set of directories in parallel.
+   * Each directory's image entries are passed through `pickFn` to select the
+   * best image file, then fetched (or served from cache) concurrently.
+   */
+  private async resolveArtUrls(
+    dirs: Iterable<string>,
+    imagesByDir: Map<string, DropboxFileEntry[]>,
+    pickFn: (entries: DropboxFileEntry[]) => string | null,
+  ): Promise<Map<string, string>> {
+    const dirToPath = new Map<string, string>();
+    for (const dir of dirs) {
+      const entries = imagesByDir.get(dir) ?? [];
+      const path = pickFn(entries);
+      if (path) dirToPath.set(dir, path);
+    }
+
+    const dirToUrl = new Map<string, string>();
+    await Promise.all(
+      Array.from(dirToPath.entries()).map(async ([dir, path]) => {
+        const url = await this.fetchArtDataUrl(path);
+        if (url) dirToUrl.set(dir, url);
+      }),
+    );
+    return dirToUrl;
   }
 
   async getTemporaryLink(path: string): Promise<string> {

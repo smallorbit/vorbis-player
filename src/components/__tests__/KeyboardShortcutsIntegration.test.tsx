@@ -14,8 +14,8 @@ vi.mock('../../hooks/usePlaylistManager', () => ({
   }))
 }));
 
-vi.mock('../../hooks/useSpotifyPlayback', () => ({
-  useSpotifyPlayback: vi.fn(() => ({
+vi.mock('../../hooks/usePlayback', () => ({
+  usePlayback: vi.fn(() => ({
     playTrack: vi.fn()
   }))
 }));

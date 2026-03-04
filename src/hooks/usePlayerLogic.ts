@@ -5,7 +5,7 @@ import { useVisualEffectsContext } from '@/contexts/VisualEffectsContext';
 import { useColorContext } from '@/contexts/ColorContext';
 import { useProviderContext } from '@/contexts/ProviderContext';
 import { usePlaylistManager } from '@/hooks/usePlaylistManager';
-import { useSpotifyPlayback } from '@/hooks/useSpotifyPlayback';
+import { usePlayback } from '@/hooks/usePlayback';
 import { useAutoAdvance } from '@/hooks/useAutoAdvance';
 import { useAccentColor } from '@/hooks/useAccentColor';
 import type { Track } from '@/services/spotify';
@@ -94,7 +94,7 @@ export function usePlayerLogic() {
   // Library drawer visibility (local UI state)
   const [showLibraryDrawer, setShowLibraryDrawer] = useState(false);
 
-  const { playTrack } = useSpotifyPlayback({
+  const { playTrack } = usePlayback({
     tracks,
     setCurrentTrackIndex,
     activeDescriptor,

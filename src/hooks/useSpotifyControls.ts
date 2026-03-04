@@ -76,9 +76,13 @@ export const useSpotifyControls = ({
     return unsubscribe;
   }, [activeDescriptor]);
 
-  // Lightweight position poll — only to update the timeline slider smoothly.
+  // Lightweight position poll — only needed for Spotify where the SDK fires
+  // state-change events (play/pause/seek) but does NOT push continuous position
+  // updates during playback.  Dropbox already pushes position via its 250ms
+  // adapter interval + timeupdate events, so polling there is redundant.
   useEffect(() => {
     if (!isPlaying) return;
+    if (activeDescriptor?.id === 'dropbox') return;
     const playback = activeDescriptor?.playback;
     if (!playback) return;
 

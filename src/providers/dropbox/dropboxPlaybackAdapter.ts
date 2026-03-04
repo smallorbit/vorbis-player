@@ -9,6 +9,7 @@ import { DropboxCatalogAdapter } from './dropboxCatalogAdapter';
 import { parseID3 } from '@/utils/id3Parser';
 import { bytesToDataUrl } from '@/utils/bytesToDataUrl';
 import { putDurationMs } from './dropboxArtCache';
+import { getMetadata, putMetadata, type CachedMetadata } from './dropboxMetadataCache';
 
 export class DropboxPlaybackAdapter implements PlaybackProvider {
   readonly providerId: ProviderId = 'dropbox';
@@ -74,8 +75,26 @@ export class DropboxPlaybackAdapter implements PlaybackProvider {
 
   private enrichMetadataInBackground(track: MediaTrack, streamUrl: string): void {
     const FETCH_LIMIT = 262144; // 256KB — enough to cover large embedded cover art in ID3 headers
+    const trackPath = track.playbackRef.ref;
 
     const doEnrich = async () => {
+      // Check IndexedDB cache first to avoid duplicate HTTP requests
+      const cached = await getMetadata(trackPath);
+      if (cached) {
+        if (this.currentTrack?.id !== track.id) return;
+        const update: PlaybackState['trackMetadata'] = {};
+        if (cached.name && cached.name !== track.name) update.name = cached.name;
+        if (cached.artists && cached.artists !== track.artists) update.artists = cached.artists;
+        if (cached.album && cached.album !== track.album) update.album = cached.album;
+        if (cached.image && !track.image) update.image = cached.image;
+        if (Object.keys(update).length > 0) {
+          this.currentTrack = { ...track, ...update };
+          this.pendingMetadataUpdate = update;
+          this.notifyListeners();
+        }
+        return;
+      }
+
       let res: Response;
       try {
         res = await fetch(streamUrl, { headers: { Range: `bytes=0-${FETCH_LIMIT - 1}` } });
@@ -110,12 +129,20 @@ export class DropboxPlaybackAdapter implements PlaybackProvider {
 
       const { title, artist, album, coverArt } = parseID3(combined.buffer as ArrayBuffer);
       const update: PlaybackState['trackMetadata'] = {};
-      if (title && title !== track.name) update.name = title;
-      if (artist && artist !== track.artists) update.artists = artist;
-      if (album && album !== track.album) update.album = album;
+      const cacheEntry: CachedMetadata = { path: trackPath, cachedAt: Date.now() };
+
+      if (title && title !== track.name) { update.name = title; cacheEntry.name = title; }
+      if (artist && artist !== track.artists) { update.artists = artist; cacheEntry.artists = artist; }
+      if (album && album !== track.album) { update.album = album; cacheEntry.album = album; }
       if (coverArt && !track.image) {
-        update.image = bytesToDataUrl(coverArt.data, coverArt.mimeType);
+        const imageDataUrl = bytesToDataUrl(coverArt.data, coverArt.mimeType);
+        update.image = imageDataUrl;
+        cacheEntry.image = imageDataUrl;
       }
+
+      // Cache parsed metadata so subsequent plays skip the HTTP fetch
+      putMetadata(cacheEntry).catch(() => {});
+
       if (Object.keys(update).length > 0) {
         this.currentTrack = { ...track, ...update };
         this.pendingMetadataUpdate = update;
