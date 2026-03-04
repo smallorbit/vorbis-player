@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import styled, { keyframes } from 'styled-components';
 import AudioPlayerComponent from './components/AudioPlayer';
 import { spotifyAuth } from './services/spotify';
-import './services/spotifyPlayer';
 import { ThemeProvider } from './styles/ThemeProvider';
 import { flexCenter, buttonPrimary } from './styles/utils';
 import { TrackProvider } from './contexts/TrackContext';
