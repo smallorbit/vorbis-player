@@ -34,12 +34,21 @@ export async function clearAllPins(): Promise<void> {
   await settingsClearStore(STORE_NAMES.PINS);
 }
 
+let migrationDone = false;
+
+/** @internal Reset migration flag for tests. */
+export function _resetMigrationFlag(): void {
+  migrationDone = false;
+}
+
 /**
  * One-time migration: move pinned playlists/albums from localStorage into IDB
  * under the "spotify" provider namespace. Removes localStorage keys after writing.
- * No-op if localStorage keys don't exist.
+ * No-op if localStorage keys don't exist or migration already ran.
  */
 export async function migratePinsFromLocalStorage(): Promise<void> {
+  if (migrationDone) return;
+  migrationDone = true;
   try {
     const playlistsRaw = localStorage.getItem(LS_PINNED_PLAYLISTS);
     const albumsRaw = localStorage.getItem(LS_PINNED_ALBUMS);
