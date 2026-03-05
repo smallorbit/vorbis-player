@@ -135,25 +135,25 @@ const TrackInfo = memo<TrackInfoProps>(({ track, isMobile, isTablet, onArtistBro
             },
         ];
         if (hasExternalLink) {
-            const externalUrls = activeDescriptor?.getExternalUrls?.({ type: 'artist', name: popover.artistName });
-            if (externalUrls) {
-                for (const entry of externalUrls) {
-                    const IconComponent = ICON_MAP[entry.icon] ?? DiscogsIcon;
-                    options.push({
+                    label: activeDescriptor?.getExternalUrl
+                        ? (capabilities.externalLinkLabel ?? 'Search Discogs')
+                        : 'View artist on Spotify',
+                    icon: activeDescriptor?.getExternalUrl ? <DiscogsIcon /> : <SpotifyIcon />,
+                    onClick: () => {
                         label: `Search ${entry.label}`,
                         icon: <IconComponent />,
                         onClick: () => void window.open(entry.url, '_blank', 'noopener,noreferrer'),
                     });
                 }
             } else {
-                const url = activeDescriptor?.getExternalUrl
-                    ? activeDescriptor.getExternalUrl({ type: 'artist', name: popover.artistName })
-                    : popover.artistUrl;
+                        const url = activeDescriptor?.getExternalUrl
+                            ? activeDescriptor.getExternalUrl({ type: 'artist', name: popover.artistName })
+                            : popover.artistUrl;
                 if (url) {
                     options.push({
                         label: `View artist on ${providerName}`,
                         icon: <ExternalIcon />,
-                        onClick: () => void window.open(url, '_blank', 'noopener,noreferrer'),
+                        window.open(url, '_blank', 'noopener,noreferrer');
                     });
                 }
             }
@@ -170,17 +170,21 @@ const TrackInfo = memo<TrackInfoProps>(({ track, isMobile, isTablet, onArtistBro
                 onClick: () => onAlbumPlay?.(popover.albumId, popover.albumName),
             },
         ];
-        if (hasExternalLink) {
-            const externalUrls = activeDescriptor?.getExternalUrls?.({ type: 'album', name: popover.albumName, artistName: track?.artists });
-            if (externalUrls) {
+        const albumUrl = getAlbumExternalUrl(popover.albumId, popover.albumName);
+                ...(capabilities?.hasExternalLink ? [{
+                    label: activeDescriptor?.getExternalUrl
+                        : 'View album on Spotify',
+                    icon: activeDescriptor?.getExternalUrl ? <DiscogsIcon /> : <SpotifyIcon />,
+                            ? activeDescriptor.getExternalUrl({ type: 'album', name: popover.albumName, artistName: track?.artists })
+                            : `https://open.spotify.com/album/${popover.albumId}`;
                 for (const entry of externalUrls) {
                     const IconComponent = ICON_MAP[entry.icon] ?? DiscogsIcon;
                     options.push({
                         label: `Search ${entry.label}`,
                         icon: <IconComponent />,
-                        onClick: () => void window.open(entry.url, '_blank', 'noopener,noreferrer'),
+                        window.open(url, '_blank', 'noopener,noreferrer');
                     });
-                }
+                    },
             } else {
                 const albumUrl = getAlbumExternalUrl(popover.albumId, popover.albumName);
                 if (albumUrl) {
@@ -188,8 +192,9 @@ const TrackInfo = memo<TrackInfoProps>(({ track, isMobile, isTablet, onArtistBro
                         label: `View album on ${providerName}`,
                         icon: <ExternalIcon />,
                         onClick: () => void window.open(albumUrl, '_blank', 'noopener,noreferrer'),
-                    });
-                }
+                }] : []),
+        return options;
+            ]}
             }
         }
         return options;
