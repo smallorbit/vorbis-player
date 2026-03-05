@@ -45,6 +45,7 @@ export interface MKLibraryCollection {
   type: string;
   attributes: {
     name: string;
+    artistName?: string;
     description?: { standard?: string };
     artwork?: MKArtworkDescriptor;
     trackCount?: number;
