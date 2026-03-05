@@ -78,6 +78,9 @@ const TrackInfo = memo<TrackInfoProps>(({ track, isMobile, isTablet, onArtistBro
         if (activeDescriptor?.getExternalUrl) {
             return activeDescriptor.getExternalUrl({ type: 'album', name: albumName, artistName: track?.artists });
         }
+        if (track?.provider === 'apple-music') {
+            return `https://music.apple.com/album/${albumId}`;
+        }
         if (track?.provider === 'spotify') {
             return `https://open.spotify.com/album/${albumId}`;
         }
