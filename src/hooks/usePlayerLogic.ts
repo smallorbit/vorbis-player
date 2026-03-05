@@ -24,7 +24,7 @@ export function mediaTrackToTrack(m: MediaTrack): Track {
     album_id: m.albumId,
     track_number: m.trackNumber,
     duration_ms: m.durationMs,
-    uri: m.provider === 'dropbox' ? '' : m.playbackRef.ref,
+    uri: m.provider === 'spotify' ? m.playbackRef.ref : '',
     image: m.image,
   };
 }
@@ -59,7 +59,7 @@ export function usePlayerLogic() {
 
   const { activeDescriptor } = useProviderContext();
 
-  /** When provider is Dropbox, holds the MediaTrack[] for playback; otherwise empty. */
+  /** For non-Spotify providers, holds the MediaTrack[] for playback; otherwise empty. */
   const mediaTracksRef = useRef<MediaTrack[]>([]);
 
   // Refs so the provider subscription handler always sees the latest values
@@ -75,7 +75,7 @@ export function usePlayerLogic() {
   // Keep mediaTracksRef.current in the same order as `tracks` so index-based
   // playback is always correct, even after shuffle is toggled.
   useLayoutEffect(() => {
-    if (activeDescriptor?.id !== 'dropbox') return;
+    if (!activeDescriptor || activeDescriptor.id === 'spotify') return;
     const mediaTracks = mediaTracksRef.current;
     if (mediaTracks.length === 0 || mediaTracks.length !== tracks.length) return;
     const idToMedia = new Map(mediaTracks.map(m => [m.id, m]));
@@ -111,7 +111,8 @@ export function usePlayerLogic() {
 
   const handlePlaylistSelect = useCallback(
     async (playlistId: string) => {
-      if (activeDescriptor?.id === 'dropbox') {
+      if (activeDescriptor && activeDescriptor.id !== 'spotify') {
+        const providerId = activeDescriptor.id;
         setError(null);
         setIsLoading(true);
         setSelectedPlaylistId(playlistId);
@@ -120,11 +121,15 @@ export function usePlayerLogic() {
           const catalog = activeDescriptor.catalog;
           const isLiked = playlistId === LIKED_SONGS_ID;
           const collectionId = isLiked ? '' : isAlbumId(playlistId) ? extractAlbumId(playlistId) : playlistId;
-          const collectionKind = isLiked ? 'liked' as const : isAlbumId(playlistId) ? 'album' as const : 'folder' as const;
-          const collectionRef = { provider: 'dropbox' as const, kind: collectionKind, id: collectionId };
+          const collectionKind: 'liked' | 'album' | 'playlist' | 'folder' = isLiked
+            ? 'liked'
+            : isAlbumId(playlistId)
+              ? 'album'
+              : providerId === 'dropbox' ? 'folder' : 'playlist';
+          const collectionRef = { provider: providerId, kind: collectionKind, id: collectionId } as const;
           const list = await catalog.listTracks(collectionRef);
           if (list.length === 0) {
-            setError('No tracks found in this folder.');
+            setError('No tracks found in this collection.');
             setTracks([]);
             setOriginalTracks([]);
             setCurrentTrackIndex(0);
@@ -134,7 +139,6 @@ export function usePlayerLogic() {
           const trackList = list.map(mediaTrackToTrack);
           setOriginalTracks(trackList);
           if (shuffleEnabled) {
-            // Shuffle both the Track[] and MediaTrack[] together so indices stay aligned.
             const indices = shuffleArray(list.map((_, i) => i));
             mediaTracksRef.current = indices.map(i => list[i]);
             setTracks(indices.map(i => trackList[i]));
@@ -146,7 +150,7 @@ export function usePlayerLogic() {
           setIsLoading(false);
           await playTrack(0);
         } catch (err) {
-          setError(err instanceof Error ? err.message : 'Failed to load folder.');
+          setError(err instanceof Error ? err.message : 'Failed to load collection.');
           setTracks([]);
           setOriginalTracks([]);
           setCurrentTrackIndex(0);
