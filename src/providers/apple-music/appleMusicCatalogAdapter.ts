@@ -47,6 +47,7 @@ function appleCollectionToMediaCollection(
     description: attrs.description?.standard ?? null,
     imageUrl: formatArtworkUrl(attrs.artwork, 300),
     trackCount: attrs.trackCount,
+    ownerName: attrs.artistName ?? null,
   };
 }
 
