@@ -1,6 +1,6 @@
 # Vorbis Player
 
-A visually immersive Spotify music player built with React, featuring customizable visual effects, animated background visualizers, and a fully responsive design.
+A visually immersive music player built with React, featuring customizable visual effects, animated background visualizers, and a fully responsive design. Supports **Spotify**, **Dropbox**, and **Apple Music** as music sources.
 
 <img src="src/assets/vorbis-player-full-screenshot.png" alt="Vorbis Player (Full)" width="600">
 <img src="src/assets/vorbis-player-playlist-screenshot.png" alt="Vorbis Player - Playlist" width="600">
@@ -8,9 +8,10 @@ A visually immersive Spotify music player built with React, featuring customizab
 
 ## Features
 
-- **Multi-Provider Support**: Stream from Spotify or your personal Dropbox music library; switch providers from app settings
+- **Multi-Provider Support**: Stream from Spotify, your personal Dropbox music library, or Apple Music; switch providers from app settings
 - **Spotify Integration**: Stream music from your Spotify account (Premium required)
 - **Dropbox Integration**: Browse and play audio files (MP3, FLAC, OGG, M4A, WAV) stored in your Dropbox
+- **Apple Music Integration**: Stream from your Apple Music library (subscription required)
 - **Playlists & Albums**: Browse, search, sort, filter, and pin your playlists and albums
 - **Liked Songs**: Play your Liked Songs collection with automatic shuffle (both Spotify and Dropbox)
 - **Visual Effects**: Dynamic glow effects with configurable intensity and animation rate
@@ -29,9 +30,10 @@ A visually immersive Spotify music player built with React, featuring customizab
 ### Prerequisites
 
 - Node.js 18+ and npm
-- A Spotify Premium account and/or a Dropbox account with music files
+- A Spotify Premium account, a Dropbox account with music files, and/or an Apple Music subscription
 - Access to [Spotify Developer Dashboard](https://developer.spotify.com/dashboard) (for Spotify)
 - Access to [Dropbox Developer Console](https://www.dropbox.com/developers/apps) (for Dropbox)
+- Access to [Apple Developer Portal](https://developer.apple.com) (for Apple Music — requires Apple Developer Program membership)
 
 ### Installation
 
@@ -51,7 +53,11 @@ A visually immersive Spotify music player built with React, featuring customizab
    - See the full [Dropbox Setup Guide](./docs/providers/dropbox-setup.md) for step-by-step instructions
    - Short version: create an app at [Dropbox Developer Console](https://www.dropbox.com/developers/apps), enable `files.metadata.read` and `files.content.read` permissions, add redirect URI `http://127.0.0.1:3000/auth/dropbox/callback`, copy your App Key
 
-4. **Configure environment**
+4. **Set up Apple Music** *(optional — only needed for Apple Music playback)*
+   - See the full [Apple Music Setup Guide](./docs/providers/apple-music-setup.md) for step-by-step instructions
+   - Short version: create a MusicKit identifier and private key in the [Apple Developer Portal](https://developer.apple.com), generate a JWT developer token, add it to `.env.local`
+
+5. **Configure environment**
 
    ```bash
    cp .env.example .env.local
@@ -71,18 +77,25 @@ A visually immersive Spotify music player built with React, featuring customizab
    VITE_DROPBOX_CLIENT_ID="your_dropbox_app_key_here"
    ```
 
-   If `VITE_DROPBOX_CLIENT_ID` is omitted, the Dropbox provider is disabled and the app runs Spotify-only.
+   Add this line to also enable Apple Music:
 
-5. **Start the app**
+   ```
+   VITE_APPLE_MUSIC_DEVELOPER_TOKEN="your_jwt_developer_token_here"
+   ```
+
+   If `VITE_DROPBOX_CLIENT_ID` is omitted, the Dropbox provider is disabled. If `VITE_APPLE_MUSIC_DEVELOPER_TOKEN` is omitted, Apple Music will appear in the provider picker but fail to connect at runtime.
+
+6. **Start the app**
 
    ```bash
    npm run dev
    ```
 
-6. **First run**
+7. **First run**
    - Open <http://127.0.0.1:3000>
-   - Click "Connect Spotify" to authenticate with Spotify, **or** open App Settings (gear icon) and connect Dropbox
-   - Choose from your playlists/albums (Spotify) or browse your Dropbox folders
+   - Choose a provider: Spotify, Dropbox, or Apple Music
+   - Authenticate with your chosen provider
+   - Browse your playlists, albums, and liked songs
 
 ## User Interface
 
@@ -140,6 +153,13 @@ When Dropbox is active:
 - Track metadata (title, artist, album, cover art) is read from ID3 tags embedded in MP3 files
 - Liked Songs are supported for Dropbox — like/unlike tracks, browse your liked collection, and manage via Export/Import and Refresh Metadata in settings
 - "Open in Spotify" links are hidden for Dropbox tracks
+
+When Apple Music is active:
+- The library shows your Apple Music library playlists and albums
+- Playback uses MusicKit JS — Apple's own playback engine handles streaming
+- Liked Songs uses Apple Music's ratings API ("loved" songs = liked songs)
+- "Open in Apple Music" links are available for all tracks
+- Authentication uses a popup-based Apple ID sign-in (no redirect URL needed)
 
 ### Visual Effects Menu
 
@@ -211,7 +231,8 @@ src/
 ├── providers/               # Multi-provider system
 │   ├── registry.ts          # Singleton ProviderRegistry
 │   ├── spotify/             # Spotify auth, catalog, playback adapters
-│   └── dropbox/             # Dropbox auth, catalog, playback adapters + art/catalog cache
+│   ├── dropbox/             # Dropbox auth, catalog, playback adapters + art/catalog cache
+│   └── apple-music/         # Apple Music auth, catalog, playback adapters (MusicKit JS)
 ├── services/                # Spotify API, Playback SDK, IndexedDB cache
 ├── utils/                   # Utility functions (color, sizing, filters)
 ├── styles/                  # Theme, global styles, CSS animations
@@ -224,8 +245,8 @@ src/
 
 - **Frontend**: React 18 + TypeScript + Vite
 - **Styling**: styled-components with theme system + Radix UI primitives
-- **Audio**: Spotify Web Playback SDK (lazy-loaded on demand) + Web API; HTML5 Audio for Dropbox streams
-- **Authentication**: PKCE OAuth 2.0 (Spotify and Dropbox)
+- **Audio**: Spotify Web Playback SDK (lazy-loaded on demand) + Web API; HTML5 Audio for Dropbox streams; MusicKit JS for Apple Music
+- **Authentication**: PKCE OAuth 2.0 (Spotify and Dropbox); MusicKit JS popup auth (Apple Music)
 - **Testing**: Vitest + React Testing Library
 - **Performance**: Web Workers, LRU caching, IndexedDB persistence, lazy loading, container queries
 
@@ -242,6 +263,7 @@ For detailed instructions, see [deploy-to-vercel.md](./docs/deployment/deploy-to
    - `VITE_SPOTIFY_CLIENT_ID`: Your Spotify app's Client ID
    - `VITE_SPOTIFY_REDIRECT_URI`: `https://your-app.vercel.app/auth/spotify/callback`
    - `VITE_DROPBOX_CLIENT_ID`: Your Dropbox app key *(optional — omit to disable Dropbox)*
+   - `VITE_APPLE_MUSIC_DEVELOPER_TOKEN`: Your MusicKit JWT developer token *(optional — omit to disable Apple Music)*
    - Update the Dropbox app's redirect URI to `https://your-app.vercel.app/auth/dropbox/callback`
 4. Deploy!
 
@@ -284,6 +306,18 @@ The `dist/` folder contains static files deployable to any web hosting service.
 ### Dropbox: Album Art Not Showing
 - Place an image file (`cover.jpg`, `folder.png`, `album.jpg`, etc.) in the same folder as your audio files
 - Art is cached in IndexedDB with a 7-day TTL; clearing site data forces a fresh download
+
+### Apple Music: Auth Popup Blocked
+- Allow popups for `127.0.0.1:3000` in your browser settings
+- MusicKit's `authorize()` must be triggered from a user gesture (button click)
+
+### Apple Music: No Library Content
+- Ensure your Apple Music subscription is active
+- Add music to your library in the Apple Music app first — the API only returns content explicitly added to your library
+
+### Apple Music: Developer Token Errors
+- Developer tokens expire after max 6 months — regenerate using the script in the [Apple Music Setup Guide](./docs/providers/apple-music-setup.md)
+- Ensure `VITE_APPLE_MUSIC_DEVELOPER_TOKEN` is set in `.env.local` and the dev server has been restarted
 
 ### Visual Effects Issues
 - Clear localStorage to reset visual settings to defaults

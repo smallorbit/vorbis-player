@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) and other AI assista
 
 ## Project Overview
 
-**Vorbis Player** is a React/TypeScript music player with customizable visual effects and a pluggable provider architecture. Supports **Spotify** (streaming, Premium required) and **Dropbox** (personal files via HTML5 Audio).
+**Vorbis Player** is a React/TypeScript music player with customizable visual effects and a pluggable provider architecture. Supports **Spotify** (streaming, Premium required), **Dropbox** (personal files via HTML5 Audio), and **Apple Music** (streaming via MusicKit JS, subscription required).
 
 Key capabilities: multi-provider auth/catalog/playback adapters, background visualizers, album art flip menu, bottom bar, swipe gestures (drawer toggles), keyboard shortcuts, IndexedDB caching, responsive layout.
 
@@ -61,7 +61,7 @@ npm run deploy:preview # Deploy preview
 src/
 ├── components/      # React components (~42 files); controls/, styled/, visualizers/ subdirs
 ├── constants/       # playlist.ts — ALBUM_ID_PREFIX, LIKED_SONGS_ID, helpers
-├── providers/       # Multi-provider system; spotify/ and dropbox/ subdirs
+├── providers/       # Multi-provider system; spotify/, dropbox/, and apple-music/ subdirs
 ├── hooks/           # 22 custom hooks
 ├── services/        # spotify.ts (auth + API), spotifyPlayer.ts (lazy SDK loading + playback), cache/ (IndexedDB)
 ├── utils/           # colorExtractor, colorUtils, sizingUtils, playlistFilters, etc.
@@ -96,13 +96,14 @@ Defined in `src/types/providers.ts` and `src/types/domain.ts`.
 **Provider interfaces**: `AuthProvider`, `CatalogProvider`, `PlaybackProvider`
 **Registration**: `src/providers/registry.ts` — singleton `providerRegistry`; providers self-register on import
 **Dropbox** only registers when `VITE_DROPBOX_CLIENT_ID` is set
+**Apple Music** always registers (like Spotify); requires `VITE_APPLE_MUSIC_DEVELOPER_TOKEN` at runtime
 
 **Domain types** (`src/types/domain.ts`):
 - `MediaTrack` — provider-agnostic track with `playbackRef`
 - `MediaCollection` — provider-agnostic collection (playlist or album)
 - `CollectionRef` — `{ provider, kind, id }`; serialized via `collectionRefToKey` / `keyToCollectionRef`
 
-**Capability-aware UI**: check `activeDescriptor.capabilities` before rendering provider-specific controls (`hasSaveTrack`, `hasExternalLink`, `hasLikedCollection`). Both Spotify and Dropbox support `hasSaveTrack` and `hasLikedCollection`.
+**Capability-aware UI**: check `activeDescriptor.capabilities` before rendering provider-specific controls (`hasSaveTrack`, `hasExternalLink`, `hasLikedCollection`). All three providers support `hasSaveTrack`, `hasLikedCollection`, and `hasExternalLink`.
 
 **Dropbox folder structure**:
 ```
@@ -115,9 +116,20 @@ Folders containing audio files become albums; parent folder = artist. A syntheti
 
 **Dropbox Liked Songs**: Stored in IndexedDB (`vorbis-dropbox-art` database v3, `likes` store). Mutations dispatch `vorbis-dropbox-likes-changed` events for real-time UI updates. Settings menu exposes Export/Import (JSON) and Refresh Metadata operations.
 
-**Token refresh**: Both providers preserve refresh tokens during transient failures and proactively refresh before expiry. Spotify uses a 5-minute buffer; Dropbox uses a 60-second buffer. On 401/400 errors Dropbox performs full logout; on 5xx or network errors it preserves the refresh token for retry.
+**Apple Music provider** (`src/providers/apple-music/`):
+- Uses MusicKit JS v3 SDK, loaded lazily by `appleMusicService.ensureLoaded()` — no global script tag
+- Auth is popup-based (`MusicKit.authorize()`), not redirect-based — `handleCallback()` always returns `false`
+- Catalog maps Apple Music library API responses to domain types; uses offset-based pagination (limit=100)
+- Liked songs use Apple Music's ratings API (`PUT /v1/me/ratings/songs/{id}` with value=1 to love, `DELETE` to unlove)
+- Playback uses MusicKit's built-in engine; `playbackTimeDidChange` events are throttled to 250ms
+- Type declarations in `appleMusicTypes.ts` use plain exports (no `namespace`/`enum` — `erasableSyntaxOnly` requirement)
+- User token persisted in `localStorage` key `vorbis-player-apple-music-token`
+
+**Token refresh**: All providers preserve refresh tokens during transient failures and proactively refresh before expiry. Spotify uses a 5-minute buffer; Dropbox uses a 60-second buffer. On 401/400 errors Dropbox performs full logout; on 5xx or network errors it preserves the refresh token for retry.
 
 **Spotify SDK loading**: The Spotify Web Playback SDK is loaded lazily by `SpotifyPlayerService.loadSDK()` — no global script tag in `index.html`. The SDK is only injected when the Spotify provider activates.
+
+**Apple Music SDK loading**: MusicKit JS v3 is loaded lazily by `appleMusicService.ensureLoaded()` — injected as a script tag to `<head>` on demand. HMR-safe via `import.meta.hot?.data`.
 
 ### Responsive Sizing
 
@@ -162,6 +174,11 @@ Optional (enables Dropbox):
 VITE_DROPBOX_CLIENT_ID="your_dropbox_app_key"
 ```
 
+Optional (enables Apple Music):
+```
+VITE_APPLE_MUSIC_DEVELOPER_TOKEN="your_musickit_jwt_token"
+```
+
 Vite dev server: host `127.0.0.1`, port `3000` (required for Spotify OAuth).
 Path alias: `@/` → `./src/` (e.g. `import { x } from '@/hooks/usePlayerState'`).
 
@@ -193,6 +210,13 @@ Path alias: `@/` → `./src/` (e.g. `import { x } from '@/hooks/usePlayerState'`
 - Art missing → place `cover.jpg` (or `folder.jpg`, `album.jpg`, `front.jpg`) alongside audio files
 - Liked songs missing → check IndexedDB `likes` store; use Settings → Refresh Metadata to re-sync
 - Auth loop → on 401/400 Dropbox performs full logout; on 5xx/network errors refresh token is preserved for retry
+
+**Apple Music:**
+- Provider not connecting → `VITE_APPLE_MUSIC_DEVELOPER_TOKEN` must be set; restart dev server
+- Auth popup blocked → browser blocks popups not triggered by user gesture; ensure `authorize()` called from click handler
+- No library content → user must have an active Apple Music subscription and content added to their library
+- Developer token expired → JWT tokens have max 6-month lifetime; regenerate from private key
+- Type errors with MusicKit types → use plain exports from `appleMusicTypes.ts` (no `namespace`/`enum` due to `erasableSyntaxOnly`)
 
 **Visual Effects:**
 - Album art filters not working → always pass `albumFilters={albumFilters}` to `AlbumArt`
