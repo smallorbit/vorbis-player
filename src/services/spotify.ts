@@ -4,6 +4,7 @@
  * Handles OAuth 2.0 PKCE authentication and Spotify Web API requests.
  */
 
+import type { ProviderId } from '../types/domain';
 import { ALBUM_ID_PREFIX } from '../constants/playlist';
 import * as libraryCache from './cache/libraryCache';
 
@@ -102,11 +103,12 @@ interface TokenData {
 
 export interface ArtistInfo {
   name: string;
-  spotifyUrl: string;
+  url: string;
 }
 
 export interface Track {
   id: string;
+  provider?: ProviderId;
   name: string;
   artists: string;
   artistsData?: ArtistInfo[];
@@ -205,7 +207,7 @@ function buildArtistsData(artists?: SpotifyArtist[]): ArtistInfo[] | undefined {
     const url = artist.external_urls?.spotify
       ?? (artist.id ? `https://open.spotify.com/artist/${artist.id}` : '');
     if (url) {
-      data.push({ name: artist.name, spotifyUrl: url });
+      data.push({ name: artist.name, url });
     }
   }
   return data.length > 0 ? data : undefined;

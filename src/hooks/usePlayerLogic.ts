@@ -18,8 +18,10 @@ import { shuffleArray } from '@/utils/shuffleArray';
 export function mediaTrackToTrack(m: MediaTrack): Track {
   return {
     id: m.id,
+    provider: m.provider,
     name: m.name,
     artists: m.artists,
+    artistsData: m.artistsData?.map((a) => ({ name: a.name, url: a.url ?? '' })),
     album: m.album,
     album_id: m.albumId,
     track_number: m.trackNumber,
