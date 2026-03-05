@@ -159,7 +159,7 @@ describe('AppleMusicCatalogAdapter', () => {
     await adapter.setTrackSaved('track1', true);
 
     expect(fetchSpy).toHaveBeenCalledWith(
-      'https://api.music.apple.com/v1/me/ratings/songs/track1',
+      'https://api.music.apple.com/v1/me/ratings/library-songs/track1',
       expect.objectContaining({
         method: 'PUT',
         body: JSON.stringify({ type: 'rating', attributes: { value: 1 } }),
@@ -177,7 +177,7 @@ describe('AppleMusicCatalogAdapter', () => {
     await adapter.setTrackSaved('track1', false);
 
     expect(fetchSpy).toHaveBeenCalledWith(
-      'https://api.music.apple.com/v1/me/ratings/songs/track1',
+      'https://api.music.apple.com/v1/me/ratings/library-songs/track1',
       expect.objectContaining({ method: 'DELETE' }),
     );
 

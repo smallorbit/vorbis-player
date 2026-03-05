@@ -96,7 +96,7 @@ export class AppleMusicCatalogAdapter implements CatalogProvider {
   async getLikedCount(signal?: AbortSignal): Promise<number> {
     const instance = await appleMusicService.ensureLoaded();
     try {
-      const response = await instance.api.music('/v1/me/ratings/songs', { limit: 1 });
+      const response = await instance.api.music('/v1/me/ratings/library-songs', { limit: 1 });
       const data = response.data as MKPaginatedResponse<unknown>;
       return data.meta?.total ?? data.data.length;
     } catch (err) {
@@ -109,7 +109,7 @@ export class AppleMusicCatalogAdapter implements CatalogProvider {
   async isTrackSaved(trackId: string): Promise<boolean> {
     const instance = await appleMusicService.ensureLoaded();
     try {
-      const response = await instance.api.music(`/v1/me/ratings/songs/${trackId}`);
+      const response = await instance.api.music(`/v1/me/ratings/library-songs/${trackId}`);
       const data = response.data as MKPaginatedResponse<unknown>;
       return data.data.length > 0;
     } catch {
@@ -123,7 +123,7 @@ export class AppleMusicCatalogAdapter implements CatalogProvider {
     const token = instance.musicUserToken;
     const devToken = instance.developerToken;
 
-    const url = `https://api.music.apple.com/v1/me/ratings/songs/${trackId}`;
+    const url = `https://api.music.apple.com/v1/me/ratings/library-songs/${trackId}`;
     const headers: Record<string, string> = {
       Authorization: `Bearer ${devToken}`,
       'Music-User-Token': token,
@@ -155,7 +155,7 @@ export class AppleMusicCatalogAdapter implements CatalogProvider {
     // Fetch rated songs then resolve to full track data
     const ratings = await this.fetchAllPages<MKMediaItem>(
       instance,
-      '/v1/me/ratings/songs',
+      '/v1/me/ratings/library-songs',
       signal,
     );
 
