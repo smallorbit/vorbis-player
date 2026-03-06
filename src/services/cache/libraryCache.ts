@@ -442,7 +442,7 @@ async function migrateFromLocalStorage(): Promise<void> {
 
 const LIKED_SONGS_TRACK_LIST_ID = 'liked-songs';
 
-export interface ClearCacheOptions {
+interface ClearCacheOptions {
   /** When true, liked songs track list is also cleared. Default: false (preserve). */
   clearLikes?: boolean;
 }

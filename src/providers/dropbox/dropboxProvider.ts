@@ -62,4 +62,3 @@ if (DROPBOX_CLIENT_ID) {
   providerRegistry.register(dropboxDescriptor);
 }
 
-export { dropboxDescriptor };
