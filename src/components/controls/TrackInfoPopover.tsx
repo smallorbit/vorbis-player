@@ -159,7 +159,7 @@ export const DiscogsIcon = () => (
   </svg>
 );
 
-export const MusicBrainzIcon = () => (
+const MusicBrainzIcon = () => (
   <svg viewBox="0 0 24 24" fill="currentColor">
     <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm0 1.5c5.799 0 10.5 4.701 10.5 10.5S17.799 22.5 12 22.5 1.5 17.799 1.5 12 6.201 1.5 12 1.5zM8.5 6.5v11h2v-4h3c1.933 0 3.5-1.567 3.5-3.5S15.433 6.5 13.5 6.5h-5zm2 2h3c.828 0 1.5.672 1.5 1.5s-.672 1.5-1.5 1.5h-3v-3z" />
   </svg>

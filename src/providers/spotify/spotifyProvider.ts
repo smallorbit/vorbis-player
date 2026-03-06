@@ -26,4 +26,3 @@ const spotifyDescriptor: ProviderDescriptor = {
 // Self-register on import
 providerRegistry.register(spotifyDescriptor);
 
-export { spotifyDescriptor };
