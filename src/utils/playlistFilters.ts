@@ -15,7 +15,7 @@ export type AlbumSortOption =
   | 'release-oldest'
   | 'recently-added';
 
-export type YearFilterOption =
+type YearFilterOption =
   | 'all'
   | '2020s'
   | '2010s'
