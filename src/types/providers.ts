@@ -80,6 +80,8 @@ export interface ProviderDescriptor {
   playback: PlaybackProvider;
   /** Build an external URL for an artist or album (e.g. Discogs search). */
   getExternalUrl?(info: { type: 'artist' | 'album'; name: string; artistName?: string }): string;
+  /** Build multiple external URLs for an artist or album. Takes precedence over getExternalUrl. */
+  getExternalUrls?(info: { type: 'artist' | 'album'; name: string; artistName?: string }): Array<{ label: string; url: string; icon: string }>;
 }
 
 /** Registry of available providers; used by app to resolve active provider by id. */
