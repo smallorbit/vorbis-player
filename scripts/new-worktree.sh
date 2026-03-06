@@ -30,6 +30,15 @@ else
   echo "  WARNING: No .env.local found in main repo — copy it manually."
 fi
 
+echo "Copying Claude settings..."
+mkdir -p "${WORKTREE_PATH}/.claude"
+for f in settings.local.json settings.json; do
+  if [ -f "${REPO_ROOT}/.claude/${f}" ]; then
+    cp "${REPO_ROOT}/.claude/${f}" "${WORKTREE_PATH}/.claude/${f}"
+    echo "  .claude/${f} copied."
+  fi
+done
+
 echo ""
 echo "Done! Open a new terminal and run:"
 echo ""
