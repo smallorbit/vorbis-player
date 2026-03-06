@@ -139,7 +139,7 @@ const TrackInfo = memo<TrackInfoProps>(({ track, isMobile, isTablet, onArtistBro
                     options.push({
                         label: `Search ${entry.label}`,
                         icon: <IconComponent />,
-                        onClick: () => window.open(entry.url, '_blank', 'noopener,noreferrer'),
+                        onClick: () => void window.open(entry.url, '_blank', 'noopener,noreferrer'),
                     });
                 }
             } else {
@@ -150,7 +150,7 @@ const TrackInfo = memo<TrackInfoProps>(({ track, isMobile, isTablet, onArtistBro
                     options.push({
                         label: `View artist on ${providerName}`,
                         icon: <ExternalIcon />,
-                        onClick: () => window.open(url, '_blank', 'noopener,noreferrer'),
+                        onClick: () => void window.open(url, '_blank', 'noopener,noreferrer'),
                     });
                 }
             }
@@ -175,7 +175,7 @@ const TrackInfo = memo<TrackInfoProps>(({ track, isMobile, isTablet, onArtistBro
                     options.push({
                         label: `Search ${entry.label}`,
                         icon: <IconComponent />,
-                        onClick: () => window.open(entry.url, '_blank', 'noopener,noreferrer'),
+                        onClick: () => void window.open(entry.url, '_blank', 'noopener,noreferrer'),
                     });
                 }
             } else {
@@ -184,7 +184,7 @@ const TrackInfo = memo<TrackInfoProps>(({ track, isMobile, isTablet, onArtistBro
                     options.push({
                         label: `View album on ${providerName}`,
                         icon: <ExternalIcon />,
-                        onClick: () => window.open(albumUrl, '_blank', 'noopener,noreferrer'),
+                        onClick: () => void window.open(albumUrl, '_blank', 'noopener,noreferrer'),
                     });
                 }
             }
