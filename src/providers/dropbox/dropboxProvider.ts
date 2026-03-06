@@ -50,6 +50,24 @@ if (DROPBOX_CLIENT_ID) {
         },
       ];
     },
+    getExternalUrls({ type, name, artistName }) {
+      const isArtist = type === 'artist';
+      const query = isArtist ? name : (artistName ? `${artistName} ${name}` : name);
+      const discogsType = isArtist ? 'artist' : 'release';
+      const mbType = isArtist ? 'artist' : 'release';
+      return [
+        {
+          label: 'Discogs',
+          url: `https://www.discogs.com/search/?q=${encodeURIComponent(query)}&type=${discogsType}`,
+          icon: 'discogs',
+        },
+        {
+          label: 'MusicBrainz',
+          url: `https://musicbrainz.org/search?query=${encodeURIComponent(query)}&type=${mbType}`,
+          icon: 'musicbrainz',
+        },
+      ];
+    },
   };
 
   providerRegistry.register(dropboxDescriptor);
