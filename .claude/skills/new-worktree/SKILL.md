@@ -1,6 +1,6 @@
 ---
 name: new-worktree
-description: Create a new git worktree from the current branch, install dependencies, and copy the env file. Use when the user wants to work in parallel across worktrees.
+description: Create a new git worktree from the current branch, install dependencies, copy the env file, and copy Claude settings. Use when the user wants to work in parallel across worktrees.
 ---
 
 # New Worktree
