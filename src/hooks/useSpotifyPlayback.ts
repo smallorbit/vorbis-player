@@ -8,7 +8,7 @@ import type { MediaTrack } from '@/types/domain';
 interface UseSpotifyPlaybackProps {
   tracks: Track[];
   setCurrentTrackIndex: (index: number) => void;
-  /** When set, playTrack uses this for Dropbox playback instead of Spotify URI. */
+  /** When set, playTrack uses this for non-Spotify provider playback. */
   activeDescriptor?: ProviderDescriptor | null;
   mediaTracksRef?: React.MutableRefObject<MediaTrack[]>;
 }
@@ -59,17 +59,17 @@ export const useSpotifyPlayback = ({
   }, [activateDevice]);
 
   const playTrack = useCallback(async (index: number, skipOnError = false) => {
-    if (activeDescriptor?.id === 'dropbox') {
+    if (activeDescriptor && activeDescriptor.id !== 'spotify') {
       const mediaTracks = mediaTracksRef?.current ?? [];
       if (!mediaTracks[index]) {
-        console.error('[DEBUG] playTrack: No Dropbox track at index', index, 'mediaTracks length:', mediaTracks.length);
+        console.error(`[${activeDescriptor.id}] playTrack: No track at index`, index, 'mediaTracks length:', mediaTracks.length);
         return;
       }
       try {
         await activeDescriptor.playback.playTrack(mediaTracks[index]);
         setCurrentTrackIndex(index);
       } catch (error) {
-        console.error('[Dropbox] Failed to play track:', error);
+        console.error(`[${activeDescriptor.id}] Failed to play track:`, error);
         if (skipOnError && index < mediaTracks.length - 1) {
           setTimeout(() => playTrack(index + 1, skipOnError), 500);
         }

@@ -351,7 +351,7 @@ describe('Spotify API', () => {
 
       const tracks = await mod.getPlaylistTracks('playlist-urls');
       expect(tracks[0].artistsData).toEqual([
-        { name: 'Artist One', spotifyUrl: 'https://open.spotify.com/artist/a1' },
+        { name: 'Artist One', url: 'https://open.spotify.com/artist/a1' },
       ]);
     });
   });

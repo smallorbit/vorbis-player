@@ -30,7 +30,7 @@ export function spotifyTrackToMediaTrack(track: Track): MediaTrack {
     artists: track.artists,
     artistsData: track.artistsData?.map((a) => ({
       name: a.name,
-      url: a.spotifyUrl,
+      url: a.url,
     })),
     album: track.album,
     albumId: track.album_id,
