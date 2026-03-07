@@ -17,10 +17,16 @@ Run the setup script, then tell the user the path to open in a new terminal.
 
 ## Steps
 
-1. Run the script via Bash:
+1. Get the repo root:
 
 ```bash
-cd "$(git rev-parse --show-toplevel)" && bash scripts/new-worktree.sh [name]
+git rev-parse --show-toplevel
 ```
 
-2. Show the user the output, including the `cd ... && claude` line to open in a new terminal.
+2. Run the setup script (use the path from step 1, do NOT chain with `&&`):
+
+```bash
+bash /path/to/repo/scripts/new-worktree.sh [name]
+```
+
+3. Show the user the output, including the `cd ... && claude` line to open in a new terminal.

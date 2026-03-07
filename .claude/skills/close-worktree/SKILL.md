@@ -17,10 +17,16 @@ Run the cleanup script from the **main repo session** (not from inside the workt
 
 ## Steps
 
-1. Run the script via Bash, passing the worktree name:
+1. Get the repo root:
 
 ```bash
-cd "$(git rev-parse --show-toplevel)" && bash scripts/close-worktree.sh <name>
+git rev-parse --show-toplevel
 ```
 
-2. Confirm to the user that the branch was merged and the worktree was removed.
+2. Run the cleanup script (use the path from step 1, do NOT chain with `&&`):
+
+```bash
+bash /path/to/repo/scripts/close-worktree.sh <name>
+```
+
+3. Confirm to the user that the branch was merged and the worktree was removed.
