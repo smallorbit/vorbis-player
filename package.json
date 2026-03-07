@@ -26,10 +26,8 @@
     "capture:mobile": "playwright test --config playwright/capture/capture.config.ts --project mobile"
   },
   "dependencies": {
-    "@types/react-window": "^1.8.8",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "react-window": "^1.8.11",
     "styled-components": "^6.1.12"
   },
   "devDependencies": {

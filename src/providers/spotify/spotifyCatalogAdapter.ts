@@ -21,7 +21,7 @@ import {
 import { ALBUM_ID_PREFIX, isAlbumId, extractAlbumId } from '@/constants/playlist';
 
 /** Map a Spotify Track to a MediaTrack. */
-export function spotifyTrackToMediaTrack(track: Track): MediaTrack {
+function spotifyTrackToMediaTrack(track: Track): MediaTrack {
   return {
     id: track.id,
     provider: 'spotify',
@@ -44,7 +44,7 @@ export function spotifyTrackToMediaTrack(track: Track): MediaTrack {
 }
 
 /** Map a PlaylistInfo to a MediaCollection. */
-export function spotifyPlaylistToMediaCollection(pl: PlaylistInfo): MediaCollection {
+function spotifyPlaylistToMediaCollection(pl: PlaylistInfo): MediaCollection {
   return {
     id: pl.id,
     provider: 'spotify',
@@ -59,7 +59,7 @@ export function spotifyPlaylistToMediaCollection(pl: PlaylistInfo): MediaCollect
 }
 
 /** Map an AlbumInfo to a MediaCollection. */
-export function spotifyAlbumToMediaCollection(album: AlbumInfo): MediaCollection {
+function spotifyAlbumToMediaCollection(album: AlbumInfo): MediaCollection {
   return {
     id: `${ALBUM_ID_PREFIX}${album.id}`,
     provider: 'spotify',

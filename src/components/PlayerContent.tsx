@@ -769,20 +769,18 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
         onShuffleToggle={handleShuffleToggle}
       />
       </ProfiledComponent>
-      {showVisualEffects && (
-        <Suspense fallback={<VisualEffectsLoadingFallback />}>
-          <VisualEffectsMenu
-            isOpen={showVisualEffects}
-            onClose={handleCloseVisualEffects}
-            accentColor={accentColor}
-            onClearCache={handleClearCache}
-            profilerEnabled={profilerEnabled}
-            onProfilerToggle={handleProfilerToggle}
-            visualizerDebugEnabled={visualizerDebugEnabled}
-            onVisualizerDebugToggle={handleVisualizerDebugToggle}
-          />
-        </Suspense>
-      )}
+      <Suspense fallback={<VisualEffectsLoadingFallback />}>
+        <VisualEffectsMenu
+          isOpen={showVisualEffects}
+          onClose={handleCloseVisualEffects}
+          accentColor={accentColor}
+          onClearCache={handleClearCache}
+          profilerEnabled={profilerEnabled}
+          onProfilerToggle={handleProfilerToggle}
+          visualizerDebugEnabled={visualizerDebugEnabled}
+          onVisualizerDebugToggle={handleVisualizerDebugToggle}
+        />
+      </Suspense>
       <Suspense fallback={<PlaylistLoadingFallback />}>
         {isMobile ? (
           <ProfiledComponent id="PlaylistBottomSheet">

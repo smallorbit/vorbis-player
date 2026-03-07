@@ -5,9 +5,9 @@
  */
 
 const DB_NAME = 'vorbis-dropbox-art';
-const DB_VERSION = 3;
+const DB_VERSION = 4;
 const STORE = 'art';
-export const ART_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+const ART_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
 interface CachedArt {
   path: string;
@@ -41,6 +41,9 @@ function openDb(): Promise<IDBDatabase | null> {
       }
       if (!database.objectStoreNames.contains('likes')) {
         database.createObjectStore('likes', { keyPath: 'trackId' });
+      }
+      if (!database.objectStoreNames.contains('durations')) {
+        database.createObjectStore('durations', { keyPath: 'trackId' });
       }
     };
   });
@@ -95,6 +98,44 @@ export async function clearArt(): Promise<void> {
       tx.onerror = () => resolve();
     } catch {
       resolve();
+    }
+  });
+}
+
+export async function putDurationMs(trackId: string, durationMs: number): Promise<void> {
+  const database = await getDb();
+  if (!database) return;
+  try {
+    const tx = database.transaction('durations', 'readwrite');
+    tx.objectStore('durations').put({ trackId, durationMs });
+  } catch {
+    // fire-and-forget
+  }
+}
+
+export async function getDurationsMap(trackIds: string[]): Promise<Map<string, number>> {
+  const result = new Map<string, number>();
+  if (trackIds.length === 0) return result;
+  const database = await getDb();
+  if (!database) return result;
+  return new Promise((resolve) => {
+    try {
+      const tx = database.transaction('durations', 'readonly');
+      const store = tx.objectStore('durations');
+      let pending = trackIds.length;
+      for (const id of trackIds) {
+        const req = store.get(id);
+        req.onsuccess = () => {
+          const entry = req.result as { trackId: string; durationMs: number } | undefined;
+          if (entry && entry.durationMs > 0) result.set(id, entry.durationMs);
+          if (--pending === 0) resolve(result);
+        };
+        req.onerror = () => {
+          if (--pending === 0) resolve(result);
+        };
+      }
+    } catch {
+      resolve(result);
     }
   });
 }

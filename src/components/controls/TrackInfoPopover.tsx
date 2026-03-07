@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect } from 'react';
 import styled from 'styled-components';
 import { theme } from '../../styles/theme';
 
@@ -84,15 +84,6 @@ const OptionButton = styled.button`
 `;
 
 function TrackInfoPopover({ options, anchorRect, onClose }: TrackInfoPopoverProps) {
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  const positionPopover = useCallback(() => {
-    if (!anchorRect) return { x: 0, y: 0 };
-    const x = anchorRect.left + anchorRect.width / 2;
-    const y = anchorRect.bottom + 8;
-    return { x, y };
-  }, [anchorRect]);
-
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -103,14 +94,15 @@ function TrackInfoPopover({ options, anchorRect, onClose }: TrackInfoPopoverProp
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [onClose]);
 
-  const { x, y } = positionPopover();
-
   if (!anchorRect) return null;
+
+  const x = anchorRect.left + anchorRect.width / 2;
+  const y = anchorRect.bottom + 8;
 
   return (
     <>
       <Overlay onClick={onClose} />
-      <PopoverContainer ref={containerRef} $x={x} $y={y}>
+      <PopoverContainer $x={x} $y={y}>
         {options.map((option, index) => (
           <OptionButton
             key={index}
@@ -159,7 +151,7 @@ export const DiscogsIcon = () => (
   </svg>
 );
 
-export const MusicBrainzIcon = () => (
+const MusicBrainzIcon = () => (
   <svg viewBox="0 0 24 24" fill="currentColor">
     <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm0 1.5c5.799 0 10.5 4.701 10.5 10.5S17.799 22.5 12 22.5 1.5 17.799 1.5 12 6.201 1.5 12 1.5zM8.5 6.5v11h2v-4h3c1.933 0 3.5-1.567 3.5-3.5S15.433 6.5 13.5 6.5h-5zm2 2h3c.828 0 1.5.672 1.5 1.5s-.672 1.5-1.5 1.5h-3v-3z" />
   </svg>

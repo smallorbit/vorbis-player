@@ -17,7 +17,7 @@
 import type { CatalogProvider } from '@/types/providers';
 import type { ProviderId, MediaTrack, MediaCollection, CollectionRef } from '@/types/domain';
 import { DropboxAuthAdapter } from './dropboxAuthAdapter';
-import { getArt, putArt, clearArt } from './dropboxArtCache';
+import { getArt, putArt, clearArt, getDurationsMap } from './dropboxArtCache';
 import { bytesToDataUrl } from '@/utils/bytesToDataUrl';
 import {
   getLikedTracks,
@@ -362,6 +362,15 @@ export class DropboxCatalogAdapter implements CatalogProvider {
         const bPath = b.playbackRef.ref;
         return aPath.localeCompare(bPath);
       });
+
+      // Hydrate any previously-discovered durations from IndexedDB cache.
+      const durationsMap = await getDurationsMap(tracks.map((t) => t.id));
+      if (durationsMap.size > 0) {
+        for (const t of tracks) {
+          const cached = durationsMap.get(t.id);
+          if (cached !== undefined) t.durationMs = cached;
+        }
+      }
 
       for (const t of tracks) this.knownTracks.set(t.id, t);
 

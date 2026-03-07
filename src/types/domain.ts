@@ -76,7 +76,7 @@ export interface PlaybackState {
   currentTrackId: string | null;
   currentPlaybackRef: PlaybackItemRef | null;
   /** Enriched metadata read from audio file tags (e.g. ID3). Overrides filename-derived values. */
-  trackMetadata?: Partial<Pick<MediaTrack, 'name' | 'artists' | 'album' | 'image'>>;
+  trackMetadata?: Partial<Pick<MediaTrack, 'name' | 'artists' | 'album' | 'image' | 'durationMs'>>;
   /** Set when the provider encounters a playback error; cleared after one notification cycle. */
   playbackError?: { code: number; message: string };
 }
