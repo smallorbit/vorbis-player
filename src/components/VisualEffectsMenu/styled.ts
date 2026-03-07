@@ -28,7 +28,9 @@ export const DrawerContainer = styled.div<{ $isOpen: boolean; $width: number; $t
   backdrop-filter: blur(${theme.drawer.backdropBlur});
   border-left: 1px solid ${theme.colors.popover.border};
   transform: translateX(${({ $isOpen }) => ($isOpen ? '0' : '100%')});
+  visibility: ${({ $isOpen }) => ($isOpen ? 'visible' : 'hidden')};
   transition: transform ${({ $transitionDuration }) => $transitionDuration}ms ${({ $transitionEasing }) => $transitionEasing},
+            visibility ${({ $transitionDuration }) => $transitionDuration}ms ${({ $transitionEasing }) => $transitionEasing},
             width ${({ $transitionDuration }) => $transitionDuration}ms ${({ $transitionEasing }) => $transitionEasing};
   z-index: ${theme.zIndex.modal};
   overflow-y: auto;
