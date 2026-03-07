@@ -119,6 +119,7 @@ export interface Track {
   uri: string;
   preview_url?: string;
   image?: string;
+  externalUrl?: string;
 }
 
 export interface PlaylistInfo {

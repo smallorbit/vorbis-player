@@ -28,6 +28,7 @@ export function mediaTrackToTrack(m: MediaTrack): Track {
     duration_ms: m.durationMs,
     uri: m.provider === 'spotify' ? m.playbackRef.ref : '',
     image: m.image,
+    externalUrl: m.externalUrl,
   };
 }
 
