@@ -1,4 +1,5 @@
 import React, { memo, useCallback, useState, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 
 import { theme } from '../../styles/theme';
 import { ProfiledComponent } from '@/components/ProfiledComponent';
@@ -287,7 +288,7 @@ const AppSettingsMenu: React.FC<AppSettingsMenuProps> = memo(({
     setTimeout(() => setClearState('idle'), 1500);
   }, [onClearCache, clearLikes, clearPins, clearAccentColors]);
 
-  return (
+  return createPortal(
     <ProfiledComponent id="app-settings-menu">
       <DrawerOverlay $isOpen={isOpen} onClick={onClose} />
       <DrawerContainer
@@ -416,7 +417,8 @@ const AppSettingsMenu: React.FC<AppSettingsMenuProps> = memo(({
           </FilterSection>
         </DrawerContent>
       </DrawerContainer>
-    </ProfiledComponent>
+    </ProfiledComponent>,
+    document.body
   );
 }, arePropsEqual);
 

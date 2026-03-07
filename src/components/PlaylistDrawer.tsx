@@ -1,4 +1,5 @@
 import React, { Suspense, memo, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import styled from 'styled-components';
 import type { Track } from '../services/spotify';
 import { theme } from '../styles/theme';
@@ -170,7 +171,7 @@ const PlaylistDrawer = memo<PlaylistDrawerProps>(({
     if (isTablet) return Math.min(viewport.width * 0.4, parseInt(theme.drawer.widths.tablet));
     return Math.min(viewport.width * 0.3, parseInt(theme.drawer.widths.desktop));
   }, [viewport.width, isMobile, isTablet]);
-  return (
+  return createPortal(
     <>
       <PlaylistOverlay
         isOpen={isOpen}
@@ -215,7 +216,8 @@ const PlaylistDrawer = memo<PlaylistDrawerProps>(({
           </Suspense>
         </PlaylistContent>
       </PlaylistDrawerContainer>
-    </>
+    </>,
+    document.body
   );
 }, arePlaylistDrawerPropsEqual);
 
