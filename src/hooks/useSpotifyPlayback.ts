@@ -62,7 +62,7 @@ export const useSpotifyPlayback = ({
     if (activeDescriptor && activeDescriptor.id !== 'spotify') {
       const mediaTracks = mediaTracksRef?.current ?? [];
       if (!mediaTracks[index]) {
-        console.error(`[${activeDescriptor.id}] playTrack: No track at index`, index, 'mediaTracks length:', mediaTracks.length);
+        console.error(`[${activeDescriptor.id}] No track at index ${index} (mediaTracks length: ${mediaTracks.length})`);
         return;
       }
       try {
@@ -78,20 +78,13 @@ export const useSpotifyPlayback = ({
     }
 
     if (!tracks[index]) {
-      console.error('[DEBUG] playTrack: No track at index', index, 'tracks length:', tracks.length);
+      console.error(`[Spotify] No track at index ${index} (tracks length: ${tracks.length})`);
       return;
     }
 
     try {
-      const isAuthenticated = spotifyAuth.isAuthenticated();
+      if (!spotifyAuth.isAuthenticated()) return;
 
-      if (!isAuthenticated) {
-        console.warn('[DEBUG] playTrack: Not authenticated');
-        return;
-      }
-
-      console.log('[DEBUG] playTrack: Playing track', tracks[index].name);
-      
       // Retry logic for 403 errors
       const playWithRetry = async (trackUri: string, retryCount = 0, maxRetries = 2): Promise<boolean> => {
         try {
@@ -113,8 +106,6 @@ export const useSpotifyPlayback = ({
             // For other 403 errors, try to recover with exponential backoff
             if (retryCount < maxRetries) {
               const backoffMs = 1500 * Math.pow(2, retryCount);
-              console.log(`🎵 Got 403 error while switching songs, retrying in ${backoffMs}ms (attempt ${retryCount + 1}/${maxRetries})...`);
-              
               await spotifyPlayer.transferPlaybackToDevice();
               await new Promise(resolve => setTimeout(resolve, backoffMs));
               await spotifyPlayer.ensureDeviceIsActive(3, 1000);
@@ -133,7 +124,6 @@ export const useSpotifyPlayback = ({
       if (!success) {
         // Track is unavailable, skip to next if enabled
         if (skipOnError && index < tracks.length - 1) {
-          console.log('🎵 Skipping unavailable track, moving to next...');
           setTimeout(() => {
             playTrack(index + 1, skipOnError);
           }, 500);
@@ -161,7 +151,6 @@ export const useSpotifyPlayback = ({
       
       // If skipOnError is enabled and we have more tracks, try the next one
       if (skipOnError && index < tracks.length - 1) {
-        console.log('🎵 Error playing track, trying next track...');
         setTimeout(() => {
           playTrack(index + 1, skipOnError);
         }, 500);
