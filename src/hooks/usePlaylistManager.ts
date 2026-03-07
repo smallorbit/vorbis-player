@@ -82,8 +82,6 @@ export const usePlaylistManager = ({
       await waitForSpotifyReady();
       await spotifyPlayer.transferPlaybackToDevice();
       
-      // Wait for device to become active
-      console.log('🎵 Waiting for device to become active...');
       await spotifyPlayer.ensureDeviceIsActive();
       
       let fetchedTracks: Track[] = [];
@@ -109,7 +107,6 @@ export const usePlaylistManager = ({
       // the track queue directly.
       if (fetchedTracks.length === 0 && !isAlbumId(playlistId) && playlistId !== LIKED_SONGS_ID) {
         try {
-          console.log('🎵 Trying context-based playback for playlist:', playlistId);
           await spotifyPlayer.playContext(`spotify:playlist:${playlistId}`);
 
           // Wait for SDK to start playing and report the first track
@@ -191,7 +188,6 @@ export const usePlaylistManager = ({
 
               // Try the next track if available
               if (trackIndex < tracksToPlay.length - 1) {
-                console.log('🎵 Trying next track...');
                 setCurrentTrackIndex(trackIndex + 1);
                 return await playWithRetry(trackIndex + 1, 0, maxRetries);
               }
@@ -202,8 +198,6 @@ export const usePlaylistManager = ({
             // For other 403 errors, try to recover with exponential backoff
             if (retryCount < maxRetries) {
               const backoffMs = 2000 * Math.pow(2, retryCount);
-              console.log(`🎵 Got 403 error, retrying in ${backoffMs}ms (attempt ${retryCount + 1}/${maxRetries})...`);
-              
               await spotifyPlayer.transferPlaybackToDevice();
               await new Promise(resolve => setTimeout(resolve, backoffMs));
               await spotifyPlayer.ensureDeviceIsActive(3, 1000);

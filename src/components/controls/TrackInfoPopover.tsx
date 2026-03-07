@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect } from 'react';
 import styled from 'styled-components';
 import { theme } from '../../styles/theme';
 
@@ -84,15 +84,6 @@ const OptionButton = styled.button`
 `;
 
 function TrackInfoPopover({ options, anchorRect, onClose }: TrackInfoPopoverProps) {
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  const positionPopover = useCallback(() => {
-    if (!anchorRect) return { x: 0, y: 0 };
-    const x = anchorRect.left + anchorRect.width / 2;
-    const y = anchorRect.bottom + 8;
-    return { x, y };
-  }, [anchorRect]);
-
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -103,14 +94,15 @@ function TrackInfoPopover({ options, anchorRect, onClose }: TrackInfoPopoverProp
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [onClose]);
 
-  const { x, y } = positionPopover();
-
   if (!anchorRect) return null;
+
+  const x = anchorRect.left + anchorRect.width / 2;
+  const y = anchorRect.bottom + 8;
 
   return (
     <>
       <Overlay onClick={onClose} />
-      <PopoverContainer ref={containerRef} $x={x} $y={y}>
+      <PopoverContainer $x={x} $y={y}>
         {options.map((option, index) => (
           <OptionButton
             key={index}
