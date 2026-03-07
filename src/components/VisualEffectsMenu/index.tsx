@@ -32,6 +32,11 @@ import {
   CacheOptionLabel,
   CacheConfirmButtons,
   CacheCancelButton,
+  CollapsibleHeader,
+  CollapsibleTitle,
+  CollapsibleChevron,
+  CollapsibleBody,
+  CollapsibleInner,
 } from './styled';
 
 export interface ClearCacheOptions {
@@ -107,59 +112,75 @@ const MusicSourcesSection = memo(({ accentColor }: { accentColor: string }) => {
 });
 MusicSourcesSection.displayName = 'MusicSourcesSection';
 
+/** Chevron SVG used in collapsible section headers. */
+const ChevronIcon = ({ isOpen }: { isOpen: boolean }) => (
+  <CollapsibleChevron $isOpen={isOpen} viewBox="0 0 24 24" fill="currentColor">
+    <path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6z" />
+  </CollapsibleChevron>
+);
 
-/** Album art cache controls — only rendered when Dropbox is the active provider. */
-const AlbumArtCacheSection = memo(({ accentColor, catalog }: { accentColor: string; catalog: DropboxCatalogAdapter }) => {
-  const [status, setStatus] = useState<'idle' | 'working' | 'done'>('idle');
-
-  const handleClear = async () => {
-    setStatus('working');
-    await catalog.clearArtCache();
-    setStatus('done');
-    setTimeout(() => setStatus('idle'), 1500);
-  };
-
-  const handleRefresh = async () => {
-    setStatus('working');
-    await catalog.clearArtCache();
-    // Re-fetch in background to warm the cache; don't await completion
-    catalog.listCollections().catch(() => {});
-    setStatus('done');
-    setTimeout(() => setStatus('idle'), 1500);
-  };
-
-  const busy = status === 'working';
-
+/** Reusable collapsible section wrapper. */
+const CollapsibleSection = memo(({
+  title,
+  accentColor,
+  defaultOpen = false,
+  children,
+}: {
+  title: string;
+  accentColor: string;
+  defaultOpen?: boolean;
+  children: React.ReactNode;
+}) => {
+  const [isOpen, setIsOpen] = useState(defaultOpen);
   return (
     <FilterSection>
-      <SectionTitle>Album Art Cache</SectionTitle>
-      <ControlGroup>
-        <ControlLabel>Clear cached art so it re-downloads on next library load</ControlLabel>
-        <ResetButton onClick={handleClear} $accentColor={accentColor} disabled={busy}>
-          {status === 'done' ? 'Cleared!' : busy ? 'Working…' : 'Clear Cache'}
-        </ResetButton>
-      </ControlGroup>
-      <ControlGroup>
-        <ControlLabel>Clear and immediately re-fetch fresh art in the background</ControlLabel>
-        <ResetButton onClick={handleRefresh} $accentColor={accentColor} disabled={busy}>
-          {status === 'done' ? 'Started!' : busy ? 'Working…' : 'Refresh Art'}
-        </ResetButton>
-      </ControlGroup>
+      <CollapsibleHeader
+        $accentColor={accentColor}
+        onClick={() => setIsOpen((o) => !o)}
+        aria-expanded={isOpen}
+      >
+        <CollapsibleTitle>{title}</CollapsibleTitle>
+        <ChevronIcon isOpen={isOpen} />
+      </CollapsibleHeader>
+      <CollapsibleBody $isOpen={isOpen}>
+        <CollapsibleInner>
+          {children}
+        </CollapsibleInner>
+      </CollapsibleBody>
     </FilterSection>
   );
 });
-AlbumArtCacheSection.displayName = 'AlbumArtCacheSection';
+CollapsibleSection.displayName = 'CollapsibleSection';
 
-/** Liked Songs management — only rendered when Dropbox is the active provider. */
-const LikedSongsSection = memo(({ accentColor, catalog }: { accentColor: string; catalog: DropboxCatalogAdapter }) => {
-  const [status, setStatus] = useState<'idle' | 'working' | 'done'>('idle');
+/** Dropbox-specific data management — art cache + liked songs. */
+const DropboxDataSection = memo(({ accentColor, catalog }: { accentColor: string; catalog: DropboxCatalogAdapter }) => {
+  const [artStatus, setArtStatus] = useState<'idle' | 'working' | 'done'>('idle');
+  const [likesStatus, setLikesStatus] = useState<'idle' | 'working' | 'done'>('idle');
   const [resultMessage, setResultMessage] = useState('');
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
-  const busy = status === 'working';
+  const artBusy = artStatus === 'working';
+  const likesBusy = likesStatus === 'working';
 
+  // Art cache handlers
+  const handleClearArt = async () => {
+    setArtStatus('working');
+    await catalog.clearArtCache();
+    setArtStatus('done');
+    setTimeout(() => setArtStatus('idle'), 1500);
+  };
+
+  const handleRefreshArt = async () => {
+    setArtStatus('working');
+    await catalog.clearArtCache();
+    catalog.listCollections().catch(() => {});
+    setArtStatus('done');
+    setTimeout(() => setArtStatus('idle'), 1500);
+  };
+
+  // Liked songs handlers
   const handleExport = async () => {
-    setStatus('working');
+    setLikesStatus('working');
     try {
       const json = await catalog.exportLikes();
       const blob = new Blob([json], { type: 'application/json' });
@@ -173,14 +194,14 @@ const LikedSongsSection = memo(({ accentColor, catalog }: { accentColor: string;
     } catch {
       setResultMessage('Export failed');
     }
-    setStatus('done');
-    setTimeout(() => { setStatus('idle'); setResultMessage(''); }, 1500);
+    setLikesStatus('done');
+    setTimeout(() => { setLikesStatus('idle'); setResultMessage(''); }, 1500);
   };
 
   const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    setStatus('working');
+    setLikesStatus('working');
     try {
       const json = await file.text();
       const count = await catalog.importLikes(json);
@@ -188,13 +209,13 @@ const LikedSongsSection = memo(({ accentColor, catalog }: { accentColor: string;
     } catch {
       setResultMessage('Import failed');
     }
-    setStatus('done');
+    setLikesStatus('done');
     if (fileInputRef.current) fileInputRef.current.value = '';
-    setTimeout(() => { setStatus('idle'); setResultMessage(''); }, 2000);
+    setTimeout(() => { setLikesStatus('idle'); setResultMessage(''); }, 2000);
   };
 
   const handleRefreshMetadata = async () => {
-    setStatus('working');
+    setLikesStatus('working');
     try {
       const result = await catalog.refreshLikedMetadata();
       const parts: string[] = [];
@@ -204,17 +225,28 @@ const LikedSongsSection = memo(({ accentColor, catalog }: { accentColor: string;
     } catch {
       setResultMessage('Refresh failed');
     }
-    setStatus('done');
-    setTimeout(() => { setStatus('idle'); setResultMessage(''); }, 2000);
+    setLikesStatus('done');
+    setTimeout(() => { setLikesStatus('idle'); setResultMessage(''); }, 2000);
   };
 
   return (
-    <FilterSection>
-      <SectionTitle>Liked Songs</SectionTitle>
+    <CollapsibleSection title="Dropbox Data" accentColor={accentColor}>
+      <ControlGroup>
+        <ControlLabel>Clear cached art so it re-downloads on next library load</ControlLabel>
+        <ResetButton onClick={handleClearArt} $accentColor={accentColor} disabled={artBusy}>
+          {artStatus === 'done' ? 'Cleared!' : artBusy ? 'Working…' : 'Clear Art Cache'}
+        </ResetButton>
+      </ControlGroup>
+      <ControlGroup>
+        <ControlLabel>Clear and immediately re-fetch fresh art in the background</ControlLabel>
+        <ResetButton onClick={handleRefreshArt} $accentColor={accentColor} disabled={artBusy}>
+          {artStatus === 'done' ? 'Started!' : artBusy ? 'Working…' : 'Refresh Art'}
+        </ResetButton>
+      </ControlGroup>
       <ControlGroup>
         <ControlLabel>Export liked songs to a JSON file for backup</ControlLabel>
-        <ResetButton onClick={handleExport} $accentColor={accentColor} disabled={busy}>
-          {status === 'done' && resultMessage === 'Exported!' ? 'Exported!' : busy ? 'Working…' : 'Export Likes'}
+        <ResetButton onClick={handleExport} $accentColor={accentColor} disabled={likesBusy}>
+          {likesStatus === 'done' && resultMessage === 'Exported!' ? 'Exported!' : likesBusy ? 'Working…' : 'Export Likes'}
         </ResetButton>
       </ControlGroup>
       <ControlGroup>
@@ -226,20 +258,20 @@ const LikedSongsSection = memo(({ accentColor, catalog }: { accentColor: string;
           onChange={handleImport}
           style={{ display: 'none' }}
         />
-        <ResetButton onClick={() => fileInputRef.current?.click()} $accentColor={accentColor} disabled={busy}>
-          {status === 'done' && resultMessage.startsWith('Imported') ? resultMessage : busy ? 'Working…' : 'Import Likes'}
+        <ResetButton onClick={() => fileInputRef.current?.click()} $accentColor={accentColor} disabled={likesBusy}>
+          {likesStatus === 'done' && resultMessage.startsWith('Imported') ? resultMessage : likesBusy ? 'Working…' : 'Import Likes'}
         </ResetButton>
       </ControlGroup>
       <ControlGroup>
         <ControlLabel>Re-scan Dropbox to update metadata for liked tracks</ControlLabel>
-        <ResetButton onClick={handleRefreshMetadata} $accentColor={accentColor} disabled={busy}>
-          {status === 'done' ? resultMessage || 'Done!' : busy ? 'Scanning…' : 'Refresh Metadata'}
+        <ResetButton onClick={handleRefreshMetadata} $accentColor={accentColor} disabled={likesBusy}>
+          {likesStatus === 'done' ? resultMessage || 'Done!' : likesBusy ? 'Scanning…' : 'Refresh Metadata'}
         </ResetButton>
       </ControlGroup>
-    </FilterSection>
+    </CollapsibleSection>
   );
 });
-LikedSongsSection.displayName = 'LikedSongsSection';
+DropboxDataSection.displayName = 'DropboxDataSection';
 
 const AppSettingsMenu: React.FC<AppSettingsMenuProps> = memo(({
   isOpen,
@@ -307,22 +339,16 @@ const AppSettingsMenu: React.FC<AppSettingsMenuProps> = memo(({
         </DrawerHeader>
 
         <DrawerContent>
-          {/* Music Sources Section */}
+          {/* Music Sources — always visible at top */}
           <MusicSourcesSection accentColor={accentColor} />
 
-          {/* Dropbox Album Art Cache Section */}
-          {dropboxCatalog?.clearArtCache && (
-            <AlbumArtCacheSection accentColor={accentColor} catalog={dropboxCatalog} />
+          {/* Dropbox Data — consolidated art cache + liked songs */}
+          {dropboxCatalog && (
+            <DropboxDataSection accentColor={accentColor} catalog={dropboxCatalog} />
           )}
 
-          {/* Dropbox Liked Songs Section */}
-          {dropboxCatalog?.exportLikes && (
-            <LikedSongsSection accentColor={accentColor} catalog={dropboxCatalog} />
-          )}
-
-          {/* Advanced Section */}
-          <FilterSection>
-            <SectionTitle>Advanced</SectionTitle>
+          {/* Advanced — collapsible */}
+          <CollapsibleSection title="Advanced" accentColor={accentColor}>
             <ControlGroup>
               <ControlLabel>Clear Library Cache</ControlLabel>
               {clearState === 'confirming' ? (
@@ -414,7 +440,7 @@ const AppSettingsMenu: React.FC<AppSettingsMenuProps> = memo(({
                 </OptionButton>
               </OptionButtonGroup>
             </ControlGroup>
-          </FilterSection>
+          </CollapsibleSection>
         </DrawerContent>
       </DrawerContainer>
     </ProfiledComponent>,
