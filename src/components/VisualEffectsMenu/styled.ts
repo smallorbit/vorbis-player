@@ -11,8 +11,10 @@ export const DrawerOverlay = styled.div<{ $isOpen: boolean }>`
   background: ${theme.colors.overlay.light};
   z-index: ${theme.zIndex.overlay};
   opacity: ${({ $isOpen }) => ($isOpen ? '1' : '0')};
+  visibility: ${({ $isOpen }) => ($isOpen ? 'visible' : 'hidden')};
   pointer-events: ${({ $isOpen }) => ($isOpen ? 'auto' : 'none')};
-  transition: all ${theme.drawer.transitionDuration}ms ${theme.drawer.transitionEasing};
+  transition: opacity ${theme.drawer.transitionDuration}ms ${theme.drawer.transitionEasing},
+            visibility ${theme.drawer.transitionDuration}ms ${theme.drawer.transitionEasing};
 `;
 
 export const DrawerContainer = styled.div<{ $isOpen: boolean; $width: number; $transitionDuration: number; $transitionEasing: string }>`
@@ -26,7 +28,9 @@ export const DrawerContainer = styled.div<{ $isOpen: boolean; $width: number; $t
   backdrop-filter: blur(${theme.drawer.backdropBlur});
   border-left: 1px solid ${theme.colors.popover.border};
   transform: translateX(${({ $isOpen }) => ($isOpen ? '0' : '100%')});
+  visibility: ${({ $isOpen }) => ($isOpen ? 'visible' : 'hidden')};
   transition: transform ${({ $transitionDuration }) => $transitionDuration}ms ${({ $transitionEasing }) => $transitionEasing},
+            visibility ${({ $transitionDuration }) => $transitionDuration}ms ${({ $transitionEasing }) => $transitionEasing},
             width ${({ $transitionDuration }) => $transitionDuration}ms ${({ $transitionEasing }) => $transitionEasing};
   z-index: ${theme.zIndex.modal};
   overflow-y: auto;
