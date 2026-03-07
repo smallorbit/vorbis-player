@@ -8,6 +8,7 @@ import type { ProviderId, MediaTrack, PlaybackState, CollectionRef } from '@/typ
 import { DropboxCatalogAdapter } from './dropboxCatalogAdapter';
 import { parseID3 } from '@/utils/id3Parser';
 import { bytesToDataUrl } from '@/utils/bytesToDataUrl';
+import { putDurationMs } from './dropboxArtCache';
 
 export class DropboxPlaybackAdapter implements PlaybackProvider {
   readonly providerId: ProviderId = 'dropbox';
@@ -16,6 +17,7 @@ export class DropboxPlaybackAdapter implements PlaybackProvider {
   private listeners = new Set<(state: PlaybackState | null) => void>();
   private updateInterval: ReturnType<typeof setInterval> | null = null;
   private pendingMetadataUpdate: PlaybackState['trackMetadata'] | null = null;
+  private pendingDurationMs: number | null = null;
   private pendingError: PlaybackState['playbackError'] | null = null;
 
   private catalog: DropboxCatalogAdapter;
@@ -33,7 +35,15 @@ export class DropboxPlaybackAdapter implements PlaybackProvider {
       this.audio.addEventListener('pause', () => this.notifyListeners());
       this.audio.addEventListener('ended', () => this.notifyListeners());
       this.audio.addEventListener('timeupdate', () => this.notifyListeners());
-      this.audio.addEventListener('loadedmetadata', () => this.notifyListeners());
+      this.audio.addEventListener('loadedmetadata', () => {
+        const dur = this.audio!.duration;
+        if (!isNaN(dur) && dur > 0 && this.currentTrack) {
+          const durationMs = Math.floor(dur * 1000);
+          this.pendingDurationMs = durationMs;
+          putDurationMs(this.currentTrack.id, durationMs).catch(() => {});
+        }
+        this.notifyListeners();
+      });
       this.audio.addEventListener('error', () => {
         const mediaError = this.audio?.error;
         this.pendingError = {
@@ -54,6 +64,7 @@ export class DropboxPlaybackAdapter implements PlaybackProvider {
 
     this.currentTrack = track;
     this.pendingMetadataUpdate = null;
+    this.pendingDurationMs = null;
     this.audio!.src = streamUrl;
     await this.audio!.play();
 
@@ -189,9 +200,13 @@ export class DropboxPlaybackAdapter implements PlaybackProvider {
       currentPlaybackRef: this.currentTrack.playbackRef,
     };
 
-    if (this.pendingMetadataUpdate) {
-      state.trackMetadata = this.pendingMetadataUpdate;
+    if (this.pendingMetadataUpdate || this.pendingDurationMs !== null) {
+      state.trackMetadata = {
+        ...this.pendingMetadataUpdate,
+        ...(this.pendingDurationMs !== null ? { durationMs: this.pendingDurationMs } : {}),
+      };
       this.pendingMetadataUpdate = null;
+      this.pendingDurationMs = null;
     }
 
     if (this.pendingError) {
