@@ -217,7 +217,7 @@ export function usePlayerLogic() {
 
           if (state.trackMetadata && trackIndex !== -1) {
             const meta = state.trackMetadata;
-            if (meta.name !== undefined || meta.artists !== undefined || meta.album !== undefined || meta.image !== undefined) {
+            if (meta.name !== undefined || meta.artists !== undefined || meta.album !== undefined || meta.image !== undefined || meta.durationMs !== undefined) {
               setTracks((prev: Track[]) =>
                 prev.map((t, i) =>
                   i === trackIndex
@@ -227,6 +227,7 @@ export function usePlayerLogic() {
                         ...(meta.artists !== undefined && { artists: meta.artists }),
                         ...(meta.album !== undefined && { album: meta.album }),
                         ...(meta.image !== undefined && { image: meta.image }),
+                        ...(meta.durationMs !== undefined && { duration_ms: meta.durationMs }),
                       }
                     : t
                 )
