@@ -32,13 +32,6 @@ if (DROPBOX_CLIENT_ID) {
     auth,
     catalog,
     playback,
-    getExternalUrl({ type, name, artistName }) {
-      if (type === 'artist') {
-        return `https://www.discogs.com/search/?q=${encodeURIComponent(name)}&type=artist`;
-      }
-      const query = artistName ? `${artistName} ${name}` : name;
-      return `https://www.discogs.com/search/?q=${encodeURIComponent(query)}&type=release`;
-    },
     getExternalUrls({ type, name, artistName }) {
       const isArtist = type === 'artist';
       const query = isArtist ? name : (artistName ? `${artistName} ${name}` : name);
