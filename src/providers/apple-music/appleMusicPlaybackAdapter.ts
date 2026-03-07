@@ -103,10 +103,12 @@ export class AppleMusicPlaybackAdapter implements PlaybackProvider {
 
   private mapState(instance: MKInstance): PlaybackState {
     const item = instance.nowPlayingItem;
+    const durationMs =
+      instance.currentPlaybackDuration * 1000 || (item?.attributes?.durationInMillis ?? 0);
     return {
       isPlaying: instance.playbackState === MKPlaybackStates.playing,
       positionMs: instance.currentPlaybackTime * 1000,
-      durationMs: instance.currentPlaybackDuration * 1000,
+      durationMs,
       currentTrackId: item?.id ?? null,
       currentPlaybackRef: item
         ? { provider: 'apple-music', ref: item.attributes.playParams?.catalogId ?? item.id }
