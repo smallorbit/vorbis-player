@@ -29,7 +29,7 @@ function appleTrackToMediaTrack(item: MKMediaItem): MediaTrack {
     albumId: attrs.playParams?.catalogId,
     trackNumber: attrs.trackNumber,
     durationMs: attrs.durationInMillis,
-    image: formatArtworkUrl(attrs.artwork, 300),
+    image: formatArtworkUrl(attrs.artwork, 1200),
     externalUrl: attrs.url ?? `https://music.apple.com/song/${catalogId}`,
   };
 }
@@ -45,7 +45,7 @@ function appleCollectionToMediaCollection(
     kind,
     name: attrs.name,
     description: attrs.description?.standard ?? null,
-    imageUrl: formatArtworkUrl(attrs.artwork, 300),
+    imageUrl: formatArtworkUrl(attrs.artwork, 1200),
     trackCount: attrs.trackCount,
     ownerName: attrs.artistName ?? null,
   };
