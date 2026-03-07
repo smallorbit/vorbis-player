@@ -29,7 +29,7 @@ interface ProviderContextValue {
 const ProviderContext =
   (import.meta.hot?.data?.ProviderContext as React.Context<ProviderContextValue | null> | undefined) ??
   createContext<ProviderContextValue | null>(null);
-if (import.meta.hot?.data) {
+if (import.meta.hot) {
   import.meta.hot.data.ProviderContext = ProviderContext;
 }
 
