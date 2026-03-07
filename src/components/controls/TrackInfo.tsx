@@ -13,6 +13,7 @@ interface TrackInfoProps {
         artistsData?: ArtistInfo[];
         album?: string;
         album_id?: string;
+        externalUrl?: string;
     } | null;
     isMobile: boolean;
     isTablet: boolean;
@@ -30,6 +31,7 @@ const areTrackInfoPropsEqual = (
         prevProps.track?.artists === nextProps.track?.artists &&
         prevProps.track?.album === nextProps.track?.album &&
         prevProps.track?.album_id === nextProps.track?.album_id &&
+        prevProps.track?.externalUrl === nextProps.track?.externalUrl &&
         prevProps.isMobile === nextProps.isMobile &&
         prevProps.isTablet === nextProps.isTablet &&
         prevProps.onArtistBrowse === nextProps.onArtistBrowse &&
@@ -78,8 +80,14 @@ const TrackInfo = memo<TrackInfoProps>(({ track, isMobile, isTablet, onArtistBro
         if (activeDescriptor?.getExternalUrl) {
             return activeDescriptor.getExternalUrl({ type: 'album', name: albumName, artistName: track?.artists });
         }
-        if (track?.provider === 'apple-music') {
-            return `https://music.apple.com/album/${albumId}`;
+        if (track?.provider === 'apple-music' && track.externalUrl) {
+            try {
+                const url = new URL(track.externalUrl);
+                url.searchParams.delete('i');
+                return url.toString();
+            } catch {
+                return undefined;
+            }
         }
         if (track?.provider === 'spotify') {
             return `https://open.spotify.com/album/${albumId}`;
