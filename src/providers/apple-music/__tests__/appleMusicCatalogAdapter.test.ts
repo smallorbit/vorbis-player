@@ -111,7 +111,7 @@ describe('AppleMusicCatalogAdapter', () => {
       album: 'Album X',
       durationMs: 240000,
       trackNumber: 1,
-      image: 'https://example.com/300x300.jpg',
+      image: 'https://example.com/1200x1200.jpg',
       externalUrl: 'https://music.apple.com/song/cat.123',
       playbackRef: { provider: 'apple-music', ref: 'cat.123' },
     });
