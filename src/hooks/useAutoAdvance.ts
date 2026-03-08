@@ -36,9 +36,10 @@ export const useAutoAdvance = ({
   useEffect(() => { currentTrackIndexRef.current = currentTrackIndex; }, [currentTrackIndex]);
   useEffect(() => { playTrackRef.current = playTrack; }, [playTrack]);
 
-  // Reset hasEnded flag when track changes
+  // Reset hasEnded flag and cooldown when track changes (manual or auto)
   useEffect(() => {
     hasEnded.current = false;
+    lastPlayInitiatedRef.current = Date.now();
   }, [currentTrackIndex]);
 
   // Use event-based detection via the provider's playback subscribe
