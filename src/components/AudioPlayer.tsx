@@ -25,7 +25,7 @@ const Container = styled.div`
 `;
 
 const AudioPlayerComponent = () => {
-  const { state, handlers } = usePlayerLogic();
+  const { state, handlers, radio } = usePlayerLogic();
   const { debugActive, handleActivatorTap } = useDebugActivator();
   const { accentColor } = useColorContext();
   const {
@@ -52,6 +52,7 @@ const AudioPlayerComponent = () => {
     onPlaylistSelect: handlers.handlePlaylistSelect,
     onAlbumPlay: handleAlbumPlay,
     onBackToLibrary: handlers.handleBackToLibrary,
+    onStartRadio: handlers.handleStartRadio,
   }), [handlers, handleAlbumPlay]);
 
   const { chosenProviderId, activeDescriptor } = useProviderContext();
@@ -95,6 +96,8 @@ const AudioPlayerComponent = () => {
           isPlaying={state.isPlaying}
           showLibraryDrawer={state.showLibraryDrawer}
           handlers={playbackHandlers}
+          radioState={radio.radioState}
+          isRadioAvailable={radio.isRadioAvailable}
         />
       </ProfiledComponent>
     );

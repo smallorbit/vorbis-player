@@ -41,6 +41,7 @@ interface PlaybackHandlers {
   onPlaylistSelect: (playlistId: string, playlistName: string) => void;
   onAlbumPlay: (albumId: string, albumName: string) => void;
   onBackToLibrary: () => void;
+  onStartRadio: () => void;
 }
 
 interface AlbumArtBounds {
@@ -55,6 +56,8 @@ interface PlayerContentProps {
   showLibraryDrawer: boolean;
   onAlbumArtBoundsChange?: (bounds: AlbumArtBounds | null) => void;
   handlers: PlaybackHandlers;
+  radioState?: { isActive: boolean; seedDescription: string | null; isGenerating: boolean; error: string | null };
+  isRadioAvailable?: boolean;
 }
 
 const ContentWrapper = styled.div.withConfig({
@@ -284,7 +287,7 @@ const FlipInner = styled.div.withConfig({
 `;
 
 
-const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, showLibraryDrawer, onAlbumArtBoundsChange, handlers }) => {
+const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, showLibraryDrawer, onAlbumArtBoundsChange, handlers, radioState, isRadioAvailable }) => {
   // --- Context hooks ---
   const {
     tracks,
@@ -767,6 +770,9 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
         onZenModeToggle={handleZenModeToggle}
         shuffleEnabled={shuffleEnabled}
         onShuffleToggle={handleShuffleToggle}
+        onStartRadio={isRadioAvailable ? handlers.onStartRadio : undefined}
+        radioActive={radioState?.isActive}
+        radioGenerating={radioState?.isGenerating}
       />
       </ProfiledComponent>
       <Suspense fallback={<VisualEffectsLoadingFallback />}>
@@ -791,6 +797,7 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
               currentTrackIndex={currentTrackIndex}
               accentColor={accentColor}
               onTrackSelect={handlers.onTrackSelect}
+              radioLabel={radioState?.isActive ? radioState.seedDescription : undefined}
             />
           </ProfiledComponent>
         ) : (
@@ -802,6 +809,7 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
               currentTrackIndex={currentTrackIndex}
               accentColor={accentColor}
               onTrackSelect={handlers.onTrackSelect}
+              radioLabel={radioState?.isActive ? radioState.seedDescription : undefined}
             />
           </ProfiledComponent>
         )}

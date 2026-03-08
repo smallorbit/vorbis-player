@@ -108,7 +108,7 @@ export class DropboxPlaybackAdapter implements PlaybackProvider {
         offset += chunk.length;
       }
 
-      const { title, artist, album, coverArt } = parseID3(combined.buffer as ArrayBuffer);
+      const { title, artist, album, coverArt, musicbrainzRecordingId, musicbrainzArtistId, isrc } = parseID3(combined.buffer as ArrayBuffer);
       const update: PlaybackState['trackMetadata'] = {};
       if (title && title !== track.name) update.name = title;
       if (artist && artist !== track.artists) update.artists = artist;
@@ -116,9 +116,18 @@ export class DropboxPlaybackAdapter implements PlaybackProvider {
       if (coverArt && !track.image) {
         update.image = bytesToDataUrl(coverArt.data, coverArt.mimeType);
       }
-      if (Object.keys(update).length > 0) {
-        this.currentTrack = { ...track, ...update };
-        this.pendingMetadataUpdate = update;
+
+      // MusicBrainz IDs go directly on the track (not via trackMetadata)
+      const mbUpdate: Partial<MediaTrack> = {};
+      if (musicbrainzRecordingId) mbUpdate.musicbrainzRecordingId = musicbrainzRecordingId;
+      if (musicbrainzArtistId) mbUpdate.musicbrainzArtistId = musicbrainzArtistId;
+      if (isrc) mbUpdate.isrc = isrc;
+
+      if (Object.keys(update).length > 0 || Object.keys(mbUpdate).length > 0) {
+        this.currentTrack = { ...track, ...update, ...mbUpdate };
+        if (Object.keys(update).length > 0) {
+          this.pendingMetadataUpdate = update;
+        }
         this.notifyListeners();
       }
     };

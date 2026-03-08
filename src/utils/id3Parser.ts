@@ -9,6 +9,12 @@ interface AudioMetadata {
   artist?: string;
   album?: string;
   coverArt?: { data: Uint8Array; mimeType: string };
+  /** MusicBrainz Recording ID (from TXXX:MusicBrainz Release Track Id). */
+  musicbrainzRecordingId?: string;
+  /** MusicBrainz Artist ID (from TXXX:MusicBrainz Artist Id). */
+  musicbrainzArtistId?: string;
+  /** International Standard Recording Code (from TSRC frame). */
+  isrc?: string;
 }
 
 function readSynchsafeInt(bytes: Uint8Array, offset: number): number {
@@ -88,6 +94,36 @@ function decodePIC(data: Uint8Array): { data: Uint8Array; mimeType: string } | n
   return { data: data.slice(pos), mimeType };
 }
 
+/**
+ * Decode a TXXX (user-defined text) frame.
+ * Format: encoding(1) + null-terminated description + null-terminated value.
+ * Returns { description, value } or null on failure.
+ */
+function decodeTXXX(data: Uint8Array): { description: string; value: string } | null {
+  if (data.length < 2) return null;
+  const encoding = data[0];
+
+  // Find end of description (null-terminated)
+  const descEnd = skipNullTerminatedString(data, 1, encoding);
+  if (descEnd >= data.length) return null;
+
+  // Decode description
+  const descBytes = data.slice(1, encoding === 1 || encoding === 2 ? descEnd - 2 : descEnd - 1);
+  const decoder =
+    encoding === 1 ? new TextDecoder('utf-16')
+    : encoding === 2 ? new TextDecoder('utf-16be')
+    : encoding === 3 ? new TextDecoder('utf-8')
+    : new TextDecoder('latin1');
+
+  const description = decoder.decode(descBytes).replace(/\0/g, '').trim();
+
+  // Decode value (rest of the frame)
+  const valueBytes = data.slice(descEnd);
+  const value = decoder.decode(valueBytes).replace(/\0/g, '').trim();
+
+  return { description, value };
+}
+
 export function parseID3(buffer: ArrayBuffer): AudioMetadata {
   const bytes = new Uint8Array(buffer);
 
@@ -157,9 +193,20 @@ export function parseID3(buffer: ArrayBuffer): AudioMetadata {
         if (frameId === 'TIT2') result.title = decodeTextFrame(data);
         else if (frameId === 'TPE1') result.artist = decodeTextFrame(data);
         else if (frameId === 'TALB') result.album = decodeTextFrame(data);
+        else if (frameId === 'TSRC') result.isrc = decodeTextFrame(data);
         else if (frameId === 'APIC' && !result.coverArt) {
           const apic = decodeAPIC(data);
           if (apic) result.coverArt = apic;
+        } else if (frameId === 'TXXX') {
+          const txxx = decodeTXXX(data);
+          if (txxx) {
+            const desc = txxx.description.toLowerCase();
+            if (desc === 'musicbrainz release track id' || desc === 'musicbrainz_trackid') {
+              result.musicbrainzRecordingId = txxx.value;
+            } else if (desc === 'musicbrainz artist id' || desc === 'musicbrainz_artistid') {
+              result.musicbrainzArtistId = txxx.value;
+            }
+          }
         }
       }
       offset += frameSize;

@@ -8,9 +8,11 @@ import { usePlaylistManager } from '@/hooks/usePlaylistManager';
 import { useSpotifyPlayback } from '@/hooks/useSpotifyPlayback';
 import { useAutoAdvance } from '@/hooks/useAutoAdvance';
 import { useAccentColor } from '@/hooks/useAccentColor';
+import { useRadio } from '@/hooks/useRadio';
 import type { Track } from '@/services/spotify';
 import type { PlaybackState } from '@/types/domain';
 import type { MediaTrack } from '@/types/domain';
+import type { RadioSeed } from '@/types/radio';
 import { isAlbumId, extractAlbumId, LIKED_SONGS_ID } from '@/constants/playlist';
 import { shuffleArray } from '@/utils/shuffleArray';
 
@@ -302,6 +304,7 @@ export function usePlayerLogic() {
 
   const handleBackToLibrary = useCallback(() => {
     handlePause();
+    stopRadio();
     setSelectedPlaylistId(null);
     setTracks([]);
     setCurrentTrackIndex(0);
@@ -309,6 +312,52 @@ export function usePlayerLogic() {
     setShowPlaylist(false);
     setShowVisualEffects(false);
   }, [handlePause, setSelectedPlaylistId, setTracks, setCurrentTrackIndex, setShowPlaylist, setShowVisualEffects]);
+
+  // ── Radio feature ───────────────────────────────────────────────────
+
+  const { radioState, startRadio, stopRadio, isRadioAvailable } = useRadio();
+
+  /**
+   * Start a radio session from the currently playing track.
+   * Fetches the full Dropbox catalog, generates a radio queue, and starts playing.
+   */
+  const handleStartRadio = useCallback(async () => {
+    if (!activeDescriptor || activeDescriptor.id !== 'dropbox') return;
+    if (!currentTrack) return;
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      // Fetch all catalog tracks for matching
+      const allMusicRef = { provider: 'dropbox' as const, kind: 'folder' as const, id: '' };
+      const allTracks = await activeDescriptor.catalog.listTracks(allMusicRef);
+
+      const seed: RadioSeed = {
+        type: 'track',
+        artist: currentTrack.artists,
+        track: currentTrack.name,
+      };
+
+      const result = await startRadio(seed, allTracks);
+
+      if (result && result.queue.length > 0) {
+        const trackList = result.queue.map(mediaTrackToTrack);
+        mediaTracksRef.current = result.queue;
+        setOriginalTracks(trackList);
+        setTracks(trackList);
+        setCurrentTrackIndex(0);
+        setSelectedPlaylistId('radio');
+        setIsLoading(false);
+        await playTrack(0);
+      } else {
+        setIsLoading(false);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to start radio.');
+      setIsLoading(false);
+    }
+  }, [activeDescriptor, currentTrack, startRadio, setIsLoading, setError, setOriginalTracks, setTracks, setCurrentTrackIndex, setSelectedPlaylistId, playTrack]);
 
   const handlers = useMemo(
     () => ({
@@ -321,6 +370,7 @@ export function usePlayerLogic() {
       handleOpenLibraryDrawer,
       handleCloseLibraryDrawer,
       handleBackToLibrary,
+      handleStartRadio,
     }),
     [
       handlePlaylistSelect,
@@ -332,6 +382,7 @@ export function usePlayerLogic() {
       handleOpenLibraryDrawer,
       handleCloseLibraryDrawer,
       handleBackToLibrary,
+      handleStartRadio,
     ]
   );
 
@@ -346,5 +397,10 @@ export function usePlayerLogic() {
       playbackPosition,
     },
     handlers,
+    radio: {
+      radioState,
+      isRadioAvailable,
+      stopRadio,
+    },
   };
 }
