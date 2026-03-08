@@ -33,6 +33,11 @@ export interface MKMediaItem {
   id: string;
   type: string;
   attributes: MKMediaItemAttributes;
+  relationships?: {
+    catalog?: {
+      data: Array<{ id: string; type: string; attributes: MKMediaItemAttributes }>;
+    };
+  };
 }
 
 export interface MKResourceRelationship {

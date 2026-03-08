@@ -89,7 +89,7 @@ describe('AppleMusicCatalogAdapter', () => {
               trackNumber: 1,
               artwork: { url: 'https://example.com/{w}x{h}.jpg' },
               playParams: { catalogId: 'cat.123' },
-              url: 'https://music.apple.com/song/cat.123',
+              url: 'https://music.apple.com/us/album/album-x/album.456?i=cat.123',
             },
           },
         ],
@@ -112,9 +112,88 @@ describe('AppleMusicCatalogAdapter', () => {
       durationMs: 240000,
       trackNumber: 1,
       image: 'https://example.com/1200x1200.jpg',
-      externalUrl: 'https://music.apple.com/song/cat.123',
+      externalUrl: 'https://music.apple.com/us/album/album-x/album.456?i=cat.123',
       playbackRef: { provider: 'apple-music', ref: 'cat.123' },
     });
+  });
+
+  it('listTracks uses catalog relationship URL when attrs.url is absent', async () => {
+    // #given — library track without attrs.url but with catalog relationship
+    mockMusic.mockResolvedValueOnce({
+      data: {
+        data: [
+          {
+            id: 'i.track2',
+            type: 'library-songs',
+            attributes: {
+              name: 'Song Two',
+              artistName: 'Artist B',
+              albumName: 'Album Y',
+              durationInMillis: 180000,
+              playParams: { catalogId: 'cat.456' },
+            },
+            relationships: {
+              catalog: {
+                data: [
+                  {
+                    id: 'cat.456',
+                    type: 'songs',
+                    attributes: {
+                      name: 'Song Two',
+                      artistName: 'Artist B',
+                      albumName: 'Album Y',
+                      durationInMillis: 180000,
+                      url: 'https://music.apple.com/us/album/album-y/album.789?i=cat.456',
+                    },
+                  },
+                ],
+              },
+            },
+          },
+        ],
+      },
+    });
+
+    // #when
+    const tracks = await adapter.listTracks({
+      provider: 'apple-music',
+      kind: 'album',
+      id: 'l.album1',
+    });
+
+    // #then — catalog URL used as externalUrl
+    expect(tracks[0].externalUrl).toBe('https://music.apple.com/us/album/album-y/album.789?i=cat.456');
+  });
+
+  it('listTracks sets externalUrl to undefined when no URL is available', async () => {
+    // #given — library track with no attrs.url and no catalog relationship
+    mockMusic.mockResolvedValueOnce({
+      data: {
+        data: [
+          {
+            id: 'i.track3',
+            type: 'library-songs',
+            attributes: {
+              name: 'Song Three',
+              artistName: 'Artist C',
+              albumName: 'Album Z',
+              durationInMillis: 200000,
+              playParams: { catalogId: 'cat.789' },
+            },
+          },
+        ],
+      },
+    });
+
+    // #when
+    const tracks = await adapter.listTracks({
+      provider: 'apple-music',
+      kind: 'album',
+      id: 'l.album2',
+    });
+
+    // #then
+    expect(tracks[0].externalUrl).toBeUndefined();
   });
 
   it('listTracks returns empty for wrong provider', async () => {
