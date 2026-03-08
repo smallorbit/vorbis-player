@@ -156,6 +156,11 @@ export interface SpotifyImage {
   width: number | null;
 }
 
+export function getLargestImage(images: SpotifyImage[] | undefined): string | undefined {
+  if (!images?.length) return undefined;
+  return images.reduce((best, img) => ((img.width ?? 0) > (best.width ?? 0) ? img : best)).url;
+}
+
 interface SpotifyAlbum {
   id?: string;
   name?: string;
@@ -219,7 +224,7 @@ function transformTrackItem(
 ): Track | null {
   if (!item.id || item.type !== 'track') return null;
 
-  const albumImage = albumOverride?.image ?? item.album?.images?.[0]?.url;
+  const albumImage = albumOverride?.image ?? getLargestImage(item.album?.images);
 
   return {
     id: item.id,
@@ -743,7 +748,7 @@ export async function getAlbumTracks(albumId: string): Promise<Track[]> {
     token
   );
 
-  const albumImage = album.images?.[0]?.url;
+  const albumImage = getLargestImage(album.images);
   const tracks: Track[] = [];
 
   for (const trackItem of album.tracks.items ?? []) {
