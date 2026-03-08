@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import { getPlaylistTracks, getAlbumTracks, getLikedSongs, spotifyAuth } from '../services/spotify';
+import { getPlaylistTracks, getAlbumTracks, getLikedSongs, spotifyAuth, getLargestImage } from '../services/spotify';
 import { spotifyPlayer } from '../services/spotifyPlayer';
 import { isAlbumId, extractAlbumId, LIKED_SONGS_ID } from '../constants/playlist';
 import { shuffleArray } from '../utils/shuffleArray';
@@ -30,7 +30,7 @@ function buildTracksFromWindow(state: SpotifyPlaybackState): Track[] {
       album_id: item.album?.uri?.split(':').pop(),
       duration_ms: item.duration_ms ?? 0,
       uri: item.uri,
-      image: item.album?.images?.[0]?.url,
+      image: getLargestImage(item.album?.images),
     };
   }
 

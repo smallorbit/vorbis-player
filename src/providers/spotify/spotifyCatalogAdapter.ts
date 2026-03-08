@@ -14,6 +14,7 @@ import {
   checkTrackSaved,
   saveTrack,
   unsaveTrack,
+  getLargestImage,
   type Track,
   type PlaylistInfo,
   type AlbumInfo,
@@ -51,7 +52,7 @@ function spotifyPlaylistToMediaCollection(pl: PlaylistInfo): MediaCollection {
     kind: 'playlist',
     name: pl.name,
     description: pl.description,
-    imageUrl: pl.images?.[0]?.url,
+    imageUrl: getLargestImage(pl.images),
     trackCount: pl.tracks?.total ?? undefined,
     ownerName: pl.owner?.display_name ?? undefined,
     revision: pl.snapshot_id,
@@ -66,7 +67,7 @@ function spotifyAlbumToMediaCollection(album: AlbumInfo): MediaCollection {
     kind: 'album',
     name: album.name,
     description: album.artists,
-    imageUrl: album.images?.[0]?.url,
+    imageUrl: getLargestImage(album.images),
     trackCount: album.total_tracks,
   };
 }
