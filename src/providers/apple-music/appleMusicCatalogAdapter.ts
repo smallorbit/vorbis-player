@@ -19,6 +19,7 @@ function formatArtworkUrl(artwork: MKArtworkDescriptor | undefined, size: number
 function appleTrackToMediaTrack(item: MKMediaItem): MediaTrack {
   const attrs = item.attributes;
   const catalogId = attrs.playParams?.catalogId ?? item.id;
+  const catalogUrl = item.relationships?.catalog?.data?.[0]?.attributes?.url;
   return {
     id: item.id,
     provider: 'apple-music',
@@ -30,7 +31,7 @@ function appleTrackToMediaTrack(item: MKMediaItem): MediaTrack {
     trackNumber: attrs.trackNumber,
     durationMs: attrs.durationInMillis,
     image: formatArtworkUrl(attrs.artwork, 1200),
-    externalUrl: attrs.url ?? `https://music.apple.com/song/${catalogId}`,
+    externalUrl: attrs.url ?? catalogUrl,
   };
 }
 
@@ -87,7 +88,7 @@ export class AppleMusicCatalogAdapter implements CatalogProvider {
 
     const instance = await appleMusicService.ensureLoaded();
     const kindPath = collectionRef.kind === 'playlist' ? 'playlists' : 'albums';
-    const path = `/v1/me/library/${kindPath}/${collectionRef.id}/tracks`;
+    const path = `/v1/me/library/${kindPath}/${collectionRef.id}/tracks?include[library-songs]=catalog`;
 
     const items = await this.fetchAllPages<MKMediaItem>(instance, path, signal);
     return items.map(appleTrackToMediaTrack);
@@ -171,7 +172,7 @@ export class AppleMusicCatalogAdapter implements CatalogProvider {
       try {
         const response = await instance.api.music(
           `/v1/me/library/songs`,
-          { 'filter[id]': batch.join(','), limit: PAGE_LIMIT },
+          { 'filter[id]': batch.join(','), limit: PAGE_LIMIT, 'include[library-songs]': 'catalog' },
         );
         const data = response.data as MKPaginatedResponse<MKMediaItem>;
         for (const item of data.data) {
