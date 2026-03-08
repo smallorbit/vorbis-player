@@ -25,6 +25,7 @@ export class AppleMusicPlaybackAdapter implements PlaybackProvider {
 
   async playTrack(track: MediaTrack): Promise<void> {
     const instance = await appleMusicService.ensureLoaded();
+    this.attachListeners(instance);
     await instance.setQueue({ song: track.playbackRef.ref, startPlaying: true });
     // setQueue with startPlaying should start playback; call play() as fallback
     if (instance.playbackState !== MKPlaybackStates.playing) {

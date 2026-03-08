@@ -41,6 +41,15 @@ export const useSpotifyControls = ({
     isDraggingRef.current = isDragging;
   }, [isDragging]);
 
+  // Seed duration from track metadata so the slider has a valid max
+  // before the playback engine reports it (e.g. MusicKit currentPlaybackDuration
+  // returns 0 until the track fully loads).
+  useEffect(() => {
+    if (currentTrack?.duration_ms) {
+      setDuration(currentTrack.duration_ms);
+    }
+  }, [currentTrack?.id, currentTrack?.duration_ms]);
+
   // Use event-based playback state updates via the provider adapter
   useEffect(() => {
     const playback = activeDescriptor?.playback;
