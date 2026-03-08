@@ -8,6 +8,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { librarySyncEngine } from '../services/cache/librarySyncEngine';
+import { appleMusicSyncEngine } from '../providers/apple-music/appleMusicSyncEngine';
 import type { CachedPlaylistInfo, SyncState } from '../services/cache/cacheTypes';
 import type { AlbumInfo } from '../services/spotify';
 import { useProviderContext } from '../contexts/ProviderContext';
@@ -94,9 +95,33 @@ export function useLibrarySync(): UseLibrarySyncResult {
     };
   }, [activeProviderId]);
 
-  // ── Non-Spotify path: call catalog.listCollections() ───────────────────
+  // ── Apple Music path: delegate to Apple Music sync engine ─────────────
   useEffect(() => {
-    if (activeProviderId === 'spotify') return;
+    if (activeProviderId !== 'apple-music') return;
+
+    const unsubscribe = appleMusicSyncEngine.subscribe((state, newPlaylists, newAlbums, newLikedCount) => {
+      setSyncState(state);
+      if (newPlaylists !== undefined) {
+        setPlaylists(newPlaylists.map(collectionToPlaylistInfo));
+      }
+      if (newAlbums !== undefined) {
+        setAlbums(newAlbums.map(collectionToAlbumInfo));
+      }
+      if (newLikedCount !== undefined) setLikedSongsCount(newLikedCount);
+    });
+
+    appleMusicSyncEngine.start().catch((err) => {
+      console.error('[useLibrarySync] Failed to start Apple Music sync engine:', err);
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, [activeProviderId]);
+
+  // ── Non-Spotify/Apple Music path: call catalog.listCollections() ──────
+  useEffect(() => {
+    if (activeProviderId === 'spotify' || activeProviderId === 'apple-music') return;
 
     const catalog = activeDescriptor?.catalog;
     const auth = activeDescriptor?.auth;
@@ -210,6 +235,8 @@ export function useLibrarySync(): UseLibrarySyncResult {
   const refreshNow = useCallback(async () => {
     if (activeProviderId === 'spotify') {
       await engineRef.current.syncNow();
+    } else if (activeProviderId === 'apple-music') {
+      await appleMusicSyncEngine.syncNow();
     } else {
       // For non-Spotify providers, the effect above handles loading.
       // A refresh re-triggers by bumping syncState so the effect re-runs isn't
