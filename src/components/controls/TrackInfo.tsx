@@ -83,6 +83,7 @@ const TrackInfo = memo<TrackInfoProps>(({ track, isMobile, isTablet, onArtistBro
         if (track?.provider === 'apple-music' && track.externalUrl) {
             try {
                 const url = new URL(track.externalUrl);
+                if (!url.searchParams.has('i')) return undefined;
                 url.searchParams.delete('i');
                 return url.toString();
             } catch {
