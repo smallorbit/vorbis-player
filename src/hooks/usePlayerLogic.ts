@@ -177,7 +177,15 @@ export function usePlayerLogic() {
     ]
   );
 
-  useAutoAdvance({ tracks, currentTrackIndex, playTrack, enabled: true });
+  const guardedPlayTrack = useCallback((index: number, skipOnError?: boolean) => {
+    const targetTrack = tracksRef.current[index];
+    if (targetTrack) {
+      expectedTrackIdRef.current = targetTrack.id;
+    }
+    playTrack(index, skipOnError);
+  }, [playTrack]);
+
+  useAutoAdvance({ tracks, currentTrackIndex, playTrack: guardedPlayTrack, enabled: true, expectedTrackIdRef });
 
   // Auto-extract accent color from album artwork; respects overrides in ColorContext
   useAccentColor(currentTrack, accentColorOverrides, setAccentColor, setAccentColorOverrides);
@@ -266,18 +274,16 @@ export function usePlayerLogic() {
   const handleNext = useCallback(() => {
     if (tracks.length === 0) return;
     const nextIndex = (currentTrackIndexRef.current + 1) % tracks.length;
-    expectedTrackIdRef.current = tracksRef.current[nextIndex]?.id ?? null;
     setCurrentTrackIndex(nextIndex);
-    playTrack(nextIndex, true);
-  }, [tracks.length, playTrack, setCurrentTrackIndex]);
+    guardedPlayTrack(nextIndex, true);
+  }, [tracks.length, guardedPlayTrack, setCurrentTrackIndex]);
 
   const handlePrevious = useCallback(() => {
     if (tracks.length === 0) return;
     const newIndex = currentTrackIndexRef.current === 0 ? tracks.length - 1 : currentTrackIndexRef.current - 1;
-    expectedTrackIdRef.current = tracksRef.current[newIndex]?.id ?? null;
     setCurrentTrackIndex(newIndex);
-    playTrack(newIndex, true);
-  }, [tracks.length, playTrack, setCurrentTrackIndex]);
+    guardedPlayTrack(newIndex, true);
+  }, [tracks.length, guardedPlayTrack, setCurrentTrackIndex]);
 
   const handlePlay = useCallback(async () => {
     try {
@@ -318,7 +324,7 @@ export function usePlayerLogic() {
       handlePause,
       handleNext,
       handlePrevious,
-      playTrack,
+      playTrack: guardedPlayTrack,
       handleOpenLibraryDrawer,
       handleCloseLibraryDrawer,
       handleBackToLibrary,
@@ -329,7 +335,7 @@ export function usePlayerLogic() {
       handlePause,
       handleNext,
       handlePrevious,
-      playTrack,
+      guardedPlayTrack,
       handleOpenLibraryDrawer,
       handleCloseLibraryDrawer,
       handleBackToLibrary,

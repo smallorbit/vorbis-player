@@ -10,6 +10,8 @@ interface UseAutoAdvanceProps {
   playTrack: (index: number, skipOnError?: boolean) => void;
   enabled?: boolean;
   endThreshold?: number;
+  /** When set, auto-advance is suppressed until the expected track starts playing. */
+  expectedTrackIdRef?: React.RefObject<string | null>;
 }
 
 const PLAY_COOLDOWN_MS = 5000;
@@ -19,7 +21,8 @@ export const useAutoAdvance = ({
   currentTrackIndex,
   playTrack,
   enabled = true,
-  endThreshold = 2000
+  endThreshold = 2000,
+  expectedTrackIdRef,
 }: UseAutoAdvanceProps) => {
   const hasEnded = useRef(false);
   const wasPlayingRef = useRef(false);
@@ -49,6 +52,7 @@ export const useAutoAdvance = ({
     }
 
     function advanceToNext() {
+      if (expectedTrackIdRef?.current) return;
       hasEnded.current = true;
       const nextIndex = (currentTrackIndexRef.current + 1) % tracksRef.current.length;
       if (tracksRef.current[nextIndex]) {
