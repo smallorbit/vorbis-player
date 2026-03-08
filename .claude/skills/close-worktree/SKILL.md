@@ -30,3 +30,5 @@ bash /path/to/repo/scripts/close-worktree.sh <name>
 ```
 
 3. Confirm to the user that the branch was merged and the worktree was removed.
+
+4. If the script output contains `PROMPT_CREATE_PR`, ask the user: **"Would you like me to create a PR for this fix?"** — and if they say yes, create a branch from the merge commit, push it, and open a PR targeting the base branch (same flow as `/bcpr`).

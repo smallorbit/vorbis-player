@@ -49,3 +49,5 @@ git branch -d "$WT_BRANCH"
 
 echo ""
 echo "Done! Worktree '$NAME' has been rebased and cleaned up."
+echo ""
+echo "PROMPT_CREATE_PR: Would you like to create a PR for this fix? (base: $CURRENT_BRANCH)"
