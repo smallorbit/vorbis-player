@@ -7,6 +7,7 @@ import type { PlaybackProvider } from '@/types/providers';
 import type { ProviderId, MediaTrack, PlaybackState, CollectionRef } from '@/types/domain';
 import { spotifyPlayer } from '@/services/spotifyPlayer';
 import { isAlbumId, extractAlbumId } from '@/constants/playlist';
+import { spotifyAuth } from '@/services/spotify';
 
 /** Map a SpotifyPlaybackState to the provider-agnostic PlaybackState. */
 function mapPlaybackState(state: SpotifyPlaybackState | null): PlaybackState | null {
@@ -32,7 +33,77 @@ export class SpotifyPlaybackAdapter implements PlaybackProvider {
   }
 
   async playTrack(track: MediaTrack): Promise<void> {
-    await spotifyPlayer.playTrack(track.playbackRef.ref);
+    const uri = track.playbackRef.ref;
+    const success = await this.playWithRetry(uri);
+    if (!success) {
+      throw new Error(`Track "${track.name}" is unavailable for playback`);
+    }
+
+    // Wait briefly, then resume if the SDK left playback paused at position 0
+    setTimeout(() => {
+      void this.ensurePlaybackStarted();
+    }, 1500);
+  }
+
+  /**
+   * Attempts to play a Spotify URI, retrying on recoverable 403 errors
+   * (e.g. device not found) with exponential backoff.  Unrecoverable
+   * "Restriction violated" 403s return false immediately.
+   */
+  private async playWithRetry(
+    trackUri: string,
+    retryCount = 0,
+    maxRetries = 2,
+  ): Promise<boolean> {
+    try {
+      await spotifyPlayer.playTrack(trackUri);
+      return true;
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : String(error);
+
+      if (msg.includes('403')) {
+        if (msg.includes('Restriction violated')) {
+          return false; // Unrecoverable
+        }
+        if (retryCount < maxRetries) {
+          const backoffMs = 1500 * Math.pow(2, retryCount);
+          await spotifyPlayer.transferPlaybackToDevice();
+          await new Promise((r) => setTimeout(r, backoffMs));
+          await spotifyPlayer.ensureDeviceIsActive(3, 1000);
+          return this.playWithRetry(trackUri, retryCount + 1, maxRetries);
+        }
+      }
+
+      throw error;
+    }
+  }
+
+  /** After a playTrack call, verify the SDK actually started playing. */
+  private async ensurePlaybackStarted(): Promise<void> {
+    try {
+      const state = await spotifyPlayer.getCurrentState();
+      if (state) {
+        if (state.paused && state.position === 0) {
+          await spotifyPlayer.resume();
+        }
+      } else {
+        // No state means the device is not active — reactivate
+        const token = await spotifyAuth.ensureValidToken();
+        const deviceId = spotifyPlayer.getDeviceId();
+        if (deviceId) {
+          await fetch('https://api.spotify.com/v1/me/player', {
+            method: 'PUT',
+            headers: {
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ device_ids: [deviceId], play: true }),
+          });
+        }
+      }
+    } catch (err) {
+      console.error('[SpotifyPlayback] Failed to ensure playback started:', err);
+    }
   }
 
   async playCollection(
@@ -65,8 +136,6 @@ export class SpotifyPlaybackAdapter implements PlaybackProvider {
   }
 
   async seek(positionMs: number): Promise<void> {
-    // Spotify seek uses the Web API
-    const { spotifyAuth } = await import('@/services/spotify');
     const token = await spotifyAuth.ensureValidToken();
     const deviceId = spotifyPlayer.getDeviceId();
     if (!deviceId) return;

@@ -3,7 +3,7 @@ import { describe, it, expect, vi } from 'vitest';
 // Mock modules that trigger Vite HMR / external services at import time
 vi.mock('@/services/spotifyPlayer', () => ({ spotifyPlayer: {} }));
 vi.mock('@/services/spotify', () => ({ spotifyAuth: {} }));
-vi.mock('@/hooks/useSpotifyPlayback', () => ({ useSpotifyPlayback: vi.fn() }));
+vi.mock('@/hooks/usePlayback', () => ({ usePlayback: vi.fn() }));
 vi.mock('@/hooks/usePlaylistManager', () => ({ usePlaylistManager: vi.fn() }));
 vi.mock('@/hooks/useAutoAdvance', () => ({ useAutoAdvance: vi.fn() }));
 vi.mock('@/hooks/useAccentColor', () => ({ useAccentColor: vi.fn() }));
