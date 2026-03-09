@@ -49,6 +49,15 @@ export interface MatchResult {
   lastfmMatchScore: number;
 }
 
+// ── Unmatched suggestion (for cross-provider resolution) ────────────
+
+export interface UnmatchedSuggestion {
+  name: string;
+  artist: string;
+  /** Last.fm similarity score (0.0–1.0). */
+  matchScore: number;
+}
+
 // ── Radio result ────────────────────────────────────────────────────
 
 export interface RadioResult {
@@ -60,4 +69,6 @@ export interface RadioResult {
     byMbid: number;
     byName: number;
   };
+  /** Last.fm suggestions that didn't match the local catalog, sorted by matchScore descending. */
+  unmatchedSuggestions: UnmatchedSuggestion[];
 }

@@ -6,7 +6,7 @@
  */
 
 import type { MediaTrack } from '@/types/domain';
-import type { RadioSeed, RadioResult, CatalogIndexes, MatchResult } from '@/types/radio';
+import type { RadioSeed, RadioResult, CatalogIndexes, MatchResult, UnmatchedSuggestion } from '@/types/radio';
 import { getSimilarTracks, getSimilarArtists } from './lastfm';
 import { buildIndexes, matchTrack, findTracksByArtist } from './catalogMatcher';
 
@@ -41,17 +41,25 @@ async function generateFromTrack(
   indexes: CatalogIndexes,
 ): Promise<RadioResult> {
   const matches: MatchResult[] = [];
+  const unmatched: UnmatchedSuggestion[] = [];
   const seenIds = new Set<string>();
+  const seenUnmatchedKeys = new Set<string>();
 
   // 1. Get similar tracks from Last.fm
-  let candidates = await getSimilarTracks(seed.artist, seed.track, 100);
-  let lastfmCandidates = candidates.length;
+  const candidates = await getSimilarTracks(seed.artist, seed.track, 100);
+  const lastfmCandidates = candidates.length;
 
   for (const candidate of candidates) {
     const result = matchTrack(candidate, indexes);
     if (result && !seenIds.has(result.track.id)) {
       seenIds.add(result.track.id);
       matches.push(result);
+    } else if (!result) {
+      const key = `${candidate.artist.toLowerCase()}||${candidate.name.toLowerCase()}`;
+      if (!seenUnmatchedKeys.has(key)) {
+        seenUnmatchedKeys.add(key);
+        unmatched.push({ name: candidate.name, artist: candidate.artist, matchScore: candidate.matchScore });
+      }
     }
   }
 
@@ -79,7 +87,7 @@ async function generateFromTrack(
   // Exclude the seed track itself
   const filteredMatches = excludeSeedTrack(matches, seed.artist, seed.track);
 
-  return buildResult(filteredMatches, lastfmCandidates, `Radio based on ${seed.track} by ${seed.artist}`);
+  return buildResult(filteredMatches, unmatched, lastfmCandidates, `Radio based on ${seed.track} by ${seed.artist}`);
 }
 
 // ── Artist seed strategy ────────────────────────────────────────────
@@ -126,7 +134,8 @@ async function generateFromArtist(
     }
   }
 
-  return buildResult(matches, lastfmCandidates, `Radio based on ${seed.artist}`);
+  // Artist seed doesn't produce track-level unmatched suggestions
+  return buildResult(matches, [], lastfmCandidates, `Radio based on ${seed.artist}`);
 }
 
 // ── Album seed strategy ─────────────────────────────────────────────
@@ -136,7 +145,9 @@ async function generateFromAlbum(
   indexes: CatalogIndexes,
 ): Promise<RadioResult> {
   const matches: MatchResult[] = [];
+  const unmatched: UnmatchedSuggestion[] = [];
   const seenIds = new Set<string>();
+  const seenUnmatchedKeys = new Set<string>();
   let totalCandidates = 0;
 
   // Sample up to 5 tracks from the album
@@ -159,6 +170,12 @@ async function generateFromAlbum(
         if (result && !seenIds.has(result.track.id)) {
           seenIds.add(result.track.id);
           matches.push(result);
+        } else if (!result) {
+          const key = `${candidate.artist.toLowerCase()}||${candidate.name.toLowerCase()}`;
+          if (!seenUnmatchedKeys.has(key)) {
+            seenUnmatchedKeys.add(key);
+            unmatched.push({ name: candidate.name, artist: candidate.artist, matchScore: candidate.matchScore });
+          }
         }
       }
     }
@@ -170,7 +187,7 @@ async function generateFromAlbum(
     return normalizedAlbum !== seed.album.toLowerCase();
   });
 
-  return buildResult(filteredMatches, totalCandidates, `Radio based on ${seed.album} by ${seed.artist}`);
+  return buildResult(filteredMatches, unmatched, totalCandidates, `Radio based on ${seed.album} by ${seed.artist}`);
 }
 
 // ── Helpers ─────────────────────────────────────────────────────────
@@ -185,6 +202,7 @@ function excludeSeedTrack(matches: MatchResult[], seedArtist: string, seedTrack:
 
 function buildResult(
   matches: MatchResult[],
+  unmatched: UnmatchedSuggestion[],
   lastfmCandidates: number,
   seedDescription: string,
 ): RadioResult {
@@ -197,6 +215,9 @@ function buildResult(
   const byMbid = matches.filter((m) => m.confidence === 'mbid').length;
   const byName = matches.filter((m) => m.confidence === 'name-exact').length;
 
+  // Sort unmatched by score descending
+  unmatched.sort((a, b) => b.matchScore - a.matchScore);
+
   return {
     queue,
     seedDescription,
@@ -206,6 +227,7 @@ function buildResult(
       byMbid: Math.min(byMbid, queue.length),
       byName: Math.min(byName, queue.length),
     },
+    unmatchedSuggestions: unmatched,
   };
 }
 
