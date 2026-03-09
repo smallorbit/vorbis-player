@@ -2,29 +2,34 @@
 
 This directory contains all project documentation organized by category.
 
-## Structure
+## Guides
 
-### `/analysis`
-Code analysis and assessment documents:
-- `ANALYSIS.md` - Comprehensive codebase analysis and improvement recommendations
+- **[Getting Started](./getting-started.md)** — Installation, environment setup, and first run
+- **[User Guide](./user-guide.md)** — All player features, controls, and keyboard shortcuts
+- **[Contributing](./contributing.md)** — Development setup, project structure, coding conventions
+- **[Troubleshooting](./troubleshooting.md)** — Common issues and solutions
 
-### `/development`
-Development guides and work-in-progress tracking:
-- `ai-agent-wip.md` - Current work-in-progress tracking for AI agent tasks
-- `dynamic-contrast-implementation.md` - Documentation for dynamic contrast feature implementation
+## Providers
 
-### `/providers`
 Step-by-step setup guides for each supported music provider:
-- `spotify-setup.md` - Create a Spotify developer app and connect your account
-- `dropbox-setup.md` - Create a Dropbox app, organize your music files, and connect
 
-### `/deployment`
-Deployment guides and procedures:
-- `deploy-to-vercel.md` - Vercel deployment instructions
+- **[Spotify Setup](./providers/spotify-setup.md)** — Create a Spotify developer app and connect your account
+- **[Dropbox Setup](./providers/dropbox-setup.md)** — Create a Dropbox app, organize your music files, and connect
+
+## Deployment
+
+- **[Deploy to Vercel](./deployment/deploy-to-vercel.md)** — Vercel deployment instructions
+
+## Development
+
+Internal development docs and implementation plans:
+
+- `development/ai-agent-wip.md` — Current work-in-progress tracking for AI agent tasks
+- `development/dynamic-contrast-implementation.md` — Dynamic contrast feature implementation
+- `development/dropbox-provider-handoff.md` — Dropbox provider handoff notes
+- `analysis/ANALYSIS.md` — Codebase analysis and improvement recommendations
 
 ## Quick Links
 
-- **For AI Agents**: See `AGENTS.md` in the project root for commands and conventions
-- **For Developers**: See `CLAUDE.md` in the project root for project overview and development guidelines
-- **For Analysis**: See `analysis/ANALYSIS.md` for codebase analysis and improvement recommendations
-
+- **Project Root**: See `CLAUDE.md` for architecture overview and AI development guidelines
+- **Implementation Plans**: See `implementation-plans/` for feature design documents
