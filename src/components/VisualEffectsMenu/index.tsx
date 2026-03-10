@@ -6,6 +6,7 @@ import { ProfiledComponent } from '@/components/ProfiledComponent';
 import { usePlayerSizing } from '../../hooks/usePlayerSizing';
 import { useProviderContext } from '@/contexts/ProviderContext';
 import type { DropboxCatalogAdapter } from '@/providers/dropbox/dropboxCatalogAdapter';
+import { ART_REFRESHED_EVENT } from '@/hooks/useLibrarySync';
 
 import {
   DrawerOverlay,
@@ -172,8 +173,9 @@ const DropboxDataSection = memo(({ accentColor, catalog }: { accentColor: string
 
   const handleRefreshArt = async () => {
     setArtStatus('working');
-    await catalog.clearArtCache();
-    catalog.listCollections().catch(() => {});
+    const { clearCatalogCache } = await import('@/providers/dropbox/dropboxCatalogCache');
+    await Promise.all([catalog.clearArtCache(), clearCatalogCache()]);
+    window.dispatchEvent(new CustomEvent(ART_REFRESHED_EVENT));
     setArtStatus('done');
     setTimeout(() => setArtStatus('idle'), 1500);
   };
