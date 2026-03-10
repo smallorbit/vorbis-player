@@ -14,6 +14,8 @@ import { useProviderContext } from '../contexts/ProviderContext';
 import type { MediaCollection } from '../types/domain';
 import { LIKES_CHANGED_EVENT } from '../providers/dropbox/dropboxLikesCache';
 
+export const ART_REFRESHED_EVENT = 'vorbis-art-refreshed';
+
 interface UseLibrarySyncResult {
   playlists: CachedPlaylistInfo[];
   albums: AlbumInfo[];
@@ -243,6 +245,12 @@ export function useLibrarySync(): UseLibrarySyncResult {
       }
     }
   }, [activeProviderId, activeDescriptor]);
+
+  useEffect(() => {
+    const handleArtRefresh = () => { refreshNow().catch(() => {}); };
+    window.addEventListener(ART_REFRESHED_EVENT, handleArtRefresh);
+    return () => window.removeEventListener(ART_REFRESHED_EVENT, handleArtRefresh);
+  }, [refreshNow]);
 
   return {
     playlists,
