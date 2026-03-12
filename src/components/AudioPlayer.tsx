@@ -17,6 +17,7 @@ import { useVisualEffectsContext } from '@/contexts/VisualEffectsContext';
 import { useTrackContext } from '@/contexts/TrackContext';
 import { useProviderContext } from '@/contexts/ProviderContext';
 import type { ProviderSwitchInterceptor } from '@/contexts/ProviderContext';
+import type { ProviderId } from '@/types/domain';
 import { resolveViaSpotify } from '@/services/spotifyResolver';
 import { toAlbumPlaylistId } from '@/constants/playlist';
 
@@ -65,6 +66,7 @@ const AudioPlayerComponent = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [isResolving, setIsResolving] = useState(false);
   const [removedCount, setRemovedCount] = useState<number | null>(null);
+  const [pendingProviderId, setPendingProviderId] = useState<ProviderId | null>(null);
   const proceedSwitchRef = useRef<(() => void) | null>(null);
 
   // Register provider switch interceptor when radio is active
@@ -73,7 +75,8 @@ const AudioPlayerComponent = () => {
       setProviderSwitchInterceptor(null);
       return;
     }
-    const interceptor: ProviderSwitchInterceptor = (_newId, proceed, _cancel) => {
+    const interceptor: ProviderSwitchInterceptor = (newId, proceed, _cancel) => {
+      setPendingProviderId(newId);
       proceedSwitchRef.current = proceed;
       setRemovedCount(null);
       setIsResolving(false);
@@ -85,6 +88,7 @@ const AudioPlayerComponent = () => {
 
   const handleDialogDismiss = useCallback(() => {
     setDialogOpen(false);
+    setPendingProviderId(null);
     proceedSwitchRef.current = null;
     setRemovedCount(null);
     setIsResolving(false);
@@ -94,6 +98,7 @@ const AudioPlayerComponent = () => {
     radio?.stopRadio();
     proceedSwitchRef.current?.();
     setDialogOpen(false);
+    setPendingProviderId(null);
     proceedSwitchRef.current = null;
     setRemovedCount(null);
     setIsResolving(false);
@@ -107,7 +112,7 @@ const AudioPlayerComponent = () => {
       const spotifyTracks = mediaTracks.filter((t) => t.provider === 'spotify');
 
       const resolved = await resolveViaSpotify(
-        dropboxTracks.map((t) => ({ artist: t.artists, name: t.name, matchScore: 1 })),
+        dropboxTracks.map((t) => ({ artist: t.artists, name: t.name })),
       );
 
       const dropped = dropboxTracks.length - resolved.length;
@@ -122,6 +127,7 @@ const AudioPlayerComponent = () => {
       setRemovedCount(dropped);
       proceedSwitchRef.current?.();
       proceedSwitchRef.current = null;
+      setPendingProviderId(null);
     } catch {
       setIsResolving(false);
       handleDialogDismiss();
