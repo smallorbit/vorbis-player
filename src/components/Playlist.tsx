@@ -1,6 +1,7 @@
 import React, { memo, useRef, useEffect } from 'react';
 import styled from 'styled-components';
 import type { Track } from '../services/spotify';
+import { SpotifyIcon, DropboxIcon } from './icons/ProviderIcons';
 import { Card, CardHeader, CardContent, CardDescription } from '../components/styled';
 import { ScrollArea } from '../components/styled';
 import { Avatar } from '../components/styled';
@@ -144,7 +145,8 @@ interface PlaylistProps {
   currentTrackIndex: number;
   accentColor: string;
   onTrackSelect: (index: number) => void;
-  isOpen?: boolean; // Add isOpen prop to trigger scrolling
+  isOpen?: boolean;
+  radioActive?: boolean;
 }
 
 interface PlaylistItemProps {
@@ -153,16 +155,18 @@ interface PlaylistItemProps {
   isSelected: boolean;
   accentColor: string;
   onSelect: (index: number) => void;
-  itemRef?: React.RefObject<HTMLDivElement>; // Add ref prop
+  itemRef?: React.RefObject<HTMLDivElement>;
+  radioActive?: boolean;
 }
 
-const PlaylistItem = memo<PlaylistItemProps>(({ 
-  track, 
-  index, 
-  isSelected, 
+const PlaylistItem = memo<PlaylistItemProps>(({
+  track,
+  index,
+  isSelected,
   accentColor,
   onSelect,
-  itemRef
+  itemRef,
+  radioActive,
 }) => {
   return (
     <PlaylistItemContainer
@@ -206,11 +210,17 @@ const PlaylistItem = memo<PlaylistItemProps>(({
       <Duration isSelected={isSelected} accentColor={accentColor}>
         {track.duration_ms ? `${Math.floor(track.duration_ms / 60000)}:${Math.floor((track.duration_ms % 60000) / 1000).toString().padStart(2, '0')}` : '--:--'}
       </Duration>
+
+      {radioActive && track.provider && (
+        track.provider === 'spotify'
+          ? <SpotifyIcon size={14} />
+          : <DropboxIcon size={14} />
+      )}
     </PlaylistItemContainer>
   );
 });
 
-const Playlist = memo<PlaylistProps>(({ tracks, currentTrackIndex, accentColor, onTrackSelect, isOpen = false }) => {
+const Playlist = memo<PlaylistProps>(({ tracks, currentTrackIndex, accentColor, onTrackSelect, isOpen = false, radioActive }) => {
   const currentTrackRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll to current track when playlist opens
@@ -247,6 +257,7 @@ const Playlist = memo<PlaylistProps>(({ tracks, currentTrackIndex, accentColor, 
                   accentColor={accentColor}
                   onSelect={onTrackSelect}
                   itemRef={index === currentTrackIndex ? currentTrackRef : undefined}
+                  radioActive={radioActive}
                 />
               ))}
             </PlaylistItems>
