@@ -9,6 +9,8 @@ A visually immersive music player built with React and TypeScript, featuring cus
 ## Features
 
 - **Multi-Provider Support** — Stream from Spotify or your personal Dropbox music library
+- **Vorbis Mode** — Cross-provider radio: Dropbox radio sessions automatically mix in Spotify tracks for recommendations not found locally (requires both providers authenticated + a Last.fm API key)
+- **Dropbox Radio** — Start a radio session from any playing Dropbox track; recommendations sourced from Last.fm, matched by MusicBrainz ID or name, resolved to Spotify for missing tracks
 - **Playlists & Albums** — Browse, search, sort, filter, and pin your collections
 - **Liked Songs** — Play your Liked Songs collection with automatic shuffle
 - **Visual Effects** — Dynamic glow, configurable album art filters, accent color backgrounds
