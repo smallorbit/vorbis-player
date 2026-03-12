@@ -66,7 +66,6 @@ const AudioPlayerComponent = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [isResolving, setIsResolving] = useState(false);
   const [removedCount, setRemovedCount] = useState<number | null>(null);
-  const [pendingProviderId, setPendingProviderId] = useState<ProviderId | null>(null);
   const proceedSwitchRef = useRef<(() => void) | null>(null);
 
   // Register provider switch interceptor when radio is active
@@ -75,8 +74,7 @@ const AudioPlayerComponent = () => {
       setProviderSwitchInterceptor(null);
       return;
     }
-    const interceptor: ProviderSwitchInterceptor = (newId, proceed, _cancel) => {
-      setPendingProviderId(newId);
+    const interceptor: ProviderSwitchInterceptor = (_newId, proceed, _cancel) => {
       proceedSwitchRef.current = proceed;
       setRemovedCount(null);
       setIsResolving(false);
@@ -88,7 +86,6 @@ const AudioPlayerComponent = () => {
 
   const handleDialogDismiss = useCallback(() => {
     setDialogOpen(false);
-    setPendingProviderId(null);
     proceedSwitchRef.current = null;
     setRemovedCount(null);
     setIsResolving(false);
@@ -98,7 +95,6 @@ const AudioPlayerComponent = () => {
     radio?.stopRadio();
     proceedSwitchRef.current?.();
     setDialogOpen(false);
-    setPendingProviderId(null);
     proceedSwitchRef.current = null;
     setRemovedCount(null);
     setIsResolving(false);
@@ -112,7 +108,7 @@ const AudioPlayerComponent = () => {
       const spotifyTracks = mediaTracks.filter((t) => t.provider === 'spotify');
 
       const resolved = await resolveViaSpotify(
-        dropboxTracks.map((t) => ({ artist: t.artists, name: t.name })),
+        dropboxTracks.map((t) => ({ artist: t.artists, name: t.name, matchScore: 1 })),
       );
 
       const dropped = dropboxTracks.length - resolved.length;
@@ -127,7 +123,6 @@ const AudioPlayerComponent = () => {
       setRemovedCount(dropped);
       proceedSwitchRef.current?.();
       proceedSwitchRef.current = null;
-      setPendingProviderId(null);
     } catch {
       setIsResolving(false);
       handleDialogDismiss();
