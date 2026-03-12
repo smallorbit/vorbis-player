@@ -12,6 +12,8 @@ interface UseSpotifyPlaybackProps {
   /** When set, playTrack uses this for non-Spotify provider playback. */
   activeDescriptor?: ProviderDescriptor | null;
   mediaTracksRef?: React.MutableRefObject<MediaTrack[]>;
+  /** Called when a Spotify API 401 auth error occurs during cross-provider playback. */
+  onSpotifyAuthExpired?: () => void;
 }
 
 export const useSpotifyPlayback = ({
@@ -19,6 +21,7 @@ export const useSpotifyPlayback = ({
   setCurrentTrackIndex,
   activeDescriptor,
   mediaTracksRef,
+  onSpotifyAuthExpired,
 }: UseSpotifyPlaybackProps) => {
 
   /** Tracks which provider is currently handling playback (may differ from activeDescriptor during cross-provider queues). */
@@ -69,29 +72,37 @@ export const useSpotifyPlayback = ({
   const playSpotifyTrack = useCallback(async (mediaTrack: MediaTrack, index: number, skipOnError: boolean, totalTracks: number, playTrackFn: (i: number, s?: boolean) => void) => {
     if (!spotifyAuth.isAuthenticated()) return;
 
-    // Ensure the Spotify SDK is initialized
+    // Ensure the Spotify SDK is initialized and device is ready
     const spotifyDescriptor = providerRegistry.get('spotify');
     if (spotifyDescriptor) {
       await spotifyDescriptor.playback.initialize();
+      await spotifyPlayer.ensureDeviceIsActive(3, 1000);
     }
 
     const trackUri = mediaTrack.playbackRef.ref;
     const trackName = mediaTrack.name;
 
+    type PlayResult = 'success' | 'unavailable' | 'auth_expired';
+
     // Retry logic for 403 errors
-    const playWithRetry = async (uri: string, retryCount = 0, maxRetries = 2): Promise<boolean> => {
+    const playWithRetry = async (uri: string, retryCount = 0, maxRetries = 2): Promise<PlayResult> => {
       try {
         await spotifyPlayer.playTrack(uri);
-        return true;
+        return 'success';
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
+
+        if (errorMessage.includes('401') || errorMessage.toLowerCase().includes('unauthorized')) {
+          onSpotifyAuthExpired?.();
+          return 'auth_expired';
+        }
 
         if (errorMessage.includes('403')) {
           const isRestrictionViolated = errorMessage.includes('Restriction violated');
 
           if (isRestrictionViolated) {
             console.warn(`Track "${trackName}" is unavailable (region-locked or removed)`);
-            return false;
+            return 'unavailable';
           }
 
           if (retryCount < maxRetries) {
@@ -107,9 +118,13 @@ export const useSpotifyPlayback = ({
       }
     };
 
-    const success = await playWithRetry(trackUri);
+    const playResult = await playWithRetry(trackUri);
 
-    if (!success) {
+    if (playResult === 'auth_expired') {
+      return;
+    }
+
+    if (playResult === 'unavailable') {
       if (skipOnError && index < totalTracks - 1) {
         setTimeout(() => playTrackFn(index + 1, skipOnError), 500);
         return;
@@ -130,7 +145,7 @@ export const useSpotifyPlayback = ({
         }
       })();
     }, 1500);
-  }, [setCurrentTrackIndex, handlePlaybackResume]);
+  }, [setCurrentTrackIndex, handlePlaybackResume, onSpotifyAuthExpired]);
 
   const playTrack = useCallback(async (index: number, skipOnError = false) => {
     const mediaTracks = mediaTracksRef?.current ?? [];
