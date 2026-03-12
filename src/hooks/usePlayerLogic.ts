@@ -487,6 +487,10 @@ export function usePlayerLogic() {
       stopRadio,
       spotifyAuthExpired,
       clearSpotifyAuthExpired,
+      isActive: radioState.isActive,
     },
+    mediaTracksRef,
+    setTracks,
+    setOriginalTracks,
   };
 }

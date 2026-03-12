@@ -91,6 +91,7 @@ interface PlaylistBottomSheetProps {
   accentColor: string;
   onTrackSelect: (index: number) => void;
   radioLabel?: string | null;
+  radioActive?: boolean;
 }
 
 const PlaylistBottomSheet = memo<PlaylistBottomSheetProps>(function PlaylistBottomSheet({
@@ -101,6 +102,7 @@ const PlaylistBottomSheet = memo<PlaylistBottomSheetProps>(function PlaylistBott
   accentColor,
   onTrackSelect,
   radioLabel,
+  radioActive,
 }) {
   const { ref: headerRef, isDragging, dragOffset } = useVerticalSwipeGesture({
     onSwipeDown: onClose,
@@ -170,6 +172,7 @@ const PlaylistBottomSheet = memo<PlaylistBottomSheetProps>(function PlaylistBott
                   onClose();
                 }}
                 isOpen={isOpen}
+                radioActive={radioActive}
               />
             </Suspense>
           )}

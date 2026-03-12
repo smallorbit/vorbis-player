@@ -124,6 +124,7 @@ interface PlaylistDrawerProps {
   accentColor: string;
   onTrackSelect: (index: number) => void;
   radioLabel?: string | null;
+  radioActive?: boolean;
 }
 
 // Custom comparison function for PlaylistDrawer memo optimization
@@ -156,6 +157,10 @@ const arePlaylistDrawerPropsEqual = (
     return false;
   }
 
+  if (prevProps.radioActive !== nextProps.radioActive) {
+    return false;
+  }
+
   // For callbacks, we assume they're stable (parent should use useCallback)
   return true;
 };
@@ -168,6 +173,7 @@ const PlaylistDrawer = memo<PlaylistDrawerProps>(({
   accentColor,
   onTrackSelect,
   radioLabel,
+  radioActive,
 }) => {
   // Get responsive sizing information
   const { viewport, isMobile, isTablet, transitionDuration, transitionEasing } = usePlayerSizing();
@@ -230,6 +236,7 @@ const PlaylistDrawer = memo<PlaylistDrawerProps>(({
                 onClose(); // Close drawer after selecting track
               }}
               isOpen={isOpen}
+              radioActive={radioActive}
             />
           </Suspense>
         </PlaylistContent>

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import styled from 'styled-components';
 import { flexCenter } from '@/styles/utils';
 import PlayerStateRenderer from './PlayerStateRenderer';
@@ -7,14 +7,18 @@ import BackgroundVisualizer from './BackgroundVisualizer';
 import AccentColorBackground from './AccentColorBackground';
 import DebugOverlay, { useDebugActivator } from './DebugOverlay';
 import ProviderSetupScreen from './ProviderSetupScreen';
+import VorbisQueueDialog from './VorbisQueueDialog';
 import { ProfilingProvider } from '@/contexts/ProfilingContext';
 import { ProfilingOverlay } from '@/components/ProfilingOverlay';
 import { ProfiledComponent } from '@/components/ProfiledComponent';
-import { usePlayerLogic } from '@/hooks/usePlayerLogic';
+import { usePlayerLogic, mediaTrackToTrack } from '@/hooks/usePlayerLogic';
 import { useColorContext } from '@/contexts/ColorContext';
 import { useVisualEffectsContext } from '@/contexts/VisualEffectsContext';
 import { useTrackContext } from '@/contexts/TrackContext';
 import { useProviderContext } from '@/contexts/ProviderContext';
+import type { ProviderSwitchInterceptor } from '@/contexts/ProviderContext';
+import type { ProviderId } from '@/types/domain';
+import { resolveViaSpotify } from '@/services/spotifyResolver';
 import { toAlbumPlaylistId } from '@/constants/playlist';
 
 const Container = styled.div`
@@ -25,7 +29,7 @@ const Container = styled.div`
 `;
 
 const AudioPlayerComponent = () => {
-  const { state, handlers, radio } = usePlayerLogic();
+  const { state, handlers, radio, mediaTracksRef, setTracks, setOriginalTracks } = usePlayerLogic();
   const { debugActive, handleActivatorTap } = useDebugActivator();
   const { accentColor } = useColorContext();
   const {
@@ -35,7 +39,7 @@ const AudioPlayerComponent = () => {
     accentColorBackgroundEnabled,
     zenModeEnabled,
   } = useVisualEffectsContext();
-  const { tracks, selectedPlaylistId } = useTrackContext();
+  const { tracks, selectedPlaylistId, currentTrack } = useTrackContext();
 
   const handleAlbumPlay = useCallback((albumId: string, _albumName: string) => {
     handlers.handlePlaylistSelect(toAlbumPlaylistId(albumId));
@@ -55,8 +59,82 @@ const AudioPlayerComponent = () => {
     onStartRadio: handlers.handleStartRadio,
   }), [handlers, handleAlbumPlay]);
 
-  const { chosenProviderId, activeDescriptor } = useProviderContext();
+  const { chosenProviderId, activeDescriptor, setProviderSwitchInterceptor } = useProviderContext();
   const needsSetup = chosenProviderId === null || !activeDescriptor?.auth.isAuthenticated();
+
+  // VorbisQueueDialog state
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [isResolving, setIsResolving] = useState(false);
+  const [removedCount, setRemovedCount] = useState<number | null>(null);
+  const [pendingProviderId, setPendingProviderId] = useState<ProviderId | null>(null);
+  const proceedSwitchRef = useRef<(() => void) | null>(null);
+
+  // Register provider switch interceptor when radio is active
+  useEffect(() => {
+    if (!radio?.isActive) {
+      setProviderSwitchInterceptor(null);
+      return;
+    }
+    const interceptor: ProviderSwitchInterceptor = (newId, proceed, _cancel) => {
+      setPendingProviderId(newId);
+      proceedSwitchRef.current = proceed;
+      setRemovedCount(null);
+      setIsResolving(false);
+      setDialogOpen(true);
+    };
+    setProviderSwitchInterceptor(interceptor);
+    return () => setProviderSwitchInterceptor(null);
+  }, [radio?.isActive, setProviderSwitchInterceptor]);
+
+  const handleDialogDismiss = useCallback(() => {
+    setDialogOpen(false);
+    setPendingProviderId(null);
+    proceedSwitchRef.current = null;
+    setRemovedCount(null);
+    setIsResolving(false);
+  }, []);
+
+  const handleStartFresh = useCallback(() => {
+    radio?.stopRadio();
+    proceedSwitchRef.current?.();
+    setDialogOpen(false);
+    setPendingProviderId(null);
+    proceedSwitchRef.current = null;
+    setRemovedCount(null);
+    setIsResolving(false);
+  }, [radio]);
+
+  const handleKeepQueue = useCallback(async () => {
+    setIsResolving(true);
+    try {
+      const mediaTracks = mediaTracksRef.current;
+      const dropboxTracks = mediaTracks.filter((t) => t.provider === 'dropbox');
+      const spotifyTracks = mediaTracks.filter((t) => t.provider === 'spotify');
+
+      const resolved = await resolveViaSpotify(
+        dropboxTracks.map((t) => ({ artist: t.artists, name: t.name })),
+      );
+
+      const dropped = dropboxTracks.length - resolved.length;
+      const resolvedQueue = [...spotifyTracks, ...resolved];
+
+      mediaTracksRef.current = resolvedQueue;
+      const trackList = resolvedQueue.map(mediaTrackToTrack);
+      setOriginalTracks(trackList);
+      setTracks(trackList);
+
+      setIsResolving(false);
+      setRemovedCount(dropped);
+      proceedSwitchRef.current?.();
+      proceedSwitchRef.current = null;
+      setPendingProviderId(null);
+    } catch {
+      setIsResolving(false);
+      handleDialogDismiss();
+    }
+  }, [mediaTracksRef, setTracks, setOriginalTracks, handleDialogDismiss]);
+
+  const currentTrackProvider = currentTrack?.provider;
 
   const autoSelectFired = useRef(false);
   useEffect(() => {
@@ -98,6 +176,10 @@ const AudioPlayerComponent = () => {
           handlers={playbackHandlers}
           radioState={radio.radioState}
           isRadioAvailable={radio.isRadioAvailable}
+          radioActive={radio.isActive}
+          currentTrackProvider={currentTrackProvider}
+          spotifyAuthExpired={radio.spotifyAuthExpired}
+          onClearSpotifyAuthExpired={radio.clearSpotifyAuthExpired}
         />
       </ProfiledComponent>
     );
@@ -131,6 +213,14 @@ const AudioPlayerComponent = () => {
           />
         </ProfiledComponent>
         {renderContent()}
+        <VorbisQueueDialog
+          isOpen={dialogOpen}
+          isResolving={isResolving}
+          removedCount={removedCount}
+          onKeepQueue={handleKeepQueue}
+          onStartFresh={handleStartFresh}
+          onDismiss={handleDialogDismiss}
+        />
       </Container>
     </ProfilingProvider>
   );
