@@ -1,9 +1,21 @@
 import { memo, Fragment, useState, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
+import styled from 'styled-components';
 import type { ArtistInfo } from '../../services/spotify';
+import type { ProviderId } from '../../types/domain';
 import { useProviderContext } from '../../contexts/ProviderContext';
 import { PlayerTrackName, PlayerTrackAlbum, AlbumLink, PlayerTrackArtist, TrackInfoOnlyRow, ArtistLink } from './styled';
 import TrackInfoPopover, { LibraryIcon, SpotifyIcon, PlayIcon, DiscogsIcon, ICON_MAP } from './TrackInfoPopover';
+import { SpotifyIcon as SpotifyProviderIcon, DropboxIcon as DropboxProviderIcon } from '../icons/ProviderIcons';
+
+const ProviderBadge = styled.span`
+  display: inline-flex;
+  align-items: center;
+  margin-left: 0.375rem;
+  vertical-align: middle;
+  opacity: 0.85;
+  flex-shrink: 0;
+`;
 
 interface TrackInfoProps {
     track: {
@@ -18,6 +30,8 @@ interface TrackInfoProps {
     isTablet: boolean;
     onArtistBrowse?: (artistName: string) => void;
     onAlbumPlay?: (albumId: string, albumName: string) => void;
+    radioActive?: boolean;
+    currentProvider?: ProviderId;
 }
 
 // Custom comparison function for memo optimization
@@ -33,7 +47,9 @@ const areTrackInfoPropsEqual = (
         prevProps.isMobile === nextProps.isMobile &&
         prevProps.isTablet === nextProps.isTablet &&
         prevProps.onArtistBrowse === nextProps.onArtistBrowse &&
-        prevProps.onAlbumPlay === nextProps.onAlbumPlay
+        prevProps.onAlbumPlay === nextProps.onAlbumPlay &&
+        prevProps.radioActive === nextProps.radioActive &&
+        prevProps.currentProvider === nextProps.currentProvider
     );
 };
 
@@ -42,7 +58,7 @@ type PopoverState =
     | { type: 'album'; albumId: string; albumName: string; rect: DOMRect }
     | null;
 
-const TrackInfo = memo<TrackInfoProps>(({ track, isMobile, isTablet, onArtistBrowse, onAlbumPlay }) => {
+const TrackInfo = memo<TrackInfoProps>(({ track, isMobile, isTablet, onArtistBrowse, onAlbumPlay, radioActive, currentProvider }) => {
     const [popover, setPopover] = useState<PopoverState>(null);
     const artistRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
     const albumRef = useRef<HTMLButtonElement>(null);
@@ -202,11 +218,24 @@ const TrackInfo = memo<TrackInfoProps>(({ track, isMobile, isTablet, onArtistBro
         document.body
     );
 
+    const renderProviderBadge = () => {
+        if (!radioActive || !currentProvider) return null;
+        return (
+            <ProviderBadge>
+                {currentProvider === 'spotify'
+                    ? <SpotifyProviderIcon size={14} />
+                    : <DropboxProviderIcon size={14} />
+                }
+            </ProviderBadge>
+        );
+    };
+
     return (
         <>
             <TrackInfoOnlyRow $compact={isMobile || isTablet}>
                 <PlayerTrackName $isMobile={isMobile} $isTablet={isTablet}>
                     {track?.name || 'No track selected'}
+                    {renderProviderBadge()}
                 </PlayerTrackName>
                 {track?.album && (
                     <PlayerTrackAlbum>{renderAlbum()}</PlayerTrackAlbum>

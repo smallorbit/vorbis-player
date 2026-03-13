@@ -2,6 +2,7 @@ import React, { Suspense, lazy, useState, useCallback, useRef, useEffect } from 
 import { clearCacheWithOptions } from '@/services/cache/libraryCache';
 import { clearAllPins } from '@/services/settings/pinnedItemsStorage';
 import type { ClearCacheOptions } from '@/components/VisualEffectsMenu';
+import type { ProviderId } from '@/types/domain';
 import styled, { useTheme } from 'styled-components';
 import { CardContent } from './styled';
 import AlbumArt from './AlbumArt';
@@ -58,6 +59,10 @@ interface PlayerContentProps {
   handlers: PlaybackHandlers;
   radioState?: { isActive: boolean; seedDescription: string | null; isGenerating: boolean; error: string | null };
   isRadioAvailable?: boolean;
+  radioActive?: boolean;
+  currentTrackProvider?: ProviderId;
+  spotifyAuthExpired?: boolean;
+  onClearSpotifyAuthExpired?: () => void;
 }
 
 const ContentWrapper = styled.div.withConfig({
@@ -261,6 +266,38 @@ const ZenControlsInner = styled.div`
   overflow: hidden;
 `;
 
+const SpotifyAuthBanner = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  margin-bottom: 0.5rem;
+  border-radius: ${({ theme }) => theme.borderRadius.lg};
+  background: ${({ theme }) => theme.colors.overlay.panel ?? 'rgba(0,0,0,0.5)'};
+  border: 1px solid ${({ theme }) => theme.colors.warning ?? theme.colors.accent};
+  font-size: ${({ theme }) => theme.fontSize.sm};
+  color: ${({ theme }) => theme.colors.foreground};
+  line-height: 1.4;
+`;
+
+const SpotifyAuthBannerDismiss = styled.button`
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: ${({ theme }) => theme.colors.muted.foreground};
+  font-size: 1rem;
+  line-height: 1;
+  padding: 0.125rem 0.25rem;
+  border-radius: ${({ theme }) => theme.borderRadius.sm};
+  transition: color ${({ theme }) => theme.transitions.fast};
+
+  &:hover {
+    color: ${({ theme }) => theme.colors.foreground};
+  }
+`;
+
 // Album art container with click handler
 const ClickableAlbumArtContainer = styled.div<{ $swipeEnabled?: boolean; $bothGestures?: boolean }>`
   position: relative;
@@ -287,7 +324,7 @@ const FlipInner = styled.div.withConfig({
 `;
 
 
-const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, showLibraryDrawer, onAlbumArtBoundsChange, handlers, radioState, isRadioAvailable }) => {
+const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, showLibraryDrawer, onAlbumArtBoundsChange, handlers, radioState, isRadioAvailable, radioActive, currentTrackProvider, spotifyAuthExpired, onClearSpotifyAuthExpired }) => {
   // --- Context hooks ---
   const {
     tracks,
@@ -643,6 +680,12 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
       transitionEasing={transitionEasing}
       $zenMode={zenModeEnabled}
     >
+      {spotifyAuthExpired && (
+        <SpotifyAuthBanner>
+          <span>Spotify session expired — reconnect Spotify to continue playing all tracks.</span>
+          <SpotifyAuthBannerDismiss onClick={onClearSpotifyAuthExpired} aria-label="Dismiss">×</SpotifyAuthBannerDismiss>
+        </SpotifyAuthBanner>
+      )}
       <PlayerContainer>
         <PlayerStack $zenMode={zenModeEnabled}>
           {/* Album Art Zone */}
@@ -747,6 +790,8 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
                         onPrevious={handlers.onPrevious}
                         onArtistBrowse={handleArtistBrowse}
                         onAlbumPlay={handleAlbumPlay}
+                        radioActive={radioActive}
+                        currentTrackProvider={currentTrackProvider}
                       />
                     </ProfiledComponent>
                   </Suspense>
@@ -798,6 +843,7 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
               accentColor={accentColor}
               onTrackSelect={handlers.onTrackSelect}
               radioLabel={radioState?.isActive ? radioState.seedDescription : undefined}
+              radioActive={radioActive}
             />
           </ProfiledComponent>
         ) : (
@@ -810,6 +856,7 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
               accentColor={accentColor}
               onTrackSelect={handlers.onTrackSelect}
               radioLabel={radioState?.isActive ? radioState.seedDescription : undefined}
+              radioActive={radioActive}
             />
           </ProfiledComponent>
         )}

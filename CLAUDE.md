@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) and other AI assista
 
 **Vorbis Player** is a React/TypeScript music player with customizable visual effects and a pluggable provider architecture. Supports **Spotify** (streaming, Premium required) and **Dropbox** (personal files via HTML5 Audio).
 
-Key capabilities: multi-provider auth/catalog/playback adapters, background visualizers, album art flip menu, bottom bar, swipe gestures (drawer toggles), keyboard shortcuts, IndexedDB caching, responsive layout.
+Key capabilities: multi-provider auth/catalog/playback adapters, Vorbis mode (cross-provider radio), background visualizers, album art flip menu, bottom bar, swipe gestures (drawer toggles), keyboard shortcuts, IndexedDB caching, responsive layout.
 
 ## Build Verification
 
@@ -63,7 +63,7 @@ src/
 ├── constants/       # playlist.ts — ALBUM_ID_PREFIX, LIKED_SONGS_ID, helpers
 ├── providers/       # Multi-provider system; spotify/ and dropbox/ subdirs
 ├── hooks/           # 22 custom hooks
-├── services/        # spotify.ts (auth + API), spotifyPlayer.ts (lazy SDK loading + playback), cache/ (IndexedDB)
+├── services/        # spotify.ts (auth + API), spotifyPlayer.ts (lazy SDK loading + playback), radioService.ts, lastfm.ts, catalogMatcher.ts, spotifyResolver.ts, cache/ (IndexedDB)
 ├── utils/           # colorExtractor, colorUtils, sizingUtils, playlistFilters, etc.
 ├── workers/         # imageProcessor.worker.ts
 ├── types/           # domain.ts, providers.ts, filters.ts
@@ -119,6 +119,38 @@ Folders containing audio files become albums; parent folder = artist. A syntheti
 
 **Spotify SDK loading**: The Spotify Web Playback SDK is loaded lazily by `SpotifyPlayerService.loadSDK()` — no global script tag in `index.html`. The SDK is only injected when the Spotify provider activates.
 
+**Provider switch interception**: `ProviderContext` exposes `setProviderSwitchInterceptor(fn | null)`. When set, the interceptor is called with `(newProviderId, proceed, cancel)` before any provider switch completes. Used by Vorbis mode to show the queue preservation dialog. Clear the interceptor (pass `null`) when the condition no longer applies.
+
+### Vorbis Mode (Cross-Provider Radio)
+
+**Vorbis mode** activates automatically when a Dropbox radio session starts and Spotify is also authenticated. It allows a single playback queue to contain tracks from both providers.
+
+**Radio flow** (`usePlayerLogic.handleStartRadio`):
+1. Full Dropbox catalog is loaded via `catalog.listTracks()`
+2. Last.fm `getSimilarTracks` / `getSimilarArtists` fetches recommendations seeded from the current track
+3. `catalogMatcher.ts` matches Last.fm results against the Dropbox catalog by MusicBrainz ID (from ID3 tags) then by normalised name
+4. Unmatched suggestions are resolved via `spotifyResolver.resolveViaSpotify()` — searched on Spotify and returned as `MediaTrack` objects with `provider: 'spotify'`
+5. Combined Dropbox + Spotify queue is set as the active tracklist; `selectedPlaylistId = 'radio'`
+6. Spotify SDK is pre-warmed concurrently with step 2 so the first Spotify track plays without delay
+
+**Cross-provider playback** (`useSpotifyPlayback.playTrack`):
+- When `activeDescriptor.id !== 'spotify'` but `mediaTrack.provider === 'spotify'`, pauses the active provider and routes through `playSpotifyTrack()`
+- `playSpotifyTrack` calls `initialize()` then `ensureDeviceIsActive(3, 1000)` before `spotifyPlayer.playTrack(uri)`
+- 401 auth errors trigger `onSpotifyAuthExpired` callback instead of silently skipping
+- `currentPlaybackProviderRef` tracks which provider is actually playing (may differ from `activeDescriptor`)
+
+**Vorbis mode exits** when the user selects any playlist or album (`handlePlaylistSelect` clears radio state).
+
+**Provider icons**: `SpotifyIcon` / `DropboxIcon` in `src/components/icons/ProviderIcons.tsx`. Rendered on the player controls panel (`TrackInfo`) and on each playlist row (`PlaylistItem`) when `radioActive` is true.
+
+**Queue preservation dialog** (`VorbisQueueDialog`): shown when the user switches providers mid-radio. "Keep queue" resolves Dropbox tracks to Spotify equivalents via `searchTrack`, drops unresolvable ones, and reports the count. "Start fresh" calls `stopRadio()` and completes the switch.
+
+**Required env var for radio**:
+```
+VITE_LASTFM_API_KEY="your_lastfm_api_key"
+```
+Radio button only appears when this is set. Spotify authentication is optional but enables cross-provider track resolution.
+
 ### Responsive Sizing
 
 Breakpoints and exact values are in `src/styles/theme.ts`. Sizing calculations are in `src/utils/sizingUtils.ts` and `src/hooks/usePlayerSizing.ts`.
@@ -162,6 +194,11 @@ Optional (enables Dropbox):
 VITE_DROPBOX_CLIENT_ID="your_dropbox_app_key"
 ```
 
+Optional (enables Dropbox radio + Vorbis mode):
+```
+VITE_LASTFM_API_KEY="your_lastfm_api_key"
+```
+
 Vite dev server: host `127.0.0.1`, port `3000` (required for Spotify OAuth).
 Path alias: `@/` → `./src/` (e.g. `import { x } from '@/hooks/usePlayerState'`).
 
@@ -196,6 +233,12 @@ Path alias: `@/` → `./src/` (e.g. `import { x } from '@/hooks/usePlayerState'`
 
 **Visual Effects:**
 - Album art filters not working → always pass `albumFilters={albumFilters}` to `AlbumArt`
+
+**Vorbis Mode / Radio:**
+- Radio button not visible → `VITE_LASTFM_API_KEY` must be set; only shown on Dropbox provider
+- Spotify tracks in radio queue not playing → check that Spotify SDK is initialised (`ensureDeviceIsActive` is called after `initialize()` in `playSpotifyTrack`)
+- Auth banner appears mid-radio → Spotify token expired; dismiss and re-authenticate Spotify; Dropbox tracks continue
+- Provider switch mid-radio → `VorbisQueueDialog` intercepts via `ProviderContext.setProviderSwitchInterceptor`; if dialog doesn't appear check that the interceptor is registered when `radioState.isActive`
 
 ## Testing Guidelines
 

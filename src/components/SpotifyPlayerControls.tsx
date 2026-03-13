@@ -1,5 +1,6 @@
 import { memo } from 'react';
 import type { Track } from '../services/spotify';
+import type { ProviderId } from '../types/domain';
 import { useSpotifyControls } from '../hooks/useSpotifyControls';
 import { usePlayerSizing } from '../hooks/usePlayerSizing';
 import { PlayerControlsContainer } from './controls/styled';
@@ -44,6 +45,13 @@ const areControlsPropsEqual = (
     return false;
   }
 
+  if (prevProps.radioActive !== nextProps.radioActive) {
+    return false;
+  }
+  if (prevProps.currentTrackProvider !== nextProps.currentTrackProvider) {
+    return false;
+  }
+
   // For callbacks, we assume they're stable (parent should use useCallback)
 
   return true;
@@ -62,6 +70,8 @@ interface SpotifyPlayerControlsProps {
   onToggleLike?: () => void;
   onArtistBrowse?: (artistName: string) => void;
   onAlbumPlay?: (albumId: string, albumName: string) => void;
+  radioActive?: boolean;
+  currentTrackProvider?: ProviderId;
 }
 
 // --- SpotifyPlayerControls Component ---
@@ -77,6 +87,8 @@ const SpotifyPlayerControls = memo<SpotifyPlayerControlsProps>(({
   onToggleLike: propOnToggleLike,
   onArtistBrowse,
   onAlbumPlay,
+  radioActive,
+  currentTrackProvider,
 }) => {
   // Get responsive sizing information
   const { isMobile, isTablet, isDesktop } = usePlayerSizing();
@@ -114,6 +126,8 @@ const SpotifyPlayerControls = memo<SpotifyPlayerControlsProps>(({
         isTablet={isTablet}
         onArtistBrowse={onArtistBrowse}
         onAlbumPlay={onAlbumPlay}
+        radioActive={radioActive}
+        currentProvider={currentTrackProvider}
       />
 
       <div style={{ display: 'flex', justifyContent: 'center', width: '100%', gap: '0.5rem' }}>

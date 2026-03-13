@@ -94,6 +94,7 @@ export function usePlayerLogic() {
   // Playback state from provider events (local — not shared via context)
   const [isPlaying, setIsPlaying] = useState(false);
   const [playbackPosition, setPlaybackPosition] = useState(0);
+  const [spotifyAuthExpired, setSpotifyAuthExpired] = useState(false);
 
   // Library drawer visibility (local UI state)
   const [showLibraryDrawer, setShowLibraryDrawer] = useState(false);
@@ -103,6 +104,7 @@ export function usePlayerLogic() {
     setCurrentTrackIndex,
     activeDescriptor,
     mediaTracksRef,
+    onSpotifyAuthExpired: () => setSpotifyAuthExpired(true),
   });
 
   const { handlePlaylistSelect: spotifyHandlePlaylistSelect } = usePlaylistManager({
@@ -354,7 +356,16 @@ export function usePlayerLogic() {
 
   // ── Radio feature ───────────────────────────────────────────────────
 
-  const { radioState, startRadio, stopRadio, isRadioAvailable } = useRadio();
+  const { radioState, startRadio, stopRadio: stopRadioBase, isRadioAvailable } = useRadio();
+
+  const clearSpotifyAuthExpired = useCallback(() => {
+    setSpotifyAuthExpired(false);
+  }, []);
+
+  const stopRadio = useCallback(() => {
+    stopRadioBase();
+    setSpotifyAuthExpired(false);
+  }, [stopRadioBase]);
 
   /**
    * Start a radio session from the currently playing track.
@@ -369,6 +380,12 @@ export function usePlayerLogic() {
     setError(null);
 
     try {
+      // Pre-warm Spotify SDK concurrently with queue generation
+      const spotifyDescriptor = providerRegistry.get('spotify');
+      if (spotifyAuth.isAuthenticated() && spotifyDescriptor) {
+        spotifyDescriptor.playback.initialize().catch(() => {});
+      }
+
       // Fetch all catalog tracks for matching
       const allMusicRef = { provider: 'dropbox' as const, kind: 'folder' as const, id: '' };
       const allTracks = await activeDescriptor.catalog.listTracks(allMusicRef);
@@ -468,6 +485,12 @@ export function usePlayerLogic() {
       radioState,
       isRadioAvailable,
       stopRadio,
+      spotifyAuthExpired,
+      clearSpotifyAuthExpired,
+      isActive: radioState.isActive,
     },
+    mediaTracksRef,
+    setTracks,
+    setOriginalTracks,
   };
 }
