@@ -272,6 +272,7 @@ const AlbumArt: React.FC<AlbumArtProps> = memo(({ currentTrack = null, accentCol
             alt={currentTrack?.name}
             style={{
               width: '100%',
+              height: '100%',
               objectFit: 'cover',
               display: 'block',
               zIndex: theme.zIndex.docked,
