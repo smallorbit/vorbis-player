@@ -17,7 +17,6 @@ import { useVisualEffectsContext } from '@/contexts/VisualEffectsContext';
 import { useTrackContext } from '@/contexts/TrackContext';
 import { useProviderContext } from '@/contexts/ProviderContext';
 import type { ProviderSwitchInterceptor } from '@/contexts/ProviderContext';
-import type { ProviderId } from '@/types/domain';
 import { resolveViaSpotify } from '@/services/spotifyResolver';
 import { toAlbumPlaylistId } from '@/constants/playlist';
 
