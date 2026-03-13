@@ -33,6 +33,12 @@ export interface MediaTrack {
   image?: string;
   /** Optional preview or external link (e.g. Spotify track URL). */
   externalUrl?: string;
+  /** MusicBrainz Recording ID (from TXXX:MusicBrainz Release Track Id or UFID). */
+  musicbrainzRecordingId?: string;
+  /** MusicBrainz Artist ID (from TXXX:MusicBrainz Artist Id). */
+  musicbrainzArtistId?: string;
+  /** International Standard Recording Code (from TSRC frame). */
+  isrc?: string;
 }
 
 /**

@@ -90,6 +90,7 @@ interface PlaylistBottomSheetProps {
   currentTrackIndex: number;
   accentColor: string;
   onTrackSelect: (index: number) => void;
+  radioLabel?: string | null;
 }
 
 const PlaylistBottomSheet = memo<PlaylistBottomSheetProps>(function PlaylistBottomSheet({
@@ -99,6 +100,7 @@ const PlaylistBottomSheet = memo<PlaylistBottomSheetProps>(function PlaylistBott
   currentTrackIndex,
   accentColor,
   onTrackSelect,
+  radioLabel,
 }) {
   const { ref: headerRef, isDragging, dragOffset } = useVerticalSwipeGesture({
     onSwipeDown: onClose,
@@ -128,7 +130,17 @@ const PlaylistBottomSheet = memo<PlaylistBottomSheetProps>(function PlaylistBott
           >
             <GripPill />
           </SwipeHandle>
-          <SheetTitle>Playlist</SheetTitle>
+          <SheetTitle>{radioLabel ? 'Radio' : 'Playlist'}</SheetTitle>
+          {radioLabel && (
+            <div style={{
+              color: theme.colors.muted.foreground,
+              fontSize: theme.fontSize.xs,
+              textAlign: 'center',
+              marginBottom: '4px',
+            }}>
+              {radioLabel}
+            </div>
+          )}
         </SheetHeader>
         <SheetContent>
           {isOpen && (

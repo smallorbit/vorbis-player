@@ -1017,3 +1017,28 @@ export function invalidateLikedSongsCaches(): void {
   likedSongsCountCache = null;
 }
 
+/**
+ * Search Spotify for a track by artist and name.
+ * Returns the best match or null if no good match found.
+ */
+export async function searchTrack(
+  artist: string,
+  trackName: string,
+): Promise<Track | null> {
+  const token = await spotifyAuth.ensureValidToken();
+  const query = encodeURIComponent(`track:${trackName} artist:${artist}`);
+  const url = `https://api.spotify.com/v1/search?q=${query}&type=track&limit=5`;
+
+  const data = await spotifyApiRequest<{ tracks: PaginatedResponse<SpotifyTrackItem> }>(url, token);
+
+  if (!data.tracks?.items?.length) return null;
+
+  // Return the first valid result
+  for (const item of data.tracks.items) {
+    const track = transformTrackItem(item);
+    if (track) return track;
+  }
+
+  return null;
+}
+

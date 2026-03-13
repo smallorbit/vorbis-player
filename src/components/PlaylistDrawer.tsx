@@ -123,6 +123,7 @@ interface PlaylistDrawerProps {
   currentTrackIndex: number;
   accentColor: string;
   onTrackSelect: (index: number) => void;
+  radioLabel?: string | null;
 }
 
 // Custom comparison function for PlaylistDrawer memo optimization
@@ -150,6 +151,11 @@ const arePlaylistDrawerPropsEqual = (
     return false;
   }
 
+  // Check radio label
+  if (prevProps.radioLabel !== nextProps.radioLabel) {
+    return false;
+  }
+
   // For callbacks, we assume they're stable (parent should use useCallback)
   return true;
 };
@@ -160,7 +166,8 @@ const PlaylistDrawer = memo<PlaylistDrawerProps>(({
   tracks,
   currentTrackIndex,
   accentColor,
-  onTrackSelect
+  onTrackSelect,
+  radioLabel,
 }) => {
   // Get responsive sizing information
   const { viewport, isMobile, isTablet, transitionDuration, transitionEasing } = usePlayerSizing();
@@ -185,7 +192,18 @@ const PlaylistDrawer = memo<PlaylistDrawerProps>(({
         transitionEasing={transitionEasing}
       >
         <PlaylistHeader>
-          <PlaylistTitle>Playlist</PlaylistTitle>
+          <div>
+            <PlaylistTitle>{radioLabel ? 'Radio' : 'Playlist'}</PlaylistTitle>
+            {radioLabel && (
+              <div style={{
+                color: theme.colors.muted.foreground,
+                fontSize: theme.fontSize.sm,
+                marginTop: '2px',
+              }}>
+                {radioLabel}
+              </div>
+            )}
+          </div>
           <CloseButton onClick={onClose}>×</CloseButton>
         </PlaylistHeader>
 

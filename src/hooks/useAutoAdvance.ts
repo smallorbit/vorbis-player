@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { spotifyPlayer } from '../services/spotifyPlayer';
 import type { Track } from '../services/spotify';
 import { useProviderContext } from '@/contexts/ProviderContext';
+import { providerRegistry } from '@/providers/registry';
 import type { PlaybackState } from '@/types/domain';
 
 interface UseAutoAdvanceProps {
@@ -41,7 +42,8 @@ export const useAutoAdvance = ({
     hasEnded.current = false;
   }, [currentTrackIndex]);
 
-  // Use event-based detection via the provider's playback subscribe
+  // Use event-based detection via provider playback subscriptions.
+  // Subscribes to all registered providers to support cross-provider queues.
   useEffect(() => {
     if (!enabled || tracks.length === 0 || !activeDescriptor) {
       return;
@@ -84,8 +86,12 @@ export const useAutoAdvance = ({
       // Guard: skip if a track was recently loaded — both Spotify SDK and HTML5
       // Audio briefly pause at position 0 during buffering, which would falsely
       // trigger advance.
+      // For cross-provider queues, check the current track's provider to determine
+      // which cooldown source to use.
+      const currentTrack = tracksRef.current[currentTrackIndexRef.current];
+      const currentTrackProvider = currentTrack?.provider ?? activeProviderId;
       let msSinceLastPlay: number;
-      if (activeProviderId === 'spotify') {
+      if (currentTrackProvider === 'spotify') {
         msSinceLastPlay = Date.now() - spotifyPlayer.lastPlayTrackTime;
       } else {
         msSinceLastPlay = Date.now() - lastPlayInitiatedRef.current;
@@ -98,8 +104,24 @@ export const useAutoAdvance = ({
       wasPlayingRef.current = !isPaused;
     }
 
-    const unsubscribe = activeDescriptor.playback.subscribe(handleProviderStateChange);
+    const unsubscribes: (() => void)[] = [];
 
-    return unsubscribe;
+    // Subscribe to active provider
+    unsubscribes.push(activeDescriptor.playback.subscribe(handleProviderStateChange));
+
+    // Subscribe to other providers for cross-provider queue support
+    for (const descriptor of providerRegistry.getAll()) {
+      if (descriptor.id !== activeDescriptor.id) {
+        unsubscribes.push(descriptor.playback.subscribe((state) => {
+          // Only process events when a track from this provider is currently playing
+          const currentTrack = tracksRef.current[currentTrackIndexRef.current];
+          if (currentTrack?.provider === descriptor.id) {
+            handleProviderStateChange(state);
+          }
+        }));
+      }
+    }
+
+    return () => unsubscribes.forEach((unsub) => unsub());
   }, [enabled, tracks.length, endThreshold, activeDescriptor, activeProviderId]);
 };
