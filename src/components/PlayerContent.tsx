@@ -18,7 +18,7 @@ import { useVerticalSwipeGesture } from '@/hooks/useVerticalSwipeGesture';
 import { useVisualEffectsState } from '@/hooks/useVisualEffectsState';
 import { useVolume } from '@/hooks/useVolume';
 import { useLikeTrack } from '@/hooks/useLikeTrack';
-import { useTrackContext } from '@/contexts/TrackContext';
+import { useTrackListContext, useCurrentTrackContext } from '@/contexts/TrackContext';
 import { useColorContext } from '@/contexts/ColorContext';
 import { useVisualEffectsContext } from '@/contexts/VisualEffectsContext';
 import { useProfilingContext } from '@/contexts/ProfilingContext';
@@ -326,15 +326,8 @@ const FlipInner = styled.div.withConfig({
 
 const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, showLibraryDrawer, onAlbumArtBoundsChange, handlers, radioState, isRadioAvailable, radioActive, currentTrackProvider, spotifyAuthExpired, onClearSpotifyAuthExpired }) => {
   // --- Context hooks ---
-  const {
-    tracks,
-    currentTrack,
-    currentTrackIndex,
-    showPlaylist,
-    setShowPlaylist,
-    shuffleEnabled,
-    handleShuffleToggle,
-  } = useTrackContext();
+  const { tracks, shuffleEnabled, handleShuffleToggle } = useTrackListContext();
+  const { currentTrack, currentTrackIndex, showPlaylist, setShowPlaylist } = useCurrentTrackContext();
 
   const {
     accentColor,

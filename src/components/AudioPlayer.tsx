@@ -14,7 +14,7 @@ import { ProfiledComponent } from '@/components/ProfiledComponent';
 import { usePlayerLogic, mediaTrackToTrack } from '@/hooks/usePlayerLogic';
 import { useColorContext } from '@/contexts/ColorContext';
 import { useVisualEffectsContext } from '@/contexts/VisualEffectsContext';
-import { useTrackContext } from '@/contexts/TrackContext';
+import { useTrackListContext, useCurrentTrackContext } from '@/contexts/TrackContext';
 import { useProviderContext } from '@/contexts/ProviderContext';
 import type { ProviderSwitchInterceptor } from '@/contexts/ProviderContext';
 import { resolveViaSpotify } from '@/services/spotifyResolver';
@@ -38,7 +38,8 @@ const AudioPlayerComponent = () => {
     accentColorBackgroundEnabled,
     zenModeEnabled,
   } = useVisualEffectsContext();
-  const { tracks, selectedPlaylistId, currentTrack } = useTrackContext();
+  const { tracks, selectedPlaylistId } = useTrackListContext();
+  const { currentTrack } = useCurrentTrackContext();
 
   const handleAlbumPlay = useCallback((albumId: string, _albumName: string) => {
     handlers.handlePlaylistSelect(toAlbumPlaylistId(albumId));
