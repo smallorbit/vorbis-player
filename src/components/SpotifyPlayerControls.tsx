@@ -27,7 +27,7 @@ interface SpotifyPlayerControlsProps {
 }
 
 // --- SpotifyPlayerControls Component ---
-const SpotifyPlayerControls = memo(({
+const SpotifyPlayerControls = memo<SpotifyPlayerControlsProps>(({
   currentTrack,
   accentColor,
   onPlay,
