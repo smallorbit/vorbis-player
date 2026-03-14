@@ -108,7 +108,7 @@ export class DropboxPlaybackAdapter implements PlaybackProvider {
         offset += chunk.length;
       }
 
-      const { title, artist, album, coverArt } = parseID3(combined.buffer as ArrayBuffer);
+      const { title, artist, album, coverArt, musicbrainzRecordingId, musicbrainzArtistId, isrc } = parseID3(combined.buffer as ArrayBuffer);
       const update: PlaybackState['trackMetadata'] = {};
       if (title && title !== track.name) update.name = title;
       if (artist && artist !== track.artists) update.artists = artist;

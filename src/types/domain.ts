@@ -33,6 +33,9 @@ export interface MediaTrack {
   image?: string;
   /** Optional preview or external link (e.g. Spotify track URL). */
   externalUrl?: string;
+  musicbrainzRecordingId?: string;
+  musicbrainzArtistId?: string;
+  isrc?: string;
 }
 
 /**
