@@ -60,7 +60,7 @@ export class DropboxAuthAdapter implements AuthProvider {
   }
 
   isAuthenticated(): boolean {
-    return !!this.accessToken;
+    return !!(this.accessToken || this.refreshToken);
   }
 
   async getAccessToken(): Promise<string | null> {
