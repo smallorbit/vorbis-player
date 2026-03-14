@@ -10,7 +10,7 @@ import type { RadioSeed, RadioResult, CatalogIndexes, MatchResult, UnmatchedSugg
 import { getSimilarTracks, getSimilarArtists } from './lastfm';
 import { buildIndexes, matchTrack, findTracksByArtist } from './catalogMatcher';
 
-const MAX_QUEUE_SIZE = 50;
+const MAX_QUEUE_SIZE = 25;
 const MIN_TRACK_THRESHOLD = 5;
 const MAX_CONCURRENT_LASTFM = 3;
 
@@ -46,7 +46,7 @@ async function generateFromTrack(
   const seenUnmatchedKeys = new Set<string>();
 
   // 1. Get similar tracks from Last.fm
-  const candidates = await getSimilarTracks(seed.artist, seed.track, 100);
+  const candidates = await getSimilarTracks(seed.artist, seed.track, 25);
   const lastfmCandidates = candidates.length;
 
   for (const candidate of candidates) {
@@ -158,7 +158,7 @@ async function generateFromAlbum(
   for (const chunk of chunks) {
     const results = await Promise.all(
       chunk.map(async (albumTrack) => {
-        const candidates = await getSimilarTracks(albumTrack.artist, albumTrack.name, 50);
+        const candidates = await getSimilarTracks(albumTrack.artist, albumTrack.name, 25);
         return candidates;
       }),
     );
