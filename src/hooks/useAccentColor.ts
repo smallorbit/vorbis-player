@@ -124,13 +124,16 @@ export const useAccentColor = (
           if (extractStart > 0) {
             console.debug(`[Profiling] useAccentColor.extract: ${(performance.now() - extractStart).toFixed(1)}ms`);
           }
-          startTransition(() => {
-            if (dominantColor) {
-              setAccentColor(dominantColor.hex);
-            } else {
-              setAccentColor(theme.colors.accent);
-            }
-          });
+          const applyColor = () => {
+            startTransition(() => {
+              setAccentColor(dominantColor ? dominantColor.hex : theme.colors.accent);
+            });
+          };
+          if (typeof requestIdleCallback === 'function') {
+            requestIdleCallback(applyColor, { timeout: 500 });
+          } else {
+            applyColor();
+          }
         })
         .catch(() => {
           setAccentColor(theme.colors.accent);

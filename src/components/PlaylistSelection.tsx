@@ -8,7 +8,7 @@ import {
 import { useProviderContext } from '@/contexts/ProviderContext';
 import { Card, CardContent, Button, Skeleton, Alert, AlertDescription } from './styled';
 import { theme } from '@/styles/theme';
-import { usePlayerSizing } from '../hooks/usePlayerSizing';
+import { usePlayerSizingContext } from '@/contexts/PlayerSizingContext';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import { useLibrarySync } from '../hooks/useLibrarySync';
 import {
@@ -620,7 +620,7 @@ const GridCardImageComponent: React.FC<LazyImageProps> = React.memo(function Gri
   );
 });
 
-function PlaylistSelection({ onPlaylistSelect, inDrawer = false, swipeZoneRef, initialSearchQuery, initialViewMode }: PlaylistSelectionProps): JSX.Element {
+const PlaylistSelection = React.memo(function PlaylistSelection({ onPlaylistSelect, inDrawer = false, swipeZoneRef, initialSearchQuery, initialViewMode }: PlaylistSelectionProps): JSX.Element {
   const { activeDescriptor } = useProviderContext();
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
     if (initialViewMode) return initialViewMode;
@@ -648,7 +648,7 @@ function PlaylistSelection({ onPlaylistSelect, inDrawer = false, swipeZoneRef, i
   const [artistFilter, setArtistFilter] = useState<string>('');
   const libraryFullyLoaded = isInitialLoadComplete;
 
-  const { viewport, isMobile, isTablet } = usePlayerSizing();
+  const { viewport, isMobile, isTablet } = usePlayerSizingContext();
   const {
     pinnedPlaylistIds,
     pinnedAlbumIds,
@@ -1130,6 +1130,6 @@ function PlaylistSelection({ onPlaylistSelect, inDrawer = false, swipeZoneRef, i
       </SelectionCard>
     </Container>
   );
-};
+});
 
 export default PlaylistSelection;

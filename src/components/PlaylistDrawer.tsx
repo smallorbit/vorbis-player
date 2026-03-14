@@ -4,7 +4,7 @@ import styled from 'styled-components';
 import type { Track } from '../services/spotify';
 import { theme } from '../styles/theme';
 import { DrawerFallback, DrawerFallbackCard } from './styled';
-import { usePlayerSizing } from '../hooks/usePlayerSizing';
+import { usePlayerSizingContext } from '@/contexts/PlayerSizingContext';
 
 const Playlist = React.lazy(() => import('./Playlist'));
 
@@ -121,7 +121,6 @@ interface PlaylistDrawerProps {
   onClose: () => void;
   tracks: Track[];
   currentTrackIndex: number;
-  accentColor: string;
   onTrackSelect: (index: number) => void;
 }
 
@@ -140,11 +139,6 @@ const arePlaylistDrawerPropsEqual = (
     return false;
   }
 
-  // Check accent color
-  if (prevProps.accentColor !== nextProps.accentColor) {
-    return false;
-  }
-
   // Check if tracks array length changed (shallow check for performance)
   if (prevProps.tracks.length !== nextProps.tracks.length) {
     return false;
@@ -159,11 +153,10 @@ const PlaylistDrawer = memo<PlaylistDrawerProps>(({
   onClose,
   tracks,
   currentTrackIndex,
-  accentColor,
   onTrackSelect
 }) => {
   // Get responsive sizing information
-  const { viewport, isMobile, isTablet, transitionDuration, transitionEasing } = usePlayerSizing();
+  const { viewport, isMobile, isTablet, transitionDuration, transitionEasing } = usePlayerSizingContext();
 
   // Calculate responsive width for the drawer
   const drawerWidth = useMemo(() => {
@@ -206,7 +199,6 @@ const PlaylistDrawer = memo<PlaylistDrawerProps>(({
             <Playlist
               tracks={tracks}
               currentTrackIndex={currentTrackIndex}
-              accentColor={accentColor}
               onTrackSelect={(index) => {
                 onTrackSelect(index);
                 onClose(); // Close drawer after selecting track

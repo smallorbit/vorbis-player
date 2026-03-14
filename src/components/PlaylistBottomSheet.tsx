@@ -88,7 +88,6 @@ interface PlaylistBottomSheetProps {
   onClose: () => void;
   tracks: Track[];
   currentTrackIndex: number;
-  accentColor: string;
   onTrackSelect: (index: number) => void;
 }
 
@@ -97,7 +96,6 @@ const PlaylistBottomSheet = memo<PlaylistBottomSheetProps>(function PlaylistBott
   onClose,
   tracks,
   currentTrackIndex,
-  accentColor,
   onTrackSelect,
 }) {
   const { ref: headerRef, isDragging, dragOffset } = useVerticalSwipeGesture({
@@ -152,7 +150,6 @@ const PlaylistBottomSheet = memo<PlaylistBottomSheetProps>(function PlaylistBott
               <Playlist
                 tracks={tracks}
                 currentTrackIndex={currentTrackIndex}
-                accentColor={accentColor}
                 onTrackSelect={(index) => {
                   onTrackSelect(index);
                   onClose();

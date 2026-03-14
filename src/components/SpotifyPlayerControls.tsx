@@ -1,7 +1,7 @@
 import { memo } from 'react';
 import type { Track } from '../services/spotify';
 import { useSpotifyControls } from '../hooks/useSpotifyControls';
-import { usePlayerSizing } from '../hooks/usePlayerSizing';
+import { usePlayerSizingContext } from '@/contexts/PlayerSizingContext';
 import { PlayerControlsContainer } from './controls/styled';
 import TrackInfo from './controls/TrackInfo';
 import PlaybackControls from './controls/PlaybackControls';
@@ -10,7 +10,6 @@ import TimelineControls from './controls/TimelineControls';
 
 interface SpotifyPlayerControlsProps {
   currentTrack: Track | null;
-  accentColor: string;
   onPlay: () => void;
   onPause: () => void;
   onNext: () => void;
@@ -26,7 +25,6 @@ interface SpotifyPlayerControlsProps {
 // --- SpotifyPlayerControls Component ---
 const SpotifyPlayerControls = memo<SpotifyPlayerControlsProps>(({
   currentTrack,
-  accentColor,
   onPlay,
   onPause,
   onNext,
@@ -38,7 +36,7 @@ const SpotifyPlayerControls = memo<SpotifyPlayerControlsProps>(({
   onAlbumPlay,
 }) => {
   // Get responsive sizing information
-  const { isMobile, isTablet, isDesktop } = usePlayerSizing();
+  const { isMobile, isTablet, isDesktop } = usePlayerSizingContext();
 
   // Use Spotify controls hook — like state is always provided via props from usePlayerLogic
   const {
@@ -82,7 +80,6 @@ const SpotifyPlayerControls = memo<SpotifyPlayerControlsProps>(({
           onPause={onPause}
           onNext={onNext}
           isPlaying={isPlaying}
-          accentColor={accentColor}
           isMobile={isMobile}
           isTablet={isTablet}
         />
@@ -99,7 +96,6 @@ const SpotifyPlayerControls = memo<SpotifyPlayerControlsProps>(({
         isLiked={effectiveIsLiked}
         isLikePending={effectiveIsLikePending}
         onLikeToggle={effectiveHandleLikeToggle}
-        accentColor={accentColor}
         isMobile={isMobile}
         isTablet={isTablet}
       />

@@ -1,6 +1,5 @@
 import styled from 'styled-components';
 import { theme } from '../../styles/theme';
-import { getContrastColor } from '../../utils/colorUtils';
 
 export const DrawerOverlay = styled.div<{ $isOpen: boolean }>`
   position: fixed;
@@ -23,7 +22,7 @@ export const DrawerContainer = styled.div<{ $isOpen: boolean; $width: number; $t
   right: 0;
   bottom: 0;
   width: ${({ $width }) => $width}px;
-  max-width: 95vw; 
+  max-width: 95vw;
   background: ${theme.colors.overlay.dark};
   backdrop-filter: blur(${theme.drawer.backdropBlur});
   border-left: 1px solid ${theme.colors.popover.border};
@@ -34,25 +33,25 @@ export const DrawerContainer = styled.div<{ $isOpen: boolean; $width: number; $t
             width ${({ $transitionDuration }) => $transitionDuration}ms ${({ $transitionEasing }) => $transitionEasing};
   z-index: ${theme.zIndex.modal};
   overflow-y: auto;
-  overflow-x: hidden; 
-  
+  overflow-x: hidden;
+
   /* Enable container queries */
   container-type: inline-size;
   container-name: visual-effects;
-  
+
   /* Container query responsive adjustments */
   @container visual-effects (max-width: ${theme.drawer.breakpoints.mobile}) {
     width: ${theme.drawer.widths.mobile};
   }
-  
+
   @container visual-effects (min-width: ${theme.drawer.breakpoints.mobile}) and (max-width: ${theme.drawer.breakpoints.tablet}) {
     width: ${theme.drawer.widths.tablet};
   }
-  
+
   @container visual-effects (min-width: ${theme.drawer.breakpoints.tablet}) {
     width: ${theme.drawer.widths.desktop};
   }
-  
+
   /* Fallback for browsers without container query support */
   @supports not (container-type: inline-size) {
     @media (max-width: ${theme.breakpoints.md}) {
@@ -67,7 +66,7 @@ export const DrawerHeader = styled.div`
   justify-content: space-between;
   padding: ${({ theme }) => theme.spacing.lg} ${theme.spacing.lg} ${theme.spacing.md};
   border-bottom: 1px solid ${({ theme }) => theme.colors.popover.border};
-  min-height: 60px; 
+  min-height: 60px;
   flex-shrink: 0; /* Prevent header from shrinking */
 `;
 
@@ -86,12 +85,12 @@ export const CloseButton = styled.button`
   padding: ${theme.spacing.sm};
   border-radius: ${theme.borderRadius.md};
   transition: all ${({ theme }) => theme.transitions.fast} ease;
-  
+
   &:hover {
     color: ${theme.colors.white};
     background: ${theme.colors.muted.background};
   }
-  
+
   svg {
     width: 1rem;
     height: 1rem;
@@ -135,7 +134,7 @@ export const SectionTitle = styled.h4`
   letter-spacing: 0.05em;
 `;
 
-export const CollapsibleHeader = styled.button<{ $accentColor: string }>`
+export const CollapsibleHeader = styled.button`
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -185,7 +184,7 @@ export const FilterGrid = styled.div`
   gap: ${({ theme }) => theme.spacing.lg};
 `;
 
-export const ResetButton = styled.button<{ $accentColor: string }>`
+export const ResetButton = styled.button`
   background: ${({ theme }) => theme.colors.control.background};
   border: 1px solid ${({ theme }) => theme.colors.border};
   color: ${({ theme }) => theme.colors.muted.foreground};
@@ -197,10 +196,10 @@ export const ResetButton = styled.button<{ $accentColor: string }>`
   transition: all ${({ theme }) => theme.transitions.fast};
   width: 100%;
   margin-top: ${({ theme }) => theme.spacing.lg};
-  
+
   &:hover {
-    background: ${({ $accentColor }) => $accentColor}22;
-    border-color: ${({ $accentColor }) => $accentColor}44;
+    background: color-mix(in srgb, var(--accent-color) 13%, transparent);
+    border-color: color-mix(in srgb, var(--accent-color) 27%, transparent);
     color: ${({ theme }) => theme.colors.foreground};
     transform: translateY(-1px);
   }
@@ -212,12 +211,12 @@ export const OptionButtonGroup = styled.div`
   flex-wrap: wrap;
 `;
 
-export const ProviderButton = styled.button<{ $accentColor: string; $isActive: boolean }>`
+export const ProviderButton = styled.button<{ $isActive: boolean }>`
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  background: ${({ $isActive, $accentColor }) => $isActive ? $accentColor + '22' : theme.colors.muted.background};
-  border: 1px solid ${({ $isActive, $accentColor }) => $isActive ? $accentColor : theme.colors.border};
+  background: ${({ $isActive }) => $isActive ? 'color-mix(in srgb, var(--accent-color) 13%, transparent)' : theme.colors.muted.background};
+  border: 1px solid ${({ $isActive }) => $isActive ? 'var(--accent-color)' : theme.colors.border};
   color: ${({ $isActive }) => $isActive ? theme.colors.white : theme.colors.muted.foreground};
   padding: 0.5rem 0.75rem;
   border-radius: ${theme.borderRadius.md};
@@ -229,18 +228,18 @@ export const ProviderButton = styled.button<{ $accentColor: string; $isActive: b
   text-align: left;
 
   &:hover {
-    background: ${({ $accentColor }) => $accentColor + '22'};
-    border-color: ${({ $accentColor }) => $accentColor};
+    background: color-mix(in srgb, var(--accent-color) 13%, transparent);
+    border-color: var(--accent-color);
     color: ${() => theme.colors.white};
   }
 `;
 
-export const ProviderStatusDot = styled.span<{ $isConnected: boolean; $accentColor: string }>`
+export const ProviderStatusDot = styled.span<{ $isConnected: boolean }>`
   display: inline-block;
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: ${({ $isConnected, $accentColor }) => $isConnected ? $accentColor : theme.colors.muted.foreground};
+  background: ${({ $isConnected }) => $isConnected ? 'var(--accent-color)' : theme.colors.muted.foreground};
   flex-shrink: 0;
 `;
 
@@ -270,7 +269,7 @@ export const CacheOptionItem = styled.li`
   gap: ${({ theme }) => theme.spacing.sm};
 `;
 
-export const CacheCheckbox = styled.input<{ $accentColor: string }>`
+export const CacheCheckbox = styled.input`
   appearance: none;
   -webkit-appearance: none;
   width: 16px;
@@ -284,8 +283,8 @@ export const CacheCheckbox = styled.input<{ $accentColor: string }>`
   transition: all ${({ theme }) => theme.transitions.fast};
 
   &:checked {
-    background: ${({ $accentColor }) => $accentColor};
-    border-color: ${({ $accentColor }) => $accentColor};
+    background: var(--accent-color);
+    border-color: var(--accent-color);
   }
 
   &:checked::after {
@@ -315,7 +314,7 @@ export const CacheConfirmButtons = styled.div`
   margin-top: ${({ theme }) => theme.spacing.sm};
 `;
 
-export const CacheCancelButton = styled.button<{ $accentColor: string }>`
+export const CacheCancelButton = styled.button`
   background: ${({ theme }) => theme.colors.control.background};
   border: 1px solid ${({ theme }) => theme.colors.border};
   color: ${({ theme }) => theme.colors.muted.foreground};
@@ -335,10 +334,10 @@ export const CacheCancelButton = styled.button<{ $accentColor: string }>`
   }
 `;
 
-export const OptionButton = styled.button<{ $accentColor: string; $isActive: boolean }>`
-  background: ${({ $isActive, $accentColor }: { $isActive: boolean; $accentColor: string }) => $isActive ? $accentColor : theme.colors.muted.background};
-  border: 1px solid ${({ $isActive, $accentColor }: { $isActive: boolean; $accentColor: string }) => $isActive ? $accentColor : theme.colors.border};
-  color: ${({ $isActive, $accentColor }: { $isActive: boolean; $accentColor: string }) => $isActive ? getContrastColor($accentColor) : theme.colors.muted.foreground};
+export const OptionButton = styled.button<{ $isActive: boolean }>`
+  background: ${({ $isActive }) => $isActive ? 'var(--accent-color)' : theme.colors.muted.background};
+  border: 1px solid ${({ $isActive }) => $isActive ? 'var(--accent-color)' : theme.colors.border};
+  color: ${({ $isActive }) => $isActive ? 'var(--accent-contrast-color)' : theme.colors.muted.foreground};
   padding: 0.375rem 0.75rem;
   border-radius: ${theme.borderRadius.sm};
   cursor: pointer;
@@ -346,13 +345,11 @@ export const OptionButton = styled.button<{ $accentColor: string; $isActive: boo
   font-weight: ${theme.fontWeight.medium};
   transition: all ${({ theme }) => theme.transitions.fast} ease;
   min-width: 60px;
-  
+
   &:hover {
-    background: ${({ $isActive, $accentColor }: { $isActive: boolean; $accentColor: string }) => $isActive ? $accentColor + 'DD' : $accentColor + '22'};
-    border-color: ${({ $accentColor }: { $accentColor: string }) => $accentColor};
-    color: ${({ $isActive, $accentColor }: { $isActive: boolean; $accentColor: string }) => $isActive ? getContrastColor($accentColor) : theme.colors.white};
+    background: ${({ $isActive }) => $isActive ? 'color-mix(in srgb, var(--accent-color) 87%, transparent)' : 'color-mix(in srgb, var(--accent-color) 13%, transparent)'};
+    border-color: var(--accent-color);
+    color: ${({ $isActive }) => $isActive ? 'var(--accent-contrast-color)' : theme.colors.white};
     transform: translateY(-1px);
   }
 `;
-
-

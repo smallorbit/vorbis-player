@@ -5,7 +5,7 @@ import type { Track } from '../services/spotify';
 import AccentColorGlowOverlay, { DEFAULT_GLOW_RATE, DEFAULT_GLOW_INTENSITY } from './AccentColorGlowOverlay';
 import { hexToRgb } from '../utils/colorUtils';
 import { useImageProcessingWorker } from '../hooks/useImageProcessingWorker';
-import { usePlayerSizing } from '../hooks/usePlayerSizing';
+import { usePlayerSizingContext } from '@/contexts/PlayerSizingContext';
 import { theme } from '../styles/theme';
 
 const spin = keyframes`
@@ -169,7 +169,7 @@ const AlbumArt: React.FC<AlbumArtProps> = memo(({ currentTrack = null, accentCol
   const { processImage } = useImageProcessingWorker();
 
   // Get responsive sizing information
-  const { isMobile, isTablet } = usePlayerSizing();
+  const { isMobile, isTablet } = usePlayerSizingContext();
 
   // Calculate responsive dimensions for the processing spinner
   const spinnerDimensions = useMemo(() => {
@@ -263,7 +263,6 @@ const AlbumArt: React.FC<AlbumArtProps> = memo(({ currentTrack = null, accentCol
         <AccentColorGlowOverlay
           glowIntensity={glowIntensity ?? DEFAULT_GLOW_INTENSITY}
           glowRate={glowRate ?? DEFAULT_GLOW_RATE}
-          accentColor={accentColor || '#000000'}
           backgroundImage={currentTrack?.image}
         />
         {currentTrack?.image ? (

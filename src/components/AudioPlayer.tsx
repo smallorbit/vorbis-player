@@ -13,6 +13,7 @@ import { ProfiledComponent } from '@/components/ProfiledComponent';
 import { usePlayerLogic } from '@/hooks/usePlayerLogic';
 import { useColorContext } from '@/contexts/ColorContext';
 import { useVisualEffectsContext } from '@/contexts/VisualEffectsContext';
+import { PlayerSizingProvider } from '@/contexts/PlayerSizingContext';
 import { useTrackListContext } from '@/contexts/TrackContext';
 import { useProviderContext } from '@/contexts/ProviderContext';
 import { toAlbumPlaylistId } from '@/constants/playlist';
@@ -101,6 +102,7 @@ const AudioPlayerComponent = () => {
   };
 
   return (
+    <PlayerSizingProvider>
     <ProfilingProvider>
       <Container>
         <DebugOverlay active={debugActive} />
@@ -130,6 +132,7 @@ const AudioPlayerComponent = () => {
         {renderContent()}
       </Container>
     </ProfilingProvider>
+    </PlayerSizingProvider>
   );
 };
 

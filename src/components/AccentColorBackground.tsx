@@ -7,7 +7,7 @@ interface AccentColorBackgroundProps {
   accentColor: string;
 }
 
-const BackgroundGradient = styled.div<{ $accentColor: string }>`
+const BackgroundGradient = styled.div`
   position: fixed;
   top: 0;
   left: 0;
@@ -15,23 +15,9 @@ const BackgroundGradient = styled.div<{ $accentColor: string }>`
   bottom: 0;
   z-index: 0;
   pointer-events: none;
-  background: linear-gradient(
-    135deg,
-    ${({ $accentColor }) => $accentColor}20 0%,
-    ${({ $accentColor }) => generateColorVariant($accentColor, 0.3)}15 50%,
-    ${({ $accentColor }) => generateColorVariant($accentColor, 0.6)}10 100%
-  );
   transition: background 0.5s ease;
 `;
 
-/**
- * AccentColorBackground Component
- * 
- * Renders a subtle gradient background using the current track's accent color.
- * Provides a cohesive visual experience that matches the music player's theme.
- * 
- * @component
- */
 const AccentColorBackground: React.FC<AccentColorBackgroundProps> = ({
   enabled,
   accentColor
@@ -40,8 +26,9 @@ const AccentColorBackground: React.FC<AccentColorBackgroundProps> = ({
     return null;
   }
 
-  return <BackgroundGradient $accentColor={accentColor} />;
+  const background = `linear-gradient(135deg, ${accentColor}20 0%, ${generateColorVariant(accentColor, 0.3)}15 50%, ${generateColorVariant(accentColor, 0.6)}10 100%)`;
+
+  return <BackgroundGradient style={{ background }} />;
 };
 
 export default AccentColorBackground;
-

@@ -1,6 +1,5 @@
 import styled from 'styled-components';
 import { theme } from '../../styles/theme';
-import { getContrastColor } from '../../utils/colorUtils';
 
 // --- Main Container ---
 export const PlayerControlsContainer = styled.div<{ $isMobile: boolean; $isTablet: boolean; $compact?: boolean }>`
@@ -17,11 +16,11 @@ export const PlayerControlsContainer = styled.div<{ $isMobile: boolean; $isTable
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
-  
+
   /* Enable container queries */
   container-type: inline-size;
   container-name: controls;
-  
+
   /* Container query responsive adjustments */
   @container controls (max-width: ${({ theme }) => theme.breakpoints.sm}) {
     flex-direction: column;
@@ -29,14 +28,14 @@ export const PlayerControlsContainer = styled.div<{ $isMobile: boolean; $isTable
     gap: ${({ theme }) => theme.spacing.xs};
     padding: ${({ theme }) => `${theme.spacing.xs} ${theme.spacing.sm}`};
   }
-  
+
   @container controls (min-width: ${({ theme }) => theme.breakpoints.sm}) and (max-width: ${({ theme }) => theme.breakpoints.md}) {
     flex-direction: column;
     align-items: center;
     gap: ${({ theme }) => theme.spacing.xs};
     padding: ${({ theme }) => `${theme.spacing.sm} ${theme.spacing.md}`};
   }
-  
+
   @container controls (min-width: ${({ theme }) => theme.breakpoints.md}) {
     flex-direction: column;
     align-items: center;
@@ -150,8 +149,8 @@ export const ArtistLink = styled.a`
 
 // --- Control Buttons ---
 export const ControlButton = styled.button.withConfig({
-  shouldForwardProp: (prop) => !['isActive', 'accentColor', '$isMobile', '$isTablet', '$compact'].includes(prop),
-}) <{ isActive?: boolean; accentColor: string; $isMobile: boolean; $isTablet: boolean; $compact?: boolean }>`
+  shouldForwardProp: (prop) => !['isActive', '$isMobile', '$isTablet', '$compact'].includes(prop),
+}) <{ isActive?: boolean; $isMobile: boolean; $isTablet: boolean; $compact?: boolean }>`
   border: none;
   display: flex;
   align-items: center;
@@ -171,7 +170,7 @@ export const ControlButton = styled.button.withConfig({
     if ($isTablet) return theme.borderRadius.md;
     return theme.borderRadius.md;
   }};
-  
+
   svg {
     width: ${({ $isMobile, $isTablet, $compact }) => {
     if ($compact) return '1.5rem';
@@ -188,11 +187,11 @@ export const ControlButton = styled.button.withConfig({
     fill: currentColor;
   }
 
-  background: ${({ isActive, accentColor }: { isActive?: boolean; accentColor: string }) => isActive ? accentColor : `${accentColor}33`};
-  color: ${({ isActive, accentColor }: { isActive?: boolean; accentColor: string }) => isActive ? getContrastColor(accentColor) : theme.colors.white};
-    
+  background: ${({ isActive }) => isActive ? 'var(--accent-color)' : 'color-mix(in srgb, var(--accent-color) 20%, transparent)'};
+  color: ${({ isActive }) => isActive ? 'var(--accent-contrast-color)' : theme.colors.white};
+
   &:hover {
-    background: ${({ isActive, accentColor }: { isActive?: boolean; accentColor: string }) => isActive ? `${accentColor}DD` : `${accentColor}4D`};
+    background: ${({ isActive }) => isActive ? 'color-mix(in srgb, var(--accent-color) 87%, transparent)' : 'color-mix(in srgb, var(--accent-color) 30%, transparent)'};
   }
 `;
 

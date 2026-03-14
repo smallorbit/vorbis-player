@@ -9,6 +9,7 @@ import { VisualEffectsProvider } from './contexts/VisualEffectsContext';
 import { VisualizerDebugProvider } from './contexts/VisualizerDebugContext';
 import { ColorProvider } from './contexts/ColorContext';
 import { PinnedItemsProvider } from './contexts/PinnedItemsContext';
+import { PlayerSizingProvider } from './contexts/PlayerSizingContext';
 import { VisualizerDebugPanel } from './components/VisualizerDebugPanel';
 import { ProviderProvider } from './contexts/ProviderContext';
 import { providerRegistry } from './providers/registry';
@@ -162,6 +163,7 @@ function App() {
   return (
     <ThemeProvider>
       <ProviderProvider>
+        <PlayerSizingProvider>
         <VisualizerDebugProvider>
           <TrackProvider>
             <VisualEffectsProvider>
@@ -176,6 +178,7 @@ function App() {
           </VisualEffectsProvider>
         </TrackProvider>
       </VisualizerDebugProvider>
+      </PlayerSizingProvider>
       </ProviderProvider>
     </ThemeProvider>
   );

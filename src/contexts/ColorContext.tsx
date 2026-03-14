@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useCallback, useMemo, useEf
 import { theme } from '@/styles/theme';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { isProfilingEnabled } from '@/contexts/ProfilingContext';
+import { getContrastColor } from '@/utils/colorUtils';
 
 interface ColorContextValue {
   accentColor: string;
@@ -68,6 +69,12 @@ export function ColorProvider({ children }: { children: React.ReactNode }) {
     handleSetCustomAccentColor,
     handleRemoveCustomAccentColor,
   }), [accentColor, accentColorOverrides, customAccentColors, setAccentColor, setAccentColorOverrides, handleSetAccentColorOverride, handleRemoveAccentColorOverride, handleSetCustomAccentColor, handleRemoveCustomAccentColor]);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    root.style.setProperty('--accent-color', accentColor);
+    root.style.setProperty('--accent-contrast-color', getContrastColor(accentColor));
+  }, [accentColor]);
 
   const profilingRef = useRef(0);
   useEffect(() => {

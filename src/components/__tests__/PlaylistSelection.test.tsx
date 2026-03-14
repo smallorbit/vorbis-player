@@ -21,8 +21,9 @@ vi.mock('@/hooks/useLibrarySync', () => ({
 
 const mockUseLibrarySync = vi.mocked(useLibrarySync);
 
-vi.mock('@/hooks/usePlayerSizing', () => ({
-  usePlayerSizing: vi.fn(() => ({
+vi.mock('@/contexts/PlayerSizingContext', () => ({
+  PlayerSizingProvider: ({ children }: { children: React.ReactNode }) => children,
+  usePlayerSizingContext: vi.fn(() => ({
     viewport: { width: 1024, height: 768, ratio: 1024 / 768 },
     isMobile: false,
     isTablet: false,
