@@ -44,7 +44,7 @@
  * @version 1.0.0
  */
 
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, startTransition } from 'react';
 import { extractDominantColor } from '../utils/colorExtractor';
 import { theme } from '@/styles/theme';
 import { isProfilingEnabled } from '@/contexts/ProfilingContext';
@@ -102,37 +102,35 @@ export const useAccentColor = (
   setAccentColor: (color: string) => void,
   setAccentColorOverrides: (overrides: Record<string, string> | ((prev: Record<string, string>) => Record<string, string>)) => void
 ) => {
-  /**
-   * Automatic color extraction effect
-   *
-   * Extracts the dominant color from the current track's artwork when the track changes.
-   * Uses cached colors from overrides if available, otherwise extracts from image.
-   */
+  const albumId = currentTrack?.album_id;
+  const albumImage = currentTrack?.image;
+  const albumOverride = albumId ? accentColorOverrides[albumId] : undefined;
+
   useEffect(() => {
-    if (!currentTrack) {
+    if (!albumId && !albumImage) {
       setAccentColor(theme.colors.accent);
       return;
     }
 
-    // Check if we have a manual override for this album
-    if (currentTrack.album_id && accentColorOverrides[currentTrack.album_id]) {
-      setAccentColor(accentColorOverrides[currentTrack.album_id]);
+    if (albumId && albumOverride) {
+      setAccentColor(albumOverride);
       return;
     }
 
-    // Extract color from album artwork if available
-    if (currentTrack.image) {
+    if (albumImage) {
       const extractStart = isProfilingEnabled() ? performance.now() : 0;
-      extractDominantColor(currentTrack.image)
+      extractDominantColor(albumImage)
         .then(dominantColor => {
           if (extractStart > 0) {
             console.debug(`[Profiling] useAccentColor.extract: ${(performance.now() - extractStart).toFixed(1)}ms`);
           }
-          if (dominantColor) {
-            setAccentColor(dominantColor.hex);
-          } else {
-            setAccentColor(theme.colors.accent);
-          }
+          startTransition(() => {
+            if (dominantColor) {
+              setAccentColor(dominantColor.hex);
+            } else {
+              setAccentColor(theme.colors.accent);
+            }
+          });
         })
         .catch(() => {
           setAccentColor(theme.colors.accent);
@@ -140,7 +138,7 @@ export const useAccentColor = (
     } else {
       setAccentColor(theme.colors.accent);
     }
-  }, [currentTrack, accentColorOverrides, setAccentColor]);
+  }, [albumId, albumImage, albumOverride, setAccentColor]);
 
   /**
    * Handle manual accent color changes

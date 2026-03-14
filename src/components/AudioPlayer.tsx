@@ -13,7 +13,7 @@ import { ProfiledComponent } from '@/components/ProfiledComponent';
 import { usePlayerLogic } from '@/hooks/usePlayerLogic';
 import { useColorContext } from '@/contexts/ColorContext';
 import { useVisualEffectsContext } from '@/contexts/VisualEffectsContext';
-import { useTrackContext } from '@/contexts/TrackContext';
+import { useTrackListContext } from '@/contexts/TrackContext';
 import { useProviderContext } from '@/contexts/ProviderContext';
 import { toAlbumPlaylistId } from '@/constants/playlist';
 
@@ -35,7 +35,7 @@ const AudioPlayerComponent = () => {
     accentColorBackgroundEnabled,
     zenModeEnabled,
   } = useVisualEffectsContext();
-  const { tracks, selectedPlaylistId } = useTrackContext();
+  const { tracks, selectedPlaylistId } = useTrackListContext();
 
   const handleAlbumPlay = useCallback((albumId: string, _albumName: string) => {
     handlers.handlePlaylistSelect(toAlbumPlaylistId(albumId));

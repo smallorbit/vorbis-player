@@ -1,6 +1,6 @@
 import { useState, useEffect, useLayoutEffect, useCallback, useMemo, useRef } from 'react';
 import { spotifyAuth } from '@/services/spotify';
-import { useTrackContext } from '@/contexts/TrackContext';
+import { useTrackListContext, useCurrentTrackContext } from '@/contexts/TrackContext';
 import { useVisualEffectsContext } from '@/contexts/VisualEffectsContext';
 import { useColorContext } from '@/contexts/ColorContext';
 import { useProviderContext } from '@/contexts/ProviderContext';
@@ -34,20 +34,23 @@ export function mediaTrackToTrack(m: MediaTrack): Track {
 export function usePlayerLogic() {
   const {
     tracks,
-    currentTrackIndex,
     isLoading,
     error,
     shuffleEnabled,
     selectedPlaylistId,
-    currentTrack,
     setTracks,
     setOriginalTracks,
-    setCurrentTrackIndex,
     setIsLoading,
     setError,
     setSelectedPlaylistId,
+  } = useTrackListContext();
+
+  const {
+    currentTrack,
+    currentTrackIndex,
+    setCurrentTrackIndex,
     setShowPlaylist,
-  } = useTrackContext();
+  } = useCurrentTrackContext();
 
   const {
     setShowVisualEffects,

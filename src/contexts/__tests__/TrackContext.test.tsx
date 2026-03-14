@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import React from 'react';
-import { TrackProvider, useTrackContext } from '../TrackContext';
+import { TrackProvider, useTrackListContext, useCurrentTrackContext } from '../TrackContext';
 import { makeTrack } from '@/test/fixtures';
 
 vi.mock('@/contexts/ProfilingContext', () => ({
@@ -10,6 +10,10 @@ vi.mock('@/contexts/ProfilingContext', () => ({
 
 function wrapper({ children }: { children: React.ReactNode }) {
   return <TrackProvider>{children}</TrackProvider>;
+}
+
+function useTrackContext() {
+  return { ...useTrackListContext(), ...useCurrentTrackContext() };
 }
 
 describe('TrackContext', () => {

@@ -8,47 +8,6 @@ import PlaybackControls from './controls/PlaybackControls';
 import TimelineControls from './controls/TimelineControls';
 
 
-
-// Custom comparison function for SpotifyPlayerControls memo optimization
-const areControlsPropsEqual = (
-  prevProps: SpotifyPlayerControlsProps,
-  nextProps: SpotifyPlayerControlsProps
-): boolean => {
-  // Check if track changed (most important check)
-  if (prevProps.currentTrack?.id !== nextProps.currentTrack?.id) {
-    return false;
-  }
-
-  // Check accent color
-  if (prevProps.accentColor !== nextProps.accentColor) {
-    return false;
-  }
-
-  // Check liked status
-  if (prevProps.isLiked !== nextProps.isLiked || prevProps.isLikePending !== nextProps.isLikePending) {
-    return false;
-  }
-
-  // Visual effects and glow are handled by the quick actions panel now
-
-  // Check track count for playlist display
-  if (prevProps.trackCount !== nextProps.trackCount) {
-    return false;
-  }
-
-  // Check artist/album browse callbacks
-  if (prevProps.onArtistBrowse !== nextProps.onArtistBrowse) {
-    return false;
-  }
-  if (prevProps.onAlbumPlay !== nextProps.onAlbumPlay) {
-    return false;
-  }
-
-  // For callbacks, we assume they're stable (parent should use useCallback)
-
-  return true;
-};
-
 interface SpotifyPlayerControlsProps {
   currentTrack: Track | null;
   accentColor: string;
@@ -146,7 +105,7 @@ const SpotifyPlayerControls = memo<SpotifyPlayerControlsProps>(({
       />
     </PlayerControlsContainer>
   );
-}, areControlsPropsEqual);
+});
 
 SpotifyPlayerControls.displayName = 'SpotifyPlayerControls';
 
