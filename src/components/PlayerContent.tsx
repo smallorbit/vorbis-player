@@ -420,7 +420,11 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
   }, [currentTrack?.album_id, handleSetAccentColorOverride, handleResetAccentColorOverride, setAccentColor]);
 
   // --- Playlist visibility ---
-  const handleShowPlaylist = useCallback(() => setShowPlaylist(true), [setShowPlaylist]);
+  const handleShowPlaylist = useCallback(() => {
+    handlers.onCloseLibraryDrawer();
+    setShowVisualEffects(false);
+    setShowPlaylist(prev => !prev);
+  }, [setShowPlaylist, handlers, setShowVisualEffects]);
   const handleClosePlaylist = useCallback(() => setShowPlaylist(false), [setShowPlaylist]);
 
   // --- App settings handlers ---
@@ -450,9 +454,17 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
   }, [visualizerDebugEnabled, profilerEnabled, profilerToggle, vizDebugCtx]);
 
   // --- VFX menu visibility ---
-  const handleShowVisualEffects = useCallback(() => setShowVisualEffects(true), [setShowVisualEffects]);
+  const handleShowVisualEffects = useCallback(() => {
+    setShowPlaylist(false);
+    handlers.onCloseLibraryDrawer();
+    setShowVisualEffects(true);
+  }, [setShowPlaylist, handlers, setShowVisualEffects]);
   const handleCloseVisualEffects = useCallback(() => setShowVisualEffects(false), [setShowVisualEffects]);
-  const handleToggleVisualEffectsMenu = useCallback(() => setShowVisualEffects(prev => !prev), [setShowVisualEffects]);
+  const handleToggleVisualEffectsMenu = useCallback(() => {
+    setShowPlaylist(false);
+    handlers.onCloseLibraryDrawer();
+    setShowVisualEffects(prev => !prev);
+  }, [setShowVisualEffects, setShowPlaylist, handlers]);
 
   // --- Glow toggle (re-enables VFX + restores saved state) ---
   const handleGlowToggle = useCallback(() => {
@@ -482,11 +494,17 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
   }, [setBackgroundVisualizerIntensity]);
 
   // --- Library drawer ---
+  const handleOpenLibraryDrawer = useCallback(() => {
+    setShowPlaylist(false);
+    setShowVisualEffects(false);
+    handlers.onOpenLibraryDrawer();
+  }, [handlers, setShowPlaylist, setShowVisualEffects]);
+
   const handleArtistBrowse = useCallback((artistName: string) => {
     setLibrarySearchQuery(artistName);
     setLibraryViewMode('albums');
-    handlers.onOpenLibraryDrawer();
-  }, [handlers]);
+    handleOpenLibraryDrawer();
+  }, [handleOpenLibraryDrawer]);
 
   const handleAlbumPlay = useCallback((albumId: string, albumName: string) => {
     handlers.onAlbumPlay(albumId, albumName);
@@ -552,9 +570,9 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
     if (showLibraryDrawer) {
       handlers.onCloseLibraryDrawer();
     } else {
-      handlers.onOpenLibraryDrawer();
+      handleOpenLibraryDrawer();
     }
-  }, [showLibraryDrawer, handlers]);
+  }, [showLibraryDrawer, handlers, handleOpenLibraryDrawer]);
 
   const { ref: drawerSwipeRef } = useVerticalSwipeGesture({
     onSwipeUp: handleSwipeUp,
@@ -594,13 +612,13 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
   const handleArrowDown = useCallback(() => {
     if (showPlaylist) {
       handleClosePlaylist();
-      handlers.onOpenLibraryDrawer();
+      handleOpenLibraryDrawer();
     } else if (showLibraryDrawer) {
       handlers.onCloseLibraryDrawer();
     } else {
-      handlers.onOpenLibraryDrawer();
+      handleOpenLibraryDrawer();
     }
-  }, [handlers, showPlaylist, showLibraryDrawer, handleClosePlaylist]);
+  }, [handlers, showPlaylist, showLibraryDrawer, handleClosePlaylist, handleOpenLibraryDrawer]);
 
   const handleVolumeUp = useCallback(() => {
     setVolumeLevel(Math.min(100, (volume ?? 50) + 5));
@@ -762,7 +780,7 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
         onMuteToggle={handleMuteToggle}
         onVolumeChange={setVolumeLevel}
         onShowVisualEffects={handleShowVisualEffects}
-        onBackToLibrary={handlers.onOpenLibraryDrawer}
+        onBackToLibrary={handleOpenLibraryDrawer}
         onShowPlaylist={handleShowPlaylist}
         onZenModeToggle={handleZenModeToggle}
         shuffleEnabled={shuffleEnabled}
