@@ -4,31 +4,36 @@ import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { isProfilingEnabled } from '@/contexts/ProfilingContext';
 import { shuffleArray } from '@/utils/shuffleArray';
 
-interface TrackContextValue {
-  // State
+// --- TrackListContext ---
+
+interface TrackListContextValue {
   tracks: Track[];
   originalTracks: Track[];
-  currentTrackIndex: number;
   isLoading: boolean;
   error: string | null;
   shuffleEnabled: boolean;
   selectedPlaylistId: string | null;
-  showPlaylist: boolean;
-  currentTrack: Track | null;
-  // Setters
   setTracks: (tracks: Track[] | ((prev: Track[]) => Track[])) => void;
   setOriginalTracks: (tracks: Track[]) => void;
-  setCurrentTrackIndex: (index: number | ((prev: number) => number)) => void;
   setIsLoading: (loading: boolean | ((prev: boolean) => boolean)) => void;
   setError: (error: string | null | ((prev: string | null) => string | null)) => void;
   setShuffleEnabled: (enabled: boolean) => void;
   setSelectedPlaylistId: (id: string | null | ((prev: string | null) => string | null)) => void;
-  setShowPlaylist: (visible: boolean | ((prev: boolean) => boolean)) => void;
-  // Actions
   handleShuffleToggle: () => void;
 }
 
-const TrackContext = createContext<TrackContextValue | null>(null);
+// --- CurrentTrackContext ---
+
+interface CurrentTrackContextValue {
+  currentTrack: Track | null;
+  currentTrackIndex: number;
+  setCurrentTrackIndex: (index: number | ((prev: number) => number)) => void;
+  showPlaylist: boolean;
+  setShowPlaylist: (visible: boolean | ((prev: boolean) => boolean)) => void;
+}
+
+const TrackListContext = createContext<TrackListContextValue | null>(null);
+const CurrentTrackContext = createContext<CurrentTrackContextValue | null>(null);
 
 export function TrackProvider({ children }: { children: React.ReactNode }) {
   const [tracks, setTracks] = useState<Track[]>([]);
@@ -68,51 +73,77 @@ export function TrackProvider({ children }: { children: React.ReactNode }) {
     setShuffleEnabled(!shuffleEnabled);
   }, [originalTracks, tracks, currentTrackIndex, shuffleEnabled, setShuffleEnabled]);
 
-  const value = useMemo<TrackContextValue>(() => ({
+  const trackListValue = useMemo<TrackListContextValue>(() => ({
     tracks,
     originalTracks,
-    currentTrackIndex,
     isLoading,
     error,
     shuffleEnabled,
     selectedPlaylistId,
-    showPlaylist,
-    currentTrack,
     setTracks,
     setOriginalTracks,
-    setCurrentTrackIndex,
     setIsLoading,
     setError,
     setShuffleEnabled,
     setSelectedPlaylistId,
-    setShowPlaylist,
     handleShuffleToggle,
   }), [
     tracks,
     originalTracks,
-    currentTrackIndex,
     isLoading,
     error,
     shuffleEnabled,
     selectedPlaylistId,
-    showPlaylist,
-    currentTrack,
     setShuffleEnabled,
     handleShuffleToggle,
   ]);
+
+  const currentTrackValue = useMemo<CurrentTrackContextValue>(() => ({
+    currentTrack,
+    currentTrackIndex,
+    setCurrentTrackIndex,
+    showPlaylist,
+    setShowPlaylist,
+  }), [currentTrack, currentTrackIndex, showPlaylist]);
 
   const profilingRef = useRef(0);
   useEffect(() => {
     if (!isProfilingEnabled()) return;
     profilingRef.current += 1;
-    console.debug(`[Profiling] TrackContext update #${profilingRef.current}`);
-  }, [value]);
+    console.debug(`[Profiling] TrackListContext update #${profilingRef.current}`);
+  }, [trackListValue]);
 
-  return <TrackContext.Provider value={value}>{children}</TrackContext.Provider>;
+  const currentProfilingRef = useRef(0);
+  useEffect(() => {
+    if (!isProfilingEnabled()) return;
+    currentProfilingRef.current += 1;
+    console.debug(`[Profiling] CurrentTrackContext update #${currentProfilingRef.current}`);
+  }, [currentTrackValue]);
+
+  return (
+    <TrackListContext.Provider value={trackListValue}>
+      <CurrentTrackContext.Provider value={currentTrackValue}>
+        {children}
+      </CurrentTrackContext.Provider>
+    </TrackListContext.Provider>
+  );
 }
 
-export function useTrackContext(): TrackContextValue {
-  const ctx = useContext(TrackContext);
-  if (!ctx) throw new Error('useTrackContext must be used within TrackProvider');
+export function useTrackListContext(): TrackListContextValue {
+  const ctx = useContext(TrackListContext);
+  if (!ctx) throw new Error('useTrackListContext must be used within TrackProvider');
   return ctx;
+}
+
+export function useCurrentTrackContext(): CurrentTrackContextValue {
+  const ctx = useContext(CurrentTrackContext);
+  if (!ctx) throw new Error('useCurrentTrackContext must be used within TrackProvider');
+  return ctx;
+}
+
+/** @deprecated Use useTrackListContext or useCurrentTrackContext instead */
+export function useTrackContext() {
+  const list = useTrackListContext();
+  const current = useCurrentTrackContext();
+  return { ...list, ...current };
 }

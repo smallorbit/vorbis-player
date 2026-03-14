@@ -5,7 +5,7 @@
  */
 
 const DB_NAME = 'vorbis-dropbox-art';
-const DB_VERSION = 4;
+const DB_VERSION = 5;
 const STORE = 'art';
 const ART_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
@@ -44,6 +44,9 @@ function openDb(): Promise<IDBDatabase | null> {
       }
       if (!database.objectStoreNames.contains('durations')) {
         database.createObjectStore('durations', { keyPath: 'trackId' });
+      }
+      if (!database.objectStoreNames.contains('tags')) {
+        database.createObjectStore('tags', { keyPath: 'trackId' });
       }
     };
   });
@@ -111,6 +114,51 @@ export async function putDurationMs(trackId: string, durationMs: number): Promis
   } catch {
     // fire-and-forget
   }
+}
+
+export interface CachedTagMetadata {
+  trackId: string;
+  name?: string;
+  artists?: string;
+  album?: string;
+}
+
+export async function putTagMetadata(trackId: string, tags: Omit<CachedTagMetadata, 'trackId'>): Promise<void> {
+  const database = await getDb();
+  if (!database) return;
+  try {
+    const tx = database.transaction('tags', 'readwrite');
+    tx.objectStore('tags').put({ trackId, ...tags });
+  } catch {
+    // fire-and-forget
+  }
+}
+
+export async function getTagsMap(trackIds: string[]): Promise<Map<string, CachedTagMetadata>> {
+  const result = new Map<string, CachedTagMetadata>();
+  if (trackIds.length === 0) return result;
+  const database = await getDb();
+  if (!database) return result;
+  return new Promise((resolve) => {
+    try {
+      const tx = database.transaction('tags', 'readonly');
+      const store = tx.objectStore('tags');
+      let pending = trackIds.length;
+      for (const id of trackIds) {
+        const req = store.get(id);
+        req.onsuccess = () => {
+          const entry = req.result as CachedTagMetadata | undefined;
+          if (entry) result.set(id, entry);
+          if (--pending === 0) resolve(result);
+        };
+        req.onerror = () => {
+          if (--pending === 0) resolve(result);
+        };
+      }
+    } catch {
+      resolve(result);
+    }
+  });
 }
 
 export async function getDurationsMap(trackIds: string[]): Promise<Map<string, number>> {

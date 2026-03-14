@@ -60,11 +60,13 @@ export class DropboxAuthAdapter implements AuthProvider {
   }
 
   isAuthenticated(): boolean {
-    return !!this.accessToken;
+    return !!(this.accessToken || this.refreshToken);
   }
 
   async getAccessToken(): Promise<string | null> {
-    if (!this.accessToken) return null;
+    if (!this.accessToken) {
+      return this.refreshToken ? this.refreshAccessToken() : null;
+    }
     return this.ensureValidToken();
   }
 
@@ -232,7 +234,9 @@ export class DropboxAuthAdapter implements AuthProvider {
 
   /** Get a valid token, refreshing proactively if it is expired or near expiry. */
   async ensureValidToken(): Promise<string | null> {
-    if (!this.accessToken) return null;
+    if (!this.accessToken) {
+      return this.refreshToken ? this.refreshAccessToken() : null;
+    }
 
     const isExpiredOrExpiringSoon =
       this.tokenExpiresAt !== null &&
