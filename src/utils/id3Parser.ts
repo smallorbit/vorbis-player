@@ -9,6 +9,12 @@ interface AudioMetadata {
   artist?: string;
   album?: string;
   coverArt?: { data: Uint8Array; mimeType: string };
+  /** MusicBrainz Recording ID (from TXXX:MusicBrainz Release Track Id). */
+  musicbrainzRecordingId?: string;
+  /** MusicBrainz Artist ID (from TXXX:MusicBrainz Artist Id). */
+  musicbrainzArtistId?: string;
+  /** International Standard Recording Code (from TSRC frame). */
+  isrc?: string;
 }
 
 function readSynchsafeInt(bytes: Uint8Array, offset: number): number {
@@ -88,8 +94,128 @@ function decodePIC(data: Uint8Array): { data: Uint8Array; mimeType: string } | n
   return { data: data.slice(pos), mimeType };
 }
 
+/**
+ * Decode a TXXX (user-defined text) frame.
+ * Format: encoding(1) + null-terminated description + null-terminated value.
+ * Returns { description, value } or null on failure.
+ */
+function decodeTXXX(data: Uint8Array): { description: string; value: string } | null {
+  if (data.length < 2) return null;
+  const encoding = data[0];
+
+  // Find end of description (null-terminated)
+  const descEnd = skipNullTerminatedString(data, 1, encoding);
+  if (descEnd >= data.length) return null;
+
+  // Decode description
+  const descBytes = data.slice(1, encoding === 1 || encoding === 2 ? descEnd - 2 : descEnd - 1);
+  const decoder =
+    encoding === 1 ? new TextDecoder('utf-16')
+    : encoding === 2 ? new TextDecoder('utf-16be')
+    : encoding === 3 ? new TextDecoder('utf-8')
+    : new TextDecoder('latin1');
+
+  const description = decoder.decode(descBytes).replace(/\0/g, '').trim();
+
+  // Decode value (rest of the frame)
+  const valueBytes = data.slice(descEnd);
+  const value = decoder.decode(valueBytes).replace(/\0/g, '').trim();
+
+  return { description, value };
+}
+
+function readUint32LE(bytes: Uint8Array, offset: number): number {
+  return bytes[offset] | (bytes[offset + 1] << 8) | (bytes[offset + 2] << 16) | (bytes[offset + 3] << 24);
+}
+
+function parseFlac(bytes: Uint8Array): AudioMetadata {
+  const result: AudioMetadata = {};
+  let offset = 4; // skip "fLaC"
+
+  while (offset + 4 <= bytes.length) {
+    const header = bytes[offset];
+    const isLast = (header & 0x80) !== 0;
+    const blockType = header & 0x7f;
+    const blockLength = readUint24BE(bytes, offset + 1);
+    offset += 4;
+
+    if (offset + blockLength > bytes.length) break;
+    const blockData = bytes.slice(offset, offset + blockLength);
+    offset += blockLength;
+
+    if (blockType === 4) {
+      // VORBIS_COMMENT block
+      let pos = 0;
+      if (pos + 4 > blockData.length) break;
+      const vendorLen = readUint32LE(blockData, pos);
+      pos += 4 + vendorLen;
+
+      if (pos + 4 > blockData.length) break;
+      const commentCount = readUint32LE(blockData, pos);
+      pos += 4;
+
+      for (let i = 0; i < commentCount && pos + 4 <= blockData.length; i++) {
+        const len = readUint32LE(blockData, pos);
+        pos += 4;
+        if (pos + len > blockData.length) break;
+        const comment = new TextDecoder('utf-8').decode(blockData.slice(pos, pos + len));
+        pos += len;
+
+        const eqIdx = comment.indexOf('=');
+        if (eqIdx < 0) continue;
+        const key = comment.slice(0, eqIdx).toUpperCase();
+        const value = comment.slice(eqIdx + 1);
+
+        if (key === 'TITLE') result.title = value;
+        else if (key === 'ARTIST') result.artist = value;
+        else if (key === 'ALBUM') result.album = value;
+        else if (key === 'ISRC') result.isrc = value;
+        else if (key === 'MUSICBRAINZ_TRACKID') result.musicbrainzRecordingId = value;
+        else if (key === 'MUSICBRAINZ_ARTISTID') result.musicbrainzArtistId = value;
+        else if (key === 'METADATA_BLOCK_PICTURE' && !result.coverArt) {
+          try {
+            const picBytes = Uint8Array.from(atob(value), (c) => c.charCodeAt(0));
+            let p = 0;
+            p += 4; // picture type
+            const mimeLen = (picBytes[p] << 24) | (picBytes[p+1] << 16) | (picBytes[p+2] << 8) | picBytes[p+3];
+            p += 4;
+            const mimeType = new TextDecoder('latin1').decode(picBytes.slice(p, p + mimeLen)) || 'image/jpeg';
+            p += mimeLen;
+            const descLen = (picBytes[p] << 24) | (picBytes[p+1] << 16) | (picBytes[p+2] << 8) | picBytes[p+3];
+            p += 4 + descLen + 16; // skip desc + width/height/depth/colors
+            const dataLen = (picBytes[p] << 24) | (picBytes[p+1] << 16) | (picBytes[p+2] << 8) | picBytes[p+3];
+            p += 4;
+            result.coverArt = { data: picBytes.slice(p, p + dataLen), mimeType };
+          } catch {
+            // malformed picture block — skip
+          }
+        }
+      }
+    } else if (blockType === 6 && !result.coverArt) {
+      // PICTURE block
+      let p = 0;
+      p += 4; // picture type
+      const mimeLen = readUint32BE(blockData, p); p += 4;
+      const mimeType = new TextDecoder('latin1').decode(blockData.slice(p, p + mimeLen)) || 'image/jpeg';
+      p += mimeLen;
+      const descLen = readUint32BE(blockData, p); p += 4 + descLen + 16;
+      const dataLen = readUint32BE(blockData, p); p += 4;
+      result.coverArt = { data: blockData.slice(p, p + dataLen), mimeType };
+    }
+
+    if (isLast) break;
+  }
+
+  return result;
+}
+
 export function parseID3(buffer: ArrayBuffer): AudioMetadata {
   const bytes = new Uint8Array(buffer);
+
+  // FLAC: "fLaC"
+  if (bytes[0] === 0x66 && bytes[1] === 0x4c && bytes[2] === 0x61 && bytes[3] === 0x43) {
+    return parseFlac(bytes);
+  }
 
   // Verify ID3 magic bytes
   if (bytes[0] !== 0x49 || bytes[1] !== 0x44 || bytes[2] !== 0x33) {
@@ -157,9 +283,20 @@ export function parseID3(buffer: ArrayBuffer): AudioMetadata {
         if (frameId === 'TIT2') result.title = decodeTextFrame(data);
         else if (frameId === 'TPE1') result.artist = decodeTextFrame(data);
         else if (frameId === 'TALB') result.album = decodeTextFrame(data);
+        else if (frameId === 'TSRC') result.isrc = decodeTextFrame(data);
         else if (frameId === 'APIC' && !result.coverArt) {
           const apic = decodeAPIC(data);
           if (apic) result.coverArt = apic;
+        } else if (frameId === 'TXXX') {
+          const txxx = decodeTXXX(data);
+          if (txxx) {
+            const desc = txxx.description.toLowerCase();
+            if (desc === 'musicbrainz release track id' || desc === 'musicbrainz_trackid') {
+              result.musicbrainzRecordingId = txxx.value;
+            } else if (desc === 'musicbrainz artist id' || desc === 'musicbrainz_artistid') {
+              result.musicbrainzArtistId = txxx.value;
+            }
+          }
         }
       }
       offset += frameSize;

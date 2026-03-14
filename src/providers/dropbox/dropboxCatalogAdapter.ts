@@ -17,7 +17,7 @@
 import type { CatalogProvider } from '@/types/providers';
 import type { ProviderId, MediaTrack, MediaCollection, CollectionRef } from '@/types/domain';
 import { DropboxAuthAdapter } from './dropboxAuthAdapter';
-import { getArt, putArt, clearArt, getDurationsMap } from './dropboxArtCache';
+import { getArt, putArt, clearArt, getDurationsMap, getTagsMap } from './dropboxArtCache';
 import { bytesToDataUrl } from '@/utils/bytesToDataUrl';
 import {
   getLikedTracks,
@@ -363,12 +363,30 @@ export class DropboxCatalogAdapter implements CatalogProvider {
         return aPath.localeCompare(bPath);
       });
 
+      const trackIds = tracks.map((t) => t.id);
+
       // Hydrate any previously-discovered durations from IndexedDB cache.
-      const durationsMap = await getDurationsMap(tracks.map((t) => t.id));
+      const durationsMap = await getDurationsMap(trackIds);
       if (durationsMap.size > 0) {
         for (const t of tracks) {
           const cached = durationsMap.get(t.id);
           if (cached !== undefined) t.durationMs = cached;
+        }
+      }
+
+      // Hydrate ID3 tag metadata from IndexedDB cache (populated on first playback).
+      const tagsMap = await getTagsMap(trackIds);
+      if (tagsMap.size > 0) {
+        for (const t of tracks) {
+          const cached = tagsMap.get(t.id);
+          if (cached) {
+            if (cached.name) t.name = cached.name;
+            if (cached.artists) {
+              t.artists = cached.artists;
+              t.artistsData = [{ name: cached.artists }];
+            }
+            if (cached.album) t.album = cached.album;
+          }
         }
       }
 

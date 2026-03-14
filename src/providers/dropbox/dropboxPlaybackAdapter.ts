@@ -8,7 +8,7 @@ import type { ProviderId, MediaTrack, PlaybackState, CollectionRef } from '@/typ
 import { DropboxCatalogAdapter } from './dropboxCatalogAdapter';
 import { parseID3 } from '@/utils/id3Parser';
 import { bytesToDataUrl } from '@/utils/bytesToDataUrl';
-import { putDurationMs } from './dropboxArtCache';
+import { putDurationMs, putTagMetadata } from './dropboxArtCache';
 
 export class DropboxPlaybackAdapter implements PlaybackProvider {
   readonly providerId: ProviderId = 'dropbox';
@@ -116,9 +116,26 @@ export class DropboxPlaybackAdapter implements PlaybackProvider {
       if (coverArt && !track.image) {
         update.image = bytesToDataUrl(coverArt.data, coverArt.mimeType);
       }
-      if (Object.keys(update).length > 0) {
-        this.currentTrack = { ...track, ...update };
-        this.pendingMetadataUpdate = update;
+
+      if (title || artist || album) {
+        putTagMetadata(track.id, {
+          ...(title ? { name: title } : {}),
+          ...(artist ? { artists: artist } : {}),
+          ...(album ? { album } : {}),
+        }).catch(() => {});
+      }
+
+      // MusicBrainz IDs go directly on the track (not via trackMetadata)
+      const mbUpdate: Partial<MediaTrack> = {};
+      if (musicbrainzRecordingId) mbUpdate.musicbrainzRecordingId = musicbrainzRecordingId;
+      if (musicbrainzArtistId) mbUpdate.musicbrainzArtistId = musicbrainzArtistId;
+      if (isrc) mbUpdate.isrc = isrc;
+
+      if (Object.keys(update).length > 0 || Object.keys(mbUpdate).length > 0) {
+        this.currentTrack = { ...track, ...update, ...mbUpdate };
+        if (Object.keys(update).length > 0) {
+          this.pendingMetadataUpdate = update;
+        }
         this.notifyListeners();
       }
     };
