@@ -112,6 +112,7 @@ const SpotifyPlayerControls = memo<SpotifyPlayerControlsProps>(({
     onNext,
     onPrevious,
     onLikeToggle: propOnToggleLike ?? (() => {}),
+    currentTrackProvider,
   });
 
   const effectiveIsLiked = propIsLiked ?? false;

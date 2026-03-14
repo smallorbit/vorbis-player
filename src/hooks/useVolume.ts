@@ -1,12 +1,14 @@
 import { useEffect, useCallback, useRef } from 'react';
 import { useLocalStorage } from './useLocalStorage';
 import { useProviderContext } from '@/contexts/ProviderContext';
+import { providerRegistry } from '@/providers/registry';
+import type { ProviderId } from '@/types/domain';
 
 const VOLUME_KEY = 'vorbis-player-volume';
 const MUTED_KEY = 'vorbis-player-muted';
 const DEFAULT_VOLUME = 50;
 
-export const useVolume = () => {
+export const useVolume = (currentTrackProvider?: ProviderId) => {
   const [volume, setVolume] = useLocalStorage<number>(VOLUME_KEY, DEFAULT_VOLUME);
   const [isMuted, setIsMuted] = useLocalStorage<boolean>(MUTED_KEY, false);
   const previousVolumeRef = useRef(volume > 0 ? volume : DEFAULT_VOLUME);
@@ -14,24 +16,32 @@ export const useVolume = () => {
 
   const { activeDescriptor } = useProviderContext();
 
+  const getPlayingPlayback = useCallback(() => {
+    const playingDescriptor =
+      currentTrackProvider && currentTrackProvider !== activeDescriptor?.id
+        ? providerRegistry.get(currentTrackProvider)
+        : activeDescriptor;
+    return playingDescriptor?.playback;
+  }, [activeDescriptor, currentTrackProvider]);
+
   useEffect(() => {
-    activeDescriptor?.playback.setVolume(initialVolumeRef.current);
-  }, [activeDescriptor]);
+    getPlayingPlayback()?.setVolume(initialVolumeRef.current);
+  }, [getPlayingPlayback]);
 
   const handleMuteToggle = useCallback(() => {
     setIsMuted((prev) => {
       const newMuted = !prev;
       if (newMuted) {
         previousVolumeRef.current = volume > 0 ? volume : DEFAULT_VOLUME;
-        activeDescriptor?.playback.setVolume(0);
+        getPlayingPlayback()?.setVolume(0);
       } else {
         const restore = previousVolumeRef.current > 0 ? previousVolumeRef.current : DEFAULT_VOLUME;
         setVolume(restore);
-        activeDescriptor?.playback.setVolume(restore / 100);
+        getPlayingPlayback()?.setVolume(restore / 100);
       }
       return newMuted;
     });
-  }, [volume, setIsMuted, setVolume, activeDescriptor]);
+  }, [volume, setIsMuted, setVolume, getPlayingPlayback]);
 
   const handleVolumeButtonClick = useCallback(() => {
     handleMuteToggle();
@@ -40,7 +50,7 @@ export const useVolume = () => {
   const setVolumeLevel = useCallback((newVolume: number) => {
     const clamped = Math.max(0, Math.min(100, Math.round(newVolume)));
     setVolume(clamped);
-    activeDescriptor?.playback.setVolume(clamped / 100);
+    getPlayingPlayback()?.setVolume(clamped / 100);
 
     if (clamped > 0 && isMuted) {
       setIsMuted(false);
@@ -48,7 +58,7 @@ export const useVolume = () => {
     if (clamped === 0 && !isMuted) {
       setIsMuted(true);
     }
-  }, [isMuted, setVolume, setIsMuted, activeDescriptor]);
+  }, [isMuted, setVolume, setIsMuted, getPlayingPlayback]);
 
   return {
     isMuted,
