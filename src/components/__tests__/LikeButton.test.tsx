@@ -33,11 +33,11 @@ describe('LikeButton', () => {
     expect(path!.getAttribute('d')).toContain('12 21.35l-1.45');
   });
 
-  it('shows loading spinner when isLoading is true', () => {
+  it('is disabled and shows heart icon when isLoading is true', () => {
     renderLikeButton({ isLoading: true });
     const button = screen.getByRole('button');
-    const svg = button.querySelector('svg');
-    expect(svg).toBeNull();
+    expect(button).toBeDisabled();
+    expect(button.querySelector('svg')).toBeTruthy();
   });
 
   it('calls onToggleLike on click in normal state', () => {
