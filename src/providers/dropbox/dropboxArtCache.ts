@@ -27,6 +27,7 @@ function openDb(): Promise<IDBDatabase | null> {
     }
     const req = indexedDB.open(DB_NAME, DB_VERSION);
     req.onerror = () => resolve(null);
+    req.onblocked = () => resolve(null);
     req.onsuccess = () => {
       db = req.result;
       resolve(db);
