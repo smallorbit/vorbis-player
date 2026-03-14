@@ -1,6 +1,5 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useReducer } from 'react';
 import type { Track } from '../services/spotify';
-import { useVolume } from './useVolume';
 import { useProviderContext } from '@/contexts/ProviderContext';
 import { providerRegistry } from '@/providers/registry';
 import type { PlaybackState, ProviderId } from '@/types/domain';
@@ -17,6 +16,36 @@ interface UseSpotifyControlsProps {
   currentTrackProvider?: ProviderId;
 }
 
+interface PlaybackTimingState {
+  isPlaying: boolean;
+  currentPosition: number;
+  duration: number;
+}
+
+type PlaybackTimingAction =
+  | { type: 'update'; isPlaying: boolean; positionMs: number; durationMs?: number }
+  | { type: 'update_no_position'; isPlaying: boolean; durationMs?: number }
+  | { type: 'position'; positionMs: number };
+
+function playbackTimingReducer(state: PlaybackTimingState, action: PlaybackTimingAction): PlaybackTimingState {
+  switch (action.type) {
+    case 'update':
+      return {
+        isPlaying: action.isPlaying,
+        currentPosition: action.positionMs,
+        duration: action.durationMs ?? state.duration,
+      };
+    case 'update_no_position':
+      return {
+        ...state,
+        isPlaying: action.isPlaying,
+        duration: action.durationMs ?? state.duration,
+      };
+    case 'position':
+      return { ...state, currentPosition: action.positionMs };
+  }
+}
+
 export const useSpotifyControls = ({
   currentTrack,
   isLiked,
@@ -28,16 +57,14 @@ export const useSpotifyControls = ({
   onLikeToggle,
   currentTrackProvider,
 }: UseSpotifyControlsProps) => {
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [currentPosition, setCurrentPosition] = useState(0);
-  const [duration, setDuration] = useState(0);
+  const [{ isPlaying, currentPosition, duration }, dispatchTiming] = useReducer(
+    playbackTimingReducer,
+    { isPlaying: false, currentPosition: 0, duration: 0 }
+  );
   const [isDragging, setIsDragging] = useState(false);
   const isDraggingRef = useRef(false);
 
   const { activeDescriptor } = useProviderContext();
-
-  // Use volume hook for volume-related functionality
-  const { isMuted, volume, handleMuteToggle, handleVolumeButtonClick, setVolumeLevel } = useVolume(currentTrackProvider);
 
   // Keep ref in sync so the event handler always has the latest value
   useEffect(() => {
@@ -56,14 +83,11 @@ export const useSpotifyControls = ({
     if (!playback) return;
 
     function handleProviderStateChange(state: PlaybackState | null) {
-      if (state) {
-        setIsPlaying(state.isPlaying);
-        if (!isDraggingRef.current) {
-          setCurrentPosition(state.positionMs);
-        }
-        if (state.durationMs) {
-          setDuration(state.durationMs);
-        }
+      if (!state) return;
+      if (isDraggingRef.current) {
+        dispatchTiming({ type: 'update_no_position', isPlaying: state.isPlaying, durationMs: state.durationMs });
+      } else {
+        dispatchTiming({ type: 'update', isPlaying: state.isPlaying, positionMs: state.positionMs, durationMs: state.durationMs });
       }
     }
 
@@ -72,13 +96,7 @@ export const useSpotifyControls = ({
     // Also check initial state once
     playback.getState().then((state) => {
       if (state) {
-        setIsPlaying(state.isPlaying);
-        if (!isDraggingRef.current) {
-          setCurrentPosition(state.positionMs);
-        }
-        if (state.durationMs) {
-          setDuration(state.durationMs);
-        }
+        dispatchTiming({ type: 'update', isPlaying: state.isPlaying, positionMs: state.positionMs, durationMs: state.durationMs });
       }
     });
 
@@ -101,7 +119,7 @@ export const useSpotifyControls = ({
       if (isDraggingRef.current) return;
       const state = await playback.getState();
       if (state) {
-        setCurrentPosition(state.positionMs);
+        dispatchTiming({ type: 'position', positionMs: state.positionMs });
       }
     }, 1000);
 
@@ -145,7 +163,7 @@ export const useSpotifyControls = ({
 
   const handleSliderChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const position = parseInt(e.target.value);
-    setCurrentPosition(position);
+    dispatchTiming({ type: 'position', positionMs: position });
   }, []);
 
   const handleSliderMouseDown = useCallback(() => {
@@ -167,17 +185,12 @@ export const useSpotifyControls = ({
 
   return {
     isPlaying,
-    isMuted,
-    volume,
     currentPosition,
     duration,
     isDragging,
     isLiked,
     isLikePending,
     handlePlayPause,
-    handleMuteToggle,
-    handleVolumeButtonClick,
-    setVolumeLevel,
     handleLikeToggle: onLikeToggle,
     handleSeek,
     handleSliderChange,
