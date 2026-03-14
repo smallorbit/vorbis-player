@@ -420,7 +420,7 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
   }, [currentTrack?.album_id, handleSetAccentColorOverride, handleResetAccentColorOverride, setAccentColor]);
 
   // --- Playlist visibility ---
-  const handleShowPlaylist = useCallback(() => setShowPlaylist(true), [setShowPlaylist]);
+  const handleShowPlaylist = useCallback(() => setShowPlaylist(prev => !prev), [setShowPlaylist]);
   const handleClosePlaylist = useCallback(() => setShowPlaylist(false), [setShowPlaylist]);
 
   // --- App settings handlers ---
@@ -450,7 +450,7 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
   }, [visualizerDebugEnabled, profilerEnabled, profilerToggle, vizDebugCtx]);
 
   // --- VFX menu visibility ---
-  const handleShowVisualEffects = useCallback(() => setShowVisualEffects(true), [setShowVisualEffects]);
+  const handleShowVisualEffects = useCallback(() => { setShowPlaylist(false); setShowVisualEffects(true); }, [setShowPlaylist, setShowVisualEffects]);
   const handleCloseVisualEffects = useCallback(() => setShowVisualEffects(false), [setShowVisualEffects]);
   const handleToggleVisualEffectsMenu = useCallback(() => setShowVisualEffects(prev => !prev), [setShowVisualEffects]);
 
