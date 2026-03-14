@@ -3,7 +3,6 @@ import styled, { keyframes, css } from 'styled-components';
 import { theme } from '../styles/theme';
 import { getContrastColor } from '../utils/colorUtils';
 
-// Define the component interface
 interface LikeButtonProps {
   trackId?: string;
   isLiked: boolean;
@@ -15,13 +14,6 @@ interface LikeButtonProps {
   $isTablet?: boolean;
 }
 
-// Loading animation for the spinner
-const spin = keyframes`
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-`;
-
-// Like animation for heart fill effect
 const heartBeat = keyframes`
   0% { transform: scale(1); }
   14% { transform: scale(1.3); }
@@ -30,11 +22,9 @@ const heartBeat = keyframes`
   70% { transform: scale(1); }
 `;
 
-// Styled button component following the ControlButton pattern with responsive sizing
 const StyledLikeButton = styled.button<{
   $isLiked: boolean;
   $accentColor: string;
-  $isLoading: boolean;
   $isMobile: boolean;
   $isTablet: boolean;
 }>`
@@ -42,7 +32,7 @@ const StyledLikeButton = styled.button<{
   display: flex;
   align-items: center;
   justify-content: center;
-  cursor: ${({ $isLoading }) => $isLoading ? 'default' : 'pointer'};
+  cursor: pointer;
   transition: all 0.2s ease;
   padding: ${({ $isMobile, $isTablet }) => {
     if ($isMobile) return theme.spacing.xs;
@@ -55,9 +45,7 @@ const StyledLikeButton = styled.button<{
     return theme.borderRadius.md;
   }};
   position: relative;
-  opacity: ${({ $isLoading }) => $isLoading ? 0.6 : 1};
 
-  /* Responsive sizing matching other control buttons */
   svg {
     width: ${({ $isMobile, $isTablet }) => {
     if ($isMobile) return '1.25rem';
@@ -73,7 +61,6 @@ const StyledLikeButton = styled.button<{
     transition: all 0.2s ease;
   }
 
-  /* Styling for liked state - matching ControlButton active state */
   ${({ $isLiked, $accentColor }) => $isLiked ? css`
     background: ${$accentColor};
     color: ${getContrastColor($accentColor)};
@@ -98,38 +85,23 @@ const StyledLikeButton = styled.button<{
     }
   `}
 
-  /* Disabled state for loading */
   &:disabled {
     cursor: default;
+    opacity: 0.6;
     pointer-events: none;
   }
 
-  /* Focus styles for accessibility */
   &:focus-visible {
     outline: 2px solid ${({ $accentColor }) => $accentColor};
     outline-offset: 2px;
   }
 `;
 
-// Loading spinner component
-const LoadingSpinner = styled.div<{ $accentColor: string }>`
-  width: 1rem;
-  height: 1rem;
-  border: 2px solid transparent;
-  border-top: 2px solid ${({ $accentColor }) => $accentColor};
-  border-radius: 50%;
-  animation: ${spin} 1s linear infinite;
-  position: absolute;
-`;
-
-// Heart icon components for filled and outlined states - memoized for performance
 const HeartIcon = memo<{ filled: boolean }>(({ filled }) => (
   <svg viewBox="0 0 24 24" role="img" aria-hidden="true">
     {filled ? (
-      // Filled heart
       <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
     ) : (
-      // Outlined heart
       <path d="M16.5 3c-1.74 0-3.41.81-4.5 2.09C10.91 3.81 9.24 3 7.5 3 4.42 3 2 5.42 2 8.5c0 3.78 3.4 6.86 8.55 11.54L12 21.35l1.45-1.32C18.6 15.36 22 12.28 22 8.5 22 5.42 19.58 3 16.5 3zm-4.4 15.55l-.1.1-.1-.1C7.14 14.24 4 11.39 4 8.5 4 6.5 5.5 5 7.5 5c1.54 0 3.04.99 3.57 2.36h1.87C13.46 5.99 14.96 5 16.5 5c2 0 3.5 1.5 3.5 3.5 0 2.89-3.14 5.74-7.9 10.05z" />
     )}
   </svg>
@@ -137,7 +109,6 @@ const HeartIcon = memo<{ filled: boolean }>(({ filled }) => (
 
 HeartIcon.displayName = 'HeartIcon';
 
-// Custom comparison function for memo optimization
 const areLikeButtonPropsEqual = (
   prevProps: LikeButtonProps,
   nextProps: LikeButtonProps
@@ -150,11 +121,9 @@ const areLikeButtonPropsEqual = (
     prevProps.className === nextProps.className &&
     prevProps.$isMobile === nextProps.$isMobile &&
     prevProps.$isTablet === nextProps.$isTablet
-    // Note: onToggleLike is excluded from comparison as it should be memoized by parent
   );
 };
 
-// Main LikeButton component
 const LikeButton = memo<LikeButtonProps>(({
   trackId,
   isLiked,
@@ -166,18 +135,7 @@ const LikeButton = memo<LikeButtonProps>(({
   $isTablet = false
 }) => {
   const handleClick = useCallback(() => {
-    console.log('[DEBUG] LikeButton handleClick', {
-      isLoading,
-      trackId,
-      hasOnToggleLike: !!onToggleLike
-    });
-
-    if (isLoading || !trackId) {
-      console.warn('[DEBUG] LikeButton click ignored:', { isLoading, trackId });
-      return;
-    }
-
-    console.log('[DEBUG] LikeButton calling onToggleLike');
+    if (isLoading || !trackId) return;
     onToggleLike();
   }, [isLoading, trackId, onToggleLike]);
 
@@ -188,34 +146,24 @@ const LikeButton = memo<LikeButtonProps>(({
     }
   }, [handleClick]);
 
-  // Determine ARIA label based on current state
-  const getAriaLabel = useCallback(() => {
-    if (isLoading) return 'Loading...';
-    if (!trackId) return 'No track selected';
-    return isLiked ? 'Remove from Liked Songs' : 'Add to Liked Songs';
-  }, [isLoading, trackId, isLiked]);
+  const ariaLabel = isLoading ? 'Loading...' : !trackId ? 'No track selected' : isLiked ? 'Remove from Liked Songs' : 'Add to Liked Songs';
 
   return (
     <StyledLikeButton
       $isLiked={isLiked}
       $accentColor={accentColor}
-      $isLoading={isLoading}
       $isMobile={$isMobile}
       $isTablet={$isTablet}
       disabled={isLoading || !trackId}
       onClick={handleClick}
       onKeyDown={handleKeyDown}
       className={className}
-      aria-label={getAriaLabel()}
-      title={getAriaLabel()}
+      aria-label={ariaLabel}
+      title={ariaLabel}
       role="button"
       tabIndex={0}
     >
-      {isLoading ? (
-        <LoadingSpinner $accentColor={accentColor} />
-      ) : (
-        <HeartIcon filled={isLiked} />
-      )}
+      <HeartIcon filled={isLiked} />
     </StyledLikeButton>
   );
 }, areLikeButtonPropsEqual);
