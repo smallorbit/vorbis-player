@@ -426,6 +426,8 @@ export function usePlayerLogic() {
       }
 
       if (combinedQueue.length > 0) {
+        // Shuffle so Dropbox and Spotify tracks are interleaved
+        combinedQueue = shuffleArray(combinedQueue);
         const trackList = combinedQueue.map(mediaTrackToTrack);
         mediaTracksRef.current = combinedQueue;
         setOriginalTracks(trackList);
