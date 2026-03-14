@@ -10,7 +10,7 @@ import BottomBar from './BottomBar';
 import { BOTTOM_BAR_HEIGHT } from './BottomBar/styled';
 import { cardBase } from '../styles/utils';
 import { ProfiledComponent } from '@/components/ProfiledComponent';
-import { usePlayerSizing } from '../hooks/usePlayerSizing';
+import { usePlayerSizingContext } from '@/contexts/PlayerSizingContext';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
 import { useSwipeGesture } from '@/hooks/useSwipeGesture';
 import { useVerticalSwipeGesture } from '@/hooks/useVerticalSwipeGesture';
@@ -512,7 +512,7 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
   }, [handlers]);
 
   // --- Responsive sizing ---
-  const { dimensions, useFluidSizing, padding, transitionDuration, transitionEasing, isMobile, isTablet, hasPointerInput, isTouchDevice } = usePlayerSizing();
+  const { dimensions, useFluidSizing, padding, transitionDuration, transitionEasing, isMobile, isTablet, hasPointerInput, isTouchDevice } = usePlayerSizingContext();
 
   // Measure controls card height so album art fills remaining space exactly.
   const controlsRef = useRef<HTMLDivElement>(null);
@@ -744,7 +744,6 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
                     <ProfiledComponent id="SpotifyPlayerControls">
                       <SpotifyPlayerControls
                         currentTrack={currentTrack}
-                        accentColor={accentColor}
                         trackCount={tracks.length}
                         isLiked={isLiked}
                         isLikePending={isLikePending}
@@ -766,7 +765,6 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
       </PlayerContainer>
       <ProfiledComponent id="BottomBar">
       <BottomBar
-        accentColor={accentColor}
         zenModeEnabled={zenModeEnabled}
         isMuted={isMuted}
         volume={volume}
@@ -784,7 +782,6 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
         <VisualEffectsMenu
           isOpen={showVisualEffects}
           onClose={handleCloseVisualEffects}
-          accentColor={accentColor}
           onClearCache={handleClearCache}
           profilerEnabled={profilerEnabled}
           onProfilerToggle={handleProfilerToggle}
@@ -800,7 +797,6 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
               onClose={handleClosePlaylist}
               tracks={tracks}
               currentTrackIndex={currentTrackIndex}
-              accentColor={accentColor}
               onTrackSelect={handlers.onTrackSelect}
             />
           </ProfiledComponent>
@@ -811,7 +807,6 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
               onClose={handleClosePlaylist}
               tracks={tracks}
               currentTrackIndex={currentTrackIndex}
-              accentColor={accentColor}
               onTrackSelect={handlers.onTrackSelect}
             />
           </ProfiledComponent>

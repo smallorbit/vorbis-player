@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 
 import { theme } from '../../styles/theme';
 import { ProfiledComponent } from '@/components/ProfiledComponent';
-import { usePlayerSizing } from '../../hooks/usePlayerSizing';
+import { usePlayerSizingContext } from '@/contexts/PlayerSizingContext';
 import { useProviderContext } from '@/contexts/ProviderContext';
 import type { DropboxCatalogAdapter } from '@/providers/dropbox/dropboxCatalogAdapter';
 import { ART_REFRESHED_EVENT } from '@/hooks/useLibrarySync';
@@ -49,7 +49,6 @@ export interface ClearCacheOptions {
 interface AppSettingsMenuProps {
   isOpen: boolean;
   onClose: () => void;
-  accentColor: string;
   onClearCache: (options: ClearCacheOptions) => Promise<void>;
   profilerEnabled: boolean;
   onProfilerToggle: () => void;
@@ -63,7 +62,6 @@ const arePropsEqual = (
 ): boolean => {
   if (
     prevProps.isOpen !== nextProps.isOpen ||
-    prevProps.accentColor !== nextProps.accentColor ||
     prevProps.profilerEnabled !== nextProps.profilerEnabled ||
     prevProps.visualizerDebugEnabled !== nextProps.visualizerDebugEnabled
   ) {
@@ -74,7 +72,7 @@ const arePropsEqual = (
 };
 
 /** Music Sources section rendered at the top of the settings drawer. */
-const MusicSourcesSection = memo(({ accentColor }: { accentColor: string }) => {
+const MusicSourcesSection = memo(() => {
   const { activeProviderId, setActiveProviderId, registry } = useProviderContext();
   const providers = useMemo(() => registry.getAll(), [registry]);
 
@@ -91,7 +89,6 @@ const MusicSourcesSection = memo(({ accentColor }: { accentColor: string }) => {
           return (
             <ProviderButton
               key={descriptor.id}
-              $accentColor={accentColor}
               $isActive={isActive}
               onClick={() => {
                 if (descriptor.id !== activeProviderId) {
@@ -101,7 +98,7 @@ const MusicSourcesSection = memo(({ accentColor }: { accentColor: string }) => {
               }}
               aria-label={`Switch to ${descriptor.name}`}
             >
-              <ProviderStatusDot $isConnected={isConnected} $accentColor={accentColor} />
+              <ProviderStatusDot $isConnected={isConnected} />
               <ProviderName>{descriptor.name}</ProviderName>
               {isActive && <ProviderActiveLabel>Active</ProviderActiveLabel>}
             </ProviderButton>
@@ -123,12 +120,10 @@ const ChevronIcon = ({ isOpen }: { isOpen: boolean }) => (
 /** Reusable collapsible section wrapper. */
 const CollapsibleSection = memo(({
   title,
-  accentColor,
   defaultOpen = false,
   children,
 }: {
   title: string;
-  accentColor: string;
   defaultOpen?: boolean;
   children: React.ReactNode;
 }) => {
@@ -136,7 +131,6 @@ const CollapsibleSection = memo(({
   return (
     <FilterSection>
       <CollapsibleHeader
-        $accentColor={accentColor}
         onClick={() => setIsOpen((o) => !o)}
         aria-expanded={isOpen}
       >
@@ -154,7 +148,7 @@ const CollapsibleSection = memo(({
 CollapsibleSection.displayName = 'CollapsibleSection';
 
 /** Dropbox-specific data management — art cache + liked songs. */
-const DropboxDataSection = memo(({ accentColor, catalog }: { accentColor: string; catalog: DropboxCatalogAdapter }) => {
+const DropboxDataSection = memo(({ catalog }: { catalog: DropboxCatalogAdapter }) => {
   const [artStatus, setArtStatus] = useState<'idle' | 'working' | 'done'>('idle');
   const [likesStatus, setLikesStatus] = useState<'idle' | 'working' | 'done'>('idle');
   const [resultMessage, setResultMessage] = useState('');
@@ -232,22 +226,22 @@ const DropboxDataSection = memo(({ accentColor, catalog }: { accentColor: string
   };
 
   return (
-    <CollapsibleSection title="Dropbox Data" accentColor={accentColor}>
+    <CollapsibleSection title="Dropbox Data">
       <ControlGroup>
         <ControlLabel>Clear cached art so it re-downloads on next library load</ControlLabel>
-        <ResetButton onClick={handleClearArt} $accentColor={accentColor} disabled={artBusy}>
+        <ResetButton onClick={handleClearArt} disabled={artBusy}>
           {artStatus === 'done' ? 'Cleared!' : artBusy ? 'Working…' : 'Clear Art Cache'}
         </ResetButton>
       </ControlGroup>
       <ControlGroup>
         <ControlLabel>Clear and immediately re-fetch fresh art in the background</ControlLabel>
-        <ResetButton onClick={handleRefreshArt} $accentColor={accentColor} disabled={artBusy}>
+        <ResetButton onClick={handleRefreshArt} disabled={artBusy}>
           {artStatus === 'done' ? 'Started!' : artBusy ? 'Working…' : 'Refresh Art'}
         </ResetButton>
       </ControlGroup>
       <ControlGroup>
         <ControlLabel>Export liked songs to a JSON file for backup</ControlLabel>
-        <ResetButton onClick={handleExport} $accentColor={accentColor} disabled={likesBusy}>
+        <ResetButton onClick={handleExport} disabled={likesBusy}>
           {likesStatus === 'done' && resultMessage === 'Exported!' ? 'Exported!' : likesBusy ? 'Working…' : 'Export Likes'}
         </ResetButton>
       </ControlGroup>
@@ -260,13 +254,13 @@ const DropboxDataSection = memo(({ accentColor, catalog }: { accentColor: string
           onChange={handleImport}
           style={{ display: 'none' }}
         />
-        <ResetButton onClick={() => fileInputRef.current?.click()} $accentColor={accentColor} disabled={likesBusy}>
+        <ResetButton onClick={() => fileInputRef.current?.click()} disabled={likesBusy}>
           {likesStatus === 'done' && resultMessage.startsWith('Imported') ? resultMessage : likesBusy ? 'Working…' : 'Import Likes'}
         </ResetButton>
       </ControlGroup>
       <ControlGroup>
         <ControlLabel>Re-scan Dropbox to update metadata for liked tracks</ControlLabel>
-        <ResetButton onClick={handleRefreshMetadata} $accentColor={accentColor} disabled={likesBusy}>
+        <ResetButton onClick={handleRefreshMetadata} disabled={likesBusy}>
           {likesStatus === 'done' ? resultMessage || 'Done!' : likesBusy ? 'Scanning…' : 'Refresh Metadata'}
         </ResetButton>
       </ControlGroup>
@@ -278,14 +272,13 @@ DropboxDataSection.displayName = 'DropboxDataSection';
 const AppSettingsMenu: React.FC<AppSettingsMenuProps> = memo(({
   isOpen,
   onClose,
-  accentColor,
   onClearCache,
   profilerEnabled,
   onProfilerToggle,
   visualizerDebugEnabled,
   onVisualizerDebugToggle
 }) => {
-  const { viewport, isMobile, isTablet, transitionDuration, transitionEasing } = usePlayerSizing();
+  const { viewport, isMobile, isTablet, transitionDuration, transitionEasing } = usePlayerSizingContext();
   const { activeProviderId, activeDescriptor } = useProviderContext();
   const isDropbox = activeProviderId === 'dropbox';
   const dropboxCatalog = isDropbox
@@ -342,15 +335,15 @@ const AppSettingsMenu: React.FC<AppSettingsMenuProps> = memo(({
 
         <DrawerContent>
           {/* Music Sources — always visible at top */}
-          <MusicSourcesSection accentColor={accentColor} />
+          <MusicSourcesSection />
 
           {/* Dropbox Data — consolidated art cache + liked songs */}
           {dropboxCatalog && (
-            <DropboxDataSection accentColor={accentColor} catalog={dropboxCatalog} />
+            <DropboxDataSection catalog={dropboxCatalog} />
           )}
 
           {/* Advanced — collapsible */}
-          <CollapsibleSection title="Advanced" accentColor={accentColor}>
+          <CollapsibleSection title="Advanced">
             <ControlGroup>
               <ControlLabel>Clear Library Cache</ControlLabel>
               {clearState === 'confirming' ? (
@@ -363,7 +356,6 @@ const AppSettingsMenu: React.FC<AppSettingsMenuProps> = memo(({
                           type="checkbox"
                           checked={clearLikes}
                           onChange={(e) => setClearLikes(e.target.checked)}
-                          $accentColor={accentColor}
                         />
                         <CacheOptionLabel htmlFor="clear-likes">Also clear Likes</CacheOptionLabel>
                       </CacheOptionItem>
@@ -374,7 +366,6 @@ const AppSettingsMenu: React.FC<AppSettingsMenuProps> = memo(({
                         type="checkbox"
                         checked={clearPins}
                         onChange={(e) => setClearPins(e.target.checked)}
-                        $accentColor={accentColor}
                       />
                       <CacheOptionLabel htmlFor="clear-pins">Also clear Pins</CacheOptionLabel>
                     </CacheOptionItem>
@@ -384,22 +375,21 @@ const AppSettingsMenu: React.FC<AppSettingsMenuProps> = memo(({
                         type="checkbox"
                         checked={clearAccentColors}
                         onChange={(e) => setClearAccentColors(e.target.checked)}
-                        $accentColor={accentColor}
                       />
                       <CacheOptionLabel htmlFor="clear-accent-colors">Also clear Accent Colors</CacheOptionLabel>
                     </CacheOptionItem>
                   </CacheOptionsList>
                   <CacheConfirmButtons>
-                    <CacheCancelButton onClick={handleClearCacheCancel} $accentColor={accentColor}>
+                    <CacheCancelButton onClick={handleClearCacheCancel}>
                       Cancel
                     </CacheCancelButton>
-                    <ResetButton onClick={handleClearCacheConfirm} $accentColor={accentColor}>
+                    <ResetButton onClick={handleClearCacheConfirm}>
                       Confirm Clear
                     </ResetButton>
                   </CacheConfirmButtons>
                 </>
               ) : (
-                <ResetButton onClick={clearState === 'success' ? undefined : handleClearCacheClick} $accentColor={accentColor}>
+                <ResetButton onClick={clearState === 'success' ? undefined : handleClearCacheClick}>
                   {clearState === 'success' ? 'Cleared!' : 'Clear Cache'}
                 </ResetButton>
               )}
@@ -408,14 +398,12 @@ const AppSettingsMenu: React.FC<AppSettingsMenuProps> = memo(({
               <ControlLabel>Performance Profiler</ControlLabel>
               <OptionButtonGroup>
                 <OptionButton
-                  $accentColor={accentColor}
                   $isActive={profilerEnabled}
                   onClick={onProfilerToggle}
                 >
                   On
                 </OptionButton>
                 <OptionButton
-                  $accentColor={accentColor}
                   $isActive={!profilerEnabled}
                   onClick={onProfilerToggle}
                 >
@@ -427,14 +415,12 @@ const AppSettingsMenu: React.FC<AppSettingsMenuProps> = memo(({
               <ControlLabel>Visualizer Debug</ControlLabel>
               <OptionButtonGroup>
                 <OptionButton
-                  $accentColor={accentColor}
                   $isActive={visualizerDebugEnabled}
                   onClick={onVisualizerDebugToggle}
                 >
                   On
                 </OptionButton>
                 <OptionButton
-                  $accentColor={accentColor}
                   $isActive={!visualizerDebugEnabled}
                   onClick={onVisualizerDebugToggle}
                 >

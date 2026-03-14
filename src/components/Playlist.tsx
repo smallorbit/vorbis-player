@@ -4,7 +4,6 @@ import type { Track } from '../services/spotify';
 import { Card, CardHeader, CardContent, CardDescription } from '../components/styled';
 import { ScrollArea } from '../components/styled';
 import { Avatar } from '../components/styled';
-import { getTransparentVariant } from '../utils/colorExtractor';
 
 // Styled components
 const PlaylistContainer = styled.div`
@@ -61,8 +60,8 @@ const PlaylistItems = styled.div`
 `;
 
 const PlaylistItemContainer = styled.div.withConfig({
-  shouldForwardProp: (prop) => !['isSelected', 'accentColor'].includes(prop),
-})<{ isSelected: boolean; accentColor: string }>`
+  shouldForwardProp: (prop) => prop !== 'isSelected',
+})<{ isSelected: boolean }>`
   display: flex;
   align-items: center;
   gap: ${({ theme }) => theme.spacing.sm};
@@ -71,10 +70,10 @@ const PlaylistItemContainer = styled.div.withConfig({
   cursor: pointer;
   transition: all 0.2s ease;
   border: 1px solid transparent;
-  
-  ${({ theme, isSelected, accentColor }) => isSelected ? `
-    background: ${getTransparentVariant(accentColor, 0.2)};
-    border-color: ${accentColor};
+
+  ${({ theme, isSelected }) => isSelected ? `
+    background: color-mix(in srgb, var(--accent-color) 20%, transparent);
+    border-color: var(--accent-color);
   ` : `
     &:hover {
       background: ${theme.colors.control.backgroundHover};
@@ -120,47 +119,44 @@ const TrackName = styled.div.withConfig({
 `;
 
 const TrackArtist = styled.div.withConfig({
-  shouldForwardProp: (prop) => !['isSelected', 'accentColor'].includes(prop),
-})<{ isSelected: boolean; accentColor: string }>`
+  shouldForwardProp: (prop) => prop !== 'isSelected',
+})<{ isSelected: boolean }>`
   font-size: ${({ theme }) => theme.fontSize.sm};
   margin-top: ${({ theme }) => theme.spacing.xs};
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  color: ${({ isSelected, accentColor, theme }) => isSelected ? accentColor : theme.colors.gray[400]};
+  color: ${({ isSelected, theme }) => isSelected ? 'var(--accent-color)' : theme.colors.gray[400]};
 `;
 
 const Duration = styled.span.withConfig({
-  shouldForwardProp: (prop) => !['isSelected', 'accentColor'].includes(prop),
-})<{ isSelected: boolean; accentColor: string }>`
+  shouldForwardProp: (prop) => prop !== 'isSelected',
+})<{ isSelected: boolean }>`
   font-size: ${({ theme }) => theme.fontSize.sm};
   font-family: monospace;
-  color: ${({ isSelected, accentColor, theme }) => isSelected ? accentColor : theme.colors.gray[400]};
+  color: ${({ isSelected, theme }) => isSelected ? 'var(--accent-color)' : theme.colors.gray[400]};
   flex-shrink: 0;
 `;
 
 interface PlaylistProps {
   tracks: Track[];
   currentTrackIndex: number;
-  accentColor: string;
   onTrackSelect: (index: number) => void;
-  isOpen?: boolean; // Add isOpen prop to trigger scrolling
+  isOpen?: boolean;
 }
 
 interface PlaylistItemProps {
   track: Track;
   index: number;
   isSelected: boolean;
-  accentColor: string;
   onSelect: (index: number) => void;
-  itemRef?: React.RefObject<HTMLDivElement>; // Add ref prop
+  itemRef?: React.RefObject<HTMLDivElement>;
 }
 
-const PlaylistItem = memo<PlaylistItemProps>(({ 
-  track, 
-  index, 
-  isSelected, 
-  accentColor,
+const PlaylistItem = memo<PlaylistItemProps>(({
+  track,
+  index,
+  isSelected,
   onSelect,
   itemRef
 }) => {
@@ -169,7 +165,6 @@ const PlaylistItem = memo<PlaylistItemProps>(({
       ref={itemRef}
       onClick={() => onSelect(index)}
       isSelected={isSelected}
-      accentColor={accentColor}
     >
       {/* Album Artwork */}
       <AlbumArtContainer>
@@ -197,20 +192,19 @@ const PlaylistItem = memo<PlaylistItemProps>(({
         <TrackName isSelected={isSelected}>
           {track.name}
         </TrackName>
-        <TrackArtist isSelected={isSelected} accentColor={accentColor}>
+        <TrackArtist isSelected={isSelected}>
           {track.artists}
         </TrackArtist>
       </TrackInfo>
 
-      {/* Duration */}
-      <Duration isSelected={isSelected} accentColor={accentColor}>
+      <Duration isSelected={isSelected}>
         {track.duration_ms ? `${Math.floor(track.duration_ms / 60000)}:${Math.floor((track.duration_ms % 60000) / 1000).toString().padStart(2, '0')}` : '--:--'}
       </Duration>
     </PlaylistItemContainer>
   );
 });
 
-const Playlist = memo<PlaylistProps>(({ tracks, currentTrackIndex, accentColor, onTrackSelect, isOpen = false }) => {
+const Playlist = memo<PlaylistProps>(({ tracks, currentTrackIndex, onTrackSelect, isOpen = false }) => {
   const currentTrackRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll to current track when playlist opens
@@ -244,7 +238,6 @@ const Playlist = memo<PlaylistProps>(({ tracks, currentTrackIndex, accentColor, 
                   track={track}
                   index={index}
                   isSelected={index === currentTrackIndex}
-                  accentColor={accentColor}
                   onSelect={onTrackSelect}
                   itemRef={index === currentTrackIndex ? currentTrackRef : undefined}
                 />

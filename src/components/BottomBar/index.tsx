@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { BottomBarContainer, BottomBarInner, ZenTriggerZone } from './styled';
 import { ControlButton } from '../controls/styled';
 import VolumeControl from '../controls/VolumeControl';
-import { usePlayerSizing } from '@/hooks/usePlayerSizing';
+import { usePlayerSizingContext } from '@/contexts/PlayerSizingContext';
 import {
   VisualEffectsIcon,
   BackToLibraryIcon,
@@ -15,7 +15,6 @@ import {
 const ZEN_HIDE_DELAY = 3000;
 
 interface BottomBarProps {
-  accentColor: string;
   zenModeEnabled?: boolean;
   isMuted: boolean;
   volume: number;
@@ -30,7 +29,6 @@ interface BottomBarProps {
 }
 
 const BottomBar = React.memo(function BottomBar({
-  accentColor,
   zenModeEnabled,
   isMuted,
   volume,
@@ -43,7 +41,7 @@ const BottomBar = React.memo(function BottomBar({
   shuffleEnabled,
   onShuffleToggle,
 }: BottomBarProps) {
-  const { isMobile, isTablet } = usePlayerSizing();
+  const { isMobile, isTablet } = usePlayerSizingContext();
   const [zenBarVisible, setZenBarVisible] = useState(false);
   const hideTimerRef = useRef<ReturnType<typeof setTimeout>>();
   const zenEntryGuardRef = useRef(false);
@@ -123,7 +121,6 @@ const BottomBar = React.memo(function BottomBar({
           <VolumeControl
             isMuted={isMuted}
             volume={volume}
-            accentColor={accentColor}
             onClick={onMuteToggle ?? (() => {})}
             onVolumeChange={onVolumeChange ?? (() => {})}
             isMobile={isMobile}
@@ -134,7 +131,6 @@ const BottomBar = React.memo(function BottomBar({
             <ControlButton
               $isMobile={isMobile}
               $isTablet={isTablet}
-              accentColor={accentColor}
               isActive={shuffleEnabled}
               onClick={onShuffleToggle}
               title={`Shuffle ${shuffleEnabled ? 'ON' : 'OFF'}`}
@@ -148,7 +144,6 @@ const BottomBar = React.memo(function BottomBar({
             $isMobile={isMobile}
             $isTablet={isTablet}
             $compact
-            accentColor={accentColor}
             onClick={onShowVisualEffects}
             title="App settings"
           >
@@ -160,7 +155,6 @@ const BottomBar = React.memo(function BottomBar({
               $isMobile={isMobile}
               $isTablet={isTablet}
               $compact
-              accentColor={accentColor}
               onClick={onBackToLibrary}
               title="Back to Library"
             >
@@ -172,7 +166,6 @@ const BottomBar = React.memo(function BottomBar({
             $isMobile={isMobile}
             $isTablet={isTablet}
             $compact
-            accentColor={accentColor}
             onClick={onShowPlaylist}
             title="Show Playlist"
           >
@@ -184,7 +177,6 @@ const BottomBar = React.memo(function BottomBar({
               $isMobile={isMobile}
               $isTablet={isTablet}
               $compact
-              accentColor={accentColor}
               isActive={zenModeEnabled}
               onClick={onZenModeToggle}
               title={`Zen Mode ${zenModeEnabled ? 'ON' : 'OFF'}`}

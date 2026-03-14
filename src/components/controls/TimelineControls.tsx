@@ -14,7 +14,6 @@ interface TimelineControlsProps {
     isLiked: boolean;
     isLikePending: boolean;
     onLikeToggle: () => void;
-    accentColor: string;
     isMobile: boolean;
     isTablet: boolean;
 }
@@ -29,13 +28,12 @@ const areTimelineControlsPropsEqual = (
         prevProps.trackId === nextProps.trackId &&
         prevProps.isLiked === nextProps.isLiked &&
         prevProps.isLikePending === nextProps.isLikePending &&
-        prevProps.accentColor === nextProps.accentColor &&
         prevProps.isMobile === nextProps.isMobile &&
         prevProps.isTablet === nextProps.isTablet
     );
 };
 
-const TimelineControls = memo<TimelineControlsProps>(({ 
+const TimelineControls = memo<TimelineControlsProps>(({
     currentPosition,
     duration,
     formatTime,
@@ -46,7 +44,6 @@ const TimelineControls = memo<TimelineControlsProps>(({
     isLiked,
     isLikePending,
     onLikeToggle,
-    accentColor,
     isMobile,
     isTablet
 }) => {
@@ -55,7 +52,6 @@ const TimelineControls = memo<TimelineControlsProps>(({
             <TimelineSlider
                 currentPosition={currentPosition}
                 duration={duration}
-                accentColor={accentColor}
                 formatTime={formatTime}
                 onSliderChange={onSliderChange}
                 onSliderMouseDown={onSliderMouseDown}
@@ -67,7 +63,6 @@ const TimelineControls = memo<TimelineControlsProps>(({
                     trackId={trackId}
                     isLiked={isLiked}
                     isLoading={isLikePending}
-                    accentColor={accentColor}
                     onToggleLike={onLikeToggle}
                     $isMobile={isMobile}
                     $isTablet={isTablet}

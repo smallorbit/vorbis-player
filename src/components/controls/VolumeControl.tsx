@@ -20,7 +20,7 @@ const PopoverContainer = styled.div`
   -webkit-backdrop-filter: blur(20px);
 `;
 
-const SliderTrack = styled.div<{ $accentColor: string; $fillPercent: number }>`
+const SliderTrack = styled.div<{ $fillPercent: number }>`
   position: relative;
   width: 4px;
   height: 120px;
@@ -36,28 +36,28 @@ const SliderTrack = styled.div<{ $accentColor: string; $fillPercent: number }>`
     left: 0;
     right: 0;
     height: ${({ $fillPercent }) => $fillPercent}%;
-    background: ${({ $accentColor }) => $accentColor};
+    background: var(--accent-color);
     border-radius: ${({ theme }) => theme.borderRadius.sm};
     pointer-events: none;
   }
 `;
 
-const SliderThumb = styled.div<{ $accentColor: string; $percent: number }>`
+const SliderThumb = styled.div<{ $percent: number }>`
   position: absolute;
   left: 50%;
   bottom: ${({ $percent }) => $percent}%;
   transform: translate(-50%, 50%);
   width: 14px;
   height: 14px;
-  background: ${({ $accentColor }) => $accentColor};
+  background: var(--accent-color);
   border-radius: 50%;
   pointer-events: none;
   box-shadow: ${({ theme }) => theme.shadows.xs};
 `;
 
-const MuteButton = styled.button<{ $isMuted: boolean; $accentColor: string }>`
+const MuteButton = styled.button<{ $isMuted: boolean }>`
   border: none;
-  background: ${({ $isMuted, $accentColor }) => $isMuted ? `${$accentColor}33` : 'transparent'};
+  background: ${({ $isMuted }) => $isMuted ? 'color-mix(in srgb, var(--accent-color) 20%, transparent)' : 'transparent'};
   color: ${({ $isMuted }) => $isMuted ? theme.colors.gray[300] : theme.colors.gray[400]};
   display: flex;
   align-items: center;
@@ -92,7 +92,6 @@ const VolumeLabel = styled.span`
 interface VolumeControlProps {
     isMuted: boolean;
     volume: number;
-    accentColor: string;
     onClick: () => void;
     onVolumeChange: (volume: number) => void;
     isMobile: boolean;
@@ -106,7 +105,6 @@ const areVolumeControlPropsEqual = (
     return (
         prevProps.isMuted === nextProps.isMuted &&
         prevProps.volume === nextProps.volume &&
-        prevProps.accentColor === nextProps.accentColor &&
         prevProps.isMobile === nextProps.isMobile &&
         prevProps.isTablet === nextProps.isTablet
     );
@@ -149,7 +147,6 @@ const UnmuteIcon = () => (
 const VolumeControl = memo<VolumeControlProps>(({
     isMuted,
     volume,
-    accentColor,
     onClick,
     onVolumeChange,
     isMobile,
@@ -243,7 +240,6 @@ const VolumeControl = memo<VolumeControlProps>(({
                 $isMobile={isMobile}
                 $isTablet={isTablet}
                 $compact
-                accentColor={accentColor}
                 isActive={isOpen}
                 onClick={togglePopover}
                 title="Volume"
@@ -264,17 +260,15 @@ const VolumeControl = memo<VolumeControlProps>(({
 
                     <SliderTrack
                         ref={trackRef}
-                        $accentColor={accentColor}
                         $fillPercent={displayVolume}
                         onMouseDown={handleTrackMouseDown}
                         onTouchStart={handleTrackTouchStart}
                     >
-                        <SliderThumb $accentColor={accentColor} $percent={displayVolume} />
+                        <SliderThumb $percent={displayVolume} />
                     </SliderTrack>
 
                     <MuteButton
                         $isMuted={isMuted}
-                        $accentColor={accentColor}
                         onClick={onClick}
                         title={isMuted ? 'Unmute' : 'Mute'}
                     >

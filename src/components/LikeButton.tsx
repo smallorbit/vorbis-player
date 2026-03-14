@@ -1,13 +1,11 @@
 import React, { memo, useCallback } from 'react';
 import styled, { keyframes, css } from 'styled-components';
 import { theme } from '../styles/theme';
-import { getContrastColor } from '../utils/colorUtils';
 
 interface LikeButtonProps {
   trackId?: string;
   isLiked: boolean;
   isLoading?: boolean;
-  accentColor: string;
   onToggleLike: () => void;
   className?: string;
   $isMobile?: boolean;
@@ -24,7 +22,6 @@ const heartBeat = keyframes`
 
 const StyledLikeButton = styled.button<{
   $isLiked: boolean;
-  $accentColor: string;
   $isMobile: boolean;
   $isTablet: boolean;
 }>`
@@ -61,13 +58,13 @@ const StyledLikeButton = styled.button<{
     transition: all 0.2s ease;
   }
 
-  ${({ $isLiked, $accentColor }) => $isLiked ? css`
-    background: ${$accentColor};
-    color: ${getContrastColor($accentColor)};
+  ${({ $isLiked }) => $isLiked ? css`
+    background: var(--accent-color);
+    color: var(--accent-contrast-color);
 
     &:hover:not(:disabled) {
-      background: ${$accentColor}DD;
-      color: ${getContrastColor($accentColor)};
+      background: color-mix(in srgb, var(--accent-color) 87%, transparent);
+      color: var(--accent-contrast-color);
       transform: translateY(-1px);
     }
 
@@ -75,11 +72,11 @@ const StyledLikeButton = styled.button<{
       animation: ${heartBeat} 0.6s ease-in-out;
     }
   ` : css`
-    background: ${$accentColor}33;
+    background: color-mix(in srgb, var(--accent-color) 20%, transparent);
     color: ${theme.colors.white};
 
     &:hover:not(:disabled) {
-      background: ${$accentColor}4D;
+      background: color-mix(in srgb, var(--accent-color) 30%, transparent);
       color: ${theme.colors.white};
       transform: translateY(-1px);
     }
@@ -92,7 +89,7 @@ const StyledLikeButton = styled.button<{
   }
 
   &:focus-visible {
-    outline: 2px solid ${({ $accentColor }) => $accentColor};
+    outline: 2px solid var(--accent-color);
     outline-offset: 2px;
   }
 `;
@@ -117,7 +114,6 @@ const areLikeButtonPropsEqual = (
     prevProps.trackId === nextProps.trackId &&
     prevProps.isLiked === nextProps.isLiked &&
     prevProps.isLoading === nextProps.isLoading &&
-    prevProps.accentColor === nextProps.accentColor &&
     prevProps.className === nextProps.className &&
     prevProps.$isMobile === nextProps.$isMobile &&
     prevProps.$isTablet === nextProps.$isTablet
@@ -128,7 +124,6 @@ const LikeButton = memo<LikeButtonProps>(({
   trackId,
   isLiked,
   isLoading = false,
-  accentColor,
   onToggleLike,
   className,
   $isMobile = false,
@@ -151,7 +146,6 @@ const LikeButton = memo<LikeButtonProps>(({
   return (
     <StyledLikeButton
       $isLiked={isLiked}
-      $accentColor={accentColor}
       $isMobile={$isMobile}
       $isTablet={$isTablet}
       disabled={isLoading || !trackId}

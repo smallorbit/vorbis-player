@@ -118,7 +118,7 @@ const ResetBtn = styled.button`
   }
 `;
 
-const SwitchTrack = styled.button<{ $on: boolean; $accent: string }>`
+const SwitchTrack = styled.button<{ $on: boolean }>`
   position: relative;
   width: 36px;
   height: 20px;
@@ -126,7 +126,7 @@ const SwitchTrack = styled.button<{ $on: boolean; $accent: string }>`
   border: none;
   padding: 0;
   cursor: pointer;
-  background: ${({ $on, $accent }) => ($on ? $accent : 'rgba(255, 255, 255, 0.15)')};
+  background: ${({ $on }) => ($on ? 'var(--accent-color)' : 'rgba(255, 255, 255, 0.15)')};
   transition: background 0.2s ease;
   flex-shrink: 0;
 `;
@@ -285,7 +285,7 @@ function QuickEffectsRow({
       <SectionCard>
         <SectionHeader>
           <SectionTitle>Glow</SectionTitle>
-          <SwitchTrack $on={glowEnabled} $accent={accentColor} onClick={onGlowToggle} aria-label="Toggle glow" role="switch" aria-checked={glowEnabled}>
+          <SwitchTrack $on={glowEnabled} onClick={onGlowToggle} aria-label="Toggle glow" role="switch" aria-checked={glowEnabled}>
             <SwitchKnob $on={glowEnabled} />
           </SwitchTrack>
         </SectionHeader>
@@ -295,9 +295,9 @@ function QuickEffectsRow({
               <SubSettingRow>
                 <SubLabel>Intensity</SubLabel>
                 <OptionButtonGroup>
-                  <OptionButton $accentColor={accentColor} $isActive={glowIntensity === 95} onClick={() => onGlowIntensityChange(95)}>Less</OptionButton>
-                  <OptionButton $accentColor={accentColor} $isActive={glowIntensity === 110} onClick={() => onGlowIntensityChange(110)}>Normal</OptionButton>
-                  <OptionButton $accentColor={accentColor} $isActive={glowIntensity === 125} onClick={() => onGlowIntensityChange(125)}>More</OptionButton>
+                  <OptionButton $isActive={glowIntensity === 95} onClick={() => onGlowIntensityChange(95)}>Less</OptionButton>
+                  <OptionButton $isActive={glowIntensity === 110} onClick={() => onGlowIntensityChange(110)}>Normal</OptionButton>
+                  <OptionButton $isActive={glowIntensity === 125} onClick={() => onGlowIntensityChange(125)}>More</OptionButton>
                 </OptionButtonGroup>
               </SubSettingRow>
             )}
@@ -305,9 +305,9 @@ function QuickEffectsRow({
               <SubSettingRow>
                 <SubLabel>Rate</SubLabel>
                 <OptionButtonGroup>
-                  <OptionButton $accentColor={accentColor} $isActive={glowRate === 5.0} onClick={() => onGlowRateChange(5.0)}>Slower</OptionButton>
-                  <OptionButton $accentColor={accentColor} $isActive={glowRate === 4.0} onClick={() => onGlowRateChange(4.0)}>Normal</OptionButton>
-                  <OptionButton $accentColor={accentColor} $isActive={glowRate === 3.0} onClick={() => onGlowRateChange(3.0)}>Faster</OptionButton>
+                  <OptionButton $isActive={glowRate === 5.0} onClick={() => onGlowRateChange(5.0)}>Slower</OptionButton>
+                  <OptionButton $isActive={glowRate === 4.0} onClick={() => onGlowRateChange(4.0)}>Normal</OptionButton>
+                  <OptionButton $isActive={glowRate === 3.0} onClick={() => onGlowRateChange(3.0)}>Faster</OptionButton>
                 </OptionButtonGroup>
               </SubSettingRow>
             )}
@@ -319,7 +319,7 @@ function QuickEffectsRow({
       <SectionCard>
         <SectionHeader>
           <SectionTitle>Visualizer</SectionTitle>
-          <SwitchTrack $on={backgroundVisualizerEnabled} $accent={accentColor} onClick={onBackgroundVisualizerToggle} aria-label="Toggle visualizer" role="switch" aria-checked={backgroundVisualizerEnabled}>
+          <SwitchTrack $on={backgroundVisualizerEnabled} onClick={onBackgroundVisualizerToggle} aria-label="Toggle visualizer" role="switch" aria-checked={backgroundVisualizerEnabled}>
             <SwitchKnob $on={backgroundVisualizerEnabled} />
           </SwitchTrack>
         </SectionHeader>
@@ -328,14 +328,12 @@ function QuickEffectsRow({
             <SubLabel>Style</SubLabel>
             <OptionButtonGroup>
               <OptionButton
-                $accentColor={accentColor}
                 $isActive={backgroundVisualizerStyle === 'fireflies'}
                 onClick={() => onBackgroundVisualizerStyleChange('fireflies')}
               >
                 Fireflies
               </OptionButton>
               <OptionButton
-                $accentColor={accentColor}
                 $isActive={backgroundVisualizerStyle === 'comet'}
                 onClick={() => onBackgroundVisualizerStyleChange('comet')}
               >
@@ -348,21 +346,18 @@ function QuickEffectsRow({
               <SubLabel>Intensity</SubLabel>
               <OptionButtonGroup>
                 <OptionButton
-                  $accentColor={accentColor}
                   $isActive={backgroundVisualizerIntensity === 30}
                   onClick={() => onBackgroundVisualizerIntensityChange(30)}
                 >
                   Less
                 </OptionButton>
                 <OptionButton
-                  $accentColor={accentColor}
                   $isActive={backgroundVisualizerIntensity === 60}
                   onClick={() => onBackgroundVisualizerIntensityChange(60)}
                 >
                   Normal
                 </OptionButton>
                 <OptionButton
-                  $accentColor={accentColor}
                   $isActive={backgroundVisualizerIntensity === 90}
                   onClick={() => onBackgroundVisualizerIntensityChange(90)}
                 >
@@ -378,7 +373,7 @@ function QuickEffectsRow({
       <SectionCard>
         <SectionHeader>
           <SectionTitle>Translucent</SectionTitle>
-          <SwitchTrack $on={translucenceEnabled} $accent={accentColor} onClick={onTranslucenceToggle} aria-label="Toggle translucence" role="switch" aria-checked={translucenceEnabled}>
+          <SwitchTrack $on={translucenceEnabled} onClick={onTranslucenceToggle} aria-label="Toggle translucence" role="switch" aria-checked={translucenceEnabled}>
             <SwitchKnob $on={translucenceEnabled} />
           </SwitchTrack>
         </SectionHeader>
