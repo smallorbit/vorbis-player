@@ -15,6 +15,7 @@ const GlowBackgroundLayer = styled.div<{
   background: var(--accent-color);
   pointer-events: none;
   z-index: -1;
+  border-radius: inherit;
 `;
 
 interface AccentColorGlowOverlayProps {
