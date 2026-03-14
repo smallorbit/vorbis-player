@@ -38,8 +38,9 @@ vi.mock('@/services/spotify', () => ({
   getUserLibraryInterleaved: vi.fn(),
 }));
 
-vi.mock('@/hooks/usePlayerSizing', () => ({
-  usePlayerSizing: vi.fn(() => ({
+vi.mock('@/contexts/PlayerSizingContext', () => ({
+  PlayerSizingProvider: ({ children }: { children: React.ReactNode }) => children,
+  usePlayerSizingContext: vi.fn(() => ({
     isMobile: false,
     isTablet: false,
     isDesktop: true,
@@ -50,7 +51,6 @@ vi.mock('@/hooks/usePlayerSizing', () => ({
 }));
 
 const defaultProps = {
-  accentColor: '#1db954',
   zenModeEnabled: false,
   isMuted: false,
   volume: 50,
