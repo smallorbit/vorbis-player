@@ -81,6 +81,7 @@ function setMockLibrarySync(overrides?: Record<string, unknown>) {
     playlists: mockPlaylists,
     albums: mockAlbums,
     likedSongsCount: 10,
+    likedSongsPerProvider: [],
     isInitialLoadComplete: true,
     isSyncing: false,
     lastSyncTimestamp: Date.now(),

@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import styled from 'styled-components';
 import { useProviderContext } from '@/contexts/ProviderContext';
+import Switch from '@/components/controls/Switch';
 import type { ProviderId } from '@/types/domain';
 
 const PROVIDER_COLORS: Record<ProviderId, string> = {
@@ -22,18 +23,20 @@ const ProviderRow = styled.div`
   gap: ${({ theme }) => theme.spacing.sm};
 `;
 
-const StatusDot = styled.span<{ $color: string }>`
+const StatusDot = styled.span<{ $color: string; $dimmed?: boolean }>`
   width: 8px;
   height: 8px;
   border-radius: 50%;
   background: ${({ $color }) => $color};
+  opacity: ${({ $dimmed }) => ($dimmed ? 0.35 : 1)};
   flex-shrink: 0;
 `;
 
-const ProviderName = styled.span`
+const ProviderName = styled.span<{ $dimmed?: boolean }>`
   color: ${({ theme }) => theme.colors.white};
   font-size: ${({ theme }) => theme.fontSize.xs};
   font-weight: ${({ theme }) => theme.fontWeight.medium};
+  opacity: ${({ $dimmed }) => ($dimmed ? 0.4 : 1)};
 `;
 
 const ProviderStatusBadge = styled.span<{ $status: 'connected' | 'expired' }>`
@@ -59,7 +62,7 @@ const ConnectButton = styled.button<{ $accentColor: string }>`
 `;
 
 const LibraryProviderBar = React.memo(function LibraryProviderBar() {
-  const { registry, activeProviderId } = useProviderContext();
+  const { registry, enabledProviderIds, toggleProvider } = useProviderContext();
   const providers = useMemo(() => registry.getAll(), [registry]);
 
   if (providers.length < 2) return null;
@@ -68,26 +71,34 @@ const LibraryProviderBar = React.memo(function LibraryProviderBar() {
     <Bar>
       {providers.map((descriptor) => {
         const accentColor = PROVIDER_COLORS[descriptor.id] ?? '#646cff';
+        const isEnabled = enabledProviderIds.includes(descriptor.id);
         const isConnected = descriptor.auth.isAuthenticated();
-        const isActive = descriptor.id === activeProviderId;
+        const isLastEnabled = enabledProviderIds.length <= 1 && isEnabled;
 
         return (
           <ProviderRow key={descriptor.id}>
-            <StatusDot $color={accentColor} />
-            <ProviderName>{descriptor.name}</ProviderName>
-            {isConnected ? (
+            <StatusDot $color={accentColor} $dimmed={!isEnabled} />
+            <ProviderName $dimmed={!isEnabled}>{descriptor.name}</ProviderName>
+            {isEnabled && isConnected && (
               <ProviderStatusBadge $status="connected">Connected</ProviderStatusBadge>
-            ) : isActive ? (
-              <ProviderStatusBadge $status="expired">Expired</ProviderStatusBadge>
-            ) : null}
-            {!isConnected && (
-              <ConnectButton
-                $accentColor={accentColor}
-                onClick={() => descriptor.auth.beginLogin({ popup: true })}
-              >
-                Connect
-              </ConnectButton>
             )}
+            {isEnabled && !isConnected && (
+              <>
+                <ProviderStatusBadge $status="expired">Expired</ProviderStatusBadge>
+                <ConnectButton
+                  $accentColor={accentColor}
+                  onClick={() => descriptor.auth.beginLogin({ popup: true })}
+                >
+                  Connect
+                </ConnectButton>
+              </>
+            )}
+            <Switch
+              on={isEnabled}
+              onToggle={() => toggleProvider(descriptor.id)}
+              ariaLabel={`${isEnabled ? 'Disable' : 'Enable'} ${descriptor.name}`}
+              disabled={isLastEnabled}
+            />
           </ProviderRow>
         );
       })}

@@ -21,6 +21,7 @@ import {
 } from '../utils/playlistFilters';
 import { usePinnedItems } from '../hooks/usePinnedItems';
 import { LIKED_SONGS_ID, LIKED_SONGS_NAME, toAlbumPlaylistId } from '../constants/playlist';
+import LibraryProviderBar from './LibraryProviderBar';
 
 type ViewMode = 'playlists' | 'albums';
 
@@ -874,6 +875,7 @@ const PlaylistSelection = React.memo(function PlaylistSelection({ onPlaylistSele
 
   const mainContent = showMainContent ? (
     <>
+      <LibraryProviderBar />
       <div ref={inDrawer ? swipeZoneRef : undefined} style={inDrawer ? { flexShrink: 0, touchAction: 'pan-y' } : undefined}>
         {tabsBar}
       </div>
