@@ -7,6 +7,7 @@ import BackgroundVisualizer from './BackgroundVisualizer';
 import AccentColorBackground from './AccentColorBackground';
 import DebugOverlay, { useDebugActivator } from './DebugOverlay';
 import ProviderSetupScreen from './ProviderSetupScreen';
+import Toast from './Toast';
 import { ProfilingProvider } from '@/contexts/ProfilingContext';
 import { ProfilingOverlay } from '@/components/ProfilingOverlay';
 import { ProfiledComponent } from '@/components/ProfiledComponent';
@@ -68,7 +69,7 @@ const AudioPlayerComponent = () => {
     onBackToLibrary: handlers.handleBackToLibrary,
   }), [handlers, handleAlbumPlay]);
 
-  const { chosenProviderId, activeDescriptor, connectedProviderIds } = useProviderContext();
+  const { chosenProviderId, activeDescriptor, connectedProviderIds, fallthroughNotification, dismissFallthroughNotification } = useProviderContext();
   // Setup is needed when no provider has been chosen yet and none are connected,
   // or when the active provider isn't authenticated and no other enabled provider is either.
   // connectedProviderIds is the subset of enabledProviderIds with valid auth.
@@ -149,6 +150,9 @@ const AudioPlayerComponent = () => {
           />
         </ProfiledComponent>
         {renderContent()}
+        {fallthroughNotification && (
+          <Toast message={fallthroughNotification} onDismiss={dismissFallthroughNotification} />
+        )}
       </Container>
     </ProfilingProvider>
     </PlayerSizingProvider>
