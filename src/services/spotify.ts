@@ -122,6 +122,7 @@ export interface Track {
   uri: string;
   preview_url?: string;
   image?: string;
+  added_at?: number;
 }
 
 export interface PlaylistInfo {
@@ -801,6 +802,7 @@ export async function getLikedSongs(limit?: number): Promise<Track[]> {
   const token = await spotifyAuth.ensureValidToken();
 
   interface SavedTrackItem {
+    added_at?: string;
     track: SpotifyTrackItem | null;
   }
 
@@ -808,7 +810,12 @@ export async function getLikedSongs(limit?: number): Promise<Track[]> {
     if (!item.track) {
       return null;
     }
-    return transformTrackItem(item.track);
+    const track = transformTrackItem(item.track);
+    if (!track) return null;
+    if (item.added_at) {
+      track.added_at = new Date(item.added_at).getTime();
+    }
+    return track;
   }
 
   const tracks = await fetchAllPaginated<SavedTrackItem, Track>(

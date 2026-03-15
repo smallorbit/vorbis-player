@@ -18,6 +18,8 @@ import { useVisualEffectsState } from '@/hooks/useVisualEffectsState';
 import { useVolume } from '@/hooks/useVolume';
 import { useLikeTrack } from '@/hooks/useLikeTrack';
 import { useTrackListContext, useCurrentTrackContext } from '@/contexts/TrackContext';
+import { useUnifiedLikedTracks } from '@/hooks/useUnifiedLikedTracks';
+import { LIKED_SONGS_ID } from '@/constants/playlist';
 import { useColorContext } from '@/contexts/ColorContext';
 import { useVisualEffectsContext } from '@/contexts/VisualEffectsContext';
 import { useProfilingContext } from '@/contexts/ProfilingContext';
@@ -287,7 +289,9 @@ const FlipInner = styled.div.withConfig({
 
 const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, showLibraryDrawer, onAlbumArtBoundsChange, handlers, currentTrackProvider }) => {
   // --- Context hooks ---
-  const { tracks, shuffleEnabled, handleShuffleToggle } = useTrackListContext();
+  const { tracks, shuffleEnabled, handleShuffleToggle, selectedPlaylistId } = useTrackListContext();
+  const { isUnifiedLikedActive } = useUnifiedLikedTracks();
+  const showProviderIcons = isUnifiedLikedActive && selectedPlaylistId === LIKED_SONGS_ID;
   const { currentTrack, currentTrackIndex, showPlaylist, setShowPlaylist } = useCurrentTrackContext();
 
   const {
@@ -326,7 +330,7 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
   // --- Leaf hooks (self-contained, fine to call here) ---
   const { effectiveGlow, handleGlowIntensityChange, handleGlowRateChange, restoreGlowSettings } = useVisualEffectsState();
   const { handleMuteToggle, isMuted, volume, setVolumeLevel } = useVolume(currentTrackProvider);
-  const { isLiked, isLikePending, handleLikeToggle } = useLikeTrack(currentTrack?.id);
+  const { isLiked, isLikePending, handleLikeToggle } = useLikeTrack(currentTrack?.id, currentTrack?.provider);
 
   // --- Local UI state ---
   const [showHelp, setShowHelp] = useState(false);
@@ -800,6 +804,7 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
               tracks={tracks}
               currentTrackIndex={currentTrackIndex}
               onTrackSelect={handlers.onTrackSelect}
+              showProviderIcons={showProviderIcons}
             />
           </ProfiledComponent>
         ) : (
@@ -810,6 +815,7 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
               tracks={tracks}
               currentTrackIndex={currentTrackIndex}
               onTrackSelect={handlers.onTrackSelect}
+              showProviderIcons={showProviderIcons}
             />
           </ProfiledComponent>
         )}

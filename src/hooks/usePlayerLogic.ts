@@ -8,6 +8,7 @@ import { usePlaylistManager } from '@/hooks/usePlaylistManager';
 import { useSpotifyPlayback } from '@/hooks/useSpotifyPlayback';
 import { useAutoAdvance } from '@/hooks/useAutoAdvance';
 import { useAccentColor } from '@/hooks/useAccentColor';
+import { useUnifiedLikedTracks } from '@/hooks/useUnifiedLikedTracks';
 import type { Track } from '@/services/spotify';
 import type { PlaybackState } from '@/types/domain';
 import type { MediaTrack } from '@/types/domain';
@@ -63,7 +64,8 @@ export function usePlayerLogic() {
     setAccentColorOverrides,
   } = useColorContext();
 
-  const { activeDescriptor, setActiveProviderId, getDescriptor } = useProviderContext();
+  const { activeDescriptor, setActiveProviderId, getDescriptor, connectedProviderIds } = useProviderContext();
+  const { isUnifiedLikedActive } = useUnifiedLikedTracks();
 
   /** For non-Spotify providers, holds the MediaTrack[] for playback; otherwise empty. */
   const mediaTracksRef = useRef<MediaTrack[]>([]);
@@ -117,6 +119,67 @@ export function usePlayerLogic() {
 
   const handlePlaylistSelect = useCallback(
     async (playlistId: string, _playlistName?: string, provider?: import('@/types/domain').ProviderId) => {
+      // Unified liked songs: fetch from all connected providers, merge by timestamp
+      if (playlistId === LIKED_SONGS_ID && !provider && isUnifiedLikedActive) {
+        setError(null);
+        setIsLoading(true);
+        setSelectedPlaylistId(playlistId);
+        mediaTracksRef.current = [];
+        try {
+          const likedProviderIds = connectedProviderIds.filter(
+            id => getDescriptor(id)?.capabilities.hasLikedCollection,
+          );
+          const results = await Promise.all(
+            likedProviderIds.map(async (id) => {
+              const catalog = getDescriptor(id)?.catalog;
+              if (!catalog) return [];
+              return catalog.listTracks({ provider: id, kind: 'liked' }).catch(() => [] as MediaTrack[]);
+            }),
+          );
+          const merged = results.flat();
+          merged.sort((a, b) => (b.addedAt ?? 0) - (a.addedAt ?? 0));
+
+          if (merged.length === 0) {
+            setError('No liked tracks found.');
+            setTracks([]);
+            setOriginalTracks([]);
+            setCurrentTrackIndex(0);
+            setIsLoading(false);
+            return;
+          }
+
+          const trackList = merged.map(mediaTrackToTrack);
+          setOriginalTracks(trackList);
+          if (shuffleEnabled) {
+            const indices = shuffleArray(merged.map((_, i) => i));
+            mediaTracksRef.current = indices.map(i => merged[i]);
+            setTracks(indices.map(i => trackList[i]));
+          } else {
+            mediaTracksRef.current = merged;
+            setTracks(trackList);
+          }
+          setCurrentTrackIndex(0);
+          setIsLoading(false);
+
+          const firstTrack = mediaTracksRef.current[0];
+          const firstProvider = getDescriptor(firstTrack.provider);
+          if (firstProvider) {
+            currentPlaybackProviderRef.current = firstTrack.provider;
+            if (firstTrack.provider !== activeDescriptor?.id) {
+              setActiveProviderId(firstTrack.provider);
+            }
+            await firstProvider.playback.playTrack(firstTrack);
+          }
+        } catch (err) {
+          setError(err instanceof Error ? err.message : 'Failed to load liked tracks.');
+          setTracks([]);
+          setOriginalTracks([]);
+          setCurrentTrackIndex(0);
+          setIsLoading(false);
+        }
+        return;
+      }
+
       // Determine which provider descriptor to use for this collection
       const targetDescriptor = provider ? getDescriptor(provider) : activeDescriptor;
       const targetProviderId = provider ?? activeDescriptor?.id;
@@ -199,6 +262,8 @@ export function usePlayerLogic() {
       setCurrentTrackIndex,
       playTrack,
       spotifyHandlePlaylistSelect,
+      isUnifiedLikedActive,
+      connectedProviderIds,
     ]
   );
 

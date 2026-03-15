@@ -36,6 +36,8 @@ export interface MediaTrack {
   musicbrainzRecordingId?: string;
   musicbrainzArtistId?: string;
   isrc?: string;
+  /** Epoch ms when the track was added/liked. Populated for liked tracks to enable cross-provider sorting. */
+  addedAt?: number;
 }
 
 /**

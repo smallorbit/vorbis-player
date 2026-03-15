@@ -47,7 +47,7 @@ export async function getLikedTracks(): Promise<MediaTrack[]> {
     req.onsuccess = () => {
       const entries = (req.result as LikedEntry[]) ?? [];
       entries.sort((a, b) => b.likedAt - a.likedAt);
-      resolve(entries.map((e) => e.track));
+      resolve(entries.map((e) => ({ ...e.track, addedAt: e.likedAt })));
     };
     req.onerror = () => resolve([]);
   });

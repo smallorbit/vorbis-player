@@ -44,6 +44,7 @@ function spotifyTrackToMediaTrack(track: Track): MediaTrack {
     externalUrl: track.uri
       ? `https://open.spotify.com/track/${track.id}`
       : undefined,
+    addedAt: track.added_at,
   };
 }
 
