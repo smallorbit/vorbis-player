@@ -1,10 +1,22 @@
 import { memo, Fragment, useState, useCallback, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
+import styled from 'styled-components';
 import type { ArtistInfo } from '../../services/spotify';
+import type { ProviderId } from '../../types/domain';
 import { useProviderContext } from '../../contexts/ProviderContext';
 import { librarySyncEngine } from '../../services/cache/librarySyncEngine';
 import { PlayerTrackName, PlayerTrackAlbum, AlbumLink, PlayerTrackArtist, TrackInfoOnlyRow, ArtistLink } from './styled';
 import TrackInfoPopover, { LibraryIcon, SpotifyIcon, PlayIcon, DiscogsIcon, AddToLibraryIcon, RemoveFromLibraryIcon, ICON_MAP } from './TrackInfoPopover';
+import ProviderIcon from '../ProviderIcon';
+
+const ProviderBadge = styled.span`
+  display: inline-flex;
+  align-items: center;
+  margin-left: 0.375rem;
+  vertical-align: middle;
+  opacity: 0.85;
+  flex-shrink: 0;
+`;
 
 interface TrackInfoProps {
     track: {
@@ -19,6 +31,7 @@ interface TrackInfoProps {
     isTablet: boolean;
     onArtistBrowse?: (artistName: string) => void;
     onAlbumPlay?: (albumId: string, albumName: string) => void;
+    currentProvider?: ProviderId;
 }
 
 // Custom comparison function for memo optimization
@@ -34,7 +47,8 @@ const areTrackInfoPropsEqual = (
         prevProps.isMobile === nextProps.isMobile &&
         prevProps.isTablet === nextProps.isTablet &&
         prevProps.onArtistBrowse === nextProps.onArtistBrowse &&
-        prevProps.onAlbumPlay === nextProps.onAlbumPlay
+        prevProps.onAlbumPlay === nextProps.onAlbumPlay &&
+        prevProps.currentProvider === nextProps.currentProvider
     );
 };
 
@@ -43,7 +57,7 @@ type PopoverState =
     | { type: 'album'; albumId: string; albumName: string; rect: DOMRect }
     | null;
 
-const TrackInfo = memo<TrackInfoProps>(({ track, isMobile, isTablet, onArtistBrowse, onAlbumPlay }) => {
+const TrackInfo = memo<TrackInfoProps>(({ track, isMobile, isTablet, onArtistBrowse, onAlbumPlay, currentProvider }) => {
     const [popover, setPopover] = useState<PopoverState>(null);
     const [albumSaved, setAlbumSaved] = useState<boolean | null>(null);
     const artistRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
@@ -237,6 +251,11 @@ const TrackInfo = memo<TrackInfoProps>(({ track, isMobile, isTablet, onArtistBro
             <TrackInfoOnlyRow $compact={isMobile || isTablet}>
                 <PlayerTrackName $isMobile={isMobile} $isTablet={isTablet}>
                     {track?.name || 'No track selected'}
+                    {currentProvider && (
+                        <ProviderBadge>
+                            <ProviderIcon provider={currentProvider} size={14} />
+                        </ProviderBadge>
+                    )}
                 </PlayerTrackName>
                 {track?.album && (
                     <PlayerTrackAlbum>{renderAlbum()}</PlayerTrackAlbum>

@@ -13,6 +13,7 @@ import type { PlaybackState } from '@/types/domain';
 import type { MediaTrack } from '@/types/domain';
 import { isAlbumId, extractAlbumId, LIKED_SONGS_ID } from '@/constants/playlist';
 import { shuffleArray } from '@/utils/shuffleArray';
+import { providerRegistry } from '@/providers/registry';
 
 /** Convert MediaTrack to Track for UI; Dropbox tracks use empty uri (playback via ref). */
 export function mediaTrackToTrack(m: MediaTrack): Track {
@@ -97,7 +98,7 @@ export function usePlayerLogic() {
   // Library drawer visibility (local UI state)
   const [showLibraryDrawer, setShowLibraryDrawer] = useState(false);
 
-  const { playTrack } = useSpotifyPlayback({
+  const { playTrack, currentPlaybackProviderRef } = useSpotifyPlayback({
     tracks,
     setCurrentTrackIndex,
     activeDescriptor,
@@ -206,7 +207,9 @@ export function usePlayerLogic() {
     handleAuthRedirect();
   }, [setError]);
 
-  // Subscribe to the active provider's playback state
+  // Subscribe to playback state from all relevant providers.
+  // In cross-provider queues (e.g., Dropbox queue with Spotify tracks),
+  // we subscribe to both providers and process events from whichever is currently playing.
   useEffect(() => {
     const playback = activeDescriptor?.playback;
     if (!playback) return;
@@ -259,7 +262,24 @@ export function usePlayerLogic() {
       }
     }
 
-    const unsubscribe = playback.subscribe(handleProviderStateChange);
+    const unsubscribes: (() => void)[] = [];
+
+    // Subscribe to the active provider
+    unsubscribes.push(playback.subscribe(handleProviderStateChange));
+
+    // Also subscribe to other registered providers for cross-provider queue support.
+    // Only process events when that provider is the one currently playing.
+    for (const descriptor of providerRegistry.getAll()) {
+      if (descriptor.id !== activeDescriptor.id) {
+        const otherUnsubscribe = descriptor.playback.subscribe((state) => {
+          // Only handle events from the provider that's currently playing
+          if (currentPlaybackProviderRef.current === descriptor.id) {
+            handleProviderStateChange(state);
+          }
+        });
+        unsubscribes.push(otherUnsubscribe);
+      }
+    }
 
     // Check initial state
     playback.getState().then((state) => {
@@ -269,7 +289,7 @@ export function usePlayerLogic() {
       }
     });
 
-    return unsubscribe;
+    return () => unsubscribes.forEach((unsub) => unsub());
   // Intentionally omit `tracks` and `currentTrackIndex` from deps — we read
   // them via refs so the subscription is only recreated when the active
   // provider changes, not on every track transition.
@@ -294,6 +314,15 @@ export function usePlayerLogic() {
 
   const handlePlay = useCallback(async () => {
     try {
+      // Resume the provider that's currently playing (may differ from active in cross-provider queues)
+      const currentProvider = currentPlaybackProviderRef.current;
+      if (currentProvider && currentProvider !== activeDescriptor?.id) {
+        const descriptor = providerRegistry.get(currentProvider);
+        if (descriptor) {
+          await descriptor.playback.resume();
+          return;
+        }
+      }
       await activeDescriptor?.playback.resume();
     } catch {
       // Autoplay policy or network errors are handled by the playback adapter
@@ -301,6 +330,15 @@ export function usePlayerLogic() {
   }, [activeDescriptor]);
 
   const handlePause = useCallback(() => {
+    // Pause the provider that's currently playing
+    const currentProvider = currentPlaybackProviderRef.current;
+    if (currentProvider && currentProvider !== activeDescriptor?.id) {
+      const descriptor = providerRegistry.get(currentProvider);
+      if (descriptor) {
+        descriptor.playback.pause();
+        return;
+      }
+    }
     activeDescriptor?.playback.pause();
   }, [activeDescriptor]);
 
@@ -360,5 +398,6 @@ export function usePlayerLogic() {
       playbackPosition,
     },
     handlers,
+    currentPlaybackProviderRef,
   };
 }

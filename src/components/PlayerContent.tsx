@@ -55,6 +55,7 @@ interface PlayerContentProps {
   showLibraryDrawer: boolean;
   onAlbumArtBoundsChange?: (bounds: AlbumArtBounds | null) => void;
   handlers: PlaybackHandlers;
+  currentTrackProvider?: import('@/types/domain').ProviderId;
 }
 
 const ContentWrapper = styled.div.withConfig({
@@ -284,7 +285,7 @@ const FlipInner = styled.div.withConfig({
 `;
 
 
-const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, showLibraryDrawer, onAlbumArtBoundsChange, handlers }) => {
+const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, showLibraryDrawer, onAlbumArtBoundsChange, handlers, currentTrackProvider }) => {
   // --- Context hooks ---
   const { tracks, shuffleEnabled, handleShuffleToggle } = useTrackListContext();
   const { currentTrack, currentTrackIndex, showPlaylist, setShowPlaylist } = useCurrentTrackContext();
@@ -324,7 +325,7 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
 
   // --- Leaf hooks (self-contained, fine to call here) ---
   const { effectiveGlow, handleGlowIntensityChange, handleGlowRateChange, restoreGlowSettings } = useVisualEffectsState();
-  const { handleMuteToggle, isMuted, volume, setVolumeLevel } = useVolume();
+  const { handleMuteToggle, isMuted, volume, setVolumeLevel } = useVolume(currentTrackProvider);
   const { isLiked, isLikePending, handleLikeToggle } = useLikeTrack(currentTrack?.id);
 
   // --- Local UI state ---
@@ -754,6 +755,7 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
                         onPrevious={handlers.onPrevious}
                         onArtistBrowse={handleArtistBrowse}
                         onAlbumPlay={handleAlbumPlay}
+                        currentTrackProvider={currentTrackProvider}
                       />
                     </ProfiledComponent>
                   </Suspense>

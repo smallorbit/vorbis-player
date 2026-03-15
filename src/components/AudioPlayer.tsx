@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import styled from 'styled-components';
 import { flexCenter } from '@/styles/utils';
 import PlayerStateRenderer from './PlayerStateRenderer';
@@ -14,7 +14,7 @@ import { usePlayerLogic } from '@/hooks/usePlayerLogic';
 import { useColorContext } from '@/contexts/ColorContext';
 import { useVisualEffectsContext } from '@/contexts/VisualEffectsContext';
 import { PlayerSizingProvider } from '@/contexts/PlayerSizingContext';
-import { useTrackListContext } from '@/contexts/TrackContext';
+import { useTrackListContext, useCurrentTrackContext } from '@/contexts/TrackContext';
 import { useProviderContext } from '@/contexts/ProviderContext';
 import { toAlbumPlaylistId } from '@/constants/playlist';
 
@@ -26,7 +26,7 @@ const Container = styled.div`
 `;
 
 const AudioPlayerComponent = () => {
-  const { state, handlers } = usePlayerLogic();
+  const { state, handlers, currentPlaybackProviderRef } = usePlayerLogic();
   const { debugActive, handleActivatorTap } = useDebugActivator();
   const { accentColor } = useColorContext();
   const {
@@ -37,6 +37,19 @@ const AudioPlayerComponent = () => {
     zenModeEnabled,
   } = useVisualEffectsContext();
   const { tracks, selectedPlaylistId } = useTrackListContext();
+  const { currentTrack } = useCurrentTrackContext();
+
+  // Track the current playback provider — derives from the ref but as React state for re-renders
+  const [currentTrackProvider, setCurrentTrackProvider] = useState<import('@/types/domain').ProviderId | undefined>(
+    currentPlaybackProviderRef.current ?? undefined
+  );
+  useEffect(() => {
+    // Update when the current track changes (provider may have switched)
+    const provider = (currentTrack?.provider as import('@/types/domain').ProviderId | undefined)
+      ?? currentPlaybackProviderRef.current
+      ?? undefined;
+    setCurrentTrackProvider(provider);
+  }, [currentTrack, currentPlaybackProviderRef]);
 
   const handleAlbumPlay = useCallback((albumId: string, _albumName: string) => {
     handlers.handlePlaylistSelect(toAlbumPlaylistId(albumId));
@@ -104,6 +117,7 @@ const AudioPlayerComponent = () => {
           isPlaying={state.isPlaying}
           showLibraryDrawer={state.showLibraryDrawer}
           handlers={playbackHandlers}
+          currentTrackProvider={currentTrackProvider}
         />
       </ProfiledComponent>
     );

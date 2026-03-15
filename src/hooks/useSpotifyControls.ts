@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback, useRef, useReducer } from 'react';
 import type { Track } from '../services/spotify';
 import { useProviderContext } from '@/contexts/ProviderContext';
-import type { PlaybackState } from '@/types/domain';
+import { providerRegistry } from '@/providers/registry';
+import type { PlaybackState, ProviderId } from '@/types/domain';
 
 interface UseSpotifyControlsProps {
   currentTrack: Track | null;
@@ -12,6 +13,7 @@ interface UseSpotifyControlsProps {
   onNext: () => void;
   onPrevious: () => void;
   onLikeToggle: () => void;
+  currentTrackProvider?: ProviderId;
 }
 
 interface PlaybackTimingState {
@@ -52,7 +54,8 @@ export const useSpotifyControls = ({
   onPause,
   onNext,
   onPrevious,
-  onLikeToggle
+  onLikeToggle,
+  currentTrackProvider,
 }: UseSpotifyControlsProps) => {
   const [{ isPlaying, currentPosition, duration }, dispatchTiming] = useReducer(
     playbackTimingReducer,
@@ -68,9 +71,15 @@ export const useSpotifyControls = ({
     isDraggingRef.current = isDragging;
   }, [isDragging]);
 
-  // Use event-based playback state updates via the provider adapter
+  // Use event-based playback state updates via the provider adapter.
+  // In cross-provider mode the active descriptor may be Dropbox while a Spotify track is
+  // actually playing, so we subscribe to whichever adapter owns the current track.
   useEffect(() => {
-    const playback = activeDescriptor?.playback;
+    const playingDescriptor =
+      currentTrackProvider && currentTrackProvider !== activeDescriptor?.id
+        ? providerRegistry.get(currentTrackProvider)
+        : activeDescriptor;
+    const playback = playingDescriptor?.playback;
     if (!playback) return;
 
     function handleProviderStateChange(state: PlaybackState | null) {
@@ -92,12 +101,18 @@ export const useSpotifyControls = ({
     });
 
     return unsubscribe;
-  }, [activeDescriptor]);
+  }, [activeDescriptor, currentTrackProvider]);
 
   // Lightweight position poll — only to update the timeline slider smoothly.
+  // Poll the adapter that is actually playing, which may differ from the active
+  // descriptor in cross-provider queues.
   useEffect(() => {
     if (!isPlaying) return;
-    const playback = activeDescriptor?.playback;
+    const playingDescriptor =
+      currentTrackProvider && currentTrackProvider !== activeDescriptor?.id
+        ? providerRegistry.get(currentTrackProvider)
+        : activeDescriptor;
+    const playback = playingDescriptor?.playback;
     if (!playback) return;
 
     const interval = setInterval(async () => {
@@ -109,7 +124,7 @@ export const useSpotifyControls = ({
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [isPlaying, activeDescriptor]);
+  }, [isPlaying, activeDescriptor, currentTrackProvider]);
 
   const handlePlayPause = useCallback(async () => {
     const playback = activeDescriptor?.playback;
@@ -134,13 +149,17 @@ export const useSpotifyControls = ({
 
   const handleSeek = useCallback(async (position: number) => {
     try {
-      const playback = activeDescriptor?.playback;
+      const playingDescriptor =
+        currentTrackProvider && currentTrackProvider !== activeDescriptor?.id
+          ? providerRegistry.get(currentTrackProvider)
+          : activeDescriptor;
+      const playback = playingDescriptor?.playback;
       if (!playback) return;
       await playback.seek(position);
     } catch (error) {
       console.error('Failed to seek:', error);
     }
-  }, [activeDescriptor]);
+  }, [activeDescriptor, currentTrackProvider]);
 
   const handleSliderChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const position = parseInt(e.target.value);

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useMemo, useCallback } from 'react';
+import React, { createContext, useContext, useMemo, useCallback, useRef } from 'react';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { providerRegistry } from '@/providers/registry';
 import type { ProviderId } from '@/types/domain';
@@ -7,6 +7,12 @@ import type { ProviderDescriptor, ProviderRegistry } from '@/types/providers';
 // Ensure providers are registered before the context is used
 import '@/providers/spotify/spotifyProvider';
 import '@/providers/dropbox/dropboxProvider'; // conditionally registers if VITE_DROPBOX_CLIENT_ID is set
+
+export type ProviderSwitchInterceptor = (
+  newProviderId: ProviderId,
+  proceed: () => void,
+  cancel: () => void,
+) => void;
 
 const ACTIVE_PROVIDER_KEY = 'vorbis-player-active-provider';
 const ENABLED_PROVIDERS_KEY = 'vorbis-player-enabled-providers';
@@ -20,6 +26,8 @@ interface ProviderContextValue {
   activeDescriptor: ProviderDescriptor | undefined;
   /** Switch active provider. Pass null to reset to the provider picker. */
   setActiveProviderId: (id: ProviderId | null) => void;
+  /** Register a function that can intercept and optionally block provider switches. */
+  setProviderSwitchInterceptor: (interceptor: ProviderSwitchInterceptor | null) => void;
   /** The global provider registry. */
   registry: ProviderRegistry;
   /** True when no provider has been chosen or the stored one is no longer registered. */
@@ -50,6 +58,8 @@ export function ProviderProvider({ children }: { children: React.ReactNode }) {
     ACTIVE_PROVIDER_KEY,
     null,
   );
+
+  const interceptorRef = useRef<ProviderSwitchInterceptor | null>(null);
 
   const allProviders = providerRegistry.getAll();
   const allProviderIds = useMemo(() => allProviders.map(p => p.id), [allProviders]);
@@ -109,15 +119,31 @@ export function ProviderProvider({ children }: { children: React.ReactNode }) {
 
   const activeDescriptor = providerRegistry.get(validProviderId);
 
+  const setProviderSwitchInterceptor = useCallback(
+    (fn: ProviderSwitchInterceptor | null) => {
+      interceptorRef.current = fn;
+    },
+    [],
+  );
+
   const setActiveProviderId = useCallback(
     (id: ProviderId | null) => {
-      if (id === null) {
-        activeDescriptor?.playback.pause().catch(() => {});
-        setStoredProviderId(null);
-      } else if (providerRegistry.has(id) && id !== storedProviderId) {
-        activeDescriptor?.playback.pause().catch(() => {});
-        setStoredProviderId(id);
+      const doSwitch = () => {
+        if (id === null) {
+          activeDescriptor?.playback.pause().catch(() => {});
+          setStoredProviderId(null);
+        } else if (providerRegistry.has(id) && id !== storedProviderId) {
+          activeDescriptor?.playback.pause().catch(() => {});
+          setStoredProviderId(id);
+        }
+      };
+
+      if (id !== null && interceptorRef.current) {
+        interceptorRef.current(id, doSwitch, () => {});
+        return;
       }
+
+      doSwitch();
     },
     [setStoredProviderId, storedProviderId, activeDescriptor],
   );
@@ -128,6 +154,7 @@ export function ProviderProvider({ children }: { children: React.ReactNode }) {
       activeProviderId: validProviderId,
       activeDescriptor,
       setActiveProviderId,
+      setProviderSwitchInterceptor,
       registry: providerRegistry,
       needsProviderSelection,
       enabledProviderIds,
@@ -136,7 +163,7 @@ export function ProviderProvider({ children }: { children: React.ReactNode }) {
       hasMultipleProviders: allProviders.length >= 2,
       getDescriptor,
     }),
-    [storedProviderId, validProviderId, activeDescriptor, setActiveProviderId, needsProviderSelection, enabledProviderIds, toggleProvider, isProviderEnabled, allProviders.length, getDescriptor],
+    [storedProviderId, validProviderId, activeDescriptor, setActiveProviderId, setProviderSwitchInterceptor, needsProviderSelection, enabledProviderIds, toggleProvider, isProviderEnabled, allProviders.length, getDescriptor],
   );
 
   return (
