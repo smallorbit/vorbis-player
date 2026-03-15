@@ -514,6 +514,9 @@ class SpotifyAuth {
   }
 
   public isAuthenticated(): boolean {
+    if (!this.tokenData) {
+      this.loadTokenFromStorage();
+    }
     return !!(this.tokenData?.access_token || this.tokenData?.refresh_token);
   }
 

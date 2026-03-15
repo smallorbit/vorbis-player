@@ -60,7 +60,18 @@ export class DropboxAuthAdapter implements AuthProvider {
   }
 
   isAuthenticated(): boolean {
+    if (!this.accessToken && !this.refreshToken) {
+      this.syncFromStorage();
+    }
     return !!(this.accessToken || this.refreshToken);
+  }
+
+  /** Re-read tokens from localStorage (e.g. written by a popup tab). */
+  private syncFromStorage(): void {
+    this.accessToken = localStorage.getItem(TOKEN_KEY);
+    this.refreshToken = localStorage.getItem(REFRESH_TOKEN_KEY);
+    const stored = localStorage.getItem(TOKEN_EXPIRY_KEY);
+    this.tokenExpiresAt = stored ? parseInt(stored, 10) : null;
   }
 
   async getAccessToken(): Promise<string | null> {
