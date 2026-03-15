@@ -15,7 +15,16 @@ vi.mock('@/providers/dropbox/dropboxLikesCache', () => ({
   LIKES_CHANGED_EVENT: 'vorbis-dropbox-likes-changed',
 }));
 
-import { useUnifiedLikedTracks } from '../useUnifiedLikedTracks';
+const mockRegistryGet = vi.fn();
+vi.mock('@/providers/registry', () => ({
+  providerRegistry: { get: (...args: unknown[]) => mockRegistryGet(...args) },
+}));
+
+vi.mock('@/hooks/useLibrarySync', () => ({
+  LIBRARY_REFRESH_EVENT: 'vorbis-library-refresh',
+}));
+
+import { useUnifiedLikedTracks, resetUnifiedLikedCache } from '../useUnifiedLikedTracks';
 import type { MediaTrack, ProviderId } from '@/types/domain';
 
 function makeTrack(id: string, provider: ProviderId, addedAt?: number): MediaTrack {
@@ -47,6 +56,7 @@ describe('useUnifiedLikedTracks', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockConnectedProviderIds.length = 0;
+    resetUnifiedLikedCache();
   });
 
   it('is not active when only one provider is connected', () => {
@@ -54,6 +64,7 @@ describe('useUnifiedLikedTracks', () => {
     mockConnectedProviderIds.push('spotify');
     const spotifyDesc = makeDescriptor('spotify', [makeTrack('s1', 'spotify', 1000)]);
     mockGetDescriptor.mockImplementation((id: string) => id === 'spotify' ? spotifyDesc : undefined);
+    mockRegistryGet.mockImplementation((id: string) => id === 'spotify' ? spotifyDesc : undefined);
 
     // #when
     const { result } = renderHook(() => useUnifiedLikedTracks());
@@ -82,6 +93,11 @@ describe('useUnifiedLikedTracks', () => {
       if (id === 'dropbox') return dropboxDesc;
       return undefined;
     });
+    mockRegistryGet.mockImplementation((id: string) => {
+      if (id === 'spotify') return spotifyDesc;
+      if (id === 'dropbox') return dropboxDesc;
+      return undefined;
+    });
 
     // #when
     const { result } = renderHook(() => useUnifiedLikedTracks());
@@ -102,9 +118,16 @@ describe('useUnifiedLikedTracks', () => {
     const spotifyTracks = [makeTrack('s1', 'spotify', 1000)];
     const dropboxTracks = [makeTrack('d1', 'dropbox')]; // no addedAt
     mockConnectedProviderIds.push('spotify', 'dropbox');
+    const spotifyDesc = makeDescriptor('spotify', spotifyTracks);
+    const dropboxDesc = makeDescriptor('dropbox', dropboxTracks);
     mockGetDescriptor.mockImplementation((id: string) => {
-      if (id === 'spotify') return makeDescriptor('spotify', spotifyTracks);
-      if (id === 'dropbox') return makeDescriptor('dropbox', dropboxTracks);
+      if (id === 'spotify') return spotifyDesc;
+      if (id === 'dropbox') return dropboxDesc;
+      return undefined;
+    });
+    mockRegistryGet.mockImplementation((id: string) => {
+      if (id === 'spotify') return spotifyDesc;
+      if (id === 'dropbox') return dropboxDesc;
       return undefined;
     });
 
@@ -138,6 +161,11 @@ describe('useUnifiedLikedTracks', () => {
       if (id === 'dropbox') return dropboxDesc;
       return undefined;
     });
+    mockRegistryGet.mockImplementation((id: string) => {
+      if (id === 'spotify') return spotifyDesc;
+      if (id === 'dropbox') return dropboxDesc;
+      return undefined;
+    });
 
     // #when
     const { result } = renderHook(() => useUnifiedLikedTracks());
@@ -160,13 +188,20 @@ describe('useUnifiedLikedTracks', () => {
       listCollections: vi.fn().mockResolvedValue([]),
       listTracks: vi.fn().mockImplementation(() => Promise.resolve(dropboxTracks)),
     };
+    const spotifyDesc = makeDescriptor('spotify', spotifyTracks);
+    const dropboxDesc = {
+      id: 'dropbox',
+      capabilities: { hasLikedCollection: true, hasSaveTrack: true, hasExternalLink: false },
+      catalog: dropboxCatalog,
+    };
     mockGetDescriptor.mockImplementation((id: string) => {
-      if (id === 'spotify') return makeDescriptor('spotify', spotifyTracks);
-      if (id === 'dropbox') return {
-        id: 'dropbox',
-        capabilities: { hasLikedCollection: true, hasSaveTrack: true, hasExternalLink: false },
-        catalog: dropboxCatalog,
-      };
+      if (id === 'spotify') return spotifyDesc;
+      if (id === 'dropbox') return dropboxDesc;
+      return undefined;
+    });
+    mockRegistryGet.mockImplementation((id: string) => {
+      if (id === 'spotify') return spotifyDesc;
+      if (id === 'dropbox') return dropboxDesc;
       return undefined;
     });
 
@@ -183,5 +218,36 @@ describe('useUnifiedLikedTracks', () => {
     await waitFor(() => {
       expect(result.current.totalCount).toBe(3);
     });
+  });
+
+  it('serves cached data immediately on subsequent hook mounts', async () => {
+    // #given
+    const spotifyTracks = [makeTrack('s1', 'spotify', 2000)];
+    const dropboxTracks = [makeTrack('d1', 'dropbox', 1000)];
+    mockConnectedProviderIds.push('spotify', 'dropbox');
+    const spotifyDesc = makeDescriptor('spotify', spotifyTracks);
+    const dropboxDesc = makeDescriptor('dropbox', dropboxTracks);
+    mockGetDescriptor.mockImplementation((id: string) => {
+      if (id === 'spotify') return spotifyDesc;
+      if (id === 'dropbox') return dropboxDesc;
+      return undefined;
+    });
+    mockRegistryGet.mockImplementation((id: string) => {
+      if (id === 'spotify') return spotifyDesc;
+      if (id === 'dropbox') return dropboxDesc;
+      return undefined;
+    });
+
+    // First mount — populates cache
+    const { result: first, unmount } = renderHook(() => useUnifiedLikedTracks());
+    await waitFor(() => expect(first.current.totalCount).toBe(2));
+    unmount();
+
+    // #when — second mount reads from cache
+    const { result: second } = renderHook(() => useUnifiedLikedTracks());
+
+    // #then — data is available synchronously (no loading state)
+    expect(second.current.totalCount).toBe(2);
+    expect(second.current.isLoading).toBe(false);
   });
 });
