@@ -128,6 +128,13 @@ export function usePlayerLogic() {
 
       if (targetDescriptor && targetProviderId !== 'spotify') {
         const providerId = targetDescriptor.id;
+
+        // Pause the previous provider before switching (activeDescriptor may still
+        // point to the old provider since setActiveProviderId is async via React state)
+        if (activeDescriptor && activeDescriptor.id !== providerId) {
+          activeDescriptor.playback.pause().catch(() => {});
+        }
+
         setError(null);
         setIsLoading(true);
         setSelectedPlaylistId(playlistId);
@@ -163,7 +170,11 @@ export function usePlayerLogic() {
           }
           setCurrentTrackIndex(0);
           setIsLoading(false);
-          await playTrack(0);
+
+          // Update the playback provider ref so controls route to the correct provider
+          // (can't use playTrack() here because activeDescriptor may still be stale)
+          currentPlaybackProviderRef.current = providerId;
+          await targetDescriptor.playback.playTrack(mediaTracksRef.current[0]);
         } catch (err) {
           setError(err instanceof Error ? err.message : 'Failed to load collection.');
           setTracks([]);
