@@ -83,7 +83,6 @@ export function usePlayerLogic() {
   // Keep mediaTracksRef.current in the same order as `tracks` so index-based
   // playback is always correct, even after shuffle is toggled.
   useLayoutEffect(() => {
-    if (!activeDescriptor || activeDescriptor.id === 'spotify') return;
     const mediaTracks = mediaTracksRef.current;
     if (mediaTracks.length === 0 || mediaTracks.length !== tracks.length) return;
     const idToMedia = new Map(mediaTracks.map(m => [m.id, m]));
@@ -91,7 +90,7 @@ export function usePlayerLogic() {
     if (reordered.length === tracks.length) {
       mediaTracksRef.current = reordered;
     }
-  }, [tracks, activeDescriptor?.id]);
+  }, [tracks]);
 
   // Playback state from provider events (local — not shared via context)
   const [isPlaying, setIsPlaying] = useState(false);
