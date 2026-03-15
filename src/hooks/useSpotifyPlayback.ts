@@ -21,6 +21,11 @@ export const useSpotifyPlayback = ({
   mediaTracksRef,
 }: UseSpotifyPlaybackProps) => {
 
+  // Use a ref for tracks so playTrack always reads the latest array,
+  // even if called from a stale closure (e.g. auto-advance timer after shuffle toggle).
+  const tracksRef = useRef(tracks);
+  tracksRef.current = tracks;
+
   /** Tracks which provider is currently handling playback (may differ from activeDescriptor during cross-provider queues). */
   const currentPlaybackProviderRef = useRef<ProviderId | null>(null);
 
@@ -190,8 +195,12 @@ export const useSpotifyPlayback = ({
     }
 
     // Standard Spotify-as-active-provider path
-    if (!tracks[index]) {
-      console.error(`[Spotify] No track at index ${index} (tracks length: ${tracks.length})`);
+    // Read tracks from ref to always get the latest array (avoids stale closure
+    // after shuffle toggle when called from auto-advance timer).
+    const currentTracks = tracksRef.current;
+
+    if (!currentTracks[index]) {
+      console.error(`[Spotify] No track at index ${index} (tracks length: ${currentTracks.length})`);
       return;
     }
 
@@ -213,7 +222,7 @@ export const useSpotifyPlayback = ({
             const isRestrictionViolated = errorMessage.includes('Restriction violated');
 
             if (isRestrictionViolated) {
-              console.warn(`Track "${tracks[index].name}" is unavailable (region-locked or removed)`);
+              console.warn(`Track "${currentTracks[index].name}" is unavailable (region-locked or removed)`);
               return false;
             }
 
@@ -232,16 +241,16 @@ export const useSpotifyPlayback = ({
         }
       };
 
-      const success = await playWithRetry(tracks[index].uri);
+      const success = await playWithRetry(currentTracks[index].uri);
 
       if (!success) {
-        if (skipOnError && index < tracks.length - 1) {
+        if (skipOnError && index < currentTracks.length - 1) {
           setTimeout(() => {
             playTrack(index + 1, skipOnError);
           }, 500);
           return;
         } else {
-          throw new Error(`Track "${tracks[index].name}" is unavailable for playback`);
+          throw new Error(`Track "${currentTracks[index].name}" is unavailable for playback`);
         }
       }
 
@@ -260,13 +269,13 @@ export const useSpotifyPlayback = ({
     } catch (error) {
       console.error('Failed to play track:', error);
 
-      if (skipOnError && index < tracks.length - 1) {
+      if (skipOnError && index < currentTracks.length - 1) {
         setTimeout(() => {
           playTrack(index + 1, skipOnError);
         }, 500);
       }
     }
-  }, [tracks, setCurrentTrackIndex, handlePlaybackResume, activeDescriptor, mediaTracksRef, playSpotifyTrack]);
+  }, [setCurrentTrackIndex, handlePlaybackResume, activeDescriptor, mediaTracksRef, playSpotifyTrack]);
 
   const resumePlayback = useCallback(async () => {
     // Resume the provider that's currently playing
