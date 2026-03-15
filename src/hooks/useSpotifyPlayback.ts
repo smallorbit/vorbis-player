@@ -52,21 +52,6 @@ export const useSpotifyPlayback = ({
     }
   }, []);
 
-  const handlePlaybackResume = useCallback(async () => {
-    const state = await spotifyPlayer.getCurrentState();
-    if (state) {
-      if (state.paused && state.position === 0) {
-        try {
-          await spotifyPlayer.resume();
-        } catch (resumeError) {
-          console.error('Failed to resume after playback attempt:', resumeError);
-        }
-      }
-    } else {
-      await activateDevice();
-    }
-  }, [activateDevice]);
-
   /**
    * Play a Spotify track via the Spotify playback adapter.
    * Handles SDK initialization, retry logic, and device activation.
@@ -127,16 +112,11 @@ export const useSpotifyPlayback = ({
 
     setCurrentTrackIndex(index);
 
-    setTimeout(() => {
-      void (async () => {
-        try {
-          await handlePlaybackResume();
-        } catch (error) {
-          console.error('Failed to resume playback:', error);
-        }
-      })();
-    }, 1500);
-  }, [setCurrentTrackIndex, handlePlaybackResume]);
+    // Listen for the SDK state change instead of blind-waiting 1500ms.
+    // If the SDK ends up paused at position 0 (a known quirk), resume.
+    // Falls back to a manual check after 3s if no event fires.
+    spotifyPlayer.waitForPlaybackOrResume(activateDevice);
+  }, [setCurrentTrackIndex, activateDevice]);
 
   const playTrack = useCallback(async (index: number, skipOnError = false) => {
     const mediaTracks = mediaTracksRef?.current ?? [];
@@ -226,7 +206,7 @@ export const useSpotifyPlayback = ({
         setTimeout(() => playTrack(index + 1, skipOnError), 500);
       }
     }
-  }, [setCurrentTrackIndex, handlePlaybackResume, activeDescriptor, mediaTracksRef, playSpotifyTrack]);
+  }, [setCurrentTrackIndex, activeDescriptor, mediaTracksRef, playSpotifyTrack]);
 
   const resumePlayback = useCallback(async () => {
     // Resume the provider that's currently playing

@@ -9,6 +9,7 @@ vi.mock('@/services/spotifyPlayer', () => ({
     resume: vi.fn().mockResolvedValue(undefined),
     transferPlaybackToDevice: vi.fn().mockResolvedValue(undefined),
     ensureDeviceIsActive: vi.fn().mockResolvedValue(true),
+    waitForPlaybackOrResume: vi.fn(),
     getDeviceId: vi.fn().mockReturnValue('device-1'),
   },
 }));
