@@ -85,7 +85,6 @@ const SpotifyPlayerControls = memo<SpotifyPlayerControlsProps>(({
         isTablet={isTablet}
         onArtistBrowse={onArtistBrowse}
         onAlbumPlay={onAlbumPlay}
-        currentProvider={currentTrackProvider}
       />
 
       <div style={{ display: 'flex', justifyContent: 'center', width: '100%', gap: '0.5rem' }}>
