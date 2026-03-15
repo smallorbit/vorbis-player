@@ -95,6 +95,15 @@ function parseFilename(filename: string): { name: string; trackNumber?: number }
   return { name: base };
 }
 
+/** Cached temporary link with expiry timestamp. */
+interface CachedLink {
+  url: string;
+  expiresAt: number;
+}
+
+/** Dropbox temporary links are valid for 4 hours; cache for 3.5 h to be safe. */
+const TEMP_LINK_TTL_MS = 3.5 * 60 * 60 * 1000;
+
 export class DropboxCatalogAdapter implements CatalogProvider {
   readonly providerId: ProviderId = 'dropbox';
   private auth: DropboxAuthAdapter;
@@ -102,6 +111,8 @@ export class DropboxCatalogAdapter implements CatalogProvider {
   private pendingArtFetches = new Map<string, Promise<string | null>>();
   // Tracks seen during listTracks calls, used to provide full MediaTrack data when liking
   private knownTracks = new Map<string, MediaTrack>();
+  /** In-memory cache of Dropbox temporary links keyed by path. */
+  private tempLinkCache = new Map<string, CachedLink>();
 
   constructor(auth: DropboxAuthAdapter) {
     this.auth = auth;
@@ -428,11 +439,32 @@ export class DropboxCatalogAdapter implements CatalogProvider {
   }
 
   async getTemporaryLink(path: string): Promise<string> {
+    const cached = this.tempLinkCache.get(path);
+    if (cached && Date.now() < cached.expiresAt) {
+      return cached.url;
+    }
+
     const result = await this.dropboxApi<{ link: string }>(
       '/files/get_temporary_link',
       { path },
     );
+
+    this.tempLinkCache.set(path, {
+      url: result.link,
+      expiresAt: Date.now() + TEMP_LINK_TTL_MS,
+    });
     return result.link;
+  }
+
+  /**
+   * Pre-warm the temporary link cache for a path.
+   * Returns immediately if already cached; otherwise fetches in the background.
+   */
+  prefetchTemporaryLink(path: string): void {
+    const cached = this.tempLinkCache.get(path);
+    if (cached && Date.now() < cached.expiresAt) return;
+    // Fire-and-forget; errors are silently ignored
+    this.getTemporaryLink(path).catch(() => {});
   }
 
   // ── Liked songs ──────────────────────────────────────────────────────
