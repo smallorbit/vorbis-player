@@ -142,137 +142,80 @@ export const useSpotifyPlayback = ({
     const mediaTracks = mediaTracksRef?.current ?? [];
     const mediaTrack = mediaTracks[index];
 
-    // Determine the track's provider: use MediaTrack provider if available, else infer from activeDescriptor
+    // Resolve provider from the track itself, falling back to activeDescriptor only
+    // when no MediaTrack is available (legacy Spotify-only playlists without mediaTracksRef).
     const trackProvider = mediaTrack?.provider ?? activeDescriptor?.id ?? 'spotify';
 
-    // Cross-provider case: active descriptor is non-Spotify but track is Spotify
-    if (activeDescriptor && activeDescriptor.id !== 'spotify' && trackProvider === 'spotify' && mediaTrack) {
-      // Pause the current (non-Spotify) provider before switching
-      const prevProvider = currentPlaybackProviderRef.current;
-      if (prevProvider && prevProvider !== 'spotify') {
-        const prevDescriptor = providerRegistry.get(prevProvider);
-        prevDescriptor?.playback.pause().catch(() => {});
-      }
-
-      currentPlaybackProviderRef.current = 'spotify';
-
-      try {
-        await playSpotifyTrack(mediaTrack, index, skipOnError, mediaTracks.length, playTrack);
-      } catch (error) {
-        console.error('[Spotify cross-provider] Failed to play track:', error);
-        if (skipOnError && index < mediaTracks.length - 1) {
-          setTimeout(() => playTrack(index + 1, skipOnError), 500);
-        }
-      }
-      return;
+    // Pause the previous provider if we're switching to a different one
+    const prevProvider = currentPlaybackProviderRef.current;
+    if (prevProvider && prevProvider !== trackProvider) {
+      providerRegistry.get(prevProvider)?.playback.pause().catch(() => {});
     }
 
-    // Standard non-Spotify provider path
-    if (activeDescriptor && activeDescriptor.id !== 'spotify') {
-      if (!mediaTrack) {
-        console.error(`[${activeDescriptor.id}] No track at index ${index} (mediaTracks length: ${mediaTracks.length})`);
+    currentPlaybackProviderRef.current = trackProvider;
+
+    // Spotify track path — uses Spotify SDK with retry/device-activation logic
+    if (trackProvider === 'spotify') {
+      if (mediaTrack) {
+        try {
+          await playSpotifyTrack(mediaTrack, index, skipOnError, mediaTracks.length, playTrack);
+        } catch (error) {
+          console.error('[Spotify] Failed to play track:', error);
+          if (skipOnError && index < mediaTracks.length - 1) {
+            setTimeout(() => playTrack(index + 1, skipOnError), 500);
+          }
+        }
         return;
       }
 
-      // If switching back from Spotify to the active provider, pause Spotify
-      if (currentPlaybackProviderRef.current === 'spotify') {
-        const spotifyDescriptor = providerRegistry.get('spotify');
-        spotifyDescriptor?.playback.pause().catch(() => {});
+      // Legacy fallback: no MediaTrack available, use Track from tracksRef
+      const currentTracks = tracksRef.current;
+      if (!currentTracks[index]) {
+        console.error(`[Spotify] No track at index ${index} (tracks length: ${currentTracks.length})`);
+        return;
       }
 
-      currentPlaybackProviderRef.current = activeDescriptor.id;
-
       try {
-        await activeDescriptor.playback.playTrack(mediaTrack);
-        setCurrentTrackIndex(index);
+        if (!spotifyAuth.isAuthenticated()) return;
+        await playSpotifyTrack(
+          {
+            id: currentTracks[index].id,
+            provider: 'spotify',
+            playbackRef: { provider: 'spotify', ref: currentTracks[index].uri },
+            name: currentTracks[index].name,
+            artists: currentTracks[index].artists,
+            album: currentTracks[index].album,
+            durationMs: currentTracks[index].duration_ms,
+            image: currentTracks[index].image,
+          },
+          index,
+          skipOnError,
+          currentTracks.length,
+          playTrack,
+        );
       } catch (error) {
-        console.error(`[${activeDescriptor.id}] Failed to play track:`, error);
-        if (skipOnError && index < mediaTracks.length - 1) {
+        console.error('Failed to play track:', error);
+        if (skipOnError && index < currentTracks.length - 1) {
           setTimeout(() => playTrack(index + 1, skipOnError), 500);
         }
       }
       return;
     }
 
-    // Standard Spotify-as-active-provider path
-    // Read tracks from ref to always get the latest array (avoids stale closure
-    // after shuffle toggle when called from auto-advance timer).
-    const currentTracks = tracksRef.current;
-
-    if (!currentTracks[index]) {
-      console.error(`[Spotify] No track at index ${index} (tracks length: ${currentTracks.length})`);
+    // Non-Spotify track path — route to the track's own provider
+    const trackDescriptor = providerRegistry.get(trackProvider);
+    if (!trackDescriptor || !mediaTrack) {
+      console.error(`[${trackProvider}] No descriptor or track at index ${index}`);
       return;
     }
 
-    currentPlaybackProviderRef.current = 'spotify';
-
     try {
-      if (!spotifyAuth.isAuthenticated()) return;
-
-      // Retry logic for 403 errors
-      const playWithRetry = async (trackUri: string, retryCount = 0, maxRetries = 2): Promise<boolean> => {
-        try {
-          await spotifyPlayer.playTrack(trackUri);
-          return true; // Success
-        } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : String(error);
-
-          // Check if it's a 403 restriction error
-          if (errorMessage.includes('403')) {
-            const isRestrictionViolated = errorMessage.includes('Restriction violated');
-
-            if (isRestrictionViolated) {
-              console.warn(`Track "${currentTracks[index].name}" is unavailable (region-locked or removed)`);
-              return false;
-            }
-
-            // For other 403 errors, try to recover with exponential backoff
-            if (retryCount < maxRetries) {
-              const backoffMs = 1500 * Math.pow(2, retryCount);
-              await spotifyPlayer.transferPlaybackToDevice();
-              await new Promise(resolve => setTimeout(resolve, backoffMs));
-              await spotifyPlayer.ensureDeviceIsActive(3, 1000);
-
-              return await playWithRetry(trackUri, retryCount + 1, maxRetries);
-            }
-          }
-
-          throw error;
-        }
-      };
-
-      const success = await playWithRetry(currentTracks[index].uri);
-
-      if (!success) {
-        if (skipOnError && index < currentTracks.length - 1) {
-          setTimeout(() => {
-            playTrack(index + 1, skipOnError);
-          }, 500);
-          return;
-        } else {
-          throw new Error(`Track "${currentTracks[index].name}" is unavailable for playback`);
-        }
-      }
-
+      await trackDescriptor.playback.playTrack(mediaTrack);
       setCurrentTrackIndex(index);
-
-      setTimeout(() => {
-        void (async () => {
-          try {
-            await handlePlaybackResume();
-          } catch (error) {
-            console.error('Failed to resume playback:', error);
-          }
-        })();
-      }, 1500);
-
     } catch (error) {
-      console.error('Failed to play track:', error);
-
-      if (skipOnError && index < currentTracks.length - 1) {
-        setTimeout(() => {
-          playTrack(index + 1, skipOnError);
-        }, 500);
+      console.error(`[${trackProvider}] Failed to play track:`, error);
+      if (skipOnError && index < mediaTracks.length - 1) {
+        setTimeout(() => playTrack(index + 1, skipOnError), 500);
       }
     }
   }, [setCurrentTrackIndex, handlePlaybackResume, activeDescriptor, mediaTracksRef, playSpotifyTrack]);

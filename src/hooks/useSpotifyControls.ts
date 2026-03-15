@@ -127,13 +127,16 @@ export const useSpotifyControls = ({
   }, [isPlaying, activeDescriptor, currentTrackProvider]);
 
   const handlePlayPause = useCallback(async () => {
-    const playback = activeDescriptor?.playback;
+    const playingDescriptor =
+      currentTrackProvider && currentTrackProvider !== activeDescriptor?.id
+        ? providerRegistry.get(currentTrackProvider)
+        : activeDescriptor;
+    const playback = playingDescriptor?.playback;
     if (!playback) return;
 
     if (isPlaying) {
       onPause();
     } else {
-      // Check if there's a track loaded in the player
       const state = await playback.getState();
 
       if (!state || !state.currentTrackId ||
@@ -145,7 +148,7 @@ export const useSpotifyControls = ({
         }
       }
     }
-  }, [isPlaying, onPlay, onPause, currentTrack, activeDescriptor]);
+  }, [isPlaying, onPlay, onPause, currentTrack, activeDescriptor, currentTrackProvider]);
 
   const handleSeek = useCallback(async (position: number) => {
     try {

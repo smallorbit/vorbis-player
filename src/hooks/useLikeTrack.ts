@@ -1,27 +1,31 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useProviderContext } from '@/contexts/ProviderContext';
+import type { ProviderId } from '@/types/domain';
 
 interface UseLikeTrackResult {
   isLiked: boolean;
   isLikePending: boolean;
   handleLikeToggle: () => void;
-  /** Whether the active provider supports save/like. */
+  /** Whether the resolved provider supports save/like. */
   canSaveTrack: boolean;
 }
 
 /**
- * Manages like/save state for a track via the active provider's catalog.
+ * Manages like/save state for a track via its owning provider's catalog.
  *
- * If the active provider doesn't support save/like (e.g. Dropbox),
- * canSaveTrack is false and the hook is a no-op.
+ * When `trackProvider` is supplied, the hook uses that provider's catalog
+ * instead of the active provider. This is essential for cross-provider
+ * playlists (e.g. unified liked songs) where the playing track may belong
+ * to a different provider than the currently active one.
  */
-export function useLikeTrack(trackId: string | undefined): UseLikeTrackResult {
+export function useLikeTrack(trackId: string | undefined, trackProvider?: ProviderId): UseLikeTrackResult {
   const [isLiked, setIsLiked] = useState(false);
   const [isLikePending, setIsLikePending] = useState(false);
 
-  const { activeDescriptor } = useProviderContext();
-  const catalog = activeDescriptor?.catalog;
-  const canSaveTrack = activeDescriptor?.capabilities.hasSaveTrack ?? false;
+  const { activeDescriptor, getDescriptor } = useProviderContext();
+  const resolvedDescriptor = trackProvider ? getDescriptor(trackProvider) : activeDescriptor;
+  const catalog = resolvedDescriptor?.catalog;
+  const canSaveTrack = resolvedDescriptor?.capabilities.hasSaveTrack ?? false;
 
   useEffect(() => {
     let isMounted = true;
