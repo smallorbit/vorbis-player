@@ -89,6 +89,7 @@ interface PlaylistBottomSheetProps {
   tracks: Track[];
   currentTrackIndex: number;
   onTrackSelect: (index: number) => void;
+  showProviderIcons?: boolean;
 }
 
 const PlaylistBottomSheet = memo<PlaylistBottomSheetProps>(function PlaylistBottomSheet({
@@ -97,6 +98,7 @@ const PlaylistBottomSheet = memo<PlaylistBottomSheetProps>(function PlaylistBott
   tracks,
   currentTrackIndex,
   onTrackSelect,
+  showProviderIcons,
 }) {
   const { ref: headerRef, isDragging, dragOffset } = useVerticalSwipeGesture({
     onSwipeDown: onClose,
@@ -155,6 +157,7 @@ const PlaylistBottomSheet = memo<PlaylistBottomSheetProps>(function PlaylistBott
                   onClose();
                 }}
                 isOpen={isOpen}
+                showProviderIcons={showProviderIcons}
               />
             </Suspense>
           )}

@@ -22,6 +22,7 @@ import {
 import { usePinnedItems } from '../hooks/usePinnedItems';
 import { LIKED_SONGS_ID, LIKED_SONGS_NAME, toAlbumPlaylistId } from '../constants/playlist';
 import LibraryProviderBar from './LibraryProviderBar';
+import { useUnifiedLikedTracks } from '@/hooks/useUnifiedLikedTracks';
 
 type ViewMode = 'playlists' | 'albums';
 
@@ -546,7 +547,10 @@ const PinIcon: React.FC<{ filled?: boolean }> = ({ filled = false }) => (
   </svg>
 );
 
-function getLikedSongsGradient(providerId?: string): string {
+function getLikedSongsGradient(providerId?: string | 'unified'): string {
+  if (providerId === 'unified') {
+    return `linear-gradient(135deg, ${theme.colors.spotify} 0%, ${theme.colors.dropbox} 100%)`;
+  }
   if (providerId === 'dropbox') {
     return `linear-gradient(135deg, ${theme.colors.dropbox} 0%, ${theme.colors.dropboxLight} 100%)`;
   }
@@ -631,6 +635,7 @@ const GridCardImageComponent: React.FC<LazyImageProps> = React.memo(function Gri
 
 const PlaylistSelection = React.memo(function PlaylistSelection({ onPlaylistSelect, inDrawer = false, swipeZoneRef, initialSearchQuery, initialViewMode }: PlaylistSelectionProps): JSX.Element {
   const { activeDescriptor, hasMultipleProviders, enabledProviderIds, getDescriptor } = useProviderContext();
+  const { isUnifiedLikedActive, totalCount: unifiedLikedCount } = useUnifiedLikedTracks();
   const showProviderBadges = hasMultipleProviders && enabledProviderIds.length > 1;
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
     if (initialViewMode) return initialViewMode;
@@ -774,8 +779,8 @@ const PlaylistSelection = React.memo(function PlaylistSelection({ onPlaylistSele
   }
 
   function handleLikedSongsClick(provider?: import('@/types/domain').ProviderId): void {
-    console.log('🎵 Selected liked songs');
-    onPlaylistSelect(LIKED_SONGS_ID, LIKED_SONGS_NAME, provider);
+    const resolvedProvider = provider ?? (likedSongsPerProvider.length === 1 ? likedSongsPerProvider[0].provider : undefined);
+    onPlaylistSelect(LIKED_SONGS_ID, LIKED_SONGS_NAME, resolvedProvider);
   }
 
   function handleViewModeChange(mode: ViewMode): void {
@@ -894,9 +899,23 @@ const PlaylistSelection = React.memo(function PlaylistSelection({ onPlaylistSele
           </PinButton>
         );
 
-        const usePerProviderLiked = showProviderBadges && likedSongsPerProvider.length >= 1;
+        const usePerProviderLiked = showProviderBadges && likedSongsPerProvider.length >= 1 && !isUnifiedLikedActive;
+        const effectiveLikedCount = isUnifiedLikedActive ? unifiedLikedCount : likedSongsCount;
 
-        const likedSongsGridCard = likedSongsCount > 0 && (usePerProviderLiked ? (
+        const likedSongsGridCard = effectiveLikedCount > 0 && (isUnifiedLikedActive ? (
+          <PinnableGridCard key="liked-songs-unified" onClick={() => handleLikedSongsClick()}>
+            <GridCardArtWrapper style={{ position: 'relative' }}>
+              <div style={{ background: getLikedSongsGradient('unified'), display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', fontSize: '3rem', color: 'white' }}>♥</div>
+              <GridCardPinOverlay $isPinned={likedSongsPinned} onClick={(e) => handlePinPlaylistClick(LIKED_SONGS_ID, e)}>
+                <PinIcon filled={likedSongsPinned} />
+              </GridCardPinOverlay>
+            </GridCardArtWrapper>
+            <GridCardTextArea>
+              <GridCardTitle>{LIKED_SONGS_NAME}</GridCardTitle>
+              <GridCardSubtitle>{effectiveLikedCount} tracks</GridCardSubtitle>
+            </GridCardTextArea>
+          </PinnableGridCard>
+        ) : usePerProviderLiked ? (
           likedSongsPerProvider.map(({ provider, count }) => (
             <PinnableGridCard key={`liked-songs-${provider}`} onClick={() => handleLikedSongsClick(provider)}>
               <GridCardArtWrapper style={{ position: 'relative' }}>
@@ -929,7 +948,18 @@ const PlaylistSelection = React.memo(function PlaylistSelection({ onPlaylistSele
           </PinnableGridCard>
         ));
 
-        const likedSongsListItem = likedSongsCount > 0 && (usePerProviderLiked ? (
+        const likedSongsListItem = effectiveLikedCount > 0 && (isUnifiedLikedActive ? (
+          <PinnableListItem key="liked-songs-unified" onClick={() => handleLikedSongsClick()}>
+            <PlaylistImageWrapper>
+              <div style={{ background: getLikedSongsGradient('unified'), display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', borderRadius: '0.5rem', fontSize: '1.5rem', color: 'white' }}>♥</div>
+            </PlaylistImageWrapper>
+            <PlaylistInfo>
+              <PlaylistName>{LIKED_SONGS_NAME}</PlaylistName>
+              <PlaylistDetails>{effectiveLikedCount} tracks • Shuffle enabled</PlaylistDetails>
+            </PlaylistInfo>
+            {likedSongsPinBtn}
+          </PinnableListItem>
+        ) : usePerProviderLiked ? (
           likedSongsPerProvider.map(({ provider, count }) => (
             <PinnableListItem key={`liked-songs-${provider}`} onClick={() => handleLikedSongsClick(provider)}>
               <div style={{ position: 'relative' }}>

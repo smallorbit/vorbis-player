@@ -4,6 +4,7 @@ import type { Track } from '../services/spotify';
 import { Card, CardHeader, CardContent, CardDescription } from '../components/styled';
 import { ScrollArea } from '../components/styled';
 import { Avatar } from '../components/styled';
+import ProviderIcon from './ProviderIcon';
 
 // Styled components
 const PlaylistContainer = styled.div`
@@ -143,6 +144,7 @@ interface PlaylistProps {
   currentTrackIndex: number;
   onTrackSelect: (index: number) => void;
   isOpen?: boolean;
+  showProviderIcons?: boolean;
 }
 
 interface PlaylistItemProps {
@@ -151,6 +153,7 @@ interface PlaylistItemProps {
   isSelected: boolean;
   onSelect: (index: number) => void;
   itemRef?: React.RefObject<HTMLDivElement>;
+  showProviderIcon?: boolean;
 }
 
 const PlaylistItem = memo<PlaylistItemProps>(({
@@ -158,7 +161,8 @@ const PlaylistItem = memo<PlaylistItemProps>(({
   index,
   isSelected,
   onSelect,
-  itemRef
+  itemRef,
+  showProviderIcon
 }) => {
   return (
     <PlaylistItemContainer
@@ -166,10 +170,9 @@ const PlaylistItem = memo<PlaylistItemProps>(({
       onClick={() => onSelect(index)}
       isSelected={isSelected}
     >
-      {/* Album Artwork */}
       <AlbumArtContainer>
-        <Avatar 
-          src={track.image} 
+        <Avatar
+          src={track.image}
           alt={track.album}
           style={{ width: '3rem', height: '3rem' }}
           fallback={
@@ -185,9 +188,13 @@ const PlaylistItem = memo<PlaylistItemProps>(({
             </svg>
           </PlayIcon>
         )}
+        {showProviderIcon && track.provider && (
+          <div style={{ position: 'absolute', bottom: -2, right: -2, zIndex: 2 }}>
+            <ProviderIcon provider={track.provider} size={16} />
+          </div>
+        )}
       </AlbumArtContainer>
 
-      {/* Track Info */}
       <TrackInfo>
         <TrackName isSelected={isSelected}>
           {track.name}
@@ -204,7 +211,7 @@ const PlaylistItem = memo<PlaylistItemProps>(({
   );
 });
 
-const Playlist = memo<PlaylistProps>(({ tracks, currentTrackIndex, onTrackSelect, isOpen = false }) => {
+const Playlist = memo<PlaylistProps>(({ tracks, currentTrackIndex, onTrackSelect, isOpen = false, showProviderIcons = false }) => {
   const currentTrackRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll to current track when playlist opens
@@ -240,6 +247,7 @@ const Playlist = memo<PlaylistProps>(({ tracks, currentTrackIndex, onTrackSelect
                   isSelected={index === currentTrackIndex}
                   onSelect={onTrackSelect}
                   itemRef={index === currentTrackIndex ? currentTrackRef : undefined}
+                  showProviderIcon={showProviderIcons}
                 />
               ))}
             </PlaylistItems>

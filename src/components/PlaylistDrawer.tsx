@@ -122,6 +122,7 @@ interface PlaylistDrawerProps {
   tracks: Track[];
   currentTrackIndex: number;
   onTrackSelect: (index: number) => void;
+  showProviderIcons?: boolean;
 }
 
 // Custom comparison function for PlaylistDrawer memo optimization
@@ -153,7 +154,8 @@ const PlaylistDrawer = memo<PlaylistDrawerProps>(({
   onClose,
   tracks,
   currentTrackIndex,
-  onTrackSelect
+  onTrackSelect,
+  showProviderIcons
 }) => {
   // Get responsive sizing information
   const { viewport, isMobile, isTablet, transitionDuration, transitionEasing } = usePlayerSizingContext();
@@ -201,9 +203,10 @@ const PlaylistDrawer = memo<PlaylistDrawerProps>(({
               currentTrackIndex={currentTrackIndex}
               onTrackSelect={(index) => {
                 onTrackSelect(index);
-                onClose(); // Close drawer after selecting track
+                onClose();
               }}
               isOpen={isOpen}
+              showProviderIcons={showProviderIcons}
             />
           </Suspense>
         </PlaylistContent>

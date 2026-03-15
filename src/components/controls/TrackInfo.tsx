@@ -32,6 +32,7 @@ const areTrackInfoPropsEqual = (
         prevProps.track?.artists === nextProps.track?.artists &&
         prevProps.track?.album === nextProps.track?.album &&
         prevProps.track?.album_id === nextProps.track?.album_id &&
+        prevProps.track?.provider === nextProps.track?.provider &&
         prevProps.isMobile === nextProps.isMobile &&
         prevProps.isTablet === nextProps.isTablet &&
         prevProps.onArtistBrowse === nextProps.onArtistBrowse &&
@@ -49,9 +50,10 @@ const TrackInfo = memo<TrackInfoProps>(({ track, isMobile, isTablet, onArtistBro
     const [albumSaved, setAlbumSaved] = useState<boolean | null>(null);
     const artistRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
     const albumRef = useRef<HTMLButtonElement>(null);
-    const { activeDescriptor } = useProviderContext();
-    const capabilities = activeDescriptor?.capabilities;
-    const catalog = activeDescriptor?.catalog;
+    const { activeDescriptor, getDescriptor } = useProviderContext();
+    const trackDescriptor = track?.provider ? getDescriptor(track.provider as import('@/types/domain').ProviderId) : activeDescriptor;
+    const capabilities = trackDescriptor?.capabilities;
+    const catalog = trackDescriptor?.catalog;
 
     // Check album saved state when album popover opens
     useEffect(() => {
@@ -89,13 +91,13 @@ const TrackInfo = memo<TrackInfoProps>(({ track, isMobile, isTablet, onArtistBro
 
     const hasExternalLink = capabilities?.hasExternalLink ?? true;
     const providerName = capabilities?.externalLinkLabel?.replace('Open in ', '') ?? 'Spotify';
-    const ExternalIcon = activeDescriptor?.getExternalUrl
+    const ExternalIcon = trackDescriptor?.getExternalUrl
         ? DiscogsIcon
         : SpotifyIcon;
 
     const getAlbumExternalUrl = (albumId: string, albumName: string): string | undefined => {
-        if (activeDescriptor?.getExternalUrl) {
-            return activeDescriptor.getExternalUrl({ type: 'album', name: albumName, artistName: track?.artists });
+        if (trackDescriptor?.getExternalUrl) {
+            return trackDescriptor.getExternalUrl({ type: 'album', name: albumName, artistName: track?.artists });
         }
         if (track?.provider === 'spotify') {
             return `https://open.spotify.com/album/${albumId}`;
@@ -151,7 +153,7 @@ const TrackInfo = memo<TrackInfoProps>(({ track, isMobile, isTablet, onArtistBro
             },
         ];
         if (hasExternalLink) {
-            const externalUrls = activeDescriptor?.getExternalUrls?.({ type: 'artist', name: popover.artistName });
+            const externalUrls = trackDescriptor?.getExternalUrls?.({ type: 'artist', name: popover.artistName });
             if (externalUrls) {
                 for (const entry of externalUrls) {
                     const IconComponent = ICON_MAP[entry.icon] ?? DiscogsIcon;
@@ -162,8 +164,8 @@ const TrackInfo = memo<TrackInfoProps>(({ track, isMobile, isTablet, onArtistBro
                     });
                 }
             } else {
-                const url = activeDescriptor?.getExternalUrl
-                    ? activeDescriptor.getExternalUrl({ type: 'artist', name: popover.artistName })
+                const url = trackDescriptor?.getExternalUrl
+                    ? trackDescriptor.getExternalUrl({ type: 'artist', name: popover.artistName })
                     : popover.artistUrl;
                 if (url) {
                     options.push({
@@ -212,7 +214,7 @@ const TrackInfo = memo<TrackInfoProps>(({ track, isMobile, isTablet, onArtistBro
             });
         }
         if (hasExternalLink) {
-            const externalUrls = activeDescriptor?.getExternalUrls?.({ type: 'album', name: popover.albumName, artistName: track?.artists });
+            const externalUrls = trackDescriptor?.getExternalUrls?.({ type: 'album', name: popover.albumName, artistName: track?.artists });
             if (externalUrls) {
                 for (const entry of externalUrls) {
                     const IconComponent = ICON_MAP[entry.icon] ?? DiscogsIcon;
