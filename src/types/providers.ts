@@ -14,7 +14,7 @@ export interface AuthProvider {
   isAuthenticated(): boolean;
   getAccessToken(): Promise<string | null>;
   /** Start OAuth (redirect or open popup). */
-  beginLogin(): Promise<void>;
+  beginLogin(options?: { popup?: boolean }): Promise<void>;
   /** Handle OAuth callback (e.g. parse URL and exchange code). */
   handleCallback(url: URL): Promise<boolean>;
   logout(): void;

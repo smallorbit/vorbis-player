@@ -7,6 +7,7 @@ import type { ProviderDescriptor, ProviderRegistry } from '@/types/providers';
 // Ensure providers are registered before the context is used
 import '@/providers/spotify/spotifyProvider';
 import '@/providers/dropbox/dropboxProvider'; // conditionally registers if VITE_DROPBOX_CLIENT_ID is set
+import { AUTH_STATE_CHANGED_EVENT } from '@/hooks/usePopupAuth';
 
 export type ProviderSwitchInterceptor = (
   newProviderId: ProviderId,
@@ -72,6 +73,27 @@ export function ProviderProvider({ children }: { children: React.ReactNode }) {
   const allProviders = providerRegistry.getAll();
   const allProviderIds = useMemo(() => allProviders.map(p => p.id), [allProviders]);
 
+  // ── Popup auth revision counter ─────────────────────────────────────────
+  const [authRevision, setAuthRevision] = useState(0);
+
+  useEffect(() => {
+    const bumpRevision = () => setAuthRevision((prev) => prev + 1);
+
+    window.addEventListener(AUTH_STATE_CHANGED_EVENT, bumpRevision);
+
+    const handleMessage = (event: MessageEvent) => {
+      if (event.origin !== window.location.origin) return;
+      if (event.data?.type !== 'vorbis-auth-complete') return;
+      bumpRevision();
+    };
+    window.addEventListener('message', handleMessage);
+
+    return () => {
+      window.removeEventListener(AUTH_STATE_CHANGED_EVENT, bumpRevision);
+      window.removeEventListener('message', handleMessage);
+    };
+  }, []);
+
   // ── Enabled providers (multi-toggle) ───────────────────────────────────
   const [storedEnabledIds, setStoredEnabledIds] = useLocalStorage<ProviderId[]>(
     ENABLED_PROVIDERS_KEY,
@@ -119,7 +141,9 @@ export function ProviderProvider({ children }: { children: React.ReactNode }) {
   // ── Connected providers (derived from enabled + auth state) ────────────
   const connectedProviderIds = useMemo(
     () => enabledProviderIds.filter(id => providerRegistry.get(id)?.auth.isAuthenticated()),
-    [enabledProviderIds],
+    // authRevision triggers re-evaluation when a popup completes OAuth
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [enabledProviderIds, authRevision],
   );
 
   // ── Auto-fallthrough notification ─────────────────────────────────────
@@ -217,7 +241,9 @@ export function ProviderProvider({ children }: { children: React.ReactNode }) {
       fallthroughNotification,
       dismissFallthroughNotification,
     }),
-    [storedProviderId, validProviderId, activeDescriptor, setActiveProviderId, setProviderSwitchInterceptor, needsProviderSelection, enabledProviderIds, toggleProvider, isProviderEnabled, allProviders.length, getDescriptor, connectedProviderIds, fallthroughNotification, dismissFallthroughNotification],
+    // authRevision triggers re-evaluation when a popup completes OAuth
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [storedProviderId, validProviderId, activeDescriptor, setActiveProviderId, setProviderSwitchInterceptor, needsProviderSelection, enabledProviderIds, toggleProvider, isProviderEnabled, allProviders.length, getDescriptor, connectedProviderIds, fallthroughNotification, dismissFallthroughNotification, authRevision],
   );
 
   return (

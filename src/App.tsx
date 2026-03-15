@@ -4,6 +4,7 @@ import AudioPlayerComponent from './components/AudioPlayer';
 import { spotifyAuth } from './services/spotify';
 import { ThemeProvider } from './styles/ThemeProvider';
 import { flexCenter, buttonPrimary } from './styles/utils';
+import { AuthCallbackPage } from './components/AuthCallbackPage';
 import { TrackProvider } from './contexts/TrackContext';
 import { VisualEffectsProvider } from './contexts/VisualEffectsContext';
 import { VisualizerDebugProvider } from './contexts/VisualizerDebugContext';
@@ -83,6 +84,7 @@ const RetryButton = styled.button`
 function App() {
   const [isAuthenticating, setIsAuthenticating] = useState(true);
   const [authError, setAuthError] = useState<string | null>(null);
+  const [isPopupCallback, setIsPopupCallback] = useState(false);
 
   useEffect(() => {
     // Clean up deprecated localStorage keys on app initialization
@@ -96,22 +98,31 @@ function App() {
 
         if (isAuthCallback) {
           let handled = false;
+          let handledProviderId: string | null = null;
           for (const descriptor of providerRegistry.getAll()) {
             try {
               const result = await descriptor.auth.handleCallback(currentUrl);
               if (result) {
                 handled = true;
-                // Clear the callback URL
-                window.history.replaceState({}, document.title, '/');
+                handledProviderId = descriptor.id;
                 break;
               }
             } catch (providerError) {
-              // This provider threw during callback handling — report and stop
               throw providerError;
             }
           }
 
-          // Fall back to legacy Spotify handling if no provider handled it
+          if (handled && window.opener) {
+            window.opener.postMessage(
+              { type: 'vorbis-auth-complete', provider: handledProviderId },
+              window.location.origin,
+            );
+            setIsPopupCallback(true);
+            setTimeout(() => window.close(), 1500);
+          } else if (handled) {
+            window.history.replaceState({}, document.title, '/');
+          }
+
           if (!handled && currentUrl.pathname.includes('/auth/spotify/callback')) {
             await spotifyAuth.handleRedirect();
           }
@@ -136,6 +147,14 @@ function App() {
             <p>Checking authentication...</p>
           </LoadingContainer>
         </AppContainer>
+      </ThemeProvider>
+    );
+  }
+
+  if (isPopupCallback) {
+    return (
+      <ThemeProvider>
+        <AuthCallbackPage />
       </ThemeProvider>
     );
   }
