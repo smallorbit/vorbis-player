@@ -80,27 +80,31 @@ const AlbumArtContainer = styled.div.withConfig({
   background: transparent;
   /* Accent color glow for floating effect */
   ${({ accentColor, glowEnabled, glowIntensity }) => {
-    // If glow is disabled, use simple shadow only
+    // If glow is disabled, use edge + inset for definition
     if (glowEnabled === false) {
       return `
-        box-shadow: ${theme.shadows.albumArtDepth};
+        box-shadow:
+          inset 0 0 10px rgba(0, 0, 0, 0.25),
+          0 0 0 1.5px rgba(255, 255, 255, 0.5),
+          ${theme.shadows.albumArtDepth};
       `;
     }
 
     // If glow is enabled with intensity > 0, use animated breathing glow
     if (glowEnabled && glowIntensity && glowIntensity > 0 && accentColor) {
       const [r, g, b] = hexToRgb(accentColor);
+      const t = (glowIntensity - 95) / (125 - 95);
+      const edgeOpacity = 0.25 + t * 0.35;
+      const glowA = 0.45 + t * 0.15;
+      const glowB = 0.3 + t * 0.15;
+      const glowC = 0.2 + t * 0.15;
       return `
         box-shadow:
-          /* White edge for definition */
-          0 0 0 2px rgba(255, 255, 255, 0.4),
-          /* Animated accent color glow layers using CSS variable */
-          0 0 16px rgba(${r}, ${g}, ${b}, calc(0.6 * var(--glow-opacity, 1))),
-          0 0 32px rgba(${r}, ${g}, ${b}, calc(0.5 * var(--glow-opacity, 1))),
-          0 0 48px rgba(${r}, ${g}, ${b}, calc(0.4 * var(--glow-opacity, 1))),
-          0 0 72px rgba(${r}, ${g}, ${b}, calc(0.3 * var(--glow-opacity, 1))),
-        
-          /* Depth shadow */
+          inset 0 0 10px rgba(0, 0, 0, 0.25),
+          0 0 0 1.5px rgba(255, 255, 255, ${edgeOpacity.toFixed(2)}),
+          0 0 10px rgba(${r}, ${g}, ${b}, calc(${glowA.toFixed(2)} * var(--glow-opacity, 1))),
+          0 0 22px rgba(${r}, ${g}, ${b}, calc(${glowB.toFixed(2)} * var(--glow-opacity, 1))),
+          0 0 36px rgba(${r}, ${g}, ${b}, calc(${glowC.toFixed(2)} * var(--glow-opacity, 1))),
           ${theme.shadows.albumArtDepth};
         animation: breathe-border-glow var(--glow-rate, ${DEFAULT_GLOW_RATE}s) linear infinite;
       `;
@@ -111,22 +115,21 @@ const AlbumArtContainer = styled.div.withConfig({
       const [r, g, b] = hexToRgb(accentColor);
       return `
         box-shadow:
-          /* White edge for definition */
-          0 0 0 2px rgba(255, 255, 255, 0.4),
-          /* Accent color inner glow - more contained */
-          0 0 16px rgba(${r}, ${g}, ${b}, 0.7),
-          0 0 32px rgba(${r}, ${g}, ${b}, 0.5),
-          0 0 48px rgba(${r}, ${g}, ${b}, 0.25),
-          /* Depth shadow */
+          inset 0 0 10px rgba(0, 0, 0, 0.25),
+          0 0 0 1.5px rgba(255, 255, 255, 0.4),
+          0 0 10px rgba(${r}, ${g}, ${b}, 0.5),
+          0 0 22px rgba(${r}, ${g}, ${b}, 0.3),
+          0 0 36px rgba(${r}, ${g}, ${b}, 0.15),
           ${theme.shadows.albumArtDepth};
       `;
     }
     return `
       box-shadow:
-        0 0 0 2px rgba(255, 255, 255, 0.5),
-        0 0 16px rgba(255, 255, 255, 0.5),
-        0 0 32px rgba(255, 255, 255, 0.4),
-        0 0 48px rgba(255, 255, 255, 0.2),
+        inset 0 0 10px rgba(0, 0, 0, 0.25),
+        0 0 0 1.5px rgba(255, 255, 255, 0.5),
+        0 0 10px rgba(255, 255, 255, 0.35),
+        0 0 22px rgba(255, 255, 255, 0.25),
+        0 0 36px rgba(255, 255, 255, 0.12),
         ${theme.shadows.albumArtDepth};
     `;
   }}
@@ -208,7 +211,7 @@ const AlbumArt: React.FC<AlbumArtProps> = memo(({ currentTrack = null, accentCol
       }
       ctx.drawImage(imageElement, 0, 0);
       const imageData = ctx.getImageData(0, 0, imageElement.width, imageElement.height);
-      const processedImageData = await processImage(imageData, accentColorRgb, 60);
+      const processedImageData = await processImage(imageData, accentColorRgb, 40);
       ctx.putImageData(processedImageData, 0, 0);
       setCanvasUrl(canvas.toDataURL());
     } catch (error) {
@@ -258,6 +261,11 @@ const AlbumArt: React.FC<AlbumArtProps> = memo(({ currentTrack = null, accentCol
       $zenMode={zenMode}
       $translucenceOpacity={translucenceEnabled ? (translucenceOpacity ?? 0.8) : 1}
       className={glowClasses}
+      style={currentTrack?.image ? {
+        backgroundImage: `url(${currentTrack.image})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+      } : undefined}
     >
       <>
         <AccentColorGlowOverlay
@@ -274,9 +282,6 @@ const AlbumArt: React.FC<AlbumArtProps> = memo(({ currentTrack = null, accentCol
               height: '100%',
               objectFit: 'cover',
               display: 'block',
-              zIndex: theme.zIndex.docked,
-              opacity: isProcessing ? 0.9 : 1,
-              transition: theme.transitions.normal,
             }}
             loading="lazy"
             onError={(e) => {
