@@ -871,7 +871,7 @@ const PlaylistSelection = React.memo(function PlaylistSelection({ onPlaylistSele
             $isPinned={likedSongsPinned}
             $disabled={!canPinMorePlaylists && !likedSongsPinned}
             onClick={(e) => handlePinPlaylistClick(LIKED_SONGS_ID, e)}
-            title={likedSongsPinned ? 'Unpin' : (canPinMorePlaylists ? 'Pin to top' : 'Pin limit reached (4)')}
+            title={likedSongsPinned ? 'Unpin' : (canPinMorePlaylists ? 'Pin to top' : 'Pin limit reached (8)')}
             aria-label={likedSongsPinned ? 'Unpin Liked Songs' : 'Pin Liked Songs to top'}
           >
             <PinIcon filled={likedSongsPinned} />
@@ -943,7 +943,7 @@ const PlaylistSelection = React.memo(function PlaylistSelection({ onPlaylistSele
                 $isPinned={pinned}
                 $disabled={!canPinMorePlaylists && !pinned}
                 onClick={(e) => handlePinPlaylistClick(playlist.id, e)}
-                title={pinned ? 'Unpin' : (canPinMorePlaylists ? 'Pin to top' : 'Pin limit reached (4)')}
+                title={pinned ? 'Unpin' : (canPinMorePlaylists ? 'Pin to top' : 'Pin limit reached (8)')}
                 aria-label={pinned ? `Unpin ${playlist.name}` : `Pin ${playlist.name} to top`}
               >
                 <PinIcon filled={pinned} />
@@ -1021,7 +1021,7 @@ const PlaylistSelection = React.memo(function PlaylistSelection({ onPlaylistSele
                 $isPinned={pinned}
                 $disabled={!canPinMoreAlbums && !pinned}
                 onClick={(e) => handlePinAlbumClick(album.id, e)}
-                title={pinned ? 'Unpin' : (canPinMoreAlbums ? 'Pin to top' : 'Pin limit reached (4)')}
+                title={pinned ? 'Unpin' : (canPinMoreAlbums ? 'Pin to top' : 'Pin limit reached (8)')}
                 aria-label={pinned ? `Unpin ${album.name}` : `Pin ${album.name} to top`}
               >
                 <PinIcon filled={pinned} />

@@ -6,7 +6,7 @@
 
 import { STORE_NAMES, settingsGet, settingsPut, settingsClearStore } from './settingsDb';
 
-export const MAX_PINS = 4;
+export const MAX_PINS = 8;
 
 interface PinRecord {
   key: string;
