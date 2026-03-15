@@ -71,6 +71,9 @@ function handleRateLimitResponse(response: Response): void {
 const trackSavedCache = new Map<string, { value: boolean; timestamp: number }>();
 const TRACK_SAVED_CACHE_TTL = 60 * 1000; // 1 minute
 
+/** Cache for checkAlbumSaved results — keyed by album ID */
+const albumSavedCache = new Map<string, { value: boolean; timestamp: number }>();
+
 /** Cache for playlist/album track lists — keyed by playlist/album ID */
 const trackListCache = new Map<string, { data: Track[]; timestamp: number }>();
 const TRACK_LIST_CACHE_TTL = 10 * 60 * 1000; // 10 minutes (in-memory L1)
@@ -866,6 +869,46 @@ export async function saveTrack(trackId: string): Promise<void> {
 
 export async function unsaveTrack(trackId: string): Promise<void> {
   return modifyTrackSaved(trackId, false);
+}
+
+// =============================================================================
+// Album Save/Unsave
+// =============================================================================
+
+export async function checkAlbumSaved(albumId: string): Promise<boolean> {
+  const cached = albumSavedCache.get(albumId);
+  if (cached && Date.now() - cached.timestamp < TRACK_SAVED_CACHE_TTL) {
+    return cached.value;
+  }
+
+  const token = await spotifyAuth.ensureValidToken();
+  const data = await spotifyApiRequest<boolean[]>(
+    `https://api.spotify.com/v1/me/albums/contains?ids=${albumId}`,
+    token
+  );
+  const result = data[0] ?? false;
+  albumSavedCache.set(albumId, { value: result, timestamp: Date.now() });
+  return result;
+}
+
+async function modifyAlbumSaved(albumId: string, save: boolean): Promise<void> {
+  const token = await spotifyAuth.ensureValidToken();
+  const method = save ? 'PUT' : 'DELETE';
+  await spotifyApiRequest<void>('https://api.spotify.com/v1/me/albums', token, {
+    method,
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ids: [albumId] }),
+  });
+
+  albumSavedCache.set(albumId, { value: save, timestamp: Date.now() });
+}
+
+export async function saveAlbum(albumId: string): Promise<void> {
+  return modifyAlbumSaved(albumId, true);
+}
+
+export async function unsaveAlbum(albumId: string): Promise<void> {
+  return modifyAlbumSaved(albumId, false);
 }
 
 // =============================================================================

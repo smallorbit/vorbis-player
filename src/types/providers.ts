@@ -35,6 +35,9 @@ export interface CatalogProvider {
   /** Optional: save/unsave track (Spotify liked). */
   setTrackSaved?(trackId: string, saved: boolean): Promise<void>;
   isTrackSaved?(trackId: string): Promise<boolean>;
+  /** Optional: save/unsave album to library. */
+  setAlbumSaved?(albumId: string, saved: boolean): Promise<void>;
+  isAlbumSaved?(albumId: string): Promise<boolean>;
 }
 
 // -----------------------------------------------------------------------------
@@ -66,6 +69,7 @@ export interface PlaybackProvider {
 export interface ProviderCapabilities {
   hasLikedCollection: boolean;
   hasSaveTrack: boolean;
+  hasSaveAlbum?: boolean;
   hasExternalLink: boolean;
   /** e.g. "Open in Spotify" */
   externalLinkLabel?: string;

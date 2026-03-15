@@ -15,6 +15,7 @@ const spotifyDescriptor: ProviderDescriptor = {
   capabilities: {
     hasLikedCollection: true,
     hasSaveTrack: true,
+    hasSaveAlbum: true,
     hasExternalLink: true,
     externalLinkLabel: 'Open in Spotify',
   },
