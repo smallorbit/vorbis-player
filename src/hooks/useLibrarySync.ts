@@ -320,9 +320,10 @@ export function useLibrarySync(): UseLibrarySyncResult {
   }, [nonSpotifyEnabledIds.join(','), getDescriptor, mergeAndSetData]);
 
   const refreshNow = useCallback(async () => {
-    // Refresh Spotify
+    // Refresh Spotify — force full re-fetch to catch changes that
+    // count-based detection may miss due to API propagation delay
     if (isSpotifyEnabled) {
-      await engineRef.current.syncNow();
+      await engineRef.current.syncNow(true);
     }
 
     // Refresh non-Spotify providers

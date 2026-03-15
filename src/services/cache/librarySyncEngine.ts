@@ -38,6 +38,8 @@ type SyncListener = (
   likedSongsCount?: number,
 ) => void;
 
+const OPTIMISTIC_GRACE_MS = 30 * 1000;
+
 export class LibrarySyncEngine {
   private intervalId: ReturnType<typeof setInterval> | null = null;
   private listeners = new Set<SyncListener>();
@@ -57,6 +59,12 @@ export class LibrarySyncEngine {
   private lastKnownPlaylists: CachedPlaylistInfo[] | undefined;
   private lastKnownAlbums: AlbumInfo[] | undefined;
   private lastKnownLikedCount: number | undefined;
+
+  // Optimistic mutations: album IDs that were recently added/removed locally.
+  // Background syncs respect these during the grace period so stale API
+  // responses don't overwrite the user's action.
+  private pendingRemovals = new Map<string, number>();
+  private pendingAdditions = new Map<string, number>();
 
   // =========================================================================
   // Public API
@@ -91,8 +99,8 @@ export class LibrarySyncEngine {
     }
   }
 
-  /** Force an immediate sync cycle. */
-  async syncNow(): Promise<void> {
+  /** Force an immediate sync cycle. When force is true, skip change detection and re-fetch everything. */
+  async syncNow(force = false): Promise<void> {
     if (this.isSyncInProgress) return;
     if (!spotifyAuth.isAuthenticated()) return;
 
@@ -101,10 +109,24 @@ export class LibrarySyncEngine {
     this.updateState({ isSyncing: true, error: null });
 
     try {
-      const changes = await this.detectChanges(this.abortController.signal);
+      if (force) {
+        const signal = this.abortController.signal;
+        const allChanges: LibraryChanges = {
+          playlistsChanged: true,
+          albumsChanged: true,
+          likedSongsChanged: true,
+          changedPlaylistIds: [],
+          newPlaylistCount: await getPlaylistCount(signal),
+          newAlbumCount: await getAlbumCount(signal),
+          newLikedSongsCount: await getLikedSongsCount(signal),
+        };
+        await this.applyChanges(allChanges, signal);
+      } else {
+        const changes = await this.detectChanges(this.abortController.signal);
 
-      if (changes.playlistsChanged || changes.albumsChanged || changes.likedSongsChanged) {
-        await this.applyChanges(changes, this.abortController.signal);
+        if (changes.playlistsChanged || changes.albumsChanged || changes.likedSongsChanged) {
+          await this.applyChanges(changes, this.abortController.signal);
+        }
       }
 
       this.updateState({
@@ -147,11 +169,36 @@ export class LibrarySyncEngine {
     return cache.getAllAlbums();
   }
 
-  /** Invalidate cached album metadata and force a sync. */
-  async invalidateAndSyncAlbums(): Promise<void> {
-    // Clear the cached album count so detectChanges always sees a mismatch
-    await cache.putMeta('albums', { lastValidated: 0, totalCount: -1 });
-    await this.syncNow();
+  /** Optimistically remove an album from cache and notify listeners immediately. */
+  async optimisticRemoveAlbum(albumId: string): Promise<void> {
+    this.pendingRemovals.set(albumId, Date.now());
+    this.pendingAdditions.delete(albumId);
+    await cache.removeAlbum(albumId);
+    await cache.removeTrackList(`album:${albumId}`);
+    const meta = await cache.getMeta('albums');
+    if (meta) {
+      await cache.putMeta('albums', {
+        ...meta,
+        totalCount: Math.max(0, (meta.totalCount ?? 1) - 1),
+      });
+    }
+    const albums = await cache.getAllAlbums();
+    this.notifyListeners(undefined, albums, undefined);
+  }
+
+  /** Optimistically add an album to cache and notify listeners immediately. */
+  async optimisticAddAlbum(album: AlbumInfo): Promise<void> {
+    this.pendingAdditions.set(album.id, Date.now());
+    this.pendingRemovals.delete(album.id);
+    await cache.putAlbum(album);
+    const meta = await cache.getMeta('albums');
+    await cache.putMeta('albums', {
+      lastValidated: meta?.lastValidated ?? Date.now(),
+      totalCount: (meta?.totalCount ?? 0) + 1,
+      latestAddedAt: album.added_at ?? meta?.latestAddedAt,
+    });
+    const albums = await cache.getAllAlbums();
+    this.notifyListeners(undefined, albums, undefined);
   }
 
   /** Get current state (for testing/debugging). */
@@ -394,6 +441,9 @@ export class LibrarySyncEngine {
   }
 
   private async syncAlbums(newTotal: number, signal: AbortSignal): Promise<AlbumInfo[]> {
+    const now = Date.now();
+    this.expirePendingMutations(now);
+
     const cachedAlbums = await cache.getAllAlbums();
 
     // Fetch ALL pages so libraries with >50 albums are fully synced
@@ -402,32 +452,44 @@ export class LibrarySyncEngine {
     const fetchedIds = new Set(allFetched.map(a => a.id));
 
     for (const cached of cachedAlbums) {
-      if (!fetchedIds.has(cached.id)) {
+      if (!fetchedIds.has(cached.id) && !this.pendingAdditions.has(cached.id)) {
         await cache.removeAlbum(cached.id);
         await cache.removeTrackList(`album:${cached.id}`);
       }
     }
 
     for (const fetched of allFetched) {
-      await cache.putAlbum(fetched);
+      if (!this.pendingRemovals.has(fetched.id)) {
+        await cache.putAlbum(fetched);
+      }
     }
 
-    const latestAddedAt = allFetched.reduce(
+    const finalAlbums = await cache.getAllAlbums();
+    const latestAddedAt = finalAlbums.reduce(
       (latest, a) => (a.added_at && a.added_at > latest ? a.added_at : latest),
       '',
     );
     await cache.putMeta('albums', {
       lastValidated: Date.now(),
-      totalCount: newTotal,
+      totalCount: finalAlbums.length,
       latestAddedAt: latestAddedAt || undefined,
     });
 
-    return allFetched;
+    return finalAlbums;
   }
 
   // =========================================================================
   // Internal Helpers
   // =========================================================================
+
+  private expirePendingMutations(now: number): void {
+    for (const [id, ts] of this.pendingRemovals) {
+      if (now - ts > OPTIMISTIC_GRACE_MS) this.pendingRemovals.delete(id);
+    }
+    for (const [id, ts] of this.pendingAdditions) {
+      if (now - ts > OPTIMISTIC_GRACE_MS) this.pendingAdditions.delete(id);
+    }
+  }
 
   private startPollingInterval(): void {
     this.intervalId = setInterval(() => {
