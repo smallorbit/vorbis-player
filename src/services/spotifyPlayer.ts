@@ -34,6 +34,8 @@ class SpotifyPlayerService {
   private masterListenerAttached = false;
   private pendingSDKLoad: Promise<void> | null = null;
   lastPlayTrackTime = 0;
+  /** Timestamp of last confirmed device-active check. */
+  private lastDeviceActiveAt = 0;
 
   constructor() {
     // Restore state from HMR if available
@@ -458,9 +460,17 @@ class SpotifyPlayerService {
     }
   }
 
+  /** How long a successful device-active check remains valid. */
+  private static readonly DEVICE_ACTIVE_TTL_MS = 30_000;
+
   async ensureDeviceIsActive(maxRetries = 5, initialDelayMs = 800): Promise<boolean> {
+    // Skip the API call if device was recently confirmed active
+    if (this.isReady && Date.now() - this.lastDeviceActiveAt < SpotifyPlayerService.DEVICE_ACTIVE_TTL_MS) {
+      return true;
+    }
+
     const token = await spotifyAuth.ensureValidToken();
-    
+
     for (let i = 0; i < maxRetries; i++) {
       try {
         const response = await fetch('https://api.spotify.com/v1/me/player', {
@@ -473,6 +483,7 @@ class SpotifyPlayerService {
           const data = await response.json();
           if (data.device?.id === this.deviceId && data.device?.is_active) {
             console.log('🎵 Device is active and ready');
+            this.lastDeviceActiveAt = Date.now();
             return true;
           }
         } else if (response.status === 204) {
@@ -496,6 +507,57 @@ class SpotifyPlayerService {
 
     console.warn('🎵 Device not confirmed active after polling, proceeding anyway');
     return false;
+  }
+
+  /**
+   * Wait for the SDK to report a state change after playTrack(), then
+   * resume if the SDK ended up paused at position 0 (a known SDK quirk).
+   * Falls back to device activation if no SDK state is available.
+   * Times out after `timeoutMs` to avoid hanging indefinitely.
+   */
+  waitForPlaybackOrResume(activateDevice: () => Promise<void>, timeoutMs = 3000): void {
+    let settled = false;
+    let unsub: (() => void) | null = null;
+
+    const cleanup = () => {
+      if (unsub) { unsub(); unsub = null; }
+    };
+
+    const onStateChange = async (state: SpotifyPlaybackState | null) => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+
+      if (state) {
+        if (state.paused && state.position === 0) {
+          try { await this.resume(); } catch { /* ignore */ }
+        }
+        // else: track is already playing, nothing to do
+      } else {
+        await activateDevice();
+      }
+    };
+
+    unsub = this.onPlayerStateChanged((state) => {
+      void onStateChange(state);
+    });
+
+    // Fallback: if the SDK never fires a state change, check manually
+    setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      void (async () => {
+        const state = await this.getCurrentState();
+        if (state) {
+          if (state.paused && state.position === 0) {
+            try { await this.resume(); } catch { /* ignore */ }
+          }
+        } else {
+          await activateDevice();
+        }
+      })();
+    }, timeoutMs);
   }
 }
 
