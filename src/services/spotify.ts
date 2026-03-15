@@ -249,6 +249,13 @@ function transformTrackItem(
   };
 }
 
+function backfillProvider(tracks: Track[]): Track[] {
+  for (const t of tracks) {
+    if (!t.provider) t.provider = 'spotify';
+  }
+  return tracks;
+}
+
 async function spotifyApiRequest<T>(
   url: string,
   token: string,
@@ -686,9 +693,9 @@ export async function getPlaylistTracks(playlistId: string): Promise<Track[]> {
   try {
     const idbCached = await libraryCache.getTrackList(cacheKey);
     if (idbCached && Date.now() - idbCached.timestamp < TRACK_LIST_PERSIST_TTL) {
-      // Promote to L1
-      trackListCache.set(cacheKey, { data: idbCached.tracks, timestamp: idbCached.timestamp });
-      return idbCached.tracks;
+      const tracks = backfillProvider(idbCached.tracks);
+      trackListCache.set(cacheKey, { data: tracks, timestamp: idbCached.timestamp });
+      return tracks;
     }
   } catch {
     // IndexedDB read failed, continue to API fetch
@@ -733,9 +740,9 @@ export async function getAlbumTracks(albumId: string): Promise<Track[]> {
   try {
     const idbCached = await libraryCache.getTrackList(cacheKey);
     if (idbCached && Date.now() - idbCached.timestamp < TRACK_LIST_PERSIST_TTL) {
-      // Promote to L1
-      trackListCache.set(cacheKey, { data: idbCached.tracks, timestamp: idbCached.timestamp });
-      return idbCached.tracks;
+      const tracks = backfillProvider(idbCached.tracks);
+      trackListCache.set(cacheKey, { data: tracks, timestamp: idbCached.timestamp });
+      return tracks;
     }
   } catch {
     // IndexedDB read failed, continue to API fetch
