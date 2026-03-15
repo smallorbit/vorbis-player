@@ -2,10 +2,13 @@ import { memo } from 'react';
 import type { Track } from '../services/spotify';
 import { useSpotifyControls } from '../hooks/useSpotifyControls';
 import { usePlayerSizingContext } from '@/contexts/PlayerSizingContext';
+import { useProviderContext } from '@/contexts/ProviderContext';
 import { PlayerControlsContainer } from './controls/styled';
 import TrackInfo from './controls/TrackInfo';
 import PlaybackControls from './controls/PlaybackControls';
 import TimelineControls from './controls/TimelineControls';
+import ProviderIcon from './ProviderIcon';
+import type { ProviderId } from '@/types/domain';
 
 
 interface SpotifyPlayerControlsProps {
@@ -37,6 +40,9 @@ const SpotifyPlayerControls = memo<SpotifyPlayerControlsProps>(({
 }) => {
   // Get responsive sizing information
   const { isMobile, isTablet, isDesktop } = usePlayerSizingContext();
+  const { hasMultipleProviders, enabledProviderIds } = useProviderContext();
+  const showProviderBadge = hasMultipleProviders && enabledProviderIds.length > 1;
+  const trackProvider = currentTrack?.provider as ProviderId | undefined;
 
   // Use Spotify controls hook — like state is always provided via props from usePlayerLogic
   const {
@@ -65,6 +71,11 @@ const SpotifyPlayerControls = memo<SpotifyPlayerControlsProps>(({
   
   return (
     <PlayerControlsContainer $isMobile={isMobile} $isTablet={isTablet} $compact={!isDesktop}>
+      {showProviderBadge && trackProvider && (
+        <div style={{ position: 'absolute', top: 6, right: 6, zIndex: 12 }}>
+          <ProviderIcon provider={trackProvider} size={22} />
+        </div>
+      )}
       <TrackInfo
         track={currentTrack}
         isMobile={isMobile}

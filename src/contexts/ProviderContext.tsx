@@ -9,6 +9,7 @@ import '@/providers/spotify/spotifyProvider';
 import '@/providers/dropbox/dropboxProvider'; // conditionally registers if VITE_DROPBOX_CLIENT_ID is set
 
 const ACTIVE_PROVIDER_KEY = 'vorbis-player-active-provider';
+const ENABLED_PROVIDERS_KEY = 'vorbis-player-enabled-providers';
 
 interface ProviderContextValue {
   /** Raw stored value — null means never chosen (show picker). */
@@ -23,6 +24,18 @@ interface ProviderContextValue {
   registry: ProviderRegistry;
   /** True when no provider has been chosen or the stored one is no longer registered. */
   needsProviderSelection: boolean;
+
+  // ── Multi-provider toggle ──────────────────────────────────────────────
+  /** Set of provider IDs that are currently enabled (toggled on). */
+  enabledProviderIds: ProviderId[];
+  /** Toggle a provider on/off. Will not disable the last remaining provider. */
+  toggleProvider: (id: ProviderId) => void;
+  /** Check if a specific provider is enabled. */
+  isProviderEnabled: (id: ProviderId) => boolean;
+  /** True when more than one provider is registered (multi-provider available). */
+  hasMultipleProviders: boolean;
+  /** Get descriptor for a specific provider by ID. */
+  getDescriptor: (id: ProviderId) => ProviderDescriptor | undefined;
 }
 
 const ProviderContext =
@@ -38,6 +51,54 @@ export function ProviderProvider({ children }: { children: React.ReactNode }) {
     null,
   );
 
+  const allProviders = providerRegistry.getAll();
+  const allProviderIds = useMemo(() => allProviders.map(p => p.id), [allProviders]);
+
+  // ── Enabled providers (multi-toggle) ───────────────────────────────────
+  const [storedEnabledIds, setStoredEnabledIds] = useLocalStorage<ProviderId[]>(
+    ENABLED_PROVIDERS_KEY,
+    [],
+  );
+
+  // Validate stored enabled IDs — only keep those that are actually registered.
+  // If nothing is stored yet, default to all registered providers.
+  const enabledProviderIds = useMemo(() => {
+    const valid = storedEnabledIds.filter(id => providerRegistry.has(id));
+    if (valid.length > 0) return valid;
+    // Default: enable all registered providers
+    return allProviderIds;
+  }, [storedEnabledIds, allProviderIds]);
+
+  const toggleProvider = useCallback(
+    (id: ProviderId) => {
+      if (!providerRegistry.has(id)) return;
+      setStoredEnabledIds(prev => {
+        const validPrev = prev.filter(pid => providerRegistry.has(pid));
+        const current = validPrev.length > 0 ? validPrev : allProviderIds;
+        const isCurrentlyEnabled = current.includes(id);
+        if (isCurrentlyEnabled) {
+          // Don't disable the last remaining provider
+          if (current.length <= 1) return current;
+          return current.filter(pid => pid !== id);
+        } else {
+          return [...current, id];
+        }
+      });
+    },
+    [setStoredEnabledIds, allProviderIds],
+  );
+
+  const isProviderEnabled = useCallback(
+    (id: ProviderId) => enabledProviderIds.includes(id),
+    [enabledProviderIds],
+  );
+
+  const getDescriptor = useCallback(
+    (id: ProviderId) => providerRegistry.get(id),
+    [],
+  );
+
+  // ── Active provider (for playback) ─────────────────────────────────────
   const needsProviderSelection =
     storedProviderId === null || !providerRegistry.has(storedProviderId);
 
@@ -69,8 +130,13 @@ export function ProviderProvider({ children }: { children: React.ReactNode }) {
       setActiveProviderId,
       registry: providerRegistry,
       needsProviderSelection,
+      enabledProviderIds,
+      toggleProvider,
+      isProviderEnabled,
+      hasMultipleProviders: allProviders.length >= 2,
+      getDescriptor,
     }),
-    [storedProviderId, validProviderId, activeDescriptor, setActiveProviderId, needsProviderSelection],
+    [storedProviderId, validProviderId, activeDescriptor, setActiveProviderId, needsProviderSelection, enabledProviderIds, toggleProvider, isProviderEnabled, allProviders.length, getDescriptor],
   );
 
   return (

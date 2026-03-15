@@ -8,6 +8,7 @@ import {
 import { useProviderContext } from '@/contexts/ProviderContext';
 import { Card, CardContent, Button, Skeleton, Alert, AlertDescription } from './styled';
 import { theme } from '@/styles/theme';
+import ProviderIcon from './ProviderIcon';
 import { usePlayerSizingContext } from '@/contexts/PlayerSizingContext';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import { useLibrarySync } from '../hooks/useLibrarySync';
@@ -24,7 +25,7 @@ import { LIKED_SONGS_ID, LIKED_SONGS_NAME, toAlbumPlaylistId } from '../constant
 type ViewMode = 'playlists' | 'albums';
 
 interface PlaylistSelectionProps {
-  onPlaylistSelect: (playlistId: string, playlistName: string) => void;
+  onPlaylistSelect: (playlistId: string, playlistName: string, provider?: import('@/types/domain').ProviderId) => void;
   /** When true, uses compact layout for drawer context (no centering, fills available space) */
   inDrawer?: boolean;
   /** Ref for swipe-to-close gesture zone (search/filters area only, not the scrollable list) */
@@ -501,6 +502,13 @@ const GridCardPinOverlay = styled.div<{ $isPinned: boolean }>`
   }
 `;
 
+const ProviderBadgeOverlay = styled.div`
+  position: absolute;
+  top: ${({ theme }) => theme.spacing.sm};
+  left: ${({ theme }) => theme.spacing.sm};
+  z-index: 2;
+`;
+
 const PinnableGridCard = styled(GridCard)`
   &:hover ${GridCardPinOverlay} {
     opacity: 1;
@@ -621,7 +629,8 @@ const GridCardImageComponent: React.FC<LazyImageProps> = React.memo(function Gri
 });
 
 const PlaylistSelection = React.memo(function PlaylistSelection({ onPlaylistSelect, inDrawer = false, swipeZoneRef, initialSearchQuery, initialViewMode }: PlaylistSelectionProps): JSX.Element {
-  const { activeDescriptor } = useProviderContext();
+  const { activeDescriptor, hasMultipleProviders, enabledProviderIds, getDescriptor } = useProviderContext();
+  const showProviderBadges = hasMultipleProviders && enabledProviderIds.length > 1;
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
     if (initialViewMode) return initialViewMode;
     const saved = localStorage.getItem('vorbis-player-view-mode');
@@ -731,15 +740,19 @@ const PlaylistSelection = React.memo(function PlaylistSelection({ onPlaylistSele
     }
   }, [libraryFullyLoaded, playlists.length, albums.length, likedSongsCount, activeDescriptor]);
 
-  // Auth check — the sync engine handles all data fetching
+  // Auth check — consider authenticated if ANY enabled provider has auth
   useEffect(() => {
-    if (activeDescriptor?.auth.isAuthenticated()) {
+    const hasAuth = enabledProviderIds.some(id => {
+      const desc = getDescriptor(id);
+      return desc?.auth.isAuthenticated();
+    }) || activeDescriptor?.auth.isAuthenticated();
+    if (hasAuth) {
       setIsAuthenticated(true);
     } else {
       setIsAuthenticated(false);
       setIsLoading(false);
     }
-  }, [activeDescriptor]);
+  }, [activeDescriptor, enabledProviderIds, getDescriptor]);
 
   // Sync loading state with the library sync engine
   useEffect(() => {
@@ -750,17 +763,17 @@ const PlaylistSelection = React.memo(function PlaylistSelection({ onPlaylistSele
 
   function handlePlaylistClick(playlist: PlaylistInfo): void {
     console.log('🎵 Selected playlist:', playlist.name);
-    onPlaylistSelect(playlist.id, playlist.name);
+    onPlaylistSelect(playlist.id, playlist.name, playlist.provider);
   }
 
   function handleAlbumClick(album: AlbumInfo): void {
     console.log('🎵 Selected album:', album.name);
-    onPlaylistSelect(toAlbumPlaylistId(album.id), album.name);
+    onPlaylistSelect(toAlbumPlaylistId(album.id), album.name, album.provider);
   }
 
-  function handleLikedSongsClick(): void {
+  function handleLikedSongsClick(provider?: import('@/types/domain').ProviderId): void {
     console.log('🎵 Selected liked songs');
-    onPlaylistSelect(LIKED_SONGS_ID, LIKED_SONGS_NAME);
+    onPlaylistSelect(LIKED_SONGS_ID, LIKED_SONGS_NAME, provider);
   }
 
   function handleViewModeChange(mode: ViewMode): void {
@@ -879,7 +892,7 @@ const PlaylistSelection = React.memo(function PlaylistSelection({ onPlaylistSele
         );
 
         const likedSongsGridCard = likedSongsCount > 0 && (
-          <PinnableGridCard key="liked-songs" onClick={handleLikedSongsClick}>
+          <PinnableGridCard key="liked-songs" onClick={() => handleLikedSongsClick()}>
             <GridCardArtWrapper style={{ position: 'relative' }}>
               <div style={{ background: getLikedSongsGradient(activeDescriptor?.id), display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', fontSize: '3rem', color: 'white' }}>♥</div>
               <GridCardPinOverlay $isPinned={likedSongsPinned} onClick={(e) => handlePinPlaylistClick(LIKED_SONGS_ID, e)}>
@@ -894,7 +907,7 @@ const PlaylistSelection = React.memo(function PlaylistSelection({ onPlaylistSele
         );
 
         const likedSongsListItem = likedSongsCount > 0 && (
-          <PinnableListItem key="liked-songs" onClick={handleLikedSongsClick}>
+          <PinnableListItem key="liked-songs" onClick={() => handleLikedSongsClick()}>
             <PlaylistImageWrapper>
               <div style={{ background: getLikedSongsGradient(activeDescriptor?.id), display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', borderRadius: '0.5rem', fontSize: '1.5rem', color: 'white' }}>♥</div>
             </PlaylistImageWrapper>
@@ -909,9 +922,14 @@ const PlaylistSelection = React.memo(function PlaylistSelection({ onPlaylistSele
         const renderPlaylistGrid = (playlist: PlaylistInfo) => {
           const pinned = isPlaylistPinned(playlist.id);
           return (
-            <PinnableGridCard key={playlist.id} onClick={() => handlePlaylistClick(playlist)}>
+            <PinnableGridCard key={`${playlist.provider ?? 'default'}-${playlist.id}`} onClick={() => handlePlaylistClick(playlist)}>
               <GridCardArtWrapper style={{ position: 'relative' }}>
                 <GridCardImageComponent images={playlist.images} alt={playlist.name} />
+                {showProviderBadges && playlist.provider && (
+                  <ProviderBadgeOverlay>
+                    <ProviderIcon provider={playlist.provider} size={22} />
+                  </ProviderBadgeOverlay>
+                )}
                 <GridCardPinOverlay $isPinned={pinned} onClick={(e) => handlePinPlaylistClick(playlist.id, e)}>
                   <PinIcon filled={pinned} />
                 </GridCardPinOverlay>
@@ -930,8 +948,15 @@ const PlaylistSelection = React.memo(function PlaylistSelection({ onPlaylistSele
         const renderPlaylistList = (playlist: PlaylistInfo) => {
           const pinned = isPlaylistPinned(playlist.id);
           return (
-            <PinnableListItem key={playlist.id} onClick={() => handlePlaylistClick(playlist)}>
-              <PlaylistImage images={playlist.images} alt={playlist.name} />
+            <PinnableListItem key={`${playlist.provider ?? 'default'}-${playlist.id}`} onClick={() => handlePlaylistClick(playlist)}>
+              <div style={{ position: 'relative' }}>
+                <PlaylistImage images={playlist.images} alt={playlist.name} />
+                {showProviderBadges && playlist.provider && (
+                  <div style={{ position: 'absolute', top: -4, right: -4, zIndex: 2 }}>
+                    <ProviderIcon provider={playlist.provider} size={18} />
+                  </div>
+                )}
+              </div>
               <PlaylistInfo>
                 <PlaylistName>{playlist.name}</PlaylistName>
                 <PlaylistDetails>
@@ -983,9 +1008,14 @@ const PlaylistSelection = React.memo(function PlaylistSelection({ onPlaylistSele
         const renderAlbumGrid = (album: AlbumInfo) => {
           const pinned = isAlbumPinned(album.id);
           return (
-            <PinnableGridCard key={album.id} onClick={() => handleAlbumClick(album)}>
+            <PinnableGridCard key={`${album.provider ?? 'default'}-${album.id}`} onClick={() => handleAlbumClick(album)}>
               <GridCardArtWrapper style={{ position: 'relative' }}>
                 <GridCardImageComponent images={album.images} alt={`${album.name} by ${album.artists}`} />
+                {showProviderBadges && album.provider && (
+                  <ProviderBadgeOverlay>
+                    <ProviderIcon provider={album.provider} size={22} />
+                  </ProviderBadgeOverlay>
+                )}
                 <GridCardPinOverlay $isPinned={pinned} onClick={(e) => handlePinAlbumClick(album.id, e)}>
                   <PinIcon filled={pinned} />
                 </GridCardPinOverlay>
@@ -1006,8 +1036,15 @@ const PlaylistSelection = React.memo(function PlaylistSelection({ onPlaylistSele
         const renderAlbumList = (album: AlbumInfo) => {
           const pinned = isAlbumPinned(album.id);
           return (
-            <PinnableListItem key={album.id} onClick={() => handleAlbumClick(album)}>
-              <PlaylistImage images={album.images} alt={`${album.name} by ${album.artists}`} />
+            <PinnableListItem key={`${album.provider ?? 'default'}-${album.id}`} onClick={() => handleAlbumClick(album)}>
+              <div style={{ position: 'relative' }}>
+                <PlaylistImage images={album.images} alt={`${album.name} by ${album.artists}`} />
+                {showProviderBadges && album.provider && (
+                  <div style={{ position: 'absolute', top: -4, right: -4, zIndex: 2 }}>
+                    <ProviderIcon provider={album.provider} size={18} />
+                  </div>
+                )}
+              </div>
               <PlaylistInfo>
                 <PlaylistName>{album.name}</PlaylistName>
                 <PlaylistDetails>

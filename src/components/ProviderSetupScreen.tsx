@@ -46,14 +46,15 @@ const ProviderGrid = styled.div`
   width: 100%;
 `;
 
-const ProviderCard = styled.button<{ $accentColor: string }>`
+const ProviderCard = styled.button<{ $accentColor: string; $isEnabled?: boolean }>`
   display: flex;
   align-items: center;
   gap: ${({ theme }) => theme.spacing.md};
   width: 100%;
   padding: ${({ theme }) => theme.spacing.md} ${({ theme }) => theme.spacing.lg};
   background: ${({ theme }) => theme.colors.control.background};
-  border: 1px solid ${({ theme }) => theme.colors.borderSubtle};
+  border: 1px solid ${({ $isEnabled, $accentColor, theme }) =>
+    $isEnabled ? $accentColor : theme.colors.borderSubtle};
   border-radius: ${({ theme }) => theme.borderRadius['2xl']};
   cursor: pointer;
   text-align: left;
@@ -65,7 +66,7 @@ const ProviderCard = styled.button<{ $accentColor: string }>`
   }
 `;
 
-const ProviderIcon = styled.div<{ $accentColor: string }>`
+const ProviderIconCircle = styled.div<{ $accentColor: string }>`
   width: 3rem;
   height: 3rem;
   border-radius: 50%;
@@ -78,6 +79,7 @@ const ProviderIcon = styled.div<{ $accentColor: string }>`
 const ProviderInfo = styled.div`
   ${flexColumn};
   gap: 0.25rem;
+  flex: 1;
 `;
 
 const ProviderName = styled.span`
@@ -89,6 +91,12 @@ const ProviderName = styled.span`
 const ProviderNote = styled.span`
   color: ${({ theme }) => theme.colors.muted.foreground};
   font-size: ${({ theme }) => theme.fontSize.xs};
+`;
+
+const StatusBadge = styled.span<{ $connected: boolean }>`
+  font-size: ${({ theme }) => theme.fontSize.xs};
+  color: ${({ $connected, theme }) => $connected ? theme.colors.success : theme.colors.muted.foreground};
+  font-weight: ${({ theme }) => theme.fontWeight.medium};
 `;
 
 const ActionButton = styled.button`
@@ -106,19 +114,10 @@ const ActionButton = styled.button`
   &:hover {
     opacity: 0.9;
   }
-`;
 
-const SwitchLink = styled.button`
-  background: none;
-  border: none;
-  color: ${({ theme }) => theme.colors.muted.foreground};
-  font-size: ${({ theme }) => theme.fontSize.sm};
-  cursor: pointer;
-  text-decoration: underline;
-  padding: 0;
-
-  &:hover {
-    color: ${({ theme }) => theme.colors.white};
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
   }
 `;
 
@@ -134,40 +133,70 @@ const Wrapper = styled.div`
 `;
 
 export default function ProviderSetupScreen() {
-  const { chosenProviderId, activeDescriptor, setActiveProviderId, registry } = useProviderContext();
+  const { chosenProviderId, activeDescriptor, setActiveProviderId, registry, enabledProviderIds, toggleProvider, getDescriptor } = useProviderContext();
   const providers = registry.getAll();
 
+  // First visit: no provider chosen yet
   if (chosenProviderId === null) {
+    const hasAnyAuth = providers.some(p => p.auth.isAuthenticated());
+
     return (
       <Wrapper>
         <SetupCard>
           <Title>Welcome to Vorbis Player</Title>
-          <Subtitle>Choose a music provider to get started</Subtitle>
+          <Subtitle>
+            {providers.length >= 2
+              ? 'Connect your music providers to get started. You can enable multiple providers.'
+              : 'Choose a music provider to get started'}
+          </Subtitle>
           <ProviderGrid>
             {providers.map((descriptor) => {
               const meta = PROVIDER_META[descriptor.id] ?? { icon: '♪', accentColor: '#646cff', note: '' };
+              const isAuthenticated = descriptor.auth.isAuthenticated();
               return (
                 <ProviderCard
                   key={descriptor.id}
                   $accentColor={meta.accentColor}
+                  $isEnabled={isAuthenticated}
                   onClick={() => {
-                    setActiveProviderId(descriptor.id);
-                    descriptor.auth.beginLogin();
+                    if (!isAuthenticated) {
+                      setActiveProviderId(descriptor.id);
+                      descriptor.auth.beginLogin();
+                    } else {
+                      // Already authenticated — just set as active
+                      setActiveProviderId(descriptor.id);
+                    }
                   }}
                 >
-                  <ProviderIcon $accentColor={meta.accentColor}>{meta.icon}</ProviderIcon>
+                  <ProviderIconCircle $accentColor={meta.accentColor}>{meta.icon}</ProviderIconCircle>
                   <ProviderInfo>
                     <ProviderName>{descriptor.name}</ProviderName>
                     {meta.note && <ProviderNote>{meta.note}</ProviderNote>}
                   </ProviderInfo>
+                  {isAuthenticated && <StatusBadge $connected>Connected</StatusBadge>}
                 </ProviderCard>
               );
             })}
           </ProviderGrid>
+          {hasAnyAuth && (
+            <ActionButton onClick={() => {
+              // Pick the first authenticated provider as active
+              const authed = providers.find(p => p.auth.isAuthenticated());
+              if (authed) setActiveProviderId(authed.id);
+            }}>
+              Continue
+            </ActionButton>
+          )}
         </SetupCard>
       </Wrapper>
     );
   }
+
+  // Reconnect screen: session expired for the active provider
+  // Check if there are other authenticated providers we can switch to
+  const otherAuthenticatedProviders = providers.filter(
+    p => p.id !== activeDescriptor?.id && p.auth.isAuthenticated() && enabledProviderIds.includes(p.id)
+  );
 
   return (
     <Wrapper>
@@ -177,10 +206,34 @@ export default function ProviderSetupScreen() {
         <ActionButton onClick={() => activeDescriptor?.auth.beginLogin()}>
           Reconnect {activeDescriptor?.name}
         </ActionButton>
-        {providers.length >= 2 && (
-          <SwitchLink onClick={() => setActiveProviderId(null)}>
+        {otherAuthenticatedProviders.length > 0 && (
+          <>
+            <Subtitle>Or switch to a connected provider:</Subtitle>
+            <ProviderGrid>
+              {otherAuthenticatedProviders.map((descriptor) => {
+                const meta = PROVIDER_META[descriptor.id] ?? { icon: '♪', accentColor: '#646cff', note: '' };
+                return (
+                  <ProviderCard
+                    key={descriptor.id}
+                    $accentColor={meta.accentColor}
+                    $isEnabled
+                    onClick={() => setActiveProviderId(descriptor.id)}
+                  >
+                    <ProviderIconCircle $accentColor={meta.accentColor}>{meta.icon}</ProviderIconCircle>
+                    <ProviderInfo>
+                      <ProviderName>{descriptor.name}</ProviderName>
+                    </ProviderInfo>
+                    <StatusBadge $connected>Connected</StatusBadge>
+                  </ProviderCard>
+                );
+              })}
+            </ProviderGrid>
+          </>
+        )}
+        {providers.length >= 2 && otherAuthenticatedProviders.length === 0 && (
+          <Subtitle style={{ cursor: 'pointer', textDecoration: 'underline' }} onClick={() => setActiveProviderId(null)}>
             Switch provider
-          </SwitchLink>
+          </Subtitle>
         )}
       </SetupCard>
     </Wrapper>

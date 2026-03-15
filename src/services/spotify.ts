@@ -133,6 +133,8 @@ export interface PlaylistInfo {
   owner: { display_name: string } | null;
   added_at?: string; // ISO 8601 timestamp when added to library
   snapshot_id?: string; // Spotify revision identifier for change detection
+  /** Which provider this playlist belongs to (for multi-provider library view). */
+  provider?: import('@/types/domain').ProviderId;
 }
 
 export interface AlbumInfo {
@@ -145,6 +147,8 @@ export interface AlbumInfo {
   uri: string;
   album_type?: string;
   added_at?: string; // ISO 8601 timestamp when saved to library
+  /** Which provider this album belongs to (for multi-provider library view). */
+  provider?: import('@/types/domain').ProviderId;
 }
 
 interface SpotifyArtist {

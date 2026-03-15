@@ -168,7 +168,7 @@ interface PlayerStateRendererProps {
   error: string | null;
   selectedPlaylistId: string | null;
   tracks: Track[];
-  onPlaylistSelect: (playlistId: string) => void;
+  onPlaylistSelect: (playlistId: string, playlistName?: string, provider?: import('@/types/domain').ProviderId) => void;
 }
 
 const PlayerStateRenderer: React.FC<PlayerStateRendererProps> = ({

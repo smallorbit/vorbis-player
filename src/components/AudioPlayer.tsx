@@ -55,8 +55,16 @@ const AudioPlayerComponent = () => {
     onBackToLibrary: handlers.handleBackToLibrary,
   }), [handlers, handleAlbumPlay]);
 
-  const { chosenProviderId, activeDescriptor } = useProviderContext();
-  const needsSetup = chosenProviderId === null || !activeDescriptor?.auth.isAuthenticated();
+  const { chosenProviderId, activeDescriptor, enabledProviderIds, getDescriptor } = useProviderContext();
+  // Setup is needed when no provider has been chosen yet, or when the active provider isn't authenticated
+  // and no other enabled provider is authenticated either
+  const hasAnyAuthenticatedProvider = enabledProviderIds.some(id => {
+    const desc = getDescriptor(id);
+    return desc?.auth.isAuthenticated();
+  });
+  const needsSetup = chosenProviderId === null
+    ? !hasAnyAuthenticatedProvider
+    : !activeDescriptor?.auth.isAuthenticated() && !hasAnyAuthenticatedProvider;
 
   const autoSelectFired = useRef(false);
   useEffect(() => {

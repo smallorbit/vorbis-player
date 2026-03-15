@@ -38,7 +38,7 @@ interface PlaybackHandlers {
   onTrackSelect: (index: number) => void;
   onOpenLibraryDrawer: () => void;
   onCloseLibraryDrawer: () => void;
-  onPlaylistSelect: (playlistId: string, playlistName: string) => void;
+  onPlaylistSelect: (playlistId: string, playlistName: string, provider?: import('@/types/domain').ProviderId) => void;
   onAlbumPlay: (albumId: string, albumName: string) => void;
   onBackToLibrary: () => void;
 }

@@ -71,9 +71,11 @@ const arePropsEqual = (
   return true;
 };
 
-/** Music Sources section rendered at the top of the settings drawer. */
+/** Music Sources section rendered at the top of the settings drawer.
+ *  Shows toggle switches so users can enable/disable providers independently.
+ */
 const MusicSourcesSection = memo(() => {
-  const { activeProviderId, setActiveProviderId, registry } = useProviderContext();
+  const { registry, enabledProviderIds, toggleProvider, setActiveProviderId } = useProviderContext();
   const providers = useMemo(() => registry.getAll(), [registry]);
 
   // Only show if there are 2+ providers registered
@@ -81,26 +83,33 @@ const MusicSourcesSection = memo(() => {
 
   return (
     <FilterSection>
-      <SectionTitle>Music Source</SectionTitle>
+      <SectionTitle>Music Sources</SectionTitle>
       <FilterGrid>
         {providers.map((descriptor) => {
-          const isActive = descriptor.id === activeProviderId;
+          const isEnabled = enabledProviderIds.includes(descriptor.id);
           const isConnected = descriptor.auth.isAuthenticated();
+          const isLastEnabled = enabledProviderIds.length <= 1 && isEnabled;
           return (
             <ProviderButton
               key={descriptor.id}
-              $isActive={isActive}
+              $isActive={isEnabled}
               onClick={() => {
-                if (descriptor.id !== activeProviderId) {
+                if (!isConnected) {
+                  // Not authenticated yet — start login flow
                   setActiveProviderId(descriptor.id);
-                  window.location.reload();
+                  descriptor.auth.beginLogin();
+                  return;
                 }
+                if (isLastEnabled) return; // Can't disable the last provider
+                toggleProvider(descriptor.id);
               }}
-              aria-label={`Switch to ${descriptor.name}`}
+              aria-label={`${isEnabled ? 'Disable' : 'Enable'} ${descriptor.name}`}
+              title={isLastEnabled ? 'At least one provider must be enabled' : undefined}
             >
               <ProviderStatusDot $isConnected={isConnected} />
               <ProviderName>{descriptor.name}</ProviderName>
-              {isActive && <ProviderActiveLabel>Active</ProviderActiveLabel>}
+              {isEnabled && isConnected && <ProviderActiveLabel>On</ProviderActiveLabel>}
+              {!isConnected && <ProviderActiveLabel>Connect</ProviderActiveLabel>}
             </ProviderButton>
           );
         })}
@@ -279,11 +288,10 @@ const AppSettingsMenu: React.FC<AppSettingsMenuProps> = memo(({
   onVisualizerDebugToggle
 }) => {
   const { viewport, isMobile, isTablet, transitionDuration, transitionEasing } = usePlayerSizingContext();
-  const { activeProviderId, activeDescriptor } = useProviderContext();
-  const isDropbox = activeProviderId === 'dropbox';
-  const dropboxCatalog = isDropbox
-    ? (activeDescriptor?.catalog as DropboxCatalogAdapter | undefined)
-    : undefined;
+  const { activeProviderId, activeDescriptor, enabledProviderIds, getDescriptor } = useProviderContext();
+  const isDropboxEnabled = enabledProviderIds.includes('dropbox');
+  const dropboxDescriptor = isDropboxEnabled ? getDescriptor('dropbox') : undefined;
+  const dropboxCatalog = dropboxDescriptor?.catalog as DropboxCatalogAdapter | undefined;
   const [clearState, setClearState] = useState<'idle' | 'confirming' | 'success'>('idle');
   const [clearLikes, setClearLikes] = useState(false);
   const [clearPins, setClearPins] = useState(false);

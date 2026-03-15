@@ -62,7 +62,7 @@ export function usePlayerLogic() {
     setAccentColorOverrides,
   } = useColorContext();
 
-  const { activeDescriptor } = useProviderContext();
+  const { activeDescriptor, setActiveProviderId, getDescriptor } = useProviderContext();
 
   /** For non-Spotify providers, holds the MediaTrack[] for playback; otherwise empty. */
   const mediaTracksRef = useRef<MediaTrack[]>([]);
@@ -115,15 +115,24 @@ export function usePlayerLogic() {
   });
 
   const handlePlaylistSelect = useCallback(
-    async (playlistId: string) => {
-      if (activeDescriptor && activeDescriptor.id !== 'spotify') {
-        const providerId = activeDescriptor.id;
+    async (playlistId: string, _playlistName?: string, provider?: import('@/types/domain').ProviderId) => {
+      // Determine which provider descriptor to use for this collection
+      const targetDescriptor = provider ? getDescriptor(provider) : activeDescriptor;
+      const targetProviderId = provider ?? activeDescriptor?.id;
+
+      // If selecting from a different provider, switch active provider for playback
+      if (targetProviderId && targetProviderId !== activeDescriptor?.id) {
+        setActiveProviderId(targetProviderId);
+      }
+
+      if (targetDescriptor && targetProviderId !== 'spotify') {
+        const providerId = targetDescriptor.id;
         setError(null);
         setIsLoading(true);
         setSelectedPlaylistId(playlistId);
         mediaTracksRef.current = [];
         try {
-          const catalog = activeDescriptor.catalog;
+          const catalog = targetDescriptor.catalog;
           const isLiked = playlistId === LIKED_SONGS_ID;
           const collectionId = isLiked ? '' : isAlbumId(playlistId) ? extractAlbumId(playlistId) : playlistId;
           const collectionKind: 'liked' | 'album' | 'playlist' | 'folder' = isLiked
@@ -167,6 +176,8 @@ export function usePlayerLogic() {
     },
     [
       activeDescriptor,
+      getDescriptor,
+      setActiveProviderId,
       shuffleEnabled,
       setError,
       setIsLoading,

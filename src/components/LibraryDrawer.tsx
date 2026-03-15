@@ -15,7 +15,7 @@ import PlaylistSelection from './PlaylistSelection';
 interface LibraryDrawerProps {
   isOpen: boolean;
   onClose: () => void;
-  onPlaylistSelect: (playlistId: string, playlistName: string) => void;
+  onPlaylistSelect: (playlistId: string, playlistName: string, provider?: import('@/types/domain').ProviderId) => void;
   initialSearchQuery?: string;
   initialViewMode?: 'playlists' | 'albums';
 }
@@ -113,12 +113,12 @@ const LibraryDrawer = React.memo(function LibraryDrawer({ isOpen, onClose, onPla
   const selectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handlePlaylistSelectWrapper = useCallback(
-    (playlistId: string, playlistName: string) => {
+    (playlistId: string, playlistName: string, provider?: import('@/types/domain').ProviderId) => {
       onClose();
       if (selectTimeoutRef.current) clearTimeout(selectTimeoutRef.current);
       selectTimeoutRef.current = setTimeout(() => {
         selectTimeoutRef.current = null;
-        onPlaylistSelect(playlistId, playlistName);
+        onPlaylistSelect(playlistId, playlistName, provider);
       }, 320);
     },
     [onClose, onPlaylistSelect]
