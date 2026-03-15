@@ -892,7 +892,7 @@ const PlaylistSelection = React.memo(function PlaylistSelection({ onPlaylistSele
           </PinButton>
         );
 
-        const usePerProviderLiked = showProviderBadges && likedSongsPerProvider.length > 1;
+        const usePerProviderLiked = showProviderBadges && likedSongsPerProvider.length >= 1;
 
         const likedSongsGridCard = likedSongsCount > 0 && (usePerProviderLiked ? (
           likedSongsPerProvider.map(({ provider, count }) => (
