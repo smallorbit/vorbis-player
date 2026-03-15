@@ -106,6 +106,7 @@ const MusicSourcesSection = memo(() => {
                 onToggle={() => toggleProvider(descriptor.id)}
                 ariaLabel={`${isEnabled ? 'Disable' : 'Enable'} ${descriptor.name}`}
                 disabled={isLastEnabled}
+                variant="neutral"
               />
             </ProviderRow>
           );

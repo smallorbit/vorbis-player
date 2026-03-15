@@ -281,6 +281,7 @@ export default function ProviderSetupScreen({ onOpenSettings, onOpenLibrary }: P
                       onToggle={() => toggleProvider(descriptor.id)}
                       ariaLabel={`${isEnabled ? 'Disable' : 'Enable'} ${descriptor.name}`}
                       disabled={enabledProviderIds.length <= 1 && isEnabled}
+                      variant="neutral"
                     />
                   )}
                 </ProviderCardContainer>

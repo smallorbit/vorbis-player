@@ -1,14 +1,25 @@
 import styled from 'styled-components';
 import { theme } from '@/styles/theme';
 
+type SwitchVariant = 'accent' | 'neutral';
+
 interface SwitchProps {
   on: boolean;
   onToggle: () => void;
   ariaLabel: string;
   disabled?: boolean;
+  variant?: SwitchVariant;
 }
 
-const SwitchTrack = styled.button<{ $on: boolean; $disabled?: boolean }>`
+const NEUTRAL_ON = '#4ade80';
+const NEUTRAL_OFF = 'rgba(255, 255, 255, 0.25)';
+
+function trackBackground(on: boolean, variant: SwitchVariant): string {
+  if (variant === 'neutral') return on ? NEUTRAL_ON : NEUTRAL_OFF;
+  return on ? 'var(--accent-color)' : 'rgba(255, 255, 255, 0.15)';
+}
+
+const SwitchTrack = styled.button<{ $on: boolean; $disabled?: boolean; $variant: SwitchVariant }>`
   position: relative;
   width: 36px;
   height: 20px;
@@ -16,7 +27,7 @@ const SwitchTrack = styled.button<{ $on: boolean; $disabled?: boolean }>`
   border: none;
   padding: 0;
   cursor: ${({ $disabled }) => ($disabled ? 'not-allowed' : 'pointer')};
-  background: ${({ $on }) => ($on ? 'var(--accent-color)' : 'rgba(255, 255, 255, 0.15)')};
+  background: ${({ $on, $variant }) => trackBackground($on, $variant)};
   opacity: ${({ $disabled }) => ($disabled ? 0.4 : 1)};
   transition: background 0.2s ease, opacity 0.2s ease;
   flex-shrink: 0;
@@ -34,11 +45,12 @@ const SwitchKnob = styled.span<{ $on: boolean }>`
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 `;
 
-export default function Switch({ on, onToggle, ariaLabel, disabled = false }: SwitchProps) {
+export default function Switch({ on, onToggle, ariaLabel, disabled = false, variant = 'accent' }: SwitchProps) {
   return (
     <SwitchTrack
       $on={on}
       $disabled={disabled}
+      $variant={variant}
       onClick={disabled ? undefined : onToggle}
       aria-label={ariaLabel}
       role="switch"

@@ -2,12 +2,10 @@ import React, { useMemo } from 'react';
 import styled from 'styled-components';
 import { useProviderContext } from '@/contexts/ProviderContext';
 import Switch from '@/components/controls/Switch';
-import type { ProviderId } from '@/types/domain';
 
-const PROVIDER_COLORS: Record<ProviderId, string> = {
-  spotify: '#1db954',
-  dropbox: '#0061ff',
-};
+
+const TOGGLE_ON_COLOR = '#4ade80';
+const TOGGLE_OFF_COLOR = 'rgba(255, 255, 255, 0.25)';
 
 const Bar = styled.div`
   display: flex;
@@ -45,19 +43,19 @@ const ProviderStatusBadge = styled.span<{ $status: 'connected' | 'expired' }>`
   color: ${({ $status }) => ($status === 'connected' ? '#10b981' : '#f59e0b')};
 `;
 
-const ConnectButton = styled.button<{ $accentColor: string }>`
+const ConnectButton = styled.button`
   font-size: 0.65rem;
   font-weight: ${({ theme }) => theme.fontWeight.semibold};
-  color: ${({ $accentColor }) => $accentColor};
+  color: ${TOGGLE_ON_COLOR};
   background: none;
-  border: 1px solid ${({ $accentColor }) => $accentColor}40;
+  border: 1px solid ${TOGGLE_ON_COLOR}40;
   border-radius: ${({ theme }) => theme.borderRadius.lg};
   padding: 2px 8px;
   cursor: pointer;
   transition: background 0.15s ease;
 
   &:hover {
-    background: ${({ $accentColor }) => $accentColor}20;
+    background: ${TOGGLE_ON_COLOR}20;
   }
 `;
 
@@ -70,14 +68,14 @@ const LibraryProviderBar = React.memo(function LibraryProviderBar() {
   return (
     <Bar>
       {providers.map((descriptor) => {
-        const accentColor = PROVIDER_COLORS[descriptor.id] ?? '#646cff';
         const isEnabled = enabledProviderIds.includes(descriptor.id);
         const isConnected = descriptor.auth.isAuthenticated();
         const isLastEnabled = enabledProviderIds.length <= 1 && isEnabled;
+        const dotColor = isEnabled ? TOGGLE_ON_COLOR : TOGGLE_OFF_COLOR;
 
         return (
           <ProviderRow key={descriptor.id}>
-            <StatusDot $color={accentColor} $dimmed={!isEnabled} />
+            <StatusDot $color={dotColor} />
             <ProviderName $dimmed={!isEnabled}>{descriptor.name}</ProviderName>
             {isEnabled && isConnected && (
               <ProviderStatusBadge $status="connected">Connected</ProviderStatusBadge>
@@ -86,7 +84,6 @@ const LibraryProviderBar = React.memo(function LibraryProviderBar() {
               <>
                 <ProviderStatusBadge $status="expired">Expired</ProviderStatusBadge>
                 <ConnectButton
-                  $accentColor={accentColor}
                   onClick={() => descriptor.auth.beginLogin({ popup: true })}
                 >
                   Connect
@@ -98,6 +95,7 @@ const LibraryProviderBar = React.memo(function LibraryProviderBar() {
               onToggle={() => toggleProvider(descriptor.id)}
               ariaLabel={`${isEnabled ? 'Disable' : 'Enable'} ${descriptor.name}`}
               disabled={isLastEnabled}
+              variant="neutral"
             />
           </ProviderRow>
         );
