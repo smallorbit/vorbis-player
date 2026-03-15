@@ -1,6 +1,7 @@
 import styled, { keyframes } from 'styled-components';
 import { useProviderContext } from '@/contexts/ProviderContext';
 import { flexCenter, flexColumn, cardBase } from '@/styles/utils';
+import Switch from '@/components/controls/Switch';
 import type { ProviderId } from '@/types/domain';
 
 const fadeInUp = keyframes`
@@ -46,7 +47,7 @@ const ProviderGrid = styled.div`
   width: 100%;
 `;
 
-const ProviderCard = styled.button<{ $accentColor: string; $isEnabled?: boolean }>`
+const ProviderCardContainer = styled.div<{ $accentColor: string; $isEnabled?: boolean }>`
   display: flex;
   align-items: center;
   gap: ${({ theme }) => theme.spacing.md};
@@ -56,14 +57,7 @@ const ProviderCard = styled.button<{ $accentColor: string; $isEnabled?: boolean 
   border: 1px solid ${({ $isEnabled, $accentColor, theme }) =>
     $isEnabled ? $accentColor : theme.colors.borderSubtle};
   border-radius: ${({ theme }) => theme.borderRadius['2xl']};
-  cursor: pointer;
-  text-align: left;
   transition: border-color 0.15s ease, background 0.15s ease;
-
-  &:hover {
-    border-color: ${({ $accentColor }) => $accentColor};
-    background: ${({ theme }) => theme.colors.control.backgroundHover};
-  }
 `;
 
 const ProviderIconCircle = styled.div<{ $accentColor: string }>`
@@ -93,10 +87,32 @@ const ProviderNote = styled.span`
   font-size: ${({ theme }) => theme.fontSize.xs};
 `;
 
-const StatusBadge = styled.span<{ $connected: boolean }>`
+const StatusBadge = styled.span<{ $status: 'connected' | 'expired' | 'idle' }>`
   font-size: ${({ theme }) => theme.fontSize.xs};
-  color: ${({ $connected, theme }) => $connected ? theme.colors.success : theme.colors.muted.foreground};
   font-weight: ${({ theme }) => theme.fontWeight.medium};
+  color: ${({ $status, theme }) =>
+    $status === 'connected'
+      ? theme.colors.success
+      : $status === 'expired'
+        ? '#f0a030'
+        : theme.colors.muted.foreground};
+`;
+
+const ConnectButton = styled.button<{ $accentColor: string }>`
+  padding: ${({ theme }) => theme.spacing.xs} ${({ theme }) => theme.spacing.md};
+  background: ${({ $accentColor }) => $accentColor};
+  color: #fff;
+  border: none;
+  border-radius: ${({ theme }) => theme.borderRadius.lg};
+  font-size: ${({ theme }) => theme.fontSize.xs};
+  font-weight: ${({ theme }) => theme.fontWeight.semibold};
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: opacity 0.15s ease;
+
+  &:hover {
+    opacity: 0.85;
+  }
 `;
 
 const ActionButton = styled.button`
@@ -133,8 +149,16 @@ const Wrapper = styled.div`
 `;
 
 export default function ProviderSetupScreen() {
-  const { chosenProviderId, activeDescriptor, setActiveProviderId, registry, enabledProviderIds } = useProviderContext();
+  const {
+    chosenProviderId,
+    activeDescriptor,
+    setActiveProviderId,
+    registry,
+    enabledProviderIds,
+    toggleProvider,
+  } = useProviderContext();
   const providers = registry.getAll();
+  const isSingleProvider = providers.length === 1;
 
   // First visit: no provider chosen yet
   if (chosenProviderId === null) {
@@ -145,42 +169,55 @@ export default function ProviderSetupScreen() {
         <SetupCard>
           <Title>Welcome to Vorbis Player</Title>
           <Subtitle>
-            {providers.length >= 2
-              ? 'Connect your music providers to get started. You can enable multiple providers.'
-              : 'Choose a music provider to get started'}
+            {isSingleProvider
+              ? 'Connect your music provider to get started'
+              : 'Connect your music providers to get started. You can enable multiple providers.'}
           </Subtitle>
           <ProviderGrid>
             {providers.map((descriptor) => {
               const meta = PROVIDER_META[descriptor.id] ?? { icon: '♪', accentColor: '#646cff', note: '' };
               const isAuthenticated = descriptor.auth.isAuthenticated();
+              const isEnabled = enabledProviderIds.includes(descriptor.id);
+
               return (
-                <ProviderCard
+                <ProviderCardContainer
                   key={descriptor.id}
                   $accentColor={meta.accentColor}
-                  $isEnabled={isAuthenticated}
-                  onClick={() => {
-                    if (!isAuthenticated) {
-                      setActiveProviderId(descriptor.id);
-                      descriptor.auth.beginLogin();
-                    } else {
-                      // Already authenticated — just set as active
-                      setActiveProviderId(descriptor.id);
-                    }
-                  }}
+                  $isEnabled={isEnabled}
                 >
                   <ProviderIconCircle $accentColor={meta.accentColor}>{meta.icon}</ProviderIconCircle>
                   <ProviderInfo>
                     <ProviderName>{descriptor.name}</ProviderName>
                     {meta.note && <ProviderNote>{meta.note}</ProviderNote>}
                   </ProviderInfo>
-                  {isAuthenticated && <StatusBadge $connected>Connected</StatusBadge>}
-                </ProviderCard>
+                  {isAuthenticated ? (
+                    <StatusBadge $status="connected">Connected</StatusBadge>
+                  ) : (
+                    <ConnectButton
+                      $accentColor={meta.accentColor}
+                      onClick={() => {
+                        if (!isEnabled) toggleProvider(descriptor.id);
+                        setActiveProviderId(descriptor.id);
+                        descriptor.auth.beginLogin();
+                      }}
+                    >
+                      Connect
+                    </ConnectButton>
+                  )}
+                  {!isSingleProvider && (
+                    <Switch
+                      on={isEnabled}
+                      onToggle={() => toggleProvider(descriptor.id)}
+                      ariaLabel={`${isEnabled ? 'Disable' : 'Enable'} ${descriptor.name}`}
+                      disabled={enabledProviderIds.length <= 1 && isEnabled}
+                    />
+                  )}
+                </ProviderCardContainer>
               );
             })}
           </ProviderGrid>
           {hasAnyAuth && (
             <ActionButton onClick={() => {
-              // Pick the first authenticated provider as active
               const authed = providers.find(p => p.auth.isAuthenticated());
               if (authed) setActiveProviderId(authed.id);
             }}>
@@ -192,49 +229,54 @@ export default function ProviderSetupScreen() {
     );
   }
 
-  // Reconnect screen: session expired for the active provider
-  // Check if there are other authenticated providers we can switch to
-  const otherAuthenticatedProviders = providers.filter(
-    p => p.id !== activeDescriptor?.id && p.auth.isAuthenticated() && enabledProviderIds.includes(p.id)
-  );
+  // All-expired reconnect screen: show each previously-enabled provider with status
+  // The auto-fallthrough in ProviderContext handles the partial-expiry case,
+  // so we only reach here when ALL enabled providers are expired.
+  const enabledProviders = providers.filter(p => enabledProviderIds.includes(p.id));
 
   return (
     <Wrapper>
       <SetupCard>
-        <Title>Reconnect to {activeDescriptor?.name}</Title>
-        <Subtitle>Your session has expired. Reconnect to continue listening.</Subtitle>
-        <ActionButton onClick={() => activeDescriptor?.auth.beginLogin()}>
-          Reconnect {activeDescriptor?.name}
-        </ActionButton>
-        {otherAuthenticatedProviders.length > 0 && (
-          <>
-            <Subtitle>Or switch to a connected provider:</Subtitle>
-            <ProviderGrid>
-              {otherAuthenticatedProviders.map((descriptor) => {
-                const meta = PROVIDER_META[descriptor.id] ?? { icon: '♪', accentColor: '#646cff', note: '' };
-                return (
-                  <ProviderCard
-                    key={descriptor.id}
-                    $accentColor={meta.accentColor}
-                    $isEnabled
-                    onClick={() => setActiveProviderId(descriptor.id)}
-                  >
-                    <ProviderIconCircle $accentColor={meta.accentColor}>{meta.icon}</ProviderIconCircle>
-                    <ProviderInfo>
-                      <ProviderName>{descriptor.name}</ProviderName>
-                    </ProviderInfo>
-                    <StatusBadge $connected>Connected</StatusBadge>
-                  </ProviderCard>
-                );
-              })}
-            </ProviderGrid>
-          </>
-        )}
-        {providers.length >= 2 && otherAuthenticatedProviders.length === 0 && (
-          <Subtitle style={{ cursor: 'pointer', textDecoration: 'underline' }} onClick={() => setActiveProviderId(null)}>
-            Switch provider
-          </Subtitle>
-        )}
+        <Title>Session Expired</Title>
+        <Subtitle>
+          {enabledProviders.length > 1
+            ? 'Your provider sessions have expired. Reconnect to continue listening.'
+            : `Your ${activeDescriptor?.name ?? 'provider'} session has expired. Reconnect to continue listening.`}
+        </Subtitle>
+        <ProviderGrid>
+          {enabledProviders.map((descriptor) => {
+            const meta = PROVIDER_META[descriptor.id] ?? { icon: '♪', accentColor: '#646cff', note: '' };
+            const isAuthenticated = descriptor.auth.isAuthenticated();
+            return (
+              <ProviderCardContainer
+                key={descriptor.id}
+                $accentColor={meta.accentColor}
+                $isEnabled={isAuthenticated}
+              >
+                <ProviderIconCircle $accentColor={meta.accentColor}>{meta.icon}</ProviderIconCircle>
+                <ProviderInfo>
+                  <ProviderName>{descriptor.name}</ProviderName>
+                </ProviderInfo>
+                {isAuthenticated ? (
+                  <StatusBadge $status="connected">Connected</StatusBadge>
+                ) : (
+                  <>
+                    <StatusBadge $status="expired">Expired</StatusBadge>
+                    <ConnectButton
+                      $accentColor={meta.accentColor}
+                      onClick={() => {
+                        setActiveProviderId(descriptor.id);
+                        descriptor.auth.beginLogin();
+                      }}
+                    >
+                      Reconnect
+                    </ConnectButton>
+                  </>
+                )}
+              </ProviderCardContainer>
+            );
+          })}
+        </ProviderGrid>
       </SetupCard>
     </Wrapper>
   );
