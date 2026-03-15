@@ -2,7 +2,7 @@ import { memo, Fragment, useState, useCallback, useRef, useEffect } from 'react'
 import { createPortal } from 'react-dom';
 import type { ArtistInfo } from '../../services/spotify';
 import { useProviderContext } from '../../contexts/ProviderContext';
-import { ART_REFRESHED_EVENT } from '../../hooks/useLibrarySync';
+import { librarySyncEngine } from '../../services/cache/librarySyncEngine';
 import { PlayerTrackName, PlayerTrackAlbum, AlbumLink, PlayerTrackArtist, TrackInfoOnlyRow, ArtistLink } from './styled';
 import TrackInfoPopover, { LibraryIcon, SpotifyIcon, PlayIcon, DiscogsIcon, AddToLibraryIcon, RemoveFromLibraryIcon, ICON_MAP } from './TrackInfoPopover';
 
@@ -192,7 +192,7 @@ const TrackInfo = memo<TrackInfoProps>(({ track, isMobile, isTablet, onArtistBro
                 icon: saved ? <RemoveFromLibraryIcon /> : <AddToLibraryIcon />,
                 onClick: () => {
                     catalog.setAlbumSaved!(popover.albumId, !saved).then(() => {
-                        window.dispatchEvent(new Event(ART_REFRESHED_EVENT));
+                        librarySyncEngine.invalidateAndSyncAlbums().catch(() => {});
                     }).catch(() => {});
                 },
             });

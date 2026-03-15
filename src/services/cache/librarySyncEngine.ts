@@ -147,6 +147,13 @@ export class LibrarySyncEngine {
     return cache.getAllAlbums();
   }
 
+  /** Invalidate cached album metadata and force a sync. */
+  async invalidateAndSyncAlbums(): Promise<void> {
+    // Clear the cached album count so detectChanges always sees a mismatch
+    await cache.putMeta('albums', { lastValidated: 0, totalCount: -1 });
+    await this.syncNow();
+  }
+
   /** Get current state (for testing/debugging). */
   getState(): SyncState {
     return { ...this.state };
