@@ -6,6 +6,7 @@ import { extractTopVibrantColors } from '@/utils/colorExtractor';
 import type { ExtractedColor } from '@/utils/colorExtractor';
 import { OptionButton, OptionButtonGroup } from '@/components/VisualEffectsMenu/styled';
 import EyedropperOverlay from '@/components/EyedropperOverlay';
+import Switch from '@/components/controls/Switch';
 import { theme } from '@/styles/theme';
 
 interface QuickEffectsRowProps {
@@ -116,31 +117,6 @@ const ResetBtn = styled.button`
   &:hover {
     color: ${({ theme }) => theme.colors.white};
   }
-`;
-
-const SwitchTrack = styled.button<{ $on: boolean }>`
-  position: relative;
-  width: 36px;
-  height: 20px;
-  border-radius: 10px;
-  border: none;
-  padding: 0;
-  cursor: pointer;
-  background: ${({ $on }) => ($on ? 'var(--accent-color)' : 'rgba(255, 255, 255, 0.15)')};
-  transition: background 0.2s ease;
-  flex-shrink: 0;
-`;
-
-const SwitchKnob = styled.span<{ $on: boolean }>`
-  position: absolute;
-  top: 2px;
-  left: ${({ $on }) => ($on ? '18px' : '2px')};
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  background: ${theme.colors.white};
-  transition: left 0.2s ease;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 `;
 
 /* Section card that groups a feature toggle with its sub-settings */
@@ -285,9 +261,7 @@ function QuickEffectsRow({
       <SectionCard>
         <SectionHeader>
           <SectionTitle>Glow</SectionTitle>
-          <SwitchTrack $on={glowEnabled} onClick={onGlowToggle} aria-label="Toggle glow" role="switch" aria-checked={glowEnabled}>
-            <SwitchKnob $on={glowEnabled} />
-          </SwitchTrack>
+          <Switch on={glowEnabled} onToggle={onGlowToggle} ariaLabel="Toggle glow" />
         </SectionHeader>
         {(hasGlowSubSettings || hasGlowRate) && glowEnabled && (
           <SubSettings>
@@ -319,9 +293,7 @@ function QuickEffectsRow({
       <SectionCard>
         <SectionHeader>
           <SectionTitle>Visualizer</SectionTitle>
-          <SwitchTrack $on={backgroundVisualizerEnabled} onClick={onBackgroundVisualizerToggle} aria-label="Toggle visualizer" role="switch" aria-checked={backgroundVisualizerEnabled}>
-            <SwitchKnob $on={backgroundVisualizerEnabled} />
-          </SwitchTrack>
+          <Switch on={backgroundVisualizerEnabled} onToggle={onBackgroundVisualizerToggle} ariaLabel="Toggle visualizer" />
         </SectionHeader>
         {backgroundVisualizerEnabled && <SubSettings>
           <SubSettingRow>
@@ -373,9 +345,7 @@ function QuickEffectsRow({
       <SectionCard>
         <SectionHeader>
           <SectionTitle>Translucent</SectionTitle>
-          <SwitchTrack $on={translucenceEnabled} onClick={onTranslucenceToggle} aria-label="Toggle translucence" role="switch" aria-checked={translucenceEnabled}>
-            <SwitchKnob $on={translucenceEnabled} />
-          </SwitchTrack>
+          <Switch on={translucenceEnabled} onToggle={onTranslucenceToggle} ariaLabel="Toggle translucence" />
         </SectionHeader>
       </SectionCard>
 

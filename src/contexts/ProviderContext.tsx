@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useMemo, useCallback, useRef } from 'react';
+import React, { createContext, useContext, useMemo, useCallback, useRef, useEffect, useState } from 'react';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { providerRegistry } from '@/providers/registry';
 import type { ProviderId } from '@/types/domain';
@@ -44,6 +44,14 @@ interface ProviderContextValue {
   hasMultipleProviders: boolean;
   /** Get descriptor for a specific provider by ID. */
   getDescriptor: (id: ProviderId) => ProviderDescriptor | undefined;
+
+  // ── Connected state ────────────────────────────────────────────────────
+  /** Subset of enabledProviderIds whose auth.isAuthenticated() returns true. */
+  connectedProviderIds: ProviderId[];
+  /** Auto-fallthrough notification message, or null. Auto-clears after 5s. */
+  fallthroughNotification: string | null;
+  /** Dismiss the fallthrough notification. */
+  dismissFallthroughNotification: () => void;
 }
 
 const ProviderContext =
@@ -108,6 +116,16 @@ export function ProviderProvider({ children }: { children: React.ReactNode }) {
     [],
   );
 
+  // ── Connected providers (derived from enabled + auth state) ────────────
+  const connectedProviderIds = useMemo(
+    () => enabledProviderIds.filter(id => providerRegistry.get(id)?.auth.isAuthenticated()),
+    [enabledProviderIds],
+  );
+
+  // ── Auto-fallthrough notification ─────────────────────────────────────
+  const [fallthroughNotification, setFallthroughNotification] = useState<string | null>(null);
+  const dismissFallthroughNotification = useCallback(() => setFallthroughNotification(null), []);
+
   // ── Active provider (for playback) ─────────────────────────────────────
   const needsProviderSelection =
     storedProviderId === null || !providerRegistry.has(storedProviderId);
@@ -148,6 +166,39 @@ export function ProviderProvider({ children }: { children: React.ReactNode }) {
     [setStoredProviderId, storedProviderId, activeDescriptor],
   );
 
+  // ── Auto-fallthrough: when active provider loses auth, switch to another ──
+  useEffect(() => {
+    // Only act when we have a chosen provider that's lost auth
+    if (storedProviderId === null) return;
+    if (activeDescriptor?.auth.isAuthenticated()) return;
+
+    // Find the first enabled provider that's still authenticated
+    const fallback = enabledProviderIds.find(
+      id => id !== validProviderId && providerRegistry.get(id)?.auth.isAuthenticated(),
+    );
+    if (!fallback) return;
+
+    const fallbackDesc = providerRegistry.get(fallback);
+    if (!fallbackDesc) return;
+
+    // Switch to the fallback provider
+    activeDescriptor?.playback.pause().catch(() => {});
+    setStoredProviderId(fallback);
+
+    // Notify the user
+    const expiredName = activeDescriptor?.name ?? storedProviderId;
+    setFallthroughNotification(
+      `${expiredName} session expired — switched to ${fallbackDesc.name}. Reconnect in Settings.`,
+    );
+  }, [storedProviderId, activeDescriptor, enabledProviderIds, validProviderId, setStoredProviderId]);
+
+  // Auto-dismiss fallthrough notification after 5 seconds
+  useEffect(() => {
+    if (!fallthroughNotification) return;
+    const timer = setTimeout(() => setFallthroughNotification(null), 5000);
+    return () => clearTimeout(timer);
+  }, [fallthroughNotification]);
+
   const value = useMemo<ProviderContextValue>(
     () => ({
       chosenProviderId: storedProviderId,
@@ -162,8 +213,11 @@ export function ProviderProvider({ children }: { children: React.ReactNode }) {
       isProviderEnabled,
       hasMultipleProviders: allProviders.length >= 2,
       getDescriptor,
+      connectedProviderIds,
+      fallthroughNotification,
+      dismissFallthroughNotification,
     }),
-    [storedProviderId, validProviderId, activeDescriptor, setActiveProviderId, setProviderSwitchInterceptor, needsProviderSelection, enabledProviderIds, toggleProvider, isProviderEnabled, allProviders.length, getDescriptor],
+    [storedProviderId, validProviderId, activeDescriptor, setActiveProviderId, setProviderSwitchInterceptor, needsProviderSelection, enabledProviderIds, toggleProvider, isProviderEnabled, allProviders.length, getDescriptor, connectedProviderIds, fallthroughNotification, dismissFallthroughNotification],
   );
 
   return (
