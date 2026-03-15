@@ -75,7 +75,7 @@ const arePropsEqual = (
  *  Shows toggle switches so users can enable/disable providers independently.
  */
 const MusicSourcesSection = memo(() => {
-  const { registry, enabledProviderIds, toggleProvider, setActiveProviderId } = useProviderContext();
+  const { registry, enabledProviderIds, toggleProvider } = useProviderContext();
   const providers = useMemo(() => registry.getAll(), [registry]);
 
   // Only show if there are 2+ providers registered
@@ -95,8 +95,9 @@ const MusicSourcesSection = memo(() => {
               $isActive={isEnabled}
               onClick={() => {
                 if (!isConnected) {
-                  // Not authenticated yet — start login flow
-                  setActiveProviderId(descriptor.id);
+                  // Not authenticated yet — start login flow without switching active provider.
+                  // Pre-enable so the library merges this provider's data after OAuth completes.
+                  if (!isEnabled) toggleProvider(descriptor.id);
                   descriptor.auth.beginLogin();
                   return;
                 }

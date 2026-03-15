@@ -9,10 +9,7 @@ vi.mock('@/services/settings/pinnedItemsStorage', () => ({
   setPins: vi.fn().mockResolvedValue(undefined),
   migratePinsFromLocalStorage: vi.fn().mockResolvedValue(undefined),
   MAX_PINS: 8,
-}));
-
-vi.mock('@/contexts/ProviderContext', () => ({
-  useProviderContext: vi.fn().mockReturnValue({ activeProviderId: 'spotify' }),
+  UNIFIED_PROVIDER: '_unified',
 }));
 
 import { getPins, setPins } from '@/services/settings/pinnedItemsStorage';
@@ -64,7 +61,7 @@ describe('usePinnedItems', () => {
 
     expect(result.current.pinnedPlaylistIds).toEqual(['p1']);
     expect(result.current.isPlaylistPinned('p1')).toBe(true);
-    expect(setPins).toHaveBeenCalledWith('spotify', 'playlists', ['p1']);
+    expect(setPins).toHaveBeenCalledWith('_unified', 'playlists', ['p1']);
   });
 
   it('should unpin a pinned playlist', async () => {
@@ -82,7 +79,7 @@ describe('usePinnedItems', () => {
 
     expect(result.current.pinnedPlaylistIds).toEqual(['p2']);
     expect(result.current.isPlaylistPinned('p1')).toBe(false);
-    expect(setPins).toHaveBeenCalledWith('spotify', 'playlists', ['p2']);
+    expect(setPins).toHaveBeenCalledWith('_unified', 'playlists', ['p2']);
   });
 
   it('should not pin beyond 8 playlists', async () => {
@@ -113,7 +110,7 @@ describe('usePinnedItems', () => {
 
     expect(result.current.pinnedAlbumIds).toEqual(['a1']);
     expect(result.current.isAlbumPinned('a1')).toBe(true);
-    expect(setPins).toHaveBeenCalledWith('spotify', 'albums', ['a1']);
+    expect(setPins).toHaveBeenCalledWith('_unified', 'albums', ['a1']);
   });
 
   it('should unpin a pinned album', async () => {
@@ -131,7 +128,7 @@ describe('usePinnedItems', () => {
 
     expect(result.current.pinnedAlbumIds).toEqual(['a2']);
     expect(result.current.isAlbumPinned('a1')).toBe(false);
-    expect(setPins).toHaveBeenCalledWith('spotify', 'albums', ['a2']);
+    expect(setPins).toHaveBeenCalledWith('_unified', 'albums', ['a2']);
   });
 
   it('should not pin beyond 8 albums', async () => {
@@ -187,13 +184,13 @@ describe('usePinnedItems', () => {
       result.current.togglePinPlaylist('p1');
     });
 
-    expect(setPins).toHaveBeenCalledWith('spotify', 'playlists', ['p1']);
+    expect(setPins).toHaveBeenCalledWith('_unified', 'playlists', ['p1']);
 
     act(() => {
       result.current.togglePinAlbum('a1');
     });
 
-    expect(setPins).toHaveBeenCalledWith('spotify', 'albums', ['a1']);
+    expect(setPins).toHaveBeenCalledWith('_unified', 'albums', ['a1']);
   });
 
   it('should allow unpinning even when at max capacity', async () => {
