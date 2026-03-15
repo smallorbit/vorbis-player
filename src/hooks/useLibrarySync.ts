@@ -16,6 +16,7 @@ import type { MediaCollection, ProviderId } from '../types/domain';
 import { LIKES_CHANGED_EVENT } from '../providers/dropbox/dropboxLikesCache';
 
 export const ART_REFRESHED_EVENT = 'vorbis-art-refreshed';
+export const LIBRARY_REFRESH_EVENT = 'vorbis-library-refresh';
 
 /** Per-provider liked songs count for rendering separate cards. */
 export interface PerProviderLikedCount {
@@ -365,9 +366,13 @@ export function useLibrarySync(): UseLibrarySyncResult {
   }, [isSpotifyEnabled, nonSpotifyEnabledIds, getDescriptor, mergeAndSetData]);
 
   useEffect(() => {
-    const handleArtRefresh = () => { refreshNow().catch(() => {}); };
-    window.addEventListener(ART_REFRESHED_EVENT, handleArtRefresh);
-    return () => window.removeEventListener(ART_REFRESHED_EVENT, handleArtRefresh);
+    const handleRefresh = () => { refreshNow().catch(() => {}); };
+    window.addEventListener(ART_REFRESHED_EVENT, handleRefresh);
+    window.addEventListener(LIBRARY_REFRESH_EVENT, handleRefresh);
+    return () => {
+      window.removeEventListener(ART_REFRESHED_EVENT, handleRefresh);
+      window.removeEventListener(LIBRARY_REFRESH_EVENT, handleRefresh);
+    };
   }, [refreshNow]);
 
   return {
