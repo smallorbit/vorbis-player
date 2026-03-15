@@ -288,7 +288,7 @@ const AppSettingsMenu: React.FC<AppSettingsMenuProps> = memo(({
   onVisualizerDebugToggle
 }) => {
   const { viewport, isMobile, isTablet, transitionDuration, transitionEasing } = usePlayerSizingContext();
-  const { activeProviderId, activeDescriptor, enabledProviderIds, getDescriptor } = useProviderContext();
+  const { enabledProviderIds, getDescriptor } = useProviderContext();
   const isDropboxEnabled = enabledProviderIds.includes('dropbox');
   const dropboxDescriptor = isDropboxEnabled ? getDescriptor('dropbox') : undefined;
   const dropboxCatalog = dropboxDescriptor?.catalog as DropboxCatalogAdapter | undefined;
@@ -357,7 +357,7 @@ const AppSettingsMenu: React.FC<AppSettingsMenuProps> = memo(({
               {clearState === 'confirming' ? (
                 <>
                   <CacheOptionsList>
-                    {!isDropbox && (
+                    {!isDropboxEnabled && (
                       <CacheOptionItem>
                         <CacheCheckbox
                           id="clear-likes"

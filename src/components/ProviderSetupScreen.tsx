@@ -133,7 +133,7 @@ const Wrapper = styled.div`
 `;
 
 export default function ProviderSetupScreen() {
-  const { chosenProviderId, activeDescriptor, setActiveProviderId, registry, enabledProviderIds, toggleProvider, getDescriptor } = useProviderContext();
+  const { chosenProviderId, activeDescriptor, setActiveProviderId, registry, enabledProviderIds } = useProviderContext();
   const providers = registry.getAll();
 
   // First visit: no provider chosen yet
