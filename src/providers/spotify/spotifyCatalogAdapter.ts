@@ -14,6 +14,9 @@ import {
   checkTrackSaved,
   saveTrack,
   unsaveTrack,
+  checkAlbumSaved,
+  saveAlbum,
+  unsaveAlbum,
   getLargestImage,
   type Track,
   type PlaylistInfo,
@@ -138,5 +141,17 @@ export class SpotifyCatalogAdapter implements CatalogProvider {
 
   async isTrackSaved(trackId: string): Promise<boolean> {
     return checkTrackSaved(trackId);
+  }
+
+  async setAlbumSaved(albumId: string, saved: boolean): Promise<void> {
+    if (saved) {
+      await saveAlbum(albumId);
+    } else {
+      await unsaveAlbum(albumId);
+    }
+  }
+
+  async isAlbumSaved(albumId: string): Promise<boolean> {
+    return checkAlbumSaved(albumId);
   }
 }

@@ -1,9 +1,10 @@
-import { memo, Fragment, useState, useCallback, useRef } from 'react';
+import { memo, Fragment, useState, useCallback, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import type { ArtistInfo } from '../../services/spotify';
 import { useProviderContext } from '../../contexts/ProviderContext';
+import { librarySyncEngine } from '../../services/cache/librarySyncEngine';
 import { PlayerTrackName, PlayerTrackAlbum, AlbumLink, PlayerTrackArtist, TrackInfoOnlyRow, ArtistLink } from './styled';
-import TrackInfoPopover, { LibraryIcon, SpotifyIcon, PlayIcon, DiscogsIcon, ICON_MAP } from './TrackInfoPopover';
+import TrackInfoPopover, { LibraryIcon, SpotifyIcon, PlayIcon, DiscogsIcon, AddToLibraryIcon, RemoveFromLibraryIcon, ICON_MAP } from './TrackInfoPopover';
 
 interface TrackInfoProps {
     track: {
@@ -44,10 +45,27 @@ type PopoverState =
 
 const TrackInfo = memo<TrackInfoProps>(({ track, isMobile, isTablet, onArtistBrowse, onAlbumPlay }) => {
     const [popover, setPopover] = useState<PopoverState>(null);
+    const [albumSaved, setAlbumSaved] = useState<boolean | null>(null);
     const artistRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
     const albumRef = useRef<HTMLButtonElement>(null);
     const { activeDescriptor } = useProviderContext();
     const capabilities = activeDescriptor?.capabilities;
+    const catalog = activeDescriptor?.catalog;
+
+    // Check album saved state when album popover opens
+    useEffect(() => {
+      if (popover?.type !== 'album' || !capabilities?.hasSaveAlbum || !catalog?.isAlbumSaved) {
+        setAlbumSaved(null);
+        return;
+      }
+      let cancelled = false;
+      catalog.isAlbumSaved(popover.albumId).then((saved) => {
+        if (!cancelled) setAlbumSaved(saved);
+      }).catch(() => {
+        if (!cancelled) setAlbumSaved(null);
+      });
+      return () => { cancelled = true; };
+    }, [popover, capabilities?.hasSaveAlbum, catalog]);
 
     const closePopover = useCallback(() => setPopover(null), []);
 
@@ -167,6 +185,18 @@ const TrackInfo = memo<TrackInfoProps>(({ track, isMobile, isTablet, onArtistBro
                 onClick: () => onAlbumPlay?.(popover.albumId, popover.albumName),
             },
         ];
+        if (capabilities?.hasSaveAlbum && catalog?.setAlbumSaved && albumSaved !== null) {
+            const saved = albumSaved;
+            options.push({
+                label: saved ? 'Remove from Library' : 'Add to Library',
+                icon: saved ? <RemoveFromLibraryIcon /> : <AddToLibraryIcon />,
+                onClick: () => {
+                    catalog.setAlbumSaved!(popover.albumId, !saved).then(() => {
+                        librarySyncEngine.invalidateAndSyncAlbums().catch(() => {});
+                    }).catch(() => {});
+                },
+            });
+        }
         if (hasExternalLink) {
             const externalUrls = activeDescriptor?.getExternalUrls?.({ type: 'album', name: popover.albumName, artistName: track?.artists });
             if (externalUrls) {
