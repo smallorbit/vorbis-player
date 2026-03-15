@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Usage: ./scripts/close-worktree.sh <name>
-# Rebases a wt/<name> branch onto the current branch, removes the worktree, and deletes the branch.
+# Rebases a wt/<name> branch onto the base branch, pushes it as a feature branch,
+# removes the worktree, and deletes the local wt/ branch.
 # Must be run from the main repo, not from inside the worktree.
 set -e
 
@@ -18,6 +19,7 @@ REPO_NAME="$(basename "$REPO_ROOT")"
 NAME="${1#wt/}"
 
 WT_BRANCH="wt/${NAME}"
+FEATURE_BRANCH="$NAME"
 WORKTREE_PATH="${REPO_ROOT}/../${REPO_NAME}-${NAME}"
 
 # Ensure we're not running from inside the worktree being closed
@@ -34,18 +36,26 @@ if ! git show-ref --verify --quiet "refs/heads/${WT_BRANCH}"; then
   exit 1
 fi
 
-CURRENT_BRANCH="$(git rev-parse --abbrev-ref HEAD)"
-echo "Rebasing $WT_BRANCH onto $CURRENT_BRANCH..."
-(cd "$WORKTREE_PATH" && git rebase "$CURRENT_BRANCH")
+BASE_BRANCH="$(git rev-parse --abbrev-ref HEAD)"
+echo "Rebasing $WT_BRANCH onto $BASE_BRANCH..."
+(cd "$WORKTREE_PATH" && git rebase "$BASE_BRANCH")
 
-echo "Fast-forwarding $CURRENT_BRANCH..."
-git merge --ff-only "$WT_BRANCH"
+echo "Creating feature branch $FEATURE_BRANCH..."
+git branch "$FEATURE_BRANCH" "$WT_BRANCH"
+
+echo "Pushing $FEATURE_BRANCH to remote..."
+REMOTE="$(git remote | head -1)"
+git push -u "$REMOTE" "$FEATURE_BRANCH"
 
 echo "Removing worktree..."
 git worktree remove "$WORKTREE_PATH"
 
-echo "Deleting branch $WT_BRANCH..."
+echo "Deleting local branch $WT_BRANCH..."
 git branch -d "$WT_BRANCH"
 
 echo ""
-echo "Done! Worktree '$NAME' has been rebased and cleaned up."
+echo "Done! Branch '$FEATURE_BRANCH' has been pushed to $REMOTE."
+echo "Base branch: $BASE_BRANCH"
+echo ""
+echo "Create a PR with:"
+echo "  gh pr create --base $BASE_BRANCH --head $FEATURE_BRANCH"

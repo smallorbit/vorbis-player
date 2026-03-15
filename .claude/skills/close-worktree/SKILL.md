@@ -1,11 +1,11 @@
 ---
 name: close-worktree
-description: Rebase a wt/* worktree branch onto the current branch, remove the worktree directory, and delete the temporary branch. Use when the user is done with parallel work in a worktree.
+description: Rebase a wt/* worktree branch onto the base branch, push as a feature branch, create a PR, remove the worktree, and delete the temporary branch. Use when the user is done with parallel work in a worktree.
 ---
 
 # Close Worktree
 
-Run the cleanup script from the **main repo session** (not from inside the worktree). The script needs to run `git merge` and `git worktree remove` from the main repo context.
+Run the cleanup script from the **main repo session** (not from inside the worktree). The script rebases, pushes a feature branch, and cleans up the worktree. Then create a PR.
 
 ## Usage
 
@@ -29,4 +29,6 @@ git rev-parse --show-toplevel
 bash /path/to/repo/scripts/close-worktree.sh <name>
 ```
 
-3. Confirm to the user that the branch was merged and the worktree was removed.
+3. Create a PR using `gh pr create` with the pushed feature branch against the base branch (shown in the script output).
+
+4. Confirm to the user that the branch was pushed, the PR was created, and the worktree was removed.
