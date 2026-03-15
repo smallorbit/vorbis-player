@@ -81,6 +81,7 @@ function setMockLibrarySync(overrides?: Record<string, unknown>) {
     playlists: mockPlaylists,
     albums: mockAlbums,
     likedSongsCount: 10,
+    likedSongsPerProvider: [],
     isInitialLoadComplete: true,
     isSyncing: false,
     lastSyncTimestamp: Date.now(),
@@ -137,7 +138,7 @@ describe('PlaylistSelection', () => {
   it('clicking a playlist calls onPlaylistSelect with the correct playlist ID', () => {
     const { onPlaylistSelect } = renderPlaylistSelection();
     fireEvent.click(screen.getByText('Chill Vibes'));
-    expect(onPlaylistSelect).toHaveBeenCalledWith('pl-1', 'Chill Vibes');
+    expect(onPlaylistSelect).toHaveBeenCalledWith('pl-1', 'Chill Vibes', undefined);
   });
 
   it('shows loading state while isSyncing is true and no data yet', () => {
@@ -169,6 +170,6 @@ describe('PlaylistSelection', () => {
     const { onPlaylistSelect } = renderPlaylistSelection();
     expect(screen.getByText('Liked Songs')).toBeTruthy();
     fireEvent.click(screen.getByText('Liked Songs'));
-    expect(onPlaylistSelect).toHaveBeenCalledWith(LIKED_SONGS_ID, 'Liked Songs');
+    expect(onPlaylistSelect).toHaveBeenCalledWith(LIKED_SONGS_ID, 'Liked Songs', undefined);
   });
 });

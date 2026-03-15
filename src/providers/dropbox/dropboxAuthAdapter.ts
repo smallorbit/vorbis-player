@@ -60,7 +60,18 @@ export class DropboxAuthAdapter implements AuthProvider {
   }
 
   isAuthenticated(): boolean {
+    if (!this.accessToken && !this.refreshToken) {
+      this.syncFromStorage();
+    }
     return !!(this.accessToken || this.refreshToken);
+  }
+
+  /** Re-read tokens from localStorage (e.g. written by a popup tab). */
+  private syncFromStorage(): void {
+    this.accessToken = localStorage.getItem(TOKEN_KEY);
+    this.refreshToken = localStorage.getItem(REFRESH_TOKEN_KEY);
+    const stored = localStorage.getItem(TOKEN_EXPIRY_KEY);
+    this.tokenExpiresAt = stored ? parseInt(stored, 10) : null;
   }
 
   async getAccessToken(): Promise<string | null> {
@@ -70,7 +81,7 @@ export class DropboxAuthAdapter implements AuthProvider {
     return this.ensureValidToken();
   }
 
-  async beginLogin(): Promise<void> {
+  async beginLogin(options?: { popup?: boolean }): Promise<void> {
     if (!getDropboxClientId()) {
       console.warn('[DropboxAuth] No VITE_DROPBOX_CLIENT_ID configured');
       return;
@@ -80,7 +91,7 @@ export class DropboxAuthAdapter implements AuthProvider {
     localStorage.setItem(CODE_VERIFIER_KEY, codeVerifier);
 
     const state = generateRandomString(32);
-    sessionStorage.setItem(OAUTH_STATE_KEY, state);
+    localStorage.setItem(OAUTH_STATE_KEY, state);
 
     const challengeBuffer = await sha256(codeVerifier);
     const codeChallenge = base64urlEncode(challengeBuffer);
@@ -96,7 +107,17 @@ export class DropboxAuthAdapter implements AuthProvider {
       state,
     });
 
-    window.location.href = `https://www.dropbox.com/oauth2/authorize?${params.toString()}`;
+    const authUrl = `https://www.dropbox.com/oauth2/authorize?${params.toString()}`;
+
+    if (options?.popup) {
+      const win = window.open(authUrl, '_blank');
+      if (!win) {
+        window.location.href = authUrl;
+      }
+      return;
+    }
+
+    window.location.href = authUrl;
   }
 
   async handleCallback(url: URL): Promise<boolean> {
@@ -116,8 +137,8 @@ export class DropboxAuthAdapter implements AuthProvider {
       return false;
     }
 
-    const expectedState = sessionStorage.getItem(OAUTH_STATE_KEY);
-    sessionStorage.removeItem(OAUTH_STATE_KEY);
+    const expectedState = localStorage.getItem(OAUTH_STATE_KEY);
+    localStorage.removeItem(OAUTH_STATE_KEY);
     if (!expectedState || returnedState !== expectedState) {
       throw new Error('OAuth state mismatch — possible CSRF attack');
     }
@@ -180,7 +201,7 @@ export class DropboxAuthAdapter implements AuthProvider {
     this.refreshToken = null;
     localStorage.removeItem(REFRESH_TOKEN_KEY);
     localStorage.removeItem(CODE_VERIFIER_KEY);
-    sessionStorage.removeItem(OAUTH_STATE_KEY);
+    localStorage.removeItem(OAUTH_STATE_KEY);
   }
 
   /** Refresh the access token using the stored refresh token. */

@@ -211,47 +211,48 @@ export const OptionButtonGroup = styled.div`
   flex-wrap: wrap;
 `;
 
-export const ProviderButton = styled.button<{ $isActive: boolean }>`
+export const ProviderRow = styled.div`
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  background: ${({ $isActive }) => $isActive ? 'color-mix(in srgb, var(--accent-color) 13%, transparent)' : theme.colors.muted.background};
-  border: 1px solid ${({ $isActive }) => $isActive ? 'var(--accent-color)' : theme.colors.border};
-  color: ${({ $isActive }) => $isActive ? theme.colors.white : theme.colors.muted.foreground};
-  padding: 0.5rem 0.75rem;
-  border-radius: ${theme.borderRadius.md};
-  cursor: pointer;
-  font-size: 0.8125rem;
-  font-weight: ${theme.fontWeight.medium};
-  transition: all ${theme.transitions.normal};
-  width: 100%;
-  text-align: left;
-
-  &:hover {
-    background: color-mix(in srgb, var(--accent-color) 13%, transparent);
-    border-color: var(--accent-color);
-    color: ${() => theme.colors.white};
-  }
-`;
-
-export const ProviderStatusDot = styled.span<{ $isConnected: boolean }>`
-  display: inline-block;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: ${({ $isConnected }) => $isConnected ? 'var(--accent-color)' : theme.colors.muted.foreground};
-  flex-shrink: 0;
+  gap: 0.625rem;
+  padding: 0.5rem 0;
 `;
 
 export const ProviderName = styled.span`
+  font-size: 0.8125rem;
+  font-weight: ${theme.fontWeight.medium};
+  color: ${theme.colors.white};
+  flex-shrink: 0;
+`;
+
+export const ProviderStatusBadge = styled.span<{ $status: 'connected' | 'expired' | 'disabled' }>`
+  font-size: 0.6875rem;
+  font-weight: ${theme.fontWeight.medium};
+  color: ${({ $status }) =>
+    $status === 'connected'
+      ? theme.colors.success
+      : $status === 'expired'
+        ? '#f0a030'
+        : theme.colors.muted.foreground};
   flex: 1;
 `;
 
-export const ProviderActiveLabel = styled.span`
+export const ProviderConnectAction = styled.button`
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--accent-color);
   font-size: 0.6875rem;
+  font-weight: ${theme.fontWeight.semibold};
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  opacity: 0.7;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: opacity ${theme.transitions.fast};
+
+  &:hover {
+    opacity: 0.8;
+  }
 `;
 
 export const CacheOptionsList = styled.ul`

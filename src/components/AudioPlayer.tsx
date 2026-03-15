@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import styled from 'styled-components';
 import { flexCenter } from '@/styles/utils';
 import PlayerStateRenderer from './PlayerStateRenderer';
@@ -7,6 +7,8 @@ import BackgroundVisualizer from './BackgroundVisualizer';
 import AccentColorBackground from './AccentColorBackground';
 import DebugOverlay, { useDebugActivator } from './DebugOverlay';
 import ProviderSetupScreen from './ProviderSetupScreen';
+import Toast from './Toast';
+import LibraryDrawer from './LibraryDrawer';
 import { ProfilingProvider } from '@/contexts/ProfilingContext';
 import { ProfilingOverlay } from '@/components/ProfilingOverlay';
 import { ProfiledComponent } from '@/components/ProfiledComponent';
@@ -14,9 +16,12 @@ import { usePlayerLogic } from '@/hooks/usePlayerLogic';
 import { useColorContext } from '@/contexts/ColorContext';
 import { useVisualEffectsContext } from '@/contexts/VisualEffectsContext';
 import { PlayerSizingProvider } from '@/contexts/PlayerSizingContext';
-import { useTrackListContext } from '@/contexts/TrackContext';
+import { useTrackListContext, useCurrentTrackContext } from '@/contexts/TrackContext';
 import { useProviderContext } from '@/contexts/ProviderContext';
 import { toAlbumPlaylistId } from '@/constants/playlist';
+import type { ClearCacheOptions } from '@/components/VisualEffectsMenu';
+
+const VisualEffectsMenu = lazy(() => import('./VisualEffectsMenu/index'));
 
 const Container = styled.div`
   width: 100%;
@@ -26,7 +31,7 @@ const Container = styled.div`
 `;
 
 const AudioPlayerComponent = () => {
-  const { state, handlers } = usePlayerLogic();
+  const { state, handlers, currentPlaybackProviderRef } = usePlayerLogic();
   const { debugActive, handleActivatorTap } = useDebugActivator();
   const { accentColor } = useColorContext();
   const {
@@ -35,8 +40,23 @@ const AudioPlayerComponent = () => {
     backgroundVisualizerIntensity,
     accentColorBackgroundEnabled,
     zenModeEnabled,
+    showVisualEffects,
+    setShowVisualEffects,
   } = useVisualEffectsContext();
   const { tracks, selectedPlaylistId } = useTrackListContext();
+  const { currentTrack } = useCurrentTrackContext();
+
+  // Track the current playback provider — derives from the ref but as React state for re-renders
+  const [currentTrackProvider, setCurrentTrackProvider] = useState<import('@/types/domain').ProviderId | undefined>(
+    currentPlaybackProviderRef.current ?? undefined
+  );
+  useEffect(() => {
+    // Update when the current track changes (provider may have switched)
+    const provider = (currentTrack?.provider as import('@/types/domain').ProviderId | undefined)
+      ?? currentPlaybackProviderRef.current
+      ?? undefined;
+    setCurrentTrackProvider(provider);
+  }, [currentTrack, currentPlaybackProviderRef]);
 
   const handleAlbumPlay = useCallback((albumId: string, _albumName: string) => {
     handlers.handlePlaylistSelect(toAlbumPlaylistId(albumId));
@@ -55,8 +75,13 @@ const AudioPlayerComponent = () => {
     onBackToLibrary: handlers.handleBackToLibrary,
   }), [handlers, handleAlbumPlay]);
 
-  const { chosenProviderId, activeDescriptor } = useProviderContext();
-  const needsSetup = chosenProviderId === null || !activeDescriptor?.auth.isAuthenticated();
+  const { chosenProviderId, activeDescriptor, connectedProviderIds, fallthroughNotification, dismissFallthroughNotification } = useProviderContext();
+  // Setup is needed when no provider has been chosen yet and none are connected,
+  // or when the active provider isn't authenticated and no other enabled provider is either.
+  // connectedProviderIds is the subset of enabledProviderIds with valid auth.
+  const needsSetup = chosenProviderId === null
+    ? connectedProviderIds.length === 0
+    : !activeDescriptor?.auth.isAuthenticated() && connectedProviderIds.length === 0;
 
   const autoSelectFired = useRef(false);
   useEffect(() => {
@@ -71,9 +96,35 @@ const AudioPlayerComponent = () => {
 
   const isMainPlayerActive = !state.isLoading && !state.error && selectedPlaylistId !== null && tracks.length > 0;
 
+  const handleOpenSettings = useCallback(() => {
+    setShowVisualEffects(true);
+  }, [setShowVisualEffects]);
+
+  const handleCloseSettings = useCallback(() => {
+    setShowVisualEffects(false);
+  }, [setShowVisualEffects]);
+
+  const handleClearCache = useCallback(async (options: ClearCacheOptions) => {
+    const { clearCacheWithOptions } = await import('@/services/cache/libraryCache');
+    await clearCacheWithOptions({ clearLikes: options.clearLikes });
+    if (options.clearPins) {
+      const { clearAllPins } = await import('@/services/settings/pinnedItemsStorage');
+      await clearAllPins();
+    }
+    if (options.clearAccentColors) {
+      localStorage.removeItem('vorbis-player-accent-color-overrides');
+      localStorage.removeItem('vorbis-player-custom-accent-colors');
+    }
+  }, []);
+
   const renderContent = () => {
     if (needsSetup) {
-      return <ProviderSetupScreen />;
+      return (
+        <ProviderSetupScreen
+          onOpenSettings={handleOpenSettings}
+          onOpenLibrary={handlers.handleOpenLibraryDrawer}
+        />
+      );
     }
 
     if (state.isLoading || state.error || selectedPlaylistId === null || tracks.length === 0) {
@@ -96,6 +147,7 @@ const AudioPlayerComponent = () => {
           isPlaying={state.isPlaying}
           showLibraryDrawer={state.showLibraryDrawer}
           handlers={playbackHandlers}
+          currentTrackProvider={currentTrackProvider}
         />
       </ProfiledComponent>
     );
@@ -130,6 +182,31 @@ const AudioPlayerComponent = () => {
           />
         </ProfiledComponent>
         {renderContent()}
+        {fallthroughNotification && (
+          <Toast message={fallthroughNotification} onDismiss={dismissFallthroughNotification} />
+        )}
+        {needsSetup && (
+          <>
+            <Suspense fallback={null}>
+              <VisualEffectsMenu
+                isOpen={showVisualEffects}
+                onClose={handleCloseSettings}
+                onClearCache={handleClearCache}
+                profilerEnabled={false}
+                onProfilerToggle={() => {}}
+                visualizerDebugEnabled={false}
+                onVisualizerDebugToggle={() => {}}
+              />
+            </Suspense>
+            <Suspense fallback={null}>
+              <LibraryDrawer
+                isOpen={state.showLibraryDrawer}
+                onClose={handlers.handleCloseLibraryDrawer}
+                onPlaylistSelect={handlers.handlePlaylistSelect}
+              />
+            </Suspense>
+          </>
+        )}
       </Container>
     </ProfilingProvider>
     </PlayerSizingProvider>

@@ -22,7 +22,15 @@ export class SpotifyAuthAdapter implements AuthProvider {
     }
   }
 
-  async beginLogin(): Promise<void> {
+  async beginLogin(options?: { popup?: boolean }): Promise<void> {
+    if (options?.popup) {
+      const url = await spotifyAuth.getAuthUrl();
+      const win = window.open(url, '_blank');
+      if (!win) {
+        window.location.href = url;
+      }
+      return;
+    }
     await spotifyAuth.redirectToAuth();
   }
 

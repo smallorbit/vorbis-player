@@ -23,10 +23,10 @@ import {
   OptionButton,
   ResetButton,
   FilterGrid,
-  ProviderButton,
-  ProviderStatusDot,
+  ProviderRow,
   ProviderName,
-  ProviderActiveLabel,
+  ProviderStatusBadge,
+  ProviderConnectAction,
   CacheOptionsList,
   CacheOptionItem,
   CacheCheckbox,
@@ -39,6 +39,7 @@ import {
   CollapsibleBody,
   CollapsibleInner,
 } from './styled';
+import Switch from '@/components/controls/Switch';
 
 export interface ClearCacheOptions {
   clearLikes: boolean;
@@ -71,37 +72,43 @@ const arePropsEqual = (
   return true;
 };
 
-/** Music Sources section rendered at the top of the settings drawer. */
+/** Music Sources section rendered at the top of the settings drawer.
+ *  Shows toggle switches so users can enable/disable providers independently.
+ */
 const MusicSourcesSection = memo(() => {
-  const { activeProviderId, setActiveProviderId, registry } = useProviderContext();
+  const { registry, enabledProviderIds, toggleProvider } = useProviderContext();
   const providers = useMemo(() => registry.getAll(), [registry]);
 
-  // Only show if there are 2+ providers registered
   if (providers.length < 2) return null;
 
   return (
     <FilterSection>
-      <SectionTitle>Music Source</SectionTitle>
+      <SectionTitle>Music Sources</SectionTitle>
       <FilterGrid>
         {providers.map((descriptor) => {
-          const isActive = descriptor.id === activeProviderId;
+          const isEnabled = enabledProviderIds.includes(descriptor.id);
           const isConnected = descriptor.auth.isAuthenticated();
+          const isLastEnabled = enabledProviderIds.length <= 1 && isEnabled;
+          const status = !isEnabled ? 'disabled' : isConnected ? 'connected' : 'expired';
           return (
-            <ProviderButton
-              key={descriptor.id}
-              $isActive={isActive}
-              onClick={() => {
-                if (descriptor.id !== activeProviderId) {
-                  setActiveProviderId(descriptor.id);
-                  window.location.reload();
-                }
-              }}
-              aria-label={`Switch to ${descriptor.name}`}
-            >
-              <ProviderStatusDot $isConnected={isConnected} />
+            <ProviderRow key={descriptor.id}>
               <ProviderName>{descriptor.name}</ProviderName>
-              {isActive && <ProviderActiveLabel>Active</ProviderActiveLabel>}
-            </ProviderButton>
+              <ProviderStatusBadge $status={status}>
+                {status === 'connected' ? 'Connected' : status === 'expired' ? 'Expired' : ''}
+              </ProviderStatusBadge>
+              {isEnabled && !isConnected && (
+                <ProviderConnectAction onClick={() => descriptor.auth.beginLogin({ popup: true })}>
+                  Reconnect
+                </ProviderConnectAction>
+              )}
+              <Switch
+                on={isEnabled}
+                onToggle={() => toggleProvider(descriptor.id)}
+                ariaLabel={`${isEnabled ? 'Disable' : 'Enable'} ${descriptor.name}`}
+                disabled={isLastEnabled}
+                variant="neutral"
+              />
+            </ProviderRow>
           );
         })}
       </FilterGrid>
@@ -279,11 +286,10 @@ const AppSettingsMenu: React.FC<AppSettingsMenuProps> = memo(({
   onVisualizerDebugToggle
 }) => {
   const { viewport, isMobile, isTablet, transitionDuration, transitionEasing } = usePlayerSizingContext();
-  const { activeProviderId, activeDescriptor } = useProviderContext();
-  const isDropbox = activeProviderId === 'dropbox';
-  const dropboxCatalog = isDropbox
-    ? (activeDescriptor?.catalog as DropboxCatalogAdapter | undefined)
-    : undefined;
+  const { enabledProviderIds, getDescriptor } = useProviderContext();
+  const isDropboxEnabled = enabledProviderIds.includes('dropbox');
+  const dropboxDescriptor = isDropboxEnabled ? getDescriptor('dropbox') : undefined;
+  const dropboxCatalog = dropboxDescriptor?.catalog as DropboxCatalogAdapter | undefined;
   const [clearState, setClearState] = useState<'idle' | 'confirming' | 'success'>('idle');
   const [clearLikes, setClearLikes] = useState(false);
   const [clearPins, setClearPins] = useState(false);
@@ -349,7 +355,7 @@ const AppSettingsMenu: React.FC<AppSettingsMenuProps> = memo(({
               {clearState === 'confirming' ? (
                 <>
                   <CacheOptionsList>
-                    {!isDropbox && (
+                    {!isDropboxEnabled && (
                       <CacheOptionItem>
                         <CacheCheckbox
                           id="clear-likes"

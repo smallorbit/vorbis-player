@@ -133,6 +133,8 @@ export interface PlaylistInfo {
   owner: { display_name: string } | null;
   added_at?: string; // ISO 8601 timestamp when added to library
   snapshot_id?: string; // Spotify revision identifier for change detection
+  /** Which provider this playlist belongs to (for multi-provider library view). */
+  provider?: import('@/types/domain').ProviderId;
 }
 
 export interface AlbumInfo {
@@ -145,6 +147,8 @@ export interface AlbumInfo {
   uri: string;
   album_type?: string;
   added_at?: string; // ISO 8601 timestamp when saved to library
+  /** Which provider this album belongs to (for multi-provider library view). */
+  provider?: import('@/types/domain').ProviderId;
 }
 
 interface SpotifyArtist {
@@ -231,6 +235,7 @@ function transformTrackItem(
 
   return {
     id: item.id,
+    provider: 'spotify',
     name: item.name,
     artists: formatArtists(item.artists),
     artistsData: buildArtistsData(item.artists),
@@ -242,6 +247,13 @@ function transformTrackItem(
     preview_url: item.preview_url,
     image: albumImage,
   };
+}
+
+function backfillProvider(tracks: Track[]): Track[] {
+  for (const t of tracks) {
+    if (!t.provider) t.provider = 'spotify';
+  }
+  return tracks;
 }
 
 async function spotifyApiRequest<T>(
@@ -502,6 +514,9 @@ class SpotifyAuth {
   }
 
   public isAuthenticated(): boolean {
+    if (!this.tokenData) {
+      this.loadTokenFromStorage();
+    }
     return !!(this.tokenData?.access_token || this.tokenData?.refresh_token);
   }
 
@@ -681,9 +696,9 @@ export async function getPlaylistTracks(playlistId: string): Promise<Track[]> {
   try {
     const idbCached = await libraryCache.getTrackList(cacheKey);
     if (idbCached && Date.now() - idbCached.timestamp < TRACK_LIST_PERSIST_TTL) {
-      // Promote to L1
-      trackListCache.set(cacheKey, { data: idbCached.tracks, timestamp: idbCached.timestamp });
-      return idbCached.tracks;
+      const tracks = backfillProvider(idbCached.tracks);
+      trackListCache.set(cacheKey, { data: tracks, timestamp: idbCached.timestamp });
+      return tracks;
     }
   } catch {
     // IndexedDB read failed, continue to API fetch
@@ -728,9 +743,9 @@ export async function getAlbumTracks(albumId: string): Promise<Track[]> {
   try {
     const idbCached = await libraryCache.getTrackList(cacheKey);
     if (idbCached && Date.now() - idbCached.timestamp < TRACK_LIST_PERSIST_TTL) {
-      // Promote to L1
-      trackListCache.set(cacheKey, { data: idbCached.tracks, timestamp: idbCached.timestamp });
-      return idbCached.tracks;
+      const tracks = backfillProvider(idbCached.tracks);
+      trackListCache.set(cacheKey, { data: tracks, timestamp: idbCached.timestamp });
+      return tracks;
     }
   } catch {
     // IndexedDB read failed, continue to API fetch

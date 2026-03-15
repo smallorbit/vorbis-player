@@ -14,6 +14,7 @@ interface TrackInfoProps {
         artistsData?: ArtistInfo[];
         album?: string;
         album_id?: string;
+        image?: string;
     } | null;
     isMobile: boolean;
     isTablet: boolean;
@@ -192,7 +193,20 @@ const TrackInfo = memo<TrackInfoProps>(({ track, isMobile, isTablet, onArtistBro
                 icon: saved ? <RemoveFromLibraryIcon /> : <AddToLibraryIcon />,
                 onClick: () => {
                     catalog.setAlbumSaved!(popover.albumId, !saved).then(() => {
-                        librarySyncEngine.invalidateAndSyncAlbums().catch(() => {});
+                        if (saved) {
+                            librarySyncEngine.optimisticRemoveAlbum(popover.albumId).catch(() => {});
+                        } else {
+                            librarySyncEngine.optimisticAddAlbum({
+                                id: popover.albumId,
+                                name: popover.albumName,
+                                artists: track?.artists ?? '',
+                                images: track?.image ? [{ url: track.image, height: null, width: null }] : [],
+                                release_date: '',
+                                total_tracks: 0,
+                                uri: `spotify:album:${popover.albumId}`,
+                                added_at: new Date().toISOString(),
+                            }).catch(() => {});
+                        }
                     }).catch(() => {});
                 },
             });

@@ -1,6 +1,6 @@
-import React, { useCallback, useRef, useEffect } from 'react';
+import React, { useCallback, useRef, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
-import styled from 'styled-components';
+import styled, { keyframes } from 'styled-components';
 import { useVerticalSwipeGesture } from '@/hooks/useVerticalSwipeGesture';
 import { theme } from '@/styles/theme';
 import {
@@ -11,11 +11,12 @@ import {
   DRAWER_TRANSITION_EASING
 } from './styled';
 import PlaylistSelection from './PlaylistSelection';
+import { LIBRARY_REFRESH_EVENT } from '@/hooks/useLibrarySync';
 
 interface LibraryDrawerProps {
   isOpen: boolean;
   onClose: () => void;
-  onPlaylistSelect: (playlistId: string, playlistName: string) => void;
+  onPlaylistSelect: (playlistId: string, playlistName: string, provider?: import('@/types/domain').ProviderId) => void;
   initialSearchQuery?: string;
   initialViewMode?: 'playlists' | 'albums';
 }
@@ -101,6 +102,35 @@ const DrawerTitle = styled.h3`
   text-align: center;
 `;
 
+const spin = keyframes`
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+`;
+
+const RefreshButton = styled.button<{ $spinning: boolean }>`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: none;
+  background: none;
+  color: ${({ theme }) => theme.colors.foreground};
+  cursor: pointer;
+  border-radius: 50%;
+  transition: background ${({ theme }) => theme.transitions.fast} ease;
+  padding: 0;
+  justify-self: end;
+
+  &:active {
+    background: ${({ theme }) => theme.colors.control.background};
+  }
+
+  & > svg {
+    animation: ${({ $spinning }) => ($spinning ? spin : 'none')} 0.8s linear infinite;
+  }
+`;
+
 const DrawerContent = styled.div`
   flex: 1;
   min-height: 0;
@@ -110,23 +140,38 @@ const DrawerContent = styled.div`
 `;
 
 const LibraryDrawer = React.memo(function LibraryDrawer({ isOpen, onClose, onPlaylistSelect, initialSearchQuery, initialViewMode }: LibraryDrawerProps) {
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const refreshTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const selectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handlePlaylistSelectWrapper = useCallback(
-    (playlistId: string, playlistName: string) => {
+    (playlistId: string, playlistName: string, provider?: import('@/types/domain').ProviderId) => {
       onClose();
       if (selectTimeoutRef.current) clearTimeout(selectTimeoutRef.current);
       selectTimeoutRef.current = setTimeout(() => {
         selectTimeoutRef.current = null;
-        onPlaylistSelect(playlistId, playlistName);
+        onPlaylistSelect(playlistId, playlistName, provider);
       }, 320);
     },
     [onClose, onPlaylistSelect]
   );
 
+  const handleRefresh = useCallback(() => {
+    if (isRefreshing) return;
+    setIsRefreshing(true);
+    window.dispatchEvent(new Event(LIBRARY_REFRESH_EVENT));
+    // Show spinner for a minimum duration then stop
+    if (refreshTimeoutRef.current) clearTimeout(refreshTimeoutRef.current);
+    refreshTimeoutRef.current = setTimeout(() => {
+      setIsRefreshing(false);
+      refreshTimeoutRef.current = null;
+    }, 1500);
+  }, [isRefreshing]);
+
   useEffect(() => {
     return () => {
       if (selectTimeoutRef.current) clearTimeout(selectTimeoutRef.current);
+      if (refreshTimeoutRef.current) clearTimeout(refreshTimeoutRef.current);
     };
   }, []);
 
@@ -158,7 +203,19 @@ const LibraryDrawer = React.memo(function LibraryDrawer({ isOpen, onClose, onPla
                 </svg>
               </CloseButton>
               <DrawerTitle>Library</DrawerTitle>
-              <div />
+              <RefreshButton
+                onClick={handleRefresh}
+                $spinning={isRefreshing}
+                aria-label="Refresh library"
+                title="Refresh library"
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                  <path d="M21 2v6h-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  <path d="M3 12a9 9 0 0 1 15.36-6.36L21 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  <path d="M3 22v-6h6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  <path d="M21 12a9 9 0 0 1-15.36 6.36L3 16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </RefreshButton>
             </DrawerHeader>
             <DrawerContent>
               <PlaylistSelection

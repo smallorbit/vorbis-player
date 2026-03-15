@@ -28,6 +28,8 @@ export const useAutoAdvance = ({
   const playTrackRef = useRef(playTrack);
   /** Tracks when advanceToNext last initiated playback (used as cooldown for non-Spotify). */
   const lastPlayInitiatedRef = useRef(0);
+  /** ID for cancelling pending advance timeouts (e.g. when shuffle is toggled). */
+  const advanceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const { activeDescriptor, activeProviderId } = useProviderContext();
 
@@ -36,10 +38,24 @@ export const useAutoAdvance = ({
   useEffect(() => { currentTrackIndexRef.current = currentTrackIndex; }, [currentTrackIndex]);
   useEffect(() => { playTrackRef.current = playTrack; }, [playTrack]);
 
-  // Reset hasEnded flag when track changes
+  // Reset hasEnded flag and cancel pending advance when track changes
+  // (includes shuffle toggle which changes currentTrackIndex).
   useEffect(() => {
     hasEnded.current = false;
+    if (advanceTimerRef.current !== null) {
+      clearTimeout(advanceTimerRef.current);
+      advanceTimerRef.current = null;
+    }
   }, [currentTrackIndex]);
+
+  // Also cancel pending advance when the tracks array changes (e.g. shuffle toggle)
+  // to prevent a stale-index timeout from playing the wrong track.
+  useEffect(() => {
+    if (advanceTimerRef.current !== null) {
+      clearTimeout(advanceTimerRef.current);
+      advanceTimerRef.current = null;
+    }
+  }, [tracks]);
 
   // Use event-based detection via the provider's playback subscribe
   useEffect(() => {
@@ -49,17 +65,20 @@ export const useAutoAdvance = ({
 
     function advanceToNext() {
       hasEnded.current = true;
-      const nextIndex = (currentTrackIndexRef.current + 1) % tracksRef.current.length;
-      if (tracksRef.current[nextIndex]) {
-        setTimeout(() => {
+      // Compute nextIndex inside the timeout callback (not here) so that
+      // if shuffle is toggled during the delay, we use the latest refs.
+      advanceTimerRef.current = setTimeout(() => {
+        advanceTimerRef.current = null;
+        const nextIndex = (currentTrackIndexRef.current + 1) % tracksRef.current.length;
+        if (tracksRef.current[nextIndex]) {
           lastPlayInitiatedRef.current = Date.now();
           playTrackRef.current(nextIndex, true);
           // Don't reset hasEnded here — playTrack is async and the audio element
           // still has the old track's ended state until the new track loads.
           // The useEffect on currentTrackIndex resets hasEnded when the track
           // actually changes (after playTrack succeeds and calls setCurrentTrackIndex).
-        }, 500);
-      }
+        }
+      }, 500);
     }
 
     function handleProviderStateChange(state: PlaybackState | null) {

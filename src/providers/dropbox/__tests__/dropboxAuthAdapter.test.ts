@@ -49,7 +49,7 @@ beforeEach(() => {
 
 describe('DropboxAuthAdapter', () => {
   describe('beginLogin', () => {
-    it('stores a state value in sessionStorage before redirecting', async () => {
+    it('stores a state value in localStorage before redirecting', async () => {
       // #given
       const adapter = new DropboxAuthAdapter();
 
@@ -57,7 +57,7 @@ describe('DropboxAuthAdapter', () => {
       await adapter.beginLogin();
 
       // #then
-      expect(sessionStorage.getItem('vorbis-player-dropbox-oauth-state')).not.toBeNull();
+      expect(localStorage.getItem('vorbis-player-dropbox-oauth-state')).not.toBeNull();
     });
 
     it('includes the state parameter in the authorization URL', async () => {
@@ -68,7 +68,7 @@ describe('DropboxAuthAdapter', () => {
       await adapter.beginLogin();
 
       // #then
-      const storedState = sessionStorage.getItem('vorbis-player-dropbox-oauth-state');
+      const storedState = localStorage.getItem('vorbis-player-dropbox-oauth-state');
       const redirected = new URL(window.location.href);
       expect(redirected.searchParams.get('state')).toBe(storedState);
     });
@@ -89,7 +89,7 @@ describe('DropboxAuthAdapter', () => {
     async function beginLogin(): Promise<{ adapter: DropboxAuthAdapter; state: string }> {
       const adapter = new DropboxAuthAdapter();
       await adapter.beginLogin();
-      const state = sessionStorage.getItem('vorbis-player-dropbox-oauth-state')!;
+      const state = localStorage.getItem('vorbis-player-dropbox-oauth-state')!;
       return { adapter, state };
     }
 
@@ -159,7 +159,7 @@ describe('DropboxAuthAdapter', () => {
       await adapter.handleCallback(url).catch(() => {});
 
       // #then
-      expect(sessionStorage.getItem('vorbis-player-dropbox-oauth-state')).toBeNull();
+      expect(localStorage.getItem('vorbis-player-dropbox-oauth-state')).toBeNull();
     });
 
     it('throws on Dropbox error parameter', async () => {
@@ -197,7 +197,7 @@ describe('DropboxAuthAdapter', () => {
       expect(localStorage.getItem('vorbis-player-dropbox-refresh-token')).toBe('ref-456');
     });
 
-    it('clears state from sessionStorage after a successful exchange', async () => {
+    it('clears state from localStorage after a successful exchange', async () => {
       // #given
       const { adapter, state } = await beginLogin();
       const url = makeCallbackUrl('valid-code', state);
@@ -214,7 +214,7 @@ describe('DropboxAuthAdapter', () => {
       await adapter.handleCallback(url);
 
       // #then
-      expect(sessionStorage.getItem('vorbis-player-dropbox-oauth-state')).toBeNull();
+      expect(localStorage.getItem('vorbis-player-dropbox-oauth-state')).toBeNull();
     });
   });
 
@@ -309,16 +309,16 @@ describe('DropboxAuthAdapter', () => {
   });
 
   describe('logout', () => {
-    it('clears the oauth state from sessionStorage', () => {
+    it('clears the oauth state from localStorage', () => {
       // #given
       const adapter = new DropboxAuthAdapter();
-      sessionStorage.setItem('vorbis-player-dropbox-oauth-state', 'leftover-state');
+      localStorage.setItem('vorbis-player-dropbox-oauth-state', 'leftover-state');
 
       // #when
       adapter.logout();
 
       // #then
-      expect(sessionStorage.getItem('vorbis-player-dropbox-oauth-state')).toBeNull();
+      expect(localStorage.getItem('vorbis-player-dropbox-oauth-state')).toBeNull();
     });
   });
 });
