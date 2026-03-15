@@ -23,10 +23,10 @@ import {
   OptionButton,
   ResetButton,
   FilterGrid,
-  ProviderButton,
-  ProviderStatusDot,
+  ProviderRow,
   ProviderName,
-  ProviderActiveLabel,
+  ProviderStatusBadge,
+  ProviderConnectAction,
   CacheOptionsList,
   CacheOptionItem,
   CacheCheckbox,
@@ -39,6 +39,7 @@ import {
   CollapsibleBody,
   CollapsibleInner,
 } from './styled';
+import Switch from '@/components/controls/Switch';
 
 export interface ClearCacheOptions {
   clearLikes: boolean;
@@ -89,29 +90,25 @@ const MusicSourcesSection = memo(() => {
           const isEnabled = enabledProviderIds.includes(descriptor.id);
           const isConnected = descriptor.auth.isAuthenticated();
           const isLastEnabled = enabledProviderIds.length <= 1 && isEnabled;
+          const status = !isEnabled ? 'disabled' : isConnected ? 'connected' : 'expired';
           return (
-            <ProviderButton
-              key={descriptor.id}
-              $isActive={isEnabled}
-              onClick={() => {
-                if (!isConnected) {
-                  // Not authenticated yet — start login flow without switching active provider.
-                  // Pre-enable so the library merges this provider's data after OAuth completes.
-                  if (!isEnabled) toggleProvider(descriptor.id);
-                  descriptor.auth.beginLogin();
-                  return;
-                }
-                if (isLastEnabled) return; // Can't disable the last provider
-                toggleProvider(descriptor.id);
-              }}
-              aria-label={`${isEnabled ? 'Disable' : 'Enable'} ${descriptor.name}`}
-              title={isLastEnabled ? 'At least one provider must be enabled' : undefined}
-            >
-              <ProviderStatusDot $isConnected={isConnected} />
+            <ProviderRow key={descriptor.id}>
               <ProviderName>{descriptor.name}</ProviderName>
-              {isEnabled && isConnected && <ProviderActiveLabel>On</ProviderActiveLabel>}
-              {!isConnected && <ProviderActiveLabel>Connect</ProviderActiveLabel>}
-            </ProviderButton>
+              <ProviderStatusBadge $status={status}>
+                {status === 'connected' ? 'Connected' : status === 'expired' ? 'Expired' : ''}
+              </ProviderStatusBadge>
+              {isEnabled && !isConnected && (
+                <ProviderConnectAction onClick={() => descriptor.auth.beginLogin()}>
+                  Reconnect
+                </ProviderConnectAction>
+              )}
+              <Switch
+                on={isEnabled}
+                onToggle={() => toggleProvider(descriptor.id)}
+                ariaLabel={`${isEnabled ? 'Disable' : 'Enable'} ${descriptor.name}`}
+                disabled={isLastEnabled}
+              />
+            </ProviderRow>
           );
         })}
       </FilterGrid>
