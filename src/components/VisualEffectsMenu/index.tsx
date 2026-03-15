@@ -79,7 +79,6 @@ const MusicSourcesSection = memo(() => {
   const { registry, enabledProviderIds, toggleProvider } = useProviderContext();
   const providers = useMemo(() => registry.getAll(), [registry]);
 
-  // Only show if there are 2+ providers registered
   if (providers.length < 2) return null;
 
   return (
@@ -98,7 +97,7 @@ const MusicSourcesSection = memo(() => {
                 {status === 'connected' ? 'Connected' : status === 'expired' ? 'Expired' : ''}
               </ProviderStatusBadge>
               {isEnabled && !isConnected && (
-                <ProviderConnectAction onClick={() => descriptor.auth.beginLogin()}>
+                <ProviderConnectAction onClick={() => descriptor.auth.beginLogin({ popup: true })}>
                   Reconnect
                 </ProviderConnectAction>
               )}

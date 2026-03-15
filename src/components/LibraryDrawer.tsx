@@ -12,6 +12,7 @@ import {
 } from './styled';
 import PlaylistSelection from './PlaylistSelection';
 import { LIBRARY_REFRESH_EVENT } from '@/hooks/useLibrarySync';
+import LibraryProviderBar from './LibraryProviderBar';
 
 interface LibraryDrawerProps {
   isOpen: boolean;
@@ -217,6 +218,7 @@ const LibraryDrawer = React.memo(function LibraryDrawer({ isOpen, onClose, onPla
                 </svg>
               </RefreshButton>
             </DrawerHeader>
+            <LibraryProviderBar />
             <DrawerContent>
               <PlaylistSelection
                 onPlaylistSelect={handlePlaylistSelectWrapper}

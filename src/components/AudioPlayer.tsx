@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import styled from 'styled-components';
 import { flexCenter } from '@/styles/utils';
 import PlayerStateRenderer from './PlayerStateRenderer';
@@ -8,6 +8,7 @@ import AccentColorBackground from './AccentColorBackground';
 import DebugOverlay, { useDebugActivator } from './DebugOverlay';
 import ProviderSetupScreen from './ProviderSetupScreen';
 import Toast from './Toast';
+import LibraryDrawer from './LibraryDrawer';
 import { ProfilingProvider } from '@/contexts/ProfilingContext';
 import { ProfilingOverlay } from '@/components/ProfilingOverlay';
 import { ProfiledComponent } from '@/components/ProfiledComponent';
@@ -18,6 +19,9 @@ import { PlayerSizingProvider } from '@/contexts/PlayerSizingContext';
 import { useTrackListContext, useCurrentTrackContext } from '@/contexts/TrackContext';
 import { useProviderContext } from '@/contexts/ProviderContext';
 import { toAlbumPlaylistId } from '@/constants/playlist';
+import type { ClearCacheOptions } from '@/components/VisualEffectsMenu';
+
+const VisualEffectsMenu = lazy(() => import('./VisualEffectsMenu/index'));
 
 const Container = styled.div`
   width: 100%;
@@ -36,6 +40,8 @@ const AudioPlayerComponent = () => {
     backgroundVisualizerIntensity,
     accentColorBackgroundEnabled,
     zenModeEnabled,
+    showVisualEffects,
+    setShowVisualEffects,
   } = useVisualEffectsContext();
   const { tracks, selectedPlaylistId } = useTrackListContext();
   const { currentTrack } = useCurrentTrackContext();
@@ -90,9 +96,35 @@ const AudioPlayerComponent = () => {
 
   const isMainPlayerActive = !state.isLoading && !state.error && selectedPlaylistId !== null && tracks.length > 0;
 
+  const handleOpenSettings = useCallback(() => {
+    setShowVisualEffects(true);
+  }, [setShowVisualEffects]);
+
+  const handleCloseSettings = useCallback(() => {
+    setShowVisualEffects(false);
+  }, [setShowVisualEffects]);
+
+  const handleClearCache = useCallback(async (options: ClearCacheOptions) => {
+    const { clearCacheWithOptions } = await import('@/services/cache/libraryCache');
+    await clearCacheWithOptions({ clearLikes: options.clearLikes });
+    if (options.clearPins) {
+      const { clearAllPins } = await import('@/services/settings/pinnedItemsStorage');
+      await clearAllPins();
+    }
+    if (options.clearAccentColors) {
+      localStorage.removeItem('vorbis-player-accent-color-overrides');
+      localStorage.removeItem('vorbis-player-custom-accent-colors');
+    }
+  }, []);
+
   const renderContent = () => {
     if (needsSetup) {
-      return <ProviderSetupScreen />;
+      return (
+        <ProviderSetupScreen
+          onOpenSettings={handleOpenSettings}
+          onOpenLibrary={handlers.handleOpenLibraryDrawer}
+        />
+      );
     }
 
     if (state.isLoading || state.error || selectedPlaylistId === null || tracks.length === 0) {
@@ -152,6 +184,28 @@ const AudioPlayerComponent = () => {
         {renderContent()}
         {fallthroughNotification && (
           <Toast message={fallthroughNotification} onDismiss={dismissFallthroughNotification} />
+        )}
+        {needsSetup && (
+          <>
+            <Suspense fallback={null}>
+              <VisualEffectsMenu
+                isOpen={showVisualEffects}
+                onClose={handleCloseSettings}
+                onClearCache={handleClearCache}
+                profilerEnabled={false}
+                onProfilerToggle={() => {}}
+                visualizerDebugEnabled={false}
+                onVisualizerDebugToggle={() => {}}
+              />
+            </Suspense>
+            <Suspense fallback={null}>
+              <LibraryDrawer
+                isOpen={state.showLibraryDrawer}
+                onClose={handlers.handleCloseLibraryDrawer}
+                onPlaylistSelect={handlers.handlePlaylistSelect}
+              />
+            </Suspense>
+          </>
         )}
       </Container>
     </ProfilingProvider>

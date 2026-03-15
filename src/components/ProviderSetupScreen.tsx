@@ -1,8 +1,14 @@
+import { useMemo } from 'react';
 import styled, { keyframes } from 'styled-components';
 import { useProviderContext } from '@/contexts/ProviderContext';
 import { flexCenter, flexColumn } from '@/styles/utils';
 import Switch from '@/components/controls/Switch';
 import type { ProviderId } from '@/types/domain';
+
+interface ProviderSetupScreenProps {
+  onOpenSettings?: () => void;
+  onOpenLibrary?: () => void;
+}
 
 const fadeInUp = keyframes`
   from { opacity: 0; transform: translateY(20px); }
@@ -11,6 +17,7 @@ const fadeInUp = keyframes`
 
 const SetupCard = styled.div`
   ${flexColumn};
+  position: relative;
   align-items: center;
   width: min(440px, 90vw);
   padding: 2.5rem 2rem;
@@ -21,6 +28,35 @@ const SetupCard = styled.div`
   box-shadow: ${({ theme }) => theme.shadows.albumArt};
   animation: ${fadeInUp} 0.4s ease-out;
   gap: ${({ theme }) => theme.spacing.lg};
+`;
+
+const CardHeader = styled.div`
+  position: relative;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+`;
+
+const SettingsButton = styled.button`
+  position: absolute;
+  top: -0.5rem;
+  right: -0.5rem;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: ${({ theme }) => theme.colors.muted.foreground};
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.15s ease, background 0.15s ease;
+
+  &:hover {
+    color: ${({ theme }) => theme.colors.white};
+    background: ${({ theme }) => theme.colors.control.background};
+  }
 `;
 
 const Title = styled.h1`
@@ -138,9 +174,23 @@ const ActionButton = styled.button`
   }
 `;
 
+const BrowseLibraryLink = styled.button`
+  background: none;
+  border: none;
+  color: ${({ theme }) => theme.colors.muted.foreground};
+  font-size: ${({ theme }) => theme.fontSize.sm};
+  cursor: pointer;
+  padding: 0;
+  transition: color 0.15s ease;
+
+  &:hover {
+    color: ${({ theme }) => theme.colors.white};
+  }
+`;
+
 const PROVIDER_META: Record<ProviderId, { icon: string; accentColor: string; note: string }> = {
-  spotify: { icon: '♫', accentColor: '#1db954', note: 'Requires Spotify Premium' },
-  dropbox: { icon: '📁', accentColor: '#0061ff', note: 'Play files from your Dropbox' },
+  spotify: { icon: '\u266B', accentColor: '#1db954', note: 'Requires Spotify Premium' },
+  dropbox: { icon: '\uD83D\uDCC1', accentColor: '#0061ff', note: 'Play files from your Dropbox' },
 };
 
 const Wrapper = styled.div`
@@ -149,7 +199,20 @@ const Wrapper = styled.div`
   min-height: 100dvh;
 `;
 
-export default function ProviderSetupScreen() {
+const GearIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path
+      d="M8.325 2.317a1 1 0 0 1 1.35-.462l.762.39a1 1 0 0 0 1.126-.112l.624-.53a1 1 0 0 1 1.395.1l.53.624a1 1 0 0 0 1.017.326l.79-.177a1 1 0 0 1 1.176.748l.177.79a1 1 0 0 0 .748.748l.79.177a1 1 0 0 1 .748 1.176l-.177.79a1 1 0 0 0 .326 1.017l.624.53a1 1 0 0 1 .1 1.395l-.53.624a1 1 0 0 0-.112 1.126l.39.762a1 1 0 0 1-.462 1.35l-.762.39a1 1 0 0 0-.553.995l.05.82a1 1 0 0 1-.88 1.066l-.82.05a1 1 0 0 0-.868.632l-.296.763a1 1 0 0 1-1.254.587l-.763-.296a1 1 0 0 0-1.04.166l-.596.573a1 1 0 0 1-1.386 0l-.596-.573a1 1 0 0 0-1.04-.166l-.763.296a1 1 0 0 1-1.254-.587l-.296-.763a1 1 0 0 0-.868-.632l-.82-.05a1 1 0 0 1-.88-1.066l.05-.82a1 1 0 0 0-.553-.995l-.762-.39a1 1 0 0 1-.462-1.35l.39-.762a1 1 0 0 0-.112-1.126l-.53-.624a1 1 0 0 1 .1-1.395l.624-.53a1 1 0 0 0 .326-1.017l-.177-.79a1 1 0 0 1 .748-1.176l.79-.177a1 1 0 0 0 .748-.748l.177-.79a1 1 0 0 1 1.176-.748l.79.177a1 1 0 0 0 1.017-.326l.53-.624"
+      stroke="currentColor"
+      strokeWidth="1.3"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <circle cx="10" cy="10" r="2.5" stroke="currentColor" strokeWidth="1.3" />
+  </svg>
+);
+
+export default function ProviderSetupScreen({ onOpenSettings, onOpenLibrary }: ProviderSetupScreenProps) {
   const {
     chosenProviderId,
     activeDescriptor,
@@ -158,7 +221,7 @@ export default function ProviderSetupScreen() {
     enabledProviderIds,
     toggleProvider,
   } = useProviderContext();
-  const providers = registry.getAll();
+  const providers = useMemo(() => registry.getAll(), [registry]);
   const isSingleProvider = providers.length === 1;
 
   // First visit: no provider chosen yet
@@ -168,7 +231,14 @@ export default function ProviderSetupScreen() {
     return (
       <Wrapper>
         <SetupCard>
-          <Title>Welcome to Vorbis Player</Title>
+          <CardHeader>
+            <Title>Welcome to Vorbis Player</Title>
+            {onOpenSettings && (
+              <SettingsButton onClick={onOpenSettings} aria-label="Open settings">
+                <GearIcon />
+              </SettingsButton>
+            )}
+          </CardHeader>
           <Subtitle>
             {isSingleProvider
               ? 'Connect your music provider to get started'
@@ -176,7 +246,7 @@ export default function ProviderSetupScreen() {
           </Subtitle>
           <ProviderGrid>
             {providers.map((descriptor) => {
-              const meta = PROVIDER_META[descriptor.id] ?? { icon: '♪', accentColor: '#646cff', note: '' };
+              const meta = PROVIDER_META[descriptor.id] ?? { icon: '\u266A', accentColor: '#646cff', note: '' };
               const isAuthenticated = descriptor.auth.isAuthenticated();
               const isEnabled = enabledProviderIds.includes(descriptor.id);
 
@@ -199,7 +269,7 @@ export default function ProviderSetupScreen() {
                       onClick={() => {
                         if (!isEnabled) toggleProvider(descriptor.id);
                         setActiveProviderId(descriptor.id);
-                        descriptor.auth.beginLogin();
+                        descriptor.auth.beginLogin({ popup: true });
                       }}
                     >
                       Connect
@@ -225,6 +295,11 @@ export default function ProviderSetupScreen() {
               Continue
             </ActionButton>
           )}
+          {hasAnyAuth && onOpenLibrary && (
+            <BrowseLibraryLink onClick={onOpenLibrary}>
+              Browse Library
+            </BrowseLibraryLink>
+          )}
         </SetupCard>
       </Wrapper>
     );
@@ -238,7 +313,14 @@ export default function ProviderSetupScreen() {
   return (
     <Wrapper>
       <SetupCard>
-        <Title>Session Expired</Title>
+        <CardHeader>
+          <Title>Session Expired</Title>
+          {onOpenSettings && (
+            <SettingsButton onClick={onOpenSettings} aria-label="Open settings">
+              <GearIcon />
+            </SettingsButton>
+          )}
+        </CardHeader>
         <Subtitle>
           {enabledProviders.length > 1
             ? 'Your provider sessions have expired. Reconnect to continue listening.'
@@ -246,7 +328,7 @@ export default function ProviderSetupScreen() {
         </Subtitle>
         <ProviderGrid>
           {enabledProviders.map((descriptor) => {
-            const meta = PROVIDER_META[descriptor.id] ?? { icon: '♪', accentColor: '#646cff', note: '' };
+            const meta = PROVIDER_META[descriptor.id] ?? { icon: '\u266A', accentColor: '#646cff', note: '' };
             const isAuthenticated = descriptor.auth.isAuthenticated();
             return (
               <ProviderCardContainer
@@ -267,7 +349,7 @@ export default function ProviderSetupScreen() {
                       $accentColor={meta.accentColor}
                       onClick={() => {
                         setActiveProviderId(descriptor.id);
-                        descriptor.auth.beginLogin();
+                        descriptor.auth.beginLogin({ popup: true });
                       }}
                     >
                       Reconnect
