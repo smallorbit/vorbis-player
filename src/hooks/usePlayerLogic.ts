@@ -246,6 +246,14 @@ export function usePlayerLogic() {
         }
         return;
       }
+      // Pause any non-Spotify provider before handing off to the Spotify playlist manager
+      // (which plays via the SDK directly, bypassing the cross-provider pause in playTrack).
+      const prevProvider = currentPlaybackProviderRef.current;
+      if (prevProvider && prevProvider !== 'spotify') {
+        providerRegistry.get(prevProvider)?.playback.pause().catch(() => {});
+      }
+      currentPlaybackProviderRef.current = 'spotify';
+      mediaTracksRef.current = [];
       await spotifyHandlePlaylistSelect(playlistId);
     },
     [
