@@ -212,6 +212,14 @@ export const useSpotifyPlayback = ({
     try {
       await trackDescriptor.playback.playTrack(mediaTrack);
       setCurrentTrackIndex(index);
+
+      // Prefetch the next track's resources (e.g. Dropbox temporary link)
+      const nextIndex = (index + 1) % mediaTracks.length;
+      const nextTrack = mediaTracks[nextIndex];
+      if (nextTrack && nextIndex !== index) {
+        const nextDescriptor = providerRegistry.get(nextTrack.provider);
+        nextDescriptor?.playback.prepareTrack?.(nextTrack);
+      }
     } catch (error) {
       console.error(`[${trackProvider}] Failed to play track:`, error);
       if (skipOnError && index < mediaTracks.length - 1) {

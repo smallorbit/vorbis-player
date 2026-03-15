@@ -74,8 +74,13 @@ export class DropboxPlaybackAdapter implements PlaybackProvider {
 
   private enrichMetadataInBackground(track: MediaTrack, streamUrl: string): void {
     const FETCH_LIMIT = 262144; // 256KB — enough to cover large embedded cover art in ID3 headers
+    const ENRICHMENT_DELAY_MS = 2000; // Wait for audio to buffer before fetching ID3 tags
 
     const doEnrich = async () => {
+      // Let the audio element buffer first before competing for bandwidth
+      await new Promise((resolve) => setTimeout(resolve, ENRICHMENT_DELAY_MS));
+      // Bail if track changed during the delay
+      if (this.currentTrack?.id !== track.id) return;
       let res: Response;
       try {
         res = await fetch(streamUrl, { headers: { Range: `bytes=0-${FETCH_LIMIT - 1}` } });
@@ -143,6 +148,10 @@ export class DropboxPlaybackAdapter implements PlaybackProvider {
     doEnrich().catch(() => {
       // Metadata enrichment is best-effort; ignore failures
     });
+  }
+
+  prepareTrack(track: MediaTrack): void {
+    this.catalog.prefetchTemporaryLink(track.playbackRef.ref);
   }
 
   async playCollection(

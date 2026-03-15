@@ -60,6 +60,8 @@ export interface PlaybackProvider {
   getState(): Promise<PlaybackState | null>;
   /** Subscribe to state changes (returns unsubscribe). */
   subscribe(listener: (state: PlaybackState | null) => void): () => void;
+  /** Optional: pre-warm resources for an upcoming track (e.g. fetch temporary links). */
+  prepareTrack?(track: MediaTrack): void;
 }
 
 // -----------------------------------------------------------------------------
