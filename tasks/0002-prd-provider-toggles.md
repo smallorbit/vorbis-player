@@ -107,13 +107,10 @@ The session start flow currently has two modes: a welcome screen (first visit) a
 - Switch toggles in settings visually match the visual effects menu toggles.
 - No regressions in single-provider mode (only one provider registered).
 
-## Open Questions
+## Decisions (Resolved)
 
-1. **Toast vs. banner for auto-fallthrough notification**: Should the "switched provider" message be a floating toast that auto-dismisses, or a persistent banner at the top of the player that the user must dismiss? Toast is less intrusive; banner ensures the user sees it.
-   - **Proposed**: Auto-dismissing toast (5 seconds) with a "Reconnect" link that opens Settings.
+1. **Auto-fallthrough notification**: Auto-dismissing toast (5 seconds) with a "Reconnect" link that opens Settings. Non-blocking, minimal UI footprint.
 
-2. **Should the welcome screen auto-connect the only provider?** If only one provider is registered, should we skip the welcome screen entirely and go straight to OAuth? Currently the welcome screen is shown even for single-provider setups.
-   - **Proposed**: Keep the welcome screen for first-time users even with one provider — it sets expectations. But make the "Connect" button prominent and primary.
+2. **Single-provider welcome screen**: Keep the welcome screen for first-time users even with one provider — it sets expectations. The "Connect" button should be prominent and primary.
 
-3. **Provider enable state on first visit**: On first visit, should all registered providers be pre-enabled (toggled on) by default? Or should they start disabled until the user explicitly enables them?
-   - **Proposed**: All registered providers start enabled by default. The user can disable any they don't want from Settings after setup.
+3. **Default provider enable state**: All registered providers start enabled by default on first visit. Users can disable any they don't want from Settings after setup.
