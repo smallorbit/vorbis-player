@@ -640,6 +640,7 @@ const PlaylistSelection = React.memo(function PlaylistSelection({ onPlaylistSele
     playlists,
     albums,
     likedSongsCount,
+    likedSongsPerProvider,
     isInitialLoadComplete,
   } = useLibrarySync();
   const [isLoading, setIsLoading] = useState(true);
@@ -891,7 +892,27 @@ const PlaylistSelection = React.memo(function PlaylistSelection({ onPlaylistSele
           </PinButton>
         );
 
-        const likedSongsGridCard = likedSongsCount > 0 && (
+        const usePerProviderLiked = showProviderBadges && likedSongsPerProvider.length > 1;
+
+        const likedSongsGridCard = likedSongsCount > 0 && (usePerProviderLiked ? (
+          likedSongsPerProvider.map(({ provider, count }) => (
+            <PinnableGridCard key={`liked-songs-${provider}`} onClick={() => handleLikedSongsClick(provider)}>
+              <GridCardArtWrapper style={{ position: 'relative' }}>
+                <div style={{ background: getLikedSongsGradient(provider), display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', fontSize: '3rem', color: 'white' }}>♥</div>
+                <ProviderBadgeOverlay>
+                  <ProviderIcon provider={provider} size={22} />
+                </ProviderBadgeOverlay>
+                <GridCardPinOverlay $isPinned={likedSongsPinned} onClick={(e) => handlePinPlaylistClick(LIKED_SONGS_ID, e)}>
+                  <PinIcon filled={likedSongsPinned} />
+                </GridCardPinOverlay>
+              </GridCardArtWrapper>
+              <GridCardTextArea>
+                <GridCardTitle>{LIKED_SONGS_NAME}</GridCardTitle>
+                <GridCardSubtitle>{count} tracks</GridCardSubtitle>
+              </GridCardTextArea>
+            </PinnableGridCard>
+          ))
+        ) : (
           <PinnableGridCard key="liked-songs" onClick={() => handleLikedSongsClick()}>
             <GridCardArtWrapper style={{ position: 'relative' }}>
               <div style={{ background: getLikedSongsGradient(activeDescriptor?.id), display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', fontSize: '3rem', color: 'white' }}>♥</div>
@@ -904,9 +925,27 @@ const PlaylistSelection = React.memo(function PlaylistSelection({ onPlaylistSele
               <GridCardSubtitle>{likedSongsCount} tracks</GridCardSubtitle>
             </GridCardTextArea>
           </PinnableGridCard>
-        );
+        ));
 
-        const likedSongsListItem = likedSongsCount > 0 && (
+        const likedSongsListItem = likedSongsCount > 0 && (usePerProviderLiked ? (
+          likedSongsPerProvider.map(({ provider, count }) => (
+            <PinnableListItem key={`liked-songs-${provider}`} onClick={() => handleLikedSongsClick(provider)}>
+              <div style={{ position: 'relative' }}>
+                <PlaylistImageWrapper>
+                  <div style={{ background: getLikedSongsGradient(provider), display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', borderRadius: '0.5rem', fontSize: '1.5rem', color: 'white' }}>♥</div>
+                </PlaylistImageWrapper>
+                <div style={{ position: 'absolute', top: -4, right: -4, zIndex: 2 }}>
+                  <ProviderIcon provider={provider} size={18} />
+                </div>
+              </div>
+              <PlaylistInfo>
+                <PlaylistName>{LIKED_SONGS_NAME}</PlaylistName>
+                <PlaylistDetails>{count} tracks • Shuffle enabled</PlaylistDetails>
+              </PlaylistInfo>
+              {likedSongsPinBtn}
+            </PinnableListItem>
+          ))
+        ) : (
           <PinnableListItem key="liked-songs" onClick={() => handleLikedSongsClick()}>
             <PlaylistImageWrapper>
               <div style={{ background: getLikedSongsGradient(activeDescriptor?.id), display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', borderRadius: '0.5rem', fontSize: '1.5rem', color: 'white' }}>♥</div>
@@ -917,7 +956,7 @@ const PlaylistSelection = React.memo(function PlaylistSelection({ onPlaylistSele
             </PlaylistInfo>
             {likedSongsPinBtn}
           </PinnableListItem>
-        );
+        ));
 
         const renderPlaylistGrid = (playlist: PlaylistInfo) => {
           const pinned = isPlaylistPinned(playlist.id);

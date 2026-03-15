@@ -24,6 +24,7 @@ function buildTracksFromWindow(state: SpotifyPlaybackState): Track[] {
   function toTrack(item: SpotifyTrack): Track {
     return {
       id: item.id || '',
+      provider: 'spotify',
       name: item.name,
       artists: item.artists.map(a => a.name).join(', '),
       album: item.album?.name ?? 'Unknown Album',

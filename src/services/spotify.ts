@@ -235,6 +235,7 @@ function transformTrackItem(
 
   return {
     id: item.id,
+    provider: 'spotify',
     name: item.name,
     artists: formatArtists(item.artists),
     artistsData: buildArtistsData(item.artists),

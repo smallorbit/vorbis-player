@@ -17,10 +17,18 @@ import { LIKES_CHANGED_EVENT } from '../providers/dropbox/dropboxLikesCache';
 
 export const ART_REFRESHED_EVENT = 'vorbis-art-refreshed';
 
+/** Per-provider liked songs count for rendering separate cards. */
+export interface PerProviderLikedCount {
+  provider: ProviderId;
+  count: number;
+}
+
 interface UseLibrarySyncResult {
   playlists: CachedPlaylistInfo[];
   albums: AlbumInfo[];
   likedSongsCount: number;
+  /** Liked counts broken down by provider (for multi-provider liked songs cards). */
+  likedSongsPerProvider: PerProviderLikedCount[];
   isInitialLoadComplete: boolean;
   isSyncing: boolean;
   lastSyncTimestamp: number | null;
@@ -68,6 +76,7 @@ export function useLibrarySync(): UseLibrarySyncResult {
   const [playlists, setPlaylists] = useState<CachedPlaylistInfo[]>([]);
   const [albums, setAlbums] = useState<AlbumInfo[]>([]);
   const [likedSongsCount, setLikedSongsCount] = useState(0);
+  const [likedSongsPerProvider, setLikedSongsPerProvider] = useState<PerProviderLikedCount[]>([]);
   const [syncState, setSyncState] = useState<SyncState>({
     isInitialLoadComplete: false,
     isSyncing: false,
@@ -91,11 +100,15 @@ export function useLibrarySync(): UseLibrarySyncResult {
     const allPlaylists: CachedPlaylistInfo[] = [];
     const allAlbums: AlbumInfo[] = [];
     let totalLikedCount = 0;
+    const perProvider: PerProviderLikedCount[] = [];
 
     if (isSpotifyEnabled) {
       allPlaylists.push(...spotifyDataRef.current.playlists);
       allAlbums.push(...spotifyDataRef.current.albums);
       totalLikedCount += spotifyDataRef.current.likedCount;
+      if (spotifyDataRef.current.likedCount > 0) {
+        perProvider.push({ provider: 'spotify', count: spotifyDataRef.current.likedCount });
+      }
     }
 
     for (const [providerId, data] of nonSpotifyDataRef.current) {
@@ -103,12 +116,16 @@ export function useLibrarySync(): UseLibrarySyncResult {
         allPlaylists.push(...data.playlists);
         allAlbums.push(...data.albums);
         totalLikedCount += data.likedCount;
+        if (data.likedCount > 0) {
+          perProvider.push({ provider: providerId, count: data.likedCount });
+        }
       }
     }
 
     setPlaylists(allPlaylists);
     setAlbums(allAlbums);
     setLikedSongsCount(totalLikedCount);
+    setLikedSongsPerProvider(perProvider);
   }, [isSpotifyEnabled, enabledProviderIds]);
 
   // ── Spotify path: delegate to existing sync engine ─────────────────────
@@ -357,6 +374,7 @@ export function useLibrarySync(): UseLibrarySyncResult {
     playlists,
     albums,
     likedSongsCount,
+    likedSongsPerProvider,
     isInitialLoadComplete: syncState.isInitialLoadComplete,
     isSyncing: syncState.isSyncing,
     lastSyncTimestamp: syncState.lastSyncTimestamp,
