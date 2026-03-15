@@ -369,7 +369,7 @@ export class LibrarySyncEngine {
     }
 
     if (changes.albumsChanged) {
-      updatedAlbums = await this.syncAlbums(changes.newAlbumCount, signal);
+      updatedAlbums = await this.syncAlbums(signal);
     }
 
     if (changes.likedSongsChanged) {
@@ -440,7 +440,7 @@ export class LibrarySyncEngine {
     return allFetched;
   }
 
-  private async syncAlbums(newTotal: number, signal: AbortSignal): Promise<AlbumInfo[]> {
+  private async syncAlbums(signal: AbortSignal): Promise<AlbumInfo[]> {
     const now = Date.now();
     this.expirePendingMutations(now);
 
