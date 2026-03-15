@@ -1,6 +1,6 @@
 import styled, { keyframes } from 'styled-components';
 import { useProviderContext } from '@/contexts/ProviderContext';
-import { flexCenter, flexColumn, cardBase } from '@/styles/utils';
+import { flexCenter, flexColumn } from '@/styles/utils';
 import Switch from '@/components/controls/Switch';
 import type { ProviderId } from '@/types/domain';
 
@@ -10,7 +10,6 @@ const fadeInUp = keyframes`
 `;
 
 const SetupCard = styled.div`
-  ${cardBase};
   ${flexColumn};
   align-items: center;
   width: min(440px, 90vw);
@@ -52,11 +51,13 @@ const ProviderCardContainer = styled.div<{ $accentColor: string; $isEnabled?: bo
   align-items: center;
   gap: ${({ theme }) => theme.spacing.md};
   width: 100%;
+  min-width: 0;
   padding: ${({ theme }) => theme.spacing.md} ${({ theme }) => theme.spacing.lg};
   background: ${({ theme }) => theme.colors.control.background};
   border: 1px solid ${({ $isEnabled, $accentColor, theme }) =>
     $isEnabled ? $accentColor : theme.colors.borderSubtle};
   border-radius: ${({ theme }) => theme.borderRadius['2xl']};
+  box-sizing: border-box;
   transition: border-color 0.15s ease, background 0.15s ease;
 `;
 
