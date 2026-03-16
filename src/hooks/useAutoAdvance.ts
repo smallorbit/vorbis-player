@@ -2,7 +2,8 @@ import { useEffect, useRef } from 'react';
 import { spotifyPlayer } from '../services/spotifyPlayer';
 import type { Track } from '../services/spotify';
 import { useProviderContext } from '@/contexts/ProviderContext';
-import type { PlaybackState } from '@/types/domain';
+import { providerRegistry } from '@/providers/registry';
+import type { PlaybackState, ProviderId } from '@/types/domain';
 
 interface UseAutoAdvanceProps {
   tracks: Track[];
@@ -10,6 +11,8 @@ interface UseAutoAdvanceProps {
   playTrack: (index: number, skipOnError?: boolean) => void;
   enabled?: boolean;
   endThreshold?: number;
+  /** Ref tracking which provider is currently handling playback (may differ from activeDescriptor). */
+  currentPlaybackProviderRef?: React.RefObject<ProviderId | null>;
 }
 
 const PLAY_COOLDOWN_MS = 5000;
@@ -19,7 +22,8 @@ export const useAutoAdvance = ({
   currentTrackIndex,
   playTrack,
   enabled = true,
-  endThreshold = 2000
+  endThreshold = 2000,
+  currentPlaybackProviderRef,
 }: UseAutoAdvanceProps) => {
   const hasEnded = useRef(false);
   const wasPlayingRef = useRef(false);
@@ -57,7 +61,10 @@ export const useAutoAdvance = ({
     }
   }, [tracks]);
 
-  // Use event-based detection via the provider's playback subscribe
+  // Use event-based detection via provider playback subscriptions.
+  // Subscribe to ALL registered providers (like usePlayerLogic does) so that
+  // cross-provider transitions in unified playlists are detected even before
+  // activeDescriptor updates via async React state.
   useEffect(() => {
     if (!enabled || tracks.length === 0 || !activeDescriptor) {
       return;
@@ -103,8 +110,9 @@ export const useAutoAdvance = ({
       // Guard: skip if a track was recently loaded — both Spotify SDK and HTML5
       // Audio briefly pause at position 0 during buffering, which would falsely
       // trigger advance.
+      const currentProvider = currentPlaybackProviderRef?.current;
       let msSinceLastPlay: number;
-      if (activeProviderId === 'spotify') {
+      if (currentProvider === 'spotify' || (!currentProvider && activeProviderId === 'spotify')) {
         msSinceLastPlay = Date.now() - spotifyPlayer.lastPlayTrackTime;
       } else {
         msSinceLastPlay = Date.now() - lastPlayInitiatedRef.current;
@@ -117,8 +125,24 @@ export const useAutoAdvance = ({
       wasPlayingRef.current = !isPaused;
     }
 
-    const unsubscribe = activeDescriptor.playback.subscribe(handleProviderStateChange);
+    const unsubscribes: (() => void)[] = [];
 
-    return unsubscribe;
+    // Subscribe to the active provider
+    unsubscribes.push(activeDescriptor.playback.subscribe(handleProviderStateChange));
+
+    // Also subscribe to other registered providers for cross-provider queue support.
+    // Only process events when that provider is the one currently playing.
+    for (const descriptor of providerRegistry.getAll()) {
+      if (descriptor.id !== activeDescriptor.id) {
+        const otherUnsubscribe = descriptor.playback.subscribe((state) => {
+          if (currentPlaybackProviderRef?.current === descriptor.id) {
+            handleProviderStateChange(state);
+          }
+        });
+        unsubscribes.push(otherUnsubscribe);
+      }
+    }
+
+    return () => unsubscribes.forEach((unsub) => unsub());
   }, [enabled, tracks.length, endThreshold, activeDescriptor, activeProviderId]);
 };
