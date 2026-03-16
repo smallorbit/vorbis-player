@@ -255,4 +255,69 @@ describe('usePlayerLogic — radio start', () => {
     expect(result.current.state.tracks[0].name).toBe('Creep');
     expect(result.current.state.tracks[1].name).toBe('No Surprises');
   });
+
+  it('deduplicates seed by normalized artist+title when recommendation has different id', async () => {
+    const seedTrack = makeTrack({ id: 'seed-1', name: 'Creep', artists: 'Radiohead', uri: 'spotify:track:creep' });
+    const seedDuplicate = makeMediaTrack({ id: 'dup-1', name: 'Creep', artists: 'Radiohead' });
+    const generatedB = makeMediaTrack({ name: 'No Surprises', artists: 'Radiohead' });
+
+    useRadioMock.mockReturnValue({
+      ...defaultRadioReturn,
+      startRadio: vi.fn().mockResolvedValue({
+        queue: [seedDuplicate, generatedB],
+        seedDescription: 'Radio based on Creep by Radiohead',
+        matchStats: { lastfmCandidates: 10, matched: 2, byMbid: 0, byName: 2 },
+        unmatchedSuggestions: [],
+      }),
+    });
+
+    const { result } = renderHook(() => useTrackContextAndPlayerLogic(), { wrapper: AllProviders });
+
+    act(() => {
+      result.current.setTracks([seedTrack]);
+      result.current.setCurrentTrackIndex(0);
+    });
+
+    await act(async () => {
+      await result.current.handlers.handleStartRadio();
+    });
+
+    expect(result.current.state.tracks.length).toBe(2);
+    expect(result.current.state.tracks[0].id).toBe('seed-1');
+    expect(result.current.state.tracks[0].name).toBe('Creep');
+    expect(result.current.state.tracks[1].name).toBe('No Surprises');
+  });
+
+  it('uses currentTrack as fallback seed when mediaTracksRef is empty (Spotify flow)', async () => {
+    const seedTrack = makeTrack({ id: 'seed-1', name: 'Creep', artists: 'Radiohead', uri: 'spotify:track:creep' });
+    const generatedA = makeMediaTrack({ name: 'Karma Police', artists: 'Radiohead' });
+
+    useRadioMock.mockReturnValue({
+      ...defaultRadioReturn,
+      startRadio: vi.fn().mockResolvedValue({
+        queue: [generatedA],
+        seedDescription: 'Radio based on Creep by Radiohead',
+        matchStats: { lastfmCandidates: 10, matched: 1, byMbid: 0, byName: 1 },
+        unmatchedSuggestions: [],
+      }),
+    });
+
+    const { result } = renderHook(() => useTrackContextAndPlayerLogic(), { wrapper: AllProviders });
+
+    act(() => {
+      result.current.setTracks([seedTrack]);
+      result.current.setCurrentTrackIndex(0);
+      result.current.mediaTracksRef.current = [];
+    });
+
+    await act(async () => {
+      await result.current.handlers.handleStartRadio();
+    });
+
+    expect(playTrackSpy).not.toHaveBeenCalled();
+    expect(result.current.state.tracks.length).toBe(2);
+    expect(result.current.state.tracks[0].id).toBe('seed-1');
+    expect(result.current.state.tracks[0].name).toBe('Creep');
+    expect(result.current.state.tracks[1].name).toBe('Karma Police');
+  });
 });
