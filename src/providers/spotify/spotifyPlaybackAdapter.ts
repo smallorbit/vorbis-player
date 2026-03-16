@@ -26,12 +26,32 @@ function mapPlaybackState(state: SpotifyPlaybackState | null): PlaybackState | n
 
 export class SpotifyPlaybackAdapter implements PlaybackProvider {
   readonly providerId: ProviderId = 'spotify';
+  private static readonly READY_TIMEOUT_MS = 10_000;
+  private static readonly READY_POLL_MS = 200;
+
+  private async waitForPlayerReady(): Promise<void> {
+    const start = Date.now();
+    while (!spotifyPlayer.getIsReady() || !spotifyPlayer.getDeviceId()) {
+      if (Date.now() - start > SpotifyPlaybackAdapter.READY_TIMEOUT_MS) {
+        throw new Error('Spotify player not ready after waiting');
+      }
+      await new Promise(resolve => setTimeout(resolve, SpotifyPlaybackAdapter.READY_POLL_MS));
+    }
+  }
+
+  private async ensurePlaybackReady(): Promise<void> {
+    await spotifyPlayer.initialize();
+    await this.waitForPlayerReady();
+    await spotifyPlayer.transferPlaybackToDevice();
+    await spotifyPlayer.ensureDeviceIsActive();
+  }
 
   async initialize(): Promise<void> {
     await spotifyPlayer.initialize();
   }
 
   async playTrack(track: MediaTrack): Promise<void> {
+    await this.ensurePlaybackReady();
     await spotifyPlayer.playTrack(track.playbackRef.ref);
   }
 
@@ -39,6 +59,7 @@ export class SpotifyPlaybackAdapter implements PlaybackProvider {
     collectionRef: CollectionRef,
     options?: { offset?: number },
   ): Promise<void> {
+    await this.ensurePlaybackReady();
     // Use Spotify context-based playback for playlists
     if (collectionRef.kind === 'playlist') {
       await spotifyPlayer.playContext(
