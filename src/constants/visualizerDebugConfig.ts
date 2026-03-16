@@ -86,11 +86,11 @@ const DEFAULT_PARTICLE: ParticleVisualizerConfig = {
 const DEFAULT_TRAIL: TrailVisualizerConfig = {
   particleMinRadius: 3.5,
   particleMaxRadius: 29,
-  lifeDrainDivisor: 11000,
+  lifeDrainDivisor: 17000,
   lifeRespawnMin: 0.8,
   lifeRespawnSpread: 0.2,
   shipTurnRate: 0.00013,
-  shipSpeedBase: 2.7,
+  shipSpeedBase: 4,
   shipSpeedSpread: 1.3,
   shipWobble: 0.025,
   pausedSpeedMult: 0.1,
@@ -102,7 +102,7 @@ const DEFAULT_TRAIL: TrailVisualizerConfig = {
   glowRadius: 16,
   minVisibleRadius: 11,
   countBaseMobile: 160,
-  countBaseDesktop: 120,
+  countBaseDesktop: 255,
   countPixelDivisor: 5000,
   countPixelDivisorMobile: 5000,
 };
