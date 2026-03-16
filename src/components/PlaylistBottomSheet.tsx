@@ -90,6 +90,8 @@ interface PlaylistBottomSheetProps {
   currentTrackIndex: number;
   onTrackSelect: (index: number) => void;
   showProviderIcons?: boolean;
+  radioActive?: boolean;
+  radioSeedDescription?: string | null;
 }
 
 const PlaylistBottomSheet = memo<PlaylistBottomSheetProps>(function PlaylistBottomSheet({
@@ -99,6 +101,8 @@ const PlaylistBottomSheet = memo<PlaylistBottomSheetProps>(function PlaylistBott
   currentTrackIndex,
   onTrackSelect,
   showProviderIcons,
+  radioActive,
+  radioSeedDescription,
 }) {
   const { ref: headerRef, isDragging, dragOffset } = useVerticalSwipeGesture({
     onSwipeDown: onClose,
@@ -117,7 +121,7 @@ const PlaylistBottomSheet = memo<PlaylistBottomSheetProps>(function PlaylistBott
         $dragOffset={effectiveDragOffset}
         role="dialog"
         aria-modal="true"
-        aria-label="Playlist"
+        aria-label={radioActive ? 'Radio' : 'Playlist'}
       >
         <SheetHeader>
           <SwipeHandle
@@ -128,7 +132,12 @@ const PlaylistBottomSheet = memo<PlaylistBottomSheetProps>(function PlaylistBott
           >
             <GripPill />
           </SwipeHandle>
-          <SheetTitle>Playlist</SheetTitle>
+          <SheetTitle>{radioActive ? 'Radio' : 'Playlist'}</SheetTitle>
+          {radioActive && radioSeedDescription && (
+            <div style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.5)', textAlign: 'center', marginTop: '2px' }}>
+              {radioSeedDescription}
+            </div>
+          )}
         </SheetHeader>
         <SheetContent>
           {isOpen && (

@@ -9,12 +9,15 @@ import { useSpotifyPlayback } from '@/hooks/useSpotifyPlayback';
 import { useAutoAdvance } from '@/hooks/useAutoAdvance';
 import { useAccentColor } from '@/hooks/useAccentColor';
 import { useUnifiedLikedTracks } from '@/hooks/useUnifiedLikedTracks';
+import { useRadio } from '@/hooks/useRadio';
 import type { Track } from '@/services/spotify';
-import type { PlaybackState } from '@/types/domain';
+import type { PlaybackState, ProviderId } from '@/types/domain';
 import type { MediaTrack } from '@/types/domain';
+import type { RadioSeed } from '@/types/radio';
 import { isAlbumId, extractAlbumId, LIKED_SONGS_ID } from '@/constants/playlist';
 import { shuffleArray } from '@/utils/shuffleArray';
 import { providerRegistry } from '@/providers/registry';
+import { resolveViaSpotify } from '@/services/spotifyResolver';
 
 /** Convert MediaTrack to Track for UI; Dropbox tracks use empty uri (playback via ref). */
 export function mediaTrackToTrack(m: MediaTrack): Track {
@@ -34,6 +37,10 @@ export function mediaTrackToTrack(m: MediaTrack): Track {
 }
 
 export function usePlayerLogic() {
+  // Terminology used in this hook:
+  // - active provider: selected provider context (library/catalog focus in UI)
+  // - driving provider: provider currently controlling audio playback
+  // In mixed queues these can differ, so playback controls should prefer the driving provider.
   const {
     tracks,
     isLoading,
@@ -95,16 +102,31 @@ export function usePlayerLogic() {
   // Playback state from provider events (local — not shared via context)
   const [isPlaying, setIsPlaying] = useState(false);
   const [playbackPosition, setPlaybackPosition] = useState(0);
+  const [spotifyAuthExpired, setSpotifyAuthExpired] = useState(false);
 
   // Library drawer visibility (local UI state)
   const [showLibraryDrawer, setShowLibraryDrawer] = useState(false);
 
-  const { playTrack, currentPlaybackProviderRef } = useSpotifyPlayback({
+  const fallbackDrivingProviderRef = useRef<ProviderId | null>(null);
+  const spotifyPlayback = useSpotifyPlayback({
     tracks,
     setCurrentTrackIndex,
     activeDescriptor,
     mediaTracksRef,
+    onSpotifyAuthExpired: () => setSpotifyAuthExpired(true),
   });
+  const { playTrack } = spotifyPlayback;
+  const drivingProviderRef = spotifyPlayback.currentPlaybackProviderRef ?? fallbackDrivingProviderRef;
+
+  /** Resolve provider currently driving playback; falls back to active provider when unknown. */
+  const getDrivingProviderId = useCallback((): ProviderId | null => (
+    drivingProviderRef.current ?? activeDescriptor?.id ?? null
+  ), [activeDescriptor, drivingProviderRef]);
+
+  const getDrivingProviderDescriptor = useCallback(() => {
+    const drivingProviderId = getDrivingProviderId();
+    return drivingProviderId ? providerRegistry.get(drivingProviderId) : undefined;
+  }, [getDrivingProviderId]);
 
   const { handlePlaylistSelect: spotifyHandlePlaylistSelect } = usePlaylistManager({
     setError,
@@ -163,7 +185,7 @@ export function usePlayerLogic() {
           const firstTrack = mediaTracksRef.current[0];
           const firstProvider = getDescriptor(firstTrack.provider);
           if (firstProvider) {
-            currentPlaybackProviderRef.current = firstTrack.provider;
+            drivingProviderRef.current = firstTrack.provider;
             if (firstTrack.provider !== activeDescriptor?.id) {
               setActiveProviderId(firstTrack.provider);
             }
@@ -235,7 +257,7 @@ export function usePlayerLogic() {
 
           // Update the playback provider ref so controls route to the correct provider
           // (can't use playTrack() here because activeDescriptor may still be stale)
-          currentPlaybackProviderRef.current = providerId;
+          drivingProviderRef.current = providerId;
           await targetDescriptor.playback.playTrack(mediaTracksRef.current[0]);
         } catch (err) {
           setError(err instanceof Error ? err.message : 'Failed to load collection.');
@@ -248,11 +270,11 @@ export function usePlayerLogic() {
       }
       // Pause any non-Spotify provider before handing off to the Spotify playlist manager
       // (which plays via the SDK directly, bypassing the cross-provider pause in playTrack).
-      const prevProvider = currentPlaybackProviderRef.current;
+      const prevProvider = drivingProviderRef.current;
       if (prevProvider && prevProvider !== 'spotify') {
         providerRegistry.get(prevProvider)?.playback.pause().catch(() => {});
       }
-      currentPlaybackProviderRef.current = 'spotify';
+      drivingProviderRef.current = 'spotify';
       mediaTracksRef.current = [];
       await spotifyHandlePlaylistSelect(playlistId);
     },
@@ -267,14 +289,14 @@ export function usePlayerLogic() {
       setTracks,
       setOriginalTracks,
       setCurrentTrackIndex,
-      playTrack,
       spotifyHandlePlaylistSelect,
       isUnifiedLikedActive,
       connectedProviderIds,
+      drivingProviderRef,
     ]
   );
 
-  useAutoAdvance({ tracks, currentTrackIndex, playTrack, enabled: true, currentPlaybackProviderRef });
+  useAutoAdvance({ tracks, currentTrackIndex, playTrack, enabled: true, currentPlaybackProviderRef: drivingProviderRef });
 
   // Auto-extract accent color from album artwork; respects overrides in ColorContext
   useAccentColor(currentTrack, accentColorOverrides, setAccentColor, setAccentColorOverrides);
@@ -296,8 +318,14 @@ export function usePlayerLogic() {
   useEffect(() => {
     const playback = activeDescriptor?.playback;
     if (!playback) return;
+    const activeProviderId = activeDescriptor.id;
 
-    function handleProviderStateChange(state: PlaybackState | null) {
+    function handleProviderStateChange(providerId: ProviderId, state: PlaybackState | null) {
+      const drivingProviderId = drivingProviderRef.current ?? activeProviderId;
+      if (providerId !== drivingProviderId) {
+        return;
+      }
+
       if (state) {
         setIsPlaying(state.isPlaying);
         setPlaybackPosition(state.positionMs);
@@ -348,24 +376,25 @@ export function usePlayerLogic() {
     const unsubscribes: (() => void)[] = [];
 
     // Subscribe to the active provider
-    unsubscribes.push(playback.subscribe(handleProviderStateChange));
+    unsubscribes.push(
+      playback.subscribe((state) => handleProviderStateChange(activeProviderId, state))
+    );
 
     // Also subscribe to other registered providers for cross-provider queue support.
     // Only process events when that provider is the one currently playing.
     for (const descriptor of providerRegistry.getAll()) {
-      if (descriptor.id !== activeDescriptor.id) {
+      if (descriptor.id !== activeProviderId) {
         const otherUnsubscribe = descriptor.playback.subscribe((state) => {
-          // Only handle events from the provider that's currently playing
-          if (currentPlaybackProviderRef.current === descriptor.id) {
-            handleProviderStateChange(state);
-          }
+          handleProviderStateChange(descriptor.id, state);
         });
         unsubscribes.push(otherUnsubscribe);
       }
     }
 
-    // Check initial state
-    playback.getState().then((state) => {
+    // Check initial state for whichever provider is currently driving playback.
+    const stateProviderId = drivingProviderRef.current ?? activeProviderId;
+    const stateDescriptor = providerRegistry.get(stateProviderId);
+    stateDescriptor?.playback.getState().then((state) => {
       if (state) {
         setIsPlaying(state.isPlaying);
         setPlaybackPosition(state.positionMs);
@@ -397,33 +426,18 @@ export function usePlayerLogic() {
 
   const handlePlay = useCallback(async () => {
     try {
-      // Resume the provider that's currently playing (may differ from active in cross-provider queues)
-      const currentProvider = currentPlaybackProviderRef.current;
-      if (currentProvider && currentProvider !== activeDescriptor?.id) {
-        const descriptor = providerRegistry.get(currentProvider);
-        if (descriptor) {
-          await descriptor.playback.resume();
-          return;
-        }
-      }
-      await activeDescriptor?.playback.resume();
+      const drivingDescriptor = getDrivingProviderDescriptor();
+      if (!drivingDescriptor) return;
+      await drivingDescriptor.playback.resume();
     } catch {
       // Autoplay policy or network errors are handled by the playback adapter
     }
-  }, [activeDescriptor]);
+  }, [getDrivingProviderDescriptor]);
 
   const handlePause = useCallback(() => {
-    // Pause the provider that's currently playing
-    const currentProvider = currentPlaybackProviderRef.current;
-    if (currentProvider && currentProvider !== activeDescriptor?.id) {
-      const descriptor = providerRegistry.get(currentProvider);
-      if (descriptor) {
-        descriptor.playback.pause();
-        return;
-      }
-    }
-    activeDescriptor?.playback.pause();
-  }, [activeDescriptor]);
+    const drivingDescriptor = getDrivingProviderDescriptor();
+    drivingDescriptor?.playback.pause();
+  }, [getDrivingProviderDescriptor]);
 
   const handleOpenLibraryDrawer = useCallback(() => {
     setShowLibraryDrawer(true);
@@ -435,15 +449,107 @@ export function usePlayerLogic() {
     setShowLibraryDrawer(false);
   }, []);
 
+  // ── Radio feature ───────────────────────────────────────────────────
+
+  const { radioState, startRadio, stopRadio: stopRadioBase, isRadioAvailable } = useRadio();
+
+  const clearSpotifyAuthExpired = useCallback(() => {
+    setSpotifyAuthExpired(false);
+  }, []);
+
+  const stopRadio = useCallback(() => {
+    stopRadioBase();
+    setSpotifyAuthExpired(false);
+  }, [stopRadioBase]);
+
   const handleBackToLibrary = useCallback(() => {
     handlePause();
+    stopRadio();
     setSelectedPlaylistId(null);
     setTracks([]);
     setCurrentTrackIndex(0);
     mediaTracksRef.current = [];
     setShowPlaylist(false);
     setShowVisualEffects(false);
-  }, [handlePause, setSelectedPlaylistId, setTracks, setCurrentTrackIndex, setShowPlaylist, setShowVisualEffects]);
+  }, [handlePause, stopRadio, setSelectedPlaylistId, setTracks, setCurrentTrackIndex, setShowPlaylist, setShowVisualEffects]);
+
+  /**
+   * Start a radio session from the currently playing track.
+   * Provider-agnostic: fetches catalog from the active provider, generates
+   * a radio queue via Last.fm, then resolves unmatched suggestions via Spotify.
+   */
+  const handleStartRadio = useCallback(async () => {
+    if (!activeDescriptor || !currentTrack) return;
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      // Pre-warm Spotify SDK concurrently with queue generation
+      const spotifyDescriptor = providerRegistry.get('spotify');
+      if (spotifyAuth.isAuthenticated() && spotifyDescriptor) {
+        spotifyDescriptor.playback.initialize().catch(() => {});
+      }
+
+      // Fetch catalog for matching — provider-specific "all tracks" strategy
+      let catalogTracks: MediaTrack[];
+      if (activeDescriptor.id === 'dropbox') {
+        const allMusicRef = { provider: 'dropbox' as const, kind: 'folder' as const, id: '' };
+        catalogTracks = await activeDescriptor.catalog.listTracks(allMusicRef);
+      } else {
+        const likedRef = { provider: activeDescriptor.id, kind: 'liked' as const, id: '' };
+        catalogTracks = await activeDescriptor.catalog.listTracks(likedRef);
+      }
+
+      const seed: RadioSeed = {
+        type: 'track',
+        artist: currentTrack.artists,
+        track: currentTrack.name,
+      };
+
+      const result = await startRadio(seed, catalogTracks);
+
+      if (!result) {
+        setIsLoading(false);
+        return;
+      }
+
+      let combinedQueue = [...result.queue];
+
+      // Resolve unmatched suggestions via Spotify if user is authenticated
+      if (result.unmatchedSuggestions.length > 0 && spotifyAuth.isAuthenticated()) {
+        try {
+          const spotifyTracks = await resolveViaSpotify(result.unmatchedSuggestions);
+          const existingKeys = new Set(
+            combinedQueue.map((t) => `${t.artists.toLowerCase()}||${t.name.toLowerCase()}`),
+          );
+          const newSpotifyTracks = spotifyTracks.filter(
+            (t) => !existingKeys.has(`${t.artists.toLowerCase()}||${t.name.toLowerCase()}`),
+          );
+          combinedQueue = [...combinedQueue, ...newSpotifyTracks];
+          console.debug('[Radio] Resolved Spotify tracks:', newSpotifyTracks.length, 'of', result.unmatchedSuggestions.length, 'unmatched suggestions');
+        } catch (err) {
+          console.warn('[Radio] Failed to resolve Spotify tracks:', err);
+        }
+      }
+
+      if (combinedQueue.length > 0) {
+        const trackList = combinedQueue.map(mediaTrackToTrack);
+        mediaTracksRef.current = combinedQueue;
+        setOriginalTracks(trackList);
+        setTracks(trackList);
+        setCurrentTrackIndex(0);
+        setSelectedPlaylistId('radio');
+        setIsLoading(false);
+        await playTrack(0);
+      } else {
+        setIsLoading(false);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to start radio.');
+      setIsLoading(false);
+    }
+  }, [activeDescriptor, currentTrack, startRadio, setIsLoading, setError, setOriginalTracks, setTracks, setCurrentTrackIndex, setSelectedPlaylistId, playTrack]);
 
   const handlers = useMemo(
     () => ({
@@ -456,6 +562,7 @@ export function usePlayerLogic() {
       handleOpenLibraryDrawer,
       handleCloseLibraryDrawer,
       handleBackToLibrary,
+      handleStartRadio,
     }),
     [
       handlePlaylistSelect,
@@ -467,6 +574,7 @@ export function usePlayerLogic() {
       handleOpenLibraryDrawer,
       handleCloseLibraryDrawer,
       handleBackToLibrary,
+      handleStartRadio,
     ]
   );
 
@@ -481,6 +589,17 @@ export function usePlayerLogic() {
       playbackPosition,
     },
     handlers,
-    currentPlaybackProviderRef,
+    radio: {
+      radioState,
+      isRadioAvailable,
+      stopRadio,
+      spotifyAuthExpired,
+      clearSpotifyAuthExpired,
+      isActive: radioState.isActive,
+    },
+    mediaTracksRef,
+    setTracks,
+    setOriginalTracks,
+    currentPlaybackProviderRef: drivingProviderRef,
   };
 }

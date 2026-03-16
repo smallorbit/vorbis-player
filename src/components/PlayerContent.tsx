@@ -43,6 +43,7 @@ interface PlaybackHandlers {
   onPlaylistSelect: (playlistId: string, playlistName: string, provider?: import('@/types/domain').ProviderId) => void;
   onAlbumPlay: (albumId: string, albumName: string) => void;
   onBackToLibrary: () => void;
+  onStartRadio?: () => void;
 }
 
 interface AlbumArtBounds {
@@ -58,6 +59,9 @@ interface PlayerContentProps {
   onAlbumArtBoundsChange?: (bounds: AlbumArtBounds | null) => void;
   handlers: PlaybackHandlers;
   currentTrackProvider?: import('@/types/domain').ProviderId;
+  radioState?: import('@/hooks/useRadio').RadioState;
+  isRadioAvailable?: boolean;
+  radioActive?: boolean;
 }
 
 const ContentWrapper = styled.div.withConfig({
@@ -287,11 +291,11 @@ const FlipInner = styled.div.withConfig({
 `;
 
 
-const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, showLibraryDrawer, onAlbumArtBoundsChange, handlers, currentTrackProvider }) => {
+const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, showLibraryDrawer, onAlbumArtBoundsChange, handlers, currentTrackProvider, radioState, isRadioAvailable, radioActive }) => {
   // --- Context hooks ---
   const { tracks, shuffleEnabled, handleShuffleToggle, selectedPlaylistId } = useTrackListContext();
   const { isUnifiedLikedActive } = useUnifiedLikedTracks();
-  const showProviderIcons = isUnifiedLikedActive && selectedPlaylistId === LIKED_SONGS_ID;
+  const showProviderIcons = (isUnifiedLikedActive && selectedPlaylistId === LIKED_SONGS_ID) || !!radioActive;
   const { currentTrack, currentTrackIndex, showPlaylist, setShowPlaylist } = useCurrentTrackContext();
 
   const {
@@ -782,6 +786,8 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
         onZenModeToggle={handleZenModeToggle}
         shuffleEnabled={shuffleEnabled}
         onShuffleToggle={handleShuffleToggle}
+        onStartRadio={isRadioAvailable ? handlers.onStartRadio : undefined}
+        radioGenerating={radioState?.isGenerating}
       />
       </ProfiledComponent>
       <Suspense fallback={<VisualEffectsLoadingFallback />}>
@@ -805,6 +811,8 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
               currentTrackIndex={currentTrackIndex}
               onTrackSelect={handlers.onTrackSelect}
               showProviderIcons={showProviderIcons}
+              radioActive={radioActive}
+              radioSeedDescription={radioState?.seedDescription}
             />
           </ProfiledComponent>
         ) : (
@@ -816,6 +824,8 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
               currentTrackIndex={currentTrackIndex}
               onTrackSelect={handlers.onTrackSelect}
               showProviderIcons={showProviderIcons}
+              radioActive={radioActive}
+              radioSeedDescription={radioState?.seedDescription}
             />
           </ProfiledComponent>
         )}

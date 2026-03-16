@@ -31,7 +31,7 @@ const Container = styled.div`
 `;
 
 const AudioPlayerComponent = () => {
-  const { state, handlers, currentPlaybackProviderRef } = usePlayerLogic();
+  const { state, handlers, radio, currentPlaybackProviderRef: playbackProviderRef } = usePlayerLogic();
   const { debugActive, handleActivatorTap } = useDebugActivator();
   const { accentColor } = useColorContext();
   const {
@@ -46,21 +46,27 @@ const AudioPlayerComponent = () => {
   const { tracks, selectedPlaylistId } = useTrackListContext();
   const { currentTrack } = useCurrentTrackContext();
 
+  const resolveDisplayProvider = useCallback((): import('@/types/domain').ProviderId | undefined => (
+    (currentTrack?.provider as import('@/types/domain').ProviderId | undefined)
+    ?? playbackProviderRef.current
+    ?? undefined
+  ), [currentTrack, playbackProviderRef]);
+
   // Track the current playback provider — derives from the ref but as React state for re-renders
-  const [currentTrackProvider, setCurrentTrackProvider] = useState<import('@/types/domain').ProviderId | undefined>(
-    currentPlaybackProviderRef.current ?? undefined
+  const [displayProviderId, setDisplayProviderId] = useState<import('@/types/domain').ProviderId | undefined>(
+    resolveDisplayProvider()
   );
   useEffect(() => {
-    // Update when the current track changes (provider may have switched)
-    const provider = (currentTrack?.provider as import('@/types/domain').ProviderId | undefined)
-      ?? currentPlaybackProviderRef.current
-      ?? undefined;
-    setCurrentTrackProvider(provider);
-  }, [currentTrack, currentPlaybackProviderRef]);
+    setDisplayProviderId(resolveDisplayProvider());
+  }, [resolveDisplayProvider]);
 
-  const handleAlbumPlay = useCallback((albumId: string, _albumName: string) => {
-    handlers.handlePlaylistSelect(toAlbumPlaylistId(albumId));
-  }, [handlers]);
+  const handleAlbumPlay = useCallback((albumId: string) => {
+    handlers.handlePlaylistSelect(
+      toAlbumPlaylistId(albumId),
+      undefined,
+      currentTrack?.provider,
+    );
+  }, [handlers, currentTrack?.provider]);
 
   const playbackHandlers = useMemo(() => ({
     onPlay: handlers.handlePlay,
@@ -73,6 +79,7 @@ const AudioPlayerComponent = () => {
     onPlaylistSelect: handlers.handlePlaylistSelect,
     onAlbumPlay: handleAlbumPlay,
     onBackToLibrary: handlers.handleBackToLibrary,
+    onStartRadio: handlers.handleStartRadio,
   }), [handlers, handleAlbumPlay]);
 
   const { chosenProviderId, activeDescriptor, connectedProviderIds, fallthroughNotification, dismissFallthroughNotification } = useProviderContext();
@@ -147,7 +154,10 @@ const AudioPlayerComponent = () => {
           isPlaying={state.isPlaying}
           showLibraryDrawer={state.showLibraryDrawer}
           handlers={playbackHandlers}
-          currentTrackProvider={currentTrackProvider}
+          radioState={radio.radioState}
+          isRadioAvailable={radio.isRadioAvailable}
+          radioActive={radio.isActive}
+          currentTrackProvider={displayProviderId}
         />
       </ProfiledComponent>
     );

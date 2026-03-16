@@ -37,14 +37,24 @@ npm run deploy:preview # Deploy preview
 ### React Components
 - Use functional components with hooks
 - Apply `React.memo()` to heavy components (AlbumArt, VisualEffectsMenu, etc.)
-- Prop drilling minimized via `usePlayerState` central state management hook
+- Prop drilling minimized via context providers and orchestration hooks (`usePlayerLogic`, provider-aware handlers)
 - All components should be TypeScript with proper typing
 
 ### State Management
-- Use `usePlayerState` for centralized state (track, playlist, color, visualEffects)
-- Use custom hooks for specific features (usePlaylistManager, useSpotifyPlayback, etc.)
+- Use context-driven state (`TrackContext`, `CurrentTrackContext`, `ProviderContext`, `ColorContext`, `VisualEffectsContext`)
+- Use `usePlayerLogic` as the orchestration layer for playback actions and provider-aware routing
+- Use focused hooks for specific behavior (`usePlaylistManager`, `useSpotifyPlayback`, `useAutoAdvance`, `useRadio`, etc.)
 - localStorage for persistent settings (visual effects, user preferences)
 - Group related state in objects to minimize re-renders
+
+### Provider Routing Model (Important)
+- **Active provider** = selected provider context for browsing/catalog actions.
+- **Driving provider** = provider currently controlling audio playback.
+- In mixed queues, active and driving providers can differ.
+- Route playback controls/state by driving provider:
+  - `useSpotifyPlayback` resolves provider in order: `track.provider` -> driving provider ref -> active provider fallback.
+  - `usePlayerLogic` owns play/pause/next/prev and playback-state sync using driving-provider resolution.
+  - `useAutoAdvance` advances from events emitted by the driving provider.
 
 ### Styling
 - Use `styled-components` with TypeScript
@@ -103,10 +113,11 @@ Related UI:
 - `saveTrack(trackId)` - Save track
 - `unsaveTrack(trackId)` - Remove from library
 
-### Liked Songs Playlist
+### Liked Songs (Unified + Provider-Specific)
 - Uses special ID `'liked-songs'`
-- Automatically shuffled on selection
-- Limits to 200 tracks for performance
+- Unified liked songs can merge liked tracks across connected providers when enabled
+- Provider capabilities (`hasLikedCollection`) determine which providers participate
+- Preserve provider identity per track for playback/album routing in mixed queues
 
 ## Common Workflows
 
@@ -124,6 +135,13 @@ Related UI:
 4. Update `useSpotifyPlayback.ts` if needed for playback changes
 5. Test with various playlist sizes
 
+### Updating Cross-Provider Playback Flow
+1. Keep active-vs-driving provider behavior explicit (do not assume they are equal)
+2. Update provider resolution in `useSpotifyPlayback` and keep fallback order consistent
+3. Ensure `usePlayerLogic` routes `play/pause/next/previous` via the driving provider
+4. Confirm provider subscription filtering still follows the driving provider
+5. Test transitions in mixed queues (Unified Liked Songs, radio, provider switches)
+
 ### Fixing Performance Issues
 1. Check React DevTools Profiler for unnecessary re-renders
 2. Review colorExtractor.ts cache hit rates
@@ -138,6 +156,22 @@ Related UI:
 - Verify token is valid and scopes are authorized
 - Check browser console for SDK errors
 - Ensure Premium account for streaming
+
+### Cross-Provider Playback / UI Desync
+- Distinguish active provider (catalog context) from driving provider (actual playback source)
+- If visualizer/play state is wrong, verify provider-state events are filtered by driving provider
+- If next/previous behaves incorrectly, verify provider resolution order in `useSpotifyPlayback`
+- Reproduce with mixed queues (Spotify + Dropbox) to catch routing regressions
+
+### Radio + Provider Switching
+- Radio queue generation uses active provider catalog plus optional Spotify resolution for unmatched tracks
+- Provider switching during/after radio should follow standard driving-provider routing
+- No special provider-switch handoff modal should appear for radio transitions
+
+### Dropbox Collection Issues
+- Dropbox album/folder IDs are path-based; do not route Spotify album IDs to Dropbox catalog calls
+- For album actions from mixed queues, route using the current track's provider
+- If likes/metadata appear stale, check IndexedDB cache state and refresh metadata flow
 
 ### Visual Effects Not Applying
 - Verify albumFilters prop passed to AlbumArt component
