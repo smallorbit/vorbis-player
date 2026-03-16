@@ -9,15 +9,18 @@ import DebugOverlay, { useDebugActivator } from './DebugOverlay';
 import ProviderSetupScreen from './ProviderSetupScreen';
 import Toast from './Toast';
 import LibraryDrawer from './LibraryDrawer';
+import VorbisQueueDialog from './VorbisQueueDialog';
 import { ProfilingProvider } from '@/contexts/ProfilingContext';
 import { ProfilingOverlay } from '@/components/ProfilingOverlay';
 import { ProfiledComponent } from '@/components/ProfiledComponent';
-import { usePlayerLogic } from '@/hooks/usePlayerLogic';
+import { usePlayerLogic, mediaTrackToTrack } from '@/hooks/usePlayerLogic';
 import { useColorContext } from '@/contexts/ColorContext';
 import { useVisualEffectsContext } from '@/contexts/VisualEffectsContext';
 import { PlayerSizingProvider } from '@/contexts/PlayerSizingContext';
 import { useTrackListContext, useCurrentTrackContext } from '@/contexts/TrackContext';
 import { useProviderContext } from '@/contexts/ProviderContext';
+import type { ProviderSwitchInterceptor } from '@/contexts/ProviderContext';
+import { resolveViaSpotify } from '@/services/spotifyResolver';
 import { toAlbumPlaylistId } from '@/constants/playlist';
 import type { ClearCacheOptions } from '@/components/VisualEffectsMenu';
 
@@ -31,7 +34,7 @@ const Container = styled.div`
 `;
 
 const AudioPlayerComponent = () => {
-  const { state, handlers, currentPlaybackProviderRef } = usePlayerLogic();
+  const { state, handlers, radio, mediaTracksRef, setTracks, setOriginalTracks, currentPlaybackProviderRef } = usePlayerLogic();
   const { debugActive, handleActivatorTap } = useDebugActivator();
   const { accentColor } = useColorContext();
   const {
@@ -73,15 +76,82 @@ const AudioPlayerComponent = () => {
     onPlaylistSelect: handlers.handlePlaylistSelect,
     onAlbumPlay: handleAlbumPlay,
     onBackToLibrary: handlers.handleBackToLibrary,
+    onStartRadio: handlers.handleStartRadio,
   }), [handlers, handleAlbumPlay]);
 
-  const { chosenProviderId, activeDescriptor, connectedProviderIds, fallthroughNotification, dismissFallthroughNotification } = useProviderContext();
+  const { chosenProviderId, activeDescriptor, connectedProviderIds, fallthroughNotification, dismissFallthroughNotification, setProviderSwitchInterceptor } = useProviderContext();
   // Setup is needed when no provider has been chosen yet and none are connected,
   // or when the active provider isn't authenticated and no other enabled provider is either.
   // connectedProviderIds is the subset of enabledProviderIds with valid auth.
   const needsSetup = chosenProviderId === null
     ? connectedProviderIds.length === 0
     : !activeDescriptor?.auth.isAuthenticated() && connectedProviderIds.length === 0;
+
+  // VorbisQueueDialog state for provider-switch interception during radio
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [isResolving, setIsResolving] = useState(false);
+  const [removedCount, setRemovedCount] = useState<number | null>(null);
+  const proceedSwitchRef = useRef<(() => void) | null>(null);
+
+  useEffect(() => {
+    if (!radio?.isActive) {
+      setProviderSwitchInterceptor(null);
+      return;
+    }
+    const interceptor: ProviderSwitchInterceptor = (_newId, proceed, _cancel) => {
+      proceedSwitchRef.current = proceed;
+      setRemovedCount(null);
+      setIsResolving(false);
+      setDialogOpen(true);
+    };
+    setProviderSwitchInterceptor(interceptor);
+    return () => setProviderSwitchInterceptor(null);
+  }, [radio?.isActive, setProviderSwitchInterceptor]);
+
+  const handleDialogDismiss = useCallback(() => {
+    setDialogOpen(false);
+    proceedSwitchRef.current = null;
+    setRemovedCount(null);
+    setIsResolving(false);
+  }, []);
+
+  const handleStartFresh = useCallback(() => {
+    radio?.stopRadio();
+    proceedSwitchRef.current?.();
+    setDialogOpen(false);
+    proceedSwitchRef.current = null;
+    setRemovedCount(null);
+    setIsResolving(false);
+  }, [radio]);
+
+  const handleKeepQueue = useCallback(async () => {
+    setIsResolving(true);
+    try {
+      const mediaTracks = mediaTracksRef.current;
+      const dropboxTracks = mediaTracks.filter((t) => t.provider === 'dropbox');
+      const spotifyTracks = mediaTracks.filter((t) => t.provider === 'spotify');
+
+      const resolved = await resolveViaSpotify(
+        dropboxTracks.map((t) => ({ artist: t.artists, name: t.name, matchScore: 1 })),
+      );
+
+      const dropped = dropboxTracks.length - resolved.length;
+      const resolvedQueue = [...spotifyTracks, ...resolved];
+
+      mediaTracksRef.current = resolvedQueue;
+      const trackList = resolvedQueue.map(mediaTrackToTrack);
+      setOriginalTracks(trackList);
+      setTracks(trackList);
+
+      setIsResolving(false);
+      setRemovedCount(dropped);
+      proceedSwitchRef.current?.();
+      proceedSwitchRef.current = null;
+    } catch {
+      setIsResolving(false);
+      handleDialogDismiss();
+    }
+  }, [mediaTracksRef, setTracks, setOriginalTracks, handleDialogDismiss]);
 
   const autoSelectFired = useRef(false);
   useEffect(() => {
@@ -147,6 +217,9 @@ const AudioPlayerComponent = () => {
           isPlaying={state.isPlaying}
           showLibraryDrawer={state.showLibraryDrawer}
           handlers={playbackHandlers}
+          radioState={radio.radioState}
+          isRadioAvailable={radio.isRadioAvailable}
+          radioActive={radio.isActive}
           currentTrackProvider={currentTrackProvider}
         />
       </ProfiledComponent>
@@ -182,6 +255,14 @@ const AudioPlayerComponent = () => {
           />
         </ProfiledComponent>
         {renderContent()}
+        <VorbisQueueDialog
+          isOpen={dialogOpen}
+          isResolving={isResolving}
+          removedCount={removedCount}
+          onKeepQueue={handleKeepQueue}
+          onStartFresh={handleStartFresh}
+          onDismiss={handleDialogDismiss}
+        />
         {fallthroughNotification && (
           <Toast message={fallthroughNotification} onDismiss={dismissFallthroughNotification} />
         )}

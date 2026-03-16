@@ -9,12 +9,15 @@ import { useSpotifyPlayback } from '@/hooks/useSpotifyPlayback';
 import { useAutoAdvance } from '@/hooks/useAutoAdvance';
 import { useAccentColor } from '@/hooks/useAccentColor';
 import { useUnifiedLikedTracks } from '@/hooks/useUnifiedLikedTracks';
+import { useRadio } from '@/hooks/useRadio';
 import type { Track } from '@/services/spotify';
 import type { PlaybackState } from '@/types/domain';
 import type { MediaTrack } from '@/types/domain';
+import type { RadioSeed } from '@/types/radio';
 import { isAlbumId, extractAlbumId, LIKED_SONGS_ID } from '@/constants/playlist';
 import { shuffleArray } from '@/utils/shuffleArray';
 import { providerRegistry } from '@/providers/registry';
+import { resolveViaSpotify } from '@/services/spotifyResolver';
 
 /** Convert MediaTrack to Track for UI; Dropbox tracks use empty uri (playback via ref). */
 export function mediaTrackToTrack(m: MediaTrack): Track {
@@ -95,6 +98,7 @@ export function usePlayerLogic() {
   // Playback state from provider events (local — not shared via context)
   const [isPlaying, setIsPlaying] = useState(false);
   const [playbackPosition, setPlaybackPosition] = useState(0);
+  const [spotifyAuthExpired, setSpotifyAuthExpired] = useState(false);
 
   // Library drawer visibility (local UI state)
   const [showLibraryDrawer, setShowLibraryDrawer] = useState(false);
@@ -104,6 +108,7 @@ export function usePlayerLogic() {
     setCurrentTrackIndex,
     activeDescriptor,
     mediaTracksRef,
+    onSpotifyAuthExpired: () => setSpotifyAuthExpired(true),
   });
 
   const { handlePlaylistSelect: spotifyHandlePlaylistSelect } = usePlaylistManager({
@@ -435,15 +440,107 @@ export function usePlayerLogic() {
     setShowLibraryDrawer(false);
   }, []);
 
+  // ── Radio feature ───────────────────────────────────────────────────
+
+  const { radioState, startRadio, stopRadio: stopRadioBase, isRadioAvailable } = useRadio();
+
+  const clearSpotifyAuthExpired = useCallback(() => {
+    setSpotifyAuthExpired(false);
+  }, []);
+
+  const stopRadio = useCallback(() => {
+    stopRadioBase();
+    setSpotifyAuthExpired(false);
+  }, [stopRadioBase]);
+
   const handleBackToLibrary = useCallback(() => {
     handlePause();
+    stopRadio();
     setSelectedPlaylistId(null);
     setTracks([]);
     setCurrentTrackIndex(0);
     mediaTracksRef.current = [];
     setShowPlaylist(false);
     setShowVisualEffects(false);
-  }, [handlePause, setSelectedPlaylistId, setTracks, setCurrentTrackIndex, setShowPlaylist, setShowVisualEffects]);
+  }, [handlePause, stopRadio, setSelectedPlaylistId, setTracks, setCurrentTrackIndex, setShowPlaylist, setShowVisualEffects]);
+
+  /**
+   * Start a radio session from the currently playing track.
+   * Provider-agnostic: fetches catalog from the active provider, generates
+   * a radio queue via Last.fm, then resolves unmatched suggestions via Spotify.
+   */
+  const handleStartRadio = useCallback(async () => {
+    if (!activeDescriptor || !currentTrack) return;
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      // Pre-warm Spotify SDK concurrently with queue generation
+      const spotifyDescriptor = providerRegistry.get('spotify');
+      if (spotifyAuth.isAuthenticated() && spotifyDescriptor) {
+        spotifyDescriptor.playback.initialize().catch(() => {});
+      }
+
+      // Fetch catalog for matching — provider-specific "all tracks" strategy
+      let catalogTracks: MediaTrack[];
+      if (activeDescriptor.id === 'dropbox') {
+        const allMusicRef = { provider: 'dropbox' as const, kind: 'folder' as const, id: '' };
+        catalogTracks = await activeDescriptor.catalog.listTracks(allMusicRef);
+      } else {
+        const likedRef = { provider: activeDescriptor.id, kind: 'liked' as const, id: '' };
+        catalogTracks = await activeDescriptor.catalog.listTracks(likedRef);
+      }
+
+      const seed: RadioSeed = {
+        type: 'track',
+        artist: currentTrack.artists,
+        track: currentTrack.name,
+      };
+
+      const result = await startRadio(seed, catalogTracks);
+
+      if (!result) {
+        setIsLoading(false);
+        return;
+      }
+
+      let combinedQueue = [...result.queue];
+
+      // Resolve unmatched suggestions via Spotify if user is authenticated
+      if (result.unmatchedSuggestions.length > 0 && spotifyAuth.isAuthenticated()) {
+        try {
+          const spotifyTracks = await resolveViaSpotify(result.unmatchedSuggestions);
+          const existingKeys = new Set(
+            combinedQueue.map((t) => `${t.artists.toLowerCase()}||${t.name.toLowerCase()}`),
+          );
+          const newSpotifyTracks = spotifyTracks.filter(
+            (t) => !existingKeys.has(`${t.artists.toLowerCase()}||${t.name.toLowerCase()}`),
+          );
+          combinedQueue = [...combinedQueue, ...newSpotifyTracks];
+          console.debug('[Radio] Resolved Spotify tracks:', newSpotifyTracks.length, 'of', result.unmatchedSuggestions.length, 'unmatched suggestions');
+        } catch (err) {
+          console.warn('[Radio] Failed to resolve Spotify tracks:', err);
+        }
+      }
+
+      if (combinedQueue.length > 0) {
+        const trackList = combinedQueue.map(mediaTrackToTrack);
+        mediaTracksRef.current = combinedQueue;
+        setOriginalTracks(trackList);
+        setTracks(trackList);
+        setCurrentTrackIndex(0);
+        setSelectedPlaylistId('radio');
+        setIsLoading(false);
+        await playTrack(0);
+      } else {
+        setIsLoading(false);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to start radio.');
+      setIsLoading(false);
+    }
+  }, [activeDescriptor, currentTrack, startRadio, setIsLoading, setError, setOriginalTracks, setTracks, setCurrentTrackIndex, setSelectedPlaylistId, playTrack]);
 
   const handlers = useMemo(
     () => ({
@@ -456,6 +553,7 @@ export function usePlayerLogic() {
       handleOpenLibraryDrawer,
       handleCloseLibraryDrawer,
       handleBackToLibrary,
+      handleStartRadio,
     }),
     [
       handlePlaylistSelect,
@@ -467,6 +565,7 @@ export function usePlayerLogic() {
       handleOpenLibraryDrawer,
       handleCloseLibraryDrawer,
       handleBackToLibrary,
+      handleStartRadio,
     ]
   );
 
@@ -481,6 +580,17 @@ export function usePlayerLogic() {
       playbackPosition,
     },
     handlers,
+    radio: {
+      radioState,
+      isRadioAvailable,
+      stopRadio,
+      spotifyAuthExpired,
+      clearSpotifyAuthExpired,
+      isActive: radioState.isActive,
+    },
+    mediaTracksRef,
+    setTracks,
+    setOriginalTracks,
     currentPlaybackProviderRef,
   };
 }

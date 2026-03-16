@@ -46,3 +46,13 @@ export const ShuffleIcon = () => (
   </svg>
 );
 
+export const RadioIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M12 14a2 2 0 100-4 2 2 0 000 4z" fill="currentColor" />
+    <path d="M8.46 8.46a5 5 0 000 7.08" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    <path d="M15.54 8.46a5 5 0 010 7.08" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    <path d="M5.64 5.64a9 9 0 000 12.73" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    <path d="M18.36 5.64a9 9 0 010 12.73" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+  </svg>
+);
+

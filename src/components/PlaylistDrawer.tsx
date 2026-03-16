@@ -123,6 +123,8 @@ interface PlaylistDrawerProps {
   currentTrackIndex: number;
   onTrackSelect: (index: number) => void;
   showProviderIcons?: boolean;
+  radioActive?: boolean;
+  radioSeedDescription?: string | null;
 }
 
 // Custom comparison function for PlaylistDrawer memo optimization
@@ -145,7 +147,14 @@ const arePlaylistDrawerPropsEqual = (
     return false;
   }
 
-  // For callbacks, we assume they're stable (parent should use useCallback)
+  if (prevProps.radioActive !== nextProps.radioActive) {
+    return false;
+  }
+
+  if (prevProps.radioSeedDescription !== nextProps.radioSeedDescription) {
+    return false;
+  }
+
   return true;
 };
 
@@ -155,7 +164,9 @@ const PlaylistDrawer = memo<PlaylistDrawerProps>(({
   tracks,
   currentTrackIndex,
   onTrackSelect,
-  showProviderIcons
+  showProviderIcons,
+  radioActive,
+  radioSeedDescription,
 }) => {
   // Get responsive sizing information
   const { viewport, isMobile, isTablet, transitionDuration, transitionEasing } = usePlayerSizingContext();
@@ -180,7 +191,14 @@ const PlaylistDrawer = memo<PlaylistDrawerProps>(({
         transitionEasing={transitionEasing}
       >
         <PlaylistHeader>
-          <PlaylistTitle>Playlist</PlaylistTitle>
+          <div>
+            <PlaylistTitle>{radioActive ? 'Radio' : 'Playlist'}</PlaylistTitle>
+            {radioActive && radioSeedDescription && (
+              <div style={{ fontSize: theme.fontSize.xs, color: theme.colors.muted.foreground, marginTop: '2px' }}>
+                {radioSeedDescription}
+              </div>
+            )}
+          </div>
           <CloseButton onClick={onClose}>×</CloseButton>
         </PlaylistHeader>
 

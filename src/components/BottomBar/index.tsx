@@ -10,6 +10,7 @@ import {
   PlaylistIcon,
   ZenModeIcon,
   ShuffleIcon,
+  RadioIcon,
 } from '../icons/QuickActionIcons';
 
 const ZEN_HIDE_DELAY = 3000;
@@ -26,6 +27,8 @@ interface BottomBarProps {
   onZenModeToggle?: () => void;
   shuffleEnabled?: boolean;
   onShuffleToggle?: () => void;
+  onStartRadio?: () => void;
+  radioGenerating?: boolean;
 }
 
 const BottomBar = React.memo(function BottomBar({
@@ -40,6 +43,8 @@ const BottomBar = React.memo(function BottomBar({
   onZenModeToggle,
   shuffleEnabled,
   onShuffleToggle,
+  onStartRadio,
+  radioGenerating,
 }: BottomBarProps) {
   const { isMobile, isTablet } = usePlayerSizingContext();
   const [zenBarVisible, setZenBarVisible] = useState(false);
@@ -137,6 +142,20 @@ const BottomBar = React.memo(function BottomBar({
               aria-pressed={shuffleEnabled}
             >
               <ShuffleIcon />
+            </ControlButton>
+          )}
+
+          {onStartRadio && (
+            <ControlButton
+              $isMobile={isMobile}
+              $isTablet={isTablet}
+              $compact
+              onClick={onStartRadio}
+              title={radioGenerating ? 'Generating radio playlist...' : 'Generate radio playlist from current track'}
+              disabled={radioGenerating}
+              aria-label="Generate radio playlist from current track"
+            >
+              <RadioIcon />
             </ControlButton>
           )}
 

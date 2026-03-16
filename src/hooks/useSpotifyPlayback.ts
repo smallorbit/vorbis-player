@@ -12,6 +12,8 @@ interface UseSpotifyPlaybackProps {
   /** When set, playTrack uses this for non-Spotify provider playback. */
   activeDescriptor?: ProviderDescriptor | null;
   mediaTracksRef?: React.MutableRefObject<MediaTrack[]>;
+  /** Called when a Spotify API 401 auth error occurs during cross-provider playback. */
+  onSpotifyAuthExpired?: () => void;
 }
 
 export const useSpotifyPlayback = ({
@@ -19,6 +21,7 @@ export const useSpotifyPlayback = ({
   setCurrentTrackIndex,
   activeDescriptor,
   mediaTracksRef,
+  onSpotifyAuthExpired,
 }: UseSpotifyPlaybackProps) => {
 
   // Use a ref for tracks so playTrack always reads the latest array,
@@ -69,7 +72,7 @@ export const useSpotifyPlayback = ({
     const trackUri = mediaTrack.playbackRef.ref;
     const trackName = mediaTrack.name;
 
-    type PlayResult = 'success' | 'unavailable';
+    type PlayResult = 'success' | 'unavailable' | 'auth_expired';
 
     const playWithRetry = async (uri: string, retryCount = 0, maxRetries = 2): Promise<PlayResult> => {
       try {
@@ -77,6 +80,11 @@ export const useSpotifyPlayback = ({
         return 'success';
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
+
+        if (errorMessage.includes('401') || errorMessage.toLowerCase().includes('unauthorized')) {
+          onSpotifyAuthExpired?.();
+          return 'auth_expired';
+        }
 
         if (errorMessage.includes('403')) {
           const isRestrictionViolated = errorMessage.includes('Restriction violated');
@@ -101,6 +109,10 @@ export const useSpotifyPlayback = ({
 
     const playResult = await playWithRetry(trackUri);
 
+    if (playResult === 'auth_expired') {
+      return;
+    }
+
     if (playResult === 'unavailable') {
       if (skipOnError && index < totalTracks - 1) {
         setTimeout(() => playTrackFn(index + 1, skipOnError), 500);
@@ -112,11 +124,8 @@ export const useSpotifyPlayback = ({
 
     setCurrentTrackIndex(index);
 
-    // Listen for the SDK state change instead of blind-waiting 1500ms.
-    // If the SDK ends up paused at position 0 (a known quirk), resume.
-    // Falls back to a manual check after 3s if no event fires.
     spotifyPlayer.waitForPlaybackOrResume(activateDevice);
-  }, [setCurrentTrackIndex, activateDevice]);
+  }, [setCurrentTrackIndex, activateDevice, onSpotifyAuthExpired]);
 
   const playTrack = useCallback(async (index: number, skipOnError = false) => {
     const mediaTracks = mediaTracksRef?.current ?? [];
