@@ -4,9 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) and other AI assista
 
 ## Project Overview
 
-**Vorbis Player** is a React/TypeScript music player with customizable visual effects and a pluggable provider architecture. Supports **Spotify** (streaming, Premium required) and **Dropbox** (personal files via HTML5 Audio).
+**Vorbis Player** is a React/TypeScript music player with customizable visual effects and a pluggable provider architecture. Supports **Spotify** (streaming, Premium required) and **Dropbox** (personal files via HTML5 Audio), including cross-provider queues.
 
-Key capabilities: multi-provider auth/catalog/playback adapters, background visualizers, album art flip menu, bottom bar, swipe gestures (drawer toggles), keyboard shortcuts, IndexedDB caching, responsive layout.
+Key capabilities: multi-provider auth/catalog/playback adapters, unified liked songs, cross-provider playback handoff, Last.fm-powered radio queue generation, background visualizers, album art flip menu, bottom bar, swipe gestures (drawer toggles), keyboard shortcuts, IndexedDB caching, responsive layout.
 
 ## Build Verification
 
@@ -104,6 +104,18 @@ Defined in `src/types/providers.ts` and `src/types/domain.ts`.
 
 **Capability-aware UI**: check `activeDescriptor.capabilities` before rendering provider-specific controls (`hasSaveTrack`, `hasExternalLink`, `hasLikedCollection`). Both Spotify and Dropbox support `hasSaveTrack` and `hasLikedCollection`.
 
+**Unified playback across providers**:
+- Queue items are represented as provider-agnostic `MediaTrack` records and can mix Spotify + Dropbox tracks in one queue.
+- Playback controls (`play`, `pause`, `next`, `previous`) route to whichever provider is currently playing, not just the active library provider.
+- Provider state subscriptions are multiplexed so UI state stays in sync during cross-provider queues.
+- Unified liked songs can merge liked tracks from all connected providers and sort by `addedAt`.
+
+**Radio generation**:
+- Radio is a one-shot action (not a sticky toggle) that builds a playlist from the current track.
+- `useRadio` + `radioService` generate suggestions from Last.fm, then match against the active provider catalog.
+- Unmatched suggestions can be resolved via Spotify search (`spotifyResolver`) when authenticated.
+- If switching providers during an active mixed radio queue, `VorbisQueueDialog` handles queue handoff choices.
+
 **Dropbox folder structure**:
 ```
 Dropbox root/
@@ -162,6 +174,11 @@ Optional (enables Dropbox):
 VITE_DROPBOX_CLIENT_ID="your_dropbox_app_key"
 ```
 
+Optional (enables radio recommendations):
+```
+VITE_LASTFM_API_KEY="your_lastfm_api_key"
+```
+
 Vite dev server: host `127.0.0.1`, port `3000` (required for Spotify OAuth).
 Path alias: `@/` → `./src/` (e.g. `import { x } from '@/hooks/usePlayerState'`).
 
@@ -193,6 +210,11 @@ Path alias: `@/` → `./src/` (e.g. `import { x } from '@/hooks/usePlayerState'`
 - Art missing → place `cover.jpg` (or `folder.jpg`, `album.jpg`, `front.jpg`) alongside audio files
 - Liked songs missing → check IndexedDB `likes` store; use Settings → Refresh Metadata to re-sync
 - Auth loop → on 401/400 Dropbox performs full logout; on 5xx/network errors refresh token is preserved for retry
+
+**Radio:**
+- Radio button disabled/unavailable → configure `VITE_LASTFM_API_KEY` and restart dev server
+- No radio results → generation uses local catalog matching; results depend on the active provider catalog size
+- Spotify additions missing in radio queue → Spotify auth must be active for unmatched suggestion resolution
 
 **Visual Effects:**
 - Album art filters not working → always pass `albumFilters={albumFilters}` to `AlbumArt`

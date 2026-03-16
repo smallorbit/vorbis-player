@@ -9,8 +9,10 @@ A visually immersive music player built with React and TypeScript, featuring cus
 ## Features
 
 - **Multi-Provider Support** — Stream from Spotify or your personal Dropbox music library
+- **Unified Cross-Provider Playback** — Keep playback controls consistent across mixed Spotify + Dropbox queues
 - **Playlists & Albums** — Browse, search, sort, filter, and pin your collections
-- **Liked Songs** — Play your Liked Songs collection with automatic shuffle
+- **Unified Liked Songs** — Merge liked tracks from connected providers into one queue
+- **Track Radio** — Generate a one-shot radio playlist from the current track (Last.fm-powered matching)
 - **Visual Effects** — Dynamic glow, configurable album art filters, accent color backgrounds
 - **Background Visualizers** — Animated particle and geometric visualizer backgrounds
 - **Album Art Flip Menu** — Tap album art to reveal quick-access visual controls
@@ -30,6 +32,8 @@ npm run dev                   # Open http://127.0.0.1:3000
 ```
 
 You'll need credentials from at least one provider. See the **[Getting Started Guide](./docs/getting-started.md)** for full setup instructions including provider configuration.
+
+For radio recommendations, also set `VITE_LASTFM_API_KEY` in `.env.local` (see `.env.example`).
 
 ## Documentation
 
