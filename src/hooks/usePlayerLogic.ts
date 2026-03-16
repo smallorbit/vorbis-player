@@ -36,6 +36,24 @@ export function mediaTrackToTrack(m: MediaTrack): Track {
   };
 }
 
+/** Build MediaTrack from Track (e.g. when only UI track is available, e.g. Spotify context playback). */
+function trackToMediaTrack(t: Track): MediaTrack {
+  const provider = (t.provider ?? 'spotify') as ProviderId;
+  return {
+    id: t.id,
+    provider,
+    playbackRef: { provider, ref: t.uri },
+    name: t.name,
+    artists: t.artists,
+    artistsData: t.artistsData?.map((a) => ({ name: a.name, url: a.url })),
+    album: t.album,
+    albumId: t.album_id,
+    trackNumber: t.track_number,
+    durationMs: t.duration_ms,
+    image: t.image,
+  };
+}
+
 export function usePlayerLogic() {
   // Terminology used in this hook:
   // - active provider: selected provider context (library/catalog focus in UI)
@@ -514,24 +532,41 @@ export function usePlayerLogic() {
         return;
       }
 
-      let combinedQueue = [...result.queue];
+      // Current playing track becomes index 0; playback continues without restart.
+      const mediaTracks = mediaTracksRef.current;
+      const currentSeedMediaTrack: MediaTrack =
+        mediaTracks[currentTrackIndex]?.id === currentTrack?.id
+          ? mediaTracks[currentTrackIndex]
+          : trackToMediaTrack(currentTrack);
+
+      const seedKey = `${currentSeedMediaTrack.artists.toLowerCase()}||${currentSeedMediaTrack.name.toLowerCase()}`;
+      const seedId = currentSeedMediaTrack.id;
+
+      let generatedTracks = [...result.queue];
 
       // Resolve unmatched suggestions via Spotify if user is authenticated
       if (result.unmatchedSuggestions.length > 0 && spotifyAuth.isAuthenticated()) {
         try {
           const spotifyTracks = await resolveViaSpotify(result.unmatchedSuggestions);
           const existingKeys = new Set(
-            combinedQueue.map((t) => `${t.artists.toLowerCase()}||${t.name.toLowerCase()}`),
+            generatedTracks.map((t) => `${t.artists.toLowerCase()}||${t.name.toLowerCase()}`),
           );
           const newSpotifyTracks = spotifyTracks.filter(
             (t) => !existingKeys.has(`${t.artists.toLowerCase()}||${t.name.toLowerCase()}`),
           );
-          combinedQueue = [...combinedQueue, ...newSpotifyTracks];
+          generatedTracks = [...generatedTracks, ...newSpotifyTracks];
           console.debug('[Radio] Resolved Spotify tracks:', newSpotifyTracks.length, 'of', result.unmatchedSuggestions.length, 'unmatched suggestions');
         } catch (err) {
           console.warn('[Radio] Failed to resolve Spotify tracks:', err);
         }
       }
+
+      // Dedupe: drop any generated track that is the same as the seed (by id or artist+title).
+      const dedupedGenerated = generatedTracks.filter(
+        (t) => t.id !== seedId && `${t.artists.toLowerCase()}||${t.name.toLowerCase()}` !== seedKey,
+      );
+
+      const combinedQueue = [currentSeedMediaTrack, ...dedupedGenerated];
 
       if (combinedQueue.length > 0) {
         const trackList = combinedQueue.map(mediaTrackToTrack);
@@ -541,7 +576,7 @@ export function usePlayerLogic() {
         setCurrentTrackIndex(0);
         setSelectedPlaylistId('radio');
         setIsLoading(false);
-        await playTrack(0);
+        // Do not call playTrack(0) — keep current track playing at current position.
       } else {
         setIsLoading(false);
       }
@@ -549,7 +584,7 @@ export function usePlayerLogic() {
       setError(err instanceof Error ? err.message : 'Failed to start radio.');
       setIsLoading(false);
     }
-  }, [activeDescriptor, currentTrack, startRadio, setIsLoading, setError, setOriginalTracks, setTracks, setCurrentTrackIndex, setSelectedPlaylistId, playTrack]);
+  }, [activeDescriptor, currentTrack, currentTrackIndex, startRadio, setIsLoading, setError, setOriginalTracks, setTracks, setCurrentTrackIndex, setSelectedPlaylistId]);
 
   const handlers = useMemo(
     () => ({
