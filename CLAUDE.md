@@ -106,15 +106,23 @@ Defined in `src/types/providers.ts` and `src/types/domain.ts`.
 
 **Unified playback across providers**:
 - Queue items are represented as provider-agnostic `MediaTrack` records and can mix Spotify + Dropbox tracks in one queue.
-- Playback controls (`play`, `pause`, `next`, `previous`) route to whichever provider is currently playing, not just the active library provider.
-- Provider state subscriptions are multiplexed so UI state stays in sync during cross-provider queues.
+- Provider model:
+  - **Active provider** = selected provider context for browsing/catalog actions.
+  - **Driving provider** = provider currently controlling audio output.
+  - These can differ in mixed queues (Unified Liked Songs, radio, cross-provider handoff).
+- Playback controls (`play`, `pause`, `next`, `previous`) route via the **driving provider**, not just the active provider.
+- Provider state subscriptions are multiplexed and filtered by the **driving provider** so visualizer/play state stays in sync.
+- Routing structure:
+  - `useSpotifyPlayback` resolves provider per index (`track.provider` → `drivingProviderRef` → `activeDescriptor.id` fallback).
+  - `usePlayerLogic` owns control actions and playback-state synchronization using `getDrivingProviderId()`.
+  - `useAutoAdvance` advances based on events from the current driving provider.
 - Unified liked songs can merge liked tracks from all connected providers and sort by `addedAt`.
 
 **Radio generation**:
 - Radio is a one-shot action (not a sticky toggle) that builds a playlist from the current track.
 - `useRadio` + `radioService` generate suggestions from Last.fm, then match against the active provider catalog.
 - Unmatched suggestions can be resolved via Spotify search (`spotifyResolver`) when authenticated.
-- If switching providers during an active mixed radio queue, `VorbisQueueDialog` handles queue handoff choices.
+- Provider switches during radio now follow the same driving-provider routing (no special queue handoff modal).
 
 **Dropbox folder structure**:
 ```

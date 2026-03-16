@@ -9,7 +9,7 @@ import { providerRegistry } from '@/providers/registry';
 interface UseSpotifyPlaybackProps {
   tracks: Track[];
   setCurrentTrackIndex: (index: number) => void;
-  /** When set, playTrack uses this for non-Spotify provider playback. */
+  /** Active provider descriptor from context (selected provider), used as a fallback only. */
   activeDescriptor?: ProviderDescriptor | null;
   mediaTracksRef?: React.MutableRefObject<MediaTrack[]>;
   /** Called when a Spotify API 401 auth error occurs during cross-provider playback. */
@@ -29,8 +29,23 @@ export const useSpotifyPlayback = ({
   const tracksRef = useRef(tracks);
   tracksRef.current = tracks;
 
-  /** Tracks which provider is currently handling playback (may differ from activeDescriptor during cross-provider queues). */
+  /** Tracks which provider is currently driving playback (can differ from active provider in mixed queues). */
   const currentPlaybackProviderRef = useRef<ProviderId | null>(null);
+
+  /** Resolve provider for the target index by preferring track provider, then driving provider, then active provider. */
+  const resolveTrackProvider = useCallback((mediaTrack?: MediaTrack): ProviderId => (
+    mediaTrack?.provider
+    ?? currentPlaybackProviderRef.current
+    ?? activeDescriptor?.id
+    ?? 'spotify'
+  ), [activeDescriptor]);
+
+  const pausePreviousProvider = useCallback((nextProvider: ProviderId): void => {
+    const previousProvider = currentPlaybackProviderRef.current;
+    if (previousProvider && previousProvider !== nextProvider) {
+      providerRegistry.get(previousProvider)?.playback.pause().catch(() => {});
+    }
+  }, []);
 
   const activateDevice = useCallback(async () => {
     try {
@@ -130,16 +145,8 @@ export const useSpotifyPlayback = ({
   const playTrack = useCallback(async (index: number, skipOnError = false) => {
     const mediaTracks = mediaTracksRef?.current ?? [];
     const mediaTrack = mediaTracks[index];
-
-    // Resolve provider from the track itself, falling back to activeDescriptor only
-    // when no MediaTrack is available (legacy Spotify-only playlists without mediaTracksRef).
-    const trackProvider = mediaTrack?.provider ?? activeDescriptor?.id ?? 'spotify';
-
-    // Pause the previous provider if we're switching to a different one
-    const prevProvider = currentPlaybackProviderRef.current;
-    if (prevProvider && prevProvider !== trackProvider) {
-      providerRegistry.get(prevProvider)?.playback.pause().catch(() => {});
-    }
+    const trackProvider = resolveTrackProvider(mediaTrack);
+    pausePreviousProvider(trackProvider);
 
     currentPlaybackProviderRef.current = trackProvider;
 
@@ -215,7 +222,7 @@ export const useSpotifyPlayback = ({
         setTimeout(() => playTrack(index + 1, skipOnError), 500);
       }
     }
-  }, [setCurrentTrackIndex, activeDescriptor, mediaTracksRef, playSpotifyTrack]);
+  }, [setCurrentTrackIndex, mediaTracksRef, pausePreviousProvider, playSpotifyTrack, resolveTrackProvider]);
 
   const resumePlayback = useCallback(async () => {
     // Resume the provider that's currently playing

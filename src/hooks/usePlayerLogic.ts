@@ -11,7 +11,7 @@ import { useAccentColor } from '@/hooks/useAccentColor';
 import { useUnifiedLikedTracks } from '@/hooks/useUnifiedLikedTracks';
 import { useRadio } from '@/hooks/useRadio';
 import type { Track } from '@/services/spotify';
-import type { PlaybackState } from '@/types/domain';
+import type { PlaybackState, ProviderId } from '@/types/domain';
 import type { MediaTrack } from '@/types/domain';
 import type { RadioSeed } from '@/types/radio';
 import { isAlbumId, extractAlbumId, LIKED_SONGS_ID } from '@/constants/playlist';
@@ -37,6 +37,10 @@ export function mediaTrackToTrack(m: MediaTrack): Track {
 }
 
 export function usePlayerLogic() {
+  // Terminology used in this hook:
+  // - active provider: selected provider context (library/catalog focus in UI)
+  // - driving provider: provider currently controlling audio playback
+  // In mixed queues these can differ, so playback controls should prefer the driving provider.
   const {
     tracks,
     isLoading,
@@ -103,13 +107,26 @@ export function usePlayerLogic() {
   // Library drawer visibility (local UI state)
   const [showLibraryDrawer, setShowLibraryDrawer] = useState(false);
 
-  const { playTrack, currentPlaybackProviderRef } = useSpotifyPlayback({
+  const fallbackDrivingProviderRef = useRef<ProviderId | null>(null);
+  const spotifyPlayback = useSpotifyPlayback({
     tracks,
     setCurrentTrackIndex,
     activeDescriptor,
     mediaTracksRef,
     onSpotifyAuthExpired: () => setSpotifyAuthExpired(true),
   });
+  const { playTrack } = spotifyPlayback;
+  const drivingProviderRef = spotifyPlayback.currentPlaybackProviderRef ?? fallbackDrivingProviderRef;
+
+  /** Resolve provider currently driving playback; falls back to active provider when unknown. */
+  const getDrivingProviderId = useCallback((): ProviderId | null => (
+    drivingProviderRef.current ?? activeDescriptor?.id ?? null
+  ), [activeDescriptor, drivingProviderRef]);
+
+  const getDrivingProviderDescriptor = useCallback(() => {
+    const drivingProviderId = getDrivingProviderId();
+    return drivingProviderId ? providerRegistry.get(drivingProviderId) : undefined;
+  }, [getDrivingProviderId]);
 
   const { handlePlaylistSelect: spotifyHandlePlaylistSelect } = usePlaylistManager({
     setError,
@@ -168,7 +185,7 @@ export function usePlayerLogic() {
           const firstTrack = mediaTracksRef.current[0];
           const firstProvider = getDescriptor(firstTrack.provider);
           if (firstProvider) {
-            currentPlaybackProviderRef.current = firstTrack.provider;
+            drivingProviderRef.current = firstTrack.provider;
             if (firstTrack.provider !== activeDescriptor?.id) {
               setActiveProviderId(firstTrack.provider);
             }
@@ -240,7 +257,7 @@ export function usePlayerLogic() {
 
           // Update the playback provider ref so controls route to the correct provider
           // (can't use playTrack() here because activeDescriptor may still be stale)
-          currentPlaybackProviderRef.current = providerId;
+          drivingProviderRef.current = providerId;
           await targetDescriptor.playback.playTrack(mediaTracksRef.current[0]);
         } catch (err) {
           setError(err instanceof Error ? err.message : 'Failed to load collection.');
@@ -253,11 +270,11 @@ export function usePlayerLogic() {
       }
       // Pause any non-Spotify provider before handing off to the Spotify playlist manager
       // (which plays via the SDK directly, bypassing the cross-provider pause in playTrack).
-      const prevProvider = currentPlaybackProviderRef.current;
+      const prevProvider = drivingProviderRef.current;
       if (prevProvider && prevProvider !== 'spotify') {
         providerRegistry.get(prevProvider)?.playback.pause().catch(() => {});
       }
-      currentPlaybackProviderRef.current = 'spotify';
+      drivingProviderRef.current = 'spotify';
       mediaTracksRef.current = [];
       await spotifyHandlePlaylistSelect(playlistId);
     },
@@ -272,14 +289,14 @@ export function usePlayerLogic() {
       setTracks,
       setOriginalTracks,
       setCurrentTrackIndex,
-      playTrack,
       spotifyHandlePlaylistSelect,
       isUnifiedLikedActive,
       connectedProviderIds,
+      drivingProviderRef,
     ]
   );
 
-  useAutoAdvance({ tracks, currentTrackIndex, playTrack, enabled: true, currentPlaybackProviderRef });
+  useAutoAdvance({ tracks, currentTrackIndex, playTrack, enabled: true, currentPlaybackProviderRef: drivingProviderRef });
 
   // Auto-extract accent color from album artwork; respects overrides in ColorContext
   useAccentColor(currentTrack, accentColorOverrides, setAccentColor, setAccentColorOverrides);
@@ -301,8 +318,14 @@ export function usePlayerLogic() {
   useEffect(() => {
     const playback = activeDescriptor?.playback;
     if (!playback) return;
+    const activeProviderId = activeDescriptor.id;
 
-    function handleProviderStateChange(state: PlaybackState | null) {
+    function handleProviderStateChange(providerId: ProviderId, state: PlaybackState | null) {
+      const drivingProviderId = drivingProviderRef.current ?? activeProviderId;
+      if (providerId !== drivingProviderId) {
+        return;
+      }
+
       if (state) {
         setIsPlaying(state.isPlaying);
         setPlaybackPosition(state.positionMs);
@@ -353,24 +376,25 @@ export function usePlayerLogic() {
     const unsubscribes: (() => void)[] = [];
 
     // Subscribe to the active provider
-    unsubscribes.push(playback.subscribe(handleProviderStateChange));
+    unsubscribes.push(
+      playback.subscribe((state) => handleProviderStateChange(activeProviderId, state))
+    );
 
     // Also subscribe to other registered providers for cross-provider queue support.
     // Only process events when that provider is the one currently playing.
     for (const descriptor of providerRegistry.getAll()) {
-      if (descriptor.id !== activeDescriptor.id) {
+      if (descriptor.id !== activeProviderId) {
         const otherUnsubscribe = descriptor.playback.subscribe((state) => {
-          // Only handle events from the provider that's currently playing
-          if (currentPlaybackProviderRef.current === descriptor.id) {
-            handleProviderStateChange(state);
-          }
+          handleProviderStateChange(descriptor.id, state);
         });
         unsubscribes.push(otherUnsubscribe);
       }
     }
 
-    // Check initial state
-    playback.getState().then((state) => {
+    // Check initial state for whichever provider is currently driving playback.
+    const stateProviderId = drivingProviderRef.current ?? activeProviderId;
+    const stateDescriptor = providerRegistry.get(stateProviderId);
+    stateDescriptor?.playback.getState().then((state) => {
       if (state) {
         setIsPlaying(state.isPlaying);
         setPlaybackPosition(state.positionMs);
@@ -402,33 +426,18 @@ export function usePlayerLogic() {
 
   const handlePlay = useCallback(async () => {
     try {
-      // Resume the provider that's currently playing (may differ from active in cross-provider queues)
-      const currentProvider = currentPlaybackProviderRef.current;
-      if (currentProvider && currentProvider !== activeDescriptor?.id) {
-        const descriptor = providerRegistry.get(currentProvider);
-        if (descriptor) {
-          await descriptor.playback.resume();
-          return;
-        }
-      }
-      await activeDescriptor?.playback.resume();
+      const drivingDescriptor = getDrivingProviderDescriptor();
+      if (!drivingDescriptor) return;
+      await drivingDescriptor.playback.resume();
     } catch {
       // Autoplay policy or network errors are handled by the playback adapter
     }
-  }, [activeDescriptor]);
+  }, [getDrivingProviderDescriptor]);
 
   const handlePause = useCallback(() => {
-    // Pause the provider that's currently playing
-    const currentProvider = currentPlaybackProviderRef.current;
-    if (currentProvider && currentProvider !== activeDescriptor?.id) {
-      const descriptor = providerRegistry.get(currentProvider);
-      if (descriptor) {
-        descriptor.playback.pause();
-        return;
-      }
-    }
-    activeDescriptor?.playback.pause();
-  }, [activeDescriptor]);
+    const drivingDescriptor = getDrivingProviderDescriptor();
+    drivingDescriptor?.playback.pause();
+  }, [getDrivingProviderDescriptor]);
 
   const handleOpenLibraryDrawer = useCallback(() => {
     setShowLibraryDrawer(true);
@@ -591,6 +600,6 @@ export function usePlayerLogic() {
     mediaTracksRef,
     setTracks,
     setOriginalTracks,
-    currentPlaybackProviderRef,
+    currentPlaybackProviderRef: drivingProviderRef,
   };
 }

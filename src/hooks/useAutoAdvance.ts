@@ -11,7 +11,7 @@ interface UseAutoAdvanceProps {
   playTrack: (index: number, skipOnError?: boolean) => void;
   enabled?: boolean;
   endThreshold?: number;
-  /** Ref tracking which provider is currently handling playback (may differ from activeDescriptor). */
+  /** Ref tracking driving provider; active provider may differ during mixed/cross-provider queues. */
   currentPlaybackProviderRef?: React.RefObject<ProviderId | null>;
 }
 
@@ -23,7 +23,7 @@ export const useAutoAdvance = ({
   playTrack,
   enabled = true,
   endThreshold = 2000,
-  currentPlaybackProviderRef,
+  currentPlaybackProviderRef: drivingProviderRef,
 }: UseAutoAdvanceProps) => {
   const hasEnded = useRef(false);
   const wasPlayingRef = useRef(false);
@@ -62,6 +62,9 @@ export const useAutoAdvance = ({
   }, [tracks]);
 
   // Use event-based detection via provider playback subscriptions.
+  // Terminology:
+  // - active provider: selected provider context
+  // - driving provider: provider currently emitting playback state
   // Subscribe to ALL registered providers (like usePlayerLogic does) so that
   // cross-provider transitions in unified playlists are detected even before
   // activeDescriptor updates via async React state.
@@ -110,9 +113,9 @@ export const useAutoAdvance = ({
       // Guard: skip if a track was recently loaded — both Spotify SDK and HTML5
       // Audio briefly pause at position 0 during buffering, which would falsely
       // trigger advance.
-      const currentProvider = currentPlaybackProviderRef?.current;
+      const drivingProviderId = drivingProviderRef?.current;
       let msSinceLastPlay: number;
-      if (currentProvider === 'spotify' || (!currentProvider && activeProviderId === 'spotify')) {
+      if (drivingProviderId === 'spotify' || (!drivingProviderId && activeProviderId === 'spotify')) {
         msSinceLastPlay = Date.now() - spotifyPlayer.lastPlayTrackTime;
       } else {
         msSinceLastPlay = Date.now() - lastPlayInitiatedRef.current;
@@ -135,7 +138,7 @@ export const useAutoAdvance = ({
     for (const descriptor of providerRegistry.getAll()) {
       if (descriptor.id !== activeDescriptor.id) {
         const otherUnsubscribe = descriptor.playback.subscribe((state) => {
-          if (currentPlaybackProviderRef?.current === descriptor.id) {
+          if (drivingProviderRef?.current === descriptor.id) {
             handleProviderStateChange(state);
           }
         });
