@@ -274,7 +274,7 @@ export function usePlayerLogic() {
     ]
   );
 
-  useAutoAdvance({ tracks, currentTrackIndex, playTrack, enabled: true });
+  useAutoAdvance({ tracks, currentTrackIndex, playTrack, enabled: true, currentPlaybackProviderRef });
 
   // Auto-extract accent color from album artwork; respects overrides in ColorContext
   useAccentColor(currentTrack, accentColorOverrides, setAccentColor, setAccentColorOverrides);
