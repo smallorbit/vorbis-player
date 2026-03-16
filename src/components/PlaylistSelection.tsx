@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import * as React from 'react';
+import { createPortal } from 'react-dom';
 import styled from 'styled-components';
 import {
   type PlaylistInfo,
@@ -23,6 +24,15 @@ import { usePinnedItems } from '../hooks/usePinnedItems';
 import { LIKED_SONGS_ID, LIKED_SONGS_NAME, toAlbumPlaylistId } from '../constants/playlist';
 import LibraryProviderBar from './LibraryProviderBar';
 import { useUnifiedLikedTracks } from '@/hooks/useUnifiedLikedTracks';
+import { librarySyncEngine } from '@/services/cache/librarySyncEngine';
+import TrackInfoPopover, {
+  SpotifyIcon,
+  PlayIcon,
+  DiscogsIcon,
+  AddToLibraryIcon,
+  RemoveFromLibraryIcon,
+  ICON_MAP,
+} from './controls/TrackInfoPopover';
 
 type ViewMode = 'playlists' | 'albums';
 
@@ -37,6 +47,11 @@ interface PlaylistSelectionProps {
   /** Set the active tab when the drawer opens */
   initialViewMode?: 'playlists' | 'albums';
 }
+
+type AlbumPopoverState = {
+  album: AlbumInfo;
+  rect: DOMRect;
+} | null;
 
 function selectOptimalImage(
   images: { url: string; width: number | null; height: number | null }[],
@@ -662,6 +677,8 @@ const PlaylistSelection = React.memo(function PlaylistSelection({ onPlaylistSele
     'recently-added'
   );
   const [artistFilter, setArtistFilter] = useState<string>('');
+  const [albumPopover, setAlbumPopover] = useState<AlbumPopoverState>(null);
+  const [albumSaved, setAlbumSaved] = useState<boolean | null>(null);
   const libraryFullyLoaded = isInitialLoadComplete;
 
   const { viewport, isMobile, isTablet } = usePlayerSizingContext();
@@ -675,6 +692,29 @@ const PlaylistSelection = React.memo(function PlaylistSelection({ onPlaylistSele
     canPinMorePlaylists,
     canPinMoreAlbums,
   } = usePinnedItems();
+
+  useEffect(() => {
+    if (!albumPopover) {
+      setAlbumSaved(null);
+      return;
+    }
+    const descriptor = albumPopover.album.provider
+      ? getDescriptor(albumPopover.album.provider)
+      : activeDescriptor;
+    if (!descriptor?.capabilities.hasSaveAlbum || !descriptor.catalog.isAlbumSaved) {
+      setAlbumSaved(null);
+      return;
+    }
+    let cancelled = false;
+    descriptor.catalog.isAlbumSaved(albumPopover.album.id).then((saved) => {
+      if (!cancelled) setAlbumSaved(saved);
+    }).catch(() => {
+      if (!cancelled) setAlbumSaved(null);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [albumPopover, activeDescriptor, getDescriptor]);
 
   const maxWidth = useMemo(() => {
     if (isMobile) {
@@ -778,6 +818,15 @@ const PlaylistSelection = React.memo(function PlaylistSelection({ onPlaylistSele
     onPlaylistSelect(toAlbumPlaylistId(album.id), album.name, album.provider);
   }
 
+  function handleAlbumContextMenu(album: AlbumInfo, event: React.MouseEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    setAlbumPopover({
+      album,
+      rect: new DOMRect(event.clientX, event.clientY, 0, 0),
+    });
+  }
+
   function handleLikedSongsClick(provider?: import('@/types/domain').ProviderId): void {
     const resolvedProvider = provider ?? (likedSongsPerProvider.length === 1 ? likedSongsPerProvider[0].provider : undefined);
     onPlaylistSelect(LIKED_SONGS_ID, LIKED_SONGS_NAME, resolvedProvider);
@@ -801,6 +850,95 @@ const PlaylistSelection = React.memo(function PlaylistSelection({ onPlaylistSele
     event.stopPropagation(); // Prevent album click from triggering
     setArtistFilter(artistName);
   }
+
+  const closeAlbumPopover = React.useCallback(() => {
+    setAlbumPopover(null);
+  }, []);
+
+  const buildAlbumPopoverOptions = React.useCallback(() => {
+    if (!albumPopover) return [];
+    const album = albumPopover.album;
+    const descriptor = album.provider ? getDescriptor(album.provider) : activeDescriptor;
+    const capabilities = descriptor?.capabilities;
+    const catalog = descriptor?.catalog;
+    const ExternalIcon = descriptor?.getExternalUrl ? DiscogsIcon : SpotifyIcon;
+    const options: Array<{ label: string; icon: React.ReactNode; onClick: () => void }> = [
+      {
+        label: `Play ${album.name}`,
+        icon: <PlayIcon />,
+        onClick: () => onPlaylistSelect(toAlbumPlaylistId(album.id), album.name, album.provider),
+      },
+    ];
+
+    if (capabilities?.hasSaveAlbum && catalog?.setAlbumSaved && albumSaved !== null) {
+      const saved = albumSaved;
+      options.push({
+        label: saved ? 'Remove from Library' : 'Add to Library',
+        icon: saved ? <RemoveFromLibraryIcon /> : <AddToLibraryIcon />,
+        onClick: () => {
+          catalog.setAlbumSaved!(album.id, !saved).then(() => {
+            if (saved) {
+              librarySyncEngine.optimisticRemoveAlbum(album.id).catch(() => {});
+            } else {
+              librarySyncEngine.optimisticAddAlbum({
+                id: album.id,
+                name: album.name,
+                artists: album.artists,
+                images: album.images ?? [],
+                release_date: album.release_date ?? '',
+                total_tracks: album.total_tracks ?? 0,
+                uri: album.uri ?? `spotify:album:${album.id}`,
+                added_at: new Date().toISOString(),
+                provider: album.provider,
+              }).catch(() => {});
+            }
+          }).catch(() => {});
+        },
+      });
+    }
+
+    if (capabilities?.hasExternalLink ?? true) {
+      const externalUrls = descriptor?.getExternalUrls?.({
+        type: 'album',
+        name: album.name,
+        artistName: album.artists,
+      });
+      if (externalUrls) {
+        for (const entry of externalUrls) {
+          const IconComponent = ICON_MAP[entry.icon] ?? DiscogsIcon;
+          options.push({
+            label: `Search ${entry.label}`,
+            icon: <IconComponent />,
+            onClick: () => void window.open(entry.url, '_blank', 'noopener,noreferrer'),
+          });
+        }
+      } else {
+        const providerName = capabilities?.externalLinkLabel?.replace('Open in ', '') ?? 'Spotify';
+        const albumUrl = descriptor?.getExternalUrl
+          ? descriptor.getExternalUrl({ type: 'album', name: album.name, artistName: album.artists })
+          : (descriptor?.id === 'spotify' ? `https://open.spotify.com/album/${album.id}` : undefined);
+        if (albumUrl) {
+          options.push({
+            label: `View album on ${providerName}`,
+            icon: <ExternalIcon />,
+            onClick: () => void window.open(albumUrl, '_blank', 'noopener,noreferrer'),
+          });
+        }
+      }
+    }
+
+    return options;
+  }, [albumPopover, albumSaved, getDescriptor, activeDescriptor, onPlaylistSelect]);
+
+  const albumPopoverPortal = albumPopover ? createPortal(
+    <TrackInfoPopover
+      type="album"
+      anchorRect={albumPopover.rect}
+      onClose={closeAlbumPopover}
+      options={buildAlbumPopoverOptions()}
+    />,
+    document.body,
+  ) : null;
 
   async function handleLogin(): Promise<void> {
     try {
@@ -1079,7 +1217,11 @@ const PlaylistSelection = React.memo(function PlaylistSelection({ onPlaylistSele
         const renderAlbumGrid = (album: AlbumInfo) => {
           const pinned = isAlbumPinned(album.id);
           return (
-            <PinnableGridCard key={`${album.provider ?? 'default'}-${album.id}`} onClick={() => handleAlbumClick(album)}>
+            <PinnableGridCard
+              key={`${album.provider ?? 'default'}-${album.id}`}
+              onClick={() => handleAlbumClick(album)}
+              onContextMenu={(e) => handleAlbumContextMenu(album, e)}
+            >
               <GridCardArtWrapper style={{ position: 'relative' }}>
                 <GridCardImageComponent images={album.images} alt={`${album.name} by ${album.artists}`} />
                 {showProviderBadges && album.provider && (
@@ -1107,7 +1249,11 @@ const PlaylistSelection = React.memo(function PlaylistSelection({ onPlaylistSele
         const renderAlbumList = (album: AlbumInfo) => {
           const pinned = isAlbumPinned(album.id);
           return (
-            <PinnableListItem key={`${album.provider ?? 'default'}-${album.id}`} onClick={() => handleAlbumClick(album)}>
+            <PinnableListItem
+              key={`${album.provider ?? 'default'}-${album.id}`}
+              onClick={() => handleAlbumClick(album)}
+              onContextMenu={(e) => handleAlbumContextMenu(album, e)}
+            >
               <div style={{ position: 'relative' }}>
                 <PlaylistImage images={album.images} alt={`${album.name} by ${album.artists}`} />
                 {showProviderBadges && album.provider && (
@@ -1224,6 +1370,7 @@ const PlaylistSelection = React.memo(function PlaylistSelection({ onPlaylistSele
       <DrawerContentWrapper>
         {statusContent}
         {mainContent}
+        {albumPopoverPortal}
       </DrawerContentWrapper>
     );
   }
@@ -1234,6 +1381,7 @@ const PlaylistSelection = React.memo(function PlaylistSelection({ onPlaylistSele
         <CardContent style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
           {statusContent}
           {mainContent}
+          {albumPopoverPortal}
         </CardContent>
       </SelectionCard>
     </Container>
