@@ -12,17 +12,29 @@ import type { Track } from './spotify';
 const QUEUE_URI_LIMIT = 200;
 const MAX_CONCURRENT_SEARCHES = 3;
 
-const SETTING_KEY = 'vorbis-player-spotify-queue-resolve-cross-provider';
+const SYNC_SETTING_KEY = 'vorbis-player-spotify-queue-sync-enabled';
+const RESOLVE_SETTING_KEY = 'vorbis-player-spotify-queue-resolve-cross-provider';
 
 class SpotifyQueueSyncService {
   /** Cache: non-Spotify trackId → resolved Spotify URI (or null if unresolvable) */
   private resolutionCache = new Map<string, string | null>();
   private pendingResolutions = new Set<string>();
 
+  /** Read the user's queue-sync setting from localStorage. */
+  isSyncEnabled(): boolean {
+    try {
+      const stored = localStorage.getItem(SYNC_SETTING_KEY);
+      if (stored === null) return true; // default on
+      return JSON.parse(stored);
+    } catch {
+      return true;
+    }
+  }
+
   /** Read the user's cross-provider resolution setting from localStorage. */
   isResolveEnabled(): boolean {
     try {
-      const stored = localStorage.getItem(SETTING_KEY);
+      const stored = localStorage.getItem(RESOLVE_SETTING_KEY);
       if (stored === null) return true; // default on
       return JSON.parse(stored);
     } catch {
@@ -36,6 +48,8 @@ class SpotifyQueueSyncService {
    * only if the resolution setting is on and a cached Spotify URI exists.
    */
   buildUpcomingUris(tracks: Track[], fromIndex: number): string[] {
+    if (!this.isSyncEnabled()) return [];
+
     const resolveEnabled = this.isResolveEnabled();
     const uris: string[] = [];
     // `spotifyPlayer.playTrack()` prepends the current URI, so reserve 1 slot.
@@ -63,6 +77,7 @@ class SpotifyQueueSyncService {
     signal?: AbortSignal,
   ): Promise<void> {
     if (!spotifyAuth.isAuthenticated()) return;
+    if (!this.isSyncEnabled()) return;
     if (!this.isResolveEnabled()) return;
 
     const toResolve = tracks.filter(

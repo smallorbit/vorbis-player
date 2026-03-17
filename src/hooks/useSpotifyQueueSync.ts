@@ -20,6 +20,7 @@ export function useSpotifyQueueSync({ tracks }: UseSpotifyQueueSyncProps): void 
 
   useEffect(() => {
     if (!spotifyAuth.isAuthenticated() || tracks.length === 0) return;
+    if (!spotifyQueueSync.isSyncEnabled()) return;
     if (!spotifyQueueSync.isResolveEnabled()) return;
 
     const hasNonSpotify = tracks.some(t => t.provider && t.provider !== 'spotify');

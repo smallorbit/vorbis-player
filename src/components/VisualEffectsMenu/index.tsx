@@ -118,31 +118,46 @@ const MusicSourcesSection = memo(() => {
 });
 MusicSourcesSection.displayName = 'MusicSourcesSection';
 
-/** Cross-provider queue resolution toggle — visible when Spotify + another provider are connected. */
+/** Spotify queue sync settings — global sync toggle plus optional cross-provider replacement. */
 const SpotifyQueueSection = memo(() => {
   const { connectedProviderIds } = useProviderContext();
   const spotifyConnected = connectedProviderIds.includes('spotify');
   const hasOtherProvider = connectedProviderIds.some(id => id !== 'spotify');
 
+  const [syncEnabled, setSyncEnabled] = useLocalStorage(
+    'vorbis-player-spotify-queue-sync-enabled',
+    true,
+  );
   const [resolveEnabled, setResolveEnabled] = useLocalStorage(
     'vorbis-player-spotify-queue-resolve-cross-provider',
     true,
   );
 
-  if (!spotifyConnected || !hasOtherProvider) return null;
+  if (!spotifyConnected) return null;
 
   return (
     <FilterSection>
       <SectionTitle>Spotify Queue</SectionTitle>
       <ControlGroup>
-        <ControlLabel>Find Spotify equivalents for non-Spotify tracks in queue</ControlLabel>
+        <ControlLabel>Keep Spotify queue synced with Vorbis playback</ControlLabel>
         <Switch
-          on={resolveEnabled}
-          onToggle={() => setResolveEnabled(!resolveEnabled)}
-          ariaLabel="Resolve non-Spotify tracks to Spotify equivalents in queue"
+          on={syncEnabled}
+          onToggle={() => setSyncEnabled(!syncEnabled)}
+          ariaLabel="Keep Spotify queue synced with Vorbis playback"
           variant="neutral"
         />
       </ControlGroup>
+      {syncEnabled && hasOtherProvider && (
+        <ControlGroup>
+          <ControlLabel>Replace non-Spotify tracks with Spotify equivalents in queue</ControlLabel>
+          <Switch
+            on={resolveEnabled}
+            onToggle={() => setResolveEnabled(!resolveEnabled)}
+            ariaLabel="Replace non-Spotify tracks with Spotify equivalents in queue"
+            variant="neutral"
+          />
+        </ControlGroup>
+      )}
     </FilterSection>
   );
 });
@@ -374,7 +389,7 @@ const AppSettingsMenu: React.FC<AppSettingsMenuProps> = memo(({
           {/* Music Sources — always visible at top */}
           <MusicSourcesSection />
 
-          {/* Spotify Queue — cross-provider resolution toggle */}
+          {/* Spotify Queue settings */}
           <SpotifyQueueSection />
 
           {/* Dropbox Data — consolidated art cache + liked songs */}
