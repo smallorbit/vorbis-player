@@ -21,6 +21,13 @@ vi.mock('@/services/spotify', () => ({
   },
 }));
 
+vi.mock('@/services/spotifyQueueSync', () => ({
+  spotifyQueueSync: {
+    buildUpcomingUris: vi.fn().mockReturnValue([]),
+    isResolveEnabled: vi.fn().mockReturnValue(false),
+  },
+}));
+
 import { useSpotifyPlayback } from '../useSpotifyPlayback';
 import { spotifyPlayer } from '@/services/spotifyPlayer';
 import { spotifyAuth } from '@/services/spotify';
@@ -87,7 +94,7 @@ describe('useSpotifyPlayback', () => {
     });
 
     // The recursive call to playTrack(1, true) should attempt to play track 2
-    expect(spotifyPlayer.playTrack).toHaveBeenCalledWith('spotify:track:t2');
+    expect(spotifyPlayer.playTrack).toHaveBeenCalledWith('spotify:track:t2', []);
   });
 
   it('calls setCurrentTrackIndex on successful playback', async () => {
@@ -99,7 +106,7 @@ describe('useSpotifyPlayback', () => {
       await result.current.playTrack(1);
     });
 
-    expect(spotifyPlayer.playTrack).toHaveBeenCalledWith('spotify:track:t2');
+    expect(spotifyPlayer.playTrack).toHaveBeenCalledWith('spotify:track:t2', []);
     expect(setCurrentTrackIndex).toHaveBeenCalledWith(1);
   });
 

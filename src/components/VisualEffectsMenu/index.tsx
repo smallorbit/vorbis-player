@@ -5,6 +5,7 @@ import { theme } from '../../styles/theme';
 import { ProfiledComponent } from '@/components/ProfiledComponent';
 import { usePlayerSizingContext } from '@/contexts/PlayerSizingContext';
 import { useProviderContext } from '@/contexts/ProviderContext';
+import { useLocalStorage } from '@/hooks/useLocalStorage';
 import type { DropboxCatalogAdapter } from '@/providers/dropbox/dropboxCatalogAdapter';
 import { ART_REFRESHED_EVENT } from '@/hooks/useLibrarySync';
 
@@ -116,6 +117,51 @@ const MusicSourcesSection = memo(() => {
   );
 });
 MusicSourcesSection.displayName = 'MusicSourcesSection';
+
+/** Spotify queue sync settings — global sync toggle plus optional cross-provider replacement. */
+const SpotifyQueueSection = memo(() => {
+  const { connectedProviderIds } = useProviderContext();
+  const spotifyConnected = connectedProviderIds.includes('spotify');
+  const hasOtherProvider = connectedProviderIds.some(id => id !== 'spotify');
+
+  const [syncEnabled, setSyncEnabled] = useLocalStorage(
+    'vorbis-player-spotify-queue-sync-enabled',
+    true,
+  );
+  const [resolveEnabled, setResolveEnabled] = useLocalStorage(
+    'vorbis-player-spotify-queue-resolve-cross-provider',
+    true,
+  );
+
+  if (!spotifyConnected) return null;
+
+  return (
+    <FilterSection>
+      <SectionTitle>Spotify Queue</SectionTitle>
+      <ControlGroup>
+        <ControlLabel>Keep Spotify queue synced with Vorbis playback</ControlLabel>
+        <Switch
+          on={syncEnabled}
+          onToggle={() => setSyncEnabled(!syncEnabled)}
+          ariaLabel="Keep Spotify queue synced with Vorbis playback"
+          variant="neutral"
+        />
+      </ControlGroup>
+      {syncEnabled && hasOtherProvider && (
+        <ControlGroup>
+          <ControlLabel>Replace non-Spotify tracks with Spotify equivalents in queue</ControlLabel>
+          <Switch
+            on={resolveEnabled}
+            onToggle={() => setResolveEnabled(!resolveEnabled)}
+            ariaLabel="Replace non-Spotify tracks with Spotify equivalents in queue"
+            variant="neutral"
+          />
+        </ControlGroup>
+      )}
+    </FilterSection>
+  );
+});
+SpotifyQueueSection.displayName = 'SpotifyQueueSection';
 
 /** Chevron SVG used in collapsible section headers. */
 const ChevronIcon = ({ isOpen }: { isOpen: boolean }) => (
@@ -342,6 +388,9 @@ const AppSettingsMenu: React.FC<AppSettingsMenuProps> = memo(({
         <DrawerContent>
           {/* Music Sources — always visible at top */}
           <MusicSourcesSection />
+
+          {/* Spotify Queue settings */}
+          <SpotifyQueueSection />
 
           {/* Dropbox Data — consolidated art cache + liked songs */}
           {dropboxCatalog && (
