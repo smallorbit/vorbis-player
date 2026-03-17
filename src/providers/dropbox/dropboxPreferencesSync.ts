@@ -267,3 +267,11 @@ export function initPreferencesSync(auth: DropboxAuthAdapter): DropboxPreference
 export function getPreferencesSync(): DropboxPreferencesSyncService | null {
   return preferencesSyncInstance;
 }
+
+/**
+ * Clear the local sync timestamp so the next initialSync() pulls from remote.
+ * Call this when pins or accent colors are cleared locally.
+ */
+export function clearPreferencesSyncTimestamp(): void {
+  localStorage.removeItem(LS_UPDATED_AT);
+}
