@@ -38,7 +38,8 @@ class SpotifyQueueSyncService {
   buildUpcomingUris(tracks: Track[], fromIndex: number): string[] {
     const resolveEnabled = this.isResolveEnabled();
     const uris: string[] = [];
-    const limit = Math.min(tracks.length, fromIndex + 1 + QUEUE_URI_LIMIT);
+    // `spotifyPlayer.playTrack()` prepends the current URI, so reserve 1 slot.
+    const limit = Math.min(tracks.length, fromIndex + QUEUE_URI_LIMIT);
 
     for (let i = fromIndex + 1; i < limit; i++) {
       const track = tracks[i];
