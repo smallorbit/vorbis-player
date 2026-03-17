@@ -16,10 +16,16 @@ import {
   exportLikes,
   importLikes,
   refreshLikedTrackMetadata,
+  getLikedEntries,
+  replaceLikes,
+  addTombstone,
+  getTombstones,
+  clearTombstones,
+  setTombstones,
 } from '../dropboxLikesCache';
 
 const DB_NAME = 'vorbis-dropbox-likes-test';
-const DB_VERSION = 3;
+const DB_VERSION = 6;
 
 function openTestDb(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
@@ -36,6 +42,9 @@ function openTestDb(): Promise<IDBDatabase> {
       }
       if (!db.objectStoreNames.contains('likes')) {
         db.createObjectStore('likes', { keyPath: 'trackId' });
+      }
+      if (!db.objectStoreNames.contains('tombstones')) {
+        db.createObjectStore('tombstones', { keyPath: 'trackId' });
       }
     };
   });
@@ -184,6 +193,64 @@ describe('dropboxLikesCache', () => {
       expect(result.removed).toBe(1);
       expect(await isTrackLiked('id:1')).toBe(true);
       expect(await isTrackLiked('id:2')).toBe(false);
+    });
+  });
+
+  describe('getLikedEntries', () => {
+    it('returns raw LikedEntry records', async () => {
+      await setTrackLiked('id:1', makeTrack('id:1', 'Song'), true);
+      const entries = await getLikedEntries();
+      expect(entries).toHaveLength(1);
+      expect(entries[0].trackId).toBe('id:1');
+      expect(entries[0].track.name).toBe('Song');
+      expect(typeof entries[0].likedAt).toBe('number');
+    });
+  });
+
+  describe('replaceLikes', () => {
+    it('atomically replaces all likes', async () => {
+      await setTrackLiked('id:1', makeTrack('id:1'), true);
+      await setTrackLiked('id:2', makeTrack('id:2'), true);
+
+      await replaceLikes([
+        { trackId: 'id:3', track: makeTrack('id:3', 'New'), likedAt: 1000 },
+      ]);
+
+      expect(await getLikedCount()).toBe(1);
+      expect(await isTrackLiked('id:1')).toBe(false);
+      expect(await isTrackLiked('id:3')).toBe(true);
+    });
+  });
+
+  describe('tombstones', () => {
+    it('addTombstone records a deletion', async () => {
+      await addTombstone('id:1');
+      const tombstones = await getTombstones();
+      expect(tombstones).toHaveLength(1);
+      expect(tombstones[0].trackId).toBe('id:1');
+      expect(typeof tombstones[0].deletedAt).toBe('number');
+    });
+
+    it('setTrackLiked(false) creates a tombstone', async () => {
+      await setTrackLiked('id:1', makeTrack('id:1'), true);
+      await setTrackLiked('id:1', null, false);
+      const tombstones = await getTombstones();
+      expect(tombstones.some((t) => t.trackId === 'id:1')).toBe(true);
+    });
+
+    it('clearTombstones removes all tombstones', async () => {
+      await addTombstone('id:1');
+      await addTombstone('id:2');
+      await clearTombstones();
+      expect(await getTombstones()).toEqual([]);
+    });
+
+    it('setTombstones replaces all tombstones', async () => {
+      await addTombstone('id:1');
+      await setTombstones([{ trackId: 'id:2', deletedAt: 5000 }]);
+      const tombstones = await getTombstones();
+      expect(tombstones).toHaveLength(1);
+      expect(tombstones[0].trackId).toBe('id:2');
     });
   });
 

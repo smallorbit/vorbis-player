@@ -14,6 +14,8 @@ import { PlayerSizingProvider } from './contexts/PlayerSizingContext';
 import { VisualizerDebugPanel } from './components/VisualizerDebugPanel';
 import { ProviderProvider } from './contexts/ProviderContext';
 import { providerRegistry } from './providers/registry';
+import { getLikesSync } from './providers/dropbox/dropboxLikesSync';
+import { getPreferencesSync } from './providers/dropbox/dropboxPreferencesSync';
 
 /**
  * Cleanup function to remove deprecated localStorage keys
@@ -110,6 +112,16 @@ function App() {
             } catch (providerError) {
               throw providerError;
             }
+          }
+
+          // Trigger likes and preferences sync after Dropbox login
+          if (handled && handledProviderId === 'dropbox') {
+            getLikesSync()?.initialSync().catch((err) => {
+              console.warn('[App] Post-login Dropbox likes sync failed:', err);
+            });
+            getPreferencesSync()?.initialSync().catch((err) => {
+              console.warn('[App] Post-login Dropbox preferences sync failed:', err);
+            });
           }
 
           if (handled && window.opener) {

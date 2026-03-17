@@ -122,6 +122,12 @@ const AudioPlayerComponent = () => {
       localStorage.removeItem('vorbis-player-accent-color-overrides');
       localStorage.removeItem('vorbis-player-custom-accent-colors');
     }
+    if (options.clearPins || options.clearAccentColors) {
+      const { clearPreferencesSyncTimestamp, getPreferencesSync } =
+        await import('@/providers/dropbox/dropboxPreferencesSync');
+      clearPreferencesSyncTimestamp();
+      getPreferencesSync()?.initialSync();
+    }
   }, []);
 
   const renderContent = () => {

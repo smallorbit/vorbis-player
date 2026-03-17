@@ -12,7 +12,7 @@ function notifyLikesChanged(): void {
   }
 }
 
-interface LikedEntry {
+export interface LikedEntry {
   trackId: string;
   track: MediaTrack;
   likedAt: number;
@@ -22,6 +22,8 @@ interface LikedEntry {
  * Open a transaction on the likes store and run the callback.
  * Returns `fallback` if the database is unavailable or the transaction fails.
  */
+const TOMBSTONE_STORE = 'tombstones';
+
 async function withStore<T>(
   mode: IDBTransactionMode,
   fallback: T,
@@ -33,6 +35,25 @@ async function withStore<T>(
     try {
       const tx = database.transaction(STORE, mode);
       const store = tx.objectStore(STORE);
+      fn(store, resolve);
+      tx.onerror = () => resolve(fallback);
+    } catch {
+      resolve(fallback);
+    }
+  });
+}
+
+async function withTombstoneStore<T>(
+  mode: IDBTransactionMode,
+  fallback: T,
+  fn: (store: IDBObjectStore, resolve: (value: T) => void) => void,
+): Promise<T> {
+  const database = await getDb();
+  if (!database) return fallback;
+  return new Promise((resolve) => {
+    try {
+      const tx = database.transaction(TOMBSTONE_STORE, mode);
+      const store = tx.objectStore(TOMBSTONE_STORE);
       fn(store, resolve);
       tx.onerror = () => resolve(fallback);
     } catch {
@@ -74,7 +95,7 @@ export async function setTrackLiked(
   track: MediaTrack | null,
   liked: boolean,
 ): Promise<void> {
-  return withStore('readwrite', undefined, (store, resolve) => {
+  await withStore('readwrite', undefined, (store, resolve) => {
     const tx = store.transaction;
     if (liked && track) {
       const entry: LikedEntry = { trackId, track, likedAt: Date.now() };
@@ -84,6 +105,9 @@ export async function setTrackLiked(
     }
     tx.oncomplete = () => { notifyLikesChanged(); resolve(undefined); };
   });
+  if (!liked) {
+    await addTombstone(trackId);
+  }
 }
 
 export async function clearLikes(): Promise<void> {
@@ -155,5 +179,70 @@ export async function refreshLikedTrackMetadata(
     };
 
     tx.oncomplete = () => { if (updated > 0 || removed > 0) notifyLikesChanged(); resolve({ updated, removed }); };
+  });
+}
+
+// ── Bulk operations for sync ────────────────────────────────────────
+
+export async function getLikedEntries(): Promise<LikedEntry[]> {
+  return withStore<LikedEntry[]>('readonly', [], (store, resolve) => {
+    const req = store.getAll();
+    req.onsuccess = () => resolve((req.result as LikedEntry[]) ?? []);
+    req.onerror = () => resolve([]);
+  });
+}
+
+export async function replaceLikes(entries: LikedEntry[]): Promise<void> {
+  return withStore('readwrite', undefined, (store, resolve) => {
+    const tx = store.transaction;
+    store.clear();
+    for (const entry of entries) {
+      if (entry.trackId && entry.track) {
+        store.put(entry);
+      }
+    }
+    tx.oncomplete = () => { notifyLikesChanged(); resolve(undefined); };
+  });
+}
+
+// ── Tombstones (track unlike deletions for sync) ────────────────────
+
+export interface Tombstone {
+  trackId: string;
+  deletedAt: number;
+}
+
+export async function addTombstone(trackId: string): Promise<void> {
+  return withTombstoneStore('readwrite', undefined, (store, resolve) => {
+    const tx = store.transaction;
+    store.put({ trackId, deletedAt: Date.now() });
+    tx.oncomplete = () => resolve(undefined);
+  });
+}
+
+export async function getTombstones(): Promise<Tombstone[]> {
+  return withTombstoneStore<Tombstone[]>('readonly', [], (store, resolve) => {
+    const req = store.getAll();
+    req.onsuccess = () => resolve((req.result as Tombstone[]) ?? []);
+    req.onerror = () => resolve([]);
+  });
+}
+
+export async function clearTombstones(): Promise<void> {
+  return withTombstoneStore('readwrite', undefined, (store, resolve) => {
+    const tx = store.transaction;
+    store.clear();
+    tx.oncomplete = () => resolve(undefined);
+  });
+}
+
+export async function setTombstones(entries: Tombstone[]): Promise<void> {
+  return withTombstoneStore('readwrite', undefined, (store, resolve) => {
+    const tx = store.transaction;
+    store.clear();
+    for (const entry of entries) {
+      store.put(entry);
+    }
+    tx.oncomplete = () => resolve(undefined);
   });
 }

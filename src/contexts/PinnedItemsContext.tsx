@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useCallback, useMemo, useState, useEffect } from 'react';
 import { getPins, setPins, migratePinsFromLocalStorage, MAX_PINS, UNIFIED_PROVIDER } from '@/services/settings/pinnedItemsStorage';
+import { getPreferencesSync } from '@/providers/dropbox/dropboxPreferencesSync';
 
 interface PinnedItemsContextValue {
   pinnedPlaylistIds: string[];
@@ -48,6 +49,7 @@ export function PinnedItemsProvider({ children }: { children: React.ReactNode })
     setPinnedPlaylistIds(prev => {
       const next = prev.includes(id) ? prev.filter(pid => pid !== id) : prev.length >= MAX_PINS ? prev : [...prev, id];
       setPins(UNIFIED_PROVIDER, 'playlists', next).catch(err => console.warn('[PinnedItemsContext] pin write failed:', err));
+      getPreferencesSync()?.schedulePush();
       return next;
     });
   }, []);
@@ -56,6 +58,7 @@ export function PinnedItemsProvider({ children }: { children: React.ReactNode })
     setPinnedAlbumIds(prev => {
       const next = prev.includes(id) ? prev.filter(pid => pid !== id) : prev.length >= MAX_PINS ? prev : [...prev, id];
       setPins(UNIFIED_PROVIDER, 'albums', next).catch(err => console.warn('[PinnedItemsContext] pin write failed:', err));
+      getPreferencesSync()?.schedulePush();
       return next;
     });
   }, []);

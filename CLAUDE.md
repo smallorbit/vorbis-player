@@ -135,6 +135,8 @@ Folders containing audio files become albums; parent folder = artist. A syntheti
 
 **Dropbox Liked Songs**: Stored in IndexedDB (`vorbis-dropbox-art` database v3, `likes` store). Mutations dispatch `vorbis-dropbox-likes-changed` events for real-time UI updates. Settings menu exposes Export/Import (JSON) and Refresh Metadata operations.
 
+**Dropbox preferences sync**: Pins (unified playlists/albums) and accent overrides/custom colors are synced to `/.vorbis/preferences.json`. Merge is last-write-wins by `updatedAt`. `dropboxPreferencesSync.ts` provides `initPreferencesSync(auth)`, `getPreferencesSync()`, `initialSync()`, and `schedulePush()` (2s debounce). PinnedItemsContext and ColorContext call `schedulePush()` after local changes; App and provider trigger `initialSync()` after Dropbox OAuth and when already authenticated.
+
 **Token refresh**: Both providers preserve refresh tokens during transient failures and proactively refresh before expiry. Spotify uses a 5-minute buffer; Dropbox uses a 60-second buffer. On 401/400 errors Dropbox performs full logout; on 5xx or network errors it preserves the refresh token for retry.
 
 **Spotify SDK loading**: The Spotify Web Playback SDK is loaded lazily by `SpotifyPlayerService.loadSDK()` — no global script tag in `index.html`. The SDK is only injected when the Spotify provider activates.
