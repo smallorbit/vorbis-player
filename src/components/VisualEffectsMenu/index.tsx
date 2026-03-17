@@ -8,6 +8,13 @@ import { useProviderContext } from '@/contexts/ProviderContext';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import type { DropboxCatalogAdapter } from '@/providers/dropbox/dropboxCatalogAdapter';
 import { ART_REFRESHED_EVENT } from '@/hooks/useLibrarySync';
+import {
+  isScrobblingConfigured,
+  isScrobblingAuthenticated,
+  getLastFmUsername,
+  beginLastFmAuth,
+  logoutLastFm,
+} from '@/services/lastfmScrobbler';
 
 import {
   DrawerOverlay,
@@ -200,6 +207,60 @@ const CollapsibleSection = memo(({
 });
 CollapsibleSection.displayName = 'CollapsibleSection';
 
+/** Last.fm Scrobbling — connect/disconnect + status. */
+const LastFmScrobblingSection = memo(() => {
+  const [isConnected, setIsConnected] = useState(isScrobblingAuthenticated);
+
+  if (!isScrobblingConfigured()) return null;
+
+  const username = getLastFmUsername();
+
+  const handleConnect = () => {
+    beginLastFmAuth({ popup: true });
+
+    // Listen for popup auth completion
+    const handler = (event: MessageEvent) => {
+      if (event.origin !== window.location.origin) return;
+      if (event.data?.type === 'vorbis-lastfm-auth-complete') {
+        setIsConnected(true);
+        window.removeEventListener('message', handler);
+      }
+    };
+    window.addEventListener('message', handler);
+    // Cleanup after 5 minutes in case popup is closed without completing
+    setTimeout(() => window.removeEventListener('message', handler), 5 * 60 * 1000);
+  };
+
+  const handleDisconnect = () => {
+    logoutLastFm();
+    setIsConnected(false);
+  };
+
+  return (
+    <FilterSection>
+      <SectionTitle>Last.fm Scrobbling</SectionTitle>
+      <FilterGrid>
+        <ProviderRow>
+          <ProviderName>Last.fm</ProviderName>
+          <ProviderStatusBadge $status={isConnected ? 'connected' : 'disabled'}>
+            {isConnected ? (username ? `${username}` : 'Connected') : ''}
+          </ProviderStatusBadge>
+          {isConnected ? (
+            <ProviderConnectAction onClick={handleDisconnect}>
+              Disconnect
+            </ProviderConnectAction>
+          ) : (
+            <ProviderConnectAction onClick={handleConnect}>
+              Connect
+            </ProviderConnectAction>
+          )}
+        </ProviderRow>
+      </FilterGrid>
+    </FilterSection>
+  );
+});
+LastFmScrobblingSection.displayName = 'LastFmScrobblingSection';
+
 /** Dropbox-specific data management — art cache + liked songs. */
 const DropboxDataSection = memo(({ catalog }: { catalog: DropboxCatalogAdapter }) => {
   const [artStatus, setArtStatus] = useState<'idle' | 'working' | 'done'>('idle');
@@ -391,6 +452,9 @@ const AppSettingsMenu: React.FC<AppSettingsMenuProps> = memo(({
 
           {/* Spotify Queue settings */}
           <SpotifyQueueSection />
+
+          {/* Last.fm Scrobbling — connect/disconnect */}
+          <LastFmScrobblingSection />
 
           {/* Dropbox Data — consolidated art cache + liked songs */}
           {dropboxCatalog && (

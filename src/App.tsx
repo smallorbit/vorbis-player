@@ -16,6 +16,7 @@ import { ProviderProvider } from './contexts/ProviderContext';
 import { providerRegistry } from './providers/registry';
 import { getLikesSync } from './providers/dropbox/dropboxLikesSync';
 import { getPreferencesSync } from './providers/dropbox/dropboxPreferencesSync';
+import { handleLastFmCallback } from './services/lastfmScrobbler';
 
 /**
  * Cleanup function to remove deprecated localStorage keys
@@ -99,6 +100,25 @@ function App() {
         const isAuthCallback = currentUrl.pathname.startsWith('/auth/');
 
         if (isAuthCallback) {
+          // Handle Last.fm scrobbling auth callback (not a provider)
+          if (currentUrl.pathname.startsWith('/auth/lastfm/callback')) {
+            const lastfmHandled = await handleLastFmCallback(currentUrl);
+            if (lastfmHandled) {
+              if (window.opener) {
+                window.opener.postMessage(
+                  { type: 'vorbis-lastfm-auth-complete' },
+                  window.location.origin,
+                );
+                setIsPopupCallback(true);
+                setTimeout(() => window.close(), 1500);
+              } else {
+                window.history.replaceState({}, document.title, '/');
+              }
+              setIsAuthenticating(false);
+              return;
+            }
+          }
+
           let handled = false;
           let handledProviderId: string | null = null;
           for (const descriptor of providerRegistry.getAll()) {

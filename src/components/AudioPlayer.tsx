@@ -13,6 +13,8 @@ import { ProfilingProvider } from '@/contexts/ProfilingContext';
 import { ProfilingOverlay } from '@/components/ProfilingOverlay';
 import { ProfiledComponent } from '@/components/ProfiledComponent';
 import { usePlayerLogic } from '@/hooks/usePlayerLogic';
+import { useLastFmScrobbler } from '@/hooks/useLastFmScrobbler';
+import { isScrobblingConfigured } from '@/services/lastfmScrobbler';
 import { useColorContext } from '@/contexts/ColorContext';
 import { useVisualEffectsContext } from '@/contexts/VisualEffectsContext';
 import { PlayerSizingProvider } from '@/contexts/PlayerSizingContext';
@@ -45,6 +47,14 @@ const AudioPlayerComponent = () => {
   } = useVisualEffectsContext();
   const { tracks, selectedPlaylistId } = useTrackListContext();
   const { currentTrack } = useCurrentTrackContext();
+
+  // Last.fm scrobbling — watches playback and sends scrobble events
+  useLastFmScrobbler({
+    currentTrack: currentTrack ?? null,
+    isPlaying: state.isPlaying,
+    playbackPosition: state.playbackPosition,
+    enabled: isScrobblingConfigured(),
+  });
 
   const resolveDisplayProvider = useCallback((): import('@/types/domain').ProviderId | undefined => (
     (currentTrack?.provider as import('@/types/domain').ProviderId | undefined)

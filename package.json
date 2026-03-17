@@ -26,6 +26,7 @@
     "capture:mobile": "playwright test --config playwright/capture/capture.config.ts --project mobile"
   },
   "dependencies": {
+    "blueimp-md5": "^2.19.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "styled-components": "^6.1.12"
@@ -36,6 +37,7 @@
     "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.3.0",
+    "@types/blueimp-md5": "^2.18.2",
     "@types/node": "^24.10.13",
     "@types/react": "^18.3.9",
     "@types/react-dom": "^18.3.1",
