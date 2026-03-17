@@ -164,23 +164,26 @@ class SpotifyPlayerService {
     this.saveState();
   }
 
-  async playTrack(uri: string): Promise<void> {
+  async playTrack(uri: string, upcomingUris?: string[]): Promise<void> {
     if (!this.deviceId || !this.isReady) {
       throw new Error('Spotify player not ready');
     }
     this.lastPlayTrackTime = Date.now();
 
     const token = await spotifyAuth.ensureValidToken();
-    
+
+    const uris = upcomingUris?.length ? [uri, ...upcomingUris] : [uri];
+
     console.log('🎵 Making Spotify API call to play track:', {
       deviceId: this.deviceId,
       uri: uri,
+      queueSize: uris.length,
       hasToken: !!token
     });
-    
+
     const response = await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${this.deviceId}`, {
       method: 'PUT',
-      body: JSON.stringify({ uris: [uri] }),
+      body: JSON.stringify({ uris }),
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`

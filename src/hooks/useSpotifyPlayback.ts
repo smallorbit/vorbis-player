@@ -1,6 +1,7 @@
 import { useCallback, useRef } from 'react';
 import { spotifyAuth } from '../services/spotify';
 import { spotifyPlayer } from '../services/spotifyPlayer';
+import { spotifyQueueSync } from '../services/spotifyQueueSync';
 import type { Track } from '../services/spotify';
 import type { ProviderDescriptor } from '@/types/providers';
 import type { MediaTrack, ProviderId } from '@/types/domain';
@@ -87,11 +88,14 @@ export const useSpotifyPlayback = ({
     const trackUri = mediaTrack.playbackRef.ref;
     const trackName = mediaTrack.name;
 
+    // Build upcoming Spotify URIs for queue sync so the Spotify app shows the full queue
+    const upcomingUris = spotifyQueueSync.buildUpcomingUris(tracksRef.current, index);
+
     type PlayResult = 'success' | 'unavailable' | 'auth_expired';
 
     const playWithRetry = async (uri: string, retryCount = 0, maxRetries = 2): Promise<PlayResult> => {
       try {
-        await spotifyPlayer.playTrack(uri);
+        await spotifyPlayer.playTrack(uri, upcomingUris);
         return 'success';
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);

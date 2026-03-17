@@ -10,6 +10,7 @@ import { useAutoAdvance } from '@/hooks/useAutoAdvance';
 import { useAccentColor } from '@/hooks/useAccentColor';
 import { useUnifiedLikedTracks } from '@/hooks/useUnifiedLikedTracks';
 import { useRadio } from '@/hooks/useRadio';
+import { useSpotifyQueueSync } from '@/hooks/useSpotifyQueueSync';
 import type { Track } from '@/services/spotify';
 import type { PlaybackState, ProviderId } from '@/types/domain';
 import type { MediaTrack } from '@/types/domain';
@@ -315,6 +316,9 @@ export function usePlayerLogic() {
   );
 
   useAutoAdvance({ tracks, currentTrackIndex, playTrack, enabled: true, currentPlaybackProviderRef: drivingProviderRef });
+
+  // Background-resolve non-Spotify tracks to Spotify URIs for queue sync
+  useSpotifyQueueSync({ tracks });
 
   // Auto-extract accent color from album artwork; respects overrides in ColorContext
   useAccentColor(currentTrack, accentColorOverrides, setAccentColor, setAccentColorOverrides);
