@@ -12,6 +12,7 @@ import {
   getTombstones,
   setTombstones,
 } from './dropboxLikesCache';
+import { ensureVorbisFolder } from './dropboxSyncFolder';
 
 export interface RemoteLikesFile {
   version: 1;
@@ -63,40 +64,6 @@ export class DropboxLikesSyncService {
     for (const entryA of a) {
       const deletedAtB = mapB.get(entryA.trackId);
       if (deletedAtB !== entryA.deletedAt) return false;
-    }
-
-    return true;
-  }
-
-  private async ensureSyncFolder(token: string): Promise<boolean> {
-    let response = await fetch('https://api.dropboxapi.com/2/files/create_folder_v2', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ path: '/.vorbis', autorename: false }),
-    });
-
-    if (response.status === 401) {
-      const refreshed = await this.auth.refreshAccessToken();
-      if (!refreshed) return false;
-      response = await fetch('https://api.dropboxapi.com/2/files/create_folder_v2', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${refreshed}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ path: '/.vorbis', autorename: false }),
-      });
-    }
-
-    // path/conflict means folder already exists.
-    if (response.status === 409) return true;
-
-    if (!response.ok) {
-      console.warn('[DropboxLikesSync] Failed to ensure /.vorbis folder:', response.status);
-      return false;
     }
 
     return true;
@@ -155,7 +122,7 @@ export class DropboxLikesSyncService {
     let token = await this.auth.ensureValidToken();
     if (!token) return false;
 
-    const folderReady = await this.ensureSyncFolder(token);
+    const folderReady = await ensureVorbisFolder(this.auth);
     if (!folderReady) return false;
 
     const apiArg = JSON.stringify({
@@ -340,10 +307,16 @@ export class DropboxLikesSyncService {
         (t) => now - t.deletedAt < TOMBSTONE_TTL_MS,
       );
 
+      const leanEntries = entries.map(({ trackId, track, likedAt }) => ({
+        trackId,
+        track: { ...track, image: undefined },
+        likedAt,
+      }));
+
       const data: RemoteLikesFile = {
         version: 1,
         updatedAt: new Date().toISOString(),
-        likes: entries,
+        likes: leanEntries,
         tombstones: activeTombstones,
       };
 

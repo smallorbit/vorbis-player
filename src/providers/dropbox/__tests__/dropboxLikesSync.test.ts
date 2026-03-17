@@ -3,7 +3,6 @@ import type { MediaTrack } from '@/types/domain';
 import type { LikedEntry, Tombstone } from '../dropboxLikesCache';
 import type { RemoteLikesFile } from '../dropboxLikesSync';
 
-// Mock the likes cache module
 vi.mock('../dropboxLikesCache', () => ({
   getLikedEntries: vi.fn(),
   replaceLikes: vi.fn(),
@@ -12,12 +11,17 @@ vi.mock('../dropboxLikesCache', () => ({
   clearTombstones: vi.fn(),
 }));
 
+vi.mock('../dropboxSyncFolder', () => ({
+  ensureVorbisFolder: vi.fn(),
+}));
+
 import {
   getLikedEntries,
   replaceLikes,
   getTombstones,
   setTombstones,
 } from '../dropboxLikesCache';
+import { ensureVorbisFolder } from '../dropboxSyncFolder';
 
 import { DropboxLikesSyncService } from '../dropboxLikesSync';
 
@@ -72,6 +76,7 @@ describe('DropboxLikesSyncService', () => {
     vi.mocked(getTombstones).mockResolvedValue([]);
     vi.mocked(replaceLikes).mockResolvedValue(undefined);
     vi.mocked(setTombstones).mockResolvedValue(undefined);
+    vi.mocked(ensureVorbisFolder).mockResolvedValue(true);
   });
 
   afterEach(() => {
@@ -263,16 +268,11 @@ describe('DropboxLikesSyncService', () => {
       };
       const result = await service.uploadLikesFile(data);
       expect(result).toBe(true);
-      // ensureSyncFolder (create_folder_v2) + upload
-      expect(fetch).toHaveBeenCalledTimes(2);
+      expect(fetch).toHaveBeenCalledTimes(1);
     });
 
-    it('ensures /.vorbis folder then uploads', async () => {
-      const fetchMock = vi
-        .fn()
-        .mockResolvedValueOnce({ status: 200, ok: true }) // create_folder_v2
-        .mockResolvedValueOnce({ status: 200, ok: true }); // upload
-      vi.stubGlobal('fetch', fetchMock);
+    it('calls ensureVorbisFolder before upload', async () => {
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ status: 200, ok: true }));
 
       const data: RemoteLikesFile = {
         version: 1,
@@ -283,17 +283,11 @@ describe('DropboxLikesSyncService', () => {
 
       const result = await service.uploadLikesFile(data);
       expect(result).toBe(true);
-      expect(fetchMock).toHaveBeenCalledTimes(2);
-      expect(fetchMock.mock.calls[0][0]).toContain('/files/create_folder_v2');
+      expect(ensureVorbisFolder).toHaveBeenCalled();
     });
 
-    it('retries with refreshed token on 401', async () => {
-      const fetchMock = vi
-        .fn()
-        .mockResolvedValueOnce({ status: 401, ok: false }) // ensure
-        .mockResolvedValueOnce({ status: 200, ok: true }) // ensure retry
-        .mockResolvedValueOnce({ status: 200, ok: true }); // upload
-      vi.stubGlobal('fetch', fetchMock);
+    it('returns false when folder creation fails', async () => {
+      vi.mocked(ensureVorbisFolder).mockResolvedValueOnce(false);
 
       const data: RemoteLikesFile = {
         version: 1,
@@ -302,8 +296,7 @@ describe('DropboxLikesSyncService', () => {
         tombstones: [],
       };
       const result = await service.uploadLikesFile(data);
-      expect(result).toBe(true);
-      expect(fetchMock).toHaveBeenCalledTimes(3);
+      expect(result).toBe(false);
     });
   });
 
@@ -320,7 +313,6 @@ describe('DropboxLikesSyncService', () => {
       vi.mocked(getLikedEntries).mockResolvedValue(localEntries);
       vi.mocked(getTombstones).mockResolvedValue([]);
 
-      // Download returns remote data, ensure folder, upload succeeds
       const fetchMock = vi
         .fn()
         .mockResolvedValueOnce({
@@ -328,13 +320,11 @@ describe('DropboxLikesSyncService', () => {
           ok: true,
           json: () => Promise.resolve(remoteData),
         })
-        .mockResolvedValueOnce({ status: 200, ok: true }) // ensure folder
         .mockResolvedValueOnce({ status: 200, ok: true }); // upload
       vi.stubGlobal('fetch', fetchMock);
 
       await service.initialSync();
 
-      // Should have replaced local likes with merged result
       expect(replaceLikes).toHaveBeenCalledWith(
         expect.arrayContaining([
           expect.objectContaining({ trackId: 'a' }),
@@ -372,14 +362,13 @@ describe('DropboxLikesSyncService', () => {
           ok: true,
           json: () => Promise.resolve(remoteData),
         })
-        .mockResolvedValueOnce({ status: 200, ok: true }) // ensure folder
         .mockResolvedValueOnce({ status: 200, ok: true }); // upload
       vi.stubGlobal('fetch', fetchMock);
 
       await service.initialSync();
 
-      // download + ensure + upload
-      expect(fetchMock).toHaveBeenCalledTimes(3);
+      // download + upload (folder ensured via shared utility)
+      expect(fetchMock).toHaveBeenCalledTimes(2);
     });
   });
 
@@ -395,11 +384,9 @@ describe('DropboxLikesSyncService', () => {
       // Nothing should have been called yet
       expect(fetchMock).not.toHaveBeenCalled();
 
-      // Advance past debounce
       await vi.advanceTimersByTimeAsync(2500);
 
-      // ensure folder + upload
-      expect(fetchMock).toHaveBeenCalledTimes(2);
+      expect(fetchMock).toHaveBeenCalledTimes(1);
     });
   });
 });

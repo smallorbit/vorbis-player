@@ -5,6 +5,7 @@
 
 import type { DropboxAuthAdapter } from './dropboxAuthAdapter';
 import { getPins, setPins, UNIFIED_PROVIDER } from '@/services/settings/pinnedItemsStorage';
+import { ensureVorbisFolder } from './dropboxSyncFolder';
 
 // ── Types ───────────────────────────────────────────────────────────────────
 
@@ -87,37 +88,6 @@ export class DropboxPreferencesSyncService {
     this.auth = auth;
   }
 
-  private async ensureSyncFolder(token: string): Promise<boolean> {
-    let response = await fetch('https://api.dropboxapi.com/2/files/create_folder_v2', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ path: '/.vorbis', autorename: false }),
-    });
-
-    if (response.status === 401) {
-      const refreshed = await this.auth.refreshAccessToken();
-      if (!refreshed) return false;
-      response = await fetch('https://api.dropboxapi.com/2/files/create_folder_v2', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${refreshed}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ path: '/.vorbis', autorename: false }),
-      });
-    }
-
-    if (response.status === 409) return true; // path/conflict = folder exists
-    if (!response.ok) {
-      console.warn('[DropboxPreferencesSync] Failed to ensure /.vorbis folder:', response.status);
-      return false;
-    }
-    return true;
-  }
-
   async downloadPreferencesFile(): Promise<RemotePreferencesFile | null> {
     const token = await this.auth.ensureValidToken();
     if (!token) return null;
@@ -168,7 +138,7 @@ export class DropboxPreferencesSyncService {
     let token = await this.auth.ensureValidToken();
     if (!token) return false;
 
-    const folderReady = await this.ensureSyncFolder(token);
+    const folderReady = await ensureVorbisFolder(this.auth);
     if (!folderReady) return false;
 
     const apiArg = JSON.stringify({

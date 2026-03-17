@@ -7,7 +7,12 @@ vi.mock('@/services/settings/pinnedItemsStorage', () => ({
   UNIFIED_PROVIDER: '_unified',
 }));
 
+vi.mock('../dropboxSyncFolder', () => ({
+  ensureVorbisFolder: vi.fn(),
+}));
+
 import { getPins, setPins } from '@/services/settings/pinnedItemsStorage';
+import { ensureVorbisFolder } from '../dropboxSyncFolder';
 import {
   DropboxPreferencesSyncService,
   buildPreferencesFromLocal,
@@ -55,6 +60,7 @@ describe('DropboxPreferencesSyncService', () => {
     });
     vi.mocked(getPins).mockResolvedValue([]);
     vi.mocked(setPins).mockResolvedValue(undefined);
+    vi.mocked(ensureVorbisFolder).mockResolvedValue(true);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     service = new DropboxPreferencesSyncService(mockAuth as any);
   });
@@ -204,33 +210,22 @@ describe('DropboxPreferencesSyncService', () => {
       vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ status: 200, ok: true }));
       const result = await service.uploadPreferencesFile(makeRemote());
       expect(result).toBe(true);
-      expect(fetch).toHaveBeenCalledTimes(2); // ensure folder + upload
+      expect(fetch).toHaveBeenCalledTimes(1);
     });
 
-    it('ensures /.vorbis folder then uploads', async () => {
-      const fetchMock = vi
-        .fn()
-        .mockResolvedValueOnce({ status: 200, ok: true }) // create_folder_v2
-        .mockResolvedValueOnce({ status: 200, ok: true }); // upload
-      vi.stubGlobal('fetch', fetchMock);
+    it('calls ensureVorbisFolder before upload', async () => {
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ status: 200, ok: true }));
 
       const result = await service.uploadPreferencesFile(makeRemote());
       expect(result).toBe(true);
-      expect(fetchMock).toHaveBeenCalledTimes(2);
-      expect(fetchMock.mock.calls[0][0]).toContain('/files/create_folder_v2');
+      expect(ensureVorbisFolder).toHaveBeenCalled();
     });
 
-    it('retries with refreshed token on 401', async () => {
-      const fetchMock = vi
-        .fn()
-        .mockResolvedValueOnce({ status: 401, ok: false }) // ensure
-        .mockResolvedValueOnce({ status: 200, ok: true }) // ensure retry
-        .mockResolvedValueOnce({ status: 200, ok: true }); // upload
-      vi.stubGlobal('fetch', fetchMock);
+    it('returns false when folder creation fails', async () => {
+      vi.mocked(ensureVorbisFolder).mockResolvedValueOnce(false);
 
       const result = await service.uploadPreferencesFile(makeRemote());
-      expect(result).toBe(true);
-      expect(fetchMock).toHaveBeenCalledTimes(3);
+      expect(result).toBe(false);
     });
   });
 
@@ -260,13 +255,12 @@ describe('DropboxPreferencesSyncService', () => {
       const fetchMock = vi
         .fn()
         .mockResolvedValueOnce({ status: 409, ok: false }) // download → not_found
-        .mockResolvedValueOnce({ status: 200, ok: true }) // ensure folder
         .mockResolvedValueOnce({ status: 200, ok: true }); // upload
       vi.stubGlobal('fetch', fetchMock);
 
       await service.initialSync();
 
-      expect(fetchMock).toHaveBeenCalledTimes(3);
+      expect(fetchMock).toHaveBeenCalledTimes(2);
     });
 
     it('handles download failure gracefully', async () => {
@@ -288,7 +282,7 @@ describe('DropboxPreferencesSyncService', () => {
 
       await vi.advanceTimersByTimeAsync(2500);
 
-      expect(fetchMock).toHaveBeenCalledTimes(2); // ensure folder + upload
+      expect(fetchMock).toHaveBeenCalledTimes(1);
     });
   });
 });
