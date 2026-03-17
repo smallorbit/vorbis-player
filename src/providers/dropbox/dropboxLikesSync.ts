@@ -155,11 +155,12 @@ export class DropboxLikesSyncService {
     let token = await this.auth.ensureValidToken();
     if (!token) return false;
 
+    const folderReady = await this.ensureSyncFolder(token);
+    if (!folderReady) return false;
+
     const apiArg = JSON.stringify({
       path: SYNC_FILE_PATH,
       mode: 'overwrite',
-      autorename: false,
-      mute: true,
     });
 
     const body = JSON.stringify(data);
@@ -184,27 +185,17 @@ export class DropboxLikesSyncService {
       response = await upload(token);
     }
 
-    if (response.status === 409) {
-      const folderReady = await this.ensureSyncFolder(token);
-      if (!folderReady) return false;
-
-      response = await upload(token);
-      if (response.status === 401) {
-        const refreshed = await this.auth.refreshAccessToken();
-        if (!refreshed) return false;
-        token = refreshed;
-        response = await upload(token);
-      }
-    }
-
     if (!response.ok) {
       const errText = await response.text();
+      let errMsg: string;
       try {
         const errJson = JSON.parse(errText);
-        console.warn('[DropboxLikesSync] Upload failed:', response.status, (errJson?.error_summary ?? errJson?.error ?? errText) || response.statusText);
+        errMsg = (errJson?.error_summary ?? errJson?.error ?? errText) || response.statusText;
       } catch {
-        console.warn('[DropboxLikesSync] Upload failed:', response.status, errText || response.statusText);
+        errMsg = errText || response.statusText;
       }
+      console.warn('[DropboxLikesSync] Upload failed:', response.status, errMsg);
+      if (response.status === 400) console.error('[DropboxLikesSync] 400 response body:', errText);
       return false;
     }
 

@@ -168,11 +168,12 @@ export class DropboxPreferencesSyncService {
     let token = await this.auth.ensureValidToken();
     if (!token) return false;
 
+    const folderReady = await this.ensureSyncFolder(token);
+    if (!folderReady) return false;
+
     const apiArg = JSON.stringify({
       path: PREFERENCES_FILE_PATH,
       mode: 'overwrite',
-      autorename: false,
-      mute: true,
     });
 
     const upload = (accessToken: string) =>
@@ -195,26 +196,17 @@ export class DropboxPreferencesSyncService {
       response = await upload(token);
     }
 
-    if (response.status === 409) {
-      const folderReady = await this.ensureSyncFolder(token);
-      if (!folderReady) return false;
-      response = await upload(token);
-      if (response.status === 401) {
-        const refreshed = await this.auth.refreshAccessToken();
-        if (!refreshed) return false;
-        token = refreshed;
-        response = await upload(token);
-      }
-    }
-
     if (!response.ok) {
       const errText = await response.text();
+      let errMsg: string;
       try {
         const errJson = JSON.parse(errText);
-        console.warn('[DropboxPreferencesSync] Upload failed:', response.status, (errJson?.error_summary ?? errJson?.error ?? errText) || response.statusText);
+        errMsg = (errJson?.error_summary ?? errJson?.error ?? errText) || response.statusText;
       } catch {
-        console.warn('[DropboxPreferencesSync] Upload failed:', response.status, errText || response.statusText);
+        errMsg = errText || response.statusText;
       }
+      console.warn('[DropboxPreferencesSync] Upload failed:', response.status, errMsg);
+      if (response.status === 400) console.error('[DropboxPreferencesSync] 400 response body:', errText);
       return false;
     }
     return true;
