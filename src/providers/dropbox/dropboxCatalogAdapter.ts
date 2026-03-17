@@ -28,7 +28,9 @@ import {
   exportLikes as exportLikesFromCache,
   importLikes as importLikesFromCache,
   refreshLikedTrackMetadata,
+  clearTombstones,
 } from './dropboxLikesCache';
+import { getLikesSync } from './dropboxLikesSync';
 
 const AUDIO_EXTENSIONS = ['.mp3', '.flac', '.ogg', '.m4a', '.wav', '.aac', '.wma', '.opus'];
 const IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.webp'];
@@ -480,10 +482,13 @@ export class DropboxCatalogAdapter implements CatalogProvider {
   async setTrackSaved(trackId: string, saved: boolean): Promise<void> {
     const track = saved ? (this.knownTracks.get(trackId) ?? null) : null;
     await setTrackLiked(trackId, track, saved);
+    getLikesSync()?.schedulePush();
   }
 
   async clearLikesCache(): Promise<void> {
     await clearLikes();
+    await clearTombstones();
+    getLikesSync()?.schedulePush();
   }
 
   async exportLikes(): Promise<string> {
@@ -491,7 +496,15 @@ export class DropboxCatalogAdapter implements CatalogProvider {
   }
 
   async importLikes(json: string): Promise<number> {
-    return importLikesFromCache(json);
+    const count = await importLikesFromCache(json);
+    if (count > 0) {
+      getLikesSync()?.schedulePush();
+    }
+    return count;
+  }
+
+  async initializeSync(): Promise<void> {
+    await getLikesSync()?.initialSync();
   }
 
   async refreshLikedMetadata(): Promise<{ updated: number; removed: number }> {

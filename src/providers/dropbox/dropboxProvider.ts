@@ -10,6 +10,7 @@ import { DropboxAuthAdapter } from './dropboxAuthAdapter';
 import { DropboxCatalogAdapter } from './dropboxCatalogAdapter';
 import { DropboxPlaybackAdapter } from './dropboxPlaybackAdapter';
 import { providerRegistry } from '@/providers/registry';
+import { initLikesSync } from './dropboxLikesSync';
 
 const DROPBOX_CLIENT_ID = import.meta.env.VITE_DROPBOX_CLIENT_ID ?? '';
 
@@ -19,6 +20,15 @@ if (DROPBOX_CLIENT_ID) {
   const auth = new DropboxAuthAdapter();
   const catalog = new DropboxCatalogAdapter(auth);
   const playback = new DropboxPlaybackAdapter(catalog);
+
+  initLikesSync(auth);
+
+  // Trigger initial sync if already authenticated (returning user)
+  if (auth.isAuthenticated()) {
+    catalog.initializeSync().catch((err) => {
+      console.warn('[DropboxProvider] Initial likes sync failed:', err);
+    });
+  }
 
   dropboxDescriptor = {
     id: 'dropbox',
