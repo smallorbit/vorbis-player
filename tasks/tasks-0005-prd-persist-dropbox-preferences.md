@@ -1,16 +1,16 @@
 # Tasks: Persist Dropbox User Preferences to Cloud Storage
 
+Scope: **pins** and **accent** (overrides, custom colors) only. Visual effects (glow, translucence, visualizer, etc.) and volume are out of scope for now.
+
 ## Relevant Files (expected)
 
 - `src/providers/dropbox/dropboxPreferencesSync.ts` — NEW: sync service (download, upload, merge, debounce, ensure folder)
-- `src/providers/dropbox/dropboxPreferencesAdapter.ts` — NEW (optional): read/write preferences payload from/to pins storage + localStorage keys (single place for key names and shape)
+- `src/providers/dropbox/dropboxPreferencesAdapter.ts` — NEW (optional): read/write preferences payload from/to pins storage + accent localStorage keys
 - `src/providers/dropbox/dropboxProvider.ts` — Initialize preferences sync, trigger initial sync when Dropbox authenticated
 - `src/App.tsx` — Trigger initial preferences sync after Dropbox OAuth callback (if not already triggered from provider init)
 - `src/services/settings/pinnedItemsStorage.ts` — No schema change; sync service will call getPins/setPins(UNIFIED_PROVIDER, …)
-- `src/contexts/PinnedItemsContext.tsx` — After setPins, call preferences sync schedulePush (or adapter exposes a “preferences changed” callback)
-- `src/contexts/ColorContext.tsx` — After accent overrides/custom colors change, notify preferences sync (or sync layer subscribes to storage)
-- `src/contexts/VisualEffectsContext.tsx` — After any visual effect setting change, notify preferences sync
-- `src/hooks/useVisualEffectsState.ts` — After glow intensity/rate change, notify preferences sync
+- `src/contexts/PinnedItemsContext.tsx` — After setPins, call preferences sync schedulePush
+- `src/contexts/ColorContext.tsx` — After accent overrides/custom colors change, call preferences sync schedulePush
 - `src/providers/dropbox/__tests__/dropboxPreferencesSync.test.ts` — NEW: tests for merge, download/upload, 409→folder create→retry, initial sync, debounce
 
 ### Notes
@@ -22,9 +22,9 @@
 ## Tasks
 
 - [ ] 1.0 Define preferences payload and adapter
-  - [ ] 1.1 Define TypeScript types for `RemotePreferencesFile` (version, updatedAt, pins, accent, visualEffects) matching PRD JSON shape
-  - [ ] 1.2 Create adapter (or inline in sync service) that builds preferences from: getPins(UNIFIED_PROVIDER, 'playlists'|'albums'), and localStorage keys for accent + visual effects (list all keys in one place)
-  - [ ] 1.3 Adapter: apply remote preferences to local — setPins(UNIFIED_PROVIDER, …), and set each localStorage key for accent and visual effects
+  - [ ] 1.1 Define TypeScript types for `RemotePreferencesFile` (version, updatedAt, pins, accent) matching PRD JSON shape (pins + accent only; no visualEffects)
+  - [ ] 1.2 Create adapter (or inline in sync service) that builds preferences from: getPins(UNIFIED_PROVIDER, 'playlists'|'albums'), and localStorage keys for accent (overrides, customColors)
+  - [ ] 1.3 Adapter: apply remote preferences to local — setPins(UNIFIED_PROVIDER, …), and set accent localStorage keys
 
 - [ ] 2.0 Create Dropbox preferences sync service
   - [ ] 2.1 Create `dropboxPreferencesSync.ts` with `DropboxPreferencesSyncService` class; constructor(auth); constants for path `/.vorbis/preferences.json`, debounce 2s
@@ -39,8 +39,7 @@
   - [ ] 3.1 In `dropboxProvider.ts`, call `initPreferencesSync(auth)`; when Dropbox is already authenticated, call `catalog.initializeSync()` (or a new `initializePreferencesSync()`) so initial sync runs for returning users
   - [ ] 3.2 In `App.tsx`, after Dropbox OAuth callback success, call `getPreferencesSync()?.initialSync().catch(...)` so new logins get initial sync
   - [ ] 3.3 After pins change: from PinnedItemsContext (or pinnedItemsStorage layer), call `getPreferencesSync()?.schedulePush()` after setPins
-  - [ ] 3.4 After accent overrides/custom colors change: from ColorContext or a single “preferences changed” subscription, call `getPreferencesSync()?.schedulePush()`
-  - [ ] 3.5 After visual effects or glow settings change: from VisualEffectsContext and useVisualEffectsState (or a shared preferences-write path), call `getPreferencesSync()?.schedulePush()`
+  - [ ] 3.4 After accent overrides/custom colors change: from ColorContext, call `getPreferencesSync()?.schedulePush()`
 
 - [ ] 4.0 Tests
   - [ ] 4.1 Unit tests for merge (remote newer → apply remote; local newer → no apply; missing remote → keep local)
