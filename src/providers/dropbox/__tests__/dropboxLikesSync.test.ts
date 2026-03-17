@@ -122,6 +122,8 @@ describe('DropboxLikesSyncService', () => {
       // Local entry is newer, should win
       expect(result.mergedLikes[0].likedAt).toBe(3000);
       expect(result.mergedLikes[0].track.name).toBe('Local Name');
+      expect(result.changed).toBe(false);
+      expect(result.remoteChanged).toBe(true);
     });
 
     it('tombstone wins over like when deletedAt > likedAt', () => {
@@ -263,6 +265,27 @@ describe('DropboxLikesSyncService', () => {
       expect(result).toBe(true);
     });
 
+    it('creates /.vorbis folder and retries upload on 409', async () => {
+      const fetchMock = vi
+        .fn()
+        .mockResolvedValueOnce({ status: 409, ok: false }) // initial upload
+        .mockResolvedValueOnce({ status: 200, ok: true }) // create_folder_v2
+        .mockResolvedValueOnce({ status: 200, ok: true }); // retry upload
+      vi.stubGlobal('fetch', fetchMock);
+
+      const data: RemoteLikesFile = {
+        version: 1,
+        updatedAt: new Date().toISOString(),
+        likes: [makeLikedEntry('a', 1000)],
+        tombstones: [],
+      };
+
+      const result = await service.uploadLikesFile(data);
+      expect(result).toBe(true);
+      expect(fetchMock).toHaveBeenCalledTimes(3);
+      expect(fetchMock.mock.calls[1][0]).toContain('/files/create_folder_v2');
+    });
+
     it('retries with refreshed token on 401', async () => {
       const fetchMock = vi
         .fn()
@@ -325,6 +348,34 @@ describe('DropboxLikesSyncService', () => {
 
       // Should not throw
       await service.initialSync();
+    });
+
+    it('pushes when local likedAt is newer than remote for same track ids', async () => {
+      const localEntries = [makeLikedEntry('a', 3000, 'Local Name')];
+      const remoteData: RemoteLikesFile = {
+        version: 1,
+        updatedAt: new Date().toISOString(),
+        likes: [makeLikedEntry('a', 1000, 'Remote Name')],
+        tombstones: [],
+      };
+
+      vi.mocked(getLikedEntries).mockResolvedValue(localEntries);
+      vi.mocked(getTombstones).mockResolvedValue([]);
+
+      const fetchMock = vi
+        .fn()
+        .mockResolvedValueOnce({
+          status: 200,
+          ok: true,
+          json: () => Promise.resolve(remoteData),
+        })
+        .mockResolvedValueOnce({ status: 200, ok: true }); // upload
+      vi.stubGlobal('fetch', fetchMock);
+
+      await service.initialSync();
+
+      // download + upload
+      expect(fetchMock).toHaveBeenCalledTimes(2);
     });
   });
 

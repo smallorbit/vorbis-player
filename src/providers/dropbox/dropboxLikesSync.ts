@@ -33,6 +33,75 @@ export class DropboxLikesSyncService {
     this.auth = auth;
   }
 
+  private likesEqual(a: LikedEntry[], b: LikedEntry[]): boolean {
+    if (a.length !== b.length) return false;
+
+    const mapB = new Map<string, LikedEntry>();
+    for (const entry of b) {
+      mapB.set(entry.trackId, entry);
+    }
+
+    for (const entryA of a) {
+      const entryB = mapB.get(entryA.trackId);
+      if (!entryB) return false;
+      if (entryA.likedAt !== entryB.likedAt) return false;
+      // Track metadata can differ even when IDs match.
+      if (JSON.stringify(entryA.track) !== JSON.stringify(entryB.track)) return false;
+    }
+
+    return true;
+  }
+
+  private tombstonesEqual(a: Tombstone[], b: Tombstone[]): boolean {
+    if (a.length !== b.length) return false;
+
+    const mapB = new Map<string, number>();
+    for (const entry of b) {
+      mapB.set(entry.trackId, entry.deletedAt);
+    }
+
+    for (const entryA of a) {
+      const deletedAtB = mapB.get(entryA.trackId);
+      if (deletedAtB !== entryA.deletedAt) return false;
+    }
+
+    return true;
+  }
+
+  private async ensureSyncFolder(token: string): Promise<boolean> {
+    let response = await fetch('https://api.dropboxapi.com/2/files/create_folder_v2', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ path: '/.vorbis', autorename: false }),
+    });
+
+    if (response.status === 401) {
+      const refreshed = await this.auth.refreshAccessToken();
+      if (!refreshed) return false;
+      response = await fetch('https://api.dropboxapi.com/2/files/create_folder_v2', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${refreshed}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ path: '/.vorbis', autorename: false }),
+      });
+    }
+
+    // path/conflict means folder already exists.
+    if (response.status === 409) return true;
+
+    if (!response.ok) {
+      console.warn('[DropboxLikesSync] Failed to ensure /.vorbis folder:', response.status);
+      return false;
+    }
+
+    return true;
+  }
+
   async downloadLikesFile(): Promise<RemoteLikesFile | null> {
     const token = await this.auth.ensureValidToken();
     if (!token) return null;
@@ -83,7 +152,7 @@ export class DropboxLikesSyncService {
   }
 
   async uploadLikesFile(data: RemoteLikesFile): Promise<boolean> {
-    const token = await this.auth.ensureValidToken();
+    let token = await this.auth.ensureValidToken();
     if (!token) return false;
 
     const apiArg = JSON.stringify({
@@ -94,28 +163,37 @@ export class DropboxLikesSyncService {
 
     const body = JSON.stringify(data);
 
-    let response = await fetch('https://content.dropboxapi.com/2/files/upload', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Dropbox-API-Arg': apiArg,
-        'Content-Type': 'application/octet-stream',
-      },
-      body,
-    });
-
-    if (response.status === 401) {
-      const refreshed = await this.auth.refreshAccessToken();
-      if (!refreshed) return false;
-      response = await fetch('https://content.dropboxapi.com/2/files/upload', {
+    const upload = (accessToken: string) =>
+      fetch('https://content.dropboxapi.com/2/files/upload', {
         method: 'POST',
         headers: {
-          Authorization: `Bearer ${refreshed}`,
+          Authorization: `Bearer ${accessToken}`,
           'Dropbox-API-Arg': apiArg,
           'Content-Type': 'application/octet-stream',
         },
         body,
       });
+
+    let response = await upload(token);
+
+    if (response.status === 401) {
+      const refreshed = await this.auth.refreshAccessToken();
+      if (!refreshed) return false;
+      token = refreshed;
+      response = await upload(token);
+    }
+
+    if (response.status === 409) {
+      const folderReady = await this.ensureSyncFolder(token);
+      if (!folderReady) return false;
+
+      response = await upload(token);
+      if (response.status === 401) {
+        const refreshed = await this.auth.refreshAccessToken();
+        if (!refreshed) return false;
+        token = refreshed;
+        response = await upload(token);
+      }
     }
 
     if (!response.ok) {
@@ -135,7 +213,12 @@ export class DropboxLikesSyncService {
     localEntries: LikedEntry[],
     remoteData: RemoteLikesFile | null,
     localTombstones: Tombstone[],
-  ): { mergedLikes: LikedEntry[]; mergedTombstones: Tombstone[]; changed: boolean } {
+  ): {
+    mergedLikes: LikedEntry[];
+    mergedTombstones: Tombstone[];
+    changed: boolean;
+    remoteChanged: boolean;
+  } {
     const now = Date.now();
     const remoteEntries = remoteData?.likes ?? [];
     const remoteTombstones = remoteData?.tombstones ?? [];
@@ -179,15 +262,17 @@ export class DropboxLikesSyncService {
       }
     }
 
-    // Determine if anything changed vs local state
-    const localIds = new Set(localEntries.map((e) => e.trackId));
-    const mergedIds = new Set(mergedLikes.map((e) => e.trackId));
+    // Determine if anything changed vs local state.
     const changed =
-      localIds.size !== mergedIds.size ||
-      [...localIds].some((id) => !mergedIds.has(id)) ||
-      [...mergedIds].some((id) => !localIds.has(id));
+      !this.likesEqual(localEntries, mergedLikes) ||
+      !this.tombstonesEqual(localTombstones, mergedTombstones);
 
-    return { mergedLikes, mergedTombstones, changed };
+    // Track whether remote is out of sync with the merged result.
+    const remoteChanged =
+      !this.likesEqual(remoteEntries, mergedLikes) ||
+      !this.tombstonesEqual(remoteTombstones, mergedTombstones);
+
+    return { mergedLikes, mergedTombstones, changed, remoteChanged };
   }
 
   /**
@@ -201,7 +286,7 @@ export class DropboxLikesSyncService {
         getTombstones(),
       ]);
 
-      const { mergedLikes, mergedTombstones, changed } = this.mergeLikes(
+      const { mergedLikes, mergedTombstones, remoteChanged } = this.mergeLikes(
         localEntries,
         remoteData,
         localTombstones,
@@ -211,9 +296,8 @@ export class DropboxLikesSyncService {
       await replaceLikes(mergedLikes);
       await setTombstones(mergedTombstones);
 
-      // Push to remote if local had data that remote didn't, or if remote didn't exist
-      const shouldPush =
-        changed || !remoteData || localTombstones.length > 0;
+      // Push to remote if it is missing or behind the merged state.
+      const shouldPush = !remoteData || remoteChanged;
 
       if (shouldPush) {
         await this.doPush();
