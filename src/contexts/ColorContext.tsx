@@ -3,6 +3,7 @@ import { theme } from '@/styles/theme';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { isProfilingEnabled } from '@/contexts/ProfilingContext';
 import { getContrastColor } from '@/utils/colorUtils';
+import { getPreferencesSync } from '@/providers/dropbox/dropboxPreferencesSync';
 
 interface ColorContextValue {
   accentColor: string;
@@ -33,9 +34,14 @@ export function ColorProvider({ children }: { children: React.ReactNode }) {
     {}
   );
 
+  const schedulePreferencesPush = useCallback(() => {
+    getPreferencesSync()?.schedulePush();
+  }, []);
+
   const handleSetAccentColorOverride = useCallback((albumId: string, color: string) => {
     setAccentColorOverrides(prev => ({ ...prev, [albumId]: color }));
-  }, [setAccentColorOverrides]);
+    schedulePreferencesPush();
+  }, [setAccentColorOverrides, schedulePreferencesPush]);
 
   const handleRemoveAccentColorOverride = useCallback((albumId: string) => {
     setAccentColorOverrides(prev => {
@@ -43,11 +49,13 @@ export function ColorProvider({ children }: { children: React.ReactNode }) {
       delete newOverrides[albumId];
       return newOverrides;
     });
-  }, [setAccentColorOverrides]);
+    schedulePreferencesPush();
+  }, [setAccentColorOverrides, schedulePreferencesPush]);
 
   const handleSetCustomAccentColor = useCallback((albumId: string, color: string) => {
     setCustomAccentColors(prev => ({ ...prev, [albumId]: color }));
-  }, [setCustomAccentColors]);
+    schedulePreferencesPush();
+  }, [setCustomAccentColors, schedulePreferencesPush]);
 
   const handleRemoveCustomAccentColor = useCallback((albumId: string) => {
     setCustomAccentColors(prev => {
@@ -55,7 +63,8 @@ export function ColorProvider({ children }: { children: React.ReactNode }) {
       delete newColors[albumId];
       return newColors;
     });
-  }, [setCustomAccentColors]);
+    schedulePreferencesPush();
+  }, [setCustomAccentColors, schedulePreferencesPush]);
 
   const value = useMemo(() => ({
     accentColor,
