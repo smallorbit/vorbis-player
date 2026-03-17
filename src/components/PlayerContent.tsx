@@ -41,6 +41,7 @@ interface PlaybackHandlers {
   onOpenLibraryDrawer: () => void;
   onCloseLibraryDrawer: () => void;
   onPlaylistSelect: (playlistId: string, playlistName: string, provider?: import('@/types/domain').ProviderId) => void;
+  onAddToQueue?: (playlistId: string, playlistName?: string, provider?: import('@/types/domain').ProviderId) => void;
   onAlbumPlay: (albumId: string, albumName: string) => void;
   onBackToLibrary: () => void;
   onStartRadio?: () => void;
@@ -844,6 +845,7 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
           isOpen={showLibraryDrawer}
           onClose={handleCloseLibraryDrawer}
           onPlaylistSelect={handlers.onPlaylistSelect}
+          onAddToQueue={handlers.onAddToQueue}
           initialSearchQuery={librarySearchQuery}
           initialViewMode={libraryViewMode}
         />

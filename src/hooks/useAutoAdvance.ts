@@ -79,7 +79,11 @@ export const useAutoAdvance = ({
       // if shuffle is toggled during the delay, we use the latest refs.
       advanceTimerRef.current = setTimeout(() => {
         advanceTimerRef.current = null;
-        const nextIndex = (currentTrackIndexRef.current + 1) % tracksRef.current.length;
+        const currentIdx = currentTrackIndexRef.current;
+        const totalTracks = tracksRef.current.length;
+        // Stop at the end of the queue instead of wrapping around
+        if (currentIdx >= totalTracks - 1) return;
+        const nextIndex = currentIdx + 1;
         if (tracksRef.current[nextIndex]) {
           lastPlayInitiatedRef.current = Date.now();
           playTrackRef.current(nextIndex, true);

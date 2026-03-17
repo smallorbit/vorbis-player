@@ -474,6 +474,73 @@ export function usePlayerLogic() {
     setShowLibraryDrawer(false);
   }, []);
 
+  // ── Add to queue ────────────────────────────────────────────────────
+
+  /**
+   * Fetch tracks from a collection (album/playlist) and append them to the
+   * current queue without interrupting playback. If nothing is playing yet,
+   * starts playback of the first added track.
+   */
+  const handleAddToQueue = useCallback(
+    async (playlistId: string, _playlistName?: string, provider?: import('@/types/domain').ProviderId) => {
+      const isQueueEmpty = tracks.length === 0;
+
+      // If nothing is playing, just load normally
+      if (isQueueEmpty) {
+        return handlePlaylistSelect(playlistId, _playlistName, provider);
+      }
+
+      const targetDescriptor = provider ? getDescriptor(provider) : activeDescriptor;
+      const targetProviderId = provider ?? activeDescriptor?.id;
+
+      if (!targetDescriptor || !targetProviderId) return;
+
+      try {
+        let newMediaTracks: MediaTrack[];
+
+        if (targetProviderId === 'spotify') {
+          // Fetch Spotify tracks via the API helpers
+          let fetchedTracks: Track[];
+          if (isAlbumId(playlistId)) {
+            const { getAlbumTracks } = await import('@/services/spotify');
+            fetchedTracks = await getAlbumTracks(extractAlbumId(playlistId));
+          } else if (playlistId === LIKED_SONGS_ID) {
+            const { getLikedSongs } = await import('@/services/spotify');
+            fetchedTracks = await getLikedSongs();
+          } else {
+            const { getPlaylistTracks } = await import('@/services/spotify');
+            fetchedTracks = await getPlaylistTracks(playlistId);
+          }
+          newMediaTracks = fetchedTracks.map(trackToMediaTrack);
+        } else {
+          // Non-Spotify provider: use catalog
+          const catalog = targetDescriptor.catalog;
+          const isLiked = playlistId === LIKED_SONGS_ID;
+          const collectionId = isLiked ? '' : isAlbumId(playlistId) ? extractAlbumId(playlistId) : playlistId;
+          const collectionKind: 'liked' | 'album' | 'playlist' | 'folder' = isLiked
+            ? 'liked'
+            : isAlbumId(playlistId)
+              ? 'album'
+              : targetProviderId === 'dropbox' ? 'folder' : 'playlist';
+          const collectionRef = { provider: targetProviderId, kind: collectionKind, id: collectionId } as const;
+          newMediaTracks = await catalog.listTracks(collectionRef);
+        }
+
+        if (newMediaTracks.length === 0) return;
+
+        const newTracks = newMediaTracks.map(mediaTrackToTrack);
+
+        // Append to existing queue
+        mediaTracksRef.current = [...mediaTracksRef.current, ...newMediaTracks];
+        setOriginalTracks([...tracksRef.current, ...newTracks]);
+        setTracks((prev: Track[]) => [...prev, ...newTracks]);
+      } catch (err) {
+        console.error('[Queue] Failed to add to queue:', err);
+      }
+    },
+    [tracks.length, handlePlaylistSelect, activeDescriptor, getDescriptor, setTracks, setOriginalTracks]
+  );
+
   // ── Radio feature ───────────────────────────────────────────────────
 
   const { radioState, startRadio, stopRadio: stopRadioBase, isRadioAvailable } = useRadio();
@@ -596,6 +663,7 @@ export function usePlayerLogic() {
   const handlers = useMemo(
     () => ({
       handlePlaylistSelect,
+      handleAddToQueue,
       handlePlay,
       handlePause,
       handleNext,
@@ -608,6 +676,7 @@ export function usePlayerLogic() {
     }),
     [
       handlePlaylistSelect,
+      handleAddToQueue,
       handlePlay,
       handlePause,
       handleNext,

@@ -17,6 +17,7 @@ interface LibraryDrawerProps {
   isOpen: boolean;
   onClose: () => void;
   onPlaylistSelect: (playlistId: string, playlistName: string, provider?: import('@/types/domain').ProviderId) => void;
+  onAddToQueue?: (playlistId: string, playlistName?: string, provider?: import('@/types/domain').ProviderId) => void;
   initialSearchQuery?: string;
   initialViewMode?: 'playlists' | 'albums';
 }
@@ -139,7 +140,7 @@ const DrawerContent = styled.div`
   flex-direction: column;
 `;
 
-const LibraryDrawer = React.memo(function LibraryDrawer({ isOpen, onClose, onPlaylistSelect, initialSearchQuery, initialViewMode }: LibraryDrawerProps) {
+const LibraryDrawer = React.memo(function LibraryDrawer({ isOpen, onClose, onPlaylistSelect, onAddToQueue, initialSearchQuery, initialViewMode }: LibraryDrawerProps) {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const refreshTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const selectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -220,6 +221,7 @@ const LibraryDrawer = React.memo(function LibraryDrawer({ isOpen, onClose, onPla
             <DrawerContent>
               <PlaylistSelection
                 onPlaylistSelect={handlePlaylistSelectWrapper}
+                onAddToQueue={onAddToQueue}
                 inDrawer
                 initialSearchQuery={initialSearchQuery}
                 initialViewMode={initialViewMode}

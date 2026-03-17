@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import styled from 'styled-components';
 import { theme } from '../../styles/theme';
 
-type PopoverType = 'artist' | 'album';
+type PopoverType = 'artist' | 'album' | 'playlist';
 
 interface PopoverOption {
   label: string;
@@ -160,6 +160,13 @@ export const AddToLibraryIcon = () => (
 export const RemoveFromLibraryIcon = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M20 6 9 17l-5-5" />
+  </svg>
+);
+
+export const AddToQueueIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M3 6h14M3 12h14M3 18h10" />
+    <path d="M19 15v6M16 18h6" />
   </svg>
 );
 

@@ -31,6 +31,7 @@ import TrackInfoPopover, {
   DiscogsIcon,
   AddToLibraryIcon,
   RemoveFromLibraryIcon,
+  AddToQueueIcon,
   ICON_MAP,
 } from './controls/TrackInfoPopover';
 
@@ -38,6 +39,7 @@ type ViewMode = 'playlists' | 'albums';
 
 interface PlaylistSelectionProps {
   onPlaylistSelect: (playlistId: string, playlistName: string, provider?: import('@/types/domain').ProviderId) => void;
+  onAddToQueue?: (playlistId: string, playlistName?: string, provider?: import('@/types/domain').ProviderId) => void;
   /** When true, uses compact layout for drawer context (no centering, fills available space) */
   inDrawer?: boolean;
   /** Ref for swipe-to-close gesture zone (search/filters area only, not the scrollable list) */
@@ -50,6 +52,11 @@ interface PlaylistSelectionProps {
 
 type AlbumPopoverState = {
   album: AlbumInfo;
+  rect: DOMRect;
+} | null;
+
+type PlaylistPopoverState = {
+  playlist: PlaylistInfo;
   rect: DOMRect;
 } | null;
 
@@ -648,7 +655,7 @@ const GridCardImageComponent: React.FC<LazyImageProps> = React.memo(function Gri
   );
 });
 
-const PlaylistSelection = React.memo(function PlaylistSelection({ onPlaylistSelect, inDrawer = false, swipeZoneRef, initialSearchQuery, initialViewMode }: PlaylistSelectionProps): JSX.Element {
+const PlaylistSelection = React.memo(function PlaylistSelection({ onPlaylistSelect, onAddToQueue, inDrawer = false, swipeZoneRef, initialSearchQuery, initialViewMode }: PlaylistSelectionProps): JSX.Element {
   const { activeDescriptor, hasMultipleProviders, enabledProviderIds, getDescriptor } = useProviderContext();
   const { isUnifiedLikedActive, totalCount: unifiedLikedCount } = useUnifiedLikedTracks();
   const showProviderBadges = hasMultipleProviders && enabledProviderIds.length > 1;
@@ -678,6 +685,7 @@ const PlaylistSelection = React.memo(function PlaylistSelection({ onPlaylistSele
   );
   const [artistFilter, setArtistFilter] = useState<string>('');
   const [albumPopover, setAlbumPopover] = useState<AlbumPopoverState>(null);
+  const [playlistPopover, setPlaylistPopover] = useState<PlaylistPopoverState>(null);
   const [albumSaved, setAlbumSaved] = useState<boolean | null>(null);
   const libraryFullyLoaded = isInitialLoadComplete;
 
@@ -818,6 +826,15 @@ const PlaylistSelection = React.memo(function PlaylistSelection({ onPlaylistSele
     onPlaylistSelect(toAlbumPlaylistId(album.id), album.name, album.provider);
   }
 
+  function handlePlaylistContextMenu(playlist: PlaylistInfo, event: React.MouseEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    setPlaylistPopover({
+      playlist,
+      rect: new DOMRect(event.clientX, event.clientY, 0, 0),
+    });
+  }
+
   function handleAlbumContextMenu(album: AlbumInfo, event: React.MouseEvent): void {
     event.preventDefault();
     event.stopPropagation();
@@ -851,6 +868,32 @@ const PlaylistSelection = React.memo(function PlaylistSelection({ onPlaylistSele
     setArtistFilter(artistName);
   }
 
+  const closePlaylistPopover = React.useCallback(() => {
+    setPlaylistPopover(null);
+  }, []);
+
+  const buildPlaylistPopoverOptions = React.useCallback(() => {
+    if (!playlistPopover) return [];
+    const playlist = playlistPopover.playlist;
+    const options: Array<{ label: string; icon: React.ReactNode; onClick: () => void }> = [
+      {
+        label: `Play ${playlist.name}`,
+        icon: <PlayIcon />,
+        onClick: () => onPlaylistSelect(playlist.id, playlist.name, playlist.provider),
+      },
+    ];
+
+    if (onAddToQueue) {
+      options.push({
+        label: 'Add to Queue',
+        icon: <AddToQueueIcon />,
+        onClick: () => onAddToQueue(playlist.id, playlist.name, playlist.provider),
+      });
+    }
+
+    return options;
+  }, [playlistPopover, onPlaylistSelect, onAddToQueue]);
+
   const closeAlbumPopover = React.useCallback(() => {
     setAlbumPopover(null);
   }, []);
@@ -869,6 +912,14 @@ const PlaylistSelection = React.memo(function PlaylistSelection({ onPlaylistSele
         onClick: () => onPlaylistSelect(toAlbumPlaylistId(album.id), album.name, album.provider),
       },
     ];
+
+    if (onAddToQueue) {
+      options.push({
+        label: 'Add to Queue',
+        icon: <AddToQueueIcon />,
+        onClick: () => onAddToQueue(toAlbumPlaylistId(album.id), album.name, album.provider),
+      });
+    }
 
     if (capabilities?.hasSaveAlbum && catalog?.setAlbumSaved && albumSaved !== null) {
       const saved = albumSaved;
@@ -928,7 +979,7 @@ const PlaylistSelection = React.memo(function PlaylistSelection({ onPlaylistSele
     }
 
     return options;
-  }, [albumPopover, albumSaved, getDescriptor, activeDescriptor, onPlaylistSelect]);
+  }, [albumPopover, albumSaved, getDescriptor, activeDescriptor, onPlaylistSelect, onAddToQueue]);
 
   const albumPopoverPortal = albumPopover ? createPortal(
     <TrackInfoPopover
@@ -936,6 +987,16 @@ const PlaylistSelection = React.memo(function PlaylistSelection({ onPlaylistSele
       anchorRect={albumPopover.rect}
       onClose={closeAlbumPopover}
       options={buildAlbumPopoverOptions()}
+    />,
+    document.body,
+  ) : null;
+
+  const playlistPopoverPortal = playlistPopover ? createPortal(
+    <TrackInfoPopover
+      type="playlist"
+      anchorRect={playlistPopover.rect}
+      onClose={closePlaylistPopover}
+      options={buildPlaylistPopoverOptions()}
     />,
     document.body,
   ) : null;
@@ -1131,7 +1192,7 @@ const PlaylistSelection = React.memo(function PlaylistSelection({ onPlaylistSele
         const renderPlaylistGrid = (playlist: PlaylistInfo) => {
           const pinned = isPlaylistPinned(playlist.id);
           return (
-            <PinnableGridCard key={`${playlist.provider ?? 'default'}-${playlist.id}`} onClick={() => handlePlaylistClick(playlist)}>
+            <PinnableGridCard key={`${playlist.provider ?? 'default'}-${playlist.id}`} onClick={() => handlePlaylistClick(playlist)} onContextMenu={(e) => handlePlaylistContextMenu(playlist, e)}>
               <GridCardArtWrapper style={{ position: 'relative' }}>
                 <GridCardImageComponent images={playlist.images} alt={playlist.name} />
                 {showProviderBadges && playlist.provider && (
@@ -1157,7 +1218,7 @@ const PlaylistSelection = React.memo(function PlaylistSelection({ onPlaylistSele
         const renderPlaylistList = (playlist: PlaylistInfo) => {
           const pinned = isPlaylistPinned(playlist.id);
           return (
-            <PinnableListItem key={`${playlist.provider ?? 'default'}-${playlist.id}`} onClick={() => handlePlaylistClick(playlist)}>
+            <PinnableListItem key={`${playlist.provider ?? 'default'}-${playlist.id}`} onClick={() => handlePlaylistClick(playlist)} onContextMenu={(e) => handlePlaylistContextMenu(playlist, e)}>
               <div style={{ position: 'relative' }}>
                 <PlaylistImage images={playlist.images} alt={playlist.name} />
                 {showProviderBadges && playlist.provider && (
@@ -1371,6 +1432,7 @@ const PlaylistSelection = React.memo(function PlaylistSelection({ onPlaylistSele
         {statusContent}
         {mainContent}
         {albumPopoverPortal}
+        {playlistPopoverPortal}
       </DrawerContentWrapper>
     );
   }
@@ -1382,6 +1444,7 @@ const PlaylistSelection = React.memo(function PlaylistSelection({ onPlaylistSele
           {statusContent}
           {mainContent}
           {albumPopoverPortal}
+        {playlistPopoverPortal}
         </CardContent>
       </SelectionCard>
     </Container>
