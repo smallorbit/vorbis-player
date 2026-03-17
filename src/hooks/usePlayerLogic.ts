@@ -208,7 +208,8 @@ export function usePlayerLogic() {
             if (firstTrack.provider !== activeDescriptor?.id) {
               setActiveProviderId(firstTrack.provider);
             }
-            await firstProvider.playback.playTrack(firstTrack);
+            // Route initial playback through shared playTrack() so Spotify queue sync runs immediately.
+            await playTrack(0);
           }
         } catch (err) {
           setError(err instanceof Error ? err.message : 'Failed to load liked tracks.');
@@ -274,10 +275,11 @@ export function usePlayerLogic() {
           setCurrentTrackIndex(0);
           setIsLoading(false);
 
-          // Update the playback provider ref so controls route to the correct provider
-          // (can't use playTrack() here because activeDescriptor may still be stale)
+          // Update the playback provider ref so controls route to the correct provider.
+          // Initial playback still goes through shared playTrack(), which resolves provider
+          // from mediaTracksRef first (not activeDescriptor), so stale provider context is safe.
           drivingProviderRef.current = providerId;
-          await targetDescriptor.playback.playTrack(mediaTracksRef.current[0]);
+          await playTrack(0);
         } catch (err) {
           setError(err instanceof Error ? err.message : 'Failed to load collection.');
           setTracks([]);
@@ -312,6 +314,7 @@ export function usePlayerLogic() {
       isUnifiedLikedActive,
       connectedProviderIds,
       drivingProviderRef,
+      playTrack,
     ]
   );
 
