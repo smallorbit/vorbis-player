@@ -157,7 +157,8 @@ export class DropboxLikesSyncService {
 
     const apiArg = JSON.stringify({
       path: SYNC_FILE_PATH,
-      mode: { '.tag': 'overwrite' },
+      mode: 'overwrite',
+      autorename: false,
       mute: true,
     });
 
@@ -198,7 +199,12 @@ export class DropboxLikesSyncService {
 
     if (!response.ok) {
       const errText = await response.text();
-      console.warn('[DropboxLikesSync] Upload failed:', response.status, errText || response.statusText);
+      try {
+        const errJson = JSON.parse(errText);
+        console.warn('[DropboxLikesSync] Upload failed:', response.status, (errJson?.error_summary ?? errJson?.error ?? errText) || response.statusText);
+      } catch {
+        console.warn('[DropboxLikesSync] Upload failed:', response.status, errText || response.statusText);
+      }
       return false;
     }
 

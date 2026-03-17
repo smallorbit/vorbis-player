@@ -170,7 +170,8 @@ export class DropboxPreferencesSyncService {
 
     const apiArg = JSON.stringify({
       path: PREFERENCES_FILE_PATH,
-      mode: { '.tag': 'overwrite' },
+      mode: 'overwrite',
+      autorename: false,
       mute: true,
     });
 
@@ -208,7 +209,12 @@ export class DropboxPreferencesSyncService {
 
     if (!response.ok) {
       const errText = await response.text();
-      console.warn('[DropboxPreferencesSync] Upload failed:', response.status, errText || response.statusText);
+      try {
+        const errJson = JSON.parse(errText);
+        console.warn('[DropboxPreferencesSync] Upload failed:', response.status, (errJson?.error_summary ?? errJson?.error ?? errText) || response.statusText);
+      } catch {
+        console.warn('[DropboxPreferencesSync] Upload failed:', response.status, errText || response.statusText);
+      }
       return false;
     }
     return true;
