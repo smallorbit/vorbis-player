@@ -573,7 +573,10 @@ export function usePlayerLogic() {
         (t) => t.id !== seedId && `${t.artists.toLowerCase()}||${t.name.toLowerCase()}` !== seedKey,
       );
 
-      const combinedQueue = [currentSeedMediaTrack, ...dedupedGenerated];
+      // Shuffle the generated tracks, keeping the current track pinned at index 0
+      // so playback is not interrupted.
+      const shuffledGenerated = shuffleArray(dedupedGenerated);
+      const combinedQueue = [currentSeedMediaTrack, ...shuffledGenerated];
 
       if (combinedQueue.length > 0) {
         const trackList = combinedQueue.map(mediaTrackToTrack);
