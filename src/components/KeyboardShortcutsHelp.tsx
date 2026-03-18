@@ -109,7 +109,7 @@ const shortcuts = [
   { key: 'Space', description: 'Play / Pause' },
   { key: '←', description: 'Previous track' },
   { key: '→', description: 'Next track' },
-  { key: '↑ / P', description: 'Toggle playlist' },
+  { key: '↑ / Q', description: 'Toggle queue' },
   { key: '↓ / L', description: 'Toggle library' },
   { key: 'K', description: 'Like / Unlike track' },
   { key: 'M', description: 'Mute / Unmute' },

@@ -11,9 +11,9 @@
   * - G: Toggle glow effect
   * - S: Toggle shuffle
   * - ?: Show keyboard shortcuts help
-  * - Escape: Close menus (playlist drawer and visual effects)
+  * - Escape: Close menus (queue drawer and visual effects)
   * - M: Mute
-  * - ArrowUp / P: (Pointer device) Toggle playlist drawer; (Touch) ArrowUp = Volume up
+  * - ArrowUp / Q: (Pointer device) Toggle queue drawer; (Touch) ArrowUp = Volume up
   * - ArrowDown / L: (Pointer device) Toggle library drawer; (Touch) ArrowDown = Volume down
   * - K: Like/Unlike track
   */
@@ -32,7 +32,7 @@ interface KeyboardShortcutHandlers {
   onPrevious?: () => void;
   
   // Menu toggles
-  onClosePlaylist?: () => void;
+  onCloseQueue?: () => void;
   onToggleVisualEffectsMenu?: () => void;
   onCloseVisualEffects?: () => void;
   
@@ -55,8 +55,8 @@ interface KeyboardShortcutHandlers {
   onToggleLike?: () => void;
   onToggleShuffle?: () => void;
   onCloseMobileMenu?: () => void;
-  /** Open playlist drawer (desktop: ArrowUp) */
-  onShowPlaylist?: () => void;
+  /** Open queue drawer (desktop: ArrowUp) */
+  onShowQueue?: () => void;
   /** Open library drawer (desktop: ArrowDown) */
   onOpenLibraryDrawer?: () => void;
   /** Toggle zen mode */
@@ -81,7 +81,7 @@ export const useKeyboardShortcuts = (
     onPlayPause,
     onNext,
     onPrevious,
-    onClosePlaylist,
+    onCloseQueue,
     onToggleVisualEffectsMenu,
     onCloseVisualEffects,
     onToggleBackgroundVisualizer,
@@ -94,7 +94,7 @@ export const useKeyboardShortcuts = (
     onToggleLike,
     onToggleShuffle,
     onCloseMobileMenu,
-    onShowPlaylist,
+    onShowQueue,
     onOpenLibraryDrawer,
     onToggleZenMode,
   } = handlers;
@@ -176,7 +176,7 @@ export const useKeyboardShortcuts = (
         case 'Escape':
           event.preventDefault();
           onCloseVisualEffects?.();
-          onClosePlaylist?.();
+          onCloseQueue?.();
           onCloseMobileMenu?.();
           break;
 
@@ -210,11 +210,11 @@ export const useKeyboardShortcuts = (
           }
           break;
 
-        case 'KeyP':
-          // P toggles playlist drawer (alternative to ArrowUp on pointer devices)
+        case 'KeyQ':
+          // Q toggles queue drawer (alternative to ArrowUp on pointer devices)
           if (!event.ctrlKey && !event.metaKey) {
             event.preventDefault();
-            onShowPlaylist?.();
+            onShowQueue?.();
           }
           break;
 
@@ -227,9 +227,9 @@ export const useKeyboardShortcuts = (
           break;
 
         case 'ArrowUp':
-          if (prefersPointerInput && onShowPlaylist) {
+          if (prefersPointerInput && onShowQueue) {
             event.preventDefault();
-            onShowPlaylist();
+            onShowQueue();
           } else if (onVolumeUp) {
             event.preventDefault();
             onVolumeUp();
@@ -254,7 +254,7 @@ export const useKeyboardShortcuts = (
     onPlayPause,
     onNext,
     onPrevious,
-    onClosePlaylist,
+    onCloseQueue,
     onToggleVisualEffectsMenu,
     onCloseVisualEffects,
     onToggleBackgroundVisualizer,
@@ -267,7 +267,7 @@ export const useKeyboardShortcuts = (
     onToggleLike,
     onToggleShuffle,
     onCloseMobileMenu,
-    onShowPlaylist,
+    onShowQueue,
     onOpenLibraryDrawer,
     onToggleZenMode,
     prefersPointerInput,

@@ -58,7 +58,7 @@ const defaultProps = {
   onVolumeChange: vi.fn(),
   onShowVisualEffects: vi.fn(),
   onBackToLibrary: vi.fn(),
-  onShowPlaylist: vi.fn(),
+  onShowQueue: vi.fn(),
   onZenModeToggle: vi.fn(),
   shuffleEnabled: false,
   onShuffleToggle: vi.fn(),
@@ -126,10 +126,10 @@ describe('BottomBar', () => {
     expect(props.onShowVisualEffects).toHaveBeenCalledOnce();
   });
 
-  it('playlist button calls onShowPlaylist when clicked', () => {
+  it('queue button calls onShowQueue when clicked', () => {
     const { props } = renderBottomBar();
-    fireEvent.click(screen.getByTitle('Show Playlist'));
-    expect(props.onShowPlaylist).toHaveBeenCalledOnce();
+    fireEvent.click(screen.getByTitle('Show Queue'));
+    expect(props.onShowQueue).toHaveBeenCalledOnce();
   });
 
   it('zen mode button calls onZenModeToggle when clicked', () => {

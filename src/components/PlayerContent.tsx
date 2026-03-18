@@ -27,8 +27,8 @@ import { useVisualizerDebug } from '@/contexts/VisualizerDebugContext';
 import LibraryDrawer from './LibraryDrawer';
 import AlbumArtQuickSwapBack from './AlbumArtQuickSwapBack';
 
-const PlaylistDrawer = lazy(() => import('./PlaylistDrawer'));
-const PlaylistBottomSheet = lazy(() => import('./PlaylistBottomSheet'));
+const QueueDrawer = lazy(() => import('./QueueDrawer'));
+const QueueBottomSheet = lazy(() => import('./QueueBottomSheet'));
 const VisualEffectsMenu = lazy(() => import('./VisualEffectsMenu/index'));
 const KeyboardShortcutsHelp = lazy(() => import('./KeyboardShortcutsHelp'));
 
@@ -168,7 +168,7 @@ function ControlsLoadingFallback() {
   );
 }
 
-function PlaylistLoadingFallback() {
+function QueueLoadingFallback() {
   const theme = useTheme();
   return (
     <div style={{
@@ -183,7 +183,7 @@ function PlaylistLoadingFallback() {
       justifyContent: 'center',
       color: theme.colors.muted.foreground
     }}>
-      Loading playlist...
+      Loading queue...
     </div>
   );
 }
@@ -297,7 +297,7 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
   const { tracks, shuffleEnabled, handleShuffleToggle, selectedPlaylistId } = useTrackListContext();
   const { isUnifiedLikedActive } = useUnifiedLikedTracks();
   const showProviderIcons = (isUnifiedLikedActive && selectedPlaylistId === LIKED_SONGS_ID) || !!radioActive;
-  const { currentTrack, currentTrackIndex, showPlaylist, setShowPlaylist } = useCurrentTrackContext();
+  const { currentTrack, currentTrackIndex, showQueue, setShowQueue } = useCurrentTrackContext();
 
   const {
     accentColor,
@@ -422,13 +422,13 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
     setAccentColor(color);
   }, [currentTrack?.album_id, handleSetAccentColorOverride, handleResetAccentColorOverride, setAccentColor]);
 
-  // --- Playlist visibility ---
-  const handleShowPlaylist = useCallback(() => {
+  // --- Queue visibility ---
+  const handleShowQueue = useCallback(() => {
     handlers.onCloseLibraryDrawer();
     setShowVisualEffects(false);
-    setShowPlaylist(prev => !prev);
-  }, [setShowPlaylist, handlers, setShowVisualEffects]);
-  const handleClosePlaylist = useCallback(() => setShowPlaylist(false), [setShowPlaylist]);
+    setShowQueue(prev => !prev);
+  }, [setShowQueue, handlers, setShowVisualEffects]);
+  const handleCloseQueue = useCallback(() => setShowQueue(false), [setShowQueue]);
 
   // --- App settings handlers ---
   const handleClearCache = useCallback(async (options: ClearCacheOptions) => {
@@ -464,16 +464,16 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
 
   // --- VFX menu visibility ---
   const handleShowVisualEffects = useCallback(() => {
-    setShowPlaylist(false);
+    setShowQueue(false);
     handlers.onCloseLibraryDrawer();
     setShowVisualEffects(true);
-  }, [setShowPlaylist, handlers, setShowVisualEffects]);
+  }, [setShowQueue, handlers, setShowVisualEffects]);
   const handleCloseVisualEffects = useCallback(() => setShowVisualEffects(false), [setShowVisualEffects]);
   const handleToggleVisualEffectsMenu = useCallback(() => {
-    setShowPlaylist(false);
+    setShowQueue(false);
     handlers.onCloseLibraryDrawer();
     setShowVisualEffects(prev => !prev);
-  }, [setShowVisualEffects, setShowPlaylist, handlers]);
+  }, [setShowVisualEffects, setShowQueue, handlers]);
 
   // --- Glow toggle (re-enables VFX + restores saved state) ---
   const handleGlowToggle = useCallback(() => {
@@ -504,10 +504,10 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
 
   // --- Library drawer ---
   const handleOpenLibraryDrawer = useCallback(() => {
-    setShowPlaylist(false);
+    setShowQueue(false);
     setShowVisualEffects(false);
     handlers.onOpenLibraryDrawer();
-  }, [handlers, setShowPlaylist, setShowVisualEffects]);
+  }, [handlers, setShowQueue, setShowVisualEffects]);
 
   const handleArtistBrowse = useCallback((artistName: string) => {
     setLibrarySearchQuery(artistName);
@@ -568,12 +568,12 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
   }, { enabled: isTouchDevice });
 
   const handleSwipeUp = useCallback(() => {
-    if (showPlaylist) {
-      handleClosePlaylist();
+    if (showQueue) {
+      handleCloseQueue();
     } else {
-      handleShowPlaylist();
+      handleShowQueue();
     }
-  }, [showPlaylist, handleShowPlaylist, handleClosePlaylist]);
+  }, [showQueue, handleShowQueue, handleCloseQueue]);
 
   const handleSwipeDown = useCallback(() => {
     if (showLibraryDrawer) {
@@ -610,24 +610,24 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
   const handleArrowUp = useCallback(() => {
     if (showLibraryDrawer) {
       handlers.onCloseLibraryDrawer();
-      handleShowPlaylist();
-    } else if (showPlaylist) {
-      handleClosePlaylist();
+      handleShowQueue();
+    } else if (showQueue) {
+      handleCloseQueue();
     } else {
-      handleShowPlaylist();
+      handleShowQueue();
     }
-  }, [handlers, showLibraryDrawer, showPlaylist, handleShowPlaylist, handleClosePlaylist]);
+  }, [handlers, showLibraryDrawer, showQueue, handleShowQueue, handleCloseQueue]);
 
   const handleArrowDown = useCallback(() => {
-    if (showPlaylist) {
-      handleClosePlaylist();
+    if (showQueue) {
+      handleCloseQueue();
       handleOpenLibraryDrawer();
     } else if (showLibraryDrawer) {
       handlers.onCloseLibraryDrawer();
     } else {
       handleOpenLibraryDrawer();
     }
-  }, [handlers, showPlaylist, showLibraryDrawer, handleClosePlaylist, handleOpenLibraryDrawer]);
+  }, [handlers, showQueue, showLibraryDrawer, handleCloseQueue, handleOpenLibraryDrawer]);
 
   const handleVolumeUp = useCallback(() => {
     setVolumeLevel(Math.min(100, (volume ?? 50) + 5));
@@ -641,7 +641,7 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
     onPlayPause: handlePlayPause,
     onNext: handlers.onNext,
     onPrevious: handlers.onPrevious,
-    onClosePlaylist: handleClosePlaylist,
+    onCloseQueue: handleCloseQueue,
     onToggleVisualEffectsMenu: handleToggleVisualEffectsMenu,
     onCloseVisualEffects: handleEscapeClose,
     onToggleBackgroundVisualizer: handleBackgroundVisualizerToggle,
@@ -653,7 +653,7 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
     onToggleLike: handleLikeToggle,
     onToggleShuffle: handleShuffleToggle,
     onToggleHelp: toggleHelp,
-    onShowPlaylist: handleArrowUp,
+    onShowQueue: handleArrowUp,
     onOpenLibraryDrawer: handleArrowDown,
     onToggleZenMode: handleZenModeToggle,
   }, { prefersPointerInput: hasPointerInput });
@@ -789,7 +789,7 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
         onVolumeChange={setVolumeLevel}
         onShowVisualEffects={handleShowVisualEffects}
         onBackToLibrary={handleOpenLibraryDrawer}
-        onShowPlaylist={handleShowPlaylist}
+        onShowQueue={handleShowQueue}
         onZenModeToggle={handleZenModeToggle}
         shuffleEnabled={shuffleEnabled}
         onShuffleToggle={handleShuffleToggle}
@@ -808,12 +808,12 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
           onVisualizerDebugToggle={handleVisualizerDebugToggle}
         />
       </Suspense>
-      <Suspense fallback={<PlaylistLoadingFallback />}>
+      <Suspense fallback={<QueueLoadingFallback />}>
         {isMobile ? (
-          <ProfiledComponent id="PlaylistBottomSheet">
-            <PlaylistBottomSheet
-              isOpen={showPlaylist}
-              onClose={handleClosePlaylist}
+          <ProfiledComponent id="QueueBottomSheet">
+            <QueueBottomSheet
+              isOpen={showQueue}
+              onClose={handleCloseQueue}
               tracks={tracks}
               currentTrackIndex={currentTrackIndex}
               onTrackSelect={handlers.onTrackSelect}
@@ -823,10 +823,10 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
             />
           </ProfiledComponent>
         ) : (
-          <ProfiledComponent id="PlaylistDrawer">
-            <PlaylistDrawer
-              isOpen={showPlaylist}
-              onClose={handleClosePlaylist}
+          <ProfiledComponent id="QueueDrawer">
+            <QueueDrawer
+              isOpen={showQueue}
+              onClose={handleCloseQueue}
               tracks={tracks}
               currentTrackIndex={currentTrackIndex}
               onTrackSelect={handlers.onTrackSelect}

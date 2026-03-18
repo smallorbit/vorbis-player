@@ -83,7 +83,7 @@ const SheetContent = styled.div`
   }
 `;
 
-interface PlaylistBottomSheetProps {
+interface QueueBottomSheetProps {
   isOpen: boolean;
   onClose: () => void;
   tracks: Track[];
@@ -94,7 +94,7 @@ interface PlaylistBottomSheetProps {
   radioSeedDescription?: string | null;
 }
 
-const PlaylistBottomSheet = memo<PlaylistBottomSheetProps>(function PlaylistBottomSheet({
+const QueueBottomSheet = memo<QueueBottomSheetProps>(function QueueBottomSheet({
   isOpen,
   onClose,
   tracks,
@@ -121,18 +121,18 @@ const PlaylistBottomSheet = memo<PlaylistBottomSheetProps>(function PlaylistBott
         $dragOffset={effectiveDragOffset}
         role="dialog"
         aria-modal="true"
-        aria-label={radioActive ? 'Radio' : 'Playlist'}
+        aria-label={radioActive ? 'Radio' : 'Queue'}
       >
         <SheetHeader>
           <SwipeHandle
             ref={headerRef}
             role="button"
-            aria-label="Swipe down or tap to close playlist"
+            aria-label="Swipe down or tap to close queue"
             onClick={onClose}
           >
             <GripPill />
           </SwipeHandle>
-          <SheetTitle>{radioActive ? 'Radio' : 'Playlist'}</SheetTitle>
+          <SheetTitle>{radioActive ? 'Radio' : 'Queue'}</SheetTitle>
           {radioActive && radioSeedDescription && (
             <div style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.5)', textAlign: 'center', marginTop: '2px' }}>
               {radioSeedDescription}
@@ -152,7 +152,7 @@ const PlaylistBottomSheet = memo<PlaylistBottomSheetProps>(function PlaylistBott
                         textAlign: 'center',
                       }}
                     >
-                      Loading playlist...
+                      Loading queue...
                     </div>
                   </DrawerFallbackCard>
                 </DrawerFallback>
@@ -177,4 +177,4 @@ const PlaylistBottomSheet = memo<PlaylistBottomSheetProps>(function PlaylistBott
   );
 });
 
-export default PlaylistBottomSheet;
+export default QueueBottomSheet;

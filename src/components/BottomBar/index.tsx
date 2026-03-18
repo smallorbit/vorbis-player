@@ -7,7 +7,7 @@ import { usePlayerSizingContext } from '@/contexts/PlayerSizingContext';
 import {
   VisualEffectsIcon,
   BackToLibraryIcon,
-  PlaylistIcon,
+  QueueIcon,
   ZenModeIcon,
   ShuffleIcon,
   RadioIcon,
@@ -23,7 +23,7 @@ interface BottomBarProps {
   onVolumeChange?: (volume: number) => void;
   onShowVisualEffects: () => void;
   onBackToLibrary?: () => void;
-  onShowPlaylist: () => void;
+  onShowQueue: () => void;
   onZenModeToggle?: () => void;
   shuffleEnabled?: boolean;
   onShuffleToggle?: () => void;
@@ -39,7 +39,7 @@ const BottomBar = React.memo(function BottomBar({
   onVolumeChange,
   onShowVisualEffects,
   onBackToLibrary,
-  onShowPlaylist,
+  onShowQueue,
   onZenModeToggle,
   shuffleEnabled,
   onShuffleToggle,
@@ -185,10 +185,10 @@ const BottomBar = React.memo(function BottomBar({
             $isMobile={isMobile}
             $isTablet={isTablet}
             $compact
-            onClick={onShowPlaylist}
-            title="Show Playlist"
+            onClick={onShowQueue}
+            title="Show Queue"
           >
-            <PlaylistIcon />
+            <QueueIcon />
           </ControlButton>
 
           {onZenModeToggle && (
