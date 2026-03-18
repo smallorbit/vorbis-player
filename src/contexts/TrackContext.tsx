@@ -54,6 +54,7 @@ export function TrackProvider({ children }: { children: React.ReactNode }) {
     if (originalTracks.length === 0) return;
 
     const current = tracks[currentTrackIndex];
+    console.log(`[Queue] shuffleToggle — ${shuffleEnabled ? 'OFF' : 'ON'}, currentIndex=${currentTrackIndex}, current="${current?.name}", tracksLen=${tracks.length}, originalLen=${originalTracks.length}`);
 
     if (!shuffleEnabled) {
       const rest = originalTracks.filter(t => t.id !== current?.id);
@@ -61,6 +62,7 @@ export function TrackProvider({ children }: { children: React.ReactNode }) {
       const newTracks = current ? [current, ...shuffled] : shuffled;
       setTracks(newTracks);
       setCurrentTrackIndex(0);
+      console.log(`[Queue] shuffleToggle — shuffled: newIndex=0, newLen=${newTracks.length}`);
     } else {
       const currentTrackId = current?.id;
       const restoredIndex = currentTrackId
@@ -68,6 +70,7 @@ export function TrackProvider({ children }: { children: React.ReactNode }) {
         : 0;
       setTracks(originalTracks);
       setCurrentTrackIndex(restoredIndex >= 0 ? restoredIndex : 0);
+      console.log(`[Queue] shuffleToggle — restored original order: newIndex=${restoredIndex >= 0 ? restoredIndex : 0}, len=${originalTracks.length}`);
     }
 
     setShuffleEnabled(!shuffleEnabled);

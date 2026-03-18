@@ -77,6 +77,7 @@ const AudioPlayerComponent = () => {
     onOpenLibraryDrawer: handlers.handleOpenLibraryDrawer,
     onCloseLibraryDrawer: handlers.handleCloseLibraryDrawer,
     onPlaylistSelect: handlers.handlePlaylistSelect,
+    onAddToQueue: handlers.handleAddToQueue,
     onAlbumPlay: handleAlbumPlay,
     onBackToLibrary: handlers.handleBackToLibrary,
     onStartRadio: handlers.handleStartRadio,
@@ -219,6 +220,7 @@ const AudioPlayerComponent = () => {
                 isOpen={state.showLibraryDrawer}
                 onClose={handlers.handleCloseLibraryDrawer}
                 onPlaylistSelect={handlers.handlePlaylistSelect}
+                onAddToQueue={handlers.handleAddToQueue}
               />
             </Suspense>
           </>
