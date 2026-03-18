@@ -9,7 +9,9 @@ import { ALBUM_ID_PREFIX } from '../constants/playlist';
 import * as libraryCache from './cache/libraryCache';
 
 const SPOTIFY_CLIENT_ID = import.meta.env.VITE_SPOTIFY_CLIENT_ID;
-const SPOTIFY_REDIRECT_URI = import.meta.env.VITE_SPOTIFY_REDIRECT_URI;
+function getSpotifyRedirectUri(): string {
+  return import.meta.env.VITE_SPOTIFY_REDIRECT_URI || `${window.location.origin}/auth/spotify/callback`;
+}
 
 const SCOPES = [
   'streaming',
@@ -425,7 +427,7 @@ class SpotifyAuth {
     const params = new URLSearchParams({
       client_id: SPOTIFY_CLIENT_ID,
       response_type: 'code',
-      redirect_uri: SPOTIFY_REDIRECT_URI,
+      redirect_uri: getSpotifyRedirectUri(),
       scope: SCOPES.join(' '),
       code_challenge_method: 'S256',
       code_challenge: codeChallenge,
@@ -451,7 +453,7 @@ class SpotifyAuth {
         client_id: SPOTIFY_CLIENT_ID,
         grant_type: 'authorization_code',
         code,
-        redirect_uri: SPOTIFY_REDIRECT_URI,
+        redirect_uri: getSpotifyRedirectUri(),
         code_verifier: codeVerifier,
       }),
     });
