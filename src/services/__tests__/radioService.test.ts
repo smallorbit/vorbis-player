@@ -34,6 +34,32 @@ describe('RadioService', () => {
   }
 
   describe('generateRadioQueue — track seed', () => {
+    it('uses the primary artist for Last.fm track lookups', async () => {
+      const { generateRadioQueue, lastfm } = await freshRadioService();
+
+      const catalog = [
+        makeTrack('Karma Police', 'Radiohead'),
+        makeTrack('Lucky', 'Radiohead'),
+        makeTrack('No Surprises', 'Radiohead'),
+        makeTrack('Exit Music', 'Radiohead'),
+        makeTrack('Airbag', 'Radiohead'),
+      ];
+
+      vi.mocked(lastfm.getSimilarTracks).mockResolvedValue([
+        { name: 'Karma Police', artist: 'Radiohead', trackMbid: null, artistMbid: null, matchScore: 0.9 },
+        { name: 'Lucky', artist: 'Radiohead', trackMbid: null, artistMbid: null, matchScore: 0.8 },
+        { name: 'No Surprises', artist: 'Radiohead', trackMbid: null, artistMbid: null, matchScore: 0.7 },
+        { name: 'Exit Music', artist: 'Radiohead', trackMbid: null, artistMbid: null, matchScore: 0.65 },
+        { name: 'Airbag', artist: 'Radiohead', trackMbid: null, artistMbid: null, matchScore: 0.6 },
+      ]);
+      vi.mocked(lastfm.getSimilarArtists).mockResolvedValue([]);
+
+      const seed: RadioSeed = { type: 'track', artist: 'Radiohead, Thom Yorke', track: 'Creep' };
+      await generateRadioQueue(seed, catalog);
+
+      expect(lastfm.getSimilarTracks).toHaveBeenCalledWith('Radiohead', 'Creep', 25);
+    });
+
     it('matches Last.fm similar tracks against catalog', async () => {
       const { generateRadioQueue, lastfm } = await freshRadioService();
 
@@ -222,6 +248,29 @@ describe('RadioService', () => {
   });
 
   describe('generateRadioQueue — album seed', () => {
+    it('uses the primary artist for Last.fm album-track lookups', async () => {
+      const { generateRadioQueue, lastfm } = await freshRadioService();
+
+      const catalog = [
+        makeTrack('Lucky', 'Radiohead'),
+        makeTrack('Karma Police', 'Radiohead'),
+      ];
+
+      vi.mocked(lastfm.getSimilarTracks).mockResolvedValue([
+        { name: 'Lucky', artist: 'Radiohead', trackMbid: null, artistMbid: null, matchScore: 0.9 },
+      ]);
+
+      const seed: RadioSeed = {
+        type: 'album',
+        artist: 'Radiohead',
+        album: 'The Bends',
+        tracks: [{ artist: 'Radiohead, Thom Yorke', name: 'Fake Plastic Trees' }],
+      };
+      await generateRadioQueue(seed, catalog);
+
+      expect(lastfm.getSimilarTracks).toHaveBeenCalledWith('Radiohead', 'Fake Plastic Trees', 25);
+    });
+
     it('matches similar tracks from album tracks', async () => {
       const { generateRadioQueue, lastfm } = await freshRadioService();
 
