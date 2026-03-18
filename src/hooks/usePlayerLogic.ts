@@ -567,6 +567,17 @@ export function usePlayerLogic() {
 
         const newTracks = newMediaTracks.map(mediaTrackToTrack);
 
+        // Sync mediaTracksRef with the current track list before appending.
+        // When a Spotify playlist is loaded, mediaTracksRef is left empty while
+        // tracks[] is populated in React state. Without this sync, appending a
+        // queued playlist would make mediaTracksRef contain only the new tracks,
+        // causing playTrack(1) to play the wrong track (e.g. track 2 of the
+        // queued playlist instead of track 2 of the currently-playing playlist).
+        if (mediaTracksRef.current.length !== tracksRef.current.length) {
+          const idToMedia = new Map(mediaTracksRef.current.map(m => [m.id, m]));
+          mediaTracksRef.current = tracksRef.current.map(t => idToMedia.get(t.id) ?? trackToMediaTrack(t));
+        }
+
         // Append to existing queue
         console.log(`[Queue] handleAddToQueue — appending ${newMediaTracks.length} tracks. Before: tracks=${tracksRef.current.length}, mediaRef=${mediaTracksRef.current.length}`);
         mediaTracksRef.current = [...mediaTracksRef.current, ...newMediaTracks];
