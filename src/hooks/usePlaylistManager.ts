@@ -74,6 +74,7 @@ export const usePlaylistManager = ({
 }: UsePlaylistManagerProps) => {
   
   const handlePlaylistSelect = useCallback(async (playlistId: string): Promise<Track[]> => {
+    console.log(`[Queue] usePlaylistManager.handlePlaylistSelect — playlistId=${playlistId}, shuffle=${shuffleEnabled}`);
     try {
       setError(null);
       setIsLoading(true);
@@ -148,6 +149,7 @@ export const usePlaylistManager = ({
       const tracksToPlay = shuffleEnabled ? shuffleArray(fetchedTracks) : fetchedTracks;
 
       // Update state with new tracks FIRST
+      console.log(`[Queue] usePlaylistManager — setting ${tracksToPlay.length} tracks (fetched=${fetchedTracks.length}, shuffled=${shuffleEnabled})`);
       setTracks(tracksToPlay);
       setCurrentTrackIndex(0);
 
@@ -231,6 +233,7 @@ export const usePlaylistManager = ({
         })();
       }, 1500);
 
+      console.log(`[Queue] usePlaylistManager — returning ${tracksToPlay.length} tracks, first="${tracksToPlay[0]?.name}"`);
       return tracksToPlay;
 
     } catch (err: unknown) {

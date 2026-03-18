@@ -150,6 +150,10 @@ export const useSpotifyPlayback = ({
     const mediaTracks = mediaTracksRef?.current ?? [];
     const mediaTrack = mediaTracks[index];
     const trackProvider = resolveTrackProvider(mediaTrack);
+    console.log(`[Queue] playTrack(${index}) — provider=${trackProvider}, track=${mediaTrack ? `"${mediaTrack.name}" (${mediaTrack.id.slice(0, 8)})` : 'NO_MEDIA_TRACK'}, mediaLen=${mediaTracks.length}, tracksLen=${tracksRef.current.length}, skipOnError=${skipOnError}`);
+    if (!mediaTrack && mediaTracks.length > 0) {
+      console.warn(`[Queue] playTrack(${index}) — index out of bounds! mediaTracksRef has ${mediaTracks.length} items`);
+    }
     pausePreviousProvider(trackProvider);
 
     currentPlaybackProviderRef.current = trackProvider;
@@ -169,6 +173,7 @@ export const useSpotifyPlayback = ({
       }
 
       // Legacy fallback: no MediaTrack available, use Track from tracksRef
+      console.warn(`[Queue] playTrack(${index}) — LEGACY FALLBACK: no mediaTrack, using tracksRef`);
       const currentTracks = tracksRef.current;
       if (!currentTracks[index]) {
         console.error(`[Spotify] No track at index ${index} (tracks length: ${currentTracks.length})`);
