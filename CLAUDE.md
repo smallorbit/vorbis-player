@@ -156,14 +156,14 @@ Centralized in `useKeyboardShortcuts.ts`. Uses `pointer: fine` / `hover: hover` 
 |-----|---------|------------|
 | `Space` | Play/Pause | Play/Pause |
 | `←` / `→` | Prev/Next track | Prev/Next track |
-| `↑` / `P` | Toggle playlist | Volume up (↑ only) |
+| `↑` / `Q` | Toggle queue | Volume up (↑ only) |
 | `↓` / `L` | Toggle library | Volume down (↓ only) |
 | `V` / `G` / `S` / `T` | Visualizer / Glow / Shuffle / Translucence | same |
 | `O` / `K` / `M` | Effects menu / Like / Mute | same |
 | `?` / `/` | Keyboard help | same |
 | `Escape` | Close all menus | same |
 
-`P` and `L` are device-independent alternatives for drawer toggles. `↑`/`↓` have cross-dismiss behavior.
+`Q` and `L` are device-independent alternatives for drawer toggles. `↑`/`↓` have cross-dismiss behavior.
 
 ## Tech Stack
 

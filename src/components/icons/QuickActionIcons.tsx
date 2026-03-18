@@ -1,4 +1,4 @@
-export const PlaylistIcon = () => (
+export const QueueIcon = () => (
   <svg viewBox="0 0 24 24" role="img" aria-hidden="true">
     <path d="M3 6h18v2H3V6zm0 5h18v2H3v-2zm0 5h18v2H3v-2z" fill="currentColor" />
   </svg>

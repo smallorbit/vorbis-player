@@ -92,7 +92,7 @@ export function usePlayerLogic() {
     currentTrack,
     currentTrackIndex,
     setCurrentTrackIndex,
-    setShowPlaylist,
+    setShowQueue,
   } = useCurrentTrackContext();
 
   const {
@@ -501,9 +501,9 @@ export function usePlayerLogic() {
 
   const handleOpenLibraryDrawer = useCallback(() => {
     setShowLibraryDrawer(true);
-    setShowPlaylist(false);
+    setShowQueue(false);
     setShowVisualEffects(false);
-  }, [setShowPlaylist, setShowVisualEffects]);
+  }, [setShowQueue, setShowVisualEffects]);
 
   const handleCloseLibraryDrawer = useCallback(() => {
     setShowLibraryDrawer(false);
@@ -601,9 +601,9 @@ export function usePlayerLogic() {
     setTracks([]);
     setCurrentTrackIndex(0);
     mediaTracksRef.current = [];
-    setShowPlaylist(false);
+    setShowQueue(false);
     setShowVisualEffects(false);
-  }, [handlePause, stopRadio, setSelectedPlaylistId, setTracks, setCurrentTrackIndex, setShowPlaylist, setShowVisualEffects]);
+  }, [handlePause, stopRadio, setSelectedPlaylistId, setTracks, setCurrentTrackIndex, setShowQueue, setShowVisualEffects]);
 
   /**
    * Start a radio session from the currently playing track.

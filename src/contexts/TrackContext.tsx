@@ -28,8 +28,8 @@ interface CurrentTrackContextValue {
   currentTrack: Track | null;
   currentTrackIndex: number;
   setCurrentTrackIndex: (index: number | ((prev: number) => number)) => void;
-  showPlaylist: boolean;
-  setShowPlaylist: (visible: boolean | ((prev: boolean) => boolean)) => void;
+  showQueue: boolean;
+  setShowQueue: (visible: boolean | ((prev: boolean) => boolean)) => void;
 }
 
 const TrackListContext = createContext<TrackListContextValue | null>(null);
@@ -43,7 +43,7 @@ export function TrackProvider({ children }: { children: React.ReactNode }) {
   const [error, setError] = useState<string | null>(null);
   const [shuffleEnabled, setShuffleEnabled] = useLocalStorage('vorbis-player-shuffle-enabled', false);
   const [selectedPlaylistId, setSelectedPlaylistId] = useState<string | null>(null);
-  const [showPlaylist, setShowPlaylist] = useState(false);
+  const [showQueue, setShowQueue] = useState(false);
 
   const currentTrack = useMemo(
     () => tracks[currentTrackIndex] || null,
@@ -105,9 +105,9 @@ export function TrackProvider({ children }: { children: React.ReactNode }) {
     currentTrack,
     currentTrackIndex,
     setCurrentTrackIndex,
-    showPlaylist,
-    setShowPlaylist,
-  }), [currentTrack, currentTrackIndex, showPlaylist]);
+    showQueue,
+    setShowQueue,
+  }), [currentTrack, currentTrackIndex, showQueue]);
 
   const profilingRef = useRef(0);
   useEffect(() => {
