@@ -83,6 +83,30 @@ const SheetContent = styled.div`
   }
 `;
 
+const SheetHeaderRow = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 ${theme.spacing.lg} ${theme.spacing.md};
+`;
+
+const SaveButton = styled.button`
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+  padding: ${theme.spacing.sm};
+  border-radius: ${theme.borderRadius.md};
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &:hover {
+    color: rgba(255, 255, 255, 1);
+  }
+`;
+
 interface QueueBottomSheetProps {
   isOpen: boolean;
   onClose: () => void;
@@ -92,6 +116,8 @@ interface QueueBottomSheetProps {
   showProviderIcons?: boolean;
   radioActive?: boolean;
   radioSeedDescription?: string | null;
+  onSaveQueue?: () => void;
+  canSaveQueue?: boolean;
 }
 
 const QueueBottomSheet = memo<QueueBottomSheetProps>(function QueueBottomSheet({
@@ -103,6 +129,8 @@ const QueueBottomSheet = memo<QueueBottomSheetProps>(function QueueBottomSheet({
   showProviderIcons,
   radioActive,
   radioSeedDescription,
+  onSaveQueue,
+  canSaveQueue,
 }) {
   const { ref: headerRef, isDragging, dragOffset } = useVerticalSwipeGesture({
     onSwipeDown: onClose,
@@ -132,7 +160,18 @@ const QueueBottomSheet = memo<QueueBottomSheetProps>(function QueueBottomSheet({
           >
             <GripPill />
           </SwipeHandle>
-          <SheetTitle>{radioActive ? 'Radio' : 'Queue'}</SheetTitle>
+          <SheetHeaderRow>
+            <SheetTitle style={{ padding: 0 }}>{radioActive ? 'Radio' : 'Queue'}</SheetTitle>
+            {canSaveQueue && (
+              <SaveButton onClick={onSaveQueue} title="Save queue as Spotify playlist" aria-label="Save queue as Spotify playlist">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                  <polyline points="17 21 17 13 7 13 7 21"/>
+                  <polyline points="7 3 7 8 15 8"/>
+                </svg>
+              </SaveButton>
+            )}
+          </SheetHeaderRow>
           {radioActive && radioSeedDescription && (
             <div style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.5)', textAlign: 'center', marginTop: '2px' }}>
               {radioSeedDescription}

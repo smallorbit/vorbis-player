@@ -1,4 +1,4 @@
-import React, { Suspense, lazy, useState, useCallback, useRef, useEffect } from 'react';
+import React, { Suspense, lazy, useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { clearCacheWithOptions } from '@/services/cache/libraryCache';
 import { clearAllPins } from '@/services/settings/pinnedItemsStorage';
 import type { ClearCacheOptions } from '@/components/VisualEffectsMenu';
@@ -26,6 +26,11 @@ import { useProfilingContext } from '@/contexts/ProfilingContext';
 import { useVisualizerDebug } from '@/contexts/VisualizerDebugContext';
 import LibraryDrawer from './LibraryDrawer';
 import AlbumArtQuickSwapBack from './AlbumArtQuickSwapBack';
+import { useSaveQueueAsPlaylist } from '@/hooks/useSaveQueueAsPlaylist';
+import { spotifyAuth } from '@/services/spotify';
+import Toast from './Toast';
+
+const SaveQueueDialog = lazy(() => import('./SaveQueueDialog'));
 
 const QueueDrawer = lazy(() => import('./QueueDrawer'));
 const QueueBottomSheet = lazy(() => import('./QueueBottomSheet'));
@@ -336,6 +341,40 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
   const { effectiveGlow, handleGlowIntensityChange, handleGlowRateChange, restoreGlowSettings } = useVisualEffectsState();
   const { handleMuteToggle, isMuted, volume, setVolumeLevel } = useVolume(currentTrackProvider);
   const { isLiked, isLikePending, handleLikeToggle } = useLikeTrack(currentTrack?.id, currentTrack?.provider);
+
+  // --- Save queue as playlist ---
+  const { saveQueueAsPlaylist, status: saveQueueStatus, error: saveQueueError, resetStatus: resetSaveQueue } = useSaveQueueAsPlaylist();
+  const [showSaveQueueDialog, setShowSaveQueueDialog] = useState(false);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const canSaveQueue = useMemo(() => spotifyAuth.isAuthenticated() && tracks.length > 0, [tracks.length]);
+
+  const handleOpenSaveQueue = useCallback(() => setShowSaveQueueDialog(true), []);
+  const handleCloseSaveQueue = useCallback(() => {
+    setShowSaveQueueDialog(false);
+    resetSaveQueue();
+  }, [resetSaveQueue]);
+
+  const handleSaveQueue = useCallback(async (name: string) => {
+    try {
+      const result = await saveQueueAsPlaylist(name, tracks);
+      setShowSaveQueueDialog(false);
+      const skippedNote = result.skippedTracks > 0
+        ? ` (${result.skippedTracks} track${result.skippedTracks !== 1 ? 's' : ''} skipped)`
+        : '';
+      setToastMessage(`Saved ${result.totalTracks} track${result.totalTracks !== 1 ? 's' : ''} to "${name}"${skippedNote}`);
+    } catch {
+      // Error is shown in the dialog via status/error props
+    }
+  }, [saveQueueAsPlaylist, tracks]);
+
+  const handleDismissToast = useCallback(() => setToastMessage(null), []);
+
+  // Auto-dismiss toast
+  useEffect(() => {
+    if (!toastMessage) return;
+    const timer = setTimeout(() => setToastMessage(null), 5000);
+    return () => clearTimeout(timer);
+  }, [toastMessage]);
 
   // --- Local UI state ---
   const [showHelp, setShowHelp] = useState(false);
@@ -820,6 +859,8 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
               showProviderIcons={showProviderIcons}
               radioActive={radioActive}
               radioSeedDescription={radioState?.seedDescription}
+              onSaveQueue={handleOpenSaveQueue}
+              canSaveQueue={canSaveQueue}
             />
           </ProfiledComponent>
         ) : (
@@ -833,6 +874,8 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
               showProviderIcons={showProviderIcons}
               radioActive={radioActive}
               radioSeedDescription={radioState?.seedDescription}
+              onSaveQueue={handleOpenSaveQueue}
+              canSaveQueue={canSaveQueue}
             />
           </ProfiledComponent>
         )}
@@ -850,6 +893,17 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
           initialViewMode={libraryViewMode}
         />
       </ProfiledComponent>
+      <Suspense fallback={null}>
+        <SaveQueueDialog
+          isOpen={showSaveQueueDialog}
+          onClose={handleCloseSaveQueue}
+          onSave={handleSaveQueue}
+          status={saveQueueStatus}
+          error={saveQueueError}
+          trackCount={tracks.length}
+        />
+      </Suspense>
+      {toastMessage && <Toast message={toastMessage} onDismiss={handleDismissToast} />}
     </ContentWrapper>
   );
 });
