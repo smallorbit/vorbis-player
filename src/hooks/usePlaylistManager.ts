@@ -73,7 +73,7 @@ export const usePlaylistManager = ({
   shuffleEnabled
 }: UsePlaylistManagerProps) => {
   
-  const handlePlaylistSelect = useCallback(async (playlistId: string) => {
+  const handlePlaylistSelect = useCallback(async (playlistId: string): Promise<Track[]> => {
     try {
       setError(null);
       setIsLoading(true);
@@ -119,13 +119,14 @@ export const usePlaylistManager = ({
             setOriginalTracks(tracksFromWindow);
             setTracks(tracksFromWindow);
             setCurrentTrackIndex(0);
+            return tracksFromWindow;
           }
           // Playback started successfully via context — return without error
-          return;
+          return [];
         } catch (contextError) {
           console.error('Context playback also failed:', contextError);
           setError("No tracks found in this playlist. It may be empty or unavailable.");
-          return;
+          return [];
         }
       }
 
@@ -137,7 +138,7 @@ export const usePlaylistManager = ({
         } else {
           setError("No tracks found in this playlist.");
         }
-        return;
+        return [];
       }
 
       // Always store original (unshuffled) track order
@@ -230,6 +231,8 @@ export const usePlaylistManager = ({
         })();
       }, 1500);
 
+      return tracksToPlay;
+
     } catch (err: unknown) {
       if (err instanceof Error && err.message.includes('authenticated')) {
         setError("Authentication expired. Redirecting to Spotify login...");
@@ -237,6 +240,7 @@ export const usePlaylistManager = ({
       } else {
         setError(err instanceof Error ? err.message : "An unknown error occurred while loading tracks.");
       }
+      return [];
     } finally {
       setIsLoading(false);
     }
