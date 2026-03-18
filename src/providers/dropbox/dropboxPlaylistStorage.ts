@@ -1,0 +1,347 @@
+/**
+ * Stores and retrieves user-created playlists as JSON files in Dropbox.
+ * Files are saved at /.vorbis/playlists/<name>.json.
+ */
+
+import type { DropboxAuthAdapter } from './dropboxAuthAdapter';
+import type { MediaTrack, MediaCollection, ProviderId, PlaybackItemRef } from '@/types/domain';
+import { toSavedPlaylistId } from '@/constants/playlist';
+
+// ── Types ────────────────────────────────────────────────────────────
+
+export interface SavedTrack {
+  id: string;
+  provider: ProviderId;
+  playbackRef: PlaybackItemRef;
+  name: string;
+  artists: string;
+  album: string;
+  albumId?: string;
+  durationMs: number;
+  externalUrl?: string;
+}
+
+export interface PlaylistFile {
+  version: 1;
+  name: string;
+  createdAt: string;
+  updatedAt: string;
+  tracks: SavedTrack[];
+}
+
+// ── Constants ────────────────────────────────────────────────────────
+
+const PLAYLISTS_FOLDER = '/.vorbis/playlists';
+
+// ── Folder management ────────────────────────────────────────────────
+
+let playlistsFolderConfirmed = false;
+
+async function ensurePlaylistsFolder(auth: DropboxAuthAdapter): Promise<boolean> {
+  if (playlistsFolderConfirmed) return true;
+
+  let token = await auth.ensureValidToken();
+  if (!token) return false;
+
+  const create = async (accessToken: string) =>
+    fetch('https://api.dropboxapi.com/2/files/create_folder_v2', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ path: PLAYLISTS_FOLDER, autorename: false }),
+    });
+
+  let response = await create(token);
+
+  if (response.status === 401) {
+    const refreshed = await auth.refreshAccessToken();
+    if (!refreshed) return false;
+    token = refreshed;
+    response = await create(token);
+  }
+
+  // 409 = folder already exists
+  if (response.status === 409 || response.ok) {
+    playlistsFolderConfirmed = true;
+    return true;
+  }
+
+  console.warn('[DropboxPlaylistStorage] Failed to ensure playlists folder:', response.status);
+  return false;
+}
+
+/** Reset cached state (for logout or testing). */
+export function resetPlaylistsFolderCache(): void {
+  playlistsFolderConfirmed = false;
+}
+
+// ── Helpers ──────────────────────────────────────────────────────────
+
+function sanitizeFilename(name: string): string {
+  return name
+    .replace(/[/\\:*?"<>|]/g, '_')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 100);
+}
+
+function mediaTrackToSavedTrack(track: MediaTrack): SavedTrack {
+  return {
+    id: track.id,
+    provider: track.provider,
+    playbackRef: track.playbackRef,
+    name: track.name,
+    artists: track.artists,
+    album: track.album,
+    albumId: track.albumId,
+    durationMs: track.durationMs,
+    externalUrl: track.externalUrl,
+  };
+}
+
+function savedTrackToMediaTrack(track: SavedTrack): MediaTrack {
+  return {
+    id: track.id,
+    provider: track.provider,
+    playbackRef: track.playbackRef,
+    name: track.name,
+    artists: track.artists,
+    artistsData: [{ name: track.artists }],
+    album: track.album,
+    albumId: track.albumId,
+    durationMs: track.durationMs,
+    externalUrl: track.externalUrl,
+  };
+}
+
+// ── Public API ───────────────────────────────────────────────────────
+
+/**
+ * Save the current queue as a playlist file in Dropbox.
+ * Returns the file path on success, or null on failure.
+ */
+export async function saveQueueAsPlaylist(
+  auth: DropboxAuthAdapter,
+  name: string,
+  mediaTracks: MediaTrack[],
+): Promise<string | null> {
+  const folderReady = await ensurePlaylistsFolder(auth);
+  if (!folderReady) return null;
+
+  const sanitized = sanitizeFilename(name);
+  if (!sanitized) return null;
+
+  const filePath = `${PLAYLISTS_FOLDER}/${sanitized}.json`;
+
+  const data: PlaylistFile = {
+    version: 1,
+    name,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    tracks: mediaTracks.map(mediaTrackToSavedTrack),
+  };
+
+  let token = await auth.ensureValidToken();
+  if (!token) return null;
+
+  const apiArg = JSON.stringify({ path: filePath, mode: 'overwrite' });
+  const body = JSON.stringify(data);
+
+  const upload = (accessToken: string) =>
+    fetch('https://content.dropboxapi.com/2/files/upload', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Dropbox-API-Arg': apiArg,
+        'Content-Type': 'application/octet-stream',
+      },
+      body,
+    });
+
+  let response = await upload(token);
+
+  if (response.status === 401) {
+    const refreshed = await auth.refreshAccessToken();
+    if (!refreshed) return null;
+    response = await upload(refreshed);
+  }
+
+  if (!response.ok) {
+    console.warn('[DropboxPlaylistStorage] Upload failed:', response.status);
+    return null;
+  }
+
+  return filePath;
+}
+
+/**
+ * List all saved playlists from /.vorbis/playlists/ as MediaCollections.
+ */
+export async function listSavedPlaylists(
+  auth: DropboxAuthAdapter,
+): Promise<MediaCollection[]> {
+  let token = await auth.ensureValidToken();
+  if (!token) return [];
+
+  interface ListResult {
+    entries: Array<{ '.tag': string; name: string; path_lower: string; path_display: string }>;
+    has_more: boolean;
+    cursor: string;
+  }
+
+  const listFolder = async (accessToken: string) =>
+    fetch('https://api.dropboxapi.com/2/files/list_folder', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ path: PLAYLISTS_FOLDER, recursive: false }),
+    });
+
+  let response = await listFolder(token);
+
+  if (response.status === 401) {
+    const refreshed = await auth.refreshAccessToken();
+    if (!refreshed) return [];
+    token = refreshed;
+    response = await listFolder(token);
+  }
+
+  // 409 = folder doesn't exist yet → no playlists
+  if (response.status === 409) return [];
+
+  if (!response.ok) {
+    console.warn('[DropboxPlaylistStorage] List folder failed:', response.status);
+    return [];
+  }
+
+  const result: ListResult = await response.json();
+  const collections: MediaCollection[] = [];
+
+  for (const entry of result.entries) {
+    if (entry['.tag'] !== 'file' || !entry.name.endsWith('.json')) continue;
+
+    const displayName = entry.name.replace(/\.json$/, '');
+    collections.push({
+      id: toSavedPlaylistId(entry.path_lower),
+      provider: 'dropbox',
+      kind: 'playlist',
+      name: displayName,
+      imageUrl: undefined,
+    });
+  }
+
+  // Handle pagination
+  let cursor = result.cursor;
+  let hasMore = result.has_more;
+  while (hasMore) {
+    const continueResp = await fetch('https://api.dropboxapi.com/2/files/list_folder/continue', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ cursor }),
+    });
+    if (!continueResp.ok) break;
+    const cont: ListResult = await continueResp.json();
+    for (const entry of cont.entries) {
+      if (entry['.tag'] !== 'file' || !entry.name.endsWith('.json')) continue;
+      const displayName = entry.name.replace(/\.json$/, '');
+      collections.push({
+        id: toSavedPlaylistId(entry.path_lower),
+        provider: 'dropbox',
+        kind: 'playlist',
+        name: displayName,
+        imageUrl: undefined,
+      });
+    }
+    cursor = cont.cursor;
+    hasMore = cont.has_more;
+  }
+
+  collections.sort((a, b) => a.name.localeCompare(b.name));
+  return collections;
+}
+
+/**
+ * Load tracks from a saved playlist file.
+ * @param playlistPath The Dropbox file path (e.g. /.vorbis/playlists/my-playlist.json)
+ */
+export async function loadPlaylistTracks(
+  auth: DropboxAuthAdapter,
+  playlistPath: string,
+): Promise<MediaTrack[]> {
+  let token = await auth.ensureValidToken();
+  if (!token) return [];
+
+  const apiArg = JSON.stringify({ path: playlistPath });
+
+  const download = (accessToken: string) =>
+    fetch('https://content.dropboxapi.com/2/files/download', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Dropbox-API-Arg': apiArg,
+      },
+    });
+
+  let response = await download(token);
+
+  if (response.status === 401) {
+    const refreshed = await auth.refreshAccessToken();
+    if (!refreshed) return [];
+    response = await download(refreshed);
+  }
+
+  if (!response.ok) {
+    console.warn('[DropboxPlaylistStorage] Download failed:', response.status);
+    return [];
+  }
+
+  try {
+    const data: PlaylistFile = await response.json();
+    if (data.version !== 1) {
+      console.warn('[DropboxPlaylistStorage] Unknown file version:', data.version);
+      return [];
+    }
+    return data.tracks.map(savedTrackToMediaTrack);
+  } catch {
+    console.warn('[DropboxPlaylistStorage] Failed to parse playlist file');
+    return [];
+  }
+}
+
+/**
+ * Delete a saved playlist file.
+ */
+export async function deleteSavedPlaylist(
+  auth: DropboxAuthAdapter,
+  playlistPath: string,
+): Promise<boolean> {
+  let token = await auth.ensureValidToken();
+  if (!token) return false;
+
+  const deleteFile = (accessToken: string) =>
+    fetch('https://api.dropboxapi.com/2/files/delete_v2', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ path: playlistPath }),
+    });
+
+  let response = await deleteFile(token);
+
+  if (response.status === 401) {
+    const refreshed = await auth.refreshAccessToken();
+    if (!refreshed) return false;
+    response = await deleteFile(refreshed);
+  }
+
+  return response.ok;
+}

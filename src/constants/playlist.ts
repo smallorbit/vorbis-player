@@ -21,3 +21,21 @@ export function extractAlbumId(playlistId: string): string {
 export function toAlbumPlaylistId(albumId: string): string {
   return `${ALBUM_ID_PREFIX}${albumId}`;
 }
+
+/** Prefix used when encoding a saved Dropbox playlist path as a playlist selection ID */
+export const SAVED_PLAYLIST_PREFIX = 'dbplaylist:';
+
+/** Check whether a playlist selection ID represents a saved Dropbox playlist */
+export function isSavedPlaylistId(playlistId: string): boolean {
+  return playlistId.startsWith(SAVED_PLAYLIST_PREFIX);
+}
+
+/** Extract the playlist file path from a saved playlist selection ID */
+export function extractPlaylistPath(playlistId: string): string {
+  return playlistId.slice(SAVED_PLAYLIST_PREFIX.length);
+}
+
+/** Create a saved playlist selection ID from a Dropbox file path */
+export function toSavedPlaylistId(path: string): string {
+  return `${SAVED_PLAYLIST_PREFIX}${path}`;
+}
