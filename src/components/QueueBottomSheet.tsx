@@ -113,6 +113,8 @@ interface QueueBottomSheetProps {
   tracks: Track[];
   currentTrackIndex: number;
   onTrackSelect: (index: number) => void;
+  onRemoveTrack?: (index: number) => void;
+  onReorderTracks?: (fromIndex: number, toIndex: number) => void;
   showProviderIcons?: boolean;
   radioActive?: boolean;
   radioSeedDescription?: string | null;
@@ -126,6 +128,8 @@ const QueueBottomSheet = memo<QueueBottomSheetProps>(function QueueBottomSheet({
   tracks,
   currentTrackIndex,
   onTrackSelect,
+  onRemoveTrack,
+  onReorderTracks,
   showProviderIcons,
   radioActive,
   radioSeedDescription,
@@ -204,6 +208,8 @@ const QueueBottomSheet = memo<QueueBottomSheetProps>(function QueueBottomSheet({
                   onTrackSelect(index);
                   onClose();
                 }}
+                onRemoveTrack={onRemoveTrack}
+                onReorderTracks={onReorderTracks}
                 isOpen={isOpen}
                 showProviderIcons={showProviderIcons}
               />
