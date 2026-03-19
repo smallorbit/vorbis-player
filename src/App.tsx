@@ -105,11 +105,29 @@ function App() {
         if (isAuthCallback) {
           // Handle Last.fm scrobbling auth callback (not a provider)
           if (currentUrl.pathname.startsWith('/auth/lastfm/callback')) {
-            const lastfmHandled = await handleLastFmCallback(currentUrl);
-            if (lastfmHandled) {
+            try {
+              const lastfmHandled = await handleLastFmCallback(currentUrl);
+              if (lastfmHandled) {
+                if (window.opener) {
+                  window.opener.postMessage(
+                    { type: 'vorbis-lastfm-auth-complete' },
+                    window.location.origin,
+                  );
+                  setIsPopupCallback(true);
+                  setTimeout(() => window.close(), 1500);
+                } else {
+                  window.history.replaceState({}, document.title, '/');
+                }
+                setIsAuthenticating(false);
+                return;
+              }
+            } catch (lastfmError) {
+              // Last.fm auth failed — notify opener (if popup) and redirect home.
+              // Do not fall through to the Spotify error screen.
+              console.warn('[App] Last.fm auth callback failed:', lastfmError);
               if (window.opener) {
                 window.opener.postMessage(
-                  { type: 'vorbis-lastfm-auth-complete' },
+                  { type: 'vorbis-lastfm-auth-error', message: lastfmError instanceof Error ? lastfmError.message : String(lastfmError) },
                   window.location.origin,
                 );
                 setIsPopupCallback(true);

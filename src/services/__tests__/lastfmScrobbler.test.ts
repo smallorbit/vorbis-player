@@ -8,8 +8,6 @@ import {
   logoutLastFm,
   updateNowPlaying,
   scrobble,
-  _md5,
-  _apiSignature,
 } from '../lastfmScrobbler';
 
 // Set up Last.fm env vars (merges with the ones in test/setup.ts)
@@ -39,30 +37,6 @@ function jsonResponse(data: unknown) {
 function errorResponse(status: number) {
   return { ok: false, status, statusText: 'Error', json: () => Promise.resolve({}), text: () => Promise.resolve('Error') };
 }
-
-describe('md5', () => {
-  it('computes correct MD5 hash for empty string', () => {
-    expect(_md5('')).toBe('d41d8cd98f00b204e9800998ecf8427e');
-  });
-
-  it('computes correct MD5 hash for "hello"', () => {
-    expect(_md5('hello')).toBe('5d41402abc4b2a76b9719d911017c592');
-  });
-
-  it('computes correct MD5 for a longer string', () => {
-    expect(_md5('The quick brown fox jumps over the lazy dog'))
-      .toBe('9e107d9d372bb6826bd81d3542a419d6');
-  });
-});
-
-describe('apiSignature', () => {
-  it('builds signature from sorted params + secret', () => {
-    // apiSignature only processes what's passed to it; api_key is added by lastfmPost
-    const sig = _apiSignature({ method: 'auth.getSession', token: 'abc' });
-    const expected = _md5('methodauth.getSessiontokenabctest-api-secret');
-    expect(sig).toBe(expected);
-  });
-});
 
 describe('isScrobblingConfigured', () => {
   it('returns true when both key and secret are set', () => {

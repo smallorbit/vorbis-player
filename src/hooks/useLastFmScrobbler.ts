@@ -16,13 +16,21 @@ import {
   scrobble,
 } from '@/services/lastfmScrobbler';
 import type { ScrobbleTrack } from '@/services/lastfmScrobbler';
-import type { Track } from '@/services/spotify';
 
 const MIN_TRACK_DURATION_MS = 30_000;
 const MAX_SCROBBLE_THRESHOLD_MS = 4 * 60 * 1000; // 4 minutes
 
+/** Minimal track shape the scrobbler needs — compatible with both Track and MediaTrack. */
+interface ScrobbleableTrack {
+  id: string;
+  name: string;
+  artists: string;
+  album?: string;
+  durationMs?: number;
+}
+
 interface UseLastFmScrobblerProps {
-  currentTrack: Track | null;
+  currentTrack: ScrobbleableTrack | null;
   isPlaying: boolean;
   playbackPosition: number;
   enabled: boolean;
@@ -45,11 +53,11 @@ export function useLastFmScrobbler({
   // Last known position (to detect track restarts/seeks)
   const lastPositionRef = useRef(0);
 
-  const buildScrobbleTrack = useCallback((track: Track): ScrobbleTrack => ({
+  const buildScrobbleTrack = useCallback((track: ScrobbleableTrack): ScrobbleTrack => ({
     artist: track.artists,
     track: track.name,
     album: track.album || undefined,
-    duration: track.duration_ms ? Math.round(track.duration_ms / 1000) : undefined,
+    duration: track.durationMs ? Math.round(track.durationMs / 1000) : undefined,
   }), []);
 
   // Reset tracking state when the track changes

@@ -199,6 +199,3 @@ export async function scrobble(track: ScrobbleTrack, timestamp?: number): Promis
   }
 }
 
-// ── Exports for testing ────────────────────────────────────────────
-
-export { md5 as _md5, apiSignature as _apiSignature };

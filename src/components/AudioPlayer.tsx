@@ -48,9 +48,10 @@ const AudioPlayerComponent = () => {
   const { tracks, selectedPlaylistId } = useTrackListContext();
   const { currentTrack } = useCurrentTrackContext();
 
-  // Last.fm scrobbling — watches playback and sends scrobble events
+  // Last.fm scrobbling — watches playback and sends scrobble events.
+  // Map Spotify Track's duration_ms to durationMs to match ScrobbleableTrack interface.
   useLastFmScrobbler({
-    currentTrack: currentTrack ?? null,
+    currentTrack: currentTrack ? { ...currentTrack, durationMs: currentTrack.duration_ms } : null,
     isPlaying: state.isPlaying,
     playbackPosition: state.playbackPosition,
     enabled: isScrobblingConfigured(),
