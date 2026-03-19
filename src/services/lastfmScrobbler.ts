@@ -140,10 +140,14 @@ export async function handleLastFmCallback(url: URL): Promise<boolean> {
   throw new Error('Failed to obtain Last.fm session key');
 }
 
-/** Clear the stored session. */
+/** Dispatched whenever the Last.fm session is cleared (logout or revocation). */
+export const LASTFM_SESSION_CHANGED_EVENT = 'vorbis-lastfm-session-changed';
+
+/** Clear the stored session and notify listeners. */
 export function logoutLastFm(): void {
   localStorage.removeItem(SESSION_KEY_STORAGE);
   localStorage.removeItem(USERNAME_STORAGE);
+  window.dispatchEvent(new CustomEvent(LASTFM_SESSION_CHANGED_EVENT));
 }
 
 // ── Scrobble API ───────────────────────────────────────────────────

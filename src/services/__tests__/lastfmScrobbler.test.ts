@@ -143,6 +143,20 @@ describe('updateNowPlaying', () => {
     expect(warnSpy).toHaveBeenCalledOnce();
     warnSpy.mockRestore();
   });
+
+  it('clears session on error 9 (invalid session key)', async () => {
+    store['vorbis-player-lastfm-session-key'] = 'sk-revoked';
+    vi.mocked(global.fetch).mockResolvedValueOnce(
+      jsonResponse({ error: 9, message: 'Invalid session key' }) as Response,
+    );
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    await updateNowPlaying({ artist: 'Test', track: 'Song' });
+
+    expect(store['vorbis-player-lastfm-session-key']).toBeUndefined();
+    expect(warnSpy).toHaveBeenCalledOnce();
+    warnSpy.mockRestore();
+  });
 });
 
 describe('scrobble', () => {

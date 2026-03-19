@@ -14,6 +14,7 @@ import {
   getLastFmUsername,
   beginLastFmAuth,
   logoutLastFm,
+  LASTFM_SESSION_CHANGED_EVENT,
 } from '@/services/lastfmScrobbler';
 
 import {
@@ -213,6 +214,13 @@ const LastFmScrobblingSection = memo(() => {
   const [connectError, setConnectError] = useState<string | null>(null);
   const messageHandlerRef = useRef<((event: MessageEvent) => void) | null>(null);
   const cleanupTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Sync isConnected when the session is cleared in-app (e.g. error-9 revocation)
+  useEffect(() => {
+    const onSessionChanged = () => setIsConnected(isScrobblingAuthenticated());
+    window.addEventListener(LASTFM_SESSION_CHANGED_EVENT, onSessionChanged);
+    return () => window.removeEventListener(LASTFM_SESSION_CHANGED_EVENT, onSessionChanged);
+  }, []);
 
   // Remove any pending message listener and timeout on unmount
   useEffect(() => {
