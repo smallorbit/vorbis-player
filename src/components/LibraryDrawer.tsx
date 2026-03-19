@@ -1,6 +1,6 @@
 import React, { useCallback, useRef, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
-import styled, { keyframes } from 'styled-components';
+import styled from 'styled-components';
 import { useVerticalSwipeGesture } from '@/hooks/useVerticalSwipeGesture';
 import { theme } from '@/styles/theme';
 import {
@@ -70,7 +70,7 @@ const DrawerHeader = styled.div`
   padding: ${theme.spacing.sm} ${theme.spacing.md};
   min-height: 48px;
   display: grid;
-  grid-template-columns: 40px 1fr 40px;
+  grid-template-columns: 40px 1fr;
   align-items: center;
   touch-action: none;
 `;
@@ -101,35 +101,6 @@ const DrawerTitle = styled.h3`
   font-size: ${theme.fontSize.xl};
   font-weight: ${theme.fontWeight.semibold};
   text-align: center;
-`;
-
-const spin = keyframes`
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-`;
-
-const RefreshButton = styled.button<{ $spinning: boolean }>`
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  border: none;
-  background: none;
-  color: ${({ theme }) => theme.colors.foreground};
-  cursor: pointer;
-  border-radius: 50%;
-  transition: background ${({ theme }) => theme.transitions.fast} ease;
-  padding: 0;
-  justify-self: end;
-
-  &:active {
-    background: ${({ theme }) => theme.colors.control.background};
-  }
-
-  & > svg {
-    animation: ${({ $spinning }) => ($spinning ? spin : 'none')} 0.8s linear infinite;
-  }
 `;
 
 const DrawerContent = styled.div`
@@ -204,19 +175,6 @@ const LibraryDrawer = React.memo(function LibraryDrawer({ isOpen, onClose, onPla
                 </svg>
               </CloseButton>
               <DrawerTitle>Library</DrawerTitle>
-              <RefreshButton
-                onClick={handleRefresh}
-                $spinning={isRefreshing}
-                aria-label="Refresh library"
-                title="Refresh library"
-              >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                  <path d="M21 2v6h-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                  <path d="M3 12a9 9 0 0 1 15.36-6.36L21 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                  <path d="M3 22v-6h6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                  <path d="M21 12a9 9 0 0 1-15.36 6.36L3 16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </RefreshButton>
             </DrawerHeader>
             <DrawerContent>
               <PlaylistSelection
@@ -225,6 +183,8 @@ const LibraryDrawer = React.memo(function LibraryDrawer({ isOpen, onClose, onPla
                 inDrawer
                 initialSearchQuery={initialSearchQuery}
                 initialViewMode={initialViewMode}
+                onLibraryRefresh={handleRefresh}
+                isLibraryRefreshing={isRefreshing}
               />
             </DrawerContent>
             <SwipeHandle
