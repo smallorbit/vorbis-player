@@ -10,8 +10,11 @@ const TOGGLE_OFF_COLOR = 'rgba(255, 255, 255, 0.25)';
 const Bar = styled.div`
   display: flex;
   align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
   gap: ${({ theme }) => theme.spacing.md};
-  padding: ${({ theme }) => theme.spacing.xs} ${({ theme }) => theme.spacing.md};
+  row-gap: ${({ theme }) => theme.spacing.xs};
+  padding: ${({ theme }) => theme.spacing.xs} 0;
   flex-shrink: 0;
 `;
 
