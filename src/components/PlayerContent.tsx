@@ -18,6 +18,7 @@ import { useVisualEffectsState } from '@/hooks/useVisualEffectsState';
 import { useVolume } from '@/hooks/useVolume';
 import { useLikeTrack } from '@/hooks/useLikeTrack';
 import { useTrackListContext, useCurrentTrackContext } from '@/contexts/TrackContext';
+import { useProviderContext } from '@/contexts/ProviderContext';
 import { useUnifiedLikedTracks } from '@/hooks/useUnifiedLikedTracks';
 import { LIKED_SONGS_ID } from '@/constants/playlist';
 import { useColorContext } from '@/contexts/ColorContext';
@@ -27,7 +28,6 @@ import { useVisualizerDebug } from '@/contexts/VisualizerDebugContext';
 import LibraryDrawer from './LibraryDrawer';
 import AlbumArtQuickSwapBack from './AlbumArtQuickSwapBack';
 import { useSaveQueueAsPlaylist } from '@/hooks/useSaveQueueAsPlaylist';
-import { spotifyAuth } from '@/services/spotify';
 import Toast from './Toast';
 
 const SaveQueueDialog = lazy(() => import('./SaveQueueDialog'));
@@ -343,10 +343,11 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
   const { isLiked, isLikePending, handleLikeToggle } = useLikeTrack(currentTrack?.id, currentTrack?.provider);
 
   // --- Save queue as playlist ---
+  const { connectedProviderIds } = useProviderContext();
   const { saveQueueAsPlaylist, status: saveQueueStatus, error: saveQueueError, resetStatus: resetSaveQueue } = useSaveQueueAsPlaylist();
   const [showSaveQueueDialog, setShowSaveQueueDialog] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
-  const canSaveQueue = useMemo(() => spotifyAuth.isAuthenticated() && tracks.length > 0, [tracks.length]);
+  const canSaveQueue = useMemo(() => connectedProviderIds.includes('spotify') && tracks.length > 0, [connectedProviderIds, tracks.length]);
 
   const handleOpenSaveQueue = useCallback(() => setShowSaveQueueDialog(true), []);
   const handleCloseSaveQueue = useCallback(() => {
