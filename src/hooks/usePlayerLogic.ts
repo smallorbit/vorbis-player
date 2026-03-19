@@ -1,4 +1,4 @@
-import { useState, useEffect, useLayoutEffect, useCallback, useMemo, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { spotifyAuth } from '@/services/spotify';
 import { useTrackListContext, useCurrentTrackContext } from '@/contexts/TrackContext';
 import { useVisualEffectsContext } from '@/contexts/VisualEffectsContext';
@@ -20,6 +20,13 @@ import { shuffleArray } from '@/utils/shuffleArray';
 import { providerRegistry } from '@/providers/registry';
 import { resolveViaSpotify } from '@/services/spotifyResolver';
 import { logQueue, logRadio } from '@/lib/debugLog';
+import { useMediaTracksMirror } from '@/hooks/useMediaTracksMirror';
+import {
+  appendMediaTracks,
+  moveItemInArray,
+  removeMediaTrackById,
+  reorderMediaTracksToMatchTracks,
+} from '@/utils/queueTrackMirror';
 
 /** Convert MediaTrack to Track for UI; Dropbox tracks use empty uri (playback via ref). */
 export function mediaTrackToTrack(m: MediaTrack): Track {
@@ -83,7 +90,6 @@ export function usePlayerLogic() {
   // In mixed queues these can differ, so playback controls should prefer the driving provider.
   const {
     tracks,
-    originalTracks,
     isLoading,
     error,
     shuffleEnabled,
@@ -116,7 +122,7 @@ export function usePlayerLogic() {
   const { isUnifiedLikedActive } = useUnifiedLikedTracks();
 
   /** MediaTrack[] mirror of `tracks` for index-based playback across all providers. */
-  const mediaTracksRef = useRef<MediaTrack[]>([]);
+  const mediaTracksRef = useMediaTracksMirror(tracks);
 
   // Refs so the provider subscription handler always sees the latest values
   // without needing them in the effect's dependency array (which would cause
@@ -127,19 +133,6 @@ export function usePlayerLogic() {
   const currentTrackIndexRef = useRef(currentTrackIndex);
   currentTrackIndexRef.current = currentTrackIndex;
   const expectedTrackIdRef = useRef<string | null>(null);
-
-  // Keep mediaTracksRef.current in the same order as `tracks` so index-based
-  // playback is always correct, even after shuffle is toggled.
-  useLayoutEffect(() => {
-    const mediaTracks = mediaTracksRef.current;
-    if (mediaTracks.length === 0 || mediaTracks.length !== tracks.length) return;
-    const idToMedia = new Map(mediaTracks.map(m => [m.id, m]));
-    const reordered = tracks.map(t => idToMedia.get(t.id)).filter((m): m is MediaTrack => m !== undefined);
-    if (reordered.length === tracks.length) {
-      mediaTracksRef.current = reordered;
-      logQueue('useLayoutEffect reordered mediaTracksRef to match tracks (%d items)', tracks.length);
-    }
-  }, [tracks]);
 
   // Playback state from provider events (local — not shared via context)
   const [isPlaying, setIsPlaying] = useState(false);
@@ -612,7 +605,7 @@ export function usePlayerLogic() {
           tracksRef.current.length,
           mediaTracksRef.current.length,
         );
-        mediaTracksRef.current = [...mediaTracksRef.current, ...newMediaTracks];
+        mediaTracksRef.current = appendMediaTracks(mediaTracksRef.current, newMediaTracks);
         setOriginalTracks([...tracksRef.current, ...newTracks]);
         setTracks((prev: Track[]) => [...prev, ...newTracks]);
         logQueue(
@@ -669,11 +662,10 @@ export function usePlayerLogic() {
         return;
       }
 
-      // Remove from mediaTracksRef by ID
-      mediaTracksRef.current = mediaTracksRef.current.filter(m => m.id !== removedTrack.id);
+      mediaTracksRef.current = removeMediaTrackById(mediaTracksRef.current, removedTrack.id);
 
       // Remove from originalTracks by ID (order-independent for shuffle)
-      setOriginalTracks(originalTracks.filter(t => t.id !== removedTrack.id));
+      setOriginalTracks((prev) => prev.filter((t) => t.id !== removedTrack.id));
 
       // Adjust currentTrackIndex if removing before current
       if (index < currentTrackIndex) {
@@ -685,7 +677,7 @@ export function usePlayerLogic() {
 
       logQueue('handleRemoveFromQueue — done, new queueLen=%d', tracks.length - 1);
     },
-    [tracks, originalTracks, currentTrackIndex, handleBackToLibrary, setTracks, setOriginalTracks, setCurrentTrackIndex]
+    [tracks, currentTrackIndex, handleBackToLibrary, setTracks, setOriginalTracks, setCurrentTrackIndex]
   );
 
   // ── Reorder queue ─────────────────────────────────────────────────
@@ -700,28 +692,22 @@ export function usePlayerLogic() {
 
       const currentTrackId = tracks[currentTrackIndex]?.id;
 
-      // Array move helper
-      const moveItem = <T,>(arr: T[], from: number, to: number): T[] => {
-        const result = [...arr];
-        const [item] = result.splice(from, 1);
-        result.splice(to, 0, item);
-        return result;
-      };
-
-      const newTracks = moveItem(tracks, fromIndex, toIndex);
+      const newTracks = moveItemInArray(tracks, fromIndex, toIndex);
 
       // Update currentTrackIndex to follow the currently playing track
       const newCurrentIndex = currentTrackId
         ? newTracks.findIndex(t => t.id === currentTrackId)
         : currentTrackIndex;
 
-      // Reorder mediaTracksRef to match
-      const idToMedia = new Map(mediaTracksRef.current.map(m => [m.id, m]));
-      const reorderedMedia = newTracks
-        .map(t => idToMedia.get(t.id))
-        .filter((m): m is MediaTrack => m !== undefined);
-      if (reorderedMedia.length === newTracks.length) {
+      // Explicitly sync mediaTracksRef before setTracks triggers a re-render, so
+      // index-based playback reads the correct track even during the render cycle.
+      // useMediaTracksMirror will also re-sync afterward, but this ensures the ref
+      // is correct synchronously.
+      const reorderedMedia = reorderMediaTracksToMatchTracks(newTracks, mediaTracksRef.current);
+      if (reorderedMedia) {
         mediaTracksRef.current = reorderedMedia;
+      } else {
+        logQueue('handleReorderQueue — mediaTracksRef out of sync (len %d vs tracks len %d); layout effect will recover', mediaTracksRef.current.length, newTracks.length);
       }
 
       // Only update originalTracks if shuffle is off
