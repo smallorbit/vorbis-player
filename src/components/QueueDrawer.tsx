@@ -146,6 +146,8 @@ interface QueueDrawerProps {
   tracks: Track[];
   currentTrackIndex: number;
   onTrackSelect: (index: number) => void;
+  onRemoveTrack?: (index: number) => void;
+  onReorderTracks?: (fromIndex: number, toIndex: number) => void;
   showProviderIcons?: boolean;
   radioActive?: boolean;
   radioSeedDescription?: string | null;
@@ -194,6 +196,8 @@ const QueueDrawer = memo<QueueDrawerProps>(({
   tracks,
   currentTrackIndex,
   onTrackSelect,
+  onRemoveTrack,
+  onReorderTracks,
   showProviderIcons,
   radioActive,
   radioSeedDescription,
@@ -266,6 +270,8 @@ const QueueDrawer = memo<QueueDrawerProps>(({
                 onTrackSelect(index);
                 onClose();
               }}
+              onRemoveTrack={onRemoveTrack}
+              onReorderTracks={onReorderTracks}
               isOpen={isOpen}
               showProviderIcons={showProviderIcons}
             />

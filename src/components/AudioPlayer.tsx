@@ -81,6 +81,8 @@ const AudioPlayerComponent = () => {
     onAlbumPlay: handleAlbumPlay,
     onBackToLibrary: handlers.handleBackToLibrary,
     onStartRadio: handlers.handleStartRadio,
+    onRemoveFromQueue: handlers.handleRemoveFromQueue,
+    onReorderQueue: handlers.handleReorderQueue,
   }), [handlers, handleAlbumPlay]);
 
   const { chosenProviderId, activeDescriptor, connectedProviderIds, fallthroughNotification, dismissFallthroughNotification } = useProviderContext();

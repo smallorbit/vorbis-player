@@ -77,6 +77,7 @@ export function usePlayerLogic() {
   // In mixed queues these can differ, so playback controls should prefer the driving provider.
   const {
     tracks,
+    originalTracks,
     isLoading,
     error,
     shuffleEnabled,
@@ -605,6 +606,91 @@ export function usePlayerLogic() {
     setShowVisualEffects(false);
   }, [handlePause, stopRadio, setSelectedPlaylistId, setTracks, setCurrentTrackIndex, setShowQueue, setShowVisualEffects]);
 
+  // ── Remove from queue ──────────────────────────────────────────────
+
+  const handleRemoveFromQueue = useCallback(
+    (index: number) => {
+      if (index < 0 || index >= tracks.length) return;
+      // Cannot remove the currently playing track
+      if (index === currentTrackIndex) return;
+
+      const removedTrack = tracks[index];
+      console.log(`[Queue] handleRemoveFromQueue — removing index=${index}, track=${trkSummary(removedTrack)}, queueLen=${tracks.length}`);
+
+      // If this would empty the queue, go back to library
+      if (tracks.length <= 1) {
+        handleBackToLibrary();
+        return;
+      }
+
+      // Remove from mediaTracksRef by ID
+      mediaTracksRef.current = mediaTracksRef.current.filter(m => m.id !== removedTrack.id);
+
+      // Remove from originalTracks by ID (order-independent for shuffle)
+      setOriginalTracks(originalTracks.filter(t => t.id !== removedTrack.id));
+
+      // Adjust currentTrackIndex if removing before current
+      if (index < currentTrackIndex) {
+        setCurrentTrackIndex(prev => prev - 1);
+      }
+
+      // Remove from tracks by index
+      setTracks(prev => prev.filter((_, i) => i !== index));
+
+      console.log(`[Queue] handleRemoveFromQueue — done, new queueLen=${tracks.length - 1}`);
+    },
+    [tracks, originalTracks, currentTrackIndex, handleBackToLibrary, setTracks, setOriginalTracks, setCurrentTrackIndex]
+  );
+
+  // ── Reorder queue ─────────────────────────────────────────────────
+
+  const handleReorderQueue = useCallback(
+    (fromIndex: number, toIndex: number) => {
+      if (fromIndex === toIndex) return;
+      if (fromIndex < 0 || fromIndex >= tracks.length) return;
+      if (toIndex < 0 || toIndex >= tracks.length) return;
+
+      console.log(`[Queue] handleReorderQueue — from=${fromIndex} to=${toIndex}, queueLen=${tracks.length}`);
+
+      const currentTrackId = tracks[currentTrackIndex]?.id;
+
+      // Array move helper
+      const moveItem = <T,>(arr: T[], from: number, to: number): T[] => {
+        const result = [...arr];
+        const [item] = result.splice(from, 1);
+        result.splice(to, 0, item);
+        return result;
+      };
+
+      const newTracks = moveItem(tracks, fromIndex, toIndex);
+
+      // Update currentTrackIndex to follow the currently playing track
+      const newCurrentIndex = currentTrackId
+        ? newTracks.findIndex(t => t.id === currentTrackId)
+        : currentTrackIndex;
+
+      // Reorder mediaTracksRef to match
+      const idToMedia = new Map(mediaTracksRef.current.map(m => [m.id, m]));
+      const reorderedMedia = newTracks
+        .map(t => idToMedia.get(t.id))
+        .filter((m): m is MediaTrack => m !== undefined);
+      if (reorderedMedia.length === newTracks.length) {
+        mediaTracksRef.current = reorderedMedia;
+      }
+
+      // Only update originalTracks if shuffle is off
+      if (!shuffleEnabled) {
+        setOriginalTracks(newTracks);
+      }
+
+      setCurrentTrackIndex(newCurrentIndex >= 0 ? newCurrentIndex : 0);
+      setTracks(newTracks);
+
+      console.log(`[Queue] handleReorderQueue — done, currentIndex=${newCurrentIndex}`);
+    },
+    [tracks, currentTrackIndex, shuffleEnabled, setTracks, setOriginalTracks, setCurrentTrackIndex]
+  );
+
   /**
    * Start a radio session from the currently playing track.
    * Provider-agnostic: fetches catalog from the active provider, generates
@@ -717,6 +803,8 @@ export function usePlayerLogic() {
       handleCloseLibraryDrawer,
       handleBackToLibrary,
       handleStartRadio,
+      handleRemoveFromQueue,
+      handleReorderQueue,
     }),
     [
       handlePlaylistSelect,
@@ -730,6 +818,8 @@ export function usePlayerLogic() {
       handleCloseLibraryDrawer,
       handleBackToLibrary,
       handleStartRadio,
+      handleRemoveFromQueue,
+      handleReorderQueue,
     ]
   );
 

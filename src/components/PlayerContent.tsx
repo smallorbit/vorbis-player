@@ -50,6 +50,8 @@ interface PlaybackHandlers {
   onAlbumPlay: (albumId: string, albumName: string) => void;
   onBackToLibrary: () => void;
   onStartRadio?: () => void;
+  onRemoveFromQueue?: (index: number) => void;
+  onReorderQueue?: (fromIndex: number, toIndex: number) => void;
 }
 
 interface AlbumArtBounds {
@@ -857,6 +859,8 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
               tracks={tracks}
               currentTrackIndex={currentTrackIndex}
               onTrackSelect={handlers.onTrackSelect}
+              onRemoveTrack={handlers.onRemoveFromQueue}
+              onReorderTracks={handlers.onReorderQueue}
               showProviderIcons={showProviderIcons}
               radioActive={radioActive}
               radioSeedDescription={radioState?.seedDescription}
@@ -872,6 +876,8 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
               tracks={tracks}
               currentTrackIndex={currentTrackIndex}
               onTrackSelect={handlers.onTrackSelect}
+              onRemoveTrack={handlers.onRemoveFromQueue}
+              onReorderTracks={handlers.onReorderQueue}
               showProviderIcons={showProviderIcons}
               radioActive={radioActive}
               radioSeedDescription={radioState?.seedDescription}
