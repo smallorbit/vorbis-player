@@ -49,6 +49,29 @@ const PlaylistHeader = styled(CardHeader)`
   flex-shrink: 0;
 `;
 
+const PlaylistHeaderRow = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+`;
+
+const EditButton = styled.button`
+  background: none;
+  border: none;
+  color: ${({ theme }) => theme.colors.gray[400]};
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: ${({ theme }) => theme.borderRadius.sm};
+  font-size: ${({ theme }) => theme.fontSize.sm};
+  transition: color 0.15s ease, background 0.15s ease;
+  flex-shrink: 0;
+
+  &:hover {
+    color: ${({ theme }) => theme.colors.white};
+    background: ${({ theme }) => theme.colors.control.backgroundHover};
+  }
+`;
+
 const PlaylistDescription = styled(CardDescription)`
   font-size: ${({ theme }) => theme.fontSize.sm};
   color: ${({ theme }) => theme.colors.gray[400]};
@@ -251,6 +274,7 @@ interface PlaylistProps {
   onReorderTracks?: (fromIndex: number, toIndex: number) => void;
   isOpen?: boolean;
   showProviderIcons?: boolean;
+  canEdit?: boolean;
 }
 
 interface PlaylistItemProps {
@@ -262,6 +286,7 @@ interface PlaylistItemProps {
   itemRef?: React.RefObject<HTMLDivElement>;
   showProviderIcon?: boolean;
   isDragActive?: boolean;
+  isEditMode?: boolean;
 }
 
 // Desktop playlist item with sortable + hover remove
@@ -274,6 +299,7 @@ const SortablePlaylistItem = memo<PlaylistItemProps>(({
   itemRef,
   showProviderIcon,
   isDragActive,
+  isEditMode,
 }) => {
   const {
     attributes,
@@ -310,7 +336,7 @@ const SortablePlaylistItem = memo<PlaylistItemProps>(({
         onClick={handleClick}
         isSelected={isSelected}
       >
-        {onRemove && (
+        {isEditMode && onRemove && (
           <DragHandle {...attributes} {...listeners}>
             <GripIcon />
           </DragHandle>
@@ -354,7 +380,7 @@ const SortablePlaylistItem = memo<PlaylistItemProps>(({
           {track.duration_ms ? `${Math.floor(track.duration_ms / 60000)}:${Math.floor((track.duration_ms % 60000) / 1000).toString().padStart(2, '0')}` : '--:--'}
         </Duration>
 
-        {onRemove && !isSelected && (
+        {isEditMode && onRemove && !isSelected && (
           <RemoveButton onClick={handleRemoveClick} aria-label={`Remove ${track.name}`}>
             <RemoveIcon />
           </RemoveButton>
@@ -373,8 +399,9 @@ const SwipeablePlaylistItem = memo<PlaylistItemProps>(({
   onRemove,
   itemRef,
   showProviderIcon,
+  isEditMode,
 }) => {
-  const canRemove = onRemove && !isSelected;
+  const canRemove = isEditMode && onRemove && !isSelected;
 
   const handleRemove = useCallback(() => {
     onRemove?.(index);
@@ -515,10 +542,12 @@ const Playlist = memo<PlaylistProps>(({
   onReorderTracks,
   isOpen = false,
   showProviderIcons = false,
+  canEdit = false,
 }) => {
   const currentTrackRef = useRef<HTMLDivElement>(null);
   const isTouch = useIsTouchDevice();
   const [isDragActive, setIsDragActive] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
 
   // Auto-scroll to current track when playlist opens
   useEffect(() => {
@@ -534,6 +563,11 @@ const Playlist = memo<PlaylistProps>(({
       return () => clearTimeout(timeoutId);
     }
   }, [isOpen, currentTrackIndex]);
+
+  // Reset edit mode when drawer closes
+  useEffect(() => {
+    if (!isOpen) setIsEditMode(false);
+  }, [isOpen]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -564,13 +598,22 @@ const Playlist = memo<PlaylistProps>(({
 
   const canManageQueue = !!(onRemoveTrack || onReorderTracks);
 
+  const editButton = canEdit && canManageQueue ? (
+    <EditButton onClick={() => setIsEditMode(m => !m)}>
+      {isEditMode ? 'Done' : 'Edit'}
+    </EditButton>
+  ) : null;
+
   // On touch devices without reorder support, use swipeable items
   if (isTouch && !onReorderTracks) {
     return (
       <PlaylistContainer>
         <PlaylistCard>
           <PlaylistHeader>
-            <PlaylistDescription>{tracks.length} tracks</PlaylistDescription>
+            <PlaylistHeaderRow>
+              <PlaylistDescription>{tracks.length} tracks</PlaylistDescription>
+              {editButton}
+            </PlaylistHeaderRow>
           </PlaylistHeader>
           <PlaylistContentArea>
             <PlaylistScrollArea>
@@ -585,6 +628,7 @@ const Playlist = memo<PlaylistProps>(({
                     onRemove={onRemoveTrack}
                     itemRef={index === currentTrackIndex ? currentTrackRef : undefined}
                     showProviderIcon={showProviderIcons}
+                    isEditMode={isEditMode}
                   />
                 ))}
               </PlaylistItems>
@@ -601,7 +645,10 @@ const Playlist = memo<PlaylistProps>(({
       <PlaylistContainer>
         <PlaylistCard>
           <PlaylistHeader>
-            <PlaylistDescription>{tracks.length} tracks</PlaylistDescription>
+            <PlaylistHeaderRow>
+              <PlaylistDescription>{tracks.length} tracks</PlaylistDescription>
+              {editButton}
+            </PlaylistHeaderRow>
           </PlaylistHeader>
           <PlaylistContentArea>
             <PlaylistScrollArea>
@@ -624,6 +671,7 @@ const Playlist = memo<PlaylistProps>(({
                         itemRef={index === currentTrackIndex ? currentTrackRef : undefined}
                         showProviderIcon={showProviderIcons}
                         isDragActive={isDragActive}
+                        isEditMode={isEditMode}
                       />
                     ))}
                   </PlaylistItems>

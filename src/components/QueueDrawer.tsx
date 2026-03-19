@@ -274,6 +274,7 @@ const QueueDrawer = memo<QueueDrawerProps>(({
               onReorderTracks={onReorderTracks}
               isOpen={isOpen}
               showProviderIcons={showProviderIcons}
+              canEdit
             />
           </Suspense>
         </QueueContent>
