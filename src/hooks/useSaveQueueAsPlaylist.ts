@@ -42,27 +42,26 @@ const MAX_CONCURRENT_RESOLVE = 3;
  */
 async function resolveTrackUris(tracks: Track[]): Promise<{ uris: string[]; skipped: number }> {
   const resolveEnabled = spotifyQueueSync.isResolveEnabled();
-  const uris: string[] = [];
-  let skipped = 0;
 
-  // Split into Spotify and non-Spotify
-  const toResolve: Track[] = [];
-  for (const track of tracks) {
+  // Build a slot per track to preserve original queue order
+  const slots: (string | null)[] = new Array(tracks.length).fill(null);
+  const toResolve: { index: number; track: Track }[] = [];
+
+  for (let i = 0; i < tracks.length; i++) {
+    const track = tracks[i];
     if (track.provider === 'spotify' || !track.provider) {
-      if (track.uri) uris.push(track.uri);
-      else skipped++;
+      slots[i] = track.uri ?? null;
     } else if (resolveEnabled) {
-      toResolve.push(track);
-    } else {
-      skipped++;
+      toResolve.push({ index: i, track });
     }
+    // else: slot stays null → skipped
   }
 
-  // Resolve non-Spotify tracks
+  // Resolve non-Spotify tracks in batches, writing results back into slots
   for (let i = 0; i < toResolve.length; i += MAX_CONCURRENT_RESOLVE) {
     const chunk = toResolve.slice(i, i + MAX_CONCURRENT_RESOLVE);
     const results = await Promise.all(
-      chunk.map(async (track) => {
+      chunk.map(async ({ track }) => {
         // Check queue sync cache first
         const cached = spotifyQueueSync.getResolvedUri(track.id);
         if (cached) return cached;
@@ -78,10 +77,17 @@ async function resolveTrackUris(tracks: Track[]): Promise<{ uris: string[]; skip
       }),
     );
 
-    for (const uri of results) {
-      if (uri) uris.push(uri);
-      else skipped++;
+    for (let j = 0; j < chunk.length; j++) {
+      slots[chunk[j].index] = results[j];
     }
+  }
+
+  // Collect results in original order
+  const uris: string[] = [];
+  let skipped = 0;
+  for (const uri of slots) {
+    if (uri) uris.push(uri);
+    else skipped++;
   }
 
   return { uris, skipped };
