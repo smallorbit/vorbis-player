@@ -141,6 +141,22 @@ Folders containing audio files become albums; parent folder = artist. A syntheti
 
 **Spotify SDK loading**: The Spotify Web Playback SDK is loaded lazily by `SpotifyPlayerService.loadSDK()` — no global script tag in `index.html`. The SDK is only injected when the Spotify provider activates.
 
+### Debug logging (optional)
+
+Detailed queue / Spotify Web API / radio / Dropbox sync tracing uses the [`debug`](https://www.npmjs.com/package/debug) package via `src/lib/debugLog.ts`. By default these messages are silent.
+
+In the browser devtools console:
+
+```js
+localStorage.debug = 'vorbis:*'; location.reload()
+```
+
+Subset examples: `vorbis:queue`, `vorbis:spotify`, `vorbis:radio`, `vorbis:dropbox-sync`, `vorbis:app`, `vorbis:sw`. Disable: `localStorage.removeItem('debug'); location.reload()`.
+
+In Node (e.g. one-off scripts): `DEBUG=vorbis:* node …`.
+
+**Still always printed:** `console.warn` / `console.error` for failures, rate limits, and missing config. **Separate:** in-app profiling (`?profile=true` or `vorbis-player-profiling` + Ctrl+Shift+P) still records metrics and may emit `console.debug` from context hooks when enabled.
+
 ### Responsive Sizing
 
 Breakpoints and exact values are in `src/styles/theme.ts`. Sizing calculations are in `src/utils/sizingUtils.ts` and `src/hooks/usePlayerSizing.ts`.

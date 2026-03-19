@@ -6,6 +6,7 @@ import type { Track } from '../services/spotify';
 import type { ProviderDescriptor } from '@/types/providers';
 import type { MediaTrack, ProviderId } from '@/types/domain';
 import { providerRegistry } from '@/providers/registry';
+import { logQueue } from '@/lib/debugLog';
 
 interface UseSpotifyPlaybackProps {
   tracks: Track[];
@@ -150,7 +151,15 @@ export const useSpotifyPlayback = ({
     const mediaTracks = mediaTracksRef?.current ?? [];
     const mediaTrack = mediaTracks[index];
     const trackProvider = resolveTrackProvider(mediaTrack);
-    console.log(`[Queue] playTrack(${index}) — provider=${trackProvider}, track=${mediaTrack ? `"${mediaTrack.name}" (${mediaTrack.id.slice(0, 8)})` : 'NO_MEDIA_TRACK'}, mediaLen=${mediaTracks.length}, tracksLen=${tracksRef.current.length}, skipOnError=${skipOnError}`);
+    logQueue(
+      'playTrack(%d) — provider=%s, track=%s, mediaLen=%d, tracksLen=%d, skipOnError=%s',
+      index,
+      trackProvider,
+      mediaTrack ? `"${mediaTrack.name}" (${mediaTrack.id.slice(0, 8)})` : 'NO_MEDIA_TRACK',
+      mediaTracks.length,
+      tracksRef.current.length,
+      String(skipOnError),
+    );
     if (!mediaTrack && mediaTracks.length > 0) {
       console.warn(`[Queue] playTrack(${index}) — index out of bounds! mediaTracksRef has ${mediaTracks.length} items`);
     }

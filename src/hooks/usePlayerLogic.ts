@@ -19,6 +19,7 @@ import { isAlbumId, extractAlbumId, LIKED_SONGS_ID } from '@/constants/playlist'
 import { shuffleArray } from '@/utils/shuffleArray';
 import { providerRegistry } from '@/providers/registry';
 import { resolveViaSpotify } from '@/services/spotifyResolver';
+import { logQueue, logRadio } from '@/lib/debugLog';
 
 /** Convert MediaTrack to Track for UI; Dropbox tracks use empty uri (playback via ref). */
 export function mediaTrackToTrack(m: MediaTrack): Track {
@@ -62,11 +63,16 @@ function trkSummary(t: { id: string; name: string; provider?: string } | null | 
 }
 
 function queueSnapshot(label: string, tracks: { id: string; name: string; provider?: string }[], mediaLen: number, idx: number) {
-  console.log(
-    `[Queue] ${label} — ${tracks.length} tracks, mediaTracksRef=${mediaLen}, index=${idx}, current=${trkSummary(tracks[idx])}`,
+  logQueue(
+    '%s — %d tracks, mediaTracksRef=%d, index=%d, current=%s',
+    label,
+    tracks.length,
+    mediaLen,
+    idx,
+    trkSummary(tracks[idx]),
   );
   if (tracks.length <= 30) {
-    console.log('[Queue]   trackIds:', tracks.map((t, i) => `${i}:${t.id.slice(0, 8)}`).join(' '));
+    logQueue('  trackIds: %s', tracks.map((t, i) => `${i}:${t.id.slice(0, 8)}`).join(' '));
   }
 }
 
@@ -131,7 +137,7 @@ export function usePlayerLogic() {
     const reordered = tracks.map(t => idToMedia.get(t.id)).filter((m): m is MediaTrack => m !== undefined);
     if (reordered.length === tracks.length) {
       mediaTracksRef.current = reordered;
-      console.log(`[Queue] useLayoutEffect reordered mediaTracksRef to match tracks (${tracks.length} items)`);
+      logQueue('useLayoutEffect reordered mediaTracksRef to match tracks (%d items)', tracks.length);
     }
   }, [tracks]);
 
@@ -176,7 +182,7 @@ export function usePlayerLogic() {
 
   const handlePlaylistSelect = useCallback(
     async (playlistId: string, _playlistName?: string, provider?: import('@/types/domain').ProviderId) => {
-      console.log(`[Queue] handlePlaylistSelect called — playlistId=${playlistId}, provider=${provider ?? 'active'}`);
+      logQueue('handlePlaylistSelect called — playlistId=%s provider=%s', playlistId, provider ?? 'active');
 
       // Unified liked songs: fetch from all connected providers, merge by timestamp
       if (playlistId === LIKED_SONGS_ID && !provider && isUnifiedLikedActive) {
@@ -318,13 +324,13 @@ export function usePlayerLogic() {
       }
       drivingProviderRef.current = 'spotify';
       mediaTracksRef.current = [];
-      console.log(`[Queue] Spotify path — delegating to usePlaylistManager for ${playlistId}`);
+      logQueue('Spotify path — delegating to usePlaylistManager for %s', playlistId);
       const spotifyTracks = await spotifyHandlePlaylistSelect(playlistId);
       if (spotifyTracks.length > 0) {
         mediaTracksRef.current = spotifyTracks.map(trackToMediaTrack);
         queueSnapshot('Spotify playlist loaded', spotifyTracks, mediaTracksRef.current.length, 0);
       } else {
-        console.log('[Queue] Spotify playlist returned 0 tracks');
+        logQueue('Spotify playlist returned 0 tracks');
       }
     },
     [
@@ -389,12 +395,18 @@ export function usePlayerLogic() {
           const trackIndex = currentTracks.findIndex((t: Track) => t.id === trackId);
           if (expectedTrackIdRef.current !== null) {
             if (trackId === expectedTrackIdRef.current) {
-              console.log(`[Queue] Provider state — expected track arrived: ${trackId.slice(0, 8)}`);
+              logQueue('Provider state — expected track arrived: %s', trackId.slice(0, 8));
               expectedTrackIdRef.current = null;
             }
             // while waiting for the expected track, ignore provider index updates
           } else if (trackIndex !== -1 && trackIndex !== currentTrackIndexRef.current) {
-            console.log(`[Queue] Provider state — index sync: ${currentTrackIndexRef.current} → ${trackIndex} (trackId=${trackId.slice(0, 8)}, queueLen=${currentTracks.length})`);
+            logQueue(
+              'Provider state — index sync: %d → %d (trackId=%s, queueLen=%d)',
+              currentTrackIndexRef.current,
+              trackIndex,
+              trackId.slice(0, 8),
+              currentTracks.length,
+            );
             setCurrentTrackIndex(trackIndex);
           }
 
@@ -466,7 +478,14 @@ export function usePlayerLogic() {
   const handleNext = useCallback(() => {
     if (tracks.length === 0) return;
     const nextIndex = (currentTrackIndexRef.current + 1) % tracks.length;
-    console.log(`[Queue] handleNext — ${currentTrackIndexRef.current} → ${nextIndex}, target=${trkSummary(tracksRef.current[nextIndex])}, queueLen=${tracks.length}, mediaLen=${mediaTracksRef.current.length}`);
+    logQueue(
+      'handleNext — %d → %d, target=%s, queueLen=%d, mediaLen=%d',
+      currentTrackIndexRef.current,
+      nextIndex,
+      trkSummary(tracksRef.current[nextIndex]),
+      tracks.length,
+      mediaTracksRef.current.length,
+    );
     expectedTrackIdRef.current = tracksRef.current[nextIndex]?.id ?? null;
     setCurrentTrackIndex(nextIndex);
     playTrack(nextIndex, true);
@@ -475,7 +494,14 @@ export function usePlayerLogic() {
   const handlePrevious = useCallback(() => {
     if (tracks.length === 0) return;
     const newIndex = currentTrackIndexRef.current === 0 ? tracks.length - 1 : currentTrackIndexRef.current - 1;
-    console.log(`[Queue] handlePrevious — ${currentTrackIndexRef.current} → ${newIndex}, target=${trkSummary(tracksRef.current[newIndex])}, queueLen=${tracks.length}, mediaLen=${mediaTracksRef.current.length}`);
+    logQueue(
+      'handlePrevious — %d → %d, target=%s, queueLen=%d, mediaLen=%d',
+      currentTrackIndexRef.current,
+      newIndex,
+      trkSummary(tracksRef.current[newIndex]),
+      tracks.length,
+      mediaTracksRef.current.length,
+    );
     expectedTrackIdRef.current = tracksRef.current[newIndex]?.id ?? null;
     setCurrentTrackIndex(newIndex);
     playTrack(newIndex, true);
@@ -483,7 +509,12 @@ export function usePlayerLogic() {
 
   const handlePlay = useCallback(async () => {
     const drivingId = getDrivingProviderId();
-    console.log(`[Queue] handlePlay — drivingProvider=${drivingId}, index=${currentTrackIndexRef.current}, track=${trkSummary(tracksRef.current[currentTrackIndexRef.current])}`);
+    logQueue(
+      'handlePlay — drivingProvider=%s, index=%d, track=%s',
+      drivingId,
+      currentTrackIndexRef.current,
+      trkSummary(tracksRef.current[currentTrackIndexRef.current]),
+    );
     try {
       const drivingDescriptor = getDrivingProviderDescriptor();
       if (!drivingDescriptor) return;
@@ -495,7 +526,7 @@ export function usePlayerLogic() {
 
   const handlePause = useCallback(() => {
     const drivingId = getDrivingProviderId();
-    console.log(`[Queue] handlePause — drivingProvider=${drivingId}, index=${currentTrackIndexRef.current}`);
+    logQueue('handlePause — drivingProvider=%s, index=%d', drivingId, currentTrackIndexRef.current);
     const drivingDescriptor = getDrivingProviderDescriptor();
     drivingDescriptor?.playback.pause();
   }, [getDrivingProviderId, getDrivingProviderDescriptor]);
@@ -520,11 +551,17 @@ export function usePlayerLogic() {
   const handleAddToQueue = useCallback(
     async (playlistId: string, _playlistName?: string, provider?: import('@/types/domain').ProviderId) => {
       const isQueueEmpty = tracks.length === 0;
-      console.log(`[Queue] handleAddToQueue — playlistId=${playlistId}, provider=${provider ?? 'active'}, currentQueueLen=${tracks.length}, mediaLen=${mediaTracksRef.current.length}`);
+      logQueue(
+        'handleAddToQueue — playlistId=%s, provider=%s, currentQueueLen=%d, mediaLen=%d',
+        playlistId,
+        provider ?? 'active',
+        tracks.length,
+        mediaTracksRef.current.length,
+      );
 
       // If nothing is playing, just load normally
       if (isQueueEmpty) {
-        console.log('[Queue] handleAddToQueue — queue empty, delegating to handlePlaylistSelect');
+        logQueue('handleAddToQueue — queue empty, delegating to handlePlaylistSelect');
         return handlePlaylistSelect(playlistId, _playlistName, provider);
       }
 
@@ -569,11 +606,20 @@ export function usePlayerLogic() {
         const newTracks = newMediaTracks.map(mediaTrackToTrack);
 
         // Append to existing queue
-        console.log(`[Queue] handleAddToQueue — appending ${newMediaTracks.length} tracks. Before: tracks=${tracksRef.current.length}, mediaRef=${mediaTracksRef.current.length}`);
+        logQueue(
+          'handleAddToQueue — appending %d tracks. Before: tracks=%d, mediaRef=%d',
+          newMediaTracks.length,
+          tracksRef.current.length,
+          mediaTracksRef.current.length,
+        );
         mediaTracksRef.current = [...mediaTracksRef.current, ...newMediaTracks];
         setOriginalTracks([...tracksRef.current, ...newTracks]);
         setTracks((prev: Track[]) => [...prev, ...newTracks]);
-        console.log(`[Queue] handleAddToQueue — after append: mediaRef=${mediaTracksRef.current.length}, newTracks added: ${newTracks.map(t => trkSummary(t)).join(', ')}`);
+        logQueue(
+          'handleAddToQueue — after append: mediaRef=%d, newTracks added: %s',
+          mediaTracksRef.current.length,
+          newTracks.map(t => trkSummary(t)).join(', '),
+        );
       } catch (err) {
         console.error('[Queue] Failed to add to queue:', err);
       }
@@ -595,7 +641,7 @@ export function usePlayerLogic() {
   }, [stopRadioBase]);
 
   const handleBackToLibrary = useCallback(() => {
-    console.log('[Queue] handleBackToLibrary — clearing all queue state');
+    logQueue('handleBackToLibrary — clearing all queue state');
     handlePause();
     stopRadio();
     setSelectedPlaylistId(null);
@@ -615,7 +661,7 @@ export function usePlayerLogic() {
       if (index === currentTrackIndex) return;
 
       const removedTrack = tracks[index];
-      console.log(`[Queue] handleRemoveFromQueue — removing index=${index}, track=${trkSummary(removedTrack)}, queueLen=${tracks.length}`);
+      logQueue('handleRemoveFromQueue — removing index=%d, track=%s, queueLen=%d', index, trkSummary(removedTrack), tracks.length);
 
       // If this would empty the queue, go back to library
       if (tracks.length <= 1) {
@@ -637,7 +683,7 @@ export function usePlayerLogic() {
       // Remove from tracks by index
       setTracks(prev => prev.filter((_, i) => i !== index));
 
-      console.log(`[Queue] handleRemoveFromQueue — done, new queueLen=${tracks.length - 1}`);
+      logQueue('handleRemoveFromQueue — done, new queueLen=%d', tracks.length - 1);
     },
     [tracks, originalTracks, currentTrackIndex, handleBackToLibrary, setTracks, setOriginalTracks, setCurrentTrackIndex]
   );
@@ -650,7 +696,7 @@ export function usePlayerLogic() {
       if (fromIndex < 0 || fromIndex >= tracks.length) return;
       if (toIndex < 0 || toIndex >= tracks.length) return;
 
-      console.log(`[Queue] handleReorderQueue — from=${fromIndex} to=${toIndex}, queueLen=${tracks.length}`);
+      logQueue('handleReorderQueue — from=%d to=%d, queueLen=%d', fromIndex, toIndex, tracks.length);
 
       const currentTrackId = tracks[currentTrackIndex]?.id;
 
@@ -686,7 +732,7 @@ export function usePlayerLogic() {
       setCurrentTrackIndex(newCurrentIndex >= 0 ? newCurrentIndex : 0);
       setTracks(newTracks);
 
-      console.log(`[Queue] handleReorderQueue — done, currentIndex=${newCurrentIndex}`);
+      logQueue('handleReorderQueue — done, currentIndex=%d', newCurrentIndex);
     },
     [tracks, currentTrackIndex, shuffleEnabled, setTracks, setOriginalTracks, setCurrentTrackIndex]
   );
@@ -755,7 +801,11 @@ export function usePlayerLogic() {
             (t) => !existingKeys.has(`${t.artists.toLowerCase()}||${t.name.toLowerCase()}`),
           );
           generatedTracks = [...generatedTracks, ...newSpotifyTracks];
-          console.debug('[Radio] Resolved Spotify tracks:', newSpotifyTracks.length, 'of', result.unmatchedSuggestions.length, 'unmatched suggestions');
+          logRadio(
+            'resolved Spotify tracks: %d of %d unmatched suggestions',
+            newSpotifyTracks.length,
+            result.unmatchedSuggestions.length,
+          );
         } catch (err) {
           console.warn('[Radio] Failed to resolve Spotify tracks:', err);
         }
