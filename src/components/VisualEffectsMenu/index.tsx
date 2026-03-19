@@ -1,4 +1,4 @@
-import React, { memo, useCallback, useState, useMemo } from 'react';
+import React, { memo, useCallback, useState, useMemo, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 
 import { theme } from '../../styles/theme';
@@ -210,12 +210,28 @@ CollapsibleSection.displayName = 'CollapsibleSection';
 /** Last.fm Scrobbling — connect/disconnect + status. */
 const LastFmScrobblingSection = memo(() => {
   const [isConnected, setIsConnected] = useState(isScrobblingAuthenticated);
+  const messageHandlerRef = useRef<((event: MessageEvent) => void) | null>(null);
+
+  // Remove any pending message listener on unmount
+  useEffect(() => {
+    return () => {
+      if (messageHandlerRef.current) {
+        window.removeEventListener('message', messageHandlerRef.current);
+        messageHandlerRef.current = null;
+      }
+    };
+  }, []);
 
   if (!isScrobblingConfigured()) return null;
 
   const username = getLastFmUsername();
 
   const handleConnect = () => {
+    // Remove any previous listener before adding a new one (repeated clicks)
+    if (messageHandlerRef.current) {
+      window.removeEventListener('message', messageHandlerRef.current);
+    }
+
     beginLastFmAuth({ popup: true });
 
     // Listen for popup auth completion
@@ -224,11 +240,16 @@ const LastFmScrobblingSection = memo(() => {
       if (event.data?.type === 'vorbis-lastfm-auth-complete') {
         setIsConnected(true);
         window.removeEventListener('message', handler);
+        messageHandlerRef.current = null;
       }
     };
+    messageHandlerRef.current = handler;
     window.addEventListener('message', handler);
     // Cleanup after 5 minutes in case popup is closed without completing
-    setTimeout(() => window.removeEventListener('message', handler), 5 * 60 * 1000);
+    setTimeout(() => {
+      window.removeEventListener('message', handler);
+      if (messageHandlerRef.current === handler) messageHandlerRef.current = null;
+    }, 5 * 60 * 1000);
   };
 
   const handleDisconnect = () => {

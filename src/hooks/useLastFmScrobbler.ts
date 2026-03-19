@@ -59,6 +59,7 @@ export function useLastFmScrobbler({
     lastTickRef.current = 0;
     lastPositionRef.current = 0;
     scrobbledTrackIdRef.current = null;
+    nowPlayingTrackIdRef.current = null;
   }, [trackId]);
 
   // Send "now playing" when a new track starts playing

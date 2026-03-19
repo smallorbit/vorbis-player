@@ -63,7 +63,13 @@ async function lastfmPost(params: Record<string, string>): Promise<unknown> {
     throw new Error(`Last.fm API error: ${response.status} ${text}`);
   }
 
-  return response.json();
+  // Last.fm returns HTTP 200 for API-level errors (e.g. invalid session key,
+  // rate limiting). Check the JSON body before returning.
+  const data = await response.json();
+  if (data && typeof data === 'object' && 'error' in data) {
+    throw new Error(`Last.fm error ${data.error}: ${data.message}`);
+  }
+  return data;
 }
 
 // ── Auth ────────────────────────────────────────────────────────────
