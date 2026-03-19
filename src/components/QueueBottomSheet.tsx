@@ -212,6 +212,7 @@ const QueueBottomSheet = memo<QueueBottomSheetProps>(function QueueBottomSheet({
                 onReorderTracks={onReorderTracks}
                 isOpen={isOpen}
                 showProviderIcons={showProviderIcons}
+                canEdit
               />
             </Suspense>
           )}
