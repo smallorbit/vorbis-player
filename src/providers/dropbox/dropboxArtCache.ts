@@ -8,6 +8,7 @@ const DB_NAME = 'vorbis-dropbox-art';
 const DB_VERSION = 6;
 const STORE = 'art';
 const ART_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+const ALBUM_ART_KEY_PREFIX = 'album:';
 
 interface CachedArt {
   path: string;
@@ -92,6 +93,20 @@ export async function putArt(path: string, dataUrl: string): Promise<void> {
       resolve();
     }
   });
+}
+
+function albumArtCacheKey(albumPath: string): string {
+  return `${ALBUM_ART_KEY_PREFIX}${albumPath}`;
+}
+
+export async function getAlbumArt(albumPath: string): Promise<string | null> {
+  if (!albumPath) return null;
+  return getArt(albumArtCacheKey(albumPath));
+}
+
+export async function putAlbumArt(albumPath: string, dataUrl: string): Promise<void> {
+  if (!albumPath || !dataUrl) return;
+  await putArt(albumArtCacheKey(albumPath), dataUrl);
 }
 
 export async function clearArt(): Promise<void> {

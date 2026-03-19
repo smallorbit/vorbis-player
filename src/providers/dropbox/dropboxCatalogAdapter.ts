@@ -17,7 +17,15 @@
 import type { CatalogProvider } from '@/types/providers';
 import type { ProviderId, MediaTrack, MediaCollection, CollectionRef } from '@/types/domain';
 import { DropboxAuthAdapter } from './dropboxAuthAdapter';
-import { getArt, putArt, clearArt, getDurationsMap, getTagsMap } from './dropboxArtCache';
+import {
+  getArt,
+  putArt,
+  clearArt,
+  getDurationsMap,
+  getTagsMap,
+  getAlbumArt,
+  putAlbumArt,
+} from './dropboxArtCache';
 import { bytesToDataUrl } from '@/utils/bytesToDataUrl';
 import {
   getLikedTracks,
@@ -35,7 +43,6 @@ import { getLikesSync } from './dropboxLikesSync';
 const AUDIO_EXTENSIONS = ['.mp3', '.flac', '.ogg', '.m4a', '.wav', '.aac', '.wma', '.opus'];
 const IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.webp'];
 const ALBUM_ART_NAMES = ['cover', 'album', 'folder', 'front', 'album cover', 'album_cover', 'artwork'];
-const THUMBNAIL_ART_NAMES = ['thumb', 'thumbnail'];
 
 interface DropboxFileEntry {
   '.tag': 'file' | 'folder';
@@ -77,11 +84,6 @@ function findArtByNames(entries: DropboxFileEntry[], names: string[]): string | 
 function pickAlbumArtPath(entries: DropboxFileEntry[]): string | null {
   if (entries.length === 0) return null;
   return findArtByNames(entries, ALBUM_ART_NAMES) ?? entries[0].path_lower;
-}
-
-function pickThumbnailArtPath(entries: DropboxFileEntry[]): string | null {
-  if (entries.length === 0) return null;
-  return findArtByNames(entries, THUMBNAIL_ART_NAMES) ?? pickAlbumArtPath(entries);
 }
 
 function parentDir(path: string): string {
@@ -161,6 +163,49 @@ export class DropboxCatalogAdapter implements CatalogProvider {
   /** Clears all cached album art, forcing a fresh download on next library load. */
   async clearArtCache(): Promise<void> {
     await clearArt();
+  }
+
+  async getAlbumArtForAlbum(albumPath: string): Promise<string | null> {
+    return getAlbumArt(albumPath);
+  }
+
+  async cacheAlbumArtForAlbum(albumPath: string, dataUrl: string): Promise<void> {
+    await putAlbumArt(albumPath, dataUrl);
+  }
+
+  /**
+   * Resolve artwork once per album directory, with fallback to album-level cached art.
+   * This keeps track/collection artwork consistent and avoids redundant network fetches.
+   */
+  private async resolveAlbumArtByDir(
+    imagesByDir: Map<string, DropboxFileEntry[]>,
+    albumDirs: Iterable<string>,
+  ): Promise<Map<string, string>> {
+    const dirToImageUrl = new Map<string, string>();
+    const uniqueDirs = Array.from(new Set(albumDirs));
+
+    await Promise.all(
+      uniqueDirs.map(async (dir) => {
+        const entries = imagesByDir.get(dir) ?? [];
+        const imagePath = pickAlbumArtPath(entries);
+        if (imagePath) {
+          const imageUrl = await this.fetchArtDataUrl(imagePath);
+          if (imageUrl) {
+            dirToImageUrl.set(dir, imageUrl);
+            // Keep an album-keyed alias so tracks from this album can hydrate instantly.
+            await putAlbumArt(dir, imageUrl);
+            return;
+          }
+        }
+
+        const cachedAlbumArt = await getAlbumArt(dir);
+        if (cachedAlbumArt) {
+          dirToImageUrl.set(dir, cachedAlbumArt);
+        }
+      }),
+    );
+
+    return dirToImageUrl;
   }
 
   private async dropboxApi<T>(
@@ -255,21 +300,7 @@ export class DropboxCatalogAdapter implements CatalogProvider {
         processBatch(result.entries);
       }
 
-      // Fetch and cache art data URLs for each album directory in parallel
-      const dirImagePaths = new Map<string, string>();
-      for (const dirPath of audioCount.keys()) {
-        const entries = imagesByDir.get(dirPath) ?? [];
-        const path = pickThumbnailArtPath(entries);
-        if (path) dirImagePaths.set(dirPath, path);
-      }
-
-      const dirToImageUrl = new Map<string, string>();
-      await Promise.all(
-        Array.from(dirImagePaths.entries()).map(async ([dir, path]) => {
-          const url = await this.fetchArtDataUrl(path);
-          if (url) dirToImageUrl.set(dir, url);
-        }),
-      );
+      const dirToImageUrl = await this.resolveAlbumArtByDir(imagesByDir, audioCount.keys());
 
       let totalTracks = 0;
       const albums: MediaCollection[] = [];
@@ -350,19 +381,8 @@ export class DropboxCatalogAdapter implements CatalogProvider {
         processBatch(result.entries);
       }
 
-      const dirToImagePath = new Map<string, string>();
-      for (const [dir, entries] of imagesByDir) {
-        const path = pickAlbumArtPath(entries);
-        if (path) dirToImagePath.set(dir, path);
-      }
-
-      const dirToImageUrl = new Map<string, string>();
-      await Promise.all(
-        Array.from(dirToImagePath.entries()).map(async ([dir, path]) => {
-          const url = await this.fetchArtDataUrl(path);
-          if (url) dirToImageUrl.set(dir, url);
-        }),
-      );
+      const albumDirs = audioEntries.map((entry) => parentDir(entry.path_lower));
+      const dirToImageUrl = await this.resolveAlbumArtByDir(imagesByDir, albumDirs);
 
       const tracks: MediaTrack[] = audioEntries.map((entry) => {
         const dir = parentDir(entry.path_lower);
