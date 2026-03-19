@@ -192,6 +192,21 @@ function idbPutAll<T>(storeName: string, items: T[]): Promise<void> {
   });
 }
 
+/** Atomically replace all records in a store: clear + putAll in a single transaction. */
+function idbReplaceAll<T>(storeName: string, items: T[]): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (!db) { reject(new Error('DB not initialized')); return; }
+    const tx = db.transaction(storeName, 'readwrite');
+    const store = tx.objectStore(storeName);
+    store.clear();
+    for (const item of items) {
+      store.put(item);
+    }
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
 // =============================================================================
 // Playlist Operations
 // =============================================================================
@@ -216,10 +231,8 @@ export async function putAllPlaylists(playlists: CachedPlaylistInfo[]): Promise<
     return;
   }
   try {
-    await idbClear(STORE_PLAYLISTS);
-    await idbPutAll(STORE_PLAYLISTS, playlists);
+    await idbReplaceAll(STORE_PLAYLISTS, playlists);
   } catch {
-    // Fall through to memory
     for (const p of playlists) fallbackStores.playlists.set(p.id, p);
   }
 }
@@ -274,8 +287,7 @@ export async function putAllAlbums(albums: AlbumInfo[]): Promise<void> {
     return;
   }
   try {
-    await idbClear(STORE_ALBUMS);
-    await idbPutAll(STORE_ALBUMS, albums);
+    await idbReplaceAll(STORE_ALBUMS, albums);
   } catch {
     for (const a of albums) fallbackStores.albums.set(a.id, a);
   }

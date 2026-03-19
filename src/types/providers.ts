@@ -27,7 +27,7 @@ export interface AuthProvider {
 export interface CatalogProvider {
   readonly providerId: ProviderId;
   /** List collections (playlists, albums, folders) for library browser. */
-  listCollections(signal?: AbortSignal): Promise<MediaCollection[]>;
+  listCollections(signal?: AbortSignal, options?: { forceRefresh?: boolean }): Promise<MediaCollection[]>;
   /** List tracks for a collection. */
   listTracks(collectionRef: CollectionRef, signal?: AbortSignal): Promise<MediaTrack[]>;
   /** Optional: total count for "Liked" or similar (Spotify). */
