@@ -25,6 +25,7 @@ import { LIKED_SONGS_ID, LIKED_SONGS_NAME, toAlbumPlaylistId } from '../constant
 import LibraryProviderBar from './LibraryProviderBar';
 import { useUnifiedLikedTracks } from '@/hooks/useUnifiedLikedTracks';
 import { librarySyncEngine } from '@/services/cache/librarySyncEngine';
+import { logQueue } from '@/lib/debugLog';
 import TrackInfoPopover, {
   SpotifyIcon,
   PlayIcon,
@@ -870,12 +871,12 @@ const PlaylistSelection = React.memo(function PlaylistSelection({
   }, [isInitialLoadComplete, playlists.length, albums.length]);
 
   function handlePlaylistClick(playlist: PlaylistInfo): void {
-    console.log('🎵 Selected playlist:', playlist.name);
+    logQueue('selected playlist: %s (%s)', playlist.name, playlist.id);
     onPlaylistSelect(playlist.id, playlist.name, playlist.provider);
   }
 
   function handleAlbumClick(album: AlbumInfo): void {
-    console.log('🎵 Selected album:', album.name);
+    logQueue('selected album: %s (%s)', album.name, album.id);
     onPlaylistSelect(toAlbumPlaylistId(album.id), album.name, album.provider);
   }
 

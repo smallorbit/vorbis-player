@@ -4,6 +4,7 @@ import { spotifyPlayer } from '../services/spotifyPlayer';
 import { isAlbumId, extractAlbumId, LIKED_SONGS_ID } from '../constants/playlist';
 import { shuffleArray } from '../utils/shuffleArray';
 import type { Track } from '../services/spotify';
+import { logQueue } from '@/lib/debugLog';
 
 async function waitForSpotifyReady(timeout = 10000): Promise<void> {
   const start = Date.now();
@@ -74,7 +75,7 @@ export const usePlaylistManager = ({
 }: UsePlaylistManagerProps) => {
   
   const handlePlaylistSelect = useCallback(async (playlistId: string): Promise<Track[]> => {
-    console.log(`[Queue] usePlaylistManager.handlePlaylistSelect — playlistId=${playlistId}, shuffle=${shuffleEnabled}`);
+    logQueue('usePlaylistManager.handlePlaylistSelect — playlistId=%s, shuffle=%s', playlistId, String(shuffleEnabled));
     try {
       setError(null);
       setIsLoading(true);
@@ -149,7 +150,7 @@ export const usePlaylistManager = ({
       const tracksToPlay = shuffleEnabled ? shuffleArray(fetchedTracks) : fetchedTracks;
 
       // Update state with new tracks FIRST
-      console.log(`[Queue] usePlaylistManager — setting ${tracksToPlay.length} tracks (fetched=${fetchedTracks.length}, shuffled=${shuffleEnabled})`);
+      logQueue('usePlaylistManager — setting %d tracks (fetched=%d, shuffled=%s)', tracksToPlay.length, fetchedTracks.length, String(shuffleEnabled));
       setTracks(tracksToPlay);
       setCurrentTrackIndex(0);
 
@@ -233,7 +234,7 @@ export const usePlaylistManager = ({
         })();
       }, 1500);
 
-      console.log(`[Queue] usePlaylistManager — returning ${tracksToPlay.length} tracks, first="${tracksToPlay[0]?.name}"`);
+      logQueue('usePlaylistManager — returning %d tracks, first="%s"', tracksToPlay.length, tracksToPlay[0]?.name ?? '');
       return tracksToPlay;
 
     } catch (err: unknown) {

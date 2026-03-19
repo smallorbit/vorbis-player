@@ -16,6 +16,7 @@ import { ProviderProvider } from './contexts/ProviderContext';
 import { providerRegistry } from './providers/registry';
 import { getLikesSync } from './providers/dropbox/dropboxLikesSync';
 import { getPreferencesSync } from './providers/dropbox/dropboxPreferencesSync';
+import { logApp } from '@/lib/debugLog';
 
 /**
  * Cleanup function to remove deprecated localStorage keys
@@ -38,7 +39,7 @@ const cleanupDeprecatedLocalStorage = () => {
   try {
     // Remove the deprecated customAccentColorOverrides key
     localStorage.removeItem('customAccentColorOverrides');
-    console.log('Cleaned up deprecated localStorage key: customAccentColorOverrides');
+    logApp('cleaned up deprecated localStorage key: customAccentColorOverrides');
   } catch (error) {
     console.warn('Failed to clean up deprecated localStorage keys:', error);
   }

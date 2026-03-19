@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { logQueue } from '@/lib/debugLog';
 import { spotifyPlayer } from '../services/spotifyPlayer';
 import type { Track } from '../services/spotify';
 import { useProviderContext } from '@/contexts/ProviderContext';
@@ -75,7 +76,7 @@ export const useAutoAdvance = ({
 
     function advanceToNext() {
       hasEnded.current = true;
-      console.log(`[Queue] autoAdvance — track ended, scheduling advance from index=${currentTrackIndexRef.current}`);
+      logQueue('autoAdvance — track ended, scheduling advance from index=%d', currentTrackIndexRef.current);
       // Compute nextIndex inside the timeout callback (not here) so that
       // if shuffle is toggled during the delay, we use the latest refs.
       advanceTimerRef.current = setTimeout(() => {
@@ -84,12 +85,12 @@ export const useAutoAdvance = ({
         const totalTracks = tracksRef.current.length;
         // Stop at the end of the queue instead of wrapping around
         if (currentIdx >= totalTracks - 1) {
-          console.log(`[Queue] autoAdvance — at end of queue (${currentIdx}/${totalTracks}), stopping`);
+          logQueue('autoAdvance — at end of queue (%d/%d), stopping', currentIdx, totalTracks);
           return;
         }
         const nextIndex = currentIdx + 1;
         if (tracksRef.current[nextIndex]) {
-          console.log(`[Queue] autoAdvance — advancing ${currentIdx} → ${nextIndex}, track="${tracksRef.current[nextIndex].name}"`);
+          logQueue('autoAdvance — advancing %d → %d, track="%s"', currentIdx, nextIndex, tracksRef.current[nextIndex].name);
           lastPlayInitiatedRef.current = Date.now();
           playTrackRef.current(nextIndex, true);
           // Don't reset hasEnded here — playTrack is async and the audio element
@@ -115,7 +116,7 @@ export const useAutoAdvance = ({
         timeRemaining <= endThreshold ||
         position >= duration - 1000
       )) {
-        console.log(`[Queue] autoAdvance — near-end detected: pos=${position}, dur=${duration}, remaining=${timeRemaining}ms`);
+        logQueue('autoAdvance — near-end detected: pos=%d, dur=%d, remaining=%dms', position, duration, timeRemaining);
         advanceToNext();
       }
 
@@ -132,7 +133,7 @@ export const useAutoAdvance = ({
       }
 
       if (!hasEnded.current && wasPlayingRef.current && isPaused && position === 0 && duration > 0 && msSinceLastPlay > PLAY_COOLDOWN_MS) {
-        console.log(`[Queue] autoAdvance — track finished (paused@0): dur=${duration}, cooldown=${msSinceLastPlay}ms`);
+        logQueue('autoAdvance — track finished (paused@0): dur=%d, cooldown=%dms', duration, msSinceLastPlay);
         advanceToNext();
       }
 
