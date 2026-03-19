@@ -116,6 +116,30 @@ const CloseButton = styled.button`
   }
 `;
 
+const SaveButton = styled.button`
+  background: none;
+  border: none;
+  color: ${theme.colors.muted.foreground};
+  cursor: pointer;
+  padding: ${theme.spacing.sm};
+  border-radius: ${theme.borderRadius.md};
+  transition: all ${theme.transitions.fast};
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &:hover {
+    background: ${theme.colors.muted.background};
+    color: ${theme.colors.white};
+  }
+`;
+
+const HeaderActions = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 2px;
+`;
+
 interface QueueDrawerProps {
   isOpen: boolean;
   onClose: () => void;
@@ -125,6 +149,8 @@ interface QueueDrawerProps {
   showProviderIcons?: boolean;
   radioActive?: boolean;
   radioSeedDescription?: string | null;
+  onSaveQueue?: () => void;
+  canSaveQueue?: boolean;
 }
 
 // Custom comparison function for QueueDrawer memo optimization
@@ -155,6 +181,10 @@ const areQueueDrawerPropsEqual = (
     return false;
   }
 
+  if (prevProps.canSaveQueue !== nextProps.canSaveQueue) {
+    return false;
+  }
+
   return true;
 };
 
@@ -167,6 +197,8 @@ const QueueDrawer = memo<QueueDrawerProps>(({
   showProviderIcons,
   radioActive,
   radioSeedDescription,
+  onSaveQueue,
+  canSaveQueue,
 }) => {
   // Get responsive sizing information
   const { viewport, isMobile, isTablet, transitionDuration, transitionEasing } = usePlayerSizingContext();
@@ -199,7 +231,18 @@ const QueueDrawer = memo<QueueDrawerProps>(({
               </div>
             )}
           </div>
-          <CloseButton onClick={onClose}>×</CloseButton>
+          <HeaderActions>
+            {canSaveQueue && (
+              <SaveButton onClick={onSaveQueue} title="Save queue as Spotify playlist" aria-label="Save queue as Spotify playlist">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                  <polyline points="17 21 17 13 7 13 7 21"/>
+                  <polyline points="7 3 7 8 15 8"/>
+                </svg>
+              </SaveButton>
+            )}
+            <CloseButton onClick={onClose}>×</CloseButton>
+          </HeaderActions>
         </QueueHeader>
 
         <QueueContent>

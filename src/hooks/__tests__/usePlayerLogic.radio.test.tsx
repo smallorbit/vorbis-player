@@ -216,11 +216,14 @@ describe('usePlayerLogic — radio start', () => {
       await result.current.handlers.handleStartRadio();
     });
 
-    expect(result.current.state.tracks.length).toBe(3);
-    expect(result.current.state.tracks[0].id).toBe(seedTrack.id);
-    expect(result.current.state.tracks[0].name).toBe('Creep');
-    expect(result.current.state.tracks[1].name).toBe('Karma Police');
-    expect(result.current.state.tracks[2].name).toBe('No Surprises');
+    const tracks = result.current.state.tracks;
+    expect(tracks.length).toBe(3);
+    expect(tracks[0].id).toBe(seedTrack.id);
+    expect(tracks[0].name).toBe('Creep');
+    // Generated tracks are shuffled, so check presence without asserting order
+    const generatedNames = tracks.slice(1).map((t) => t.name);
+    expect(generatedNames).toContain('Karma Police');
+    expect(generatedNames).toContain('No Surprises');
     expect(result.current.state.selectedPlaylistId).toBe('radio');
   });
 
