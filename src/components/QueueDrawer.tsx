@@ -140,6 +140,11 @@ const HeaderActions = styled.div`
   gap: 2px;
 `;
 
+/** Detect reorder / id changes when length and current index are unchanged (memo guard). */
+function queueTrackOrderKey(tracks: { id: string }[]): string {
+  return tracks.map((t) => t.id).join('\0');
+}
+
 interface QueueDrawerProps {
   isOpen: boolean;
   onClose: () => void;
@@ -170,8 +175,11 @@ const areQueueDrawerPropsEqual = (
     return false;
   }
 
-  // Check if tracks array length changed (shallow check for performance)
   if (prevProps.tracks.length !== nextProps.tracks.length) {
+    return false;
+  }
+
+  if (queueTrackOrderKey(prevProps.tracks) !== queueTrackOrderKey(nextProps.tracks)) {
     return false;
   }
 

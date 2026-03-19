@@ -59,7 +59,7 @@ interface UsePlaylistManagerProps {
   setIsLoading: (loading: boolean) => void;
   setSelectedPlaylistId: (id: string | null) => void;
   setTracks: (tracks: Track[]) => void;
-  setOriginalTracks: (tracks: Track[]) => void;
+  setOriginalTracks: (tracks: Track[] | ((prev: Track[]) => Track[])) => void;
   setCurrentTrackIndex: (index: number) => void;
   shuffleEnabled: boolean;
 }
