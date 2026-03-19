@@ -142,7 +142,7 @@ const HeaderActions = styled.div`
 
 /** Detect reorder / id changes when length and current index are unchanged (memo guard). */
 function queueTrackOrderKey(tracks: { id: string }[]): string {
-  return tracks.map((t) => t.id).join('\0');
+  return tracks.map((t) => t.id).join('|');
 }
 
 interface QueueDrawerProps {
