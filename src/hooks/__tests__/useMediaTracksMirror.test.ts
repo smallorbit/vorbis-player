@@ -76,10 +76,8 @@ describe('useMediaTracksMirror', () => {
       rerender({ tracks });
     });
 
-    // Same reference — useLayoutEffect re-runs but produces same result
+    // Same reference — useLayoutEffect skips (dependency unchanged), ref is left as-is
     expect(result.current.current.map((m) => m.id)).toEqual(['x', 'y']);
-    // After reorder with matching order, produces a new array (reorderMediaTracksToMatchTracks
-    // always returns a new array when it succeeds, so we only check ids)
     expect(result.current.current[0].id).toBe(before[0].id);
   });
 });

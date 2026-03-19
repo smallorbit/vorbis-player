@@ -195,6 +195,10 @@ const areQueueDrawerPropsEqual = (
     return false;
   }
 
+  // Callback props (onClose, onTrackSelect, onRemoveTrack, onReorderTracks, onSaveQueue,
+  // showProviderIcons) are intentionally omitted — they are expected to be stable
+  // useCallback references from the parent. If an unstable callback is ever passed,
+  // this comparator will suppress the re-render incorrectly.
   return true;
 };
 
