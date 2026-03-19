@@ -15,6 +15,16 @@ import { useProviderContext } from '../contexts/ProviderContext';
 import type { MediaCollection, ProviderId } from '../types/domain';
 import { LIKES_CHANGED_EVENT } from '../providers/dropbox/dropboxLikesCache';
 
+function splitCollections(collections: MediaCollection[]): { playlists: CachedPlaylistInfo[]; albums: AlbumInfo[] } {
+  const playlists: CachedPlaylistInfo[] = [];
+  const albums: AlbumInfo[] = [];
+  for (const c of collections) {
+    if (c.kind === 'album') albums.push(collectionToAlbumInfo(c));
+    else playlists.push(collectionToPlaylistInfo(c));
+  }
+  return { playlists, albums };
+}
+
 export const ART_REFRESHED_EVENT = 'vorbis-art-refreshed';
 export const LIBRARY_REFRESH_EVENT = 'vorbis-library-refresh';
 
@@ -183,105 +193,40 @@ export function useLibrarySync(): UseLibrarySyncResult {
       const descriptor = getDescriptor(providerId);
       const catalog = descriptor?.catalog;
       const auth = descriptor?.auth;
-      if (!catalog || !auth) return;
-
-      if (!auth.isAuthenticated()) {
+      if (!catalog || !auth || !auth.isAuthenticated()) {
         nonSpotifyDataRef.current.set(providerId, { playlists: [], albums: [], likedCount: 0 });
         return;
       }
 
       setSyncState(prev => ({ ...prev, isSyncing: true, error: null }));
 
-      // Fetch liked count (local IndexedDB, so fast)
-      let likedCount = 0;
-      if (catalog.getLikedCount && !cancelled) {
-        likedCount = await catalog.getLikedCount(controller.signal);
-      }
+      try {
+        // Run liked count and collection fetch concurrently (liked count is a fast local IDB read)
+        const [collections, likedCount] = await Promise.all([
+          catalog.listCollections(controller.signal),
+          catalog.getLikedCount ? catalog.getLikedCount(controller.signal) : Promise.resolve(0),
+        ]);
+        if (cancelled) return;
 
-      // Try cache first for this provider
-      let usedCache = false;
-      if (providerId === 'dropbox') {
-        try {
-          const { getCachedCatalog, putCatalogCache } = await import('@/providers/dropbox/dropboxCatalogCache');
-          const cached = await getCachedCatalog();
-
-          if (cached && !cancelled) {
-            const playlistItems: CachedPlaylistInfo[] = [];
-            const albumItems: AlbumInfo[] = [];
-            for (const c of cached.collections) {
-              if (c.kind === 'album') albumItems.push(collectionToAlbumInfo(c));
-              else playlistItems.push(collectionToPlaylistInfo(c));
-            }
-            nonSpotifyDataRef.current.set(providerId, { playlists: playlistItems, albums: albumItems, likedCount });
-            mergeAndSetData();
-
-            if (!cached.isStale) {
-              setSyncState(prev => ({
-                ...prev,
-                isInitialLoadComplete: true,
-                isSyncing: false,
-                lastSyncTimestamp: cached.cachedAt,
-              }));
-              usedCache = true;
-            }
-          }
-
-          if (!usedCache) {
-            const collections = await catalog.listCollections(controller.signal);
-            if (cancelled) return;
-
-            const playlistItems: CachedPlaylistInfo[] = [];
-            const albumItems: AlbumInfo[] = [];
-            for (const c of collections) {
-              if (c.kind === 'album') albumItems.push(collectionToAlbumInfo(c));
-              else playlistItems.push(collectionToPlaylistInfo(c));
-            }
-            nonSpotifyDataRef.current.set(providerId, { playlists: playlistItems, albums: albumItems, likedCount });
-            mergeAndSetData();
-            setSyncState(prev => ({
-              ...prev,
-              isInitialLoadComplete: true,
-              isSyncing: false,
-              lastSyncTimestamp: Date.now(),
-            }));
-            putCatalogCache(collections);
-          }
-        } catch (err) {
-          if (cancelled) return;
-          if (err instanceof DOMException && err.name === 'AbortError') return;
-          console.error(`[useLibrarySync] Failed to load collections for ${providerId}:`, err);
-          setSyncState(prev => ({
-            ...prev,
-            isInitialLoadComplete: true,
-            isSyncing: false,
-            error: err instanceof Error ? err.message : 'Failed to load library',
-          }));
-        }
-      } else {
-        // Generic non-Spotify, non-Dropbox provider
-        try {
-          const collections = await catalog.listCollections(controller.signal);
-          if (cancelled) return;
-
-          const playlistItems: CachedPlaylistInfo[] = [];
-          const albumItems: AlbumInfo[] = [];
-          for (const c of collections) {
-            if (c.kind === 'album') albumItems.push(collectionToAlbumInfo(c));
-            else playlistItems.push(collectionToPlaylistInfo(c));
-          }
-          nonSpotifyDataRef.current.set(providerId, { playlists: playlistItems, albums: albumItems, likedCount });
-          mergeAndSetData();
-          setSyncState(prev => ({
-            ...prev,
-            isInitialLoadComplete: true,
-            isSyncing: false,
-            lastSyncTimestamp: Date.now(),
-          }));
-        } catch (err) {
-          if (cancelled) return;
-          if (err instanceof DOMException && err.name === 'AbortError') return;
-          console.error(`[useLibrarySync] Failed to load collections for ${providerId}:`, err);
-        }
+        const { playlists, albums } = splitCollections(collections);
+        nonSpotifyDataRef.current.set(providerId, { playlists, albums, likedCount });
+        mergeAndSetData();
+        setSyncState(prev => ({
+          ...prev,
+          isInitialLoadComplete: true,
+          isSyncing: false,
+          lastSyncTimestamp: Date.now(),
+        }));
+      } catch (err) {
+        if (cancelled) return;
+        if (err instanceof DOMException && err.name === 'AbortError') return;
+        console.error(`[useLibrarySync] Failed to load collections for ${providerId}:`, err);
+        setSyncState(prev => ({
+          ...prev,
+          isInitialLoadComplete: true,
+          isSyncing: false,
+          error: err instanceof Error ? err.message : 'Failed to load library',
+        }));
       }
     }
 
@@ -292,7 +237,7 @@ export function useLibrarySync(): UseLibrarySyncResult {
       cancelled = true;
       controller.abort();
     };
-  }, [nonSpotifyEnabledIds.join(','), getDescriptor, mergeAndSetData]);
+  }, [[...nonSpotifyEnabledIds].sort().join(','), getDescriptor, mergeAndSetData]);
 
   // ── Listen for likes-changed events to update count in real-time ──────
   useEffect(() => {
@@ -317,7 +262,7 @@ export function useLibrarySync(): UseLibrarySyncResult {
       handlers.push(() => window.removeEventListener(LIKES_CHANGED_EVENT, handleLikesChanged));
     }
     return () => handlers.forEach(cleanup => cleanup());
-  }, [nonSpotifyEnabledIds.join(','), getDescriptor, mergeAndSetData]);
+  }, [[...nonSpotifyEnabledIds].sort().join(','), getDescriptor, mergeAndSetData]);
 
   const refreshNow = useCallback(async () => {
     // Refresh Spotify — force full re-fetch to catch changes that
@@ -334,18 +279,12 @@ export function useLibrarySync(): UseLibrarySyncResult {
 
       setSyncState(prev => ({ ...prev, isSyncing: true, error: null }));
       try {
-        const collections = await catalog.listCollections();
-        const playlistItems: CachedPlaylistInfo[] = [];
-        const albumItems: AlbumInfo[] = [];
-        for (const c of collections) {
-          if (c.kind === 'album') albumItems.push(collectionToAlbumInfo(c));
-          else playlistItems.push(collectionToPlaylistInfo(c));
-        }
-        let likedCount = 0;
-        if (catalog.getLikedCount) {
-          likedCount = await catalog.getLikedCount();
-        }
-        nonSpotifyDataRef.current.set(providerId, { playlists: playlistItems, albums: albumItems, likedCount });
+        const [collections, likedCount] = await Promise.all([
+          catalog.listCollections(undefined, { forceRefresh: true }),
+          catalog.getLikedCount ? catalog.getLikedCount() : Promise.resolve(0),
+        ]);
+        const { playlists, albums } = splitCollections(collections);
+        nonSpotifyDataRef.current.set(providerId, { playlists, albums, likedCount });
         mergeAndSetData();
         setSyncState(prev => ({
           ...prev,
@@ -353,9 +292,6 @@ export function useLibrarySync(): UseLibrarySyncResult {
           isSyncing: false,
           lastSyncTimestamp: Date.now(),
         }));
-        if (providerId === 'dropbox') {
-          import('@/providers/dropbox/dropboxCatalogCache').then(m => m.putCatalogCache(collections));
-        }
       } catch (err) {
         setSyncState(prev => ({
           ...prev,

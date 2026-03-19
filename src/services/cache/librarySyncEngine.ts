@@ -412,24 +412,27 @@ export class LibrarySyncEngine {
     const fetchedIds = new Set(allFetched.map(p => p.id));
     const snapshotIds: Record<string, string> = { ...(meta?.snapshotIds ?? {}) };
 
+    const removals: Promise<void>[] = [];
     for (const cached of cachedPlaylists) {
       if (!fetchedIds.has(cached.id)) {
-        await cache.removePlaylist(cached.id);
-        await cache.removeTrackList(`playlist:${cached.id}`);
+        removals.push(cache.removePlaylist(cached.id), cache.removeTrackList(`playlist:${cached.id}`));
         delete snapshotIds[cached.id];
       }
     }
+    await Promise.all(removals);
 
+    const writes: Promise<void>[] = [];
     for (const fetched of allFetched) {
       const cached = cachedMap.get(fetched.id);
       if (cached && fetched.snapshot_id && fetched.snapshot_id !== cached.snapshot_id) {
-        await cache.removeTrackList(`playlist:${fetched.id}`);
+        writes.push(cache.removeTrackList(`playlist:${fetched.id}`));
       }
-      await cache.putPlaylist(fetched);
+      writes.push(cache.putPlaylist(fetched));
       if (fetched.snapshot_id) {
         snapshotIds[fetched.id] = fetched.snapshot_id;
       }
     }
+    await Promise.all(writes);
 
     await cache.putMeta('playlists', {
       lastValidated: Date.now(),
@@ -451,31 +454,40 @@ export class LibrarySyncEngine {
 
     const fetchedIds = new Set(allFetched.map(a => a.id));
 
+    const ops: Promise<void>[] = [];
     for (const cached of cachedAlbums) {
       if (!fetchedIds.has(cached.id) && !this.pendingAdditions.has(cached.id)) {
-        await cache.removeAlbum(cached.id);
-        await cache.removeTrackList(`album:${cached.id}`);
+        ops.push(cache.removeAlbum(cached.id), cache.removeTrackList(`album:${cached.id}`));
       }
     }
-
     for (const fetched of allFetched) {
       if (!this.pendingRemovals.has(fetched.id)) {
-        await cache.putAlbum(fetched);
+        ops.push(cache.putAlbum(fetched));
       }
     }
+    await Promise.all(ops);
 
-    const finalAlbums = await cache.getAllAlbums();
-    const latestAddedAt = finalAlbums.reduce(
+    // Compute the final album list from what we already have in memory
+    // Compute the final album list from in-memory state
+    const finalAlbums: AlbumInfo[] = [
+      ...allFetched.filter(f => !this.pendingRemovals.has(f.id)),
+      // Locally-added albums not yet reflected in the API response
+      ...cachedAlbums.filter(a => this.pendingAdditions.has(a.id) && !fetchedIds.has(a.id)),
+    ];
+    const seen = new Set<string>();
+    const deduped = finalAlbums.filter(a => seen.has(a.id) ? false : (seen.add(a.id), true));
+
+    const latestAddedAt = deduped.reduce(
       (latest, a) => (a.added_at && a.added_at > latest ? a.added_at : latest),
       '',
     );
     await cache.putMeta('albums', {
       lastValidated: Date.now(),
-      totalCount: finalAlbums.length,
+      totalCount: deduped.length,
       latestAddedAt: latestAddedAt || undefined,
     });
 
-    return finalAlbums;
+    return deduped;
   }
 
   // =========================================================================
