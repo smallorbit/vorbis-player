@@ -699,9 +699,15 @@ export function usePlayerLogic() {
         ? newTracks.findIndex(t => t.id === currentTrackId)
         : currentTrackIndex;
 
+      // Explicitly sync mediaTracksRef before setTracks triggers a re-render, so
+      // index-based playback reads the correct track even during the render cycle.
+      // useMediaTracksMirror will also re-sync afterward, but this ensures the ref
+      // is correct synchronously.
       const reorderedMedia = reorderMediaTracksToMatchTracks(newTracks, mediaTracksRef.current);
       if (reorderedMedia) {
         mediaTracksRef.current = reorderedMedia;
+      } else {
+        logQueue('handleReorderQueue — mediaTracksRef out of sync (len %d vs tracks len %d); layout effect will recover', mediaTracksRef.current.length, newTracks.length);
       }
 
       // Only update originalTracks if shuffle is off
