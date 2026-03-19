@@ -100,13 +100,7 @@ const QueueTitle = styled.h3`
   font-weight: ${theme.fontWeight.semibold};
 `;
 
-const HeaderActions = styled.div`
-  display: flex;
-  align-items: center;
-  gap: ${theme.spacing.xs};
-`;
-
-const HeaderButton = styled.button`
+const CloseButton = styled.button`
   background: none;
   border: none;
   color: ${theme.colors.muted.foreground};
