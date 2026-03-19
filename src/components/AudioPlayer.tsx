@@ -31,7 +31,7 @@ const Container = styled.div`
 `;
 
 const AudioPlayerComponent = () => {
-  const { state, handlers, radio, currentPlaybackProviderRef: playbackProviderRef, mediaTracksRef } = usePlayerLogic();
+  const { state, handlers, radio, currentPlaybackProviderRef: playbackProviderRef } = usePlayerLogic();
   const { debugActive, handleActivatorTap } = useDebugActivator();
   const { accentColor } = useColorContext();
   const {
@@ -167,7 +167,6 @@ const AudioPlayerComponent = () => {
           isRadioAvailable={radio.isRadioAvailable}
           radioActive={radio.isActive}
           currentTrackProvider={displayProviderId}
-          mediaTracksRef={mediaTracksRef}
         />
       </ProfiledComponent>
     );

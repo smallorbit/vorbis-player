@@ -69,7 +69,6 @@ interface PlayerContentProps {
   radioState?: import('@/hooks/useRadio').RadioState;
   isRadioAvailable?: boolean;
   radioActive?: boolean;
-  mediaTracksRef?: React.RefObject<import('@/types/domain').MediaTrack[]>;
 }
 
 const ContentWrapper = styled.div.withConfig({
@@ -299,7 +298,7 @@ const FlipInner = styled.div.withConfig({
 `;
 
 
-const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, showLibraryDrawer, onAlbumArtBoundsChange, handlers, currentTrackProvider, radioState, isRadioAvailable, radioActive, mediaTracksRef }) => {
+const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, showLibraryDrawer, onAlbumArtBoundsChange, handlers, currentTrackProvider, radioState, isRadioAvailable, radioActive }) => {
   // --- Context hooks ---
   const { tracks, shuffleEnabled, handleShuffleToggle, selectedPlaylistId } = useTrackListContext();
   const { isUnifiedLikedActive } = useUnifiedLikedTracks();

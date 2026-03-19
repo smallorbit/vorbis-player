@@ -5,6 +5,7 @@
 
 import type { AuthProvider } from '@/types/providers';
 import type { ProviderId } from '@/types/domain';
+import { resetPlaylistsFolderCache } from './dropboxPlaylistStorage';
 
 function getDropboxClientId(): string {
   return import.meta.env.VITE_DROPBOX_CLIENT_ID ?? '';
@@ -202,6 +203,7 @@ export class DropboxAuthAdapter implements AuthProvider {
     localStorage.removeItem(REFRESH_TOKEN_KEY);
     localStorage.removeItem(CODE_VERIFIER_KEY);
     localStorage.removeItem(OAUTH_STATE_KEY);
+    resetPlaylistsFolderCache();
   }
 
   /** Refresh the access token using the stored refresh token. */
