@@ -40,7 +40,7 @@ On mobile and tablet:
 
 - **Tap** album art to flip and reveal quick-access controls (or play/pause in zen mode)
 - **Swipe left/right** on album art to change tracks
-- **Swipe up** on album art to toggle the playlist drawer
+- **Swipe up** on album art to toggle the queue drawer
 - **Swipe down** on album art to toggle the library drawer
 
 ## Library
@@ -99,7 +99,7 @@ Opened via the gear icon in the bottom bar. Provides full control over:
 |-----|-------------------|---------------------|
 | `Space` | Play/Pause | Play/Pause |
 | `ArrowRight` / `ArrowLeft` | Next / Previous track | Next / Previous track |
-| `ArrowUp` / `P` | Toggle playlist drawer | Volume up (ArrowUp only) |
+| `ArrowUp` / `Q` | Toggle queue drawer | Volume up (ArrowUp only) |
 | `ArrowDown` / `L` | Toggle library drawer | Volume down (ArrowDown only) |
 | `V` | Toggle background visualizer | Toggle background visualizer |
 | `G` | Toggle glow effect | Toggle glow effect |

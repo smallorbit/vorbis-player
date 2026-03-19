@@ -8,7 +8,7 @@ import { usePlayerSizingContext } from '@/contexts/PlayerSizingContext';
 
 const Playlist = React.lazy(() => import('./Playlist'));
 
-const PlaylistDrawerContainer = styled.div.withConfig({
+const QueueDrawerContainer = styled.div.withConfig({
   shouldForwardProp: (prop) => !['isOpen', 'width', 'transitionDuration', 'transitionEasing'].includes(prop),
 }) <{ isOpen: boolean; width: number; transitionDuration: number; transitionEasing: string }>`
   position: fixed;
@@ -29,20 +29,20 @@ const PlaylistDrawerContainer = styled.div.withConfig({
   
   /* Enable container queries */
   container-type: inline-size;
-  container-name: playlist;
-  
+  container-name: queue;
+
   /* Container query responsive adjustments */
-  @container playlist (max-width: ${theme.breakpoints.md}) {
+  @container queue (max-width: ${theme.breakpoints.md}) {
     width: ${theme.drawer.widths.mobile};
     padding: ${theme.spacing.sm};
   }
   
-  @container playlist (min-width: ${theme.breakpoints.md}) and (max-width: ${theme.drawer.breakpoints.mobile}) {
+  @container queue (min-width: ${theme.breakpoints.md}) and (max-width: ${theme.drawer.breakpoints.mobile}) {
     width: ${theme.drawer.widths.tablet};
     padding: ${theme.spacing.md};
   }
   
-  @container playlist (min-width: ${theme.drawer.breakpoints.mobile}) {
+  @container queue (min-width: ${theme.drawer.breakpoints.mobile}) {
     width: ${theme.drawer.widths.desktop};
     padding: ${theme.spacing.lg};
   }
@@ -55,7 +55,7 @@ const PlaylistDrawerContainer = styled.div.withConfig({
   }
 `;
 
-const PlaylistContent = styled.div`
+const QueueContent = styled.div`
   padding: ${theme.spacing.sm} 0 ${theme.spacing.md} 0;
   
   /* Ensure playlist cards have proper spacing from top and bottom */
@@ -68,7 +68,7 @@ const PlaylistContent = styled.div`
   }
 `;
 
-const PlaylistOverlay = styled.div.withConfig({
+const QueueOverlay = styled.div.withConfig({
   shouldForwardProp: (prop) => !['isOpen'].includes(prop),
 }) <{ isOpen: boolean }>`
   position: fixed;
@@ -84,7 +84,7 @@ const PlaylistOverlay = styled.div.withConfig({
   z-index: ${theme.zIndex.overlay};
 `;
 
-const PlaylistHeader = styled.div`
+const QueueHeader = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -93,7 +93,7 @@ const PlaylistHeader = styled.div`
   border-bottom: 1px solid ${theme.colors.popover.border};
 `;
 
-const PlaylistTitle = styled.h3`
+const QueueTitle = styled.h3`
   color: ${theme.colors.white};
   margin: 0;
   font-size: ${theme.fontSize.xl};
@@ -116,21 +116,54 @@ const CloseButton = styled.button`
   }
 `;
 
-interface PlaylistDrawerProps {
+const SaveButton = styled.button`
+  background: none;
+  border: none;
+  color: ${theme.colors.muted.foreground};
+  cursor: pointer;
+  padding: ${theme.spacing.sm};
+  border-radius: ${theme.borderRadius.md};
+  transition: all ${theme.transitions.fast};
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &:hover {
+    background: ${theme.colors.muted.background};
+    color: ${theme.colors.white};
+  }
+`;
+
+const HeaderActions = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 2px;
+`;
+
+/** Detect reorder / id changes when length and current index are unchanged (memo guard). */
+function queueTrackOrderKey(tracks: { id: string }[]): string {
+  return tracks.map((t) => t.id).join('|');
+}
+
+interface QueueDrawerProps {
   isOpen: boolean;
   onClose: () => void;
   tracks: Track[];
   currentTrackIndex: number;
   onTrackSelect: (index: number) => void;
+  onRemoveTrack?: (index: number) => void;
+  onReorderTracks?: (fromIndex: number, toIndex: number) => void;
   showProviderIcons?: boolean;
   radioActive?: boolean;
   radioSeedDescription?: string | null;
+  onSaveQueue?: () => void;
+  canSaveQueue?: boolean;
 }
 
-// Custom comparison function for PlaylistDrawer memo optimization
-const arePlaylistDrawerPropsEqual = (
-  prevProps: PlaylistDrawerProps,
-  nextProps: PlaylistDrawerProps
+// Custom comparison function for QueueDrawer memo optimization
+const areQueueDrawerPropsEqual = (
+  prevProps: QueueDrawerProps,
+  nextProps: QueueDrawerProps
 ): boolean => {
   // Check if open state changed
   if (prevProps.isOpen !== nextProps.isOpen) {
@@ -142,8 +175,11 @@ const arePlaylistDrawerPropsEqual = (
     return false;
   }
 
-  // Check if tracks array length changed (shallow check for performance)
   if (prevProps.tracks.length !== nextProps.tracks.length) {
+    return false;
+  }
+
+  if (queueTrackOrderKey(prevProps.tracks) !== queueTrackOrderKey(nextProps.tracks)) {
     return false;
   }
 
@@ -155,18 +191,30 @@ const arePlaylistDrawerPropsEqual = (
     return false;
   }
 
+  if (prevProps.canSaveQueue !== nextProps.canSaveQueue) {
+    return false;
+  }
+
+  // Callback props (onClose, onTrackSelect, onRemoveTrack, onReorderTracks, onSaveQueue,
+  // showProviderIcons) are intentionally omitted — they are expected to be stable
+  // useCallback references from the parent. If an unstable callback is ever passed,
+  // this comparator will suppress the re-render incorrectly.
   return true;
 };
 
-const PlaylistDrawer = memo<PlaylistDrawerProps>(({
+const QueueDrawer = memo<QueueDrawerProps>(({
   isOpen,
   onClose,
   tracks,
   currentTrackIndex,
   onTrackSelect,
+  onRemoveTrack,
+  onReorderTracks,
   showProviderIcons,
   radioActive,
   radioSeedDescription,
+  onSaveQueue,
+  canSaveQueue,
 }) => {
   // Get responsive sizing information
   const { viewport, isMobile, isTablet, transitionDuration, transitionEasing } = usePlayerSizingContext();
@@ -179,30 +227,41 @@ const PlaylistDrawer = memo<PlaylistDrawerProps>(({
   }, [viewport.width, isMobile, isTablet]);
   return createPortal(
     <>
-      <PlaylistOverlay
+      <QueueOverlay
         isOpen={isOpen}
         onClick={onClose}
       />
 
-      <PlaylistDrawerContainer
+      <QueueDrawerContainer
         isOpen={isOpen}
         width={drawerWidth}
         transitionDuration={transitionDuration}
         transitionEasing={transitionEasing}
       >
-        <PlaylistHeader>
+        <QueueHeader>
           <div>
-            <PlaylistTitle>{radioActive ? 'Radio' : 'Playlist'}</PlaylistTitle>
+            <QueueTitle>{radioActive ? 'Radio' : 'Queue'}</QueueTitle>
             {radioActive && radioSeedDescription && (
               <div style={{ fontSize: theme.fontSize.xs, color: theme.colors.muted.foreground, marginTop: '2px' }}>
                 {radioSeedDescription}
               </div>
             )}
           </div>
-          <CloseButton onClick={onClose}>×</CloseButton>
-        </PlaylistHeader>
+          <HeaderActions>
+            {canSaveQueue && (
+              <SaveButton onClick={onSaveQueue} title="Save queue as Spotify playlist" aria-label="Save queue as Spotify playlist">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                  <polyline points="17 21 17 13 7 13 7 21"/>
+                  <polyline points="7 3 7 8 15 8"/>
+                </svg>
+              </SaveButton>
+            )}
+            <CloseButton onClick={onClose}>×</CloseButton>
+          </HeaderActions>
+        </QueueHeader>
 
-        <PlaylistContent>
+        <QueueContent>
           <Suspense fallback={
             <DrawerFallback>
               <DrawerFallbackCard>
@@ -211,7 +270,7 @@ const PlaylistDrawer = memo<PlaylistDrawerProps>(({
                   color: theme.colors.muted.foreground,
                   textAlign: 'center'
                 }}>
-                  Loading playlist...
+                  Loading queue...
                 </div>
               </DrawerFallbackCard>
             </DrawerFallback>
@@ -223,17 +282,20 @@ const PlaylistDrawer = memo<PlaylistDrawerProps>(({
                 onTrackSelect(index);
                 onClose();
               }}
+              onRemoveTrack={onRemoveTrack}
+              onReorderTracks={onReorderTracks}
               isOpen={isOpen}
               showProviderIcons={showProviderIcons}
+              canEdit
             />
           </Suspense>
-        </PlaylistContent>
-      </PlaylistDrawerContainer>
+        </QueueContent>
+      </QueueDrawerContainer>
     </>,
     document.body
   );
-}, arePlaylistDrawerPropsEqual);
+}, areQueueDrawerPropsEqual);
 
-PlaylistDrawer.displayName = 'PlaylistDrawer';
+QueueDrawer.displayName = 'QueueDrawer';
 
-export default PlaylistDrawer;
+export default QueueDrawer;

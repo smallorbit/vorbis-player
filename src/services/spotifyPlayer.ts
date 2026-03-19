@@ -1,4 +1,5 @@
 import { spotifyAuth } from './spotify';
+import { logSpotify } from '@/lib/debugLog';
 
 // HMR-safe storage for player state
 interface HMRPlayerState {
@@ -10,7 +11,7 @@ interface HMRPlayerState {
 // Use Vite's HMR data API to preserve state across hot reloads
 const getHMRState = (): HMRPlayerState => {
   if (import.meta.hot?.data.playerState) {
-    console.log('🔥 Restoring player state from HMR');
+    logSpotify('restoring player state from HMR');
     return import.meta.hot.data.playerState;
   }
   return {
@@ -45,7 +46,7 @@ class SpotifyPlayerService {
     this.isReady = hmrState.isReady;
 
     if (this.isReady) {
-      console.log('🔥 Player was already ready, device ID:', this.deviceId);
+      logSpotify('player already ready, device ID: %s', this.deviceId);
     }
   }
 
@@ -131,14 +132,14 @@ class SpotifyPlayerService {
     });
 
     this.player.addListener('ready', ({ device_id }: { device_id: string }) => {
-      console.log('🎵 Spotify player ready with device ID:', device_id);
+      logSpotify('player ready with device ID: %s', device_id);
       this.deviceId = device_id;
       this.isReady = true;
       this.saveState();
     });
 
     this.player.addListener('not_ready', ({ device_id }: { device_id: string }) => {
-      console.log('Device ID has gone offline', device_id);
+      logSpotify('device ID went offline: %s', device_id);
       this.isReady = false;
       this.saveState();
     });
@@ -174,12 +175,7 @@ class SpotifyPlayerService {
 
     const uris = upcomingUris?.length ? [uri, ...upcomingUris] : [uri];
 
-    console.log('🎵 Making Spotify API call to play track:', {
-      deviceId: this.deviceId,
-      uri: uri,
-      queueSize: uris.length,
-      hasToken: !!token
-    });
+    logSpotify('Web API play track deviceId=%s queueSize=%d', this.deviceId, uris.length);
 
     const response = await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${this.deviceId}`, {
       method: 'PUT',
@@ -190,15 +186,11 @@ class SpotifyPlayerService {
       },
     });
     
-    console.log('🎵 Spotify API response:', {
-      status: response.status,
-      statusText: response.statusText,
-      ok: response.ok
-    });
+    logSpotify('Web API play track response status=%d ok=%s', response.status, response.ok);
     
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('🎵 Spotify API error response:', errorText);
+      console.error('[spotifyPlayer] Spotify API error response:', errorText);
       
       // Try to parse the error as JSON to extract the reason
       let errorReason = '';
@@ -237,7 +229,7 @@ class SpotifyPlayerService {
       body.offset = { position: offsetPosition };
     }
 
-    console.log('🎵 Playing context:', { contextUri, offsetPosition, deviceId: this.deviceId });
+    logSpotify('Web API play context uri=%s offset=%s', contextUri, offsetPosition ?? '(none)');
 
     const response = await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${this.deviceId}`, {
       method: 'PUT',
@@ -250,7 +242,7 @@ class SpotifyPlayerService {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('🎵 Context playback error:', errorText);
+      console.error('[spotifyPlayer] Context playback error:', errorText);
 
       let errorReason = '';
       try {
@@ -273,11 +265,7 @@ class SpotifyPlayerService {
 
     const token = await spotifyAuth.ensureValidToken();
     
-    console.log('🎵 Making Spotify API call to play playlist:', {
-      deviceId: this.deviceId,
-      tracksCount: uris.length,
-      hasToken: !!token
-    });
+    logSpotify('Web API play URIs list length=%d deviceId=%s', uris.length, this.deviceId);
     
     const response = await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${this.deviceId}`, {
       method: 'PUT',
@@ -288,15 +276,11 @@ class SpotifyPlayerService {
       },
     });
     
-    console.log('🎵 Spotify API response:', {
-      status: response.status,
-      statusText: response.statusText,
-      ok: response.ok
-    });
+    logSpotify('Web API play URIs response status=%d ok=%s', response.status, response.ok);
     
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('🎵 Spotify API error response:', errorText);
+      console.error('[spotifyPlayer] Spotify API error response:', errorText);
       throw new Error(`Spotify API error: ${response.status} ${response.statusText} - ${errorText}`);
     }
   }
@@ -453,12 +437,12 @@ class SpotifyPlayerService {
 
       if (!response.ok && response.status !== 204) {
         const errorText = await response.text();
-        console.warn('Transfer playback response:', response.status, errorText);
+        console.warn('[spotifyPlayer] Transfer playback response:', response.status, errorText);
       } else {
-        console.log('🎵 Successfully transferred playback to device');
+        logSpotify('transferred playback to device');
       }
     } catch (error) {
-      console.error('🎵 Failed to transfer playback to device:', error);
+      console.error('[spotifyPlayer] Failed to transfer playback to device:', error);
       throw error;
     }
   }
@@ -485,13 +469,13 @@ class SpotifyPlayerService {
         if (response.status === 200) {
           const data = await response.json();
           if (data.device?.id === this.deviceId && data.device?.is_active) {
-            console.log('🎵 Device is active and ready');
+            logSpotify('device is active and ready');
             this.lastDeviceActiveAt = Date.now();
             return true;
           }
         } else if (response.status === 204) {
           // No active devices yet, continue polling
-          console.log(`🎵 No active device yet, attempt ${i + 1}/${maxRetries}`);
+          logSpotify('no active device yet, attempt %d/%d', i + 1, maxRetries);
         }
 
         if (i < maxRetries - 1) {
@@ -500,7 +484,7 @@ class SpotifyPlayerService {
           await new Promise(resolve => setTimeout(resolve, delay));
         }
       } catch (error) {
-        console.warn(`🎵 Error checking device status (attempt ${i + 1}):`, error);
+        console.warn(`[spotifyPlayer] Error checking device status (attempt ${i + 1}):`, error);
         if (i < maxRetries - 1) {
           const delay = initialDelayMs * Math.pow(2, i);
           await new Promise(resolve => setTimeout(resolve, delay));
@@ -508,7 +492,7 @@ class SpotifyPlayerService {
       }
     }
 
-    console.warn('🎵 Device not confirmed active after polling, proceeding anyway');
+    console.warn('[spotifyPlayer] Device not confirmed active after polling, proceeding anyway');
     return false;
   }
 

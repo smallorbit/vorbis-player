@@ -87,9 +87,12 @@ const AudioPlayerComponent = () => {
     onOpenLibraryDrawer: handlers.handleOpenLibraryDrawer,
     onCloseLibraryDrawer: handlers.handleCloseLibraryDrawer,
     onPlaylistSelect: handlers.handlePlaylistSelect,
+    onAddToQueue: handlers.handleAddToQueue,
     onAlbumPlay: handleAlbumPlay,
     onBackToLibrary: handlers.handleBackToLibrary,
     onStartRadio: handlers.handleStartRadio,
+    onRemoveFromQueue: handlers.handleRemoveFromQueue,
+    onReorderQueue: handlers.handleReorderQueue,
   }), [handlers, handleAlbumPlay]);
 
   const { chosenProviderId, activeDescriptor, connectedProviderIds, fallthroughNotification, dismissFallthroughNotification } = useProviderContext();
@@ -229,6 +232,7 @@ const AudioPlayerComponent = () => {
                 isOpen={state.showLibraryDrawer}
                 onClose={handlers.handleCloseLibraryDrawer}
                 onPlaylistSelect={handlers.handlePlaylistSelect}
+                onAddToQueue={handlers.handleAddToQueue}
               />
             </Suspense>
           </>

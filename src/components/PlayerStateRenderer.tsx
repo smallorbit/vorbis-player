@@ -92,18 +92,18 @@ const LoadingContainer = styled.div`
   position: relative;
 `;
 
-const SpotifyIcon = styled.div`
+const MusicIcon = styled.div`
   width: 4rem;
   height: 4rem;
   border-radius: 50%;
-  background: linear-gradient(135deg, ${({ theme }) => theme.colors.spotify}, ${({ theme }) => theme.colors.spotifyLight});
+  background: linear-gradient(135deg, ${({ theme }) => theme.colors.primary}, ${({ theme }) => theme.colors.primaryHover});
   display: flex;
   align-items: center;
   justify-content: center;
   margin-bottom: ${({ theme }) => theme.spacing.lg};
   animation: ${pulseWave} 2s ease-in-out infinite;
-  box-shadow: ${({ theme }) => theme.shadows.spotify};
-  
+  box-shadow: 0 8px 32px ${({ theme }) => theme.colors.primary}4d;
+
   &::before {
     content: '♪';
     color: ${({ theme }) => theme.colors.white};
@@ -158,7 +158,7 @@ const ProgressBar = styled.div`
     left: -100%;
     width: 100%;
     height: 100%;
-    background: linear-gradient(90deg, transparent, #1db954, transparent);
+    background: linear-gradient(90deg, transparent, ${({ theme }) => theme.colors.primary}, transparent);
     animation: ${shimmer} 1.5s infinite linear;
   }
 `;
@@ -190,7 +190,7 @@ const PlayerStateRenderer: React.FC<PlayerStateRendererProps> = ({
     return (
       <LoadingCard standalone>
         <LoadingContainer>
-          <SpotifyIcon />
+          <MusicIcon />
           <LoadingText>
             <LoadingTitle>Loading Your Music</LoadingTitle>
             <LoadingSubtext>Connecting to {providerName} and preparing your tracks</LoadingSubtext>
@@ -203,7 +203,7 @@ const PlayerStateRenderer: React.FC<PlayerStateRendererProps> = ({
 
   // Handle authentication errors
   if (error) {
-    const isAuthError = error.includes('Redirecting to Spotify login') ||
+    const isAuthError = error.includes('Redirecting to') ||
       error.includes('No authentication token') ||
       error.includes('Authentication expired');
 
@@ -246,7 +246,7 @@ const PlayerStateRenderer: React.FC<PlayerStateRendererProps> = ({
       <Suspense fallback={
         <LoadingCard standalone>
           <LoadingContainer>
-            <SpotifyIcon />
+            <MusicIcon />
             <LoadingText>
               <LoadingTitle>Loading Your Library</LoadingTitle>
               <LoadingSubtext>Discovering your playlists and albums</LoadingSubtext>

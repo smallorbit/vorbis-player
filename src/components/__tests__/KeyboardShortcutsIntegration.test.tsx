@@ -98,7 +98,7 @@ describe('Keyboard Shortcuts Integration', () => {
       onPlayPause: vi.fn(),
       onNext: vi.fn(),
       onPrevious: vi.fn(),
-      onClosePlaylist: vi.fn(),
+      onCloseQueue: vi.fn(),
       onToggleVisualEffectsMenu: vi.fn(),
       onCloseVisualEffects: vi.fn(),
       onToggleBackgroundVisualizer: vi.fn(),

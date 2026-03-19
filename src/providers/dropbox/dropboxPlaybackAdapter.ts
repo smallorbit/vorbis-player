@@ -63,6 +63,7 @@ export class DropboxPlaybackAdapter implements PlaybackProvider {
     const streamUrl = await this.catalog.getTemporaryLink(dropboxPath);
 
     this.currentTrack = track;
+    this.hydrateAlbumArtFromCache(track);
     this.pendingMetadataUpdate = null;
     this.pendingDurationMs = null;
     this.audio!.src = streamUrl;
@@ -70,6 +71,26 @@ export class DropboxPlaybackAdapter implements PlaybackProvider {
 
     this.startUpdateInterval();
     this.enrichMetadataInBackground(track, streamUrl);
+  }
+
+  private hydrateAlbumArtFromCache(track: MediaTrack): void {
+    if (track.image || !track.albumId) return;
+    this.catalog.getAlbumArtForAlbum(track.albumId)
+      .then((cachedImage) => {
+        if (!cachedImage) return;
+        if (this.currentTrack?.id !== track.id) return;
+        if (this.currentTrack.image) return;
+
+        this.currentTrack = { ...this.currentTrack, image: cachedImage };
+        this.pendingMetadataUpdate = {
+          ...(this.pendingMetadataUpdate ?? {}),
+          image: cachedImage,
+        };
+        this.notifyListeners();
+      })
+      .catch(() => {
+        // Best-effort cache hydration.
+      });
   }
 
   private enrichMetadataInBackground(track: MediaTrack, streamUrl: string): void {
@@ -118,8 +139,11 @@ export class DropboxPlaybackAdapter implements PlaybackProvider {
       if (title && title !== track.name) update.name = title;
       if (artist && artist !== track.artists) update.artists = artist;
       if (album && album !== track.album) update.album = album;
-      if (coverArt && !track.image) {
+      if (coverArt && !this.currentTrack?.image) {
         update.image = bytesToDataUrl(coverArt.data, coverArt.mimeType);
+        if (track.albumId) {
+          this.catalog.cacheAlbumArtForAlbum(track.albumId, update.image).catch(() => {});
+        }
       }
 
       if (title || artist || album) {
@@ -137,7 +161,7 @@ export class DropboxPlaybackAdapter implements PlaybackProvider {
       if (isrc) mbUpdate.isrc = isrc;
 
       if (Object.keys(update).length > 0 || Object.keys(mbUpdate).length > 0) {
-        this.currentTrack = { ...track, ...update, ...mbUpdate };
+        this.currentTrack = { ...(this.currentTrack ?? track), ...update, ...mbUpdate };
         if (Object.keys(update).length > 0) {
           this.pendingMetadataUpdate = update;
         }

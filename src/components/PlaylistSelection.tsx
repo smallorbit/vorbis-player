@@ -25,12 +25,14 @@ import { LIKED_SONGS_ID, LIKED_SONGS_NAME, toAlbumPlaylistId } from '../constant
 import LibraryProviderBar from './LibraryProviderBar';
 import { useUnifiedLikedTracks } from '@/hooks/useUnifiedLikedTracks';
 import { librarySyncEngine } from '@/services/cache/librarySyncEngine';
+import { logQueue } from '@/lib/debugLog';
 import TrackInfoPopover, {
   SpotifyIcon,
   PlayIcon,
   DiscogsIcon,
   AddToLibraryIcon,
   RemoveFromLibraryIcon,
+  AddToQueueIcon,
   ICON_MAP,
 } from './controls/TrackInfoPopover';
 
@@ -38,6 +40,7 @@ type ViewMode = 'playlists' | 'albums';
 
 interface PlaylistSelectionProps {
   onPlaylistSelect: (playlistId: string, playlistName: string, provider?: import('@/types/domain').ProviderId) => void;
+  onAddToQueue?: (playlistId: string, playlistName?: string, provider?: import('@/types/domain').ProviderId) => void;
   /** When true, uses compact layout for drawer context (no centering, fills available space) */
   inDrawer?: boolean;
   /** Ref for swipe-to-close gesture zone (search/filters area only, not the scrollable list) */
@@ -46,10 +49,19 @@ interface PlaylistSelectionProps {
   initialSearchQuery?: string;
   /** Set the active tab when the drawer opens */
   initialViewMode?: 'playlists' | 'albums';
+  /** Drawer-only: show refresh button near the sort dropdown */
+  onLibraryRefresh?: () => void;
+  /** Drawer-only: controls the refresh spinner */
+  isLibraryRefreshing?: boolean;
 }
 
 type AlbumPopoverState = {
   album: AlbumInfo;
+  rect: DOMRect;
+} | null;
+
+type PlaylistPopoverState = {
+  playlist: PlaylistInfo;
   rect: DOMRect;
 } | null;
 
@@ -375,12 +387,28 @@ const TabButton = styled.button<{ $active: boolean }>`
   }
 `;
 
-const ControlsContainer = styled.div`
+const ControlsContainer = styled.div<{ $inDrawer?: boolean }>`
   display: flex;
   gap: 0.75rem;
   align-items: center;
   margin-bottom: 1rem;
   flex-wrap: wrap;
+  ${({ $inDrawer }) =>
+    $inDrawer
+      ? `
+    flex-direction: column;
+    align-items: stretch;
+    flex-wrap: nowrap;
+  `
+      : ''}
+`;
+
+const SortControlsRow = styled.div`
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  width: 100%;
+  min-width: 0;
 `;
 
 const SearchInput = styled.input`
@@ -427,6 +455,30 @@ const SelectDropdown = styled.select`
   option {
     background: ${({ theme }) => theme.colors.popover.background};
     color: ${({ theme }) => theme.colors.white};
+  }
+`;
+
+const RefreshButton = styled.button<{ $spinning: boolean }>`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: none;
+  background: none;
+  color: ${({ theme }) => theme.colors.foreground};
+  cursor: pointer;
+  border-radius: 50%;
+  transition: background ${({ theme }) => theme.transitions.fast} ease;
+  padding: 0;
+  flex-shrink: 0;
+
+  &:active {
+    background: ${({ theme }) => theme.colors.control.background};
+  }
+
+  & > svg {
+    animation: ${({ $spinning }) => ($spinning ? 'vorbis-spinner-spin 0.8s linear infinite' : 'none')};
   }
 `;
 
@@ -648,7 +700,16 @@ const GridCardImageComponent: React.FC<LazyImageProps> = React.memo(function Gri
   );
 });
 
-const PlaylistSelection = React.memo(function PlaylistSelection({ onPlaylistSelect, inDrawer = false, swipeZoneRef, initialSearchQuery, initialViewMode }: PlaylistSelectionProps): JSX.Element {
+const PlaylistSelection = React.memo(function PlaylistSelection({
+  onPlaylistSelect,
+  onAddToQueue,
+  inDrawer = false,
+  swipeZoneRef,
+  initialSearchQuery,
+  initialViewMode,
+  onLibraryRefresh,
+  isLibraryRefreshing
+}: PlaylistSelectionProps): JSX.Element {
   const { activeDescriptor, hasMultipleProviders, enabledProviderIds, getDescriptor } = useProviderContext();
   const { isUnifiedLikedActive, totalCount: unifiedLikedCount } = useUnifiedLikedTracks();
   const showProviderBadges = hasMultipleProviders && enabledProviderIds.length > 1;
@@ -678,6 +739,7 @@ const PlaylistSelection = React.memo(function PlaylistSelection({ onPlaylistSele
   );
   const [artistFilter, setArtistFilter] = useState<string>('');
   const [albumPopover, setAlbumPopover] = useState<AlbumPopoverState>(null);
+  const [playlistPopover, setPlaylistPopover] = useState<PlaylistPopoverState>(null);
   const [albumSaved, setAlbumSaved] = useState<boolean | null>(null);
   const libraryFullyLoaded = isInitialLoadComplete;
 
@@ -809,13 +871,22 @@ const PlaylistSelection = React.memo(function PlaylistSelection({ onPlaylistSele
   }, [isInitialLoadComplete, playlists.length, albums.length]);
 
   function handlePlaylistClick(playlist: PlaylistInfo): void {
-    console.log('🎵 Selected playlist:', playlist.name);
+    logQueue('selected playlist: %s (%s)', playlist.name, playlist.id);
     onPlaylistSelect(playlist.id, playlist.name, playlist.provider);
   }
 
   function handleAlbumClick(album: AlbumInfo): void {
-    console.log('🎵 Selected album:', album.name);
+    logQueue('selected album: %s (%s)', album.name, album.id);
     onPlaylistSelect(toAlbumPlaylistId(album.id), album.name, album.provider);
+  }
+
+  function handlePlaylistContextMenu(playlist: PlaylistInfo, event: React.MouseEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    setPlaylistPopover({
+      playlist,
+      rect: new DOMRect(event.clientX, event.clientY, 0, 0),
+    });
   }
 
   function handleAlbumContextMenu(album: AlbumInfo, event: React.MouseEvent): void {
@@ -851,6 +922,32 @@ const PlaylistSelection = React.memo(function PlaylistSelection({ onPlaylistSele
     setArtistFilter(artistName);
   }
 
+  const closePlaylistPopover = React.useCallback(() => {
+    setPlaylistPopover(null);
+  }, []);
+
+  const buildPlaylistPopoverOptions = React.useCallback(() => {
+    if (!playlistPopover) return [];
+    const playlist = playlistPopover.playlist;
+    const options: Array<{ label: string; icon: React.ReactNode; onClick: () => void }> = [
+      {
+        label: `Play ${playlist.name}`,
+        icon: <PlayIcon />,
+        onClick: () => onPlaylistSelect(playlist.id, playlist.name, playlist.provider),
+      },
+    ];
+
+    if (onAddToQueue) {
+      options.push({
+        label: 'Add to Queue',
+        icon: <AddToQueueIcon />,
+        onClick: () => onAddToQueue(playlist.id, playlist.name, playlist.provider),
+      });
+    }
+
+    return options;
+  }, [playlistPopover, onPlaylistSelect, onAddToQueue]);
+
   const closeAlbumPopover = React.useCallback(() => {
     setAlbumPopover(null);
   }, []);
@@ -869,6 +966,14 @@ const PlaylistSelection = React.memo(function PlaylistSelection({ onPlaylistSele
         onClick: () => onPlaylistSelect(toAlbumPlaylistId(album.id), album.name, album.provider),
       },
     ];
+
+    if (onAddToQueue) {
+      options.push({
+        label: 'Add to Queue',
+        icon: <AddToQueueIcon />,
+        onClick: () => onAddToQueue(toAlbumPlaylistId(album.id), album.name, album.provider),
+      });
+    }
 
     if (capabilities?.hasSaveAlbum && catalog?.setAlbumSaved && albumSaved !== null) {
       const saved = albumSaved;
@@ -928,7 +1033,7 @@ const PlaylistSelection = React.memo(function PlaylistSelection({ onPlaylistSele
     }
 
     return options;
-  }, [albumPopover, albumSaved, getDescriptor, activeDescriptor, onPlaylistSelect]);
+  }, [albumPopover, albumSaved, getDescriptor, activeDescriptor, onPlaylistSelect, onAddToQueue]);
 
   const albumPopoverPortal = albumPopover ? createPortal(
     <TrackInfoPopover
@@ -936,6 +1041,16 @@ const PlaylistSelection = React.memo(function PlaylistSelection({ onPlaylistSele
       anchorRect={albumPopover.rect}
       onClose={closeAlbumPopover}
       options={buildAlbumPopoverOptions()}
+    />,
+    document.body,
+  ) : null;
+
+  const playlistPopoverPortal = playlistPopover ? createPortal(
+    <TrackInfoPopover
+      type="playlist"
+      anchorRect={playlistPopover.rect}
+      onClose={closePlaylistPopover}
+      options={buildPlaylistPopoverOptions()}
     />,
     document.body,
   ) : null;
@@ -953,50 +1068,116 @@ const PlaylistSelection = React.memo(function PlaylistSelection({ onPlaylistSele
   const showMainContent = isAuthenticated && !error && (hasAnyContent || (!isLoading && !libraryFullyLoaded));
 
   const searchAndSortControls = (
-    <ControlsContainer>
-      <SearchInput
-        type="text"
-        placeholder={viewMode === 'playlists' ? 'Search playlists...' : 'Search albums...'}
-        value={searchQuery}
-        onChange={(e) => setSearchQuery(e.target.value)}
-      />
+    inDrawer ? (
+      <ControlsContainer $inDrawer>
+        <SearchInput
+          type="text"
+          placeholder={viewMode === 'playlists' ? 'Search playlists...' : 'Search albums...'}
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+        />
 
-      {viewMode === 'playlists' ? (
-        <SelectDropdown
-          value={playlistSort}
-          onChange={(e) => setPlaylistSort(e.target.value as PlaylistSortOption)}
-        >
-          <option value="recently-added">Recently Added</option>
-          <option value="name-asc">Name (A-Z)</option>
-          <option value="name-desc">Name (Z-A)</option>
-        </SelectDropdown>
-      ) : (
-        <SelectDropdown
-          value={albumSort}
-          onChange={(e) => setAlbumSort(e.target.value as AlbumSortOption)}
-        >
-          <option value="recently-added">Recently Added</option>
-          <option value="name-asc">Name (A-Z)</option>
-          <option value="name-desc">Name (Z-A)</option>
-          <option value="artist-asc">Artist (A-Z)</option>
-          <option value="artist-desc">Artist (Z-A)</option>
-          <option value="release-newest">Release (Newest)</option>
-          <option value="release-oldest">Release (Oldest)</option>
-        </SelectDropdown>
-      )}
+        <SortControlsRow>
+          {viewMode === 'playlists' ? (
+            <SelectDropdown
+              value={playlistSort}
+              onChange={(e) => setPlaylistSort(e.target.value as PlaylistSortOption)}
+              style={{ flex: 1, minWidth: 0 }}
+            >
+              <option value="recently-added">Recently Added</option>
+              <option value="name-asc">Name (A-Z)</option>
+              <option value="name-desc">Name (Z-A)</option>
+            </SelectDropdown>
+          ) : (
+            <SelectDropdown
+              value={albumSort}
+              onChange={(e) => setAlbumSort(e.target.value as AlbumSortOption)}
+              style={{ flex: 1, minWidth: 0 }}
+            >
+              <option value="recently-added">Recently Added</option>
+              <option value="name-asc">Name (A-Z)</option>
+              <option value="name-desc">Name (Z-A)</option>
+              <option value="artist-asc">Artist (A-Z)</option>
+              <option value="artist-desc">Artist (Z-A)</option>
+              <option value="release-newest">Release (Newest)</option>
+              <option value="release-oldest">Release (Oldest)</option>
+            </SelectDropdown>
+          )}
+
+          {onLibraryRefresh && (
+            <RefreshButton
+              onClick={onLibraryRefresh}
+              $spinning={!!isLibraryRefreshing}
+              aria-label="Refresh library"
+              title="Refresh library"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                <path d="M21 2v6h-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                <path d="M3 12a9 9 0 0 1 15.36-6.36L21 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                <path d="M3 22v-6h6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                <path d="M21 12a9 9 0 0 1-15.36 6.36L3 16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </RefreshButton>
+          )}
+        </SortControlsRow>
+
+        {(searchQuery || artistFilter) && (
+          <ClearButton
+            onClick={() => {
+              setSearchQuery('');
+              setArtistFilter('');
+            }}
+          >
+            Clear
+          </ClearButton>
+        )}
+      </ControlsContainer>
+    ) : (
+      <ControlsContainer>
+        <SearchInput
+          type="text"
+          placeholder={viewMode === 'playlists' ? 'Search playlists...' : 'Search albums...'}
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+        />
+
+        {viewMode === 'playlists' ? (
+          <SelectDropdown
+            value={playlistSort}
+            onChange={(e) => setPlaylistSort(e.target.value as PlaylistSortOption)}
+          >
+            <option value="recently-added">Recently Added</option>
+            <option value="name-asc">Name (A-Z)</option>
+            <option value="name-desc">Name (Z-A)</option>
+          </SelectDropdown>
+        ) : (
+          <SelectDropdown
+            value={albumSort}
+            onChange={(e) => setAlbumSort(e.target.value as AlbumSortOption)}
+          >
+            <option value="recently-added">Recently Added</option>
+            <option value="name-asc">Name (A-Z)</option>
+            <option value="name-desc">Name (Z-A)</option>
+            <option value="artist-asc">Artist (A-Z)</option>
+            <option value="artist-desc">Artist (Z-A)</option>
+            <option value="release-newest">Release (Newest)</option>
+            <option value="release-oldest">Release (Oldest)</option>
+          </SelectDropdown>
+        )}
 
 
-      {(searchQuery || artistFilter) && (
-        <ClearButton
-          onClick={() => {
-            setSearchQuery('');
-            setArtistFilter('');
-          }}
-        >
-          Clear
-        </ClearButton>
-      )}
-    </ControlsContainer>
+        {(searchQuery || artistFilter) && (
+          <ClearButton
+            onClick={() => {
+              setSearchQuery('');
+              setArtistFilter('');
+            }}
+          >
+            Clear
+          </ClearButton>
+        )}
+      </ControlsContainer>
+    )
   );
 
   const tabsBar = (
@@ -1131,7 +1312,7 @@ const PlaylistSelection = React.memo(function PlaylistSelection({ onPlaylistSele
         const renderPlaylistGrid = (playlist: PlaylistInfo) => {
           const pinned = isPlaylistPinned(playlist.id);
           return (
-            <PinnableGridCard key={`${playlist.provider ?? 'default'}-${playlist.id}`} onClick={() => handlePlaylistClick(playlist)}>
+            <PinnableGridCard key={`${playlist.provider ?? 'default'}-${playlist.id}`} onClick={() => handlePlaylistClick(playlist)} onContextMenu={(e) => handlePlaylistContextMenu(playlist, e)}>
               <GridCardArtWrapper style={{ position: 'relative' }}>
                 <GridCardImageComponent images={playlist.images} alt={playlist.name} />
                 {showProviderBadges && playlist.provider && (
@@ -1157,7 +1338,7 @@ const PlaylistSelection = React.memo(function PlaylistSelection({ onPlaylistSele
         const renderPlaylistList = (playlist: PlaylistInfo) => {
           const pinned = isPlaylistPinned(playlist.id);
           return (
-            <PinnableListItem key={`${playlist.provider ?? 'default'}-${playlist.id}`} onClick={() => handlePlaylistClick(playlist)}>
+            <PinnableListItem key={`${playlist.provider ?? 'default'}-${playlist.id}`} onClick={() => handlePlaylistClick(playlist)} onContextMenu={(e) => handlePlaylistContextMenu(playlist, e)}>
               <div style={{ position: 'relative' }}>
                 <PlaylistImage images={playlist.images} alt={playlist.name} />
                 {showProviderBadges && playlist.provider && (
@@ -1371,6 +1552,7 @@ const PlaylistSelection = React.memo(function PlaylistSelection({ onPlaylistSele
         {statusContent}
         {mainContent}
         {albumPopoverPortal}
+        {playlistPopoverPortal}
       </DrawerContentWrapper>
     );
   }
@@ -1382,6 +1564,7 @@ const PlaylistSelection = React.memo(function PlaylistSelection({ onPlaylistSele
           {statusContent}
           {mainContent}
           {albumPopoverPortal}
+        {playlistPopoverPortal}
         </CardContent>
       </SelectionCard>
     </Container>

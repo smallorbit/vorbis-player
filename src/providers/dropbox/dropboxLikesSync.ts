@@ -13,6 +13,7 @@ import {
   setTombstones,
 } from './dropboxLikesCache';
 import { ensureVorbisFolder } from './dropboxSyncFolder';
+import { logDropboxSync } from '@/lib/debugLog';
 
 export interface RemoteLikesFile {
   version: 1;
@@ -268,9 +269,7 @@ export class DropboxLikesSyncService {
         await this.doPush();
       }
 
-      console.log(
-        `[DropboxLikesSync] Initial sync complete: ${mergedLikes.length} likes, ${mergedTombstones.length} tombstones`,
-      );
+      logDropboxSync('initial sync complete: %d likes, %d tombstones', mergedLikes.length, mergedTombstones.length);
     } catch (error) {
       console.warn('[DropboxLikesSync] Initial sync failed:', error);
     }

@@ -17,6 +17,7 @@ import { providerRegistry } from './providers/registry';
 import { getLikesSync } from './providers/dropbox/dropboxLikesSync';
 import { getPreferencesSync } from './providers/dropbox/dropboxPreferencesSync';
 import { handleLastFmCallback } from './services/lastfmScrobbler';
+import { logApp } from '@/lib/debugLog';
 
 /**
  * Cleanup function to remove deprecated localStorage keys
@@ -39,7 +40,7 @@ const cleanupDeprecatedLocalStorage = () => {
   try {
     // Remove the deprecated customAccentColorOverrides key
     localStorage.removeItem('customAccentColorOverrides');
-    console.log('Cleaned up deprecated localStorage key: customAccentColorOverrides');
+    logApp('cleaned up deprecated localStorage key: customAccentColorOverrides');
   } catch (error) {
     console.warn('Failed to clean up deprecated localStorage keys:', error);
   }
@@ -49,6 +50,8 @@ const AppContainer = styled.div`
   color: ${({ theme }) => theme.colors.foreground};
   min-height: 100vh;
   min-height: 100dvh;
+  box-sizing: border-box;
+  padding-top: env(safe-area-inset-top, 0px);
   ${flexCenter}
 `;
 

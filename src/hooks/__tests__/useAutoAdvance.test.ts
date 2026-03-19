@@ -124,7 +124,7 @@ describe('useAutoAdvance', () => {
     expect(playTrack).not.toHaveBeenCalled();
   });
 
-  it('wraps from last track to index 0', () => {
+  it('stops at the end of the queue instead of wrapping', () => {
     renderHook(() =>
       useAutoAdvance({ tracks, currentTrackIndex: 2, playTrack, endThreshold: 2000 }),
       opts
@@ -151,6 +151,6 @@ describe('useAutoAdvance', () => {
     }));
 
     vi.advanceTimersByTime(500);
-    expect(playTrack).toHaveBeenCalledWith(0, true);
+    expect(playTrack).not.toHaveBeenCalled();
   });
 });

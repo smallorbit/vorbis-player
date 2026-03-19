@@ -1,4 +1,4 @@
-import React, { Suspense, lazy, useState, useCallback, useRef, useEffect } from 'react';
+import React, { Suspense, lazy, useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { clearCacheWithOptions } from '@/services/cache/libraryCache';
 import { clearAllPins } from '@/services/settings/pinnedItemsStorage';
 import type { ClearCacheOptions } from '@/components/VisualEffectsMenu';
@@ -18,6 +18,7 @@ import { useVisualEffectsState } from '@/hooks/useVisualEffectsState';
 import { useVolume } from '@/hooks/useVolume';
 import { useLikeTrack } from '@/hooks/useLikeTrack';
 import { useTrackListContext, useCurrentTrackContext } from '@/contexts/TrackContext';
+import { useProviderContext } from '@/contexts/ProviderContext';
 import { useUnifiedLikedTracks } from '@/hooks/useUnifiedLikedTracks';
 import { LIKED_SONGS_ID } from '@/constants/playlist';
 import { useColorContext } from '@/contexts/ColorContext';
@@ -26,9 +27,13 @@ import { useProfilingContext } from '@/contexts/ProfilingContext';
 import { useVisualizerDebug } from '@/contexts/VisualizerDebugContext';
 import LibraryDrawer from './LibraryDrawer';
 import AlbumArtQuickSwapBack from './AlbumArtQuickSwapBack';
+import { useSaveQueueAsPlaylist } from '@/hooks/useSaveQueueAsPlaylist';
+import Toast from './Toast';
 
-const PlaylistDrawer = lazy(() => import('./PlaylistDrawer'));
-const PlaylistBottomSheet = lazy(() => import('./PlaylistBottomSheet'));
+const SaveQueueDialog = lazy(() => import('./SaveQueueDialog'));
+
+const QueueDrawer = lazy(() => import('./QueueDrawer'));
+const QueueBottomSheet = lazy(() => import('./QueueBottomSheet'));
 const VisualEffectsMenu = lazy(() => import('./VisualEffectsMenu/index'));
 const KeyboardShortcutsHelp = lazy(() => import('./KeyboardShortcutsHelp'));
 
@@ -41,9 +46,12 @@ interface PlaybackHandlers {
   onOpenLibraryDrawer: () => void;
   onCloseLibraryDrawer: () => void;
   onPlaylistSelect: (playlistId: string, playlistName: string, provider?: import('@/types/domain').ProviderId) => void;
+  onAddToQueue?: (playlistId: string, playlistName?: string, provider?: import('@/types/domain').ProviderId) => void;
   onAlbumPlay: (albumId: string, albumName: string) => void;
   onBackToLibrary: () => void;
   onStartRadio?: () => void;
+  onRemoveFromQueue?: (index: number) => void;
+  onReorderQueue?: (fromIndex: number, toIndex: number) => void;
 }
 
 interface AlbumArtBounds {
@@ -167,7 +175,7 @@ function ControlsLoadingFallback() {
   );
 }
 
-function PlaylistLoadingFallback() {
+function QueueLoadingFallback() {
   const theme = useTheme();
   return (
     <div style={{
@@ -182,7 +190,7 @@ function PlaylistLoadingFallback() {
       justifyContent: 'center',
       color: theme.colors.muted.foreground
     }}>
-      Loading playlist...
+      Loading queue...
     </div>
   );
 }
@@ -296,7 +304,7 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
   const { tracks, shuffleEnabled, handleShuffleToggle, selectedPlaylistId } = useTrackListContext();
   const { isUnifiedLikedActive } = useUnifiedLikedTracks();
   const showProviderIcons = (isUnifiedLikedActive && selectedPlaylistId === LIKED_SONGS_ID) || !!radioActive;
-  const { currentTrack, currentTrackIndex, showPlaylist, setShowPlaylist } = useCurrentTrackContext();
+  const { currentTrack, currentTrackIndex, showQueue, setShowQueue } = useCurrentTrackContext();
 
   const {
     accentColor,
@@ -335,6 +343,41 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
   const { effectiveGlow, handleGlowIntensityChange, handleGlowRateChange, restoreGlowSettings } = useVisualEffectsState();
   const { handleMuteToggle, isMuted, volume, setVolumeLevel } = useVolume(currentTrackProvider);
   const { isLiked, isLikePending, handleLikeToggle } = useLikeTrack(currentTrack?.id, currentTrack?.provider);
+
+  // --- Save queue as playlist ---
+  const { connectedProviderIds } = useProviderContext();
+  const { saveQueueAsPlaylist, status: saveQueueStatus, error: saveQueueError, resetStatus: resetSaveQueue } = useSaveQueueAsPlaylist();
+  const [showSaveQueueDialog, setShowSaveQueueDialog] = useState(false);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const canSaveQueue = useMemo(() => connectedProviderIds.includes('spotify') && tracks.length > 0, [connectedProviderIds, tracks.length]);
+
+  const handleOpenSaveQueue = useCallback(() => setShowSaveQueueDialog(true), []);
+  const handleCloseSaveQueue = useCallback(() => {
+    setShowSaveQueueDialog(false);
+    resetSaveQueue();
+  }, [resetSaveQueue]);
+
+  const handleSaveQueue = useCallback(async (name: string) => {
+    try {
+      const result = await saveQueueAsPlaylist(name, tracks);
+      setShowSaveQueueDialog(false);
+      const skippedNote = result.skippedTracks > 0
+        ? ` (${result.skippedTracks} track${result.skippedTracks !== 1 ? 's' : ''} skipped)`
+        : '';
+      setToastMessage(`Saved ${result.totalTracks} track${result.totalTracks !== 1 ? 's' : ''} to "${name}"${skippedNote}`);
+    } catch {
+      // Error is shown in the dialog via status/error props
+    }
+  }, [saveQueueAsPlaylist, tracks]);
+
+  const handleDismissToast = useCallback(() => setToastMessage(null), []);
+
+  // Auto-dismiss toast
+  useEffect(() => {
+    if (!toastMessage) return;
+    const timer = setTimeout(() => setToastMessage(null), 5000);
+    return () => clearTimeout(timer);
+  }, [toastMessage]);
 
   // --- Local UI state ---
   const [showHelp, setShowHelp] = useState(false);
@@ -421,13 +464,13 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
     setAccentColor(color);
   }, [currentTrack?.album_id, handleSetAccentColorOverride, handleResetAccentColorOverride, setAccentColor]);
 
-  // --- Playlist visibility ---
-  const handleShowPlaylist = useCallback(() => {
+  // --- Queue visibility ---
+  const handleShowQueue = useCallback(() => {
     handlers.onCloseLibraryDrawer();
     setShowVisualEffects(false);
-    setShowPlaylist(prev => !prev);
-  }, [setShowPlaylist, handlers, setShowVisualEffects]);
-  const handleClosePlaylist = useCallback(() => setShowPlaylist(false), [setShowPlaylist]);
+    setShowQueue(prev => !prev);
+  }, [setShowQueue, handlers, setShowVisualEffects]);
+  const handleCloseQueue = useCallback(() => setShowQueue(false), [setShowQueue]);
 
   // --- App settings handlers ---
   const handleClearCache = useCallback(async (options: ClearCacheOptions) => {
@@ -463,16 +506,16 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
 
   // --- VFX menu visibility ---
   const handleShowVisualEffects = useCallback(() => {
-    setShowPlaylist(false);
+    setShowQueue(false);
     handlers.onCloseLibraryDrawer();
     setShowVisualEffects(true);
-  }, [setShowPlaylist, handlers, setShowVisualEffects]);
+  }, [setShowQueue, handlers, setShowVisualEffects]);
   const handleCloseVisualEffects = useCallback(() => setShowVisualEffects(false), [setShowVisualEffects]);
   const handleToggleVisualEffectsMenu = useCallback(() => {
-    setShowPlaylist(false);
+    setShowQueue(false);
     handlers.onCloseLibraryDrawer();
     setShowVisualEffects(prev => !prev);
-  }, [setShowVisualEffects, setShowPlaylist, handlers]);
+  }, [setShowVisualEffects, setShowQueue, handlers]);
 
   // --- Glow toggle (re-enables VFX + restores saved state) ---
   const handleGlowToggle = useCallback(() => {
@@ -503,10 +546,10 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
 
   // --- Library drawer ---
   const handleOpenLibraryDrawer = useCallback(() => {
-    setShowPlaylist(false);
+    setShowQueue(false);
     setShowVisualEffects(false);
     handlers.onOpenLibraryDrawer();
-  }, [handlers, setShowPlaylist, setShowVisualEffects]);
+  }, [handlers, setShowQueue, setShowVisualEffects]);
 
   const handleArtistBrowse = useCallback((artistName: string) => {
     setLibrarySearchQuery(artistName);
@@ -567,12 +610,12 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
   }, { enabled: isTouchDevice });
 
   const handleSwipeUp = useCallback(() => {
-    if (showPlaylist) {
-      handleClosePlaylist();
+    if (showQueue) {
+      handleCloseQueue();
     } else {
-      handleShowPlaylist();
+      handleShowQueue();
     }
-  }, [showPlaylist, handleShowPlaylist, handleClosePlaylist]);
+  }, [showQueue, handleShowQueue, handleCloseQueue]);
 
   const handleSwipeDown = useCallback(() => {
     if (showLibraryDrawer) {
@@ -609,24 +652,24 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
   const handleArrowUp = useCallback(() => {
     if (showLibraryDrawer) {
       handlers.onCloseLibraryDrawer();
-      handleShowPlaylist();
-    } else if (showPlaylist) {
-      handleClosePlaylist();
+      handleShowQueue();
+    } else if (showQueue) {
+      handleCloseQueue();
     } else {
-      handleShowPlaylist();
+      handleShowQueue();
     }
-  }, [handlers, showLibraryDrawer, showPlaylist, handleShowPlaylist, handleClosePlaylist]);
+  }, [handlers, showLibraryDrawer, showQueue, handleShowQueue, handleCloseQueue]);
 
   const handleArrowDown = useCallback(() => {
-    if (showPlaylist) {
-      handleClosePlaylist();
+    if (showQueue) {
+      handleCloseQueue();
       handleOpenLibraryDrawer();
     } else if (showLibraryDrawer) {
       handlers.onCloseLibraryDrawer();
     } else {
       handleOpenLibraryDrawer();
     }
-  }, [handlers, showPlaylist, showLibraryDrawer, handleClosePlaylist, handleOpenLibraryDrawer]);
+  }, [handlers, showQueue, showLibraryDrawer, handleCloseQueue, handleOpenLibraryDrawer]);
 
   const handleVolumeUp = useCallback(() => {
     setVolumeLevel(Math.min(100, (volume ?? 50) + 5));
@@ -640,7 +683,7 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
     onPlayPause: handlePlayPause,
     onNext: handlers.onNext,
     onPrevious: handlers.onPrevious,
-    onClosePlaylist: handleClosePlaylist,
+    onCloseQueue: handleCloseQueue,
     onToggleVisualEffectsMenu: handleToggleVisualEffectsMenu,
     onCloseVisualEffects: handleEscapeClose,
     onToggleBackgroundVisualizer: handleBackgroundVisualizerToggle,
@@ -652,7 +695,7 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
     onToggleLike: handleLikeToggle,
     onToggleShuffle: handleShuffleToggle,
     onToggleHelp: toggleHelp,
-    onShowPlaylist: handleArrowUp,
+    onShowQueue: handleArrowUp,
     onOpenLibraryDrawer: handleArrowDown,
     onToggleZenMode: handleZenModeToggle,
   }, { prefersPointerInput: hasPointerInput });
@@ -788,7 +831,7 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
         onVolumeChange={setVolumeLevel}
         onShowVisualEffects={handleShowVisualEffects}
         onBackToLibrary={handleOpenLibraryDrawer}
-        onShowPlaylist={handleShowPlaylist}
+        onShowQueue={handleShowQueue}
         onZenModeToggle={handleZenModeToggle}
         shuffleEnabled={shuffleEnabled}
         onShuffleToggle={handleShuffleToggle}
@@ -807,31 +850,39 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
           onVisualizerDebugToggle={handleVisualizerDebugToggle}
         />
       </Suspense>
-      <Suspense fallback={<PlaylistLoadingFallback />}>
+      <Suspense fallback={<QueueLoadingFallback />}>
         {isMobile ? (
-          <ProfiledComponent id="PlaylistBottomSheet">
-            <PlaylistBottomSheet
-              isOpen={showPlaylist}
-              onClose={handleClosePlaylist}
+          <ProfiledComponent id="QueueBottomSheet">
+            <QueueBottomSheet
+              isOpen={showQueue}
+              onClose={handleCloseQueue}
               tracks={tracks}
               currentTrackIndex={currentTrackIndex}
               onTrackSelect={handlers.onTrackSelect}
+              onRemoveTrack={handlers.onRemoveFromQueue}
+              onReorderTracks={handlers.onReorderQueue}
               showProviderIcons={showProviderIcons}
               radioActive={radioActive}
               radioSeedDescription={radioState?.seedDescription}
+              onSaveQueue={handleOpenSaveQueue}
+              canSaveQueue={canSaveQueue}
             />
           </ProfiledComponent>
         ) : (
-          <ProfiledComponent id="PlaylistDrawer">
-            <PlaylistDrawer
-              isOpen={showPlaylist}
-              onClose={handleClosePlaylist}
+          <ProfiledComponent id="QueueDrawer">
+            <QueueDrawer
+              isOpen={showQueue}
+              onClose={handleCloseQueue}
               tracks={tracks}
               currentTrackIndex={currentTrackIndex}
               onTrackSelect={handlers.onTrackSelect}
+              onRemoveTrack={handlers.onRemoveFromQueue}
+              onReorderTracks={handlers.onReorderQueue}
               showProviderIcons={showProviderIcons}
               radioActive={radioActive}
               radioSeedDescription={radioState?.seedDescription}
+              onSaveQueue={handleOpenSaveQueue}
+              canSaveQueue={canSaveQueue}
             />
           </ProfiledComponent>
         )}
@@ -844,10 +895,22 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
           isOpen={showLibraryDrawer}
           onClose={handleCloseLibraryDrawer}
           onPlaylistSelect={handlers.onPlaylistSelect}
+          onAddToQueue={handlers.onAddToQueue}
           initialSearchQuery={librarySearchQuery}
           initialViewMode={libraryViewMode}
         />
       </ProfiledComponent>
+      <Suspense fallback={null}>
+        <SaveQueueDialog
+          isOpen={showSaveQueueDialog}
+          onClose={handleCloseSaveQueue}
+          onSave={handleSaveQueue}
+          status={saveQueueStatus}
+          error={saveQueueError}
+          trackCount={tracks.length}
+        />
+      </Suspense>
+      {toastMessage && <Toast message={toastMessage} onDismiss={handleDismissToast} />}
     </ContentWrapper>
   );
 });

@@ -117,6 +117,11 @@ class SpotifyQueueSyncService {
     }
   }
 
+  /** Look up a previously resolved Spotify URI for a non-Spotify track. */
+  getResolvedUri(trackId: string): string | null | undefined {
+    return this.resolutionCache.get(trackId);
+  }
+
   clearCache(): void {
     this.resolutionCache.clear();
   }

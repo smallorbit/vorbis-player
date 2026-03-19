@@ -26,8 +26,11 @@ echo "Copying environment file..."
 if [ -f "${REPO_ROOT}/.env.local" ]; then
   cp "${REPO_ROOT}/.env.local" "${WORKTREE_PATH}/.env.local"
   echo "  .env.local copied."
+elif [ -f "${REPO_ROOT}/.env" ]; then
+  cp "${REPO_ROOT}/.env" "${WORKTREE_PATH}/.env.local"
+  echo "  .env copied as .env.local."
 else
-  echo "  WARNING: No .env.local found in main repo — copy it manually."
+  echo "  WARNING: No .env.local or .env found in main repo — copy it manually."
 fi
 
 echo ""

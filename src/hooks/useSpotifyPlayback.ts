@@ -6,6 +6,7 @@ import type { Track } from '../services/spotify';
 import type { ProviderDescriptor } from '@/types/providers';
 import type { MediaTrack, ProviderId } from '@/types/domain';
 import { providerRegistry } from '@/providers/registry';
+import { logQueue } from '@/lib/debugLog';
 
 interface UseSpotifyPlaybackProps {
   tracks: Track[];
@@ -150,6 +151,18 @@ export const useSpotifyPlayback = ({
     const mediaTracks = mediaTracksRef?.current ?? [];
     const mediaTrack = mediaTracks[index];
     const trackProvider = resolveTrackProvider(mediaTrack);
+    logQueue(
+      'playTrack(%d) — provider=%s, track=%s, mediaLen=%d, tracksLen=%d, skipOnError=%s',
+      index,
+      trackProvider,
+      mediaTrack ? `"${mediaTrack.name}" (${mediaTrack.id.slice(0, 8)})` : 'NO_MEDIA_TRACK',
+      mediaTracks.length,
+      tracksRef.current.length,
+      String(skipOnError),
+    );
+    if (!mediaTrack && mediaTracks.length > 0) {
+      console.warn(`[Queue] playTrack(${index}) — index out of bounds! mediaTracksRef has ${mediaTracks.length} items`);
+    }
     pausePreviousProvider(trackProvider);
 
     currentPlaybackProviderRef.current = trackProvider;
@@ -169,6 +182,7 @@ export const useSpotifyPlayback = ({
       }
 
       // Legacy fallback: no MediaTrack available, use Track from tracksRef
+      console.warn(`[Queue] playTrack(${index}) — LEGACY FALLBACK: no mediaTrack, using tracksRef`);
       const currentTracks = tracksRef.current;
       if (!currentTracks[index]) {
         console.error(`[Spotify] No track at index ${index} (tracks length: ${currentTracks.length})`);

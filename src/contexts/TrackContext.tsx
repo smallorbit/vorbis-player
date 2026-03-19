@@ -3,6 +3,7 @@ import type { Track } from '@/services/spotify';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { isProfilingEnabled } from '@/contexts/ProfilingContext';
 import { shuffleArray } from '@/utils/shuffleArray';
+import { logQueue } from '@/lib/debugLog';
 
 // --- TrackListContext ---
 
@@ -14,7 +15,7 @@ interface TrackListContextValue {
   shuffleEnabled: boolean;
   selectedPlaylistId: string | null;
   setTracks: (tracks: Track[] | ((prev: Track[]) => Track[])) => void;
-  setOriginalTracks: (tracks: Track[]) => void;
+  setOriginalTracks: (tracks: Track[] | ((prev: Track[]) => Track[])) => void;
   setIsLoading: (loading: boolean | ((prev: boolean) => boolean)) => void;
   setError: (error: string | null | ((prev: string | null) => string | null)) => void;
   setShuffleEnabled: (enabled: boolean) => void;
@@ -28,8 +29,8 @@ interface CurrentTrackContextValue {
   currentTrack: Track | null;
   currentTrackIndex: number;
   setCurrentTrackIndex: (index: number | ((prev: number) => number)) => void;
-  showPlaylist: boolean;
-  setShowPlaylist: (visible: boolean | ((prev: boolean) => boolean)) => void;
+  showQueue: boolean;
+  setShowQueue: (visible: boolean | ((prev: boolean) => boolean)) => void;
 }
 
 const TrackListContext = createContext<TrackListContextValue | null>(null);
@@ -43,7 +44,7 @@ export function TrackProvider({ children }: { children: React.ReactNode }) {
   const [error, setError] = useState<string | null>(null);
   const [shuffleEnabled, setShuffleEnabled] = useLocalStorage('vorbis-player-shuffle-enabled', false);
   const [selectedPlaylistId, setSelectedPlaylistId] = useState<string | null>(null);
-  const [showPlaylist, setShowPlaylist] = useState(false);
+  const [showQueue, setShowQueue] = useState(false);
 
   const currentTrack = useMemo(
     () => tracks[currentTrackIndex] || null,
@@ -54,6 +55,14 @@ export function TrackProvider({ children }: { children: React.ReactNode }) {
     if (originalTracks.length === 0) return;
 
     const current = tracks[currentTrackIndex];
+    logQueue(
+      'shuffleToggle — %s, currentIndex=%d, current="%s", tracksLen=%d, originalLen=%d',
+      shuffleEnabled ? 'OFF' : 'ON',
+      currentTrackIndex,
+      current?.name ?? '',
+      tracks.length,
+      originalTracks.length,
+    );
 
     if (!shuffleEnabled) {
       const rest = originalTracks.filter(t => t.id !== current?.id);
@@ -61,6 +70,7 @@ export function TrackProvider({ children }: { children: React.ReactNode }) {
       const newTracks = current ? [current, ...shuffled] : shuffled;
       setTracks(newTracks);
       setCurrentTrackIndex(0);
+      logQueue('shuffleToggle — shuffled: newIndex=0, newLen=%d', newTracks.length);
     } else {
       const currentTrackId = current?.id;
       const restoredIndex = currentTrackId
@@ -68,6 +78,7 @@ export function TrackProvider({ children }: { children: React.ReactNode }) {
         : 0;
       setTracks(originalTracks);
       setCurrentTrackIndex(restoredIndex >= 0 ? restoredIndex : 0);
+      logQueue('shuffleToggle — restored original order: newIndex=%d, len=%d', restoredIndex >= 0 ? restoredIndex : 0, originalTracks.length);
     }
 
     setShuffleEnabled(!shuffleEnabled);
@@ -102,9 +113,9 @@ export function TrackProvider({ children }: { children: React.ReactNode }) {
     currentTrack,
     currentTrackIndex,
     setCurrentTrackIndex,
-    showPlaylist,
-    setShowPlaylist,
-  }), [currentTrack, currentTrackIndex, showPlaylist]);
+    showQueue,
+    setShowQueue,
+  }), [currentTrack, currentTrackIndex, showQueue]);
 
   const profilingRef = useRef(0);
   useEffect(() => {

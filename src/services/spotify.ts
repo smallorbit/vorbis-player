@@ -9,7 +9,9 @@ import { ALBUM_ID_PREFIX } from '../constants/playlist';
 import * as libraryCache from './cache/libraryCache';
 
 const SPOTIFY_CLIENT_ID = import.meta.env.VITE_SPOTIFY_CLIENT_ID;
-const SPOTIFY_REDIRECT_URI = import.meta.env.VITE_SPOTIFY_REDIRECT_URI;
+function getSpotifyRedirectUri(): string {
+  return import.meta.env.VITE_SPOTIFY_REDIRECT_URI || `${window.location.origin}/auth/spotify/callback`;
+}
 
 const SCOPES = [
   'streaming',
@@ -23,6 +25,8 @@ const SCOPES = [
   'user-library-read',
   'user-library-modify',
   'user-top-read',
+  'playlist-modify-public',
+  'playlist-modify-private',
 ];
 
 const TOKEN_REFRESH_BUFFER_MS = 5 * 60 * 1000;
@@ -423,7 +427,7 @@ class SpotifyAuth {
     const params = new URLSearchParams({
       client_id: SPOTIFY_CLIENT_ID,
       response_type: 'code',
-      redirect_uri: SPOTIFY_REDIRECT_URI,
+      redirect_uri: getSpotifyRedirectUri(),
       scope: SCOPES.join(' '),
       code_challenge_method: 'S256',
       code_challenge: codeChallenge,
@@ -449,7 +453,7 @@ class SpotifyAuth {
         client_id: SPOTIFY_CLIENT_ID,
         grant_type: 'authorization_code',
         code,
-        redirect_uri: SPOTIFY_REDIRECT_URI,
+        redirect_uri: getSpotifyRedirectUri(),
         code_verifier: codeVerifier,
       }),
     });
@@ -1104,5 +1108,77 @@ export async function searchTrack(
   }
 
   return null;
+}
+
+// ---------------------------------------------------------------------------
+// Playlist Creation
+// ---------------------------------------------------------------------------
+
+interface SpotifyUserProfile {
+  id: string;
+  display_name?: string;
+}
+
+interface SpotifyPlaylistResponse {
+  id: string;
+  uri: string;
+  external_urls: { spotify: string };
+}
+
+/** Get the current user's Spotify ID. */
+export async function getCurrentUserId(): Promise<string> {
+  const token = await spotifyAuth.ensureValidToken();
+  const data = await spotifyApiRequest<SpotifyUserProfile>(
+    'https://api.spotify.com/v1/me',
+    token,
+  );
+  return data.id;
+}
+
+/** Create a new playlist on the current user's Spotify account. */
+export async function createPlaylist(
+  name: string,
+  options?: { description?: string; isPublic?: boolean },
+): Promise<{ id: string; uri: string; url: string }> {
+  const token = await spotifyAuth.ensureValidToken();
+  const userId = await getCurrentUserId();
+
+  const data = await spotifyApiRequest<SpotifyPlaylistResponse>(
+    `https://api.spotify.com/v1/users/${encodeURIComponent(userId)}/playlists`,
+    token,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name,
+        public: options?.isPublic ?? false,
+        description: options?.description ?? '',
+      }),
+    },
+  );
+
+  return { id: data.id, uri: data.uri, url: data.external_urls.spotify };
+}
+
+/** Add tracks to a Spotify playlist by URI. Handles batching (max 100 per request). */
+export async function addTracksToPlaylist(
+  playlistId: string,
+  uris: string[],
+): Promise<void> {
+  const token = await spotifyAuth.ensureValidToken();
+  const BATCH_SIZE = 100;
+
+  for (let i = 0; i < uris.length; i += BATCH_SIZE) {
+    const batch = uris.slice(i, i + BATCH_SIZE);
+    await spotifyApiRequest<{ snapshot_id: string }>(
+      `https://api.spotify.com/v1/playlists/${encodeURIComponent(playlistId)}/tracks`,
+      token,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ uris: batch }),
+      },
+    );
+  }
 }
 

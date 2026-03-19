@@ -24,7 +24,7 @@ interface TrackState {
   shuffleEnabled: boolean;
 }
 
-interface PlaylistState {
+interface QueueState {
   selectedId: string | null;
   isVisible: boolean;
 }
@@ -51,14 +51,14 @@ interface VisualEffectsState {
 
 interface TrackActions {
   setTracks: (tracks: Track[] | ((prev: Track[]) => Track[])) => void;
-  setOriginalTracks: (tracks: Track[]) => void;
+  setOriginalTracks: (tracks: Track[] | ((prev: Track[]) => Track[])) => void;
   setCurrentIndex: (index: number | ((prev: number) => number)) => void;
   setLoading: (loading: boolean | ((prev: boolean) => boolean)) => void;
   setError: (error: string | null | ((prev: string | null) => string | null)) => void;
   setShuffleEnabled: (enabled: boolean) => void;
 }
 
-interface PlaylistActions {
+interface QueueActions {
   setSelectedId: (id: string | null | ((prev: string | null) => string | null)) => void;
   setVisible: (visible: boolean | ((prev: boolean) => boolean)) => void;
 }
@@ -95,7 +95,7 @@ interface ZenModeActions {
 
 interface PlayerState {
   track: TrackState;
-  playlist: PlaylistState;
+  queue: QueueState;
   color: ColorState;
   visualEffects: VisualEffectsState;
   zenMode: ZenModeState;
@@ -104,7 +104,7 @@ interface PlayerState {
 interface PlayerStateSetters {
   actions: {
     track: TrackActions;
-    playlist: PlaylistActions;
+    queue: QueueActions;
     color: ColorActions;
     visualEffects: VisualEffectsActions;
     zenMode: ZenModeActions;
@@ -129,7 +129,7 @@ export function usePlayerState(): PlayerState & PlayerStateSetters {
     false
   );
   const [selectedPlaylistId, setSelectedPlaylistId] = useState<string | null>(null);
-  const [showPlaylist, setShowPlaylist] = useState(false);
+  const [showQueue, setShowQueue] = useState(false);
   const [accentColor, setAccentColor] = useState<string>(theme.colors.accent);
   const [showVisualEffects, setShowVisualEffects] = useState(false);
 
@@ -204,9 +204,9 @@ export function usePlayerState(): PlayerState & PlayerStateSetters {
       error,
       shuffleEnabled
     },
-    playlist: {
+    queue: {
       selectedId: selectedPlaylistId,
-      isVisible: showPlaylist
+      isVisible: showQueue
     },
     color: {
       current: accentColor,
@@ -238,9 +238,9 @@ export function usePlayerState(): PlayerState & PlayerStateSetters {
         setError,
         setShuffleEnabled
       },
-      playlist: {
+      queue: {
         setSelectedId: setSelectedPlaylistId,
-        setVisible: setShowPlaylist
+        setVisible: setShowQueue
       },
       color: {
         setCurrent: setAccentColor,

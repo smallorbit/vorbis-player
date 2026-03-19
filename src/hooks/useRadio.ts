@@ -10,6 +10,7 @@ import type { MediaTrack } from '@/types/domain';
 import type { RadioSeed, RadioResult } from '@/types/radio';
 import { generateRadioQueue } from '@/services/radioService';
 import { isLastFmConfigured } from '@/services/lastfm';
+import { logRadio } from '@/lib/debugLog';
 
 export interface RadioState {
   /** Whether a radio session is currently active. */
@@ -83,7 +84,7 @@ export function useRadio(): UseRadioReturn {
         lastMatchStats: result.matchStats,
       });
 
-      console.debug('[Radio] Queue generated:', result.matchStats);
+      logRadio('queue generated: %o', result.matchStats);
       return result;
     } catch (err) {
       if (generationRef.current !== generationId) return null;

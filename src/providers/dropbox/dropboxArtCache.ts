@@ -8,6 +8,7 @@ const DB_NAME = 'vorbis-dropbox-art';
 const DB_VERSION = 6;
 const STORE = 'art';
 const ART_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+const ALBUM_ART_KEY_PREFIX = 'album:';
 
 interface CachedArt {
   path: string;
@@ -94,6 +95,20 @@ export async function putArt(path: string, dataUrl: string): Promise<void> {
   });
 }
 
+function albumArtCacheKey(albumPath: string): string {
+  return `${ALBUM_ART_KEY_PREFIX}${albumPath}`;
+}
+
+export async function getAlbumArt(albumPath: string): Promise<string | null> {
+  if (!albumPath) return null;
+  return getArt(albumArtCacheKey(albumPath));
+}
+
+export async function putAlbumArt(albumPath: string, dataUrl: string): Promise<void> {
+  if (!albumPath || !dataUrl) return;
+  await putArt(albumArtCacheKey(albumPath), dataUrl);
+}
+
 export async function clearArt(): Promise<void> {
   const database = await getDb();
   if (!database) return;
@@ -138,21 +153,16 @@ export async function putTagMetadata(trackId: string, tags: Omit<CachedTagMetada
   }
 }
 
-export async function getTagsMap(trackIds: string[]): Promise<Map<string, CachedTagMetadata>> {
-  const result = new Map<string, CachedTagMetadata>();
-  if (trackIds.length === 0) return result;
-  const database = await getDb();
-  if (!database) return result;
+function batchGetFromStore<T>(database: IDBDatabase, storeName: string, ids: string[]): Promise<Map<string, T>> {
   return new Promise((resolve) => {
+    const result = new Map<string, T>();
     try {
-      const tx = database.transaction('tags', 'readonly');
-      const store = tx.objectStore('tags');
-      let pending = trackIds.length;
-      for (const id of trackIds) {
+      const store = database.transaction(storeName, 'readonly').objectStore(storeName);
+      let pending = ids.length;
+      for (const id of ids) {
         const req = store.get(id);
         req.onsuccess = () => {
-          const entry = req.result as CachedTagMetadata | undefined;
-          if (entry) result.set(id, entry);
+          if (req.result) result.set(id, req.result as T);
           if (--pending === 0) resolve(result);
         };
         req.onerror = () => {
@@ -165,29 +175,21 @@ export async function getTagsMap(trackIds: string[]): Promise<Map<string, Cached
   });
 }
 
-export async function getDurationsMap(trackIds: string[]): Promise<Map<string, number>> {
-  const result = new Map<string, number>();
-  if (trackIds.length === 0) return result;
+export async function getTagsMap(trackIds: string[]): Promise<Map<string, CachedTagMetadata>> {
+  if (trackIds.length === 0) return new Map();
   const database = await getDb();
-  if (!database) return result;
-  return new Promise((resolve) => {
-    try {
-      const tx = database.transaction('durations', 'readonly');
-      const store = tx.objectStore('durations');
-      let pending = trackIds.length;
-      for (const id of trackIds) {
-        const req = store.get(id);
-        req.onsuccess = () => {
-          const entry = req.result as { trackId: string; durationMs: number } | undefined;
-          if (entry && entry.durationMs > 0) result.set(id, entry.durationMs);
-          if (--pending === 0) resolve(result);
-        };
-        req.onerror = () => {
-          if (--pending === 0) resolve(result);
-        };
-      }
-    } catch {
-      resolve(result);
-    }
-  });
+  if (!database) return new Map();
+  return batchGetFromStore<CachedTagMetadata>(database, 'tags', trackIds);
+}
+
+export async function getDurationsMap(trackIds: string[]): Promise<Map<string, number>> {
+  if (trackIds.length === 0) return new Map();
+  const database = await getDb();
+  if (!database) return new Map();
+  const raw = await batchGetFromStore<{ trackId: string; durationMs: number }>(database, 'durations', trackIds);
+  const result = new Map<string, number>();
+  for (const [id, entry] of raw) {
+    if (entry.durationMs > 0) result.set(id, entry.durationMs);
+  }
+  return result;
 }

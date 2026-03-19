@@ -46,7 +46,8 @@ async function generateFromTrack(
   const seenIds = new Set<string>();
   const seenUnmatchedKeys = new Set<string>();
 
-  const candidates = await getSimilarTracks(seed.artist, seed.track, 25);
+  const seedArtistForLastFm = getPrimaryArtist(seed.artist);
+  const candidates = await getSimilarTracks(seedArtistForLastFm, seed.track, 25);
   const lastfmCandidates = candidates.length;
 
   for (const candidate of candidates) {
@@ -64,7 +65,7 @@ async function generateFromTrack(
   }
 
   if (matches.length < MIN_TRACK_THRESHOLD) {
-    const similarArtists = await getSimilarArtists(seed.artist, 10);
+    const similarArtists = await getSimilarArtists(seedArtistForLastFm, 10);
     for (const artist of similarArtists) {
       const artistTracks = findTracksByArtist(artist.name, artist.mbid, indexes);
       let added = 0;
@@ -96,7 +97,8 @@ async function generateFromArtist(
   const matches: MatchResult[] = [];
   const seenIds = new Set<string>();
 
-  const similarArtists = await getSimilarArtists(seed.artist, 30);
+  const seedArtistForLastFm = getPrimaryArtist(seed.artist);
+  const similarArtists = await getSimilarArtists(seedArtistForLastFm, 30);
   let lastfmCandidates = 0;
 
   for (const artist of similarArtists) {
@@ -149,7 +151,7 @@ async function generateFromAlbum(
   for (const chunk of chunks) {
     const results = await Promise.all(
       chunk.map(async (albumTrack) => {
-        const candidates = await getSimilarTracks(albumTrack.artist, albumTrack.name, 25);
+        const candidates = await getSimilarTracks(getPrimaryArtist(albumTrack.artist), albumTrack.name, 25);
         return candidates;
       }),
     );
@@ -224,4 +226,28 @@ function chunkArray<T>(arr: T[], size: number): T[][] {
     chunks.push(arr.slice(i, i + size));
   }
   return chunks;
+}
+
+function getPrimaryArtist(artists: string): string {
+  const normalized = artists.trim();
+  if (!normalized) return artists;
+
+  const separators = [
+    /\s*,\s*/,
+    /\s+feat\.?\s+/i,
+    /\s+featuring\s+/i,
+    /\s*&\s*/,
+    /\s+and\s+/i,
+    /\s*\/\s*/,
+    /\s*;\s*/,
+  ];
+
+  for (const separator of separators) {
+    const [first] = normalized.split(separator);
+    if (first && first.trim() !== normalized) {
+      return first.trim();
+    }
+  }
+
+  return normalized;
 }

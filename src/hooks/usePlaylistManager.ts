@@ -4,6 +4,7 @@ import { spotifyPlayer } from '../services/spotifyPlayer';
 import { isAlbumId, extractAlbumId, LIKED_SONGS_ID } from '../constants/playlist';
 import { shuffleArray } from '../utils/shuffleArray';
 import type { Track } from '../services/spotify';
+import { logQueue } from '@/lib/debugLog';
 
 async function waitForSpotifyReady(timeout = 10000): Promise<void> {
   const start = Date.now();
@@ -58,7 +59,7 @@ interface UsePlaylistManagerProps {
   setIsLoading: (loading: boolean) => void;
   setSelectedPlaylistId: (id: string | null) => void;
   setTracks: (tracks: Track[]) => void;
-  setOriginalTracks: (tracks: Track[]) => void;
+  setOriginalTracks: (tracks: Track[] | ((prev: Track[]) => Track[])) => void;
   setCurrentTrackIndex: (index: number) => void;
   shuffleEnabled: boolean;
 }
@@ -73,7 +74,8 @@ export const usePlaylistManager = ({
   shuffleEnabled
 }: UsePlaylistManagerProps) => {
   
-  const handlePlaylistSelect = useCallback(async (playlistId: string) => {
+  const handlePlaylistSelect = useCallback(async (playlistId: string): Promise<Track[]> => {
+    logQueue('usePlaylistManager.handlePlaylistSelect — playlistId=%s, shuffle=%s', playlistId, String(shuffleEnabled));
     try {
       setError(null);
       setIsLoading(true);
@@ -119,13 +121,14 @@ export const usePlaylistManager = ({
             setOriginalTracks(tracksFromWindow);
             setTracks(tracksFromWindow);
             setCurrentTrackIndex(0);
+            return tracksFromWindow;
           }
           // Playback started successfully via context — return without error
-          return;
+          return [];
         } catch (contextError) {
           console.error('Context playback also failed:', contextError);
           setError("No tracks found in this playlist. It may be empty or unavailable.");
-          return;
+          return [];
         }
       }
 
@@ -137,7 +140,7 @@ export const usePlaylistManager = ({
         } else {
           setError("No tracks found in this playlist.");
         }
-        return;
+        return [];
       }
 
       // Always store original (unshuffled) track order
@@ -147,6 +150,7 @@ export const usePlaylistManager = ({
       const tracksToPlay = shuffleEnabled ? shuffleArray(fetchedTracks) : fetchedTracks;
 
       // Update state with new tracks FIRST
+      logQueue('usePlaylistManager — setting %d tracks (fetched=%d, shuffled=%s)', tracksToPlay.length, fetchedTracks.length, String(shuffleEnabled));
       setTracks(tracksToPlay);
       setCurrentTrackIndex(0);
 
@@ -230,6 +234,9 @@ export const usePlaylistManager = ({
         })();
       }, 1500);
 
+      logQueue('usePlaylistManager — returning %d tracks, first="%s"', tracksToPlay.length, tracksToPlay[0]?.name ?? '');
+      return tracksToPlay;
+
     } catch (err: unknown) {
       if (err instanceof Error && err.message.includes('authenticated')) {
         setError("Authentication expired. Redirecting to Spotify login...");
@@ -237,6 +244,7 @@ export const usePlaylistManager = ({
       } else {
         setError(err instanceof Error ? err.message : "An unknown error occurred while loading tracks.");
       }
+      return [];
     } finally {
       setIsLoading(false);
     }
