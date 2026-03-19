@@ -172,6 +172,11 @@ export async function updateNowPlaying(track: ScrobbleTrack): Promise<void> {
   try {
     await lastfmPost(params);
   } catch (err) {
+    // Error 9 = Invalid session key (revoked). Clear stale session so the UI
+    // reflects the disconnected state and the user can reconnect.
+    if (err instanceof Error && err.message.includes('Last.fm error 9')) {
+      logoutLastFm();
+    }
     console.warn('[Scrobbler] Failed to update now playing:', err);
   }
 }
@@ -195,6 +200,9 @@ export async function scrobble(track: ScrobbleTrack, timestamp?: number): Promis
   try {
     await lastfmPost(params);
   } catch (err) {
+    if (err instanceof Error && err.message.includes('Last.fm error 9')) {
+      logoutLastFm();
+    }
     console.warn('[Scrobbler] Failed to scrobble:', err);
   }
 }

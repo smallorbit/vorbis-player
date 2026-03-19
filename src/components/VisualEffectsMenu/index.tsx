@@ -212,13 +212,18 @@ const LastFmScrobblingSection = memo(() => {
   const [isConnected, setIsConnected] = useState(isScrobblingAuthenticated);
   const [connectError, setConnectError] = useState<string | null>(null);
   const messageHandlerRef = useRef<((event: MessageEvent) => void) | null>(null);
+  const cleanupTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Remove any pending message listener on unmount
+  // Remove any pending message listener and timeout on unmount
   useEffect(() => {
     return () => {
       if (messageHandlerRef.current) {
         window.removeEventListener('message', messageHandlerRef.current);
         messageHandlerRef.current = null;
+      }
+      if (cleanupTimeoutRef.current !== null) {
+        clearTimeout(cleanupTimeoutRef.current);
+        cleanupTimeoutRef.current = null;
       }
     };
   }, []);
@@ -246,7 +251,7 @@ const LastFmScrobblingSection = memo(() => {
         window.removeEventListener('message', handler);
         messageHandlerRef.current = null;
       } else if (event.data?.type === 'vorbis-lastfm-auth-error') {
-        setConnectError('Connection failed. Please try again.');
+        setConnectError('Auth failed');
         window.removeEventListener('message', handler);
         messageHandlerRef.current = null;
       }
@@ -254,9 +259,10 @@ const LastFmScrobblingSection = memo(() => {
     messageHandlerRef.current = handler;
     window.addEventListener('message', handler);
     // Cleanup after 5 minutes in case popup is closed without completing
-    setTimeout(() => {
+    cleanupTimeoutRef.current = setTimeout(() => {
       window.removeEventListener('message', handler);
       if (messageHandlerRef.current === handler) messageHandlerRef.current = null;
+      cleanupTimeoutRef.current = null;
     }, 5 * 60 * 1000);
   };
 
