@@ -56,7 +56,7 @@ const Input = styled.input`
   box-sizing: border-box;
 
   &:focus {
-    border-color: var(--accent-color);
+    border-color: rgba(255, 255, 255, 0.5);
   }
 
   &::placeholder {
@@ -78,11 +78,11 @@ const DialogButton = styled.button<{ $primary?: boolean }>`
   cursor: pointer;
   transition: all ${theme.transitions.fast};
   border: 1px solid ${({ $primary }) => $primary ? 'transparent' : theme.colors.control.border};
-  background: ${({ $primary }) => $primary ? 'var(--accent-color)' : 'transparent'};
-  color: ${theme.colors.white};
+  background: ${({ $primary }) => $primary ? 'rgba(255, 255, 255, 0.9)' : 'transparent'};
+  color: ${({ $primary }) => $primary ? '#111' : theme.colors.white};
 
   &:hover:not(:disabled) {
-    opacity: 0.85;
+    background: ${({ $primary }) => $primary ? 'rgba(255, 255, 255, 1)' : theme.colors.control.backgroundHover};
   }
 
   &:disabled {
