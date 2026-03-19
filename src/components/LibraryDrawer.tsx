@@ -24,7 +24,7 @@ interface LibraryDrawerProps {
 
 const DrawerContainer = styled.div.withConfig({
   shouldForwardProp: (prop) => !['$isOpen', '$isDragging', '$dragOffset'].includes(prop),
-})<{
+}) <{
   $isOpen: boolean;
   $isDragging: boolean;
   $dragOffset: number;
@@ -69,9 +69,10 @@ const DrawerHeader = styled.div`
   flex-shrink: 0;
   padding: ${theme.spacing.sm} ${theme.spacing.md};
   min-height: 48px;
-  display: grid;
-  grid-template-columns: 40px 1fr;
+  display: flex;
+  justify-content: space-between;
   align-items: center;
+  position: relative;
   touch-action: none;
 `;
 
@@ -101,6 +102,10 @@ const DrawerTitle = styled.h3`
   font-size: ${theme.fontSize.xl};
   font-weight: ${theme.fontWeight.semibold};
   text-align: center;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  pointer-events: none;
 `;
 
 const DrawerContent = styled.div`
