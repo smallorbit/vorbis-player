@@ -87,7 +87,7 @@ export function useLastFmScrobbler({
       return;
     }
 
-    const duration = currentTrack.duration_ms ?? 0;
+    const duration = currentTrack.durationMs ?? 0;
     if (duration < MIN_TRACK_DURATION_MS) return;
     if (scrobbledTrackIdRef.current === currentTrack.id) return;
 

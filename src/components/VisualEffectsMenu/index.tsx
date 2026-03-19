@@ -210,6 +210,7 @@ CollapsibleSection.displayName = 'CollapsibleSection';
 /** Last.fm Scrobbling — connect/disconnect + status. */
 const LastFmScrobblingSection = memo(() => {
   const [isConnected, setIsConnected] = useState(isScrobblingAuthenticated);
+  const [connectError, setConnectError] = useState<string | null>(null);
   const messageHandlerRef = useRef<((event: MessageEvent) => void) | null>(null);
 
   // Remove any pending message listener on unmount
@@ -234,11 +235,18 @@ const LastFmScrobblingSection = memo(() => {
 
     beginLastFmAuth({ popup: true });
 
-    // Listen for popup auth completion
+    setConnectError(null);
+
+    // Listen for popup auth completion or failure
     const handler = (event: MessageEvent) => {
       if (event.origin !== window.location.origin) return;
       if (event.data?.type === 'vorbis-lastfm-auth-complete') {
         setIsConnected(true);
+        setConnectError(null);
+        window.removeEventListener('message', handler);
+        messageHandlerRef.current = null;
+      } else if (event.data?.type === 'vorbis-lastfm-auth-error') {
+        setConnectError('Connection failed. Please try again.');
         window.removeEventListener('message', handler);
         messageHandlerRef.current = null;
       }
@@ -263,8 +271,8 @@ const LastFmScrobblingSection = memo(() => {
       <FilterGrid>
         <ProviderRow>
           <ProviderName>Last.fm</ProviderName>
-          <ProviderStatusBadge $status={isConnected ? 'connected' : 'disabled'}>
-            {isConnected ? (username ? `${username}` : 'Connected') : ''}
+          <ProviderStatusBadge $status={isConnected ? 'connected' : connectError ? 'expired' : 'disabled'}>
+            {isConnected ? (username ?? 'Connected') : (connectError ?? '')}
           </ProviderStatusBadge>
           {isConnected ? (
             <ProviderConnectAction onClick={handleDisconnect}>
