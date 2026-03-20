@@ -361,11 +361,17 @@ export class DropboxCatalogAdapter implements CatalogProvider {
 
   async listTracks(collectionRef: CollectionRef, signal?: AbortSignal): Promise<MediaTrack[]> {
     if (collectionRef.provider !== 'dropbox') return [];
-    if (collectionRef.kind === 'liked') return getLikedTracks();
+    if (collectionRef.kind === 'liked') {
+      const tracks = await getLikedTracks();
+      await this.hydrateCachedDurations(tracks);
+      return tracks;
+    }
 
     // Saved playlists: load from JSON file in Dropbox
     if (collectionRef.kind === 'playlist') {
-      return loadPlaylistTracks(this.auth, collectionRef.id);
+      const tracks = await loadPlaylistTracks(this.auth, collectionRef.id);
+      await this.hydrateCachedDurations(tracks);
+      return tracks;
     }
 
     const folderPath = collectionRef.id;
@@ -405,17 +411,11 @@ export class DropboxCatalogAdapter implements CatalogProvider {
 
       const trackIds = tracks.map((t) => t.id);
 
-      // Hydrate any previously-discovered durations from IndexedDB cache.
-      const durationsMap = await getDurationsMap(trackIds);
-      if (durationsMap.size > 0) {
-        for (const t of tracks) {
-          const cached = durationsMap.get(t.id);
-          if (cached !== undefined) t.durationMs = cached;
-        }
-      }
-
-      // Hydrate ID3 tag metadata from IndexedDB cache (populated on first playback).
-      const tagsMap = await getTagsMap(trackIds);
+      // Hydrate durations and ID3 tags from IndexedDB cache concurrently.
+      const [, tagsMap] = await Promise.all([
+        this.hydrateCachedDurations(tracks),
+        getTagsMap(trackIds),
+      ]);
       if (tagsMap.size > 0) {
         for (const t of tracks) {
           const cached = tagsMap.get(t.id);
@@ -436,6 +436,19 @@ export class DropboxCatalogAdapter implements CatalogProvider {
     } catch (error) {
       console.error('[DropboxCatalog] Failed to list tracks:', error);
       throw error;
+    }
+  }
+
+  /** Hydrate any previously-discovered durations from the IndexedDB cache onto tracks missing them. */
+  private async hydrateCachedDurations(tracks: MediaTrack[]): Promise<void> {
+    const needDuration = tracks.filter((t) => !t.durationMs);
+    if (needDuration.length === 0) return;
+    const durationsMap = await getDurationsMap(needDuration.map((t) => t.id));
+    if (durationsMap.size > 0) {
+      for (const t of needDuration) {
+        const cached = durationsMap.get(t.id);
+        if (cached !== undefined) t.durationMs = cached;
+      }
     }
   }
 
