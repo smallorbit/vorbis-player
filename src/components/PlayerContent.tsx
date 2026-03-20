@@ -27,6 +27,7 @@ import { useProfilingContext } from '@/contexts/ProfilingContext';
 import { useVisualizerDebug } from '@/contexts/VisualizerDebugContext';
 import LibraryDrawer from './LibraryDrawer';
 import AlbumArtQuickSwapBack from './AlbumArtQuickSwapBack';
+import { DropboxAuthAdapter } from '@/providers/dropbox/dropboxAuthAdapter';
 import Toast from './Toast';
 
 const SaveQueueDialog = lazy(() => import('./SaveQueueDialog'));
@@ -372,8 +373,8 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
       const dropbox = providerRegistry.get('dropbox');
       if (!dropbox?.auth.isAuthenticated()) return false;
 
-      const { DropboxAuthAdapter } = await import('@/providers/dropbox/dropboxAuthAdapter');
-      const auth = dropbox.auth as InstanceType<typeof DropboxAuthAdapter>;
+      if (!(dropbox.auth instanceof DropboxAuthAdapter)) return false;
+      const auth = dropbox.auth;
       const { saveQueueAsPlaylist } = await import('@/providers/dropbox/dropboxPlaylistStorage');
       const result = await saveQueueAsPlaylist(auth, name, mediaTracks);
 
