@@ -35,12 +35,17 @@ import TrackInfoPopover, {
   AddToQueueIcon,
   ICON_MAP,
 } from './controls/TrackInfoPopover';
+import type { AddToQueueResult, ProviderId } from '@/types/domain';
 
 type ViewMode = 'playlists' | 'albums';
 
 interface PlaylistSelectionProps {
-  onPlaylistSelect: (playlistId: string, playlistName: string, provider?: import('@/types/domain').ProviderId) => void;
-  onAddToQueue?: (playlistId: string, playlistName?: string, provider?: import('@/types/domain').ProviderId) => void;
+  onPlaylistSelect: (playlistId: string, playlistName: string, provider?: ProviderId) => void;
+  onAddToQueue?: (
+    playlistId: string,
+    playlistName?: string,
+    provider?: ProviderId,
+  ) => Promise<AddToQueueResult | null>;
   /** When true, uses compact layout for drawer context (no centering, fills available space) */
   inDrawer?: boolean;
   /** Ref for swipe-to-close gesture zone (search/filters area only, not the scrollable list) */
@@ -898,7 +903,7 @@ const PlaylistSelection = React.memo(function PlaylistSelection({
     });
   }
 
-  function handleLikedSongsClick(provider?: import('@/types/domain').ProviderId): void {
+  function handleLikedSongsClick(provider?: ProviderId): void {
     const resolvedProvider = provider ?? (likedSongsPerProvider.length === 1 ? likedSongsPerProvider[0].provider : undefined);
     onPlaylistSelect(LIKED_SONGS_ID, LIKED_SONGS_NAME, resolvedProvider);
   }

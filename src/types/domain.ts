@@ -94,6 +94,13 @@ export function collectionRefToKey(ref: CollectionRef): string {
   return `${ref.provider}:${ref.kind}:${ref.id}`;
 }
 
+/** Result of appending a collection to the queue; used for confirmation UI. */
+export interface AddToQueueResult {
+  added: number;
+  /** Display name from the library (album or playlist title). */
+  collectionName?: string;
+}
+
 /** Parse a stored key back into CollectionRef if possible. */
 export function keyToCollectionRef(key: string): CollectionRef | null {
   const parts = key.split(':');
