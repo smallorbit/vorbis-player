@@ -10,6 +10,7 @@ vi.mock('@/services/settings/pinnedItemsStorage', () => ({
   migratePinsFromLocalStorage: vi.fn().mockResolvedValue(undefined),
   MAX_PINS: 8,
   UNIFIED_PROVIDER: '_unified',
+  PINS_CHANGED_EVENT: 'vorbis-pins-changed',
 }));
 
 import { getPins, setPins } from '@/services/settings/pinnedItemsStorage';
