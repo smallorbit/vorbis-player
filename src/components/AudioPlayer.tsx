@@ -182,7 +182,14 @@ const AudioPlayerComponent = () => {
         {/* 5 rapid taps in top-left corner toggles debug overlay */}
         <div
           onClick={handleActivatorTap}
-          style={{ position: 'fixed', top: 0, left: 0, width: 44, height: 44, zIndex: 999990 }}
+          style={{
+            position: 'fixed',
+            top: 'env(safe-area-inset-top, 0px)',
+            left: 0,
+            width: 44,
+            height: 44,
+            zIndex: 999990,
+          }}
         />
         <ProfiledComponent id="AccentColorBackground">
           <AccentColorBackground
