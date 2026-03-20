@@ -6,6 +6,9 @@ const APP_URL = 'http://127.0.0.1:3000';
 const CDP_ENDPOINT = 'http://127.0.0.1:9222';
 const AUTH_STATE_PATH = path.resolve(import.meta.dirname, '.auth-state.json');
 
+/** Default Dropbox album used when no PLAYLIST env var is set. */
+const DEFAULT_PLAYLIST = 'album:/andy timmons band/theme from a perfect world';
+
 type AuthState = {
   savedAt: string;
   localStorage: Record<string, string>;
@@ -21,7 +24,7 @@ function loadAuthState(): AuthState | null {
 
 export const test = base.extend<{ capturePage: Page }>({
   capturePage: async ({}, use, testInfo) => {
-    const playlist = process.env.PLAYLIST;
+    const playlist = process.env.PLAYLIST || DEFAULT_PLAYLIST;
     const useCdp = process.env.USE_CDP === '1';
     const headless = process.env.HEADLESS === '1';
     const authState = loadAuthState();
@@ -46,38 +49,21 @@ export const test = base.extend<{ capturePage: Page }>({
       const browser = await chromium.connectOverCDP(CDP_ENDPOINT);
       const context = browser.contexts()[0];
 
-      let cdp;
-
-      if (playlist) {
-        page = await context.newPage();
-        cdp = await context.newCDPSession(page);
-        await cdp.send('Emulation.setDeviceMetricsOverride', {
-          width,
-          height,
-          deviceScaleFactor: dpr,
-          mobile: width < 700,
-        });
-        await page.goto(`${APP_URL}?playlist=${encodeURIComponent(playlist)}`);
-        await page.locator('button[title^="Zen Mode"]').waitFor({ state: 'visible', timeout: 30_000 });
-      } else {
-        const pages = context.pages();
-        page = pages.find(p => p.url().includes('127.0.0.1:3000')) ?? pages[0];
-        cdp = await context.newCDPSession(page);
-        await cdp.send('Emulation.setDeviceMetricsOverride', {
-          width,
-          height,
-          deviceScaleFactor: dpr,
-          mobile: width < 700,
-        });
-        await page.waitForTimeout(500);
-      }
+      page = await context.newPage();
+      const cdp = await context.newCDPSession(page);
+      await cdp.send('Emulation.setDeviceMetricsOverride', {
+        width,
+        height,
+        deviceScaleFactor: dpr,
+        mobile: width < 700,
+      });
+      await page.goto(`${APP_URL}?playlist=${encodeURIComponent(playlist)}`);
+      await page.locator('button[title^="Zen Mode"]').waitFor({ state: 'visible', timeout: 30_000 });
 
       cleanup = async () => {
         await cdp.send('Emulation.clearDeviceMetricsOverride');
         await cdp.detach();
-        if (playlist) {
-          await page.close();
-        }
+        await page.close();
       };
     } else {
       // --- Standalone mode: launch browser with injected auth tokens ---
@@ -94,10 +80,7 @@ export const test = base.extend<{ capturePage: Page }>({
       }, authState.localStorage);
 
       page = await context.newPage();
-      const url = playlist
-        ? `${APP_URL}?playlist=${encodeURIComponent(playlist)}`
-        : APP_URL;
-      await page.goto(url);
+      await page.goto(`${APP_URL}?playlist=${encodeURIComponent(playlist)}`);
       await page.locator('button[title^="Zen Mode"]').waitFor({ state: 'visible', timeout: 30_000 });
 
       cleanup = async () => {
