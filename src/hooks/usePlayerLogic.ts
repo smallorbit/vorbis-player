@@ -22,6 +22,7 @@ import { resolveViaSpotify } from '@/services/spotifyResolver';
 import { logQueue, logRadio } from '@/lib/debugLog';
 import { useMediaTracksMirror } from '@/hooks/useMediaTracksMirror';
 import { useQueueThumbnailLoader } from '@/hooks/useQueueThumbnailLoader';
+import { useQueueDurationLoader } from '@/hooks/useQueueDurationLoader';
 import {
   appendMediaTracks,
   moveItemInArray,
@@ -350,6 +351,9 @@ export function usePlayerLogic() {
 
   // Progressively load missing thumbnails for Dropbox tracks in the queue
   useQueueThumbnailLoader(tracks, mediaTracksRef, setTracks);
+
+  // Progressively discover missing durations for Dropbox tracks in the queue
+  useQueueDurationLoader(tracks, mediaTracksRef, setTracks);
 
   // Auto-extract accent color from album artwork; respects overrides in ColorContext
   useAccentColor(currentTrack, accentColorOverrides, setAccentColor, setAccentColorOverrides);
