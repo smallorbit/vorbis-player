@@ -41,7 +41,6 @@ import {
 } from './dropboxLikesCache';
 import { getLikesSync } from './dropboxLikesSync';
 import { listSavedPlaylists, loadPlaylistTracks } from './dropboxPlaylistStorage';
-import { isSavedPlaylistId, extractPlaylistPath } from '@/constants/playlist';
 
 const AUDIO_EXTENSIONS = ['.mp3', '.flac', '.ogg', '.m4a', '.wav', '.aac', '.wma', '.opus'];
 const IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.webp'];
@@ -366,10 +365,7 @@ export class DropboxCatalogAdapter implements CatalogProvider {
 
     // Saved playlists: load from JSON file in Dropbox
     if (collectionRef.kind === 'playlist') {
-      const playlistPath = isSavedPlaylistId(collectionRef.id)
-        ? extractPlaylistPath(collectionRef.id)
-        : collectionRef.id;
-      return loadPlaylistTracks(this.auth, playlistPath);
+      return loadPlaylistTracks(this.auth, collectionRef.id);
     }
 
     const folderPath = collectionRef.id;
