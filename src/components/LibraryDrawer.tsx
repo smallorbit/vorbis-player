@@ -12,12 +12,17 @@ import {
 } from './styled';
 import PlaylistSelection from './PlaylistSelection';
 import { LIBRARY_REFRESH_EVENT } from '@/hooks/useLibrarySync';
+import type { AddToQueueResult, ProviderId } from '@/types/domain';
 
 interface LibraryDrawerProps {
   isOpen: boolean;
   onClose: () => void;
-  onPlaylistSelect: (playlistId: string, playlistName: string, provider?: import('@/types/domain').ProviderId) => void;
-  onAddToQueue?: (playlistId: string, playlistName?: string, provider?: import('@/types/domain').ProviderId) => void;
+  onPlaylistSelect: (playlistId: string, playlistName: string, provider?: ProviderId) => void;
+  onAddToQueue?: (
+    playlistId: string,
+    playlistName?: string,
+    provider?: ProviderId,
+  ) => Promise<AddToQueueResult | null>;
   initialSearchQuery?: string;
   initialViewMode?: 'playlists' | 'albums';
 }
@@ -122,7 +127,7 @@ const LibraryDrawer = React.memo(function LibraryDrawer({ isOpen, onClose, onPla
   const selectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handlePlaylistSelectWrapper = useCallback(
-    (playlistId: string, playlistName: string, provider?: import('@/types/domain').ProviderId) => {
+    (playlistId: string, playlistName: string, provider?: ProviderId) => {
       onClose();
       if (selectTimeoutRef.current) clearTimeout(selectTimeoutRef.current);
       selectTimeoutRef.current = setTimeout(() => {

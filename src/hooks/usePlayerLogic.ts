@@ -12,7 +12,7 @@ import { useUnifiedLikedTracks } from '@/hooks/useUnifiedLikedTracks';
 import { useRadio } from '@/hooks/useRadio';
 import { useSpotifyQueueSync } from '@/hooks/useSpotifyQueueSync';
 import type { Track } from '@/services/spotify';
-import type { PlaybackState, ProviderId } from '@/types/domain';
+import type { AddToQueueResult, PlaybackState, ProviderId } from '@/types/domain';
 import type { MediaTrack } from '@/types/domain';
 import type { RadioSeed } from '@/types/radio';
 import { isAlbumId, extractAlbumId, LIKED_SONGS_ID, resolvePlaylistRef } from '@/constants/playlist';
@@ -175,7 +175,7 @@ export function usePlayerLogic() {
   });
 
   const handlePlaylistSelect = useCallback(
-    async (playlistId: string, _playlistName?: string, provider?: import('@/types/domain').ProviderId) => {
+    async (playlistId: string, _playlistName?: string, provider?: import('@/types/domain').ProviderId): Promise<number> => {
       logQueue('handlePlaylistSelect called — playlistId=%s provider=%s', playlistId, provider ?? 'active');
 
       // Unified liked songs: fetch from all connected providers, merge by timestamp
@@ -204,7 +204,7 @@ export function usePlayerLogic() {
             setOriginalTracks([]);
             setCurrentTrackIndex(0);
             setIsLoading(false);
-            return;
+            return 0;
           }
 
           const trackList = merged.map(mediaTrackToTrack);
@@ -231,14 +231,15 @@ export function usePlayerLogic() {
             // Route initial playback through shared playTrack() so Spotify queue sync runs immediately.
             await playTrack(0);
           }
+          return merged.length;
         } catch (err) {
           setError(err instanceof Error ? err.message : 'Failed to load liked tracks.');
           setTracks([]);
           setOriginalTracks([]);
           setCurrentTrackIndex(0);
           setIsLoading(false);
+          return 0;
         }
-        return;
       }
 
       // Determine which provider descriptor to use for this collection
@@ -274,7 +275,7 @@ export function usePlayerLogic() {
             setOriginalTracks([]);
             setCurrentTrackIndex(0);
             setIsLoading(false);
-            return;
+            return 0;
           }
           const trackList = list.map(mediaTrackToTrack);
           setOriginalTracks(trackList);
@@ -295,14 +296,15 @@ export function usePlayerLogic() {
           drivingProviderRef.current = providerId;
           queueSnapshot(`Non-Spotify (${providerId}) playlist loaded`, trackList, mediaTracksRef.current.length, 0);
           await playTrack(0);
+          return list.length;
         } catch (err) {
           setError(err instanceof Error ? err.message : 'Failed to load collection.');
           setTracks([]);
           setOriginalTracks([]);
           setCurrentTrackIndex(0);
           setIsLoading(false);
+          return 0;
         }
-        return;
       }
       // Pause any non-Spotify provider before handing off to the Spotify playlist manager
       // (which plays via the SDK directly, bypassing the cross-provider pause in playTrack).
@@ -320,6 +322,7 @@ export function usePlayerLogic() {
       } else {
         logQueue('Spotify playlist returned 0 tracks');
       }
+      return spotifyTracks.length;
     },
     [
       activeDescriptor,
@@ -540,7 +543,7 @@ export function usePlayerLogic() {
    * starts playback of the first added track.
    */
   const handleAddToQueue = useCallback(
-    async (playlistId: string, _playlistName?: string, provider?: import('@/types/domain').ProviderId) => {
+    async (playlistId: string, _playlistName?: string, provider?: import('@/types/domain').ProviderId): Promise<AddToQueueResult | null> => {
       const isQueueEmpty = tracks.length === 0;
       logQueue(
         'handleAddToQueue — playlistId=%s, provider=%s, currentQueueLen=%d, mediaLen=%d',
@@ -553,13 +556,17 @@ export function usePlayerLogic() {
       // If nothing is playing, just load normally
       if (isQueueEmpty) {
         logQueue('handleAddToQueue — queue empty, delegating to handlePlaylistSelect');
-        return handlePlaylistSelect(playlistId, _playlistName, provider);
+        const loaded = await handlePlaylistSelect(playlistId, _playlistName, provider);
+        if (loaded > 0) {
+          return { added: loaded, collectionName: _playlistName };
+        }
+        return null;
       }
 
       const targetDescriptor = provider ? getDescriptor(provider) : activeDescriptor;
       const targetProviderId = provider ?? activeDescriptor?.id;
 
-      if (!targetDescriptor || !targetProviderId) return;
+      if (!targetDescriptor || !targetProviderId) return null;
 
       try {
         let newMediaTracks: MediaTrack[];
@@ -586,7 +593,7 @@ export function usePlayerLogic() {
           newMediaTracks = await catalog.listTracks(collectionRef);
         }
 
-        if (newMediaTracks.length === 0) return;
+        if (newMediaTracks.length === 0) return null;
 
         const newTracks = newMediaTracks.map(mediaTrackToTrack);
 
@@ -605,8 +612,10 @@ export function usePlayerLogic() {
           mediaTracksRef.current.length,
           newTracks.map(t => trkSummary(t)).join(', '),
         );
+        return { added: newMediaTracks.length, collectionName: _playlistName };
       } catch (err) {
         console.error('[Queue] Failed to add to queue:', err);
+        return null;
       }
     },
     [tracks.length, handlePlaylistSelect, activeDescriptor, getDescriptor, setTracks, setOriginalTracks]
