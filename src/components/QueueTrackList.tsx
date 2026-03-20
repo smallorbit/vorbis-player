@@ -319,10 +319,10 @@ const SortableQueueItem = memo<QueueItemProps>(({
   };
 
   const handleClick = useCallback(() => {
-    if (!isDragActive) {
+    if (!isDragActive && !isEditMode) {
       onSelect(index);
     }
-  }, [onSelect, index, isDragActive]);
+  }, [onSelect, index, isDragActive, isEditMode]);
 
   const handleRemoveClick = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
@@ -422,7 +422,9 @@ const SwipeableQueueItem = memo<QueueItemProps>(({
     return (
       <QueueListItem
         ref={itemRef}
-        onClick={() => onSelect(index)}
+        onClick={() => {
+          if (!isEditMode) onSelect(index);
+        }}
         isSelected={isSelected}
       >
         <AlbumArtContainer>
@@ -482,7 +484,7 @@ const SwipeableQueueItem = memo<QueueItemProps>(({
       <SwipeableContent $offsetX={offsetX} $isSwiping={isSwiping}>
         <QueueListItem
           ref={itemRef}
-          onClick={() => !isRevealed && onSelect(index)}
+          onClick={() => !isRevealed && !isEditMode && onSelect(index)}
           isSelected={isSelected}
         >
           <AlbumArtContainer>

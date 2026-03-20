@@ -72,7 +72,7 @@ const DrawerContainer = styled.div.withConfig({
 
 const DrawerHeader = styled.div`
   flex-shrink: 0;
-  padding: ${theme.spacing.sm} ${theme.spacing.md};
+  padding: calc(${theme.spacing.sm} + env(safe-area-inset-top, 0px)) ${theme.spacing.md} ${theme.spacing.sm};
   min-height: 48px;
   display: flex;
   justify-content: space-between;
