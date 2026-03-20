@@ -53,7 +53,7 @@ When multiple music providers (Spotify, Dropbox) are enabled simultaneously, eac
 - **Performance**: Fetching liked tracks from multiple providers should happen in parallel. Consider caching the merged result with invalidation on any provider's change event.
 - **useLibrarySync**: Currently returns `likedSongsPerProvider: PerProviderLikedCount[]`. This can be extended to also return a `totalLikedCount` when multiple providers are active.
 - **PlaylistSelection**: Currently renders one card per provider when `likedSongsPerProvider.length >= 1`. Needs to render a single unified card when 2+ providers are present.
-- **Track list rendering**: The track list component (used by `PlaylistDrawer`) needs to support an optional provider icon column/badge.
+- **Track list rendering**: `QueueTrackList` (used by `QueueDrawer` / `QueueBottomSheet`) needs to support an optional provider icon column/badge.
 
 ## Success Metrics
 

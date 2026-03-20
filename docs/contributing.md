@@ -46,13 +46,14 @@ src/
 ├── components/              # React components (~42 files)
 │   ├── AudioPlayer.tsx      # Main orchestrator with centralized state
 │   ├── PlayerContent.tsx    # Main player layout (centering, responsive sizing)
-│   ├── PlayerStateRenderer.tsx  # Loading/error/playlist selection states
+│   ├── PlayerStateRenderer.tsx  # Loading/error and library collection selection states
 │   ├── AlbumArt.tsx         # Album artwork with filters & glow effects
 │   ├── PlaylistSelection.tsx    # Playlist/album browser with search/sort/filter/pin
 │   ├── SpotifyPlayerControls.tsx # Player control interface
 │   ├── LibraryDrawer.tsx    # Full-screen library browser drawer
-│   ├── PlaylistDrawer.tsx   # Sliding track list drawer (desktop/tablet)
-│   ├── PlaylistBottomSheet.tsx  # Mobile playlist bottom sheet
+│   ├── QueueDrawer.tsx      # Queue (up-next) side drawer (desktop/tablet)
+│   ├── QueueBottomSheet.tsx # Queue bottom sheet (mobile)
+│   ├── QueueTrackList.tsx   # Queue track list (reorder/remove); lazy-loaded by queue surfaces
 │   ├── ColorPickerPopover.tsx   # Per-album color picker
 │   ├── AlbumArtBackside.tsx     # Flip menu back face
 │   ├── BottomBar/               # Bottom bar components

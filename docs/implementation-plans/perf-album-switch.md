@@ -56,7 +56,7 @@ img.onload → extractDominantColor() → worker result → startTransition(setA
 
 ### 4. `usePlayerSizing` instantiated 7 times independently
 
-**What happens:** `usePlayerSizing` is called directly in 7 components: `PlayerContent`, `SpotifyPlayerControls`, `PlaylistDrawer`, `BottomBar`, `AlbumArt`, `VisualEffectsMenu`, `TimelineSlider`, and `PlaylistSelection`. Each instance sets up its own resize listener and maintains its own `viewport`/`dimensions` state. On resize, all 7 fire state updates independently.
+**What happens:** `usePlayerSizing` is called directly in 7 components: `PlayerContent`, `SpotifyPlayerControls`, `QueueDrawer`, `BottomBar`, `AlbumArt`, `VisualEffectsMenu`, `TimelineSlider`, and `PlaylistSelection`. Each instance sets up its own resize listener and maintains its own `viewport`/`dimensions` state. On resize, all 7 fire state updates independently.
 
 During album switch this is less critical (viewport doesn't change), but it means 7 hook instances doing redundant work on every resize, and it contributes to render breadth generally.
 
@@ -125,7 +125,7 @@ Implement in this order for maximum incremental gain with safe rollback:
 | `src/contexts/PlayerSizingContext.tsx` | New file |
 | `src/components/PlayerContent.tsx` | Use context instead of hook directly |
 | `src/components/SpotifyPlayerControls.tsx` | Same |
-| `src/components/PlaylistDrawer.tsx` | Same |
+| `src/components/QueueDrawer.tsx` | Same |
 | `src/components/BottomBar/index.tsx` | Same |
 | `src/components/AlbumArt.tsx` | Same |
 | `src/components/VisualEffectsMenu/index.tsx` | Same |

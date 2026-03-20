@@ -23,7 +23,7 @@ Migrate the app from direct Spotify coupling to a provider-based architecture. S
 | **Services**  | `services/spotify.ts` (auth + API + types), `services/spotifyPlayer.ts` (SDK), `services/cache/librarySyncEngine.ts`, `libraryCache.ts`, `cacheTypes.ts` |
 | **Hooks**     | `usePlaylistManager`, `useSpotifyPlayback`, `useSpotifyControls`, `usePlayerLogic`, `useAutoAdvance`, `useVolume`, `useLibrarySync`, `useLikeTrack` |
 | **Contexts**  | `TrackContext` (uses `Track` from spotify) |
-| **Components**| `PlayerStateRenderer`, `PlaylistSelection`, `SpotifyPlayerControls`, `TrackInfo`, `Playlist`, `AlbumArt`, etc. |
+| **Components**| `PlayerStateRenderer`, `PlaylistSelection`, `SpotifyPlayerControls`, `TrackInfo`, `QueueTrackList`, `AlbumArt`, etc. |
 
 ## Migration Order (Incremental, No Big Bang)
 
