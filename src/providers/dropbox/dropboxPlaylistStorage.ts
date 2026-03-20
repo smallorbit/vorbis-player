@@ -7,6 +7,16 @@ import type { DropboxAuthAdapter } from './dropboxAuthAdapter';
 import type { MediaTrack, MediaCollection, ProviderId, PlaybackItemRef } from '@/types/domain';
 import { toSavedPlaylistId } from '@/constants/playlist';
 
+// ── Helpers ──────────────────────────────────────────────────────────
+
+/** Escape non-ASCII characters for use in HTTP headers (Dropbox-API-Arg). */
+function jsonToHttpHeader(json: string): string {
+  return json.replace(/[\u0080-\uffff]/g, (ch) => {
+    const code = ch.charCodeAt(0);
+    return `\\u${code.toString(16).padStart(4, '0')}`;
+  });
+}
+
 // ── Types ────────────────────────────────────────────────────────────
 
 export interface SavedTrack {
@@ -89,6 +99,8 @@ function sanitizeFilename(name: string): string {
 }
 
 function mediaTrackToSavedTrack(track: MediaTrack): SavedTrack {
+  // Exclude base64 data URIs (e.g. Dropbox album art) — only store URL references
+  const image = track.image?.startsWith('data:') ? undefined : track.image;
   return {
     id: track.id,
     provider: track.provider,
@@ -99,7 +111,7 @@ function mediaTrackToSavedTrack(track: MediaTrack): SavedTrack {
     albumId: track.albumId,
     durationMs: track.durationMs,
     externalUrl: track.externalUrl,
-    image: track.image,
+    image,
   };
 }
 
@@ -159,7 +171,9 @@ export async function saveQueueAsPlaylist(
   let token = await auth.ensureValidToken();
   if (!token) return null;
 
-  const apiArg = JSON.stringify({ path: filePath, mode: 'overwrite' });
+  const apiArg = jsonToHttpHeader(
+    JSON.stringify({ path: filePath, mode: 'overwrite' }),
+  );
   const body = JSON.stringify(data);
 
   const upload = (accessToken: string) =>
@@ -304,7 +318,7 @@ async function loadPlaylistFile(
   let token = await auth.ensureValidToken();
   if (!token) return null;
 
-  const apiArg = JSON.stringify({ path: playlistPath });
+  const apiArg = jsonToHttpHeader(JSON.stringify({ path: playlistPath }));
 
   const download = (accessToken: string) =>
     fetch('https://content.dropboxapi.com/2/files/download', {
