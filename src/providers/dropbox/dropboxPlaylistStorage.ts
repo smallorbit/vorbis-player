@@ -108,7 +108,7 @@ function savedTrackToMediaTrack(track: SavedTrack): MediaTrack {
     playbackRef: track.playbackRef,
     name: track.name,
     artists: track.artists,
-    artistsData: [{ name: track.artists }],
+    artistsData: undefined,
     album: track.album,
     albumId: track.albumId,
     durationMs: track.durationMs,
@@ -134,12 +134,22 @@ export async function saveQueueAsPlaylist(
   if (!sanitized) return null;
 
   const filePath = `${PLAYLISTS_FOLDER}/${sanitized}.json`;
+  const now = new Date().toISOString();
+
+  // Preserve createdAt from existing file on overwrite
+  let createdAt = now;
+  try {
+    const existing = await loadPlaylistFile(auth, filePath);
+    if (existing?.createdAt) createdAt = existing.createdAt;
+  } catch {
+    // New file — use current time
+  }
 
   const data: PlaylistFile = {
     version: 1,
     name,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
+    createdAt,
+    updatedAt: now,
     tracks: mediaTracks.map(mediaTrackToSavedTrack),
   };
 
@@ -238,7 +248,7 @@ export async function listSavedPlaylists(
   let cursor = result.cursor;
   let hasMore = result.has_more;
   while (hasMore) {
-    const continueResp = await fetch('https://api.dropboxapi.com/2/files/list_folder/continue', {
+    let continueResp = await fetch('https://api.dropboxapi.com/2/files/list_folder/continue', {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${token}`,
@@ -246,6 +256,19 @@ export async function listSavedPlaylists(
       },
       body: JSON.stringify({ cursor }),
     });
+    if (continueResp.status === 401) {
+      const refreshed = await auth.refreshAccessToken();
+      if (!refreshed) break;
+      token = refreshed;
+      continueResp = await fetch('https://api.dropboxapi.com/2/files/list_folder/continue', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ cursor }),
+      });
+    }
     if (!continueResp.ok) break;
     const cont: ListResult = await continueResp.json();
     for (const entry of cont.entries) {
@@ -268,15 +291,15 @@ export async function listSavedPlaylists(
 }
 
 /**
- * Load tracks from a saved playlist file.
- * @param playlistPath The Dropbox file path (e.g. /.vorbis/playlists/my-playlist.json)
+ * Download and parse a playlist file from Dropbox.
+ * Returns null if the file doesn't exist or can't be parsed.
  */
-export async function loadPlaylistTracks(
+async function loadPlaylistFile(
   auth: DropboxAuthAdapter,
   playlistPath: string,
-): Promise<MediaTrack[]> {
+): Promise<PlaylistFile | null> {
   let token = await auth.ensureValidToken();
-  if (!token) return [];
+  if (!token) return null;
 
   const apiArg = JSON.stringify({ path: playlistPath });
 
@@ -293,21 +316,32 @@ export async function loadPlaylistTracks(
 
   if (response.status === 401) {
     const refreshed = await auth.refreshAccessToken();
-    if (!refreshed) return [];
+    if (!refreshed) return null;
     response = await download(refreshed);
   }
 
-  if (!response.ok) {
-    console.warn('[DropboxPlaylistStorage] Download failed:', response.status);
-    return [];
-  }
+  if (!response.ok) return null;
 
   try {
     const data: PlaylistFile = await response.json();
-    if (data.version !== 1) {
-      console.warn('[DropboxPlaylistStorage] Unknown file version:', data.version);
-      return [];
-    }
+    return data.version === 1 ? data : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Load tracks from a saved playlist file.
+ * @param playlistPath The Dropbox file path (e.g. /.vorbis/playlists/my-playlist.json)
+ */
+export async function loadPlaylistTracks(
+  auth: DropboxAuthAdapter,
+  playlistPath: string,
+): Promise<MediaTrack[]> {
+  const data = await loadPlaylistFile(auth, playlistPath);
+  if (!data) return [];
+
+  try {
     return data.tracks.map(savedTrackToMediaTrack);
   } catch {
     console.warn('[DropboxPlaylistStorage] Failed to parse playlist file');

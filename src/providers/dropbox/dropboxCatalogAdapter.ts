@@ -352,7 +352,7 @@ export class DropboxCatalogAdapter implements CatalogProvider {
       }
 
       const collections = [allMusic, ...savedPlaylists, ...albums];
-      putCatalogCache(collections);
+      await putCatalogCache(collections);
       return collections;
     } catch (error) {
       console.error('[DropboxCatalog] Failed to list collections:', error);
