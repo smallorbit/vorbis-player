@@ -23,7 +23,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { useHorizontalSwipeToRemove } from '@/hooks/useHorizontalSwipeToRemove';
 
 // Styled components
-const PlaylistContainer = styled.div`
+const QueueListRoot = styled.div`
   width: 100%;
   flex: 1;
   min-height: 0;
@@ -31,7 +31,7 @@ const PlaylistContainer = styled.div`
   flex-direction: column;
 `;
 
-const PlaylistCard = styled(Card)`
+const QueueListCard = styled(Card)`
   background: ${({ theme }) => theme.colors.muted.background};
   backdrop-filter: blur(12px);
   border: 1px solid ${({ theme }) => theme.colors.control.border};
@@ -44,12 +44,12 @@ const PlaylistCard = styled(Card)`
   min-height: 0;
 `;
 
-const PlaylistHeader = styled(CardHeader)`
+const QueueListCardHeader = styled(CardHeader)`
   padding: ${({ theme }) => theme.spacing.sm} ${({ theme }) => theme.spacing.md} ${({ theme }) => theme.spacing.sm};
   flex-shrink: 0;
 `;
 
-const PlaylistHeaderRow = styled.div`
+const QueueListCardHeaderRow = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -72,13 +72,13 @@ const EditButton = styled.button`
   }
 `;
 
-const PlaylistDescription = styled(CardDescription)`
+const QueueListMeta = styled(CardDescription)`
   font-size: ${({ theme }) => theme.fontSize.sm};
   color: ${({ theme }) => theme.colors.gray[400]};
   margin: 0;
 `;
 
-const PlaylistContentArea = styled(CardContent)`
+const QueueListContent = styled(CardContent)`
   padding: 0;
   overflow: hidden;
   flex: 1;
@@ -87,19 +87,19 @@ const PlaylistContentArea = styled(CardContent)`
   flex-direction: column;
 `;
 
-const PlaylistScrollArea = styled(ScrollArea)`
+const QueueListScroll = styled(ScrollArea)`
   flex: 1;
   min-height: 0;
 `;
 
-const PlaylistItems = styled.div`
+const QueueListItems = styled.div`
   padding: 1rem ${({ theme }) => theme.spacing.md};
   display: flex;
   flex-direction: column;
   gap: ${({ theme }) => theme.spacing.sm};
 `;
 
-const PlaylistItemContainer = styled.div.withConfig({
+const QueueListItem = styled.div.withConfig({
   shouldForwardProp: (prop) => prop !== 'isSelected',
 })<{ isSelected: boolean }>`
   display: flex;
@@ -206,7 +206,7 @@ const RemoveButton = styled.button`
   opacity: 0;
   transition: opacity 0.15s ease, color 0.15s ease, background 0.15s ease;
 
-  ${PlaylistItemContainer}:hover & {
+  ${QueueListItem}:hover & {
     opacity: 1;
   }
 
@@ -266,7 +266,7 @@ const RemoveIcon = () => (
   </svg>
 );
 
-interface PlaylistProps {
+interface QueueTrackListProps {
   tracks: Track[];
   currentTrackIndex: number;
   onTrackSelect: (index: number) => void;
@@ -277,7 +277,7 @@ interface PlaylistProps {
   canEdit?: boolean;
 }
 
-interface PlaylistItemProps {
+interface QueueItemProps {
   track: Track;
   index: number;
   isSelected: boolean;
@@ -289,8 +289,8 @@ interface PlaylistItemProps {
   isEditMode?: boolean;
 }
 
-// Desktop playlist item with sortable + hover remove
-const SortablePlaylistItem = memo<PlaylistItemProps>(({
+// Desktop queue item with sortable + hover remove
+const SortableQueueItem = memo<QueueItemProps>(({
   track,
   index,
   isSelected,
@@ -331,7 +331,7 @@ const SortablePlaylistItem = memo<PlaylistItemProps>(({
 
   return (
     <div ref={setNodeRef} style={style}>
-      <PlaylistItemContainer
+      <QueueListItem
         ref={itemRef}
         onClick={handleClick}
         isSelected={isSelected}
@@ -385,13 +385,13 @@ const SortablePlaylistItem = memo<PlaylistItemProps>(({
             <RemoveIcon />
           </RemoveButton>
         )}
-      </PlaylistItemContainer>
+      </QueueListItem>
     </div>
   );
 });
 
-// Mobile playlist item with swipe-to-remove
-const SwipeablePlaylistItem = memo<PlaylistItemProps>(({
+// Mobile queue item with swipe-to-remove
+const SwipeableQueueItem = memo<QueueItemProps>(({
   track,
   index,
   isSelected,
@@ -420,7 +420,7 @@ const SwipeablePlaylistItem = memo<PlaylistItemProps>(({
   if (!canRemove) {
     // No swipe for current track — render without swipe wrapper
     return (
-      <PlaylistItemContainer
+      <QueueListItem
         ref={itemRef}
         onClick={() => onSelect(index)}
         isSelected={isSelected}
@@ -462,7 +462,7 @@ const SwipeablePlaylistItem = memo<PlaylistItemProps>(({
         <Duration isSelected={isSelected}>
           {track.duration_ms ? `${Math.floor(track.duration_ms / 60000)}:${Math.floor((track.duration_ms % 60000) / 1000).toString().padStart(2, '0')}` : '--:--'}
         </Duration>
-      </PlaylistItemContainer>
+      </QueueListItem>
     );
   }
 
@@ -480,7 +480,7 @@ const SwipeablePlaylistItem = memo<PlaylistItemProps>(({
         </SwipeRemoveBackdrop>
       )}
       <SwipeableContent $offsetX={offsetX} $isSwiping={isSwiping}>
-        <PlaylistItemContainer
+        <QueueListItem
           ref={itemRef}
           onClick={() => !isRevealed && onSelect(index)}
           isSelected={isSelected}
@@ -515,7 +515,7 @@ const SwipeablePlaylistItem = memo<PlaylistItemProps>(({
           <Duration isSelected={isSelected}>
             {track.duration_ms ? `${Math.floor(track.duration_ms / 60000)}:${Math.floor((track.duration_ms % 60000) / 1000).toString().padStart(2, '0')}` : '--:--'}
           </Duration>
-        </PlaylistItemContainer>
+        </QueueListItem>
       </SwipeableContent>
     </SwipeableWrapper>
   );
@@ -534,7 +534,7 @@ const useIsTouchDevice = () => {
   return isTouch;
 };
 
-const Playlist = memo<PlaylistProps>(({
+const QueueTrackList = memo<QueueTrackListProps>(({
   tracks,
   currentTrackIndex,
   onTrackSelect,
@@ -549,7 +549,7 @@ const Playlist = memo<PlaylistProps>(({
   const [isDragActive, setIsDragActive] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
 
-  // Auto-scroll to current track when playlist opens
+  // Auto-scroll to current track when queue opens
   useEffect(() => {
     if (isOpen && currentTrackRef.current && currentTrackIndex >= 0) {
       const timeoutId = setTimeout(() => {
@@ -607,19 +607,19 @@ const Playlist = memo<PlaylistProps>(({
   // On touch devices without reorder support, use swipeable items
   if (isTouch && !onReorderTracks) {
     return (
-      <PlaylistContainer>
-        <PlaylistCard>
-          <PlaylistHeader>
-            <PlaylistHeaderRow>
-              <PlaylistDescription>{tracks.length} tracks</PlaylistDescription>
+      <QueueListRoot>
+        <QueueListCard>
+          <QueueListCardHeader>
+            <QueueListCardHeaderRow>
+              <QueueListMeta>{tracks.length} tracks</QueueListMeta>
               {editButton}
-            </PlaylistHeaderRow>
-          </PlaylistHeader>
-          <PlaylistContentArea>
-            <PlaylistScrollArea>
-              <PlaylistItems>
+            </QueueListCardHeaderRow>
+          </QueueListCardHeader>
+          <QueueListContent>
+            <QueueListScroll>
+              <QueueListItems>
                 {tracks.map((track, index) => (
-                  <SwipeablePlaylistItem
+                  <SwipeableQueueItem
                     key={`${track.name}-${track.id}`}
                     track={track}
                     index={index}
@@ -631,27 +631,27 @@ const Playlist = memo<PlaylistProps>(({
                     isEditMode={isEditMode}
                   />
                 ))}
-              </PlaylistItems>
-            </PlaylistScrollArea>
-          </PlaylistContentArea>
-        </PlaylistCard>
-      </PlaylistContainer>
+              </QueueListItems>
+            </QueueListScroll>
+          </QueueListContent>
+        </QueueListCard>
+      </QueueListRoot>
     );
   }
 
   // Desktop / with reorder: use DnD context
   if (canManageQueue) {
     return (
-      <PlaylistContainer>
-        <PlaylistCard>
-          <PlaylistHeader>
-            <PlaylistHeaderRow>
-              <PlaylistDescription>{tracks.length} tracks</PlaylistDescription>
+      <QueueListRoot>
+        <QueueListCard>
+          <QueueListCardHeader>
+            <QueueListCardHeaderRow>
+              <QueueListMeta>{tracks.length} tracks</QueueListMeta>
               {editButton}
-            </PlaylistHeaderRow>
-          </PlaylistHeader>
-          <PlaylistContentArea>
-            <PlaylistScrollArea>
+            </QueueListCardHeaderRow>
+          </QueueListCardHeader>
+          <QueueListContent>
+            <QueueListScroll>
               <DndContext
                 sensors={sensors}
                 collisionDetection={closestCenter}
@@ -659,9 +659,9 @@ const Playlist = memo<PlaylistProps>(({
                 onDragEnd={handleDragEnd}
               >
                 <SortableContext items={sortableIds} strategy={verticalListSortingStrategy}>
-                  <PlaylistItems>
+                  <QueueListItems>
                     {tracks.map((track, index) => (
-                      <SortablePlaylistItem
+                      <SortableQueueItem
                         key={`${track.name}-${track.id}`}
                         track={track}
                         index={index}
@@ -674,28 +674,28 @@ const Playlist = memo<PlaylistProps>(({
                         isEditMode={isEditMode}
                       />
                     ))}
-                  </PlaylistItems>
+                  </QueueListItems>
                 </SortableContext>
               </DndContext>
-            </PlaylistScrollArea>
-          </PlaylistContentArea>
-        </PlaylistCard>
-      </PlaylistContainer>
+            </QueueListScroll>
+          </QueueListContent>
+        </QueueListCard>
+      </QueueListRoot>
     );
   }
 
   // Fallback: no queue management (read-only)
   return (
-    <PlaylistContainer>
-      <PlaylistCard>
-        <PlaylistHeader>
-          <PlaylistDescription>{tracks.length} tracks</PlaylistDescription>
-        </PlaylistHeader>
-        <PlaylistContentArea>
-          <PlaylistScrollArea>
-            <PlaylistItems>
+    <QueueListRoot>
+      <QueueListCard>
+        <QueueListCardHeader>
+          <QueueListMeta>{tracks.length} tracks</QueueListMeta>
+        </QueueListCardHeader>
+        <QueueListContent>
+          <QueueListScroll>
+            <QueueListItems>
               {tracks.map((track: Track, index: number) => (
-                <PlaylistItemContainer
+                <QueueListItem
                   key={`${track.name}-${track.id}`}
                   ref={index === currentTrackIndex ? currentTrackRef : undefined}
                   onClick={() => onTrackSelect(index)}
@@ -738,14 +738,14 @@ const Playlist = memo<PlaylistProps>(({
                   <Duration isSelected={index === currentTrackIndex}>
                     {track.duration_ms ? `${Math.floor(track.duration_ms / 60000)}:${Math.floor((track.duration_ms % 60000) / 1000).toString().padStart(2, '0')}` : '--:--'}
                   </Duration>
-                </PlaylistItemContainer>
+                </QueueListItem>
               ))}
-            </PlaylistItems>
-          </PlaylistScrollArea>
-        </PlaylistContentArea>
-      </PlaylistCard>
-    </PlaylistContainer>
+            </QueueListItems>
+          </QueueListScroll>
+        </QueueListContent>
+      </QueueListCard>
+    </QueueListRoot>
   );
 });
 
-export default Playlist;
+export default QueueTrackList;

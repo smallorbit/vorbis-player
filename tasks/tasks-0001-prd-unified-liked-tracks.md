@@ -9,9 +9,9 @@
 - `src/providers/spotify/spotifyCatalogAdapter.ts` - Maps `added_at` to `addedAt` on `MediaTrack`
 - `src/providers/dropbox/dropboxLikesCache.ts` - Returns `likedAt` as `addedAt` on liked tracks
 - `src/components/PlaylistSelection.tsx` - Shows single unified liked card with blended gradient when 2+ providers active
-- `src/components/Playlist.tsx` - Added provider icon badges on track items (unified context only)
-- `src/components/PlaylistDrawer.tsx` - Passes `showProviderIcons` prop through to Playlist
-- `src/components/PlaylistBottomSheet.tsx` - Passes `showProviderIcons` prop through to Playlist
+- `src/components/QueueTrackList.tsx` - Added provider icon badges on track items (unified context only)
+- `src/components/QueueDrawer.tsx` - Passes `showProviderIcons` prop through to QueueTrackList
+- `src/components/QueueBottomSheet.tsx` - Passes `showProviderIcons` prop through to QueueTrackList
 - `src/components/PlayerContent.tsx` - Determines when to show provider icons based on unified state
 - `src/components/ProviderIcon.tsx` - Existing provider icon badge component (reused as-is)
 - `src/hooks/usePlayerLogic.ts` - Handles unified liked playlist selection (parallel fetch + merge)
@@ -36,7 +36,7 @@
   - [x] 2.3 Display the total liked count (sum across providers) on the unified card.
   - [x] 2.4 Ensure the pinning feature works with the unified liked card (same `LIKED_SONGS_ID` key).
 - [x] 3.0 Update track list rendering to display provider icons
-  - [x] 3.1 Modify `Playlist.tsx` track item rendering to accept and display an optional provider icon badge using the existing `ProviderIcon` component. Positioned on the album art thumbnail.
+  - [x] 3.1 Modify `QueueTrackList.tsx` track item rendering to accept and display an optional provider icon badge using the existing `ProviderIcon` component. Positioned on the album art thumbnail.
   - [x] 3.2 Pass the `provider` field from each `Track` to the track item when the current playlist is the unified liked playlist. Only show provider icons in the unified context (not for regular single-provider playlists).
 - [x] 4.0 Wire up like/unlike actions and track loading in the unified context
   - [x] 4.1 Modify `usePlayerLogic.ts` `handlePlaylistSelect`: when `LIKED_SONGS_ID` is selected without a specific provider (unified mode), fetch liked tracks from all providers in parallel, merge and sort by recency, and set as the current playlist.

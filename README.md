@@ -11,13 +11,14 @@ A visually immersive music player built with React and TypeScript, featuring cus
 
 - **Multi-Provider Support** — Stream from Spotify or your personal Dropbox music library
 - **Unified Cross-Provider Playback** — Keep playback controls consistent across mixed Spotify + Dropbox queues
-- **Playlists & Albums** — Browse, search, sort, filter, and pin your collections
+- **Queue** — See and edit what plays next (reorder, remove tracks) in the queue drawer or mobile sheet
+- **Playlists & Albums** — Browse, search, sort, filter, and pin your **library** collections (not the same as the playback queue)
 - **Unified Liked Songs** — Merge liked tracks from connected providers into one queue
 - **Track Radio** — Generate a one-shot radio playlist from the current track (Last.fm-powered matching)
 - **Visual Effects** — Dynamic glow, configurable album art filters, accent color backgrounds
 - **Background Visualizers** — Animated particle and geometric visualizer backgrounds
 - **Album Art Flip Menu** — Tap album art to reveal quick-access visual controls
-- **Swipe Gestures** — Swipe to change tracks, open playlists, or browse the library
+- **Swipe Gestures** — Swipe to change tracks, open the queue, or browse the library
 - **Keyboard Shortcuts** — Context-aware controls with device-specific behavior
 - **Responsive Design** — Fluid layout from mobile phones to ultra-wide desktops
 - **Instant Startup** — IndexedDB-based library cache with background sync

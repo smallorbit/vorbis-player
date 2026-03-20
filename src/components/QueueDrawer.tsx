@@ -6,7 +6,7 @@ import { theme } from '../styles/theme';
 import { DrawerFallback, DrawerFallbackCard } from './styled';
 import { usePlayerSizingContext } from '@/contexts/PlayerSizingContext';
 
-const Playlist = React.lazy(() => import('./Playlist'));
+const QueueTrackList = React.lazy(() => import('./QueueTrackList'));
 
 const QueueDrawerContainer = styled.div.withConfig({
   shouldForwardProp: (prop) => !['isOpen', 'width', 'transitionDuration', 'transitionEasing'].includes(prop),
@@ -278,7 +278,7 @@ const QueueDrawer = memo<QueueDrawerProps>(({
               </DrawerFallbackCard>
             </DrawerFallback>
           }>
-            <Playlist
+            <QueueTrackList
               tracks={tracks}
               currentTrackIndex={currentTrackIndex}
               onTrackSelect={(index) => {

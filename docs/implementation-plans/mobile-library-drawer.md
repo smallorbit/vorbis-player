@@ -95,7 +95,7 @@ const [showLibraryDrawer, setShowLibraryDrawer] = useState(false);
 ```typescript
 const handleOpenLibraryDrawer = useCallback(() => {
   setShowLibraryDrawer(true);
-  setShowPlaylist(false);      // Close playlist drawer if open
+  setShowPlaylist(false);      // Close queue drawer if open
   setShowVisualEffects(false); // Close VFX menu if open
 }, [setShowPlaylist, setShowVisualEffects]);
 
@@ -272,7 +272,7 @@ One potential issue: PlaylistSelection's `Container` centers content with `displ
 ## Edge Cases
 
 - **Escape key**: Should close the library drawer. Add to the `handleEscapeClose` handler in PlayerContent.
-- **Drawer + other overlays**: Opening library drawer auto-closes playlist drawer and VFX menu (handled in `handleOpenLibraryDrawer`).
+- **Drawer + other overlays**: Opening library drawer auto-closes the queue drawer and VFX menu (handled in `handleOpenLibraryDrawer`).
 - **Data freshness**: PlaylistSelection fetches fresh data every time it mounts. Since we conditionally render `{isOpen && <PlaylistSelection />}`, each open gets fresh data.
 - **Rapid open/close**: The 320ms delay in playlist selection could cause issues if user opens drawer, selects quickly, then opens again. Use `clearTimeout` pattern or ignore if drawer is already closed.
 - **Scroll position reset**: Since PlaylistSelection unmounts on close, scroll position resets each time. This is acceptable since the drawer is a fresh browsing session.
