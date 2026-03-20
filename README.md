@@ -2,9 +2,10 @@
 
 A visually immersive music player built with React and TypeScript, featuring customizable visual effects, animated background visualizers, and a fully responsive design. Supports streaming from **Spotify** (Premium required) and playing personal audio files from **Dropbox**.
 
-<img src="src/assets/vorbis-player-full-screenshot.png" alt="Vorbis Player (Full)" width="600">
-<img src="src/assets/vorbis-player-playlist-screenshot.png" alt="Vorbis Player - Playlist" width="600">
-<img src="src/assets/vorbis-player-art-only-screenshot.png" alt="Vorbis Player - Art Only" width="600">
+<img src="src/assets/player-main.png" alt="Vorbis Player (Full)" width="600">
+<img src="src/assets/queue-drawer.png" alt="Vorbis Player - Queue" width="600">
+<img src="src/assets/library-drawer.png" alt="Vorbis Player - Library" width="600">
+<img src="src/assets/zen-mode.png" alt="Vorbis Player - Zen Mode" width="600">
 
 ## Features
 
