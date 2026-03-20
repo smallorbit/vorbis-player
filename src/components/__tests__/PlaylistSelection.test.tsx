@@ -172,4 +172,12 @@ describe('PlaylistSelection', () => {
     fireEvent.click(screen.getByText('Liked Songs'));
     expect(onPlaylistSelect).toHaveBeenCalledWith(LIKED_SONGS_ID, 'Liked Songs', undefined);
   });
+
+  it('inDrawer: tapping a playlist opens the menu; Play then calls onPlaylistSelect', () => {
+    const { onPlaylistSelect } = renderPlaylistSelection({ inDrawer: true });
+    fireEvent.click(screen.getByText('Chill Vibes'));
+    expect(onPlaylistSelect).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: /play chill vibes/i }));
+    expect(onPlaylistSelect).toHaveBeenCalledWith('pl-1', 'Chill Vibes', undefined);
+  });
 });

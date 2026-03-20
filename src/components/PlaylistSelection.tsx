@@ -70,6 +70,19 @@ type PlaylistPopoverState = {
   rect: DOMRect;
 } | null;
 
+/** Minimal playlist row for Liked Songs — used to open the same popover as other playlists in the drawer grid. */
+function likedSongsAsPlaylistInfo(provider?: ProviderId): PlaylistInfo {
+  return {
+    id: LIKED_SONGS_ID,
+    name: LIKED_SONGS_NAME,
+    description: null,
+    images: [],
+    tracks: null,
+    owner: null,
+    provider,
+  };
+}
+
 function selectOptimalImage(
   images: { url: string; width: number | null; height: number | null }[],
   targetSize: number = 64
@@ -1227,7 +1240,11 @@ const PlaylistSelection = React.memo(function PlaylistSelection({
         const effectiveLikedCount = isUnifiedLikedActive ? unifiedLikedCount : likedSongsCount;
 
         const likedSongsGridCard = effectiveLikedCount > 0 && (isUnifiedLikedActive ? (
-          <PinnableGridCard key="liked-songs-unified" onClick={() => handleLikedSongsClick()}>
+          <PinnableGridCard
+            key="liked-songs-unified"
+            onClick={(e) => handlePlaylistContextMenu(likedSongsAsPlaylistInfo(), e)}
+            onContextMenu={(e) => handlePlaylistContextMenu(likedSongsAsPlaylistInfo(), e)}
+          >
             <GridCardArtWrapper style={{ position: 'relative' }}>
               <div style={{ background: getLikedSongsGradient('unified'), display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', fontSize: '3rem', color: 'white' }}>♥</div>
               <GridCardPinOverlay $isPinned={likedSongsPinned} onClick={(e) => handlePinPlaylistClick(LIKED_SONGS_ID, e)}>
@@ -1241,7 +1258,11 @@ const PlaylistSelection = React.memo(function PlaylistSelection({
           </PinnableGridCard>
         ) : usePerProviderLiked ? (
           likedSongsPerProvider.map(({ provider, count }) => (
-            <PinnableGridCard key={`liked-songs-${provider}`} onClick={() => handleLikedSongsClick(provider)}>
+            <PinnableGridCard
+              key={`liked-songs-${provider}`}
+              onClick={(e) => handlePlaylistContextMenu(likedSongsAsPlaylistInfo(provider), e)}
+              onContextMenu={(e) => handlePlaylistContextMenu(likedSongsAsPlaylistInfo(provider), e)}
+            >
               <GridCardArtWrapper style={{ position: 'relative' }}>
                 <div style={{ background: getLikedSongsGradient(provider), display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', fontSize: '3rem', color: 'white' }}>♥</div>
                 <ProviderBadgeOverlay>
@@ -1258,7 +1279,11 @@ const PlaylistSelection = React.memo(function PlaylistSelection({
             </PinnableGridCard>
           ))
         ) : (
-          <PinnableGridCard key="liked-songs" onClick={() => handleLikedSongsClick()}>
+          <PinnableGridCard
+            key="liked-songs"
+            onClick={(e) => handlePlaylistContextMenu(likedSongsAsPlaylistInfo(), e)}
+            onContextMenu={(e) => handlePlaylistContextMenu(likedSongsAsPlaylistInfo(), e)}
+          >
             <GridCardArtWrapper style={{ position: 'relative' }}>
               <div style={{ background: getLikedSongsGradient(activeDescriptor?.id), display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', fontSize: '3rem', color: 'white' }}>♥</div>
               <GridCardPinOverlay $isPinned={likedSongsPinned} onClick={(e) => handlePinPlaylistClick(LIKED_SONGS_ID, e)}>
@@ -1317,7 +1342,11 @@ const PlaylistSelection = React.memo(function PlaylistSelection({
         const renderPlaylistGrid = (playlist: PlaylistInfo) => {
           const pinned = isPlaylistPinned(playlist.id);
           return (
-            <PinnableGridCard key={`${playlist.provider ?? 'default'}-${playlist.id}`} onClick={() => handlePlaylistClick(playlist)} onContextMenu={(e) => handlePlaylistContextMenu(playlist, e)}>
+            <PinnableGridCard
+              key={`${playlist.provider ?? 'default'}-${playlist.id}`}
+              onClick={(e) => handlePlaylistContextMenu(playlist, e)}
+              onContextMenu={(e) => handlePlaylistContextMenu(playlist, e)}
+            >
               <GridCardArtWrapper style={{ position: 'relative' }}>
                 <GridCardImageComponent images={playlist.images} alt={playlist.name} />
                 {showProviderBadges && playlist.provider && (
@@ -1405,7 +1434,7 @@ const PlaylistSelection = React.memo(function PlaylistSelection({
           return (
             <PinnableGridCard
               key={`${album.provider ?? 'default'}-${album.id}`}
-              onClick={() => handleAlbumClick(album)}
+              onClick={(e) => handleAlbumContextMenu(album, e)}
               onContextMenu={(e) => handleAlbumContextMenu(album, e)}
             >
               <GridCardArtWrapper style={{ position: 'relative' }}>
