@@ -50,7 +50,6 @@ const AppContainer = styled.div`
   min-height: 100vh;
   min-height: 100dvh;
   box-sizing: border-box;
-  padding-top: env(safe-area-inset-top, 0px);
   ${flexCenter}
 `;
 

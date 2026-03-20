@@ -23,7 +23,7 @@ const slideOut = keyframes`
 
 const ToastContainer = styled.div<{ $exiting: boolean }>`
   position: fixed;
-  top: ${theme.spacing.lg};
+  top: calc(${theme.spacing.lg} + env(safe-area-inset-top, 0px));
   left: 50%;
   transform: translate(-50%, 0);
   z-index: ${theme.zIndex.modal + 10};

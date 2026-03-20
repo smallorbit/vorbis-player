@@ -64,7 +64,7 @@ export const DrawerHeader = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: ${({ theme }) => theme.spacing.lg} ${theme.spacing.lg} ${theme.spacing.md};
+  padding: calc(${theme.spacing.lg} + env(safe-area-inset-top, 0px)) ${theme.spacing.lg} ${theme.spacing.md};
   border-bottom: 1px solid ${({ theme }) => theme.colors.popover.border};
   min-height: 60px;
   flex-shrink: 0; /* Prevent header from shrinking */

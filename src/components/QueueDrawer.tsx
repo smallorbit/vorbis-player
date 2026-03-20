@@ -25,6 +25,7 @@ const QueueDrawerContainer = styled.div.withConfig({
   z-index: ${theme.zIndex.modal};
   overflow-y: auto;
   padding: ${theme.spacing.md};
+  padding-top: calc(${theme.spacing.md} + env(safe-area-inset-top, 0px));
   box-sizing: border-box;
   
   /* Enable container queries */
