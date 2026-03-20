@@ -1,45 +1,46 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
+/**
+ * Inline dialog for saving the current queue as a playlist.
+ * Supports saving to Dropbox (as JSON file) or Spotify (as playlist via API).
+ * Shows a provider selector when multiple providers are available.
+ */
+
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import styled, { keyframes } from 'styled-components';
 import { theme } from '@/styles/theme';
+import type { ProviderId } from '@/types/domain';
 
 const fadeIn = keyframes`
   from { opacity: 0; }
   to { opacity: 1; }
 `;
 
-const slideUp = keyframes`
-  from { transform: translate(-50%, -50%) scale(0.95); opacity: 0; }
-  to { transform: translate(-50%, -50%) scale(1); opacity: 1; }
-`;
-
 const Overlay = styled.div`
   position: fixed;
   inset: 0;
-  background: ${theme.colors.overlay.light};
-  backdrop-filter: blur(4px);
   z-index: ${theme.zIndex.modal + 5};
+  background: ${theme.colors.overlay.bar};
+  display: flex;
+  align-items: center;
+  justify-content: center;
   animation: ${fadeIn} 0.2s ease;
 `;
 
-const Dialog = styled.div`
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  z-index: ${theme.zIndex.modal + 6};
-  width: min(380px, 90vw);
+const DialogBox = styled.div`
   background: ${theme.colors.overlay.dark};
-  backdrop-filter: blur(${theme.drawer.backdropBlur});
+  backdrop-filter: blur(16px);
   border: 1px solid ${theme.colors.popover.border};
   border-radius: ${theme.borderRadius['2xl']};
   padding: ${theme.spacing.lg};
-  animation: ${slideUp} 0.2s ease;
+  width: min(380px, 90vw);
+  display: flex;
+  flex-direction: column;
+  gap: ${theme.spacing.md};
 `;
 
-const Title = styled.h3`
+const DialogTitle = styled.h3`
+  margin: 0;
   color: ${theme.colors.white};
-  margin: 0 0 ${theme.spacing.md};
   font-size: ${theme.fontSize.lg};
   font-weight: ${theme.fontWeight.semibold};
 `;
@@ -47,26 +48,24 @@ const Title = styled.h3`
 const Input = styled.input`
   width: 100%;
   padding: ${theme.spacing.sm} ${theme.spacing.md};
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid ${theme.colors.popover.border};
-  border-radius: ${theme.borderRadius.md};
+  background: ${theme.colors.muted.background};
+  border: 1px solid ${theme.colors.control.border};
+  border-radius: ${theme.borderRadius.lg};
   color: ${theme.colors.white};
-  font-size: ${theme.fontSize.sm};
+  font-size: ${theme.fontSize.base};
   outline: none;
   box-sizing: border-box;
-  transition: border-color ${theme.transitions.fast};
 
   &:focus {
-    border-color: rgba(255, 255, 255, 0.3);
+    border-color: rgba(255, 255, 255, 0.5);
   }
 
   &::placeholder {
-    color: ${theme.colors.muted.foreground};
+    color: ${theme.colors.gray[500]};
   }
 `;
 
 const Warning = styled.div`
-  margin-top: ${theme.spacing.sm};
   padding: ${theme.spacing.sm} ${theme.spacing.md};
   background: rgba(255, 180, 50, 0.12);
   border: 1px solid rgba(255, 180, 50, 0.25);
@@ -76,96 +75,170 @@ const Warning = styled.div`
   line-height: 1.4;
 `;
 
-const ButtonRow = styled.div`
-  display: flex;
-  justify-content: flex-end;
-  gap: ${theme.spacing.sm};
-  margin-top: ${theme.spacing.lg};
+const ErrorText = styled.div`
+  font-size: ${theme.fontSize.xs};
+  color: #ef4444;
+  line-height: 1.4;
 `;
 
-const Button = styled.button<{ $primary?: boolean }>`
-  padding: ${theme.spacing.sm} ${theme.spacing.lg};
-  border-radius: ${theme.borderRadius.md};
-  border: 1px solid ${props => props.$primary ? 'transparent' : theme.colors.popover.border};
-  background: ${props => props.$primary ? 'rgba(255, 255, 255, 0.15)' : 'transparent'};
-  color: ${theme.colors.white};
+const ButtonRow = styled.div`
+  display: flex;
+  gap: ${theme.spacing.sm};
+  justify-content: flex-end;
+`;
+
+const DialogButton = styled.button<{ $primary?: boolean }>`
+  padding: ${theme.spacing.sm} ${theme.spacing.md};
+  border-radius: ${theme.borderRadius.lg};
   font-size: ${theme.fontSize.sm};
+  font-weight: ${theme.fontWeight.medium};
   cursor: pointer;
   transition: all ${theme.transitions.fast};
+  border: 1px solid ${({ $primary }) => $primary ? 'transparent' : theme.colors.control.border};
+  background: ${({ $primary }) => $primary ? 'rgba(255, 255, 255, 0.9)' : 'transparent'};
+  color: ${({ $primary }) => $primary ? '#111' : theme.colors.white};
 
   &:hover:not(:disabled) {
-    background: ${props => props.$primary ? 'rgba(255, 255, 255, 0.22)' : 'rgba(255, 255, 255, 0.08)'};
+    background: ${({ $primary }) => $primary ? 'rgba(255, 255, 255, 1)' : theme.colors.control.backgroundHover};
   }
 
   &:disabled {
-    opacity: 0.4;
+    opacity: 0.5;
     cursor: not-allowed;
   }
 `;
 
+const ProviderRow = styled.div`
+  display: flex;
+  gap: ${theme.spacing.sm};
+`;
+
+const ProviderOption = styled.button<{ $active: boolean }>`
+  flex: 1;
+  padding: ${theme.spacing.sm} ${theme.spacing.md};
+  border-radius: ${theme.borderRadius.lg};
+  font-size: ${theme.fontSize.sm};
+  font-weight: ${theme.fontWeight.medium};
+  cursor: pointer;
+  transition: all ${theme.transitions.fast};
+  border: 1px solid ${({ $active }) => $active ? 'rgba(255, 255, 255, 0.5)' : theme.colors.control.border};
+  background: ${({ $active }) => $active ? 'rgba(255, 255, 255, 0.12)' : 'transparent'};
+  color: ${({ $active }) => $active ? theme.colors.white : theme.colors.gray[400]};
+
+  &:hover {
+    background: ${({ $active }) => $active ? 'rgba(255, 255, 255, 0.15)' : theme.colors.control.backgroundHover};
+  }
+`;
+
+const PROVIDER_LABELS: Record<string, string> = {
+  dropbox: 'Dropbox',
+  spotify: 'Spotify',
+};
+
 interface SaveQueueDialogProps {
-  onSave: (name: string) => Promise<boolean>;
+  onSave: (name: string, provider: ProviderId) => Promise<boolean>;
   onClose: () => void;
+  availableProviders: ProviderId[];
+  hasDropboxTracks: boolean;
   hasSpotifyTracks: boolean;
-  defaultName?: string;
 }
 
-export default function SaveQueueDialog({ onSave, onClose, hasSpotifyTracks, defaultName }: SaveQueueDialogProps) {
-  const [name, setName] = useState(defaultName ?? '');
+export default function SaveQueueDialog({ onSave, onClose, availableProviders, hasDropboxTracks, hasSpotifyTracks }: SaveQueueDialogProps) {
+  const [name, setName] = useState(() => {
+    const date = new Date().toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
+    return `Queue — ${date}`;
+  });
+  const [provider, setProvider] = useState<ProviderId>(availableProviders[0]);
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    inputRef.current?.focus();
-    inputRef.current?.select();
+    requestAnimationFrame(() => inputRef.current?.select());
   }, []);
 
   const handleSave = useCallback(async () => {
     const trimmed = name.trim();
     if (!trimmed || saving) return;
+    setError(null);
     setSaving(true);
-    const success = await onSave(trimmed);
+    const success = await onSave(trimmed, provider);
     setSaving(false);
-    if (success) onClose();
-  }, [name, saving, onSave, onClose]);
+    if (!success) {
+      setError('Failed to save playlist. Please try again.');
+    }
+  }, [name, saving, onSave, provider]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
       e.preventDefault();
       handleSave();
     } else if (e.key === 'Escape') {
-      e.preventDefault();
+      e.stopPropagation();
       onClose();
     }
   }, [handleSave, onClose]);
 
+  const showProviderSelector = availableProviders.length > 1;
+  const showDropboxWarning = provider === 'dropbox' && hasSpotifyTracks;
+  const showSpotifyWarning = provider === 'spotify' && hasDropboxTracks;
+
   return createPortal(
-    <>
-      <Overlay onClick={onClose} />
-      <Dialog>
-        <Title>Save Queue as Playlist</Title>
+    <Overlay onClick={saving ? undefined : onClose} onKeyDown={e => { if (e.key === 'Escape') { e.stopPropagation(); onClose(); } }}>
+      <DialogBox onClick={e => e.stopPropagation()}>
+        <DialogTitle>Save Queue as Playlist</DialogTitle>
+        {showProviderSelector && (
+          <ProviderRow>
+            {availableProviders.map(id => (
+              <ProviderOption
+                key={id}
+                $active={provider === id}
+                onClick={() => setProvider(id)}
+                disabled={saving}
+              >
+                {PROVIDER_LABELS[id] ?? id}
+              </ProviderOption>
+            ))}
+          </ProviderRow>
+        )}
         <Input
           ref={inputRef}
           value={name}
           onChange={e => setName(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder="Playlist name"
-          maxLength={100}
           disabled={saving}
+          autoFocus
         />
-        {hasSpotifyTracks && (
+        {showDropboxWarning && (
           <Warning>
             This queue contains Spotify tracks. They will be saved but require Spotify authentication to play back.
           </Warning>
         )}
+        {showSpotifyWarning && (
+          <Warning>
+            This queue contains Dropbox tracks. Only tracks that can be matched on Spotify will be included.
+          </Warning>
+        )}
+        {error && <ErrorText>{error}</ErrorText>}
         <ButtonRow>
-          <Button onClick={onClose} disabled={saving}>Cancel</Button>
-          <Button $primary onClick={handleSave} disabled={!name.trim() || saving}>
+          <DialogButton onClick={onClose} disabled={saving}>
+            Cancel
+          </DialogButton>
+          <DialogButton
+            $primary
+            onClick={handleSave}
+            disabled={saving || !name.trim()}
+          >
             {saving ? 'Saving...' : 'Save'}
-          </Button>
+          </DialogButton>
         </ButtonRow>
-      </Dialog>
-    </>,
+      </DialogBox>
+    </Overlay>,
     document.body,
   );
 }
