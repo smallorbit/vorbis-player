@@ -27,7 +27,8 @@ import { useProfilingContext } from '@/contexts/ProfilingContext';
 import { useVisualizerDebug } from '@/contexts/VisualizerDebugContext';
 import LibraryDrawer from './LibraryDrawer';
 import AlbumArtQuickSwapBack from './AlbumArtQuickSwapBack';
-import { useSaveQueueAsPlaylist } from '@/hooks/useSaveQueueAsPlaylist';
+import type { ProviderId } from '@/types/domain';
+import { LIBRARY_REFRESH_EVENT } from '@/hooks/useLibrarySync';
 import Toast from './Toast';
 
 const SaveQueueDialog = lazy(() => import('./SaveQueueDialog'));
@@ -70,6 +71,7 @@ interface PlayerContentProps {
   radioState?: import('@/hooks/useRadio').RadioState;
   isRadioAvailable?: boolean;
   radioActive?: boolean;
+  mediaTracksRef?: React.RefObject<import('@/types/domain').MediaTrack[]>;
 }
 
 const ContentWrapper = styled.div.withConfig({
@@ -299,7 +301,7 @@ const FlipInner = styled.div.withConfig({
 `;
 
 
-const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, showLibraryDrawer, onAlbumArtBoundsChange, handlers, currentTrackProvider, radioState, isRadioAvailable, radioActive }) => {
+const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, showLibraryDrawer, onAlbumArtBoundsChange, handlers, currentTrackProvider, radioState, isRadioAvailable, radioActive, mediaTracksRef }) => {
   // --- Context hooks ---
   const { tracks, shuffleEnabled, handleShuffleToggle, selectedPlaylistId } = useTrackListContext();
   const { isUnifiedLikedActive } = useUnifiedLikedTracks();
@@ -346,29 +348,67 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
 
   // --- Save queue as playlist ---
   const { connectedProviderIds } = useProviderContext();
-  const { saveQueueAsPlaylist, status: saveQueueStatus, error: saveQueueError, resetStatus: resetSaveQueue } = useSaveQueueAsPlaylist();
   const [showSaveQueueDialog, setShowSaveQueueDialog] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
-  const canSaveQueue = useMemo(() => connectedProviderIds.includes('spotify') && tracks.length > 0, [connectedProviderIds, tracks.length]);
+  const saveProviders = useMemo(
+    () => connectedProviderIds.filter((id): id is 'dropbox' | 'spotify' => id === 'dropbox' || id === 'spotify'),
+    [connectedProviderIds],
+  );
+  const canSaveQueue = saveProviders.length > 0 && tracks.length > 0;
+  const hasSpotifyTracks = useMemo(() => tracks.some(t => t.provider === 'spotify'), [tracks]);
+  const hasDropboxTracks = useMemo(() => tracks.some(t => t.provider === 'dropbox'), [tracks]);
 
   const handleOpenSaveQueue = useCallback(() => setShowSaveQueueDialog(true), []);
-  const handleCloseSaveQueue = useCallback(() => {
-    setShowSaveQueueDialog(false);
-    resetSaveQueue();
-  }, [resetSaveQueue]);
+  const handleCloseSaveQueue = useCallback(() => setShowSaveQueueDialog(false), []);
 
-  const handleSaveQueue = useCallback(async (name: string) => {
+  const handleSaveQueue = useCallback(async (name: string, provider: ProviderId): Promise<boolean> => {
     try {
-      const result = await saveQueueAsPlaylist(name, tracks);
-      setShowSaveQueueDialog(false);
-      const skippedNote = result.skippedTracks > 0
-        ? ` (${result.skippedTracks} track${result.skippedTracks !== 1 ? 's' : ''} skipped)`
-        : '';
-      setToastMessage(`Saved ${result.totalTracks} track${result.totalTracks !== 1 ? 's' : ''} to "${name}"${skippedNote}`);
-    } catch {
-      // Error is shown in the dialog via status/error props
+      if (provider === 'dropbox') {
+        const mediaTracks = mediaTracksRef?.current;
+        if (!mediaTracks || mediaTracks.length === 0) return false;
+
+        const { providerRegistry } = await import('@/providers/registry');
+        const { DropboxAuthAdapter } = await import('@/providers/dropbox/dropboxAuthAdapter');
+        const dropbox = providerRegistry.get('dropbox');
+        if (!dropbox?.auth.isAuthenticated()) return false;
+        if (!(dropbox.auth instanceof DropboxAuthAdapter)) return false;
+
+        const { saveQueueAsPlaylist } = await import('@/providers/dropbox/dropboxPlaylistStorage');
+        const result = await saveQueueAsPlaylist(dropbox.auth, name, mediaTracks);
+        if (!result) return false;
+
+        setShowSaveQueueDialog(false);
+        setToastMessage(`Saved "${name}" to Dropbox`);
+        window.dispatchEvent(new Event(LIBRARY_REFRESH_EVENT));
+        return true;
+      }
+
+      if (provider === 'spotify') {
+        if (tracks.length === 0) return false;
+
+        const { spotifyAuth, createPlaylist, addTracksToPlaylist } = await import('@/services/spotify');
+        if (!spotifyAuth.isAuthenticated()) return false;
+
+        const { resolveTrackUris } = await import('@/hooks/useSaveQueueAsPlaylist');
+        const { uris } = await resolveTrackUris(tracks);
+        if (uris.length === 0) return false;
+
+        const playlist = await createPlaylist(name, {
+          description: 'Created from Vorbis Player queue',
+        });
+        await addTracksToPlaylist(playlist.id, uris);
+
+        setShowSaveQueueDialog(false);
+        setToastMessage(`Saved "${name}" to Spotify`);
+        return true;
+      }
+
+      return false;
+    } catch (err) {
+      console.error('[SaveQueue] Failed to save:', err);
+      return false;
     }
-  }, [saveQueueAsPlaylist, tracks]);
+  }, [mediaTracksRef, tracks]);
 
   const handleDismissToast = useCallback(() => setToastMessage(null), []);
 
@@ -391,7 +431,6 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
   const toggleFlip = useCallback(() => setIsFlipped(f => !f), []);
   const flipContainerRef = useRef<HTMLDivElement>(null);
   const albumArtContainerRef = useRef<HTMLDivElement | null>(null);
-
 
   // Report album art bounds for trail visualizer (head stays inside art)
   useEffect(() => {
@@ -900,16 +939,17 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
           initialViewMode={libraryViewMode}
         />
       </ProfiledComponent>
-      <Suspense fallback={null}>
-        <SaveQueueDialog
-          isOpen={showSaveQueueDialog}
-          onClose={handleCloseSaveQueue}
-          onSave={handleSaveQueue}
-          status={saveQueueStatus}
-          error={saveQueueError}
-          trackCount={tracks.length}
-        />
-      </Suspense>
+      {showSaveQueueDialog && (
+        <Suspense fallback={null}>
+          <SaveQueueDialog
+            onSave={handleSaveQueue}
+            onClose={handleCloseSaveQueue}
+            availableProviders={saveProviders}
+            hasDropboxTracks={hasDropboxTracks}
+            hasSpotifyTracks={hasSpotifyTracks}
+          />
+        </Suspense>
+      )}
       {toastMessage && <Toast message={toastMessage} onDismiss={handleDismissToast} />}
     </ContentWrapper>
   );

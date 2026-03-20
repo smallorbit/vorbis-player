@@ -40,6 +40,7 @@ import {
   clearTombstones,
 } from './dropboxLikesCache';
 import { getLikesSync } from './dropboxLikesSync';
+import { listSavedPlaylists, loadPlaylistTracks } from './dropboxPlaylistStorage';
 
 const AUDIO_EXTENSIONS = ['.mp3', '.flac', '.ogg', '.m4a', '.wav', '.aac', '.wma', '.opus'];
 const IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.webp'];
@@ -341,8 +342,16 @@ export class DropboxCatalogAdapter implements CatalogProvider {
         trackCount: totalTracks,
       };
 
-      const collections = [allMusic, ...albums];
-      putCatalogCache(collections);
+      // Fetch saved playlists from /.vorbis/playlists/ (non-blocking; empty on failure)
+      let savedPlaylists: MediaCollection[] = [];
+      try {
+        savedPlaylists = await listSavedPlaylists(this.auth);
+      } catch {
+        // Silently ignore — saved playlists are optional
+      }
+
+      const collections = [allMusic, ...savedPlaylists, ...albums];
+      await putCatalogCache(collections);
       return collections;
     } catch (error) {
       console.error('[DropboxCatalog] Failed to list collections:', error);
@@ -353,6 +362,11 @@ export class DropboxCatalogAdapter implements CatalogProvider {
   async listTracks(collectionRef: CollectionRef, signal?: AbortSignal): Promise<MediaTrack[]> {
     if (collectionRef.provider !== 'dropbox') return [];
     if (collectionRef.kind === 'liked') return getLikedTracks();
+
+    // Saved playlists: load from JSON file in Dropbox
+    if (collectionRef.kind === 'playlist') {
+      return loadPlaylistTracks(this.auth, collectionRef.id);
+    }
 
     const folderPath = collectionRef.id;
 

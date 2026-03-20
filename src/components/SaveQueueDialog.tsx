@@ -1,13 +1,14 @@
 /**
- * Inline dialog for saving the current queue as a Spotify playlist.
- * Renders as a portal overlay with a name input and save button.
+ * Inline dialog for saving the current queue as a playlist.
+ * Supports saving to Dropbox (as JSON file) or Spotify (as playlist via API).
+ * Shows a provider selector when multiple providers are available.
  */
 
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import styled, { keyframes } from 'styled-components';
 import { theme } from '@/styles/theme';
-import type { SaveQueueStatus } from '@/hooks/useSaveQueueAsPlaylist';
+import type { ProviderId } from '@/types/domain';
 
 const fadeIn = keyframes`
   from { opacity: 0; }
@@ -64,6 +65,22 @@ const Input = styled.input`
   }
 `;
 
+const Warning = styled.div`
+  padding: ${theme.spacing.sm} ${theme.spacing.md};
+  background: rgba(255, 180, 50, 0.12);
+  border: 1px solid rgba(255, 180, 50, 0.25);
+  border-radius: ${theme.borderRadius.md};
+  color: rgba(255, 200, 100, 0.9);
+  font-size: ${theme.fontSize.xs};
+  line-height: 1.4;
+`;
+
+const ErrorText = styled.div`
+  font-size: ${theme.fontSize.xs};
+  color: #ef4444;
+  line-height: 1.4;
+`;
+
 const ButtonRow = styled.div`
   display: flex;
   gap: ${theme.spacing.sm};
@@ -91,94 +108,133 @@ const DialogButton = styled.button<{ $primary?: boolean }>`
   }
 `;
 
-const StatusText = styled.div<{ $error?: boolean }>`
-  font-size: ${theme.fontSize.sm};
-  color: ${({ $error }) => $error ? '#ef4444' : theme.colors.gray[400]};
+const ProviderRow = styled.div`
+  display: flex;
+  gap: ${theme.spacing.sm};
 `;
 
+const ProviderOption = styled.button<{ $active: boolean }>`
+  flex: 1;
+  padding: ${theme.spacing.sm} ${theme.spacing.md};
+  border-radius: ${theme.borderRadius.lg};
+  font-size: ${theme.fontSize.sm};
+  font-weight: ${theme.fontWeight.medium};
+  cursor: pointer;
+  transition: all ${theme.transitions.fast};
+  border: 1px solid ${({ $active }) => $active ? 'rgba(255, 255, 255, 0.5)' : theme.colors.control.border};
+  background: ${({ $active }) => $active ? 'rgba(255, 255, 255, 0.12)' : 'transparent'};
+  color: ${({ $active }) => $active ? theme.colors.white : theme.colors.gray[400]};
+
+  &:hover {
+    background: ${({ $active }) => $active ? 'rgba(255, 255, 255, 0.15)' : theme.colors.control.backgroundHover};
+  }
+`;
+
+const PROVIDER_LABELS: Record<string, string> = {
+  dropbox: 'Dropbox',
+  spotify: 'Spotify',
+};
+
 interface SaveQueueDialogProps {
-  isOpen: boolean;
+  onSave: (name: string, provider: ProviderId) => Promise<boolean>;
   onClose: () => void;
-  onSave: (name: string) => void;
-  status: SaveQueueStatus;
-  error: string | null;
-  trackCount: number;
+  availableProviders: ProviderId[];
+  hasDropboxTracks: boolean;
+  hasSpotifyTracks: boolean;
 }
 
-export default function SaveQueueDialog({
-  isOpen,
-  onClose,
-  onSave,
-  status,
-  error,
-  trackCount,
-}: SaveQueueDialogProps) {
-  const [name, setName] = useState('');
+export default function SaveQueueDialog({ onSave, onClose, availableProviders, hasDropboxTracks, hasSpotifyTracks }: SaveQueueDialogProps) {
+  const [name, setName] = useState(() => {
+    const date = new Date().toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
+    return `Queue — ${date}`;
+  });
+  const [provider, setProvider] = useState<ProviderId>(availableProviders[0]);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (isOpen) {
-      const date = new Date().toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric',
-      });
-      setName(`Queue — ${date}`);
-      // Focus after portal renders
-      requestAnimationFrame(() => inputRef.current?.select());
-    }
-  }, [isOpen]);
+    requestAnimationFrame(() => inputRef.current?.select());
+  }, []);
 
-  const handleSubmit = useCallback((e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSave = useCallback(async () => {
     const trimmed = name.trim();
-    if (trimmed && status !== 'saving') {
-      onSave(trimmed);
+    if (!trimmed || saving) return;
+    setError(null);
+    setSaving(true);
+    const success = await onSave(trimmed, provider);
+    setSaving(false);
+    if (!success) {
+      setError('Failed to save playlist. Please try again.');
     }
-  }, [name, status, onSave]);
+  }, [name, saving, onSave, provider]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (e.key === 'Escape') {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleSave();
+    } else if (e.key === 'Escape') {
       e.stopPropagation();
       onClose();
     }
-  }, [onClose]);
+  }, [handleSave, onClose]);
 
-  if (!isOpen) return null;
-
-  const isSaving = status === 'saving';
+  const showProviderSelector = availableProviders.length > 1;
+  const showDropboxWarning = provider === 'dropbox' && hasSpotifyTracks;
+  const showSpotifyWarning = provider === 'spotify' && hasDropboxTracks;
 
   return createPortal(
-    <Overlay onClick={isSaving ? undefined : onClose} onKeyDown={handleKeyDown}>
+    <Overlay onClick={saving ? undefined : onClose} onKeyDown={e => { if (e.key === 'Escape') { e.stopPropagation(); onClose(); } }}>
       <DialogBox onClick={e => e.stopPropagation()}>
-        <DialogTitle>Save Queue to Spotify</DialogTitle>
-        <form onSubmit={handleSubmit}>
-          <Input
-            ref={inputRef}
-            value={name}
-            onChange={e => setName(e.target.value)}
-            placeholder="Playlist name"
-            disabled={isSaving}
-            autoFocus
-          />
-        </form>
-        <StatusText>
-          {trackCount} track{trackCount !== 1 ? 's' : ''} in queue
-        </StatusText>
-        {error && <StatusText $error>{error}</StatusText>}
+        <DialogTitle>Save Queue as Playlist</DialogTitle>
+        {showProviderSelector && (
+          <ProviderRow>
+            {availableProviders.map(id => (
+              <ProviderOption
+                key={id}
+                $active={provider === id}
+                onClick={() => setProvider(id)}
+                disabled={saving}
+              >
+                {PROVIDER_LABELS[id] ?? id}
+              </ProviderOption>
+            ))}
+          </ProviderRow>
+        )}
+        <Input
+          ref={inputRef}
+          value={name}
+          onChange={e => setName(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder="Playlist name"
+          disabled={saving}
+          autoFocus
+        />
+        {showDropboxWarning && (
+          <Warning>
+            This queue contains Spotify tracks. They will be saved but require Spotify authentication to play back.
+          </Warning>
+        )}
+        {showSpotifyWarning && (
+          <Warning>
+            This queue contains Dropbox tracks. Only tracks that can be matched on Spotify will be included.
+          </Warning>
+        )}
+        {error && <ErrorText>{error}</ErrorText>}
         <ButtonRow>
-          <DialogButton onClick={onClose} disabled={isSaving}>
+          <DialogButton onClick={onClose} disabled={saving}>
             Cancel
           </DialogButton>
           <DialogButton
             $primary
-            onClick={() => {
-              const trimmed = name.trim();
-              if (trimmed) onSave(trimmed);
-            }}
-            disabled={isSaving || !name.trim()}
+            onClick={handleSave}
+            disabled={saving || !name.trim()}
           >
-            {isSaving ? 'Saving...' : 'Save'}
+            {saving ? 'Saving...' : 'Save'}
           </DialogButton>
         </ButtonRow>
       </DialogBox>
