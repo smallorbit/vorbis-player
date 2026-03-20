@@ -453,6 +453,42 @@ export class DropboxCatalogAdapter implements CatalogProvider {
     };
   }
 
+  /**
+   * Resolve album art for a single album directory.
+   * Checks IndexedDB cache first, then scans the Dropbox directory for image files.
+   * Returns a data URL or null.
+   */
+  async resolveAlbumArt(albumDir: string, signal?: AbortSignal): Promise<string | null> {
+    if (!albumDir) return null;
+
+    // Check cache first
+    const cached = await getAlbumArt(albumDir);
+    if (cached) return cached;
+
+    // Scan the directory for image files
+    try {
+      const result = await this.dropboxApi<{ entries: DropboxFileEntry[] }>(
+        '/files/list_folder',
+        { path: albumDir, recursive: false },
+        signal,
+      );
+
+      const images = result.entries.filter(
+        (e) => e['.tag'] === 'file' && isImageFile(e.name),
+      );
+      const imagePath = pickAlbumArtPath(images);
+      if (!imagePath) return null;
+
+      const imageUrl = await this.fetchArtDataUrl(imagePath);
+      if (imageUrl) {
+        await putAlbumArt(albumDir, imageUrl);
+      }
+      return imageUrl;
+    } catch {
+      return null;
+    }
+  }
+
   async getTemporaryLink(path: string): Promise<string> {
     const cached = this.tempLinkCache.get(path);
     if (cached && Date.now() < cached.expiresAt) {

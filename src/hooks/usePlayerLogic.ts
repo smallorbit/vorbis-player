@@ -21,6 +21,7 @@ import { providerRegistry } from '@/providers/registry';
 import { resolveViaSpotify } from '@/services/spotifyResolver';
 import { logQueue, logRadio } from '@/lib/debugLog';
 import { useMediaTracksMirror } from '@/hooks/useMediaTracksMirror';
+import { useQueueThumbnailLoader } from '@/hooks/useQueueThumbnailLoader';
 import {
   appendMediaTracks,
   moveItemInArray,
@@ -349,6 +350,9 @@ export function usePlayerLogic() {
 
   // Background-resolve non-Spotify tracks to Spotify URIs for queue sync
   useSpotifyQueueSync({ tracks });
+
+  // Progressively load missing thumbnails for Dropbox tracks in the queue
+  useQueueThumbnailLoader(tracks, mediaTracksRef, setTracks);
 
   // Auto-extract accent color from album artwork; respects overrides in ColorContext
   useAccentColor(currentTrack, accentColorOverrides, setAccentColor, setAccentColorOverrides);
