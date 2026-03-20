@@ -15,7 +15,7 @@ import type { Track } from '@/services/spotify';
 import type { PlaybackState, ProviderId } from '@/types/domain';
 import type { MediaTrack } from '@/types/domain';
 import type { RadioSeed } from '@/types/radio';
-import { isAlbumId, extractAlbumId, LIKED_SONGS_ID, isSavedPlaylistId, extractPlaylistPath } from '@/constants/playlist';
+import { isAlbumId, extractAlbumId, LIKED_SONGS_ID, resolvePlaylistRef } from '@/constants/playlist';
 import { shuffleArray } from '@/utils/shuffleArray';
 import { providerRegistry } from '@/providers/registry';
 import { resolveViaSpotify } from '@/services/spotifyResolver';
@@ -265,15 +265,7 @@ export function usePlayerLogic() {
         mediaTracksRef.current = [];
         try {
           const catalog = targetDescriptor.catalog;
-          const isLiked = playlistId === LIKED_SONGS_ID;
-          const collectionId = isLiked ? '' : isAlbumId(playlistId) ? extractAlbumId(playlistId) : isSavedPlaylistId(playlistId) ? extractPlaylistPath(playlistId) : playlistId;
-          const collectionKind: 'liked' | 'album' | 'playlist' | 'folder' = isLiked
-            ? 'liked'
-            : isAlbumId(playlistId)
-              ? 'album'
-              : isSavedPlaylistId(playlistId)
-                ? 'playlist'
-                : providerId === 'dropbox' ? 'folder' : 'playlist';
+          const { id: collectionId, kind: collectionKind } = resolvePlaylistRef(playlistId, providerId);
           const collectionRef = { provider: providerId, kind: collectionKind, id: collectionId } as const;
           const list = await catalog.listTracks(collectionRef);
           if (list.length === 0) {
@@ -589,15 +581,7 @@ export function usePlayerLogic() {
         } else {
           // Non-Spotify provider: use catalog
           const catalog = targetDescriptor.catalog;
-          const isLiked = playlistId === LIKED_SONGS_ID;
-          const collectionId = isLiked ? '' : isAlbumId(playlistId) ? extractAlbumId(playlistId) : isSavedPlaylistId(playlistId) ? extractPlaylistPath(playlistId) : playlistId;
-          const collectionKind: 'liked' | 'album' | 'playlist' | 'folder' = isLiked
-            ? 'liked'
-            : isAlbumId(playlistId)
-              ? 'album'
-              : isSavedPlaylistId(playlistId)
-                ? 'playlist'
-                : targetProviderId === 'dropbox' ? 'folder' : 'playlist';
+          const { id: collectionId, kind: collectionKind } = resolvePlaylistRef(playlistId, targetProviderId);
           const collectionRef = { provider: targetProviderId, kind: collectionKind, id: collectionId } as const;
           newMediaTracks = await catalog.listTracks(collectionRef);
         }

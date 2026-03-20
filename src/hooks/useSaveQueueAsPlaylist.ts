@@ -40,7 +40,7 @@ const MAX_CONCURRENT_RESOLVE = 3;
  * sync resolution cache first, then fall back to on-demand search if the
  * cross-provider resolve setting is enabled.
  */
-async function resolveTrackUris(tracks: Track[]): Promise<{ uris: string[]; skipped: number }> {
+export async function resolveTrackUris(tracks: Track[]): Promise<{ uris: string[]; skipped: number }> {
   const resolveEnabled = spotifyQueueSync.isResolveEnabled();
 
   // Build a slot per track to preserve original queue order

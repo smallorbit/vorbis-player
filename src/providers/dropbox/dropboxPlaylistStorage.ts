@@ -248,57 +248,45 @@ export async function listSavedPlaylists(
   const result: ListResult = await response.json();
   const collections: MediaCollection[] = [];
 
-  for (const entry of result.entries) {
-    if (entry['.tag'] !== 'file' || !entry.name.endsWith('.json')) continue;
-
-    const displayName = entry.name.replace(/\.json$/, '');
-    collections.push({
-      id: toSavedPlaylistId(entry.path_lower),
-      provider: 'dropbox',
-      kind: 'playlist',
-      name: displayName,
-      imageUrl: undefined,
-    });
-  }
-
-  // Handle pagination
-  let cursor = result.cursor;
-  let hasMore = result.has_more;
-  while (hasMore) {
-    let continueResp = await fetch('https://api.dropboxapi.com/2/files/list_folder/continue', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ cursor }),
-    });
-    if (continueResp.status === 401) {
-      const refreshed = await auth.refreshAccessToken();
-      if (!refreshed) break;
-      token = refreshed;
-      continueResp = await fetch('https://api.dropboxapi.com/2/files/list_folder/continue', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ cursor }),
-      });
-    }
-    if (!continueResp.ok) break;
-    const cont: ListResult = await continueResp.json();
-    for (const entry of cont.entries) {
+  const collectEntries = (entries: ListResult['entries']) => {
+    for (const entry of entries) {
       if (entry['.tag'] !== 'file' || !entry.name.endsWith('.json')) continue;
-      const displayName = entry.name.replace(/\.json$/, '');
       collections.push({
         id: toSavedPlaylistId(entry.path_lower),
         provider: 'dropbox',
         kind: 'playlist',
-        name: displayName,
+        name: entry.name.replace(/\.json$/, ''),
         imageUrl: undefined,
       });
     }
+  };
+
+  collectEntries(result.entries);
+
+  // Handle pagination
+  let cursor = result.cursor;
+  let hasMore = result.has_more;
+  const continueFetch = (accessToken: string) =>
+    fetch('https://api.dropboxapi.com/2/files/list_folder/continue', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ cursor }),
+    });
+
+  while (hasMore) {
+    let continueResp = await continueFetch(token);
+    if (continueResp.status === 401) {
+      const refreshed = await auth.refreshAccessToken();
+      if (!refreshed) break;
+      token = refreshed;
+      continueResp = await continueFetch(token);
+    }
+    if (!continueResp.ok) break;
+    const cont: ListResult = await continueResp.json();
+    collectEntries(cont.entries);
     cursor = cont.cursor;
     hasMore = cont.has_more;
   }

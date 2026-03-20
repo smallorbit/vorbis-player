@@ -28,7 +28,6 @@ import { useVisualizerDebug } from '@/contexts/VisualizerDebugContext';
 import LibraryDrawer from './LibraryDrawer';
 import AlbumArtQuickSwapBack from './AlbumArtQuickSwapBack';
 import type { ProviderId } from '@/types/domain';
-import { DropboxAuthAdapter } from '@/providers/dropbox/dropboxAuthAdapter';
 import { LIBRARY_REFRESH_EVENT } from '@/hooks/useLibrarySync';
 import Toast from './Toast';
 
@@ -369,6 +368,7 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
         if (!mediaTracks || mediaTracks.length === 0) return false;
 
         const { providerRegistry } = await import('@/providers/registry');
+        const { DropboxAuthAdapter } = await import('@/providers/dropbox/dropboxAuthAdapter');
         const dropbox = providerRegistry.get('dropbox');
         if (!dropbox?.auth.isAuthenticated()) return false;
         if (!(dropbox.auth instanceof DropboxAuthAdapter)) return false;
@@ -386,22 +386,11 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
       if (provider === 'spotify') {
         if (tracks.length === 0) return false;
 
-        const { spotifyAuth, createPlaylist, addTracksToPlaylist, searchTrack } = await import('@/services/spotify');
+        const { spotifyAuth, createPlaylist, addTracksToPlaylist } = await import('@/services/spotify');
         if (!spotifyAuth.isAuthenticated()) return false;
 
-        // Resolve all tracks to Spotify URIs
-        const uris: string[] = [];
-        for (const track of tracks) {
-          if (track.provider === 'spotify' || !track.provider) {
-            if (track.uri) uris.push(track.uri);
-          } else {
-            try {
-              const found = await searchTrack(track.artists, track.name);
-              if (found?.uri) uris.push(found.uri);
-            } catch { /* skip unresolvable */ }
-          }
-        }
-
+        const { resolveTrackUris } = await import('@/hooks/useSaveQueueAsPlaylist');
+        const { uris } = await resolveTrackUris(tracks);
         if (uris.length === 0) return false;
 
         const playlist = await createPlaylist(name, {

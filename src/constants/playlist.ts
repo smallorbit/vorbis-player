@@ -39,3 +39,14 @@ export function extractPlaylistPath(playlistId: string): string {
 export function toSavedPlaylistId(path: string): string {
   return `${SAVED_PLAYLIST_PREFIX}${path}`;
 }
+
+/** Resolve a playlist selection ID to a collection ID and kind for catalog lookup. */
+export function resolvePlaylistRef(
+  playlistId: string,
+  providerId: string,
+): { id: string; kind: 'liked' | 'album' | 'playlist' | 'folder' } {
+  if (playlistId === LIKED_SONGS_ID) return { id: '', kind: 'liked' };
+  if (isAlbumId(playlistId)) return { id: extractAlbumId(playlistId), kind: 'album' };
+  if (isSavedPlaylistId(playlistId)) return { id: extractPlaylistPath(playlistId), kind: 'playlist' };
+  return { id: playlistId, kind: providerId === 'dropbox' ? 'folder' : 'playlist' };
+}
