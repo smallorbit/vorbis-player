@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useCallback, useMemo, useState, useEffect } from 'react';
-import { getPins, setPins, migratePinsFromLocalStorage, MAX_PINS, UNIFIED_PROVIDER } from '@/services/settings/pinnedItemsStorage';
+import { getPins, setPins, migratePinsFromLocalStorage, MAX_PINS, UNIFIED_PROVIDER, PINS_CHANGED_EVENT } from '@/services/settings/pinnedItemsStorage';
 import { getPreferencesSync } from '@/providers/dropbox/dropboxPreferencesSync';
 
 interface PinnedItemsContextValue {
@@ -33,6 +33,21 @@ export function PinnedItemsProvider({ children }: { children: React.ReactNode })
     }
     load().catch(err => console.warn('[PinnedItemsContext] Failed to load pins:', err));
     return () => { cancelled = true; };
+  }, []);
+
+  // Reload pins when updated externally (e.g. Dropbox sync)
+  useEffect(() => {
+    function onPinsChanged() {
+      Promise.all([
+        getPins(UNIFIED_PROVIDER, 'playlists'),
+        getPins(UNIFIED_PROVIDER, 'albums'),
+      ]).then(([playlists, albums]) => {
+        setPinnedPlaylistIds(playlists);
+        setPinnedAlbumIds(albums);
+      }).catch(err => console.warn('[PinnedItemsContext] Failed to reload pins:', err));
+    }
+    window.addEventListener(PINS_CHANGED_EVENT, onPinsChanged);
+    return () => window.removeEventListener(PINS_CHANGED_EVENT, onPinsChanged);
   }, []);
 
   const isPlaylistPinned = useCallback(

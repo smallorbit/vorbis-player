@@ -4,6 +4,7 @@ import type { RemotePreferencesFile } from '../dropboxPreferencesSync';
 vi.mock('@/services/settings/pinnedItemsStorage', () => ({
   getPins: vi.fn(),
   setPins: vi.fn(),
+  notifyPinsChanged: vi.fn(),
   UNIFIED_PROVIDER: '_unified',
 }));
 

@@ -4,7 +4,7 @@
  */
 
 import type { DropboxAuthAdapter } from './dropboxAuthAdapter';
-import { getPins, setPins, UNIFIED_PROVIDER } from '@/services/settings/pinnedItemsStorage';
+import { getPins, setPins, UNIFIED_PROVIDER, notifyPinsChanged } from '@/services/settings/pinnedItemsStorage';
 import { ensureVorbisFolder } from './dropboxSyncFolder';
 
 // ── Types ───────────────────────────────────────────────────────────────────
@@ -64,6 +64,7 @@ export async function applyRemoteToLocal(data: RemotePreferencesFile): Promise<v
     setPins(UNIFIED_PROVIDER, 'playlists', data.pins.playlists ?? []),
     setPins(UNIFIED_PROVIDER, 'albums', data.pins.albums ?? []),
   ]);
+  notifyPinsChanged();
   const accent = data.accent ?? { overrides: {}, customColors: {} };
   localStorage.setItem(LS_ACCENT_OVERRIDES, JSON.stringify(accent.overrides ?? {}));
   localStorage.setItem(LS_ACCENT_CUSTOM, JSON.stringify(accent.customColors ?? {}));

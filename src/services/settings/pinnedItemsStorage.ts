@@ -8,6 +8,13 @@ import { STORE_NAMES, settingsGet, settingsPut, settingsClearStore } from './set
 
 export const MAX_PINS = 8;
 
+/** Event dispatched when pins are updated externally (e.g. Dropbox sync). */
+export const PINS_CHANGED_EVENT = 'vorbis-pins-changed';
+
+export function notifyPinsChanged(): void {
+  window.dispatchEvent(new Event(PINS_CHANGED_EVENT));
+}
+
 /** Provider key used for the unified (cross-provider) pin namespace. */
 export const UNIFIED_PROVIDER = '_unified';
 
