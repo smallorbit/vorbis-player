@@ -19,6 +19,7 @@ export interface SavedTrack {
   albumId?: string;
   durationMs: number;
   externalUrl?: string;
+  image?: string;
 }
 
 export interface PlaylistFile {
@@ -98,6 +99,7 @@ function mediaTrackToSavedTrack(track: MediaTrack): SavedTrack {
     albumId: track.albumId,
     durationMs: track.durationMs,
     externalUrl: track.externalUrl,
+    image: track.image,
   };
 }
 
@@ -113,6 +115,7 @@ function savedTrackToMediaTrack(track: SavedTrack): MediaTrack {
     albumId: track.albumId,
     durationMs: track.durationMs,
     externalUrl: track.externalUrl,
+    image: track.image,
   };
 }
 
