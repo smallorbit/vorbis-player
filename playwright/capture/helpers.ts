@@ -1,4 +1,4 @@
-import { type Page, type Locator, type TestInfo } from '@playwright/test';
+import { type Page, type TestInfo } from '@playwright/test';
 import path from 'node:path';
 import fs from 'node:fs';
 
@@ -20,34 +20,8 @@ export async function navigateToPlayer(page: Page): Promise<void> {
   await animationSettle(page, 300);
 }
 
-export async function loadPlayerWithPlaylist(page: Page, playlistId: string): Promise<void> {
-  await page.goto(`http://127.0.0.1:3000?playlist=${encodeURIComponent(playlistId)}`);
-  await waitForPlayerReady(page);
-  await focusPage(page);
-}
-
 export async function openLibraryDrawer(page: Page): Promise<void> {
   await page.keyboard.press('l');
-  await animationSettle(page, 600);
-}
-
-export async function closeLibraryDrawer(page: Page): Promise<void> {
-  await page.keyboard.press('l');
-  await animationSettle(page, 600);
-}
-
-export async function openPlaylistDrawer(page: Page): Promise<void> {
-  await page.keyboard.press('p');
-  await animationSettle(page, 600);
-}
-
-export async function closePlaylistDrawer(page: Page): Promise<void> {
-  await page.keyboard.press('p');
-  await animationSettle(page, 600);
-}
-
-export async function openSettingsMenu(page: Page): Promise<void> {
-  await page.keyboard.press('o');
   await animationSettle(page, 600);
 }
 
@@ -75,19 +49,5 @@ export async function captureScreenshot(
   fs.mkdirSync(dir, { recursive: true });
   const filePath = path.join(dir, `${name}.png`);
   await page.screenshot({ path: filePath, animations: 'allow' });
-  return filePath;
-}
-
-export async function captureElementScreenshot(
-  page: Page,
-  locator: Locator,
-  name: string,
-  testInfo: TestInfo
-): Promise<string> {
-  const projectName = testInfo.project.name;
-  const dir = path.join(OUTPUT_DIR, projectName);
-  fs.mkdirSync(dir, { recursive: true });
-  const filePath = path.join(dir, `${name}.png`);
-  await locator.screenshot({ path: filePath, animations: 'allow' });
   return filePath;
 }
