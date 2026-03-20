@@ -14,7 +14,7 @@ import {
 } from './styled';
 import type { Track } from '../services/spotify';
 
-const Playlist = React.lazy(() => import('./Playlist'));
+const QueueTrackList = React.lazy(() => import('./QueueTrackList'));
 
 const DrawerContainer = styled.div.withConfig({
   shouldForwardProp: (prop) => !['$isOpen', '$isDragging', '$dragOffset'].includes(prop),
@@ -201,7 +201,7 @@ const QueueBottomSheet = memo<QueueBottomSheetProps>(function QueueBottomSheet({
                 </DrawerFallback>
               }
             >
-              <Playlist
+              <QueueTrackList
                 tracks={tracks}
                 currentTrackIndex={currentTrackIndex}
                 onTrackSelect={(index) => {

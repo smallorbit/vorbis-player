@@ -26,7 +26,7 @@ Vorbis Player is a React-based Spotify music player with visual effects and albu
    - Type definitions for major interfaces
 
 3. **Performance Optimizations**
-   - Lazy loading of heavy components (VisualEffectsMenu, PlaylistDrawer)
+   - Lazy loading of heavy components (VisualEffectsMenu, QueueDrawer, QueueBottomSheet)
    - Color extraction caching with LRU cache
    - Web Workers for image processing
    - React.memo on heavy components
@@ -34,7 +34,7 @@ Vorbis Player is a React-based Spotify music player with visual effects and albu
 4. **Feature-Rich**
    - Multiple visualizers (particles, geometric, gradient flow, waveform)
    - Advanced visual effects (glow, filters, accent colors)
-   - Playlist management with shuffle support
+   - Library collections and playback queue, with shuffle support
    - Keyboard shortcuts and UI controls
 
 ---
@@ -193,7 +193,7 @@ export default React.memo(AlbumArt);
 
 // MISSING for components with:
 - VisualEffectsMenu
-- PlaylistDrawer
+- QueueDrawer
 - PlayerContent (has many props)
 ```
 

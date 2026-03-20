@@ -55,6 +55,11 @@ npm run deploy:preview # Deploy preview
 
 ## Architecture
 
+### Queue vs playlist (terminology)
+
+- **Queue** — tracks scheduled to play next (reorder/remove in `QueueDrawer` / `QueueBottomSheet`; list UI in `QueueTrackList.tsx`).
+- **Playlist** — a library **collection** from a provider (Spotify playlist, Dropbox folder-as-album, Liked Songs, etc.), browsed via `PlaylistSelection` and loaded through `usePlaylistManager` / catalog APIs.
+
 ### Source Layout
 
 ```
@@ -86,7 +91,7 @@ AppContainer (flexCenter, min-height: 100dvh)
 - **`overflow: visible` is required on ContentWrapper** — `container-type: inline-size` creates containment that clips absolutely-positioned children
 - **`100dvh`** throughout to handle iOS address bar changes
 - **BottomBar** renders via `createPortal()` to `document.body`, fixed at bottom
-- **Drawers** use fixed positioning with slide animations and swipe-to-dismiss; vertical swipes on album art toggle playlist (up) and library (down) drawers
+- **Drawers** use fixed positioning with slide animations and swipe-to-dismiss; vertical swipes on album art toggle **queue** (up) and **library** (down) drawers (`QueueDrawer` / `QueueBottomSheet` vs `LibraryDrawer`)
 - **BackgroundVisualizer and AccentColorBackground** are `position: fixed` with low z-index, don't affect layout
 
 ### Multi-Provider Architecture

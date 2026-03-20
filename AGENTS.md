@@ -75,7 +75,7 @@ src/
 ```
 
 ### Performance Considerations
-- Lazy load heavy components (VisualEffectsMenu, PlaylistDrawer)
+- Lazy load heavy components (VisualEffectsMenu, QueueDrawer, QueueBottomSheet)
 - Cache color extraction with LRU cache in colorExtractor.ts
 - Use Web Workers for image processing (imageProcessor.worker.ts)
 - Debounce rapid state updates (150ms standard)
@@ -91,9 +91,10 @@ src/
   - TimelineControls (bottom)
 
 Related UI:
-- **PlaylistDrawer** - Sliding drawer with tracks
+- **QueueDrawer** / **QueueBottomSheet** - Queue (up-next tracks) on desktop/tablet vs mobile
+- **QueueTrackList** - Track list inside queue surfaces (lazy-loaded); reorder/remove/edit modes
 - **VisualEffectsMenu** - Visual effects controls
-- **PlaylistSelection** - Playlist picker with Liked Songs support
+- **PlaylistSelection** - Library playlist/album picker with Liked Songs support
 
 ## Spotify Integration
 

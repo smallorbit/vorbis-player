@@ -23,7 +23,7 @@ Fixed at the bottom of the screen:
 - Shuffle toggle
 - Visual effects menu (gear icon for full controls)
 - Back to library
-- Playlist drawer toggle
+- Queue drawer toggle
 - Zen mode toggle (desktop/tablet)
 
 ### Playback Controls

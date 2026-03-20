@@ -54,7 +54,7 @@ zIndex: {
 }
 ```
 
-This places the bottom menu **above** background overlays but **below** modals (playlist drawer, VFX menu), so the menu handle stays accessible while drawers are open, but doesn't block drawer interactions.
+This places the bottom menu **above** background overlays but **below** modals (queue drawer, VFX menu), so the menu handle stays accessible while drawers are open, but doesn't block drawer interactions.
 
 ---
 
@@ -147,7 +147,7 @@ Extracted sub-component containing the button grid. Same buttons as the current 
 
 1. **Glow toggle** — `ControlButton` with `isActive={glowEnabled}`, `GlowIcon`
 2. **Background Visualizer toggle** — conditional on `onBackgroundVisualizerToggle` prop, `BackgroundVisualizerIcon`
-3. **Playlist** — opens playlist drawer, `PlaylistIcon`
+3. **Queue** — opens the queue drawer (`onShowPlaylist` prop / `PlaylistIcon` in code)
 4. **Visual Effects** — opens VFX menu, `VisualEffectsIcon`
 5. **Color Picker** — `ColorPickerPopover` (renders via portal, so positioning works from bottom)
 6. **Back to Library** — conditional on `onBackToLibrary` prop, `BackToLibraryIcon`
@@ -157,7 +157,7 @@ All icons imported from `src/components/icons/QuickActionIcons.tsx`.
 
 Uses `useCustomAccentColors` hook for color picker integration (same as current drawer).
 
-**Auto-collapse behavior:** When the user taps Playlist or Visual Effects (actions that open full-screen drawers), the menu auto-collapses. Glow/Visualizer toggles do NOT auto-collapse (quick toggle).
+**Auto-collapse behavior:** When the user taps Queue or Visual Effects (actions that open full-screen drawers), the menu auto-collapses. Glow/Visualizer toggles do NOT auto-collapse (quick toggle).
 
 ---
 
@@ -190,7 +190,7 @@ const getTransform = () => {
 - Tap handle -> toggle
 - The `ref` from `useSwipeGesture` attaches to the `HandleArea`
 
-**Auto-collapse on drawer open:** Wrap `onShowPlaylist`/`onShowVisualEffects` callbacks to call `collapse()` then the original handler.
+**Auto-collapse on drawer open:** Wrap `onShowPlaylist` (queue) / `onShowVisualEffects` callbacks to call `collapse()` then the original handler.
 
 **Props interface:** Same as current `MobileQuickActionsDrawerProps` minus `isExpanded` and `onToggleExpand` (state is internal), plus `transitionDuration` and `transitionEasing` from `usePlayerSizing`.
 
@@ -254,7 +254,7 @@ Remove `src/components/MobileQuickActionsDrawer.tsx` entirely.
 - **Safe area insets**: `viewport-fit=cover` is already set in `index.html`. The `MenuWrapper` uses `padding-bottom: env(safe-area-inset-bottom, 0px)` to respect iPhone home indicators.
 - **Landscape mode**: Buttons use `flex-wrap: wrap` — on narrow landscape heights, the menu stays compact. The handle remains at 32px.
 - **ColorPickerPopover positioning**: The popover uses `createPortal` to `document.body` and positions above the trigger button via `getBoundingClientRect()`. Since the button is near the bottom, the popover's existing upward positioning (`transform: translate(-50%, -100%)`) should work. Verify on small screens.
-- **Menu + drawer overlap**: The menu (z-index 1350) sits below drawer overlays (1300) and modals (1400). When playlist/VFX drawers open, the menu auto-collapses. The handle remains tappable above background content.
+- **Menu + drawer overlap**: The menu (z-index 1350) sits below drawer overlays (1300) and modals (1400). When queue/VFX drawers open, the menu auto-collapses. The handle remains tappable above background content.
 - **Rapid taps**: CSS `transform` transitions naturally interpolate from current position — no jitter on rapid toggles.
 
 ---
@@ -268,8 +268,8 @@ Remove `src/components/MobileQuickActionsDrawer.tsx` entirely.
 5. **Test tap to collapse**: Tap handle again -> menu slides down
 6. **Test swipe up**: Swipe up on handle -> expands
 7. **Test swipe down**: Swipe down on handle -> collapses
-8. **Test buttons**: Each button (glow, visualizer, playlist, VFX, color picker, back to library) functions correctly
-9. **Test auto-collapse**: Tapping Playlist or Visual Effects collapses the menu and opens the respective drawer
+8. **Test buttons**: Each button (glow, visualizer, queue, VFX, color picker, back to library) functions correctly
+9. **Test auto-collapse**: Tapping Queue or Visual Effects collapses the menu and opens the respective drawer
 10. **Test desktop unchanged**: On desktop viewport, side panels appear as before, no bottom menu
 11. **Test controls hidden**: Tap album art to hide controls -> bottom menu handle still visible and functional
 12. **Test safe area**: On iPhone (or simulator), verify the menu respects the home indicator area
