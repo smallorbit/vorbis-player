@@ -27,9 +27,10 @@ import { useProfilingContext } from '@/contexts/ProfilingContext';
 import { useVisualizerDebug } from '@/contexts/VisualizerDebugContext';
 import LibraryDrawer from './LibraryDrawer';
 import AlbumArtQuickSwapBack from './AlbumArtQuickSwapBack';
-import type { ProviderId } from '@/types/domain';
+import type { AddToQueueResult, MediaTrack, ProviderId } from '@/types/domain';
 import { LIBRARY_REFRESH_EVENT } from '@/hooks/useLibrarySync';
 import Toast from './Toast';
+import type { RadioState } from '@/hooks/useRadio';
 
 const SaveQueueDialog = lazy(() => import('./SaveQueueDialog'));
 
@@ -46,8 +47,12 @@ interface PlaybackHandlers {
   onTrackSelect: (index: number) => void;
   onOpenLibraryDrawer: () => void;
   onCloseLibraryDrawer: () => void;
-  onPlaylistSelect: (playlistId: string, playlistName: string, provider?: import('@/types/domain').ProviderId) => void;
-  onAddToQueue?: (playlistId: string, playlistName?: string, provider?: import('@/types/domain').ProviderId) => void;
+  onPlaylistSelect: (playlistId: string, playlistName: string, provider?: ProviderId) => void;
+  onAddToQueue?: (
+    playlistId: string,
+    playlistName?: string,
+    provider?: ProviderId,
+  ) => Promise<AddToQueueResult | null>;
   onAlbumPlay: (albumId: string, albumName: string) => void;
   onBackToLibrary: () => void;
   onStartRadio?: () => void;
@@ -67,11 +72,11 @@ interface PlayerContentProps {
   showLibraryDrawer: boolean;
   onAlbumArtBoundsChange?: (bounds: AlbumArtBounds | null) => void;
   handlers: PlaybackHandlers;
-  currentTrackProvider?: import('@/types/domain').ProviderId;
-  radioState?: import('@/hooks/useRadio').RadioState;
+  currentTrackProvider?: ProviderId;
+  radioState?: RadioState;
   isRadioAvailable?: boolean;
   radioActive?: boolean;
-  mediaTracksRef?: React.RefObject<import('@/types/domain').MediaTrack[]>;
+  mediaTracksRef?: React.RefObject<MediaTrack[]>;
 }
 
 const ContentWrapper = styled.div.withConfig({
@@ -349,7 +354,11 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
   // --- Save queue as playlist ---
   const { connectedProviderIds } = useProviderContext();
   const [showSaveQueueDialog, setShowSaveQueueDialog] = useState(false);
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [toast, setToast] = useState<{
+    message: string;
+    actionLabel?: string;
+    onAction?: () => void;
+  } | null>(null);
   const saveProviders = useMemo(
     () => connectedProviderIds.filter((id): id is 'dropbox' | 'spotify' => id === 'dropbox' || id === 'spotify'),
     [connectedProviderIds],
@@ -378,7 +387,7 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
         if (!result) return false;
 
         setShowSaveQueueDialog(false);
-        setToastMessage(`Saved "${name}" to Dropbox`);
+        setToast({ message: `Saved "${name}" to Dropbox` });
         window.dispatchEvent(new Event(LIBRARY_REFRESH_EVENT));
         return true;
       }
@@ -399,7 +408,7 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
         await addTracksToPlaylist(playlist.id, uris);
 
         setShowSaveQueueDialog(false);
-        setToastMessage(`Saved "${name}" to Spotify`);
+        setToast({ message: `Saved "${name}" to Spotify` });
         return true;
       }
 
@@ -410,14 +419,7 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
     }
   }, [mediaTracksRef, tracks]);
 
-  const handleDismissToast = useCallback(() => setToastMessage(null), []);
-
-  // Auto-dismiss toast
-  useEffect(() => {
-    if (!toastMessage) return;
-    const timer = setTimeout(() => setToastMessage(null), 5000);
-    return () => clearTimeout(timer);
-  }, [toastMessage]);
+  const handleDismissToast = useCallback(() => setToast(null), []);
 
   // --- Local UI state ---
   const [showHelp, setShowHelp] = useState(false);
@@ -510,6 +512,32 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
     setShowQueue(prev => !prev);
   }, [setShowQueue, handlers, setShowVisualEffects]);
   const handleCloseQueue = useCallback(() => setShowQueue(false), [setShowQueue]);
+
+  const handleOpenQueueFromToast = useCallback(() => {
+    handlers.onCloseLibraryDrawer();
+    setShowVisualEffects(false);
+    setShowQueue(true);
+  }, [handlers, setShowVisualEffects, setShowQueue]);
+
+  const handleAddToQueueWithToast = useCallback(
+    async (playlistId: string, playlistName?: string, provider?: ProviderId) => {
+      if (!handlers.onAddToQueue) return null;
+      const result = await handlers.onAddToQueue(playlistId, playlistName, provider);
+      if (!result || result.added <= 0) return null;
+      const name = result.collectionName?.trim();
+      const title = name && name.length > 0 ? `"${name}"` : 'this collection';
+      setToast({
+        message: `Added ${result.added} ${result.added === 1 ? 'track' : 'tracks'} from ${title} to your`,
+        actionLabel: 'queue',
+        onAction: () => {
+          handleOpenQueueFromToast();
+          setToast(null);
+        },
+      });
+      return result;
+    },
+    [handlers, handleOpenQueueFromToast],
+  );
 
   // --- App settings handlers ---
   const handleClearCache = useCallback(async (options: ClearCacheOptions) => {
@@ -934,7 +962,7 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
           isOpen={showLibraryDrawer}
           onClose={handleCloseLibraryDrawer}
           onPlaylistSelect={handlers.onPlaylistSelect}
-          onAddToQueue={handlers.onAddToQueue}
+          onAddToQueue={handleAddToQueueWithToast}
           initialSearchQuery={librarySearchQuery}
           initialViewMode={libraryViewMode}
         />
@@ -950,7 +978,14 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
           />
         </Suspense>
       )}
-      {toastMessage && <Toast message={toastMessage} onDismiss={handleDismissToast} />}
+      {toast && (
+        <Toast
+          message={toast.message}
+          onDismiss={handleDismissToast}
+          actionLabel={toast.actionLabel}
+          onAction={toast.onAction}
+        />
+      )}
     </ContentWrapper>
   );
 });
