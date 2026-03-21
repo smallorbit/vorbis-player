@@ -46,6 +46,8 @@ interface UseLibrarySyncResult {
   syncError: string | null;
   /** Force an immediate sync */
   refreshNow: () => Promise<void>;
+  /** Optimistically remove a collection from the local list (instant UI update). */
+  removeCollection: (collectionId: string) => void;
 }
 
 /**
@@ -312,6 +314,20 @@ export function useLibrarySync(): UseLibrarySyncResult {
     };
   }, [refreshNow]);
 
+  const removeCollection = useCallback((collectionId: string) => {
+    // Remove from Spotify ref
+    spotifyDataRef.current.playlists = spotifyDataRef.current.playlists.filter(p => p.id !== collectionId);
+    spotifyDataRef.current.albums = spotifyDataRef.current.albums.filter(a => a.id !== collectionId);
+
+    // Remove from non-Spotify refs
+    for (const [, data] of nonSpotifyDataRef.current) {
+      data.playlists = data.playlists.filter(p => p.id !== collectionId);
+      data.albums = data.albums.filter(a => a.id !== collectionId);
+    }
+
+    mergeAndSetData();
+  }, [mergeAndSetData]);
+
   return {
     playlists,
     albums,
@@ -322,5 +338,6 @@ export function useLibrarySync(): UseLibrarySyncResult {
     lastSyncTimestamp: syncState.lastSyncTimestamp,
     syncError: syncState.error,
     refreshNow,
+    removeCollection,
   };
 }

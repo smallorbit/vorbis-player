@@ -746,6 +746,7 @@ const PlaylistSelection = React.memo(function PlaylistSelection({
     likedSongsCount,
     likedSongsPerProvider,
     isInitialLoadComplete,
+    removeCollection,
   } = useLibrarySync();
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -1104,9 +1105,10 @@ const PlaylistSelection = React.memo(function PlaylistSelection({
       : deleteTarget.id;
 
     await descriptor.catalog.deleteCollection(collectionId, 'playlist');
+    removeCollection(deleteTarget.id);
     setDeleteTarget(null);
     window.dispatchEvent(new Event(LIBRARY_REFRESH_EVENT));
-  }, [deleteTarget, activeDescriptor, getDescriptor]);
+  }, [deleteTarget, activeDescriptor, getDescriptor, removeCollection]);
 
   const handleDeleteClose = React.useCallback(() => setDeleteTarget(null), []);
 
