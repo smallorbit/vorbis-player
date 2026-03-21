@@ -6,6 +6,7 @@
 import type { DropboxAuthAdapter } from './dropboxAuthAdapter';
 import type { MediaTrack, MediaCollection, ProviderId, PlaybackItemRef } from '@/types/domain';
 import { toSavedPlaylistId } from '@/constants/playlist';
+import { logLibrary } from '@/lib/debugLog';
 
 // ── Helpers ──────────────────────────────────────────────────────────
 
@@ -295,19 +296,23 @@ export async function listSavedPlaylists(
   }
 
   // Download each playlist file in parallel to get track counts
+  logLibrary('listSavedPlaylists: fetching track counts for %d playlists, paths: %o', collections.length, filePaths);
   await Promise.all(
     collections.map(async (collection, i) => {
       try {
         const data = await loadPlaylistFile(auth, filePaths[i]);
+        logLibrary('listSavedPlaylists: "%s" file=%s data=%s tracks=%d',
+          collection.name, filePaths[i], data ? 'loaded' : 'null', data?.tracks?.length ?? -1);
         if (data) {
           collection.trackCount = data.tracks.length;
         }
-      } catch {
-        // Leave trackCount undefined on failure — UI will show 0
+      } catch (err) {
+        logLibrary('listSavedPlaylists: "%s" failed to load: %o', collection.name, err);
       }
     }),
   );
 
+  logLibrary('listSavedPlaylists: final collections: %o', collections.map(c => ({ name: c.name, trackCount: c.trackCount })));
   collections.sort((a, b) => a.name.localeCompare(b.name));
   return collections;
 }

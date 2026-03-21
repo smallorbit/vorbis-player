@@ -14,6 +14,7 @@ import type { AlbumInfo } from '../services/spotify';
 import { useProviderContext } from '../contexts/ProviderContext';
 import type { MediaCollection, ProviderId } from '../types/domain';
 import { LIKES_CHANGED_EVENT } from '../providers/dropbox/dropboxLikesCache';
+import { logLibrary } from '../lib/debugLog';
 
 function splitCollections(collections: MediaCollection[]): { playlists: CachedPlaylistInfo[]; albums: AlbumInfo[] } {
   const playlists: CachedPlaylistInfo[] = [];
@@ -159,6 +160,8 @@ export function useLibrarySync(): UseLibrarySyncResult {
         isInitialLoadComplete: prev.isInitialLoadComplete || state.isInitialLoadComplete,
       }));
       if (newPlaylists !== undefined) {
+        logLibrary('[spotify] sync engine playlists: %o',
+          newPlaylists.map(p => ({ name: p.name, tracks: p.tracks })));
         // Tag spotify playlists with provider
         spotifyDataRef.current.playlists = newPlaylists.map(p => ({ ...p, provider: 'spotify' as ProviderId }));
       }
@@ -210,7 +213,14 @@ export function useLibrarySync(): UseLibrarySyncResult {
         ]);
         if (cancelled) return;
 
+        logLibrary('[%s] raw collections from catalog: %o', providerId,
+          collections.map(c => ({ name: c.name, kind: c.kind, trackCount: c.trackCount })));
+
         const { playlists, albums } = splitCollections(collections);
+        logLibrary('[%s] after splitCollections — playlists: %o', providerId,
+          playlists.map(p => ({ name: p.name, tracks: p.tracks })));
+        logLibrary('[%s] after splitCollections — albums: %o', providerId,
+          albums.map(a => ({ name: a.name, total_tracks: a.total_tracks })));
         nonSpotifyDataRef.current.set(providerId, { playlists, albums, likedCount });
         mergeAndSetData();
         setSyncState(prev => ({

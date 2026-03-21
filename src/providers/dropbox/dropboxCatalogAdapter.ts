@@ -27,6 +27,7 @@ import {
   putAlbumArt,
 } from './dropboxArtCache';
 import { getCachedCatalog, putCatalogCache } from './dropboxCatalogCache';
+import { logLibrary } from '@/lib/debugLog';
 import { bytesToDataUrl } from '@/utils/bytesToDataUrl';
 import {
   getLikedTracks,
@@ -278,6 +279,9 @@ export class DropboxCatalogAdapter implements CatalogProvider {
     if (!options?.forceRefresh) {
       const cached = await getCachedCatalog();
       if (cached && !cached.isStale) {
+        logLibrary('[dropbox] returning cached catalog (%d collections): %o',
+          cached.collections.length,
+          cached.collections.map(c => ({ name: c.name, kind: c.kind, trackCount: c.trackCount })));
         return cached.collections;
       }
     }
@@ -351,6 +355,9 @@ export class DropboxCatalogAdapter implements CatalogProvider {
       }
 
       const collections = [allMusic, ...savedPlaylists, ...albums];
+      logLibrary('[dropbox] fresh catalog (%d collections), savedPlaylists: %o',
+        collections.length,
+        savedPlaylists.map(c => ({ name: c.name, trackCount: c.trackCount })));
       await putCatalogCache(collections);
       return collections;
     } catch (error) {

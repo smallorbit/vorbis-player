@@ -19,3 +19,4 @@ export const logRadio = createDebug('vorbis:radio');
 export const logDropboxSync = createDebug('vorbis:dropbox-sync');
 export const logApp = createDebug('vorbis:app');
 export const logSw = createDebug('vorbis:sw');
+export const logLibrary = createDebug('vorbis:library');
