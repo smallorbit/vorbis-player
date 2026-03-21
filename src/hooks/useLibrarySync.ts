@@ -276,15 +276,18 @@ export function useLibrarySync(): UseLibrarySyncResult {
     return () => handlers.forEach(cleanup => cleanup());
   }, [[...nonSpotifyEnabledIds].sort().join(','), getDescriptor, mergeAndSetData]);
 
-  const refreshNow = useCallback(async () => {
-    // Refresh Spotify — force full re-fetch to catch changes that
-    // count-based detection may miss due to API propagation delay
-    if (isSpotifyEnabled) {
-      await engineRef.current.syncNow(true);
+  const refreshNow = useCallback(async (scopeProviderId?: ProviderId) => {
+    if (!scopeProviderId || scopeProviderId === 'spotify') {
+      if (isSpotifyEnabled) {
+        await engineRef.current.syncNow(true);
+      }
     }
 
-    // Refresh non-Spotify providers
-    for (const providerId of nonSpotifyEnabledIds) {
+    const providerIdsToRefresh = scopeProviderId
+      ? nonSpotifyEnabledIds.filter(id => id === scopeProviderId)
+      : nonSpotifyEnabledIds;
+
+    for (const providerId of providerIdsToRefresh) {
       const descriptor = getDescriptor(providerId);
       const catalog = descriptor?.catalog;
       if (!catalog) continue;
@@ -315,12 +318,16 @@ export function useLibrarySync(): UseLibrarySyncResult {
   }, [isSpotifyEnabled, nonSpotifyEnabledIds, getDescriptor, mergeAndSetData]);
 
   useEffect(() => {
-    const handleRefresh = () => { refreshNow().catch(() => {}); };
-    window.addEventListener(ART_REFRESHED_EVENT, handleRefresh);
-    window.addEventListener(LIBRARY_REFRESH_EVENT, handleRefresh);
+    const handleArtRefresh = () => { refreshNow().catch(() => {}); };
+    const handleLibraryRefresh = (e: Event) => {
+      const providerId = (e as CustomEvent<{ providerId?: ProviderId }>).detail?.providerId;
+      refreshNow(providerId).catch(() => {});
+    };
+    window.addEventListener(ART_REFRESHED_EVENT, handleArtRefresh);
+    window.addEventListener(LIBRARY_REFRESH_EVENT, handleLibraryRefresh);
     return () => {
-      window.removeEventListener(ART_REFRESHED_EVENT, handleRefresh);
-      window.removeEventListener(LIBRARY_REFRESH_EVENT, handleRefresh);
+      window.removeEventListener(ART_REFRESHED_EVENT, handleArtRefresh);
+      window.removeEventListener(LIBRARY_REFRESH_EVENT, handleLibraryRefresh);
     };
   }, [refreshNow]);
 

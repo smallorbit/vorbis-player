@@ -388,7 +388,7 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
 
         setShowSaveQueueDialog(false);
         setToast({ message: `Saved "${name}" to Dropbox` });
-        window.dispatchEvent(new Event(LIBRARY_REFRESH_EVENT));
+        window.dispatchEvent(new CustomEvent(LIBRARY_REFRESH_EVENT, { detail: { providerId: 'dropbox' } }));
         return true;
       }
 

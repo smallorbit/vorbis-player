@@ -1107,7 +1107,7 @@ const PlaylistSelection = React.memo(function PlaylistSelection({
     await descriptor.catalog.deleteCollection(collectionId, 'playlist');
     removeCollection(deleteTarget.id);
     setDeleteTarget(null);
-    window.dispatchEvent(new Event(LIBRARY_REFRESH_EVENT));
+    window.dispatchEvent(new CustomEvent(LIBRARY_REFRESH_EVENT, { detail: { providerId: provider } }));
   }, [deleteTarget, activeDescriptor, getDescriptor, removeCollection]);
 
   const handleDeleteClose = React.useCallback(() => setDeleteTarget(null), []);
