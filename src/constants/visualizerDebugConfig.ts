@@ -90,7 +90,7 @@ const DEFAULT_TRAIL: TrailVisualizerConfig = {
   lifeRespawnMin: 0.8,
   lifeRespawnSpread: 0.2,
   shipTurnRate: 0.00013,
-  shipSpeedBase: 4,
+  shipSpeedBase: 2.5,
   shipSpeedSpread: 1.3,
   shipWobble: 0.025,
   pausedSpeedMult: 0.1,
