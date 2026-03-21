@@ -141,10 +141,12 @@ interface SaveQueueDialogProps {
   availableProviders: ProviderId[];
   hasDropboxTracks: boolean;
   hasSpotifyTracks: boolean;
+  defaultName?: string;
 }
 
-export default function SaveQueueDialog({ onSave, onClose, availableProviders, hasDropboxTracks, hasSpotifyTracks }: SaveQueueDialogProps) {
+export default function SaveQueueDialog({ onSave, onClose, availableProviders, hasDropboxTracks, hasSpotifyTracks, defaultName }: SaveQueueDialogProps) {
   const [name, setName] = useState(() => {
+    if (defaultName) return defaultName;
     const date = new Date().toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',
