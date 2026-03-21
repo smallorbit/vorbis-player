@@ -33,9 +33,13 @@ import TrackInfoPopover, {
   AddToLibraryIcon,
   RemoveFromLibraryIcon,
   AddToQueueIcon,
+  TrashIcon,
   ICON_MAP,
 } from './controls/TrackInfoPopover';
+import ConfirmDeleteDialog from './ConfirmDeleteDialog';
 import type { AddToQueueResult, ProviderId } from '@/types/domain';
+import { isSavedPlaylistId, extractPlaylistPath } from '../constants/playlist';
+import { LIBRARY_REFRESH_EVENT } from '@/hooks/useLibrarySync';
 
 type ViewMode = 'playlists' | 'albums';
 
@@ -759,6 +763,7 @@ const PlaylistSelection = React.memo(function PlaylistSelection({
   const [albumPopover, setAlbumPopover] = useState<AlbumPopoverState>(null);
   const [playlistPopover, setPlaylistPopover] = useState<PlaylistPopoverState>(null);
   const [albumSaved, setAlbumSaved] = useState<boolean | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string; provider?: ProviderId } | null>(null);
   const libraryFullyLoaded = isInitialLoadComplete;
 
   const { viewport, isMobile, isTablet } = usePlayerSizingContext();
@@ -963,8 +968,23 @@ const PlaylistSelection = React.memo(function PlaylistSelection({
       });
     }
 
+    const provider = playlist.provider ?? activeDescriptor?.id;
+    const descriptor = provider ? getDescriptor(provider) : activeDescriptor;
+    const canDelete = descriptor?.capabilities.hasDeleteCollection &&
+      descriptor.catalog.deleteCollection &&
+      playlist.id !== LIKED_SONGS_ID &&
+      (provider === 'spotify' || isSavedPlaylistId(playlist.id));
+
+    if (canDelete) {
+      options.push({
+        label: 'Delete Playlist',
+        icon: <TrashIcon />,
+        onClick: () => setDeleteTarget({ id: playlist.id, name: playlist.name, provider }),
+      });
+    }
+
     return options;
-  }, [playlistPopover, onPlaylistSelect, onAddToQueue]);
+  }, [playlistPopover, onPlaylistSelect, onAddToQueue, activeDescriptor, getDescriptor]);
 
   const closeAlbumPopover = React.useCallback(() => {
     setAlbumPopover(null);
@@ -1072,6 +1092,24 @@ const PlaylistSelection = React.memo(function PlaylistSelection({
     />,
     document.body,
   ) : null;
+
+  const handleDeleteConfirm = React.useCallback(async () => {
+    if (!deleteTarget) return;
+    const provider = deleteTarget.provider ?? activeDescriptor?.id;
+    const descriptor = provider ? getDescriptor(provider) : activeDescriptor;
+    if (!descriptor?.catalog.deleteCollection) return;
+
+    let collectionId = deleteTarget.id;
+    let kind: 'playlist' | 'album' = 'playlist';
+
+    if (isSavedPlaylistId(deleteTarget.id)) {
+      collectionId = extractPlaylistPath(deleteTarget.id);
+    }
+
+    await descriptor.catalog.deleteCollection(collectionId, kind);
+    setDeleteTarget(null);
+    window.dispatchEvent(new Event(LIBRARY_REFRESH_EVENT));
+  }, [deleteTarget, activeDescriptor, getDescriptor]);
 
   async function handleLogin(): Promise<void> {
     try {
@@ -1587,6 +1625,13 @@ const PlaylistSelection = React.memo(function PlaylistSelection({
         {mainContent}
         {albumPopoverPortal}
         {playlistPopoverPortal}
+        {deleteTarget && (
+          <ConfirmDeleteDialog
+            name={deleteTarget.name}
+            onConfirm={handleDeleteConfirm}
+            onClose={() => setDeleteTarget(null)}
+          />
+        )}
       </DrawerContentWrapper>
     );
   }
@@ -1599,6 +1644,13 @@ const PlaylistSelection = React.memo(function PlaylistSelection({
           {mainContent}
           {albumPopoverPortal}
         {playlistPopoverPortal}
+        {deleteTarget && (
+          <ConfirmDeleteDialog
+            name={deleteTarget.name}
+            onConfirm={handleDeleteConfirm}
+            onClose={() => setDeleteTarget(null)}
+          />
+        )}
         </CardContent>
       </SelectionCard>
     </Container>

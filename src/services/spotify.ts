@@ -1160,6 +1160,16 @@ export async function createPlaylist(
   return { id: data.id, uri: data.uri, url: data.external_urls.spotify };
 }
 
+/** Unfollow (remove) a playlist from the current user's library. */
+export async function unfollowPlaylist(playlistId: string): Promise<void> {
+  const token = await spotifyAuth.ensureValidToken();
+  await spotifyApiRequest<void>(
+    `https://api.spotify.com/v1/playlists/${encodeURIComponent(playlistId)}/followers`,
+    token,
+    { method: 'DELETE' },
+  );
+}
+
 /** Add tracks to a Spotify playlist by URI. Handles batching (max 100 per request). */
 export async function addTracksToPlaylist(
   playlistId: string,

@@ -40,7 +40,7 @@ import {
   clearTombstones,
 } from './dropboxLikesCache';
 import { getLikesSync } from './dropboxLikesSync';
-import { listSavedPlaylists, loadPlaylistTracks } from './dropboxPlaylistStorage';
+import { listSavedPlaylists, loadPlaylistTracks, deleteSavedPlaylist } from './dropboxPlaylistStorage';
 
 const AUDIO_EXTENSIONS = ['.mp3', '.flac', '.ogg', '.m4a', '.wav', '.aac', '.wma', '.opus'];
 const IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.webp'];
@@ -581,6 +581,13 @@ export class DropboxCatalogAdapter implements CatalogProvider {
 
   async initializeSync(): Promise<void> {
     await getLikesSync()?.initialSync();
+  }
+
+  async deleteCollection(collectionId: string, kind: 'playlist' | 'album' | 'folder' | 'liked'): Promise<void> {
+    if (kind === 'playlist') {
+      const success = await deleteSavedPlaylist(this.auth, collectionId);
+      if (!success) throw new Error('Failed to delete playlist');
+    }
   }
 
   async refreshLikedMetadata(): Promise<{ updated: number; removed: number }> {
