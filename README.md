@@ -8,16 +8,16 @@ A visually immersive music player built with React and TypeScript, featuring cus
 ## Screenshots
 
 #### Normal mode
-<img src="src/assets/player-main.png" alt="Vorbis Player (Full)" width="600">
+<img src="public/assets/player-main.png" alt="Vorbis Player (Full)" width="600">
 
 #### Zen mode
-<img src="src/assets/zen-mode.png" alt="Vorbis Player - Zen Mode" width="600">
+<img src="public/assets/zen-mode.png" alt="Vorbis Player - Zen Mode" width="600">
 
 #### Queue drawer
-<img src="src/assets/queue-drawer.png" alt="Vorbis Player - Queue" width="600">
+<img src="public/assets/queue-drawer.png" alt="Vorbis Player - Queue" width="600">
 
 #### Library drawer
-<img src="src/assets/library-drawer.png" alt="Vorbis Player - Library" width="600">
+<img src="public/assets/library-drawer.png" alt="Vorbis Player - Library" width="600">
 
 
 ## Features
