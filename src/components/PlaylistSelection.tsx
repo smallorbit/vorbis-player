@@ -1099,17 +1099,24 @@ const PlaylistSelection = React.memo(function PlaylistSelection({
     const descriptor = provider ? getDescriptor(provider) : activeDescriptor;
     if (!descriptor?.catalog.deleteCollection) return;
 
-    let collectionId = deleteTarget.id;
-    let kind: 'playlist' | 'album' = 'playlist';
+    const collectionId = isSavedPlaylistId(deleteTarget.id)
+      ? extractPlaylistPath(deleteTarget.id)
+      : deleteTarget.id;
 
-    if (isSavedPlaylistId(deleteTarget.id)) {
-      collectionId = extractPlaylistPath(deleteTarget.id);
-    }
-
-    await descriptor.catalog.deleteCollection(collectionId, kind);
+    await descriptor.catalog.deleteCollection(collectionId, 'playlist');
     setDeleteTarget(null);
     window.dispatchEvent(new Event(LIBRARY_REFRESH_EVENT));
   }, [deleteTarget, activeDescriptor, getDescriptor]);
+
+  const handleDeleteClose = React.useCallback(() => setDeleteTarget(null), []);
+
+  const confirmDeletePortal = deleteTarget ? (
+    <ConfirmDeleteDialog
+      name={deleteTarget.name}
+      onConfirm={handleDeleteConfirm}
+      onClose={handleDeleteClose}
+    />
+  ) : null;
 
   async function handleLogin(): Promise<void> {
     try {
@@ -1625,13 +1632,7 @@ const PlaylistSelection = React.memo(function PlaylistSelection({
         {mainContent}
         {albumPopoverPortal}
         {playlistPopoverPortal}
-        {deleteTarget && (
-          <ConfirmDeleteDialog
-            name={deleteTarget.name}
-            onConfirm={handleDeleteConfirm}
-            onClose={() => setDeleteTarget(null)}
-          />
-        )}
+        {confirmDeletePortal}
       </DrawerContentWrapper>
     );
   }
@@ -1644,13 +1645,7 @@ const PlaylistSelection = React.memo(function PlaylistSelection({
           {mainContent}
           {albumPopoverPortal}
         {playlistPopoverPortal}
-        {deleteTarget && (
-          <ConfirmDeleteDialog
-            name={deleteTarget.name}
-            onConfirm={handleDeleteConfirm}
-            onClose={() => setDeleteTarget(null)}
-          />
-        )}
+        {confirmDeletePortal}
         </CardContent>
       </SelectionCard>
     </Container>
