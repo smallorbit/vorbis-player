@@ -167,7 +167,7 @@ export function usePlayerState(): PlayerState & PlayerStateSetters {
   const [accentColorBackgroundEnabled, setAccentColorBackgroundEnabled] = useState<boolean>(false);
   const [backgroundVisualizerIntensity, setBackgroundVisualizerIntensity] = useLocalStorage<number>(
     'vorbis-player-background-visualizer-intensity',
-    60
+    40
   );
 
   useEffect(() => {

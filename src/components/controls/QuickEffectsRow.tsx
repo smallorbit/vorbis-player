@@ -318,20 +318,20 @@ function QuickEffectsRow({
               <SubLabel>Intensity</SubLabel>
               <OptionButtonGroup>
                 <OptionButton
-                  $isActive={backgroundVisualizerIntensity === 30}
-                  onClick={() => onBackgroundVisualizerIntensityChange(30)}
+                  $isActive={backgroundVisualizerIntensity === 20}
+                  onClick={() => onBackgroundVisualizerIntensityChange(20)}
                 >
                   Less
                 </OptionButton>
                 <OptionButton
-                  $isActive={backgroundVisualizerIntensity === 60}
-                  onClick={() => onBackgroundVisualizerIntensityChange(60)}
+                  $isActive={backgroundVisualizerIntensity === 40}
+                  onClick={() => onBackgroundVisualizerIntensityChange(40)}
                 >
                   Normal
                 </OptionButton>
                 <OptionButton
-                  $isActive={backgroundVisualizerIntensity === 90}
-                  onClick={() => onBackgroundVisualizerIntensityChange(90)}
+                  $isActive={backgroundVisualizerIntensity === 60}
+                  onClick={() => onBackgroundVisualizerIntensityChange(60)}
                 >
                   More
                 </OptionButton>

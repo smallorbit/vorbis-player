@@ -36,7 +36,7 @@ export function VisualEffectsProvider({ children }: { children: React.ReactNode 
   const [perAlbumGlow, setPerAlbumGlow] = useLocalStorage<Record<string, { intensity: number; rate: number }>>('vorbis-player-per-album-glow', {});
   const [backgroundVisualizerEnabled, setBackgroundVisualizerEnabled] = useLocalStorage<boolean>('vorbis-player-background-visualizer-enabled', true);
   const [backgroundVisualizerStyle, setBackgroundVisualizerStyle] = useLocalStorage<VisualizerStyle>('vorbis-player-background-visualizer-style', 'fireflies');
-  const [backgroundVisualizerIntensity, setBackgroundVisualizerIntensity] = useLocalStorage<number>('vorbis-player-background-visualizer-intensity', 60);
+  const [backgroundVisualizerIntensity, setBackgroundVisualizerIntensity] = useLocalStorage<number>('vorbis-player-background-visualizer-intensity', 40);
   const [accentColorBackgroundPreferred, setAccentColorBackgroundPreferred] = useLocalStorage<boolean>('vorbis-player-accent-color-background-preferred', false);
   const [accentColorBackgroundEnabled, setAccentColorBackgroundEnabled] = useState<boolean>(false);
   const [translucenceEnabled, setTranslucenceEnabled] = useLocalStorage<boolean>('vorbis-player-translucence-enabled', false);

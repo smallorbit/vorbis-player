@@ -73,13 +73,14 @@ export const TrailVisualizer: React.FC<TrailVisualizerProps> = ({
     inited: false,
   });
 
-  const getParticleCount = useCallback((width: number, height: number): number => {
+  const getParticleCount = useCallback((width: number, height: number, intensityValue: number): number => {
     const pixelCount = width * height;
     const isMobile = width < 768;
+    const scale = Math.max(0.1, intensityValue / 60);
     if (isMobile) {
-      return Math.min(Math.round(t.countBaseMobile), Math.floor(pixelCount / t.countPixelDivisorMobile));
+      return Math.round(Math.min(t.countBaseMobile, Math.floor(pixelCount / t.countPixelDivisorMobile)) * scale);
     }
-    return Math.min(Math.round(t.countBaseDesktop), Math.floor(pixelCount / t.countPixelDivisor));
+    return Math.round(Math.min(t.countBaseDesktop, Math.floor(pixelCount / t.countPixelDivisor)) * scale);
   }, [t]);
 
   const initializeParticles = useCallback((
@@ -191,16 +192,15 @@ export const TrailVisualizer: React.FC<TrailVisualizerProps> = ({
     particles: TrailParticle[],
     width: number,
     height: number,
-    intensityValue: number
+    _intensityValue: number
   ): void => {
     ctx.clearRect(0, 0, width, height);
 
     const ship = shipRef.current;
-    const intensityFactor = intensityValue / 100;
 
     particles.forEach(particle => {
       if (particle.life <= 0) return;
-      const alpha = Math.max(0, particle.life) * intensityFactor;
+      const alpha = Math.max(0, particle.life);
       const r = Math.max(t.minVisibleRadius, particle.radius * particle.life);
 
       ctx.save();
@@ -212,9 +212,9 @@ export const TrailVisualizer: React.FC<TrailVisualizerProps> = ({
       ctx.restore();
     });
 
-    if (ship.inited && intensityFactor > 0 && t.glowRadius > 0) {
+    if (ship.inited && t.glowRadius > 0) {
       const glow = ctx.createRadialGradient(ship.x, ship.y, 0, ship.x, ship.y, t.glowRadius);
-      glow.addColorStop(0, `rgba(255,255,255,${0.5 * intensityFactor})`);
+      glow.addColorStop(0, 'rgba(255,255,255,0.5)');
       glow.addColorStop(1, 'rgba(255,255,255,0)');
       ctx.save();
       ctx.globalAlpha = 1;
