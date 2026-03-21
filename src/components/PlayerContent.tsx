@@ -388,7 +388,7 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
 
         setShowSaveQueueDialog(false);
         setToast({ message: `Saved "${name}" to Dropbox` });
-        window.dispatchEvent(new Event(LIBRARY_REFRESH_EVENT));
+        window.dispatchEvent(new CustomEvent(LIBRARY_REFRESH_EVENT, { detail: { providerId: 'dropbox' } }));
         return true;
       }
 
@@ -975,6 +975,7 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
             availableProviders={saveProviders}
             hasDropboxTracks={hasDropboxTracks}
             hasSpotifyTracks={hasSpotifyTracks}
+            defaultName={radioState?.isActive && radioState.seedDescription ? radioState.seedDescription.replace(/^Radio based on /i, '').replace(/\s+by\s+.+$/i, '') + ' Radio' : undefined}
           />
         </Suspense>
       )}

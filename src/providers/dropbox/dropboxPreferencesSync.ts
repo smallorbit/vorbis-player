@@ -113,6 +113,10 @@ export class DropboxPreferencesSyncService {
           'Dropbox-API-Arg': apiArg,
         },
       });
+      if (response.status === 401) {
+        this.auth.reportUnauthorized();
+        return null;
+      }
     }
 
     if (response.status === 409) return null; // path/not_found
@@ -165,6 +169,10 @@ export class DropboxPreferencesSyncService {
       if (!refreshed) return false;
       token = refreshed;
       response = await upload(token);
+      if (response.status === 401) {
+        this.auth.reportUnauthorized();
+        return false;
+      }
     }
 
     if (!response.ok) {

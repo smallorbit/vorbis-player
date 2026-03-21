@@ -35,6 +35,10 @@ async function doEnsureFolder(auth: DropboxAuthAdapter): Promise<boolean> {
       },
       body: JSON.stringify({ path: FOLDER_PATH, autorename: false }),
     });
+    if (response.status === 401) {
+      auth.reportUnauthorized();
+      return false;
+    }
   }
 
   if (response.status === 409) return true;

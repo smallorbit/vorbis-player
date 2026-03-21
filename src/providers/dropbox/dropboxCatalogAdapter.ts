@@ -27,6 +27,7 @@ import {
   putAlbumArt,
 } from './dropboxArtCache';
 import { getCachedCatalog, putCatalogCache } from './dropboxCatalogCache';
+import { logLibrary } from '@/lib/debugLog';
 import { bytesToDataUrl } from '@/utils/bytesToDataUrl';
 import {
   getLikedTracks,
@@ -40,7 +41,7 @@ import {
   clearTombstones,
 } from './dropboxLikesCache';
 import { getLikesSync } from './dropboxLikesSync';
-import { listSavedPlaylists, loadPlaylistTracks } from './dropboxPlaylistStorage';
+import { listSavedPlaylists, loadPlaylistTracks, deleteSavedPlaylist } from './dropboxPlaylistStorage';
 
 const AUDIO_EXTENSIONS = ['.mp3', '.flac', '.ogg', '.m4a', '.wav', '.aac', '.wma', '.opus'];
 const IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.webp'];
@@ -235,6 +236,10 @@ export class DropboxCatalogAdapter implements CatalogProvider {
       token = await this.auth.refreshAccessToken();
       if (!token) throw new Error('Dropbox authentication expired');
       response = await makeRequest(token);
+      if (response.status === 401) {
+        this.auth.reportUnauthorized();
+        throw new Error('Dropbox authentication expired');
+      }
     }
 
     if (!response.ok) {
@@ -278,6 +283,9 @@ export class DropboxCatalogAdapter implements CatalogProvider {
     if (!options?.forceRefresh) {
       const cached = await getCachedCatalog();
       if (cached && !cached.isStale) {
+        logLibrary('[dropbox] returning cached catalog (%d collections): %o',
+          cached.collections.length,
+          cached.collections.map(c => ({ name: c.name, kind: c.kind, trackCount: c.trackCount })));
         return cached.collections;
       }
     }
@@ -351,6 +359,9 @@ export class DropboxCatalogAdapter implements CatalogProvider {
       }
 
       const collections = [allMusic, ...savedPlaylists, ...albums];
+      logLibrary('[dropbox] fresh catalog (%d collections), savedPlaylists: %o',
+        collections.length,
+        savedPlaylists.map(c => ({ name: c.name, trackCount: c.trackCount })));
       await putCatalogCache(collections);
       return collections;
     } catch (error) {
@@ -581,6 +592,13 @@ export class DropboxCatalogAdapter implements CatalogProvider {
 
   async initializeSync(): Promise<void> {
     await getLikesSync()?.initialSync();
+  }
+
+  async deleteCollection(collectionId: string, kind: 'playlist' | 'album' | 'folder' | 'liked'): Promise<void> {
+    if (kind === 'playlist') {
+      const success = await deleteSavedPlaylist(this.auth, collectionId);
+      if (!success) throw new Error('Failed to delete playlist');
+    }
   }
 
   async refreshLikedMetadata(): Promise<{ updated: number; removed: number }> {

@@ -14,6 +14,7 @@ import type { AlbumInfo } from '../services/spotify';
 import { useProviderContext } from '../contexts/ProviderContext';
 import type { MediaCollection, ProviderId } from '../types/domain';
 import { LIKES_CHANGED_EVENT } from '../providers/dropbox/dropboxLikesCache';
+import { logLibrary } from '../lib/debugLog';
 
 function splitCollections(collections: MediaCollection[]): { playlists: CachedPlaylistInfo[]; albums: AlbumInfo[] } {
   const playlists: CachedPlaylistInfo[] = [];
@@ -46,6 +47,8 @@ interface UseLibrarySyncResult {
   syncError: string | null;
   /** Force an immediate sync */
   refreshNow: () => Promise<void>;
+  /** Optimistically remove a collection from the local list (instant UI update). */
+  removeCollection: (collectionId: string) => void;
 }
 
 /**
@@ -157,6 +160,8 @@ export function useLibrarySync(): UseLibrarySyncResult {
         isInitialLoadComplete: prev.isInitialLoadComplete || state.isInitialLoadComplete,
       }));
       if (newPlaylists !== undefined) {
+        logLibrary('[spotify] sync engine playlists: %o',
+          newPlaylists.map(p => ({ name: p.name, tracks: p.tracks })));
         // Tag spotify playlists with provider
         spotifyDataRef.current.playlists = newPlaylists.map(p => ({ ...p, provider: 'spotify' as ProviderId }));
       }
@@ -208,7 +213,14 @@ export function useLibrarySync(): UseLibrarySyncResult {
         ]);
         if (cancelled) return;
 
+        logLibrary('[%s] raw collections from catalog: %o', providerId,
+          collections.map(c => ({ name: c.name, kind: c.kind, trackCount: c.trackCount })));
+
         const { playlists, albums } = splitCollections(collections);
+        logLibrary('[%s] after splitCollections — playlists: %o', providerId,
+          playlists.map(p => ({ name: p.name, tracks: p.tracks })));
+        logLibrary('[%s] after splitCollections — albums: %o', providerId,
+          albums.map(a => ({ name: a.name, total_tracks: a.total_tracks })));
         nonSpotifyDataRef.current.set(providerId, { playlists, albums, likedCount });
         mergeAndSetData();
         setSyncState(prev => ({
@@ -264,15 +276,18 @@ export function useLibrarySync(): UseLibrarySyncResult {
     return () => handlers.forEach(cleanup => cleanup());
   }, [[...nonSpotifyEnabledIds].sort().join(','), getDescriptor, mergeAndSetData]);
 
-  const refreshNow = useCallback(async () => {
-    // Refresh Spotify — force full re-fetch to catch changes that
-    // count-based detection may miss due to API propagation delay
-    if (isSpotifyEnabled) {
-      await engineRef.current.syncNow(true);
+  const refreshNow = useCallback(async (scopeProviderId?: ProviderId) => {
+    if (!scopeProviderId || scopeProviderId === 'spotify') {
+      if (isSpotifyEnabled) {
+        await engineRef.current.syncNow(true);
+      }
     }
 
-    // Refresh non-Spotify providers
-    for (const providerId of nonSpotifyEnabledIds) {
+    const providerIdsToRefresh = scopeProviderId
+      ? nonSpotifyEnabledIds.filter(id => id === scopeProviderId)
+      : nonSpotifyEnabledIds;
+
+    for (const providerId of providerIdsToRefresh) {
       const descriptor = getDescriptor(providerId);
       const catalog = descriptor?.catalog;
       if (!catalog) continue;
@@ -303,14 +318,32 @@ export function useLibrarySync(): UseLibrarySyncResult {
   }, [isSpotifyEnabled, nonSpotifyEnabledIds, getDescriptor, mergeAndSetData]);
 
   useEffect(() => {
-    const handleRefresh = () => { refreshNow().catch(() => {}); };
-    window.addEventListener(ART_REFRESHED_EVENT, handleRefresh);
-    window.addEventListener(LIBRARY_REFRESH_EVENT, handleRefresh);
+    const handleArtRefresh = () => { refreshNow().catch(() => {}); };
+    const handleLibraryRefresh = (e: Event) => {
+      const providerId = (e as CustomEvent<{ providerId?: ProviderId }>).detail?.providerId;
+      refreshNow(providerId).catch(() => {});
+    };
+    window.addEventListener(ART_REFRESHED_EVENT, handleArtRefresh);
+    window.addEventListener(LIBRARY_REFRESH_EVENT, handleLibraryRefresh);
     return () => {
-      window.removeEventListener(ART_REFRESHED_EVENT, handleRefresh);
-      window.removeEventListener(LIBRARY_REFRESH_EVENT, handleRefresh);
+      window.removeEventListener(ART_REFRESHED_EVENT, handleArtRefresh);
+      window.removeEventListener(LIBRARY_REFRESH_EVENT, handleLibraryRefresh);
     };
   }, [refreshNow]);
+
+  const removeCollection = useCallback((collectionId: string) => {
+    // Remove from Spotify ref
+    spotifyDataRef.current.playlists = spotifyDataRef.current.playlists.filter(p => p.id !== collectionId);
+    spotifyDataRef.current.albums = spotifyDataRef.current.albums.filter(a => a.id !== collectionId);
+
+    // Remove from non-Spotify refs
+    for (const [, data] of nonSpotifyDataRef.current) {
+      data.playlists = data.playlists.filter(p => p.id !== collectionId);
+      data.albums = data.albums.filter(a => a.id !== collectionId);
+    }
+
+    mergeAndSetData();
+  }, [mergeAndSetData]);
 
   return {
     playlists,
@@ -322,5 +355,6 @@ export function useLibrarySync(): UseLibrarySyncResult {
     lastSyncTimestamp: syncState.lastSyncTimestamp,
     syncError: syncState.error,
     refreshNow,
+    removeCollection,
   };
 }

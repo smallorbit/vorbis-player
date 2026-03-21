@@ -38,6 +38,8 @@ export interface CatalogProvider {
   /** Optional: save/unsave album to library. */
   setAlbumSaved?(albumId: string, saved: boolean): Promise<void>;
   isAlbumSaved?(albumId: string): Promise<boolean>;
+  /** Optional: delete/unfollow a collection (playlist). */
+  deleteCollection?(collectionId: string, kind: import('./domain').CollectionKind): Promise<void>;
 }
 
 // -----------------------------------------------------------------------------
@@ -72,6 +74,7 @@ export interface ProviderCapabilities {
   hasLikedCollection: boolean;
   hasSaveTrack: boolean;
   hasSaveAlbum?: boolean;
+  hasDeleteCollection?: boolean;
   hasExternalLink: boolean;
   /** e.g. "Open in Spotify" */
   externalLinkLabel?: string;

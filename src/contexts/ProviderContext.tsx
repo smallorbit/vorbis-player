@@ -8,6 +8,7 @@ import type { ProviderDescriptor, ProviderRegistry } from '@/types/providers';
 import '@/providers/spotify/spotifyProvider';
 import '@/providers/dropbox/dropboxProvider'; // conditionally registers if VITE_DROPBOX_CLIENT_ID is set
 import { AUTH_STATE_CHANGED_EVENT } from '@/hooks/usePopupAuth';
+import { DROPBOX_AUTH_ERROR_EVENT } from '@/providers/dropbox/dropboxAuthAdapter';
 
 export type ProviderSwitchInterceptor = (
   newProviderId: ProviderId,
@@ -80,6 +81,7 @@ export function ProviderProvider({ children }: { children: React.ReactNode }) {
     const bumpRevision = () => setAuthRevision((prev) => prev + 1);
 
     window.addEventListener(AUTH_STATE_CHANGED_EVENT, bumpRevision);
+    window.addEventListener(DROPBOX_AUTH_ERROR_EVENT, bumpRevision);
 
     const handleMessage = (event: MessageEvent) => {
       if (event.origin !== window.location.origin) return;
@@ -90,6 +92,7 @@ export function ProviderProvider({ children }: { children: React.ReactNode }) {
 
     return () => {
       window.removeEventListener(AUTH_STATE_CHANGED_EVENT, bumpRevision);
+      window.removeEventListener(DROPBOX_AUTH_ERROR_EVENT, bumpRevision);
       window.removeEventListener('message', handleMessage);
     };
   }, []);

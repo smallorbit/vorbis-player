@@ -6,6 +6,7 @@
 import type { DropboxAuthAdapter } from './dropboxAuthAdapter';
 import type { MediaTrack, MediaCollection, ProviderId, PlaybackItemRef } from '@/types/domain';
 import { toSavedPlaylistId } from '@/constants/playlist';
+import { logLibrary } from '@/lib/debugLog';
 
 // ── Helpers ──────────────────────────────────────────────────────────
 
@@ -71,6 +72,10 @@ async function ensurePlaylistsFolder(auth: DropboxAuthAdapter): Promise<boolean>
     if (!refreshed) return false;
     token = refreshed;
     response = await create(token);
+    if (response.status === 401) {
+      auth.reportUnauthorized();
+      return false;
+    }
   }
 
   // 409 = folder already exists
@@ -193,6 +198,10 @@ export async function saveQueueAsPlaylist(
     const refreshed = await auth.refreshAccessToken();
     if (!refreshed) return null;
     response = await upload(refreshed);
+    if (response.status === 401) {
+      auth.reportUnauthorized();
+      return null;
+    }
   }
 
   if (!response.ok) {
@@ -235,6 +244,10 @@ export async function listSavedPlaylists(
     if (!refreshed) return [];
     token = refreshed;
     response = await listFolder(token);
+    if (response.status === 401) {
+      auth.reportUnauthorized();
+      return [];
+    }
   }
 
   // 409 = folder doesn't exist yet → no playlists
@@ -248,6 +261,8 @@ export async function listSavedPlaylists(
   const result: ListResult = await response.json();
   const collections: MediaCollection[] = [];
 
+  const filePaths: string[] = [];
+
   const collectEntries = (entries: ListResult['entries']) => {
     for (const entry of entries) {
       if (entry['.tag'] !== 'file' || !entry.name.endsWith('.json')) continue;
@@ -258,6 +273,7 @@ export async function listSavedPlaylists(
         name: entry.name.replace(/\.json$/, ''),
         imageUrl: undefined,
       });
+      filePaths.push(entry.path_lower);
     }
   };
 
@@ -283,6 +299,10 @@ export async function listSavedPlaylists(
       if (!refreshed) break;
       token = refreshed;
       continueResp = await continueFetch(token);
+      if (continueResp.status === 401) {
+        auth.reportUnauthorized();
+        break;
+      }
     }
     if (!continueResp.ok) break;
     const cont: ListResult = await continueResp.json();
@@ -291,6 +311,24 @@ export async function listSavedPlaylists(
     hasMore = cont.has_more;
   }
 
+  // Download each playlist file in parallel to get track counts
+  logLibrary('listSavedPlaylists: fetching track counts for %d playlists, paths: %o', collections.length, filePaths);
+  await Promise.all(
+    collections.map(async (collection, i) => {
+      try {
+        const data = await loadPlaylistFile(auth, filePaths[i]);
+        logLibrary('listSavedPlaylists: "%s" file=%s data=%s tracks=%d',
+          collection.name, filePaths[i], data ? 'loaded' : 'null', data?.tracks?.length ?? -1);
+        if (data) {
+          collection.trackCount = data.tracks.length;
+        }
+      } catch (err) {
+        logLibrary('listSavedPlaylists: "%s" failed to load: %o', collection.name, err);
+      }
+    }),
+  );
+
+  logLibrary('listSavedPlaylists: final collections: %o', collections.map(c => ({ name: c.name, trackCount: c.trackCount })));
   collections.sort((a, b) => a.name.localeCompare(b.name));
   return collections;
 }
@@ -323,6 +361,10 @@ async function loadPlaylistFile(
     const refreshed = await auth.refreshAccessToken();
     if (!refreshed) return null;
     response = await download(refreshed);
+    if (response.status === 401) {
+      auth.reportUnauthorized();
+      return null;
+    }
   }
 
   if (!response.ok) return null;
@@ -380,6 +422,10 @@ export async function deleteSavedPlaylist(
     const refreshed = await auth.refreshAccessToken();
     if (!refreshed) return false;
     response = await deleteFile(refreshed);
+    if (response.status === 401) {
+      auth.reportUnauthorized();
+      return false;
+    }
   }
 
   return response.ok;

@@ -6,44 +6,17 @@
 
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import styled, { keyframes } from 'styled-components';
+import styled from 'styled-components';
 import { theme } from '@/styles/theme';
 import type { ProviderId } from '@/types/domain';
-
-const fadeIn = keyframes`
-  from { opacity: 0; }
-  to { opacity: 1; }
-`;
-
-const Overlay = styled.div`
-  position: fixed;
-  inset: 0;
-  z-index: ${theme.zIndex.modal + 5};
-  background: ${theme.colors.overlay.bar};
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  animation: ${fadeIn} 0.2s ease;
-`;
-
-const DialogBox = styled.div`
-  background: ${theme.colors.overlay.dark};
-  backdrop-filter: blur(16px);
-  border: 1px solid ${theme.colors.popover.border};
-  border-radius: ${theme.borderRadius['2xl']};
-  padding: ${theme.spacing.lg};
-  width: min(380px, 90vw);
-  display: flex;
-  flex-direction: column;
-  gap: ${theme.spacing.md};
-`;
-
-const DialogTitle = styled.h3`
-  margin: 0;
-  color: ${theme.colors.white};
-  font-size: ${theme.fontSize.lg};
-  font-weight: ${theme.fontWeight.semibold};
-`;
+import {
+  DialogOverlay,
+  DialogBox,
+  DialogTitle,
+  DialogErrorText,
+  DialogButtonRow,
+  DialogButton,
+} from './styled/Dialog';
 
 const Input = styled.input`
   width: 100%;
@@ -73,39 +46,6 @@ const Warning = styled.div`
   color: rgba(255, 200, 100, 0.9);
   font-size: ${theme.fontSize.xs};
   line-height: 1.4;
-`;
-
-const ErrorText = styled.div`
-  font-size: ${theme.fontSize.xs};
-  color: #ef4444;
-  line-height: 1.4;
-`;
-
-const ButtonRow = styled.div`
-  display: flex;
-  gap: ${theme.spacing.sm};
-  justify-content: flex-end;
-`;
-
-const DialogButton = styled.button<{ $primary?: boolean }>`
-  padding: ${theme.spacing.sm} ${theme.spacing.md};
-  border-radius: ${theme.borderRadius.lg};
-  font-size: ${theme.fontSize.sm};
-  font-weight: ${theme.fontWeight.medium};
-  cursor: pointer;
-  transition: all ${theme.transitions.fast};
-  border: 1px solid ${({ $primary }) => $primary ? 'transparent' : theme.colors.control.border};
-  background: ${({ $primary }) => $primary ? 'rgba(255, 255, 255, 0.9)' : 'transparent'};
-  color: ${({ $primary }) => $primary ? '#111' : theme.colors.white};
-
-  &:hover:not(:disabled) {
-    background: ${({ $primary }) => $primary ? 'rgba(255, 255, 255, 1)' : theme.colors.control.backgroundHover};
-  }
-
-  &:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
 `;
 
 const ProviderRow = styled.div`
@@ -141,10 +81,12 @@ interface SaveQueueDialogProps {
   availableProviders: ProviderId[];
   hasDropboxTracks: boolean;
   hasSpotifyTracks: boolean;
+  defaultName?: string;
 }
 
-export default function SaveQueueDialog({ onSave, onClose, availableProviders, hasDropboxTracks, hasSpotifyTracks }: SaveQueueDialogProps) {
+export default function SaveQueueDialog({ onSave, onClose, availableProviders, hasDropboxTracks, hasSpotifyTracks, defaultName }: SaveQueueDialogProps) {
   const [name, setName] = useState(() => {
+    if (defaultName) return defaultName;
     const date = new Date().toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',
@@ -188,7 +130,7 @@ export default function SaveQueueDialog({ onSave, onClose, availableProviders, h
   const showSpotifyWarning = provider === 'spotify' && hasDropboxTracks;
 
   return createPortal(
-    <Overlay onClick={saving ? undefined : onClose} onKeyDown={e => { if (e.key === 'Escape') { e.stopPropagation(); onClose(); } }}>
+    <DialogOverlay onClick={saving ? undefined : onClose} onKeyDown={e => { if (e.key === 'Escape') { e.stopPropagation(); onClose(); } }}>
       <DialogBox onClick={e => e.stopPropagation()}>
         <DialogTitle>Save Queue as Playlist</DialogTitle>
         {showProviderSelector && (
@@ -224,8 +166,8 @@ export default function SaveQueueDialog({ onSave, onClose, availableProviders, h
             This queue contains Dropbox tracks. Only tracks that can be matched on Spotify will be included.
           </Warning>
         )}
-        {error && <ErrorText>{error}</ErrorText>}
-        <ButtonRow>
+        {error && <DialogErrorText>{error}</DialogErrorText>}
+        <DialogButtonRow>
           <DialogButton onClick={onClose} disabled={saving}>
             Cancel
           </DialogButton>
@@ -236,9 +178,9 @@ export default function SaveQueueDialog({ onSave, onClose, availableProviders, h
           >
             {saving ? 'Saving...' : 'Save'}
           </DialogButton>
-        </ButtonRow>
+        </DialogButtonRow>
       </DialogBox>
-    </Overlay>,
+    </DialogOverlay>,
     document.body,
   );
 }

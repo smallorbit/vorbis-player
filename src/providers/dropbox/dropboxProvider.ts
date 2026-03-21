@@ -41,6 +41,7 @@ if (DROPBOX_CLIENT_ID) {
     capabilities: {
       hasLikedCollection: true,
       hasSaveTrack: true,
+      hasDeleteCollection: true,
       hasExternalLink: true,
       externalLinkLabel: 'Search Discogs',
     },
