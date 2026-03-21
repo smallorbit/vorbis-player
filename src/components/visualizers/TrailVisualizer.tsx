@@ -136,9 +136,10 @@ export const TrailVisualizer: React.FC<TrailVisualizerProps> = ({
     const speedMult = playing ? 1.0 : t.pausedSpeedMult;
     const dt = deltaTime / 16;
 
+    const viewportScale = Math.max(0.5, width / 1400);
     const turnRate = t.shipTurnRate * deltaTime + (Math.random() - 0.5) * t.shipWobble;
     ship.angle += turnRate;
-    const shipSpeed = t.shipSpeedBase + (Math.random() - 0.5) * t.shipSpeedSpread;
+    const shipSpeed = (t.shipSpeedBase + (Math.random() - 0.5) * t.shipSpeedSpread) * viewportScale;
     ship.vx = Math.cos(ship.angle) * shipSpeed + (Math.random() - 0.5) * 0.2;
     ship.vy = Math.sin(ship.angle) * shipSpeed + (Math.random() - 0.5) * 0.2;
 
