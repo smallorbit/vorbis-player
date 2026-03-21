@@ -165,6 +165,8 @@ export function usePlayerLogic() {
     return drivingProviderId ? providerRegistry.get(drivingProviderId) : undefined;
   }, [getDrivingProviderId]);
 
+  const { radioState, startRadio, stopRadio: stopRadioBase, isRadioAvailable } = useRadio();
+
   const { handlePlaylistSelect: spotifyHandlePlaylistSelect } = usePlaylistManager({
     setError,
     setIsLoading,
@@ -178,6 +180,11 @@ export function usePlayerLogic() {
   const handlePlaylistSelect = useCallback(
     async (playlistId: string, _playlistName?: string, provider?: import('@/types/domain').ProviderId): Promise<number> => {
       logQueue('handlePlaylistSelect called — playlistId=%s provider=%s', playlistId, provider ?? 'active');
+
+      // Clear any active radio session since the queue is being replaced
+      if (radioState.isActive) {
+        stopRadioBase();
+      }
 
       // Unified liked songs: fetch from all connected providers, merge by timestamp
       if (playlistId === LIKED_SONGS_ID && !provider && isUnifiedLikedActive) {
@@ -341,6 +348,8 @@ export function usePlayerLogic() {
       connectedProviderIds,
       drivingProviderRef,
       playTrack,
+      radioState.isActive,
+      stopRadioBase,
     ]
   );
 
@@ -626,8 +635,6 @@ export function usePlayerLogic() {
   );
 
   // ── Radio feature ───────────────────────────────────────────────────
-
-  const { radioState, startRadio, stopRadio: stopRadioBase, isRadioAvailable } = useRadio();
 
   const clearSpotifyAuthExpired = useCallback(() => {
     setSpotifyAuthExpired(false);
