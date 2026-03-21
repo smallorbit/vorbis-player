@@ -248,6 +248,8 @@ export async function listSavedPlaylists(
   const result: ListResult = await response.json();
   const collections: MediaCollection[] = [];
 
+  const filePaths: string[] = [];
+
   const collectEntries = (entries: ListResult['entries']) => {
     for (const entry of entries) {
       if (entry['.tag'] !== 'file' || !entry.name.endsWith('.json')) continue;
@@ -258,6 +260,7 @@ export async function listSavedPlaylists(
         name: entry.name.replace(/\.json$/, ''),
         imageUrl: undefined,
       });
+      filePaths.push(entry.path_lower);
     }
   };
 
@@ -290,6 +293,20 @@ export async function listSavedPlaylists(
     cursor = cont.cursor;
     hasMore = cont.has_more;
   }
+
+  // Download each playlist file in parallel to get track counts
+  await Promise.all(
+    collections.map(async (collection, i) => {
+      try {
+        const data = await loadPlaylistFile(auth, filePaths[i]);
+        if (data) {
+          collection.trackCount = data.tracks.length;
+        }
+      } catch {
+        // Leave trackCount undefined on failure — UI will show 0
+      }
+    }),
+  );
 
   collections.sort((a, b) => a.name.localeCompare(b.name));
   return collections;
