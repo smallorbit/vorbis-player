@@ -8,7 +8,7 @@ interface UseCanvasVisualizerProps<T> {
   /**
    * Calculate how many items to spawn based on canvas dimensions
    */
-  getItemCount: (width: number, height: number) => number;
+  getItemCount: (width: number, height: number, intensity: number) => number;
   /**
    * Create the initial array of items
    */
@@ -57,17 +57,17 @@ export const useCanvasVisualizer = <T>({
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
 
-      const count = getItemCount(canvas.width, canvas.height);
+      const count = getItemCount(canvas.width, canvas.height, intensity);
       itemsRef.current = initializeItems(count, canvas.width, canvas.height, accentColor);
     };
 
     resizeCanvas();
     window.addEventListener('resize', resizeCanvas);
-    
+
     return () => {
       window.removeEventListener('resize', resizeCanvas);
     };
-  }, [accentColor, getItemCount, initializeItems]);
+  }, [accentColor, intensity, getItemCount, initializeItems]);
 
   // Handle color changes for existing items
   useEffect(() => {

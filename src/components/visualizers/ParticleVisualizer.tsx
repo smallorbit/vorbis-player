@@ -41,13 +41,14 @@ export const ParticleVisualizer: React.FC<ParticleVisualizerProps> = ({
   const config = useVisualizerDebugConfig();
   const p = config.particle;
 
-  const getParticleCount = useCallback((width: number, height: number): number => {
+  const getParticleCount = useCallback((width: number, height: number, intensityValue: number): number => {
     const pixelCount = width * height;
     const isMobile = width < 768;
+    const scale = Math.max(0.1, intensityValue / 60);
     if (isMobile) {
-      return Math.min(Math.round(p.countBaseMobile), Math.floor(pixelCount / p.countPixelDivisorMobile));
+      return Math.round(Math.min(p.countBaseMobile, Math.floor(pixelCount / p.countPixelDivisorMobile)) * scale);
     }
-    return Math.min(Math.round(p.countBaseDesktop), Math.floor(pixelCount / p.countPixelDivisor));
+    return Math.round(Math.min(p.countBaseDesktop, Math.floor(pixelCount / p.countPixelDivisor)) * scale);
   }, [p]);
 
   const initializeParticles = useCallback((
@@ -104,13 +105,13 @@ export const ParticleVisualizer: React.FC<ParticleVisualizerProps> = ({
     particles: Particle[],
     width: number,
     height: number,
-    intensityValue: number
+    _intensityValue: number
   ): void => {
     ctx.clearRect(0, 0, width, height);
 
     particles.forEach(particle => {
       ctx.save();
-      ctx.globalAlpha = particle.opacity * (intensityValue / 100);
+      ctx.globalAlpha = particle.opacity;
       ctx.fillStyle = particle.color;
       ctx.beginPath();
       ctx.arc(particle.x, particle.y, particle.radius, 0, Math.PI * 2);
