@@ -94,6 +94,10 @@ export class DropboxLikesSyncService {
           'Dropbox-API-Arg': apiArg,
         },
       });
+      if (response.status === 401) {
+        this.auth.reportUnauthorized();
+        return null;
+      }
     }
 
     if (response.status === 409) {
@@ -151,6 +155,10 @@ export class DropboxLikesSyncService {
       if (!refreshed) return false;
       token = refreshed;
       response = await upload(token);
+      if (response.status === 401) {
+        this.auth.reportUnauthorized();
+        return false;
+      }
     }
 
     if (!response.ok) {

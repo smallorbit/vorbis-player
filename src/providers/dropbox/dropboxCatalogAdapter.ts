@@ -236,6 +236,10 @@ export class DropboxCatalogAdapter implements CatalogProvider {
       token = await this.auth.refreshAccessToken();
       if (!token) throw new Error('Dropbox authentication expired');
       response = await makeRequest(token);
+      if (response.status === 401) {
+        this.auth.reportUnauthorized();
+        throw new Error('Dropbox authentication expired');
+      }
     }
 
     if (!response.ok) {

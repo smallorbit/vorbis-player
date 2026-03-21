@@ -72,6 +72,10 @@ async function ensurePlaylistsFolder(auth: DropboxAuthAdapter): Promise<boolean>
     if (!refreshed) return false;
     token = refreshed;
     response = await create(token);
+    if (response.status === 401) {
+      auth.reportUnauthorized();
+      return false;
+    }
   }
 
   // 409 = folder already exists
@@ -194,6 +198,10 @@ export async function saveQueueAsPlaylist(
     const refreshed = await auth.refreshAccessToken();
     if (!refreshed) return null;
     response = await upload(refreshed);
+    if (response.status === 401) {
+      auth.reportUnauthorized();
+      return null;
+    }
   }
 
   if (!response.ok) {
@@ -236,6 +244,10 @@ export async function listSavedPlaylists(
     if (!refreshed) return [];
     token = refreshed;
     response = await listFolder(token);
+    if (response.status === 401) {
+      auth.reportUnauthorized();
+      return [];
+    }
   }
 
   // 409 = folder doesn't exist yet → no playlists
@@ -287,6 +299,10 @@ export async function listSavedPlaylists(
       if (!refreshed) break;
       token = refreshed;
       continueResp = await continueFetch(token);
+      if (continueResp.status === 401) {
+        auth.reportUnauthorized();
+        break;
+      }
     }
     if (!continueResp.ok) break;
     const cont: ListResult = await continueResp.json();
@@ -345,6 +361,10 @@ async function loadPlaylistFile(
     const refreshed = await auth.refreshAccessToken();
     if (!refreshed) return null;
     response = await download(refreshed);
+    if (response.status === 401) {
+      auth.reportUnauthorized();
+      return null;
+    }
   }
 
   if (!response.ok) return null;
@@ -402,6 +422,10 @@ export async function deleteSavedPlaylist(
     const refreshed = await auth.refreshAccessToken();
     if (!refreshed) return false;
     response = await deleteFile(refreshed);
+    if (response.status === 401) {
+      auth.reportUnauthorized();
+      return false;
+    }
   }
 
   return response.ok;

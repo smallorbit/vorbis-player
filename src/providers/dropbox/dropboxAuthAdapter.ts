@@ -7,6 +7,8 @@ import type { AuthProvider } from '@/types/providers';
 import type { ProviderId } from '@/types/domain';
 import { resetPlaylistsFolderCache } from './dropboxPlaylistStorage';
 
+export const DROPBOX_AUTH_ERROR_EVENT = 'vorbis-dropbox-auth-error';
+
 function getDropboxClientId(): string {
   return import.meta.env.VITE_DROPBOX_CLIENT_ID ?? '';
 }
@@ -204,6 +206,17 @@ export class DropboxAuthAdapter implements AuthProvider {
     localStorage.removeItem(CODE_VERIFIER_KEY);
     localStorage.removeItem(OAUTH_STATE_KEY);
     resetPlaylistsFolderCache();
+  }
+
+  /**
+   * Called by API consumers when a freshly-refreshed token is still rejected (401).
+   * Treats this as an invalid session: clears all tokens and notifies the UI.
+   */
+  reportUnauthorized(): void {
+    if (!this.accessToken && !this.refreshToken) return;
+    console.warn('[DropboxAuth] Persistent 401 after token refresh — logging out');
+    this.logout();
+    window.dispatchEvent(new CustomEvent(DROPBOX_AUTH_ERROR_EVENT));
   }
 
   /** Refresh the access token using the stored refresh token. */
