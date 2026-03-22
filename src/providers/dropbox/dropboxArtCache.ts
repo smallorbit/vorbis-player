@@ -5,7 +5,7 @@
  */
 
 const DB_NAME = 'vorbis-dropbox-art';
-const DB_VERSION = 6;
+const DB_VERSION = 7;
 const STORE = 'art';
 const ART_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 const ALBUM_ART_KEY_PREFIX = 'album:';
@@ -52,6 +52,9 @@ function openDb(): Promise<IDBDatabase | null> {
       }
       if (!database.objectStoreNames.contains('tombstones')) {
         database.createObjectStore('tombstones', { keyPath: 'trackId' });
+      }
+      if (!database.objectStoreNames.contains('trackDates')) {
+        database.createObjectStore('trackDates', { keyPath: 'albumId' });
       }
     };
   });
@@ -190,6 +193,36 @@ export async function getDurationsMap(trackIds: string[]): Promise<Map<string, n
   const result = new Map<string, number>();
   for (const [id, entry] of raw) {
     if (entry.durationMs > 0) result.set(id, entry.durationMs);
+  }
+  return result;
+}
+
+// ── Track date (release year) cache ──────────────────────────
+
+export interface CachedTrackDate {
+  albumId: string;
+  releaseYear: number;
+}
+
+export async function putTrackDate(albumId: string, releaseYear: number): Promise<void> {
+  const database = await getDb();
+  if (!database) return;
+  try {
+    const tx = database.transaction('trackDates', 'readwrite');
+    tx.objectStore('trackDates').put({ albumId, releaseYear });
+  } catch {
+    // fire-and-forget
+  }
+}
+
+export async function getTrackDatesMap(albumIds: string[]): Promise<Map<string, number>> {
+  if (albumIds.length === 0) return new Map();
+  const database = await getDb();
+  if (!database) return new Map();
+  const raw = await batchGetFromStore<CachedTrackDate>(database, 'trackDates', albumIds);
+  const result = new Map<string, number>();
+  for (const [id, entry] of raw) {
+    if (entry.releaseYear > 0) result.set(id, entry.releaseYear);
   }
   return result;
 }

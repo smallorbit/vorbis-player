@@ -77,7 +77,7 @@ function collectionToAlbumInfo(c: MediaCollection): AlbumInfo {
     name: c.name,
     artists: c.ownerName ?? '',
     images: c.imageUrl ? [{ url: c.imageUrl, height: null, width: null }] : [],
-    release_date: '',
+    release_date: c.releaseDate ?? '',
     total_tracks: c.trackCount ?? 0,
     uri: '',
     album_type: c.kind === 'folder' ? 'folder' : 'album',

@@ -26,8 +26,11 @@ import {
   getTagsMap,
   getAlbumArt,
   putAlbumArt,
+  putTrackDate,
+  getTrackDatesMap,
 } from './dropboxArtCache';
 import { getCachedCatalog, putCatalogCache, clearCatalogCache } from './dropboxCatalogCache';
+import { parseID3 } from '@/utils/id3Parser';
 import { logLibrary } from '@/lib/debugLog';
 import { bytesToDataUrl } from '@/utils/bytesToDataUrl';
 import {
@@ -304,6 +307,8 @@ export class DropboxCatalogAdapter implements CatalogProvider {
       const audioCount = new Map<string, number>();
       // path_lower → image file entries
       const imagesByDir = new Map<string, DropboxFileEntry[]>();
+      // path_lower → first audio file path (for date scanning)
+      const firstAudioByDir = new Map<string, string>();
 
       await this.paginateFolder('', (entries) => {
         for (const entry of entries) {
@@ -314,6 +319,9 @@ export class DropboxCatalogAdapter implements CatalogProvider {
             const dir = parentDir(entry.path_lower);
             if (isAudioFile(entry.name)) {
               audioCount.set(dir, (audioCount.get(dir) ?? 0) + 1);
+              if (!firstAudioByDir.has(dir)) {
+                firstAudioByDir.set(dir, entry.path_lower);
+              }
             } else if (isImageFile(entry.name)) {
               const list = imagesByDir.get(dir) ?? [];
               list.push(entry);
@@ -346,6 +354,14 @@ export class DropboxCatalogAdapter implements CatalogProvider {
         });
       }
 
+      // Hydrate cached release dates onto albums
+      const albumIds = albums.map((a) => a.id);
+      const cachedDates = await getTrackDatesMap(albumIds);
+      for (const album of albums) {
+        const year = cachedDates.get(album.id);
+        if (year) album.releaseDate = String(year);
+      }
+
       albums.sort((a, b) => a.name.localeCompare(b.name));
 
       const allMusic: MediaCollection = {
@@ -369,6 +385,10 @@ export class DropboxCatalogAdapter implements CatalogProvider {
         collections.length,
         savedPlaylists.map(c => ({ name: c.name, trackCount: c.trackCount })));
       await putCatalogCache(collections);
+
+      // Kick off background date scanning (fire-and-forget)
+      this.scanAlbumDatesInBackground(albums, firstAudioByDir).catch(() => {});
+
       return collections;
     } catch (error) {
       console.error('[DropboxCatalog] Failed to list collections:', error);
@@ -664,6 +684,53 @@ export class DropboxCatalogAdapter implements CatalogProvider {
 
   async searchTrack(_artist: string, _title: string): Promise<MediaTrack | null> {
     return null;
+  }
+
+  /**
+   * Background scan: fetch ~10KB of one representative track per album,
+   * parse the year via id3Parser, and cache it in IndexedDB.
+   * Processes albums in batches to avoid rate limiting.
+   */
+  private async scanAlbumDatesInBackground(
+    albums: MediaCollection[],
+    audioByDir: Map<string, string>,
+  ): Promise<void> {
+    // Only scan albums that don't already have dates cached
+    const albumIds = albums.filter((a) => a.kind === 'album' && a.id).map((a) => a.id);
+    const existing = await getTrackDatesMap(albumIds);
+    const toScan = albums.filter((a) => a.kind === 'album' && a.id && !existing.has(a.id));
+    if (toScan.length === 0) return;
+
+    const BATCH_SIZE = 5;
+    const BATCH_DELAY_MS = 200;
+
+    for (let i = 0; i < toScan.length; i += BATCH_SIZE) {
+      const batch = toScan.slice(i, i + BATCH_SIZE);
+      await Promise.all(
+        batch.map(async (album) => {
+          const trackPath = audioByDir.get(album.id);
+          if (!trackPath) return;
+          try {
+            const tempUrl = await this.getTemporaryLink(trackPath);
+            const resp = await fetch(tempUrl, {
+              headers: { Range: 'bytes=0-10240' },
+            });
+            if (!resp.ok) return;
+            const buffer = await resp.arrayBuffer();
+            const meta = parseID3(buffer);
+            if (meta.releaseYear) {
+              await putTrackDate(album.id, meta.releaseYear);
+              album.releaseDate = String(meta.releaseYear);
+            }
+          } catch {
+            // Silently skip — will retry on next catalog refresh
+          }
+        }),
+      );
+      if (i + BATCH_SIZE < toScan.length) {
+        await new Promise((r) => setTimeout(r, BATCH_DELAY_MS));
+      }
+    }
   }
 
   private probeAudioDuration(url: string): Promise<number | null> {

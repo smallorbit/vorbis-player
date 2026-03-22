@@ -78,10 +78,10 @@ function matchesSearch(
  * Extract year from a date string (handles various Spotify formats)
  * Spotify returns: "2023", "2023-05", or "2023-05-15"
  */
-function extractYear(dateString: string | undefined): number {
-  if (!dateString) return 0;
+function extractYear(dateString: string | undefined): number | null {
+  if (!dateString) return null;
   const year = parseInt(dateString.substring(0, 4), 10);
-  return isNaN(year) ? 0 : year;
+  return isNaN(year) || year === 0 ? null : year;
 }
 
 /**
@@ -96,8 +96,9 @@ function parseAddedAt(addedAt: string | undefined): number {
 /**
  * Check if a year falls within a decade filter
  */
-function matchesYearFilter(year: number, filter: YearFilterOption): boolean {
+function matchesYearFilter(year: number | null, filter: YearFilterOption): boolean {
   if (filter === 'all') return true;
+  if (year === null) return false;
   if (filter === 'older') return year < 1980;
 
   const decadeStart = parseInt(filter); // "2020s" -> 2020
@@ -185,6 +186,9 @@ export function filterAndSortAlbums(
       result.sort((a, b) => {
         const yearA = extractYear(a.release_date);
         const yearB = extractYear(b.release_date);
+        if (yearA === null && yearB === null) return 0;
+        if (yearA === null) return 1;
+        if (yearB === null) return -1;
         return yearB - yearA;
       });
       break;
@@ -192,6 +196,9 @@ export function filterAndSortAlbums(
       result.sort((a, b) => {
         const yearA = extractYear(a.release_date);
         const yearB = extractYear(b.release_date);
+        if (yearA === null && yearB === null) return 0;
+        if (yearA === null) return 1;
+        if (yearB === null) return -1;
         return yearA - yearB;
       });
       break;
@@ -216,7 +223,7 @@ export function getAvailableDecades(albums: AlbumInfo[]): YearFilterOption[] {
 
   albums.forEach(album => {
     const year = extractYear(album.release_date);
-    if (year === 0) return;
+    if (year === null) return;
 
     if (year >= 2020) decades.add('2020s');
     else if (year >= 2010) decades.add('2010s');

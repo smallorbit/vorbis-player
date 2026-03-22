@@ -234,6 +234,54 @@ describe('filterAndSortAlbums', () => {
     });
   });
 
+  describe('missing release dates', () => {
+    const albumsWithMissing: AlbumInfo[] = [
+      ...mockAlbums,
+      {
+        id: '5',
+        name: 'No Date Album',
+        artists: 'Unknown',
+        images: [],
+        release_date: '',
+        total_tracks: 5,
+        uri: 'spotify:album:5',
+        added_at: '2024-11-01T10:00:00Z',
+      },
+      {
+        id: '6',
+        name: 'Also No Date',
+        artists: 'Mystery',
+        images: [],
+        release_date: '',
+        total_tracks: 3,
+        uri: 'spotify:album:6',
+        added_at: '2024-09-01T10:00:00Z',
+      },
+    ];
+
+    it('pushes albums with missing dates to the end when sorting release-newest', () => {
+      const result = filterAndSortAlbums(albumsWithMissing, '', 'release-newest');
+      // Dated albums come first, sorted newest to oldest
+      expect(result[0].name).toBe('Random Access Memories'); // 2013
+      expect(result[1].name).toBe('Thriller');               // 1982
+      expect(result[2].name).toBe('Abbey Road');             // 1969
+      // Undated albums at the end
+      expect(result[3].release_date).toBe('');
+      expect(result[4].release_date).toBe('');
+    });
+
+    it('pushes albums with missing dates to the end when sorting release-oldest', () => {
+      const result = filterAndSortAlbums(albumsWithMissing, '', 'release-oldest');
+      // Dated albums come first, sorted oldest to newest
+      expect(result[0].name).toBe('Abbey Road');             // 1969
+      expect(result[1].name).toBe('Thriller');               // 1982
+      expect(result[2].name).toBe('Random Access Memories'); // 2013
+      // Undated albums at the end
+      expect(result[3].release_date).toBe('');
+      expect(result[4].release_date).toBe('');
+    });
+  });
+
   describe('combined search + filter + sort', () => {
     it('applies search, year filter, and sort together', () => {
       // Searching for empty, filtering 1980s, sorting by name
