@@ -49,6 +49,7 @@ interface AlbumArtProps {
   zenMode?: boolean;
   translucenceEnabled?: boolean;
   translucenceOpacity?: number;
+  onRetryAlbumArt?: () => void;
 }
 
 
@@ -163,10 +164,13 @@ const arePropsEqual = (prevProps: AlbumArtProps, nextProps: AlbumArtProps): bool
       prevProps.translucenceOpacity !== nextProps.translucenceOpacity) {
     return false;
   }
+  if (prevProps.onRetryAlbumArt !== nextProps.onRetryAlbumArt) {
+    return false;
+  }
   return true;
 };
 
-const AlbumArt: React.FC<AlbumArtProps> = memo(({ currentTrack = null, accentColor, glowIntensity, glowRate, glowEnabled, zenMode, translucenceEnabled, translucenceOpacity }) => {
+const AlbumArt: React.FC<AlbumArtProps> = memo(({ currentTrack = null, accentColor, glowIntensity, glowRate, glowEnabled, zenMode, translucenceEnabled, translucenceOpacity, onRetryAlbumArt }) => {
   const [canvasUrl, setCanvasUrl] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const { processImage } = useImageProcessingWorker();
@@ -292,14 +296,40 @@ const AlbumArt: React.FC<AlbumArtProps> = memo(({ currentTrack = null, accentCol
         ) : (
           <div style={{
             width: '100%',
+            height: '100%',
             backgroundColor: theme.colors.gray[900],
             display: 'flex',
+            flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
+            gap: '12px',
             color: theme.colors.gray[500],
             borderRadius: theme.borderRadius['3xl']
           }}>
-            <p>No image</p>
+            <p style={{ margin: 0 }}>No image</p>
+            {onRetryAlbumArt && (
+              <button
+                onClick={(e) => { e.stopPropagation(); onRetryAlbumArt(); }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '6px 14px',
+                  background: 'rgba(255, 255, 255, 0.1)',
+                  color: 'rgba(255, 255, 255, 0.7)',
+                  border: '1px solid rgba(255, 255, 255, 0.15)',
+                  borderRadius: '8px',
+                  fontSize: '13px',
+                  cursor: 'pointer',
+                }}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="23 4 23 10 17 10" />
+                  <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+                </svg>
+                Retry
+              </button>
+            )}
           </div>
         )}
         {isProcessing && <ProcessingSpinner size={spinnerDimensions.size} innerSize={spinnerDimensions.innerSize} />}
