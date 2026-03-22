@@ -13,7 +13,7 @@ import type { CachedPlaylistInfo, SyncState } from '../services/cache/cacheTypes
 import type { AlbumInfo } from '../services/spotify';
 import { useProviderContext } from '../contexts/ProviderContext';
 import type { MediaCollection, ProviderId } from '../types/domain';
-import { LIKES_CHANGED_EVENT } from '../providers/dropbox/dropboxLikesCache';
+import { providerRegistry } from '../providers/registry';
 import { logLibrary } from '../lib/debugLog';
 
 function splitCollections(collections: MediaCollection[]): { playlists: CachedPlaylistInfo[]; albums: AlbumInfo[] } {
@@ -100,14 +100,18 @@ export function useLibrarySync(): UseLibrarySyncResult {
 
   const engineRef = useRef(librarySyncEngine);
 
+  // The library sync engine manages one provider (currently Spotify) with IndexedDB cache + polling.
+  // All other providers fetch via catalog.listCollections() directly.
+  const engineProviderId = librarySyncEngine.providerId as ProviderId | undefined;
+
   // Per-provider data stored in refs so we can merge without re-fetching all
-  const spotifyDataRef = useRef<{ playlists: CachedPlaylistInfo[]; albums: AlbumInfo[]; likedCount: number }>({
+  const engineDataRef = useRef<{ playlists: CachedPlaylistInfo[]; albums: AlbumInfo[]; likedCount: number }>({
     playlists: [], albums: [], likedCount: 0,
   });
-  const nonSpotifyDataRef = useRef<Map<ProviderId, { playlists: CachedPlaylistInfo[]; albums: AlbumInfo[]; likedCount: number }>>(new Map());
+  const catalogDataRef = useRef<Map<ProviderId, { playlists: CachedPlaylistInfo[]; albums: AlbumInfo[]; likedCount: number }>>(new Map());
 
-  const isSpotifyEnabled = enabledProviderIds.includes('spotify');
-  const nonSpotifyEnabledIds = enabledProviderIds.filter(id => id !== 'spotify');
+  const isEngineProviderEnabled = !!engineProviderId && enabledProviderIds.includes(engineProviderId);
+  const catalogProviderIds = enabledProviderIds.filter(id => id !== engineProviderId);
 
   // Merge all provider data into combined state
   const mergeAndSetData = useCallback(() => {
@@ -116,16 +120,16 @@ export function useLibrarySync(): UseLibrarySyncResult {
     let totalLikedCount = 0;
     const perProvider: PerProviderLikedCount[] = [];
 
-    if (isSpotifyEnabled) {
-      allPlaylists.push(...spotifyDataRef.current.playlists);
-      allAlbums.push(...spotifyDataRef.current.albums);
-      totalLikedCount += spotifyDataRef.current.likedCount;
-      if (spotifyDataRef.current.likedCount > 0) {
-        perProvider.push({ provider: 'spotify', count: spotifyDataRef.current.likedCount });
+    if (isEngineProviderEnabled && engineProviderId) {
+      allPlaylists.push(...engineDataRef.current.playlists);
+      allAlbums.push(...engineDataRef.current.albums);
+      totalLikedCount += engineDataRef.current.likedCount;
+      if (engineDataRef.current.likedCount > 0) {
+        perProvider.push({ provider: engineProviderId, count: engineDataRef.current.likedCount });
       }
     }
 
-    for (const [providerId, data] of nonSpotifyDataRef.current) {
+    for (const [providerId, data] of catalogDataRef.current) {
       if (enabledProviderIds.includes(providerId)) {
         allPlaylists.push(...data.playlists);
         allAlbums.push(...data.albums);
@@ -140,38 +144,39 @@ export function useLibrarySync(): UseLibrarySyncResult {
     setAlbums(allAlbums);
     setLikedSongsCount(totalLikedCount);
     setLikedSongsPerProvider(perProvider);
-  }, [isSpotifyEnabled, enabledProviderIds]);
+  }, [isEngineProviderEnabled, engineProviderId, enabledProviderIds]);
 
-  // ── Spotify path: delegate to existing sync engine ─────────────────────
+  // ── Engine provider path: delegate to existing sync engine ──────────────
   useEffect(() => {
-    if (!isSpotifyEnabled) {
-      spotifyDataRef.current = { playlists: [], albums: [], likedCount: 0 };
+    if (!isEngineProviderEnabled || !engineProviderId) {
+      engineDataRef.current = { playlists: [], albums: [], likedCount: 0 };
       mergeAndSetData();
       return;
     }
 
     const engine = engineRef.current;
+    const epId = engineProviderId;
 
     const unsubscribe = engine.subscribe((state, newPlaylists, newAlbums, newLikedCount) => {
       setSyncState(prev => ({
         ...prev,
         ...state,
-        // Keep isInitialLoadComplete true once any provider has loaded
         isInitialLoadComplete: prev.isInitialLoadComplete || state.isInitialLoadComplete,
       }));
       if (newPlaylists !== undefined) {
-        logLibrary('[spotify] sync engine playlists: %o',
+        logLibrary('[%s] sync engine playlists: %o', epId,
           newPlaylists.map(p => ({ name: p.name, tracks: p.tracks })));
-        // Tag spotify playlists with provider
-        spotifyDataRef.current.playlists = newPlaylists.map(p => ({ ...p, provider: 'spotify' as ProviderId }));
+        engineDataRef.current.playlists = newPlaylists.map(p => ({ ...p, provider: epId }));
       }
       if (newAlbums !== undefined) {
-        spotifyDataRef.current.albums = newAlbums.map(a => ({ ...a, provider: 'spotify' as ProviderId }));
+        engineDataRef.current.albums = newAlbums.map(a => ({ ...a, provider: epId }));
       }
       if (newLikedCount !== undefined) {
-        spotifyDataRef.current.likedCount = newLikedCount;
+        engineDataRef.current.likedCount = newLikedCount;
       }
-      mergeAndSetData();
+      if (newPlaylists !== undefined || newAlbums !== undefined || newLikedCount !== undefined) {
+        mergeAndSetData();
+      }
     });
 
     engine.start().catch((err) => {
@@ -181,12 +186,12 @@ export function useLibrarySync(): UseLibrarySyncResult {
     return () => {
       unsubscribe();
     };
-  }, [isSpotifyEnabled, mergeAndSetData]);
+  }, [isEngineProviderEnabled, engineProviderId, mergeAndSetData]);
 
-  // ── Non-Spotify path: call catalog.listCollections() for each enabled non-Spotify provider ───
+  // ── Catalog providers path: call catalog.listCollections() for each provider not using the sync engine ───
   useEffect(() => {
-    if (nonSpotifyEnabledIds.length === 0) {
-      nonSpotifyDataRef.current.clear();
+    if (catalogProviderIds.length === 0) {
+      catalogDataRef.current.clear();
       mergeAndSetData();
       return;
     }
@@ -199,14 +204,13 @@ export function useLibrarySync(): UseLibrarySyncResult {
       const catalog = descriptor?.catalog;
       const auth = descriptor?.auth;
       if (!catalog || !auth || !auth.isAuthenticated()) {
-        nonSpotifyDataRef.current.set(providerId, { playlists: [], albums: [], likedCount: 0 });
+        catalogDataRef.current.set(providerId, { playlists: [], albums: [], likedCount: 0 });
         return;
       }
 
       setSyncState(prev => ({ ...prev, isSyncing: true, error: null }));
 
       try {
-        // Run liked count and collection fetch concurrently (liked count is a fast local IDB read)
         const [collections, likedCount] = await Promise.all([
           catalog.listCollections(controller.signal),
           catalog.getLikedCount ? catalog.getLikedCount(controller.signal) : Promise.resolve(0),
@@ -221,7 +225,7 @@ export function useLibrarySync(): UseLibrarySyncResult {
           playlists.map(p => ({ name: p.name, tracks: p.tracks })));
         logLibrary('[%s] after splitCollections — albums: %o', providerId,
           albums.map(a => ({ name: a.name, total_tracks: a.total_tracks })));
-        nonSpotifyDataRef.current.set(providerId, { playlists, albums, likedCount });
+        catalogDataRef.current.set(providerId, { playlists, albums, likedCount });
         mergeAndSetData();
         setSyncState(prev => ({
           ...prev,
@@ -242,27 +246,29 @@ export function useLibrarySync(): UseLibrarySyncResult {
       }
     }
 
-    // Load all non-Spotify providers in parallel
-    Promise.all(nonSpotifyEnabledIds.map(loadProviderCollections)).catch(() => {});
+    Promise.all(catalogProviderIds.map(loadProviderCollections)).catch(() => {});
 
     return () => {
       cancelled = true;
       controller.abort();
     };
-  }, [[...nonSpotifyEnabledIds].sort().join(','), getDescriptor, mergeAndSetData]);
+  }, [[...catalogProviderIds].sort().join(','), getDescriptor, mergeAndSetData]);
 
   // ── Listen for likes-changed events to update count in real-time ──────
   useEffect(() => {
-    // Only relevant for non-Spotify providers with getLikedCount
-    const handlers: Array<() => void> = [];
-    for (const providerId of nonSpotifyEnabledIds) {
+    const cleanups: Array<() => void> = [];
+    for (const providerId of catalogProviderIds) {
       const descriptor = getDescriptor(providerId);
       const catalog = descriptor?.catalog;
       if (!catalog?.getLikedCount) continue;
 
+      const registryDescriptor = providerRegistry.get(providerId);
+      const eventName = registryDescriptor?.likesChangedEvent;
+      if (!eventName) continue;
+
       const handleLikesChanged = () => {
         catalog.getLikedCount!().then(count => {
-          const data = nonSpotifyDataRef.current.get(providerId);
+          const data = catalogDataRef.current.get(providerId);
           if (data) {
             data.likedCount = count;
             mergeAndSetData();
@@ -270,22 +276,22 @@ export function useLibrarySync(): UseLibrarySyncResult {
         }).catch(() => {});
       };
 
-      window.addEventListener(LIKES_CHANGED_EVENT, handleLikesChanged);
-      handlers.push(() => window.removeEventListener(LIKES_CHANGED_EVENT, handleLikesChanged));
+      window.addEventListener(eventName, handleLikesChanged);
+      cleanups.push(() => window.removeEventListener(eventName, handleLikesChanged));
     }
-    return () => handlers.forEach(cleanup => cleanup());
-  }, [[...nonSpotifyEnabledIds].sort().join(','), getDescriptor, mergeAndSetData]);
+    return () => cleanups.forEach(cleanup => cleanup());
+  }, [[...catalogProviderIds].sort().join(','), getDescriptor, mergeAndSetData]);
 
   const refreshNow = useCallback(async (scopeProviderId?: ProviderId) => {
-    if (!scopeProviderId || scopeProviderId === 'spotify') {
-      if (isSpotifyEnabled) {
+    if (!scopeProviderId || scopeProviderId === engineProviderId) {
+      if (isEngineProviderEnabled) {
         await engineRef.current.syncNow(true);
       }
     }
 
     const providerIdsToRefresh = scopeProviderId
-      ? nonSpotifyEnabledIds.filter(id => id === scopeProviderId)
-      : nonSpotifyEnabledIds;
+      ? catalogProviderIds.filter(id => id === scopeProviderId)
+      : catalogProviderIds;
 
     for (const providerId of providerIdsToRefresh) {
       const descriptor = getDescriptor(providerId);
@@ -299,7 +305,7 @@ export function useLibrarySync(): UseLibrarySyncResult {
           catalog.getLikedCount ? catalog.getLikedCount() : Promise.resolve(0),
         ]);
         const { playlists, albums } = splitCollections(collections);
-        nonSpotifyDataRef.current.set(providerId, { playlists, albums, likedCount });
+        catalogDataRef.current.set(providerId, { playlists, albums, likedCount });
         mergeAndSetData();
         setSyncState(prev => ({
           ...prev,
@@ -315,7 +321,7 @@ export function useLibrarySync(): UseLibrarySyncResult {
         }));
       }
     }
-  }, [isSpotifyEnabled, nonSpotifyEnabledIds, getDescriptor, mergeAndSetData]);
+  }, [isEngineProviderEnabled, engineProviderId, catalogProviderIds, getDescriptor, mergeAndSetData]);
 
   useEffect(() => {
     const handleArtRefresh = () => { refreshNow().catch(() => {}); };
@@ -332,12 +338,10 @@ export function useLibrarySync(): UseLibrarySyncResult {
   }, [refreshNow]);
 
   const removeCollection = useCallback((collectionId: string) => {
-    // Remove from Spotify ref
-    spotifyDataRef.current.playlists = spotifyDataRef.current.playlists.filter(p => p.id !== collectionId);
-    spotifyDataRef.current.albums = spotifyDataRef.current.albums.filter(a => a.id !== collectionId);
+    engineDataRef.current.playlists = engineDataRef.current.playlists.filter(p => p.id !== collectionId);
+    engineDataRef.current.albums = engineDataRef.current.albums.filter(a => a.id !== collectionId);
 
-    // Remove from non-Spotify refs
-    for (const [, data] of nonSpotifyDataRef.current) {
+    for (const [, data] of catalogDataRef.current) {
       data.playlists = data.playlists.filter(p => p.id !== collectionId);
       data.albums = data.albums.filter(a => a.id !== collectionId);
     }

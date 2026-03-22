@@ -1,24 +1,21 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { spotifyAuth } from '@/services/spotify';
 import { useTrackListContext, useCurrentTrackContext } from '@/contexts/TrackContext';
 import { useVisualEffectsContext } from '@/contexts/VisualEffectsContext';
 import { useColorContext } from '@/contexts/ColorContext';
 import { useProviderContext } from '@/contexts/ProviderContext';
-import { usePlaylistManager } from '@/hooks/usePlaylistManager';
-import { useSpotifyPlayback } from '@/hooks/useSpotifyPlayback';
+import { useSpotifyPlaylistManager } from '@/providers/spotify/useSpotifyPlaylistManager';
+import { useProviderPlayback } from '@/hooks/useProviderPlayback';
 import { useAutoAdvance } from '@/hooks/useAutoAdvance';
 import { useAccentColor } from '@/hooks/useAccentColor';
 import { useUnifiedLikedTracks } from '@/hooks/useUnifiedLikedTracks';
 import { useRadio } from '@/hooks/useRadio';
-import { useSpotifyQueueSync } from '@/hooks/useSpotifyQueueSync';
 import type { Track } from '@/services/spotify';
 import type { AddToQueueResult, PlaybackState, ProviderId } from '@/types/domain';
 import type { MediaTrack } from '@/types/domain';
 import type { RadioSeed } from '@/types/radio';
-import { isAlbumId, extractAlbumId, LIKED_SONGS_ID, resolvePlaylistRef } from '@/constants/playlist';
+import { LIKED_SONGS_ID, resolvePlaylistRef } from '@/constants/playlist';
 import { shuffleArray } from '@/utils/shuffleArray';
 import { providerRegistry } from '@/providers/registry';
-import { resolveViaSpotify } from '@/services/spotifyResolver';
 import { logQueue, logRadio } from '@/lib/debugLog';
 import { useMediaTracksMirror } from '@/hooks/useMediaTracksMirror';
 import { useQueueThumbnailLoader } from '@/hooks/useQueueThumbnailLoader';
@@ -42,14 +39,14 @@ export function mediaTrackToTrack(m: MediaTrack): Track {
     album_id: m.albumId,
     track_number: m.trackNumber,
     duration_ms: m.durationMs,
-    uri: m.provider === 'spotify' ? m.playbackRef.ref : '',
+    uri: m.playbackRef.ref,
     image: m.image,
   };
 }
 
 /** Build MediaTrack from Track (e.g. when only UI track is available, e.g. Spotify context playback). */
 function trackToMediaTrack(t: Track): MediaTrack {
-  const provider = (t.provider ?? 'spotify') as ProviderId;
+  const provider = (t.provider ?? providerRegistry.getAll()[0]?.id ?? 'unknown') as ProviderId;
   return {
     id: t.id,
     provider,
@@ -139,21 +136,19 @@ export function usePlayerLogic() {
   // Playback state from provider events (local — not shared via context)
   const [isPlaying, setIsPlaying] = useState(false);
   const [playbackPosition, setPlaybackPosition] = useState(0);
-  const [spotifyAuthExpired, setSpotifyAuthExpired] = useState(false);
+  const [authExpired, setAuthExpired] = useState<ProviderId | null>(null);
 
   // Library drawer visibility (local UI state)
   const [showLibraryDrawer, setShowLibraryDrawer] = useState(false);
 
-  const fallbackDrivingProviderRef = useRef<ProviderId | null>(null);
-  const spotifyPlayback = useSpotifyPlayback({
-    tracks,
+  const providerPlayback = useProviderPlayback({
     setCurrentTrackIndex,
     activeDescriptor,
     mediaTracksRef,
-    onSpotifyAuthExpired: () => setSpotifyAuthExpired(true),
+    onAuthExpired: (providerId: ProviderId) => setAuthExpired(providerId),
   });
-  const { playTrack } = spotifyPlayback;
-  const drivingProviderRef = spotifyPlayback.currentPlaybackProviderRef ?? fallbackDrivingProviderRef;
+  const { playTrack } = providerPlayback;
+  const drivingProviderRef = providerPlayback.currentPlaybackProviderRef;
 
   /** Resolve provider currently driving playback; falls back to active provider when unknown. */
   const getDrivingProviderId = useCallback((): ProviderId | null => (
@@ -167,7 +162,7 @@ export function usePlayerLogic() {
 
   const { radioState, startRadio, stopRadio: stopRadioBase, isRadioAvailable } = useRadio();
 
-  const { handlePlaylistSelect: spotifyHandlePlaylistSelect } = usePlaylistManager({
+  const { handlePlaylistSelect: spotifyHandlePlaylistSelect } = useSpotifyPlaylistManager({
     setError,
     setIsLoading,
     setSelectedPlaylistId,
@@ -259,7 +254,7 @@ export function usePlayerLogic() {
         setActiveProviderId(targetProviderId);
       }
 
-      if (targetDescriptor && targetProviderId !== 'spotify') {
+      if (targetDescriptor) {
         const providerId = targetDescriptor.id;
 
         // Pause the previous provider before switching (activeDescriptor may still
@@ -277,6 +272,29 @@ export function usePlayerLogic() {
           const { id: collectionId, kind: collectionKind } = resolvePlaylistRef(playlistId, providerId);
           const collectionRef = { provider: providerId, kind: collectionKind, id: collectionId } as const;
           const list = await catalog.listTracks(collectionRef);
+
+          // If catalog returns no tracks and the provider supports native collection
+          // playback (e.g. Spotify context playback for restricted playlists), delegate
+          // to the legacy SDK-based playlist handler.
+          if (list.length === 0 && targetDescriptor.playback.playCollection) {
+            setIsLoading(false);
+            const prevProvider = drivingProviderRef.current;
+            if (prevProvider && prevProvider !== providerId) {
+              providerRegistry.get(prevProvider)?.playback.pause().catch(() => {});
+            }
+            drivingProviderRef.current = providerId;
+            mediaTracksRef.current = [];
+            logQueue('Context playback path — delegating to legacy handler for %s on %s', playlistId, providerId);
+            const sdkTracks = await spotifyHandlePlaylistSelect(playlistId);
+            if (sdkTracks.length > 0) {
+              mediaTracksRef.current = sdkTracks.map(trackToMediaTrack);
+              queueSnapshot('Context playback loaded', sdkTracks, mediaTracksRef.current.length, 0);
+            } else {
+              logQueue('Context playback returned 0 tracks');
+            }
+            return sdkTracks.length;
+          }
+
           if (list.length === 0) {
             setError('No tracks found in this collection.');
             setTracks([]);
@@ -297,12 +315,8 @@ export function usePlayerLogic() {
           }
           setCurrentTrackIndex(0);
           setIsLoading(false);
-
-          // Update the playback provider ref so controls route to the correct provider.
-          // Initial playback still goes through shared playTrack(), which resolves provider
-          // from mediaTracksRef first (not activeDescriptor), so stale provider context is safe.
           drivingProviderRef.current = providerId;
-          queueSnapshot(`Non-Spotify (${providerId}) playlist loaded`, trackList, mediaTracksRef.current.length, 0);
+          queueSnapshot(`${providerId} playlist loaded`, trackList, mediaTracksRef.current.length, 0);
           await playTrack(0);
           return list.length;
         } catch (err) {
@@ -314,23 +328,7 @@ export function usePlayerLogic() {
           return 0;
         }
       }
-      // Pause any non-Spotify provider before handing off to the Spotify playlist manager
-      // (which plays via the SDK directly, bypassing the cross-provider pause in playTrack).
-      const prevProvider = drivingProviderRef.current;
-      if (prevProvider && prevProvider !== 'spotify') {
-        providerRegistry.get(prevProvider)?.playback.pause().catch(() => {});
-      }
-      drivingProviderRef.current = 'spotify';
-      mediaTracksRef.current = [];
-      logQueue('Spotify path — delegating to usePlaylistManager for %s', playlistId);
-      const spotifyTracks = await spotifyHandlePlaylistSelect(playlistId);
-      if (spotifyTracks.length > 0) {
-        mediaTracksRef.current = spotifyTracks.map(trackToMediaTrack);
-        queueSnapshot('Spotify playlist loaded', spotifyTracks, mediaTracksRef.current.length, 0);
-      } else {
-        logQueue('Spotify playlist returned 0 tracks');
-      }
-      return spotifyTracks.length;
+      return 0;
     },
     [
       activeDescriptor,
@@ -355,8 +353,13 @@ export function usePlayerLogic() {
 
   useAutoAdvance({ tracks, currentTrackIndex, playTrack, enabled: true, currentPlaybackProviderRef: drivingProviderRef });
 
-  // Background-resolve non-Spotify tracks to Spotify URIs for queue sync
-  useSpotifyQueueSync({ tracks });
+  // Notify the driving provider when the queue changes
+  useEffect(() => {
+    const drivingId = drivingProviderRef.current;
+    if (!drivingId || tracks.length === 0) return;
+    const descriptor = providerRegistry.get(drivingId);
+    descriptor?.playback.onQueueChanged?.(mediaTracksRef.current, currentTrackIndex);
+  }, [tracks, currentTrackIndex, drivingProviderRef, mediaTracksRef]);
 
   // Progressively load missing thumbnails for Dropbox tracks in the queue
   useQueueThumbnailLoader(tracks, mediaTracksRef, setTracks);
@@ -369,8 +372,12 @@ export function usePlayerLogic() {
 
   useEffect(() => {
     async function handleAuthRedirect() {
+      const currentUrl = new URL(window.location.href);
       try {
-        await spotifyAuth.handleRedirect();
+        for (const desc of providerRegistry.getAll()) {
+          const handled = await desc.auth.handleCallback(currentUrl);
+          if (handled) break;
+        }
       } catch (error) {
         setError(error instanceof Error ? error.message : 'Authentication failed');
       }
@@ -582,29 +589,10 @@ export function usePlayerLogic() {
       if (!targetDescriptor || !targetProviderId) return null;
 
       try {
-        let newMediaTracks: MediaTrack[];
-
-        if (targetProviderId === 'spotify') {
-          // Fetch Spotify tracks via the API helpers
-          let fetchedTracks: Track[];
-          if (isAlbumId(playlistId)) {
-            const { getAlbumTracks } = await import('@/services/spotify');
-            fetchedTracks = await getAlbumTracks(extractAlbumId(playlistId));
-          } else if (playlistId === LIKED_SONGS_ID) {
-            const { getLikedSongs } = await import('@/services/spotify');
-            fetchedTracks = await getLikedSongs();
-          } else {
-            const { getPlaylistTracks } = await import('@/services/spotify');
-            fetchedTracks = await getPlaylistTracks(playlistId);
-          }
-          newMediaTracks = fetchedTracks.map(trackToMediaTrack);
-        } else {
-          // Non-Spotify provider: use catalog
-          const catalog = targetDescriptor.catalog;
-          const { id: collectionId, kind: collectionKind } = resolvePlaylistRef(playlistId, targetProviderId);
-          const collectionRef = { provider: targetProviderId, kind: collectionKind, id: collectionId } as const;
-          newMediaTracks = await catalog.listTracks(collectionRef);
-        }
+        const catalog = targetDescriptor.catalog;
+        const { id: collectionId, kind: collectionKind } = resolvePlaylistRef(playlistId, targetProviderId);
+        const collectionRef = { provider: targetProviderId, kind: collectionKind, id: collectionId } as const;
+        const newMediaTracks = await catalog.listTracks(collectionRef);
 
         if (newMediaTracks.length === 0) return null;
 
@@ -636,13 +624,13 @@ export function usePlayerLogic() {
 
   // ── Radio feature ───────────────────────────────────────────────────
 
-  const clearSpotifyAuthExpired = useCallback(() => {
-    setSpotifyAuthExpired(false);
+  const clearAuthExpired = useCallback(() => {
+    setAuthExpired(null);
   }, []);
 
   const stopRadio = useCallback(() => {
     stopRadioBase();
-    setSpotifyAuthExpired(false);
+    setAuthExpired(null);
   }, [stopRadioBase]);
 
   const handleBackToLibrary = useCallback(() => {
@@ -747,19 +735,24 @@ export function usePlayerLogic() {
     setError(null);
 
     try {
-      // Pre-warm Spotify SDK concurrently with queue generation
-      const spotifyDescriptor = providerRegistry.get('spotify');
-      if (spotifyAuth.isAuthenticated() && spotifyDescriptor) {
-        spotifyDescriptor.playback.initialize().catch(() => {});
+      // Pre-warm playback SDKs for providers that support track search
+      const searchProviders = providerRegistry.getAll().filter(
+        d => d.capabilities.hasTrackSearch && d.auth.isAuthenticated(),
+      );
+      for (const sp of searchProviders) {
+        sp.playback.initialize().catch(() => {});
       }
 
       // Fetch catalog for matching — provider-specific "all tracks" strategy
+      // Fetch the widest catalog for radio matching: try all-music folder first,
+      // then fall back to liked songs. Folder-based providers (e.g. Dropbox) return
+      // their full library from the root folder; others use liked songs as the catalog.
       let catalogTracks: MediaTrack[];
-      if (activeDescriptor.id === 'dropbox') {
-        const allMusicRef = { provider: 'dropbox' as const, kind: 'folder' as const, id: '' };
-        catalogTracks = await activeDescriptor.catalog.listTracks(allMusicRef);
-      } else {
-        const likedRef = { provider: activeDescriptor.id, kind: 'liked' as const, id: '' };
+      const folderId = activeDescriptor.id;
+      const allMusicRef = { provider: folderId, kind: 'folder' as const, id: '' };
+      catalogTracks = await activeDescriptor.catalog.listTracks(allMusicRef);
+      if (catalogTracks.length === 0) {
+        const likedRef = { provider: folderId, kind: 'liked' as const, id: '' };
         catalogTracks = await activeDescriptor.catalog.listTracks(likedRef);
       }
 
@@ -788,24 +781,35 @@ export function usePlayerLogic() {
 
       let generatedTracks = [...result.queue];
 
-      // Resolve unmatched suggestions via Spotify if user is authenticated
-      if (result.unmatchedSuggestions.length > 0 && spotifyAuth.isAuthenticated()) {
-        try {
-          const spotifyTracks = await resolveViaSpotify(result.unmatchedSuggestions);
-          const existingKeys = new Set(
-            generatedTracks.map((t) => `${t.artists.toLowerCase()}||${t.name.toLowerCase()}`),
-          );
-          const newSpotifyTracks = spotifyTracks.filter(
-            (t) => !existingKeys.has(`${t.artists.toLowerCase()}||${t.name.toLowerCase()}`),
-          );
-          generatedTracks = [...generatedTracks, ...newSpotifyTracks];
-          logRadio(
-            'resolved Spotify tracks: %d of %d unmatched suggestions',
-            newSpotifyTracks.length,
-            result.unmatchedSuggestions.length,
-          );
-        } catch (err) {
-          console.warn('[Radio] Failed to resolve Spotify tracks:', err);
+      // Resolve unmatched suggestions via providers that support track search
+      if (result.unmatchedSuggestions.length > 0) {
+        const searchCapableProviders = providerRegistry.getAll().filter(
+          d => d.capabilities.hasTrackSearch && d.auth.isAuthenticated(),
+        );
+        if (searchCapableProviders.length > 0) {
+          try {
+            const resolvedTracks: MediaTrack[] = [];
+            for (const suggestion of result.unmatchedSuggestions) {
+              for (const provider of searchCapableProviders) {
+                const match = await provider.catalog.searchTrack?.(suggestion.artist, suggestion.name);
+                if (match) { resolvedTracks.push(match); break; }
+              }
+            }
+            const existingKeys = new Set(
+              generatedTracks.map((t) => `${t.artists.toLowerCase()}||${t.name.toLowerCase()}`),
+            );
+            const newTracks = resolvedTracks.filter(
+              (t) => !existingKeys.has(`${t.artists.toLowerCase()}||${t.name.toLowerCase()}`),
+            );
+            generatedTracks = [...generatedTracks, ...newTracks];
+            logRadio(
+              'resolved tracks via search: %d of %d unmatched suggestions',
+              newTracks.length,
+              result.unmatchedSuggestions.length,
+            );
+          } catch (err) {
+            console.warn('[Radio] Failed to resolve tracks via search:', err);
+          }
         }
       }
 
@@ -886,8 +890,8 @@ export function usePlayerLogic() {
       radioState,
       isRadioAvailable,
       stopRadio,
-      spotifyAuthExpired,
-      clearSpotifyAuthExpired,
+      authExpired,
+      clearAuthExpired,
       isActive: radioState.isActive,
     },
     mediaTracksRef,

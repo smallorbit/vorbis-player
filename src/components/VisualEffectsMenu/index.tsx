@@ -6,7 +6,7 @@ import { ProfiledComponent } from '@/components/ProfiledComponent';
 import { usePlayerSizingContext } from '@/contexts/PlayerSizingContext';
 import { useProviderContext } from '@/contexts/ProviderContext';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
-import type { DropboxCatalogAdapter } from '@/providers/dropbox/dropboxCatalogAdapter';
+import type { CatalogProvider } from '@/types/providers';
 import { ART_REFRESHED_EVENT } from '@/hooks/useLibrarySync';
 
 import {
@@ -118,11 +118,18 @@ const MusicSourcesSection = memo(() => {
 });
 MusicSourcesSection.displayName = 'MusicSourcesSection';
 
-/** Spotify queue sync settings — global sync toggle plus optional cross-provider replacement. */
-const SpotifyQueueSection = memo(() => {
-  const { connectedProviderIds } = useProviderContext();
-  const spotifyConnected = connectedProviderIds.includes('spotify');
-  const hasOtherProvider = connectedProviderIds.some(id => id !== 'spotify');
+/** Queue sync settings for providers with native queue sync capability. */
+const NativeQueueSyncSection = memo(() => {
+  const { connectedProviderIds, registry } = useProviderContext();
+
+  const syncProvider = useMemo(() => {
+    const allProviders = registry.getAll();
+    return allProviders.find(
+      (p) => p.capabilities.hasNativeQueueSync && connectedProviderIds.includes(p.id),
+    );
+  }, [registry, connectedProviderIds]);
+
+  const hasOtherProvider = connectedProviderIds.length > 1;
 
   const [syncEnabled, setSyncEnabled] = useLocalStorage(
     'vorbis-player-spotify-queue-sync-enabled',
@@ -133,27 +140,29 @@ const SpotifyQueueSection = memo(() => {
     true,
   );
 
-  if (!spotifyConnected) return null;
+  if (!syncProvider) return null;
+
+  const providerName = syncProvider.name;
 
   return (
     <FilterSection>
-      <SectionTitle>Spotify Queue</SectionTitle>
+      <SectionTitle>{providerName} Queue</SectionTitle>
       <ControlGroup>
-        <ControlLabel>Keep Spotify queue synced with Vorbis playback</ControlLabel>
+        <ControlLabel>Keep {providerName} queue synced with Vorbis playback</ControlLabel>
         <Switch
           on={syncEnabled}
           onToggle={() => setSyncEnabled(!syncEnabled)}
-          ariaLabel="Keep Spotify queue synced with Vorbis playback"
+          ariaLabel={`Keep ${providerName} queue synced with Vorbis playback`}
           variant="neutral"
         />
       </ControlGroup>
       {syncEnabled && hasOtherProvider && (
         <ControlGroup>
-          <ControlLabel>Replace non-Spotify tracks with Spotify equivalents in queue</ControlLabel>
+          <ControlLabel>Replace non-{providerName} tracks with {providerName} equivalents in queue</ControlLabel>
           <Switch
             on={resolveEnabled}
             onToggle={() => setResolveEnabled(!resolveEnabled)}
-            ariaLabel="Replace non-Spotify tracks with Spotify equivalents in queue"
+            ariaLabel={`Replace non-${providerName} tracks with ${providerName} equivalents in queue`}
             variant="neutral"
           />
         </ControlGroup>
@@ -161,7 +170,7 @@ const SpotifyQueueSection = memo(() => {
     </FilterSection>
   );
 });
-SpotifyQueueSection.displayName = 'SpotifyQueueSection';
+NativeQueueSyncSection.displayName = 'NativeQueueSyncSection';
 
 /** Chevron SVG used in collapsible section headers. */
 const ChevronIcon = ({ isOpen }: { isOpen: boolean }) => (
@@ -200,8 +209,8 @@ const CollapsibleSection = memo(({
 });
 CollapsibleSection.displayName = 'CollapsibleSection';
 
-/** Dropbox-specific data management — art cache + liked songs. */
-const DropboxDataSection = memo(({ catalog }: { catalog: DropboxCatalogAdapter }) => {
+/** Provider data management — art cache + liked songs for providers that support it. */
+const ProviderDataSection = memo(({ providerName, catalog }: { providerName: string; catalog: CatalogProvider }) => {
   const [artStatus, setArtStatus] = useState<'idle' | 'working' | 'done'>('idle');
   const [likesStatus, setLikesStatus] = useState<'idle' | 'working' | 'done'>('idle');
   const [resultMessage, setResultMessage] = useState('');
@@ -210,28 +219,30 @@ const DropboxDataSection = memo(({ catalog }: { catalog: DropboxCatalogAdapter }
   const artBusy = artStatus === 'working';
   const likesBusy = likesStatus === 'working';
 
-  // Art cache handlers
+  const hasArtCache = !!catalog.clearArtCache;
+  const hasRefreshArt = !!catalog.refreshArtCache;
+  const hasLikesManagement = !!catalog.exportLikes && !!catalog.importLikes;
+  const hasMetadataRefresh = !!catalog.refreshLikedMetadata;
+
   const handleClearArt = async () => {
     setArtStatus('working');
-    await catalog.clearArtCache();
+    await catalog.clearArtCache?.();
     setArtStatus('done');
     setTimeout(() => setArtStatus('idle'), 1500);
   };
 
   const handleRefreshArt = async () => {
     setArtStatus('working');
-    const { clearCatalogCache } = await import('@/providers/dropbox/dropboxCatalogCache');
-    await Promise.all([catalog.clearArtCache(), clearCatalogCache()]);
+    await catalog.refreshArtCache?.();
     window.dispatchEvent(new CustomEvent(ART_REFRESHED_EVENT));
     setArtStatus('done');
     setTimeout(() => setArtStatus('idle'), 1500);
   };
 
-  // Liked songs handlers
   const handleExport = async () => {
     setLikesStatus('working');
     try {
-      const json = await catalog.exportLikes();
+      const json = await catalog.exportLikes!();
       const blob = new Blob([json], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -253,7 +264,7 @@ const DropboxDataSection = memo(({ catalog }: { catalog: DropboxCatalogAdapter }
     setLikesStatus('working');
     try {
       const json = await file.text();
-      const count = await catalog.importLikes(json);
+      const count = await catalog.importLikes!(json);
       setResultMessage(`Imported ${count} tracks`);
     } catch {
       setResultMessage('Import failed');
@@ -266,7 +277,7 @@ const DropboxDataSection = memo(({ catalog }: { catalog: DropboxCatalogAdapter }
   const handleRefreshMetadata = async () => {
     setLikesStatus('working');
     try {
-      const result = await catalog.refreshLikedMetadata();
+      const result = await catalog.refreshLikedMetadata!();
       const parts: string[] = [];
       if (result.updated > 0) parts.push(`${result.updated} updated`);
       if (result.removed > 0) parts.push(`${result.removed} removed`);
@@ -279,48 +290,58 @@ const DropboxDataSection = memo(({ catalog }: { catalog: DropboxCatalogAdapter }
   };
 
   return (
-    <CollapsibleSection title="Dropbox Data">
-      <ControlGroup>
-        <ControlLabel>Clear cached art so it re-downloads on next library load</ControlLabel>
-        <ResetButton onClick={handleClearArt} disabled={artBusy}>
-          {artStatus === 'done' ? 'Cleared!' : artBusy ? 'Working…' : 'Clear Art Cache'}
-        </ResetButton>
-      </ControlGroup>
-      <ControlGroup>
-        <ControlLabel>Clear and immediately re-fetch fresh art in the background</ControlLabel>
-        <ResetButton onClick={handleRefreshArt} disabled={artBusy}>
-          {artStatus === 'done' ? 'Started!' : artBusy ? 'Working…' : 'Refresh Art'}
-        </ResetButton>
-      </ControlGroup>
-      <ControlGroup>
-        <ControlLabel>Export liked songs to a JSON file for backup</ControlLabel>
-        <ResetButton onClick={handleExport} disabled={likesBusy}>
-          {likesStatus === 'done' && resultMessage === 'Exported!' ? 'Exported!' : likesBusy ? 'Working…' : 'Export Likes'}
-        </ResetButton>
-      </ControlGroup>
-      <ControlGroup>
-        <ControlLabel>Import liked songs from a previously exported JSON file</ControlLabel>
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept=".json"
-          onChange={handleImport}
-          style={{ display: 'none' }}
-        />
-        <ResetButton onClick={() => fileInputRef.current?.click()} disabled={likesBusy}>
-          {likesStatus === 'done' && resultMessage.startsWith('Imported') ? resultMessage : likesBusy ? 'Working…' : 'Import Likes'}
-        </ResetButton>
-      </ControlGroup>
-      <ControlGroup>
-        <ControlLabel>Re-scan Dropbox to update metadata for liked tracks</ControlLabel>
-        <ResetButton onClick={handleRefreshMetadata} disabled={likesBusy}>
-          {likesStatus === 'done' ? resultMessage || 'Done!' : likesBusy ? 'Scanning…' : 'Refresh Metadata'}
-        </ResetButton>
-      </ControlGroup>
+    <CollapsibleSection title={`${providerName} Data`}>
+      {hasArtCache && (
+        <ControlGroup>
+          <ControlLabel>Clear cached art so it re-downloads on next library load</ControlLabel>
+          <ResetButton onClick={handleClearArt} disabled={artBusy}>
+            {artStatus === 'done' ? 'Cleared!' : artBusy ? 'Working…' : 'Clear Art Cache'}
+          </ResetButton>
+        </ControlGroup>
+      )}
+      {hasRefreshArt && (
+        <ControlGroup>
+          <ControlLabel>Clear and immediately re-fetch fresh art in the background</ControlLabel>
+          <ResetButton onClick={handleRefreshArt} disabled={artBusy}>
+            {artStatus === 'done' ? 'Started!' : artBusy ? 'Working…' : 'Refresh Art'}
+          </ResetButton>
+        </ControlGroup>
+      )}
+      {hasLikesManagement && (
+        <>
+          <ControlGroup>
+            <ControlLabel>Export liked songs to a JSON file for backup</ControlLabel>
+            <ResetButton onClick={handleExport} disabled={likesBusy}>
+              {likesStatus === 'done' && resultMessage === 'Exported!' ? 'Exported!' : likesBusy ? 'Working…' : 'Export Likes'}
+            </ResetButton>
+          </ControlGroup>
+          <ControlGroup>
+            <ControlLabel>Import liked songs from a previously exported JSON file</ControlLabel>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".json"
+              onChange={handleImport}
+              style={{ display: 'none' }}
+            />
+            <ResetButton onClick={() => fileInputRef.current?.click()} disabled={likesBusy}>
+              {likesStatus === 'done' && resultMessage.startsWith('Imported') ? resultMessage : likesBusy ? 'Working…' : 'Import Likes'}
+            </ResetButton>
+          </ControlGroup>
+        </>
+      )}
+      {hasMetadataRefresh && (
+        <ControlGroup>
+          <ControlLabel>Re-scan {providerName} to update metadata for liked tracks</ControlLabel>
+          <ResetButton onClick={handleRefreshMetadata} disabled={likesBusy}>
+            {likesStatus === 'done' ? resultMessage || 'Done!' : likesBusy ? 'Scanning…' : 'Refresh Metadata'}
+          </ResetButton>
+        </ControlGroup>
+      )}
     </CollapsibleSection>
   );
 });
-DropboxDataSection.displayName = 'DropboxDataSection';
+ProviderDataSection.displayName = 'ProviderDataSection';
 
 const AppSettingsMenu: React.FC<AppSettingsMenuProps> = memo(({
   isOpen,
@@ -332,10 +353,12 @@ const AppSettingsMenu: React.FC<AppSettingsMenuProps> = memo(({
   onVisualizerDebugToggle
 }) => {
   const { viewport, isMobile, isTablet, transitionDuration, transitionEasing } = usePlayerSizingContext();
-  const { enabledProviderIds, getDescriptor } = useProviderContext();
-  const isDropboxEnabled = enabledProviderIds.includes('dropbox');
-  const dropboxDescriptor = isDropboxEnabled ? getDescriptor('dropbox') : undefined;
-  const dropboxCatalog = dropboxDescriptor?.catalog as DropboxCatalogAdapter | undefined;
+  const { enabledProviderIds, registry } = useProviderContext();
+  const dataProviders = useMemo(() => {
+    return registry.getAll().filter(
+      (p) => enabledProviderIds.includes(p.id) && (p.catalog.clearArtCache || p.catalog.exportLikes),
+    );
+  }, [registry, enabledProviderIds]);
   const [clearState, setClearState] = useState<'idle' | 'confirming' | 'success'>('idle');
   const [clearLikes, setClearLikes] = useState(false);
   const [clearPins, setClearPins] = useState(false);
@@ -389,13 +412,13 @@ const AppSettingsMenu: React.FC<AppSettingsMenuProps> = memo(({
           {/* Music Sources — always visible at top */}
           <MusicSourcesSection />
 
-          {/* Spotify Queue settings */}
-          <SpotifyQueueSection />
+          {/* Queue sync settings for providers with native sync */}
+          <NativeQueueSyncSection />
 
-          {/* Dropbox Data — consolidated art cache + liked songs */}
-          {dropboxCatalog && (
-            <DropboxDataSection catalog={dropboxCatalog} />
-          )}
+          {/* Provider data management sections */}
+          {dataProviders.map((p) => (
+            <ProviderDataSection key={p.id} providerName={p.name} catalog={p.catalog} />
+          ))}
 
           {/* Advanced — collapsible */}
           <CollapsibleSection title="Advanced">
@@ -404,7 +427,7 @@ const AppSettingsMenu: React.FC<AppSettingsMenuProps> = memo(({
               {clearState === 'confirming' ? (
                 <>
                   <CacheOptionsList>
-                    {!isDropboxEnabled && (
+                    {dataProviders.length === 0 && (
                       <CacheOptionItem>
                         <CacheCheckbox
                           id="clear-likes"

@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useSyncExternalStore } from 'react';
 import { useProviderContext } from '@/contexts/ProviderContext';
-import { LIKES_CHANGED_EVENT } from '@/providers/dropbox/dropboxLikesCache';
 import { LIBRARY_REFRESH_EVENT } from '@/hooks/useLibrarySync';
 import { providerRegistry } from '@/providers/registry';
 import type { MediaTrack, ProviderId } from '@/types/domain';
@@ -127,16 +126,24 @@ export function useUnifiedLikedTracks(): UseUnifiedLikedTracksResult {
     }
   }, [isUnifiedLikedActive, providerKey, likedProviderIds, lastProviderKey]);
 
-  // Listen for library refresh and Dropbox likes changes
+  // Listen for library refresh and provider likes-changed events
   useEffect(() => {
     if (!isUnifiedLikedActive) return;
     const handle = () => refreshCache(likedProviderIds);
+    const cleanups: Array<() => void> = [];
+
     window.addEventListener(LIBRARY_REFRESH_EVENT, handle);
-    window.addEventListener(LIKES_CHANGED_EVENT, handle);
-    return () => {
-      window.removeEventListener(LIBRARY_REFRESH_EVENT, handle);
-      window.removeEventListener(LIKES_CHANGED_EVENT, handle);
-    };
+    cleanups.push(() => window.removeEventListener(LIBRARY_REFRESH_EVENT, handle));
+
+    const likesEvents = providerRegistry.getAll()
+      .filter(d => d.likesChangedEvent)
+      .map(d => d.likesChangedEvent!);
+    for (const eventName of likesEvents) {
+      window.addEventListener(eventName, handle);
+      cleanups.push(() => window.removeEventListener(eventName, handle));
+    }
+
+    return () => cleanups.forEach(cleanup => cleanup());
   }, [isUnifiedLikedActive, likedProviderIds]);
 
   const refresh = useCallback(() => {

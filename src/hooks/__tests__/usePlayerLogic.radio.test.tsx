@@ -24,7 +24,6 @@ vi.mock('@/hooks/useSpotifyPlayback', () => ({
   useSpotifyPlayback: vi.fn(() => ({
     playTrack: playTrackSpy,
     resumePlayback: vi.fn(),
-    activateDevice: vi.fn(),
     currentPlaybackProviderRef: { current: 'spotify' as const },
   })),
 }));

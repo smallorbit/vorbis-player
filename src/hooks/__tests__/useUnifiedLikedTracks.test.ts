@@ -11,13 +11,13 @@ vi.mock('@/contexts/ProviderContext', () => ({
   }),
 }));
 
-vi.mock('@/providers/dropbox/dropboxLikesCache', () => ({
-  LIKES_CHANGED_EVENT: 'vorbis-dropbox-likes-changed',
-}));
-
 const mockRegistryGet = vi.fn();
+const mockRegistryGetAll = vi.fn().mockReturnValue([]);
 vi.mock('@/providers/registry', () => ({
-  providerRegistry: { get: (...args: unknown[]) => mockRegistryGet(...args) },
+  providerRegistry: {
+    get: (...args: unknown[]) => mockRegistryGet(...args),
+    getAll: () => mockRegistryGetAll(),
+  },
 }));
 
 vi.mock('@/hooks/useLibrarySync', () => ({
@@ -40,7 +40,7 @@ function makeTrack(id: string, provider: ProviderId, addedAt?: number): MediaTra
   };
 }
 
-function makeDescriptor(id: ProviderId, tracks: MediaTrack[]) {
+function makeDescriptor(id: ProviderId, tracks: MediaTrack[], likesChangedEvent?: string) {
   return {
     id,
     capabilities: { hasLikedCollection: true, hasSaveTrack: true, hasExternalLink: false },
@@ -49,6 +49,7 @@ function makeDescriptor(id: ProviderId, tracks: MediaTrack[]) {
       listCollections: vi.fn().mockResolvedValue([]),
       listTracks: vi.fn().mockResolvedValue(tracks),
     },
+    ...(likesChangedEvent && { likesChangedEvent }),
   };
 }
 
@@ -193,6 +194,7 @@ describe('useUnifiedLikedTracks', () => {
       id: 'dropbox',
       capabilities: { hasLikedCollection: true, hasSaveTrack: true, hasExternalLink: false },
       catalog: dropboxCatalog,
+      likesChangedEvent: 'vorbis-dropbox-likes-changed',
     };
     mockGetDescriptor.mockImplementation((id: string) => {
       if (id === 'spotify') return spotifyDesc;
@@ -204,6 +206,7 @@ describe('useUnifiedLikedTracks', () => {
       if (id === 'dropbox') return dropboxDesc;
       return undefined;
     });
+    mockRegistryGetAll.mockReturnValue([spotifyDesc, dropboxDesc]);
 
     const { result } = renderHook(() => useUnifiedLikedTracks());
     await waitFor(() => expect(result.current.totalCount).toBe(2));

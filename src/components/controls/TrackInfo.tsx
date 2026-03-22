@@ -89,18 +89,19 @@ const TrackInfo = memo<TrackInfoProps>(({ track, isMobile, isTablet, onArtistBro
         setPopover({ type: 'album', albumId: track.album_id, albumName: track.album, rect });
     }, [track?.album_id, track?.album]);
 
-    const hasExternalLink = capabilities?.hasExternalLink ?? true;
-    const providerName = capabilities?.externalLinkLabel?.replace('Open in ', '') ?? 'Spotify';
+    const hasExternalLink = capabilities?.hasExternalLink ?? false;
+    const providerName = capabilities?.externalLinkLabel?.replace('Open in ', '') ?? trackDescriptor?.name ?? 'External';
     const ExternalIcon = trackDescriptor?.getExternalUrl
         ? DiscogsIcon
         : SpotifyIcon;
 
-    const getAlbumExternalUrl = (albumId: string, albumName: string): string | undefined => {
+    const getAlbumExternalUrl = (_albumId: string, albumName: string): string | undefined => {
+        if (trackDescriptor?.getExternalUrls) {
+            const urls = trackDescriptor.getExternalUrls({ type: 'album', name: albumName, artistName: track?.artists });
+            return urls?.[0]?.url;
+        }
         if (trackDescriptor?.getExternalUrl) {
             return trackDescriptor.getExternalUrl({ type: 'album', name: albumName, artistName: track?.artists });
-        }
-        if (track?.provider === 'spotify') {
-            return `https://open.spotify.com/album/${albumId}`;
         }
         return undefined;
     };

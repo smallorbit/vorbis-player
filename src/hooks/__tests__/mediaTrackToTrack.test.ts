@@ -53,7 +53,7 @@ describe('mediaTrackToTrack', () => {
     expect(track.album_id).toBeUndefined();
   });
 
-  it('sets empty uri for dropbox provider', () => {
+  it('uses playbackRef.ref as uri regardless of provider', () => {
     // #given
     const media = makeMediaTrack({ provider: 'dropbox' });
 
@@ -61,10 +61,10 @@ describe('mediaTrackToTrack', () => {
     const track = mediaTrackToTrack(media);
 
     // #then
-    expect(track.uri).toBe('');
+    expect(track.uri).toBe('/artist/album/01 - song.mp3');
   });
 
-  it('uses playbackRef as uri for non-dropbox providers', () => {
+  it('uses playbackRef as uri for spotify provider', () => {
     // #given
     const media = makeMediaTrack({
       provider: 'spotify',

@@ -1,7 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { logQueue } from '@/lib/debugLog';
-import { spotifyPlayer } from '../services/spotifyPlayer';
-import type { Track } from '../services/spotify';
+import type { Track } from '@/services/spotify';
 import { useProviderContext } from '@/contexts/ProviderContext';
 import { providerRegistry } from '@/providers/registry';
 import type { PlaybackState, ProviderId } from '@/types/domain';
@@ -31,7 +30,7 @@ export const useAutoAdvance = ({
   const tracksRef = useRef(tracks);
   const currentTrackIndexRef = useRef(currentTrackIndex);
   const playTrackRef = useRef(playTrack);
-  /** Tracks when advanceToNext last initiated playback (used as cooldown for non-Spotify). */
+  /** Tracks when advanceToNext last initiated playback (fallback cooldown). */
   const lastPlayInitiatedRef = useRef(0);
   /** ID for cancelling pending advance timeouts (e.g. when shuffle is toggled). */
   const advanceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -124,13 +123,10 @@ export const useAutoAdvance = ({
       // Guard: skip if a track was recently loaded — both Spotify SDK and HTML5
       // Audio briefly pause at position 0 during buffering, which would falsely
       // trigger advance.
-      const drivingProviderId = drivingProviderRef?.current;
-      let msSinceLastPlay: number;
-      if (drivingProviderId === 'spotify' || (!drivingProviderId && activeProviderId === 'spotify')) {
-        msSinceLastPlay = Date.now() - spotifyPlayer.lastPlayTrackTime;
-      } else {
-        msSinceLastPlay = Date.now() - lastPlayInitiatedRef.current;
-      }
+      const effectiveProviderId = drivingProviderRef?.current ?? activeProviderId;
+      const drivingDescriptor = effectiveProviderId ? providerRegistry.get(effectiveProviderId) : null;
+      const lastPlayTime = drivingDescriptor?.playback.getLastPlayTime?.() ?? lastPlayInitiatedRef.current;
+      const msSinceLastPlay = Date.now() - lastPlayTime;
 
       if (!hasEnded.current && wasPlayingRef.current && isPaused && position === 0 && duration > 0 && msSinceLastPlay > PLAY_COOLDOWN_MS) {
         logQueue('autoAdvance — track finished (paused@0): dur=%d, cooldown=%dms', duration, msSinceLastPlay);

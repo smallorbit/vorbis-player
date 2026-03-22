@@ -1,43 +1,59 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
-import { makeTrack } from '@/test/fixtures';
+import { AuthExpiredError, UnavailableTrackError } from '@/providers/errors';
+import type { MediaTrack, ProviderId } from '@/types/domain';
 
-vi.mock('@/services/spotifyPlayer', () => ({
-  spotifyPlayer: {
-    playTrack: vi.fn().mockResolvedValue(undefined),
-    getCurrentState: vi.fn().mockResolvedValue(null),
-    resume: vi.fn().mockResolvedValue(undefined),
-    transferPlaybackToDevice: vi.fn().mockResolvedValue(undefined),
-    ensureDeviceIsActive: vi.fn().mockResolvedValue(true),
-    waitForPlaybackOrResume: vi.fn(),
-    getDeviceId: vi.fn().mockReturnValue('device-1'),
+const mockPlayTrack = vi.fn().mockResolvedValue(undefined);
+const mockPause = vi.fn().mockResolvedValue(undefined);
+const mockResume = vi.fn().mockResolvedValue(undefined);
+const mockPrepareTrack = vi.fn();
+const mockInitialize = vi.fn().mockResolvedValue(undefined);
+
+vi.mock('@/providers/registry', () => ({
+  providerRegistry: {
+    get: vi.fn((id: string) => ({
+      id,
+      playback: {
+        providerId: id,
+        playTrack: mockPlayTrack,
+        pause: mockPause,
+        resume: mockResume,
+        prepareTrack: mockPrepareTrack,
+        initialize: mockInitialize,
+        seek: vi.fn(),
+        next: vi.fn(),
+        previous: vi.fn(),
+        setVolume: vi.fn(),
+        getState: vi.fn(),
+        subscribe: vi.fn(),
+      },
+    })),
   },
 }));
 
-vi.mock('@/services/spotify', () => ({
-  spotifyAuth: {
-    isAuthenticated: vi.fn().mockReturnValue(true),
-    ensureValidToken: vi.fn().mockResolvedValue('token'),
-  },
-}));
+import { useProviderPlayback } from '../useProviderPlayback';
 
-vi.mock('@/services/spotifyQueueSync', () => ({
-  spotifyQueueSync: {
-    buildUpcomingUris: vi.fn().mockReturnValue([]),
-    isResolveEnabled: vi.fn().mockReturnValue(false),
-  },
-}));
+function makeMediaTrack(overrides?: Partial<MediaTrack>): MediaTrack {
+  return {
+    id: 'track-1',
+    provider: 'spotify' as ProviderId,
+    playbackRef: { provider: 'spotify' as ProviderId, ref: 'spotify:track:track-1' },
+    name: 'Test Track',
+    artists: 'Test Artist',
+    album: 'Test Album',
+    durationMs: 210000,
+    image: 'https://example.com/image.jpg',
+    ...overrides,
+  };
+}
 
-import { useSpotifyPlayback } from '../useSpotifyPlayback';
-import { spotifyPlayer } from '@/services/spotifyPlayer';
-import { spotifyAuth } from '@/services/spotify';
-
-describe('useSpotifyPlayback', () => {
-  const tracks = [
-    makeTrack({ id: 't1', uri: 'spotify:track:t1', name: 'Track 1' }),
-    makeTrack({ id: 't2', uri: 'spotify:track:t2', name: 'Track 2' }),
-    makeTrack({ id: 't3', uri: 'spotify:track:t3', name: 'Track 3' }),
+describe('useProviderPlayback', () => {
+  const mediaTracks: MediaTrack[] = [
+    makeMediaTrack({ id: 't1', name: 'Track 1', playbackRef: { provider: 'spotify' as ProviderId, ref: 'spotify:track:t1' } }),
+    makeMediaTrack({ id: 't2', name: 'Track 2', playbackRef: { provider: 'spotify' as ProviderId, ref: 'spotify:track:t2' } }),
+    makeMediaTrack({ id: 't3', name: 'Track 3', playbackRef: { provider: 'spotify' as ProviderId, ref: 'spotify:track:t3' } }),
   ];
+  const mediaTracksRef = { current: mediaTracks };
   const setCurrentTrackIndex = vi.fn();
 
   beforeEach(() => {
@@ -49,86 +65,170 @@ describe('useSpotifyPlayback', () => {
     vi.useRealTimers();
   });
 
-  it('returns early when track index out of bounds', async () => {
+  it('returns early when no media track at index', async () => {
+    // #given
     const { result } = renderHook(() =>
-      useSpotifyPlayback({ tracks, setCurrentTrackIndex })
+      useProviderPlayback({ setCurrentTrackIndex, mediaTracksRef })
     );
 
+    // #when
     await act(async () => {
       await result.current.playTrack(99);
     });
 
-    expect(spotifyPlayer.playTrack).not.toHaveBeenCalled();
-  });
-
-  it('returns early when not authenticated', async () => {
-    vi.mocked(spotifyAuth.isAuthenticated).mockReturnValueOnce(false);
-
-    const { result } = renderHook(() =>
-      useSpotifyPlayback({ tracks, setCurrentTrackIndex })
-    );
-
-    await act(async () => {
-      await result.current.playTrack(0);
-    });
-
-    expect(spotifyPlayer.playTrack).not.toHaveBeenCalled();
-  });
-
-  it('marks track failed and skips to next on Restriction Violated', async () => {
-    vi.mocked(spotifyPlayer.playTrack).mockRejectedValueOnce(
-      new Error('Spotify API error: 403 - Restriction violated')
-    );
-
-    const { result } = renderHook(() =>
-      useSpotifyPlayback({ tracks, setCurrentTrackIndex })
-    );
-
-    await act(async () => {
-      await result.current.playTrack(0, true);
-    });
-
-    // Should schedule a skip to next track after 500ms
-    await act(async () => {
-      vi.advanceTimersByTime(500);
-    });
-
-    // The recursive call to playTrack(1, true) should attempt to play track 2
-    expect(spotifyPlayer.playTrack).toHaveBeenCalledWith('spotify:track:t2', []);
+    // #then
+    expect(mockPlayTrack).not.toHaveBeenCalled();
   });
 
   it('calls setCurrentTrackIndex on successful playback', async () => {
+    // #given
     const { result } = renderHook(() =>
-      useSpotifyPlayback({ tracks, setCurrentTrackIndex })
+      useProviderPlayback({ setCurrentTrackIndex, mediaTracksRef })
     );
 
+    // #when
     await act(async () => {
       await result.current.playTrack(1);
     });
 
-    expect(spotifyPlayer.playTrack).toHaveBeenCalledWith('spotify:track:t2', []);
+    // #then
+    expect(mockPlayTrack).toHaveBeenCalledWith(mediaTracks[1]);
     expect(setCurrentTrackIndex).toHaveBeenCalledWith(1);
   });
 
-  it('retries on 403 non-restriction error with backoff', async () => {
-    vi.useRealTimers();
-
-    vi.mocked(spotifyPlayer.playTrack)
-      .mockRejectedValueOnce(new Error('Spotify API error: 403 - Device not found'))
-      .mockResolvedValueOnce(undefined);
-
-    // Make backoff-related waits resolve immediately
-    vi.mocked(spotifyPlayer.ensureDeviceIsActive).mockResolvedValue(true);
+  it('calls onAuthExpired on AuthExpiredError', async () => {
+    // #given
+    const onAuthExpired = vi.fn();
+    mockPlayTrack.mockRejectedValueOnce(new AuthExpiredError('spotify'));
 
     const { result } = renderHook(() =>
-      useSpotifyPlayback({ tracks, setCurrentTrackIndex })
+      useProviderPlayback({ setCurrentTrackIndex, mediaTracksRef, onAuthExpired })
+    );
+
+    // #when
+    await act(async () => {
+      await result.current.playTrack(0);
+    });
+
+    // #then
+    expect(onAuthExpired).toHaveBeenCalledWith('spotify');
+    expect(setCurrentTrackIndex).not.toHaveBeenCalled();
+  });
+
+  it('skips to next track on UnavailableTrackError when skipOnError is true', async () => {
+    // #given
+    mockPlayTrack.mockRejectedValueOnce(new UnavailableTrackError('Track 1'));
+
+    const { result } = renderHook(() =>
+      useProviderPlayback({ setCurrentTrackIndex, mediaTracksRef })
+    );
+
+    // #when
+    await act(async () => {
+      await result.current.playTrack(0, true);
+    });
+
+    await act(async () => {
+      vi.advanceTimersByTime(500);
+    });
+
+    // #then — recursive call plays track at index 1
+    expect(mockPlayTrack).toHaveBeenCalledWith(mediaTracks[1]);
+  });
+
+  it('skips to next track on generic error when skipOnError is true', async () => {
+    // #given
+    mockPlayTrack.mockRejectedValueOnce(new Error('Unknown failure'));
+
+    const { result } = renderHook(() =>
+      useProviderPlayback({ setCurrentTrackIndex, mediaTracksRef })
+    );
+
+    // #when
+    await act(async () => {
+      await result.current.playTrack(0, true);
+    });
+
+    await act(async () => {
+      vi.advanceTimersByTime(500);
+    });
+
+    // #then
+    expect(mockPlayTrack).toHaveBeenCalledWith(mediaTracks[1]);
+  });
+
+  it('prefetches the next track after successful playback', async () => {
+    // #given
+    const { result } = renderHook(() =>
+      useProviderPlayback({ setCurrentTrackIndex, mediaTracksRef })
+    );
+
+    // #when
+    await act(async () => {
+      await result.current.playTrack(0);
+    });
+
+    // #then
+    expect(mockPrepareTrack).toHaveBeenCalledWith(mediaTracks[1]);
+  });
+
+  it('pauses previous provider when switching providers', async () => {
+    // #given
+    const mixedTracks: MediaTrack[] = [
+      makeMediaTrack({ id: 'd1', provider: 'dropbox' as ProviderId, playbackRef: { provider: 'dropbox' as ProviderId, ref: '/path/to/file.mp3' } }),
+      makeMediaTrack({ id: 's1', provider: 'spotify' as ProviderId, playbackRef: { provider: 'spotify' as ProviderId, ref: 'spotify:track:s1' } }),
+    ];
+    const mixedRef = { current: mixedTracks };
+
+    const { result } = renderHook(() =>
+      useProviderPlayback({ setCurrentTrackIndex, mediaTracksRef: mixedRef })
+    );
+
+    // #when — play dropbox track first
+    await act(async () => {
+      await result.current.playTrack(0);
+    });
+
+    // #when — then play spotify track (should pause dropbox)
+    await act(async () => {
+      await result.current.playTrack(1);
+    });
+
+    // #then
+    expect(mockPause).toHaveBeenCalled();
+  });
+
+  it('resumes playback via current driving provider', async () => {
+    // #given
+    const { result } = renderHook(() =>
+      useProviderPlayback({ setCurrentTrackIndex, mediaTracksRef })
     );
 
     await act(async () => {
       await result.current.playTrack(0);
     });
 
-    // Should have been called twice: once failed, once succeeded after retry
-    expect(spotifyPlayer.playTrack).toHaveBeenCalledTimes(2);
-  }, 15000);
+    mockResume.mockClear();
+
+    // #when
+    await act(async () => {
+      await result.current.resumePlayback();
+    });
+
+    // #then
+    expect(mockResume).toHaveBeenCalled();
+  });
+
+  it('does not return activateDevice', () => {
+    // #given
+    const { result } = renderHook(() =>
+      useProviderPlayback({ setCurrentTrackIndex, mediaTracksRef })
+    );
+
+    // #then
+    expect(result.current).toHaveProperty('playTrack');
+    expect(result.current).toHaveProperty('resumePlayback');
+    expect(result.current).toHaveProperty('currentPlaybackProviderRef');
+    expect(result.current).not.toHaveProperty('activateDevice');
+  });
 });
