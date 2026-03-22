@@ -22,11 +22,12 @@ import {
   putArt,
   clearArt,
   getDurationsMap,
+  putDurationMs,
   getTagsMap,
   getAlbumArt,
   putAlbumArt,
 } from './dropboxArtCache';
-import { getCachedCatalog, putCatalogCache } from './dropboxCatalogCache';
+import { getCachedCatalog, putCatalogCache, clearCatalogCache } from './dropboxCatalogCache';
 import { logLibrary } from '@/lib/debugLog';
 import { bytesToDataUrl } from '@/utils/bytesToDataUrl';
 import {
@@ -166,6 +167,11 @@ export class DropboxCatalogAdapter implements CatalogProvider {
   /** Clears all cached album art, forcing a fresh download on next library load. */
   async clearArtCache(): Promise<void> {
     await clearArt();
+  }
+
+  /** Clears art + catalog caches so the next library load re-fetches everything. */
+  async refreshArtCache(): Promise<void> {
+    await Promise.all([clearArt(), clearCatalogCache()]);
   }
 
   async getAlbumArtForAlbum(albumPath: string): Promise<string | null> {
@@ -606,5 +612,71 @@ export class DropboxCatalogAdapter implements CatalogProvider {
     const allMusicRef: CollectionRef = { provider: 'dropbox', kind: 'folder', id: '' };
     const freshTracks = await this.listTracks(allMusicRef);
     return refreshLikedTrackMetadata(freshTracks);
+  }
+
+  // ── CatalogProvider optional interface methods ─────────────────────
+
+  async resolveDuration(track: MediaTrack): Promise<number | null> {
+    const cached = await getDurationsMap([track.id]);
+    const cachedDuration = cached.get(track.id);
+    if (cachedDuration) return cachedDuration;
+
+    try {
+      const url = await this.getTemporaryLink(track.playbackRef.ref);
+      const durationMs = await this.probeAudioDuration(url);
+      if (durationMs) {
+        putDurationMs(track.id, durationMs).catch(() => {});
+      }
+      return durationMs;
+    } catch {
+      return null;
+    }
+  }
+
+  async resolveArtwork(albumId: string, signal?: AbortSignal): Promise<string | null> {
+    return this.resolveAlbumArt(albumId, signal);
+  }
+
+  async searchTrack(_artist: string, _title: string): Promise<MediaTrack | null> {
+    return null;
+  }
+
+  private probeAudioDuration(url: string): Promise<number | null> {
+    return new Promise((resolve) => {
+      const audio = new Audio();
+      audio.preload = 'metadata';
+
+      const timeout = setTimeout(() => {
+        cleanup();
+        resolve(null);
+      }, 10_000);
+
+      const cleanup = () => {
+        clearTimeout(timeout);
+        audio.removeEventListener('loadedmetadata', onMeta);
+        audio.removeEventListener('error', onError);
+        audio.src = '';
+        audio.load();
+      };
+
+      const onMeta = () => {
+        const dur = audio.duration;
+        cleanup();
+        if (!isNaN(dur) && dur > 0) {
+          resolve(Math.floor(dur * 1000));
+        } else {
+          resolve(null);
+        }
+      };
+
+      const onError = () => {
+        cleanup();
+        resolve(null);
+      };
+
+      audio.addEventListener('loadedmetadata', onMeta, { once: true });
+      audio.addEventListener('error', onError, { once: true });
+      audio.src = url;
+    });
   }
 }

@@ -6,7 +6,11 @@
 import type { PlaybackProvider } from '@/types/providers';
 import type { ProviderId, MediaTrack, PlaybackState, CollectionRef } from '@/types/domain';
 import { spotifyPlayer } from '@/services/spotifyPlayer';
+import { spotifyAuth } from '@/services/spotify';
 import { isAlbumId, extractAlbumId } from '@/constants/playlist';
+import { AuthExpiredError, UnavailableTrackError } from '@/providers/errors';
+import { spotifyQueueSync } from './spotifyQueueSync';
+import { logSpotify } from '@/lib/debugLog';
 
 /** Map a SpotifyPlaybackState to the provider-agnostic PlaybackState. */
 function mapPlaybackState(state: SpotifyPlaybackState | null): PlaybackState | null {
@@ -24,10 +28,15 @@ function mapPlaybackState(state: SpotifyPlaybackState | null): PlaybackState | n
   };
 }
 
+const MAX_PLAY_RETRIES = 2;
+const BASE_RETRY_BACKOFF_MS = 1500;
+
 export class SpotifyPlaybackAdapter implements PlaybackProvider {
   readonly providerId: ProviderId = 'spotify';
   private static readonly READY_TIMEOUT_MS = 10_000;
   private static readonly READY_POLL_MS = 200;
+
+  private pendingUpcomingUris: string[] | null = null;
 
   private async waitForPlayerReady(): Promise<void> {
     const start = Date.now();
@@ -52,7 +61,69 @@ export class SpotifyPlaybackAdapter implements PlaybackProvider {
 
   async playTrack(track: MediaTrack): Promise<void> {
     await this.ensurePlaybackReady();
-    await spotifyPlayer.playTrack(track.playbackRef.ref);
+
+    const uri = track.playbackRef.ref;
+    const upcomingUris = this.pendingUpcomingUris ?? undefined;
+
+    await this.playWithRetry(uri, track.name, upcomingUris);
+
+    const activateDevice = async () => {
+      try {
+        const token = await spotifyAuth.ensureValidToken();
+        const deviceId = spotifyPlayer.getDeviceId();
+        if (deviceId) {
+          await fetch('https://api.spotify.com/v1/me/player', {
+            method: 'PUT',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              device_ids: [deviceId],
+              play: true,
+            }),
+          });
+        }
+      } catch (error) {
+        console.error('Failed to activate device:', error);
+      }
+    };
+
+    spotifyPlayer.waitForPlaybackOrResume(activateDevice);
+  }
+
+  private async playWithRetry(
+    uri: string,
+    trackName: string,
+    upcomingUris?: string[],
+    retryCount = 0,
+  ): Promise<void> {
+    try {
+      await spotifyPlayer.playTrack(uri, upcomingUris);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+
+      if (message.includes('401') || message.toLowerCase().includes('unauthorized')) {
+        throw new AuthExpiredError('spotify');
+      }
+
+      if (message.includes('403')) {
+        if (message.includes('Restriction violated')) {
+          throw new UnavailableTrackError(trackName);
+        }
+
+        if (retryCount < MAX_PLAY_RETRIES) {
+          const backoffMs = BASE_RETRY_BACKOFF_MS * Math.pow(2, retryCount);
+          logSpotify('403 during play, retrying (%d/%d) after %dms', retryCount + 1, MAX_PLAY_RETRIES, backoffMs);
+          await spotifyPlayer.transferPlaybackToDevice();
+          await new Promise(resolve => setTimeout(resolve, backoffMs));
+          await spotifyPlayer.ensureDeviceIsActive(3, 1000);
+          return this.playWithRetry(uri, trackName, upcomingUris, retryCount + 1);
+        }
+      }
+
+      throw error;
+    }
   }
 
   async playCollection(
@@ -60,7 +131,6 @@ export class SpotifyPlaybackAdapter implements PlaybackProvider {
     options?: { offset?: number },
   ): Promise<void> {
     await this.ensurePlaybackReady();
-    // Use Spotify context-based playback for playlists
     if (collectionRef.kind === 'playlist') {
       await spotifyPlayer.playContext(
         `spotify:playlist:${collectionRef.id}`,
@@ -86,8 +156,6 @@ export class SpotifyPlaybackAdapter implements PlaybackProvider {
   }
 
   async seek(positionMs: number): Promise<void> {
-    // Spotify seek uses the Web API
-    const { spotifyAuth } = await import('@/services/spotify');
     const token = await spotifyAuth.ensureValidToken();
     const deviceId = spotifyPlayer.getDeviceId();
     if (!deviceId) return;
@@ -122,5 +190,26 @@ export class SpotifyPlaybackAdapter implements PlaybackProvider {
     return spotifyPlayer.onPlayerStateChanged((spotifyState) => {
       listener(mapPlaybackState(spotifyState));
     });
+  }
+
+  getLastPlayTime(): number {
+    return spotifyPlayer.lastPlayTrackTime;
+  }
+
+  onQueueChanged(tracks: MediaTrack[], fromIndex: number): void {
+    const legacyTracks = tracks.map(t => ({
+      id: t.id,
+      name: t.name,
+      artists: t.artists ?? '',
+      album: t.album ?? '',
+      album_id: t.albumId ?? '',
+      duration_ms: t.durationMs ?? 0,
+      image: t.image ?? '',
+      uri: t.playbackRef.ref,
+      provider: t.provider,
+      track_number: t.trackNumber,
+    }));
+
+    this.pendingUpcomingUris = spotifyQueueSync.buildUpcomingUris(legacyTracks, fromIndex);
   }
 }

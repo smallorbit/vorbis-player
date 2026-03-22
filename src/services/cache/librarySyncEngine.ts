@@ -41,6 +41,7 @@ type SyncListener = (
 const OPTIMISTIC_GRACE_MS = 30 * 1000;
 
 export class LibrarySyncEngine {
+  readonly providerId = 'spotify';
   private intervalId: ReturnType<typeof setInterval> | null = null;
   private listeners = new Set<SyncListener>();
   private abortController: AbortController | null = null;

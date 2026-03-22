@@ -19,6 +19,7 @@ import {
   unsaveAlbum,
   unfollowPlaylist,
   getLargestImage,
+  searchTrack,
   type Track,
   type PlaylistInfo,
   type AlbumInfo,
@@ -162,6 +163,16 @@ export class SpotifyCatalogAdapter implements CatalogProvider {
       await unfollowPlaylist(collectionId);
     } else if (kind === 'album') {
       await unsaveAlbum(collectionId);
+    }
+  }
+
+  async searchTrack(artist: string, title: string): Promise<MediaTrack | null> {
+    try {
+      const track = await searchTrack(artist, title);
+      if (!track) return null;
+      return spotifyTrackToMediaTrack(track);
+    } catch {
+      return null;
     }
   }
 }

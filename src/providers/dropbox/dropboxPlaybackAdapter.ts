@@ -21,6 +21,7 @@ export class DropboxPlaybackAdapter implements PlaybackProvider {
   private pendingError: PlaybackState['playbackError'] | null = null;
 
   private catalog: DropboxCatalogAdapter;
+  private lastPlayTime = 0;
 
   constructor(catalog: DropboxCatalogAdapter) {
     this.catalog = catalog;
@@ -63,6 +64,7 @@ export class DropboxPlaybackAdapter implements PlaybackProvider {
     const streamUrl = await this.catalog.getTemporaryLink(dropboxPath);
 
     this.currentTrack = track;
+    this.lastPlayTime = Date.now();
     this.hydrateAlbumArtFromCache(track);
     this.pendingMetadataUpdate = null;
     this.pendingDurationMs = null;
@@ -309,6 +311,14 @@ export class DropboxPlaybackAdapter implements PlaybackProvider {
       clearInterval(this.updateInterval);
       this.updateInterval = null;
     }
+  }
+
+  getLastPlayTime(): number {
+    return this.lastPlayTime;
+  }
+
+  onQueueChanged(_tracks: MediaTrack[], _fromIndex: number): void {
+    // No-op for Dropbox
   }
 
   destroy(): void {
