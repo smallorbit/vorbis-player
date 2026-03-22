@@ -68,6 +68,9 @@ styled: ['styled-components']
     },
     dedupe: ['react', 'react-dom', 'styled-components'],
   },
+  optimizeDeps: {
+    exclude: ['playwright-core', '@playwright/test', 'fsevents']
+  },
   server: {
     host: '127.0.0.1',
     port: 3000
