@@ -21,7 +21,7 @@ import {
   type AlbumSortOption
 } from '../utils/playlistFilters';
 import { usePinnedItems } from '../hooks/usePinnedItems';
-import { LIKED_SONGS_ID, LIKED_SONGS_NAME, toAlbumPlaylistId } from '../constants/playlist';
+import { LIKED_SONGS_ID, LIKED_SONGS_NAME, toAlbumPlaylistId, isAlbumId } from '../constants/playlist';
 import LibraryProviderBar from './LibraryProviderBar';
 import { useUnifiedLikedTracks } from '@/hooks/useUnifiedLikedTracks';
 import { librarySyncEngine } from '@/services/cache/librarySyncEngine';
@@ -38,6 +38,7 @@ import TrackInfoPopover, {
 } from './controls/TrackInfoPopover';
 import ConfirmDeleteDialog from './ConfirmDeleteDialog';
 import type { AddToQueueResult, ProviderId } from '@/types/domain';
+import { providerRegistry } from '@/providers/registry';
 import { isSavedPlaylistId, extractPlaylistPath } from '../constants/playlist';
 import { LIBRARY_REFRESH_EVENT } from '@/hooks/useLibrarySync';
 
@@ -638,12 +639,17 @@ const PinIcon: React.FC<{ filled?: boolean }> = ({ filled = false }) => (
 
 function getLikedSongsGradient(providerId?: string | 'unified'): string {
   if (providerId === 'unified') {
-    return `linear-gradient(135deg, ${theme.colors.spotify} 0%, ${theme.colors.dropbox} 100%)`;
+    const allProviders = providerRegistry.getAll();
+    const colors = allProviders.map(p => p.color).filter(Boolean);
+    if (colors.length >= 2) {
+      return `linear-gradient(135deg, ${colors[0]} 0%, ${colors[1]} 100%)`;
+    }
+    const fallback = colors[0] ?? theme.colors.accent;
+    return `linear-gradient(135deg, ${fallback} 0%, ${fallback} 100%)`;
   }
-  if (providerId === 'dropbox') {
-    return `linear-gradient(135deg, ${theme.colors.dropbox} 0%, ${theme.colors.dropboxLight} 100%)`;
-  }
-  return `linear-gradient(135deg, ${theme.colors.spotify} 0%, ${theme.colors.spotifyLight} 100%)`;
+  const descriptor = providerId ? providerRegistry.get(providerId as ProviderId) : undefined;
+  const color = descriptor?.color ?? theme.colors.accent;
+  return `linear-gradient(135deg, ${color} 0%, ${color}cc 100%)`;
 }
 
 /** Shared hook for lazy-loading images via IntersectionObserver */
@@ -974,7 +980,7 @@ const PlaylistSelection = React.memo(function PlaylistSelection({
     const canDelete = descriptor?.capabilities.hasDeleteCollection &&
       descriptor.catalog.deleteCollection &&
       playlist.id !== LIKED_SONGS_ID &&
-      (provider === 'spotify' || isSavedPlaylistId(playlist.id));
+      !isAlbumId(playlist.id);
 
     if (canDelete) {
       options.push({
@@ -1057,10 +1063,10 @@ const PlaylistSelection = React.memo(function PlaylistSelection({
           });
         }
       } else {
-        const providerName = capabilities?.externalLinkLabel?.replace('Open in ', '') ?? 'Spotify';
+        const providerName = capabilities?.externalLinkLabel?.replace('Open in ', '') ?? descriptor?.name ?? 'External';
         const albumUrl = descriptor?.getExternalUrl
           ? descriptor.getExternalUrl({ type: 'album', name: album.name, artistName: album.artists })
-          : (descriptor?.id === 'spotify' ? `https://open.spotify.com/album/${album.id}` : undefined);
+          : undefined;
         if (albumUrl) {
           options.push({
             label: `View album on ${providerName}`,

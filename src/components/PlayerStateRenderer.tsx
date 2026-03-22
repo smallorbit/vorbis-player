@@ -218,7 +218,7 @@ const PlayerStateRenderer: React.FC<PlayerStateRendererProps> = ({
           <CardContent style={{ textAlign: 'center' }}>
             <p style={{ color: theme.colors.gray[300], marginBottom: theme.spacing.lg }}>
               Sign in to your {providerName} account to access your music.
-              {activeDescriptor?.id === 'spotify' && ' Requires Spotify Premium.'}
+              {activeDescriptor?.subscriptionNote && ` ${activeDescriptor.subscriptionNote}`}
             </p>
             <Button
               onClick={handleConnectClick}

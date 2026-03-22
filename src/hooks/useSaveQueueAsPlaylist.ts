@@ -14,7 +14,7 @@ import {
   createPlaylist,
   addTracksToPlaylist,
 } from '@/services/spotify';
-import { spotifyQueueSync } from '@/services/spotifyQueueSync';
+import { spotifyQueueSync } from '@/providers/spotify/spotifyQueueSync';
 
 export type SaveQueueStatus = 'idle' | 'saving' | 'success' | 'error';
 
@@ -49,7 +49,7 @@ export async function resolveTrackUris(tracks: Track[]): Promise<{ uris: string[
 
   for (let i = 0; i < tracks.length; i++) {
     const track = tracks[i];
-    if (track.provider === 'spotify' || !track.provider) {
+    if (track.uri?.startsWith('spotify:') || !track.provider) {
       slots[i] = track.uri ?? null;
     } else if (resolveEnabled) {
       toResolve.push({ index: i, track });

@@ -20,6 +20,20 @@ vi.mock('@/services/spotifyPlayer', () => ({
     previousTrack: vi.fn().mockResolvedValue(undefined),
     setVolume: vi.fn().mockResolvedValue(undefined),
     onPlayerStateChanged: vi.fn().mockReturnValue(() => {}),
+    waitForPlaybackOrResume: vi.fn(),
+    lastPlayTrackTime: 0,
+  },
+}));
+
+vi.mock('@/services/spotify', () => ({
+  spotifyAuth: {
+    ensureValidToken: vi.fn().mockResolvedValue('token'),
+  },
+}));
+
+vi.mock('@/providers/spotify/spotifyQueueSync', () => ({
+  spotifyQueueSync: {
+    buildUpcomingUris: vi.fn().mockReturnValue([]),
   },
 }));
 
@@ -62,7 +76,7 @@ describe('SpotifyPlaybackAdapter', () => {
     expect(spotifyPlayer.initialize).toHaveBeenCalledTimes(1);
     expect(spotifyPlayer.transferPlaybackToDevice).toHaveBeenCalledTimes(1);
     expect(spotifyPlayer.ensureDeviceIsActive).toHaveBeenCalledTimes(1);
-    expect(spotifyPlayer.playTrack).toHaveBeenCalledWith('spotify:track:abc123');
+    expect(spotifyPlayer.playTrack).toHaveBeenCalledWith('spotify:track:abc123', undefined);
   });
 
   it('times out if SDK never becomes ready', async () => {

@@ -31,6 +31,7 @@ import type { AddToQueueResult, MediaTrack, ProviderId } from '@/types/domain';
 import { LIBRARY_REFRESH_EVENT } from '@/hooks/useLibrarySync';
 import Toast from './Toast';
 import type { RadioState } from '@/hooks/useRadio';
+import { providerRegistry } from '@/providers/registry';
 
 const SaveQueueDialog = lazy(() => import('./SaveQueueDialog'));
 
@@ -360,64 +361,37 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
     onAction?: () => void;
   } | null>(null);
   const saveProviders = useMemo(
-    () => connectedProviderIds.filter((id): id is 'dropbox' | 'spotify' => id === 'dropbox' || id === 'spotify'),
+    () => connectedProviderIds.filter(id => {
+      const desc = providerRegistry.get(id);
+      return desc?.savePlaylist != null;
+    }),
     [connectedProviderIds],
   );
   const canSaveQueue = saveProviders.length > 0 && tracks.length > 0;
-  const hasSpotifyTracks = useMemo(() => tracks.some(t => t.provider === 'spotify'), [tracks]);
-  const hasDropboxTracks = useMemo(() => tracks.some(t => t.provider === 'dropbox'), [tracks]);
-
+  const trackProviders = useMemo(() => new Set(tracks.map(t => t.provider).filter(Boolean)), [tracks]);
   const handleOpenSaveQueue = useCallback(() => setShowSaveQueueDialog(true), []);
   const handleCloseSaveQueue = useCallback(() => setShowSaveQueueDialog(false), []);
 
   const handleSaveQueue = useCallback(async (name: string, provider: ProviderId): Promise<boolean> => {
     try {
-      if (provider === 'dropbox') {
-        const mediaTracks = mediaTracksRef?.current;
-        if (!mediaTracks || mediaTracks.length === 0) return false;
+      const descriptor = providerRegistry.get(provider);
+      if (!descriptor?.savePlaylist || !descriptor.auth.isAuthenticated()) return false;
 
-        const { providerRegistry } = await import('@/providers/registry');
-        const { DropboxAuthAdapter } = await import('@/providers/dropbox/dropboxAuthAdapter');
-        const dropbox = providerRegistry.get('dropbox');
-        if (!dropbox?.auth.isAuthenticated()) return false;
-        if (!(dropbox.auth instanceof DropboxAuthAdapter)) return false;
+      const mediaTracks = mediaTracksRef?.current;
+      if (!mediaTracks || mediaTracks.length === 0) return false;
 
-        const { saveQueueAsPlaylist } = await import('@/providers/dropbox/dropboxPlaylistStorage');
-        const result = await saveQueueAsPlaylist(dropbox.auth, name, mediaTracks);
-        if (!result) return false;
+      const result = await descriptor.savePlaylist(name, mediaTracks);
+      if (!result) return false;
 
-        setShowSaveQueueDialog(false);
-        setToast({ message: `Saved "${name}" to Dropbox` });
-        window.dispatchEvent(new CustomEvent(LIBRARY_REFRESH_EVENT, { detail: { providerId: 'dropbox' } }));
-        return true;
-      }
-
-      if (provider === 'spotify') {
-        if (tracks.length === 0) return false;
-
-        const { spotifyAuth, createPlaylist, addTracksToPlaylist } = await import('@/services/spotify');
-        if (!spotifyAuth.isAuthenticated()) return false;
-
-        const { resolveTrackUris } = await import('@/hooks/useSaveQueueAsPlaylist');
-        const { uris } = await resolveTrackUris(tracks);
-        if (uris.length === 0) return false;
-
-        const playlist = await createPlaylist(name, {
-          description: 'Created from Vorbis Player queue',
-        });
-        await addTracksToPlaylist(playlist.id, uris);
-
-        setShowSaveQueueDialog(false);
-        setToast({ message: `Saved "${name}" to Spotify` });
-        return true;
-      }
-
-      return false;
+      setShowSaveQueueDialog(false);
+      setToast({ message: `Saved "${name}" to ${descriptor.name}` });
+      window.dispatchEvent(new CustomEvent(LIBRARY_REFRESH_EVENT, { detail: { providerId: provider } }));
+      return true;
     } catch (err) {
       console.error('[SaveQueue] Failed to save:', err);
       return false;
     }
-  }, [mediaTracksRef, tracks]);
+  }, [mediaTracksRef]);
 
   const handleDismissToast = useCallback(() => setToast(null), []);
 
@@ -983,8 +957,7 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
             onSave={handleSaveQueue}
             onClose={handleCloseSaveQueue}
             availableProviders={saveProviders}
-            hasDropboxTracks={hasDropboxTracks}
-            hasSpotifyTracks={hasSpotifyTracks}
+            trackProviders={trackProviders}
             defaultName={radioState?.isActive && radioState.seedDescription ? radioState.seedDescription.replace(/^Radio based on /i, '').replace(/\s+by\s+.+$/i, '') + ' Radio' : undefined}
           />
         </Suspense>

@@ -27,7 +27,7 @@ vi.mock('@/services/spotify', () => ({
   },
 }));
 
-import { usePlaylistManager } from '../usePlaylistManager';
+import { useSpotifyPlaylistManager as usePlaylistManager } from '@/providers/spotify/useSpotifyPlaylistManager';
 import { getPlaylistTracks, getAlbumTracks, getLikedSongs, spotifyAuth } from '@/services/spotify';
 
 describe('usePlaylistManager', () => {

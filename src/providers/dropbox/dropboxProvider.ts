@@ -11,7 +11,10 @@ import { DropboxCatalogAdapter } from './dropboxCatalogAdapter';
 import { DropboxPlaybackAdapter } from './dropboxPlaybackAdapter';
 import { providerRegistry } from '@/providers/registry';
 import { initLikesSync } from './dropboxLikesSync';
+import { LIKES_CHANGED_EVENT } from './dropboxLikesCache';
 import { initPreferencesSync, getPreferencesSync } from './dropboxPreferencesSync';
+import { saveQueueAsPlaylist } from './dropboxPlaylistStorage';
+import { DropboxIcon } from './DropboxIcon';
 
 const DROPBOX_CLIENT_ID = import.meta.env.VITE_DROPBOX_CLIENT_ID ?? '';
 
@@ -38,6 +41,9 @@ if (DROPBOX_CLIENT_ID) {
   dropboxDescriptor = {
     id: 'dropbox',
     name: 'Dropbox',
+    color: '#0061FF',
+    icon: DropboxIcon,
+    likesChangedEvent: LIKES_CHANGED_EVENT,
     capabilities: {
       hasLikedCollection: true,
       hasSaveTrack: true,
@@ -48,6 +54,11 @@ if (DROPBOX_CLIENT_ID) {
     auth,
     catalog,
     playback,
+    async savePlaylist(name: string, tracks) {
+      const result = await saveQueueAsPlaylist(auth, name, tracks);
+      if (!result) return null;
+      return { totalTracks: tracks.length, skippedTracks: 0 };
+    },
     getExternalUrls({ type, name, artistName }) {
       const isArtist = type === 'artist';
       const query = isArtist ? name : (artistName ? `${artistName} ${name}` : name);

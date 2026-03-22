@@ -1,6 +1,6 @@
 /**
  * Inline dialog for saving the current queue as a playlist.
- * Supports saving to Dropbox (as JSON file) or Spotify (as playlist via API).
+ * Supports saving to any provider that implements savePlaylist.
  * Shows a provider selector when multiple providers are available.
  */
 
@@ -9,6 +9,7 @@ import { createPortal } from 'react-dom';
 import styled from 'styled-components';
 import { theme } from '@/styles/theme';
 import type { ProviderId } from '@/types/domain';
+import { providerRegistry } from '@/providers/registry';
 import {
   DialogOverlay,
   DialogBox,
@@ -70,21 +71,15 @@ const ProviderOption = styled.button<{ $active: boolean }>`
   }
 `;
 
-const PROVIDER_LABELS: Record<string, string> = {
-  dropbox: 'Dropbox',
-  spotify: 'Spotify',
-};
-
 interface SaveQueueDialogProps {
   onSave: (name: string, provider: ProviderId) => Promise<boolean>;
   onClose: () => void;
   availableProviders: ProviderId[];
-  hasDropboxTracks: boolean;
-  hasSpotifyTracks: boolean;
+  trackProviders: Set<string | undefined>;
   defaultName?: string;
 }
 
-export default function SaveQueueDialog({ onSave, onClose, availableProviders, hasDropboxTracks, hasSpotifyTracks, defaultName }: SaveQueueDialogProps) {
+export default function SaveQueueDialog({ onSave, onClose, availableProviders, trackProviders, defaultName }: SaveQueueDialogProps) {
   const [name, setName] = useState(() => {
     if (defaultName) return defaultName;
     const date = new Date().toLocaleDateString('en-US', {
@@ -126,8 +121,8 @@ export default function SaveQueueDialog({ onSave, onClose, availableProviders, h
   }, [handleSave, onClose]);
 
   const showProviderSelector = availableProviders.length > 1;
-  const showDropboxWarning = provider === 'dropbox' && hasSpotifyTracks;
-  const showSpotifyWarning = provider === 'spotify' && hasDropboxTracks;
+  const targetDescriptor = providerRegistry.get(provider);
+  const hasOtherProviderTracks = Array.from(trackProviders).some(p => p && p !== provider);
 
   return createPortal(
     <DialogOverlay onClick={saving ? undefined : onClose} onKeyDown={e => { if (e.key === 'Escape') { e.stopPropagation(); onClose(); } }}>
@@ -135,16 +130,19 @@ export default function SaveQueueDialog({ onSave, onClose, availableProviders, h
         <DialogTitle>Save Queue as Playlist</DialogTitle>
         {showProviderSelector && (
           <ProviderRow>
-            {availableProviders.map(id => (
-              <ProviderOption
-                key={id}
-                $active={provider === id}
-                onClick={() => setProvider(id)}
-                disabled={saving}
-              >
-                {PROVIDER_LABELS[id] ?? id}
-              </ProviderOption>
-            ))}
+            {availableProviders.map(id => {
+              const desc = providerRegistry.get(id);
+              return (
+                <ProviderOption
+                  key={id}
+                  $active={provider === id}
+                  onClick={() => setProvider(id)}
+                  disabled={saving}
+                >
+                  {desc?.name ?? id}
+                </ProviderOption>
+              );
+            })}
           </ProviderRow>
         )}
         <Input
@@ -156,14 +154,9 @@ export default function SaveQueueDialog({ onSave, onClose, availableProviders, h
           disabled={saving}
           autoFocus
         />
-        {showDropboxWarning && (
+        {hasOtherProviderTracks && (
           <Warning>
-            This queue contains Spotify tracks. They will be saved but require Spotify authentication to play back.
-          </Warning>
-        )}
-        {showSpotifyWarning && (
-          <Warning>
-            This queue contains Dropbox tracks. Only tracks that can be matched on Spotify will be included.
+            This queue contains tracks from other providers. Some tracks may be skipped or require additional authentication when saving to {targetDescriptor?.name ?? provider}.
           </Warning>
         )}
         {error && <DialogErrorText>{error}</DialogErrorText>}
