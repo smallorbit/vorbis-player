@@ -380,14 +380,20 @@ export class DropboxCatalogAdapter implements CatalogProvider {
     if (collectionRef.provider !== 'dropbox') return [];
     if (collectionRef.kind === 'liked') {
       const tracks = await getLikedTracks();
-      await this.hydrateCachedDurations(tracks);
+      await Promise.all([
+        this.hydrateCachedDurations(tracks),
+        this.hydrateCachedArtwork(tracks),
+      ]);
       return tracks;
     }
 
     // Saved playlists: load from JSON file in Dropbox
     if (collectionRef.kind === 'playlist') {
       const tracks = await loadPlaylistTracks(this.auth, collectionRef.id);
-      await this.hydrateCachedDurations(tracks);
+      await Promise.all([
+        this.hydrateCachedDurations(tracks),
+        this.hydrateCachedArtwork(tracks),
+      ]);
       return tracks;
     }
 
@@ -465,6 +471,25 @@ export class DropboxCatalogAdapter implements CatalogProvider {
       for (const t of needDuration) {
         const cached = durationsMap.get(t.id);
         if (cached !== undefined) t.durationMs = cached;
+      }
+    }
+  }
+
+  private async hydrateCachedArtwork(tracks: MediaTrack[]): Promise<void> {
+    const needArt = tracks.filter((t) => !t.image && t.albumId);
+    if (needArt.length === 0) return;
+    const albumIds = [...new Set(needArt.map((t) => t.albumId!))];
+    const artMap = new Map<string, string>();
+    await Promise.all(
+      albumIds.map(async (albumId) => {
+        const cached = await getAlbumArt(albumId);
+        if (cached) artMap.set(albumId, cached);
+      }),
+    );
+    if (artMap.size > 0) {
+      for (const t of needArt) {
+        const art = artMap.get(t.albumId!);
+        if (art) t.image = art;
       }
     }
   }
