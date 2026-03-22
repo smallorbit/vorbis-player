@@ -432,6 +432,14 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
   const [isFlipped, setIsFlipped] = useState(false);
   const toggleFlip = useCallback(() => setIsFlipped(f => !f), []);
   const flipContainerRef = useRef<HTMLDivElement>(null);
+
+  const handleRetryAlbumArt = useCallback(async () => {
+    const providerId = currentTrackProvider ?? currentTrack?.provider;
+    if (!providerId) return;
+    const { providerRegistry } = await import('@/providers/registry');
+    const descriptor = providerRegistry.get(providerId);
+    descriptor?.playback.refreshCurrentTrackArt?.();
+  }, [currentTrackProvider, currentTrack?.provider]);
   const albumArtContainerRef = useRef<HTMLDivElement | null>(null);
 
   // Report album art bounds for trail visualizer (head stays inside art)
@@ -817,6 +825,7 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
                       translucenceEnabled={translucenceEnabled}
                       translucenceOpacity={translucenceOpacity}
                       zenMode={zenModeEnabled}
+                      onRetryAlbumArt={handleRetryAlbumArt}
                     />
                   </ProfiledComponent>
                   <AlbumArtQuickSwapBack
@@ -842,6 +851,7 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
                     isMobile={isMobile}
                     isTablet={isTablet}
                     onClose={() => setIsFlipped(false)}
+                    onRetryAlbumArt={handleRetryAlbumArt}
                   />
                 </FlipInner>
               </ClickableAlbumArtContainer>

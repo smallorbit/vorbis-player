@@ -178,6 +178,33 @@ export class DropboxPlaybackAdapter implements PlaybackProvider {
     this.catalog.prefetchTemporaryLink(track.playbackRef.ref);
   }
 
+  refreshCurrentTrackArt(): void {
+    const track = this.currentTrack;
+    if (!track || track.image) return;
+
+    // Try album art from Dropbox folder (cover.jpg etc.)
+    if (track.albumId) {
+      this.catalog.resolveAlbumArt(track.albumId).then((imageUrl) => {
+        if (!imageUrl) return;
+        if (this.currentTrack?.id !== track.id) return;
+        if (this.currentTrack.image) return;
+
+        this.currentTrack = { ...this.currentTrack, image: imageUrl };
+        this.pendingMetadataUpdate = {
+          ...(this.pendingMetadataUpdate ?? {}),
+          image: imageUrl,
+        };
+        this.notifyListeners();
+      }).catch(() => {});
+    }
+
+    // Also re-attempt ID3 tag extraction for embedded cover art
+    const dropboxPath = track.playbackRef.ref;
+    this.catalog.getTemporaryLink(dropboxPath).then((streamUrl) => {
+      this.enrichMetadataInBackground(track, streamUrl);
+    }).catch(() => {});
+  }
+
   async playCollection(
     _collectionRef: CollectionRef,
     _options?: { offset?: number },

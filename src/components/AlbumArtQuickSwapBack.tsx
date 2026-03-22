@@ -26,6 +26,7 @@ interface AlbumArtQuickSwapBackProps {
   isMobile: boolean;
   isTablet: boolean;
   onClose: () => void;
+  onRetryAlbumArt?: () => void;
 }
 
 const BacksideRoot = styled.div`
@@ -75,6 +76,29 @@ const Title = styled.div`
   margin-bottom: ${theme.spacing.md};
 `;
 
+const RetryButton = styled.button`
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  margin-top: ${theme.spacing.md};
+  background: rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: ${theme.borderRadius.lg};
+  font-size: ${theme.fontSize.xs};
+  cursor: pointer;
+  transition: background 0.2s ease;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.2);
+  }
+
+  &:active {
+    background: rgba(255, 255, 255, 0.25);
+  }
+`;
+
 function AlbumArtQuickSwapBack({
   currentTrack,
   accentColor,
@@ -98,6 +122,7 @@ function AlbumArtQuickSwapBack({
   isMobile,
   isTablet,
   onClose,
+  onRetryAlbumArt,
 }: AlbumArtQuickSwapBackProps) {
   return (
     <BacksideRoot>
@@ -131,6 +156,15 @@ function AlbumArtQuickSwapBack({
           isTablet={isTablet}
         />
         </div>
+        {onRetryAlbumArt && !currentTrack?.image && (
+          <RetryButton onClick={(e) => { e.stopPropagation(); onRetryAlbumArt(); }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="23 4 23 10 17 10" />
+              <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+            </svg>
+            Retry Artwork
+          </RetryButton>
+        )}
       </Content>
     </BacksideRoot>
   );

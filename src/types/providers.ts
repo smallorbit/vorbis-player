@@ -64,6 +64,8 @@ export interface PlaybackProvider {
   subscribe(listener: (state: PlaybackState | null) => void): () => void;
   /** Optional: pre-warm resources for an upcoming track (e.g. fetch temporary links). */
   prepareTrack?(track: MediaTrack): void;
+  /** Optional: re-fetch album art for the currently playing track. */
+  refreshCurrentTrackArt?(): void;
 }
 
 // -----------------------------------------------------------------------------
