@@ -219,6 +219,18 @@ export function ProviderProvider({ children }: { children: React.ReactNode }) {
     );
   }, [storedProviderId, activeDescriptor, enabledProviderIds, validProviderId, setStoredProviderId]);
 
+  // ── Auto-switch when active provider is disabled ──────────────────────
+  useEffect(() => {
+    if (storedProviderId === null) return;
+    if (enabledProviderIds.includes(storedProviderId)) return;
+
+    const fallback = enabledProviderIds.find(id => providerRegistry.has(id));
+    if (!fallback) return;
+
+    activeDescriptor?.playback.pause().catch(() => {});
+    setStoredProviderId(fallback);
+  }, [storedProviderId, enabledProviderIds, activeDescriptor, setStoredProviderId]);
+
   // Auto-dismiss fallthrough notification after 5 seconds
   useEffect(() => {
     if (!fallthroughNotification) return;
