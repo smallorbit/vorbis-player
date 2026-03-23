@@ -516,6 +516,20 @@ const DrawerBottomControls = styled.div`
   }
 `;
 
+const DrawerBottomRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: ${theme.spacing.sm};
+  width: 100%;
+  min-width: 0;
+  flex-wrap: wrap;
+`;
+
+const DrawerRefreshButton = styled(RefreshButton)`
+  margin-left: auto;
+  flex-shrink: 0;
+`;
+
 const ClearButton = styled.button`
   padding: ${({ theme }) => theme.spacing.sm} ${theme.spacing.lg};
   background: ${({ theme }) => theme.colors.control.background};
@@ -1297,7 +1311,7 @@ const PlaylistSelection = React.memo(function PlaylistSelection({
 
   const mainContent = showMainContent ? (
     <>
-      <LibraryProviderBar />
+      {!inDrawer && <LibraryProviderBar />}
       <div ref={inDrawer ? swipeZoneRef : undefined} style={inDrawer ? { flexShrink: 0, touchAction: 'pan-y' } : undefined}>
         {tabsBar}
       </div>
@@ -1623,8 +1637,9 @@ const PlaylistSelection = React.memo(function PlaylistSelection({
 
       {inDrawer && onLibraryRefresh && (
         <DrawerBottomControls>
-          <SortControlsRow style={{ justifyContent: 'flex-end' }}>
-            <RefreshButton
+          <DrawerBottomRow>
+            <LibraryProviderBar variant="drawerBottom" />
+            <DrawerRefreshButton
               onClick={onLibraryRefresh}
               $spinning={!!isLibraryRefreshing}
               aria-label="Refresh library"
@@ -1636,8 +1651,8 @@ const PlaylistSelection = React.memo(function PlaylistSelection({
                 <path d="M3 22v-6h6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                 <path d="M21 12a9 9 0 0 1-15.36 6.36L3 16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
-            </RefreshButton>
-          </SortControlsRow>
+            </DrawerRefreshButton>
+          </DrawerBottomRow>
         </DrawerBottomControls>
       )}
 

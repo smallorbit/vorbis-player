@@ -85,10 +85,13 @@ function extractYear(dateString: string | undefined): number | null {
 }
 
 /**
- * Parse ISO timestamp to epoch milliseconds for sorting
+ * Parse added-at to epoch milliseconds for sorting (ISO strings or epoch ms).
  */
-function parseAddedAt(addedAt: string | undefined): number {
-  if (!addedAt) return 0;
+function parseAddedAt(addedAt: string | number | undefined): number {
+  if (addedAt == null || addedAt === '') return 0;
+  if (typeof addedAt === 'number') {
+    return Number.isFinite(addedAt) ? addedAt : 0;
+  }
   const timestamp = new Date(addedAt).getTime();
   return isNaN(timestamp) ? 0 : timestamp;
 }

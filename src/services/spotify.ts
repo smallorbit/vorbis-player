@@ -974,10 +974,9 @@ export async function getPlaylistsPage(
     token,
     { signal }
   );
-  const fetchTimestamp = new Date().toISOString();
-  const playlists = (data.items ?? []).map((p) => ({
+  const playlists = (data.items ?? []).map((p, i) => ({
     ...p,
-    added_at: p.added_at || fetchTimestamp,
+    added_at: p.added_at || new Date(Date.now() - i * 60000).toISOString(),
   }));
   return {
     playlists,
@@ -1027,16 +1026,20 @@ export async function getAlbumsPage(
 /** Fetch ALL user playlists with full pagination (not capped at 50). */
 export async function getAllUserPlaylists(signal?: AbortSignal): Promise<PlaylistInfo[]> {
   const token = await spotifyAuth.ensureValidToken();
-  const fetchTimestamp = new Date().toISOString();
   const playlists: PlaylistInfo[] = [];
   let nextUrl: string | null = 'https://api.spotify.com/v1/me/playlists?limit=50';
+  let index = 0;
 
   while (nextUrl) {
     if (signal?.aborted) throw new DOMException('Request aborted', 'AbortError');
     const url = nextUrl;
     const data: PaginatedResponse<PlaylistInfo> = await spotifyApiRequest(url, token, { signal });
     for (const item of data.items ?? []) {
-      playlists.push({ ...item, added_at: item.added_at || fetchTimestamp });
+      playlists.push({
+        ...item,
+        added_at: item.added_at || new Date(Date.now() - index * 60000).toISOString(),
+      });
+      index++;
     }
     nextUrl = data.next;
   }
