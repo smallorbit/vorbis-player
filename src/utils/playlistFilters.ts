@@ -1,4 +1,5 @@
 import type { PlaylistInfo, AlbumInfo } from '../services/spotify';
+import { LIBRARY_ALBUM_SORT_ANCHOR_IDS, LIBRARY_PLAYLIST_SORT_ANCHOR_IDS } from '../constants/playlist';
 
 // ============================================================
 // TYPE DEFINITIONS
@@ -15,7 +16,7 @@ export type AlbumSortOption =
   | 'release-oldest'
   | 'recently-added';
 
-type YearFilterOption =
+export type YearFilterOption =
   | 'all'
   | '2020s'
   | '2010s'
@@ -112,6 +113,50 @@ function matchesYearFilter(year: number | null, filter: YearFilterOption): boole
 // MAIN FILTER/SORT FUNCTIONS
 // ============================================================
 
+function sortPlaylistArrayInPlace(playlists: PlaylistInfo[], sortOption: PlaylistSortOption): void {
+  switch (sortOption) {
+    case 'name-asc':
+      playlists.sort((a, b) => a.name.localeCompare(b.name));
+      break;
+    case 'name-desc':
+      playlists.sort((a, b) => b.name.localeCompare(a.name));
+      break;
+    case 'recently-added':
+    default:
+      playlists.sort((a, b) => {
+        const dateA = parseAddedAt(a.added_at);
+        const dateB = parseAddedAt(b.added_at);
+        return dateB - dateA; // Most recent first
+      });
+      break;
+  }
+}
+
+/**
+ * Filter playlists by search query (no sorting).
+ */
+export function filterPlaylistsOnly(playlists: PlaylistInfo[], searchQuery: string): PlaylistInfo[] {
+  return playlists.filter(p => matchesSearch(p, searchQuery));
+}
+
+/**
+ * Sort playlists for the library UI: anchor collections keep catalog order, remaining items follow the sort option.
+ */
+export function sortPlaylistSubgroup(
+  items: PlaylistInfo[],
+  sortOption: PlaylistSortOption,
+  anchorIds: ReadonlySet<string> = LIBRARY_PLAYLIST_SORT_ANCHOR_IDS
+): PlaylistInfo[] {
+  const anchors: PlaylistInfo[] = [];
+  const rest: PlaylistInfo[] = [];
+  for (const p of items) {
+    if (anchorIds.has(p.id)) anchors.push(p);
+    else rest.push(p);
+  }
+  sortPlaylistArrayInPlace(rest, sortOption);
+  return [...anchors, ...rest];
+}
+
 /**
  * Filter and sort playlists based on search query and sort option
  */
@@ -120,28 +165,97 @@ export function filterAndSortPlaylists(
   searchQuery: string,
   sortOption: PlaylistSortOption
 ): PlaylistInfo[] {
-  // Step 1: Filter by search query
-  const result = playlists.filter(p => matchesSearch(p, searchQuery));
+  const filtered = filterPlaylistsOnly(playlists, searchQuery);
+  return sortPlaylistSubgroup(filtered, sortOption);
+}
 
-  // Step 2: Sort
-  switch (sortOption) {
-    case 'name-asc':
-      result.sort((a, b) => a.name.localeCompare(b.name));
-      break;
-    case 'name-desc':
-      result.sort((a, b) => b.name.localeCompare(a.name));
-      break;
-    case 'recently-added':
-    default:
-      result.sort((a, b) => {
-        const dateA = parseAddedAt(a.added_at);
-        const dateB = parseAddedAt(b.added_at);
-        return dateB - dateA; // Most recent first
-      });
-      break;
+/**
+ * Filter albums by search, decade, and artist (no sorting).
+ */
+export function filterAlbumsOnly(
+  albums: AlbumInfo[],
+  searchQuery: string,
+  yearFilter: YearFilterOption = 'all',
+  artistFilter: string = ''
+): AlbumInfo[] {
+  let result = albums.filter(a => matchesSearch(a, searchQuery));
+
+  if (yearFilter !== 'all') {
+    result = result.filter(a => {
+      const year = extractYear(a.release_date);
+      return matchesYearFilter(year, yearFilter);
+    });
+  }
+
+  if (artistFilter) {
+    const normalizedArtistFilter = normalizeText(artistFilter);
+    result = result.filter(a => normalizeText(a.artists).includes(normalizedArtistFilter));
   }
 
   return result;
+}
+
+function sortAlbumArrayInPlace(albums: AlbumInfo[], sortOption: AlbumSortOption): void {
+  switch (sortOption) {
+    case 'name-asc':
+      albums.sort((a, b) => a.name.localeCompare(b.name));
+      break;
+    case 'name-desc':
+      albums.sort((a, b) => b.name.localeCompare(a.name));
+      break;
+    case 'artist-asc':
+      albums.sort((a, b) => a.artists.localeCompare(b.artists));
+      break;
+    case 'artist-desc':
+      albums.sort((a, b) => b.artists.localeCompare(a.artists));
+      break;
+    case 'release-newest':
+      albums.sort((a, b) => {
+        const yearA = extractYear(a.release_date);
+        const yearB = extractYear(b.release_date);
+        if (yearA === null && yearB === null) return 0;
+        if (yearA === null) return 1;
+        if (yearB === null) return -1;
+        return yearB - yearA;
+      });
+      break;
+    case 'release-oldest':
+      albums.sort((a, b) => {
+        const yearA = extractYear(a.release_date);
+        const yearB = extractYear(b.release_date);
+        if (yearA === null && yearB === null) return 0;
+        if (yearA === null) return 1;
+        if (yearB === null) return -1;
+        return yearA - yearB;
+      });
+      break;
+    case 'recently-added':
+    default:
+      albums.sort((a, b) => {
+        const dateA = parseAddedAt(a.added_at);
+        const dateB = parseAddedAt(b.added_at);
+        return dateB - dateA;
+      });
+      break;
+  }
+}
+
+/**
+ * Sort albums for the library UI: anchor items keep catalog order, remaining items follow the sort option.
+ */
+export function sortAlbumSubgroup(
+  items: AlbumInfo[],
+  sortOption: AlbumSortOption,
+  anchorIds: ReadonlySet<string> = LIBRARY_ALBUM_SORT_ANCHOR_IDS
+): AlbumInfo[] {
+  const anchors: AlbumInfo[] = [];
+  const rest: AlbumInfo[] = [];
+  for (const a of items) {
+    if (anchorIds.has(a.id)) anchors.push(a);
+    else rest.push(a);
+  }
+  sortAlbumArrayInPlace(rest, sortOption);
+  return [...anchors, ...rest];
 }
 
 /**
@@ -154,68 +268,8 @@ export function filterAndSortAlbums(
   yearFilter: YearFilterOption = 'all',
   artistFilter: string = ''
 ): AlbumInfo[] {
-  // Step 1: Filter by search query
-  let result = albums.filter(a => matchesSearch(a, searchQuery));
-
-  // Step 2: Filter by year/decade
-  if (yearFilter !== 'all') {
-    result = result.filter(a => {
-      const year = extractYear(a.release_date);
-      return matchesYearFilter(year, yearFilter);
-    });
-  }
-
-  // Step 3: Filter by artist
-  if (artistFilter) {
-    const normalizedArtistFilter = normalizeText(artistFilter);
-    result = result.filter(a => normalizeText(a.artists).includes(normalizedArtistFilter));
-  }
-
-  // Step 4: Sort
-  switch (sortOption) {
-    case 'name-asc':
-      result.sort((a, b) => a.name.localeCompare(b.name));
-      break;
-    case 'name-desc':
-      result.sort((a, b) => b.name.localeCompare(a.name));
-      break;
-    case 'artist-asc':
-      result.sort((a, b) => a.artists.localeCompare(b.artists));
-      break;
-    case 'artist-desc':
-      result.sort((a, b) => b.artists.localeCompare(a.artists));
-      break;
-    case 'release-newest':
-      result.sort((a, b) => {
-        const yearA = extractYear(a.release_date);
-        const yearB = extractYear(b.release_date);
-        if (yearA === null && yearB === null) return 0;
-        if (yearA === null) return 1;
-        if (yearB === null) return -1;
-        return yearB - yearA;
-      });
-      break;
-    case 'release-oldest':
-      result.sort((a, b) => {
-        const yearA = extractYear(a.release_date);
-        const yearB = extractYear(b.release_date);
-        if (yearA === null && yearB === null) return 0;
-        if (yearA === null) return 1;
-        if (yearB === null) return -1;
-        return yearA - yearB;
-      });
-      break;
-    case 'recently-added':
-    default:
-      result.sort((a, b) => {
-        const dateA = parseAddedAt(a.added_at);
-        const dateB = parseAddedAt(b.added_at);
-        return dateB - dateA; // Most recent first
-      });
-      break;
-  }
-
-  return result;
+  const filtered = filterAlbumsOnly(albums, searchQuery, yearFilter, artistFilter);
+  return sortAlbumSubgroup(filtered, sortOption);
 }
 
 /**
@@ -277,4 +331,29 @@ export function partitionByPinned<T>(
   }
 
   return { pinned, unpinned };
+}
+
+/**
+ * From filtered library items, produce flat / pinned / unpinned lists.
+ * With no pin ids, sorts the full list once; otherwise partitions by pins then sorts each subgroup
+ * (same pattern as sortPlaylistSubgroup / sortAlbumSubgroup per subgroup).
+ */
+export function buildLibraryViewWithPins<T>(
+  filtered: T[],
+  pinnedIds: string[],
+  getId: (item: T) => string,
+  sortSubgroup: (items: T[]) => T[]
+): { flat: T[]; pinned: T[]; unpinned: T[] } {
+  if (pinnedIds.length === 0) {
+    const sorted = sortSubgroup(filtered);
+    return { flat: sorted, pinned: [], unpinned: sorted };
+  }
+  const { pinned, unpinned } = partitionByPinned(filtered, pinnedIds, getId);
+  const pinnedSorted = sortSubgroup(pinned);
+  const unpinnedSorted = sortSubgroup(unpinned);
+  return {
+    flat: [...pinnedSorted, ...unpinnedSorted],
+    pinned: pinnedSorted,
+    unpinned: unpinnedSorted,
+  };
 }

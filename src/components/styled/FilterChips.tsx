@@ -104,17 +104,6 @@ export const SearchChipInput = styled.input`
   }
 `;
 
-export const ClearChip = styled(Chip)`
-  border-color: ${theme.colors.control.borderHover};
-  color: ${theme.colors.muted.foreground};
-  background: none;
-
-  &:hover {
-    color: ${theme.colors.white};
-    background: ${theme.colors.control.backgroundHover};
-  }
-`;
-
 /** Sort chip with dropdown arrow. */
 export const SortChipWrapper = styled.div`
   position: relative;
