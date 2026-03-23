@@ -1,5 +1,7 @@
-import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
+import { useState, useRef, useEffect, useLayoutEffect, useMemo, useCallback } from 'react';
 import * as React from 'react';
+import { createPortal } from 'react-dom';
+import { theme } from '@/styles/theme';
 import {
   ChipRow,
   Chip,
@@ -114,22 +116,90 @@ const FilterChipRow = React.memo(function FilterChipRow({
   const [searchExpanded, setSearchExpanded] = useState(false);
   const [sortOpen, setSortOpen] = useState(false);
   const [artistListOpen, setArtistListOpen] = useState(false);
+  const [sortMenuPos, setSortMenuPos] = useState<{ top: number; left: number } | null>(null);
+  const [artistMenuPos, setArtistMenuPos] = useState<{ top: number; left: number } | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const sortRef = useRef<HTMLDivElement>(null);
+  const sortDropdownRef = useRef<HTMLDivElement>(null);
   const artistRef = useRef<HTMLDivElement>(null);
+  const artistDropdownRef = useRef<HTMLDivElement>(null);
 
-  // Close dropdowns when clicking outside
+  const MENU_GAP_PX = 4;
+
+  // ChipRow uses overflow-x: auto, which clips overflow-y — portaled menus avoid that.
+  useLayoutEffect(() => {
+    if (!sortOpen) {
+      setSortMenuPos(null);
+      return;
+    }
+    const update = () => {
+      const el = sortRef.current;
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      const minW = 180;
+      const left = Math.max(8, Math.min(rect.left, window.innerWidth - minW - 8));
+      setSortMenuPos({ top: rect.bottom + MENU_GAP_PX, left });
+    };
+    update();
+    window.addEventListener('scroll', update, true);
+    window.addEventListener('resize', update);
+    return () => {
+      window.removeEventListener('scroll', update, true);
+      window.removeEventListener('resize', update);
+    };
+  }, [sortOpen]);
+
+  useLayoutEffect(() => {
+    if (!artistListOpen) {
+      setArtistMenuPos(null);
+      return;
+    }
+    const update = () => {
+      const el = artistRef.current;
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      const minW = 200;
+      const left = Math.max(8, Math.min(rect.left, window.innerWidth - minW - 8));
+      setArtistMenuPos({ top: rect.top - MENU_GAP_PX, left });
+    };
+    update();
+    window.addEventListener('scroll', update, true);
+    window.addEventListener('resize', update);
+    return () => {
+      window.removeEventListener('scroll', update, true);
+      window.removeEventListener('resize', update);
+    };
+  }, [artistListOpen]);
+
+  // Close dropdowns when clicking outside (menus are portaled, so check both anchors + panels)
   useEffect(() => {
     function handleClick(e: MouseEvent) {
-      if (sortOpen && sortRef.current && !sortRef.current.contains(e.target as Node)) {
-        setSortOpen(false);
+      const t = e.target as Node;
+      if (sortOpen) {
+        const inSort =
+          !!(sortRef.current?.contains(t) || sortDropdownRef.current?.contains(t));
+        if (!inSort) setSortOpen(false);
       }
-      if (artistListOpen && artistRef.current && !artistRef.current.contains(e.target as Node)) {
-        setArtistListOpen(false);
+      if (artistListOpen) {
+        const inArtist =
+          !!(artistRef.current?.contains(t) || artistDropdownRef.current?.contains(t));
+        if (!inArtist) setArtistListOpen(false);
       }
     }
     document.addEventListener('mousedown', handleClick);
     return () => document.removeEventListener('mousedown', handleClick);
+  }, [sortOpen, artistListOpen]);
+
+  useEffect(() => {
+    if (!sortOpen && !artistListOpen) return;
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') {
+        setSortOpen(false);
+        setArtistListOpen(false);
+      }
+    }
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
   }, [sortOpen, artistListOpen]);
 
   // Auto-focus search input when expanded
@@ -196,31 +266,47 @@ const FilterChipRow = React.memo(function FilterChipRow({
 
       {/* Sort chip */}
       <SortChipWrapper ref={sortRef}>
-        <Chip $active={sortOpen} onClick={() => setSortOpen(!sortOpen)}>
+        <Chip $active={sortOpen} onClick={() => setSortOpen(!sortOpen)} aria-expanded={sortOpen} aria-haspopup="listbox">
           <SortIcon />
           {currentSortLabel}
           <ChevronDownIcon />
         </Chip>
-        {sortOpen && (
-          <SortDropdown>
-            {Object.entries(sortLabels).map(([value, label]) => (
-              <SortOption
-                key={value}
-                $active={currentSort === value}
-                onClick={() => {
-                  if (viewMode === 'playlists') {
-                    onPlaylistSortChange(value as PlaylistSortOption);
-                  } else {
-                    onAlbumSortChange(value as AlbumSortOption);
-                  }
-                  setSortOpen(false);
-                }}
-              >
-                {label}
-              </SortOption>
-            ))}
-          </SortDropdown>
-        )}
+        {sortOpen &&
+          sortMenuPos &&
+          createPortal(
+            <SortDropdown
+              ref={sortDropdownRef}
+              role="listbox"
+              aria-label="Sort by"
+              style={{
+                position: 'fixed',
+                top: sortMenuPos.top,
+                left: sortMenuPos.left,
+                zIndex: theme.zIndex.popover,
+                margin: 0,
+              }}
+            >
+              {Object.entries(sortLabels).map(([value, label]) => (
+                <SortOption
+                  key={value}
+                  $active={currentSort === value}
+                  role="option"
+                  aria-selected={currentSort === value}
+                  onClick={() => {
+                    if (viewMode === 'playlists') {
+                      onPlaylistSortChange(value as PlaylistSortOption);
+                    } else {
+                      onAlbumSortChange(value as AlbumSortOption);
+                    }
+                    setSortOpen(false);
+                  }}
+                >
+                  {label}
+                </SortOption>
+              ))}
+            </SortDropdown>,
+            document.body
+          )}
       </SortChipWrapper>
 
       {/* Provider chips */}
@@ -252,23 +338,36 @@ const FilterChipRow = React.memo(function FilterChipRow({
           <Chip $active={artistListOpen || (!!artistFilter && !visibleArtists.some(([a]) => a === artistFilter))} onClick={() => setArtistListOpen(!artistListOpen)}>
             More...
           </Chip>
-          {artistListOpen && (
-            <ArtistListPopover>
-              {topArtists.map(([artist, count]) => (
-                <ArtistOption
-                  key={artist}
-                  $active={artistFilter === artist}
-                  onClick={() => {
-                    onArtistFilterChange(artistFilter === artist ? '' : artist);
-                    setArtistListOpen(false);
-                  }}
-                >
-                  {artist}
-                  <ArtistCount>{count}</ArtistCount>
-                </ArtistOption>
-              ))}
-            </ArtistListPopover>
-          )}
+          {artistListOpen &&
+            artistMenuPos &&
+            createPortal(
+              <ArtistListPopover
+                ref={artistDropdownRef}
+                style={{
+                  position: 'fixed',
+                  top: artistMenuPos.top,
+                  left: artistMenuPos.left,
+                  zIndex: theme.zIndex.popover,
+                  margin: 0,
+                  transform: 'translateY(-100%)',
+                }}
+              >
+                {topArtists.map(([artist, count]) => (
+                  <ArtistOption
+                    key={artist}
+                    $active={artistFilter === artist}
+                    onClick={() => {
+                      onArtistFilterChange(artistFilter === artist ? '' : artist);
+                      setArtistListOpen(false);
+                    }}
+                  >
+                    {artist}
+                    <ArtistCount>{count}</ArtistCount>
+                  </ArtistOption>
+                ))}
+              </ArtistListPopover>,
+              document.body
+            )}
         </SortChipWrapper>
       )}
 
