@@ -7,15 +7,22 @@ import Switch from '@/components/controls/Switch';
 const TOGGLE_ON_COLOR = '#4ade80';
 const TOGGLE_OFF_COLOR = 'rgba(255, 255, 255, 0.25)';
 
-const Bar = styled.div`
+const Bar = styled.div<{ $variant?: 'default' | 'drawerBottom' }>`
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: ${({ $variant }) => ($variant === 'drawerBottom' ? 'flex-start' : 'center')};
   flex-wrap: wrap;
   gap: ${({ theme }) => theme.spacing.md};
   row-gap: ${({ theme }) => theme.spacing.xs};
-  padding: ${({ theme }) => theme.spacing.xs} 0;
-  flex-shrink: 0;
+  padding: ${({ theme, $variant }) => ($variant === 'drawerBottom' ? '0' : `${theme.spacing.xs} 0`)};
+  flex-shrink: ${({ $variant }) => ($variant === 'drawerBottom' ? 1 : 0)};
+  ${({ $variant }) =>
+    $variant === 'drawerBottom'
+      ? `
+    flex: 1 1 auto;
+    min-width: 0;
+  `
+      : ''}
 `;
 
 const ProviderRow = styled.div`
@@ -62,14 +69,18 @@ const ConnectButton = styled.button`
   }
 `;
 
-const LibraryProviderBar = React.memo(function LibraryProviderBar() {
+interface LibraryProviderBarProps {
+  variant?: 'default' | 'drawerBottom';
+}
+
+const LibraryProviderBar = React.memo(function LibraryProviderBar({ variant = 'default' }: LibraryProviderBarProps) {
   const { registry, enabledProviderIds, toggleProvider } = useProviderContext();
   const providers = useMemo(() => registry.getAll(), [registry]);
 
   if (providers.length < 2) return null;
 
   return (
-    <Bar>
+    <Bar $variant={variant}>
       {providers.map((descriptor) => {
         const isEnabled = enabledProviderIds.includes(descriptor.id);
         const isConnected = descriptor.auth.isAuthenticated();
