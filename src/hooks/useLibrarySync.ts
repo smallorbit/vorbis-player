@@ -15,13 +15,19 @@ import { useProviderContext } from '../contexts/ProviderContext';
 import type { MediaCollection, ProviderId } from '../types/domain';
 import { providerRegistry } from '../providers/registry';
 import { logLibrary } from '../lib/debugLog';
+import { getOrSetFirstSeenAddedAtIso } from '../utils/libraryFirstSeen';
 
 function splitCollections(collections: MediaCollection[]): { playlists: CachedPlaylistInfo[]; albums: AlbumInfo[] } {
   const playlists: CachedPlaylistInfo[] = [];
   const albums: AlbumInfo[] = [];
+  let playlistOrdinal = 0;
+  let albumOrdinal = 0;
   for (const c of collections) {
-    if (c.kind === 'album') albums.push(collectionToAlbumInfo(c));
-    else playlists.push(collectionToPlaylistInfo(c));
+    if (c.kind === 'album') {
+      albums.push(collectionToAlbumInfo(c, albumOrdinal++));
+    } else {
+      playlists.push(collectionToPlaylistInfo(c, playlistOrdinal++));
+    }
   }
   return { playlists, albums };
 }
@@ -55,7 +61,7 @@ interface UseLibrarySyncResult {
  * Map a MediaCollection to CachedPlaylistInfo shape so the library UI can
  * render it regardless of provider.
  */
-function collectionToPlaylistInfo(c: MediaCollection): CachedPlaylistInfo {
+function collectionToPlaylistInfo(c: MediaCollection, ordinal: number): CachedPlaylistInfo {
   return {
     id: c.id,
     name: c.name,
@@ -65,13 +71,14 @@ function collectionToPlaylistInfo(c: MediaCollection): CachedPlaylistInfo {
     owner: c.ownerName ? { display_name: c.ownerName } : null,
     snapshot_id: c.revision ?? undefined,
     provider: c.provider,
+    added_at: getOrSetFirstSeenAddedAtIso(c.provider, `playlist:${c.id}`, ordinal),
   };
 }
 
 /**
  * Map a MediaCollection (album/folder kind) to AlbumInfo shape.
  */
-function collectionToAlbumInfo(c: MediaCollection): AlbumInfo {
+function collectionToAlbumInfo(c: MediaCollection, ordinal: number): AlbumInfo {
   return {
     id: c.id,
     name: c.name,
@@ -82,6 +89,7 @@ function collectionToAlbumInfo(c: MediaCollection): AlbumInfo {
     uri: '',
     album_type: c.kind === 'folder' ? 'folder' : 'album',
     provider: c.provider,
+    added_at: getOrSetFirstSeenAddedAtIso(c.provider, `album:${c.id}`, ordinal),
   };
 }
 
