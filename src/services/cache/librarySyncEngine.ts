@@ -404,10 +404,15 @@ export class LibrarySyncEngine {
     const playlists = await getAllUserPlaylists(signal);
     const allFetched = playlists as CachedPlaylistInfo[];
 
-    const fetchTimestamp = new Date().toISOString();
-    for (const p of allFetched) {
+    // Spotify often omits added_at on /me/playlists; avoid assigning one shared
+    // timestamp to every playlist (that makes "Recently Added" a no-op).
+    for (let i = 0; i < allFetched.length; i++) {
+      const p = allFetched[i];
       const cached = cachedMap.get(p.id);
-      p.added_at = cached?.added_at || p.added_at || fetchTimestamp;
+      p.added_at =
+        cached?.added_at ||
+        p.added_at ||
+        new Date(Date.now() - i * 60000).toISOString();
     }
 
     const fetchedIds = new Set(allFetched.map(p => p.id));

@@ -69,6 +69,8 @@ export interface MediaCollection {
   ownerName?: string | null;
   /** Revision/cursor for change detection (e.g. snapshot_id, cursor, hash). */
   revision?: string | null;
+  /** Release date string (e.g. "2023", "2023-05-17") for sorting. */
+  releaseDate?: string;
 }
 
 /**

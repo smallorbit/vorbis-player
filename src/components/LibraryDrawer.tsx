@@ -70,55 +70,13 @@ const DrawerContainer = styled.div.withConfig({
   }
 `;
 
-const DrawerHeader = styled.div`
-  flex-shrink: 0;
-  padding: calc(${theme.spacing.sm} + env(safe-area-inset-top, 0px)) ${theme.spacing.md} ${theme.spacing.sm};
-  min-height: 48px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  position: relative;
-  touch-action: none;
-`;
-
-const CloseButton = styled.button`
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  border: none;
-  background: none;
-  color: ${({ theme }) => theme.colors.foreground};
-  font-size: ${({ theme }) => theme.fontSize.xl};
-  cursor: pointer;
-  border-radius: 50%;
-  transition: background ${({ theme }) => theme.transitions.fast} ease;
-  padding: 0;
-
-  &:active {
-    background: ${({ theme }) => theme.colors.control.background};
-  }
-`;
-
-const DrawerTitle = styled.h3`
-  color: ${theme.colors.white};
-  margin: 0;
-  font-size: ${theme.fontSize.xl};
-  font-weight: ${theme.fontWeight.semibold};
-  text-align: center;
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
-  pointer-events: none;
-`;
-
 const DrawerContent = styled.div`
   flex: 1;
   min-height: 0;
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  padding-top: env(safe-area-inset-top, 0px);
 `;
 
 const LibraryDrawer = React.memo(function LibraryDrawer({ isOpen, onClose, onPlaylistSelect, onAddToQueue, initialSearchQuery, initialViewMode }: LibraryDrawerProps) {
@@ -178,14 +136,6 @@ const LibraryDrawer = React.memo(function LibraryDrawer({ isOpen, onClose, onPla
       >
         {isOpen && (
           <>
-            <DrawerHeader>
-              <CloseButton onClick={onClose} aria-label="Close library">
-                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                  <path d="M4 7L10 13L16 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </CloseButton>
-              <DrawerTitle>Library</DrawerTitle>
-            </DrawerHeader>
             <DrawerContent>
               <PlaylistSelection
                 onPlaylistSelect={handlePlaylistSelectWrapper}

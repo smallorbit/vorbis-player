@@ -4,7 +4,7 @@
  * Extracts title, artist, album, and embedded cover art (APIC/PIC frames).
  */
 
-interface AudioMetadata {
+export interface AudioMetadata {
   title?: string;
   artist?: string;
   album?: string;
@@ -15,6 +15,8 @@ interface AudioMetadata {
   musicbrainzArtistId?: string;
   /** International Standard Recording Code (from TSRC frame). */
   isrc?: string;
+  /** Release year extracted from date frames (TDRC/TYER/TYE/DATE). */
+  releaseYear?: number;
 }
 
 function readSynchsafeInt(bytes: Uint8Array, offset: number): number {
@@ -124,6 +126,17 @@ function decodeTXXX(data: Uint8Array): { description: string; value: string } | 
   return { description, value };
 }
 
+/**
+ * Extract a 4-digit year from a date string.
+ * Handles: "YYYY", "YYYY-MM-DD", "YYYYMMDD", etc.
+ */
+function extractYearFromDateString(value: string): number | null {
+  const match = value.match(/^(\d{4})/);
+  if (!match) return null;
+  const year = parseInt(match[1], 10);
+  return year > 0 && year < 3000 ? year : null;
+}
+
 function readUint32LE(bytes: Uint8Array, offset: number): number {
   return bytes[offset] | (bytes[offset + 1] << 8) | (bytes[offset + 2] << 16) | (bytes[offset + 3] << 24);
 }
@@ -172,6 +185,10 @@ function parseFlac(bytes: Uint8Array): AudioMetadata {
         else if (key === 'ISRC') result.isrc = value;
         else if (key === 'MUSICBRAINZ_TRACKID') result.musicbrainzRecordingId = value;
         else if (key === 'MUSICBRAINZ_ARTISTID') result.musicbrainzArtistId = value;
+        else if ((key === 'DATE' || key === 'YEAR') && !result.releaseYear) {
+          const y = extractYearFromDateString(value);
+          if (y) result.releaseYear = y;
+        }
         else if (key === 'METADATA_BLOCK_PICTURE' && !result.coverArt) {
           try {
             const picBytes = Uint8Array.from(atob(value), (c) => c.charCodeAt(0));
@@ -255,7 +272,10 @@ export function parseID3(buffer: ArrayBuffer): AudioMetadata {
         if (frameId === 'TT2') result.title = decodeTextFrame(data);
         else if (frameId === 'TP1') result.artist = decodeTextFrame(data);
         else if (frameId === 'TAL') result.album = decodeTextFrame(data);
-        else if (frameId === 'PIC' && !result.coverArt) {
+        else if (frameId === 'TYE' && !result.releaseYear) {
+          const y = extractYearFromDateString(decodeTextFrame(data));
+          if (y) result.releaseYear = y;
+        } else if (frameId === 'PIC' && !result.coverArt) {
           const pic = decodePIC(data);
           if (pic) result.coverArt = pic;
         }
@@ -284,7 +304,10 @@ export function parseID3(buffer: ArrayBuffer): AudioMetadata {
         else if (frameId === 'TPE1') result.artist = decodeTextFrame(data);
         else if (frameId === 'TALB') result.album = decodeTextFrame(data);
         else if (frameId === 'TSRC') result.isrc = decodeTextFrame(data);
-        else if (frameId === 'APIC' && !result.coverArt) {
+        else if ((frameId === 'TDRC' || frameId === 'TYER') && !result.releaseYear) {
+          const y = extractYearFromDateString(decodeTextFrame(data));
+          if (y) result.releaseYear = y;
+        } else if (frameId === 'APIC' && !result.coverArt) {
           const apic = decodeAPIC(data);
           if (apic) result.coverArt = apic;
         } else if (frameId === 'TXXX') {

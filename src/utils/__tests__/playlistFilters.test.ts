@@ -1,6 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import {
   filterAndSortPlaylists,
+  filterPlaylistsOnly,
+  sortPlaylistSubgroup,
+  filterAlbumsOnly,
+  sortAlbumSubgroup,
   filterAndSortAlbums,
   getAvailableDecades,
   partitionByPinned,
@@ -128,6 +132,46 @@ describe('filterAndSortPlaylists', () => {
       expect(result[1].name).toBe('Road Trip');   // 2024-12-01
       expect(result[2].name).toBe('Chill Vibes'); // 2024-06-15
     });
+
+    it('keeps anchor playlists before sorted remainder (All Music id "", liked-songs)', () => {
+      const allMusic: PlaylistInfo = {
+        id: '',
+        name: 'All Music',
+        description: null,
+        images: [],
+        tracks: { total: 100 },
+        owner: null,
+        added_at: '2020-01-01T10:00:00Z',
+      };
+      const likedInList: PlaylistInfo = {
+        id: 'liked-songs',
+        name: 'Liked Songs',
+        description: null,
+        images: [],
+        tracks: { total: 5 },
+        owner: null,
+        added_at: '2021-01-01T10:00:00Z',
+      };
+      const mixed = [mockPlaylists[2], allMusic, mockPlaylists[0], likedInList];
+      const result = filterAndSortPlaylists(mixed, '', 'name-asc');
+      expect(result.map(p => p.name)).toEqual([
+        'All Music',
+        'Liked Songs',
+        'Chill Vibes',
+        'Road Trip',
+      ]);
+    });
+  });
+
+  describe('sortPlaylistSubgroup with partition (pinned + sort)', () => {
+    it('sorts within pinned and unpinned groups independently', () => {
+      const filtered = filterPlaylistsOnly(mockPlaylists, '');
+      const { pinned, unpinned } = partitionByPinned(filtered, ['3', '1'], (p) => p.id);
+      const pinnedSorted = sortPlaylistSubgroup(pinned, 'name-asc');
+      const unpinnedSorted = sortPlaylistSubgroup(unpinned, 'name-asc');
+      expect(pinnedSorted.map(p => p.name)).toEqual(['Chill Vibes', 'Road Trip']);
+      expect(unpinnedSorted.map(p => p.name)).toEqual(['Workout Mix']);
+    });
   });
 });
 
@@ -234,6 +278,54 @@ describe('filterAndSortAlbums', () => {
     });
   });
 
+  describe('missing release dates', () => {
+    const albumsWithMissing: AlbumInfo[] = [
+      ...mockAlbums,
+      {
+        id: '5',
+        name: 'No Date Album',
+        artists: 'Unknown',
+        images: [],
+        release_date: '',
+        total_tracks: 5,
+        uri: 'spotify:album:5',
+        added_at: '2024-11-01T10:00:00Z',
+      },
+      {
+        id: '6',
+        name: 'Also No Date',
+        artists: 'Mystery',
+        images: [],
+        release_date: '',
+        total_tracks: 3,
+        uri: 'spotify:album:6',
+        added_at: '2024-09-01T10:00:00Z',
+      },
+    ];
+
+    it('pushes albums with missing dates to the end when sorting release-newest', () => {
+      const result = filterAndSortAlbums(albumsWithMissing, '', 'release-newest');
+      // Dated albums come first, sorted newest to oldest
+      expect(result[0].name).toBe('Random Access Memories'); // 2013
+      expect(result[1].name).toBe('Thriller');               // 1982
+      expect(result[2].name).toBe('Abbey Road');             // 1969
+      // Undated albums at the end
+      expect(result[3].release_date).toBe('');
+      expect(result[4].release_date).toBe('');
+    });
+
+    it('pushes albums with missing dates to the end when sorting release-oldest', () => {
+      const result = filterAndSortAlbums(albumsWithMissing, '', 'release-oldest');
+      // Dated albums come first, sorted oldest to newest
+      expect(result[0].name).toBe('Abbey Road');             // 1969
+      expect(result[1].name).toBe('Thriller');               // 1982
+      expect(result[2].name).toBe('Random Access Memories'); // 2013
+      // Undated albums at the end
+      expect(result[3].release_date).toBe('');
+      expect(result[4].release_date).toBe('');
+    });
+  });
+
   describe('combined search + filter + sort', () => {
     it('applies search, year filter, and sort together', () => {
       // Searching for empty, filtering 1980s, sorting by name
@@ -264,6 +356,37 @@ describe('filterAndSortAlbums', () => {
       expect(result).toHaveLength(2);
       expect(result[0].name).toBe('Abbey Road');
       expect(result[1].name).toBe('Let It Be');
+    });
+
+    it('keeps anchor album (id "") before sorted remainder', () => {
+      const allMusic: AlbumInfo = {
+        id: '',
+        name: 'All Music',
+        artists: 'Various',
+        images: [],
+        release_date: '',
+        total_tracks: 999,
+        uri: '',
+        added_at: '2010-01-01T10:00:00Z',
+      };
+      const mixed = [mockAlbums[2], allMusic, mockAlbums[0]];
+      const result = filterAndSortAlbums(mixed, '', 'name-asc');
+      expect(result.map(a => a.name)).toEqual([
+        'All Music',
+        'Abbey Road',
+        'Random Access Memories',
+      ]);
+    });
+  });
+
+  describe('sortAlbumSubgroup with partition (pinned + sort)', () => {
+    it('sorts within pinned and unpinned groups independently', () => {
+      const filtered = filterAlbumsOnly(mockAlbums, '', 'all', '');
+      const { pinned, unpinned } = partitionByPinned(filtered, ['3', '1'], (a) => a.id);
+      const pinnedSorted = sortAlbumSubgroup(pinned, 'name-asc');
+      const unpinnedSorted = sortAlbumSubgroup(unpinned, 'name-asc');
+      expect(pinnedSorted.map(a => a.name)).toEqual(['Abbey Road', 'Random Access Memories']);
+      expect(unpinnedSorted.map(a => a.name)).toEqual(['Thriller']);
     });
   });
 });

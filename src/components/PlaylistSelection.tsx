@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import * as React from 'react';
 import { createPortal } from 'react-dom';
 import styled from 'styled-components';
@@ -14,14 +14,18 @@ import { usePlayerSizingContext } from '@/contexts/PlayerSizingContext';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import { useLibrarySync } from '../hooks/useLibrarySync';
 import {
-  filterAndSortPlaylists,
-  filterAndSortAlbums,
-  partitionByPinned,
+  filterPlaylistsOnly,
+  sortPlaylistSubgroup,
+  filterAlbumsOnly,
+  sortAlbumSubgroup,
+  buildLibraryViewWithPins,
   type PlaylistSortOption,
   type AlbumSortOption
 } from '../utils/playlistFilters';
 import { usePinnedItems } from '../hooks/usePinnedItems';
 import { LIKED_SONGS_ID, LIKED_SONGS_NAME, toAlbumPlaylistId, isAlbumId } from '../constants/playlist';
+import FilterChipRow from './FilterChipRow';
+import LibraryDrawerSortChip from './LibraryDrawerSortChip';
 import LibraryProviderBar from './LibraryProviderBar';
 import { useUnifiedLikedTracks } from '@/hooks/useUnifiedLikedTracks';
 import { librarySyncEngine } from '@/services/cache/librarySyncEngine';
@@ -505,6 +509,10 @@ const RefreshButton = styled.button<{ $spinning: boolean }>`
   }
 `;
 
+const DrawerRefreshButton = styled(RefreshButton)`
+  flex-shrink: 0;
+`;
+
 const DrawerBottomControls = styled.div`
   flex-shrink: 0;
   padding: ${theme.spacing.sm} 0 0;
@@ -513,6 +521,23 @@ const DrawerBottomControls = styled.div`
   & > div {
     margin-bottom: 0;
   }
+`;
+
+const DrawerBottomRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: ${theme.spacing.sm};
+  width: 100%;
+  min-width: 0;
+  flex-wrap: wrap;
+`;
+
+const DrawerBottomActions = styled.div`
+  display: flex;
+  align-items: center;
+  gap: ${theme.spacing.sm};
+  flex-shrink: 0;
+  margin-left: auto;
 `;
 
 const ClearButton = styled.button`
@@ -529,6 +554,11 @@ const ClearButton = styled.button`
     background: ${({ theme }) => theme.colors.control.backgroundHover};
     color: ${({ theme }) => theme.colors.white};
   }
+`;
+
+const DrawerClearFiltersButton = styled(ClearButton)`
+  padding: ${({ theme }) => `${theme.spacing.xs} ${theme.spacing.md}`};
+  font-size: ${({ theme }) => theme.fontSize.xs};
 `;
 
 const EmptyState = styled.div<{ $fullWidth?: boolean }>`
@@ -767,6 +797,7 @@ const PlaylistSelection = React.memo(function PlaylistSelection({
     'recently-added'
   );
   const [artistFilter, setArtistFilter] = useState<string>('');
+  const [providerFilters, setProviderFilters] = useState<ProviderId[]>([]);
   const [albumPopover, setAlbumPopover] = useState<AlbumPopoverState>(null);
   const [playlistPopover, setPlaylistPopover] = useState<PlaylistPopoverState>(null);
   const [albumSaved, setAlbumSaved] = useState<boolean | null>(null);
@@ -835,29 +866,58 @@ const PlaylistSelection = React.memo(function PlaylistSelection({
     localStorage.setItem('vorbis-player-view-mode', viewMode);
   }, [viewMode]);
 
-  const filteredPlaylists = useMemo(() => {
-    return filterAndSortPlaylists(playlists, searchQuery, playlistSort);
-  }, [playlists, searchQuery, playlistSort]);
+  const handleProviderToggle = useCallback((provider: ProviderId) => {
+    setProviderFilters((prev) => {
+      if (prev.length === 0) {
+        // First toggle: activate only this provider (deactivate others)
+        return [provider];
+      }
+      if (prev.includes(provider)) {
+        const next = prev.filter((p) => p !== provider);
+        // If removing last filter, return to "all" (empty = no filter)
+        return next;
+      }
+      return [...prev, provider];
+    });
+  }, []);
 
-  const filteredAlbums = useMemo(() => {
-    return filterAndSortAlbums(albums, searchQuery, albumSort, 'all', artistFilter);
-  }, [albums, searchQuery, albumSort, artistFilter]);
-
-  const hasActiveFilters = searchQuery !== '' || artistFilter !== '';
-
-  const { pinned: pinnedPlaylists, unpinned: unpinnedPlaylists } = useMemo(() => {
-    if (hasActiveFilters || pinnedPlaylistIds.length === 0) {
-      return { pinned: [] as PlaylistInfo[], unpinned: filteredPlaylists };
+  const playlistLibraryView = useMemo(() => {
+    let items = playlists;
+    if (providerFilters.length > 0) {
+      items = items.filter((p) => p.provider && providerFilters.includes(p.provider));
     }
-    return partitionByPinned(filteredPlaylists, pinnedPlaylistIds, (p) => p.id);
-  }, [filteredPlaylists, pinnedPlaylistIds, hasActiveFilters]);
+    const filtered = filterPlaylistsOnly(items, searchQuery);
+    return buildLibraryViewWithPins(
+      filtered,
+      pinnedPlaylistIds,
+      (p) => p.id,
+      (subgroup) => sortPlaylistSubgroup(subgroup, playlistSort)
+    );
+  }, [playlists, searchQuery, playlistSort, providerFilters, pinnedPlaylistIds]);
 
-  const { pinned: pinnedAlbums, unpinned: unpinnedAlbums } = useMemo(() => {
-    if (pinnedAlbumIds.length === 0) {
-      return { pinned: [] as AlbumInfo[], unpinned: filteredAlbums };
+  const filteredPlaylists = playlistLibraryView.flat;
+  const pinnedPlaylists = playlistLibraryView.pinned;
+  const unpinnedPlaylists = playlistLibraryView.unpinned;
+
+  const albumLibraryView = useMemo(() => {
+    let items = albums;
+    if (providerFilters.length > 0) {
+      items = items.filter((a) => a.provider && providerFilters.includes(a.provider));
     }
-    return partitionByPinned(filteredAlbums, pinnedAlbumIds, (a) => a.id);
-  }, [filteredAlbums, pinnedAlbumIds]);
+    const filtered = filterAlbumsOnly(items, searchQuery, 'all', artistFilter);
+    return buildLibraryViewWithPins(
+      filtered,
+      pinnedAlbumIds,
+      (a) => a.id,
+      (subgroup) => sortAlbumSubgroup(subgroup, albumSort)
+    );
+  }, [albums, searchQuery, albumSort, artistFilter, providerFilters, pinnedAlbumIds]);
+
+  const filteredAlbums = albumLibraryView.flat;
+  const pinnedAlbums = albumLibraryView.pinned;
+  const unpinnedAlbums = albumLibraryView.unpinned;
+
+  const hasActiveFilters = searchQuery !== '' || artistFilter !== '' || providerFilters.length > 0;
 
   useEffect(() => {
     if (viewMode === 'playlists') {
@@ -1197,6 +1257,7 @@ const PlaylistSelection = React.memo(function PlaylistSelection({
             onClick={() => {
               setSearchQuery('');
               setArtistFilter('');
+              setProviderFilters([]);
             }}
           >
             Clear
@@ -1242,6 +1303,7 @@ const PlaylistSelection = React.memo(function PlaylistSelection({
             onClick={() => {
               setSearchQuery('');
               setArtistFilter('');
+              setProviderFilters([]);
             }}
           >
             Clear
@@ -1270,10 +1332,25 @@ const PlaylistSelection = React.memo(function PlaylistSelection({
 
   const mainContent = showMainContent ? (
     <>
-      <LibraryProviderBar />
+      {!inDrawer && <LibraryProviderBar />}
       <div ref={inDrawer ? swipeZoneRef : undefined} style={inDrawer ? { flexShrink: 0, touchAction: 'pan-y' } : undefined}>
         {tabsBar}
       </div>
+
+      {inDrawer && (
+        <FilterChipRow
+          viewMode={viewMode}
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+          enabledProviderIds={enabledProviderIds}
+          activeProviderFilters={providerFilters}
+          onProviderToggle={handleProviderToggle}
+          showProviderChips={showProviderBadges}
+          albums={albums}
+          artistFilter={artistFilter}
+          onArtistFilterChange={setArtistFilter}
+        />
+      )}
 
       {viewMode === 'playlists' && (() => {
         const likedSongsPinned = isPlaylistPinned(LIKED_SONGS_ID);
@@ -1575,7 +1652,46 @@ const PlaylistSelection = React.memo(function PlaylistSelection({
 
       {inDrawer && (
         <DrawerBottomControls>
-          {searchAndSortControls}
+          <DrawerBottomRow>
+            <LibraryProviderBar variant="drawerBottom" />
+            <DrawerBottomActions>
+              <LibraryDrawerSortChip
+                viewMode={viewMode}
+                playlistSort={playlistSort}
+                albumSort={albumSort}
+                onPlaylistSortChange={setPlaylistSort}
+                onAlbumSortChange={setAlbumSort}
+              />
+              {hasActiveFilters && (
+                <DrawerClearFiltersButton
+                  type="button"
+                  onClick={() => {
+                    setSearchQuery('');
+                    setArtistFilter('');
+                    setProviderFilters([]);
+                  }}
+                  aria-label="Clear filters"
+                >
+                  Clear
+                </DrawerClearFiltersButton>
+              )}
+              {onLibraryRefresh && (
+                <DrawerRefreshButton
+                  onClick={onLibraryRefresh}
+                  $spinning={!!isLibraryRefreshing}
+                  aria-label="Refresh library"
+                  title="Refresh library"
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                    <path d="M21 2v6h-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    <path d="M3 12a9 9 0 0 1 15.36-6.36L21 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    <path d="M3 22v-6h6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    <path d="M21 12a9 9 0 0 1-15.36 6.36L3 16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </DrawerRefreshButton>
+              )}
+            </DrawerBottomActions>
+          </DrawerBottomRow>
         </DrawerBottomControls>
       )}
 

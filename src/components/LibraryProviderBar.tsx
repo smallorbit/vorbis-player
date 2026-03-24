@@ -3,19 +3,25 @@ import styled from 'styled-components';
 import { useProviderContext } from '@/contexts/ProviderContext';
 import Switch from '@/components/controls/Switch';
 
-
 const TOGGLE_ON_COLOR = '#4ade80';
 const TOGGLE_OFF_COLOR = 'rgba(255, 255, 255, 0.25)';
 
-const Bar = styled.div`
+const Bar = styled.div<{ $variant?: 'default' | 'drawerBottom' }>`
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: ${({ $variant }) => ($variant === 'drawerBottom' ? 'flex-start' : 'center')};
   flex-wrap: wrap;
   gap: ${({ theme }) => theme.spacing.md};
   row-gap: ${({ theme }) => theme.spacing.xs};
-  padding: ${({ theme }) => theme.spacing.xs} 0;
-  flex-shrink: 0;
+  padding: ${({ theme, $variant }) => ($variant === 'drawerBottom' ? '0' : `${theme.spacing.xs} 0`)};
+  flex-shrink: ${({ $variant }) => ($variant === 'drawerBottom' ? 1 : 0)};
+  ${({ $variant }) =>
+    $variant === 'drawerBottom'
+      ? `
+    flex: 1 1 auto;
+    min-width: 0;
+  `
+      : ''}
 `;
 
 const ProviderRow = styled.div`
@@ -62,14 +68,27 @@ const ConnectButton = styled.button`
   }
 `;
 
-const LibraryProviderBar = React.memo(function LibraryProviderBar() {
+const DrawerOffBadge = styled.span`
+  font-size: 0.65rem;
+  font-weight: ${({ theme }) => theme.fontWeight.medium};
+  color: ${({ theme }) => theme.colors.muted.foreground};
+  opacity: 0.85;
+`;
+
+interface LibraryProviderBarProps {
+  variant?: 'default' | 'drawerBottom';
+}
+
+const LibraryProviderBar = React.memo(function LibraryProviderBar({ variant = 'default' }: LibraryProviderBarProps) {
   const { registry, enabledProviderIds, toggleProvider } = useProviderContext();
   const providers = useMemo(() => registry.getAll(), [registry]);
 
   if (providers.length < 2) return null;
 
+  const drawerBottom = variant === 'drawerBottom';
+
   return (
-    <Bar>
+    <Bar $variant={variant}>
       {providers.map((descriptor) => {
         const isEnabled = enabledProviderIds.includes(descriptor.id);
         const isConnected = descriptor.auth.isAuthenticated();
@@ -80,6 +99,7 @@ const LibraryProviderBar = React.memo(function LibraryProviderBar() {
           <ProviderRow key={descriptor.id}>
             <StatusDot $color={dotColor} />
             <ProviderName $dimmed={!isEnabled}>{descriptor.name}</ProviderName>
+            {drawerBottom && !isEnabled && <DrawerOffBadge>Off</DrawerOffBadge>}
             {isEnabled && isConnected && (
               <ProviderStatusBadge $status="connected">Connected</ProviderStatusBadge>
             )}
@@ -93,13 +113,15 @@ const LibraryProviderBar = React.memo(function LibraryProviderBar() {
                 </ConnectButton>
               </>
             )}
-            <Switch
-              on={isEnabled}
-              onToggle={() => toggleProvider(descriptor.id)}
-              ariaLabel={`${isEnabled ? 'Disable' : 'Enable'} ${descriptor.name}`}
-              disabled={isLastEnabled}
-              variant="neutral"
-            />
+            {!drawerBottom && (
+              <Switch
+                on={isEnabled}
+                onToggle={() => toggleProvider(descriptor.id)}
+                ariaLabel={`${isEnabled ? 'Disable' : 'Enable'} ${descriptor.name}`}
+                disabled={isLastEnabled}
+                variant="neutral"
+              />
+            )}
           </ProviderRow>
         );
       })}
