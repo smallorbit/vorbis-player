@@ -240,7 +240,7 @@ const PlayerStack = styled.div.withConfig({
   width: 100%;
   min-height: 0; /* Allow flex shrink so content fits above bottom bar */
   max-width: ${({ $zenMode }) => $zenMode
-    ? `min(calc(100vw - 32px), calc(100dvh - 80px))`
+    ? `min(calc(100vw - 32px), calc(100dvh - 130px))`
     : `min(calc(100vw - 48px), calc(100dvh - var(--player-controls-height, 220px) - 120px))`
   };
   margin: 0 auto;
@@ -279,6 +279,33 @@ const ZenControlsWrapper = styled.div.withConfig({
 const ZenControlsInner = styled.div`
   min-height: 0;
   overflow: hidden;
+`;
+
+// Zen mode track info — non-interactive song + artist label below album art
+const ZenTrackInfo = styled.div.withConfig({
+  shouldForwardProp: (prop) => !['$zenMode', '$isMobile', '$isTablet'].includes(prop),
+})<{ $zenMode: boolean; $isMobile: boolean; $isTablet: boolean }>`
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none;
+  color: ${({ theme }) => theme.colors.white};
+  font-weight: ${({ theme }) => theme.fontWeight.semibold};
+  font-size: ${({ $isMobile, $isTablet, theme }) => {
+    if ($isMobile) return theme.fontSize.lg;
+    if ($isTablet) return theme.fontSize.xl;
+    return theme.fontSize['2xl'];
+  }};
+  text-shadow: ${({ theme }) => theme.shadows.textMd};
+  margin-top: ${({ theme }) => theme.spacing.sm};
+  padding: 0 ${({ theme }) => theme.spacing.md};
+  opacity: ${({ $zenMode }) => $zenMode ? 1 : 0};
+  max-height: ${({ $zenMode }) => $zenMode ? '3rem' : '0'};
+  transition: ${({ $zenMode }) => $zenMode
+    ? 'opacity 600ms ease 800ms, max-height 300ms ease 300ms'
+    : 'opacity 200ms ease, max-height 200ms ease'
+  };
 `;
 
 // Album art container with click handler
@@ -652,6 +679,13 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
     setZenModeEnabled(prev => !prev);
   }, [zenModeEnabled, setZenModeEnabled]);
 
+  // Click outside album art exits zen mode
+  const handleZenExitClick = useCallback(() => {
+    if (zenModeEnabled) {
+      handleZenModeToggle();
+    }
+  }, [zenModeEnabled, handleZenModeToggle]);
+
   // --- Swipe gestures ---
   const { offsetX, isSwiping, isAnimating, gestureHandlers } = useSwipeGesture({
     onSwipeLeft: handlers.onNext,
@@ -757,6 +791,7 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
       transitionDuration={transitionDuration}
       transitionEasing={transitionEasing}
       $zenMode={zenModeEnabled}
+      onClick={handleZenExitClick}
     >
       <PlayerContainer>
         <PlayerStack $zenMode={zenModeEnabled}>
@@ -781,7 +816,10 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
                 $swipeEnabled={isTouchDevice}
                 $bothGestures={isTouchDevice}
                 {...(isTouchDevice ? gestureHandlers : {})}
-                onClick={!isSwiping && !isAnimating && !isFlipped ? toggleFlip : undefined}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (!isSwiping && !isAnimating && !isFlipped) toggleFlip();
+                }}
                 style={{
                   transform: `translateX(${offsetX}px)`,
                   transition: isAnimating ? 'transform 300ms cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
@@ -831,6 +869,9 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
               </ClickableAlbumArtContainer>
             </div>
           </CardContent>
+          <ZenTrackInfo $zenMode={zenModeEnabled} $isMobile={isMobile} $isTablet={isTablet}>
+            {currentTrack?.name}{currentTrack?.artists ? ` \u2014 ${currentTrack.artists}` : ''}
+          </ZenTrackInfo>
           <ZenControlsWrapper $zenMode={zenModeEnabled}>
             <ZenControlsInner ref={controlsRef}>
               <LoadingCard

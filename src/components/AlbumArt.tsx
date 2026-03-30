@@ -67,7 +67,7 @@ const AlbumArtContainer = styled.div.withConfig({
   position: relative;
   width: 100%;
   max-width: ${({ $zenMode }) => $zenMode
-    ? `min(calc(100vw - 32px), calc(100dvh - 80px))`
+    ? `min(calc(100vw - 32px), calc(100dvh - 130px))`
     : `min(calc(100vw - 48px), calc(100dvh - var(--player-controls-height, 220px) - 120px))`
   };
   /* Entering zen: art grows after controls fade out (300ms delay). Exiting zen: art shrinks immediately. */
