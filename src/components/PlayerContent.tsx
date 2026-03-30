@@ -283,29 +283,49 @@ const ZenControlsInner = styled.div`
 
 // Zen mode track info — non-interactive song + artist label below album art
 const ZenTrackInfo = styled.div.withConfig({
-  shouldForwardProp: (prop) => !['$zenMode', '$isMobile', '$isTablet'].includes(prop),
-})<{ $zenMode: boolean; $isMobile: boolean; $isTablet: boolean }>`
+  shouldForwardProp: (prop) => !['$zenMode'].includes(prop),
+})<{ $zenMode: boolean }>`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   text-align: center;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
   pointer-events: none;
-  color: ${({ theme }) => theme.colors.white};
+  margin-top: ${({ theme }) => theme.spacing.sm};
+  padding: 0 ${({ theme }) => theme.spacing.md};
+  overflow: hidden;
+  opacity: ${({ $zenMode }) => $zenMode ? 1 : 0};
+  max-height: ${({ $zenMode }) => $zenMode ? '5rem' : '0'};
+  transition: ${({ $zenMode }) => $zenMode
+    ? 'opacity 600ms ease 800ms, max-height 300ms ease 300ms'
+    : 'opacity 200ms ease, max-height 200ms ease'
+  };
+`;
+
+const ZenTrackName = styled.div.withConfig({
+  shouldForwardProp: (prop) => !['$isMobile', '$isTablet'].includes(prop),
+})<{ $isMobile: boolean; $isTablet: boolean }>`
   font-weight: ${({ theme }) => theme.fontWeight.semibold};
   font-size: ${({ $isMobile, $isTablet, theme }) => {
     if ($isMobile) return theme.fontSize.lg;
     if ($isTablet) return theme.fontSize.xl;
     return theme.fontSize['2xl'];
   }};
+  color: ${({ theme }) => theme.colors.white};
   text-shadow: ${({ theme }) => theme.shadows.textMd};
-  margin-top: ${({ theme }) => theme.spacing.sm};
-  padding: 0 ${({ theme }) => theme.spacing.md};
-  opacity: ${({ $zenMode }) => $zenMode ? 1 : 0};
-  max-height: ${({ $zenMode }) => $zenMode ? '3rem' : '0'};
-  transition: ${({ $zenMode }) => $zenMode
-    ? 'opacity 600ms ease 800ms, max-height 300ms ease 300ms'
-    : 'opacity 200ms ease, max-height 200ms ease'
-  };
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
+`;
+
+const ZenTrackArtist = styled.div`
+  font-size: ${({ theme }) => theme.fontSize.base};
+  line-height: 1.4;
+  color: ${({ theme }) => theme.colors.gray[300]};
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
 `;
 
 // Album art container with click handler
@@ -869,8 +889,13 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
               </ClickableAlbumArtContainer>
             </div>
           </CardContent>
-          <ZenTrackInfo $zenMode={zenModeEnabled} $isMobile={isMobile} $isTablet={isTablet}>
-            {currentTrack?.name}{currentTrack?.artists ? ` \u2014 ${currentTrack.artists}` : ''}
+          <ZenTrackInfo $zenMode={zenModeEnabled}>
+            <ZenTrackName $isMobile={isMobile} $isTablet={isTablet}>
+              {currentTrack?.name}
+            </ZenTrackName>
+            {currentTrack?.artists && (
+              <ZenTrackArtist>{currentTrack.artists}</ZenTrackArtist>
+            )}
           </ZenTrackInfo>
           <ZenControlsWrapper $zenMode={zenModeEnabled}>
             <ZenControlsInner ref={controlsRef}>
