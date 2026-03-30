@@ -27,6 +27,9 @@ import {
   reorderMediaTracksToMatchTracks,
 } from '@/utils/queueTrackMirror';
 
+export type RadioProgressPhase = 'fetching-catalog' | 'generating' | 'resolving' | 'done';
+export interface RadioProgress { phase: RadioProgressPhase; trackCount?: number; }
+
 /** Convert MediaTrack to Track for UI; Dropbox tracks use empty uri (playback via ref). */
 export function mediaTrackToTrack(m: MediaTrack): Track {
   return {
@@ -140,6 +143,9 @@ export function usePlayerLogic() {
 
   // Library drawer visibility (local UI state)
   const [showLibraryDrawer, setShowLibraryDrawer] = useState(false);
+
+  // Radio generation progress panel state
+  const [radioProgress, setRadioProgress] = useState<RadioProgress | null>(null);
 
   const providerPlayback = useProviderPlayback({
     setCurrentTrackIndex,
@@ -731,8 +737,7 @@ export function usePlayerLogic() {
   const handleStartRadio = useCallback(async () => {
     if (!activeDescriptor || !currentTrack) return;
 
-    setIsLoading(true);
-    setError(null);
+    setRadioProgress({ phase: 'fetching-catalog' });
 
     try {
       // Pre-warm playback SDKs for providers that support track search
@@ -762,10 +767,11 @@ export function usePlayerLogic() {
         track: currentTrack.name,
       };
 
+      setRadioProgress({ phase: 'generating' });
       const result = await startRadio(seed, catalogTracks);
 
       if (!result) {
-        setIsLoading(false);
+        setRadioProgress(null);
         return;
       }
 
@@ -783,6 +789,7 @@ export function usePlayerLogic() {
 
       // Resolve unmatched suggestions via providers that support track search
       if (result.unmatchedSuggestions.length > 0) {
+        setRadioProgress({ phase: 'resolving' });
         const searchCapableProviders = providerRegistry.getAll().filter(
           d => d.capabilities.hasTrackSearch && d.auth.isAuthenticated(),
         );
@@ -830,17 +837,19 @@ export function usePlayerLogic() {
         setTracks(trackList);
         setCurrentTrackIndex(0);
         setSelectedPlaylistId('radio');
-        setIsLoading(false);
+        setRadioProgress({ phase: 'done', trackCount: combinedQueue.length });
         queueSnapshot('Radio queue built', trackList, mediaTracksRef.current.length, 0);
         // Do not call playTrack(0) — keep current track playing at current position.
       } else {
-        setIsLoading(false);
+        setRadioProgress(null);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to start radio.');
-      setIsLoading(false);
+      console.warn('[Radio] Generation failed:', err);
+      setRadioProgress(null);
     }
-  }, [activeDescriptor, currentTrack, currentTrackIndex, startRadio, setIsLoading, setError, setOriginalTracks, setTracks, setCurrentTrackIndex, setSelectedPlaylistId]);
+  }, [activeDescriptor, currentTrack, currentTrackIndex, startRadio, setOriginalTracks, setTracks, setCurrentTrackIndex, setSelectedPlaylistId, setRadioProgress]);
+
+  const dismissRadioProgress = useCallback(() => setRadioProgress(null), []);
 
   const handlers = useMemo(
     () => ({
@@ -893,6 +902,8 @@ export function usePlayerLogic() {
       authExpired,
       clearAuthExpired,
       isActive: radioState.isActive,
+      radioProgress,
+      dismissRadioProgress,
     },
     mediaTracksRef,
     setTracks,
