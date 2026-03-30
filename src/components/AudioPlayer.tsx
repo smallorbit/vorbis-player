@@ -168,6 +168,8 @@ const AudioPlayerComponent = () => {
           radioActive={radio.isActive}
           currentTrackProvider={displayProviderId}
           mediaTracksRef={mediaTracksRef}
+          radioProgress={radio.radioProgress}
+          onDismissRadioProgress={radio.dismissRadioProgress}
         />
       </ProfiledComponent>
     );
