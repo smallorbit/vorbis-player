@@ -704,8 +704,8 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
   }, [zenModeEnabled, setZenModeEnabled]);
 
   // Click outside album art exits zen mode
-  const handleZenExitClick = useCallback(() => {
-    if (zenModeEnabled) {
+  const handleZenExitClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    if (zenModeEnabled && e.currentTarget.contains(e.target as Node)) {
       handleZenModeToggle();
     }
   }, [zenModeEnabled, handleZenModeToggle]);
