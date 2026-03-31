@@ -52,185 +52,166 @@ export function useCollectionLoader({
   stopRadioBase,
   radioStateIsActive,
 }: UseCollectionLoaderProps): UseCollectionLoaderReturn {
+  const beginLoad = useCallback((playlistId: string) => {
+    setError(null);
+    setIsLoading(true);
+    setSelectedPlaylistId(playlistId);
+    mediaTracksRef.current = [];
+  }, [setError, setIsLoading, setSelectedPlaylistId, mediaTracksRef]);
+
+  const clearWithError = useCallback((message: string): 0 => {
+    setError(message);
+    setTracks([]);
+    setOriginalTracks([]);
+    setCurrentTrackIndex(0);
+    setIsLoading(false);
+    return 0;
+  }, [setError, setTracks, setOriginalTracks, setCurrentTrackIndex, setIsLoading]);
+
+  const handleLoadError = useCallback((err: unknown, fallbackMessage: string): 0 => {
+    return clearWithError(err instanceof Error ? err.message : fallbackMessage);
+  }, [clearWithError]);
+
+  const applyTracks = useCallback((tracks: MediaTrack[]) => {
+    setOriginalTracks(tracks);
+    if (shuffleEnabled) {
+      const indices = shuffleArray(tracks.map((_, i) => i));
+      const shuffled = indices.map(i => tracks[i]);
+      mediaTracksRef.current = shuffled;
+      setTracks(shuffled);
+    } else {
+      mediaTracksRef.current = tracks;
+      setTracks(tracks);
+    }
+    setCurrentTrackIndex(0);
+    setIsLoading(false);
+  }, [shuffleEnabled, mediaTracksRef, setOriginalTracks, setTracks, setCurrentTrackIndex, setIsLoading]);
+
+  const loadUnifiedLiked = useCallback(async (playlistId: string): Promise<number> => {
+    beginLoad(playlistId);
+    try {
+      const descriptorMap = new Map(
+        connectedProviderIds.map(id => [id, getDescriptor(id)])
+      );
+      const likedProviderIds = connectedProviderIds.filter(
+        id => descriptorMap.get(id)?.capabilities.hasLikedCollection,
+      );
+      const results = await Promise.all(
+        likedProviderIds.map(async (id) => {
+          const catalog = descriptorMap.get(id)?.catalog;
+          if (!catalog) return [];
+          return catalog.listTracks({ provider: id, kind: 'liked' }).catch(() => [] as MediaTrack[]);
+        }),
+      );
+      const merged = results.flat();
+      merged.sort((a, b) => (b.addedAt ?? 0) - (a.addedAt ?? 0));
+
+      if (merged.length === 0) return clearWithError('No liked tracks found.');
+
+      applyTracks(merged);
+
+      const firstTrack = mediaTracksRef.current[0];
+      const firstProvider = getDescriptor(firstTrack.provider);
+      if (firstProvider) {
+        drivingProviderRef.current = firstTrack.provider;
+        if (firstTrack.provider !== activeDescriptor?.id) {
+          setActiveProviderId(firstTrack.provider);
+        }
+        queueSnapshot('Unified Liked loaded', merged, mediaTracksRef.current.length, 0);
+        await playTrack(0);
+      }
+      return merged.length;
+    } catch (err) {
+      return handleLoadError(err, 'Failed to load liked tracks.');
+    }
+  }, [
+    beginLoad, clearWithError, handleLoadError, applyTracks,
+    connectedProviderIds, getDescriptor, activeDescriptor,
+    setActiveProviderId, drivingProviderRef, mediaTracksRef, playTrack,
+  ]);
+
+  const loadContextPlayback = useCallback(async (
+    playlistId: string, providerId: ProviderId,
+  ): Promise<number> => {
+    setIsLoading(false);
+    const prevProvider = drivingProviderRef.current;
+    if (prevProvider && prevProvider !== providerId) {
+      providerRegistry.get(prevProvider)?.playback.pause().catch(() => {});
+    }
+    drivingProviderRef.current = providerId;
+    mediaTracksRef.current = [];
+    logQueue('Context playback path — delegating to legacy handler for %s on %s', playlistId, providerId);
+    const sdkTracks = await spotifyHandlePlaylistSelect(playlistId);
+    if (sdkTracks.length > 0) {
+      mediaTracksRef.current = sdkTracks;
+      queueSnapshot('Context playback loaded', sdkTracks, mediaTracksRef.current.length, 0);
+    } else {
+      logQueue('Context playback returned 0 tracks');
+    }
+    return sdkTracks.length;
+  }, [drivingProviderRef, mediaTracksRef, setIsLoading, spotifyHandlePlaylistSelect]);
+
+  const loadProviderCollection = useCallback(async (
+    playlistId: string, targetDescriptor: ProviderDescriptor,
+  ): Promise<number> => {
+    const providerId = targetDescriptor.id;
+
+    if (activeDescriptor && activeDescriptor.id !== providerId) {
+      activeDescriptor.playback.pause().catch(() => {});
+    }
+
+    beginLoad(playlistId);
+    try {
+      const { id: collectionId, kind: collectionKind } = resolvePlaylistRef(playlistId, providerId);
+      const collectionRef = { provider: providerId, kind: collectionKind, id: collectionId } as const;
+      const list = await targetDescriptor.catalog.listTracks(collectionRef);
+
+      if (list.length === 0 && targetDescriptor.playback.playCollection) {
+        return loadContextPlayback(playlistId, providerId);
+      }
+
+      if (list.length === 0) return clearWithError('No tracks found in this collection.');
+
+      applyTracks(list);
+      drivingProviderRef.current = providerId;
+      queueSnapshot(`${providerId} playlist loaded`, list, mediaTracksRef.current.length, 0);
+      await playTrack(0);
+      return list.length;
+    } catch (err) {
+      return handleLoadError(err, 'Failed to load collection.');
+    }
+  }, [
+    activeDescriptor, beginLoad, clearWithError, handleLoadError,
+    applyTracks, loadContextPlayback, drivingProviderRef, mediaTracksRef, playTrack,
+  ]);
+
   const handlePlaylistSelect = useCallback(
     async (playlistId: string, _playlistName?: string, provider?: ProviderId): Promise<number> => {
       logQueue('handlePlaylistSelect called — playlistId=%s provider=%s', playlistId, provider ?? 'active');
 
-      if (radioStateIsActive) {
-        stopRadioBase();
-      }
+      if (radioStateIsActive) stopRadioBase();
 
-      // Unified liked songs: fetch from all connected providers, merge by timestamp
       if (playlistId === LIKED_SONGS_ID && !provider && isUnifiedLikedActive) {
-        setError(null);
-        setIsLoading(true);
-        setSelectedPlaylistId(playlistId);
-        mediaTracksRef.current = [];
-        try {
-          // Cache descriptors to avoid redundant lookups
-          const descriptorMap = new Map(
-            connectedProviderIds.map(id => [id, getDescriptor(id)])
-          );
-          const likedProviderIds = connectedProviderIds.filter(
-            id => descriptorMap.get(id)?.capabilities.hasLikedCollection,
-          );
-          const results = await Promise.all(
-            likedProviderIds.map(async (id) => {
-              const catalog = descriptorMap.get(id)?.catalog;
-              if (!catalog) return [];
-              return catalog.listTracks({ provider: id, kind: 'liked' }).catch(() => [] as MediaTrack[]);
-            }),
-          );
-          const merged = results.flat();
-          merged.sort((a, b) => (b.addedAt ?? 0) - (a.addedAt ?? 0));
-
-          if (merged.length === 0) {
-            setError('No liked tracks found.');
-            setTracks([]);
-            setOriginalTracks([]);
-            setCurrentTrackIndex(0);
-            setIsLoading(false);
-            return 0;
-          }
-
-          setOriginalTracks(merged);
-          if (shuffleEnabled) {
-            const indices = shuffleArray(merged.map((_, i) => i));
-            const shuffled = indices.map(i => merged[i]);
-            mediaTracksRef.current = shuffled;
-            setTracks(shuffled);
-          } else {
-            mediaTracksRef.current = merged;
-            setTracks(merged);
-          }
-          setCurrentTrackIndex(0);
-          setIsLoading(false);
-
-          const firstTrack = mediaTracksRef.current[0];
-          const firstProvider = getDescriptor(firstTrack.provider);
-          if (firstProvider) {
-            drivingProviderRef.current = firstTrack.provider;
-            if (firstTrack.provider !== activeDescriptor?.id) {
-              setActiveProviderId(firstTrack.provider);
-            }
-            queueSnapshot('Unified Liked loaded', merged, mediaTracksRef.current.length, 0);
-            // Route initial playback through shared playTrack() so Spotify queue sync runs immediately.
-            await playTrack(0);
-          }
-          return merged.length;
-        } catch (err) {
-          setError(err instanceof Error ? err.message : 'Failed to load liked tracks.');
-          setTracks([]);
-          setOriginalTracks([]);
-          setCurrentTrackIndex(0);
-          setIsLoading(false);
-          return 0;
-        }
+        return loadUnifiedLiked(playlistId);
       }
 
-      // Determine which provider descriptor to use for this collection
       const targetDescriptor = provider ? getDescriptor(provider) : activeDescriptor;
       const targetProviderId = provider ?? activeDescriptor?.id;
 
-      // If selecting from a different provider, switch active provider for playback
       if (targetProviderId && targetProviderId !== activeDescriptor?.id) {
         setActiveProviderId(targetProviderId);
       }
 
       if (targetDescriptor) {
-        const providerId = targetDescriptor.id;
-
-        // Pause the previous provider before switching (activeDescriptor may still
-        // point to the old provider since setActiveProviderId is async via React state)
-        if (activeDescriptor && activeDescriptor.id !== providerId) {
-          activeDescriptor.playback.pause().catch(() => {});
-        }
-
-        setError(null);
-        setIsLoading(true);
-        setSelectedPlaylistId(playlistId);
-        mediaTracksRef.current = [];
-        try {
-          const catalog = targetDescriptor.catalog;
-          const { id: collectionId, kind: collectionKind } = resolvePlaylistRef(playlistId, providerId);
-          const collectionRef = { provider: providerId, kind: collectionKind, id: collectionId } as const;
-          const list = await catalog.listTracks(collectionRef);
-
-          // If catalog returns no tracks and the provider supports native collection
-          // playback (e.g. Spotify context playback for restricted playlists), delegate
-          // to the legacy SDK-based playlist handler.
-          if (list.length === 0 && targetDescriptor.playback.playCollection) {
-            setIsLoading(false);
-            const prevProvider = drivingProviderRef.current;
-            if (prevProvider && prevProvider !== providerId) {
-              providerRegistry.get(prevProvider)?.playback.pause().catch(() => {});
-            }
-            drivingProviderRef.current = providerId;
-            mediaTracksRef.current = [];
-            logQueue('Context playback path — delegating to legacy handler for %s on %s', playlistId, providerId);
-            const sdkTracks = await spotifyHandlePlaylistSelect(playlistId);
-            if (sdkTracks.length > 0) {
-              mediaTracksRef.current = sdkTracks;
-              queueSnapshot('Context playback loaded', sdkTracks, mediaTracksRef.current.length, 0);
-            } else {
-              logQueue('Context playback returned 0 tracks');
-            }
-            return sdkTracks.length;
-          }
-
-          if (list.length === 0) {
-            setError('No tracks found in this collection.');
-            setTracks([]);
-            setOriginalTracks([]);
-            setCurrentTrackIndex(0);
-            setIsLoading(false);
-            return 0;
-          }
-          setOriginalTracks(list);
-          if (shuffleEnabled) {
-            const indices = shuffleArray<number>(list.map((_: MediaTrack, i: number) => i));
-            const shuffled = indices.map(i => list[i]);
-            mediaTracksRef.current = shuffled;
-            setTracks(shuffled);
-          } else {
-            mediaTracksRef.current = list;
-            setTracks(list);
-          }
-          setCurrentTrackIndex(0);
-          setIsLoading(false);
-          drivingProviderRef.current = providerId;
-          queueSnapshot(`${providerId} playlist loaded`, list, mediaTracksRef.current.length, 0);
-          await playTrack(0);
-          return list.length;
-        } catch (err) {
-          setError(err instanceof Error ? err.message : 'Failed to load collection.');
-          setTracks([]);
-          setOriginalTracks([]);
-          setCurrentTrackIndex(0);
-          setIsLoading(false);
-          return 0;
-        }
+        return loadProviderCollection(playlistId, targetDescriptor);
       }
+
       return 0;
     },
     [
-      activeDescriptor,
-      getDescriptor,
-      setActiveProviderId,
-      shuffleEnabled,
-      setError,
-      setIsLoading,
-      setSelectedPlaylistId,
-      setTracks,
-      setOriginalTracks,
-      setCurrentTrackIndex,
-      spotifyHandlePlaylistSelect,
-      isUnifiedLikedActive,
-      connectedProviderIds,
-      drivingProviderRef,
-      playTrack,
-      radioStateIsActive,
-      stopRadioBase,
+      activeDescriptor, getDescriptor, setActiveProviderId,
+      isUnifiedLikedActive, loadUnifiedLiked, loadProviderCollection,
+      radioStateIsActive, stopRadioBase,
     ]
   );
 
