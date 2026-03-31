@@ -11,6 +11,7 @@ import type { MediaTrack } from '@/types/domain';
 import { theme } from '@/styles/theme';
 import type { VisualizerStyle } from '../types/visualizer';
 import { useLocalStorage } from './useLocalStorage';
+import { STORAGE_KEYS } from '@/constants/storage';
 
 /**
  * Internal state type definitions
@@ -125,7 +126,7 @@ export function usePlayerState(): PlayerState & PlayerStateSetters {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [shuffleEnabled, setShuffleEnabled] = useLocalStorage<boolean>(
-    'vorbis-player-shuffle-enabled',
+    STORAGE_KEYS.SHUFFLE_ENABLED,
     false
   );
   const [selectedPlaylistId, setSelectedPlaylistId] = useState<string | null>(null);
@@ -134,39 +135,39 @@ export function usePlayerState(): PlayerState & PlayerStateSetters {
   const [showVisualEffects, setShowVisualEffects] = useState(false);
 
   const [visualEffectsEnabled, setVisualEffectsEnabled] = useLocalStorage<boolean>(
-    'vorbis-player-visual-effects-enabled',
+    STORAGE_KEYS.VISUAL_EFFECTS_ENABLED,
     true
   );
   
   const [perAlbumGlow, setPerAlbumGlow] = useLocalStorage<Record<string, { intensity: number; rate: number }>>(
-    'vorbis-player-per-album-glow',
+    STORAGE_KEYS.PER_ALBUM_GLOW,
     {}
   );
   
   const [accentColorOverrides, setAccentColorOverrides] = useLocalStorage<Record<string, string>>(
-    'vorbis-player-accent-color-overrides',
+    STORAGE_KEYS.ACCENT_COLOR_OVERRIDES,
     {}
   );
   
   const [backgroundVisualizerEnabled, setBackgroundVisualizerEnabled] = useLocalStorage<boolean>(
-    'vorbis-player-background-visualizer-enabled',
+    STORAGE_KEYS.BG_VISUALIZER_ENABLED,
     true
   );
   const [backgroundVisualizerStyle, setBackgroundVisualizerStyle] = useLocalStorage<VisualizerStyle>(
-    'vorbis-player-background-visualizer-style',
+    STORAGE_KEYS.BG_VISUALIZER_STYLE,
     'fireflies'
   );
   const [accentColorBackgroundPreferred, setAccentColorBackgroundPreferred] = useLocalStorage<boolean>(
-    'vorbis-player-accent-color-background-preferred',
+    STORAGE_KEYS.ACCENT_COLOR_BG_PREFERRED,
     false
   );
   const [zenModeEnabled, setZenModeEnabled] = useLocalStorage<boolean>(
-    'vorbis-player-zen-mode-enabled',
+    STORAGE_KEYS.ZEN_MODE_ENABLED,
     false
   );
   const [accentColorBackgroundEnabled, setAccentColorBackgroundEnabled] = useState<boolean>(false);
   const [backgroundVisualizerIntensity, setBackgroundVisualizerIntensity] = useLocalStorage<number>(
-    'vorbis-player-background-visualizer-intensity',
+    STORAGE_KEYS.BG_VISUALIZER_INTENSITY,
     40
   );
 
@@ -178,7 +179,7 @@ export function usePlayerState(): PlayerState & PlayerStateSetters {
     }
   }, [visualEffectsEnabled, accentColorBackgroundPreferred]);
 
-  useEffect(() => { localStorage.removeItem('vorbis-player-album-filters'); }, []);
+  useEffect(() => { localStorage.removeItem(STORAGE_KEYS.ALBUM_FILTERS); }, []);
 
   const handleSetAccentColorOverride = useCallback((albumId: string, color: string) => {
     setAccentColorOverrides(prev => ({

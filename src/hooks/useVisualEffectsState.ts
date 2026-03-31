@@ -1,6 +1,7 @@
 import { useState, useCallback, useMemo } from 'react';
 import { DEFAULT_GLOW_INTENSITY, DEFAULT_GLOW_RATE } from '../components/AccentColorGlowOverlay';
 import { useLocalStorage } from './useLocalStorage';
+import { STORAGE_KEYS } from '@/constants/storage';
 
 interface UseVisualEffectsStateProps {
   initialGlowIntensity?: number;
@@ -13,12 +14,12 @@ export const useVisualEffectsState = ({
 }: UseVisualEffectsStateProps = {}) => {
   // Glow state management with localStorage persistence
   const [glowIntensity, setGlowIntensity] = useLocalStorage<number>(
-    'vorbis-player-glow-intensity',
+    STORAGE_KEYS.GLOW_INTENSITY,
     initialGlowIntensity
   );
 
   const [glowRate, setGlowRate] = useLocalStorage<number>(
-    'vorbis-player-glow-rate',
+    STORAGE_KEYS.GLOW_RATE,
     initialGlowRate
   );
 
