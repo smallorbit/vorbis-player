@@ -61,12 +61,16 @@ const AudioPlayerComponent = () => {
   }, [resolveDisplayProvider]);
 
   const handleAlbumPlay = useCallback((albumId: string) => {
-    handlers.handlePlaylistSelect(
+    handlers.loadCollection(
       toAlbumPlaylistId(albumId),
-      undefined,
       currentTrack?.provider,
     );
   }, [handlers, currentTrack?.provider]);
+
+  const handlePlaylistSelect = useCallback(
+    (id: string, _name?: string, provider?: import('@/types/domain').ProviderId) => handlers.loadCollection(id, provider),
+    [handlers]
+  );
 
   const playbackHandlers = useMemo(() => ({
     onPlay: handlers.handlePlay,
@@ -76,14 +80,14 @@ const AudioPlayerComponent = () => {
     onTrackSelect: handlers.playTrack,
     onOpenLibraryDrawer: handlers.handleOpenLibraryDrawer,
     onCloseLibraryDrawer: handlers.handleCloseLibraryDrawer,
-    onPlaylistSelect: handlers.handlePlaylistSelect,
+    onPlaylistSelect: handlePlaylistSelect,
     onAddToQueue: handlers.handleAddToQueue,
     onAlbumPlay: handleAlbumPlay,
     onBackToLibrary: handlers.handleBackToLibrary,
     onStartRadio: handlers.handleStartRadio,
     onRemoveFromQueue: handlers.handleRemoveFromQueue,
     onReorderQueue: handlers.handleReorderQueue,
-  }), [handlers, handleAlbumPlay]);
+  }), [handlers, handleAlbumPlay, handlePlaylistSelect]);
 
   const { chosenProviderId, activeDescriptor, connectedProviderIds, fallthroughNotification, dismissFallthroughNotification } = useProviderContext();
   // Setup is needed when no provider has been chosen yet and none are connected,
@@ -101,7 +105,7 @@ const AudioPlayerComponent = () => {
     if (!playlistParam) return;
     autoSelectFired.current = true;
     window.history.replaceState({}, '', '/');
-    handlers.handlePlaylistSelect(playlistParam);
+    handlers.loadCollection(playlistParam);
   }, [needsSetup, selectedPlaylistId, handlers]);
 
   const isMainPlayerActive = !state.isLoading && !state.error && selectedPlaylistId !== null && tracks.length > 0;
@@ -151,7 +155,7 @@ const AudioPlayerComponent = () => {
             error={state.error}
             selectedPlaylistId={selectedPlaylistId}
             tracks={tracks}
-            onPlaylistSelect={handlers.handlePlaylistSelect}
+            onPlaylistSelect={handlePlaylistSelect}
           />
         </ProfiledComponent>
       );
@@ -231,7 +235,7 @@ const AudioPlayerComponent = () => {
               <LibraryDrawer
                 isOpen={state.showLibraryDrawer}
                 onClose={handlers.handleCloseLibraryDrawer}
-                onPlaylistSelect={handlers.handlePlaylistSelect}
+                onPlaylistSelect={handlePlaylistSelect}
                 onAddToQueue={handlers.handleAddToQueue}
               />
             </Suspense>

@@ -17,14 +17,14 @@ interface UseQueueManagementProps {
   tracks: MediaTrack[];
   currentTrackIndex: number;
   shuffleEnabled: boolean;
-  handlePlaylistSelect: (playlistId: string, _playlistName?: string, provider?: ProviderId) => Promise<number>;
+  loadCollection: (playlistId: string, provider?: ProviderId) => Promise<number>;
   handleBackToLibrary: () => void;
   activeDescriptor: ProviderDescriptor | undefined;
   getDescriptor: (providerId: ProviderId) => ProviderDescriptor | undefined;
 }
 
 interface UseQueueManagementReturn {
-  handleAddToQueue: (playlistId: string, _playlistName?: string, provider?: ProviderId) => Promise<AddToQueueResult | null>;
+  handleAddToQueue: (playlistId: string, collectionName?: string, provider?: ProviderId) => Promise<AddToQueueResult | null>;
   handleRemoveFromQueue: (index: number) => void;
   handleReorderQueue: (fromIndex: number, toIndex: number) => void;
 }
@@ -34,7 +34,7 @@ export function useQueueManagement({
   tracks,
   currentTrackIndex,
   shuffleEnabled,
-  handlePlaylistSelect,
+  loadCollection,
   handleBackToLibrary,
   activeDescriptor,
   getDescriptor,
@@ -49,7 +49,7 @@ export function useQueueManagement({
    * starts playback of the first added track.
    */
   const handleAddToQueue = useCallback(
-    async (playlistId: string, _playlistName?: string, provider?: ProviderId): Promise<AddToQueueResult | null> => {
+    async (playlistId: string, collectionName?: string, provider?: ProviderId): Promise<AddToQueueResult | null> => {
       const isQueueEmpty = tracks.length === 0;
       logQueue(
         'handleAddToQueue — playlistId=%s, provider=%s, currentQueueLen=%d, mediaLen=%d',
@@ -60,10 +60,10 @@ export function useQueueManagement({
       );
 
       if (isQueueEmpty) {
-        logQueue('handleAddToQueue — queue empty, delegating to handlePlaylistSelect');
-        const loaded = await handlePlaylistSelect(playlistId, _playlistName, provider);
+        logQueue('handleAddToQueue — queue empty, delegating to loadCollection');
+        const loaded = await loadCollection(playlistId, provider);
         if (loaded > 0) {
-          return { added: loaded, collectionName: _playlistName };
+          return { added: loaded, collectionName };
         }
         return null;
       }
@@ -96,13 +96,13 @@ export function useQueueManagement({
           mediaTracksRef.current.length,
           newMediaTracks.map((t: MediaTrack) => trkSummary(t)).join(', '),
         );
-        return { added: newMediaTracks.length, collectionName: _playlistName };
+        return { added: newMediaTracks.length, collectionName };
       } catch (err) {
         console.error('[Queue] Failed to add to queue:', err);
         return null;
       }
     },
-    [tracks.length, handlePlaylistSelect, activeDescriptor, getDescriptor, setTracks, setOriginalTracks]
+    [tracks.length, loadCollection, activeDescriptor, getDescriptor, setTracks, setOriginalTracks]
   );
 
   const handleRemoveFromQueue = useCallback(

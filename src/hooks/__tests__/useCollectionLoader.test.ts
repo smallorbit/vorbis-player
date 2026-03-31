@@ -85,7 +85,7 @@ describe('useCollectionLoader', () => {
     );
 
     const trackCount = await act(async () => {
-      return result.current.handlePlaylistSelect('playlist_123', 'My Playlist');
+      return result.current.loadCollection('playlist_123');
     });
 
     expect(mockSetIsLoading).toHaveBeenCalledWith(true);
@@ -141,7 +141,7 @@ describe('useCollectionLoader', () => {
     );
 
     const trackCount = await act(async () => {
-      return result.current.handlePlaylistSelect(LIKED_SONGS_ID);
+      return result.current.loadCollection(LIKED_SONGS_ID);
     });
 
     // Should merge and sort by addedAt (newest first): track 3 (1500), track 1 (1000), track 2 (500)
@@ -174,7 +174,7 @@ describe('useCollectionLoader', () => {
     );
 
     const trackCount = await act(async () => {
-      return result.current.handlePlaylistSelect('playlist_123', 'Empty Playlist');
+      return result.current.loadCollection('playlist_123');
     });
 
     expect(mockSetError).toHaveBeenCalledWith('No tracks found in this collection.');
@@ -209,7 +209,7 @@ describe('useCollectionLoader', () => {
     );
 
     const trackCount = await act(async () => {
-      return result.current.handlePlaylistSelect('playlist_123');
+      return result.current.loadCollection('playlist_123');
     });
 
     // Should delegate to spotifyHandlePlaylistSelect

@@ -45,7 +45,7 @@ describe('useQueueManagement', () => {
         currentTrackIndex: 1,
         shuffleEnabled: false,
         trackOps: { setTracks: mockSetTracks, setOriginalTracks: mockSetOriginalTracks, setCurrentTrackIndex: mockSetCurrentTrackIndex, mediaTracksRef },
-        handlePlaylistSelect: mockHandlePlaylistSelect,
+        loadCollection: mockHandlePlaylistSelect,
         handleBackToLibrary: mockHandleBackToLibrary,
         activeDescriptor: mockActiveDescriptor,
         getDescriptor: mockGetDescriptor,
@@ -70,7 +70,7 @@ describe('useQueueManagement', () => {
         currentTrackIndex: 2,
         shuffleEnabled: false,
         trackOps: { setTracks: mockSetTracks, setOriginalTracks: mockSetOriginalTracks, setCurrentTrackIndex: mockSetCurrentTrackIndex, mediaTracksRef },
-        handlePlaylistSelect: mockHandlePlaylistSelect,
+        loadCollection: mockHandlePlaylistSelect,
         handleBackToLibrary: mockHandleBackToLibrary,
         activeDescriptor: mockActiveDescriptor,
         getDescriptor: mockGetDescriptor,
@@ -96,7 +96,7 @@ describe('useQueueManagement', () => {
         currentTrackIndex: 0,
         shuffleEnabled: false,
         trackOps: { setTracks: mockSetTracks, setOriginalTracks: mockSetOriginalTracks, setCurrentTrackIndex: mockSetCurrentTrackIndex, mediaTracksRef },
-        handlePlaylistSelect: mockHandlePlaylistSelect,
+        loadCollection: mockHandlePlaylistSelect,
         handleBackToLibrary: mockHandleBackToLibrary,
         activeDescriptor: mockActiveDescriptor,
         getDescriptor: mockGetDescriptor,
@@ -112,7 +112,7 @@ describe('useQueueManagement', () => {
     expect(mockSetTracks).toHaveBeenCalled();
   });
 
-  it('handleAddToQueue delegates to handlePlaylistSelect when queue is empty', async () => {
+  it('handleAddToQueue delegates to loadCollection when queue is empty', async () => {
     mockHandlePlaylistSelect.mockResolvedValue(3);
 
     const { result } = renderHook(() =>
@@ -121,7 +121,7 @@ describe('useQueueManagement', () => {
         currentTrackIndex: 0,
         shuffleEnabled: false,
         trackOps: { setTracks: mockSetTracks, setOriginalTracks: mockSetOriginalTracks, setCurrentTrackIndex: mockSetCurrentTrackIndex, mediaTracksRef },
-        handlePlaylistSelect: mockHandlePlaylistSelect,
+        loadCollection: mockHandlePlaylistSelect,
         handleBackToLibrary: mockHandleBackToLibrary,
         activeDescriptor: mockActiveDescriptor,
         getDescriptor: mockGetDescriptor,
@@ -132,7 +132,7 @@ describe('useQueueManagement', () => {
       return result.current.handleAddToQueue('playlist_id', 'My Playlist');
     });
 
-    expect(mockHandlePlaylistSelect).toHaveBeenCalledWith('playlist_id', 'My Playlist', undefined);
+    expect(mockHandlePlaylistSelect).toHaveBeenCalledWith('playlist_id', undefined);
     expect(response).toEqual({ added: 3, collectionName: 'My Playlist' });
   });
 
@@ -152,7 +152,7 @@ describe('useQueueManagement', () => {
         currentTrackIndex: 0,
         shuffleEnabled: false,
         trackOps: { setTracks: mockSetTracks, setOriginalTracks: mockSetOriginalTracks, setCurrentTrackIndex: mockSetCurrentTrackIndex, mediaTracksRef },
-        handlePlaylistSelect: mockHandlePlaylistSelect,
+        loadCollection: mockHandlePlaylistSelect,
         handleBackToLibrary: mockHandleBackToLibrary,
         activeDescriptor: mockActiveDescriptor,
         getDescriptor: mockGetDescriptor,

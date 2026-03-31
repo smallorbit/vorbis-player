@@ -24,7 +24,7 @@ interface UseCollectionLoaderProps {
 }
 
 interface UseCollectionLoaderReturn {
-  handlePlaylistSelect: (playlistId: string, _playlistName?: string, provider?: ProviderId) => Promise<number>;
+  loadCollection: (playlistId: string, provider?: ProviderId) => Promise<number>;
 }
 
 export function useCollectionLoader({
@@ -176,9 +176,9 @@ export function useCollectionLoader({
     applyTracks, loadContextPlayback, drivingProviderRef, mediaTracksRef, playTrack,
   ]);
 
-  const handlePlaylistSelect = useCallback(
-    async (playlistId: string, _playlistName?: string, provider?: ProviderId): Promise<number> => {
-      logQueue('handlePlaylistSelect called — playlistId=%s provider=%s', playlistId, provider ?? 'active');
+  const loadCollection = useCallback(
+    async (playlistId: string, provider?: ProviderId): Promise<number> => {
+      logQueue('loadCollection called — playlistId=%s provider=%s', playlistId, provider ?? 'active');
 
       if (radioStateIsActive) stopRadioBase();
 
@@ -207,6 +207,6 @@ export function useCollectionLoader({
   );
 
   return {
-    handlePlaylistSelect,
+    loadCollection,
   };
 }
