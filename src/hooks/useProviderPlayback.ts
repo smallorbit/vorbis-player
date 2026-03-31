@@ -8,14 +8,14 @@ import { logQueue } from '@/lib/debugLog';
 export interface UseProviderPlaybackProps {
   setCurrentTrackIndex: (index: number) => void;
   activeDescriptor?: ProviderDescriptor | null;
-  mediaTracksRef?: React.MutableRefObject<MediaTrack[]>;
+  mediaTracks: MediaTrack[];
   onAuthExpired?: (providerId: ProviderId) => void;
 }
 
 export const useProviderPlayback = ({
   setCurrentTrackIndex,
   activeDescriptor,
-  mediaTracksRef,
+  mediaTracks,
   onAuthExpired,
 }: UseProviderPlaybackProps) => {
 
@@ -36,7 +36,6 @@ export const useProviderPlayback = ({
   }, []);
 
   const playTrack = useCallback(async (index: number, skipOnError = false) => {
-    const mediaTracks = mediaTracksRef?.current ?? [];
     const mediaTrack = mediaTracks[index];
     const trackProvider = resolveTrackProvider(mediaTrack);
 
@@ -100,7 +99,7 @@ export const useProviderPlayback = ({
         setTimeout(() => playTrack(index + 1, skipOnError), 500);
       }
     }
-  }, [setCurrentTrackIndex, mediaTracksRef, pausePreviousProvider, resolveTrackProvider, onAuthExpired]);
+  }, [setCurrentTrackIndex, mediaTracks, pausePreviousProvider, resolveTrackProvider, onAuthExpired]);
 
   const resumePlayback = useCallback(async () => {
     const currentProvider = currentPlaybackProviderRef.current;
