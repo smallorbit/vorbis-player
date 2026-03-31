@@ -17,7 +17,7 @@ import { logQueue, logRadio } from '@/lib/debugLog';
 import { shuffleArray } from '@/utils/shuffleArray';
 import { useQueueThumbnailLoader } from '@/hooks/useQueueThumbnailLoader';
 import { useQueueDurationLoader } from '@/hooks/useQueueDurationLoader';
-import { mediaTrackToTrack, trackToMediaTrack, trkSummary, queueSnapshot } from './playerLogicUtils';
+import { mediaTrackToTrack, trkSummary, queueSnapshot } from './playerLogicUtils';
 import { useQueueManagement } from './useQueueManagement';
 import { useCollectionLoader } from './useCollectionLoader';
 import { usePlaybackSubscription } from './usePlaybackSubscription';
@@ -354,7 +354,7 @@ export function usePlayerLogic() {
       const currentSeedMediaTrack: MediaTrack =
         mediaTracks[currentTrackIndex]?.id === currentTrack?.id
           ? mediaTracks[currentTrackIndex]
-          : trackToMediaTrack(currentTrack);
+          : currentTrack;
 
       const seedKey = `${currentSeedMediaTrack.artists.toLowerCase()}||${currentSeedMediaTrack.name.toLowerCase()}`;
       const seedId = currentSeedMediaTrack.id;
@@ -407,14 +407,13 @@ export function usePlayerLogic() {
       const combinedQueue = [currentSeedMediaTrack, ...shuffledGenerated];
 
       if (combinedQueue.length > 0) {
-        const trackList = combinedQueue.map(mediaTrackToTrack);
         mediaTracksRef.current = combinedQueue;
-        setOriginalTracks(trackList);
-        setTracks(trackList);
+        setOriginalTracks(combinedQueue);
+        setTracks(combinedQueue);
         setCurrentTrackIndex(0);
         setSelectedPlaylistId('radio');
         setRadioProgress({ phase: 'done', trackCount: combinedQueue.length });
-        queueSnapshot('Radio queue built', trackList, mediaTracksRef.current.length, 0);
+        queueSnapshot('Radio queue built', combinedQueue, mediaTracksRef.current.length, 0);
         // Do not call playTrack(0) — keep current track playing at current position.
       } else {
         setRadioProgress(null);

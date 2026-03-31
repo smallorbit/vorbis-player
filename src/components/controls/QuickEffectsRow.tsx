@@ -191,8 +191,8 @@ function QuickEffectsRow({
   const [colorOptions, setColorOptions] = useState<ExtractedColor[]>([]);
   const [showEyedropper, setShowEyedropper] = useState(false);
 
-  const customColor = currentTrack?.album_id
-    ? customAccentColorOverrides[currentTrack.album_id]
+  const customColor = currentTrack?.albumId
+    ? customAccentColorOverrides[currentTrack.albumId]
     : undefined;
 
   useEffect(() => {

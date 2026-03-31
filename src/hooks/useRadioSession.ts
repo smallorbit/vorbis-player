@@ -1,23 +1,22 @@
 import { useCallback } from 'react';
-import type { Track } from '@/services/spotify';
 import type { MediaTrack, ProviderId } from '@/types/domain';
 import type { RadioSeed, UnmatchedSuggestion } from '@/types/radio';
 import { shuffleArray } from '@/utils/shuffleArray';
 import { providerRegistry } from '@/providers/registry';
 import { logRadio } from '@/lib/debugLog';
-import { mediaTrackToTrack, trackToMediaTrack, queueSnapshot } from './playerLogicUtils';
+import { queueSnapshot } from './playerLogicUtils';
 
 interface UseRadioSessionProps {
   activeDescriptor: any;
-  currentTrack: Track | null;
+  currentTrack: MediaTrack | null;
   currentTrackIndex: number;
   mediaTracksRef: React.MutableRefObject<MediaTrack[]>;
   startRadio: (seed: RadioSeed, catalogTracks: MediaTrack[]) => Promise<any>;
   stopRadioBase: () => void;
   setIsLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
-  setTracks: (tracks: Track[] | ((prev: Track[]) => Track[])) => void;
-  setOriginalTracks: (tracks: Track[]) => void;
+  setTracks: (tracks: MediaTrack[] | ((prev: MediaTrack[]) => MediaTrack[])) => void;
+  setOriginalTracks: (tracks: MediaTrack[]) => void;
   setCurrentTrackIndex: (index: number | ((prev: number) => number)) => void;
   setSelectedPlaylistId: (id: string | null) => void;
   authExpired: ProviderId | null;
@@ -107,7 +106,7 @@ export function useRadioSession({
       const currentSeedMediaTrack: MediaTrack =
         mediaTracks[currentTrackIndex]?.id === currentTrack?.id
           ? mediaTracks[currentTrackIndex]
-          : trackToMediaTrack(currentTrack);
+          : currentTrack;
 
       const seedKey = `${currentSeedMediaTrack.artists.toLowerCase()}||${currentSeedMediaTrack.name.toLowerCase()}`;
       const seedId = currentSeedMediaTrack.id;
@@ -159,14 +158,13 @@ export function useRadioSession({
       const combinedQueue = [currentSeedMediaTrack, ...shuffledGenerated];
 
       if (combinedQueue.length > 0) {
-        const trackList = combinedQueue.map(mediaTrackToTrack);
         mediaTracksRef.current = combinedQueue;
-        setOriginalTracks(trackList);
-        setTracks(trackList);
+        setOriginalTracks(combinedQueue);
+        setTracks(combinedQueue);
         setCurrentTrackIndex(0);
         setSelectedPlaylistId('radio');
         setIsLoading(false);
-        queueSnapshot('Radio queue built', trackList, mediaTracksRef.current.length, 0);
+        queueSnapshot('Radio queue built', combinedQueue, mediaTracksRef.current.length, 0);
         // Do not call playTrack(0) — keep current track playing at current position.
       } else {
         setIsLoading(false);

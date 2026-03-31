@@ -77,7 +77,7 @@ const TrackInfo = memo<TrackInfoProps>(({ track, isMobile, isTablet, onArtistBro
         e.stopPropagation();
         const target = e.currentTarget as HTMLElement;
         const rect = target.getBoundingClientRect();
-        setPopover({ type: 'artist', artistName: artist.name, artistUrl: artist.url, rect });
+        setPopover({ type: 'artist', artistName: artist.name, artistUrl: artist.url ?? '', rect });
     }, []);
 
     const handleAlbumClick = useCallback((e: React.MouseEvent) => {

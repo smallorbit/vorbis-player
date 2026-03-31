@@ -12,7 +12,7 @@ import * as libraryCache from './cache/libraryCache';
  * Internal Spotify Track type — used for caching and transformations.
  * Converted to MediaTrack for use throughout the application.
  */
-interface Track {
+export interface Track {
   id: string;
   provider: string;
   name: string;
@@ -130,7 +130,7 @@ interface TokenData {
 
 export interface ArtistInfo {
   name: string;
-  url: string;
+  url?: string;
 }
 
 export interface PlaylistInfo {

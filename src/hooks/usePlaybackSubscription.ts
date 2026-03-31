@@ -5,7 +5,7 @@ import { providerRegistry } from '@/providers/registry';
 import { logQueue } from '@/lib/debugLog';
 
 interface UsePlaybackSubscriptionProps {
-  activeDescriptor: { id: ProviderId; playback: PlaybackProvider };
+  activeDescriptor: { id: ProviderId; playback: PlaybackProvider } | undefined;
   drivingProviderRef: React.MutableRefObject<ProviderId | null>;
   tracksRef: React.MutableRefObject<MediaTrack[]>;
   currentTrackIndexRef: React.MutableRefObject<number>;
