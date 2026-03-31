@@ -23,7 +23,7 @@ interface UseQueueManagementProps {
   activeDescriptor: any;
   getDescriptor: (providerId: ProviderId) => any;
   setTracks: (tracks: Track[] | ((prev: Track[]) => Track[])) => void;
-  setOriginalTracks: (tracks: Track[]) => void;
+  setOriginalTracks: (tracks: Track[] | ((prev: Track[]) => Track[])) => void;
   setCurrentTrackIndex: (index: number | ((prev: number) => number)) => void;
 }
 

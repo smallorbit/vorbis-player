@@ -9,7 +9,6 @@ import { useAutoAdvance } from '@/hooks/useAutoAdvance';
 import { useAccentColor } from '@/hooks/useAccentColor';
 import { useUnifiedLikedTracks } from '@/hooks/useUnifiedLikedTracks';
 import { useRadio } from '@/hooks/useRadio';
-import type { Track } from '@/services/spotify';
 import type { ProviderId } from '@/types/domain';
 import type { MediaTrack } from '@/types/domain';
 import type { RadioSeed } from '@/types/radio';
@@ -260,11 +259,23 @@ export function usePlayerLogic() {
     setShowLibraryDrawer(false);
   }, []);
 
-  // ── Queue management will be initialized below after dependencies ────────
-
-  // ── Radio feature ───────────────────────────────────────────────────
-
-  // Radio session will be initialized below via useRadioSession
+  // Initialize radio session (before handleBackToLibrary, which needs stopRadio)
+  const { stopRadio, clearAuthExpired } = useRadioSession({
+    activeDescriptor,
+    currentTrack,
+    currentTrackIndex,
+    mediaTracksRef,
+    startRadio,
+    stopRadioBase,
+    setIsLoading,
+    setError,
+    setTracks,
+    setOriginalTracks,
+    setCurrentTrackIndex,
+    setSelectedPlaylistId,
+    authExpired,
+    setAuthExpired,
+  });
 
   const handleBackToLibrary = useCallback(() => {
     logQueue('handleBackToLibrary — clearing all queue state');
@@ -291,27 +302,6 @@ export function usePlayerLogic() {
     setTracks,
     setOriginalTracks,
     setCurrentTrackIndex,
-  });
-
-  // Radio progress state for UI feedback
-  const [radioProgress, setRadioProgress] = useState<RadioProgress | null>(null);
-
-  // Initialize radio session
-  const { stopRadio, clearAuthExpired, authExpired } = useRadioSession({
-    activeDescriptor,
-    currentTrack,
-    currentTrackIndex,
-    mediaTracksRef,
-    startRadio,
-    stopRadioBase,
-    setIsLoading,
-    setError,
-    setTracks,
-    setOriginalTracks,
-    setCurrentTrackIndex,
-    setSelectedPlaylistId,
-    authExpired,
-    setAuthExpired,
   });
 
   /**

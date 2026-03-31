@@ -97,14 +97,14 @@ export function usePlaybackSubscription({
 
     // Subscribe to the active provider
     unsubscribes.push(
-      playback.subscribe((state) => handleProviderStateChange(activeProviderId, state))
+      playback.subscribe((state: PlaybackState | null) => handleProviderStateChange(activeProviderId, state))
     );
 
     // Also subscribe to other registered providers for cross-provider queue support.
     // Only process events when that provider is the one currently playing.
     for (const descriptor of providerRegistry.getAll()) {
       if (descriptor.id !== activeProviderId) {
-        const otherUnsubscribe = descriptor.playback.subscribe((state) => {
+        const otherUnsubscribe = descriptor.playback.subscribe((state: PlaybackState | null) => {
           handleProviderStateChange(descriptor.id, state);
         });
         unsubscribes.push(otherUnsubscribe);

@@ -1,7 +1,7 @@
-import { useState, useCallback } from 'react';
+import { useCallback } from 'react';
 import type { Track } from '@/services/spotify';
-import type { MediaTrack, ProviderId, RadioState } from '@/types/domain';
-import type { RadioSeed } from '@/types/radio';
+import type { MediaTrack, ProviderId } from '@/types/domain';
+import type { RadioSeed, UnmatchedSuggestion } from '@/types/radio';
 import { shuffleArray } from '@/utils/shuffleArray';
 import { providerRegistry } from '@/providers/registry';
 import { logRadio } from '@/lib/debugLog';
@@ -121,7 +121,7 @@ export function useRadioSession({
         if (searchCapableProviders.length > 0) {
           try {
             // Parallelize searches across all suggestions and providers
-            const searchPromises = result.unmatchedSuggestions.map(async (suggestion) => {
+            const searchPromises = result.unmatchedSuggestions.map(async (suggestion: UnmatchedSuggestion) => {
               for (const provider of searchCapableProviders) {
                 const match = await provider.catalog.searchTrack?.(suggestion.artist, suggestion.name);
                 if (match) return match;
