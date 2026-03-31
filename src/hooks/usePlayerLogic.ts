@@ -96,7 +96,7 @@ export function usePlayerLogic() {
   const providerPlayback = useProviderPlayback({
     setCurrentTrackIndex,
     activeDescriptor,
-    mediaTracks: tracks,
+    mediaTracksRef,
     onAuthExpired: (providerId: ProviderId) => setAuthExpired(providerId),
   });
   const { playTrack } = providerPlayback;
