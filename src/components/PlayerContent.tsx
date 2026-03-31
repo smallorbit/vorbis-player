@@ -30,7 +30,9 @@ import AlbumArtQuickSwapBack from './AlbumArtQuickSwapBack';
 import type { AddToQueueResult, MediaTrack, ProviderId } from '@/types/domain';
 import { LIBRARY_REFRESH_EVENT } from '@/hooks/useLibrarySync';
 import Toast from './Toast';
+import RadioProgressToast from './RadioProgressToast';
 import type { RadioState } from '@/hooks/useRadio';
+import type { RadioProgress } from '@/hooks/usePlayerLogic';
 import { providerRegistry } from '@/providers/registry';
 
 const SaveQueueDialog = lazy(() => import('./SaveQueueDialog'));
@@ -78,6 +80,8 @@ interface PlayerContentProps {
   isRadioAvailable?: boolean;
   radioActive?: boolean;
   mediaTracksRef?: React.RefObject<MediaTrack[]>;
+  radioProgress?: RadioProgress | null;
+  onDismissRadioProgress?: () => void;
 }
 
 const ContentWrapper = styled.div.withConfig({
@@ -354,7 +358,7 @@ const FlipInner = styled.div.withConfig({
 `;
 
 
-const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, showLibraryDrawer, onAlbumArtBoundsChange, handlers, currentTrackProvider, radioState, isRadioAvailable, radioActive, mediaTracksRef }) => {
+const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, showLibraryDrawer, onAlbumArtBoundsChange, handlers, currentTrackProvider, radioState, isRadioAvailable, radioActive, mediaTracksRef, radioProgress, onDismissRadioProgress }) => {
   // --- Context hooks ---
   const { tracks, shuffleEnabled, handleShuffleToggle, selectedPlaylistId } = useTrackListContext();
   const { isUnifiedLikedActive } = useUnifiedLikedTracks();
@@ -700,8 +704,8 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
   }, [zenModeEnabled, setZenModeEnabled]);
 
   // Click outside album art exits zen mode
-  const handleZenExitClick = useCallback(() => {
-    if (zenModeEnabled) {
+  const handleZenExitClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    if (zenModeEnabled && e.currentTarget.contains(e.target as Node)) {
       handleZenModeToggle();
     }
   }, [zenModeEnabled, handleZenModeToggle]);
@@ -1034,6 +1038,17 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
           onDismiss={handleDismissToast}
           actionLabel={toast.actionLabel}
           onAction={toast.onAction}
+        />
+      )}
+      {radioProgress && onDismissRadioProgress && (
+        <RadioProgressToast
+          phase={radioProgress.phase}
+          trackCount={radioProgress.trackCount}
+          onDismiss={onDismissRadioProgress}
+          onViewQueue={() => {
+            handleOpenQueueFromToast();
+            onDismissRadioProgress();
+          }}
         />
       )}
     </ContentWrapper>
