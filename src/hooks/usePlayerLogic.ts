@@ -120,7 +120,7 @@ export function usePlayerLogic() {
   });
 
   // Initialize collection loader
-  const { handlePlaylistSelect } = useCollectionLoader({
+  const { loadCollection } = useCollectionLoader({
     trackOps,
     activeDescriptor,
     getDescriptor,
@@ -279,7 +279,7 @@ export function usePlayerLogic() {
     tracks,
     currentTrackIndex,
     shuffleEnabled,
-    handlePlaylistSelect,
+    loadCollection,
     handleBackToLibrary,
     activeDescriptor,
     getDescriptor,
@@ -289,7 +289,7 @@ export function usePlayerLogic() {
 
   const handlers = useMemo(
     () => ({
-      handlePlaylistSelect,
+      loadCollection,
       handleAddToQueue,
       handlePlay,
       handlePause,
@@ -304,7 +304,7 @@ export function usePlayerLogic() {
       handleReorderQueue,
     }),
     [
-      handlePlaylistSelect,
+      loadCollection,
       handleAddToQueue,
       handlePlay,
       handlePause,

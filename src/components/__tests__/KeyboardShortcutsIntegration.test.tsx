@@ -86,7 +86,7 @@ describe('Keyboard Shortcuts Integration', () => {
     expect(result.current.handlers).toHaveProperty('handlePause');
     expect(result.current.handlers).toHaveProperty('handleNext');
     expect(result.current.handlers).toHaveProperty('handlePrevious');
-    expect(result.current.handlers).toHaveProperty('handlePlaylistSelect');
+    expect(result.current.handlers).toHaveProperty('loadCollection');
     expect(result.current.handlers).toHaveProperty('handleOpenLibraryDrawer');
     expect(result.current.handlers).toHaveProperty('handleBackToLibrary');
     expect(typeof result.current.handlers.handlePlay).toBe('function');
