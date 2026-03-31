@@ -44,47 +44,6 @@ export function makeAlbumInfo(overrides?: Partial<AlbumInfo>): AlbumInfo {
   };
 }
 
-export function makeSpotifyPlaybackState(
-  overrides?: Partial<SpotifyPlaybackState>
-): SpotifyPlaybackState {
-  return {
-    context: {
-      uri: 'spotify:playlist:playlist-1',
-      metadata: {},
-    },
-    disallows: {
-      pausing: false,
-      peeking_next: false,
-      peeking_prev: false,
-      resuming: false,
-      seeking: false,
-      skipping_next: false,
-      skipping_prev: false,
-    },
-    paused: false,
-    position: 30000,
-    repeat_mode: 0,
-    shuffle: false,
-    track_window: {
-      current_track: {
-        id: 'track-1',
-        uri: 'spotify:track:track-1',
-        name: 'Test Track',
-        duration_ms: 210000,
-        artists: [{ name: 'Test Artist', uri: 'spotify:artist:artist-1' }],
-        album: {
-          name: 'Test Album',
-          uri: 'spotify:album:album-1',
-          images: [{ url: 'https://i.scdn.co/image/test', height: 300, width: 300 }],
-        },
-      },
-      next_tracks: [],
-      previous_tracks: [],
-    },
-    ...overrides,
-  };
-}
-
 export function makeMediaTrack(overrides?: Partial<MediaTrack>): MediaTrack {
   return {
     id: 'track-1',

@@ -77,8 +77,3 @@ export async function ensureVorbisFolder(auth: DropboxAuthAdapter): Promise<bool
   return inflightPromise;
 }
 
-/** Reset cached state (for logout or testing). */
-export function resetVorbisFolderCache(): void {
-  folderConfirmed = false;
-  inflightPromise = null;
-}
