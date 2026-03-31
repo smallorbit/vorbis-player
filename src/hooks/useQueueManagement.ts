@@ -103,7 +103,7 @@ export function useQueueManagement({
         logQueue(
           'handleAddToQueue — after append: mediaRef=%d, newTracks added: %s',
           mediaTracksRef.current.length,
-          newTracks.map(t => trkSummary(t)).join(', '),
+          newTracks.map((t: Track) => trkSummary(t)).join(', '),
         );
         return { added: newMediaTracks.length, collectionName: _playlistName };
       } catch (err) {

@@ -28,6 +28,7 @@ interface UseRadioSessionReturn {
   handleStartRadio: () => Promise<void>;
   stopRadio: () => void;
   clearAuthExpired: () => void;
+  authExpired: ProviderId | null;
 }
 
 export function useRadioSession({

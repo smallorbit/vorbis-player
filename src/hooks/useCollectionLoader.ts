@@ -190,7 +190,7 @@ export function useCollectionLoader({
           const trackList = list.map(mediaTrackToTrack);
           setOriginalTracks(trackList);
           if (shuffleEnabled) {
-            const indices = shuffleArray(list.map((_, i) => i));
+            const indices = shuffleArray<number>(list.map((_: MediaTrack, i: number) => i));
             mediaTracksRef.current = indices.map(i => list[i]);
             setTracks(indices.map(i => trackList[i]));
           } else {
