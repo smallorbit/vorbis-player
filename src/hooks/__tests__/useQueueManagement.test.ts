@@ -38,7 +38,7 @@ describe('useQueueManagement', () => {
   });
 
   it('handleRemoveFromQueue does nothing when index equals currentTrackIndex', () => {
-    const tracks = [makeTrack('1'), makeTrack('2'), makeTrack('3')];
+    const tracks = [makeTrack({ id: '1' }), makeTrack({ id: '2' }), makeTrack({ id: '3' })];
     const { result } = renderHook(() =>
       useQueueManagement({
         tracks,
@@ -66,7 +66,7 @@ describe('useQueueManagement', () => {
 
   it('handleRemoveFromQueue adjusts currentTrackIndex when removing a track before the current one', () => {
     mediaTracksRef.current = [makeMediaTrack('1'), makeMediaTrack('2'), makeMediaTrack('3')];
-    const tracks = [makeTrack('1'), makeTrack('2'), makeTrack('3')];
+    const tracks = [makeTrack({ id: '1' }), makeTrack({ id: '2' }), makeTrack({ id: '3' })];
     const { result } = renderHook(() =>
       useQueueManagement({
         tracks,
@@ -155,10 +155,6 @@ describe('useQueueManagement', () => {
     const mockCatalog = {
       listTracks: vi.fn().mockResolvedValue([makeMediaTrack('3'), makeMediaTrack('4')]),
     };
-    mockGetDescriptor.mockReturnValue({
-      id: 'spotify',
-      catalog: mockCatalog,
-    });
     mockActiveDescriptor.id = 'spotify';
     mockActiveDescriptor.catalog = mockCatalog;
 
