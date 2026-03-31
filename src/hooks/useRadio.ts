@@ -25,7 +25,7 @@ export interface RadioState {
   lastMatchStats: RadioResult['matchStats'] | null;
 }
 
-export interface UseRadioReturn {
+interface UseRadioReturn {
   radioState: RadioState;
   /** Start a radio session. Requires catalog tracks for matching. */
   startRadio: (seed: RadioSeed, catalogTracks: MediaTrack[]) => Promise<RadioResult | null>;

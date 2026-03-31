@@ -36,7 +36,7 @@ export const ART_REFRESHED_EVENT = 'vorbis-art-refreshed';
 export const LIBRARY_REFRESH_EVENT = 'vorbis-library-refresh';
 
 /** Per-provider liked songs count for rendering separate cards. */
-export interface PerProviderLikedCount {
+interface PerProviderLikedCount {
   provider: ProviderId;
   count: number;
 }

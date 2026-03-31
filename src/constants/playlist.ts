@@ -29,7 +29,7 @@ export function toAlbumPlaylistId(albumId: string): string {
 }
 
 /** Prefix used when encoding a saved Dropbox playlist path as a playlist selection ID */
-export const SAVED_PLAYLIST_PREFIX = 'dbplaylist:';
+const SAVED_PLAYLIST_PREFIX = 'dbplaylist:';
 
 /** Check whether a playlist selection ID represents a saved Dropbox playlist */
 export function isSavedPlaylistId(playlistId: string): boolean {

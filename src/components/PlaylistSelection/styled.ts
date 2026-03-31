@@ -2,7 +2,7 @@ import styled from 'styled-components';
 import { Card } from '../styled';
 import { theme } from '@/styles/theme';
 
-export const spinnerKeyframes = `
+const spinnerKeyframes = `
   @keyframes vorbis-spinner-spin {
     to { transform: rotate(360deg); }
   }
@@ -120,7 +120,7 @@ export const MobileGrid = styled.div`
   align-content: start;
 `;
 
-export const GridCard = styled.div`
+const GridCard = styled.div`
   display: flex;
   flex-direction: column;
   cursor: pointer;
@@ -187,7 +187,7 @@ export const GridCardSubtitle = styled.div<{ $clickable?: boolean }>`
   `}
 `;
 
-export const PlaylistItem = styled.div`
+const PlaylistItem = styled.div`
   display: flex;
   align-items: center;
   gap: ${({ theme }) => theme.spacing.md};

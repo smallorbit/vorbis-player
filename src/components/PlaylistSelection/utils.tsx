@@ -7,7 +7,7 @@ import { LIKED_SONGS_ID, LIKED_SONGS_NAME } from '@/constants/playlist';
 import type { PlaylistInfo } from '../../services/spotify';
 import { GridCardArtWrapper, PlaylistImageWrapper } from './styled';
 
-export function selectOptimalImage(
+function selectOptimalImage(
   images: { url: string; width: number | null; height: number | null }[],
   targetSize: number = 64
 ): string | undefined {
@@ -61,7 +61,7 @@ export const PinIcon: React.FC<{ filled?: boolean }> = ({ filled = false }) => (
 );
 
 /** Shared hook for lazy-loading images via IntersectionObserver */
-export function useLazyImage(
+function useLazyImage(
   images: { url: string; width: number | null; height: number | null }[],
   targetSize: number,
   rootMargin: string

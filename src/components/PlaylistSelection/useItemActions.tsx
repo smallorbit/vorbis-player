@@ -20,12 +20,12 @@ import TrackInfoPopover, {
 import ConfirmDeleteDialog from '../ConfirmDeleteDialog';
 import { LIBRARY_REFRESH_EVENT } from '@/hooks/useLibrarySync';
 
-export type AlbumPopoverState = {
+type AlbumPopoverState = {
   album: AlbumInfo;
   rect: DOMRect;
 } | null;
 
-export type PlaylistPopoverState = {
+type PlaylistPopoverState = {
   playlist: PlaylistInfo;
   rect: DOMRect;
 } | null;
