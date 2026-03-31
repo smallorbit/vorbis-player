@@ -1,28 +1,81 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook } from '@testing-library/react';
+import type { PlaybackState } from '@/types/domain';
 
-vi.mock('@/services/spotifyPlayer', () => ({
-  spotifyPlayer: {
-    onPlayerStateChanged: vi.fn().mockReturnValue(vi.fn()),
-    lastPlayTrackTime: 0,
+const mockSubscribe = vi.fn();
+
+vi.mock('@/contexts/ProviderContext', () => ({
+  useProviderContext: vi.fn(),
+  ProviderProvider: ({ children }: { children: React.ReactNode }) => children,
+}));
+
+vi.mock('@/providers/registry', () => ({
+  providerRegistry: {
+    getAll: vi.fn().mockReturnValue([]),
+    get: vi.fn(),
   },
 }));
 
 import { useAutoAdvance } from '../useAutoAdvance';
-import { spotifyPlayer } from '@/services/spotifyPlayer';
-import { makeTrack, makeSpotifyPlaybackState } from '@/test/fixtures';
+import { useProviderContext } from '@/contexts/ProviderContext';
+import { providerRegistry } from '@/providers/registry';
+import { makeTrack, makeProviderDescriptor } from '@/test/fixtures';
 import { ProviderWrapper } from '@/test/providerTestUtils';
 
 const opts = { wrapper: ProviderWrapper };
 
 describe('useAutoAdvance', () => {
-  const playTrack = vi.fn();
+  let playTrack: ReturnType<typeof vi.fn>;
   const tracks = [makeTrack({ id: 't1' }), makeTrack({ id: 't2' }), makeTrack({ id: 't3' })];
+  let providerStateCallback: ((state: PlaybackState | null) => void) | null = null;
 
   beforeEach(() => {
+    playTrack = vi.fn();
     vi.clearAllMocks();
     vi.useFakeTimers();
-    (spotifyPlayer as unknown as { lastPlayTrackTime: number }).lastPlayTrackTime = 0;
+    providerStateCallback = null;
+
+    mockSubscribe.mockImplementation((callback: (state: PlaybackState | null) => void) => {
+      providerStateCallback = callback;
+      return vi.fn(); // unsubscribe function
+    });
+
+    const mockDescriptor = makeProviderDescriptor({
+      playback: {
+        providerId: 'spotify',
+        initialize: vi.fn().mockResolvedValue(undefined),
+        playTrack: vi.fn().mockResolvedValue(undefined),
+        pause: vi.fn().mockResolvedValue(undefined),
+        resume: vi.fn().mockResolvedValue(undefined),
+        seek: vi.fn().mockResolvedValue(undefined),
+        next: vi.fn().mockResolvedValue(undefined),
+        previous: vi.fn().mockResolvedValue(undefined),
+        setVolume: vi.fn().mockResolvedValue(undefined),
+        getState: vi.fn().mockResolvedValue(null),
+        subscribe: mockSubscribe,
+        getLastPlayTime: vi.fn().mockReturnValue(0),
+      },
+    });
+
+    vi.mocked(useProviderContext).mockReturnValue({
+      chosenProviderId: 'spotify',
+      activeProviderId: 'spotify',
+      activeDescriptor: mockDescriptor,
+      setActiveProviderId: vi.fn(),
+      setProviderSwitchInterceptor: vi.fn(),
+      registry: { get: vi.fn(), getAll: vi.fn(), has: vi.fn() },
+      needsProviderSelection: false,
+      enabledProviderIds: ['spotify'],
+      toggleProvider: vi.fn(),
+      isProviderEnabled: vi.fn(),
+      hasMultipleProviders: false,
+      getDescriptor: vi.fn(),
+      connectedProviderIds: ['spotify'],
+      fallthroughNotification: null,
+      dismissFallthroughNotification: vi.fn(),
+    });
+
+    vi.mocked(providerRegistry.getAll).mockReturnValue([]);
   });
 
   afterEach(() => {
@@ -35,9 +88,7 @@ describe('useAutoAdvance', () => {
       opts
     );
 
-    // The hook should not have called spotifyPlayer.onPlayerStateChanged
-    // (it now goes through the provider adapter, but the adapter wraps the same mock)
-    expect(spotifyPlayer.onPlayerStateChanged).not.toHaveBeenCalled();
+    expect(mockSubscribe).not.toHaveBeenCalled();
   });
 
   it('does not subscribe when tracks is empty', () => {
@@ -46,7 +97,7 @@ describe('useAutoAdvance', () => {
       opts
     );
 
-    expect(spotifyPlayer.onPlayerStateChanged).not.toHaveBeenCalled();
+    expect(mockSubscribe).not.toHaveBeenCalled();
   });
 
   it('advances when timeRemaining <= endThreshold', () => {
@@ -55,29 +106,19 @@ describe('useAutoAdvance', () => {
       opts
     );
 
-    // The provider adapter subscribe wraps spotifyPlayer.onPlayerStateChanged,
-    // so the last call to the mock has our callback
-    const subscribeCalls = vi.mocked(spotifyPlayer.onPlayerStateChanged).mock.calls;
-    expect(subscribeCalls.length).toBeGreaterThan(0);
-    const sdkCallback = subscribeCalls[subscribeCalls.length - 1][0];
+    expect(mockSubscribe).toHaveBeenCalled();
 
     // Simulate near-end: position 208500, duration 210000, timeRemaining = 1500ms
-    sdkCallback(makeSpotifyPlaybackState({
-      paused: false,
-      position: 208500,
-      track_window: {
-        current_track: {
-          id: 't1',
-          uri: 'spotify:track:t1',
-          name: 'Test',
-          duration_ms: 210000,
-          artists: [{ name: 'A', uri: 'u' }],
-          album: { name: 'Al', uri: 'u', images: [] },
-        },
-        next_tracks: [],
-        previous_tracks: [],
+    providerStateCallback?.({
+      isPlaying: true,
+      positionMs: 208500,
+      durationMs: 210000,
+      currentTrackId: 't1',
+      currentPlaybackRef: {
+        provider: 'spotify',
+        ref: 'spotify:track:t1',
       },
-    }));
+    });
 
     vi.advanceTimersByTime(500);
     expect(playTrack).toHaveBeenCalledWith(1, true);
@@ -89,36 +130,106 @@ describe('useAutoAdvance', () => {
       opts
     );
 
-    const subscribeCalls = vi.mocked(spotifyPlayer.onPlayerStateChanged).mock.calls;
-    const sdkCallback = subscribeCalls[subscribeCalls.length - 1][0];
+    expect(mockSubscribe).toHaveBeenCalled();
 
     // Simulate "was playing" state first
-    sdkCallback(makeSpotifyPlaybackState({ paused: false, position: 100000 }));
+    providerStateCallback?.({
+      isPlaying: true,
+      positionMs: 100000,
+      durationMs: 210000,
+      currentTrackId: 't1',
+      currentPlaybackRef: {
+        provider: 'spotify',
+        ref: 'spotify:track:t1',
+      },
+    });
 
     // Then simulate natural end: paused at position 0
-    sdkCallback(makeSpotifyPlaybackState({ paused: true, position: 0 }));
+    providerStateCallback?.({
+      isPlaying: false,
+      positionMs: 0,
+      durationMs: 210000,
+      currentTrackId: 't1',
+      currentPlaybackRef: {
+        provider: 'spotify',
+        ref: 'spotify:track:t1',
+      },
+    });
 
     vi.advanceTimersByTime(500);
     expect(playTrack).toHaveBeenCalledWith(1, true);
   });
 
   it('does NOT advance if msSinceLastPlay < PLAY_COOLDOWN_MS', () => {
-    // Set lastPlayTrackTime to very recent
-    (spotifyPlayer as unknown as { lastPlayTrackTime: number }).lastPlayTrackTime = Date.now();
+    // Record current time before hook setup
+    const recentPlayTime = Date.now();
+
+    const mockDescriptor = makeProviderDescriptor({
+      playback: {
+        providerId: 'spotify',
+        initialize: vi.fn().mockResolvedValue(undefined),
+        playTrack: vi.fn().mockResolvedValue(undefined),
+        pause: vi.fn().mockResolvedValue(undefined),
+        resume: vi.fn().mockResolvedValue(undefined),
+        seek: vi.fn().mockResolvedValue(undefined),
+        next: vi.fn().mockResolvedValue(undefined),
+        previous: vi.fn().mockResolvedValue(undefined),
+        setVolume: vi.fn().mockResolvedValue(undefined),
+        getState: vi.fn().mockResolvedValue(null),
+        subscribe: mockSubscribe,
+        getLastPlayTime: vi.fn().mockReturnValue(recentPlayTime), // Very recent (within cooldown)
+      },
+    });
+
+    // Also mock providerRegistry.get to return the descriptor for 'spotify'
+    vi.mocked(providerRegistry.get).mockReturnValue(mockDescriptor);
+
+    vi.mocked(useProviderContext).mockReturnValue({
+      chosenProviderId: 'spotify',
+      activeProviderId: 'spotify',
+      activeDescriptor: mockDescriptor,
+      setActiveProviderId: vi.fn(),
+      setProviderSwitchInterceptor: vi.fn(),
+      registry: { get: vi.fn(), getAll: vi.fn(), has: vi.fn() },
+      needsProviderSelection: false,
+      enabledProviderIds: ['spotify'],
+      toggleProvider: vi.fn(),
+      isProviderEnabled: vi.fn(),
+      hasMultipleProviders: false,
+      getDescriptor: vi.fn(),
+      connectedProviderIds: ['spotify'],
+      fallthroughNotification: null,
+      dismissFallthroughNotification: vi.fn(),
+    });
 
     renderHook(() =>
       useAutoAdvance({ tracks, currentTrackIndex: 0, playTrack }),
       opts
     );
 
-    const subscribeCalls = vi.mocked(spotifyPlayer.onPlayerStateChanged).mock.calls;
-    const sdkCallback = subscribeCalls[subscribeCalls.length - 1][0];
-
     // Simulate "was playing"
-    sdkCallback(makeSpotifyPlaybackState({ paused: false, position: 100000 }));
+    providerStateCallback?.({
+      isPlaying: true,
+      positionMs: 100000,
+      durationMs: 210000,
+      currentTrackId: 't1',
+      currentPlaybackRef: {
+        provider: 'spotify',
+        ref: 'spotify:track:t1',
+      },
+    });
 
     // Then simulate pause at 0 (but within cooldown)
-    sdkCallback(makeSpotifyPlaybackState({ paused: true, position: 0 }));
+    providerStateCallback?.({
+      isPlaying: false,
+      positionMs: 0,
+      durationMs: 210000,
+      currentTrackId: 't1',
+      currentPlaybackRef: {
+        provider: 'spotify',
+        ref: 'spotify:track:t1',
+      },
+    });
 
     vi.advanceTimersByTime(500);
     expect(playTrack).not.toHaveBeenCalled();
@@ -130,25 +241,18 @@ describe('useAutoAdvance', () => {
       opts
     );
 
-    const subscribeCalls = vi.mocked(spotifyPlayer.onPlayerStateChanged).mock.calls;
-    const sdkCallback = subscribeCalls[subscribeCalls.length - 1][0];
+    expect(mockSubscribe).toHaveBeenCalled();
 
-    sdkCallback(makeSpotifyPlaybackState({
-      paused: false,
-      position: 209000,
-      track_window: {
-        current_track: {
-          id: 't3',
-          uri: 'spotify:track:t3',
-          name: 'Test',
-          duration_ms: 210000,
-          artists: [{ name: 'A', uri: 'u' }],
-          album: { name: 'Al', uri: 'u', images: [] },
-        },
-        next_tracks: [],
-        previous_tracks: [],
+    providerStateCallback?.({
+      isPlaying: true,
+      positionMs: 209000,
+      durationMs: 210000,
+      currentTrackId: 't3',
+      currentPlaybackRef: {
+        provider: 'spotify',
+        ref: 'spotify:track:t3',
       },
-    }));
+    });
 
     vi.advanceTimersByTime(500);
     expect(playTrack).not.toHaveBeenCalled();
