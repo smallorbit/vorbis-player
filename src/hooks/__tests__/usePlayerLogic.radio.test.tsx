@@ -11,6 +11,7 @@ import { TrackProvider } from '@/contexts/TrackContext';
 import { VisualEffectsProvider } from '@/contexts/VisualEffectsContext';
 import { ColorProvider } from '@/contexts/ColorContext';
 import { ProviderProvider } from '@/contexts/ProviderContext';
+import { RADIO_PLAYLIST_ID } from '@/constants/playlist';
 import { makeTrack } from '@/test/fixtures';
 import type { MediaTrack } from '@/types/domain';
 
@@ -218,7 +219,7 @@ describe('usePlayerLogic — radio start', () => {
     const generatedNames = tracks.slice(1).map((t) => t.name);
     expect(generatedNames).toContain('Karma Police');
     expect(generatedNames).toContain('No Surprises');
-    expect(result.current.state.selectedPlaylistId).toBe('radio');
+    expect(result.current.state.selectedPlaylistId).toBe(RADIO_PLAYLIST_ID);
   });
 
   it('deduplicates seed track from generated queue when it appears in recommendations', async () => {

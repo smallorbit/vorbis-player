@@ -3,6 +3,7 @@ import type { MediaTrack, ProviderId } from '@/types/domain';
 import type { ProviderDescriptor } from '@/types/providers';
 import type { TrackOperations } from '@/types/trackOperations';
 import type { RadioSeed, UnmatchedSuggestion } from '@/types/radio';
+import { RADIO_PLAYLIST_ID } from '@/constants/playlist';
 import { shuffleArray } from '@/utils/shuffleArray';
 import { providerRegistry } from '@/providers/registry';
 import { logRadio } from '@/lib/debugLog';
@@ -146,7 +147,7 @@ export function useRadioSession({
         setOriginalTracks(combinedQueue);
         setTracks(combinedQueue);
         setCurrentTrackIndex(0);
-        setSelectedPlaylistId('radio');
+        setSelectedPlaylistId(RADIO_PLAYLIST_ID);
         onProgress({ phase: 'done', trackCount: combinedQueue.length });
         queueSnapshot('Radio queue built', combinedQueue, mediaTracksRef.current.length, 0);
       } else {
