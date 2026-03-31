@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import styled from 'styled-components';
-import type { Track } from '@/services/spotify';
+import type { MediaTrack } from '@/types/domain';
 import { extractTopVibrantColors } from '@/utils/colorExtractor';
 import type { ExtractedColor } from '@/utils/colorExtractor';
 import { OptionButton, OptionButtonGroup } from '@/components/VisualEffectsMenu/styled';
@@ -10,7 +10,7 @@ import Switch from '@/components/controls/Switch';
 import { theme } from '@/styles/theme';
 
 interface QuickEffectsRowProps {
-  currentTrack: Track | null;
+  currentTrack: MediaTrack | null;
   accentColor: string;
   onAccentColorChange: (color: string) => void;
   customAccentColorOverrides: Record<string, string>;

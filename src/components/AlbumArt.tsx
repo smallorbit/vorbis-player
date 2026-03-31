@@ -1,6 +1,6 @@
 import React, { memo, useEffect, useState, useCallback, useMemo } from 'react';
 import styled, { keyframes } from 'styled-components';
-import type { Track } from '../services/spotify';
+import type { MediaTrack } from '@/types/domain';
 
 import AccentColorGlowOverlay, { DEFAULT_GLOW_RATE, DEFAULT_GLOW_INTENSITY } from './AccentColorGlowOverlay';
 import { hexToRgb } from '../utils/colorUtils';
@@ -40,7 +40,7 @@ const ProcessingSpinner = styled.div.withConfig({
 `;
 
 interface AlbumArtProps {
-  currentTrack: Track | null;
+  currentTrack: MediaTrack | null;
   objectPosition?: string;
   accentColor?: string;
   glowIntensity?: number;

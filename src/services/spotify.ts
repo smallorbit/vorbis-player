@@ -113,22 +113,6 @@ export interface ArtistInfo {
   url: string;
 }
 
-export interface Track {
-  id: string;
-  provider?: ProviderId;
-  name: string;
-  artists: string;
-  artistsData?: ArtistInfo[];
-  album: string;
-  album_id?: string;
-  track_number?: number;
-  duration_ms: number;
-  uri: string;
-  preview_url?: string;
-  image?: string;
-  added_at?: number;
-}
-
 export interface PlaylistInfo {
   id: string;
   name: string;
