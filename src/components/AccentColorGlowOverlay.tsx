@@ -1,5 +1,6 @@
 import React from 'react';
 import styled from 'styled-components';
+import { breatheGlow } from '../styles/animations';
 
 
 export const DEFAULT_GLOW_RATE = 4.0;
@@ -10,12 +11,23 @@ const GlowBackgroundLayer = styled.div<{
   $glowRate: number;
 }>`
   position: absolute;
-  width: -webkit-fill-available;
-  height: -webkit-fill-available;
+  width: 100%;
+  height: 100%;
   background: var(--accent-color);
   pointer-events: none;
   z-index: -1;
   border-radius: inherit;
+  display: block;
+  transform: translateZ(0);
+  will-change: transform, opacity, filter;
+  opacity: calc(${({ $glowIntensity }) => $glowIntensity} / 100);
+  animation: ${breatheGlow} ${({ $glowRate }) => $glowRate}s linear infinite;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+    transform: none;
+    will-change: auto;
+  }
 `;
 
 interface AccentColorGlowOverlayProps {
@@ -43,14 +55,10 @@ const AccentColorGlowOverlay = React.memo<React.FC<AccentColorGlowOverlayProps>>
   if (glowIntensity === 0 || !backgroundImage) {
     return null;
   }
-  const glowBackgroundClasses = [
-    glowIntensity > 0 ? 'glow-background' : 'glow-hidden'
-  ].filter(Boolean).join(' ');
   return (
     <GlowBackgroundLayer
       $glowIntensity={glowIntensity}
       $glowRate={glowRate}
-      className={glowBackgroundClasses}
     />
   );
 }, areGlowPropsEqual);

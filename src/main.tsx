@@ -1,7 +1,5 @@
 import { createRoot } from 'react-dom/client'
 import './index.css'
-import './styles/glow-animations.css'
-import './styles/container-queries.css'
 import App from './App.tsx'
 import { logSw } from '@/lib/debugLog'
 
