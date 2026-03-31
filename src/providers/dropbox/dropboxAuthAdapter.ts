@@ -5,6 +5,7 @@
 
 import type { AuthProvider } from '@/types/providers';
 import type { ProviderId } from '@/types/domain';
+import { STORAGE_KEYS } from '@/constants/storage';
 import { resetPlaylistsFolderCache } from './dropboxPlaylistStorage';
 
 export const DROPBOX_AUTH_ERROR_EVENT = 'vorbis-dropbox-auth-error';
@@ -18,11 +19,6 @@ function getRedirectUri(): string {
   return `${window.location.origin}/auth/dropbox/callback`;
 }
 
-const TOKEN_KEY = 'vorbis-player-dropbox-token';
-const REFRESH_TOKEN_KEY = 'vorbis-player-dropbox-refresh-token';
-const TOKEN_EXPIRY_KEY = 'vorbis-player-dropbox-token-expiry';
-const CODE_VERIFIER_KEY = 'vorbis-player-dropbox-code-verifier';
-const OAUTH_STATE_KEY = 'vorbis-player-dropbox-oauth-state';
 
 function generateRandomString(length: number): string {
   const array = new Uint8Array(length);
@@ -56,9 +52,9 @@ export class DropboxAuthAdapter implements AuthProvider {
   private tokenExpiresAt: number | null = null;
 
   constructor() {
-    this.accessToken = localStorage.getItem(TOKEN_KEY);
-    this.refreshToken = localStorage.getItem(REFRESH_TOKEN_KEY);
-    const stored = localStorage.getItem(TOKEN_EXPIRY_KEY);
+    this.accessToken = localStorage.getItem(STORAGE_KEYS.DROPBOX_TOKEN);
+    this.refreshToken = localStorage.getItem(STORAGE_KEYS.DROPBOX_REFRESH_TOKEN);
+    const stored = localStorage.getItem(STORAGE_KEYS.DROPBOX_TOKEN_EXPIRY);
     this.tokenExpiresAt = stored ? parseInt(stored, 10) : null;
   }
 
@@ -71,9 +67,9 @@ export class DropboxAuthAdapter implements AuthProvider {
 
   /** Re-read tokens from localStorage (e.g. written by a popup tab). */
   private syncFromStorage(): void {
-    this.accessToken = localStorage.getItem(TOKEN_KEY);
-    this.refreshToken = localStorage.getItem(REFRESH_TOKEN_KEY);
-    const stored = localStorage.getItem(TOKEN_EXPIRY_KEY);
+    this.accessToken = localStorage.getItem(STORAGE_KEYS.DROPBOX_TOKEN);
+    this.refreshToken = localStorage.getItem(STORAGE_KEYS.DROPBOX_REFRESH_TOKEN);
+    const stored = localStorage.getItem(STORAGE_KEYS.DROPBOX_TOKEN_EXPIRY);
     this.tokenExpiresAt = stored ? parseInt(stored, 10) : null;
   }
 
@@ -91,10 +87,10 @@ export class DropboxAuthAdapter implements AuthProvider {
     }
 
     const codeVerifier = generateRandomString(64);
-    localStorage.setItem(CODE_VERIFIER_KEY, codeVerifier);
+    localStorage.setItem(STORAGE_KEYS.DROPBOX_CODE_VERIFIER, codeVerifier);
 
     const state = generateRandomString(32);
-    localStorage.setItem(OAUTH_STATE_KEY, state);
+    localStorage.setItem(STORAGE_KEYS.DROPBOX_OAUTH_STATE, state);
 
     const challengeBuffer = await sha256(codeVerifier);
     const codeChallenge = base64urlEncode(challengeBuffer);
@@ -140,13 +136,13 @@ export class DropboxAuthAdapter implements AuthProvider {
       return false;
     }
 
-    const expectedState = localStorage.getItem(OAUTH_STATE_KEY);
-    localStorage.removeItem(OAUTH_STATE_KEY);
+    const expectedState = localStorage.getItem(STORAGE_KEYS.DROPBOX_OAUTH_STATE);
+    localStorage.removeItem(STORAGE_KEYS.DROPBOX_OAUTH_STATE);
     if (!expectedState || returnedState !== expectedState) {
       throw new Error('OAuth state mismatch — possible CSRF attack');
     }
 
-    const codeVerifier = localStorage.getItem(CODE_VERIFIER_KEY);
+    const codeVerifier = localStorage.getItem(STORAGE_KEYS.DROPBOX_CODE_VERIFIER);
     if (!codeVerifier) {
       throw new Error('Missing code verifier for Dropbox PKCE');
     }
@@ -179,14 +175,14 @@ export class DropboxAuthAdapter implements AuthProvider {
       ? Date.now() + data.expires_in * 1000
       : null;
 
-    localStorage.setItem(TOKEN_KEY, data.access_token);
+    localStorage.setItem(STORAGE_KEYS.DROPBOX_TOKEN, data.access_token);
     if (data.refresh_token) {
-      localStorage.setItem(REFRESH_TOKEN_KEY, data.refresh_token);
+      localStorage.setItem(STORAGE_KEYS.DROPBOX_REFRESH_TOKEN, data.refresh_token);
     }
     if (this.tokenExpiresAt !== null) {
-      localStorage.setItem(TOKEN_EXPIRY_KEY, String(this.tokenExpiresAt));
+      localStorage.setItem(STORAGE_KEYS.DROPBOX_TOKEN_EXPIRY, String(this.tokenExpiresAt));
     }
-    localStorage.removeItem(CODE_VERIFIER_KEY);
+    localStorage.removeItem(STORAGE_KEYS.DROPBOX_CODE_VERIFIER);
 
     return true;
   }
@@ -195,16 +191,16 @@ export class DropboxAuthAdapter implements AuthProvider {
   private clearAccessToken(): void {
     this.accessToken = null;
     this.tokenExpiresAt = null;
-    localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem(TOKEN_EXPIRY_KEY);
+    localStorage.removeItem(STORAGE_KEYS.DROPBOX_TOKEN);
+    localStorage.removeItem(STORAGE_KEYS.DROPBOX_TOKEN_EXPIRY);
   }
 
   logout(): void {
     this.clearAccessToken();
     this.refreshToken = null;
-    localStorage.removeItem(REFRESH_TOKEN_KEY);
-    localStorage.removeItem(CODE_VERIFIER_KEY);
-    localStorage.removeItem(OAUTH_STATE_KEY);
+    localStorage.removeItem(STORAGE_KEYS.DROPBOX_REFRESH_TOKEN);
+    localStorage.removeItem(STORAGE_KEYS.DROPBOX_CODE_VERIFIER);
+    localStorage.removeItem(STORAGE_KEYS.DROPBOX_OAUTH_STATE);
     resetPlaylistsFolderCache();
   }
 
@@ -261,9 +257,9 @@ export class DropboxAuthAdapter implements AuthProvider {
       ? Date.now() + data.expires_in * 1000
       : null;
 
-    localStorage.setItem(TOKEN_KEY, data.access_token);
+    localStorage.setItem(STORAGE_KEYS.DROPBOX_TOKEN, data.access_token);
     if (this.tokenExpiresAt !== null) {
-      localStorage.setItem(TOKEN_EXPIRY_KEY, String(this.tokenExpiresAt));
+      localStorage.setItem(STORAGE_KEYS.DROPBOX_TOKEN_EXPIRY, String(this.tokenExpiresAt));
     }
     return data.access_token;
   }
