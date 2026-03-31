@@ -68,12 +68,16 @@ export function useCollectionLoader({
         setSelectedPlaylistId(playlistId);
         mediaTracksRef.current = [];
         try {
+          // Cache descriptors to avoid redundant lookups
+          const descriptorMap = new Map(
+            connectedProviderIds.map(id => [id, getDescriptor(id)])
+          );
           const likedProviderIds = connectedProviderIds.filter(
-            id => getDescriptor(id)?.capabilities.hasLikedCollection,
+            id => descriptorMap.get(id)?.capabilities.hasLikedCollection,
           );
           const results = await Promise.all(
             likedProviderIds.map(async (id) => {
-              const catalog = getDescriptor(id)?.catalog;
+              const catalog = descriptorMap.get(id)?.catalog;
               if (!catalog) return [];
               return catalog.listTracks({ provider: id, kind: 'liked' }).catch(() => [] as MediaTrack[]);
             }),

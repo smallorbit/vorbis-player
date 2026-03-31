@@ -1,23 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useCollectionLoader } from '../useCollectionLoader';
-import type { Track } from '@/services/spotify';
+import { makeTrack } from '@/test/fixtures';
 import type { MediaTrack } from '@/types/domain';
-
-function makeTrack(id: string): Track {
-  return {
-    id,
-    provider: 'spotify',
-    name: `Track ${id}`,
-    artists: 'Artist',
-    artistsData: [],
-    album: 'Album',
-    album_id: 'album_id',
-    track_number: 1,
-    duration_ms: 180000,
-    uri: `spotify:track:${id}`,
-  };
-}
 
 function makeMediaTrack(id: string, addedAt?: number): MediaTrack {
   return {

@@ -120,13 +120,15 @@ export function useRadioSession({
         );
         if (searchCapableProviders.length > 0) {
           try {
-            const resolvedTracks: MediaTrack[] = [];
-            for (const suggestion of result.unmatchedSuggestions) {
+            // Parallelize searches across all suggestions and providers
+            const searchPromises = result.unmatchedSuggestions.map(async (suggestion) => {
               for (const provider of searchCapableProviders) {
                 const match = await provider.catalog.searchTrack?.(suggestion.artist, suggestion.name);
-                if (match) { resolvedTracks.push(match); break; }
+                if (match) return match;
               }
-            }
+              return null;
+            });
+            const resolvedTracks = (await Promise.all(searchPromises)).filter((t): t is MediaTrack => t !== null);
             const existingKeys = new Set(
               generatedTracks.map((t) => `${t.artists.toLowerCase()}||${t.name.toLowerCase()}`),
             );

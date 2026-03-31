@@ -68,20 +68,17 @@ export function usePlaybackSubscription({
 
           if (state.trackMetadata && trackIndex !== -1) {
             const meta = state.trackMetadata;
-            if (meta.name !== undefined || meta.artists !== undefined || meta.album !== undefined || meta.image !== undefined || meta.durationMs !== undefined) {
+            // Build update object with only defined fields
+            const updates: Partial<Track> = {};
+            if (meta.name !== undefined) updates.name = meta.name;
+            if (meta.artists !== undefined) updates.artists = meta.artists;
+            if (meta.album !== undefined) updates.album = meta.album;
+            if (meta.image !== undefined) updates.image = meta.image;
+            if (meta.durationMs !== undefined) updates.duration_ms = meta.durationMs;
+
+            if (Object.keys(updates).length > 0) {
               setTracks((prev: Track[]) =>
-                prev.map((t, i) =>
-                  i === trackIndex
-                    ? {
-                        ...t,
-                        ...(meta.name !== undefined && { name: meta.name }),
-                        ...(meta.artists !== undefined && { artists: meta.artists }),
-                        ...(meta.album !== undefined && { album: meta.album }),
-                        ...(meta.image !== undefined && { image: meta.image }),
-                        ...(meta.durationMs !== undefined && { duration_ms: meta.durationMs }),
-                      }
-                    : t
-                )
+                prev.map((t, i) => (i === trackIndex ? { ...t, ...updates } : t))
               );
               const mediaIdx = mediaTracksRef.current.findIndex((m) => m.id === trackId);
               if (mediaIdx !== -1) {
