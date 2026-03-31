@@ -13,6 +13,7 @@ import { spotifyPlayer } from '@/services/spotifyPlayer';
 import { isAlbumId, extractAlbumId, LIKED_SONGS_ID } from '@/constants/playlist';
 import { shuffleArray } from '@/utils/shuffleArray';
 import type { ProviderId, MediaTrack } from '@/types/domain';
+import type { TrackOperations } from '@/types/trackOperations';
 import { logQueue } from '@/lib/debugLog';
 
 const SPOTIFY_PROVIDER_ID: ProviderId = 'spotify';
@@ -61,24 +62,15 @@ function buildTracksFromWindow(state: SpotifyPlaybackState): MediaTrack[] {
 }
 
 interface UseSpotifyPlaylistManagerProps {
-  setError: (error: string | null) => void;
-  setIsLoading: (loading: boolean) => void;
-  setSelectedPlaylistId: (id: string | null) => void;
-  setTracks: (tracks: MediaTrack[]) => void;
-  setOriginalTracks: (tracks: MediaTrack[] | ((prev: MediaTrack[]) => MediaTrack[])) => void;
-  setCurrentTrackIndex: (index: number) => void;
+  trackOps: Omit<TrackOperations, 'mediaTracksRef'>;
   shuffleEnabled: boolean;
 }
 
 export const useSpotifyPlaylistManager = ({
-  setError,
-  setIsLoading,
-  setSelectedPlaylistId,
-  setTracks,
-  setOriginalTracks,
-  setCurrentTrackIndex,
+  trackOps,
   shuffleEnabled
 }: UseSpotifyPlaylistManagerProps) => {
+  const { setError, setIsLoading, setSelectedPlaylistId, setTracks, setOriginalTracks, setCurrentTrackIndex } = trackOps;
 
   const handlePlaylistSelect = useCallback(async (playlistId: string): Promise<MediaTrack[]> => {
     logQueue('useSpotifyPlaylistManager.handlePlaylistSelect — playlistId=%s, shuffle=%s', playlistId, String(shuffleEnabled));

@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 import type { MediaTrack, ProviderId } from '@/types/domain';
 import type { ProviderDescriptor } from '@/types/providers';
+import type { TrackOperations } from '@/types/trackOperations';
 import { LIKED_SONGS_ID, resolvePlaylistRef } from '@/constants/playlist';
 import { shuffleArray } from '@/utils/shuffleArray';
 import { providerRegistry } from '@/providers/registry';
@@ -8,20 +9,14 @@ import { logQueue } from '@/lib/debugLog';
 import { queueSnapshot } from './playerLogicUtils';
 
 interface UseCollectionLoaderProps {
+  trackOps: TrackOperations;
   activeDescriptor: ProviderDescriptor | undefined;
   getDescriptor: (providerId: ProviderId) => ProviderDescriptor | undefined;
   setActiveProviderId: (providerId: ProviderId) => void;
   connectedProviderIds: ProviderId[];
   shuffleEnabled: boolean;
   isUnifiedLikedActive: boolean;
-  mediaTracksRef: React.MutableRefObject<MediaTrack[]>;
   drivingProviderRef: React.MutableRefObject<ProviderId | null>;
-  setError: (error: string | null) => void;
-  setIsLoading: (loading: boolean) => void;
-  setSelectedPlaylistId: (id: string | null) => void;
-  setTracks: (tracks: MediaTrack[] | ((prev: MediaTrack[]) => MediaTrack[])) => void;
-  setOriginalTracks: (tracks: MediaTrack[]) => void;
-  setCurrentTrackIndex: (index: number | ((prev: number) => number)) => void;
   playTrack: (index: number, isSkip?: boolean) => Promise<void>;
   spotifyHandlePlaylistSelect: (playlistId: string) => Promise<MediaTrack[]>;
   stopRadioBase: () => void;
@@ -33,25 +28,21 @@ interface UseCollectionLoaderReturn {
 }
 
 export function useCollectionLoader({
+  trackOps,
   activeDescriptor,
   getDescriptor,
   setActiveProviderId,
   connectedProviderIds,
   shuffleEnabled,
   isUnifiedLikedActive,
-  mediaTracksRef,
   drivingProviderRef,
-  setError,
-  setIsLoading,
-  setSelectedPlaylistId,
-  setTracks,
-  setOriginalTracks,
-  setCurrentTrackIndex,
   playTrack,
   spotifyHandlePlaylistSelect,
   stopRadioBase,
   radioStateIsActive,
 }: UseCollectionLoaderProps): UseCollectionLoaderReturn {
+  const { setError, setIsLoading, setSelectedPlaylistId, setTracks, setOriginalTracks, setCurrentTrackIndex, mediaTracksRef } = trackOps;
+
   const beginLoad = useCallback((playlistId: string) => {
     setError(null);
     setIsLoading(true);

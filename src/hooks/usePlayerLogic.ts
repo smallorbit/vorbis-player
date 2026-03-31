@@ -10,6 +10,7 @@ import { useAccentColor } from '@/hooks/useAccentColor';
 import { useUnifiedLikedTracks } from '@/hooks/useUnifiedLikedTracks';
 import { useRadio } from '@/hooks/useRadio';
 import type { ProviderId } from '@/types/domain';
+import type { TrackOperations } from '@/types/trackOperations';
 import { providerRegistry } from '@/providers/registry';
 import { logQueue } from '@/lib/debugLog';
 import { useQueueThumbnailLoader } from '@/hooks/useQueueThumbnailLoader';
@@ -66,6 +67,11 @@ export function usePlayerLogic() {
   const mediaTracksRef = useRef(tracks);
   mediaTracksRef.current = tracks;
 
+  const trackOps: TrackOperations = useMemo(() => ({
+    setTracks, setOriginalTracks, setCurrentTrackIndex,
+    setSelectedPlaylistId, setError, setIsLoading, mediaTracksRef,
+  }), [setTracks, setOriginalTracks, setCurrentTrackIndex, setSelectedPlaylistId, setError, setIsLoading]);
+
   // Refs so the provider subscription handler always sees the latest values
   // without needing them in the effect's dependency array (which would cause
   // the subscription to tear down and recreate on every track change, triggering
@@ -109,31 +115,20 @@ export function usePlayerLogic() {
   const { radioState, startRadio, stopRadio: stopRadioBase, isRadioAvailable } = useRadio();
 
   const { handlePlaylistSelect: spotifyHandlePlaylistSelect } = useSpotifyPlaylistManager({
-    setError,
-    setIsLoading,
-    setSelectedPlaylistId,
-    setTracks,
-    setOriginalTracks,
-    setCurrentTrackIndex,
+    trackOps,
     shuffleEnabled,
   });
 
   // Initialize collection loader
   const { handlePlaylistSelect } = useCollectionLoader({
+    trackOps,
     activeDescriptor,
     getDescriptor,
     setActiveProviderId,
     connectedProviderIds,
     shuffleEnabled,
     isUnifiedLikedActive,
-    mediaTracksRef,
     drivingProviderRef,
-    setError,
-    setIsLoading,
-    setSelectedPlaylistId,
-    setTracks,
-    setOriginalTracks,
-    setCurrentTrackIndex,
     playTrack,
     spotifyHandlePlaylistSelect,
     stopRadioBase,
@@ -255,17 +250,12 @@ export function usePlayerLogic() {
 
   // Initialize radio session (before handleBackToLibrary, which needs stopRadio)
   const { handleStartRadio, stopRadio, clearAuthExpired } = useRadioSession({
+    trackOps,
     activeDescriptor,
     currentTrack,
     currentTrackIndex,
-    mediaTracksRef,
     startRadio,
     stopRadioBase,
-    setError,
-    setTracks,
-    setOriginalTracks,
-    setCurrentTrackIndex,
-    setSelectedPlaylistId,
     onProgress: setRadioProgress,
     authExpired,
     setAuthExpired,
@@ -285,17 +275,14 @@ export function usePlayerLogic() {
 
   // Initialize queue management handlers
   const { handleAddToQueue, handleRemoveFromQueue, handleReorderQueue } = useQueueManagement({
+    trackOps,
     tracks,
     currentTrackIndex,
     shuffleEnabled,
-    mediaTracksRef,
     handlePlaylistSelect,
     handleBackToLibrary,
     activeDescriptor,
     getDescriptor,
-    setTracks,
-    setOriginalTracks,
-    setCurrentTrackIndex,
   });
 
   const dismissRadioProgress = useCallback(() => setRadioProgress(null), []);

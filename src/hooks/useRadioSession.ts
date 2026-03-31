@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 import type { MediaTrack, ProviderId } from '@/types/domain';
 import type { ProviderDescriptor } from '@/types/providers';
+import type { TrackOperations } from '@/types/trackOperations';
 import type { RadioSeed, UnmatchedSuggestion } from '@/types/radio';
 import { shuffleArray } from '@/utils/shuffleArray';
 import { providerRegistry } from '@/providers/registry';
@@ -11,17 +12,12 @@ export type RadioProgressPhase = 'fetching-catalog' | 'generating' | 'resolving'
 export interface RadioProgress { phase: RadioProgressPhase; trackCount?: number; }
 
 interface UseRadioSessionProps {
+  trackOps: Pick<TrackOperations, 'setError' | 'setTracks' | 'setOriginalTracks' | 'setCurrentTrackIndex' | 'setSelectedPlaylistId' | 'mediaTracksRef'>;
   activeDescriptor: ProviderDescriptor | undefined;
   currentTrack: MediaTrack | null;
   currentTrackIndex: number;
-  mediaTracksRef: React.MutableRefObject<MediaTrack[]>;
   startRadio: (seed: RadioSeed, catalogTracks: MediaTrack[]) => Promise<any>;
   stopRadioBase: () => void;
-  setError: (error: string | null) => void;
-  setTracks: (tracks: MediaTrack[] | ((prev: MediaTrack[]) => MediaTrack[])) => void;
-  setOriginalTracks: (tracks: MediaTrack[]) => void;
-  setCurrentTrackIndex: (index: number | ((prev: number) => number)) => void;
-  setSelectedPlaylistId: (id: string | null) => void;
   onProgress: (progress: RadioProgress | null) => void;
   authExpired: ProviderId | null;
   setAuthExpired: (providerId: ProviderId | null) => void;
@@ -35,21 +31,17 @@ interface UseRadioSessionReturn {
 }
 
 export function useRadioSession({
+  trackOps,
   activeDescriptor,
   currentTrack,
   currentTrackIndex,
-  mediaTracksRef,
   startRadio,
   stopRadioBase,
-  setError,
-  setTracks,
-  setOriginalTracks,
-  setCurrentTrackIndex,
-  setSelectedPlaylistId,
   onProgress,
   authExpired,
   setAuthExpired,
 }: UseRadioSessionProps): UseRadioSessionReturn {
+  const { setError, setTracks, setOriginalTracks, setCurrentTrackIndex, setSelectedPlaylistId, mediaTracksRef } = trackOps;
   const clearAuthExpired = useCallback(() => {
     setAuthExpired(null);
   }, [setAuthExpired]);

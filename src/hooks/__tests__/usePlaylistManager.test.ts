@@ -39,12 +39,7 @@ describe('usePlaylistManager', () => {
   const setCurrentTrackIndex = vi.fn();
 
   const defaultProps = {
-    setError,
-    setIsLoading,
-    setSelectedPlaylistId,
-    setTracks,
-    setOriginalTracks,
-    setCurrentTrackIndex,
+    trackOps: { setError, setIsLoading, setSelectedPlaylistId, setTracks, setOriginalTracks, setCurrentTrackIndex },
     shuffleEnabled: false,
   };
 
