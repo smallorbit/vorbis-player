@@ -4,7 +4,7 @@ import styled, { keyframes } from 'styled-components';
 import { theme } from '@/styles/theme';
 import type { RadioProgressPhase } from '@/hooks/usePlayerLogic';
 
-export interface RadioProgressToastProps {
+interface RadioProgressToastProps {
   phase: RadioProgressPhase;
   trackCount?: number;
   onDismiss: () => void;

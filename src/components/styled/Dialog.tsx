@@ -1,7 +1,7 @@
 import styled, { keyframes } from 'styled-components';
 import { theme } from '@/styles/theme';
 
-export const dialogFadeIn = keyframes`
+const dialogFadeIn = keyframes`
   from { opacity: 0; }
   to { opacity: 1; }
 `;

@@ -20,10 +20,9 @@ vi.mock('@/hooks/usePlaylistManager', () => ({
   usePlaylistManager: vi.fn(() => ({ handlePlaylistSelect: vi.fn() })),
 }));
 
-vi.mock('@/hooks/useSpotifyPlayback', () => ({
-  useSpotifyPlayback: vi.fn(() => ({
+vi.mock('@/hooks/useProviderPlayback', () => ({
+  useProviderPlayback: vi.fn(() => ({
     playTrack: playTrackSpy,
-    resumePlayback: vi.fn(),
     currentPlaybackProviderRef: { current: 'spotify' as const },
   })),
 }));
@@ -108,10 +107,6 @@ vi.mock('@/providers/registry', () => ({
     getAll: vi.fn(() => []),
     register: vi.fn(),
   },
-}));
-
-vi.mock('@/services/spotifyResolver', () => ({
-  resolveViaSpotify: vi.fn().mockResolvedValue([]),
 }));
 
 function makeMediaTrack(overrides: Partial<MediaTrack> & { name: string; artists: string }): MediaTrack {

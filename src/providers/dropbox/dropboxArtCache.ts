@@ -138,7 +138,7 @@ export async function putDurationMs(trackId: string, durationMs: number): Promis
   }
 }
 
-export interface CachedTagMetadata {
+interface CachedTagMetadata {
   trackId: string;
   name?: string;
   artists?: string;
@@ -199,7 +199,7 @@ export async function getDurationsMap(trackIds: string[]): Promise<Map<string, n
 
 // ── Track date (release year) cache ──────────────────────────
 
-export interface CachedTrackDate {
+interface CachedTrackDate {
   albumId: string;
   releaseYear: number;
 }

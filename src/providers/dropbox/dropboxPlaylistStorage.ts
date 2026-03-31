@@ -20,7 +20,7 @@ function jsonToHttpHeader(json: string): string {
 
 // ── Types ────────────────────────────────────────────────────────────
 
-export interface SavedTrack {
+interface SavedTrack {
   id: string;
   provider: ProviderId;
   playbackRef: PlaybackItemRef;
@@ -33,7 +33,7 @@ export interface SavedTrack {
   image?: string;
 }
 
-export interface PlaylistFile {
+interface PlaylistFile {
   version: 1;
   name: string;
   createdAt: string;

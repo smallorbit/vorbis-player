@@ -1,24 +1,28 @@
 import { useCallback } from 'react';
 import type { MediaTrack, ProviderId } from '@/types/domain';
+import type { ProviderDescriptor } from '@/types/providers';
 import type { RadioSeed, UnmatchedSuggestion } from '@/types/radio';
 import { shuffleArray } from '@/utils/shuffleArray';
 import { providerRegistry } from '@/providers/registry';
 import { logRadio } from '@/lib/debugLog';
 import { queueSnapshot } from './playerLogicUtils';
 
+export type RadioProgressPhase = 'fetching-catalog' | 'generating' | 'resolving' | 'done';
+export interface RadioProgress { phase: RadioProgressPhase; trackCount?: number; }
+
 interface UseRadioSessionProps {
-  activeDescriptor: any;
+  activeDescriptor: ProviderDescriptor | undefined;
   currentTrack: MediaTrack | null;
   currentTrackIndex: number;
   mediaTracksRef: React.MutableRefObject<MediaTrack[]>;
   startRadio: (seed: RadioSeed, catalogTracks: MediaTrack[]) => Promise<any>;
   stopRadioBase: () => void;
-  setIsLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
   setTracks: (tracks: MediaTrack[] | ((prev: MediaTrack[]) => MediaTrack[])) => void;
   setOriginalTracks: (tracks: MediaTrack[]) => void;
   setCurrentTrackIndex: (index: number | ((prev: number) => number)) => void;
   setSelectedPlaylistId: (id: string | null) => void;
+  onProgress: (progress: RadioProgress | null) => void;
   authExpired: ProviderId | null;
   setAuthExpired: (providerId: ProviderId | null) => void;
 }
@@ -37,12 +41,12 @@ export function useRadioSession({
   mediaTracksRef,
   startRadio,
   stopRadioBase,
-  setIsLoading,
   setError,
   setTracks,
   setOriginalTracks,
   setCurrentTrackIndex,
   setSelectedPlaylistId,
+  onProgress,
   authExpired,
   setAuthExpired,
 }: UseRadioSessionProps): UseRadioSessionReturn {
@@ -55,19 +59,12 @@ export function useRadioSession({
     setAuthExpired(null);
   }, [stopRadioBase]);
 
-  /**
-   * Start a radio session from the currently playing track.
-   * Provider-agnostic: fetches catalog from the active provider, generates
-   * a radio queue via Last.fm, then resolves unmatched suggestions via Spotify.
-   */
   const handleStartRadio = useCallback(async () => {
     if (!activeDescriptor || !currentTrack) return;
 
-    setIsLoading(true);
-    setError(null);
+    onProgress({ phase: 'fetching-catalog' });
 
     try {
-      // Pre-warm playback SDKs for providers that support track search
       const searchProviders = providerRegistry.getAll().filter(
         d => d.capabilities.hasTrackSearch && d.auth.isAuthenticated(),
       );
@@ -75,7 +72,6 @@ export function useRadioSession({
         sp.playback.initialize().catch(() => {});
       }
 
-      // Fetch catalog for matching — provider-specific "all tracks" strategy
       // Fetch the widest catalog for radio matching: try all-music folder first,
       // then fall back to liked songs. Folder-based providers (e.g. Dropbox) return
       // their full library from the root folder; others use liked songs as the catalog.
@@ -94,14 +90,14 @@ export function useRadioSession({
         track: currentTrack.name,
       };
 
+      onProgress({ phase: 'generating' });
       const result = await startRadio(seed, catalogTracks);
 
       if (!result) {
-        setIsLoading(false);
+        onProgress(null);
         return;
       }
 
-      // Current playing track becomes index 0; playback continues without restart.
       const mediaTracks = mediaTracksRef.current;
       const currentSeedMediaTrack: MediaTrack =
         mediaTracks[currentTrackIndex]?.id === currentTrack?.id
@@ -113,14 +109,13 @@ export function useRadioSession({
 
       let generatedTracks = [...result.queue];
 
-      // Resolve unmatched suggestions via providers that support track search
       if (result.unmatchedSuggestions.length > 0) {
+        onProgress({ phase: 'resolving' });
         const searchCapableProviders = providerRegistry.getAll().filter(
           d => d.capabilities.hasTrackSearch && d.auth.isAuthenticated(),
         );
         if (searchCapableProviders.length > 0) {
           try {
-            // Parallelize searches across all suggestions and providers
             const searchPromises = result.unmatchedSuggestions.map(async (suggestion: UnmatchedSuggestion) => {
               for (const provider of searchCapableProviders) {
                 const match = await provider.catalog.searchTrack?.(suggestion.artist, suggestion.name);
@@ -147,13 +142,10 @@ export function useRadioSession({
         }
       }
 
-      // Dedupe: drop any generated track that is the same as the seed (by id or artist+title).
       const dedupedGenerated = generatedTracks.filter(
         (t) => t.id !== seedId && `${t.artists.toLowerCase()}||${t.name.toLowerCase()}` !== seedKey,
       );
 
-      // Shuffle the generated tracks, keeping the current track pinned at index 0
-      // so playback is not interrupted.
       const shuffledGenerated = shuffleArray(dedupedGenerated);
       const combinedQueue = [currentSeedMediaTrack, ...shuffledGenerated];
 
@@ -163,17 +155,17 @@ export function useRadioSession({
         setTracks(combinedQueue);
         setCurrentTrackIndex(0);
         setSelectedPlaylistId('radio');
-        setIsLoading(false);
+        onProgress({ phase: 'done', trackCount: combinedQueue.length });
         queueSnapshot('Radio queue built', combinedQueue, mediaTracksRef.current.length, 0);
-        // Do not call playTrack(0) — keep current track playing at current position.
       } else {
-        setIsLoading(false);
+        onProgress(null);
       }
     } catch (err) {
+      console.warn('[Radio] Generation failed:', err);
       setError(err instanceof Error ? err.message : 'Failed to start radio.');
-      setIsLoading(false);
+      onProgress(null);
     }
-  }, [activeDescriptor, currentTrack, currentTrackIndex, startRadio, setIsLoading, setError, setOriginalTracks, setTracks, setCurrentTrackIndex, setSelectedPlaylistId]);
+  }, [activeDescriptor, currentTrack, currentTrackIndex, startRadio, onProgress, setError, setOriginalTracks, setTracks, setCurrentTrackIndex, setSelectedPlaylistId]);
 
   return {
     handleStartRadio,

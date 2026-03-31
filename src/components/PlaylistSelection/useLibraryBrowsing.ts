@@ -6,11 +6,10 @@ import type { ProviderId } from '@/types/domain';
 type ViewMode = 'playlists' | 'albums';
 
 export function useLibraryBrowsing(initialSearchQuery?: string, initialViewMode?: ViewMode) {
-  const [viewMode, setViewMode] = useState<ViewMode>(() => {
-    if (initialViewMode) return initialViewMode;
-    const saved = localStorage.getItem('vorbis-player-view-mode');
-    return (saved === 'albums' ? 'albums' : 'playlists') as ViewMode;
-  });
+  const [viewMode, setViewMode] = useLocalStorage<ViewMode>(
+    'vorbis-player-view-mode',
+    initialViewMode ?? 'playlists',
+  );
 
   const [searchQuery, setSearchQuery] = useState(initialSearchQuery || '');
 
@@ -39,10 +38,6 @@ export function useLibraryBrowsing(initialSearchQuery?: string, initialViewMode?
       setViewMode(initialViewMode);
     }
   }, [initialViewMode]);
-
-  useEffect(() => {
-    localStorage.setItem('vorbis-player-view-mode', viewMode);
-  }, [viewMode]);
 
   // Clear artist filter when switching away from albums view
   useEffect(() => {

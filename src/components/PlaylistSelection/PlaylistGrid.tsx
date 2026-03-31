@@ -27,7 +27,6 @@ import { getLikedSongsGradient, likedSongsAsPlaylistInfo, PinIcon, PlaylistImage
 
 interface PlaylistGridProps {
   inDrawer: boolean;
-  playlists: PlaylistInfo[];
   likedSongsPerProvider: { provider: ProviderId; count: number }[];
   likedSongsCount: number;
   isUnifiedLikedActive: boolean;

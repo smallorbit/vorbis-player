@@ -151,10 +151,3 @@ export function useCurrentTrackContext(): CurrentTrackContextValue {
   if (!ctx) throw new Error('useCurrentTrackContext must be used within TrackProvider');
   return ctx;
 }
-
-/** @deprecated Use useTrackListContext or useCurrentTrackContext instead */
-export function useTrackContext() {
-  const list = useTrackListContext();
-  const current = useCurrentTrackContext();
-  return { ...list, ...current };
-}

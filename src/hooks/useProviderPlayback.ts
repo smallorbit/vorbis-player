@@ -5,7 +5,7 @@ import { providerRegistry } from '@/providers/registry';
 import { AuthExpiredError, UnavailableTrackError } from '@/providers/errors';
 import { logQueue } from '@/lib/debugLog';
 
-export interface UseProviderPlaybackProps {
+interface UseProviderPlaybackProps {
   setCurrentTrackIndex: (index: number) => void;
   activeDescriptor?: ProviderDescriptor | null;
   mediaTracks: MediaTrack[];

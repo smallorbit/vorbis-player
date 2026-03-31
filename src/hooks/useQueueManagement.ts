@@ -1,5 +1,6 @@
 import { useCallback, useRef } from 'react';
 import type { AddToQueueResult, MediaTrack, ProviderId } from '@/types/domain';
+import type { ProviderDescriptor } from '@/types/providers';
 import { resolvePlaylistRef } from '@/constants/playlist';
 import { logQueue } from '@/lib/debugLog';
 import {
@@ -17,8 +18,8 @@ interface UseQueueManagementProps {
   mediaTracksRef: React.MutableRefObject<MediaTrack[]>;
   handlePlaylistSelect: (playlistId: string, _playlistName?: string, provider?: ProviderId) => Promise<number>;
   handleBackToLibrary: () => void;
-  activeDescriptor: any;
-  getDescriptor: (providerId: ProviderId) => any;
+  activeDescriptor: ProviderDescriptor | undefined;
+  getDescriptor: (providerId: ProviderId) => ProviderDescriptor | undefined;
   setTracks: (tracks: MediaTrack[] | ((prev: MediaTrack[]) => MediaTrack[])) => void;
   setOriginalTracks: (tracks: MediaTrack[] | ((prev: MediaTrack[]) => MediaTrack[])) => void;
   setCurrentTrackIndex: (index: number | ((prev: number) => number)) => void;
@@ -62,7 +63,6 @@ export function useQueueManagement({
         mediaTracksRef.current.length,
       );
 
-      // If nothing is playing, just load normally
       if (isQueueEmpty) {
         logQueue('handleAddToQueue — queue empty, delegating to handlePlaylistSelect');
         const loaded = await handlePlaylistSelect(playlistId, _playlistName, provider);
@@ -112,13 +112,11 @@ export function useQueueManagement({
   const handleRemoveFromQueue = useCallback(
     (index: number) => {
       if (index < 0 || index >= tracks.length) return;
-      // Cannot remove the currently playing track
       if (index === currentTrackIndex) return;
 
       const removedTrack = tracks[index];
       logQueue('handleRemoveFromQueue — removing index=%d, track=%s, queueLen=%d', index, trkSummary(removedTrack), tracks.length);
 
-      // If this would empty the queue, go back to library
       if (tracks.length <= 1) {
         handleBackToLibrary();
         return;

@@ -63,11 +63,9 @@ export function useQueueDurationLoader(
 
         await Promise.all(
           batch.map(async (track) => {
-            const mt = tracks.find((m) => m.id === track.id);
-            if (!mt) return;
             try {
-              const provider = providerRegistry.get(mt.provider);
-              const durationMs = await provider?.catalog.resolveDuration?.(mt);
+              const provider = providerRegistry.get(track.provider);
+              const durationMs = await provider?.catalog.resolveDuration?.(track);
               if (durationMs) {
                 batchResults.set(track.id, durationMs);
               }

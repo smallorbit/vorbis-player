@@ -10,7 +10,7 @@ import '@/providers/dropbox/dropboxProvider'; // conditionally registers if VITE
 import { AUTH_STATE_CHANGED_EVENT } from '@/hooks/usePopupAuth';
 import { DROPBOX_AUTH_ERROR_EVENT } from '@/providers/dropbox/dropboxAuthAdapter';
 
-export type ProviderSwitchInterceptor = (
+type ProviderSwitchInterceptor = (
   newProviderId: ProviderId,
   proceed: () => void,
   cancel: () => void,

@@ -1,5 +1,6 @@
 import { useCallback } from 'react';
 import type { MediaTrack, ProviderId } from '@/types/domain';
+import type { ProviderDescriptor } from '@/types/providers';
 import { LIKED_SONGS_ID, resolvePlaylistRef } from '@/constants/playlist';
 import { shuffleArray } from '@/utils/shuffleArray';
 import { providerRegistry } from '@/providers/registry';
@@ -7,8 +8,8 @@ import { logQueue } from '@/lib/debugLog';
 import { queueSnapshot } from './playerLogicUtils';
 
 interface UseCollectionLoaderProps {
-  activeDescriptor: any;
-  getDescriptor: (providerId: ProviderId) => any;
+  activeDescriptor: ProviderDescriptor | undefined;
+  getDescriptor: (providerId: ProviderId) => ProviderDescriptor | undefined;
   setActiveProviderId: (providerId: ProviderId) => void;
   connectedProviderIds: ProviderId[];
   shuffleEnabled: boolean;
@@ -55,7 +56,6 @@ export function useCollectionLoader({
     async (playlistId: string, _playlistName?: string, provider?: ProviderId): Promise<number> => {
       logQueue('handlePlaylistSelect called — playlistId=%s provider=%s', playlistId, provider ?? 'active');
 
-      // Clear any active radio session since the queue is being replaced
       if (radioStateIsActive) {
         stopRadioBase();
       }

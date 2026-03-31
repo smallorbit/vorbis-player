@@ -1,7 +1,7 @@
 import type { MediaTrack } from '@/types/domain';
 
 /** Tracks with stable `id` used to align UI order with `MediaTrack[]` playback mirror. */
-export interface TrackOrderItem {
+interface TrackOrderItem {
   id: string;
 }
 

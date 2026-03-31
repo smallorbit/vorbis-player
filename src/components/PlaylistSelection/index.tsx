@@ -125,8 +125,6 @@ const PlaylistSelection = React.memo(function PlaylistSelection({
     removeCollection,
   });
 
-  const libraryFullyLoaded = isInitialLoadComplete;
-
   const { viewport, isMobile, isTablet } = usePlayerSizingContext();
   const {
     pinnedPlaylistIds,
@@ -184,7 +182,7 @@ const PlaylistSelection = React.memo(function PlaylistSelection({
   const unpinnedAlbums = albumLibraryView.unpinned;
 
   useEffect(() => {
-    if (!libraryFullyLoaded) return;
+    if (!isInitialLoadComplete) return;
     if (playlists.length === 0 && albums.length === 0 && likedSongsCount === 0) {
       const providerName = activeDescriptor?.name ?? 'your music service';
       setError(
@@ -193,7 +191,7 @@ const PlaylistSelection = React.memo(function PlaylistSelection({
     } else {
       setError(null);
     }
-  }, [libraryFullyLoaded, playlists.length, albums.length, likedSongsCount, activeDescriptor]);
+  }, [isInitialLoadComplete, playlists.length, albums.length, likedSongsCount, activeDescriptor]);
 
   // Auth check — consider authenticated if ANY enabled provider has auth
   useEffect(() => {
@@ -378,7 +376,7 @@ const PlaylistSelection = React.memo(function PlaylistSelection({
   );
 
   const hasAnyContent = playlists.length > 0 || albums.length > 0 || likedSongsCount > 0;
-  const showMainContent = isAuthenticated && !error && (hasAnyContent || (!isLoading && !libraryFullyLoaded));
+  const showMainContent = isAuthenticated && !error && (hasAnyContent || (!isLoading && !isInitialLoadComplete));
 
   const mainContent = showMainContent ? (
     <>
@@ -405,7 +403,6 @@ const PlaylistSelection = React.memo(function PlaylistSelection({
       {viewMode === 'playlists' && (
         <PlaylistGrid
           inDrawer={inDrawer}
-          playlists={playlists}
           likedSongsPerProvider={likedSongsPerProvider}
           likedSongsCount={likedSongsCount}
           isUnifiedLikedActive={isUnifiedLikedActive}
