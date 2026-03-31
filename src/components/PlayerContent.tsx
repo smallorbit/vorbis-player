@@ -25,6 +25,7 @@ import { useColorContext } from '@/contexts/ColorContext';
 import { useVisualEffectsContext } from '@/contexts/VisualEffectsContext';
 import { useProfilingContext } from '@/contexts/ProfilingContext';
 import { useVisualizerDebug } from '@/contexts/VisualizerDebugContext';
+import { STORAGE_KEYS } from '@/constants/storage';
 import LibraryDrawer from './LibraryDrawer';
 import AlbumArtQuickSwapBack from './AlbumArtQuickSwapBack';
 import type { AddToQueueResult, MediaTrack, ProviderId } from '@/types/domain';
@@ -579,8 +580,8 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
       await clearAllPins();
     }
     if (options.clearAccentColors) {
-      localStorage.removeItem('vorbis-player-accent-color-overrides');
-      localStorage.removeItem('vorbis-player-custom-accent-colors');
+      localStorage.removeItem(STORAGE_KEYS.ACCENT_COLOR_OVERRIDES);
+      localStorage.removeItem(STORAGE_KEYS.CUSTOM_ACCENT_COLORS);
     }
     if (options.clearPins || options.clearAccentColors) {
       const { clearPreferencesSyncTimestamp, getPreferencesSync } =

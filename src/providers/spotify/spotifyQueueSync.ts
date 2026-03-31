@@ -7,13 +7,11 @@
  */
 
 import { searchTrack, spotifyAuth } from '@/services/spotify';
+import { STORAGE_KEYS } from '@/constants/storage';
 import type { MediaTrack } from '@/types/domain';
 
 const QUEUE_URI_LIMIT = 200;
 const MAX_CONCURRENT_SEARCHES = 3;
-
-const SYNC_SETTING_KEY = 'vorbis-player-spotify-queue-sync-enabled';
-const RESOLVE_SETTING_KEY = 'vorbis-player-spotify-queue-resolve-cross-provider';
 
 class SpotifyQueueSyncService {
   /** Cache: non-Spotify trackId → resolved Spotify URI (or null if unresolvable) */
@@ -23,7 +21,7 @@ class SpotifyQueueSyncService {
   /** Read the user's queue-sync setting from localStorage. */
   isSyncEnabled(): boolean {
     try {
-      const stored = localStorage.getItem(SYNC_SETTING_KEY);
+      const stored = localStorage.getItem(STORAGE_KEYS.SPOTIFY_QUEUE_SYNC);
       if (stored === null) return true; // default on
       return JSON.parse(stored);
     } catch {
@@ -34,7 +32,7 @@ class SpotifyQueueSyncService {
   /** Read the user's cross-provider resolution setting from localStorage. */
   isResolveEnabled(): boolean {
     try {
-      const stored = localStorage.getItem(RESOLVE_SETTING_KEY);
+      const stored = localStorage.getItem(STORAGE_KEYS.SPOTIFY_QUEUE_CROSS_PROVIDER);
       if (stored === null) return true; // default on
       return JSON.parse(stored);
     } catch {

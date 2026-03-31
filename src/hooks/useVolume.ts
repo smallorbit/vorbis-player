@@ -2,15 +2,13 @@ import { useEffect, useCallback, useRef } from 'react';
 import { useLocalStorage } from './useLocalStorage';
 import { useProviderContext } from '@/contexts/ProviderContext';
 import { providerRegistry } from '@/providers/registry';
+import { STORAGE_KEYS } from '@/constants/storage';
 import type { ProviderId } from '@/types/domain';
-
-const VOLUME_KEY = 'vorbis-player-volume';
-const MUTED_KEY = 'vorbis-player-muted';
 const DEFAULT_VOLUME = 50;
 
 export const useVolume = (currentTrackProvider?: ProviderId) => {
-  const [volume, setVolume] = useLocalStorage<number>(VOLUME_KEY, DEFAULT_VOLUME);
-  const [isMuted, setIsMuted] = useLocalStorage<boolean>(MUTED_KEY, false);
+  const [volume, setVolume] = useLocalStorage<number>(STORAGE_KEYS.VOLUME, DEFAULT_VOLUME);
+  const [isMuted, setIsMuted] = useLocalStorage<boolean>(STORAGE_KEYS.MUTED, false);
   const previousVolumeRef = useRef(volume > 0 ? volume : DEFAULT_VOLUME);
   const initialVolumeRef = useRef(isMuted ? 0 : volume / 100);
 

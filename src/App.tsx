@@ -16,6 +16,7 @@ import { ProviderProvider } from './contexts/ProviderContext';
 import { providerRegistry } from './providers/registry';
 import { getLikesSync } from './providers/dropbox/dropboxLikesSync';
 import { getPreferencesSync } from './providers/dropbox/dropboxPreferencesSync';
+import { AUTH_COMPLETE_EVENT } from '@/constants/events';
 import { logApp } from '@/lib/debugLog';
 
 /**
@@ -128,7 +129,7 @@ function App() {
 
           if (handled && window.opener) {
             window.opener.postMessage(
-              { type: 'vorbis-auth-complete', provider: handledProviderId },
+              { type: AUTH_COMPLETE_EVENT, provider: handledProviderId },
               window.location.origin,
             );
             setIsPopupCallback(true);

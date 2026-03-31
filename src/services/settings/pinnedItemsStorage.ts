@@ -5,6 +5,7 @@
  */
 
 import { STORE_NAMES, settingsGet, settingsPut, settingsClearStore } from './settingsDb';
+import { STORAGE_KEYS } from '@/constants/storage';
 
 export const MAX_PINS = 8;
 
@@ -36,8 +37,6 @@ export async function setPins(providerId: string, type: 'playlists' | 'albums', 
   await settingsPut(STORE_NAMES.PINS, { key: pinKey(providerId, type), ids });
 }
 
-const LS_PINNED_PLAYLISTS = 'vorbis-player-pinned-playlists';
-const LS_PINNED_ALBUMS = 'vorbis-player-pinned-albums';
 
 /** Clear all pinned items for all providers. */
 export async function clearAllPins(): Promise<void> {
@@ -64,15 +63,15 @@ export async function migratePinsFromLocalStorage(): Promise<void> {
   migrationDone = true;
   try {
     // Step 1: localStorage → IDB (legacy)
-    const playlistsRaw = localStorage.getItem(LS_PINNED_PLAYLISTS);
-    const albumsRaw = localStorage.getItem(LS_PINNED_ALBUMS);
+    const playlistsRaw = localStorage.getItem(STORAGE_KEYS.PINNED_PLAYLISTS);
+    const albumsRaw = localStorage.getItem(STORAGE_KEYS.PINNED_ALBUMS);
 
     if (playlistsRaw) {
       const ids = JSON.parse(playlistsRaw) as string[];
       if (Array.isArray(ids) && ids.length > 0) {
         await setPins('spotify', 'playlists', ids);
       }
-      localStorage.removeItem(LS_PINNED_PLAYLISTS);
+      localStorage.removeItem(STORAGE_KEYS.PINNED_PLAYLISTS);
     }
 
     if (albumsRaw) {
@@ -80,7 +79,7 @@ export async function migratePinsFromLocalStorage(): Promise<void> {
       if (Array.isArray(ids) && ids.length > 0) {
         await setPins('spotify', 'albums', ids);
       }
-      localStorage.removeItem(LS_PINNED_ALBUMS);
+      localStorage.removeItem(STORAGE_KEYS.PINNED_ALBUMS);
     }
 
     // Step 2: Merge per-provider pins into unified namespace
