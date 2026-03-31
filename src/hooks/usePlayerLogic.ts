@@ -15,7 +15,6 @@ import type { RadioSeed } from '@/types/radio';
 import { providerRegistry } from '@/providers/registry';
 import { logQueue, logRadio } from '@/lib/debugLog';
 import { shuffleArray } from '@/utils/shuffleArray';
-import { useMediaTracksMirror } from '@/hooks/useMediaTracksMirror';
 import { useQueueThumbnailLoader } from '@/hooks/useQueueThumbnailLoader';
 import { useQueueDurationLoader } from '@/hooks/useQueueDurationLoader';
 import { mediaTrackToTrack, trackToMediaTrack, trkSummary, queueSnapshot } from './playerLogicUtils';
@@ -68,8 +67,9 @@ export function usePlayerLogic() {
   const { activeDescriptor, setActiveProviderId, getDescriptor, connectedProviderIds } = useProviderContext();
   const { isUnifiedLikedActive } = useUnifiedLikedTracks();
 
-  /** MediaTrack[] mirror of `tracks` for index-based playback across all providers. */
-  const mediaTracksRef = useMediaTracksMirror(tracks);
+  // MediaTrack[] mirror of `tracks` for index-based playback across all providers
+  const mediaTracksRef = useRef(tracks);
+  mediaTracksRef.current = tracks;
 
   // Refs so the provider subscription handler always sees the latest values
   // without needing them in the effect's dependency array (which would cause
@@ -95,7 +95,7 @@ export function usePlayerLogic() {
   const providerPlayback = useProviderPlayback({
     setCurrentTrackIndex,
     activeDescriptor,
-    mediaTracksRef,
+    mediaTracks: tracks,
     onAuthExpired: (providerId: ProviderId) => setAuthExpired(providerId),
   });
   const { playTrack } = providerPlayback;
@@ -152,14 +152,14 @@ export function usePlayerLogic() {
     const drivingId = drivingProviderRef.current;
     if (!drivingId || tracks.length === 0) return;
     const descriptor = providerRegistry.get(drivingId);
-    descriptor?.playback.onQueueChanged?.(mediaTracksRef.current, currentTrackIndex);
-  }, [tracks, currentTrackIndex, drivingProviderRef, mediaTracksRef]);
+    descriptor?.playback.onQueueChanged?.(tracks, currentTrackIndex);
+  }, [tracks, currentTrackIndex, drivingProviderRef]);
 
   // Progressively load missing thumbnails for Dropbox tracks in the queue
-  useQueueThumbnailLoader(tracks, mediaTracksRef, setTracks);
+  useQueueThumbnailLoader(tracks, setTracks);
 
   // Progressively discover missing durations for Dropbox tracks in the queue
-  useQueueDurationLoader(tracks, mediaTracksRef, setTracks);
+  useQueueDurationLoader(tracks, setTracks);
 
   // Auto-extract accent color from album artwork; respects overrides in ColorContext
   useAccentColor(currentTrack, accentColorOverrides, setAccentColor, setAccentColorOverrides);
