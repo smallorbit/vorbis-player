@@ -120,7 +120,7 @@ const PlaylistSelection = React.memo(function PlaylistSelection({
   } = useItemActions({
     onPlaylistSelect,
     onAddToQueue,
-    activeDescriptor,
+    activeDescriptor: activeDescriptor ?? null,
     getDescriptor,
     removeCollection,
   });
@@ -418,7 +418,7 @@ const PlaylistSelection = React.memo(function PlaylistSelection({
           unpinnedPlaylists={unpinnedPlaylists}
           isPlaylistPinned={isPlaylistPinned}
           canPinMorePlaylists={canPinMorePlaylists}
-          activeDescriptor={activeDescriptor}
+          activeDescriptor={activeDescriptor ?? null}
           onPlaylistClick={handlePlaylistClick}
           onPlaylistContextMenu={handlePlaylistContextMenu}
           onPinPlaylistClick={handlePinPlaylistClick}

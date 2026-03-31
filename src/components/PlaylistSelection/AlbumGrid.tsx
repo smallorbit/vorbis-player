@@ -8,7 +8,6 @@ import {
   GridCardTextArea,
   GridCardTitle,
   GridCardSubtitle,
-  PlaylistImageWrapper,
   PlaylistInfoDiv,
   PlaylistName,
   PlaylistDetails,
