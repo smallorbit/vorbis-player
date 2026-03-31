@@ -37,7 +37,7 @@ function readStoredOverrides(): VisualizerDebugOverrides | null {
 function writeStoredOverrides(overrides: VisualizerDebugOverrides | null): void {
   try {
     if (overrides == null) {
-      localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem(STORAGE_KEYS.VISUALIZER_DEBUG_OVERRIDES);
       return;
     }
     localStorage.setItem(STORAGE_KEYS.VISUALIZER_DEBUG_OVERRIDES, JSON.stringify(overrides));
