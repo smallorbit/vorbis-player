@@ -216,12 +216,12 @@ const PlaylistSelection = React.memo(function PlaylistSelection({
     }
   }, [isInitialLoadComplete, playlists.length, albums.length]);
 
-  function handlePlaylistClick(playlist: Parameters<typeof onPlaylistSelect>[0] extends string ? never : import('../../services/spotify').PlaylistInfo): void {
+  function handlePlaylistClick(playlist: PlaylistInfo): void {
     logQueue('selected playlist: %s (%s)', playlist.name, playlist.id);
     onPlaylistSelect(playlist.id, playlist.name, playlist.provider);
   }
 
-  function handleAlbumClick(album: import('../../services/spotify').AlbumInfo): void {
+  function handleAlbumClick(album: AlbumInfo): void {
     logQueue('selected album: %s (%s)', album.name, album.id);
     onPlaylistSelect(toAlbumPlaylistId(album.id), album.name, album.provider);
   }
