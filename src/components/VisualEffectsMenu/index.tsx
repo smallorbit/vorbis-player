@@ -6,6 +6,7 @@ import { ProfiledComponent } from '@/components/ProfiledComponent';
 import { usePlayerSizingContext } from '@/contexts/PlayerSizingContext';
 import { useProviderContext } from '@/contexts/ProviderContext';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
+import { STORAGE_KEYS } from '@/constants/storage';
 import type { CatalogProvider } from '@/types/providers';
 import { ART_REFRESHED_EVENT } from '@/hooks/useLibrarySync';
 
@@ -132,11 +133,11 @@ const NativeQueueSyncSection = memo(() => {
   const hasOtherProvider = connectedProviderIds.length > 1;
 
   const [syncEnabled, setSyncEnabled] = useLocalStorage(
-    'vorbis-player-spotify-queue-sync-enabled',
+    STORAGE_KEYS.SPOTIFY_QUEUE_SYNC,
     true,
   );
   const [resolveEnabled, setResolveEnabled] = useLocalStorage(
-    'vorbis-player-spotify-queue-resolve-cross-provider',
+    STORAGE_KEYS.SPOTIFY_QUEUE_CROSS_PROVIDER,
     true,
   );
 

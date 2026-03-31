@@ -19,6 +19,7 @@ import { PlayerSizingProvider } from '@/contexts/PlayerSizingContext';
 import { useTrackListContext, useCurrentTrackContext } from '@/contexts/TrackContext';
 import { useProviderContext } from '@/contexts/ProviderContext';
 import { toAlbumPlaylistId } from '@/constants/playlist';
+import { STORAGE_KEYS } from '@/constants/storage';
 import type { ClearCacheOptions } from '@/components/VisualEffectsMenu';
 
 const VisualEffectsMenu = lazy(() => import('./VisualEffectsMenu/index'));
@@ -126,8 +127,8 @@ const AudioPlayerComponent = () => {
       await clearAllPins();
     }
     if (options.clearAccentColors) {
-      localStorage.removeItem('vorbis-player-accent-color-overrides');
-      localStorage.removeItem('vorbis-player-custom-accent-colors');
+      localStorage.removeItem(STORAGE_KEYS.ACCENT_COLOR_OVERRIDES);
+      localStorage.removeItem(STORAGE_KEYS.CUSTOM_ACCENT_COLORS);
     }
     if (options.clearPins || options.clearAccentColors) {
       const { clearPreferencesSyncTimestamp, getPreferencesSync } =
