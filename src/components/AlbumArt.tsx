@@ -1,6 +1,7 @@
 import React, { memo, useEffect, useState, useCallback, useMemo } from 'react';
 import styled, { keyframes } from 'styled-components';
 import type { MediaTrack } from '@/types/domain';
+import { breatheBorderGlow } from '../styles/animations';
 
 import AccentColorGlowOverlay, { DEFAULT_GLOW_RATE, DEFAULT_GLOW_INTENSITY } from './AccentColorGlowOverlay';
 import { hexToRgb } from '../utils/colorUtils';
@@ -63,6 +64,9 @@ const AlbumArtContainer = styled.div.withConfig({
   $zenMode?: boolean;
   $translucenceOpacity?: number;
 }>`
+  transform: translateZ(0);
+  will-change: transform, opacity;
+  isolation: isolate;
   border-radius: ${theme.borderRadius['3xl']};
   position: relative;
   width: 100%;
@@ -107,7 +111,7 @@ const AlbumArtContainer = styled.div.withConfig({
           0 0 22px rgba(${r}, ${g}, ${b}, calc(${glowB.toFixed(2)} * var(--glow-opacity, 1))),
           0 0 36px rgba(${r}, ${g}, ${b}, calc(${glowC.toFixed(2)} * var(--glow-opacity, 1))),
           ${theme.shadows.albumArtDepth};
-        animation: breathe-border-glow var(--glow-rate, ${DEFAULT_GLOW_RATE}s) linear infinite;
+        animation: ${breatheBorderGlow} var(--glow-rate, ${DEFAULT_GLOW_RATE}s) linear infinite;
       `;
     }
 
@@ -251,11 +255,6 @@ const AlbumArt: React.FC<AlbumArtProps> = memo(({ currentTrack = null, accentCol
 
   if (!currentTrack) return null;
 
-  const glowClasses = [
-    'glow-container',
-    glowIntensity && glowIntensity > 0 && accentColor ? 'glow-active' : ''
-  ].filter(Boolean).join(' ');
-
   return (
     <AlbumArtContainer
       accentColor={accentColor}
@@ -264,7 +263,6 @@ const AlbumArt: React.FC<AlbumArtProps> = memo(({ currentTrack = null, accentCol
       glowEnabled={glowEnabled}
       $zenMode={zenMode}
       $translucenceOpacity={translucenceEnabled ? (translucenceOpacity ?? 0.8) : 1}
-      className={glowClasses}
       style={currentTrack?.image ? {
         backgroundImage: `url(${currentTrack.image})`,
         backgroundSize: 'cover',

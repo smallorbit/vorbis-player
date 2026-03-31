@@ -1,9 +1,3 @@
-/* Import progressive enhancement styles */
-@import './styles/progressive-enhancement.css';
-
-/* Import theme breakpoints */
-@import './styles/breakpoints.css';
-
 :root {
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
@@ -17,75 +11,36 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+
+  --accent-color: #000000;
+  --glow-intensity: 50;
+  --glow-rate: 3.5s;
+  --accent-rgb: 0, 0, 0;
+  --glow-opacity: 1;
 }
 
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-a:hover {
-  color: #535bf2;
+@property --glow-opacity {
+  syntax: '<number>';
+  initial-value: 1;
+  inherits: true;
 }
 
 #root {
   width: 100%;
-  min-height: 100vh;
   min-height: 100dvh;
 }
 
 body {
   margin: 0;
-  min-height: 100vh;
   min-height: 100dvh;
 
   /* Mobile viewport optimizations */
   -webkit-text-size-adjust: 100%;
   -ms-text-size-adjust: 100%;
   text-size-adjust: 100%;
-  
+
   /* Prevent all scrolling — player is designed to fit within viewport */
   overflow: hidden;
-}
-
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
-}
-
-
-
-/* Backdrop filter support with fallbacks */
-@supports (backdrop-filter: blur(20px)) {
-  .backdrop-blur-lg {
-    backdrop-filter: blur(20px);
-  }
-}
-
-/* Fallback for browsers without backdrop-filter support */
-@supports not (backdrop-filter: blur(20px)) {
-  .backdrop-blur-lg {
-    /* Use semi-transparent background as fallback */
-    background-color: rgba(0, 0, 0, 0.3);
-  }
-}
-
-
-
-.drop-shadow-bold {
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.8));
-}
-
-.border-3 {
-  border-width: 3px;
-}
-
-.border-4 {
-  border-width: 4px;
-}
-
-.text-shadow-lg {
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
 }
 
 input[type="range"] {
@@ -117,11 +72,10 @@ input[type="range"]::-moz-range-thumb {
   width: 20px;
   border-radius: 50%;
   background: linear-gradient(135deg, #fb923c, #f59e0b);
-  border: 3px solid #ffffff;
+  border: none;
   box-shadow: 0 4px 12px rgba(251, 146, 60, 0.5);
   cursor: pointer;
   transition: all 0.2s ease;
-  border: none;
 }
 
 input[type="range"]::-moz-range-thumb:hover {
@@ -135,49 +89,12 @@ input[type="range"]::-moz-range-track {
   border: none;
 }
 
-/* Mobile viewport optimizations */
-@media (max-width: calc(var(--breakpoint-lg) - 1px)) {
-  #root {
-    /* Ensure full viewport usage on mobile */
-    min-height: 100vh;
-    min-height: 100dvh; /* Dynamic viewport height for mobile browsers */
-  }
-}
-
-/* Tablet viewport optimizations */
-@media (min-width: var(--breakpoint-lg)) and (max-width: calc(var(--breakpoint-xl) - 1px)) {
-  #root {
-    /* Optimize viewport usage for tablets */
-    min-height: 100vh;
-    min-height: 100dvh;
-  }
-}
-
-/* Handle mobile browser UI changes */
-@media (max-width: calc(var(--breakpoint-lg) - 1px)) and (orientation: landscape) {
-  #root {
-    /* Account for mobile browser UI in landscape */
-    min-height: 100vh;
-    min-height: 100dvh;
-  }
-}
-
-/* Handle tablet browser UI changes */
-@media (min-width: var(--breakpoint-lg)) and (max-width: calc(var(--breakpoint-xl) - 1px)) and (orientation: landscape) {
-  #root {
-    /* Account for tablet browser UI in landscape */
-    min-height: 100vh;
-    min-height: 100dvh;
-  }
-}
-
 /* iOS Safari specific optimizations */
 @supports (-webkit-touch-callout: none) {
   body {
-    /* Prevent iOS Safari from zooming on input focus */
     -webkit-text-size-adjust: 100%;
   }
-  
+
   input, textarea, select {
     /* Prevent iOS Safari zoom on input focus */
     font-size: 16px;
@@ -187,7 +104,6 @@ input[type="range"]::-moz-range-track {
 /* Android Chrome specific optimizations */
 @media screen and (-webkit-min-device-pixel-ratio: 0) {
   body {
-    /* Improve text rendering on Android */
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
@@ -196,43 +112,7 @@ input[type="range"]::-moz-range-track {
 /* High DPI display optimizations */
 @media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
   body {
-    /* Improve text rendering on high DPI displays */
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
 }
-
-/* Container Query Support */
-@supports (container-type: inline-size) {
-  /* Enable container queries for responsive components */
-  .player-content {
-    container-type: inline-size;
-    container-name: player;
-  }
-  
-  .player-controls {
-    container-type: inline-size;
-    container-name: controls;
-  }
-  
-  .playlist-drawer {
-    container-type: inline-size;
-    container-name: playlist;
-  }
-  
-  .visual-effects-menu {
-    container-type: inline-size;
-    container-name: effects;
-  }
-}
-
-/* Container Query Fallbacks */
-@supports not (container-type: inline-size) {
-  /* Fallback to media queries when container queries aren't supported */
-  .player-content {
-    /* Use existing media query fallbacks - no additional styles needed */
-    display: block;
-  }
-}
-
-
