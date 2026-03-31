@@ -9,36 +9,26 @@ import { useAutoAdvance } from '@/hooks/useAutoAdvance';
 import { useAccentColor } from '@/hooks/useAccentColor';
 import { useUnifiedLikedTracks } from '@/hooks/useUnifiedLikedTracks';
 import { useRadio } from '@/hooks/useRadio';
-import type { AddToQueueResult, PlaybackState, ProviderId } from '@/types/domain';
+import type { ProviderId } from '@/types/domain';
 import type { MediaTrack } from '@/types/domain';
 import type { RadioSeed } from '@/types/radio';
-import { LIKED_SONGS_ID, resolvePlaylistRef } from '@/constants/playlist';
-import { shuffleArray } from '@/utils/shuffleArray';
 import { providerRegistry } from '@/providers/registry';
 import { logQueue, logRadio } from '@/lib/debugLog';
+import { shuffleArray } from '@/utils/shuffleArray';
+import { useMediaTracksMirror } from '@/hooks/useMediaTracksMirror';
 import { useQueueThumbnailLoader } from '@/hooks/useQueueThumbnailLoader';
 import { useQueueDurationLoader } from '@/hooks/useQueueDurationLoader';
+import { mediaTrackToTrack, trackToMediaTrack, trkSummary, queueSnapshot } from './playerLogicUtils';
+import { useQueueManagement } from './useQueueManagement';
+import { useCollectionLoader } from './useCollectionLoader';
+import { usePlaybackSubscription } from './usePlaybackSubscription';
+import { useRadioSession } from './useRadioSession';
 
+export type RadioProgressPhase = 'fetching-catalog' | 'generating' | 'resolving' | 'done';
+export interface RadioProgress { phase: RadioProgressPhase; trackCount?: number; }
 
-/** Compact track summary for queue debug logs. */
-function trkSummary(t: { id: string; name: string; provider?: string } | null | undefined): string {
-  if (!t) return '(none)';
-  return `[${t.provider ?? '?'}] "${t.name}" (${t.id.slice(0, 8)})`;
-}
-
-function queueSnapshot(label: string, tracks: { id: string; name: string; provider?: string }[], mediaLen: number, idx: number) {
-  logQueue(
-    '%s — %d tracks, mediaTracksRef=%d, index=%d, current=%s',
-    label,
-    tracks.length,
-    mediaLen,
-    idx,
-    trkSummary(tracks[idx]),
-  );
-  if (tracks.length <= 30) {
-    logQueue('  trackIds: %s', tracks.map((t, i) => `${i}:${t.id.slice(0, 8)}`).join(' '));
-  }
-}
+// Re-export for backward compatibility with existing imports
+export { mediaTrackToTrack };
 
 export function usePlayerLogic() {
   // Terminology used in this hook:
@@ -78,6 +68,9 @@ export function usePlayerLogic() {
   const { activeDescriptor, setActiveProviderId, getDescriptor, connectedProviderIds } = useProviderContext();
   const { isUnifiedLikedActive } = useUnifiedLikedTracks();
 
+  /** MediaTrack[] mirror of `tracks` for index-based playback across all providers. */
+  const mediaTracksRef = useMediaTracksMirror(tracks);
+
   // Refs so the provider subscription handler always sees the latest values
   // without needing them in the effect's dependency array (which would cause
   // the subscription to tear down and recreate on every track change, triggering
@@ -96,10 +89,13 @@ export function usePlayerLogic() {
   // Library drawer visibility (local UI state)
   const [showLibraryDrawer, setShowLibraryDrawer] = useState(false);
 
+  // Radio generation progress panel state
+  const [radioProgress, setRadioProgress] = useState<RadioProgress | null>(null);
+
   const providerPlayback = useProviderPlayback({
     setCurrentTrackIndex,
     activeDescriptor,
-    mediaTracks: tracks,
+    mediaTracksRef,
     onAuthExpired: (providerId: ProviderId) => setAuthExpired(providerId),
   });
   const { playTrack } = providerPlayback;
@@ -127,174 +123,27 @@ export function usePlayerLogic() {
     shuffleEnabled,
   });
 
-  const handlePlaylistSelect = useCallback(
-    async (playlistId: string, _playlistName?: string, provider?: import('@/types/domain').ProviderId): Promise<number> => {
-      logQueue('handlePlaylistSelect called — playlistId=%s provider=%s', playlistId, provider ?? 'active');
-
-      // Clear any active radio session since the queue is being replaced
-      if (radioState.isActive) {
-        stopRadioBase();
-      }
-
-      // Unified liked songs: fetch from all connected providers, merge by timestamp
-      if (playlistId === LIKED_SONGS_ID && !provider && isUnifiedLikedActive) {
-        setError(null);
-        setIsLoading(true);
-        setSelectedPlaylistId(playlistId);
-        try {
-          const likedProviderIds = connectedProviderIds.filter(
-            id => getDescriptor(id)?.capabilities.hasLikedCollection,
-          );
-          const results = await Promise.all(
-            likedProviderIds.map(async (id) => {
-              const catalog = getDescriptor(id)?.catalog;
-              if (!catalog) return [];
-              return catalog.listTracks({ provider: id, kind: 'liked' }).catch(() => [] as MediaTrack[]);
-            }),
-          );
-          const merged = results.flat();
-          merged.sort((a, b) => (b.addedAt ?? 0) - (a.addedAt ?? 0));
-
-          if (merged.length === 0) {
-            setError('No liked tracks found.');
-            setTracks([]);
-            setOriginalTracks([]);
-            setCurrentTrackIndex(0);
-            setIsLoading(false);
-            return 0;
-          }
-
-          setOriginalTracks(merged);
-          if (shuffleEnabled) {
-            const indices = shuffleArray(merged.map((_, i) => i));
-            setTracks(indices.map(i => merged[i]));
-          } else {
-            setTracks(merged);
-          }
-          setCurrentTrackIndex(0);
-          setIsLoading(false);
-
-          const firstTrack = merged[0];
-          const firstProvider = getDescriptor(firstTrack.provider);
-          if (firstProvider) {
-            drivingProviderRef.current = firstTrack.provider;
-            if (firstTrack.provider !== activeDescriptor?.id) {
-              setActiveProviderId(firstTrack.provider);
-            }
-            queueSnapshot('Unified Liked loaded', merged, merged.length, 0);
-            // Route initial playback through shared playTrack() so Spotify queue sync runs immediately.
-            await playTrack(0);
-          }
-          return merged.length;
-        } catch (err) {
-          setError(err instanceof Error ? err.message : 'Failed to load liked tracks.');
-          setTracks([]);
-          setOriginalTracks([]);
-          setCurrentTrackIndex(0);
-          setIsLoading(false);
-          return 0;
-        }
-      }
-
-      // Determine which provider descriptor to use for this collection
-      const targetDescriptor = provider ? getDescriptor(provider) : activeDescriptor;
-      const targetProviderId = provider ?? activeDescriptor?.id;
-
-      // If selecting from a different provider, switch active provider for playback
-      if (targetProviderId && targetProviderId !== activeDescriptor?.id) {
-        setActiveProviderId(targetProviderId);
-      }
-
-      if (targetDescriptor) {
-        const providerId = targetDescriptor.id;
-
-        // Pause the previous provider before switching (activeDescriptor may still
-        // point to the old provider since setActiveProviderId is async via React state)
-        if (activeDescriptor && activeDescriptor.id !== providerId) {
-          activeDescriptor.playback.pause().catch(() => {});
-        }
-
-        setError(null);
-        setIsLoading(true);
-        setSelectedPlaylistId(playlistId);
-        try {
-          const catalog = targetDescriptor.catalog;
-          const { id: collectionId, kind: collectionKind } = resolvePlaylistRef(playlistId, providerId);
-          const collectionRef = { provider: providerId, kind: collectionKind, id: collectionId } as const;
-          const list = await catalog.listTracks(collectionRef);
-
-          // If catalog returns no tracks and the provider supports native collection
-          // playback (e.g. Spotify context playback for restricted playlists), delegate
-          // to the legacy SDK-based playlist handler.
-          if (list.length === 0 && targetDescriptor.playback.playCollection) {
-            setIsLoading(false);
-            const prevProvider = drivingProviderRef.current;
-            if (prevProvider && prevProvider !== providerId) {
-              providerRegistry.get(prevProvider)?.playback.pause().catch(() => {});
-            }
-            drivingProviderRef.current = providerId;
-            logQueue('Context playback path — delegating to legacy handler for %s on %s', playlistId, providerId);
-            const sdkTracks = await spotifyHandlePlaylistSelect(playlistId);
-            if (sdkTracks.length > 0) {
-              queueSnapshot('Context playback loaded', sdkTracks, sdkTracks.length, 0);
-            } else {
-              logQueue('Context playback returned 0 tracks');
-            }
-            return sdkTracks.length;
-          }
-
-          if (list.length === 0) {
-            setError('No tracks found in this collection.');
-            setTracks([]);
-            setOriginalTracks([]);
-            setCurrentTrackIndex(0);
-            setIsLoading(false);
-            return 0;
-          }
-          setOriginalTracks(list);
-          if (shuffleEnabled) {
-            const indices = shuffleArray(list.map((_, i) => i));
-            setTracks(indices.map(i => list[i]));
-          } else {
-            setTracks(list);
-          }
-          setCurrentTrackIndex(0);
-          setIsLoading(false);
-          drivingProviderRef.current = providerId;
-          queueSnapshot(`${providerId} playlist loaded`, list, list.length, 0);
-          await playTrack(0);
-          return list.length;
-        } catch (err) {
-          setError(err instanceof Error ? err.message : 'Failed to load collection.');
-          setTracks([]);
-          setOriginalTracks([]);
-          setCurrentTrackIndex(0);
-          setIsLoading(false);
-          return 0;
-        }
-      }
-      return 0;
-    },
-    [
-      activeDescriptor,
-      getDescriptor,
-      setActiveProviderId,
-      shuffleEnabled,
-      setError,
-      setIsLoading,
-      setSelectedPlaylistId,
-      setTracks,
-      setOriginalTracks,
-      setCurrentTrackIndex,
-      spotifyHandlePlaylistSelect,
-      isUnifiedLikedActive,
-      connectedProviderIds,
-      drivingProviderRef,
-      playTrack,
-      radioState.isActive,
-      stopRadioBase,
-    ]
-  );
+  // Initialize collection loader
+  const { handlePlaylistSelect } = useCollectionLoader({
+    activeDescriptor,
+    getDescriptor,
+    setActiveProviderId,
+    connectedProviderIds,
+    shuffleEnabled,
+    isUnifiedLikedActive,
+    mediaTracksRef,
+    drivingProviderRef,
+    setError,
+    setIsLoading,
+    setSelectedPlaylistId,
+    setTracks,
+    setOriginalTracks,
+    setCurrentTrackIndex,
+    playTrack,
+    spotifyHandlePlaylistSelect,
+    stopRadioBase,
+    radioStateIsActive: radioState.isActive,
+  });
 
   useAutoAdvance({ tracks, currentTrackIndex, playTrack, enabled: true, currentPlaybackProviderRef: drivingProviderRef });
 
@@ -303,14 +152,14 @@ export function usePlayerLogic() {
     const drivingId = drivingProviderRef.current;
     if (!drivingId || tracks.length === 0) return;
     const descriptor = providerRegistry.get(drivingId);
-    descriptor?.playback.onQueueChanged?.(tracks, currentTrackIndex);
-  }, [tracks, currentTrackIndex, drivingProviderRef]);
+    descriptor?.playback.onQueueChanged?.(mediaTracksRef.current, currentTrackIndex);
+  }, [tracks, currentTrackIndex, drivingProviderRef, mediaTracksRef]);
 
   // Progressively load missing thumbnails for Dropbox tracks in the queue
-  useQueueThumbnailLoader(tracks, setTracks);
+  useQueueThumbnailLoader(tracks, mediaTracksRef, setTracks);
 
   // Progressively discover missing durations for Dropbox tracks in the queue
-  useQueueDurationLoader(tracks, setTracks);
+  useQueueDurationLoader(tracks, mediaTracksRef, setTracks);
 
   // Auto-extract accent color from album artwork; respects overrides in ColorContext
   useAccentColor(currentTrack, accentColorOverrides, setAccentColor, setAccentColorOverrides);
@@ -330,115 +179,30 @@ export function usePlayerLogic() {
     handleAuthRedirect();
   }, [setError]);
 
-  // Subscribe to playback state from all relevant providers.
-  // In cross-provider queues (e.g., Dropbox queue with Spotify tracks),
-  // we subscribe to both providers and process events from whichever is currently playing.
-  useEffect(() => {
-    const playback = activeDescriptor?.playback;
-    if (!playback) return;
-    const activeProviderId = activeDescriptor.id;
-
-    function handleProviderStateChange(providerId: ProviderId, state: PlaybackState | null) {
-      const drivingProviderId = drivingProviderRef.current ?? activeProviderId;
-      if (providerId !== drivingProviderId) {
-        return;
-      }
-
-      if (state) {
-        setIsPlaying(state.isPlaying);
-        setPlaybackPosition(state.positionMs);
-
-        if (state.currentTrackId) {
-          const trackId = state.currentTrackId;
-          const currentTracks = tracksRef.current;
-          const trackIndex = currentTracks.findIndex((t: Track) => t.id === trackId);
-          if (expectedTrackIdRef.current !== null) {
-            if (trackId === expectedTrackIdRef.current) {
-              logQueue('Provider state — expected track arrived: %s', trackId.slice(0, 8));
-              expectedTrackIdRef.current = null;
-            }
-            // while waiting for the expected track, ignore provider index updates
-          } else if (trackIndex !== -1 && trackIndex !== currentTrackIndexRef.current) {
-            logQueue(
-              'Provider state — index sync: %d → %d (trackId=%s, queueLen=%d)',
-              currentTrackIndexRef.current,
-              trackIndex,
-              trackId.slice(0, 8),
-              currentTracks.length,
-            );
-            setCurrentTrackIndex(trackIndex);
-          }
-
-          if (state.trackMetadata && trackIndex !== -1) {
-            const meta = state.trackMetadata;
-            if (meta.name !== undefined || meta.artists !== undefined || meta.album !== undefined || meta.image !== undefined || meta.durationMs !== undefined) {
-              setTracks((prev: MediaTrack[]) =>
-                prev.map((t, i) =>
-                  i === trackIndex
-                    ? {
-                        ...t,
-                        ...(meta.name !== undefined && { name: meta.name }),
-                        ...(meta.artists !== undefined && { artists: meta.artists }),
-                        ...(meta.album !== undefined && { album: meta.album }),
-                        ...(meta.image !== undefined && { image: meta.image }),
-                        ...(meta.durationMs !== undefined && { durationMs: meta.durationMs }),
-                      }
-                    : t
-                )
-              );
-            }
-          }
-        }
-      } else {
-        setIsPlaying(false);
-        setPlaybackPosition(0);
-      }
-    }
-
-    const unsubscribes: (() => void)[] = [];
-
-    // Subscribe to the active provider
-    unsubscribes.push(
-      playback.subscribe((state) => handleProviderStateChange(activeProviderId, state))
-    );
-
-    // Also subscribe to other registered providers for cross-provider queue support.
-    // Only process events when that provider is the one currently playing.
-    for (const descriptor of providerRegistry.getAll()) {
-      if (descriptor.id !== activeProviderId) {
-        const otherUnsubscribe = descriptor.playback.subscribe((state) => {
-          handleProviderStateChange(descriptor.id, state);
-        });
-        unsubscribes.push(otherUnsubscribe);
-      }
-    }
-
-    // Check initial state for whichever provider is currently driving playback.
-    const stateProviderId = drivingProviderRef.current ?? activeProviderId;
-    const stateDescriptor = providerRegistry.get(stateProviderId);
-    stateDescriptor?.playback.getState().then((state) => {
-      if (state) {
-        setIsPlaying(state.isPlaying);
-        setPlaybackPosition(state.positionMs);
-      }
-    });
-
-    return () => unsubscribes.forEach((unsub) => unsub());
-  // Intentionally omit `tracks` and `currentTrackIndex` from deps — we read
-  // them via refs so the subscription is only recreated when the active
-  // provider changes, not on every track transition.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeDescriptor, setCurrentTrackIndex, setTracks]);
+  // Subscribe to playback state from all relevant providers
+  usePlaybackSubscription({
+    activeDescriptor,
+    drivingProviderRef,
+    tracksRef,
+    currentTrackIndexRef,
+    expectedTrackIdRef,
+    mediaTracksRef,
+    setIsPlaying,
+    setPlaybackPosition,
+    setCurrentTrackIndex,
+    setTracks,
+  });
 
   const handleNext = useCallback(() => {
     if (tracks.length === 0) return;
     const nextIndex = (currentTrackIndexRef.current + 1) % tracks.length;
     logQueue(
-      'handleNext — %d → %d, target=%s, queueLen=%d',
+      'handleNext — %d → %d, target=%s, queueLen=%d, mediaLen=%d',
       currentTrackIndexRef.current,
       nextIndex,
       trkSummary(tracksRef.current[nextIndex]),
       tracks.length,
+      mediaTracksRef.current.length,
     );
     expectedTrackIdRef.current = tracksRef.current[nextIndex]?.id ?? null;
     setCurrentTrackIndex(nextIndex);
@@ -449,11 +213,12 @@ export function usePlayerLogic() {
     if (tracks.length === 0) return;
     const newIndex = currentTrackIndexRef.current === 0 ? tracks.length - 1 : currentTrackIndexRef.current - 1;
     logQueue(
-      'handlePrevious — %d → %d, target=%s, queueLen=%d',
+      'handlePrevious — %d → %d, target=%s, queueLen=%d, mediaLen=%d',
       currentTrackIndexRef.current,
       newIndex,
       trkSummary(tracksRef.current[newIndex]),
       tracks.length,
+      mediaTracksRef.current.length,
     );
     expectedTrackIdRef.current = tracksRef.current[newIndex]?.id ?? null;
     setCurrentTrackIndex(newIndex);
@@ -494,77 +259,23 @@ export function usePlayerLogic() {
     setShowLibraryDrawer(false);
   }, []);
 
-  // ── Add to queue ────────────────────────────────────────────────────
-
-  /**
-   * Fetch tracks from a collection (album/playlist) and append them to the
-   * current queue without interrupting playback. If nothing is playing yet,
-   * starts playback of the first added track.
-   */
-  const handleAddToQueue = useCallback(
-    async (playlistId: string, _playlistName?: string, provider?: import('@/types/domain').ProviderId): Promise<AddToQueueResult | null> => {
-      const isQueueEmpty = tracks.length === 0;
-      logQueue(
-        'handleAddToQueue — playlistId=%s, provider=%s, currentQueueLen=%d',
-        playlistId,
-        provider ?? 'active',
-        tracks.length,
-      );
-
-      // If nothing is playing, just load normally
-      if (isQueueEmpty) {
-        logQueue('handleAddToQueue — queue empty, delegating to handlePlaylistSelect');
-        const loaded = await handlePlaylistSelect(playlistId, _playlistName, provider);
-        if (loaded > 0) {
-          return { added: loaded, collectionName: _playlistName };
-        }
-        return null;
-      }
-
-      const targetDescriptor = provider ? getDescriptor(provider) : activeDescriptor;
-      const targetProviderId = provider ?? activeDescriptor?.id;
-
-      if (!targetDescriptor || !targetProviderId) return null;
-
-      try {
-        const catalog = targetDescriptor.catalog;
-        const { id: collectionId, kind: collectionKind } = resolvePlaylistRef(playlistId, targetProviderId);
-        const collectionRef = { provider: targetProviderId, kind: collectionKind, id: collectionId } as const;
-        const newMediaTracks = await catalog.listTracks(collectionRef);
-
-        if (newMediaTracks.length === 0) return null;
-
-        // Append to existing queue
-        logQueue(
-          'handleAddToQueue — appending %d tracks. Before: tracks=%d',
-          newMediaTracks.length,
-          tracksRef.current.length,
-        );
-        setOriginalTracks([...tracksRef.current, ...newMediaTracks]);
-        setTracks((prev: MediaTrack[]) => [...prev, ...newMediaTracks]);
-        logQueue(
-          'handleAddToQueue — after append: newTracks added: %s',
-          newMediaTracks.map(t => trkSummary(t)).join(', '),
-        );
-        return { added: newMediaTracks.length, collectionName: _playlistName };
-      } catch (err) {
-        console.error('[Queue] Failed to add to queue:', err);
-        return null;
-      }
-    },
-    [tracks.length, handlePlaylistSelect, activeDescriptor, getDescriptor, setTracks, setOriginalTracks]
-  );
-
-  // ── Radio feature ───────────────────────────────────────────────────
-
-  const clearAuthExpired = useCallback(() => {
-    setAuthExpired(null);
-  }, []);
-
-  const stopRadio = useCallback(() => {
-    stopRadioBase();
-    setAuthExpired(null);
-  }, [stopRadioBase]);
+  // Initialize radio session (before handleBackToLibrary, which needs stopRadio)
+  const { stopRadio, clearAuthExpired } = useRadioSession({
+    activeDescriptor,
+    currentTrack,
+    currentTrackIndex,
+    mediaTracksRef,
+    startRadio,
+    stopRadioBase,
+    setIsLoading,
+    setError,
+    setTracks,
+    setOriginalTracks,
+    setCurrentTrackIndex,
+    setSelectedPlaylistId,
+    authExpired,
+    setAuthExpired,
+  });
 
   const handleBackToLibrary = useCallback(() => {
     logQueue('handleBackToLibrary — clearing all queue state');
@@ -573,77 +284,25 @@ export function usePlayerLogic() {
     setSelectedPlaylistId(null);
     setTracks([]);
     setCurrentTrackIndex(0);
+    mediaTracksRef.current = [];
     setShowQueue(false);
     setShowVisualEffects(false);
   }, [handlePause, stopRadio, setSelectedPlaylistId, setTracks, setCurrentTrackIndex, setShowQueue, setShowVisualEffects]);
 
-  // ── Remove from queue ──────────────────────────────────────────────
-
-  const handleRemoveFromQueue = useCallback(
-    (index: number) => {
-      if (index < 0 || index >= tracks.length) return;
-      // Cannot remove the currently playing track
-      if (index === currentTrackIndex) return;
-
-      const removedTrack = tracks[index];
-      logQueue('handleRemoveFromQueue — removing index=%d, track=%s, queueLen=%d', index, trkSummary(removedTrack), tracks.length);
-
-      // If this would empty the queue, go back to library
-      if (tracks.length <= 1) {
-        handleBackToLibrary();
-        return;
-      }
-
-      // Remove from originalTracks by ID (order-independent for shuffle)
-      setOriginalTracks((prev) => prev.filter((t) => t.id !== removedTrack.id));
-
-      // Adjust currentTrackIndex if removing before current
-      if (index < currentTrackIndex) {
-        setCurrentTrackIndex(prev => prev - 1);
-      }
-
-      // Remove from tracks by index
-      setTracks(prev => prev.filter((_, i) => i !== index));
-
-      logQueue('handleRemoveFromQueue — done, new queueLen=%d', tracks.length - 1);
-    },
-    [tracks, currentTrackIndex, handleBackToLibrary, setTracks, setOriginalTracks, setCurrentTrackIndex]
-  );
-
-  // ── Reorder queue ─────────────────────────────────────────────────
-
-  const handleReorderQueue = useCallback(
-    (fromIndex: number, toIndex: number) => {
-      if (fromIndex === toIndex) return;
-      if (fromIndex < 0 || fromIndex >= tracks.length) return;
-      if (toIndex < 0 || toIndex >= tracks.length) return;
-
-      logQueue('handleReorderQueue — from=%d to=%d, queueLen=%d', fromIndex, toIndex, tracks.length);
-
-      const currentTrackId = tracks[currentTrackIndex]?.id;
-
-      // Move item in array
-      const newTracks = [...tracks];
-      const [movedTrack] = newTracks.splice(fromIndex, 1);
-      newTracks.splice(toIndex, 0, movedTrack);
-
-      // Update currentTrackIndex to follow the currently playing track
-      const newCurrentIndex = currentTrackId
-        ? newTracks.findIndex(t => t.id === currentTrackId)
-        : currentTrackIndex;
-
-      // Only update originalTracks if shuffle is off
-      if (!shuffleEnabled) {
-        setOriginalTracks(newTracks);
-      }
-
-      setCurrentTrackIndex(newCurrentIndex >= 0 ? newCurrentIndex : 0);
-      setTracks(newTracks);
-
-      logQueue('handleReorderQueue — done, currentIndex=%d', newCurrentIndex);
-    },
-    [tracks, currentTrackIndex, shuffleEnabled, setTracks, setOriginalTracks, setCurrentTrackIndex]
-  );
+  // Initialize queue management handlers
+  const { handleAddToQueue, handleRemoveFromQueue, handleReorderQueue } = useQueueManagement({
+    tracks,
+    currentTrackIndex,
+    shuffleEnabled,
+    mediaTracksRef,
+    handlePlaylistSelect,
+    handleBackToLibrary,
+    activeDescriptor,
+    getDescriptor,
+    setTracks,
+    setOriginalTracks,
+    setCurrentTrackIndex,
+  });
 
   /**
    * Start a radio session from the currently playing track.
@@ -653,8 +312,7 @@ export function usePlayerLogic() {
   const handleStartRadio = useCallback(async () => {
     if (!activeDescriptor || !currentTrack) return;
 
-    setIsLoading(true);
-    setError(null);
+    setRadioProgress({ phase: 'fetching-catalog' });
 
     try {
       // Pre-warm playback SDKs for providers that support track search
@@ -684,18 +342,20 @@ export function usePlayerLogic() {
         track: currentTrack.name,
       };
 
+      setRadioProgress({ phase: 'generating' });
       const result = await startRadio(seed, catalogTracks);
 
       if (!result) {
-        setIsLoading(false);
+        setRadioProgress(null);
         return;
       }
 
       // Current playing track becomes index 0; playback continues without restart.
+      const mediaTracks = mediaTracksRef.current;
       const currentSeedMediaTrack: MediaTrack =
-        tracksRef.current[currentTrackIndex]?.id === currentTrack?.id
-          ? tracksRef.current[currentTrackIndex]
-          : currentTrack;
+        mediaTracks[currentTrackIndex]?.id === currentTrack?.id
+          ? mediaTracks[currentTrackIndex]
+          : trackToMediaTrack(currentTrack);
 
       const seedKey = `${currentSeedMediaTrack.artists.toLowerCase()}||${currentSeedMediaTrack.name.toLowerCase()}`;
       const seedId = currentSeedMediaTrack.id;
@@ -704,18 +364,21 @@ export function usePlayerLogic() {
 
       // Resolve unmatched suggestions via providers that support track search
       if (result.unmatchedSuggestions.length > 0) {
+        setRadioProgress({ phase: 'resolving' });
         const searchCapableProviders = providerRegistry.getAll().filter(
           d => d.capabilities.hasTrackSearch && d.auth.isAuthenticated(),
         );
         if (searchCapableProviders.length > 0) {
           try {
-            const resolvedTracks: MediaTrack[] = [];
-            for (const suggestion of result.unmatchedSuggestions) {
+            // Parallelize searches across all suggestions and providers
+            const searchPromises = result.unmatchedSuggestions.map(async (suggestion) => {
               for (const provider of searchCapableProviders) {
                 const match = await provider.catalog.searchTrack?.(suggestion.artist, suggestion.name);
-                if (match) { resolvedTracks.push(match); break; }
+                if (match) return match;
               }
-            }
+              return null;
+            });
+            const resolvedTracks = (await Promise.all(searchPromises)).filter((t): t is MediaTrack => t !== null);
             const existingKeys = new Set(
               generatedTracks.map((t) => `${t.artists.toLowerCase()}||${t.name.toLowerCase()}`),
             );
@@ -745,21 +408,25 @@ export function usePlayerLogic() {
       const combinedQueue = [currentSeedMediaTrack, ...shuffledGenerated];
 
       if (combinedQueue.length > 0) {
-        setOriginalTracks(combinedQueue);
-        setTracks(combinedQueue);
+        const trackList = combinedQueue.map(mediaTrackToTrack);
+        mediaTracksRef.current = combinedQueue;
+        setOriginalTracks(trackList);
+        setTracks(trackList);
         setCurrentTrackIndex(0);
         setSelectedPlaylistId('radio');
-        setIsLoading(false);
-        queueSnapshot('Radio queue built', combinedQueue, combinedQueue.length, 0);
+        setRadioProgress({ phase: 'done', trackCount: combinedQueue.length });
+        queueSnapshot('Radio queue built', trackList, mediaTracksRef.current.length, 0);
         // Do not call playTrack(0) — keep current track playing at current position.
       } else {
-        setIsLoading(false);
+        setRadioProgress(null);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to start radio.');
-      setIsLoading(false);
+      console.warn('[Radio] Generation failed:', err);
+      setRadioProgress(null);
     }
-  }, [activeDescriptor, currentTrack, currentTrackIndex, startRadio, setIsLoading, setError, setOriginalTracks, setTracks, setCurrentTrackIndex, setSelectedPlaylistId]);
+  }, [activeDescriptor, currentTrack, currentTrackIndex, startRadio, setOriginalTracks, setTracks, setCurrentTrackIndex, setSelectedPlaylistId]);
+
+  const dismissRadioProgress = useCallback(() => setRadioProgress(null), []);
 
   const handlers = useMemo(
     () => ({
@@ -812,7 +479,10 @@ export function usePlayerLogic() {
       authExpired,
       clearAuthExpired,
       isActive: radioState.isActive,
+      radioProgress,
+      dismissRadioProgress,
     },
+    mediaTracksRef,
     setTracks,
     setOriginalTracks,
     currentPlaybackProviderRef: drivingProviderRef,

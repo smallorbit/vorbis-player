@@ -13,7 +13,7 @@ Key capabilities: multi-provider auth/catalog/playback adapters, unified liked s
 Always verify the build compiles cleanly after removing dependencies, refactoring imports, or making multi-file changes:
 
 ```bash
-npx tsc --noEmit       # TypeScript check
+npx tsc -b --noEmit       # TypeScript check
 npm run build          # Full build
 ```
 
