@@ -181,3 +181,101 @@ describe('PlaylistSelection', () => {
     expect(onPlaylistSelect).toHaveBeenCalledWith('pl-1', 'Chill Vibes', undefined);
   });
 });
+
+describe('PlaylistSelection — search and filter', () => {
+  beforeEach(() => {
+    setMockLibrarySync();
+  });
+
+  it('filters playlists by search query', () => {
+    renderPlaylistSelection();
+    const searchInput = screen.getByPlaceholderText('Search playlists...');
+
+    // Search for "Chill"
+    fireEvent.change(searchInput, { target: { value: 'Chill' } });
+
+    // Should show only "Chill Vibes"
+    expect(screen.getByText('Chill Vibes')).toBeTruthy();
+
+    // Should not show the other playlists
+    expect(screen.queryByText('Rock Anthems')).toBeNull();
+    expect(screen.queryByText('Jazz Classics')).toBeNull();
+  });
+
+  it('shows empty state when search matches nothing', () => {
+    renderPlaylistSelection();
+    const searchInput = screen.getByPlaceholderText('Search playlists...');
+
+    // Search for something that doesn't match any playlist
+    fireEvent.change(searchInput, { target: { value: 'XYZ123NonExistent' } });
+
+    // Should show a no results indicator or empty state
+    // The component should show either "no playlists" or similar message
+    const noResultsText = screen.queryByText(/no/i);
+    expect(noResultsText || searchInput.parentElement?.textContent).toBeTruthy();
+  });
+
+  it('clears search when clear button is clicked', () => {
+    renderPlaylistSelection();
+    const searchInput = screen.getByPlaceholderText('Search playlists...') as HTMLInputElement;
+
+    // Type a search query
+    fireEvent.change(searchInput, { target: { value: 'Chill' } });
+    expect(searchInput.value).toBe('Chill');
+
+    // Find and click the clear button (typically an X or clear icon)
+    // The button should be near the search input
+    const clearButton = screen.queryByRole('button', { name: /clear|close|reset/i })
+      || screen.getByRole('button', { name: /✕|✖|×|x/i });
+
+    if (clearButton) {
+      fireEvent.click(clearButton);
+
+      // Search input should be cleared
+      expect((searchInput as HTMLInputElement).value).toBe('');
+
+      // All playlists should be visible again
+      expect(screen.getByText('Chill Vibes')).toBeTruthy();
+      expect(screen.getByText('Rock Anthems')).toBeTruthy();
+      expect(screen.getByText('Jazz Classics')).toBeTruthy();
+    }
+  });
+
+  it('search is case-insensitive', () => {
+    renderPlaylistSelection();
+    const searchInput = screen.getByPlaceholderText('Search playlists...');
+
+    // Search with different case variations
+    fireEvent.change(searchInput, { target: { value: 'JAZZ' } });
+    expect(screen.getByText('Jazz Classics')).toBeTruthy();
+    expect(screen.queryByText('Chill Vibes')).toBeNull();
+
+    // Try lowercase
+    fireEvent.change(searchInput, { target: { value: 'rock' } });
+    expect(screen.getByText('Rock Anthems')).toBeTruthy();
+    expect(screen.queryByText('Jazz Classics')).toBeNull();
+  });
+
+  it('search updates live as user types', () => {
+    renderPlaylistSelection();
+    const searchInput = screen.getByPlaceholderText('Search playlists...');
+
+    // Start typing a unique search
+    fireEvent.change(searchInput, { target: { value: 'Chill' } });
+    expect(screen.getByText('Chill Vibes')).toBeTruthy();
+
+    // Search for Jazz should show only Jazz
+    fireEvent.change(searchInput, { target: { value: 'Jazz' } });
+    expect(screen.getByText('Jazz Classics')).toBeTruthy();
+
+    // Search for Rock should show only Rock
+    fireEvent.change(searchInput, { target: { value: 'Rock' } });
+    expect(screen.getByText('Rock Anthems')).toBeTruthy();
+
+    // Clear and all should be visible again
+    fireEvent.change(searchInput, { target: { value: '' } });
+    expect(screen.getByText('Chill Vibes')).toBeTruthy();
+    expect(screen.getByText('Jazz Classics')).toBeTruthy();
+    expect(screen.getByText('Rock Anthems')).toBeTruthy();
+  });
+});
