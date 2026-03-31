@@ -95,7 +95,7 @@ describe('useQueueManagement', () => {
 
   it('handleReorderQueue updates currentTrackIndex to follow the playing track', () => {
     mediaTracksRef.current = [makeMediaTrack('1'), makeMediaTrack('2'), makeMediaTrack('3')];
-    const tracks = [makeTrack('1'), makeTrack('2'), makeTrack('3')];
+    const tracks = [makeTrack({ id: '1' }), makeTrack({ id: '2' }), makeTrack({ id: '3' })];
     const { result } = renderHook(() =>
       useQueueManagement({
         tracks,
@@ -150,7 +150,7 @@ describe('useQueueManagement', () => {
 
   it('handleAddToQueue appends tracks to an existing queue without resetting currentTrackIndex', async () => {
     mediaTracksRef.current = [makeMediaTrack('1'), makeMediaTrack('2')];
-    const tracks = [makeTrack('1'), makeTrack('2')];
+    const tracks = [makeTrack({ id: '1' }), makeTrack({ id: '2' })];
 
     const mockCatalog = {
       listTracks: vi.fn().mockResolvedValue([makeMediaTrack('3'), makeMediaTrack('4')]),
@@ -160,6 +160,7 @@ describe('useQueueManagement', () => {
       catalog: mockCatalog,
     });
     mockActiveDescriptor.id = 'spotify';
+    mockActiveDescriptor.catalog = mockCatalog;
 
     const { result } = renderHook(() =>
       useQueueManagement({

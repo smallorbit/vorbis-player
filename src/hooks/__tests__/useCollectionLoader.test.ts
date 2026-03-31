@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useCollectionLoader } from '../useCollectionLoader';
 import { makeTrack } from '@/test/fixtures';
+import { LIKED_SONGS_ID } from '@/constants/playlist';
 import type { MediaTrack } from '@/types/domain';
 
 function makeMediaTrack(id: string, addedAt?: number): MediaTrack {
@@ -152,7 +153,7 @@ describe('useCollectionLoader', () => {
     );
 
     const trackCount = await act(async () => {
-      return result.current.handlePlaylistSelect('liked_songs_id');
+      return result.current.handlePlaylistSelect(LIKED_SONGS_ID);
     });
 
     // Should merge and sort by addedAt (newest first): track 3 (1500), track 1 (1000), track 2 (500)
