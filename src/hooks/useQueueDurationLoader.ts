@@ -1,5 +1,4 @@
 import { useEffect, useRef, useCallback } from 'react';
-import type { Track } from '@/services/spotify';
 import type { MediaTrack } from '@/types/domain';
 import { providerRegistry } from '@/providers/registry';
 import { logQueue } from '@/lib/debugLog';
@@ -17,9 +16,8 @@ const RESOLVE_CONCURRENCY = 2;
  * Updates are applied progressively so the queue UI fills in durations.
  */
 export function useQueueDurationLoader(
-  tracks: readonly Track[],
-  mediaTracksRef: React.MutableRefObject<MediaTrack[]>,
-  setTracks: React.Dispatch<React.SetStateAction<Track[]>>,
+  tracks: readonly MediaTrack[],
+  setTracks: React.Dispatch<React.SetStateAction<MediaTrack[]>>,
 ) {
   const attemptedTrackIds = useRef(new Set<string>());
   const abortRef = useRef<AbortController | null>(null);
@@ -29,30 +27,23 @@ export function useQueueDurationLoader(
       if (updates.size === 0) return;
       logQueue('durationLoader — applying %d duration updates', updates.size);
 
-      for (const mt of mediaTracksRef.current) {
-        if (!mt.durationMs) {
-          const dur = updates.get(mt.id);
-          if (dur) mt.durationMs = dur;
-        }
-      }
-
       setTracks((prev) => {
         let changed = false;
         const next = prev.map((t) => {
-          if (!t.duration_ms) {
+          if (!t.durationMs) {
             const dur = updates.get(t.id);
-            if (dur) { changed = true; return { ...t, duration_ms: dur }; }
+            if (dur) { changed = true; return { ...t, durationMs: dur }; }
           }
           return t;
         });
         return changed ? next : prev;
       });
     },
-    [mediaTracksRef, setTracks],
+    [setTracks],
   );
 
   useEffect(() => {
-    const missing = tracks.filter((t) => !t.duration_ms);
+    const missing = tracks.filter((t) => !t.durationMs);
     if (missing.length === 0) return;
 
     const toResolve = missing.filter((t) => !attemptedTrackIds.current.has(t.id));
@@ -72,7 +63,7 @@ export function useQueueDurationLoader(
 
         await Promise.all(
           batch.map(async (track) => {
-            const mt = mediaTracksRef.current.find((m) => m.id === track.id);
+            const mt = tracks.find((m) => m.id === track.id);
             if (!mt) return;
             try {
               const provider = providerRegistry.get(mt.provider);
@@ -97,7 +88,7 @@ export function useQueueDurationLoader(
     run().catch(() => {});
 
     return () => controller.abort();
-  }, [tracks, applyDurationUpdates, mediaTracksRef]);
+  }, [tracks, applyDurationUpdates]);
 
   useEffect(() => {
     if (tracks.length === 0) {

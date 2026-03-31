@@ -1,10 +1,10 @@
 import styled from 'styled-components';
-import type { Track } from '@/services/spotify';
+import type { MediaTrack } from '@/types/domain';
 import QuickEffectsRow from '@/components/controls/QuickEffectsRow';
 import { theme } from '@/styles/theme';
 
 interface AlbumArtQuickSwapBackProps {
-  currentTrack: Track | null;
+  currentTrack: MediaTrack | null;
   accentColor: string;
   onAccentColorChange: (color: string) => void;
   customAccentColorOverrides: Record<string, string>;

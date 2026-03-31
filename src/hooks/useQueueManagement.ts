@@ -1,8 +1,5 @@
 import { useCallback, useRef } from 'react';
-import type { Track } from '@/services/spotify';
-import type { AddToQueueResult } from '@/types/domain';
-import type { MediaTrack } from '@/types/domain';
-import type { ProviderId } from '@/types/domain';
+import type { AddToQueueResult, MediaTrack, ProviderId } from '@/types/domain';
 import { resolvePlaylistRef } from '@/constants/playlist';
 import { logQueue } from '@/lib/debugLog';
 import {
@@ -11,10 +8,10 @@ import {
   removeMediaTrackById,
   reorderMediaTracksToMatchTracks,
 } from '@/utils/queueTrackMirror';
-import { mediaTrackToTrack, trkSummary } from './playerLogicUtils';
+import { trkSummary } from './playerLogicUtils';
 
 interface UseQueueManagementProps {
-  tracks: Track[];
+  tracks: MediaTrack[];
   currentTrackIndex: number;
   shuffleEnabled: boolean;
   mediaTracksRef: React.MutableRefObject<MediaTrack[]>;
@@ -22,8 +19,8 @@ interface UseQueueManagementProps {
   handleBackToLibrary: () => void;
   activeDescriptor: any;
   getDescriptor: (providerId: ProviderId) => any;
-  setTracks: (tracks: Track[] | ((prev: Track[]) => Track[])) => void;
-  setOriginalTracks: (tracks: Track[] | ((prev: Track[]) => Track[])) => void;
+  setTracks: (tracks: MediaTrack[] | ((prev: MediaTrack[]) => MediaTrack[])) => void;
+  setOriginalTracks: (tracks: MediaTrack[] | ((prev: MediaTrack[]) => MediaTrack[])) => void;
   setCurrentTrackIndex: (index: number | ((prev: number) => number)) => void;
 }
 
@@ -88,8 +85,6 @@ export function useQueueManagement({
 
         if (newMediaTracks.length === 0) return null;
 
-        const newTracks = newMediaTracks.map(mediaTrackToTrack);
-
         // Append to existing queue
         logQueue(
           'handleAddToQueue — appending %d tracks. Before: tracks=%d, mediaRef=%d',
@@ -98,12 +93,12 @@ export function useQueueManagement({
           mediaTracksRef.current.length,
         );
         mediaTracksRef.current = appendMediaTracks(mediaTracksRef.current, newMediaTracks);
-        setOriginalTracks([...tracksRef.current, ...newTracks]);
-        setTracks((prev: Track[]) => [...prev, ...newTracks]);
+        setOriginalTracks([...tracksRef.current, ...newMediaTracks]);
+        setTracks((prev: MediaTrack[]) => [...prev, ...newMediaTracks]);
         logQueue(
           'handleAddToQueue — after append: mediaRef=%d, newTracks added: %s',
           mediaTracksRef.current.length,
-          newTracks.map((t: Track) => trkSummary(t)).join(', '),
+          newMediaTracks.map((t: MediaTrack) => trkSummary(t)).join(', '),
         );
         return { added: newMediaTracks.length, collectionName: _playlistName };
       } catch (err) {

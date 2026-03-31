@@ -12,7 +12,7 @@ import {
   DRAWER_TRANSITION_DURATION,
   DRAWER_TRANSITION_EASING
 } from './styled';
-import type { Track } from '../services/spotify';
+import type { MediaTrack } from '@/types/domain';
 
 const QueueTrackList = React.lazy(() => import('./QueueTrackList'));
 
@@ -110,7 +110,7 @@ const SaveButton = styled.button`
 interface QueueBottomSheetProps {
   isOpen: boolean;
   onClose: () => void;
-  tracks: Track[];
+  tracks: MediaTrack[];
   currentTrackIndex: number;
   onTrackSelect: (index: number) => void;
   onRemoveTrack?: (index: number) => void;

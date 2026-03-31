@@ -104,7 +104,7 @@ export class SpotifyCatalogAdapter implements CatalogProvider {
   async listTracks(collectionRef: CollectionRef, signal?: AbortSignal): Promise<MediaTrack[]> {
     if (collectionRef.provider !== 'spotify') return [];
 
-    let tracks: Track[] = [];
+    let tracks: MediaTrack[] = [];
 
     switch (collectionRef.kind) {
       case 'playlist':
@@ -127,7 +127,7 @@ export class SpotifyCatalogAdapter implements CatalogProvider {
     // Check signal after async call
     if (signal?.aborted) throw new DOMException('Request aborted', 'AbortError');
 
-    return tracks.map(spotifyTrackToMediaTrack);
+    return tracks;
   }
 
   async getLikedCount(signal?: AbortSignal): Promise<number> {

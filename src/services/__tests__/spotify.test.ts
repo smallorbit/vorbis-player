@@ -208,9 +208,9 @@ describe('Spotify API', () => {
       });
 
       const tracks = await mod.getAlbumTracks('album-1');
-      expect(tracks[0].track_number).toBe(1);
-      expect(tracks[1].track_number).toBe(2);
-      expect(tracks[2].track_number).toBe(3);
+      expect(tracks[0].trackNumber).toBe(1);
+      expect(tracks[1].trackNumber).toBe(2);
+      expect(tracks[2].trackNumber).toBe(3);
     });
   });
 

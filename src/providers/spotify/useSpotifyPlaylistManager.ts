@@ -12,8 +12,7 @@ import { getPlaylistTracks, getAlbumTracks, getLikedSongs, spotifyAuth, getLarge
 import { spotifyPlayer } from '@/services/spotifyPlayer';
 import { isAlbumId, extractAlbumId, LIKED_SONGS_ID } from '@/constants/playlist';
 import { shuffleArray } from '@/utils/shuffleArray';
-import type { Track } from '@/services/spotify';
-import type { ProviderId } from '@/types/domain';
+import type { ProviderId, MediaTrack } from '@/types/domain';
 import { logQueue } from '@/lib/debugLog';
 
 const SPOTIFY_PROVIDER_ID: ProviderId = 'spotify';
@@ -26,19 +25,21 @@ async function waitForSpotifyReady(timeout = 10000): Promise<void> {
   }
 }
 
-function buildTracksFromWindow(state: SpotifyPlaybackState): Track[] {
-  const tracks: Track[] = [];
+function buildTracksFromWindow(state: SpotifyPlaybackState): MediaTrack[] {
+  const tracks: MediaTrack[] = [];
 
-  function toTrack(item: SpotifyTrack): Track {
+  function toTrack(item: SpotifyTrack): MediaTrack {
+    const albumId = item.album?.uri?.split(':').pop();
+    const uri = item.uri;
     return {
       id: item.id || '',
       provider: SPOTIFY_PROVIDER_ID,
+      playbackRef: { provider: SPOTIFY_PROVIDER_ID, ref: uri },
       name: item.name,
       artists: item.artists.map(a => a.name).join(', '),
       album: item.album?.name ?? 'Unknown Album',
-      album_id: item.album?.uri?.split(':').pop(),
-      duration_ms: item.duration_ms ?? 0,
-      uri: item.uri,
+      albumId,
+      durationMs: item.duration_ms ?? 0,
       image: getLargestImage(item.album?.images),
     };
   }
@@ -63,8 +64,8 @@ interface UseSpotifyPlaylistManagerProps {
   setError: (error: string | null) => void;
   setIsLoading: (loading: boolean) => void;
   setSelectedPlaylistId: (id: string | null) => void;
-  setTracks: (tracks: Track[]) => void;
-  setOriginalTracks: (tracks: Track[] | ((prev: Track[]) => Track[])) => void;
+  setTracks: (tracks: MediaTrack[]) => void;
+  setOriginalTracks: (tracks: MediaTrack[] | ((prev: MediaTrack[]) => MediaTrack[])) => void;
   setCurrentTrackIndex: (index: number) => void;
   shuffleEnabled: boolean;
 }
@@ -79,7 +80,7 @@ export const useSpotifyPlaylistManager = ({
   shuffleEnabled
 }: UseSpotifyPlaylistManagerProps) => {
 
-  const handlePlaylistSelect = useCallback(async (playlistId: string): Promise<Track[]> => {
+  const handlePlaylistSelect = useCallback(async (playlistId: string): Promise<MediaTrack[]> => {
     logQueue('useSpotifyPlaylistManager.handlePlaylistSelect — playlistId=%s, shuffle=%s', playlistId, String(shuffleEnabled));
     try {
       setError(null);
@@ -92,7 +93,7 @@ export const useSpotifyPlaylistManager = ({
 
       await spotifyPlayer.ensureDeviceIsActive();
 
-      let fetchedTracks: Track[] = [];
+      let fetchedTracks: MediaTrack[] = [];
 
       if (isAlbumId(playlistId)) {
         fetchedTracks = await getAlbumTracks(extractAlbumId(playlistId));
@@ -149,7 +150,7 @@ export const useSpotifyPlaylistManager = ({
       setCurrentTrackIndex(0);
 
       const playWithRetry = async (trackIndex: number, retryCount = 0, maxRetries = 2): Promise<boolean> => {
-        const trackUri = tracksToPlay[trackIndex]?.uri;
+        const trackUri = tracksToPlay[trackIndex]?.playbackRef.ref;
         if (!trackUri) {
           console.error('No track URI at index', trackIndex);
           return false;

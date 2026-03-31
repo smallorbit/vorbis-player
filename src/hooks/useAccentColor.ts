@@ -48,7 +48,7 @@ import { useCallback, useEffect, startTransition } from 'react';
 import { extractDominantColor } from '../utils/colorExtractor';
 import { theme } from '@/styles/theme';
 import { isProfilingEnabled } from '@/contexts/ProfilingContext';
-import type { Track } from '../services/spotify';
+import type { MediaTrack } from '@/types/domain';
 
 /**
  * useAccentColor - Custom hook for accent color management
@@ -97,12 +97,12 @@ import type { Track } from '../services/spotify';
  * - Persists color overrides in state
  */
 export const useAccentColor = (
-  currentTrack: Track | null,
+  currentTrack: MediaTrack | null,
   accentColorOverrides: Record<string, string>,
   setAccentColor: (color: string) => void,
   setAccentColorOverrides: (overrides: Record<string, string> | ((prev: Record<string, string>) => Record<string, string>)) => void
 ) => {
-  const albumId = currentTrack?.album_id;
+  const albumId = currentTrack?.albumId;
   const albumImage = currentTrack?.image;
   const albumOverride = albumId ? accentColorOverrides[albumId] : undefined;
 
@@ -153,7 +153,7 @@ export const useAccentColor = (
    * @param color - The new accent color ('auto' for extraction, or hex color)
    */
   const handleAccentColorChange = useCallback((color: string) => {
-    const albumId = currentTrack?.album_id;
+    const albumId = currentTrack?.albumId;
 
     if (color === 'auto') {
       if (albumId) {
@@ -188,7 +188,7 @@ export const useAccentColor = (
     } else {
       setAccentColor(color);
     }
-  }, [currentTrack?.album_id, currentTrack?.image, setAccentColorOverrides, setAccentColor]);
+  }, [currentTrack?.albumId, currentTrack?.image, setAccentColorOverrides, setAccentColor]);
 
   /**
    * Reset to automatically extracted color

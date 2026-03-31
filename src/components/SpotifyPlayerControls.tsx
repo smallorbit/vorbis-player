@@ -1,5 +1,5 @@
 import { memo } from 'react';
-import type { Track } from '../services/spotify';
+import type { MediaTrack } from '@/types/domain';
 import { useSpotifyControls } from '../hooks/useSpotifyControls';
 import { usePlayerSizingContext } from '@/contexts/PlayerSizingContext';
 import { useProviderContext } from '@/contexts/ProviderContext';
@@ -12,7 +12,7 @@ import type { ProviderId } from '@/types/domain';
 
 
 interface SpotifyPlayerControlsProps {
-  currentTrack: Track | null;
+  currentTrack: MediaTrack | null;
   onPlay: () => void;
   onPause: () => void;
   onNext: () => void;

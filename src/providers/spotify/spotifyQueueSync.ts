@@ -7,7 +7,7 @@
  */
 
 import { searchTrack, spotifyAuth } from '@/services/spotify';
-import type { Track } from '@/services/spotify';
+import type { MediaTrack } from '@/types/domain';
 
 const QUEUE_URI_LIMIT = 200;
 const MAX_CONCURRENT_SEARCHES = 3;
@@ -47,7 +47,7 @@ class SpotifyQueueSyncService {
    * Spotify tracks are included directly; non-Spotify tracks are included
    * only if the resolution setting is on and a cached Spotify URI exists.
    */
-  buildUpcomingUris(tracks: Track[], fromIndex: number): string[] {
+  buildUpcomingUris(tracks: MediaTrack[], fromIndex: number): string[] {
     if (!this.isSyncEnabled()) return [];
 
     const resolveEnabled = this.isResolveEnabled();
@@ -60,7 +60,7 @@ class SpotifyQueueSyncService {
       if (!track) continue;
 
       if (track.provider === 'spotify' || !track.provider) {
-        if (track.uri) uris.push(track.uri);
+        if (track.playbackRef.ref) uris.push(track.playbackRef.ref);
       } else if (resolveEnabled) {
         const cached = this.resolutionCache.get(track.id);
         if (cached) uris.push(cached);
@@ -73,7 +73,7 @@ class SpotifyQueueSyncService {
 
   /** Resolve non-Spotify tracks to Spotify URIs in the background. */
   async resolveTracksInBackground(
-    tracks: Track[],
+    tracks: MediaTrack[],
     signal?: AbortSignal,
   ): Promise<void> {
     if (!spotifyAuth.isAuthenticated()) return;

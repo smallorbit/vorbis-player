@@ -1,15 +1,17 @@
-import type { Track, AlbumInfo, PlaylistInfo } from '@/services/spotify';
+import type { AlbumInfo, PlaylistInfo } from '@/services/spotify';
+import type { MediaTrack, ProviderId } from '@/types/domain';
 import type { CachedPlaylistInfo } from '@/services/cache/cacheTypes';
 
-export function makeTrack(overrides?: Partial<Track>): Track {
+export function makeTrack(overrides?: Partial<MediaTrack>): MediaTrack {
   return {
     id: 'track-1',
+    provider: 'spotify' as ProviderId,
+    playbackRef: { provider: 'spotify' as ProviderId, ref: 'spotify:track:track-1' },
     name: 'Test Track',
     artists: 'Test Artist',
     album: 'Test Album',
-    album_id: 'album-1',
-    duration_ms: 210000,
-    uri: 'spotify:track:track-1',
+    albumId: 'album-1',
+    durationMs: 210000,
     image: 'https://i.scdn.co/image/test',
     ...overrides,
   };

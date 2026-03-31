@@ -1,21 +1,19 @@
 import { useEffect } from 'react';
-import type { Track } from '@/services/spotify';
-import type { PlaybackState, ProviderId } from '@/types/domain';
-import type { MediaTrack } from '@/types/domain';
+import type { PlaybackState, ProviderId, MediaTrack } from '@/types/domain';
+import type { PlaybackProvider } from '@/types/providers';
 import { providerRegistry } from '@/providers/registry';
 import { logQueue } from '@/lib/debugLog';
 
 interface UsePlaybackSubscriptionProps {
-  activeDescriptor: any;
+  activeDescriptor: { id: ProviderId; playback: PlaybackProvider } | undefined;
   drivingProviderRef: React.MutableRefObject<ProviderId | null>;
-  tracksRef: React.MutableRefObject<Track[]>;
+  tracksRef: React.MutableRefObject<MediaTrack[]>;
   currentTrackIndexRef: React.MutableRefObject<number>;
   expectedTrackIdRef: React.MutableRefObject<string | null>;
-  mediaTracksRef: React.MutableRefObject<MediaTrack[]>;
   setIsPlaying: (isPlaying: boolean) => void;
   setPlaybackPosition: (position: number) => void;
   setCurrentTrackIndex: (index: number | ((prev: number) => number)) => void;
-  setTracks: (tracks: Track[] | ((prev: Track[]) => Track[])) => void;
+  setTracks: (tracks: MediaTrack[] | ((prev: MediaTrack[]) => MediaTrack[])) => void;
 }
 
 export function usePlaybackSubscription({
@@ -24,7 +22,6 @@ export function usePlaybackSubscription({
   tracksRef,
   currentTrackIndexRef,
   expectedTrackIdRef,
-  mediaTracksRef,
   setIsPlaying,
   setPlaybackPosition,
   setCurrentTrackIndex,
@@ -48,7 +45,7 @@ export function usePlaybackSubscription({
         if (state.currentTrackId) {
           const trackId = state.currentTrackId;
           const currentTracks = tracksRef.current;
-          const trackIndex = currentTracks.findIndex((t: Track) => t.id === trackId);
+          const trackIndex = currentTracks.findIndex((t: MediaTrack) => t.id === trackId);
           if (expectedTrackIdRef.current !== null) {
             if (trackId === expectedTrackIdRef.current) {
               logQueue('Provider state — expected track arrived: %s', trackId.slice(0, 8));
@@ -68,22 +65,19 @@ export function usePlaybackSubscription({
 
           if (state.trackMetadata && trackIndex !== -1) {
             const meta = state.trackMetadata;
-            // Build update object with only defined fields
-            const updates: Partial<Track> = {};
+            const updates: Partial<MediaTrack> = {};
             if (meta.name !== undefined) updates.name = meta.name;
             if (meta.artists !== undefined) updates.artists = meta.artists;
             if (meta.album !== undefined) updates.album = meta.album;
             if (meta.image !== undefined) updates.image = meta.image;
-            if (meta.durationMs !== undefined) updates.duration_ms = meta.durationMs;
+            if (meta.durationMs !== undefined) updates.durationMs = meta.durationMs;
 
             if (Object.keys(updates).length > 0) {
-              setTracks((prev: Track[]) =>
-                prev.map((t, i) => (i === trackIndex ? { ...t, ...updates } : t))
+              setTracks((prev: MediaTrack[]) =>
+                prev.map((t, i) =>
+                  i === trackIndex ? { ...t, ...updates } : t
+                )
               );
-              const mediaIdx = mediaTracksRef.current.findIndex((m) => m.id === trackId);
-              if (mediaIdx !== -1) {
-                mediaTracksRef.current[mediaIdx] = { ...mediaTracksRef.current[mediaIdx], ...meta };
-              }
             }
           }
         }

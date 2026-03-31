@@ -4,9 +4,29 @@
  * Handles OAuth 2.0 PKCE authentication and Spotify Web API requests.
  */
 
-import type { ProviderId } from '../types/domain';
+import type { ProviderId, MediaTrack } from '../types/domain';
 import { ALBUM_ID_PREFIX } from '../constants/playlist';
 import * as libraryCache from './cache/libraryCache';
+
+/**
+ * Internal Spotify Track type — used for caching and transformations.
+ * Converted to MediaTrack for use throughout the application.
+ */
+export interface Track {
+  id: string;
+  provider: string;
+  name: string;
+  artists: string;
+  artistsData?: { name: string; url?: string }[];
+  album: string;
+  album_id?: string;
+  track_number?: number;
+  duration_ms: number;
+  uri: string;
+  preview_url?: string;
+  image?: string;
+  added_at?: number;
+}
 
 const SPOTIFY_CLIENT_ID = import.meta.env.VITE_SPOTIFY_CLIENT_ID;
 function getSpotifyRedirectUri(): string {
@@ -110,23 +130,7 @@ interface TokenData {
 
 export interface ArtistInfo {
   name: string;
-  url: string;
-}
-
-export interface Track {
-  id: string;
-  provider?: ProviderId;
-  name: string;
-  artists: string;
-  artistsData?: ArtistInfo[];
-  album: string;
-  album_id?: string;
-  track_number?: number;
-  duration_ms: number;
-  uri: string;
-  preview_url?: string;
-  image?: string;
-  added_at?: number;
+  url?: string;
 }
 
 export interface PlaylistInfo {
@@ -259,6 +263,27 @@ function backfillProvider(tracks: Track[]): Track[] {
     if (!t.provider) t.provider = 'spotify';
   }
   return tracks;
+}
+
+/**
+ * Convert Spotify Track objects to provider-neutral MediaTrack format.
+ */
+function tracksToMediaTracks(tracks: Track[]): MediaTrack[] {
+  return tracks.map((t: any) => ({
+    id: t.id,
+    provider: t.provider as ProviderId,
+    playbackRef: { provider: 'spotify' as ProviderId, ref: t.uri },
+    name: t.name,
+    artists: t.artists,
+    artistsData: t.artistsData,
+    album: t.album,
+    albumId: t.album_id,
+    trackNumber: t.track_number,
+    durationMs: t.duration_ms,
+    image: t.image,
+    externalUrl: t.preview_url,
+    addedAt: t.added_at,
+  }));
 }
 
 async function spotifyApiRequest<T>(
@@ -688,13 +713,13 @@ export async function getUserLibraryInterleaved(
   }
 }
 
-export async function getPlaylistTracks(playlistId: string): Promise<Track[]> {
+export async function getPlaylistTracks(playlistId: string): Promise<MediaTrack[]> {
   const cacheKey = `playlist:${playlistId}`;
 
   // L1: Check in-memory cache (instant)
   const cached = trackListCache.get(cacheKey);
   if (cached && Date.now() - cached.timestamp < TRACK_LIST_CACHE_TTL) {
-    return cached.data;
+    return tracksToMediaTracks(cached.data);
   }
 
   // L2: Check IndexedDB persistent cache (survives page reload)
@@ -703,7 +728,7 @@ export async function getPlaylistTracks(playlistId: string): Promise<Track[]> {
     if (idbCached && Date.now() - idbCached.timestamp < TRACK_LIST_PERSIST_TTL) {
       const tracks = backfillProvider(idbCached.tracks);
       trackListCache.set(cacheKey, { data: tracks, timestamp: idbCached.timestamp });
-      return tracks;
+      return tracksToMediaTracks(tracks);
     }
   } catch {
     // IndexedDB read failed, continue to API fetch
@@ -732,16 +757,16 @@ export async function getPlaylistTracks(playlistId: string): Promise<Track[]> {
   // Write to both L1 and L2
   trackListCache.set(cacheKey, { data: tracks, timestamp: Date.now() });
   libraryCache.putTrackList(cacheKey, tracks).catch(() => {});
-  return tracks;
+  return tracksToMediaTracks(tracks);
 }
 
-export async function getAlbumTracks(albumId: string): Promise<Track[]> {
+export async function getAlbumTracks(albumId: string): Promise<MediaTrack[]> {
   const cacheKey = `${ALBUM_ID_PREFIX}${albumId}`;
 
   // L1: Check in-memory cache (instant)
   const cached = trackListCache.get(cacheKey);
   if (cached && Date.now() - cached.timestamp < TRACK_LIST_CACHE_TTL) {
-    return cached.data;
+    return tracksToMediaTracks(cached.data);
   }
 
   // L2: Check IndexedDB persistent cache (survives page reload)
@@ -750,7 +775,7 @@ export async function getAlbumTracks(albumId: string): Promise<Track[]> {
     if (idbCached && Date.now() - idbCached.timestamp < TRACK_LIST_PERSIST_TTL) {
       const tracks = backfillProvider(idbCached.tracks);
       trackListCache.set(cacheKey, { data: tracks, timestamp: idbCached.timestamp });
-      return tracks;
+      return tracksToMediaTracks(tracks);
     }
   } catch {
     // IndexedDB read failed, continue to API fetch
@@ -790,16 +815,17 @@ export async function getAlbumTracks(albumId: string): Promise<Track[]> {
   // Write to both L1 and L2
   trackListCache.set(cacheKey, { data: sorted, timestamp: Date.now() });
   libraryCache.putTrackList(cacheKey, sorted).catch(() => {});
-  return sorted;
+  return tracksToMediaTracks(sorted);
 }
 
-export async function getLikedSongs(limit?: number): Promise<Track[]> {
+export async function getLikedSongs(limit?: number): Promise<MediaTrack[]> {
   if (likedSongsCache && Date.now() - likedSongsCache.timestamp < LIKED_SONGS_CACHE_TTL) {
+    const data = tracksToMediaTracks(likedSongsCache.data);
     if (limit === undefined && likedSongsCache.limit === Infinity) {
-      return likedSongsCache.data;
+      return data;
     }
     if (limit !== undefined && likedSongsCache.limit >= limit) {
-      return likedSongsCache.data.slice(0, limit);
+      return data.slice(0, limit);
     }
   }
 
@@ -830,7 +856,7 @@ export async function getLikedSongs(limit?: number): Promise<Track[]> {
   );
 
   likedSongsCache = { data: tracks, limit: limit ?? Infinity, timestamp: Date.now() };
-  return tracks;
+  return tracksToMediaTracks(tracks);
 }
 
 export async function getLikedSongsCount(signal?: AbortSignal): Promise<number> {

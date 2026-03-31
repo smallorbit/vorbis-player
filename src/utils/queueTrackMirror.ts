@@ -24,7 +24,7 @@ export function removeMediaTrackById(mediaTracks: readonly MediaTrack[], trackId
   return mediaTracks.filter((m) => m.id !== trackId);
 }
 
-/** Append for “add to queue” without mutating the source list. */
+/** Append for "add to queue" without mutating the source list. */
 export function appendMediaTracks(
   mediaTracks: readonly MediaTrack[],
   additions: readonly MediaTrack[],

@@ -7,7 +7,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import type { Track } from '../services/spotify';
+import type { MediaTrack } from '@/types/domain';
 import { theme } from '@/styles/theme';
 import type { VisualizerStyle } from '../types/visualizer';
 import { useLocalStorage } from './useLocalStorage';
@@ -16,8 +16,8 @@ import { useLocalStorage } from './useLocalStorage';
  * Internal state type definitions
  */
 interface TrackState {
-  tracks: Track[];
-  originalTracks: Track[];
+  tracks: MediaTrack[];
+  originalTracks: MediaTrack[];
   currentIndex: number;
   isLoading: boolean;
   error: string | null;
@@ -50,8 +50,8 @@ interface VisualEffectsState {
 }
 
 interface TrackActions {
-  setTracks: (tracks: Track[] | ((prev: Track[]) => Track[])) => void;
-  setOriginalTracks: (tracks: Track[] | ((prev: Track[]) => Track[])) => void;
+  setTracks: (tracks: MediaTrack[] | ((prev: MediaTrack[]) => MediaTrack[])) => void;
+  setOriginalTracks: (tracks: MediaTrack[] | ((prev: MediaTrack[]) => MediaTrack[])) => void;
   setCurrentIndex: (index: number | ((prev: number) => number)) => void;
   setLoading: (loading: boolean | ((prev: boolean) => boolean)) => void;
   setError: (error: string | null | ((prev: string | null) => string | null)) => void;
@@ -119,8 +119,8 @@ interface PlayerStateSetters {
  * with persistent storage and performance optimizations.
  */
 export function usePlayerState(): PlayerState & PlayerStateSetters {
-  const [tracks, setTracks] = useState<Track[]>([]);
-  const [originalTracks, setOriginalTracks] = useState<Track[]>([]);
+  const [tracks, setTracks] = useState<MediaTrack[]>([]);
+  const [originalTracks, setOriginalTracks] = useState<MediaTrack[]>([]);
   const [currentTrackIndex, setCurrentTrackIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);

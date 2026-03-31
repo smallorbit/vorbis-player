@@ -1,11 +1,10 @@
 import { useCallback } from 'react';
-import type { Track } from '@/services/spotify';
 import type { MediaTrack, ProviderId } from '@/types/domain';
 import { LIKED_SONGS_ID, resolvePlaylistRef } from '@/constants/playlist';
 import { shuffleArray } from '@/utils/shuffleArray';
 import { providerRegistry } from '@/providers/registry';
 import { logQueue } from '@/lib/debugLog';
-import { mediaTrackToTrack, trackToMediaTrack, queueSnapshot } from './playerLogicUtils';
+import { queueSnapshot } from './playerLogicUtils';
 
 interface UseCollectionLoaderProps {
   activeDescriptor: any;
@@ -19,11 +18,11 @@ interface UseCollectionLoaderProps {
   setError: (error: string | null) => void;
   setIsLoading: (loading: boolean) => void;
   setSelectedPlaylistId: (id: string | null) => void;
-  setTracks: (tracks: Track[] | ((prev: Track[]) => Track[])) => void;
-  setOriginalTracks: (tracks: Track[]) => void;
+  setTracks: (tracks: MediaTrack[] | ((prev: MediaTrack[]) => MediaTrack[])) => void;
+  setOriginalTracks: (tracks: MediaTrack[]) => void;
   setCurrentTrackIndex: (index: number | ((prev: number) => number)) => void;
   playTrack: (index: number, isSkip?: boolean) => Promise<void>;
-  spotifyHandlePlaylistSelect: (playlistId: string) => Promise<Track[]>;
+  spotifyHandlePlaylistSelect: (playlistId: string) => Promise<MediaTrack[]>;
   stopRadioBase: () => void;
   radioStateIsActive: boolean;
 }
@@ -94,15 +93,15 @@ export function useCollectionLoader({
             return 0;
           }
 
-          const trackList = merged.map(mediaTrackToTrack);
-          setOriginalTracks(trackList);
+          setOriginalTracks(merged);
           if (shuffleEnabled) {
             const indices = shuffleArray(merged.map((_, i) => i));
-            mediaTracksRef.current = indices.map(i => merged[i]);
-            setTracks(indices.map(i => trackList[i]));
+            const shuffled = indices.map(i => merged[i]);
+            mediaTracksRef.current = shuffled;
+            setTracks(shuffled);
           } else {
             mediaTracksRef.current = merged;
-            setTracks(trackList);
+            setTracks(merged);
           }
           setCurrentTrackIndex(0);
           setIsLoading(false);
@@ -114,7 +113,7 @@ export function useCollectionLoader({
             if (firstTrack.provider !== activeDescriptor?.id) {
               setActiveProviderId(firstTrack.provider);
             }
-            queueSnapshot('Unified Liked loaded', trackList, mediaTracksRef.current.length, 0);
+            queueSnapshot('Unified Liked loaded', merged, mediaTracksRef.current.length, 0);
             // Route initial playback through shared playTrack() so Spotify queue sync runs immediately.
             await playTrack(0);
           }
@@ -171,7 +170,7 @@ export function useCollectionLoader({
             logQueue('Context playback path — delegating to legacy handler for %s on %s', playlistId, providerId);
             const sdkTracks = await spotifyHandlePlaylistSelect(playlistId);
             if (sdkTracks.length > 0) {
-              mediaTracksRef.current = sdkTracks.map(trackToMediaTrack);
+              mediaTracksRef.current = sdkTracks;
               queueSnapshot('Context playback loaded', sdkTracks, mediaTracksRef.current.length, 0);
             } else {
               logQueue('Context playback returned 0 tracks');
@@ -187,20 +186,20 @@ export function useCollectionLoader({
             setIsLoading(false);
             return 0;
           }
-          const trackList = list.map(mediaTrackToTrack);
-          setOriginalTracks(trackList);
+          setOriginalTracks(list);
           if (shuffleEnabled) {
             const indices = shuffleArray<number>(list.map((_: MediaTrack, i: number) => i));
-            mediaTracksRef.current = indices.map(i => list[i]);
-            setTracks(indices.map(i => trackList[i]));
+            const shuffled = indices.map(i => list[i]);
+            mediaTracksRef.current = shuffled;
+            setTracks(shuffled);
           } else {
             mediaTracksRef.current = list;
-            setTracks(trackList);
+            setTracks(list);
           }
           setCurrentTrackIndex(0);
           setIsLoading(false);
           drivingProviderRef.current = providerId;
-          queueSnapshot(`${providerId} playlist loaded`, trackList, mediaTracksRef.current.length, 0);
+          queueSnapshot(`${providerId} playlist loaded`, list, mediaTracksRef.current.length, 0);
           await playTrack(0);
           return list.length;
         } catch (err) {
