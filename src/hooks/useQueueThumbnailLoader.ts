@@ -1,5 +1,4 @@
 import { useEffect, useRef, useCallback } from 'react';
-import type { Track } from '@/services/spotify';
 import type { MediaTrack } from '@/types/domain';
 import { providerRegistry } from '@/providers/registry';
 import { logQueue } from '@/lib/debugLog';
@@ -17,9 +16,9 @@ const FETCH_CONCURRENCY = 3;
  * Updates are batched so the queue UI re-renders efficiently.
  */
 export function useQueueThumbnailLoader(
-  tracks: readonly Track[],
+  tracks: readonly MediaTrack[],
   mediaTracksRef: React.MutableRefObject<MediaTrack[]>,
-  setTracks: React.Dispatch<React.SetStateAction<Track[]>>,
+  setTracks: React.Dispatch<React.SetStateAction<MediaTrack[]>>,
 ) {
   const attemptedAlbumIds = useRef(new Set<string>());
   const abortRef = useRef<AbortController | null>(null);
@@ -39,8 +38,8 @@ export function useQueueThumbnailLoader(
       setTracks((prev) => {
         let changed = false;
         const next = prev.map((t) => {
-          if (!t.image && t.album_id) {
-            const img = updates.get(t.album_id);
+          if (!t.image && t.albumId) {
+            const img = updates.get(t.albumId);
             if (img) { changed = true; return { ...t, image: img }; }
           }
           return t;
@@ -52,10 +51,10 @@ export function useQueueThumbnailLoader(
   );
 
   useEffect(() => {
-    const missing = tracks.filter((t) => !t.image && t.album_id);
+    const missing = tracks.filter((t) => !t.image && t.albumId);
     if (missing.length === 0) return;
 
-    const albumIds = [...new Set(missing.map((t) => t.album_id!))];
+    const albumIds = [...new Set(missing.map((t) => t.albumId!))];
     const toResolve = albumIds.filter((id) => !attemptedAlbumIds.current.has(id));
     if (toResolve.length === 0) return;
 

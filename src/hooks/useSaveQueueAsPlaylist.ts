@@ -7,7 +7,7 @@
  */
 
 import { useState, useCallback } from 'react';
-import type { Track } from '@/services/spotify';
+import type { MediaTrack } from '@/types/domain';
 import {
   spotifyAuth,
   searchTrack,
@@ -25,7 +25,7 @@ export interface SaveQueueResult {
 }
 
 interface UseSaveQueueAsPlaylistReturn {
-  saveQueueAsPlaylist: (name: string, tracks: Track[]) => Promise<SaveQueueResult>;
+  saveQueueAsPlaylist: (name: string, tracks: MediaTrack[]) => Promise<SaveQueueResult>;
   status: SaveQueueStatus;
   error: string | null;
   lastResult: SaveQueueResult | null;
@@ -40,17 +40,17 @@ const MAX_CONCURRENT_RESOLVE = 3;
  * sync resolution cache first, then fall back to on-demand search if the
  * cross-provider resolve setting is enabled.
  */
-export async function resolveTrackUris(tracks: Track[]): Promise<{ uris: string[]; skipped: number }> {
+export async function resolveTrackUris(tracks: MediaTrack[]): Promise<{ uris: string[]; skipped: number }> {
   const resolveEnabled = spotifyQueueSync.isResolveEnabled();
 
   // Build a slot per track to preserve original queue order
   const slots: (string | null)[] = new Array(tracks.length).fill(null);
-  const toResolve: { index: number; track: Track }[] = [];
+  const toResolve: { index: number; track: MediaTrack }[] = [];
 
   for (let i = 0; i < tracks.length; i++) {
     const track = tracks[i];
-    if (track.uri?.startsWith('spotify:') || !track.provider) {
-      slots[i] = track.uri ?? null;
+    if (track.playbackRef.ref?.startsWith('spotify:') || !track.provider) {
+      slots[i] = track.playbackRef.ref ?? null;
     } else if (resolveEnabled) {
       toResolve.push({ index: i, track });
     }
@@ -104,7 +104,7 @@ export function useSaveQueueAsPlaylist(): UseSaveQueueAsPlaylistReturn {
     setLastResult(null);
   }, []);
 
-  const saveQueueAsPlaylist = useCallback(async (name: string, tracks: Track[]): Promise<SaveQueueResult> => {
+  const saveQueueAsPlaylist = useCallback(async (name: string, tracks: MediaTrack[]): Promise<SaveQueueResult> => {
     if (!spotifyAuth.isAuthenticated()) {
       const err = 'Spotify is not connected';
       setError(err);
