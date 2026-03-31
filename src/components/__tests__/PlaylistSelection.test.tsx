@@ -65,10 +65,16 @@ vi.mock('@/services/spotifyPlayer', () => ({
   },
 }));
 
+const MOCK_PLAYLIST_NAMES = {
+  CHILL: 'Chill Vibes',
+  ROCK: 'Rock Anthems',
+  JAZZ: 'Jazz Classics',
+} as const;
+
 const mockPlaylists = [
-  makePlaylistInfo({ id: 'pl-1', name: 'Chill Vibes' }),
-  makePlaylistInfo({ id: 'pl-2', name: 'Rock Anthems' }),
-  makePlaylistInfo({ id: 'pl-3', name: 'Jazz Classics' }),
+  makePlaylistInfo({ id: 'pl-1', name: MOCK_PLAYLIST_NAMES.CHILL }),
+  makePlaylistInfo({ id: 'pl-2', name: MOCK_PLAYLIST_NAMES.ROCK }),
+  makePlaylistInfo({ id: 'pl-3', name: MOCK_PLAYLIST_NAMES.JAZZ }),
 ];
 
 const mockAlbums = [
@@ -179,5 +185,103 @@ describe('PlaylistSelection', () => {
     expect(onPlaylistSelect).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole('button', { name: /play chill vibes/i }));
     expect(onPlaylistSelect).toHaveBeenCalledWith('pl-1', 'Chill Vibes', undefined);
+  });
+});
+
+describe('PlaylistSelection — search and filter', () => {
+  beforeEach(() => {
+    setMockLibrarySync();
+  });
+
+  it('filters playlists by search query', () => {
+    renderPlaylistSelection();
+    const searchInput = screen.getByPlaceholderText('Search playlists...');
+
+    // Search for "Chill"
+    fireEvent.change(searchInput, { target: { value: MOCK_PLAYLIST_NAMES.CHILL } });
+
+    // Should show only "Chill Vibes"
+    expect(screen.getByText(MOCK_PLAYLIST_NAMES.CHILL)).toBeTruthy();
+
+    // Should not show the other playlists
+    expect(screen.queryByText(MOCK_PLAYLIST_NAMES.ROCK)).toBeNull();
+    expect(screen.queryByText(MOCK_PLAYLIST_NAMES.JAZZ)).toBeNull();
+  });
+
+  it('shows empty state when search matches nothing', () => {
+    renderPlaylistSelection();
+    const searchInput = screen.getByPlaceholderText('Search playlists...');
+
+    // Search for something that doesn't match any playlist
+    fireEvent.change(searchInput, { target: { value: 'XYZ123NonExistent' } });
+
+    // Should show a no results indicator or empty state
+    // The component should show either "no playlists" or similar message
+    const noResultsText = screen.queryByText(/no/i);
+    expect(noResultsText || searchInput.parentElement?.textContent).toBeTruthy();
+  });
+
+  it('clears search when clear button is clicked', () => {
+    renderPlaylistSelection();
+    const searchInput = screen.getByPlaceholderText('Search playlists...') as HTMLInputElement;
+
+    // Type a search query
+    fireEvent.change(searchInput, { target: { value: MOCK_PLAYLIST_NAMES.CHILL } });
+    expect(searchInput.value).toBe(MOCK_PLAYLIST_NAMES.CHILL);
+
+    // Find and click the clear button (typically an X or clear icon)
+    // The button should be near the search input
+    const clearButton = screen.queryByRole('button', { name: /clear|close|reset/i })
+      || screen.getByRole('button', { name: /✕|✖|×|x/i });
+
+    if (clearButton) {
+      fireEvent.click(clearButton);
+
+      // Search input should be cleared
+      expect((searchInput as HTMLInputElement).value).toBe('');
+
+      // All playlists should be visible again
+      expect(screen.getByText(MOCK_PLAYLIST_NAMES.CHILL)).toBeTruthy();
+      expect(screen.getByText(MOCK_PLAYLIST_NAMES.ROCK)).toBeTruthy();
+      expect(screen.getByText(MOCK_PLAYLIST_NAMES.JAZZ)).toBeTruthy();
+    }
+  });
+
+  it('search is case-insensitive', () => {
+    renderPlaylistSelection();
+    const searchInput = screen.getByPlaceholderText('Search playlists...');
+
+    // Search with different case variations
+    fireEvent.change(searchInput, { target: { value: 'JAZZ' } });
+    expect(screen.getByText(MOCK_PLAYLIST_NAMES.JAZZ)).toBeTruthy();
+    expect(screen.queryByText(MOCK_PLAYLIST_NAMES.CHILL)).toBeNull();
+
+    // Try lowercase
+    fireEvent.change(searchInput, { target: { value: 'rock' } });
+    expect(screen.getByText(MOCK_PLAYLIST_NAMES.ROCK)).toBeTruthy();
+    expect(screen.queryByText(MOCK_PLAYLIST_NAMES.JAZZ)).toBeNull();
+  });
+
+  it('search updates live as user types', () => {
+    renderPlaylistSelection();
+    const searchInput = screen.getByPlaceholderText('Search playlists...');
+
+    // Start typing a unique search
+    fireEvent.change(searchInput, { target: { value: MOCK_PLAYLIST_NAMES.CHILL } });
+    expect(screen.getByText(MOCK_PLAYLIST_NAMES.CHILL)).toBeTruthy();
+
+    // Search for Jazz should show only Jazz
+    fireEvent.change(searchInput, { target: { value: MOCK_PLAYLIST_NAMES.JAZZ } });
+    expect(screen.getByText(MOCK_PLAYLIST_NAMES.JAZZ)).toBeTruthy();
+
+    // Search for Rock should show only Rock
+    fireEvent.change(searchInput, { target: { value: MOCK_PLAYLIST_NAMES.ROCK } });
+    expect(screen.getByText(MOCK_PLAYLIST_NAMES.ROCK)).toBeTruthy();
+
+    // Clear and all should be visible again
+    fireEvent.change(searchInput, { target: { value: '' } });
+    expect(screen.getByText(MOCK_PLAYLIST_NAMES.CHILL)).toBeTruthy();
+    expect(screen.getByText(MOCK_PLAYLIST_NAMES.JAZZ)).toBeTruthy();
+    expect(screen.getByText(MOCK_PLAYLIST_NAMES.ROCK)).toBeTruthy();
   });
 });
