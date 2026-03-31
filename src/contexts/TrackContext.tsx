@@ -4,6 +4,7 @@ import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { isProfilingEnabled } from '@/contexts/ProfilingContext';
 import { shuffleArray } from '@/utils/shuffleArray';
 import { logQueue } from '@/lib/debugLog';
+import { STORAGE_KEYS } from '@/constants/storage';
 
 // --- TrackListContext ---
 
@@ -42,7 +43,7 @@ export function TrackProvider({ children }: { children: React.ReactNode }) {
   const [currentTrackIndex, setCurrentTrackIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [shuffleEnabled, setShuffleEnabled] = useLocalStorage('vorbis-player-shuffle-enabled', false);
+  const [shuffleEnabled, setShuffleEnabled] = useLocalStorage(STORAGE_KEYS.SHUFFLE_ENABLED, false);
   const [selectedPlaylistId, setSelectedPlaylistId] = useState<string | null>(null);
   const [showQueue, setShowQueue] = useState(false);
 
