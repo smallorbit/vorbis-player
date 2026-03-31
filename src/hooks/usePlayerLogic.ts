@@ -12,8 +12,10 @@ import { useRadio } from '@/hooks/useRadio';
 import type { Track } from '@/services/spotify';
 import type { ProviderId } from '@/types/domain';
 import type { MediaTrack } from '@/types/domain';
+import type { RadioSeed } from '@/types/radio';
 import { providerRegistry } from '@/providers/registry';
-import { logQueue } from '@/lib/debugLog';
+import { logQueue, logRadio } from '@/lib/debugLog';
+import { shuffleArray } from '@/utils/shuffleArray';
 import { useMediaTracksMirror } from '@/hooks/useMediaTracksMirror';
 import { useQueueThumbnailLoader } from '@/hooks/useQueueThumbnailLoader';
 import { useQueueDurationLoader } from '@/hooks/useQueueDurationLoader';
@@ -291,82 +293,26 @@ export function usePlayerLogic() {
     setCurrentTrackIndex,
   });
 
-<<<<<<< HEAD
-  const handleRemoveFromQueue = useCallback(
-    (index: number) => {
-      if (index < 0 || index >= tracks.length) return;
-      // Cannot remove the currently playing track
-      if (index === currentTrackIndex) return;
+  // Radio progress state for UI feedback
+  const [radioProgress, setRadioProgress] = useState<RadioProgress | null>(null);
 
-      const removedTrack = tracks[index];
-      logQueue('handleRemoveFromQueue — removing index=%d, track=%s, queueLen=%d', index, trkSummary(removedTrack), tracks.length);
-
-      // If this would empty the queue, go back to library
-      if (tracks.length <= 1) {
-        handleBackToLibrary();
-        return;
-      }
-
-      mediaTracksRef.current = removeMediaTrackById(mediaTracksRef.current, removedTrack.id);
-
-      // Remove from originalTracks by ID (order-independent for shuffle)
-      setOriginalTracks((prev) => prev.filter((t) => t.id !== removedTrack.id));
-
-      // Adjust currentTrackIndex if removing before current
-      if (index < currentTrackIndex) {
-        setCurrentTrackIndex(prev => prev - 1);
-      }
-
-      // Remove from tracks by index
-      setTracks(prev => prev.filter((_, i) => i !== index));
-
-      logQueue('handleRemoveFromQueue — done, new queueLen=%d', tracks.length - 1);
-    },
-    [tracks, currentTrackIndex, handleBackToLibrary, setTracks, setOriginalTracks, setCurrentTrackIndex]
-  );
-
-  // ── Reorder queue ─────────────────────────────────────────────────
-
-  const handleReorderQueue = useCallback(
-    (fromIndex: number, toIndex: number) => {
-      if (fromIndex === toIndex) return;
-      if (fromIndex < 0 || fromIndex >= tracks.length) return;
-      if (toIndex < 0 || toIndex >= tracks.length) return;
-
-      logQueue('handleReorderQueue — from=%d to=%d, queueLen=%d', fromIndex, toIndex, tracks.length);
-
-      const currentTrackId = tracks[currentTrackIndex]?.id;
-
-      const newTracks = moveItemInArray(tracks, fromIndex, toIndex);
-
-      // Update currentTrackIndex to follow the currently playing track
-      const newCurrentIndex = currentTrackId
-        ? newTracks.findIndex(t => t.id === currentTrackId)
-        : currentTrackIndex;
-
-      // Explicitly sync mediaTracksRef before setTracks triggers a re-render, so
-      // index-based playback reads the correct track even during the render cycle.
-      // useMediaTracksMirror will also re-sync afterward, but this ensures the ref
-      // is correct synchronously.
-      const reorderedMedia = reorderMediaTracksToMatchTracks(newTracks, mediaTracksRef.current);
-      if (reorderedMedia) {
-        mediaTracksRef.current = reorderedMedia;
-      } else {
-        logQueue('handleReorderQueue — mediaTracksRef out of sync (len %d vs tracks len %d); layout effect will recover', mediaTracksRef.current.length, newTracks.length);
-      }
-
-      // Only update originalTracks if shuffle is off
-      if (!shuffleEnabled) {
-        setOriginalTracks(newTracks);
-      }
-
-      setCurrentTrackIndex(newCurrentIndex >= 0 ? newCurrentIndex : 0);
-      setTracks(newTracks);
-
-      logQueue('handleReorderQueue — done, currentIndex=%d', newCurrentIndex);
-    },
-    [tracks, currentTrackIndex, shuffleEnabled, setTracks, setOriginalTracks, setCurrentTrackIndex]
-  );
+  // Initialize radio session
+  const { stopRadio, clearAuthExpired, authExpired } = useRadioSession({
+    activeDescriptor,
+    currentTrack,
+    currentTrackIndex,
+    mediaTracksRef,
+    startRadio,
+    stopRadioBase,
+    setIsLoading,
+    setError,
+    setTracks,
+    setOriginalTracks,
+    setCurrentTrackIndex,
+    setSelectedPlaylistId,
+    authExpired,
+    setAuthExpired,
+  });
 
   /**
    * Start a radio session from the currently playing track.
@@ -434,13 +380,15 @@ export function usePlayerLogic() {
         );
         if (searchCapableProviders.length > 0) {
           try {
-            const resolvedTracks: MediaTrack[] = [];
-            for (const suggestion of result.unmatchedSuggestions) {
+            // Parallelize searches across all suggestions and providers
+            const searchPromises = result.unmatchedSuggestions.map(async (suggestion) => {
               for (const provider of searchCapableProviders) {
                 const match = await provider.catalog.searchTrack?.(suggestion.artist, suggestion.name);
-                if (match) { resolvedTracks.push(match); break; }
+                if (match) return match;
               }
-            }
+              return null;
+            });
+            const resolvedTracks = (await Promise.all(searchPromises)).filter((t): t is MediaTrack => t !== null);
             const existingKeys = new Set(
               generatedTracks.map((t) => `${t.artists.toLowerCase()}||${t.name.toLowerCase()}`),
             );
@@ -486,28 +434,9 @@ export function usePlayerLogic() {
       console.warn('[Radio] Generation failed:', err);
       setRadioProgress(null);
     }
-  }, [activeDescriptor, currentTrack, currentTrackIndex, startRadio, setOriginalTracks, setTracks, setCurrentTrackIndex, setSelectedPlaylistId, setRadioProgress]);
+  }, [activeDescriptor, currentTrack, currentTrackIndex, startRadio, setOriginalTracks, setTracks, setCurrentTrackIndex, setSelectedPlaylistId]);
 
   const dismissRadioProgress = useCallback(() => setRadioProgress(null), []);
-=======
-  // Initialize radio session
-  const { handleStartRadio, stopRadio, clearAuthExpired } = useRadioSession({
-    activeDescriptor,
-    currentTrack,
-    currentTrackIndex,
-    mediaTracksRef,
-    startRadio,
-    stopRadioBase,
-    setIsLoading,
-    setError,
-    setTracks,
-    setOriginalTracks,
-    setCurrentTrackIndex,
-    setSelectedPlaylistId,
-    authExpired,
-    setAuthExpired,
-  });
->>>>>>> 71a9c94 (refactor: decompose usePlayerLogic into focused sub-hooks)
 
   const handlers = useMemo(
     () => ({
