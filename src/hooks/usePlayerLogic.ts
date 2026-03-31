@@ -307,12 +307,10 @@ export function usePlayerLogic() {
   }, [tracks, currentTrackIndex, drivingProviderRef]);
 
   // Progressively load missing thumbnails for Dropbox tracks in the queue
-  const mediaTracksRef = useRef(tracks);
-  useEffect(() => { mediaTracksRef.current = tracks; }, [tracks]);
-  useQueueThumbnailLoader(tracks, mediaTracksRef, setTracks);
+  useQueueThumbnailLoader(tracks, setTracks);
 
   // Progressively discover missing durations for Dropbox tracks in the queue
-  useQueueDurationLoader(tracks, mediaTracksRef, setTracks);
+  useQueueDurationLoader(tracks, setTracks);
 
   // Auto-extract accent color from album artwork; respects overrides in ColorContext
   useAccentColor(currentTrack, accentColorOverrides, setAccentColor, setAccentColorOverrides);

@@ -17,7 +17,6 @@ const FETCH_CONCURRENCY = 3;
  */
 export function useQueueThumbnailLoader(
   tracks: readonly MediaTrack[],
-  mediaTracksRef: React.MutableRefObject<MediaTrack[]>,
   setTracks: React.Dispatch<React.SetStateAction<MediaTrack[]>>,
 ) {
   const attemptedAlbumIds = useRef(new Set<string>());
@@ -27,13 +26,6 @@ export function useQueueThumbnailLoader(
     (updates: Map<string, string>) => {
       if (updates.size === 0) return;
       logQueue('thumbnailLoader — applying %d image updates', updates.size);
-
-      for (const mt of mediaTracksRef.current) {
-        if (!mt.image && mt.albumId) {
-          const img = updates.get(mt.albumId);
-          if (img) mt.image = img;
-        }
-      }
 
       setTracks((prev) => {
         let changed = false;
@@ -47,7 +39,7 @@ export function useQueueThumbnailLoader(
         return changed ? next : prev;
       });
     },
-    [mediaTracksRef, setTracks],
+    [setTracks],
   );
 
   useEffect(() => {
@@ -75,7 +67,7 @@ export function useQueueThumbnailLoader(
         await Promise.all(
           batch.map(async (albumId) => {
             // Find a track with this albumId to determine the provider
-            const mt = mediaTracksRef.current.find((m) => m.albumId === albumId);
+            const mt = tracks.find((m) => m.albumId === albumId);
             if (!mt) return;
             try {
               const provider = providerRegistry.get(mt.provider);
@@ -97,7 +89,7 @@ export function useQueueThumbnailLoader(
     run().catch(() => {});
 
     return () => controller.abort();
-  }, [tracks, applyImageUpdates, mediaTracksRef]);
+  }, [tracks, applyImageUpdates]);
 
   useEffect(() => {
     if (tracks.length === 0) {

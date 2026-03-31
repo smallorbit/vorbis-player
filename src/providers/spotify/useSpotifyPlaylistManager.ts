@@ -96,12 +96,12 @@ export const useSpotifyPlaylistManager = ({
       let fetchedTracks: MediaTrack[] = [];
 
       if (isAlbumId(playlistId)) {
-        fetchedTracks = (await getAlbumTracks(extractAlbumId(playlistId))) as MediaTrack[];
+        fetchedTracks = await getAlbumTracks(extractAlbumId(playlistId));
       } else if (playlistId === LIKED_SONGS_ID) {
-        fetchedTracks = (await getLikedSongs()) as MediaTrack[];
+        fetchedTracks = await getLikedSongs();
       } else {
         try {
-          fetchedTracks = (await getPlaylistTracks(playlistId)) as MediaTrack[];
+          fetchedTracks = await getPlaylistTracks(playlistId);
         } catch (trackError) {
           console.warn('Failed to fetch playlist tracks, will try context playback:', trackError);
           fetchedTracks = [];

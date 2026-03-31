@@ -17,7 +17,6 @@ const RESOLVE_CONCURRENCY = 2;
  */
 export function useQueueDurationLoader(
   tracks: readonly MediaTrack[],
-  mediaTracksRef: React.MutableRefObject<MediaTrack[]>,
   setTracks: React.Dispatch<React.SetStateAction<MediaTrack[]>>,
 ) {
   const attemptedTrackIds = useRef(new Set<string>());
@@ -27,13 +26,6 @@ export function useQueueDurationLoader(
     (updates: Map<string, number>) => {
       if (updates.size === 0) return;
       logQueue('durationLoader — applying %d duration updates', updates.size);
-
-      for (const mt of mediaTracksRef.current) {
-        if (!mt.durationMs) {
-          const dur = updates.get(mt.id);
-          if (dur) mt.durationMs = dur;
-        }
-      }
 
       setTracks((prev) => {
         let changed = false;
@@ -47,7 +39,7 @@ export function useQueueDurationLoader(
         return changed ? next : prev;
       });
     },
-    [mediaTracksRef, setTracks],
+    [setTracks],
   );
 
   useEffect(() => {
@@ -71,7 +63,7 @@ export function useQueueDurationLoader(
 
         await Promise.all(
           batch.map(async (track) => {
-            const mt = mediaTracksRef.current.find((m) => m.id === track.id);
+            const mt = tracks.find((m) => m.id === track.id);
             if (!mt) return;
             try {
               const provider = providerRegistry.get(mt.provider);
@@ -96,7 +88,7 @@ export function useQueueDurationLoader(
     run().catch(() => {});
 
     return () => controller.abort();
-  }, [tracks, applyDurationUpdates, mediaTracksRef]);
+  }, [tracks, applyDurationUpdates]);
 
   useEffect(() => {
     if (tracks.length === 0) {
