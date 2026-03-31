@@ -82,6 +82,7 @@ describe('DropboxPlaybackAdapter', () => {
 
   afterEach(() => {
     adapter.destroy();
+    vi.clearAllMocks();
   });
 
   it('initialize creates an HTMLAudioElement', async () => {

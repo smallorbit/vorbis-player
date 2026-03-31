@@ -24,6 +24,26 @@ import { ProviderWrapper } from '@/test/providerTestUtils';
 
 const opts = { wrapper: ProviderWrapper };
 
+const createMockPlaybackDescriptor = (playbackOverrides?: Record<string, any>) => {
+  return makeProviderDescriptor({
+    playback: {
+      providerId: 'spotify',
+      initialize: vi.fn().mockResolvedValue(undefined),
+      playTrack: vi.fn().mockResolvedValue(undefined),
+      pause: vi.fn().mockResolvedValue(undefined),
+      resume: vi.fn().mockResolvedValue(undefined),
+      seek: vi.fn().mockResolvedValue(undefined),
+      next: vi.fn().mockResolvedValue(undefined),
+      previous: vi.fn().mockResolvedValue(undefined),
+      setVolume: vi.fn().mockResolvedValue(undefined),
+      getState: vi.fn().mockResolvedValue(null),
+      subscribe: mockSubscribe,
+      getLastPlayTime: vi.fn().mockReturnValue(0),
+      ...playbackOverrides,
+    },
+  });
+};
+
 describe('useAutoAdvance', () => {
   let playTrack: ReturnType<typeof vi.fn>;
   const tracks = [makeTrack({ id: 't1' }), makeTrack({ id: 't2' }), makeTrack({ id: 't3' })];
@@ -40,22 +60,7 @@ describe('useAutoAdvance', () => {
       return vi.fn(); // unsubscribe function
     });
 
-    const mockDescriptor = makeProviderDescriptor({
-      playback: {
-        providerId: 'spotify',
-        initialize: vi.fn().mockResolvedValue(undefined),
-        playTrack: vi.fn().mockResolvedValue(undefined),
-        pause: vi.fn().mockResolvedValue(undefined),
-        resume: vi.fn().mockResolvedValue(undefined),
-        seek: vi.fn().mockResolvedValue(undefined),
-        next: vi.fn().mockResolvedValue(undefined),
-        previous: vi.fn().mockResolvedValue(undefined),
-        setVolume: vi.fn().mockResolvedValue(undefined),
-        getState: vi.fn().mockResolvedValue(null),
-        subscribe: mockSubscribe,
-        getLastPlayTime: vi.fn().mockReturnValue(0),
-      },
-    });
+    const mockDescriptor = createMockPlaybackDescriptor();
 
     vi.mocked(useProviderContext).mockReturnValue({
       chosenProviderId: 'spotify',
@@ -164,21 +169,8 @@ describe('useAutoAdvance', () => {
     // Record current time before hook setup
     const recentPlayTime = Date.now();
 
-    const mockDescriptor = makeProviderDescriptor({
-      playback: {
-        providerId: 'spotify',
-        initialize: vi.fn().mockResolvedValue(undefined),
-        playTrack: vi.fn().mockResolvedValue(undefined),
-        pause: vi.fn().mockResolvedValue(undefined),
-        resume: vi.fn().mockResolvedValue(undefined),
-        seek: vi.fn().mockResolvedValue(undefined),
-        next: vi.fn().mockResolvedValue(undefined),
-        previous: vi.fn().mockResolvedValue(undefined),
-        setVolume: vi.fn().mockResolvedValue(undefined),
-        getState: vi.fn().mockResolvedValue(null),
-        subscribe: mockSubscribe,
-        getLastPlayTime: vi.fn().mockReturnValue(recentPlayTime), // Very recent (within cooldown)
-      },
+    const mockDescriptor = createMockPlaybackDescriptor({
+      getLastPlayTime: vi.fn().mockReturnValue(recentPlayTime), // Very recent (within cooldown)
     });
 
     // Also mock providerRegistry.get to return the descriptor for 'spotify'
