@@ -1,3 +1,4 @@
+import React from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { AuthExpiredError, UnavailableTrackError } from '@/providers/errors';
@@ -54,6 +55,7 @@ describe('useProviderPlayback', () => {
     makeMediaTrack({ id: 't3', name: 'Track 3', playbackRef: { provider: 'spotify' as ProviderId, ref: 'spotify:track:t3' } }),
   ];
   const setCurrentTrackIndex = vi.fn();
+  const mediaTracksRef = { current: mediaTracks };
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -67,7 +69,7 @@ describe('useProviderPlayback', () => {
   it('returns early when no media track at index', async () => {
     // #given
     const { result } = renderHook(() =>
-      useProviderPlayback({ setCurrentTrackIndex, mediaTracks })
+      useProviderPlayback({ setCurrentTrackIndex, mediaTracksRef })
     );
 
     // #when
@@ -82,7 +84,7 @@ describe('useProviderPlayback', () => {
   it('calls setCurrentTrackIndex on successful playback', async () => {
     // #given
     const { result } = renderHook(() =>
-      useProviderPlayback({ setCurrentTrackIndex, mediaTracks })
+      useProviderPlayback({ setCurrentTrackIndex, mediaTracksRef })
     );
 
     // #when
@@ -101,7 +103,7 @@ describe('useProviderPlayback', () => {
     mockPlayTrack.mockRejectedValueOnce(new AuthExpiredError('spotify'));
 
     const { result } = renderHook(() =>
-      useProviderPlayback({ setCurrentTrackIndex, mediaTracks, onAuthExpired })
+      useProviderPlayback({ setCurrentTrackIndex, mediaTracksRef, onAuthExpired })
     );
 
     // #when
@@ -119,7 +121,7 @@ describe('useProviderPlayback', () => {
     mockPlayTrack.mockRejectedValueOnce(new UnavailableTrackError('Track 1'));
 
     const { result } = renderHook(() =>
-      useProviderPlayback({ setCurrentTrackIndex, mediaTracks })
+      useProviderPlayback({ setCurrentTrackIndex, mediaTracksRef })
     );
 
     // #when
@@ -140,7 +142,7 @@ describe('useProviderPlayback', () => {
     mockPlayTrack.mockRejectedValueOnce(new Error('Unknown failure'));
 
     const { result } = renderHook(() =>
-      useProviderPlayback({ setCurrentTrackIndex, mediaTracks })
+      useProviderPlayback({ setCurrentTrackIndex, mediaTracksRef })
     );
 
     // #when
@@ -159,7 +161,7 @@ describe('useProviderPlayback', () => {
   it('prefetches the next track after successful playback', async () => {
     // #given
     const { result } = renderHook(() =>
-      useProviderPlayback({ setCurrentTrackIndex, mediaTracks })
+      useProviderPlayback({ setCurrentTrackIndex, mediaTracksRef })
     );
 
     // #when
@@ -179,7 +181,7 @@ describe('useProviderPlayback', () => {
     ];
 
     const { result } = renderHook(() =>
-      useProviderPlayback({ setCurrentTrackIndex, mediaTracks: mixedTracks })
+      useProviderPlayback({ setCurrentTrackIndex, mediaTracksRef: { current: mixedTracks } as React.MutableRefObject<MediaTrack[]> })
     );
 
     // #when — play dropbox track first
@@ -199,7 +201,7 @@ describe('useProviderPlayback', () => {
   it('resumes playback via current driving provider', async () => {
     // #given
     const { result } = renderHook(() =>
-      useProviderPlayback({ setCurrentTrackIndex, mediaTracks })
+      useProviderPlayback({ setCurrentTrackIndex, mediaTracksRef })
     );
 
     await act(async () => {
@@ -220,7 +222,7 @@ describe('useProviderPlayback', () => {
   it('does not return activateDevice', () => {
     // #given
     const { result } = renderHook(() =>
-      useProviderPlayback({ setCurrentTrackIndex, mediaTracks })
+      useProviderPlayback({ setCurrentTrackIndex, mediaTracksRef })
     );
 
     // #then
