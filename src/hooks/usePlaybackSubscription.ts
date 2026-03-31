@@ -1,15 +1,15 @@
 import { useEffect } from 'react';
 import type { PlaybackState, ProviderId, MediaTrack } from '@/types/domain';
+import type { PlaybackProvider } from '@/types/providers';
 import { providerRegistry } from '@/providers/registry';
 import { logQueue } from '@/lib/debugLog';
 
 interface UsePlaybackSubscriptionProps {
-  activeDescriptor: any;
+  activeDescriptor: { id: ProviderId; playback: PlaybackProvider };
   drivingProviderRef: React.MutableRefObject<ProviderId | null>;
   tracksRef: React.MutableRefObject<MediaTrack[]>;
   currentTrackIndexRef: React.MutableRefObject<number>;
   expectedTrackIdRef: React.MutableRefObject<string | null>;
-  mediaTracksRef: React.MutableRefObject<MediaTrack[]>;
   setIsPlaying: (isPlaying: boolean) => void;
   setPlaybackPosition: (position: number) => void;
   setCurrentTrackIndex: (index: number | ((prev: number) => number)) => void;
@@ -22,7 +22,6 @@ export function usePlaybackSubscription({
   tracksRef,
   currentTrackIndexRef,
   expectedTrackIdRef,
-  mediaTracksRef,
   setIsPlaying,
   setPlaybackPosition,
   setCurrentTrackIndex,
@@ -66,25 +65,19 @@ export function usePlaybackSubscription({
 
           if (state.trackMetadata && trackIndex !== -1) {
             const meta = state.trackMetadata;
-            if (meta.name !== undefined || meta.artists !== undefined || meta.album !== undefined || meta.image !== undefined || meta.durationMs !== undefined) {
+            const updates: Partial<MediaTrack> = {};
+            if (meta.name !== undefined) updates.name = meta.name;
+            if (meta.artists !== undefined) updates.artists = meta.artists;
+            if (meta.album !== undefined) updates.album = meta.album;
+            if (meta.image !== undefined) updates.image = meta.image;
+            if (meta.durationMs !== undefined) updates.durationMs = meta.durationMs;
+
+            if (Object.keys(updates).length > 0) {
               setTracks((prev: MediaTrack[]) =>
                 prev.map((t, i) =>
-                  i === trackIndex
-                    ? {
-                        ...t,
-                        ...(meta.name !== undefined && { name: meta.name }),
-                        ...(meta.artists !== undefined && { artists: meta.artists }),
-                        ...(meta.album !== undefined && { album: meta.album }),
-                        ...(meta.image !== undefined && { image: meta.image }),
-                        ...(meta.durationMs !== undefined && { durationMs: meta.durationMs }),
-                      }
-                    : t
+                  i === trackIndex ? { ...t, ...updates } : t
                 )
               );
-              const mediaIdx = mediaTracksRef.current.findIndex((m) => m.id === trackId);
-              if (mediaIdx !== -1) {
-                mediaTracksRef.current[mediaIdx] = { ...mediaTracksRef.current[mediaIdx], ...meta };
-              }
             }
           }
         }

@@ -186,7 +186,6 @@ export function usePlayerLogic() {
     tracksRef,
     currentTrackIndexRef,
     expectedTrackIdRef,
-    mediaTracksRef,
     setIsPlaying,
     setPlaybackPosition,
     setCurrentTrackIndex,
