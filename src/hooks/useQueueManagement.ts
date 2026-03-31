@@ -1,6 +1,7 @@
 import { useCallback, useRef } from 'react';
 import type { AddToQueueResult, MediaTrack, ProviderId } from '@/types/domain';
 import type { ProviderDescriptor } from '@/types/providers';
+import type { TrackOperations } from '@/types/trackOperations';
 import { resolvePlaylistRef } from '@/constants/playlist';
 import { logQueue } from '@/lib/debugLog';
 import {
@@ -12,17 +13,14 @@ import {
 import { trkSummary } from './playerLogicUtils';
 
 interface UseQueueManagementProps {
+  trackOps: Pick<TrackOperations, 'setTracks' | 'setOriginalTracks' | 'setCurrentTrackIndex' | 'mediaTracksRef'>;
   tracks: MediaTrack[];
   currentTrackIndex: number;
   shuffleEnabled: boolean;
-  mediaTracksRef: React.MutableRefObject<MediaTrack[]>;
   handlePlaylistSelect: (playlistId: string, _playlistName?: string, provider?: ProviderId) => Promise<number>;
   handleBackToLibrary: () => void;
   activeDescriptor: ProviderDescriptor | undefined;
   getDescriptor: (providerId: ProviderId) => ProviderDescriptor | undefined;
-  setTracks: (tracks: MediaTrack[] | ((prev: MediaTrack[]) => MediaTrack[])) => void;
-  setOriginalTracks: (tracks: MediaTrack[] | ((prev: MediaTrack[]) => MediaTrack[])) => void;
-  setCurrentTrackIndex: (index: number | ((prev: number) => number)) => void;
 }
 
 interface UseQueueManagementReturn {
@@ -32,18 +30,16 @@ interface UseQueueManagementReturn {
 }
 
 export function useQueueManagement({
+  trackOps,
   tracks,
   currentTrackIndex,
   shuffleEnabled,
-  mediaTracksRef,
   handlePlaylistSelect,
   handleBackToLibrary,
   activeDescriptor,
   getDescriptor,
-  setTracks,
-  setOriginalTracks,
-  setCurrentTrackIndex,
 }: UseQueueManagementProps): UseQueueManagementReturn {
+  const { setTracks, setOriginalTracks, setCurrentTrackIndex, mediaTracksRef } = trackOps;
   const tracksRef = useRef(tracks);
   tracksRef.current = tracks;
 

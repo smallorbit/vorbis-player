@@ -44,14 +44,11 @@ describe('useQueueManagement', () => {
         tracks,
         currentTrackIndex: 1,
         shuffleEnabled: false,
-        mediaTracksRef,
+        trackOps: { setTracks: mockSetTracks, setOriginalTracks: mockSetOriginalTracks, setCurrentTrackIndex: mockSetCurrentTrackIndex, mediaTracksRef },
         handlePlaylistSelect: mockHandlePlaylistSelect,
         handleBackToLibrary: mockHandleBackToLibrary,
         activeDescriptor: mockActiveDescriptor,
         getDescriptor: mockGetDescriptor,
-        setTracks: mockSetTracks,
-        setOriginalTracks: mockSetOriginalTracks,
-        setCurrentTrackIndex: mockSetCurrentTrackIndex,
       })
     );
 
@@ -72,14 +69,11 @@ describe('useQueueManagement', () => {
         tracks,
         currentTrackIndex: 2,
         shuffleEnabled: false,
-        mediaTracksRef,
+        trackOps: { setTracks: mockSetTracks, setOriginalTracks: mockSetOriginalTracks, setCurrentTrackIndex: mockSetCurrentTrackIndex, mediaTracksRef },
         handlePlaylistSelect: mockHandlePlaylistSelect,
         handleBackToLibrary: mockHandleBackToLibrary,
         activeDescriptor: mockActiveDescriptor,
         getDescriptor: mockGetDescriptor,
-        setTracks: mockSetTracks,
-        setOriginalTracks: mockSetOriginalTracks,
-        setCurrentTrackIndex: mockSetCurrentTrackIndex,
       })
     );
 
@@ -101,14 +95,11 @@ describe('useQueueManagement', () => {
         tracks,
         currentTrackIndex: 0,
         shuffleEnabled: false,
-        mediaTracksRef,
+        trackOps: { setTracks: mockSetTracks, setOriginalTracks: mockSetOriginalTracks, setCurrentTrackIndex: mockSetCurrentTrackIndex, mediaTracksRef },
         handlePlaylistSelect: mockHandlePlaylistSelect,
         handleBackToLibrary: mockHandleBackToLibrary,
         activeDescriptor: mockActiveDescriptor,
         getDescriptor: mockGetDescriptor,
-        setTracks: mockSetTracks,
-        setOriginalTracks: mockSetOriginalTracks,
-        setCurrentTrackIndex: mockSetCurrentTrackIndex,
       })
     );
 
@@ -129,14 +120,11 @@ describe('useQueueManagement', () => {
         tracks: [],
         currentTrackIndex: 0,
         shuffleEnabled: false,
-        mediaTracksRef,
+        trackOps: { setTracks: mockSetTracks, setOriginalTracks: mockSetOriginalTracks, setCurrentTrackIndex: mockSetCurrentTrackIndex, mediaTracksRef },
         handlePlaylistSelect: mockHandlePlaylistSelect,
         handleBackToLibrary: mockHandleBackToLibrary,
         activeDescriptor: mockActiveDescriptor,
         getDescriptor: mockGetDescriptor,
-        setTracks: mockSetTracks,
-        setOriginalTracks: mockSetOriginalTracks,
-        setCurrentTrackIndex: mockSetCurrentTrackIndex,
       })
     );
 
@@ -163,14 +151,11 @@ describe('useQueueManagement', () => {
         tracks,
         currentTrackIndex: 0,
         shuffleEnabled: false,
-        mediaTracksRef,
+        trackOps: { setTracks: mockSetTracks, setOriginalTracks: mockSetOriginalTracks, setCurrentTrackIndex: mockSetCurrentTrackIndex, mediaTracksRef },
         handlePlaylistSelect: mockHandlePlaylistSelect,
         handleBackToLibrary: mockHandleBackToLibrary,
         activeDescriptor: mockActiveDescriptor,
         getDescriptor: mockGetDescriptor,
-        setTracks: mockSetTracks,
-        setOriginalTracks: mockSetOriginalTracks,
-        setCurrentTrackIndex: mockSetCurrentTrackIndex,
       })
     );
 
