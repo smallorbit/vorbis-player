@@ -92,6 +92,22 @@ describe('SpotifyPlaybackAdapter', () => {
     expect(spotifyPlayer.playTrack).not.toHaveBeenCalled();
   });
 
+  it('retries with force=true transfer on 403 error', async () => {
+    vi.useFakeTimers();
+    vi.mocked(spotifyPlayer.playTrack)
+      .mockRejectedValueOnce(new Error('Spotify API error: 403'))
+      .mockResolvedValue(undefined);
+
+    const playPromise = adapter.playTrack(makeSpotifyTrack());
+    await vi.runAllTimersAsync();
+    await playPromise;
+
+    // #given initial call + retry
+    const calls = vi.mocked(spotifyPlayer.transferPlaybackToDevice).mock.calls;
+    // #then the retry call must bypass the cache with force=true
+    expect(calls.some(c => c[0] === true)).toBe(true);
+  });
+
   it('ensures readiness before playing playlist context', async () => {
     const collection: CollectionRef = { provider: 'spotify', kind: 'playlist', id: 'playlist-1' };
 

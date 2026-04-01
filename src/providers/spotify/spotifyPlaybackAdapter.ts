@@ -115,7 +115,7 @@ export class SpotifyPlaybackAdapter implements PlaybackProvider {
         if (retryCount < MAX_PLAY_RETRIES) {
           const backoffMs = BASE_RETRY_BACKOFF_MS * Math.pow(2, retryCount);
           logSpotify('403 during play, retrying (%d/%d) after %dms', retryCount + 1, MAX_PLAY_RETRIES, backoffMs);
-          await spotifyPlayer.transferPlaybackToDevice();
+          await spotifyPlayer.transferPlaybackToDevice(true);
           await new Promise(resolve => setTimeout(resolve, backoffMs));
           await spotifyPlayer.ensureDeviceIsActive(3, 1000);
           return this.playWithRetry(uri, trackName, upcomingUris, retryCount + 1);

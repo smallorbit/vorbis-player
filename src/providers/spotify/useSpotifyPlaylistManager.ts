@@ -184,7 +184,7 @@ export const useSpotifyPlaylistManager = ({
 
             if (retryCount < maxRetries) {
               const backoffMs = 2000 * Math.pow(2, retryCount);
-              await spotifyPlayer.transferPlaybackToDevice();
+              await spotifyPlayer.transferPlaybackToDevice(true);
               await new Promise(resolve => setTimeout(resolve, backoffMs));
               await spotifyPlayer.ensureDeviceIsActive(3, 1000);
 
