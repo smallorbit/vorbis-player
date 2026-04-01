@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useMemo, useRef 
 import type { VisualizerStyle } from '@/types/visualizer';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { isProfilingEnabled } from '@/contexts/ProfilingContext';
+import { STORAGE_KEYS } from '@/constants/storage';
 
 interface VisualEffectsContextValue {
   // State
@@ -32,30 +33,30 @@ interface VisualEffectsContextValue {
 const VisualEffectsContext = createContext<VisualEffectsContextValue | null>(null);
 
 export function VisualEffectsProvider({ children }: { children: React.ReactNode }) {
-  const [visualEffectsEnabled, setVisualEffectsEnabled] = useLocalStorage<boolean>('vorbis-player-visual-effects-enabled', true);
-  const [perAlbumGlow, setPerAlbumGlow] = useLocalStorage<Record<string, { intensity: number; rate: number }>>('vorbis-player-per-album-glow', {});
-  const [backgroundVisualizerEnabled, setBackgroundVisualizerEnabled] = useLocalStorage<boolean>('vorbis-player-background-visualizer-enabled', true);
-  const [backgroundVisualizerStyle, setBackgroundVisualizerStyle] = useLocalStorage<VisualizerStyle>('vorbis-player-background-visualizer-style', 'fireflies');
-  const [backgroundVisualizerIntensity, setBackgroundVisualizerIntensity] = useLocalStorage<number>('vorbis-player-background-visualizer-intensity', 40);
-  const [accentColorBackgroundPreferred, setAccentColorBackgroundPreferred] = useLocalStorage<boolean>('vorbis-player-accent-color-background-preferred', false);
+  const [visualEffectsEnabled, setVisualEffectsEnabled] = useLocalStorage<boolean>(STORAGE_KEYS.VISUAL_EFFECTS_ENABLED, true);
+  const [perAlbumGlow, setPerAlbumGlow] = useLocalStorage<Record<string, { intensity: number; rate: number }>>(STORAGE_KEYS.PER_ALBUM_GLOW, {});
+  const [backgroundVisualizerEnabled, setBackgroundVisualizerEnabled] = useLocalStorage<boolean>(STORAGE_KEYS.BG_VISUALIZER_ENABLED, true);
+  const [backgroundVisualizerStyle, setBackgroundVisualizerStyle] = useLocalStorage<VisualizerStyle>(STORAGE_KEYS.BG_VISUALIZER_STYLE, 'fireflies');
+  const [backgroundVisualizerIntensity, setBackgroundVisualizerIntensity] = useLocalStorage<number>(STORAGE_KEYS.BG_VISUALIZER_INTENSITY, 40);
+  const [accentColorBackgroundPreferred, setAccentColorBackgroundPreferred] = useLocalStorage<boolean>(STORAGE_KEYS.ACCENT_COLOR_BG_PREFERRED, false);
   const [accentColorBackgroundEnabled, setAccentColorBackgroundEnabled] = useState<boolean>(false);
-  const [translucenceEnabled, setTranslucenceEnabled] = useLocalStorage<boolean>('vorbis-player-translucence-enabled', false);
-  const [translucenceOpacity, setTranslucenceOpacity] = useLocalStorage<number>('vorbis-player-translucence-opacity', 0.8);
-  const [zenModeEnabled, setZenModeEnabled] = useLocalStorage<boolean>('vorbis-player-zen-mode-enabled', false);
+  const [translucenceEnabled, setTranslucenceEnabled] = useLocalStorage<boolean>(STORAGE_KEYS.TRANSLUCENCE_ENABLED, false);
+  const [translucenceOpacity, setTranslucenceOpacity] = useLocalStorage<number>(STORAGE_KEYS.TRANSLUCENCE_OPACITY, 0.8);
+  const [zenModeEnabled, setZenModeEnabled] = useLocalStorage<boolean>(STORAGE_KEYS.ZEN_MODE_ENABLED, false);
   const [showVisualEffects, setShowVisualEffects] = useState<boolean>(false);
 
   // One-time migration: rename old visualizer style values; remove geometric
   useEffect(() => {
-    const raw = localStorage.getItem('vorbis-player-background-visualizer-style');
+    const raw = localStorage.getItem(STORAGE_KEYS.BG_VISUALIZER_STYLE);
     if (raw === 'particles') {
       setBackgroundVisualizerStyle('fireflies');
-      localStorage.setItem('vorbis-player-background-visualizer-style', 'fireflies');
+      localStorage.setItem(STORAGE_KEYS.BG_VISUALIZER_STYLE, 'fireflies');
     } else if (raw === 'trail') {
       setBackgroundVisualizerStyle('comet');
-      localStorage.setItem('vorbis-player-background-visualizer-style', 'comet');
+      localStorage.setItem(STORAGE_KEYS.BG_VISUALIZER_STYLE, 'comet');
     } else if (raw === 'geometric') {
       setBackgroundVisualizerStyle('fireflies');
-      localStorage.setItem('vorbis-player-background-visualizer-style', 'fireflies');
+      localStorage.setItem(STORAGE_KEYS.BG_VISUALIZER_STYLE, 'fireflies');
     }
   }, [setBackgroundVisualizerStyle]);
 
@@ -67,7 +68,7 @@ export function VisualEffectsProvider({ children }: { children: React.ReactNode 
     }
   }, [visualEffectsEnabled, accentColorBackgroundPreferred]);
 
-  useEffect(() => { localStorage.removeItem('vorbis-player-album-filters'); }, []);
+  useEffect(() => { localStorage.removeItem(STORAGE_KEYS.ALBUM_FILTERS); }, []);
 
   const value = useMemo<VisualEffectsContextValue>(() => ({
     visualEffectsEnabled,

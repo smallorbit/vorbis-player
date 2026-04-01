@@ -197,19 +197,6 @@ export class SpotifyPlaybackAdapter implements PlaybackProvider {
   }
 
   onQueueChanged(tracks: MediaTrack[], fromIndex: number): void {
-    const legacyTracks = tracks.map(t => ({
-      id: t.id,
-      name: t.name,
-      artists: t.artists ?? '',
-      album: t.album ?? '',
-      album_id: t.albumId ?? '',
-      duration_ms: t.durationMs ?? 0,
-      image: t.image ?? '',
-      uri: t.playbackRef.ref,
-      provider: t.provider,
-      track_number: t.trackNumber,
-    }));
-
-    this.pendingUpcomingUris = spotifyQueueSync.buildUpcomingUris(legacyTracks, fromIndex);
+    this.pendingUpcomingUris = spotifyQueueSync.buildUpcomingUris(tracks, fromIndex);
   }
 }

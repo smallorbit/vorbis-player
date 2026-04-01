@@ -25,6 +25,7 @@ import { useColorContext } from '@/contexts/ColorContext';
 import { useVisualEffectsContext } from '@/contexts/VisualEffectsContext';
 import { useProfilingContext } from '@/contexts/ProfilingContext';
 import { useVisualizerDebug } from '@/contexts/VisualizerDebugContext';
+import { STORAGE_KEYS } from '@/constants/storage';
 import LibraryDrawer from './LibraryDrawer';
 import AlbumArtQuickSwapBack from './AlbumArtQuickSwapBack';
 import type { AddToQueueResult, MediaTrack, ProviderId } from '@/types/domain';
@@ -514,29 +515,29 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
 
   // --- Color handlers (replaces useCustomAccentColors) ---
   const handleCustomAccentColor = useCallback((color: string) => {
-    if (currentTrack?.album_id) {
+    if (currentTrack?.albumId) {
       if (color === '') {
-        handleRemoveAccentColorOverride(currentTrack.album_id);
-        handleRemoveCustomAccentColor(currentTrack.album_id);
+        handleRemoveAccentColorOverride(currentTrack.albumId);
+        handleRemoveCustomAccentColor(currentTrack.albumId);
       } else {
-        handleSetAccentColorOverride(currentTrack.album_id, color);
-        handleSetCustomAccentColor(currentTrack.album_id, color);
+        handleSetAccentColorOverride(currentTrack.albumId, color);
+        handleSetCustomAccentColor(currentTrack.albumId, color);
         setAccentColor(color);
       }
     }
-  }, [currentTrack?.album_id, handleSetAccentColorOverride, handleRemoveAccentColorOverride, handleSetCustomAccentColor, handleRemoveCustomAccentColor, setAccentColor]);
+  }, [currentTrack?.albumId, handleSetAccentColorOverride, handleRemoveAccentColorOverride, handleSetCustomAccentColor, handleRemoveCustomAccentColor, setAccentColor]);
 
   const handleAccentColorChange = useCallback((color: string) => {
-    if (color === 'RESET_TO_DEFAULT' && currentTrack?.album_id) {
-      handleResetAccentColorOverride(currentTrack.album_id);
+    if (color === 'RESET_TO_DEFAULT' && currentTrack?.albumId) {
+      handleResetAccentColorOverride(currentTrack.albumId);
       // useAccentColor effect in usePlayerLogic will re-extract from artwork automatically
       return;
     }
-    if (currentTrack?.album_id) {
-      handleSetAccentColorOverride(currentTrack.album_id, color);
+    if (currentTrack?.albumId) {
+      handleSetAccentColorOverride(currentTrack.albumId, color);
     }
     setAccentColor(color);
-  }, [currentTrack?.album_id, handleSetAccentColorOverride, handleResetAccentColorOverride, setAccentColor]);
+  }, [currentTrack?.albumId, handleSetAccentColorOverride, handleResetAccentColorOverride, setAccentColor]);
 
   // --- Queue visibility ---
   const handleShowQueue = useCallback(() => {
@@ -579,8 +580,8 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({ isPlaying, sho
       await clearAllPins();
     }
     if (options.clearAccentColors) {
-      localStorage.removeItem('vorbis-player-accent-color-overrides');
-      localStorage.removeItem('vorbis-player-custom-accent-colors');
+      localStorage.removeItem(STORAGE_KEYS.ACCENT_COLOR_OVERRIDES);
+      localStorage.removeItem(STORAGE_KEYS.CUSTOM_ACCENT_COLORS);
     }
     if (options.clearPins || options.clearAccentColors) {
       const { clearPreferencesSyncTimestamp, getPreferencesSync } =

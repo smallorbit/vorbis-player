@@ -1,3 +1,4 @@
+import React from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { AuthExpiredError, UnavailableTrackError } from '@/providers/errors';
@@ -53,8 +54,8 @@ describe('useProviderPlayback', () => {
     makeMediaTrack({ id: 't2', name: 'Track 2', playbackRef: { provider: 'spotify' as ProviderId, ref: 'spotify:track:t2' } }),
     makeMediaTrack({ id: 't3', name: 'Track 3', playbackRef: { provider: 'spotify' as ProviderId, ref: 'spotify:track:t3' } }),
   ];
-  const mediaTracksRef = { current: mediaTracks };
   const setCurrentTrackIndex = vi.fn();
+  const mediaTracksRef = { current: mediaTracks };
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -178,10 +179,9 @@ describe('useProviderPlayback', () => {
       makeMediaTrack({ id: 'd1', provider: 'dropbox' as ProviderId, playbackRef: { provider: 'dropbox' as ProviderId, ref: '/path/to/file.mp3' } }),
       makeMediaTrack({ id: 's1', provider: 'spotify' as ProviderId, playbackRef: { provider: 'spotify' as ProviderId, ref: 'spotify:track:s1' } }),
     ];
-    const mixedRef = { current: mixedTracks };
 
     const { result } = renderHook(() =>
-      useProviderPlayback({ setCurrentTrackIndex, mediaTracksRef: mixedRef })
+      useProviderPlayback({ setCurrentTrackIndex, mediaTracksRef: { current: mixedTracks } as React.MutableRefObject<MediaTrack[]> })
     );
 
     // #when — play dropbox track first

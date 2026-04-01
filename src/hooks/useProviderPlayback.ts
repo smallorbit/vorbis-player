@@ -5,10 +5,10 @@ import { providerRegistry } from '@/providers/registry';
 import { AuthExpiredError, UnavailableTrackError } from '@/providers/errors';
 import { logQueue } from '@/lib/debugLog';
 
-export interface UseProviderPlaybackProps {
+interface UseProviderPlaybackProps {
   setCurrentTrackIndex: (index: number) => void;
   activeDescriptor?: ProviderDescriptor | null;
-  mediaTracksRef?: React.MutableRefObject<MediaTrack[]>;
+  mediaTracksRef: React.MutableRefObject<MediaTrack[]>;
   onAuthExpired?: (providerId: ProviderId) => void;
 }
 
@@ -36,8 +36,8 @@ export const useProviderPlayback = ({
   }, []);
 
   const playTrack = useCallback(async (index: number, skipOnError = false) => {
-    const mediaTracks = mediaTracksRef?.current ?? [];
-    const mediaTrack = mediaTracks[index];
+    const tracks = mediaTracksRef.current;
+    const mediaTrack = tracks[index];
     const trackProvider = resolveTrackProvider(mediaTrack);
 
     logQueue(
@@ -45,7 +45,7 @@ export const useProviderPlayback = ({
       index,
       trackProvider ?? 'NONE',
       mediaTrack ? `"${mediaTrack.name}" (${mediaTrack.id.slice(0, 8)})` : 'NO_MEDIA_TRACK',
-      mediaTracks.length,
+      tracks.length,
       String(skipOnError),
     );
 
@@ -55,8 +55,8 @@ export const useProviderPlayback = ({
     }
 
     if (!mediaTrack) {
-      if (mediaTracks.length > 0) {
-        console.warn(`[Playback] playTrack(${index}) — index out of bounds! mediaTracksRef has ${mediaTracks.length} items`);
+      if (tracks.length > 0) {
+        console.warn(`[Playback] playTrack(${index}) — index out of bounds! mediaTracksRef has ${tracks.length} items`);
       }
       console.error(`[Playback] playTrack(${index}) — no track at index`);
       return;
@@ -75,8 +75,8 @@ export const useProviderPlayback = ({
       await descriptor.playback.playTrack(mediaTrack);
       setCurrentTrackIndex(index);
 
-      const nextIndex = (index + 1) % mediaTracks.length;
-      const nextTrack = mediaTracks[nextIndex];
+      const nextIndex = (index + 1) % tracks.length;
+      const nextTrack = tracks[nextIndex];
       if (nextTrack && nextIndex !== index) {
         const nextDescriptor = providerRegistry.get(nextTrack.provider);
         nextDescriptor?.playback.prepareTrack?.(nextTrack);
@@ -89,18 +89,18 @@ export const useProviderPlayback = ({
 
       if (error instanceof UnavailableTrackError) {
         console.warn(`[${trackProvider}] ${error.message}`);
-        if (skipOnError && index < mediaTracks.length - 1) {
+        if (skipOnError && index < tracks.length - 1) {
           setTimeout(() => playTrack(index + 1, skipOnError), 500);
         }
         return;
       }
 
       console.error(`[${trackProvider}] Failed to play track:`, error);
-      if (skipOnError && index < mediaTracks.length - 1) {
+      if (skipOnError && index < tracks.length - 1) {
         setTimeout(() => playTrack(index + 1, skipOnError), 500);
       }
     }
-  }, [setCurrentTrackIndex, mediaTracksRef, pausePreviousProvider, resolveTrackProvider, onAuthExpired]);
+  }, [setCurrentTrackIndex, pausePreviousProvider, resolveTrackProvider, onAuthExpired]);
 
   const resumePlayback = useCallback(async () => {
     const currentProvider = currentPlaybackProviderRef.current;

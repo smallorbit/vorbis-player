@@ -1,21 +1,22 @@
 import React, { createContext, useContext, useState, useMemo, useCallback, useEffect, useRef } from 'react';
-import type { Track } from '@/services/spotify';
+import type { MediaTrack } from '@/types/domain';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { isProfilingEnabled } from '@/contexts/ProfilingContext';
 import { shuffleArray } from '@/utils/shuffleArray';
 import { logQueue } from '@/lib/debugLog';
+import { STORAGE_KEYS } from '@/constants/storage';
 
 // --- TrackListContext ---
 
 interface TrackListContextValue {
-  tracks: Track[];
-  originalTracks: Track[];
+  tracks: MediaTrack[];
+  originalTracks: MediaTrack[];
   isLoading: boolean;
   error: string | null;
   shuffleEnabled: boolean;
   selectedPlaylistId: string | null;
-  setTracks: (tracks: Track[] | ((prev: Track[]) => Track[])) => void;
-  setOriginalTracks: (tracks: Track[] | ((prev: Track[]) => Track[])) => void;
+  setTracks: (tracks: MediaTrack[] | ((prev: MediaTrack[]) => MediaTrack[])) => void;
+  setOriginalTracks: (tracks: MediaTrack[] | ((prev: MediaTrack[]) => MediaTrack[])) => void;
   setIsLoading: (loading: boolean | ((prev: boolean) => boolean)) => void;
   setError: (error: string | null | ((prev: string | null) => string | null)) => void;
   setShuffleEnabled: (enabled: boolean) => void;
@@ -26,7 +27,7 @@ interface TrackListContextValue {
 // --- CurrentTrackContext ---
 
 interface CurrentTrackContextValue {
-  currentTrack: Track | null;
+  currentTrack: MediaTrack | null;
   currentTrackIndex: number;
   setCurrentTrackIndex: (index: number | ((prev: number) => number)) => void;
   showQueue: boolean;
@@ -37,12 +38,12 @@ const TrackListContext = createContext<TrackListContextValue | null>(null);
 const CurrentTrackContext = createContext<CurrentTrackContextValue | null>(null);
 
 export function TrackProvider({ children }: { children: React.ReactNode }) {
-  const [tracks, setTracks] = useState<Track[]>([]);
-  const [originalTracks, setOriginalTracks] = useState<Track[]>([]);
+  const [tracks, setTracks] = useState<MediaTrack[]>([]);
+  const [originalTracks, setOriginalTracks] = useState<MediaTrack[]>([]);
   const [currentTrackIndex, setCurrentTrackIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [shuffleEnabled, setShuffleEnabled] = useLocalStorage('vorbis-player-shuffle-enabled', false);
+  const [shuffleEnabled, setShuffleEnabled] = useLocalStorage(STORAGE_KEYS.SHUFFLE_ENABLED, false);
   const [selectedPlaylistId, setSelectedPlaylistId] = useState<string | null>(null);
   const [showQueue, setShowQueue] = useState(false);
 
@@ -150,11 +151,4 @@ export function useCurrentTrackContext(): CurrentTrackContextValue {
   const ctx = useContext(CurrentTrackContext);
   if (!ctx) throw new Error('useCurrentTrackContext must be used within TrackProvider');
   return ctx;
-}
-
-/** @deprecated Use useTrackListContext or useCurrentTrackContext instead */
-export function useTrackContext() {
-  const list = useTrackListContext();
-  const current = useCurrentTrackContext();
-  return { ...list, ...current };
 }

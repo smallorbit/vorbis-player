@@ -12,10 +12,10 @@ import {
   type VisualizerDebugConfig,
   type VisualizerDebugOverrides,
 } from '@/constants/visualizerDebugConfig';
+import { STORAGE_KEYS } from '@/constants/storage';
 
 const DEBUG_PARAM = 'debug';
 const DEBUG_VALUE = 'visualizer';
-const STORAGE_KEY = 'vorbis-player-visualizer-debug-overrides';
 
 function isDebugModeEnabled(): boolean {
   if (typeof window === 'undefined') return false;
@@ -25,7 +25,7 @@ function isDebugModeEnabled(): boolean {
 
 function readStoredOverrides(): VisualizerDebugOverrides | null {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(STORAGE_KEYS.VISUALIZER_DEBUG_OVERRIDES);
     if (!raw) return null;
     const parsed = JSON.parse(raw) as VisualizerDebugOverrides;
     return parsed;
@@ -37,10 +37,10 @@ function readStoredOverrides(): VisualizerDebugOverrides | null {
 function writeStoredOverrides(overrides: VisualizerDebugOverrides | null): void {
   try {
     if (overrides == null) {
-      localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem(STORAGE_KEYS.VISUALIZER_DEBUG_OVERRIDES);
       return;
     }
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(overrides));
+    localStorage.setItem(STORAGE_KEYS.VISUALIZER_DEBUG_OVERRIDES, JSON.stringify(overrides));
   } catch {
     // ignore
   }

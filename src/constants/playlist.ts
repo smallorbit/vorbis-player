@@ -7,6 +7,9 @@ export const LIKED_SONGS_ID = 'liked-songs';
 /** Display name for the Liked Songs collection */
 export const LIKED_SONGS_NAME = 'Liked Songs';
 
+/** Special playlist ID representing the radio queue */
+export const RADIO_PLAYLIST_ID = 'radio';
+
 /** Playlist IDs that stay in catalog order and are not reordered by library sort (Liked Songs row, Dropbox "All Music" uses id ''). */
 export const LIBRARY_PLAYLIST_SORT_ANCHOR_IDS: ReadonlySet<string> = new Set([LIKED_SONGS_ID, '']);
 
@@ -29,7 +32,7 @@ export function toAlbumPlaylistId(albumId: string): string {
 }
 
 /** Prefix used when encoding a saved Dropbox playlist path as a playlist selection ID */
-export const SAVED_PLAYLIST_PREFIX = 'dbplaylist:';
+const SAVED_PLAYLIST_PREFIX = 'dbplaylist:';
 
 /** Check whether a playlist selection ID represents a saved Dropbox playlist */
 export function isSavedPlaylistId(playlistId: string): boolean {

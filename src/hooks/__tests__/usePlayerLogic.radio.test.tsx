@@ -11,6 +11,7 @@ import { TrackProvider } from '@/contexts/TrackContext';
 import { VisualEffectsProvider } from '@/contexts/VisualEffectsContext';
 import { ColorProvider } from '@/contexts/ColorContext';
 import { ProviderProvider } from '@/contexts/ProviderContext';
+import { RADIO_PLAYLIST_ID } from '@/constants/playlist';
 import { makeTrack } from '@/test/fixtures';
 import type { MediaTrack } from '@/types/domain';
 
@@ -20,10 +21,9 @@ vi.mock('@/hooks/usePlaylistManager', () => ({
   usePlaylistManager: vi.fn(() => ({ handlePlaylistSelect: vi.fn() })),
 }));
 
-vi.mock('@/hooks/useSpotifyPlayback', () => ({
-  useSpotifyPlayback: vi.fn(() => ({
+vi.mock('@/hooks/useProviderPlayback', () => ({
+  useProviderPlayback: vi.fn(() => ({
     playTrack: playTrackSpy,
-    resumePlayback: vi.fn(),
     currentPlaybackProviderRef: { current: 'spotify' as const },
   })),
 }));
@@ -110,10 +110,6 @@ vi.mock('@/providers/registry', () => ({
   },
 }));
 
-vi.mock('@/services/spotifyResolver', () => ({
-  resolveViaSpotify: vi.fn().mockResolvedValue([]),
-}));
-
 function makeMediaTrack(overrides: Partial<MediaTrack> & { name: string; artists: string }): MediaTrack {
   return {
     id: `mt-${overrides.name}-${overrides.artists}`.toLowerCase().replace(/\s+/g, '-'),
@@ -174,7 +170,7 @@ describe('usePlayerLogic — radio start', () => {
       }),
     });
 
-    const seedTrack = makeTrack({ id: 'seed-1', name: 'Creep', artists: 'Radiohead', uri: 'spotify:track:creep' });
+    const seedTrack = makeTrack({ id: 'seed-1', name: 'Creep', artists: 'Radiohead', playbackRef: { provider: 'spotify', ref: 'spotify:track:creep' } });
     const { result } = renderHook(() => useTrackContextAndPlayerLogic(), { wrapper: AllProviders });
 
     act(() => {
@@ -190,7 +186,7 @@ describe('usePlayerLogic — radio start', () => {
   });
 
   it('sets queue with current track at index 0 and generated tracks after', async () => {
-    const seedTrack = makeTrack({ id: 'seed-1', name: 'Creep', artists: 'Radiohead', uri: 'spotify:track:creep' });
+    const seedTrack = makeTrack({ id: 'seed-1', name: 'Creep', artists: 'Radiohead', playbackRef: { provider: 'spotify', ref: 'spotify:track:creep' } });
     const generatedA = makeMediaTrack({ name: 'Karma Police', artists: 'Radiohead' });
     const generatedB = makeMediaTrack({ name: 'No Surprises', artists: 'Radiohead' });
 
@@ -223,11 +219,11 @@ describe('usePlayerLogic — radio start', () => {
     const generatedNames = tracks.slice(1).map((t) => t.name);
     expect(generatedNames).toContain('Karma Police');
     expect(generatedNames).toContain('No Surprises');
-    expect(result.current.state.selectedPlaylistId).toBe('radio');
+    expect(result.current.state.selectedPlaylistId).toBe(RADIO_PLAYLIST_ID);
   });
 
   it('deduplicates seed track from generated queue when it appears in recommendations', async () => {
-    const seedTrack = makeTrack({ id: 'seed-1', name: 'Creep', artists: 'Radiohead', uri: 'spotify:track:creep' });
+    const seedTrack = makeTrack({ id: 'seed-1', name: 'Creep', artists: 'Radiohead', playbackRef: { provider: 'spotify', ref: 'spotify:track:creep' } });
     const generatedIncludingSeed = makeMediaTrack({ id: 'seed-1', name: 'Creep', artists: 'Radiohead' });
     const generatedB = makeMediaTrack({ name: 'No Surprises', artists: 'Radiohead' });
 
@@ -259,7 +255,7 @@ describe('usePlayerLogic — radio start', () => {
   });
 
   it('deduplicates seed by normalized artist+title when recommendation has different id', async () => {
-    const seedTrack = makeTrack({ id: 'seed-1', name: 'Creep', artists: 'Radiohead', uri: 'spotify:track:creep' });
+    const seedTrack = makeTrack({ id: 'seed-1', name: 'Creep', artists: 'Radiohead', playbackRef: { provider: 'spotify', ref: 'spotify:track:creep' } });
     const seedDuplicate = makeMediaTrack({ id: 'dup-1', name: 'Creep', artists: 'Radiohead' });
     const generatedB = makeMediaTrack({ name: 'No Surprises', artists: 'Radiohead' });
 
@@ -291,7 +287,7 @@ describe('usePlayerLogic — radio start', () => {
   });
 
   it('uses currentTrack as fallback seed when mediaTracksRef is empty (Spotify flow)', async () => {
-    const seedTrack = makeTrack({ id: 'seed-1', name: 'Creep', artists: 'Radiohead', uri: 'spotify:track:creep' });
+    const seedTrack = makeTrack({ id: 'seed-1', name: 'Creep', artists: 'Radiohead', playbackRef: { provider: 'spotify', ref: 'spotify:track:creep' } });
     const generatedA = makeMediaTrack({ name: 'Karma Police', artists: 'Radiohead' });
 
     useRadioMock.mockReturnValue({
@@ -309,7 +305,6 @@ describe('usePlayerLogic — radio start', () => {
     act(() => {
       result.current.setTracks([seedTrack]);
       result.current.setCurrentTrackIndex(0);
-      result.current.mediaTracksRef.current = [];
     });
 
     await act(async () => {

@@ -35,7 +35,7 @@ const ALBUM_SORT_LABELS: Record<AlbumSortOption, string> = {
   'release-oldest': 'Release (Oldest)',
 };
 
-export interface LibraryDrawerSortChipProps {
+interface LibraryDrawerSortChipProps {
   viewMode: 'playlists' | 'albums';
   playlistSort: PlaylistSortOption;
   albumSort: AlbumSortOption;

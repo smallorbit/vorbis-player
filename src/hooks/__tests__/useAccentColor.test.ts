@@ -27,7 +27,7 @@ describe('useAccentColor', () => {
   });
 
   it('uses override from accentColorOverrides when album_id matches', () => {
-    const track = makeTrack({ album_id: 'album-1', image: 'img.jpg' });
+    const track = makeTrack({ albumId: 'album-1', image: 'img.jpg' });
     const overrides = { 'album-1': '#00ff00' };
 
     renderHook(() =>
@@ -39,7 +39,7 @@ describe('useAccentColor', () => {
   });
 
   it('calls extractDominantColor when no override exists', async () => {
-    const track = makeTrack({ album_id: 'album-2', image: 'img.jpg' });
+    const track = makeTrack({ albumId: 'album-2', image: 'img.jpg' });
 
     renderHook(() =>
       useAccentColor(track, {}, setAccentColor, setAccentColorOverrides)
@@ -53,7 +53,7 @@ describe('useAccentColor', () => {
 
   it('falls back to theme color on extraction failure', async () => {
     vi.mocked(extractDominantColor).mockResolvedValue(null);
-    const track = makeTrack({ album_id: 'album-3', image: 'img.jpg' });
+    const track = makeTrack({ albumId: 'album-3', image: 'img.jpg' });
 
     renderHook(() =>
       useAccentColor(track, {}, setAccentColor, setAccentColorOverrides)
@@ -65,7 +65,7 @@ describe('useAccentColor', () => {
   });
 
   it('falls back to theme color when track has no image', () => {
-    const track = makeTrack({ album_id: 'album-4', image: undefined });
+    const track = makeTrack({ albumId: 'album-4', image: undefined });
 
     renderHook(() =>
       useAccentColor(track, {}, setAccentColor, setAccentColorOverrides)
@@ -84,7 +84,7 @@ describe('useAccentColor', () => {
   });
 
   it('handleAccentColorChange with auto removes override and re-extracts', async () => {
-    const track = makeTrack({ album_id: 'album-5', image: 'img.jpg' });
+    const track = makeTrack({ albumId: 'album-5', image: 'img.jpg' });
     const overrides = { 'album-5': '#custom' };
 
     const { result } = renderHook(() =>
@@ -101,7 +101,7 @@ describe('useAccentColor', () => {
   });
 
   it('handleAccentColorChange with hex saves to overrides', () => {
-    const track = makeTrack({ album_id: 'album-6', image: 'img.jpg' });
+    const track = makeTrack({ albumId: 'album-6', image: 'img.jpg' });
 
     const { result } = renderHook(() =>
       useAccentColor(track, {}, setAccentColor, setAccentColorOverrides)
@@ -115,7 +115,7 @@ describe('useAccentColor', () => {
 
   it('falls back to theme color on extraction rejection', async () => {
     vi.mocked(extractDominantColor).mockRejectedValue(new Error('CORS'));
-    const track = makeTrack({ album_id: 'album-7', image: 'img.jpg' });
+    const track = makeTrack({ albumId: 'album-7', image: 'img.jpg' });
 
     renderHook(() =>
       useAccentColor(track, {}, setAccentColor, setAccentColorOverrides)

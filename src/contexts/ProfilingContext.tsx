@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useCallback, useMemo, useRef, useEffect } from 'react';
+import { STORAGE_KEYS } from '@/constants/storage';
 
 interface RenderStats {
   renderCount: number; mountCount: number; updateCount: number;
@@ -32,7 +33,6 @@ interface ProfilingContextValue {
   enabled: boolean; collector: MetricsCollector | null; toggle: () => void;
 }
 
-const STORAGE_KEY = 'vorbis-player-profiling';
 const HAS_WINDOW = typeof window !== 'undefined';
 
 class MetricsCollector {
@@ -177,7 +177,7 @@ const ProfilingContext = createContext<ProfilingContextValue | null>(null);
 function getInitialEnabled(): boolean {
   if (!HAS_WINDOW) return false;
   if (new URLSearchParams(window.location.search).get('profile') === 'true') return true;
-  return localStorage.getItem(STORAGE_KEY) === 'true';
+  return localStorage.getItem(STORAGE_KEYS.PROFILING) === 'true';
 }
 
 export function ProfilingProvider({ children }: { children: React.ReactNode }) {
@@ -187,7 +187,7 @@ export function ProfilingProvider({ children }: { children: React.ReactNode }) {
   const toggle = useCallback(() => {
     setEnabled((prev) => {
       const next = !prev;
-      if (HAS_WINDOW) localStorage.setItem(STORAGE_KEY, String(next));
+      if (HAS_WINDOW) localStorage.setItem(STORAGE_KEYS.PROFILING, String(next));
       if (next && !collectorRef.current) collectorRef.current = new MetricsCollector();
       if (!next && collectorRef.current) collectorRef.current.destroy();
       return next;
@@ -230,5 +230,5 @@ export function useProfilingContext(): ProfilingContextValue {
 export function isProfilingEnabled(): boolean {
   if (!HAS_WINDOW) return false;
   if (new URLSearchParams(window.location.search).get('profile') === 'true') return true;
-  return localStorage.getItem(STORAGE_KEY) === 'true';
+  return localStorage.getItem(STORAGE_KEYS.PROFILING) === 'true';
 }

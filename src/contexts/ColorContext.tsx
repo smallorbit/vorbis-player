@@ -4,6 +4,7 @@ import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { isProfilingEnabled } from '@/contexts/ProfilingContext';
 import { getContrastColor } from '@/utils/colorUtils';
 import { getPreferencesSync } from '@/providers/dropbox/dropboxPreferencesSync';
+import { STORAGE_KEYS } from '@/constants/storage';
 
 interface ColorContextValue {
   accentColor: string;
@@ -23,14 +24,14 @@ const ColorContext = createContext<ColorContextValue | null>(null);
 export function ColorProvider({ children }: { children: React.ReactNode }) {
   const [accentColor, setAccentColor] = useState<string>(theme.colors.accent);
   const [accentColorOverrides, setAccentColorOverrides] = useLocalStorage<Record<string, string>>(
-    'vorbis-player-accent-color-overrides',
+    STORAGE_KEYS.ACCENT_COLOR_OVERRIDES,
     {}
   );
 
   // Separate storage for colors picked via the eyedropper — only updated by the eyedropper,
   // not by palette swatch selection. This prevents palette clicks from overwriting the custom swatch.
   const [customAccentColors, setCustomAccentColors] = useLocalStorage<Record<string, string>>(
-    'vorbis-player-custom-accent-colors',
+    STORAGE_KEYS.CUSTOM_ACCENT_COLORS,
     {}
   );
 

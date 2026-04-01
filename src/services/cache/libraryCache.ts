@@ -13,6 +13,7 @@ import type {
   CachedTrackList,
   LibraryCacheMeta,
 } from './cacheTypes';
+import { STORAGE_KEYS } from '@/constants/storage';
 
 const DB_NAME = 'vorbis-player-library';
 const DB_VERSION = 1;
@@ -21,9 +22,6 @@ const STORE_PLAYLISTS = 'playlists';
 const STORE_ALBUMS = 'albums';
 const STORE_TRACK_LISTS = 'trackLists';
 const STORE_META = 'meta';
-
-const LOCALSTORAGE_PLAYLISTS_KEY = 'vorbis-player-cache-playlists';
-const LOCALSTORAGE_ALBUMS_KEY = 'vorbis-player-cache-albums';
 
 // =============================================================================
 // In-Memory Fallback
@@ -403,8 +401,8 @@ interface LocalStorageCacheEntry<T> {
 
 async function migrateFromLocalStorage(): Promise<void> {
   try {
-    const playlistsRaw = localStorage.getItem(LOCALSTORAGE_PLAYLISTS_KEY);
-    const albumsRaw = localStorage.getItem(LOCALSTORAGE_ALBUMS_KEY);
+    const playlistsRaw = localStorage.getItem(STORAGE_KEYS.CACHE_PLAYLISTS);
+    const albumsRaw = localStorage.getItem(STORAGE_KEYS.CACHE_ALBUMS);
 
     if (!playlistsRaw && !albumsRaw) return;
 
@@ -422,7 +420,7 @@ async function migrateFromLocalStorage(): Promise<void> {
           totalCount: entry.data.length,
           snapshotIds,
         } satisfies LibraryCacheMeta);
-        localStorage.removeItem(LOCALSTORAGE_PLAYLISTS_KEY);
+        localStorage.removeItem(STORAGE_KEYS.CACHE_PLAYLISTS);
       }
     }
 
@@ -440,7 +438,7 @@ async function migrateFromLocalStorage(): Promise<void> {
           totalCount: entry.data.length,
           latestAddedAt: latestAddedAt || undefined,
         } satisfies LibraryCacheMeta);
-        localStorage.removeItem(LOCALSTORAGE_ALBUMS_KEY);
+        localStorage.removeItem(STORAGE_KEYS.CACHE_ALBUMS);
       }
     }
   } catch (err) {

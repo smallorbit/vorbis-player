@@ -4,7 +4,7 @@
  * Extracts title, artist, album, and embedded cover art (APIC/PIC frames).
  */
 
-export interface AudioMetadata {
+interface AudioMetadata {
   title?: string;
   artist?: string;
   album?: string;

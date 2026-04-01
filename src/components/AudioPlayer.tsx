@@ -19,6 +19,7 @@ import { PlayerSizingProvider } from '@/contexts/PlayerSizingContext';
 import { useTrackListContext, useCurrentTrackContext } from '@/contexts/TrackContext';
 import { useProviderContext } from '@/contexts/ProviderContext';
 import { toAlbumPlaylistId } from '@/constants/playlist';
+import { STORAGE_KEYS } from '@/constants/storage';
 import type { ClearCacheOptions } from '@/components/VisualEffectsMenu';
 
 const VisualEffectsMenu = lazy(() => import('./VisualEffectsMenu/index'));
@@ -61,12 +62,16 @@ const AudioPlayerComponent = () => {
   }, [resolveDisplayProvider]);
 
   const handleAlbumPlay = useCallback((albumId: string) => {
-    handlers.handlePlaylistSelect(
+    handlers.loadCollection(
       toAlbumPlaylistId(albumId),
-      undefined,
       currentTrack?.provider,
     );
   }, [handlers, currentTrack?.provider]);
+
+  const handlePlaylistSelect = useCallback(
+    (id: string, _name?: string, provider?: import('@/types/domain').ProviderId) => handlers.loadCollection(id, provider),
+    [handlers]
+  );
 
   const playbackHandlers = useMemo(() => ({
     onPlay: handlers.handlePlay,
@@ -76,14 +81,14 @@ const AudioPlayerComponent = () => {
     onTrackSelect: handlers.playTrack,
     onOpenLibraryDrawer: handlers.handleOpenLibraryDrawer,
     onCloseLibraryDrawer: handlers.handleCloseLibraryDrawer,
-    onPlaylistSelect: handlers.handlePlaylistSelect,
+    onPlaylistSelect: handlePlaylistSelect,
     onAddToQueue: handlers.handleAddToQueue,
     onAlbumPlay: handleAlbumPlay,
     onBackToLibrary: handlers.handleBackToLibrary,
     onStartRadio: handlers.handleStartRadio,
     onRemoveFromQueue: handlers.handleRemoveFromQueue,
     onReorderQueue: handlers.handleReorderQueue,
-  }), [handlers, handleAlbumPlay]);
+  }), [handlers, handleAlbumPlay, handlePlaylistSelect]);
 
   const { chosenProviderId, activeDescriptor, connectedProviderIds, fallthroughNotification, dismissFallthroughNotification } = useProviderContext();
   // Setup is needed when no provider has been chosen yet and none are connected,
@@ -101,7 +106,7 @@ const AudioPlayerComponent = () => {
     if (!playlistParam) return;
     autoSelectFired.current = true;
     window.history.replaceState({}, '', '/');
-    handlers.handlePlaylistSelect(playlistParam);
+    handlers.loadCollection(playlistParam);
   }, [needsSetup, selectedPlaylistId, handlers]);
 
   const isMainPlayerActive = !state.isLoading && !state.error && selectedPlaylistId !== null && tracks.length > 0;
@@ -122,8 +127,8 @@ const AudioPlayerComponent = () => {
       await clearAllPins();
     }
     if (options.clearAccentColors) {
-      localStorage.removeItem('vorbis-player-accent-color-overrides');
-      localStorage.removeItem('vorbis-player-custom-accent-colors');
+      localStorage.removeItem(STORAGE_KEYS.ACCENT_COLOR_OVERRIDES);
+      localStorage.removeItem(STORAGE_KEYS.CUSTOM_ACCENT_COLORS);
     }
     if (options.clearPins || options.clearAccentColors) {
       const { clearPreferencesSyncTimestamp, getPreferencesSync } =
@@ -151,7 +156,7 @@ const AudioPlayerComponent = () => {
             error={state.error}
             selectedPlaylistId={selectedPlaylistId}
             tracks={tracks}
-            onPlaylistSelect={handlers.handlePlaylistSelect}
+            onPlaylistSelect={handlePlaylistSelect}
           />
         </ProfiledComponent>
       );
@@ -231,7 +236,7 @@ const AudioPlayerComponent = () => {
               <LibraryDrawer
                 isOpen={state.showLibraryDrawer}
                 onClose={handlers.handleCloseLibraryDrawer}
-                onPlaylistSelect={handlers.handlePlaylistSelect}
+                onPlaylistSelect={handlePlaylistSelect}
                 onAddToQueue={handlers.handleAddToQueue}
               />
             </Suspense>

@@ -9,15 +9,14 @@ import '@/providers/spotify/spotifyProvider';
 import '@/providers/dropbox/dropboxProvider'; // conditionally registers if VITE_DROPBOX_CLIENT_ID is set
 import { AUTH_STATE_CHANGED_EVENT } from '@/hooks/usePopupAuth';
 import { DROPBOX_AUTH_ERROR_EVENT } from '@/providers/dropbox/dropboxAuthAdapter';
+import { AUTH_COMPLETE_EVENT } from '@/constants/events';
+import { STORAGE_KEYS } from '@/constants/storage';
 
-export type ProviderSwitchInterceptor = (
+type ProviderSwitchInterceptor = (
   newProviderId: ProviderId,
   proceed: () => void,
   cancel: () => void,
 ) => void;
-
-const ACTIVE_PROVIDER_KEY = 'vorbis-player-active-provider';
-const ENABLED_PROVIDERS_KEY = 'vorbis-player-enabled-providers';
 
 interface ProviderContextValue {
   /** Raw stored value — null means never chosen (show picker). */
@@ -65,7 +64,7 @@ if (import.meta.hot?.data) {
 
 export function ProviderProvider({ children }: { children: React.ReactNode }) {
   const [storedProviderId, setStoredProviderId] = useLocalStorage<ProviderId | null>(
-    ACTIVE_PROVIDER_KEY,
+    STORAGE_KEYS.ACTIVE_PROVIDER,
     null,
   );
 
@@ -85,7 +84,7 @@ export function ProviderProvider({ children }: { children: React.ReactNode }) {
 
     const handleMessage = (event: MessageEvent) => {
       if (event.origin !== window.location.origin) return;
-      if (event.data?.type !== 'vorbis-auth-complete') return;
+      if (event.data?.type !== AUTH_COMPLETE_EVENT) return;
       bumpRevision();
     };
     window.addEventListener('message', handleMessage);
@@ -99,7 +98,7 @@ export function ProviderProvider({ children }: { children: React.ReactNode }) {
 
   // ── Enabled providers (multi-toggle) ───────────────────────────────────
   const [storedEnabledIds, setStoredEnabledIds] = useLocalStorage<ProviderId[]>(
-    ENABLED_PROVIDERS_KEY,
+    STORAGE_KEYS.ENABLED_PROVIDERS,
     [],
   );
 

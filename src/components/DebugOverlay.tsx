@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { STORAGE_KEYS } from '@/constants/storage';
 
 interface LogEntry {
   time: string;
@@ -7,18 +8,17 @@ interface LogEntry {
 }
 
 const MAX_LOGS = 200;
-const STORAGE_KEY = 'vorbis-player-debug-overlay';
 const TAP_COUNT_TO_ACTIVATE = 5;
 const TAP_WINDOW_MS = 2000;
 
 function isDebugEnabled(): boolean {
   if (typeof window === 'undefined') return false;
   if (new URLSearchParams(window.location.search).get('debug') === 'true') return true;
-  try { return localStorage.getItem(STORAGE_KEY) === 'true'; } catch { return false; }
+  try { return localStorage.getItem(STORAGE_KEYS.DEBUG_OVERLAY) === 'true'; } catch { return false; }
 }
 
 function setDebugEnabled(enabled: boolean) {
-  try { localStorage.setItem(STORAGE_KEY, String(enabled)); } catch { /* noop */ }
+  try { localStorage.setItem(STORAGE_KEYS.DEBUG_OVERLAY, String(enabled)); } catch { /* noop */ }
 }
 
 export function useDebugActivator() {

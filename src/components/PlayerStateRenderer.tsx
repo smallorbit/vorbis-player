@@ -1,6 +1,6 @@
 import React, { Suspense, useCallback } from 'react';
 import styled, { keyframes } from 'styled-components';
-import type { Track } from '../services/spotify';
+import type { MediaTrack } from '@/types/domain';
 import { Card, CardHeader, CardContent } from '../components/styled';
 import { Button } from '../components/styled';
 import { Alert, AlertDescription } from '../components/styled';
@@ -167,7 +167,7 @@ interface PlayerStateRendererProps {
   isLoading: boolean;
   error: string | null;
   selectedPlaylistId: string | null;
-  tracks: Track[];
+  tracks: MediaTrack[];
   onPlaylistSelect: (playlistId: string, playlistName?: string, provider?: import('@/types/domain').ProviderId) => void;
 }
 

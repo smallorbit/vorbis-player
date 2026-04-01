@@ -1,12 +1,12 @@
 import { useEffect, useRef } from 'react';
 import { logQueue } from '@/lib/debugLog';
-import type { Track } from '@/services/spotify';
+import type { MediaTrack } from '@/types/domain';
 import { useProviderContext } from '@/contexts/ProviderContext';
 import { providerRegistry } from '@/providers/registry';
 import type { PlaybackState, ProviderId } from '@/types/domain';
 
 interface UseAutoAdvanceProps {
-  tracks: Track[];
+  tracks: MediaTrack[];
   currentTrackIndex: number;
   playTrack: (index: number, skipOnError?: boolean) => void;
   enabled?: boolean;

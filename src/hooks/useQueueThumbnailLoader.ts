@@ -1,5 +1,4 @@
 import { useEffect, useRef, useCallback } from 'react';
-import type { Track } from '@/services/spotify';
 import type { MediaTrack } from '@/types/domain';
 import { providerRegistry } from '@/providers/registry';
 import { logQueue } from '@/lib/debugLog';
@@ -17,9 +16,8 @@ const FETCH_CONCURRENCY = 3;
  * Updates are batched so the queue UI re-renders efficiently.
  */
 export function useQueueThumbnailLoader(
-  tracks: readonly Track[],
-  mediaTracksRef: React.MutableRefObject<MediaTrack[]>,
-  setTracks: React.Dispatch<React.SetStateAction<Track[]>>,
+  tracks: readonly MediaTrack[],
+  setTracks: React.Dispatch<React.SetStateAction<MediaTrack[]>>,
 ) {
   const attemptedAlbumIds = useRef(new Set<string>());
   const abortRef = useRef<AbortController | null>(null);
@@ -29,18 +27,11 @@ export function useQueueThumbnailLoader(
       if (updates.size === 0) return;
       logQueue('thumbnailLoader — applying %d image updates', updates.size);
 
-      for (const mt of mediaTracksRef.current) {
-        if (!mt.image && mt.albumId) {
-          const img = updates.get(mt.albumId);
-          if (img) mt.image = img;
-        }
-      }
-
       setTracks((prev) => {
         let changed = false;
         const next = prev.map((t) => {
-          if (!t.image && t.album_id) {
-            const img = updates.get(t.album_id);
+          if (!t.image && t.albumId) {
+            const img = updates.get(t.albumId);
             if (img) { changed = true; return { ...t, image: img }; }
           }
           return t;
@@ -48,14 +39,14 @@ export function useQueueThumbnailLoader(
         return changed ? next : prev;
       });
     },
-    [mediaTracksRef, setTracks],
+    [setTracks],
   );
 
   useEffect(() => {
-    const missing = tracks.filter((t) => !t.image && t.album_id);
+    const missing = tracks.filter((t) => !t.image && t.albumId);
     if (missing.length === 0) return;
 
-    const albumIds = [...new Set(missing.map((t) => t.album_id!))];
+    const albumIds = [...new Set(missing.map((t) => t.albumId!))];
     const toResolve = albumIds.filter((id) => !attemptedAlbumIds.current.has(id));
     if (toResolve.length === 0) return;
 
@@ -76,7 +67,7 @@ export function useQueueThumbnailLoader(
         await Promise.all(
           batch.map(async (albumId) => {
             // Find a track with this albumId to determine the provider
-            const mt = mediaTracksRef.current.find((m) => m.albumId === albumId);
+            const mt = tracks.find((m) => m.albumId === albumId);
             if (!mt) return;
             try {
               const provider = providerRegistry.get(mt.provider);
@@ -98,7 +89,7 @@ export function useQueueThumbnailLoader(
     run().catch(() => {});
 
     return () => controller.abort();
-  }, [tracks, applyImageUpdates, mediaTracksRef]);
+  }, [tracks, applyImageUpdates]);
 
   useEffect(() => {
     if (tracks.length === 0) {

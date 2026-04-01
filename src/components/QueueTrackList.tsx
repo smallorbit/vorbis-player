@@ -1,6 +1,7 @@
 import React, { memo, useRef, useEffect, useCallback, useState } from 'react';
 import styled from 'styled-components';
-import type { Track } from '../services/spotify';
+import type { MediaTrack } from '@/types/domain';
+import { formatDuration } from '@/utils/formatDuration';
 import { Card, CardHeader, CardContent, CardDescription } from '../components/styled';
 import { ScrollArea } from '../components/styled';
 import { Avatar } from '../components/styled';
@@ -267,7 +268,7 @@ const RemoveIcon = () => (
 );
 
 interface QueueTrackListProps {
-  tracks: Track[];
+  tracks: MediaTrack[];
   currentTrackIndex: number;
   onTrackSelect: (index: number) => void;
   onRemoveTrack?: (index: number) => void;
@@ -278,7 +279,7 @@ interface QueueTrackListProps {
 }
 
 interface QueueItemProps {
-  track: Track;
+  track: MediaTrack;
   index: number;
   isSelected: boolean;
   onSelect: (index: number) => void;
@@ -377,7 +378,7 @@ const SortableQueueItem = memo<QueueItemProps>(({
         </TrackInfo>
 
         <Duration isSelected={isSelected}>
-          {track.duration_ms ? `${Math.floor(track.duration_ms / 60000)}:${Math.floor((track.duration_ms % 60000) / 1000).toString().padStart(2, '0')}` : '--:--'}
+          {track.durationMs ? formatDuration(track.durationMs) : '--:--'}
         </Duration>
 
         {isEditMode && onRemove && !isSelected && (
@@ -462,7 +463,7 @@ const SwipeableQueueItem = memo<QueueItemProps>(({
         </TrackInfo>
 
         <Duration isSelected={isSelected}>
-          {track.duration_ms ? `${Math.floor(track.duration_ms / 60000)}:${Math.floor((track.duration_ms % 60000) / 1000).toString().padStart(2, '0')}` : '--:--'}
+          {track.durationMs ? formatDuration(track.durationMs) : '--:--'}
         </Duration>
       </QueueListItem>
     );
@@ -515,7 +516,7 @@ const SwipeableQueueItem = memo<QueueItemProps>(({
           </TrackInfo>
 
           <Duration isSelected={isSelected}>
-            {track.duration_ms ? `${Math.floor(track.duration_ms / 60000)}:${Math.floor((track.duration_ms % 60000) / 1000).toString().padStart(2, '0')}` : '--:--'}
+            {track.durationMs ? formatDuration(track.durationMs) : '--:--'}
           </Duration>
         </QueueListItem>
       </SwipeableContent>
@@ -696,7 +697,7 @@ const QueueTrackList = memo<QueueTrackListProps>(({
         <QueueListContent>
           <QueueListScroll>
             <QueueListItems>
-              {tracks.map((track: Track, index: number) => (
+              {tracks.map((track: MediaTrack, index: number) => (
                 <QueueListItem
                   key={`${track.name}-${track.id}`}
                   ref={index === currentTrackIndex ? currentTrackRef : undefined}
@@ -738,7 +739,7 @@ const QueueTrackList = memo<QueueTrackListProps>(({
                   </TrackInfo>
 
                   <Duration isSelected={index === currentTrackIndex}>
-                    {track.duration_ms ? `${Math.floor(track.duration_ms / 60000)}:${Math.floor((track.duration_ms % 60000) / 1000).toString().padStart(2, '0')}` : '--:--'}
+                    {track.durationMs ? formatDuration(track.durationMs) : '--:--'}
                   </Duration>
                 </QueueListItem>
               ))}

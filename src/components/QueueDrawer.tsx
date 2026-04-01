@@ -1,7 +1,7 @@
 import React, { Suspense, memo, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import styled from 'styled-components';
-import type { Track } from '../services/spotify';
+import type { MediaTrack } from '@/types/domain';
 import { theme } from '../styles/theme';
 import { DrawerFallback, DrawerFallbackCard } from './styled';
 import { usePlayerSizingContext } from '@/contexts/PlayerSizingContext';
@@ -152,7 +152,7 @@ function queueTrackOrderKey(tracks: { id: string }[]): string {
 interface QueueDrawerProps {
   isOpen: boolean;
   onClose: () => void;
-  tracks: Track[];
+  tracks: MediaTrack[];
   currentTrackIndex: number;
   onTrackSelect: (index: number) => void;
   onRemoveTrack?: (index: number) => void;

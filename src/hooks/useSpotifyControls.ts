@@ -1,11 +1,11 @@
 import { useState, useEffect, useCallback, useRef, useReducer } from 'react';
-import type { Track } from '../services/spotify';
+import type { MediaTrack } from '@/types/domain';
 import { useProviderContext } from '@/contexts/ProviderContext';
 import { providerRegistry } from '@/providers/registry';
 import type { PlaybackState, ProviderId } from '@/types/domain';
 
 interface UseSpotifyControlsProps {
-  currentTrack: Track | null;
+  currentTrack: MediaTrack | null;
   isLiked: boolean;
   isLikePending: boolean;
   onPlay: () => void;

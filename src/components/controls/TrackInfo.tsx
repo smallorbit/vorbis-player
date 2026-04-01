@@ -13,7 +13,7 @@ interface TrackInfoProps {
         artists?: string;
         artistsData?: ArtistInfo[];
         album?: string;
-        album_id?: string;
+        albumId?: string;
         image?: string;
     } | null;
     isMobile: boolean;
@@ -31,7 +31,7 @@ const areTrackInfoPropsEqual = (
         prevProps.track?.name === nextProps.track?.name &&
         prevProps.track?.artists === nextProps.track?.artists &&
         prevProps.track?.album === nextProps.track?.album &&
-        prevProps.track?.album_id === nextProps.track?.album_id &&
+        prevProps.track?.albumId === nextProps.track?.albumId &&
         prevProps.track?.provider === nextProps.track?.provider &&
         prevProps.isMobile === nextProps.isMobile &&
         prevProps.isTablet === nextProps.isTablet &&
@@ -77,17 +77,17 @@ const TrackInfo = memo<TrackInfoProps>(({ track, isMobile, isTablet, onArtistBro
         e.stopPropagation();
         const target = e.currentTarget as HTMLElement;
         const rect = target.getBoundingClientRect();
-        setPopover({ type: 'artist', artistName: artist.name, artistUrl: artist.url, rect });
+        setPopover({ type: 'artist', artistName: artist.name, artistUrl: artist.url ?? '', rect });
     }, []);
 
     const handleAlbumClick = useCallback((e: React.MouseEvent) => {
         e.preventDefault();
         e.stopPropagation();
-        if (!track?.album_id || !track?.album) return;
+        if (!track?.albumId || !track?.album) return;
         const target = e.currentTarget as HTMLElement;
         const rect = target.getBoundingClientRect();
-        setPopover({ type: 'album', albumId: track.album_id, albumName: track.album, rect });
-    }, [track?.album_id, track?.album]);
+        setPopover({ type: 'album', albumId: track.albumId, albumName: track.album, rect });
+    }, [track?.albumId, track?.album]);
 
     const hasExternalLink = capabilities?.hasExternalLink ?? false;
     const providerName = capabilities?.externalLinkLabel?.replace('Open in ', '') ?? trackDescriptor?.name ?? 'External';
@@ -130,7 +130,7 @@ const TrackInfo = memo<TrackInfoProps>(({ track, isMobile, isTablet, onArtistBro
 
     const renderAlbum = () => {
         if (!track?.album) return null;
-        if (track.album_id) {
+        if (track.albumId) {
             return (
                 <AlbumLink
                     as="button"
