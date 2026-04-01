@@ -37,6 +37,8 @@ class SpotifyPlayerService {
   lastPlayTrackTime = 0;
   /** Timestamp of last confirmed device-active check. */
   private lastDeviceActiveAt = 0;
+  /** Timestamp of last successful playback transfer. */
+  private lastTransferAt = 0;
 
   constructor() {
     // Restore state from HMR if available
@@ -179,13 +181,13 @@ class SpotifyPlayerService {
 
     const response = await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${this.deviceId}`, {
       method: 'PUT',
-      body: JSON.stringify({ uris }),
+      body: JSON.stringify({ uris, position_ms: 0 }),
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`
       },
     });
-    
+
     logSpotify('Web API play track response status=%d ok=%s', response.status, response.ok);
     
     if (!response.ok) {
@@ -224,7 +226,7 @@ class SpotifyPlayerService {
 
     const token = await spotifyAuth.ensureValidToken();
 
-    const body: Record<string, unknown> = { context_uri: contextUri };
+    const body: Record<string, unknown> = { context_uri: contextUri, position_ms: 0 };
     if (offsetPosition !== undefined) {
       body.offset = { position: offsetPosition };
     }
@@ -269,13 +271,13 @@ class SpotifyPlayerService {
     
     const response = await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${this.deviceId}`, {
       method: 'PUT',
-      body: JSON.stringify({ uris }),
+      body: JSON.stringify({ uris, position_ms: 0 }),
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`
       },
     });
-    
+
     logSpotify('Web API play URIs response status=%d ok=%s', response.status, response.ok);
     
     if (!response.ok) {
@@ -403,6 +405,7 @@ class SpotifyPlayerService {
       this.player = null;
       this.deviceId = null;
       this.isReady = false;
+      this.lastTransferAt = 0;
       this.saveState();
     }
   }
@@ -415,9 +418,14 @@ class SpotifyPlayerService {
     return this.isReady;
   }
 
-  async transferPlaybackToDevice(): Promise<void> {
+  async transferPlaybackToDevice(force = false): Promise<void> {
     if (!this.deviceId || !this.isReady) {
       throw new Error('Device not ready for playback transfer');
+    }
+
+    if (!force && Date.now() - this.lastTransferAt < SpotifyPlayerService.TRANSFER_TTL_MS) {
+      logSpotify('skipping transfer — device recently transferred');
+      return;
     }
 
     const token = await spotifyAuth.ensureValidToken();
@@ -437,6 +445,7 @@ class SpotifyPlayerService {
           console.warn('[spotifyPlayer] Transfer playback response:', response.status, errorText);
         } else {
           logSpotify('transferred playback to device');
+          this.lastTransferAt = Date.now();
         }
         return;
       } catch (error) {
@@ -453,6 +462,8 @@ class SpotifyPlayerService {
 
   /** How long a successful device-active check remains valid. */
   private static readonly DEVICE_ACTIVE_TTL_MS = 30_000;
+  /** How long a successful playback transfer remains valid. */
+  private static readonly TRANSFER_TTL_MS = 30_000;
 
   async ensureDeviceIsActive(maxRetries = 5, initialDelayMs = 800): Promise<boolean> {
     // Skip the API call if device was recently confirmed active
