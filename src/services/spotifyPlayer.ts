@@ -421,29 +421,33 @@ class SpotifyPlayerService {
     }
 
     const token = await spotifyAuth.ensureValidToken();
-    
-    try {
-      const response = await fetch('https://api.spotify.com/v1/me/player', {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          device_ids: [this.deviceId],
-          play: false
-        })
-      });
+    const body = JSON.stringify({ device_ids: [this.deviceId], play: false });
+    const headers = { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' };
 
-      if (!response.ok && response.status !== 204) {
-        const errorText = await response.text();
-        console.warn('[spotifyPlayer] Transfer playback response:', response.status, errorText);
-      } else {
-        logSpotify('transferred playback to device');
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        const response = await fetch('https://api.spotify.com/v1/me/player', {
+          method: 'PUT',
+          headers,
+          body,
+        });
+
+        if (!response.ok && response.status !== 204) {
+          const errorText = await response.text();
+          console.warn('[spotifyPlayer] Transfer playback response:', response.status, errorText);
+        } else {
+          logSpotify('transferred playback to device');
+        }
+        return;
+      } catch (error) {
+        if (attempt === 0) {
+          console.warn('[spotifyPlayer] Transfer playback network error, retrying:', error);
+          await new Promise(resolve => setTimeout(resolve, 500));
+        } else {
+          console.error('[spotifyPlayer] Failed to transfer playback to device:', error);
+          throw error;
+        }
       }
-    } catch (error) {
-      console.error('[spotifyPlayer] Failed to transfer playback to device:', error);
-      throw error;
     }
   }
 
