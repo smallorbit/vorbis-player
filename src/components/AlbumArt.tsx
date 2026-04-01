@@ -1,5 +1,5 @@
 import React, { memo, useEffect, useState, useCallback, useMemo } from 'react';
-import styled, { keyframes } from 'styled-components';
+import styled, { keyframes, css } from 'styled-components';
 import type { MediaTrack } from '@/types/domain';
 import { breatheBorderGlow } from '../styles/animations';
 
@@ -103,7 +103,7 @@ const AlbumArtContainer = styled.div.withConfig({
       const glowA = 0.45 + t * 0.15;
       const glowB = 0.3 + t * 0.15;
       const glowC = 0.2 + t * 0.15;
-      return `
+      return css`
         box-shadow:
           inset 0 0 10px rgba(0, 0, 0, 0.25),
           0 0 0 1.5px rgba(255, 255, 255, ${edgeOpacity.toFixed(2)}),

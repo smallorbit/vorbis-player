@@ -242,7 +242,7 @@ describe('useCollectionLoader', () => {
     );
 
     await act(async () => {
-      await result.current.handlePlaylistSelect('playlist_123');
+      await result.current.loadCollection('playlist_123');
     });
 
     expect(mockStopRadioBase).toHaveBeenCalled();
@@ -272,7 +272,7 @@ describe('useCollectionLoader', () => {
     );
 
     await act(async () => {
-      await result.current.handlePlaylistSelect('playlist_123');
+      await result.current.loadCollection('playlist_123');
     });
 
     // setOriginalTracks gets the unshuffled list; setTracks gets whatever order
@@ -308,7 +308,7 @@ describe('useCollectionLoader', () => {
     );
 
     await act(async () => {
-      await result.current.handlePlaylistSelect('playlist_123', undefined, 'dropbox');
+      await result.current.loadCollection('playlist_123', 'dropbox');
     });
 
     expect(mockSetActiveProviderId).toHaveBeenCalledWith('dropbox');
@@ -337,7 +337,7 @@ describe('useCollectionLoader', () => {
     );
 
     const trackCount = await act(async () => {
-      return result.current.handlePlaylistSelect('playlist_123');
+      return result.current.loadCollection('playlist_123');
     });
 
     expect(mockSetError).toHaveBeenCalledWith('Network error');
@@ -371,7 +371,7 @@ describe('useCollectionLoader', () => {
     );
 
     const trackCount = await act(async () => {
-      return result.current.handlePlaylistSelect(LIKED_SONGS_ID);
+      return result.current.loadCollection(LIKED_SONGS_ID);
     });
 
     expect(mockSetError).toHaveBeenCalledWith('No liked tracks found.');
@@ -399,7 +399,7 @@ describe('useCollectionLoader', () => {
     );
 
     const trackCount = await act(async () => {
-      return result.current.handlePlaylistSelect('playlist_123');
+      return result.current.loadCollection('playlist_123');
     });
 
     expect(trackCount).toBe(0);
