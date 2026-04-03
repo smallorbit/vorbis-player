@@ -5,10 +5,6 @@ import { theme } from '../../styles/theme';
 import { ProfiledComponent } from '@/components/ProfiledComponent';
 import { usePlayerSizingContext } from '@/contexts/PlayerSizingContext';
 import { useProviderContext } from '@/contexts/ProviderContext';
-import { useLocalStorage } from '@/hooks/useLocalStorage';
-import { STORAGE_KEYS } from '@/constants/storage';
-import type { CatalogProvider } from '@/types/providers';
-import { ART_REFRESHED_EVENT } from '@/hooks/useLibrarySync';
 
 import {
   DrawerOverlay,
@@ -17,31 +13,22 @@ import {
   DrawerTitle,
   CloseButton,
   DrawerContent,
-  FilterSection,
-  SectionTitle,
   ControlGroup,
   ControlLabel,
   OptionButtonGroup,
   OptionButton,
   ResetButton,
-  FilterGrid,
-  ProviderRow,
-  ProviderName,
-  ProviderStatusBadge,
-  ProviderConnectAction,
   CacheOptionsList,
   CacheOptionItem,
   CacheCheckbox,
   CacheOptionLabel,
   CacheConfirmButtons,
   CacheCancelButton,
-  CollapsibleHeader,
-  CollapsibleTitle,
-  CollapsibleChevron,
-  CollapsibleBody,
-  CollapsibleInner,
 } from './styled';
-import Switch from '@/components/controls/Switch';
+
+import { MusicSourcesSection, NativeQueueSyncSection } from './SourcesSections';
+import { ProviderDataSection } from './ProviderDataSection';
+import { CollapsibleSection } from './CollapsibleSection';
 
 export interface ClearCacheOptions {
   clearLikes: boolean;
@@ -73,276 +60,6 @@ const arePropsEqual = (
 
   return true;
 };
-
-/** Music Sources section rendered at the top of the settings drawer.
- *  Shows toggle switches so users can enable/disable providers independently.
- */
-const MusicSourcesSection = memo(() => {
-  const { registry, enabledProviderIds, toggleProvider } = useProviderContext();
-  const providers = useMemo(() => registry.getAll(), [registry]);
-
-  if (providers.length < 2) return null;
-
-  return (
-    <FilterSection>
-      <SectionTitle>Music Sources</SectionTitle>
-      <FilterGrid>
-        {providers.map((descriptor) => {
-          const isEnabled = enabledProviderIds.includes(descriptor.id);
-          const isConnected = descriptor.auth.isAuthenticated();
-          const isLastEnabled = enabledProviderIds.length <= 1 && isEnabled;
-          const status = !isEnabled ? 'disabled' : isConnected ? 'connected' : 'expired';
-          return (
-            <ProviderRow key={descriptor.id}>
-              <ProviderName>{descriptor.name}</ProviderName>
-              <ProviderStatusBadge $status={status}>
-                {status === 'connected' ? 'Connected' : status === 'expired' ? 'Expired' : ''}
-              </ProviderStatusBadge>
-              {isEnabled && !isConnected && (
-                <ProviderConnectAction onClick={() => descriptor.auth.beginLogin({ popup: true })}>
-                  Reconnect
-                </ProviderConnectAction>
-              )}
-              <Switch
-                on={isEnabled}
-                onToggle={() => toggleProvider(descriptor.id)}
-                ariaLabel={`${isEnabled ? 'Disable' : 'Enable'} ${descriptor.name}`}
-                disabled={isLastEnabled}
-                variant="neutral"
-              />
-            </ProviderRow>
-          );
-        })}
-      </FilterGrid>
-    </FilterSection>
-  );
-});
-MusicSourcesSection.displayName = 'MusicSourcesSection';
-
-/** Queue sync settings for providers with native queue sync capability. */
-const NativeQueueSyncSection = memo(() => {
-  const { connectedProviderIds, registry } = useProviderContext();
-
-  const syncProvider = useMemo(() => {
-    const allProviders = registry.getAll();
-    return allProviders.find(
-      (p) => p.capabilities.hasNativeQueueSync && connectedProviderIds.includes(p.id),
-    );
-  }, [registry, connectedProviderIds]);
-
-  const hasOtherProvider = connectedProviderIds.length > 1;
-
-  const [syncEnabled, setSyncEnabled] = useLocalStorage(
-    STORAGE_KEYS.SPOTIFY_QUEUE_SYNC,
-    true,
-  );
-  const [resolveEnabled, setResolveEnabled] = useLocalStorage(
-    STORAGE_KEYS.SPOTIFY_QUEUE_CROSS_PROVIDER,
-    true,
-  );
-
-  if (!syncProvider) return null;
-
-  const providerName = syncProvider.name;
-
-  return (
-    <FilterSection>
-      <SectionTitle>{providerName} Queue</SectionTitle>
-      <ControlGroup>
-        <ControlLabel>Keep {providerName} queue synced with Vorbis playback</ControlLabel>
-        <Switch
-          on={syncEnabled}
-          onToggle={() => setSyncEnabled(!syncEnabled)}
-          ariaLabel={`Keep ${providerName} queue synced with Vorbis playback`}
-          variant="neutral"
-        />
-      </ControlGroup>
-      {syncEnabled && hasOtherProvider && (
-        <ControlGroup>
-          <ControlLabel>Replace non-{providerName} tracks with {providerName} equivalents in queue</ControlLabel>
-          <Switch
-            on={resolveEnabled}
-            onToggle={() => setResolveEnabled(!resolveEnabled)}
-            ariaLabel={`Replace non-${providerName} tracks with ${providerName} equivalents in queue`}
-            variant="neutral"
-          />
-        </ControlGroup>
-      )}
-    </FilterSection>
-  );
-});
-NativeQueueSyncSection.displayName = 'NativeQueueSyncSection';
-
-/** Chevron SVG used in collapsible section headers. */
-const ChevronIcon = ({ isOpen }: { isOpen: boolean }) => (
-  <CollapsibleChevron $isOpen={isOpen} viewBox="0 0 24 24" fill="currentColor">
-    <path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6z" />
-  </CollapsibleChevron>
-);
-
-/** Reusable collapsible section wrapper. */
-const CollapsibleSection = memo(({
-  title,
-  defaultOpen = false,
-  children,
-}: {
-  title: string;
-  defaultOpen?: boolean;
-  children: React.ReactNode;
-}) => {
-  const [isOpen, setIsOpen] = useState(defaultOpen);
-  return (
-    <FilterSection>
-      <CollapsibleHeader
-        onClick={() => setIsOpen((o) => !o)}
-        aria-expanded={isOpen}
-      >
-        <CollapsibleTitle>{title}</CollapsibleTitle>
-        <ChevronIcon isOpen={isOpen} />
-      </CollapsibleHeader>
-      <CollapsibleBody $isOpen={isOpen}>
-        <CollapsibleInner>
-          {children}
-        </CollapsibleInner>
-      </CollapsibleBody>
-    </FilterSection>
-  );
-});
-CollapsibleSection.displayName = 'CollapsibleSection';
-
-/** Provider data management — art cache + liked songs for providers that support it. */
-const ProviderDataSection = memo(({ providerName, catalog }: { providerName: string; catalog: CatalogProvider }) => {
-  const [artStatus, setArtStatus] = useState<'idle' | 'working' | 'done'>('idle');
-  const [likesStatus, setLikesStatus] = useState<'idle' | 'working' | 'done'>('idle');
-  const [resultMessage, setResultMessage] = useState('');
-  const fileInputRef = React.useRef<HTMLInputElement>(null);
-
-  const artBusy = artStatus === 'working';
-  const likesBusy = likesStatus === 'working';
-
-  const hasArtCache = !!catalog.clearArtCache;
-  const hasRefreshArt = !!catalog.refreshArtCache;
-  const hasLikesManagement = !!catalog.exportLikes && !!catalog.importLikes;
-  const hasMetadataRefresh = !!catalog.refreshLikedMetadata;
-
-  const handleClearArt = async () => {
-    setArtStatus('working');
-    await catalog.clearArtCache?.();
-    setArtStatus('done');
-    setTimeout(() => setArtStatus('idle'), 1500);
-  };
-
-  const handleRefreshArt = async () => {
-    setArtStatus('working');
-    await catalog.refreshArtCache?.();
-    window.dispatchEvent(new CustomEvent(ART_REFRESHED_EVENT));
-    setArtStatus('done');
-    setTimeout(() => setArtStatus('idle'), 1500);
-  };
-
-  const handleExport = async () => {
-    setLikesStatus('working');
-    try {
-      const json = await catalog.exportLikes!();
-      const blob = new Blob([json], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `vorbis-liked-songs-${new Date().toISOString().slice(0, 10)}.json`;
-      a.click();
-      URL.revokeObjectURL(url);
-      setResultMessage('Exported!');
-    } catch {
-      setResultMessage('Export failed');
-    }
-    setLikesStatus('done');
-    setTimeout(() => { setLikesStatus('idle'); setResultMessage(''); }, 1500);
-  };
-
-  const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setLikesStatus('working');
-    try {
-      const json = await file.text();
-      const count = await catalog.importLikes!(json);
-      setResultMessage(`Imported ${count} tracks`);
-    } catch {
-      setResultMessage('Import failed');
-    }
-    setLikesStatus('done');
-    if (fileInputRef.current) fileInputRef.current.value = '';
-    setTimeout(() => { setLikesStatus('idle'); setResultMessage(''); }, 2000);
-  };
-
-  const handleRefreshMetadata = async () => {
-    setLikesStatus('working');
-    try {
-      const result = await catalog.refreshLikedMetadata!();
-      const parts: string[] = [];
-      if (result.updated > 0) parts.push(`${result.updated} updated`);
-      if (result.removed > 0) parts.push(`${result.removed} removed`);
-      setResultMessage(parts.length > 0 ? parts.join(', ') : 'No changes');
-    } catch {
-      setResultMessage('Refresh failed');
-    }
-    setLikesStatus('done');
-    setTimeout(() => { setLikesStatus('idle'); setResultMessage(''); }, 2000);
-  };
-
-  return (
-    <CollapsibleSection title={`${providerName} Data`}>
-      {hasArtCache && (
-        <ControlGroup>
-          <ControlLabel>Clear cached art so it re-downloads on next library load</ControlLabel>
-          <ResetButton onClick={handleClearArt} disabled={artBusy}>
-            {artStatus === 'done' ? 'Cleared!' : artBusy ? 'Working…' : 'Clear Art Cache'}
-          </ResetButton>
-        </ControlGroup>
-      )}
-      {hasRefreshArt && (
-        <ControlGroup>
-          <ControlLabel>Clear and immediately re-fetch fresh art in the background</ControlLabel>
-          <ResetButton onClick={handleRefreshArt} disabled={artBusy}>
-            {artStatus === 'done' ? 'Started!' : artBusy ? 'Working…' : 'Refresh Art'}
-          </ResetButton>
-        </ControlGroup>
-      )}
-      {hasLikesManagement && (
-        <>
-          <ControlGroup>
-            <ControlLabel>Export liked songs to a JSON file for backup</ControlLabel>
-            <ResetButton onClick={handleExport} disabled={likesBusy}>
-              {likesStatus === 'done' && resultMessage === 'Exported!' ? 'Exported!' : likesBusy ? 'Working…' : 'Export Likes'}
-            </ResetButton>
-          </ControlGroup>
-          <ControlGroup>
-            <ControlLabel>Import liked songs from a previously exported JSON file</ControlLabel>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".json"
-              onChange={handleImport}
-              style={{ display: 'none' }}
-            />
-            <ResetButton onClick={() => fileInputRef.current?.click()} disabled={likesBusy}>
-              {likesStatus === 'done' && resultMessage.startsWith('Imported') ? resultMessage : likesBusy ? 'Working…' : 'Import Likes'}
-            </ResetButton>
-          </ControlGroup>
-        </>
-      )}
-      {hasMetadataRefresh && (
-        <ControlGroup>
-          <ControlLabel>Re-scan {providerName} to update metadata for liked tracks</ControlLabel>
-          <ResetButton onClick={handleRefreshMetadata} disabled={likesBusy}>
-            {likesStatus === 'done' ? resultMessage || 'Done!' : likesBusy ? 'Scanning…' : 'Refresh Metadata'}
-          </ResetButton>
-        </ControlGroup>
-      )}
-    </CollapsibleSection>
-  );
-});
-ProviderDataSection.displayName = 'ProviderDataSection';
 
 const AppSettingsMenu: React.FC<AppSettingsMenuProps> = memo(({
   isOpen,
@@ -410,18 +127,14 @@ const AppSettingsMenu: React.FC<AppSettingsMenuProps> = memo(({
         </DrawerHeader>
 
         <DrawerContent>
-          {/* Music Sources — always visible at top */}
           <MusicSourcesSection />
 
-          {/* Queue sync settings for providers with native sync */}
           <NativeQueueSyncSection />
 
-          {/* Provider data management sections */}
           {dataProviders.map((p) => (
             <ProviderDataSection key={p.id} providerName={p.name} catalog={p.catalog} />
           ))}
 
-          {/* Advanced — collapsible */}
           <CollapsibleSection title="Advanced">
             <ControlGroup>
               <ControlLabel>Clear Library Cache</ControlLabel>
