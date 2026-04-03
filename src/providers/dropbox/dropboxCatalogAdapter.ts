@@ -18,21 +18,13 @@ import type { CatalogProvider } from '@/types/providers';
 import type { ProviderId, MediaTrack, MediaCollection, CollectionRef } from '@/types/domain';
 import { DropboxAuthAdapter } from './dropboxAuthAdapter';
 import {
-  getArt,
-  putArt,
-  clearArt,
   getDurationsMap,
   putDurationMs,
   getTagsMap,
-  getAlbumArt,
-  putAlbumArt,
-  putTrackDate,
   getTrackDatesMap,
 } from './dropboxArtCache';
 import { getCachedCatalog, putCatalogCache, clearCatalogCache } from './dropboxCatalogCache';
-import { parseID3 } from '@/utils/id3Parser';
 import { logLibrary } from '@/lib/debugLog';
-import { bytesToDataUrl } from '@/utils/bytesToDataUrl';
 import {
   getLikedTracks,
   getLikedCount as getLikedCountFromCache,
@@ -46,248 +38,49 @@ import {
 } from './dropboxLikesCache';
 import { getLikesSync } from './dropboxLikesSync';
 import { listSavedPlaylists, loadPlaylistTracks, deleteSavedPlaylist } from './dropboxPlaylistStorage';
-
-const AUDIO_EXTENSIONS = ['.mp3', '.flac', '.ogg', '.m4a', '.wav', '.aac', '.wma', '.opus'];
-const IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.webp'];
-const ALBUM_ART_NAMES = ['cover', 'album', 'folder', 'front', 'album cover', 'album_cover', 'artwork'];
-
-interface DropboxFileEntry {
-  '.tag': 'file' | 'folder';
-  name: string;
-  id: string;
-  path_lower: string;
-  path_display: string;
-  size?: number;
-}
-
-interface DropboxListFolderResult {
-  entries: DropboxFileEntry[];
-  cursor: string;
-  has_more: boolean;
-}
-
-function isAudioFile(name: string): boolean {
-  const lower = name.toLowerCase();
-  return AUDIO_EXTENSIONS.some((ext) => lower.endsWith(ext));
-}
-
-function isImageFile(name: string): boolean {
-  const lower = name.toLowerCase();
-  return IMAGE_EXTENSIONS.some((ext) => lower.endsWith(ext));
-}
-
-function baseName(name: string): string {
-  return name.replace(/\.[^/.]+$/, '').toLowerCase().trim();
-}
-
-function findArtByNames(entries: DropboxFileEntry[], names: string[]): string | null {
-  for (const preferred of names) {
-    const found = entries.find((e) => baseName(e.name) === preferred || baseName(e.name).includes(preferred));
-    if (found) return found.path_lower;
-  }
-  return null;
-}
-
-function pickAlbumArtPath(entries: DropboxFileEntry[]): string | null {
-  if (entries.length === 0) return null;
-  return findArtByNames(entries, ALBUM_ART_NAMES) ?? entries[0].path_lower;
-}
-
-function parentDir(path: string): string {
-  return path.split('/').slice(0, -1).join('/') || '/';
-}
-
-function parseFilename(filename: string): { name: string; trackNumber?: number } {
-  const base = filename.replace(/\.[^/.]+$/, '');
-  const match = base.match(/^(\d{1,3})\s*[-.\s]\s*(.+)$/);
-  if (match) {
-    return { name: match[2].trim(), trackNumber: parseInt(match[1], 10) };
-  }
-  return { name: base };
-}
-
-/** Cached temporary link with expiry timestamp. */
-interface CachedLink {
-  url: string;
-  expiresAt: number;
-}
-
-/** Dropbox temporary links are valid for 4 hours; cache for 3.5 h to be safe. */
-const TEMP_LINK_TTL_MS = 3.5 * 60 * 60 * 1000;
+import type { DropboxFileEntry } from './dropboxCatalogHelpers';
+import {
+  isAudioFile,
+  isImageFile,
+  parentDir,
+  entryToMediaTrack,
+  hydrateCachedDurations,
+  hydrateCachedArtwork,
+  probeAudioDuration,
+} from './dropboxCatalogHelpers';
+import { DropboxApiClient } from './dropboxApiClient';
+import { DropboxArtworkResolver } from './dropboxArtworkResolver';
+import { scanAlbumDatesInBackground } from './dropboxDateScanner';
 
 export class DropboxCatalogAdapter implements CatalogProvider {
   readonly providerId: ProviderId = 'dropbox';
   private auth: DropboxAuthAdapter;
-  // Deduplicates concurrent fetch requests for the same image path
-  private pendingArtFetches = new Map<string, Promise<string | null>>();
-  // Tracks seen during listTracks calls, used to provide full MediaTrack data when liking
+  private apiClient: DropboxApiClient;
+  private artworkResolver: DropboxArtworkResolver;
   private knownTracks = new Map<string, MediaTrack>();
-  /** In-memory cache of Dropbox temporary links keyed by path. */
-  private tempLinkCache = new Map<string, CachedLink>();
 
   constructor(auth: DropboxAuthAdapter) {
     this.auth = auth;
+    this.apiClient = new DropboxApiClient(auth);
+    this.artworkResolver = new DropboxArtworkResolver(this.apiClient);
   }
 
-  /**
-   * Fetches an image from Dropbox and caches it as a data URL in IndexedDB.
-   * Subsequent calls for the same path return the cached value instantly.
-   * Concurrent calls for the same path are deduplicated.
-   */
-  private fetchArtDataUrl(path: string): Promise<string | null> {
-    const pending = this.pendingArtFetches.get(path);
-    if (pending) return pending;
-
-    const promise = this.doFetchArtDataUrl(path).finally(() => {
-      this.pendingArtFetches.delete(path);
-    });
-    this.pendingArtFetches.set(path, promise);
-    return promise;
-  }
-
-  private async doFetchArtDataUrl(path: string): Promise<string | null> {
-    const cached = await getArt(path);
-    if (cached) return cached;
-
-    try {
-      const tempUrl = await this.getTemporaryLink(path);
-      const resp = await fetch(tempUrl);
-      if (!resp.ok) return null;
-
-      const mimeType = resp.headers.get('Content-Type') ?? 'image/jpeg';
-      const buffer = await resp.arrayBuffer();
-      const bytes = new Uint8Array(buffer);
-
-      const dataUrl = bytesToDataUrl(bytes, mimeType);
-
-      await putArt(path, dataUrl);
-      return dataUrl;
-    } catch {
-      return null;
-    }
-  }
-
-  /** Clears all cached album art, forcing a fresh download on next library load. */
   async clearArtCache(): Promise<void> {
-    await clearArt();
+    await this.artworkResolver.clearArtCache();
   }
 
-  /** Clears art + catalog caches so the next library load re-fetches everything. */
   async refreshArtCache(): Promise<void> {
-    await Promise.all([clearArt(), clearCatalogCache()]);
+    await Promise.all([this.artworkResolver.clearArtCache(), clearCatalogCache()]);
   }
 
   async getAlbumArtForAlbum(albumPath: string): Promise<string | null> {
-    return getAlbumArt(albumPath);
+    return this.artworkResolver.getAlbumArtForAlbum(albumPath);
   }
 
   async cacheAlbumArtForAlbum(albumPath: string, dataUrl: string): Promise<void> {
-    await putAlbumArt(albumPath, dataUrl);
+    await this.artworkResolver.cacheAlbumArtForAlbum(albumPath, dataUrl);
   }
 
-  /**
-   * Resolve artwork once per album directory, with fallback to album-level cached art.
-   * This keeps track/collection artwork consistent and avoids redundant network fetches.
-   */
-  private async resolveAlbumArtByDir(
-    imagesByDir: Map<string, DropboxFileEntry[]>,
-    albumDirs: Iterable<string>,
-  ): Promise<Map<string, string>> {
-    const dirToImageUrl = new Map<string, string>();
-    const uniqueDirs = Array.from(new Set(albumDirs));
-
-    await Promise.all(
-      uniqueDirs.map(async (dir) => {
-        const entries = imagesByDir.get(dir) ?? [];
-        const imagePath = pickAlbumArtPath(entries);
-        if (imagePath) {
-          const imageUrl = await this.fetchArtDataUrl(imagePath);
-          if (imageUrl) {
-            dirToImageUrl.set(dir, imageUrl);
-            // Keep an album-keyed alias so tracks from this album can hydrate instantly.
-            await putAlbumArt(dir, imageUrl);
-            return;
-          }
-        }
-
-        const cachedAlbumArt = await getAlbumArt(dir);
-        if (cachedAlbumArt) {
-          dirToImageUrl.set(dir, cachedAlbumArt);
-        }
-      }),
-    );
-
-    return dirToImageUrl;
-  }
-
-  private async dropboxApi<T>(
-    endpoint: string,
-    body: Record<string, unknown>,
-    signal?: AbortSignal,
-  ): Promise<T> {
-    let token = await this.auth.ensureValidToken();
-    if (!token) throw new Error('Not authenticated with Dropbox');
-
-    const makeRequest = (accessToken: string) =>
-      fetch(`https://api.dropboxapi.com/2${endpoint}`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(body),
-        signal,
-      });
-
-    let response = await makeRequest(token);
-
-    if (response.status === 401) {
-      token = await this.auth.refreshAccessToken();
-      if (!token) throw new Error('Dropbox authentication expired');
-      response = await makeRequest(token);
-      if (response.status === 401) {
-        this.auth.reportUnauthorized();
-        throw new Error('Dropbox authentication expired');
-      }
-    }
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Dropbox API error: ${response.status} ${errorText}`);
-    }
-
-    return response.json();
-  }
-
-  private async paginateFolder(
-    path: string,
-    callback: (entries: DropboxFileEntry[]) => void,
-    signal?: AbortSignal,
-  ): Promise<void> {
-    let result = await this.dropboxApi<DropboxListFolderResult>(
-      '/files/list_folder',
-      { path, recursive: true },
-      signal,
-    );
-    callback(result.entries);
-    while (result.has_more) {
-      if (signal?.aborted) throw new DOMException('Request aborted', 'AbortError');
-      result = await this.dropboxApi<DropboxListFolderResult>(
-        '/files/list_folder/continue',
-        { cursor: result.cursor },
-        signal,
-      );
-      callback(result.entries);
-    }
-  }
-
-  /**
-   * Recursively scans the app root to discover albums (folders containing audio files).
-   * Each such folder becomes an album collection; its parent folder name is the artist.
-   * Also returns a single "All Music" playlist with the total track count.
-   *
-   * Results are cached in IndexedDB for 1 hour. Pass `{ forceRefresh: true }` to bypass the cache.
-   */
   async listCollections(signal?: AbortSignal, options?: { forceRefresh?: boolean }): Promise<MediaCollection[]> {
     if (!options?.forceRefresh) {
       const cached = await getCachedCatalog();
@@ -300,17 +93,13 @@ export class DropboxCatalogAdapter implements CatalogProvider {
     }
 
     try {
-      // path_lower → display name / parent path
       const dirDisplayName = new Map<string, string>();
       const dirParent = new Map<string, string>();
-      // path_lower → audio file count
       const audioCount = new Map<string, number>();
-      // path_lower → image file entries
       const imagesByDir = new Map<string, DropboxFileEntry[]>();
-      // path_lower → first audio file path (for date scanning)
       const firstAudioByDir = new Map<string, string>();
 
-      await this.paginateFolder('', (entries) => {
+      await this.apiClient.paginateFolder('', (entries) => {
         for (const entry of entries) {
           if (entry['.tag'] === 'folder') {
             dirDisplayName.set(entry.path_lower, entry.name);
@@ -331,7 +120,7 @@ export class DropboxCatalogAdapter implements CatalogProvider {
         }
       }, signal);
 
-      const dirToImageUrl = await this.resolveAlbumArtByDir(imagesByDir, audioCount.keys());
+      const dirToImageUrl = await this.artworkResolver.resolveAlbumArtByDir(imagesByDir, audioCount.keys());
 
       let totalTracks = 0;
       const albums: MediaCollection[] = [];
@@ -354,7 +143,6 @@ export class DropboxCatalogAdapter implements CatalogProvider {
         });
       }
 
-      // Hydrate cached release dates onto albums
       const albumIds = albums.map((a) => a.id);
       const cachedDates = await getTrackDatesMap(albumIds);
       for (const album of albums) {
@@ -372,12 +160,11 @@ export class DropboxCatalogAdapter implements CatalogProvider {
         trackCount: totalTracks,
       };
 
-      // Fetch saved playlists from /.vorbis/playlists/ (non-blocking; empty on failure)
       let savedPlaylists: MediaCollection[] = [];
       try {
         savedPlaylists = await listSavedPlaylists(this.auth);
       } catch {
-        // Silently ignore — saved playlists are optional
+        // Silently ignore -- saved playlists are optional
       }
 
       const collections = [allMusic, ...savedPlaylists, ...albums];
@@ -386,8 +173,7 @@ export class DropboxCatalogAdapter implements CatalogProvider {
         savedPlaylists.map(c => ({ name: c.name, trackCount: c.trackCount })));
       await putCatalogCache(collections);
 
-      // Kick off background date scanning (fire-and-forget)
-      this.scanAlbumDatesInBackground(albums, firstAudioByDir).catch(() => {});
+      scanAlbumDatesInBackground(this.apiClient, albums, firstAudioByDir).catch(() => {});
 
       return collections;
     } catch (error) {
@@ -401,18 +187,17 @@ export class DropboxCatalogAdapter implements CatalogProvider {
     if (collectionRef.kind === 'liked') {
       const tracks = await getLikedTracks();
       await Promise.all([
-        this.hydrateCachedDurations(tracks),
-        this.hydrateCachedArtwork(tracks),
+        hydrateCachedDurations(tracks),
+        hydrateCachedArtwork(tracks),
       ]);
       return tracks;
     }
 
-    // Saved playlists: load from JSON file in Dropbox
     if (collectionRef.kind === 'playlist') {
       const tracks = await loadPlaylistTracks(this.auth, collectionRef.id);
       await Promise.all([
-        this.hydrateCachedDurations(tracks),
-        this.hydrateCachedArtwork(tracks),
+        hydrateCachedDurations(tracks),
+        hydrateCachedArtwork(tracks),
       ]);
       return tracks;
     }
@@ -423,7 +208,7 @@ export class DropboxCatalogAdapter implements CatalogProvider {
       const audioEntries: DropboxFileEntry[] = [];
       const imagesByDir = new Map<string, DropboxFileEntry[]>();
 
-      await this.paginateFolder(folderPath, (entries) => {
+      await this.apiClient.paginateFolder(folderPath, (entries) => {
         for (const entry of entries) {
           if (entry['.tag'] !== 'file') continue;
           if (isAudioFile(entry.name)) {
@@ -438,12 +223,12 @@ export class DropboxCatalogAdapter implements CatalogProvider {
       }, signal);
 
       const albumDirs = audioEntries.map((entry) => parentDir(entry.path_lower));
-      const dirToImageUrl = await this.resolveAlbumArtByDir(imagesByDir, albumDirs);
+      const dirToImageUrl = await this.artworkResolver.resolveAlbumArtByDir(imagesByDir, albumDirs);
 
       const tracks: MediaTrack[] = audioEntries.map((entry) => {
         const dir = parentDir(entry.path_lower);
         const imageUrl = dirToImageUrl.get(dir) ?? undefined;
-        return this.entryToMediaTrack(entry, imageUrl);
+        return entryToMediaTrack(entry, imageUrl);
       });
 
       tracks.sort((a, b) => {
@@ -454,9 +239,8 @@ export class DropboxCatalogAdapter implements CatalogProvider {
 
       const trackIds = tracks.map((t) => t.id);
 
-      // Hydrate durations and ID3 tags from IndexedDB cache concurrently.
       const [, tagsMap] = await Promise.all([
-        this.hydrateCachedDurations(tracks),
+        hydrateCachedDurations(tracks),
         getTagsMap(trackIds),
       ]);
       if (tagsMap.size > 0) {
@@ -482,132 +266,17 @@ export class DropboxCatalogAdapter implements CatalogProvider {
     }
   }
 
-  /** Hydrate any previously-discovered durations from the IndexedDB cache onto tracks missing them. */
-  private async hydrateCachedDurations(tracks: MediaTrack[]): Promise<void> {
-    const needDuration = tracks.filter((t) => !t.durationMs);
-    if (needDuration.length === 0) return;
-    const durationsMap = await getDurationsMap(needDuration.map((t) => t.id));
-    if (durationsMap.size > 0) {
-      for (const t of needDuration) {
-        const cached = durationsMap.get(t.id);
-        if (cached !== undefined) t.durationMs = cached;
-      }
-    }
-  }
-
-  private async hydrateCachedArtwork(tracks: MediaTrack[]): Promise<void> {
-    const needArt = tracks.filter((t) => !t.image && t.albumId);
-    if (needArt.length === 0) return;
-    const albumIds = [...new Set(needArt.map((t) => t.albumId!))];
-    const artMap = new Map<string, string>();
-    await Promise.all(
-      albumIds.map(async (albumId) => {
-        const cached = await getAlbumArt(albumId);
-        if (cached) artMap.set(albumId, cached);
-      }),
-    );
-    if (artMap.size > 0) {
-      for (const t of needArt) {
-        const art = artMap.get(t.albumId!);
-        if (art) t.image = art;
-      }
-    }
-  }
-
-  private entryToMediaTrack(entry: DropboxFileEntry, imageUrl?: string): MediaTrack {
-    const { name, trackNumber } = parseFilename(entry.name);
-
-    // Derive album and artist from the path hierarchy.
-    // Expected: /<artist>/<album>/<track> or /<album>/<track>
-    const displayParts = entry.path_display.split('/').filter(Boolean);
-    const albumName = displayParts.length >= 2 ? displayParts[displayParts.length - 2] : 'Unknown Album';
-    const artistName = displayParts.length >= 3 ? displayParts[displayParts.length - 3] : undefined;
-
-    // Album ID is the parent directory path — stable per-album identifier used for color overrides.
-    const albumId = parentDir(entry.path_lower);
-
-    const artist = artistName ?? 'Unknown Artist';
-    return {
-      id: entry.id,
-      provider: 'dropbox',
-      playbackRef: { provider: 'dropbox', ref: entry.path_lower },
-      name,
-      artists: artist,
-      artistsData: [{ name: artist }],
-      album: albumName,
-      albumId,
-      trackNumber,
-      durationMs: 0,
-      image: imageUrl,
-    };
-  }
-
-  /**
-   * Resolve album art for a single album directory.
-   * Checks IndexedDB cache first, then scans the Dropbox directory for image files.
-   * Returns a data URL or null.
-   */
-  async resolveAlbumArt(albumDir: string, signal?: AbortSignal): Promise<string | null> {
-    if (!albumDir) return null;
-
-    // Check cache first
-    const cached = await getAlbumArt(albumDir);
-    if (cached) return cached;
-
-    // Scan the directory for image files
-    try {
-      const result = await this.dropboxApi<{ entries: DropboxFileEntry[] }>(
-        '/files/list_folder',
-        { path: albumDir, recursive: false },
-        signal,
-      );
-
-      const images = result.entries.filter(
-        (e) => e['.tag'] === 'file' && isImageFile(e.name),
-      );
-      const imagePath = pickAlbumArtPath(images);
-      if (!imagePath) return null;
-
-      const imageUrl = await this.fetchArtDataUrl(imagePath);
-      if (imageUrl) {
-        await putAlbumArt(albumDir, imageUrl);
-      }
-      return imageUrl;
-    } catch {
-      return null;
-    }
-  }
+  // -- Temporary links (delegated to apiClient) --
 
   async getTemporaryLink(path: string): Promise<string> {
-    const cached = this.tempLinkCache.get(path);
-    if (cached && Date.now() < cached.expiresAt) {
-      return cached.url;
-    }
-
-    const result = await this.dropboxApi<{ link: string }>(
-      '/files/get_temporary_link',
-      { path },
-    );
-
-    this.tempLinkCache.set(path, {
-      url: result.link,
-      expiresAt: Date.now() + TEMP_LINK_TTL_MS,
-    });
-    return result.link;
+    return this.apiClient.getTemporaryLink(path);
   }
 
-  /**
-   * Pre-warm the temporary link cache for a path.
-   * Returns immediately if already cached; otherwise fetches in the background.
-   */
   prefetchTemporaryLink(path: string): void {
-    const cached = this.tempLinkCache.get(path);
-    if (cached && Date.now() < cached.expiresAt) return;
-    // Fire-and-forget; errors are silently ignored
-    this.getTemporaryLink(path).catch(() => {});
+    this.apiClient.prefetchTemporaryLink(path);
   }
 
-  // ── Liked songs ──────────────────────────────────────────────────────
+  // -- Liked songs --
 
   async getLikedCount(): Promise<number> {
     return getLikedCountFromCache();
@@ -653,13 +322,12 @@ export class DropboxCatalogAdapter implements CatalogProvider {
   }
 
   async refreshLikedMetadata(): Promise<{ updated: number; removed: number }> {
-    // Scan all Dropbox tracks to get fresh metadata
     const allMusicRef: CollectionRef = { provider: 'dropbox', kind: 'folder', id: '' };
     const freshTracks = await this.listTracks(allMusicRef);
     return refreshLikedTrackMetadata(freshTracks);
   }
 
-  // ── CatalogProvider optional interface methods ─────────────────────
+  // -- CatalogProvider optional interface methods --
 
   async resolveDuration(track: MediaTrack): Promise<number | null> {
     const cached = await getDurationsMap([track.id]);
@@ -667,8 +335,8 @@ export class DropboxCatalogAdapter implements CatalogProvider {
     if (cachedDuration) return cachedDuration;
 
     try {
-      const url = await this.getTemporaryLink(track.playbackRef.ref);
-      const durationMs = await this.probeAudioDuration(url);
+      const url = await this.apiClient.getTemporaryLink(track.playbackRef.ref);
+      const durationMs = await probeAudioDuration(url);
       if (durationMs) {
         putDurationMs(track.id, durationMs).catch(() => {});
       }
@@ -678,97 +346,15 @@ export class DropboxCatalogAdapter implements CatalogProvider {
     }
   }
 
+  async resolveAlbumArt(albumDir: string, signal?: AbortSignal): Promise<string | null> {
+    return this.artworkResolver.resolveAlbumArt(albumDir, signal);
+  }
+
   async resolveArtwork(albumId: string, signal?: AbortSignal): Promise<string | null> {
-    return this.resolveAlbumArt(albumId, signal);
+    return this.artworkResolver.resolveAlbumArt(albumId, signal);
   }
 
   async searchTrack(_artist: string, _title: string): Promise<MediaTrack | null> {
     return null;
-  }
-
-  /**
-   * Background scan: fetch ~10KB of one representative track per album,
-   * parse the year via id3Parser, and cache it in IndexedDB.
-   * Processes albums in batches to avoid rate limiting.
-   */
-  private async scanAlbumDatesInBackground(
-    albums: MediaCollection[],
-    audioByDir: Map<string, string>,
-  ): Promise<void> {
-    // Only scan albums that don't already have dates cached
-    const albumIds = albums.filter((a) => a.kind === 'album' && a.id).map((a) => a.id);
-    const existing = await getTrackDatesMap(albumIds);
-    const toScan = albums.filter((a) => a.kind === 'album' && a.id && !existing.has(a.id));
-    if (toScan.length === 0) return;
-
-    const BATCH_SIZE = 5;
-    const BATCH_DELAY_MS = 200;
-
-    for (let i = 0; i < toScan.length; i += BATCH_SIZE) {
-      const batch = toScan.slice(i, i + BATCH_SIZE);
-      await Promise.all(
-        batch.map(async (album) => {
-          const trackPath = audioByDir.get(album.id);
-          if (!trackPath) return;
-          try {
-            const tempUrl = await this.getTemporaryLink(trackPath);
-            const resp = await fetch(tempUrl, {
-              headers: { Range: 'bytes=0-10240' },
-            });
-            if (!resp.ok) return;
-            const buffer = await resp.arrayBuffer();
-            const meta = parseID3(buffer);
-            if (meta.releaseYear) {
-              await putTrackDate(album.id, meta.releaseYear);
-              album.releaseDate = String(meta.releaseYear);
-            }
-          } catch {
-            // Silently skip — will retry on next catalog refresh
-          }
-        }),
-      );
-      if (i + BATCH_SIZE < toScan.length) {
-        await new Promise((r) => setTimeout(r, BATCH_DELAY_MS));
-      }
-    }
-  }
-
-  private probeAudioDuration(url: string): Promise<number | null> {
-    return new Promise((resolve) => {
-      const audio = new Audio();
-      audio.preload = 'metadata';
-
-      const timeout = setTimeout(() => {
-        cleanup();
-        resolve(null);
-      }, 10_000);
-
-      const cleanup = () => {
-        clearTimeout(timeout);
-        audio.removeEventListener('loadedmetadata', onMeta);
-        audio.removeEventListener('error', onError);
-        audio.src = '';
-        audio.load();
-      };
-
-      const onMeta = () => {
-        const dur = audio.duration;
-        cleanup();
-        if (!isNaN(dur) && dur > 0) {
-          resolve(Math.floor(dur * 1000));
-        } else {
-          resolve(null);
-        }
-      };
-
-      const onError = () => {
-        cleanup();
-        resolve(null);
-      };
-
-      audio.addEventListener('loadedmetadata', onMeta, { once: true });
-      audio.addEventListener('error', onError, { once: true });
-      audio.src = url;
-    });
   }
 }
