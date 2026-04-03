@@ -146,6 +146,53 @@ Folders containing audio files become albums; parent folder = artist. A syntheti
 
 **Spotify SDK loading**: The Spotify Web Playback SDK is loaded lazily by `SpotifyPlayerService.loadSDK()` — no global script tag in `index.html`. The SDK is only injected when the Spotify provider activates.
 
+### Playback Flow
+
+User action to audio output follows this chain:
+
+1. **User triggers play/next/previous** — `usePlayerLogic` dispatches via `handlePlay` / `handleNext` / `handlePrevious`
+2. **Provider resolution** — `useProviderPlayback.playTrack(index)` resolves the provider for the track at that index: `track.provider` → `drivingProviderRef` → `activeDescriptor.id` fallback
+3. **Cross-provider handoff** — `pausePreviousProvider()` pauses the old provider if the driving provider changed, then updates `currentPlaybackProviderRef`
+4. **Adapter playback** — calls `descriptor.playback.playTrack(mediaTrack)` on the resolved `PlaybackProvider` (Spotify SDK or HTML5 Audio)
+5. **Next-track pre-warm** — after successful play, `prepareTrack()` is called on the next track's provider
+6. **State subscription** — `usePlaybackSubscription` subscribes to all registered providers, filters events by driving provider, and syncs `isPlaying`, `playbackPosition`, and `currentTrackIndex` back to React state. Uses `expectedTrackIdRef` to ignore stale provider index updates during transitions
+7. **Auto-advance** — `useAutoAdvance` subscribes to all providers and detects track end via two signals: `timeRemaining <= endThreshold` (near-end) or `wasPlaying && isPaused && position === 0` (natural end). A 5-second cooldown (`PLAY_COOLDOWN_MS`) prevents false triggers during buffering
+8. **Error recovery** — `UnavailableTrackError` and generic errors trigger auto-skip to the next track when `skipOnError` is true. `AuthExpiredError` surfaces a re-auth prompt
+
+Key files: `usePlayerLogic.ts` → `useProviderPlayback.ts` → `PlaybackProvider` (interface in `types/providers.ts`) → `usePlaybackSubscription.ts` → `useAutoAdvance.ts`
+
+### Queue Mutation Flow
+
+Queue state lives in `TrackContext` (`tracks`, `originalTracks`, `currentTrackIndex`, `shuffleEnabled`) and is mutated through `TrackOperations` (defined in `types/trackOperations.ts`). A parallel `mediaTracksRef` keeps an imperative mirror for index-based playback without waiting for React renders.
+
+**Loading a collection** (`useCollectionLoader.loadCollection`):
+- Resolves the target provider and collection ref
+- Fetches tracks via `catalog.listTracks(collectionRef)`
+- Calls `applyTracks()` which stores `originalTracks`, optionally shuffles, sets `tracks` + `mediaTracksRef`, resets `currentTrackIndex` to 0, then calls `playTrack(0)`
+- Unified Liked Songs path merges tracks from all connected providers sorted by `addedAt`
+
+**Adding to queue** (`useQueueManagement.handleAddToQueue`):
+- If queue is empty, delegates to `loadCollection` (full load + autoplay)
+- Otherwise fetches tracks via `catalog.listTracks` and appends to `tracks`, `originalTracks`, and `mediaTracksRef` without resetting `currentTrackIndex`
+
+**Removing from queue** (`handleRemoveFromQueue`):
+- Blocks removal of the currently playing track (`index === currentTrackIndex`)
+- Removes by index from `tracks`, by ID from `originalTracks` and `mediaTracksRef`
+- Decrements `currentTrackIndex` if the removed track was before the current one
+- If only one track remains, calls `handleBackToLibrary` (full reset)
+
+**Reordering** (`handleReorderQueue`):
+- Uses `moveItemInArray` on `tracks`, then syncs `mediaTracksRef` via `reorderMediaTracksToMatchTracks`
+- Recalculates `currentTrackIndex` by finding the playing track's ID in the new order
+- Only updates `originalTracks` when shuffle is off
+
+**Shuffle interaction** (`TrackContext.handleShuffleToggle`):
+- Enable: shuffles `originalTracks` (excluding current track), places current track first, resets index to 0
+- Disable: restores `originalTracks`, finds current track's original index
+- Persisted via `useLocalStorage`
+
+**Queue change notification**: `usePlayerLogic` calls `descriptor.playback.onQueueChanged?(tracks, currentTrackIndex)` whenever `tracks` or `currentTrackIndex` change, allowing providers with native queue sync (Spotify) to stay aligned.
+
 ### Debug logging (optional)
 
 Detailed queue / Spotify Web API / radio / Dropbox sync tracing uses the [`debug`](https://www.npmjs.com/package/debug) package via `src/lib/debugLog.ts`. By default these messages are silent.
@@ -256,6 +303,37 @@ Run with `npm run test:run`. Tests are colocated with source files in `__tests__
 
 - Verify actual behavior, not mock implementations
 - Every test should have meaningful assertions
+
+### Test Utilities (`src/test/`)
+
+| File | Purpose |
+|------|---------|
+| `setup.ts` | Global test setup: mocks `localStorage`, `sessionStorage`, `window.location`, `history`, `fetch`, `crypto` (for PKCE), `btoa`/`atob`; imports `fake-indexeddb/auto` and `@testing-library/jest-dom`; clears all mocks in `afterEach` |
+| `fixtures.ts` | Factory functions for domain objects: `makeTrack()`, `makeMediaTrack()`, `makePlaylistInfo()`, `makeAlbumInfo()`, `makeProviderDescriptor()` — all accept partial overrides |
+| `testWrappers.tsx` | `TestWrapper` component that nests all app context providers (`ProviderProvider`, `PlayerSizingProvider`, `TrackProvider`, `ColorProvider`, `VisualEffectsProvider`, `PinnedItemsProvider`) for component/hook tests |
+| `providerTestUtils.tsx` | `ProviderWrapper` — lighter wrapper with only `ProviderProvider`, for hooks that only need provider context |
+
+### BDD Comment Convention
+
+Tests use `// #given`, `// #when`, `// #then` comments to mark the Arrange-Act-Assert phases:
+
+```ts
+it('loads volume from localStorage on init', () => {
+  // #given
+  vi.mocked(window.localStorage.getItem).mockImplementation((key: string) => {
+    if (key === 'vorbis-player-volume') return '75';
+    return null;
+  });
+
+  // #when
+  const { result } = renderHook(() => useVolume(), { wrapper: ProviderWrapper });
+
+  // #then
+  expect(result.current.volume).toBe(75);
+});
+```
+
+Use this pattern in all new tests. The `#given` section is optional when there is no setup beyond what `beforeEach` provides.
 
 ## Command Instructions
 
