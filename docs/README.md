@@ -24,10 +24,7 @@ Step-by-step setup guides for each supported music provider:
 
 Internal development docs and implementation plans:
 
-- `development/ai-agent-wip.md` — Current work-in-progress tracking for AI agent tasks
 - `development/dynamic-contrast-implementation.md` — Dynamic contrast feature implementation
-- `development/dropbox-provider-handoff.md` — Dropbox provider handoff notes
-- `analysis/ANALYSIS.md` — Codebase analysis and improvement recommendations
 
 ## Quick Links
 
