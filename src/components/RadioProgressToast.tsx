@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import styled, { keyframes } from 'styled-components';
 import { theme } from '@/styles/theme';
-import type { RadioProgressPhase } from '@/hooks/usePlayerLogic';
+import type { RadioProgressPhase } from '@/types/radio';
 
 interface RadioProgressToastProps {
   phase: RadioProgressPhase;

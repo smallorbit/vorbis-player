@@ -7,23 +7,12 @@
 
 import { useState, useCallback, useRef } from 'react';
 import type { MediaTrack } from '@/types/domain';
-import type { RadioSeed, RadioResult } from '@/types/radio';
+import type { RadioSeed, RadioResult, RadioState } from '@/types/radio';
 import { generateRadioQueue } from '@/services/radioService';
 import { isLastFmConfigured } from '@/services/lastfm';
 import { logRadio } from '@/lib/debugLog';
 
-export interface RadioState {
-  /** Whether a radio session is currently active. */
-  isActive: boolean;
-  /** Description of the current radio seed (e.g., "Radio based on Creep by Radiohead"). */
-  seedDescription: string | null;
-  /** Whether radio queue is currently being generated. */
-  isGenerating: boolean;
-  /** Error message from the last radio attempt. */
-  error: string | null;
-  /** Match stats from the last successful radio generation. */
-  lastMatchStats: RadioResult['matchStats'] | null;
-}
+export type { RadioState };
 
 interface UseRadioReturn {
   radioState: RadioState;
