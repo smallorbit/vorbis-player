@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo } from 'react';
-import { DEFAULT_GLOW_INTENSITY, DEFAULT_GLOW_RATE } from '../components/AccentColorGlowOverlay';
+import { DEFAULT_GLOW_INTENSITY, DEFAULT_GLOW_RATE } from '@/components/AccentColorGlowOverlay';
 import { useLocalStorage } from './useLocalStorage';
 import { STORAGE_KEYS } from '@/constants/storage';
 
