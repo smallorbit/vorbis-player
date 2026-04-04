@@ -318,12 +318,6 @@ function QuickEffectsRow({
               >
                 Wave
               </OptionButton>
-              <OptionButton
-                $isActive={backgroundVisualizerStyle === 'starburst'}
-                onClick={() => onBackgroundVisualizerStyleChange('starburst')}
-              >
-                Starburst
-              </OptionButton>
             </OptionButtonGroup>
           </SubSettingRow>
           {hasVizIntensity && (

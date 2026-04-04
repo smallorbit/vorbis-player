@@ -8,8 +8,7 @@
 export type VisualizerStyle =
   | 'fireflies'
   | 'comet'
-  | 'wave'
-  | 'starburst';
+  | 'wave';
 
 interface VisualizerConfig {
   particleCount?: number;

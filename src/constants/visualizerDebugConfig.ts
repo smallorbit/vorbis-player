@@ -69,24 +69,10 @@ export interface WaveVisualizerConfig {
   pausedSpeedMult: number;
 }
 
-export interface StarburstVisualizerConfig {
-  particleCount: number;
-  speedMin: number;
-  speedSpread: number;
-  radiusMin: number;
-  radiusSpread: number;
-  maxDistanceScale: number;
-  maxDistanceSpread: number;
-  burstIntervalMin: number;
-  burstIntervalSpread: number;
-  pausedSpeedMult: number;
-}
-
 export interface VisualizerDebugConfig {
   particle: ParticleVisualizerConfig;
   trail: TrailVisualizerConfig;
   wave: WaveVisualizerConfig;
-  starburst: StarburstVisualizerConfig;
 }
 
 /** Partial overrides for debug panel; nested keys are optional. */
@@ -94,7 +80,6 @@ export interface VisualizerDebugOverrides {
   particle?: Partial<ParticleVisualizerConfig>;
   trail?: Partial<TrailVisualizerConfig>;
   wave?: Partial<WaveVisualizerConfig>;
-  starburst?: Partial<StarburstVisualizerConfig>;
 }
 
 const DEFAULT_PARTICLE: ParticleVisualizerConfig = {
@@ -156,24 +141,10 @@ const DEFAULT_WAVE: WaveVisualizerConfig = {
   pausedSpeedMult: 0.3,
 };
 
-const DEFAULT_STARBURST: StarburstVisualizerConfig = {
-  particleCount: 60,
-  speedMin: 180,
-  speedSpread: 120,
-  radiusMin: 1.5,
-  radiusSpread: 2.5,
-  maxDistanceScale: 0.6,
-  maxDistanceSpread: 0.3,
-  burstIntervalMin: 1800,
-  burstIntervalSpread: 1200,
-  pausedSpeedMult: 0.3,
-};
-
 export const DEFAULT_VISUALIZER_DEBUG_CONFIG: VisualizerDebugConfig = {
   particle: { ...DEFAULT_PARTICLE },
   trail: { ...DEFAULT_TRAIL },
   wave: { ...DEFAULT_WAVE },
-  starburst: { ...DEFAULT_STARBURST },
 };
 
 /** Deep merge: overrides only replace provided keys; nested objects are merged. */
@@ -193,9 +164,5 @@ export function mergeVisualizerConfig(
     ...base.wave,
     ...(overrides?.wave ?? {}),
   };
-  const starburst = {
-    ...base.starburst,
-    ...(overrides?.starburst ?? {}),
-  };
-  return { particle, trail, wave, starburst };
+  return { particle, trail, wave };
 }
