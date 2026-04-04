@@ -105,6 +105,7 @@ describe('Keyboard Shortcuts Integration', () => {
       onToggleGlow: vi.fn(),
       onMute: vi.fn(),
       onToggleLike: vi.fn(),
+      onToggleShuffle: vi.fn(),
       onToggleHelp: vi.fn()
     };
 
@@ -123,11 +124,11 @@ describe('Keyboard Shortcuts Integration', () => {
       { key: 'KeyK', handler: handlers.onToggleLike },
       { key: 'KeyG', handler: handlers.onToggleGlow },
       { key: 'KeyV', handler: handlers.onToggleBackgroundVisualizer },
-      { key: 'KeyO', handler: handlers.onToggleVisualEffectsMenu },
+      { key: 'KeyS', handler: handlers.onToggleShuffle, shift: false },
     ];
 
-    tests.forEach(({ key, handler: expectedHandler }) => {
-      const event = new KeyboardEvent('keydown', { code: key, bubbles: true });
+    tests.forEach(({ key, handler: expectedHandler, shift }) => {
+      const event = new KeyboardEvent('keydown', { code: key, shiftKey: shift || false, bubbles: true });
       Object.defineProperty(event, 'target', { value: document.body, enumerable: true });
       handler(event);
       expect(expectedHandler).toHaveBeenCalled();
