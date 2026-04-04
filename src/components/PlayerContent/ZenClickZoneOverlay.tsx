@@ -18,6 +18,7 @@ const Overlay = styled.div`
   overflow: hidden;
   display: flex;
   flex-direction: row;
+  container-type: size;
 `;
 
 const ZoneDiv = styled.div.withConfig({
@@ -31,9 +32,10 @@ const ZoneDiv = styled.div.withConfig({
   .zone-icon {
     opacity: ${({ $hovered }) => ($hovered ? 1 : 0)};
     transition: opacity 150ms ease;
-    background: rgba(0, 0, 0, 0.35);
+    background: rgba(0, 0, 0, 0.4);
     border-radius: 50%;
-    padding: 0.5rem;
+    width: 16cqw;
+    height: 16cqw;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -53,7 +55,7 @@ const RightZone = styled(ZoneDiv)`
 `;
 
 const Icon: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
+  <svg viewBox="0 0 24 24" fill="white" style={{ width: '60%', height: '60%' }}>
     {children}
   </svg>
 );
