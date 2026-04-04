@@ -3,6 +3,7 @@ import styled from 'styled-components';
 import type { VisualizerStyle } from '../types/visualizer';
 import { ParticleVisualizer } from './visualizers/ParticleVisualizer';
 import { TrailVisualizer } from './visualizers/TrailVisualizer';
+import { WaveVisualizer } from './visualizers/WaveVisualizer';
 
 interface AlbumArtBounds {
   left: number;
@@ -68,6 +69,8 @@ const BackgroundVisualizer: React.FC<BackgroundVisualizerProps> = React.memo(({
         return ParticleVisualizer;
       case 'comet':
         return TrailVisualizer;
+      case 'wave':
+        return WaveVisualizer;
       default:
         return ParticleVisualizer;
     }

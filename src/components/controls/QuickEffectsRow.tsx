@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import styled from 'styled-components';
 import type { MediaTrack } from '@/types/domain';
+import type { VisualizerStyle } from '@/types/visualizer';
 import { extractTopVibrantColors } from '@/utils/colorExtractor';
 import type { ExtractedColor } from '@/utils/colorExtractor';
 import { OptionButton, OptionButtonGroup } from '@/components/VisualEffectsMenu/styled';
@@ -23,8 +24,8 @@ interface QuickEffectsRowProps {
   onGlowRateChange?: (v: number) => void;
   backgroundVisualizerEnabled: boolean;
   onBackgroundVisualizerToggle: () => void;
-  backgroundVisualizerStyle: 'fireflies' | 'comet';
-  onBackgroundVisualizerStyleChange: (style: 'fireflies' | 'comet') => void;
+  backgroundVisualizerStyle: VisualizerStyle;
+  onBackgroundVisualizerStyleChange: (style: VisualizerStyle) => void;
   backgroundVisualizerIntensity?: number;
   onBackgroundVisualizerIntensityChange?: (intensity: number) => void;
   translucenceEnabled: boolean;
@@ -310,6 +311,12 @@ function QuickEffectsRow({
                 onClick={() => onBackgroundVisualizerStyleChange('comet')}
               >
                 Comet
+              </OptionButton>
+              <OptionButton
+                $isActive={backgroundVisualizerStyle === 'wave'}
+                onClick={() => onBackgroundVisualizerStyleChange('wave')}
+              >
+                Wave
               </OptionButton>
             </OptionButtonGroup>
           </SubSettingRow>

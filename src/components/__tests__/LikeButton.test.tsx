@@ -17,20 +17,13 @@ function renderLikeButton(overrides?: Partial<typeof defaultProps>) {
 }
 
 describe('LikeButton', () => {
-  it('renders outlined heart icon when isLiked is false', () => {
+  it('renders both outline and filled heart SVGs for cross-fade', () => {
     renderLikeButton({ isLiked: false });
-    const svg = screen.getByRole('button').querySelector('svg');
-    expect(svg).toBeTruthy();
-    const path = svg!.querySelector('path');
-    expect(path!.getAttribute('d')).toContain('16.5 3c-1.74');
-  });
-
-  it('renders filled heart icon when isLiked is true', () => {
-    renderLikeButton({ isLiked: true });
-    const svg = screen.getByRole('button').querySelector('svg');
-    expect(svg).toBeTruthy();
-    const path = svg!.querySelector('path');
-    expect(path!.getAttribute('d')).toContain('12 21.35l-1.45');
+    const button = screen.getByRole('button');
+    const svgs = button.querySelectorAll('svg');
+    expect(svgs).toHaveLength(2);
+    expect(svgs[0]).toHaveClass('heart-outline');
+    expect(svgs[1]).toHaveClass('heart-filled');
   });
 
   it('is disabled and shows heart icon when isLoading is true', () => {

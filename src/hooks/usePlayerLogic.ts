@@ -20,10 +20,7 @@ import { useQueueManagement } from './useQueueManagement';
 import { useCollectionLoader } from './useCollectionLoader';
 import { usePlaybackSubscription } from './usePlaybackSubscription';
 import { useRadioSession } from './useRadioSession';
-import type { RadioProgress } from './useRadioSession';
-
-export type { RadioProgressPhase, RadioProgress } from './useRadioSession';
-
+import type { RadioProgress } from '@/types/radio';
 
 export function usePlayerLogic() {
   // Terminology used in this hook:

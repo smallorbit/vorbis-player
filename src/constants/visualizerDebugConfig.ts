@@ -54,15 +54,32 @@ export interface TrailVisualizerConfig {
   countPixelDivisorMobile: number;
 }
 
+export interface WaveVisualizerConfig {
+  waveCount: number;
+  phaseSpeedMin: number;
+  phaseSpeedSpread: number;
+  amplitudeBase: number;
+  amplitudeLayerScale: number;
+  frequencyMin: number;
+  frequencySpread: number;
+  yBaseStart: number;
+  yBaseLayerScale: number;
+  opacityBase: number;
+  opacityLayerScale: number;
+  pausedSpeedMult: number;
+}
+
 export interface VisualizerDebugConfig {
   particle: ParticleVisualizerConfig;
   trail: TrailVisualizerConfig;
+  wave: WaveVisualizerConfig;
 }
 
 /** Partial overrides for debug panel; nested keys are optional. */
 export interface VisualizerDebugOverrides {
   particle?: Partial<ParticleVisualizerConfig>;
   trail?: Partial<TrailVisualizerConfig>;
+  wave?: Partial<WaveVisualizerConfig>;
 }
 
 const DEFAULT_PARTICLE: ParticleVisualizerConfig = {
@@ -109,9 +126,25 @@ const DEFAULT_TRAIL: TrailVisualizerConfig = {
 
 
 
+const DEFAULT_WAVE: WaveVisualizerConfig = {
+  waveCount: 4,
+  phaseSpeedMin: 0.004,
+  phaseSpeedSpread: 0.003,
+  amplitudeBase: 0.06,
+  amplitudeLayerScale: 0.05,
+  frequencyMin: 0.003,
+  frequencySpread: 0.002,
+  yBaseStart: 0.55,
+  yBaseLayerScale: 0.12,
+  opacityBase: 0.12,
+  opacityLayerScale: 0.1,
+  pausedSpeedMult: 0.3,
+};
+
 export const DEFAULT_VISUALIZER_DEBUG_CONFIG: VisualizerDebugConfig = {
   particle: { ...DEFAULT_PARTICLE },
   trail: { ...DEFAULT_TRAIL },
+  wave: { ...DEFAULT_WAVE },
 };
 
 /** Deep merge: overrides only replace provided keys; nested objects are merged. */
@@ -127,5 +160,9 @@ export function mergeVisualizerConfig(
     ...base.trail,
     ...(overrides?.trail ?? {}),
   };
-  return { particle, trail };
+  const wave = {
+    ...base.wave,
+    ...(overrides?.wave ?? {}),
+  };
+  return { particle, trail, wave };
 }

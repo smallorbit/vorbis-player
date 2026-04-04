@@ -2,13 +2,12 @@ import { useCallback } from 'react';
 import type { MediaTrack, ProviderId } from '@/types/domain';
 import type { ProviderDescriptor } from '@/types/providers';
 import type { TrackOperations } from '@/types/trackOperations';
-import type { RadioSeed, RadioProgressPhase, RadioProgress } from '@/types/radio';
+import type { RadioSeed, RadioProgress } from '@/types/radio';
 import { RADIO_PLAYLIST_ID } from '@/constants/playlist';
 import { providerRegistry } from '@/providers/registry';
 import { runRadioPipeline } from '@/services/radioPipeline';
 import { queueSnapshot } from './playerLogicUtils';
 
-export type { RadioProgressPhase, RadioProgress };
 
 interface UseRadioSessionProps {
   trackOps: Pick<TrackOperations, 'setError' | 'setTracks' | 'setOriginalTracks' | 'setCurrentTrackIndex' | 'setSelectedPlaylistId' | 'mediaTracksRef'>;

@@ -4,6 +4,7 @@ import { useProviderContext } from '@/contexts/ProviderContext';
 import { providerRegistry } from '@/providers/registry';
 import { STORAGE_KEYS } from '@/constants/storage';
 import type { ProviderId } from '@/types/domain';
+
 const DEFAULT_VOLUME = 50;
 
 export const useVolume = (currentTrackProvider?: ProviderId) => {

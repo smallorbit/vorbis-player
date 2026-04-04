@@ -1,7 +1,12 @@
+/**
+ * Extracts dominant colors from album artwork using Canvas pixel analysis.
+ * Results are LRU-cached (100 entries) and images are downscaled for performance.
+ */
 import { hasCache, getFromCache, addToCache } from './colorCache';
 import type { ExtractedColor } from './colorCache';
 export type { ExtractedColor } from './colorCache';
 
+/** Pixel color data used during extraction. */
 interface ColorData {
   r: number;
   g: number;
@@ -9,6 +14,7 @@ interface ColorData {
   count: number;
 }
 
+/** Converts RGB (0-255 each) to [hue 0-360, saturation 0-100, lightness 0-100]. */
 function rgbToHsl(r: number, g: number, b: number): [number, number, number] {
   r /= 255;
   g /= 255;
@@ -41,20 +47,28 @@ function rgbToHsl(r: number, g: number, b: number): [number, number, number] {
   return [h * 360, s * 100, l * 100];
 }
 
+/** Converts RGB (0-255 each) to a '#rrggbb' hex string. */
 function rgbToHex(r: number, g: number, b: number): string {
   return `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`;
 }
 
+/** Returns true if lightness is in the 40-85% range (suitable for UI accent use). */
 function isGoodContrast(r: number, g: number, b: number): boolean {
   const [, , lightness] = rgbToHsl(r, g, b);
   return lightness >= 40 && lightness <= 85;
 }
 
+/** Returns true if saturation is >= 50% (vibrant enough for accent use). */
 function isVibrant(r: number, g: number, b: number): boolean {
   const [, saturation] = rgbToHsl(r, g, b);
   return saturation >= 50;
 }
 
+/**
+ * Extracts the single most prominent vibrant color from an image URL.
+ * Scores candidates by: pixel count x (saturation/100) x contrast-proximity-to-50% lightness.
+ * Returns null if no sufficiently vibrant+contrasting color is found, or if image loading fails.
+ */
 export async function extractDominantColor(imageUrl: string): Promise<ExtractedColor | null> {
   if (hasCache(imageUrl)) {
     return getFromCache(imageUrl) ?? null;
