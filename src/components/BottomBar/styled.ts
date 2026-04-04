@@ -4,8 +4,8 @@ import { theme } from '@/styles/theme';
 export const BOTTOM_BAR_HEIGHT = 60;
 
 export const BottomBarContainer = styled.div.withConfig({
-  shouldForwardProp: (prop) => !['$zenHidden'].includes(prop),
-})<{ $zenHidden?: boolean }>`
+  shouldForwardProp: (prop) => !['$hidden'].includes(prop),
+})<{ $hidden?: boolean }>`
   position: fixed;
   bottom: 0;
   left: 0;
@@ -16,14 +16,10 @@ export const BottomBarContainer = styled.div.withConfig({
   -webkit-backdrop-filter: blur(20px) saturate(180%);
   border-top: 1px solid ${({ theme }) => theme.colors.popover.border};
   padding-bottom: env(safe-area-inset-bottom, 0px);
-  opacity: ${({ $zenHidden }) => $zenHidden ? 0 : 1};
-  transform: ${({ $zenHidden }) => $zenHidden ? 'translateY(100%)' : 'translateY(0)'};
-  pointer-events: ${({ $zenHidden }) => $zenHidden ? 'none' : 'auto'};
-  /* When revealing (exiting zen): longer fade-in with short delay so it’s not jarring. When hiding: quick. */
-  transition: ${({ $zenHidden, theme }) =>
-    $zenHidden
-      ? `opacity ${theme.transitions.slow} ease, transform ${theme.transitions.slow} ease`
-      : `opacity 0.5s ease-out 0.15s, transform 0.5s ease-out 0.15s`};
+  opacity: ${({ $hidden }) => $hidden ? 0 : 1};
+  transform: ${({ $hidden }) => $hidden ? 'translateY(100%)' : 'translateY(0)'};
+  pointer-events: ${({ $hidden }) => $hidden ? 'none' : 'auto'};
+  transition: opacity 0.3s ease, transform 0.3s ease;
 `;
 
 export const BottomBarInner = styled.div`
@@ -35,7 +31,7 @@ export const BottomBarInner = styled.div`
   height: ${BOTTOM_BAR_HEIGHT}px;
 `;
 
-/** Invisible hover/touch zone at the bottom of the viewport to reveal the bar in zen mode */
+/** Invisible hover/touch zone at the bottom of the viewport to reveal the bar */
 export const ZenTriggerZone = styled.div`
   position: fixed;
   bottom: 0;

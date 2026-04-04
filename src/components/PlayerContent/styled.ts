@@ -1,6 +1,5 @@
 import styled from 'styled-components';
 import { cardBase } from '@/styles/utils';
-import { BOTTOM_BAR_HEIGHT } from '@/components/BottomBar/styled';
 
 export const ContentWrapper = styled.div.withConfig({
   shouldForwardProp: (prop) => !['width', 'padding', 'useFluidSizing', 'transitionDuration', 'transitionEasing', '$zenMode'].includes(prop),
@@ -17,7 +16,7 @@ export const ContentWrapper = styled.div.withConfig({
 
   margin: 0 auto;
   padding: ${props => props.padding}px;
-  padding-bottom: ${props => props.$zenMode ? props.padding : `calc(${props.padding + BOTTOM_BAR_HEIGHT}px + env(safe-area-inset-bottom, 0px))`};
+  padding-bottom: ${props => props.padding}px;
   box-sizing: border-box;
   position: relative;
   z-index: 2;
@@ -25,7 +24,7 @@ export const ContentWrapper = styled.div.withConfig({
 
   transition: width ${props => props.$zenMode ? '1000ms cubic-bezier(0.4, 0, 0.2, 1) 300ms' : '1000ms cubic-bezier(0.4, 0, 0.2, 1)'},
             padding ${props => props.transitionDuration}ms ${props => props.transitionEasing},
-            padding-bottom ${props => props.$zenMode ? '1000ms cubic-bezier(0.4, 0, 0.2, 1) 300ms' : '1000ms cubic-bezier(0.4, 0, 0.2, 1)'},
+            padding-bottom 1000ms cubic-bezier(0.4, 0, 0.2, 1),
             max-width ${props => props.$zenMode ? '1000ms cubic-bezier(0.4, 0, 0.2, 1) 300ms' : '1000ms cubic-bezier(0.4, 0, 0.2, 1)'};
 
   container-type: inline-size;
