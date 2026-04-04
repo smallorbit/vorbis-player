@@ -139,6 +139,7 @@ const BottomBar = React.memo(function BottomBar({
               isActive={shuffleEnabled}
               onClick={onShuffleToggle}
               title={`Shuffle ${shuffleEnabled ? 'ON' : 'OFF'}`}
+              aria-label="Shuffle"
               aria-pressed={shuffleEnabled}
             >
               <ShuffleIcon />
@@ -165,6 +166,7 @@ const BottomBar = React.memo(function BottomBar({
             $compact
             onClick={onShowVisualEffects}
             title="App settings"
+            aria-label="App settings"
           >
             <VisualEffectsIcon />
           </ControlButton>
@@ -176,6 +178,7 @@ const BottomBar = React.memo(function BottomBar({
               $compact
               onClick={onBackToLibrary}
               title="Back to Library"
+              aria-label="Back to Library"
             >
               <BackToLibraryIcon />
             </ControlButton>
@@ -187,6 +190,7 @@ const BottomBar = React.memo(function BottomBar({
             $compact
             onClick={onShowQueue}
             title="Show Queue"
+            aria-label="Show Queue"
           >
             <QueueIcon />
           </ControlButton>
@@ -199,6 +203,7 @@ const BottomBar = React.memo(function BottomBar({
               isActive={zenModeEnabled}
               onClick={onZenModeToggle}
               title={`Zen Mode ${zenModeEnabled ? 'ON' : 'OFF'}`}
+              aria-label="Zen Mode"
               aria-pressed={zenModeEnabled}
             >
               <ZenModeIcon />

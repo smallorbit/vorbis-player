@@ -261,7 +261,7 @@ const QueueDrawer = memo<QueueDrawerProps>(({
                 </svg>
               </SaveButton>
             )}
-            <CloseButton onClick={onClose}>×</CloseButton>
+            <CloseButton onClick={onClose} aria-label="Close queue drawer">×</CloseButton>
           </HeaderActions>
         </QueueHeader>
 
