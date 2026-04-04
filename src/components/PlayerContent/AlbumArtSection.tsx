@@ -9,10 +9,12 @@ import { useColorContext } from '@/contexts/ColorContext';
 import { useVisualEffectsContext } from '@/contexts/VisualEffectsContext';
 import { useProviderContext } from '@/contexts/ProviderContext';
 import { useVisualEffectsState } from '@/hooks/useVisualEffectsState';
+import { useLikeTrack } from '@/hooks/useLikeTrack';
 import type { MediaTrack, ProviderId } from '@/types/domain';
 import { FlipInner, ZenTrackInfo, ZenTrackName, ZenTrackArtist } from './styled';
 import { GestureLayer } from './GestureLayer';
 import { ZenClickZoneOverlay } from './ZenClickZoneOverlay';
+import { ZenLikeOverlay } from './ZenLikeOverlay';
 
 const ZenProviderBadgeOverlay = styled.div`
   position: absolute;
@@ -102,8 +104,11 @@ export const AlbumArtSection: React.FC<AlbumArtSectionProps> = React.memo(({
     restoreGlowSettings,
   } = useVisualEffectsState();
 
+  const { isLiked, handleLikeToggle, canSaveTrack } = useLikeTrack(currentTrack?.id, currentTrackProvider);
+
   const [isFlipped, setIsFlipped] = useState(false);
   const [hoveredZone, setHoveredZone] = useState<'left' | 'center' | 'right' | null>(null);
+  const [isHovered, setIsHovered] = useState(false);
   const flipContainerRef = useRef<HTMLDivElement>(null);
   const albumArtContainerRef = useRef<HTMLDivElement | null>(null);
 
@@ -167,9 +172,18 @@ export const AlbumArtSection: React.FC<AlbumArtSectionProps> = React.memo(({
     setIsFlipped(false);
   }, [currentTrack?.id]);
 
+  const handleMouseEnter = useCallback(() => {
+    if (zenModeEnabled && hasPointerInput) setIsHovered(true);
+  }, [zenModeEnabled, hasPointerInput]);
+
+  const handleMouseLeave = useCallback(() => {
+    setIsHovered(false);
+  }, []);
+
   useEffect(() => {
     if (!zenModeEnabled) {
       setHoveredZone(null);
+      setIsHovered(false);
     }
   }, [zenModeEnabled]);
 
@@ -250,7 +264,7 @@ export const AlbumArtSection: React.FC<AlbumArtSectionProps> = React.memo(({
             <ProviderBadge providerId={currentTrackProvider} />
           </ZenProviderBadgeOverlay>
         )}
-        <div ref={flipContainerRef} style={{ width: '100%', position: 'relative' }}>
+        <div ref={flipContainerRef} style={{ width: '100%', position: 'relative' }} onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
           <GestureLayer
             onSwipeLeft={onSwipeLeft}
             onSwipeRight={onSwipeRight}
@@ -308,6 +322,12 @@ export const AlbumArtSection: React.FC<AlbumArtSectionProps> = React.memo(({
             isPlaying={isPlaying}
             hoveredZone={hoveredZone}
             visible={zenModeEnabled && hasPointerInput}
+          />
+          <ZenLikeOverlay
+            isLiked={isLiked}
+            isVisible={zenModeEnabled && hasPointerInput && isHovered}
+            canSaveTrack={canSaveTrack}
+            onToggleLike={handleLikeToggle}
           />
         </div>
       </CardContent>
