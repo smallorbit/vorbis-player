@@ -115,7 +115,7 @@ const shortcuts = [
   { key: 'M', description: 'Mute / Unmute' },
   { key: 'G', description: 'Toggle glow effect' },
   { key: 'V', description: 'Toggle background visualizations' },
-  { key: 'O', description: 'Open visual effects menu' },
+  { key: 'S', description: 'Open settings' },
   { key: 'Z', description: 'Toggle zen mode' },
   { key: 'Esc', description: 'Close menus' },
   { key: '/', description: 'Show this help' },
