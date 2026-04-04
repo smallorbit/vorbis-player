@@ -37,6 +37,8 @@ export class SpotifyPlaybackAdapter implements PlaybackProvider {
   private static readonly READY_POLL_MS = 200;
 
   private pendingUpcomingUris: string[] | null = null;
+  /** True after the first successful playTrack; lets subsequent plays skip heavy API checks. */
+  private playbackSessionActive = false;
 
   private async waitForPlayerReady(): Promise<void> {
     const start = Date.now();
@@ -55,17 +57,46 @@ export class SpotifyPlaybackAdapter implements PlaybackProvider {
     await spotifyPlayer.ensureDeviceIsActive();
   }
 
+  /**
+   * Fast path for consecutive plays: skip API calls when the player is locally
+   * known to be ready. Falls back to full ensurePlaybackReady() if local state
+   * indicates the device went away.
+   */
+  private async ensurePlaybackReadyFastPath(): Promise<void> {
+    if (!spotifyPlayer.getIsReady() || !spotifyPlayer.getDeviceId()) {
+      logSpotify('fast-path: device not ready locally, falling back to full check');
+      this.playbackSessionActive = false;
+      return this.ensurePlaybackReady();
+    }
+    logSpotify('fast-path: device locally ready, skipping transfer + active checks');
+  }
+
   async initialize(): Promise<void> {
     await spotifyPlayer.initialize();
   }
 
   async playTrack(track: MediaTrack): Promise<void> {
-    await this.ensurePlaybackReady();
-
     const uri = track.playbackRef.ref;
+
+    // If Spotify's SDK already natively advanced to this track, skip the API call entirely.
+    if (this.playbackSessionActive) {
+      const state = await spotifyPlayer.getCurrentState();
+      if (state?.track_window?.current_track?.uri === uri && !state.paused) {
+        logSpotify('Spotify already playing requested track natively, skipping API call');
+        return;
+      }
+    }
+
+    if (this.playbackSessionActive) {
+      await this.ensurePlaybackReadyFastPath();
+    } else {
+      await this.ensurePlaybackReady();
+    }
+
     const upcomingUris = this.pendingUpcomingUris ?? undefined;
 
     await this.playWithRetry(uri, track.name, upcomingUris);
+    this.playbackSessionActive = true;
 
     const activateDevice = async () => {
       try {
@@ -112,6 +143,7 @@ export class SpotifyPlaybackAdapter implements PlaybackProvider {
           throw new UnavailableTrackError(trackName);
         }
 
+        this.playbackSessionActive = false;
         if (retryCount < MAX_PLAY_RETRIES) {
           const backoffMs = BASE_RETRY_BACKOFF_MS * Math.pow(2, retryCount);
           logSpotify('403 during play, retrying (%d/%d) after %dms', retryCount + 1, MAX_PLAY_RETRIES, backoffMs);
@@ -194,6 +226,11 @@ export class SpotifyPlaybackAdapter implements PlaybackProvider {
 
   getLastPlayTime(): number {
     return spotifyPlayer.lastPlayTrackTime;
+  }
+
+  prepareTrack(_track: MediaTrack): void {
+    // Pre-warm the auth token so no refresh delay hits the next transition.
+    spotifyAuth.ensureValidToken().catch(() => {});
   }
 
   onQueueChanged(tracks: MediaTrack[], fromIndex: number): void {

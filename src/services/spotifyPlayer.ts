@@ -223,8 +223,8 @@ class SpotifyPlayerService {
     return this.isReady;
   }
 
-  private static readonly DEVICE_ACTIVE_TTL_MS = 30_000;
-  private static readonly TRANSFER_TTL_MS = 30_000;
+  private static readonly DEVICE_ACTIVE_TTL_MS = 300_000;
+  private static readonly TRANSFER_TTL_MS = 300_000;
 
   async transferPlaybackToDevice(force = false): Promise<void> {
     if (!this.deviceId || !this.isReady) {
@@ -243,7 +243,7 @@ class SpotifyPlayerService {
     }
   }
 
-  async ensureDeviceIsActive(maxRetries = 5, initialDelayMs = 800): Promise<boolean> {
+  async ensureDeviceIsActive(maxRetries = 5, initialDelayMs = 300): Promise<boolean> {
     if (this.isReady && Date.now() - this.lastDeviceActiveAt < SpotifyPlayerService.DEVICE_ACTIVE_TTL_MS) {
       return true;
     }
