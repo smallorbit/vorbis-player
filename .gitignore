@@ -63,6 +63,9 @@ Thumbs.db
 .cursor/plans/
 .certs/
 
+# Conversation exports
+it.txt
+
 # Playwright
 test-results/
 
