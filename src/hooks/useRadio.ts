@@ -1,18 +1,9 @@
-/**
- * useRadio — React hook for radio state management.
- *
- * Manages starting radio sessions from tracks, artists, or albums.
- * Provider-agnostic: works with any catalog of MediaTracks.
- */
-
 import { useState, useCallback, useRef } from 'react';
 import type { MediaTrack } from '@/types/domain';
 import type { RadioSeed, RadioResult, RadioState } from '@/types/radio';
 import { generateRadioQueue } from '@/services/radioService';
 import { isLastFmConfigured } from '@/services/lastfm';
 import { logRadio } from '@/lib/debugLog';
-
-export type { RadioState };
 
 interface UseRadioReturn {
   radioState: RadioState;

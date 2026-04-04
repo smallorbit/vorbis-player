@@ -4,7 +4,7 @@ import type {
   ImageProcessingRequest, 
   ImageProcessingResponse, 
   ImageProcessingError 
-} from '../workers/imageProcessor.worker';
+} from '@/workers/imageProcessor.worker';
 
 interface UseImageProcessingWorkerReturn {
   processImage: (

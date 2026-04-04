@@ -1,36 +1,12 @@
-/**
- * React hook that connects the LibrarySyncEngine to component state.
- *
- * Multi-provider aware: fetches collections from ALL enabled providers
- * simultaneously and merges results. Spotify uses the LibrarySyncEngine
- * (with IndexedDB cache and background polling); other providers call
- * catalog.listCollections() directly.
- */
-
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { librarySyncEngine } from '../services/cache/librarySyncEngine';
-import type { CachedPlaylistInfo, SyncState } from '../services/cache/cacheTypes';
-import type { AlbumInfo } from '../services/spotify';
-import { useProviderContext } from '../contexts/ProviderContext';
-import type { MediaCollection, ProviderId } from '../types/domain';
-import { providerRegistry } from '../providers/registry';
-import { logLibrary } from '../lib/debugLog';
-import { getOrSetFirstSeenAddedAtIso } from '../utils/libraryFirstSeen';
-
-function splitCollections(collections: MediaCollection[]): { playlists: CachedPlaylistInfo[]; albums: AlbumInfo[] } {
-  const playlists: CachedPlaylistInfo[] = [];
-  const albums: AlbumInfo[] = [];
-  let playlistOrdinal = 0;
-  let albumOrdinal = 0;
-  for (const c of collections) {
-    if (c.kind === 'album') {
-      albums.push(collectionToAlbumInfo(c, albumOrdinal++));
-    } else {
-      playlists.push(collectionToPlaylistInfo(c, playlistOrdinal++));
-    }
-  }
-  return { playlists, albums };
-}
+import type { CachedPlaylistInfo, SyncState } from '@/services/cache/cacheTypes';
+import type { AlbumInfo } from '@/services/spotify';
+import type { MediaCollection, ProviderId } from '@/types/domain';
+import { useProviderContext } from '@/contexts/ProviderContext';
+import { providerRegistry } from '@/providers/registry';
+import { librarySyncEngine } from '@/services/cache/librarySyncEngine';
+import { logLibrary } from '@/lib/debugLog';
+import { getOrSetFirstSeenAddedAtIso } from '@/utils/libraryFirstSeen';
 
 export const ART_REFRESHED_EVENT = 'vorbis-art-refreshed';
 export const LIBRARY_REFRESH_EVENT = 'vorbis-library-refresh';
@@ -57,10 +33,6 @@ interface UseLibrarySyncResult {
   removeCollection: (collectionId: string) => void;
 }
 
-/**
- * Map a MediaCollection to CachedPlaylistInfo shape so the library UI can
- * render it regardless of provider.
- */
 function collectionToPlaylistInfo(c: MediaCollection, ordinal: number): CachedPlaylistInfo {
   return {
     id: c.id,
@@ -75,9 +47,6 @@ function collectionToPlaylistInfo(c: MediaCollection, ordinal: number): CachedPl
   };
 }
 
-/**
- * Map a MediaCollection (album/folder kind) to AlbumInfo shape.
- */
 function collectionToAlbumInfo(c: MediaCollection, ordinal: number): AlbumInfo {
   return {
     id: c.id,
@@ -91,6 +60,21 @@ function collectionToAlbumInfo(c: MediaCollection, ordinal: number): AlbumInfo {
     provider: c.provider,
     added_at: getOrSetFirstSeenAddedAtIso(c.provider, `album:${c.id}`, ordinal),
   };
+}
+
+function splitCollections(collections: MediaCollection[]): { playlists: CachedPlaylistInfo[]; albums: AlbumInfo[] } {
+  const playlists: CachedPlaylistInfo[] = [];
+  const albums: AlbumInfo[] = [];
+  let playlistOrdinal = 0;
+  let albumOrdinal = 0;
+  for (const c of collections) {
+    if (c.kind === 'album') {
+      albums.push(collectionToAlbumInfo(c, albumOrdinal++));
+    } else {
+      playlists.push(collectionToPlaylistInfo(c, playlistOrdinal++));
+    }
+  }
+  return { playlists, albums };
 }
 
 export function useLibrarySync(): UseLibrarySyncResult {
@@ -108,11 +92,8 @@ export function useLibrarySync(): UseLibrarySyncResult {
 
   const engineRef = useRef(librarySyncEngine);
 
-  // The library sync engine manages one provider (currently Spotify) with IndexedDB cache + polling.
-  // All other providers fetch via catalog.listCollections() directly.
   const engineProviderId = librarySyncEngine.providerId as ProviderId | undefined;
 
-  // Per-provider data stored in refs so we can merge without re-fetching all
   const engineDataRef = useRef<{ playlists: CachedPlaylistInfo[]; albums: AlbumInfo[]; likedCount: number }>({
     playlists: [], albums: [], likedCount: 0,
   });
@@ -121,7 +102,6 @@ export function useLibrarySync(): UseLibrarySyncResult {
   const isEngineProviderEnabled = !!engineProviderId && enabledProviderIds.includes(engineProviderId);
   const catalogProviderIds = enabledProviderIds.filter(id => id !== engineProviderId);
 
-  // Merge all provider data into combined state
   const mergeAndSetData = useCallback(() => {
     const allPlaylists: CachedPlaylistInfo[] = [];
     const allAlbums: AlbumInfo[] = [];
@@ -154,7 +134,6 @@ export function useLibrarySync(): UseLibrarySyncResult {
     setLikedSongsPerProvider(perProvider);
   }, [isEngineProviderEnabled, engineProviderId, enabledProviderIds]);
 
-  // ── Engine provider path: delegate to existing sync engine ──────────────
   useEffect(() => {
     if (!isEngineProviderEnabled || !engineProviderId) {
       engineDataRef.current = { playlists: [], albums: [], likedCount: 0 };
@@ -196,7 +175,6 @@ export function useLibrarySync(): UseLibrarySyncResult {
     };
   }, [isEngineProviderEnabled, engineProviderId, mergeAndSetData]);
 
-  // ── Catalog providers path: call catalog.listCollections() for each provider not using the sync engine ───
   useEffect(() => {
     if (catalogProviderIds.length === 0) {
       catalogDataRef.current.clear();
@@ -262,7 +240,6 @@ export function useLibrarySync(): UseLibrarySyncResult {
     };
   }, [[...catalogProviderIds].sort().join(','), getDescriptor, mergeAndSetData]);
 
-  // ── Listen for likes-changed events to update count in real-time ──────
   useEffect(() => {
     const cleanups: Array<() => void> = [];
     for (const providerId of catalogProviderIds) {

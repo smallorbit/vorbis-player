@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useRadioSession } from '../useRadioSession';
-import type { RadioProgress } from '../useRadioSession';
+import type { RadioProgress } from '@/types/radio';
 import { makeMediaTrack, makeProviderDescriptor } from '@/test/fixtures';
 import type { MediaTrack } from '@/types/domain';
 import type { ProviderDescriptor } from '@/types/providers';

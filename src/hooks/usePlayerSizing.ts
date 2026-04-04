@@ -3,7 +3,7 @@ import type {
   ViewportInfo, 
   PlayerDimensions, 
   SizingConstraints
-} from '../utils/sizingUtils';
+} from '@/utils/sizingUtils';
 import {
   getViewportInfo,
   calculatePlayerDimensions,
@@ -11,13 +11,13 @@ import {
   calculateOptimalPadding,
   getOptimalAspectRatio,
   calculateAspectRatioConstraints
-} from '../utils/sizingUtils';
+} from '@/utils/sizingUtils';
 import {
   detectBrowserFeatures,
   getEnhancedViewportInfo,
   createEnhancedEventListeners,
   type BrowserFeatures
-} from '../utils/featureDetection';
+} from '@/utils/featureDetection';
 
 interface UsePlayerSizingReturn {
   dimensions: PlayerDimensions;

@@ -1,21 +1,10 @@
-/**
- * Centralized state management hook for the entire Vorbis Player application.
- * 
- * Manages tracks, playback state, visual effects, and user preferences with
- * persistent storage and performance optimizations. Serves as the single source
- * of truth for all player-related state.
- */
-
 import { useState, useEffect, useCallback } from 'react';
 import type { MediaTrack } from '@/types/domain';
+import type { VisualizerStyle } from '@/types/visualizer';
 import { theme } from '@/styles/theme';
-import type { VisualizerStyle } from '../types/visualizer';
-import { useLocalStorage } from './useLocalStorage';
 import { STORAGE_KEYS } from '@/constants/storage';
+import { useLocalStorage } from './useLocalStorage';
 
-/**
- * Internal state type definitions
- */
 interface TrackState {
   tracks: MediaTrack[];
   originalTracks: MediaTrack[];
@@ -112,13 +101,6 @@ interface PlayerStateSetters {
   };
 }
 
-/**
- * Global player state management hook.
- * 
- * Centralized state management for the entire player application.
- * Manages tracks, playback state, visual effects, and user preferences
- * with persistent storage and performance optimizations.
- */
 export function usePlayerState(): PlayerState & PlayerStateSetters {
   const [tracks, setTracks] = useState<MediaTrack[]>([]);
   const [originalTracks, setOriginalTracks] = useState<MediaTrack[]>([]);
@@ -138,17 +120,17 @@ export function usePlayerState(): PlayerState & PlayerStateSetters {
     STORAGE_KEYS.VISUAL_EFFECTS_ENABLED,
     true
   );
-  
+
   const [perAlbumGlow, setPerAlbumGlow] = useLocalStorage<Record<string, { intensity: number; rate: number }>>(
     STORAGE_KEYS.PER_ALBUM_GLOW,
     {}
   );
-  
+
   const [accentColorOverrides, setAccentColorOverrides] = useLocalStorage<Record<string, string>>(
     STORAGE_KEYS.ACCENT_COLOR_OVERRIDES,
     {}
   );
-  
+
   const [backgroundVisualizerEnabled, setBackgroundVisualizerEnabled] = useLocalStorage<boolean>(
     STORAGE_KEYS.BG_VISUALIZER_ENABLED,
     true
@@ -184,7 +166,7 @@ export function usePlayerState(): PlayerState & PlayerStateSetters {
   const handleSetAccentColorOverride = useCallback((albumId: string, color: string) => {
     setAccentColorOverrides(prev => ({
       ...prev,
-      [albumId]: color
+      [albumId]: color,
     }));
   }, [setAccentColorOverrides]);
 
@@ -203,15 +185,15 @@ export function usePlayerState(): PlayerState & PlayerStateSetters {
       currentIndex: currentTrackIndex,
       isLoading,
       error,
-      shuffleEnabled
+      shuffleEnabled,
     },
     queue: {
       selectedId: selectedPlaylistId,
-      isVisible: showQueue
+      isVisible: showQueue,
     },
     color: {
       current: accentColor,
-      overrides: accentColorOverrides
+      overrides: accentColorOverrides,
     },
     visualEffects: {
       enabled: visualEffectsEnabled,
@@ -220,15 +202,15 @@ export function usePlayerState(): PlayerState & PlayerStateSetters {
       backgroundVisualizer: {
         enabled: backgroundVisualizerEnabled,
         style: backgroundVisualizerStyle,
-        intensity: backgroundVisualizerIntensity
+        intensity: backgroundVisualizerIntensity,
       },
       accentColorBackground: {
         enabled: accentColorBackgroundEnabled,
-        preferred: accentColorBackgroundPreferred
-      }
+        preferred: accentColorBackgroundPreferred,
+      },
     },
     zenMode: {
-      enabled: zenModeEnabled
+      enabled: zenModeEnabled,
     },
     actions: {
       track: {
@@ -237,18 +219,18 @@ export function usePlayerState(): PlayerState & PlayerStateSetters {
         setCurrentIndex: setCurrentTrackIndex,
         setLoading: setIsLoading,
         setError,
-        setShuffleEnabled
+        setShuffleEnabled,
       },
       queue: {
         setSelectedId: setSelectedPlaylistId,
-        setVisible: setShowQueue
+        setVisible: setShowQueue,
       },
       color: {
         setCurrent: setAccentColor,
         setOverrides: setAccentColorOverrides,
         handleSetAccentColorOverride,
         handleRemoveAccentColorOverride,
-        handleResetAccentColorOverride: handleRemoveAccentColorOverride
+        handleResetAccentColorOverride: handleRemoveAccentColorOverride,
       },
       visualEffects: {
         setEnabled: setVisualEffectsEnabled,
@@ -257,15 +239,15 @@ export function usePlayerState(): PlayerState & PlayerStateSetters {
         backgroundVisualizer: {
           setEnabled: setBackgroundVisualizerEnabled,
           setStyle: setBackgroundVisualizerStyle,
-          setIntensity: setBackgroundVisualizerIntensity
+          setIntensity: setBackgroundVisualizerIntensity,
         },
         accentColorBackground: {
-          setPreferred: setAccentColorBackgroundPreferred
-        }
+          setPreferred: setAccentColorBackgroundPreferred,
+        },
       },
       zenMode: {
-        setEnabled: setZenModeEnabled
-      }
-    }
+        setEnabled: setZenModeEnabled,
+      },
+    },
   };
 }

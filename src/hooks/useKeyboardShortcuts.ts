@@ -1,22 +1,3 @@
-/**
-  * Centralized keyboard shortcuts hook for the player
-  * Consolidates all keyboard event handling in one place
-  *
-  * Supported shortcuts:
-  * - Space: Play/Pause
-  * - ArrowRight: Next track
-  * - ArrowLeft: Previous track
-  * - V: Toggle background visualizations
-  * - S: Toggle visual effects menu
-  * - G: Toggle glow effect
-  * - ?: Show keyboard shortcuts help
-  * - Escape: Close menus (queue drawer and visual effects)
-  * - M: Mute
-  * - ArrowUp / Q: (Pointer device) Toggle queue drawer; (Touch) ArrowUp = Volume up
-  * - ArrowDown / L: (Pointer device) Toggle library drawer; (Touch) ArrowDown = Volume down
-  * - K: Like/Unlike track
-  */
-
 import { useEffect } from 'react';
 
 interface KeyboardShortcutOptions {
@@ -25,29 +6,16 @@ interface KeyboardShortcutOptions {
 }
 
 interface KeyboardShortcutHandlers {
-  // Playback controls
   onPlayPause?: () => void;
   onNext?: () => void;
   onPrevious?: () => void;
-  
-  // Menu toggles
   onCloseQueue?: () => void;
   onToggleVisualEffectsMenu?: () => void;
   onCloseVisualEffects?: () => void;
-  
-  // Background visualizer
   onToggleBackgroundVisualizer?: () => void;
-  
-  // Glow effect
   onToggleGlow?: () => void;
-
-  // Translucence
   onToggleTranslucence?: () => void;
-
-  // Help
   onToggleHelp?: () => void;
-  
-  // Other
   onMute?: () => void;
   onVolumeUp?: () => void;
   onVolumeDown?: () => void;
@@ -62,20 +30,12 @@ interface KeyboardShortcutHandlers {
   onToggleZenMode?: () => void;
 }
 
-/**
- * Central keyboard shortcuts management hook
- * Prevents handler duplication across multiple components
- * 
- * @param handlers - Object containing callback functions for each shortcut
- * @param options - Configuration options (e.g. prefersPointerInput for drawer shortcuts)
- */
 export const useKeyboardShortcuts = (
   handlers: KeyboardShortcutHandlers,
   options?: KeyboardShortcutOptions
 ) => {
   const prefersPointerInput = options?.prefersPointerInput ?? false;
 
-  // Destructure handlers to avoid capturing entire object
   const {
     onPlayPause,
     onNext,
@@ -100,21 +60,17 @@ export const useKeyboardShortcuts = (
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      // Don't intercept keyboard events when typing in input fields
-      if (event.target instanceof HTMLInputElement || 
+      if (event.target instanceof HTMLInputElement ||
           event.target instanceof HTMLTextAreaElement) {
         return;
       }
 
-      // Check if target is contentEditable
       const target = event.target as HTMLElement;
       if (target && target.isContentEditable) {
         return;
       }
 
-      // Handle different key combinations
       switch (event.code) {
-        // Playback controls
         case 'Space':
           event.preventDefault();
           onPlayPause?.();
@@ -130,9 +86,7 @@ export const useKeyboardShortcuts = (
           onPrevious?.();
           break;
 
-        // Menu toggles
         case 'KeyV':
-          // V toggles background visualizations
           if (!event.ctrlKey && !event.metaKey) {
             event.preventDefault();
             onToggleBackgroundVisualizer?.();
@@ -140,7 +94,6 @@ export const useKeyboardShortcuts = (
           break;
 
         case 'KeyS':
-          // S toggles visual effects menu
           if (!event.ctrlKey && !event.metaKey) {
             event.preventDefault();
             onToggleVisualEffectsMenu?.();
@@ -148,7 +101,6 @@ export const useKeyboardShortcuts = (
           break;
 
         case 'KeyG':
-          // G toggles glow effect
           if (!event.ctrlKey && !event.metaKey) {
             event.preventDefault();
             onToggleGlow?.();
@@ -156,7 +108,6 @@ export const useKeyboardShortcuts = (
           break;
 
         case 'KeyT':
-          // T toggles translucence
           if (!event.ctrlKey && !event.metaKey) {
             event.preventDefault();
             onToggleTranslucence?.();
@@ -164,14 +115,12 @@ export const useKeyboardShortcuts = (
           break;
 
         case 'Slash':
-          // / or ? (Shift+/) shows help modal
           if (!event.ctrlKey && !event.metaKey) {
             event.preventDefault();
             onToggleHelp?.();
           }
           break;
 
-        // Close menus
         case 'Escape':
           event.preventDefault();
           onCloseVisualEffects?.();
@@ -179,14 +128,12 @@ export const useKeyboardShortcuts = (
           onCloseMobileMenu?.();
           break;
 
-        // Volume controls
         case 'KeyM':
           event.preventDefault();
           onMute?.();
           break;
 
         case 'KeyL':
-          // L toggles library drawer (alternative to ArrowDown on pointer devices)
           if (!event.ctrlKey && !event.metaKey) {
             event.preventDefault();
             onOpenLibraryDrawer?.();
@@ -194,7 +141,6 @@ export const useKeyboardShortcuts = (
           break;
 
         case 'KeyK':
-          // K toggles like/unlike
           if (!event.ctrlKey && !event.metaKey) {
             event.preventDefault();
             onToggleLike?.();
@@ -202,7 +148,6 @@ export const useKeyboardShortcuts = (
           break;
 
         case 'KeyQ':
-          // Q toggles queue drawer (alternative to ArrowUp on pointer devices)
           if (!event.ctrlKey && !event.metaKey) {
             event.preventDefault();
             onShowQueue?.();
@@ -210,7 +155,6 @@ export const useKeyboardShortcuts = (
           break;
 
         case 'KeyZ':
-          // Z toggles zen mode
           if (!event.ctrlKey && !event.metaKey) {
             event.preventDefault();
             onToggleZenMode?.();
