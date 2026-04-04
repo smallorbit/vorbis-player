@@ -14,13 +14,11 @@ import {
   getPlaylistCount,
   getAlbumCount,
   getLikedSongsCount,
-  getAllUserPlaylists,
-  getAllUserAlbums,
   getUserLibraryInterleaved,
-  invalidateLikedSongsCaches,
   spotifyAuth,
 } from '../spotify';
 import * as cache from './libraryCache';
+import { detectChanges, applyChanges } from './libraryDiffEngine';
 import type {
   CachedPlaylistInfo,
   LibraryChanges,
@@ -121,12 +119,14 @@ export class LibrarySyncEngine {
           newAlbumCount: await getAlbumCount(signal),
           newLikedSongsCount: await getLikedSongsCount(signal),
         };
-        await this.applyChanges(allChanges, signal);
+        const result = await applyChanges(allChanges, signal, this.pendingRemovals, this.pendingAdditions);
+        this.notifyListeners(result.playlists, result.albums, result.likedSongsCount);
       } else {
-        const changes = await this.detectChanges(this.abortController.signal);
+        const changes = await detectChanges(this.abortController.signal);
 
         if (changes.playlistsChanged || changes.albumsChanged || changes.likedSongsChanged) {
-          await this.applyChanges(changes, this.abortController.signal);
+          const result = await applyChanges(changes, this.abortController.signal, this.pendingRemovals, this.pendingAdditions);
+          this.notifyListeners(result.playlists, result.albums, result.likedSongsCount);
         }
       }
 
@@ -212,7 +212,6 @@ export class LibrarySyncEngine {
   // =========================================================================
 
   private async initialLoad(): Promise<void> {
-    // Try to load from IndexedDB cache first (warm start)
     const [cachedPlaylists, cachedAlbums, , likedMeta] = await Promise.all([
       cache.getAllPlaylists(),
       cache.getAllAlbums(),
@@ -223,7 +222,6 @@ export class LibrarySyncEngine {
     const hasCache = cachedPlaylists.length > 0 || cachedAlbums.length > 0;
 
     if (hasCache) {
-      // Warm start: emit cached data immediately
       this.updateState({ isInitialLoadComplete: true });
       this.notifyListeners(
         cachedPlaylists,
@@ -231,13 +229,10 @@ export class LibrarySyncEngine {
         likedMeta?.totalCount ?? 0,
       );
 
-      // Then validate cache against Spotify (awaited so start() resolves
-      // only after the initial validation is complete)
       await this.syncNow().catch((err) => {
         console.warn('[librarySyncEngine] Background sync after warm start failed:', err);
       });
     } else {
-      // Cold start: no cached data, use progressive loading
       await this.coldStartLoad();
     }
   }
@@ -258,7 +253,6 @@ export class LibrarySyncEngine {
       allPlaylists = playlists as CachedPlaylistInfo[];
       this.notifyListeners(allPlaylists, allAlbums);
       if (isComplete) {
-        // Write to IndexedDB
         cache.putAllPlaylists(allPlaylists).catch(() => {});
         const snapshotIds: Record<string, string> = {};
         for (const p of allPlaylists) {
@@ -290,7 +284,6 @@ export class LibrarySyncEngine {
     };
 
     try {
-      // Also fetch liked songs count
       const likedCountPromise = getLikedSongsCount(this.abortController.signal).catch(() => 0);
 
       await getUserLibraryInterleaved(
@@ -315,185 +308,13 @@ export class LibrarySyncEngine {
       if (err instanceof DOMException && err.name === 'AbortError') return;
       console.error('[librarySyncEngine] Cold start load failed:', err);
       this.updateState({
-        isInitialLoadComplete: true, // Mark complete even on error so UI isn't stuck loading
+        isInitialLoadComplete: true,
         isSyncing: false,
         error: err instanceof Error ? err.message : 'Failed to load library',
       });
     } finally {
       this.abortController = null;
     }
-  }
-
-  // =========================================================================
-  // Change Detection
-  // =========================================================================
-
-  private async detectChanges(signal: AbortSignal): Promise<LibraryChanges> {
-    const [playlistsMeta, albumsMeta, likedMeta] = await Promise.all([
-      cache.getMeta('playlists'),
-      cache.getMeta('albums'),
-      cache.getMeta('likedSongs'),
-    ]);
-
-    // Fetch current counts from Spotify (3 lightweight API calls)
-    const [newPlaylistCount, newAlbumCount, newLikedSongsCount] = await Promise.all([
-      getPlaylistCount(signal),
-      getAlbumCount(signal),
-      getLikedSongsCount(signal),
-    ]);
-
-    const playlistsChanged = newPlaylistCount !== (playlistsMeta?.totalCount ?? -1);
-    const albumsChanged = newAlbumCount !== (albumsMeta?.totalCount ?? -1);
-    const likedSongsChanged = newLikedSongsCount !== (likedMeta?.totalCount ?? -1);
-
-    return {
-      playlistsChanged,
-      albumsChanged,
-      likedSongsChanged,
-      changedPlaylistIds: [], // Will be populated in applyChanges if needed
-      newPlaylistCount,
-      newAlbumCount,
-      newLikedSongsCount,
-    };
-  }
-
-  // =========================================================================
-  // Incremental Updates
-  // =========================================================================
-
-  private async applyChanges(changes: LibraryChanges, signal: AbortSignal): Promise<void> {
-    let updatedPlaylists: CachedPlaylistInfo[] | undefined;
-    let updatedAlbums: AlbumInfo[] | undefined;
-
-    if (changes.playlistsChanged) {
-      updatedPlaylists = await this.syncPlaylists(changes.newPlaylistCount, signal);
-    }
-
-    if (changes.albumsChanged) {
-      updatedAlbums = await this.syncAlbums(signal);
-    }
-
-    if (changes.likedSongsChanged) {
-      // Invalidate liked songs caches so next access triggers fresh fetch
-      invalidateLikedSongsCaches();
-      await cache.putMeta('likedSongs', {
-        lastValidated: Date.now(),
-        totalCount: changes.newLikedSongsCount,
-      });
-    }
-
-    // Notify listeners with updated data
-    const playlists = updatedPlaylists ?? await cache.getAllPlaylists();
-    const albums = updatedAlbums ?? await cache.getAllAlbums();
-    this.notifyListeners(playlists, albums, changes.newLikedSongsCount);
-  }
-
-  private async syncPlaylists(newTotal: number, signal: AbortSignal): Promise<CachedPlaylistInfo[]> {
-    const [cachedPlaylists, meta] = await Promise.all([
-      cache.getAllPlaylists(),
-      cache.getMeta('playlists'),
-    ]);
-
-    const cachedMap = new Map<string, CachedPlaylistInfo>(
-      cachedPlaylists.map(p => [p.id, p])
-    );
-
-    if (signal.aborted) throw new DOMException('Request aborted', 'AbortError');
-
-    // Fetch ALL pages so libraries with >50 playlists are fully synced
-    const playlists = await getAllUserPlaylists(signal);
-    const allFetched = playlists as CachedPlaylistInfo[];
-
-    // Spotify often omits added_at on /me/playlists; avoid assigning one shared
-    // timestamp to every playlist (that makes "Recently Added" a no-op).
-    for (let i = 0; i < allFetched.length; i++) {
-      const p = allFetched[i];
-      const cached = cachedMap.get(p.id);
-      p.added_at =
-        cached?.added_at ||
-        p.added_at ||
-        new Date(Date.now() - i * 60000).toISOString();
-    }
-
-    const fetchedIds = new Set(allFetched.map(p => p.id));
-    const snapshotIds: Record<string, string> = { ...(meta?.snapshotIds ?? {}) };
-
-    const removals: Promise<void>[] = [];
-    for (const cached of cachedPlaylists) {
-      if (!fetchedIds.has(cached.id)) {
-        removals.push(cache.removePlaylist(cached.id), cache.removeTrackList(`playlist:${cached.id}`));
-        delete snapshotIds[cached.id];
-      }
-    }
-    await Promise.all(removals);
-
-    const writes: Promise<void>[] = [];
-    for (const fetched of allFetched) {
-      const cached = cachedMap.get(fetched.id);
-      if (cached && fetched.snapshot_id && fetched.snapshot_id !== cached.snapshot_id) {
-        writes.push(cache.removeTrackList(`playlist:${fetched.id}`));
-      }
-      writes.push(cache.putPlaylist(fetched));
-      if (fetched.snapshot_id) {
-        snapshotIds[fetched.id] = fetched.snapshot_id;
-      }
-    }
-    await Promise.all(writes);
-
-    await cache.putMeta('playlists', {
-      lastValidated: Date.now(),
-      totalCount: newTotal,
-      snapshotIds,
-    });
-
-    return allFetched;
-  }
-
-  private async syncAlbums(signal: AbortSignal): Promise<AlbumInfo[]> {
-    const now = Date.now();
-    this.expirePendingMutations(now);
-
-    const cachedAlbums = await cache.getAllAlbums();
-
-    // Fetch ALL pages so libraries with >50 albums are fully synced
-    const allFetched = await getAllUserAlbums(signal);
-
-    const fetchedIds = new Set(allFetched.map(a => a.id));
-
-    const ops: Promise<void>[] = [];
-    for (const cached of cachedAlbums) {
-      if (!fetchedIds.has(cached.id) && !this.pendingAdditions.has(cached.id)) {
-        ops.push(cache.removeAlbum(cached.id), cache.removeTrackList(`album:${cached.id}`));
-      }
-    }
-    for (const fetched of allFetched) {
-      if (!this.pendingRemovals.has(fetched.id)) {
-        ops.push(cache.putAlbum(fetched));
-      }
-    }
-    await Promise.all(ops);
-
-    // Compute the final album list from what we already have in memory
-    // Compute the final album list from in-memory state
-    const finalAlbums: AlbumInfo[] = [
-      ...allFetched.filter(f => !this.pendingRemovals.has(f.id)),
-      // Locally-added albums not yet reflected in the API response
-      ...cachedAlbums.filter(a => this.pendingAdditions.has(a.id) && !fetchedIds.has(a.id)),
-    ];
-    const seen = new Set<string>();
-    const deduped = finalAlbums.filter(a => seen.has(a.id) ? false : (seen.add(a.id), true));
-
-    const latestAddedAt = deduped.reduce(
-      (latest, a) => (a.added_at && a.added_at > latest ? a.added_at : latest),
-      '',
-    );
-    await cache.putMeta('albums', {
-      lastValidated: Date.now(),
-      totalCount: deduped.length,
-      latestAddedAt: latestAddedAt || undefined,
-    });
-
-    return deduped;
   }
 
   // =========================================================================
@@ -511,6 +332,7 @@ export class LibrarySyncEngine {
 
   private startPollingInterval(): void {
     this.intervalId = setInterval(() => {
+      this.expirePendingMutations(Date.now());
       this.syncNow().catch((err) => {
         console.warn('[librarySyncEngine] Background sync error:', err);
       });
@@ -526,7 +348,6 @@ export class LibrarySyncEngine {
     albums?: AlbumInfo[],
     likedSongsCount?: number,
   ): void {
-    // Cache the data so it can be replayed to future subscribers immediately.
     if (playlists !== undefined) this.lastKnownPlaylists = playlists;
     if (albums !== undefined) this.lastKnownAlbums = albums;
     if (likedSongsCount !== undefined) this.lastKnownLikedCount = likedSongsCount;
