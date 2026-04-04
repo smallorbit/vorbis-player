@@ -275,6 +275,7 @@ export const AlbumArtSection: React.FC<AlbumArtSectionProps> = React.memo(({
             onSwipeDown={onSwipeDown}
             isTouchDevice={isTouchDevice}
             onClick={handleClick}
+            onLongPress={zenModeEnabled ? toggleFlip : undefined}
             albumArtContainerRef={albumArtContainerRef}
             onZoneHover={setHoveredZone}
             zenModeEnabled={zenModeEnabled}

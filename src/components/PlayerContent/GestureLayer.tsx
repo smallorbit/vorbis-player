@@ -1,6 +1,7 @@
 import React, { useCallback } from 'react';
 import { useSwipeGesture } from '@/hooks/useSwipeGesture';
 import { useVerticalSwipeGesture } from '@/hooks/useVerticalSwipeGesture';
+import { useLongPress } from '@/hooks/useLongPress';
 import { ClickableAlbumArtContainer } from './styled';
 
 type Zone = 'left' | 'center' | 'right';
@@ -12,6 +13,7 @@ interface GestureLayerProps {
   onSwipeDown: () => void;
   isTouchDevice: boolean;
   onClick: (e: React.MouseEvent) => void;
+  onLongPress?: () => void;
   albumArtContainerRef: React.MutableRefObject<HTMLDivElement | null>;
   children: React.ReactNode;
   onZoneHover?: (zone: Zone | null) => void;
@@ -26,6 +28,7 @@ export const GestureLayer: React.FC<GestureLayerProps> = React.memo(({
   onSwipeDown,
   isTouchDevice,
   onClick,
+  onLongPress,
   albumArtContainerRef,
   children,
   onZoneHover,
@@ -42,6 +45,11 @@ export const GestureLayer: React.FC<GestureLayerProps> = React.memo(({
     onSwipeDown,
     threshold: 80,
     enabled: isTouchDevice,
+  });
+
+  const longPressHandlers = useLongPress({
+    onLongPress: onLongPress ?? (() => {}),
+    enabled: zenModeEnabled === true && onLongPress !== undefined,
   });
 
   const handleRef = useCallback((el: HTMLDivElement | null) => {
@@ -81,6 +89,15 @@ export const GestureLayer: React.FC<GestureLayerProps> = React.memo(({
     ? { onMouseMove: handleMouseMove, onMouseLeave: handleMouseLeave }
     : {};
 
+  const zenLongPressHandlers = zenModeEnabled && onLongPress
+    ? {
+        onPointerDown: longPressHandlers.onPointerDown,
+        onPointerUp: longPressHandlers.onPointerUp,
+        onPointerCancel: longPressHandlers.onPointerCancel,
+        onPointerMove: longPressHandlers.onPointerMove,
+      }
+    : {};
+
   return (
     <ClickableAlbumArtContainer
       ref={handleRef}
@@ -88,6 +105,7 @@ export const GestureLayer: React.FC<GestureLayerProps> = React.memo(({
       $bothGestures={isTouchDevice}
       {...(isTouchDevice ? gestureHandlers : {})}
       {...zoneHoverHandlers}
+      {...zenLongPressHandlers}
       onClick={handleClick}
       style={{
         transform: `translateX(${offsetX}px)`,
