@@ -264,7 +264,7 @@ export const AlbumArtSection: React.FC<AlbumArtSectionProps> = React.memo(({
       }}>
         {zenModeEnabled && connectedProviderIds.length > 1 && currentTrackProvider != null && (
           <ZenProviderBadgeOverlay>
-            <ProviderBadge providerId={currentTrackProvider} />
+            <ProviderBadge providerId={currentTrackProvider} iconOnly />
           </ZenProviderBadgeOverlay>
         )}
         <div ref={flipContainerRef} style={{ width: '100%', position: 'relative' }} onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>

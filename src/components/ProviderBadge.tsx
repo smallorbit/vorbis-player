@@ -3,7 +3,9 @@ import styled from 'styled-components';
 import type { ProviderId } from '@/types/domain';
 import { providerRegistry } from '@/providers/registry';
 
-const BadgeContainer = styled.div`
+const BadgeContainer = styled.div.withConfig({
+  shouldForwardProp: (prop) => !['$iconOnly'].includes(prop),
+})<{ $iconOnly: boolean }>`
   display: flex;
   align-items: center;
   gap: ${({ theme }) => theme.spacing.xs};
@@ -12,7 +14,7 @@ const BadgeContainer = styled.div`
   -webkit-backdrop-filter: blur(8px);
   border: 1px solid ${({ theme }) => theme.colors.borderSubtle};
   border-radius: ${({ theme }) => theme.borderRadius.full};
-  padding: 3px 8px 3px 4px;
+  padding: ${({ $iconOnly }) => $iconOnly ? '4px' : '3px 8px 3px 4px'};
   pointer-events: none;
   user-select: none;
 `;
@@ -38,21 +40,22 @@ const ProviderName = styled.span`
 interface ProviderBadgeProps {
   providerId: ProviderId;
   iconSize?: number;
+  iconOnly?: boolean;
   className?: string;
 }
 
-export const ProviderBadge: React.FC<ProviderBadgeProps> = React.memo(({ providerId, iconSize = 16, className }) => {
+export const ProviderBadge: React.FC<ProviderBadgeProps> = React.memo(({ providerId, iconSize = 16, iconOnly = false, className }) => {
   const descriptor = providerRegistry.get(providerId);
   if (!descriptor) return null;
 
   const IconComponent = descriptor.icon;
 
   return (
-    <BadgeContainer className={className}>
+    <BadgeContainer $iconOnly={iconOnly} className={className}>
       <IconWrapper $size={iconSize}>
         {IconComponent ? <IconComponent size={iconSize} /> : null}
       </IconWrapper>
-      <ProviderName>{descriptor.name}</ProviderName>
+      {!iconOnly && <ProviderName>{descriptor.name}</ProviderName>}
     </BadgeContainer>
   );
 });
