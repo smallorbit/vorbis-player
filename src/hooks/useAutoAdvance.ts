@@ -97,7 +97,7 @@ export const useAutoAdvance = ({
           // The useEffect on currentTrackIndex resets hasEnded when the track
           // actually changes (after playTrack succeeds and calls setCurrentTrackIndex).
         }
-      }, 500);
+      }, 100);
     }
 
     function handleProviderStateChange(state: PlaybackState | null) {
