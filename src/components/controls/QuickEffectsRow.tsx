@@ -312,6 +312,12 @@ function QuickEffectsRow({
               >
                 Comet
               </OptionButton>
+              <OptionButton
+                $isActive={backgroundVisualizerStyle === 'wave'}
+                onClick={() => onBackgroundVisualizerStyleChange('wave')}
+              >
+                Wave
+              </OptionButton>
             </OptionButtonGroup>
           </SubSettingRow>
           {hasVizIntensity && (

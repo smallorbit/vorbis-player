@@ -10,6 +10,7 @@ import { useVisualEffectsContext } from '@/contexts/VisualEffectsContext';
 import { useProviderContext } from '@/contexts/ProviderContext';
 import { useVisualEffectsState } from '@/hooks/useVisualEffectsState';
 import type { MediaTrack, ProviderId } from '@/types/domain';
+import type { VisualizerStyle } from '@/types/visualizer';
 import { FlipInner, ZenTrackInfo, ZenTrackName, ZenTrackArtist } from './styled';
 import { GestureLayer } from './GestureLayer';
 import { ZenClickZoneOverlay } from './ZenClickZoneOverlay';
@@ -241,7 +242,7 @@ export const AlbumArtSection: React.FC<AlbumArtSectionProps> = React.memo(({
     setBackgroundVisualizerEnabled(prev => !prev);
   }, [setBackgroundVisualizerEnabled]);
 
-  const handleBackgroundVisualizerStyleChange = useCallback((style: 'fireflies' | 'comet') => {
+  const handleBackgroundVisualizerStyleChange = useCallback((style: VisualizerStyle) => {
     setBackgroundVisualizerStyle(style);
   }, [setBackgroundVisualizerStyle]);
 
@@ -308,7 +309,7 @@ export const AlbumArtSection: React.FC<AlbumArtSectionProps> = React.memo(({
                 onGlowRateChange={handleGlowRateChange}
                 backgroundVisualizerEnabled={backgroundVisualizerEnabled}
                 onBackgroundVisualizerToggle={handleBackgroundVisualizerToggle}
-                backgroundVisualizerStyle={backgroundVisualizerStyle as 'fireflies' | 'comet'}
+                backgroundVisualizerStyle={backgroundVisualizerStyle}
                 onBackgroundVisualizerStyleChange={handleBackgroundVisualizerStyleChange}
                 backgroundVisualizerIntensity={backgroundVisualizerIntensity}
                 onBackgroundVisualizerIntensityChange={handleBackgroundVisualizerIntensityChange}

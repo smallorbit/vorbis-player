@@ -1,5 +1,6 @@
 import styled from 'styled-components';
 import type { MediaTrack } from '@/types/domain';
+import type { VisualizerStyle } from '@/types/visualizer';
 import QuickEffectsRow from '@/components/controls/QuickEffectsRow';
 import { theme } from '@/styles/theme';
 
@@ -17,8 +18,8 @@ interface AlbumArtQuickSwapBackProps {
   onGlowRateChange: (v: number) => void;
   backgroundVisualizerEnabled: boolean;
   onBackgroundVisualizerToggle: () => void;
-  backgroundVisualizerStyle: 'fireflies' | 'comet';
-  onBackgroundVisualizerStyleChange: (style: 'fireflies' | 'comet') => void;
+  backgroundVisualizerStyle: VisualizerStyle;
+  onBackgroundVisualizerStyleChange: (style: VisualizerStyle) => void;
   backgroundVisualizerIntensity: number;
   onBackgroundVisualizerIntensityChange: (intensity: number) => void;
   translucenceEnabled: boolean;
