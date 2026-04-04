@@ -96,7 +96,11 @@ export const useKeyboardShortcuts = (
         case 'KeyS':
           if (!event.ctrlKey && !event.metaKey) {
             event.preventDefault();
-            onToggleVisualEffectsMenu?.();
+            if (event.shiftKey) {
+              onToggleVisualEffectsMenu?.();
+            } else {
+              onToggleShuffle?.();
+            }
           }
           break;
 

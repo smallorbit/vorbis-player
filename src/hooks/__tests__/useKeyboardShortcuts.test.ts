@@ -119,16 +119,32 @@ describe('useKeyboardShortcuts', () => {
     addEventListenerSpy.mockRestore();
   });
 
-  it('should call onToggleVisualEffectsMenu when KeyO is pressed', () => {
+  it('should call onToggleShuffle when KeyS is pressed', () => {
+    const onToggleShuffle = vi.fn();
+    const addEventListenerSpy = vi.spyOn(document, 'addEventListener');
+
+    renderHook(() => useKeyboardShortcuts({ onToggleShuffle }));
+
+    const handler = addEventListenerSpy.mock.calls[0][1] as EventListener;
+    const event = new KeyboardEvent('keydown', { code: 'KeyS', bubbles: true });
+    Object.defineProperty(event, 'target', { value: document.body, enumerable: true });
+    handler(event);
+
+    expect(onToggleShuffle).toHaveBeenCalled();
+    addEventListenerSpy.mockRestore();
+  });
+
+  it('should call onToggleVisualEffectsMenu when Shift+S is pressed', () => {
     const onToggleVisualEffectsMenu = vi.fn();
     const addEventListenerSpy = vi.spyOn(document, 'addEventListener');
-    
+
     renderHook(() => useKeyboardShortcuts({ onToggleVisualEffectsMenu }));
-    
+
     const handler = addEventListenerSpy.mock.calls[0][1] as EventListener;
-    const event = createKeyboardEvent('KeyO');
+    const event = new KeyboardEvent('keydown', { code: 'KeyS', shiftKey: true, bubbles: true });
+    Object.defineProperty(event, 'target', { value: document.body, enumerable: true });
     handler(event);
-    
+
     expect(onToggleVisualEffectsMenu).toHaveBeenCalled();
     addEventListenerSpy.mockRestore();
   });
