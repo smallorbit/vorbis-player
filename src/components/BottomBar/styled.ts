@@ -19,10 +19,7 @@ export const BottomBarContainer = styled.div.withConfig({
   opacity: ${({ $hidden }) => $hidden ? 0 : 1};
   transform: ${({ $hidden }) => $hidden ? 'translateY(100%)' : 'translateY(0)'};
   pointer-events: ${({ $hidden }) => $hidden ? 'none' : 'auto'};
-  transition: ${({ $hidden, theme }) =>
-    $hidden
-      ? `opacity ${theme.transitions.slow} ease, transform ${theme.transitions.slow} ease`
-      : `opacity 0.5s ease-out 0.15s, transform 0.5s ease-out 0.15s`};
+  transition: opacity 0.3s ease, transform 0.3s ease;
 `;
 
 export const BottomBarInner = styled.div`
