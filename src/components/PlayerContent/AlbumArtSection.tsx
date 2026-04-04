@@ -1,14 +1,25 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
+import styled from 'styled-components';
 import { CardContent } from '@/components/styled';
 import AlbumArt from '@/components/AlbumArt';
 import AlbumArtQuickSwapBack from '@/components/AlbumArtQuickSwapBack';
 import { ProfiledComponent } from '@/components/ProfiledComponent';
+import { ProviderBadge } from '@/components/ProviderBadge';
 import { useColorContext } from '@/contexts/ColorContext';
 import { useVisualEffectsContext } from '@/contexts/VisualEffectsContext';
+import { useProviderContext } from '@/contexts/ProviderContext';
 import { useVisualEffectsState } from '@/hooks/useVisualEffectsState';
 import type { MediaTrack, ProviderId } from '@/types/domain';
 import { FlipInner, ZenTrackInfo, ZenTrackName, ZenTrackArtist } from './styled';
 import { GestureLayer } from './GestureLayer';
+
+const ZenProviderBadgeOverlay = styled.div`
+  position: absolute;
+  top: ${({ theme }) => theme.spacing.sm};
+  right: ${({ theme }) => theme.spacing.sm};
+  z-index: 10;
+  pointer-events: none;
+`;
 
 interface AlbumArtBounds {
   left: number;
@@ -44,6 +55,8 @@ export const AlbumArtSection: React.FC<AlbumArtSectionProps> = React.memo(({
   onSwipeDown,
   onAlbumArtBoundsChange,
 }) => {
+  const { connectedProviderIds } = useProviderContext();
+
   const {
     accentColor,
     customAccentColors,
@@ -190,6 +203,11 @@ export const AlbumArtSection: React.FC<AlbumArtSectionProps> = React.memo(({
         alignItems: 'center',
         paddingTop: zenModeEnabled ? '0' : (isMobile ? '0.25rem' : '0.5rem')
       }}>
+        {zenModeEnabled && connectedProviderIds.length > 1 && currentTrackProvider != null && (
+          <ZenProviderBadgeOverlay>
+            <ProviderBadge providerId={currentTrackProvider} />
+          </ZenProviderBadgeOverlay>
+        )}
         <div ref={flipContainerRef} style={{ width: '100%' }}>
           <GestureLayer
             onSwipeLeft={onSwipeLeft}
