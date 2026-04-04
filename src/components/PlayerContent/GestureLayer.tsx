@@ -3,15 +3,20 @@ import { useSwipeGesture } from '@/hooks/useSwipeGesture';
 import { useVerticalSwipeGesture } from '@/hooks/useVerticalSwipeGesture';
 import { ClickableAlbumArtContainer } from './styled';
 
+type Zone = 'left' | 'center' | 'right';
+
 interface GestureLayerProps {
   onSwipeLeft: () => void;
   onSwipeRight: () => void;
   onSwipeUp: () => void;
   onSwipeDown: () => void;
   isTouchDevice: boolean;
-  onClick: () => void;
+  onClick: (e: React.MouseEvent) => void;
   albumArtContainerRef: React.MutableRefObject<HTMLDivElement | null>;
   children: React.ReactNode;
+  onZoneHover?: (zone: Zone | null) => void;
+  zenModeEnabled?: boolean;
+  hasPointerInput?: boolean;
 }
 
 export const GestureLayer: React.FC<GestureLayerProps> = React.memo(({
@@ -23,6 +28,9 @@ export const GestureLayer: React.FC<GestureLayerProps> = React.memo(({
   onClick,
   albumArtContainerRef,
   children,
+  onZoneHover,
+  zenModeEnabled,
+  hasPointerInput,
 }) => {
   const { offsetX, isSwiping, isAnimating, gestureHandlers } = useSwipeGesture({
     onSwipeLeft,
@@ -48,9 +56,30 @@ export const GestureLayer: React.FC<GestureLayerProps> = React.memo(({
   const handleClick = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
     if (!isSwiping && !isAnimating) {
-      onClick();
+      onClick(e);
     }
   }, [isSwiping, isAnimating, onClick]);
+
+  const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    if (!onZoneHover) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const relX = (e.clientX - rect.left) / rect.width;
+    if (relX < 0.25) {
+      onZoneHover('left');
+    } else if (relX > 0.75) {
+      onZoneHover('right');
+    } else {
+      onZoneHover('center');
+    }
+  }, [onZoneHover]);
+
+  const handleMouseLeave = useCallback(() => {
+    onZoneHover?.(null);
+  }, [onZoneHover]);
+
+  const zoneHoverHandlers = zenModeEnabled && hasPointerInput
+    ? { onMouseMove: handleMouseMove, onMouseLeave: handleMouseLeave }
+    : {};
 
   return (
     <ClickableAlbumArtContainer
@@ -58,6 +87,7 @@ export const GestureLayer: React.FC<GestureLayerProps> = React.memo(({
       $swipeEnabled={isTouchDevice}
       $bothGestures={isTouchDevice}
       {...(isTouchDevice ? gestureHandlers : {})}
+      {...zoneHoverHandlers}
       onClick={handleClick}
       style={{
         transform: `translateX(${offsetX}px)`,

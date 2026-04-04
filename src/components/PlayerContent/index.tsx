@@ -179,11 +179,17 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({
             isMobile={isMobile}
             isTablet={isTablet}
             isTouchDevice={isTouchDevice}
+            hasPointerInput={hasPointerInput}
+            isPlaying={isPlaying}
             onSwipeLeft={handlers.onNext}
             onSwipeRight={handlers.onPrevious}
             onSwipeUp={handleSwipeUp}
             onSwipeDown={handleSwipeDown}
             onAlbumArtBoundsChange={onAlbumArtBoundsChange}
+            onPlay={handlers.onPlay}
+            onPause={handlers.onPause}
+            onNext={handlers.onNext}
+            onPrevious={handlers.onPrevious}
           />
           <PlayerControlsSection
             currentTrack={currentTrack}
