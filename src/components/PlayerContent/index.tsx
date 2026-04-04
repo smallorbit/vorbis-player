@@ -1,7 +1,9 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
+import styled from 'styled-components';
 import { usePlayerSizingContext } from '@/contexts/PlayerSizingContext';
 import { useCurrentTrackContext } from '@/contexts/TrackContext';
 import { useVisualEffectsContext } from '@/contexts/VisualEffectsContext';
+import { useProviderContext } from '@/contexts/ProviderContext';
 import type { AddToQueueResult, MediaTrack, ProviderId } from '@/types/domain';
 import type { RadioState } from '@/hooks/useRadio';
 import type { RadioProgress } from '@/hooks/usePlayerLogic';
@@ -9,6 +11,15 @@ import { ContentWrapper, PlayerContainer, PlayerStack } from './styled';
 import { AlbumArtSection } from './AlbumArtSection';
 import { PlayerControlsSection } from './PlayerControlsSection';
 import { DrawerOrchestrator } from './DrawerOrchestrator';
+import { ProviderBadge } from '@/components/ProviderBadge';
+
+const BadgeOverlay = styled.div`
+  position: absolute;
+  top: ${({ theme }) => theme.spacing.sm};
+  right: ${({ theme }) => theme.spacing.sm};
+  z-index: 10;
+  pointer-events: none;
+`;
 
 export interface PlaybackHandlers {
   onPlay: () => void;
@@ -67,6 +78,8 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({
 }) => {
   const { currentTrack, showQueue, setShowQueue } = useCurrentTrackContext();
   const { zenModeEnabled, setZenModeEnabled, setShowVisualEffects } = useVisualEffectsContext();
+  const { connectedProviderIds } = useProviderContext();
+  const showProviderBadge = connectedProviderIds.length > 1 && currentTrackProvider != null;
   const { dimensions, useFluidSizing, padding, transitionDuration, transitionEasing, isMobile, isTablet, hasPointerInput, isTouchDevice } = usePlayerSizingContext();
 
   const [librarySearchQuery, setLibrarySearchQuery] = useState<string | undefined>(undefined);
@@ -171,6 +184,11 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({
       onClick={handleZenExitClick}
     >
       <PlayerContainer>
+        {showProviderBadge && (
+          <BadgeOverlay>
+            <ProviderBadge providerId={currentTrackProvider!} />
+          </BadgeOverlay>
+        )}
         <PlayerStack $zenMode={zenModeEnabled}>
           <AlbumArtSection
             currentTrack={currentTrack}
