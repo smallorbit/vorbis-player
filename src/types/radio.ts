@@ -58,6 +58,11 @@ export interface UnmatchedSuggestion {
   matchScore: number;
 }
 
+// ── Radio progress ──────────────────────────────────────────────────
+
+export type RadioProgressPhase = 'fetching-catalog' | 'generating' | 'resolving' | 'done';
+export interface RadioProgress { phase: RadioProgressPhase; trackCount?: number; }
+
 // ── Radio result ────────────────────────────────────────────────────
 
 export interface RadioResult {
