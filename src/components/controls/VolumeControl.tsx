@@ -243,6 +243,8 @@ const VolumeControl = memo<VolumeControlProps>(({
                 isActive={isOpen}
                 onClick={togglePopover}
                 title="Volume"
+                aria-label="Volume"
+                aria-pressed={isOpen}
             >
                 <VolumeIcon isMuted={isMuted} volume={volume} />
             </ControlButton>
@@ -271,6 +273,8 @@ const VolumeControl = memo<VolumeControlProps>(({
                         $isMuted={isMuted}
                         onClick={onClick}
                         title={isMuted ? 'Unmute' : 'Mute'}
+                        aria-label={isMuted ? 'Unmute' : 'Mute'}
+                        aria-pressed={isMuted}
                     >
                         {isMuted ? <UnmuteIcon /> : <MuteIcon />}
                     </MuteButton>

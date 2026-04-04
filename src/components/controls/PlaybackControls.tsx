@@ -33,12 +33,12 @@ const PlaybackControls = memo<PlaybackControlsProps>(({
 }) => {
     return (
         <>
-            <ControlButton $isMobile={isMobile} $isTablet={isTablet} onClick={onPrevious}>
+            <ControlButton $isMobile={isMobile} $isTablet={isTablet} onClick={onPrevious} aria-label="Previous track">
                 <svg viewBox="0 0 24 24">
                     <path d="M6 6h2v12H6zm3.5 6l8.5 6V6z" />
                 </svg>
             </ControlButton>
-            <ControlButton $isMobile={isMobile} $isTablet={isTablet} isActive={isPlaying} onClick={isPlaying ? onPause : onPlay}>
+            <ControlButton $isMobile={isMobile} $isTablet={isTablet} isActive={isPlaying} onClick={isPlaying ? onPause : onPlay} aria-label={isPlaying ? 'Pause' : 'Play'} aria-pressed={isPlaying}>
                 {isPlaying ? (
                     <svg viewBox="0 0 24 24">
                         <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
@@ -49,7 +49,7 @@ const PlaybackControls = memo<PlaybackControlsProps>(({
                     </svg>
                 )}
             </ControlButton>
-            <ControlButton $isMobile={isMobile} $isTablet={isTablet} onClick={onNext}>
+            <ControlButton $isMobile={isMobile} $isTablet={isTablet} onClick={onNext} aria-label="Next track">
                 <svg viewBox="0 0 24 24">
                     <path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z" />
                 </svg>
