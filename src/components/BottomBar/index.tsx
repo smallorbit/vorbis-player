@@ -14,6 +14,7 @@ import {
 } from '../icons/QuickActionIcons';
 
 const ZEN_HIDE_DELAY = 3000;
+const AUTO_HIDE_DELAY = 1000;
 
 interface BottomBarProps {
   zenModeEnabled?: boolean;
@@ -48,8 +49,11 @@ const BottomBar = React.memo(function BottomBar({
 }: BottomBarProps) {
   const { isMobile, isTablet } = usePlayerSizingContext();
   const [zenBarVisible, setZenBarVisible] = useState(false);
+  const [autoHidden, setAutoHidden] = useState(false);
   const hideTimerRef = useRef<ReturnType<typeof setTimeout>>();
+  const autoHideTimerRef = useRef<ReturnType<typeof setTimeout>>();
   const zenEntryGuardRef = useRef(false);
+  const isHoveringBarRef = useRef(false);
 
   const clearHideTimer = useCallback(() => {
     if (hideTimerRef.current) {
@@ -72,21 +76,62 @@ const BottomBar = React.memo(function BottomBar({
   }, [startHideTimer]);
 
   const handleBarMouseEnter = useCallback(() => {
-    if (!zenModeEnabled) return;
-    setZenBarVisible(true);
-    clearHideTimer();
+    isHoveringBarRef.current = true;
+    if (zenModeEnabled) {
+      setZenBarVisible(true);
+      clearHideTimer();
+    }
+    setAutoHidden(false);
+    if (autoHideTimerRef.current) {
+      clearTimeout(autoHideTimerRef.current);
+      autoHideTimerRef.current = undefined;
+    }
   }, [zenModeEnabled, clearHideTimer]);
 
   const handleBarMouseLeave = useCallback(() => {
-    if (!zenModeEnabled) return;
-    startHideTimer();
+    isHoveringBarRef.current = false;
+    if (zenModeEnabled) {
+      startHideTimer();
+    }
+    autoHideTimerRef.current = setTimeout(() => {
+      setAutoHidden(true);
+    }, AUTO_HIDE_DELAY);
   }, [zenModeEnabled, startHideTimer]);
 
   const handleBarInteraction = useCallback(() => {
-    if (!zenModeEnabled) return;
-    clearHideTimer();
-    startHideTimer();
+    if (zenModeEnabled) {
+      clearHideTimer();
+      startHideTimer();
+    }
   }, [zenModeEnabled, clearHideTimer, startHideTimer]);
+
+  useEffect(() => {
+    const resetAutoHideTimer = () => {
+      if (isHoveringBarRef.current) return;
+      setAutoHidden(false);
+      if (autoHideTimerRef.current) {
+        clearTimeout(autoHideTimerRef.current);
+      }
+      autoHideTimerRef.current = setTimeout(() => {
+        setAutoHidden(true);
+      }, AUTO_HIDE_DELAY);
+    };
+
+    document.addEventListener('mousemove', resetAutoHideTimer);
+    document.addEventListener('touchstart', resetAutoHideTimer, { passive: true });
+
+    autoHideTimerRef.current = setTimeout(() => {
+      setAutoHidden(true);
+    }, AUTO_HIDE_DELAY);
+
+    return () => {
+      document.removeEventListener('mousemove', resetAutoHideTimer);
+      document.removeEventListener('touchstart', resetAutoHideTimer);
+      if (autoHideTimerRef.current) {
+        clearTimeout(autoHideTimerRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (zenModeEnabled) {
@@ -106,7 +151,7 @@ const BottomBar = React.memo(function BottomBar({
     return () => clearHideTimer();
   }, [clearHideTimer]);
 
-  const isHidden = zenModeEnabled && !zenBarVisible;
+  const isZenHidden = zenModeEnabled && !zenBarVisible;
 
   return createPortal(
     <>
@@ -117,7 +162,8 @@ const BottomBar = React.memo(function BottomBar({
         />
       )}
       <BottomBarContainer
-        $zenHidden={isHidden}
+        $zenHidden={isZenHidden}
+        $autoHidden={!isZenHidden && autoHidden}
         onMouseEnter={handleBarMouseEnter}
         onMouseLeave={handleBarMouseLeave}
         onClick={handleBarInteraction}

@@ -4,8 +4,8 @@ import { theme } from '@/styles/theme';
 export const BOTTOM_BAR_HEIGHT = 60;
 
 export const BottomBarContainer = styled.div.withConfig({
-  shouldForwardProp: (prop) => !['$zenHidden'].includes(prop),
-})<{ $zenHidden?: boolean }>`
+  shouldForwardProp: (prop) => !['$zenHidden', '$autoHidden'].includes(prop),
+})<{ $zenHidden?: boolean; $autoHidden?: boolean }>`
   position: fixed;
   bottom: 0;
   left: 0;
@@ -16,12 +16,12 @@ export const BottomBarContainer = styled.div.withConfig({
   -webkit-backdrop-filter: blur(20px) saturate(180%);
   border-top: 1px solid ${({ theme }) => theme.colors.popover.border};
   padding-bottom: env(safe-area-inset-bottom, 0px);
-  opacity: ${({ $zenHidden }) => $zenHidden ? 0 : 1};
-  transform: ${({ $zenHidden }) => $zenHidden ? 'translateY(100%)' : 'translateY(0)'};
-  pointer-events: ${({ $zenHidden }) => $zenHidden ? 'none' : 'auto'};
-  /* When revealing (exiting zen): longer fade-in with short delay so it’s not jarring. When hiding: quick. */
-  transition: ${({ $zenHidden, theme }) =>
-    $zenHidden
+  opacity: ${({ $zenHidden, $autoHidden }) => ($zenHidden || $autoHidden) ? 0 : 1};
+  transform: ${({ $zenHidden, $autoHidden }) => ($zenHidden || $autoHidden) ? 'translateY(100%)' : 'translateY(0)'};
+  pointer-events: ${({ $zenHidden, $autoHidden }) => ($zenHidden || $autoHidden) ? 'none' : 'auto'};
+  /* When revealing: longer fade-in with short delay so it's not jarring. When hiding: quick. */
+  transition: ${({ $zenHidden, $autoHidden, theme }) =>
+    ($zenHidden || $autoHidden)
       ? `opacity ${theme.transitions.slow} ease, transform ${theme.transitions.slow} ease`
       : `opacity 0.5s ease-out 0.15s, transform 0.5s ease-out 0.15s`};
 `;
