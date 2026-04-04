@@ -208,9 +208,11 @@ export const SortableQueueItem = memo<QueueItemProps>(({
         onContextMenu={handleContextMenu}
         isSelected={isSelected}
         {...longPressHandlers}
+        {...(isEditMode && onRemove ? { ...attributes, ...listeners } : {})}
+        style={isEditMode && onRemove ? { cursor: isDragging ? 'grabbing' : 'grab', touchAction: 'none' } : undefined}
       >
         {isEditMode && onRemove && (
-          <DragHandle {...attributes} {...listeners}>
+          <DragHandle>
             <GripIcon />
           </DragHandle>
         )}
