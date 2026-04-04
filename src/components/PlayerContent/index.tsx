@@ -2,6 +2,7 @@ import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { usePlayerSizingContext } from '@/contexts/PlayerSizingContext';
 import { useCurrentTrackContext } from '@/contexts/TrackContext';
 import { useVisualEffectsContext } from '@/contexts/VisualEffectsContext';
+import { useLikeTrack } from '@/hooks/useLikeTrack';
 import type { AddToQueueResult, MediaTrack, ProviderId } from '@/types/domain';
 import type { RadioState } from '@/hooks/useRadio';
 import type { RadioProgress } from '@/hooks/usePlayerLogic';
@@ -68,6 +69,7 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({
   const { currentTrack, showQueue, setShowQueue } = useCurrentTrackContext();
   const { zenModeEnabled, setZenModeEnabled, setShowVisualEffects } = useVisualEffectsContext();
   const { dimensions, useFluidSizing, padding, transitionDuration, transitionEasing, isMobile, isTablet, hasPointerInput, isTouchDevice } = usePlayerSizingContext();
+  const { isLiked, isLikePending, handleLikeToggle, canSaveTrack } = useLikeTrack(currentTrack?.id, currentTrackProvider);
 
   const [librarySearchQuery, setLibrarySearchQuery] = useState<string | undefined>(undefined);
   const [libraryViewMode, setLibraryViewMode] = useState<'playlists' | 'albums' | undefined>(undefined);
@@ -190,6 +192,9 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({
             onPause={handlers.onPause}
             onNext={handlers.onNext}
             onPrevious={handlers.onPrevious}
+            isLiked={isLiked}
+            canSaveTrack={canSaveTrack}
+            onLikeToggle={handleLikeToggle}
           />
           <PlayerControlsSection
             currentTrack={currentTrack}
@@ -214,6 +219,9 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({
             isRadioAvailable={isRadioAvailable}
             onStartRadio={handlers.onStartRadio}
             radioState={radioState}
+            isLiked={isLiked}
+            isLikePending={isLikePending}
+            onLikeToggle={handleLikeToggle}
           />
         </PlayerStack>
       </PlayerContainer>

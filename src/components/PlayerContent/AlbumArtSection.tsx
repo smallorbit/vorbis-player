@@ -9,7 +9,6 @@ import { useColorContext } from '@/contexts/ColorContext';
 import { useVisualEffectsContext } from '@/contexts/VisualEffectsContext';
 import { useProviderContext } from '@/contexts/ProviderContext';
 import { useVisualEffectsState } from '@/hooks/useVisualEffectsState';
-import { useLikeTrack } from '@/hooks/useLikeTrack';
 import type { MediaTrack, ProviderId } from '@/types/domain';
 import { FlipInner, ZenTrackInfo, ZenTrackName, ZenTrackArtist } from './styled';
 import { GestureLayer } from './GestureLayer';
@@ -49,6 +48,9 @@ interface AlbumArtSectionProps {
   onPause: () => void;
   onNext: () => void;
   onPrevious: () => void;
+  isLiked: boolean;
+  canSaveTrack: boolean;
+  onLikeToggle: () => void;
 }
 
 export const AlbumArtSection: React.FC<AlbumArtSectionProps> = React.memo(({
@@ -69,6 +71,9 @@ export const AlbumArtSection: React.FC<AlbumArtSectionProps> = React.memo(({
   onPause,
   onNext,
   onPrevious,
+  isLiked,
+  canSaveTrack,
+  onLikeToggle,
 }) => {
   const { connectedProviderIds } = useProviderContext();
 
@@ -103,8 +108,6 @@ export const AlbumArtSection: React.FC<AlbumArtSectionProps> = React.memo(({
     handleGlowRateChange,
     restoreGlowSettings,
   } = useVisualEffectsState();
-
-  const { isLiked, handleLikeToggle, canSaveTrack } = useLikeTrack(currentTrack?.id, currentTrackProvider);
 
   const [isFlipped, setIsFlipped] = useState(false);
   const [hoveredZone, setHoveredZone] = useState<'left' | 'center' | 'right' | null>(null);
@@ -327,7 +330,7 @@ export const AlbumArtSection: React.FC<AlbumArtSectionProps> = React.memo(({
             isLiked={isLiked}
             isVisible={zenModeEnabled && hasPointerInput && isHovered}
             canSaveTrack={canSaveTrack}
-            onToggleLike={handleLikeToggle}
+            onToggleLike={onLikeToggle}
           />
         </div>
       </CardContent>

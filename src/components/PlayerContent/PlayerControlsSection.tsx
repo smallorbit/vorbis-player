@@ -11,7 +11,6 @@ import { useProfilingContext } from '@/contexts/ProfilingContext';
 import { useVisualizerDebug } from '@/contexts/VisualizerDebugContext';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
 import { useVolume } from '@/hooks/useVolume';
-import { useLikeTrack } from '@/hooks/useLikeTrack';
 import { useTrackListContext } from '@/contexts/TrackContext';
 import { clearCacheWithOptions } from '@/services/cache/libraryCache';
 import { clearAllPins } from '@/services/settings/pinnedItemsStorage';
@@ -83,6 +82,9 @@ interface PlayerControlsSectionProps {
   isRadioAvailable?: boolean;
   onStartRadio?: () => void;
   radioState?: RadioState;
+  isLiked: boolean;
+  isLikePending: boolean;
+  onLikeToggle: () => void;
 }
 
 export const PlayerControlsSection: React.FC<PlayerControlsSectionProps> = React.memo(({
@@ -108,12 +110,14 @@ export const PlayerControlsSection: React.FC<PlayerControlsSectionProps> = React
   isRadioAvailable,
   onStartRadio,
   radioState,
+  isLiked,
+  isLikePending,
+  onLikeToggle,
 }) => {
   const { tracks, shuffleEnabled, handleShuffleToggle } = useTrackListContext();
   const { accentColor } = useColorContext();
   const { effectiveGlow, restoreGlowSettings } = useVisualEffectsState();
   const { handleMuteToggle, isMuted, volume, setVolumeLevel } = useVolume(currentTrackProvider);
-  const { isLiked, isLikePending, handleLikeToggle } = useLikeTrack(currentTrack?.id, currentTrack?.provider);
 
   const {
     visualEffectsEnabled,
@@ -251,7 +255,7 @@ export const PlayerControlsSection: React.FC<PlayerControlsSectionProps> = React
     onMute: handleMuteToggle,
     onVolumeUp: handleVolumeUp,
     onVolumeDown: handleVolumeDown,
-    onToggleLike: handleLikeToggle,
+    onToggleLike: onLikeToggle,
     onToggleShuffle: handleShuffleToggle,
     onToggleHelp: toggleHelp,
     onShowQueue: handleArrowUp,
@@ -286,7 +290,7 @@ export const PlayerControlsSection: React.FC<PlayerControlsSectionProps> = React
                     trackCount={tracks.length}
                     isLiked={isLiked}
                     isLikePending={isLikePending}
-                    onToggleLike={handleLikeToggle}
+                    onToggleLike={onLikeToggle}
                     onPlay={onPlay}
                     onPause={onPause}
                     onNext={onNext}
