@@ -4,6 +4,7 @@ import type { VisualizerStyle } from '../types/visualizer';
 import { ParticleVisualizer } from './visualizers/ParticleVisualizer';
 import { TrailVisualizer } from './visualizers/TrailVisualizer';
 import { WaveVisualizer } from './visualizers/WaveVisualizer';
+import { StarburstVisualizer } from './visualizers/StarburstVisualizer';
 
 interface AlbumArtBounds {
   left: number;
@@ -71,6 +72,8 @@ const BackgroundVisualizer: React.FC<BackgroundVisualizerProps> = React.memo(({
         return TrailVisualizer;
       case 'wave':
         return WaveVisualizer;
+      case 'starburst':
+        return StarburstVisualizer;
       default:
         return ParticleVisualizer;
     }
