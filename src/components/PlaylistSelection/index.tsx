@@ -26,6 +26,7 @@ import { useLibraryBrowsing } from './useLibraryBrowsing';
 import { useItemActions } from './useItemActions';
 import { LibraryStatusContent } from './LibraryStatusContent';
 import { LibraryMainContent } from './LibraryMainContent';
+import LibraryDrawerHeader from './LibraryDrawerHeader';
 
 interface PlaylistSelectionProps {
   onPlaylistSelect: (playlistId: string, playlistName: string, provider?: ProviderId) => void;
@@ -283,6 +284,7 @@ const PlaylistSelection = React.memo(function PlaylistSelection({
   if (inDrawer) {
     return (
       <DrawerContentWrapper>
+        <LibraryDrawerHeader activeDescriptor={activeDescriptor ?? null} />
         <LibraryStatusContent {...statusContentProps} />
         {showMainContent && <LibraryMainContent {...mainContentProps} />}
         {albumPopoverPortal}
