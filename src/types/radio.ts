@@ -77,3 +77,19 @@ export interface RadioResult {
   /** Last.fm suggestions that didn't match the local catalog, sorted by matchScore descending. */
   unmatchedSuggestions: UnmatchedSuggestion[];
 }
+
+
+// ── Radio state ──────────────────────────────────────────────────────
+
+export interface RadioState {
+  /** Whether a radio session is currently active. */
+  isActive: boolean;
+  /** Description of the current radio seed (e.g., "Radio based on Creep by Radiohead"). */
+  seedDescription: string | null;
+  /** Whether radio queue is currently being generated. */
+  isGenerating: boolean;
+  /** Error message from the last radio attempt. */
+  error: string | null;
+  /** Match stats from the last successful radio generation. */
+  lastMatchStats: RadioResult['matchStats'] | null;
+}

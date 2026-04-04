@@ -20,9 +20,9 @@ import { useQueueManagement } from './useQueueManagement';
 import { useCollectionLoader } from './useCollectionLoader';
 import { usePlaybackSubscription } from './usePlaybackSubscription';
 import { useRadioSession } from './useRadioSession';
-import type { RadioProgress } from './useRadioSession';
+import type { RadioProgress, RadioProgressPhase } from '@/types/radio';
 
-export type { RadioProgressPhase, RadioProgress } from './useRadioSession';
+export type { RadioProgressPhase, RadioProgress };
 
 
 export function usePlayerLogic() {

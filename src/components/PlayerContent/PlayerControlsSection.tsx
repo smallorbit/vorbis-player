@@ -17,7 +17,7 @@ import { clearAllPins } from '@/services/settings/pinnedItemsStorage';
 import { STORAGE_KEYS } from '@/constants/storage';
 import type { ClearCacheOptions } from '@/components/VisualEffectsMenu';
 import type { MediaTrack, ProviderId } from '@/types/domain';
-import type { RadioState } from '@/hooks/useRadio';
+import type { RadioState } from '@/types/radio';
 import { LoadingCard, ZenControlsWrapper, ZenControlsInner } from './styled';
 
 const VisualEffectsMenu = lazy(() => import('@/components/VisualEffectsMenu/index'));

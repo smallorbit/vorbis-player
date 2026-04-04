@@ -11,8 +11,7 @@ import { LIKED_SONGS_ID } from '@/constants/playlist';
 import { LIBRARY_REFRESH_EVENT } from '@/hooks/useLibrarySync';
 import { providerRegistry } from '@/providers/registry';
 import type { AddToQueueResult, MediaTrack, ProviderId } from '@/types/domain';
-import type { RadioState } from '@/hooks/useRadio';
-import type { RadioProgress } from '@/hooks/usePlayerLogic';
+import type { RadioState, RadioProgress } from '@/types/radio';
 
 const SaveQueueDialog = lazy(() => import('@/components/SaveQueueDialog'));
 const QueueDrawer = lazy(() => import('@/components/QueueDrawer'));
