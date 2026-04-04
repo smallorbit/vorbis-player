@@ -7,9 +7,8 @@
   * - ArrowRight: Next track
   * - ArrowLeft: Previous track
   * - V: Toggle background visualizations
-  * - O: Toggle visual effects menu
+  * - S: Toggle visual effects menu
   * - G: Toggle glow effect
-  * - S: Toggle shuffle
   * - ?: Show keyboard shortcuts help
   * - Escape: Close menus (queue drawer and visual effects)
   * - M: Mute
@@ -140,8 +139,8 @@ export const useKeyboardShortcuts = (
           }
           break;
 
-        case 'KeyO':
-          // O toggles visual effects menu
+        case 'KeyS':
+          // S toggles visual effects menu
           if (!event.ctrlKey && !event.metaKey) {
             event.preventDefault();
             onToggleVisualEffectsMenu?.();
@@ -199,14 +198,6 @@ export const useKeyboardShortcuts = (
           if (!event.ctrlKey && !event.metaKey) {
             event.preventDefault();
             onToggleLike?.();
-          }
-          break;
-
-        case 'KeyS':
-          // S toggles shuffle
-          if (!event.ctrlKey && !event.metaKey) {
-            event.preventDefault();
-            onToggleShuffle?.();
           }
           break;
 
