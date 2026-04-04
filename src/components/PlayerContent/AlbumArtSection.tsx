@@ -12,6 +12,7 @@ import { useVisualEffectsState } from '@/hooks/useVisualEffectsState';
 import type { MediaTrack, ProviderId } from '@/types/domain';
 import { FlipInner, ZenTrackInfo, ZenTrackName, ZenTrackArtist } from './styled';
 import { GestureLayer } from './GestureLayer';
+import { ZenClickZoneOverlay } from './ZenClickZoneOverlay';
 
 const ZenProviderBadgeOverlay = styled.div`
   position: absolute;
@@ -35,11 +36,17 @@ interface AlbumArtSectionProps {
   isMobile: boolean;
   isTablet: boolean;
   isTouchDevice: boolean;
+  hasPointerInput: boolean;
+  isPlaying: boolean;
   onSwipeLeft: () => void;
   onSwipeRight: () => void;
   onSwipeUp: () => void;
   onSwipeDown: () => void;
   onAlbumArtBoundsChange?: (bounds: AlbumArtBounds | null) => void;
+  onPlay: () => void;
+  onPause: () => void;
+  onNext: () => void;
+  onPrevious: () => void;
 }
 
 export const AlbumArtSection: React.FC<AlbumArtSectionProps> = React.memo(({
@@ -49,11 +56,17 @@ export const AlbumArtSection: React.FC<AlbumArtSectionProps> = React.memo(({
   isMobile,
   isTablet,
   isTouchDevice,
+  hasPointerInput,
+  isPlaying,
   onSwipeLeft,
   onSwipeRight,
   onSwipeUp,
   onSwipeDown,
   onAlbumArtBoundsChange,
+  onPlay,
+  onPause,
+  onNext,
+  onPrevious,
 }) => {
   const { connectedProviderIds } = useProviderContext();
 
@@ -90,10 +103,33 @@ export const AlbumArtSection: React.FC<AlbumArtSectionProps> = React.memo(({
   } = useVisualEffectsState();
 
   const [isFlipped, setIsFlipped] = useState(false);
+  const [hoveredZone, setHoveredZone] = useState<'left' | 'center' | 'right' | null>(null);
   const flipContainerRef = useRef<HTMLDivElement>(null);
   const albumArtContainerRef = useRef<HTMLDivElement | null>(null);
 
   const toggleFlip = useCallback(() => setIsFlipped(f => !f), []);
+
+  const handleClick = useCallback((e: React.MouseEvent) => {
+    if (zenModeEnabled) {
+      const container = albumArtContainerRef.current;
+      if (!container) return;
+      const rect = container.getBoundingClientRect();
+      const relX = (e.clientX - rect.left) / rect.width;
+      if (relX < 0.25) {
+        onPrevious();
+      } else if (relX > 0.75) {
+        onNext();
+      } else {
+        if (isPlaying) {
+          onPause();
+        } else {
+          onPlay();
+        }
+      }
+    } else {
+      toggleFlip();
+    }
+  }, [zenModeEnabled, isPlaying, onPlay, onPause, onNext, onPrevious, toggleFlip]);
 
   const handleRetryAlbumArt = useCallback(async () => {
     const providerId = currentTrackProvider ?? currentTrack?.provider;
@@ -130,6 +166,12 @@ export const AlbumArtSection: React.FC<AlbumArtSectionProps> = React.memo(({
   useEffect(() => {
     setIsFlipped(false);
   }, [currentTrack?.id]);
+
+  useEffect(() => {
+    if (!zenModeEnabled) {
+      setHoveredZone(null);
+    }
+  }, [zenModeEnabled]);
 
   useEffect(() => {
     if (!isFlipped) return;
@@ -208,15 +250,18 @@ export const AlbumArtSection: React.FC<AlbumArtSectionProps> = React.memo(({
             <ProviderBadge providerId={currentTrackProvider} />
           </ZenProviderBadgeOverlay>
         )}
-        <div ref={flipContainerRef} style={{ width: '100%' }}>
+        <div ref={flipContainerRef} style={{ width: '100%', position: 'relative' }}>
           <GestureLayer
             onSwipeLeft={onSwipeLeft}
             onSwipeRight={onSwipeRight}
             onSwipeUp={onSwipeUp}
             onSwipeDown={onSwipeDown}
             isTouchDevice={isTouchDevice}
-            onClick={toggleFlip}
+            onClick={handleClick}
             albumArtContainerRef={albumArtContainerRef}
+            onZoneHover={setHoveredZone}
+            zenModeEnabled={zenModeEnabled}
+            hasPointerInput={hasPointerInput}
           >
             <FlipInner $isFlipped={isFlipped}>
               <ProfiledComponent id="AlbumArt">
@@ -259,6 +304,11 @@ export const AlbumArtSection: React.FC<AlbumArtSectionProps> = React.memo(({
               />
             </FlipInner>
           </GestureLayer>
+          <ZenClickZoneOverlay
+            isPlaying={isPlaying}
+            hoveredZone={hoveredZone}
+            visible={zenModeEnabled && hasPointerInput}
+          />
         </div>
       </CardContent>
       <ZenTrackInfo $zenMode={zenModeEnabled}>
