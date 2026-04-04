@@ -13,7 +13,7 @@ import {
   RadioIcon,
 } from '../icons/QuickActionIcons';
 
-const AUTOHIDE_DELAY = 1000;
+const AUTOHIDE_DELAY = 500;
 
 interface BottomBarProps {
   zenModeEnabled?: boolean;
