@@ -5,6 +5,7 @@ interface ZenLikeOverlayProps {
   isVisible: boolean;
   canSaveTrack: boolean;
   onToggleLike: () => void;
+  zenModeEnabled: boolean;
 }
 
 export const ZenLikeOverlay: React.FC<ZenLikeOverlayProps> = React.memo(({
@@ -12,8 +13,9 @@ export const ZenLikeOverlay: React.FC<ZenLikeOverlayProps> = React.memo(({
   isVisible,
   canSaveTrack,
   onToggleLike,
+  zenModeEnabled,
 }) => {
-  if (!canSaveTrack) return null;
+  if (!canSaveTrack || !zenModeEnabled) return null;
 
   const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
