@@ -1,6 +1,6 @@
 import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import styled from 'styled-components';
-import { flexCenter } from '@/styles/utils';
+import { flexCenter, srOnly } from '@/styles/utils';
 import PlayerStateRenderer from './PlayerStateRenderer';
 import PlayerContent from './PlayerContent';
 import BackgroundVisualizer from './BackgroundVisualizer';
@@ -29,6 +29,10 @@ const Container = styled.div`
   min-height: 100vh;
   min-height: 100dvh;
   ${flexCenter};
+`;
+
+const ScreenReaderAnnouncement = styled.div`
+  ${srOnly}
 `;
 
 const AudioPlayerComponent = () => {
@@ -184,6 +188,9 @@ const AudioPlayerComponent = () => {
     <PlayerSizingProvider>
     <ProfilingProvider>
       <Container>
+        <ScreenReaderAnnouncement aria-live="polite" aria-atomic="true">
+          {currentTrack ? `Now playing: ${currentTrack.name} by ${currentTrack.artists}` : ''}
+        </ScreenReaderAnnouncement>
         <DebugOverlay active={debugActive} />
         <ProfilingOverlay />
         {/* 5 rapid taps in top-left corner toggles debug overlay */}
