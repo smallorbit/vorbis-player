@@ -333,6 +333,7 @@ export const AlbumArtSection: React.FC<AlbumArtSectionProps> = React.memo(({
             isVisible={zenModeEnabled && hasPointerInput && isHovered}
             canSaveTrack={canSaveTrack}
             onToggleLike={onLikeToggle}
+            zenModeEnabled={zenModeEnabled}
           />
         </div>
       </CardContent>
