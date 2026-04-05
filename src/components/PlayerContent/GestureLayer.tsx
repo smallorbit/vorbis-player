@@ -1,10 +1,10 @@
 import React, { useCallback } from 'react';
+import { ZEN_CONTROLS_DURATION, ZEN_ART_EASING, resolveZenZone } from '@/constants/zenAnimation';
+import type { Zone } from '@/constants/zenAnimation';
 import { useSwipeGesture } from '@/hooks/useSwipeGesture';
 import { useVerticalSwipeGesture } from '@/hooks/useVerticalSwipeGesture';
 import { useLongPress } from '@/hooks/useLongPress';
 import { ClickableAlbumArtContainer } from './styled';
-
-type Zone = 'left' | 'center' | 'right';
 
 interface ZenTouchHandlers {
   onPointerDown: (e: React.PointerEvent) => void;
@@ -80,19 +80,7 @@ export const GestureLayer: React.FC<GestureLayerProps> = React.memo(({
   const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     if (!onZoneHover) return;
     const rect = e.currentTarget.getBoundingClientRect();
-    const relY = (e.clientY - rect.top) / rect.height;
-    if (relY < 0.2 || relY > 0.8) {
-      onZoneHover(null);
-      return;
-    }
-    const relX = (e.clientX - rect.left) / rect.width;
-    if (relX < 0.25) {
-      onZoneHover('left');
-    } else if (relX > 0.75) {
-      onZoneHover('right');
-    } else {
-      onZoneHover('center');
-    }
+    onZoneHover(resolveZenZone(e.clientX, e.clientY, rect));
   }, [onZoneHover]);
 
   const handleMouseLeave = useCallback(() => {
@@ -130,7 +118,7 @@ export const GestureLayer: React.FC<GestureLayerProps> = React.memo(({
       onClick={handleClick}
       style={{
         transform: `translateX(${offsetX}px)`,
-        transition: isAnimating ? 'transform 300ms cubic-bezier(0.4, 0, 0.2, 1)' : 'none',
+        transition: isAnimating ? `transform ${ZEN_CONTROLS_DURATION}ms ${ZEN_ART_EASING}` : 'none',
         willChange: isSwiping ? 'transform' : undefined,
       }}
     >
