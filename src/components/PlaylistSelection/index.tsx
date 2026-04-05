@@ -183,17 +183,12 @@ const PlaylistSelection = React.memo(function PlaylistSelection({
     }) || activeDescriptor?.auth.isAuthenticated();
     if (hasAuth) {
       setIsAuthenticated(true);
+      setIsLoading(false);
     } else {
       setIsAuthenticated(false);
       setIsLoading(false);
     }
   }, [activeDescriptor, enabledProviderIds, getDescriptor]);
-
-  useEffect(() => {
-    if (isInitialLoadComplete || playlists.length > 0 || albums.length > 0 || likedSongsCount > 0) {
-      setIsLoading(false);
-    }
-  }, [isInitialLoadComplete, playlists.length, albums.length, likedSongsCount]);
 
   function handlePlaylistClick(playlist: PlaylistInfo): void {
     logQueue('selected playlist: %s (%s)', playlist.name, playlist.id);
