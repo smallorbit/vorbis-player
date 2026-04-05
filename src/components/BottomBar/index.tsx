@@ -50,7 +50,7 @@ const BottomBar = React.memo(function BottomBar({
   onFlipToggle,
 }: BottomBarProps) {
   const { isMobile, isTablet, isTouchDevice } = usePlayerSizingContext();
-  const [barVisible, setBarVisible] = useState(true);
+  const [barVisible, setBarVisible] = useState(!zenModeEnabled);
   const hideTimerRef = useRef<ReturnType<typeof setTimeout>>();
   const isHoveringRef = useRef(false);
   const touchLockedRef = useRef(false);
