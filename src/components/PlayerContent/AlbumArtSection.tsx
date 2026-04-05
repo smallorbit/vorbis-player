@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { ZEN_DEAD_ZONE_TOP, ZEN_DEAD_ZONE_BOTTOM, ZEN_ZONE_LEFT_BOUNDARY, ZEN_ZONE_RIGHT_BOUNDARY } from '@/constants/zenAnimation';
+import { resolveZenZone } from '@/constants/zenAnimation';
 import styled from 'styled-components';
 import { CardContent } from '@/components/styled';
 import AlbumArt from '@/components/AlbumArt';
@@ -146,12 +146,11 @@ export const AlbumArtSection: React.FC<AlbumArtSectionProps> = React.memo(({
       const container = albumArtContainerRef.current;
       if (!container) return;
       const rect = container.getBoundingClientRect();
-      const relY = (e.clientY - rect.top) / rect.height;
-      if (relY < ZEN_DEAD_ZONE_TOP || relY > ZEN_DEAD_ZONE_BOTTOM) return;
-      const relX = (e.clientX - rect.left) / rect.width;
-      if (relX < ZEN_ZONE_LEFT_BOUNDARY) {
+      const zone = resolveZenZone(e.clientX, e.clientY, rect);
+      if (zone === null) return;
+      if (zone === 'left') {
         onPrevious();
-      } else if (relX > ZEN_ZONE_RIGHT_BOUNDARY) {
+      } else if (zone === 'right') {
         onNext();
       } else {
         if (isPlaying) {
