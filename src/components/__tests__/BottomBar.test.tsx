@@ -96,13 +96,6 @@ describe('BottomBar', () => {
     expect(props.onBackToLibrary).toHaveBeenCalledOnce();
   });
 
-  it('clicking back-to-library calls onBackToLibrary callback', () => {
-    const onBackToLibrary = vi.fn();
-    renderBottomBar({ onBackToLibrary });
-    fireEvent.click(screen.getByTitle('Back to Library'));
-    expect(onBackToLibrary).toHaveBeenCalledOnce();
-  });
-
   it('zen mode button is visible when onZenModeToggle is provided', () => {
     renderBottomBar({ onZenModeToggle: vi.fn() });
     expect(screen.getByTitle(/zen mode/i)).toBeTruthy();
