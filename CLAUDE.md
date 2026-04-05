@@ -65,7 +65,7 @@ npm run deploy:preview # Deploy preview
 ```
 src/
 ├── components/      # React components (~33 files); key subdirs: BottomBar/, controls/, icons/, PlayerContent/, PlaylistSelection/, styled/, VisualEffectsMenu/, VisualizerDebugPanel/, visualizers/
-├── constants/       # playlist.ts — ALBUM_ID_PREFIX, LIKED_SONGS_ID, helpers
+├── constants/       # playlist.ts, zenAnimation.ts, storage.ts
 ├── providers/       # Multi-provider system; spotify/ and dropbox/ subdirs
 ├── hooks/           # 30 custom hooks
 ├── services/        # spotify.ts (auth + API), spotifyPlayer.ts (lazy SDK loading + playback), cache/ (IndexedDB)
@@ -219,6 +219,7 @@ Centralized in `useKeyboardShortcuts.ts`. Uses `pointer: fine` / `hover: hover` 
 | `↑` / `Q` | Toggle queue | Volume up (↑ only) |
 | `↓` / `L` | Toggle library | Volume down (↓ only) |
 | `V` / `G` / `S` / `T` | Visualizer / Glow / Shuffle / Translucence | same |
+| `Z` | Toggle zen mode | same |
 | `O` / `K` / `M` | Effects menu / Like / Mute | same |
 | `?` / `/` | Keyboard help | same |
 | `Escape` | Close all menus | same |
