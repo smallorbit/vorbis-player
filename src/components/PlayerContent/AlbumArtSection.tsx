@@ -52,6 +52,7 @@ interface AlbumArtSectionProps {
   isLiked: boolean;
   canSaveTrack: boolean;
   onLikeToggle: () => void;
+  flipToggleRef?: React.MutableRefObject<(() => void) | null>;
 }
 
 export const AlbumArtSection: React.FC<AlbumArtSectionProps> = React.memo(({
@@ -75,6 +76,7 @@ export const AlbumArtSection: React.FC<AlbumArtSectionProps> = React.memo(({
   isLiked,
   canSaveTrack,
   onLikeToggle,
+  flipToggleRef,
 }) => {
   const { connectedProviderIds } = useProviderContext();
 
@@ -117,6 +119,11 @@ export const AlbumArtSection: React.FC<AlbumArtSectionProps> = React.memo(({
   const albumArtContainerRef = useRef<HTMLDivElement | null>(null);
 
   const toggleFlip = useCallback(() => setIsFlipped(f => !f), []);
+
+  useEffect(() => {
+    if (flipToggleRef) flipToggleRef.current = toggleFlip;
+    return () => { if (flipToggleRef) flipToggleRef.current = null; };
+  }, [flipToggleRef, toggleFlip]);
 
   const handleClick = useCallback((e: React.MouseEvent) => {
     if (zenModeEnabled) {

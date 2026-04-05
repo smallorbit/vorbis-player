@@ -85,6 +85,7 @@ interface PlayerControlsSectionProps {
   isLiked: boolean;
   isLikePending: boolean;
   onLikeToggle: () => void;
+  onFlipToggle?: () => void;
 }
 
 export const PlayerControlsSection: React.FC<PlayerControlsSectionProps> = React.memo(({
@@ -113,6 +114,7 @@ export const PlayerControlsSection: React.FC<PlayerControlsSectionProps> = React
   isLiked,
   isLikePending,
   onLikeToggle,
+  onFlipToggle,
 }) => {
   const { tracks, shuffleEnabled, handleShuffleToggle } = useTrackListContext();
   const { accentColor } = useColorContext();
@@ -320,6 +322,7 @@ export const PlayerControlsSection: React.FC<PlayerControlsSectionProps> = React
           onShuffleToggle={handleShuffleToggle}
           onStartRadio={isRadioAvailable ? onStartRadio : undefined}
           radioGenerating={radioState?.isGenerating}
+          onFlipToggle={onFlipToggle}
         />
       </ProfiledComponent>
       <Suspense fallback={<VisualEffectsLoadingFallback />}>
