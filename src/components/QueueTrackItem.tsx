@@ -91,6 +91,44 @@ const ContextTrashIcon = () => (
   </svg>
 );
 
+interface QueueItemContentProps {
+  track: MediaTrack;
+  isSelected: boolean;
+  showProviderIcon?: boolean;
+}
+
+const QueueItemContent = ({ track, isSelected, showProviderIcon }: QueueItemContentProps) => (
+  <>
+    <AlbumArtContainer>
+      <Avatar
+        src={track.image}
+        alt={track.album}
+        style={{ width: '3rem', height: '3rem' }}
+        fallback={<AlbumFallbackIcon />}
+      />
+      {isSelected && <PlayingIcon />}
+      {showProviderIcon && track.provider && (
+        <div style={{ position: 'absolute', bottom: -2, right: -2, zIndex: 2 }}>
+          <ProviderIcon provider={track.provider} size={16} />
+        </div>
+      )}
+    </AlbumArtContainer>
+
+    <TrackInfo>
+      <TrackName isSelected={isSelected}>
+        {track.name}
+      </TrackName>
+      <TrackArtist isSelected={isSelected}>
+        {track.artists}
+      </TrackArtist>
+    </TrackInfo>
+
+    <Duration isSelected={isSelected}>
+      {track.durationMs ? formatDuration(track.durationMs) : '--:--'}
+    </Duration>
+  </>
+);
+
 interface ContextMenuState {
   x: number;
   y: number;
@@ -217,33 +255,7 @@ export const SortableQueueItem = memo<QueueItemProps>(({
           </DragHandle>
         )}
 
-        <AlbumArtContainer>
-          <Avatar
-            src={track.image}
-            alt={track.album}
-            style={{ width: '3rem', height: '3rem' }}
-            fallback={<AlbumFallbackIcon />}
-          />
-          {isSelected && <PlayingIcon />}
-          {showProviderIcon && track.provider && (
-            <div style={{ position: 'absolute', bottom: -2, right: -2, zIndex: 2 }}>
-              <ProviderIcon provider={track.provider} size={16} />
-            </div>
-          )}
-        </AlbumArtContainer>
-
-        <TrackInfo>
-          <TrackName isSelected={isSelected}>
-            {track.name}
-          </TrackName>
-          <TrackArtist isSelected={isSelected}>
-            {track.artists}
-          </TrackArtist>
-        </TrackInfo>
-
-        <Duration isSelected={isSelected}>
-          {track.durationMs ? formatDuration(track.durationMs) : '--:--'}
-        </Duration>
+        <QueueItemContent track={track} isSelected={isSelected} showProviderIcon={showProviderIcon} />
 
         {isEditMode && onRemove && !isSelected && (
           <RemoveButton onClick={handleRemoveClick} aria-label={`Remove ${track.name}`}>
@@ -306,33 +318,7 @@ export const SwipeableQueueItem = memo<QueueItemProps>(({
           isSelected={isSelected}
           {...longPressHandlers}
         >
-          <AlbumArtContainer>
-            <Avatar
-              src={track.image}
-              alt={track.album}
-              style={{ width: '3rem', height: '3rem' }}
-              fallback={<AlbumFallbackIcon />}
-            />
-            {isSelected && <PlayingIcon />}
-            {showProviderIcon && track.provider && (
-              <div style={{ position: 'absolute', bottom: -2, right: -2, zIndex: 2 }}>
-                <ProviderIcon provider={track.provider} size={16} />
-              </div>
-            )}
-          </AlbumArtContainer>
-
-          <TrackInfo>
-            <TrackName isSelected={isSelected}>
-              {track.name}
-            </TrackName>
-            <TrackArtist isSelected={isSelected}>
-              {track.artists}
-            </TrackArtist>
-          </TrackInfo>
-
-          <Duration isSelected={isSelected}>
-            {track.durationMs ? formatDuration(track.durationMs) : '--:--'}
-          </Duration>
+          <QueueItemContent track={track} isSelected={isSelected} showProviderIcon={showProviderIcon} />
         </QueueListItem>
 
         {menu && (
@@ -369,32 +355,7 @@ export const SwipeableQueueItem = memo<QueueItemProps>(({
             isSelected={isSelected}
             {...longPressHandlers}
           >
-            <AlbumArtContainer>
-              <Avatar
-                src={track.image}
-                alt={track.album}
-                style={{ width: '3rem', height: '3rem' }}
-                fallback={<AlbumFallbackIcon />}
-              />
-              {showProviderIcon && track.provider && (
-                <div style={{ position: 'absolute', bottom: -2, right: -2, zIndex: 2 }}>
-                  <ProviderIcon provider={track.provider} size={16} />
-                </div>
-              )}
-            </AlbumArtContainer>
-
-            <TrackInfo>
-              <TrackName isSelected={isSelected}>
-                {track.name}
-              </TrackName>
-              <TrackArtist isSelected={isSelected}>
-                {track.artists}
-              </TrackArtist>
-            </TrackInfo>
-
-            <Duration isSelected={isSelected}>
-              {track.durationMs ? formatDuration(track.durationMs) : '--:--'}
-            </Duration>
+            <QueueItemContent track={track} isSelected={isSelected} showProviderIcon={showProviderIcon} />
           </QueueListItem>
         </SwipeableContent>
       </SwipeableWrapper>
