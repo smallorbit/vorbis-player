@@ -14,6 +14,8 @@ import PlaylistSelection from './PlaylistSelection';
 import { LIBRARY_REFRESH_EVENT } from '@/hooks/useLibrarySync';
 import type { AddToQueueResult, ProviderId } from '@/types/domain';
 
+const REFRESH_SPINNER_MIN_MS = 1500;
+
 interface LibraryDrawerProps {
   isOpen: boolean;
   onClose: () => void;
@@ -91,7 +93,7 @@ const LibraryDrawer = React.memo(function LibraryDrawer({ isOpen, onClose, onPla
       selectTimeoutRef.current = setTimeout(() => {
         selectTimeoutRef.current = null;
         onPlaylistSelect(playlistId, playlistName, provider);
-      }, 320);
+      }, DRAWER_TRANSITION_DURATION);
     },
     [onClose, onPlaylistSelect]
   );
@@ -105,7 +107,7 @@ const LibraryDrawer = React.memo(function LibraryDrawer({ isOpen, onClose, onPla
     refreshTimeoutRef.current = setTimeout(() => {
       setIsRefreshing(false);
       refreshTimeoutRef.current = null;
-    }, 1500);
+    }, REFRESH_SPINNER_MIN_MS);
   }, [isRefreshing]);
 
   useEffect(() => {

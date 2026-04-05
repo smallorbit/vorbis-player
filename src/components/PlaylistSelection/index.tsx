@@ -27,6 +27,8 @@ import { useItemActions } from './useItemActions';
 import { LibraryStatusContent } from './LibraryStatusContent';
 import { LibraryMainContent } from './LibraryMainContent';
 import LibraryDrawerHeader from './LibraryDrawerHeader';
+import { LibraryProvider } from './LibraryContext';
+import type { LibraryContextValue } from './LibraryContext';
 
 interface PlaylistSelectionProps {
   onPlaylistSelect: (playlistId: string, playlistName: string, provider?: ProviderId) => void;
@@ -223,7 +225,7 @@ const PlaylistSelection = React.memo(function PlaylistSelection({
   const hasAnyContent = playlists.length > 0 || albums.length > 0 || likedSongsCount > 0;
   const showMainContent = isAuthenticated && !error && (hasAnyContent || (!isLoading && !isInitialLoadComplete));
 
-  const mainContentProps = {
+  const libraryContextValue: LibraryContextValue = {
     inDrawer,
     swipeZoneRef,
     viewMode,
@@ -280,29 +282,33 @@ const PlaylistSelection = React.memo(function PlaylistSelection({
 
   if (inDrawer) {
     return (
-      <DrawerContentWrapper>
-        <LibraryDrawerHeader activeDescriptor={activeDescriptor ?? null} />
-        <LibraryStatusContent {...statusContentProps} />
-        {showMainContent && <LibraryMainContent {...mainContentProps} />}
-        {albumPopoverPortal}
-        {playlistPopoverPortal}
-        {confirmDeletePortal}
-      </DrawerContentWrapper>
+      <LibraryProvider value={libraryContextValue}>
+        <DrawerContentWrapper>
+          <LibraryDrawerHeader activeDescriptor={activeDescriptor ?? null} />
+          <LibraryStatusContent {...statusContentProps} />
+          {showMainContent && <LibraryMainContent />}
+          {albumPopoverPortal}
+          {playlistPopoverPortal}
+          {confirmDeletePortal}
+        </DrawerContentWrapper>
+      </LibraryProvider>
     );
   }
 
   return (
-    <Container $inDrawer={false}>
-      <SelectionCard $maxWidth={maxWidth} $inDrawer={false}>
-        <CardContent style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
-          <LibraryStatusContent {...statusContentProps} />
-          {showMainContent && <LibraryMainContent {...mainContentProps} />}
-          {albumPopoverPortal}
-          {playlistPopoverPortal}
-          {confirmDeletePortal}
-        </CardContent>
-      </SelectionCard>
-    </Container>
+    <LibraryProvider value={libraryContextValue}>
+      <Container $inDrawer={false}>
+        <SelectionCard $maxWidth={maxWidth} $inDrawer={false}>
+          <CardContent style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+            <LibraryStatusContent {...statusContentProps} />
+            {showMainContent && <LibraryMainContent />}
+            {albumPopoverPortal}
+            {playlistPopoverPortal}
+            {confirmDeletePortal}
+          </CardContent>
+        </SelectionCard>
+      </Container>
+    </LibraryProvider>
   );
 });
 
