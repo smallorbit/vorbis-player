@@ -31,7 +31,23 @@ export const BottomBarInner = styled.div`
   height: ${BOTTOM_BAR_HEIGHT}px;
 `;
 
-/** Invisible hover/touch zone at the bottom of the viewport to reveal the bar */
+export const ZenGripPill = styled.div.withConfig({
+  shouldForwardProp: (prop) => !['$visible'].includes(prop),
+})<{ $visible: boolean }>`
+  width: 36px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.35);
+  border-radius: 2px;
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  opacity: ${({ $visible }) => ($visible ? 1 : 0)};
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+`;
+
+/** Hover/touch zone at the bottom of the viewport to reveal the bar */
 export const ZenTriggerZone = styled.div`
   position: fixed;
   bottom: 0;

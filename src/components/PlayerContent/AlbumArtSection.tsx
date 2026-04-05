@@ -9,6 +9,7 @@ import { useColorContext } from '@/contexts/ColorContext';
 import { useVisualEffectsContext } from '@/contexts/VisualEffectsContext';
 import { useProviderContext } from '@/contexts/ProviderContext';
 import { useVisualEffectsState } from '@/hooks/useVisualEffectsState';
+import { useZenTouchGestures } from '@/hooks/useZenTouchGestures';
 import type { MediaTrack, ProviderId } from '@/types/domain';
 import type { VisualizerStyle } from '@/types/visualizer';
 import { FlipInner, ZenTrackInfo, ZenTrackName, ZenTrackArtist } from './styled';
@@ -16,12 +17,12 @@ import { GestureLayer } from './GestureLayer';
 import { ZenClickZoneOverlay } from './ZenClickZoneOverlay';
 import { ZenLikeOverlay } from './ZenLikeOverlay';
 
-const ZenProviderBadgeOverlay = styled.div`
-  position: absolute;
-  top: ${({ theme }) => theme.spacing.sm};
-  right: ${({ theme }) => theme.spacing.sm};
-  z-index: 10;
-  pointer-events: none;
+const ZenProviderBadgeInline = styled.span`
+  display: inline-flex;
+  vertical-align: baseline;
+  margin-left: ${({ theme }) => theme.spacing.sm};
+  position: relative;
+  top: -1px;
 `;
 
 interface AlbumArtBounds {
@@ -52,6 +53,7 @@ interface AlbumArtSectionProps {
   isLiked: boolean;
   canSaveTrack: boolean;
   onLikeToggle: () => void;
+  flipToggleRef?: React.MutableRefObject<(() => void) | null>;
 }
 
 export const AlbumArtSection: React.FC<AlbumArtSectionProps> = React.memo(({
@@ -75,6 +77,7 @@ export const AlbumArtSection: React.FC<AlbumArtSectionProps> = React.memo(({
   isLiked,
   canSaveTrack,
   onLikeToggle,
+  flipToggleRef,
 }) => {
   const { connectedProviderIds } = useProviderContext();
 
@@ -118,7 +121,26 @@ export const AlbumArtSection: React.FC<AlbumArtSectionProps> = React.memo(({
 
   const toggleFlip = useCallback(() => setIsFlipped(f => !f), []);
 
+  useEffect(() => {
+    if (flipToggleRef) flipToggleRef.current = toggleFlip;
+    return () => { if (flipToggleRef) flipToggleRef.current = null; };
+  }, [flipToggleRef, toggleFlip]);
+
+  const zenTouchActive = isTouchDevice && zenModeEnabled && !isFlipped;
+
+  const zenTouchGestures = useZenTouchGestures({
+    enabled: zenTouchActive,
+    isPlaying,
+    onPlay,
+    onPause,
+    onLikeToggle,
+    onFlipToggle: toggleFlip,
+  });
+
   const handleClick = useCallback((e: React.MouseEvent) => {
+    if (zenTouchActive || (isTouchDevice && zenModeEnabled && isFlipped)) {
+      return;
+    }
     if (zenModeEnabled) {
       const container = albumArtContainerRef.current;
       if (!container) return;
@@ -138,7 +160,7 @@ export const AlbumArtSection: React.FC<AlbumArtSectionProps> = React.memo(({
     } else {
       toggleFlip();
     }
-  }, [zenModeEnabled, isPlaying, onPlay, onPause, onNext, onPrevious, toggleFlip]);
+  }, [zenTouchActive, zenModeEnabled, isPlaying, onPlay, onPause, onNext, onPrevious, toggleFlip]);
 
   const handleRetryAlbumArt = useCallback(async () => {
     const providerId = currentTrackProvider ?? currentTrack?.provider;
@@ -263,11 +285,6 @@ export const AlbumArtSection: React.FC<AlbumArtSectionProps> = React.memo(({
         alignItems: 'center',
         paddingTop: zenModeEnabled ? '0' : (isMobile ? '0.25rem' : '0.5rem')
       }}>
-        {zenModeEnabled && connectedProviderIds.length > 1 && currentTrackProvider != null && (
-          <ZenProviderBadgeOverlay>
-            <ProviderBadge providerId={currentTrackProvider} iconOnly />
-          </ZenProviderBadgeOverlay>
-        )}
         <div ref={flipContainerRef} style={{ width: '100%', position: 'relative' }} onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
           <GestureLayer
             onSwipeLeft={onSwipeLeft}
@@ -276,7 +293,8 @@ export const AlbumArtSection: React.FC<AlbumArtSectionProps> = React.memo(({
             onSwipeDown={onSwipeDown}
             isTouchDevice={isTouchDevice}
             onClick={handleClick}
-            onLongPress={zenModeEnabled ? toggleFlip : undefined}
+            onLongPress={zenModeEnabled && !zenTouchActive ? toggleFlip : undefined}
+            zenTouchHandlers={zenTouchActive ? zenTouchGestures : undefined}
             albumArtContainerRef={albumArtContainerRef}
             onZoneHover={setHoveredZone}
             zenModeEnabled={zenModeEnabled}
@@ -326,7 +344,7 @@ export const AlbumArtSection: React.FC<AlbumArtSectionProps> = React.memo(({
           <ZenClickZoneOverlay
             isPlaying={isPlaying}
             hoveredZone={hoveredZone}
-            visible={zenModeEnabled && hasPointerInput}
+            visible={zenModeEnabled && hasPointerInput && !zenTouchActive}
           />
           <ZenLikeOverlay
             isLiked={isLiked}
@@ -340,6 +358,11 @@ export const AlbumArtSection: React.FC<AlbumArtSectionProps> = React.memo(({
       <ZenTrackInfo $zenMode={zenModeEnabled}>
         <ZenTrackName $isMobile={isMobile} $isTablet={isTablet}>
           {currentTrack?.name}
+          {zenModeEnabled && connectedProviderIds.length > 1 && currentTrackProvider != null && (
+            <ZenProviderBadgeInline>
+              <ProviderBadge providerId={currentTrackProvider} iconOnly />
+            </ZenProviderBadgeInline>
+          )}
         </ZenTrackName>
         {currentTrack?.artists && (
           <ZenTrackArtist>{currentTrack.artists}</ZenTrackArtist>

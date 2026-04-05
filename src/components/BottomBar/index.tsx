@@ -1,6 +1,6 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { BottomBarContainer, BottomBarInner, ZenTriggerZone } from './styled';
+import { BottomBarContainer, BottomBarInner, ZenGripPill, ZenTriggerZone } from './styled';
 import { ControlButton } from '../controls/styled';
 import VolumeControl from '../controls/VolumeControl';
 import { usePlayerSizingContext } from '@/contexts/PlayerSizingContext';
@@ -11,6 +11,7 @@ import {
   ZenModeIcon,
   ShuffleIcon,
   RadioIcon,
+  FlipMenuIcon,
 } from '../icons/QuickActionIcons';
 
 const AUTOHIDE_DELAY = 1000;
@@ -29,6 +30,7 @@ interface BottomBarProps {
   onShuffleToggle?: () => void;
   onStartRadio?: () => void;
   radioGenerating?: boolean;
+  onFlipToggle?: () => void;
 }
 
 const BottomBar = React.memo(function BottomBar({
@@ -45,11 +47,13 @@ const BottomBar = React.memo(function BottomBar({
   onShuffleToggle,
   onStartRadio,
   radioGenerating,
+  onFlipToggle,
 }: BottomBarProps) {
-  const { isMobile, isTablet } = usePlayerSizingContext();
-  const [barVisible, setBarVisible] = useState(true);
+  const { isMobile, isTablet, isTouchDevice } = usePlayerSizingContext();
+  const [barVisible, setBarVisible] = useState(!zenModeEnabled);
   const hideTimerRef = useRef<ReturnType<typeof setTimeout>>();
   const isHoveringRef = useRef(false);
+  const touchLockedRef = useRef(false);
 
   const clearHideTimer = useCallback(() => {
     if (hideTimerRef.current) {
@@ -59,6 +63,7 @@ const BottomBar = React.memo(function BottomBar({
   }, []);
 
   const startHideTimer = useCallback(() => {
+    if (touchLockedRef.current) return;
     clearHideTimer();
     hideTimerRef.current = setTimeout(() => {
       setBarVisible(false);
@@ -71,6 +76,17 @@ const BottomBar = React.memo(function BottomBar({
       startHideTimer();
     }
   }, [startHideTimer]);
+
+  const handleTouchToggle = useCallback(() => {
+    if (barVisible) {
+      touchLockedRef.current = false;
+      setBarVisible(false);
+    } else {
+      touchLockedRef.current = true;
+      setBarVisible(true);
+      clearHideTimer();
+    }
+  }, [barVisible, clearHideTimer]);
 
   const handleBarMouseEnter = useCallback(() => {
     isHoveringRef.current = true;
@@ -92,6 +108,7 @@ const BottomBar = React.memo(function BottomBar({
   useEffect(() => {
     if (zenModeEnabled) return;
     clearHideTimer();
+    touchLockedRef.current = false;
     setBarVisible(true);
   }, [zenModeEnabled, clearHideTimer]);
 
@@ -99,7 +116,14 @@ const BottomBar = React.memo(function BottomBar({
 
   return createPortal(
     <>
-      {zenModeEnabled && <ZenTriggerZone onMouseEnter={showBar} onTouchStart={showBar} />}
+      {zenModeEnabled && (
+        <ZenTriggerZone
+          onMouseEnter={isTouchDevice ? undefined : showBar}
+          onTouchStart={isTouchDevice ? handleTouchToggle : undefined}
+        >
+          <ZenGripPill $visible={!barVisible} />
+        </ZenTriggerZone>
+      )}
       <BottomBarContainer
         $hidden={isHidden}
         onMouseEnter={handleBarMouseEnter}
@@ -140,6 +164,19 @@ const BottomBar = React.memo(function BottomBar({
               aria-label="Generate radio playlist from current track"
             >
               <RadioIcon />
+            </ControlButton>
+          )}
+
+          {zenModeEnabled && onFlipToggle && (
+            <ControlButton
+              $isMobile={isMobile}
+              $isTablet={isTablet}
+              $compact
+              onClick={onFlipToggle}
+              title="Flip menu"
+              aria-label="Flip menu"
+            >
+              <FlipMenuIcon />
             </ControlButton>
           )}
 
