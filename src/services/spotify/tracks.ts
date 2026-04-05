@@ -184,16 +184,26 @@ interface BatchEntry {
   reject: (reason: unknown) => void;
 }
 
+const BATCH_SIZE = 50;
+const BATCH_COLLECT_DELAY_MS = 50;
+const BATCH_INTER_CHUNK_DELAY_MS = 100;
+
 let _batchQueue: BatchEntry[] = [];
-let _batchFlushScheduled = false;
+let _batchFlushTimer: ReturnType<typeof setTimeout> | null = null;
+
+function _sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
 async function _flushBatch(): Promise<void> {
+  _batchFlushTimer = null;
   const queue = _batchQueue;
   _batchQueue = [];
-  _batchFlushScheduled = false;
 
-  const BATCH_SIZE = 50;
   for (let i = 0; i < queue.length; i += BATCH_SIZE) {
+    if (i > 0) {
+      await _sleep(BATCH_INTER_CHUNK_DELAY_MS);
+    }
     const chunk = queue.slice(i, i + BATCH_SIZE);
     const ids = chunk.map((entry) => entry.id);
     try {
@@ -222,9 +232,8 @@ export function checkTrackSaved(trackId: string): Promise<boolean> {
 
   return new Promise((resolve, reject) => {
     _batchQueue.push({ id: trackId, resolve, reject });
-    if (!_batchFlushScheduled) {
-      _batchFlushScheduled = true;
-      Promise.resolve().then(_flushBatch);
+    if (_batchFlushTimer === null) {
+      _batchFlushTimer = setTimeout(_flushBatch, BATCH_COLLECT_DELAY_MS);
     }
   });
 }
