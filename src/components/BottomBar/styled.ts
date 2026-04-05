@@ -57,3 +57,10 @@ export const ZenTriggerZone = styled.div`
   z-index: ${Number(theme.zIndex.mobileMenu) - 1};
   background: transparent;
 `;
+
+export const ZenBackdrop = styled.div`
+  position: fixed;
+  inset: 0;
+  z-index: ${Number(theme.zIndex.mobileMenu) - 2};
+  background: transparent;
+`;
