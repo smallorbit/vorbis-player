@@ -79,24 +79,30 @@ export function useQueueManagement({
         const collectionRef = { provider: targetProviderId, kind: collectionKind, id: collectionId } as const;
         const newMediaTracks = await catalog.listTracks(collectionRef);
 
-        if (newMediaTracks.length === 0) return null;
+        const existingIds = new Set(tracksRef.current.map((t) => t.id));
+        const uniqueNewTracks = newMediaTracks.filter((t) => !existingIds.has(t.id));
+        if (uniqueNewTracks.length < newMediaTracks.length) {
+          logQueue('handleAddToQueue — deduped: %d → %d tracks', newMediaTracks.length, uniqueNewTracks.length);
+        }
+
+        if (uniqueNewTracks.length === 0) return null;
 
         // Append to existing queue
         logQueue(
           'handleAddToQueue — appending %d tracks. Before: tracks=%d, mediaRef=%d',
-          newMediaTracks.length,
+          uniqueNewTracks.length,
           tracksRef.current.length,
           mediaTracksRef.current.length,
         );
-        mediaTracksRef.current = appendMediaTracks(mediaTracksRef.current, newMediaTracks);
-        setOriginalTracks([...tracksRef.current, ...newMediaTracks]);
-        setTracks((prev: MediaTrack[]) => [...prev, ...newMediaTracks]);
+        mediaTracksRef.current = appendMediaTracks(mediaTracksRef.current, uniqueNewTracks);
+        setOriginalTracks([...tracksRef.current, ...uniqueNewTracks]);
+        setTracks((prev: MediaTrack[]) => [...prev, ...uniqueNewTracks]);
         logQueue(
           'handleAddToQueue — after append: mediaRef=%d, newTracks added: %s',
           mediaTracksRef.current.length,
-          newMediaTracks.map((t: MediaTrack) => trkSummary(t)).join(', '),
+          uniqueNewTracks.map((t: MediaTrack) => trkSummary(t)).join(', '),
         );
-        return { added: newMediaTracks.length, collectionName };
+        return { added: uniqueNewTracks.length, collectionName };
       } catch (err) {
         console.error('[Queue] Failed to add to queue:', err);
         return null;
