@@ -2,7 +2,7 @@ import React, { memo, useEffect, useState, useCallback, useMemo } from 'react';
 import styled, { keyframes, css } from 'styled-components';
 import type { MediaTrack } from '@/types/domain';
 import { breatheBorderGlow } from '../styles/animations';
-import { ZEN_ART_DURATION, ZEN_ART_EASING, ZEN_ART_ENTER_DELAY } from '@/constants/zenAnimation';
+import { ZEN_ART_DURATION, ZEN_ART_EASING, ZEN_ART_ENTER_DELAY, ZEN_ART_MARGIN_H, ZEN_ART_MARGIN_V } from '@/constants/zenAnimation';
 
 import AccentColorGlowOverlay, { DEFAULT_GLOW_RATE, DEFAULT_GLOW_INTENSITY } from './AccentColorGlowOverlay';
 import { hexToRgb } from '../utils/colorUtils';
@@ -72,7 +72,7 @@ const AlbumArtContainer = styled.div.withConfig({
   position: relative;
   width: 100%;
   max-width: ${({ $zenMode }) => $zenMode
-    ? `min(calc(100vw - 32px), calc(100dvh - 130px))`
+    ? `min(calc(100vw - ${ZEN_ART_MARGIN_H}px), calc(100dvh - ${ZEN_ART_MARGIN_V}px))`
     : `min(calc(100vw - 48px), calc(100dvh - var(--player-controls-height, 220px) - 120px))`
   };
   transition: ${({ $zenMode }) => $zenMode
