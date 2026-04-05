@@ -1,7 +1,5 @@
 import * as React from 'react';
 import type { PlaylistInfo } from '../../services/spotify';
-import type { ProviderId } from '@/types/domain';
-import type { ProviderDescriptor } from '@/types/providers';
 import { LIKED_SONGS_ID, LIKED_SONGS_NAME } from '@/constants/playlist';
 import ProviderIcon from '../ProviderIcon';
 import {
@@ -25,50 +23,31 @@ import {
   TabSpinner,
 } from './styled';
 import { getLikedSongsGradient, likedSongsAsPlaylistInfo, PinIcon, PlaylistImage, GridCardImageComponent } from './utils';
+import { useLibraryContext } from './LibraryContext';
 
-interface PlaylistGridProps {
-  inDrawer: boolean;
-  likedSongsPerProvider: { provider: ProviderId; count: number }[];
-  likedSongsCount: number;
-  isLikedSongsSyncing: boolean;
-  isUnifiedLikedActive: boolean;
-  unifiedLikedCount: number;
-  isInitialLoadComplete: boolean;
-  showProviderBadges: boolean;
-  hasActiveFilters: boolean;
-  searchQuery: string;
-  pinnedPlaylists: PlaylistInfo[];
-  unpinnedPlaylists: PlaylistInfo[];
-  isPlaylistPinned: (id: string) => boolean;
-  canPinMorePlaylists: boolean;
-  activeDescriptor: ProviderDescriptor | null;
-  onPlaylistClick: (playlist: PlaylistInfo) => void;
-  onPlaylistContextMenu: (playlist: PlaylistInfo, e: React.MouseEvent) => void;
-  onPinPlaylistClick: (id: string, e: React.MouseEvent) => void;
-  onLikedSongsClick: (provider?: ProviderId) => void;
-}
+export const PlaylistGrid: React.FC = React.memo(function PlaylistGrid() {
+  const {
+    inDrawer,
+    likedSongsPerProvider,
+    likedSongsCount,
+    isLikedSongsSyncing,
+    isUnifiedLikedActive,
+    unifiedLikedCount,
+    isInitialLoadComplete,
+    showProviderBadges,
+    hasActiveFilters,
+    searchQuery,
+    pinnedPlaylists,
+    unpinnedPlaylists,
+    isPlaylistPinned,
+    canPinMorePlaylists,
+    activeDescriptor,
+    onPlaylistClick,
+    onPlaylistContextMenu,
+    onPinPlaylistClick,
+    onLikedSongsClick,
+  } = useLibraryContext();
 
-export const PlaylistGrid: React.FC<PlaylistGridProps> = React.memo(function PlaylistGrid({
-  inDrawer,
-  likedSongsPerProvider,
-  likedSongsCount,
-  isLikedSongsSyncing,
-  isUnifiedLikedActive,
-  unifiedLikedCount,
-  isInitialLoadComplete,
-  showProviderBadges,
-  hasActiveFilters,
-  searchQuery,
-  pinnedPlaylists,
-  unpinnedPlaylists,
-  isPlaylistPinned,
-  canPinMorePlaylists,
-  activeDescriptor,
-  onPlaylistClick,
-  onPlaylistContextMenu,
-  onPinPlaylistClick,
-  onLikedSongsClick,
-}) {
   const likedSongsPinned = isPlaylistPinned(LIKED_SONGS_ID);
   const likedSongsPinBtn = (
     <PinButton

@@ -21,39 +21,25 @@ import {
   ClickableArtist,
 } from './styled';
 import { PinIcon, PlaylistImage, GridCardImageComponent } from './utils';
+import { useLibraryContext } from './LibraryContext';
 
-interface AlbumGridProps {
-  inDrawer: boolean;
-  albums: AlbumInfo[];
-  isInitialLoadComplete: boolean;
-  showProviderBadges: boolean;
-  searchQuery: string;
-  artistFilter: string;
-  pinnedAlbums: AlbumInfo[];
-  unpinnedAlbums: AlbumInfo[];
-  isAlbumPinned: (id: string) => boolean;
-  canPinMoreAlbums: boolean;
-  onAlbumClick: (album: AlbumInfo) => void;
-  onAlbumContextMenu: (album: AlbumInfo, e: React.MouseEvent) => void;
-  onPinAlbumClick: (id: string, e: React.MouseEvent) => void;
-  onArtistClick: (artist: string, e: React.MouseEvent) => void;
-}
+export const AlbumGrid: React.FC = React.memo(function AlbumGrid() {
+  const {
+    inDrawer,
+    isInitialLoadComplete,
+    showProviderBadges,
+    searchQuery,
+    artistFilter,
+    pinnedAlbums,
+    unpinnedAlbums,
+    isAlbumPinned,
+    canPinMoreAlbums,
+    onAlbumClick,
+    onAlbumContextMenu,
+    onPinAlbumClick,
+    onArtistClick,
+  } = useLibraryContext();
 
-export const AlbumGrid: React.FC<AlbumGridProps> = React.memo(function AlbumGrid({
-  inDrawer,
-  isInitialLoadComplete,
-  showProviderBadges,
-  searchQuery,
-  artistFilter,
-  pinnedAlbums,
-  unpinnedAlbums,
-  isAlbumPinned,
-  canPinMoreAlbums,
-  onAlbumClick,
-  onAlbumContextMenu,
-  onPinAlbumClick,
-  onArtistClick,
-}) {
   const renderAlbumGrid = (album: AlbumInfo) => {
     const pinned = isAlbumPinned(album.id);
     return (
