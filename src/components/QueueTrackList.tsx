@@ -122,6 +122,17 @@ const QueueTrackList = memo<QueueTrackListProps>(({
 
   const canManageQueue = !!(onRemoveTrack || onReorderTracks);
 
+  const handlePlayNext = useCallback((index: number) => {
+    if (onReorderTracks && index !== currentTrackIndex) {
+      const targetIndex = currentTrackIndex + 1;
+      if (index < currentTrackIndex) {
+        onReorderTracks(index, targetIndex - 1);
+      } else {
+        onReorderTracks(index, targetIndex);
+      }
+    }
+  }, [onReorderTracks, currentTrackIndex]);
+
   const editButton = canEdit && canManageQueue ? (
     <EditButton onClick={() => setIsEditMode(m => !m)}>
       {isEditMode ? 'Done' : 'Edit'}
@@ -149,6 +160,7 @@ const QueueTrackList = memo<QueueTrackListProps>(({
                     isSelected={index === currentTrackIndex}
                     onSelect={onTrackSelect}
                     onRemove={onRemoveTrack}
+                    onPlayNext={handlePlayNext}
                     itemRef={index === currentTrackIndex ? currentTrackRef : undefined}
                     showProviderIcon={showProviderIcons}
                     isEditMode={isEditMode}
@@ -190,6 +202,7 @@ const QueueTrackList = memo<QueueTrackListProps>(({
                         isSelected={index === currentTrackIndex}
                         onSelect={onTrackSelect}
                         onRemove={onRemoveTrack}
+                        onPlayNext={handlePlayNext}
                         itemRef={index === currentTrackIndex ? currentTrackRef : undefined}
                         showProviderIcon={showProviderIcons}
                         isDragActive={isDragActive}
