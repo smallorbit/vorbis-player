@@ -138,7 +138,7 @@ export const AlbumArtSection: React.FC<AlbumArtSectionProps> = React.memo(({
   });
 
   const handleClick = useCallback((e: React.MouseEvent) => {
-    if (zenTouchActive || (isTouchDevice && zenModeEnabled && isFlipped)) {
+    if (zenTouchActive || (zenModeEnabled && isFlipped)) {
       return;
     }
     if (zenModeEnabled) {
@@ -344,11 +344,11 @@ export const AlbumArtSection: React.FC<AlbumArtSectionProps> = React.memo(({
           <ZenClickZoneOverlay
             isPlaying={isPlaying}
             hoveredZone={hoveredZone}
-            visible={zenModeEnabled && hasPointerInput && !zenTouchActive}
+            visible={zenModeEnabled && hasPointerInput && !zenTouchActive && !isFlipped}
           />
           <ZenLikeOverlay
             isLiked={isLiked}
-            isVisible={zenModeEnabled && hasPointerInput && isHovered}
+            isVisible={zenModeEnabled && hasPointerInput && isHovered && !isFlipped}
             canSaveTrack={canSaveTrack}
             onToggleLike={onLikeToggle}
             zenModeEnabled={zenModeEnabled}
