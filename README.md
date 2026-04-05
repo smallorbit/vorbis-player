@@ -43,6 +43,7 @@ git clone git@github.com:smallorbit/vorbis-player.git
 cd vorbis-player
 npm install
 cp .env.example .env.local   # Add your provider credentials
+# For local dev, set VITE_SPOTIFY_REDIRECT_URI=http://127.0.0.1:3000/auth/spotify/callback
 npm run dev                   # Open http://127.0.0.1:3000
 ```
 
@@ -57,6 +58,7 @@ For radio recommendations, also set `VITE_LASTFM_API_KEY` in `.env.local` (see `
 | **[Getting Started](./docs/getting-started.md)** | Installation, environment setup, and first run |
 | **[User Guide](./docs/user-guide.md)** | All player features, controls, and keyboard shortcuts |
 | **[Contributing](./docs/contributing.md)** | Development setup, project structure, coding conventions |
+| **[Architecture](./CLAUDE.md#architecture)** | System design, provider model, playback flow |
 | **[Troubleshooting](./docs/troubleshooting.md)** | Common issues and solutions |
 
 ### Provider Setup
