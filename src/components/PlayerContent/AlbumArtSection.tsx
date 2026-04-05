@@ -19,8 +19,10 @@ import { ZenLikeOverlay } from './ZenLikeOverlay';
 
 const ZenProviderBadgeInline = styled.span`
   display: inline-flex;
-  vertical-align: middle;
-  margin-left: ${({ theme }) => theme.spacing.xs};
+  vertical-align: baseline;
+  margin-left: ${({ theme }) => theme.spacing.sm};
+  position: relative;
+  top: -1px;
 `;
 
 interface AlbumArtBounds {
