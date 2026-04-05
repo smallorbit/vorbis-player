@@ -244,7 +244,7 @@ const QueueDrawer = memo<QueueDrawerProps>(({
       >
         <QueueHeader>
           <div>
-            <QueueTitle>{radioActive ? 'Radio' : 'Queue'}</QueueTitle>
+            <QueueTitle>{radioActive ? 'Radio' : 'Up Next'}</QueueTitle>
             {radioActive && radioSeedDescription && (
               <div style={{ fontSize: theme.fontSize.xs, color: theme.colors.muted.foreground, marginTop: '2px' }}>
                 {radioSeedDescription}
@@ -253,7 +253,7 @@ const QueueDrawer = memo<QueueDrawerProps>(({
           </div>
           <HeaderActions>
             {canSaveQueue && (
-              <SaveButton onClick={onSaveQueue} title="Save queue as playlist" aria-label="Save queue as playlist">
+              <SaveButton onClick={onSaveQueue} title="Save as playlist" aria-label="Save as playlist">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
                   <polyline points="17 21 17 13 7 13 7 21"/>
@@ -261,7 +261,7 @@ const QueueDrawer = memo<QueueDrawerProps>(({
                 </svg>
               </SaveButton>
             )}
-            <CloseButton onClick={onClose} aria-label="Close queue drawer">×</CloseButton>
+            <CloseButton onClick={onClose} aria-label="Close Up Next drawer">×</CloseButton>
           </HeaderActions>
         </QueueHeader>
 
