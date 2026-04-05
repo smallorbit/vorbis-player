@@ -77,6 +77,35 @@ const Title = styled.div`
   margin-bottom: ${theme.spacing.md};
 `;
 
+const CloseButton = styled.button`
+  position: absolute;
+  top: ${theme.spacing.sm};
+  right: ${theme.spacing.sm};
+  z-index: 2;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.4);
+  color: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 50%;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
+
+  &:hover {
+    background: rgba(0, 0, 0, 0.6);
+    color: rgba(255, 255, 255, 1);
+  }
+
+  &:active {
+    background: rgba(0, 0, 0, 0.75);
+  }
+`;
+
 const RetryButton = styled.button`
   display: flex;
   align-items: center;
@@ -129,6 +158,7 @@ function AlbumArtQuickSwapBack({
     <BacksideRoot>
       <BlurredBg $image={currentTrack?.image} />
       <DarkOverlay />
+      <CloseButton aria-label="Close menu" onClick={(e) => { e.stopPropagation(); onClose(); }}>×</CloseButton>
 
       <Content onClick={onClose}>
         <Title>Visual Effects</Title>
