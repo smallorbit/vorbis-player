@@ -39,6 +39,13 @@ export async function apiPlayTrack(
       errorReason = errorText ? ` - ${errorText}` : '';
     }
 
+    if (response.status === 429) {
+      const retryAfter = response.headers.get('Retry-After');
+      if (retryAfter) {
+        errorReason += ` Retry-After: ${retryAfter}`;
+      }
+    }
+
     throw new Error(`Spotify API error: ${response.status}${errorReason}`);
   }
 }
