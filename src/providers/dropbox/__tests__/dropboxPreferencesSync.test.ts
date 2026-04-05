@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type { RemotePreferencesFile } from '../dropboxPreferencesSync';
+import type { DropboxAuthAdapter } from '../dropboxAuthAdapter';
 
 vi.mock('@/services/settings/pinnedItemsStorage', () => ({
   getPins: vi.fn(),
@@ -40,7 +41,8 @@ function createMockAuth(token = 'test-token') {
     logout: vi.fn(),
     ensureValidToken: vi.fn().mockResolvedValue(token),
     refreshAccessToken: vi.fn().mockResolvedValue(token),
-  };
+    reportUnauthorized: vi.fn(),
+  } satisfies DropboxAuthAdapter;
 }
 
 describe('DropboxPreferencesSyncService', () => {
@@ -62,8 +64,7 @@ describe('DropboxPreferencesSyncService', () => {
     vi.mocked(getPins).mockResolvedValue([]);
     vi.mocked(setPins).mockResolvedValue(undefined);
     vi.mocked(ensureVorbisFolder).mockResolvedValue(true);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    service = new DropboxPreferencesSyncService(mockAuth as any);
+    service = new DropboxPreferencesSyncService(mockAuth);
   });
 
   afterEach(() => {
