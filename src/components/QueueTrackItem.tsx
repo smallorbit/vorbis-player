@@ -22,6 +22,8 @@ import {
   SwipeableWrapper,
   SwipeableContent,
   SwipeRemoveBackdrop,
+  SwipeRemoveButton,
+  ProviderIconContainer,
 } from './QueueTrackList.styled';
 
 const GripIcon = () => (
@@ -103,14 +105,14 @@ const QueueItemContent = ({ track, isSelected, showProviderIcon }: QueueItemCont
       <Avatar
         src={track.image}
         alt={track.album}
-        style={{ width: '3rem', height: '3rem' }}
         fallback={<AlbumFallbackIcon />}
+        style={{ width: '3rem', height: '3rem' }}
       />
       {isSelected && <PlayingIcon />}
       {showProviderIcon && track.provider && (
-        <div style={{ position: 'absolute', bottom: -2, right: -2, zIndex: 2 }}>
+        <ProviderIconContainer>
           <ProviderIcon provider={track.provider} size={16} />
-        </div>
+        </ProviderIconContainer>
       )}
     </AlbumArtContainer>
 
@@ -338,13 +340,12 @@ export const SwipeableQueueItem = memo<QueueItemProps>(({
       <SwipeableWrapper ref={swipeRef}>
         {(offsetX < 0 || isRevealed) && (
           <SwipeRemoveBackdrop>
-            <button
+            <SwipeRemoveButton
               onClick={handleRemoveClick}
-              style={{ background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', padding: '8px 16px', font: 'inherit', fontWeight: 600 }}
               aria-label={`Remove ${track.name}`}
             >
               Remove
-            </button>
+            </SwipeRemoveButton>
           </SwipeRemoveBackdrop>
         )}
         <SwipeableContent $offsetX={offsetX} $isSwiping={isSwiping}>

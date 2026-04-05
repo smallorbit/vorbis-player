@@ -225,3 +225,34 @@ export const SwipeRemoveBackdrop = styled.div`
   font-weight: ${({ theme }) => theme.fontWeight.semibold};
   border-radius: 0 ${({ theme }) => theme.borderRadius.lg} ${({ theme }) => theme.borderRadius.lg} 0;
 `;
+
+export const SwipeRemoveButton = styled.button`
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  padding: 8px 16px;
+  font-family: inherit;
+  font-weight: 600;
+`;
+
+export const ProviderIconContainer = styled.div`
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  z-index: 2;
+`;
+
+
+export const RadioSeedDescription = styled.div`
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.5);
+  text-align: center;
+  margin-top: 2px;
+`;
+
+export const LoadingFallback = styled.div`
+  animation: ${({ theme }) => theme.animations.pulse};
+  color: ${({ theme }) => theme.colors.muted.foreground};
+  text-align: center;
+`;

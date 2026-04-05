@@ -12,6 +12,7 @@ import {
   DRAWER_TRANSITION_DURATION,
   DRAWER_TRANSITION_EASING
 } from './styled';
+import { RadioSeedDescription, LoadingFallback } from './QueueTrackList.styled';
 import type { MediaTrack } from '@/types/domain';
 
 const QueueTrackList = React.lazy(() => import('./QueueTrackList'));
@@ -64,6 +65,10 @@ const SheetTitle = styled.h3`
   color: ${theme.colors.white};
   font-size: ${theme.fontSize.xl};
   font-weight: ${theme.fontWeight.semibold};
+
+  &.noPadding {
+    padding: 0;
+  }
 `;
 
 const SheetContent = styled.div`
@@ -165,7 +170,7 @@ const QueueBottomSheet = memo<QueueBottomSheetProps>(function QueueBottomSheet({
             <GripPill />
           </SwipeHandle>
           <SheetHeaderRow>
-            <SheetTitle style={{ padding: 0 }}>{radioActive ? 'Radio' : 'Queue'}</SheetTitle>
+            <SheetTitle className="noPadding">{radioActive ? 'Radio' : 'Queue'}</SheetTitle>
             {canSaveQueue && (
               <SaveButton onClick={onSaveQueue} title="Save queue as playlist" aria-label="Save queue as playlist">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -177,9 +182,9 @@ const QueueBottomSheet = memo<QueueBottomSheetProps>(function QueueBottomSheet({
             )}
           </SheetHeaderRow>
           {radioActive && radioSeedDescription && (
-            <div style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.5)', textAlign: 'center', marginTop: '2px' }}>
+            <RadioSeedDescription>
               {radioSeedDescription}
-            </div>
+            </RadioSeedDescription>
           )}
         </SheetHeader>
         <SheetContent>
@@ -188,15 +193,9 @@ const QueueBottomSheet = memo<QueueBottomSheetProps>(function QueueBottomSheet({
               fallback={
                 <DrawerFallback>
                   <DrawerFallbackCard>
-                    <div
-                      style={{
-                        animation: theme.animations.pulse,
-                        color: theme.colors.muted.foreground,
-                        textAlign: 'center',
-                      }}
-                    >
+                    <LoadingFallback>
                       Loading queue...
-                    </div>
+                    </LoadingFallback>
                   </DrawerFallbackCard>
                 </DrawerFallback>
               }
