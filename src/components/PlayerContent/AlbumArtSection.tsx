@@ -17,12 +17,10 @@ import { GestureLayer } from './GestureLayer';
 import { ZenClickZoneOverlay } from './ZenClickZoneOverlay';
 import { ZenLikeOverlay } from './ZenLikeOverlay';
 
-const ZenProviderBadgeOverlay = styled.div`
-  position: absolute;
-  top: ${({ theme }) => theme.spacing.sm};
-  right: ${({ theme }) => theme.spacing.sm};
-  z-index: 10;
-  pointer-events: none;
+const ZenProviderBadgeInline = styled.span`
+  display: inline-flex;
+  vertical-align: middle;
+  margin-left: ${({ theme }) => theme.spacing.xs};
 `;
 
 interface AlbumArtBounds {
@@ -126,7 +124,7 @@ export const AlbumArtSection: React.FC<AlbumArtSectionProps> = React.memo(({
     return () => { if (flipToggleRef) flipToggleRef.current = null; };
   }, [flipToggleRef, toggleFlip]);
 
-  const zenTouchActive = isTouchDevice && zenModeEnabled;
+  const zenTouchActive = isTouchDevice && zenModeEnabled && !isFlipped;
 
   const zenTouchGestures = useZenTouchGestures({
     enabled: zenTouchActive,
@@ -138,7 +136,7 @@ export const AlbumArtSection: React.FC<AlbumArtSectionProps> = React.memo(({
   });
 
   const handleClick = useCallback((e: React.MouseEvent) => {
-    if (zenTouchActive) {
+    if (zenTouchActive || (isTouchDevice && zenModeEnabled && isFlipped)) {
       return;
     }
     if (zenModeEnabled) {
@@ -285,11 +283,6 @@ export const AlbumArtSection: React.FC<AlbumArtSectionProps> = React.memo(({
         alignItems: 'center',
         paddingTop: zenModeEnabled ? '0' : (isMobile ? '0.25rem' : '0.5rem')
       }}>
-        {zenModeEnabled && connectedProviderIds.length > 1 && currentTrackProvider != null && (
-          <ZenProviderBadgeOverlay>
-            <ProviderBadge providerId={currentTrackProvider} iconOnly />
-          </ZenProviderBadgeOverlay>
-        )}
         <div ref={flipContainerRef} style={{ width: '100%', position: 'relative' }} onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
           <GestureLayer
             onSwipeLeft={onSwipeLeft}
@@ -363,6 +356,11 @@ export const AlbumArtSection: React.FC<AlbumArtSectionProps> = React.memo(({
       <ZenTrackInfo $zenMode={zenModeEnabled}>
         <ZenTrackName $isMobile={isMobile} $isTablet={isTablet}>
           {currentTrack?.name}
+          {zenModeEnabled && connectedProviderIds.length > 1 && currentTrackProvider != null && (
+            <ZenProviderBadgeInline>
+              <ProviderBadge providerId={currentTrackProvider} iconOnly />
+            </ZenProviderBadgeInline>
+          )}
         </ZenTrackName>
         {currentTrack?.artists && (
           <ZenTrackArtist>{currentTrack.artists}</ZenTrackArtist>
