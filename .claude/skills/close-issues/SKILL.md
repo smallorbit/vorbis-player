@@ -40,4 +40,4 @@ gh issue close <N> --comment "Resolved in #<PR> (merged to staging)."
 ## Notes
 
 - PRs in this repo target `staging`, not `main` — GitHub's auto-close only fires when merging to the default branch, so issues stay open even after the fix lands.
-- If running after a staging → main release (cut-staging), you can scan the full staging diff: `git log main..origin/staging --oneline` before the merge to catch all referenced issues.
+- If running after a staging → main release (cut-release), you can scan the full staging diff: `git log main..origin/staging --oneline` before the merge to catch all referenced issues.
