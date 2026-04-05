@@ -1,6 +1,21 @@
 import styled from 'styled-components';
 import { cardBase } from '@/styles/utils';
 import { BOTTOM_BAR_HEIGHT } from '@/components/BottomBar/styled';
+import {
+  ZEN_ART_DURATION,
+  ZEN_ART_EASING,
+  ZEN_ART_ENTER_DELAY,
+  ZEN_CONTROLS_DURATION,
+  ZEN_CONTROLS_EXIT_DELAY,
+  ZEN_CONTROLS_OPACITY_EXIT_DURATION,
+  ZEN_CONTROLS_OPACITY_EXIT_DELAY,
+  ZEN_CONTROLS_TRANSFORM_EXIT_DELAY,
+  ZEN_TRACK_INFO_ENTER_OPACITY_DURATION,
+  ZEN_TRACK_INFO_ENTER_OPACITY_DELAY,
+  ZEN_TRACK_INFO_ENTER_HEIGHT_DURATION,
+  ZEN_TRACK_INFO_ENTER_HEIGHT_DELAY,
+  ZEN_TRACK_INFO_EXIT_DURATION,
+} from '@/constants/zenAnimation';
 
 export const ContentWrapper = styled.div.withConfig({
   shouldForwardProp: (prop) => !['width', 'padding', 'useFluidSizing', 'transitionDuration', 'transitionEasing', '$zenMode'].includes(prop),
@@ -23,10 +38,10 @@ export const ContentWrapper = styled.div.withConfig({
   z-index: 2;
   overflow: visible;
 
-  transition: width ${props => props.$zenMode ? '1000ms cubic-bezier(0.4, 0, 0.2, 1) 300ms' : '1000ms cubic-bezier(0.4, 0, 0.2, 1)'},
+  transition: width ${props => props.$zenMode ? `${ZEN_ART_DURATION}ms ${ZEN_ART_EASING} ${ZEN_ART_ENTER_DELAY}ms` : `${ZEN_ART_DURATION}ms ${ZEN_ART_EASING}`},
             padding ${props => props.transitionDuration}ms ${props => props.transitionEasing},
-            padding-bottom 1000ms cubic-bezier(0.4, 0, 0.2, 1),
-            max-width ${props => props.$zenMode ? '1000ms cubic-bezier(0.4, 0, 0.2, 1) 300ms' : '1000ms cubic-bezier(0.4, 0, 0.2, 1)'};
+            padding-bottom ${ZEN_ART_DURATION}ms ${ZEN_ART_EASING},
+            max-width ${props => props.$zenMode ? `${ZEN_ART_DURATION}ms ${ZEN_ART_EASING} ${ZEN_ART_ENTER_DELAY}ms` : `${ZEN_ART_DURATION}ms ${ZEN_ART_EASING}`};
 
   container-type: inline-size;
   container-name: player;
@@ -58,8 +73,8 @@ export const PlayerStack = styled.div.withConfig({
   margin: 0 auto;
   /* Entering zen: art grows after controls fade out (300ms delay). Exiting zen: art shrinks immediately. */
   transition: ${({ $zenMode }) => $zenMode
-    ? 'max-width 1000ms cubic-bezier(0.4, 0, 0.2, 1) 300ms'
-    : 'max-width 1000ms cubic-bezier(0.4, 0, 0.2, 1)'
+    ? `max-width ${ZEN_ART_DURATION}ms ${ZEN_ART_EASING} ${ZEN_ART_ENTER_DELAY}ms`
+    : `max-width ${ZEN_ART_DURATION}ms ${ZEN_ART_EASING}`
   };
 `;
 
@@ -80,8 +95,8 @@ export const ZenControlsWrapper = styled.div.withConfig({
    * the state flip, so PlayerStack has the correct target from the first animation frame.
    */
   transition: ${({ $zenMode }) => $zenMode
-    ? 'grid-template-rows 300ms ease, opacity 300ms ease, transform 300ms ease'
-    : 'grid-template-rows 500ms ease 500ms, opacity 1200ms ease 1200ms, transform 300ms ease 300ms'
+    ? `grid-template-rows ${ZEN_CONTROLS_DURATION}ms ease, opacity ${ZEN_CONTROLS_DURATION}ms ease, transform ${ZEN_CONTROLS_DURATION}ms ease`
+    : `grid-template-rows ${ZEN_CONTROLS_EXIT_DELAY}ms ease ${ZEN_CONTROLS_EXIT_DELAY}ms, opacity ${ZEN_CONTROLS_OPACITY_EXIT_DURATION}ms ease ${ZEN_CONTROLS_OPACITY_EXIT_DELAY}ms, transform ${ZEN_CONTROLS_DURATION}ms ease ${ZEN_CONTROLS_TRANSFORM_EXIT_DELAY}ms`
   };
   pointer-events: ${({ $zenMode }) => $zenMode ? 'none' : 'auto'};
 `;
@@ -105,8 +120,8 @@ export const ZenTrackInfo = styled.div.withConfig({
   opacity: ${({ $zenMode }) => $zenMode ? 1 : 0};
   max-height: ${({ $zenMode }) => $zenMode ? '5rem' : '0'};
   transition: ${({ $zenMode }) => $zenMode
-    ? 'opacity 600ms ease 800ms, max-height 300ms ease 300ms'
-    : 'opacity 200ms ease, max-height 200ms ease'
+    ? `opacity ${ZEN_TRACK_INFO_ENTER_OPACITY_DURATION}ms ease ${ZEN_TRACK_INFO_ENTER_OPACITY_DELAY}ms, max-height ${ZEN_TRACK_INFO_ENTER_HEIGHT_DURATION}ms ease ${ZEN_TRACK_INFO_ENTER_HEIGHT_DELAY}ms`
+    : `opacity ${ZEN_TRACK_INFO_EXIT_DURATION}ms ease, max-height ${ZEN_TRACK_INFO_EXIT_DURATION}ms ease`
   };
 `;
 
