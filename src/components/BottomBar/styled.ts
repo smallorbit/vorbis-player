@@ -1,5 +1,6 @@
 import styled from 'styled-components';
 import { theme } from '@/styles/theme';
+import { ZEN_BAR_DURATION } from '@/constants/zenAnimation';
 
 export const BOTTOM_BAR_HEIGHT = 60;
 
@@ -19,7 +20,7 @@ export const BottomBarContainer = styled.div.withConfig({
   opacity: ${({ $hidden }) => $hidden ? 0 : 1};
   transform: ${({ $hidden }) => $hidden ? 'translateY(100%)' : 'translateY(0)'};
   pointer-events: ${({ $hidden }) => $hidden ? 'none' : 'auto'};
-  transition: opacity 0.3s ease, transform 0.3s ease;
+  transition: opacity ${ZEN_BAR_DURATION}ms ease, transform ${ZEN_BAR_DURATION}ms ease;
 `;
 
 export const BottomBarInner = styled.div`
@@ -43,7 +44,7 @@ export const ZenGripPill = styled.div.withConfig({
   left: 50%;
   transform: translateX(-50%);
   opacity: ${({ $visible }) => ($visible ? 1 : 0)};
-  transition: opacity 0.3s ease;
+  transition: opacity ${ZEN_BAR_DURATION}ms ease;
   pointer-events: none;
 `;
 

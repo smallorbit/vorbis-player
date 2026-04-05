@@ -2,6 +2,7 @@ import React, { memo, useEffect, useState, useCallback, useMemo } from 'react';
 import styled, { keyframes, css } from 'styled-components';
 import type { MediaTrack } from '@/types/domain';
 import { breatheBorderGlow } from '../styles/animations';
+import { ZEN_ART_DURATION, ZEN_ART_EASING, ZEN_ART_ENTER_DELAY } from '@/constants/zenAnimation';
 
 import AccentColorGlowOverlay, { DEFAULT_GLOW_RATE, DEFAULT_GLOW_INTENSITY } from './AccentColorGlowOverlay';
 import { hexToRgb } from '../utils/colorUtils';
@@ -76,8 +77,8 @@ const AlbumArtContainer = styled.div.withConfig({
   };
   /* Entering zen: art grows after controls fade out (300ms delay). Exiting zen: art shrinks immediately. */
   transition: ${({ $zenMode }) => $zenMode
-    ? 'max-width 1000ms cubic-bezier(0.4, 0, 0.2, 1) 300ms'
-    : 'max-width 1000ms cubic-bezier(0.4, 0, 0.2, 1)'
+    ? `max-width ${ZEN_ART_DURATION}ms ${ZEN_ART_EASING} ${ZEN_ART_ENTER_DELAY}ms`
+    : `max-width ${ZEN_ART_DURATION}ms ${ZEN_ART_EASING}`
   };
   aspect-ratio: 1;
   margin: 0 auto;

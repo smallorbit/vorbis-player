@@ -1,0 +1,28 @@
+export const ZEN_ART_DURATION = 1000;
+export const ZEN_ART_EASING = 'cubic-bezier(0.4, 0, 0.2, 1)';
+export const ZEN_ART_ENTER_DELAY = 300;
+
+export const ZEN_CONTROLS_DURATION = 300;
+export const ZEN_CONTROLS_EXIT_DELAY = 500;
+export const ZEN_CONTROLS_OPACITY_EXIT_DURATION = 1200;
+export const ZEN_CONTROLS_OPACITY_EXIT_DELAY = 1200;
+export const ZEN_CONTROLS_TRANSFORM_EXIT_DELAY = 300;
+
+export const ZEN_BAR_DURATION = 300;
+
+export const ZEN_TRACK_INFO_ENTER_OPACITY_DURATION = 600;
+export const ZEN_TRACK_INFO_ENTER_OPACITY_DELAY = 800;
+export const ZEN_TRACK_INFO_ENTER_HEIGHT_DURATION = 300;
+export const ZEN_TRACK_INFO_ENTER_HEIGHT_DELAY = 300;
+export const ZEN_TRACK_INFO_EXIT_DURATION = 200;
+
+export const ZEN_DEAD_ZONE_TOP = 0.2;
+export const ZEN_DEAD_ZONE_BOTTOM = 0.8;
+export const ZEN_ZONE_LEFT_BOUNDARY = 0.25;
+export const ZEN_ZONE_RIGHT_BOUNDARY = 0.75;
+
+export function zenArtTransition(zenMode: boolean): string {
+  return zenMode
+    ? `max-width ${ZEN_ART_DURATION}ms ${ZEN_ART_EASING} ${ZEN_ART_ENTER_DELAY}ms`
+    : `max-width ${ZEN_ART_DURATION}ms ${ZEN_ART_EASING}`;
+}
