@@ -160,7 +160,7 @@ export const AlbumArtSection: React.FC<AlbumArtSectionProps> = React.memo(({
     } else {
       toggleFlip();
     }
-  }, [zenTouchActive, zenModeEnabled, isPlaying, onPlay, onPause, onNext, onPrevious, toggleFlip]);
+  }, [zenTouchActive, zenModeEnabled, isFlipped, isPlaying, onPlay, onPause, onNext, onPrevious, toggleFlip]);
 
   const handleRetryAlbumArt = useCallback(async () => {
     const providerId = currentTrackProvider ?? currentTrack?.provider;
