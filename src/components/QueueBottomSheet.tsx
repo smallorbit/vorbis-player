@@ -2,7 +2,6 @@ import React, { Suspense, memo } from 'react';
 import { createPortal } from 'react-dom';
 import styled from 'styled-components';
 import { useVerticalSwipeGesture } from '@/hooks/useVerticalSwipeGesture';
-import { theme } from '@/styles/theme';
 import {
   DrawerOverlay,
   GripPill,
@@ -30,13 +29,13 @@ const DrawerContainer = styled.div.withConfig({
   bottom: 0;
   height: 66dvh;
   max-height: 66dvh;
-  z-index: ${theme.zIndex.modal};
-  background: ${theme.colors.overlay.dark};
-  backdrop-filter: blur(${theme.drawer.backdropBlur});
-  -webkit-backdrop-filter: blur(${theme.drawer.backdropBlur});
-  border-top-left-radius: ${theme.borderRadius['2xl']};
-  border-top-right-radius: ${theme.borderRadius['2xl']};
-  border-top: 1px solid ${theme.colors.popover.border};
+  z-index: ${({ theme }) => theme.zIndex.modal};
+  background: ${({ theme }) => theme.colors.overlay.dark};
+  backdrop-filter: blur(${({ theme }) => theme.drawer.backdropBlur});
+  -webkit-backdrop-filter: blur(${({ theme }) => theme.drawer.backdropBlur});
+  border-top-left-radius: ${({ theme }) => theme.borderRadius['2xl']};
+  border-top-right-radius: ${({ theme }) => theme.borderRadius['2xl']};
+  border-top: 1px solid ${({ theme }) => theme.colors.popover.border};
   overflow: hidden;
   pointer-events: ${({ $isOpen }) => ($isOpen ? 'auto' : 'none')};
   display: flex;
@@ -61,10 +60,10 @@ const SheetHeader = styled.div`
 
 const SheetTitle = styled.h3`
   margin: 0;
-  padding: 0 ${theme.spacing.lg} ${theme.spacing.md};
-  color: ${theme.colors.white};
-  font-size: ${theme.fontSize.xl};
-  font-weight: ${theme.fontWeight.semibold};
+  padding: 0 ${({ theme }) => theme.spacing.lg} ${({ theme }) => theme.spacing.md};
+  color: ${({ theme }) => theme.colors.white};
+  font-size: ${({ theme }) => theme.fontSize.xl};
+  font-weight: ${({ theme }) => theme.fontWeight.semibold};
 
   &.noPadding {
     padding: 0;
@@ -74,7 +73,7 @@ const SheetTitle = styled.h3`
 const SheetContent = styled.div`
   flex: 1;
   overflow: hidden;
-  padding: 0 ${theme.spacing.md} ${theme.spacing.md};
+  padding: 0 ${({ theme }) => theme.spacing.md} ${({ theme }) => theme.spacing.md};
   min-height: 0;
   display: flex;
   flex-direction: column;
@@ -92,7 +91,7 @@ const SheetHeaderRow = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 ${theme.spacing.lg} ${theme.spacing.md};
+  padding: 0 ${({ theme }) => theme.spacing.lg} ${({ theme }) => theme.spacing.md};
 `;
 
 const SaveButton = styled.button`
@@ -100,8 +99,8 @@ const SaveButton = styled.button`
   border: none;
   color: rgba(255, 255, 255, 0.6);
   cursor: pointer;
-  padding: ${theme.spacing.sm};
-  border-radius: ${theme.borderRadius.md};
+  padding: ${({ theme }) => theme.spacing.sm};
+  border-radius: ${({ theme }) => theme.borderRadius.md};
   transition: all 0.15s ease;
   display: flex;
   align-items: center;
