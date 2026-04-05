@@ -20,13 +20,6 @@ Step-by-step setup guides for each supported music provider:
 
 - **[Deploy to Vercel](./deployment/deploy-to-vercel.md)** — Vercel deployment instructions
 
-## Development
-
-Internal development docs and implementation plans:
-
-- `development/dynamic-contrast-implementation.md` — Dynamic contrast feature implementation
-
 ## Quick Links
 
 - **Project Root**: See `CLAUDE.md` for architecture overview and AI development guidelines
-- **Implementation Plans**: See `implementation-plans/` for feature design documents
