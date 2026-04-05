@@ -21,6 +21,17 @@ export const ZEN_DEAD_ZONE_BOTTOM = 0.8;
 export const ZEN_ZONE_LEFT_BOUNDARY = 0.25;
 export const ZEN_ZONE_RIGHT_BOUNDARY = 0.75;
 
+export type Zone = 'left' | 'center' | 'right';
+
+export function resolveZenZone(clientX: number, clientY: number, rect: DOMRect): Zone | null {
+  const relY = (clientY - rect.top) / rect.height;
+  if (relY < ZEN_DEAD_ZONE_TOP || relY > ZEN_DEAD_ZONE_BOTTOM) return null;
+  const relX = (clientX - rect.left) / rect.width;
+  if (relX < ZEN_ZONE_LEFT_BOUNDARY) return 'left';
+  if (relX > ZEN_ZONE_RIGHT_BOUNDARY) return 'right';
+  return 'center';
+}
+
 export function zenArtTransition(zenMode: boolean): string {
   return zenMode
     ? `max-width ${ZEN_ART_DURATION}ms ${ZEN_ART_EASING} ${ZEN_ART_ENTER_DELAY}ms`

@@ -1,11 +1,10 @@
 import React, { useCallback } from 'react';
-import { ZEN_DEAD_ZONE_TOP, ZEN_DEAD_ZONE_BOTTOM, ZEN_ZONE_LEFT_BOUNDARY, ZEN_ZONE_RIGHT_BOUNDARY, ZEN_CONTROLS_DURATION, ZEN_ART_EASING } from '@/constants/zenAnimation';
+import { ZEN_CONTROLS_DURATION, ZEN_ART_EASING, resolveZenZone } from '@/constants/zenAnimation';
+import type { Zone } from '@/constants/zenAnimation';
 import { useSwipeGesture } from '@/hooks/useSwipeGesture';
 import { useVerticalSwipeGesture } from '@/hooks/useVerticalSwipeGesture';
 import { useLongPress } from '@/hooks/useLongPress';
 import { ClickableAlbumArtContainer } from './styled';
-
-type Zone = 'left' | 'center' | 'right';
 
 interface ZenTouchHandlers {
   onPointerDown: (e: React.PointerEvent) => void;
@@ -81,19 +80,7 @@ export const GestureLayer: React.FC<GestureLayerProps> = React.memo(({
   const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     if (!onZoneHover) return;
     const rect = e.currentTarget.getBoundingClientRect();
-    const relY = (e.clientY - rect.top) / rect.height;
-    if (relY < ZEN_DEAD_ZONE_TOP || relY > ZEN_DEAD_ZONE_BOTTOM) {
-      onZoneHover(null);
-      return;
-    }
-    const relX = (e.clientX - rect.left) / rect.width;
-    if (relX < ZEN_ZONE_LEFT_BOUNDARY) {
-      onZoneHover('left');
-    } else if (relX > ZEN_ZONE_RIGHT_BOUNDARY) {
-      onZoneHover('right');
-    } else {
-      onZoneHover('center');
-    }
+    onZoneHover(resolveZenZone(e.clientX, e.clientY, rect));
   }, [onZoneHover]);
 
   const handleMouseLeave = useCallback(() => {
