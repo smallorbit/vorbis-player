@@ -1,6 +1,6 @@
 import * as React from 'react';
 import type { PlaylistInfo } from '../../services/spotify';
-import { LIKED_SONGS_ID, LIKED_SONGS_NAME } from '@/constants/playlist';
+import { LIKED_SONGS_ID } from '@/constants/playlist';
 import ProviderIcon from '../ProviderIcon';
 import {
   MobileGrid,
@@ -9,7 +9,6 @@ import {
   GridCardTextArea,
   GridCardTitle,
   GridCardSubtitle,
-  PlaylistImageWrapper,
   PlaylistInfoDiv,
   PlaylistName,
   PlaylistDetails,
@@ -20,17 +19,16 @@ import {
   PinnableGridCard,
   PinnedSectionLabel,
   EmptyState,
-  TabSpinner,
 } from './styled';
-import { getLikedSongsGradient, likedSongsAsPlaylistInfo, PinIcon, PlaylistImage, GridCardImageComponent } from './utils';
+import { PinIcon, PlaylistImage, GridCardImageComponent } from './utils';
 import { useLibraryContext } from './LibraryContext';
+import { LikedSongsCard } from './LikedSongsCard';
 
 export const PlaylistGrid: React.FC = React.memo(function PlaylistGrid() {
   const {
     inDrawer,
     likedSongsPerProvider,
     likedSongsCount,
-    isLikedSongsSyncing,
     isUnifiedLikedActive,
     unifiedLikedCount,
     isInitialLoadComplete,
@@ -41,136 +39,25 @@ export const PlaylistGrid: React.FC = React.memo(function PlaylistGrid() {
     unpinnedPlaylists,
     isPlaylistPinned,
     canPinMorePlaylists,
-    activeDescriptor,
     onPlaylistClick,
     onPlaylistContextMenu,
     onPinPlaylistClick,
-    onLikedSongsClick,
   } = useLibraryContext();
 
   const likedSongsPinned = isPlaylistPinned(LIKED_SONGS_ID);
-  const likedSongsPinBtn = (
-    <PinButton
-      $isPinned={likedSongsPinned}
-      $disabled={!canPinMorePlaylists && !likedSongsPinned}
-      onClick={(e) => onPinPlaylistClick(LIKED_SONGS_ID, e)}
-      title={likedSongsPinned ? 'Unpin' : (canPinMorePlaylists ? 'Pin to top' : 'Pin limit reached (8)')}
-      aria-label={likedSongsPinned ? 'Unpin Liked Songs' : 'Pin Liked Songs to top'}
-    >
-      <PinIcon filled={likedSongsPinned} />
-    </PinButton>
-  );
-
   const usePerProviderLiked = showProviderBadges && likedSongsPerProvider.length >= 1 && !isUnifiedLikedActive;
   const effectiveLikedCount = isUnifiedLikedActive ? unifiedLikedCount : likedSongsCount;
   const isLikedLoading = !isInitialLoadComplete && effectiveLikedCount === 0;
   const showLikedSongs = effectiveLikedCount > 0 || isLikedLoading;
-  const likedSubtitle = effectiveLikedCount > 0
-    ? <>{effectiveLikedCount} tracks{isLikedSongsSyncing && <TabSpinner />}</>
-    : <TabSpinner />;
-  const likedListSubtitle = effectiveLikedCount > 0
-    ? <>{effectiveLikedCount} tracks{isLikedSongsSyncing && <TabSpinner />} • Shuffle enabled</>
-    : <TabSpinner />;
 
-  const likedSongsGridCard = showLikedSongs && (isUnifiedLikedActive ? (
-    <PinnableGridCard
-      key="liked-songs-unified"
-      onClick={(e) => onPlaylistContextMenu(likedSongsAsPlaylistInfo(), e)}
-      onContextMenu={(e) => onPlaylistContextMenu(likedSongsAsPlaylistInfo(), e)}
-    >
-      <GridCardArtWrapper style={{ position: 'relative' }}>
-        <div style={{ background: getLikedSongsGradient('unified'), display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', fontSize: '3rem', color: 'white' }}>♥</div>
-        <GridCardPinOverlay $isPinned={likedSongsPinned} onClick={(e) => onPinPlaylistClick(LIKED_SONGS_ID, e)}>
-          <PinIcon filled={likedSongsPinned} />
-        </GridCardPinOverlay>
-      </GridCardArtWrapper>
-      <GridCardTextArea>
-        <GridCardTitle>{LIKED_SONGS_NAME}</GridCardTitle>
-        <GridCardSubtitle>{likedSubtitle}</GridCardSubtitle>
-      </GridCardTextArea>
-    </PinnableGridCard>
-  ) : usePerProviderLiked ? (
-    likedSongsPerProvider.map(({ provider, count }) => (
-      <PinnableGridCard
-        key={`liked-songs-${provider}`}
-        onClick={(e) => onPlaylistContextMenu(likedSongsAsPlaylistInfo(provider), e)}
-        onContextMenu={(e) => onPlaylistContextMenu(likedSongsAsPlaylistInfo(provider), e)}
-      >
-        <GridCardArtWrapper style={{ position: 'relative' }}>
-          <div style={{ background: getLikedSongsGradient(provider), display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', fontSize: '3rem', color: 'white' }}>♥</div>
-          <ProviderBadgeOverlay>
-            <ProviderIcon provider={provider} size={22} />
-          </ProviderBadgeOverlay>
-          <GridCardPinOverlay $isPinned={likedSongsPinned} onClick={(e) => onPinPlaylistClick(LIKED_SONGS_ID, e)}>
-            <PinIcon filled={likedSongsPinned} />
-          </GridCardPinOverlay>
-        </GridCardArtWrapper>
-        <GridCardTextArea>
-          <GridCardTitle>{LIKED_SONGS_NAME}</GridCardTitle>
-          <GridCardSubtitle>{count} tracks{isLikedSongsSyncing && <TabSpinner />}</GridCardSubtitle>
-        </GridCardTextArea>
-      </PinnableGridCard>
-    ))
-  ) : (
-    <PinnableGridCard
-      key="liked-songs"
-      onClick={(e) => onPlaylistContextMenu(likedSongsAsPlaylistInfo(), e)}
-      onContextMenu={(e) => onPlaylistContextMenu(likedSongsAsPlaylistInfo(), e)}
-    >
-      <GridCardArtWrapper style={{ position: 'relative' }}>
-        <div style={{ background: getLikedSongsGradient(activeDescriptor?.id), display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', fontSize: '3rem', color: 'white' }}>♥</div>
-        <GridCardPinOverlay $isPinned={likedSongsPinned} onClick={(e) => onPinPlaylistClick(LIKED_SONGS_ID, e)}>
-          <PinIcon filled={likedSongsPinned} />
-        </GridCardPinOverlay>
-      </GridCardArtWrapper>
-      <GridCardTextArea>
-        <GridCardTitle>{LIKED_SONGS_NAME}</GridCardTitle>
-        <GridCardSubtitle>{likedSubtitle}</GridCardSubtitle>
-      </GridCardTextArea>
-    </PinnableGridCard>
-  ));
+  const layout = inDrawer ? 'grid' : 'list';
 
-  const likedSongsListItem = showLikedSongs && (isUnifiedLikedActive ? (
-    <PinnableListItem key="liked-songs-unified" onClick={() => onLikedSongsClick()}>
-      <PlaylistImageWrapper>
-        <div style={{ background: getLikedSongsGradient('unified'), display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', borderRadius: '0.5rem', fontSize: '1.5rem', color: 'white' }}>♥</div>
-      </PlaylistImageWrapper>
-      <PlaylistInfoDiv>
-        <PlaylistName>{LIKED_SONGS_NAME}</PlaylistName>
-        <PlaylistDetails>{likedListSubtitle}</PlaylistDetails>
-      </PlaylistInfoDiv>
-      {likedSongsPinBtn}
-    </PinnableListItem>
-  ) : usePerProviderLiked ? (
-    likedSongsPerProvider.map(({ provider, count }) => (
-      <PinnableListItem key={`liked-songs-${provider}`} onClick={() => onLikedSongsClick(provider)}>
-        <div style={{ position: 'relative' }}>
-          <PlaylistImageWrapper>
-            <div style={{ background: getLikedSongsGradient(provider), display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', borderRadius: '0.5rem', fontSize: '1.5rem', color: 'white' }}>♥</div>
-          </PlaylistImageWrapper>
-          <div style={{ position: 'absolute', top: -4, right: -4, zIndex: 2 }}>
-            <ProviderIcon provider={provider} size={18} />
-          </div>
-        </div>
-        <PlaylistInfoDiv>
-          <PlaylistName>{LIKED_SONGS_NAME}</PlaylistName>
-          <PlaylistDetails>{count} tracks{isLikedSongsSyncing && <TabSpinner />} • Shuffle enabled</PlaylistDetails>
-        </PlaylistInfoDiv>
-        {likedSongsPinBtn}
-      </PinnableListItem>
-    ))
-  ) : (
-    <PinnableListItem key="liked-songs" onClick={() => onLikedSongsClick()}>
-      <PlaylistImageWrapper>
-        <div style={{ background: getLikedSongsGradient(activeDescriptor?.id), display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', borderRadius: '0.5rem', fontSize: '1.5rem', color: 'white' }}>♥</div>
-      </PlaylistImageWrapper>
-      <PlaylistInfoDiv>
-        <PlaylistName>{LIKED_SONGS_NAME}</PlaylistName>
-        <PlaylistDetails>{likedListSubtitle}</PlaylistDetails>
-      </PlaylistInfoDiv>
-      {likedSongsPinBtn}
-    </PinnableListItem>
-  ));
+  const likedSongsItem = showLikedSongs && (usePerProviderLiked
+    ? likedSongsPerProvider.map(({ provider, count }) => (
+        <LikedSongsCard key={`liked-songs-${provider}`} layout={layout} provider={provider} count={count} />
+      ))
+    : <LikedSongsCard layout={layout} count={effectiveLikedCount} />
+  );
 
   const renderPlaylistGrid = (playlist: PlaylistInfo) => {
     const pinned = isPlaylistPinned(playlist.id);
@@ -236,7 +123,6 @@ export const PlaylistGrid: React.FC = React.memo(function PlaylistGrid() {
 
   const renderFn = inDrawer ? renderPlaylistGrid : renderPlaylistList;
   const hasPinnedSection = pinnedPlaylists.length > 0 || (likedSongsPinned && showLikedSongs && !hasActiveFilters);
-  const likedSongsItem = inDrawer ? likedSongsGridCard : likedSongsListItem;
 
   const filteredPlaylistsCount = pinnedPlaylists.length + unpinnedPlaylists.length;
   const emptyState = filteredPlaylistsCount === 0 && likedSongsCount === 0 && isInitialLoadComplete && (
@@ -250,11 +136,9 @@ export const PlaylistGrid: React.FC = React.memo(function PlaylistGrid() {
   const Grid = inDrawer ? MobileGrid : PlaylistGridDiv;
   return (
     <Grid $inDrawer={inDrawer ? undefined : false}>
-      {/* Pinned section: liked songs (if pinned) + pinned playlists */}
       {!hasActiveFilters && likedSongsPinned && likedSongsItem}
       {pinnedPlaylists.map(renderFn)}
       {hasPinnedSection && <PinnedSectionLabel key="__pin-sep">Pinned</PinnedSectionLabel>}
-      {/* Unpinned section: liked songs (if not pinned) + remaining playlists */}
       {(hasActiveFilters || !likedSongsPinned) && likedSongsItem}
       {unpinnedPlaylists.map(renderFn)}
       {emptyState}
