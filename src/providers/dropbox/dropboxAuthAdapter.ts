@@ -7,6 +7,7 @@ import type { AuthProvider } from '@/types/providers';
 import type { ProviderId } from '@/types/domain';
 import { STORAGE_KEYS } from '@/constants/storage';
 import { resetPlaylistsFolderCache } from './dropboxPlaylistStorage';
+import { clearLikedCountSnapshot } from '@/services/cache/likedCountSnapshot';
 
 export const DROPBOX_AUTH_ERROR_EVENT = 'vorbis-dropbox-auth-error';
 
@@ -202,6 +203,7 @@ export class DropboxAuthAdapter implements AuthProvider {
     localStorage.removeItem(STORAGE_KEYS.DROPBOX_CODE_VERIFIER);
     localStorage.removeItem(STORAGE_KEYS.DROPBOX_OAUTH_STATE);
     resetPlaylistsFolderCache();
+    clearLikedCountSnapshot('dropbox');
   }
 
   /**
