@@ -69,6 +69,7 @@ const PlaylistSelection = React.memo(function PlaylistSelection({
     likedSongsCount,
     likedSongsPerProvider,
     isInitialLoadComplete,
+    isLikedSongsSyncing,
     removeCollection,
   } = useLibrarySync();
 
@@ -189,10 +190,10 @@ const PlaylistSelection = React.memo(function PlaylistSelection({
   }, [activeDescriptor, enabledProviderIds, getDescriptor]);
 
   useEffect(() => {
-    if (isInitialLoadComplete || playlists.length > 0 || albums.length > 0) {
+    if (isInitialLoadComplete || playlists.length > 0 || albums.length > 0 || likedSongsCount > 0) {
       setIsLoading(false);
     }
-  }, [isInitialLoadComplete, playlists.length, albums.length]);
+  }, [isInitialLoadComplete, playlists.length, albums.length, likedSongsCount]);
 
   function handlePlaylistClick(playlist: PlaylistInfo): void {
     logQueue('selected playlist: %s (%s)', playlist.name, playlist.id);
@@ -250,6 +251,7 @@ const PlaylistSelection = React.memo(function PlaylistSelection({
     enabledProviderIds,
     likedSongsPerProvider,
     likedSongsCount,
+    isLikedSongsSyncing,
     isUnifiedLikedActive,
     unifiedLikedCount,
     pinnedPlaylists,

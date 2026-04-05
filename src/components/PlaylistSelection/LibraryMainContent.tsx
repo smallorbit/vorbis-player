@@ -48,6 +48,7 @@ interface LibraryMainContentProps {
   enabledProviderIds: ProviderId[];
   likedSongsPerProvider: LikedSongsEntry[];
   likedSongsCount: number;
+  isLikedSongsSyncing: boolean;
   isUnifiedLikedActive: boolean;
   unifiedLikedCount: number;
   pinnedPlaylists: PlaylistInfo[];
@@ -94,6 +95,7 @@ export function LibraryMainContent({
   enabledProviderIds,
   likedSongsPerProvider,
   likedSongsCount,
+  isLikedSongsSyncing,
   isUnifiedLikedActive,
   unifiedLikedCount,
   pinnedPlaylists,
@@ -160,6 +162,7 @@ export function LibraryMainContent({
           inDrawer={inDrawer}
           likedSongsPerProvider={likedSongsPerProvider}
           likedSongsCount={likedSongsCount}
+          isLikedSongsSyncing={isLikedSongsSyncing}
           isUnifiedLikedActive={isUnifiedLikedActive}
           unifiedLikedCount={unifiedLikedCount}
           isInitialLoadComplete={isInitialLoadComplete}

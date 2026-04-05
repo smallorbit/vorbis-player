@@ -52,6 +52,7 @@ export const STORAGE_KEYS = {
   // Cache
   CACHE_ALBUMS: 'vorbis-player-cache-albums',
   CACHE_PLAYLISTS: 'vorbis-player-cache-playlists',
+  LIKED_COUNT_SNAPSHOTS: 'vorbis-player-liked-count-snapshots',
   LIBRARY: 'vorbis-player-library',
   SETTINGS: 'vorbis-player-settings',
 

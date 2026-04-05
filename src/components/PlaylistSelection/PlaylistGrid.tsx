@@ -22,6 +22,7 @@ import {
   PinnableGridCard,
   PinnedSectionLabel,
   EmptyState,
+  TabSpinner,
 } from './styled';
 import { getLikedSongsGradient, likedSongsAsPlaylistInfo, PinIcon, PlaylistImage, GridCardImageComponent } from './utils';
 
@@ -29,6 +30,7 @@ interface PlaylistGridProps {
   inDrawer: boolean;
   likedSongsPerProvider: { provider: ProviderId; count: number }[];
   likedSongsCount: number;
+  isLikedSongsSyncing: boolean;
   isUnifiedLikedActive: boolean;
   unifiedLikedCount: number;
   isInitialLoadComplete: boolean;
@@ -50,6 +52,7 @@ export const PlaylistGrid: React.FC<PlaylistGridProps> = React.memo(function Pla
   inDrawer,
   likedSongsPerProvider,
   likedSongsCount,
+  isLikedSongsSyncing,
   isUnifiedLikedActive,
   unifiedLikedCount,
   isInitialLoadComplete,
@@ -81,6 +84,7 @@ export const PlaylistGrid: React.FC<PlaylistGridProps> = React.memo(function Pla
 
   const usePerProviderLiked = showProviderBadges && likedSongsPerProvider.length >= 1 && !isUnifiedLikedActive;
   const effectiveLikedCount = isUnifiedLikedActive ? unifiedLikedCount : likedSongsCount;
+  const syncSpinner = isLikedSongsSyncing ? <TabSpinner /> : null;
 
   const likedSongsGridCard = effectiveLikedCount > 0 && (isUnifiedLikedActive ? (
     <PinnableGridCard
@@ -96,7 +100,7 @@ export const PlaylistGrid: React.FC<PlaylistGridProps> = React.memo(function Pla
       </GridCardArtWrapper>
       <GridCardTextArea>
         <GridCardTitle>{LIKED_SONGS_NAME}</GridCardTitle>
-        <GridCardSubtitle>{effectiveLikedCount} tracks</GridCardSubtitle>
+        <GridCardSubtitle>{effectiveLikedCount} tracks{syncSpinner}</GridCardSubtitle>
       </GridCardTextArea>
     </PinnableGridCard>
   ) : usePerProviderLiked ? (
@@ -117,7 +121,7 @@ export const PlaylistGrid: React.FC<PlaylistGridProps> = React.memo(function Pla
         </GridCardArtWrapper>
         <GridCardTextArea>
           <GridCardTitle>{LIKED_SONGS_NAME}</GridCardTitle>
-          <GridCardSubtitle>{count} tracks</GridCardSubtitle>
+          <GridCardSubtitle>{count} tracks{syncSpinner}</GridCardSubtitle>
         </GridCardTextArea>
       </PinnableGridCard>
     ))
@@ -135,7 +139,7 @@ export const PlaylistGrid: React.FC<PlaylistGridProps> = React.memo(function Pla
       </GridCardArtWrapper>
       <GridCardTextArea>
         <GridCardTitle>{LIKED_SONGS_NAME}</GridCardTitle>
-        <GridCardSubtitle>{likedSongsCount} tracks</GridCardSubtitle>
+        <GridCardSubtitle>{likedSongsCount} tracks{syncSpinner}</GridCardSubtitle>
       </GridCardTextArea>
     </PinnableGridCard>
   ));
@@ -147,7 +151,7 @@ export const PlaylistGrid: React.FC<PlaylistGridProps> = React.memo(function Pla
       </PlaylistImageWrapper>
       <PlaylistInfoDiv>
         <PlaylistName>{LIKED_SONGS_NAME}</PlaylistName>
-        <PlaylistDetails>{effectiveLikedCount} tracks • Shuffle enabled</PlaylistDetails>
+        <PlaylistDetails>{effectiveLikedCount} tracks{syncSpinner} • Shuffle enabled</PlaylistDetails>
       </PlaylistInfoDiv>
       {likedSongsPinBtn}
     </PinnableListItem>
@@ -164,7 +168,7 @@ export const PlaylistGrid: React.FC<PlaylistGridProps> = React.memo(function Pla
         </div>
         <PlaylistInfoDiv>
           <PlaylistName>{LIKED_SONGS_NAME}</PlaylistName>
-          <PlaylistDetails>{count} tracks • Shuffle enabled</PlaylistDetails>
+          <PlaylistDetails>{count} tracks{syncSpinner} • Shuffle enabled</PlaylistDetails>
         </PlaylistInfoDiv>
         {likedSongsPinBtn}
       </PinnableListItem>
@@ -176,7 +180,7 @@ export const PlaylistGrid: React.FC<PlaylistGridProps> = React.memo(function Pla
       </PlaylistImageWrapper>
       <PlaylistInfoDiv>
         <PlaylistName>{LIKED_SONGS_NAME}</PlaylistName>
-        <PlaylistDetails>{likedSongsCount} tracks • Shuffle enabled</PlaylistDetails>
+        <PlaylistDetails>{likedSongsCount} tracks{syncSpinner} • Shuffle enabled</PlaylistDetails>
       </PlaylistInfoDiv>
       {likedSongsPinBtn}
     </PinnableListItem>
