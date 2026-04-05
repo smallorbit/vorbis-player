@@ -80,6 +80,11 @@ export const GestureLayer: React.FC<GestureLayerProps> = React.memo(({
   const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     if (!onZoneHover) return;
     const rect = e.currentTarget.getBoundingClientRect();
+    const relY = (e.clientY - rect.top) / rect.height;
+    if (relY < 0.2 || relY > 0.8) {
+      onZoneHover(null);
+      return;
+    }
     const relX = (e.clientX - rect.left) / rect.width;
     if (relX < 0.25) {
       onZoneHover('left');

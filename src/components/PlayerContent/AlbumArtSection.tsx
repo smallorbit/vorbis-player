@@ -145,6 +145,8 @@ export const AlbumArtSection: React.FC<AlbumArtSectionProps> = React.memo(({
       const container = albumArtContainerRef.current;
       if (!container) return;
       const rect = container.getBoundingClientRect();
+      const relY = (e.clientY - rect.top) / rect.height;
+      if (relY < 0.2 || relY > 0.8) return;
       const relX = (e.clientX - rect.left) / rect.width;
       if (relX < 0.25) {
         onPrevious();
