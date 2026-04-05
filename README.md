@@ -24,7 +24,8 @@ A music player with visualizers and multi-provider support (Spotify, Dropbox), b
 
 - **Multi-Provider Support** — Stream from Spotify or your personal Dropbox music library
 - **Unified Cross-Provider Playback** — Keep playback controls consistent across mixed Spotify + Dropbox queues
-- **Queue** — See and edit what plays next (reorder, remove tracks) in the queue drawer or mobile sheet
+- **Zen Mode** — Distraction-free playback with hover-activated controls (desktop) or touch gestures (mobile), album art focus, and auto-hiding bottom bar
+- **Queue** — See and edit what plays next (reorder, remove, deduplicate) in the queue drawer or mobile sheet
 - **Playlists & Albums** — Browse, search, sort, filter, and pin your **library** collections (not the same as the playback queue)
 - **Unified Liked Songs** — Merge liked tracks from connected providers into one queue
 - **Track Radio** — Generate a one-shot radio playlist from the current track (Last.fm-powered matching)
