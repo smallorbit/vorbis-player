@@ -88,9 +88,12 @@ describe('useCollectionLoader', () => {
       return result.current.loadCollection('playlist_123');
     });
 
+    const expectedTracks = [makeMediaTrack('1'), makeMediaTrack('2'), makeMediaTrack('3')];
+
     expect(mockSetIsLoading).toHaveBeenCalledWith(true);
-    expect(mockSetTracks).toHaveBeenCalled();
-    expect(mockSetOriginalTracks).toHaveBeenCalled();
+    // applyTracks passes the track array directly (no functional updater)
+    expect(mockSetTracks).toHaveBeenCalledWith(expectedTracks);
+    expect(mockSetOriginalTracks).toHaveBeenCalledWith(expectedTracks);
     expect(mockPlayTrack).toHaveBeenCalledWith(0);
     expect(trackCount).toBe(3);
   });
@@ -144,8 +147,10 @@ describe('useCollectionLoader', () => {
       return result.current.loadCollection(LIKED_SONGS_ID);
     });
 
-    // Should merge and sort by addedAt (newest first): track 3 (1500), track 1 (1000), track 2 (500)
-    expect(mockSetTracks).toHaveBeenCalled();
+    // applyTracks passes the merged+sorted array directly — newest addedAt first
+    const expectedMergedOrder = [makeMediaTrack('3', 1500), makeMediaTrack('1', 1000), makeMediaTrack('2', 500)];
+    expect(mockSetTracks).toHaveBeenCalledWith(expectedMergedOrder);
+    expect(mockSetOriginalTracks).toHaveBeenCalledWith(expectedMergedOrder);
     expect(trackCount).toBe(3);
   });
 
@@ -275,9 +280,13 @@ describe('useCollectionLoader', () => {
       await result.current.loadCollection('playlist_123');
     });
 
-    // setOriginalTracks gets the unshuffled list; setTracks gets whatever order
+    // setOriginalTracks always receives the original unshuffled order
     expect(mockSetOriginalTracks).toHaveBeenCalledWith(tracks);
-    expect(mockSetTracks).toHaveBeenCalled();
+    // setTracks receives a shuffled permutation — same elements, possibly different order
+    expect(mockSetTracks).toHaveBeenCalledTimes(1);
+    const shuffledTracks = mockSetTracks.mock.calls[0][0] as MediaTrack[];
+    expect(shuffledTracks).toHaveLength(tracks.length);
+    expect(shuffledTracks.map(t => t.id).sort()).toEqual(['1', '2', '3']);
   });
 
   it('switches active provider when loading a collection from a different provider', async () => {
