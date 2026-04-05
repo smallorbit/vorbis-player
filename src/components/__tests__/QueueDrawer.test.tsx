@@ -62,12 +62,12 @@ describe('QueueDrawer', () => {
   });
 
   describe('rendering', () => {
-    it('renders the drawer with a "Queue" title when not in radio mode', () => {
+    it('renders the drawer with an "Up Next" title when not in radio mode', () => {
       // #given
       render(<Wrapper><QueueDrawer {...defaultProps} /></Wrapper>);
 
       // #then
-      expect(screen.getByText('Queue')).toBeInTheDocument();
+      expect(screen.getByText('Up Next')).toBeInTheDocument();
     });
 
     it('renders "Radio" title when radioActive is true', () => {
@@ -114,7 +114,7 @@ describe('QueueDrawer', () => {
       );
 
       // #then
-      expect(screen.getByLabelText('Save queue as playlist')).toBeInTheDocument();
+      expect(screen.getByLabelText('Save as playlist')).toBeInTheDocument();
     });
 
     it('does not render save button when canSaveQueue is false', () => {
@@ -122,7 +122,7 @@ describe('QueueDrawer', () => {
       render(<Wrapper><QueueDrawer {...defaultProps} /></Wrapper>);
 
       // #then
-      expect(screen.queryByLabelText('Save queue as playlist')).not.toBeInTheDocument();
+      expect(screen.queryByLabelText('Save as playlist')).not.toBeInTheDocument();
     });
   });
 
@@ -182,7 +182,7 @@ describe('QueueDrawer', () => {
       );
 
       // #when
-      fireEvent.click(screen.getByLabelText('Save queue as playlist'));
+      fireEvent.click(screen.getByLabelText('Save as playlist'));
 
       // #then
       expect(onSaveQueue).toHaveBeenCalled();

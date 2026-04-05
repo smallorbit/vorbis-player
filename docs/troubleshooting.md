@@ -62,6 +62,22 @@ For the full Dropbox setup walkthrough, see the [Dropbox Setup Guide](./provider
 - **Background visualizer not working**: Requires Canvas API support in your browser
 - **CSS filters not working**: Requires a modern browser (Chrome, Firefox, Safari, Edge)
 
+## Debug Logging
+
+Detailed queue / Spotify Web API / radio / Dropbox sync tracing uses the [`debug`](https://www.npmjs.com/package/debug) package via `src/lib/debugLog.ts`. By default these messages are silent.
+
+In the browser devtools console:
+
+```js
+localStorage.debug = 'vorbis:*'; location.reload()
+```
+
+Subset examples: `vorbis:queue`, `vorbis:spotify`, `vorbis:radio`, `vorbis:dropbox-sync`, `vorbis:app`, `vorbis:sw`. Disable: `localStorage.removeItem('debug'); location.reload()`.
+
+In Node (e.g. one-off scripts): `DEBUG=vorbis:* node …`.
+
+**Still always printed:** `console.warn` / `console.error` for failures, rate limits, and missing config. **Separate:** in-app profiling (`?profile=true` or `vorbis-player-profiling` + Ctrl+Shift+P) still records metrics and may emit `console.debug` from context hooks when enabled.
+
 ## General
 
 ### App Won't Start

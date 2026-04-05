@@ -84,15 +84,22 @@ const BottomBar = React.memo(function BottomBar({
   }, [startHideTimer]);
 
   useEffect(() => {
+    if (!zenModeEnabled) return;
     startHideTimer();
     return () => clearHideTimer();
-  }, [startHideTimer, clearHideTimer]);
+  }, [zenModeEnabled, startHideTimer, clearHideTimer]);
 
-  const isHidden = !barVisible;
+  useEffect(() => {
+    if (zenModeEnabled) return;
+    clearHideTimer();
+    setBarVisible(true);
+  }, [zenModeEnabled, clearHideTimer]);
+
+  const isHidden = !barVisible && !!zenModeEnabled;
 
   return createPortal(
     <>
-      <ZenTriggerZone onMouseEnter={showBar} onTouchStart={showBar} />
+      {zenModeEnabled && <ZenTriggerZone onMouseEnter={showBar} onTouchStart={showBar} />}
       <BottomBarContainer
         $hidden={isHidden}
         onMouseEnter={handleBarMouseEnter}

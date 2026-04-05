@@ -127,7 +127,7 @@ export default function SaveQueueDialog({ onSave, onClose, availableProviders, t
   return createPortal(
     <DialogOverlay onClick={saving ? undefined : onClose} onKeyDown={e => { if (e.key === 'Escape') { e.stopPropagation(); onClose(); } }}>
       <DialogBox onClick={e => e.stopPropagation()}>
-        <DialogTitle>Save Queue as Playlist</DialogTitle>
+        <DialogTitle>Save as Playlist</DialogTitle>
         {showProviderSelector && (
           <ProviderRow>
             {availableProviders.map(id => {

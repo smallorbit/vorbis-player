@@ -35,7 +35,7 @@ When creating or working in a git worktree:
 
 ```bash
 npm install
-cp ../.env .env.local
+cp ../.env.local .env.local
 ```
 
 Worktrees don't inherit `node_modules`. `.env.local` contains Spotify credentials needed for tests. Verify with `npm run test:run`.
@@ -44,7 +44,7 @@ Worktrees don't inherit `node_modules`. `.env.local` contains Spotify credential
 
 ```bash
 npm run dev            # Start dev server
-tsc -b && vite build   # Build for production
+npm run build          # Build for production
 npm run lint           # Lint
 npm run test           # Watch mode
 npm run test:run       # Run once
@@ -64,10 +64,10 @@ npm run deploy:preview # Deploy preview
 
 ```
 src/
-├── components/      # React components (~42 files); controls/, styled/, visualizers/ subdirs
+├── components/      # React components (~33 files); key subdirs: BottomBar/, controls/, icons/, PlayerContent/, PlaylistSelection/, styled/, VisualEffectsMenu/, VisualizerDebugPanel/, visualizers/
 ├── constants/       # playlist.ts — ALBUM_ID_PREFIX, LIKED_SONGS_ID, helpers
 ├── providers/       # Multi-provider system; spotify/ and dropbox/ subdirs
-├── hooks/           # 22 custom hooks
+├── hooks/           # 30 custom hooks
 ├── services/        # spotify.ts (auth + API), spotifyPlayer.ts (lazy SDK loading + playback), cache/ (IndexedDB)
 ├── utils/           # colorExtractor, colorUtils, sizingUtils, playlistFilters, etc.
 ├── workers/         # imageProcessor.worker.ts
@@ -118,7 +118,7 @@ Defined in `src/types/providers.ts` and `src/types/domain.ts`.
 - Playback controls (`play`, `pause`, `next`, `previous`) route via the **driving provider**, not just the active provider.
 - Provider state subscriptions are multiplexed and filtered by the **driving provider** so visualizer/play state stays in sync.
 - Routing structure:
-  - `useSpotifyPlayback` resolves provider per index (`track.provider` → `drivingProviderRef` → `activeDescriptor.id` fallback).
+  - `useProviderPlayback` resolves provider per index (`track.provider` → `drivingProviderRef` → `activeDescriptor.id` fallback).
   - `usePlayerLogic` owns control actions and playback-state synchronization using `getDrivingProviderId()`.
   - `useAutoAdvance` advances based on events from the current driving provider.
 - Unified liked songs can merge liked tracks from all connected providers and sort by `addedAt`.
@@ -195,19 +195,7 @@ Queue state lives in `TrackContext` (`tracks`, `originalTracks`, `currentTrackIn
 
 ### Debug logging (optional)
 
-Detailed queue / Spotify Web API / radio / Dropbox sync tracing uses the [`debug`](https://www.npmjs.com/package/debug) package via `src/lib/debugLog.ts`. By default these messages are silent.
-
-In the browser devtools console:
-
-```js
-localStorage.debug = 'vorbis:*'; location.reload()
-```
-
-Subset examples: `vorbis:queue`, `vorbis:spotify`, `vorbis:radio`, `vorbis:dropbox-sync`, `vorbis:app`, `vorbis:sw`. Disable: `localStorage.removeItem('debug'); location.reload()`.
-
-In Node (e.g. one-off scripts): `DEBUG=vorbis:* node …`.
-
-**Still always printed:** `console.warn` / `console.error` for failures, rate limits, and missing config. **Separate:** in-app profiling (`?profile=true` or `vorbis-player-profiling` + Ctrl+Shift+P) still records metrics and may emit `console.debug` from context hooks when enabled.
+Debug logging uses the [`debug`](https://www.npmjs.com/package/debug) package via `src/lib/debugLog.ts` with namespace `vorbis:*`. See `docs/troubleshooting.md` for usage.
 
 ### Responsive Sizing
 
@@ -235,8 +223,8 @@ Centralized in `useKeyboardShortcuts.ts`. Uses `pointer: fine` / `hover: hover` 
 
 ## Tech Stack
 
-React 18, TypeScript 5, Vite 6, styled-components 6, Radix UI, react-window
-Testing: Vitest, @testing-library/react, jsdom
+See README.md for the full tech stack.
+
 Build: ES2020, esbuild, manual chunks (vendor/radix/styled)
 
 ## Environment Configuration
@@ -276,26 +264,7 @@ Path alias: `@/` → `./src/` (e.g. `import { x } from '@/hooks/usePlayerState'`
 - Elements clipped → ensure `overflow: visible` on `ContentWrapper`
 - Mobile viewport bouncing → use `100dvh` not `100vh`
 
-**Spotify:**
-- Auth issues → use `127.0.0.1` not `localhost`
-- Track skipping → auto-skip handles 403 Restriction Violated errors
-- Expired tokens → refresh token is preserved; `isAuthenticated()` returns true if refresh token exists
-
-**Dropbox:**
-- Provider not visible → `VITE_DROPBOX_CLIENT_ID` must be set; restart dev server
-- No collections → audio files must be in subfolders (root-level files are skipped)
-- Stale catalog → 1-hour IndexedDB TTL; clear site data to force refresh
-- Art missing → place `cover.jpg` (or `folder.jpg`, `album.jpg`, `front.jpg`) alongside audio files
-- Liked songs missing → check IndexedDB `likes` store; use Settings → Refresh Metadata to re-sync
-- Auth loop → on 401/400 Dropbox performs full logout; on 5xx/network errors refresh token is preserved for retry
-
-**Radio:**
-- Radio button disabled/unavailable → configure `VITE_LASTFM_API_KEY` and restart dev server
-- No radio results → generation uses local catalog matching; results depend on the active provider catalog size
-- Spotify additions missing in radio queue → Spotify auth must be active for unmatched suggestion resolution
-
-**Visual Effects:**
-- Album art filters not working → always pass `albumFilters={albumFilters}` to `AlbumArt`
+For provider-specific issues (Spotify, Dropbox, Radio), see `docs/troubleshooting.md`.
 
 ## Testing Guidelines
 
