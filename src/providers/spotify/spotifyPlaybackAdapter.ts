@@ -28,8 +28,8 @@ function mapPlaybackState(state: SpotifyPlaybackState | null): PlaybackState | n
   };
 }
 
-const MAX_PLAY_RETRIES = 2;
-const BASE_RETRY_BACKOFF_MS = 1500;
+const MAX_PLAY_RETRIES = 5;
+const BASE_RETRY_BACKOFF_MS = 1000;
 
 export class SpotifyPlaybackAdapter implements PlaybackProvider {
   readonly providerId: ProviderId = 'spotify';
@@ -138,20 +138,33 @@ export class SpotifyPlaybackAdapter implements PlaybackProvider {
         throw new AuthExpiredError('spotify');
       }
 
+      if (retryCount >= MAX_PLAY_RETRIES) {
+        throw error;
+      }
+
+      if (message.includes('429')) {
+        const retryAfterMatch = message.match(/retry.?after[:\s]+(\d+)/i);
+        const retryAfterSec = retryAfterMatch ? parseInt(retryAfterMatch[1], 10) : 0;
+        const backoffMs = retryAfterSec > 0
+          ? retryAfterSec * 1000
+          : BASE_RETRY_BACKOFF_MS * Math.pow(2, retryCount);
+        logSpotify('429 during play, retrying (%d/%d) after %dms', retryCount + 1, MAX_PLAY_RETRIES, backoffMs);
+        await new Promise(resolve => setTimeout(resolve, backoffMs));
+        return this.playWithRetry(uri, trackName, upcomingUris, retryCount + 1);
+      }
+
       if (message.includes('403')) {
         if (message.includes('Restriction violated')) {
           throw new UnavailableTrackError(trackName);
         }
 
         this.playbackSessionActive = false;
-        if (retryCount < MAX_PLAY_RETRIES) {
-          const backoffMs = BASE_RETRY_BACKOFF_MS * Math.pow(2, retryCount);
-          logSpotify('403 during play, retrying (%d/%d) after %dms', retryCount + 1, MAX_PLAY_RETRIES, backoffMs);
-          await spotifyPlayer.transferPlaybackToDevice(true);
-          await new Promise(resolve => setTimeout(resolve, backoffMs));
-          await spotifyPlayer.ensureDeviceIsActive(3, 1000);
-          return this.playWithRetry(uri, trackName, upcomingUris, retryCount + 1);
-        }
+        const backoffMs = BASE_RETRY_BACKOFF_MS * Math.pow(2, retryCount);
+        logSpotify('403 during play, retrying (%d/%d) after %dms', retryCount + 1, MAX_PLAY_RETRIES, backoffMs);
+        await spotifyPlayer.transferPlaybackToDevice(true);
+        await new Promise(resolve => setTimeout(resolve, backoffMs));
+        await spotifyPlayer.ensureDeviceIsActive(3, 1000);
+        return this.playWithRetry(uri, trackName, upcomingUris, retryCount + 1);
       }
 
       throw error;

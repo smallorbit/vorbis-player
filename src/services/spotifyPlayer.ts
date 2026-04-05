@@ -10,6 +10,8 @@ import {
   apiEnsureDeviceActive,
 } from './spotifyPlayerPlayback';
 
+const VOLUME_DEBOUNCE_MS = 200;
+
 class SpotifyPlayerService {
   private player: SpotifyPlayer | null;
   private deviceId: string | null;
@@ -20,6 +22,8 @@ class SpotifyPlayerService {
   lastPlayTrackTime = 0;
   private lastDeviceActiveAt = 0;
   private lastTransferAt = 0;
+  private volumeDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+  private pendingVolumePercent: number | null = null;
 
   constructor() {
     const hmrState = getHMRState();
@@ -152,21 +156,35 @@ class SpotifyPlayerService {
   async setVolume(volume: number): Promise<void> {
     if (!this.player) return;
 
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
-      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-
-    if (isIOS && this.deviceId) {
-      await apiSetVolume(this.deviceId, Math.round(volume * 100));
+    if (!this.isReady || !this.deviceId) {
       return;
     }
 
-    try {
-      await this.player.setVolume(volume);
-    } catch {
-      if (this.deviceId) {
-        await apiSetVolume(this.deviceId, Math.round(volume * 100));
+    const volumePercent = Math.round(volume * 100);
+
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+    if (!isIOS) {
+      try {
+        await this.player.setVolume(volume);
+      } catch {
+        // SDK setVolume failed; fall through to debounced API call
       }
     }
+
+    this.pendingVolumePercent = volumePercent;
+    if (this.volumeDebounceTimer !== null) {
+      clearTimeout(this.volumeDebounceTimer);
+    }
+    this.volumeDebounceTimer = setTimeout(() => {
+      this.volumeDebounceTimer = null;
+      const pending = this.pendingVolumePercent;
+      this.pendingVolumePercent = null;
+      if (pending !== null && this.deviceId && this.isReady) {
+        apiSetVolume(this.deviceId, pending).catch(() => {});
+      }
+    }, VOLUME_DEBOUNCE_MS);
   }
 
   async getCurrentState(): Promise<SpotifyPlaybackState | null> {
