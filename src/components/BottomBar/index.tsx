@@ -49,10 +49,11 @@ const BottomBar = React.memo(function BottomBar({
   radioGenerating,
   onFlipToggle,
 }: BottomBarProps) {
-  const { isMobile, isTablet } = usePlayerSizingContext();
+  const { isMobile, isTablet, isTouchDevice } = usePlayerSizingContext();
   const [barVisible, setBarVisible] = useState(true);
   const hideTimerRef = useRef<ReturnType<typeof setTimeout>>();
   const isHoveringRef = useRef(false);
+  const touchLockedRef = useRef(false);
 
   const clearHideTimer = useCallback(() => {
     if (hideTimerRef.current) {
@@ -62,6 +63,7 @@ const BottomBar = React.memo(function BottomBar({
   }, []);
 
   const startHideTimer = useCallback(() => {
+    if (touchLockedRef.current) return;
     clearHideTimer();
     hideTimerRef.current = setTimeout(() => {
       setBarVisible(false);
@@ -74,6 +76,17 @@ const BottomBar = React.memo(function BottomBar({
       startHideTimer();
     }
   }, [startHideTimer]);
+
+  const handleTouchToggle = useCallback(() => {
+    if (barVisible) {
+      touchLockedRef.current = false;
+      setBarVisible(false);
+    } else {
+      touchLockedRef.current = true;
+      setBarVisible(true);
+      clearHideTimer();
+    }
+  }, [barVisible, clearHideTimer]);
 
   const handleBarMouseEnter = useCallback(() => {
     isHoveringRef.current = true;
@@ -95,6 +108,7 @@ const BottomBar = React.memo(function BottomBar({
   useEffect(() => {
     if (zenModeEnabled) return;
     clearHideTimer();
+    touchLockedRef.current = false;
     setBarVisible(true);
   }, [zenModeEnabled, clearHideTimer]);
 
@@ -103,7 +117,10 @@ const BottomBar = React.memo(function BottomBar({
   return createPortal(
     <>
       {zenModeEnabled && (
-        <ZenTriggerZone onMouseEnter={showBar} onTouchStart={showBar}>
+        <ZenTriggerZone
+          onMouseEnter={isTouchDevice ? undefined : showBar}
+          onTouchStart={isTouchDevice ? handleTouchToggle : undefined}
+        >
           <ZenGripPill $visible={!barVisible} />
         </ZenTriggerZone>
       )}
