@@ -178,20 +178,55 @@ export async function getLikedSongsCount(signal?: AbortSignal): Promise<number> 
   return count;
 }
 
-export async function checkTrackSaved(trackId: string): Promise<boolean> {
+interface BatchEntry {
+  id: string;
+  resolve: (value: boolean) => void;
+  reject: (reason: unknown) => void;
+}
+
+let _batchQueue: BatchEntry[] = [];
+let _batchFlushScheduled = false;
+
+async function _flushBatch(): Promise<void> {
+  const queue = _batchQueue;
+  _batchQueue = [];
+  _batchFlushScheduled = false;
+
+  const BATCH_SIZE = 50;
+  for (let i = 0; i < queue.length; i += BATCH_SIZE) {
+    const chunk = queue.slice(i, i + BATCH_SIZE);
+    const ids = chunk.map((entry) => entry.id);
+    try {
+      const token = await spotifyAuth.ensureValidToken();
+      const data = await spotifyApiRequest<boolean[]>(
+        `https://api.spotify.com/v1/me/tracks/contains?ids=${ids.join(',')}`,
+        token
+      );
+      const now = Date.now();
+      chunk.forEach((entry, index) => {
+        const result = data[index] ?? false;
+        trackSavedCache.set(entry.id, { value: result, timestamp: now });
+        entry.resolve(result);
+      });
+    } catch (err) {
+      chunk.forEach((entry) => entry.reject(err));
+    }
+  }
+}
+
+export function checkTrackSaved(trackId: string): Promise<boolean> {
   const cached = trackSavedCache.get(trackId);
   if (cached && Date.now() - cached.timestamp < TRACK_SAVED_CACHE_TTL) {
-    return cached.value;
+    return Promise.resolve(cached.value);
   }
 
-  const token = await spotifyAuth.ensureValidToken();
-  const data = await spotifyApiRequest<boolean[]>(
-    `https://api.spotify.com/v1/me/tracks/contains?ids=${trackId}`,
-    token
-  );
-  const result = data[0] ?? false;
-  trackSavedCache.set(trackId, { value: result, timestamp: Date.now() });
-  return result;
+  return new Promise((resolve, reject) => {
+    _batchQueue.push({ id: trackId, resolve, reject });
+    if (!_batchFlushScheduled) {
+      _batchFlushScheduled = true;
+      Promise.resolve().then(_flushBatch);
+    }
+  });
 }
 
 async function modifyTrackSaved(trackId: string, save: boolean): Promise<void> {
