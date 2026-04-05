@@ -102,6 +102,7 @@ export interface QueueItemProps {
   isSelected: boolean;
   onSelect: (index: number) => void;
   onRemove?: (index: number) => void;
+  onPlayNext?: (index: number) => void;
   itemRef?: React.RefObject<HTMLDivElement>;
   showProviderIcon?: boolean;
   isDragActive?: boolean;
@@ -112,8 +113,9 @@ function useQueueItemContextMenu(
   track: MediaTrack,
   index: number,
   isSelected: boolean,
-  onSelect: (index: number) => void,
+  _onSelect: (index: number) => void,
   onRemove?: (index: number) => void,
+  onPlayNext?: (index: number) => void,
 ) {
   const [menu, setMenu] = useState<ContextMenuState | null>(null);
   const { isLiked, handleLikeToggle, canSaveTrack } = useLikeTrack(track.id, track.provider);
@@ -142,9 +144,9 @@ function useQueueItemContextMenu(
 
   const options = [
     {
-      label: 'Play now',
+      label: 'Play next',
       icon: <ContextPlayIcon />,
-      onClick: () => onSelect(index),
+      onClick: () => onPlayNext?.(index),
     },
     ...(canSaveTrack
       ? [{ label: isLiked ? 'Unlike' : 'Like', icon: <HeartIcon filled={isLiked} />, onClick: handleLikeToggle }]
@@ -163,6 +165,7 @@ export const SortableQueueItem = memo<QueueItemProps>(({
   isSelected,
   onSelect,
   onRemove,
+  onPlayNext,
   itemRef,
   showProviderIcon,
   isDragActive,
@@ -197,7 +200,7 @@ export const SortableQueueItem = memo<QueueItemProps>(({
   }, [onRemove, index]);
 
   const { menu, closeMenu, handleContextMenu, longPressHandlers, options } = useQueueItemContextMenu(
-    track, index, isSelected, onSelect, onRemove
+    track, index, isSelected, onSelect, onRemove, onPlayNext
   );
 
   return (
@@ -270,6 +273,7 @@ export const SwipeableQueueItem = memo<QueueItemProps>(({
   isSelected,
   onSelect,
   onRemove,
+  onPlayNext,
   itemRef,
   showProviderIcon,
   isEditMode,
@@ -291,7 +295,7 @@ export const SwipeableQueueItem = memo<QueueItemProps>(({
   }, [onRemove, index, reset]);
 
   const { menu, closeMenu, handleContextMenu, longPressHandlers, options } = useQueueItemContextMenu(
-    track, index, isSelected, onSelect, onRemove
+    track, index, isSelected, onSelect, onRemove, onPlayNext
   );
 
   if (!canRemove) {
