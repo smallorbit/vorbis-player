@@ -40,8 +40,7 @@ export const useCanvasVisualizer = <T>({
   getItemCount,
   initializeItems,
   updateItems,
-  renderItems,
-  onColorChange
+  renderItems
 }: UseCanvasVisualizerProps<T>) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const itemsRef = useRef<T[]>([]);
@@ -68,13 +67,6 @@ export const useCanvasVisualizer = <T>({
       window.removeEventListener('resize', resizeCanvas);
     };
   }, [accentColor, intensity, getItemCount, initializeItems]);
-
-  // Handle color changes for existing items
-  useEffect(() => {
-    if (itemsRef.current.length > 0) {
-      onColorChange(itemsRef.current, accentColor);
-    }
-  }, [accentColor, onColorChange]);
 
   // Animation loop
   const animate = useCallback((currentTime: number) => {
