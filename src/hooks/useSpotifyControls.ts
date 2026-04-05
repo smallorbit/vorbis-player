@@ -66,6 +66,13 @@ export const useSpotifyControls = ({
 
   const { activeDescriptor } = useProviderContext();
 
+  const getPlayingDescriptor = useCallback(() =>
+    currentTrackProvider && currentTrackProvider !== activeDescriptor?.id
+      ? providerRegistry.get(currentTrackProvider)
+      : activeDescriptor,
+    [currentTrackProvider, activeDescriptor]
+  );
+
   // Keep ref in sync so the event handler always has the latest value
   useEffect(() => {
     isDraggingRef.current = isDragging;
@@ -75,10 +82,7 @@ export const useSpotifyControls = ({
   // In cross-provider mode the active descriptor may be Dropbox while a Spotify track is
   // actually playing, so we subscribe to whichever adapter owns the current track.
   useEffect(() => {
-    const playingDescriptor =
-      currentTrackProvider && currentTrackProvider !== activeDescriptor?.id
-        ? providerRegistry.get(currentTrackProvider)
-        : activeDescriptor;
+    const playingDescriptor = getPlayingDescriptor();
     const playback = playingDescriptor?.playback;
     if (!playback) return;
 
@@ -101,17 +105,14 @@ export const useSpotifyControls = ({
     });
 
     return unsubscribe;
-  }, [activeDescriptor, currentTrackProvider]);
+  }, [getPlayingDescriptor]);
 
   // Lightweight position poll — only to update the timeline slider smoothly.
   // Poll the adapter that is actually playing, which may differ from the active
   // descriptor in cross-provider queues.
   useEffect(() => {
     if (!isPlaying) return;
-    const playingDescriptor =
-      currentTrackProvider && currentTrackProvider !== activeDescriptor?.id
-        ? providerRegistry.get(currentTrackProvider)
-        : activeDescriptor;
+    const playingDescriptor = getPlayingDescriptor();
     const playback = playingDescriptor?.playback;
     if (!playback) return;
 
@@ -124,13 +125,10 @@ export const useSpotifyControls = ({
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [isPlaying, activeDescriptor, currentTrackProvider]);
+  }, [isPlaying, getPlayingDescriptor]);
 
   const handlePlayPause = useCallback(async () => {
-    const playingDescriptor =
-      currentTrackProvider && currentTrackProvider !== activeDescriptor?.id
-        ? providerRegistry.get(currentTrackProvider)
-        : activeDescriptor;
+    const playingDescriptor = getPlayingDescriptor();
     const playback = playingDescriptor?.playback;
     if (!playback) return;
 
@@ -148,21 +146,18 @@ export const useSpotifyControls = ({
         }
       }
     }
-  }, [isPlaying, onPlay, onPause, currentTrack, activeDescriptor, currentTrackProvider]);
+  }, [isPlaying, onPlay, onPause, currentTrack, getPlayingDescriptor]);
 
   const handleSeek = useCallback(async (position: number) => {
     try {
-      const playingDescriptor =
-        currentTrackProvider && currentTrackProvider !== activeDescriptor?.id
-          ? providerRegistry.get(currentTrackProvider)
-          : activeDescriptor;
+      const playingDescriptor = getPlayingDescriptor();
       const playback = playingDescriptor?.playback;
       if (!playback) return;
       await playback.seek(position);
     } catch (error) {
       console.error('Failed to seek:', error);
     }
-  }, [activeDescriptor, currentTrackProvider]);
+  }, [getPlayingDescriptor]);
 
   const handleSliderChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const position = parseInt(e.target.value);

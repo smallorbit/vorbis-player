@@ -1,7 +1,7 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
-import type { 
-  ViewportInfo, 
-  PlayerDimensions, 
+import { useState, useEffect, useCallback } from 'react';
+import type {
+  ViewportInfo,
+  PlayerDimensions,
   SizingConstraints
 } from '@/utils/sizingUtils';
 import {
@@ -56,7 +56,7 @@ interface UsePlayerSizingReturn {
 export const usePlayerSizing = (constraints?: SizingConstraints): UsePlayerSizingReturn => {
   // Detect browser features once
   const [browserFeatures] = useState<BrowserFeatures>(() => detectBrowserFeatures());
-  
+
   // Get enhanced viewport info with fallbacks
   const [viewport, setViewport] = useState<ViewportInfo>(() => {
     if (browserFeatures.visualViewport || browserFeatures.devicePixelRatio) {
@@ -64,54 +64,31 @@ export const usePlayerSizing = (constraints?: SizingConstraints): UsePlayerSizin
     }
     return getViewportInfo();
   });
-  
-  const [dimensions, setDimensions] = useState<PlayerDimensions>(() => 
+
+  const [dimensions, setDimensions] = useState<PlayerDimensions>(() =>
     calculatePlayerDimensions(viewport, constraints)
   );
 
   const updateDimensions = useCallback(() => {
-    const newViewport: ViewportInfo = browserFeatures.visualViewport || browserFeatures.devicePixelRatio 
+    const newViewport: ViewportInfo = browserFeatures.visualViewport || browserFeatures.devicePixelRatio
       ? getEnhancedViewportInfo(browserFeatures)
       : getViewportInfo();
     const newDimensions = calculatePlayerDimensions(newViewport, constraints);
-    
+
     setViewport(newViewport);
     setDimensions(newDimensions);
   }, [constraints, browserFeatures]);
-
-  // Debounced resize handler with smooth transitions
-  const debouncedUpdateDimensions = useCallback(() => {
-    const newViewport: ViewportInfo = browserFeatures.visualViewport || browserFeatures.devicePixelRatio 
-      ? getEnhancedViewportInfo(browserFeatures)
-      : getViewportInfo();
-    const newDimensions = calculatePlayerDimensions(newViewport, constraints);
-    
-    setViewport(newViewport);
-    setDimensions(newDimensions);
-  }, [constraints, browserFeatures]);
-
-  const timeoutRef = useRef<NodeJS.Timeout>();
 
   useEffect(() => {
     // Initial calculation
     updateDimensions();
 
     // Use enhanced event listeners with fallbacks
-    const cleanup = createEnhancedEventListeners(browserFeatures, debouncedUpdateDimensions);
-    
+    const cleanup = createEnhancedEventListeners(browserFeatures, updateDimensions);
+
     // Cleanup
     return cleanup;
-  }, [debouncedUpdateDimensions, updateDimensions, browserFeatures]);
-
-  // Cleanup timeout on unmount to prevent memory leaks
-  useEffect(() => {
-    const timeoutId = timeoutRef.current;
-    return () => {
-      if (timeoutId) {
-        clearTimeout(timeoutId);
-      }
-    };
-  }, []);
+  }, [updateDimensions, browserFeatures]);
 
   // Pointer/touch input detection: true when user has mouse or precise pointer (not touch-only)
   const [hasPointerInput, setHasPointerInput] = useState(() => {
@@ -147,7 +124,7 @@ export const usePlayerSizing = (constraints?: SizingConstraints): UsePlayerSizin
   const aspectRatio = dimensions.aspectRatio;
   const optimalAspectRatio = getOptimalAspectRatio(viewport);
   const aspectRatioConstraints = calculateAspectRatioConstraints(viewport);
-  
+
   // Transition configuration
   const transitionDuration = 300; // 300ms for smooth transitions
   const transitionEasing = 'cubic-bezier(0.4, 0, 0.2, 1)'; // Material Design easing

@@ -2,7 +2,7 @@ import { useCallback } from 'react';
 import type { MediaTrack, ProviderId } from '@/types/domain';
 import type { ProviderDescriptor } from '@/types/providers';
 import type { TrackOperations } from '@/types/trackOperations';
-import type { RadioSeed, RadioProgress } from '@/types/radio';
+import type { RadioSeed, RadioProgress, RadioResult } from '@/types/radio';
 import { RADIO_PLAYLIST_ID } from '@/constants/playlist';
 import { providerRegistry } from '@/providers/registry';
 import { runRadioPipeline } from '@/services/radioPipeline';
@@ -14,7 +14,7 @@ interface UseRadioSessionProps {
   activeDescriptor: ProviderDescriptor | undefined;
   currentTrack: MediaTrack | null;
   currentTrackIndex: number;
-  startRadio: (seed: RadioSeed, catalogTracks: MediaTrack[]) => Promise<any>;
+  startRadio: (seed: RadioSeed, catalogTracks: MediaTrack[]) => Promise<RadioResult | null>;
   stopRadioBase: () => void;
   onProgress: (progress: RadioProgress | null) => void;
   authExpired: ProviderId | null;
