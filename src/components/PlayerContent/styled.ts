@@ -17,6 +17,8 @@ import {
   ZEN_TRACK_INFO_EXIT_DURATION,
   ZEN_ART_MARGIN_H,
   ZEN_ART_MARGIN_V,
+  ZEN_ART_MARGIN_H_MOBILE,
+  ZEN_ART_MARGIN_V_MOBILE,
 } from '@/constants/zenAnimation';
 
 export const ContentWrapper = styled.div.withConfig({
@@ -78,6 +80,12 @@ export const PlayerStack = styled.div.withConfig({
     ? `max-width ${ZEN_ART_DURATION}ms ${ZEN_ART_EASING} ${ZEN_ART_ENTER_DELAY}ms`
     : `max-width ${ZEN_ART_DURATION}ms ${ZEN_ART_EASING}`
   };
+
+  @media (max-width: ${({ theme }) => theme.breakpoints.lg}) {
+    ${({ $zenMode }) => $zenMode && `
+      max-width: min(calc(100vw - ${ZEN_ART_MARGIN_H_MOBILE}px), calc(100dvh - ${ZEN_ART_MARGIN_V_MOBILE}px));
+    `}
+  }
 `;
 
 export const ZenControlsWrapper = styled.div.withConfig({

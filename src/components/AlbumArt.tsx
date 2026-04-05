@@ -2,7 +2,7 @@ import React, { memo, useEffect, useState, useCallback, useMemo } from 'react';
 import styled, { keyframes, css } from 'styled-components';
 import type { MediaTrack } from '@/types/domain';
 import { breatheBorderGlow } from '../styles/animations';
-import { ZEN_ART_DURATION, ZEN_ART_EASING, ZEN_ART_ENTER_DELAY, ZEN_ART_MARGIN_H, ZEN_ART_MARGIN_V } from '@/constants/zenAnimation';
+import { ZEN_ART_DURATION, ZEN_ART_EASING, ZEN_ART_ENTER_DELAY, ZEN_ART_MARGIN_H, ZEN_ART_MARGIN_V, ZEN_ART_MARGIN_H_MOBILE, ZEN_ART_MARGIN_V_MOBILE } from '@/constants/zenAnimation';
 
 import AccentColorGlowOverlay, { DEFAULT_GLOW_RATE, DEFAULT_GLOW_INTENSITY } from './AccentColorGlowOverlay';
 import { hexToRgb } from '../utils/colorUtils';
@@ -143,6 +143,12 @@ const AlbumArtContainer = styled.div.withConfig({
   opacity: ${({ $translucenceOpacity }) => $translucenceOpacity ?? 1};
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
+
+  @media (max-width: ${theme.breakpoints.lg}) {
+    ${({ $zenMode }) => $zenMode && `
+      max-width: min(calc(100vw - ${ZEN_ART_MARGIN_H_MOBILE}px), calc(100dvh - ${ZEN_ART_MARGIN_V_MOBILE}px));
+    `}
+  }
 `;
 
 const arePropsEqual = (prevProps: AlbumArtProps, nextProps: AlbumArtProps): boolean => {

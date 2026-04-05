@@ -10,6 +10,8 @@ export const ZEN_CONTROLS_TRANSFORM_EXIT_DELAY = 300;
 
 export const ZEN_ART_MARGIN_H = 96;
 export const ZEN_ART_MARGIN_V = 196;
+export const ZEN_ART_MARGIN_H_MOBILE = 32;
+export const ZEN_ART_MARGIN_V_MOBILE = 120;
 
 export const ZEN_BAR_DURATION = 300;
 
