@@ -6,6 +6,13 @@ import { ClickableAlbumArtContainer } from './styled';
 
 type Zone = 'left' | 'center' | 'right';
 
+interface ZenTouchHandlers {
+  onPointerDown: (e: React.PointerEvent) => void;
+  onPointerUp: (e: React.PointerEvent) => void;
+  onPointerCancel: (e: React.PointerEvent) => void;
+  onPointerMove: (e: React.PointerEvent) => void;
+}
+
 interface GestureLayerProps {
   onSwipeLeft: () => void;
   onSwipeRight: () => void;
@@ -14,6 +21,7 @@ interface GestureLayerProps {
   isTouchDevice: boolean;
   onClick: (e: React.MouseEvent) => void;
   onLongPress?: () => void;
+  zenTouchHandlers?: ZenTouchHandlers;
   albumArtContainerRef: React.MutableRefObject<HTMLDivElement | null>;
   children: React.ReactNode;
   onZoneHover?: (zone: Zone | null) => void;
@@ -29,6 +37,7 @@ export const GestureLayer: React.FC<GestureLayerProps> = React.memo(({
   isTouchDevice,
   onClick,
   onLongPress,
+  zenTouchHandlers,
   albumArtContainerRef,
   children,
   onZoneHover,
@@ -89,14 +98,21 @@ export const GestureLayer: React.FC<GestureLayerProps> = React.memo(({
     ? { onMouseMove: handleMouseMove, onMouseLeave: handleMouseLeave }
     : {};
 
-  const zenLongPressHandlers = zenModeEnabled && onLongPress
+  const activePointerHandlers = zenTouchHandlers
     ? {
-        onPointerDown: longPressHandlers.onPointerDown,
-        onPointerUp: longPressHandlers.onPointerUp,
-        onPointerCancel: longPressHandlers.onPointerCancel,
-        onPointerMove: longPressHandlers.onPointerMove,
+        onPointerDown: zenTouchHandlers.onPointerDown,
+        onPointerUp: zenTouchHandlers.onPointerUp,
+        onPointerCancel: zenTouchHandlers.onPointerCancel,
+        onPointerMove: zenTouchHandlers.onPointerMove,
       }
-    : {};
+    : zenModeEnabled && onLongPress
+      ? {
+          onPointerDown: longPressHandlers.onPointerDown,
+          onPointerUp: longPressHandlers.onPointerUp,
+          onPointerCancel: longPressHandlers.onPointerCancel,
+          onPointerMove: longPressHandlers.onPointerMove,
+        }
+      : {};
 
   return (
     <ClickableAlbumArtContainer
@@ -105,7 +121,7 @@ export const GestureLayer: React.FC<GestureLayerProps> = React.memo(({
       $bothGestures={isTouchDevice}
       {...(isTouchDevice ? gestureHandlers : {})}
       {...zoneHoverHandlers}
-      {...zenLongPressHandlers}
+      {...activePointerHandlers}
       onClick={handleClick}
       style={{
         transform: `translateX(${offsetX}px)`,
