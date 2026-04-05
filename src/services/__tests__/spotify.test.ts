@@ -216,15 +216,67 @@ describe('Spotify API', () => {
 
   describe('like/save', () => {
     it('checkTrackSaved returns cached value within TTL', async () => {
+      vi.useFakeTimers();
       const mod = await freshSpotify();
 
       mockFetchResponse([true]);
-      const result1 = await mod.checkTrackSaved('track-123');
+      const promise = mod.checkTrackSaved('track-123');
+      await vi.runAllTimersAsync();
+      const result1 = await promise;
       expect(result1).toBe(true);
 
       const result2 = await mod.checkTrackSaved('track-123');
       expect(result2).toBe(true);
       expect(global.fetch).toHaveBeenCalledTimes(1);
+      vi.useRealTimers();
+    });
+
+    it('checkTrackSaved batches concurrent calls across render cycles into one request', async () => {
+      vi.useFakeTimers();
+      const mod = await freshSpotify();
+
+      // #given — simulate calls arriving across two separate microtask ticks (different render cycles)
+      mockFetchResponse([true, false, true]);
+      const p1 = mod.checkTrackSaved('track-a');
+      const p2 = mod.checkTrackSaved('track-b');
+      // advance microtasks to simulate a new render cycle adding more calls before the 50ms timer fires
+      await Promise.resolve();
+      const p3 = mod.checkTrackSaved('track-c');
+
+      // #when — advance past the 50ms collection window
+      await vi.runAllTimersAsync();
+
+      // #then — all three resolved in a single API request
+      expect(await p1).toBe(true);
+      expect(await p2).toBe(false);
+      expect(await p3).toBe(true);
+      expect(global.fetch).toHaveBeenCalledTimes(1);
+      const url = vi.mocked(global.fetch).mock.calls[0][0] as string;
+      expect(url).toContain('ids=track-a,track-b,track-c');
+      vi.useRealTimers();
+    });
+
+    it('checkTrackSaved splits >50 ids into sequential chunks with inter-chunk delay', async () => {
+      vi.useFakeTimers();
+      const mod = await freshSpotify();
+
+      // #given — 60 distinct track IDs
+      const ids = Array.from({ length: 60 }, (_, i) => `track-${i}`);
+      // First chunk of 50 returns all false, second chunk of 10 returns all true
+      mockFetchResponse(Array(50).fill(false));
+      mockFetchResponse(Array(10).fill(true));
+
+      // #when
+      const promises = ids.map((id) => mod.checkTrackSaved(id));
+      await vi.runAllTimersAsync();
+      const results = await Promise.all(promises);
+
+      // #then — two API calls were made (chunked)
+      expect(global.fetch).toHaveBeenCalledTimes(2);
+      // First 50 resolved false, last 10 resolved true
+      expect(results.slice(0, 50).every((r) => r === false)).toBe(true);
+      expect(results.slice(50).every((r) => r === true)).toBe(true);
+      vi.useRealTimers();
     });
 
     it('saveTrack makes PUT request and updates cache', async () => {
