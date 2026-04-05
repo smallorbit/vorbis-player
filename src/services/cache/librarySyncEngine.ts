@@ -19,6 +19,7 @@ import {
 } from '../spotify';
 import * as cache from './libraryCache';
 import { detectChanges, applyChanges } from './libraryDiffEngine';
+import { writeLikedCountSnapshot } from './likedCountSnapshot';
 import type {
   CachedPlaylistInfo,
   LibraryChanges,
@@ -350,7 +351,10 @@ export class LibrarySyncEngine {
   ): void {
     if (playlists !== undefined) this.lastKnownPlaylists = playlists;
     if (albums !== undefined) this.lastKnownAlbums = albums;
-    if (likedSongsCount !== undefined) this.lastKnownLikedCount = likedSongsCount;
+    if (likedSongsCount !== undefined) {
+      this.lastKnownLikedCount = likedSongsCount;
+      writeLikedCountSnapshot(this.providerId as 'spotify', likedSongsCount);
+    }
 
     for (const listener of this.listeners) {
       try {

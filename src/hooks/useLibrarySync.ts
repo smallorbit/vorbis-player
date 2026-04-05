@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import type { CachedPlaylistInfo, SyncState } from '@/services/cache/cacheTypes';
 import type { AlbumInfo } from '@/services/spotify';
 import type { MediaCollection, ProviderId } from '@/types/domain';
@@ -7,6 +7,7 @@ import { providerRegistry } from '@/providers/registry';
 import { librarySyncEngine } from '@/services/cache/librarySyncEngine';
 import { logLibrary } from '@/lib/debugLog';
 import { getOrSetFirstSeenAddedAtIso } from '@/utils/libraryFirstSeen';
+import { readLikedCountSnapshots, writeLikedCountSnapshot } from '@/services/cache/likedCountSnapshot';
 
 export const ART_REFRESHED_EVENT = 'vorbis-art-refreshed';
 export const LIBRARY_REFRESH_EVENT = 'vorbis-library-refresh';
@@ -25,12 +26,27 @@ interface UseLibrarySyncResult {
   likedSongsPerProvider: PerProviderLikedCount[];
   isInitialLoadComplete: boolean;
   isSyncing: boolean;
+  /** True while liked counts from the synchronous cache seed are being verified by async sources. */
+  isLikedSongsSyncing: boolean;
   lastSyncTimestamp: number | null;
   syncError: string | null;
   /** Force an immediate sync */
   refreshNow: () => Promise<void>;
   /** Optimistically remove a collection from the local list (instant UI update). */
   removeCollection: (collectionId: string) => void;
+}
+
+function initLikedCountsFromSnapshot(): { total: number; perProvider: PerProviderLikedCount[] } {
+  const snapshots = readLikedCountSnapshots();
+  const perProvider: PerProviderLikedCount[] = [];
+  let total = 0;
+  for (const [provider, entry] of Object.entries(snapshots)) {
+    if (entry.count > 0) {
+      perProvider.push({ provider: provider as ProviderId, count: entry.count });
+      total += entry.count;
+    }
+  }
+  return { total, perProvider };
 }
 
 function collectionToPlaylistInfo(c: MediaCollection, ordinal: number): CachedPlaylistInfo {
@@ -79,10 +95,11 @@ function splitCollections(collections: MediaCollection[]): { playlists: CachedPl
 
 export function useLibrarySync(): UseLibrarySyncResult {
   const { enabledProviderIds, getDescriptor } = useProviderContext();
+  const initialSnapshot = useMemo(() => initLikedCountsFromSnapshot(), []);
   const [playlists, setPlaylists] = useState<CachedPlaylistInfo[]>([]);
   const [albums, setAlbums] = useState<AlbumInfo[]>([]);
-  const [likedSongsCount, setLikedSongsCount] = useState(0);
-  const [likedSongsPerProvider, setLikedSongsPerProvider] = useState<PerProviderLikedCount[]>([]);
+  const [likedSongsCount, setLikedSongsCount] = useState(() => initialSnapshot.total);
+  const [likedSongsPerProvider, setLikedSongsPerProvider] = useState<PerProviderLikedCount[]>(() => initialSnapshot.perProvider);
   const [syncState, setSyncState] = useState<SyncState>({
     isInitialLoadComplete: false,
     isSyncing: false,
@@ -212,6 +229,7 @@ export function useLibrarySync(): UseLibrarySyncResult {
         logLibrary('[%s] after splitCollections — albums: %o', providerId,
           albums.map(a => ({ name: a.name, total_tracks: a.total_tracks })));
         catalogDataRef.current.set(providerId, { playlists, albums, likedCount });
+        writeLikedCountSnapshot(providerId, likedCount);
         mergeAndSetData();
         setSyncState(prev => ({
           ...prev,
@@ -291,6 +309,7 @@ export function useLibrarySync(): UseLibrarySyncResult {
         ]);
         const { playlists, albums } = splitCollections(collections);
         catalogDataRef.current.set(providerId, { playlists, albums, likedCount });
+        writeLikedCountSnapshot(providerId, likedCount);
         mergeAndSetData();
         setSyncState(prev => ({
           ...prev,
@@ -334,6 +353,10 @@ export function useLibrarySync(): UseLibrarySyncResult {
     mergeAndSetData();
   }, [mergeAndSetData]);
 
+  const isLikedSongsSyncing = enabledProviderIds.length > 0
+    && !syncState.isInitialLoadComplete
+    && initialSnapshot.total > 0;
+
   return {
     playlists,
     albums,
@@ -341,6 +364,7 @@ export function useLibrarySync(): UseLibrarySyncResult {
     likedSongsPerProvider,
     isInitialLoadComplete: syncState.isInitialLoadComplete,
     isSyncing: syncState.isSyncing,
+    isLikedSongsSyncing,
     lastSyncTimestamp: syncState.lastSyncTimestamp,
     syncError: syncState.error,
     refreshNow,

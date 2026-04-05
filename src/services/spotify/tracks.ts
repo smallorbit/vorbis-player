@@ -8,12 +8,14 @@ import {
   TRACK_SAVED_CACHE_TTL,
   LIKED_SONGS_CACHE_TTL,
   LIKED_SONGS_COUNT_TTL,
+  TRACK_LIST_PERSIST_TTL,
   invalidateTrackSavedCache,
   getLikedSongsCountCache,
   setLikedSongsCountCache,
   getLikedSongsCache,
   setLikedSongsCache,
 } from './cache';
+import * as libraryCache from '../cache/libraryCache';
 
 // =============================================================================
 // Shared Utilities
@@ -110,6 +112,16 @@ export async function getLikedSongs(limit?: number): Promise<MediaTrack[]> {
     }
   }
 
+  if (limit === undefined) {
+    try {
+      const idbCached = await libraryCache.getTrackList('liked-songs');
+      if (idbCached && Date.now() - idbCached.timestamp < TRACK_LIST_PERSIST_TTL) {
+        setLikedSongsCache({ data: idbCached.tracks, limit: Infinity, timestamp: idbCached.timestamp });
+        return tracksToMediaTracks(idbCached.tracks);
+      }
+    } catch { /* IndexedDB unavailable — fall through to API */ }
+  }
+
   const token = await spotifyAuth.ensureValidToken();
 
   interface SavedTrackItem {
@@ -137,6 +149,9 @@ export async function getLikedSongs(limit?: number): Promise<MediaTrack[]> {
   );
 
   setLikedSongsCache({ data: tracks, limit: limit ?? Infinity, timestamp: Date.now() });
+  if (limit === undefined) {
+    libraryCache.putTrackList('liked-songs', tracks).catch(() => {});
+  }
   return tracksToMediaTracks(tracks);
 }
 
