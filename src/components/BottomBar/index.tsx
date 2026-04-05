@@ -1,6 +1,6 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { BottomBarContainer, BottomBarInner, ZenGripPill, ZenTriggerZone } from './styled';
+import { BottomBarContainer, BottomBarInner, ZenGripPill, ZenTriggerZone, ZenBackdrop } from './styled';
 import { ControlButton } from '../controls/styled';
 import VolumeControl from '../controls/VolumeControl';
 import { usePlayerSizingContext } from '@/contexts/PlayerSizingContext';
@@ -88,6 +88,11 @@ const BottomBar = React.memo(function BottomBar({
     }
   }, [barVisible, clearHideTimer]);
 
+  const handleBackdropDismiss = useCallback(() => {
+    touchLockedRef.current = false;
+    setBarVisible(false);
+  }, []);
+
   const handleBarMouseEnter = useCallback(() => {
     isHoveringRef.current = true;
     setBarVisible(true);
@@ -116,6 +121,9 @@ const BottomBar = React.memo(function BottomBar({
 
   return createPortal(
     <>
+      {zenModeEnabled && barVisible && isTouchDevice && (
+        <ZenBackdrop onTouchStart={handleBackdropDismiss} onClick={handleBackdropDismiss} />
+      )}
       {zenModeEnabled && (
         <ZenTriggerZone
           onMouseEnter={isTouchDevice ? undefined : showBar}

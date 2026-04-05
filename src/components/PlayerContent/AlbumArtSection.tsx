@@ -138,7 +138,7 @@ export const AlbumArtSection: React.FC<AlbumArtSectionProps> = React.memo(({
   });
 
   const handleClick = useCallback((e: React.MouseEvent) => {
-    if (zenTouchActive || (isTouchDevice && zenModeEnabled && isFlipped)) {
+    if (zenTouchActive || (zenModeEnabled && isFlipped)) {
       return;
     }
     if (zenModeEnabled) {
@@ -160,7 +160,7 @@ export const AlbumArtSection: React.FC<AlbumArtSectionProps> = React.memo(({
     } else {
       toggleFlip();
     }
-  }, [zenTouchActive, zenModeEnabled, isPlaying, onPlay, onPause, onNext, onPrevious, toggleFlip]);
+  }, [zenTouchActive, zenModeEnabled, isFlipped, isPlaying, onPlay, onPause, onNext, onPrevious, toggleFlip]);
 
   const handleRetryAlbumArt = useCallback(async () => {
     const providerId = currentTrackProvider ?? currentTrack?.provider;
@@ -344,11 +344,11 @@ export const AlbumArtSection: React.FC<AlbumArtSectionProps> = React.memo(({
           <ZenClickZoneOverlay
             isPlaying={isPlaying}
             hoveredZone={hoveredZone}
-            visible={zenModeEnabled && hasPointerInput && !zenTouchActive}
+            visible={zenModeEnabled && hasPointerInput && !zenTouchActive && !isFlipped}
           />
           <ZenLikeOverlay
             isLiked={isLiked}
-            isVisible={zenModeEnabled && hasPointerInput && isHovered}
+            isVisible={zenModeEnabled && hasPointerInput && isHovered && !isFlipped}
             canSaveTrack={canSaveTrack}
             onToggleLike={onLikeToggle}
             zenModeEnabled={zenModeEnabled}

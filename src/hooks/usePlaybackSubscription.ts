@@ -115,7 +115,24 @@ export function usePlaybackSubscription({
       }
     });
 
-    return () => unsubscribes.forEach((unsub) => unsub());
+    function handleVisibilityChange() {
+      if (document.hidden) return;
+      expectedTrackIdRef.current = null;
+      const resyncProviderId = drivingProviderRef.current ?? activeProviderId;
+      const resyncDescriptor = providerRegistry.get(resyncProviderId);
+      resyncDescriptor?.playback.getState().then((state) => {
+        if (state) {
+          handleProviderStateChange(resyncProviderId, state);
+        }
+      });
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      unsubscribes.forEach((unsub) => unsub());
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   // Intentionally omit `tracks` and `currentTrackIndex` from deps — we read
   // them via refs so the subscription is only recreated when the active
   // provider changes, not on every track transition.

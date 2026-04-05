@@ -6,6 +6,7 @@
 import type { AuthProvider } from '@/types/providers';
 import type { ProviderId } from '@/types/domain';
 import { spotifyAuth } from '@/services/spotify';
+import { clearLikedCountSnapshot } from '@/services/cache/likedCountSnapshot';
 
 export class SpotifyAuthAdapter implements AuthProvider {
   readonly providerId: ProviderId = 'spotify';
@@ -57,5 +58,6 @@ export class SpotifyAuthAdapter implements AuthProvider {
 
   logout(): void {
     spotifyAuth.logout();
+    clearLikedCountSnapshot('spotify');
   }
 }
