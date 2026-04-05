@@ -15,6 +15,8 @@ import {
   ZEN_TRACK_INFO_ENTER_HEIGHT_DURATION,
   ZEN_TRACK_INFO_ENTER_HEIGHT_DELAY,
   ZEN_TRACK_INFO_EXIT_DURATION,
+  ZEN_ART_MARGIN_H,
+  ZEN_ART_MARGIN_V,
 } from '@/constants/zenAnimation';
 
 export const ContentWrapper = styled.div.withConfig({
@@ -67,7 +69,7 @@ export const PlayerStack = styled.div.withConfig({
   width: 100%;
   min-height: 0; /* Allow flex shrink so content fits above bottom bar */
   max-width: ${({ $zenMode }) => $zenMode
-    ? `min(calc(100vw - 32px), calc(100dvh - 130px))`
+    ? `min(calc(100vw - ${ZEN_ART_MARGIN_H}px), calc(100dvh - ${ZEN_ART_MARGIN_V}px))`
     : `min(calc(100vw - 48px), calc(100dvh - var(--player-controls-height, 220px) - ${120 + BOTTOM_BAR_HEIGHT}px))`
   };
   margin: 0 auto;
