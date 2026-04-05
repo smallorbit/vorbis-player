@@ -1,14 +1,11 @@
 import type * as React from 'react';
-import type { AlbumInfo, PlaylistInfo } from '../../services/spotify';
-import type { ProviderDescriptor } from '@/types/providers';
-import type { ProviderId } from '@/types/domain';
-import type { PlaylistSortOption, AlbumSortOption } from '@/utils/playlistFilters';
 import FilterChipRow from '../FilterChipRow';
 import LibraryDrawerSortChip from '../LibraryDrawerSortChip';
 import LibraryProviderBar from '../LibraryProviderBar';
 import { PlaylistGrid } from './PlaylistGrid';
 import { AlbumGrid } from './AlbumGrid';
 import { LibraryControls } from './LibraryControls';
+import { useLibraryContext } from './LibraryContext';
 import {
   TabSpinner,
   TabsContainer,
@@ -20,104 +17,32 @@ import {
   DrawerClearFiltersButton,
 } from './styled';
 
-interface LikedSongsEntry {
-  provider: ProviderId;
-  count: number;
-}
+export function LibraryMainContent(): React.JSX.Element {
+  const {
+    inDrawer,
+    swipeZoneRef,
+    viewMode,
+    setViewMode,
+    searchQuery,
+    setSearchQuery,
+    playlistSort,
+    setPlaylistSort,
+    albumSort,
+    setAlbumSort,
+    artistFilter,
+    setArtistFilter,
+    providerFilters,
+    setProviderFilters,
+    handleProviderToggle,
+    hasActiveFilters,
+    albums,
+    isInitialLoadComplete,
+    showProviderBadges,
+    enabledProviderIds,
+    onLibraryRefresh,
+    isLibraryRefreshing,
+  } = useLibraryContext();
 
-interface LibraryMainContentProps {
-  inDrawer: boolean;
-  swipeZoneRef?: React.RefObject<HTMLDivElement>;
-  viewMode: 'playlists' | 'albums';
-  setViewMode: (v: 'playlists' | 'albums') => void;
-  searchQuery: string;
-  setSearchQuery: (v: string) => void;
-  playlistSort: PlaylistSortOption;
-  setPlaylistSort: (v: PlaylistSortOption) => void;
-  albumSort: AlbumSortOption;
-  setAlbumSort: (v: AlbumSortOption) => void;
-  artistFilter: string;
-  setArtistFilter: (v: string) => void;
-  providerFilters: ProviderId[];
-  setProviderFilters: (v: ProviderId[]) => void;
-  handleProviderToggle: (provider: ProviderId) => void;
-  hasActiveFilters: boolean;
-  albums: AlbumInfo[];
-  isInitialLoadComplete: boolean;
-  showProviderBadges: boolean;
-  enabledProviderIds: ProviderId[];
-  likedSongsPerProvider: LikedSongsEntry[];
-  likedSongsCount: number;
-  isLikedSongsSyncing: boolean;
-  isUnifiedLikedActive: boolean;
-  unifiedLikedCount: number;
-  pinnedPlaylists: PlaylistInfo[];
-  unpinnedPlaylists: PlaylistInfo[];
-  pinnedAlbums: AlbumInfo[];
-  unpinnedAlbums: AlbumInfo[];
-  isPlaylistPinned: (id: string) => boolean;
-  canPinMorePlaylists: boolean;
-  isAlbumPinned: (id: string) => boolean;
-  canPinMoreAlbums: boolean;
-  activeDescriptor: ProviderDescriptor | null;
-  onPlaylistClick: (playlist: PlaylistInfo) => void;
-  onPlaylistContextMenu: (playlist: PlaylistInfo, event: React.MouseEvent) => void;
-  onPinPlaylistClick: (id: string, event: React.MouseEvent) => void;
-  onLikedSongsClick: (provider?: ProviderId) => void;
-  onAlbumClick: (album: AlbumInfo) => void;
-  onAlbumContextMenu: (album: AlbumInfo, event: React.MouseEvent) => void;
-  onPinAlbumClick: (id: string, event: React.MouseEvent) => void;
-  onArtistClick: (artistName: string, event: React.MouseEvent) => void;
-  onLibraryRefresh?: () => void;
-  isLibraryRefreshing?: boolean;
-}
-
-export function LibraryMainContent({
-  inDrawer,
-  swipeZoneRef,
-  viewMode,
-  setViewMode,
-  searchQuery,
-  setSearchQuery,
-  playlistSort,
-  setPlaylistSort,
-  albumSort,
-  setAlbumSort,
-  artistFilter,
-  setArtistFilter,
-  providerFilters,
-  setProviderFilters,
-  handleProviderToggle,
-  hasActiveFilters,
-  albums,
-  isInitialLoadComplete,
-  showProviderBadges,
-  enabledProviderIds,
-  likedSongsPerProvider,
-  likedSongsCount,
-  isLikedSongsSyncing,
-  isUnifiedLikedActive,
-  unifiedLikedCount,
-  pinnedPlaylists,
-  unpinnedPlaylists,
-  pinnedAlbums,
-  unpinnedAlbums,
-  isPlaylistPinned,
-  canPinMorePlaylists,
-  isAlbumPinned,
-  canPinMoreAlbums,
-  activeDescriptor,
-  onPlaylistClick,
-  onPlaylistContextMenu,
-  onPinPlaylistClick,
-  onLikedSongsClick,
-  onAlbumClick,
-  onAlbumContextMenu,
-  onPinAlbumClick,
-  onArtistClick,
-  onLibraryRefresh,
-  isLibraryRefreshing,
-}: LibraryMainContentProps): React.JSX.Element {
   const tabsBar = (
     <TabsContainer>
       <TabButton
@@ -157,48 +82,9 @@ export function LibraryMainContent({
         />
       )}
 
-      {viewMode === 'playlists' && (
-        <PlaylistGrid
-          inDrawer={inDrawer}
-          likedSongsPerProvider={likedSongsPerProvider}
-          likedSongsCount={likedSongsCount}
-          isLikedSongsSyncing={isLikedSongsSyncing}
-          isUnifiedLikedActive={isUnifiedLikedActive}
-          unifiedLikedCount={unifiedLikedCount}
-          isInitialLoadComplete={isInitialLoadComplete}
-          showProviderBadges={showProviderBadges}
-          hasActiveFilters={hasActiveFilters}
-          searchQuery={searchQuery}
-          pinnedPlaylists={pinnedPlaylists}
-          unpinnedPlaylists={unpinnedPlaylists}
-          isPlaylistPinned={isPlaylistPinned}
-          canPinMorePlaylists={canPinMorePlaylists}
-          activeDescriptor={activeDescriptor}
-          onPlaylistClick={onPlaylistClick}
-          onPlaylistContextMenu={onPlaylistContextMenu}
-          onPinPlaylistClick={onPinPlaylistClick}
-          onLikedSongsClick={onLikedSongsClick}
-        />
-      )}
+      {viewMode === 'playlists' && <PlaylistGrid />}
 
-      {viewMode === 'albums' && (
-        <AlbumGrid
-          inDrawer={inDrawer}
-          albums={albums}
-          isInitialLoadComplete={isInitialLoadComplete}
-          showProviderBadges={showProviderBadges}
-          searchQuery={searchQuery}
-          artistFilter={artistFilter}
-          pinnedAlbums={pinnedAlbums}
-          unpinnedAlbums={unpinnedAlbums}
-          isAlbumPinned={isAlbumPinned}
-          canPinMoreAlbums={canPinMoreAlbums}
-          onAlbumClick={onAlbumClick}
-          onAlbumContextMenu={onAlbumContextMenu}
-          onPinAlbumClick={onPinAlbumClick}
-          onArtistClick={onArtistClick}
-        />
-      )}
+      {viewMode === 'albums' && <AlbumGrid />}
 
       {inDrawer && (
         <DrawerBottomControls>
