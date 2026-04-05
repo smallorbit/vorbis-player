@@ -1,7 +1,6 @@
 import React, { Suspense, memo, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import type { MediaTrack } from '@/types/domain';
-import { theme } from '../styles/theme';
 import { DrawerFallback, DrawerFallbackCard } from './styled';
 import { usePlayerSizingContext } from '@/contexts/PlayerSizingContext';
 import {
@@ -98,9 +97,9 @@ const QueueDrawer = memo<QueueDrawerProps>(({
 
   // Calculate responsive width for the drawer
   const drawerWidth = useMemo(() => {
-    if (isMobile) return Math.min(viewport.width, parseInt(theme.breakpoints.xs));
-    if (isTablet) return Math.min(viewport.width * 0.4, parseInt(theme.drawer.widths.tablet));
-    return Math.min(viewport.width * 0.3, parseInt(theme.drawer.widths.desktop));
+    if (isMobile) return Math.min(viewport.width, 320);
+    if (isTablet) return Math.min(viewport.width * 0.4, 480);
+    return Math.min(viewport.width * 0.3, 600);
   }, [viewport.width, isMobile, isTablet]);
   return createPortal(
     <>
@@ -119,7 +118,7 @@ const QueueDrawer = memo<QueueDrawerProps>(({
           <div>
             <QueueTitle>{radioActive ? 'Radio' : 'Queue'}</QueueTitle>
             {radioActive && radioSeedDescription && (
-              <div style={{ fontSize: theme.fontSize.xs, color: theme.colors.muted.foreground, marginTop: '2px' }}>
+              <div style={{ fontSize: '0.75rem', color: 'rgba(255, 255, 255, 0.6)', marginTop: '2px' }}>
                 {radioSeedDescription}
               </div>
             )}
@@ -143,8 +142,8 @@ const QueueDrawer = memo<QueueDrawerProps>(({
             <DrawerFallback>
               <DrawerFallbackCard>
                 <div style={{
-                  animation: theme.animations.pulse,
-                  color: theme.colors.muted.foreground,
+                  animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                  color: 'rgba(255, 255, 255, 0.6)',
                   textAlign: 'center'
                 }}>
                   Loading queue...
