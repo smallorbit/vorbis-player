@@ -137,4 +137,37 @@ describe('BottomBar', () => {
     fireEvent.click(screen.getByTitle(/zen mode/i));
     expect(props.onZenModeToggle).toHaveBeenCalledOnce();
   });
+
+  it('bar remains visible in normal mode — no hide timer is started', () => {
+    vi.useFakeTimers();
+
+    // #given
+    renderBottomBar({ zenModeEnabled: false });
+
+    // #when
+    vi.advanceTimersByTime(2000);
+
+    // #then
+    expect(screen.getByTitle('App settings')).toBeTruthy();
+
+    vi.useRealTimers();
+  });
+
+  it('portal renders fewer elements in normal mode than in zen mode', () => {
+    // #given — count baseline children before any render
+    const baselineCount = document.body.childElementCount;
+
+    // #when — render in zen mode
+    const { unmount: unmountZen } = renderBottomBar({ zenModeEnabled: true });
+    const zenCount = document.body.childElementCount - baselineCount;
+    unmountZen();
+
+    // render in normal mode
+    const baselineCount2 = document.body.childElementCount;
+    renderBottomBar({ zenModeEnabled: false });
+    const normalCount = document.body.childElementCount - baselineCount2;
+
+    // #then — zen mode adds one extra element (ZenTriggerZone)
+    expect(zenCount).toBe(normalCount + 1);
+  });
 });
