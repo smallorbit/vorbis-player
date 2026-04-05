@@ -9,7 +9,7 @@ vi.mock('@/services/lastfm', () => ({
   getAlbumTracks: vi.fn(),
 }));
 
-function makeTrack(name: string, artist: string, extra?: Partial<MediaTrack>): MediaTrack {
+function makeRadioTrack(name: string, artist: string, extra?: Partial<MediaTrack>): MediaTrack {
   return {
     id: `${artist}-${name}`.toLowerCase().replace(/\s+/g, '-'),
     provider: 'dropbox',
@@ -38,11 +38,11 @@ describe('RadioService', () => {
       const { generateRadioQueue, lastfm } = await freshRadioService();
 
       const catalog = [
-        makeTrack('Karma Police', 'Radiohead'),
-        makeTrack('Lucky', 'Radiohead'),
-        makeTrack('No Surprises', 'Radiohead'),
-        makeTrack('Exit Music', 'Radiohead'),
-        makeTrack('Airbag', 'Radiohead'),
+        makeRadioTrack('Karma Police', 'Radiohead'),
+        makeRadioTrack('Lucky', 'Radiohead'),
+        makeRadioTrack('No Surprises', 'Radiohead'),
+        makeRadioTrack('Exit Music', 'Radiohead'),
+        makeRadioTrack('Airbag', 'Radiohead'),
       ];
 
       vi.mocked(lastfm.getSimilarTracks).mockResolvedValue([
@@ -64,12 +64,12 @@ describe('RadioService', () => {
       const { generateRadioQueue, lastfm } = await freshRadioService();
 
       const catalog = [
-        makeTrack('Karma Police', 'Radiohead'),
-        makeTrack('Lucky', 'Radiohead'),
-        makeTrack('Paranoid Android', 'Radiohead'),
-        makeTrack('No Surprises', 'Radiohead'),
-        makeTrack('Exit Music', 'Radiohead'),
-        makeTrack('Unrelated', 'Other Artist'),
+        makeRadioTrack('Karma Police', 'Radiohead'),
+        makeRadioTrack('Lucky', 'Radiohead'),
+        makeRadioTrack('Paranoid Android', 'Radiohead'),
+        makeRadioTrack('No Surprises', 'Radiohead'),
+        makeRadioTrack('Exit Music', 'Radiohead'),
+        makeRadioTrack('Unrelated', 'Other Artist'),
       ];
 
       vi.mocked(lastfm.getSimilarTracks).mockResolvedValue([
@@ -95,12 +95,12 @@ describe('RadioService', () => {
       const { generateRadioQueue, lastfm } = await freshRadioService();
 
       const catalog = [
-        makeTrack('Creep', 'Radiohead'),
-        makeTrack('Karma Police', 'Radiohead'),
-        makeTrack('Lucky', 'Radiohead'),
-        makeTrack('No Surprises', 'Radiohead'),
-        makeTrack('Exit Music', 'Radiohead'),
-        makeTrack('Airbag', 'Radiohead'),
+        makeRadioTrack('Creep', 'Radiohead'),
+        makeRadioTrack('Karma Police', 'Radiohead'),
+        makeRadioTrack('Lucky', 'Radiohead'),
+        makeRadioTrack('No Surprises', 'Radiohead'),
+        makeRadioTrack('Exit Music', 'Radiohead'),
+        makeRadioTrack('Airbag', 'Radiohead'),
       ];
 
       vi.mocked(lastfm.getSimilarTracks).mockResolvedValue([
@@ -122,11 +122,11 @@ describe('RadioService', () => {
       const { generateRadioQueue, lastfm } = await freshRadioService();
 
       const catalog = [
-        makeTrack('Lucky', 'Radiohead'),
-        makeTrack('No Surprises', 'Radiohead'),
-        makeTrack('Exit Music', 'Radiohead'),
-        makeTrack('Airbag', 'Radiohead'),
-        makeTrack('Let Down', 'Radiohead'),
+        makeRadioTrack('Lucky', 'Radiohead'),
+        makeRadioTrack('No Surprises', 'Radiohead'),
+        makeRadioTrack('Exit Music', 'Radiohead'),
+        makeRadioTrack('Airbag', 'Radiohead'),
+        makeRadioTrack('Let Down', 'Radiohead'),
       ];
 
       vi.mocked(lastfm.getSimilarTracks).mockResolvedValue([
@@ -150,9 +150,9 @@ describe('RadioService', () => {
       const { generateRadioQueue, lastfm } = await freshRadioService();
 
       const catalog = [
-        makeTrack('Hysteria', 'Muse'),
-        makeTrack('Starlight', 'Muse'),
-        makeTrack('Time Is Running Out', 'Muse'),
+        makeRadioTrack('Hysteria', 'Muse'),
+        makeRadioTrack('Starlight', 'Muse'),
+        makeRadioTrack('Time Is Running Out', 'Muse'),
       ];
 
       vi.mocked(lastfm.getSimilarTracks).mockResolvedValue([
@@ -173,11 +173,11 @@ describe('RadioService', () => {
       const { generateRadioQueue, lastfm } = await freshRadioService();
 
       const catalog = [
-        makeTrack('Karma Police', 'Radiohead'),
-        makeTrack('Lucky', 'Radiohead'),
-        makeTrack('No Surprises', 'Radiohead'),
-        makeTrack('Exit Music', 'Radiohead'),
-        makeTrack('Airbag', 'Radiohead'),
+        makeRadioTrack('Karma Police', 'Radiohead'),
+        makeRadioTrack('Lucky', 'Radiohead'),
+        makeRadioTrack('No Surprises', 'Radiohead'),
+        makeRadioTrack('Exit Music', 'Radiohead'),
+        makeRadioTrack('Airbag', 'Radiohead'),
       ];
 
       vi.mocked(lastfm.getSimilarTracks).mockResolvedValue([
@@ -200,11 +200,11 @@ describe('RadioService', () => {
       const { generateRadioQueue, lastfm } = await freshRadioService();
 
       const catalog = [
-        makeTrack('A', 'Radiohead'),
-        makeTrack('B', 'Radiohead'),
-        makeTrack('C', 'Radiohead'),
-        makeTrack('D', 'Radiohead'),
-        makeTrack('E', 'Radiohead'),
+        makeRadioTrack('A', 'Radiohead'),
+        makeRadioTrack('B', 'Radiohead'),
+        makeRadioTrack('C', 'Radiohead'),
+        makeRadioTrack('D', 'Radiohead'),
+        makeRadioTrack('E', 'Radiohead'),
       ];
 
       vi.mocked(lastfm.getSimilarTracks).mockResolvedValue([
@@ -229,9 +229,9 @@ describe('RadioService', () => {
       const { generateRadioQueue, lastfm } = await freshRadioService();
 
       const catalog = [
-        makeTrack('Hysteria', 'Muse'),
-        makeTrack('Starlight', 'Muse'),
-        makeTrack('Creep', 'Radiohead'),
+        makeRadioTrack('Hysteria', 'Muse'),
+        makeRadioTrack('Starlight', 'Muse'),
+        makeRadioTrack('Creep', 'Radiohead'),
       ];
 
       vi.mocked(lastfm.getSimilarArtists).mockResolvedValue([
@@ -252,8 +252,8 @@ describe('RadioService', () => {
       const { generateRadioQueue, lastfm } = await freshRadioService();
 
       const catalog = [
-        makeTrack('Lucky', 'Radiohead'),
-        makeTrack('Karma Police', 'Radiohead'),
+        makeRadioTrack('Lucky', 'Radiohead'),
+        makeRadioTrack('Karma Police', 'Radiohead'),
       ];
 
       vi.mocked(lastfm.getSimilarTracks).mockResolvedValue([
@@ -275,8 +275,8 @@ describe('RadioService', () => {
       const { generateRadioQueue, lastfm } = await freshRadioService();
 
       const catalog = [
-        makeTrack('Lucky', 'Radiohead'),
-        makeTrack('Karma Police', 'Radiohead'),
+        makeRadioTrack('Lucky', 'Radiohead'),
+        makeRadioTrack('Karma Police', 'Radiohead'),
       ];
 
       vi.mocked(lastfm.getSimilarTracks).mockResolvedValue([
@@ -304,9 +304,9 @@ describe('RadioService', () => {
       const { generateRadioQueue, lastfm } = await freshRadioService();
 
       const catalog = [
-        makeTrack('Lucky', 'Radiohead', { album: 'OK Computer' }),
-        makeTrack('Karma Police', 'Radiohead', { album: 'OK Computer' }),
-        makeTrack('Creep', 'Radiohead', { album: 'Pablo Honey' }),
+        makeRadioTrack('Lucky', 'Radiohead', { album: 'OK Computer' }),
+        makeRadioTrack('Karma Police', 'Radiohead', { album: 'OK Computer' }),
+        makeRadioTrack('Creep', 'Radiohead', { album: 'Pablo Honey' }),
       ];
 
       vi.mocked(lastfm.getSimilarTracks).mockResolvedValue([
@@ -332,11 +332,11 @@ describe('RadioService', () => {
       const { generateRadioQueue, lastfm } = await freshRadioService();
 
       const catalog = [
-        makeTrack('Karma Police', 'Radiohead', { musicbrainzRecordingId: 'kp-mbid' }),
-        makeTrack('Lucky', 'Radiohead'),
-        makeTrack('No Surprises', 'Radiohead'),
-        makeTrack('Exit Music', 'Radiohead'),
-        makeTrack('Airbag', 'Radiohead'),
+        makeRadioTrack('Karma Police', 'Radiohead', { musicbrainzRecordingId: 'kp-mbid' }),
+        makeRadioTrack('Lucky', 'Radiohead'),
+        makeRadioTrack('No Surprises', 'Radiohead'),
+        makeRadioTrack('Exit Music', 'Radiohead'),
+        makeRadioTrack('Airbag', 'Radiohead'),
       ];
 
       vi.mocked(lastfm.getSimilarTracks).mockResolvedValue([
