@@ -15,6 +15,10 @@ import {
   ZEN_TRACK_INFO_ENTER_HEIGHT_DURATION,
   ZEN_TRACK_INFO_ENTER_HEIGHT_DELAY,
   ZEN_TRACK_INFO_EXIT_DURATION,
+  ZEN_ART_MARGIN_H,
+  ZEN_ART_MARGIN_V,
+  ZEN_ART_MARGIN_H_MOBILE,
+  ZEN_ART_MARGIN_V_MOBILE,
 } from '@/constants/zenAnimation';
 
 export const ContentWrapper = styled.div.withConfig({
@@ -67,7 +71,7 @@ export const PlayerStack = styled.div.withConfig({
   width: 100%;
   min-height: 0; /* Allow flex shrink so content fits above bottom bar */
   max-width: ${({ $zenMode }) => $zenMode
-    ? `min(calc(100vw - 32px), calc(100dvh - 130px))`
+    ? `min(calc(100vw - ${ZEN_ART_MARGIN_H}px), calc(100dvh - ${ZEN_ART_MARGIN_V}px))`
     : `min(calc(100vw - 48px), calc(100dvh - var(--player-controls-height, 220px) - ${120 + BOTTOM_BAR_HEIGHT}px))`
   };
   margin: 0 auto;
@@ -76,6 +80,12 @@ export const PlayerStack = styled.div.withConfig({
     ? `max-width ${ZEN_ART_DURATION}ms ${ZEN_ART_EASING} ${ZEN_ART_ENTER_DELAY}ms`
     : `max-width ${ZEN_ART_DURATION}ms ${ZEN_ART_EASING}`
   };
+
+  @media (max-width: ${({ theme }) => theme.breakpoints.lg}) {
+    ${({ $zenMode }) => $zenMode && `
+      max-width: min(calc(100vw - ${ZEN_ART_MARGIN_H_MOBILE}px), calc(100dvh - ${ZEN_ART_MARGIN_V_MOBILE}px));
+    `}
+  }
 `;
 
 export const ZenControlsWrapper = styled.div.withConfig({
