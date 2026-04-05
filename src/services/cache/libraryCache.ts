@@ -206,115 +206,109 @@ function idbReplaceAll<T>(storeName: string, items: T[]): Promise<void> {
 }
 
 // =============================================================================
+// Generic Store Operations Factory
+// =============================================================================
+
+interface StoreOps<T extends { id: string }> {
+  getAll: () => Promise<T[]>;
+  put: (item: T) => Promise<void>;
+  remove: (id: string) => Promise<void>;
+  replaceAll: (items: T[]) => Promise<void>;
+}
+
+function createStoreOps<T extends { id: string }>(
+  storeName: string,
+  fallback: Map<string, T>,
+): StoreOps<T> {
+  return {
+    async getAll(): Promise<T[]> {
+      await initCache();
+      if (fallbackMode) return Array.from(fallback.values());
+      try {
+        return await idbGetAll<T>(storeName);
+      } catch {
+        return Array.from(fallback.values());
+      }
+    },
+
+    async put(item: T): Promise<void> {
+      await initCache();
+      if (fallbackMode) { fallback.set(item.id, item); return; }
+      try {
+        await idbPut(storeName, item);
+      } catch {
+        fallback.set(item.id, item);
+      }
+    },
+
+    async remove(id: string): Promise<void> {
+      await initCache();
+      if (fallbackMode) { fallback.delete(id); return; }
+      try {
+        await idbDelete(storeName, id);
+      } catch {
+        fallback.delete(id);
+      }
+    },
+
+    async replaceAll(items: T[]): Promise<void> {
+      await initCache();
+      if (fallbackMode) {
+        fallback.clear();
+        for (const item of items) fallback.set(item.id, item);
+        return;
+      }
+      try {
+        await idbReplaceAll(storeName, items);
+      } catch {
+        for (const item of items) fallback.set(item.id, item);
+      }
+    },
+  };
+}
+
+// =============================================================================
 // Playlist Operations
 // =============================================================================
 
+const playlistOps = createStoreOps<CachedPlaylistInfo>(STORE_PLAYLISTS, fallbackStores.playlists);
+
 export async function getAllPlaylists(): Promise<CachedPlaylistInfo[]> {
-  await initCache();
-  if (fallbackMode) {
-    return Array.from(fallbackStores.playlists.values());
-  }
-  try {
-    return await idbGetAll<CachedPlaylistInfo>(STORE_PLAYLISTS);
-  } catch {
-    return Array.from(fallbackStores.playlists.values());
-  }
+  return playlistOps.getAll();
 }
 
 export async function putAllPlaylists(playlists: CachedPlaylistInfo[]): Promise<void> {
-  await initCache();
-  if (fallbackMode) {
-    fallbackStores.playlists.clear();
-    for (const p of playlists) fallbackStores.playlists.set(p.id, p);
-    return;
-  }
-  try {
-    await idbReplaceAll(STORE_PLAYLISTS, playlists);
-  } catch {
-    for (const p of playlists) fallbackStores.playlists.set(p.id, p);
-  }
+  return playlistOps.replaceAll(playlists);
 }
 
 export async function putPlaylist(playlist: CachedPlaylistInfo): Promise<void> {
-  await initCache();
-  if (fallbackMode) {
-    fallbackStores.playlists.set(playlist.id, playlist);
-    return;
-  }
-  try {
-    await idbPut(STORE_PLAYLISTS, playlist);
-  } catch {
-    fallbackStores.playlists.set(playlist.id, playlist);
-  }
+  return playlistOps.put(playlist);
 }
 
 export async function removePlaylist(id: string): Promise<void> {
-  await initCache();
-  if (fallbackMode) {
-    fallbackStores.playlists.delete(id);
-    return;
-  }
-  try {
-    await idbDelete(STORE_PLAYLISTS, id);
-  } catch {
-    fallbackStores.playlists.delete(id);
-  }
+  return playlistOps.remove(id);
 }
 
 // =============================================================================
 // Album Operations
 // =============================================================================
 
+const albumOps = createStoreOps<AlbumInfo>(STORE_ALBUMS, fallbackStores.albums);
+
 export async function getAllAlbums(): Promise<AlbumInfo[]> {
-  await initCache();
-  if (fallbackMode) {
-    return Array.from(fallbackStores.albums.values());
-  }
-  try {
-    return await idbGetAll<AlbumInfo>(STORE_ALBUMS);
-  } catch {
-    return Array.from(fallbackStores.albums.values());
-  }
+  return albumOps.getAll();
 }
 
 export async function putAllAlbums(albums: AlbumInfo[]): Promise<void> {
-  await initCache();
-  if (fallbackMode) {
-    fallbackStores.albums.clear();
-    for (const a of albums) fallbackStores.albums.set(a.id, a);
-    return;
-  }
-  try {
-    await idbReplaceAll(STORE_ALBUMS, albums);
-  } catch {
-    for (const a of albums) fallbackStores.albums.set(a.id, a);
-  }
+  return albumOps.replaceAll(albums);
 }
 
 export async function putAlbum(album: AlbumInfo): Promise<void> {
-  await initCache();
-  if (fallbackMode) {
-    fallbackStores.albums.set(album.id, album);
-    return;
-  }
-  try {
-    await idbPut(STORE_ALBUMS, album);
-  } catch {
-    fallbackStores.albums.set(album.id, album);
-  }
+  return albumOps.put(album);
 }
 
 export async function removeAlbum(id: string): Promise<void> {
-  await initCache();
-  if (fallbackMode) {
-    fallbackStores.albums.delete(id);
-    return;
-  }
-  try {
-    await idbDelete(STORE_ALBUMS, id);
-  } catch {
-    fallbackStores.albums.delete(id);
-  }
+  return albumOps.remove(id);
 }
 
 // =============================================================================
@@ -323,9 +317,7 @@ export async function removeAlbum(id: string): Promise<void> {
 
 export async function getTrackList(id: string): Promise<CachedTrackList | undefined> {
   await initCache();
-  if (fallbackMode) {
-    return fallbackStores.trackLists.get(id);
-  }
+  if (fallbackMode) return fallbackStores.trackLists.get(id);
   try {
     return await idbGet<CachedTrackList>(STORE_TRACK_LISTS, id);
   } catch {
@@ -336,10 +328,7 @@ export async function getTrackList(id: string): Promise<CachedTrackList | undefi
 export async function putTrackList(id: string, tracks: import('../spotify').Track[], snapshotId?: string): Promise<void> {
   const entry: CachedTrackList = { id, tracks, timestamp: Date.now(), snapshotId };
   await initCache();
-  if (fallbackMode) {
-    fallbackStores.trackLists.set(id, entry);
-    return;
-  }
+  if (fallbackMode) { fallbackStores.trackLists.set(id, entry); return; }
   try {
     await idbPut(STORE_TRACK_LISTS, entry);
   } catch {
@@ -349,10 +338,7 @@ export async function putTrackList(id: string, tracks: import('../spotify').Trac
 
 export async function removeTrackList(id: string): Promise<void> {
   await initCache();
-  if (fallbackMode) {
-    fallbackStores.trackLists.delete(id);
-    return;
-  }
+  if (fallbackMode) { fallbackStores.trackLists.delete(id); return; }
   try {
     await idbDelete(STORE_TRACK_LISTS, id);
   } catch {
@@ -366,9 +352,7 @@ export async function removeTrackList(id: string): Promise<void> {
 
 export async function getMeta(key: string): Promise<LibraryCacheMeta | undefined> {
   await initCache();
-  if (fallbackMode) {
-    return fallbackStores.meta.get(key);
-  }
+  if (fallbackMode) return fallbackStores.meta.get(key);
   try {
     return await idbGet<LibraryCacheMeta>(STORE_META, key);
   } catch {
@@ -379,10 +363,7 @@ export async function getMeta(key: string): Promise<LibraryCacheMeta | undefined
 export async function putMeta(key: string, meta: Omit<LibraryCacheMeta, 'key'>): Promise<void> {
   const entry = { ...meta, key };
   await initCache();
-  if (fallbackMode) {
-    fallbackStores.meta.set(key, entry);
-    return;
-  }
+  if (fallbackMode) { fallbackStores.meta.set(key, entry); return; }
   try {
     await idbPut(STORE_META, entry);
   } catch {
