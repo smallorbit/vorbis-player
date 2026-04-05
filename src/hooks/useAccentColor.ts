@@ -15,20 +15,27 @@ export const useAccentColor = (
   const albumOverride = albumId ? accentColorOverrides[albumId] : undefined;
 
   useEffect(() => {
+    let isCurrent = true;
+
     if (!albumId && !albumImage) {
       setAccentColor(theme.colors.accent);
-      return;
+      return () => {
+        isCurrent = false;
+      };
     }
 
     if (albumId && albumOverride) {
       setAccentColor(albumOverride);
-      return;
+      return () => {
+        isCurrent = false;
+      };
     }
 
     if (albumImage) {
       const extractStart = isProfilingEnabled() ? performance.now() : 0;
       extractDominantColor(albumImage)
         .then(dominantColor => {
+          if (!isCurrent) return;
           if (extractStart > 0) {
             console.debug(`[Profiling] useAccentColor.extract: ${(performance.now() - extractStart).toFixed(1)}ms`);
           }
@@ -44,11 +51,16 @@ export const useAccentColor = (
           }
         })
         .catch(() => {
+          if (!isCurrent) return;
           setAccentColor(theme.colors.accent);
         });
     } else {
       setAccentColor(theme.colors.accent);
     }
+
+    return () => {
+      isCurrent = false;
+    };
   }, [albumId, albumImage, albumOverride, setAccentColor]);
 
   const handleAccentColorChange = useCallback((color: string) => {
