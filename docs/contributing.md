@@ -43,7 +43,7 @@ npm run deploy:preview # Deploy preview (Vercel)
 
 ```
 src/
-├── components/              # React components (~42 files)
+├── components/              # React components
 │   ├── AudioPlayer.tsx      # Main orchestrator with centralized state
 │   ├── PlayerContent.tsx    # Main player layout (centering, responsive sizing)
 │   ├── PlayerStateRenderer.tsx  # Loading/error and library collection selection states
@@ -63,7 +63,7 @@ src/
 │   ├── visualizers/         # Background visualizer components
 │   └── VisualEffectsMenu/   # Visual effects configuration panel
 ├── constants/               # Shared constants (playlist IDs, prefixes)
-├── hooks/                   # 22 custom React hooks
+├── hooks/                   # 30 custom React hooks
 ├── providers/               # Multi-provider system
 │   ├── registry.ts          # Singleton ProviderRegistry
 │   ├── spotify/             # Spotify auth, catalog, playback adapters
