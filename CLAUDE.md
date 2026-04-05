@@ -93,6 +93,7 @@ AppContainer (flexCenter, min-height: 100dvh)
 - **BottomBar** renders via `createPortal()` to `document.body`, fixed at bottom
 - **Drawers** use fixed positioning with slide animations and swipe-to-dismiss; vertical swipes on album art toggle **queue** (up) and **library** (down) drawers (`QueueDrawer` / `QueueBottomSheet` vs `LibraryDrawer`)
 - **BackgroundVisualizer and AccentColorBackground** are `position: fixed` with low z-index, don't affect layout
+- **Zen mode overlays** (`ZenClickZoneOverlay`, `ZenLikeOverlay`): hover-activated on desktop (pointer devices only), hidden when flip menu is open (`isFlipped`), with vertical dead zones (top/bottom 20% of album art ignored). Mobile zen uses touch gestures instead (`useZenTouchGestures`). BottomBar in zen mode shows via grip pill tap with tap-outside-to-dismiss backdrop.
 
 ### Multi-Provider Architecture
 
@@ -146,6 +147,8 @@ Folders containing audio files become albums; parent folder = artist. A syntheti
 
 **Spotify SDK loading**: The Spotify Web Playback SDK is loaded lazily by `SpotifyPlayerService.loadSDK()` — no global script tag in `index.html`. The SDK is only injected when the Spotify provider activates.
 
+**Spotify API batching**: `checkTrackSaved` in `src/services/spotify/tracks.ts` uses microtask-based batching — concurrent calls within the same render cycle are collected and flushed as a single `/me/tracks/contains` request (up to 50 IDs per Spotify API limit), preventing 429 rate limiting.
+
 ### Playback Flow
 
 User action to audio output follows this chain:
@@ -155,7 +158,7 @@ User action to audio output follows this chain:
 3. **Cross-provider handoff** — `pausePreviousProvider()` pauses the old provider if the driving provider changed, then updates `currentPlaybackProviderRef`
 4. **Adapter playback** — calls `descriptor.playback.playTrack(mediaTrack)` on the resolved `PlaybackProvider` (Spotify SDK or HTML5 Audio)
 5. **Next-track pre-warm** — after successful play, `prepareTrack()` is called on the next track's provider
-6. **State subscription** — `usePlaybackSubscription` subscribes to all registered providers, filters events by driving provider, and syncs `isPlaying`, `playbackPosition`, and `currentTrackIndex` back to React state. Uses `expectedTrackIdRef` to ignore stale provider index updates during transitions
+6. **State subscription** — `usePlaybackSubscription` subscribes to all registered providers, filters events by driving provider, and syncs `isPlaying`, `playbackPosition`, and `currentTrackIndex` back to React state. Uses `expectedTrackIdRef` to ignore stale provider index updates during transitions. Also listens for `visibilitychange` events — when the tab returns to foreground, it clears `expectedTrackIdRef` (stale transition guards) and calls `getState()` on the driving provider to resync track info, album art, and playback position.
 7. **Auto-advance** — `useAutoAdvance` subscribes to all providers and detects track end via two signals: `timeRemaining <= endThreshold` (near-end) or `wasPlaying && isPaused && position === 0` (natural end). A 5-second cooldown (`PLAY_COOLDOWN_MS`) prevents false triggers during buffering
 8. **Error recovery** — `UnavailableTrackError` and generic errors trigger auto-skip to the next track when `skipOnError` is true. `AuthExpiredError` surfaces a re-auth prompt
 
@@ -174,6 +177,7 @@ Queue state lives in `TrackContext` (`tracks`, `originalTracks`, `currentTrackIn
 **Adding to queue** (`useQueueManagement.handleAddToQueue`):
 - If queue is empty, delegates to `loadCollection` (full load + autoplay)
 - Otherwise fetches tracks via `catalog.listTracks` and appends to `tracks`, `originalTracks`, and `mediaTracksRef` without resetting `currentTrackIndex`
+- Deduplicates by track ID before appending — tracks already in the queue are skipped
 
 **Removing from queue** (`handleRemoveFromQueue`):
 - Blocks removal of the currently playing track (`index === currentTrackIndex`)
