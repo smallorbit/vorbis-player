@@ -1,5 +1,6 @@
 import styled from 'styled-components';
 import { cardBase } from '@/styles/utils';
+import { BOTTOM_BAR_HEIGHT } from '@/components/BottomBar/styled';
 
 export const ContentWrapper = styled.div.withConfig({
   shouldForwardProp: (prop) => !['width', 'padding', 'useFluidSizing', 'transitionDuration', 'transitionEasing', '$zenMode'].includes(prop),
@@ -32,7 +33,7 @@ export const ContentWrapper = styled.div.withConfig({
   display: flex;
   flex-direction: column;
   /* Prevent overflow on tablets; content must fit above bottom bar + safe area */
-  max-height: ${props => props.$zenMode ? 'none' : '100dvh'};
+  max-height: ${props => props.$zenMode ? 'none' : `calc(100dvh - ${BOTTOM_BAR_HEIGHT}px)`};
 `;
 
 export const PlayerContainer = styled.div`
@@ -52,7 +53,7 @@ export const PlayerStack = styled.div.withConfig({
   min-height: 0; /* Allow flex shrink so content fits above bottom bar */
   max-width: ${({ $zenMode }) => $zenMode
     ? `min(calc(100vw - 32px), calc(100dvh - 130px))`
-    : `min(calc(100vw - 48px), calc(100dvh - var(--player-controls-height, 220px) - 120px))`
+    : `min(calc(100vw - 48px), calc(100dvh - var(--player-controls-height, 220px) - ${120 + BOTTOM_BAR_HEIGHT}px))`
   };
   margin: 0 auto;
   /* Entering zen: art grows after controls fade out (300ms delay). Exiting zen: art shrinks immediately. */
