@@ -74,10 +74,9 @@ const AlbumArtContainer = styled.div.withConfig({
     ? `min(calc(100vw - 32px), calc(100dvh - 130px))`
     : `min(calc(100vw - 48px), calc(100dvh - var(--player-controls-height, 220px) - 120px))`
   };
-  /* Entering zen: art grows after controls fade out (300ms delay). Exiting zen: art shrinks immediately. */
   transition: ${({ $zenMode }) => $zenMode
-    ? 'max-width 1000ms cubic-bezier(0.4, 0, 0.2, 1) 300ms'
-    : 'max-width 1000ms cubic-bezier(0.4, 0, 0.2, 1)'
+    ? 'max-width 1000ms cubic-bezier(0.4, 0, 0.2, 1) 300ms, box-shadow 0.5s ease, opacity 0.5s ease'
+    : 'max-width 1000ms cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.5s ease, opacity 0.5s ease'
   };
   aspect-ratio: 1;
   margin: 0 auto;
@@ -140,7 +139,6 @@ const AlbumArtContainer = styled.div.withConfig({
   }}
   border: none;
   z-index: ${theme.zIndex.docked};
-  transition: box-shadow 0.5s ease, opacity 0.5s ease;
   opacity: ${({ $translucenceOpacity }) => $translucenceOpacity ?? 1};
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
