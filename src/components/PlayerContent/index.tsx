@@ -68,7 +68,7 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({
   const { currentTrack, showQueue, setShowQueue } = useCurrentTrackContext();
   const { zenModeEnabled, setZenModeEnabled, setShowVisualEffects } = useVisualEffectsContext();
   const { dimensions, useFluidSizing, padding, transitionDuration, transitionEasing, isMobile, isTablet, hasPointerInput, isTouchDevice } = usePlayerSizingContext();
-  const { isLiked, isLikePending, handleLikeToggle, canSaveTrack } = useLikeTrack(currentTrack?.id, currentTrackProvider);
+  const { isLiked, isLikePending, handleLikeToggle, canSaveTrack } = useLikeTrack(currentTrack?.id, currentTrack?.provider);
 
   const [librarySearchQuery, setLibrarySearchQuery] = useState<string | undefined>(undefined);
   const [libraryViewMode, setLibraryViewMode] = useState<'playlists' | 'albums' | undefined>(undefined);

@@ -35,6 +35,8 @@ vi.mock('@/services/spotify', () => ({
 import { useLikeTrack } from '../useLikeTrack';
 import { checkTrackSaved, saveTrack, unsaveTrack } from '@/services/spotify';
 import { ProviderWrapper } from '@/test/providerTestUtils';
+import { providerRegistry } from '@/providers/registry';
+import type { ProviderDescriptor } from '@/types/providers';
 
 const opts = { wrapper: ProviderWrapper };
 
@@ -192,5 +194,117 @@ describe('useLikeTrack', () => {
     });
 
     expect(result.current.isLiked).toBe(false);
+  });
+});
+
+describe('useLikeTrack — cross-provider guard', () => {
+  const dropboxIsTrackSaved = vi.fn();
+  const dropboxSetTrackSaved = vi.fn();
+
+  const dropboxDescriptor: ProviderDescriptor = {
+    id: 'dropbox',
+    name: 'Dropbox',
+    capabilities: { hasSaveTrack: true, hasLikedCollection: true, hasExternalLink: false },
+    auth: {
+      providerId: 'dropbox',
+      isAuthenticated: vi.fn().mockReturnValue(true),
+      getAccessToken: vi.fn().mockResolvedValue(null),
+      beginLogin: vi.fn(),
+      handleCallback: vi.fn().mockResolvedValue(false),
+      logout: vi.fn(),
+    },
+    catalog: {
+      providerId: 'dropbox',
+      listCollections: vi.fn().mockResolvedValue([]),
+      listTracks: vi.fn().mockResolvedValue([]),
+      isTrackSaved: dropboxIsTrackSaved,
+      setTrackSaved: dropboxSetTrackSaved,
+    },
+    playback: {
+      providerId: 'dropbox',
+      initialize: vi.fn().mockResolvedValue(undefined),
+      playTrack: vi.fn().mockResolvedValue(undefined),
+      pause: vi.fn().mockResolvedValue(undefined),
+      resume: vi.fn().mockResolvedValue(undefined),
+      seek: vi.fn().mockResolvedValue(undefined),
+      next: vi.fn().mockResolvedValue(undefined),
+      previous: vi.fn().mockResolvedValue(undefined),
+      setVolume: vi.fn().mockResolvedValue(undefined),
+      getState: vi.fn().mockResolvedValue(null),
+      subscribe: vi.fn().mockReturnValue(vi.fn()),
+      getLastPlayTime: vi.fn().mockReturnValue(Date.now()),
+    },
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    providerRegistry.register(dropboxDescriptor);
+    dropboxIsTrackSaved.mockResolvedValue(false);
+    dropboxSetTrackSaved.mockResolvedValue(undefined);
+    vi.mocked(checkTrackSaved).mockResolvedValue(false);
+  });
+
+  it('does not call Spotify API when trackProvider is dropbox', async () => {
+    // #given - a Dropbox track ID
+    dropboxIsTrackSaved.mockResolvedValue(true);
+
+    // #when
+    const { result } = renderHook(
+      () => useLikeTrack('id:Esy6aoXsEfIAAAAAAAAAmw', 'dropbox'),
+      { wrapper: ProviderWrapper },
+    );
+
+    await waitFor(() => {
+      expect(result.current.isLikePending).toBe(false);
+    });
+
+    // #then - Dropbox catalog used, Spotify API not called
+    expect(dropboxIsTrackSaved).toHaveBeenCalledWith('id:Esy6aoXsEfIAAAAAAAAAmw');
+    expect(checkTrackSaved).not.toHaveBeenCalled();
+    expect(result.current.isLiked).toBe(true);
+  });
+
+  it('routes like toggle to Dropbox catalog, not Spotify', async () => {
+    // #given
+    dropboxIsTrackSaved.mockResolvedValue(false);
+
+    const { result } = renderHook(
+      () => useLikeTrack('id:Esy6aoXsEfIAAAAAAAAAmw', 'dropbox'),
+      { wrapper: ProviderWrapper },
+    );
+
+    await waitFor(() => {
+      expect(result.current.isLikePending).toBe(false);
+    });
+
+    // #when
+    await act(async () => {
+      result.current.handleLikeToggle();
+    });
+
+    // #then
+    expect(dropboxSetTrackSaved).toHaveBeenCalledWith('id:Esy6aoXsEfIAAAAAAAAAmw', true);
+    expect(saveTrack).not.toHaveBeenCalled();
+    expect(unsaveTrack).not.toHaveBeenCalled();
+  });
+
+  it('no-ops when trackProvider is an unregistered provider', async () => {
+    // #when - cast to ProviderId to simulate a stale/unknown provider reaching the hook
+    const unknownProvider = 'unknown-provider' as import('@/types/domain').ProviderId;
+
+    const { result } = renderHook(
+      () => useLikeTrack('some-track-id', unknownProvider),
+      { wrapper: ProviderWrapper },
+    );
+
+    await waitFor(() => {
+      expect(result.current.isLikePending).toBe(false);
+    });
+
+    // #then - nothing called, graceful no-op
+    expect(checkTrackSaved).not.toHaveBeenCalled();
+    expect(dropboxIsTrackSaved).not.toHaveBeenCalled();
+    expect(result.current.isLiked).toBe(false);
+    expect(result.current.canSaveTrack).toBe(false);
   });
 });
