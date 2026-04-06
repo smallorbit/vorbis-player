@@ -66,20 +66,28 @@ export function TrackProvider({ children }: { children: React.ReactNode }) {
     );
 
     if (!shuffleEnabled) {
-      const rest = originalTracks.filter(t => t.id !== current?.id);
+      // Shuffle using current track data (not originalTracks objects, which may be stale)
+      const rest = tracks.filter(t => t.id !== current?.id);
       const shuffled = shuffleArray(rest);
       const newTracks = current ? [current, ...shuffled] : shuffled;
       setTracks(newTracks);
       setCurrentTrackIndex(0);
       logQueue('shuffleToggle — shuffled: newIndex=0, newLen=%d', newTracks.length);
     } else {
+      // Restore original order by reordering current tracks (preserves up-to-date track data)
       const currentTrackId = current?.id;
+      const originalOrderIds = originalTracks.map(t => t.id);
+      const byId = new Map(tracks.map(t => [t.id, t]));
+      const reordered = [
+        ...originalOrderIds.flatMap(id => { const t = byId.get(id); return t ? [t] : []; }),
+        ...tracks.filter(t => !originalOrderIds.includes(t.id)),
+      ];
       const restoredIndex = currentTrackId
-        ? originalTracks.findIndex(t => t.id === currentTrackId)
+        ? reordered.findIndex(t => t.id === currentTrackId)
         : 0;
-      setTracks(originalTracks);
+      setTracks(reordered);
       setCurrentTrackIndex(restoredIndex >= 0 ? restoredIndex : 0);
-      logQueue('shuffleToggle — restored original order: newIndex=%d, len=%d', restoredIndex >= 0 ? restoredIndex : 0, originalTracks.length);
+      logQueue('shuffleToggle — restored original order: newIndex=%d, len=%d', restoredIndex >= 0 ? restoredIndex : 0, reordered.length);
     }
 
     setShuffleEnabled(!shuffleEnabled);
