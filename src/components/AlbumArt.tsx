@@ -68,7 +68,7 @@ const AlbumArtContainer = styled.div.withConfig({
   transform: translateZ(0);
   will-change: transform, opacity;
   isolation: isolate;
-  border-radius: ${theme.borderRadius['3xl']};
+  border-radius: ${theme.borderRadius.xl};
   position: relative;
   width: 100%;
   max-width: ${({ $zenMode }) => $zenMode
