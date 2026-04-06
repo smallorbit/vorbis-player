@@ -117,6 +117,7 @@ const AudioPlayerComponent = () => {
   const handleCloseQuickAccessPanel = useCallback(() => setShowQuickAccessPanel(false), []);
 
   const [qapToast, setQapToast] = useState<string | null>(null);
+  const handleQapToastDismiss = useCallback(() => setQapToast(null), []);
   const handleAddToQueueFromPanel = useCallback(
     async (id: string, name?: string, provider?: import('@/types/domain').ProviderId) => {
       const result = await handlers.handleAddToQueue(id, name, provider);
@@ -232,18 +233,23 @@ const AudioPlayerComponent = () => {
 
     if (state.isLoading || state.error || selectedPlaylistId === null || tracks.length === 0) {
       return (
-        <ProfiledComponent id="PlayerStateRenderer">
-          <PlayerStateRenderer
-            isLoading={state.isLoading}
-            error={state.error}
-            selectedPlaylistId={selectedPlaylistId}
-            tracks={tracks}
-            onPlaylistSelect={handlePlaylistSelect}
-            onAddToQueue={handleAddToQueueFromPanel}
-            lastSession={lastSession}
-            onResume={handleResume}
-          />
-        </ProfiledComponent>
+        <>
+          <ProfiledComponent id="PlayerStateRenderer">
+            <PlayerStateRenderer
+              isLoading={state.isLoading}
+              error={state.error}
+              selectedPlaylistId={selectedPlaylistId}
+              tracks={tracks}
+              onPlaylistSelect={handlePlaylistSelect}
+              onAddToQueue={handleAddToQueueFromPanel}
+              lastSession={lastSession}
+              onResume={handleResume}
+            />
+          </ProfiledComponent>
+          {qapToast && (
+            <Toast message={qapToast} onDismiss={handleQapToastDismiss} />
+          )}
+        </>
       );
     }
 
@@ -330,7 +336,7 @@ const AudioPlayerComponent = () => {
           </QuickAccessOverlay>
         )}
         {qapToast && (
-          <Toast message={qapToast} onDismiss={() => setQapToast(null)} />
+          <Toast message={qapToast} onDismiss={handleQapToastDismiss} />
         )}
         {fallthroughNotification && (
           <Toast message={fallthroughNotification} onDismiss={dismissFallthroughNotification} />
