@@ -23,15 +23,17 @@ describe('TrackContext', () => {
   });
 
   it('currentTrack returns correct track at currentTrackIndex', () => {
+    // #given
     const { result } = renderHook(() => useTrackContext(), { wrapper });
-
     const tracks = [makeTrack({ id: 't1' }), makeTrack({ id: 't2' }), makeTrack({ id: 't3' })];
 
+    // #when
     act(() => {
       result.current.setTracks(tracks);
       result.current.setCurrentTrackIndex(1);
     });
 
+    // #then
     expect(result.current.currentTrack?.id).toBe('t2');
   });
 
@@ -42,29 +44,8 @@ describe('TrackContext', () => {
   });
 
   it('handleShuffleToggle puts current track first in shuffled order', () => {
+    // #given
     const { result } = renderHook(() => useTrackContext(), { wrapper });
-
-    const tracks = [makeTrack({ id: 't1' }), makeTrack({ id: 't2' }), makeTrack({ id: 't3' })];
-
-    act(() => {
-      result.current.setTracks(tracks);
-      result.current.setOriginalTracks(tracks);
-      result.current.setCurrentTrackIndex(1); // current = t2
-    });
-
-    act(() => {
-      result.current.handleShuffleToggle();
-    });
-
-    // Current track should be first
-    expect(result.current.tracks[0].id).toBe('t2');
-    expect(result.current.currentTrackIndex).toBe(0);
-    expect(result.current.shuffleEnabled).toBe(true);
-  });
-
-  it('handleShuffleToggle (disable) restores original order and finds correct index', () => {
-    const { result } = renderHook(() => useTrackContext(), { wrapper });
-
     const tracks = [makeTrack({ id: 't1' }), makeTrack({ id: 't2' }), makeTrack({ id: 't3' })];
 
     act(() => {
@@ -73,39 +54,62 @@ describe('TrackContext', () => {
       result.current.setCurrentTrackIndex(1);
     });
 
-    // Enable shuffle
+    // #when
     act(() => {
       result.current.handleShuffleToggle();
     });
 
-    // Disable shuffle
+    // #then
+    expect(result.current.tracks[0].id).toBe('t2');
+    expect(result.current.currentTrackIndex).toBe(0);
+    expect(result.current.shuffleEnabled).toBe(true);
+  });
+
+  it('handleShuffleToggle (disable) restores original order and finds correct index', () => {
+    // #given
+    const { result } = renderHook(() => useTrackContext(), { wrapper });
+    const tracks = [makeTrack({ id: 't1' }), makeTrack({ id: 't2' }), makeTrack({ id: 't3' })];
+
+    act(() => {
+      result.current.setTracks(tracks);
+      result.current.setOriginalTracks(tracks);
+      result.current.setCurrentTrackIndex(1);
+    });
+
+    // #when - enable shuffle
     act(() => {
       result.current.handleShuffleToggle();
     });
 
-    // Should restore original order
+    // #when - disable shuffle
+    act(() => {
+      result.current.handleShuffleToggle();
+    });
+
+    // #then
     expect(result.current.tracks.map(t => t.id)).toEqual(['t1', 't2', 't3']);
     expect(result.current.shuffleEnabled).toBe(false);
-    // Current track (t2) should be at index 1 in the original order
     expect(result.current.currentTrackIndex).toBe(1);
   });
 
   it('handleShuffleToggle is no-op when originalTracks is empty', () => {
+    // #given
     const { result } = renderHook(() => useTrackContext(), { wrapper });
-
     const initialTracks = result.current.tracks;
 
+    // #when
     act(() => {
       result.current.handleShuffleToggle();
     });
 
+    // #then
     expect(result.current.tracks).toBe(initialTracks);
     expect(result.current.shuffleEnabled).toBe(false);
   });
 
   it('shuffleEnabled persists to localStorage', () => {
+    // #given
     const { result } = renderHook(() => useTrackContext(), { wrapper });
-
     const tracks = [makeTrack({ id: 't1' }), makeTrack({ id: 't2' })];
 
     act(() => {
@@ -114,10 +118,12 @@ describe('TrackContext', () => {
       result.current.setCurrentTrackIndex(0);
     });
 
+    // #when
     act(() => {
       result.current.handleShuffleToggle();
     });
 
+    // #then
     expect(window.localStorage.setItem).toHaveBeenCalledWith(
       'vorbis-player-shuffle-enabled',
       'true'

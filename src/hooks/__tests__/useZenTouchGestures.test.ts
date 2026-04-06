@@ -301,7 +301,7 @@ describe('useZenTouchGestures', () => {
       const opts = defaultOptions();
       const { result } = renderHook(() => useZenTouchGestures(opts));
 
-      // #when - start a long press then cancel it
+      // #when
       act(() => {
         result.current.onPointerDown(createPointerEvent());
       });
@@ -342,7 +342,7 @@ describe('useZenTouchGestures', () => {
       const opts = { ...defaultOptions(), enabled: false };
       const { result } = renderHook(() => useZenTouchGestures(opts));
 
-      // #when - simulate down/up (down is ignored so up should also be a no-op)
+      // #when
       act(() => {
         result.current.onPointerDown(createPointerEvent());
         result.current.onPointerUp(createPointerEvent());
@@ -358,11 +358,11 @@ describe('useZenTouchGestures', () => {
     });
 
     it('ignores pointer move when disabled', () => {
-      // #given - enable for down, then simulate disabled move (move guard does nothing)
+      // #given
       const opts = { ...defaultOptions(), enabled: false };
       const { result } = renderHook(() => useZenTouchGestures(opts));
 
-      // #when - move far; since down was already ignored, no timer to cancel
+      // #when
       act(() => {
         result.current.onPointerMove(createPointerEvent(200, 200));
       });

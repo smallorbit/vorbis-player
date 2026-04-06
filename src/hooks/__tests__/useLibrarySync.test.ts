@@ -468,19 +468,16 @@ describe('useLibrarySync', () => {
         id === 'dropbox' ? dropboxDescriptor : undefined,
       );
 
-      // Provider registry reports dropbox has a likesChangedEvent
       mockRegistryGet.mockImplementation((id: ProviderId) =>
         id === 'dropbox' ? { likesChangedEvent: 'vorbis-dropbox-likes-changed' } : undefined,
       );
 
       const { result } = renderHook(() => useLibrarySync());
 
-      // Seed initial catalog data so mergeAndSetData has something to work with
       await waitFor(() => {
         expect(dropboxDescriptor.catalog.listCollections).toHaveBeenCalled();
       });
 
-      // Simulate likedCount increasing
       getLikedCount.mockResolvedValue(10);
 
       // #when
@@ -505,7 +502,6 @@ describe('useLibrarySync', () => {
         id === 'dropbox' ? dropboxDescriptor : undefined,
       );
 
-      // No likesChangedEvent registered
       mockRegistryGet.mockReturnValue(undefined);
 
       renderHook(() => useLibrarySync());
@@ -516,15 +512,14 @@ describe('useLibrarySync', () => {
 
       getLikedCount.mockResolvedValue(99);
 
-      // #when — fire the event anyway
+      // #when
       act(() => {
         window.dispatchEvent(new Event('vorbis-dropbox-likes-changed'));
       });
 
-      // Tiny delay to confirm no re-fetch occurred
       await new Promise(r => setTimeout(r, 20));
 
-      // #then — getLikedCount was only called during initial load, not again
+      // #then
       expect(getLikedCount).toHaveBeenCalledTimes(1);
     });
   });
@@ -546,12 +541,12 @@ describe('useLibrarySync', () => {
         expect(dropboxDescriptor.catalog.listCollections).toHaveBeenCalledTimes(1);
       });
 
-      // #when — refresh scoped to dropbox only
+      // #when
       await act(async () => {
         await result.current.refreshNow('dropbox' as ProviderId);
       });
 
-      // #then — dropbox catalog called again; engine syncNow NOT called for dropbox scope
+      // #then
       expect(dropboxDescriptor.catalog.listCollections).toHaveBeenCalledTimes(2);
       expect(mockSyncNow).not.toHaveBeenCalled();
     });
@@ -573,7 +568,7 @@ describe('useLibrarySync', () => {
       // #given
       const { result } = renderHook(() => useLibrarySync());
 
-      // #when — scope = spotify (the engine provider)
+      // #when
       await act(async () => {
         await result.current.refreshNow('spotify' as ProviderId);
       });
@@ -594,12 +589,12 @@ describe('useLibrarySync', () => {
 
       const { result } = renderHook(() => useLibrarySync());
 
-      // #when — scope = dropbox only
+      // #when
       await act(async () => {
         await result.current.refreshNow('dropbox' as ProviderId);
       });
 
-      // #then — engine syncNow should NOT be called
+      // #then
       expect(mockSyncNow).not.toHaveBeenCalled();
     });
   });

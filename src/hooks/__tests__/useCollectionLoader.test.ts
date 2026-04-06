@@ -52,6 +52,7 @@ describe('useCollectionLoader', () => {
   });
 
   it('loading a standard provider collection sets tracks and calls playTrack(0)', async () => {
+    // #given
     const mockCatalog = {
       listTracks: vi.fn().mockResolvedValue([
         makeMediaTrack('1'),
@@ -84,14 +85,14 @@ describe('useCollectionLoader', () => {
       })
     );
 
+    // #when
     const trackCount = await act(async () => {
       return result.current.loadCollection('playlist_123');
     });
 
+    // #then
     const expectedTracks = [makeMediaTrack('1'), makeMediaTrack('2'), makeMediaTrack('3')];
-
     expect(mockSetIsLoading).toHaveBeenCalledWith(true);
-    // applyTracks passes the track array directly (no functional updater)
     expect(mockSetTracks).toHaveBeenCalledWith(expectedTracks);
     expect(mockSetOriginalTracks).toHaveBeenCalledWith(expectedTracks);
     expect(mockPlayTrack).toHaveBeenCalledWith(0);
@@ -99,6 +100,7 @@ describe('useCollectionLoader', () => {
   });
 
   it('loading unified liked songs merges results from multiple providers sorted by addedAt', async () => {
+    // #given
     const mockCatalog1 = {
       listTracks: vi.fn().mockResolvedValue([
         makeMediaTrack('1', 1000),
@@ -143,11 +145,12 @@ describe('useCollectionLoader', () => {
       })
     );
 
+    // #when
     const trackCount = await act(async () => {
       return result.current.loadCollection(LIKED_SONGS_ID);
     });
 
-    // applyTracks passes the merged+sorted array directly — newest addedAt first
+    // #then
     const expectedMergedOrder = [makeMediaTrack('3', 1500), makeMediaTrack('1', 1000), makeMediaTrack('2', 500)];
     expect(mockSetTracks).toHaveBeenCalledWith(expectedMergedOrder);
     expect(mockSetOriginalTracks).toHaveBeenCalledWith(expectedMergedOrder);
@@ -155,6 +158,7 @@ describe('useCollectionLoader', () => {
   });
 
   it('an empty collection result sets error state', async () => {
+    // #given
     const mockCatalog = {
       listTracks: vi.fn().mockResolvedValue([]),
     };
@@ -178,16 +182,19 @@ describe('useCollectionLoader', () => {
       })
     );
 
+    // #when
     const trackCount = await act(async () => {
       return result.current.loadCollection('playlist_123');
     });
 
+    // #then
     expect(mockSetError).toHaveBeenCalledWith('No tracks found in this collection.');
     expect(mockSetTracks).toHaveBeenCalledWith([]);
     expect(trackCount).toBe(0);
   });
 
   it('the legacy SDK fallback path is invoked when list.length === 0 and playCollection is defined', async () => {
+    // #given
     mockSpotifyHandlePlaylistSelect.mockResolvedValue([makeTrack('1'), makeTrack('2')]);
 
     const mockCatalog = {
@@ -213,16 +220,18 @@ describe('useCollectionLoader', () => {
       })
     );
 
+    // #when
     const trackCount = await act(async () => {
       return result.current.loadCollection('playlist_123');
     });
 
-    // Should delegate to spotifyHandlePlaylistSelect
+    // #then
     expect(mockSpotifyHandlePlaylistSelect).toHaveBeenCalledWith('playlist_123');
     expect(trackCount).toBe(2);
   });
 
   it('stops radio before loading a new collection when radio is active', async () => {
+    // #given
     const mockCatalog = {
       listTracks: vi.fn().mockResolvedValue([makeMediaTrack('1')]),
     };
@@ -246,14 +255,17 @@ describe('useCollectionLoader', () => {
       })
     );
 
+    // #when
     await act(async () => {
       await result.current.loadCollection('playlist_123');
     });
 
+    // #then
     expect(mockStopRadioBase).toHaveBeenCalled();
   });
 
   it('shuffles tracks when shuffleEnabled is true', async () => {
+    // #given
     const tracks = [makeMediaTrack('1'), makeMediaTrack('2'), makeMediaTrack('3')];
     const mockCatalog = { listTracks: vi.fn().mockResolvedValue(tracks) };
     mockActiveDescriptor.catalog = mockCatalog;
@@ -276,13 +288,13 @@ describe('useCollectionLoader', () => {
       })
     );
 
+    // #when
     await act(async () => {
       await result.current.loadCollection('playlist_123');
     });
 
-    // setOriginalTracks always receives the original unshuffled order
+    // #then
     expect(mockSetOriginalTracks).toHaveBeenCalledWith(tracks);
-    // setTracks receives a shuffled permutation — same elements, possibly different order
     expect(mockSetTracks).toHaveBeenCalledTimes(1);
     const shuffledTracks = mockSetTracks.mock.calls[0][0] as MediaTrack[];
     expect(shuffledTracks).toHaveLength(tracks.length);
@@ -290,6 +302,7 @@ describe('useCollectionLoader', () => {
   });
 
   it('switches active provider when loading a collection from a different provider', async () => {
+    // #given
     const dropboxCatalog = { listTracks: vi.fn().mockResolvedValue([makeMediaTrack('1')]) };
     const dropboxDescriptor = {
       id: 'dropbox' as const,
@@ -316,10 +329,12 @@ describe('useCollectionLoader', () => {
       })
     );
 
+    // #when
     await act(async () => {
       await result.current.loadCollection('playlist_123', 'dropbox');
     });
 
+    // #then
     expect(mockSetActiveProviderId).toHaveBeenCalledWith('dropbox');
   });
 

@@ -184,12 +184,11 @@ describe('useProviderPlayback', () => {
       useProviderPlayback({ setCurrentTrackIndex, mediaTracksRef: { current: mixedTracks } as React.MutableRefObject<MediaTrack[]> })
     );
 
-    // #when — play dropbox track first
+    // #when
     await act(async () => {
       await result.current.playTrack(0);
     });
 
-    // #when — then play spotify track (should pause dropbox)
     await act(async () => {
       await result.current.playTrack(1);
     });
@@ -225,7 +224,7 @@ describe('useProviderPlayback', () => {
       useProviderPlayback({ setCurrentTrackIndex, mediaTracksRef })
     );
 
-    // #then
+    // #when / #then
     expect(result.current).toHaveProperty('playTrack');
     expect(result.current).toHaveProperty('resumePlayback');
     expect(result.current).toHaveProperty('currentPlaybackProviderRef');
