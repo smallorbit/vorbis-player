@@ -22,6 +22,8 @@ interface AlbumArtQuickSwapBackProps {
   onBackgroundVisualizerStyleChange: (style: VisualizerStyle) => void;
   backgroundVisualizerIntensity: number;
   onBackgroundVisualizerIntensityChange: (intensity: number) => void;
+  backgroundVisualizerSpeed: number;
+  onBackgroundVisualizerSpeedChange: (speed: number) => void;
   translucenceEnabled: boolean;
   onTranslucenceToggle: () => void;
   isMobile: boolean;
@@ -147,6 +149,8 @@ function AlbumArtQuickSwapBack({
   onBackgroundVisualizerStyleChange,
   backgroundVisualizerIntensity,
   onBackgroundVisualizerIntensityChange,
+  backgroundVisualizerSpeed,
+  onBackgroundVisualizerSpeedChange,
   translucenceEnabled,
   onTranslucenceToggle,
   isMobile,
@@ -181,6 +185,8 @@ function AlbumArtQuickSwapBack({
           onBackgroundVisualizerStyleChange={onBackgroundVisualizerStyleChange}
           backgroundVisualizerIntensity={backgroundVisualizerIntensity}
           onBackgroundVisualizerIntensityChange={onBackgroundVisualizerIntensityChange}
+          backgroundVisualizerSpeed={backgroundVisualizerSpeed}
+          onBackgroundVisualizerSpeedChange={onBackgroundVisualizerSpeedChange}
           translucenceEnabled={translucenceEnabled}
           onTranslucenceToggle={onTranslucenceToggle}
           isMobile={isMobile}

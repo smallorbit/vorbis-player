@@ -11,6 +11,7 @@ interface VisualEffectsContextValue {
   backgroundVisualizerEnabled: boolean;
   backgroundVisualizerStyle: VisualizerStyle;
   backgroundVisualizerIntensity: number;
+  backgroundVisualizerSpeed: number;
   accentColorBackgroundPreferred: boolean;
   accentColorBackgroundEnabled: boolean;
   translucenceEnabled: boolean;
@@ -23,6 +24,7 @@ interface VisualEffectsContextValue {
   setBackgroundVisualizerEnabled: (enabled: boolean | ((prev: boolean) => boolean)) => void;
   setBackgroundVisualizerStyle: (style: VisualizerStyle | ((prev: VisualizerStyle) => VisualizerStyle)) => void;
   setBackgroundVisualizerIntensity: (intensity: number | ((prev: number) => number)) => void;
+  setBackgroundVisualizerSpeed: (speed: number | ((prev: number) => number)) => void;
   setAccentColorBackgroundPreferred: (preferred: boolean | ((prev: boolean) => boolean)) => void;
   setTranslucenceEnabled: (enabled: boolean | ((prev: boolean) => boolean)) => void;
   setTranslucenceOpacity: (opacity: number | ((prev: number) => number)) => void;
@@ -38,6 +40,7 @@ export function VisualEffectsProvider({ children }: { children: React.ReactNode 
   const [backgroundVisualizerEnabled, setBackgroundVisualizerEnabled] = useLocalStorage<boolean>(STORAGE_KEYS.BG_VISUALIZER_ENABLED, true);
   const [backgroundVisualizerStyle, setBackgroundVisualizerStyle] = useLocalStorage<VisualizerStyle>(STORAGE_KEYS.BG_VISUALIZER_STYLE, 'fireflies');
   const [backgroundVisualizerIntensity, setBackgroundVisualizerIntensity] = useLocalStorage<number>(STORAGE_KEYS.BG_VISUALIZER_INTENSITY, 40);
+  const [backgroundVisualizerSpeed, setBackgroundVisualizerSpeed] = useLocalStorage<number>(STORAGE_KEYS.BG_VISUALIZER_SPEED, 1.0);
   const [accentColorBackgroundPreferred, setAccentColorBackgroundPreferred] = useLocalStorage<boolean>(STORAGE_KEYS.ACCENT_COLOR_BG_PREFERRED, false);
   const [accentColorBackgroundEnabled, setAccentColorBackgroundEnabled] = useState<boolean>(false);
   const [translucenceEnabled, setTranslucenceEnabled] = useLocalStorage<boolean>(STORAGE_KEYS.TRANSLUCENCE_ENABLED, false);
@@ -76,6 +79,7 @@ export function VisualEffectsProvider({ children }: { children: React.ReactNode 
     backgroundVisualizerEnabled,
     backgroundVisualizerStyle,
     backgroundVisualizerIntensity,
+    backgroundVisualizerSpeed,
     accentColorBackgroundPreferred,
     accentColorBackgroundEnabled,
     translucenceEnabled,
@@ -87,6 +91,7 @@ export function VisualEffectsProvider({ children }: { children: React.ReactNode 
     setBackgroundVisualizerEnabled,
     setBackgroundVisualizerStyle,
     setBackgroundVisualizerIntensity,
+    setBackgroundVisualizerSpeed,
     setAccentColorBackgroundPreferred,
     setTranslucenceEnabled,
     setTranslucenceOpacity,
@@ -98,6 +103,7 @@ export function VisualEffectsProvider({ children }: { children: React.ReactNode 
     backgroundVisualizerEnabled,
     backgroundVisualizerStyle,
     backgroundVisualizerIntensity,
+    backgroundVisualizerSpeed,
     accentColorBackgroundPreferred,
     accentColorBackgroundEnabled,
     translucenceEnabled,
@@ -109,6 +115,7 @@ export function VisualEffectsProvider({ children }: { children: React.ReactNode 
     setBackgroundVisualizerEnabled,
     setBackgroundVisualizerStyle,
     setBackgroundVisualizerIntensity,
+    setBackgroundVisualizerSpeed,
     setAccentColorBackgroundPreferred,
     setTranslucenceEnabled,
     setTranslucenceOpacity,

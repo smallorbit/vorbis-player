@@ -5,6 +5,7 @@ import { useVisualizerDebugConfig } from '../../contexts/VisualizerDebugContext'
 
 interface ParticleVisualizerProps {
   intensity: number;
+  speed?: number;
   accentColor: string;
   isPlaying: boolean;
   playbackPosition?: number;
@@ -35,6 +36,7 @@ interface Particle {
  */
 export const ParticleVisualizer: React.FC<ParticleVisualizerProps> = ({
   intensity,
+  speed,
   accentColor,
   isPlaying,
 }) => {
@@ -80,7 +82,7 @@ export const ParticleVisualizer: React.FC<ParticleVisualizerProps> = ({
     height: number
   ): void => {
     const baseSpeed = isPlaying ? 1.0 : p.pausedSpeed;
-    const speedMultiplier = baseSpeed * p.speedMultiplier;
+    const speedMultiplier = baseSpeed * p.speedMultiplier * (speed ?? 1.0);
 
     particles.forEach(particle => {
       particle.x += particle.vx * speedMultiplier * (deltaTime / 16);
@@ -98,7 +100,7 @@ export const ParticleVisualizer: React.FC<ParticleVisualizerProps> = ({
       particle.radius = Math.max(1.5, particle.baseRadius + (pulseValue - 0.5) * p.pulseVariation);
       particle.opacity = Math.max(0.1, Math.min(1.0, particle.baseOpacity + (pulseValue - 0.5) * p.opacityVariation));
     });
-  }, [p]);
+  }, [p, speed]);
 
   const renderParticles = useCallback((
     ctx: CanvasRenderingContext2D,

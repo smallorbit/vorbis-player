@@ -103,6 +103,8 @@ export const AlbumArtSection: React.FC<AlbumArtSectionProps> = React.memo(({
     setBackgroundVisualizerStyle,
     backgroundVisualizerIntensity,
     setBackgroundVisualizerIntensity,
+    backgroundVisualizerSpeed,
+    setBackgroundVisualizerSpeed,
     setTranslucenceEnabled,
     setVisualEffectsEnabled,
   } = useVisualEffectsContext();
@@ -278,6 +280,10 @@ export const AlbumArtSection: React.FC<AlbumArtSectionProps> = React.memo(({
     setBackgroundVisualizerIntensity(Math.max(0, Math.min(100, intensity)));
   }, [setBackgroundVisualizerIntensity]);
 
+  const handleBackgroundVisualizerSpeedChange = useCallback((speed: number) => {
+    setBackgroundVisualizerSpeed(speed);
+  }, [setBackgroundVisualizerSpeed]);
+
   return (
     <>
       <CardContent style={{
@@ -334,6 +340,8 @@ export const AlbumArtSection: React.FC<AlbumArtSectionProps> = React.memo(({
                 onBackgroundVisualizerStyleChange={handleBackgroundVisualizerStyleChange}
                 backgroundVisualizerIntensity={backgroundVisualizerIntensity}
                 onBackgroundVisualizerIntensityChange={handleBackgroundVisualizerIntensityChange}
+                backgroundVisualizerSpeed={backgroundVisualizerSpeed}
+                onBackgroundVisualizerSpeedChange={handleBackgroundVisualizerSpeedChange}
                 translucenceEnabled={translucenceEnabled}
                 onTranslucenceToggle={handleTranslucenceToggle}
                 isMobile={isMobile}

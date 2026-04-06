@@ -4,6 +4,7 @@ import { useCanvasVisualizer } from '../../hooks/useCanvasVisualizer';
 
 interface WaveVisualizerProps {
   intensity: number;
+  speed?: number;
   accentColor: string;
   isPlaying: boolean;
   playbackPosition?: number;
@@ -35,6 +36,7 @@ const PAUSED_SPEED_MULT = 0.3;
  */
 export const WaveVisualizer: React.FC<WaveVisualizerProps> = ({
   intensity,
+  speed,
   accentColor,
   isPlaying,
 }) => {
@@ -63,7 +65,7 @@ export const WaveVisualizer: React.FC<WaveVisualizerProps> = ({
 
   const updateItems = useCallback(
     (waves: Wave[], deltaTime: number, playing: boolean, _width: number, height: number): void => {
-      const speedMult = playing ? 1.0 : PAUSED_SPEED_MULT;
+      const speedMult = (playing ? 1.0 : PAUSED_SPEED_MULT) * (speed ?? 1.0);
       const dt = deltaTime / 16;
       waves.forEach((wave, i) => {
         wave.phase += wave.phaseSpeed * speedMult * dt;
@@ -72,7 +74,7 @@ export const WaveVisualizer: React.FC<WaveVisualizerProps> = ({
         wave.amplitude = height * (0.06 + (i / WAVE_COUNT) * 0.05);
       });
     },
-    []
+    [speed]
   );
 
   const renderItems = useCallback(
