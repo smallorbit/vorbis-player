@@ -1,4 +1,4 @@
-import type { ProviderId } from '@/types/domain';
+import type { MediaTrack, ProviderId } from '@/types/domain';
 
 const SESSION_KEY = 'vorbis-player-last-session';
 
@@ -8,17 +8,29 @@ export interface SessionSnapshot {
   collectionProvider?: ProviderId;
   trackIndex: number;
   trackId?: string;
-  trackOrder?: string[];  // ordered track IDs representing the queue at save time
-  // Display-only fields for the Resume card (shown before re-fetching)
+  /** Full ordered queue. Dropbox playbackRef and image are stripped (presigned URLs expire). */
+  queueTracks?: MediaTrack[];
+  // Display-only fields for the Resume card
   trackTitle?: string;
   trackArtist?: string;
   trackImage?: string;
   savedAt?: number;
 }
 
+/** Strip expiring presigned fields from Dropbox tracks before persisting. */
+function sanitizeTrack(track: MediaTrack): MediaTrack {
+  if (track.provider !== 'dropbox') return track;
+  return { ...track, playbackRef: { provider: 'dropbox', ref: '' }, image: '' };
+}
+
 export function saveSession(snapshot: SessionSnapshot): void {
   try {
-    localStorage.setItem(SESSION_KEY, JSON.stringify({ ...snapshot, savedAt: Date.now() }));
+    const sanitized: SessionSnapshot = {
+      ...snapshot,
+      savedAt: Date.now(),
+      queueTracks: snapshot.queueTracks?.map(sanitizeTrack),
+    };
+    localStorage.setItem(SESSION_KEY, JSON.stringify(sanitized));
   } catch (err) {
     console.warn('[session] saveSession failed:', err);
   }

@@ -81,15 +81,14 @@ const AudioPlayerComponent = () => {
   }, [resolveDisplayProvider]);
 
   const collectionNameRef = useRef<string>('');
-  const trackIds = useMemo(() => tracks.map(t => t.id), [tracks]);
 
   const { lastSession } = useSessionPersistence(
     selectedPlaylistId,
     collectionNameRef.current,
     currentTrack?.provider as import('@/types/domain').ProviderId | undefined,
+    tracks,
     currentTrackIndex,
     currentTrack?.id,
-    trackIds,
     currentTrack?.name,
     currentTrack?.artists,
     currentTrack?.image,
@@ -161,14 +160,17 @@ const AudioPlayerComponent = () => {
     setShowVisualEffects(false);
   }, [setShowVisualEffects]);
 
-  // Two-phase resume: first re-order the queue, then seek to the correct track.
-  const pendingReorderRef = useRef<string[] | null>(null);
+  // Two-phase resume:
+  // Phase 1 — loadCollection gives fresh URLs for the source collection; we merge in
+  //            any cross-provider extras from the saved queue and re-order everything.
+  // Phase 2 — once re-ordered tracks are in state, play the correct track by ID.
+  const pendingQueueRef = useRef<import('@/types/domain').MediaTrack[] | null>(null);
   const pendingPlayRef = useRef<{ trackId?: string; trackIndex: number } | null>(null);
 
   const handleResume = useCallback(() => {
     if (!lastSession) return;
-    if (lastSession.trackOrder && lastSession.trackOrder.length > 0) {
-      pendingReorderRef.current = lastSession.trackOrder;
+    if (lastSession.queueTracks && lastSession.queueTracks.length > 0) {
+      pendingQueueRef.current = lastSession.queueTracks;
     }
     pendingPlayRef.current = { trackId: lastSession.trackId, trackIndex: lastSession.trackIndex };
     handlers.loadCollection(lastSession.collectionId, lastSession.collectionProvider);
@@ -177,22 +179,30 @@ const AudioPlayerComponent = () => {
   useEffect(() => {
     if (tracks.length === 0) return;
 
-    // Phase 1: re-order the freshly-loaded tracks to match the saved queue order.
-    if (pendingReorderRef.current) {
-      const order = pendingReorderRef.current;
-      pendingReorderRef.current = null;
-      const byId = new Map(tracks.map(t => [t.id, t]));
+    // Phase 1: merge fresh collection tracks with any cross-provider extras, then re-order.
+    if (pendingQueueRef.current) {
+      const savedQueue = pendingQueueRef.current;
+      pendingQueueRef.current = null;
+
+      const freshById = new Map(tracks.map(t => [t.id, t]));
+      // Extras: tracks from the saved queue not present in the freshly-loaded collection
+      const extras = savedQueue.filter(t => !freshById.has(t.id));
+      const allById = new Map([
+        ...tracks.map(t => [t.id, t] as [string, import('@/types/domain').MediaTrack]),
+        ...extras.map(t => [t.id, t] as [string, import('@/types/domain').MediaTrack]),
+      ]);
+      const savedOrder = savedQueue.map(t => t.id);
       const reordered = [
-        ...order.flatMap(id => { const t = byId.get(id); return t ? [t] : []; }),
-        ...tracks.filter(t => !order.includes(t.id)),
+        ...savedOrder.flatMap(id => { const t = allById.get(id); return t ? [t] : []; }),
+        ...tracks.filter(t => !savedOrder.includes(t.id)),
       ];
       if (reordered.length > 0) {
         setTracks(reordered);
-        return; // wait for next render with reordered tracks before playing
+        return; // wait for next render with merged+reordered tracks before playing
       }
     }
 
-    // Phase 2: play the correct track.
+    // Phase 2: play the correct track by ID.
     if (pendingPlayRef.current) {
       const { trackId, trackIndex } = pendingPlayRef.current;
       pendingPlayRef.current = null;
