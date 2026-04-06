@@ -176,7 +176,12 @@ describe('PlaylistSelection', () => {
     renderPlaylistSelection();
 
     // #then
-    expect(screen.getByText('Loading your library...')).toBeTruthy();
+    // When auth is resolved but initial load is not complete, the component renders
+    // tab buttons with inline spinners — not the "Loading your library..." skeleton
+    // (that skeleton only shows when isLoading=true, i.e. before auth resolves).
+    expect(screen.getByRole('button', { name: /playlists/i })).toBeTruthy();
+    expect(screen.getByRole('button', { name: /albums/i })).toBeTruthy();
+    expect(screen.queryByText('Loading your library...')).toBeNull();
   });
 
   it('shows error message when no content is found after load', () => {
