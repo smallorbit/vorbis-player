@@ -21,6 +21,8 @@ import { useProviderContext } from '@/contexts/ProviderContext';
 import { toAlbumPlaylistId } from '@/constants/playlist';
 import { STORAGE_KEYS } from '@/constants/storage';
 import type { ClearCacheOptions } from '@/components/VisualEffectsMenu';
+import { useSessionPersistence } from '@/hooks/useSessionPersistence';
+import QuickAccessPanel from './QuickAccessPanel';
 
 const VisualEffectsMenu = lazy(() => import('./VisualEffectsMenu/index'));
 
@@ -29,6 +31,19 @@ const Container = styled.div`
   min-height: 100vh;
   min-height: 100dvh;
   ${flexCenter};
+`;
+
+const QuickAccessOverlay = styled.div`
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-bottom: 60px;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
 `;
 
 const ScreenReaderAnnouncement = styled.div`
@@ -49,8 +64,8 @@ const AudioPlayerComponent = () => {
     showVisualEffects,
     setShowVisualEffects,
   } = useVisualEffectsContext();
-  const { tracks, selectedPlaylistId } = useTrackListContext();
-  const { currentTrack } = useCurrentTrackContext();
+  const { tracks, selectedPlaylistId, setTracks, setOriginalTracks, setSelectedPlaylistId } = useTrackListContext();
+  const { currentTrack, currentTrackIndex, setCurrentTrackIndex, setShowQueue } = useCurrentTrackContext();
 
   const resolveDisplayProvider = useCallback((): import('@/types/domain').ProviderId | undefined => (
     (currentTrack?.provider as import('@/types/domain').ProviderId | undefined)
@@ -66,7 +81,23 @@ const AudioPlayerComponent = () => {
     setDisplayProviderId(resolveDisplayProvider());
   }, [resolveDisplayProvider]);
 
+  const collectionNameRef = useRef<string>('');
+  const collectionProviderRef = useRef<import('@/types/domain').ProviderId | undefined>(undefined);
+
+  const { lastSession } = useSessionPersistence(
+    selectedPlaylistId,
+    collectionNameRef.current,
+    collectionProviderRef.current,
+    tracks,
+    currentTrackIndex,
+    currentTrack?.id,
+    currentTrack?.name,
+    currentTrack?.artists,
+    currentTrack?.image,
+  );
+
   const handleAlbumPlay = useCallback((albumId: string) => {
+    collectionProviderRef.current = currentTrack?.provider as import('@/types/domain').ProviderId | undefined;
     handlers.loadCollection(
       toAlbumPlaylistId(albumId),
       currentTrack?.provider,
@@ -74,8 +105,35 @@ const AudioPlayerComponent = () => {
   }, [handlers, currentTrack?.provider]);
 
   const handlePlaylistSelect = useCallback(
-    (id: string, _name?: string, provider?: import('@/types/domain').ProviderId) => handlers.loadCollection(id, provider),
+    (id: string, name?: string, provider?: import('@/types/domain').ProviderId) => {
+      if (name) collectionNameRef.current = name;
+      collectionProviderRef.current = provider;
+      handlers.loadCollection(id, provider);
+    },
     [handlers]
+  );
+
+  const [showQuickAccessPanel, setShowQuickAccessPanel] = useState(false);
+  const handleOpenQuickAccessPanel = useCallback(() => setShowQuickAccessPanel(true), []);
+  const handleCloseQuickAccessPanel = useCallback(() => setShowQuickAccessPanel(false), []);
+
+  const [qapToast, setQapToast] = useState<{ message: string; actionLabel?: string; onAction?: () => void } | null>(null);
+  const handleQapToastDismiss = useCallback(() => setQapToast(null), []);
+  const handleAddToQueueFromPanel = useCallback(
+    async (id: string, name?: string, provider?: import('@/types/domain').ProviderId) => {
+      const result = await handlers.handleAddToQueue(id, name, provider);
+      if (result && result.added > 0) {
+        const title = result.collectionName?.trim();
+        const label = title ? `"${title}"` : 'this collection';
+        setQapToast({
+          message: `Added ${result.added} ${result.added === 1 ? 'track' : 'tracks'} from ${label} to your`,
+          actionLabel: 'queue',
+          onAction: () => { setShowQueue(true); setQapToast(null); },
+        });
+      }
+      return result;
+    },
+    [handlers, setShowQueue],
   );
 
   const playbackHandlers = useMemo(() => ({
@@ -84,16 +142,17 @@ const AudioPlayerComponent = () => {
     onNext: handlers.handleNext,
     onPrevious: handlers.handlePrevious,
     onTrackSelect: handlers.playTrack,
-    onOpenLibraryDrawer: handlers.handleOpenLibraryDrawer,
+    onOpenLibraryDrawer: handleOpenQuickAccessPanel,
     onCloseLibraryDrawer: handlers.handleCloseLibraryDrawer,
+    onOpenQuickAccessPanel: handleOpenQuickAccessPanel,
     onPlaylistSelect: handlePlaylistSelect,
     onAddToQueue: handlers.handleAddToQueue,
     onAlbumPlay: handleAlbumPlay,
-    onBackToLibrary: handlers.handleBackToLibrary,
+    onBackToLibrary: handleOpenQuickAccessPanel,
     onStartRadio: handlers.handleStartRadio,
     onRemoveFromQueue: handlers.handleRemoveFromQueue,
     onReorderQueue: handlers.handleReorderQueue,
-  }), [handlers, handleAlbumPlay, handlePlaylistSelect]);
+  }), [handlers, handleAlbumPlay, handlePlaylistSelect, handleOpenQuickAccessPanel]);
 
   const { chosenProviderId, activeDescriptor, connectedProviderIds, fallthroughNotification, dismissFallthroughNotification } = useProviderContext();
   // Setup is needed when no provider has been chosen yet and none are connected,
@@ -123,6 +182,30 @@ const AudioPlayerComponent = () => {
   const handleCloseSettings = useCallback(() => {
     setShowVisualEffects(false);
   }, [setShowVisualEffects]);
+
+  const pendingPlayRef = useRef<{ trackId?: string; trackIndex: number } | null>(null);
+
+  const handleResume = useCallback(() => {
+    if (!lastSession?.queueTracks?.length) return;
+    const { queueTracks, trackId, trackIndex, collectionId } = lastSession;
+    const targetIdx = trackId
+      ? queueTracks.findIndex(t => t.id === trackId)
+      : Math.min(trackIndex, queueTracks.length - 1);
+    const resolvedIdx = targetIdx >= 0 ? targetIdx : Math.min(trackIndex, queueTracks.length - 1);
+    setTracks(queueTracks);
+    setOriginalTracks(queueTracks);
+    setSelectedPlaylistId(collectionId);
+    setCurrentTrackIndex(resolvedIdx);
+    pendingPlayRef.current = { trackId, trackIndex: resolvedIdx };
+  }, [lastSession, setTracks, setOriginalTracks, setSelectedPlaylistId, setCurrentTrackIndex]);
+
+  useEffect(() => {
+    if (tracks.length === 0 || !pendingPlayRef.current) return;
+    const { trackId, trackIndex } = pendingPlayRef.current;
+    pendingPlayRef.current = null;
+    const idx = trackId ? tracks.findIndex(t => t.id === trackId) : -1;
+    handlers.playTrack(idx >= 0 ? idx : Math.min(trackIndex, tracks.length - 1));
+  }, [tracks, handlers]);
 
   const handleClearCache = useCallback(async (options: ClearCacheOptions) => {
     const { clearCacheWithOptions } = await import('@/services/cache/libraryCache');
@@ -155,15 +238,23 @@ const AudioPlayerComponent = () => {
 
     if (state.isLoading || state.error || selectedPlaylistId === null || tracks.length === 0) {
       return (
-        <ProfiledComponent id="PlayerStateRenderer">
-          <PlayerStateRenderer
-            isLoading={state.isLoading}
-            error={state.error}
-            selectedPlaylistId={selectedPlaylistId}
-            tracks={tracks}
-            onPlaylistSelect={handlePlaylistSelect}
-          />
-        </ProfiledComponent>
+        <>
+          <ProfiledComponent id="PlayerStateRenderer">
+            <PlayerStateRenderer
+              isLoading={state.isLoading}
+              error={state.error}
+              selectedPlaylistId={selectedPlaylistId}
+              tracks={tracks}
+              onPlaylistSelect={handlePlaylistSelect}
+              onAddToQueue={handleAddToQueueFromPanel}
+              lastSession={lastSession}
+              onResume={handleResume}
+            />
+          </ProfiledComponent>
+          {qapToast && (
+            <Toast message={qapToast.message} actionLabel={qapToast.actionLabel} onAction={qapToast.onAction} onDismiss={handleQapToastDismiss} />
+          )}
+        </>
       );
     }
 
@@ -225,6 +316,34 @@ const AudioPlayerComponent = () => {
           />
         </ProfiledComponent>
         {renderContent()}
+        {showQuickAccessPanel && isMainPlayerActive && (
+          <QuickAccessOverlay onClick={handleCloseQuickAccessPanel}>
+            <div
+              onClick={(e) => e.stopPropagation()}
+              style={{ width: '92%', maxWidth: 900, height: '80%', maxHeight: 'calc(100dvh - 120px)', margin: 'auto', position: 'relative' }}
+            >
+              <QuickAccessPanel
+                onPlaylistSelect={(id, name, provider) => {
+                  handleCloseQuickAccessPanel();
+                  handlePlaylistSelect(id, name, provider);
+                }}
+                onAddToQueue={async (id, name, provider) => {
+                  handleCloseQuickAccessPanel();
+                  return handleAddToQueueFromPanel(id, name, provider);
+                }}
+                onBrowseLibrary={() => {
+                  handleCloseQuickAccessPanel();
+                  handlers.handleOpenLibraryDrawer();
+                }}
+                lastSession={null}
+                onResume={() => {}}
+              />
+            </div>
+          </QuickAccessOverlay>
+        )}
+        {qapToast && (
+          <Toast message={qapToast.message} actionLabel={qapToast.actionLabel} onAction={qapToast.onAction} onDismiss={handleQapToastDismiss} />
+        )}
         {fallthroughNotification && (
           <Toast message={fallthroughNotification} onDismiss={dismissFallthroughNotification} />
         )}
@@ -246,7 +365,7 @@ const AudioPlayerComponent = () => {
                 isOpen={state.showLibraryDrawer}
                 onClose={handlers.handleCloseLibraryDrawer}
                 onPlaylistSelect={handlePlaylistSelect}
-                onAddToQueue={handlers.handleAddToQueue}
+                onAddToQueue={handleAddToQueueFromPanel}
               />
             </Suspense>
           </>

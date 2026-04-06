@@ -18,6 +18,7 @@ export interface PlaybackHandlers {
   onTrackSelect: (index: number) => void;
   onOpenLibraryDrawer: () => void;
   onCloseLibraryDrawer: () => void;
+  onOpenQuickAccessPanel?: () => void;
   onPlaylistSelect: (playlistId: string, playlistName: string, provider?: ProviderId) => void;
   onAddToQueue?: (
     playlistId: string,
@@ -155,6 +156,8 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({
   const handleSwipeDown = useCallback(() => {
     if (showLibraryDrawer) {
       handlers.onCloseLibraryDrawer();
+    } else if (handlers.onOpenQuickAccessPanel) {
+      handlers.onOpenQuickAccessPanel();
     } else {
       handleOpenLibraryDrawer();
     }

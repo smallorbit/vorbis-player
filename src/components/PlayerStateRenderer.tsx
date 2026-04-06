@@ -1,16 +1,17 @@
-import React, { Suspense, useCallback } from 'react';
+import React, { Suspense, useCallback, useState } from 'react';
 import styled, { keyframes } from 'styled-components';
 import type { MediaTrack } from '@/types/domain';
+import type { SessionSnapshot } from '@/services/sessionPersistence';
 import { Card, CardHeader, CardContent } from '../components/styled';
 import { Button } from '../components/styled';
 import { Alert, AlertDescription } from '../components/styled';
 import { flexColumn, cardBase } from '../styles/utils';
 import { theme } from '@/styles/theme';
 import { useProviderContext } from '@/contexts/ProviderContext';
+import QuickAccessPanel from './QuickAccessPanel';
 
 const PlaylistSelection = React.lazy(() => import('./PlaylistSelection'));
 
-// Improved loading animations
 const pulseWave = keyframes`
   0%, 100% {
     transform: scale(1);
@@ -53,7 +54,7 @@ const LoadingCard = styled(Card)<{ backgroundImage?: string; standalone?: boolea
   border-radius: 1.25rem;
   border: 1px solid ${({ theme }) => theme.colors.border};
   box-shadow: ${({ theme }) => theme.shadows.albumArt};
-  
+
   ${({ theme, backgroundImage }) => backgroundImage ? `
     &::after {
       content: '';
@@ -66,7 +67,7 @@ const LoadingCard = styled(Card)<{ backgroundImage?: string; standalone?: boolea
       border-radius: 1.25rem;
       z-index: 0;
     }
-    
+
     &::before {
       content: '';
       position: absolute;
@@ -150,7 +151,7 @@ const ProgressBar = styled.div`
   margin-top: 1.5rem;
   position: relative;
   overflow: hidden;
-  
+
   &::after {
     content: '';
     position: absolute;
@@ -169,6 +170,9 @@ interface PlayerStateRendererProps {
   selectedPlaylistId: string | null;
   tracks: MediaTrack[];
   onPlaylistSelect: (playlistId: string, playlistName?: string, provider?: import('@/types/domain').ProviderId) => void;
+  onAddToQueue: (id: string, name?: string, provider?: import('@/types/domain').ProviderId) => void;
+  lastSession: SessionSnapshot | null;
+  onResume: () => void;
 }
 
 const PlayerStateRenderer: React.FC<PlayerStateRendererProps> = ({
@@ -176,16 +180,31 @@ const PlayerStateRenderer: React.FC<PlayerStateRendererProps> = ({
   error,
   selectedPlaylistId,
   tracks,
-  onPlaylistSelect
+  onPlaylistSelect,
+  onAddToQueue,
+  lastSession,
+  onResume,
 }) => {
   const { activeDescriptor } = useProviderContext();
   const providerName = activeDescriptor?.name ?? 'Music Service';
+  const [showLibrary, setShowLibrary] = useState(false);
 
   const handleConnectClick = useCallback(() => {
     activeDescriptor?.auth.beginLogin();
   }, [activeDescriptor]);
 
-  // Show loading state
+  const handleBrowseLibrary = useCallback(() => {
+    setShowLibrary(true);
+  }, []);
+
+  const handlePlaylistSelectWrapped = useCallback(
+    (id: string, name?: string, provider?: import('@/types/domain').ProviderId) => {
+      setShowLibrary(false);
+      onPlaylistSelect(id, name, provider);
+    },
+    [onPlaylistSelect],
+  );
+
   if (isLoading) {
     return (
       <LoadingCard standalone>
@@ -201,7 +220,6 @@ const PlayerStateRenderer: React.FC<PlayerStateRendererProps> = ({
     );
   }
 
-  // Handle authentication errors
   if (error) {
     const isAuthError = error.includes('Redirecting to') ||
       error.includes('No authentication token') ||
@@ -240,27 +258,37 @@ const PlayerStateRenderer: React.FC<PlayerStateRendererProps> = ({
     );
   }
 
-  // Show playlist selection when no playlist is selected
   if (selectedPlaylistId === null || tracks.length === 0) {
+    if (showLibrary) {
+      return (
+        <Suspense fallback={
+          <LoadingCard standalone>
+            <LoadingContainer>
+              <MusicIcon />
+              <LoadingText>
+                <LoadingTitle>Loading Your Library</LoadingTitle>
+                <LoadingSubtext>Discovering your playlists and albums</LoadingSubtext>
+              </LoadingText>
+              <ProgressBar />
+            </LoadingContainer>
+          </LoadingCard>
+        }>
+          <PlaylistSelection onPlaylistSelect={handlePlaylistSelectWrapped} />
+        </Suspense>
+      );
+    }
+
     return (
-      <Suspense fallback={
-        <LoadingCard standalone>
-          <LoadingContainer>
-            <MusicIcon />
-            <LoadingText>
-              <LoadingTitle>Loading Your Library</LoadingTitle>
-              <LoadingSubtext>Discovering your playlists and albums</LoadingSubtext>
-            </LoadingText>
-            <ProgressBar />
-          </LoadingContainer>
-        </LoadingCard>
-      }>
-        <PlaylistSelection onPlaylistSelect={onPlaylistSelect} />
-      </Suspense>
+      <QuickAccessPanel
+        onPlaylistSelect={handlePlaylistSelectWrapped}
+        onAddToQueue={onAddToQueue}
+        onBrowseLibrary={handleBrowseLibrary}
+        lastSession={lastSession}
+        onResume={onResume}
+      />
     );
   }
 
-  // Return null when ready to show main player
   return null;
 };
 
