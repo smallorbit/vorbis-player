@@ -1,7 +1,8 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect, useCallback } from 'react';
 import type { PlaylistInfo, AlbumInfo } from '@/services/spotify';
 import type { ProviderId } from '@/types/domain';
 import { getLikedSongsGradient } from '@/components/PlaylistSelection/utils';
+import { useLongPress } from '@/hooks/useLongPress';
 import {
   RingSection,
   RingContainer,
@@ -23,6 +24,7 @@ interface PinRingProps {
   likedSongsCount: number;
   onLoadCollection: (id: string, name: string, provider?: ProviderId) => void;
   onLoadLikedSongs: (providerIds: ProviderId[]) => void;
+  onAddToQueue: (id: string, name: string, provider?: ProviderId) => void;
   accentColor?: string;
 }
 
@@ -38,6 +40,42 @@ type SatelliteItem =
   | { kind: 'playlist'; item: PlaylistInfo }
   | { kind: 'album'; item: AlbumInfo };
 
+interface SatelliteProps {
+  $x: number;
+  $y: number;
+  id: string;
+  name: string;
+  provider?: ProviderId;
+  imgUrl?: string;
+  fallback: string;
+  onPlay: (id: string, name: string, provider?: ProviderId) => void;
+  onAddToQueue: (id: string, name: string, provider?: ProviderId) => void;
+}
+
+const Satellite: React.FC<SatelliteProps> = ({
+  $x, $y, id, name, provider, imgUrl, fallback, onPlay, onAddToQueue,
+}) => {
+  const handlePlay = useCallback(() => onPlay(id, name, provider), [id, name, provider, onPlay]);
+  const handleAdd = useCallback(() => onAddToQueue(id, name, provider), [id, name, provider, onAddToQueue]);
+
+  const longPress = useLongPress({ onShortPress: handlePlay, onLongPress: handleAdd });
+
+  return (
+    <SatelliteButton
+      $x={$x}
+      $y={$y}
+      title={name}
+      onContextMenu={(e) => { e.preventDefault(); handleAdd(); }}
+      {...longPress}
+    >
+      <SatelliteArt>
+        {imgUrl ? <img src={imgUrl} alt={name} loading="lazy" /> : fallback}
+      </SatelliteArt>
+      <SatelliteName>{name}</SatelliteName>
+    </SatelliteButton>
+  );
+};
+
 const PinRing: React.FC<PinRingProps> = ({
   pinnedPlaylists,
   pinnedAlbums,
@@ -45,6 +83,7 @@ const PinRing: React.FC<PinRingProps> = ({
   likedSongsCount,
   onLoadCollection,
   onLoadLikedSongs,
+  onAddToQueue,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [radius, setRadius] = useState(110);
@@ -93,9 +132,7 @@ const PinRing: React.FC<PinRingProps> = ({
     activeProviderIds.length === 1 ? activeProviderIds[0] : 'unified',
   );
 
-  const handleLikedSongs = () => {
-    onLoadLikedSongs(activeProviderIds);
-  };
+  const handleLikedSongs = () => onLoadLikedSongs(activeProviderIds);
 
   return (
     <RingSection>
@@ -107,45 +144,35 @@ const PinRing: React.FC<PinRingProps> = ({
           }
           if (sat.kind === 'playlist') {
             const p = sat.item;
-            const imgUrl = getImageUrl(p.images);
             return (
-              <SatelliteButton
+              <Satellite
                 key={`playlist-${p.id}`}
                 $x={pos.x}
                 $y={pos.y}
-                onClick={() => onLoadCollection(p.id, p.name, p.provider)}
-                title={p.name}
-              >
-                <SatelliteArt>
-                  {imgUrl ? (
-                    <img src={imgUrl} alt={p.name} loading="lazy" />
-                  ) : (
-                    '♪'
-                  )}
-                </SatelliteArt>
-                <SatelliteName>{p.name}</SatelliteName>
-              </SatelliteButton>
+                id={p.id}
+                name={p.name}
+                provider={p.provider}
+                imgUrl={getImageUrl(p.images)}
+                fallback="♪"
+                onPlay={onLoadCollection}
+                onAddToQueue={onAddToQueue}
+              />
             );
           }
           const a = sat.item;
-          const imgUrl = getImageUrl(a.images);
           return (
-            <SatelliteButton
+            <Satellite
               key={`album-${a.id}`}
               $x={pos.x}
               $y={pos.y}
-              onClick={() => onLoadCollection(`album:${a.id}`, a.name, a.provider)}
-              title={a.name}
-            >
-              <SatelliteArt>
-                {imgUrl ? (
-                  <img src={imgUrl} alt={a.name} loading="lazy" />
-                ) : (
-                  '💿'
-                )}
-              </SatelliteArt>
-              <SatelliteName>{a.name}</SatelliteName>
-            </SatelliteButton>
+              id={`album:${a.id}`}
+              name={a.name}
+              provider={a.provider}
+              imgUrl={getImageUrl(a.images)}
+              fallback="💿"
+              onPlay={onLoadCollection}
+              onAddToQueue={onAddToQueue}
+            />
           );
         })}
 

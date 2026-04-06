@@ -225,6 +225,7 @@ const AudioPlayerComponent = () => {
             selectedPlaylistId={selectedPlaylistId}
             tracks={tracks}
             onPlaylistSelect={handlePlaylistSelect}
+            onAddToQueue={handlers.handleAddToQueue}
             lastSession={lastSession}
             onResume={handleResume}
           />
@@ -300,6 +301,9 @@ const AudioPlayerComponent = () => {
                 onPlaylistSelect={(id, name, provider) => {
                   handleCloseQuickAccessPanel();
                   handlePlaylistSelect(id, name, provider);
+                }}
+                onAddToQueue={(id, name, provider) => {
+                  handlers.handleAddToQueue(id, name, provider);
                 }}
                 onBrowseLibrary={() => {
                   handleCloseQuickAccessPanel();

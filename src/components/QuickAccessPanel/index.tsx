@@ -20,6 +20,7 @@ import {
 
 export interface QuickAccessPanelProps {
   onPlaylistSelect: (id: string, name: string, provider?: ProviderId) => void;
+  onAddToQueue: (id: string, name?: string, provider?: ProviderId) => void;
   onBrowseLibrary: () => void;
   lastSession: SessionSnapshot | null;
   onResume: () => void;
@@ -27,6 +28,7 @@ export interface QuickAccessPanelProps {
 
 const QuickAccessPanel: React.FC<QuickAccessPanelProps> = ({
   onPlaylistSelect,
+  onAddToQueue,
   onBrowseLibrary,
   lastSession,
   onResume,
@@ -92,6 +94,7 @@ const QuickAccessPanel: React.FC<QuickAccessPanelProps> = ({
         likedSongsCount={effectiveLikedCount}
         onLoadCollection={handleLoadCollection}
         onLoadLikedSongs={handleLoadLikedSongs}
+        onAddToQueue={onAddToQueue}
       />
 
       {showProviderChips && (

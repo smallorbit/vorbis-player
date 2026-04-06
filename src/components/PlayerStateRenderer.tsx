@@ -170,6 +170,7 @@ interface PlayerStateRendererProps {
   selectedPlaylistId: string | null;
   tracks: MediaTrack[];
   onPlaylistSelect: (playlistId: string, playlistName?: string, provider?: import('@/types/domain').ProviderId) => void;
+  onAddToQueue: (id: string, name?: string, provider?: import('@/types/domain').ProviderId) => void;
   lastSession: SessionSnapshot | null;
   onResume: () => void;
 }
@@ -180,6 +181,7 @@ const PlayerStateRenderer: React.FC<PlayerStateRendererProps> = ({
   selectedPlaylistId,
   tracks,
   onPlaylistSelect,
+  onAddToQueue,
   lastSession,
   onResume,
 }) => {
@@ -279,6 +281,7 @@ const PlayerStateRenderer: React.FC<PlayerStateRendererProps> = ({
     return (
       <QuickAccessPanel
         onPlaylistSelect={handlePlaylistSelectWrapped}
+        onAddToQueue={onAddToQueue}
         onBrowseLibrary={handleBrowseLibrary}
         lastSession={lastSession}
         onResume={onResume}
