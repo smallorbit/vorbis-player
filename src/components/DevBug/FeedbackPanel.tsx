@@ -520,6 +520,7 @@ export function FeedbackPanel(props: FeedbackPanelProps) {
     const host = document.createElement('div');
     host.style.cssText =
       'position:fixed;top:0;left:0;width:0;height:0;overflow:visible;z-index:2147483646;pointer-events:none;';
+    host.setAttribute('data-devbug', '');
     document.body.appendChild(host);
     const shadow = host.attachShadow({ mode: 'open' });
     hostRef.current = host;

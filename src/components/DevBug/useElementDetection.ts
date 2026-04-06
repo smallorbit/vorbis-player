@@ -36,6 +36,11 @@ export function useElementDetection(
           return;
         }
 
+        if (element.closest('[data-devbug]')) {
+          onDetectRef.current(null);
+          return;
+        }
+
         onDetectRef.current({
           element,
           tagName: element.tagName.toLowerCase(),

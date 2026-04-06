@@ -39,6 +39,8 @@ function collectOverlappingElements(rect: SelectionRect): { elements: Element[];
   for (const el of all) {
     if (seen.has(el)) continue;
 
+    if (el.closest('[data-devbug]')) continue;
+
     const computed = window.getComputedStyle(el);
     const isHidden =
       computed.display === 'none' ||
