@@ -1,4 +1,4 @@
-import React, { Suspense, memo } from 'react';
+import React, { Suspense, memo, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import styled from 'styled-components';
 import { useVerticalSwipeGesture } from '@/hooks/useVerticalSwipeGesture';
@@ -136,6 +136,9 @@ const QueueBottomSheet = memo<QueueBottomSheetProps>(function QueueBottomSheet({
   onSaveQueue,
   canSaveQueue,
 }) {
+  const hasBeenOpenedRef = useRef(false);
+  if (isOpen) hasBeenOpenedRef.current = true;
+
   const { ref: headerRef, isDragging, dragOffset } = useVerticalSwipeGesture({
     onSwipeDown: onClose,
     threshold: 80,
@@ -143,6 +146,8 @@ const QueueBottomSheet = memo<QueueBottomSheetProps>(function QueueBottomSheet({
   });
 
   const effectiveDragOffset = isOpen && isDragging ? dragOffset : 0;
+
+  if (!hasBeenOpenedRef.current) return null;
 
   return createPortal(
     <>

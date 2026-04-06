@@ -165,7 +165,7 @@ export const DrawerOrchestrator: React.FC<DrawerOrchestratorProps> = React.memo(
 
   return (
     <>
-      <Suspense fallback={<QueueLoadingFallback />}>
+      <Suspense fallback={showQueue ? <QueueLoadingFallback /> : null}>
         {isMobile ? (
           <ProfiledComponent id="QueueBottomSheet">
             <QueueBottomSheet

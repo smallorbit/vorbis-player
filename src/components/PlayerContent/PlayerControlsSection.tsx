@@ -1,4 +1,4 @@
-import React, { Suspense, lazy, useState, useCallback } from 'react';
+import React, { Suspense, lazy, useState, useCallback, useRef } from 'react';
 import { useTheme } from 'styled-components';
 import { CardContent } from '@/components/styled';
 import SpotifyPlayerControls from '@/components/SpotifyPlayerControls';
@@ -133,6 +133,9 @@ export const PlayerControlsSection: React.FC<PlayerControlsSectionProps> = React
   const { enabled: profilerEnabled, toggle: profilerToggle } = useProfilingContext();
   const vizDebugCtx = useVisualizerDebug();
   const visualizerDebugEnabled = vizDebugCtx?.isDebugMode ?? false;
+
+  const settingsHasBeenOpenedRef = useRef(false);
+  if (showVisualEffects) settingsHasBeenOpenedRef.current = true;
 
   const [showHelp, setShowHelp] = useState(false);
   const toggleHelp = useCallback(() => setShowHelp(prev => !prev), []);
@@ -325,17 +328,19 @@ export const PlayerControlsSection: React.FC<PlayerControlsSectionProps> = React
           onFlipToggle={onFlipToggle}
         />
       </ProfiledComponent>
-      <Suspense fallback={<VisualEffectsLoadingFallback />}>
-        <VisualEffectsMenu
-          isOpen={showVisualEffects}
-          onClose={handleCloseVisualEffects}
-          onClearCache={handleClearCache}
-          profilerEnabled={profilerEnabled}
-          onProfilerToggle={handleProfilerToggle}
-          visualizerDebugEnabled={visualizerDebugEnabled}
-          onVisualizerDebugToggle={handleVisualizerDebugToggle}
-        />
-      </Suspense>
+      {settingsHasBeenOpenedRef.current && (
+        <Suspense fallback={<VisualEffectsLoadingFallback />}>
+          <VisualEffectsMenu
+            isOpen={showVisualEffects}
+            onClose={handleCloseVisualEffects}
+            onClearCache={handleClearCache}
+            profilerEnabled={profilerEnabled}
+            onProfilerToggle={handleProfilerToggle}
+            visualizerDebugEnabled={visualizerDebugEnabled}
+            onVisualizerDebugToggle={handleVisualizerDebugToggle}
+          />
+        </Suspense>
+      )}
       <Suspense fallback={null}>
         <KeyboardShortcutsHelp isOpen={showHelp} onClose={closeHelp} />
       </Suspense>

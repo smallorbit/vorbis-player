@@ -82,6 +82,9 @@ const DrawerContent = styled.div`
 `;
 
 const LibraryDrawer = React.memo(function LibraryDrawer({ isOpen, onClose, onPlaylistSelect, onAddToQueue, initialSearchQuery, initialViewMode }: LibraryDrawerProps) {
+  const hasBeenOpenedRef = useRef(false);
+  if (isOpen) hasBeenOpenedRef.current = true;
+
   const [isRefreshing, setIsRefreshing] = useState(false);
   const refreshTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const selectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -124,6 +127,8 @@ const LibraryDrawer = React.memo(function LibraryDrawer({ isOpen, onClose, onPla
   });
 
   const effectiveDragOffset = isOpen && isDragging ? dragOffset : 0;
+
+  if (!hasBeenOpenedRef.current) return null;
 
   return createPortal(
     <>
