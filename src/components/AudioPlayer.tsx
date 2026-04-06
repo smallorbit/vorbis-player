@@ -63,7 +63,7 @@ const AudioPlayerComponent = () => {
     showVisualEffects,
     setShowVisualEffects,
   } = useVisualEffectsContext();
-  const { tracks, selectedPlaylistId, setTracks } = useTrackListContext();
+  const { tracks, selectedPlaylistId, setTracks, setOriginalTracks } = useTrackListContext();
   const { currentTrack, currentTrackIndex } = useCurrentTrackContext();
 
   const resolveDisplayProvider = useCallback((): import('@/types/domain').ProviderId | undefined => (
@@ -198,6 +198,7 @@ const AudioPlayerComponent = () => {
       ];
       if (reordered.length > 0) {
         setTracks(reordered);
+        setOriginalTracks(reordered);
         return; // wait for next render with merged+reordered tracks before playing
       }
     }
@@ -209,7 +210,7 @@ const AudioPlayerComponent = () => {
       const idx = trackId ? tracks.findIndex(t => t.id === trackId) : -1;
       handlers.playTrack(idx >= 0 ? idx : Math.min(trackIndex, tracks.length - 1));
     }
-  }, [tracks, handlers, setTracks]);
+  }, [tracks, handlers, setTracks, setOriginalTracks]);
 
   const handleClearCache = useCallback(async (options: ClearCacheOptions) => {
     const { clearCacheWithOptions } = await import('@/services/cache/libraryCache');
