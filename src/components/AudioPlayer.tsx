@@ -322,9 +322,7 @@ const AudioPlayerComponent = () => {
                   handleCloseQuickAccessPanel();
                   handlePlaylistSelect(id, name, provider);
                 }}
-                onAddToQueue={(id, name, provider) => {
-                  handlers.handleAddToQueue(id, name, provider);
-                }}
+                onAddToQueue={handleAddToQueueFromPanel}
                 onBrowseLibrary={() => {
                   handleCloseQuickAccessPanel();
                   handlers.handleOpenLibraryDrawer();
