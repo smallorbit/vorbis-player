@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { buildBugReport, collectBrowserInfo, extractElementInfo } from '../reportBuilder';
+import { buildBugReport, collectBrowserInfo, extractElementInfo, getReactComponentName } from '../reportBuilder';
 import type { SelectedElement } from '@/types/devbug';
 
 const FIXED_UUID = 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee';
@@ -253,5 +253,129 @@ describe('extractElementInfo', () => {
     expect(info.computedStyles).toHaveProperty('position');
 
     document.body.removeChild(el);
+  });
+});
+
+describe('getReactComponentName', () => {
+  function makeElementWithFiber(fiberType: unknown): Element {
+    const el = document.createElement('div');
+    Object.defineProperty(el, '__reactFiber$test', {
+      value: { type: fiberType, return: null },
+      writable: true,
+      configurable: true,
+      enumerable: true,
+    });
+    return el;
+  }
+
+  it('returns null when element has no React fiber key', () => {
+    // #given
+    const el = document.createElement('div');
+
+    // #when
+    const name = getReactComponentName(el);
+
+    // #then
+    expect(name).toBeNull();
+  });
+
+  it('resolves displayName from an object type (styled-component wrapper)', () => {
+    // #given
+    const styledType = { displayName: 'Styled(AlbumArtContainer)' };
+    const el = makeElementWithFiber(styledType);
+
+    // #when
+    const name = getReactComponentName(el);
+
+    // #then
+    expect(name).toBe('AlbumArtContainer');
+  });
+
+  it('resolves displayName from a ForwardRef wrapper', () => {
+    // #given
+    const forwardRefType = { displayName: 'ForwardRef(PlayerContainer)' };
+    const el = makeElementWithFiber(forwardRefType);
+
+    // #when
+    const name = getReactComponentName(el);
+
+    // #then
+    expect(name).toBe('PlayerContainer');
+  });
+
+  it('resolves displayName from a Memo wrapper', () => {
+    // #given
+    const memoType = { displayName: 'Memo(TrackList)' };
+    const el = makeElementWithFiber(memoType);
+
+    // #when
+    const name = getReactComponentName(el);
+
+    // #then
+    expect(name).toBe('TrackList');
+  });
+
+  it('skips generic styled.div function name and walks up the fiber tree', () => {
+    // #given
+    const el = document.createElement('div');
+    const styledFn = function styled() {};
+    Object.defineProperty(styledFn, 'name', { value: 'styled.div', configurable: true });
+    const parentFiber = { type: function AlbumArtContainer() {}, return: null };
+    Object.defineProperty(el, '__reactFiber$test', {
+      value: { type: styledFn, return: parentFiber },
+      writable: true,
+      configurable: true,
+      enumerable: true,
+    });
+
+    // #when
+    const name = getReactComponentName(el);
+
+    // #then
+    expect(name).toBe('AlbumArtContainer');
+  });
+
+  it('resolves displayName on a function type before checking name', () => {
+    // #given
+    const fn = function _c() {};
+    Object.defineProperty(fn, 'displayName', { value: 'VolumeBar', configurable: true });
+    const el = makeElementWithFiber(fn);
+
+    // #when
+    const name = getReactComponentName(el);
+
+    // #then
+    expect(name).toBe('VolumeBar');
+  });
+
+  it('returns plain function name when not generic', () => {
+    // #given
+    const fn = function TrackInfo() {};
+    const el = makeElementWithFiber(fn);
+
+    // #when
+    const name = getReactComponentName(el);
+
+    // #then
+    expect(name).toBe('TrackInfo');
+  });
+
+  it('returns null when all fiber types are generic', () => {
+    // #given
+    const el = document.createElement('div');
+    const styledFn = function styled() {};
+    Object.defineProperty(styledFn, 'name', { value: 'styled.div', configurable: true });
+    Object.defineProperty(el, '__reactFiber$test', {
+      value: { type: styledFn, return: null },
+      writable: true,
+      configurable: true,
+      enumerable: true,
+    });
+
+    // #when
+    const name = getReactComponentName(el);
+
+    // #then
+    expect(name).toBeNull();
   });
 });

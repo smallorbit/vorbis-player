@@ -2,12 +2,19 @@ import type { BugReport, ConsoleEntry, SelectedElement } from '@/types/devbug';
 
 const CONSOLE_LOG_LIMIT = 10;
 
+function resolveComponentLabel(element: SelectedElement): string {
+  const name = element.reactComponentName;
+  if (name && !/^styled\./i.test(name) && !/^Styled\(/i.test(name)) {
+    return name;
+  }
+  const tagMatch = element.cssSelector.match(/^[a-z][a-z0-9]*/i);
+  return tagMatch ? tagMatch[0] : element.cssSelector;
+}
+
 export function formatIssueTitle(report: BugReport): string {
   const categories = report.categories.length > 0 ? report.categories.join(', ') : 'general';
   const component =
-    report.elements.length > 0
-      ? (report.elements[0].reactComponentName ?? report.elements[0].cssSelector)
-      : 'unknown';
+    report.elements.length > 0 ? resolveComponentLabel(report.elements[0]) : 'unknown';
   return `[DevBug] ${categories} — ${component}`;
 }
 
