@@ -97,6 +97,8 @@ AppContainer (flexCenter, min-height: 100dvh)
 
 ### Multi-Provider Architecture
 
+#### Provider Model
+
 Defined in `src/types/providers.ts` and `src/types/domain.ts`.
 
 **Provider interfaces**: `AuthProvider`, `CatalogProvider`, `PlaybackProvider`
@@ -129,6 +131,8 @@ Defined in `src/types/providers.ts` and `src/types/domain.ts`.
 - `useRadio` + `radioService` generate suggestions from Last.fm, then match against the active provider catalog.
 - Unmatched suggestions can be resolved via Spotify search (`spotifyResolver`) when authenticated.
 - Provider switches during radio now follow the same driving-provider routing (no special queue handoff modal).
+
+#### Provider Implementation Details
 
 **Dropbox folder structure**:
 ```
