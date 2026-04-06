@@ -59,17 +59,21 @@ export const GridWaveVisualizer: React.FC<GridWaveVisualizerProps> = ({
       const cols = Math.ceil(width / spacing) + 1;
       const rows = Math.ceil(height / spacing) + 1;
 
+      const centerX = (cols - 1) * spacing / 2;
       const particles: GridParticle[] = [];
       for (let row = 0; row < rows; row++) {
         for (let col = 0; col < cols; col++) {
+          const x = col * spacing;
+          const edgeFactor = Math.abs(x - centerX) / Math.max(1, centerX);
           const depthFactor = row / Math.max(1, rows - 1);
+          const intensityFactor = edgeFactor * g.edgeIntensity + depthFactor * (1 - g.edgeIntensity);
           particles.push({
             gridX: col,
             gridY: row,
-            baseX: col * spacing,
+            baseX: x,
             baseY: row * spacing,
-            baseRadius: g.baseRadius * (0.7 + depthFactor * 0.6),
-            color: generateColorVariant(baseColor, 0.3 + depthFactor * 0.5),
+            baseRadius: g.baseRadius * (0.7 + intensityFactor * 0.6),
+            color: generateColorVariant(baseColor, 0.3 + intensityFactor * 0.5),
           });
         }
       }
@@ -123,6 +127,7 @@ export const GridWaveVisualizer: React.FC<GridWaveVisualizerProps> = ({
       const intensityScale = Math.max(0.3, intensityValue / 60);
       const amplitude = g.amplitudeBase * Math.min(width, height) * intensityScale;
       const rows = Math.ceil(height / g.spacing) + 1;
+      const centerX = width / 2;
 
       state.particles.forEach(particle => {
         let displacement = 0;
@@ -135,8 +140,10 @@ export const GridWaveVisualizer: React.FC<GridWaveVisualizerProps> = ({
         const normalizedDisp = (displacement + 1) / 2;
         const yOffset = displacement * amplitude;
 
+        const edgeFactor = Math.abs(particle.baseX - centerX) / Math.max(1, centerX);
         const depthFactor = particle.gridY / Math.max(1, rows - 1);
-        const perspectiveScale = 1.0 - g.perspectiveStrength * (1.0 - depthFactor);
+        const spatialFactor = edgeFactor * g.edgeIntensity + depthFactor * (1 - g.edgeIntensity);
+        const perspectiveScale = 1.0 - g.perspectiveStrength * (1.0 - spatialFactor);
 
         const radius = Math.max(0.5, particle.baseRadius * (1 + normalizedDisp * g.radiusWaveScale) * perspectiveScale);
         const opacity = Math.max(0.05, Math.min(1.0,
@@ -164,10 +171,14 @@ export const GridWaveVisualizer: React.FC<GridWaveVisualizerProps> = ({
     (states: GridWaveState[], color: string): void => {
       const state = states[0];
       if (!state) return;
+      const cols = Math.ceil(state.width / g.spacing) + 1;
       const rows = Math.ceil(state.height / g.spacing) + 1;
+      const centerX = (cols - 1) * g.spacing / 2;
       state.particles.forEach(particle => {
+        const edgeFactor = Math.abs(particle.baseX - centerX) / Math.max(1, centerX);
         const depthFactor = particle.gridY / Math.max(1, rows - 1);
-        particle.color = generateColorVariant(color, 0.3 + depthFactor * 0.5);
+        const intensityFactor = edgeFactor * g.edgeIntensity + depthFactor * (1 - g.edgeIntensity);
+        particle.color = generateColorVariant(color, 0.3 + intensityFactor * 0.5);
       });
     },
     [g]

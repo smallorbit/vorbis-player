@@ -63,6 +63,7 @@ export interface GridWaveVisualizerConfig {
   frequencyBase: number;
   frequencySpread: number;
   perspectiveStrength: number;
+  edgeIntensity: number;
   baseRadius: number;
   radiusWaveScale: number;
   opacityBase: number;
@@ -154,7 +155,8 @@ const DEFAULT_GRID_WAVE: GridWaveVisualizerConfig = {
   amplitudeBase: 0.12,
   frequencyBase: 0.005,
   frequencySpread: 0.003,
-  perspectiveStrength: 0.4,
+  perspectiveStrength: 0.12,
+  edgeIntensity: 0.7,
   baseRadius: 2.5,
   radiusWaveScale: 1.2,
   opacityBase: 0.25,
@@ -165,17 +167,17 @@ const DEFAULT_GRID_WAVE: GridWaveVisualizerConfig = {
 };
 
 const DEFAULT_WAVE: WaveVisualizerConfig = {
-  waveCount: 4,
-  phaseSpeedMin: 0.004,
-  phaseSpeedSpread: 0.003,
-  amplitudeBase: 0.06,
-  amplitudeLayerScale: 0.05,
-  frequencyMin: 0.003,
+  waveCount: 7,
+  phaseSpeedMin: 0.003,
+  phaseSpeedSpread: 0.012,
+  amplitudeBase: 0.03,
+  amplitudeLayerScale: 0.055,
+  frequencyMin: 0.0025,
   frequencySpread: 0.002,
-  yBaseStart: 0.55,
-  yBaseLayerScale: 0.12,
-  opacityBase: 0.12,
-  opacityLayerScale: 0.1,
+  yBaseStart: 0.15,
+  yBaseLayerScale: 0.7,
+  opacityBase: 0.06,
+  opacityLayerScale: 0.16,
   pausedSpeedMult: 0.3,
 };
 
