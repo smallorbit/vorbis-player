@@ -40,9 +40,9 @@ const QuickRow = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: ${theme.spacing.sm};
+  gap: ${theme.spacing.xs};
   width: 100%;
-  margin-top: ${theme.spacing.xs};
+  margin-top: 2px;
 `;
 
 const RowLine = styled.div`
@@ -127,10 +127,10 @@ const SectionCard = styled.div`
   width: 100%;
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: ${theme.borderRadius.lg};
-  padding: 8px 10px;
+  padding: 6px 8px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
 `;
 
 const SectionHeader = styled.div`
@@ -151,14 +151,14 @@ const SubSettings = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 5px;
+  gap: 3px;
 `;
 
 const SubSettingRow = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: ${theme.spacing.sm};
+  gap: ${theme.spacing.xs};
   flex-wrap: wrap;
 `;
 
