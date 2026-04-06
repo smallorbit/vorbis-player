@@ -319,7 +319,7 @@ const AudioPlayerComponent = () => {
           <QuickAccessOverlay onClick={handleCloseQuickAccessPanel}>
             <div
               onClick={(e) => e.stopPropagation()}
-              style={{ width: '100%', maxWidth: 480, aspectRatio: '1', margin: 'auto', position: 'relative' }}
+              style={{ width: '92%', maxWidth: 900, height: '85%', maxHeight: '85vh', margin: 'auto', position: 'relative' }}
             >
               <QuickAccessPanel
                 onPlaylistSelect={(id, name, provider) => {
