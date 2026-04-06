@@ -100,21 +100,22 @@ export const ResumeLabel = styled.div`
 export const GridSection = styled.div`
   flex: 1;
   min-height: 0;
-  padding: 8px;
+  padding: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
+  container-type: size;
 `;
 
 export const GridContainer = styled.div`
+  --grid-size: min(100cqi, 100cqb);
+  width: var(--grid-size);
+  height: var(--grid-size);
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   grid-template-rows: repeat(4, 1fr);
   gap: 6px;
-  aspect-ratio: 1;
-  max-width: 100%;
-  max-height: 100%;
 `;
 
 export const LikedSongsCard = styled.button`
