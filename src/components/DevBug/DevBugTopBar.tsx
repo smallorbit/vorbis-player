@@ -1,12 +1,13 @@
 import { createPortal } from 'react-dom';
-import styled, { keyframes } from 'styled-components';
+import styled, { keyframes, css } from 'styled-components';
+import { useReducedMotion } from '@/hooks/useReducedMotion';
 
 const slideDown = keyframes`
   from { transform: translateY(-100%); opacity: 0; }
   to { transform: translateY(0); opacity: 1; }
 `;
 
-const TopBarContainer = styled.div`
+const TopBarContainer = styled.div<{ $reducedMotion: boolean }>`
   position: fixed;
   top: 0;
   left: 0;
@@ -20,13 +21,22 @@ const TopBarContainer = styled.div`
   padding: 6px 16px;
   text-align: center;
   cursor: crosshair;
-  animation: ${slideDown} 0.2s ease-out;
   user-select: none;
+
+  ${({ $reducedMotion }) =>
+    !$reducedMotion &&
+    css`
+      animation: ${slideDown} 0.2s ease-out;
+    `}
 `;
 
 export function DevBugTopBar() {
+  const reducedMotion = useReducedMotion();
+
   return createPortal(
-    <TopBarContainer>Preview Mode — click an element to inspect</TopBarContainer>,
+    <TopBarContainer $reducedMotion={reducedMotion}>
+      Preview Mode — click an element to inspect
+    </TopBarContainer>,
     document.body,
   );
 }
