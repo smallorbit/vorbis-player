@@ -4,8 +4,6 @@ import { createPortal } from 'react-dom';
 import { theme } from '@/styles/theme';
 import {
   ChipRow,
-  ChipRowContainer,
-  ChipRowFade,
   Chip,
   SearchChipWrapper,
   SearchChipIcon,
@@ -68,11 +66,9 @@ const FilterChipRow = React.memo(function FilterChipRow({
   const [searchExpanded, setSearchExpanded] = useState(false);
   const [artistListOpen, setArtistListOpen] = useState(false);
   const [artistMenuPos, setArtistMenuPos] = useState<{ top: number; left: number } | null>(null);
-  const [showRightFade, setShowRightFade] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const artistRef = useRef<HTMLDivElement>(null);
   const artistDropdownRef = useRef<HTMLDivElement>(null);
-  const chipRowRef = useRef<HTMLDivElement>(null);
 
   const MENU_GAP_PX = 4;
 
@@ -133,26 +129,6 @@ const FilterChipRow = React.memo(function FilterChipRow({
     if (searchQuery && !searchExpanded) setSearchExpanded(true);
   }, [searchQuery, searchExpanded]);
 
-  const checkOverflow = useCallback(() => {
-    const el = chipRowRef.current;
-    if (!el) return;
-    const hasMore = el.scrollLeft + el.clientWidth < el.scrollWidth - 2;
-    setShowRightFade(hasMore);
-  }, []);
-
-  useEffect(() => {
-    const el = chipRowRef.current;
-    if (!el) return;
-    checkOverflow();
-    const observer = new ResizeObserver(checkOverflow);
-    observer.observe(el);
-    el.addEventListener('scroll', checkOverflow);
-    return () => {
-      observer.disconnect();
-      el.removeEventListener('scroll', checkOverflow);
-    };
-  }, [checkOverflow]);
-
   const handleSearchToggle = useCallback(() => {
     if (searchExpanded) {
       onSearchChange('');
@@ -179,8 +155,7 @@ const FilterChipRow = React.memo(function FilterChipRow({
   const hasMoreArtists = topArtists.length > 5;
 
   return (
-    <ChipRowContainer>
-      <ChipRow ref={chipRowRef}>
+    <ChipRow>
       <SearchChipWrapper $expanded={searchExpanded}>
         <SearchChipIcon onClick={handleSearchToggle} aria-label={searchExpanded ? 'Close search' : 'Search'}>
           {searchExpanded ? <CloseIcon /> : <SearchIcon />}
@@ -254,9 +229,7 @@ const FilterChipRow = React.memo(function FilterChipRow({
             )}
         </SortChipWrapper>
       )}
-      </ChipRow>
-      {showRightFade && <ChipRowFade />}
-    </ChipRowContainer>
+    </ChipRow>
   );
 });
 

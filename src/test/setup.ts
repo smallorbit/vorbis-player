@@ -83,13 +83,6 @@ Object.defineProperty(global, 'crypto', {
 global.btoa = vi.fn((str) => Buffer.from(str, 'binary').toString('base64'));
 global.atob = vi.fn((b64) => Buffer.from(b64, 'base64').toString('binary'));
 
-// Mock ResizeObserver (not available in jsdom)
-global.ResizeObserver = vi.fn(() => ({
-  observe: vi.fn(),
-  unobserve: vi.fn(),
-  disconnect: vi.fn(),
-}));
-
 // Clean up after each test
 afterEach(() => {
   vi.clearAllMocks();

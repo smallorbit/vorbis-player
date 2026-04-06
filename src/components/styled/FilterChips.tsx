@@ -188,22 +188,3 @@ export const ArtistCount = styled.span`
   color: ${theme.colors.muted.foreground};
   margin-left: ${theme.spacing.sm};
 `;
-
-/** Outer wrapper to contain the chip row and gradient fade overlay */
-export const ChipRowContainer = styled.div`
-  position: relative;
-  overflow: hidden;
-  flex-shrink: 0;
-`;
-
-/** Right-edge gradient fade indicating more chips are available */
-export const ChipRowFade = styled.div`
-  position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  width: 40px;
-  background: linear-gradient(to right, transparent, rgba(0, 0, 0, 0.8));
-  pointer-events: none;
-  z-index: 1;
-`;
