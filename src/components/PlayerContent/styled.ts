@@ -205,7 +205,7 @@ export const LoadingCard = styled.div.withConfig({
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  border-radius: 1.25rem;
+  border-radius: ${({ theme }) => theme.borderRadius.xl};
   border: 1px solid ${({ theme }) => theme.colors.borderSubtle};
   box-shadow: ${({ theme }) => theme.shadows.card};
   transition: box-shadow ${({ theme }) => theme.transitions.normal}, border-color ${({ theme }) => theme.transitions.normal};
@@ -217,7 +217,7 @@ export const LoadingCard = styled.div.withConfig({
       background-size: cover;
       background-position: center;
       background-repeat: no-repeat;
-      border-radius: 1.25rem;
+      border-radius: ${theme.borderRadius.xl};
       z-index: 0;
     }
     &::before {
@@ -226,7 +226,7 @@ export const LoadingCard = styled.div.withConfig({
       background: ${theme.colors.card.overlay};
       backdrop-filter: blur(40px) saturate(180%);
       -webkit-backdrop-filter: blur(40px) saturate(180%);
-      border-radius: 1.25rem;
+      border-radius: ${theme.borderRadius.xl};
       z-index: 1;
     }
   ` : `
