@@ -361,8 +361,8 @@ function QuickEffectsRow({
               <SubLabel>Speed</SubLabel>
               <OptionButtonGroup>
                 <OptionButton $isActive={backgroundVisualizerSpeed === 0.5} onClick={() => onBackgroundVisualizerSpeedChange(0.5)}>Slower</OptionButton>
-                <OptionButton $isActive={backgroundVisualizerSpeed === 1.0} onClick={() => onBackgroundVisualizerSpeedChange(1.0)}>Normal</OptionButton>
-                <OptionButton $isActive={backgroundVisualizerSpeed === 2.0} onClick={() => onBackgroundVisualizerSpeedChange(2.0)}>Faster</OptionButton>
+                <OptionButton $isActive={backgroundVisualizerSpeed === 0.7} onClick={() => onBackgroundVisualizerSpeedChange(0.7)}>Normal</OptionButton>
+                <OptionButton $isActive={backgroundVisualizerSpeed === 1.2} onClick={() => onBackgroundVisualizerSpeedChange(1.2)}>Faster</OptionButton>
               </OptionButtonGroup>
             </SubSettingRow>
           )}

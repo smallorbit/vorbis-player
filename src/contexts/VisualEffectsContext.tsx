@@ -40,7 +40,7 @@ export function VisualEffectsProvider({ children }: { children: React.ReactNode 
   const [backgroundVisualizerEnabled, setBackgroundVisualizerEnabled] = useLocalStorage<boolean>(STORAGE_KEYS.BG_VISUALIZER_ENABLED, true);
   const [backgroundVisualizerStyle, setBackgroundVisualizerStyle] = useLocalStorage<VisualizerStyle>(STORAGE_KEYS.BG_VISUALIZER_STYLE, 'fireflies');
   const [backgroundVisualizerIntensity, setBackgroundVisualizerIntensity] = useLocalStorage<number>(STORAGE_KEYS.BG_VISUALIZER_INTENSITY, 40);
-  const [backgroundVisualizerSpeed, setBackgroundVisualizerSpeed] = useLocalStorage<number>(STORAGE_KEYS.BG_VISUALIZER_SPEED, 1.0);
+  const [backgroundVisualizerSpeed, setBackgroundVisualizerSpeed] = useLocalStorage<number>(STORAGE_KEYS.BG_VISUALIZER_SPEED, 0.7);
   const [accentColorBackgroundPreferred, setAccentColorBackgroundPreferred] = useLocalStorage<boolean>(STORAGE_KEYS.ACCENT_COLOR_BG_PREFERRED, false);
   const [accentColorBackgroundEnabled, setAccentColorBackgroundEnabled] = useState<boolean>(false);
   const [translucenceEnabled, setTranslucenceEnabled] = useLocalStorage<boolean>(STORAGE_KEYS.TRANSLUCENCE_ENABLED, false);
