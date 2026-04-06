@@ -23,18 +23,26 @@ describe('colorUtils', () => {
 
   describe('getRelativeLuminance', () => {
     it('should return 1 for white', () => {
+      // #when
       const luminance = getRelativeLuminance('#ffffff');
+
+      // #then
       expect(luminance).toBeCloseTo(1, 2);
     });
 
     it('should return 0 for black', () => {
+      // #when
       const luminance = getRelativeLuminance('#000000');
+
+      // #then
       expect(luminance).toBeCloseTo(0, 2);
     });
 
     it('should calculate intermediate luminance values', () => {
-      // Gray should be around 0.2-0.4 depending on the exact shade
+      // #when
       const grayLuminance = getRelativeLuminance('#808080');
+
+      // #then
       expect(grayLuminance).toBeGreaterThan(0.1);
       expect(grayLuminance).toBeLessThan(0.5);
     });
@@ -63,18 +71,21 @@ describe('colorUtils', () => {
 
   describe('getContrastColor', () => {
     it('should return dark color for light backgrounds', () => {
+      // #when / #then
       expect(getContrastColor('#ffffff')).toBe('#1a1a1a');
-      expect(getContrastColor('#f5f5f0')).toBe('#1a1a1a'); // soft off-white
-      expect(getContrastColor('#ffff00')).toBe('#1a1a1a'); // yellow
+      expect(getContrastColor('#f5f5f0')).toBe('#1a1a1a');
+      expect(getContrastColor('#ffff00')).toBe('#1a1a1a');
     });
 
     it('should return light color for dark backgrounds', () => {
+      // #when / #then
       expect(getContrastColor('#000000')).toBe('#ffffff');
       expect(getContrastColor('#1a1a1a')).toBe('#ffffff');
-      expect(getContrastColor('#fb923c')).toBe('#ffffff'); // marigold (original accent)
+      expect(getContrastColor('#fb923c')).toBe('#ffffff');
     });
 
     it('should support custom contrast colors', () => {
+      // #when / #then
       expect(getContrastColor('#ffffff', '#333333', '#eeeeee')).toBe('#333333');
       expect(getContrastColor('#000000', '#333333', '#eeeeee')).toBe('#eeeeee');
     });

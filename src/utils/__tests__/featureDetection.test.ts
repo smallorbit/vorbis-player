@@ -75,7 +75,6 @@ describe('featureDetection', () => {
       Object.defineProperty(window, 'innerWidth', { value: 1024, configurable: true });
       Object.defineProperty(window, 'innerHeight', { value: 768, configurable: true });
       Object.defineProperty(window, 'devicePixelRatio', { value: 2, configurable: true });
-
       const features = {
         visualViewport: false,
         devicePixelRatio: true,
@@ -95,7 +94,6 @@ describe('featureDetection', () => {
       // #given
       Object.defineProperty(window, 'innerWidth', { value: 375, configurable: true });
       Object.defineProperty(window, 'innerHeight', { value: 812, configurable: true });
-
       const features = {
         visualViewport: false,
         devicePixelRatio: false,

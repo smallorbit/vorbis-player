@@ -58,51 +58,64 @@ describe('usePlaylistManager', () => {
   });
 
   it('calls getPlaylistTracks for regular playlist IDs', async () => {
+    // #given
     const { result } = renderHook(() => usePlaylistManager(defaultProps));
 
+    // #when - select a regular playlist
     await act(async () => {
       await result.current.handlePlaylistSelect('playlist-123');
     });
 
+    // #then
     expect(getPlaylistTracks).toHaveBeenCalledWith('playlist-123');
     expect(setTracks).toHaveBeenCalled();
   });
 
   it('calls getLikedSongs for LIKED_SONGS_ID', async () => {
+    // #given
     const { result } = renderHook(() => usePlaylistManager(defaultProps));
 
+    // #when - select liked songs
     await act(async () => {
       await result.current.handlePlaylistSelect('liked-songs');
     });
 
+    // #then
     expect(getLikedSongs).toHaveBeenCalled();
   });
 
   it('calls getAlbumTracks for album IDs (album: prefix)', async () => {
+    // #given
     const { result } = renderHook(() => usePlaylistManager(defaultProps));
 
+    // #when - select an album using album: prefix
     await act(async () => {
       await result.current.handlePlaylistSelect('album:album-456');
     });
 
+    // #then
     expect(getAlbumTracks).toHaveBeenCalledWith('album-456');
   });
 
   it('sets error when playlist returns empty tracks', async () => {
+    // #given - mock empty liked songs
     vi.mocked(getLikedSongs).mockResolvedValue([]);
 
     const { result } = renderHook(() => usePlaylistManager(defaultProps));
 
+    // #when - select empty playlist
     await act(async () => {
       await result.current.handlePlaylistSelect('liked-songs');
     });
 
+    // #then
     expect(setError).toHaveBeenCalledWith(
       expect.stringContaining('No liked songs')
     );
   });
 
   it('applies shuffle when shuffleEnabled=true', async () => {
+    // #given - create 20 tracks and mock shuffle enabled
     const tracks = Array.from({ length: 20 }, (_, i) =>
       makeTrack({ id: `t${i}`, name: `Track ${i}` })
     );
@@ -112,19 +125,20 @@ describe('usePlaylistManager', () => {
       usePlaylistManager({ ...defaultProps, shuffleEnabled: true })
     );
 
+    // #when - select playlist with shuffle enabled
     await act(async () => {
       await result.current.handlePlaylistSelect('playlist-shuffle');
     });
 
-    // setOriginalTracks should have the original order
+    // #then - original order preserved, shuffled order applied
     expect(setOriginalTracks).toHaveBeenCalledWith(tracks);
 
-    // setTracks should have been called (order may differ)
     const shuffledTracks = setTracks.mock.calls[0][0] as typeof tracks;
     expect(shuffledTracks).toHaveLength(20);
   });
 
   it('calls redirectToAuth on auth error', async () => {
+    // #given - mock auth failure
     const { spotifyPlayer } = await import('@/services/spotifyPlayer');
     vi.mocked(spotifyPlayer.initialize).mockRejectedValueOnce(
       new Error('User must be authenticated before initializing player')
@@ -132,23 +146,28 @@ describe('usePlaylistManager', () => {
 
     const { result } = renderHook(() => usePlaylistManager(defaultProps));
 
+    // #when - select playlist while auth fails
     await act(async () => {
       await result.current.handlePlaylistSelect('playlist-auth-fail');
     });
 
+    // #then
     expect(spotifyAuth.redirectToAuth).toHaveBeenCalled();
   });
 
   it('sets isLoading false in finally block on error', async () => {
+    // #given - mock generic error
     const { spotifyPlayer } = await import('@/services/spotifyPlayer');
     vi.mocked(spotifyPlayer.initialize).mockRejectedValueOnce(new Error('Some error'));
 
     const { result } = renderHook(() => usePlaylistManager(defaultProps));
 
+    // #when - select playlist while error occurs
     await act(async () => {
       await result.current.handlePlaylistSelect('playlist-error');
     });
 
+    // #then
     expect(setIsLoading).toHaveBeenLastCalledWith(false);
   });
 });

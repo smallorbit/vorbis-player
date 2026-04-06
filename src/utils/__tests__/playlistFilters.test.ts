@@ -165,10 +165,15 @@ describe('filterAndSortPlaylists', () => {
 
   describe('sortPlaylistSubgroup with partition (pinned + sort)', () => {
     it('sorts within pinned and unpinned groups independently', () => {
+      // #given
       const filtered = filterPlaylistsOnly(mockPlaylists, '');
       const { pinned, unpinned } = partitionByPinned(filtered, ['3', '1'], (p) => p.id);
+
+      // #when
       const pinnedSorted = sortPlaylistSubgroup(pinned, 'name-asc');
       const unpinnedSorted = sortPlaylistSubgroup(unpinned, 'name-asc');
+
+      // #then
       expect(pinnedSorted.map(p => p.name)).toEqual(['Chill Vibes', 'Road Trip']);
       expect(unpinnedSorted.map(p => p.name)).toEqual(['Workout Mix']);
     });
@@ -335,7 +340,7 @@ describe('filterAndSortAlbums', () => {
     });
 
     it('applies search, year filter, artist filter, and sort together', () => {
-      // Add an album by The Beatles from the 1960s
+      // #given
       const extendedMockAlbums: AlbumInfo[] = [
         ...mockAlbums,
         {
@@ -350,9 +355,10 @@ describe('filterAndSortAlbums', () => {
         }
       ];
 
-      // Filter by artist "The Beatles" (should get 2 Beatles albums)
-      // Filter by decade "older" (should only get pre-1980 albums)
+      // #when
       const result = filterAndSortAlbums(extendedMockAlbums, '', 'name-asc', 'older', 'The Beatles');
+
+      // #then
       expect(result).toHaveLength(2);
       expect(result[0].name).toBe('Abbey Road');
       expect(result[1].name).toBe('Let It Be');
@@ -381,10 +387,15 @@ describe('filterAndSortAlbums', () => {
 
   describe('sortAlbumSubgroup with partition (pinned + sort)', () => {
     it('sorts within pinned and unpinned groups independently', () => {
+      // #given
       const filtered = filterAlbumsOnly(mockAlbums, '', 'all', '');
       const { pinned, unpinned } = partitionByPinned(filtered, ['3', '1'], (a) => a.id);
+
+      // #when
       const pinnedSorted = sortAlbumSubgroup(pinned, 'name-asc');
       const unpinnedSorted = sortAlbumSubgroup(unpinned, 'name-asc');
+
+      // #then
       expect(pinnedSorted.map(a => a.name)).toEqual(['Abbey Road', 'Random Access Memories']);
       expect(unpinnedSorted.map(a => a.name)).toEqual(['Thriller']);
     });
@@ -439,7 +450,10 @@ describe('partitionByPinned', () => {
 
 describe('getAvailableDecades', () => {
   it('returns unique decades from album collection', () => {
+    // #when
     const decades = getAvailableDecades(mockAlbums);
+
+    // #then
     expect(decades).toContain('2010s');
     expect(decades).toContain('1980s');
     expect(decades).toContain('older');
@@ -447,7 +461,10 @@ describe('getAvailableDecades', () => {
   });
 
   it('returns decades in chronological order (recent first)', () => {
+    // #when
     const decades = getAvailableDecades(mockAlbums);
+
+    // #then
     const indexOf2010s = decades.indexOf('2010s');
     const indexOf1980s = decades.indexOf('1980s');
     const indexOfOlder = decades.indexOf('older');

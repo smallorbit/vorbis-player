@@ -44,14 +44,20 @@ function isVibrant(r: number, g: number, b: number): boolean {
 describe('colorExtractor', () => {
   describe('rgbToHsl', () => {
     it('converts pure red correctly', () => {
+      // #when
       const [h, s, l] = rgbToHsl(255, 0, 0);
+
+      // #then
       expect(h).toBe(0);
       expect(s).toBe(100);
       expect(l).toBe(50);
     });
 
     it('converts white to 0% saturation, 100% lightness', () => {
+      // #when
       const [h, s, l] = rgbToHsl(255, 255, 255);
+
+      // #then
       expect(h).toBe(0);
       expect(s).toBe(0);
       expect(l).toBe(100);
@@ -60,55 +66,63 @@ describe('colorExtractor', () => {
 
   describe('rgbToHex', () => {
     it('converts (255, 128, 64) to #ff8040', () => {
+      // #when / #then
       expect(rgbToHex(255, 128, 64)).toBe('#ff8040');
     });
 
     it('converts (0, 0, 0) to #000000', () => {
+      // #when / #then
       expect(rgbToHex(0, 0, 0)).toBe('#000000');
     });
   });
 
   describe('isGoodContrast', () => {
     it('returns true for mid-lightness colors (40-85%)', () => {
-      // Pure red: lightness = 50%
+      // #when / #then
       expect(isGoodContrast(255, 0, 0)).toBe(true);
     });
 
     it('returns false for very dark colors (below 40%)', () => {
-      // Black: lightness = 0%
+      // #when / #then
       expect(isGoodContrast(0, 0, 0)).toBe(false);
     });
 
     it('returns false for very light colors (above 85%)', () => {
-      // White: lightness = 100%
+      // #when / #then
       expect(isGoodContrast(255, 255, 255)).toBe(false);
     });
   });
 
   describe('isVibrant', () => {
     it('returns true for saturated colors (>= 50%)', () => {
+      // #when / #then
       expect(isVibrant(255, 0, 0)).toBe(true);
     });
 
     it('returns false for gray (0% saturation)', () => {
+      // #when / #then
       expect(isVibrant(128, 128, 128)).toBe(false);
     });
   });
 
   describe('getTransparentVariant', () => {
     it('handles hex input', () => {
+      // #when / #then
       expect(getTransparentVariant('#ff8040')).toBe('rgba(255, 128, 64, 0.2)');
     });
 
     it('handles rgb input', () => {
+      // #when / #then
       expect(getTransparentVariant('rgb(255, 128, 64)')).toBe('rgba(255, 128, 64, 0.2)');
     });
 
     it('accepts custom opacity', () => {
+      // #when / #then
       expect(getTransparentVariant('#ff0000', 0.5)).toBe('rgba(255, 0, 0, 0.5)');
     });
 
     it('returns original string for unsupported format', () => {
+      // #when / #then
       expect(getTransparentVariant('red')).toBe('red');
     });
   });

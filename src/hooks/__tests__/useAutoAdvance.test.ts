@@ -106,6 +106,7 @@ describe('useAutoAdvance', () => {
   });
 
   it('advances when timeRemaining <= endThreshold', () => {
+    // #given
     renderHook(() =>
       useAutoAdvance({ tracks, currentTrackIndex: 0, playTrack, endThreshold: 2000 }),
       opts
@@ -113,7 +114,7 @@ describe('useAutoAdvance', () => {
 
     expect(mockSubscribe).toHaveBeenCalled();
 
-    // Simulate near-end: position 208500, duration 210000, timeRemaining = 1500ms
+    // #when - simulate near-end: position 208500, duration 210000, timeRemaining = 1500ms
     providerStateCallback?.({
       isPlaying: true,
       positionMs: 208500,
@@ -126,10 +127,13 @@ describe('useAutoAdvance', () => {
     });
 
     vi.advanceTimersByTime(500);
+
+    // #then
     expect(playTrack).toHaveBeenCalledWith(1, true);
   });
 
   it('advances on pause-at-position-0 (natural track end)', () => {
+    // #given
     renderHook(() =>
       useAutoAdvance({ tracks, currentTrackIndex: 0, playTrack }),
       opts
@@ -149,7 +153,7 @@ describe('useAutoAdvance', () => {
       },
     });
 
-    // Then simulate natural end: paused at position 0
+    // #when - simulate natural end: paused at position 0
     providerStateCallback?.({
       isPlaying: false,
       positionMs: 0,
@@ -162,11 +166,13 @@ describe('useAutoAdvance', () => {
     });
 
     vi.advanceTimersByTime(500);
+
+    // #then
     expect(playTrack).toHaveBeenCalledWith(1, true);
   });
 
   it('does NOT advance if msSinceLastPlay < PLAY_COOLDOWN_MS', () => {
-    // Record current time before hook setup
+    // #given - a very recent play time (within cooldown window)
     const recentPlayTime = Date.now();
 
     const mockDescriptor = createMockPlaybackDescriptor({
@@ -199,7 +205,7 @@ describe('useAutoAdvance', () => {
       opts
     );
 
-    // Simulate "was playing"
+    // Simulate "was playing" state
     providerStateCallback?.({
       isPlaying: true,
       positionMs: 100000,
@@ -211,7 +217,7 @@ describe('useAutoAdvance', () => {
       },
     });
 
-    // Then simulate pause at 0 (but within cooldown)
+    // #when - simulate pause at 0 (but within cooldown)
     providerStateCallback?.({
       isPlaying: false,
       positionMs: 0,
@@ -224,10 +230,13 @@ describe('useAutoAdvance', () => {
     });
 
     vi.advanceTimersByTime(500);
+
+    // #then
     expect(playTrack).not.toHaveBeenCalled();
   });
 
   it('stops at the end of the queue instead of wrapping', () => {
+    // #given
     renderHook(() =>
       useAutoAdvance({ tracks, currentTrackIndex: 2, playTrack, endThreshold: 2000 }),
       opts
@@ -235,6 +244,7 @@ describe('useAutoAdvance', () => {
 
     expect(mockSubscribe).toHaveBeenCalled();
 
+    // #when
     providerStateCallback?.({
       isPlaying: true,
       positionMs: 209000,
@@ -247,6 +257,8 @@ describe('useAutoAdvance', () => {
     });
 
     vi.advanceTimersByTime(500);
+
+    // #then
     expect(playTrack).not.toHaveBeenCalled();
   });
 });

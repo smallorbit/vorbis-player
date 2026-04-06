@@ -63,6 +63,7 @@ describe('keyToCollectionRef', () => {
   });
 
   it('round-trips all ref variants', () => {
+    // #given
     const refs: CollectionRef[] = [
       { provider: 'spotify', kind: 'playlist', id: 'p1' },
       { provider: 'spotify', kind: 'album', id: 'a1' },
@@ -70,6 +71,7 @@ describe('keyToCollectionRef', () => {
       { provider: 'dropbox', kind: 'folder', id: '/path/to/music' },
     ];
 
+    // #when / #then
     for (const ref of refs) {
       const key = collectionRefToKey(ref);
       const parsed = keyToCollectionRef(key);

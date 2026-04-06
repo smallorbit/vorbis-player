@@ -193,6 +193,7 @@ describe('PlayerContent', () => {
   });
 
   it('renders without crashing when no track is loaded', () => {
+    // #when
     const { container } = render(
       <TestWrapper>
         <PlayerContent
@@ -203,10 +204,12 @@ describe('PlayerContent', () => {
       </TestWrapper>
     );
 
+    // #then
     expect(container).toBeTruthy();
   });
 
   it('renders player controls when isPlaying is true', () => {
+    // #when
     const { container } = render(
       <TestWrapper>
         <PlayerContent
@@ -217,11 +220,12 @@ describe('PlayerContent', () => {
       </TestWrapper>
     );
 
-    // Should render without errors
+    // #then
     expect(container).toBeTruthy();
   });
 
   it('passes showLibraryDrawer prop without crashing when false', () => {
+    // #when
     const { container } = render(
       <TestWrapper>
         <PlayerContent
@@ -232,11 +236,12 @@ describe('PlayerContent', () => {
       </TestWrapper>
     );
 
-    // Component should render without errors when showLibraryDrawer is false
+    // #then
     expect(container).toBeTruthy();
   });
 
   it('handles radioState prop when provided', () => {
+    // #given
     const radioState = {
       isActive: false,
       seedDescription: null,
@@ -245,6 +250,7 @@ describe('PlayerContent', () => {
       lastMatchStats: null,
     };
 
+    // #when
     const { container } = render(
       <TestWrapper>
         <PlayerContent
@@ -257,10 +263,12 @@ describe('PlayerContent', () => {
       </TestWrapper>
     );
 
+    // #then
     expect(container).toBeTruthy();
   });
 
   it('handles all required handler callbacks', () => {
+    // #given
     const handlers = {
       onPlay: vi.fn(),
       onPause: vi.fn(),
@@ -274,6 +282,7 @@ describe('PlayerContent', () => {
       onBackToLibrary: vi.fn(),
     };
 
+    // #when
     const { container } = render(
       <TestWrapper>
         <PlayerContent
@@ -284,12 +293,15 @@ describe('PlayerContent', () => {
       </TestWrapper>
     );
 
+    // #then
     expect(container).toBeTruthy();
   });
 
   it('accepts optional onBoundsChange callback', () => {
+    // #given
     const mockOnBoundsChange = vi.fn();
 
+    // #when
     const { container } = render(
       <TestWrapper>
         <PlayerContent
@@ -301,10 +313,12 @@ describe('PlayerContent', () => {
       </TestWrapper>
     );
 
+    // #then
     expect(container).toBeTruthy();
   });
 
   it('accepts currentTrackProvider prop', () => {
+    // #when
     const { container } = render(
       <TestWrapper>
         <PlayerContent
@@ -316,6 +330,7 @@ describe('PlayerContent', () => {
       </TestWrapper>
     );
 
+    // #then
     expect(container).toBeTruthy();
   });
 });

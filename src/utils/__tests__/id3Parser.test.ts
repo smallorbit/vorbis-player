@@ -162,30 +162,44 @@ describe('parseID3 — release year extraction', () => {
 
   describe('FLAC — DATE vorbis comment', () => {
     it('extracts year from DATE comment', () => {
+      // #when
       const buffer = buildFlacWithComments(['DATE=2023-01-15']);
       const result = parseID3(buffer);
+
+      // #then
       expect(result.releaseYear).toBe(2023);
     });
 
     it('extracts year from YEAR comment', () => {
+      // #when
       const buffer = buildFlacWithComments(['YEAR=1987']);
       const result = parseID3(buffer);
+
+      // #then
       expect(result.releaseYear).toBe(1987);
     });
 
     it('extracts year from DATE with year only', () => {
+      // #when
       const buffer = buildFlacWithComments(['DATE=2005']);
       const result = parseID3(buffer);
+
+      // #then
       expect(result.releaseYear).toBe(2005);
     });
 
     it('also extracts title and artist alongside DATE', () => {
+      // #given
       const buffer = buildFlacWithComments([
         'TITLE=Test Song',
         'ARTIST=Test Artist',
         'DATE=2019',
       ]);
+
+      // #when
       const result = parseID3(buffer);
+
+      // #then
       expect(result.releaseYear).toBe(2019);
       expect(result.title).toBe('Test Song');
       expect(result.artist).toBe('Test Artist');
@@ -218,8 +232,11 @@ describe('parseID3 — release year extraction', () => {
     });
 
     it('FLAC: returns undefined releaseYear when DATE is malformed', () => {
+      // #when
       const buffer = buildFlacWithComments(['DATE=not-a-date']);
       const result = parseID3(buffer);
+
+      // #then
       expect(result.releaseYear).toBeUndefined();
     });
   });

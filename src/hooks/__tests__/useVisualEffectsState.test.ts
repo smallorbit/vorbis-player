@@ -52,13 +52,16 @@ describe('useVisualEffectsState', () => {
   });
 
   it('effectiveGlow reflects current intensity and rate', () => {
+    // #given
     const { result } = renderHook(() => useVisualEffectsState());
 
+    // #when - change intensity to 120 and rate to 3.0
     act(() => {
       result.current.handleGlowIntensityChange(120);
       result.current.handleGlowRateChange(3.0);
     });
 
+    // #then
     expect(result.current.effectiveGlow).toEqual({ intensity: 120, rate: 3.0 });
   });
 

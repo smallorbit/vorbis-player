@@ -102,18 +102,23 @@ describe('useVolume', () => {
   });
 
   it('clamps volume to [0, 100]', () => {
+    // #given
     const { result } = renderHook(() => useVolume(), { wrapper: ProviderWrapper });
 
     // #when - set above 100
     act(() => {
       result.current.setVolumeLevel(150);
     });
+
+    // #then
     expect(result.current.volume).toBe(100);
 
     // #when - set below 0
     act(() => {
       result.current.setVolumeLevel(-10);
     });
+
+    // #then
     expect(result.current.volume).toBe(0);
   });
 
