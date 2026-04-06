@@ -1,5 +1,7 @@
+import { useState, useEffect } from 'react';
 import * as React from 'react';
 import styled from 'styled-components';
+import { getAlbumArt } from '@/providers/dropbox/dropboxArtCache';
 
 const MosaicGrid = styled.div`
   display: grid;
@@ -19,21 +21,34 @@ const MosaicGrid = styled.div`
 `;
 
 interface MosaicThumbnailProps {
-  coverUrls: string[];
+  /** Album folder paths to resolve from IndexedDB art cache. */
+  albumPaths: string[];
   alt: string;
 }
 
 export const MosaicThumbnail: React.FC<MosaicThumbnailProps> = React.memo(
-  function MosaicThumbnail({ coverUrls, alt }) {
-    if (coverUrls.length === 0) return null;
+  function MosaicThumbnail({ albumPaths, alt }) {
+    const [resolvedUrls, setResolvedUrls] = useState<string[]>([]);
 
-    if (coverUrls.length === 1) {
-      return <img src={coverUrls[0]} alt={alt} loading="lazy" decoding="async" />;
+    useEffect(() => {
+      let cancelled = false;
+      Promise.all(albumPaths.map(path => getAlbumArt(path))).then(results => {
+        if (cancelled) return;
+        const urls = results.filter((url): url is string => url != null);
+        setResolvedUrls(urls);
+      });
+      return () => { cancelled = true; };
+    }, [albumPaths]);
+
+    if (resolvedUrls.length === 0) return null;
+
+    if (resolvedUrls.length === 1) {
+      return <img src={resolvedUrls[0]} alt={alt} loading="lazy" decoding="async" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 'inherit' }} />;
     }
 
-    const [a, b] = coverUrls;
-    const quadrants = coverUrls.length >= 4
-      ? [coverUrls[0], coverUrls[1], coverUrls[2], coverUrls[3]]
+    const [a, b] = resolvedUrls;
+    const quadrants = resolvedUrls.length >= 4
+      ? [resolvedUrls[0], resolvedUrls[1], resolvedUrls[2], resolvedUrls[3]]
       : [a, b, b, a];
 
     return (

@@ -2,9 +2,8 @@ import { describe, it, expect } from 'vitest';
 import { selectMosaicCovers, buildAlbumCoverMap } from '../mosaicSelection';
 
 describe('selectMosaicCovers', () => {
-  it('returns empty array when no albums have covers', () => {
+  it('returns empty array when map is empty', () => {
     const map = new Map<string, { coverUrl: string; trackCount: number }>();
-    map.set('album-a', { coverUrl: '', trackCount: 5 });
 
     // #when
     const result = selectMosaicCovers(map, 'playlist-1');
@@ -13,66 +12,62 @@ describe('selectMosaicCovers', () => {
     expect(result).toEqual([]);
   });
 
-  it('returns single URL for one album with cover', () => {
+  it('returns single album key for one album', () => {
     const map = new Map<string, { coverUrl: string; trackCount: number }>();
-    map.set('album-a', { coverUrl: 'https://art/a.jpg', trackCount: 5 });
+    map.set('/music/artist/album-a', { coverUrl: 'art-a', trackCount: 5 });
 
     // #when
     const result = selectMosaicCovers(map, 'playlist-1');
 
     // #then
-    expect(result).toEqual(['https://art/a.jpg']);
+    expect(result).toEqual(['/music/artist/album-a']);
   });
 
-  it('returns 2 URLs for 2 albums sorted by track count', () => {
+  it('returns 2 album keys for 2 albums sorted by track count', () => {
     const map = new Map<string, { coverUrl: string; trackCount: number }>();
-    map.set('album-a', { coverUrl: 'https://art/a.jpg', trackCount: 3 });
-    map.set('album-b', { coverUrl: 'https://art/b.jpg', trackCount: 7 });
+    map.set('/music/artist/album-a', { coverUrl: 'art-a', trackCount: 3 });
+    map.set('/music/artist/album-b', { coverUrl: 'art-b', trackCount: 7 });
 
     // #when
     const result = selectMosaicCovers(map, 'playlist-1');
 
     // #then
-    expect(result).toEqual(['https://art/b.jpg', 'https://art/a.jpg']);
+    expect(result).toEqual(['/music/artist/album-b', '/music/artist/album-a']);
   });
 
-  it('returns 2 URLs for 3 albums taking the top 2 by track count', () => {
+  it('returns 2 album keys for 3 albums taking top 2 by track count', () => {
     const map = new Map<string, { coverUrl: string; trackCount: number }>();
-    map.set('album-a', { coverUrl: 'https://art/a.jpg', trackCount: 2 });
-    map.set('album-b', { coverUrl: 'https://art/b.jpg', trackCount: 10 });
-    map.set('album-c', { coverUrl: 'https://art/c.jpg', trackCount: 5 });
+    map.set('album-a', { coverUrl: 'art-a', trackCount: 2 });
+    map.set('album-b', { coverUrl: 'art-b', trackCount: 10 });
+    map.set('album-c', { coverUrl: 'art-c', trackCount: 5 });
 
     // #when
     const result = selectMosaicCovers(map, 'playlist-1');
 
     // #then
-    expect(result).toEqual(['https://art/b.jpg', 'https://art/c.jpg']);
+    expect(result).toEqual(['album-b', 'album-c']);
   });
 
-  it('returns 4 URLs for 4+ albums via weighted random', () => {
+  it('returns 4 album keys for 4+ albums via weighted random', () => {
     const map = new Map<string, { coverUrl: string; trackCount: number }>();
-    map.set('album-a', { coverUrl: 'https://art/a.jpg', trackCount: 10 });
-    map.set('album-b', { coverUrl: 'https://art/b.jpg', trackCount: 8 });
-    map.set('album-c', { coverUrl: 'https://art/c.jpg', trackCount: 6 });
-    map.set('album-d', { coverUrl: 'https://art/d.jpg', trackCount: 4 });
-    map.set('album-e', { coverUrl: 'https://art/e.jpg', trackCount: 2 });
+    const albumKeys = ['album-a', 'album-b', 'album-c', 'album-d', 'album-e'];
+    albumKeys.forEach((key, i) => map.set(key, { coverUrl: `art-${i}`, trackCount: 10 - i * 2 }));
 
     // #when
     const result = selectMosaicCovers(map, 'playlist-1');
 
     // #then
     expect(result).toHaveLength(4);
-    const unique = new Set(result);
-    expect(unique.size).toBe(4);
-    for (const url of result) {
-      expect(url).toMatch(/^https:\/\/art\/[a-e]\.jpg$/);
+    expect(new Set(result).size).toBe(4);
+    for (const key of result) {
+      expect(albumKeys).toContain(key);
     }
   });
 
   it('produces stable results for the same playlist ID', () => {
     const map = new Map<string, { coverUrl: string; trackCount: number }>();
     for (let i = 0; i < 10; i++) {
-      map.set(`album-${i}`, { coverUrl: `https://art/${i}.jpg`, trackCount: i + 1 });
+      map.set(`album-${i}`, { coverUrl: `art-${i}`, trackCount: i + 1 });
     }
 
     // #when
@@ -86,7 +81,7 @@ describe('selectMosaicCovers', () => {
   it('produces different results for different playlist IDs', () => {
     const map = new Map<string, { coverUrl: string; trackCount: number }>();
     for (let i = 0; i < 20; i++) {
-      map.set(`album-${i}`, { coverUrl: `https://art/${i}.jpg`, trackCount: 5 });
+      map.set(`album-${i}`, { coverUrl: `art-${i}`, trackCount: 5 });
     }
 
     // #when
@@ -95,19 +90,6 @@ describe('selectMosaicCovers', () => {
 
     // #then
     expect(result1).not.toEqual(result2);
-  });
-
-  it('skips albums with empty cover URLs', () => {
-    const map = new Map<string, { coverUrl: string; trackCount: number }>();
-    map.set('album-a', { coverUrl: 'https://art/a.jpg', trackCount: 5 });
-    map.set('album-b', { coverUrl: '', trackCount: 10 });
-    map.set('album-c', { coverUrl: 'https://art/c.jpg', trackCount: 3 });
-
-    // #when
-    const result = selectMosaicCovers(map, 'playlist-1');
-
-    // #then
-    expect(result).toEqual(['https://art/a.jpg', 'https://art/c.jpg']);
   });
 });
 

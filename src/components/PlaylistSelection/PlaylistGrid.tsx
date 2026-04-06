@@ -75,7 +75,7 @@ export const PlaylistGrid: React.FC = React.memo(function PlaylistGrid() {
         onContextMenu={(e) => onPlaylistContextMenu(playlist, e)}
       >
         <GridCardArtWrapper style={{ position: 'relative' }}>
-          <GridCardImageComponent images={playlist.images} alt={playlist.name} />
+          <GridCardImageComponent images={playlist.images} alt={playlist.name} mosaicAlbumPaths={playlist.mosaicAlbumPaths} />
           {showProviderBadges && playlist.provider && (
             <ProviderBadgeOverlay>
               <ProviderIcon provider={playlist.provider} size={22} />
@@ -101,7 +101,7 @@ export const PlaylistGrid: React.FC = React.memo(function PlaylistGrid() {
     return (
       <PinnableListItem key={`${playlist.provider ?? 'default'}-${playlist.id}`} onClick={() => onPlaylistClick(playlist)} onContextMenu={(e) => onPlaylistContextMenu(playlist, e)}>
         <div style={{ position: 'relative' }}>
-          <PlaylistImage images={playlist.images} alt={playlist.name} />
+          <PlaylistImage images={playlist.images} alt={playlist.name} mosaicAlbumPaths={playlist.mosaicAlbumPaths} />
           {showProviderBadges && playlist.provider && (
             <div style={{ position: 'absolute', top: -4, right: -4, zIndex: 2 }}>
               <ProviderIcon provider={playlist.provider} size={18} />

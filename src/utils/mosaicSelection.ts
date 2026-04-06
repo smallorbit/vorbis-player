@@ -1,7 +1,3 @@
-interface AlbumCoverInfo {
-  coverUrl: string;
-  trackCount: number;
-}
 
 function hashString(str: string): number {
   let hash = 0;
@@ -20,7 +16,7 @@ function seededRandom(seed: number): () => number {
 }
 
 function weightedPick(
-  albums: AlbumCoverInfo[],
+  albums: { trackCount: number }[],
   rng: () => number,
   exclude: Set<number>,
 ): number {
@@ -39,21 +35,26 @@ function weightedPick(
   return albums.length - 1;
 }
 
+interface AlbumEntry {
+  key: string;
+  trackCount: number;
+}
+
 export function selectMosaicCovers(
   tracksByAlbum: Map<string, { coverUrl: string; trackCount: number }>,
   playlistId: string,
 ): string[] {
-  const albums: AlbumCoverInfo[] = [];
-  for (const entry of tracksByAlbum.values()) {
-    if (entry.coverUrl) albums.push(entry);
+  const albums: AlbumEntry[] = [];
+  for (const [key, entry] of tracksByAlbum.entries()) {
+    albums.push({ key, trackCount: entry.trackCount });
   }
 
   if (albums.length === 0) return [];
-  if (albums.length === 1) return [albums[0].coverUrl];
+  if (albums.length === 1) return [albums[0].key];
 
   if (albums.length <= 3) {
     const sorted = [...albums].sort((a, b) => b.trackCount - a.trackCount);
-    return [sorted[0].coverUrl, sorted[1].coverUrl];
+    return [sorted[0].key, sorted[1].key];
   }
 
   const seed = hashString(playlistId);
@@ -64,7 +65,7 @@ export function selectMosaicCovers(
   for (let i = 0; i < 4 && excluded.size < albums.length; i++) {
     const idx = weightedPick(albums, rng, excluded);
     if (idx === -1) break;
-    picked.push(albums[idx].coverUrl);
+    picked.push(albums[idx].key);
     excluded.add(idx);
   }
 

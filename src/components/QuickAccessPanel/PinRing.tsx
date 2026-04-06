@@ -50,22 +50,22 @@ interface GridItemCardProps {
   name: string;
   provider?: ProviderId;
   imgUrl?: string;
-  mosaicUrls?: string[];
+  mosaicAlbumPaths?: string[];
   fallback: string;
   onPlay: (id: string, name: string, provider?: ProviderId) => void;
   onAddToQueue: (id: string, name: string, provider?: ProviderId) => void;
 }
 
 const GridItemCard: React.FC<GridItemCardProps> = ({
-  id, name, provider, imgUrl, mosaicUrls, fallback, onPlay, onAddToQueue,
+  id, name, provider, imgUrl, mosaicAlbumPaths, fallback, onPlay, onAddToQueue,
 }) => {
   const handlePlay = useCallback(() => onPlay(id, name, provider), [id, name, provider, onPlay]);
   const handleAdd = useCallback(() => onAddToQueue(id, name, provider), [id, name, provider, onAddToQueue]);
 
   const longPress = useLongPress({ onShortPress: handlePlay, onLongPress: handleAdd });
 
-  const artContent = mosaicUrls && mosaicUrls.length > 1
-    ? <MosaicThumbnail coverUrls={mosaicUrls} alt={name} />
+  const artContent = mosaicAlbumPaths && mosaicAlbumPaths.length >= 2
+    ? <MosaicThumbnail albumPaths={mosaicAlbumPaths} alt={name} />
     : imgUrl ? <img src={imgUrl} alt={name} loading="lazy" /> : fallback;
 
   return (
@@ -138,15 +138,14 @@ const PinRing: React.FC<PinRingProps> = ({
             {items.map((sat) => {
               if (sat.kind === 'playlist') {
                 const p = sat.item;
-                const isMosaic = p.images.length > 1 && p.images.every(img => img.width === null && img.height === null);
                 return (
                   <GridItemCard
                     key={`playlist-${p.id}`}
                     id={p.id}
                     name={p.name}
                     provider={p.provider}
-                    imgUrl={isMosaic ? undefined : getImageUrl(p.images)}
-                    mosaicUrls={isMosaic ? p.images.map(img => img.url) : undefined}
+                    imgUrl={getImageUrl(p.images)}
+                    mosaicAlbumPaths={p.mosaicAlbumPaths}
                     fallback="♪"
                     onPlay={onLoadCollection}
                     onAddToQueue={onAddToQueue}

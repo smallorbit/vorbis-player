@@ -71,8 +71,8 @@ export interface MediaCollection {
   revision?: string | null;
   /** Release date string (e.g. "2023", "2023-05-17") for sorting. */
   releaseDate?: string;
-  /** Multiple cover image URLs for mosaic thumbnails (multi-album playlists). */
-  mosaicImageUrls?: string[];
+  /** Album paths for mosaic thumbnails (multi-album playlists). Resolved to art at render time via IndexedDB cache. */
+  mosaicAlbumPaths?: string[];
 }
 
 /**

@@ -324,10 +324,8 @@ export async function listSavedPlaylists(
           collection.trackCount = data.tracks.length;
           const albumMap = buildAlbumCoverMap(data.tracks);
           if (albumMap.size >= 2) {
-            collection.mosaicImageUrls = selectMosaicCovers(albumMap, collection.id);
-          } else if (albumMap.size === 1) {
-            const singleCover = albumMap.values().next().value;
-            if (singleCover?.coverUrl) collection.imageUrl = singleCover.coverUrl;
+            const selected = selectMosaicCovers(albumMap, collection.id);
+            collection.mosaicAlbumPaths = selected;
           }
         }
       } catch (err) {

@@ -100,34 +100,17 @@ function useLazyImage(
 interface LazyImageProps {
   images: { url: string; width: number | null; height: number | null }[];
   alt: string;
+  mosaicAlbumPaths?: string[];
 }
 
-function isMosaicImageSet(images: { url: string; width: number | null; height: number | null }[]): boolean {
-  return images.length > 1 && images.every(img => img.width === null && img.height === null);
-}
+export const PlaylistImage: React.FC<LazyImageProps> = React.memo(function PlaylistImage({ images, alt, mosaicAlbumPaths }) {
+  const hasMosaic = mosaicAlbumPaths && mosaicAlbumPaths.length >= 2;
+  const { ref, imageUrl } = useLazyImage(hasMosaic ? [] : images, 64, '50px');
 
-export const PlaylistImage: React.FC<LazyImageProps> = React.memo(function PlaylistImage({ images, alt }) {
-  const isMosaic = isMosaicImageSet(images);
-  const { ref, imageUrl } = useLazyImage(isMosaic ? [] : images, 64, '50px');
-  const [isVisible, setIsVisible] = useState(false);
-  const visRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!isMosaic || !visRef.current) return;
-    const observer = new IntersectionObserver(
-      (entries) => { if (entries[0]?.isIntersecting) { setIsVisible(true); observer.disconnect(); } },
-      { rootMargin: '50px', threshold: 0.01 },
-    );
-    observer.observe(visRef.current);
-    return () => observer.disconnect();
-  }, [isMosaic]);
-
-  if (isMosaic) {
+  if (hasMosaic) {
     return (
-      <PlaylistImageWrapper ref={visRef}>
-        {isVisible ? (
-          <MosaicThumbnail coverUrls={images.map(img => img.url)} alt={alt} />
-        ) : null}
+      <PlaylistImageWrapper>
+        <MosaicThumbnail albumPaths={mosaicAlbumPaths} alt={alt} />
       </PlaylistImageWrapper>
     );
   }
@@ -143,28 +126,14 @@ export const PlaylistImage: React.FC<LazyImageProps> = React.memo(function Playl
   );
 });
 
-export const GridCardImageComponent: React.FC<LazyImageProps> = React.memo(function GridCardImageComponent({ images, alt }) {
-  const isMosaic = isMosaicImageSet(images);
-  const { ref, imageUrl } = useLazyImage(isMosaic ? [] : images, 300, '100px');
-  const [isVisible, setIsVisible] = useState(false);
-  const visRef = useRef<HTMLDivElement>(null);
+export const GridCardImageComponent: React.FC<LazyImageProps> = React.memo(function GridCardImageComponent({ images, alt, mosaicAlbumPaths }) {
+  const hasMosaic = mosaicAlbumPaths && mosaicAlbumPaths.length >= 2;
+  const { ref, imageUrl } = useLazyImage(hasMosaic ? [] : images, 300, '100px');
 
-  useEffect(() => {
-    if (!isMosaic || !visRef.current) return;
-    const observer = new IntersectionObserver(
-      (entries) => { if (entries[0]?.isIntersecting) { setIsVisible(true); observer.disconnect(); } },
-      { rootMargin: '100px', threshold: 0.01 },
-    );
-    observer.observe(visRef.current);
-    return () => observer.disconnect();
-  }, [isMosaic]);
-
-  if (isMosaic) {
+  if (hasMosaic) {
     return (
-      <GridCardArtWrapper ref={visRef}>
-        {isVisible ? (
-          <MosaicThumbnail coverUrls={images.map(img => img.url)} alt={alt} />
-        ) : null}
+      <GridCardArtWrapper>
+        <MosaicThumbnail albumPaths={mosaicAlbumPaths} alt={alt} />
       </GridCardArtWrapper>
     );
   }
