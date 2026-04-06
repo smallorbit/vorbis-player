@@ -157,6 +157,7 @@ describe('usePlayerLogic — radio start', () => {
   });
 
   it('does not call playTrack when starting radio (preserves current track playback)', async () => {
+    // #given
     const generatedA = makeMediaTrack({ name: 'Karma Police', artists: 'Radiohead' });
     const generatedB = makeMediaTrack({ name: 'No Surprises', artists: 'Radiohead' });
 
@@ -178,14 +179,17 @@ describe('usePlayerLogic — radio start', () => {
       result.current.setCurrentTrackIndex(0);
     });
 
+    // #when
     await act(async () => {
       await result.current.handlers.handleStartRadio();
     });
 
+    // #then
     expect(playTrackSpy).not.toHaveBeenCalled();
   });
 
   it('sets queue with current track at index 0 and generated tracks after', async () => {
+    // #given
     const seedTrack = makeTrack({ id: 'seed-1', name: 'Creep', artists: 'Radiohead', playbackRef: { provider: 'spotify', ref: 'spotify:track:creep' } });
     const generatedA = makeMediaTrack({ name: 'Karma Police', artists: 'Radiohead' });
     const generatedB = makeMediaTrack({ name: 'No Surprises', artists: 'Radiohead' });
@@ -207,15 +211,16 @@ describe('usePlayerLogic — radio start', () => {
       result.current.setCurrentTrackIndex(0);
     });
 
+    // #when
     await act(async () => {
       await result.current.handlers.handleStartRadio();
     });
 
+    // #then
     const tracks = result.current.state.tracks;
     expect(tracks.length).toBe(3);
     expect(tracks[0].id).toBe(seedTrack.id);
     expect(tracks[0].name).toBe('Creep');
-    // Generated tracks are shuffled, so check presence without asserting order
     const generatedNames = tracks.slice(1).map((t) => t.name);
     expect(generatedNames).toContain('Karma Police');
     expect(generatedNames).toContain('No Surprises');
@@ -223,6 +228,7 @@ describe('usePlayerLogic — radio start', () => {
   });
 
   it('deduplicates seed track from generated queue when it appears in recommendations', async () => {
+    // #given
     const seedTrack = makeTrack({ id: 'seed-1', name: 'Creep', artists: 'Radiohead', playbackRef: { provider: 'spotify', ref: 'spotify:track:creep' } });
     const generatedIncludingSeed = makeMediaTrack({ id: 'seed-1', name: 'Creep', artists: 'Radiohead' });
     const generatedB = makeMediaTrack({ name: 'No Surprises', artists: 'Radiohead' });
@@ -244,10 +250,12 @@ describe('usePlayerLogic — radio start', () => {
       result.current.setCurrentTrackIndex(0);
     });
 
+    // #when
     await act(async () => {
       await result.current.handlers.handleStartRadio();
     });
 
+    // #then
     expect(result.current.state.tracks.length).toBe(2);
     expect(result.current.state.tracks[0].id).toBe('seed-1');
     expect(result.current.state.tracks[0].name).toBe('Creep');
@@ -255,6 +263,7 @@ describe('usePlayerLogic — radio start', () => {
   });
 
   it('deduplicates seed by normalized artist+title when recommendation has different id', async () => {
+    // #given
     const seedTrack = makeTrack({ id: 'seed-1', name: 'Creep', artists: 'Radiohead', playbackRef: { provider: 'spotify', ref: 'spotify:track:creep' } });
     const seedDuplicate = makeMediaTrack({ id: 'dup-1', name: 'Creep', artists: 'Radiohead' });
     const generatedB = makeMediaTrack({ name: 'No Surprises', artists: 'Radiohead' });
@@ -276,10 +285,12 @@ describe('usePlayerLogic — radio start', () => {
       result.current.setCurrentTrackIndex(0);
     });
 
+    // #when
     await act(async () => {
       await result.current.handlers.handleStartRadio();
     });
 
+    // #then
     expect(result.current.state.tracks.length).toBe(2);
     expect(result.current.state.tracks[0].id).toBe('seed-1');
     expect(result.current.state.tracks[0].name).toBe('Creep');
@@ -287,6 +298,7 @@ describe('usePlayerLogic — radio start', () => {
   });
 
   it('uses currentTrack as fallback seed when mediaTracksRef is empty (Spotify flow)', async () => {
+    // #given
     const seedTrack = makeTrack({ id: 'seed-1', name: 'Creep', artists: 'Radiohead', playbackRef: { provider: 'spotify', ref: 'spotify:track:creep' } });
     const generatedA = makeMediaTrack({ name: 'Karma Police', artists: 'Radiohead' });
 
@@ -307,10 +319,12 @@ describe('usePlayerLogic — radio start', () => {
       result.current.setCurrentTrackIndex(0);
     });
 
+    // #when
     await act(async () => {
       await result.current.handlers.handleStartRadio();
     });
 
+    // #then
     expect(playTrackSpy).not.toHaveBeenCalled();
     expect(result.current.state.tracks.length).toBe(2);
     expect(result.current.state.tracks[0].id).toBe('seed-1');
