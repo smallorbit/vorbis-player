@@ -67,12 +67,15 @@ describe('SpotifyPlaybackAdapter', () => {
   });
 
   it('initializes and activates device before playing a track', async () => {
+    // #given
     const readyStates = [false, true];
     vi.mocked(spotifyPlayer.getIsReady).mockImplementation(() => readyStates.shift() ?? true);
     vi.mocked(spotifyPlayer.getDeviceId).mockReturnValue('device-1');
 
+    // #when
     await adapter.playTrack(makeSpotifyTrack());
 
+    // #then
     expect(spotifyPlayer.initialize).toHaveBeenCalledTimes(1);
     expect(spotifyPlayer.transferPlaybackToDevice).toHaveBeenCalledTimes(1);
     expect(spotifyPlayer.ensureDeviceIsActive).toHaveBeenCalledTimes(1);
@@ -80,39 +83,46 @@ describe('SpotifyPlaybackAdapter', () => {
   });
 
   it('times out if SDK never becomes ready', async () => {
+    // #given
     vi.useFakeTimers();
     vi.mocked(spotifyPlayer.getIsReady).mockReturnValue(false);
     vi.mocked(spotifyPlayer.getDeviceId).mockReturnValue(null);
 
+    // #when
     const playPromise = adapter.playTrack(makeSpotifyTrack());
     const rejection = expect(playPromise).rejects.toThrow('Spotify player not ready after waiting');
     await vi.advanceTimersByTimeAsync(10_500);
 
+    // #then
     await rejection;
     expect(spotifyPlayer.playTrack).not.toHaveBeenCalled();
   });
 
   it('retries with force=true transfer on 403 error', async () => {
+    // #given
     vi.useFakeTimers();
     vi.mocked(spotifyPlayer.playTrack)
       .mockRejectedValueOnce(new Error('Spotify API error: 403'))
       .mockResolvedValue(undefined);
 
+    // #when
     const playPromise = adapter.playTrack(makeSpotifyTrack());
     await vi.runAllTimersAsync();
     await playPromise;
 
-    // #given initial call + retry
-    const calls = vi.mocked(spotifyPlayer.transferPlaybackToDevice).mock.calls;
     // #then the retry call must bypass the cache with force=true
+    const calls = vi.mocked(spotifyPlayer.transferPlaybackToDevice).mock.calls;
     expect(calls.some(c => c[0] === true)).toBe(true);
   });
 
   it('ensures readiness before playing playlist context', async () => {
+    // #given
     const collection: CollectionRef = { provider: 'spotify', kind: 'playlist', id: 'playlist-1' };
 
+    // #when
     await adapter.playCollection(collection);
 
+    // #then
     expect(spotifyPlayer.initialize).toHaveBeenCalledTimes(1);
     expect(spotifyPlayer.transferPlaybackToDevice).toHaveBeenCalledTimes(1);
     expect(spotifyPlayer.ensureDeviceIsActive).toHaveBeenCalledTimes(1);

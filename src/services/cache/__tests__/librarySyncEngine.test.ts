@@ -168,6 +168,7 @@ describe('LibrarySyncEngine', () => {
 
   describe('change detection', () => {
     it('should not fetch full data when counts match', async () => {
+      // #given
       await seedCacheMeta({
         playlists: [makePlaylist('p1', 'Existing', 'snap1')],
         albums: [makeAlbum('a1')],
@@ -179,29 +180,30 @@ describe('LibrarySyncEngine', () => {
       mockGetAlbumCount.mockResolvedValue(1);
       mockGetLikedSongsCount.mockResolvedValue(5);
 
-      // Don't start polling — just run a single sync
       await engine.start();
-      engine.stop(); // Stop interval
+      engine.stop();
       vi.clearAllMocks();
 
       mockGetPlaylistCount.mockResolvedValue(1);
       mockGetAlbumCount.mockResolvedValue(1);
       mockGetLikedSongsCount.mockResolvedValue(5);
 
+      // #when
       await engine.syncNow();
 
+      // #then
       expect(mockGetAllUserPlaylists).not.toHaveBeenCalled();
       expect(mockGetAllUserAlbums).not.toHaveBeenCalled();
       expect(mockInvalidateLikedSongsCaches).not.toHaveBeenCalled();
     });
 
     it('should detect playlist count change and sync', async () => {
+      // #given
       await seedCacheMeta({
         playlists: [makePlaylist('p1', 'Existing', 'snap1')],
         snapshotIds: { p1: 'snap1' },
       });
 
-      // Initial start — counts match
       mockGetPlaylistCount.mockResolvedValue(1);
       mockGetAlbumCount.mockResolvedValue(0);
       mockGetLikedSongsCount.mockResolvedValue(0);
@@ -210,7 +212,6 @@ describe('LibrarySyncEngine', () => {
       engine.stop();
       vi.clearAllMocks();
 
-      // Sync with changed count
       mockGetPlaylistCount.mockResolvedValue(2);
       mockGetAlbumCount.mockResolvedValue(0);
       mockGetLikedSongsCount.mockResolvedValue(0);
@@ -219,8 +220,10 @@ describe('LibrarySyncEngine', () => {
         makePlaylist('p2', 'New Playlist', 'snap2'),
       ]);
 
+      // #when
       await engine.syncNow();
 
+      // #then
       expect(mockGetAllUserPlaylists).toHaveBeenCalled();
       const cachedPlaylists = await cache.getAllPlaylists();
       expect(cachedPlaylists).toHaveLength(2);
@@ -228,7 +231,7 @@ describe('LibrarySyncEngine', () => {
     });
 
     it('should detect liked songs count change and invalidate cache', async () => {
-      // Need at least one playlist so warm start triggers (not cold start)
+      // #given
       await seedCacheMeta({
         playlists: [makePlaylist('p1')],
         snapshotIds: {},
@@ -243,13 +246,14 @@ describe('LibrarySyncEngine', () => {
       engine.stop();
       vi.clearAllMocks();
 
-      // Liked songs changed from 5 to 6
       mockGetPlaylistCount.mockResolvedValue(1);
       mockGetAlbumCount.mockResolvedValue(0);
       mockGetLikedSongsCount.mockResolvedValue(6);
 
+      // #when
       await engine.syncNow();
 
+      // #then
       expect(mockInvalidateLikedSongsCaches).toHaveBeenCalled();
       const likedMeta = await cache.getMeta('likedSongs');
       expect(likedMeta!.totalCount).toBe(6);
@@ -258,6 +262,7 @@ describe('LibrarySyncEngine', () => {
 
   describe('incremental playlist updates', () => {
     it('should remove deleted playlists from cache', async () => {
+      // #given
       await seedCacheMeta({
         playlists: [makePlaylist('p1', 'Keep', 'snap1'), makePlaylist('p2', 'Remove', 'snap2')],
         playlistCount: 2,
@@ -272,7 +277,6 @@ describe('LibrarySyncEngine', () => {
       engine.stop();
       vi.clearAllMocks();
 
-      // p2 was removed
       mockGetPlaylistCount.mockResolvedValue(1);
       mockGetAlbumCount.mockResolvedValue(0);
       mockGetLikedSongsCount.mockResolvedValue(0);
@@ -280,14 +284,17 @@ describe('LibrarySyncEngine', () => {
         makePlaylist('p1', 'Keep', 'snap1'),
       ]);
 
+      // #when
       await engine.syncNow();
 
+      // #then
       const playlists = await cache.getAllPlaylists();
       expect(playlists).toHaveLength(1);
       expect(playlists[0].id).toBe('p1');
     });
 
     it('should invalidate track list when snapshot_id changes', async () => {
+      // #given
       await cache.putTrackList('playlist:p1', [
         { id: 't1', name: 'Old', artists: 'A', album: 'B', duration_ms: 100, uri: 'u' },
       ], 'snap-old');
@@ -304,7 +311,6 @@ describe('LibrarySyncEngine', () => {
       engine.stop();
       vi.clearAllMocks();
 
-      // Count changes (triggers sync), snapshot also changed
       mockGetPlaylistCount.mockResolvedValue(2);
       mockGetAlbumCount.mockResolvedValue(0);
       mockGetLikedSongsCount.mockResolvedValue(0);
@@ -313,8 +319,10 @@ describe('LibrarySyncEngine', () => {
         makePlaylist('p2', 'New', 'snap2'),
       ]);
 
+      // #when
       await engine.syncNow();
 
+      // #then
       const trackList = await cache.getTrackList('playlist:p1');
       expect(trackList).toBeUndefined();
     });
@@ -331,6 +339,7 @@ describe('LibrarySyncEngine', () => {
     });
 
     it('should return an unsubscribe function', async () => {
+      // #given
       mockGetUserLibraryInterleaved.mockImplementation(async (onP, onA) => {
         onP([], true);
         onA([], true);
@@ -339,18 +348,20 @@ describe('LibrarySyncEngine', () => {
 
       let callCount = 0;
       const unsub = engine.subscribe(() => { callCount++; });
-      expect(callCount).toBe(1); // Initial emit
+      expect(callCount).toBe(1);
 
+      // #when
       unsub();
       await engine.start();
 
-      // Cold start emits, but listener was removed so callCount shouldn't increase
+      // #then
       expect(callCount).toBe(1);
     });
   });
 
   describe('error handling', () => {
     it('should handle API errors gracefully during sync', async () => {
+      // #given
       await seedCacheMeta({
         playlists: [makePlaylist('p1')],
         snapshotIds: {},
@@ -364,18 +375,18 @@ describe('LibrarySyncEngine', () => {
       engine.stop();
       vi.clearAllMocks();
 
-      // Sync fails
       mockGetPlaylistCount.mockRejectedValue(new Error('Network error'));
       mockGetAlbumCount.mockResolvedValue(0);
       mockGetLikedSongsCount.mockResolvedValue(0);
 
+      // #when
       await engine.syncNow();
 
+      // #then
       const state = engine.getState();
       expect(state.error).toBeTruthy();
       expect(state.isSyncing).toBe(false);
 
-      // Cached data should still be intact
       const playlists = await cache.getAllPlaylists();
       expect(playlists).toHaveLength(1);
     });

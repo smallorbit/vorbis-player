@@ -69,6 +69,17 @@ describe('pinnedItemsStorage', () => {
       expect(dropboxResult).toEqual([]);
     });
 
+    it('provider isolation: spotify playlists do not affect dropbox playlists', async () => {
+      // #given
+      await setPins('spotify', 'playlists', ['sp-1', 'sp-2']);
+
+      // #when
+      const dropboxResult = await getPins('dropbox', 'playlists');
+
+      // #then
+      expect(dropboxResult).toEqual([]);
+    });
+
     it('type isolation: playlists pins do not affect albums for the same provider', async () => {
       // #given
       await setPins('spotify', 'playlists', ['pl-1', 'pl-2']);
@@ -130,7 +141,7 @@ describe('pinnedItemsStorage', () => {
     });
 
     it('is idempotent when called a second time after keys have been removed', async () => {
-      // #given — first call consumes the keys
+      // #given
       vi.mocked(localStorage.getItem).mockImplementation((key) => {
         if (key === 'vorbis-player-pinned-playlists') return JSON.stringify(['pl-1']);
         if (key === 'vorbis-player-pinned-albums') return JSON.stringify(['al-1']);
@@ -138,16 +149,14 @@ describe('pinnedItemsStorage', () => {
       });
       await migratePinsFromLocalStorage();
 
-      // simulate keys removed (second call sees nothing)
       vi.mocked(localStorage.getItem).mockReturnValue(null);
       vi.mocked(localStorage.removeItem).mockClear();
 
       // #when
       await migratePinsFromLocalStorage();
 
-      // #then — no additional writes or removals
+      // #then
       expect(localStorage.removeItem).not.toHaveBeenCalled();
-      // IDB still holds the data from the first migration
       expect(await getPins('spotify', 'playlists')).toEqual(['pl-1']);
       expect(await getPins('spotify', 'albums')).toEqual(['al-1']);
     });

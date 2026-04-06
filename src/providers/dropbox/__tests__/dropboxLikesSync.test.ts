@@ -87,34 +87,48 @@ describe('DropboxLikesSyncService', () => {
 
   describe('mergeLikes', () => {
     it('merges empty local and remote', () => {
+      // #when
       const result = service.mergeLikes([], null, []);
+
+      // #then
       expect(result.mergedLikes).toEqual([]);
       expect(result.mergedTombstones).toEqual([]);
       expect(result.changed).toBe(false);
     });
 
     it('keeps local likes when remote is empty', () => {
+      // #given
       const local = [makeLikedEntry('a', 1000)];
+
+      // #when
       const result = service.mergeLikes(local, null, []);
+
+      // #then
       expect(result.mergedLikes).toHaveLength(1);
       expect(result.mergedLikes[0].trackId).toBe('a');
       expect(result.changed).toBe(false);
     });
 
     it('adds remote likes missing locally', () => {
+      // #given
       const remote: RemoteLikesFile = {
         version: 1,
         updatedAt: new Date().toISOString(),
         likes: [makeLikedEntry('b', 2000)],
         tombstones: [],
       };
+
+      // #when
       const result = service.mergeLikes([], remote, []);
+
+      // #then
       expect(result.mergedLikes).toHaveLength(1);
       expect(result.mergedLikes[0].trackId).toBe('b');
       expect(result.changed).toBe(true);
     });
 
     it('merges overlapping likes keeping latest likedAt', () => {
+      // #given
       const local = [makeLikedEntry('a', 3000, 'Local Name')];
       const remote: RemoteLikesFile = {
         version: 1,
@@ -122,7 +136,11 @@ describe('DropboxLikesSyncService', () => {
         likes: [makeLikedEntry('a', 1000, 'Remote Name')],
         tombstones: [],
       };
+
+      // #when
       const result = service.mergeLikes(local, remote, []);
+
+      // #then
       expect(result.mergedLikes).toHaveLength(1);
       // Local entry is newer, should win
       expect(result.mergedLikes[0].likedAt).toBe(3000);
@@ -132,22 +150,33 @@ describe('DropboxLikesSyncService', () => {
     });
 
     it('tombstone wins over like when deletedAt > likedAt', () => {
+      // #given
       const local = [makeLikedEntry('a', 1000)];
       const localTombstones = [makeTombstone('a', 2000)];
+
+      // #when
       const result = service.mergeLikes(local, null, localTombstones);
+
+      // #then
       expect(result.mergedLikes).toHaveLength(0);
       expect(result.changed).toBe(true);
     });
 
     it('like wins over tombstone when likedAt > deletedAt', () => {
+      // #given
       const local = [makeLikedEntry('a', 3000)];
       const localTombstones = [makeTombstone('a', 2000)];
+
+      // #when
       const result = service.mergeLikes(local, null, localTombstones);
+
+      // #then
       expect(result.mergedLikes).toHaveLength(1);
       expect(result.mergedLikes[0].trackId).toBe('a');
     });
 
     it('remote tombstone removes local like', () => {
+      // #given
       const local = [makeLikedEntry('a', 1000)];
       const remote: RemoteLikesFile = {
         version: 1,
@@ -155,21 +184,31 @@ describe('DropboxLikesSyncService', () => {
         likes: [],
         tombstones: [makeTombstone('a', 2000)],
       };
+
+      // #when
       const result = service.mergeLikes(local, remote, []);
+
+      // #then
       expect(result.mergedLikes).toHaveLength(0);
       expect(result.changed).toBe(true);
     });
 
     it('prunes tombstones older than 30 days', () => {
+      // #given
       const now = Date.now();
       const oldTombstone = makeTombstone('old', now - 31 * 24 * 60 * 60 * 1000);
       const recentTombstone = makeTombstone('recent', now - 1000);
+
+      // #when
       const result = service.mergeLikes([], null, [oldTombstone, recentTombstone]);
+
+      // #then
       expect(result.mergedTombstones).toHaveLength(1);
       expect(result.mergedTombstones[0].trackId).toBe('recent');
     });
 
     it('merges both local and remote likes and tombstones', () => {
+      // #given
       const local = [makeLikedEntry('a', 1000), makeLikedEntry('c', 3000)];
       const remote: RemoteLikesFile = {
         version: 1,
@@ -178,8 +217,11 @@ describe('DropboxLikesSyncService', () => {
         tombstones: [makeTombstone('c', 4000)],
       };
       const localTombstones: Tombstone[] = [];
+
+      // #when
       const result = service.mergeLikes(local, remote, localTombstones);
 
+      // #then
       const ids = result.mergedLikes.map((e) => e.trackId).sort();
       expect(ids).toEqual(['a', 'b']); // c removed by remote tombstone
       expect(result.mergedLikes.find((e) => e.trackId === 'a')?.likedAt).toBe(1000); // local wins
@@ -200,6 +242,7 @@ describe('DropboxLikesSyncService', () => {
     });
 
     it('parses remote file on success', async () => {
+      // #given
       const remoteData: RemoteLikesFile = {
         version: 1,
         updatedAt: new Date().toISOString(),
@@ -214,11 +257,16 @@ describe('DropboxLikesSyncService', () => {
           json: () => Promise.resolve(remoteData),
         }),
       );
+
+      // #when
       const result = await service.downloadLikesFile();
+
+      // #then
       expect(result).toEqual(remoteData);
     });
 
     it('retries with refreshed token on 401', async () => {
+      // #given
       const remoteData: RemoteLikesFile = {
         version: 1,
         updatedAt: new Date().toISOString(),
@@ -235,7 +283,10 @@ describe('DropboxLikesSyncService', () => {
         });
       vi.stubGlobal('fetch', fetchMock);
 
+      // #when
       const result = await service.downloadLikesFile();
+
+      // #then
       expect(result).toEqual(remoteData);
       expect(fetchMock).toHaveBeenCalledTimes(2);
       expect(mockAuth.refreshAccessToken).toHaveBeenCalled();
@@ -256,6 +307,7 @@ describe('DropboxLikesSyncService', () => {
     });
 
     it('returns true on successful upload', async () => {
+      // #given
       vi.stubGlobal(
         'fetch',
         vi.fn().mockResolvedValue({ status: 200, ok: true }),
@@ -266,12 +318,17 @@ describe('DropboxLikesSyncService', () => {
         likes: [makeLikedEntry('a', 1000)],
         tombstones: [],
       };
+
+      // #when
       const result = await service.uploadLikesFile(data);
+
+      // #then
       expect(result).toBe(true);
       expect(fetch).toHaveBeenCalledTimes(1);
     });
 
     it('calls ensureVorbisFolder before upload', async () => {
+      // #given
       vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ status: 200, ok: true }));
 
       const data: RemoteLikesFile = {
@@ -281,12 +338,16 @@ describe('DropboxLikesSyncService', () => {
         tombstones: [],
       };
 
+      // #when
       const result = await service.uploadLikesFile(data);
+
+      // #then
       expect(result).toBe(true);
       expect(ensureVorbisFolder).toHaveBeenCalled();
     });
 
     it('returns false when folder creation fails', async () => {
+      // #given
       vi.mocked(ensureVorbisFolder).mockResolvedValueOnce(false);
 
       const data: RemoteLikesFile = {
@@ -295,7 +356,11 @@ describe('DropboxLikesSyncService', () => {
         likes: [],
         tombstones: [],
       };
+
+      // #when
       const result = await service.uploadLikesFile(data);
+
+      // #then
       expect(result).toBe(false);
     });
   });
@@ -374,14 +439,16 @@ describe('DropboxLikesSyncService', () => {
 
   describe('schedulePush', () => {
     it('debounces push calls', async () => {
+      // #given
       const fetchMock = vi.fn().mockResolvedValue({ status: 200, ok: true });
       vi.stubGlobal('fetch', fetchMock);
 
+      // #when
       service.schedulePush();
       service.schedulePush();
       service.schedulePush();
 
-      // Nothing should have been called yet
+      // #then — nothing should have been called yet
       expect(fetchMock).not.toHaveBeenCalled();
 
       await vi.advanceTimersByTimeAsync(2500);

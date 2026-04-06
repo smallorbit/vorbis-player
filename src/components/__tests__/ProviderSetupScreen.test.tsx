@@ -177,7 +177,6 @@ describe('ProviderSetupScreen', () => {
         registry: { getAll: () => [spotifyDesc] },
         enabledProviderIds: ['spotify'],
       });
-
       render(<Wrapper><ProviderSetupScreen /></Wrapper>);
 
       // #when
@@ -208,7 +207,6 @@ describe('ProviderSetupScreen', () => {
         registry: { getAll: () => [spotifyDesc] },
         enabledProviderIds: ['spotify'],
       });
-
       render(<Wrapper><ProviderSetupScreen onOpenLibrary={onOpenLibrary} /></Wrapper>);
 
       // #when
@@ -267,12 +265,10 @@ describe('ProviderSetupScreen', () => {
       // #given
       const spotifyDesc = makeProviderDescriptor({ id: 'spotify', name: 'Spotify' });
       const dropboxDesc = makeProviderDescriptor({ id: 'dropbox' as 'spotify', name: 'Dropbox' });
-
       mockProviderContextValue = buildProviderContext({
         chosenProviderId: 'spotify',
         registry: { getAll: () => [spotifyDesc, dropboxDesc] },
       });
-
       render(<Wrapper><ProviderSetupScreen /></Wrapper>);
 
       // #when

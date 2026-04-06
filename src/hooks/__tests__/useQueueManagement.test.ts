@@ -62,6 +62,7 @@ describe('useQueueManagement', () => {
   });
 
   it('handleRemoveFromQueue adjusts currentTrackIndex when removing a track before the current one', () => {
+    // #given
     mediaTracksRef.current = [makeMediaTrack('1'), makeMediaTrack('2'), makeMediaTrack('3')];
     const tracks = [makeTrack({ id: '1' }), makeTrack({ id: '2' }), makeTrack({ id: '3' })];
     const { result } = renderHook(() =>
@@ -77,17 +78,26 @@ describe('useQueueManagement', () => {
       })
     );
 
+    // #when
     act(() => {
       result.current.handleRemoveFromQueue(0);
     });
 
-    // Should decrement currentTrackIndex from 2 to 1
+    // #then — setCurrentTrackIndex receives a functional updater that decrements by 1
     expect(mockSetCurrentTrackIndex).toHaveBeenCalledWith(expect.any(Function));
-    expect(mockSetTracks).toHaveBeenCalled();
+    const indexUpdater = mockSetCurrentTrackIndex.mock.calls[0][0] as (prev: number) => number;
+    expect(indexUpdater(2)).toBe(1);
+
+    // setTracks receives a functional updater that removes the track at index 0
+    expect(mockSetTracks).toHaveBeenCalledWith(expect.any(Function));
+    const tracksUpdater = mockSetTracks.mock.calls[0][0] as (prev: typeof tracks) => typeof tracks;
+    expect(tracksUpdater(tracks)).toEqual([makeTrack({ id: '2' }), makeTrack({ id: '3' })]);
+
     expect(mockSetOriginalTracks).toHaveBeenCalled();
   });
 
   it('handleReorderQueue updates currentTrackIndex to follow the playing track', () => {
+    // #given
     mediaTracksRef.current = [makeMediaTrack('1'), makeMediaTrack('2'), makeMediaTrack('3')];
     const tracks = [makeTrack({ id: '1' }), makeTrack({ id: '2' }), makeTrack({ id: '3' })];
     const { result } = renderHook(() =>
@@ -103,16 +113,18 @@ describe('useQueueManagement', () => {
       })
     );
 
+    // #when
     act(() => {
-      result.current.handleReorderQueue(0, 2); // Move first track to end
+      result.current.handleReorderQueue(0, 2);
     });
 
-    // After reordering, the playing track (originally at 0) should be at index 2
+    // #then
     expect(mockSetCurrentTrackIndex).toHaveBeenCalledWith(2);
     expect(mockSetTracks).toHaveBeenCalled();
   });
 
   it('handleAddToQueue delegates to loadCollection when queue is empty', async () => {
+    // #given
     mockHandlePlaylistSelect.mockResolvedValue(3);
 
     const { result } = renderHook(() =>
@@ -128,15 +140,18 @@ describe('useQueueManagement', () => {
       })
     );
 
+    // #when
     const response = await act(async () => {
       return result.current.handleAddToQueue('playlist_id', 'My Playlist');
     });
 
+    // #then
     expect(mockHandlePlaylistSelect).toHaveBeenCalledWith('playlist_id', undefined);
     expect(response).toEqual({ added: 3, collectionName: 'My Playlist' });
   });
 
   it('handleAddToQueue appends tracks to an existing queue without resetting currentTrackIndex', async () => {
+    // #given
     mediaTracksRef.current = [makeMediaTrack('1'), makeMediaTrack('2')];
     const tracks = [makeTrack({ id: '1' }), makeTrack({ id: '2' })];
 
@@ -159,15 +174,24 @@ describe('useQueueManagement', () => {
       })
     );
 
+    // #when
     const response = await act(async () => {
       return result.current.handleAddToQueue('playlist_id');
     });
 
-    // Should have appended the new tracks
+    // #then
     expect(mockSetTracks).toHaveBeenCalledWith(expect.any(Function));
+    const tracksUpdater = mockSetTracks.mock.calls[0][0] as (prev: ReturnType<typeof makeMediaTrack>[]) => ReturnType<typeof makeMediaTrack>[];
+    const existingTracks = [makeMediaTrack('1'), makeMediaTrack('2')];
+    const appended = tracksUpdater(existingTracks);
+    expect(appended).toHaveLength(4);
+    expect(appended[0].id).toBe('1');
+    expect(appended[1].id).toBe('2');
+    expect(appended[2].id).toBe('3');
+    expect(appended[3].id).toBe('4');
+
     expect(mockSetOriginalTracks).toHaveBeenCalled();
     expect(response).toEqual({ added: 2, collectionName: undefined });
-    // currentTrackIndex should NOT be reset
     expect(mockSetCurrentTrackIndex).not.toHaveBeenCalled();
   });
 });

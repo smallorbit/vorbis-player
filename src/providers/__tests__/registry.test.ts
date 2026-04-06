@@ -82,31 +82,43 @@ describe('ProviderRegistry', () => {
   });
 
   it('registers and retrieves a provider', () => {
+    // #given
     const descriptor = makeStubDescriptor('spotify', 'Spotify');
+
+    // #when
     registry.register(descriptor);
 
+    // #then
     expect(registry.has('spotify')).toBe(true);
     expect(registry.get('spotify')).toBe(descriptor);
   });
 
   it('getAll() returns all registered providers', () => {
+    // #given
     const spotify = makeStubDescriptor('spotify', 'Spotify');
     const dropbox = makeStubDescriptor('dropbox', 'Dropbox');
+
+    // #when
     registry.register(spotify);
     registry.register(dropbox);
-
     const all = registry.getAll();
+
+    // #then
     expect(all).toHaveLength(2);
     expect(all).toContain(spotify);
     expect(all).toContain(dropbox);
   });
 
   it('overwrites a provider if registered twice with the same id', () => {
+    // #given
     const first = makeStubDescriptor('spotify', 'Spotify v1');
     const second = makeStubDescriptor('spotify', 'Spotify v2');
+
+    // #when
     registry.register(first);
     registry.register(second);
 
+    // #then
     expect(registry.get('spotify')).toBe(second);
     expect(registry.getAll()).toHaveLength(1);
   });

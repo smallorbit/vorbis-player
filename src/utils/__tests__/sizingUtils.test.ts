@@ -33,9 +33,11 @@ describe('sizingUtils', () => {
 
   describe('getViewportInfo', () => {
     it('should return correct viewport info for landscape', () => {
+      // #when
       mockWindow(1024, 700);
       const viewport = getViewportInfo();
-      
+
+      // #then
       expect(viewport.width).toBe(1024);
       expect(viewport.height).toBe(700);
       expect(viewport.orientation).toBe('landscape');
@@ -43,9 +45,11 @@ describe('sizingUtils', () => {
     });
 
     it('should return correct viewport info for portrait', () => {
+      // #when
       mockWindow(700, 1024);
       const viewport = getViewportInfo();
-      
+
+      // #then
       expect(viewport.width).toBe(700);
       expect(viewport.height).toBe(1024);
       expect(viewport.orientation).toBe('portrait');
@@ -54,30 +58,36 @@ describe('sizingUtils', () => {
 
   describe('calculatePlayerDimensions', () => {
     it('should calculate dimensions for desktop landscape', () => {
+      // #when
       mockWindow(1920, 1080);
       const viewport = getViewportInfo();
       const dimensions = calculatePlayerDimensions(viewport);
-      
+
+      // #then
       expect(dimensions.width).toBeLessThanOrEqual(1920 * 0.8);
       expect(dimensions.height).toBeLessThanOrEqual(1080 * 0.85);
       expect(dimensions.scale).toBeLessThanOrEqual(1);
     });
 
     it('should calculate dimensions for mobile portrait', () => {
+      // #when
       mockWindow(375, 667);
       const viewport = getViewportInfo();
       const dimensions = calculatePlayerDimensions(viewport);
-      
+
+      // #then
       expect(dimensions.width).toBeGreaterThanOrEqual(320);
       expect(dimensions.height).toBeGreaterThanOrEqual(400);
     });
 
     it('should respect constraints', () => {
+      // #when
       mockWindow(1920, 1080);
       const viewport = getViewportInfo();
       const constraints = { minWidth: 500, maxWidth: 800 };
       const dimensions = calculatePlayerDimensions(viewport, constraints);
-      
+
+      // #then
       expect(dimensions.width).toBeGreaterThanOrEqual(500);
       expect(dimensions.width).toBeLessThanOrEqual(800);
     });
@@ -86,20 +96,29 @@ describe('sizingUtils', () => {
 
   describe('shouldUseFluidSizing', () => {
     it('should return true for mobile', () => {
+      // #when
       mockWindow(375, 667);
       const viewport = getViewportInfo();
+
+      // #then
       expect(shouldUseFluidSizing(viewport)).toBe(true);
     });
 
     it('should return true for very large screens', () => {
+      // #when
       mockWindow(2560, 1440);
       const viewport = getViewportInfo();
+
+      // #then
       expect(shouldUseFluidSizing(viewport)).toBe(true);
     });
 
     it('should return false for standard desktop', () => {
+      // #when
       mockWindow(1280, 720);
       const viewport = getViewportInfo();
+
+      // #then
       expect(shouldUseFluidSizing(viewport)).toBe(false);
     });
   });

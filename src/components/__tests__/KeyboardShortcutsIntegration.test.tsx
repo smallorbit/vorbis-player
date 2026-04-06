@@ -80,8 +80,10 @@ describe('Keyboard Shortcuts Integration', () => {
   });
 
   it('should expose core playback handlers from usePlayerLogic', () => {
+    // #when
     const { result } = renderHook(() => usePlayerLogic(), { wrapper: AllProviders });
 
+    // #then
     expect(result.current.handlers).toHaveProperty('handlePlay');
     expect(result.current.handlers).toHaveProperty('handlePause');
     expect(result.current.handlers).toHaveProperty('handleNext');
@@ -94,6 +96,7 @@ describe('Keyboard Shortcuts Integration', () => {
   });
 
   it('should handle all keyboard shortcuts in PlayerContent context', () => {
+    // #given
     const handlers = {
       onPlayPause: vi.fn(),
       onNext: vi.fn(),
@@ -110,12 +113,9 @@ describe('Keyboard Shortcuts Integration', () => {
     };
 
     const addEventListenerSpy = vi.spyOn(document, 'addEventListener');
-
     renderHook(() => useKeyboardShortcuts(handlers));
-
     const handler = addEventListenerSpy.mock.calls[0][1] as EventListener;
 
-    // Test each shortcut
     const tests = [
       { key: 'Space', handler: handlers.onPlayPause },
       { key: 'ArrowLeft', handler: handlers.onPrevious },
@@ -127,10 +127,13 @@ describe('Keyboard Shortcuts Integration', () => {
       { key: 'KeyS', handler: handlers.onToggleShuffle, shift: false },
     ];
 
+    // #when
     tests.forEach(({ key, handler: expectedHandler, shift }) => {
       const event = new KeyboardEvent('keydown', { code: key, shiftKey: shift || false, bubbles: true });
       Object.defineProperty(event, 'target', { value: document.body, enumerable: true });
       handler(event);
+
+      // #then
       expect(expectedHandler).toHaveBeenCalled();
     });
 
@@ -138,6 +141,7 @@ describe('Keyboard Shortcuts Integration', () => {
   });
 
   it('should not trigger shortcuts when typing in form fields', () => {
+    // #given
     const handlers = {
       onToggleLike: vi.fn(),
       onToggleGlow: vi.fn(),
@@ -145,31 +149,34 @@ describe('Keyboard Shortcuts Integration', () => {
     };
 
     const addEventListenerSpy = vi.spyOn(document, 'addEventListener');
-
     renderHook(() => useKeyboardShortcuts(handlers));
-
     const handler = addEventListenerSpy.mock.calls[0][1] as EventListener;
 
-    // Create input and textarea elements
     const input = document.createElement('input');
     const textarea = document.createElement('textarea');
 
-    // Test input field
+    // #when input field receives keydown
     const inputEvent = new KeyboardEvent('keydown', { code: 'Space', bubbles: true });
     Object.defineProperty(inputEvent, 'target', { value: input, enumerable: true });
     handler(inputEvent);
+
+    // #then
     expect(handlers.onPlayPause).not.toHaveBeenCalled();
 
-    // Test textarea field
+    // #when textarea field receives keydown
     const textareaEvent = new KeyboardEvent('keydown', { code: 'KeyG', bubbles: true });
     Object.defineProperty(textareaEvent, 'target', { value: textarea, enumerable: true });
     handler(textareaEvent);
+
+    // #then
     expect(handlers.onToggleGlow).not.toHaveBeenCalled();
 
-    // Test that normal element still works
+    // #when normal element receives keydown
     const bodyEvent = new KeyboardEvent('keydown', { code: 'Space', bubbles: true });
     Object.defineProperty(bodyEvent, 'target', { value: document.body, enumerable: true });
     handler(bodyEvent);
+
+    // #then
     expect(handlers.onPlayPause).toHaveBeenCalled();
 
     addEventListenerSpy.mockRestore();

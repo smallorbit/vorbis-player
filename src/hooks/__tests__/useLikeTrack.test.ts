@@ -87,6 +87,7 @@ describe('useLikeTrack', () => {
   });
 
   it('optimistic update before API resolves', async () => {
+    // #given
     vi.mocked(checkTrackSaved).mockResolvedValue(false);
     let resolveSave: () => void;
     vi.mocked(saveTrack).mockImplementation(
@@ -117,6 +118,7 @@ describe('useLikeTrack', () => {
   });
 
   it('reverts optimistic update on API error', async () => {
+    // #given
     vi.mocked(checkTrackSaved).mockResolvedValue(false);
     vi.mocked(saveTrack).mockRejectedValue(new Error('API error'));
 
@@ -137,6 +139,7 @@ describe('useLikeTrack', () => {
   });
 
   it('no-op when isLikePending is true (prevents double-click)', async () => {
+    // #given
     vi.mocked(checkTrackSaved).mockResolvedValue(false);
     let resolveSave: () => void;
     vi.mocked(saveTrack).mockImplementation(
@@ -149,18 +152,19 @@ describe('useLikeTrack', () => {
       expect(result.current.isLikePending).toBe(false);
     });
 
-    // First toggle
+    // #when - first toggle
     act(() => {
       result.current.handleLikeToggle();
     });
 
     expect(result.current.isLikePending).toBe(true);
 
-    // Second toggle while pending - should be no-op
+    // #when - second toggle while pending - should be no-op
     act(() => {
       result.current.handleLikeToggle();
     });
 
+    // #then
     expect(saveTrack).toHaveBeenCalledTimes(1);
 
     await act(async () => {
@@ -169,6 +173,7 @@ describe('useLikeTrack', () => {
   });
 
   it('calls unsaveTrack when unliking', async () => {
+    // #given
     vi.mocked(checkTrackSaved).mockResolvedValue(true);
 
     const { result } = renderHook(() => useLikeTrack('track-1'), opts);
@@ -177,10 +182,12 @@ describe('useLikeTrack', () => {
       expect(result.current.isLiked).toBe(true);
     });
 
+    // #when
     await act(async () => {
       result.current.handleLikeToggle();
     });
 
+    // #then
     expect(unsaveTrack).toHaveBeenCalledWith('track-1');
   });
 

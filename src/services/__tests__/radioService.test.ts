@@ -9,7 +9,7 @@ vi.mock('@/services/lastfm', () => ({
   getAlbumTracks: vi.fn(),
 }));
 
-function makeTrack(name: string, artist: string, extra?: Partial<MediaTrack>): MediaTrack {
+function makeRadioTrack(name: string, artist: string, extra?: Partial<MediaTrack>): MediaTrack {
   return {
     id: `${artist}-${name}`.toLowerCase().replace(/\s+/g, '-'),
     provider: 'dropbox',
@@ -35,14 +35,15 @@ describe('RadioService', () => {
 
   describe('generateRadioQueue — track seed', () => {
     it('uses the primary artist for Last.fm track lookups', async () => {
+      // #given
       const { generateRadioQueue, lastfm } = await freshRadioService();
 
       const catalog = [
-        makeTrack('Karma Police', 'Radiohead'),
-        makeTrack('Lucky', 'Radiohead'),
-        makeTrack('No Surprises', 'Radiohead'),
-        makeTrack('Exit Music', 'Radiohead'),
-        makeTrack('Airbag', 'Radiohead'),
+        makeRadioTrack('Karma Police', 'Radiohead'),
+        makeRadioTrack('Lucky', 'Radiohead'),
+        makeRadioTrack('No Surprises', 'Radiohead'),
+        makeRadioTrack('Exit Music', 'Radiohead'),
+        makeRadioTrack('Airbag', 'Radiohead'),
       ];
 
       vi.mocked(lastfm.getSimilarTracks).mockResolvedValue([
@@ -55,21 +56,25 @@ describe('RadioService', () => {
       vi.mocked(lastfm.getSimilarArtists).mockResolvedValue([]);
 
       const seed: RadioSeed = { type: 'track', artist: 'Radiohead, Thom Yorke', track: 'Creep' };
+
+      // #when
       await generateRadioQueue(seed, catalog);
 
+      // #then
       expect(lastfm.getSimilarTracks).toHaveBeenCalledWith('Radiohead', 'Creep', 25);
     });
 
     it('matches Last.fm similar tracks against catalog', async () => {
+      // #given
       const { generateRadioQueue, lastfm } = await freshRadioService();
 
       const catalog = [
-        makeTrack('Karma Police', 'Radiohead'),
-        makeTrack('Lucky', 'Radiohead'),
-        makeTrack('Paranoid Android', 'Radiohead'),
-        makeTrack('No Surprises', 'Radiohead'),
-        makeTrack('Exit Music', 'Radiohead'),
-        makeTrack('Unrelated', 'Other Artist'),
+        makeRadioTrack('Karma Police', 'Radiohead'),
+        makeRadioTrack('Lucky', 'Radiohead'),
+        makeRadioTrack('Paranoid Android', 'Radiohead'),
+        makeRadioTrack('No Surprises', 'Radiohead'),
+        makeRadioTrack('Exit Music', 'Radiohead'),
+        makeRadioTrack('Unrelated', 'Other Artist'),
       ];
 
       vi.mocked(lastfm.getSimilarTracks).mockResolvedValue([
@@ -82,8 +87,11 @@ describe('RadioService', () => {
       ]);
 
       const seed: RadioSeed = { type: 'track', artist: 'Radiohead', track: 'Creep' };
+
+      // #when
       const result = await generateRadioQueue(seed, catalog);
 
+      // #then
       expect(result.queue.length).toBeGreaterThanOrEqual(5);
       expect(result.queue.every((t) => t.name !== 'Creep')).toBe(true);
       expect(result.seedDescription).toContain('Creep');
@@ -92,15 +100,16 @@ describe('RadioService', () => {
     });
 
     it('excludes the seed track from the queue', async () => {
+      // #given
       const { generateRadioQueue, lastfm } = await freshRadioService();
 
       const catalog = [
-        makeTrack('Creep', 'Radiohead'),
-        makeTrack('Karma Police', 'Radiohead'),
-        makeTrack('Lucky', 'Radiohead'),
-        makeTrack('No Surprises', 'Radiohead'),
-        makeTrack('Exit Music', 'Radiohead'),
-        makeTrack('Airbag', 'Radiohead'),
+        makeRadioTrack('Creep', 'Radiohead'),
+        makeRadioTrack('Karma Police', 'Radiohead'),
+        makeRadioTrack('Lucky', 'Radiohead'),
+        makeRadioTrack('No Surprises', 'Radiohead'),
+        makeRadioTrack('Exit Music', 'Radiohead'),
+        makeRadioTrack('Airbag', 'Radiohead'),
       ];
 
       vi.mocked(lastfm.getSimilarTracks).mockResolvedValue([
@@ -113,20 +122,24 @@ describe('RadioService', () => {
       ]);
 
       const seed: RadioSeed = { type: 'track', artist: 'Radiohead', track: 'Creep' };
+
+      // #when
       const result = await generateRadioQueue(seed, catalog);
 
+      // #then
       expect(result.queue.find((t) => t.name === 'Creep')).toBeUndefined();
     });
 
     it('collects unmatched suggestions', async () => {
+      // #given
       const { generateRadioQueue, lastfm } = await freshRadioService();
 
       const catalog = [
-        makeTrack('Lucky', 'Radiohead'),
-        makeTrack('No Surprises', 'Radiohead'),
-        makeTrack('Exit Music', 'Radiohead'),
-        makeTrack('Airbag', 'Radiohead'),
-        makeTrack('Let Down', 'Radiohead'),
+        makeRadioTrack('Lucky', 'Radiohead'),
+        makeRadioTrack('No Surprises', 'Radiohead'),
+        makeRadioTrack('Exit Music', 'Radiohead'),
+        makeRadioTrack('Airbag', 'Radiohead'),
+        makeRadioTrack('Let Down', 'Radiohead'),
       ];
 
       vi.mocked(lastfm.getSimilarTracks).mockResolvedValue([
@@ -139,20 +152,24 @@ describe('RadioService', () => {
       ]);
 
       const seed: RadioSeed = { type: 'track', artist: 'Radiohead', track: 'Creep' };
+
+      // #when
       const result = await generateRadioQueue(seed, catalog);
 
+      // #then
       expect(result.unmatchedSuggestions).toEqual(
         expect.arrayContaining([expect.objectContaining({ name: 'Missing Song', artist: 'Missing Artist' })]),
       );
     });
 
     it('falls back to similar artists when few track matches', async () => {
+      // #given
       const { generateRadioQueue, lastfm } = await freshRadioService();
 
       const catalog = [
-        makeTrack('Hysteria', 'Muse'),
-        makeTrack('Starlight', 'Muse'),
-        makeTrack('Time Is Running Out', 'Muse'),
+        makeRadioTrack('Hysteria', 'Muse'),
+        makeRadioTrack('Starlight', 'Muse'),
+        makeRadioTrack('Time Is Running Out', 'Muse'),
       ];
 
       vi.mocked(lastfm.getSimilarTracks).mockResolvedValue([
@@ -163,21 +180,25 @@ describe('RadioService', () => {
       ]);
 
       const seed: RadioSeed = { type: 'track', artist: 'Radiohead', track: 'Creep' };
+
+      // #when
       const result = await generateRadioQueue(seed, catalog);
 
+      // #then
       expect(result.queue.length).toBeGreaterThan(0);
       expect(result.queue.some((t) => t.artists === 'Muse')).toBe(true);
     });
 
     it('deduplicates tracks in the queue', async () => {
+      // #given
       const { generateRadioQueue, lastfm } = await freshRadioService();
 
       const catalog = [
-        makeTrack('Karma Police', 'Radiohead'),
-        makeTrack('Lucky', 'Radiohead'),
-        makeTrack('No Surprises', 'Radiohead'),
-        makeTrack('Exit Music', 'Radiohead'),
-        makeTrack('Airbag', 'Radiohead'),
+        makeRadioTrack('Karma Police', 'Radiohead'),
+        makeRadioTrack('Lucky', 'Radiohead'),
+        makeRadioTrack('No Surprises', 'Radiohead'),
+        makeRadioTrack('Exit Music', 'Radiohead'),
+        makeRadioTrack('Airbag', 'Radiohead'),
       ];
 
       vi.mocked(lastfm.getSimilarTracks).mockResolvedValue([
@@ -190,21 +211,25 @@ describe('RadioService', () => {
       ]);
 
       const seed: RadioSeed = { type: 'track', artist: 'Radiohead', track: 'Creep' };
+
+      // #when
       const result = await generateRadioQueue(seed, catalog);
 
+      // #then
       const ids = result.queue.map((t) => t.id);
       expect(new Set(ids).size).toBe(ids.length);
     });
 
     it('sorts queue by Last.fm match score descending', async () => {
+      // #given
       const { generateRadioQueue, lastfm } = await freshRadioService();
 
       const catalog = [
-        makeTrack('A', 'Radiohead'),
-        makeTrack('B', 'Radiohead'),
-        makeTrack('C', 'Radiohead'),
-        makeTrack('D', 'Radiohead'),
-        makeTrack('E', 'Radiohead'),
+        makeRadioTrack('A', 'Radiohead'),
+        makeRadioTrack('B', 'Radiohead'),
+        makeRadioTrack('C', 'Radiohead'),
+        makeRadioTrack('D', 'Radiohead'),
+        makeRadioTrack('E', 'Radiohead'),
       ];
 
       vi.mocked(lastfm.getSimilarTracks).mockResolvedValue([
@@ -216,8 +241,11 @@ describe('RadioService', () => {
       ]);
 
       const seed: RadioSeed = { type: 'track', artist: 'Radiohead', track: 'Creep' };
+
+      // #when
       const result = await generateRadioQueue(seed, catalog);
 
+      // #then
       expect(result.queue[0].name).toBe('A');
       expect(result.queue[1].name).toBe('B');
       expect(result.queue[2].name).toBe('D');
@@ -226,12 +254,13 @@ describe('RadioService', () => {
 
   describe('generateRadioQueue — artist seed', () => {
     it('matches tracks from similar artists', async () => {
+      // #given
       const { generateRadioQueue, lastfm } = await freshRadioService();
 
       const catalog = [
-        makeTrack('Hysteria', 'Muse'),
-        makeTrack('Starlight', 'Muse'),
-        makeTrack('Creep', 'Radiohead'),
+        makeRadioTrack('Hysteria', 'Muse'),
+        makeRadioTrack('Starlight', 'Muse'),
+        makeRadioTrack('Creep', 'Radiohead'),
       ];
 
       vi.mocked(lastfm.getSimilarArtists).mockResolvedValue([
@@ -239,8 +268,11 @@ describe('RadioService', () => {
       ]);
 
       const seed: RadioSeed = { type: 'artist', artist: 'Radiohead' };
+
+      // #when
       const result = await generateRadioQueue(seed, catalog);
 
+      // #then
       expect(result.queue.some((t) => t.artists === 'Muse')).toBe(true);
       expect(result.queue.some((t) => t.artists === 'Radiohead')).toBe(true);
       expect(result.seedDescription).toContain('Radiohead');
@@ -249,11 +281,12 @@ describe('RadioService', () => {
 
   describe('generateRadioQueue — album seed', () => {
     it('uses the primary artist for Last.fm album-track lookups', async () => {
+      // #given
       const { generateRadioQueue, lastfm } = await freshRadioService();
 
       const catalog = [
-        makeTrack('Lucky', 'Radiohead'),
-        makeTrack('Karma Police', 'Radiohead'),
+        makeRadioTrack('Lucky', 'Radiohead'),
+        makeRadioTrack('Karma Police', 'Radiohead'),
       ];
 
       vi.mocked(lastfm.getSimilarTracks).mockResolvedValue([
@@ -266,17 +299,21 @@ describe('RadioService', () => {
         album: 'The Bends',
         tracks: [{ artist: 'Radiohead, Thom Yorke', name: 'Fake Plastic Trees' }],
       };
+
+      // #when
       await generateRadioQueue(seed, catalog);
 
+      // #then
       expect(lastfm.getSimilarTracks).toHaveBeenCalledWith('Radiohead', 'Fake Plastic Trees', 25);
     });
 
     it('matches similar tracks from album tracks', async () => {
+      // #given
       const { generateRadioQueue, lastfm } = await freshRadioService();
 
       const catalog = [
-        makeTrack('Lucky', 'Radiohead'),
-        makeTrack('Karma Police', 'Radiohead'),
+        makeRadioTrack('Lucky', 'Radiohead'),
+        makeRadioTrack('Karma Police', 'Radiohead'),
       ];
 
       vi.mocked(lastfm.getSimilarTracks).mockResolvedValue([
@@ -293,20 +330,24 @@ describe('RadioService', () => {
           { artist: 'Radiohead', name: 'High and Dry' },
         ],
       };
+
+      // #when
       const result = await generateRadioQueue(seed, catalog);
 
+      // #then
       expect(result.queue.length).toBeGreaterThan(0);
       expect(result.seedDescription).toContain('The Bends');
       expect(result.seedDescription).toContain('Radiohead');
     });
 
     it('excludes tracks from the seed album', async () => {
+      // #given
       const { generateRadioQueue, lastfm } = await freshRadioService();
 
       const catalog = [
-        makeTrack('Lucky', 'Radiohead', { album: 'OK Computer' }),
-        makeTrack('Karma Police', 'Radiohead', { album: 'OK Computer' }),
-        makeTrack('Creep', 'Radiohead', { album: 'Pablo Honey' }),
+        makeRadioTrack('Lucky', 'Radiohead', { album: 'OK Computer' }),
+        makeRadioTrack('Karma Police', 'Radiohead', { album: 'OK Computer' }),
+        makeRadioTrack('Creep', 'Radiohead', { album: 'Pablo Honey' }),
       ];
 
       vi.mocked(lastfm.getSimilarTracks).mockResolvedValue([
@@ -321,22 +362,26 @@ describe('RadioService', () => {
         album: 'OK Computer',
         tracks: [{ artist: 'Radiohead', name: 'Airbag' }],
       };
+
+      // #when
       const result = await generateRadioQueue(seed, catalog);
 
+      // #then
       expect(result.queue.every((t) => t.album !== 'OK Computer')).toBe(true);
     });
   });
 
   describe('matchStats', () => {
     it('reports accurate match statistics', async () => {
+      // #given
       const { generateRadioQueue, lastfm } = await freshRadioService();
 
       const catalog = [
-        makeTrack('Karma Police', 'Radiohead', { musicbrainzRecordingId: 'kp-mbid' }),
-        makeTrack('Lucky', 'Radiohead'),
-        makeTrack('No Surprises', 'Radiohead'),
-        makeTrack('Exit Music', 'Radiohead'),
-        makeTrack('Airbag', 'Radiohead'),
+        makeRadioTrack('Karma Police', 'Radiohead', { musicbrainzRecordingId: 'kp-mbid' }),
+        makeRadioTrack('Lucky', 'Radiohead'),
+        makeRadioTrack('No Surprises', 'Radiohead'),
+        makeRadioTrack('Exit Music', 'Radiohead'),
+        makeRadioTrack('Airbag', 'Radiohead'),
       ];
 
       vi.mocked(lastfm.getSimilarTracks).mockResolvedValue([
@@ -349,8 +394,11 @@ describe('RadioService', () => {
       ]);
 
       const seed: RadioSeed = { type: 'track', artist: 'Radiohead', track: 'Creep' };
+
+      // #when
       const result = await generateRadioQueue(seed, catalog);
 
+      // #then
       expect(result.matchStats.lastfmCandidates).toBe(6);
       expect(result.matchStats.matched).toBe(5);
       expect(result.matchStats.byMbid).toBe(1);

@@ -77,7 +77,7 @@ describe('useUnifiedLikedTracks', () => {
   });
 
   it('merges tracks from multiple providers sorted by timestamp descending', async () => {
-    // #given
+    // #given - set up two providers with tracks at different timestamps
     const spotifyTracks = [
       makeTrack('s1', 'spotify', 3000),
       makeTrack('s2', 'spotify', 1000),
@@ -100,10 +100,10 @@ describe('useUnifiedLikedTracks', () => {
       return undefined;
     });
 
-    // #when
+    // #when - render hook
     const { result } = renderHook(() => useUnifiedLikedTracks());
 
-    // #then
+    // #then - unified likes active with merged and sorted tracks
     expect(result.current.isUnifiedLikedActive).toBe(true);
 
     await waitFor(() => {
@@ -115,7 +115,7 @@ describe('useUnifiedLikedTracks', () => {
   });
 
   it('places tracks without timestamps after timestamped tracks', async () => {
-    // #given
+    // #given - one provider with timestamp, one without
     const spotifyTracks = [makeTrack('s1', 'spotify', 1000)];
     const dropboxTracks = [makeTrack('d1', 'dropbox')]; // no addedAt
     mockConnectedProviderIds.push('spotify', 'dropbox');
@@ -132,10 +132,10 @@ describe('useUnifiedLikedTracks', () => {
       return undefined;
     });
 
-    // #when
+    // #when - render hook
     const { result } = renderHook(() => useUnifiedLikedTracks());
 
-    // #then
+    // #then - timestamped tracks first, unset timestamps at end
     await waitFor(() => {
       expect(result.current.unifiedTracks.length).toBe(2);
     });
@@ -144,7 +144,7 @@ describe('useUnifiedLikedTracks', () => {
   });
 
   it('handles provider fetch failure gracefully', async () => {
-    // #given
+    // #given - one provider succeeds, one fails with network error
     const spotifyTracks = [makeTrack('s1', 'spotify', 1000)];
     mockConnectedProviderIds.push('spotify', 'dropbox');
     const spotifyDesc = makeDescriptor('spotify', spotifyTracks);
@@ -168,10 +168,10 @@ describe('useUnifiedLikedTracks', () => {
       return undefined;
     });
 
-    // #when
+    // #when - render hook with failing dropbox provider
     const { result } = renderHook(() => useUnifiedLikedTracks());
 
-    // #then
+    // #then - only spotify tracks included
     await waitFor(() => {
       expect(result.current.unifiedTracks.length).toBe(1);
     });
@@ -179,7 +179,7 @@ describe('useUnifiedLikedTracks', () => {
   });
 
   it('refreshes when Dropbox likes change event fires', async () => {
-    // #given
+    // #given - set up providers with dynamic dropbox track list
     const spotifyTracks = [makeTrack('s1', 'spotify', 2000)];
     let dropboxTracks = [makeTrack('d1', 'dropbox', 1000)];
     mockConnectedProviderIds.push('spotify', 'dropbox');
@@ -211,20 +211,20 @@ describe('useUnifiedLikedTracks', () => {
     const { result } = renderHook(() => useUnifiedLikedTracks());
     await waitFor(() => expect(result.current.totalCount).toBe(2));
 
-    // #when — add a new track and fire event
+    // #when - add a new dropbox track and fire change event
     dropboxTracks = [makeTrack('d1', 'dropbox', 1000), makeTrack('d2', 'dropbox', 3000)];
     act(() => {
       window.dispatchEvent(new Event('vorbis-dropbox-likes-changed'));
     });
 
-    // #then
+    // #then - unified tracks refreshed with new track
     await waitFor(() => {
       expect(result.current.totalCount).toBe(3);
     });
   });
 
   it('serves cached data immediately on subsequent hook mounts', async () => {
-    // #given
+    // #given - set up providers
     const spotifyTracks = [makeTrack('s1', 'spotify', 2000)];
     const dropboxTracks = [makeTrack('d1', 'dropbox', 1000)];
     mockConnectedProviderIds.push('spotify', 'dropbox');
@@ -241,15 +241,15 @@ describe('useUnifiedLikedTracks', () => {
       return undefined;
     });
 
-    // First mount — populates cache
+    // #when - first mount populates cache
     const { result: first, unmount } = renderHook(() => useUnifiedLikedTracks());
     await waitFor(() => expect(first.current.totalCount).toBe(2));
     unmount();
 
-    // #when — second mount reads from cache
+    // #when - second mount reads from cache
     const { result: second } = renderHook(() => useUnifiedLikedTracks());
 
-    // #then — data is available synchronously (no loading state)
+    // #then - data available synchronously without loading state
     expect(second.current.totalCount).toBe(2);
     expect(second.current.isLoading).toBe(false);
   });
