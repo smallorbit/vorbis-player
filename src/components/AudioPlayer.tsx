@@ -63,7 +63,7 @@ const AudioPlayerComponent = () => {
     showVisualEffects,
     setShowVisualEffects,
   } = useVisualEffectsContext();
-  const { tracks, selectedPlaylistId } = useTrackListContext();
+  const { tracks, selectedPlaylistId, setTracks } = useTrackListContext();
   const { currentTrack, currentTrackIndex } = useCurrentTrackContext();
 
   const resolveDisplayProvider = useCallback((): import('@/types/domain').ProviderId | undefined => (
@@ -81,6 +81,7 @@ const AudioPlayerComponent = () => {
   }, [resolveDisplayProvider]);
 
   const collectionNameRef = useRef<string>('');
+  const trackIds = useMemo(() => tracks.map(t => t.id), [tracks]);
 
   const { lastSession } = useSessionPersistence(
     selectedPlaylistId,
@@ -88,6 +89,7 @@ const AudioPlayerComponent = () => {
     currentTrack?.provider as import('@/types/domain').ProviderId | undefined,
     currentTrackIndex,
     currentTrack?.id,
+    trackIds,
     currentTrack?.name,
     currentTrack?.artists,
     currentTrack?.image,
@@ -159,25 +161,45 @@ const AudioPlayerComponent = () => {
     setShowVisualEffects(false);
   }, [setShowVisualEffects]);
 
-  const pendingResumeRef = useRef<{ trackId?: string; trackIndex: number } | null>(null);
+  // Two-phase resume: first re-order the queue, then seek to the correct track.
+  const pendingReorderRef = useRef<string[] | null>(null);
+  const pendingPlayRef = useRef<{ trackId?: string; trackIndex: number } | null>(null);
 
   const handleResume = useCallback(() => {
     if (!lastSession) return;
-    pendingResumeRef.current = { trackId: lastSession.trackId, trackIndex: lastSession.trackIndex };
+    if (lastSession.trackOrder && lastSession.trackOrder.length > 0) {
+      pendingReorderRef.current = lastSession.trackOrder;
+    }
+    pendingPlayRef.current = { trackId: lastSession.trackId, trackIndex: lastSession.trackIndex };
     handlers.loadCollection(lastSession.collectionId, lastSession.collectionProvider);
   }, [lastSession, handlers]);
 
   useEffect(() => {
-    if (pendingResumeRef.current !== null && tracks.length > 0) {
-      const { trackId, trackIndex } = pendingResumeRef.current;
-      pendingResumeRef.current = null;
-      // Prefer finding by ID so shuffle doesn't land on the wrong track
-      const idx = trackId
-        ? (tracks.findIndex(t => t.id === trackId) ?? -1)
-        : -1;
+    if (tracks.length === 0) return;
+
+    // Phase 1: re-order the freshly-loaded tracks to match the saved queue order.
+    if (pendingReorderRef.current) {
+      const order = pendingReorderRef.current;
+      pendingReorderRef.current = null;
+      const byId = new Map(tracks.map(t => [t.id, t]));
+      const reordered = [
+        ...order.flatMap(id => { const t = byId.get(id); return t ? [t] : []; }),
+        ...tracks.filter(t => !order.includes(t.id)),
+      ];
+      if (reordered.length > 0) {
+        setTracks(reordered);
+        return; // wait for next render with reordered tracks before playing
+      }
+    }
+
+    // Phase 2: play the correct track.
+    if (pendingPlayRef.current) {
+      const { trackId, trackIndex } = pendingPlayRef.current;
+      pendingPlayRef.current = null;
+      const idx = trackId ? tracks.findIndex(t => t.id === trackId) : -1;
       handlers.playTrack(idx >= 0 ? idx : Math.min(trackIndex, tracks.length - 1));
     }
-  }, [tracks, handlers]);
+  }, [tracks, handlers, setTracks]);
 
   const handleClearCache = useCallback(async (options: ClearCacheOptions) => {
     const { clearCacheWithOptions } = await import('@/services/cache/libraryCache');

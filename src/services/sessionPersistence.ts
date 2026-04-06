@@ -8,6 +8,7 @@ export interface SessionSnapshot {
   collectionProvider?: ProviderId;
   trackIndex: number;
   trackId?: string;
+  trackOrder?: string[];  // ordered track IDs representing the queue at save time
   // Display-only fields for the Resume card (shown before re-fetching)
   trackTitle?: string;
   trackArtist?: string;
