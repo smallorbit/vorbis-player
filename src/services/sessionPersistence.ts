@@ -17,10 +17,9 @@ export interface SessionSnapshot {
   savedAt?: number;
 }
 
-/** Strip expiring presigned fields from Dropbox tracks before persisting. */
+/** Strip image URLs from all tracks — they're display-only and can be large presigned URLs. */
 function sanitizeTrack(track: MediaTrack): MediaTrack {
-  if (track.provider !== 'dropbox') return track;
-  return { ...track, playbackRef: { provider: 'dropbox', ref: '' }, image: '' };
+  return { ...track, image: '' };
 }
 
 export function saveSession(snapshot: SessionSnapshot): void {
