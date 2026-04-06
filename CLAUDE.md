@@ -339,6 +339,6 @@ Use this pattern in all new tests. The `#given` section is optional when there i
 ## AI Workflow Rules
 
 For structured feature development, see `.claude/rules/`:
-- `generate_prd.md` — PRD creation
-- `generate_tasks_from_prd.md` — Task breakdown
-- `process_tasks.md` — Task execution with commits
+- `generate_prd.md` — PRD creation process: asks clarifying questions, then generates a structured requirements doc
+- `generate_tasks_from_prd.md` — breaks a PRD into a detailed parent/subtask list; waits for "Go" confirmation before generating subtasks
+- `process_tasks.md` — task execution protocol: one subtask at a time, with test + commit gates before marking parent complete
