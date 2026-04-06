@@ -17,6 +17,7 @@ interface BackgroundVisualizerProps {
   enabled: boolean;
   style: VisualizerStyle;
   intensity: number;
+  speed?: number;
   accentColor: string;
   isPlaying: boolean;
   playbackPosition?: number;
@@ -56,6 +57,7 @@ const BackgroundVisualizer: React.FC<BackgroundVisualizerProps> = React.memo(({
   enabled,
   style,
   intensity,
+  speed,
   accentColor,
   isPlaying,
   playbackPosition,
@@ -87,6 +89,7 @@ const BackgroundVisualizer: React.FC<BackgroundVisualizerProps> = React.memo(({
     <VisualizerContainer>
       <VisualizerComponent
         intensity={intensity}
+        speed={speed ?? 1.0}
         accentColor={accentColor}
         isPlaying={isPlaying}
         playbackPosition={playbackPosition}

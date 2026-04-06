@@ -28,6 +28,8 @@ interface QuickEffectsRowProps {
   onBackgroundVisualizerStyleChange: (style: VisualizerStyle) => void;
   backgroundVisualizerIntensity?: number;
   onBackgroundVisualizerIntensityChange?: (intensity: number) => void;
+  backgroundVisualizerSpeed?: number;
+  onBackgroundVisualizerSpeedChange?: (speed: number) => void;
   translucenceEnabled: boolean;
   onTranslucenceToggle: () => void;
   isMobile: boolean;
@@ -186,6 +188,8 @@ function QuickEffectsRow({
   onBackgroundVisualizerStyleChange,
   backgroundVisualizerIntensity,
   onBackgroundVisualizerIntensityChange,
+  backgroundVisualizerSpeed,
+  onBackgroundVisualizerSpeedChange,
   translucenceEnabled,
   onTranslucenceToggle,
 }: QuickEffectsRowProps) {
@@ -212,6 +216,7 @@ function QuickEffectsRow({
   const hasGlowSubSettings = glowIntensity !== undefined && onGlowIntensityChange;
   const hasGlowRate = glowRate !== undefined && onGlowRateChange;
   const hasVizIntensity = backgroundVisualizerIntensity !== undefined && onBackgroundVisualizerIntensityChange;
+  const hasVizSpeed = backgroundVisualizerSpeed !== undefined && onBackgroundVisualizerSpeedChange;
 
   return (
     <QuickRow>
@@ -348,6 +353,16 @@ function QuickEffectsRow({
                 >
                   More
                 </OptionButton>
+              </OptionButtonGroup>
+            </SubSettingRow>
+          )}
+          {hasVizSpeed && (
+            <SubSettingRow>
+              <SubLabel>Speed</SubLabel>
+              <OptionButtonGroup>
+                <OptionButton $isActive={backgroundVisualizerSpeed === 0.5} onClick={() => onBackgroundVisualizerSpeedChange(0.5)}>Slower</OptionButton>
+                <OptionButton $isActive={backgroundVisualizerSpeed === 1.0} onClick={() => onBackgroundVisualizerSpeedChange(1.0)}>Normal</OptionButton>
+                <OptionButton $isActive={backgroundVisualizerSpeed === 2.0} onClick={() => onBackgroundVisualizerSpeedChange(2.0)}>Faster</OptionButton>
               </OptionButtonGroup>
             </SubSettingRow>
           )}
