@@ -17,8 +17,9 @@ export interface SessionSnapshot {
   savedAt?: number;
 }
 
-/** Strip image URLs from all tracks — they're display-only and can be large presigned URLs. */
+/** Strip Dropbox image URLs before persisting — they're large presigned URLs that expire. */
 function sanitizeTrack(track: MediaTrack): MediaTrack {
+  if (track.provider !== 'dropbox') return track;
   return { ...track, image: '' };
 }
 

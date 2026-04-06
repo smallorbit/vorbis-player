@@ -64,7 +64,7 @@ const AudioPlayerComponent = () => {
     setShowVisualEffects,
   } = useVisualEffectsContext();
   const { tracks, selectedPlaylistId, setTracks, setOriginalTracks, setSelectedPlaylistId } = useTrackListContext();
-  const { currentTrack, currentTrackIndex } = useCurrentTrackContext();
+  const { currentTrack, currentTrackIndex, setCurrentTrackIndex } = useCurrentTrackContext();
 
   const resolveDisplayProvider = useCallback((): import('@/types/domain').ProviderId | undefined => (
     (currentTrack?.provider as import('@/types/domain').ProviderId | undefined)
@@ -168,13 +168,16 @@ const AudioPlayerComponent = () => {
   const handleResume = useCallback(() => {
     if (!lastSession?.queueTracks?.length) return;
     const { queueTracks, trackId, trackIndex, collectionId } = lastSession;
-    // Restore the saved queue directly — playbackRef is a permanent path/URI for all providers,
-    // so no re-fetch needed. Image URLs are stripped (display-only) but track data is intact.
+    const targetIdx = trackId
+      ? queueTracks.findIndex(t => t.id === trackId)
+      : Math.min(trackIndex, queueTracks.length - 1);
+    const resolvedIdx = targetIdx >= 0 ? targetIdx : Math.min(trackIndex, queueTracks.length - 1);
     setTracks(queueTracks);
     setOriginalTracks(queueTracks);
     setSelectedPlaylistId(collectionId);
-    pendingPlayRef.current = { trackId, trackIndex };
-  }, [lastSession, setTracks, setOriginalTracks, setSelectedPlaylistId]);
+    setCurrentTrackIndex(resolvedIdx);
+    pendingPlayRef.current = { trackId, trackIndex: resolvedIdx };
+  }, [lastSession, setTracks, setOriginalTracks, setSelectedPlaylistId, setCurrentTrackIndex]);
 
   useEffect(() => {
     if (tracks.length === 0 || !pendingPlayRef.current) return;
