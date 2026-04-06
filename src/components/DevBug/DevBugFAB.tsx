@@ -208,7 +208,13 @@ export function DevBugFAB() {
 
   const handleElementSelected = useCallback(
     (_element: Element, info: SelectedElement) => {
-      panel.open(info);
+      import('@/services/devbug/screenshotCapture').then(({ captureScreenshot }) => {
+        captureScreenshot(info.boundingRect).then((dataUrl) => {
+          panel.open(info, dataUrl);
+        }).catch(() => {
+          panel.open(info);
+        });
+      });
     },
     [panel],
   );
@@ -223,7 +229,7 @@ export function DevBugFAB() {
   );
 
   const handleAnnotationComplete = useCallback(
-    (_annotatedDataUrl: string) => {
+    (annotatedDataUrl: string) => {
       const syntheticInfo: SelectedElement = {
         cssSelector: 'screenshot',
         xpath: '/screenshot',
@@ -232,7 +238,7 @@ export function DevBugFAB() {
         computedStyles: {},
         textContent: '',
       };
-      panel.open(syntheticInfo);
+      panel.open(syntheticInfo, annotatedDataUrl);
     },
     [panel],
   );
@@ -333,6 +339,7 @@ export function DevBugFAB() {
       <FeedbackPanel
         isOpen={panel.isOpen}
         selectedElement={panel.selectedElement}
+        screenshotDataUrl={panel.screenshotDataUrl}
         categories={panel.categories}
         comment={panel.comment}
         onToggleCategory={panel.toggleCategory}

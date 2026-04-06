@@ -372,6 +372,7 @@ interface ToastState {
 export interface FeedbackPanelProps {
   isOpen: boolean;
   selectedElement: SelectedElement | null;
+  screenshotDataUrl: string | null;
   categories: Category[];
   comment: string;
   onToggleCategory: (category: Category) => void;
@@ -389,6 +390,7 @@ interface PanelContentProps extends FeedbackPanelProps {
 function PanelContent({
   isOpen,
   selectedElement,
+  screenshotDataUrl,
   categories,
   comment,
   consoleEntries,
@@ -416,10 +418,18 @@ function PanelContent({
         <div className="panel-body">
           <div>
             <p className="section-label">Screenshot</p>
-            <div className="screenshot-placeholder">
-              <span className="screenshot-placeholder-icon">📸</span>
-              <span className="screenshot-placeholder-text">Screenshot capture coming soon</span>
-            </div>
+            {screenshotDataUrl ? (
+              <img
+                src={screenshotDataUrl}
+                alt="Screenshot"
+                style={{ width: '100%', borderRadius: '6px', border: '1px solid #333' }}
+              />
+            ) : (
+              <div className="screenshot-placeholder">
+                <span className="screenshot-placeholder-icon">📸</span>
+                <span className="screenshot-placeholder-text">No screenshot captured</span>
+              </div>
+            )}
           </div>
 
           {selectedElement && (
@@ -562,6 +572,7 @@ export function FeedbackPanel(props: FeedbackPanelProps) {
       const report = buildBugReport({
         selectionMode: 'click',
         elements: props.selectedElement ? [props.selectedElement] : [],
+        screenshotDataUrl: props.screenshotDataUrl ?? undefined,
         comment: props.comment,
         categories: props.categories,
         consoleLogs: entries,

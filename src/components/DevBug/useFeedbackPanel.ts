@@ -4,12 +4,13 @@ import type { Category, SelectedElement } from '@/types/devbug';
 export interface FeedbackPanelState {
   isOpen: boolean;
   selectedElement: SelectedElement | null;
+  screenshotDataUrl: string | null;
   categories: Category[];
   comment: string;
 }
 
 export interface FeedbackPanelActions {
-  open: (element: SelectedElement) => void;
+  open: (element: SelectedElement, screenshotDataUrl?: string) => void;
   close: () => void;
   toggleCategory: (category: Category) => void;
   setComment: (comment: string) => void;
@@ -19,6 +20,7 @@ export interface FeedbackPanelActions {
 const INITIAL_STATE: FeedbackPanelState = {
   isOpen: false,
   selectedElement: null,
+  screenshotDataUrl: null,
   categories: [],
   comment: '',
 };
@@ -26,8 +28,8 @@ const INITIAL_STATE: FeedbackPanelState = {
 export function useFeedbackPanel(): FeedbackPanelState & FeedbackPanelActions {
   const [state, setState] = useState<FeedbackPanelState>(INITIAL_STATE);
 
-  const open = useCallback((element: SelectedElement) => {
-    setState({ isOpen: true, selectedElement: element, categories: [], comment: '' });
+  const open = useCallback((element: SelectedElement, screenshotDataUrl?: string) => {
+    setState({ isOpen: true, selectedElement: element, screenshotDataUrl: screenshotDataUrl ?? null, categories: [], comment: '' });
   }, []);
 
   const close = useCallback(() => {
