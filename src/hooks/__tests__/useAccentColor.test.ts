@@ -39,12 +39,15 @@ describe('useAccentColor', () => {
   });
 
   it('calls extractDominantColor when no override exists', async () => {
+    // #given
     const track = makeTrack({ albumId: 'album-2', image: 'img.jpg' });
 
+    // #when - render with no overrides
     renderHook(() =>
       useAccentColor(track, {}, setAccentColor, setAccentColorOverrides)
     );
 
+    // #then
     await waitFor(() => {
       expect(extractDominantColor).toHaveBeenCalledWith('img.jpg');
       expect(setAccentColor).toHaveBeenCalledWith('#ff6b6b');
@@ -52,13 +55,16 @@ describe('useAccentColor', () => {
   });
 
   it('falls back to theme color on extraction failure', async () => {
+    // #given - extraction returns null
     vi.mocked(extractDominantColor).mockResolvedValue(null);
     const track = makeTrack({ albumId: 'album-3', image: 'img.jpg' });
 
+    // #when - render with failing extraction
     renderHook(() =>
       useAccentColor(track, {}, setAccentColor, setAccentColorOverrides)
     );
 
+    // #then
     await waitFor(() => {
       expect(setAccentColor).toHaveBeenCalledWith(expect.stringMatching(/^#/));
     });
@@ -84,6 +90,7 @@ describe('useAccentColor', () => {
   });
 
   it('handleAccentColorChange with auto removes override and re-extracts', async () => {
+    // #given
     const track = makeTrack({ albumId: 'album-5', image: 'img.jpg' });
     const overrides = { 'album-5': '#custom' };
 
@@ -91,8 +98,10 @@ describe('useAccentColor', () => {
       useAccentColor(track, overrides, setAccentColor, setAccentColorOverrides)
     );
 
+    // #when - change to 'auto'
     result.current.handleAccentColorChange('auto');
 
+    // #then
     expect(setAccentColorOverrides).toHaveBeenCalledWith(expect.any(Function));
 
     await waitFor(() => {
@@ -101,26 +110,32 @@ describe('useAccentColor', () => {
   });
 
   it('handleAccentColorChange with hex saves to overrides', () => {
+    // #given
     const track = makeTrack({ albumId: 'album-6', image: 'img.jpg' });
 
     const { result } = renderHook(() =>
       useAccentColor(track, {}, setAccentColor, setAccentColorOverrides)
     );
 
+    // #when - change to specific hex color
     result.current.handleAccentColorChange('#ff0000');
 
+    // #then
     expect(setAccentColorOverrides).toHaveBeenCalledWith(expect.any(Function));
     expect(setAccentColor).toHaveBeenCalledWith('#ff0000');
   });
 
   it('falls back to theme color on extraction rejection', async () => {
+    // #given - extraction promise rejects
     vi.mocked(extractDominantColor).mockRejectedValue(new Error('CORS'));
     const track = makeTrack({ albumId: 'album-7', image: 'img.jpg' });
 
+    // #when - render with rejection error
     renderHook(() =>
       useAccentColor(track, {}, setAccentColor, setAccentColorOverrides)
     );
 
+    // #then
     await waitFor(() => {
       expect(setAccentColor).toHaveBeenCalled();
     });

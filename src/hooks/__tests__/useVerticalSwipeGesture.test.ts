@@ -45,29 +45,7 @@ describe('useVerticalSwipeGesture', () => {
   });
 
   it('swipe down past threshold calls onSwipeDown', () => {
-    const onSwipeDown = vi.fn();
-    const { result } = renderHook(() =>
-      useVerticalSwipeGesture({ onSwipeDown, threshold: 50 })
-    );
-
-    // #given - attach element
-    const div = document.createElement('div');
-    (result.current.ref as React.MutableRefObject<HTMLDivElement>).current = div;
-    // Re-render to attach listeners
-    const { result: result2 } = renderHook(() =>
-      useVerticalSwipeGesture({ onSwipeDown, threshold: 50 })
-    );
-    (result2.current.ref as React.MutableRefObject<HTMLDivElement>).current = div;
-
-    // Need to trigger effect by re-rendering with element attached
-    const onSwipeDown2 = vi.fn();
-    const { result: r } = renderHook(() =>
-      useVerticalSwipeGesture({ onSwipeDown: onSwipeDown2, threshold: 50 })
-    );
-    const el = document.createElement('div');
-    Object.defineProperty(r.current, 'ref', { value: { current: el } });
-
-    // Direct approach: create a div, attach the hook via ref, and dispatch events
+    // #given
     const onDown = vi.fn();
     const hookDiv = document.createElement('div');
     document.body.appendChild(hookDiv);
@@ -80,18 +58,20 @@ describe('useVerticalSwipeGesture', () => {
       },
       { initialProps: { opts: { onSwipeDown: onDown, threshold: 50 } } }
     );
-    // Force effect to run by re-rendering
     rerender({ opts: { onSwipeDown: onDown, threshold: 50 } });
 
+    // #when - perform 100px down swipe
     act(() => {
-      simulateSwipe(hookDiv, 100, 100, 100, 200); // 100px down
+      simulateSwipe(hookDiv, 100, 100, 100, 200);
     });
 
+    // #then
     expect(onDown).toHaveBeenCalled();
     document.body.removeChild(hookDiv);
   });
 
   it('swipe up past threshold calls onSwipeUp', () => {
+    // #given
     const onSwipeUp = vi.fn();
     const hookDiv = document.createElement('div');
     document.body.appendChild(hookDiv);
@@ -106,15 +86,18 @@ describe('useVerticalSwipeGesture', () => {
     );
     rerender({ opts: { onSwipeUp, threshold: 50 } });
 
+    // #when - perform 100px up swipe
     act(() => {
-      simulateSwipe(hookDiv, 100, 200, 100, 100); // 100px up
+      simulateSwipe(hookDiv, 100, 200, 100, 100);
     });
 
+    // #then
     expect(onSwipeUp).toHaveBeenCalled();
     document.body.removeChild(hookDiv);
   });
 
   it('horizontal movement locks direction and does NOT trigger callbacks', () => {
+    // #given
     const onSwipeUp = vi.fn();
     const onSwipeDown = vi.fn();
     const hookDiv = document.createElement('div');
@@ -130,17 +113,19 @@ describe('useVerticalSwipeGesture', () => {
     );
     rerender({ opts: { onSwipeUp, onSwipeDown, threshold: 50 } });
 
+    // #when - move primarily horizontal: 100px right, only 5px down
     act(() => {
-      // Move primarily horizontal: 100px right, only 5px down
       simulateSwipe(hookDiv, 100, 100, 200, 105);
     });
 
+    // #then
     expect(onSwipeUp).not.toHaveBeenCalled();
     expect(onSwipeDown).not.toHaveBeenCalled();
     document.body.removeChild(hookDiv);
   });
 
   it('short drag below threshold does nothing', () => {
+    // #given
     const onSwipeDown = vi.fn();
     const hookDiv = document.createElement('div');
     document.body.appendChild(hookDiv);
@@ -155,16 +140,18 @@ describe('useVerticalSwipeGesture', () => {
     );
     rerender({ opts: { onSwipeDown, threshold: 50 } });
 
+    // #when - perform only 20px movement, slow enough to not trigger velocity threshold
     act(() => {
-      // Only 20px movement, slow enough to not trigger velocity threshold
       simulateSwipe(hookDiv, 100, 100, 100, 120, 1000);
     });
 
+    // #then
     expect(onSwipeDown).not.toHaveBeenCalled();
     document.body.removeChild(hookDiv);
   });
 
   it('fast flick triggers swipe even below distance threshold', () => {
+    // #given
     const onSwipeDown = vi.fn();
     const hookDiv = document.createElement('div');
     document.body.appendChild(hookDiv);
@@ -179,16 +166,18 @@ describe('useVerticalSwipeGesture', () => {
     );
     rerender({ opts: { onSwipeDown, threshold: 80, velocityThreshold: 0.3 } });
 
+    // #when - perform 30px in 50ms (velocity 0.6 > 0.3 threshold)
     act(() => {
-      // 30px in 50ms = velocity 0.6 > 0.3 threshold
       simulateSwipe(hookDiv, 100, 100, 100, 130, 50);
     });
 
+    // #then
     expect(onSwipeDown).toHaveBeenCalled();
     document.body.removeChild(hookDiv);
   });
 
   it('enabled: false disables handlers', () => {
+    // #given
     const onSwipeDown = vi.fn();
     const hookDiv = document.createElement('div');
     document.body.appendChild(hookDiv);
@@ -203,10 +192,12 @@ describe('useVerticalSwipeGesture', () => {
     );
     rerender({ opts: { onSwipeDown, enabled: false } });
 
+    // #when - attempt swipe while disabled
     act(() => {
       simulateSwipe(hookDiv, 100, 100, 100, 200);
     });
 
+    // #then
     expect(onSwipeDown).not.toHaveBeenCalled();
     document.body.removeChild(hookDiv);
   });
@@ -219,6 +210,7 @@ describe('useVerticalSwipeGesture', () => {
   });
 
   it('isDragging becomes true mid-gesture for vertical movement', () => {
+    // #given
     const hookDiv = document.createElement('div');
     document.body.appendChild(hookDiv);
 
@@ -232,12 +224,13 @@ describe('useVerticalSwipeGesture', () => {
     );
     rerender({ opts: { threshold: 50 } });
 
+    // #when - touchstart, then move vertically past the direction lock threshold (10px)
     act(() => {
       hookDiv.dispatchEvent(createNativeTouchEvent('touchstart', 100, 100));
-      // Move vertically past the direction lock threshold (10px)
       hookDiv.dispatchEvent(createNativeTouchEvent('touchmove', 100, 150));
     });
 
+    // #then
     expect(result.current.isDragging).toBe(true);
 
     act(() => {
@@ -248,6 +241,7 @@ describe('useVerticalSwipeGesture', () => {
   });
 
   it('removes event listeners on unmount', () => {
+    // #given
     const hookDiv = document.createElement('div');
     document.body.appendChild(hookDiv);
     const removeListenerSpy = vi.spyOn(hookDiv, 'removeEventListener');
@@ -262,7 +256,7 @@ describe('useVerticalSwipeGesture', () => {
     );
     rerender({ opts: { threshold: 50 } });
 
-    // #when
+    // #when - unmount the hook
     unmount();
 
     // #then
@@ -274,6 +268,7 @@ describe('useVerticalSwipeGesture', () => {
   });
 
   it('full touch sequence: touchstart -> touchmove -> touchend triggers swipe', () => {
+    // #given
     const onSwipeDown = vi.fn();
     const onSwipeUp = vi.fn();
     const hookDiv = document.createElement('div');
@@ -305,6 +300,7 @@ describe('useVerticalSwipeGesture', () => {
   });
 
   it('dragOffset tracks deltaY during gesture', () => {
+    // #given
     const hookDiv = document.createElement('div');
     document.body.appendChild(hookDiv);
 
@@ -318,11 +314,13 @@ describe('useVerticalSwipeGesture', () => {
     );
     rerender({ opts: { threshold: 50 } });
 
+    // #when - perform touchstart at 100, then touchmove to 175
     act(() => {
       hookDiv.dispatchEvent(createNativeTouchEvent('touchstart', 100, 100));
       hookDiv.dispatchEvent(createNativeTouchEvent('touchmove', 100, 175));
     });
 
+    // #then
     expect(result.current.dragOffset).toBe(75);
 
     act(() => {

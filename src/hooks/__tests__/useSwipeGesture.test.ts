@@ -53,6 +53,7 @@ describe('useSwipeGesture', () => {
   });
 
   it('tap triggers onTap, not swipe handlers', () => {
+    // #given
     const onTap = vi.fn();
     const onSwipeLeft = vi.fn();
     const onSwipeRight = vi.fn();
@@ -61,23 +62,24 @@ describe('useSwipeGesture', () => {
       useSwipeGesture({ onTap, onSwipeLeft, onSwipeRight })
     );
 
-    // Touchstart at (100, 100)
+    // #when
     act(() => {
       result.current.gestureHandlers.onTouchStart(createTouchEvent(100, 100, 0));
     });
 
-    // Touchend at (102, 102) within 100ms — a tap
     act(() => {
       vi.advanceTimersByTime(100);
       result.current.gestureHandlers.onTouchEnd(createTouchEvent(102, 102, 100));
     });
 
+    // #then
     expect(onTap).toHaveBeenCalledTimes(1);
     expect(onSwipeLeft).not.toHaveBeenCalled();
     expect(onSwipeRight).not.toHaveBeenCalled();
   });
 
   it('swipe left past threshold triggers onSwipeLeft', () => {
+    // #given
     const onSwipeLeft = vi.fn();
     const onSwipeRight = vi.fn();
     const onTap = vi.fn();
@@ -86,33 +88,32 @@ describe('useSwipeGesture', () => {
       useSwipeGesture({ onSwipeLeft, onSwipeRight, onTap })
     );
 
-    // Touchstart at (200, 100)
+    // #when - start, move left -100px, end
     act(() => {
       result.current.gestureHandlers.onTouchStart(createTouchEvent(200, 100, 0));
     });
 
-    // Move left to (100, 100) — delta = -100px
     act(() => {
       result.current.gestureHandlers.onTouchMove(createTouchEvent(100, 100, 200));
     });
 
-    // End the gesture
     act(() => {
       vi.advanceTimersByTime(200);
       result.current.gestureHandlers.onTouchEnd(createTouchEvent(100, 100, 200));
     });
 
-    // Advance past animationDuration to fire the swipe callback
     act(() => {
       vi.advanceTimersByTime(300);
     });
 
+    // #then
     expect(onSwipeLeft).toHaveBeenCalledTimes(1);
     expect(onSwipeRight).not.toHaveBeenCalled();
     expect(onTap).not.toHaveBeenCalled();
   });
 
   it('swipe right past threshold triggers onSwipeRight', () => {
+    // #given
     const onSwipeLeft = vi.fn();
     const onSwipeRight = vi.fn();
     const onTap = vi.fn();
@@ -121,45 +122,43 @@ describe('useSwipeGesture', () => {
       useSwipeGesture({ onSwipeLeft, onSwipeRight, onTap })
     );
 
-    // Touchstart at (100, 100)
+    // #when - start, move right +100px, end
     act(() => {
       result.current.gestureHandlers.onTouchStart(createTouchEvent(100, 100, 0));
     });
 
-    // Move right to (200, 100) — delta = +100px
     act(() => {
       result.current.gestureHandlers.onTouchMove(createTouchEvent(200, 100, 200));
     });
 
-    // End the gesture
     act(() => {
       vi.advanceTimersByTime(200);
       result.current.gestureHandlers.onTouchEnd(createTouchEvent(200, 100, 200));
     });
 
-    // Advance past animationDuration to fire the swipe callback
     act(() => {
       vi.advanceTimersByTime(300);
     });
 
+    // #then
     expect(onSwipeRight).toHaveBeenCalledTimes(1);
     expect(onSwipeLeft).not.toHaveBeenCalled();
     expect(onTap).not.toHaveBeenCalled();
   });
 
   it('fast flick below distance but above velocity threshold triggers swipe', () => {
+    // #given
     const onSwipeLeft = vi.fn();
 
     const { result } = renderHook(() =>
       useSwipeGesture({ onSwipeLeft })
     );
 
-    // Touchstart at (200, 100)
+    // #when - 30px in 50ms = velocity 0.6 px/ms, exceeds 0.3 threshold
     act(() => {
       result.current.gestureHandlers.onTouchStart(createTouchEvent(200, 100, 0));
     });
 
-    // Move left only 30px but very fast (within 50ms)
     act(() => {
       result.current.gestureHandlers.onTouchMove(createTouchEvent(170, 100, 30));
     });
@@ -169,16 +168,16 @@ describe('useSwipeGesture', () => {
       result.current.gestureHandlers.onTouchEnd(createTouchEvent(170, 100, 50));
     });
 
-    // Advance past animationDuration to fire the swipe callback
     act(() => {
       vi.advanceTimersByTime(300);
     });
 
-    // Velocity = 30px / 50ms = 0.6 px/ms, which exceeds the 0.3 threshold
+    // #then
     expect(onSwipeLeft).toHaveBeenCalledTimes(1);
   });
 
   it('vertical gesture does not trigger swipe or tap', () => {
+    // #given
     const onSwipeLeft = vi.fn();
     const onSwipeRight = vi.fn();
     const onTap = vi.fn();
@@ -187,12 +186,11 @@ describe('useSwipeGesture', () => {
       useSwipeGesture({ onSwipeLeft, onSwipeRight, onTap })
     );
 
-    // Touchstart at (100, 100)
+    // #when - touchstart at (100, 100), move primarily vertically: small deltaX (5px), large deltaY (100px)
     act(() => {
       result.current.gestureHandlers.onTouchStart(createTouchEvent(100, 100, 0));
     });
 
-    // Move primarily vertically: small deltaX (5px), large deltaY (100px)
     act(() => {
       result.current.gestureHandlers.onTouchMove(createTouchEvent(105, 200, 200));
     });
@@ -202,12 +200,14 @@ describe('useSwipeGesture', () => {
       result.current.gestureHandlers.onTouchEnd(createTouchEvent(105, 200, 200));
     });
 
+    // #then
     expect(onSwipeLeft).not.toHaveBeenCalled();
     expect(onSwipeRight).not.toHaveBeenCalled();
     expect(onTap).not.toHaveBeenCalled();
   });
 
   it('below-threshold horizontal gesture snaps back without triggering swipe', () => {
+    // #given
     const onSwipeLeft = vi.fn();
     const onSwipeRight = vi.fn();
 
@@ -215,22 +215,21 @@ describe('useSwipeGesture', () => {
       useSwipeGesture({ onSwipeLeft, onSwipeRight })
     );
 
-    // Touchstart at (100, 100)
+    // #when - touchstart at (100, 100), move only 20px right (below 50px threshold), end slowly (500ms)
     act(() => {
       result.current.gestureHandlers.onTouchStart(createTouchEvent(100, 100, 0));
     });
 
-    // Move only 20px right — below the default 50px threshold
     act(() => {
       result.current.gestureHandlers.onTouchMove(createTouchEvent(120, 100, 500));
     });
 
-    // End gesture slowly (500ms means velocity = 20/500 = 0.04, below 0.3 threshold)
     act(() => {
       vi.advanceTimersByTime(500);
       result.current.gestureHandlers.onTouchEnd(createTouchEvent(120, 100, 500));
     });
 
+    // #then
     expect(onSwipeLeft).not.toHaveBeenCalled();
     expect(onSwipeRight).not.toHaveBeenCalled();
 
@@ -243,6 +242,7 @@ describe('useSwipeGesture', () => {
   });
 
   it('enabled: false disables all gesture handling', () => {
+    // #given
     const onSwipeLeft = vi.fn();
     const onSwipeRight = vi.fn();
     const onTap = vi.fn();
@@ -254,7 +254,7 @@ describe('useSwipeGesture', () => {
       )
     );
 
-    // Attempt a swipe
+    // #when - attempt a swipe while disabled
     act(() => {
       result.current.gestureHandlers.onTouchStart(createTouchEvent(200, 100, 0));
     });
@@ -268,6 +268,7 @@ describe('useSwipeGesture', () => {
       result.current.gestureHandlers.onTouchEnd(createTouchEvent(100, 100, 200));
     });
 
+    // #then
     expect(onSwipeLeft).not.toHaveBeenCalled();
     expect(onSwipeRight).not.toHaveBeenCalled();
     expect(onTap).not.toHaveBeenCalled();
@@ -276,19 +277,19 @@ describe('useSwipeGesture', () => {
   });
 
   it('offsetX updates during touchmove with dampening factor', () => {
+    // #given
     const { result } = renderHook(() => useSwipeGesture({}));
 
-    // Touchstart at (200, 100)
+    // #when - touchstart at (200, 100), move 100px to the left
     act(() => {
       result.current.gestureHandlers.onTouchStart(createTouchEvent(200, 100, 0));
     });
 
-    // Move 100px to the left
     act(() => {
       result.current.gestureHandlers.onTouchMove(createTouchEvent(100, 100, 100));
     });
 
-    // With dampening factor of 0.8, a -100px move should yield -80px offsetX
+    // #then - with dampening factor of 0.8, a -100px move should yield -80px offsetX
     expect(result.current.offsetX).toBe(-80);
     expect(result.current.isSwiping).toBe(true);
   });
