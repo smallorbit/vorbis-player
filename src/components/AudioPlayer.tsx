@@ -40,6 +40,7 @@ const QuickAccessOverlay = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
+  padding-bottom: 60px;
   background: rgba(0, 0, 0, 0.7);
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
@@ -319,7 +320,7 @@ const AudioPlayerComponent = () => {
           <QuickAccessOverlay onClick={handleCloseQuickAccessPanel}>
             <div
               onClick={(e) => e.stopPropagation()}
-              style={{ width: '92%', maxWidth: 900, height: '85%', maxHeight: '85vh', margin: 'auto', position: 'relative' }}
+              style={{ width: '92%', maxWidth: 900, height: '80%', maxHeight: 'calc(100dvh - 120px)', margin: 'auto', position: 'relative' }}
             >
               <QuickAccessPanel
                 onPlaylistSelect={(id, name, provider) => {
