@@ -56,6 +56,7 @@ export interface TrailVisualizerConfig {
 
 export interface GridWaveVisualizerConfig {
   spacing: number;
+  spacingMobile: number;
   waveCount: number;
   waveSpeedBase: number;
   waveSpeedSpread: number;
@@ -149,6 +150,7 @@ const DEFAULT_TRAIL: TrailVisualizerConfig = {
 
 const DEFAULT_GRID_WAVE: GridWaveVisualizerConfig = {
   spacing: 35,
+  spacingMobile: 22,
   waveCount: 2,
   waveSpeedBase: 0.006,
   waveSpeedSpread: 0.004,
