@@ -20,3 +20,4 @@ export const logDropboxSync = createDebug('vorbis:dropbox-sync');
 export const logApp = createDebug('vorbis:app');
 export const logSw = createDebug('vorbis:sw');
 export const logLibrary = createDebug('vorbis:library');
+export const logSession = createDebug('vorbis:session');

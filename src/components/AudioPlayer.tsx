@@ -63,8 +63,8 @@ const AudioPlayerComponent = () => {
     showVisualEffects,
     setShowVisualEffects,
   } = useVisualEffectsContext();
-  const { tracks, selectedPlaylistId, setTracks, setOriginalTracks, setSelectedPlaylistId } = useTrackListContext();
-  const { currentTrack, currentTrackIndex, setCurrentTrackIndex } = useCurrentTrackContext();
+  const { tracks, selectedPlaylistId } = useTrackListContext();
+  const { currentTrack, currentTrackIndex } = useCurrentTrackContext();
 
   const resolveDisplayProvider = useCallback((): import('@/types/domain').ProviderId | undefined => (
     (currentTrack?.provider as import('@/types/domain').ProviderId | undefined)
@@ -82,7 +82,15 @@ const AudioPlayerComponent = () => {
 
   const collectionNameRef = useRef<string>('');
 
-  const { lastSession } = useSessionPersistence(tracks, currentTrackIndex, collectionNameRef.current);
+  const { lastSession } = useSessionPersistence(
+    selectedPlaylistId,
+    collectionNameRef.current,
+    currentTrack?.provider as import('@/types/domain').ProviderId | undefined,
+    currentTrackIndex,
+    currentTrack?.name,
+    currentTrack?.artists,
+    currentTrack?.image,
+  );
 
   const handleAlbumPlay = useCallback((albumId: string) => {
     handlers.loadCollection(
@@ -153,14 +161,10 @@ const AudioPlayerComponent = () => {
   const pendingResumeRef = useRef<number | null>(null);
 
   const handleResume = useCallback(() => {
-    if (!lastSession || lastSession.tracks.length === 0) return;
-    const resumeIndex = Math.max(0, Math.min(lastSession.currentTrackIndex, lastSession.tracks.length - 1));
-    pendingResumeRef.current = resumeIndex;
-    setOriginalTracks(lastSession.tracks);
-    setTracks(lastSession.tracks);
-    setSelectedPlaylistId('session-resume');
-    setCurrentTrackIndex(resumeIndex);
-  }, [lastSession, setOriginalTracks, setTracks, setSelectedPlaylistId, setCurrentTrackIndex]);
+    if (!lastSession) return;
+    pendingResumeRef.current = lastSession.trackIndex;
+    handlers.loadCollection(lastSession.collectionId, lastSession.collectionProvider);
+  }, [lastSession, handlers]);
 
   useEffect(() => {
     if (pendingResumeRef.current !== null && tracks.length > 0) {
