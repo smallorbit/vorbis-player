@@ -60,14 +60,14 @@ export const useKeyboardShortcuts = (
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.target instanceof HTMLInputElement ||
-          event.target instanceof HTMLTextAreaElement) {
-        return;
-      }
-
-      const target = event.target as HTMLElement;
-      if (target && target.isContentEditable) {
-        return;
+      // Don't fire shortcuts when user is typing in an input field.
+      // Use composedPath() to detect inputs inside Shadow DOM boundaries (e.g., DevBug panel).
+      const target = (event.composedPath?.()?.[0] || event.target) as HTMLElement | null;
+      if (target instanceof HTMLElement) {
+        const tag = target.tagName;
+        if (tag === 'INPUT' || tag === 'TEXTAREA' || target.isContentEditable) {
+          return;
+        }
       }
 
       switch (event.code) {

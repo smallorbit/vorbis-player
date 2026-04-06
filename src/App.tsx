@@ -18,6 +18,8 @@ import { getLikesSync } from './providers/dropbox/dropboxLikesSync';
 import { getPreferencesSync } from './providers/dropbox/dropboxPreferencesSync';
 import { AUTH_COMPLETE_EVENT } from '@/constants/events';
 import { logApp } from '@/lib/debugLog';
+import { DevBugProvider } from '@/contexts/DevBugContext';
+import { DevBugFAB } from '@/components/DevBug';
 
 /**
  * Cleanup function to remove deprecated localStorage keys
@@ -194,7 +196,7 @@ function App() {
     );
   }
 
-  return (
+  const player = (
     <ThemeProvider>
       <ProviderProvider>
         <PlayerSizingProvider>
@@ -216,6 +218,17 @@ function App() {
       </ProviderProvider>
     </ThemeProvider>
   );
+
+  if (import.meta.env.DEV) {
+    return (
+      <DevBugProvider>
+        {player}
+        <DevBugFAB />
+      </DevBugProvider>
+    );
+  }
+
+  return player;
 }
 
 export default App;
