@@ -21,6 +21,8 @@ import { useProviderContext } from '@/contexts/ProviderContext';
 import { toAlbumPlaylistId } from '@/constants/playlist';
 import { STORAGE_KEYS } from '@/constants/storage';
 import type { ClearCacheOptions } from '@/components/VisualEffectsMenu';
+import { useSessionPersistence } from '@/hooks/useSessionPersistence';
+import QuickAccessPanel from './QuickAccessPanel';
 
 const VisualEffectsMenu = lazy(() => import('./VisualEffectsMenu/index'));
 
@@ -29,6 +31,18 @@ const Container = styled.div`
   min-height: 100vh;
   min-height: 100dvh;
   ${flexCenter};
+`;
+
+const QuickAccessOverlay = styled.div`
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
 `;
 
 const ScreenReaderAnnouncement = styled.div`
@@ -50,7 +64,7 @@ const AudioPlayerComponent = () => {
     setShowVisualEffects,
   } = useVisualEffectsContext();
   const { tracks, selectedPlaylistId } = useTrackListContext();
-  const { currentTrack } = useCurrentTrackContext();
+  const { currentTrack, currentTrackIndex } = useCurrentTrackContext();
 
   const resolveDisplayProvider = useCallback((): import('@/types/domain').ProviderId | undefined => (
     (currentTrack?.provider as import('@/types/domain').ProviderId | undefined)
@@ -66,6 +80,18 @@ const AudioPlayerComponent = () => {
     setDisplayProviderId(resolveDisplayProvider());
   }, [resolveDisplayProvider]);
 
+  const collectionNameRef = useRef<string>('');
+
+  const { lastSession } = useSessionPersistence(
+    selectedPlaylistId,
+    collectionNameRef.current,
+    currentTrack?.provider as import('@/types/domain').ProviderId | undefined,
+    currentTrackIndex,
+    currentTrack?.name,
+    currentTrack?.artists,
+    currentTrack?.image,
+  );
+
   const handleAlbumPlay = useCallback((albumId: string) => {
     handlers.loadCollection(
       toAlbumPlaylistId(albumId),
@@ -74,9 +100,16 @@ const AudioPlayerComponent = () => {
   }, [handlers, currentTrack?.provider]);
 
   const handlePlaylistSelect = useCallback(
-    (id: string, _name?: string, provider?: import('@/types/domain').ProviderId) => handlers.loadCollection(id, provider),
+    (id: string, name?: string, provider?: import('@/types/domain').ProviderId) => {
+      if (name) collectionNameRef.current = name;
+      handlers.loadCollection(id, provider);
+    },
     [handlers]
   );
+
+  const [showQuickAccessPanel, setShowQuickAccessPanel] = useState(false);
+  const handleOpenQuickAccessPanel = useCallback(() => setShowQuickAccessPanel(true), []);
+  const handleCloseQuickAccessPanel = useCallback(() => setShowQuickAccessPanel(false), []);
 
   const playbackHandlers = useMemo(() => ({
     onPlay: handlers.handlePlay,
@@ -84,16 +117,17 @@ const AudioPlayerComponent = () => {
     onNext: handlers.handleNext,
     onPrevious: handlers.handlePrevious,
     onTrackSelect: handlers.playTrack,
-    onOpenLibraryDrawer: handlers.handleOpenLibraryDrawer,
+    onOpenLibraryDrawer: handleOpenQuickAccessPanel,
     onCloseLibraryDrawer: handlers.handleCloseLibraryDrawer,
+    onOpenQuickAccessPanel: handleOpenQuickAccessPanel,
     onPlaylistSelect: handlePlaylistSelect,
     onAddToQueue: handlers.handleAddToQueue,
     onAlbumPlay: handleAlbumPlay,
-    onBackToLibrary: handlers.handleBackToLibrary,
+    onBackToLibrary: handleOpenQuickAccessPanel,
     onStartRadio: handlers.handleStartRadio,
     onRemoveFromQueue: handlers.handleRemoveFromQueue,
     onReorderQueue: handlers.handleReorderQueue,
-  }), [handlers, handleAlbumPlay, handlePlaylistSelect]);
+  }), [handlers, handleAlbumPlay, handlePlaylistSelect, handleOpenQuickAccessPanel]);
 
   const { chosenProviderId, activeDescriptor, connectedProviderIds, fallthroughNotification, dismissFallthroughNotification } = useProviderContext();
   // Setup is needed when no provider has been chosen yet and none are connected,
@@ -123,6 +157,22 @@ const AudioPlayerComponent = () => {
   const handleCloseSettings = useCallback(() => {
     setShowVisualEffects(false);
   }, [setShowVisualEffects]);
+
+  const pendingResumeRef = useRef<number | null>(null);
+
+  const handleResume = useCallback(() => {
+    if (!lastSession) return;
+    pendingResumeRef.current = lastSession.trackIndex;
+    handlers.loadCollection(lastSession.collectionId, lastSession.collectionProvider);
+  }, [lastSession, handlers]);
+
+  useEffect(() => {
+    if (pendingResumeRef.current !== null && tracks.length > 0) {
+      const idx = pendingResumeRef.current;
+      pendingResumeRef.current = null;
+      handlers.playTrack(idx);
+    }
+  }, [tracks, handlers]);
 
   const handleClearCache = useCallback(async (options: ClearCacheOptions) => {
     const { clearCacheWithOptions } = await import('@/services/cache/libraryCache');
@@ -162,6 +212,8 @@ const AudioPlayerComponent = () => {
             selectedPlaylistId={selectedPlaylistId}
             tracks={tracks}
             onPlaylistSelect={handlePlaylistSelect}
+            lastSession={lastSession}
+            onResume={handleResume}
           />
         </ProfiledComponent>
       );
@@ -225,6 +277,27 @@ const AudioPlayerComponent = () => {
           />
         </ProfiledComponent>
         {renderContent()}
+        {showQuickAccessPanel && isMainPlayerActive && (
+          <QuickAccessOverlay onClick={handleCloseQuickAccessPanel}>
+            <div
+              onClick={(e) => e.stopPropagation()}
+              style={{ width: '100%', maxWidth: 480, aspectRatio: '1', margin: 'auto', position: 'relative' }}
+            >
+              <QuickAccessPanel
+                onPlaylistSelect={(id, name, provider) => {
+                  handleCloseQuickAccessPanel();
+                  handlePlaylistSelect(id, name, provider);
+                }}
+                onBrowseLibrary={() => {
+                  handleCloseQuickAccessPanel();
+                  handlers.handleOpenLibraryDrawer();
+                }}
+                lastSession={null}
+                onResume={() => {}}
+              />
+            </div>
+          </QuickAccessOverlay>
+        )}
         {fallthroughNotification && (
           <Toast message={fallthroughNotification} onDismiss={dismissFallthroughNotification} />
         )}
