@@ -1,3 +1,4 @@
+import { useRef } from 'react';
 import styled from 'styled-components';
 import type { MediaTrack } from '@/types/domain';
 import type { VisualizerStyle } from '@/types/visualizer';
@@ -66,8 +67,8 @@ const Content = styled.div`
   align-items: center;
   justify-content: flex-start;
   height: 100%;
-  padding: ${theme.spacing.lg};
-  padding-top: ${theme.spacing.xl};
+  padding: ${theme.spacing.sm};
+  padding-top: ${theme.spacing.lg};
   box-sizing: border-box;
   overflow-y: auto;
   scrollbar-width: none;
@@ -84,7 +85,7 @@ const Title = styled.div`
   color: rgba(255, 255, 255, 0.7);
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  margin-bottom: ${theme.spacing.md};
+  margin-bottom: ${theme.spacing.xs};
 `;
 
 const CloseButton = styled.button`
@@ -166,13 +167,27 @@ function AlbumArtQuickSwapBack({
   onClose,
   onRetryAlbumArt,
 }: AlbumArtQuickSwapBackProps) {
+  const pointerStartRef = useRef<{ x: number; y: number } | null>(null);
+
+  const handlePointerDown = (e: React.PointerEvent) => {
+    pointerStartRef.current = { x: e.clientX, y: e.clientY };
+  };
+
+  const handlePointerUp = (e: React.PointerEvent) => {
+    if (!pointerStartRef.current) return;
+    const dx = Math.abs(e.clientX - pointerStartRef.current.x);
+    const dy = Math.abs(e.clientY - pointerStartRef.current.y);
+    pointerStartRef.current = null;
+    if (dx < 10 && dy < 10) onClose();
+  };
+
   return (
     <BacksideRoot>
       <BlurredBg $image={currentTrack?.image} />
       <DarkOverlay />
       <CloseButton aria-label="Close menu" onClick={(e) => { e.stopPropagation(); onClose(); }}>×</CloseButton>
 
-      <Content onClick={onClose}>
+      <Content onPointerDown={handlePointerDown} onPointerUp={handlePointerUp}>
         <Title>Visual Effects</Title>
         <div onClick={(e) => e.stopPropagation()}>
         <QuickEffectsRow
