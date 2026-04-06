@@ -81,7 +81,7 @@ const QuickAccessPanel: React.FC<QuickAccessPanelProps> = ({
 
   return (
     <PanelRoot>
-      {lastSession && lastSession.tracks.length > 0 && (
+      {lastSession && lastSession.collectionId && (
         <ResumeCard session={lastSession} onResume={onResume} />
       )}
 

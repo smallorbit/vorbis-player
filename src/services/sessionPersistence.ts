@@ -1,19 +1,24 @@
-import type { MediaTrack } from '@/types/domain';
+import type { ProviderId } from '@/types/domain';
 
 const SESSION_KEY = 'vorbis-player-last-session';
 
 export interface SessionSnapshot {
-  tracks: MediaTrack[];
-  currentTrackIndex: number;
+  collectionId: string;
   collectionName: string;
-  collectionProvider?: string;
+  collectionProvider?: ProviderId;
+  trackIndex: number;
+  // Display-only fields for the Resume card (shown before re-fetching)
+  trackTitle?: string;
+  trackArtist?: string;
+  trackImage?: string;
+  savedAt?: number;
 }
 
 export function saveSession(snapshot: SessionSnapshot): void {
   try {
-    localStorage.setItem(SESSION_KEY, JSON.stringify(snapshot));
-  } catch {
-    // Storage quota or unavailable — ignore
+    localStorage.setItem(SESSION_KEY, JSON.stringify({ ...snapshot, savedAt: Date.now() }));
+  } catch (err) {
+    console.warn('[session] saveSession failed:', err);
   }
 }
 
@@ -25,9 +30,9 @@ export function loadSession(): SessionSnapshot | null {
     if (
       typeof parsed === 'object' &&
       parsed !== null &&
-      Array.isArray((parsed as SessionSnapshot).tracks) &&
-      typeof (parsed as SessionSnapshot).currentTrackIndex === 'number' &&
-      typeof (parsed as SessionSnapshot).collectionName === 'string'
+      typeof (parsed as SessionSnapshot).collectionId === 'string' &&
+      typeof (parsed as SessionSnapshot).collectionName === 'string' &&
+      typeof (parsed as SessionSnapshot).trackIndex === 'number'
     ) {
       return parsed as SessionSnapshot;
     }

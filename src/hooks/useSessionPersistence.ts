@@ -1,14 +1,19 @@
 import { useState, useEffect, useRef } from 'react';
-import type { MediaTrack } from '@/types/domain';
+import type { ProviderId } from '@/types/domain';
 import { saveSession, loadSession } from '@/services/sessionPersistence';
 import type { SessionSnapshot } from '@/services/sessionPersistence';
+import { logSession } from '@/lib/debugLog';
 
 const DEBOUNCE_MS = 1000;
 
 export function useSessionPersistence(
-  tracks: MediaTrack[],
-  currentTrackIndex: number,
+  collectionId: string | null,
   collectionName: string,
+  collectionProvider: ProviderId | undefined,
+  trackIndex: number,
+  trackTitle: string | undefined,
+  trackArtist: string | undefined,
+  trackImage: string | undefined,
 ): { lastSession: SessionSnapshot | null } {
   const [lastSession, setLastSession] = useState<SessionSnapshot | null>(null);
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -17,18 +22,34 @@ export function useSessionPersistence(
   useEffect(() => {
     if (hasLoadedRef.current) return;
     hasLoadedRef.current = true;
-    setLastSession(loadSession());
+    const loaded = loadSession();
+    logSession('loaded session from storage: %o', loaded
+      ? { collectionId: loaded.collectionId, collectionName: loaded.collectionName, trackIndex: loaded.trackIndex, provider: loaded.collectionProvider }
+      : null
+    );
+    setLastSession(loaded);
   }, []);
 
   useEffect(() => {
-    if (tracks.length === 0) return;
+    logSession('save effect fired — collectionId=%s, collectionName=%s, provider=%s, trackIndex=%d, trackTitle=%s',
+      collectionId, collectionName, collectionProvider, trackIndex, trackTitle
+    );
+
+    if (!collectionId) {
+      logSession('skipping save — no collectionId');
+      return;
+    }
 
     if (debounceTimerRef.current !== null) {
       clearTimeout(debounceTimerRef.current);
     }
 
     debounceTimerRef.current = setTimeout(() => {
-      saveSession({ tracks, currentTrackIndex, collectionName });
+      logSession('saving session — collectionId=%s, provider=%s, trackIndex=%d',
+        collectionId, collectionProvider, trackIndex
+      );
+      saveSession({ collectionId, collectionName, collectionProvider, trackIndex, trackTitle, trackArtist, trackImage });
+      logSession('save complete');
     }, DEBOUNCE_MS);
 
     return () => {
@@ -36,7 +57,7 @@ export function useSessionPersistence(
         clearTimeout(debounceTimerRef.current);
       }
     };
-  }, [tracks, currentTrackIndex, collectionName]);
+  }, [collectionId, collectionName, collectionProvider, trackIndex, trackTitle, trackArtist, trackImage]);
 
   return { lastSession };
 }

@@ -63,8 +63,8 @@ const AudioPlayerComponent = () => {
     showVisualEffects,
     setShowVisualEffects,
   } = useVisualEffectsContext();
-  const { tracks, selectedPlaylistId, setTracks, setOriginalTracks, setSelectedPlaylistId } = useTrackListContext();
-  const { currentTrack, currentTrackIndex, setCurrentTrackIndex } = useCurrentTrackContext();
+  const { tracks, selectedPlaylistId } = useTrackListContext();
+  const { currentTrack, currentTrackIndex } = useCurrentTrackContext();
 
   const resolveDisplayProvider = useCallback((): import('@/types/domain').ProviderId | undefined => (
     (currentTrack?.provider as import('@/types/domain').ProviderId | undefined)
@@ -82,7 +82,15 @@ const AudioPlayerComponent = () => {
 
   const collectionNameRef = useRef<string>('');
 
-  const { lastSession } = useSessionPersistence(tracks, currentTrackIndex, collectionNameRef.current);
+  const { lastSession } = useSessionPersistence(
+    selectedPlaylistId,
+    collectionNameRef.current,
+    currentTrack?.provider as import('@/types/domain').ProviderId | undefined,
+    currentTrackIndex,
+    currentTrack?.name,
+    currentTrack?.artists,
+    currentTrack?.image,
+  );
 
   const handleAlbumPlay = useCallback((albumId: string) => {
     handlers.loadCollection(
@@ -109,13 +117,13 @@ const AudioPlayerComponent = () => {
     onNext: handlers.handleNext,
     onPrevious: handlers.handlePrevious,
     onTrackSelect: handlers.playTrack,
-    onOpenLibraryDrawer: handlers.handleOpenLibraryDrawer,
+    onOpenLibraryDrawer: handleOpenQuickAccessPanel,
     onCloseLibraryDrawer: handlers.handleCloseLibraryDrawer,
     onOpenQuickAccessPanel: handleOpenQuickAccessPanel,
     onPlaylistSelect: handlePlaylistSelect,
     onAddToQueue: handlers.handleAddToQueue,
     onAlbumPlay: handleAlbumPlay,
-    onBackToLibrary: handlers.handleBackToLibrary,
+    onBackToLibrary: handleOpenQuickAccessPanel,
     onStartRadio: handlers.handleStartRadio,
     onRemoveFromQueue: handlers.handleRemoveFromQueue,
     onReorderQueue: handlers.handleReorderQueue,
@@ -150,15 +158,21 @@ const AudioPlayerComponent = () => {
     setShowVisualEffects(false);
   }, [setShowVisualEffects]);
 
+  const pendingResumeRef = useRef<number | null>(null);
+
   const handleResume = useCallback(() => {
-    if (!lastSession || lastSession.tracks.length === 0) return;
-    const resumeIndex = Math.max(0, Math.min(lastSession.currentTrackIndex, lastSession.tracks.length - 1));
-    setOriginalTracks(lastSession.tracks);
-    setTracks(lastSession.tracks);
-    setSelectedPlaylistId('session-resume');
-    setCurrentTrackIndex(resumeIndex);
-    handlers.playTrack(resumeIndex);
-  }, [lastSession, setOriginalTracks, setTracks, setSelectedPlaylistId, setCurrentTrackIndex, handlers]);
+    if (!lastSession) return;
+    pendingResumeRef.current = lastSession.trackIndex;
+    handlers.loadCollection(lastSession.collectionId, lastSession.collectionProvider);
+  }, [lastSession, handlers]);
+
+  useEffect(() => {
+    if (pendingResumeRef.current !== null && tracks.length > 0) {
+      const idx = pendingResumeRef.current;
+      pendingResumeRef.current = null;
+      handlers.playTrack(idx);
+    }
+  }, [tracks, handlers]);
 
   const handleClearCache = useCallback(async (options: ClearCacheOptions) => {
     const { clearCacheWithOptions } = await import('@/services/cache/libraryCache');
