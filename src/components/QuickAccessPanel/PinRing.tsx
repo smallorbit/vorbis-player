@@ -31,10 +31,13 @@ interface PinRingProps {
 
 function getImageUrl(
   images: { url: string; width: number | null; height: number | null }[],
+  targetWidth = 300,
 ): string | undefined {
   if (!images?.length) return undefined;
-  const sorted = [...images].sort((a, b) => (b.width ?? 0) - (a.width ?? 0));
-  return sorted[sorted.length - 1]?.url ?? sorted[0]?.url;
+  const sorted = [...images].sort(
+    (a, b) => Math.abs((a.width ?? 0) - targetWidth) - Math.abs((b.width ?? 0) - targetWidth),
+  );
+  return sorted[0]?.url;
 }
 
 type GridSatelliteItem =
