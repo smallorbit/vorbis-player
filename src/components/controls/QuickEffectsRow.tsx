@@ -318,6 +318,12 @@ function QuickEffectsRow({
               >
                 Wave
               </OptionButton>
+              <OptionButton
+                $isActive={backgroundVisualizerStyle === 'grid'}
+                onClick={() => onBackgroundVisualizerStyleChange('grid')}
+              >
+                Grid
+              </OptionButton>
             </OptionButtonGroup>
           </SubSettingRow>
           {hasVizIntensity && (
