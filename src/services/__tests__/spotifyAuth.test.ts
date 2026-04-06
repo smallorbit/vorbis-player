@@ -34,35 +34,50 @@ describe('SpotifyAuth', () => {
     });
 
     it('returns true with a valid non-expired token', async () => {
+      // #given
       const token = {
         access_token: 'valid-token',
         refresh_token: 'refresh',
         expires_at: Date.now() + 3600 * 1000,
       };
       vi.mocked(localStorage.getItem).mockReturnValue(JSON.stringify(token));
+
+      // #when
       const auth = await freshAuth();
+
+      // #then
       expect(auth.isAuthenticated()).toBe(true);
     });
 
     it('returns true when token is expired but refresh token exists', async () => {
+      // #given
       const token = {
         access_token: 'expired-token',
         refresh_token: 'refresh',
         expires_at: Date.now() - 1000,
       };
       vi.mocked(localStorage.getItem).mockReturnValue(JSON.stringify(token));
+
+      // #when
       const auth = await freshAuth();
+
+      // #then
       expect(auth.isAuthenticated()).toBe(true);
       expect(localStorage.removeItem).not.toHaveBeenCalledWith('spotify_token');
     });
 
     it('returns false and clears storage when token is expired without refresh token', async () => {
+      // #given
       const token = {
         access_token: 'expired-token',
         expires_at: Date.now() - 1000,
       };
       vi.mocked(localStorage.getItem).mockReturnValue(JSON.stringify(token));
+
+      // #when
       const auth = await freshAuth();
+
+      // #then
       expect(auth.isAuthenticated()).toBe(false);
       expect(localStorage.removeItem).toHaveBeenCalledWith('spotify_token');
     });
@@ -79,19 +94,25 @@ describe('SpotifyAuth', () => {
 
   describe('ensureValidToken', () => {
     it('returns current access_token when not near expiry', async () => {
+      // #given
       const token = {
         access_token: 'my-token',
         refresh_token: 'refresh',
-        expires_at: Date.now() + 30 * 60 * 1000, // 30 min from now
+        expires_at: Date.now() + 30 * 60 * 1000,
       };
       vi.mocked(localStorage.getItem).mockReturnValue(JSON.stringify(token));
       const auth = await freshAuth();
+
+      // #when
       const result = await auth.ensureValidToken();
+
+      // #then
       expect(result).toBe('my-token');
       expect(global.fetch).not.toHaveBeenCalled();
     });
 
     it('refreshes token when access token is already expired', async () => {
+      // #given
       const token = {
         access_token: 'expired-token',
         refresh_token: 'my-refresh',
@@ -106,16 +127,20 @@ describe('SpotifyAuth', () => {
         expires_in: 3600,
       });
 
+      // #when
       const result = await auth.ensureValidToken();
+
+      // #then
       expect(result).toBe('new-token');
       expect(global.fetch).toHaveBeenCalledTimes(1);
     });
 
     it('calls refresh when within 5-minute buffer of expiry', async () => {
+      // #given
       const token = {
         access_token: 'old-token',
         refresh_token: 'my-refresh',
-        expires_at: Date.now() + 2 * 60 * 1000, // 2 min from now (within 5-min buffer)
+        expires_at: Date.now() + 2 * 60 * 1000,
       };
       vi.mocked(localStorage.getItem).mockReturnValue(JSON.stringify(token));
       const auth = await freshAuth();
@@ -126,7 +151,10 @@ describe('SpotifyAuth', () => {
         expires_in: 3600,
       });
 
+      // #when
       const result = await auth.ensureValidToken();
+
+      // #then
       expect(result).toBe('new-token');
       expect(global.fetch).toHaveBeenCalledTimes(1);
     });
@@ -134,6 +162,7 @@ describe('SpotifyAuth', () => {
 
   describe('refreshAccessToken', () => {
     it('POSTs to Spotify token endpoint with correct body', async () => {
+      // #given
       const token = {
         access_token: 'old-token',
         refresh_token: 'my-refresh-token',
@@ -148,8 +177,10 @@ describe('SpotifyAuth', () => {
         expires_in: 3600,
       });
 
+      // #when
       await auth.refreshAccessToken();
 
+      // #then
       const [url, options] = vi.mocked(global.fetch).mock.calls[0];
       expect(url).toBe('https://accounts.spotify.com/api/token');
       expect(options?.method).toBe('POST');
@@ -160,6 +191,7 @@ describe('SpotifyAuth', () => {
     });
 
     it('throws on non-ok response', async () => {
+      // #given
       const token = {
         access_token: 'old-token',
         refresh_token: 'my-refresh',
@@ -170,12 +202,14 @@ describe('SpotifyAuth', () => {
 
       mockFetchResponse({}, 401);
 
+      // #when / #then
       await expect(auth.refreshAccessToken()).rejects.toThrow('Token refresh failed');
     });
   });
 
   describe('handleAuthCallback', () => {
     it('exchanges code+verifier, stores tokens, clears code_verifier', async () => {
+      // #given
       vi.mocked(localStorage.getItem).mockImplementation((key: string) => {
         if (key === 'spotify_code_verifier') return 'test-verifier';
         return null;
@@ -188,8 +222,10 @@ describe('SpotifyAuth', () => {
         expires_in: 3600,
       });
 
+      // #when
       await auth.handleAuthCallback('test-code');
 
+      // #then
       const [url, options] = vi.mocked(global.fetch).mock.calls[0];
       expect(url).toBe('https://accounts.spotify.com/api/token');
       const body = options?.body as URLSearchParams;
@@ -217,6 +253,7 @@ describe('SpotifyAuth', () => {
     });
 
     it('calls handleAuthCallback when code param present and on callback path', async () => {
+      // #given
       Object.defineProperty(window, 'location', {
         value: {
           href: 'http://127.0.0.1:3000/auth/spotify/callback?code=abc123',
@@ -237,13 +274,16 @@ describe('SpotifyAuth', () => {
         expires_in: 3600,
       });
 
+      // #when
       await auth.handleRedirect();
 
+      // #then
       expect(global.fetch).toHaveBeenCalledTimes(1);
       expect(sessionStorage.setItem).toHaveBeenCalledWith('spotify_processed_code', 'abc123');
     });
 
     it('skips already-seen code via sessionStorage deduplication', async () => {
+      // #given
       Object.defineProperty(window, 'location', {
         value: {
           href: 'http://127.0.0.1:3000/auth/spotify/callback?code=abc123',
@@ -255,8 +295,10 @@ describe('SpotifyAuth', () => {
       vi.mocked(sessionStorage.getItem).mockReturnValue('abc123');
       const auth = await freshAuth();
 
+      // #when
       await auth.handleRedirect();
 
+      // #then
       expect(global.fetch).not.toHaveBeenCalled();
       expect(window.history.replaceState).toHaveBeenCalled();
     });

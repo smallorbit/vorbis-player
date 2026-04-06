@@ -63,6 +63,7 @@ describe('buildIndexes', () => {
   });
 
   it('indexes tracks by artist MBID', () => {
+    // #given
     const t1 = makeTrack({
       id: 't1',
       name: 'Creep',
@@ -76,7 +77,10 @@ describe('buildIndexes', () => {
       musicbrainzArtistId: 'artist-123',
     });
 
+    // #when
     const indexes = buildIndexes([t1, t2]);
+
+    // #then
     expect(indexes.byArtistMbid.get('artist-123')).toHaveLength(2);
   });
 
@@ -143,6 +147,7 @@ describe('matchTrack', () => {
   });
 
   it('matches with different casing and accents', () => {
+    // #given
     const accentedTrack = makeTrack({
       id: 'accented',
       name: 'Déjà Vu',
@@ -158,12 +163,16 @@ describe('matchTrack', () => {
       matchScore: 0.7,
     };
 
+    // #when
     const result = matchTrack(candidate, idx);
+
+    // #then
     expect(result).not.toBeNull();
     expect(result!.track.id).toBe('accented');
   });
 
   it('matches when catalog has parenthetical and candidate does not', () => {
+    // #given
     const remasteredTrack = makeTrack({
       id: 'remastered',
       name: 'Bohemian Rhapsody (Remastered)',
@@ -179,7 +188,10 @@ describe('matchTrack', () => {
       matchScore: 0.95,
     };
 
+    // #when
     const result = matchTrack(candidate, idx);
+
+    // #then
     expect(result).not.toBeNull();
     expect(result!.track.id).toBe('remastered');
   });
@@ -198,7 +210,7 @@ describe('matchTrack', () => {
   });
 
   it('prefers MBID match over name match', () => {
-    // Track has both MBID and name, MBID should win
+    // #given
     const candidate: LastFmSimilarTrack = {
       name: 'Fake Plastic Trees',
       artist: 'Radiohead',
@@ -207,7 +219,10 @@ describe('matchTrack', () => {
       matchScore: 0.91,
     };
 
+    // #when
     const result = matchTrack(candidate, indexes);
+
+    // #then
     expect(result!.confidence).toBe('mbid');
   });
 });

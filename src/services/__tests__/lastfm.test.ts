@@ -29,6 +29,7 @@ beforeEach(() => {
 
 describe('getSimilarTracks', () => {
   it('parses a valid response with multiple tracks', async () => {
+    // #given
     mockFetch.mockResolvedValueOnce(
       jsonResponse({
         similartracks: {
@@ -50,7 +51,10 @@ describe('getSimilarTracks', () => {
       }),
     );
 
+    // #when
     const result = await getSimilarTracks('Radiohead', 'Creep', 50);
+
+    // #then
     expect(result).toHaveLength(2);
     expect(result[0]).toEqual({
       name: 'Fake Plastic Trees',
@@ -92,6 +96,7 @@ describe('getSimilarTracks', () => {
 
 describe('getSimilarArtists', () => {
   it('parses a valid response', async () => {
+    // #given
     mockFetch.mockResolvedValueOnce(
       jsonResponse({
         similarartists: {
@@ -103,7 +108,10 @@ describe('getSimilarArtists', () => {
       }),
     );
 
+    // #when
     const result = await getSimilarArtists('Radiohead', 20);
+
+    // #then
     expect(result).toHaveLength(2);
     expect(result[0]).toEqual({ name: 'Muse', mbid: 'muse-mbid', matchScore: 0.75 });
     expect(result[1].mbid).toBeNull();
@@ -118,6 +126,7 @@ describe('getSimilarArtists', () => {
 
 describe('getArtistTopTracks', () => {
   it('parses a valid response and sets matchScore to 1.0', async () => {
+    // #given
     mockFetch.mockResolvedValueOnce(
       jsonResponse({
         toptracks: {
@@ -133,7 +142,10 @@ describe('getArtistTopTracks', () => {
       }),
     );
 
+    // #when
     const result = await getArtistTopTracks('Radiohead', 10);
+
+    // #then
     expect(result).toHaveLength(1);
     expect(result[0].matchScore).toBe(1.0);
     expect(result[0].name).toBe('Creep');
@@ -142,6 +154,7 @@ describe('getArtistTopTracks', () => {
 
 describe('getAlbumTracks', () => {
   it('parses album track list', async () => {
+    // #given
     mockFetch.mockResolvedValueOnce(
       jsonResponse({
         album: {
@@ -155,7 +168,10 @@ describe('getAlbumTracks', () => {
       }),
     );
 
+    // #when
     const result = await getAlbumTracks('Radiohead', 'Kid A');
+
+    // #then
     expect(result).toHaveLength(2);
     expect(result[0]).toEqual({ name: 'Everything in Its Right Place', artist: 'Radiohead' });
   });
@@ -175,11 +191,15 @@ describe('isLastFmConfigured', () => {
 
 describe('URL construction', () => {
   it('includes correct query parameters', async () => {
+    // #given
     mockFetch.mockResolvedValueOnce(
       jsonResponse({ similartracks: { track: [] } }),
     );
+
+    // #when
     await getSimilarTracks('Radiohead', 'Creep', 100);
 
+    // #then
     const calledUrl = new URL(mockFetch.mock.calls[0][0]);
     expect(calledUrl.searchParams.get('method')).toBe('track.getsimilar');
     expect(calledUrl.searchParams.get('artist')).toBe('Radiohead');
