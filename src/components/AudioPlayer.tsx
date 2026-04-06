@@ -116,6 +116,20 @@ const AudioPlayerComponent = () => {
   const handleOpenQuickAccessPanel = useCallback(() => setShowQuickAccessPanel(true), []);
   const handleCloseQuickAccessPanel = useCallback(() => setShowQuickAccessPanel(false), []);
 
+  const [qapToast, setQapToast] = useState<string | null>(null);
+  const handleAddToQueueFromPanel = useCallback(
+    async (id: string, name?: string, provider?: import('@/types/domain').ProviderId) => {
+      const result = await handlers.handleAddToQueue(id, name, provider);
+      if (result && result.added > 0) {
+        const title = result.collectionName?.trim();
+        const label = title ? `"${title}"` : 'this collection';
+        setQapToast(`Added ${result.added} ${result.added === 1 ? 'track' : 'tracks'} from ${label} to your queue`);
+      }
+      return result;
+    },
+    [handlers],
+  );
+
   const playbackHandlers = useMemo(() => ({
     onPlay: handlers.handlePlay,
     onPause: handlers.handlePause,
@@ -225,7 +239,7 @@ const AudioPlayerComponent = () => {
             selectedPlaylistId={selectedPlaylistId}
             tracks={tracks}
             onPlaylistSelect={handlePlaylistSelect}
-            onAddToQueue={handlers.handleAddToQueue}
+            onAddToQueue={handleAddToQueueFromPanel}
             lastSession={lastSession}
             onResume={handleResume}
           />
@@ -315,6 +329,9 @@ const AudioPlayerComponent = () => {
             </div>
           </QuickAccessOverlay>
         )}
+        {qapToast && (
+          <Toast message={qapToast} onDismiss={() => setQapToast(null)} />
+        )}
         {fallthroughNotification && (
           <Toast message={fallthroughNotification} onDismiss={dismissFallthroughNotification} />
         )}
@@ -336,7 +353,7 @@ const AudioPlayerComponent = () => {
                 isOpen={state.showLibraryDrawer}
                 onClose={handlers.handleCloseLibraryDrawer}
                 onPlaylistSelect={handlePlaylistSelect}
-                onAddToQueue={handlers.handleAddToQueue}
+                onAddToQueue={handleAddToQueueFromPanel}
               />
             </Suspense>
           </>
