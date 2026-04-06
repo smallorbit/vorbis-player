@@ -20,42 +20,69 @@ const MosaicGrid = styled.div`
   }
 `;
 
+const Placeholder = styled.div`
+  width: 100%;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.06);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+`;
+
 interface MosaicThumbnailProps {
-  /** Album folder paths to resolve from IndexedDB art cache. */
   albumPaths: string[];
   alt: string;
 }
 
 export const MosaicThumbnail: React.FC<MosaicThumbnailProps> = React.memo(
   function MosaicThumbnail({ albumPaths, alt }) {
-    const [resolvedUrls, setResolvedUrls] = useState<string[]>([]);
+    const [resolved, setResolved] = useState<(string | null)[]>([]);
 
     useEffect(() => {
       let cancelled = false;
-      Promise.all(albumPaths.map(path => getAlbumArt(path))).then(results => {
+      const resolve = () =>
+        Promise.all(albumPaths.map(path => getAlbumArt(path))).then(results => {
+          if (!cancelled) setResolved(results);
+          return results;
+        });
+
+      resolve().then(results => {
         if (cancelled) return;
-        const urls = results.filter((url): url is string => url != null);
-        setResolvedUrls(urls);
+        const hasMissing = results.some(url => url == null);
+        if (hasMissing) {
+          setTimeout(() => { if (!cancelled) resolve(); }, 3000);
+        }
       });
       return () => { cancelled = true; };
     }, [albumPaths]);
 
-    if (resolvedUrls.length === 0) return null;
+    const hasAny = resolved.some(url => url != null);
+    if (!hasAny) return null;
 
-    if (resolvedUrls.length === 1) {
-      return <img src={resolvedUrls[0]} alt={alt} loading="lazy" decoding="async" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 'inherit' }} />;
+    // Single album with art → full-bleed
+    if (albumPaths.length === 1 && resolved[0]) {
+      return <img src={resolved[0]} alt={alt} loading="lazy" decoding="async" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 'inherit' }} />;
     }
 
-    const [a, b] = resolvedUrls;
-    const quadrants = resolvedUrls.length >= 4
-      ? [resolvedUrls[0], resolvedUrls[1], resolvedUrls[2], resolvedUrls[3]]
-      : [a, b, b, a];
+    // Build the 4 quadrants
+    let quadrants: (string | null)[];
+    if (resolved.length >= 4) {
+      quadrants = [resolved[0], resolved[1], resolved[2], resolved[3]];
+    } else {
+      // 2-3 paths → diagonal duplication: A in Q1+Q4, B in Q2+Q3
+      const a = resolved[0] ?? null;
+      const b = resolved[1] ?? resolved[0] ?? null;
+      quadrants = [a, b, b, a];
+    }
 
     return (
       <MosaicGrid>
-        {quadrants.map((url, i) => (
-          <img key={i} src={url} alt={`${alt} cover ${i + 1}`} loading="lazy" decoding="async" />
-        ))}
+        {quadrants.map((url, i) =>
+          url
+            ? <img key={i} src={url} alt={`${alt} cover ${i + 1}`} loading="lazy" decoding="async" />
+            : <Placeholder key={i}>♪</Placeholder>
+        )}
       </MosaicGrid>
     );
   },
