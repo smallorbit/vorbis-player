@@ -160,6 +160,7 @@ function AlbumArtQuickSwapBack({
   onRetryAlbumArt,
 }: AlbumArtQuickSwapBackProps) {
   const pointerStartRef = useRef<{ x: number; y: number } | null>(null);
+  const controlsRef = useRef<HTMLDivElement>(null);
 
   const handlePointerDown = (e: React.PointerEvent) => {
     pointerStartRef.current = { x: e.clientX, y: e.clientY };
@@ -170,7 +171,10 @@ function AlbumArtQuickSwapBack({
     const dx = Math.abs(e.clientX - pointerStartRef.current.x);
     const dy = Math.abs(e.clientY - pointerStartRef.current.y);
     pointerStartRef.current = null;
-    if (dx < 10 && dy < 10) onClose();
+    if (dx < 10 && dy < 10) {
+      if (controlsRef.current?.contains(e.target as Node)) return;
+      onClose();
+    }
   };
 
   return (
@@ -181,7 +185,7 @@ function AlbumArtQuickSwapBack({
 
       <Content onPointerDown={handlePointerDown} onPointerUp={handlePointerUp}>
         {!isMobile && <Title>Visual Effects</Title>}
-        <div onClick={(e) => e.stopPropagation()}>
+        <div ref={controlsRef} onClick={(e) => e.stopPropagation()}>
         <QuickEffectsRow
           currentTrack={currentTrack}
           accentColor={accentColor}
