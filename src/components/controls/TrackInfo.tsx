@@ -95,13 +95,16 @@ const TrackInfo = memo<TrackInfoProps>(({ track, isMobile, isTablet, onArtistBro
         ? DiscogsIcon
         : SpotifyIcon;
 
-    const getAlbumExternalUrl = (_albumId: string, albumName: string): string | undefined => {
+    const getAlbumExternalUrl = (albumId: string, albumName: string): string | undefined => {
         if (trackDescriptor?.getExternalUrls) {
             const urls = trackDescriptor.getExternalUrls({ type: 'album', name: albumName, artistName: track?.artists });
             return urls?.[0]?.url;
         }
         if (trackDescriptor?.getExternalUrl) {
             return trackDescriptor.getExternalUrl({ type: 'album', name: albumName, artistName: track?.artists });
+        }
+        if (trackDescriptor?.id === 'spotify' && albumId) {
+            return `https://open.spotify.com/album/${albumId}`;
         }
         return undefined;
     };
