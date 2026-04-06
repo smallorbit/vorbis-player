@@ -148,12 +148,12 @@ const DEFAULT_TRAIL: TrailVisualizerConfig = {
 
 const DEFAULT_GRID_WAVE: GridWaveVisualizerConfig = {
   spacing: 35,
-  waveCount: 3,
-  waveSpeedBase: 0.018,
-  waveSpeedSpread: 0.012,
-  amplitudeBase: 0.06,
-  frequencyBase: 0.012,
-  frequencySpread: 0.008,
+  waveCount: 2,
+  waveSpeedBase: 0.006,
+  waveSpeedSpread: 0.004,
+  amplitudeBase: 0.12,
+  frequencyBase: 0.005,
+  frequencySpread: 0.003,
   perspectiveStrength: 0.4,
   baseRadius: 2.5,
   radiusWaveScale: 1.2,
