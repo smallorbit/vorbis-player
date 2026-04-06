@@ -1,4 +1,4 @@
-import React, { Suspense, memo, useMemo } from 'react';
+import React, { Suspense, memo, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import styled from 'styled-components';
 import type { MediaTrack } from '@/types/domain';
@@ -220,6 +220,9 @@ const QueueDrawer = memo<QueueDrawerProps>(({
   onSaveQueue,
   canSaveQueue,
 }) => {
+  const hasBeenOpenedRef = useRef(false);
+  if (isOpen) hasBeenOpenedRef.current = true;
+
   // Get responsive sizing information
   const { viewport, isMobile, isTablet, transitionDuration, transitionEasing } = usePlayerSizingContext();
 
@@ -229,6 +232,9 @@ const QueueDrawer = memo<QueueDrawerProps>(({
     if (isTablet) return Math.min(viewport.width * 0.4, parseInt(theme.drawer.widths.tablet));
     return Math.min(viewport.width * 0.3, parseInt(theme.drawer.widths.desktop));
   }, [viewport.width, isMobile, isTablet]);
+
+  if (!hasBeenOpenedRef.current) return null;
+
   return createPortal(
     <>
       <QueueOverlay
