@@ -97,99 +97,107 @@ export const ResumeLabel = styled.div`
   border-radius: ${theme.borderRadius.full};
 `;
 
-export const RingSection = styled.div`
+export const GridSection = styled.div`
   flex: 1;
   min-height: 0;
+  padding: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: ${theme.spacing.sm};
-  position: relative;
+  overflow: hidden;
+  container-type: size;
 `;
 
-export const RingContainer = styled.div`
-  position: relative;
-  width: 100%;
-  aspect-ratio: 1;
-  max-width: 320px;
-  max-height: 320px;
+export const GridContainer = styled.div`
+  --grid-size: min(100cqi, 100cqb);
+  width: var(--grid-size);
+  height: var(--grid-size);
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  grid-template-rows: repeat(4, 1fr);
+  gap: 6px;
 `;
 
-export const CenterButton = styled.button`
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 72px;
-  height: 72px;
-  border-radius: 50%;
-  border: 2px solid rgba(255, 255, 255, 0.2);
-  background: rgba(255, 255, 255, 0.08);
+export const LikedSongsCard = styled.button`
+  grid-column: 2 / 4;
+  grid-row: 2 / 4;
+  border-radius: ${theme.borderRadius.xl};
+  border: 1px solid rgba(255, 255, 255, 0.15);
   cursor: pointer;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 2px;
-  transition: background ${theme.transitions.fast}, transform ${theme.transitions.fast};
+  gap: 6px;
+  padding: 12px;
+  overflow: hidden;
+  transition: filter ${theme.transitions.fast}, transform ${theme.transitions.fast};
   touch-action: manipulation;
-  z-index: 1;
 
   &:hover {
-    background: rgba(255, 255, 255, 0.14);
-    transform: translate(-50%, -50%) scale(1.05);
+    filter: brightness(1.12);
+    transform: scale(1.02);
   }
 
   &:active {
-    transform: translate(-50%, -50%) scale(0.96);
+    transform: scale(0.97);
   }
 `;
 
-export const CenterCount = styled.div`
-  font-size: ${theme.fontSize.xs};
-  color: rgba(255, 255, 255, 0.7);
-  font-weight: ${theme.fontWeight.medium};
+export const LikedSongsHeart = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+`;
+
+export const LikedSongsCount = styled.div`
+  font-size: ${theme.fontSize.lg};
+  font-weight: ${theme.fontWeight.bold};
+  color: rgba(255, 255, 255, 0.95);
   line-height: 1;
 `;
 
-export const SatelliteButton = styled.button<{ $x: number; $y: number }>`
-  position: absolute;
-  width: 52px;
-  height: 52px;
-  left: calc(50% + ${({ $x }) => $x}px - 26px);
-  top: calc(50% + ${({ $y }) => $y}px - 26px);
-  border-radius: ${theme.borderRadius.lg};
-  border: 1px solid ${theme.colors.borderSubtle};
+export const LikedSongsLabel = styled.div`
+  font-size: ${theme.fontSize.xs};
+  font-weight: ${theme.fontWeight.medium};
+  color: rgba(255, 255, 255, 0.75);
+  text-align: center;
+  line-height: 1.2;
+`;
+
+export const GridItem = styled.button`
+  position: relative;
+  border-radius: ${theme.borderRadius.md};
+  border: 1px solid rgba(255, 255, 255, 0.1);
   background: rgba(255, 255, 255, 0.06);
   cursor: pointer;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: flex-start;
   padding: 0;
   overflow: hidden;
   transition: background ${theme.transitions.fast}, transform ${theme.transitions.fast};
   touch-action: manipulation;
+  min-height: 0;
 
   &:hover {
     background: rgba(255, 255, 255, 0.12);
-    transform: scale(1.08);
+    transform: scale(1.05);
   }
 
   &:active {
-    transform: scale(0.94);
+    transform: scale(0.95);
   }
 `;
 
-export const SatelliteArt = styled.div`
-  width: 100%;
-  flex: 1;
+export const GridItemArt = styled.div`
+  position: absolute;
+  inset: 0;
+  bottom: 18px;
   overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
   background: ${theme.colors.control.background};
-  font-size: 1.4rem;
+  font-size: 1.2rem;
 
   img {
     width: 100%;
@@ -198,41 +206,40 @@ export const SatelliteArt = styled.div`
   }
 `;
 
-export const SatelliteName = styled.div`
-  width: 100%;
-  padding: 1px 3px;
+export const GridItemName = styled.div`
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 18px;
+  padding: 1px 4px;
   font-size: 8px;
-  color: rgba(255, 255, 255, 0.7);
+  color: rgba(255, 255, 255, 0.75);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   text-align: center;
-  line-height: 1.3;
-  background: rgba(0, 0, 0, 0.4);
+  line-height: 16px;
+  background: rgba(0, 0, 0, 0.45);
   flex-shrink: 0;
 `;
 
-export const GhostSlot = styled.div<{ $x: number; $y: number }>`
-  position: absolute;
-  width: 52px;
-  height: 52px;
-  left: calc(50% + ${({ $x }) => $x}px - 26px);
-  top: calc(50% + ${({ $y }) => $y}px - 26px);
-  border-radius: ${theme.borderRadius.lg};
+export const GridGhostSlot = styled.div`
+  border-radius: ${theme.borderRadius.md};
   border: 1px dashed rgba(255, 255, 255, 0.15);
   background: rgba(255, 255, 255, 0.02);
 `;
 
-export const GhostHint = styled.div`
-  position: absolute;
-  bottom: -28px;
-  left: 50%;
-  transform: translateX(-50%);
+export const GridEmptyHint = styled.div`
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   font-size: ${theme.fontSize.xs};
   color: rgba(255, 255, 255, 0.3);
-  white-space: nowrap;
-  pointer-events: none;
   text-align: center;
+  pointer-events: none;
+  padding: ${theme.spacing.md};
 `;
 
 export const ChipsSection = styled.div`
