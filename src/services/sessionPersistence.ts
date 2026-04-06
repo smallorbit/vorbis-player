@@ -7,6 +7,7 @@ export interface SessionSnapshot {
   collectionName: string;
   collectionProvider?: ProviderId;
   trackIndex: number;
+  trackId?: string;
   // Display-only fields for the Resume card (shown before re-fetching)
   trackTitle?: string;
   trackArtist?: string;

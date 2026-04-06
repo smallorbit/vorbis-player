@@ -87,6 +87,7 @@ const AudioPlayerComponent = () => {
     collectionNameRef.current,
     currentTrack?.provider as import('@/types/domain').ProviderId | undefined,
     currentTrackIndex,
+    currentTrack?.id,
     currentTrack?.name,
     currentTrack?.artists,
     currentTrack?.image,
@@ -158,19 +159,23 @@ const AudioPlayerComponent = () => {
     setShowVisualEffects(false);
   }, [setShowVisualEffects]);
 
-  const pendingResumeRef = useRef<number | null>(null);
+  const pendingResumeRef = useRef<{ trackId?: string; trackIndex: number } | null>(null);
 
   const handleResume = useCallback(() => {
     if (!lastSession) return;
-    pendingResumeRef.current = lastSession.trackIndex;
+    pendingResumeRef.current = { trackId: lastSession.trackId, trackIndex: lastSession.trackIndex };
     handlers.loadCollection(lastSession.collectionId, lastSession.collectionProvider);
   }, [lastSession, handlers]);
 
   useEffect(() => {
     if (pendingResumeRef.current !== null && tracks.length > 0) {
-      const idx = pendingResumeRef.current;
+      const { trackId, trackIndex } = pendingResumeRef.current;
       pendingResumeRef.current = null;
-      handlers.playTrack(idx);
+      // Prefer finding by ID so shuffle doesn't land on the wrong track
+      const idx = trackId
+        ? (tracks.findIndex(t => t.id === trackId) ?? -1)
+        : -1;
+      handlers.playTrack(idx >= 0 ? idx : Math.min(trackIndex, tracks.length - 1));
     }
   }, [tracks, handlers]);
 

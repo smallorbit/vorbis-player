@@ -11,6 +11,7 @@ export function useSessionPersistence(
   collectionName: string,
   collectionProvider: ProviderId | undefined,
   trackIndex: number,
+  trackId: string | undefined,
   trackTitle: string | undefined,
   trackArtist: string | undefined,
   trackImage: string | undefined,
@@ -48,7 +49,7 @@ export function useSessionPersistence(
       logSession('saving session — collectionId=%s, provider=%s, trackIndex=%d',
         collectionId, collectionProvider, trackIndex
       );
-      saveSession({ collectionId, collectionName, collectionProvider, trackIndex, trackTitle, trackArtist, trackImage });
+      saveSession({ collectionId, collectionName, collectionProvider, trackIndex, trackId, trackTitle, trackArtist, trackImage });
       logSession('save complete');
     }, DEBOUNCE_MS);
 
@@ -57,7 +58,7 @@ export function useSessionPersistence(
         clearTimeout(debounceTimerRef.current);
       }
     };
-  }, [collectionId, collectionName, collectionProvider, trackIndex, trackTitle, trackArtist, trackImage]);
+  }, [collectionId, collectionName, collectionProvider, trackIndex, trackId, trackTitle, trackArtist, trackImage]);
 
   return { lastSession };
 }
