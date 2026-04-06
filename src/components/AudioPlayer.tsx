@@ -109,13 +109,13 @@ const AudioPlayerComponent = () => {
     onNext: handlers.handleNext,
     onPrevious: handlers.handlePrevious,
     onTrackSelect: handlers.playTrack,
-    onOpenLibraryDrawer: handlers.handleOpenLibraryDrawer,
+    onOpenLibraryDrawer: handleOpenQuickAccessPanel,
     onCloseLibraryDrawer: handlers.handleCloseLibraryDrawer,
     onOpenQuickAccessPanel: handleOpenQuickAccessPanel,
     onPlaylistSelect: handlePlaylistSelect,
     onAddToQueue: handlers.handleAddToQueue,
     onAlbumPlay: handleAlbumPlay,
-    onBackToLibrary: handlers.handleBackToLibrary,
+    onBackToLibrary: handleOpenQuickAccessPanel,
     onStartRadio: handlers.handleStartRadio,
     onRemoveFromQueue: handlers.handleRemoveFromQueue,
     onReorderQueue: handlers.handleReorderQueue,
@@ -150,15 +150,25 @@ const AudioPlayerComponent = () => {
     setShowVisualEffects(false);
   }, [setShowVisualEffects]);
 
+  const pendingResumeRef = useRef<number | null>(null);
+
   const handleResume = useCallback(() => {
     if (!lastSession || lastSession.tracks.length === 0) return;
     const resumeIndex = Math.max(0, Math.min(lastSession.currentTrackIndex, lastSession.tracks.length - 1));
+    pendingResumeRef.current = resumeIndex;
     setOriginalTracks(lastSession.tracks);
     setTracks(lastSession.tracks);
     setSelectedPlaylistId('session-resume');
     setCurrentTrackIndex(resumeIndex);
-    handlers.playTrack(resumeIndex);
-  }, [lastSession, setOriginalTracks, setTracks, setSelectedPlaylistId, setCurrentTrackIndex, handlers]);
+  }, [lastSession, setOriginalTracks, setTracks, setSelectedPlaylistId, setCurrentTrackIndex]);
+
+  useEffect(() => {
+    if (pendingResumeRef.current !== null && tracks.length > 0) {
+      const idx = pendingResumeRef.current;
+      pendingResumeRef.current = null;
+      handlers.playTrack(idx);
+    }
+  }, [tracks, handlers]);
 
   const handleClearCache = useCallback(async (options: ClearCacheOptions) => {
     const { clearCacheWithOptions } = await import('@/services/cache/libraryCache');
