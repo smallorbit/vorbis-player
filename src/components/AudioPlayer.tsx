@@ -64,7 +64,7 @@ const AudioPlayerComponent = () => {
     setShowVisualEffects,
   } = useVisualEffectsContext();
   const { tracks, selectedPlaylistId, setTracks, setOriginalTracks, setSelectedPlaylistId } = useTrackListContext();
-  const { currentTrack, currentTrackIndex, setCurrentTrackIndex } = useCurrentTrackContext();
+  const { currentTrack, currentTrackIndex, setCurrentTrackIndex, setShowQueue } = useCurrentTrackContext();
 
   const resolveDisplayProvider = useCallback((): import('@/types/domain').ProviderId | undefined => (
     (currentTrack?.provider as import('@/types/domain').ProviderId | undefined)
@@ -116,7 +116,7 @@ const AudioPlayerComponent = () => {
   const handleOpenQuickAccessPanel = useCallback(() => setShowQuickAccessPanel(true), []);
   const handleCloseQuickAccessPanel = useCallback(() => setShowQuickAccessPanel(false), []);
 
-  const [qapToast, setQapToast] = useState<string | null>(null);
+  const [qapToast, setQapToast] = useState<{ message: string; actionLabel?: string; onAction?: () => void } | null>(null);
   const handleQapToastDismiss = useCallback(() => setQapToast(null), []);
   const handleAddToQueueFromPanel = useCallback(
     async (id: string, name?: string, provider?: import('@/types/domain').ProviderId) => {
@@ -124,11 +124,15 @@ const AudioPlayerComponent = () => {
       if (result && result.added > 0) {
         const title = result.collectionName?.trim();
         const label = title ? `"${title}"` : 'this collection';
-        setQapToast(`Added ${result.added} ${result.added === 1 ? 'track' : 'tracks'} from ${label} to your queue`);
+        setQapToast({
+          message: `Added ${result.added} ${result.added === 1 ? 'track' : 'tracks'} from ${label} to your`,
+          actionLabel: 'queue',
+          onAction: () => { setShowQueue(true); setQapToast(null); },
+        });
       }
       return result;
     },
-    [handlers],
+    [handlers, setShowQueue],
   );
 
   const playbackHandlers = useMemo(() => ({
@@ -247,7 +251,7 @@ const AudioPlayerComponent = () => {
             />
           </ProfiledComponent>
           {qapToast && (
-            <Toast message={qapToast} onDismiss={handleQapToastDismiss} />
+            <Toast message={qapToast.message} actionLabel={qapToast.actionLabel} onAction={qapToast.onAction} onDismiss={handleQapToastDismiss} />
           )}
         </>
       );
@@ -334,7 +338,7 @@ const AudioPlayerComponent = () => {
           </QuickAccessOverlay>
         )}
         {qapToast && (
-          <Toast message={qapToast} onDismiss={handleQapToastDismiss} />
+          <Toast message={qapToast.message} actionLabel={qapToast.actionLabel} onAction={qapToast.onAction} onDismiss={handleQapToastDismiss} />
         )}
         {fallthroughNotification && (
           <Toast message={fallthroughNotification} onDismiss={dismissFallthroughNotification} />
