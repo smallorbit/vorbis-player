@@ -521,7 +521,7 @@ export function FeedbackPanel(props: FeedbackPanelProps) {
     host.style.cssText =
       'position:fixed;top:0;left:0;width:0;height:0;overflow:visible;z-index:2147483646;pointer-events:none;';
     document.body.appendChild(host);
-    const shadow = host.attachShadow({ mode: 'closed' });
+    const shadow = host.attachShadow({ mode: 'open' });
     hostRef.current = host;
     shadowRef.current = shadow;
     setMounted(true);
