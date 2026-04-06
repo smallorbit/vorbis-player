@@ -142,7 +142,7 @@ const AudioPlayerComponent = () => {
     onNext: handlers.handleNext,
     onPrevious: handlers.handlePrevious,
     onTrackSelect: handlers.playTrack,
-    onOpenLibraryDrawer: handleOpenQuickAccessPanel,
+    onOpenLibraryDrawer: handlers.handleOpenLibraryDrawer,
     onCloseLibraryDrawer: handlers.handleCloseLibraryDrawer,
     onOpenQuickAccessPanel: handleOpenQuickAccessPanel,
     onPlaylistSelect: handlePlaylistSelect,
