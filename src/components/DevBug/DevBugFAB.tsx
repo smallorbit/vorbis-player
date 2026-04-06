@@ -1,8 +1,10 @@
-import { useEffect } from 'react';
+import { useCallback, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import styled, { keyframes, css } from 'styled-components';
 import { useDevBug } from '@/contexts/DevBugContext';
+import type { SelectedElement } from '@/types/devbug';
 import { DevBugTopBar } from './DevBugTopBar';
+import { InspectOverlay } from './InspectOverlay';
 
 const pulse = keyframes`
   0%, 100% { box-shadow: 0 0 0 0 rgba(255, 160, 0, 0.7); }
@@ -60,6 +62,9 @@ const BugIcon = () => (
 export function DevBugFAB() {
   const { isActive, toggle } = useDevBug();
 
+  const handleElementSelected = useCallback((_element: Element, _info: SelectedElement) => {
+  }, []);
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.ctrlKey && e.shiftKey && e.key === 'D') {
@@ -90,6 +95,7 @@ export function DevBugFAB() {
         <BugIcon />
       </FABButton>
       {isActive && <DevBugTopBar />}
+      <InspectOverlay onElementSelected={handleElementSelected} />
     </>,
     document.body,
   );

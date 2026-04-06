@@ -77,7 +77,7 @@ export function extractElementInfo(element: Element): SelectedElement {
   };
 }
 
-function getReactComponentName(element: Element): string | null {
+export function getReactComponentName(element: Element): string | null {
   const fiberKey = Object.keys(element).find(
     (key) => key.startsWith('__reactFiber') || key.startsWith('__reactInternalInstance'),
   );
