@@ -50,16 +50,21 @@ function initLikedCountsFromSnapshot(): { total: number; perProvider: PerProvide
 }
 
 function collectionToPlaylistInfo(c: MediaCollection, ordinal: number): CachedPlaylistInfo {
+  const images: { url: string; height: number | null; width: number | null }[] = c.imageUrl
+    ? [{ url: c.imageUrl, height: null, width: null }]
+    : [];
+
   return {
     id: c.id,
     name: c.name,
     description: c.description ?? null,
-    images: c.imageUrl ? [{ url: c.imageUrl, height: null, width: null }] : [],
+    images,
     tracks: c.trackCount != null ? { total: c.trackCount } : null,
     owner: c.ownerName ? { display_name: c.ownerName } : null,
     snapshot_id: c.revision ?? undefined,
     provider: c.provider,
     added_at: getOrSetFirstSeenAddedAtIso(c.provider, `playlist:${c.id}`, ordinal),
+    mosaicAlbumPaths: c.mosaicAlbumPaths,
   };
 }
 

@@ -6,6 +6,7 @@ import type { ProviderId } from '@/types/domain';
 import { LIKED_SONGS_ID, LIKED_SONGS_NAME } from '@/constants/playlist';
 import type { PlaylistInfo } from '../../services/spotify';
 import { GridCardArtWrapper, PlaylistImageWrapper } from './styled';
+import { MosaicThumbnail } from '../MosaicThumbnail';
 
 function selectOptimalImage(
   images: { url: string; width: number | null; height: number | null }[],
@@ -99,10 +100,21 @@ function useLazyImage(
 interface LazyImageProps {
   images: { url: string; width: number | null; height: number | null }[];
   alt: string;
+  mosaicAlbumPaths?: string[];
 }
 
-export const PlaylistImage: React.FC<LazyImageProps> = React.memo(function PlaylistImage({ images, alt }) {
-  const { ref, imageUrl } = useLazyImage(images, 64, '50px');
+export const PlaylistImage: React.FC<LazyImageProps> = React.memo(function PlaylistImage({ images, alt, mosaicAlbumPaths }) {
+  const hasMosaic = mosaicAlbumPaths && mosaicAlbumPaths.length >= 2;
+  const { ref, imageUrl } = useLazyImage(hasMosaic ? [] : images, 64, '50px');
+
+  if (hasMosaic) {
+    return (
+      <PlaylistImageWrapper>
+        <MosaicThumbnail albumPaths={mosaicAlbumPaths} alt={alt} />
+      </PlaylistImageWrapper>
+    );
+  }
+
   return (
     <PlaylistImageWrapper ref={ref}>
       {imageUrl ? (
@@ -114,8 +126,18 @@ export const PlaylistImage: React.FC<LazyImageProps> = React.memo(function Playl
   );
 });
 
-export const GridCardImageComponent: React.FC<LazyImageProps> = React.memo(function GridCardImageComponent({ images, alt }) {
-  const { ref, imageUrl } = useLazyImage(images, 300, '100px');
+export const GridCardImageComponent: React.FC<LazyImageProps> = React.memo(function GridCardImageComponent({ images, alt, mosaicAlbumPaths }) {
+  const hasMosaic = mosaicAlbumPaths && mosaicAlbumPaths.length >= 2;
+  const { ref, imageUrl } = useLazyImage(hasMosaic ? [] : images, 300, '100px');
+
+  if (hasMosaic) {
+    return (
+      <GridCardArtWrapper>
+        <MosaicThumbnail albumPaths={mosaicAlbumPaths} alt={alt} />
+      </GridCardArtWrapper>
+    );
+  }
+
   return (
     <GridCardArtWrapper ref={ref}>
       {imageUrl ? (

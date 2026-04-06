@@ -3,6 +3,7 @@ import type { PlaylistInfo, AlbumInfo } from '@/services/spotify';
 import type { ProviderId } from '@/types/domain';
 import { getLikedSongsGradient } from '@/components/PlaylistSelection/utils';
 import { useLongPress } from '@/hooks/useLongPress';
+import { MosaicThumbnail } from '../MosaicThumbnail';
 import {
   GridSection,
   GridContainer,
@@ -49,18 +50,23 @@ interface GridItemCardProps {
   name: string;
   provider?: ProviderId;
   imgUrl?: string;
+  mosaicAlbumPaths?: string[];
   fallback: string;
   onPlay: (id: string, name: string, provider?: ProviderId) => void;
   onAddToQueue: (id: string, name: string, provider?: ProviderId) => void;
 }
 
 const GridItemCard: React.FC<GridItemCardProps> = ({
-  id, name, provider, imgUrl, fallback, onPlay, onAddToQueue,
+  id, name, provider, imgUrl, mosaicAlbumPaths, fallback, onPlay, onAddToQueue,
 }) => {
   const handlePlay = useCallback(() => onPlay(id, name, provider), [id, name, provider, onPlay]);
   const handleAdd = useCallback(() => onAddToQueue(id, name, provider), [id, name, provider, onAddToQueue]);
 
   const longPress = useLongPress({ onShortPress: handlePlay, onLongPress: handleAdd });
+
+  const artContent = mosaicAlbumPaths && mosaicAlbumPaths.length >= 2
+    ? <MosaicThumbnail albumPaths={mosaicAlbumPaths} alt={name} />
+    : imgUrl ? <img src={imgUrl} alt={name} loading="lazy" /> : fallback;
 
   return (
     <GridItem
@@ -68,9 +74,7 @@ const GridItemCard: React.FC<GridItemCardProps> = ({
       onContextMenu={(e) => { e.preventDefault(); handleAdd(); }}
       {...longPress}
     >
-      <GridItemArt>
-        {imgUrl ? <img src={imgUrl} alt={name} loading="lazy" /> : fallback}
-      </GridItemArt>
+      <GridItemArt>{artContent}</GridItemArt>
       <GridItemName>{name}</GridItemName>
     </GridItem>
   );
@@ -141,6 +145,7 @@ const PinRing: React.FC<PinRingProps> = ({
                     name={p.name}
                     provider={p.provider}
                     imgUrl={getImageUrl(p.images)}
+                    mosaicAlbumPaths={p.mosaicAlbumPaths}
                     fallback="♪"
                     onPlay={onLoadCollection}
                     onAddToQueue={onAddToQueue}

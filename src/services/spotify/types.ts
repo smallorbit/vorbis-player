@@ -46,6 +46,8 @@ export interface PlaylistInfo {
   snapshot_id?: string; // Spotify revision identifier for change detection
   /** Which provider this playlist belongs to (for multi-provider library view). */
   provider?: ProviderId;
+  /** Album folder paths for Dropbox mosaic thumbnails — resolved to art at render time via IndexedDB cache. */
+  mosaicAlbumPaths?: string[];
 }
 
 export interface AlbumInfo {
