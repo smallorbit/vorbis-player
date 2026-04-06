@@ -15,3 +15,4 @@ export { AnnotationOverlay } from './AnnotationOverlay';
 export type { AnnotationOverlayProps } from './AnnotationOverlay';
 export { useAnnotationDrawing } from './useAnnotationDrawing';
 export type { AnnotationTool, DrawingPhase, Annotation } from './useAnnotationDrawing';
+export { useDevBugKeyboard } from './useDevBugKeyboard';
