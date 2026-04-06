@@ -7,6 +7,7 @@ import type { DropboxAuthAdapter } from './dropboxAuthAdapter';
 import type { MediaTrack, MediaCollection, ProviderId, PlaybackItemRef } from '@/types/domain';
 import { toSavedPlaylistId } from '@/constants/playlist';
 import { logLibrary } from '@/lib/debugLog';
+import { buildAlbumCoverMap, selectMosaicCovers } from '@/utils/mosaicSelection';
 
 // ── Helpers ──────────────────────────────────────────────────────────
 
@@ -321,6 +322,13 @@ export async function listSavedPlaylists(
           collection.name, filePaths[i], data ? 'loaded' : 'null', data?.tracks?.length ?? -1);
         if (data) {
           collection.trackCount = data.tracks.length;
+          const albumMap = buildAlbumCoverMap(data.tracks);
+          if (albumMap.size >= 2) {
+            collection.mosaicImageUrls = selectMosaicCovers(albumMap, collection.id);
+          } else if (albumMap.size === 1) {
+            const singleCover = albumMap.values().next().value;
+            if (singleCover?.coverUrl) collection.imageUrl = singleCover.coverUrl;
+          }
         }
       } catch (err) {
         logLibrary('listSavedPlaylists: "%s" failed to load: %o', collection.name, err);

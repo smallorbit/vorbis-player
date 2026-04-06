@@ -3,6 +3,7 @@ import type { PlaylistInfo, AlbumInfo } from '@/services/spotify';
 import type { ProviderId } from '@/types/domain';
 import { getLikedSongsGradient } from '@/components/PlaylistSelection/utils';
 import { useLongPress } from '@/hooks/useLongPress';
+import { MosaicThumbnail } from '../MosaicThumbnail';
 import {
   GridSection,
   GridContainer,
@@ -49,18 +50,23 @@ interface GridItemCardProps {
   name: string;
   provider?: ProviderId;
   imgUrl?: string;
+  mosaicUrls?: string[];
   fallback: string;
   onPlay: (id: string, name: string, provider?: ProviderId) => void;
   onAddToQueue: (id: string, name: string, provider?: ProviderId) => void;
 }
 
 const GridItemCard: React.FC<GridItemCardProps> = ({
-  id, name, provider, imgUrl, fallback, onPlay, onAddToQueue,
+  id, name, provider, imgUrl, mosaicUrls, fallback, onPlay, onAddToQueue,
 }) => {
   const handlePlay = useCallback(() => onPlay(id, name, provider), [id, name, provider, onPlay]);
   const handleAdd = useCallback(() => onAddToQueue(id, name, provider), [id, name, provider, onAddToQueue]);
 
   const longPress = useLongPress({ onShortPress: handlePlay, onLongPress: handleAdd });
+
+  const artContent = mosaicUrls && mosaicUrls.length > 1
+    ? <MosaicThumbnail coverUrls={mosaicUrls} alt={name} />
+    : imgUrl ? <img src={imgUrl} alt={name} loading="lazy" /> : fallback;
 
   return (
     <GridItem
@@ -68,9 +74,7 @@ const GridItemCard: React.FC<GridItemCardProps> = ({
       onContextMenu={(e) => { e.preventDefault(); handleAdd(); }}
       {...longPress}
     >
-      <GridItemArt>
-        {imgUrl ? <img src={imgUrl} alt={name} loading="lazy" /> : fallback}
-      </GridItemArt>
+      <GridItemArt>{artContent}</GridItemArt>
       <GridItemName>{name}</GridItemName>
     </GridItem>
   );
@@ -134,13 +138,15 @@ const PinRing: React.FC<PinRingProps> = ({
             {items.map((sat) => {
               if (sat.kind === 'playlist') {
                 const p = sat.item;
+                const isMosaic = p.images.length > 1 && p.images.every(img => img.width === null && img.height === null);
                 return (
                   <GridItemCard
                     key={`playlist-${p.id}`}
                     id={p.id}
                     name={p.name}
                     provider={p.provider}
-                    imgUrl={getImageUrl(p.images)}
+                    imgUrl={isMosaic ? undefined : getImageUrl(p.images)}
+                    mosaicUrls={isMosaic ? p.images.map(img => img.url) : undefined}
                     fallback="♪"
                     onPlay={onLoadCollection}
                     onAddToQueue={onAddToQueue}

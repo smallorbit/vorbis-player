@@ -6,6 +6,7 @@ import type { ProviderId } from '@/types/domain';
 import { LIKED_SONGS_ID, LIKED_SONGS_NAME } from '@/constants/playlist';
 import type { PlaylistInfo } from '../../services/spotify';
 import { GridCardArtWrapper, PlaylistImageWrapper } from './styled';
+import { MosaicThumbnail } from '../MosaicThumbnail';
 
 function selectOptimalImage(
   images: { url: string; width: number | null; height: number | null }[],
@@ -101,8 +102,36 @@ interface LazyImageProps {
   alt: string;
 }
 
+function isMosaicImageSet(images: { url: string; width: number | null; height: number | null }[]): boolean {
+  return images.length > 1 && images.every(img => img.width === null && img.height === null);
+}
+
 export const PlaylistImage: React.FC<LazyImageProps> = React.memo(function PlaylistImage({ images, alt }) {
-  const { ref, imageUrl } = useLazyImage(images, 64, '50px');
+  const isMosaic = isMosaicImageSet(images);
+  const { ref, imageUrl } = useLazyImage(isMosaic ? [] : images, 64, '50px');
+  const [isVisible, setIsVisible] = useState(false);
+  const visRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!isMosaic || !visRef.current) return;
+    const observer = new IntersectionObserver(
+      (entries) => { if (entries[0]?.isIntersecting) { setIsVisible(true); observer.disconnect(); } },
+      { rootMargin: '50px', threshold: 0.01 },
+    );
+    observer.observe(visRef.current);
+    return () => observer.disconnect();
+  }, [isMosaic]);
+
+  if (isMosaic) {
+    return (
+      <PlaylistImageWrapper ref={visRef}>
+        {isVisible ? (
+          <MosaicThumbnail coverUrls={images.map(img => img.url)} alt={alt} />
+        ) : null}
+      </PlaylistImageWrapper>
+    );
+  }
+
   return (
     <PlaylistImageWrapper ref={ref}>
       {imageUrl ? (
@@ -115,7 +144,31 @@ export const PlaylistImage: React.FC<LazyImageProps> = React.memo(function Playl
 });
 
 export const GridCardImageComponent: React.FC<LazyImageProps> = React.memo(function GridCardImageComponent({ images, alt }) {
-  const { ref, imageUrl } = useLazyImage(images, 300, '100px');
+  const isMosaic = isMosaicImageSet(images);
+  const { ref, imageUrl } = useLazyImage(isMosaic ? [] : images, 300, '100px');
+  const [isVisible, setIsVisible] = useState(false);
+  const visRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!isMosaic || !visRef.current) return;
+    const observer = new IntersectionObserver(
+      (entries) => { if (entries[0]?.isIntersecting) { setIsVisible(true); observer.disconnect(); } },
+      { rootMargin: '100px', threshold: 0.01 },
+    );
+    observer.observe(visRef.current);
+    return () => observer.disconnect();
+  }, [isMosaic]);
+
+  if (isMosaic) {
+    return (
+      <GridCardArtWrapper ref={visRef}>
+        {isVisible ? (
+          <MosaicThumbnail coverUrls={images.map(img => img.url)} alt={alt} />
+        ) : null}
+      </GridCardArtWrapper>
+    );
+  }
+
   return (
     <GridCardArtWrapper ref={ref}>
       {imageUrl ? (
