@@ -47,16 +47,17 @@ describe('Spotify API', () => {
 
   describe('rate limiting', () => {
     it('sets backoff when receiving 429 with Retry-After header', async () => {
+      // #given
       const mod = await freshSpotify();
-
       mockFetchResponse({ error: 'rate limited' }, 429, { 'Retry-After': '1' });
 
+      // #when / #then
       await expect(mod.getPlaylistCount()).rejects.toThrow('Spotify API error: 429');
     });
 
     it('defaults to 5-second backoff when Retry-After absent', async () => {
+      // #given
       const mod = await freshSpotify();
-
       vi.mocked(global.fetch).mockResolvedValueOnce({
         ok: false,
         status: 429,
@@ -65,10 +66,12 @@ describe('Spotify API', () => {
         text: () => Promise.resolve('rate limited'),
       } as Response);
 
+      // #when / #then
       await expect(mod.getPlaylistCount()).rejects.toThrow('429');
     });
 
     it('subsequent requests are delayed after 429', async () => {
+      // #given
       const mod = await freshSpotify();
       vi.useFakeTimers();
 
@@ -80,6 +83,7 @@ describe('Spotify API', () => {
         text: () => Promise.resolve('rate limited'),
       } as Response);
 
+      // #when
       await expect(mod.getPlaylistCount()).rejects.toThrow('429');
 
       mockFetchResponse({ items: [], next: null, total: 3 });
@@ -87,21 +91,25 @@ describe('Spotify API', () => {
       const nextCall = mod.getPlaylistCount();
       await vi.advanceTimersByTimeAsync(3000);
       const result = await nextCall;
+
+      // #then
       expect(result).toBe(3);
 
       vi.useRealTimers();
     });
 
     it('deduplicates concurrent GET requests to the same URL', async () => {
+      // #given
       const mod = await freshSpotify();
-
       mockFetchResponse({ items: [], next: null, total: 5 });
 
+      // #when
       const [result1, result2] = await Promise.all([
         mod.getPlaylistCount(),
         mod.getPlaylistCount(),
       ]);
 
+      // #then
       expect(result1).toBe(5);
       expect(result2).toBe(5);
       expect(global.fetch).toHaveBeenCalledTimes(1);
@@ -110,6 +118,7 @@ describe('Spotify API', () => {
 
   describe('track-list caching', () => {
     it('getPlaylistTracks returns L1 cache hit without calling fetch', async () => {
+      // #given
       const mod = await freshSpotify();
 
       mockFetchResponse({
@@ -129,16 +138,20 @@ describe('Spotify API', () => {
         next: null,
       });
 
+      // #when
       await mod.getPlaylistTracks('l1-test');
       const fetchCountAfterFirst = vi.mocked(global.fetch).mock.calls.length;
 
       const tracks = await mod.getPlaylistTracks('l1-test');
+
+      // #then
       expect(tracks).toHaveLength(1);
       expect(tracks[0].name).toBe('Cached Song');
       expect(vi.mocked(global.fetch).mock.calls.length).toBe(fetchCountAfterFirst);
     });
 
     it('falls through to IndexedDB (L2) on L1 miss, promotes to L1', async () => {
+      // #given
       vi.mocked(libraryCache.getTrackList).mockResolvedValueOnce({
         id: 'playlist:l2-test',
         tracks: [
@@ -155,14 +168,18 @@ describe('Spotify API', () => {
       });
 
       const mod = await freshSpotify();
+
+      // #when
       const tracks = await mod.getPlaylistTracks('l2-test');
 
+      // #then
       expect(tracks).toHaveLength(1);
       expect(tracks[0].name).toBe('From IDB');
       expect(global.fetch).not.toHaveBeenCalled();
     });
 
     it('fetches from API (L3) on full cache miss, writes both L1 and L2', async () => {
+      // #given
       const mod = await freshSpotify();
 
       mockFetchResponse({
@@ -182,7 +199,10 @@ describe('Spotify API', () => {
         next: null,
       });
 
+      // #when
       const tracks = await mod.getPlaylistTracks('api-test');
+
+      // #then
       expect(tracks).toHaveLength(1);
       expect(tracks[0].name).toBe('From API');
       expect(libraryCache.putTrackList).toHaveBeenCalledWith(
@@ -192,6 +212,7 @@ describe('Spotify API', () => {
     });
 
     it('getAlbumTracks sorts by track_number', async () => {
+      // #given
       const mod = await freshSpotify();
 
       mockFetchResponse({
@@ -207,7 +228,10 @@ describe('Spotify API', () => {
         },
       });
 
+      // #when
       const tracks = await mod.getAlbumTracks('album-1');
+
+      // #then
       expect(tracks[0].trackNumber).toBe(1);
       expect(tracks[1].trackNumber).toBe(2);
       expect(tracks[2].trackNumber).toBe(3);
@@ -216,16 +240,21 @@ describe('Spotify API', () => {
 
   describe('like/save', () => {
     it('checkTrackSaved returns cached value within TTL', async () => {
+      // #given
       vi.useFakeTimers();
       const mod = await freshSpotify();
 
       mockFetchResponse([true]);
+
+      // #when
       const promise = mod.checkTrackSaved('track-123');
       await vi.runAllTimersAsync();
       const result1 = await promise;
-      expect(result1).toBe(true);
 
       const result2 = await mod.checkTrackSaved('track-123');
+
+      // #then
+      expect(result1).toBe(true);
       expect(result2).toBe(true);
       expect(global.fetch).toHaveBeenCalledTimes(1);
       vi.useRealTimers();
@@ -257,12 +286,11 @@ describe('Spotify API', () => {
     });
 
     it('checkTrackSaved splits >50 ids into sequential chunks with inter-chunk delay', async () => {
+      // #given
       vi.useFakeTimers();
       const mod = await freshSpotify();
 
-      // #given — 60 distinct track IDs
       const ids = Array.from({ length: 60 }, (_, i) => `track-${i}`);
-      // First chunk of 50 returns all false, second chunk of 10 returns all true
       mockFetchResponse(Array(50).fill(false));
       mockFetchResponse(Array(10).fill(true));
 
@@ -271,21 +299,22 @@ describe('Spotify API', () => {
       await vi.runAllTimersAsync();
       const results = await Promise.all(promises);
 
-      // #then — two API calls were made (chunked)
+      // #then
       expect(global.fetch).toHaveBeenCalledTimes(2);
-      // First 50 resolved false, last 10 resolved true
       expect(results.slice(0, 50).every((r) => r === false)).toBe(true);
       expect(results.slice(50).every((r) => r === true)).toBe(true);
       vi.useRealTimers();
     });
 
     it('saveTrack makes PUT request and updates cache', async () => {
+      // #given
       const mod = await freshSpotify();
-
       mockFetchResponse(undefined, 200);
 
+      // #when
       await mod.saveTrack('track-456');
 
+      // #then
       const [url, options] = vi.mocked(global.fetch).mock.calls[0];
       expect(url).toBe('https://api.spotify.com/v1/me/tracks');
       expect(options?.method).toBe('PUT');
@@ -294,28 +323,32 @@ describe('Spotify API', () => {
     });
 
     it('unsaveTrack makes DELETE request', async () => {
+      // #given
       const mod = await freshSpotify();
-
       mockFetchResponse(undefined, 200);
 
+      // #when
       await mod.unsaveTrack('track-789');
 
+      // #then
       const [url, options] = vi.mocked(global.fetch).mock.calls[0];
       expect(url).toBe('https://api.spotify.com/v1/me/tracks');
       expect(options?.method).toBe('DELETE');
     });
 
     it('saveTrack rejects on API error', async () => {
+      // #given
       const mod = await freshSpotify();
-
       mockFetchResponse({ error: 'forbidden' }, 403);
 
+      // #when / #then
       await expect(mod.saveTrack('track-bad')).rejects.toThrow('Spotify API error: 403');
     });
   });
 
   describe('data transformation', () => {
     it('skips non-track items in playlist results', async () => {
+      // #given
       const mod = await freshSpotify();
 
       mockFetchResponse({
@@ -338,12 +371,16 @@ describe('Spotify API', () => {
         next: null,
       });
 
+      // #when
       const tracks = await mod.getPlaylistTracks('playlist-mixed');
+
+      // #then
       expect(tracks).toHaveLength(1);
       expect(tracks[0].name).toBe('Valid Track');
     });
 
     it('skips items without id', async () => {
+      // #given
       const mod = await freshSpotify();
 
       mockFetchResponse({
@@ -358,11 +395,15 @@ describe('Spotify API', () => {
         next: null,
       });
 
+      // #when
       const tracks = await mod.getPlaylistTracks('playlist-nullid');
+
+      // #then
       expect(tracks).toHaveLength(0);
     });
 
     it('formats Unknown Artist for empty artists array', async () => {
+      // #given
       const mod = await freshSpotify();
 
       mockFetchResponse({
@@ -378,11 +419,15 @@ describe('Spotify API', () => {
         next: null,
       });
 
+      // #when
       const tracks = await mod.getPlaylistTracks('playlist-noartist');
+
+      // #then
       expect(tracks[0].artists).toBe('Unknown Artist');
     });
 
     it('builds artistsData with correct Spotify URLs', async () => {
+      // #given
       const mod = await freshSpotify();
 
       mockFetchResponse({
@@ -401,7 +446,10 @@ describe('Spotify API', () => {
         next: null,
       });
 
+      // #when
       const tracks = await mod.getPlaylistTracks('playlist-urls');
+
+      // #then
       expect(tracks[0].artistsData).toEqual([
         { name: 'Artist One', url: 'https://open.spotify.com/artist/a1' },
       ]);

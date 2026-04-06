@@ -79,54 +79,79 @@ describe('libraryCache', () => {
     });
 
     it('should be idempotent', async () => {
+      // #given
       await initCache();
       const db1 = _testing.db;
+
+      // #when
       await initCache();
+
+      // #then
       expect(_testing.db).toBe(db1);
     });
   });
 
   describe('Playlist operations', () => {
     it('should store and retrieve playlists', async () => {
+      // #given
       const playlists = [makePlaylist('p1', 'Rock'), makePlaylist('p2', 'Jazz')];
-      await putAllPlaylists(playlists);
 
+      // #when
+      await putAllPlaylists(playlists);
       const result = await getAllPlaylists();
+
+      // #then
       expect(result).toHaveLength(2);
       expect(result.map((p) => p.id).sort()).toEqual(['p1', 'p2']);
     });
 
     it('should overwrite all playlists', async () => {
+      // #given
       await putAllPlaylists([makePlaylist('p1'), makePlaylist('p2')]);
-      await putAllPlaylists([makePlaylist('p3')]);
 
+      // #when
+      await putAllPlaylists([makePlaylist('p3')]);
       const result = await getAllPlaylists();
+
+      // #then
       expect(result).toHaveLength(1);
       expect(result[0].id).toBe('p3');
     });
 
     it('should add a single playlist', async () => {
+      // #given
       await putAllPlaylists([makePlaylist('p1')]);
-      await putPlaylist(makePlaylist('p2', 'New'));
 
+      // #when
+      await putPlaylist(makePlaylist('p2', 'New'));
       const result = await getAllPlaylists();
+
+      // #then
       expect(result).toHaveLength(2);
     });
 
     it('should update a playlist by id', async () => {
+      // #given
       await putAllPlaylists([makePlaylist('p1', 'Old Name')]);
-      await putPlaylist(makePlaylist('p1', 'New Name'));
 
+      // #when
+      await putPlaylist(makePlaylist('p1', 'New Name'));
       const result = await getAllPlaylists();
+
+      // #then
       expect(result).toHaveLength(1);
       expect(result[0].name).toBe('New Name');
     });
 
     it('should remove a playlist', async () => {
+      // #given
       await putAllPlaylists([makePlaylist('p1'), makePlaylist('p2')]);
-      await removePlaylist('p1');
 
+      // #when
+      await removePlaylist('p1');
       const result = await getAllPlaylists();
+
+      // #then
       expect(result).toHaveLength(1);
       expect(result[0].id).toBe('p2');
     });
@@ -145,35 +170,51 @@ describe('libraryCache', () => {
 
   describe('Album operations', () => {
     it('should store and retrieve albums', async () => {
+      // #given
       const albums = [makeAlbum('a1'), makeAlbum('a2')];
-      await putAllAlbums(albums);
 
+      // #when
+      await putAllAlbums(albums);
       const result = await getAllAlbums();
+
+      // #then
       expect(result).toHaveLength(2);
     });
 
     it('should overwrite all albums', async () => {
+      // #given
       await putAllAlbums([makeAlbum('a1'), makeAlbum('a2')]);
-      await putAllAlbums([makeAlbum('a3')]);
 
+      // #when
+      await putAllAlbums([makeAlbum('a3')]);
       const result = await getAllAlbums();
+
+      // #then
       expect(result).toHaveLength(1);
       expect(result[0].id).toBe('a3');
     });
 
     it('should add a single album', async () => {
+      // #given
       await putAllAlbums([makeAlbum('a1')]);
-      await putAlbum(makeAlbum('a2'));
 
+      // #when
+      await putAlbum(makeAlbum('a2'));
       const result = await getAllAlbums();
+
+      // #then
       expect(result).toHaveLength(2);
     });
 
     it('should remove an album', async () => {
+      // #given
       await putAllAlbums([makeAlbum('a1'), makeAlbum('a2')]);
-      await removeAlbum('a1');
 
+      // #when
+      await removeAlbum('a1');
       const result = await getAllAlbums();
+
+      // #then
       expect(result).toHaveLength(1);
       expect(result[0].id).toBe('a2');
     });
@@ -181,10 +222,14 @@ describe('libraryCache', () => {
 
   describe('Track list operations', () => {
     it('should store and retrieve a track list', async () => {
+      // #given
       const tracks = [makeTrack('t1'), makeTrack('t2')];
-      await putTrackList('playlist:p1', tracks, 'snap1');
 
+      // #when
+      await putTrackList('playlist:p1', tracks, 'snap1');
       const result = await getTrackList('playlist:p1');
+
+      // #then
       expect(result).toBeDefined();
       expect(result!.tracks).toHaveLength(2);
       expect(result!.snapshotId).toBe('snap1');
@@ -197,31 +242,43 @@ describe('libraryCache', () => {
     });
 
     it('should remove a track list', async () => {
+      // #given
       await putTrackList('playlist:p1', [makeTrack('t1')]);
-      await removeTrackList('playlist:p1');
 
+      // #when
+      await removeTrackList('playlist:p1');
       const result = await getTrackList('playlist:p1');
+
+      // #then
       expect(result).toBeUndefined();
     });
 
     it('should overwrite existing track list', async () => {
+      // #given
       await putTrackList('playlist:p1', [makeTrack('t1')]);
-      await putTrackList('playlist:p1', [makeTrack('t2'), makeTrack('t3')]);
 
+      // #when
+      await putTrackList('playlist:p1', [makeTrack('t2'), makeTrack('t3')]);
       const result = await getTrackList('playlist:p1');
+
+      // #then
       expect(result!.tracks).toHaveLength(2);
     });
   });
 
   describe('Metadata operations', () => {
     it('should store and retrieve metadata', async () => {
+      // #given
       await putMeta('playlists', {
         lastValidated: 1000,
         totalCount: 50,
         snapshotIds: { p1: 'snap1' },
       });
 
+      // #when
       const result = await getMeta('playlists');
+
+      // #then
       expect(result).toBeDefined();
       expect(result!.key).toBe('playlists');
       expect(result!.totalCount).toBe(50);
@@ -234,10 +291,14 @@ describe('libraryCache', () => {
     });
 
     it('should overwrite metadata', async () => {
+      // #given
       await putMeta('playlists', { lastValidated: 1000, totalCount: 50 });
-      await putMeta('playlists', { lastValidated: 2000, totalCount: 60 });
 
+      // #when
+      await putMeta('playlists', { lastValidated: 2000, totalCount: 60 });
       const result = await getMeta('playlists');
+
+      // #then
       expect(result!.totalCount).toBe(60);
       expect(result!.lastValidated).toBe(2000);
     });
@@ -261,10 +322,15 @@ describe('libraryCache', () => {
 
   describe('close/reopen persistence', () => {
     it('should persist data after close and reopen', async () => {
+      // #given
       await putAllPlaylists([makePlaylist('p1', 'Survive')]);
+
+      // #when
       closeCache();
       await initCache();
       const result = await getAllPlaylists();
+
+      // #then
       expect(result).toHaveLength(1);
       expect(result[0].name).toBe('Survive');
     });
