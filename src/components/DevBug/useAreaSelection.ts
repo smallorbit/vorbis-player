@@ -50,6 +50,14 @@ function collectOverlappingElements(rect: SelectionRect): { elements: Element[];
     if (domRect.width === 0 && domRect.height === 0) continue;
 
     if (rectsOverlap(rect, domRect)) {
+      // Skip elements that fully enclose the selection — they're ancestors, not targets
+      const enclosesSelection =
+        domRect.left <= rect.x &&
+        domRect.top <= rect.y &&
+        domRect.right >= rect.x + rect.width &&
+        domRect.bottom >= rect.y + rect.height;
+      if (enclosesSelection) continue;
+
       seen.add(el);
       elements.push(el);
       infos.push(extractElementInfo(el));
