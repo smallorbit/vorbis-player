@@ -8,7 +8,7 @@ export interface SessionSnapshot {
   collectionProvider?: ProviderId;
   trackIndex: number;
   trackId?: string;
-  /** Full ordered queue. Dropbox playbackRef and image are stripped (presigned URLs expire). */
+  /** Full ordered queue, saved as-is. */
   queueTracks?: MediaTrack[];
   // Display-only fields for the Resume card
   trackTitle?: string;
@@ -17,20 +17,9 @@ export interface SessionSnapshot {
   savedAt?: number;
 }
 
-/** Strip Dropbox image URLs before persisting — they're large presigned URLs that expire. */
-function sanitizeTrack(track: MediaTrack): MediaTrack {
-  if (track.provider !== 'dropbox') return track;
-  return { ...track, image: '' };
-}
-
 export function saveSession(snapshot: SessionSnapshot): void {
   try {
-    const sanitized: SessionSnapshot = {
-      ...snapshot,
-      savedAt: Date.now(),
-      queueTracks: snapshot.queueTracks?.map(sanitizeTrack),
-    };
-    localStorage.setItem(SESSION_KEY, JSON.stringify(sanitized));
+    localStorage.setItem(SESSION_KEY, JSON.stringify({ ...snapshot, savedAt: Date.now() }));
   } catch (err) {
     console.warn('[session] saveSession failed:', err);
   }
