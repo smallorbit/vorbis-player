@@ -36,7 +36,7 @@ const BacksideRoot = styled.div`
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
   transform: rotateY(180deg);
-  border-radius: ${theme.borderRadius['3xl']};
+  border-radius: ${theme.borderRadius.xl};
   overflow: hidden;
 `;
 
