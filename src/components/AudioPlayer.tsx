@@ -81,11 +81,12 @@ const AudioPlayerComponent = () => {
   }, [resolveDisplayProvider]);
 
   const collectionNameRef = useRef<string>('');
+  const collectionProviderRef = useRef<import('@/types/domain').ProviderId | undefined>(undefined);
 
   const { lastSession } = useSessionPersistence(
     selectedPlaylistId,
     collectionNameRef.current,
-    currentTrack?.provider as import('@/types/domain').ProviderId | undefined,
+    collectionProviderRef.current,
     tracks,
     currentTrackIndex,
     currentTrack?.id,
@@ -95,6 +96,7 @@ const AudioPlayerComponent = () => {
   );
 
   const handleAlbumPlay = useCallback((albumId: string) => {
+    collectionProviderRef.current = currentTrack?.provider as import('@/types/domain').ProviderId | undefined;
     handlers.loadCollection(
       toAlbumPlaylistId(albumId),
       currentTrack?.provider,
@@ -104,6 +106,7 @@ const AudioPlayerComponent = () => {
   const handlePlaylistSelect = useCallback(
     (id: string, name?: string, provider?: import('@/types/domain').ProviderId) => {
       if (name) collectionNameRef.current = name;
+      collectionProviderRef.current = provider;
       handlers.loadCollection(id, provider);
     },
     [handlers]
