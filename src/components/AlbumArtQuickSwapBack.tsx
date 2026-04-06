@@ -65,18 +65,10 @@ const Content = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: flex-start;
+  justify-content: center;
   height: 100%;
-  padding: ${theme.spacing.sm};
-  padding-top: ${theme.spacing.lg};
+  padding: ${theme.spacing.lg};
   box-sizing: border-box;
-  overflow-y: auto;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-
-  &::-webkit-scrollbar {
-    display: none;
-  }
 `;
 
 const Title = styled.div`
@@ -188,7 +180,7 @@ function AlbumArtQuickSwapBack({
       <CloseButton aria-label="Close menu" onClick={(e) => { e.stopPropagation(); onClose(); }}>×</CloseButton>
 
       <Content onPointerDown={handlePointerDown} onPointerUp={handlePointerUp}>
-        <Title>Visual Effects</Title>
+        {!isMobile && <Title>Visual Effects</Title>}
         <div onClick={(e) => e.stopPropagation()}>
         <QuickEffectsRow
           currentTrack={currentTrack}
