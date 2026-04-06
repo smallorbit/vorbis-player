@@ -93,6 +93,54 @@ describe('formatIssueTitle', () => {
     // #then
     expect(title).toContain('broken, slower');
   });
+
+  it('falls back to tag name from cssSelector when reactComponentName is a styled wrapper', () => {
+    // #given
+    const report: BugReport = {
+      ...BASE_REPORT,
+      categories: ['broken'],
+      elements: [
+        {
+          cssSelector: 'div.sc-abc123',
+          xpath: '/div',
+          reactComponentName: 'styled.div',
+          boundingRect: { top: 0, right: 100, bottom: 50, left: 0, width: 100, height: 50, x: 0, y: 0 },
+          computedStyles: {},
+          textContent: '',
+        },
+      ],
+    };
+
+    // #when
+    const title = formatIssueTitle(report);
+
+    // #then
+    expect(title).toBe('[DevBug] broken — div');
+  });
+
+  it('falls back to tag name from cssSelector when reactComponentName is null', () => {
+    // #given
+    const report: BugReport = {
+      ...BASE_REPORT,
+      categories: ['broken'],
+      elements: [
+        {
+          cssSelector: 'button.some-class',
+          xpath: '/button',
+          reactComponentName: null,
+          boundingRect: { top: 0, right: 100, bottom: 50, left: 0, width: 100, height: 50, x: 0, y: 0 },
+          computedStyles: {},
+          textContent: '',
+        },
+      ],
+    };
+
+    // #when
+    const title = formatIssueTitle(report);
+
+    // #then
+    expect(title).toBe('[DevBug] broken — button');
+  });
 });
 
 describe('formatIssueBody', () => {

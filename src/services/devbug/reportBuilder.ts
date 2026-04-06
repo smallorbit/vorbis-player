@@ -77,6 +77,23 @@ export function extractElementInfo(element: Element): SelectedElement {
   };
 }
 
+function isGenericName(name: string): boolean {
+  return (
+    /^styled\./.test(name) ||
+    /^Styled\(/.test(name) ||
+    /^forwardRef$/i.test(name) ||
+    /^_c\d*$/.test(name) ||
+    name === 'div' ||
+    name === 'span' ||
+    name === 'button'
+  );
+}
+
+function unwrapDisplayName(displayName: string): string {
+  const match = displayName.match(/^(?:Styled|ForwardRef|Memo)\((.+)\)$/);
+  return match ? match[1] : displayName;
+}
+
 export function getReactComponentName(element: Element): string | null {
   const fiberKey = Object.keys(element).find(
     (key) => key.startsWith('__reactFiber') || key.startsWith('__reactInternalInstance'),
@@ -91,13 +108,26 @@ export function getReactComponentName(element: Element): string | null {
 
   while (fiber) {
     const type = fiber.type;
-    if (typeof type === 'function' && type.name) {
-      return type.name;
-    }
+
     if (typeof type === 'object' && type !== null) {
       const displayName = (type as Record<string, unknown>).displayName;
-      if (typeof displayName === 'string') return displayName;
+      if (typeof displayName === 'string') {
+        const unwrapped = unwrapDisplayName(displayName);
+        if (!isGenericName(unwrapped)) return unwrapped;
+      }
     }
+
+    if (typeof type === 'function') {
+      const fnType = type as { displayName?: string; name?: string };
+      if (typeof fnType.displayName === 'string') {
+        const unwrapped = unwrapDisplayName(fnType.displayName);
+        if (!isGenericName(unwrapped)) return unwrapped;
+      }
+      if (fnType.name && !isGenericName(fnType.name)) {
+        return fnType.name;
+      }
+    }
+
     fiber = fiber.return as typeof fiber;
   }
 
