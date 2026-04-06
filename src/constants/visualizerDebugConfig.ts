@@ -54,6 +54,24 @@ export interface TrailVisualizerConfig {
   countPixelDivisorMobile: number;
 }
 
+export interface GridWaveVisualizerConfig {
+  spacing: number;
+  waveCount: number;
+  waveSpeedBase: number;
+  waveSpeedSpread: number;
+  amplitudeBase: number;
+  frequencyBase: number;
+  frequencySpread: number;
+  perspectiveStrength: number;
+  baseRadius: number;
+  radiusWaveScale: number;
+  opacityBase: number;
+  opacityWaveScale: number;
+  pausedSpeedMult: number;
+  countBaseMobile: number;
+  countBaseDesktop: number;
+}
+
 export interface WaveVisualizerConfig {
   waveCount: number;
   phaseSpeedMin: number;
@@ -73,6 +91,7 @@ export interface VisualizerDebugConfig {
   particle: ParticleVisualizerConfig;
   trail: TrailVisualizerConfig;
   wave: WaveVisualizerConfig;
+  grid: GridWaveVisualizerConfig;
 }
 
 /** Partial overrides for debug panel; nested keys are optional. */
@@ -80,6 +99,7 @@ export interface VisualizerDebugOverrides {
   particle?: Partial<ParticleVisualizerConfig>;
   trail?: Partial<TrailVisualizerConfig>;
   wave?: Partial<WaveVisualizerConfig>;
+  grid?: Partial<GridWaveVisualizerConfig>;
 }
 
 const DEFAULT_PARTICLE: ParticleVisualizerConfig = {
@@ -126,6 +146,24 @@ const DEFAULT_TRAIL: TrailVisualizerConfig = {
 
 
 
+const DEFAULT_GRID_WAVE: GridWaveVisualizerConfig = {
+  spacing: 35,
+  waveCount: 3,
+  waveSpeedBase: 0.018,
+  waveSpeedSpread: 0.012,
+  amplitudeBase: 0.06,
+  frequencyBase: 0.012,
+  frequencySpread: 0.008,
+  perspectiveStrength: 0.4,
+  baseRadius: 2.5,
+  radiusWaveScale: 1.2,
+  opacityBase: 0.25,
+  opacityWaveScale: 0.45,
+  pausedSpeedMult: 0.3,
+  countBaseMobile: 1,
+  countBaseDesktop: 1,
+};
+
 const DEFAULT_WAVE: WaveVisualizerConfig = {
   waveCount: 4,
   phaseSpeedMin: 0.004,
@@ -145,6 +183,7 @@ export const DEFAULT_VISUALIZER_DEBUG_CONFIG: VisualizerDebugConfig = {
   particle: { ...DEFAULT_PARTICLE },
   trail: { ...DEFAULT_TRAIL },
   wave: { ...DEFAULT_WAVE },
+  grid: { ...DEFAULT_GRID_WAVE },
 };
 
 /** Deep merge: overrides only replace provided keys; nested objects are merged. */
@@ -164,5 +203,9 @@ export function mergeVisualizerConfig(
     ...base.wave,
     ...(overrides?.wave ?? {}),
   };
-  return { particle, trail, wave };
+  const grid = {
+    ...base.grid,
+    ...(overrides?.grid ?? {}),
+  };
+  return { particle, trail, wave, grid };
 }
