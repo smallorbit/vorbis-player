@@ -1,6 +1,7 @@
 import React, { useCallback } from 'react';
 import { generateColorVariant } from '../../utils/visualizerUtils';
 import { useCanvasVisualizer } from '../../hooks/useCanvasVisualizer';
+import { useVisualizerDebugConfig } from '../../contexts/VisualizerDebugContext';
 
 interface WaveVisualizerProps {
   intensity: number;
@@ -21,60 +22,65 @@ interface Wave {
   color: string;
 }
 
-const WAVE_COUNT = 4;
-const PAUSED_SPEED_MULT = 0.3;
+const PHI = 1.6180339887;
 
-/**
- * WaveVisualizer Component
- *
- * Renders layered sine waves rising from the bottom of the canvas, each filling
- * the area below with a semi-transparent color derived from the accent color.
- *
- * Pausing slows phase advancement to ~30% of normal speed.
- *
- * @component
- */
 export const WaveVisualizer: React.FC<WaveVisualizerProps> = ({
   intensity,
   speed,
   accentColor,
   isPlaying,
 }) => {
+  const config = useVisualizerDebugConfig();
+  const w = config.wave;
+
   const getItemCount = useCallback(
-    (_width: number, _height: number, _intensity: number): number => WAVE_COUNT,
-    []
+    (_width: number, _height: number, _intensity: number): number => w.waveCount,
+    [w]
   );
 
   const initializeItems = useCallback(
-    (count: number, _width: number, height: number, baseColor: string): Wave[] => {
+    (count: number, width: number, height: number, baseColor: string): Wave[] => {
+      const isMobile = width < 768;
+      const amplitudeScale = isMobile ? 0.65 : 1.0;
+
       return Array.from({ length: count }, (_, i) => {
-        const layerRatio = i / count;
+        const layerRatio = i / Math.max(1, count - 1);
+        const phiPower = Math.pow(PHI, i / Math.max(1, count - 1) * 2);
+        const normalizedPhi = phiPower / Math.pow(PHI, 2);
+        const phaseSpeed = w.phaseSpeedMin + normalizedPhi * w.phaseSpeedSpread;
+
         return {
           phase: Math.random() * Math.PI * 2,
-          phaseSpeed: 0.004 + Math.random() * 0.003,
-          amplitude: height * (0.06 + layerRatio * 0.05),
-          frequency: 0.003 + Math.random() * 0.002,
-          yBase: height * (0.55 + layerRatio * 0.12),
-          opacity: 0.12 + layerRatio * 0.1,
-          color: generateColorVariant(baseColor, 0.4 + layerRatio * 0.4),
+          phaseSpeed,
+          amplitude: height * (w.amplitudeBase + layerRatio * w.amplitudeLayerScale) * amplitudeScale,
+          frequency: w.frequencyMin + Math.random() * w.frequencySpread,
+          yBase: height * (w.yBaseStart + layerRatio * w.yBaseLayerScale),
+          opacity: w.opacityBase + layerRatio * w.opacityLayerScale,
+          color: generateColorVariant(baseColor, 0.2 + layerRatio * 0.6),
         };
       });
     },
-    []
+    [w]
   );
 
   const updateItems = useCallback(
-    (waves: Wave[], deltaTime: number, playing: boolean, _width: number, height: number): void => {
-      const speedMult = (playing ? 1.0 : PAUSED_SPEED_MULT) * (speed ?? 1.0);
+    (waves: Wave[], deltaTime: number, playing: boolean, width: number, height: number): void => {
+      const speedMult = (playing ? 1.0 : w.pausedSpeedMult) * (speed ?? 1.0);
       const dt = deltaTime / 16;
+      const isMobile = width < 768;
+      const amplitudeScale = isMobile ? 0.65 : 1.0;
+      const count = waves.length;
+
       waves.forEach((wave, i) => {
         wave.phase += wave.phaseSpeed * speedMult * dt;
         if (wave.phase > Math.PI * 2) wave.phase -= Math.PI * 2;
-        wave.yBase = height * (0.55 + (i / WAVE_COUNT) * 0.12);
-        wave.amplitude = height * (0.06 + (i / WAVE_COUNT) * 0.05);
+
+        const layerRatio = i / Math.max(1, count - 1);
+        wave.yBase = height * (w.yBaseStart + layerRatio * w.yBaseLayerScale);
+        wave.amplitude = height * (w.amplitudeBase + layerRatio * w.amplitudeLayerScale) * amplitudeScale;
       });
     },
-    [speed]
+    [speed, w]
   );
 
   const renderItems = useCallback(
@@ -88,7 +94,10 @@ export const WaveVisualizer: React.FC<WaveVisualizerProps> = ({
       ctx.clearRect(0, 0, width, height);
       const intensityScale = Math.max(0.3, intensityValue / 60);
 
-      waves.forEach(wave => {
+      for (let i = waves.length - 1; i >= 0; i--) {
+        const wave = waves[i];
+        if (!wave) continue;
+
         ctx.save();
         ctx.globalAlpha = wave.opacity * intensityScale;
         ctx.fillStyle = wave.color;
@@ -105,16 +114,21 @@ export const WaveVisualizer: React.FC<WaveVisualizerProps> = ({
         ctx.closePath();
         ctx.fill();
         ctx.restore();
-      });
+      }
     },
     []
   );
 
-  const handleColorChange = useCallback((waves: Wave[], color: string): void => {
-    waves.forEach((wave, i) => {
-      wave.color = generateColorVariant(color, 0.4 + (i / WAVE_COUNT) * 0.4);
-    });
-  }, []);
+  const handleColorChange = useCallback(
+    (waves: Wave[], color: string): void => {
+      const count = waves.length;
+      waves.forEach((wave, i) => {
+        const layerRatio = i / Math.max(1, count - 1);
+        wave.color = generateColorVariant(color, 0.2 + layerRatio * 0.6);
+      });
+    },
+    []
+  );
 
   const canvasRef = useCanvasVisualizer<Wave>({
     accentColor,
