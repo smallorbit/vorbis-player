@@ -102,23 +102,22 @@ export const GridSection = styled.div`
   min-height: 0;
   padding: 8px;
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
 `;
 
 export const GridContainer = styled.div`
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  grid-auto-rows: 1fr;
   gap: 6px;
   width: 100%;
-  height: 100%;
-  flex: 1;
-  min-height: 0;
 `;
 
 export const LikedSongsCard = styled.button`
-  grid-column: span 2;
-  grid-row: span 2;
+  grid-column: 2 / 4;
+  grid-row: 2 / 4;
+  aspect-ratio: 1;
   border-radius: ${theme.borderRadius.xl};
   border: 1px solid rgba(255, 255, 255, 0.15);
   cursor: pointer;
@@ -166,6 +165,7 @@ export const LikedSongsLabel = styled.div`
 
 export const GridItem = styled.button`
   position: relative;
+  aspect-ratio: 1;
   border-radius: ${theme.borderRadius.md};
   border: 1px solid rgba(255, 255, 255, 0.1);
   background: rgba(255, 255, 255, 0.06);
@@ -223,6 +223,7 @@ export const GridItemName = styled.div`
 `;
 
 export const GridGhostSlot = styled.div`
+  aspect-ratio: 1;
   border-radius: ${theme.borderRadius.md};
   border: 1px dashed rgba(255, 255, 255, 0.15);
   background: rgba(255, 255, 255, 0.02);
