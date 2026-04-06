@@ -28,8 +28,11 @@ describe('DropboxAuthAdapter', () => {
   });
 
   it('isAuthenticated returns true when token is in localStorage', () => {
+    // #given
     store['vorbis-player-dropbox-token'] = 'test-token';
     auth = new DropboxAuthAdapter();
+
+    // #when / #then
     expect(auth.isAuthenticated()).toBe(true);
   });
 
@@ -38,8 +41,11 @@ describe('DropboxAuthAdapter', () => {
   });
 
   it('getAccessToken returns token when authenticated', async () => {
+    // #given
     store['vorbis-player-dropbox-token'] = 'my-token';
     auth = new DropboxAuthAdapter();
+
+    // #when / #then
     expect(await auth.getAccessToken()).toBe('my-token');
   });
 
@@ -59,12 +65,16 @@ describe('DropboxAuthAdapter', () => {
   });
 
   it('logout clears stored tokens', () => {
+    // #given
     store['vorbis-player-dropbox-token'] = 'test';
     store['vorbis-player-dropbox-refresh-token'] = 'refresh';
     auth = new DropboxAuthAdapter();
     expect(auth.isAuthenticated()).toBe(true);
 
+    // #when
     auth.logout();
+
+    // #then
     expect(auth.isAuthenticated()).toBe(false);
     expect(store['vorbis-player-dropbox-token']).toBeUndefined();
     expect(store['vorbis-player-dropbox-refresh-token']).toBeUndefined();
@@ -117,6 +127,7 @@ describe('DropboxPlaybackAdapter', () => {
   });
 
   it('playTrack sets src and calls play', async () => {
+    // #when
     await playback.playTrack({
       id: 'test-id',
       provider: 'dropbox',
@@ -127,20 +138,28 @@ describe('DropboxPlaybackAdapter', () => {
       durationMs: 0,
     });
 
+    // #then
     expect(catalog.getTemporaryLink).toHaveBeenCalledWith('/music/song.mp3');
     expect(mockAudio.src).toBe('https://dl.dropbox.com/temp/song.mp3');
     expect(mockAudio.play).toHaveBeenCalled();
   });
 
   it('pause calls audio.pause', async () => {
+    // #given
     await playback.initialize();
+
+    // #when
     await playback.pause();
+
+    // #then
     expect(mockAudio.pause).toHaveBeenCalled();
   });
 
   it('setVolume clamps to [0, 1]', async () => {
+    // #given
     await playback.initialize();
 
+    // #when / #then
     await playback.setVolume(0.5);
     expect(mockAudio.volume).toBe(0.5);
 
@@ -157,9 +176,14 @@ describe('DropboxPlaybackAdapter', () => {
   });
 
   it('subscribe returns unsubscribe function', async () => {
+    // #given
     await playback.initialize();
     const listener = vi.fn();
+
+    // #when
     const unsub = playback.subscribe(listener);
+
+    // #then
     expect(typeof unsub).toBe('function');
     unsub();
   });

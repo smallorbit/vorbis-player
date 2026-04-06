@@ -85,20 +85,26 @@ describe('dropboxLikesCache', () => {
 
   describe('setTrackLiked / isTrackLiked / getLikedCount', () => {
     it('likes a track and reports it as liked', async () => {
+      // #given
       const track = makeTrack('id:1', 'Song One');
 
+      // #when
       await setTrackLiked('id:1', track, true);
 
+      // #then
       expect(await isTrackLiked('id:1')).toBe(true);
       expect(await getLikedCount()).toBe(1);
     });
 
     it('unlikes a track', async () => {
+      // #given
       const track = makeTrack('id:1', 'Song One');
       await setTrackLiked('id:1', track, true);
 
+      // #when
       await setTrackLiked('id:1', null, false);
 
+      // #then
       expect(await isTrackLiked('id:1')).toBe(false);
       expect(await getLikedCount()).toBe(0);
     });
@@ -106,9 +112,11 @@ describe('dropboxLikesCache', () => {
 
   describe('getLikedTracks', () => {
     it('returns liked tracks sorted by likedAt descending', async () => {
+      // #given
       const track1 = makeTrack('id:1', 'First');
       const track2 = makeTrack('id:2', 'Second');
 
+      // #when
       await setTrackLiked('id:1', track1, true);
       // Small delay so timestamps differ
       await new Promise((r) => setTimeout(r, 10));
@@ -116,6 +124,7 @@ describe('dropboxLikesCache', () => {
 
       const tracks = await getLikedTracks();
 
+      // #then
       expect(tracks).toHaveLength(2);
       expect(tracks[0].name).toBe('Second');
       expect(tracks[1].name).toBe('First');
@@ -128,11 +137,14 @@ describe('dropboxLikesCache', () => {
 
   describe('clearLikes', () => {
     it('removes all liked tracks', async () => {
+      // #given
       await setTrackLiked('id:1', makeTrack('id:1'), true);
       await setTrackLiked('id:2', makeTrack('id:2'), true);
 
+      // #when
       await clearLikes();
 
+      // #then
       expect(await getLikedCount()).toBe(0);
       expect(await getLikedTracks()).toEqual([]);
     });
@@ -140,11 +152,15 @@ describe('dropboxLikesCache', () => {
 
   describe('exportLikes / importLikes', () => {
     it('round-trips liked tracks through export and import', async () => {
+      // #given
       await setTrackLiked('id:1', makeTrack('id:1', 'Song A'), true);
       await setTrackLiked('id:2', makeTrack('id:2', 'Song B'), true);
 
+      // #when
       const json = await exportLikes();
       const parsed = JSON.parse(json);
+
+      // #then
       expect(parsed).toHaveLength(2);
 
       // Clear and import
@@ -169,12 +185,16 @@ describe('dropboxLikesCache', () => {
 
   describe('refreshLikedTrackMetadata', () => {
     it('updates metadata for liked tracks that exist in fresh scan', async () => {
+      // #given
       const oldTrack = makeTrack('id:1', 'Old Name');
       await setTrackLiked('id:1', oldTrack, true);
 
       const freshTrack = makeTrack('id:1', 'New Name');
+
+      // #when
       const result = await refreshLikedTrackMetadata([freshTrack]);
 
+      // #then
       expect(result.updated).toBe(1);
       expect(result.removed).toBe(0);
 
@@ -183,12 +203,15 @@ describe('dropboxLikesCache', () => {
     });
 
     it('removes liked tracks not found in fresh scan', async () => {
+      // #given
       await setTrackLiked('id:1', makeTrack('id:1'), true);
       await setTrackLiked('id:2', makeTrack('id:2'), true);
 
+      // #when
       // Fresh scan only has id:1
       const result = await refreshLikedTrackMetadata([makeTrack('id:1')]);
 
+      // #then
       expect(result.updated).toBe(1);
       expect(result.removed).toBe(1);
       expect(await isTrackLiked('id:1')).toBe(true);
@@ -209,13 +232,16 @@ describe('dropboxLikesCache', () => {
 
   describe('replaceLikes', () => {
     it('atomically replaces all likes', async () => {
+      // #given
       await setTrackLiked('id:1', makeTrack('id:1'), true);
       await setTrackLiked('id:2', makeTrack('id:2'), true);
 
+      // #when
       await replaceLikes([
         { trackId: 'id:3', track: makeTrack('id:3', 'New'), likedAt: 1000 },
       ]);
 
+      // #then
       expect(await getLikedCount()).toBe(1);
       expect(await isTrackLiked('id:1')).toBe(false);
       expect(await isTrackLiked('id:3')).toBe(true);
@@ -224,7 +250,10 @@ describe('dropboxLikesCache', () => {
 
   describe('tombstones', () => {
     it('addTombstone records a deletion', async () => {
+      // #given / #when
       await addTombstone('id:1');
+
+      // #then
       const tombstones = await getTombstones();
       expect(tombstones).toHaveLength(1);
       expect(tombstones[0].trackId).toBe('id:1');
@@ -232,22 +261,37 @@ describe('dropboxLikesCache', () => {
     });
 
     it('setTrackLiked(false) creates a tombstone', async () => {
+      // #given
       await setTrackLiked('id:1', makeTrack('id:1'), true);
+
+      // #when
       await setTrackLiked('id:1', null, false);
+
+      // #then
       const tombstones = await getTombstones();
       expect(tombstones.some((t) => t.trackId === 'id:1')).toBe(true);
     });
 
     it('clearTombstones removes all tombstones', async () => {
+      // #given
       await addTombstone('id:1');
       await addTombstone('id:2');
+
+      // #when
       await clearTombstones();
+
+      // #then
       expect(await getTombstones()).toEqual([]);
     });
 
     it('setTombstones replaces all tombstones', async () => {
+      // #given
       await addTombstone('id:1');
+
+      // #when
       await setTombstones([{ trackId: 'id:2', deletedAt: 5000 }]);
+
+      // #then
       const tombstones = await getTombstones();
       expect(tombstones).toHaveLength(1);
       expect(tombstones[0].trackId).toBe('id:2');
