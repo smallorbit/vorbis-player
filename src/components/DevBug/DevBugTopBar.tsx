@@ -34,7 +34,7 @@ export function DevBugTopBar() {
   const reducedMotion = useReducedMotion();
 
   return createPortal(
-    <TopBarContainer $reducedMotion={reducedMotion}>
+    <TopBarContainer $reducedMotion={reducedMotion} data-devbug="">
       Preview Mode — click an element to inspect
     </TopBarContainer>,
     document.body,

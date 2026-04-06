@@ -286,7 +286,7 @@ export function DevBugFAB() {
 
   return createPortal(
     <>
-      <FABContainer>
+      <FABContainer data-devbug="">
         {isActive && dialOpen && (
           <SpeedDialList>
             {MODES.map((mode, index) => (
