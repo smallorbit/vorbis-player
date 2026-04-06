@@ -91,27 +91,34 @@ describe('DropboxPlaybackAdapter', () => {
   });
 
   it('playTrack calls catalog.getTemporaryLink and sets audio src', async () => {
+    // #given
     const track = makeMediaTrack({ id: 'track-1', name: 'Test Track', artists: 'Test Artist' });
-
     await adapter.initialize();
+
+    // #when
     await adapter.playTrack(track);
 
+    // #then
     expect(mockCatalog.getTemporaryLink).toHaveBeenCalledWith(track.playbackRef.ref);
     expect(mockAudio.src).toBe('https://example.com/stream.mp3');
     expect(mockAudio.play).toHaveBeenCalled();
   });
 
   it('seek sets audio.currentTime in seconds', async () => {
+    // #given
     const track = makeMediaTrack({ id: 'track-1', name: 'Test Track', artists: 'Test Artist' });
-
     await adapter.initialize();
     await adapter.playTrack(track);
+
+    // #when
     await adapter.seek(5000);
 
+    // #then
     expect(mockAudio.currentTime).toBe(5);
   });
 
   it('subscribe receives state updates and returns unsubscribe', async () => {
+    // #given
     const track = makeMediaTrack({ id: 'track-1', name: 'Test Track', artists: 'Test Artist' });
     const listener = vi.fn();
 
@@ -120,11 +127,13 @@ describe('DropboxPlaybackAdapter', () => {
     mockAudio.paused = false;
     mockAudio.duration = 200;
 
+    // #when
     const unsubscribe = adapter.subscribe(listener);
 
     // Trigger a state change
     (mockAudio as any).__triggerEvent('play');
 
+    // #then
     expect(listener).toHaveBeenCalled();
     const state = listener.mock.calls[0][0] as PlaybackState;
     expect(state.currentTrackId).toBe('track-1');
@@ -142,24 +151,29 @@ describe('DropboxPlaybackAdapter', () => {
   });
 
   it('pause calls audio.pause', async () => {
+    // #given
     const track = makeMediaTrack({ id: 'track-1', name: 'Test Track', artists: 'Test Artist' });
-
     await adapter.initialize();
     await adapter.playTrack(track);
+
+    // #when
     await adapter.pause();
 
+    // #then
     expect(mockAudio.pause).toHaveBeenCalled();
   });
 
   it('resume calls audio.play', async () => {
+    // #given
     const track = makeMediaTrack({ id: 'track-1', name: 'Test Track', artists: 'Test Artist' });
-
     await adapter.initialize();
     await adapter.playTrack(track);
     mockAudio.play.mockClear();
 
+    // #when
     await adapter.resume();
 
+    // #then
     expect(mockAudio.play).toHaveBeenCalled();
   });
 
@@ -171,8 +185,10 @@ describe('DropboxPlaybackAdapter', () => {
   });
 
   it('setVolume clamps volume to 0-1 range', async () => {
+    // #given
     await adapter.initialize();
 
+    // #when / #then
     await adapter.setVolume(2.0);
     expect(mockAudio.volume).toBe(1);
 
@@ -181,30 +197,35 @@ describe('DropboxPlaybackAdapter', () => {
   });
 
   it('getLastPlayTime returns the timestamp of the last playTrack call', async () => {
+    // #given
     const track = makeMediaTrack({ id: 'track-1', name: 'Test Track', artists: 'Test Artist' });
-
     await adapter.initialize();
+
+    // #when
     const beforePlay = Date.now();
     await adapter.playTrack(track);
     const afterPlay = Date.now();
     const lastTime = adapter.getLastPlayTime();
 
+    // #then
     expect(lastTime).toBeGreaterThanOrEqual(beforePlay);
     expect(lastTime).toBeLessThanOrEqual(afterPlay);
   });
 
   it('returns valid PlaybackState after playTrack', async () => {
+    // #given
     const track = makeMediaTrack({ id: 'track-1', name: 'Test Track', artists: 'Test Artist' });
-
     await adapter.initialize();
     mockAudio.paused = false;
     mockAudio.ended = false;
     mockAudio.duration = 210;
     mockAudio.currentTime = 30;
 
+    // #when
     await adapter.playTrack(track);
     const state = await adapter.getState();
 
+    // #then
     expect(state).not.toBeNull();
     expect(state!.currentTrackId).toBe('track-1');
     expect(state!.isPlaying).toBe(true);

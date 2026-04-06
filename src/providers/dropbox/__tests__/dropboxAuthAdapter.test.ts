@@ -220,6 +220,7 @@ describe('DropboxAuthAdapter', () => {
 
   describe('getAccessToken', () => {
     it('calls ensureValidToken to refresh when near expiry', async () => {
+      // #given
       localStorageMock.setItem('vorbis-player-dropbox-token', 'old-token');
       localStorageMock.setItem('vorbis-player-dropbox-refresh-token', 'my-refresh');
       localStorageMock.setItem('vorbis-player-dropbox-token-expiry', String(Date.now() - 1000));
@@ -227,16 +228,22 @@ describe('DropboxAuthAdapter', () => {
       const adapter = new DropboxAuthAdapter();
       vi.spyOn(adapter, 'refreshAccessToken').mockResolvedValue('new-token');
 
+      // #when
       const token = await adapter.getAccessToken();
+
+      // #then
       expect(token).toBe('new-token');
       expect(adapter.refreshAccessToken).toHaveBeenCalledTimes(1);
     });
 
     it('returns current token when not expired', async () => {
+      // #given
       localStorageMock.setItem('vorbis-player-dropbox-token', 'valid-token');
       localStorageMock.setItem('vorbis-player-dropbox-token-expiry', String(Date.now() + 3600000));
 
       const adapter = new DropboxAuthAdapter();
+
+      // #when / #then
       const token = await adapter.getAccessToken();
       expect(token).toBe('valid-token');
     });
@@ -261,6 +268,7 @@ describe('DropboxAuthAdapter', () => {
     }
 
     it('preserves refresh token on server error (5xx)', async () => {
+      // #given
       const adapter = await freshAdapter({
         'vorbis-player-dropbox-token': 'old-token',
         'vorbis-player-dropbox-refresh-token': 'my-refresh',
@@ -271,13 +279,17 @@ describe('DropboxAuthAdapter', () => {
         status: 500,
       }));
 
+      // #when
       const result = await adapter.refreshAccessToken();
+
+      // #then
       expect(result).toBeNull();
       expect(localStorageMock.getItem('vorbis-player-dropbox-refresh-token')).toBe('my-refresh');
       expect(localStorageMock.getItem('vorbis-player-dropbox-token')).toBeNull();
     });
 
     it('calls full logout on 401 (invalid/revoked token)', async () => {
+      // #given
       const adapter = await freshAdapter({
         'vorbis-player-dropbox-token': 'old-token',
         'vorbis-player-dropbox-refresh-token': 'my-refresh',
@@ -288,13 +300,17 @@ describe('DropboxAuthAdapter', () => {
         status: 401,
       }));
 
+      // #when
       const result = await adapter.refreshAccessToken();
+
+      // #then
       expect(result).toBeNull();
       expect(localStorageMock.getItem('vorbis-player-dropbox-refresh-token')).toBeNull();
       expect(localStorageMock.getItem('vorbis-player-dropbox-token')).toBeNull();
     });
 
     it('preserves refresh token on network error', async () => {
+      // #given
       const adapter = await freshAdapter({
         'vorbis-player-dropbox-token': 'old-token',
         'vorbis-player-dropbox-refresh-token': 'my-refresh',
@@ -302,7 +318,10 @@ describe('DropboxAuthAdapter', () => {
 
       vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('Network failure')));
 
+      // #when
       const result = await adapter.refreshAccessToken();
+
+      // #then
       expect(result).toBeNull();
       expect(localStorageMock.getItem('vorbis-player-dropbox-refresh-token')).toBe('my-refresh');
     });

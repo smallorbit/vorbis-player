@@ -112,25 +112,31 @@ describe('DropboxPreferencesSyncService', () => {
 
   describe('buildPreferencesFromLocal', () => {
     it('builds payload from getPins and localStorage accent keys', async () => {
+      // #given
       vi.mocked(getPins)
         .mockResolvedValueOnce(['pl1', 'pl2'])
         .mockResolvedValueOnce(['al1']);
       localStorageStore['vorbis-player-accent-color-overrides'] = JSON.stringify({ '/path/album': '#ff0000' });
       localStorageStore['vorbis-player-custom-accent-colors'] = JSON.stringify({ '/path/album': '#00ff00' });
 
+      // #when
       const result = await buildPreferencesFromLocal();
 
+      // #then
       expect(result.pins).toEqual({ playlists: ['pl1', 'pl2'], albums: ['al1'] });
       expect(result.accent.overrides).toEqual({ '/path/album': '#ff0000' });
       expect(result.accent.customColors).toEqual({ '/path/album': '#00ff00' });
     });
 
     it('handles missing or invalid localStorage gracefully', async () => {
+      // #given
       vi.mocked(getPins).mockResolvedValue([]);
       localStorageStore['vorbis-player-accent-color-overrides'] = 'not-json';
 
+      // #when
       const result = await buildPreferencesFromLocal();
 
+      // #then
       expect(result.accent.overrides).toEqual({});
       expect(result.accent.customColors).toEqual({});
     });
@@ -138,13 +144,16 @@ describe('DropboxPreferencesSyncService', () => {
 
   describe('applyRemoteToLocal', () => {
     it('writes pins and accent to storage', async () => {
+      // #given
       const remote = makeRemote({
         pins: { playlists: ['p1'], albums: ['a1'] },
         accent: { overrides: { id1: '#red' }, customColors: { id1: '#blue' } },
       });
 
+      // #when
       await applyRemoteToLocal(remote);
 
+      // #then
       expect(setPins).toHaveBeenCalledWith('_unified', 'playlists', ['p1']);
       expect(setPins).toHaveBeenCalledWith('_unified', 'albums', ['a1']);
       expect(localStorage.setItem).toHaveBeenCalledWith(
@@ -172,17 +181,23 @@ describe('DropboxPreferencesSyncService', () => {
     });
 
     it('parses remote file on success', async () => {
+      // #given
       const remoteData = makeRemote({ pins: { playlists: ['x'], albums: [] } });
       vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
         status: 200,
         ok: true,
         json: () => Promise.resolve(remoteData),
       }));
+
+      // #when
       const result = await service.downloadPreferencesFile();
+
+      // #then
       expect(result).toEqual(remoteData);
     });
 
     it('retries with refreshed token on 401', async () => {
+      // #given
       const remoteData = makeRemote();
       const fetchMock = vi
         .fn()
@@ -194,7 +209,10 @@ describe('DropboxPreferencesSyncService', () => {
         });
       vi.stubGlobal('fetch', fetchMock);
 
+      // #when
       const result = await service.downloadPreferencesFile();
+
+      // #then
       expect(result).toEqual(remoteData);
       expect(fetchMock).toHaveBeenCalledTimes(2);
       expect(mockAuth.refreshAccessToken).toHaveBeenCalled();
@@ -209,24 +227,37 @@ describe('DropboxPreferencesSyncService', () => {
     });
 
     it('returns true on successful upload', async () => {
+      // #given
       vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ status: 200, ok: true }));
+
+      // #when
       const result = await service.uploadPreferencesFile(makeRemote());
+
+      // #then
       expect(result).toBe(true);
       expect(fetch).toHaveBeenCalledTimes(1);
     });
 
     it('calls ensureVorbisFolder before upload', async () => {
+      // #given
       vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ status: 200, ok: true }));
 
+      // #when
       const result = await service.uploadPreferencesFile(makeRemote());
+
+      // #then
       expect(result).toBe(true);
       expect(ensureVorbisFolder).toHaveBeenCalled();
     });
 
     it('returns false when folder creation fails', async () => {
+      // #given
       vi.mocked(ensureVorbisFolder).mockResolvedValueOnce(false);
 
+      // #when
       const result = await service.uploadPreferencesFile(makeRemote());
+
+      // #then
       expect(result).toBe(false);
     });
   });
@@ -273,13 +304,16 @@ describe('DropboxPreferencesSyncService', () => {
 
   describe('schedulePush', () => {
     it('debounces push calls', async () => {
+      // #given
       const fetchMock = vi.fn().mockResolvedValue({ status: 200, ok: true });
       vi.stubGlobal('fetch', fetchMock);
 
+      // #when
       service.schedulePush();
       service.schedulePush();
       service.schedulePush();
 
+      // #then
       expect(fetchMock).not.toHaveBeenCalled();
 
       await vi.advanceTimersByTimeAsync(2500);
