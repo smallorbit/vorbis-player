@@ -5,6 +5,7 @@ import { useVisualizerDebugConfig } from '../../contexts/VisualizerDebugContext'
 
 interface GridWaveVisualizerProps {
   intensity: number;
+  speed?: number;
   accentColor: string;
   isPlaying: boolean;
   playbackPosition?: number;
@@ -37,6 +38,7 @@ interface GridWaveState {
 
 export const GridWaveVisualizer: React.FC<GridWaveVisualizerProps> = ({
   intensity,
+  speed,
   accentColor,
   isPlaying,
 }) => {
@@ -88,7 +90,7 @@ export const GridWaveVisualizer: React.FC<GridWaveVisualizerProps> = ({
 
   const updateItems = useCallback(
     (states: GridWaveState[], deltaTime: number, playing: boolean, width: number, height: number): void => {
-      const speedMult = playing ? 1.0 : g.pausedSpeedMult;
+      const speedMult = (playing ? 1.0 : g.pausedSpeedMult) * (speed ?? 1.0);
       const dt = deltaTime / 16;
 
       const state = states[0];
@@ -102,7 +104,7 @@ export const GridWaveVisualizer: React.FC<GridWaveVisualizerProps> = ({
         if (wave.phase > Math.PI * 2) wave.phase -= Math.PI * 2;
       });
     },
-    [g]
+    [g, speed]
   );
 
   const renderItems = useCallback(

@@ -12,6 +12,7 @@ interface AlbumArtBounds {
 
 interface TrailVisualizerProps {
   intensity: number;
+  speed?: number;
   accentColor: string;
   isPlaying: boolean;
   playbackPosition?: number;
@@ -52,6 +53,7 @@ interface ShipState {
  */
 export const TrailVisualizer: React.FC<TrailVisualizerProps> = ({
   intensity,
+  speed,
   accentColor,
   isPlaying,
   albumArtBounds,
@@ -133,7 +135,7 @@ export const TrailVisualizer: React.FC<TrailVisualizerProps> = ({
       ship.inited = true;
     }
 
-    const speedMult = playing ? 1.0 : t.pausedSpeedMult;
+    const speedMult = (playing ? 1.0 : t.pausedSpeedMult) * (speed ?? 1.0);
     const dt = deltaTime / 16;
 
     const viewportScale = Math.max(0.5, Math.sqrt(width / 1400));
@@ -186,7 +188,7 @@ export const TrailVisualizer: React.FC<TrailVisualizerProps> = ({
         particle.vy *= t.driftDecay;
       }
     });
-  }, [t]);
+  }, [t, speed]);
 
   const renderParticles = useCallback((
     ctx: CanvasRenderingContext2D,

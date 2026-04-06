@@ -43,6 +43,7 @@ const AudioPlayerComponent = () => {
     backgroundVisualizerEnabled,
     backgroundVisualizerStyle,
     backgroundVisualizerIntensity,
+    backgroundVisualizerSpeed,
     accentColorBackgroundEnabled,
     zenModeEnabled,
     showVisualEffects,
@@ -216,6 +217,7 @@ const AudioPlayerComponent = () => {
             enabled={backgroundVisualizerEnabled && isMainPlayerActive}
             style={backgroundVisualizerStyle}
             intensity={backgroundVisualizerIntensity}
+            speed={backgroundVisualizerSpeed}
             accentColor={accentColor}
             isPlaying={state.isPlaying}
             playbackPosition={state.playbackPosition}

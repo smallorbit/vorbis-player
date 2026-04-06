@@ -21,6 +21,7 @@ export const STORAGE_KEYS = {
   BG_VISUALIZER_ENABLED: 'vorbis-player-background-visualizer-enabled',
   BG_VISUALIZER_STYLE: 'vorbis-player-background-visualizer-style',
   BG_VISUALIZER_INTENSITY: 'vorbis-player-background-visualizer-intensity',
+  BG_VISUALIZER_SPEED: 'vorbis-player-background-visualizer-speed',
 
   // Accent color configuration
   ACCENT_COLOR_BG_PREFERRED: 'vorbis-player-accent-color-background-preferred',
