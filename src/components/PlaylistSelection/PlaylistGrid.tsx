@@ -35,6 +35,7 @@ export const PlaylistGrid: React.FC = React.memo(function PlaylistGrid() {
     showProviderBadges,
     hasActiveFilters,
     searchQuery,
+    providerFilters,
     pinnedPlaylists,
     unpinnedPlaylists,
     isPlaylistPinned,
@@ -45,15 +46,21 @@ export const PlaylistGrid: React.FC = React.memo(function PlaylistGrid() {
   } = useLibraryContext();
 
   const likedSongsPinned = isPlaylistPinned(LIKED_SONGS_ID);
-  const usePerProviderLiked = showProviderBadges && likedSongsPerProvider.length >= 1 && !isUnifiedLikedActive;
-  const effectiveLikedCount = isUnifiedLikedActive ? unifiedLikedCount : likedSongsCount;
+
+  const filteredLikedSongsPerProvider = providerFilters.length > 0
+    ? likedSongsPerProvider.filter(e => providerFilters.includes(e.provider))
+    : likedSongsPerProvider;
+
+  const shouldShowUnified = isUnifiedLikedActive && filteredLikedSongsPerProvider.length !== 1;
+  const usePerProviderLiked = showProviderBadges && filteredLikedSongsPerProvider.length >= 1 && !shouldShowUnified;
+  const effectiveLikedCount = shouldShowUnified ? unifiedLikedCount : likedSongsCount;
   const isLikedLoading = !isInitialLoadComplete && effectiveLikedCount === 0;
   const showLikedSongs = effectiveLikedCount > 0 || isLikedLoading;
 
   const layout = inDrawer ? 'grid' : 'list';
 
   const likedSongsItem = showLikedSongs && (usePerProviderLiked
-    ? likedSongsPerProvider.map(({ provider, count }) => (
+    ? filteredLikedSongsPerProvider.map(({ provider, count }) => (
         <LikedSongsCard key={`liked-songs-${provider}`} layout={layout} provider={provider} count={count} />
       ))
     : <LikedSongsCard layout={layout} count={effectiveLikedCount} />
