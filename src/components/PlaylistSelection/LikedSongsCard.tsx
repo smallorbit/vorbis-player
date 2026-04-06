@@ -56,7 +56,7 @@ const LikedSongsCard: React.FC<LikedSongsCardProps> = React.memo(function LikedS
   const likedSongsPinned = isPlaylistPinned(LIKED_SONGS_ID);
   const isPerProvider = provider !== undefined;
   const gradient = getLikedSongsGradient(
-    isUnifiedLikedActive ? 'unified' : (isPerProvider ? provider : activeDescriptor?.id)
+    isPerProvider ? provider : (isUnifiedLikedActive ? 'unified' : activeDescriptor?.id)
   );
 
   const syncSpinner = isLikedSongsSyncing ? <TabSpinner /> : null;
