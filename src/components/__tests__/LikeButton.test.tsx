@@ -34,47 +34,74 @@ describe('LikeButton', () => {
   });
 
   it('calls onToggleLike on click in normal state', () => {
+    // #given
     const { props } = renderLikeButton();
+
+    // #when
     fireEvent.click(screen.getByRole('button'));
+
+    // #then
     expect(props.onToggleLike).toHaveBeenCalledOnce();
   });
 
   it('does not call onToggleLike when isLoading is true', () => {
+    // #given
     const { props } = renderLikeButton({ isLoading: true });
+
+    // #when
     fireEvent.click(screen.getByRole('button'));
+
+    // #then
     expect(props.onToggleLike).not.toHaveBeenCalled();
   });
 
   it('does not call onToggleLike when trackId is undefined', () => {
+    // #given
     const { props } = renderLikeButton({ trackId: undefined });
+
+    // #when
     fireEvent.click(screen.getByRole('button'));
+
+    // #then
     expect(props.onToggleLike).not.toHaveBeenCalled();
   });
 
   it('has correct aria-label for each state', () => {
+    // #given
     const { rerender } = render(
       <LikeButton {...defaultProps} isLiked={false} />
     );
+
+    // #then
     expect(screen.getByRole('button')).toHaveAttribute(
       'aria-label',
       'Add to Liked Songs'
     );
 
+    // #when
     rerender(<LikeButton {...defaultProps} isLiked={true} />);
+
+    // #then
     expect(screen.getByRole('button')).toHaveAttribute(
       'aria-label',
       'Remove from Liked Songs'
     );
 
+    // #when
     rerender(<LikeButton {...defaultProps} isLoading={true} />);
+
+    // #then
     expect(screen.getByRole('button')).toHaveAttribute(
       'aria-label',
       'Loading...'
     );
 
+    // #when
     rerender(
       <LikeButton {...defaultProps} trackId={undefined} />
     );
+
+    // #then
     expect(screen.getByRole('button')).toHaveAttribute(
       'aria-label',
       'No track selected'

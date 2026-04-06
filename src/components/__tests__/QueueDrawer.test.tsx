@@ -134,7 +134,7 @@ describe('QueueDrawer', () => {
         <Wrapper><QueueDrawer {...defaultProps} onClose={onClose} /></Wrapper>
       );
 
-      // #when — the overlay is the first child rendered by the portal
+      // #when
       const overlay = container.ownerDocument.body.querySelector('[class]');
       if (overlay) fireEvent.click(overlay);
 
