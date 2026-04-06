@@ -531,6 +531,12 @@ export function FeedbackPanel(props: FeedbackPanelProps) {
   }, []);
 
   useEffect(() => {
+    const host = hostRef.current;
+    if (!host) return;
+    host.style.pointerEvents = props.isOpen ? 'auto' : 'none';
+  }, [props.isOpen]);
+
+  useEffect(() => {
     if (props.isOpen) {
       import('@/services/devbug/consoleCapture').then(({ getEntries }) => {
         setConsoleEntries(getEntries().slice(-10));
