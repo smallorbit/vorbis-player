@@ -197,6 +197,19 @@ Queue state lives in `TrackContext` (`tracks`, `originalTracks`, `currentTrackIn
 
 **Queue change notification**: `usePlayerLogic` calls `descriptor.playback.onQueueChanged?(tracks, currentTrackIndex)` whenever `tracks` or `currentTrackIndex` change, allowing providers with native queue sync (Spotify) to stay aligned.
 
+### Background Visualizers
+
+Four animated background styles, selectable via the flip menu's Speed/Style controls. All share a `speed` prop (multiplier from `VisualEffectsContext`) and per-visualizer tuning in `src/constants/visualizerDebugConfig.ts`.
+
+| Style key | Component | Description |
+|-----------|-----------|-------------|
+| `fireflies` | `ParticleVisualizer` | Drifting particles with pulsing opacity |
+| `comet` | `TrailVisualizer` | Ships leaving fading particle trails |
+| `wave` | `WaveVisualizer` | Layered sine waves spread vertically |
+| `grid` | `GridWaveVisualizer` | Dot grid distorted by traveling waves |
+
+Type: `VisualizerStyle` in `src/types/visualizer.d.ts`. Components in `src/components/visualizers/`.
+
 ### Debug logging (optional)
 
 Debug logging uses the [`debug`](https://www.npmjs.com/package/debug) package via `src/lib/debugLog.ts` with namespace `vorbis:*`. See `docs/troubleshooting.md` for usage.
