@@ -5,6 +5,8 @@ import { useDevBug } from '@/contexts/DevBugContext';
 import type { SelectedElement } from '@/types/devbug';
 import { DevBugTopBar } from './DevBugTopBar';
 import { InspectOverlay } from './InspectOverlay';
+import { FeedbackPanel } from './FeedbackPanel';
+import { useFeedbackPanel } from './useFeedbackPanel';
 
 const pulse = keyframes`
   0%, 100% { box-shadow: 0 0 0 0 rgba(255, 160, 0, 0.7); }
@@ -60,10 +62,30 @@ const BugIcon = () => (
 );
 
 export function DevBugFAB() {
-  const { isActive, toggle } = useDevBug();
+  const { isActive, toggle, deactivate } = useDevBug();
+  const panel = useFeedbackPanel();
 
-  const handleElementSelected = useCallback((_element: Element, _info: SelectedElement) => {
-  }, []);
+  const handleElementSelected = useCallback(
+    (_element: Element, info: SelectedElement) => {
+      panel.open(info);
+    },
+    [panel],
+  );
+
+  const handlePanelCancel = useCallback(() => {
+    panel.close();
+    deactivate();
+  }, [panel, deactivate]);
+
+  useEffect(() => {
+    if (isActive) {
+      import('@/services/devbug/consoleCapture').then(({ startCapture }) => startCapture());
+      import('@/services/devbug/perfCapture').then(({ startPerfCapture }) => startPerfCapture());
+    } else {
+      import('@/services/devbug/consoleCapture').then(({ stopCapture }) => stopCapture());
+      import('@/services/devbug/perfCapture').then(({ stopPerfCapture }) => stopPerfCapture());
+    }
+  }, [isActive]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -96,6 +118,15 @@ export function DevBugFAB() {
       </FABButton>
       {isActive && <DevBugTopBar />}
       <InspectOverlay onElementSelected={handleElementSelected} />
+      <FeedbackPanel
+        isOpen={panel.isOpen}
+        selectedElement={panel.selectedElement}
+        categories={panel.categories}
+        comment={panel.comment}
+        onToggleCategory={panel.toggleCategory}
+        onCommentChange={panel.setComment}
+        onCancel={handlePanelCancel}
+      />
     </>,
     document.body,
   );
