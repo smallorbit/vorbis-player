@@ -11,7 +11,7 @@ import {
   ZenModeIcon,
   ShuffleIcon,
   RadioIcon,
-  FlipMenuIcon,
+  QuickAccessPanelIcon,
 } from '../icons/QuickActionIcons';
 
 const AUTOHIDE_DELAY = 1000;
@@ -30,7 +30,7 @@ interface BottomBarProps {
   onShuffleToggle?: () => void;
   onStartRadio?: () => void;
   radioGenerating?: boolean;
-  onFlipToggle?: () => void;
+  onOpenQuickAccessPanel?: () => void;
 }
 
 const BottomBar = React.memo(function BottomBar({
@@ -47,7 +47,7 @@ const BottomBar = React.memo(function BottomBar({
   onShuffleToggle,
   onStartRadio,
   radioGenerating,
-  onFlipToggle,
+  onOpenQuickAccessPanel,
 }: BottomBarProps) {
   const { isMobile, isTablet, isTouchDevice } = usePlayerSizingContext();
   const [barVisible, setBarVisible] = useState(!zenModeEnabled);
@@ -175,16 +175,16 @@ const BottomBar = React.memo(function BottomBar({
             </ControlButton>
           )}
 
-          {zenModeEnabled && onFlipToggle && (
+          {onOpenQuickAccessPanel && (
             <ControlButton
               $isMobile={isMobile}
               $isTablet={isTablet}
               $compact
-              onClick={onFlipToggle}
-              title="Flip menu"
-              aria-label="Flip menu"
+              onClick={onOpenQuickAccessPanel}
+              title="Quick Access Panel"
+              aria-label="Quick Access Panel"
             >
-              <FlipMenuIcon />
+              <QuickAccessPanelIcon />
             </ControlButton>
           )}
 
