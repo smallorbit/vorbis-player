@@ -102,7 +102,7 @@ const LikedSongsCard: React.FC<LikedSongsCardProps> = React.memo(function LikedS
       $isPinned={likedSongsPinned}
       $disabled={!canPinMorePlaylists && !likedSongsPinned}
       onClick={(e) => onPinPlaylistClick(LIKED_SONGS_ID, e)}
-      title={likedSongsPinned ? 'Unpin' : (canPinMorePlaylists ? 'Pin to top' : 'Pin limit reached (8)')}
+      title={likedSongsPinned ? 'Unpin' : (canPinMorePlaylists ? 'Pin to top' : 'Pin limit reached (12)')}
       aria-label={likedSongsPinned ? 'Unpin Liked Songs' : 'Pin Liked Songs to top'}
     >
       <PinIcon filled={likedSongsPinned} />

@@ -62,24 +62,25 @@ export function PinnedItemsProvider({ children }: { children: React.ReactNode })
 
   const togglePinPlaylist = useCallback((id: string) => {
     setPinnedPlaylistIds(prev => {
-      const next = prev.includes(id) ? prev.filter(pid => pid !== id) : prev.length >= MAX_PINS ? prev : [...prev, id];
+      const next = prev.includes(id) ? prev.filter(pid => pid !== id) : prev.length + pinnedAlbumIds.length >= MAX_PINS ? prev : [...prev, id];
       setPins(UNIFIED_PROVIDER, 'playlists', next).catch(err => console.warn('[PinnedItemsContext] pin write failed:', err));
       getPreferencesSync()?.schedulePush();
       return next;
     });
-  }, []);
+  }, [pinnedAlbumIds]);
 
   const togglePinAlbum = useCallback((id: string) => {
     setPinnedAlbumIds(prev => {
-      const next = prev.includes(id) ? prev.filter(pid => pid !== id) : prev.length >= MAX_PINS ? prev : [...prev, id];
+      const next = prev.includes(id) ? prev.filter(pid => pid !== id) : pinnedPlaylistIds.length + prev.length >= MAX_PINS ? prev : [...prev, id];
       setPins(UNIFIED_PROVIDER, 'albums', next).catch(err => console.warn('[PinnedItemsContext] pin write failed:', err));
       getPreferencesSync()?.schedulePush();
       return next;
     });
-  }, []);
+  }, [pinnedPlaylistIds]);
 
-  const canPinMorePlaylists = pinnedPlaylistIds.length < MAX_PINS;
-  const canPinMoreAlbums = pinnedAlbumIds.length < MAX_PINS;
+  const totalPinned = pinnedPlaylistIds.length + pinnedAlbumIds.length;
+  const canPinMorePlaylists = totalPinned < MAX_PINS;
+  const canPinMoreAlbums = totalPinned < MAX_PINS;
 
   const value = useMemo<PinnedItemsContextValue>(() => ({
     pinnedPlaylistIds,
