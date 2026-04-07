@@ -1,6 +1,7 @@
 import React, { useCallback } from 'react';
 import type { PlaylistInfo, AlbumInfo } from '@/services/spotify';
 import type { ProviderId } from '@/types/domain';
+import { MAX_PINS } from '@/services/settings/pinnedItemsStorage';
 import { getLikedSongsGradient } from '@/components/PlaylistSelection/utils';
 import { useLongPress } from '@/hooks/useLongPress';
 import { MosaicThumbnail } from '../MosaicThumbnail';
@@ -102,10 +103,10 @@ const PinRing: React.FC<PinRingProps> = ({
   const items: GridSatelliteItem[] = [
     ...filteredPlaylists.map(p => ({ kind: 'playlist' as const, item: p })),
     ...filteredAlbums.map(a => ({ kind: 'album' as const, item: a })),
-  ].slice(0, 12);
+  ];
 
   const showHint = items.length === 0;
-  const ghostCount = Math.max(0, 12 - items.length);
+  const ghostCount = Math.max(0, MAX_PINS - items.length);
 
   const gradient = getLikedSongsGradient(
     activeProviderIds.length === 1 ? activeProviderIds[0] : 'unified',

@@ -101,7 +101,7 @@ export const AlbumGrid: React.FC = React.memo(function AlbumGrid() {
           $isPinned={pinned}
           $disabled={!canPinMoreAlbums && !pinned}
           onClick={(e) => onPinAlbumClick(album.id, e)}
-          title={pinned ? 'Unpin' : (canPinMoreAlbums ? 'Pin to top' : 'Pin limit reached (8)')}
+          title={pinned ? 'Unpin' : (canPinMoreAlbums ? 'Pin to top' : 'Pin limit reached (12)')}
           aria-label={pinned ? `Unpin ${album.name}` : `Pin ${album.name} to top`}
         >
           <PinIcon filled={pinned} />

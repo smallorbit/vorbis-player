@@ -8,7 +8,7 @@ vi.mock('@/services/settings/pinnedItemsStorage', () => ({
   getPins: vi.fn().mockResolvedValue([]),
   setPins: vi.fn().mockResolvedValue(undefined),
   migratePinsFromLocalStorage: vi.fn().mockResolvedValue(undefined),
-  MAX_PINS: 8,
+  MAX_PINS: 12,
   UNIFIED_PROVIDER: '_unified',
   PINS_CHANGED_EVENT: 'vorbis-pins-changed',
 }));
@@ -92,23 +92,23 @@ describe('usePinnedItems', () => {
     expect(setPins).toHaveBeenCalledWith('_unified', 'playlists', ['p2']);
   });
 
-  it('should not pin beyond 8 playlists', async () => {
-    // #given - initialize with max playlists (8)
+  it('should not pin beyond 12 playlists', async () => {
+    // #given - initialize with max playlists (12)
     (getPins as ReturnType<typeof vi.fn>).mockImplementation(
       (_provider: string, type: string) =>
-        type === 'playlists' ? Promise.resolve(['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7', 'p8']) : Promise.resolve([])
+        type === 'playlists' ? Promise.resolve(['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7', 'p8', 'p9', 'p10', 'p11', 'p12']) : Promise.resolve([])
     );
     const { result } = renderHook(() => usePinnedItems(), { wrapper });
 
-    await waitFor(() => expect(result.current.pinnedPlaylistIds).toEqual(['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7', 'p8']));
+    await waitFor(() => expect(result.current.pinnedPlaylistIds).toEqual(['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7', 'p8', 'p9', 'p10', 'p11', 'p12']));
 
     // #when - attempt to pin another playlist
     act(() => {
-      result.current.togglePinPlaylist('p9');
+      result.current.togglePinPlaylist('p13');
     });
 
     // #then
-    expect(result.current.pinnedPlaylistIds).toEqual(['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7', 'p8']);
+    expect(result.current.pinnedPlaylistIds).toEqual(['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7', 'p8', 'p9', 'p10', 'p11', 'p12']);
     expect(result.current.canPinMorePlaylists).toBe(false);
   });
 
@@ -150,23 +150,23 @@ describe('usePinnedItems', () => {
     expect(setPins).toHaveBeenCalledWith('_unified', 'albums', ['a2']);
   });
 
-  it('should not pin beyond 8 albums', async () => {
-    // #given - initialize with max albums (8)
+  it('should not pin beyond 12 albums', async () => {
+    // #given - initialize with max albums (12)
     (getPins as ReturnType<typeof vi.fn>).mockImplementation(
       (_provider: string, type: string) =>
-        type === 'albums' ? Promise.resolve(['a1', 'a2', 'a3', 'a4', 'a5', 'a6', 'a7', 'a8']) : Promise.resolve([])
+        type === 'albums' ? Promise.resolve(['a1', 'a2', 'a3', 'a4', 'a5', 'a6', 'a7', 'a8', 'a9', 'a10', 'a11', 'a12']) : Promise.resolve([])
     );
     const { result } = renderHook(() => usePinnedItems(), { wrapper });
 
-    await waitFor(() => expect(result.current.pinnedAlbumIds).toEqual(['a1', 'a2', 'a3', 'a4', 'a5', 'a6', 'a7', 'a8']));
+    await waitFor(() => expect(result.current.pinnedAlbumIds).toEqual(['a1', 'a2', 'a3', 'a4', 'a5', 'a6', 'a7', 'a8', 'a9', 'a10', 'a11', 'a12']));
 
     // #when - attempt to pin another album
     act(() => {
-      result.current.togglePinAlbum('a9');
+      result.current.togglePinAlbum('a13');
     });
 
     // #then
-    expect(result.current.pinnedAlbumIds).toEqual(['a1', 'a2', 'a3', 'a4', 'a5', 'a6', 'a7', 'a8']);
+    expect(result.current.pinnedAlbumIds).toEqual(['a1', 'a2', 'a3', 'a4', 'a5', 'a6', 'a7', 'a8', 'a9', 'a10', 'a11', 'a12']);
     expect(result.current.canPinMoreAlbums).toBe(false);
   });
 
@@ -179,7 +179,7 @@ describe('usePinnedItems', () => {
     expect(result.current.canPinMorePlaylists).toBe(true);
     expect(result.current.canPinMoreAlbums).toBe(true);
 
-    // #when - pin 7 playlists
+    // #when - pin 11 playlists
     act(() => {
       result.current.togglePinPlaylist('p1');
       result.current.togglePinPlaylist('p2');
@@ -188,14 +188,18 @@ describe('usePinnedItems', () => {
       result.current.togglePinPlaylist('p5');
       result.current.togglePinPlaylist('p6');
       result.current.togglePinPlaylist('p7');
+      result.current.togglePinPlaylist('p8');
+      result.current.togglePinPlaylist('p9');
+      result.current.togglePinPlaylist('p10');
+      result.current.togglePinPlaylist('p11');
     });
 
     // #then - still have capacity
     expect(result.current.canPinMorePlaylists).toBe(true);
 
-    // #when - pin 8th playlist
+    // #when - pin 12th playlist
     act(() => {
-      result.current.togglePinPlaylist('p8');
+      result.current.togglePinPlaylist('p12');
     });
 
     // #then - at max capacity
@@ -229,11 +233,11 @@ describe('usePinnedItems', () => {
     // #given - initialize with max playlists
     (getPins as ReturnType<typeof vi.fn>).mockImplementation(
       (_provider: string, type: string) =>
-        type === 'playlists' ? Promise.resolve(['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7', 'p8']) : Promise.resolve([])
+        type === 'playlists' ? Promise.resolve(['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7', 'p8', 'p9', 'p10', 'p11', 'p12']) : Promise.resolve([])
     );
     const { result } = renderHook(() => usePinnedItems(), { wrapper });
 
-    await waitFor(() => expect(result.current.pinnedPlaylistIds).toEqual(['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7', 'p8']));
+    await waitFor(() => expect(result.current.pinnedPlaylistIds).toEqual(['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7', 'p8', 'p9', 'p10', 'p11', 'p12']));
 
     // #when - unpin one while at max
     act(() => {
@@ -241,7 +245,7 @@ describe('usePinnedItems', () => {
     });
 
     // #then
-    expect(result.current.pinnedPlaylistIds).toEqual(['p1', 'p3', 'p4', 'p5', 'p6', 'p7', 'p8']);
+    expect(result.current.pinnedPlaylistIds).toEqual(['p1', 'p3', 'p4', 'p5', 'p6', 'p7', 'p8', 'p9', 'p10', 'p11', 'p12']);
     expect(result.current.canPinMorePlaylists).toBe(true);
   });
 
