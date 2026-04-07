@@ -119,7 +119,7 @@ export const PlaylistGrid: React.FC = React.memo(function PlaylistGrid() {
           $isPinned={pinned}
           $disabled={!canPinMorePlaylists && !pinned}
           onClick={(e) => onPinPlaylistClick(playlist.id, e)}
-          title={pinned ? 'Unpin' : (canPinMorePlaylists ? 'Pin to top' : 'Pin limit reached (8)')}
+          title={pinned ? 'Unpin' : (canPinMorePlaylists ? 'Pin to top' : 'Pin limit reached (12)')}
           aria-label={pinned ? `Unpin ${playlist.name}` : `Pin ${playlist.name} to top`}
         >
           <PinIcon filled={pinned} />

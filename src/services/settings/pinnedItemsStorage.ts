@@ -7,7 +7,7 @@
 import { STORE_NAMES, settingsGet, settingsPut, settingsClearStore } from './settingsDb';
 import { STORAGE_KEYS } from '@/constants/storage';
 
-export const MAX_PINS = 8;
+export const MAX_PINS = 12;
 
 /** Event dispatched when pins are updated externally (e.g. Dropbox sync). */
 export const PINS_CHANGED_EVENT = 'vorbis-pins-changed';
