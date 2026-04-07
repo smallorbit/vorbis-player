@@ -78,6 +78,7 @@ interface PlayerControlsSectionProps {
   onCloseQueue: () => void;
   onOpenLibraryDrawer: () => void;
   onCloseLibraryDrawer: () => void;
+  onOpenQuickAccessPanel?: () => void;
   onZenModeToggle: () => void;
   isRadioAvailable?: boolean;
   onStartRadio?: () => void;
@@ -107,6 +108,7 @@ export const PlayerControlsSection: React.FC<PlayerControlsSectionProps> = React
   onCloseQueue,
   onOpenLibraryDrawer,
   onCloseLibraryDrawer,
+  onOpenQuickAccessPanel,
   onZenModeToggle,
   isRadioAvailable,
   onStartRadio,
@@ -231,13 +233,13 @@ export const PlayerControlsSection: React.FC<PlayerControlsSectionProps> = React
   const handleArrowDown = useCallback(() => {
     if (showQueue) {
       onCloseQueue();
-      onOpenLibraryDrawer();
+      onOpenQuickAccessPanel?.();
     } else if (showLibraryDrawer) {
       onCloseLibraryDrawer();
     } else {
-      onOpenLibraryDrawer();
+      onOpenQuickAccessPanel?.();
     }
-  }, [showQueue, showLibraryDrawer, onCloseQueue, onOpenLibraryDrawer, onCloseLibraryDrawer]);
+  }, [showQueue, showLibraryDrawer, onCloseQueue, onOpenQuickAccessPanel, onCloseLibraryDrawer]);
 
   const handleVolumeUp = useCallback(() => {
     setVolumeLevel(Math.min(100, (volume ?? 50) + 5));
@@ -264,7 +266,8 @@ export const PlayerControlsSection: React.FC<PlayerControlsSectionProps> = React
     onToggleShuffle: handleShuffleToggle,
     onToggleHelp: toggleHelp,
     onShowQueue: handleArrowUp,
-    onOpenLibraryDrawer: handleArrowDown,
+    onOpenLibraryDrawer: onOpenLibraryDrawer,
+    onOpenQuickAccessPanel: handleArrowDown,
     onToggleZenMode: onZenModeToggle,
   }, { prefersPointerInput: hasPointerInput });
 

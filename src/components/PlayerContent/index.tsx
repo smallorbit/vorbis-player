@@ -220,6 +220,7 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({
             onCloseQueue={handleCloseQueue}
             onOpenLibraryDrawer={handleOpenLibraryDrawer}
             onCloseLibraryDrawer={handleCloseLibraryDrawer}
+            onOpenQuickAccessPanel={handlers.onOpenQuickAccessPanel}
             onZenModeToggle={handleZenModeToggle}
             isRadioAvailable={isRadioAvailable}
             onStartRadio={handlers.onStartRadio}
