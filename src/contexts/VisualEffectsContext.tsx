@@ -38,7 +38,7 @@ export function VisualEffectsProvider({ children }: { children: React.ReactNode 
   const [visualEffectsEnabled, setVisualEffectsEnabled] = useLocalStorage<boolean>(STORAGE_KEYS.VISUAL_EFFECTS_ENABLED, true);
   const [perAlbumGlow, setPerAlbumGlow] = useLocalStorage<Record<string, { intensity: number; rate: number }>>(STORAGE_KEYS.PER_ALBUM_GLOW, {});
   const [backgroundVisualizerEnabled, setBackgroundVisualizerEnabled] = useLocalStorage<boolean>(STORAGE_KEYS.BG_VISUALIZER_ENABLED, true);
-  const [backgroundVisualizerStyle, setBackgroundVisualizerStyle] = useLocalStorage<VisualizerStyle>(STORAGE_KEYS.BG_VISUALIZER_STYLE, 'fireflies');
+  const [backgroundVisualizerStyle, setBackgroundVisualizerStyle] = useLocalStorage<VisualizerStyle>(STORAGE_KEYS.BG_VISUALIZER_STYLE, 'wave');
   const [backgroundVisualizerIntensity, setBackgroundVisualizerIntensity] = useLocalStorage<number>(STORAGE_KEYS.BG_VISUALIZER_INTENSITY, 40);
   const [backgroundVisualizerSpeed, setBackgroundVisualizerSpeed] = useLocalStorage<number>(STORAGE_KEYS.BG_VISUALIZER_SPEED, 0.7);
   const [accentColorBackgroundPreferred, setAccentColorBackgroundPreferred] = useLocalStorage<boolean>(STORAGE_KEYS.ACCENT_COLOR_BG_PREFERRED, false);
