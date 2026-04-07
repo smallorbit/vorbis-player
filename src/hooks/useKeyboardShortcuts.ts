@@ -26,6 +26,8 @@ interface KeyboardShortcutHandlers {
   onShowQueue?: () => void;
   /** Open library drawer (desktop: ArrowDown) */
   onOpenLibraryDrawer?: () => void;
+  /** Open quick access panel (desktop: ArrowDown / L) */
+  onOpenQuickAccessPanel?: () => void;
   /** Toggle zen mode */
   onToggleZenMode?: () => void;
 }
@@ -55,6 +57,7 @@ export const useKeyboardShortcuts = (
     onCloseMobileMenu,
     onShowQueue,
     onOpenLibraryDrawer,
+    onOpenQuickAccessPanel,
     onToggleZenMode,
   } = handlers;
 
@@ -140,7 +143,7 @@ export const useKeyboardShortcuts = (
         case 'KeyL':
           if (!event.ctrlKey && !event.metaKey) {
             event.preventDefault();
-            onOpenLibraryDrawer?.();
+            onOpenQuickAccessPanel?.();
           }
           break;
 
@@ -176,9 +179,9 @@ export const useKeyboardShortcuts = (
           break;
 
         case 'ArrowDown':
-          if (prefersPointerInput && onOpenLibraryDrawer) {
+          if (prefersPointerInput && onOpenQuickAccessPanel) {
             event.preventDefault();
-            onOpenLibraryDrawer();
+            onOpenQuickAccessPanel();
           } else if (onVolumeDown) {
             event.preventDefault();
             onVolumeDown();
@@ -208,6 +211,7 @@ export const useKeyboardShortcuts = (
     onCloseMobileMenu,
     onShowQueue,
     onOpenLibraryDrawer,
+    onOpenQuickAccessPanel,
     onToggleZenMode,
     prefersPointerInput,
   ]);
