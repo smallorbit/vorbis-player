@@ -56,6 +56,14 @@ export const RadioIcon = () => (
   </svg>
 );
 
+export const QuickAccessPanelIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect x="3" y="3" width="18" height="11" rx="1.5" stroke="currentColor" strokeWidth="1.75" />
+    <path d="M7 18h10" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" />
+    <path d="M10 21h4" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" />
+  </svg>
+);
+
 export const FlipMenuIcon = () => (
   <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
     <path d="M12 3L13.2 8.5L18 6.5L15 10.8L21 12L15 13.2L18 17.5L13.2 15.5L12 21L10.8 15.5L6 17.5L9 13.2L3 12L9 10.8L6 6.5L10.8 8.5L12 3Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" fill="currentColor" fillOpacity="0.15" />

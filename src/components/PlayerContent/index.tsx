@@ -77,7 +77,6 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({
   const controlsRef = useRef<HTMLDivElement>(null);
   const stableControlsHeightRef = useRef<number>(220);
   const flipToggleRef = useRef<(() => void) | null>(null);
-  const handleFlipToggle = useCallback(() => flipToggleRef.current?.(), []);
 
   useEffect(() => {
     const el = controlsRef.current;
@@ -220,6 +219,7 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({
             onCloseQueue={handleCloseQueue}
             onOpenLibraryDrawer={handleOpenLibraryDrawer}
             onCloseLibraryDrawer={handleCloseLibraryDrawer}
+            onOpenQuickAccessPanel={handlers.onOpenQuickAccessPanel}
             onZenModeToggle={handleZenModeToggle}
             isRadioAvailable={isRadioAvailable}
             onStartRadio={handlers.onStartRadio}
@@ -227,7 +227,6 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({
             isLiked={isLiked}
             isLikePending={isLikePending}
             onLikeToggle={handleLikeToggle}
-            onFlipToggle={handleFlipToggle}
           />
         </PlayerStack>
       </PlayerContainer>
