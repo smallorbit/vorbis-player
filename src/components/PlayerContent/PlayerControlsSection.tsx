@@ -8,6 +8,7 @@ import { useVisualEffectsState } from '@/hooks/useVisualEffectsState';
 import { useColorContext } from '@/contexts/ColorContext';
 import { useVisualEffectsContext } from '@/contexts/VisualEffectsContext';
 import { useProfilingContext } from '@/contexts/ProfilingContext';
+import type { VisualizerStyle } from '@/types/visualizer';
 import { useVisualizerDebug } from '@/contexts/VisualizerDebugContext';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
 import { useVolume } from '@/hooks/useVolume';
@@ -124,7 +125,8 @@ export const PlayerControlsSection: React.FC<PlayerControlsSectionProps> = React
   const {
     visualEffectsEnabled,
     setVisualEffectsEnabled,
-    setBackgroundVisualizerEnabled,
+    backgroundVisualizerStyle,
+    setBackgroundVisualizerStyle,
     setTranslucenceEnabled,
     showVisualEffects,
     setShowVisualEffects,
@@ -164,9 +166,13 @@ export const PlayerControlsSection: React.FC<PlayerControlsSectionProps> = React
     }
   }, [visualEffectsEnabled, setVisualEffectsEnabled, restoreGlowSettings]);
 
-  const handleBackgroundVisualizerToggle = useCallback(() => {
-    setBackgroundVisualizerEnabled(prev => !prev);
-  }, [setBackgroundVisualizerEnabled]);
+  const VISUALIZER_CYCLE: VisualizerStyle[] = ['fireflies', 'comet', 'wave', 'grid'];
+
+  const handleCycleVisualizerStyle = useCallback(() => {
+    const currentIndex = VISUALIZER_CYCLE.indexOf(backgroundVisualizerStyle);
+    const nextIndex = (currentIndex + 1) % VISUALIZER_CYCLE.length;
+    setBackgroundVisualizerStyle(VISUALIZER_CYCLE[nextIndex]);
+  }, [backgroundVisualizerStyle, setBackgroundVisualizerStyle]);
 
   const handleTranslucenceToggle = useCallback(() => {
     setTranslucenceEnabled(prev => !prev);
@@ -254,7 +260,7 @@ export const PlayerControlsSection: React.FC<PlayerControlsSectionProps> = React
     onCloseQueue: onCloseQueue,
     onToggleVisualEffectsMenu: handleToggleVisualEffectsMenu,
     onCloseVisualEffects: handleEscapeClose,
-    onToggleBackgroundVisualizer: handleBackgroundVisualizerToggle,
+    onCycleVisualizerStyle: handleCycleVisualizerStyle,
     onToggleGlow: handleGlowToggle,
     onToggleTranslucence: handleTranslucenceToggle,
     onMute: handleMuteToggle,
