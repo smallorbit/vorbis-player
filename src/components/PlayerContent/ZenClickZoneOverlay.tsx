@@ -29,8 +29,8 @@ const IconButton = styled.button`
   background: rgba(0, 0, 0, 0.4);
   border: none;
   border-radius: 50%;
-  width: 112px;
-  height: 112px;
+  width: 224px;
+  height: 224px;
   display: flex;
   align-items: center;
   justify-content: center;
