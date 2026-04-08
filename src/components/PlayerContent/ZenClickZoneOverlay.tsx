@@ -20,7 +20,7 @@ const Overlay = styled.div`
   flex-direction: row;
   align-items: center;
   justify-content: space-between;
-  padding: 0 8%;
+  padding: 0 2%;
   container-type: size;
 `;
 
