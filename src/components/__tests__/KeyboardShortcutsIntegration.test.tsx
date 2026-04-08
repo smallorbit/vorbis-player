@@ -104,7 +104,7 @@ describe('Keyboard Shortcuts Integration', () => {
       onCloseQueue: vi.fn(),
       onToggleVisualEffectsMenu: vi.fn(),
       onCloseVisualEffects: vi.fn(),
-      onToggleBackgroundVisualizer: vi.fn(),
+      onCycleVisualizerStyle: vi.fn(),
       onToggleGlow: vi.fn(),
       onMute: vi.fn(),
       onToggleLike: vi.fn(),
@@ -123,7 +123,7 @@ describe('Keyboard Shortcuts Integration', () => {
       { key: 'KeyM', handler: handlers.onMute },
       { key: 'KeyK', handler: handlers.onToggleLike },
       { key: 'KeyG', handler: handlers.onToggleGlow },
-      { key: 'KeyV', handler: handlers.onToggleBackgroundVisualizer },
+      { key: 'KeyV', handler: handlers.onCycleVisualizerStyle },
       { key: 'KeyS', handler: handlers.onToggleShuffle, shift: false },
     ];
 

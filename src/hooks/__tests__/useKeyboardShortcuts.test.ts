@@ -130,12 +130,12 @@ describe('useKeyboardShortcuts', () => {
     addEventListenerSpy.mockRestore();
   });
 
-  it('should call onToggleBackgroundVisualizer when KeyV is pressed', () => {
+  it('should call onCycleVisualizerStyle when KeyV is pressed', () => {
     // #given
-    const onToggleBackgroundVisualizer = vi.fn();
+    const onCycleVisualizerStyle = vi.fn();
     const addEventListenerSpy = vi.spyOn(document, 'addEventListener');
 
-    renderHook(() => useKeyboardShortcuts({ onToggleBackgroundVisualizer }));
+    renderHook(() => useKeyboardShortcuts({ onCycleVisualizerStyle }));
 
     const handler = addEventListenerSpy.mock.calls[0][1] as EventListener;
     const event = createKeyboardEvent('KeyV');
@@ -144,7 +144,7 @@ describe('useKeyboardShortcuts', () => {
     handler(event);
 
     // #then
-    expect(onToggleBackgroundVisualizer).toHaveBeenCalled();
+    expect(onCycleVisualizerStyle).toHaveBeenCalled();
     addEventListenerSpy.mockRestore();
   });
 

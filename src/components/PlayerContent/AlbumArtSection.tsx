@@ -1,5 +1,4 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { resolveZenZone } from '@/constants/zenAnimation';
 import styled from 'styled-components';
 import { CardContent } from '@/components/styled';
 import AlbumArt from '@/components/AlbumArt';
@@ -117,7 +116,6 @@ export const AlbumArtSection: React.FC<AlbumArtSectionProps> = React.memo(({
   } = useVisualEffectsState();
 
   const [isFlipped, setIsFlipped] = useState(false);
-  const [hoveredZone, setHoveredZone] = useState<'left' | 'center' | 'right' | null>(null);
   const [isHovered, setIsHovered] = useState(false);
   const flipContainerRef = useRef<HTMLDivElement>(null);
   const albumArtContainerRef = useRef<HTMLDivElement | null>(null);
@@ -140,31 +138,20 @@ export const AlbumArtSection: React.FC<AlbumArtSectionProps> = React.memo(({
     onFlipToggle: toggleFlip,
   });
 
-  const handleClick = useCallback((e: React.MouseEvent) => {
+  const handlePlayPause = useCallback(() => {
+    if (isPlaying) {
+      onPause();
+    } else {
+      onPlay();
+    }
+  }, [isPlaying, onPlay, onPause]);
+
+  const handleClick = useCallback((_e: React.MouseEvent) => {
     if (zenTouchActive || (zenModeEnabled && isFlipped)) {
       return;
     }
-    if (zenModeEnabled) {
-      const container = albumArtContainerRef.current;
-      if (!container) return;
-      const rect = container.getBoundingClientRect();
-      const zone = resolveZenZone(e.clientX, e.clientY, rect);
-      if (zone === null) return;
-      if (zone === 'left') {
-        onPrevious();
-      } else if (zone === 'right') {
-        onNext();
-      } else {
-        if (isPlaying) {
-          onPause();
-        } else {
-          onPlay();
-        }
-      }
-    } else {
-      toggleFlip();
-    }
-  }, [zenTouchActive, zenModeEnabled, isFlipped, isPlaying, onPlay, onPause, onNext, onPrevious, toggleFlip]);
+    toggleFlip();
+  }, [zenTouchActive, zenModeEnabled, isFlipped, toggleFlip]);
 
   const handleRetryAlbumArt = useCallback(async () => {
     const providerId = currentTrackProvider ?? currentTrack?.provider;
@@ -212,7 +199,6 @@ export const AlbumArtSection: React.FC<AlbumArtSectionProps> = React.memo(({
 
   useEffect(() => {
     if (!zenModeEnabled) {
-      setHoveredZone(null);
       setIsHovered(false);
     }
   }, [zenModeEnabled]);
@@ -304,7 +290,6 @@ export const AlbumArtSection: React.FC<AlbumArtSectionProps> = React.memo(({
             onLongPress={toggleFlip}
             zenTouchHandlers={zenTouchActive ? zenTouchGestures : undefined}
             albumArtContainerRef={albumArtContainerRef}
-            onZoneHover={setHoveredZone}
             zenModeEnabled={zenModeEnabled}
             hasPointerInput={hasPointerInput}
           >
@@ -353,8 +338,10 @@ export const AlbumArtSection: React.FC<AlbumArtSectionProps> = React.memo(({
           </GestureLayer>
           <ZenClickZoneOverlay
             isPlaying={isPlaying}
-            hoveredZone={hoveredZone}
             visible={zenModeEnabled && hasPointerInput && !zenTouchActive && !isFlipped}
+            onPrevious={onPrevious}
+            onNext={onNext}
+            onPlayPause={handlePlayPause}
           />
           <ZenLikeOverlay
             isLiked={isLiked}

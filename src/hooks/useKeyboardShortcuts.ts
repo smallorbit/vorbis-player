@@ -12,7 +12,7 @@ interface KeyboardShortcutHandlers {
   onCloseQueue?: () => void;
   onToggleVisualEffectsMenu?: () => void;
   onCloseVisualEffects?: () => void;
-  onToggleBackgroundVisualizer?: () => void;
+  onCycleVisualizerStyle?: () => void;
   onToggleGlow?: () => void;
   onToggleTranslucence?: () => void;
   onToggleHelp?: () => void;
@@ -45,7 +45,7 @@ export const useKeyboardShortcuts = (
     onCloseQueue,
     onToggleVisualEffectsMenu,
     onCloseVisualEffects,
-    onToggleBackgroundVisualizer,
+    onCycleVisualizerStyle,
     onToggleGlow,
     onToggleTranslucence,
     onToggleHelp,
@@ -92,7 +92,7 @@ export const useKeyboardShortcuts = (
         case 'KeyV':
           if (!event.ctrlKey && !event.metaKey) {
             event.preventDefault();
-            onToggleBackgroundVisualizer?.();
+            onCycleVisualizerStyle?.();
           }
           break;
 
@@ -199,7 +199,7 @@ export const useKeyboardShortcuts = (
     onCloseQueue,
     onToggleVisualEffectsMenu,
     onCloseVisualEffects,
-    onToggleBackgroundVisualizer,
+    onCycleVisualizerStyle,
     onToggleGlow,
     onToggleTranslucence,
     onToggleHelp,

@@ -178,7 +178,7 @@ function AlbumArtQuickSwapBack({
   };
 
   return (
-    <BacksideRoot>
+    <BacksideRoot onClick={(e) => e.stopPropagation()}>
       <BlurredBg $image={currentTrack?.image} />
       <DarkOverlay />
       <CloseButton aria-label="Close menu" onClick={(e) => { e.stopPropagation(); onClose(); }}>×</CloseButton>
