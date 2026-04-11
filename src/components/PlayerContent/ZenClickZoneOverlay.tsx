@@ -20,7 +20,7 @@ const Overlay = styled.div`
   flex-direction: row;
   align-items: center;
   justify-content: space-between;
-  padding: 0 8%;
+  padding: 0 2%;
   container-type: size;
 `;
 
@@ -29,8 +29,8 @@ const IconButton = styled.button`
   background: rgba(0, 0, 0, 0.4);
   border: none;
   border-radius: 50%;
-  width: 224px;
-  height: 224px;
+  width: clamp(72px, 20cqmin, 224px);
+  height: clamp(72px, 20cqmin, 224px);
   display: flex;
   align-items: center;
   justify-content: center;
