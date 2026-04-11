@@ -35,7 +35,7 @@ const QuickAccessPanel: React.FC<QuickAccessPanelProps> = ({
 }) => {
   const { pinnedPlaylistIds, pinnedAlbumIds } = usePinnedItemsContext();
   const { connectedProviderIds, getDescriptor } = useProviderContext();
-  const { playlists, albums, likedSongsCount, likedSongsPerProvider } = useLibrarySync();
+  const { playlists, albums, likedSongsPerProvider } = useLibrarySync();
   const { isUnifiedLikedActive, totalCount: unifiedLikedCount } = useUnifiedLikedTracks();
 
   const [activeProviderIds, setActiveProviderIds] = useState<ProviderId[]>([]);
@@ -65,7 +65,14 @@ const QuickAccessPanel: React.FC<QuickAccessPanelProps> = ({
       .sort((a, b) => pinnedAlbumIds.indexOf(a.id) - pinnedAlbumIds.indexOf(b.id));
   }, [albums, pinnedAlbumIds]);
 
-  const effectiveLikedCount = isUnifiedLikedActive ? unifiedLikedCount : likedSongsCount;
+  const filteredLikedSongsPerProvider = activeProviderIds.length > 0
+    ? likedSongsPerProvider.filter(e => activeProviderIds.includes(e.provider))
+    : likedSongsPerProvider;
+
+  const shouldShowUnified = isUnifiedLikedActive && filteredLikedSongsPerProvider.length !== 1;
+  const effectiveLikedCount = shouldShowUnified
+    ? unifiedLikedCount
+    : filteredLikedSongsPerProvider.reduce((sum, e) => sum + e.count, 0);
 
   const handleLoadCollection = (id: string, name: string, provider?: ProviderId) => {
     onPlaylistSelect(id, name, provider);
@@ -116,15 +123,15 @@ const QuickAccessPanel: React.FC<QuickAccessPanelProps> = ({
         </ChipsSection>
       )}
 
-      {lastSession && lastSession.collectionId && (
-        <ResumeCard session={lastSession} onResume={onResume} />
-      )}
-
       <BrowseSection>
         <BrowseButton onClick={onBrowseLibrary}>
           Browse Library →
         </BrowseButton>
       </BrowseSection>
+
+      {lastSession && lastSession.collectionId && (
+        <ResumeCard session={lastSession} onResume={onResume} />
+      )}
     </PanelRoot>
   );
 };

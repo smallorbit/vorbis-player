@@ -48,9 +48,9 @@ export const ResumeCardRoot = styled.button`
 `;
 
 export const ResumeArt = styled.div`
-  width: 40px;
-  height: 40px;
-  border-radius: ${theme.borderRadius.md};
+  width: 52px;
+  height: 52px;
+  border-radius: ${theme.borderRadius.lg};
   overflow: hidden;
   flex-shrink: 0;
   background: ${theme.colors.control.background};
@@ -72,7 +72,7 @@ export const ResumeText = styled.div`
 
 export const ResumeTrackName = styled.div`
   color: ${theme.colors.white};
-  font-size: ${theme.fontSize.sm};
+  font-size: ${theme.fontSize.base};
   font-weight: ${theme.fontWeight.medium};
   white-space: nowrap;
   overflow: hidden;
@@ -87,14 +87,21 @@ export const ResumeCollectionName = styled.div`
   text-overflow: ellipsis;
 `;
 
-export const ResumeLabel = styled.div`
-  color: ${theme.colors.muted.foreground};
-  font-size: ${theme.fontSize.xs};
-  font-weight: ${theme.fontWeight.medium};
-  flex-shrink: 0;
-  padding: ${theme.spacing.xs} ${theme.spacing.sm};
-  border: 1px solid ${theme.colors.borderSubtle};
+export const ResumePlayButton = styled.div`
+  width: 34px;
+  height: 34px;
   border-radius: ${theme.borderRadius.full};
+  background: rgba(255, 255, 255, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: ${theme.colors.white};
+
+  svg {
+    width: 16px;
+    height: 16px;
+  }
 `;
 
 export const GridSection = styled.div`
