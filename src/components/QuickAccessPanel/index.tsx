@@ -83,10 +83,6 @@ const QuickAccessPanel: React.FC<QuickAccessPanelProps> = ({
 
   return (
     <PanelRoot>
-      {lastSession && lastSession.collectionId && (
-        <ResumeCard session={lastSession} onResume={onResume} />
-      )}
-
       <PinRing
         pinnedPlaylists={pinnedPlaylists}
         pinnedAlbums={pinnedAlbums}
@@ -118,6 +114,10 @@ const QuickAccessPanel: React.FC<QuickAccessPanelProps> = ({
             })}
           </ChipRow>
         </ChipsSection>
+      )}
+
+      {lastSession && lastSession.collectionId && (
+        <ResumeCard session={lastSession} onResume={onResume} />
       )}
 
       <BrowseSection>
