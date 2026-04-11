@@ -6,7 +6,7 @@ import {
   ResumeText,
   ResumeTrackName,
   ResumeCollectionName,
-  ResumeLabel,
+  ResumePlayButton,
 } from './styled';
 
 interface ResumeCardProps {
@@ -27,7 +27,11 @@ const ResumeCard: React.FC<ResumeCardProps> = ({ session, onResume }) => (
       <ResumeTrackName>{session.trackTitle ?? session.collectionName}</ResumeTrackName>
       <ResumeCollectionName>{session.collectionName}</ResumeCollectionName>
     </ResumeText>
-    <ResumeLabel>Resume</ResumeLabel>
+    <ResumePlayButton aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="currentColor">
+        <path d="M8 5v14l11-7z" />
+      </svg>
+    </ResumePlayButton>
   </ResumeCardRoot>
 );
 
