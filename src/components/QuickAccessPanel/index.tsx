@@ -116,15 +116,15 @@ const QuickAccessPanel: React.FC<QuickAccessPanelProps> = ({
         </ChipsSection>
       )}
 
-      {lastSession && lastSession.collectionId && (
-        <ResumeCard session={lastSession} onResume={onResume} />
-      )}
-
       <BrowseSection>
         <BrowseButton onClick={onBrowseLibrary}>
           Browse Library →
         </BrowseButton>
       </BrowseSection>
+
+      {lastSession && lastSession.collectionId && (
+        <ResumeCard session={lastSession} onResume={onResume} />
+      )}
     </PanelRoot>
   );
 };
