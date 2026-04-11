@@ -61,4 +61,5 @@ export const STORAGE_KEYS = {
   PROFILING: 'vorbis-player-profiling',
   DEBUG_OVERLAY: 'vorbis-player-debug-overlay',
   VISUALIZER_DEBUG_OVERRIDES: 'vorbis-player-visualizer-debug-overrides',
+  DEVBUG_ENABLED: 'vorbis-player-devbug',
 } as const;
