@@ -21,6 +21,7 @@ import { logApp } from '@/lib/debugLog';
 import { DevBugProvider } from '@/contexts/DevBugContext';
 import { DevBugFAB } from '@/components/DevBug';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
+import { STORAGE_KEYS } from '@/constants/storage';
 
 /**
  * Cleanup function to remove deprecated localStorage keys
@@ -93,7 +94,7 @@ function App() {
   const [isAuthenticating, setIsAuthenticating] = useState(true);
   const [authError, setAuthError] = useState<string | null>(null);
   const [isPopupCallback, setIsPopupCallback] = useState(false);
-  const [devbugEnabled] = useLocalStorage('vorbis-player-devbug', false);
+  const [devbugEnabled] = useLocalStorage(STORAGE_KEYS.DEVBUG_ENABLED, false);
 
   useEffect(() => {
     // Clean up deprecated localStorage keys on app initialization
