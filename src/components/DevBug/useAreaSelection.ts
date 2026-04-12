@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback } from 'react';
-import { extractElementInfo, getReactComponentName } from '@/services/devbug/reportBuilder';
+import { extractElementInfo } from '@/services/devbug/reportBuilder';
 import type { SelectedElement } from '@/types/devbug';
 
 export type SelectionPhase = 'idle' | 'dragging' | 'done';
@@ -145,4 +145,3 @@ export function useAreaSelection(
   };
 }
 
-export { getReactComponentName };

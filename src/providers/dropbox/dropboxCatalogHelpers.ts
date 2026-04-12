@@ -1,6 +1,6 @@
-export const AUDIO_EXTENSIONS = ['.mp3', '.flac', '.ogg', '.m4a', '.wav', '.aac', '.wma', '.opus'];
-export const IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.webp'];
-export const ALBUM_ART_NAMES = ['cover', 'album', 'folder', 'front', 'album cover', 'album_cover', 'artwork'];
+const AUDIO_EXTENSIONS = ['.mp3', '.flac', '.ogg', '.m4a', '.wav', '.aac', '.wma', '.opus'];
+const IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.webp'];
+const ALBUM_ART_NAMES = ['cover', 'album', 'folder', 'front', 'album cover', 'album_cover', 'artwork'];
 
 export interface DropboxFileEntry {
   '.tag': 'file' | 'folder';
@@ -56,7 +56,7 @@ export function parentDir(path: string): string {
   return path.split('/').slice(0, -1).join('/') || '/';
 }
 
-export function parseFilename(filename: string): { name: string; trackNumber?: number } {
+function parseFilename(filename: string): { name: string; trackNumber?: number } {
   const base = filename.replace(/\.[^/.]+$/, '');
   const match = base.match(/^(\d{1,3})\s*[-.\s]\s*(.+)$/);
   if (match) {

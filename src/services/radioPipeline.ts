@@ -5,7 +5,7 @@ import { generateRadioQueue } from '@/services/radioService';
 import { shuffleArray } from '@/utils/shuffleArray';
 import { logRadio } from '@/lib/debugLog';
 
-export interface RadioPipelineOptions {
+interface RadioPipelineOptions {
   seedTrack: MediaTrack;
   catalogProvider: CatalogProvider;
   searchProviders: ProviderDescriptor[];
@@ -13,7 +13,7 @@ export interface RadioPipelineOptions {
   generateQueue?: (seed: RadioSeed, catalogTracks: MediaTrack[]) => Promise<RadioResult | null>;
 }
 
-export interface RadioPipelineResult {
+interface RadioPipelineResult {
   queue: MediaTrack[];
   seedDescription: string;
   stats: {

@@ -69,7 +69,7 @@ export async function applyChanges(
   return { playlists, albums, likedSongsCount: changes.newLikedSongsCount };
 }
 
-export async function syncPlaylists(newTotal: number, signal: AbortSignal): Promise<CachedPlaylistInfo[]> {
+async function syncPlaylists(newTotal: number, signal: AbortSignal): Promise<CachedPlaylistInfo[]> {
   const [cachedPlaylists, meta] = await Promise.all([
     cache.getAllPlaylists(),
     cache.getMeta('playlists'),
@@ -127,7 +127,7 @@ export async function syncPlaylists(newTotal: number, signal: AbortSignal): Prom
   return allFetched;
 }
 
-export async function syncAlbums(
+async function syncAlbums(
   signal: AbortSignal,
   pendingRemovals: Map<string, number>,
   pendingAdditions: Map<string, number>,

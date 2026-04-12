@@ -97,7 +97,7 @@ interface ContextMenuState {
   y: number;
 }
 
-export interface QueueItemProps {
+interface QueueItemProps {
   track: MediaTrack;
   index: number;
   isSelected: boolean;
