@@ -11,8 +11,10 @@ import {
   DRAWER_TRANSITION_EASING
 } from './styled';
 import PlaylistSelection from './PlaylistSelection';
+import ResumeCard from './QuickAccessPanel/ResumeCard';
 import { LIBRARY_REFRESH_EVENT } from '@/hooks/useLibrarySync';
 import type { AddToQueueResult, ProviderId } from '@/types/domain';
+import type { SessionSnapshot } from '@/services/sessionPersistence';
 
 const REFRESH_SPINNER_MIN_MS = 1500;
 
@@ -27,6 +29,8 @@ interface LibraryDrawerProps {
   ) => Promise<AddToQueueResult | null>;
   initialSearchQuery?: string;
   initialViewMode?: 'playlists' | 'albums';
+  lastSession?: SessionSnapshot | null;
+  onResume?: () => void;
 }
 
 const DrawerContainer = styled.div.withConfig({
@@ -81,7 +85,7 @@ const DrawerContent = styled.div`
   padding-top: env(safe-area-inset-top, 0px);
 `;
 
-const LibraryDrawer = React.memo(function LibraryDrawer({ isOpen, onClose, onPlaylistSelect, onAddToQueue, initialSearchQuery, initialViewMode }: LibraryDrawerProps) {
+const LibraryDrawer = React.memo(function LibraryDrawer({ isOpen, onClose, onPlaylistSelect, onAddToQueue, initialSearchQuery, initialViewMode, lastSession, onResume }: LibraryDrawerProps) {
   const hasBeenOpenedRef = useRef(false);
   if (isOpen) hasBeenOpenedRef.current = true;
 
@@ -153,6 +157,9 @@ const LibraryDrawer = React.memo(function LibraryDrawer({ isOpen, onClose, onPla
                 onLibraryRefresh={handleRefresh}
                 isLibraryRefreshing={isRefreshing}
               />
+              {lastSession && onResume && (
+                <ResumeCard session={lastSession} onResume={onResume} />
+              )}
             </DrawerContent>
             <SwipeHandle
               ref={handleRef}
