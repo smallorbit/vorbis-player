@@ -242,6 +242,8 @@ const PlaylistSelection = React.memo(function PlaylistSelection({
       providerFilters,
       setProviderFilters,
       handleProviderToggle,
+      recentlyAddedFilter,
+      setRecentlyAddedFilter,
       hasActiveFilters,
       albums,
       isInitialLoadComplete,

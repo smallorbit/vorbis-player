@@ -149,7 +149,31 @@ When multiple providers are connected, `LibraryProviderBar` shows toggle buttons
 - Subsequent toggles add/remove providers.
 - Removing the last filter returns to "all" (empty array = no filter).
 
-## Sort and Filter
+## Filter Architecture
+
+The library browser provides multi-level filtering and searching via a pipeline in `src/utils/playlistFilters.ts`:
+
+1. **Text search** — case-insensitive matching on name, description, owner, and artist fields
+2. **Provider filter** — show items from selected providers only (empty array = all providers)
+3. **Artist filter** (albums only) — filter albums by a single artist
+4. **Decade filter** (albums only, future expansion) — group albums by release decade
+5. **Pinned partitioning** — pinned items always sort to top
+
+**UI Components**:
+- **FilterChipRow** (`src/components/FilterChipRow.tsx`) — renders in drawer mode only. Shows search chip, provider filter chips, and top 5 artists (albums only). "More..." button opens a popover with full artist list (max 15 artists).
+- **FilterSidebar** (`src/components/LibraryDrawer/FilterSidebar.tsx`) — collection type (Playlists/Albums) toggle buttons, provider checkboxes, and a "Clear Filters" button. Desktop-only; on mobile, controlled by a "Filters" toggle button that expands it with smooth animation.
+- **LibraryControls** (`src/components/PlaylistSelection/LibraryControls.tsx`) — idle view (non-drawer) filtering. Renders similar controls to FilterChipRow and sort dropdowns.
+
+**Filter State Persistence** (`src/hooks/useFilterState.ts`):
+- Collection type and selected provider IDs are saved in `localStorage` key `vorbis-player-filter-state`
+- Default: `{ collectionType: 'playlists', selectedProviderIds: [] }`
+- Search query and artist filter are ephemeral (not persisted)
+
+**Responsive Design**:
+- **Desktop (≥700px):** FilterSidebar is always visible as a static left sidebar. FilterChipRow appears at the top of the drawer.
+- **Mobile (<700px):** FilterSidebar is hidden by default. A "Filters" button at the top expands it inline with a smooth height animation and dark overlay backdrop. Max height: 70vh.
+
+## Sort and Filter State
 
 **Hook:** `useLibraryBrowsing` (`src/components/PlaylistSelection/useLibraryBrowsing.ts`)
 

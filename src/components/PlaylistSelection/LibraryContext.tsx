@@ -3,7 +3,7 @@ import type * as React from 'react';
 import type { AlbumInfo, PlaylistInfo } from '../../services/spotify';
 import type { ProviderDescriptor } from '@/types/providers';
 import type { ProviderId } from '@/types/domain';
-import type { PlaylistSortOption, AlbumSortOption } from '@/utils/playlistFilters';
+import type { PlaylistSortOption, AlbumSortOption, RecentlyAddedFilterOption } from '@/utils/playlistFilters';
 
 interface LikedSongsEntry {
   provider: ProviderId;
@@ -26,6 +26,8 @@ export interface LibraryContextValue {
   providerFilters: ProviderId[];
   setProviderFilters: (v: ProviderId[]) => void;
   handleProviderToggle: (provider: ProviderId) => void;
+  recentlyAddedFilter: RecentlyAddedFilterOption;
+  setRecentlyAddedFilter: (v: RecentlyAddedFilterOption) => void;
   hasActiveFilters: boolean;
   albums: AlbumInfo[];
   isInitialLoadComplete: boolean;
