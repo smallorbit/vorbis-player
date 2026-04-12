@@ -26,6 +26,8 @@ import {
   CacheCancelButton,
 } from './styled';
 
+import { FEEDBACK_DISPLAY_MS } from '@/hooks/useAsyncAction';
+
 import { MusicSourcesSection, NativeQueueSyncSection } from './SourcesSections';
 import { ProviderDataSection } from './ProviderDataSection';
 import { CollapsibleSection } from './CollapsibleSection';
@@ -110,7 +112,7 @@ const AppSettingsMenu: React.FC<AppSettingsMenuProps> = memo(({
     setClearLikes(false);
     setClearPins(false);
     setClearAccentColors(false);
-    setTimeout(() => setClearState('idle'), 1500);
+    setTimeout(() => setClearState('idle'), FEEDBACK_DISPLAY_MS);
   }, [onClearCache, clearLikes, clearPins, clearAccentColors]);
 
   return createPortal(
