@@ -1,4 +1,5 @@
 import { spotifyAuth } from './spotify';
+import { SPOTIFY_TRANSFER_RETRY_COUNT } from '@/constants/spotify';
 import { logSpotify } from '@/lib/debugLog';
 
 export async function apiPlayTrack(
@@ -143,7 +144,7 @@ export async function apiTransferPlayback(
   const body = JSON.stringify({ device_ids: [deviceId], play: false });
   const headers = { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' };
 
-  for (let attempt = 0; attempt < 2; attempt++) {
+  for (let attempt = 0; attempt < SPOTIFY_TRANSFER_RETRY_COUNT; attempt++) {
     try {
       const response = await fetch('https://api.spotify.com/v1/me/player', {
         method: 'PUT',

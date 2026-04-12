@@ -1,5 +1,11 @@
 import { spotifyAuth } from './spotify';
 import { logSpotify } from '@/lib/debugLog';
+import {
+  SPOTIFY_MAX_RETRIES,
+  SPOTIFY_INITIAL_RETRY_DELAY_MS,
+  SPOTIFY_INITIAL_VOLUME,
+  SPOTIFY_RESUME_TIMEOUT_MS,
+} from '@/constants/spotify';
 import { getHMRState, saveHMRState, loadSpotifySDK } from './spotifyPlayerSdk';
 import {
   apiPlayTrack,
@@ -69,7 +75,7 @@ class SpotifyPlayerService {
           spotifyAuth.redirectToAuth();
         });
       },
-      volume: 0.5
+      volume: SPOTIFY_INITIAL_VOLUME
     });
 
     this.player.addListener('ready', ({ device_id }: { device_id: string }) => {
@@ -261,7 +267,7 @@ class SpotifyPlayerService {
     }
   }
 
-  async ensureDeviceIsActive(maxRetries = 5, initialDelayMs = 300): Promise<boolean> {
+  async ensureDeviceIsActive(maxRetries = SPOTIFY_MAX_RETRIES, initialDelayMs = SPOTIFY_INITIAL_RETRY_DELAY_MS): Promise<boolean> {
     if (this.isReady && Date.now() - this.lastDeviceActiveAt < SpotifyPlayerService.DEVICE_ACTIVE_TTL_MS) {
       return true;
     }
@@ -274,7 +280,7 @@ class SpotifyPlayerService {
     return active;
   }
 
-  waitForPlaybackOrResume(activateDevice: () => Promise<void>, timeoutMs = 3000): void {
+  waitForPlaybackOrResume(activateDevice: () => Promise<void>, timeoutMs = SPOTIFY_RESUME_TIMEOUT_MS): void {
     let settled = false;
     let unsub: (() => void) | null = null;
 
