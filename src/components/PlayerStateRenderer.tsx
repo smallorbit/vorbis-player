@@ -8,6 +8,7 @@ import { Alert, AlertDescription } from '../components/styled';
 import { flexColumn, cardBase } from '../styles/utils';
 import { theme } from '@/styles/theme';
 import { useProviderContext } from '@/contexts/ProviderContext';
+import { useQapEnabled } from '@/hooks/useQapEnabled';
 import QuickAccessPanel from './QuickAccessPanel';
 
 const PlaylistSelection = React.lazy(() => import('./PlaylistSelection'));
@@ -187,7 +188,8 @@ const PlayerStateRenderer: React.FC<PlayerStateRendererProps> = ({
 }) => {
   const { activeDescriptor } = useProviderContext();
   const providerName = activeDescriptor?.name ?? 'Music Service';
-  const [showLibrary, setShowLibrary] = useState(false);
+  const [qapEnabled] = useQapEnabled();
+  const [showLibrary, setShowLibrary] = useState(!qapEnabled);
 
   const handleConnectClick = useCallback(() => {
     activeDescriptor?.auth.beginLogin();
