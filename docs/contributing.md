@@ -114,7 +114,7 @@ Guidelines:
 
 ## Git Workflow
 
-- Feature branches from main: `feature/name`, `fix/name`
+- Feature branches from `develop`: `feature/name`, `fix/name`
 - Atomic commits with conventional format (`feat:`, `fix:`, `refactor:`, etc.)
 - Reference issue numbers in commit messages
 - Run `npm run test:run` and `npm run build` before pushing

@@ -43,6 +43,14 @@ On mobile and tablet:
 - **Swipe up** on album art to toggle the queue drawer
 - **Swipe down** on album art to toggle the library drawer
 
+## Home Screen & Quick Access Panel
+
+By default, the player opens to the **library browser** when no track is loaded. An optional **Quick Access Panel (QAP)** can be enabled in the settings panel (gear icon) under "Quick Access Panel" — it shows pinned collections and liked songs as a home screen.
+
+### Session Resume
+
+When a previous session exists, a **ResumeCard** ("Pick up where you left off") appears at the bottom of the library drawer (or inside the QAP if enabled). Tapping it restores your queue, track, and exact playback position.
+
 ## Library
 
 The library drawer supports:
@@ -51,8 +59,9 @@ The library drawer supports:
 - **Sort** — Sort by recently added, name, artist, or release date
 - **Filter** — Filter albums by decade or by artist (click artist name in album grid)
 - **View Modes** — Toggle between Playlists and Albums tabs
-- **Pinning** — Pin up to 4 playlists and 4 albums to the top of their tabs
+- **Pinning** — Pin up to 12 playlists and 12 albums to the top of their tabs
 - **Liked Songs** — Special entry with shuffle indicator
+- **Play Liked / Queue Liked** — Long-press or right-click a collection to play or queue only your liked tracks from it
 
 ## Provider Selection
 
