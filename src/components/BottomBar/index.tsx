@@ -16,6 +16,7 @@ import {
 } from '../icons/QuickActionIcons';
 
 const AUTOHIDE_DELAY = 1000;
+const noop = () => {};
 
 interface BottomBarProps {
   zenModeEnabled?: boolean;
@@ -143,8 +144,8 @@ const BottomBar = React.memo(function BottomBar({
           <VolumeControl
             isMuted={isMuted}
             volume={volume}
-            onClick={onMuteToggle ?? (() => {})}
-            onVolumeChange={onVolumeChange ?? (() => {})}
+            onClick={onMuteToggle ?? noop}
+            onVolumeChange={onVolumeChange ?? noop}
             isMobile={isMobile}
             isTablet={isTablet}
           />
