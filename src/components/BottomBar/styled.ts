@@ -1,11 +1,10 @@
 import styled from 'styled-components';
-import { theme } from '@/styles/theme';
 import { ZEN_BAR_DURATION } from '@/constants/zenAnimation';
 
 export const BOTTOM_BAR_HEIGHT = 60;
 
 export const BottomBarContainer = styled.div.withConfig({
-  shouldForwardProp: (prop) => !['$hidden'].includes(prop),
+  shouldForwardProp: (prop) => prop !== '$hidden',
 })<{ $hidden?: boolean }>`
   position: fixed;
   bottom: 0;
@@ -28,12 +27,12 @@ export const BottomBarInner = styled.div`
   align-items: center;
   justify-content: center;
   gap: ${({ theme }) => theme.spacing.xs};
-  padding: ${({ theme }) => theme.spacing.xs} ${theme.spacing.md};
+  padding: ${({ theme }) => `${theme.spacing.xs} ${theme.spacing.md}`};
   height: ${BOTTOM_BAR_HEIGHT}px;
 `;
 
 export const ZenGripPill = styled.div.withConfig({
-  shouldForwardProp: (prop) => !['$visible'].includes(prop),
+  shouldForwardProp: (prop) => prop !== '$visible',
 })<{ $visible: boolean }>`
   width: 36px;
   height: 4px;
@@ -55,13 +54,13 @@ export const ZenTriggerZone = styled.div`
   left: 0;
   right: 0;
   height: 48px;
-  z-index: ${Number(theme.zIndex.mobileMenu) - 1};
+  z-index: ${({ theme }) => Number(theme.zIndex.mobileMenu) - 1};
   background: transparent;
 `;
 
 export const ZenBackdrop = styled.div`
   position: fixed;
   inset: 0;
-  z-index: ${Number(theme.zIndex.mobileMenu) - 2};
+  z-index: ${({ theme }) => Number(theme.zIndex.mobileMenu) - 2};
   background: transparent;
 `;

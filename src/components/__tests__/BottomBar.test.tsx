@@ -44,6 +44,7 @@ vi.mock('@/contexts/PlayerSizingContext', () => ({
     isMobile: false,
     isTablet: false,
     isDesktop: true,
+    isTouchDevice: false,
     hasPointerInput: true,
     viewport: { width: 1024, height: 768, ratio: 1024 / 768 },
     dimensions: { width: 600, height: 600 },
