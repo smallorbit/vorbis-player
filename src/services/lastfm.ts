@@ -7,6 +7,10 @@
 import type { LastFmSimilarTrack, LastFmSimilarArtist } from '@/types/radio';
 
 const LASTFM_BASE = 'https://ws.audioscrobbler.com/2.0/';
+const RATE_LIMIT_PADDING_MS = 10;
+const SIMILAR_TRACKS_DEFAULT_LIMIT = 50;
+const SIMILAR_ARTISTS_DEFAULT_LIMIT = 20;
+const TOP_TRACKS_DEFAULT_LIMIT = 10;
 
 function getApiKey(): string {
   const key = import.meta.env.VITE_LASTFM_API_KEY as string | undefined;
@@ -26,7 +30,7 @@ async function waitForRateLimit(): Promise<void> {
   requestTimestamps = requestTimestamps.filter((t) => now - t < WINDOW_MS);
   if (requestTimestamps.length >= RATE_LIMIT) {
     const oldest = requestTimestamps[0];
-    const waitMs = WINDOW_MS - (now - oldest) + 10;
+    const waitMs = WINDOW_MS - (now - oldest) + RATE_LIMIT_PADDING_MS;
     await new Promise((resolve) => setTimeout(resolve, waitMs));
   }
   requestTimestamps.push(Date.now());
@@ -94,7 +98,7 @@ function parseSimilarArtist(raw: Record<string, unknown>): LastFmSimilarArtist {
 export async function getSimilarTracks(
   artist: string,
   track: string,
-  limit = 50,
+  limit = SIMILAR_TRACKS_DEFAULT_LIMIT,
 ): Promise<LastFmSimilarTrack[]> {
   const data = (await lastfmGet({
     method: 'track.getsimilar',
@@ -115,7 +119,7 @@ export async function getSimilarTracks(
 
 export async function getSimilarArtists(
   artist: string,
-  limit = 20,
+  limit = SIMILAR_ARTISTS_DEFAULT_LIMIT,
 ): Promise<LastFmSimilarArtist[]> {
   const data = (await lastfmGet({
     method: 'artist.getsimilar',
@@ -135,7 +139,7 @@ export async function getSimilarArtists(
 
 export async function getArtistTopTracks(
   artist: string,
-  limit = 10,
+  limit = TOP_TRACKS_DEFAULT_LIMIT,
 ): Promise<LastFmSimilarTrack[]> {
   const data = (await lastfmGet({
     method: 'artist.gettoptracks',
