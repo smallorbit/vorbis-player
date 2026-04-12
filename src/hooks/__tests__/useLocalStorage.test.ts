@@ -1,168 +1,142 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
-import { useLocalStorage } from '../useLocalStorage';
-
-// Mock localStorage since it's not available in all test environments
-const localStorageMock = (() => {
-  let store: Record<string, string> = {};
-
-  return {
-    getItem: (key: string) => store[key] || null,
-    setItem: (key: string, value: string) => {
-      store[key] = value.toString();
-    },
-    removeItem: (key: string) => {
-      delete store[key];
-    },
-    clear: () => {
-      store = {};
-    }
-  };
-})();
+import { useLocalStorage } from '@/hooks/useLocalStorage';
 
 describe('useLocalStorage', () => {
   beforeEach(() => {
-    Object.defineProperty(window, 'localStorage', {
-      value: localStorageMock,
-      writable: true
-    });
-    localStorageMock.clear();
-    vi.clearAllMocks();
+    vi.mocked(window.localStorage.getItem).mockReturnValue(null);
   });
 
-  afterEach(() => {
-    localStorageMock.clear();
-  });
-
-  it('should initialize with the provided initial value when localStorage is empty', () => {
+  it('returns the initial value when localStorage has no entry for the key', () => {
+    // #when
     const { result } = renderHook(() => useLocalStorage('test-key', 'initial'));
-    const [value] = result.current;
-    expect(value).toBe('initial');
+
+    // #then
+    expect(result.current[0]).toBe('initial');
   });
 
-  it('should read value from localStorage on initialization', () => {
-    localStorageMock.setItem('test-key', JSON.stringify('stored-value'));
+  it('returns the stored value when localStorage has data for the key', () => {
+    // #given
+    vi.mocked(window.localStorage.getItem).mockReturnValue(JSON.stringify('stored-value'));
+
+    // #when
     const { result } = renderHook(() => useLocalStorage('test-key', 'initial'));
-    const [value] = result.current;
-    expect(value).toBe('stored-value');
+
+    // #then
+    expect(result.current[0]).toBe('stored-value');
   });
 
-  it('should update localStorage when value changes', () => {
+  it('writes to localStorage when setValue is called with a direct value', () => {
     // #given
     const { result } = renderHook(() => useLocalStorage('test-key', 'initial'));
 
-    // #when - update value to 'updated'
+    // #when
     act(() => {
-      const [, setValue] = result.current;
-      setValue('updated');
+      result.current[1]('updated');
     });
 
     // #then
-    const storedValue = localStorageMock.getItem('test-key');
-    expect(storedValue).toBe(JSON.stringify('updated'));
+    expect(window.localStorage.setItem).toHaveBeenCalledWith('test-key', JSON.stringify('updated'));
+    expect(result.current[0]).toBe('updated');
   });
 
-  it('should support function updates like useState', () => {
+  it('writes to localStorage when setValue is called with an updater function', () => {
     // #given
+    vi.mocked(window.localStorage.getItem).mockReturnValue(JSON.stringify(10));
     const { result } = renderHook(() => useLocalStorage('counter', 0));
 
-    // #when - increment counter using function update
+    // #when
     act(() => {
-      const [, setValue] = result.current;
-      setValue(prev => prev + 1);
+      result.current[1]((prev) => prev + 5);
     });
 
     // #then
-    expect(result.current[0]).toBe(1);
+    expect(window.localStorage.setItem).toHaveBeenCalledWith('counter', JSON.stringify(15));
+    expect(result.current[0]).toBe(15);
   });
 
-  it('should handle complex objects', () => {
+  it('falls back to the initial value and warns when stored JSON is malformed', () => {
     // #given
-    const initialObj = { name: 'test', values: [1, 2, 3] };
-    const { result } = renderHook(() => useLocalStorage('obj-key', initialObj));
+    vi.mocked(window.localStorage.getItem).mockReturnValue('not-valid-json{{');
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
-    // #when - update object to new values
-    act(() => {
-      const [, setValue] = result.current;
-      setValue({ name: 'updated', values: [4, 5, 6] });
-    });
-
-    // #then
-    const [value] = result.current;
-    expect(value).toEqual({ name: 'updated', values: [4, 5, 6] });
-    expect(localStorageMock.getItem('obj-key')).toBe(JSON.stringify({ name: 'updated', values: [4, 5, 6] }));
-  });
-
-  it('should handle JSON parse errors gracefully', () => {
-    // #given - store invalid JSON
-    localStorageMock.setItem('bad-json', 'not-valid-json');
-    const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-
-    // #when - initialize with bad JSON key
+    // #when
     const { result } = renderHook(() => useLocalStorage('bad-json', 'fallback'));
-    const [value] = result.current;
 
     // #then
-    expect(value).toBe('fallback');
-    expect(consoleSpy).toHaveBeenCalled();
+    expect(result.current[0]).toBe('fallback');
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('bad-json'), expect.anything());
 
-    consoleSpy.mockRestore();
+    warnSpy.mockRestore();
   });
 
-  it('should handle localStorage quota exceeded gracefully', () => {
-    // #given - mock failing localStorage and console
-    const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+  it('warns and still updates React state when localStorage.setItem throws', () => {
+    // #given
+    vi.mocked(window.localStorage.setItem).mockImplementation(() => {
+      throw new DOMException('QuotaExceededError');
+    });
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const { result } = renderHook(() => useLocalStorage('test-key', 'original'));
 
-    const failingStorage = {
-      getItem: (key: string) => localStorageMock.getItem(key),
-      setItem: () => {
-        throw new Error('QuotaExceededError');
-      },
-      removeItem: (key: string) => localStorageMock.removeItem(key),
-      clear: () => localStorageMock.clear()
-    };
-
-    Object.defineProperty(window, 'localStorage', {
-      value: failingStorage,
-      writable: true
+    // #when
+    act(() => {
+      result.current[1]('new-value');
     });
 
+    // #then
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('test-key'), expect.anything());
+    expect(result.current[0]).toBe('new-value');
+
+    warnSpy.mockRestore();
+  });
+
+  it('syncs state from a StorageEvent fired by another tab', () => {
+    // #given
     const { result } = renderHook(() => useLocalStorage('test-key', 'initial'));
 
-    // #when - attempt to set value when storage is full
-    try {
-      act(() => {
-        const [, setValue] = result.current;
-        setValue('new-value');
-      });
-    } catch {
-      // Expected error from React boundary
-    }
+    // #when
+    act(() => {
+      window.dispatchEvent(
+        new StorageEvent('storage', {
+          key: 'test-key',
+          newValue: JSON.stringify('from-other-tab'),
+        }),
+      );
+    });
 
     // #then
-    expect(consoleSpy).toHaveBeenCalled();
-
-    // Restore original localStorage
-    Object.defineProperty(window, 'localStorage', {
-      value: localStorageMock,
-      writable: true
-    });
-    consoleSpy.mockRestore();
-    errorSpy.mockRestore();
+    expect(result.current[0]).toBe('from-other-tab');
   });
 
-  it('should handle different data types', () => {
-    // #given - initialize hooks with various data types
-    const { result: stringResult } = renderHook(() => useLocalStorage('string', 'hello'));
-    const { result: numberResult } = renderHook(() => useLocalStorage('number', 42));
-    const { result: booleanResult } = renderHook(() => useLocalStorage('boolean', true));
-    const { result: arrayResult } = renderHook(() => useLocalStorage('array', [1, 2, 3]));
+  it('ignores StorageEvents for unrelated keys', () => {
+    // #given
+    const { result } = renderHook(() => useLocalStorage('test-key', 'original'));
 
-    // #then - verify each type is preserved
-    expect(stringResult.current[0]).toBe('hello');
-    expect(numberResult.current[0]).toBe(42);
-    expect(booleanResult.current[0]).toBe(true);
-    expect(arrayResult.current[0]).toEqual([1, 2, 3]);
+    // #when
+    act(() => {
+      window.dispatchEvent(
+        new StorageEvent('storage', {
+          key: 'other-key',
+          newValue: JSON.stringify('should-not-apply'),
+        }),
+      );
+    });
+
+    // #then
+    expect(result.current[0]).toBe('original');
+  });
+
+  it('removes the storage event listener when the hook unmounts', () => {
+    // #given
+    const removeListenerSpy = vi.spyOn(window, 'removeEventListener');
+    const { unmount } = renderHook(() => useLocalStorage('test-key', 0));
+
+    // #when
+    unmount();
+
+    // #then
+    expect(removeListenerSpy).toHaveBeenCalledWith('storage', expect.any(Function));
+
+    removeListenerSpy.mockRestore();
   });
 });
