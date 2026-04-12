@@ -362,6 +362,8 @@ const AudioPlayerComponent = () => {
                 onClose={handlers.handleCloseLibraryDrawer}
                 onPlaylistSelect={handlePlaylistSelect}
                 onAddToQueue={handleAddToQueueFromPanel}
+                lastSession={lastSession}
+                onResume={handleResume}
               />
             </Suspense>
           </>
