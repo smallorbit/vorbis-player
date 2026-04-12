@@ -15,7 +15,7 @@ export interface SessionSnapshot {
   trackArtist?: string;
   trackImage?: string;
   savedAt?: number;
-  /** Playback position in seconds at the time the session was saved. */
+  /** Playback position in milliseconds at the time the session was saved. */
   playbackPosition?: number;
 }
 

@@ -346,5 +346,6 @@ export function usePlayerLogic() {
     setTracks,
     setOriginalTracks,
     currentPlaybackProviderRef: drivingProviderRef,
+    expectedTrackIdRef,
   };
 }

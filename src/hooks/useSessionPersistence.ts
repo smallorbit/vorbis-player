@@ -67,7 +67,7 @@ export function useSessionPersistence(
       return;
     }
 
-    logSession('save effect fired — collectionId=%s, provider=%s, trackIndex=%d, position=%ds, queueLength=%d',
+    logSession('save effect fired — collectionId=%s, provider=%s, trackIndex=%d, position=%dms, queueLength=%d',
       collectionId, collectionProvider, currentTrackIndex, Math.floor(playbackPosition), tracks.length
     );
 
@@ -76,7 +76,7 @@ export function useSessionPersistence(
     debounceTimerRef.current = setTimeout(() => {
       const snapshot = snapshotRef.current;
       if (!snapshot) return;
-      logSession('saving session — collectionId=%s, provider=%s, trackIndex=%d, position=%ds, queueLength=%d',
+      logSession('saving session — collectionId=%s, provider=%s, trackIndex=%d, position=%dms, queueLength=%d',
         snapshot.collectionId, snapshot.collectionProvider, snapshot.trackIndex, Math.floor(snapshot.playbackPosition ?? 0), snapshot.queueTracks?.length
       );
       saveSession(snapshot);
@@ -95,7 +95,7 @@ export function useSessionPersistence(
     periodicTimerRef.current = setInterval(() => {
       const snapshot = snapshotRef.current;
       if (!snapshot) return;
-      logSession('periodic save — position=%ds', Math.floor(snapshot.playbackPosition ?? 0));
+      logSession('periodic save — position=%dms', Math.floor(snapshot.playbackPosition ?? 0));
       saveSession(snapshot);
     }, PERIODIC_SAVE_INTERVAL_MS);
 
@@ -109,7 +109,7 @@ export function useSessionPersistence(
     const handleBeforeUnload = () => {
       const snapshot = snapshotRef.current;
       if (!snapshot) return;
-      logSession('beforeunload save — position=%ds', Math.floor(snapshot.playbackPosition ?? 0));
+      logSession('beforeunload save — position=%dms', Math.floor(snapshot.playbackPosition ?? 0));
       saveSession(snapshot);
     };
 
