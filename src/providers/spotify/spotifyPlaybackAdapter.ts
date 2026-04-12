@@ -8,6 +8,7 @@ import type { ProviderId, MediaTrack, PlaybackState, CollectionRef } from '@/typ
 import { spotifyPlayer } from '@/services/spotifyPlayer';
 import { spotifyAuth } from '@/services/spotify';
 import { isAlbumId, extractAlbumId } from '@/constants/playlist';
+import { SPOTIFY_MAX_RETRIES, SPOTIFY_BASE_BACKOFF_MS } from '@/constants/spotify';
 import { AuthExpiredError, UnavailableTrackError } from '@/providers/errors';
 import { spotifyQueueSync } from './spotifyQueueSync';
 import { logSpotify } from '@/lib/debugLog';
@@ -27,9 +28,6 @@ function mapPlaybackState(state: SpotifyPlaybackState | null): PlaybackState | n
       : null,
   };
 }
-
-const MAX_PLAY_RETRIES = 5;
-const BASE_RETRY_BACKOFF_MS = 1000;
 
 export class SpotifyPlaybackAdapter implements PlaybackProvider {
   readonly providerId: ProviderId = 'spotify';
@@ -140,7 +138,7 @@ export class SpotifyPlaybackAdapter implements PlaybackProvider {
         throw new AuthExpiredError('spotify');
       }
 
-      if (retryCount >= MAX_PLAY_RETRIES) {
+      if (retryCount >= SPOTIFY_MAX_RETRIES) {
         throw error;
       }
 
@@ -149,8 +147,8 @@ export class SpotifyPlaybackAdapter implements PlaybackProvider {
         const retryAfterSec = retryAfterMatch ? parseInt(retryAfterMatch[1], 10) : 0;
         const backoffMs = retryAfterSec > 0
           ? retryAfterSec * 1000
-          : BASE_RETRY_BACKOFF_MS * Math.pow(2, retryCount);
-        logSpotify('429 during play, retrying (%d/%d) after %dms', retryCount + 1, MAX_PLAY_RETRIES, backoffMs);
+          : SPOTIFY_BASE_BACKOFF_MS * Math.pow(2, retryCount);
+        logSpotify('429 during play, retrying (%d/%d) after %dms', retryCount + 1, SPOTIFY_MAX_RETRIES, backoffMs);
         await new Promise(resolve => setTimeout(resolve, backoffMs));
         return this.playWithRetry(uri, trackName, upcomingUris, retryCount + 1, positionMs);
       }
@@ -161,8 +159,8 @@ export class SpotifyPlaybackAdapter implements PlaybackProvider {
         }
 
         this.playbackSessionActive = false;
-        const backoffMs = BASE_RETRY_BACKOFF_MS * Math.pow(2, retryCount);
-        logSpotify('403 during play, retrying (%d/%d) after %dms', retryCount + 1, MAX_PLAY_RETRIES, backoffMs);
+        const backoffMs = SPOTIFY_BASE_BACKOFF_MS * Math.pow(2, retryCount);
+        logSpotify('403 during play, retrying (%d/%d) after %dms', retryCount + 1, SPOTIFY_MAX_RETRIES, backoffMs);
         await spotifyPlayer.transferPlaybackToDevice(true);
         await new Promise(resolve => setTimeout(resolve, backoffMs));
         await spotifyPlayer.ensureDeviceIsActive(3, 1000);

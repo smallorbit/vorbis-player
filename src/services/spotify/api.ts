@@ -1,4 +1,5 @@
 import type { PaginatedResponse } from './types';
+import { SPOTIFY_RATE_LIMIT_WAIT_S } from '@/constants/spotify';
 
 // =============================================================================
 // Rate Limiting & Request Deduplication
@@ -28,8 +29,8 @@ function isRateLimited(): boolean {
 function handleRateLimitResponse(response: Response): void {
   if (response.status === 429) {
     const retryAfter = response.headers.get('Retry-After');
-    const waitSeconds = retryAfter ? parseInt(retryAfter, 10) : 5;
-    const waitMs = (isNaN(waitSeconds) ? 5 : Math.max(waitSeconds, 1)) * 1000;
+    const waitSeconds = retryAfter ? parseInt(retryAfter, 10) : SPOTIFY_RATE_LIMIT_WAIT_S;
+    const waitMs = (isNaN(waitSeconds) ? SPOTIFY_RATE_LIMIT_WAIT_S : Math.max(waitSeconds, 1)) * 1000;
     rateLimitedUntil = Date.now() + waitMs;
     console.warn(`[spotify] 429 rate-limited — backing off for ${waitMs}ms`);
   }
