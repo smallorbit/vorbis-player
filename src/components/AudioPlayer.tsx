@@ -183,8 +183,6 @@ const AudioPlayerComponent = () => {
     setShowVisualEffects(false);
   }, [setShowVisualEffects]);
 
-  const pendingPlayRef = useRef<{ trackId?: string; trackIndex: number } | null>(null);
-
   const handleResume = useCallback(() => {
     if (!lastSession?.queueTracks?.length) return;
     const { queueTracks, trackId, trackIndex, collectionId } = lastSession;
@@ -196,16 +194,12 @@ const AudioPlayerComponent = () => {
     setOriginalTracks(queueTracks);
     setSelectedPlaylistId(collectionId);
     setCurrentTrackIndex(resolvedIdx);
-    pendingPlayRef.current = { trackId, trackIndex: resolvedIdx };
-  }, [lastSession, setTracks, setOriginalTracks, setSelectedPlaylistId, setCurrentTrackIndex]);
-
-  useEffect(() => {
-    if (tracks.length === 0 || !pendingPlayRef.current) return;
-    const { trackId, trackIndex } = pendingPlayRef.current;
-    pendingPlayRef.current = null;
-    const idx = trackId ? tracks.findIndex(t => t.id === trackId) : -1;
-    handlers.playTrack(idx >= 0 ? idx : Math.min(trackIndex, tracks.length - 1));
-  }, [tracks, handlers]);
+    // Update the imperative tracks mirror synchronously so playTrack can resolve
+    // the right track before React re-renders. Required for iOS Safari, which
+    // blocks audio.play() called outside the synchronous user-gesture call stack.
+    mediaTracksRef.current = queueTracks;
+    handlers.playTrack(resolvedIdx);
+  }, [lastSession, setTracks, setOriginalTracks, setSelectedPlaylistId, setCurrentTrackIndex, mediaTracksRef, handlers]);
 
   const handleClearCache = useCallback(async (options: ClearCacheOptions) => {
     const { clearCacheWithOptions } = await import('@/services/cache/libraryCache');

@@ -27,40 +27,53 @@ export class DropboxPlaybackAdapter implements PlaybackProvider {
     this.catalog = catalog;
   }
 
-  async initialize(): Promise<void> {
-    if (!this.audio) {
-      this.audio = new Audio();
-      this.audio.preload = 'auto';
+  private ensureAudio(): void {
+    if (this.audio) return;
+    this.audio = new Audio();
+    this.audio.preload = 'auto';
 
-      this.audio.addEventListener('play', () => this.notifyListeners());
-      this.audio.addEventListener('pause', () => this.notifyListeners());
-      this.audio.addEventListener('ended', () => this.notifyListeners());
-      this.audio.addEventListener('timeupdate', () => this.notifyListeners());
-      this.audio.addEventListener('loadedmetadata', () => {
-        const dur = this.audio!.duration;
-        if (!isNaN(dur) && dur > 0 && this.currentTrack) {
-          const durationMs = Math.floor(dur * 1000);
-          this.pendingDurationMs = durationMs;
-          putDurationMs(this.currentTrack.id, durationMs).catch(() => {});
-        }
-        this.notifyListeners();
-      });
-      this.audio.addEventListener('error', () => {
-        const mediaError = this.audio?.error;
-        this.pendingError = {
-          code: mediaError?.code ?? 0,
-          message: mediaError?.message || `MediaError code ${mediaError?.code ?? 0}`,
-        };
-        console.error('[DropboxPlayback] Audio error:', mediaError);
-        this.notifyListeners();
-      });
-    }
+    this.audio.addEventListener('play', () => this.notifyListeners());
+    this.audio.addEventListener('pause', () => this.notifyListeners());
+    this.audio.addEventListener('ended', () => this.notifyListeners());
+    this.audio.addEventListener('timeupdate', () => this.notifyListeners());
+    this.audio.addEventListener('loadedmetadata', () => {
+      const dur = this.audio!.duration;
+      if (!isNaN(dur) && dur > 0 && this.currentTrack) {
+        const durationMs = Math.floor(dur * 1000);
+        this.pendingDurationMs = durationMs;
+        putDurationMs(this.currentTrack.id, durationMs).catch(() => {});
+      }
+      this.notifyListeners();
+    });
+    this.audio.addEventListener('error', () => {
+      const mediaError = this.audio?.error;
+      this.pendingError = {
+        code: mediaError?.code ?? 0,
+        message: mediaError?.message || `MediaError code ${mediaError?.code ?? 0}`,
+      };
+      console.error('[DropboxPlayback] Audio error:', mediaError);
+      this.notifyListeners();
+    });
+  }
+
+  async initialize(): Promise<void> {
+    this.ensureAudio();
   }
 
   async playTrack(track: MediaTrack): Promise<void> {
-    if (!this.audio) await this.initialize();
+    this.ensureAudio();
 
     const dropboxPath = track.playbackRef.ref;
+
+    // iOS Safari requires audio.play() to be called within the synchronous
+    // user-gesture call stack to register this element as user-activated.
+    // Calling it here (before any await) ensures the subsequent async play()
+    // — after the Dropbox URL fetch — succeeds on iOS even though the
+    // network request breaks the gesture activation window.
+    if (this.audio!.paused) {
+      this.audio!.play().catch(() => {});
+    }
+
     const streamUrl = await this.catalog.getTemporaryLink(dropboxPath);
 
     this.currentTrack = track;
@@ -68,6 +81,7 @@ export class DropboxPlaybackAdapter implements PlaybackProvider {
     this.hydrateAlbumArtFromCache(track);
     this.pendingMetadataUpdate = null;
     this.pendingDurationMs = null;
+    this.audio!.pause();
     this.audio!.src = streamUrl;
     await this.audio!.play();
 
