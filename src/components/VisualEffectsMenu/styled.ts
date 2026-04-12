@@ -1,5 +1,4 @@
 import styled from 'styled-components';
-import { theme } from '../../styles/theme';
 
 export const DrawerOverlay = styled.div<{ $isOpen: boolean }>`
   position: fixed;
@@ -7,13 +6,13 @@ export const DrawerOverlay = styled.div<{ $isOpen: boolean }>`
   left: 0;
   right: 0;
   bottom: 0;
-  background: ${theme.colors.overlay.light};
-  z-index: ${theme.zIndex.overlay};
+  background: ${({ theme }) => theme.colors.overlay.light};
+  z-index: ${({ theme }) => theme.zIndex.overlay};
   opacity: ${({ $isOpen }) => ($isOpen ? '1' : '0')};
   visibility: ${({ $isOpen }) => ($isOpen ? 'visible' : 'hidden')};
   pointer-events: ${({ $isOpen }) => ($isOpen ? 'auto' : 'none')};
-  transition: opacity ${theme.drawer.transitionDuration}ms ${theme.drawer.transitionEasing},
-            visibility ${theme.drawer.transitionDuration}ms ${theme.drawer.transitionEasing};
+  transition: opacity ${({ theme }) => theme.drawer.transitionDuration}ms ${({ theme }) => theme.drawer.transitionEasing},
+            visibility ${({ theme }) => theme.drawer.transitionDuration}ms ${({ theme }) => theme.drawer.transitionEasing};
 `;
 
 export const DrawerContainer = styled.div<{ $isOpen: boolean; $width: number; $transitionDuration: number; $transitionEasing: string }>`
@@ -23,15 +22,15 @@ export const DrawerContainer = styled.div<{ $isOpen: boolean; $width: number; $t
   bottom: 0;
   width: ${({ $width }) => $width}px;
   max-width: 95vw;
-  background: ${theme.colors.overlay.dark};
-  backdrop-filter: blur(${theme.drawer.backdropBlur});
-  border-left: 1px solid ${theme.colors.popover.border};
+  background: ${({ theme }) => theme.colors.overlay.dark};
+  backdrop-filter: blur(${({ theme }) => theme.drawer.backdropBlur});
+  border-left: 1px solid ${({ theme }) => theme.colors.popover.border};
   transform: translateX(${({ $isOpen }) => ($isOpen ? '0' : '100%')});
   visibility: ${({ $isOpen }) => ($isOpen ? 'visible' : 'hidden')};
   transition: transform ${({ $transitionDuration }) => $transitionDuration}ms ${({ $transitionEasing }) => $transitionEasing},
             visibility ${({ $transitionDuration }) => $transitionDuration}ms ${({ $transitionEasing }) => $transitionEasing},
             width ${({ $transitionDuration }) => $transitionDuration}ms ${({ $transitionEasing }) => $transitionEasing};
-  z-index: ${theme.zIndex.modal};
+  z-index: ${({ theme }) => theme.zIndex.modal};
   overflow-y: auto;
   overflow-x: hidden;
 
@@ -40,22 +39,22 @@ export const DrawerContainer = styled.div<{ $isOpen: boolean; $width: number; $t
   container-name: visual-effects;
 
   /* Container query responsive adjustments */
-  @container visual-effects (max-width: ${theme.drawer.breakpoints.mobile}) {
-    width: ${theme.drawer.widths.mobile};
+  @container visual-effects (max-width: ${({ theme }) => theme.drawer.breakpoints.mobile}) {
+    width: ${({ theme }) => theme.drawer.widths.mobile};
   }
 
-  @container visual-effects (min-width: ${theme.drawer.breakpoints.mobile}) and (max-width: ${theme.drawer.breakpoints.tablet}) {
-    width: ${theme.drawer.widths.tablet};
+  @container visual-effects (min-width: ${({ theme }) => theme.drawer.breakpoints.mobile}) and (max-width: ${({ theme }) => theme.drawer.breakpoints.tablet}) {
+    width: ${({ theme }) => theme.drawer.widths.tablet};
   }
 
-  @container visual-effects (min-width: ${theme.drawer.breakpoints.tablet}) {
-    width: ${theme.drawer.widths.desktop};
+  @container visual-effects (min-width: ${({ theme }) => theme.drawer.breakpoints.tablet}) {
+    width: ${({ theme }) => theme.drawer.widths.desktop};
   }
 
   /* Fallback for browsers without container query support */
   @supports not (container-type: inline-size) {
-    @media (max-width: ${theme.breakpoints.md}) {
-      width: ${theme.drawer.widths.mobile};
+    @media (max-width: ${({ theme }) => theme.breakpoints.md}) {
+      width: ${({ theme }) => theme.drawer.widths.mobile};
     }
   }
 `;
@@ -64,7 +63,7 @@ export const DrawerHeader = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: calc(${theme.spacing.lg} + env(safe-area-inset-top, 0px)) ${theme.spacing.lg} ${theme.spacing.md};
+  padding: calc(${({ theme }) => theme.spacing.lg} + env(safe-area-inset-top, 0px)) ${({ theme }) => theme.spacing.lg} ${({ theme }) => theme.spacing.md};
   border-bottom: 1px solid ${({ theme }) => theme.colors.popover.border};
   min-height: 60px;
   flex-shrink: 0; /* Prevent header from shrinking */
@@ -80,15 +79,15 @@ export const DrawerTitle = styled.h3`
 export const CloseButton = styled.button`
   background: none;
   border: none;
-  color: ${theme.colors.muted.foreground};
+  color: ${({ theme }) => theme.colors.muted.foreground};
   cursor: pointer;
-  padding: ${theme.spacing.sm};
-  border-radius: ${theme.borderRadius.md};
+  padding: ${({ theme }) => theme.spacing.sm};
+  border-radius: ${({ theme }) => theme.borderRadius.md};
   transition: all ${({ theme }) => theme.transitions.fast} ease;
 
   &:hover {
-    color: ${theme.colors.white};
-    background: ${theme.colors.muted.background};
+    color: ${({ theme }) => theme.colors.white};
+    background: ${({ theme }) => theme.colors.muted.background};
   }
 
   svg {
@@ -98,7 +97,7 @@ export const CloseButton = styled.button`
 `;
 
 export const DrawerContent = styled.div`
-  padding: ${({ theme }) => theme.spacing.md} ${theme.spacing.lg} ${theme.spacing.lg};
+  padding: ${({ theme }) => theme.spacing.md} ${({ theme }) => theme.spacing.lg} ${({ theme }) => theme.spacing.lg};
   display: flex;
   flex-direction: column;
   gap: ${({ theme }) => theme.spacing.md};
@@ -188,7 +187,7 @@ export const ResetButton = styled.button`
   background: ${({ theme }) => theme.colors.control.background};
   border: 1px solid ${({ theme }) => theme.colors.border};
   color: ${({ theme }) => theme.colors.muted.foreground};
-  padding: ${({ theme }) => theme.spacing.sm} ${theme.spacing.md};
+  padding: ${({ theme }) => theme.spacing.sm} ${({ theme }) => theme.spacing.md};
   border-radius: ${({ theme }) => theme.borderRadius.lg};
   cursor: pointer;
   font-size: ${({ theme }) => theme.fontSize.sm};
@@ -220,15 +219,15 @@ export const ProviderRow = styled.div`
 
 export const ProviderName = styled.span`
   font-size: 0.8125rem;
-  font-weight: ${theme.fontWeight.medium};
-  color: ${theme.colors.white};
+  font-weight: ${({ theme }) => theme.fontWeight.medium};
+  color: ${({ theme }) => theme.colors.white};
   flex-shrink: 0;
 `;
 
 export const ProviderStatusBadge = styled.span<{ $status: 'connected' | 'expired' | 'disabled' }>`
   font-size: 0.6875rem;
-  font-weight: ${theme.fontWeight.medium};
-  color: ${({ $status }) =>
+  font-weight: ${({ theme }) => theme.fontWeight.medium};
+  color: ${({ $status, theme }) =>
     $status === 'connected'
       ? theme.colors.success
       : $status === 'expired'
@@ -243,12 +242,12 @@ export const ProviderConnectAction = styled.button`
   padding: 0;
   color: var(--accent-color);
   font-size: 0.6875rem;
-  font-weight: ${theme.fontWeight.semibold};
+  font-weight: ${({ theme }) => theme.fontWeight.semibold};
   text-transform: uppercase;
   letter-spacing: 0.04em;
   cursor: pointer;
   flex-shrink: 0;
-  transition: opacity ${theme.transitions.fast};
+  transition: opacity ${({ theme }) => theme.transitions.fast};
 
   &:hover {
     opacity: 0.8;
@@ -319,7 +318,7 @@ export const CacheCancelButton = styled.button`
   background: ${({ theme }) => theme.colors.control.background};
   border: 1px solid ${({ theme }) => theme.colors.border};
   color: ${({ theme }) => theme.colors.muted.foreground};
-  padding: ${({ theme }) => theme.spacing.sm} ${theme.spacing.md};
+  padding: ${({ theme }) => theme.spacing.sm} ${({ theme }) => theme.spacing.md};
   border-radius: ${({ theme }) => theme.borderRadius.lg};
   cursor: pointer;
   font-size: ${({ theme }) => theme.fontSize.sm};
@@ -336,21 +335,21 @@ export const CacheCancelButton = styled.button`
 `;
 
 export const OptionButton = styled.button<{ $isActive: boolean }>`
-  background: ${({ $isActive }) => $isActive ? 'var(--accent-color)' : theme.colors.muted.background};
-  border: 1px solid ${({ $isActive }) => $isActive ? 'var(--accent-color)' : theme.colors.border};
-  color: ${({ $isActive }) => $isActive ? 'var(--accent-contrast-color)' : theme.colors.muted.foreground};
+  background: ${({ $isActive, theme }) => $isActive ? 'var(--accent-color)' : theme.colors.muted.background};
+  border: 1px solid ${({ $isActive, theme }) => $isActive ? 'var(--accent-color)' : theme.colors.border};
+  color: ${({ $isActive, theme }) => $isActive ? 'var(--accent-contrast-color)' : theme.colors.muted.foreground};
   padding: 0.375rem 0.75rem;
-  border-radius: ${theme.borderRadius.sm};
+  border-radius: ${({ theme }) => theme.borderRadius.sm};
   cursor: pointer;
   font-size: 0.75rem;
-  font-weight: ${theme.fontWeight.medium};
+  font-weight: ${({ theme }) => theme.fontWeight.medium};
   transition: all ${({ theme }) => theme.transitions.fast} ease;
   min-width: 60px;
 
   &:hover {
     background: ${({ $isActive }) => $isActive ? 'color-mix(in srgb, var(--accent-color) 87%, transparent)' : 'color-mix(in srgb, var(--accent-color) 13%, transparent)'};
     border-color: var(--accent-color);
-    color: ${({ $isActive }) => $isActive ? 'var(--accent-contrast-color)' : theme.colors.white};
+    color: ${({ $isActive, theme }) => $isActive ? 'var(--accent-contrast-color)' : theme.colors.white};
     transform: translateY(-1px);
   }
 `;
