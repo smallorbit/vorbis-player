@@ -94,6 +94,7 @@ const AudioPlayerComponent = () => {
     currentTrack?.name,
     currentTrack?.artists,
     currentTrack?.image,
+    state.playbackPosition,
   );
 
   const handleAlbumPlay = useCallback((albumId: string) => {
@@ -183,9 +184,9 @@ const AudioPlayerComponent = () => {
     setShowVisualEffects(false);
   }, [setShowVisualEffects]);
 
-  const handleResume = useCallback(() => {
+  const handleResume = useCallback(async () => {
     if (!lastSession?.queueTracks?.length) return;
-    const { queueTracks, trackId, trackIndex, collectionId } = lastSession;
+    const { queueTracks, trackId, trackIndex, collectionId, playbackPosition: savedPosition } = lastSession;
     const targetIdx = trackId
       ? queueTracks.findIndex(t => t.id === trackId)
       : Math.min(trackIndex, queueTracks.length - 1);
@@ -198,8 +199,17 @@ const AudioPlayerComponent = () => {
     // the right track before React re-renders. Required for iOS Safari, which
     // blocks audio.play() called outside the synchronous user-gesture call stack.
     mediaTracksRef.current = queueTracks;
-    handlers.playTrack(resolvedIdx);
-  }, [lastSession, setTracks, setOriginalTracks, setSelectedPlaylistId, setCurrentTrackIndex, mediaTracksRef, handlers]);
+    await handlers.playTrack(resolvedIdx);
+
+    if (savedPosition && savedPosition > 0) {
+      const drivingProviderId = playbackProviderRef.current;
+      if (drivingProviderId) {
+        const { providerRegistry } = await import('@/providers/registry');
+        const descriptor = providerRegistry.get(drivingProviderId);
+        descriptor?.playback.seek(savedPosition * 1000).catch(() => {});
+      }
+    }
+  }, [lastSession, setTracks, setOriginalTracks, setSelectedPlaylistId, setCurrentTrackIndex, mediaTracksRef, handlers, playbackProviderRef]);
 
   const handleClearCache = useCallback(async (options: ClearCacheOptions) => {
     const { clearCacheWithOptions } = await import('@/services/cache/libraryCache');

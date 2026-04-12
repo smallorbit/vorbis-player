@@ -15,6 +15,8 @@ export interface SessionSnapshot {
   trackArtist?: string;
   trackImage?: string;
   savedAt?: number;
+  /** Playback position in seconds at the time the session was saved. */
+  playbackPosition?: number;
 }
 
 /** Strip Dropbox image URLs — presigned and large. playbackRef is a permanent path, keep it. */
