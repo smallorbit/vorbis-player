@@ -1,7 +1,9 @@
 import type * as React from 'react';
+import styled from 'styled-components';
 import FilterChipRow from '../FilterChipRow';
 import LibraryDrawerSortChip from '../LibraryDrawerSortChip';
 import LibraryProviderBar from '../LibraryProviderBar';
+import { FilterSidebar } from '../LibraryDrawer/FilterSidebar';
 import { PlaylistGrid } from './PlaylistGrid';
 import { AlbumGrid } from './AlbumGrid';
 import { LibraryControls } from './LibraryControls';
@@ -17,6 +19,21 @@ import {
   DrawerBottomActions,
   DrawerClearFiltersButton,
 } from './styled';
+
+const DrawerContent = styled.div`
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  gap: 0;
+`;
+
+const MainContent = styled.div`
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+`;
 
 export function LibraryMainContent(): React.JSX.Element {
   const {
@@ -61,91 +78,111 @@ export function LibraryMainContent(): React.JSX.Element {
     </TabsContainer>
   );
 
-  return (
-    <>
-      {!inDrawer && <LibraryProviderBar />}
-      <div ref={inDrawer ? swipeZoneRef : undefined} style={inDrawer ? { flexShrink: 0, touchAction: 'pan-y' } : undefined}>
-        {tabsBar}
-      </div>
-
-      {inDrawer && (
-        <FilterChipRow
-          viewMode={viewMode}
+  if (inDrawer) {
+    return (
+      <DrawerContent>
+        <FilterSidebar
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
+          collectionType={viewMode}
+          onCollectionTypeChange={setViewMode}
           enabledProviderIds={enabledProviderIds}
-          activeProviderFilters={providerFilters}
-          onProviderToggle={handleProviderToggle}
-          showProviderChips={showProviderBadges}
-          albums={albums}
-          artistFilter={artistFilter}
-          onArtistFilterChange={setArtistFilter}
+          selectedProviderIds={providerFilters}
+          onProviderFilterChange={setProviderFilters}
+          showProviderFilter={showProviderBadges}
         />
-      )}
+        <MainContent>
+          <div ref={swipeZoneRef} style={{ flexShrink: 0, touchAction: 'pan-y' }}>
+            {tabsBar}
+          </div>
+
+          <FilterChipRow
+            viewMode={viewMode}
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
+            enabledProviderIds={enabledProviderIds}
+            activeProviderFilters={providerFilters}
+            onProviderToggle={handleProviderToggle}
+            showProviderChips={showProviderBadges}
+            albums={albums}
+            artistFilter={artistFilter}
+            onArtistFilterChange={setArtistFilter}
+          />
+
+          {viewMode === 'playlists' && <PlaylistGrid />}
+
+          {viewMode === 'albums' && <AlbumGrid />}
+
+          <DrawerBottomControls>
+            <DrawerBottomRow>
+              <LibraryProviderBar variant="drawerBottom" />
+              <DrawerBottomActions>
+                <LibraryDrawerSortChip
+                  viewMode={viewMode}
+                  playlistSort={playlistSort}
+                  albumSort={albumSort}
+                  onPlaylistSortChange={setPlaylistSort}
+                  onAlbumSortChange={setAlbumSort}
+                />
+                {hasActiveFilters && (
+                  <DrawerClearFiltersButton
+                    type="button"
+                    onClick={() => {
+                      setSearchQuery('');
+                      setArtistFilter('');
+                      setProviderFilters([]);
+                    }}
+                    aria-label="Clear filters"
+                  >
+                    Clear
+                  </DrawerClearFiltersButton>
+                )}
+                {onLibraryRefresh && (
+                  <DrawerRefreshButton
+                    onClick={onLibraryRefresh}
+                    $spinning={!!isLibraryRefreshing}
+                    aria-label="Refresh library"
+                    title="Refresh library"
+                  >
+                    <RefreshIcon />
+                  </DrawerRefreshButton>
+                )}
+              </DrawerBottomActions>
+            </DrawerBottomRow>
+          </DrawerBottomControls>
+        </MainContent>
+      </DrawerContent>
+    );
+  }
+
+  return (
+    <>
+      <LibraryProviderBar />
+      <div style={{ flexShrink: 0, touchAction: 'pan-y' }}>
+        {tabsBar}
+      </div>
 
       {viewMode === 'playlists' && <PlaylistGrid />}
 
       {viewMode === 'albums' && <AlbumGrid />}
 
-      {inDrawer && (
-        <DrawerBottomControls>
-          <DrawerBottomRow>
-            <LibraryProviderBar variant="drawerBottom" />
-            <DrawerBottomActions>
-              <LibraryDrawerSortChip
-                viewMode={viewMode}
-                playlistSort={playlistSort}
-                albumSort={albumSort}
-                onPlaylistSortChange={setPlaylistSort}
-                onAlbumSortChange={setAlbumSort}
-              />
-              {hasActiveFilters && (
-                <DrawerClearFiltersButton
-                  type="button"
-                  onClick={() => {
-                    setSearchQuery('');
-                    setArtistFilter('');
-                    setProviderFilters([]);
-                  }}
-                  aria-label="Clear filters"
-                >
-                  Clear
-                </DrawerClearFiltersButton>
-              )}
-              {onLibraryRefresh && (
-                <DrawerRefreshButton
-                  onClick={onLibraryRefresh}
-                  $spinning={!!isLibraryRefreshing}
-                  aria-label="Refresh library"
-                  title="Refresh library"
-                >
-                  <RefreshIcon />
-                </DrawerRefreshButton>
-              )}
-            </DrawerBottomActions>
-          </DrawerBottomRow>
-        </DrawerBottomControls>
-      )}
-
-      {!inDrawer && (
-        <div style={{ marginTop: '1.5rem' }}>
-          <LibraryControls
-            inDrawer={false}
-            viewMode={viewMode}
-            searchQuery={searchQuery}
-            setSearchQuery={setSearchQuery}
-            playlistSort={playlistSort}
-            setPlaylistSort={setPlaylistSort}
-            albumSort={albumSort}
-            setAlbumSort={setAlbumSort}
-            artistFilter={artistFilter}
-            setArtistFilter={setArtistFilter}
-            setProviderFilters={setProviderFilters}
-            onLibraryRefresh={onLibraryRefresh}
-            isLibraryRefreshing={isLibraryRefreshing}
-          />
-        </div>
-      )}
+      <div style={{ marginTop: '1.5rem' }}>
+        <LibraryControls
+          inDrawer={false}
+          viewMode={viewMode}
+          searchQuery={searchQuery}
+          setSearchQuery={setSearchQuery}
+          playlistSort={playlistSort}
+          setPlaylistSort={setPlaylistSort}
+          albumSort={albumSort}
+          setAlbumSort={setAlbumSort}
+          artistFilter={artistFilter}
+          setArtistFilter={setArtistFilter}
+          setProviderFilters={setProviderFilters}
+          onLibraryRefresh={onLibraryRefresh}
+          isLibraryRefreshing={isLibraryRefreshing}
+        />
+      </div>
     </>
   );
 }
