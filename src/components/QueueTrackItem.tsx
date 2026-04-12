@@ -17,6 +17,7 @@ import {
   TrackName,
   TrackArtist,
   Duration,
+  LikedIndicator,
   DragHandle,
   RemoveButton,
   SwipeableWrapper,
@@ -156,7 +157,7 @@ function useQueueItemContextMenu(
       : []),
   ];
 
-  return { menu, closeMenu, handleContextMenu, longPressHandlers, options };
+  return { menu, closeMenu, handleContextMenu, longPressHandlers, options, isLiked, canSaveTrack };
 }
 
 export const SortableQueueItem = memo<QueueItemProps>(({
@@ -199,7 +200,7 @@ export const SortableQueueItem = memo<QueueItemProps>(({
     onRemove?.(index);
   }, [onRemove, index]);
 
-  const { menu, closeMenu, handleContextMenu, longPressHandlers, options } = useQueueItemContextMenu(
+  const { menu, closeMenu, handleContextMenu, longPressHandlers, options, isLiked, canSaveTrack } = useQueueItemContextMenu(
     track, index, isSelected, onSelect, onRemove, onPlayNext
   );
 
@@ -248,6 +249,12 @@ export const SortableQueueItem = memo<QueueItemProps>(({
           {track.durationMs ? formatDuration(track.durationMs) : '--:--'}
         </Duration>
 
+        {canSaveTrack && isLiked && (
+          <LikedIndicator aria-label="Liked">
+            <HeartIcon filled />
+          </LikedIndicator>
+        )}
+
         {isEditMode && onRemove && !isSelected && (
           <RemoveButton onClick={handleRemoveClick} aria-label={`Remove ${track.name}`}>
             <RemoveIcon />
@@ -294,7 +301,7 @@ export const SwipeableQueueItem = memo<QueueItemProps>(({
     onRemove?.(index);
   }, [onRemove, index, reset]);
 
-  const { menu, closeMenu, handleContextMenu, longPressHandlers, options } = useQueueItemContextMenu(
+  const { menu, closeMenu, handleContextMenu, longPressHandlers, options, isLiked, canSaveTrack } = useQueueItemContextMenu(
     track, index, isSelected, onSelect, onRemove, onPlayNext
   );
 
@@ -337,6 +344,12 @@ export const SwipeableQueueItem = memo<QueueItemProps>(({
           <Duration isSelected={isSelected}>
             {track.durationMs ? formatDuration(track.durationMs) : '--:--'}
           </Duration>
+
+          {canSaveTrack && isLiked && (
+            <LikedIndicator aria-label="Liked">
+              <HeartIcon filled />
+            </LikedIndicator>
+          )}
         </QueueListItem>
 
         {menu && (
@@ -399,6 +412,12 @@ export const SwipeableQueueItem = memo<QueueItemProps>(({
             <Duration isSelected={isSelected}>
               {track.durationMs ? formatDuration(track.durationMs) : '--:--'}
             </Duration>
+
+            {canSaveTrack && isLiked && (
+              <LikedIndicator aria-label="Liked">
+                <HeartIcon filled />
+              </LikedIndicator>
+            )}
           </QueueListItem>
         </SwipeableContent>
       </SwipeableWrapper>
