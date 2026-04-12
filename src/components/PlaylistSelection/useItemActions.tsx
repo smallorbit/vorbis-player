@@ -370,21 +370,8 @@ export function useItemActions({
   }) : null;
 
   return {
-    albumPopover,
-    setAlbumPopover,
-    playlistPopover,
-    setPlaylistPopover,
-    albumSaved,
-    deleteTarget,
-    setDeleteTarget,
     handlePlaylistContextMenu,
     handleAlbumContextMenu,
-    closePlaylistPopover,
-    buildPlaylistPopoverOptions,
-    closeAlbumPopover,
-    buildAlbumPopoverOptions,
-    handleDeleteConfirm,
-    handleDeleteClose,
     albumPopoverPortal,
     playlistPopoverPortal,
     confirmDeletePortal,

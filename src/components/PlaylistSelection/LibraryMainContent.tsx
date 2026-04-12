@@ -6,6 +6,7 @@ import { PlaylistGrid } from './PlaylistGrid';
 import { AlbumGrid } from './AlbumGrid';
 import { LibraryControls } from './LibraryControls';
 import { useLibraryContext } from './LibraryContext';
+import { RefreshIcon } from './utils';
 import {
   TabSpinner,
   TabsContainer,
@@ -118,12 +119,7 @@ export function LibraryMainContent(): React.JSX.Element {
                   aria-label="Refresh library"
                   title="Refresh library"
                 >
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                    <path d="M21 2v6h-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                    <path d="M3 12a9 9 0 0 1 15.36-6.36L21 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                    <path d="M3 22v-6h6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                    <path d="M21 12a9 9 0 0 1-15.36 6.36L3 16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
+                  <RefreshIcon />
                 </DrawerRefreshButton>
               )}
             </DrawerBottomActions>
