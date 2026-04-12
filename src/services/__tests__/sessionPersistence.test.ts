@@ -103,6 +103,32 @@ describe('sessionPersistence', () => {
     });
   });
 
+  describe('playbackPosition unit contract', () => {
+    it('stores playbackPosition as milliseconds (not seconds)', () => {
+      // #given — a typical position of 2 minutes 30 seconds = 150,000 ms
+      const snapshot: SessionSnapshot = { ...baseSnapshot, playbackPosition: 150_000 };
+
+      // #when
+      saveSession(snapshot);
+      const loaded = loadSession();
+
+      // #then — value must come back unchanged (milliseconds, not multiplied/divided)
+      expect(loaded?.playbackPosition).toBe(150_000);
+    });
+
+    it('stores sub-second playbackPosition accurately', () => {
+      // #given — position at 500 ms
+      const snapshot: SessionSnapshot = { ...baseSnapshot, playbackPosition: 500 };
+
+      // #when
+      saveSession(snapshot);
+      const loaded = loadSession();
+
+      // #then
+      expect(loaded?.playbackPosition).toBe(500);
+    });
+  });
+
   describe('clearSession', () => {
     it('removes persisted session', () => {
       // #given

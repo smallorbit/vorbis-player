@@ -51,7 +51,7 @@ const ScreenReaderAnnouncement = styled.div`
 `;
 
 const AudioPlayerComponent = () => {
-  const { state, handlers, radio, currentPlaybackProviderRef: playbackProviderRef, mediaTracksRef } = usePlayerLogic();
+  const { state, handlers, radio, currentPlaybackProviderRef: playbackProviderRef, mediaTracksRef, expectedTrackIdRef } = usePlayerLogic();
   const { debugActive, handleActivatorTap } = useDebugActivator();
   const { accentColor } = useColorContext();
   const {
@@ -213,7 +213,7 @@ const AudioPlayerComponent = () => {
 
   const handleResume = useCallback(async () => {
     if (!lastSession?.queueTracks?.length) return;
-    const { queueTracks, trackId, trackIndex, collectionId, playbackPosition: savedPosition } = lastSession;
+    const { queueTracks, trackId, trackIndex, collectionId, playbackPosition: savedPositionMs } = lastSession;
     const targetIdx = trackId
       ? queueTracks.findIndex(t => t.id === trackId)
       : Math.min(trackIndex, queueTracks.length - 1);
@@ -226,17 +226,22 @@ const AudioPlayerComponent = () => {
     // the right track before React re-renders. Required for iOS Safari, which
     // blocks audio.play() called outside the synchronous user-gesture call stack.
     mediaTracksRef.current = queueTracks;
+    // Guard the playback subscription against index-sync racing during load:
+    // without this, usePlaybackSubscription may overwrite resolvedIdx with a
+    // stale provider track index before the new track's ID is confirmed.
+    expectedTrackIdRef.current = queueTracks[resolvedIdx]?.id ?? null;
     await handlers.playTrack(resolvedIdx);
 
-    if (savedPosition && savedPosition > 0) {
+    if (savedPositionMs && savedPositionMs > 0) {
       const drivingProviderId = playbackProviderRef.current;
       if (drivingProviderId) {
         const { providerRegistry } = await import('@/providers/registry');
         const descriptor = providerRegistry.get(drivingProviderId);
-        descriptor?.playback.seek(savedPosition * 1000).catch(() => {});
+        // savedPositionMs is already in milliseconds (sourced from state.playbackPosition / positionMs)
+        descriptor?.playback.seek(savedPositionMs).catch(() => {});
       }
     }
-  }, [lastSession, setTracks, setOriginalTracks, setSelectedPlaylistId, setCurrentTrackIndex, mediaTracksRef, handlers, playbackProviderRef]);
+  }, [lastSession, setTracks, setOriginalTracks, setSelectedPlaylistId, setCurrentTrackIndex, mediaTracksRef, expectedTrackIdRef, handlers, playbackProviderRef]);
 
   const handleClearCache = useCallback(async (options: ClearCacheOptions) => {
     const { clearCacheWithOptions } = await import('@/services/cache/libraryCache');
