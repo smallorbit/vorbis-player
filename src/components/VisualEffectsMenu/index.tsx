@@ -136,10 +136,6 @@ const AppSettingsMenu: React.FC<AppSettingsMenuProps> = memo(({
 
           <NativeQueueSyncSection />
 
-          {dataProviders.map((p) => (
-            <ProviderDataSection key={p.id} providerName={p.name} catalog={p.catalog} />
-          ))}
-
           <ControlGroup>
             <ControlLabel>Quick Access Panel</ControlLabel>
             <OptionButtonGroup>
@@ -243,6 +239,9 @@ const AppSettingsMenu: React.FC<AppSettingsMenuProps> = memo(({
                 </OptionButton>
               </OptionButtonGroup>
             </ControlGroup>
+            {dataProviders.map((p) => (
+              <ProviderDataSection key={p.id} providerName={p.name} catalog={p.catalog} />
+            ))}
           </CollapsibleSection>
         </DrawerContent>
       </DrawerContainer>
