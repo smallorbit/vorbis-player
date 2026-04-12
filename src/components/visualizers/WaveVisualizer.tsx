@@ -8,8 +8,6 @@ interface WaveVisualizerProps {
   speed?: number;
   accentColor: string;
   isPlaying: boolean;
-  playbackPosition?: number;
-  zenMode?: boolean;
 }
 
 interface Wave {
