@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import * as React from 'react';
 import { useProviderContext } from '@/contexts/ProviderContext';
 import { CardContent } from '../styled';
@@ -81,9 +81,7 @@ const PlaylistSelection = React.memo(function PlaylistSelection({
     removeCollection,
   } = useLibrarySync();
 
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [loginError, setLoginError] = useState<string | null>(null);
 
   const {
     viewMode,
@@ -174,31 +172,25 @@ const PlaylistSelection = React.memo(function PlaylistSelection({
   const pinnedAlbums = albumLibraryView.pinned;
   const unpinnedAlbums = albumLibraryView.unpinned;
 
-  useEffect(() => {
-    if (!isInitialLoadComplete) return;
+  const isAuthenticated = useMemo(
+    () =>
+      enabledProviderIds.some(id => getDescriptor(id)?.auth.isAuthenticated()) ||
+      (activeDescriptor?.auth.isAuthenticated() ?? false),
+    [activeDescriptor, enabledProviderIds, getDescriptor]
+  );
+
+  const isLoading = false;
+
+  const libraryError = useMemo(() => {
+    if (!isInitialLoadComplete) return null;
     if (playlists.length === 0 && albums.length === 0 && likedSongsCount === 0) {
       const providerName = activeDescriptor?.name ?? 'your music service';
-      setError(
-        `No playlists, albums, or liked songs found. Please add some music to ${providerName} first.`
-      );
-    } else {
-      setError(null);
+      return `No playlists, albums, or liked songs found. Please add some music to ${providerName} first.`;
     }
+    return null;
   }, [isInitialLoadComplete, playlists.length, albums.length, likedSongsCount, activeDescriptor]);
 
-  useEffect(() => {
-    const hasAuth = enabledProviderIds.some(id => {
-      const desc = getDescriptor(id);
-      return desc?.auth.isAuthenticated();
-    }) || activeDescriptor?.auth.isAuthenticated();
-    if (hasAuth) {
-      setIsAuthenticated(true);
-      setIsLoading(false);
-    } else {
-      setIsAuthenticated(false);
-      setIsLoading(false);
-    }
-  }, [activeDescriptor, enabledProviderIds, getDescriptor]);
+  const error = loginError ?? libraryError;
 
   function handlePlaylistClick(playlist: PlaylistInfo): void {
     logQueue('selected playlist: %s (%s)', playlist.name, playlist.id);
@@ -233,59 +225,100 @@ const PlaylistSelection = React.memo(function PlaylistSelection({
   const hasAnyContent = playlists.length > 0 || albums.length > 0 || likedSongsCount > 0;
   const showMainContent = isAuthenticated && !error && (hasAnyContent || (!isLoading && !isInitialLoadComplete));
 
-  const libraryContextValue: LibraryContextValue = {
-    inDrawer,
-    swipeZoneRef,
-    viewMode,
-    setViewMode,
-    searchQuery,
-    setSearchQuery,
-    playlistSort,
-    setPlaylistSort,
-    albumSort,
-    setAlbumSort,
-    artistFilter,
-    setArtistFilter,
-    providerFilters,
-    setProviderFilters,
-    handleProviderToggle,
-    hasActiveFilters,
-    albums,
-    isInitialLoadComplete,
-    showProviderBadges,
-    enabledProviderIds,
-    likedSongsPerProvider,
-    likedSongsCount,
-    isLikedSongsSyncing,
-    isUnifiedLikedActive,
-    unifiedLikedCount,
-    pinnedPlaylists,
-    unpinnedPlaylists,
-    pinnedAlbums,
-    unpinnedAlbums,
-    isPlaylistPinned,
-    canPinMorePlaylists,
-    isAlbumPinned,
-    canPinMoreAlbums,
-    activeDescriptor: activeDescriptor ?? null,
-    onPlaylistClick: handlePlaylistClick,
-    onPlaylistContextMenu: handlePlaylistContextMenu,
-    onPinPlaylistClick: handlePinPlaylistClick,
-    onLikedSongsClick: handleLikedSongsClick,
-    onAlbumClick: handleAlbumClick,
-    onAlbumContextMenu: handleAlbumContextMenu,
-    onPinAlbumClick: handlePinAlbumClick,
-    onArtistClick: handleArtistClick,
-    onLibraryRefresh,
-    isLibraryRefreshing,
-  };
+  const libraryContextValue: LibraryContextValue = useMemo(
+    () => ({
+      inDrawer,
+      swipeZoneRef,
+      viewMode,
+      setViewMode,
+      searchQuery,
+      setSearchQuery,
+      playlistSort,
+      setPlaylistSort,
+      albumSort,
+      setAlbumSort,
+      artistFilter,
+      setArtistFilter,
+      providerFilters,
+      setProviderFilters,
+      handleProviderToggle,
+      hasActiveFilters,
+      albums,
+      isInitialLoadComplete,
+      showProviderBadges,
+      enabledProviderIds,
+      likedSongsPerProvider,
+      likedSongsCount,
+      isLikedSongsSyncing,
+      isUnifiedLikedActive,
+      unifiedLikedCount,
+      pinnedPlaylists,
+      unpinnedPlaylists,
+      pinnedAlbums,
+      unpinnedAlbums,
+      isPlaylistPinned,
+      canPinMorePlaylists,
+      isAlbumPinned,
+      canPinMoreAlbums,
+      activeDescriptor: activeDescriptor ?? null,
+      onPlaylistClick: handlePlaylistClick,
+      onPlaylistContextMenu: handlePlaylistContextMenu,
+      onPinPlaylistClick: handlePinPlaylistClick,
+      onLikedSongsClick: handleLikedSongsClick,
+      onAlbumClick: handleAlbumClick,
+      onAlbumContextMenu: handleAlbumContextMenu,
+      onPinAlbumClick: handlePinAlbumClick,
+      onArtistClick: handleArtistClick,
+      onLibraryRefresh,
+      isLibraryRefreshing,
+    }),
+    [
+      inDrawer,
+      swipeZoneRef,
+      viewMode,
+      searchQuery,
+      playlistSort,
+      albumSort,
+      artistFilter,
+      providerFilters,
+      hasActiveFilters,
+      albums,
+      isInitialLoadComplete,
+      showProviderBadges,
+      enabledProviderIds,
+      likedSongsPerProvider,
+      likedSongsCount,
+      isLikedSongsSyncing,
+      isUnifiedLikedActive,
+      unifiedLikedCount,
+      pinnedPlaylists,
+      unpinnedPlaylists,
+      pinnedAlbums,
+      unpinnedAlbums,
+      isPlaylistPinned,
+      canPinMorePlaylists,
+      isAlbumPinned,
+      canPinMoreAlbums,
+      activeDescriptor,
+      handlePlaylistClick,
+      handlePlaylistContextMenu,
+      handlePinPlaylistClick,
+      handleLikedSongsClick,
+      handleAlbumClick,
+      handleAlbumContextMenu,
+      handlePinAlbumClick,
+      handleArtistClick,
+      onLibraryRefresh,
+      isLibraryRefreshing,
+    ]
+  );
 
   const statusContentProps = {
     isLoading,
     isAuthenticated,
     error,
     activeDescriptor: activeDescriptor ?? null,
-    setError,
+    setError: setLoginError,
   };
 
   if (inDrawer) {
