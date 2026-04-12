@@ -26,6 +26,8 @@ export interface PlaybackHandlers {
     playlistName?: string,
     provider?: ProviderId,
   ) => Promise<AddToQueueResult | null>;
+  onPlayLikedTracks?: (tracks: MediaTrack[], collectionId: string, collectionName: string, provider?: ProviderId) => Promise<void>;
+  onQueueLikedTracks?: (tracks: MediaTrack[], collectionName?: string) => void;
   onAlbumPlay: (albumId: string, albumName: string) => void;
   onBackToLibrary: () => void;
   onStartRadio?: () => void;
@@ -241,6 +243,8 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({
         onCloseLibraryDrawer={handleCloseLibraryDrawer}
         onPlaylistSelect={handlers.onPlaylistSelect}
         onAddToQueue={handlers.onAddToQueue}
+        onPlayLikedTracks={handlers.onPlayLikedTracks}
+        onQueueLikedTracks={handlers.onQueueLikedTracks}
         onTrackSelect={handlers.onTrackSelect}
         onRemoveFromQueue={handlers.onRemoveFromQueue}
         onReorderQueue={handlers.onReorderQueue}

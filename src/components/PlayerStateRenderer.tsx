@@ -173,6 +173,8 @@ interface PlayerStateRendererProps {
   tracks: MediaTrack[];
   onPlaylistSelect: (playlistId: string, playlistName?: string, provider?: import('@/types/domain').ProviderId) => void;
   onAddToQueue: (id: string, name?: string, provider?: import('@/types/domain').ProviderId) => void;
+  onPlayLikedTracks?: (tracks: MediaTrack[], collectionId: string, collectionName: string, provider?: import('@/types/domain').ProviderId) => Promise<void>;
+  onQueueLikedTracks?: (tracks: MediaTrack[], collectionName?: string) => void;
   lastSession: SessionSnapshot | null;
   onResume: () => void;
 }
@@ -184,6 +186,8 @@ const PlayerStateRenderer: React.FC<PlayerStateRendererProps> = ({
   tracks,
   onPlaylistSelect,
   onAddToQueue,
+  onPlayLikedTracks,
+  onQueueLikedTracks,
   lastSession,
   onResume,
 }) => {
@@ -278,6 +282,8 @@ const PlayerStateRenderer: React.FC<PlayerStateRendererProps> = ({
         }>
           <PlaylistSelection
             onPlaylistSelect={handlePlaylistSelectWrapped}
+            onPlayLikedTracks={onPlayLikedTracks}
+            onQueueLikedTracks={onQueueLikedTracks}
             footer={lastSession && onResume ? (
               <ResumeCard session={lastSession} onResume={onResume} />
             ) : undefined}

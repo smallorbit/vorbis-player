@@ -25,6 +25,7 @@ interface UseQueueManagementProps {
 
 interface UseQueueManagementReturn {
   handleAddToQueue: (playlistId: string, collectionName?: string, provider?: ProviderId) => Promise<AddToQueueResult | null>;
+  queueTracksDirectly: (tracks: MediaTrack[], collectionName?: string) => AddToQueueResult | null;
   handleRemoveFromQueue: (index: number) => void;
   handleReorderQueue: (fromIndex: number, toIndex: number) => void;
 }
@@ -183,8 +184,32 @@ export function useQueueManagement({
     [tracks, currentTrackIndex, shuffleEnabled, setTracks, setOriginalTracks, setCurrentTrackIndex]
   );
 
+  const queueTracksDirectly = useCallback(
+    (newTracks: MediaTrack[], collectionName?: string): AddToQueueResult | null => {
+      if (newTracks.length === 0) return null;
+
+      const existingIds = new Set(tracksRef.current.map((t) => t.id));
+      const uniqueNewTracks = newTracks.filter((t) => !existingIds.has(t.id));
+
+      if (uniqueNewTracks.length === 0) return null;
+
+      logQueue(
+        'queueTracksDirectly — appending %d tracks. Before: tracks=%d, mediaRef=%d',
+        uniqueNewTracks.length,
+        tracksRef.current.length,
+        mediaTracksRef.current.length,
+      );
+      mediaTracksRef.current = appendMediaTracks(mediaTracksRef.current, uniqueNewTracks);
+      setOriginalTracks([...tracksRef.current, ...uniqueNewTracks]);
+      setTracks((prev: MediaTrack[]) => [...prev, ...uniqueNewTracks]);
+      return { added: uniqueNewTracks.length, collectionName };
+    },
+    [mediaTracksRef, setOriginalTracks, setTracks]
+  );
+
   return {
     handleAddToQueue,
+    queueTracksDirectly,
     handleRemoveFromQueue,
     handleReorderQueue,
   };
