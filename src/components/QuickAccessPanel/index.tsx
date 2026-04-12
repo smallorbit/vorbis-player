@@ -18,7 +18,7 @@ import {
   BrowseButton,
 } from './styled';
 
-export interface QuickAccessPanelProps {
+interface QuickAccessPanelProps {
   onPlaylistSelect: (id: string, name: string, provider?: ProviderId) => void;
   onAddToQueue: (id: string, name?: string, provider?: ProviderId) => void;
   onBrowseLibrary: () => void;

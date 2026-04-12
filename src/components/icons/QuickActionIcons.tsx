@@ -64,9 +64,3 @@ export const QuickAccessPanelIcon = () => (
   </svg>
 );
 
-export const FlipMenuIcon = () => (
-  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M12 3L13.2 8.5L18 6.5L15 10.8L21 12L15 13.2L18 17.5L13.2 15.5L12 21L10.8 15.5L6 17.5L9 13.2L3 12L9 10.8L6 6.5L10.8 8.5L12 3Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" fill="currentColor" fillOpacity="0.15" />
-  </svg>
-);
-

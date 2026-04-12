@@ -134,7 +134,7 @@ export function getReactComponentName(element: Element): string | null {
   return null;
 }
 
-export interface BuildBugReportParams {
+interface BuildBugReportParams {
   selectionMode: SelectionMode;
   elements: SelectedElement[];
   screenshotDataUrl?: string;
