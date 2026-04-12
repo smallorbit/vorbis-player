@@ -106,12 +106,12 @@ class SpotifyPlayerService {
     this.saveState();
   }
 
-  async playTrack(uri: string, upcomingUris?: string[]): Promise<void> {
+  async playTrack(uri: string, upcomingUris?: string[], positionMs?: number): Promise<void> {
     if (!this.deviceId || !this.isReady) {
       throw new Error('Spotify player not ready');
     }
     this.lastPlayTrackTime = Date.now();
-    await apiPlayTrack(this.deviceId, uri, upcomingUris);
+    await apiPlayTrack(this.deviceId, uri, upcomingUris, positionMs);
   }
 
   async playContext(contextUri: string, offsetPosition?: number): Promise<void> {

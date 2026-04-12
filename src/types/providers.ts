@@ -66,8 +66,8 @@ export interface CatalogProvider {
 export interface PlaybackProvider {
   readonly providerId: ProviderId;
   initialize(): Promise<void>;
-  /** Play a single track by ref. */
-  playTrack(track: MediaTrack): Promise<void>;
+  /** Play a single track by ref, optionally starting from a position. */
+  playTrack(track: MediaTrack, options?: { positionMs?: number }): Promise<void>;
   /** Play a collection from optional offset (e.g. playlist from index). */
   playCollection?(collectionRef: CollectionRef, options?: { offset?: number }): Promise<void>;
   pause(): Promise<void>;
