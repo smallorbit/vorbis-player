@@ -260,7 +260,7 @@ const QueueTrackList = memo<QueueTrackListProps>(({
                   key={`${track.name}-${track.id}`}
                   ref={index === currentTrackIndex ? currentTrackRef : undefined}
                   onClick={() => onTrackSelect(index)}
-                  isSelected={index === currentTrackIndex}
+                  $isSelected={index === currentTrackIndex}
                 >
                   <AlbumArtContainer>
                     <Avatar
@@ -288,15 +288,15 @@ const QueueTrackList = memo<QueueTrackListProps>(({
                   </AlbumArtContainer>
 
                   <TrackInfo>
-                    <TrackName isSelected={index === currentTrackIndex}>
+                    <TrackName $isSelected={index === currentTrackIndex}>
                       {track.name}
                     </TrackName>
-                    <TrackArtist isSelected={index === currentTrackIndex}>
+                    <TrackArtist $isSelected={index === currentTrackIndex}>
                       {track.artists}
                     </TrackArtist>
                   </TrackInfo>
 
-                  <Duration isSelected={index === currentTrackIndex}>
+                  <Duration $isSelected={index === currentTrackIndex}>
                     {track.durationMs ? formatDuration(track.durationMs) : '--:--'}
                   </Duration>
 

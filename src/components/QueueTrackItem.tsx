@@ -210,7 +210,7 @@ export const SortableQueueItem = memo<QueueItemProps>(({
         ref={itemRef}
         onClick={handleClick}
         onContextMenu={handleContextMenu}
-        isSelected={isSelected}
+        $isSelected={isSelected}
         {...longPressHandlers}
         {...(isEditMode && onRemove ? { ...attributes, ...listeners } : {})}
         style={isEditMode && onRemove ? { cursor: isDragging ? 'grabbing' : 'grab', touchAction: 'none' } : undefined}
@@ -237,15 +237,15 @@ export const SortableQueueItem = memo<QueueItemProps>(({
         </AlbumArtContainer>
 
         <TrackInfo>
-          <TrackName isSelected={isSelected}>
+          <TrackName $isSelected={isSelected}>
             {track.name}
           </TrackName>
-          <TrackArtist isSelected={isSelected}>
+          <TrackArtist $isSelected={isSelected}>
             {track.artists}
           </TrackArtist>
         </TrackInfo>
 
-        <Duration isSelected={isSelected}>
+        <Duration $isSelected={isSelected}>
           {track.durationMs ? formatDuration(track.durationMs) : '--:--'}
         </Duration>
 
@@ -314,7 +314,7 @@ export const SwipeableQueueItem = memo<QueueItemProps>(({
             if (!isEditMode) onSelect(index);
           }}
           onContextMenu={handleContextMenu}
-          isSelected={isSelected}
+          $isSelected={isSelected}
           {...longPressHandlers}
         >
           <AlbumArtContainer>
@@ -333,15 +333,15 @@ export const SwipeableQueueItem = memo<QueueItemProps>(({
           </AlbumArtContainer>
 
           <TrackInfo>
-            <TrackName isSelected={isSelected}>
+            <TrackName $isSelected={isSelected}>
               {track.name}
             </TrackName>
-            <TrackArtist isSelected={isSelected}>
+            <TrackArtist $isSelected={isSelected}>
               {track.artists}
             </TrackArtist>
           </TrackInfo>
 
-          <Duration isSelected={isSelected}>
+          <Duration $isSelected={isSelected}>
             {track.durationMs ? formatDuration(track.durationMs) : '--:--'}
           </Duration>
 
@@ -383,7 +383,7 @@ export const SwipeableQueueItem = memo<QueueItemProps>(({
             ref={itemRef}
             onClick={() => !isRevealed && !isEditMode && onSelect(index)}
             onContextMenu={handleContextMenu}
-            isSelected={isSelected}
+            $isSelected={isSelected}
             {...longPressHandlers}
           >
             <AlbumArtContainer>
@@ -401,15 +401,15 @@ export const SwipeableQueueItem = memo<QueueItemProps>(({
             </AlbumArtContainer>
 
             <TrackInfo>
-              <TrackName isSelected={isSelected}>
+              <TrackName $isSelected={isSelected}>
                 {track.name}
               </TrackName>
-              <TrackArtist isSelected={isSelected}>
+              <TrackArtist $isSelected={isSelected}>
                 {track.artists}
               </TrackArtist>
             </TrackInfo>
 
-            <Duration isSelected={isSelected}>
+            <Duration $isSelected={isSelected}>
               {track.durationMs ? formatDuration(track.durationMs) : '--:--'}
             </Duration>
 

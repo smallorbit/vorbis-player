@@ -8,20 +8,18 @@ import { usePlayerSizingContext } from '@/contexts/PlayerSizingContext';
 
 const QueueTrackList = React.lazy(() => import('./QueueTrackList'));
 
-const QueueDrawerContainer = styled.div.withConfig({
-  shouldForwardProp: (prop) => !['isOpen', 'width', 'transitionDuration', 'transitionEasing'].includes(prop),
-}) <{ isOpen: boolean; width: number; transitionDuration: number; transitionEasing: string }>`
+const QueueDrawerContainer = styled.div<{ $isOpen: boolean; $width: number; $transitionDuration: number; $transitionEasing: string }>`
   position: fixed;
   top: 0;
   right: 0;
-  width: ${({ width }) => width}px;
-  height: 100vh;
+  width: ${({ $width }) => $width}px;
+  height: 100dvh;
   background: ${theme.colors.overlay.dark};
   backdrop-filter: blur(${theme.drawer.backdropBlur});
   border-left: 1px solid ${theme.colors.popover.border};
-  transform: translateX(${props => props.isOpen ? '0' : '100%'});
-  transition: transform ${({ transitionDuration }) => transitionDuration}ms ${({ transitionEasing }) => transitionEasing},
-            width ${({ transitionDuration }) => transitionDuration}ms ${({ transitionEasing }) => transitionEasing};
+  transform: translateX(${props => props.$isOpen ? '0' : '100%'});
+  transition: transform ${({ $transitionDuration }) => $transitionDuration}ms ${({ $transitionEasing }) => $transitionEasing},
+            width ${({ $transitionDuration }) => $transitionDuration}ms ${({ $transitionEasing }) => $transitionEasing};
   z-index: ${theme.zIndex.modal};
   overflow-y: auto;
   padding: ${theme.spacing.md};
@@ -69,18 +67,16 @@ const QueueContent = styled.div`
   }
 `;
 
-const QueueOverlay = styled.div.withConfig({
-  shouldForwardProp: (prop) => !['isOpen'].includes(prop),
-}) <{ isOpen: boolean }>`
+const QueueOverlay = styled.div<{ $isOpen: boolean }>`
   position: fixed;
   top: 0;
   left: 0;
   width: 100vw;
-  height: 100vh;
+  height: 100dvh;
   background: ${theme.colors.overlay.light};
   backdrop-filter: blur(2px);
-  opacity: ${props => props.isOpen ? 1 : 0};
-  visibility: ${props => props.isOpen ? 'visible' : 'hidden'};
+  opacity: ${props => props.$isOpen ? 1 : 0};
+  visibility: ${props => props.$isOpen ? 'visible' : 'hidden'};
   transition: all ${theme.drawer.transitionDuration}ms ${theme.drawer.transitionEasing};
   z-index: ${theme.zIndex.overlay};
 `;
@@ -238,15 +234,15 @@ const QueueDrawer = memo<QueueDrawerProps>(({
   return createPortal(
     <>
       <QueueOverlay
-        isOpen={isOpen}
+        $isOpen={isOpen}
         onClick={onClose}
       />
 
       <QueueDrawerContainer
-        isOpen={isOpen}
-        width={drawerWidth}
-        transitionDuration={transitionDuration}
-        transitionEasing={transitionEasing}
+        $isOpen={isOpen}
+        $width={drawerWidth}
+        $transitionDuration={transitionDuration}
+        $transitionEasing={transitionEasing}
       >
         <QueueHeader>
           <div>
