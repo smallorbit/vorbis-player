@@ -6,6 +6,16 @@ import { hasCache, getFromCache, addToCache } from './colorCache';
 import type { ExtractedColor } from './colorCache';
 export type { ExtractedColor } from './colorCache';
 
+// Color extraction algorithm constants
+const IMAGE_MAX_SIZE = 150;
+const PIXEL_SAMPLE_STRIDE = 16;
+const ALPHA_THRESHOLD = 128;
+const COLOR_BUCKET_SIZE = 8;
+const MIN_LIGHTNESS = 40;
+const MAX_LIGHTNESS = 85;
+const MIN_SATURATION = 50;
+const COLOR_SIMILARITY_THRESHOLD = 40;
+
 /** Pixel color data used during extraction. */
 interface ColorData {
   r: number;
@@ -55,13 +65,13 @@ function rgbToHex(r: number, g: number, b: number): string {
 /** Returns true if lightness is in the 40-85% range (suitable for UI accent use). */
 function isGoodContrast(r: number, g: number, b: number): boolean {
   const [, , lightness] = rgbToHsl(r, g, b);
-  return lightness >= 40 && lightness <= 85;
+  return lightness >= MIN_LIGHTNESS && lightness <= MAX_LIGHTNESS;
 }
 
 /** Returns true if saturation is >= 50% (vibrant enough for accent use). */
 function isVibrant(r: number, g: number, b: number): boolean {
   const [, saturation] = rgbToHsl(r, g, b);
-  return saturation >= 50;
+  return saturation >= MIN_SATURATION;
 }
 
 /**
@@ -89,8 +99,7 @@ export async function extractDominantColor(imageUrl: string): Promise<ExtractedC
             return;
           }
 
-          const maxSize = 150;
-          const scale = Math.min(maxSize / img.width, maxSize / img.height);
+          const scale = Math.min(IMAGE_MAX_SIZE / img.width, IMAGE_MAX_SIZE / img.height);
           canvas.width = img.width * scale;
           canvas.height = img.height * scale;
 
@@ -101,17 +110,17 @@ export async function extractDominantColor(imageUrl: string): Promise<ExtractedC
 
           const colorMap = new Map<string, ColorData>();
 
-          for (let i = 0; i < data.length; i += 16) {
+          for (let i = 0; i < data.length; i += PIXEL_SAMPLE_STRIDE) {
             const r = data[i];
             const g = data[i + 1];
             const b = data[i + 2];
             const a = data[i + 3];
 
-            if (a < 128) continue;
+            if (a < ALPHA_THRESHOLD) continue;
 
-            const rBucket = Math.floor(r / 8) * 8;
-            const gBucket = Math.floor(g / 8) * 8;
-            const bBucket = Math.floor(b / 8) * 8;
+            const rBucket = Math.floor(r / COLOR_BUCKET_SIZE) * COLOR_BUCKET_SIZE;
+            const gBucket = Math.floor(g / COLOR_BUCKET_SIZE) * COLOR_BUCKET_SIZE;
+            const bBucket = Math.floor(b / COLOR_BUCKET_SIZE) * COLOR_BUCKET_SIZE;
 
             const key = `${rBucket}-${gBucket}-${bBucket}`;
 
@@ -210,8 +219,7 @@ export async function extractTopVibrantColors(imageUrl: string, count = 3): Prom
             return;
           }
 
-          const maxSize = 150;
-          const scale = Math.min(maxSize / img.width, maxSize / img.height);
+          const scale = Math.min(IMAGE_MAX_SIZE / img.width, IMAGE_MAX_SIZE / img.height);
           canvas.width = img.width * scale;
           canvas.height = img.height * scale;
 
@@ -222,15 +230,15 @@ export async function extractTopVibrantColors(imageUrl: string, count = 3): Prom
 
           const colorMap = new Map<string, ColorData>();
 
-          for (let i = 0; i < data.length; i += 16) {
+          for (let i = 0; i < data.length; i += PIXEL_SAMPLE_STRIDE) {
             const r = data[i];
             const g = data[i + 1];
             const b = data[i + 2];
             const a = data[i + 3];
-            if (a < 128) continue;
-            const rBucket = Math.floor(r / 8) * 8;
-            const gBucket = Math.floor(g / 8) * 8;
-            const bBucket = Math.floor(b / 8) * 8;
+            if (a < ALPHA_THRESHOLD) continue;
+            const rBucket = Math.floor(r / COLOR_BUCKET_SIZE) * COLOR_BUCKET_SIZE;
+            const gBucket = Math.floor(g / COLOR_BUCKET_SIZE) * COLOR_BUCKET_SIZE;
+            const bBucket = Math.floor(b / COLOR_BUCKET_SIZE) * COLOR_BUCKET_SIZE;
             const key = `${rBucket}-${gBucket}-${bBucket}`;
             if (colorMap.has(key)) {
               colorMap.get(key)!.count++;
@@ -253,7 +261,7 @@ export async function extractTopVibrantColors(imageUrl: string, count = 3): Prom
 
           scoredColors.sort((a, b) => b.score - a.score);
 
-          function isTooSimilar(c1: ColorData, c2: ColorData, threshold = 40) {
+          function isTooSimilar(c1: ColorData, c2: ColorData, threshold = COLOR_SIMILARITY_THRESHOLD) {
             const dr = c1.r - c2.r;
             const dg = c1.g - c2.g;
             const db = c1.b - c2.b;
