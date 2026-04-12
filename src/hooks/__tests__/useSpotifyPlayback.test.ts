@@ -93,7 +93,7 @@ describe('useProviderPlayback', () => {
     });
 
     // #then
-    expect(mockPlayTrack).toHaveBeenCalledWith(mediaTracks[1]);
+    expect(mockPlayTrack).toHaveBeenCalledWith(mediaTracks[1], undefined);
     expect(setCurrentTrackIndex).toHaveBeenCalledWith(1);
   });
 
@@ -134,7 +134,7 @@ describe('useProviderPlayback', () => {
     });
 
     // #then — recursive call plays track at index 1
-    expect(mockPlayTrack).toHaveBeenCalledWith(mediaTracks[1]);
+    expect(mockPlayTrack).toHaveBeenCalledWith(mediaTracks[1], undefined);
   });
 
   it('skips to next track on generic error when skipOnError is true', async () => {
@@ -155,7 +155,7 @@ describe('useProviderPlayback', () => {
     });
 
     // #then
-    expect(mockPlayTrack).toHaveBeenCalledWith(mediaTracks[1]);
+    expect(mockPlayTrack).toHaveBeenCalledWith(mediaTracks[1], undefined);
   });
 
   it('prefetches the next track after successful playback', async () => {

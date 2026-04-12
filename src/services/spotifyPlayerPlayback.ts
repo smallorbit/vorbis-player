@@ -5,15 +5,16 @@ export async function apiPlayTrack(
   deviceId: string,
   uri: string,
   upcomingUris?: string[],
+  positionMs?: number,
 ): Promise<void> {
   const token = await spotifyAuth.ensureValidToken();
   const uris = upcomingUris?.length ? [uri, ...upcomingUris] : [uri];
 
-  logSpotify('Web API play track deviceId=%s queueSize=%d', deviceId, uris.length);
+  logSpotify('Web API play track deviceId=%s queueSize=%d positionMs=%s', deviceId, uris.length, positionMs ?? 0);
 
   const response = await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`, {
     method: 'PUT',
-    body: JSON.stringify({ uris, position_ms: 0 }),
+    body: JSON.stringify({ uris, position_ms: positionMs ?? 0 }),
     headers: {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${token}`

@@ -79,7 +79,7 @@ describe('SpotifyPlaybackAdapter', () => {
     expect(spotifyPlayer.initialize).toHaveBeenCalledTimes(1);
     expect(spotifyPlayer.transferPlaybackToDevice).toHaveBeenCalledTimes(1);
     expect(spotifyPlayer.ensureDeviceIsActive).toHaveBeenCalledTimes(1);
-    expect(spotifyPlayer.playTrack).toHaveBeenCalledWith('spotify:track:abc123', undefined);
+    expect(spotifyPlayer.playTrack).toHaveBeenCalledWith('spotify:track:abc123', undefined, undefined);
   });
 
   it('times out if SDK never becomes ready', async () => {
