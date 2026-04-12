@@ -29,6 +29,12 @@ interface SwipeGestureReturn {
 const DIRECTION_LOCK_THRESHOLD = 10;
 const DAMPENING_FACTOR = 0.8;
 
+export const DEFAULT_SWIPE_THRESHOLD = 50;
+export const DEFAULT_VELOCITY_THRESHOLD = 0.3;
+export const DEFAULT_TAP_MAX_DURATION = 250;
+export const DEFAULT_TAP_MAX_DISTANCE = 10;
+export const DEFAULT_ANIMATION_DURATION = 300;
+
 const noopHandlers: SwipeGestureReturn = {
   offsetX: 0,
   isSwiping: false,
@@ -45,12 +51,12 @@ export function useSwipeGesture(
   options: SwipeGestureOptions = {}
 ): SwipeGestureReturn {
   const {
-    swipeThreshold = 50,
-    velocityThreshold = 0.3,
-    tapMaxDuration = 250,
-    tapMaxDistance = 10,
+    swipeThreshold = DEFAULT_SWIPE_THRESHOLD,
+    velocityThreshold = DEFAULT_VELOCITY_THRESHOLD,
+    tapMaxDuration = DEFAULT_TAP_MAX_DURATION,
+    tapMaxDistance = DEFAULT_TAP_MAX_DISTANCE,
     enabled = true,
-    animationDuration = 300,
+    animationDuration = DEFAULT_ANIMATION_DURATION,
   } = options;
 
   const [offsetX, setOffsetX] = useState(0);

@@ -8,8 +8,6 @@ interface GridWaveVisualizerProps {
   speed?: number;
   accentColor: string;
   isPlaying: boolean;
-  playbackPosition?: number;
-  zenMode?: boolean;
 }
 
 interface GridParticle {
@@ -168,24 +166,6 @@ export const GridWaveVisualizer: React.FC<GridWaveVisualizerProps> = ({
     [g]
   );
 
-  const handleColorChange = useCallback(
-    (states: GridWaveState[], color: string): void => {
-      const state = states[0];
-      if (!state) return;
-      const spacing = state.width < 768 ? g.spacingMobile : g.spacing;
-      const cols = Math.ceil(state.width / spacing) + 1;
-      const rows = Math.ceil(state.height / spacing) + 1;
-      const centerX = (cols - 1) * spacing / 2;
-      state.particles.forEach(particle => {
-        const edgeFactor = Math.abs(particle.baseX - centerX) / Math.max(1, centerX);
-        const depthFactor = particle.gridY / Math.max(1, rows - 1);
-        const intensityFactor = edgeFactor * g.edgeIntensity + depthFactor * (1 - g.edgeIntensity);
-        particle.color = generateColorVariant(color, 0.3 + intensityFactor * 0.5);
-      });
-    },
-    [g]
-  );
-
   const canvasRef = useCanvasVisualizer<GridWaveState>({
     accentColor,
     isPlaying,
@@ -194,7 +174,6 @@ export const GridWaveVisualizer: React.FC<GridWaveVisualizerProps> = ({
     initializeItems,
     updateItems,
     renderItems,
-    onColorChange: handleColorChange,
   });
 
   return (

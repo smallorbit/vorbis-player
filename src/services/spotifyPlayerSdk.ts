@@ -1,3 +1,4 @@
+import { SPOTIFY_SDK_LOAD_TIMEOUT_MS } from '@/constants/spotify';
 import { logSpotify } from '@/lib/debugLog';
 
 interface HMRPlayerState {
@@ -43,7 +44,7 @@ export function loadSpotifySDK(pendingRef: { current: Promise<void> | null }): P
     const timeout = setTimeout(() => {
       pendingRef.current = null;
       reject(new Error('Spotify SDK failed to load within timeout'));
-    }, 10000);
+    }, SPOTIFY_SDK_LOAD_TIMEOUT_MS);
 
     window.onSpotifyWebPlaybackSDKReady = () => {
       clearTimeout(timeout);

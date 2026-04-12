@@ -8,8 +8,6 @@ interface WaveVisualizerProps {
   speed?: number;
   accentColor: string;
   isPlaying: boolean;
-  playbackPosition?: number;
-  zenMode?: boolean;
 }
 
 interface Wave {
@@ -119,17 +117,6 @@ export const WaveVisualizer: React.FC<WaveVisualizerProps> = ({
     []
   );
 
-  const handleColorChange = useCallback(
-    (waves: Wave[], color: string): void => {
-      const count = waves.length;
-      waves.forEach((wave, i) => {
-        const layerRatio = i / Math.max(1, count - 1);
-        wave.color = generateColorVariant(color, 0.2 + layerRatio * 0.6);
-      });
-    },
-    []
-  );
-
   const canvasRef = useCanvasVisualizer<Wave>({
     accentColor,
     isPlaying,
@@ -138,7 +125,6 @@ export const WaveVisualizer: React.FC<WaveVisualizerProps> = ({
     initializeItems,
     updateItems,
     renderItems,
-    onColorChange: handleColorChange,
   });
 
   return (

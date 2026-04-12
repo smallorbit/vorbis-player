@@ -10,6 +10,10 @@ import { parseID3 } from '@/utils/id3Parser';
 import { bytesToDataUrl } from '@/utils/bytesToDataUrl';
 import { putDurationMs, putTagMetadata } from './dropboxArtCache';
 
+const PLAYBACK_POLL_INTERVAL_MS = 250;
+const FETCH_LIMIT = 262144; // 256KB — enough to cover large embedded cover art in ID3 headers
+const ENRICHMENT_DELAY_MS = 2000; // Wait for audio to buffer before fetching ID3 tags
+
 export class DropboxPlaybackAdapter implements PlaybackProvider {
   readonly providerId: ProviderId = 'dropbox';
   private audio: HTMLAudioElement | null = null;
@@ -114,9 +118,6 @@ export class DropboxPlaybackAdapter implements PlaybackProvider {
   }
 
   private enrichMetadataInBackground(track: MediaTrack, streamUrl: string): void {
-    const FETCH_LIMIT = 262144; // 256KB — enough to cover large embedded cover art in ID3 headers
-    const ENRICHMENT_DELAY_MS = 2000; // Wait for audio to buffer before fetching ID3 tags
-
     const doEnrich = async () => {
       // Let the audio element buffer first before competing for bandwidth
       await new Promise((resolve) => setTimeout(resolve, ENRICHMENT_DELAY_MS));
@@ -316,12 +317,11 @@ export class DropboxPlaybackAdapter implements PlaybackProvider {
 
   private startUpdateInterval(): void {
     this.stopUpdateInterval();
-    // Poll every 250ms for smooth timeline updates
     this.updateInterval = setInterval(() => {
       if (this.audio && !this.audio.paused) {
         this.notifyListeners();
       }
-    }, 250);
+    }, PLAYBACK_POLL_INTERVAL_MS);
   }
 
   private stopUpdateInterval(): void {

@@ -5,14 +5,7 @@ export const QueueIcon = () => (
 );
 
 export const VisualEffectsIcon = () => (
-  <svg
-    viewBox="0 0 24 24"
-    style={{ display: 'block' }}
-    width="1.5rem"
-    height="1.5rem"
-    fill="none"
-    xmlns="http://www.w3.org/2000/svg"
-  >
+  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
     <path
       fill="currentColor"
       fillRule="evenodd"

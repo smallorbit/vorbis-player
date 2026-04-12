@@ -1,5 +1,38 @@
 import { theme } from '@/styles/theme';
 
+// Sizing configuration constants
+const SIZING_CONFIG = {
+  // Optimal aspect ratios for different viewport types
+  aspectRatios: {
+    veryTall: 0.6,      // Portrait phones, tablets (viewportRatio < 0.75)
+    standard: 0.8,      // Standard portrait (viewportRatio < 1.0)
+    squarish: 0.86,     // Square-ish or landscape tablets (viewportRatio < 1.5)
+    landscape: 0.9,     // Standard landscape (viewportRatio < 2.0)
+    ultraWide: 1.2,     // Ultra-wide screens (viewportRatio >= 2.0)
+  },
+  // Viewport ratio breakpoints for determining screen type
+  viewportRatioBreakpoints: {
+    veryTall: 0.75,
+    standard: 1.0,
+    squarish: 1.5,
+    landscape: 2.0,
+  },
+  // Responsive padding values in pixels based on screen size
+  padding: {
+    verySmall: 2,       // 2px for very small screens
+    small: 4,           // 4px for small phones
+    medium: 6,          // 6px for standard phones
+    large: 10,          // 10px for large phones / small tablets
+  },
+  // Viewport usage overrides for mobile devices
+  mobileViewportUsage: {
+    width: 0.98,
+    height: 0.95,
+  },
+  // Conversion factor: 1rem = 16px
+  remToPxFactor: 16,
+} as const;
+
 // Type definition for Window with Visual Viewport API support
 interface WindowWithVisualViewport extends Window {
   visualViewport: VisualViewport | null;
@@ -39,8 +72,8 @@ const createDefaultSizingConstraints = (viewport: ViewportInfo): SizingConstrain
   viewportUsageHeight: number;
 } => {
   const isMobile = viewport.width < parseInt(theme.breakpoints.lg);
-  const viewportUsageWidth = isMobile ? 0.98 : theme.playerConstraints.viewportUsage.width;
-  const viewportUsageHeight = isMobile ? 0.95 : theme.playerConstraints.viewportUsage.height;
+  const viewportUsageWidth = isMobile ? SIZING_CONFIG.mobileViewportUsage.width : theme.playerConstraints.viewportUsage.width;
+  const viewportUsageHeight = isMobile ? SIZING_CONFIG.mobileViewportUsage.height : theme.playerConstraints.viewportUsage.height;
 
   return {
     minWidth: parseInt(theme.breakpoints.xs),
@@ -160,7 +193,7 @@ export const shouldUseFluidSizing = (viewport: ViewportInfo): boolean => {
 // Helper function to convert rem values to pixels
 const remToPixels = (remValue: string): number => {
   const numericValue = parseFloat(remValue);
-  return numericValue * 16; // 1rem = 16px
+  return numericValue * SIZING_CONFIG.remToPxFactor;
 };
 
 export const calculateOptimalPadding = (viewport: ViewportInfo): number => {
@@ -172,50 +205,45 @@ export const calculateOptimalPadding = (viewport: ViewportInfo): number => {
     lg: parseInt(theme.breakpoints.lg),
   };
 
-  if (viewport.width < breakpoints.xs) return 2;  // 2px for very small screens
-  if (viewport.width < breakpoints.sm) return 4;   // 4px for small phones
-  if (viewport.width < breakpoints.md) return 6;   // 6px for standard phones
-  if (viewport.width < breakpoints.lg) return 10;  // 10px for large phones / small tablets
-  return remToPixels(theme.spacing.md);             // 16px for desktop
+  if (viewport.width < breakpoints.xs) return SIZING_CONFIG.padding.verySmall;
+  if (viewport.width < breakpoints.sm) return SIZING_CONFIG.padding.small;
+  if (viewport.width < breakpoints.md) return SIZING_CONFIG.padding.medium;
+  if (viewport.width < breakpoints.lg) return SIZING_CONFIG.padding.large;
+  return remToPixels(theme.spacing.md);
 };
 
 // Enhanced aspect ratio utilities
 export const getOptimalAspectRatio = (viewport: ViewportInfo): number => {
   const viewportRatio = viewport.width / viewport.height;
-  
+
   // Define aspect ratio ranges for different screen types
-  if (viewportRatio < 0.75) {
-    // Very tall screens (portrait phones, tablets)
-    return 0.6;
-  } else if (viewportRatio < 1.0) {
-    // Standard portrait
-    return 0.8;
-  } else if (viewportRatio < 1.5) {
-    // Square-ish or landscape tablets
-    return 0.86;
-  } else if (viewportRatio < 2.0) {
-    // Standard landscape
-    return 0.9;
+  if (viewportRatio < SIZING_CONFIG.viewportRatioBreakpoints.veryTall) {
+    return SIZING_CONFIG.aspectRatios.veryTall;
+  } else if (viewportRatio < SIZING_CONFIG.viewportRatioBreakpoints.standard) {
+    return SIZING_CONFIG.aspectRatios.standard;
+  } else if (viewportRatio < SIZING_CONFIG.viewportRatioBreakpoints.squarish) {
+    return SIZING_CONFIG.aspectRatios.squarish;
+  } else if (viewportRatio < SIZING_CONFIG.viewportRatioBreakpoints.landscape) {
+    return SIZING_CONFIG.aspectRatios.landscape;
   } else {
-    // Ultra-wide screens
-    return 1.2;
+    return SIZING_CONFIG.aspectRatios.ultraWide;
   }
 };
 
 export const calculateAspectRatioConstraints = (viewport: ViewportInfo): { min: number; max: number } => {
   const viewportRatio = viewport.width / viewport.height;
-  
+
   // Define reasonable aspect ratio bounds based on viewport
-  if (viewportRatio < 0.75) {
+  if (viewportRatio < SIZING_CONFIG.viewportRatioBreakpoints.veryTall) {
     // Very tall screens - allow wider ratios
     return { min: 0.5, max: 1.0 };
-  } else if (viewportRatio < 1.0) {
+  } else if (viewportRatio < SIZING_CONFIG.viewportRatioBreakpoints.standard) {
     // Portrait - standard bounds
     return { min: 0.6, max: 0.9 };
-  } else if (viewportRatio < 1.5) {
+  } else if (viewportRatio < SIZING_CONFIG.viewportRatioBreakpoints.squarish) {
     // Square-ish - balanced bounds
     return { min: 0.7, max: 1.1 };
-  } else if (viewportRatio < 2.0) {
+  } else if (viewportRatio < SIZING_CONFIG.viewportRatioBreakpoints.landscape) {
     // Landscape - allow taller ratios
     return { min: 0.8, max: 1.3 };
   } else {

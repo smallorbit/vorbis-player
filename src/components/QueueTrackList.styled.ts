@@ -78,9 +78,7 @@ export const QueueListItems = styled.div`
   gap: ${({ theme }) => theme.spacing.sm};
 `;
 
-export const QueueListItem = styled.div.withConfig({
-  shouldForwardProp: (prop) => prop !== 'isSelected',
-})<{ isSelected: boolean }>`
+export const QueueListItem = styled.div<{ $isSelected: boolean }>`
   display: flex;
   align-items: center;
   gap: ${({ theme }) => theme.spacing.sm};
@@ -90,7 +88,7 @@ export const QueueListItem = styled.div.withConfig({
   transition: background 0.2s ease, border-color 0.2s ease;
   border: 1px solid transparent;
 
-  ${({ theme, isSelected }) => isSelected ? `
+  ${({ theme, $isSelected }) => $isSelected ? `
     background: color-mix(in srgb, var(--accent-color) 20%, transparent);
     border-color: var(--accent-color);
   ` : `
@@ -121,13 +119,11 @@ export const TrackInfo = styled.div`
   min-width: 0;
 `;
 
-export const TrackName = styled.div.withConfig({
-  shouldForwardProp: (prop) => prop !== 'isSelected',
-})<{ isSelected: boolean }>`
+export const TrackName = styled.div<{ $isSelected: boolean }>`
   font-weight: ${({ theme }) => theme.fontWeight.semibold};
   font-size: ${({ theme }) => theme.fontSize.base};
   line-height: 1.25;
-  color: ${({ isSelected, theme }) => isSelected ? theme.colors.white : '#f5f5f5'};
+  color: ${({ $isSelected, theme }) => $isSelected ? theme.colors.white : '#f5f5f5'};
 
   /* Allow up to 2 lines with ellipsis on overflow */
   display: -webkit-box;
@@ -137,23 +133,19 @@ export const TrackName = styled.div.withConfig({
   word-break: break-word;
 `;
 
-export const TrackArtist = styled.div.withConfig({
-  shouldForwardProp: (prop) => prop !== 'isSelected',
-})<{ isSelected: boolean }>`
+export const TrackArtist = styled.div<{ $isSelected: boolean }>`
   font-size: ${({ theme }) => theme.fontSize.sm};
   margin-top: ${({ theme }) => theme.spacing.xs};
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  color: ${({ isSelected, theme }) => isSelected ? 'var(--accent-color)' : theme.colors.gray[400]};
+  color: ${({ $isSelected, theme }) => $isSelected ? 'var(--accent-color)' : theme.colors.gray[400]};
 `;
 
-export const Duration = styled.span.withConfig({
-  shouldForwardProp: (prop) => prop !== 'isSelected',
-})<{ isSelected: boolean }>`
+export const Duration = styled.span<{ $isSelected: boolean }>`
   font-size: ${({ theme }) => theme.fontSize.sm};
   font-family: monospace;
-  color: ${({ isSelected, theme }) => isSelected ? 'var(--accent-color)' : theme.colors.gray[400]};
+  color: ${({ $isSelected, theme }) => $isSelected ? 'var(--accent-color)' : theme.colors.gray[400]};
   flex-shrink: 0;
 `;
 

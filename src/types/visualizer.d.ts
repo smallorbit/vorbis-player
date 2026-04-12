@@ -11,12 +11,3 @@ export type VisualizerStyle =
   | 'wave'
   | 'grid';
 
-interface VisualizerConfig {
-  particleCount?: number;
-  animationSpeed?: number;
-  colorVariation?: number;
-  barCount?: number;
-  shapeCount?: number;
-  layerCount?: number;
-}
-

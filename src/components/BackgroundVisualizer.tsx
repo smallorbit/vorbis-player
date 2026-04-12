@@ -20,8 +20,6 @@ interface BackgroundVisualizerProps {
   speed?: number;
   accentColor: string;
   isPlaying: boolean;
-  playbackPosition?: number;
-  zenMode?: boolean;
   /** When style is 'comet', the trail head is constrained to this rect so it appears to come from the album art */
   albumArtBounds?: AlbumArtBounds | null;
 }
@@ -51,7 +49,6 @@ const VisualizerContainer = styled.div`
  * - intensity: Visualizer intensity (0-100)
  * - accentColor: Current track's accent color
  * - isPlaying: Whether music is currently playing
- * - playbackPosition: Current playback position in milliseconds (optional)
  */
 const BackgroundVisualizer: React.FC<BackgroundVisualizerProps> = React.memo(({
   enabled,
@@ -60,8 +57,6 @@ const BackgroundVisualizer: React.FC<BackgroundVisualizerProps> = React.memo(({
   speed,
   accentColor,
   isPlaying,
-  playbackPosition,
-  zenMode,
   albumArtBounds,
 }) => {
   const VisualizerComponent = useMemo(() => {
@@ -92,8 +87,6 @@ const BackgroundVisualizer: React.FC<BackgroundVisualizerProps> = React.memo(({
         speed={speed ?? 1.0}
         accentColor={accentColor}
         isPlaying={isPlaying}
-        playbackPosition={playbackPosition}
-        zenMode={zenMode}
         {...(style === 'comet' && albumArtBounds != null ? { albumArtBounds } : {})}
       />
     </VisualizerContainer>

@@ -21,12 +21,6 @@ interface UseCanvasVisualizerProps<T> {
    * Render items to the canvas
    */
   renderItems: (ctx: CanvasRenderingContext2D, items: T[], width: number, height: number, intensity: number) => void;
-  /**
-   * Update item colors when accent color changes. 
-   * This runs in addition to re-initialization to ensure immediate feedback without full reset if desired,
-   * though currently the hook re-initializes on color change by default due to dependency.
-   */
-  onColorChange: (items: T[], color: string) => void;
 }
 
 /**

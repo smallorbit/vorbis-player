@@ -8,8 +8,6 @@ interface ParticleVisualizerProps {
   speed?: number;
   accentColor: string;
   isPlaying: boolean;
-  playbackPosition?: number;
-  zenMode?: boolean;
 }
 
 interface Particle {
@@ -122,12 +120,6 @@ export const ParticleVisualizer: React.FC<ParticleVisualizerProps> = ({
     });
   }, []);
 
-  const handleColorChange = useCallback((particles: Particle[], color: string) => {
-    particles.forEach(particle => {
-      particle.color = generateColorVariant(color, Math.random() * 0.5 + 0.3);
-    });
-  }, []);
-
   const canvasRef = useCanvasVisualizer<Particle>({
     accentColor,
     isPlaying,
@@ -136,7 +128,6 @@ export const ParticleVisualizer: React.FC<ParticleVisualizerProps> = ({
     initializeItems: initializeParticles,
     updateItems: updateParticles,
     renderItems: renderParticles,
-    onColorChange: handleColorChange
   });
 
   return (

@@ -60,7 +60,6 @@ const AudioPlayerComponent = () => {
     backgroundVisualizerIntensity,
     backgroundVisualizerSpeed,
     accentColorBackgroundEnabled,
-    zenModeEnabled,
     showVisualEffects,
     setShowVisualEffects,
   } = useVisualEffectsContext();
@@ -351,8 +350,6 @@ const AudioPlayerComponent = () => {
             speed={backgroundVisualizerSpeed}
             accentColor={accentColor}
             isPlaying={state.isPlaying}
-            playbackPosition={state.playbackPosition}
-            zenMode={zenModeEnabled}
           />
         </ProfiledComponent>
         {renderContent()}
