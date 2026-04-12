@@ -75,11 +75,12 @@ export class SpotifyPlaybackAdapter implements PlaybackProvider {
     await spotifyPlayer.initialize();
   }
 
-  async playTrack(track: MediaTrack): Promise<void> {
+  async playTrack(track: MediaTrack, options?: { positionMs?: number }): Promise<void> {
     const uri = track.playbackRef.ref;
+    const startPositionMs = options?.positionMs;
 
     // If Spotify's SDK already natively advanced to this track, skip the API call entirely.
-    if (this.playbackSessionActive) {
+    if (this.playbackSessionActive && !startPositionMs) {
       const state = await spotifyPlayer.getCurrentState();
       if (state?.track_window?.current_track?.uri === uri && !state.paused) {
         logSpotify('Spotify already playing requested track natively, skipping API call');
@@ -95,7 +96,7 @@ export class SpotifyPlaybackAdapter implements PlaybackProvider {
 
     const upcomingUris = this.pendingUpcomingUris ?? undefined;
 
-    await this.playWithRetry(uri, track.name, upcomingUris);
+    await this.playWithRetry(uri, track.name, upcomingUris, 0, startPositionMs);
     this.playbackSessionActive = true;
 
     const activateDevice = async () => {
@@ -128,9 +129,10 @@ export class SpotifyPlaybackAdapter implements PlaybackProvider {
     trackName: string,
     upcomingUris?: string[],
     retryCount = 0,
+    positionMs?: number,
   ): Promise<void> {
     try {
-      await spotifyPlayer.playTrack(uri, upcomingUris);
+      await spotifyPlayer.playTrack(uri, upcomingUris, positionMs);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
 
@@ -150,7 +152,7 @@ export class SpotifyPlaybackAdapter implements PlaybackProvider {
           : BASE_RETRY_BACKOFF_MS * Math.pow(2, retryCount);
         logSpotify('429 during play, retrying (%d/%d) after %dms', retryCount + 1, MAX_PLAY_RETRIES, backoffMs);
         await new Promise(resolve => setTimeout(resolve, backoffMs));
-        return this.playWithRetry(uri, trackName, upcomingUris, retryCount + 1);
+        return this.playWithRetry(uri, trackName, upcomingUris, retryCount + 1, positionMs);
       }
 
       if (message.includes('403')) {
@@ -164,7 +166,7 @@ export class SpotifyPlaybackAdapter implements PlaybackProvider {
         await spotifyPlayer.transferPlaybackToDevice(true);
         await new Promise(resolve => setTimeout(resolve, backoffMs));
         await spotifyPlayer.ensureDeviceIsActive(3, 1000);
-        return this.playWithRetry(uri, trackName, upcomingUris, retryCount + 1);
+        return this.playWithRetry(uri, trackName, upcomingUris, retryCount + 1, positionMs);
       }
 
       throw error;

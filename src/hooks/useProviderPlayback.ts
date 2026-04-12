@@ -35,7 +35,7 @@ export const useProviderPlayback = ({
     }
   }, []);
 
-  const playTrack = useCallback(async (index: number, skipOnError = false) => {
+  const playTrack = useCallback(async (index: number, skipOnError = false, options?: { positionMs?: number }) => {
     const tracks = mediaTracksRef.current;
     const mediaTrack = tracks[index];
     const trackProvider = resolveTrackProvider(mediaTrack);
@@ -72,7 +72,7 @@ export const useProviderPlayback = ({
     }
 
     try {
-      await descriptor.playback.playTrack(mediaTrack);
+      await descriptor.playback.playTrack(mediaTrack, options);
       setCurrentTrackIndex(index);
 
       const nextIndex = (index + 1) % tracks.length;

@@ -84,6 +84,15 @@ const AudioPlayerComponent = () => {
   const collectionNameRef = useRef<string>('');
   const collectionProviderRef = useRef<import('@/types/domain').ProviderId | undefined>(undefined);
 
+  const getLivePosition = useCallback(async (): Promise<number | null> => {
+    const drivingId = playbackProviderRef.current;
+    if (!drivingId) return null;
+    const { providerRegistry } = await import('@/providers/registry');
+    const descriptor = providerRegistry.get(drivingId);
+    const ps = await descriptor?.playback.getState();
+    return ps?.positionMs ?? null;
+  }, [playbackProviderRef]);
+
   const { lastSession } = useSessionPersistence(
     selectedPlaylistId,
     collectionNameRef.current,
@@ -95,6 +104,7 @@ const AudioPlayerComponent = () => {
     currentTrack?.artists,
     currentTrack?.image,
     state.playbackPosition,
+    getLivePosition,
   );
 
   const handleAlbumPlay = useCallback((albumId: string) => {
@@ -230,18 +240,10 @@ const AudioPlayerComponent = () => {
     // without this, usePlaybackSubscription may overwrite resolvedIdx with a
     // stale provider track index before the new track's ID is confirmed.
     expectedTrackIdRef.current = queueTracks[resolvedIdx]?.id ?? null;
-    await handlers.playTrack(resolvedIdx);
 
-    if (savedPositionMs && savedPositionMs > 0) {
-      const drivingProviderId = playbackProviderRef.current;
-      if (drivingProviderId) {
-        const { providerRegistry } = await import('@/providers/registry');
-        const descriptor = providerRegistry.get(drivingProviderId);
-        // savedPositionMs is already in milliseconds (sourced from state.playbackPosition / positionMs)
-        descriptor?.playback.seek(savedPositionMs).catch(() => {});
-      }
-    }
-  }, [lastSession, setTracks, setOriginalTracks, setSelectedPlaylistId, setCurrentTrackIndex, mediaTracksRef, expectedTrackIdRef, handlers, playbackProviderRef]);
+    const positionMs = savedPositionMs && savedPositionMs > 0 ? savedPositionMs : undefined;
+    await handlers.playTrack(resolvedIdx, false, positionMs ? { positionMs } : undefined);
+  }, [lastSession, setTracks, setOriginalTracks, setSelectedPlaylistId, setCurrentTrackIndex, mediaTracksRef, expectedTrackIdRef, handlers]);
 
   const handleClearCache = useCallback(async (options: ClearCacheOptions) => {
     const { clearCacheWithOptions } = await import('@/services/cache/libraryCache');

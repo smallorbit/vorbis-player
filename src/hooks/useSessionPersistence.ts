@@ -5,7 +5,7 @@ import type { SessionSnapshot } from '@/services/sessionPersistence';
 import { logSession } from '@/lib/debugLog';
 
 const DEBOUNCE_MS = 1000;
-const PERIODIC_SAVE_INTERVAL_MS = 20_000;
+const PERIODIC_SAVE_INTERVAL_MS = 10_000;
 
 export function useSessionPersistence(
   collectionId: string | null,
@@ -18,6 +18,7 @@ export function useSessionPersistence(
   trackArtist: string | undefined,
   trackImage: string | undefined,
   playbackPosition: number,
+  getLivePosition?: () => Promise<number | null>,
 ): { lastSession: SessionSnapshot | null } {
   const [lastSession, setLastSession] = useState<SessionSnapshot | null>(null);
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -88,13 +89,19 @@ export function useSessionPersistence(
     };
   }, [collectionId, collectionName, collectionProvider, tracks, currentTrackIndex, trackId, trackTitle, trackArtist, trackImage, playbackPosition]);
 
-  // Periodic save every 20 seconds during active playback.
+  const getLivePositionRef = useRef(getLivePosition);
+  getLivePositionRef.current = getLivePosition;
+
   useEffect(() => {
     if (periodicTimerRef.current !== null) clearInterval(periodicTimerRef.current);
 
-    periodicTimerRef.current = setInterval(() => {
+    periodicTimerRef.current = setInterval(async () => {
       const snapshot = snapshotRef.current;
       if (!snapshot) return;
+
+      const livePos = await getLivePositionRef.current?.();
+      if (livePos != null) snapshot.playbackPosition = livePos;
+
       logSession('periodic save — position=%dms', Math.floor(snapshot.playbackPosition ?? 0));
       saveSession(snapshot);
     }, PERIODIC_SAVE_INTERVAL_MS);

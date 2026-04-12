@@ -60,7 +60,7 @@ export class DropboxPlaybackAdapter implements PlaybackProvider {
     this.ensureAudio();
   }
 
-  async playTrack(track: MediaTrack): Promise<void> {
+  async playTrack(track: MediaTrack, options?: { positionMs?: number }): Promise<void> {
     this.ensureAudio();
 
     const dropboxPath = track.playbackRef.ref;
@@ -84,6 +84,10 @@ export class DropboxPlaybackAdapter implements PlaybackProvider {
     this.audio!.pause();
     this.audio!.src = streamUrl;
     await this.audio!.play();
+
+    if (options?.positionMs) {
+      this.audio!.currentTime = options.positionMs / 1000;
+    }
 
     this.startUpdateInterval();
     this.enrichMetadataInBackground(track, streamUrl);
