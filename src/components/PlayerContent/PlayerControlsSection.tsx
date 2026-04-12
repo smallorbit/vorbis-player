@@ -237,15 +237,16 @@ export const PlayerControlsSection: React.FC<PlayerControlsSectionProps> = React
   }, [showLibraryDrawer, showQueue, onShowQueue, onCloseQueue, onCloseLibraryDrawer]);
 
   const handleArrowDown = useCallback(() => {
+    const openPanel = qapEnabled ? onOpenQuickAccessPanel : onOpenLibraryDrawer;
     if (showQueue) {
       onCloseQueue();
-      onOpenQuickAccessPanel?.();
+      openPanel?.();
     } else if (showLibraryDrawer) {
       onCloseLibraryDrawer();
     } else {
-      onOpenQuickAccessPanel?.();
+      openPanel?.();
     }
-  }, [showQueue, showLibraryDrawer, onCloseQueue, onOpenQuickAccessPanel, onCloseLibraryDrawer]);
+  }, [showQueue, showLibraryDrawer, onCloseQueue, onOpenQuickAccessPanel, onOpenLibraryDrawer, onCloseLibraryDrawer, qapEnabled]);
 
   const handleVolumeUp = useCallback(() => {
     setVolumeLevel(Math.min(100, (volume ?? 50) + 5));

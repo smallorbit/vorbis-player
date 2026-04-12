@@ -140,24 +140,25 @@ const AppSettingsMenu: React.FC<AppSettingsMenuProps> = memo(({
             <ProviderDataSection key={p.id} providerName={p.name} catalog={p.catalog} />
           ))}
 
+          <ControlGroup>
+            <ControlLabel>Quick Access Panel</ControlLabel>
+            <OptionButtonGroup>
+              <OptionButton
+                $isActive={qapEnabled}
+                onClick={onQapToggle}
+              >
+                On
+              </OptionButton>
+              <OptionButton
+                $isActive={!qapEnabled}
+                onClick={onQapToggle}
+              >
+                Off
+              </OptionButton>
+            </OptionButtonGroup>
+          </ControlGroup>
+
           <CollapsibleSection title="Advanced">
-            <ControlGroup>
-              <ControlLabel>Quick Access Panel</ControlLabel>
-              <OptionButtonGroup>
-                <OptionButton
-                  $isActive={qapEnabled}
-                  onClick={onQapToggle}
-                >
-                  On
-                </OptionButton>
-                <OptionButton
-                  $isActive={!qapEnabled}
-                  onClick={onQapToggle}
-                >
-                  Off
-                </OptionButton>
-              </OptionButtonGroup>
-            </ControlGroup>
             <ControlGroup>
               <ControlLabel>Clear Library Cache</ControlLabel>
               {clearState === 'confirming' ? (

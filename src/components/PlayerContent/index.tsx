@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
+import { useQapEnabled } from '@/hooks/useQapEnabled';
 import { usePlayerSizingContext } from '@/contexts/PlayerSizingContext';
 import { useCurrentTrackContext } from '@/contexts/TrackContext';
 import { useVisualEffectsContext } from '@/contexts/VisualEffectsContext';
@@ -73,6 +74,7 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({
 
   const [librarySearchQuery, setLibrarySearchQuery] = useState<string | undefined>(undefined);
   const [libraryViewMode, setLibraryViewMode] = useState<'playlists' | 'albums' | undefined>(undefined);
+  const [qapEnabled] = useQapEnabled();
 
   const controlsRef = useRef<HTMLDivElement>(null);
   const stableControlsHeightRef = useRef<number>(220);
@@ -155,12 +157,14 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({
   const handleSwipeDown = useCallback(() => {
     if (showLibraryDrawer) {
       handlers.onCloseLibraryDrawer();
+    } else if (!qapEnabled) {
+      handleOpenLibraryDrawer();
     } else if (handlers.onOpenQuickAccessPanel) {
       handlers.onOpenQuickAccessPanel();
     } else {
       handleOpenLibraryDrawer();
     }
-  }, [showLibraryDrawer, handlers, handleOpenLibraryDrawer]);
+  }, [showLibraryDrawer, handlers, handleOpenLibraryDrawer, qapEnabled]);
 
   const handleLibrarySearchQueryReset = useCallback(() => setLibrarySearchQuery(undefined), []);
   const handleLibraryViewModeReset = useCallback(() => setLibraryViewMode(undefined), []);

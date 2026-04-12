@@ -48,6 +48,8 @@ interface PlaylistSelectionProps {
   onLibraryRefresh?: () => void;
   /** Drawer-only: controls the refresh spinner */
   isLibraryRefreshing?: boolean;
+  /** Optional element rendered below the grid inside the card */
+  footer?: React.ReactNode;
 }
 
 const PlaylistSelection = React.memo(function PlaylistSelection({
@@ -58,7 +60,8 @@ const PlaylistSelection = React.memo(function PlaylistSelection({
   initialSearchQuery,
   initialViewMode,
   onLibraryRefresh,
-  isLibraryRefreshing
+  isLibraryRefreshing,
+  footer,
 }: PlaylistSelectionProps): JSX.Element {
   const { activeDescriptor, hasMultipleProviders, enabledProviderIds, getDescriptor } = useProviderContext();
   const { isUnifiedLikedActive, totalCount: unifiedLikedCount } = useUnifiedLikedTracks();
@@ -304,6 +307,7 @@ const PlaylistSelection = React.memo(function PlaylistSelection({
             {playlistPopoverPortal}
             {confirmDeletePortal}
           </CardContent>
+          {footer}
         </SelectionCard>
       </Container>
     </LibraryProvider>
