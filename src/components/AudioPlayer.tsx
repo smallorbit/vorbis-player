@@ -352,6 +352,8 @@ const AudioPlayerComponent = () => {
                 onProfilerToggle={() => {}}
                 visualizerDebugEnabled={false}
                 onVisualizerDebugToggle={() => {}}
+                qapEnabled={false}
+                onQapToggle={() => {}}
               />
             </Suspense>
             <Suspense fallback={null}>
