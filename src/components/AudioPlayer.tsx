@@ -136,6 +136,31 @@ const AudioPlayerComponent = () => {
     [handlers, setShowQueue],
   );
 
+  const handlePlayLikedTracks = useCallback(
+    async (likedTracks: import('@/types/domain').MediaTrack[], collectionId: string, collectionName: string, provider?: import('@/types/domain').ProviderId) => {
+      collectionNameRef.current = collectionName;
+      collectionProviderRef.current = provider;
+      await handlers.playTracksDirectly(likedTracks, collectionId, provider);
+    },
+    [handlers],
+  );
+
+  const handleQueueLikedTracks = useCallback(
+    (likedTracks: import('@/types/domain').MediaTrack[], collectionName?: string) => {
+      const result = handlers.queueTracksDirectly(likedTracks, collectionName);
+      if (result && result.added > 0) {
+        const title = result.collectionName?.trim();
+        const label = title ? `"${title}"` : 'this collection';
+        setQapToast({
+          message: `Added ${result.added} liked ${result.added === 1 ? 'track' : 'tracks'} from ${label} to your`,
+          actionLabel: 'queue',
+          onAction: () => { setShowQueue(true); setQapToast(null); },
+        });
+      }
+    },
+    [handlers, setShowQueue],
+  );
+
   const playbackHandlers = useMemo(() => ({
     onPlay: handlers.handlePlay,
     onPause: handlers.handlePause,
@@ -147,6 +172,8 @@ const AudioPlayerComponent = () => {
     onOpenQuickAccessPanel: handleOpenQuickAccessPanel,
     onPlaylistSelect: handlePlaylistSelect,
     onAddToQueue: handlers.handleAddToQueue,
+    onPlayLikedTracks: handlePlayLikedTracks,
+    onQueueLikedTracks: handleQueueLikedTracks,
     onAlbumPlay: handleAlbumPlay,
     onBackToLibrary: handleOpenQuickAccessPanel,
     onStartRadio: handlers.handleStartRadio,
@@ -241,6 +268,8 @@ const AudioPlayerComponent = () => {
               tracks={tracks}
               onPlaylistSelect={handlePlaylistSelect}
               onAddToQueue={handleAddToQueueFromPanel}
+              onPlayLikedTracks={handlePlayLikedTracks}
+              onQueueLikedTracks={handleQueueLikedTracks}
               lastSession={lastSession}
               onResume={handleResume}
             />
@@ -362,6 +391,8 @@ const AudioPlayerComponent = () => {
                 onClose={handlers.handleCloseLibraryDrawer}
                 onPlaylistSelect={handlePlaylistSelect}
                 onAddToQueue={handleAddToQueueFromPanel}
+                onPlayLikedTracks={handlePlayLikedTracks}
+                onQueueLikedTracks={handleQueueLikedTracks}
                 lastSession={lastSession}
                 onResume={handleResume}
               />
