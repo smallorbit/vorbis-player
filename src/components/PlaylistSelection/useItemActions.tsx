@@ -2,9 +2,9 @@ import { useState, useEffect, useCallback } from 'react';
 import * as React from 'react';
 import { createPortal } from 'react-dom';
 import type { AlbumInfo, PlaylistInfo } from '../../services/spotify';
-import type { AddToQueueResult, ProviderId } from '@/types/domain';
+import type { AddToQueueResult, MediaTrack, ProviderId } from '@/types/domain';
 import type { ProviderDescriptor } from '@/types/providers';
-import { LIKED_SONGS_ID, isAlbumId, isSavedPlaylistId, extractPlaylistPath } from '@/constants/playlist';
+import { LIKED_SONGS_ID, isAlbumId, isSavedPlaylistId, extractPlaylistPath, resolvePlaylistRef } from '@/constants/playlist';
 import { librarySyncEngine } from '@/services/cache/librarySyncEngine';
 import { toAlbumPlaylistId } from '@/constants/playlist';
 import TrackInfoPopover, {
@@ -14,6 +14,7 @@ import TrackInfoPopover, {
   AddToLibraryIcon,
   RemoveFromLibraryIcon,
   AddToQueueIcon,
+  HeartIcon,
   TrashIcon,
   ICON_MAP,
 } from '../controls/TrackInfoPopover';
@@ -33,14 +34,36 @@ type PlaylistPopoverState = {
 interface UseItemActionsProps {
   onPlaylistSelect: (playlistId: string, playlistName: string, provider?: ProviderId) => void;
   onAddToQueue?: (playlistId: string, playlistName?: string, provider?: ProviderId) => Promise<AddToQueueResult | null>;
+  onPlayLikedTracks?: (tracks: MediaTrack[], collectionId: string, collectionName: string, provider?: ProviderId) => Promise<void>;
+  onQueueLikedTracks?: (tracks: MediaTrack[], collectionName?: string) => void;
   activeDescriptor: ProviderDescriptor | null;
   getDescriptor: (id: ProviderId) => ProviderDescriptor | undefined;
   removeCollection: (id: string) => void;
 }
 
+async function fetchLikedTracksForCollection(
+  collectionId: string,
+  descriptor: ProviderDescriptor,
+): Promise<MediaTrack[]> {
+  const providerId = descriptor.id;
+  const { id, kind } = resolvePlaylistRef(collectionId, providerId);
+  const collectionRef = { provider: providerId, kind, id } as const;
+  const allTracks = await descriptor.catalog.listTracks(collectionRef);
+
+  if (!descriptor.catalog.isTrackSaved) return [];
+
+  const savedResults = await Promise.all(
+    allTracks.map((track) => descriptor.catalog.isTrackSaved!(track.id).catch(() => false))
+  );
+
+  return allTracks.filter((_, i) => savedResults[i]);
+}
+
 export function useItemActions({
   onPlaylistSelect,
   onAddToQueue,
+  onPlayLikedTracks,
+  onQueueLikedTracks,
   activeDescriptor,
   getDescriptor,
   removeCollection,
@@ -49,6 +72,7 @@ export function useItemActions({
   const [playlistPopover, setPlaylistPopover] = useState<PlaylistPopoverState>(null);
   const [albumSaved, setAlbumSaved] = useState<boolean | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string; provider?: ProviderId } | null>(null);
+  const [likedLoading, setLikedLoading] = useState(false);
 
   useEffect(() => {
     if (!albumPopover) {
@@ -98,6 +122,10 @@ export function useItemActions({
   const buildPlaylistPopoverOptions = useCallback(() => {
     if (!playlistPopover) return [];
     const playlist = playlistPopover.playlist;
+    const provider = playlist.provider ?? activeDescriptor?.id;
+    const descriptor = provider ? getDescriptor(provider) : activeDescriptor;
+    const canSaveTrack = descriptor?.capabilities.hasSaveTrack && !!descriptor.catalog.isTrackSaved;
+
     const options: Array<{ label: string; icon: React.ReactNode; onClick: () => void }> = [
       {
         label: `Play ${playlist.name}`,
@@ -114,8 +142,44 @@ export function useItemActions({
       });
     }
 
-    const provider = playlist.provider ?? activeDescriptor?.id;
-    const descriptor = provider ? getDescriptor(provider) : activeDescriptor;
+    if (canSaveTrack && onPlayLikedTracks && descriptor) {
+      options.push({
+        label: likedLoading ? 'Loading…' : 'Play Liked',
+        icon: React.createElement(HeartIcon),
+        onClick: () => {
+          if (likedLoading) return;
+          setLikedLoading(true);
+          fetchLikedTracksForCollection(playlist.id, descriptor)
+            .then((likedTracks) => {
+              if (likedTracks.length > 0) {
+                return onPlayLikedTracks(likedTracks, playlist.id, playlist.name, playlist.provider);
+              }
+            })
+            .catch((err) => { console.error('[PlayLiked] Failed:', err); })
+            .finally(() => { setLikedLoading(false); });
+        },
+      });
+    }
+
+    if (canSaveTrack && onQueueLikedTracks && descriptor) {
+      options.push({
+        label: likedLoading ? 'Loading…' : 'Queue Liked',
+        icon: React.createElement(HeartIcon),
+        onClick: () => {
+          if (likedLoading) return;
+          setLikedLoading(true);
+          fetchLikedTracksForCollection(playlist.id, descriptor)
+            .then((likedTracks) => {
+              if (likedTracks.length > 0) {
+                onQueueLikedTracks(likedTracks, playlist.name);
+              }
+            })
+            .catch((err) => { console.error('[QueueLiked] Failed:', err); })
+            .finally(() => { setLikedLoading(false); });
+        },
+      });
+    }
+
     const canDelete = descriptor?.capabilities.hasDeleteCollection &&
       descriptor.catalog.deleteCollection &&
       playlist.id !== LIKED_SONGS_ID &&
@@ -130,7 +194,7 @@ export function useItemActions({
     }
 
     return options;
-  }, [playlistPopover, onPlaylistSelect, onAddToQueue, activeDescriptor, getDescriptor]);
+  }, [playlistPopover, onPlaylistSelect, onAddToQueue, onPlayLikedTracks, onQueueLikedTracks, activeDescriptor, getDescriptor, likedLoading]);
 
   const closeAlbumPopover = useCallback(() => {
     setAlbumPopover(null);
@@ -143,6 +207,8 @@ export function useItemActions({
     const capabilities = descriptor?.capabilities;
     const catalog = descriptor?.catalog;
     const ExternalIcon = descriptor?.getExternalUrl ? DiscogsIcon : SpotifyIcon;
+    const canSaveTrack = capabilities?.hasSaveTrack && !!catalog?.isTrackSaved;
+
     const options: Array<{ label: string; icon: React.ReactNode; onClick: () => void }> = [
       {
         label: `Play ${album.name}`,
@@ -156,6 +222,46 @@ export function useItemActions({
         label: 'Add to Queue',
         icon: React.createElement(AddToQueueIcon),
         onClick: () => onAddToQueue(toAlbumPlaylistId(album.id), album.name, album.provider),
+      });
+    }
+
+    if (canSaveTrack && onPlayLikedTracks && descriptor) {
+      const albumCollectionId = toAlbumPlaylistId(album.id);
+      options.push({
+        label: likedLoading ? 'Loading…' : 'Play Liked',
+        icon: React.createElement(HeartIcon),
+        onClick: () => {
+          if (likedLoading) return;
+          setLikedLoading(true);
+          fetchLikedTracksForCollection(albumCollectionId, descriptor)
+            .then((likedTracks) => {
+              if (likedTracks.length > 0) {
+                return onPlayLikedTracks(likedTracks, albumCollectionId, album.name, album.provider);
+              }
+            })
+            .catch((err) => { console.error('[PlayLiked] Failed:', err); })
+            .finally(() => { setLikedLoading(false); });
+        },
+      });
+    }
+
+    if (canSaveTrack && onQueueLikedTracks && descriptor) {
+      const albumCollectionId = toAlbumPlaylistId(album.id);
+      options.push({
+        label: likedLoading ? 'Loading…' : 'Queue Liked',
+        icon: React.createElement(HeartIcon),
+        onClick: () => {
+          if (likedLoading) return;
+          setLikedLoading(true);
+          fetchLikedTracksForCollection(albumCollectionId, descriptor)
+            .then((likedTracks) => {
+              if (likedTracks.length > 0) {
+                onQueueLikedTracks(likedTracks, album.name);
+              }
+            })
+            .catch((err) => { console.error('[QueueLiked] Failed:', err); })
+            .finally(() => { setLikedLoading(false); });
+        },
       });
     }
 
@@ -217,7 +323,7 @@ export function useItemActions({
     }
 
     return options;
-  }, [albumPopover, albumSaved, getDescriptor, activeDescriptor, onPlaylistSelect, onAddToQueue]);
+  }, [albumPopover, albumSaved, getDescriptor, activeDescriptor, onPlaylistSelect, onAddToQueue, onPlayLikedTracks, onQueueLikedTracks, likedLoading]);
 
   const handleDeleteConfirm = useCallback(async () => {
     if (!deleteTarget) return;

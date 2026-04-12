@@ -157,6 +157,15 @@ export const Duration = styled.span.withConfig({
   flex-shrink: 0;
 `;
 
+export const LikedIndicator = styled.span`
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  color: var(--accent-color);
+  opacity: 0.85;
+  line-height: 1;
+`;
+
 export const DragHandle = styled.div`
   flex-shrink: 0;
   cursor: grab;

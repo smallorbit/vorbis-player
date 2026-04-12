@@ -92,6 +92,8 @@ AppContainer (flexCenter, min-height: 100dvh)
 - **`100dvh`** throughout to handle iOS address bar changes
 - **BottomBar** renders via `createPortal()` to `document.body`, fixed at bottom
 - **Drawers** use fixed positioning with slide animations and swipe-to-dismiss; vertical swipes on album art toggle **queue** (up) and **library** (down) drawers (`QueueDrawer` / `QueueBottomSheet` vs `LibraryDrawer`)
+- **Idle/home view** — when no track is loaded, `PlayerStateRenderer` shows the library browser (`PlaylistSelection`) by default. The Quick Access Panel (QAP) is opt-in: toggled via the "Quick Access Panel" On/Off control in the settings panel (gear icon, `VisualEffectsMenu`). The preference is stored under the `vorbis-player-qap-enabled` localStorage key (default `false`) via `useQapEnabled()`. `PlayerStateRenderer` initializes `showLibrary` to `!qapEnabled` and routes accordingly.
+- **ResumeCard** — `LibraryDrawer` accepts `lastSession` and `onResume` props and renders a `ResumeCard` at the bottom of the drawer, allowing users to resume a previous session regardless of whether QAP is enabled.
 - **BackgroundVisualizer and AccentColorBackground** are `position: fixed` with low z-index, don't affect layout
 - **Zen mode overlays** (`ZenClickZoneOverlay`, `ZenLikeOverlay`): hover-activated on desktop (pointer devices only), hidden when flip menu is open (`isFlipped`), with vertical dead zones (top/bottom 20% of album art ignored). Mobile zen uses touch gestures instead (`useZenTouchGestures`). BottomBar in zen mode shows via grip pill tap with tap-outside-to-dismiss backdrop.
 

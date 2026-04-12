@@ -11,8 +11,10 @@ import {
   DRAWER_TRANSITION_EASING
 } from './styled';
 import PlaylistSelection from './PlaylistSelection';
+import ResumeCard from './QuickAccessPanel/ResumeCard';
 import { LIBRARY_REFRESH_EVENT } from '@/hooks/useLibrarySync';
-import type { AddToQueueResult, ProviderId } from '@/types/domain';
+import type { AddToQueueResult, MediaTrack, ProviderId } from '@/types/domain';
+import type { SessionSnapshot } from '@/services/sessionPersistence';
 
 const REFRESH_SPINNER_MIN_MS = 1500;
 
@@ -25,8 +27,12 @@ interface LibraryDrawerProps {
     playlistName?: string,
     provider?: ProviderId,
   ) => Promise<AddToQueueResult | null>;
+  onPlayLikedTracks?: (tracks: MediaTrack[], collectionId: string, collectionName: string, provider?: ProviderId) => Promise<void>;
+  onQueueLikedTracks?: (tracks: MediaTrack[], collectionName?: string) => void;
   initialSearchQuery?: string;
   initialViewMode?: 'playlists' | 'albums';
+  lastSession?: SessionSnapshot | null;
+  onResume?: () => void;
 }
 
 const DrawerContainer = styled.div.withConfig({
@@ -81,7 +87,7 @@ const DrawerContent = styled.div`
   padding-top: env(safe-area-inset-top, 0px);
 `;
 
-const LibraryDrawer = React.memo(function LibraryDrawer({ isOpen, onClose, onPlaylistSelect, onAddToQueue, initialSearchQuery, initialViewMode }: LibraryDrawerProps) {
+const LibraryDrawer = React.memo(function LibraryDrawer({ isOpen, onClose, onPlaylistSelect, onAddToQueue, onPlayLikedTracks, onQueueLikedTracks, initialSearchQuery, initialViewMode, lastSession, onResume }: LibraryDrawerProps) {
   const hasBeenOpenedRef = useRef(false);
   if (isOpen) hasBeenOpenedRef.current = true;
 
@@ -147,12 +153,17 @@ const LibraryDrawer = React.memo(function LibraryDrawer({ isOpen, onClose, onPla
               <PlaylistSelection
                 onPlaylistSelect={handlePlaylistSelectWrapper}
                 onAddToQueue={onAddToQueue}
+                onPlayLikedTracks={onPlayLikedTracks}
+                onQueueLikedTracks={onQueueLikedTracks}
                 inDrawer
                 initialSearchQuery={initialSearchQuery}
                 initialViewMode={initialViewMode}
                 onLibraryRefresh={handleRefresh}
                 isLibraryRefreshing={isRefreshing}
               />
+              {lastSession && onResume && (
+                <ResumeCard session={lastSession} onResume={onResume} />
+              )}
             </DrawerContent>
             <SwipeHandle
               ref={handleRef}

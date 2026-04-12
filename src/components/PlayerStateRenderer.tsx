@@ -8,7 +8,9 @@ import { Alert, AlertDescription } from '../components/styled';
 import { flexColumn, cardBase } from '../styles/utils';
 import { theme } from '@/styles/theme';
 import { useProviderContext } from '@/contexts/ProviderContext';
+import { useQapEnabled } from '@/hooks/useQapEnabled';
 import QuickAccessPanel from './QuickAccessPanel';
+import ResumeCard from './QuickAccessPanel/ResumeCard';
 
 const PlaylistSelection = React.lazy(() => import('./PlaylistSelection'));
 
@@ -171,6 +173,8 @@ interface PlayerStateRendererProps {
   tracks: MediaTrack[];
   onPlaylistSelect: (playlistId: string, playlistName?: string, provider?: import('@/types/domain').ProviderId) => void;
   onAddToQueue: (id: string, name?: string, provider?: import('@/types/domain').ProviderId) => void;
+  onPlayLikedTracks?: (tracks: MediaTrack[], collectionId: string, collectionName: string, provider?: import('@/types/domain').ProviderId) => Promise<void>;
+  onQueueLikedTracks?: (tracks: MediaTrack[], collectionName?: string) => void;
   lastSession: SessionSnapshot | null;
   onResume: () => void;
 }
@@ -182,12 +186,15 @@ const PlayerStateRenderer: React.FC<PlayerStateRendererProps> = ({
   tracks,
   onPlaylistSelect,
   onAddToQueue,
+  onPlayLikedTracks,
+  onQueueLikedTracks,
   lastSession,
   onResume,
 }) => {
   const { activeDescriptor } = useProviderContext();
   const providerName = activeDescriptor?.name ?? 'Music Service';
-  const [showLibrary, setShowLibrary] = useState(false);
+  const [qapEnabled] = useQapEnabled();
+  const [showLibrary, setShowLibrary] = useState(!qapEnabled);
 
   const handleConnectClick = useCallback(() => {
     activeDescriptor?.auth.beginLogin();
@@ -273,7 +280,14 @@ const PlayerStateRenderer: React.FC<PlayerStateRendererProps> = ({
             </LoadingContainer>
           </LoadingCard>
         }>
-          <PlaylistSelection onPlaylistSelect={handlePlaylistSelectWrapped} />
+          <PlaylistSelection
+            onPlaylistSelect={handlePlaylistSelectWrapped}
+            onPlayLikedTracks={onPlayLikedTracks}
+            onQueueLikedTracks={onQueueLikedTracks}
+            footer={lastSession && onResume ? (
+              <ResumeCard session={lastSession} onResume={onResume} />
+            ) : undefined}
+          />
         </Suspense>
       );
     }

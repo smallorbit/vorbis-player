@@ -44,6 +44,8 @@ interface AppSettingsMenuProps {
   onProfilerToggle: () => void;
   visualizerDebugEnabled: boolean;
   onVisualizerDebugToggle: () => void;
+  qapEnabled: boolean;
+  onQapToggle: () => void;
 }
 
 const arePropsEqual = (
@@ -53,7 +55,8 @@ const arePropsEqual = (
   if (
     prevProps.isOpen !== nextProps.isOpen ||
     prevProps.profilerEnabled !== nextProps.profilerEnabled ||
-    prevProps.visualizerDebugEnabled !== nextProps.visualizerDebugEnabled
+    prevProps.visualizerDebugEnabled !== nextProps.visualizerDebugEnabled ||
+    prevProps.qapEnabled !== nextProps.qapEnabled
   ) {
     return false;
   }
@@ -68,7 +71,9 @@ const AppSettingsMenu: React.FC<AppSettingsMenuProps> = memo(({
   profilerEnabled,
   onProfilerToggle,
   visualizerDebugEnabled,
-  onVisualizerDebugToggle
+  onVisualizerDebugToggle,
+  qapEnabled,
+  onQapToggle,
 }) => {
   const { viewport, isMobile, isTablet, transitionDuration, transitionEasing } = usePlayerSizingContext();
   const { enabledProviderIds, registry } = useProviderContext();
@@ -131,9 +136,23 @@ const AppSettingsMenu: React.FC<AppSettingsMenuProps> = memo(({
 
           <NativeQueueSyncSection />
 
-          {dataProviders.map((p) => (
-            <ProviderDataSection key={p.id} providerName={p.name} catalog={p.catalog} />
-          ))}
+          <ControlGroup>
+            <ControlLabel>Quick Access Panel</ControlLabel>
+            <OptionButtonGroup>
+              <OptionButton
+                $isActive={qapEnabled}
+                onClick={onQapToggle}
+              >
+                On
+              </OptionButton>
+              <OptionButton
+                $isActive={!qapEnabled}
+                onClick={onQapToggle}
+              >
+                Off
+              </OptionButton>
+            </OptionButtonGroup>
+          </ControlGroup>
 
           <CollapsibleSection title="Advanced">
             <ControlGroup>
@@ -220,6 +239,9 @@ const AppSettingsMenu: React.FC<AppSettingsMenuProps> = memo(({
                 </OptionButton>
               </OptionButtonGroup>
             </ControlGroup>
+            {dataProviders.map((p) => (
+              <ProviderDataSection key={p.id} providerName={p.name} catalog={p.catalog} />
+            ))}
           </CollapsibleSection>
         </DrawerContent>
       </DrawerContainer>

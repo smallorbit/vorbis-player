@@ -15,7 +15,7 @@ import { usePinnedItems } from '../../hooks/usePinnedItems';
 import { LIKED_SONGS_ID, LIKED_SONGS_NAME, toAlbumPlaylistId } from '../../constants/playlist';
 import { useUnifiedLikedTracks } from '@/hooks/useUnifiedLikedTracks';
 import { logQueue } from '@/lib/debugLog';
-import type { AddToQueueResult, ProviderId } from '@/types/domain';
+import type { AddToQueueResult, MediaTrack, ProviderId } from '@/types/domain';
 import type { PlaylistInfo, AlbumInfo } from '../../services/spotify';
 import {
   Container,
@@ -36,6 +36,8 @@ interface PlaylistSelectionProps {
     playlistName?: string,
     provider?: ProviderId,
   ) => Promise<AddToQueueResult | null>;
+  onPlayLikedTracks?: (tracks: MediaTrack[], collectionId: string, collectionName: string, provider?: ProviderId) => Promise<void>;
+  onQueueLikedTracks?: (tracks: MediaTrack[], collectionName?: string) => void;
   /** When true, uses compact layout for drawer context (no centering, fills available space) */
   inDrawer?: boolean;
   /** Ref for swipe-to-close gesture zone (search/filters area only, not the scrollable list) */
@@ -48,17 +50,22 @@ interface PlaylistSelectionProps {
   onLibraryRefresh?: () => void;
   /** Drawer-only: controls the refresh spinner */
   isLibraryRefreshing?: boolean;
+  /** Optional element rendered below the grid inside the card */
+  footer?: React.ReactNode;
 }
 
 const PlaylistSelection = React.memo(function PlaylistSelection({
   onPlaylistSelect,
   onAddToQueue,
+  onPlayLikedTracks,
+  onQueueLikedTracks,
   inDrawer = false,
   swipeZoneRef,
   initialSearchQuery,
   initialViewMode,
   onLibraryRefresh,
-  isLibraryRefreshing
+  isLibraryRefreshing,
+  footer,
 }: PlaylistSelectionProps): JSX.Element {
   const { activeDescriptor, hasMultipleProviders, enabledProviderIds, getDescriptor } = useProviderContext();
   const { isUnifiedLikedActive, totalCount: unifiedLikedCount } = useUnifiedLikedTracks();
@@ -104,6 +111,8 @@ const PlaylistSelection = React.memo(function PlaylistSelection({
   } = useItemActions({
     onPlaylistSelect,
     onAddToQueue,
+    onPlayLikedTracks,
+    onQueueLikedTracks,
     activeDescriptor: activeDescriptor ?? null,
     getDescriptor,
     removeCollection,
@@ -304,6 +313,7 @@ const PlaylistSelection = React.memo(function PlaylistSelection({
             {playlistPopoverPortal}
             {confirmDeletePortal}
           </CardContent>
+          {footer}
         </SelectionCard>
       </Container>
     </LibraryProvider>

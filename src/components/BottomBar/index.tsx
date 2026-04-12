@@ -4,6 +4,7 @@ import { BottomBarContainer, BottomBarInner, ZenGripPill, ZenTriggerZone, ZenBac
 import { ControlButton } from '../controls/styled';
 import VolumeControl from '../controls/VolumeControl';
 import { usePlayerSizingContext } from '@/contexts/PlayerSizingContext';
+import { useQapEnabled } from '@/hooks/useQapEnabled';
 import {
   VisualEffectsIcon,
   BackToLibraryIcon,
@@ -50,6 +51,7 @@ const BottomBar = React.memo(function BottomBar({
   onOpenQuickAccessPanel,
 }: BottomBarProps) {
   const { isMobile, isTablet, isTouchDevice } = usePlayerSizingContext();
+  const [qapEnabled] = useQapEnabled();
   const [barVisible, setBarVisible] = useState(!zenModeEnabled);
   const hideTimerRef = useRef<ReturnType<typeof setTimeout>>();
   const isHoveringRef = useRef(false);
@@ -175,7 +177,7 @@ const BottomBar = React.memo(function BottomBar({
             </ControlButton>
           )}
 
-          {onOpenQuickAccessPanel && (
+          {qapEnabled && onOpenQuickAccessPanel && (
             <ControlButton
               $isMobile={isMobile}
               $isTablet={isTablet}

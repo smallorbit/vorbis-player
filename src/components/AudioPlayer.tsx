@@ -94,6 +94,7 @@ const AudioPlayerComponent = () => {
     currentTrack?.name,
     currentTrack?.artists,
     currentTrack?.image,
+    state.playbackPosition,
   );
 
   const handleAlbumPlay = useCallback((albumId: string) => {
@@ -136,6 +137,31 @@ const AudioPlayerComponent = () => {
     [handlers, setShowQueue],
   );
 
+  const handlePlayLikedTracks = useCallback(
+    async (likedTracks: import('@/types/domain').MediaTrack[], collectionId: string, collectionName: string, provider?: import('@/types/domain').ProviderId) => {
+      collectionNameRef.current = collectionName;
+      collectionProviderRef.current = provider;
+      await handlers.playTracksDirectly(likedTracks, collectionId, provider);
+    },
+    [handlers],
+  );
+
+  const handleQueueLikedTracks = useCallback(
+    (likedTracks: import('@/types/domain').MediaTrack[], collectionName?: string) => {
+      const result = handlers.queueTracksDirectly(likedTracks, collectionName);
+      if (result && result.added > 0) {
+        const title = result.collectionName?.trim();
+        const label = title ? `"${title}"` : 'this collection';
+        setQapToast({
+          message: `Added ${result.added} liked ${result.added === 1 ? 'track' : 'tracks'} from ${label} to your`,
+          actionLabel: 'queue',
+          onAction: () => { setShowQueue(true); setQapToast(null); },
+        });
+      }
+    },
+    [handlers, setShowQueue],
+  );
+
   const playbackHandlers = useMemo(() => ({
     onPlay: handlers.handlePlay,
     onPause: handlers.handlePause,
@@ -147,6 +173,8 @@ const AudioPlayerComponent = () => {
     onOpenQuickAccessPanel: handleOpenQuickAccessPanel,
     onPlaylistSelect: handlePlaylistSelect,
     onAddToQueue: handlers.handleAddToQueue,
+    onPlayLikedTracks: handlePlayLikedTracks,
+    onQueueLikedTracks: handleQueueLikedTracks,
     onAlbumPlay: handleAlbumPlay,
     onBackToLibrary: handleOpenQuickAccessPanel,
     onStartRadio: handlers.handleStartRadio,
@@ -183,9 +211,9 @@ const AudioPlayerComponent = () => {
     setShowVisualEffects(false);
   }, [setShowVisualEffects]);
 
-  const handleResume = useCallback(() => {
+  const handleResume = useCallback(async () => {
     if (!lastSession?.queueTracks?.length) return;
-    const { queueTracks, trackId, trackIndex, collectionId } = lastSession;
+    const { queueTracks, trackId, trackIndex, collectionId, playbackPosition: savedPosition } = lastSession;
     const targetIdx = trackId
       ? queueTracks.findIndex(t => t.id === trackId)
       : Math.min(trackIndex, queueTracks.length - 1);
@@ -198,8 +226,17 @@ const AudioPlayerComponent = () => {
     // the right track before React re-renders. Required for iOS Safari, which
     // blocks audio.play() called outside the synchronous user-gesture call stack.
     mediaTracksRef.current = queueTracks;
-    handlers.playTrack(resolvedIdx);
-  }, [lastSession, setTracks, setOriginalTracks, setSelectedPlaylistId, setCurrentTrackIndex, mediaTracksRef, handlers]);
+    await handlers.playTrack(resolvedIdx);
+
+    if (savedPosition && savedPosition > 0) {
+      const drivingProviderId = playbackProviderRef.current;
+      if (drivingProviderId) {
+        const { providerRegistry } = await import('@/providers/registry');
+        const descriptor = providerRegistry.get(drivingProviderId);
+        descriptor?.playback.seek(savedPosition * 1000).catch(() => {});
+      }
+    }
+  }, [lastSession, setTracks, setOriginalTracks, setSelectedPlaylistId, setCurrentTrackIndex, mediaTracksRef, handlers, playbackProviderRef]);
 
   const handleClearCache = useCallback(async (options: ClearCacheOptions) => {
     const { clearCacheWithOptions } = await import('@/services/cache/libraryCache');
@@ -241,6 +278,8 @@ const AudioPlayerComponent = () => {
               tracks={tracks}
               onPlaylistSelect={handlePlaylistSelect}
               onAddToQueue={handleAddToQueueFromPanel}
+              onPlayLikedTracks={handlePlayLikedTracks}
+              onQueueLikedTracks={handleQueueLikedTracks}
               lastSession={lastSession}
               onResume={handleResume}
             />
@@ -352,6 +391,8 @@ const AudioPlayerComponent = () => {
                 onProfilerToggle={() => {}}
                 visualizerDebugEnabled={false}
                 onVisualizerDebugToggle={() => {}}
+                qapEnabled={false}
+                onQapToggle={() => {}}
               />
             </Suspense>
             <Suspense fallback={null}>
@@ -360,6 +401,10 @@ const AudioPlayerComponent = () => {
                 onClose={handlers.handleCloseLibraryDrawer}
                 onPlaylistSelect={handlePlaylistSelect}
                 onAddToQueue={handleAddToQueueFromPanel}
+                onPlayLikedTracks={handlePlayLikedTracks}
+                onQueueLikedTracks={handleQueueLikedTracks}
+                lastSession={lastSession}
+                onResume={handleResume}
               />
             </Suspense>
           </>

@@ -17,6 +17,7 @@ import { clearCacheWithOptions } from '@/services/cache/libraryCache';
 import { clearAllPins } from '@/services/settings/pinnedItemsStorage';
 import { STORAGE_KEYS } from '@/constants/storage';
 import type { ClearCacheOptions } from '@/components/VisualEffectsMenu';
+import { useQapEnabled } from '@/hooks/useQapEnabled';
 import type { MediaTrack, ProviderId } from '@/types/domain';
 import type { RadioState } from '@/types/radio';
 import { LoadingCard, ZenControlsWrapper, ZenControlsInner } from './styled';
@@ -135,6 +136,7 @@ export const PlayerControlsSection: React.FC<PlayerControlsSectionProps> = React
   const { enabled: profilerEnabled, toggle: profilerToggle } = useProfilingContext();
   const vizDebugCtx = useVisualizerDebug();
   const visualizerDebugEnabled = vizDebugCtx?.isDebugMode ?? false;
+  const [qapEnabled, setQapEnabled] = useQapEnabled();
 
   const settingsHasBeenOpenedRef = useRef(false);
   if (showVisualEffects) settingsHasBeenOpenedRef.current = true;
@@ -235,15 +237,16 @@ export const PlayerControlsSection: React.FC<PlayerControlsSectionProps> = React
   }, [showLibraryDrawer, showQueue, onShowQueue, onCloseQueue, onCloseLibraryDrawer]);
 
   const handleArrowDown = useCallback(() => {
+    const openPanel = qapEnabled ? onOpenQuickAccessPanel : onOpenLibraryDrawer;
     if (showQueue) {
       onCloseQueue();
-      onOpenQuickAccessPanel?.();
+      openPanel?.();
     } else if (showLibraryDrawer) {
       onCloseLibraryDrawer();
     } else {
-      onOpenQuickAccessPanel?.();
+      openPanel?.();
     }
-  }, [showQueue, showLibraryDrawer, onCloseQueue, onOpenQuickAccessPanel, onCloseLibraryDrawer]);
+  }, [showQueue, showLibraryDrawer, onCloseQueue, onOpenQuickAccessPanel, onOpenLibraryDrawer, onCloseLibraryDrawer, qapEnabled]);
 
   const handleVolumeUp = useCallback(() => {
     setVolumeLevel(Math.min(100, (volume ?? 50) + 5));
@@ -345,6 +348,8 @@ export const PlayerControlsSection: React.FC<PlayerControlsSectionProps> = React
             onProfilerToggle={handleProfilerToggle}
             visualizerDebugEnabled={visualizerDebugEnabled}
             onVisualizerDebugToggle={handleVisualizerDebugToggle}
+            qapEnabled={qapEnabled}
+            onQapToggle={() => setQapEnabled(!qapEnabled)}
           />
         </Suspense>
       )}

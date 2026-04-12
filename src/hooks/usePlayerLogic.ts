@@ -117,7 +117,7 @@ export function usePlayerLogic() {
   });
 
   // Initialize collection loader
-  const { loadCollection } = useCollectionLoader({
+  const { loadCollection, playTracksDirectly } = useCollectionLoader({
     trackOps,
     activeDescriptor,
     getDescriptor,
@@ -271,7 +271,7 @@ export function usePlayerLogic() {
   }, [handlePause, stopRadio, setSelectedPlaylistId, setTracks, setCurrentTrackIndex, setShowQueue, setShowVisualEffects]);
 
   // Initialize queue management handlers
-  const { handleAddToQueue, handleRemoveFromQueue, handleReorderQueue } = useQueueManagement({
+  const { handleAddToQueue, queueTracksDirectly, handleRemoveFromQueue, handleReorderQueue } = useQueueManagement({
     trackOps,
     tracks,
     currentTrackIndex,
@@ -287,7 +287,9 @@ export function usePlayerLogic() {
   const handlers = useMemo(
     () => ({
       loadCollection,
+      playTracksDirectly,
       handleAddToQueue,
+      queueTracksDirectly,
       handlePlay,
       handlePause,
       handleNext,
@@ -302,7 +304,9 @@ export function usePlayerLogic() {
     }),
     [
       loadCollection,
+      playTracksDirectly,
       handleAddToQueue,
+      queueTracksDirectly,
       handlePlay,
       handlePause,
       handleNext,

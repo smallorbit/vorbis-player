@@ -48,6 +48,8 @@ interface DrawerOrchestratorProps {
     playlistName?: string,
     provider?: ProviderId,
   ) => Promise<AddToQueueResult | null>;
+  onPlayLikedTracks?: (tracks: MediaTrack[], collectionId: string, collectionName: string, provider?: ProviderId) => Promise<void>;
+  onQueueLikedTracks?: (tracks: MediaTrack[], collectionName?: string) => void;
   onTrackSelect: (index: number) => void;
   onRemoveFromQueue?: (index: number) => void;
   onReorderQueue?: (fromIndex: number, toIndex: number) => void;
@@ -71,6 +73,8 @@ export const DrawerOrchestrator: React.FC<DrawerOrchestratorProps> = React.memo(
   onCloseLibraryDrawer,
   onPlaylistSelect,
   onAddToQueue,
+  onPlayLikedTracks,
+  onQueueLikedTracks,
   onTrackSelect,
   onRemoveFromQueue,
   onReorderQueue,
@@ -208,6 +212,8 @@ export const DrawerOrchestrator: React.FC<DrawerOrchestratorProps> = React.memo(
           onClose={handleCloseLibrary}
           onPlaylistSelect={onPlaylistSelect}
           onAddToQueue={handleAddToQueueWithToast}
+          onPlayLikedTracks={onPlayLikedTracks}
+          onQueueLikedTracks={onQueueLikedTracks}
           initialSearchQuery={librarySearchQuery}
           initialViewMode={libraryViewMode}
         />

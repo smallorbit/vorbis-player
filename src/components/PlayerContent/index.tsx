@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
+import { useQapEnabled } from '@/hooks/useQapEnabled';
 import { usePlayerSizingContext } from '@/contexts/PlayerSizingContext';
 import { useCurrentTrackContext } from '@/contexts/TrackContext';
 import { useVisualEffectsContext } from '@/contexts/VisualEffectsContext';
@@ -25,6 +26,8 @@ export interface PlaybackHandlers {
     playlistName?: string,
     provider?: ProviderId,
   ) => Promise<AddToQueueResult | null>;
+  onPlayLikedTracks?: (tracks: MediaTrack[], collectionId: string, collectionName: string, provider?: ProviderId) => Promise<void>;
+  onQueueLikedTracks?: (tracks: MediaTrack[], collectionName?: string) => void;
   onAlbumPlay: (albumId: string, albumName: string) => void;
   onBackToLibrary: () => void;
   onStartRadio?: () => void;
@@ -73,6 +76,7 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({
 
   const [librarySearchQuery, setLibrarySearchQuery] = useState<string | undefined>(undefined);
   const [libraryViewMode, setLibraryViewMode] = useState<'playlists' | 'albums' | undefined>(undefined);
+  const [qapEnabled] = useQapEnabled();
 
   const controlsRef = useRef<HTMLDivElement>(null);
   const stableControlsHeightRef = useRef<number>(220);
@@ -155,12 +159,14 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({
   const handleSwipeDown = useCallback(() => {
     if (showLibraryDrawer) {
       handlers.onCloseLibraryDrawer();
+    } else if (!qapEnabled) {
+      handleOpenLibraryDrawer();
     } else if (handlers.onOpenQuickAccessPanel) {
       handlers.onOpenQuickAccessPanel();
     } else {
       handleOpenLibraryDrawer();
     }
-  }, [showLibraryDrawer, handlers, handleOpenLibraryDrawer]);
+  }, [showLibraryDrawer, handlers, handleOpenLibraryDrawer, qapEnabled]);
 
   const handleLibrarySearchQueryReset = useCallback(() => setLibrarySearchQuery(undefined), []);
   const handleLibraryViewModeReset = useCallback(() => setLibraryViewMode(undefined), []);
@@ -237,6 +243,8 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({
         onCloseLibraryDrawer={handleCloseLibraryDrawer}
         onPlaylistSelect={handlers.onPlaylistSelect}
         onAddToQueue={handlers.onAddToQueue}
+        onPlayLikedTracks={handlers.onPlayLikedTracks}
+        onQueueLikedTracks={handlers.onQueueLikedTracks}
         onTrackSelect={handlers.onTrackSelect}
         onRemoveFromQueue={handlers.onRemoveFromQueue}
         onReorderQueue={handlers.onReorderQueue}

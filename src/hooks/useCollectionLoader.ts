@@ -25,6 +25,7 @@ interface UseCollectionLoaderProps {
 
 interface UseCollectionLoaderReturn {
   loadCollection: (playlistId: string, provider?: ProviderId) => Promise<number>;
+  playTracksDirectly: (tracks: MediaTrack[], collectionId: string, provider?: ProviderId) => Promise<number>;
 }
 
 export function useCollectionLoader({
@@ -206,7 +207,53 @@ export function useCollectionLoader({
     ]
   );
 
+  const playTracksDirectly = useCallback(
+    async (tracks: MediaTrack[], collectionId: string, provider?: ProviderId): Promise<number> => {
+      if (radioStateIsActive) stopRadioBase();
+
+      const targetDescriptor = provider ? getDescriptor(provider) : activeDescriptor;
+      const targetProviderId = provider ?? activeDescriptor?.id;
+
+      if (targetDescriptor && activeDescriptor && activeDescriptor.id !== targetDescriptor.id) {
+        activeDescriptor.playback.pause().catch(() => {});
+      }
+
+      setError(null);
+      setIsLoading(true);
+      setSelectedPlaylistId(collectionId);
+      mediaTracksRef.current = [];
+
+      if (tracks.length === 0) {
+        setTracks([]);
+        setOriginalTracks([]);
+        setCurrentTrackIndex(0);
+        setIsLoading(false);
+        return 0;
+      }
+
+      applyTracks(tracks);
+
+      if (targetProviderId) {
+        drivingProviderRef.current = targetProviderId;
+        if (targetProviderId !== activeDescriptor?.id) {
+          setActiveProviderId(targetProviderId);
+        }
+      }
+
+      queueSnapshot('Direct tracks loaded', tracks, mediaTracksRef.current.length, 0);
+      await playTrack(0);
+      return tracks.length;
+    },
+    [
+      radioStateIsActive, stopRadioBase, getDescriptor, activeDescriptor,
+      setError, setIsLoading, setSelectedPlaylistId, mediaTracksRef,
+      setTracks, setOriginalTracks, setCurrentTrackIndex,
+      applyTracks, drivingProviderRef, setActiveProviderId, playTrack,
+    ]
+  );
+
   return {
     loadCollection,
+    playTracksDirectly,
   };
 }
