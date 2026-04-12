@@ -27,7 +27,7 @@ A music player with visualizers and multi-provider support (Spotify, Dropbox), b
 - **Zen Mode** — Distraction-free playback with hover-activated controls (desktop) or touch gestures (mobile), album art focus, and auto-hiding bottom bar
 - **Queue** — See and edit what plays next (reorder, remove, deduplicate) in the queue drawer or mobile sheet
 - **Playlists & Albums** — Browse, search, sort, filter, and pin your **library** collections (not the same as the playback queue)
-- **Unified Liked Songs** — Merge liked tracks from connected providers into one queue
+- **Unified Liked Songs** — Merge liked tracks from connected providers into one queue; "Play Liked" and "Queue Liked" filter any collection to just your favorites
 - **Track Radio** — Generate a one-shot radio playlist from the current track (Last.fm-powered matching)
 - **Visual Effects** — Dynamic glow, configurable album art filters, accent color backgrounds
 - **Background Visualizers** — Animated particle and geometric visualizer backgrounds
@@ -35,6 +35,7 @@ A music player with visualizers and multi-provider support (Spotify, Dropbox), b
 - **Swipe Gestures** — Swipe to change tracks, open the queue, or browse the library
 - **Keyboard Shortcuts** — Context-aware controls with device-specific behavior
 - **Responsive Design** — Fluid layout from mobile phones to ultra-wide desktops
+- **Session Resume** — Pick up where you left off — playback position, queue, and track are restored on reopen
 - **Instant Startup** — IndexedDB-based library cache with background sync
 
 ## Quick Start
