@@ -8,8 +8,6 @@ interface GridWaveVisualizerProps {
   speed?: number;
   accentColor: string;
   isPlaying: boolean;
-  playbackPosition?: number;
-  zenMode?: boolean;
 }
 
 interface GridParticle {

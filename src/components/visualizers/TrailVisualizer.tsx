@@ -15,8 +15,6 @@ interface TrailVisualizerProps {
   speed?: number;
   accentColor: string;
   isPlaying: boolean;
-  playbackPosition?: number;
-  zenMode?: boolean;
   /** When set, the trail head (ship) stays inside this rect so the trail appears to come from the album art */
   albumArtBounds?: AlbumArtBounds | null;
 }
