@@ -84,6 +84,15 @@ const AudioPlayerComponent = () => {
   const collectionNameRef = useRef<string>('');
   const collectionProviderRef = useRef<import('@/types/domain').ProviderId | undefined>(undefined);
 
+  const getLivePosition = useCallback(async (): Promise<number | null> => {
+    const drivingId = playbackProviderRef.current;
+    if (!drivingId) return null;
+    const { providerRegistry } = await import('@/providers/registry');
+    const descriptor = providerRegistry.get(drivingId);
+    const ps = await descriptor?.playback.getState();
+    return ps?.positionMs ?? null;
+  }, [playbackProviderRef]);
+
   const { lastSession } = useSessionPersistence(
     selectedPlaylistId,
     collectionNameRef.current,
@@ -95,6 +104,7 @@ const AudioPlayerComponent = () => {
     currentTrack?.artists,
     currentTrack?.image,
     state.playbackPosition,
+    getLivePosition,
   );
 
   const handleAlbumPlay = useCallback((albumId: string) => {
