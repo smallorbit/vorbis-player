@@ -192,6 +192,11 @@ The library browser provides multi-level filtering and searching via a pipeline 
 
 **Artist filter** is cleared automatically when switching from albums to playlists view.
 
+**Provider filter** logic:
+- Empty array (`[]`) = show all providers (no filtering)
+- Non-empty array = show only items from selected providers
+- Toggle semantics: clicking a provider in the filter adds/removes it; removing the last provider resets to "all"
+
 **Sort anchors:** Certain special collections (`LIKED_SONGS_ID`, Dropbox "All Music" with id `''`) are exempt from sort reordering -- they always stay in catalog order. Defined in `LIBRARY_PLAYLIST_SORT_ANCHOR_IDS` and `LIBRARY_ALBUM_SORT_ANCHOR_IDS` in `src/constants/playlist.ts`.
 
 ## Pinned Items
@@ -273,9 +278,12 @@ QAP preference is stored in `localStorage` key `vorbis-player-qap-enabled` (defa
 | File | Role |
 |------|------|
 | `src/components/LibraryDrawer.tsx` | Drawer container with swipe-to-dismiss |
+| `src/components/FilterChipRow.tsx` | Search and provider/artist filter chips (drawer only) |
+| `src/components/LibraryDrawer/FilterSidebar.tsx` | Collection type toggle and provider checkboxes (responsive) |
 | `src/components/PlaylistSelection/index.tsx` | Main library component, assembles LibraryContext |
 | `src/components/PlaylistSelection/LibraryContext.tsx` | Context definition for library state |
-| `src/components/PlaylistSelection/LibraryMainContent.tsx` | Tabs, search, sort, filter controls + grids |
+| `src/components/PlaylistSelection/LibraryMainContent.tsx` | Tabs, filter chips, sort chip, clear filters button |
+| `src/components/PlaylistSelection/LibraryControls.tsx` | Idle view (non-drawer) search, sort, and filter controls |
 | `src/components/PlaylistSelection/useLibraryBrowsing.ts` | Browse state management (view mode, search, sort, filters) |
 | `src/components/PlaylistSelection/useItemActions.ts` | Context menu actions (play, queue, delete) |
 | `src/components/PlaylistSelection/PlaylistGrid.tsx` | Playlist card grid |
@@ -285,10 +293,11 @@ QAP preference is stored in `localStorage` key `vorbis-player-qap-enabled` (defa
 | `src/components/QuickAccessPanel/ResumeCard.tsx` | Session resume card |
 | `src/contexts/PinnedItemsContext.tsx` | Pin state and IndexedDB persistence |
 | `src/services/settings/pinnedItemsStorage.ts` | IndexedDB pin storage, MAX_PINS, events |
+| `src/hooks/useFilterState.ts` | Filter state persistence (collection type, provider filters) |
 | `src/hooks/useLibrarySync.ts` | Collection sync engine across providers |
 | `src/hooks/useUnifiedLikedTracks.ts` | Cross-provider liked songs merge |
 | `src/hooks/useQapEnabled.ts` | QAP preference (localStorage) |
-| `src/utils/playlistFilters.ts` | Filter/sort/pin-split utilities |
+| `src/utils/playlistFilters.ts` | Filter/sort/pin-split utilities; genre/decade logic (future) |
 | `src/constants/playlist.ts` | LIKED_SONGS_ID, sort anchor IDs, ID encoding |
 | `src/components/PlayerContent/DrawerOrchestrator.tsx` | Drawer switching and toast management |
 
