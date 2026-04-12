@@ -36,9 +36,3 @@ export function resolveZenZone(clientX: number, clientY: number, rect: DOMRect):
   if (relX > ZEN_ZONE_RIGHT_BOUNDARY) return 'right';
   return 'center';
 }
-
-export function zenArtTransition(zenMode: boolean): string {
-  return zenMode
-    ? `max-width ${ZEN_ART_DURATION}ms ${ZEN_ART_EASING} ${ZEN_ART_ENTER_DELAY}ms`
-    : `max-width ${ZEN_ART_DURATION}ms ${ZEN_ART_EASING}`;
-}

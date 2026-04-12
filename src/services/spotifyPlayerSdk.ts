@@ -25,7 +25,6 @@ const saveHMRState = (state: HMRPlayerState) => {
 };
 
 export { getHMRState, saveHMRState };
-export type { HMRPlayerState };
 
 export function loadSpotifySDK(pendingRef: { current: Promise<void> | null }): Promise<void> {
   if (typeof window === 'undefined') {

@@ -5,13 +5,13 @@ const GITHUB_API_BASE = 'https://api.github.com';
 const SCREENSHOT_PATH_PREFIX = 'docs/bug-screenshots';
 const DEVBUG_LABEL = 'devbug';
 
-export interface GitHubServiceConfig {
+interface GitHubServiceConfig {
   token: string;
   owner: string;
   repo: string;
 }
 
-export interface GitHubService {
+interface GitHubService {
   uploadScreenshot(dataUrl: string, filename: string): Promise<string>;
   createIssue(report: BugReport): Promise<{ number: number; url: string }>;
   isConfigured(): boolean;
