@@ -23,6 +23,14 @@ export const PanelRoot = styled.div`
   animation: ${fadeIn} 0.25s ease-out;
 `;
 
+export const ResumeLabel = styled.div`
+  font-size: ${theme.fontSize.xs};
+  font-weight: ${theme.fontWeight.medium};
+  color: rgba(255, 255, 255, 0.5);
+  padding: ${theme.spacing.sm} ${theme.spacing.md} ${theme.spacing.xs};
+  flex-shrink: 0;
+`;
+
 export const ResumeCardRoot = styled.button`
   display: flex;
   align-items: center;
