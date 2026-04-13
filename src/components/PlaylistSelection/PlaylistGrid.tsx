@@ -30,7 +30,7 @@ import { LikedSongsCard } from './LikedSongsCard';
 export const PlaylistGrid: React.FC = React.memo(function PlaylistGrid() {
   const { hasActiveFilters, searchQuery, providerFilters } = useLibraryBrowsingContext();
   const { pinnedPlaylists, unpinnedPlaylists, isPlaylistPinned, canPinMorePlaylists, onPinPlaylistClick } = useLibraryPins();
-  const { onPlaylistClick, onPlaylistContextMenu } = useLibraryActions();
+  const { onPlaylistContextMenu } = useLibraryActions();
   const { inDrawer, likedSongsPerProvider, likedSongsCount, isUnifiedLikedActive, unifiedLikedCount, isInitialLoadComplete, showProviderBadges } = useLibraryData();
 
   const likedSongsPinned = isPlaylistPinned(LIKED_SONGS_ID);
@@ -90,7 +90,7 @@ export const PlaylistGrid: React.FC = React.memo(function PlaylistGrid() {
   const renderPlaylistList = (playlist: PlaylistInfo) => {
     const pinned = isPlaylistPinned(playlist.id);
     return (
-      <PinnableListItem key={`${playlist.provider ?? 'default'}-${playlist.id}`} onClick={() => onPlaylistClick(playlist)} onContextMenu={(e) => onPlaylistContextMenu(playlist, e)}>
+      <PinnableListItem key={`${playlist.provider ?? 'default'}-${playlist.id}`} onClick={(e) => onPlaylistContextMenu(playlist, e)} onContextMenu={(e) => onPlaylistContextMenu(playlist, e)}>
         <div style={{ position: 'relative' }}>
           <PlaylistImage images={playlist.images} alt={playlist.name} mosaicAlbumPaths={playlist.mosaicAlbumPaths} />
           {showProviderBadges && playlist.provider && (

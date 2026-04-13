@@ -151,15 +151,15 @@ describe('PlaylistSelection', () => {
     expect(items.length).toBeGreaterThan(0);
   });
 
-  it('clicking a playlist calls onPlaylistSelect with the correct playlist ID', () => {
+  it('clicking a playlist opens the context menu instead of playing directly', () => {
     // #given
-    const { onPlaylistSelect } = renderLibraryPage();
+    renderLibraryPage();
 
     // #when
     fireEvent.click(screen.getByText('Chill Vibes'));
 
     // #then
-    expect(onPlaylistSelect).toHaveBeenCalledWith('pl-1', 'Chill Vibes', undefined);
+    expect(screen.getByText('Play Chill Vibes')).toBeTruthy();
   });
 
   it('shows loading state while isSyncing is true and no data yet', () => {
