@@ -146,8 +146,8 @@ describe('PlaylistSelection', () => {
 
   it('search input filters playlist list by name (case-insensitive)', () => {
     // #given
-    renderLibraryPage();
-    const searchInput = screen.getByPlaceholderText('Search playlists...');
+    renderDrawerLibrary();
+    const searchInput = screen.getByRole('textbox', { name: /search playlists and albums/i });
 
     // #when
     fireEvent.change(searchInput, { target: { value: 'chill' } });
@@ -251,8 +251,8 @@ describe('PlaylistSelection — search and filter', () => {
 
   it('filters playlists by search query', () => {
     // #given
-    renderLibraryPage();
-    const searchInput = screen.getByPlaceholderText('Search playlists...');
+    renderDrawerLibrary();
+    const searchInput = screen.getByRole('textbox', { name: /search playlists and albums/i });
 
     // #when
     fireEvent.change(searchInput, { target: { value: MOCK_PLAYLIST_NAMES.CHILL } });
@@ -265,26 +265,25 @@ describe('PlaylistSelection — search and filter', () => {
 
   it('shows empty state when search matches nothing', () => {
     // #given
-    renderLibraryPage();
-    const searchInput = screen.getByPlaceholderText('Search playlists...');
+    setMockLibrarySync({ likedSongsCount: 0 });
+    renderDrawerLibrary();
+    const searchInput = screen.getByRole('textbox', { name: /search playlists and albums/i });
 
     // #when
     fireEvent.change(searchInput, { target: { value: 'XYZ123NonExistent' } });
 
     // #then
-    const noResultsText = screen.queryByText(/no/i);
-    expect(noResultsText || searchInput.parentElement?.textContent).toBeTruthy();
+    expect(screen.getByText(/no playlists match/i)).toBeTruthy();
   });
 
   it('clears search when clear button is clicked', () => {
     // #given
-    renderLibraryPage();
-    const searchInput = screen.getByPlaceholderText('Search playlists...') as HTMLInputElement;
+    renderDrawerLibrary();
+    const searchInput = screen.getByRole('textbox', { name: /search playlists and albums/i }) as HTMLInputElement;
     fireEvent.change(searchInput, { target: { value: MOCK_PLAYLIST_NAMES.CHILL } });
     expect(searchInput.value).toBe(MOCK_PLAYLIST_NAMES.CHILL);
 
-    const clearButton = screen.queryByRole('button', { name: /clear|close|reset/i })
-      || screen.getByRole('button', { name: /✕|✖|×|x/i });
+    const clearButton = screen.queryByRole('button', { name: /clear search/i });
 
     // #when
     if (clearButton) {
@@ -300,8 +299,8 @@ describe('PlaylistSelection — search and filter', () => {
 
   it('search is case-insensitive', () => {
     // #given
-    renderLibraryPage();
-    const searchInput = screen.getByPlaceholderText('Search playlists...');
+    renderDrawerLibrary();
+    const searchInput = screen.getByRole('textbox', { name: /search playlists and albums/i });
 
     // #when
     fireEvent.change(searchInput, { target: { value: 'JAZZ' } });
@@ -320,8 +319,8 @@ describe('PlaylistSelection — search and filter', () => {
 
   it('search updates live as user types', () => {
     // #given
-    renderLibraryPage();
-    const searchInput = screen.getByPlaceholderText('Search playlists...');
+    renderDrawerLibrary();
+    const searchInput = screen.getByRole('textbox', { name: /search playlists and albums/i });
 
     // #when
     fireEvent.change(searchInput, { target: { value: MOCK_PLAYLIST_NAMES.CHILL } });

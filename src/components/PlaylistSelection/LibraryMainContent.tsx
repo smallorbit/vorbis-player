@@ -182,8 +182,6 @@ export function LibraryMainContent(): React.JSX.Element {
         <LibraryControls
           inDrawer={false}
           viewMode={viewMode}
-          searchQuery={searchQuery}
-          setSearchQuery={setSearchQuery}
           playlistSort={playlistSort}
           setPlaylistSort={setPlaylistSort}
           albumSort={albumSort}

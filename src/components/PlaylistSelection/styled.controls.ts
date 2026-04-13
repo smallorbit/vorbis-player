@@ -80,28 +80,6 @@ export const SortControlsRow = styled.div`
   min-width: 0;
 `;
 
-export const SearchInput = styled.input`
-  flex: 1;
-  min-width: 180px;
-  padding: ${({ theme }) => theme.spacing.sm} ${theme.spacing.lg};
-  background: ${({ theme }) => theme.colors.control.background};
-  border: 1px solid ${({ theme }) => theme.colors.control.borderHover};
-  border-radius: ${({ theme }) => theme.borderRadius.lg};
-  color: ${({ theme }) => theme.colors.white};
-  font-size: ${({ theme }) => theme.fontSize.sm};
-  outline: none;
-  transition: border-color ${({ theme }) => theme.transitions.fast}, background ${({ theme }) => theme.transitions.fast};
-
-  &::placeholder {
-    color: ${({ theme }) => theme.colors.muted.foreground};
-  }
-
-  &:focus {
-    background: ${({ theme }) => theme.colors.control.backgroundHover};
-    border-color: ${({ theme }) => theme.colors.accent};
-  }
-`;
-
 export const SelectDropdown = styled.select`
   padding: ${({ theme }) => theme.spacing.sm} ${theme.spacing.lg};
   background: ${({ theme }) => theme.colors.control.background};
