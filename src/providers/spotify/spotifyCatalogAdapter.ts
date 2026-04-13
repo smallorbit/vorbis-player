@@ -75,6 +75,7 @@ function spotifyAlbumToMediaCollection(album: AlbumInfo): MediaCollection {
     description: album.artists,
     imageUrl: getLargestImage(album.images),
     trackCount: album.total_tracks,
+    genres: album.genres,
   };
 }
 

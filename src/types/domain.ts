@@ -38,6 +38,8 @@ export interface MediaTrack {
   isrc?: string;
   /** Epoch ms when the track was added/liked. Populated for liked tracks to enable cross-provider sorting. */
   addedAt?: number;
+  /** Genre tags for the track (e.g. from album metadata). Empty array means unavailable. */
+  genres?: string[];
 }
 
 /**
@@ -73,6 +75,8 @@ export interface MediaCollection {
   releaseDate?: string;
   /** Album paths for mosaic thumbnails (multi-album playlists). Resolved to art at render time via IndexedDB cache. */
   mosaicAlbumPaths?: string[];
+  /** Populated by Spotify; undefined for Dropbox collections (no provider-level genre data available). */
+  genres?: string[];
 }
 
 /**

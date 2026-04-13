@@ -62,6 +62,8 @@ export interface AlbumInfo {
   added_at?: string; // ISO 8601 timestamp when saved to library
   /** Which provider this album belongs to (for multi-provider library view). */
   provider?: ProviderId;
+  /** Genre tags returned by the Spotify album object. */
+  genres?: string[];
 }
 
 interface SpotifyArtist {
