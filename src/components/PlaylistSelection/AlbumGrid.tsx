@@ -29,7 +29,7 @@ import { useLibraryBrowsingContext, useLibraryPins, useLibraryActions, useLibrar
 export const AlbumGrid: React.FC = React.memo(function AlbumGrid() {
   const { searchQuery, artistFilter } = useLibraryBrowsingContext();
   const { pinnedAlbums, unpinnedAlbums, isAlbumPinned, canPinMoreAlbums, onPinAlbumClick } = useLibraryPins();
-  const { onAlbumClick, onAlbumContextMenu, onArtistClick } = useLibraryActions();
+  const { onAlbumContextMenu, onArtistClick } = useLibraryActions();
   const { inDrawer, isInitialLoadComplete, showProviderBadges } = useLibraryData();
 
   const renderAlbumGrid = (album: AlbumInfo) => {
@@ -72,7 +72,7 @@ export const AlbumGrid: React.FC = React.memo(function AlbumGrid() {
     return (
       <PinnableListItem
         key={`${album.provider ?? 'default'}-${album.id}`}
-        onClick={() => onAlbumClick(album)}
+        onClick={(e) => onAlbumContextMenu(album, e)}
         onContextMenu={(e) => onAlbumContextMenu(album, e)}
       >
         <div style={{ position: 'relative' }}>
