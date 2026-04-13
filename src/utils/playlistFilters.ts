@@ -1,4 +1,5 @@
 import type { PlaylistInfo, AlbumInfo } from '../services/spotify';
+import type { MediaTrack } from '../types/domain';
 import { LIBRARY_ALBUM_SORT_ANCHOR_IDS, LIBRARY_PLAYLIST_SORT_ANCHOR_IDS } from '../constants/playlist';
 
 // ============================================================
@@ -17,10 +18,26 @@ export type AlbumSortOption =
   | 'recently-added';
 
 /**
- * Filter option for recently-added collections (#898).
- * Defined here so imports in LibraryContext compile; full implementation is in #898.
+ * Unified filter state for the library browser.
+ *
+ * Each field is optional — omitting it means "no filter applied" for that dimension.
+ * The filter pipeline applies each non-empty filter in sequence:
+ *   provider → collectionType → genres → recentlyAdded → searchQuery
  */
-export type RecentlyAddedFilterOption = 'all' | 'week' | 'month' | '3months';
+export interface FilterState {
+  /** Only include items from these providers. Empty array = all providers. */
+  provider?: string[];
+  /** Only include playlists or albums. Undefined = all. */
+  collectionType?: 'playlists' | 'albums';
+  /** Only include items tagged with at least one of these genres. Empty array = all genres. */
+  genres?: string[];
+  /** Only include items added within this time window. 'all' or undefined = no restriction. */
+  recentlyAdded?: 'all' | '7-days' | '30-days' | '1-year';
+  /** Full-text search across title, artist, album. Empty string = no restriction. */
+  searchQuery?: string;
+}
+
+export type RecentlyAddedFilterOption = FilterState['recentlyAdded'];
 
 type YearFilterOption =
   | 'all'
@@ -116,16 +133,75 @@ function matchesYearFilter(year: number | null, filter: YearFilterOption): boole
 }
 
 /**
- * Check if a collection matches the genre filter.
- * Returns true when no genres are selected (show all).
- * When genres are selected, returns true if the collection has at least one matching genre.
- * Collections with no genres are excluded when a genre filter is active.
+ * Resolve the cutoff epoch ms for a recently-added time range.
+ * Returns 0 for 'all' or undefined (no restriction).
  */
-export function matchesGenreFilter(genres: string[] | undefined, selectedGenres: string[]): boolean {
+function recentlyAddedCutoffMs(timeRange: FilterState['recentlyAdded']): number {
+  if (!timeRange || timeRange === 'all') return 0;
+  const now = Date.now();
+  const MS_PER_DAY = 86_400_000;
+  switch (timeRange) {
+    case '7-days':  return now - 7 * MS_PER_DAY;
+    case '30-days': return now - 30 * MS_PER_DAY;
+    case '1-year':  return now - 365 * MS_PER_DAY;
+  }
+}
+
+// ============================================================
+// UNIFIED FILTER HELPERS
+// ============================================================
+
+/**
+ * Returns true when the item's provider is included in selectedProviders,
+ * or when selectedProviders is empty (no restriction).
+ */
+export function matchesProviderFilter(
+  itemProvider: string | undefined,
+  selectedProviders: string[]
+): boolean {
+  if (selectedProviders.length === 0) return true;
+  if (!itemProvider) return false;
+  return selectedProviders.includes(itemProvider);
+}
+
+/**
+ * Returns true when the item is tagged with at least one of the selected genres,
+ * or when selectedGenres is empty (no restriction).
+ * Items with no genres are excluded when a genre filter is active.
+ */
+export function matchesGenreFilter(itemGenres: string[] | undefined, selectedGenres: string[]): boolean {
   if (selectedGenres.length === 0) return true;
-  if (!genres || genres.length === 0) return false;
-  // Match if any of the collection's genres appears in the selected set
-  return genres.some((g) => selectedGenres.includes(g));
+  if (!itemGenres || itemGenres.length === 0) return false;
+  return selectedGenres.some(g => itemGenres.includes(g));
+}
+
+/**
+ * Returns true when the item was added within the given time range,
+ * or when the time range is 'all' / undefined (no restriction).
+ */
+export function matchesRecentlyAddedFilter(
+  addedAt: string | number | undefined,
+  timeRange: FilterState['recentlyAdded']
+): boolean {
+  const cutoff = recentlyAddedCutoffMs(timeRange);
+  if (cutoff === 0) return true;
+  const ts = parseAddedAt(addedAt);
+  if (ts === 0) return false;
+  return ts >= cutoff;
+}
+
+/**
+ * Returns true when the track matches the search query across
+ * name, artists, and album fields. Empty query always returns true.
+ */
+export function matchesSearchQuery(track: MediaTrack, searchQuery: string): boolean {
+  if (!searchQuery) return true;
+  const q = normalizeText(searchQuery);
+  return (
+    normalizeText(track.name).includes(q) ||
+    normalizeText(track.artists).includes(q) ||
+    normalizeText(track.album).includes(q)
+  );
 }
 
 /**
@@ -142,6 +218,58 @@ export function getAvailableGenres(items: Array<{ genres?: string[] }>): string[
     }
   }
   return Array.from(genreSet).sort((a, b) => a.localeCompare(b));
+}
+
+// ============================================================
+// UNIFIED FILTER APPLICATION
+// ============================================================
+
+/**
+ * Apply a FilterState to a MediaTrack array.
+ * Pipeline: provider → genres → recentlyAdded → searchQuery
+ */
+export function applyFilters(items: MediaTrack[], filterState: FilterState): MediaTrack[] {
+  const { provider, genres, recentlyAdded, searchQuery } = filterState;
+  const activeProvider = provider && provider.length > 0 ? provider : null;
+  const activeGenres   = genres && genres.length > 0 ? genres : null;
+  const activeCutoff   = recentlyAddedCutoffMs(recentlyAdded);
+  const activeQuery    = searchQuery ? normalizeText(searchQuery) : null;
+
+  return items.filter(track => {
+    if (activeProvider && !activeProvider.includes(track.provider)) return false;
+    if (activeGenres && !matchesGenreFilter((track as MediaTrack & { genres?: string[] }).genres, activeGenres)) return false;
+    if (activeCutoff > 0) {
+      const ts = typeof track.addedAt === 'number' ? track.addedAt : 0;
+      if (ts === 0 || ts < activeCutoff) return false;
+    }
+    if (activeQuery) {
+      if (
+        !normalizeText(track.name).includes(activeQuery) &&
+        !normalizeText(track.artists).includes(activeQuery) &&
+        !normalizeText(track.album).includes(activeQuery)
+      ) return false;
+    }
+    return true;
+  });
+}
+
+/**
+ * Apply a FilterState to an AlbumInfo array.
+ * Pipeline: provider → genres → recentlyAdded → searchQuery
+ */
+export function applyAlbumFilters(albums: AlbumInfo[], filterState: FilterState): AlbumInfo[] {
+  const { provider, genres, recentlyAdded, searchQuery } = filterState;
+  const activeProvider = provider && provider.length > 0 ? provider : null;
+  const activeGenres   = genres && genres.length > 0 ? genres : null;
+  const activeCutoff   = recentlyAddedCutoffMs(recentlyAdded);
+
+  return albums.filter(album => {
+    if (activeProvider && !matchesProviderFilter(album.provider, activeProvider)) return false;
+    if (activeGenres && !matchesGenreFilter((album as AlbumInfo & { genres?: string[] }).genres, activeGenres)) return false;
+    if (activeCutoff > 0 && !matchesRecentlyAddedFilter(album.added_at, recentlyAdded)) return false;
+    if (!matchesSearch(album, searchQuery ?? '')) return false;
+    return true;
+  });
 }
 
 // ============================================================
