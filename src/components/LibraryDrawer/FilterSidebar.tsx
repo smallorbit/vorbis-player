@@ -48,9 +48,13 @@ const SidebarContainer = styled.div`
   /* Desktop: persistent left sidebar */
   @media (min-width: ${theme.breakpoints.lg}) {
     border-right: 1px solid ${theme.colors.popover.border};
-    min-width: 200px;
+    min-width: 160px;
     max-height: 100%;
     overflow-y: auto;
+    scrollbar-width: none;
+    &::-webkit-scrollbar {
+      display: none;
+    }
   }
 `;
 
