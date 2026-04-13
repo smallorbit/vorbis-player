@@ -1,8 +1,6 @@
 import type * as React from 'react';
 import styled from 'styled-components';
 import { theme } from '@/styles/theme';
-import FilterChipRow from '../FilterChipRow';
-import LibraryProviderBar from '../LibraryProviderBar';
 import { FilterSidebar } from '../LibraryDrawer/FilterSidebar';
 import { PlaylistGrid } from './PlaylistGrid';
 import { AlbumGrid } from './AlbumGrid';
@@ -10,9 +8,6 @@ import { LibraryControls } from './LibraryControls';
 import { useLibraryBrowsingContext, useLibraryActions, useLibraryData } from './LibraryContext';
 import { RefreshIcon } from './utils';
 import {
-  TabSpinner,
-  TabsContainer,
-  TabButton,
   DrawerRefreshButton,
   DrawerBottomControls,
   DrawerBottomRow,
@@ -49,11 +44,8 @@ export function LibraryMainContent(): React.JSX.Element {
     setPlaylistSort,
     albumSort,
     setAlbumSort,
-    artistFilter,
-    setArtistFilter,
     providerFilters,
     setProviderFilters,
-    handleProviderToggle,
     availableGenres,
     selectedGenres,
     setSelectedGenres,
@@ -61,24 +53,7 @@ export function LibraryMainContent(): React.JSX.Element {
     setRecentlyAddedFilter,
   } = useLibraryBrowsingContext();
   const { onLibraryRefresh, isLibraryRefreshing } = useLibraryActions();
-  const { inDrawer, swipeZoneRef, albums, isInitialLoadComplete, showProviderBadges, enabledProviderIds } = useLibraryData();
-
-  const tabsBar = (
-    <TabsContainer>
-      <TabButton
-        $active={viewMode === 'playlists'}
-        onClick={() => setViewMode('playlists')}
-      >
-        Playlists{!isInitialLoadComplete && <TabSpinner />}
-      </TabButton>
-      <TabButton
-        $active={viewMode === 'albums'}
-        onClick={() => setViewMode('albums')}
-      >
-        Albums{!isInitialLoadComplete && <TabSpinner />}
-      </TabButton>
-    </TabsContainer>
-  );
+  const { inDrawer, showProviderBadges, enabledProviderIds } = useLibraryData();
 
   if (inDrawer) {
     return (
@@ -103,30 +78,12 @@ export function LibraryMainContent(): React.JSX.Element {
           setAlbumSort={setAlbumSort}
         />
         <MainContent>
-          <div ref={swipeZoneRef} style={{ flexShrink: 0, touchAction: 'pan-y' }}>
-            {tabsBar}
-          </div>
-
-          <FilterChipRow
-            viewMode={viewMode}
-            searchQuery={searchQuery}
-            onSearchChange={setSearchQuery}
-            enabledProviderIds={enabledProviderIds}
-            activeProviderFilters={providerFilters}
-            onProviderToggle={handleProviderToggle}
-            showProviderChips={showProviderBadges}
-            albums={albums}
-            artistFilter={artistFilter}
-            onArtistFilterChange={setArtistFilter}
-          />
-
           {viewMode === 'playlists' && <PlaylistGrid />}
 
           {viewMode === 'albums' && <AlbumGrid />}
 
           <DrawerBottomControls>
             <DrawerBottomRow>
-              <LibraryProviderBar variant="drawerBottom" />
               <DrawerBottomActions>
                 {onLibraryRefresh && (
                   <DrawerRefreshButton
@@ -148,11 +105,6 @@ export function LibraryMainContent(): React.JSX.Element {
 
   return (
     <>
-      <LibraryProviderBar />
-      <div style={{ flexShrink: 0, touchAction: 'pan-y' }}>
-        {tabsBar}
-      </div>
-
       {viewMode === 'playlists' && <PlaylistGrid />}
 
       {viewMode === 'albums' && <AlbumGrid />}
