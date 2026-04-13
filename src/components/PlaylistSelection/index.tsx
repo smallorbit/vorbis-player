@@ -14,6 +14,7 @@ import {
   LibraryDataProvider,
 } from './LibraryContext';
 import { useLibraryRoot } from './useLibraryRoot';
+import { LibraryMiniPlayer } from './LibraryMiniPlayer';
 
 interface LibraryPageProps {
   onPlaylistSelect: (playlistId: string, playlistName: string, provider?: ProviderId) => void;
@@ -24,6 +25,8 @@ interface LibraryPageProps {
   ) => Promise<AddToQueueResult | null>;
   onPlayLikedTracks?: (tracks: MediaTrack[], collectionId: string, collectionName: string, provider?: ProviderId) => Promise<void>;
   onQueueLikedTracks?: (tracks: MediaTrack[], collectionName?: string) => void;
+  onNavigateToPlayer?: () => void;
+  isPlaying?: boolean;
   footer?: React.ReactNode;
 }
 
@@ -32,6 +35,8 @@ export const LibraryPage = React.memo(function LibraryPage({
   onAddToQueue,
   onPlayLikedTracks,
   onQueueLikedTracks,
+  onNavigateToPlayer,
+  isPlaying,
   footer,
 }: LibraryPageProps): JSX.Element {
   const {
@@ -68,6 +73,9 @@ export const LibraryPage = React.memo(function LibraryPage({
             {confirmDeletePortal}
           </CardContent>
           {footer}
+          {onNavigateToPlayer && (
+            <LibraryMiniPlayer isPlaying={isPlaying ?? false} onNavigateToPlayer={onNavigateToPlayer} />
+          )}
         </PageSelectionCard>
       </PageContainer>
     </LibraryActionsProvider>
