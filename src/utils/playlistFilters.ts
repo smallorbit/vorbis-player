@@ -1,4 +1,5 @@
 import type { PlaylistInfo, AlbumInfo } from '../services/spotify';
+import type { MediaTrack } from '../types/domain';
 import { LIBRARY_ALBUM_SORT_ANCHOR_IDS, LIBRARY_PLAYLIST_SORT_ANCHOR_IDS } from '../constants/playlist';
 
 // ============================================================
@@ -25,6 +26,26 @@ type YearFilterOption =
   | '1980s'
   | 'older';
 
+/**
+ * Unified filter state for the library browser.
+ *
+ * Each field is optional — omitting it means "no filter applied" for that dimension.
+ * The filter pipeline applies each non-empty filter in sequence:
+ *   provider → collectionType → genres → recentlyAdded → searchQuery
+ */
+export interface FilterState {
+  /** Only include items from these providers. Empty array = all providers. */
+  provider?: string[];
+  /** Only include playlists or albums. Undefined = all. */
+  collectionType?: 'playlists' | 'albums';
+  /** Only include items tagged with at least one of these genres. Empty array = all genres. */
+  genres?: string[];
+  /** Only include items added within this time window. 'all' or undefined = no restriction. */
+  recentlyAdded?: 'all' | '7-days' | '30-days' | '1-year';
+  /** Full-text search across title, artist, album. Empty string = no restriction. */
+  searchQuery?: string;
+}
+
 // ============================================================
 // HELPER FUNCTIONS
 // ============================================================
@@ -48,7 +69,6 @@ function matchesSearch(
 
   const normalizedQuery = normalizeText(query);
 
-  // Common field: name
   if (normalizeText(item.name).includes(normalizedQuery)) {
     return true;
   }
@@ -107,6 +127,169 @@ function matchesYearFilter(year: number | null, filter: YearFilterOption): boole
 
   const decadeStart = parseInt(filter); // "2020s" -> 2020
   return year >= decadeStart && year < decadeStart + 10;
+}
+
+/**
+ * Resolve the cutoff epoch ms for a recently-added time range.
+ * Returns 0 for 'all' or undefined (no restriction).
+ */
+function recentlyAddedCutoffMs(timeRange: FilterState['recentlyAdded']): number {
+  if (!timeRange || timeRange === 'all') return 0;
+  const now = Date.now();
+  const MS_PER_DAY = 86_400_000;
+  switch (timeRange) {
+    case '7-days':  return now - 7 * MS_PER_DAY;
+    case '30-days': return now - 30 * MS_PER_DAY;
+    case '1-year':  return now - 365 * MS_PER_DAY;
+  }
+}
+
+// ============================================================
+// UNIFIED FILTER HELPERS (exported for reuse and testing)
+// ============================================================
+
+/**
+ * Returns true when the item's provider is included in selectedProviders,
+ * or when selectedProviders is empty (no restriction).
+ */
+export function matchesProviderFilter(
+  itemProvider: string | undefined,
+  selectedProviders: string[]
+): boolean {
+  if (selectedProviders.length === 0) return true;
+  if (!itemProvider) return false;
+  return selectedProviders.includes(itemProvider);
+}
+
+/**
+ * Returns true when the item is tagged with at least one of the selected genres,
+ * or when selectedGenres is empty (no restriction).
+ *
+ * Accepts an optional genres array on the item — if absent the item passes
+ * only when no genre filter is active.
+ */
+export function matchesGenreFilter(
+  itemGenres: string[] | undefined,
+  selectedGenres: string[]
+): boolean {
+  if (selectedGenres.length === 0) return true;
+  if (!itemGenres || itemGenres.length === 0) return false;
+  return selectedGenres.some(g => itemGenres.includes(g));
+}
+
+/**
+ * Returns true when the item was added within the given time range,
+ * or when the time range is 'all' / undefined (no restriction).
+ *
+ * addedAt may be epoch ms (number) or an ISO string.
+ */
+export function matchesRecentlyAddedFilter(
+  addedAt: string | number | undefined,
+  timeRange: FilterState['recentlyAdded']
+): boolean {
+  const cutoff = recentlyAddedCutoffMs(timeRange);
+  if (cutoff === 0) return true;
+  const ts = parseAddedAt(addedAt);
+  if (ts === 0) return false;
+  return ts >= cutoff;
+}
+
+/**
+ * Returns true when the track matches the search query across
+ * name, artists, and album fields. Empty query always returns true.
+ */
+export function matchesSearchQuery(track: MediaTrack, searchQuery: string): boolean {
+  if (!searchQuery) return true;
+  const q = normalizeText(searchQuery);
+  return (
+    normalizeText(track.name).includes(q) ||
+    normalizeText(track.artists).includes(q) ||
+    normalizeText(track.album).includes(q)
+  );
+}
+
+// ============================================================
+// UNIFIED FILTER APPLICATION
+// ============================================================
+
+/**
+ * Apply a FilterState to a MediaTrack array.
+ *
+ * Filter pipeline: provider → genres → recentlyAdded → searchQuery
+ * (collectionType is not applicable to individual tracks)
+ *
+ * Each filter is a no-op when its state field is absent or empty.
+ */
+export function applyFilters(
+  items: MediaTrack[],
+  filterState: FilterState
+): MediaTrack[] {
+  const { provider, genres, recentlyAdded, searchQuery } = filterState;
+
+  const activeProvider   = provider && provider.length > 0 ? provider : null;
+  const activeGenres     = genres && genres.length > 0 ? genres : null;
+  const activeCutoff     = recentlyAddedCutoffMs(recentlyAdded);
+  const activeQuery      = searchQuery ? normalizeText(searchQuery) : null;
+
+  return items.filter(track => {
+    if (activeProvider && !activeProvider.includes(track.provider)) return false;
+
+    if (activeGenres) {
+      const tg = (track as MediaTrack & { genres?: string[] }).genres;
+      if (!tg || !activeGenres.some(g => tg.includes(g))) return false;
+    }
+
+    if (activeCutoff > 0) {
+      const ts = typeof track.addedAt === 'number' ? track.addedAt : 0;
+      if (ts === 0 || ts < activeCutoff) return false;
+    }
+
+    if (activeQuery) {
+      if (
+        !normalizeText(track.name).includes(activeQuery) &&
+        !normalizeText(track.artists).includes(activeQuery) &&
+        !normalizeText(track.album).includes(activeQuery)
+      ) {
+        return false;
+      }
+    }
+
+    return true;
+  });
+}
+
+/**
+ * Apply a FilterState to an AlbumInfo array.
+ *
+ * Filter pipeline: provider → genres → recentlyAdded → searchQuery
+ * (collectionType is handled upstream by the caller choosing which list to pass)
+ *
+ * Each filter is a no-op when its state field is absent or empty.
+ */
+export function applyAlbumFilters(
+  albums: AlbumInfo[],
+  filterState: FilterState
+): AlbumInfo[] {
+  const { provider, genres, recentlyAdded, searchQuery } = filterState;
+
+  const activeProvider = provider && provider.length > 0 ? provider : null;
+  const activeGenres   = genres && genres.length > 0 ? genres : null;
+  const activeCutoff   = recentlyAddedCutoffMs(recentlyAdded);
+
+  return albums.filter(album => {
+    if (activeProvider && !matchesProviderFilter(album.provider, activeProvider)) return false;
+
+    if (activeGenres) {
+      const ag = (album as AlbumInfo & { genres?: string[] }).genres;
+      if (!matchesGenreFilter(ag, activeGenres)) return false;
+    }
+
+    if (activeCutoff > 0 && !matchesRecentlyAddedFilter(album.added_at, recentlyAdded)) return false;
+
+    if (!matchesSearch(album, searchQuery ?? '')) return false;
+
+    return true;
+  });
 }
 
 // ============================================================
@@ -293,6 +476,24 @@ export function getAvailableDecades(albums: AlbumInfo[]): YearFilterOption[] {
   // Return sorted (most recent first)
   const order: YearFilterOption[] = ['2020s', '2010s', '2000s', '1990s', '1980s', 'older'];
   return order.filter(d => decades.has(d));
+}
+
+/**
+ * Collect unique genre strings across albums that expose a genres field.
+ * Returns genres sorted alphabetically.
+ */
+export function getAvailableGenres(
+  albums: (AlbumInfo & { genres?: string[] })[]
+): string[] {
+  const genres = new Set<string>();
+  for (const album of albums) {
+    if (album.genres) {
+      for (const g of album.genres) {
+        genres.add(g);
+      }
+    }
+  }
+  return Array.from(genres).sort((a, b) => a.localeCompare(b));
 }
 
 /**
