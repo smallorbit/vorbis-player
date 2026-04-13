@@ -2,7 +2,6 @@ import type * as React from 'react';
 import styled from 'styled-components';
 import { theme } from '@/styles/theme';
 import FilterChipRow from '../FilterChipRow';
-import LibraryDrawerSortChip from '../LibraryDrawerSortChip';
 import LibraryProviderBar from '../LibraryProviderBar';
 import { FilterSidebar } from '../LibraryDrawer/FilterSidebar';
 import { PlaylistGrid } from './PlaylistGrid';
@@ -18,7 +17,6 @@ import {
   DrawerBottomControls,
   DrawerBottomRow,
   DrawerBottomActions,
-  DrawerClearFiltersButton,
 } from './styled';
 
 const DrawerContent = styled.div`
@@ -61,7 +59,6 @@ export function LibraryMainContent(): React.JSX.Element {
     setSelectedGenres,
     recentlyAddedFilter,
     setRecentlyAddedFilter,
-    hasActiveFilters,
   } = useLibraryBrowsingContext();
   const { onLibraryRefresh, isLibraryRefreshing } = useLibraryActions();
   const { inDrawer, swipeZoneRef, albums, isInitialLoadComplete, showProviderBadges, enabledProviderIds } = useLibraryData();
@@ -100,6 +97,10 @@ export function LibraryMainContent(): React.JSX.Element {
           onGenreChange={setSelectedGenres}
           recentlyAdded={recentlyAddedFilter}
           onRecentlyAddedChange={setRecentlyAddedFilter}
+          playlistSort={playlistSort}
+          setPlaylistSort={setPlaylistSort}
+          albumSort={albumSort}
+          setAlbumSort={setAlbumSort}
         />
         <MainContent>
           <div ref={swipeZoneRef} style={{ flexShrink: 0, touchAction: 'pan-y' }}>
@@ -127,28 +128,6 @@ export function LibraryMainContent(): React.JSX.Element {
             <DrawerBottomRow>
               <LibraryProviderBar variant="drawerBottom" />
               <DrawerBottomActions>
-                <LibraryDrawerSortChip
-                  viewMode={viewMode}
-                  playlistSort={playlistSort}
-                  albumSort={albumSort}
-                  onPlaylistSortChange={setPlaylistSort}
-                  onAlbumSortChange={setAlbumSort}
-                />
-                {hasActiveFilters && (
-                  <DrawerClearFiltersButton
-                    type="button"
-                    onClick={() => {
-                      setSearchQuery('');
-                      setArtistFilter('');
-                      setProviderFilters([]);
-                      setSelectedGenres([]);
-                      setRecentlyAddedFilter('all');
-                    }}
-                    aria-label="Clear filters"
-                  >
-                    Clear
-                  </DrawerClearFiltersButton>
-                )}
                 {onLibraryRefresh && (
                   <DrawerRefreshButton
                     onClick={onLibraryRefresh}
@@ -181,14 +160,6 @@ export function LibraryMainContent(): React.JSX.Element {
       <div style={{ marginTop: '1.5rem' }}>
         <LibraryControls
           inDrawer={false}
-          viewMode={viewMode}
-          playlistSort={playlistSort}
-          setPlaylistSort={setPlaylistSort}
-          albumSort={albumSort}
-          setAlbumSort={setAlbumSort}
-          artistFilter={artistFilter}
-          setArtistFilter={setArtistFilter}
-          setProviderFilters={setProviderFilters}
           onLibraryRefresh={onLibraryRefresh}
           isLibraryRefreshing={isLibraryRefreshing}
         />

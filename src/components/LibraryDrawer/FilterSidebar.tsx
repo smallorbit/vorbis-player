@@ -2,7 +2,12 @@ import { useCallback } from 'react';
 import styled from 'styled-components';
 import { theme } from '@/styles/theme';
 import type { ProviderId } from '@/types/domain';
-import type { RecentlyAddedFilterOption } from '@/utils/playlistFilters';
+import type {
+  RecentlyAddedFilterOption,
+  PlaylistSortOption,
+  AlbumSortOption,
+} from '@/utils/playlistFilters';
+import { PLAYLIST_SORT_LABELS, ALBUM_SORT_LABELS } from '@/utils/playlistFilters';
 
 interface FilterSidebarProps {
   searchQuery: string;
@@ -25,6 +30,11 @@ interface FilterSidebarProps {
 
   recentlyAdded: RecentlyAddedFilterOption;
   onRecentlyAddedChange: (value: RecentlyAddedFilterOption) => void;
+
+  playlistSort: PlaylistSortOption;
+  setPlaylistSort: (v: PlaylistSortOption) => void;
+  albumSort: AlbumSortOption;
+  setAlbumSort: (v: AlbumSortOption) => void;
 }
 
 const SidebarContainer = styled.div`
@@ -202,6 +212,34 @@ const CheckboxLabel = styled.span`
   }
 `;
 
+const SortSelect = styled.select`
+  width: 100%;
+  padding: ${theme.spacing.sm} ${theme.spacing.md};
+  background: ${theme.colors.control.background};
+  border: 1px solid ${theme.colors.control.border};
+  border-radius: ${theme.borderRadius.md};
+  color: ${theme.colors.white};
+  font-size: ${theme.fontSize.sm};
+  cursor: pointer;
+  transition: all ${theme.transitions.fast};
+  appearance: none;
+
+  &:hover {
+    background: ${theme.colors.control.backgroundHover};
+    border-color: ${theme.colors.control.borderHover};
+  }
+
+  &:focus {
+    outline: none;
+    border-color: ${theme.colors.control.borderHover};
+  }
+
+  option {
+    background: ${theme.colors.popover.background};
+    color: ${theme.colors.white};
+  }
+`;
+
 const ClearFiltersButton = styled.button`
   padding: ${theme.spacing.xs} ${theme.spacing.md};
   background: ${theme.colors.control.background};
@@ -259,6 +297,10 @@ export const FilterSidebar = ({
   onGenreChange,
   recentlyAdded,
   onRecentlyAddedChange,
+  playlistSort,
+  setPlaylistSort,
+  albumSort,
+  setAlbumSort,
 }: FilterSidebarProps) => {
   const hasActiveFilters =
     searchQuery !== '' ||
@@ -402,6 +444,31 @@ export const FilterSidebar = ({
             </ToggleButton>
           ))}
         </ToggleGroup>
+      </FilterSection>
+
+      <FilterSection>
+        <SectionTitle>Sort</SectionTitle>
+        {collectionType === 'playlists' ? (
+          <SortSelect
+            value={playlistSort}
+            onChange={(e) => setPlaylistSort(e.target.value as PlaylistSortOption)}
+            aria-label="Sort playlists"
+          >
+            {Object.entries(PLAYLIST_SORT_LABELS).map(([value, label]) => (
+              <option key={value} value={value}>{label}</option>
+            ))}
+          </SortSelect>
+        ) : (
+          <SortSelect
+            value={albumSort}
+            onChange={(e) => setAlbumSort(e.target.value as AlbumSortOption)}
+            aria-label="Sort albums"
+          >
+            {Object.entries(ALBUM_SORT_LABELS).map(([value, label]) => (
+              <option key={value} value={value}>{label}</option>
+            ))}
+          </SortSelect>
+        )}
       </FilterSection>
 
       {hasActiveFilters && (
