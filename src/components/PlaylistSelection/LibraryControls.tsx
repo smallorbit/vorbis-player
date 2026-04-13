@@ -5,7 +5,6 @@ import type { ProviderId } from '@/types/domain';
 import {
   ControlsContainer,
   SortControlsRow,
-  SearchInput,
   SelectDropdown,
   RefreshButton,
   ClearButton,
@@ -15,8 +14,6 @@ import { RefreshIcon } from './utils';
 interface LibraryControlsProps {
   inDrawer: boolean;
   viewMode: 'playlists' | 'albums';
-  searchQuery: string;
-  setSearchQuery: (v: string) => void;
   playlistSort: PlaylistSortOption;
   setPlaylistSort: (v: PlaylistSortOption) => void;
   albumSort: AlbumSortOption;
@@ -31,8 +28,6 @@ interface LibraryControlsProps {
 export function LibraryControls({
   inDrawer,
   viewMode,
-  searchQuery,
-  setSearchQuery,
   playlistSort,
   setPlaylistSort,
   albumSort,
@@ -44,7 +39,6 @@ export function LibraryControls({
   isLibraryRefreshing,
 }: LibraryControlsProps): React.JSX.Element {
   const clearFilters = () => {
-    setSearchQuery('');
     setArtistFilter('');
     setProviderFilters([]);
   };
@@ -52,13 +46,6 @@ export function LibraryControls({
   if (inDrawer) {
     return (
       <ControlsContainer $inDrawer>
-        <SearchInput
-          type="text"
-          placeholder={viewMode === 'playlists' ? 'Search playlists...' : 'Search albums...'}
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-        />
-
         <SortControlsRow>
           {viewMode === 'playlists' ? (
             <SelectDropdown
@@ -94,7 +81,7 @@ export function LibraryControls({
           )}
         </SortControlsRow>
 
-        {(searchQuery || artistFilter) && (
+        {artistFilter && (
           <ClearButton onClick={clearFilters}>Clear</ClearButton>
         )}
       </ControlsContainer>
@@ -103,13 +90,6 @@ export function LibraryControls({
 
   return (
     <ControlsContainer>
-      <SearchInput
-        type="text"
-        placeholder={viewMode === 'playlists' ? 'Search playlists...' : 'Search albums...'}
-        value={searchQuery}
-        onChange={(e) => setSearchQuery(e.target.value)}
-      />
-
       {viewMode === 'playlists' ? (
         <SelectDropdown
           value={playlistSort}
@@ -130,7 +110,7 @@ export function LibraryControls({
         </SelectDropdown>
       )}
 
-      {(searchQuery || artistFilter) && (
+      {artistFilter && (
         <ClearButton onClick={clearFilters}>Clear</ClearButton>
       )}
     </ControlsContainer>
