@@ -192,34 +192,33 @@ export const DrawerOrchestrator: React.FC<DrawerOrchestratorProps> = React.memo(
           </ProfiledComponent>
         )}
       </Suspense>
-      {showLibrary && (
-        isMobile ? (
-          <LibraryOverlay>
-            <Suspense fallback={null}>
-              <ProfiledComponent id="LibraryPage">
-                <LibraryPage
-                  onPlaylistSelect={handleLibraryPlaylistSelect}
-                  onPlayLikedTracks={onPlayLikedTracks}
-                  onQueueLikedTracks={onQueueLikedTracks}
-                  onNavigateToPlayer={onCloseLibrary}
-                  isPlaying={isPlaying}
-                />
-              </ProfiledComponent>
-            </Suspense>
-          </LibraryOverlay>
-        ) : (
+      {showLibrary && isMobile && (
+        <LibraryOverlay>
           <Suspense fallback={null}>
-            <LibraryDrawer
-              isOpen={showLibrary}
-              onClose={onCloseLibrary}
-              onPlaylistSelect={handleLibraryPlaylistSelect}
-              onPlayLikedTracks={onPlayLikedTracks}
-              onQueueLikedTracks={onQueueLikedTracks}
-              lastSession={tracks.length === 0 ? lastSession : undefined}
-              onResume={tracks.length === 0 ? onResume : undefined}
-            />
+            <ProfiledComponent id="LibraryPage">
+              <LibraryPage
+                onPlaylistSelect={handleLibraryPlaylistSelect}
+                onPlayLikedTracks={onPlayLikedTracks}
+                onQueueLikedTracks={onQueueLikedTracks}
+                onNavigateToPlayer={onCloseLibrary}
+                isPlaying={isPlaying}
+              />
+            </ProfiledComponent>
           </Suspense>
-        )
+        </LibraryOverlay>
+      )}
+      {!isMobile && (
+        <Suspense fallback={null}>
+          <LibraryDrawer
+            isOpen={showLibrary}
+            onClose={onCloseLibrary}
+            onPlaylistSelect={handleLibraryPlaylistSelect}
+            onPlayLikedTracks={onPlayLikedTracks}
+            onQueueLikedTracks={onQueueLikedTracks}
+            lastSession={tracks.length === 0 ? lastSession : undefined}
+            onResume={tracks.length === 0 ? onResume : undefined}
+          />
+        </Suspense>
       )}
       {showSaveQueueDialog && (
         <Suspense fallback={null}>
