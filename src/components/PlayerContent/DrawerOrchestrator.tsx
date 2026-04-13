@@ -215,8 +215,8 @@ export const DrawerOrchestrator: React.FC<DrawerOrchestratorProps> = React.memo(
               onPlaylistSelect={handleLibraryPlaylistSelect}
               onPlayLikedTracks={onPlayLikedTracks}
               onQueueLikedTracks={onQueueLikedTracks}
-              lastSession={lastSession}
-              onResume={onResume}
+              lastSession={tracks.length === 0 ? lastSession : undefined}
+              onResume={tracks.length === 0 ? onResume : undefined}
             />
           </Suspense>
         )
