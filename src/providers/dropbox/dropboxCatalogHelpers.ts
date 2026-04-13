@@ -93,6 +93,8 @@ export function entryToMediaTrack(entry: DropboxFileEntry, imageUrl?: string): M
     trackNumber,
     durationMs: 0,
     image: imageUrl,
+    // Dropbox file metadata does not include genre information
+    genres: [],
   };
 }
 

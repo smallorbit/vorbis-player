@@ -140,6 +140,8 @@ export class DropboxCatalogAdapter implements CatalogProvider {
           trackCount: count,
           ownerName: artistName ?? null,
           imageUrl: dirToImageUrl.get(dirPath),
+          // Dropbox folder metadata does not include genre information
+          genres: [],
         });
       }
 
@@ -158,6 +160,8 @@ export class DropboxCatalogAdapter implements CatalogProvider {
         kind: 'folder',
         name: 'All Music',
         trackCount: totalTracks,
+        // Dropbox folder metadata does not include genre information
+        genres: [],
       };
 
       let savedPlaylists: MediaCollection[] = [];
