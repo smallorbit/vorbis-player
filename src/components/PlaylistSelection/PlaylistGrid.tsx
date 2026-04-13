@@ -2,6 +2,7 @@ import * as React from 'react';
 import type { PlaylistInfo } from '../../services/spotify';
 import { LIKED_SONGS_ID } from '@/constants/playlist';
 import ProviderIcon from '../ProviderIcon';
+import { PlaylistTypeIcon } from '../icons/QuickActionIcons';
 import {
   MobileGrid,
   PlaylistGridDiv,
@@ -10,7 +11,7 @@ import {
   GridCardTitle,
   GridCardSubtitle,
   PlaylistInfoDiv,
-  PlaylistName,
+  PlaylistNameRow,
   PlaylistDetails,
   PinButton,
   PinnableListItem,
@@ -19,6 +20,8 @@ import {
   PinnableGridCard,
   PinnedSectionLabel,
   EmptyState,
+  CollectionTypeLabel,
+  GridCardTitleRow,
 } from './styled';
 import { PinIcon, PlaylistImage, GridCardImageComponent } from './utils';
 import { useLibraryContext } from './LibraryContext';
@@ -86,7 +89,10 @@ export const PlaylistGrid: React.FC = React.memo(function PlaylistGrid() {
           </GridCardPinOverlay>
         </GridCardArtWrapper>
         <GridCardTextArea>
-          <GridCardTitle>{playlist.name}</GridCardTitle>
+          <GridCardTitleRow>
+            <GridCardTitle>{playlist.name}</GridCardTitle>
+            <CollectionTypeLabel title="Playlist"><PlaylistTypeIcon /></CollectionTypeLabel>
+          </GridCardTitleRow>
           <GridCardSubtitle>
             {playlist.tracks?.total ?? 0} tracks
             {playlist.owner?.display_name && ` • ${playlist.owner.display_name}`}
@@ -109,7 +115,10 @@ export const PlaylistGrid: React.FC = React.memo(function PlaylistGrid() {
           )}
         </div>
         <PlaylistInfoDiv>
-          <PlaylistName>{playlist.name}</PlaylistName>
+          <PlaylistNameRow>
+            <span>{playlist.name}</span>
+            <CollectionTypeLabel title="Playlist"><PlaylistTypeIcon /></CollectionTypeLabel>
+          </PlaylistNameRow>
           <PlaylistDetails>
             {playlist.tracks?.total ?? 0} tracks
             {playlist.owner?.display_name && ` • by ${playlist.owner.display_name}`}
