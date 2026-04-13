@@ -44,6 +44,7 @@ interface DrawerOrchestratorProps {
   onCloseQueue: () => void;
   showLibrary: boolean;
   onCloseLibrary: () => void;
+  isPlaying?: boolean;
   onPlaylistSelect: (playlistId: string, playlistName: string, provider?: ProviderId) => void;
   onPlayLikedTracks?: (tracks: MediaTrack[], collectionId: string, collectionName: string, provider?: ProviderId) => Promise<void>;
   onQueueLikedTracks?: (tracks: MediaTrack[], collectionName?: string) => void;
@@ -66,6 +67,7 @@ export const DrawerOrchestrator: React.FC<DrawerOrchestratorProps> = React.memo(
   onCloseQueue,
   showLibrary,
   onCloseLibrary,
+  isPlaying,
   onPlaylistSelect,
   onPlayLikedTracks,
   onQueueLikedTracks,
@@ -189,6 +191,8 @@ export const DrawerOrchestrator: React.FC<DrawerOrchestratorProps> = React.memo(
               onPlaylistSelect={handleLibraryPlaylistSelect}
               onPlayLikedTracks={onPlayLikedTracks}
               onQueueLikedTracks={onQueueLikedTracks}
+              onNavigateToPlayer={onCloseLibrary}
+              isPlaying={isPlaying}
               footer={lastSession && onResume ? (
                 <ResumeCard session={lastSession} onResume={onResume} />
               ) : undefined}
