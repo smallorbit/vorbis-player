@@ -16,6 +16,12 @@ export type AlbumSortOption =
   | 'release-oldest'
   | 'recently-added';
 
+/**
+ * Filter option for recently-added collections (#898).
+ * Defined here so imports in LibraryContext compile; full implementation is in #898.
+ */
+export type RecentlyAddedFilterOption = 'all' | 'week' | 'month' | '3months';
+
 type YearFilterOption =
   | 'all'
   | '2020s'
@@ -109,6 +115,35 @@ function matchesYearFilter(year: number | null, filter: YearFilterOption): boole
   return year >= decadeStart && year < decadeStart + 10;
 }
 
+/**
+ * Check if a collection matches the genre filter.
+ * Returns true when no genres are selected (show all).
+ * When genres are selected, returns true if the collection has at least one matching genre.
+ * Collections with no genres are excluded when a genre filter is active.
+ */
+export function matchesGenreFilter(genres: string[] | undefined, selectedGenres: string[]): boolean {
+  if (selectedGenres.length === 0) return true;
+  if (!genres || genres.length === 0) return false;
+  // Match if any of the collection's genres appears in the selected set
+  return genres.some((g) => selectedGenres.includes(g));
+}
+
+/**
+ * Extract the sorted unique genres from a list of collections.
+ * Collections with empty or missing genres arrays are skipped.
+ */
+export function getAvailableGenres(items: Array<{ genres?: string[] }>): string[] {
+  const genreSet = new Set<string>();
+  for (const item of items) {
+    if (item.genres) {
+      for (const g of item.genres) {
+        if (g) genreSet.add(g);
+      }
+    }
+  }
+  return Array.from(genreSet).sort((a, b) => a.localeCompare(b));
+}
+
 // ============================================================
 // MAIN FILTER/SORT FUNCTIONS
 // ============================================================
@@ -134,9 +169,15 @@ function sortPlaylistArrayInPlace(playlists: PlaylistInfo[], sortOption: Playlis
 
 /**
  * Filter playlists by search query (no sorting).
+ * Genre filter is intentionally not applied here — PlaylistInfo carries no genre metadata.
+ * The genre filter UI is most useful in album view where albums do carry genre tags.
  */
-export function filterPlaylistsOnly(playlists: PlaylistInfo[], searchQuery: string): PlaylistInfo[] {
-  return playlists.filter(p => matchesSearch(p, searchQuery));
+export function filterPlaylistsOnly(
+  playlists: PlaylistInfo[],
+  searchQuery: string,
+  _selectedGenres: string[] = []
+): PlaylistInfo[] {
+  return playlists.filter((p) => matchesSearch(p, searchQuery));
 }
 
 /**
@@ -158,27 +199,32 @@ export function sortPlaylistSubgroup(
 }
 
 /**
- * Filter and sort playlists based on search query and sort option
+ * Filter and sort playlists based on search query, genre filter, and sort option.
  */
 export function filterAndSortPlaylists(
   playlists: PlaylistInfo[],
   searchQuery: string,
-  sortOption: PlaylistSortOption
+  sortOption: PlaylistSortOption,
+  selectedGenres: string[] = []
 ): PlaylistInfo[] {
-  const filtered = filterPlaylistsOnly(playlists, searchQuery);
+  const filtered = filterPlaylistsOnly(playlists, searchQuery, selectedGenres);
   return sortPlaylistSubgroup(filtered, sortOption);
 }
 
 /**
- * Filter albums by search, decade, and artist (no sorting).
+ * Filter albums by search, decade, artist, and optional genre selection (no sorting).
+ * When selectedGenres is non-empty, only albums whose genres overlap are shown.
  */
 export function filterAlbumsOnly(
   albums: AlbumInfo[],
   searchQuery: string,
   yearFilter: YearFilterOption = 'all',
-  artistFilter: string = ''
+  artistFilter: string = '',
+  selectedGenres: string[] = []
 ): AlbumInfo[] {
-  let result = albums.filter(a => matchesSearch(a, searchQuery));
+  let result = albums.filter(
+    (a) => matchesSearch(a, searchQuery) && matchesGenreFilter(a.genres, selectedGenres)
+  );
 
   if (yearFilter !== 'all') {
     result = result.filter(a => {
@@ -259,16 +305,17 @@ export function sortAlbumSubgroup(
 }
 
 /**
- * Filter and sort albums based on search query, sort option, year filter, and artist filter
+ * Filter and sort albums based on search query, sort option, year filter, artist filter, and genre filter.
  */
 export function filterAndSortAlbums(
   albums: AlbumInfo[],
   searchQuery: string,
   sortOption: AlbumSortOption,
   yearFilter: YearFilterOption = 'all',
-  artistFilter: string = ''
+  artistFilter: string = '',
+  selectedGenres: string[] = []
 ): AlbumInfo[] {
-  const filtered = filterAlbumsOnly(albums, searchQuery, yearFilter, artistFilter);
+  const filtered = filterAlbumsOnly(albums, searchQuery, yearFilter, artistFilter, selectedGenres);
   return sortAlbumSubgroup(filtered, sortOption);
 }
 

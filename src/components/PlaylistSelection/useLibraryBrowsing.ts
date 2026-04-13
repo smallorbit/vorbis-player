@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
-import type { PlaylistSortOption, AlbumSortOption } from '@/utils/playlistFilters';
+import type { PlaylistSortOption, AlbumSortOption, RecentlyAddedFilterOption } from '@/utils/playlistFilters';
 import type { ProviderId } from '@/types/domain';
 
 type ViewMode = 'playlists' | 'albums';
@@ -25,6 +25,9 @@ export function useLibraryBrowsing(initialSearchQuery?: string, initialViewMode?
 
   const [artistFilter, setArtistFilter] = useState<string>('');
   const [providerFilters, setProviderFilters] = useState<ProviderId[]>([]);
+  const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
+  // Placeholder for #898 — no-op until recently-added filter is implemented
+  const [recentlyAddedFilter, setRecentlyAddedFilter] = useState<RecentlyAddedFilterOption>('all');
 
   // Sync when initial props change (e.g., drawer re-opened with new filter)
   useEffect(() => {
@@ -63,7 +66,11 @@ export function useLibraryBrowsing(initialSearchQuery?: string, initialViewMode?
     });
   }, []);
 
-  const hasActiveFilters = searchQuery !== '' || artistFilter !== '' || providerFilters.length > 0;
+  const hasActiveFilters =
+    searchQuery !== '' ||
+    artistFilter !== '' ||
+    providerFilters.length > 0 ||
+    selectedGenres.length > 0;
 
   return {
     viewMode,
@@ -79,6 +86,10 @@ export function useLibraryBrowsing(initialSearchQuery?: string, initialViewMode?
     providerFilters,
     setProviderFilters,
     handleProviderToggle,
+    selectedGenres,
+    setSelectedGenres,
+    recentlyAddedFilter,
+    setRecentlyAddedFilter,
     hasActiveFilters,
   };
 }

@@ -14,6 +14,12 @@ interface FilterSidebarProps {
   onProviderFilterChange: (providerIds: ProviderId[]) => void;
 
   showProviderFilter: boolean;
+
+  /** Available genres derived from the current collection set. */
+  availableGenres: string[];
+  /** Currently selected genres (empty = all genres included). */
+  selectedGenres: string[];
+  onGenreChange: (genres: string[]) => void;
 }
 
 const SidebarContainer = styled.div`
@@ -232,16 +238,21 @@ export const FilterSidebar = ({
   selectedProviderIds,
   onProviderFilterChange,
   showProviderFilter,
+  availableGenres,
+  selectedGenres,
+  onGenreChange,
 }: FilterSidebarProps) => {
   const hasActiveFilters =
     searchQuery !== '' ||
     collectionType === 'albums' ||
-    selectedProviderIds.length > 0;
+    selectedProviderIds.length > 0 ||
+    selectedGenres.length > 0;
 
   const handleClearFilters = () => {
     onSearchChange('');
     onCollectionTypeChange('playlists');
     onProviderFilterChange([]);
+    onGenreChange([]);
   };
 
   const handleProviderToggle = (provider: ProviderId) => {
@@ -250,6 +261,14 @@ export const FilterSidebar = ({
       onProviderFilterChange(next.length === enabledProviderIds.length ? [] : next);
     } else {
       onProviderFilterChange([...selectedProviderIds, provider]);
+    }
+  };
+
+  const handleGenreToggle = (genre: string) => {
+    if (selectedGenres.includes(genre)) {
+      onGenreChange(selectedGenres.filter((g) => g !== genre));
+    } else {
+      onGenreChange([...selectedGenres, genre]);
     }
   };
 
@@ -314,6 +333,37 @@ export const FilterSidebar = ({
                   aria-label={`Filter by ${provider}`}
                 />
                 <CheckboxLabel>{provider}</CheckboxLabel>
+              </ProviderCheckboxContainer>
+            ))}
+          </div>
+        </FilterSection>
+      )}
+
+      {availableGenres.length > 0 && (
+        <FilterSection>
+          <SectionTitle>Genres</SectionTitle>
+          <div>
+            {/* "All genres" acts as a clear shortcut when genres are selected */}
+            {selectedGenres.length > 0 && (
+              <ProviderCheckboxContainer>
+                <Checkbox
+                  type="checkbox"
+                  checked={false}
+                  onChange={() => onGenreChange([])}
+                  aria-label="Show all genres"
+                />
+                <CheckboxLabel>All genres</CheckboxLabel>
+              </ProviderCheckboxContainer>
+            )}
+            {availableGenres.map((genre) => (
+              <ProviderCheckboxContainer key={genre}>
+                <Checkbox
+                  type="checkbox"
+                  checked={selectedGenres.length === 0 || selectedGenres.includes(genre)}
+                  onChange={() => handleGenreToggle(genre)}
+                  aria-label={`Filter by genre: ${genre}`}
+                />
+                <CheckboxLabel>{genre}</CheckboxLabel>
               </ProviderCheckboxContainer>
             ))}
           </div>
