@@ -18,6 +18,7 @@ import { clearAllPins } from '@/services/settings/pinnedItemsStorage';
 import { STORAGE_KEYS } from '@/constants/storage';
 import type { ClearCacheOptions } from '@/components/VisualEffectsMenu';
 import { useQapEnabled } from '@/hooks/useQapEnabled';
+import { usePlayerSizingContext } from '@/contexts/PlayerSizingContext';
 import type { MediaTrack, ProviderId } from '@/types/domain';
 import type { RadioState } from '@/types/radio';
 import { LoadingCard, ZenControlsWrapper, ZenControlsInner } from './styled';
@@ -119,6 +120,7 @@ export const PlayerControlsSection: React.FC<PlayerControlsSectionProps> = React
   onLikeToggle,
 }) => {
   const { tracks, shuffleEnabled, handleShuffleToggle } = useTrackListContext();
+  const { isMobile } = usePlayerSizingContext();
   const { accentColor } = useColorContext();
   const { effectiveGlow, restoreGlowSettings } = useVisualEffectsState();
   const { handleMuteToggle, isMuted, volume, setVolumeLevel } = useVolume(currentTrackProvider);
@@ -323,6 +325,7 @@ export const PlayerControlsSection: React.FC<PlayerControlsSectionProps> = React
       <ProfiledComponent id="BottomBar">
         <BottomBar
           zenModeEnabled={zenModeEnabled}
+          hidden={showLibrary && isMobile}
           isMuted={isMuted}
           volume={volume}
           onMuteToggle={handleMuteToggle}

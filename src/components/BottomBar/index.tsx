@@ -20,6 +20,7 @@ const noop = () => {};
 
 interface BottomBarProps {
   zenModeEnabled?: boolean;
+  hidden?: boolean;
   isMuted: boolean;
   volume: number;
   onMuteToggle?: () => void;
@@ -37,6 +38,7 @@ interface BottomBarProps {
 
 const BottomBar = React.memo(function BottomBar({
   zenModeEnabled,
+  hidden,
   isMuted,
   volume,
   onMuteToggle,
@@ -119,6 +121,8 @@ const BottomBar = React.memo(function BottomBar({
     touchLockedRef.current = false;
     setBarVisible(true);
   }, [zenModeEnabled, clearHideTimer]);
+
+  if (hidden) return null;
 
   const isHidden = !barVisible && !!zenModeEnabled;
 
