@@ -10,6 +10,7 @@ import {
   filterAlbumsOnly,
   sortAlbumSubgroup,
   buildLibraryViewWithPins,
+  getAvailableGenres,
 } from '../../utils/playlistFilters';
 import { usePinnedItems } from '../../hooks/usePinnedItems';
 import { LIKED_SONGS_ID, LIKED_SONGS_NAME, toAlbumPlaylistId } from '../../constants/playlist';
@@ -97,6 +98,10 @@ const PlaylistSelection = React.memo(function PlaylistSelection({
     providerFilters,
     setProviderFilters,
     handleProviderToggle,
+    selectedGenres,
+    setSelectedGenres,
+    recentlyAddedFilter,
+    setRecentlyAddedFilter,
     hasActiveFilters,
   } = useLibraryBrowsing(initialSearchQuery, initialViewMode);
 
@@ -143,14 +148,14 @@ const PlaylistSelection = React.memo(function PlaylistSelection({
     if (providerFilters.length > 0) {
       items = items.filter((p) => p.provider && providerFilters.includes(p.provider));
     }
-    const filtered = filterPlaylistsOnly(items, searchQuery);
+    const filtered = filterPlaylistsOnly(items, searchQuery, selectedGenres);
     return buildLibraryViewWithPins(
       filtered,
       pinnedPlaylistIds,
       (p) => p.id,
       (subgroup) => sortPlaylistSubgroup(subgroup, playlistSort)
     );
-  }, [playlists, searchQuery, playlistSort, providerFilters, pinnedPlaylistIds]);
+  }, [playlists, searchQuery, playlistSort, providerFilters, pinnedPlaylistIds, selectedGenres]);
 
   const pinnedPlaylists = playlistLibraryView.pinned;
   const unpinnedPlaylists = playlistLibraryView.unpinned;
@@ -160,17 +165,20 @@ const PlaylistSelection = React.memo(function PlaylistSelection({
     if (providerFilters.length > 0) {
       items = items.filter((a) => a.provider && providerFilters.includes(a.provider));
     }
-    const filtered = filterAlbumsOnly(items, searchQuery, 'all', artistFilter);
+    const filtered = filterAlbumsOnly(items, searchQuery, 'all', artistFilter, selectedGenres);
     return buildLibraryViewWithPins(
       filtered,
       pinnedAlbumIds,
       (a) => a.id,
       (subgroup) => sortAlbumSubgroup(subgroup, albumSort)
     );
-  }, [albums, searchQuery, albumSort, artistFilter, providerFilters, pinnedAlbumIds]);
+  }, [albums, searchQuery, albumSort, artistFilter, providerFilters, pinnedAlbumIds, selectedGenres]);
 
   const pinnedAlbums = albumLibraryView.pinned;
   const unpinnedAlbums = albumLibraryView.unpinned;
+
+  // Derive available genres from the full album list (albums carry genre metadata; playlists don't)
+  const availableGenres = useMemo(() => getAvailableGenres(albums), [albums]);
 
   const isAuthenticated = useMemo(
     () =>
@@ -242,6 +250,9 @@ const PlaylistSelection = React.memo(function PlaylistSelection({
       providerFilters,
       setProviderFilters,
       handleProviderToggle,
+      availableGenres,
+      selectedGenres,
+      setSelectedGenres,
       recentlyAddedFilter,
       setRecentlyAddedFilter,
       hasActiveFilters,
@@ -283,6 +294,8 @@ const PlaylistSelection = React.memo(function PlaylistSelection({
       albumSort,
       artistFilter,
       providerFilters,
+      availableGenres,
+      selectedGenres,
       hasActiveFilters,
       albums,
       isInitialLoadComplete,

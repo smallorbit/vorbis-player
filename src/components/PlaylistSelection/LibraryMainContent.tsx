@@ -52,6 +52,9 @@ export function LibraryMainContent(): React.JSX.Element {
     providerFilters,
     setProviderFilters,
     handleProviderToggle,
+    availableGenres,
+    selectedGenres,
+    setSelectedGenres,
     hasActiveFilters,
     albums,
     isInitialLoadComplete,
@@ -90,6 +93,9 @@ export function LibraryMainContent(): React.JSX.Element {
           selectedProviderIds={providerFilters}
           onProviderFilterChange={setProviderFilters}
           showProviderFilter={showProviderBadges}
+          availableGenres={availableGenres}
+          selectedGenres={selectedGenres}
+          onGenreChange={setSelectedGenres}
         />
         <MainContent>
           <div ref={swipeZoneRef} style={{ flexShrink: 0, touchAction: 'pan-y' }}>
@@ -131,6 +137,7 @@ export function LibraryMainContent(): React.JSX.Element {
                       setSearchQuery('');
                       setArtistFilter('');
                       setProviderFilters([]);
+                      setSelectedGenres([]);
                     }}
                     aria-label="Clear filters"
                   >

@@ -7,12 +7,17 @@ import { FilterSidebar } from '../FilterSidebar';
 
 function renderFilterSidebar(props = {}) {
   const defaultProps = {
+    searchQuery: '',
+    onSearchChange: vi.fn(),
     collectionType: 'playlists' as const,
     onCollectionTypeChange: vi.fn(),
     enabledProviderIds: [] as const,
     selectedProviderIds: [] as const,
     onProviderFilterChange: vi.fn(),
     showProviderFilter: false,
+    availableGenres: [] as string[],
+    selectedGenres: [] as string[],
+    onGenreChange: vi.fn(),
     ...props,
   };
 

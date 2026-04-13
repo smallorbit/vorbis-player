@@ -26,6 +26,10 @@ export interface LibraryContextValue {
   providerFilters: ProviderId[];
   setProviderFilters: (v: ProviderId[]) => void;
   handleProviderToggle: (provider: ProviderId) => void;
+  /** Available genres derived from the current album set for the genre filter UI. */
+  availableGenres: string[];
+  selectedGenres: string[];
+  setSelectedGenres: (v: string[]) => void;
   recentlyAddedFilter: RecentlyAddedFilterOption;
   setRecentlyAddedFilter: (v: RecentlyAddedFilterOption) => void;
   hasActiveFilters: boolean;
