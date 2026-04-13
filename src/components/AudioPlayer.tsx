@@ -372,6 +372,10 @@ const AudioPlayerComponent = () => {
                   return handleAddToQueueFromPanel(id, name, provider);
                 }}
                 onBrowseLibrary={() => {
+                  localStorage.removeItem(STORAGE_KEYS.LIBRARY_SEARCH);
+                  localStorage.removeItem(STORAGE_KEYS.LIBRARY_PROVIDER_FILTERS);
+                  localStorage.removeItem(STORAGE_KEYS.LIBRARY_GENRES);
+                  localStorage.removeItem(STORAGE_KEYS.LIBRARY_RECENTLY_ADDED);
                   handleCloseQuickAccessPanel();
                   handlers.handleOpenLibrary();
                 }}
