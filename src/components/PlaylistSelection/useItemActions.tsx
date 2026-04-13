@@ -21,6 +21,8 @@ import TrackInfoPopover, {
 import ConfirmDeleteDialog from '../ConfirmDeleteDialog';
 import { LIBRARY_REFRESH_EVENT } from '@/hooks/useLibrarySync';
 
+type PopoverOption = { label: string; icon: React.ReactNode; onClick: () => void };
+
 type AlbumPopoverState = {
   album: AlbumInfo;
   rect: DOMRect;
@@ -119,26 +121,30 @@ export function useItemActions({
     setPlaylistPopover(null);
   }, []);
 
-  const buildPlaylistPopoverOptions = useCallback(() => {
-    if (!playlistPopover) return [];
-    const playlist = playlistPopover.playlist;
-    const provider = playlist.provider ?? activeDescriptor?.id;
-    const descriptor = provider ? getDescriptor(provider) : activeDescriptor;
+  function buildCollectionPopoverOptions(params: {
+    collectionId: string;
+    collectionName: string;
+    collectionProvider: ProviderId | undefined;
+    descriptor: ProviderDescriptor | null | undefined;
+    onPlay: () => void;
+    onQueue: (() => void) | undefined;
+  }): PopoverOption[] {
+    const { collectionId, collectionName, collectionProvider, descriptor, onPlay, onQueue } = params;
     const canSaveTrack = descriptor?.capabilities.hasSaveTrack && !!descriptor.catalog.isTrackSaved;
 
-    const options: Array<{ label: string; icon: React.ReactNode; onClick: () => void }> = [
+    const options: PopoverOption[] = [
       {
-        label: `Play ${playlist.name}`,
+        label: `Play ${collectionName}`,
         icon: React.createElement(PlayIcon),
-        onClick: () => onPlaylistSelect(playlist.id, playlist.name, playlist.provider),
+        onClick: onPlay,
       },
     ];
 
-    if (onAddToQueue) {
+    if (onQueue) {
       options.push({
         label: 'Add to Queue',
         icon: React.createElement(AddToQueueIcon),
-        onClick: () => onAddToQueue(playlist.id, playlist.name, playlist.provider),
+        onClick: onQueue,
       });
     }
 
@@ -149,10 +155,10 @@ export function useItemActions({
         onClick: () => {
           if (likedLoading) return;
           setLikedLoading(true);
-          fetchLikedTracksForCollection(playlist.id, descriptor)
+          fetchLikedTracksForCollection(collectionId, descriptor)
             .then((likedTracks) => {
               if (likedTracks.length > 0) {
-                return onPlayLikedTracks(likedTracks, playlist.id, playlist.name, playlist.provider);
+                return onPlayLikedTracks(likedTracks, collectionId, collectionName, collectionProvider);
               }
             })
             .catch((err) => { console.error('[PlayLiked] Failed:', err); })
@@ -168,10 +174,10 @@ export function useItemActions({
         onClick: () => {
           if (likedLoading) return;
           setLikedLoading(true);
-          fetchLikedTracksForCollection(playlist.id, descriptor)
+          fetchLikedTracksForCollection(collectionId, descriptor)
             .then((likedTracks) => {
               if (likedTracks.length > 0) {
-                onQueueLikedTracks(likedTracks, playlist.name);
+                onQueueLikedTracks(likedTracks, collectionName);
               }
             })
             .catch((err) => { console.error('[QueueLiked] Failed:', err); })
@@ -179,6 +185,26 @@ export function useItemActions({
         },
       });
     }
+
+    return options;
+  }
+
+  const buildPlaylistPopoverOptions = useCallback(() => {
+    if (!playlistPopover) return [];
+    const playlist = playlistPopover.playlist;
+    const provider = playlist.provider ?? activeDescriptor?.id;
+    const descriptor = provider ? getDescriptor(provider) : activeDescriptor;
+
+    const options = buildCollectionPopoverOptions({
+      collectionId: playlist.id,
+      collectionName: playlist.name,
+      collectionProvider: playlist.provider,
+      descriptor,
+      onPlay: () => onPlaylistSelect(playlist.id, playlist.name, playlist.provider),
+      onQueue: onAddToQueue
+        ? () => onAddToQueue(playlist.id, playlist.name, playlist.provider)
+        : undefined,
+    });
 
     const canDelete = descriptor?.capabilities.hasDeleteCollection &&
       descriptor.catalog.deleteCollection &&
@@ -207,63 +233,18 @@ export function useItemActions({
     const capabilities = descriptor?.capabilities;
     const catalog = descriptor?.catalog;
     const ExternalIcon = descriptor?.getExternalUrl ? DiscogsIcon : SpotifyIcon;
-    const canSaveTrack = capabilities?.hasSaveTrack && !!catalog?.isTrackSaved;
+    const albumCollectionId = toAlbumPlaylistId(album.id);
 
-    const options: Array<{ label: string; icon: React.ReactNode; onClick: () => void }> = [
-      {
-        label: `Play ${album.name}`,
-        icon: React.createElement(PlayIcon),
-        onClick: () => onPlaylistSelect(toAlbumPlaylistId(album.id), album.name, album.provider),
-      },
-    ];
-
-    if (onAddToQueue) {
-      options.push({
-        label: 'Add to Queue',
-        icon: React.createElement(AddToQueueIcon),
-        onClick: () => onAddToQueue(toAlbumPlaylistId(album.id), album.name, album.provider),
-      });
-    }
-
-    if (canSaveTrack && onPlayLikedTracks && descriptor) {
-      const albumCollectionId = toAlbumPlaylistId(album.id);
-      options.push({
-        label: likedLoading ? 'Loading…' : 'Play Liked',
-        icon: React.createElement(HeartIcon),
-        onClick: () => {
-          if (likedLoading) return;
-          setLikedLoading(true);
-          fetchLikedTracksForCollection(albumCollectionId, descriptor)
-            .then((likedTracks) => {
-              if (likedTracks.length > 0) {
-                return onPlayLikedTracks(likedTracks, albumCollectionId, album.name, album.provider);
-              }
-            })
-            .catch((err) => { console.error('[PlayLiked] Failed:', err); })
-            .finally(() => { setLikedLoading(false); });
-        },
-      });
-    }
-
-    if (canSaveTrack && onQueueLikedTracks && descriptor) {
-      const albumCollectionId = toAlbumPlaylistId(album.id);
-      options.push({
-        label: likedLoading ? 'Loading…' : 'Queue Liked',
-        icon: React.createElement(HeartIcon),
-        onClick: () => {
-          if (likedLoading) return;
-          setLikedLoading(true);
-          fetchLikedTracksForCollection(albumCollectionId, descriptor)
-            .then((likedTracks) => {
-              if (likedTracks.length > 0) {
-                onQueueLikedTracks(likedTracks, album.name);
-              }
-            })
-            .catch((err) => { console.error('[QueueLiked] Failed:', err); })
-            .finally(() => { setLikedLoading(false); });
-        },
-      });
-    }
+    const options = buildCollectionPopoverOptions({
+      collectionId: albumCollectionId,
+      collectionName: album.name,
+      collectionProvider: album.provider,
+      descriptor,
+      onPlay: () => onPlaylistSelect(albumCollectionId, album.name, album.provider),
+      onQueue: onAddToQueue
+        ? () => onAddToQueue(albumCollectionId, album.name, album.provider)
+        : undefined,
+    });
 
     if (capabilities?.hasSaveAlbum && catalog?.setAlbumSaved && albumSaved !== null) {
       const saved = albumSaved;
