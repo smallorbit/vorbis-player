@@ -37,29 +37,22 @@ const SidebarContainer = styled.div.withConfig({
   background: rgba(20, 20, 20, 0.3);
   flex-shrink: 0;
 
+  /* Desktop: persistent left sidebar */
   @media (min-width: ${theme.breakpoints.lg}) {
     border-right: 1px solid ${theme.colors.popover.border};
     min-width: 200px;
-    position: static;
     max-height: 100%;
     overflow-y: auto;
-    opacity: 1;
-    pointer-events: auto;
   }
 
+  /* Mobile: collapsible full-width panel that pushes content down */
   @media (max-width: ${theme.breakpoints.md}) {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    z-index: 100;
+    width: 100%;
     border-bottom: 1px solid ${theme.colors.popover.border};
-    border-radius: 0 0 ${theme.borderRadius.lg} ${theme.borderRadius.lg};
-    max-height: ${({ $isExpanded }) => ($isExpanded ? '70vh' : '0')};
+    max-height: ${({ $isExpanded }) => ($isExpanded ? '75vh' : '0')};
     overflow: hidden;
-    opacity: ${({ $isExpanded }) => ($isExpanded ? 1 : 0)};
-    pointer-events: ${({ $isExpanded }) => ($isExpanded ? 'auto' : 'none')};
-    transition: max-height ${theme.transitions.normal}, opacity ${theme.transitions.normal};
+    padding: ${({ $isExpanded }) => ($isExpanded ? theme.spacing.lg : '0')};
+    transition: max-height ${theme.transitions.normal}, padding ${theme.transitions.normal};
   }
 `;
 
@@ -245,24 +238,24 @@ const ClearFiltersButton = styled.button`
 
 const MobileToggleButton = styled.button`
   display: none;
-  padding: ${theme.spacing.xs} ${theme.spacing.md};
-  background: ${theme.colors.control.background};
-  border: 1px solid ${theme.colors.control.border};
-  border-radius: ${theme.borderRadius.md};
-  color: ${theme.colors.muted.foreground};
-  font-size: ${theme.fontSize.sm};
-  cursor: pointer;
-  transition: all ${theme.transitions.fast};
-  align-items: center;
-  gap: ${theme.spacing.xs};
-
-  &:hover {
-    background: ${theme.colors.control.backgroundHover};
-    color: ${theme.colors.white};
-  }
 
   @media (max-width: ${theme.breakpoints.md}) {
     display: flex;
+    width: 100%;
+    align-items: center;
+    justify-content: space-between;
+    padding: ${theme.spacing.sm} ${theme.spacing.lg};
+    background: rgba(20, 20, 20, 0.3);
+    border: none;
+    border-bottom: 1px solid ${theme.colors.popover.border};
+    color: ${theme.colors.muted.foreground};
+    font-size: ${theme.fontSize.sm};
+    cursor: pointer;
+    transition: color ${theme.transitions.fast};
+
+    &:hover {
+      color: ${theme.colors.white};
+    }
   }
 `;
 
@@ -272,13 +265,17 @@ const MobileToggleIcon = styled.span.withConfig({
   display: inline-block;
   transition: transform ${theme.transitions.fast};
   transform: rotate(${({ $isExpanded }) => ($isExpanded ? '180deg' : '0deg')});
+  font-size: ${theme.fontSize.xs};
 `;
 
 const Wrapper = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: ${theme.spacing.md};
-  position: relative;
+  display: contents;
+
+  @media (max-width: ${theme.breakpoints.md}) {
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+  }
 `;
 
 const SearchIconSvg = () => (

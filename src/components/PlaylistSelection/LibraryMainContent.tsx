@@ -1,5 +1,6 @@
 import type * as React from 'react';
 import styled from 'styled-components';
+import { theme } from '@/styles/theme';
 import FilterChipRow from '../FilterChipRow';
 import LibraryDrawerSortChip from '../LibraryDrawerSortChip';
 import LibraryProviderBar from '../LibraryProviderBar';
@@ -25,6 +26,11 @@ const DrawerContent = styled.div`
   flex: 1;
   min-height: 0;
   gap: 0;
+
+  /* On mobile: stack filters above content */
+  @media (max-width: ${theme.breakpoints.md}) {
+    flex-direction: column;
+  }
 `;
 
 const MainContent = styled.div`
