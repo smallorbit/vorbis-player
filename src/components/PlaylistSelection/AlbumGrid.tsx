@@ -1,6 +1,7 @@
 import * as React from 'react';
 import type { AlbumInfo } from '../../services/spotify';
 import ProviderIcon from '../ProviderIcon';
+import { AlbumTypeIcon } from '../icons/QuickActionIcons';
 import {
   MobileGrid,
   PlaylistGridDiv,
@@ -9,7 +10,7 @@ import {
   GridCardTitle,
   GridCardSubtitle,
   PlaylistInfoDiv,
-  PlaylistName,
+  PlaylistNameRow,
   PlaylistDetails,
   PinButton,
   PinnableListItem,
@@ -19,6 +20,8 @@ import {
   PinnedSectionLabel,
   EmptyState,
   ClickableArtist,
+  CollectionTypeLabel,
+  GridCardTitleRow,
 } from './styled';
 import { PinIcon, PlaylistImage, GridCardImageComponent } from './utils';
 import { useLibraryContext } from './LibraryContext';
@@ -60,7 +63,10 @@ export const AlbumGrid: React.FC = React.memo(function AlbumGrid() {
           </GridCardPinOverlay>
         </GridCardArtWrapper>
         <GridCardTextArea>
-          <GridCardTitle>{album.name}</GridCardTitle>
+          <GridCardTitleRow>
+            <GridCardTitle>{album.name}</GridCardTitle>
+            <CollectionTypeLabel title="Album"><AlbumTypeIcon /></CollectionTypeLabel>
+          </GridCardTitleRow>
           <GridCardSubtitle
             $clickable={true}
             onClick={(e) => onArtistClick(album.artists, e)}
@@ -89,7 +95,10 @@ export const AlbumGrid: React.FC = React.memo(function AlbumGrid() {
           )}
         </div>
         <PlaylistInfoDiv>
-          <PlaylistName>{album.name}</PlaylistName>
+          <PlaylistNameRow>
+            <span>{album.name}</span>
+            <CollectionTypeLabel title="Album"><AlbumTypeIcon /></CollectionTypeLabel>
+          </PlaylistNameRow>
           <PlaylistDetails>
             <ClickableArtist onClick={(e) => onArtistClick(album.artists, e)}>
               {album.artists}
