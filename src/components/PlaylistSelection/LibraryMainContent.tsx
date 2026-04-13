@@ -12,6 +12,8 @@ import {
   DrawerBottomControls,
   DrawerBottomRow,
   DrawerBottomActions,
+  TabsContainer,
+  TabButton,
 } from './styled';
 
 const DrawerContent = styled.div`
@@ -105,6 +107,17 @@ export function LibraryMainContent(): React.JSX.Element {
 
   return (
     <>
+      <div style={{ flexShrink: 0 }}>
+        <TabsContainer>
+          <TabButton $active={viewMode === 'playlists'} onClick={() => setViewMode('playlists')}>
+            Playlists
+          </TabButton>
+          <TabButton $active={viewMode === 'albums'} onClick={() => setViewMode('albums')}>
+            Albums
+          </TabButton>
+        </TabsContainer>
+      </div>
+
       {viewMode === 'playlists' && <PlaylistGrid />}
 
       {viewMode === 'albums' && <AlbumGrid />}
