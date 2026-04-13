@@ -1,6 +1,7 @@
 import styled from 'styled-components';
 import { theme } from '@/styles/theme';
 import type { ProviderId } from '@/types/domain';
+import type { RecentlyAddedFilterOption } from '@/utils/playlistFilters';
 
 interface FilterSidebarProps {
   searchQuery: string;
@@ -20,6 +21,9 @@ interface FilterSidebarProps {
   /** Currently selected genres (empty = all genres included). */
   selectedGenres: string[];
   onGenreChange: (genres: string[]) => void;
+
+  recentlyAdded: RecentlyAddedFilterOption;
+  onRecentlyAddedChange: (value: RecentlyAddedFilterOption) => void;
 }
 
 const SidebarContainer = styled.div`
@@ -229,6 +233,13 @@ const ClearIconSvg = () => (
   </svg>
 );
 
+const RECENTLY_ADDED_OPTIONS: { label: string; value: RecentlyAddedFilterOption }[] = [
+  { label: 'All time', value: 'all' },
+  { label: 'Last 7 days', value: '7-days' },
+  { label: 'Last 30 days', value: '30-days' },
+  { label: 'Last year', value: '1-year' },
+];
+
 export const FilterSidebar = ({
   searchQuery,
   onSearchChange,
@@ -241,18 +252,22 @@ export const FilterSidebar = ({
   availableGenres,
   selectedGenres,
   onGenreChange,
+  recentlyAdded,
+  onRecentlyAddedChange,
 }: FilterSidebarProps) => {
   const hasActiveFilters =
     searchQuery !== '' ||
     collectionType === 'albums' ||
     selectedProviderIds.length > 0 ||
-    selectedGenres.length > 0;
+    selectedGenres.length > 0 ||
+    (recentlyAdded !== 'all' && recentlyAdded !== undefined);
 
   const handleClearFilters = () => {
     onSearchChange('');
     onCollectionTypeChange('playlists');
     onProviderFilterChange([]);
     onGenreChange([]);
+    onRecentlyAddedChange('all');
   };
 
   const handleProviderToggle = (provider: ProviderId) => {
@@ -369,6 +384,21 @@ export const FilterSidebar = ({
           </div>
         </FilterSection>
       )}
+
+      <FilterSection>
+        <SectionTitle>Recently Added</SectionTitle>
+        <ToggleGroup>
+          {RECENTLY_ADDED_OPTIONS.map(({ label, value }) => (
+            <ToggleButton
+              key={value}
+              $active={(recentlyAdded ?? 'all') === value}
+              onClick={() => onRecentlyAddedChange(value)}
+            >
+              {label}
+            </ToggleButton>
+          ))}
+        </ToggleGroup>
+      </FilterSection>
 
       {hasActiveFilters && (
         <ClearFiltersButton onClick={handleClearFilters}>

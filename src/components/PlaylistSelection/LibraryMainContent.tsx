@@ -55,6 +55,8 @@ export function LibraryMainContent(): React.JSX.Element {
     availableGenres,
     selectedGenres,
     setSelectedGenres,
+    recentlyAddedFilter,
+    setRecentlyAddedFilter,
     hasActiveFilters,
     albums,
     isInitialLoadComplete,
@@ -96,6 +98,8 @@ export function LibraryMainContent(): React.JSX.Element {
           availableGenres={availableGenres}
           selectedGenres={selectedGenres}
           onGenreChange={setSelectedGenres}
+          recentlyAdded={recentlyAddedFilter}
+          onRecentlyAddedChange={setRecentlyAddedFilter}
         />
         <MainContent>
           <div ref={swipeZoneRef} style={{ flexShrink: 0, touchAction: 'pan-y' }}>
@@ -138,6 +142,7 @@ export function LibraryMainContent(): React.JSX.Element {
                       setArtistFilter('');
                       setProviderFilters([]);
                       setSelectedGenres([]);
+                      setRecentlyAddedFilter('all');
                     }}
                     aria-label="Clear filters"
                   >

@@ -26,7 +26,6 @@ export function useLibraryBrowsing(initialSearchQuery?: string, initialViewMode?
   const [artistFilter, setArtistFilter] = useState<string>('');
   const [providerFilters, setProviderFilters] = useState<ProviderId[]>([]);
   const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
-  // Placeholder for #898 — no-op until recently-added filter is implemented
   const [recentlyAddedFilter, setRecentlyAddedFilter] = useState<RecentlyAddedFilterOption>('all');
 
   // Sync when initial props change (e.g., drawer re-opened with new filter)
@@ -70,7 +69,8 @@ export function useLibraryBrowsing(initialSearchQuery?: string, initialViewMode?
     searchQuery !== '' ||
     artistFilter !== '' ||
     providerFilters.length > 0 ||
-    selectedGenres.length > 0;
+    selectedGenres.length > 0 ||
+    (recentlyAddedFilter !== 'all' && recentlyAddedFilter !== undefined);
 
   return {
     viewMode,
