@@ -4,7 +4,6 @@ import { useTheme } from 'styled-components';
 import { ProfiledComponent } from '@/components/ProfiledComponent';
 import Toast from '@/components/Toast';
 import RadioProgressToast from '@/components/RadioProgressToast';
-import ResumeCard from '@/components/QuickAccessPanel/ResumeCard';
 import { useTrackListContext, useCurrentTrackContext } from '@/contexts/TrackContext';
 import { useProviderContext } from '@/contexts/ProviderContext';
 import { useUnifiedLikedTracks } from '@/hooks/useUnifiedLikedTracks';
@@ -23,6 +22,7 @@ const LibraryOverlay = styled.div`
 `;
 
 const LibraryPage = lazy(() => import('@/components/PlaylistSelection'));
+const LibraryDrawer = lazy(() => import('@/components/LibraryDrawer'));
 const SaveQueueDialog = lazy(() => import('@/components/SaveQueueDialog'));
 const QueueDrawer = lazy(() => import('@/components/QueueDrawer'));
 const QueueBottomSheet = lazy(() => import('@/components/QueueBottomSheet'));
@@ -193,22 +193,33 @@ export const DrawerOrchestrator: React.FC<DrawerOrchestratorProps> = React.memo(
         )}
       </Suspense>
       {showLibrary && (
-        <LibraryOverlay>
+        isMobile ? (
+          <LibraryOverlay>
+            <Suspense fallback={null}>
+              <ProfiledComponent id="LibraryPage">
+                <LibraryPage
+                  onPlaylistSelect={handleLibraryPlaylistSelect}
+                  onPlayLikedTracks={onPlayLikedTracks}
+                  onQueueLikedTracks={onQueueLikedTracks}
+                  onNavigateToPlayer={onCloseLibrary}
+                  isPlaying={isPlaying}
+                />
+              </ProfiledComponent>
+            </Suspense>
+          </LibraryOverlay>
+        ) : (
           <Suspense fallback={null}>
-            <ProfiledComponent id="LibraryPage">
-              <LibraryPage
-                onPlaylistSelect={handleLibraryPlaylistSelect}
-                onPlayLikedTracks={onPlayLikedTracks}
-                onQueueLikedTracks={onQueueLikedTracks}
-                onNavigateToPlayer={onCloseLibrary}
-                isPlaying={isPlaying}
-                footer={lastSession && onResume ? (
-                  <ResumeCard session={lastSession} onResume={onResume} />
-                ) : undefined}
-              />
-            </ProfiledComponent>
+            <LibraryDrawer
+              isOpen={showLibrary}
+              onClose={onCloseLibrary}
+              onPlaylistSelect={handleLibraryPlaylistSelect}
+              onPlayLikedTracks={onPlayLikedTracks}
+              onQueueLikedTracks={onQueueLikedTracks}
+              lastSession={lastSession}
+              onResume={onResume}
+            />
           </Suspense>
-        </LibraryOverlay>
+        )
       )}
       {showSaveQueueDialog && (
         <Suspense fallback={null}>
