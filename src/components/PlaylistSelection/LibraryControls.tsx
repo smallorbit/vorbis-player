@@ -1,5 +1,6 @@
 import type * as React from 'react';
 import type { PlaylistSortOption, AlbumSortOption } from '@/utils/playlistFilters';
+import { PLAYLIST_SORT_LABELS, ALBUM_SORT_LABELS } from '@/utils/playlistFilters';
 import type { ProviderId } from '@/types/domain';
 import {
   ControlsContainer,
@@ -65,9 +66,9 @@ export function LibraryControls({
               onChange={(e) => setPlaylistSort(e.target.value as PlaylistSortOption)}
               style={{ flex: 1, minWidth: 0 }}
             >
-              <option value="recently-added">Recently Added</option>
-              <option value="name-asc">Name (A-Z)</option>
-              <option value="name-desc">Name (Z-A)</option>
+              {Object.entries(PLAYLIST_SORT_LABELS).map(([value, label]) => (
+                <option key={value} value={value}>{label}</option>
+              ))}
             </SelectDropdown>
           ) : (
             <SelectDropdown
@@ -75,13 +76,9 @@ export function LibraryControls({
               onChange={(e) => setAlbumSort(e.target.value as AlbumSortOption)}
               style={{ flex: 1, minWidth: 0 }}
             >
-              <option value="recently-added">Recently Added</option>
-              <option value="name-asc">Name (A-Z)</option>
-              <option value="name-desc">Name (Z-A)</option>
-              <option value="artist-asc">Artist (A-Z)</option>
-              <option value="artist-desc">Artist (Z-A)</option>
-              <option value="release-newest">Release (Newest)</option>
-              <option value="release-oldest">Release (Oldest)</option>
+              {Object.entries(ALBUM_SORT_LABELS).map(([value, label]) => (
+                <option key={value} value={value}>{label}</option>
+              ))}
             </SelectDropdown>
           )}
 
@@ -118,22 +115,18 @@ export function LibraryControls({
           value={playlistSort}
           onChange={(e) => setPlaylistSort(e.target.value as PlaylistSortOption)}
         >
-          <option value="recently-added">Recently Added</option>
-          <option value="name-asc">Name (A-Z)</option>
-          <option value="name-desc">Name (Z-A)</option>
+          {Object.entries(PLAYLIST_SORT_LABELS).map(([value, label]) => (
+            <option key={value} value={value}>{label}</option>
+          ))}
         </SelectDropdown>
       ) : (
         <SelectDropdown
           value={albumSort}
           onChange={(e) => setAlbumSort(e.target.value as AlbumSortOption)}
         >
-          <option value="recently-added">Recently Added</option>
-          <option value="name-asc">Name (A-Z)</option>
-          <option value="name-desc">Name (Z-A)</option>
-          <option value="artist-asc">Artist (A-Z)</option>
-          <option value="artist-desc">Artist (Z-A)</option>
-          <option value="release-newest">Release (Newest)</option>
-          <option value="release-oldest">Release (Oldest)</option>
+          {Object.entries(ALBUM_SORT_LABELS).map(([value, label]) => (
+            <option key={value} value={value}>{label}</option>
+          ))}
         </SelectDropdown>
       )}
 

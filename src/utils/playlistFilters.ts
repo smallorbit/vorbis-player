@@ -39,6 +39,22 @@ export interface FilterState {
 
 export type RecentlyAddedFilterOption = FilterState['recentlyAdded'];
 
+export const PLAYLIST_SORT_LABELS: Record<PlaylistSortOption, string> = {
+  'recently-added': 'Recently Added',
+  'name-asc': 'Name (A-Z)',
+  'name-desc': 'Name (Z-A)',
+};
+
+export const ALBUM_SORT_LABELS: Record<AlbumSortOption, string> = {
+  'recently-added': 'Recently Added',
+  'name-asc': 'Name (A-Z)',
+  'name-desc': 'Name (Z-A)',
+  'artist-asc': 'Artist (A-Z)',
+  'artist-desc': 'Artist (Z-A)',
+  'release-newest': 'Release (Newest)',
+  'release-oldest': 'Release (Oldest)',
+};
+
 type YearFilterOption =
   | 'all'
   | '2020s'

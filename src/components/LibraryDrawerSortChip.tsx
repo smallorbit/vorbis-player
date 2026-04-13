@@ -4,6 +4,7 @@ import { createPortal } from 'react-dom';
 import { theme } from '@/styles/theme';
 import { Chip, SortChipWrapper, SortDropdown, SortOption } from './styled/FilterChips';
 import type { AlbumSortOption, PlaylistSortOption } from '@/utils/playlistFilters';
+import { PLAYLIST_SORT_LABELS, ALBUM_SORT_LABELS } from '@/utils/playlistFilters';
 
 const SortIcon = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -18,22 +19,6 @@ const ChevronDownIcon = () => (
     <polyline points="6 9 12 15 18 9" />
   </svg>
 );
-
-const PLAYLIST_SORT_LABELS: Record<PlaylistSortOption, string> = {
-  'recently-added': 'Recently Added',
-  'name-asc': 'Name (A-Z)',
-  'name-desc': 'Name (Z-A)',
-};
-
-const ALBUM_SORT_LABELS: Record<AlbumSortOption, string> = {
-  'recently-added': 'Recently Added',
-  'name-asc': 'Name (A-Z)',
-  'name-desc': 'Name (Z-A)',
-  'artist-asc': 'Artist (A-Z)',
-  'artist-desc': 'Artist (Z-A)',
-  'release-newest': 'Release (Newest)',
-  'release-oldest': 'Release (Oldest)',
-};
 
 interface LibraryDrawerSortChipProps {
   viewMode: 'playlists' | 'albums';
