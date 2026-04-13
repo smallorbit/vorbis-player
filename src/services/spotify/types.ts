@@ -22,6 +22,8 @@ export interface Track {
   preview_url?: string;
   image?: string;
   added_at?: number;
+  /** Genre tags inherited from the parent album (Spotify stores genres at album/artist level). */
+  genres?: string[];
 }
 
 interface TokenData {
@@ -62,6 +64,8 @@ export interface AlbumInfo {
   added_at?: string; // ISO 8601 timestamp when saved to library
   /** Which provider this album belongs to (for multi-provider library view). */
   provider?: ProviderId;
+  /** Genre tags returned by the Spotify album object. */
+  genres?: string[];
 }
 
 interface SpotifyArtist {
@@ -90,6 +94,8 @@ interface SpotifyAlbum {
   total_tracks?: number;
   album_type?: string;
   artists?: SpotifyArtist[];
+  /** Present on full album objects (e.g. GET /albums/{id}); absent on simplified objects in library listings. */
+  genres?: string[];
 }
 
 interface SpotifyTrackItem {

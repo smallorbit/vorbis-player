@@ -41,6 +41,8 @@ export async function getAlbumTracks(albumId: string): Promise<MediaTrack[]> {
     name: string;
     images?: SpotifyImage[];
     tracks: { items: SpotifyTrackItem[] };
+    /** Genres from the full album object (absent on simplified objects). */
+    genres?: string[];
   }
 
   const album = await spotifyApiRequest<AlbumResponse>(
@@ -58,6 +60,8 @@ export async function getAlbumTracks(albumId: string): Promise<MediaTrack[]> {
       image: albumImage,
     });
     if (track) {
+      // Propagate album genres to each track (Spotify genres live at album level)
+      if (album.genres?.length) track.genres = album.genres;
       tracks.push(track);
     }
   }
@@ -146,6 +150,8 @@ export async function getAlbumsPage(
       uri: album.uri ?? '',
       album_type: album.album_type,
       added_at: item.added_at,
+      // Genres are present on full album objects; simplified library objects may omit them
+      genres: album.genres,
     } as AlbumInfo;
   });
   return {
@@ -183,6 +189,8 @@ export async function getAllUserAlbums(signal?: AbortSignal): Promise<AlbumInfo[
         uri: album.uri ?? '',
         album_type: album.album_type,
         added_at: item.added_at,
+        // Genres are present on full album objects; simplified library objects may omit them
+        genres: album.genres,
       });
     }
     nextUrl = data.next;

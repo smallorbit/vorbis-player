@@ -93,6 +93,7 @@ export function tracksToMediaTracks(tracks: Track[]): MediaTrack[] {
     image: t.image,
     externalUrl: t.preview_url,
     addedAt: t.added_at,
+    genres: t.genres,
   }));
 }
 
