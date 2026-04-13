@@ -186,7 +186,7 @@ const AudioPlayerComponent = () => {
     onPlayLikedTracks: handlePlayLikedTracks,
     onQueueLikedTracks: handleQueueLikedTracks,
     onAlbumPlay: handleAlbumPlay,
-    onBackToLibrary: handleOpenQuickAccessPanel,
+    onBackToLibrary: handlers.handleOpenLibrary,
     onStartRadio: handlers.handleStartRadio,
     onRemoveFromQueue: handlers.handleRemoveFromQueue,
     onReorderQueue: handlers.handleReorderQueue,
