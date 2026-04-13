@@ -18,6 +18,8 @@ function renderFilterSidebar(props = {}) {
     availableGenres: [] as string[],
     selectedGenres: [] as string[],
     onGenreChange: vi.fn(),
+    recentlyAdded: 'all' as const,
+    onRecentlyAddedChange: vi.fn(),
     ...props,
   };
 
@@ -232,5 +234,48 @@ describe('FilterSidebar', () => {
     // #then
     expect(spotifyCheckbox.checked).toBe(true);
     expect(dropboxCheckbox.checked).toBe(false);
+  });
+
+  it('renders recently added section with all time options', () => {
+    // #when
+    renderFilterSidebar({ recentlyAdded: 'all' });
+
+    // #then
+    expect(screen.getByRole('button', { name: 'All time' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Last 7 days' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Last 30 days' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Last year' })).toBeInTheDocument();
+  });
+
+  it('calls onRecentlyAddedChange when clicking a time range option', () => {
+    // #given
+    const onRecentlyAddedChange = vi.fn();
+    renderFilterSidebar({ recentlyAdded: 'all', onRecentlyAddedChange });
+
+    // #when
+    fireEvent.click(screen.getByRole('button', { name: 'Last 30 days' }));
+
+    // #then
+    expect(onRecentlyAddedChange).toHaveBeenCalledWith('30-days');
+  });
+
+  it('shows Clear Filters button when recently added is not all', () => {
+    // #given
+    renderFilterSidebar({ recentlyAdded: '7-days' });
+
+    // #then
+    expect(screen.getByRole('button', { name: 'Clear Filters' })).toBeInTheDocument();
+  });
+
+  it('resets recently added when clicking Clear Filters', () => {
+    // #given
+    const onRecentlyAddedChange = vi.fn();
+    renderFilterSidebar({ recentlyAdded: '7-days', onRecentlyAddedChange });
+
+    // #when
+    fireEvent.click(screen.getByRole('button', { name: 'Clear Filters' }));
+
+    // #then
+    expect(onRecentlyAddedChange).toHaveBeenCalledWith('all');
   });
 });
