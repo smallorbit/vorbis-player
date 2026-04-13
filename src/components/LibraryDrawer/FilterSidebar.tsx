@@ -1,3 +1,4 @@
+import { useState, useCallback } from 'react';
 import styled from 'styled-components';
 import { theme } from '@/styles/theme';
 import type { ProviderId } from '@/types/domain';
@@ -26,17 +27,40 @@ interface FilterSidebarProps {
   onRecentlyAddedChange: (value: RecentlyAddedFilterOption) => void;
 }
 
-const SidebarContainer = styled.div`
+const SidebarContainer = styled.div.withConfig({
+  shouldForwardProp: (prop) => prop !== '$isExpanded',
+})<{ $isExpanded: boolean }>`
   display: flex;
   flex-direction: column;
   gap: ${theme.spacing.lg};
   padding: ${theme.spacing.lg};
-  border-right: 1px solid ${theme.colors.popover.border};
   background: rgba(20, 20, 20, 0.3);
-  min-width: 200px;
   flex-shrink: 0;
-  max-height: 100%;
-  overflow-y: auto;
+
+  @media (min-width: ${theme.breakpoints.lg}) {
+    border-right: 1px solid ${theme.colors.popover.border};
+    min-width: 200px;
+    position: static;
+    max-height: 100%;
+    overflow-y: auto;
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  @media (max-width: ${theme.breakpoints.md}) {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    border-bottom: 1px solid ${theme.colors.popover.border};
+    border-radius: 0 0 ${theme.borderRadius.lg} ${theme.borderRadius.lg};
+    max-height: ${({ $isExpanded }) => ($isExpanded ? '70vh' : '0')};
+    overflow: hidden;
+    opacity: ${({ $isExpanded }) => ($isExpanded ? 1 : 0)};
+    pointer-events: ${({ $isExpanded }) => ($isExpanded ? 'auto' : 'none')};
+    transition: max-height ${theme.transitions.normal}, opacity ${theme.transitions.normal};
+  }
 `;
 
 const FilterSection = styled.div`
@@ -219,6 +243,44 @@ const ClearFiltersButton = styled.button`
   }
 `;
 
+const MobileToggleButton = styled.button`
+  display: none;
+  padding: ${theme.spacing.xs} ${theme.spacing.md};
+  background: ${theme.colors.control.background};
+  border: 1px solid ${theme.colors.control.border};
+  border-radius: ${theme.borderRadius.md};
+  color: ${theme.colors.muted.foreground};
+  font-size: ${theme.fontSize.sm};
+  cursor: pointer;
+  transition: all ${theme.transitions.fast};
+  align-items: center;
+  gap: ${theme.spacing.xs};
+
+  &:hover {
+    background: ${theme.colors.control.backgroundHover};
+    color: ${theme.colors.white};
+  }
+
+  @media (max-width: ${theme.breakpoints.md}) {
+    display: flex;
+  }
+`;
+
+const MobileToggleIcon = styled.span.withConfig({
+  shouldForwardProp: (prop) => prop !== '$isExpanded',
+})<{ $isExpanded: boolean }>`
+  display: inline-block;
+  transition: transform ${theme.transitions.fast};
+  transform: rotate(${({ $isExpanded }) => ($isExpanded ? '180deg' : '0deg')});
+`;
+
+const Wrapper = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: ${theme.spacing.md};
+  position: relative;
+`;
+
 const SearchIconSvg = () => (
   <svg viewBox="0 0 24 24">
     <circle cx="11" cy="11" r="8" />
@@ -255,6 +317,8 @@ export const FilterSidebar = ({
   recentlyAdded,
   onRecentlyAddedChange,
 }: FilterSidebarProps) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+
   const hasActiveFilters =
     searchQuery !== '' ||
     collectionType === 'albums' ||
@@ -262,33 +326,42 @@ export const FilterSidebar = ({
     selectedGenres.length > 0 ||
     (recentlyAdded !== 'all' && recentlyAdded !== undefined);
 
-  const handleClearFilters = () => {
+  const handleClearFilters = useCallback(() => {
     onSearchChange('');
     onCollectionTypeChange('playlists');
     onProviderFilterChange([]);
     onGenreChange([]);
     onRecentlyAddedChange('all');
-  };
+  }, [onSearchChange, onCollectionTypeChange, onProviderFilterChange, onGenreChange, onRecentlyAddedChange]);
 
-  const handleProviderToggle = (provider: ProviderId) => {
+  const handleProviderToggle = useCallback((provider: ProviderId) => {
     if (selectedProviderIds.includes(provider)) {
       const next = selectedProviderIds.filter((p) => p !== provider);
       onProviderFilterChange(next.length === enabledProviderIds.length ? [] : next);
     } else {
       onProviderFilterChange([...selectedProviderIds, provider]);
     }
-  };
+  }, [selectedProviderIds, enabledProviderIds, onProviderFilterChange]);
 
-  const handleGenreToggle = (genre: string) => {
+  const handleGenreToggle = useCallback((genre: string) => {
     if (selectedGenres.includes(genre)) {
       onGenreChange(selectedGenres.filter((g) => g !== genre));
     } else {
       onGenreChange([...selectedGenres, genre]);
     }
-  };
+  }, [selectedGenres, onGenreChange]);
+
+  const handleToggleExpand = useCallback(() => {
+    setIsExpanded((prev) => !prev);
+  }, []);
 
   return (
-    <SidebarContainer>
+    <Wrapper>
+      <MobileToggleButton onClick={handleToggleExpand} aria-expanded={isExpanded} aria-label="Toggle filters">
+        Filters
+        <MobileToggleIcon $isExpanded={isExpanded}>▼</MobileToggleIcon>
+      </MobileToggleButton>
+      <SidebarContainer $isExpanded={isExpanded}>
       <FilterSection>
         <SectionTitle>Search</SectionTitle>
         <SearchInputWrapper>
@@ -406,5 +479,6 @@ export const FilterSidebar = ({
         </ClearFiltersButton>
       )}
     </SidebarContainer>
+    </Wrapper>
   );
 };
