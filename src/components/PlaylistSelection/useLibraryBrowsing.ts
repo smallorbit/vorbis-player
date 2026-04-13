@@ -11,7 +11,10 @@ export function useLibraryBrowsing(initialSearchQuery?: string, initialViewMode?
     initialViewMode ?? 'playlists',
   );
 
-  const [searchQuery, setSearchQuery] = useState(initialSearchQuery || '');
+  const [searchQuery, setSearchQuery] = useLocalStorage<string>(
+    'vorbis-player-library-search',
+    '',
+  );
 
   const [playlistSort, setPlaylistSort] = useLocalStorage<PlaylistSortOption>(
     'vorbis-player-playlist-sort',
@@ -24,9 +27,18 @@ export function useLibraryBrowsing(initialSearchQuery?: string, initialViewMode?
   );
 
   const [artistFilter, setArtistFilter] = useState<string>('');
-  const [providerFilters, setProviderFilters] = useState<ProviderId[]>([]);
-  const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
-  const [recentlyAddedFilter, setRecentlyAddedFilter] = useState<RecentlyAddedFilterOption>('all');
+  const [providerFilters, setProviderFilters] = useLocalStorage<ProviderId[]>(
+    'vorbis-player-library-provider-filters',
+    [],
+  );
+  const [selectedGenres, setSelectedGenres] = useLocalStorage<string[]>(
+    'vorbis-player-library-genres',
+    [],
+  );
+  const [recentlyAddedFilter, setRecentlyAddedFilter] = useLocalStorage<RecentlyAddedFilterOption>(
+    'vorbis-player-library-recently-added',
+    'all',
+  );
 
   // Sync when initial props change (e.g., drawer re-opened with new filter)
   useEffect(() => {
