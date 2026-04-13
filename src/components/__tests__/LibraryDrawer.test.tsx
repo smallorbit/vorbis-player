@@ -25,7 +25,7 @@ vi.mock('@/contexts/PlayerSizingContext', () => ({
 }));
 
 vi.mock('@/components/PlaylistSelection', () => ({
-  default: ({ onPlaylistSelect }: { onPlaylistSelect: (id: string, name: string) => void }) => (
+  DrawerLibrary: ({ onPlaylistSelect }: { onPlaylistSelect: (id: string, name: string) => void }) => (
     <div data-testid="playlist-selection">
       <button onClick={() => onPlaylistSelect('pl-1', 'Mock Playlist')}>Mock Playlist</button>
     </div>

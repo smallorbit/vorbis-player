@@ -10,7 +10,7 @@ import {
   DRAWER_TRANSITION_DURATION,
   DRAWER_TRANSITION_EASING
 } from './styled';
-import PlaylistSelection from './PlaylistSelection';
+import { DrawerLibrary } from './PlaylistSelection';
 import ResumeCard from './QuickAccessPanel/ResumeCard';
 import { LIBRARY_REFRESH_EVENT } from '@/hooks/useLibrarySync';
 import type { AddToQueueResult, MediaTrack, ProviderId } from '@/types/domain';
@@ -150,12 +150,11 @@ const LibraryDrawer = React.memo(function LibraryDrawer({ isOpen, onClose, onPla
         {isOpen && (
           <>
             <DrawerContent>
-              <PlaylistSelection
+              <DrawerLibrary
                 onPlaylistSelect={handlePlaylistSelectWrapper}
                 onAddToQueue={onAddToQueue}
                 onPlayLikedTracks={onPlayLikedTracks}
                 onQueueLikedTracks={onQueueLikedTracks}
-                inDrawer
                 initialSearchQuery={initialSearchQuery}
                 initialViewMode={initialViewMode}
                 onLibraryRefresh={handleRefresh}
