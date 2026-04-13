@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useCallback } from 'react';
 import styled from 'styled-components';
 import { theme } from '@/styles/theme';
 import type { ProviderId } from '@/types/domain';
@@ -27,9 +27,7 @@ interface FilterSidebarProps {
   onRecentlyAddedChange: (value: RecentlyAddedFilterOption) => void;
 }
 
-const SidebarContainer = styled.div.withConfig({
-  shouldForwardProp: (prop) => prop !== '$isExpanded',
-})<{ $isExpanded: boolean }>`
+const SidebarContainer = styled.div`
   display: flex;
   flex-direction: column;
   gap: ${theme.spacing.lg};
@@ -43,16 +41,6 @@ const SidebarContainer = styled.div.withConfig({
     min-width: 200px;
     max-height: 100%;
     overflow-y: auto;
-  }
-
-  /* Mobile: collapsible full-width panel that pushes content down */
-  @media (max-width: ${theme.breakpoints.md}) {
-    width: 100%;
-    border-bottom: 1px solid ${theme.colors.popover.border};
-    max-height: ${({ $isExpanded }) => ($isExpanded ? '75vh' : '0')};
-    overflow: hidden;
-    padding: ${({ $isExpanded }) => ($isExpanded ? theme.spacing.lg : '0')};
-    transition: max-height ${theme.transitions.normal}, padding ${theme.transitions.normal};
   }
 `;
 
@@ -236,48 +224,6 @@ const ClearFiltersButton = styled.button`
   }
 `;
 
-const MobileToggleButton = styled.button`
-  display: none;
-
-  @media (max-width: ${theme.breakpoints.md}) {
-    display: flex;
-    width: 100%;
-    align-items: center;
-    justify-content: space-between;
-    padding: ${theme.spacing.sm} ${theme.spacing.lg};
-    background: rgba(20, 20, 20, 0.3);
-    border: none;
-    border-bottom: 1px solid ${theme.colors.popover.border};
-    color: ${theme.colors.muted.foreground};
-    font-size: ${theme.fontSize.sm};
-    cursor: pointer;
-    transition: color ${theme.transitions.fast};
-
-    &:hover {
-      color: ${theme.colors.white};
-    }
-  }
-`;
-
-const MobileToggleIcon = styled.span.withConfig({
-  shouldForwardProp: (prop) => prop !== '$isExpanded',
-})<{ $isExpanded: boolean }>`
-  display: inline-block;
-  transition: transform ${theme.transitions.fast};
-  transform: rotate(${({ $isExpanded }) => ($isExpanded ? '180deg' : '0deg')});
-  font-size: ${theme.fontSize.xs};
-`;
-
-const Wrapper = styled.div`
-  display: contents;
-
-  @media (max-width: ${theme.breakpoints.md}) {
-    display: flex;
-    flex-direction: column;
-    flex-shrink: 0;
-  }
-`;
-
 const SearchIconSvg = () => (
   <svg viewBox="0 0 24 24">
     <circle cx="11" cy="11" r="8" />
@@ -314,8 +260,6 @@ export const FilterSidebar = ({
   recentlyAdded,
   onRecentlyAddedChange,
 }: FilterSidebarProps) => {
-  const [isExpanded, setIsExpanded] = useState(false);
-
   const hasActiveFilters =
     searchQuery !== '' ||
     collectionType === 'albums' ||
@@ -348,17 +292,8 @@ export const FilterSidebar = ({
     }
   }, [selectedGenres, onGenreChange]);
 
-  const handleToggleExpand = useCallback(() => {
-    setIsExpanded((prev) => !prev);
-  }, []);
-
   return (
-    <Wrapper>
-      <MobileToggleButton onClick={handleToggleExpand} aria-expanded={isExpanded} aria-label="Toggle filters">
-        Filters
-        <MobileToggleIcon $isExpanded={isExpanded}>▼</MobileToggleIcon>
-      </MobileToggleButton>
-      <SidebarContainer $isExpanded={isExpanded}>
+    <SidebarContainer>
       <FilterSection>
         <SectionTitle>Search</SectionTitle>
         <SearchInputWrapper>
@@ -428,7 +363,6 @@ export const FilterSidebar = ({
         <FilterSection>
           <SectionTitle>Genres</SectionTitle>
           <div>
-            {/* "All genres" acts as a clear shortcut when genres are selected */}
             {selectedGenres.length > 0 && (
               <ProviderCheckboxContainer>
                 <Checkbox
@@ -476,6 +410,5 @@ export const FilterSidebar = ({
         </ClearFiltersButton>
       )}
     </SidebarContainer>
-    </Wrapper>
   );
 };
