@@ -3,7 +3,7 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import { ThemeProvider } from 'styled-components';
 import { theme } from '@/styles/theme';
-import { LibraryPage, DrawerLibrary } from '../PlaylistSelection';
+import { LibraryPage } from '../PlaylistSelection';
 import { TestWrapper } from '@/test/testWrappers';
 import { makePlaylistInfo, makeAlbumInfo } from '@/test/fixtures';
 import { LIKED_SONGS_ID } from '@/constants/playlist';
@@ -103,18 +103,6 @@ function renderLibraryPage(props?: Partial<Parameters<typeof LibraryPage>[0]>) {
     <ThemeProvider theme={theme}>
       <TestWrapper>
         <LibraryPage onPlaylistSelect={onPlaylistSelect} {...props} />
-      </TestWrapper>
-    </ThemeProvider>
-  );
-  return { ...result, onPlaylistSelect };
-}
-
-function renderDrawerLibrary(props?: Partial<Parameters<typeof DrawerLibrary>[0]>) {
-  const onPlaylistSelect = vi.fn();
-  const result = render(
-    <ThemeProvider theme={theme}>
-      <TestWrapper>
-        <DrawerLibrary onPlaylistSelect={onPlaylistSelect} {...props} />
       </TestWrapper>
     </ThemeProvider>
   );
@@ -226,22 +214,6 @@ describe('PlaylistSelection', () => {
     expect(onPlaylistSelect).toHaveBeenCalledWith(LIKED_SONGS_ID, 'Liked Songs', undefined);
   });
 
-  it('DrawerLibrary: tapping a playlist opens the menu; Play then calls onPlaylistSelect', () => {
-    // #given
-    const { onPlaylistSelect } = renderDrawerLibrary();
-
-    // #when
-    fireEvent.click(screen.getByText('Chill Vibes'));
-
-    // #then
-    expect(onPlaylistSelect).not.toHaveBeenCalled();
-
-    // #when
-    fireEvent.click(screen.getByRole('button', { name: /play chill vibes/i }));
-
-    // #then
-    expect(onPlaylistSelect).toHaveBeenCalledWith('pl-1', 'Chill Vibes', undefined);
-  });
 });
 
 describe('PlaylistSelection — search and filter', () => {

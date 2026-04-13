@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef, useEffect } from 'react';
+import React, { useCallback, useRef, useEffect } from 'react';
 import { useQapEnabled } from '@/hooks/useQapEnabled';
 import { usePlayerSizingContext } from '@/contexts/PlayerSizingContext';
 import { useCurrentTrackContext } from '@/contexts/TrackContext';
@@ -6,6 +6,7 @@ import { useVisualEffectsContext } from '@/contexts/VisualEffectsContext';
 import { useLikeTrack } from '@/hooks/useLikeTrack';
 import type { AddToQueueResult, MediaTrack, ProviderId } from '@/types/domain';
 import type { RadioState, RadioProgress } from '@/types/radio';
+import type { SessionSnapshot } from '@/services/sessionPersistence';
 import { ContentWrapper, PlayerContainer, PlayerStack } from './styled';
 import { AlbumArtSection } from './AlbumArtSection';
 import { PlayerControlsSection } from './PlayerControlsSection';
@@ -17,8 +18,8 @@ export interface PlaybackHandlers {
   onNext: () => void;
   onPrevious: () => void;
   onTrackSelect: (index: number) => void;
-  onOpenLibraryDrawer: () => void;
-  onCloseLibraryDrawer: () => void;
+  onOpenLibrary: () => void;
+  onCloseLibrary: () => void;
   onOpenQuickAccessPanel?: () => void;
   onPlaylistSelect: (playlistId: string, playlistName: string, provider?: ProviderId) => void;
   onAddToQueue?: (
@@ -44,7 +45,7 @@ interface AlbumArtBounds {
 
 interface PlayerContentProps {
   isPlaying: boolean;
-  showLibraryDrawer: boolean;
+  showLibrary: boolean;
   onAlbumArtBoundsChange?: (bounds: AlbumArtBounds | null) => void;
   handlers: PlaybackHandlers;
   currentTrackProvider?: ProviderId;
@@ -54,11 +55,13 @@ interface PlayerContentProps {
   mediaTracksRef?: React.RefObject<MediaTrack[]>;
   radioProgress?: RadioProgress | null;
   onDismissRadioProgress?: () => void;
+  lastSession?: SessionSnapshot | null;
+  onResume?: () => void;
 }
 
 const PlayerContent: React.FC<PlayerContentProps> = React.memo(({
   isPlaying,
-  showLibraryDrawer,
+  showLibrary,
   onAlbumArtBoundsChange,
   handlers,
   currentTrackProvider,
@@ -68,14 +71,14 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({
   mediaTracksRef,
   radioProgress,
   onDismissRadioProgress,
+  lastSession,
+  onResume,
 }) => {
   const { currentTrack, showQueue, setShowQueue } = useCurrentTrackContext();
   const { zenModeEnabled, setZenModeEnabled, setShowVisualEffects } = useVisualEffectsContext();
   const { dimensions, useFluidSizing, padding, transitionDuration, transitionEasing, isMobile, isTablet, hasPointerInput, isTouchDevice } = usePlayerSizingContext();
   const { isLiked, isLikePending, handleLikeToggle, canSaveTrack } = useLikeTrack(currentTrack?.id, currentTrack?.provider);
 
-  const [librarySearchQuery, setLibrarySearchQuery] = useState<string | undefined>(undefined);
-  const [libraryViewMode, setLibraryViewMode] = useState<'playlists' | 'albums' | undefined>(undefined);
   const [qapEnabled] = useQapEnabled();
 
   const controlsRef = useRef<HTMLDivElement>(null);
@@ -99,7 +102,7 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({
   }, []);
 
   const handleShowQueue = useCallback(() => {
-    handlers.onCloseLibraryDrawer();
+    handlers.onCloseLibrary();
     setShowVisualEffects(false);
     setShowQueue(prev => !prev);
   }, [setShowQueue, handlers, setShowVisualEffects]);
@@ -107,29 +110,27 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({
   const handleCloseQueue = useCallback(() => setShowQueue(false), [setShowQueue]);
 
   const handleOpenQueueFromToast = useCallback(() => {
-    handlers.onCloseLibraryDrawer();
+    handlers.onCloseLibrary();
     setShowVisualEffects(false);
     setShowQueue(true);
   }, [handlers, setShowVisualEffects, setShowQueue]);
 
-  const handleOpenLibraryDrawer = useCallback(() => {
+  const handleOpenLibrary = useCallback(() => {
     setShowQueue(false);
     setShowVisualEffects(false);
-    handlers.onOpenLibraryDrawer();
+    handlers.onOpenLibrary();
   }, [handlers, setShowQueue, setShowVisualEffects]);
 
-  const handleArtistBrowse = useCallback((artistName: string) => {
-    setLibrarySearchQuery(artistName);
-    setLibraryViewMode('albums');
-    handleOpenLibraryDrawer();
-  }, [handleOpenLibraryDrawer]);
+  const handleArtistBrowse = useCallback((_artistName: string) => {
+    handleOpenLibrary();
+  }, [handleOpenLibrary]);
 
   const handleAlbumPlay = useCallback((albumId: string, albumName: string) => {
     handlers.onAlbumPlay(albumId, albumName);
   }, [handlers]);
 
-  const handleCloseLibraryDrawer = useCallback(() => {
-    handlers.onCloseLibraryDrawer();
+  const handleCloseLibrary = useCallback(() => {
+    handlers.onCloseLibrary();
   }, [handlers]);
 
   const handleZenModeToggle = useCallback(() => {
@@ -157,19 +158,17 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({
   }, [showQueue, handleShowQueue, handleCloseQueue]);
 
   const handleSwipeDown = useCallback(() => {
-    if (showLibraryDrawer) {
-      handlers.onCloseLibraryDrawer();
+    if (showLibrary) {
+      handlers.onCloseLibrary();
     } else if (!qapEnabled) {
-      handleOpenLibraryDrawer();
+      handleOpenLibrary();
     } else if (handlers.onOpenQuickAccessPanel) {
       handlers.onOpenQuickAccessPanel();
     } else {
-      handleOpenLibraryDrawer();
+      handleOpenLibrary();
     }
-  }, [showLibraryDrawer, handlers, handleOpenLibraryDrawer, qapEnabled]);
+  }, [showLibrary, handlers, handleOpenLibrary, qapEnabled]);
 
-  const handleLibrarySearchQueryReset = useCallback(() => setLibrarySearchQuery(undefined), []);
-  const handleLibraryViewModeReset = useCallback(() => setLibraryViewMode(undefined), []);
 
   return (
     <ContentWrapper
@@ -212,7 +211,7 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({
             isPlaying={isPlaying}
             zenModeEnabled={zenModeEnabled}
             hasPointerInput={hasPointerInput}
-            showLibraryDrawer={showLibraryDrawer}
+            showLibrary={showLibrary}
             showQueue={showQueue}
             controlsRef={controlsRef}
             onPlay={handlers.onPlay}
@@ -223,8 +222,8 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({
             onAlbumPlay={handleAlbumPlay}
             onShowQueue={handleShowQueue}
             onCloseQueue={handleCloseQueue}
-            onOpenLibraryDrawer={handleOpenLibraryDrawer}
-            onCloseLibraryDrawer={handleCloseLibraryDrawer}
+            onOpenLibrary={handleOpenLibrary}
+            onCloseLibrary={handleCloseLibrary}
             onOpenQuickAccessPanel={handlers.onOpenQuickAccessPanel}
             onZenModeToggle={handleZenModeToggle}
             isRadioAvailable={isRadioAvailable}
@@ -239,10 +238,9 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({
       <DrawerOrchestrator
         showQueue={showQueue}
         onCloseQueue={handleCloseQueue}
-        showLibraryDrawer={showLibraryDrawer}
-        onCloseLibraryDrawer={handleCloseLibraryDrawer}
+        showLibrary={showLibrary}
+        onCloseLibrary={handleCloseLibrary}
         onPlaylistSelect={handlers.onPlaylistSelect}
-        onAddToQueue={handlers.onAddToQueue}
         onPlayLikedTracks={handlers.onPlayLikedTracks}
         onQueueLikedTracks={handlers.onQueueLikedTracks}
         onTrackSelect={handlers.onTrackSelect}
@@ -255,10 +253,8 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({
         radioProgress={radioProgress}
         onDismissRadioProgress={onDismissRadioProgress}
         onOpenQueueFromToast={handleOpenQueueFromToast}
-        librarySearchQuery={librarySearchQuery}
-        libraryViewMode={libraryViewMode}
-        onLibrarySearchQueryReset={handleLibrarySearchQueryReset}
-        onLibraryViewModeReset={handleLibraryViewModeReset}
+        lastSession={lastSession}
+        onResume={onResume}
       />
     </ContentWrapper>
   );

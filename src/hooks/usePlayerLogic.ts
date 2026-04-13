@@ -84,8 +84,8 @@ export function usePlayerLogic() {
   const [playbackPosition, setPlaybackPosition] = useState(0);
   const [authExpired, setAuthExpired] = useState<ProviderId | null>(null);
 
-  // Library drawer visibility (local UI state)
-  const [showLibraryDrawer, setShowLibraryDrawer] = useState(false);
+  // Library full-screen visibility (local UI state)
+  const [showLibrary, setShowLibrary] = useState(false);
 
   // Radio generation progress panel state
   const [radioProgress, setRadioProgress] = useState<RadioProgress | null>(null);
@@ -235,14 +235,14 @@ export function usePlayerLogic() {
     drivingDescriptor?.playback.pause();
   }, [getDrivingProviderId, getDrivingProviderDescriptor]);
 
-  const handleOpenLibraryDrawer = useCallback(() => {
-    setShowLibraryDrawer(true);
+  const handleOpenLibrary = useCallback(() => {
+    setShowLibrary(true);
     setShowQueue(false);
     setShowVisualEffects(false);
   }, [setShowQueue, setShowVisualEffects]);
 
-  const handleCloseLibraryDrawer = useCallback(() => {
-    setShowLibraryDrawer(false);
+  const handleCloseLibrary = useCallback(() => {
+    setShowLibrary(false);
   }, []);
 
   // Initialize radio session (before handleBackToLibrary, which needs stopRadio)
@@ -295,8 +295,8 @@ export function usePlayerLogic() {
       handleNext,
       handlePrevious,
       playTrack,
-      handleOpenLibraryDrawer,
-      handleCloseLibraryDrawer,
+      handleOpenLibrary,
+      handleCloseLibrary,
       handleBackToLibrary,
       handleStartRadio,
       handleRemoveFromQueue,
@@ -312,8 +312,8 @@ export function usePlayerLogic() {
       handleNext,
       handlePrevious,
       playTrack,
-      handleOpenLibraryDrawer,
-      handleCloseLibraryDrawer,
+      handleOpenLibrary,
+      handleCloseLibrary,
       handleBackToLibrary,
       handleStartRadio,
       handleRemoveFromQueue,
@@ -327,7 +327,7 @@ export function usePlayerLogic() {
       error,
       selectedPlaylistId,
       tracks,
-      showLibraryDrawer,
+      showLibrary,
       isPlaying,
       playbackPosition,
     },
