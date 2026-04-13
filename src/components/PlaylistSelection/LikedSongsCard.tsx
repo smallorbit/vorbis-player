@@ -19,7 +19,7 @@ import {
   TabSpinner,
 } from './styled';
 import { getLikedSongsGradient, likedSongsAsPlaylistInfo, PinIcon } from './utils';
-import { useLibraryContext } from './LibraryContext';
+import { useLibraryPins, useLibraryActions, useLibraryData } from './LibraryContext';
 
 interface LikedSongsCardProps {
   layout: 'grid' | 'list';
@@ -42,16 +42,9 @@ const HeartArt: React.FC<{ gradient: string; layout: 'grid' | 'list' }> = ({ gra
 );
 
 const LikedSongsCard: React.FC<LikedSongsCardProps> = React.memo(function LikedSongsCard({ layout, provider, count }) {
-  const {
-    isLikedSongsSyncing,
-    isUnifiedLikedActive,
-    isPlaylistPinned,
-    canPinMorePlaylists,
-    activeDescriptor,
-    onPlaylistContextMenu,
-    onPinPlaylistClick,
-    onLikedSongsClick,
-  } = useLibraryContext();
+  const { isPlaylistPinned, canPinMorePlaylists, onPinPlaylistClick } = useLibraryPins();
+  const { onPlaylistContextMenu, onLikedSongsClick } = useLibraryActions();
+  const { isLikedSongsSyncing, isUnifiedLikedActive, activeDescriptor } = useLibraryData();
 
   const likedSongsPinned = isPlaylistPinned(LIKED_SONGS_ID);
   const isPerProvider = provider !== undefined;

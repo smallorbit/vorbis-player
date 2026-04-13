@@ -10,9 +10,7 @@ interface LikedSongsEntry {
   count: number;
 }
 
-export interface LibraryContextValue {
-  inDrawer: boolean;
-  swipeZoneRef?: React.RefObject<HTMLDivElement>;
+export interface LibraryBrowsingContextValue {
   viewMode: 'playlists' | 'albums';
   setViewMode: (v: 'playlists' | 'albums') => void;
   searchQuery: string;
@@ -26,13 +24,41 @@ export interface LibraryContextValue {
   providerFilters: ProviderId[];
   setProviderFilters: (v: ProviderId[]) => void;
   handleProviderToggle: (provider: ProviderId) => void;
-  /** Available genres derived from the current album set for the genre filter UI. */
   availableGenres: string[];
   selectedGenres: string[];
   setSelectedGenres: (v: string[]) => void;
   recentlyAddedFilter: RecentlyAddedFilterOption;
   setRecentlyAddedFilter: (v: RecentlyAddedFilterOption) => void;
   hasActiveFilters: boolean;
+}
+
+export interface LibraryPinContextValue {
+  pinnedPlaylists: PlaylistInfo[];
+  unpinnedPlaylists: PlaylistInfo[];
+  pinnedAlbums: AlbumInfo[];
+  unpinnedAlbums: AlbumInfo[];
+  isPlaylistPinned: (id: string) => boolean;
+  canPinMorePlaylists: boolean;
+  isAlbumPinned: (id: string) => boolean;
+  canPinMoreAlbums: boolean;
+  onPinPlaylistClick: (id: string, event: React.MouseEvent) => void;
+  onPinAlbumClick: (id: string, event: React.MouseEvent) => void;
+}
+
+export interface LibraryActionsContextValue {
+  onPlaylistClick: (playlist: PlaylistInfo) => void;
+  onPlaylistContextMenu: (playlist: PlaylistInfo, event: React.MouseEvent) => void;
+  onLikedSongsClick: (provider?: ProviderId) => void;
+  onAlbumClick: (album: AlbumInfo) => void;
+  onAlbumContextMenu: (album: AlbumInfo, event: React.MouseEvent) => void;
+  onArtistClick: (artistName: string, event: React.MouseEvent) => void;
+  onLibraryRefresh?: () => void;
+  isLibraryRefreshing?: boolean;
+}
+
+export interface LibraryDataContextValue {
+  inDrawer: boolean;
+  swipeZoneRef?: React.RefObject<HTMLDivElement>;
   albums: AlbumInfo[];
   isInitialLoadComplete: boolean;
   showProviderBadges: boolean;
@@ -42,35 +68,61 @@ export interface LibraryContextValue {
   isLikedSongsSyncing: boolean;
   isUnifiedLikedActive: boolean;
   unifiedLikedCount: number;
-  pinnedPlaylists: PlaylistInfo[];
-  unpinnedPlaylists: PlaylistInfo[];
-  pinnedAlbums: AlbumInfo[];
-  unpinnedAlbums: AlbumInfo[];
-  isPlaylistPinned: (id: string) => boolean;
-  canPinMorePlaylists: boolean;
-  isAlbumPinned: (id: string) => boolean;
-  canPinMoreAlbums: boolean;
   activeDescriptor: ProviderDescriptor | null;
-  onPlaylistClick: (playlist: PlaylistInfo) => void;
-  onPlaylistContextMenu: (playlist: PlaylistInfo, event: React.MouseEvent) => void;
-  onPinPlaylistClick: (id: string, event: React.MouseEvent) => void;
-  onLikedSongsClick: (provider?: ProviderId) => void;
-  onAlbumClick: (album: AlbumInfo) => void;
-  onAlbumContextMenu: (album: AlbumInfo, event: React.MouseEvent) => void;
-  onPinAlbumClick: (id: string, event: React.MouseEvent) => void;
-  onArtistClick: (artistName: string, event: React.MouseEvent) => void;
-  onLibraryRefresh?: () => void;
-  isLibraryRefreshing?: boolean;
 }
 
-const LibraryContext = createContext<LibraryContextValue | null>(null);
+export type LibraryContextValue =
+  LibraryBrowsingContextValue &
+  LibraryPinContextValue &
+  LibraryActionsContextValue &
+  LibraryDataContextValue;
 
-export const LibraryProvider = LibraryContext.Provider;
+const LibraryBrowsingContext = createContext<LibraryBrowsingContextValue | null>(null);
+const LibraryPinContext = createContext<LibraryPinContextValue | null>(null);
+const LibraryActionsContext = createContext<LibraryActionsContextValue | null>(null);
+const LibraryDataContext = createContext<LibraryDataContextValue | null>(null);
 
-export function useLibraryContext(): LibraryContextValue {
-  const ctx = useContext(LibraryContext);
+export const LibraryBrowsingProvider = LibraryBrowsingContext.Provider;
+export const LibraryPinProvider = LibraryPinContext.Provider;
+export const LibraryActionsProvider = LibraryActionsContext.Provider;
+export const LibraryDataProvider = LibraryDataContext.Provider;
+
+export function useLibraryBrowsingContext(): LibraryBrowsingContextValue {
+  const ctx = useContext(LibraryBrowsingContext);
   if (!ctx) {
-    throw new Error('useLibraryContext must be used within a LibraryProvider');
+    throw new Error('useLibraryBrowsingContext must be used within a LibraryBrowsingProvider');
   }
   return ctx;
+}
+
+export function useLibraryPins(): LibraryPinContextValue {
+  const ctx = useContext(LibraryPinContext);
+  if (!ctx) {
+    throw new Error('useLibraryPins must be used within a LibraryPinProvider');
+  }
+  return ctx;
+}
+
+export function useLibraryActions(): LibraryActionsContextValue {
+  const ctx = useContext(LibraryActionsContext);
+  if (!ctx) {
+    throw new Error('useLibraryActions must be used within a LibraryActionsProvider');
+  }
+  return ctx;
+}
+
+export function useLibraryData(): LibraryDataContextValue {
+  const ctx = useContext(LibraryDataContext);
+  if (!ctx) {
+    throw new Error('useLibraryData must be used within a LibraryDataProvider');
+  }
+  return ctx;
+}
+
+export function useLibraryContext(): LibraryContextValue {
+  const browsing = useLibraryBrowsingContext();
+  const pins = useLibraryPins();
+  const actions = useLibraryActions();
+  const data = useLibraryData();
+  return { ...browsing, ...pins, ...actions, ...data };
 }

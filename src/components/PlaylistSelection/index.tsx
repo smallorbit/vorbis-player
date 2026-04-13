@@ -28,8 +28,18 @@ import { useLibraryBrowsing } from './useLibraryBrowsing';
 import { useItemActions } from './useItemActions';
 import { LibraryStatusContent } from './LibraryStatusContent';
 import { LibraryMainContent } from './LibraryMainContent';
-import { LibraryProvider } from './LibraryContext';
-import type { LibraryContextValue } from './LibraryContext';
+import {
+  LibraryBrowsingProvider,
+  LibraryPinProvider,
+  LibraryActionsProvider,
+  LibraryDataProvider,
+} from './LibraryContext';
+import type {
+  LibraryBrowsingContextValue,
+  LibraryPinContextValue,
+  LibraryActionsContextValue,
+  LibraryDataContextValue,
+} from './LibraryContext';
 
 interface PlaylistSelectionProps {
   onPlaylistSelect: (playlistId: string, playlistName: string, provider?: ProviderId) => void;
@@ -240,10 +250,8 @@ const PlaylistSelection = React.memo(function PlaylistSelection({
   const hasAnyContent = playlists.length > 0 || albums.length > 0 || likedSongsCount > 0;
   const showMainContent = isAuthenticated && !error && (hasAnyContent || (!isLoading && !isInitialLoadComplete));
 
-  const libraryContextValue: LibraryContextValue = useMemo(
+  const browsingValue: LibraryBrowsingContextValue = useMemo(
     () => ({
-      inDrawer,
-      swipeZoneRef,
       viewMode,
       setViewMode,
       searchQuery,
@@ -263,38 +271,8 @@ const PlaylistSelection = React.memo(function PlaylistSelection({
       recentlyAddedFilter,
       setRecentlyAddedFilter,
       hasActiveFilters,
-      albums,
-      isInitialLoadComplete,
-      showProviderBadges,
-      enabledProviderIds,
-      likedSongsPerProvider,
-      likedSongsCount,
-      isLikedSongsSyncing,
-      isUnifiedLikedActive,
-      unifiedLikedCount,
-      pinnedPlaylists,
-      unpinnedPlaylists,
-      pinnedAlbums,
-      unpinnedAlbums,
-      isPlaylistPinned,
-      canPinMorePlaylists,
-      isAlbumPinned,
-      canPinMoreAlbums,
-      activeDescriptor: activeDescriptor ?? null,
-      onPlaylistClick: handlePlaylistClick,
-      onPlaylistContextMenu: handlePlaylistContextMenu,
-      onPinPlaylistClick: handlePinPlaylistClick,
-      onLikedSongsClick: handleLikedSongsClick,
-      onAlbumClick: handleAlbumClick,
-      onAlbumContextMenu: handleAlbumContextMenu,
-      onPinAlbumClick: handlePinAlbumClick,
-      onArtistClick: handleArtistClick,
-      onLibraryRefresh,
-      isLibraryRefreshing,
     }),
     [
-      inDrawer,
-      swipeZoneRef,
       viewMode,
       searchQuery,
       playlistSort,
@@ -305,6 +283,63 @@ const PlaylistSelection = React.memo(function PlaylistSelection({
       selectedGenres,
       recentlyAddedFilter,
       hasActiveFilters,
+    ]
+  );
+
+  const pinValue: LibraryPinContextValue = useMemo(
+    () => ({
+      pinnedPlaylists,
+      unpinnedPlaylists,
+      pinnedAlbums,
+      unpinnedAlbums,
+      isPlaylistPinned,
+      canPinMorePlaylists,
+      isAlbumPinned,
+      canPinMoreAlbums,
+      onPinPlaylistClick: handlePinPlaylistClick,
+      onPinAlbumClick: handlePinAlbumClick,
+    }),
+    [
+      pinnedPlaylists,
+      unpinnedPlaylists,
+      pinnedAlbums,
+      unpinnedAlbums,
+      isPlaylistPinned,
+      canPinMorePlaylists,
+      isAlbumPinned,
+      canPinMoreAlbums,
+      handlePinPlaylistClick,
+      handlePinAlbumClick,
+    ]
+  );
+
+  const actionsValue: LibraryActionsContextValue = useMemo(
+    () => ({
+      onPlaylistClick: handlePlaylistClick,
+      onPlaylistContextMenu: handlePlaylistContextMenu,
+      onLikedSongsClick: handleLikedSongsClick,
+      onAlbumClick: handleAlbumClick,
+      onAlbumContextMenu: handleAlbumContextMenu,
+      onArtistClick: handleArtistClick,
+      onLibraryRefresh,
+      isLibraryRefreshing,
+    }),
+    [
+      handlePlaylistClick,
+      handlePlaylistContextMenu,
+      handleLikedSongsClick,
+      handleAlbumClick,
+      handleAlbumContextMenu,
+      handleArtistClick,
+      onLibraryRefresh,
+      isLibraryRefreshing,
+    ]
+  );
+
+  const dataValue: LibraryDataContextValue = useMemo(
+    () => ({
+      inDrawer,
+      swipeZoneRef,
       albums,
       isInitialLoadComplete,
       showProviderBadges,
@@ -314,25 +349,21 @@ const PlaylistSelection = React.memo(function PlaylistSelection({
       isLikedSongsSyncing,
       isUnifiedLikedActive,
       unifiedLikedCount,
-      pinnedPlaylists,
-      unpinnedPlaylists,
-      pinnedAlbums,
-      unpinnedAlbums,
-      isPlaylistPinned,
-      canPinMorePlaylists,
-      isAlbumPinned,
-      canPinMoreAlbums,
+      activeDescriptor: activeDescriptor ?? null,
+    }),
+    [
+      inDrawer,
+      swipeZoneRef,
+      albums,
+      isInitialLoadComplete,
+      showProviderBadges,
+      enabledProviderIds,
+      likedSongsPerProvider,
+      likedSongsCount,
+      isLikedSongsSyncing,
+      isUnifiedLikedActive,
+      unifiedLikedCount,
       activeDescriptor,
-      handlePlaylistClick,
-      handlePlaylistContextMenu,
-      handlePinPlaylistClick,
-      handleLikedSongsClick,
-      handleAlbumClick,
-      handleAlbumContextMenu,
-      handlePinAlbumClick,
-      handleArtistClick,
-      onLibraryRefresh,
-      isLibraryRefreshing,
     ]
   );
 
@@ -346,7 +377,10 @@ const PlaylistSelection = React.memo(function PlaylistSelection({
 
   if (inDrawer) {
     return (
-      <LibraryProvider value={libraryContextValue}>
+      <LibraryDataProvider value={dataValue}>
+      <LibraryBrowsingProvider value={browsingValue}>
+      <LibraryPinProvider value={pinValue}>
+      <LibraryActionsProvider value={actionsValue}>
         <DrawerContentWrapper>
           <LibraryStatusContent {...statusContentProps} />
           {showMainContent && <LibraryMainContent />}
@@ -354,12 +388,18 @@ const PlaylistSelection = React.memo(function PlaylistSelection({
           {playlistPopoverPortal}
           {confirmDeletePortal}
         </DrawerContentWrapper>
-      </LibraryProvider>
+      </LibraryActionsProvider>
+      </LibraryPinProvider>
+      </LibraryBrowsingProvider>
+      </LibraryDataProvider>
     );
   }
 
   return (
-    <LibraryProvider value={libraryContextValue}>
+    <LibraryDataProvider value={dataValue}>
+    <LibraryBrowsingProvider value={browsingValue}>
+    <LibraryPinProvider value={pinValue}>
+    <LibraryActionsProvider value={actionsValue}>
       <Container $inDrawer={false}>
         <SelectionCard $maxWidth={maxWidth} $inDrawer={false}>
           <CardContent style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
@@ -372,7 +412,10 @@ const PlaylistSelection = React.memo(function PlaylistSelection({
           {footer}
         </SelectionCard>
       </Container>
-    </LibraryProvider>
+    </LibraryActionsProvider>
+    </LibraryPinProvider>
+    </LibraryBrowsingProvider>
+    </LibraryDataProvider>
   );
 });
 
