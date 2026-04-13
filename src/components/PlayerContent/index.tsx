@@ -242,6 +242,7 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({
         onCloseLibrary={handleCloseLibrary}
         isPlaying={isPlaying}
         onPlaylistSelect={handlers.onPlaylistSelect}
+        onAddToQueue={handlers.onAddToQueue}
         onPlayLikedTracks={handlers.onPlayLikedTracks}
         onQueueLikedTracks={handlers.onQueueLikedTracks}
         onTrackSelect={handlers.onTrackSelect}

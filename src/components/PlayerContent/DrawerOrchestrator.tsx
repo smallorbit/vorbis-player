@@ -10,7 +10,7 @@ import { useUnifiedLikedTracks } from '@/hooks/useUnifiedLikedTracks';
 import { LIKED_SONGS_ID } from '@/constants/playlist';
 import { LIBRARY_REFRESH_EVENT } from '@/hooks/useLibrarySync';
 import { providerRegistry } from '@/providers/registry';
-import type { MediaTrack, ProviderId } from '@/types/domain';
+import type { AddToQueueResult, MediaTrack, ProviderId } from '@/types/domain';
 import type { RadioState, RadioProgress } from '@/types/radio';
 import type { SessionSnapshot } from '@/services/sessionPersistence';
 
@@ -54,6 +54,7 @@ interface DrawerOrchestratorProps {
   onCloseLibrary: () => void;
   isPlaying?: boolean;
   onPlaylistSelect: (playlistId: string, playlistName: string, provider?: ProviderId) => void;
+  onAddToQueue?: (playlistId: string, playlistName?: string, provider?: ProviderId) => Promise<AddToQueueResult | null>;
   onPlayLikedTracks?: (tracks: MediaTrack[], collectionId: string, collectionName: string, provider?: ProviderId) => Promise<void>;
   onQueueLikedTracks?: (tracks: MediaTrack[], collectionName?: string) => void;
   onTrackSelect: (index: number) => void;
@@ -77,6 +78,7 @@ export const DrawerOrchestrator: React.FC<DrawerOrchestratorProps> = React.memo(
   onCloseLibrary,
   isPlaying,
   onPlaylistSelect,
+  onAddToQueue,
   onPlayLikedTracks,
   onQueueLikedTracks,
   onTrackSelect,
@@ -198,6 +200,7 @@ export const DrawerOrchestrator: React.FC<DrawerOrchestratorProps> = React.memo(
             <ProfiledComponent id="LibraryPage">
               <LibraryPage
                 onPlaylistSelect={handleLibraryPlaylistSelect}
+                onAddToQueue={onAddToQueue}
                 onPlayLikedTracks={onPlayLikedTracks}
                 onQueueLikedTracks={onQueueLikedTracks}
                 onNavigateToPlayer={onCloseLibrary}
@@ -213,6 +216,7 @@ export const DrawerOrchestrator: React.FC<DrawerOrchestratorProps> = React.memo(
             isOpen={showLibrary}
             onClose={onCloseLibrary}
             onPlaylistSelect={handleLibraryPlaylistSelect}
+            onAddToQueue={onAddToQueue}
             onPlayLikedTracks={onPlayLikedTracks}
             onQueueLikedTracks={onQueueLikedTracks}
             lastSession={tracks.length === 0 ? lastSession : undefined}
