@@ -114,22 +114,11 @@ describe('PlaylistSelection', () => {
     setMockLibrarySync();
   });
 
-  it('renders Playlists and Albums tab buttons', () => {
+  it('renders playlists by default', () => {
     renderLibraryPage();
-    expect(screen.getByRole('button', { name: /playlists/i })).toBeTruthy();
-    expect(screen.getByRole('button', { name: /albums/i })).toBeTruthy();
-  });
-
-  it('switching to Albums tab shows the album grid', () => {
-    // #given
-    renderLibraryPage();
-
-    // #when
-    fireEvent.click(screen.getByRole('button', { name: /albums/i }));
-
-    // #then
-    expect(screen.getByText('Album One')).toBeTruthy();
-    expect(screen.getByText('Album Two')).toBeTruthy();
+    expect(screen.getByText('Chill Vibes')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: /^playlists$/i })).toBeNull();
+    expect(screen.queryByRole('button', { name: /^albums$/i })).toBeNull();
   });
 
   it('search input filters playlist list by name (case-insensitive)', () => {
@@ -176,11 +165,6 @@ describe('PlaylistSelection', () => {
     renderLibraryPage();
 
     // #then
-    // When auth is resolved but initial load is not complete, the component renders
-    // tab buttons with inline spinners — not the "Loading your library..." skeleton
-    // (that skeleton only shows when isLoading=true, i.e. before auth resolves).
-    expect(screen.getByRole('button', { name: /playlists/i })).toBeTruthy();
-    expect(screen.getByRole('button', { name: /albums/i })).toBeTruthy();
     expect(screen.queryByText('Loading your library...')).toBeNull();
   });
 
