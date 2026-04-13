@@ -153,7 +153,7 @@ export class LibrarySyncEngine {
   subscribe(listener: SyncListener): () => void {
     this.listeners.add(listener);
     // Immediately emit current state AND last-known data so new subscribers
-    // (e.g. when LibraryDrawer reopens and remounts PlaylistSelection) don't
+    // (e.g. when the library view reopens and remounts PlaylistSelection) don't
     // see an empty list while isInitialLoadComplete is already true.
     listener(this.state, this.lastKnownPlaylists, this.lastKnownAlbums, this.lastKnownLikedCount);
     return () => {

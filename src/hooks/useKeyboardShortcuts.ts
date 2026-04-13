@@ -25,7 +25,7 @@ interface KeyboardShortcutHandlers {
   /** Open queue drawer (desktop: ArrowUp) */
   onShowQueue?: () => void;
   /** Open library drawer (desktop: ArrowDown) */
-  onOpenLibraryDrawer?: () => void;
+  onOpenLibrary?: () => void;
   /** Open quick access panel (desktop: ArrowDown / L) */
   onOpenQuickAccessPanel?: () => void;
   /** Toggle zen mode */
@@ -56,7 +56,7 @@ export const useKeyboardShortcuts = (
     onToggleShuffle,
     onCloseMobileMenu,
     onShowQueue,
-    onOpenLibraryDrawer,
+    onOpenLibrary,
     onOpenQuickAccessPanel,
     onToggleZenMode,
   } = handlers;
@@ -210,7 +210,7 @@ export const useKeyboardShortcuts = (
     onToggleShuffle,
     onCloseMobileMenu,
     onShowQueue,
-    onOpenLibraryDrawer,
+    onOpenLibrary,
     onOpenQuickAccessPanel,
     onToggleZenMode,
     prefersPointerInput,
