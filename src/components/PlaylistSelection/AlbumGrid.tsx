@@ -24,24 +24,13 @@ import {
   GridCardTitleRow,
 } from './styled';
 import { PinIcon, PlaylistImage, GridCardImageComponent } from './utils';
-import { useLibraryContext } from './LibraryContext';
+import { useLibraryBrowsingContext, useLibraryPins, useLibraryActions, useLibraryData } from './LibraryContext';
 
 export const AlbumGrid: React.FC = React.memo(function AlbumGrid() {
-  const {
-    inDrawer,
-    isInitialLoadComplete,
-    showProviderBadges,
-    searchQuery,
-    artistFilter,
-    pinnedAlbums,
-    unpinnedAlbums,
-    isAlbumPinned,
-    canPinMoreAlbums,
-    onAlbumClick,
-    onAlbumContextMenu,
-    onPinAlbumClick,
-    onArtistClick,
-  } = useLibraryContext();
+  const { searchQuery, artistFilter } = useLibraryBrowsingContext();
+  const { pinnedAlbums, unpinnedAlbums, isAlbumPinned, canPinMoreAlbums, onPinAlbumClick } = useLibraryPins();
+  const { onAlbumClick, onAlbumContextMenu, onArtistClick } = useLibraryActions();
+  const { inDrawer, isInitialLoadComplete, showProviderBadges } = useLibraryData();
 
   const renderAlbumGrid = (album: AlbumInfo) => {
     const pinned = isAlbumPinned(album.id);

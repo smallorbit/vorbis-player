@@ -8,7 +8,7 @@ import { FilterSidebar } from '../LibraryDrawer/FilterSidebar';
 import { PlaylistGrid } from './PlaylistGrid';
 import { AlbumGrid } from './AlbumGrid';
 import { LibraryControls } from './LibraryControls';
-import { useLibraryContext } from './LibraryContext';
+import { useLibraryBrowsingContext, useLibraryActions, useLibraryData } from './LibraryContext';
 import { RefreshIcon } from './utils';
 import {
   TabSpinner,
@@ -43,8 +43,6 @@ const MainContent = styled.div`
 
 export function LibraryMainContent(): React.JSX.Element {
   const {
-    inDrawer,
-    swipeZoneRef,
     viewMode,
     setViewMode,
     searchQuery,
@@ -64,13 +62,9 @@ export function LibraryMainContent(): React.JSX.Element {
     recentlyAddedFilter,
     setRecentlyAddedFilter,
     hasActiveFilters,
-    albums,
-    isInitialLoadComplete,
-    showProviderBadges,
-    enabledProviderIds,
-    onLibraryRefresh,
-    isLibraryRefreshing,
-  } = useLibraryContext();
+  } = useLibraryBrowsingContext();
+  const { onLibraryRefresh, isLibraryRefreshing } = useLibraryActions();
+  const { inDrawer, swipeZoneRef, albums, isInitialLoadComplete, showProviderBadges, enabledProviderIds } = useLibraryData();
 
   const tabsBar = (
     <TabsContainer>

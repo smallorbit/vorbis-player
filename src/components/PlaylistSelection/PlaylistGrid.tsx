@@ -24,29 +24,14 @@ import {
   GridCardTitleRow,
 } from './styled';
 import { PinIcon, PlaylistImage, GridCardImageComponent } from './utils';
-import { useLibraryContext } from './LibraryContext';
+import { useLibraryBrowsingContext, useLibraryPins, useLibraryActions, useLibraryData } from './LibraryContext';
 import { LikedSongsCard } from './LikedSongsCard';
 
 export const PlaylistGrid: React.FC = React.memo(function PlaylistGrid() {
-  const {
-    inDrawer,
-    likedSongsPerProvider,
-    likedSongsCount,
-    isUnifiedLikedActive,
-    unifiedLikedCount,
-    isInitialLoadComplete,
-    showProviderBadges,
-    hasActiveFilters,
-    searchQuery,
-    providerFilters,
-    pinnedPlaylists,
-    unpinnedPlaylists,
-    isPlaylistPinned,
-    canPinMorePlaylists,
-    onPlaylistClick,
-    onPlaylistContextMenu,
-    onPinPlaylistClick,
-  } = useLibraryContext();
+  const { hasActiveFilters, searchQuery, providerFilters } = useLibraryBrowsingContext();
+  const { pinnedPlaylists, unpinnedPlaylists, isPlaylistPinned, canPinMorePlaylists, onPinPlaylistClick } = useLibraryPins();
+  const { onPlaylistClick, onPlaylistContextMenu } = useLibraryActions();
+  const { inDrawer, likedSongsPerProvider, likedSongsCount, isUnifiedLikedActive, unifiedLikedCount, isInitialLoadComplete, showProviderBadges } = useLibraryData();
 
   const likedSongsPinned = isPlaylistPinned(LIKED_SONGS_ID);
 
