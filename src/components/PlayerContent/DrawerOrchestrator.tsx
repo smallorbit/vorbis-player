@@ -18,7 +18,13 @@ const LibraryOverlay = styled.div`
   position: fixed;
   inset: 0;
   z-index: ${({ theme }) => theme.zIndex.overlay};
-  overflow: auto;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
 `;
 
 const LibraryPage = lazy(() => import('@/components/PlaylistSelection'));
