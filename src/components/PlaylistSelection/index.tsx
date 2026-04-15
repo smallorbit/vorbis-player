@@ -47,6 +47,7 @@ export const LibraryPage = React.memo(function LibraryPage({
     albumPopoverPortal,
     playlistPopoverPortal,
     confirmDeletePortal,
+    saveErrorToast,
   } = useLibraryRoot({
     onPlaylistSelect,
     onAddToQueue,
@@ -73,6 +74,7 @@ export const LibraryPage = React.memo(function LibraryPage({
             {albumPopoverPortal}
             {playlistPopoverPortal}
             {confirmDeletePortal}
+            {saveErrorToast}
           </CardContent>
           {footer}
           {onNavigateToPlayer && (
@@ -121,6 +123,7 @@ export const DrawerLibrary = React.memo(function DrawerLibrary({
     albumPopoverPortal,
     playlistPopoverPortal,
     confirmDeletePortal,
+    saveErrorToast,
   } = useLibraryRoot({
     onPlaylistSelect,
     onAddToQueue,
@@ -142,6 +145,7 @@ export const DrawerLibrary = React.memo(function DrawerLibrary({
         {albumPopoverPortal}
         {playlistPopoverPortal}
         {confirmDeletePortal}
+        {saveErrorToast}
       </DrawerContentWrapper>
     </LibraryProviders>
   );
