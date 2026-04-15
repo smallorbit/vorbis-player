@@ -15,7 +15,6 @@ import {
   TabsContainer,
   TabButton,
 } from './styled';
-import type { ProviderId } from '@/types/domain';
 
 const DrawerContent = styled.div`
   display: flex;
@@ -156,17 +155,20 @@ export function LibraryMainContent(): React.JSX.Element {
     <>
       {showProviderBadges && (
         <ProviderFilterRow>
-          {enabledProviderIds.map((provider: ProviderId) => (
-            <ProviderChip
-              key={provider}
-              $active={providerFilters.length === 0 || providerFilters.includes(provider)}
-              onClick={() => handleProviderToggle(provider)}
-              aria-pressed={providerFilters.length === 0 || providerFilters.includes(provider)}
-              aria-label={`Filter by ${provider}`}
-            >
-              {provider}
-            </ProviderChip>
-          ))}
+          {enabledProviderIds.map((provider) => {
+            const isActive = providerFilters.length === 0 || providerFilters.includes(provider);
+            return (
+              <ProviderChip
+                key={provider}
+                $active={isActive}
+                onClick={() => handleProviderToggle(provider)}
+                aria-pressed={isActive}
+                aria-label={`Filter by ${provider}`}
+              >
+                {provider}
+              </ProviderChip>
+            );
+          })}
         </ProviderFilterRow>
       )}
 
