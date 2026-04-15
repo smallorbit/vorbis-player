@@ -237,9 +237,11 @@ export function useLibraryRoot({
       availableGenres,
       selectedGenres: browsingState.selectedGenres,
       setSelectedGenres: browsingState.setSelectedGenres,
+      handleGenreToggle: browsingState.handleGenreToggle,
       recentlyAddedFilter: browsingState.recentlyAddedFilter,
       setRecentlyAddedFilter: browsingState.setRecentlyAddedFilter,
       hasActiveFilters: browsingState.hasActiveFilters,
+      handleClearFilters: browsingState.handleClearFilters,
     }),
     [
       browsingState.viewMode,
