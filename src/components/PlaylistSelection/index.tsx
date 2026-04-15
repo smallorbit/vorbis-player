@@ -9,12 +9,7 @@ import {
 } from './styled';
 import { LibraryStatusContent } from './LibraryStatusContent';
 import { LibraryMainContent } from './LibraryMainContent';
-import {
-  LibraryBrowsingProvider,
-  LibraryPinProvider,
-  LibraryActionsProvider,
-  LibraryDataProvider,
-} from './LibraryContext';
+import { LibraryProviders } from './LibraryContext';
 import { useLibraryRoot } from './useLibraryRoot';
 import { LibraryMiniPlayer } from './LibraryMiniPlayer';
 
@@ -61,10 +56,7 @@ export const LibraryPage = React.memo(function LibraryPage({
   });
 
   return (
-    <LibraryDataProvider value={dataValue}>
-    <LibraryBrowsingProvider value={browsingValue}>
-    <LibraryPinProvider value={pinValue}>
-    <LibraryActionsProvider value={actionsValue}>
+    <LibraryProviders values={{ browsing: browsingValue, pin: pinValue, actions: actionsValue, data: dataValue }}>
       <PageContainer $overlay>
         <PageSelectionCard $maxWidth={maxWidth} $overlay>
           <CardContent
@@ -88,10 +80,7 @@ export const LibraryPage = React.memo(function LibraryPage({
           )}
         </PageSelectionCard>
       </PageContainer>
-    </LibraryActionsProvider>
-    </LibraryPinProvider>
-    </LibraryBrowsingProvider>
-    </LibraryDataProvider>
+    </LibraryProviders>
   );
 });
 
@@ -146,10 +135,7 @@ export const DrawerLibrary = React.memo(function DrawerLibrary({
   });
 
   return (
-    <LibraryDataProvider value={dataValue}>
-    <LibraryBrowsingProvider value={browsingValue}>
-    <LibraryPinProvider value={pinValue}>
-    <LibraryActionsProvider value={actionsValue}>
+    <LibraryProviders values={{ browsing: browsingValue, pin: pinValue, actions: actionsValue, data: dataValue }}>
       <DrawerContentWrapper>
         <LibraryStatusContent {...statusContentProps} />
         {showMainContent && <LibraryMainContent />}
@@ -157,10 +143,7 @@ export const DrawerLibrary = React.memo(function DrawerLibrary({
         {playlistPopoverPortal}
         {confirmDeletePortal}
       </DrawerContentWrapper>
-    </LibraryActionsProvider>
-    </LibraryPinProvider>
-    </LibraryBrowsingProvider>
-    </LibraryDataProvider>
+    </LibraryProviders>
   );
 });
 
