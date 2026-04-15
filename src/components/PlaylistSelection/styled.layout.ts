@@ -7,6 +7,10 @@ export const PageContainer = styled.div<{ $overlay?: boolean }>`
   display: flex;
   min-height: 100vh;
   min-height: 100dvh;
+  ${({ $overlay }) => $overlay && `
+    height: 100dvh;
+    overflow: hidden;
+  `}
   align-items: ${({ $overlay }) => ($overlay ? 'stretch' : 'center')};
   justify-content: center;
   padding: ${({ $overlay }) => ($overlay ? '0' : '1rem')};
