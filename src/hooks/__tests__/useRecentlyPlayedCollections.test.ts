@@ -109,16 +109,9 @@ describe('useRecentlyPlayedCollections', () => {
     });
 
     // #then
-    expect(window.localStorage.setItem).toHaveBeenCalledWith(
-      STORAGE_KEY,
-      expect.any(String)
-    );
-    const storedCall = vi.mocked(window.localStorage.setItem).mock.calls.find(
-      ([key]) => key === STORAGE_KEY
-    );
-    expect(storedCall).toBeDefined();
-    const stored = JSON.parse(storedCall![1] as string);
-    expect(stored[0]).toEqual({ ref, name: 'My Playlist' });
+    const lastCall = vi.mocked(window.localStorage.setItem).mock.lastCall;
+    expect(lastCall?.[0]).toBe(STORAGE_KEY);
+    expect(JSON.parse(lastCall![1] as string)[0]).toEqual({ ref, name: 'My Playlist' });
   });
 
   it('loads persisted history from localStorage on init', () => {
