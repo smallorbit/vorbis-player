@@ -23,42 +23,37 @@ export const PanelRoot = styled.div`
   animation: ${fadeIn} 0.25s ease-out;
 `;
 
-export const ResumeLabel = styled.div`
-  font-size: ${theme.fontSize.xs};
-  font-weight: ${theme.fontWeight.medium};
-  color: rgba(255, 255, 255, 0.5);
-  padding: ${theme.spacing.sm} ${theme.spacing.md} ${theme.spacing.xs};
-  flex-shrink: 0;
-`;
-
 export const ResumeCardRoot = styled.button`
   display: flex;
+  flex-shrink: 0;
   align-items: center;
   gap: ${theme.spacing.sm};
+  width: 100%;
   padding: ${theme.spacing.sm} ${theme.spacing.md};
-  background: rgba(255, 255, 255, 0.06);
-  border-bottom: 1px solid ${theme.colors.borderSubtle};
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   border: none;
+  border-top: 1px solid ${theme.colors.borderSubtle};
   border-radius: 0;
   cursor: pointer;
-  width: 100%;
+  color: ${theme.colors.foreground};
   text-align: left;
   transition: background ${theme.transitions.fast};
-  flex-shrink: 0;
 
   &:hover {
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(0, 0, 0, 0.75);
   }
 
   &:active {
-    background: rgba(255, 255, 255, 0.14);
+    background: rgba(0, 0, 0, 0.85);
   }
 `;
 
 export const ResumeArt = styled.div`
-  width: 52px;
-  height: 52px;
-  border-radius: ${theme.borderRadius.lg};
+  width: 40px;
+  height: 40px;
+  border-radius: ${theme.borderRadius.md};
   overflow: hidden;
   flex-shrink: 0;
   background: ${theme.colors.control.background};
@@ -76,35 +71,35 @@ export const ResumeArt = styled.div`
 export const ResumeText = styled.div`
   flex: 1;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 `;
 
-export const ResumeTrackName = styled.div`
-  color: ${theme.colors.white};
-  font-size: ${theme.fontSize.base};
+export const ResumeTrackName = styled.span`
+  font-size: ${theme.fontSize.sm};
   font-weight: ${theme.fontWeight.medium};
+  color: ${theme.colors.foreground};
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 `;
 
-export const ResumeCollectionName = styled.div`
-  color: ${theme.colors.muted.foreground};
+export const ResumeCollectionName = styled.span`
   font-size: ${theme.fontSize.xs};
+  color: ${theme.colors.muted.foreground};
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 `;
 
 export const ResumePlayButton = styled.div`
-  width: 34px;
-  height: 34px;
-  border-radius: ${theme.borderRadius.full};
-  background: rgba(255, 255, 255, 0.15);
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0;
-  color: ${theme.colors.white};
+  padding-right: ${theme.spacing.xs};
+  color: ${theme.colors.muted.foreground};
 
   svg {
     width: 16px;
