@@ -14,7 +14,7 @@ const Strip = styled.button`
   -webkit-backdrop-filter: blur(16px);
   border: none;
   border-top: 1px solid ${theme.colors.borderSubtle};
-  border-radius: 0 0 1.25rem 1.25rem;
+  border-radius: 0;
   cursor: pointer;
   color: ${theme.colors.foreground};
   text-align: left;

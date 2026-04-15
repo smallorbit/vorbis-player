@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { CardContent } from '../styled';
+import { theme } from '@/styles/theme';
 import type { AddToQueueResult, MediaTrack, ProviderId } from '@/types/domain';
 import {
   PageContainer,
@@ -64,9 +65,17 @@ export const LibraryPage = React.memo(function LibraryPage({
     <LibraryBrowsingProvider value={browsingValue}>
     <LibraryPinProvider value={pinValue}>
     <LibraryActionsProvider value={actionsValue}>
-      <PageContainer $overlay={!!onNavigateToPlayer}>
-        <PageSelectionCard $maxWidth={maxWidth} $overlay={!!onNavigateToPlayer}>
-          <CardContent style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+      <PageContainer $overlay>
+        <PageSelectionCard $maxWidth={maxWidth} $overlay>
+          <CardContent
+            style={{
+              flex: 1,
+              minHeight: 0,
+              display: 'flex',
+              flexDirection: 'column',
+              padding: `0 ${theme.spacing.md}`,
+            }}
+          >
             <LibraryStatusContent {...statusContentProps} />
             {showMainContent && <LibraryMainContent />}
             {albumPopoverPortal}

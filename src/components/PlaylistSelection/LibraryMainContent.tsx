@@ -44,7 +44,7 @@ const ProviderFilterRow = styled.div`
   display: flex;
   flex-shrink: 0;
   gap: ${theme.spacing.sm};
-  padding: ${theme.spacing.sm} ${theme.spacing.md};
+  padding: ${theme.spacing.sm} 0 ${theme.spacing.md};
   overflow-x: auto;
   scrollbar-width: none;
   &::-webkit-scrollbar {

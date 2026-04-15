@@ -16,7 +16,7 @@ export function LibraryControls({
   inDrawer,
   onLibraryRefresh,
   isLibraryRefreshing,
-}: LibraryControlsProps): React.JSX.Element {
+}: LibraryControlsProps): React.JSX.Element | null {
   if (inDrawer) {
     return (
       <ControlsContainer $inDrawer>
@@ -36,18 +36,18 @@ export function LibraryControls({
     );
   }
 
+  if (!onLibraryRefresh) return null;
+
   return (
     <ControlsContainer>
-      {onLibraryRefresh && (
-        <RefreshButton
-          onClick={onLibraryRefresh}
-          $spinning={!!isLibraryRefreshing}
-          aria-label="Refresh library"
-          title="Refresh library"
-        >
-          <RefreshIcon />
-        </RefreshButton>
-      )}
+      <RefreshButton
+        onClick={onLibraryRefresh}
+        $spinning={!!isLibraryRefreshing}
+        aria-label="Refresh library"
+        title="Refresh library"
+      >
+        <RefreshIcon />
+      </RefreshButton>
     </ControlsContainer>
   );
 }
