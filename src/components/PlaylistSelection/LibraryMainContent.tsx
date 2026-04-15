@@ -34,6 +34,10 @@ const MainContent = styled.div`
   flex: 1;
   min-height: 0;
   overflow: auto;
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
 `;
 
 export function LibraryMainContent(): React.JSX.Element {

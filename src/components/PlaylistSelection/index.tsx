@@ -64,8 +64,8 @@ export const LibraryPage = React.memo(function LibraryPage({
     <LibraryBrowsingProvider value={browsingValue}>
     <LibraryPinProvider value={pinValue}>
     <LibraryActionsProvider value={actionsValue}>
-      <PageContainer>
-        <PageSelectionCard $maxWidth={maxWidth}>
+      <PageContainer $overlay={!!onNavigateToPlayer}>
+        <PageSelectionCard $maxWidth={maxWidth} $overlay={!!onNavigateToPlayer}>
           <CardContent style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
             <LibraryStatusContent {...statusContentProps} />
             {showMainContent && <LibraryMainContent />}
