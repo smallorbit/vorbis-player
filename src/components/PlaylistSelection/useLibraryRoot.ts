@@ -197,8 +197,29 @@ export function useLibraryRoot({
   }
 
   function handleLikedSongsClick(provider?: ProviderId): void {
-    const resolvedProvider = provider ?? (likedSongsPerProvider.length === 1 ? likedSongsPerProvider[0].provider : undefined);
-    onPlaylistSelect(LIKED_SONGS_ID, LIKED_SONGS_NAME, resolvedProvider);
+    if (provider !== undefined) {
+      logQueue('liked songs click: explicit provider %s', provider);
+      onPlaylistSelect(LIKED_SONGS_ID, LIKED_SONGS_NAME, provider);
+      return;
+    }
+
+    if (isUnifiedLikedActive) {
+      logQueue('liked songs click: unified path');
+      onPlaylistSelect(LIKED_SONGS_ID, LIKED_SONGS_NAME, undefined);
+      return;
+    }
+
+    if (likedSongsPerProvider.length === 1) {
+      logQueue('liked songs click: single provider %s', likedSongsPerProvider[0].provider);
+      onPlaylistSelect(LIKED_SONGS_ID, LIKED_SONGS_NAME, likedSongsPerProvider[0].provider);
+      return;
+    }
+
+    logQueue(
+      'liked songs click: ambiguous — %d providers, unified inactive; falling back to active provider',
+      likedSongsPerProvider.length,
+    );
+    onPlaylistSelect(LIKED_SONGS_ID, LIKED_SONGS_NAME, activeDescriptor?.id);
   }
 
   function handlePinPlaylistClick(id: string, event: React.MouseEvent): void {
