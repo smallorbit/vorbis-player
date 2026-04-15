@@ -78,8 +78,9 @@ The library browser provides multi-level filtering and searching via a pipeline 
 5. **Pinned partitioning** — pinned items always sort to top
 
 **UI Components**:
-- **FilterSidebar** (`src/components/LibraryDrawer/FilterSidebar.tsx`) — collection type (Playlists/Albums) toggle buttons, provider checkboxes, and a "Clear Filters" button. Desktop-only (≥700px); on mobile, filter chips are rendered inline in `LibraryControls`.
-- **LibraryControls** (`src/components/PlaylistSelection/LibraryControls.tsx`) — search, sort dropdowns, and (on mobile) provider/filter chip controls.
+- **FilterSidebar** (`src/components/LibraryDrawer/FilterSidebar.tsx`) — collection type (Playlists/Albums) toggle buttons, provider checkboxes, and a "Clear Filters" button. Desktop-only (≥700px).
+- **LibraryControls** (`src/components/PlaylistSelection/LibraryControls.tsx`) — search, sort dropdowns, and filter controls. Used on desktop outside of drawer mode.
+- **MobileLibraryBottomBar** (`src/components/PlaylistSelection/MobileLibraryBottomBar.tsx`) — mobile-only bottom bar containing a full-width search input and a trailing sort dropdown. Rendered by `LibraryMainContent` in place of the provider chip row when `isMobile` is true.
 
 **Filter State Persistence** (`src/components/PlaylistSelection/useLibraryBrowsing.ts`):
 
@@ -100,8 +101,16 @@ All filter and sort state is persisted to `localStorage` via `useLocalStorage`. 
 **Opening library from QAP:** When the user taps "Browse Library" in the Quick Access Panel, the above filter keys are cleared from localStorage before `handleOpenLibrary()` is called, ensuring a clean state.
 
 **Responsive Design**:
-- **Desktop (≥700px):** `FilterSidebar` is always visible as a static left sidebar.
-- **Mobile (<700px):** `FilterSidebar` is hidden; filter controls are rendered inline via `LibraryControls`.
+- **Desktop (≥700px):** `FilterSidebar` is always visible as a static left sidebar (provider chips, sort, genre, recently-added). Provider filter is applied to the item list.
+- **Mobile (<700px):** `FilterSidebar` is hidden. `MobileLibraryBottomBar` is rendered instead — it provides search and sort only. The provider filter is intentionally bypassed on mobile (see below).
+
+### Mobile/Desktop Filter Divergence
+
+On mobile, `useLibraryRoot` sets `ignoreProviderFilters = isMobile` (line 125). When this flag is true, the `providerFilters` state is read but never applied to the playlist or album lists — all items from every enabled provider are always shown.
+
+**Rationale:** The provider chip row is absent on mobile, so a stale filter set from a prior desktop session could leave mobile users seeing an unexpectedly empty library with no way to reset it. Ignoring `providerFilters` on mobile eliminates this failure mode without adding a mobile-specific chip UI.
+
+**Shared state:** Search query and sort preferences (`vorbis-player-library-search`, `vorbis-player-playlist-sort`, `vorbis-player-album-sort`) are shared between mobile and desktop via the same `useLibraryBrowsing` localStorage keys — no new keys were introduced. Only the provider filter (`vorbis-player-library-provider-filters`) is silently ignored on mobile; it remains in localStorage and is restored if the user switches to desktop.
 
 ## Sort and Filter State
 
@@ -210,7 +219,8 @@ QAP preference is stored in `localStorage` key `vorbis-player-qap-enabled` (defa
 |------|------|
 | `src/components/PlaylistSelection/index.tsx` | `LibraryPage` component — full-screen library view |
 | `src/components/PlaylistSelection/LibraryContext.tsx` | Four sub-context definitions and providers |
-| `src/components/PlaylistSelection/LibraryMainContent.tsx` | Tabs, filter chips, sort chip, clear filters button |
+| `src/components/PlaylistSelection/LibraryMainContent.tsx` | Tabs, grid rendering, mobile/desktop bottom bar branching |
+| `src/components/PlaylistSelection/MobileLibraryBottomBar.tsx` | Mobile search + sort bar (replaces provider chip row on mobile) |
 | `src/components/PlaylistSelection/LibraryControls.tsx` | Search, sort, and filter controls |
 | `src/components/PlaylistSelection/useLibraryBrowsing.ts` | Browse state management (view mode, search, sort, filters) with localStorage persistence |
 | `src/components/PlaylistSelection/useLibraryRoot.ts` | Assembles all four context values for `LibraryPage` |
