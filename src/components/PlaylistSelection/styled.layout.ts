@@ -26,6 +26,7 @@ export const PageSelectionCard = styled(Card)<{ $maxWidth: number; $overlay?: bo
   box-shadow: ${({ $overlay }) => ($overlay ? 'none' : theme.shadows.albumArt)};
   display: flex;
   flex-direction: column;
+  height: ${({ $overlay }) => ($overlay ? '100dvh' : 'auto')};
   max-height: ${({ $overlay }) => ($overlay ? '100dvh' : 'min(90dvh, 900px)')};
 `;
 
