@@ -20,6 +20,7 @@ import { useQueueManagement } from './useQueueManagement';
 import { useCollectionLoader } from './useCollectionLoader';
 import { usePlaybackSubscription } from './usePlaybackSubscription';
 import { useRadioSession } from './useRadioSession';
+import { useRecentlyPlayedCollections } from './useRecentlyPlayedCollections';
 import type { RadioProgress } from '@/types/radio';
 
 export function usePlayerLogic() {
@@ -116,6 +117,8 @@ export function usePlayerLogic() {
     shuffleEnabled,
   });
 
+  const { record } = useRecentlyPlayedCollections();
+
   // Initialize collection loader
   const { loadCollection, playTracksDirectly } = useCollectionLoader({
     trackOps,
@@ -130,6 +133,7 @@ export function usePlayerLogic() {
     spotifyHandlePlaylistSelect,
     stopRadioBase,
     radioStateIsActive: radioState.isActive,
+    record,
   });
 
   useAutoAdvance({ tracks, currentTrackIndex, playTrack, enabled: true, currentPlaybackProviderRef: drivingProviderRef });

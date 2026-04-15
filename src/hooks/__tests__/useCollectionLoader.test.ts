@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useCollectionLoader } from '../useCollectionLoader';
 import { makeTrack } from '@/test/fixtures';
-import { LIKED_SONGS_ID } from '@/constants/playlist';
+import { LIKED_SONGS_ID, LIKED_SONGS_NAME } from '@/constants/playlist';
 import type { MediaTrack } from '@/types/domain';
 
 function makeMediaTrack(id: string, addedAt?: number): MediaTrack {
@@ -30,6 +30,7 @@ describe('useCollectionLoader', () => {
   let mockGetDescriptor: ReturnType<typeof vi.fn>;
   let mockSpotifyHandlePlaylistSelect: ReturnType<typeof vi.fn>;
   let mockStopRadioBase: ReturnType<typeof vi.fn>;
+  let mockRecord: ReturnType<typeof vi.fn>;
   let mockActiveDescriptor: any;
   let mediaTracksRef: React.MutableRefObject<MediaTrack[]>;
   let drivingProviderRef: React.MutableRefObject<string | null>;
@@ -46,6 +47,7 @@ describe('useCollectionLoader', () => {
     mockGetDescriptor = vi.fn();
     mockSpotifyHandlePlaylistSelect = vi.fn().mockResolvedValue([]);
     mockStopRadioBase = vi.fn();
+    mockRecord = vi.fn();
     mediaTracksRef = { current: [] };
     drivingProviderRef = { current: null };
     mockActiveDescriptor = { id: 'spotify' };
@@ -81,6 +83,7 @@ describe('useCollectionLoader', () => {
         playTrack: mockPlayTrack,
         spotifyHandlePlaylistSelect: mockSpotifyHandlePlaylistSelect,
         stopRadioBase: mockStopRadioBase,
+        record: mockRecord,
         radioStateIsActive: false,
       })
     );
@@ -141,6 +144,7 @@ describe('useCollectionLoader', () => {
         playTrack: mockPlayTrack,
         spotifyHandlePlaylistSelect: mockSpotifyHandlePlaylistSelect,
         stopRadioBase: mockStopRadioBase,
+        record: mockRecord,
         radioStateIsActive: false,
       })
     );
@@ -178,6 +182,7 @@ describe('useCollectionLoader', () => {
         playTrack: mockPlayTrack,
         spotifyHandlePlaylistSelect: mockSpotifyHandlePlaylistSelect,
         stopRadioBase: mockStopRadioBase,
+        record: mockRecord,
         radioStateIsActive: false,
       })
     );
@@ -216,6 +221,7 @@ describe('useCollectionLoader', () => {
         playTrack: mockPlayTrack,
         spotifyHandlePlaylistSelect: mockSpotifyHandlePlaylistSelect,
         stopRadioBase: mockStopRadioBase,
+        record: mockRecord,
         radioStateIsActive: false,
       })
     );
@@ -251,6 +257,7 @@ describe('useCollectionLoader', () => {
         playTrack: mockPlayTrack,
         spotifyHandlePlaylistSelect: mockSpotifyHandlePlaylistSelect,
         stopRadioBase: mockStopRadioBase,
+        record: mockRecord,
         radioStateIsActive: true,
       })
     );
@@ -284,6 +291,7 @@ describe('useCollectionLoader', () => {
         playTrack: mockPlayTrack,
         spotifyHandlePlaylistSelect: mockSpotifyHandlePlaylistSelect,
         stopRadioBase: mockStopRadioBase,
+        record: mockRecord,
         radioStateIsActive: false,
       })
     );
@@ -325,6 +333,7 @@ describe('useCollectionLoader', () => {
         playTrack: mockPlayTrack,
         spotifyHandlePlaylistSelect: mockSpotifyHandlePlaylistSelect,
         stopRadioBase: mockStopRadioBase,
+        record: mockRecord,
         radioStateIsActive: false,
       })
     );
@@ -356,6 +365,7 @@ describe('useCollectionLoader', () => {
         playTrack: mockPlayTrack,
         spotifyHandlePlaylistSelect: mockSpotifyHandlePlaylistSelect,
         stopRadioBase: mockStopRadioBase,
+        record: mockRecord,
         radioStateIsActive: false,
       })
     );
@@ -390,6 +400,7 @@ describe('useCollectionLoader', () => {
         playTrack: mockPlayTrack,
         spotifyHandlePlaylistSelect: mockSpotifyHandlePlaylistSelect,
         stopRadioBase: mockStopRadioBase,
+        record: mockRecord,
         radioStateIsActive: false,
       })
     );
@@ -418,6 +429,7 @@ describe('useCollectionLoader', () => {
         playTrack: mockPlayTrack,
         spotifyHandlePlaylistSelect: mockSpotifyHandlePlaylistSelect,
         stopRadioBase: mockStopRadioBase,
+        record: mockRecord,
         radioStateIsActive: false,
       })
     );
@@ -428,5 +440,157 @@ describe('useCollectionLoader', () => {
 
     expect(trackCount).toBe(0);
     expect(mockSetIsLoading).not.toHaveBeenCalled();
+  });
+
+  it('calls record with the collection ref and name after a successful provider collection load', async () => {
+    // #given
+    const mockCatalog = {
+      listTracks: vi.fn().mockResolvedValue([makeMediaTrack('1'), makeMediaTrack('2')]),
+    };
+    mockActiveDescriptor.catalog = mockCatalog;
+    mockActiveDescriptor.playback = { pause: vi.fn() };
+
+    const { result } = renderHook(() =>
+      useCollectionLoader({
+        trackOps: { setError: mockSetError, setIsLoading: mockSetIsLoading, setSelectedPlaylistId: mockSetSelectedPlaylistId, setTracks: mockSetTracks, setOriginalTracks: mockSetOriginalTracks, setCurrentTrackIndex: mockSetCurrentTrackIndex, mediaTracksRef },
+        activeDescriptor: mockActiveDescriptor,
+        getDescriptor: mockGetDescriptor,
+        setActiveProviderId: mockSetActiveProviderId,
+        connectedProviderIds: ['spotify'],
+        shuffleEnabled: false,
+        isUnifiedLikedActive: false,
+        drivingProviderRef,
+        playTrack: mockPlayTrack,
+        spotifyHandlePlaylistSelect: mockSpotifyHandlePlaylistSelect,
+        stopRadioBase: mockStopRadioBase,
+        record: mockRecord,
+        radioStateIsActive: false,
+      })
+    );
+
+    // #when
+    await act(async () => {
+      await result.current.loadCollection('playlist_123', undefined, 'My Playlist');
+    });
+
+    // #then
+    expect(mockRecord).toHaveBeenCalledOnce();
+    expect(mockRecord).toHaveBeenCalledWith(
+      { provider: 'spotify', kind: 'playlist', id: 'playlist_123' },
+      'My Playlist',
+    );
+  });
+
+  it('does not call record when the provider collection load fails', async () => {
+    // #given
+    const mockCatalog = {
+      listTracks: vi.fn().mockRejectedValue(new Error('Network error')),
+    };
+    mockActiveDescriptor.catalog = mockCatalog;
+    mockActiveDescriptor.playback = { pause: vi.fn() };
+
+    const { result } = renderHook(() =>
+      useCollectionLoader({
+        trackOps: { setError: mockSetError, setIsLoading: mockSetIsLoading, setSelectedPlaylistId: mockSetSelectedPlaylistId, setTracks: mockSetTracks, setOriginalTracks: mockSetOriginalTracks, setCurrentTrackIndex: mockSetCurrentTrackIndex, mediaTracksRef },
+        activeDescriptor: mockActiveDescriptor,
+        getDescriptor: mockGetDescriptor,
+        setActiveProviderId: mockSetActiveProviderId,
+        connectedProviderIds: ['spotify'],
+        shuffleEnabled: false,
+        isUnifiedLikedActive: false,
+        drivingProviderRef,
+        playTrack: mockPlayTrack,
+        spotifyHandlePlaylistSelect: mockSpotifyHandlePlaylistSelect,
+        stopRadioBase: mockStopRadioBase,
+        record: mockRecord,
+        radioStateIsActive: false,
+      })
+    );
+
+    // #when
+    await act(async () => {
+      await result.current.loadCollection('playlist_123', undefined, 'My Playlist');
+    });
+
+    // #then
+    expect(mockRecord).not.toHaveBeenCalled();
+  });
+
+  it('calls record with the liked kind and display name after a successful unified liked load', async () => {
+    // #given
+    const mockCatalog = {
+      listTracks: vi.fn().mockResolvedValue([makeMediaTrack('1', 1000)]),
+    };
+    mockGetDescriptor.mockReturnValue({
+      id: 'spotify',
+      catalog: mockCatalog,
+      capabilities: { hasLikedCollection: true },
+    });
+    mockActiveDescriptor.id = 'spotify';
+
+    const { result } = renderHook(() =>
+      useCollectionLoader({
+        trackOps: { setError: mockSetError, setIsLoading: mockSetIsLoading, setSelectedPlaylistId: mockSetSelectedPlaylistId, setTracks: mockSetTracks, setOriginalTracks: mockSetOriginalTracks, setCurrentTrackIndex: mockSetCurrentTrackIndex, mediaTracksRef },
+        activeDescriptor: mockActiveDescriptor,
+        getDescriptor: mockGetDescriptor,
+        setActiveProviderId: mockSetActiveProviderId,
+        connectedProviderIds: ['spotify'],
+        shuffleEnabled: false,
+        isUnifiedLikedActive: true,
+        drivingProviderRef,
+        playTrack: mockPlayTrack,
+        spotifyHandlePlaylistSelect: mockSpotifyHandlePlaylistSelect,
+        stopRadioBase: mockStopRadioBase,
+        record: mockRecord,
+        radioStateIsActive: false,
+      })
+    );
+
+    // #when
+    await act(async () => {
+      await result.current.loadCollection(LIKED_SONGS_ID);
+    });
+
+    // #then
+    expect(mockRecord).toHaveBeenCalledOnce();
+    expect(mockRecord).toHaveBeenCalledWith(
+      { provider: 'spotify', kind: 'liked' },
+      LIKED_SONGS_NAME,
+    );
+  });
+
+  it('does not call record when the unified liked load returns no tracks', async () => {
+    // #given
+    mockGetDescriptor.mockReturnValue({
+      id: 'spotify',
+      catalog: { listTracks: vi.fn().mockResolvedValue([]) },
+      capabilities: { hasLikedCollection: true },
+    });
+
+    const { result } = renderHook(() =>
+      useCollectionLoader({
+        trackOps: { setError: mockSetError, setIsLoading: mockSetIsLoading, setSelectedPlaylistId: mockSetSelectedPlaylistId, setTracks: mockSetTracks, setOriginalTracks: mockSetOriginalTracks, setCurrentTrackIndex: mockSetCurrentTrackIndex, mediaTracksRef },
+        activeDescriptor: mockActiveDescriptor,
+        getDescriptor: mockGetDescriptor,
+        setActiveProviderId: mockSetActiveProviderId,
+        connectedProviderIds: ['spotify'],
+        shuffleEnabled: false,
+        isUnifiedLikedActive: true,
+        drivingProviderRef,
+        playTrack: mockPlayTrack,
+        spotifyHandlePlaylistSelect: mockSpotifyHandlePlaylistSelect,
+        stopRadioBase: mockStopRadioBase,
+        record: mockRecord,
+        radioStateIsActive: false,
+      })
+    );
+
+    // #when
+    await act(async () => {
+      await result.current.loadCollection(LIKED_SONGS_ID);
+    });
+
+    // #then
+    expect(mockRecord).not.toHaveBeenCalled();
   });
 });
