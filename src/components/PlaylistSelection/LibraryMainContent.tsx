@@ -1,11 +1,13 @@
 import type * as React from 'react';
 import styled from 'styled-components';
 import { theme } from '@/styles/theme';
+import { usePlayerSizingContext } from '@/contexts/PlayerSizingContext';
 import { FilterSidebar } from '../LibraryDrawer/FilterSidebar';
 import { PlaylistGrid } from './PlaylistGrid';
 import { AlbumGrid } from './AlbumGrid';
 import { LibraryControls } from './LibraryControls';
 import { useLibraryBrowsingContext, useLibraryActions, useLibraryData } from './LibraryContext';
+import { MobileLibraryBottomBar } from './MobileLibraryBottomBar';
 import { RefreshIcon } from './utils';
 import {
   DrawerRefreshButton,
@@ -102,6 +104,7 @@ export function LibraryMainContent(): React.JSX.Element {
   } = useLibraryBrowsingContext();
   const { onLibraryRefresh, isLibraryRefreshing } = useLibraryActions();
   const { inDrawer, showProviderBadges, enabledProviderIds } = useLibraryData();
+  const { isMobile } = usePlayerSizingContext();
 
   if (inDrawer) {
     return (
@@ -174,23 +177,27 @@ export function LibraryMainContent(): React.JSX.Element {
         isLibraryRefreshing={isLibraryRefreshing}
       />
 
-      {showProviderBadges && (
-        <ProviderFilterRow>
-          {enabledProviderIds.map((provider) => {
-            const isActive = providerFilters.length === 0 || providerFilters.includes(provider);
-            return (
-              <ProviderChip
-                key={provider}
-                $active={isActive}
-                onClick={() => handleProviderToggle(provider)}
-                aria-pressed={isActive}
-                aria-label={`Filter by ${provider}`}
-              >
-                {provider}
-              </ProviderChip>
-            );
-          })}
-        </ProviderFilterRow>
+      {isMobile ? (
+        <MobileLibraryBottomBar />
+      ) : (
+        showProviderBadges && (
+          <ProviderFilterRow>
+            {enabledProviderIds.map((provider) => {
+              const isActive = providerFilters.length === 0 || providerFilters.includes(provider);
+              return (
+                <ProviderChip
+                  key={provider}
+                  $active={isActive}
+                  onClick={() => handleProviderToggle(provider)}
+                  aria-pressed={isActive}
+                  aria-label={`Filter by ${provider}`}
+                >
+                  {provider}
+                </ProviderChip>
+              );
+            })}
+          </ProviderFilterRow>
+        )
       )}
     </>
   );
