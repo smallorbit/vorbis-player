@@ -4,6 +4,7 @@ import { usePlayerSizingContext } from '@/contexts/PlayerSizingContext';
 import { useCurrentTrackContext } from '@/contexts/TrackContext';
 import { useVisualEffectsContext } from '@/contexts/VisualEffectsContext';
 import { useLikeTrack } from '@/hooks/useLikeTrack';
+import { STORAGE_KEYS } from '@/constants/storage';
 import type { AddToQueueResult, MediaTrack, ProviderId } from '@/types/domain';
 import type { RadioState, RadioProgress } from '@/types/radio';
 import type { SessionSnapshot } from '@/services/sessionPersistence';
@@ -121,7 +122,8 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({
     handlers.onOpenLibrary();
   }, [handlers, setShowQueue, setShowVisualEffects]);
 
-  const handleArtistBrowse = useCallback((_artistName: string) => {
+  const handleArtistBrowse = useCallback((artistName: string) => {
+    localStorage.setItem(STORAGE_KEYS.LIBRARY_SEARCH, JSON.stringify(artistName));
     handleOpenLibrary();
   }, [handleOpenLibrary]);
 
