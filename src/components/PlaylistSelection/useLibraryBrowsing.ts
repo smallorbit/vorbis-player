@@ -13,7 +13,7 @@ export function useLibraryBrowsing(initialSearchQuery?: string, initialViewMode?
 
   const [searchQuery, setSearchQuery] = useLocalStorage<string>(
     'vorbis-player-library-search',
-    '',
+    initialSearchQuery ?? '',
   );
 
   const [playlistSort, setPlaylistSort] = useLocalStorage<PlaylistSortOption>(
@@ -39,18 +39,6 @@ export function useLibraryBrowsing(initialSearchQuery?: string, initialViewMode?
     'vorbis-player-library-recently-added',
     'all',
   );
-
-  useEffect(() => {
-    if (initialSearchQuery !== undefined) {
-      setSearchQuery(initialSearchQuery);
-    }
-  }, [initialSearchQuery]);
-
-  useEffect(() => {
-    if (initialViewMode) {
-      setViewMode(initialViewMode);
-    }
-  }, [initialViewMode]);
 
   useEffect(() => {
     if (viewMode === 'playlists' && artistFilter !== '') {
