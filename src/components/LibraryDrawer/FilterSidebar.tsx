@@ -1,4 +1,3 @@
-import { useCallback } from 'react';
 import styled from 'styled-components';
 import { theme } from '@/styles/theme';
 import type { ProviderId } from '@/types/domain';
@@ -13,12 +12,12 @@ interface FilterSidebarProps {
   searchQuery: string;
   onSearchChange: (query: string) => void;
 
-  collectionType: 'playlists' | 'albums';
-  onCollectionTypeChange: (type: 'playlists' | 'albums') => void;
+  viewMode: 'playlists' | 'albums';
+  onViewModeChange: (type: 'playlists' | 'albums') => void;
 
   enabledProviderIds: ProviderId[];
   selectedProviderIds: ProviderId[];
-  onProviderFilterChange: (providerIds: ProviderId[]) => void;
+  onProviderToggle: (provider: ProviderId) => void;
 
   showProviderFilter: boolean;
 
@@ -26,7 +25,7 @@ interface FilterSidebarProps {
   availableGenres: string[];
   /** Currently selected genres (empty = all genres included). */
   selectedGenres: string[];
-  onGenreChange: (genres: string[]) => void;
+  onGenreToggle: (genre: string) => void;
 
   recentlyAdded: RecentlyAddedFilterOption;
   onRecentlyAddedChange: (value: RecentlyAddedFilterOption) => void;
@@ -35,6 +34,9 @@ interface FilterSidebarProps {
   setPlaylistSort: (v: PlaylistSortOption) => void;
   albumSort: AlbumSortOption;
   setAlbumSort: (v: AlbumSortOption) => void;
+
+  hasActiveFilters: boolean;
+  onClearFilters: () => void;
 }
 
 const SidebarContainer = styled.div`
@@ -185,34 +187,36 @@ const ToggleButton = styled.button<{ $active: boolean }>`
   }
 `;
 
-const ProviderCheckboxContainer = styled.label`
+const ChipList = styled.div`
   display: flex;
-  align-items: center;
+  flex-wrap: wrap;
   gap: ${theme.spacing.sm};
-  padding: ${theme.spacing.sm} ${theme.spacing.md};
+`;
+
+const FilterChip = styled.button<{ $active: boolean }>`
+  display: inline-flex;
+  align-items: center;
+  padding: ${theme.spacing.xs} ${theme.spacing.md};
+  border-radius: 999px;
+  border: 1px solid
+    ${({ $active }) =>
+      $active ? theme.colors.control.borderHover : theme.colors.control.border};
+  background: ${({ $active }) =>
+    $active ? theme.colors.control.backgroundHover : 'transparent'};
+  color: ${({ $active }) => ($active ? theme.colors.white : theme.colors.muted.foreground)};
+  font-size: ${theme.fontSize.sm};
+  font-weight: ${({ $active }) => ($active ? theme.fontWeight.semibold : theme.fontWeight.normal)};
   cursor: pointer;
-  border-radius: ${theme.borderRadius.md};
-  transition: background ${theme.transitions.fast};
+  transition: all ${theme.transitions.fast};
 
   &:hover {
-    background: ${theme.colors.control.background};
-  }
-`;
-
-const Checkbox = styled.input`
-  width: 16px;
-  height: 16px;
-  cursor: pointer;
-  accent-color: ${theme.colors.spotify};
-`;
-
-const CheckboxLabel = styled.span`
-  font-size: ${theme.fontSize.sm};
-  color: ${theme.colors.muted.foreground};
-  transition: color ${theme.transitions.fast};
-
-  ${ProviderCheckboxContainer}:hover & {
+    background: ${theme.colors.control.backgroundHover};
+    border-color: ${theme.colors.control.borderHover};
     color: ${theme.colors.white};
+  }
+
+  &:active {
+    opacity: 0.8;
   }
 `;
 
@@ -290,53 +294,29 @@ const RECENTLY_ADDED_OPTIONS: { label: string; value: RecentlyAddedFilterOption 
 export const FilterSidebar = ({
   searchQuery,
   onSearchChange,
-  collectionType,
-  onCollectionTypeChange,
+  viewMode,
+  onViewModeChange,
   enabledProviderIds,
   selectedProviderIds,
-  onProviderFilterChange,
+  onProviderToggle,
   showProviderFilter,
   availableGenres,
   selectedGenres,
-  onGenreChange,
+  onGenreToggle,
   recentlyAdded,
   onRecentlyAddedChange,
   playlistSort,
   setPlaylistSort,
   albumSort,
   setAlbumSort,
+  hasActiveFilters,
+  onClearFilters,
 }: FilterSidebarProps) => {
-  const hasActiveFilters =
-    searchQuery !== '' ||
-    collectionType === 'albums' ||
-    selectedProviderIds.length > 0 ||
-    selectedGenres.length > 0 ||
-    (recentlyAdded !== 'all' && recentlyAdded !== undefined);
+  const isProviderActive = (provider: ProviderId): boolean =>
+    selectedProviderIds.length === 0 || selectedProviderIds.includes(provider);
 
-  const handleClearFilters = useCallback(() => {
-    onSearchChange('');
-    onCollectionTypeChange('playlists');
-    onProviderFilterChange([]);
-    onGenreChange([]);
-    onRecentlyAddedChange('all');
-  }, [onSearchChange, onCollectionTypeChange, onProviderFilterChange, onGenreChange, onRecentlyAddedChange]);
-
-  const handleProviderToggle = useCallback((provider: ProviderId) => {
-    if (selectedProviderIds.includes(provider)) {
-      const next = selectedProviderIds.filter((p) => p !== provider);
-      onProviderFilterChange(next.length === enabledProviderIds.length ? [] : next);
-    } else {
-      onProviderFilterChange([...selectedProviderIds, provider]);
-    }
-  }, [selectedProviderIds, enabledProviderIds, onProviderFilterChange]);
-
-  const handleGenreToggle = useCallback((genre: string) => {
-    if (selectedGenres.includes(genre)) {
-      onGenreChange(selectedGenres.filter((g) => g !== genre));
-    } else {
-      onGenreChange([...selectedGenres, genre]);
-    }
-  }, [selectedGenres, onGenreChange]);
+  const isGenreActive = (genre: string): boolean =>
+    selectedGenres.length === 0 || selectedGenres.includes(genre);
 
   return (
     <SidebarContainer>
@@ -369,14 +349,14 @@ export const FilterSidebar = ({
         <SectionTitle>Collection Type</SectionTitle>
         <ToggleGroup>
           <ToggleButton
-            $active={collectionType === 'playlists'}
-            onClick={() => onCollectionTypeChange('playlists')}
+            $active={viewMode === 'playlists'}
+            onClick={() => onViewModeChange('playlists')}
           >
             Playlists
           </ToggleButton>
           <ToggleButton
-            $active={collectionType === 'albums'}
-            onClick={() => onCollectionTypeChange('albums')}
+            $active={viewMode === 'albums'}
+            onClick={() => onViewModeChange('albums')}
           >
             Albums
           </ToggleButton>
@@ -386,52 +366,46 @@ export const FilterSidebar = ({
       {showProviderFilter && (
         <FilterSection>
           <SectionTitle>Providers</SectionTitle>
-          <div>
-            {enabledProviderIds.map((provider) => (
-              <ProviderCheckboxContainer key={provider}>
-                <Checkbox
-                  type="checkbox"
-                  checked={
-                    selectedProviderIds.length === 0 ||
-                    selectedProviderIds.includes(provider)
-                  }
-                  onChange={() => handleProviderToggle(provider)}
+          <ChipList>
+            {enabledProviderIds.map((provider) => {
+              const active = isProviderActive(provider);
+              return (
+                <FilterChip
+                  key={provider}
+                  type="button"
+                  $active={active}
+                  aria-pressed={active}
                   aria-label={`Filter by ${provider}`}
-                />
-                <CheckboxLabel>{provider}</CheckboxLabel>
-              </ProviderCheckboxContainer>
-            ))}
-          </div>
+                  onClick={() => onProviderToggle(provider)}
+                >
+                  {provider}
+                </FilterChip>
+              );
+            })}
+          </ChipList>
         </FilterSection>
       )}
 
       {availableGenres.length > 0 && (
         <FilterSection>
           <SectionTitle>Genres</SectionTitle>
-          <div>
-            {selectedGenres.length > 0 && (
-              <ProviderCheckboxContainer>
-                <Checkbox
-                  type="checkbox"
-                  checked={false}
-                  onChange={() => onGenreChange([])}
-                  aria-label="Show all genres"
-                />
-                <CheckboxLabel>All genres</CheckboxLabel>
-              </ProviderCheckboxContainer>
-            )}
-            {availableGenres.map((genre) => (
-              <ProviderCheckboxContainer key={genre}>
-                <Checkbox
-                  type="checkbox"
-                  checked={selectedGenres.length === 0 || selectedGenres.includes(genre)}
-                  onChange={() => handleGenreToggle(genre)}
+          <ChipList>
+            {availableGenres.map((genre) => {
+              const active = isGenreActive(genre);
+              return (
+                <FilterChip
+                  key={genre}
+                  type="button"
+                  $active={active}
+                  aria-pressed={active}
                   aria-label={`Filter by genre: ${genre}`}
-                />
-                <CheckboxLabel>{genre}</CheckboxLabel>
-              </ProviderCheckboxContainer>
-            ))}
-          </div>
+                  onClick={() => onGenreToggle(genre)}
+                >
+                  {genre}
+                </FilterChip>
+              );
+            })}
+          </ChipList>
         </FilterSection>
       )}
 
@@ -452,7 +426,7 @@ export const FilterSidebar = ({
 
       <FilterSection>
         <SectionTitle>Sort</SectionTitle>
-        {collectionType === 'playlists' ? (
+        {viewMode === 'playlists' ? (
           <SortSelect
             value={playlistSort}
             onChange={(e) => setPlaylistSort(e.target.value as PlaylistSortOption)}
@@ -476,7 +450,7 @@ export const FilterSidebar = ({
       </FilterSection>
 
       {hasActiveFilters && (
-        <ClearFiltersButton onClick={handleClearFilters}>
+        <ClearFiltersButton onClick={onClearFilters}>
           Clear Filters
         </ClearFiltersButton>
       )}
