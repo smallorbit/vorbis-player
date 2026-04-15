@@ -1,5 +1,5 @@
 import { createContext, useContext } from 'react';
-import type * as React from 'react';
+import * as React from 'react';
 import type { AlbumInfo, PlaylistInfo } from '../../services/spotify';
 import type { ProviderDescriptor } from '@/types/providers';
 import type { ProviderId } from '@/types/domain';
@@ -71,12 +71,6 @@ export interface LibraryDataContextValue {
   activeDescriptor: ProviderDescriptor | null;
 }
 
-export type LibraryContextValue =
-  LibraryBrowsingContextValue &
-  LibraryPinContextValue &
-  LibraryActionsContextValue &
-  LibraryDataContextValue;
-
 const LibraryBrowsingContext = createContext<LibraryBrowsingContextValue | null>(null);
 const LibraryPinContext = createContext<LibraryPinContextValue | null>(null);
 const LibraryActionsContext = createContext<LibraryActionsContextValue | null>(null);
@@ -119,10 +113,24 @@ export function useLibraryData(): LibraryDataContextValue {
   return ctx;
 }
 
-export function useLibraryContext(): LibraryContextValue {
-  const browsing = useLibraryBrowsingContext();
-  const pins = useLibraryPins();
-  const actions = useLibraryActions();
-  const data = useLibraryData();
-  return { ...browsing, ...pins, ...actions, ...data };
+export function LibraryProviders({ values, children }: {
+  values: {
+    browsing: LibraryBrowsingContextValue;
+    pin: LibraryPinContextValue;
+    actions: LibraryActionsContextValue;
+    data: LibraryDataContextValue;
+  };
+  children: React.ReactNode;
+}): JSX.Element {
+  return (
+    <LibraryDataProvider value={values.data}>
+      <LibraryBrowsingProvider value={values.browsing}>
+        <LibraryPinProvider value={values.pin}>
+          <LibraryActionsProvider value={values.actions}>
+            {children}
+          </LibraryActionsProvider>
+        </LibraryPinProvider>
+      </LibraryBrowsingProvider>
+    </LibraryDataProvider>
+  );
 }
