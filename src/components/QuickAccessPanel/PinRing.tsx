@@ -2,7 +2,7 @@ import React, { useCallback } from 'react';
 import type { PlaylistInfo, AlbumInfo } from '@/services/spotify';
 import type { ProviderId } from '@/types/domain';
 import { MAX_PINS } from '@/services/settings/pinnedItemsStorage';
-import { getLikedSongsGradient } from '@/components/PlaylistSelection/utils';
+import { getLikedSongsGradient } from '@/components/PlaylistSelection/playlistUtils';
 import { useLongPress } from '@/hooks/useLongPress';
 import { MosaicThumbnail } from '../MosaicThumbnail';
 import {

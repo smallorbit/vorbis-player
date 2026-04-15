@@ -18,7 +18,8 @@ import {
   PinnableGridCard,
   TabSpinner,
 } from './styled';
-import { getLikedSongsGradient, likedSongsAsPlaylistInfo, PinIcon } from './utils';
+import { getLikedSongsGradient, likedSongsAsPlaylistInfo } from './playlistUtils';
+import { PinIcon } from './utils';
 import { useLibraryPins, useLibraryActions, useLibraryData } from './LibraryContext';
 
 interface LikedSongsCardProps {
