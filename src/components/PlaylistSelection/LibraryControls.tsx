@@ -1,90 +1,26 @@
 import type * as React from 'react';
-import type { PlaylistSortOption, AlbumSortOption } from '@/utils/playlistFilters';
-import type { ProviderId } from '@/types/domain';
 import {
   ControlsContainer,
   SortControlsRow,
-  SearchInput,
-  SelectDropdown,
   RefreshButton,
-  ClearButton,
 } from './styled';
 import { RefreshIcon } from './utils';
 
 interface LibraryControlsProps {
   inDrawer: boolean;
-  viewMode: 'playlists' | 'albums';
-  searchQuery: string;
-  setSearchQuery: (v: string) => void;
-  playlistSort: PlaylistSortOption;
-  setPlaylistSort: (v: PlaylistSortOption) => void;
-  albumSort: AlbumSortOption;
-  setAlbumSort: (v: AlbumSortOption) => void;
-  artistFilter: string;
-  setArtistFilter: (v: string) => void;
-  setProviderFilters: (v: ProviderId[]) => void;
   onLibraryRefresh?: () => void;
   isLibraryRefreshing?: boolean;
 }
 
 export function LibraryControls({
   inDrawer,
-  viewMode,
-  searchQuery,
-  setSearchQuery,
-  playlistSort,
-  setPlaylistSort,
-  albumSort,
-  setAlbumSort,
-  artistFilter,
-  setArtistFilter,
-  setProviderFilters,
   onLibraryRefresh,
   isLibraryRefreshing,
-}: LibraryControlsProps): React.JSX.Element {
-  const clearFilters = () => {
-    setSearchQuery('');
-    setArtistFilter('');
-    setProviderFilters([]);
-  };
-
+}: LibraryControlsProps): React.JSX.Element | null {
   if (inDrawer) {
     return (
       <ControlsContainer $inDrawer>
-        <SearchInput
-          type="text"
-          placeholder={viewMode === 'playlists' ? 'Search playlists...' : 'Search albums...'}
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-        />
-
         <SortControlsRow>
-          {viewMode === 'playlists' ? (
-            <SelectDropdown
-              value={playlistSort}
-              onChange={(e) => setPlaylistSort(e.target.value as PlaylistSortOption)}
-              style={{ flex: 1, minWidth: 0 }}
-            >
-              <option value="recently-added">Recently Added</option>
-              <option value="name-asc">Name (A-Z)</option>
-              <option value="name-desc">Name (Z-A)</option>
-            </SelectDropdown>
-          ) : (
-            <SelectDropdown
-              value={albumSort}
-              onChange={(e) => setAlbumSort(e.target.value as AlbumSortOption)}
-              style={{ flex: 1, minWidth: 0 }}
-            >
-              <option value="recently-added">Recently Added</option>
-              <option value="name-asc">Name (A-Z)</option>
-              <option value="name-desc">Name (Z-A)</option>
-              <option value="artist-asc">Artist (A-Z)</option>
-              <option value="artist-desc">Artist (Z-A)</option>
-              <option value="release-newest">Release (Newest)</option>
-              <option value="release-oldest">Release (Oldest)</option>
-            </SelectDropdown>
-          )}
-
           {onLibraryRefresh && (
             <RefreshButton
               onClick={onLibraryRefresh}
@@ -96,50 +32,22 @@ export function LibraryControls({
             </RefreshButton>
           )}
         </SortControlsRow>
-
-        {(searchQuery || artistFilter) && (
-          <ClearButton onClick={clearFilters}>Clear</ClearButton>
-        )}
       </ControlsContainer>
     );
   }
 
+  if (!onLibraryRefresh) return null;
+
   return (
     <ControlsContainer>
-      <SearchInput
-        type="text"
-        placeholder={viewMode === 'playlists' ? 'Search playlists...' : 'Search albums...'}
-        value={searchQuery}
-        onChange={(e) => setSearchQuery(e.target.value)}
-      />
-
-      {viewMode === 'playlists' ? (
-        <SelectDropdown
-          value={playlistSort}
-          onChange={(e) => setPlaylistSort(e.target.value as PlaylistSortOption)}
-        >
-          <option value="recently-added">Recently Added</option>
-          <option value="name-asc">Name (A-Z)</option>
-          <option value="name-desc">Name (Z-A)</option>
-        </SelectDropdown>
-      ) : (
-        <SelectDropdown
-          value={albumSort}
-          onChange={(e) => setAlbumSort(e.target.value as AlbumSortOption)}
-        >
-          <option value="recently-added">Recently Added</option>
-          <option value="name-asc">Name (A-Z)</option>
-          <option value="name-desc">Name (Z-A)</option>
-          <option value="artist-asc">Artist (A-Z)</option>
-          <option value="artist-desc">Artist (Z-A)</option>
-          <option value="release-newest">Release (Newest)</option>
-          <option value="release-oldest">Release (Oldest)</option>
-        </SelectDropdown>
-      )}
-
-      {(searchQuery || artistFilter) && (
-        <ClearButton onClick={clearFilters}>Clear</ClearButton>
-      )}
+      <RefreshButton
+        onClick={onLibraryRefresh}
+        $spinning={!!isLibraryRefreshing}
+        aria-label="Refresh library"
+        title="Refresh library"
+      >
+        <RefreshIcon />
+      </RefreshButton>
     </ControlsContainer>
   );
 }

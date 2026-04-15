@@ -18,6 +18,7 @@ import { clearAllPins } from '@/services/settings/pinnedItemsStorage';
 import { STORAGE_KEYS } from '@/constants/storage';
 import type { ClearCacheOptions } from '@/components/VisualEffectsMenu';
 import { useQapEnabled } from '@/hooks/useQapEnabled';
+import { usePlayerSizingContext } from '@/contexts/PlayerSizingContext';
 import type { MediaTrack, ProviderId } from '@/types/domain';
 import type { RadioState } from '@/types/radio';
 import { LoadingCard, ZenControlsWrapper, ZenControlsInner } from './styled';
@@ -67,7 +68,7 @@ interface PlayerControlsSectionProps {
   isPlaying: boolean;
   zenModeEnabled: boolean;
   hasPointerInput: boolean;
-  showLibraryDrawer: boolean;
+  showLibrary: boolean;
   showQueue: boolean;
   controlsRef: React.RefObject<HTMLDivElement>;
   onPlay: () => void;
@@ -78,8 +79,8 @@ interface PlayerControlsSectionProps {
   onAlbumPlay: (albumId: string, albumName: string) => void;
   onShowQueue: () => void;
   onCloseQueue: () => void;
-  onOpenLibraryDrawer: () => void;
-  onCloseLibraryDrawer: () => void;
+  onOpenLibrary: () => void;
+  onCloseLibrary: () => void;
   onOpenQuickAccessPanel?: () => void;
   onZenModeToggle: () => void;
   isRadioAvailable?: boolean;
@@ -96,7 +97,7 @@ export const PlayerControlsSection: React.FC<PlayerControlsSectionProps> = React
   isPlaying,
   zenModeEnabled,
   hasPointerInput,
-  showLibraryDrawer,
+  showLibrary,
   showQueue,
   controlsRef,
   onPlay,
@@ -107,8 +108,8 @@ export const PlayerControlsSection: React.FC<PlayerControlsSectionProps> = React
   onAlbumPlay,
   onShowQueue,
   onCloseQueue,
-  onOpenLibraryDrawer,
-  onCloseLibraryDrawer,
+  onOpenLibrary,
+  onCloseLibrary,
   onOpenQuickAccessPanel,
   onZenModeToggle,
   isRadioAvailable,
@@ -119,6 +120,7 @@ export const PlayerControlsSection: React.FC<PlayerControlsSectionProps> = React
   onLikeToggle,
 }) => {
   const { tracks, shuffleEnabled, handleShuffleToggle } = useTrackListContext();
+  const { isMobile } = usePlayerSizingContext();
   const { accentColor } = useColorContext();
   const { effectiveGlow, restoreGlowSettings } = useVisualEffectsState();
   const { handleMuteToggle, isMuted, volume, setVolumeLevel } = useVolume(currentTrackProvider);
@@ -147,17 +149,17 @@ export const PlayerControlsSection: React.FC<PlayerControlsSectionProps> = React
 
   const handleShowVisualEffects = useCallback(() => {
     onCloseQueue();
-    onCloseLibraryDrawer();
+    onCloseLibrary();
     setShowVisualEffects(true);
-  }, [onCloseQueue, onCloseLibraryDrawer, setShowVisualEffects]);
+  }, [onCloseQueue, onCloseLibrary, setShowVisualEffects]);
 
   const handleCloseVisualEffects = useCallback(() => setShowVisualEffects(false), [setShowVisualEffects]);
 
   const handleToggleVisualEffectsMenu = useCallback(() => {
     onCloseQueue();
-    onCloseLibraryDrawer();
+    onCloseLibrary();
     setShowVisualEffects(prev => !prev);
-  }, [setShowVisualEffects, onCloseQueue, onCloseLibraryDrawer]);
+  }, [setShowVisualEffects, onCloseQueue, onCloseLibrary]);
 
   const handleGlowToggle = useCallback(() => {
     if (visualEffectsEnabled) {
@@ -220,33 +222,33 @@ export const PlayerControlsSection: React.FC<PlayerControlsSectionProps> = React
   }, [onPlay, onPause, isPlaying]);
 
   const handleEscapeClose = useCallback(() => {
-    onCloseLibraryDrawer();
+    onCloseLibrary();
     handleCloseVisualEffects();
     if (showHelp) closeHelp();
-  }, [onCloseLibraryDrawer, handleCloseVisualEffects, showHelp, closeHelp]);
+  }, [onCloseLibrary, handleCloseVisualEffects, showHelp, closeHelp]);
 
   const handleArrowUp = useCallback(() => {
-    if (showLibraryDrawer) {
-      onCloseLibraryDrawer();
+    if (showLibrary) {
+      onCloseLibrary();
       onShowQueue();
     } else if (showQueue) {
       onCloseQueue();
     } else {
       onShowQueue();
     }
-  }, [showLibraryDrawer, showQueue, onShowQueue, onCloseQueue, onCloseLibraryDrawer]);
+  }, [showLibrary, showQueue, onShowQueue, onCloseQueue, onCloseLibrary]);
 
   const handleArrowDown = useCallback(() => {
-    const openPanel = qapEnabled ? onOpenQuickAccessPanel : onOpenLibraryDrawer;
+    const openPanel = qapEnabled ? onOpenQuickAccessPanel : onOpenLibrary;
     if (showQueue) {
       onCloseQueue();
       openPanel?.();
-    } else if (showLibraryDrawer) {
-      onCloseLibraryDrawer();
+    } else if (showLibrary) {
+      onCloseLibrary();
     } else {
       openPanel?.();
     }
-  }, [showQueue, showLibraryDrawer, onCloseQueue, onOpenQuickAccessPanel, onOpenLibraryDrawer, onCloseLibraryDrawer, qapEnabled]);
+  }, [showQueue, showLibrary, onCloseQueue, onOpenQuickAccessPanel, onOpenLibrary, onCloseLibrary, qapEnabled]);
 
   const handleVolumeUp = useCallback(() => {
     setVolumeLevel(Math.min(100, (volume ?? 50) + 5));
@@ -273,7 +275,7 @@ export const PlayerControlsSection: React.FC<PlayerControlsSectionProps> = React
     onToggleShuffle: handleShuffleToggle,
     onToggleHelp: toggleHelp,
     onShowQueue: handleArrowUp,
-    onOpenLibraryDrawer: onOpenLibraryDrawer,
+    onOpenLibrary: onOpenLibrary,
     onOpenQuickAccessPanel: handleArrowDown,
     onToggleZenMode: onZenModeToggle,
   }, { prefersPointerInput: hasPointerInput });
@@ -323,12 +325,13 @@ export const PlayerControlsSection: React.FC<PlayerControlsSectionProps> = React
       <ProfiledComponent id="BottomBar">
         <BottomBar
           zenModeEnabled={zenModeEnabled}
+          hidden={showLibrary && isMobile}
           isMuted={isMuted}
           volume={volume}
           onMuteToggle={handleMuteToggle}
           onVolumeChange={setVolumeLevel}
           onShowVisualEffects={handleShowVisualEffects}
-          onBackToLibrary={onOpenLibraryDrawer}
+          onBackToLibrary={onOpenLibrary}
           onShowQueue={onShowQueue}
           onZenModeToggle={onZenModeToggle}
           shuffleEnabled={shuffleEnabled}

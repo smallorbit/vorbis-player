@@ -10,7 +10,7 @@ import {
   DRAWER_TRANSITION_DURATION,
   DRAWER_TRANSITION_EASING
 } from './styled';
-import PlaylistSelection from './PlaylistSelection';
+import { DrawerLibrary } from './PlaylistSelection';
 import ResumeCard from './QuickAccessPanel/ResumeCard';
 import { LIBRARY_REFRESH_EVENT } from '@/hooks/useLibrarySync';
 import type { AddToQueueResult, MediaTrack, ProviderId } from '@/types/domain';
@@ -66,14 +66,7 @@ const DrawerContainer = styled.div.withConfig({
     $isDragging ? 'none' : `transform ${DRAWER_TRANSITION_DURATION}ms ${DRAWER_TRANSITION_EASING}`};
   will-change: ${({ $isDragging }) => ($isDragging ? 'transform' : 'auto')};
 
-  /* Constrain width on desktop to match player content area */
   @media (min-width: ${theme.breakpoints.lg}) {
-    max-width: 700px;
-    margin-left: auto;
-    margin-right: auto;
-    border-radius: 0 0 ${theme.borderRadius.xl} ${theme.borderRadius.xl};
-    border-left: 1px solid ${theme.colors.popover.border};
-    border-right: 1px solid ${theme.colors.popover.border};
     border-bottom: 1px solid ${theme.colors.popover.border};
   }
 `;
@@ -150,12 +143,11 @@ const LibraryDrawer = React.memo(function LibraryDrawer({ isOpen, onClose, onPla
         {isOpen && (
           <>
             <DrawerContent>
-              <PlaylistSelection
+              <DrawerLibrary
                 onPlaylistSelect={handlePlaylistSelectWrapper}
                 onAddToQueue={onAddToQueue}
                 onPlayLikedTracks={onPlayLikedTracks}
                 onQueueLikedTracks={onQueueLikedTracks}
-                inDrawer
                 initialSearchQuery={initialSearchQuery}
                 initialViewMode={initialViewMode}
                 onLibraryRefresh={handleRefresh}

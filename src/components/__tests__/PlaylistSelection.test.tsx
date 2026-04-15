@@ -3,7 +3,7 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import { ThemeProvider } from 'styled-components';
 import { theme } from '@/styles/theme';
-import PlaylistSelection from '../PlaylistSelection';
+import { LibraryPage } from '../PlaylistSelection';
 import { TestWrapper } from '@/test/testWrappers';
 import { makePlaylistInfo, makeAlbumInfo } from '@/test/fixtures';
 import { LIKED_SONGS_ID } from '@/constants/playlist';
@@ -97,12 +97,12 @@ function setMockLibrarySync(overrides?: Record<string, unknown>) {
   } as ReturnType<typeof useLibrarySync>);
 }
 
-function renderPlaylistSelection(props?: Partial<Parameters<typeof PlaylistSelection>[0]>) {
+function renderLibraryPage(props?: Partial<Parameters<typeof LibraryPage>[0]>) {
   const onPlaylistSelect = vi.fn();
   const result = render(
     <ThemeProvider theme={theme}>
       <TestWrapper>
-        <PlaylistSelection onPlaylistSelect={onPlaylistSelect} {...props} />
+        <LibraryPage onPlaylistSelect={onPlaylistSelect} {...props} />
       </TestWrapper>
     </ThemeProvider>
   );
@@ -115,14 +115,14 @@ describe('PlaylistSelection', () => {
   });
 
   it('renders Playlists and Albums tab buttons', () => {
-    renderPlaylistSelection();
+    renderLibraryPage();
     expect(screen.getByRole('button', { name: /playlists/i })).toBeTruthy();
     expect(screen.getByRole('button', { name: /albums/i })).toBeTruthy();
   });
 
   it('switching to Albums tab shows the album grid', () => {
     // #given
-    renderPlaylistSelection();
+    renderLibraryPage();
 
     // #when
     fireEvent.click(screen.getByRole('button', { name: /albums/i }));
@@ -134,8 +134,8 @@ describe('PlaylistSelection', () => {
 
   it('search input filters playlist list by name (case-insensitive)', () => {
     // #given
-    renderPlaylistSelection();
-    const searchInput = screen.getByPlaceholderText('Search playlists...');
+    renderDrawerLibrary();
+    const searchInput = screen.getByRole('textbox', { name: /search playlists and albums/i });
 
     // #when
     fireEvent.change(searchInput, { target: { value: 'chill' } });
@@ -146,20 +146,20 @@ describe('PlaylistSelection', () => {
   });
 
   it('pinned items appear before unpinned items', () => {
-    renderPlaylistSelection();
+    renderLibraryPage();
     const items = screen.getAllByText(/tracks/);
     expect(items.length).toBeGreaterThan(0);
   });
 
-  it('clicking a playlist calls onPlaylistSelect with the correct playlist ID', () => {
+  it('clicking a playlist opens the context menu instead of playing directly', () => {
     // #given
-    const { onPlaylistSelect } = renderPlaylistSelection();
+    renderLibraryPage();
 
     // #when
     fireEvent.click(screen.getByText('Chill Vibes'));
 
     // #then
-    expect(onPlaylistSelect).toHaveBeenCalledWith('pl-1', 'Chill Vibes', undefined);
+    expect(screen.getByText('Play Chill Vibes')).toBeTruthy();
   });
 
   it('shows loading state while isSyncing is true and no data yet', () => {
@@ -173,7 +173,7 @@ describe('PlaylistSelection', () => {
     });
 
     // #when
-    renderPlaylistSelection();
+    renderLibraryPage();
 
     // #then
     // When auth is resolved but initial load is not complete, the component renders
@@ -194,7 +194,7 @@ describe('PlaylistSelection', () => {
     });
 
     // #when
-    renderPlaylistSelection();
+    renderLibraryPage();
 
     // #then
     expect(
@@ -204,7 +204,7 @@ describe('PlaylistSelection', () => {
 
   it('Liked Songs item is present with LIKED_SONGS_ID', () => {
     // #given
-    const { onPlaylistSelect } = renderPlaylistSelection();
+    const { onPlaylistSelect } = renderLibraryPage();
 
     // #when
     fireEvent.click(screen.getByText('Liked Songs'));
@@ -214,22 +214,6 @@ describe('PlaylistSelection', () => {
     expect(onPlaylistSelect).toHaveBeenCalledWith(LIKED_SONGS_ID, 'Liked Songs', undefined);
   });
 
-  it('inDrawer: tapping a playlist opens the menu; Play then calls onPlaylistSelect', () => {
-    // #given
-    const { onPlaylistSelect } = renderPlaylistSelection({ inDrawer: true });
-
-    // #when
-    fireEvent.click(screen.getByText('Chill Vibes'));
-
-    // #then
-    expect(onPlaylistSelect).not.toHaveBeenCalled();
-
-    // #when
-    fireEvent.click(screen.getByRole('button', { name: /play chill vibes/i }));
-
-    // #then
-    expect(onPlaylistSelect).toHaveBeenCalledWith('pl-1', 'Chill Vibes', undefined);
-  });
 });
 
 describe('PlaylistSelection — search and filter', () => {
@@ -239,8 +223,8 @@ describe('PlaylistSelection — search and filter', () => {
 
   it('filters playlists by search query', () => {
     // #given
-    renderPlaylistSelection();
-    const searchInput = screen.getByPlaceholderText('Search playlists...');
+    renderDrawerLibrary();
+    const searchInput = screen.getByRole('textbox', { name: /search playlists and albums/i });
 
     // #when
     fireEvent.change(searchInput, { target: { value: MOCK_PLAYLIST_NAMES.CHILL } });
@@ -253,26 +237,25 @@ describe('PlaylistSelection — search and filter', () => {
 
   it('shows empty state when search matches nothing', () => {
     // #given
-    renderPlaylistSelection();
-    const searchInput = screen.getByPlaceholderText('Search playlists...');
+    setMockLibrarySync({ likedSongsCount: 0 });
+    renderDrawerLibrary();
+    const searchInput = screen.getByRole('textbox', { name: /search playlists and albums/i });
 
     // #when
     fireEvent.change(searchInput, { target: { value: 'XYZ123NonExistent' } });
 
     // #then
-    const noResultsText = screen.queryByText(/no/i);
-    expect(noResultsText || searchInput.parentElement?.textContent).toBeTruthy();
+    expect(screen.getByText(/no playlists match/i)).toBeTruthy();
   });
 
   it('clears search when clear button is clicked', () => {
     // #given
-    renderPlaylistSelection();
-    const searchInput = screen.getByPlaceholderText('Search playlists...') as HTMLInputElement;
+    renderDrawerLibrary();
+    const searchInput = screen.getByRole('textbox', { name: /search playlists and albums/i }) as HTMLInputElement;
     fireEvent.change(searchInput, { target: { value: MOCK_PLAYLIST_NAMES.CHILL } });
     expect(searchInput.value).toBe(MOCK_PLAYLIST_NAMES.CHILL);
 
-    const clearButton = screen.queryByRole('button', { name: /clear|close|reset/i })
-      || screen.getByRole('button', { name: /✕|✖|×|x/i });
+    const clearButton = screen.queryByRole('button', { name: /clear search/i });
 
     // #when
     if (clearButton) {
@@ -288,8 +271,8 @@ describe('PlaylistSelection — search and filter', () => {
 
   it('search is case-insensitive', () => {
     // #given
-    renderPlaylistSelection();
-    const searchInput = screen.getByPlaceholderText('Search playlists...');
+    renderDrawerLibrary();
+    const searchInput = screen.getByRole('textbox', { name: /search playlists and albums/i });
 
     // #when
     fireEvent.change(searchInput, { target: { value: 'JAZZ' } });
@@ -308,8 +291,8 @@ describe('PlaylistSelection — search and filter', () => {
 
   it('search updates live as user types', () => {
     // #given
-    renderPlaylistSelection();
-    const searchInput = screen.getByPlaceholderText('Search playlists...');
+    renderDrawerLibrary();
+    const searchInput = screen.getByRole('textbox', { name: /search playlists and albums/i });
 
     // #when
     fireEvent.change(searchInput, { target: { value: MOCK_PLAYLIST_NAMES.CHILL } });

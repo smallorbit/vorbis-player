@@ -168,8 +168,8 @@ const mockHandlers: PlaybackHandlers = {
   onNext: vi.fn(),
   onPrevious: vi.fn(),
   onTrackSelect: vi.fn(),
-  onOpenLibraryDrawer: vi.fn(),
-  onCloseLibraryDrawer: vi.fn(),
+  onOpenLibrary: vi.fn(),
+  onCloseLibrary: vi.fn(),
   onPlaylistSelect: vi.fn(),
   onAddToQueue: vi.fn(),
   onAlbumPlay: vi.fn(),
@@ -198,7 +198,7 @@ describe('PlayerContent', () => {
       <TestWrapper>
         <PlayerContent
           isPlaying={false}
-          showLibraryDrawer={false}
+          showLibrary={false}
           handlers={mockHandlers}
         />
       </TestWrapper>
@@ -214,7 +214,7 @@ describe('PlayerContent', () => {
       <TestWrapper>
         <PlayerContent
           isPlaying={true}
-          showLibraryDrawer={false}
+          showLibrary={false}
           handlers={mockHandlers}
         />
       </TestWrapper>
@@ -224,13 +224,13 @@ describe('PlayerContent', () => {
     expect(container).toBeTruthy();
   });
 
-  it('passes showLibraryDrawer prop without crashing when false', () => {
+  it('passes showLibrary prop without crashing when false', () => {
     // #when
     const { container } = render(
       <TestWrapper>
         <PlayerContent
           isPlaying={false}
-          showLibraryDrawer={false}
+          showLibrary={false}
           handlers={mockHandlers}
         />
       </TestWrapper>
@@ -255,7 +255,7 @@ describe('PlayerContent', () => {
       <TestWrapper>
         <PlayerContent
           isPlaying={false}
-          showLibraryDrawer={false}
+          showLibrary={false}
           handlers={mockHandlers}
           radioState={radioState}
           isRadioAvailable={true}
@@ -275,8 +275,8 @@ describe('PlayerContent', () => {
       onNext: vi.fn(),
       onPrevious: vi.fn(),
       onTrackSelect: vi.fn(),
-      onOpenLibraryDrawer: vi.fn(),
-      onCloseLibraryDrawer: vi.fn(),
+      onOpenLibrary: vi.fn(),
+      onCloseLibrary: vi.fn(),
       onPlaylistSelect: vi.fn(),
       onAlbumPlay: vi.fn(),
       onBackToLibrary: vi.fn(),
@@ -287,7 +287,7 @@ describe('PlayerContent', () => {
       <TestWrapper>
         <PlayerContent
           isPlaying={true}
-          showLibraryDrawer={false}
+          showLibrary={false}
           handlers={handlers as PlaybackHandlers}
         />
       </TestWrapper>
@@ -306,7 +306,7 @@ describe('PlayerContent', () => {
       <TestWrapper>
         <PlayerContent
           isPlaying={false}
-          showLibraryDrawer={false}
+          showLibrary={false}
           handlers={mockHandlers}
           onAlbumArtBoundsChange={mockOnBoundsChange}
         />
@@ -323,7 +323,7 @@ describe('PlayerContent', () => {
       <TestWrapper>
         <PlayerContent
           isPlaying={true}
-          showLibraryDrawer={false}
+          showLibrary={false}
           handlers={mockHandlers}
           currentTrackProvider="spotify"
         />

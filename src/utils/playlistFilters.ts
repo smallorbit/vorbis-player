@@ -1,4 +1,5 @@
 import type { PlaylistInfo, AlbumInfo } from '../services/spotify';
+import type { MediaTrack } from '../types/domain';
 import { LIBRARY_ALBUM_SORT_ANCHOR_IDS, LIBRARY_PLAYLIST_SORT_ANCHOR_IDS } from '../constants/playlist';
 
 // ============================================================
@@ -15,6 +16,44 @@ export type AlbumSortOption =
   | 'release-newest'
   | 'release-oldest'
   | 'recently-added';
+
+/**
+ * Unified filter state for the library browser.
+ *
+ * Each field is optional — omitting it means "no filter applied" for that dimension.
+ * The filter pipeline applies each non-empty filter in sequence:
+ *   provider → collectionType → genres → recentlyAdded → searchQuery
+ */
+export interface FilterState {
+  /** Only include items from these providers. Empty array = all providers. */
+  provider?: string[];
+  /** Only include playlists or albums. Undefined = all. */
+  collectionType?: 'playlists' | 'albums';
+  /** Only include items tagged with at least one of these genres. Empty array = all genres. */
+  genres?: string[];
+  /** Only include items added within this time window. 'all' or undefined = no restriction. */
+  recentlyAdded?: 'all' | '7-days' | '30-days' | '1-year';
+  /** Full-text search across title, artist, album. Empty string = no restriction. */
+  searchQuery?: string;
+}
+
+export type RecentlyAddedFilterOption = FilterState['recentlyAdded'];
+
+export const PLAYLIST_SORT_LABELS: Record<PlaylistSortOption, string> = {
+  'recently-added': 'Recently Added',
+  'name-asc': 'Name (A-Z)',
+  'name-desc': 'Name (Z-A)',
+};
+
+export const ALBUM_SORT_LABELS: Record<AlbumSortOption, string> = {
+  'recently-added': 'Recently Added',
+  'name-asc': 'Name (A-Z)',
+  'name-desc': 'Name (Z-A)',
+  'artist-asc': 'Artist (A-Z)',
+  'artist-desc': 'Artist (Z-A)',
+  'release-newest': 'Release (Newest)',
+  'release-oldest': 'Release (Oldest)',
+};
 
 type YearFilterOption =
   | 'all'
@@ -109,6 +148,146 @@ function matchesYearFilter(year: number | null, filter: YearFilterOption): boole
   return year >= decadeStart && year < decadeStart + 10;
 }
 
+/**
+ * Resolve the cutoff epoch ms for a recently-added time range.
+ * Returns 0 for 'all' or undefined (no restriction).
+ */
+function recentlyAddedCutoffMs(timeRange: FilterState['recentlyAdded']): number {
+  if (!timeRange || timeRange === 'all') return 0;
+  const now = Date.now();
+  const MS_PER_DAY = 86_400_000;
+  switch (timeRange) {
+    case '7-days':  return now - 7 * MS_PER_DAY;
+    case '30-days': return now - 30 * MS_PER_DAY;
+    case '1-year':  return now - 365 * MS_PER_DAY;
+  }
+}
+
+// ============================================================
+// UNIFIED FILTER HELPERS
+// ============================================================
+
+/**
+ * Returns true when the item's provider is included in selectedProviders,
+ * or when selectedProviders is empty (no restriction).
+ */
+export function matchesProviderFilter(
+  itemProvider: string | undefined,
+  selectedProviders: string[]
+): boolean {
+  if (selectedProviders.length === 0) return true;
+  if (!itemProvider) return false;
+  return selectedProviders.includes(itemProvider);
+}
+
+/**
+ * Returns true when the item is tagged with at least one of the selected genres,
+ * or when selectedGenres is empty (no restriction).
+ * Items with no genres are excluded when a genre filter is active.
+ */
+export function matchesGenreFilter(itemGenres: string[] | undefined, selectedGenres: string[]): boolean {
+  if (selectedGenres.length === 0) return true;
+  if (!itemGenres || itemGenres.length === 0) return false;
+  return selectedGenres.some(g => itemGenres.includes(g));
+}
+
+/**
+ * Returns true when the item was added within the given time range,
+ * or when the time range is 'all' / undefined (no restriction).
+ */
+export function matchesRecentlyAddedFilter(
+  addedAt: string | number | undefined,
+  timeRange: FilterState['recentlyAdded']
+): boolean {
+  const cutoff = recentlyAddedCutoffMs(timeRange);
+  if (cutoff === 0) return true;
+  const ts = parseAddedAt(addedAt);
+  if (ts === 0) return false;
+  return ts >= cutoff;
+}
+
+/**
+ * Returns true when the track matches the search query across
+ * name, artists, and album fields. Empty query always returns true.
+ */
+export function matchesSearchQuery(track: MediaTrack, searchQuery: string): boolean {
+  if (!searchQuery) return true;
+  const q = normalizeText(searchQuery);
+  return (
+    normalizeText(track.name).includes(q) ||
+    normalizeText(track.artists).includes(q) ||
+    normalizeText(track.album).includes(q)
+  );
+}
+
+/**
+ * Extract the sorted unique genres from a list of collections.
+ * Collections with empty or missing genres arrays are skipped.
+ */
+export function getAvailableGenres(items: Array<{ genres?: string[] }>): string[] {
+  const genreSet = new Set<string>();
+  for (const item of items) {
+    if (item.genres) {
+      for (const g of item.genres) {
+        if (g) genreSet.add(g);
+      }
+    }
+  }
+  return Array.from(genreSet).sort((a, b) => a.localeCompare(b));
+}
+
+// ============================================================
+// UNIFIED FILTER APPLICATION
+// ============================================================
+
+/**
+ * Apply a FilterState to a MediaTrack array.
+ * Pipeline: provider → genres → recentlyAdded → searchQuery
+ */
+export function applyFilters(items: MediaTrack[], filterState: FilterState): MediaTrack[] {
+  const { provider, genres, recentlyAdded, searchQuery } = filterState;
+  const activeProvider = provider && provider.length > 0 ? provider : null;
+  const activeGenres   = genres && genres.length > 0 ? genres : null;
+  const activeCutoff   = recentlyAddedCutoffMs(recentlyAdded);
+  const activeQuery    = searchQuery ? normalizeText(searchQuery) : null;
+
+  return items.filter(track => {
+    if (activeProvider && !activeProvider.includes(track.provider)) return false;
+    if (activeGenres && !matchesGenreFilter((track as MediaTrack & { genres?: string[] }).genres, activeGenres)) return false;
+    if (activeCutoff > 0) {
+      const ts = typeof track.addedAt === 'number' ? track.addedAt : 0;
+      if (ts === 0 || ts < activeCutoff) return false;
+    }
+    if (activeQuery) {
+      if (
+        !normalizeText(track.name).includes(activeQuery) &&
+        !normalizeText(track.artists).includes(activeQuery) &&
+        !normalizeText(track.album).includes(activeQuery)
+      ) return false;
+    }
+    return true;
+  });
+}
+
+/**
+ * Apply a FilterState to an AlbumInfo array.
+ * Pipeline: provider → genres → recentlyAdded → searchQuery
+ */
+export function applyAlbumFilters(albums: AlbumInfo[], filterState: FilterState): AlbumInfo[] {
+  const { provider, genres, recentlyAdded, searchQuery } = filterState;
+  const activeProvider = provider && provider.length > 0 ? provider : null;
+  const activeGenres   = genres && genres.length > 0 ? genres : null;
+  const activeCutoff   = recentlyAddedCutoffMs(recentlyAdded);
+
+  return albums.filter(album => {
+    if (activeProvider && !matchesProviderFilter(album.provider, activeProvider)) return false;
+    if (activeGenres && !matchesGenreFilter((album as AlbumInfo & { genres?: string[] }).genres, activeGenres)) return false;
+    if (activeCutoff > 0 && !matchesRecentlyAddedFilter(album.added_at, recentlyAdded)) return false;
+    if (!matchesSearch(album, searchQuery ?? '')) return false;
+    return true;
+  });
+}
+
 // ============================================================
 // MAIN FILTER/SORT FUNCTIONS
 // ============================================================
@@ -134,9 +313,15 @@ function sortPlaylistArrayInPlace(playlists: PlaylistInfo[], sortOption: Playlis
 
 /**
  * Filter playlists by search query (no sorting).
+ * Genre filter is intentionally not applied here — PlaylistInfo carries no genre metadata.
+ * The genre filter UI is most useful in album view where albums do carry genre tags.
  */
-export function filterPlaylistsOnly(playlists: PlaylistInfo[], searchQuery: string): PlaylistInfo[] {
-  return playlists.filter(p => matchesSearch(p, searchQuery));
+export function filterPlaylistsOnly(
+  playlists: PlaylistInfo[],
+  searchQuery: string,
+  _selectedGenres: string[] = []
+): PlaylistInfo[] {
+  return playlists.filter((p) => matchesSearch(p, searchQuery));
 }
 
 /**
@@ -158,27 +343,32 @@ export function sortPlaylistSubgroup(
 }
 
 /**
- * Filter and sort playlists based on search query and sort option
+ * Filter and sort playlists based on search query, genre filter, and sort option.
  */
 export function filterAndSortPlaylists(
   playlists: PlaylistInfo[],
   searchQuery: string,
-  sortOption: PlaylistSortOption
+  sortOption: PlaylistSortOption,
+  selectedGenres: string[] = []
 ): PlaylistInfo[] {
-  const filtered = filterPlaylistsOnly(playlists, searchQuery);
+  const filtered = filterPlaylistsOnly(playlists, searchQuery, selectedGenres);
   return sortPlaylistSubgroup(filtered, sortOption);
 }
 
 /**
- * Filter albums by search, decade, and artist (no sorting).
+ * Filter albums by search, decade, artist, and optional genre selection (no sorting).
+ * When selectedGenres is non-empty, only albums whose genres overlap are shown.
  */
 export function filterAlbumsOnly(
   albums: AlbumInfo[],
   searchQuery: string,
   yearFilter: YearFilterOption = 'all',
-  artistFilter: string = ''
+  artistFilter: string = '',
+  selectedGenres: string[] = []
 ): AlbumInfo[] {
-  let result = albums.filter(a => matchesSearch(a, searchQuery));
+  let result = albums.filter(
+    (a) => matchesSearch(a, searchQuery) && matchesGenreFilter(a.genres, selectedGenres)
+  );
 
   if (yearFilter !== 'all') {
     result = result.filter(a => {
@@ -259,16 +449,17 @@ export function sortAlbumSubgroup(
 }
 
 /**
- * Filter and sort albums based on search query, sort option, year filter, and artist filter
+ * Filter and sort albums based on search query, sort option, year filter, artist filter, and genre filter.
  */
 export function filterAndSortAlbums(
   albums: AlbumInfo[],
   searchQuery: string,
   sortOption: AlbumSortOption,
   yearFilter: YearFilterOption = 'all',
-  artistFilter: string = ''
+  artistFilter: string = '',
+  selectedGenres: string[] = []
 ): AlbumInfo[] {
-  const filtered = filterAlbumsOnly(albums, searchQuery, yearFilter, artistFilter);
+  const filtered = filterAlbumsOnly(albums, searchQuery, yearFilter, artistFilter, selectedGenres);
   return sortAlbumSubgroup(filtered, sortOption);
 }
 

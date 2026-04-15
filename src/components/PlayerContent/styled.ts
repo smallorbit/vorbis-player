@@ -35,6 +35,7 @@ export const ContentWrapper = styled.div.withConfig({
   max-width: ${props => props.$zenMode ? '100%' : `${props.width}px`};
 
   margin: 0 auto;
+  margin-bottom: ${props => props.$zenMode ? '0' : `${BOTTOM_BAR_HEIGHT}px`};
   padding: ${props => props.padding}px;
   padding-bottom: ${props => props.padding}px;
   box-sizing: border-box;

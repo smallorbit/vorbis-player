@@ -150,6 +150,25 @@ export const PlaylistName = styled.div`
   margin-bottom: 0.25rem;
 `;
 
+export const PlaylistNameRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  min-width: 0;
+  margin-bottom: 0.25rem;
+
+  & > :first-child {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-weight: ${({ theme }) => theme.fontWeight.semibold};
+    font-size: ${({ theme }) => theme.fontSize.base};
+    color: ${({ theme }) => theme.colors.white};
+  }
+`;
+
 export const PlaylistDetails = styled.div`
   font-size: 0.875rem;
   color: rgba(255, 255, 255, 0.6);
@@ -249,6 +268,35 @@ export const ProviderBadgeOverlay = styled.div`
 export const PinnableGridCard = styled(GridCard)`
   &:hover ${GridCardPinOverlay} {
     opacity: 1;
+  }
+`;
+
+export const CollectionTypeLabel = styled.span`
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: ${({ theme }) => theme.colors.muted.foreground};
+  flex-shrink: 0;
+
+  svg {
+    width: 0.75em;
+    height: 0.75em;
+    opacity: 0.7;
+  }
+`;
+
+export const GridCardTitleRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  min-width: 0;
+
+  & > :first-child {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 `;
 

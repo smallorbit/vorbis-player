@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) and other AI assista
 
 **Vorbis Player** is a React/TypeScript music player with customizable visual effects and a pluggable provider architecture. Supports **Spotify** (streaming, Premium required) and **Dropbox** (personal files via HTML5 Audio), including cross-provider queues.
 
-Key capabilities: multi-provider auth/catalog/playback adapters, unified liked songs, cross-provider playback handoff, Last.fm-powered radio queue generation, background visualizers, album art flip menu, bottom bar, swipe gestures (drawer toggles), keyboard shortcuts, IndexedDB caching, responsive layout.
+Key capabilities: multi-provider auth/catalog/playback adapters, unified liked songs, cross-provider playback handoff, Last.fm-powered radio queue generation, background visualizers, album art flip menu, bottom bar, swipe gestures (queue drawer / full-screen library), keyboard shortcuts, IndexedDB caching, responsive layout.
 
 ## Build Verification
 
@@ -91,9 +91,12 @@ AppContainer (flexCenter, min-height: 100dvh)
 - **`overflow: visible` is required on ContentWrapper** — `container-type: inline-size` creates containment that clips absolutely-positioned children
 - **`100dvh`** throughout to handle iOS address bar changes
 - **BottomBar** renders via `createPortal()` to `document.body`, fixed at bottom
-- **Drawers** use fixed positioning with slide animations and swipe-to-dismiss; vertical swipes on album art toggle **queue** (up) and **library** (down) drawers (`QueueDrawer` / `QueueBottomSheet` vs `LibraryDrawer`)
-- **Idle/home view** — when no track is loaded, `PlayerStateRenderer` shows the library browser (`PlaylistSelection`) by default. The Quick Access Panel (QAP) is opt-in: toggled via the "Quick Access Panel" On/Off control in the settings panel (gear icon, `VisualEffectsMenu`). The preference is stored under the `vorbis-player-qap-enabled` localStorage key (default `false`) via `useQapEnabled()`. `PlayerStateRenderer` initializes `showLibrary` to `!qapEnabled` and routes accordingly.
-- **ResumeCard** — `LibraryDrawer` accepts `lastSession` and `onResume` props and renders a `ResumeCard` at the bottom of the drawer, allowing users to resume a previous session regardless of whether QAP is enabled.
+- **Drawers** use fixed positioning with slide animations and swipe-to-dismiss; vertical swipes on album art toggle the **queue** (up) drawer (`QueueDrawer` / `QueueBottomSheet`)
+- **Full-screen library** — the library browser opens as `LibraryPage` (a full-screen view), not a drawer. `showLibrary` state in `usePlayerLogic` gates it; `handleOpenLibrary` / `handleCloseLibrary` toggle it. `LibraryPage` is rendered in `AudioPlayer.tsx` via `React.lazy` when `showLibrary` is true.
+- **Opening the library**: swipe down on album art, BottomBar library button, or keyboard `↓` / `L`. Opening library closes the queue drawer.
+- **Filter state** for the library persists to localStorage via `useLocalStorage`. Keys are prefixed `vorbis-player-library-*` (e.g., `vorbis-player-library-search`, `vorbis-player-library-provider-filters`, `vorbis-player-library-genres`, `vorbis-player-library-recently-added`). Opening the library from the QAP "Browse Library" button clears these keys before navigating.
+- **Idle/home view** — when no track is loaded, `PlayerStateRenderer` shows the library browser (`LibraryPage`) by default. The Quick Access Panel (QAP) is opt-in: toggled via the "Quick Access Panel" On/Off control in the settings panel (gear icon, `VisualEffectsMenu`). The preference is stored under the `vorbis-player-qap-enabled` localStorage key (default `false`) via `useQapEnabled()`. `PlayerStateRenderer` initializes `showLibrary` to `!qapEnabled` and routes accordingly.
+- **ResumeCard** — passed as the `footer` prop to `LibraryPage`, allowing users to resume a previous session regardless of whether QAP is enabled.
 - **BackgroundVisualizer and AccentColorBackground** are `position: fixed` with low z-index, don't affect layout
 - **Zen mode overlays** (`ZenClickZoneOverlay`, `ZenLikeOverlay`): hover-activated on desktop (pointer devices only), hidden when flip menu is open (`isFlipped`), with vertical dead zones (top/bottom 20% of album art ignored). Mobile zen uses touch gestures instead (`useZenTouchGestures`). BottomBar in zen mode shows via grip pill tap with tap-outside-to-dismiss backdrop.
 

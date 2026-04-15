@@ -12,7 +12,7 @@ import { useQapEnabled } from '@/hooks/useQapEnabled';
 import QuickAccessPanel from './QuickAccessPanel';
 import ResumeCard from './QuickAccessPanel/ResumeCard';
 
-const PlaylistSelection = React.lazy(() => import('./PlaylistSelection'));
+const LibraryPage = React.lazy(() => import('./PlaylistSelection'));
 
 const pulseWave = keyframes`
   0%, 100% {
@@ -280,7 +280,7 @@ const PlayerStateRenderer: React.FC<PlayerStateRendererProps> = ({
             </LoadingContainer>
           </LoadingCard>
         }>
-          <PlaylistSelection
+          <LibraryPage
             onPlaylistSelect={handlePlaylistSelectWrapped}
             onPlayLikedTracks={onPlayLikedTracks}
             onQueueLikedTracks={onQueueLikedTracks}

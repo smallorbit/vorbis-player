@@ -8,7 +8,7 @@ import AccentColorBackground from './AccentColorBackground';
 import DebugOverlay, { useDebugActivator } from './DebugOverlay';
 import ProviderSetupScreen from './ProviderSetupScreen';
 import Toast from './Toast';
-import LibraryDrawer from './LibraryDrawer';
+import ResumeCard from './QuickAccessPanel/ResumeCard';
 import { ProfilingProvider } from '@/contexts/ProfilingContext';
 import { ProfilingOverlay } from '@/components/ProfilingOverlay';
 import { ProfiledComponent } from '@/components/ProfiledComponent';
@@ -25,6 +25,7 @@ import { useSessionPersistence } from '@/hooks/useSessionPersistence';
 import QuickAccessPanel from './QuickAccessPanel';
 
 const VisualEffectsMenu = lazy(() => import('./VisualEffectsMenu/index'));
+const LibraryPage = lazy(() => import('./PlaylistSelection'));
 
 const Container = styled.div`
   width: 100%;
@@ -177,15 +178,15 @@ const AudioPlayerComponent = () => {
     onNext: handlers.handleNext,
     onPrevious: handlers.handlePrevious,
     onTrackSelect: handlers.playTrack,
-    onOpenLibraryDrawer: handlers.handleOpenLibraryDrawer,
-    onCloseLibraryDrawer: handlers.handleCloseLibraryDrawer,
+    onOpenLibrary: handlers.handleOpenLibrary,
+    onCloseLibrary: handlers.handleCloseLibrary,
     onOpenQuickAccessPanel: handleOpenQuickAccessPanel,
     onPlaylistSelect: handlePlaylistSelect,
     onAddToQueue: handlers.handleAddToQueue,
     onPlayLikedTracks: handlePlayLikedTracks,
     onQueueLikedTracks: handleQueueLikedTracks,
     onAlbumPlay: handleAlbumPlay,
-    onBackToLibrary: handleOpenQuickAccessPanel,
+    onBackToLibrary: handlers.handleOpenLibrary,
     onStartRadio: handlers.handleStartRadio,
     onRemoveFromQueue: handlers.handleRemoveFromQueue,
     onReorderQueue: handlers.handleReorderQueue,
@@ -268,7 +269,7 @@ const AudioPlayerComponent = () => {
       return (
         <ProviderSetupScreen
           onOpenSettings={handleOpenSettings}
-          onOpenLibrary={handlers.handleOpenLibraryDrawer}
+          onOpenLibrary={handlers.handleOpenLibrary}
         />
       );
     }
@@ -301,7 +302,7 @@ const AudioPlayerComponent = () => {
       <ProfiledComponent id="PlayerContent">
         <PlayerContent
           isPlaying={state.isPlaying}
-          showLibraryDrawer={state.showLibraryDrawer}
+          showLibrary={state.showLibrary}
           handlers={playbackHandlers}
           radioState={radio.radioState}
           isRadioAvailable={radio.isRadioAvailable}
@@ -310,6 +311,8 @@ const AudioPlayerComponent = () => {
           mediaTracksRef={mediaTracksRef}
           radioProgress={radio.radioProgress}
           onDismissRadioProgress={radio.dismissRadioProgress}
+          lastSession={lastSession}
+          onResume={handleResume}
         />
       </ProfiledComponent>
     );
@@ -369,8 +372,12 @@ const AudioPlayerComponent = () => {
                   return handleAddToQueueFromPanel(id, name, provider);
                 }}
                 onBrowseLibrary={() => {
+                  localStorage.removeItem(STORAGE_KEYS.LIBRARY_SEARCH);
+                  localStorage.removeItem(STORAGE_KEYS.LIBRARY_PROVIDER_FILTERS);
+                  localStorage.removeItem(STORAGE_KEYS.LIBRARY_GENRES);
+                  localStorage.removeItem(STORAGE_KEYS.LIBRARY_RECENTLY_ADDED);
                   handleCloseQuickAccessPanel();
-                  handlers.handleOpenLibraryDrawer();
+                  handlers.handleOpenLibrary();
                 }}
                 lastSession={null}
                 onResume={() => {}}
@@ -399,18 +406,21 @@ const AudioPlayerComponent = () => {
                 onQapToggle={() => {}}
               />
             </Suspense>
-            <Suspense fallback={null}>
-              <LibraryDrawer
-                isOpen={state.showLibraryDrawer}
-                onClose={handlers.handleCloseLibraryDrawer}
-                onPlaylistSelect={handlePlaylistSelect}
-                onAddToQueue={handleAddToQueueFromPanel}
-                onPlayLikedTracks={handlePlayLikedTracks}
-                onQueueLikedTracks={handleQueueLikedTracks}
-                lastSession={lastSession}
-                onResume={handleResume}
-              />
-            </Suspense>
+            {state.showLibrary && (
+              <Suspense fallback={null}>
+                <LibraryPage
+                  onPlaylistSelect={(id, name, provider) => {
+                    handlers.handleCloseLibrary();
+                    handlePlaylistSelect(id, name, provider);
+                  }}
+                  onPlayLikedTracks={handlePlayLikedTracks}
+                  onQueueLikedTracks={handleQueueLikedTracks}
+                  footer={lastSession && handleResume ? (
+                    <ResumeCard session={lastSession} onResume={handleResume} />
+                  ) : undefined}
+                />
+              </Suspense>
+            )}
           </>
         )}
       </Container>

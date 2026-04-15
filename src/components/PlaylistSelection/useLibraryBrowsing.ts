@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
-import type { PlaylistSortOption, AlbumSortOption } from '@/utils/playlistFilters';
+import type { PlaylistSortOption, AlbumSortOption, RecentlyAddedFilterOption } from '@/utils/playlistFilters';
 import type { ProviderId } from '@/types/domain';
 
 type ViewMode = 'playlists' | 'albums';
@@ -11,7 +11,10 @@ export function useLibraryBrowsing(initialSearchQuery?: string, initialViewMode?
     initialViewMode ?? 'playlists',
   );
 
-  const [searchQuery, setSearchQuery] = useState(initialSearchQuery || '');
+  const [searchQuery, setSearchQuery] = useLocalStorage<string>(
+    'vorbis-player-library-search',
+    '',
+  );
 
   const [playlistSort, setPlaylistSort] = useLocalStorage<PlaylistSortOption>(
     'vorbis-player-playlist-sort',
@@ -24,7 +27,18 @@ export function useLibraryBrowsing(initialSearchQuery?: string, initialViewMode?
   );
 
   const [artistFilter, setArtistFilter] = useState<string>('');
-  const [providerFilters, setProviderFilters] = useState<ProviderId[]>([]);
+  const [providerFilters, setProviderFilters] = useLocalStorage<ProviderId[]>(
+    'vorbis-player-library-provider-filters',
+    [],
+  );
+  const [selectedGenres, setSelectedGenres] = useLocalStorage<string[]>(
+    'vorbis-player-library-genres',
+    [],
+  );
+  const [recentlyAddedFilter, setRecentlyAddedFilter] = useLocalStorage<RecentlyAddedFilterOption>(
+    'vorbis-player-library-recently-added',
+    'all',
+  );
 
   // Sync when initial props change (e.g., drawer re-opened with new filter)
   useEffect(() => {
@@ -63,7 +77,12 @@ export function useLibraryBrowsing(initialSearchQuery?: string, initialViewMode?
     });
   }, []);
 
-  const hasActiveFilters = searchQuery !== '' || artistFilter !== '' || providerFilters.length > 0;
+  const hasActiveFilters =
+    searchQuery !== '' ||
+    artistFilter !== '' ||
+    providerFilters.length > 0 ||
+    selectedGenres.length > 0 ||
+    (recentlyAddedFilter !== 'all' && recentlyAddedFilter !== undefined);
 
   return {
     viewMode,
@@ -79,6 +98,10 @@ export function useLibraryBrowsing(initialSearchQuery?: string, initialViewMode?
     providerFilters,
     setProviderFilters,
     handleProviderToggle,
+    selectedGenres,
+    setSelectedGenres,
+    recentlyAddedFilter,
+    setRecentlyAddedFilter,
     hasActiveFilters,
   };
 }
