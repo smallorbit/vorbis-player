@@ -90,6 +90,7 @@ export function useLibraryRoot({
     albumPopoverPortal,
     playlistPopoverPortal,
     confirmDeletePortal,
+    saveErrorToast,
   } = useItemActions({
     onPlaylistSelect,
     onAddToQueue,
@@ -355,5 +356,6 @@ export function useLibraryRoot({
     albumPopoverPortal,
     playlistPopoverPortal,
     confirmDeletePortal,
+    saveErrorToast,
   };
 }
