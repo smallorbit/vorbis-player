@@ -9,17 +9,23 @@ function renderFilterSidebar(props = {}) {
   const defaultProps = {
     searchQuery: '',
     onSearchChange: vi.fn(),
-    collectionType: 'playlists' as const,
-    onCollectionTypeChange: vi.fn(),
+    viewMode: 'playlists' as const,
+    onViewModeChange: vi.fn(),
     enabledProviderIds: [] as const,
     selectedProviderIds: [] as const,
-    onProviderFilterChange: vi.fn(),
+    onProviderToggle: vi.fn(),
     showProviderFilter: false,
     availableGenres: [] as string[],
     selectedGenres: [] as string[],
-    onGenreChange: vi.fn(),
+    onGenreToggle: vi.fn(),
     recentlyAdded: 'all' as const,
     onRecentlyAddedChange: vi.fn(),
+    playlistSort: 'recently-added' as const,
+    setPlaylistSort: vi.fn(),
+    albumSort: 'recently-added' as const,
+    setAlbumSort: vi.fn(),
+    hasActiveFilters: false,
+    onClearFilters: vi.fn(),
     ...props,
   };
 
@@ -37,7 +43,7 @@ describe('FilterSidebar', () => {
 
   it('renders collection type toggle buttons', () => {
     // #given
-    renderFilterSidebar({ collectionType: 'playlists' });
+    renderFilterSidebar({ viewMode: 'playlists' });
 
     // #when
     const playlistsBtn = screen.getByRole('button', { name: 'Playlists' });
@@ -50,7 +56,7 @@ describe('FilterSidebar', () => {
 
   it('highlights active collection type', () => {
     // #given
-    renderFilterSidebar({ collectionType: 'albums' });
+    renderFilterSidebar({ viewMode: 'albums' });
 
     // #when
     const albumsBtn = screen.getByRole('button', { name: 'Albums' });
@@ -59,12 +65,12 @@ describe('FilterSidebar', () => {
     expect(albumsBtn).toBeInTheDocument();
   });
 
-  it('calls onCollectionTypeChange when clicking playlists button', () => {
+  it('calls onViewModeChange when clicking playlists button', () => {
     // #given
-    const onCollectionTypeChange = vi.fn();
+    const onViewModeChange = vi.fn();
     renderFilterSidebar({
-      collectionType: 'albums',
-      onCollectionTypeChange,
+      viewMode: 'albums',
+      onViewModeChange,
     });
 
     // #when
@@ -72,15 +78,15 @@ describe('FilterSidebar', () => {
     fireEvent.click(playlistsBtn);
 
     // #then
-    expect(onCollectionTypeChange).toHaveBeenCalledWith('playlists');
+    expect(onViewModeChange).toHaveBeenCalledWith('playlists');
   });
 
-  it('calls onCollectionTypeChange when clicking albums button', () => {
+  it('calls onViewModeChange when clicking albums button', () => {
     // #given
-    const onCollectionTypeChange = vi.fn();
+    const onViewModeChange = vi.fn();
     renderFilterSidebar({
-      collectionType: 'playlists',
-      onCollectionTypeChange,
+      viewMode: 'playlists',
+      onViewModeChange,
     });
 
     // #when
@@ -88,7 +94,7 @@ describe('FilterSidebar', () => {
     fireEvent.click(albumsBtn);
 
     // #then
-    expect(onCollectionTypeChange).toHaveBeenCalledWith('albums');
+    expect(onViewModeChange).toHaveBeenCalledWith('albums');
   });
 
   it('does not render provider filter when showProviderFilter is false', () => {
@@ -105,7 +111,7 @@ describe('FilterSidebar', () => {
     expect(providers).toHaveLength(0);
   });
 
-  it('renders provider filter checkboxes when showProviderFilter is true', () => {
+  it('renders provider filter chips when showProviderFilter is true', () => {
     // #given
     renderFilterSidebar({
       showProviderFilter: true,
@@ -114,38 +120,34 @@ describe('FilterSidebar', () => {
     });
 
     // #when
-    const spotifyCheckbox = screen.getByLabelText('Filter by spotify');
-    const dropboxCheckbox = screen.getByLabelText('Filter by dropbox');
+    const spotifyChip = screen.getByLabelText('Filter by spotify');
+    const dropboxChip = screen.getByLabelText('Filter by dropbox');
 
     // #then
-    expect(spotifyCheckbox).toBeInTheDocument();
-    expect(dropboxCheckbox).toBeInTheDocument();
+    expect(spotifyChip).toBeInTheDocument();
+    expect(dropboxChip).toBeInTheDocument();
   });
 
-  it('toggles provider when clicking provider checkbox', () => {
+  it('calls onProviderToggle with provider id when clicking a provider chip', () => {
     // #given
-    const onProviderFilterChange = vi.fn();
+    const onProviderToggle = vi.fn();
     renderFilterSidebar({
       showProviderFilter: true,
       enabledProviderIds: ['spotify', 'dropbox'],
       selectedProviderIds: [],
-      onProviderFilterChange,
+      onProviderToggle,
     });
 
     // #when
-    const spotifyCheckbox = screen.getByLabelText('Filter by spotify');
-    fireEvent.click(spotifyCheckbox);
+    fireEvent.click(screen.getByLabelText('Filter by spotify'));
 
     // #then
-    expect(onProviderFilterChange).toHaveBeenCalled();
+    expect(onProviderToggle).toHaveBeenCalledWith('spotify');
   });
 
-  it('does not render Clear Filters button when no filters are active', () => {
+  it('does not render Clear Filters button when hasActiveFilters is false', () => {
     // #given
-    renderFilterSidebar({
-      collectionType: 'playlists',
-      selectedProviderIds: [],
-    });
+    renderFilterSidebar({ hasActiveFilters: false });
 
     // #when
     const clearBtn = screen.queryByRole('button', { name: 'Clear Filters' });
@@ -154,12 +156,9 @@ describe('FilterSidebar', () => {
     expect(clearBtn).not.toBeInTheDocument();
   });
 
-  it('renders Clear Filters button when collection type is albums', () => {
+  it('renders Clear Filters button when hasActiveFilters is true', () => {
     // #given
-    renderFilterSidebar({
-      collectionType: 'albums',
-      selectedProviderIds: [],
-    });
+    renderFilterSidebar({ hasActiveFilters: true });
 
     // #when
     const clearBtn = screen.queryByRole('button', { name: 'Clear Filters' });
@@ -168,41 +167,22 @@ describe('FilterSidebar', () => {
     expect(clearBtn).toBeInTheDocument();
   });
 
-  it('renders Clear Filters button when providers are filtered', () => {
+  it('calls onClearFilters when clicking Clear Filters', () => {
     // #given
+    const onClearFilters = vi.fn();
     renderFilterSidebar({
-      collectionType: 'playlists',
-      selectedProviderIds: ['spotify'],
+      hasActiveFilters: true,
+      onClearFilters,
     });
 
     // #when
-    const clearBtn = screen.queryByRole('button', { name: 'Clear Filters' });
+    fireEvent.click(screen.getByRole('button', { name: 'Clear Filters' }));
 
     // #then
-    expect(clearBtn).toBeInTheDocument();
+    expect(onClearFilters).toHaveBeenCalled();
   });
 
-  it('resets filters to default when clicking Clear Filters', () => {
-    // #given
-    const onCollectionTypeChange = vi.fn();
-    const onProviderFilterChange = vi.fn();
-    renderFilterSidebar({
-      collectionType: 'albums',
-      selectedProviderIds: ['spotify'],
-      onCollectionTypeChange,
-      onProviderFilterChange,
-    });
-
-    // #when
-    const clearBtn = screen.getByRole('button', { name: 'Clear Filters' });
-    fireEvent.click(clearBtn);
-
-    // #then
-    expect(onCollectionTypeChange).toHaveBeenCalledWith('playlists');
-    expect(onProviderFilterChange).toHaveBeenCalledWith([]);
-  });
-
-  it('checks providers by default when no filter is active', () => {
+  it('shows every provider chip as active when no filter is set', () => {
     // #given
     renderFilterSidebar({
       showProviderFilter: true,
@@ -211,15 +191,15 @@ describe('FilterSidebar', () => {
     });
 
     // #when
-    const spotifyCheckbox = screen.getByLabelText('Filter by spotify') as HTMLInputElement;
-    const dropboxCheckbox = screen.getByLabelText('Filter by dropbox') as HTMLInputElement;
+    const spotifyChip = screen.getByLabelText('Filter by spotify');
+    const dropboxChip = screen.getByLabelText('Filter by dropbox');
 
     // #then
-    expect(spotifyCheckbox.checked).toBe(true);
-    expect(dropboxCheckbox.checked).toBe(true);
+    expect(spotifyChip).toHaveAttribute('aria-pressed', 'true');
+    expect(dropboxChip).toHaveAttribute('aria-pressed', 'true');
   });
 
-  it('only checks selected providers when filter is active', () => {
+  it('shows only selected provider chips as active when filter is non-empty', () => {
     // #given
     renderFilterSidebar({
       showProviderFilter: true,
@@ -228,12 +208,74 @@ describe('FilterSidebar', () => {
     });
 
     // #when
-    const spotifyCheckbox = screen.getByLabelText('Filter by spotify') as HTMLInputElement;
-    const dropboxCheckbox = screen.getByLabelText('Filter by dropbox') as HTMLInputElement;
+    const spotifyChip = screen.getByLabelText('Filter by spotify');
+    const dropboxChip = screen.getByLabelText('Filter by dropbox');
 
     // #then
-    expect(spotifyCheckbox.checked).toBe(true);
-    expect(dropboxCheckbox.checked).toBe(false);
+    expect(spotifyChip).toHaveAttribute('aria-pressed', 'true');
+    expect(dropboxChip).toHaveAttribute('aria-pressed', 'false');
+  });
+
+  it('shows every genre chip as active when no genre is selected', () => {
+    // #given
+    renderFilterSidebar({
+      availableGenres: ['rock', 'pop'],
+      selectedGenres: [],
+    });
+
+    // #when
+    const rockChip = screen.getByLabelText('Filter by genre: rock');
+    const popChip = screen.getByLabelText('Filter by genre: pop');
+
+    // #then
+    expect(rockChip).toHaveAttribute('aria-pressed', 'true');
+    expect(popChip).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  it('shows only selected genre chips as active when filter is non-empty', () => {
+    // #given
+    renderFilterSidebar({
+      availableGenres: ['rock', 'pop'],
+      selectedGenres: ['rock'],
+    });
+
+    // #when
+    const rockChip = screen.getByLabelText('Filter by genre: rock');
+    const popChip = screen.getByLabelText('Filter by genre: pop');
+
+    // #then
+    expect(rockChip).toHaveAttribute('aria-pressed', 'true');
+    expect(popChip).toHaveAttribute('aria-pressed', 'false');
+  });
+
+  it('calls onGenreToggle with genre when clicking a genre chip', () => {
+    // #given
+    const onGenreToggle = vi.fn();
+    renderFilterSidebar({
+      availableGenres: ['rock', 'pop'],
+      selectedGenres: [],
+      onGenreToggle,
+    });
+
+    // #when
+    fireEvent.click(screen.getByLabelText('Filter by genre: rock'));
+
+    // #then
+    expect(onGenreToggle).toHaveBeenCalledWith('rock');
+  });
+
+  it('does not render an "All genres" pseudo-row when a genre is selected', () => {
+    // #given
+    renderFilterSidebar({
+      availableGenres: ['rock', 'pop'],
+      selectedGenres: ['rock'],
+    });
+
+    // #when
+    const allGenres = screen.queryByLabelText('Show all genres');
+
+    // #then
+    expect(allGenres).not.toBeInTheDocument();
   });
 
   it('renders recently added section with all time options', () => {
@@ -257,25 +299,5 @@ describe('FilterSidebar', () => {
 
     // #then
     expect(onRecentlyAddedChange).toHaveBeenCalledWith('30-days');
-  });
-
-  it('shows Clear Filters button when recently added is not all', () => {
-    // #given
-    renderFilterSidebar({ recentlyAdded: '7-days' });
-
-    // #then
-    expect(screen.getByRole('button', { name: 'Clear Filters' })).toBeInTheDocument();
-  });
-
-  it('resets recently added when clicking Clear Filters', () => {
-    // #given
-    const onRecentlyAddedChange = vi.fn();
-    renderFilterSidebar({ recentlyAdded: '7-days', onRecentlyAddedChange });
-
-    // #when
-    fireEvent.click(screen.getByRole('button', { name: 'Clear Filters' }));
-
-    // #then
-    expect(onRecentlyAddedChange).toHaveBeenCalledWith('all');
   });
 });

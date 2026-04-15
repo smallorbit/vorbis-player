@@ -13,7 +13,7 @@ export function useLibraryBrowsing(initialSearchQuery?: string, initialViewMode?
 
   const [searchQuery, setSearchQuery] = useLocalStorage<string>(
     'vorbis-player-library-search',
-    '',
+    initialSearchQuery ?? '',
   );
 
   const [playlistSort, setPlaylistSort] = useLocalStorage<PlaylistSortOption>(
@@ -40,42 +40,49 @@ export function useLibraryBrowsing(initialSearchQuery?: string, initialViewMode?
     'all',
   );
 
-  // Sync when initial props change (e.g., drawer re-opened with new filter)
   useEffect(() => {
-    if (initialSearchQuery !== undefined) {
-      setSearchQuery(initialSearchQuery);
-    }
-  }, [initialSearchQuery]);
-
-  useEffect(() => {
-    if (initialViewMode) {
-      setViewMode(initialViewMode);
-    }
-  }, [initialViewMode]);
-
-  // Clear artist filter when switching away from albums view
-  useEffect(() => {
-    if (viewMode === 'playlists') {
-      if (artistFilter !== '') {
-        setArtistFilter('');
-      }
+    if (viewMode === 'playlists' && artistFilter !== '') {
+      setArtistFilter('');
     }
   }, [viewMode, artistFilter]);
 
   const handleProviderToggle = useCallback((provider: ProviderId) => {
     setProviderFilters((prev) => {
       if (prev.length === 0) {
-        // First toggle: activate only this provider (deactivate others)
         return [provider];
       }
+      if (prev.length === 1 && prev[0] === provider) {
+        return [];
+      }
       if (prev.includes(provider)) {
-        const next = prev.filter((p) => p !== provider);
-        // If removing last filter, return to "all" (empty = no filter)
-        return next;
+        return prev.filter((p) => p !== provider);
       }
       return [...prev, provider];
     });
-  }, []);
+  }, [setProviderFilters]);
+
+  const handleGenreToggle = useCallback((genre: string) => {
+    setSelectedGenres((prev) => {
+      if (prev.length === 0) {
+        return [genre];
+      }
+      if (prev.length === 1 && prev[0] === genre) {
+        return [];
+      }
+      if (prev.includes(genre)) {
+        return prev.filter((g) => g !== genre);
+      }
+      return [...prev, genre];
+    });
+  }, [setSelectedGenres]);
+
+  const handleClearFilters = useCallback(() => {
+    setSearchQuery('');
+    setArtistFilter('');
+    setProviderFilters([]);
+    setSelectedGenres([]);
+    setRecentlyAddedFilter('all');
+  }, [setSearchQuery, setProviderFilters, setSelectedGenres, setRecentlyAddedFilter]);
 
   const hasActiveFilters =
     searchQuery !== '' ||
@@ -100,8 +107,10 @@ export function useLibraryBrowsing(initialSearchQuery?: string, initialViewMode?
     handleProviderToggle,
     selectedGenres,
     setSelectedGenres,
+    handleGenreToggle,
     recentlyAddedFilter,
     setRecentlyAddedFilter,
     hasActiveFilters,
+    handleClearFilters,
   };
 }

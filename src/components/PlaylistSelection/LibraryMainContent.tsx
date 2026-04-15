@@ -94,13 +94,14 @@ export function LibraryMainContent(): React.JSX.Element {
     albumSort,
     setAlbumSort,
     providerFilters,
-    setProviderFilters,
     handleProviderToggle,
     availableGenres,
     selectedGenres,
-    setSelectedGenres,
+    handleGenreToggle,
     recentlyAddedFilter,
     setRecentlyAddedFilter,
+    hasActiveFilters,
+    handleClearFilters,
   } = useLibraryBrowsingContext();
   const { onLibraryRefresh, isLibraryRefreshing } = useLibraryActions();
   const { inDrawer, showProviderBadges, enabledProviderIds } = useLibraryData();
@@ -112,21 +113,23 @@ export function LibraryMainContent(): React.JSX.Element {
         <FilterSidebar
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
-          collectionType={viewMode}
-          onCollectionTypeChange={setViewMode}
+          viewMode={viewMode}
+          onViewModeChange={setViewMode}
           enabledProviderIds={enabledProviderIds}
           selectedProviderIds={providerFilters}
-          onProviderFilterChange={setProviderFilters}
+          onProviderToggle={handleProviderToggle}
           showProviderFilter={showProviderBadges}
           availableGenres={availableGenres}
           selectedGenres={selectedGenres}
-          onGenreChange={setSelectedGenres}
+          onGenreToggle={handleGenreToggle}
           recentlyAdded={recentlyAddedFilter}
           onRecentlyAddedChange={setRecentlyAddedFilter}
           playlistSort={playlistSort}
           setPlaylistSort={setPlaylistSort}
           albumSort={albumSort}
           setAlbumSort={setAlbumSort}
+          hasActiveFilters={hasActiveFilters}
+          onClearFilters={handleClearFilters}
         />
         <MainContent>
           {viewMode === 'playlists' && <PlaylistGrid />}

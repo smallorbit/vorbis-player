@@ -203,7 +203,7 @@ describe('PlaylistSelection', () => {
   });
 
   it('Liked Songs item is present with LIKED_SONGS_ID', () => {
-    // #given
+    // #given — likedSongsPerProvider is empty and unified is inactive: resolves to active provider
     const { onPlaylistSelect } = renderLibraryPage();
 
     // #when
@@ -211,7 +211,7 @@ describe('PlaylistSelection', () => {
 
     // #then
     expect(screen.getByText('Liked Songs')).toBeTruthy();
-    expect(onPlaylistSelect).toHaveBeenCalledWith(LIKED_SONGS_ID, 'Liked Songs', undefined);
+    expect(onPlaylistSelect).toHaveBeenCalledWith(LIKED_SONGS_ID, 'Liked Songs', 'spotify');
   });
 
 });
