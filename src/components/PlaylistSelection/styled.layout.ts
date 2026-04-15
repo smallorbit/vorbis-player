@@ -34,11 +34,7 @@ export const DrawerContentWrapper = styled.div`
   min-height: 0;
   display: flex;
   flex-direction: column;
-  padding: 0 ${theme.spacing.md};
   overflow: hidden;
-  max-width: 1000px;
-  margin-left: auto;
-  margin-right: auto;
   width: 100%;
   box-sizing: border-box;
 `;
