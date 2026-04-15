@@ -27,9 +27,11 @@ export interface LibraryBrowsingContextValue {
   availableGenres: string[];
   selectedGenres: string[];
   setSelectedGenres: (v: string[]) => void;
+  handleGenreToggle: (genre: string) => void;
   recentlyAddedFilter: RecentlyAddedFilterOption;
   setRecentlyAddedFilter: (v: RecentlyAddedFilterOption) => void;
   hasActiveFilters: boolean;
+  handleClearFilters: () => void;
 }
 
 export interface LibraryPinContextValue {
