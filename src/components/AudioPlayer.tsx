@@ -23,7 +23,6 @@ import { STORAGE_KEYS } from '@/constants/storage';
 import type { ClearCacheOptions } from '@/components/VisualEffectsMenu';
 import { useSessionPersistence } from '@/hooks/useSessionPersistence';
 import QuickAccessPanel from './QuickAccessPanel';
-import { BOTTOM_BAR_HEIGHT } from './BottomBar/styled';
 
 const VisualEffectsMenu = lazy(() => import('./VisualEffectsMenu/index'));
 const LibraryPage = lazy(() => import('./PlaylistSelection'));
@@ -32,7 +31,6 @@ const Container = styled.div`
   width: 100%;
   min-height: 100vh;
   min-height: 100dvh;
-  padding-bottom: ${BOTTOM_BAR_HEIGHT}px;
   ${flexCenter};
 `;
 
