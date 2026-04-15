@@ -32,6 +32,11 @@ export const PageSelectionCard = styled(Card)<{ $maxWidth: number; $overlay?: bo
   flex-direction: column;
   height: ${({ $overlay }) => ($overlay ? '100dvh' : 'auto')};
   max-height: ${({ $overlay }) => ($overlay ? '100dvh' : 'min(90dvh, 900px)')};
+  ${({ $overlay }) => $overlay && `
+    padding: 0;
+    margin: 0;
+    box-sizing: border-box;
+  `}
 `;
 
 export const DrawerContentWrapper = styled.div`
