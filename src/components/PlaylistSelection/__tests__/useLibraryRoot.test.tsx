@@ -348,7 +348,43 @@ describe('useLibraryRoot behavioral coverage', () => {
       expect(onPlaylistSelect).toHaveBeenCalledWith('liked-songs', 'Liked Songs', 'spotify');
     });
 
-    it('passes undefined provider when multiple providers have liked songs', () => {
+    it('routes through unified path when unified liked is active', () => {
+      // #given
+      const onPlaylistSelect = vi.fn();
+      mockUseLibrarySync.mockReturnValue({
+        playlists: [],
+        albums: [],
+        likedSongsCount: 10,
+        likedSongsPerProvider: [
+          { provider: 'spotify' as const, count: 5 },
+          { provider: 'dropbox' as const, count: 5 },
+        ],
+        isInitialLoadComplete: true,
+        isSyncing: false,
+        isLikedSongsSyncing: false,
+        lastSyncTimestamp: Date.now(),
+        syncError: null,
+        refreshNow: vi.fn(),
+        removeCollection: vi.fn(),
+      });
+      mockUseUnifiedLikedTracks.mockReturnValue({
+        isUnifiedLikedActive: true,
+        totalCount: 10,
+      });
+      const { result } = renderHook(() =>
+        useLibraryRoot({ onPlaylistSelect, inDrawer: false }),
+      );
+
+      // #when — click liked songs without specifying a provider
+      act(() => {
+        result.current.actionsValue.onLikedSongsClick(undefined);
+      });
+
+      // #then — provider is undefined (unified route)
+      expect(onPlaylistSelect).toHaveBeenCalledWith('liked-songs', 'Liked Songs', undefined);
+    });
+
+    it('falls back to active provider when multiple providers and unified inactive', () => {
       // #given
       const onPlaylistSelect = vi.fn();
       mockUseLibrarySync.mockReturnValue({
@@ -376,8 +412,8 @@ describe('useLibraryRoot behavioral coverage', () => {
         result.current.actionsValue.onLikedSongsClick(undefined);
       });
 
-      // #then — provider remains undefined (unified route)
-      expect(onPlaylistSelect).toHaveBeenCalledWith('liked-songs', 'Liked Songs', undefined);
+      // #then — ambiguous branch falls back to active descriptor id (logged via debug)
+      expect(onPlaylistSelect).toHaveBeenCalledWith('liked-songs', 'Liked Songs', 'spotify');
     });
   });
 });
