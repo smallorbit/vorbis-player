@@ -122,9 +122,11 @@ export function useLibraryRoot({
     return Math.min(viewport.width * 0.6, 600);
   }, [viewport.width, isMobile, isTablet]);
 
+  const ignoreProviderFilters = isMobile;
+
   const playlistLibraryView = useMemo(() => {
     let items = playlists;
-    if (providerFilters.length > 0) {
+    if (!ignoreProviderFilters && providerFilters.length > 0) {
       items = items.filter((p) => p.provider && providerFilters.includes(p.provider));
     }
     let filtered = filterPlaylistsOnly(items, searchQuery, selectedGenres);
@@ -137,14 +139,14 @@ export function useLibraryRoot({
       (p) => p.id,
       (subgroup) => sortPlaylistSubgroup(subgroup, playlistSort)
     );
-  }, [playlists, searchQuery, playlistSort, providerFilters, pinnedPlaylistIds, selectedGenres, recentlyAddedFilter]);
+  }, [playlists, searchQuery, playlistSort, providerFilters, ignoreProviderFilters, pinnedPlaylistIds, selectedGenres, recentlyAddedFilter]);
 
   const pinnedPlaylists = playlistLibraryView.pinned;
   const unpinnedPlaylists = playlistLibraryView.unpinned;
 
   const albumLibraryView = useMemo(() => {
     let items = albums;
-    if (providerFilters.length > 0) {
+    if (!ignoreProviderFilters && providerFilters.length > 0) {
       items = items.filter((a) => a.provider && providerFilters.includes(a.provider));
     }
     let filtered = filterAlbumsOnly(items, searchQuery, 'all', artistFilter, selectedGenres);
@@ -157,7 +159,7 @@ export function useLibraryRoot({
       (a) => a.id,
       (subgroup) => sortAlbumSubgroup(subgroup, albumSort)
     );
-  }, [albums, searchQuery, albumSort, artistFilter, providerFilters, pinnedAlbumIds, selectedGenres, recentlyAddedFilter]);
+  }, [albums, searchQuery, albumSort, artistFilter, providerFilters, ignoreProviderFilters, pinnedAlbumIds, selectedGenres, recentlyAddedFilter]);
 
   const pinnedAlbums = albumLibraryView.pinned;
   const unpinnedAlbums = albumLibraryView.unpinned;
