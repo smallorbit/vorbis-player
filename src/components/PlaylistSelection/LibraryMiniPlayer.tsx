@@ -4,6 +4,7 @@ import { useCurrentTrackContext } from '@/contexts/TrackContext';
 
 const Strip = styled.button`
   display: flex;
+  flex-shrink: 0;
   align-items: center;
   gap: ${theme.spacing.sm};
   width: 100%;

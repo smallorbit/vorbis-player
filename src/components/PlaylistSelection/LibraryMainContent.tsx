@@ -153,25 +153,6 @@ export function LibraryMainContent(): React.JSX.Element {
 
   return (
     <>
-      {showProviderBadges && (
-        <ProviderFilterRow>
-          {enabledProviderIds.map((provider) => {
-            const isActive = providerFilters.length === 0 || providerFilters.includes(provider);
-            return (
-              <ProviderChip
-                key={provider}
-                $active={isActive}
-                onClick={() => handleProviderToggle(provider)}
-                aria-pressed={isActive}
-                aria-label={`Filter by ${provider}`}
-              >
-                {provider}
-              </ProviderChip>
-            );
-          })}
-        </ProviderFilterRow>
-      )}
-
       <div style={{ flexShrink: 0 }}>
         <TabsContainer>
           <TabButton $active={viewMode === 'playlists'} onClick={() => setViewMode('playlists')}>
@@ -194,6 +175,25 @@ export function LibraryMainContent(): React.JSX.Element {
           isLibraryRefreshing={isLibraryRefreshing}
         />
       </div>
+
+      {showProviderBadges && (
+        <ProviderFilterRow>
+          {enabledProviderIds.map((provider) => {
+            const isActive = providerFilters.length === 0 || providerFilters.includes(provider);
+            return (
+              <ProviderChip
+                key={provider}
+                $active={isActive}
+                onClick={() => handleProviderToggle(provider)}
+                aria-pressed={isActive}
+                aria-label={`Filter by ${provider}`}
+              >
+                {provider}
+              </ProviderChip>
+            );
+          })}
+        </ProviderFilterRow>
+      )}
     </>
   );
 }
