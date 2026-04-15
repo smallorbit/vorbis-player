@@ -15,6 +15,7 @@ import {
   TabsContainer,
   TabButton,
 } from './styled';
+import type { ProviderId } from '@/types/domain';
 
 const DrawerContent = styled.div`
   display: flex;
@@ -40,6 +41,47 @@ const MainContent = styled.div`
   }
 `;
 
+const ProviderFilterRow = styled.div`
+  display: flex;
+  flex-shrink: 0;
+  gap: ${theme.spacing.sm};
+  padding: ${theme.spacing.sm} ${theme.spacing.md};
+  overflow-x: auto;
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+`;
+
+const ProviderChip = styled.button<{ $active: boolean }>`
+  display: flex;
+  align-items: center;
+  gap: ${theme.spacing.xs};
+  flex-shrink: 0;
+  padding: ${theme.spacing.xs} ${theme.spacing.md};
+  border-radius: 999px;
+  border: 1px solid
+    ${({ $active }) =>
+      $active ? theme.colors.control.borderHover : theme.colors.control.border};
+  background: ${({ $active }) =>
+    $active ? theme.colors.control.backgroundHover : 'transparent'};
+  color: ${({ $active }) => ($active ? theme.colors.white : theme.colors.muted.foreground)};
+  font-size: ${theme.fontSize.sm};
+  font-weight: ${({ $active }) => ($active ? theme.fontWeight.semibold : theme.fontWeight.normal)};
+  cursor: pointer;
+  transition: all ${theme.transitions.fast};
+
+  &:hover {
+    background: ${theme.colors.control.backgroundHover};
+    border-color: ${theme.colors.control.borderHover};
+    color: ${theme.colors.white};
+  }
+
+  &:active {
+    opacity: 0.8;
+  }
+`;
+
 export function LibraryMainContent(): React.JSX.Element {
   const {
     viewMode,
@@ -52,6 +94,7 @@ export function LibraryMainContent(): React.JSX.Element {
     setAlbumSort,
     providerFilters,
     setProviderFilters,
+    handleProviderToggle,
     availableGenres,
     selectedGenres,
     setSelectedGenres,
@@ -111,6 +154,22 @@ export function LibraryMainContent(): React.JSX.Element {
 
   return (
     <>
+      {showProviderBadges && (
+        <ProviderFilterRow>
+          {enabledProviderIds.map((provider: ProviderId) => (
+            <ProviderChip
+              key={provider}
+              $active={providerFilters.length === 0 || providerFilters.includes(provider)}
+              onClick={() => handleProviderToggle(provider)}
+              aria-pressed={providerFilters.length === 0 || providerFilters.includes(provider)}
+              aria-label={`Filter by ${provider}`}
+            >
+              {provider}
+            </ProviderChip>
+          ))}
+        </ProviderFilterRow>
+      )}
+
       <div style={{ flexShrink: 0 }}>
         <TabsContainer>
           <TabButton $active={viewMode === 'playlists'} onClick={() => setViewMode('playlists')}>
