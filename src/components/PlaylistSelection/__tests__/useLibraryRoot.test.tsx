@@ -115,6 +115,273 @@ function albumNames(result: { current: ReturnType<typeof useLibraryRoot> }): str
   return result.current.pinValue.unpinnedAlbums.map((a) => a.name);
 }
 
+describe('useLibraryRoot behavioral coverage', () => {
+  beforeEach(() => {
+    window.localStorage.clear();
+    mockIsMobile.current = false;
+    vi.clearAllMocks();
+    setupDefaultMocks();
+  });
+
+  describe('combined filter interactions', () => {
+    it('applies provider, genre, and recently-added filters together on albums', () => {
+      // #given
+      const recent = new Date(Date.now() - 3 * 86_400_000).toISOString();
+      const old = new Date(Date.now() - 60 * 86_400_000).toISOString();
+      setLibrarySync(
+        [],
+        [
+          makeAlbumInfo({ id: 'a-1', name: 'Spotify Rock Recent',  provider: 'spotify',  genres: ['Rock'],   added_at: recent }),
+          makeAlbumInfo({ id: 'a-2', name: 'Spotify Rock Old',     provider: 'spotify',  genres: ['Rock'],   added_at: old }),
+          makeAlbumInfo({ id: 'a-3', name: 'Spotify Jazz Recent',  provider: 'spotify',  genres: ['Jazz'],   added_at: recent }),
+          makeAlbumInfo({ id: 'a-4', name: 'Dropbox Rock Recent',  provider: 'dropbox',  genres: ['Rock'],   added_at: recent }),
+        ],
+      );
+      const { result } = renderLibraryRoot();
+
+      // #when — provider=spotify, genre=Rock, recently-added=7-days
+      act(() => {
+        result.current.browsingValue.setProviderFilters(['spotify']);
+        result.current.browsingValue.setSelectedGenres(['Rock']);
+        result.current.browsingValue.setRecentlyAddedFilter('7-days');
+      });
+
+      // #then — only the one item matching all three filters survives
+      expect(albumNames(result)).toEqual(['Spotify Rock Recent']);
+    });
+
+    it('applies provider and recently-added filters together on playlists', () => {
+      // #given
+      const recent = new Date(Date.now() - 2 * 86_400_000).toISOString();
+      const old = new Date(Date.now() - 60 * 86_400_000).toISOString();
+      setLibrarySync(
+        [
+          makePlaylistInfo({ id: 'p-1', name: 'Spotify Recent',  provider: 'spotify',  added_at: recent }),
+          makePlaylistInfo({ id: 'p-2', name: 'Spotify Old',     provider: 'spotify',  added_at: old }),
+          makePlaylistInfo({ id: 'p-3', name: 'Dropbox Recent',  provider: 'dropbox',  added_at: recent }),
+        ],
+        [],
+      );
+      const { result } = renderLibraryRoot();
+
+      // #when — provider=spotify AND recently-added=7-days
+      act(() => {
+        result.current.browsingValue.setProviderFilters(['spotify']);
+        result.current.browsingValue.setRecentlyAddedFilter('7-days');
+      });
+
+      // #then — only the spotify + recent playlist passes both filters
+      expect(playlistNames(result)).toEqual(['Spotify Recent']);
+    });
+  });
+
+  describe('mobile provider filter bypass', () => {
+    beforeEach(() => {
+      mockIsMobile.current = true;
+    });
+
+    it('shows items from all providers when isMobile is true, even when providerFilters is set', () => {
+      // #given
+      setLibrarySync(
+        [
+          makePlaylistInfo({ id: 'p-1', name: 'Spotify Playlist', provider: 'spotify' }),
+          makePlaylistInfo({ id: 'p-2', name: 'Dropbox Playlist', provider: 'dropbox' }),
+        ],
+        [
+          makeAlbumInfo({ id: 'a-1', name: 'Spotify Album', provider: 'spotify' }),
+          makeAlbumInfo({ id: 'a-2', name: 'Dropbox Album', provider: 'dropbox' }),
+        ],
+      );
+      const { result } = renderLibraryRoot();
+
+      // #when — set a provider filter that would exclude dropbox on desktop
+      act(() => {
+        result.current.browsingValue.setProviderFilters(['spotify']);
+      });
+
+      // #then — both providers' items appear in playlists and albums
+      expect(playlistNames(result).sort()).toEqual(['Dropbox Playlist', 'Spotify Playlist']);
+      expect(albumNames(result).sort()).toEqual(['Dropbox Album', 'Spotify Album']);
+    });
+  });
+
+  describe('error messaging', () => {
+    it('surfaces libraryError mentioning the active provider name when all collections are empty and load is complete', () => {
+      // #given — all counts are 0 and initial load is done
+      mockUseLibrarySync.mockReturnValue({
+        playlists: [],
+        albums: [],
+        likedSongsCount: 0,
+        likedSongsPerProvider: [],
+        isInitialLoadComplete: true,
+        isSyncing: false,
+        isLikedSongsSyncing: false,
+        lastSyncTimestamp: Date.now(),
+        syncError: null,
+        refreshNow: vi.fn(),
+        removeCollection: vi.fn(),
+      });
+
+      // #when
+      const { result } = renderLibraryRoot();
+
+      // #then — error string names the active provider
+      expect(typeof result.current.statusContentProps.error).toBe('string');
+      expect(result.current.statusContentProps.error).toContain('Spotify');
+    });
+
+    it('does not surface libraryError before initial load completes', () => {
+      // #given — load still in progress
+      mockUseLibrarySync.mockReturnValue({
+        playlists: [],
+        albums: [],
+        likedSongsCount: 0,
+        likedSongsPerProvider: [],
+        isInitialLoadComplete: false,
+        isSyncing: true,
+        isLikedSongsSyncing: false,
+        lastSyncTimestamp: null,
+        syncError: null,
+        refreshNow: vi.fn(),
+        removeCollection: vi.fn(),
+      });
+
+      // #when
+      const { result } = renderLibraryRoot();
+
+      // #then — no error yet
+      expect(result.current.statusContentProps.error).toBeNull();
+    });
+  });
+
+  describe('pin composition', () => {
+    it('pinned playlist appears in pinnedPlaylists and not in unpinnedPlaylists', () => {
+      // #given
+      setLibrarySync(
+        [
+          makePlaylistInfo({ id: 'p-pinned', name: 'Pinned Playlist', provider: 'spotify' }),
+          makePlaylistInfo({ id: 'p-free',   name: 'Free Playlist',   provider: 'spotify' }),
+        ],
+        [],
+      );
+      mockUsePinnedItems.mockReturnValue({
+        pinnedPlaylistIds: ['p-pinned'],
+        pinnedAlbumIds: [],
+        isPlaylistPinned: (id: string) => id === 'p-pinned',
+        isAlbumPinned: () => false,
+        togglePinPlaylist: vi.fn(),
+        togglePinAlbum: vi.fn(),
+        canPinMorePlaylists: true,
+        canPinMoreAlbums: true,
+      });
+
+      // #when
+      const { result } = renderLibraryRoot();
+
+      // #then
+      const pinnedNames = result.current.pinValue.pinnedPlaylists.map((p) => p.name);
+      const unpinnedNames = result.current.pinValue.unpinnedPlaylists.map((p) => p.name);
+      expect(pinnedNames).toContain('Pinned Playlist');
+      expect(unpinnedNames).not.toContain('Pinned Playlist');
+      expect(unpinnedNames).toContain('Free Playlist');
+    });
+
+    it('pinned album appears in pinnedAlbums and not in unpinnedAlbums', () => {
+      // #given
+      setLibrarySync(
+        [],
+        [
+          makeAlbumInfo({ id: 'a-pinned', name: 'Pinned Album',  provider: 'spotify' }),
+          makeAlbumInfo({ id: 'a-free',   name: 'Free Album',    provider: 'spotify' }),
+        ],
+      );
+      mockUsePinnedItems.mockReturnValue({
+        pinnedPlaylistIds: [],
+        pinnedAlbumIds: ['a-pinned'],
+        isPlaylistPinned: () => false,
+        isAlbumPinned: (id: string) => id === 'a-pinned',
+        togglePinPlaylist: vi.fn(),
+        togglePinAlbum: vi.fn(),
+        canPinMorePlaylists: true,
+        canPinMoreAlbums: true,
+      });
+
+      // #when
+      const { result } = renderLibraryRoot();
+
+      // #then
+      const pinnedNames = result.current.pinValue.pinnedAlbums.map((a) => a.name);
+      const unpinnedNames = result.current.pinValue.unpinnedAlbums.map((a) => a.name);
+      expect(pinnedNames).toContain('Pinned Album');
+      expect(unpinnedNames).not.toContain('Pinned Album');
+      expect(unpinnedNames).toContain('Free Album');
+    });
+  });
+
+  describe('liked songs provider resolution', () => {
+    it('resolves to the single provider when only one provider has liked songs', () => {
+      // #given
+      const onPlaylistSelect = vi.fn();
+      mockUseLibrarySync.mockReturnValue({
+        playlists: [],
+        albums: [],
+        likedSongsCount: 5,
+        likedSongsPerProvider: [{ provider: 'spotify' as const, count: 5 }],
+        isInitialLoadComplete: true,
+        isSyncing: false,
+        isLikedSongsSyncing: false,
+        lastSyncTimestamp: Date.now(),
+        syncError: null,
+        refreshNow: vi.fn(),
+        removeCollection: vi.fn(),
+      });
+      const { result } = renderHook(() =>
+        useLibraryRoot({ onPlaylistSelect, inDrawer: false }),
+      );
+
+      // #when — click liked songs without specifying a provider
+      act(() => {
+        result.current.actionsValue.onLikedSongsClick(undefined);
+      });
+
+      // #then — routed to liked-songs with the single provider resolved
+      expect(onPlaylistSelect).toHaveBeenCalledWith('liked-songs', 'Liked Songs', 'spotify');
+    });
+
+    it('passes undefined provider when multiple providers have liked songs', () => {
+      // #given
+      const onPlaylistSelect = vi.fn();
+      mockUseLibrarySync.mockReturnValue({
+        playlists: [],
+        albums: [],
+        likedSongsCount: 10,
+        likedSongsPerProvider: [
+          { provider: 'spotify' as const, count: 5 },
+          { provider: 'dropbox' as const, count: 5 },
+        ],
+        isInitialLoadComplete: true,
+        isSyncing: false,
+        isLikedSongsSyncing: false,
+        lastSyncTimestamp: Date.now(),
+        syncError: null,
+        refreshNow: vi.fn(),
+        removeCollection: vi.fn(),
+      });
+      const { result } = renderHook(() =>
+        useLibraryRoot({ onPlaylistSelect, inDrawer: false }),
+      );
+
+      // #when — click liked songs without specifying a provider
+      act(() => {
+        result.current.actionsValue.onLikedSongsClick(undefined);
+      });
+
+      // #then — provider remains undefined (unified route)
+      expect(onPlaylistSelect).toHaveBeenCalledWith('liked-songs', 'Liked Songs', undefined);
+    });
+  });
+});
+
 describe('useLibraryRoot grid behavior', () => {
   beforeEach(() => {
     window.localStorage.clear();
