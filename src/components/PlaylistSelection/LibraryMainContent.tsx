@@ -168,13 +168,11 @@ export function LibraryMainContent(): React.JSX.Element {
 
       {viewMode === 'albums' && <AlbumGrid />}
 
-      <div style={{ marginTop: '1.5rem' }}>
-        <LibraryControls
-          inDrawer={false}
-          onLibraryRefresh={onLibraryRefresh}
-          isLibraryRefreshing={isLibraryRefreshing}
-        />
-      </div>
+      <LibraryControls
+        inDrawer={false}
+        onLibraryRefresh={onLibraryRefresh}
+        isLibraryRefreshing={isLibraryRefreshing}
+      />
 
       {showProviderBadges && (
         <ProviderFilterRow>
