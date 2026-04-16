@@ -79,18 +79,13 @@ const PlaceholderThumbnailSvg = () => (
   </svg>
 );
 
-interface RecentlyPlayedThumbProps {
-  imageUrl?: string | null;
-  alt: string;
-}
-
-const RecentlyPlayedThumb = ({ imageUrl, alt }: RecentlyPlayedThumbProps) => {
+const RecentlyPlayedThumb = ({ imageUrl }: { imageUrl?: string | null }) => {
   const [errored, setErrored] = useState(false);
   const showImage = !!imageUrl && !errored;
   return (
-    <RecentlyPlayedThumbnail aria-hidden={showImage ? undefined : true}>
+    <RecentlyPlayedThumbnail aria-hidden>
       {showImage ? (
-        <img src={imageUrl} alt={alt} loading="lazy" onError={() => setErrored(true)} />
+        <img src={imageUrl} alt="" loading="lazy" onError={() => setErrored(true)} />
       ) : (
         <PlaceholderThumbnailSvg />
       )}
@@ -229,7 +224,7 @@ export const FilterSidebar = ({
                   onClick={() => onRecentlyPlayedSelect(entry)}
                   aria-label={`Play ${entry.name}`}
                 >
-                  <RecentlyPlayedThumb imageUrl={entry.imageUrl} alt="" />
+                  <RecentlyPlayedThumb imageUrl={entry.imageUrl} />
                   <RecentlyPlayedLabel>{entry.name}</RecentlyPlayedLabel>
                 </RecentlyPlayedItem>
               );
