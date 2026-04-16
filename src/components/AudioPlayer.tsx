@@ -119,7 +119,7 @@ const AudioPlayerComponent = () => {
     (id: string, name?: string, provider?: import('@/types/domain').ProviderId) => {
       if (name) collectionNameRef.current = name;
       collectionProviderRef.current = provider;
-      handlers.loadCollection(id, provider);
+      handlers.loadCollection(id, provider, name);
     },
     [handlers]
   );

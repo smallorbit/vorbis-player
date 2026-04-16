@@ -1,8 +1,8 @@
 import { useCallback } from 'react';
-import type { MediaTrack, ProviderId } from '@/types/domain';
+import type { CollectionRef, MediaTrack, ProviderId } from '@/types/domain';
 import type { ProviderDescriptor } from '@/types/providers';
 import type { TrackOperations } from '@/types/trackOperations';
-import { LIKED_SONGS_ID, resolvePlaylistRef } from '@/constants/playlist';
+import { LIKED_SONGS_ID, LIKED_SONGS_NAME, resolvePlaylistRef } from '@/constants/playlist';
 import { shuffleArray } from '@/utils/shuffleArray';
 import { providerRegistry } from '@/providers/registry';
 import { logQueue } from '@/lib/debugLog';
@@ -21,10 +21,11 @@ interface UseCollectionLoaderProps {
   spotifyHandlePlaylistSelect: (playlistId: string) => Promise<MediaTrack[]>;
   stopRadioBase: () => void;
   radioStateIsActive: boolean;
+  record: (ref: CollectionRef, name: string) => void;
 }
 
 interface UseCollectionLoaderReturn {
-  loadCollection: (playlistId: string, provider?: ProviderId) => Promise<number>;
+  loadCollection: (playlistId: string, provider?: ProviderId, name?: string) => Promise<number>;
   playTracksDirectly: (tracks: MediaTrack[], collectionId: string, provider?: ProviderId) => Promise<number>;
 }
 
@@ -41,6 +42,7 @@ export function useCollectionLoader({
   spotifyHandlePlaylistSelect,
   stopRadioBase,
   radioStateIsActive,
+  record,
 }: UseCollectionLoaderProps): UseCollectionLoaderReturn {
   const { setError, setIsLoading, setSelectedPlaylistId, setTracks, setOriginalTracks, setCurrentTrackIndex, mediaTracksRef } = trackOps;
 
@@ -79,7 +81,7 @@ export function useCollectionLoader({
     setIsLoading(false);
   }, [shuffleEnabled, mediaTracksRef, setOriginalTracks, setTracks, setCurrentTrackIndex, setIsLoading]);
 
-  const loadUnifiedLiked = useCallback(async (playlistId: string): Promise<number> => {
+  const loadUnifiedLiked = useCallback(async (playlistId: string, name?: string): Promise<number> => {
     beginLoad(playlistId);
     try {
       const descriptorMap = new Map(
@@ -111,6 +113,10 @@ export function useCollectionLoader({
         }
         queueSnapshot('Unified Liked loaded', merged, mediaTracksRef.current.length, 0);
         await playTrack(0);
+        record(
+          { provider: firstTrack.provider, kind: 'liked' },
+          name ?? LIKED_SONGS_NAME,
+        );
       }
       return merged.length;
     } catch (err) {
@@ -119,7 +125,7 @@ export function useCollectionLoader({
   }, [
     beginLoad, clearWithError, handleLoadError, applyTracks,
     connectedProviderIds, getDescriptor, activeDescriptor,
-    setActiveProviderId, drivingProviderRef, mediaTracksRef, playTrack,
+    setActiveProviderId, drivingProviderRef, mediaTracksRef, playTrack, record,
   ]);
 
   const loadContextPlayback = useCallback(async (
@@ -144,7 +150,7 @@ export function useCollectionLoader({
   }, [drivingProviderRef, mediaTracksRef, setIsLoading, spotifyHandlePlaylistSelect]);
 
   const loadProviderCollection = useCallback(async (
-    playlistId: string, targetDescriptor: ProviderDescriptor,
+    playlistId: string, targetDescriptor: ProviderDescriptor, name?: string,
   ): Promise<number> => {
     const providerId = targetDescriptor.id;
 
@@ -168,23 +174,24 @@ export function useCollectionLoader({
       drivingProviderRef.current = providerId;
       queueSnapshot(`${providerId} playlist loaded`, list, mediaTracksRef.current.length, 0);
       await playTrack(0);
+      record(collectionRef, name ?? collectionId);
       return list.length;
     } catch (err) {
       return handleLoadError(err, 'Failed to load collection.');
     }
   }, [
     activeDescriptor, beginLoad, clearWithError, handleLoadError,
-    applyTracks, loadContextPlayback, drivingProviderRef, mediaTracksRef, playTrack,
+    applyTracks, loadContextPlayback, drivingProviderRef, mediaTracksRef, playTrack, record,
   ]);
 
   const loadCollection = useCallback(
-    async (playlistId: string, provider?: ProviderId): Promise<number> => {
+    async (playlistId: string, provider?: ProviderId, name?: string): Promise<number> => {
       logQueue('loadCollection called — playlistId=%s provider=%s', playlistId, provider ?? 'active');
 
       if (radioStateIsActive) stopRadioBase();
 
       if (playlistId === LIKED_SONGS_ID && !provider && isUnifiedLikedActive) {
-        return loadUnifiedLiked(playlistId);
+        return loadUnifiedLiked(playlistId, name);
       }
 
       const targetDescriptor = provider ? getDescriptor(provider) : activeDescriptor;
@@ -195,7 +202,7 @@ export function useCollectionLoader({
       }
 
       if (targetDescriptor) {
-        return loadProviderCollection(playlistId, targetDescriptor);
+        return loadProviderCollection(playlistId, targetDescriptor, name);
       }
 
       return 0;
