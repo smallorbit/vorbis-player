@@ -36,6 +36,10 @@ const SearchInputWrapper = styled.div`
   &:focus-within {
     border-color: ${theme.colors.control.borderHover};
     background: ${theme.colors.control.backgroundHover};
+    box-shadow:
+      0 0 0 2px rgba(0, 0, 0, 0.9),
+      0 0 0 4px rgba(255, 255, 255, 0.85),
+      0 0 12px 0 rgba(255, 255, 255, 0.35);
   }
 `;
 
@@ -68,6 +72,10 @@ const SearchInput = styled.input`
   font-size: ${theme.fontSize.sm};
   color: ${theme.colors.white};
   min-width: 0;
+
+  &:focus-visible {
+    box-shadow: none;
+  }
 
   &::placeholder {
     color: ${theme.colors.muted.foreground};
