@@ -4,7 +4,7 @@
  * Covers:
  *  B. Library open/close — BottomBar's onBackToLibrary triggers library open;
  *     library closes when onCloseLibrary / onNavigateToPlayer is invoked.
- *  C. Filter reset on QAP open — the onBrowseLibrary handler removes the four
+ *  C. Filter reset on QAP open — the onBrowseLibrary handler removes the three
  *     library filter keys from localStorage before opening the library.
  */
 
@@ -202,7 +202,6 @@ describe('Library open/close via onCloseLibrary', () => {
  *     localStorage.removeItem(STORAGE_KEYS.LIBRARY_SEARCH);
  *     localStorage.removeItem(STORAGE_KEYS.LIBRARY_PROVIDER_FILTERS);
  *     localStorage.removeItem(STORAGE_KEYS.LIBRARY_GENRES);
- *     localStorage.removeItem(STORAGE_KEYS.LIBRARY_RECENTLY_ADDED);
  *     handleCloseQuickAccessPanel();
  *     handlers.handleOpenLibrary();
  *   }}
@@ -212,7 +211,6 @@ function makeBrowseLibraryHandler(onOpenLibrary: () => void) {
     localStorage.removeItem(STORAGE_KEYS.LIBRARY_SEARCH);
     localStorage.removeItem(STORAGE_KEYS.LIBRARY_PROVIDER_FILTERS);
     localStorage.removeItem(STORAGE_KEYS.LIBRARY_GENRES);
-    localStorage.removeItem(STORAGE_KEYS.LIBRARY_RECENTLY_ADDED);
     onOpenLibrary();
   };
 }
@@ -261,20 +259,7 @@ describe('Filter reset on QAP open (onBrowseLibrary)', () => {
     expect(removeItem).toHaveBeenCalledWith(STORAGE_KEYS.LIBRARY_GENRES);
   });
 
-  it('removes LIBRARY_RECENTLY_ADDED from localStorage before opening the library', () => {
-    // #given
-    const removeItem = vi.spyOn(localStorage, 'removeItem');
-    const onOpenLibrary = vi.fn();
-    const handler = makeBrowseLibraryHandler(onOpenLibrary);
-
-    // #when
-    handler();
-
-    // #then
-    expect(removeItem).toHaveBeenCalledWith(STORAGE_KEYS.LIBRARY_RECENTLY_ADDED);
-  });
-
-  it('removes all four filter keys and then calls onOpenLibrary', () => {
+  it('removes all three filter keys and then calls onOpenLibrary', () => {
     // #given
     const callOrder: string[] = [];
     const removeItem = vi.spyOn(localStorage, 'removeItem').mockImplementation((key) => {
@@ -286,8 +271,8 @@ describe('Filter reset on QAP open (onBrowseLibrary)', () => {
     // #when
     handler();
 
-    // #then — all four removes happen before the library open
-    expect(removeItem).toHaveBeenCalledTimes(4);
+    // #then — all three removes happen before the library open
+    expect(removeItem).toHaveBeenCalledTimes(3);
     expect(onOpenLibrary).toHaveBeenCalledOnce();
 
     const openIdx = callOrder.indexOf('openLibrary');
@@ -295,7 +280,6 @@ describe('Filter reset on QAP open (onBrowseLibrary)', () => {
       callOrder.indexOf(`remove:${STORAGE_KEYS.LIBRARY_SEARCH}`),
       callOrder.indexOf(`remove:${STORAGE_KEYS.LIBRARY_PROVIDER_FILTERS}`),
       callOrder.indexOf(`remove:${STORAGE_KEYS.LIBRARY_GENRES}`),
-      callOrder.indexOf(`remove:${STORAGE_KEYS.LIBRARY_RECENTLY_ADDED}`),
     ];
     expect(Math.max(...removeIndices)).toBeLessThan(openIdx);
   });

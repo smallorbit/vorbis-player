@@ -6,10 +6,8 @@ import {
   sortAlbumSubgroup,
   buildLibraryViewWithPins,
   getAvailableGenres,
-  matchesRecentlyAddedFilter,
   type PlaylistSortOption,
   type AlbumSortOption,
-  type RecentlyAddedFilterOption,
 } from '../../utils/playlistFilters';
 import type { PlaylistInfo, AlbumInfo } from '../../services/spotify';
 import type { ProviderId } from '@/types/domain';
@@ -23,7 +21,6 @@ interface UseLibraryViewsParams {
   artistFilter: string;
   providerFilters: ProviderId[];
   selectedGenres: string[];
-  recentlyAddedFilter: RecentlyAddedFilterOption;
   pinnedPlaylistIds: string[];
   pinnedAlbumIds: string[];
   ignoreProviderFilters: boolean;
@@ -46,7 +43,6 @@ export function useLibraryViews({
   artistFilter,
   providerFilters,
   selectedGenres,
-  recentlyAddedFilter,
   pinnedPlaylistIds,
   pinnedAlbumIds,
   ignoreProviderFilters,
@@ -56,34 +52,28 @@ export function useLibraryViews({
     if (!ignoreProviderFilters && providerFilters.length > 0) {
       items = items.filter((p) => p.provider && providerFilters.includes(p.provider));
     }
-    let filtered = filterPlaylistsOnly(items, searchQuery, selectedGenres);
-    if (recentlyAddedFilter && recentlyAddedFilter !== 'all') {
-      filtered = filtered.filter((p) => matchesRecentlyAddedFilter(p.added_at, recentlyAddedFilter));
-    }
+    const filtered = filterPlaylistsOnly(items, searchQuery, selectedGenres);
     return buildLibraryViewWithPins(
       filtered,
       pinnedPlaylistIds,
       (p) => p.id,
       (subgroup) => sortPlaylistSubgroup(subgroup, playlistSort)
     );
-  }, [playlists, searchQuery, playlistSort, providerFilters, ignoreProviderFilters, pinnedPlaylistIds, selectedGenres, recentlyAddedFilter]);
+  }, [playlists, searchQuery, playlistSort, providerFilters, ignoreProviderFilters, pinnedPlaylistIds, selectedGenres]);
 
   const albumLibraryView = useMemo(() => {
     let items = albums;
     if (!ignoreProviderFilters && providerFilters.length > 0) {
       items = items.filter((a) => a.provider && providerFilters.includes(a.provider));
     }
-    let filtered = filterAlbumsOnly(items, searchQuery, 'all', artistFilter, selectedGenres);
-    if (recentlyAddedFilter && recentlyAddedFilter !== 'all') {
-      filtered = filtered.filter((a) => matchesRecentlyAddedFilter(a.added_at, recentlyAddedFilter));
-    }
+    const filtered = filterAlbumsOnly(items, searchQuery, 'all', artistFilter, selectedGenres);
     return buildLibraryViewWithPins(
       filtered,
       pinnedAlbumIds,
       (a) => a.id,
       (subgroup) => sortAlbumSubgroup(subgroup, albumSort)
     );
-  }, [albums, searchQuery, albumSort, artistFilter, providerFilters, ignoreProviderFilters, pinnedAlbumIds, selectedGenres, recentlyAddedFilter]);
+  }, [albums, searchQuery, albumSort, artistFilter, providerFilters, ignoreProviderFilters, pinnedAlbumIds, selectedGenres]);
 
   const availableGenres = useMemo(() => getAvailableGenres(albums), [albums]);
 

@@ -17,7 +17,7 @@ interface UseQueueManagementProps {
   tracks: MediaTrack[];
   currentTrackIndex: number;
   shuffleEnabled: boolean;
-  loadCollection: (playlistId: string, provider?: ProviderId) => Promise<number>;
+  loadCollection: (playlistId: string, provider?: ProviderId, name?: string) => Promise<number>;
   handleBackToLibrary: () => void;
   activeDescriptor: ProviderDescriptor | undefined;
   getDescriptor: (providerId: ProviderId) => ProviderDescriptor | undefined;
@@ -62,7 +62,7 @@ export function useQueueManagement({
 
       if (isQueueEmpty) {
         logQueue('handleAddToQueue — queue empty, delegating to loadCollection');
-        const loaded = await loadCollection(playlistId, provider);
+        const loaded = await loadCollection(playlistId, provider, collectionName);
         if (loaded > 0) {
           return { added: loaded, collectionName };
         }

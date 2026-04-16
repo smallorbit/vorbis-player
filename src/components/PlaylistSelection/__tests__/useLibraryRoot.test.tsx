@@ -10,12 +10,14 @@ const {
   mockUseUnifiedLikedTracks,
   mockUseProviderContext,
   mockUsePinnedItems,
+  mockUseRecentlyPlayedCollections,
 } = vi.hoisted(() => ({
   mockIsMobile: { current: false },
   mockUseLibrarySync: vi.fn(),
   mockUseUnifiedLikedTracks: vi.fn(),
   mockUseProviderContext: vi.fn(),
   mockUsePinnedItems: vi.fn(),
+  mockUseRecentlyPlayedCollections: vi.fn(),
 }));
 
 vi.mock('@/contexts/PlayerSizingContext', () => ({
@@ -52,6 +54,10 @@ vi.mock('@/hooks/usePinnedItems', () => ({
   usePinnedItems: () => mockUsePinnedItems(),
 }));
 
+vi.mock('@/hooks/useRecentlyPlayedCollections', () => ({
+  useRecentlyPlayedCollections: () => mockUseRecentlyPlayedCollections(),
+}));
+
 import { useLibraryRoot } from '../useLibraryRoot';
 
 function setupDefaultMocks(): void {
@@ -79,6 +85,10 @@ function setupDefaultMocks(): void {
     togglePinAlbum: vi.fn(),
     canPinMorePlaylists: true,
     canPinMoreAlbums: true,
+  });
+  mockUseRecentlyPlayedCollections.mockReturnValue({
+    history: [],
+    record: vi.fn(),
   });
 }
 
@@ -124,54 +134,26 @@ describe('useLibraryRoot behavioral coverage', () => {
   });
 
   describe('combined filter interactions', () => {
-    it('applies provider, genre, and recently-added filters together on albums', () => {
+    it('applies provider and genre filters together on albums', () => {
       // #given
-      const recent = new Date(Date.now() - 3 * 86_400_000).toISOString();
-      const old = new Date(Date.now() - 60 * 86_400_000).toISOString();
       setLibrarySync(
         [],
         [
-          makeAlbumInfo({ id: 'a-1', name: 'Spotify Rock Recent',  provider: 'spotify',  genres: ['Rock'],   added_at: recent }),
-          makeAlbumInfo({ id: 'a-2', name: 'Spotify Rock Old',     provider: 'spotify',  genres: ['Rock'],   added_at: old }),
-          makeAlbumInfo({ id: 'a-3', name: 'Spotify Jazz Recent',  provider: 'spotify',  genres: ['Jazz'],   added_at: recent }),
-          makeAlbumInfo({ id: 'a-4', name: 'Dropbox Rock Recent',  provider: 'dropbox',  genres: ['Rock'],   added_at: recent }),
+          makeAlbumInfo({ id: 'a-1', name: 'Spotify Rock',   provider: 'spotify',  genres: ['Rock'] }),
+          makeAlbumInfo({ id: 'a-2', name: 'Spotify Jazz',   provider: 'spotify',  genres: ['Jazz'] }),
+          makeAlbumInfo({ id: 'a-3', name: 'Dropbox Rock',   provider: 'dropbox',  genres: ['Rock'] }),
         ],
       );
       const { result } = renderLibraryRoot();
 
-      // #when — provider=spotify, genre=Rock, recently-added=7-days
+      // #when — provider=spotify AND genre=Rock
       act(() => {
         result.current.browsingValue.setProviderFilters(['spotify']);
         result.current.browsingValue.setSelectedGenres(['Rock']);
-        result.current.browsingValue.setRecentlyAddedFilter('7-days');
       });
 
-      // #then — only the one item matching all three filters survives
-      expect(albumNames(result)).toEqual(['Spotify Rock Recent']);
-    });
-
-    it('applies provider and recently-added filters together on playlists', () => {
-      // #given
-      const recent = new Date(Date.now() - 2 * 86_400_000).toISOString();
-      const old = new Date(Date.now() - 60 * 86_400_000).toISOString();
-      setLibrarySync(
-        [
-          makePlaylistInfo({ id: 'p-1', name: 'Spotify Recent',  provider: 'spotify',  added_at: recent }),
-          makePlaylistInfo({ id: 'p-2', name: 'Spotify Old',     provider: 'spotify',  added_at: old }),
-          makePlaylistInfo({ id: 'p-3', name: 'Dropbox Recent',  provider: 'dropbox',  added_at: recent }),
-        ],
-        [],
-      );
-      const { result } = renderLibraryRoot();
-
-      // #when — provider=spotify AND recently-added=7-days
-      act(() => {
-        result.current.browsingValue.setProviderFilters(['spotify']);
-        result.current.browsingValue.setRecentlyAddedFilter('7-days');
-      });
-
-      // #then — only the spotify + recent playlist passes both filters
-      expect(playlistNames(result)).toEqual(['Spotify Recent']);
+      // #then — only the item matching both filters survives
+      expect(albumNames(result)).toEqual(['Spotify Rock']);
     });
   });
 
@@ -594,6 +576,89 @@ describe('useLibraryRoot grid behavior', () => {
 
       // #then
       expect(playlistNames(result).sort()).toEqual(['Dropbox Mix', 'Spotify Mix']);
+    });
+  });
+
+  describe('recently played image enrichment', () => {
+    it('resolves imageUrl from cached playlists when history entry lacks one', () => {
+      // #given
+      mockUseRecentlyPlayedCollections.mockReturnValue({
+        record: vi.fn(),
+        history: ([
+          { ref: { provider: 'spotify', kind: 'playlist', id: 'p-1' }, name: 'My Mix' },
+        ]),
+      });
+      setLibrarySync(
+        [makePlaylistInfo({ id: 'p-1', name: 'My Mix', provider: 'spotify', images: [{ url: 'https://example.com/p1.jpg', height: 300, width: 300 }] })],
+        [],
+      );
+
+      // #when
+      const { result } = renderLibraryRoot();
+
+      // #then
+      expect(result.current.browsingValue.recentlyPlayed[0].imageUrl).toBe('https://example.com/p1.jpg');
+    });
+
+    it('resolves imageUrl from cached albums for album history entries', () => {
+      // #given
+      mockUseRecentlyPlayedCollections.mockReturnValue({
+        record: vi.fn(),
+        history: ([
+          { ref: { provider: 'spotify', kind: 'album', id: 'a-1' }, name: 'OK Computer' },
+        ]),
+      });
+      setLibrarySync(
+        [],
+        [makeAlbumInfo({ id: 'a-1', name: 'OK Computer', provider: 'spotify', images: [{ url: 'https://example.com/a1.jpg', height: 300, width: 300 }] })],
+      );
+
+      // #when
+      const { result } = renderLibraryRoot();
+
+      // #then
+      expect(result.current.browsingValue.recentlyPlayed[0].imageUrl).toBe('https://example.com/a1.jpg');
+    });
+
+    it('preserves existing imageUrl without overwriting from cache', () => {
+      // #given
+      mockUseRecentlyPlayedCollections.mockReturnValue({
+        record: vi.fn(),
+        history: ([
+          {
+            ref: { provider: 'spotify', kind: 'playlist', id: 'p-1' },
+            name: 'My Mix',
+            imageUrl: 'https://example.com/stored.jpg',
+          },
+        ]),
+      });
+      setLibrarySync(
+        [makePlaylistInfo({ id: 'p-1', name: 'My Mix', provider: 'spotify', images: [{ url: 'https://example.com/fresh.jpg', height: 300, width: 300 }] })],
+        [],
+      );
+
+      // #when
+      const { result } = renderLibraryRoot();
+
+      // #then
+      expect(result.current.browsingValue.recentlyPlayed[0].imageUrl).toBe('https://example.com/stored.jpg');
+    });
+
+    it('leaves imageUrl undefined when no matching collection is cached', () => {
+      // #given
+      mockUseRecentlyPlayedCollections.mockReturnValue({
+        record: vi.fn(),
+        history: ([
+          { ref: { provider: 'spotify', kind: 'playlist', id: 'missing' }, name: 'Gone' },
+        ]),
+      });
+      setLibrarySync([], []);
+
+      // #when
+      const { result } = renderLibraryRoot();
+
+      // #then
+      expect(result.current.browsingValue.recentlyPlayed[0].imageUrl).toBeUndefined();
     });
   });
 });

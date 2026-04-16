@@ -22,7 +22,7 @@ export type AlbumSortOption =
  *
  * Each field is optional — omitting it means "no filter applied" for that dimension.
  * The filter pipeline applies each non-empty filter in sequence:
- *   provider → collectionType → genres → recentlyAdded → searchQuery
+ *   provider → collectionType → genres → searchQuery
  */
 export interface FilterState {
   /** Only include items from these providers. Empty array = all providers. */
@@ -31,13 +31,9 @@ export interface FilterState {
   collectionType?: 'playlists' | 'albums';
   /** Only include items tagged with at least one of these genres. Empty array = all genres. */
   genres?: string[];
-  /** Only include items added within this time window. 'all' or undefined = no restriction. */
-  recentlyAdded?: 'all' | '7-days' | '30-days' | '1-year';
   /** Full-text search across title, artist, album. Empty string = no restriction. */
   searchQuery?: string;
 }
-
-export type RecentlyAddedFilterOption = FilterState['recentlyAdded'];
 
 export const PLAYLIST_SORT_LABELS: Record<PlaylistSortOption, string> = {
   'recently-added': 'Recently Added',
@@ -148,21 +144,6 @@ function matchesYearFilter(year: number | null, filter: YearFilterOption): boole
   return year >= decadeStart && year < decadeStart + 10;
 }
 
-/**
- * Resolve the cutoff epoch ms for a recently-added time range.
- * Returns 0 for 'all' or undefined (no restriction).
- */
-function recentlyAddedCutoffMs(timeRange: FilterState['recentlyAdded']): number {
-  if (!timeRange || timeRange === 'all') return 0;
-  const now = Date.now();
-  const MS_PER_DAY = 86_400_000;
-  switch (timeRange) {
-    case '7-days':  return now - 7 * MS_PER_DAY;
-    case '30-days': return now - 30 * MS_PER_DAY;
-    case '1-year':  return now - 365 * MS_PER_DAY;
-  }
-}
-
 // ============================================================
 // UNIFIED FILTER HELPERS
 // ============================================================
@@ -189,21 +170,6 @@ export function matchesGenreFilter(itemGenres: string[] | undefined, selectedGen
   if (selectedGenres.length === 0) return true;
   if (!itemGenres || itemGenres.length === 0) return false;
   return selectedGenres.some(g => itemGenres.includes(g));
-}
-
-/**
- * Returns true when the item was added within the given time range,
- * or when the time range is 'all' / undefined (no restriction).
- */
-export function matchesRecentlyAddedFilter(
-  addedAt: string | number | undefined,
-  timeRange: FilterState['recentlyAdded']
-): boolean {
-  const cutoff = recentlyAddedCutoffMs(timeRange);
-  if (cutoff === 0) return true;
-  const ts = parseAddedAt(addedAt);
-  if (ts === 0) return false;
-  return ts >= cutoff;
 }
 
 /**
@@ -242,22 +208,17 @@ export function getAvailableGenres(items: Array<{ genres?: string[] }>): string[
 
 /**
  * Apply a FilterState to a MediaTrack array.
- * Pipeline: provider → genres → recentlyAdded → searchQuery
+ * Pipeline: provider → genres → searchQuery
  */
 export function applyFilters(items: MediaTrack[], filterState: FilterState): MediaTrack[] {
-  const { provider, genres, recentlyAdded, searchQuery } = filterState;
+  const { provider, genres, searchQuery } = filterState;
   const activeProvider = provider && provider.length > 0 ? provider : null;
   const activeGenres   = genres && genres.length > 0 ? genres : null;
-  const activeCutoff   = recentlyAddedCutoffMs(recentlyAdded);
   const activeQuery    = searchQuery ? normalizeText(searchQuery) : null;
 
   return items.filter(track => {
     if (activeProvider && !activeProvider.includes(track.provider)) return false;
     if (activeGenres && !matchesGenreFilter((track as MediaTrack & { genres?: string[] }).genres, activeGenres)) return false;
-    if (activeCutoff > 0) {
-      const ts = typeof track.addedAt === 'number' ? track.addedAt : 0;
-      if (ts === 0 || ts < activeCutoff) return false;
-    }
     if (activeQuery) {
       if (
         !normalizeText(track.name).includes(activeQuery) &&
@@ -271,18 +232,16 @@ export function applyFilters(items: MediaTrack[], filterState: FilterState): Med
 
 /**
  * Apply a FilterState to an AlbumInfo array.
- * Pipeline: provider → genres → recentlyAdded → searchQuery
+ * Pipeline: provider → genres → searchQuery
  */
 export function applyAlbumFilters(albums: AlbumInfo[], filterState: FilterState): AlbumInfo[] {
-  const { provider, genres, recentlyAdded, searchQuery } = filterState;
+  const { provider, genres, searchQuery } = filterState;
   const activeProvider = provider && provider.length > 0 ? provider : null;
   const activeGenres   = genres && genres.length > 0 ? genres : null;
-  const activeCutoff   = recentlyAddedCutoffMs(recentlyAdded);
 
   return albums.filter(album => {
     if (activeProvider && !matchesProviderFilter(album.provider, activeProvider)) return false;
     if (activeGenres && !matchesGenreFilter((album as AlbumInfo & { genres?: string[] }).genres, activeGenres)) return false;
-    if (activeCutoff > 0 && !matchesRecentlyAddedFilter(album.added_at, recentlyAdded)) return false;
     if (!matchesSearch(album, searchQuery ?? '')) return false;
     return true;
   });

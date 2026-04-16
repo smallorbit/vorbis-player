@@ -98,8 +98,8 @@ export function LibraryMainContent(): React.JSX.Element {
     availableGenres,
     selectedGenres,
     handleGenreToggle,
-    recentlyAddedFilter,
-    setRecentlyAddedFilter,
+    recentlyPlayed,
+    onRecentlyPlayedSelect,
     hasActiveFilters,
     handleClearFilters,
   } = useLibraryBrowsingContext();
@@ -122,8 +122,8 @@ export function LibraryMainContent(): React.JSX.Element {
           availableGenres={availableGenres}
           selectedGenres={selectedGenres}
           onGenreToggle={handleGenreToggle}
-          recentlyAdded={recentlyAddedFilter}
-          onRecentlyAddedChange={setRecentlyAddedFilter}
+          recentlyPlayed={recentlyPlayed}
+          onRecentlyPlayedSelect={onRecentlyPlayedSelect}
           playlistSort={playlistSort}
           setPlaylistSort={setPlaylistSort}
           albumSort={albumSort}

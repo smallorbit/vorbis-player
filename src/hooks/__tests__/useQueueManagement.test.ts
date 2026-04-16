@@ -146,7 +146,7 @@ describe('useQueueManagement', () => {
     });
 
     // #then
-    expect(mockHandlePlaylistSelect).toHaveBeenCalledWith('playlist_id', undefined);
+    expect(mockHandlePlaylistSelect).toHaveBeenCalledWith('playlist_id', undefined, 'My Playlist');
     expect(response).toEqual({ added: 3, collectionName: 'My Playlist' });
   });
 

@@ -50,6 +50,10 @@ export const SearchInputWrapper = styled.div`
   &:focus-within {
     border-color: ${theme.colors.control.borderHover};
     background: ${theme.colors.control.backgroundHover};
+    box-shadow:
+      0 0 0 2px rgba(0, 0, 0, 0.9),
+      0 0 0 4px rgba(255, 255, 255, 0.85),
+      0 0 12px 0 rgba(255, 255, 255, 0.35);
   }
 `;
 
@@ -82,6 +86,10 @@ export const SearchInput = styled.input`
   font-size: ${theme.fontSize.sm};
   color: ${theme.colors.white};
   min-width: 0;
+
+  &:focus-visible {
+    box-shadow: none;
+  }
 
   &::placeholder {
     color: ${theme.colors.muted.foreground};
@@ -208,6 +216,76 @@ export const SortSelect = styled.select`
     background: ${theme.colors.popover.background};
     color: ${theme.colors.white};
   }
+`;
+
+export const RecentlyPlayedList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: ${theme.spacing.xs};
+`;
+
+export const RecentlyPlayedItem = styled.button`
+  display: flex;
+  align-items: center;
+  gap: ${theme.spacing.sm};
+  width: 100%;
+  padding: ${theme.spacing.sm} ${theme.spacing.md};
+  background: ${theme.colors.control.background};
+  border: 1px solid ${theme.colors.control.border};
+  border-radius: ${theme.borderRadius.md};
+  color: ${theme.colors.muted.foreground};
+  font-size: ${theme.fontSize.sm};
+  cursor: pointer;
+  transition: all ${theme.transitions.fast};
+  text-align: left;
+
+  &:hover {
+    background: ${theme.colors.control.backgroundHover};
+    border-color: ${theme.colors.control.borderHover};
+    color: ${theme.colors.white};
+  }
+
+  &:active {
+    opacity: 0.8;
+  }
+`;
+
+export const RecentlyPlayedThumbnail = styled.div`
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  border-radius: ${theme.borderRadius.sm};
+  overflow: hidden;
+  background: ${theme.colors.control.borderHover};
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  svg {
+    width: 14px;
+    height: 14px;
+    color: ${theme.colors.muted.foreground};
+    stroke: currentColor;
+    fill: none;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+`;
+
+export const RecentlyPlayedLabel = styled.span`
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 `;
 
 export const ClearFiltersButton = styled.button`

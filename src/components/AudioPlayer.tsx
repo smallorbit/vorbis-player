@@ -119,7 +119,7 @@ const AudioPlayerComponent = () => {
     (id: string, name?: string, provider?: import('@/types/domain').ProviderId) => {
       if (name) collectionNameRef.current = name;
       collectionProviderRef.current = provider;
-      handlers.loadCollection(id, provider);
+      handlers.loadCollection(id, provider, name);
     },
     [handlers]
   );
@@ -375,7 +375,6 @@ const AudioPlayerComponent = () => {
                   localStorage.removeItem(STORAGE_KEYS.LIBRARY_SEARCH);
                   localStorage.removeItem(STORAGE_KEYS.LIBRARY_PROVIDER_FILTERS);
                   localStorage.removeItem(STORAGE_KEYS.LIBRARY_GENRES);
-                  localStorage.removeItem(STORAGE_KEYS.LIBRARY_RECENTLY_ADDED);
                   handleCloseQuickAccessPanel();
                   handlers.handleOpenLibrary();
                 }}

@@ -11,7 +11,6 @@ import {
 import type {
   AlbumSortOption,
   PlaylistSortOption,
-  RecentlyAddedFilterOption,
 } from '@/utils/playlistFilters';
 import type { ProviderId } from '@/types/domain';
 
@@ -36,8 +35,6 @@ function BrowsingStateHarness({
   const [artistFilter, setArtistFilter] = useState<string>('');
   const [providerFilters, setProviderFilters] = useState<ProviderId[]>([]);
   const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
-  const [recentlyAddedFilter, setRecentlyAddedFilter] =
-    useState<RecentlyAddedFilterOption>('all');
 
   const value: LibraryBrowsingContextValue = {
     viewMode,
@@ -56,9 +53,11 @@ function BrowsingStateHarness({
     availableGenres: [],
     selectedGenres,
     setSelectedGenres,
-    recentlyAddedFilter,
-    setRecentlyAddedFilter,
+    handleGenreToggle: () => undefined,
+    recentlyPlayed: [],
+    onRecentlyPlayedSelect: () => undefined,
     hasActiveFilters: false,
+    handleClearFilters: () => undefined,
   };
 
   return (

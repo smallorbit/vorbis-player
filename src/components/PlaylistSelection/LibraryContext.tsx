@@ -3,7 +3,8 @@ import * as React from 'react';
 import type { AlbumInfo, PlaylistInfo } from '../../services/spotify';
 import type { ProviderDescriptor } from '@/types/providers';
 import type { ProviderId } from '@/types/domain';
-import type { PlaylistSortOption, AlbumSortOption, RecentlyAddedFilterOption } from '@/utils/playlistFilters';
+import type { PlaylistSortOption, AlbumSortOption } from '@/utils/playlistFilters';
+import type { RecentlyPlayedEntry } from '@/hooks/useRecentlyPlayedCollections';
 
 interface LikedSongsEntry {
   provider: ProviderId;
@@ -28,8 +29,8 @@ export interface LibraryBrowsingContextValue {
   selectedGenres: string[];
   setSelectedGenres: (v: string[]) => void;
   handleGenreToggle: (genre: string) => void;
-  recentlyAddedFilter: RecentlyAddedFilterOption;
-  setRecentlyAddedFilter: (v: RecentlyAddedFilterOption) => void;
+  recentlyPlayed: RecentlyPlayedEntry[];
+  onRecentlyPlayedSelect: (entry: RecentlyPlayedEntry) => void;
   hasActiveFilters: boolean;
   handleClearFilters: () => void;
 }

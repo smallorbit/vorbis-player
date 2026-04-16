@@ -4,6 +4,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ThemeProvider } from 'styled-components';
 import { theme } from '@/styles/theme';
 import { FilterSidebar } from '../FilterSidebar';
+import type { RecentlyPlayedEntry } from '@/hooks/useRecentlyPlayedCollections';
 
 function renderFilterSidebar(props = {}) {
   const defaultProps = {
@@ -18,8 +19,8 @@ function renderFilterSidebar(props = {}) {
     availableGenres: [] as string[],
     selectedGenres: [] as string[],
     onGenreToggle: vi.fn(),
-    recentlyAdded: 'all' as const,
-    onRecentlyAddedChange: vi.fn(),
+    recentlyPlayed: [] as RecentlyPlayedEntry[],
+    onRecentlyPlayedSelect: vi.fn(),
     playlistSort: 'recently-added' as const,
     setPlaylistSort: vi.fn(),
     albumSort: 'recently-added' as const,
@@ -278,26 +279,100 @@ describe('FilterSidebar', () => {
     expect(allGenres).not.toBeInTheDocument();
   });
 
-  it('renders recently added section with all time options', () => {
-    // #when
-    renderFilterSidebar({ recentlyAdded: 'all' });
+  describe('Recently Played section', () => {
+    const entries: RecentlyPlayedEntry[] = [
+      { ref: { provider: 'spotify', kind: 'playlist', id: 'p-1' }, name: 'Chill Mix' },
+      { ref: { provider: 'dropbox', kind: 'album', id: 'a-1' }, name: 'Rumours' },
+      { ref: { provider: 'spotify', kind: 'liked' }, name: 'Liked Songs' },
+    ];
 
-    // #then
-    expect(screen.getByRole('button', { name: 'All time' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Last 7 days' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Last 30 days' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Last year' })).toBeInTheDocument();
-  });
+    it('does not render the section when history is empty', () => {
+      // #when
+      renderFilterSidebar({ recentlyPlayed: [] });
 
-  it('calls onRecentlyAddedChange when clicking a time range option', () => {
-    // #given
-    const onRecentlyAddedChange = vi.fn();
-    renderFilterSidebar({ recentlyAdded: 'all', onRecentlyAddedChange });
+      // #then
+      expect(screen.queryByText('Recently Played')).not.toBeInTheDocument();
+    });
 
-    // #when
-    fireEvent.click(screen.getByRole('button', { name: 'Last 30 days' }));
+    it('renders the section header when history has entries', () => {
+      // #when
+      renderFilterSidebar({ recentlyPlayed: entries });
 
-    // #then
-    expect(onRecentlyAddedChange).toHaveBeenCalledWith('30-days');
+      // #then
+      expect(screen.getByText('Recently Played')).toBeInTheDocument();
+    });
+
+    it('renders one clickable shortcut per entry (up to 5)', () => {
+      // #when
+      renderFilterSidebar({ recentlyPlayed: entries });
+
+      // #then
+      expect(screen.getByRole('button', { name: 'Play Chill Mix' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Play Rumours' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Play Liked Songs' })).toBeInTheDocument();
+    });
+
+    it('caps the rendered list at 5 entries', () => {
+      // #given
+      const six: RecentlyPlayedEntry[] = Array.from({ length: 6 }, (_, i) => ({
+        ref: { provider: 'spotify', kind: 'playlist', id: `p-${i}` },
+        name: `Playlist ${i}`,
+      }));
+
+      // #when
+      renderFilterSidebar({ recentlyPlayed: six });
+
+      // #then
+      for (let i = 0; i < 5; i++) {
+        expect(screen.getByRole('button', { name: `Play Playlist ${i}` })).toBeInTheDocument();
+      }
+      expect(screen.queryByRole('button', { name: 'Play Playlist 5' })).not.toBeInTheDocument();
+    });
+
+    it('renders a thumbnail image when an entry has an imageUrl', () => {
+      // #given
+      const withImage: RecentlyPlayedEntry[] = [{
+        ref: { provider: 'spotify', kind: 'playlist', id: 'p-img' },
+        name: 'With Cover',
+        imageUrl: 'https://cdn.example/cover.jpg',
+      }];
+
+      // #when
+      renderFilterSidebar({ recentlyPlayed: withImage });
+
+      // #then
+      const button = screen.getByRole('button', { name: 'Play With Cover' });
+      const img = button.querySelector('img');
+      expect(img).not.toBeNull();
+      expect(img?.getAttribute('src')).toBe('https://cdn.example/cover.jpg');
+    });
+
+    it('renders a placeholder when an entry has no imageUrl', () => {
+      // #given
+      const noImage: RecentlyPlayedEntry[] = [{
+        ref: { provider: 'spotify', kind: 'liked' },
+        name: 'No Cover',
+      }];
+
+      // #when
+      renderFilterSidebar({ recentlyPlayed: noImage });
+
+      // #then
+      const button = screen.getByRole('button', { name: 'Play No Cover' });
+      expect(button.querySelector('img')).toBeNull();
+      expect(button.querySelector('svg')).not.toBeNull();
+    });
+
+    it('calls onRecentlyPlayedSelect with the entry when a shortcut is clicked', () => {
+      // #given
+      const onRecentlyPlayedSelect = vi.fn();
+      renderFilterSidebar({ recentlyPlayed: entries, onRecentlyPlayedSelect });
+
+      // #when
+      fireEvent.click(screen.getByRole('button', { name: 'Play Chill Mix' }));
+
+      // #then
+      expect(onRecentlyPlayedSelect).toHaveBeenCalledWith(entries[0]);
+    });
   });
 });

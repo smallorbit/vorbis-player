@@ -1,10 +1,12 @@
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import * as React from 'react';
 import { useProviderContext } from '@/contexts/ProviderContext';
 import { usePlayerSizingContext } from '@/contexts/PlayerSizingContext';
 import { useLibrarySync } from '../../hooks/useLibrarySync';
 import { usePinnedItems } from '../../hooks/usePinnedItems';
 import { useUnifiedLikedTracks } from '@/hooks/useUnifiedLikedTracks';
+import { useRecentlyPlayedCollections, type RecentlyPlayedEntry } from '@/hooks/useRecentlyPlayedCollections';
+import { LIKED_SONGS_ID, LIKED_SONGS_NAME, toAlbumPlaylistId } from '../../constants/playlist';
 import type { AddToQueueResult, MediaTrack, ProviderId } from '@/types/domain';
 import { useLibraryBrowsing } from './useLibraryBrowsing';
 import { useItemActions } from './useItemActions';
@@ -57,6 +59,45 @@ export function useLibraryRoot({
   } = useLibrarySync();
 
   const browsingState = useLibraryBrowsing(initialSearchQuery, initialViewMode);
+  const { history: recentlyPlayedRaw } = useRecentlyPlayedCollections();
+
+  const recentlyPlayed = useMemo<RecentlyPlayedEntry[]>(() => {
+    return recentlyPlayedRaw.map((entry) => {
+      if (entry.imageUrl) return entry;
+      const { ref } = entry;
+      if (ref.kind === 'playlist') {
+        const match = playlists.find(
+          (p) => p.id === ref.id && (p.provider ?? 'spotify') === ref.provider,
+        );
+        const imageUrl = match?.images?.[0]?.url;
+        return imageUrl ? { ...entry, imageUrl } : entry;
+      }
+      if (ref.kind === 'album') {
+        const match = albums.find(
+          (a) => a.id === ref.id && (a.provider ?? 'spotify') === ref.provider,
+        );
+        const imageUrl = match?.images?.[0]?.url;
+        return imageUrl ? { ...entry, imageUrl } : entry;
+      }
+      return entry;
+    });
+  }, [recentlyPlayedRaw, playlists, albums]);
+
+  const handleRecentlyPlayedSelect = useCallback(
+    (entry: RecentlyPlayedEntry) => {
+      const { ref, name } = entry;
+      if (ref.kind === 'liked') {
+        onPlaylistSelect(LIKED_SONGS_ID, LIKED_SONGS_NAME, ref.provider);
+        return;
+      }
+      if (ref.kind === 'album') {
+        onPlaylistSelect(toAlbumPlaylistId(ref.id), name, ref.provider);
+        return;
+      }
+      onPlaylistSelect(ref.id, name, ref.provider);
+    },
+    [onPlaylistSelect],
+  );
 
   const {
     handlePlaylistContextMenu,
@@ -102,7 +143,6 @@ export function useLibraryRoot({
     artistFilter: browsingState.artistFilter,
     providerFilters: browsingState.providerFilters,
     selectedGenres: browsingState.selectedGenres,
-    recentlyAddedFilter: browsingState.recentlyAddedFilter,
     pinnedPlaylistIds,
     pinnedAlbumIds,
     ignoreProviderFilters: isMobile,
@@ -138,6 +178,8 @@ export function useLibraryRoot({
   const { browsingValue, pinValue, actionsValue, dataValue } = useLibraryContextValues({
     browsingState,
     availableGenres,
+    recentlyPlayed,
+    onRecentlyPlayedSelect: handleRecentlyPlayedSelect,
     pinnedPlaylists,
     unpinnedPlaylists,
     pinnedAlbums,
