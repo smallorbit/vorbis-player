@@ -3,7 +3,7 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import { ThemeProvider } from 'styled-components';
 import { theme } from '@/styles/theme';
-import { LibraryPage } from '../PlaylistSelection';
+import { LibraryPage, DrawerLibrary } from '../PlaylistSelection';
 import { TestWrapper } from '@/test/testWrappers';
 import { makePlaylistInfo, makeAlbumInfo } from '@/test/fixtures';
 import { LIKED_SONGS_ID } from '@/constants/playlist';
@@ -103,6 +103,18 @@ function renderLibraryPage(props?: Partial<Parameters<typeof LibraryPage>[0]>) {
     <ThemeProvider theme={theme}>
       <TestWrapper>
         <LibraryPage onPlaylistSelect={onPlaylistSelect} {...props} />
+      </TestWrapper>
+    </ThemeProvider>
+  );
+  return { ...result, onPlaylistSelect };
+}
+
+function renderDrawerLibrary(props?: Partial<Parameters<typeof DrawerLibrary>[0]>) {
+  const onPlaylistSelect = vi.fn();
+  const result = render(
+    <ThemeProvider theme={theme}>
+      <TestWrapper>
+        <DrawerLibrary onPlaylistSelect={onPlaylistSelect} {...props} />
       </TestWrapper>
     </ThemeProvider>
   );
