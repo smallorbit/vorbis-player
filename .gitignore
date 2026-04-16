@@ -33,6 +33,7 @@ dist-ssr
 # Audio files
 public/audio/
 .claude/settings.local.json
+.claude/HANDOFF.md
 
 # Electron build outputs
 dist-electron/
