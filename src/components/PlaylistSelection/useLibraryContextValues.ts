@@ -3,6 +3,7 @@ import * as React from 'react';
 import type { PlaylistInfo, AlbumInfo } from '../../services/spotify';
 import type { ProviderDescriptor } from '@/types/providers';
 import type { ProviderId } from '@/types/domain';
+import type { RecentlyPlayedEntry } from '@/hooks/useRecentlyPlayedCollections';
 import type {
   LibraryBrowsingContextValue,
   LibraryPinContextValue,
@@ -10,7 +11,7 @@ import type {
   LibraryDataContextValue,
 } from './LibraryContext';
 
-type BrowsingState = Omit<LibraryBrowsingContextValue, 'availableGenres'>;
+type BrowsingState = Omit<LibraryBrowsingContextValue, 'availableGenres' | 'recentlyPlayed' | 'onRecentlyPlayedSelect'>;
 
 interface LikedSongsEntry {
   provider: ProviderId;
@@ -20,6 +21,8 @@ interface LikedSongsEntry {
 interface UseLibraryContextValuesParams {
   browsingState: BrowsingState;
   availableGenres: string[];
+  recentlyPlayed: RecentlyPlayedEntry[];
+  onRecentlyPlayedSelect: (entry: RecentlyPlayedEntry) => void;
   pinnedPlaylists: PlaylistInfo[];
   unpinnedPlaylists: PlaylistInfo[];
   pinnedAlbums: AlbumInfo[];
@@ -62,6 +65,8 @@ export interface LibraryContextValuesResult {
 export function useLibraryContextValues({
   browsingState,
   availableGenres,
+  recentlyPlayed,
+  onRecentlyPlayedSelect,
   pinnedPlaylists,
   unpinnedPlaylists,
   pinnedAlbums,
@@ -112,8 +117,8 @@ export function useLibraryContextValues({
       selectedGenres: browsingState.selectedGenres,
       setSelectedGenres: browsingState.setSelectedGenres,
       handleGenreToggle: browsingState.handleGenreToggle,
-      recentlyAddedFilter: browsingState.recentlyAddedFilter,
-      setRecentlyAddedFilter: browsingState.setRecentlyAddedFilter,
+      recentlyPlayed,
+      onRecentlyPlayedSelect,
       hasActiveFilters: browsingState.hasActiveFilters,
       handleClearFilters: browsingState.handleClearFilters,
     }),
@@ -126,7 +131,8 @@ export function useLibraryContextValues({
       browsingState.providerFilters,
       availableGenres,
       browsingState.selectedGenres,
-      browsingState.recentlyAddedFilter,
+      recentlyPlayed,
+      onRecentlyPlayedSelect,
       browsingState.hasActiveFilters,
     ]
   );
