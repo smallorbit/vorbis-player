@@ -1,10 +1,10 @@
 import type { ProviderId } from '@/types/domain';
 import type {
-  RecentlyAddedFilterOption,
   PlaylistSortOption,
   AlbumSortOption,
 } from '@/utils/playlistFilters';
 import { PLAYLIST_SORT_LABELS, ALBUM_SORT_LABELS } from '@/utils/playlistFilters';
+import type { RecentlyPlayedEntry } from '@/hooks/useRecentlyPlayedCollections';
 import {
   SidebarContainer,
   FilterSection,
@@ -19,6 +19,8 @@ import {
   FilterChip,
   SortSelect,
   ClearFiltersButton,
+  RecentlyPlayedList,
+  RecentlyPlayedItem,
 } from './FilterSidebar.styled';
 
 interface FilterSidebarProps {
@@ -40,8 +42,8 @@ interface FilterSidebarProps {
   selectedGenres: string[];
   onGenreToggle: (genre: string) => void;
 
-  recentlyAdded: RecentlyAddedFilterOption;
-  onRecentlyAddedChange: (value: RecentlyAddedFilterOption) => void;
+  recentlyPlayed: RecentlyPlayedEntry[];
+  onRecentlyPlayedSelect: (entry: RecentlyPlayedEntry) => void;
 
   playlistSort: PlaylistSortOption;
   setPlaylistSort: (v: PlaylistSortOption) => void;
@@ -66,13 +68,6 @@ const ClearIconSvg = () => (
   </svg>
 );
 
-const RECENTLY_ADDED_OPTIONS: { label: string; value: RecentlyAddedFilterOption }[] = [
-  { label: 'All time', value: 'all' },
-  { label: 'Last 7 days', value: '7-days' },
-  { label: 'Last 30 days', value: '30-days' },
-  { label: 'Last year', value: '1-year' },
-];
-
 export const FilterSidebar = ({
   searchQuery,
   onSearchChange,
@@ -85,8 +80,8 @@ export const FilterSidebar = ({
   availableGenres,
   selectedGenres,
   onGenreToggle,
-  recentlyAdded,
-  onRecentlyAddedChange,
+  recentlyPlayed,
+  onRecentlyPlayedSelect,
   playlistSort,
   setPlaylistSort,
   albumSort,
@@ -191,20 +186,26 @@ export const FilterSidebar = ({
         </FilterSection>
       )}
 
-      <FilterSection>
-        <SectionTitle>Recently Added</SectionTitle>
-        <ToggleGroup>
-          {RECENTLY_ADDED_OPTIONS.map(({ label, value }) => (
-            <ToggleButton
-              key={value}
-              $active={(recentlyAdded ?? 'all') === value}
-              onClick={() => onRecentlyAddedChange(value)}
-            >
-              {label}
-            </ToggleButton>
-          ))}
-        </ToggleGroup>
-      </FilterSection>
+      {recentlyPlayed.length > 0 && (
+        <FilterSection>
+          <SectionTitle>Recently Played</SectionTitle>
+          <RecentlyPlayedList>
+            {recentlyPlayed.slice(0, 5).map((entry) => {
+              const key = `${entry.ref.provider}:${entry.ref.kind}:${entry.ref.kind === 'liked' ? '' : entry.ref.id}`;
+              return (
+                <RecentlyPlayedItem
+                  key={key}
+                  type="button"
+                  onClick={() => onRecentlyPlayedSelect(entry)}
+                  aria-label={`Play ${entry.name}`}
+                >
+                  {entry.name}
+                </RecentlyPlayedItem>
+              );
+            })}
+          </RecentlyPlayedList>
+        </FilterSection>
+      )}
 
       <FilterSection>
         <SectionTitle>Sort</SectionTitle>

@@ -210,6 +210,39 @@ export const SortSelect = styled.select`
   }
 `;
 
+export const RecentlyPlayedList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: ${theme.spacing.xs};
+`;
+
+export const RecentlyPlayedItem = styled.button`
+  display: block;
+  width: 100%;
+  padding: ${theme.spacing.sm} ${theme.spacing.md};
+  background: ${theme.colors.control.background};
+  border: 1px solid ${theme.colors.control.border};
+  border-radius: ${theme.borderRadius.md};
+  color: ${theme.colors.muted.foreground};
+  font-size: ${theme.fontSize.sm};
+  cursor: pointer;
+  transition: all ${theme.transitions.fast};
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  &:hover {
+    background: ${theme.colors.control.backgroundHover};
+    border-color: ${theme.colors.control.borderHover};
+    color: ${theme.colors.white};
+  }
+
+  &:active {
+    opacity: 0.8;
+  }
+`;
+
 export const ClearFiltersButton = styled.button`
   padding: ${theme.spacing.xs} ${theme.spacing.md};
   background: ${theme.colors.control.background};

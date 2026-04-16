@@ -36,7 +36,6 @@ export const STORAGE_KEYS = {
   LIBRARY_SEARCH: 'vorbis-player-library-search',
   LIBRARY_PROVIDER_FILTERS: 'vorbis-player-library-provider-filters',
   LIBRARY_GENRES: 'vorbis-player-library-genres',
-  LIBRARY_RECENTLY_ADDED: 'vorbis-player-library-recently-added',
   PINNED_PLAYLISTS: 'vorbis-player-pinned-playlists',
   PINNED_ALBUMS: 'vorbis-player-pinned-albums',
 
