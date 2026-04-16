@@ -10,12 +10,14 @@ const {
   mockUseUnifiedLikedTracks,
   mockUseProviderContext,
   mockUsePinnedItems,
+  mockUseRecentlyPlayedCollections,
 } = vi.hoisted(() => ({
   mockIsMobile: { current: false },
   mockUseLibrarySync: vi.fn(),
   mockUseUnifiedLikedTracks: vi.fn(),
   mockUseProviderContext: vi.fn(),
   mockUsePinnedItems: vi.fn(),
+  mockUseRecentlyPlayedCollections: vi.fn(),
 }));
 
 vi.mock('@/contexts/PlayerSizingContext', () => ({
@@ -52,6 +54,10 @@ vi.mock('@/hooks/usePinnedItems', () => ({
   usePinnedItems: () => mockUsePinnedItems(),
 }));
 
+vi.mock('@/hooks/useRecentlyPlayedCollections', () => ({
+  useRecentlyPlayedCollections: () => mockUseRecentlyPlayedCollections(),
+}));
+
 import { useLibraryRoot } from '../useLibraryRoot';
 
 function setupDefaultMocks(): void {
@@ -79,6 +85,10 @@ function setupDefaultMocks(): void {
     togglePinAlbum: vi.fn(),
     canPinMorePlaylists: true,
     canPinMoreAlbums: true,
+  });
+  mockUseRecentlyPlayedCollections.mockReturnValue({
+    history: [],
+    record: vi.fn(),
   });
 }
 
@@ -566,6 +576,89 @@ describe('useLibraryRoot grid behavior', () => {
 
       // #then
       expect(playlistNames(result).sort()).toEqual(['Dropbox Mix', 'Spotify Mix']);
+    });
+  });
+
+  describe('recently played image enrichment', () => {
+    it('resolves imageUrl from cached playlists when history entry lacks one', () => {
+      // #given
+      mockUseRecentlyPlayedCollections.mockReturnValue({
+        record: vi.fn(),
+        history: ([
+          { ref: { provider: 'spotify', kind: 'playlist', id: 'p-1' }, name: 'My Mix' },
+        ]),
+      });
+      setLibrarySync(
+        [makePlaylistInfo({ id: 'p-1', name: 'My Mix', provider: 'spotify', images: [{ url: 'https://example.com/p1.jpg', height: 300, width: 300 }] })],
+        [],
+      );
+
+      // #when
+      const { result } = renderLibraryRoot();
+
+      // #then
+      expect(result.current.browsingValue.recentlyPlayed[0].imageUrl).toBe('https://example.com/p1.jpg');
+    });
+
+    it('resolves imageUrl from cached albums for album history entries', () => {
+      // #given
+      mockUseRecentlyPlayedCollections.mockReturnValue({
+        record: vi.fn(),
+        history: ([
+          { ref: { provider: 'spotify', kind: 'album', id: 'a-1' }, name: 'OK Computer' },
+        ]),
+      });
+      setLibrarySync(
+        [],
+        [makeAlbumInfo({ id: 'a-1', name: 'OK Computer', provider: 'spotify', images: [{ url: 'https://example.com/a1.jpg', height: 300, width: 300 }] })],
+      );
+
+      // #when
+      const { result } = renderLibraryRoot();
+
+      // #then
+      expect(result.current.browsingValue.recentlyPlayed[0].imageUrl).toBe('https://example.com/a1.jpg');
+    });
+
+    it('preserves existing imageUrl without overwriting from cache', () => {
+      // #given
+      mockUseRecentlyPlayedCollections.mockReturnValue({
+        record: vi.fn(),
+        history: ([
+          {
+            ref: { provider: 'spotify', kind: 'playlist', id: 'p-1' },
+            name: 'My Mix',
+            imageUrl: 'https://example.com/stored.jpg',
+          },
+        ]),
+      });
+      setLibrarySync(
+        [makePlaylistInfo({ id: 'p-1', name: 'My Mix', provider: 'spotify', images: [{ url: 'https://example.com/fresh.jpg', height: 300, width: 300 }] })],
+        [],
+      );
+
+      // #when
+      const { result } = renderLibraryRoot();
+
+      // #then
+      expect(result.current.browsingValue.recentlyPlayed[0].imageUrl).toBe('https://example.com/stored.jpg');
+    });
+
+    it('leaves imageUrl undefined when no matching collection is cached', () => {
+      // #given
+      mockUseRecentlyPlayedCollections.mockReturnValue({
+        record: vi.fn(),
+        history: ([
+          { ref: { provider: 'spotify', kind: 'playlist', id: 'missing' }, name: 'Gone' },
+        ]),
+      });
+      setLibrarySync([], []);
+
+      // #when
+      const { result } = renderLibraryRoot();
+
+      // #then
+      expect(result.current.browsingValue.recentlyPlayed[0].imageUrl).toBeUndefined();
     });
   });
 });
