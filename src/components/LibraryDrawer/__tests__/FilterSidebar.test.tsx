@@ -329,6 +329,40 @@ describe('FilterSidebar', () => {
       expect(screen.queryByRole('button', { name: 'Play Playlist 5' })).not.toBeInTheDocument();
     });
 
+    it('renders a thumbnail image when an entry has an imageUrl', () => {
+      // #given
+      const withImage: RecentlyPlayedEntry[] = [{
+        ref: { provider: 'spotify', kind: 'playlist', id: 'p-img' },
+        name: 'With Cover',
+        imageUrl: 'https://cdn.example/cover.jpg',
+      }];
+
+      // #when
+      renderFilterSidebar({ recentlyPlayed: withImage });
+
+      // #then
+      const button = screen.getByRole('button', { name: 'Play With Cover' });
+      const img = button.querySelector('img');
+      expect(img).not.toBeNull();
+      expect(img?.getAttribute('src')).toBe('https://cdn.example/cover.jpg');
+    });
+
+    it('renders a placeholder when an entry has no imageUrl', () => {
+      // #given
+      const noImage: RecentlyPlayedEntry[] = [{
+        ref: { provider: 'spotify', kind: 'liked' },
+        name: 'No Cover',
+      }];
+
+      // #when
+      renderFilterSidebar({ recentlyPlayed: noImage });
+
+      // #then
+      const button = screen.getByRole('button', { name: 'Play No Cover' });
+      expect(button.querySelector('img')).toBeNull();
+      expect(button.querySelector('svg')).not.toBeNull();
+    });
+
     it('calls onRecentlyPlayedSelect with the entry when a shortcut is clicked', () => {
       // #given
       const onRecentlyPlayedSelect = vi.fn();

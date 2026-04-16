@@ -478,6 +478,47 @@ describe('useCollectionLoader', () => {
     expect(mockRecord).toHaveBeenCalledWith(
       { provider: 'spotify', kind: 'playlist', id: 'playlist_123' },
       'My Playlist',
+      null,
+    );
+  });
+
+  it('forwards the first track image as imageUrl when calling record', async () => {
+    // #given
+    const trackWithImage: MediaTrack = { ...makeMediaTrack('1'), image: 'https://cdn.example/cover.jpg' };
+    const mockCatalog = {
+      listTracks: vi.fn().mockResolvedValue([trackWithImage, makeMediaTrack('2')]),
+    };
+    mockActiveDescriptor.catalog = mockCatalog;
+    mockActiveDescriptor.playback = { pause: vi.fn() };
+
+    const { result } = renderHook(() =>
+      useCollectionLoader({
+        trackOps: { setError: mockSetError, setIsLoading: mockSetIsLoading, setSelectedPlaylistId: mockSetSelectedPlaylistId, setTracks: mockSetTracks, setOriginalTracks: mockSetOriginalTracks, setCurrentTrackIndex: mockSetCurrentTrackIndex, mediaTracksRef },
+        activeDescriptor: mockActiveDescriptor,
+        getDescriptor: mockGetDescriptor,
+        setActiveProviderId: mockSetActiveProviderId,
+        connectedProviderIds: ['spotify'],
+        shuffleEnabled: false,
+        isUnifiedLikedActive: false,
+        drivingProviderRef,
+        playTrack: mockPlayTrack,
+        spotifyHandlePlaylistSelect: mockSpotifyHandlePlaylistSelect,
+        stopRadioBase: mockStopRadioBase,
+        record: mockRecord,
+        radioStateIsActive: false,
+      })
+    );
+
+    // #when
+    await act(async () => {
+      await result.current.loadCollection('playlist_123', undefined, 'My Playlist');
+    });
+
+    // #then
+    expect(mockRecord).toHaveBeenCalledWith(
+      { provider: 'spotify', kind: 'playlist', id: 'playlist_123' },
+      'My Playlist',
+      'https://cdn.example/cover.jpg',
     );
   });
 
@@ -556,6 +597,7 @@ describe('useCollectionLoader', () => {
     expect(mockRecord).toHaveBeenCalledWith(
       { provider: 'spotify', kind: 'liked' },
       LIKED_SONGS_NAME,
+      null,
     );
   });
 

@@ -114,6 +114,52 @@ describe('useRecentlyPlayedCollections', () => {
     expect(JSON.parse(lastCall![1] as string)[0]).toEqual({ ref, name: 'My Playlist' });
   });
 
+  it('records and persists the imageUrl when provided', () => {
+    // #given
+    const ref = makeRef();
+    const { result } = renderHook(() => useRecentlyPlayedCollections());
+
+    // #when
+    act(() => {
+      result.current.record(ref, 'My Playlist', 'https://example.com/cover.jpg');
+    });
+
+    // #then
+    expect(result.current.history[0]).toEqual({
+      ref,
+      name: 'My Playlist',
+      imageUrl: 'https://example.com/cover.jpg',
+    });
+  });
+
+  it('omits imageUrl when not provided', () => {
+    // #given
+    const ref = makeRef();
+    const { result } = renderHook(() => useRecentlyPlayedCollections());
+
+    // #when
+    act(() => {
+      result.current.record(ref, 'My Playlist');
+    });
+
+    // #then
+    expect(result.current.history[0]).not.toHaveProperty('imageUrl');
+  });
+
+  it('omits imageUrl when null is passed', () => {
+    // #given
+    const ref = makeRef();
+    const { result } = renderHook(() => useRecentlyPlayedCollections());
+
+    // #when
+    act(() => {
+      result.current.record(ref, 'My Playlist', null);
+    });
+
+    // #then
+    expect(result.current.history[0]).not.toHaveProperty('imageUrl');
+  });
+
   it('loads persisted history from localStorage on init', () => {
     // #given
     const ref = makeRef();

@@ -21,7 +21,7 @@ interface UseCollectionLoaderProps {
   spotifyHandlePlaylistSelect: (playlistId: string) => Promise<MediaTrack[]>;
   stopRadioBase: () => void;
   radioStateIsActive: boolean;
-  record: (ref: CollectionRef, name: string) => void;
+  record: (ref: CollectionRef, name: string, imageUrl?: string | null) => void;
 }
 
 interface UseCollectionLoaderReturn {
@@ -116,6 +116,7 @@ export function useCollectionLoader({
         record(
           { provider: firstTrack.provider, kind: 'liked' },
           name ?? LIKED_SONGS_NAME,
+          firstTrack.image ?? null,
         );
       }
       return merged.length;
@@ -174,7 +175,7 @@ export function useCollectionLoader({
       drivingProviderRef.current = providerId;
       queueSnapshot(`${providerId} playlist loaded`, list, mediaTracksRef.current.length, 0);
       await playTrack(0);
-      record(collectionRef, name ?? collectionId);
+      record(collectionRef, name ?? collectionId, list[0]?.image ?? null);
       return list.length;
     } catch (err) {
       return handleLoadError(err, 'Failed to load collection.');

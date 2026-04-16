@@ -225,7 +225,9 @@ export const RecentlyPlayedList = styled.div`
 `;
 
 export const RecentlyPlayedItem = styled.button`
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: ${theme.spacing.sm};
   width: 100%;
   padding: ${theme.spacing.sm} ${theme.spacing.md};
   background: ${theme.colors.control.background};
@@ -236,9 +238,6 @@ export const RecentlyPlayedItem = styled.button`
   cursor: pointer;
   transition: all ${theme.transitions.fast};
   text-align: left;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 
   &:hover {
     background: ${theme.colors.control.backgroundHover};
@@ -249,6 +248,44 @@ export const RecentlyPlayedItem = styled.button`
   &:active {
     opacity: 0.8;
   }
+`;
+
+export const RecentlyPlayedThumbnail = styled.div`
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  border-radius: ${theme.borderRadius.sm};
+  overflow: hidden;
+  background: ${theme.colors.control.borderHover};
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  svg {
+    width: 14px;
+    height: 14px;
+    color: ${theme.colors.muted.foreground};
+    stroke: currentColor;
+    fill: none;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+`;
+
+export const RecentlyPlayedLabel = styled.span`
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 `;
 
 export const ClearFiltersButton = styled.button`
