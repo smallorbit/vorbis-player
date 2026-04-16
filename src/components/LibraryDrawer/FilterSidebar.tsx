@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import type { ProviderId } from '@/types/domain';
 import type {
   PlaylistSortOption,
@@ -21,6 +22,8 @@ import {
   ClearFiltersButton,
   RecentlyPlayedList,
   RecentlyPlayedItem,
+  RecentlyPlayedThumbnail,
+  RecentlyPlayedLabel,
 } from './FilterSidebar.styled';
 
 interface FilterSidebarProps {
@@ -67,6 +70,28 @@ const ClearIconSvg = () => (
     <line x1="6" y1="6" x2="18" y2="18" />
   </svg>
 );
+
+const PlaceholderThumbnailSvg = () => (
+  <svg viewBox="0 0 24 24" aria-hidden="true">
+    <path d="M9 18V5l12-2v13" />
+    <circle cx="6" cy="18" r="3" />
+    <circle cx="18" cy="16" r="3" />
+  </svg>
+);
+
+const RecentlyPlayedThumb = ({ imageUrl }: { imageUrl?: string | null }) => {
+  const [errored, setErrored] = useState(false);
+  const showImage = !!imageUrl && !errored;
+  return (
+    <RecentlyPlayedThumbnail aria-hidden>
+      {showImage ? (
+        <img src={imageUrl} alt="" loading="lazy" onError={() => setErrored(true)} />
+      ) : (
+        <PlaceholderThumbnailSvg />
+      )}
+    </RecentlyPlayedThumbnail>
+  );
+};
 
 export const FilterSidebar = ({
   searchQuery,
@@ -199,7 +224,8 @@ export const FilterSidebar = ({
                   onClick={() => onRecentlyPlayedSelect(entry)}
                   aria-label={`Play ${entry.name}`}
                 >
-                  {entry.name}
+                  <RecentlyPlayedThumb imageUrl={entry.imageUrl} />
+                  <RecentlyPlayedLabel>{entry.name}</RecentlyPlayedLabel>
                 </RecentlyPlayedItem>
               );
             })}
