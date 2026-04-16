@@ -74,11 +74,10 @@ The library browser provides multi-level filtering and searching via a pipeline 
 1. **Text search** — case-insensitive matching on name, description, owner, and artist fields
 2. **Provider filter** — show items from selected providers only (empty array = all providers)
 3. **Artist filter** (albums only) — filter albums by a single artist
-4. **Recently added filter** — limit to items added within a time window
-5. **Pinned partitioning** — pinned items always sort to top
+4. **Pinned partitioning** — pinned items always sort to top
 
 **UI Components**:
-- **FilterSidebar** (`src/components/LibraryDrawer/FilterSidebar.tsx`) — collection type (Playlists/Albums) toggle buttons, provider checkboxes, and a "Clear Filters" button. Desktop-only (≥700px).
+- **FilterSidebar** (`src/components/LibraryDrawer/FilterSidebar.tsx`) — collection type (Playlists/Albums) toggle buttons, provider checkboxes, a "Clear Filters" button, and a "Recently Played" shortcut list. Desktop-only (≥700px).
 - **LibraryControls** (`src/components/PlaylistSelection/LibraryControls.tsx`) — search, sort dropdowns, and filter controls. Used on desktop outside of drawer mode.
 - **MobileLibraryBottomBar** (`src/components/PlaylistSelection/MobileLibraryBottomBar.tsx`) — mobile-only bottom bar containing a full-width search input and a trailing sort dropdown. Rendered by `LibraryMainContent` in place of the provider chip row when `isMobile` is true.
 
@@ -94,15 +93,37 @@ All filter and sort state is persisted to `localStorage` via `useLocalStorage`. 
 | `vorbis-player-album-sort` | `'recently-added'` | Album sort order |
 | `vorbis-player-library-provider-filters` | `[]` | Active provider filters |
 | `vorbis-player-library-genres` | `[]` | Genre filter (future expansion) |
-| `vorbis-player-library-recently-added` | `'all'` | Recently added filter window |
 
 `artistFilter` is ephemeral (`useState`) — it is not persisted and resets on unmount.
 
 **Opening library from QAP:** When the user taps "Browse Library" in the Quick Access Panel, the above filter keys are cleared from localStorage before `handleOpenLibrary()` is called, ensuring a clean state.
 
 **Responsive Design**:
-- **Desktop (≥700px):** `FilterSidebar` is always visible as a static left sidebar (provider chips, sort, genre, recently-added). Provider filter is applied to the item list.
+- **Desktop (≥700px):** `FilterSidebar` is always visible as a static left sidebar (provider chips, sort, genre, recently-played shortcuts). Provider filter is applied to the item list.
 - **Mobile (<700px):** `FilterSidebar` is hidden. `MobileLibraryBottomBar` is rendered instead — it provides search and sort only. The provider filter is intentionally bypassed on mobile (see below).
+
+## Recently Played
+
+**Hook:** `useRecentlyPlayedCollections` (`src/hooks/useRecentlyPlayedCollections.ts`)
+
+Tracks the last 5 collections the user opened, enabling one-click shortcuts in the library sidebar.
+
+```ts
+interface RecentlyPlayedEntry {
+  ref: CollectionRef;
+  name: string;
+}
+
+const { history, record } = useRecentlyPlayedCollections();
+// history: RecentlyPlayedEntry[]  — newest first, max 5 entries
+// record(ref, name)               — called on successful collection load
+```
+
+**Storage:** `vorbis-player-recently-played` (localStorage). Entries are deduped by `CollectionRef` key (`collectionRefToKey`) — loading a collection already in history moves it to the top rather than duplicating it. The list is capped at 5 entries.
+
+**Integration:** `useCollectionLoader.loadCollection` calls `record()` automatically after a successful load, so history stays up to date without any per-callsite wiring.
+
+**UI:** `FilterSidebar` renders a "Recently Played" section below the provider chips (desktop only, ≥700px). The section is hidden when `history` is empty. Each entry is a clickable shortcut that triggers `onPlaylistSelect` with the stored `CollectionRef`.
 
 ### Mobile/Desktop Filter Divergence
 
@@ -124,7 +145,6 @@ On mobile, `useLibraryRoot` sets `ignoreProviderFilters = isMobile` (line 125). 
 | `albumSort` | `useLocalStorage('vorbis-player-album-sort')` | `'recently-added'` |
 | `artistFilter` | `useState` | `''` |
 | `providerFilters` | `useLocalStorage('vorbis-player-library-provider-filters')` | `[]` (empty = all) |
-| `recentlyAddedFilter` | `useLocalStorage('vorbis-player-library-recently-added')` | `'all'` |
 
 **Sort options** (from `src/utils/playlistFilters.ts`):
 - Playlists: `name-asc`, `name-desc`, `recently-added`
@@ -237,6 +257,7 @@ QAP preference is stored in `localStorage` key `vorbis-player-qap-enabled` (defa
 | `src/hooks/useLibrarySync.ts` | Collection sync engine across providers |
 | `src/hooks/useUnifiedLikedTracks.ts` | Cross-provider liked songs merge |
 | `src/hooks/useQapEnabled.ts` | QAP preference (localStorage) |
+| `src/hooks/useRecentlyPlayedCollections.ts` | Recently played collection history (localStorage) |
 | `src/hooks/usePlayerLogic.ts` | `showLibrary`, `handleOpenLibrary`, `handleCloseLibrary` |
 | `src/utils/playlistFilters.ts` | Filter/sort/pin-split utilities |
 | `src/constants/playlist.ts` | LIKED_SONGS_ID, sort anchor IDs, ID encoding |
