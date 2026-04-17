@@ -14,7 +14,7 @@ export const QueueListCard = styled(Card)`
   background: ${({ theme }) => theme.colors.muted.background};
   backdrop-filter: blur(12px);
   border: 1px solid ${({ theme }) => theme.colors.control.border};
-  border-radius: 1.25rem;
+  border-radius: ${({ theme }) => theme.borderRadius.flat};
   overflow: hidden;
   padding: 0;
   margin: 0;
@@ -40,7 +40,7 @@ export const EditButton = styled.button`
   color: ${({ theme }) => theme.colors.gray[400]};
   cursor: pointer;
   padding: 2px 6px;
-  border-radius: ${({ theme }) => theme.borderRadius.sm};
+  border-radius: ${({ theme }) => theme.borderRadius.flat};
   font-size: ${({ theme }) => theme.fontSize.sm};
   transition: color 0.15s ease, background 0.15s ease;
   flex-shrink: 0;
@@ -83,7 +83,7 @@ export const QueueListItem = styled.div<{ $isSelected: boolean }>`
   align-items: center;
   gap: ${({ theme }) => theme.spacing.sm};
   padding: ${({ theme }) => theme.spacing.sm};
-  border-radius: ${({ theme }) => theme.borderRadius.lg};
+  border-radius: ${({ theme }) => theme.borderRadius.flat};
   cursor: pointer;
   transition: background 0.2s ease, border-color 0.2s ease;
   border: 1px solid transparent;
@@ -179,7 +179,7 @@ export const RemoveButton = styled.button`
   color: ${({ theme }) => theme.colors.gray[500]};
   cursor: pointer;
   padding: 4px;
-  border-radius: ${({ theme }) => theme.borderRadius.sm};
+  border-radius: ${({ theme }) => theme.borderRadius.flat};
   display: flex;
   align-items: center;
   justify-content: center;
@@ -199,7 +199,7 @@ export const RemoveButton = styled.button`
 export const SwipeableWrapper = styled.div`
   position: relative;
   overflow: hidden;
-  border-radius: ${({ theme }) => theme.borderRadius.lg};
+  border-radius: ${({ theme }) => theme.borderRadius.flat};
 `;
 
 export const SwipeableContent = styled.div.withConfig({
@@ -224,5 +224,5 @@ export const SwipeRemoveBackdrop = styled.div`
   color: ${({ theme }) => theme.colors.white};
   font-size: ${({ theme }) => theme.fontSize.sm};
   font-weight: ${({ theme }) => theme.fontWeight.semibold};
-  border-radius: 0 ${({ theme }) => theme.borderRadius.lg} ${({ theme }) => theme.borderRadius.lg} 0;
+  border-radius: ${({ theme }) => theme.borderRadius.flat};
 `;

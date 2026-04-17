@@ -104,7 +104,7 @@ const CloseButton = styled.button`
   font-size: ${theme.fontSize.xl};
   cursor: pointer;
   padding: ${theme.spacing.sm};
-  border-radius: ${theme.borderRadius.md};
+  border-radius: ${theme.borderRadius.flat};
   transition: all ${theme.transitions.fast};
   display: flex;
   align-items: center;
@@ -122,7 +122,7 @@ const SaveButton = styled.button`
   color: ${theme.colors.muted.foreground};
   cursor: pointer;
   padding: ${theme.spacing.sm};
-  border-radius: ${theme.borderRadius.md};
+  border-radius: ${theme.borderRadius.flat};
   transition: all ${theme.transitions.fast};
   display: flex;
   align-items: center;
