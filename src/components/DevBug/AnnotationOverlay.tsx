@@ -39,7 +39,7 @@ const Toolbar = styled.div`
   gap: 8px;
   background: rgba(0, 0, 0, 0.8);
   border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 8px;
+  border-radius: 0;
   padding: 8px 12px;
   backdrop-filter: blur(8px);
 `;
@@ -48,7 +48,7 @@ const ToolButton = styled.button<{ $active: boolean }>`
   background: ${({ $active }) => ($active ? 'rgba(255, 255, 255, 0.2)' : 'transparent')};
   border: 1px solid ${({ $active }) => ($active ? 'rgba(255, 255, 255, 0.6)' : 'rgba(255, 255, 255, 0.2)')};
   color: #fff;
-  border-radius: 6px;
+  border-radius: 0;
   padding: 6px 12px;
   font-size: 13px;
   font-weight: 500;
@@ -68,7 +68,7 @@ const ActionButton = styled.button<{ $variant?: 'primary' | 'cancel' }>`
     ${({ $variant }) =>
       $variant === 'primary' ? '#3182ce' : 'rgba(255, 255, 255, 0.3)'};
   color: #fff;
-  border-radius: 6px;
+  border-radius: 0;
   padding: 6px 14px;
   font-size: 13px;
   font-weight: 600;
