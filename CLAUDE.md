@@ -25,6 +25,17 @@ When modifying CSS layout or styling, avoid making additional 'clever' adjustmen
 
 Make the minimal change first, confirm it works visually, then iterate. Do not combine multiple layout changes into a single large edit.
 
+### Flat design
+
+The player uses a deliberately flat visual language. Rules:
+
+- **Preserved rounded surfaces**: `AlbumArt` uses `borderRadius.xl`; the player panel directly beneath it (track/artist name + timeline) also retains its rounded corners.
+- **All other rectangular surfaces** use `theme.borderRadius.flat` (`0`) — cards, drawers, menus, list items, modals, etc.
+- **Circles** (`border-radius: 50%`) stay circular everywhere (icon buttons, avatar-style elements).
+- **Thumbnails** (library tiles, mini album art) use `theme.borderRadius.md` (6 px).
+
+When adding new UI surfaces, default to `borderRadius.flat` unless the element is explicitly one of the exceptions above. Do not introduce new ad-hoc radius values.
+
 ## Git & PR Workflow
 
 Run `npm test` before `git push` and before creating any PR.

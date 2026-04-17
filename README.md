@@ -76,6 +76,10 @@ For radio recommendations, also set `VITE_LASTFM_API_KEY` in `.env.local` (see `
 |----------|-------|
 | Vercel | **[Deploy to Vercel](./docs/deployment/deploy-to-vercel.md)** |
 
+## Design language
+
+The UI follows a flat-first approach: nearly all rectangular surfaces (cards, drawers, menus, list items) use zero border radius via `theme.borderRadius.flat`. Only the album art and the player panel immediately below it keep rounded corners; thumbnails use a small 6 px radius (`theme.borderRadius.md`); circular elements (icon buttons) stay fully round. This keeps the visual language crisp and avoids arbitrary radius values scattered across components.
+
 ## Tech Stack
 
 React 18 · TypeScript 5 · Vite 6 · styled-components · Radix UI · Vitest
