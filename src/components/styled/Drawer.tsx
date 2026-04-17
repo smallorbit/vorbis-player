@@ -20,7 +20,7 @@ export const GripPill = styled.div`
   width: 40px;
   height: 4px;
   background: ${({ theme }) => theme.colors.control.backgroundHover};
-  border-radius: ${({ theme }) => theme.borderRadius.sm};
+  border-radius: ${({ theme }) => theme.borderRadius.flat};
 `;
 
 export const SwipeHandle = styled.div`
