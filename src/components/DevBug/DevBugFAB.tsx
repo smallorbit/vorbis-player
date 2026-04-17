@@ -123,7 +123,7 @@ const Tooltip = styled.span`
   font-size: 11px;
   font-family: system-ui, sans-serif;
   padding: 4px 8px;
-  border-radius: 4px;
+  border-radius: 0;
   pointer-events: none;
   opacity: 0;
   transition: opacity 0.15s;
