@@ -138,7 +138,7 @@ export const ToggleButton = styled.button<{ $active: boolean }>`
   border: 1px solid
     ${({ $active }) =>
       $active ? theme.colors.control.borderHover : theme.colors.control.border};
-  border-radius: ${theme.borderRadius.md};
+  border-radius: ${theme.borderRadius.flat};
   color: ${({ $active }) =>
     $active ? theme.colors.white : theme.colors.muted.foreground};
   font-size: ${theme.fontSize.sm};
@@ -195,7 +195,7 @@ export const SortSelect = styled.select`
   padding: ${theme.spacing.sm} ${theme.spacing.md};
   background: ${theme.colors.control.background};
   border: 1px solid ${theme.colors.control.border};
-  border-radius: ${theme.borderRadius.md};
+  border-radius: ${theme.borderRadius.flat};
   color: ${theme.colors.white};
   font-size: ${theme.fontSize.sm};
   cursor: pointer;
@@ -232,7 +232,7 @@ export const RecentlyPlayedItem = styled.button`
   padding: ${theme.spacing.sm} ${theme.spacing.md};
   background: ${theme.colors.control.background};
   border: 1px solid ${theme.colors.control.border};
-  border-radius: ${theme.borderRadius.md};
+  border-radius: ${theme.borderRadius.flat};
   color: ${theme.colors.muted.foreground};
   font-size: ${theme.fontSize.sm};
   cursor: pointer;
@@ -292,7 +292,7 @@ export const ClearFiltersButton = styled.button`
   padding: ${theme.spacing.xs} ${theme.spacing.md};
   background: ${theme.colors.control.background};
   border: 1px solid ${theme.colors.control.border};
-  border-radius: ${theme.borderRadius.md};
+  border-radius: ${theme.borderRadius.flat};
   color: ${theme.colors.muted.foreground};
   font-size: ${theme.fontSize.xs};
   cursor: pointer;
