@@ -53,7 +53,7 @@ const LoadingCard = styled(Card)<{ backgroundImage?: string; standalone?: boolea
   right: 0;
   bottom: 0;
   overflow: hidden;
-  border-radius: 1.25rem;
+  border-radius: ${({ theme }) => theme.borderRadius.flat};
   border: 1px solid ${({ theme }) => theme.colors.border};
   box-shadow: ${({ theme }) => theme.shadows.albumArt};
 
@@ -66,7 +66,7 @@ const LoadingCard = styled(Card)<{ backgroundImage?: string; standalone?: boolea
       background-size: cover;
       background-position: center;
       background-repeat: no-repeat;
-      border-radius: 1.25rem;
+      border-radius: ${theme.borderRadius.flat};
       z-index: 0;
     }
 
@@ -76,7 +76,7 @@ const LoadingCard = styled(Card)<{ backgroundImage?: string; standalone?: boolea
       inset: 0;
       background: ${theme.colors.card.overlay};
       backdrop-filter: blur(24px);
-      border-radius: 1.25rem;
+      border-radius: ${theme.borderRadius.flat};
       z-index: 1;
     }
   ` : `
@@ -149,7 +149,7 @@ const ProgressBar = styled.div`
   width: 200px;
   height: 3px;
   background: ${({ theme }) => theme.colors.control.background};
-  border-radius: 1.5px;
+  border-radius: ${({ theme }) => theme.borderRadius.flat};
   margin-top: 1.5rem;
   position: relative;
   overflow: hidden;

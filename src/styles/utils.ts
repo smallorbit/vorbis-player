@@ -17,7 +17,7 @@ export const buttonBase = css`
   align-items: center;
   justify-content: center;
   padding: ${theme.spacing.sm} ${theme.spacing.md};
-  border-radius: ${theme.borderRadius.lg};
+  border-radius: ${theme.borderRadius.flat};
   font-size: ${theme.fontSize.sm};
   font-weight: ${theme.fontWeight.medium};
   transition: ${theme.transitions.normal};
@@ -76,7 +76,7 @@ export const buttonGhost = css`
 export const cardBase = css`
   background-color: ${theme.colors.muted.background};
   border: 1px solid ${theme.colors.border};
-  border-radius: ${theme.borderRadius.md};
+  border-radius: ${theme.borderRadius.flat};
   padding: ${theme.spacing.sm};
   margin: ${theme.spacing.sm};
   margin-top: ${theme.spacing.md};
@@ -112,12 +112,12 @@ export const customScrollbar = css`
   
   &::-webkit-scrollbar-track {
     background: ${theme.colors.muted.background};
-    border-radius: ${theme.borderRadius.md};
+    border-radius: ${theme.borderRadius.flat};
   }
-  
+
   &::-webkit-scrollbar-thumb {
     background: ${theme.colors.gray[600]};
-    border-radius: ${theme.borderRadius.md};
+    border-radius: ${theme.borderRadius.flat};
   }
   
   &::-webkit-scrollbar-thumb:hover {

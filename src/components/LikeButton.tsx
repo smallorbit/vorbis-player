@@ -37,11 +37,7 @@ const StyledLikeButton = styled.button<{
     if ($isTablet) return theme.spacing.sm;
     return theme.spacing.sm;
   }};
-  border-radius: ${({ $isMobile, $isTablet }) => {
-    if ($isMobile) return theme.borderRadius.sm;
-    if ($isTablet) return theme.borderRadius.md;
-    return theme.borderRadius.md;
-  }};
+  border-radius: ${theme.borderRadius.flat};
   position: relative;
 
   .heart-icon-wrapper {

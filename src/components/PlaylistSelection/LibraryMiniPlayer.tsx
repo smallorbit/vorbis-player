@@ -88,7 +88,7 @@ const Bars = styled.div<{ $paused: boolean }>`
     width: 3px;
     height: 100%;
     background: ${theme.colors.muted.foreground};
-    border-radius: 1px;
+    border-radius: ${theme.borderRadius.flat};
     transform-origin: bottom;
     animation: ${equalize} 0.8s ease-in-out infinite;
     animation-play-state: ${({ $paused }) => ($paused ? 'paused' : 'running')};

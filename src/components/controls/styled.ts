@@ -159,7 +159,7 @@ export const ControlButton = styled.button.withConfig({
   touch-action: manipulation; /* Remove 300ms tap delay on iOS */
   transition: all 0.2s ease;
   padding: ${({ theme }) => theme.spacing.sm};
-  border-radius: ${({ theme }) => theme.borderRadius.md};
+  border-radius: ${({ theme }) => theme.borderRadius.flat};
 
   svg {
     width: 1.5rem;
