@@ -14,7 +14,7 @@ const PopoverContainer = styled.div`
   gap: ${({ theme }) => theme.spacing.sm};
   background: ${({ theme }) => theme.colors.popover.background};
   border: 1px solid ${({ theme }) => theme.colors.popover.border};
-  border-radius: ${({ theme }) => theme.borderRadius.xl};
+  border-radius: ${({ theme }) => theme.borderRadius.flat};
   box-shadow: ${({ theme }) => theme.shadows.popover};
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
@@ -25,7 +25,7 @@ const SliderTrack = styled.div<{ $fillPercent: number }>`
   width: 4px;
   height: 120px;
   background: ${({ theme }) => theme.colors.control.backgroundHover};
-  border-radius: ${({ theme }) => theme.borderRadius.sm};
+  border-radius: ${({ theme }) => theme.borderRadius.flat};
   cursor: pointer;
   touch-action: none;
 
@@ -37,7 +37,7 @@ const SliderTrack = styled.div<{ $fillPercent: number }>`
     right: 0;
     height: ${({ $fillPercent }) => $fillPercent}%;
     background: var(--accent-color);
-    border-radius: ${({ theme }) => theme.borderRadius.sm};
+    border-radius: ${({ theme }) => theme.borderRadius.flat};
     pointer-events: none;
   }
 `;
@@ -64,7 +64,7 @@ const MuteButton = styled.button<{ $isMuted: boolean }>`
   justify-content: center;
   cursor: pointer;
   padding: ${({ theme }) => theme.spacing.xs};
-  border-radius: ${({ theme }) => theme.borderRadius.md};
+  border-radius: ${({ theme }) => theme.borderRadius.flat};
   transition: all ${({ theme }) => theme.transitions.fast} ease;
   touch-action: manipulation; /* Remove 300ms tap delay on iOS */
 
