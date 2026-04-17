@@ -33,6 +33,7 @@ The player uses a deliberately flat visual language. Rules:
 - **All other rectangular surfaces** use `theme.borderRadius.flat` (`0`) — cards, drawers, menus, list items, modals, etc.
 - **Circles** (`border-radius: 50%`) stay circular everywhere (icon buttons, avatar-style elements).
 - **Thumbnails** (library tiles, mini album art) use `theme.borderRadius.md` (6 px).
+- **Functional controls whose shape is part of their mechanics** keep their original rounding. In practice this means pill-shaped toggle tracks (`Switch`) and any slider track whose knob is circular — flattening them would leave the circular thumb clipping against square corners. Treat the `Switch` component (`src/components/controls/Switch.tsx`) as the reference: track = `borderRadius.full`, knob = `border-radius: 50%`.
 
 When adding new UI surfaces, default to `borderRadius.flat` unless the element is explicitly one of the exceptions above. Do not introduce new ad-hoc radius values.
 
