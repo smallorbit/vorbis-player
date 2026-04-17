@@ -37,7 +37,7 @@ export const ZenGripPill = styled.div.withConfig({
   width: 36px;
   height: 4px;
   background: rgba(255, 255, 255, 0.35);
-  border-radius: 2px;
+  border-radius: ${({ theme }) => theme.borderRadius.flat};
   position: absolute;
   bottom: 10px;
   left: 50%;
