@@ -136,6 +136,8 @@ const StatusBadge = styled.span<{ $status: 'connected' | 'expired' | 'idle' }>`
 `;
 
 const ConnectButton = styled.button<{ $accentColor: string }>`
+  appearance: none;
+  -webkit-appearance: none;
   padding: ${({ theme }) => theme.spacing.xs} ${({ theme }) => theme.spacing.md};
   background: ${({ $accentColor }) => $accentColor};
   color: #fff;
@@ -312,10 +314,20 @@ export default function ProviderSetupScreen({ onOpenSettings, onOpenLibrary }: P
     );
   }
 
-  // All-expired reconnect screen: show each previously-enabled provider with status
+  // All-expired reconnect screen: show each previously-enabled provider with status.
   // The auto-fallthrough in ProviderContext handles the partial-expiry case,
   // so we only reach here when ALL enabled providers are expired.
-  const enabledProviders = providers.filter(p => enabledProviderIds.includes(p.id));
+  //
+  // The active provider is surfaced first even if it isn't in enabledProviderIds —
+  // otherwise a user who disabled their active provider after its session expired
+  // would see a "reconnect" card for a provider they weren't trying to use.
+  const expiredProviders = useMemo(() => {
+    const inEnabled = providers.filter(p => enabledProviderIds.includes(p.id));
+    if (activeDescriptor && !enabledProviderIds.includes(activeDescriptor.id)) {
+      return [activeDescriptor, ...inEnabled];
+    }
+    return inEnabled;
+  }, [providers, enabledProviderIds, activeDescriptor]);
 
   return (
     <Wrapper>
@@ -329,12 +341,12 @@ export default function ProviderSetupScreen({ onOpenSettings, onOpenLibrary }: P
           )}
         </CardHeader>
         <Subtitle>
-          {enabledProviders.length > 1
+          {expiredProviders.length > 1
             ? 'Your provider sessions have expired. Reconnect to continue listening.'
             : `Your ${activeDescriptor?.name ?? 'provider'} session has expired. Reconnect to continue listening.`}
         </Subtitle>
         <ProviderGrid>
-          {enabledProviders.map((descriptor) => {
+          {expiredProviders.map((descriptor) => {
             const meta = PROVIDER_META[descriptor.id] ?? { icon: '\u266A', accentColor: '#646cff', note: '' };
             const isAuthenticated = descriptor.auth.isAuthenticated();
             return (

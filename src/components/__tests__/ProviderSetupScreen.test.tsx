@@ -296,5 +296,44 @@ describe('ProviderSetupScreen', () => {
         screen.getByText(/Your Spotify session has expired/)
       ).toBeInTheDocument();
     });
+
+    it('surfaces the active provider even when it is not in enabledProviderIds', () => {
+      // #given — user was playing Spotify, disabled it, then its session expired
+      const spotifyDesc = makeProviderDescriptor({ id: 'spotify', name: 'Spotify' });
+      const dropboxDesc = makeProviderDescriptor({ id: 'dropbox' as 'spotify', name: 'Dropbox' });
+      mockProviderContextValue = buildProviderContext({
+        chosenProviderId: 'spotify',
+        activeDescriptor: spotifyDesc,
+        registry: { getAll: () => [spotifyDesc, dropboxDesc] },
+        enabledProviderIds: ['dropbox'],
+      });
+
+      // #when
+      render(<Wrapper><ProviderSetupScreen /></Wrapper>);
+
+      // #then — Spotify card is rendered so the user can reconnect the provider they were using
+      expect(screen.getByText('Spotify')).toBeInTheDocument();
+      expect(screen.getByText('Dropbox')).toBeInTheDocument();
+      expect(screen.getAllByText('Reconnect')).toHaveLength(2);
+    });
+
+    it('does not duplicate the active provider when it is already in enabledProviderIds', () => {
+      // #given
+      const spotifyDesc = makeProviderDescriptor({ id: 'spotify', name: 'Spotify' });
+      const dropboxDesc = makeProviderDescriptor({ id: 'dropbox' as 'spotify', name: 'Dropbox' });
+      mockProviderContextValue = buildProviderContext({
+        chosenProviderId: 'spotify',
+        activeDescriptor: spotifyDesc,
+        registry: { getAll: () => [spotifyDesc, dropboxDesc] },
+        enabledProviderIds: ['spotify', 'dropbox'],
+      });
+
+      // #when
+      render(<Wrapper><ProviderSetupScreen /></Wrapper>);
+
+      // #then — exactly one card per provider, no duplicates
+      expect(screen.getAllByText('Spotify')).toHaveLength(1);
+      expect(screen.getAllByText('Dropbox')).toHaveLength(1);
+    });
   });
 });
