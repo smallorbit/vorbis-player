@@ -23,7 +23,7 @@ const WarningText = styled.p`
   padding: ${theme.spacing.sm} ${theme.spacing.md};
   background: rgba(239, 68, 68, 0.1);
   border: 1px solid rgba(239, 68, 68, 0.25);
-  border-radius: ${theme.borderRadius.md};
+  border-radius: ${theme.borderRadius.flat};
   color: rgba(252, 165, 165, 0.9);
   font-size: ${theme.fontSize.xs};
   line-height: 1.4;
