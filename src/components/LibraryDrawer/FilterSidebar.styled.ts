@@ -43,7 +43,7 @@ export const SearchInputWrapper = styled.div`
   position: relative;
   background: ${theme.colors.control.background};
   border: 1px solid ${theme.colors.control.border};
-  border-radius: ${theme.borderRadius.md};
+  border-radius: ${theme.borderRadius.flat};
   padding: 0 ${theme.spacing.sm};
   transition: all ${theme.transitions.fast};
 
@@ -167,7 +167,7 @@ export const FilterChip = styled.button<{ $active: boolean }>`
   display: inline-flex;
   align-items: center;
   padding: ${theme.spacing.xs} ${theme.spacing.md};
-  border-radius: 999px;
+  border-radius: ${theme.borderRadius.flat};
   border: 1px solid
     ${({ $active }) =>
       $active ? theme.colors.control.borderHover : theme.colors.control.border};
@@ -254,7 +254,7 @@ export const RecentlyPlayedThumbnail = styled.div`
   flex-shrink: 0;
   width: 24px;
   height: 24px;
-  border-radius: ${theme.borderRadius.sm};
+  border-radius: ${theme.borderRadius.md};
   overflow: hidden;
   background: ${theme.colors.control.borderHover};
   display: flex;
