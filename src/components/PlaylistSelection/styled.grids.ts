@@ -50,7 +50,7 @@ export const GridCardArtWrapper = styled.div`
   position: relative;
   width: 100%;
   aspect-ratio: 1;
-  border-radius: 0.5rem;
+  border-radius: ${({ theme }) => theme.borderRadius.md};
   overflow: hidden;
   background: linear-gradient(135deg, ${({ theme }) => theme.colors.gray[800]}, ${({ theme }) => theme.colors.gray[700]});
 
@@ -120,7 +120,7 @@ const PlaylistItem = styled.div`
 export const PlaylistImageWrapper = styled.div`
   width: 60px;
   height: 60px;
-  border-radius: 0.5rem;
+  border-radius: ${({ theme }) => theme.borderRadius.md};
   overflow: hidden;
   background: linear-gradient(45deg, ${({ theme }) => theme.colors.gray[700]}, ${({ theme }) => theme.colors.gray[600]});
   flex-shrink: 0;

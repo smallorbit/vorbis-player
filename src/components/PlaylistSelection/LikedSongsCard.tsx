@@ -1,6 +1,7 @@
 import * as React from 'react';
 import ProviderIcon from '../ProviderIcon';
 import { LIKED_SONGS_ID, LIKED_SONGS_NAME } from '@/constants/playlist';
+import { theme } from '@/styles/theme';
 import type { ProviderId } from '@/types/domain';
 import {
   GridCardArtWrapper,
@@ -36,7 +37,7 @@ const HeartArt: React.FC<{ gradient: string; layout: 'grid' | 'list' }> = ({ gra
     justifyContent: 'center',
     width: '100%',
     height: '100%',
-    borderRadius: layout === 'list' ? '0.5rem' : undefined,
+    borderRadius: layout === 'list' ? theme.borderRadius.md : undefined,
     fontSize: layout === 'list' ? '1.5rem' : '3rem',
     color: 'white',
   }}>♥</div>
