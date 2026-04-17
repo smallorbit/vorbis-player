@@ -11,7 +11,7 @@ export const Panel = styled.div`
   pointer-events: auto;
   background: ${({ theme }) => theme.colors.overlay.panel};
   border: 1px solid ${({ theme }) => theme.colors.borderSubtle};
-  border-radius: ${({ theme }) => theme.borderRadius.lg};
+  border-radius: ${({ theme }) => theme.borderRadius.flat};
   padding: ${({ theme }) => theme.spacing.md};
   font-size: ${({ theme }) => theme.fontSize.xs};
   color: ${({ theme }) => theme.colors.foreground};
@@ -74,7 +74,7 @@ export const NumberInput = styled.input.attrs({ type: 'number' })`
   font-size: 11px;
   background: ${({ theme }) => theme.colors.control.background};
   border: 1px solid ${({ theme }) => theme.colors.control.border};
-  border-radius: ${({ theme }) => theme.borderRadius.xs};
+  border-radius: ${({ theme }) => theme.borderRadius.flat};
   color: ${({ theme }) => theme.colors.foreground};
 
   &:focus {
@@ -93,7 +93,7 @@ export const ButtonRow = styled.div`
 export const Button = styled.button<{ $variant?: 'primary' | 'secondary' }>`
   padding: ${({ theme }) => theme.spacing.xs} ${({ theme }) => theme.spacing.sm};
   font-size: 11px;
-  border-radius: ${({ theme }) => theme.borderRadius.sm};
+  border-radius: ${({ theme }) => theme.borderRadius.flat};
   cursor: pointer;
   border: 1px solid ${({ theme }) => theme.colors.control.border};
   background: ${({ theme }) => theme.colors.control.background};
@@ -122,7 +122,7 @@ export const JsonArea = styled.textarea`
   font-family: ui-monospace, monospace;
   background: ${({ theme }) => theme.colors.overlay.backdrop};
   border: 1px solid ${({ theme }) => theme.colors.borderSubtle};
-  border-radius: ${({ theme }) => theme.borderRadius.xs};
+  border-radius: ${({ theme }) => theme.borderRadius.flat};
   color: ${({ theme }) => theme.colors.foreground};
   resize: vertical;
 
