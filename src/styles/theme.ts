@@ -104,6 +104,7 @@ export const theme = {
   },
   
   borderRadius: {
+    flat: '0',
     none: '0',
     xs: '0.05rem',  // 1px
     sm: '0.125rem',  // 2px
