@@ -24,7 +24,7 @@ const Input = styled.input`
   padding: ${theme.spacing.sm} ${theme.spacing.md};
   background: ${theme.colors.muted.background};
   border: 1px solid ${theme.colors.control.border};
-  border-radius: ${theme.borderRadius.lg};
+  border-radius: ${theme.borderRadius.flat};
   color: ${theme.colors.white};
   font-size: ${theme.fontSize.base};
   outline: none;
@@ -43,7 +43,7 @@ const Warning = styled.div`
   padding: ${theme.spacing.sm} ${theme.spacing.md};
   background: rgba(255, 180, 50, 0.12);
   border: 1px solid rgba(255, 180, 50, 0.25);
-  border-radius: ${theme.borderRadius.md};
+  border-radius: ${theme.borderRadius.flat};
   color: rgba(255, 200, 100, 0.9);
   font-size: ${theme.fontSize.xs};
   line-height: 1.4;
@@ -57,7 +57,7 @@ const ProviderRow = styled.div`
 const ProviderOption = styled.button<{ $active: boolean }>`
   flex: 1;
   padding: ${theme.spacing.sm} ${theme.spacing.md};
-  border-radius: ${theme.borderRadius.lg};
+  border-radius: ${theme.borderRadius.flat};
   font-size: ${theme.fontSize.sm};
   font-weight: ${theme.fontWeight.medium};
   cursor: pointer;

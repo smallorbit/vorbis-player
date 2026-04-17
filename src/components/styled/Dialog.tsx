@@ -21,7 +21,7 @@ export const DialogBox = styled.div`
   background: ${theme.colors.overlay.dark};
   backdrop-filter: blur(16px);
   border: 1px solid ${theme.colors.popover.border};
-  border-radius: ${theme.borderRadius['2xl']};
+  border-radius: ${theme.borderRadius.flat};
   padding: ${theme.spacing.lg};
   width: min(380px, 90vw);
   display: flex;
@@ -50,7 +50,7 @@ export const DialogButtonRow = styled.div`
 
 export const DialogButton = styled.button<{ $primary?: boolean; $destructive?: boolean }>`
   padding: ${theme.spacing.sm} ${theme.spacing.md};
-  border-radius: ${theme.borderRadius.lg};
+  border-radius: ${theme.borderRadius.flat};
   font-size: ${theme.fontSize.sm};
   font-weight: ${theme.fontWeight.medium};
   cursor: pointer;

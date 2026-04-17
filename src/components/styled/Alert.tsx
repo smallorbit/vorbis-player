@@ -8,7 +8,7 @@ interface AlertProps {
 
 const StyledAlert = styled.div<{ $variant?: string }>`
   padding: ${({ theme }) => theme.spacing.md};
-  border-radius: ${({ theme }) => theme.borderRadius.md};
+  border-radius: ${({ theme }) => theme.borderRadius.flat};
   border: 1px solid ${({ theme }) => theme.colors.border};
   background-color: ${({ theme }) => theme.colors.muted.background};
   
