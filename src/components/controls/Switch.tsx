@@ -23,7 +23,7 @@ const SwitchTrack = styled.button<{ $on: boolean; $disabled?: boolean; $variant:
   position: relative;
   width: 36px;
   height: 20px;
-  border-radius: ${({ theme }) => theme.borderRadius.flat};
+  border-radius: ${({ theme }) => theme.borderRadius.full};
   border: none;
   padding: 0;
   cursor: ${({ $disabled }) => ($disabled ? 'not-allowed' : 'pointer')};
