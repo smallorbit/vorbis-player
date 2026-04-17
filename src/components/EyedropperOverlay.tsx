@@ -69,7 +69,7 @@ const EyedropperOverlay: React.FC<EyedropperOverlayProps> = ({ image, onPick, on
       <div style={{
         position: 'relative',
         background: theme.colors.gray[800],
-        borderRadius: theme.borderRadius['2xl'],
+        borderRadius: theme.borderRadius.flat,
         padding: theme.spacing.md,
         boxShadow: theme.shadows.lg,
       }}>
@@ -78,7 +78,7 @@ const EyedropperOverlay: React.FC<EyedropperOverlayProps> = ({ image, onPick, on
           style={{
             maxWidth: 400,
             maxHeight: 400,
-            borderRadius: theme.borderRadius.xl,
+            borderRadius: theme.borderRadius.flat,
             cursor: 'crosshair',
             boxShadow: theme.shadows.md,
             display: 'block',
@@ -95,7 +95,7 @@ const EyedropperOverlay: React.FC<EyedropperOverlayProps> = ({ image, onPick, on
             background: theme.colors.gray[900],
             color: theme.colors.white,
             border: 'none',
-            borderRadius: theme.borderRadius.md,
+            borderRadius: theme.borderRadius.flat,
             padding: `${theme.spacing.xs} 10px`,
             cursor: 'pointer',
             fontSize: theme.fontSize.base,
@@ -111,7 +111,7 @@ const EyedropperOverlay: React.FC<EyedropperOverlayProps> = ({ image, onPick, on
             background: theme.colors.popover.background,
             color: theme.colors.white,
             padding: `${theme.spacing.xs} 10px`,
-            borderRadius: theme.borderRadius.md,
+            borderRadius: theme.borderRadius.flat,
             fontSize: theme.fontSize.sm,
             border: `2px solid ${hoverColor}`,
           }}>
@@ -121,7 +121,7 @@ const EyedropperOverlay: React.FC<EyedropperOverlayProps> = ({ image, onPick, on
               width: 16,
               height: 16,
               background: hoverColor,
-              borderRadius: theme.borderRadius.xs,
+              borderRadius: theme.borderRadius.flat,
               marginLeft: theme.spacing.sm,
               border: `1px solid ${theme.colors.white}`,
             }} />
