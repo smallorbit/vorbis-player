@@ -50,7 +50,7 @@ export function LibraryStatusContent({
               border: 'none',
               padding: `${theme.spacing.lg} ${theme.spacing.xl}`,
               fontSize: theme.fontSize.base,
-              borderRadius: theme.borderRadius.lg,
+              borderRadius: theme.borderRadius.flat,
               cursor: 'pointer',
               transition: `background ${theme.transitions.fast} ease`
             }}

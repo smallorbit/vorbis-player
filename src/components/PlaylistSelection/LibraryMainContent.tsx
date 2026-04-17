@@ -60,7 +60,7 @@ const ProviderChip = styled.button<{ $active: boolean }>`
   gap: ${theme.spacing.xs};
   flex-shrink: 0;
   padding: ${theme.spacing.xs} ${theme.spacing.md};
-  border-radius: 999px;
+  border-radius: ${theme.borderRadius.flat};
   border: 1px solid
     ${({ $active }) =>
       $active ? theme.colors.control.borderHover : theme.colors.control.border};

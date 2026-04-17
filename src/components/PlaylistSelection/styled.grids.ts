@@ -36,7 +36,7 @@ const GridCard = styled.div`
   display: flex;
   flex-direction: column;
   cursor: pointer;
-  border-radius: 0.5rem;
+  border-radius: ${({ theme }) => theme.borderRadius.flat};
   transition: transform 0.15s ease, background 0.15s ease;
   min-width: 0;
 
@@ -106,7 +106,7 @@ const PlaylistItem = styled.div`
   padding: ${({ theme }) => theme.spacing.md};
   background: ${({ theme }) => theme.colors.control.background};
   border: 1px solid ${({ theme }) => theme.colors.control.border};
-  border-radius: ${({ theme }) => theme.borderRadius.xl};
+  border-radius: ${({ theme }) => theme.borderRadius.flat};
   cursor: pointer;
   transition: all ${({ theme }) => theme.transitions.fast} ease;
 

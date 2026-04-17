@@ -26,7 +26,7 @@ export const PageSelectionCard = styled(Card)<{ $maxWidth: number; $overlay?: bo
   background: ${theme.colors.muted.background};
   backdrop-filter: blur(12px);
   border: ${({ $overlay }) => ($overlay ? 'none' : `1px solid ${theme.colors.control.border}`)};
-  border-radius: ${({ $overlay }) => ($overlay ? '0' : '1.25rem')};
+  border-radius: ${theme.borderRadius.flat};
   box-shadow: ${({ $overlay }) => ($overlay ? 'none' : theme.shadows.albumArt)};
   display: flex;
   flex-direction: column;

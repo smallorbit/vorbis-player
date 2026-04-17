@@ -58,7 +58,7 @@ const ConnectButton = styled.button`
   color: ${TOGGLE_ON_COLOR};
   background: none;
   border: 1px solid ${TOGGLE_ON_COLOR}40;
-  border-radius: ${({ theme }) => theme.borderRadius.lg};
+  border-radius: ${({ theme }) => theme.borderRadius.flat};
   padding: 2px 8px;
   cursor: pointer;
   transition: background 0.15s ease;
