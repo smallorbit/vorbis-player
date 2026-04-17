@@ -88,7 +88,7 @@ export function InspectOverlay({ onElementSelected }: InspectOverlayProps) {
 
     ctx.fillStyle = TOOLTIP_BG;
     ctx.beginPath();
-    ctx.roundRect(tx, ty, tooltipW, tooltipH, 4);
+    ctx.rect(tx, ty, tooltipW, tooltipH);
     ctx.fill();
 
     lines.forEach((line, i) => {
