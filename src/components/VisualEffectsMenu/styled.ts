@@ -82,7 +82,7 @@ export const CloseButton = styled.button`
   color: ${({ theme }) => theme.colors.muted.foreground};
   cursor: pointer;
   padding: ${({ theme }) => theme.spacing.sm};
-  border-radius: ${({ theme }) => theme.borderRadius.md};
+  border-radius: ${({ theme }) => theme.borderRadius.flat};
   transition: all ${({ theme }) => theme.transitions.fast} ease;
 
   &:hover {
@@ -188,7 +188,7 @@ export const ResetButton = styled.button`
   border: 1px solid ${({ theme }) => theme.colors.border};
   color: ${({ theme }) => theme.colors.muted.foreground};
   padding: ${({ theme }) => theme.spacing.sm} ${({ theme }) => theme.spacing.md};
-  border-radius: ${({ theme }) => theme.borderRadius.lg};
+  border-radius: ${({ theme }) => theme.borderRadius.flat};
   cursor: pointer;
   font-size: ${({ theme }) => theme.fontSize.sm};
   font-weight: ${({ theme }) => theme.fontWeight.medium};
@@ -275,7 +275,7 @@ export const CacheCheckbox = styled.input`
   width: 16px;
   height: 16px;
   border: 1px solid ${({ theme }) => theme.colors.border};
-  border-radius: ${({ theme }) => theme.borderRadius.sm};
+  border-radius: ${({ theme }) => theme.borderRadius.flat};
   background: ${({ theme }) => theme.colors.control.background};
   cursor: pointer;
   flex-shrink: 0;
@@ -319,7 +319,7 @@ export const CacheCancelButton = styled.button`
   border: 1px solid ${({ theme }) => theme.colors.border};
   color: ${({ theme }) => theme.colors.muted.foreground};
   padding: ${({ theme }) => theme.spacing.sm} ${({ theme }) => theme.spacing.md};
-  border-radius: ${({ theme }) => theme.borderRadius.lg};
+  border-radius: ${({ theme }) => theme.borderRadius.flat};
   cursor: pointer;
   font-size: ${({ theme }) => theme.fontSize.sm};
   font-weight: ${({ theme }) => theme.fontWeight.medium};
@@ -339,7 +339,7 @@ export const OptionButton = styled.button<{ $isActive: boolean }>`
   border: 1px solid ${({ $isActive, theme }) => $isActive ? 'var(--accent-color)' : theme.colors.border};
   color: ${({ $isActive, theme }) => $isActive ? 'var(--accent-contrast-color)' : theme.colors.muted.foreground};
   padding: 0.375rem 0.75rem;
-  border-radius: ${({ theme }) => theme.borderRadius.sm};
+  border-radius: ${({ theme }) => theme.borderRadius.flat};
   cursor: pointer;
   font-size: 0.75rem;
   font-weight: ${({ theme }) => theme.fontWeight.medium};
