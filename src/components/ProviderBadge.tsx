@@ -13,7 +13,7 @@ const BadgeContainer = styled.div.withConfig({
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   border: 1px solid ${({ theme }) => theme.colors.borderSubtle};
-  border-radius: ${({ theme }) => theme.borderRadius.full};
+  border-radius: ${({ theme }) => theme.borderRadius.flat};
   padding: ${({ $iconOnly }) => $iconOnly ? '4px' : '3px 8px 3px 4px'};
   pointer-events: none;
   user-select: none;

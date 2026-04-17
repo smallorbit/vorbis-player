@@ -84,7 +84,7 @@ export const SelectDropdown = styled.select`
   padding: ${({ theme }) => theme.spacing.sm} ${theme.spacing.lg};
   background: ${({ theme }) => theme.colors.control.background};
   border: 1px solid ${({ theme }) => theme.colors.control.borderHover};
-  border-radius: ${({ theme }) => theme.borderRadius.lg};
+  border-radius: ${({ theme }) => theme.borderRadius.flat};
   color: ${({ theme }) => theme.colors.white};
   font-size: ${({ theme }) => theme.fontSize.sm};
   cursor: pointer;
@@ -164,7 +164,7 @@ export const ClearButton = styled.button`
   padding: ${({ theme }) => theme.spacing.sm} ${theme.spacing.lg};
   background: ${({ theme }) => theme.colors.control.background};
   border: 1px solid ${({ theme }) => theme.colors.control.borderHover};
-  border-radius: ${({ theme }) => theme.borderRadius.lg};
+  border-radius: ${({ theme }) => theme.borderRadius.flat};
   color: ${({ theme }) => theme.colors.muted.foreground};
   font-size: ${({ theme }) => theme.fontSize.sm};
   cursor: pointer;

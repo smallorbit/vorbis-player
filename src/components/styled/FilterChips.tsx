@@ -23,7 +23,7 @@ export const Chip = styled.button<{ $active?: boolean }>`
   gap: ${theme.spacing.xs};
   padding: ${theme.spacing.xs} ${theme.spacing.md};
   min-height: 36px;
-  border-radius: ${theme.borderRadius.full};
+  border-radius: ${theme.borderRadius.flat};
   border: 1px solid ${({ $active }) =>
     $active ? theme.colors.accent : theme.colors.control.borderHover};
   background: ${({ $active }) =>
@@ -59,7 +59,7 @@ export const SearchChipWrapper = styled.div<{ $expanded: boolean }>`
   display: inline-flex;
   align-items: center;
   min-height: 36px;
-  border-radius: ${theme.borderRadius.full};
+  border-radius: ${theme.borderRadius.flat};
   border: 1px solid ${({ $expanded }) =>
     $expanded ? theme.colors.accent : theme.colors.control.borderHover};
   background: ${({ $expanded }) =>
@@ -118,7 +118,7 @@ export const SortDropdown = styled.div`
   min-width: 180px;
   background: ${theme.colors.popover.background};
   border: 1px solid ${theme.colors.popover.border};
-  border-radius: ${theme.borderRadius.lg};
+  border-radius: ${theme.borderRadius.flat};
   box-shadow: ${theme.shadows.popover};
   padding: ${theme.spacing.xs} 0;
   overflow: hidden;
@@ -156,7 +156,7 @@ export const ArtistListPopover = styled.div`
   overflow-y: auto;
   background: ${theme.colors.popover.background};
   border: 1px solid ${theme.colors.popover.border};
-  border-radius: ${theme.borderRadius.lg};
+  border-radius: ${theme.borderRadius.flat};
   box-shadow: ${theme.shadows.popover};
   padding: ${theme.spacing.xs} 0;
   scrollbar-width: thin;

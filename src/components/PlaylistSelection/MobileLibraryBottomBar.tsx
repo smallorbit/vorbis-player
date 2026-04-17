@@ -28,7 +28,7 @@ const SearchInputWrapper = styled.div`
   min-width: 0;
   background: ${theme.colors.control.background};
   border: 1px solid ${theme.colors.control.border};
-  border-radius: ${theme.borderRadius.md};
+  border-radius: ${theme.borderRadius.flat};
   padding: 0 ${theme.spacing.sm};
   min-height: ${MIN_TAP_TARGET};
   transition: all ${theme.transitions.fast};
@@ -117,7 +117,7 @@ const SortSelect = styled.select`
   padding: ${theme.spacing.sm} ${theme.spacing.md};
   background: ${theme.colors.control.background};
   border: 1px solid ${theme.colors.control.border};
-  border-radius: ${theme.borderRadius.md};
+  border-radius: ${theme.borderRadius.flat};
   color: ${theme.colors.white};
   font-size: ${theme.fontSize.sm};
   cursor: pointer;
