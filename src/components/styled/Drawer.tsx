@@ -46,7 +46,7 @@ export const DrawerFallback = styled.div`
 
 export const DrawerFallbackCard = styled.div`
   background-color: ${theme.colors.gray[800]};
-  border-radius: ${theme.borderRadius['2xl']};
+  border-radius: ${theme.borderRadius.flat};
   padding: ${theme.spacing.md};
   border: 1px solid ${theme.colors.gray[700]};
 `;

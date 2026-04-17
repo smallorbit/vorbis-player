@@ -79,7 +79,17 @@ export const cardBase = css`
   border-radius: ${theme.borderRadius.md};
   padding: ${theme.spacing.sm};
   margin: ${theme.spacing.sm};
-  margin-top: ${theme.spacing.md}; 
+  margin-top: ${theme.spacing.md};
+  box-shadow: ${theme.shadows.sm};
+`;
+
+export const flatCardBase = css`
+  background-color: ${theme.colors.muted.background};
+  border: 1px solid ${theme.colors.border};
+  border-radius: ${theme.borderRadius.flat};
+  padding: ${theme.spacing.sm};
+  margin: ${theme.spacing.sm};
+  margin-top: ${theme.spacing.md};
   box-shadow: ${theme.shadows.sm};
 `;
 

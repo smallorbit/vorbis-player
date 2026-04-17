@@ -3,7 +3,7 @@ import { useProfilingContext, type ProfilingSnapshot } from '@/contexts/Profilin
 
 const btnStyle: React.CSSProperties = {
   color: '#ddd', background: 'rgba(80,80,80,0.8)', border: '1px solid #555',
-  borderRadius: 4, padding: '3px 8px', fontSize: 10, cursor: 'pointer',
+  borderRadius: 0, padding: '3px 8px', fontSize: 10, cursor: 'pointer',
 };
 
 const sectionHeader: React.CSSProperties = {
@@ -58,7 +58,7 @@ export function ProfilingOverlay(): React.ReactElement | null {
   return (
     <div style={{
       position: 'fixed', top: 8, left: 8, zIndex: 999980,
-      background: 'rgba(0,0,0,0.85)', color: '#fff', borderRadius: 8,
+      background: 'rgba(0,0,0,0.85)', color: '#fff', borderRadius: 0,
       padding: 8, fontSize: 11, fontFamily: 'monospace',
       maxWidth: 360, maxHeight: '80vh', overflow: 'auto', userSelect: 'none',
     }}>

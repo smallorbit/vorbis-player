@@ -21,7 +21,7 @@ const SetupCard = styled.div`
   align-items: center;
   width: min(440px, 90vw);
   padding: 2.5rem 2rem;
-  border-radius: 1.25rem;
+  border-radius: ${({ theme }) => theme.borderRadius.flat};
   border: 1px solid ${({ theme }) => theme.colors.border};
   background: ${({ theme }) => theme.colors.muted.background};
   backdrop-filter: blur(12px);
@@ -92,7 +92,7 @@ const ProviderCardContainer = styled.div<{ $accentColor: string; $isEnabled?: bo
   background: ${({ theme }) => theme.colors.control.background};
   border: 1px solid ${({ $isEnabled, $accentColor, theme }) =>
     $isEnabled ? $accentColor : theme.colors.borderSubtle};
-  border-radius: ${({ theme }) => theme.borderRadius['2xl']};
+  border-radius: ${({ theme }) => theme.borderRadius.flat};
   box-sizing: border-box;
   transition: border-color 0.15s ease, background 0.15s ease;
 `;
@@ -140,7 +140,7 @@ const ConnectButton = styled.button<{ $accentColor: string }>`
   background: ${({ $accentColor }) => $accentColor};
   color: #fff;
   border: none;
-  border-radius: ${({ theme }) => theme.borderRadius.lg};
+  border-radius: ${({ theme }) => theme.borderRadius.flat};
   font-size: ${({ theme }) => theme.fontSize.xs};
   font-weight: ${({ theme }) => theme.fontWeight.semibold};
   cursor: pointer;
@@ -158,7 +158,7 @@ const ActionButton = styled.button`
   background: ${({ theme }) => theme.colors.accent};
   color: ${({ theme }) => theme.colors.foregroundDark};
   border: none;
-  border-radius: ${({ theme }) => theme.borderRadius['2xl']};
+  border-radius: ${({ theme }) => theme.borderRadius.flat};
   font-size: ${({ theme }) => theme.fontSize.base};
   font-weight: ${({ theme }) => theme.fontWeight.semibold};
   cursor: pointer;

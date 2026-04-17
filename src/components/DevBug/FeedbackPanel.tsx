@@ -62,7 +62,7 @@ const PANEL_STYLES = `
     font-size: 18px;
     line-height: 1;
     padding: 4px;
-    border-radius: 4px;
+    border-radius: 0;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -93,7 +93,7 @@ const PANEL_STYLES = `
 
   .panel-body::-webkit-scrollbar-thumb {
     background: #444;
-    border-radius: 3px;
+    border-radius: 0;
   }
 
   .section-label {
@@ -110,7 +110,7 @@ const PANEL_STYLES = `
     height: 140px;
     background: #252525;
     border: 1px dashed #444;
-    border-radius: 6px;
+    border-radius: 0;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -130,7 +130,7 @@ const PANEL_STYLES = `
 
   .metadata-grid {
     background: #252525;
-    border-radius: 6px;
+    border-radius: 0;
     padding: 10px 12px;
     display: flex;
     flex-direction: column;
@@ -165,7 +165,7 @@ const PANEL_STYLES = `
 
   .console-list {
     background: #252525;
-    border-radius: 6px;
+    border-radius: 0;
     max-height: 140px;
     overflow-y: auto;
     font-family: 'SF Mono', 'Fira Code', monospace;
@@ -178,7 +178,7 @@ const PANEL_STYLES = `
 
   .console-list::-webkit-scrollbar-thumb {
     background: #444;
-    border-radius: 2px;
+    border-radius: 0;
   }
 
   .console-entry {
@@ -235,7 +235,7 @@ const PANEL_STYLES = `
     align-items: center;
     gap: 4px;
     padding: 5px 10px;
-    border-radius: 20px;
+    border-radius: 0;
     border: 1px solid #444;
     background: #252525;
     color: #b8b8b8;
@@ -260,7 +260,7 @@ const PANEL_STYLES = `
     width: 100%;
     background: #252525;
     border: 1px solid #444;
-    border-radius: 6px;
+    border-radius: 0;
     color: #e8e8e8;
     font-family: inherit;
     font-size: 13px;
@@ -291,7 +291,7 @@ const PANEL_STYLES = `
   .btn {
     flex: 1;
     padding: 9px 16px;
-    border-radius: 6px;
+    border-radius: 0;
     border: none;
     font-family: inherit;
     font-size: 13px;
@@ -329,7 +329,7 @@ const PANEL_STYLES = `
     bottom: 24px;
     right: 336px;
     padding: 10px 16px;
-    border-radius: 8px;
+    border-radius: 0;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     font-size: 13px;
     font-weight: 500;
@@ -422,7 +422,7 @@ function PanelContent({
               <img
                 src={screenshotDataUrl}
                 alt="Screenshot"
-                style={{ width: '100%', borderRadius: '6px', border: '1px solid #333' }}
+                style={{ width: '100%', borderRadius: '0', border: '1px solid #333' }}
               />
             ) : (
               <div className="screenshot-placeholder">

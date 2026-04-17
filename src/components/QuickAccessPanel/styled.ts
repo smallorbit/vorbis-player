@@ -14,7 +14,7 @@ export const PanelRoot = styled.div`
   align-items: stretch;
   justify-content: flex-start;
   overflow: hidden;
-  border-radius: 1.25rem;
+  border-radius: ${theme.borderRadius.flat};
   border: 1px solid ${theme.colors.border};
   box-shadow: ${theme.shadows.albumArt};
   background: ${theme.colors.muted.background};
@@ -53,7 +53,7 @@ export const ResumeCardRoot = styled.button`
 export const ResumeArt = styled.div`
   width: 40px;
   height: 40px;
-  border-radius: ${theme.borderRadius.md};
+  border-radius: ${theme.borderRadius.flat};
   overflow: hidden;
   flex-shrink: 0;
   background: ${theme.colors.control.background};
@@ -131,7 +131,7 @@ export const GridContainer = styled.div`
 export const LikedSongsCard = styled.button`
   grid-column: 2 / 4;
   grid-row: 2 / 4;
-  border-radius: ${theme.borderRadius.xl};
+  border-radius: ${theme.borderRadius.flat};
   border: 1px solid rgba(255, 255, 255, 0.15);
   cursor: pointer;
   display: flex;
@@ -178,7 +178,7 @@ export const LikedSongsLabel = styled.div`
 
 export const GridItem = styled.button`
   position: relative;
-  border-radius: ${theme.borderRadius.md};
+  border-radius: ${theme.borderRadius.flat};
   border: 1px solid rgba(255, 255, 255, 0.1);
   background: rgba(255, 255, 255, 0.06);
   cursor: pointer;
@@ -235,7 +235,7 @@ export const GridItemName = styled.div`
 `;
 
 export const GridGhostSlot = styled.div`
-  border-radius: ${theme.borderRadius.md};
+  border-radius: ${theme.borderRadius.flat};
   border: 1px dashed rgba(255, 255, 255, 0.15);
   background: rgba(255, 255, 255, 0.02);
 `;

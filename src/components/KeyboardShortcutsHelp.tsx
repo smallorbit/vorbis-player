@@ -27,7 +27,7 @@ const Modal = styled.div<{ $isOpen: boolean }>`
   background: ${theme.colors.overlay.dark};
   backdrop-filter: blur(20px);
   border: 1px solid ${theme.colors.popover.border};
-  border-radius: ${theme.borderRadius.lg};
+  border-radius: ${theme.borderRadius.flat};
   max-width: 400px;
   width: 90%;
   max-height: 80vh;
@@ -59,7 +59,7 @@ const CloseButton = styled.button`
   color: ${({ theme }) => theme.colors.muted.foreground};
   cursor: pointer;
   padding: ${({ theme }) => theme.spacing.sm};
-  border-radius: ${({ theme }) => theme.borderRadius.md};
+  border-radius: ${({ theme }) => theme.borderRadius.flat};
   transition: all ${({ theme }) => theme.transitions.fast} ease;
   display: flex;
   align-items: center;
@@ -96,7 +96,7 @@ const ShortcutDescription = styled.span`
 const ShortcutKey = styled.kbd`
   background: ${({ theme }) => theme.colors.control.background};
   border: 1px solid ${({ theme }) => theme.colors.border};
-  border-radius: ${({ theme }) => theme.borderRadius.xs};
+  border-radius: ${({ theme }) => theme.borderRadius.flat};
   padding: ${({ theme }) => theme.spacing.xs} ${theme.spacing.xs};
   font-family: 'Monaco', 'Menlo', monospace;
   font-size: ${({ theme }) => theme.fontSize.xs};

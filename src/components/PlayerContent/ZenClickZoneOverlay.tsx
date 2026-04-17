@@ -14,7 +14,7 @@ const Overlay = styled.div`
   inset: 0;
   pointer-events: none;
   z-index: 5;
-  border-radius: ${({ theme }) => theme.borderRadius['3xl']};
+  border-radius: ${({ theme }) => theme.borderRadius.flat};
   overflow: hidden;
   display: flex;
   flex-direction: row;

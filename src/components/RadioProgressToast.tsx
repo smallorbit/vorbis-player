@@ -50,7 +50,7 @@ const ToastContainer = styled.div<{ $exiting: boolean }>`
   background: ${theme.colors.overlay.dark};
   backdrop-filter: blur(12px);
   border: 1px solid ${theme.colors.popover.border};
-  border-radius: ${theme.borderRadius['2xl']};
+  border-radius: ${theme.borderRadius.flat};
   color: ${theme.colors.white};
   font-size: ${theme.fontSize.sm};
   line-height: 1.4;

@@ -148,6 +148,6 @@ export default function DebugOverlay({ active }: { active: boolean }) {
 
 const btnStyle: React.CSSProperties = {
   color: '#ddd', background: 'rgba(80,80,80,0.8)', border: '1px solid #555',
-  borderRadius: 6, padding: '5px 12px', fontSize: 12, cursor: 'pointer',
+  borderRadius: 0, padding: '5px 12px', fontSize: 12, cursor: 'pointer',
   WebkitTapHighlightColor: 'transparent',
 };

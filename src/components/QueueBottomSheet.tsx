@@ -33,8 +33,8 @@ const DrawerContainer = styled.div.withConfig({
   background: ${theme.colors.overlay.dark};
   backdrop-filter: blur(${theme.drawer.backdropBlur});
   -webkit-backdrop-filter: blur(${theme.drawer.backdropBlur});
-  border-top-left-radius: ${theme.borderRadius['2xl']};
-  border-top-right-radius: ${theme.borderRadius['2xl']};
+  border-top-left-radius: ${theme.borderRadius.flat};
+  border-top-right-radius: ${theme.borderRadius.flat};
   border-top: 1px solid ${theme.colors.popover.border};
   overflow: hidden;
   pointer-events: ${({ $isOpen }) => ($isOpen ? 'auto' : 'none')};
@@ -96,7 +96,7 @@ const SaveButton = styled.button`
   color: rgba(255, 255, 255, 0.6);
   cursor: pointer;
   padding: ${theme.spacing.sm};
-  border-radius: ${theme.borderRadius.md};
+  border-radius: ${theme.borderRadius.flat};
   transition: all 0.15s ease;
   display: flex;
   align-items: center;
