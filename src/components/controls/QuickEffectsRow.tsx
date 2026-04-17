@@ -126,7 +126,7 @@ const ResetBtn = styled.button`
 const SectionCard = styled.div`
   width: 100%;
   border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: ${theme.borderRadius.lg};
+  border-radius: ${theme.borderRadius.flat};
   padding: 6px 8px;
   display: flex;
   flex-direction: column;

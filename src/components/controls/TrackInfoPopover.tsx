@@ -33,7 +33,7 @@ const PopoverContainer = styled.div<{ $x: number; $y: number }>`
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border: 1px solid ${({ theme }) => theme.colors.borderSubtle};
-  border-radius: ${({ theme }) => theme.borderRadius.xl};
+  border-radius: ${({ theme }) => theme.borderRadius.flat};
   box-shadow: ${({ theme }) => theme.shadows.popover};
   padding: ${({ theme }) => theme.spacing.xs};
   animation: popoverFadeIn ${({ theme }) => theme.transitions.fast} ease-out;
@@ -63,7 +63,7 @@ const OptionButton = styled.button`
   font-size: ${({ theme }) => theme.fontSize.sm};
   font-weight: ${({ theme }) => theme.fontWeight.medium};
   cursor: pointer;
-  border-radius: ${({ theme }) => theme.borderRadius.lg};
+  border-radius: ${({ theme }) => theme.borderRadius.flat};
   transition: background ${({ theme }) => theme.transitions.fast} ease;
   white-space: nowrap;
 

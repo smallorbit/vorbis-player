@@ -39,7 +39,7 @@ const BacksideRoot = styled.div`
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
   transform: rotateY(180deg);
-  border-radius: ${theme.borderRadius.xl};
+  border-radius: ${theme.borderRadius.flat};
   overflow: hidden;
 `;
 
@@ -118,7 +118,7 @@ const RetryButton = styled.button`
   background: rgba(255, 255, 255, 0.12);
   color: rgba(255, 255, 255, 0.85);
   border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: ${theme.borderRadius.lg};
+  border-radius: ${theme.borderRadius.flat};
   font-size: ${theme.fontSize.xs};
   cursor: pointer;
   transition: background 0.2s ease;
