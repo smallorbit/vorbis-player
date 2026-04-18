@@ -1,4 +1,5 @@
 import type { TokenData } from './types';
+import { SESSION_EXPIRED_EVENT } from '@/constants/events';
 
 const SPOTIFY_CLIENT_ID = import.meta.env.VITE_SPOTIFY_CLIENT_ID;
 
@@ -30,6 +31,7 @@ const TOKEN_REFRESH_BUFFER_MS = 5 * 60 * 1000;
 
 class SpotifyAuth {
   private tokenData: TokenData | null = null;
+  private refreshInFlight: Promise<void> | null = null;
 
   constructor() {
     this.loadTokenFromStorage();
@@ -140,6 +142,17 @@ class SpotifyAuth {
   }
 
   public async refreshAccessToken(): Promise<void> {
+    if (this.refreshInFlight) {
+      return this.refreshInFlight;
+    }
+
+    this.refreshInFlight = this.performRefresh().finally(() => {
+      this.refreshInFlight = null;
+    });
+    return this.refreshInFlight;
+  }
+
+  private async performRefresh(): Promise<void> {
     if (!this.tokenData?.refresh_token) {
       throw new Error('No refresh token available');
     }
@@ -159,6 +172,10 @@ class SpotifyAuth {
     });
 
     if (!response.ok) {
+      if (response.status === 400 || response.status === 401) {
+        this.logout();
+        this.notifySessionExpired();
+      }
       throw new Error(`Token refresh failed: ${response.statusText}`);
     }
 
@@ -168,6 +185,13 @@ class SpotifyAuth {
       refresh_token: data.refresh_token || this.tokenData.refresh_token,
       expires_at: Date.now() + data.expires_in * 1000,
     });
+  }
+
+  private notifySessionExpired(): void {
+    if (typeof window === 'undefined') return;
+    window.dispatchEvent(
+      new CustomEvent(SESSION_EXPIRED_EVENT, { detail: { providerId: 'spotify' } }),
+    );
   }
 
   public async ensureValidToken(): Promise<string> {
