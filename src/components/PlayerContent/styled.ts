@@ -32,7 +32,6 @@ export const ContentWrapper = styled.div.withConfig({
   $zenMode?: boolean;
 }>`
   width: ${props => props.$zenMode ? '100%' : props.useFluidSizing ? '100%' : `${props.width}px`};
-  max-width: ${props => props.$zenMode ? '100%' : `${props.width}px`};
 
   margin: 0 auto;
   margin-bottom: ${props => props.$zenMode ? '0' : `${BOTTOM_BAR_HEIGHT}px`};
@@ -45,8 +44,7 @@ export const ContentWrapper = styled.div.withConfig({
 
   transition: width ${props => props.$zenMode ? `${ZEN_ART_DURATION}ms ${ZEN_ART_EASING} ${ZEN_ART_ENTER_DELAY}ms` : `${ZEN_ART_DURATION}ms ${ZEN_ART_EASING}`},
             padding ${props => props.transitionDuration}ms ${props => props.transitionEasing},
-            padding-bottom ${ZEN_ART_DURATION}ms ${ZEN_ART_EASING},
-            max-width ${props => props.$zenMode ? `${ZEN_ART_DURATION}ms ${ZEN_ART_EASING} ${ZEN_ART_ENTER_DELAY}ms` : `${ZEN_ART_DURATION}ms ${ZEN_ART_EASING}`};
+            padding-bottom ${ZEN_ART_DURATION}ms ${ZEN_ART_EASING};
 
   container-type: inline-size;
   container-name: player;
