@@ -64,7 +64,7 @@ npm run deploy:preview # Deploy preview
 
 ```
 src/
-├── components/      # React components (~33 files); key subdirs: BottomBar/, controls/, icons/, PlayerContent/, PlaylistSelection/, styled/, VisualEffectsMenu/, VisualizerDebugPanel/, visualizers/
+├── components/      # React components (~33 files); key subdirs: BottomBar/, controls/, DevBug/, icons/, LibraryDrawer/, PlayerContent/, PlaylistSelection/, QuickAccessPanel/, styled/, VisualEffectsMenu/, VisualizerDebugPanel/, visualizers/
 ├── constants/       # playlist.ts, zenAnimation.ts, storage.ts
 ├── providers/       # Multi-provider system; spotify/ and dropbox/ subdirs
 ├── hooks/           # 30 custom hooks
