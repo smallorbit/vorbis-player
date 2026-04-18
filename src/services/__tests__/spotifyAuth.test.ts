@@ -205,6 +205,108 @@ describe('SpotifyAuth', () => {
       // #when / #then
       await expect(auth.refreshAccessToken()).rejects.toThrow('Token refresh failed');
     });
+
+    it('logs out and emits SESSION_EXPIRED_EVENT on 401 refresh', async () => {
+      // #given
+      const token = {
+        access_token: 'old-token',
+        refresh_token: 'my-refresh',
+        expires_at: Date.now() + 30 * 60 * 1000,
+      };
+      vi.mocked(localStorage.getItem).mockReturnValue(JSON.stringify(token));
+      const auth = await freshAuth();
+
+      mockFetchResponse({}, 401);
+
+      const dispatchSpy = vi.spyOn(window, 'dispatchEvent');
+
+      // #when
+      await expect(auth.refreshAccessToken()).rejects.toThrow('Token refresh failed');
+
+      // #then
+      expect(localStorage.removeItem).toHaveBeenCalledWith('spotify_token');
+      const dispatchedEvents = dispatchSpy.mock.calls.map(call => (call[0] as Event).type);
+      expect(dispatchedEvents).toContain('vorbis-session-expired');
+      dispatchSpy.mockRestore();
+    });
+
+    it('logs out and emits SESSION_EXPIRED_EVENT on 400 refresh', async () => {
+      // #given
+      const token = {
+        access_token: 'old-token',
+        refresh_token: 'my-refresh',
+        expires_at: Date.now() + 30 * 60 * 1000,
+      };
+      vi.mocked(localStorage.getItem).mockReturnValue(JSON.stringify(token));
+      const auth = await freshAuth();
+
+      mockFetchResponse({}, 400);
+
+      const dispatchSpy = vi.spyOn(window, 'dispatchEvent');
+
+      // #when
+      await expect(auth.refreshAccessToken()).rejects.toThrow('Token refresh failed');
+
+      // #then
+      expect(localStorage.removeItem).toHaveBeenCalledWith('spotify_token');
+      const dispatchedEvents = dispatchSpy.mock.calls.map(call => (call[0] as Event).type);
+      expect(dispatchedEvents).toContain('vorbis-session-expired');
+      dispatchSpy.mockRestore();
+    });
+
+    it('preserves refresh token on 5xx (transient) — no logout, no event', async () => {
+      // #given
+      const token = {
+        access_token: 'old-token',
+        refresh_token: 'my-refresh',
+        expires_at: Date.now() + 30 * 60 * 1000,
+      };
+      vi.mocked(localStorage.getItem).mockReturnValue(JSON.stringify(token));
+      const auth = await freshAuth();
+
+      mockFetchResponse({}, 500);
+
+      const dispatchSpy = vi.spyOn(window, 'dispatchEvent');
+
+      // #when
+      await expect(auth.refreshAccessToken()).rejects.toThrow('Token refresh failed');
+
+      // #then
+      expect(localStorage.removeItem).not.toHaveBeenCalledWith('spotify_token');
+      const dispatchedEvents = dispatchSpy.mock.calls.map(call => (call[0] as Event).type);
+      expect(dispatchedEvents).not.toContain('vorbis-session-expired');
+      dispatchSpy.mockRestore();
+    });
+
+    it('single-flights concurrent refresh calls into one fetch', async () => {
+      // #given
+      const token = {
+        access_token: 'old-token',
+        refresh_token: 'my-refresh',
+        expires_at: Date.now() + 30 * 60 * 1000,
+      };
+      vi.mocked(localStorage.getItem).mockReturnValue(JSON.stringify(token));
+      const auth = await freshAuth();
+
+      mockFetchResponse({
+        access_token: 'new-token',
+        refresh_token: 'new-refresh',
+        expires_in: 3600,
+      });
+
+      // #when
+      const [a, b, c] = await Promise.all([
+        auth.refreshAccessToken(),
+        auth.refreshAccessToken(),
+        auth.refreshAccessToken(),
+      ]);
+
+      // #then
+      expect(global.fetch).toHaveBeenCalledTimes(1);
+      expect(a).toBeUndefined();
+      expect(b).toBeUndefined();
+      expect(c).toBeUndefined();
+    });
   });
 
   describe('handleAuthCallback', () => {
