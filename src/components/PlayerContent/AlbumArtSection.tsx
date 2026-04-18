@@ -10,9 +10,17 @@ import { useVisualEffectsContext } from '@/contexts/VisualEffectsContext';
 import { useProviderContext } from '@/contexts/ProviderContext';
 import { useVisualEffectsState } from '@/hooks/useVisualEffectsState';
 import { useZenTouchGestures } from '@/hooks/useZenTouchGestures';
+import { useTransitionWillChange } from '@/hooks/useTransitionWillChange';
+import {
+  ZEN_TRACK_INFO_ENTER_OPACITY_DURATION,
+  ZEN_TRACK_INFO_ENTER_OPACITY_DELAY,
+} from '@/constants/zenAnimation';
 import type { MediaTrack, ProviderId } from '@/types/domain';
 import type { VisualizerStyle } from '@/types/visualizer';
 import { FlipInner, ZenTrackInfo, ZenTrackName, ZenTrackArtist } from './styled';
+
+const ZEN_TRACK_INFO_WILL_CHANGE_FALLBACK_MS =
+  ZEN_TRACK_INFO_ENTER_OPACITY_DURATION + ZEN_TRACK_INFO_ENTER_OPACITY_DELAY + 100;
 import { GestureLayer } from './GestureLayer';
 import { ZenClickZoneOverlay } from './ZenClickZoneOverlay';
 import { ZenLikeOverlay } from './ZenLikeOverlay';
@@ -119,6 +127,13 @@ export const AlbumArtSection: React.FC<AlbumArtSectionProps> = React.memo(({
   const [isHovered, setIsHovered] = useState(false);
   const flipContainerRef = useRef<HTMLDivElement>(null);
   const albumArtContainerRef = useRef<HTMLDivElement | null>(null);
+  const zenTrackInfoRef = useRef<HTMLDivElement>(null);
+  useTransitionWillChange(
+    zenTrackInfoRef,
+    zenModeEnabled,
+    'opacity, max-height',
+    ZEN_TRACK_INFO_WILL_CHANGE_FALLBACK_MS,
+  );
 
   const toggleFlip = useCallback(() => setIsFlipped(f => !f), []);
 
@@ -353,7 +368,7 @@ export const AlbumArtSection: React.FC<AlbumArtSectionProps> = React.memo(({
           />
         </div>
       </CardContent>
-      <ZenTrackInfo $zenMode={zenModeEnabled}>
+      <ZenTrackInfo $zenMode={zenModeEnabled} ref={zenTrackInfoRef}>
         <ZenTrackName $isMobile={isMobile} $isTablet={isTablet}>
           {currentTrack?.name}
           {zenModeEnabled && connectedProviderIds.length > 1 && currentTrackProvider != null && (

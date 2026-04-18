@@ -19,9 +19,17 @@ import { STORAGE_KEYS } from '@/constants/storage';
 import type { ClearCacheOptions } from '@/components/VisualEffectsMenu';
 import { useQapEnabled } from '@/hooks/useQapEnabled';
 import { usePlayerSizingContext } from '@/contexts/PlayerSizingContext';
+import { useTransitionWillChange } from '@/hooks/useTransitionWillChange';
+import {
+  ZEN_CONTROLS_OPACITY_EXIT_DURATION,
+  ZEN_CONTROLS_OPACITY_EXIT_DELAY,
+} from '@/constants/zenAnimation';
 import type { MediaTrack, ProviderId } from '@/types/domain';
 import type { RadioState } from '@/types/radio';
 import { LoadingCard, ZenControlsWrapper, ZenControlsInner } from './styled';
+
+const ZEN_CONTROLS_WILL_CHANGE_FALLBACK_MS =
+  ZEN_CONTROLS_OPACITY_EXIT_DURATION + ZEN_CONTROLS_OPACITY_EXIT_DELAY + 100;
 
 const VisualEffectsMenu = lazy(() => import('@/components/VisualEffectsMenu/index'));
 const KeyboardShortcutsHelp = lazy(() => import('@/components/KeyboardShortcutsHelp'));
@@ -142,6 +150,14 @@ export const PlayerControlsSection: React.FC<PlayerControlsSectionProps> = React
 
   const settingsHasBeenOpenedRef = useRef(false);
   if (showVisualEffects) settingsHasBeenOpenedRef.current = true;
+
+  const zenControlsWrapperRef = useRef<HTMLDivElement>(null);
+  useTransitionWillChange(
+    zenControlsWrapperRef,
+    zenModeEnabled,
+    'grid-template-rows, opacity, transform',
+    ZEN_CONTROLS_WILL_CHANGE_FALLBACK_MS,
+  );
 
   const [showHelp, setShowHelp] = useState(false);
   const toggleHelp = useCallback(() => setShowHelp(prev => !prev), []);
@@ -282,7 +298,7 @@ export const PlayerControlsSection: React.FC<PlayerControlsSectionProps> = React
 
   return (
     <>
-      <ZenControlsWrapper $zenMode={zenModeEnabled}>
+      <ZenControlsWrapper $zenMode={zenModeEnabled} ref={zenControlsWrapperRef}>
         <ZenControlsInner ref={controlsRef}>
           <LoadingCard
             backgroundImage={currentTrack?.image}
