@@ -9,7 +9,7 @@ import '@/providers/spotify/spotifyProvider';
 import '@/providers/dropbox/dropboxProvider'; // conditionally registers if VITE_DROPBOX_CLIENT_ID is set
 import { AUTH_STATE_CHANGED_EVENT } from '@/hooks/usePopupAuth';
 import { DROPBOX_AUTH_ERROR_EVENT } from '@/providers/dropbox/dropboxAuthAdapter';
-import { AUTH_COMPLETE_EVENT } from '@/constants/events';
+import { AUTH_COMPLETE_EVENT, SESSION_EXPIRED_EVENT } from '@/constants/events';
 import { STORAGE_KEYS } from '@/constants/storage';
 
 type ProviderSwitchInterceptor = (
@@ -53,6 +53,13 @@ interface ProviderContextValue {
   fallthroughNotification: string | null;
   /** Dismiss the fallthrough notification. */
   dismissFallthroughNotification: () => void;
+
+  /** Reconnect prompt shown when a provider's refresh token is rejected (400/401). Persists until acted upon. */
+  reconnectPrompt: { providerId: ProviderId; message: string } | null;
+  /** Trigger the OAuth flow for the provider with a pending reconnect prompt. */
+  acceptReconnectPrompt: () => void;
+  /** Dismiss the reconnect prompt without reconnecting. */
+  dismissReconnectPrompt: () => void;
 }
 
 const ProviderContext =
@@ -151,6 +158,43 @@ export function ProviderProvider({ children }: { children: React.ReactNode }) {
   // ── Auto-fallthrough notification ─────────────────────────────────────
   const [fallthroughNotification, setFallthroughNotification] = useState<string | null>(null);
   const dismissFallthroughNotification = useCallback(() => setFallthroughNotification(null), []);
+
+  // ── Session-expired reconnect prompt ─────────────────────────────────
+  const [reconnectPrompt, setReconnectPrompt] = useState<{ providerId: ProviderId; message: string } | null>(null);
+
+  useEffect(() => {
+    const handleSessionExpired = (event: Event) => {
+      const detail = (event as CustomEvent<{ providerId: ProviderId }>).detail;
+      const providerId = detail?.providerId;
+      if (!providerId) return;
+      const descriptor = providerRegistry.get(providerId);
+      const name = descriptor?.name ?? providerId;
+      setReconnectPrompt(prev => {
+        if (prev?.providerId === providerId) return prev;
+        return {
+          providerId,
+          message: `Your ${name} session has expired. Tap to reconnect.`,
+        };
+      });
+      setAuthRevision(prev => prev + 1);
+    };
+
+    window.addEventListener(SESSION_EXPIRED_EVENT, handleSessionExpired);
+    return () => window.removeEventListener(SESSION_EXPIRED_EVENT, handleSessionExpired);
+  }, []);
+
+  const dismissReconnectPrompt = useCallback(() => setReconnectPrompt(null), []);
+
+  const acceptReconnectPrompt = useCallback(() => {
+    setReconnectPrompt(current => {
+      if (!current) return null;
+      const descriptor = providerRegistry.get(current.providerId);
+      descriptor?.auth.beginLogin({ popup: true }).catch(error => {
+        console.warn('[ProviderContext] Failed to begin login for reconnect:', error);
+      });
+      return null;
+    });
+  }, []);
 
   // ── Active provider (for playback) ─────────────────────────────────────
   const needsProviderSelection =
@@ -254,10 +298,13 @@ export function ProviderProvider({ children }: { children: React.ReactNode }) {
       connectedProviderIds,
       fallthroughNotification,
       dismissFallthroughNotification,
+      reconnectPrompt,
+      acceptReconnectPrompt,
+      dismissReconnectPrompt,
     }),
     // authRevision triggers re-evaluation when a popup completes OAuth
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [storedProviderId, validProviderId, activeDescriptor, setActiveProviderId, setProviderSwitchInterceptor, needsProviderSelection, enabledProviderIds, toggleProvider, isProviderEnabled, allProviders.length, getDescriptor, connectedProviderIds, fallthroughNotification, dismissFallthroughNotification, authRevision],
+    [storedProviderId, validProviderId, activeDescriptor, setActiveProviderId, setProviderSwitchInterceptor, needsProviderSelection, enabledProviderIds, toggleProvider, isProviderEnabled, allProviders.length, getDescriptor, connectedProviderIds, fallthroughNotification, dismissFallthroughNotification, reconnectPrompt, acceptReconnectPrompt, dismissReconnectPrompt, authRevision],
   );
 
   return (

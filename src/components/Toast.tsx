@@ -9,6 +9,8 @@ interface ToastProps {
   /** Optional text button (e.g. “View queue”) — does not dismiss on its own unless `onAction` does. */
   actionLabel?: string;
   onAction?: () => void;
+  /** When true, the toast does not auto-dismiss — the user must click the dismiss button or action. */
+  persistent?: boolean;
 }
 
 const slideIn = keyframes`
@@ -100,10 +102,11 @@ const DismissIcon = styled.button`
   }
 `;
 
-export default function Toast({ message, onDismiss, actionLabel, onAction }: ToastProps) {
+export default function Toast({ message, onDismiss, actionLabel, onAction, persistent = false }: ToastProps) {
   const [exiting, setExiting] = useState(false);
 
   useEffect(() => {
+    if (persistent) return;
     const displayDurationMs = 5000;
     const exitDurationMs = 300;
     const exitTimer = setTimeout(() => setExiting(true), displayDurationMs - exitDurationMs);
@@ -112,7 +115,7 @@ export default function Toast({ message, onDismiss, actionLabel, onAction }: Toa
       clearTimeout(exitTimer);
       clearTimeout(dismissTimer);
     };
-  }, [onDismiss]);
+  }, [onDismiss, persistent]);
 
   const handleDismiss = () => {
     setExiting(true);
