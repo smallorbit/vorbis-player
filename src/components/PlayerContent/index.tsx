@@ -119,17 +119,23 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({
     const nextWidth = el.offsetWidth;
     lastStackWidthRef.current = nextWidth;
 
-    if (prevWidth === null || prevWidth === 0 || nextWidth === 0 || reducedMotion) {
+    const resetTransform = () => {
       el.style.transition = 'none';
       el.style.transform = '';
+    };
+
+    if (prevWidth === null || prevWidth <= 0 || nextWidth <= 0 || reducedMotion) {
+      resetTransform();
       return;
     }
 
     const ratio = prevWidth / nextWidth;
-    if (Math.abs(ratio - 1) < 0.001) return;
+    if (Math.abs(ratio - 1) < 0.001) {
+      resetTransform();
+      return;
+    }
 
     const enterDelay = zenModeEnabled ? ZEN_ART_ENTER_DELAY : 0;
-
     el.style.transition = 'none';
     el.style.transform = `scale(${ratio})`;
     void el.offsetWidth;
