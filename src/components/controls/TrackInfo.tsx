@@ -5,6 +5,7 @@ import { useProviderContext } from '../../contexts/ProviderContext';
 import { librarySyncEngine } from '../../services/cache/librarySyncEngine';
 import { PlayerTrackName, PlayerTrackAlbum, AlbumLink, PlayerTrackArtist, TrackInfoOnlyRow, ArtistLink } from './styled';
 import TrackInfoPopover, { LibraryIcon, SpotifyIcon, PlayIcon, DiscogsIcon, AddToLibraryIcon, RemoveFromLibraryIcon, ICON_MAP } from './TrackInfoPopover';
+import TrackRadioPopover from './TrackRadioPopover';
 
 interface TrackInfoProps {
     track: {
@@ -20,6 +21,7 @@ interface TrackInfoProps {
     isTablet: boolean;
     onArtistBrowse?: (artistName: string) => void;
     onAlbumPlay?: (albumId: string, albumName: string) => void;
+    onPlayRadio?: () => void;
 }
 
 // Custom comparison function for memo optimization
@@ -36,16 +38,18 @@ const areTrackInfoPropsEqual = (
         prevProps.isMobile === nextProps.isMobile &&
         prevProps.isTablet === nextProps.isTablet &&
         prevProps.onArtistBrowse === nextProps.onArtistBrowse &&
-        prevProps.onAlbumPlay === nextProps.onAlbumPlay
+        prevProps.onAlbumPlay === nextProps.onAlbumPlay &&
+        prevProps.onPlayRadio === nextProps.onPlayRadio
     );
 };
 
 type PopoverState =
     | { type: 'artist'; artistName: string; artistUrl: string; rect: DOMRect }
     | { type: 'album'; albumId: string; albumName: string; rect: DOMRect }
+    | { type: 'radio'; trackName: string; rect: DOMRect }
     | null;
 
-const TrackInfo = memo<TrackInfoProps>(({ track, isMobile, isTablet, onArtistBrowse, onAlbumPlay }) => {
+const TrackInfo = memo<TrackInfoProps>(({ track, isMobile, isTablet, onArtistBrowse, onAlbumPlay, onPlayRadio }) => {
     const [popover, setPopover] = useState<PopoverState>(null);
     const [albumSaved, setAlbumSaved] = useState<boolean | null>(null);
     const artistRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
@@ -88,6 +92,21 @@ const TrackInfo = memo<TrackInfoProps>(({ track, isMobile, isTablet, onArtistBro
         const rect = target.getBoundingClientRect();
         setPopover({ type: 'album', albumId: track.albumId, albumName: track.album, rect });
     }, [track?.albumId, track?.album]);
+
+    const handleTrackNameClick = useCallback((e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (!track?.name || !onPlayRadio) return;
+        const target = e.currentTarget as HTMLElement;
+        const rect = target.getBoundingClientRect();
+        setPopover({ type: 'radio', trackName: track.name, rect });
+    }, [track?.name, onPlayRadio]);
+
+    const handlePlayRadio = useCallback(() => {
+        if (!onPlayRadio) return;
+        onPlayRadio();
+        setPopover(null);
+    }, [onPlayRadio]);
 
     const hasExternalLink = capabilities?.hasExternalLink ?? false;
     const providerName = capabilities?.externalLinkLabel?.replace('Open in ', '') ?? trackDescriptor?.name ?? 'External';
@@ -243,21 +262,45 @@ const TrackInfo = memo<TrackInfoProps>(({ track, isMobile, isTablet, onArtistBro
     };
 
     const popoverContent = popover && createPortal(
-        <TrackInfoPopover
-            type={popover.type}
-            anchorRect={popover.rect}
-            onClose={closePopover}
-            options={popover.type === 'artist' ? buildArtistOptions() : buildAlbumOptions()}
-        />,
+        popover.type === 'radio' ? (
+            <TrackRadioPopover
+                trackName={popover.trackName}
+                anchorRect={popover.rect}
+                onClose={closePopover}
+                onPlayRadio={handlePlayRadio}
+            />
+        ) : (
+            <TrackInfoPopover
+                type={popover.type}
+                anchorRect={popover.rect}
+                onClose={closePopover}
+                options={popover.type === 'artist' ? buildArtistOptions() : buildAlbumOptions()}
+            />
+        ),
         document.body
     );
+
+    const trackNameContent = track?.name || 'No track selected';
+    const isTrackNameClickable = Boolean(onPlayRadio && track?.name);
 
     return (
         <>
             <TrackInfoOnlyRow $compact={isMobile || isTablet}>
-                <PlayerTrackName $isMobile={isMobile} $isTablet={isTablet}>
-                    {track?.name || 'No track selected'}
-                </PlayerTrackName>
+                {isTrackNameClickable ? (
+                    <PlayerTrackName
+                        as="button"
+                        type="button"
+                        onClick={handleTrackNameClick}
+                        $isMobile={isMobile}
+                        $isTablet={isTablet}
+                    >
+                        {trackNameContent}
+                    </PlayerTrackName>
+                ) : (
+                    <PlayerTrackName $isMobile={isMobile} $isTablet={isTablet}>
+                        {trackNameContent}
+                    </PlayerTrackName>
+                )}
                 {track?.album && (
                     <PlayerTrackAlbum>{renderAlbum()}</PlayerTrackAlbum>
                 )}

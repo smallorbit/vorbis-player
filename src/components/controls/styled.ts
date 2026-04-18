@@ -85,6 +85,17 @@ export const PlayerTrackName = styled.div<{ $isMobile: boolean; $isTablet: boole
   position: relative;
   z-index: 11;
   text-shadow: ${({ theme }) => theme.shadows.textMd};
+
+  /* Reset button-specific styles when rendered as a button (as="button") */
+  &:where(button) {
+    background: none;
+    border: none;
+    padding: 0;
+    margin: 0;
+    font: inherit;
+    text-align: inherit;
+    cursor: pointer;
+  }
 `;
 
 export const PlayerTrackAlbum = styled.div`
