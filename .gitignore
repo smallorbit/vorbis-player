@@ -74,3 +74,6 @@ test-results/
 playwright/capture/output/
 playwright/capture/.auth-state.json
 playwright/capture/.chrome-profile/
+
+# Claude Code sessionkit handoff docs
+.sessionkit/

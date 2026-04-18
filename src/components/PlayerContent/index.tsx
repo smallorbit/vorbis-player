@@ -206,8 +206,6 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({
             canSaveTrack={canSaveTrack}
             onLikeToggle={handleLikeToggle}
             flipToggleRef={flipToggleRef}
-            isRadioAvailable={isRadioAvailable}
-            onStartRadio={handlers.onStartRadio}
           />
           <PlayerControlsSection
             currentTrack={currentTrack}
