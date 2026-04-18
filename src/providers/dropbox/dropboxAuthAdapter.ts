@@ -6,10 +6,19 @@
 import type { AuthProvider } from '@/types/providers';
 import type { ProviderId } from '@/types/domain';
 import { STORAGE_KEYS } from '@/constants/storage';
+import { SESSION_EXPIRED_EVENT } from '@/constants/events';
 import { resetPlaylistsFolderCache } from './dropboxPlaylistStorage';
 import { clearLikedCountSnapshot } from '@/services/cache/likedCountSnapshot';
 
 export const DROPBOX_AUTH_ERROR_EVENT = 'vorbis-dropbox-auth-error';
+
+function notifyDropboxSessionExpired(): void {
+  if (typeof window === 'undefined') return;
+  window.dispatchEvent(new CustomEvent(DROPBOX_AUTH_ERROR_EVENT));
+  window.dispatchEvent(
+    new CustomEvent(SESSION_EXPIRED_EVENT, { detail: { providerId: 'dropbox' } }),
+  );
+}
 
 function getDropboxClientId(): string {
   return import.meta.env.VITE_DROPBOX_CLIENT_ID ?? '';
@@ -51,6 +60,7 @@ export class DropboxAuthAdapter implements AuthProvider {
   private accessToken: string | null = null;
   private refreshToken: string | null = null;
   private tokenExpiresAt: number | null = null;
+  private refreshInFlight: Promise<string | null> | null = null;
 
   constructor() {
     this.accessToken = localStorage.getItem(STORAGE_KEYS.DROPBOX_TOKEN);
@@ -214,11 +224,22 @@ export class DropboxAuthAdapter implements AuthProvider {
     if (!this.accessToken && !this.refreshToken) return;
     console.warn('[DropboxAuth] Persistent 401 after token refresh — logging out');
     this.logout();
-    window.dispatchEvent(new CustomEvent(DROPBOX_AUTH_ERROR_EVENT));
+    notifyDropboxSessionExpired();
   }
 
-  /** Refresh the access token using the stored refresh token. */
+  /** Refresh the access token using the stored refresh token. Single-flight: concurrent callers share one request. */
   async refreshAccessToken(): Promise<string | null> {
+    if (this.refreshInFlight) {
+      return this.refreshInFlight;
+    }
+
+    this.refreshInFlight = this.performRefresh().finally(() => {
+      this.refreshInFlight = null;
+    });
+    return this.refreshInFlight;
+  }
+
+  private async performRefresh(): Promise<string | null> {
     if (!this.refreshToken || !getDropboxClientId()) return null;
 
     const body = new URLSearchParams({
@@ -235,7 +256,6 @@ export class DropboxAuthAdapter implements AuthProvider {
         body: body.toString(),
       });
     } catch (error) {
-      // Network error — preserve refresh token for future retry.
       console.warn('[DropboxAuth] Token refresh network error:', error);
       this.clearAccessToken();
       return null;
@@ -244,10 +264,9 @@ export class DropboxAuthAdapter implements AuthProvider {
     if (!response.ok) {
       console.warn('[DropboxAuth] Token refresh failed:', response.status);
       if (response.status === 400 || response.status === 401) {
-        // Invalid or revoked grant — full logout.
         this.logout();
+        notifyDropboxSessionExpired();
       } else {
-        // Transient failure — clear access token but keep refresh token for retry.
         this.clearAccessToken();
       }
       return null;

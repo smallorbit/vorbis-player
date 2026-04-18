@@ -314,6 +314,7 @@ export const PlayerControlsSection: React.FC<PlayerControlsSectionProps> = React
                     onPrevious={onPrevious}
                     onArtistBrowse={onArtistBrowse}
                     onAlbumPlay={onAlbumPlay}
+                    onPlayRadio={isRadioAvailable ? onStartRadio : undefined}
                     currentTrackProvider={currentTrackProvider}
                   />
                 </ProfiledComponent>

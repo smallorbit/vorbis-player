@@ -325,6 +325,56 @@ describe('DropboxAuthAdapter', () => {
       expect(result).toBeNull();
       expect(localStorageMock.getItem('vorbis-player-dropbox-refresh-token')).toBe('my-refresh');
     });
+
+    it('emits SESSION_EXPIRED_EVENT on 401 (invalid grant)', async () => {
+      // #given
+      const adapter = await freshAdapter({
+        'vorbis-player-dropbox-token': 'old-token',
+        'vorbis-player-dropbox-refresh-token': 'my-refresh',
+      });
+
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+        ok: false,
+        status: 401,
+      }));
+
+      const dispatchSpy = vi.spyOn(window, 'dispatchEvent');
+
+      // #when
+      await adapter.refreshAccessToken();
+
+      // #then
+      const dispatchedEvents = dispatchSpy.mock.calls.map(call => (call[0] as Event).type);
+      expect(dispatchedEvents).toContain('vorbis-session-expired');
+      dispatchSpy.mockRestore();
+    });
+
+    it('single-flights concurrent refresh calls into one fetch', async () => {
+      // #given
+      const adapter = await freshAdapter({
+        'vorbis-player-dropbox-token': 'old-token',
+        'vorbis-player-dropbox-refresh-token': 'my-refresh',
+      });
+
+      const fetchMock = vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ access_token: 'fresh-token', expires_in: 3600 }),
+      });
+      vi.stubGlobal('fetch', fetchMock);
+
+      // #when
+      const [a, b, c] = await Promise.all([
+        adapter.refreshAccessToken(),
+        adapter.refreshAccessToken(),
+        adapter.refreshAccessToken(),
+      ]);
+
+      // #then
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+      expect(a).toBe('fresh-token');
+      expect(b).toBe('fresh-token');
+      expect(c).toBe('fresh-token');
+    });
   });
 
   describe('logout', () => {
