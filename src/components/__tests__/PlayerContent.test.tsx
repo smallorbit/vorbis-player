@@ -74,6 +74,10 @@ vi.mock('@/hooks/useLikeTrack', () => ({
   })),
 }));
 
+vi.mock('@/hooks/useReducedMotion', () => ({
+  useReducedMotion: vi.fn(() => false),
+}));
+
 vi.mock('@/hooks/useUnifiedLikedTracks', () => ({
   useUnifiedLikedTracks: vi.fn(() => ({
     isUnifiedLikedActive: false,
