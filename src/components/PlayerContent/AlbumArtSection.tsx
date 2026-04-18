@@ -317,7 +317,7 @@ export const AlbumArtSection: React.FC<AlbumArtSectionProps> = React.memo(({
         zIndex: 2,
         minHeight: 0,
         alignItems: 'center',
-        paddingTop: zenModeEnabled ? '0' : (isMobile ? '0.25rem' : '0.5rem')
+        transform: zenModeEnabled ? 'translateY(0)' : `translateY(${isMobile ? '0.25rem' : '0.5rem'})`
       }}>
         <div ref={flipContainerRef} style={{ width: '100%', position: 'relative' }} onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
           <GestureLayer
