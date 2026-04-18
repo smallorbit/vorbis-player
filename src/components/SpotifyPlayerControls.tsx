@@ -23,6 +23,7 @@ interface SpotifyPlayerControlsProps {
   onToggleLike?: () => void;
   onArtistBrowse?: (artistName: string) => void;
   onAlbumPlay?: (albumId: string, albumName: string) => void;
+  onPlayRadio?: () => void;
   currentTrackProvider?: ProviderId;
 }
 
@@ -38,6 +39,7 @@ const SpotifyPlayerControls = memo<SpotifyPlayerControlsProps>(({
   onToggleLike: propOnToggleLike,
   onArtistBrowse,
   onAlbumPlay,
+  onPlayRadio,
   currentTrackProvider,
 }) => {
   // Get responsive sizing information
@@ -85,6 +87,7 @@ const SpotifyPlayerControls = memo<SpotifyPlayerControlsProps>(({
         isTablet={isTablet}
         onArtistBrowse={onArtistBrowse}
         onAlbumPlay={onAlbumPlay}
+        onPlayRadio={onPlayRadio}
       />
 
       <div style={{ display: 'flex', justifyContent: 'center', width: '100%', gap: '0.5rem' }}>
