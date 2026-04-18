@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import styled from 'styled-components';
 import { theme } from '../../styles/theme';
 
-type PopoverType = 'artist' | 'album' | 'playlist';
+type PopoverType = 'artist' | 'album' | 'playlist' | 'radio';
 
 interface PopoverOption {
   label: string;
