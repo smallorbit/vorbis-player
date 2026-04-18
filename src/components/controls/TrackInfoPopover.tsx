@@ -8,6 +8,8 @@ interface PopoverOption {
   label: string;
   icon: React.ReactNode;
   onClick: () => void;
+  disabled?: boolean;
+  title?: string;
 }
 
 interface TrackInfoPopoverProps {
@@ -51,28 +53,32 @@ const PopoverContainer = styled.div<{ $x: number; $y: number }>`
   }
 `;
 
-const OptionButton = styled.button`
+const OptionButton = styled.button<{ $disabled?: boolean }>`
   display: flex;
   align-items: center;
   gap: 0.625rem;
   width: 100%;
+  min-height: 44px;
   padding: ${({ theme }) => theme.spacing.sm} ${theme.spacing.lg};
   background: none;
   border: none;
-  color: ${({ theme }) => theme.colors.foreground};
+  color: ${({ theme, $disabled }) => ($disabled ? theme.colors.muted.foreground : theme.colors.foreground)};
   font-size: ${({ theme }) => theme.fontSize.sm};
   font-weight: ${({ theme }) => theme.fontWeight.medium};
-  cursor: pointer;
+  cursor: ${({ $disabled }) => ($disabled ? 'not-allowed' : 'pointer')};
+  opacity: ${({ $disabled }) => ($disabled ? 0.5 : 1)};
   border-radius: ${({ theme }) => theme.borderRadius.lg};
   transition: background ${({ theme }) => theme.transitions.fast} ease;
   white-space: nowrap;
 
   &:hover {
-    background: ${({ theme }) => theme.colors.control.background};
+    background: ${({ theme, $disabled }) =>
+      $disabled ? 'transparent' : theme.colors.control.background};
   }
 
   &:active {
-    background: ${({ theme }) => theme.colors.control.backgroundHover};
+    background: ${({ theme, $disabled }) =>
+      $disabled ? 'transparent' : theme.colors.control.backgroundHover};
   }
 
   svg {
@@ -106,7 +112,11 @@ function TrackInfoPopover({ options, anchorRect, onClose }: TrackInfoPopoverProp
         {options.map((option, index) => (
           <OptionButton
             key={index}
+            $disabled={option.disabled}
+            aria-disabled={option.disabled ? 'true' : undefined}
+            title={option.title}
             onClick={() => {
+              if (option.disabled) return;
               option.onClick();
               onClose();
             }}
