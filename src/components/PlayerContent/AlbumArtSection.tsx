@@ -5,6 +5,7 @@ import AlbumArt from '@/components/AlbumArt';
 import AlbumArtQuickSwapBack from '@/components/AlbumArtQuickSwapBack';
 import { ProfiledComponent } from '@/components/ProfiledComponent';
 import { ProviderBadge } from '@/components/ProviderBadge';
+import { TrackRadioPopover } from '@/components/controls/TrackRadioPopover';
 import { useColorContext } from '@/contexts/ColorContext';
 import { useVisualEffectsContext } from '@/contexts/VisualEffectsContext';
 import { useProviderContext } from '@/contexts/ProviderContext';
@@ -23,6 +24,25 @@ const ZenProviderBadgeInline = styled.span`
   margin-left: ${({ theme }) => theme.spacing.sm};
   position: relative;
   top: -1px;
+`;
+
+const ZenTrackNameTrigger = styled.button`
+  display: inline;
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  color: inherit;
+  text-shadow: inherit;
+  cursor: pointer;
+  pointer-events: auto;
+
+  &:focus-visible {
+    outline: 2px solid ${({ theme }) => theme.colors.white};
+    outline-offset: 2px;
+    border-radius: ${({ theme }) => theme.borderRadius.sm};
+  }
 `;
 
 interface AlbumArtBounds {
@@ -54,6 +74,8 @@ interface AlbumArtSectionProps {
   canSaveTrack: boolean;
   onLikeToggle: () => void;
   flipToggleRef?: React.MutableRefObject<(() => void) | null>;
+  isRadioAvailable?: boolean;
+  onStartRadio?: () => void;
 }
 
 export const AlbumArtSection: React.FC<AlbumArtSectionProps> = React.memo(({
@@ -78,6 +100,8 @@ export const AlbumArtSection: React.FC<AlbumArtSectionProps> = React.memo(({
   canSaveTrack,
   onLikeToggle,
   flipToggleRef,
+  isRadioAvailable,
+  onStartRadio,
 }) => {
   const { connectedProviderIds } = useProviderContext();
 
@@ -117,6 +141,7 @@ export const AlbumArtSection: React.FC<AlbumArtSectionProps> = React.memo(({
 
   const [isFlipped, setIsFlipped] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
+  const [radioPopoverAnchor, setRadioPopoverAnchor] = useState<DOMRect | null>(null);
   const flipContainerRef = useRef<HTMLDivElement>(null);
   const albumArtContainerRef = useRef<HTMLDivElement | null>(null);
 
@@ -200,8 +225,23 @@ export const AlbumArtSection: React.FC<AlbumArtSectionProps> = React.memo(({
   useEffect(() => {
     if (!zenModeEnabled) {
       setIsHovered(false);
+      setRadioPopoverAnchor(null);
     }
   }, [zenModeEnabled]);
+
+  const handleTrackNameClick = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
+    e.stopPropagation();
+    if (!onStartRadio || !isRadioAvailable) return;
+    setRadioPopoverAnchor(e.currentTarget.getBoundingClientRect());
+  }, [onStartRadio, isRadioAvailable]);
+
+  const handleCloseRadioPopover = useCallback(() => {
+    setRadioPopoverAnchor(null);
+  }, []);
+
+  const handlePlayRadio = useCallback(() => {
+    onStartRadio?.();
+  }, [onStartRadio]);
 
   useEffect(() => {
     if (!isFlipped) return;
@@ -354,7 +394,13 @@ export const AlbumArtSection: React.FC<AlbumArtSectionProps> = React.memo(({
       </CardContent>
       <ZenTrackInfo $zenMode={zenModeEnabled}>
         <ZenTrackName $isMobile={isMobile} $isTablet={isTablet}>
-          {currentTrack?.name}
+          {currentTrack?.name && zenModeEnabled && isRadioAvailable && onStartRadio ? (
+            <ZenTrackNameTrigger type="button" onClick={handleTrackNameClick}>
+              {currentTrack.name}
+            </ZenTrackNameTrigger>
+          ) : (
+            currentTrack?.name
+          )}
           {zenModeEnabled && connectedProviderIds.length > 1 && currentTrackProvider != null && (
             <ZenProviderBadgeInline>
               <ProviderBadge providerId={currentTrackProvider} iconOnly />
@@ -365,6 +411,14 @@ export const AlbumArtSection: React.FC<AlbumArtSectionProps> = React.memo(({
           <ZenTrackArtist>{currentTrack.artists}</ZenTrackArtist>
         )}
       </ZenTrackInfo>
+      {zenModeEnabled && radioPopoverAnchor && currentTrack?.name && (
+        <TrackRadioPopover
+          trackName={currentTrack.name}
+          anchorRect={radioPopoverAnchor}
+          onClose={handleCloseRadioPopover}
+          onPlayRadio={handlePlayRadio}
+        />
+      )}
     </>
   );
 });
