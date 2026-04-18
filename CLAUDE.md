@@ -138,6 +138,7 @@ Defined in `src/types/providers.ts` and `src/types/domain.ts`.
 - `useRadio` + `radioService` generate suggestions from Last.fm, then match against the active provider catalog.
 - Unmatched suggestions can be resolved via Spotify search (`spotifyResolver`) when authenticated.
 - Provider switches during radio now follow the same driving-provider routing (no special queue handoff modal).
+- **Track name context menu**: clicking the track name (in both normal and zen mode) opens a `TrackRadioPopover` with a single "Play {trackName} Radio" option. This mirrors the existing artist/album popover pattern (`TrackInfoPopover`). The option is disabled with a tooltip when Last.fm is not configured. Components: `TrackRadioPopover.tsx` (popover wrapper), `TrackInfo.tsx` (normal mode), `AlbumArtSection.tsx` (zen mode).
 
 #### Provider Implementation Details
 
