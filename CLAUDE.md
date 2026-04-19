@@ -119,6 +119,17 @@ Defined in `src/types/providers.ts` and `src/types/domain.ts`.
 
 **Capability-aware UI**: check `activeDescriptor.capabilities` before rendering provider-specific controls (`hasSaveTrack`, `hasExternalLink`, `hasLikedCollection`). Both Spotify and Dropbox support `hasSaveTrack` and `hasLikedCollection`.
 
+**Provider toggle (Music Sources section in settings)**:
+- Each provider row has a single on/off toggle — there is no separate Reconnect button.
+- `enabledProviderIds` — localStorage-persisted set of providers the user has opted into.
+- `connectedProviderIds` — derived set: `enabledProviderIds` ∩ authenticated providers. Used by cross-provider features (Unified Liked Songs, radio resolver).
+- Toggle-OFF: opens `ProviderDisconnectDialog` showing the provider name and count of queued tracks that will be removed. Confirming calls `logout()`, removes the provider from `enabledProviderIds`, and cleans up queue/playback state. The last enabled provider's toggle is disabled to prevent a zero-provider state.
+- Toggle-ON when already authenticated: silently adds to `enabledProviderIds`.
+- Toggle-ON when not authenticated: calls `beginLogin({ popup: true })` immediately. The provider is added to `enabledProviderIds` only after the OAuth popup reports success via `AUTH_COMPLETE_EVENT`.
+- OAuth cancel/failure: toggle reverts; a toast shows `"Couldn't connect to {provider}. Try again."`.
+- Mid-session unrecoverable 401: `logout()` is called automatically; a toast shows `"{Provider} disconnected — session expired."`.
+- Implementation: `src/components/VisualEffectsMenu/SourcesSections.tsx` (`MusicSourcesSection`).
+
 **Unified playback across providers**:
 - Queue items are represented as provider-agnostic `MediaTrack` records and can mix Spotify + Dropbox tracks in one queue.
 - Provider model:
@@ -131,12 +142,12 @@ Defined in `src/types/providers.ts` and `src/types/domain.ts`.
   - `useProviderPlayback` resolves provider per index (`track.provider` → `drivingProviderRef` → `activeDescriptor.id` fallback).
   - `usePlayerLogic` owns control actions and playback-state synchronization using `getDrivingProviderId()`.
   - `useAutoAdvance` advances based on events from the current driving provider.
-- Unified liked songs can merge liked tracks from all connected providers and sort by `addedAt`.
+- Unified liked songs can merge liked tracks from all connected providers (`connectedProviderIds`) and sort by `addedAt`.
 
 **Radio generation**:
 - Radio is a one-shot action (not a sticky toggle) that builds a playlist from the current track.
 - `useRadio` + `radioService` generate suggestions from Last.fm, then match against the active provider catalog.
-- Unmatched suggestions can be resolved via Spotify search (`spotifyResolver`) when authenticated.
+- Unmatched suggestions can be resolved via Spotify search (`spotifyResolver`) when authenticated and Spotify is in `connectedProviderIds`.
 - Provider switches during radio now follow the same driving-provider routing (no special queue handoff modal).
 - **Track name context menu**: clicking the track name (in both normal and zen mode) opens a `TrackRadioPopover` with a single "Play {trackName} Radio" option. This mirrors the existing artist/album popover pattern (`TrackInfoPopover`). The option is disabled with a tooltip when Last.fm is not configured. Components: `TrackRadioPopover.tsx` (popover wrapper), `TrackInfo.tsx` (normal mode), `AlbumArtSection.tsx` (zen mode).
 

@@ -31,6 +31,18 @@ vi.mock('@/contexts/ProviderContext', () => ({
   })),
 }));
 
+vi.mock('@/contexts/TrackContext', () => ({
+  useTrackListContext: vi.fn(() => ({
+    tracks: [],
+    setTracks: vi.fn(),
+    setOriginalTracks: vi.fn(),
+  })),
+  useCurrentTrackContext: vi.fn(() => ({
+    currentTrackIndex: 0,
+    setCurrentTrackIndex: vi.fn(),
+  })),
+}));
+
 vi.mock('@/contexts/ProfilingContext', () => ({
   useProfilingContext: vi.fn(() => ({
     enabled: false,
