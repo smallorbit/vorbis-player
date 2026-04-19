@@ -248,6 +248,63 @@ describe('PlayerStateRenderer idle routing', () => {
     });
   });
 
+  it('calls onHydrateFired with the resolved track when hydrate fires', async () => {
+    // #given
+    mockUseWelcomeSeen.mockReturnValue([true, vi.fn()]);
+    mockUseQapEnabled.mockReturnValue([false, vi.fn()]);
+    const onHydrateFired = vi.fn();
+    const sessionWithTrack: SessionSnapshot = {
+      ...freshSession,
+      trackId: 't2',
+      trackIndex: 1,
+      queueTracks: [
+        { id: 't1', name: 'First', artists: 'A', album: 'Al', image: '', duration: 1, uri: '', provider: 'spotify', playbackRef: 'spotify:track:t1' },
+        { id: 't2', name: 'Second', artists: 'A', album: 'Al', image: '', duration: 1, uri: '', provider: 'spotify', playbackRef: 'spotify:track:t2' },
+      ],
+    };
+
+    // #when
+    render(
+      <Wrapper>
+        <PlayerStateRenderer
+          {...defaultProps}
+          lastSession={sessionWithTrack}
+          onHydrateFired={onHydrateFired}
+        />
+      </Wrapper>,
+    );
+
+    // #then
+    await waitFor(() => {
+      expect(onHydrateFired).toHaveBeenCalledTimes(1);
+    });
+    expect(onHydrateFired).toHaveBeenCalledWith(expect.objectContaining({ id: 't2', name: 'Second' }));
+  });
+
+  it('does not call onHydrateFired for a stale session', async () => {
+    // #given
+    mockUseWelcomeSeen.mockReturnValue([true, vi.fn()]);
+    mockUseQapEnabled.mockReturnValue([false, vi.fn()]);
+    const onHydrateFired = vi.fn();
+
+    // #when
+    render(
+      <Wrapper>
+        <PlayerStateRenderer
+          {...defaultProps}
+          lastSession={staleSession}
+          onHydrateFired={onHydrateFired}
+        />
+      </Wrapper>,
+    );
+
+    // #then
+    await waitFor(() => {
+      expect(screen.getByTestId('playlist-selection')).toBeInTheDocument();
+    });
+    expect(onHydrateFired).not.toHaveBeenCalled();
+  });
+
   it('does not call onHydrate for a stale session', async () => {
     // #given
     mockUseWelcomeSeen.mockReturnValue([true, vi.fn()]);

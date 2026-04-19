@@ -182,6 +182,7 @@ interface PlayerStateRendererProps {
   onResume: () => void;
   onOpenSettings: () => void;
   onHydrate: (session: SessionSnapshot) => Promise<void>;
+  onHydrateFired?: (track: MediaTrack) => void;
 }
 
 type IdleRoute = 'welcome' | 'qap' | 'hydrate' | 'library';
@@ -210,6 +211,7 @@ const PlayerStateRenderer: React.FC<PlayerStateRendererProps> = ({
   onResume,
   onOpenSettings,
   onHydrate,
+  onHydrateFired,
 }) => {
   const { activeDescriptor } = useProviderContext();
   const providerName = activeDescriptor?.name ?? 'Music Service';
@@ -227,8 +229,17 @@ const PlayerStateRenderer: React.FC<PlayerStateRendererProps> = ({
     if (route !== 'hydrate') return;
     if (!lastSession) return;
     hydrateFiredRef.current = true;
+    const { queueTracks, trackId, trackIndex } = lastSession;
+    if (queueTracks?.length) {
+      const targetIdx = trackId
+        ? queueTracks.findIndex(t => t.id === trackId)
+        : Math.min(trackIndex, queueTracks.length - 1);
+      const resolvedIdx = targetIdx >= 0 ? targetIdx : Math.min(trackIndex, queueTracks.length - 1);
+      const resolvedTrack = queueTracks[resolvedIdx];
+      if (resolvedTrack) onHydrateFired?.(resolvedTrack);
+    }
     void onHydrate(lastSession);
-  }, [route, lastSession, onHydrate]);
+  }, [route, lastSession, onHydrate, onHydrateFired]);
 
   const handleConnectClick = useCallback(() => {
     activeDescriptor?.auth.beginLogin();

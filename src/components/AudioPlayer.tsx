@@ -69,7 +69,7 @@ const AudioPlayerComponent = () => {
   const { accentColorBackgroundEnabled } = useAccentColorBackground();
   const { showVisualEffects, setShowVisualEffects } = useVisualEffectsToggle();
   const { tracks, selectedPlaylistId, setTracks, setOriginalTracks, setSelectedPlaylistId } = useTrackListContext();
-  const { currentTrack, currentTrackIndex, setCurrentTrackIndex, setShowQueue } = useCurrentTrackContext();
+  const { currentTrack, currentTrackIndex, setCurrentTrackIndex, showQueue, setShowQueue } = useCurrentTrackContext();
 
   const resolveDisplayProvider = useCallback((): import('@/types/domain').ProviderId | undefined => (
     (currentTrack?.provider as import('@/types/domain').ProviderId | undefined)
@@ -134,6 +134,27 @@ const AudioPlayerComponent = () => {
 
   const [qapToast, setQapToast] = useState<{ message: string; actionLabel?: string; onAction?: () => void } | null>(null);
   const handleQapToastDismiss = useCallback(() => setQapToast(null), []);
+
+  const [resumeToast, setResumeToast] = useState<{ message: string } | null>(null);
+  const dismissResumeToast = useCallback(() => setResumeToast(null), []);
+  const handleHydrateFired = useCallback((track: import('@/types/domain').MediaTrack) => {
+    setResumeToast({ message: `Resuming '${track.name}' — press play to continue.` });
+  }, []);
+  const handlePlayWithResumeDismiss = useCallback(() => {
+    setResumeToast(null);
+    handlers.handlePlay();
+  }, [handlers]);
+  const handlePauseWithResumeDismiss = useCallback(() => {
+    setResumeToast(null);
+    handlers.handlePause();
+  }, [handlers]);
+  const handleOpenLibraryWithResumeDismiss = useCallback(() => {
+    setResumeToast(null);
+    handlers.handleOpenLibrary();
+  }, [handlers]);
+  useEffect(() => {
+    if (resumeToast && showQueue) setResumeToast(null);
+  }, [resumeToast, showQueue]);
   const handleAddToQueueFromPanel = useCallback(
     async (id: string, name?: string, provider?: import('@/types/domain').ProviderId) => {
       const result = await handlers.handleAddToQueue(id, name, provider);
@@ -177,12 +198,12 @@ const AudioPlayerComponent = () => {
   );
 
   const playbackHandlers = useMemo(() => ({
-    onPlay: handlers.handlePlay,
-    onPause: handlers.handlePause,
+    onPlay: handlePlayWithResumeDismiss,
+    onPause: handlePauseWithResumeDismiss,
     onNext: handlers.handleNext,
     onPrevious: handlers.handlePrevious,
     onTrackSelect: handlers.playTrack,
-    onOpenLibrary: handlers.handleOpenLibrary,
+    onOpenLibrary: handleOpenLibraryWithResumeDismiss,
     onCloseLibrary: handlers.handleCloseLibrary,
     onOpenQuickAccessPanel: handleOpenQuickAccessPanel,
     onPlaylistSelect: handlePlaylistSelect,
@@ -190,11 +211,19 @@ const AudioPlayerComponent = () => {
     onPlayLikedTracks: handlePlayLikedTracks,
     onQueueLikedTracks: handleQueueLikedTracks,
     onAlbumPlay: handleAlbumPlay,
-    onBackToLibrary: handlers.handleOpenLibrary,
+    onBackToLibrary: handleOpenLibraryWithResumeDismiss,
     onStartRadio: handlers.handleStartRadio,
     onRemoveFromQueue: handlers.handleRemoveFromQueue,
     onReorderQueue: handlers.handleReorderQueue,
-  }), [handlers, handleAlbumPlay, handlePlaylistSelect, handleOpenQuickAccessPanel]);
+  }), [
+    handlers,
+    handleAlbumPlay,
+    handlePlaylistSelect,
+    handleOpenQuickAccessPanel,
+    handlePlayWithResumeDismiss,
+    handlePauseWithResumeDismiss,
+    handleOpenLibraryWithResumeDismiss,
+  ]);
 
   const { chosenProviderId, activeDescriptor, connectedProviderIds, fallthroughNotification, dismissFallthroughNotification, reconnectPrompt, acceptReconnectPrompt, dismissReconnectPrompt, disconnectToast, dismissDisconnectToast } = useProviderContext();
   // Setup is needed when no provider has been chosen yet and none are connected,
@@ -295,6 +324,7 @@ const AudioPlayerComponent = () => {
               onResume={handleResume}
               onOpenSettings={handleOpenSettings}
               onHydrate={handlers.handleHydrate}
+              onHydrateFired={handleHydrateFired}
             />
           </ProfiledComponent>
           {qapToast && (
@@ -392,6 +422,9 @@ const AudioPlayerComponent = () => {
         )}
         {qapToast && (
           <Toast message={qapToast.message} actionLabel={qapToast.actionLabel} onAction={qapToast.onAction} onDismiss={handleQapToastDismiss} />
+        )}
+        {resumeToast && (
+          <Toast message={resumeToast.message} onDismiss={dismissResumeToast} />
         )}
         {fallthroughNotification && (
           <Toast message={fallthroughNotification} onDismiss={dismissFallthroughNotification} />
