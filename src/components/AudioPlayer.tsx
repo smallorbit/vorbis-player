@@ -192,7 +192,7 @@ const AudioPlayerComponent = () => {
     onReorderQueue: handlers.handleReorderQueue,
   }), [handlers, handleAlbumPlay, handlePlaylistSelect, handleOpenQuickAccessPanel]);
 
-  const { chosenProviderId, activeDescriptor, connectedProviderIds, fallthroughNotification, dismissFallthroughNotification, reconnectPrompt, acceptReconnectPrompt, dismissReconnectPrompt } = useProviderContext();
+  const { chosenProviderId, activeDescriptor, connectedProviderIds, fallthroughNotification, dismissFallthroughNotification, reconnectPrompt, acceptReconnectPrompt, dismissReconnectPrompt, disconnectToast, dismissDisconnectToast } = useProviderContext();
   // Setup is needed when no provider has been chosen yet and none are connected,
   // or when the active provider isn't authenticated and no other enabled provider is either.
   // connectedProviderIds is the subset of enabledProviderIds with valid auth.
@@ -398,6 +398,9 @@ const AudioPlayerComponent = () => {
             onDismiss={dismissReconnectPrompt}
             persistent
           />
+        )}
+        {disconnectToast && !reconnectPrompt && (
+          <Toast message={disconnectToast} onDismiss={dismissDisconnectToast} />
         )}
         {needsSetup && (
           <>
