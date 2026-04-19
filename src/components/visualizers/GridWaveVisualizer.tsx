@@ -2,6 +2,7 @@ import React, { useCallback } from 'react';
 import { generateColorVariant } from '../../utils/visualizerUtils';
 import { useCanvasVisualizer } from '../../hooks/useCanvasVisualizer';
 import { useVisualizerDebugConfig } from '../../contexts/VisualizerDebugContext';
+import { gridSpatialFactor, gridWaveProjection } from './math';
 
 interface GridWaveVisualizerProps {
   intensity: number;
@@ -70,9 +71,7 @@ export const GridWaveVisualizer: React.FC<GridWaveVisualizerProps> = ({
         for (let col = 0; col < cols; col++) {
           const x = originX + col * spacing;
           const y = originY + row * spacing;
-          const edgeFactor = Math.abs(x - centerX) / Math.max(1, centerX);
-          const depthFactor = row / Math.max(1, rows - 1);
-          const intensityFactor = edgeFactor * g.edgeIntensity + depthFactor * (1 - g.edgeIntensity);
+          const intensityFactor = gridSpatialFactor(x, centerX, row, rows, g.edgeIntensity);
           particles.push({
             gridX: col,
             gridY: row,
@@ -138,8 +137,7 @@ export const GridWaveVisualizer: React.FC<GridWaveVisualizerProps> = ({
       state.particles.forEach(particle => {
         let dispX = 0, dispY = 0;
         state.waves.forEach(wave => {
-          const proj = particle.baseX * wave.angleX * wave.frequency
-                     + particle.baseY * wave.angleY * wave.frequency;
+          const proj = gridWaveProjection(particle.baseX, particle.baseY, wave.angleX, wave.angleY, wave.frequency);
           const d = Math.sin(proj + wave.phase);
           dispX += d * wave.angleX;
           dispY += d * wave.angleY;
@@ -149,9 +147,7 @@ export const GridWaveVisualizer: React.FC<GridWaveVisualizerProps> = ({
 
         const normalizedDisp = (Math.hypot(dispX, dispY) + 1) / 2;
 
-        const edgeFactor = Math.abs(particle.baseX - centerX) / Math.max(1, centerX);
-        const depthFactor = particle.gridY / Math.max(1, rows - 1);
-        const spatialFactor = edgeFactor * g.edgeIntensity + depthFactor * (1 - g.edgeIntensity);
+        const spatialFactor = gridSpatialFactor(particle.baseX, centerX, particle.gridY, rows, g.edgeIntensity);
         const perspectiveScale = 1.0 - g.perspectiveStrength * (1.0 - spatialFactor);
 
         const radius = Math.max(0.5, particle.baseRadius * (1 + normalizedDisp * g.radiusWaveScale) * perspectiveScale);
