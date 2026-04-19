@@ -136,15 +136,18 @@ export const GridWaveVisualizer: React.FC<GridWaveVisualizerProps> = ({
       const centerX = width / 2;
 
       state.particles.forEach(particle => {
-        let displacement = 0;
+        let dispX = 0, dispY = 0;
         state.waves.forEach(wave => {
-          const proj = particle.baseX * wave.angleX * wave.frequency + particle.baseY * wave.angleY * wave.frequency;
-          displacement += Math.sin(proj + wave.phase);
+          const proj = particle.baseX * wave.angleX * wave.frequency
+                     + particle.baseY * wave.angleY * wave.frequency;
+          const d = Math.sin(proj + wave.phase);
+          dispX += d * wave.angleX;
+          dispY += d * wave.angleY;
         });
-        displacement /= g.waveCount;
+        dispX /= g.waveCount;
+        dispY /= g.waveCount;
 
-        const normalizedDisp = (displacement + 1) / 2;
-        const yOffset = displacement * amplitude;
+        const normalizedDisp = (Math.hypot(dispX, dispY) + 1) / 2;
 
         const edgeFactor = Math.abs(particle.baseX - centerX) / Math.max(1, centerX);
         const depthFactor = particle.gridY / Math.max(1, rows - 1);
@@ -156,8 +159,8 @@ export const GridWaveVisualizer: React.FC<GridWaveVisualizerProps> = ({
           (g.opacityBase + normalizedDisp * g.opacityWaveScale) * perspectiveScale * intensityScale
         ));
 
-        const x = particle.baseX;
-        const y = particle.baseY + yOffset;
+        const x = particle.baseX + dispX * amplitude;
+        const y = particle.baseY + dispY * amplitude;
 
         if (x < -radius || x > width + radius || y < -radius || y > height + radius) return;
 
