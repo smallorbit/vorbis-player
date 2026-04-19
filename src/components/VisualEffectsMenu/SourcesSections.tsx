@@ -1,11 +1,13 @@
 import { memo, useMemo, useCallback, useEffect, useRef, useState } from 'react';
 
 import { useProviderContext } from '@/contexts/ProviderContext';
+import { useTrackListContext, useCurrentTrackContext } from '@/contexts/TrackContext';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { STORAGE_KEYS } from '@/constants/storage';
 import { AUTH_COMPLETE_EVENT } from '@/constants/events';
 import type { ProviderId } from '@/types/domain';
 import Toast from '@/components/Toast';
+import ProviderDisconnectDialog from '@/components/ProviderDisconnectDialog';
 
 import {
   FilterSection,
@@ -21,9 +23,12 @@ import Switch from '@/components/controls/Switch';
 
 export const MusicSourcesSection = memo(() => {
   const { registry, enabledProviderIds, toggleProvider } = useProviderContext();
+  const { tracks, setTracks, setOriginalTracks } = useTrackListContext();
+  const { currentTrackIndex, setCurrentTrackIndex } = useCurrentTrackContext();
   const providers = useMemo(() => registry.getAll(), [registry]);
 
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [disconnectDialogProviderId, setDisconnectDialogProviderId] = useState<ProviderId | null>(null);
   const pendingPopup = useRef<{ providerId: ProviderId; popup: Window } | null>(null);
   const popupPollInterval = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -102,7 +107,62 @@ export const MusicSourcesSection = memo(() => {
 
   useEffect(() => () => clearPendingPopup(), [clearPendingPopup]);
 
+  const handleConfirmDisconnect = useCallback(() => {
+    const id = disconnectDialogProviderId;
+    if (!id) return;
+
+    setDisconnectDialogProviderId(null);
+
+    const descriptor = registry.get(id);
+    descriptor?.playback.pause().catch(() => {});
+
+    const providerTracks = tracks.filter(t => t.provider === id);
+    const providerTrackIds = new Set(providerTracks.map(t => t.id));
+    const remainingTracks = tracks.filter(t => t.provider !== id);
+
+    if (remainingTracks.length === 0) {
+      setTracks([]);
+      setOriginalTracks([]);
+      setCurrentTrackIndex(0);
+    } else {
+      const playingTrack = tracks[currentTrackIndex];
+      const removedBeforeCurrent = tracks
+        .slice(0, currentTrackIndex)
+        .filter(t => providerTrackIds.has(t.id)).length;
+      const newIndex = Math.max(
+        0,
+        Math.min(currentTrackIndex - removedBeforeCurrent, remainingTracks.length - 1),
+      );
+      setTracks(remainingTracks);
+      setOriginalTracks(prev => prev.filter(t => t.provider !== id));
+      if (playingTrack && providerTrackIds.has(playingTrack.id)) {
+        setCurrentTrackIndex(0);
+      } else {
+        setCurrentTrackIndex(newIndex);
+      }
+    }
+
+    descriptor?.auth.logout();
+    toggleProvider(id);
+  }, [
+    disconnectDialogProviderId,
+    registry,
+    tracks,
+    currentTrackIndex,
+    setTracks,
+    setOriginalTracks,
+    setCurrentTrackIndex,
+    toggleProvider,
+  ]);
+
   if (providers.length < 2) return null;
+
+  const disconnectDescriptor = disconnectDialogProviderId
+    ? registry.get(disconnectDialogProviderId)
+    : null;
+  const affectedQueueCount = disconnectDialogProviderId
+    ? tracks.filter(t => t.provider === disconnectDialogProviderId).length
+    : 0;
 
   return (
     <FilterSection>
@@ -128,7 +188,7 @@ export const MusicSourcesSection = memo(() => {
                   if (!isEnabled) {
                     handleToggleOn(descriptor);
                   } else {
-                    toggleProvider(descriptor.id);
+                    setDisconnectDialogProviderId(descriptor.id);
                   }
                 }}
                 ariaLabel={`${isEnabled ? 'Disable' : 'Enable'} ${descriptor.name}`}
@@ -139,6 +199,14 @@ export const MusicSourcesSection = memo(() => {
           );
         })}
       </FilterGrid>
+      {disconnectDescriptor && (
+        <ProviderDisconnectDialog
+          providerName={disconnectDescriptor.name}
+          affectedQueueCount={affectedQueueCount}
+          onConfirm={handleConfirmDisconnect}
+          onCancel={() => setDisconnectDialogProviderId(null)}
+        />
+      )}
     </FilterSection>
   );
 });
