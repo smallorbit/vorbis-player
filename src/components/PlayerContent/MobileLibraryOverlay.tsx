@@ -16,6 +16,7 @@ const OverlayRoot = styled.div.withConfig({
   inset: 0;
   z-index: ${({ theme }) => theme.zIndex.overlay};
   overflow: hidden;
+  background: ${({ theme }) => theme.colors.popover.background};
   pointer-events: ${({ $visible }) => ($visible ? 'auto' : 'none')};
   opacity: ${({ $visible }) => ($visible ? 1 : 0)};
   transform: ${({ $visible }) => ($visible ? 'translateY(0)' : 'translateY(8px)')};
