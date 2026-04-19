@@ -111,9 +111,13 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({
     return () => observer.disconnect();
   }, []);
 
+  const playerStackWillChangeCleanupRef = useRef<(() => void) | null>(null);
+
   useLayoutEffect(() => {
     const el = playerStackRef.current;
     if (!el) return;
+
+    playerStackWillChangeCleanupRef.current?.();
 
     const prevWidth = lastStackWidthRef.current;
     const nextWidth = el.offsetWidth;
@@ -139,8 +143,30 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({
     el.style.transition = 'none';
     el.style.transform = `scale(${ratio})`;
     void el.offsetWidth;
+
+    el.style.willChange = 'transform';
+    let timeoutId: number | null = null;
+    const clearWillChange = () => {
+      if (timeoutId !== null) {
+        window.clearTimeout(timeoutId);
+        timeoutId = null;
+      }
+      el.removeEventListener('transitionend', onTransitionEnd);
+      el.style.willChange = '';
+      playerStackWillChangeCleanupRef.current = null;
+    };
+    const onTransitionEnd = (event: TransitionEvent) => {
+      if (event.target !== el || event.propertyName !== 'transform') return;
+      clearWillChange();
+    };
+    el.addEventListener('transitionend', onTransitionEnd);
+    timeoutId = window.setTimeout(clearWillChange, ZEN_ART_DURATION + enterDelay + 100);
+    playerStackWillChangeCleanupRef.current = clearWillChange;
+
     el.style.transition = `transform ${ZEN_ART_DURATION}ms ${ZEN_ART_EASING} ${enterDelay}ms`;
     el.style.transform = 'scale(1)';
+
+    return clearWillChange;
   }, [zenModeEnabled, reducedMotion]);
 
   useEffect(() => {
