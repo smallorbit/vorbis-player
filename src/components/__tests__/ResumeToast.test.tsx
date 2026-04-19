@@ -12,30 +12,27 @@ type ResumeToastHarnessHandle = {
   pressUserAction: () => void;
 };
 
-// Mirrors the AudioPlayer wire-up: state + dismissal triggers (play / pause /
-// openLibrary) plus a showQueue effect, rendering the real Toast component.
+// Mirrors the AudioPlayer resume-toast wire-up: state setter driven by
+// hydrate, user actions, and a showQueue effect, rendering the real Toast.
 const ResumeToastHarness = React.forwardRef<ResumeToastHarnessHandle, { showQueue: boolean }>(
   ({ showQueue }, ref) => {
-    const [resumeToast, setResumeToast] = useState<{ message: string } | null>(null);
-    const dismiss = useCallback(() => setResumeToast(null), []);
+    const [message, setMessage] = useState<string | null>(null);
+    const dismiss = useCallback(() => setMessage(null), []);
 
     const handleHydrateFired = useCallback((track: MediaTrack) => {
-      setResumeToast({ message: `Resuming '${track.name}' — press play to continue.` });
+      setMessage(`Resuming '${track.name}' — press play to continue.`);
     }, []);
-    const dismissOnAction = useCallback(() => setResumeToast(null), []);
 
     useEffect(() => {
-      if (resumeToast && showQueue) setResumeToast(null);
-    }, [resumeToast, showQueue]);
+      if (showQueue) setMessage(null);
+    }, [showQueue]);
 
     React.useImperativeHandle(ref, () => ({
       fireHydrate: handleHydrateFired,
-      pressUserAction: dismissOnAction,
+      pressUserAction: dismiss,
     }));
 
-    return resumeToast ? (
-      <Toast message={resumeToast.message} onDismiss={dismiss} />
-    ) : null;
+    return message ? <Toast message={message} onDismiss={dismiss} /> : null;
   }
 );
 ResumeToastHarness.displayName = 'ResumeToastHarness';
