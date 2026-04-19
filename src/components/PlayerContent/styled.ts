@@ -119,20 +119,22 @@ export const ZenControlsInner = styled.div`
 export const ZenTrackInfo = styled.div.withConfig({
   shouldForwardProp: (prop) => !['$zenMode'].includes(prop),
 })<{ $zenMode: boolean }>`
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+  display: grid;
+  grid-template-rows: ${({ $zenMode }) => $zenMode ? '1fr' : '0fr'};
   text-align: center;
   pointer-events: none;
   margin-top: ${({ theme }) => theme.spacing.sm};
   padding: 0 ${({ theme }) => theme.spacing.md};
-  overflow: hidden;
   opacity: ${({ $zenMode }) => $zenMode ? 1 : 0};
-  max-height: ${({ $zenMode }) => $zenMode ? '5rem' : '0'};
   transition: ${({ $zenMode }) => $zenMode
-    ? `opacity ${ZEN_TRACK_INFO_ENTER_OPACITY_DURATION}ms ease ${ZEN_TRACK_INFO_ENTER_OPACITY_DELAY}ms, max-height ${ZEN_TRACK_INFO_ENTER_HEIGHT_DURATION}ms ease ${ZEN_TRACK_INFO_ENTER_HEIGHT_DELAY}ms`
-    : `opacity ${ZEN_TRACK_INFO_EXIT_DURATION}ms ease, max-height ${ZEN_TRACK_INFO_EXIT_DURATION}ms ease`
+    ? `opacity ${ZEN_TRACK_INFO_ENTER_OPACITY_DURATION}ms ease ${ZEN_TRACK_INFO_ENTER_OPACITY_DELAY}ms, grid-template-rows ${ZEN_TRACK_INFO_ENTER_HEIGHT_DURATION}ms ease ${ZEN_TRACK_INFO_ENTER_HEIGHT_DELAY}ms`
+    : `opacity ${ZEN_TRACK_INFO_EXIT_DURATION}ms ease, grid-template-rows ${ZEN_TRACK_INFO_EXIT_DURATION}ms ease`
   };
+`;
+
+export const ZenTrackInfoInner = styled.div`
+  min-height: 0;
+  overflow: hidden;
 `;
 
 export const ZenTrackName = styled.div.withConfig({
