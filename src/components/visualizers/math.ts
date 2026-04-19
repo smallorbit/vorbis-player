@@ -85,28 +85,6 @@ export function gridWaveProjection(
 }
 
 /**
- * Average the sine contributions from multiple waves at a single particle position.
- *
- * @param baseX - Particle's resting x position.
- * @param baseY - Particle's resting y position.
- * @param waves - Array of wave states (angleX, angleY, frequency, phase).
- * @returns Average displacement value in [-1, 1].
- */
-export function gridDisplacement(
-  baseX: number,
-  baseY: number,
-  waves: ReadonlyArray<{ angleX: number; angleY: number; frequency: number; phase: number }>
-): number {
-  if (waves.length === 0) return 0;
-  let sum = 0;
-  for (const wave of waves) {
-    const proj = gridWaveProjection(baseX, baseY, wave.angleX, wave.angleY, wave.frequency);
-    sum += Math.sin(proj + wave.phase);
-  }
-  return sum / waves.length;
-}
-
-/**
  * Compute the edge-weighted spatial factor used in GridWaveVisualizer for
  * perspective and opacity scaling.
  *

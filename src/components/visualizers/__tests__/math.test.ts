@@ -5,7 +5,6 @@ import {
   waveY,
   layerRatio,
   gridWaveProjection,
-  gridDisplacement,
   gridSpatialFactor,
 } from '../math';
 
@@ -173,74 +172,6 @@ describe('gridWaveProjection', () => {
 
     // #then — 100*1*0.005 + 50*0*0.005 = 0.5
     expect(proj).toBeCloseTo(0.5, 10);
-  });
-});
-
-describe('gridDisplacement', () => {
-  it('returns 0 when there are no waves', () => {
-    expect(gridDisplacement(100, 100, [])).toBe(0);
-  });
-
-  it('returns 0 when all waves contribute zero displacement (phase = -proj)', () => {
-    // #given — sin(proj + phase) = sin(0) = 0 when phase = -proj
-    const baseX = 0;
-    const baseY = 0;
-    const waves = [
-      { angleX: 1, angleY: 0, frequency: 0.005, phase: 0 }, // proj = 0, sin(0) = 0
-    ];
-
-    // #when
-    const d = gridDisplacement(baseX, baseY, waves);
-
-    // #then
-    expect(d).toBe(0);
-  });
-
-  it('returns 1 when all waves contribute maximum positive displacement', () => {
-    // #given — make sin(proj + phase) = sin(pi/2) = 1 for each wave
-    const waves = [
-      { angleX: 0, angleY: 0, frequency: 0.005, phase: Math.PI / 2 }, // proj=0, phase=pi/2
-      { angleX: 0, angleY: 0, frequency: 0.005, phase: Math.PI / 2 },
-    ];
-
-    // #when
-    const d = gridDisplacement(0, 0, waves);
-
-    // #then
-    expect(d).toBeCloseTo(1, 10);
-  });
-
-  it('averages contributions from multiple waves', () => {
-    // #given — one wave at +1 and one at -1
-    const waves = [
-      { angleX: 0, angleY: 0, frequency: 0, phase: Math.PI / 2 },  // sin(pi/2) = 1
-      { angleX: 0, angleY: 0, frequency: 0, phase: -Math.PI / 2 }, // sin(-pi/2) = -1
-    ];
-
-    // #when
-    const d = gridDisplacement(0, 0, waves);
-
-    // #then — average of +1 and -1 = 0
-    expect(d).toBeCloseTo(0, 10);
-  });
-
-  it('output stays in [-1, 1]', () => {
-    // #given — random-ish wave configuration
-    const waves = [
-      { angleX: 0.707, angleY: 0.707, frequency: 0.005, phase: 0.3 },
-      { angleX: -0.707, angleY: 0.707, frequency: 0.008, phase: 1.2 },
-    ];
-
-    for (let x = 0; x < 500; x += 50) {
-      for (let y = 0; y < 500; y += 50) {
-        // #when
-        const d = gridDisplacement(x, y, waves);
-
-        // #then
-        expect(d).toBeGreaterThanOrEqual(-1);
-        expect(d).toBeLessThanOrEqual(1);
-      }
-    }
   });
 });
 
