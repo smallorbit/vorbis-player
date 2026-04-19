@@ -1,13 +1,13 @@
 import React, { Suspense, lazy, useEffect, useRef, useState } from 'react';
 import styled, { css } from 'styled-components';
 import { ProfiledComponent } from '@/components/ProfiledComponent';
+import { DRAWER_TRANSITION_EASING } from '@/components/styled';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 import type { AddToQueueResult, MediaTrack, ProviderId } from '@/types/domain';
 
 const LibraryPage = lazy(() => import('@/components/PlaylistSelection'));
 
 export const MOBILE_LIBRARY_OVERLAY_DURATION_MS = 200;
-export const MOBILE_LIBRARY_OVERLAY_EASING = 'cubic-bezier(0.4, 0, 0.2, 1)';
 
 const OverlayRoot = styled.div.withConfig({
   shouldForwardProp: (prop) => !['$visible', '$reducedMotion'].includes(prop),
@@ -16,7 +16,6 @@ const OverlayRoot = styled.div.withConfig({
   inset: 0;
   z-index: ${({ theme }) => theme.zIndex.overlay};
   overflow: hidden;
-  transform-origin: center bottom;
   pointer-events: ${({ $visible }) => ($visible ? 'auto' : 'none')};
   opacity: ${({ $visible }) => ($visible ? 1 : 0)};
   transform: ${({ $visible }) => ($visible ? 'translateY(0)' : 'translateY(8px)')};
@@ -29,8 +28,8 @@ const OverlayRoot = styled.div.withConfig({
         `
       : css`
           transition:
-            opacity ${MOBILE_LIBRARY_OVERLAY_DURATION_MS}ms ${MOBILE_LIBRARY_OVERLAY_EASING},
-            transform ${MOBILE_LIBRARY_OVERLAY_DURATION_MS}ms ${MOBILE_LIBRARY_OVERLAY_EASING};
+            opacity ${MOBILE_LIBRARY_OVERLAY_DURATION_MS}ms ${DRAWER_TRANSITION_EASING},
+            transform ${MOBILE_LIBRARY_OVERLAY_DURATION_MS}ms ${DRAWER_TRANSITION_EASING};
         `}
 
   @media (prefers-reduced-motion: reduce) {
@@ -142,5 +141,3 @@ export const MobileLibraryOverlay: React.FC<MobileLibraryOverlayProps> = React.m
 });
 
 MobileLibraryOverlay.displayName = 'MobileLibraryOverlay';
-
-export default MobileLibraryOverlay;
