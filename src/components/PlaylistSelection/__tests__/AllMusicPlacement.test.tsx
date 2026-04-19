@@ -33,8 +33,6 @@ const baseBrowsing: LibraryBrowsingContextValue = {
   setPlaylistSort: () => undefined,
   albumSort: 'recently-added',
   setAlbumSort: () => undefined,
-  artistFilter: '',
-  setArtistFilter: () => undefined,
   providerFilters: [],
   setProviderFilters: () => undefined,
   handleProviderToggle: () => undefined,

@@ -214,35 +214,6 @@ describe('filterAndSortAlbums', () => {
     });
   });
 
-  describe('artist filtering', () => {
-    it('returns all albums when artist filter is empty', () => {
-      const result = filterAndSortAlbums(mockAlbums, '', 'recently-added', 'all', '');
-      expect(result).toHaveLength(3);
-    });
-
-    it('filters by exact artist name', () => {
-      const result = filterAndSortAlbums(mockAlbums, '', 'recently-added', 'all', 'The Beatles');
-      expect(result).toHaveLength(1);
-      expect(result[0].name).toBe('Abbey Road');
-    });
-
-    it('filters by partial artist name (case-insensitive)', () => {
-      const result = filterAndSortAlbums(mockAlbums, '', 'recently-added', 'all', 'daft');
-      expect(result).toHaveLength(1);
-      expect(result[0].name).toBe('Random Access Memories');
-    });
-
-    it('filters by artist name (case-insensitive uppercase)', () => {
-      const result = filterAndSortAlbums(mockAlbums, '', 'recently-added', 'all', 'MICHAEL JACKSON');
-      expect(result).toHaveLength(1);
-      expect(result[0].name).toBe('Thriller');
-    });
-
-    it('returns empty array when artist not found', () => {
-      const result = filterAndSortAlbums(mockAlbums, '', 'recently-added', 'all', 'Nonexistent Artist');
-      expect(result).toHaveLength(0);
-    });
-  });
 
   describe('sorting', () => {
     it('sorts by artist ascending', () => {
@@ -329,7 +300,7 @@ describe('filterAndSortAlbums', () => {
       expect(result[0].name).toBe('Thriller');
     });
 
-    it('applies search, year filter, artist filter, and sort together', () => {
+    it('applies search query, year filter, and sort together', () => {
       // #given
       const extendedMockAlbums: AlbumInfo[] = [
         ...mockAlbums,
@@ -346,7 +317,7 @@ describe('filterAndSortAlbums', () => {
       ];
 
       // #when
-      const result = filterAndSortAlbums(extendedMockAlbums, '', 'name-asc', 'older', 'The Beatles');
+      const result = filterAndSortAlbums(extendedMockAlbums, 'beatles', 'name-asc', 'older');
 
       // #then
       expect(result).toHaveLength(2);
@@ -367,7 +338,7 @@ describe('filterAndSortAlbums', () => {
   describe('sortAlbumSubgroup with partition (pinned + sort)', () => {
     it('sorts within pinned and unpinned groups independently', () => {
       // #given
-      const filtered = filterAlbumsOnly(mockAlbums, '', 'all', '');
+      const filtered = filterAlbumsOnly(mockAlbums, '', 'all');
       const { pinned, unpinned } = partitionByPinned(filtered, ['3', '1'], (a) => a.id);
 
       // #when

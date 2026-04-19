@@ -20,8 +20,6 @@ export interface LibraryBrowsingContextValue {
   setPlaylistSort: (v: PlaylistSortOption) => void;
   albumSort: AlbumSortOption;
   setAlbumSort: (v: AlbumSortOption) => void;
-  artistFilter: string;
-  setArtistFilter: (v: string) => void;
   providerFilters: ProviderId[];
   setProviderFilters: (v: ProviderId[]) => void;
   handleProviderToggle: (provider: ProviderId) => void;
