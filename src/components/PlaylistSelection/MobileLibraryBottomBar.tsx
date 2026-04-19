@@ -156,6 +156,29 @@ const ClearIconSvg = () => (
   </svg>
 );
 
+interface SortSelectProps {
+  value: string;
+  onChange: (value: string) => void;
+  labels: Record<string, string>;
+  ariaLabel: string;
+}
+
+function renderSortSelect({ value, onChange, labels, ariaLabel }: SortSelectProps): JSX.Element {
+  return (
+    <SortSelect
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      aria-label={ariaLabel}
+    >
+      {Object.entries(labels).map(([optValue, label]) => (
+        <option key={optValue} value={optValue}>
+          {label}
+        </option>
+      ))}
+    </SortSelect>
+  );
+}
+
 export function MobileLibraryBottomBar(): JSX.Element {
   const {
     viewMode,
@@ -191,30 +214,20 @@ export function MobileLibraryBottomBar(): JSX.Element {
         )}
       </SearchInputWrapper>
 
-      {viewMode === 'playlists' ? (
-        <SortSelect
-          value={playlistSort}
-          onChange={(e) => setPlaylistSort(e.target.value as PlaylistSortOption)}
-          aria-label="Sort playlists"
-        >
-          {Object.entries(PLAYLIST_SORT_LABELS).map(([value, label]) => (
-            <option key={value} value={value}>
-              {label}
-            </option>
-          ))}
-        </SortSelect>
-      ) : (
-        <SortSelect
-          value={albumSort}
-          onChange={(e) => setAlbumSort(e.target.value as AlbumSortOption)}
-          aria-label="Sort albums"
-        >
-          {Object.entries(ALBUM_SORT_LABELS).map(([value, label]) => (
-            <option key={value} value={value}>
-              {label}
-            </option>
-          ))}
-        </SortSelect>
+      {renderSortSelect(
+        viewMode === 'playlists'
+          ? {
+              value: playlistSort,
+              onChange: (v) => setPlaylistSort(v as PlaylistSortOption),
+              labels: PLAYLIST_SORT_LABELS,
+              ariaLabel: 'Sort playlists',
+            }
+          : {
+              value: albumSort,
+              onChange: (v) => setAlbumSort(v as AlbumSortOption),
+              labels: ALBUM_SORT_LABELS,
+              ariaLabel: 'Sort albums',
+            },
       )}
     </BarContainer>
   );
