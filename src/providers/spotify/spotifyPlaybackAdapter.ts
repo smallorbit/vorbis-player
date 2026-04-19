@@ -6,6 +6,7 @@
 import type { PlaybackProvider } from '@/types/providers';
 import type { ProviderId, MediaTrack, PlaybackState, CollectionRef } from '@/types/domain';
 import { spotifyPlayer } from '@/services/spotifyPlayer';
+import { apiPlayTrack } from '@/services/spotifyPlayerPlayback';
 import { spotifyAuth } from '@/services/spotify';
 import { isAlbumId, extractAlbumId } from '@/constants/playlist';
 import { SPOTIFY_MAX_RETRIES, SPOTIFY_BASE_BACKOFF_MS } from '@/constants/spotify';
@@ -297,8 +298,6 @@ export class SpotifyPlaybackAdapter implements PlaybackProvider {
   private async stageTrackPaused(track: MediaTrack, positionMs: number): Promise<void> {
     await this.ensurePlaybackReady();
 
-    const uri = track.playbackRef.ref;
-    const token = await spotifyAuth.ensureValidToken();
     const deviceId = spotifyPlayer.getDeviceId();
     if (!deviceId) return;
 
@@ -306,30 +305,16 @@ export class SpotifyPlaybackAdapter implements PlaybackProvider {
     // playback at the saved offset then immediately pause. The net effect from
     // the user's perspective is the track appearing as the paused context on
     // this device (and mirrored on other Spotify Connect clients).
-    const playResponse = await fetch(
-      `https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`,
-      {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ uris: [uri], position_ms: Math.floor(positionMs) }),
-      },
-    );
-
-    if (!playResponse.ok && playResponse.status !== 204) {
-      throw new Error(`Spotify stage play failed: ${playResponse.status}`);
-    }
-
+    const positionFloor = Math.floor(positionMs);
+    await apiPlayTrack(deviceId, track.playbackRef.ref, undefined, positionFloor);
     await spotifyPlayer.pause();
 
     this.emitState({
       isPlaying: false,
-      positionMs: Math.floor(positionMs),
+      positionMs: positionFloor,
       durationMs: track.durationMs ?? 0,
       currentTrackId: track.id,
-      currentPlaybackRef: { provider: 'spotify', ref: uri },
+      currentPlaybackRef: { provider: 'spotify', ref: track.playbackRef.ref },
     });
   }
 
