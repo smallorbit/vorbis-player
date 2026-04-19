@@ -37,6 +37,7 @@ A music player with visualizers and multi-provider support (Spotify, Dropbox), b
 - **Keyboard Shortcuts** — Context-aware controls with device-specific behavior
 - **Responsive Design** — Fluid layout from mobile phones to ultra-wide desktops
 - **Session Resume** — Pick up where you left off — playback position, queue, and track are restored on reopen
+- **Landing Experience** — First-run users get a one-time Welcome screen; returning users see a prominent Resume hero (when the optional Quick Access Panel is enabled) or a hydrated, paused player ready to resume. Sessions older than 30 days fall back to the Library view.
 - **Instant Startup** — IndexedDB-based library cache with background sync
 
 ## Quick Start
