@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { STORAGE_KEYS } from '@/constants/storage';
+import { theme } from '@/styles/theme';
 
 interface LogEntry {
   time: string;
@@ -94,7 +95,7 @@ export default function DebugOverlay({ active }: { active: boolean }) {
       <div
         onClick={() => setVisible(v => !v)}
         style={{
-          position: 'fixed', bottom: 8, left: 8, zIndex: 999999,
+          position: 'fixed', bottom: 8, left: 8, zIndex: theme.zIndex.debugTopmost,
           background: errorCount > 0 ? 'rgba(220,40,40,0.9)' : 'rgba(50,50,50,0.85)',
           color: '#0f0', borderRadius: '50%', width: 32, height: 32,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -109,14 +110,14 @@ export default function DebugOverlay({ active }: { active: boolean }) {
 
       {visible && (
         <div style={{
-          position: 'fixed', inset: 0, zIndex: 999998,
+          position: 'fixed', inset: 0, zIndex: theme.zIndex.debugModal,
           background: 'rgba(0,0,0,0.94)', color: '#ccc',
           fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
           fontSize: 10, overflow: 'auto',
           padding: '44px 8px 8px', WebkitOverflowScrolling: 'touch',
         }}>
           <div style={{
-            position: 'fixed', top: 0, left: 0, right: 0, zIndex: 999999,
+            position: 'fixed', top: 0, left: 0, right: 0, zIndex: theme.zIndex.debugTopmost,
             display: 'flex', gap: 8, padding: '8px',
             background: 'rgba(20,20,20,0.95)', backdropFilter: 'blur(12px)',
             borderBottom: '1px solid #333',

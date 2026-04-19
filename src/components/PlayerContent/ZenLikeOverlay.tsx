@@ -1,6 +1,8 @@
 import React from 'react';
 import styled from 'styled-components';
 
+const ZEN_LIKE_BUTTON_Z = 6;
+
 interface ZenLikeOverlayProps {
   isLiked: boolean;
   isVisible: boolean;
@@ -15,7 +17,7 @@ const LikeButton = styled.button.withConfig({
   position: absolute;
   bottom: 12px;
   right: 12px;
-  z-index: 6;
+  z-index: ${ZEN_LIKE_BUTTON_Z};
   pointer-events: auto;
   background: rgba(0, 0, 0, 0.45);
   border-radius: ${({ theme }) => theme.borderRadius.full};

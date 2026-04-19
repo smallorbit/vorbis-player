@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useProfilingContext, type ProfilingSnapshot } from '@/contexts/ProfilingContext';
+import { theme } from '@/styles/theme';
 
 const btnStyle: React.CSSProperties = {
   color: '#ddd', background: 'rgba(80,80,80,0.8)', border: '1px solid #555',
@@ -57,7 +58,7 @@ export function ProfilingOverlay(): React.ReactElement | null {
 
   return (
     <div style={{
-      position: 'fixed', top: 8, left: 8, zIndex: 999980,
+      position: 'fixed', top: 8, left: 8, zIndex: theme.zIndex.debugOverlay,
       background: 'rgba(0,0,0,0.85)', color: '#fff', borderRadius: 8,
       padding: 8, fontSize: 11, fontFamily: 'monospace',
       maxWidth: 360, maxHeight: '80vh', overflow: 'auto', userSelect: 'none',
