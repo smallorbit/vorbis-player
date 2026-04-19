@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useCallback } from 'react';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import type { PlaylistSortOption, AlbumSortOption } from '@/utils/playlistFilters';
 import type { ProviderId } from '@/types/domain';
@@ -26,7 +26,6 @@ export function useLibraryBrowsing(initialSearchQuery?: string, initialViewMode?
     'recently-added'
   );
 
-  const [artistFilter, setArtistFilter] = useState<string>('');
   const [providerFilters, setProviderFilters] = useLocalStorage<ProviderId[]>(
     'vorbis-player-library-provider-filters',
     [],
@@ -35,12 +34,6 @@ export function useLibraryBrowsing(initialSearchQuery?: string, initialViewMode?
     'vorbis-player-library-genres',
     [],
   );
-
-  useEffect(() => {
-    if (viewMode === 'playlists' && artistFilter !== '') {
-      setArtistFilter('');
-    }
-  }, [viewMode, artistFilter]);
 
   const handleProviderToggle = useCallback((provider: ProviderId) => {
     setProviderFilters((prev) => {
@@ -74,14 +67,12 @@ export function useLibraryBrowsing(initialSearchQuery?: string, initialViewMode?
 
   const handleClearFilters = useCallback(() => {
     setSearchQuery('');
-    setArtistFilter('');
     setProviderFilters([]);
     setSelectedGenres([]);
   }, [setSearchQuery, setProviderFilters, setSelectedGenres]);
 
   const hasActiveFilters =
     searchQuery !== '' ||
-    artistFilter !== '' ||
     providerFilters.length > 0 ||
     selectedGenres.length > 0;
 
@@ -94,8 +85,6 @@ export function useLibraryBrowsing(initialSearchQuery?: string, initialViewMode?
     setPlaylistSort,
     albumSort,
     setAlbumSort,
-    artistFilter,
-    setArtistFilter,
     providerFilters,
     setProviderFilters,
     handleProviderToggle,

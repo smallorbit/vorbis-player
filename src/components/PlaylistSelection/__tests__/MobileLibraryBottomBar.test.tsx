@@ -32,7 +32,6 @@ function BrowsingStateHarness({
   const [searchQuery, setSearchQuery] = useState<string>(initialSearchQuery);
   const [playlistSort, setPlaylistSort] = useState<PlaylistSortOption>(initialPlaylistSort);
   const [albumSort, setAlbumSort] = useState<AlbumSortOption>(initialAlbumSort);
-  const [artistFilter, setArtistFilter] = useState<string>('');
   const [providerFilters, setProviderFilters] = useState<ProviderId[]>([]);
   const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
 
@@ -45,8 +44,6 @@ function BrowsingStateHarness({
     setPlaylistSort,
     albumSort,
     setAlbumSort,
-    artistFilter,
-    setArtistFilter,
     providerFilters,
     setProviderFilters,
     handleProviderToggle: () => undefined,
