@@ -133,16 +133,7 @@ describe('filterAndSortPlaylists', () => {
       expect(result[2].name).toBe('Chill Vibes'); // 2024-06-15
     });
 
-    it('keeps anchor playlists before sorted remainder (All Music id "", liked-songs)', () => {
-      const allMusic: PlaylistInfo = {
-        id: '',
-        name: 'All Music',
-        description: null,
-        images: [],
-        tracks: { total: 100 },
-        owner: null,
-        added_at: '2020-01-01T10:00:00Z',
-      };
+    it('keeps Liked Songs anchored before sorted remainder (All Music has its own anchored card now)', () => {
       const likedInList: PlaylistInfo = {
         id: 'liked-songs',
         name: 'Liked Songs',
@@ -152,10 +143,9 @@ describe('filterAndSortPlaylists', () => {
         owner: null,
         added_at: '2021-01-01T10:00:00Z',
       };
-      const mixed = [mockPlaylists[2], allMusic, mockPlaylists[0], likedInList];
+      const mixed = [mockPlaylists[2], mockPlaylists[0], likedInList];
       const result = filterAndSortPlaylists(mixed, '', 'name-asc');
       expect(result.map(p => p.name)).toEqual([
-        'All Music',
         'Liked Songs',
         'Chill Vibes',
         'Road Trip',
@@ -364,21 +354,10 @@ describe('filterAndSortAlbums', () => {
       expect(result[1].name).toBe('Let It Be');
     });
 
-    it('keeps anchor album (id "") before sorted remainder', () => {
-      const allMusic: AlbumInfo = {
-        id: '',
-        name: 'All Music',
-        artists: 'Various',
-        images: [],
-        release_date: '',
-        total_tracks: 999,
-        uri: '',
-        added_at: '2010-01-01T10:00:00Z',
-      };
-      const mixed = [mockAlbums[2], allMusic, mockAlbums[0]];
+    it('sorts albums without anchor exceptions (All Music no longer lives in the album list)', () => {
+      const mixed = [mockAlbums[2], mockAlbums[0]];
       const result = filterAndSortAlbums(mixed, '', 'name-asc');
       expect(result.map(a => a.name)).toEqual([
-        'All Music',
         'Abbey Road',
         'Random Access Memories',
       ]);
