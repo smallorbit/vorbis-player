@@ -24,6 +24,8 @@ interface UseLibrarySyncResult {
   likedSongsCount: number;
   /** Liked counts broken down by provider (for multi-provider liked songs cards). */
   likedSongsPerProvider: PerProviderLikedCount[];
+  /** Total track count for the Dropbox "All Music" aggregate row, or 0 when Dropbox is not enabled. */
+  allMusicCount: number;
   isInitialLoadComplete: boolean;
   isSyncing: boolean;
   /** True while liked counts from the synchronous cache seed are being verified by async sources. */
@@ -83,19 +85,33 @@ function collectionToAlbumInfo(c: MediaCollection, ordinal: number): AlbumInfo {
   };
 }
 
-function splitCollections(collections: MediaCollection[]): { playlists: CachedPlaylistInfo[]; albums: AlbumInfo[] } {
+/** Returns true when the collection is the Dropbox "All Music" aggregate row. */
+function isAllMusicCollection(c: MediaCollection): boolean {
+  return c.provider === 'dropbox' && c.id === '';
+}
+
+function splitCollections(collections: MediaCollection[]): {
+  playlists: CachedPlaylistInfo[];
+  albums: AlbumInfo[];
+  allMusicCount: number;
+} {
   const playlists: CachedPlaylistInfo[] = [];
   const albums: AlbumInfo[] = [];
   let playlistOrdinal = 0;
   let albumOrdinal = 0;
+  let allMusicCount = 0;
   for (const c of collections) {
+    if (isAllMusicCollection(c)) {
+      allMusicCount = c.trackCount ?? 0;
+      continue;
+    }
     if (c.kind === 'album') {
       albums.push(collectionToAlbumInfo(c, albumOrdinal++));
     } else {
       playlists.push(collectionToPlaylistInfo(c, playlistOrdinal++));
     }
   }
-  return { playlists, albums };
+  return { playlists, albums, allMusicCount };
 }
 
 export function useLibrarySync(): UseLibrarySyncResult {
@@ -105,6 +121,7 @@ export function useLibrarySync(): UseLibrarySyncResult {
   const [albums, setAlbums] = useState<AlbumInfo[]>([]);
   const [likedSongsCount, setLikedSongsCount] = useState(() => initialSnapshot.total);
   const [likedSongsPerProvider, setLikedSongsPerProvider] = useState<PerProviderLikedCount[]>(() => initialSnapshot.perProvider);
+  const [allMusicCount, setAllMusicCount] = useState(0);
   const [syncState, setSyncState] = useState<SyncState>({
     isInitialLoadComplete: false,
     isSyncing: false,
@@ -119,7 +136,7 @@ export function useLibrarySync(): UseLibrarySyncResult {
   const engineDataRef = useRef<{ playlists: CachedPlaylistInfo[]; albums: AlbumInfo[]; likedCount: number }>({
     playlists: [], albums: [], likedCount: 0,
   });
-  const catalogDataRef = useRef<Map<ProviderId, { playlists: CachedPlaylistInfo[]; albums: AlbumInfo[]; likedCount: number }>>(new Map());
+  const catalogDataRef = useRef<Map<ProviderId, { playlists: CachedPlaylistInfo[]; albums: AlbumInfo[]; likedCount: number; allMusicCount: number }>>(new Map());
 
   const isEngineProviderEnabled = !!engineProviderId && enabledProviderIds.includes(engineProviderId);
   const catalogProviderIds = enabledProviderIds.filter(id => id !== engineProviderId);
@@ -128,6 +145,7 @@ export function useLibrarySync(): UseLibrarySyncResult {
     const allPlaylists: CachedPlaylistInfo[] = [];
     const allAlbums: AlbumInfo[] = [];
     let totalLikedCount = 0;
+    let totalAllMusicCount = 0;
     const perProvider: PerProviderLikedCount[] = [];
 
     if (isEngineProviderEnabled && engineProviderId) {
@@ -144,6 +162,7 @@ export function useLibrarySync(): UseLibrarySyncResult {
         allPlaylists.push(...data.playlists);
         allAlbums.push(...data.albums);
         totalLikedCount += data.likedCount;
+        totalAllMusicCount += data.allMusicCount;
         if (data.likedCount > 0) {
           perProvider.push({ provider: providerId, count: data.likedCount });
         }
@@ -154,6 +173,7 @@ export function useLibrarySync(): UseLibrarySyncResult {
     setAlbums(allAlbums);
     setLikedSongsCount(totalLikedCount);
     setLikedSongsPerProvider(perProvider);
+    setAllMusicCount(totalAllMusicCount);
   }, [isEngineProviderEnabled, engineProviderId, enabledProviderIds]);
 
   useEffect(() => {
@@ -212,7 +232,7 @@ export function useLibrarySync(): UseLibrarySyncResult {
       const catalog = descriptor?.catalog;
       const auth = descriptor?.auth;
       if (!catalog || !auth || !auth.isAuthenticated()) {
-        catalogDataRef.current.set(providerId, { playlists: [], albums: [], likedCount: 0 });
+        catalogDataRef.current.set(providerId, { playlists: [], albums: [], likedCount: 0, allMusicCount: 0 });
         return;
       }
 
@@ -228,12 +248,12 @@ export function useLibrarySync(): UseLibrarySyncResult {
         logLibrary('[%s] raw collections from catalog: %o', providerId,
           collections.map(c => ({ name: c.name, kind: c.kind, trackCount: c.trackCount })));
 
-        const { playlists, albums } = splitCollections(collections);
+        const { playlists, albums, allMusicCount } = splitCollections(collections);
         logLibrary('[%s] after splitCollections — playlists: %o', providerId,
           playlists.map(p => ({ name: p.name, tracks: p.tracks })));
         logLibrary('[%s] after splitCollections — albums: %o', providerId,
           albums.map(a => ({ name: a.name, total_tracks: a.total_tracks })));
-        catalogDataRef.current.set(providerId, { playlists, albums, likedCount });
+        catalogDataRef.current.set(providerId, { playlists, albums, likedCount, allMusicCount });
         writeLikedCountSnapshot(providerId, likedCount);
         mergeAndSetData();
         setSyncState(prev => ({
@@ -312,8 +332,8 @@ export function useLibrarySync(): UseLibrarySyncResult {
           catalog.listCollections(undefined, { forceRefresh: true }),
           catalog.getLikedCount ? catalog.getLikedCount() : Promise.resolve(0),
         ]);
-        const { playlists, albums } = splitCollections(collections);
-        catalogDataRef.current.set(providerId, { playlists, albums, likedCount });
+        const { playlists, albums, allMusicCount } = splitCollections(collections);
+        catalogDataRef.current.set(providerId, { playlists, albums, likedCount, allMusicCount });
         writeLikedCountSnapshot(providerId, likedCount);
         mergeAndSetData();
         setSyncState(prev => ({
@@ -367,6 +387,7 @@ export function useLibrarySync(): UseLibrarySyncResult {
     albums,
     likedSongsCount,
     likedSongsPerProvider,
+    allMusicCount,
     isInitialLoadComplete: syncState.isInitialLoadComplete,
     isSyncing: syncState.isSyncing,
     isLikedSongsSyncing,

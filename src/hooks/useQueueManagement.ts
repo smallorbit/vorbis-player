@@ -2,8 +2,9 @@ import { useCallback, useRef } from 'react';
 import type { AddToQueueResult, MediaTrack, ProviderId } from '@/types/domain';
 import type { ProviderDescriptor } from '@/types/providers';
 import type { TrackOperations } from '@/types/trackOperations';
-import { resolvePlaylistRef } from '@/constants/playlist';
+import { isAllMusicRef, resolvePlaylistRef } from '@/constants/playlist';
 import { logQueue } from '@/lib/debugLog';
+import { shuffleArray } from '@/utils/shuffleArray';
 import {
   appendMediaTracks,
   moveItemInArray,
@@ -78,7 +79,8 @@ export function useQueueManagement({
         const catalog = targetDescriptor.catalog;
         const { id: collectionId, kind: collectionKind } = resolvePlaylistRef(playlistId, targetProviderId);
         const collectionRef = { provider: targetProviderId, kind: collectionKind, id: collectionId } as const;
-        const newMediaTracks = await catalog.listTracks(collectionRef);
+        const fetchedTracks = await catalog.listTracks(collectionRef);
+        const newMediaTracks = isAllMusicRef(collectionRef) ? shuffleArray(fetchedTracks) : fetchedTracks;
 
         const existingIds = new Set(tracksRef.current.map((t) => t.id));
         const uniqueNewTracks = newMediaTracks.filter((t) => !existingIds.has(t.id));

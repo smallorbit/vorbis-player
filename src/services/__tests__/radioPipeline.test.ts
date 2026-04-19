@@ -228,6 +228,53 @@ describe('runRadioPipeline', () => {
       expect(result!.queue.some((t) => t.id === 'resolved-1')).toBe(true);
     });
 
+    it('skips unauthenticated search providers silently', async () => {
+      // #given
+      const seedTrack = makeMediaTrack({ id: 'seed-1', name: 'Creep', artists: 'Radiohead' });
+      const catalogTrack = makeMediaTrack({ id: 'rec-1', name: 'Karma Police', artists: 'Radiohead' });
+      const resolvedTrack = makeMediaTrack({ id: 'resolved-1', name: 'Missing Song', artists: 'Missing Artist' });
+      const catalogProvider = makeCatalogProvider([catalogTrack]);
+
+      const unauthenticatedProvider = makeProviderDescriptor({
+        capabilities: { hasSaveTrack: false, hasExternalLink: false, hasLikedCollection: false, hasTrackSearch: true },
+        auth: {
+          providerId: 'spotify',
+          isAuthenticated: vi.fn().mockReturnValue(false),
+          getAccessToken: vi.fn(),
+          beginLogin: vi.fn(),
+          handleCallback: vi.fn(),
+          logout: vi.fn(),
+        },
+        catalog: {
+          providerId: 'spotify',
+          listCollections: vi.fn().mockResolvedValue([]),
+          listTracks: vi.fn().mockResolvedValue([]),
+          searchTrack: vi.fn().mockResolvedValue(resolvedTrack),
+        },
+      });
+
+      const generateQueue = vi.fn().mockResolvedValue(
+        makeRadioResult({
+          queue: [catalogTrack],
+          unmatchedSuggestions: [{ name: 'Missing Song', artist: 'Missing Artist', matchScore: 0.5 }],
+        }),
+      );
+
+      // #when
+      const result = await runRadioPipeline({
+        seedTrack,
+        catalogProvider,
+        searchProviders: [unauthenticatedProvider],
+        onProgress,
+        generateQueue,
+      });
+
+      // #then - disconnected provider is not used for resolution
+      expect(result).not.toBeNull();
+      expect(result!.queue.some((t) => t.id === 'resolved-1')).toBe(false);
+      expect(vi.mocked(unauthenticatedProvider.catalog.searchTrack)).not.toHaveBeenCalled();
+    });
+
     it('does not add resolved tracks that duplicate existing queue entries by artists||name', async () => {
       // #given
       const seedTrack = makeMediaTrack({ id: 'seed-1', name: 'Creep', artists: 'Radiohead' });

@@ -1,6 +1,6 @@
 import * as React from 'react';
 import type { PlaylistInfo } from '../../services/spotify';
-import { LIKED_SONGS_ID } from '@/constants/playlist';
+import { ALL_MUSIC_PIN_ID, LIKED_SONGS_ID } from '@/constants/playlist';
 import ProviderIcon from '../ProviderIcon';
 import { PlaylistTypeIcon } from '../icons/QuickActionIcons';
 import {
@@ -26,14 +26,16 @@ import {
 import { PinIcon, PlaylistImage, GridCardImageComponent } from './utils';
 import { useLibraryBrowsingContext, useLibraryPins, useLibraryActions, useLibraryData } from './LibraryContext';
 import { LikedSongsCard } from './LikedSongsCard';
+import { AllMusicCard } from './AllMusicCard';
 
 export const PlaylistGrid: React.FC = React.memo(function PlaylistGrid() {
   const { hasActiveFilters, searchQuery, providerFilters } = useLibraryBrowsingContext();
   const { pinnedPlaylists, unpinnedPlaylists, isPlaylistPinned, canPinMorePlaylists, onPinPlaylistClick } = useLibraryPins();
   const { onPlaylistContextMenu } = useLibraryActions();
-  const { inDrawer, likedSongsPerProvider, likedSongsCount, isUnifiedLikedActive, unifiedLikedCount, isInitialLoadComplete, showProviderBadges } = useLibraryData();
+  const { inDrawer, likedSongsPerProvider, likedSongsCount, isUnifiedLikedActive, unifiedLikedCount, isInitialLoadComplete, showProviderBadges, allMusicCount, enabledProviderIds } = useLibraryData();
 
   const likedSongsPinned = isPlaylistPinned(LIKED_SONGS_ID);
+  const allMusicPinned = isPlaylistPinned(ALL_MUSIC_PIN_ID);
 
   const filteredLikedSongsPerProvider = providerFilters.length > 0
     ? likedSongsPerProvider.filter(e => providerFilters.includes(e.provider))
@@ -53,6 +55,11 @@ export const PlaylistGrid: React.FC = React.memo(function PlaylistGrid() {
       ))
     : <LikedSongsCard layout={layout} count={effectiveLikedCount} />
   );
+
+  const dropboxEnabled = enabledProviderIds.includes('dropbox');
+  const passesProviderFilter = providerFilters.length === 0 || providerFilters.includes('dropbox');
+  const showAllMusic = dropboxEnabled && passesProviderFilter && (allMusicCount > 0 || !isInitialLoadComplete);
+  const allMusicItem = showAllMusic && <AllMusicCard layout={layout} count={allMusicCount} />;
 
   const renderPlaylistGrid = (playlist: PlaylistInfo) => {
     const pinned = isPlaylistPinned(playlist.id);
@@ -123,7 +130,9 @@ export const PlaylistGrid: React.FC = React.memo(function PlaylistGrid() {
   };
 
   const renderFn = inDrawer ? renderPlaylistGrid : renderPlaylistList;
-  const hasPinnedSection = pinnedPlaylists.length > 0 || (likedSongsPinned && showLikedSongs && !hasActiveFilters);
+  const hasPinnedSection = pinnedPlaylists.length > 0
+    || (likedSongsPinned && showLikedSongs && !hasActiveFilters)
+    || (allMusicPinned && showAllMusic && !hasActiveFilters);
 
   const filteredPlaylistsCount = pinnedPlaylists.length + unpinnedPlaylists.length;
   const emptyState = filteredPlaylistsCount === 0 && likedSongsCount === 0 && isInitialLoadComplete && (
@@ -137,9 +146,11 @@ export const PlaylistGrid: React.FC = React.memo(function PlaylistGrid() {
   const Grid = inDrawer ? MobileGrid : PlaylistGridDiv;
   return (
     <Grid $inDrawer={inDrawer ? undefined : false}>
+      {!hasActiveFilters && allMusicPinned && allMusicItem}
       {!hasActiveFilters && likedSongsPinned && likedSongsItem}
       {pinnedPlaylists.map(renderFn)}
       {hasPinnedSection && <PinnedSectionLabel key="__pin-sep">Pinned</PinnedSectionLabel>}
+      {(hasActiveFilters || !allMusicPinned) && allMusicItem}
       {(hasActiveFilters || !likedSongsPinned) && likedSongsItem}
       {unpinnedPlaylists.map(renderFn)}
       {emptyState}

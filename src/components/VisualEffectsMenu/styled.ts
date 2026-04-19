@@ -224,35 +224,14 @@ export const ProviderName = styled.span`
   flex-shrink: 0;
 `;
 
-export const ProviderStatusBadge = styled.span<{ $status: 'connected' | 'expired' | 'disabled' }>`
+export const ProviderStatusBadge = styled.span<{ $status: 'connected' | 'disabled' }>`
   font-size: 0.6875rem;
   font-weight: ${({ theme }) => theme.fontWeight.medium};
   color: ${({ $status, theme }) =>
-    $status === 'connected'
-      ? theme.colors.success
-      : $status === 'expired'
-        ? '#f0a030'
-        : theme.colors.muted.foreground};
+    $status === 'connected' ? theme.colors.success : theme.colors.muted.foreground};
   flex: 1;
 `;
 
-export const ProviderConnectAction = styled.button`
-  background: none;
-  border: none;
-  padding: 0;
-  color: var(--accent-color);
-  font-size: 0.6875rem;
-  font-weight: ${({ theme }) => theme.fontWeight.semibold};
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  cursor: pointer;
-  flex-shrink: 0;
-  transition: opacity ${({ theme }) => theme.transitions.fast};
-
-  &:hover {
-    opacity: 0.8;
-  }
-`;
 
 export const CacheOptionsList = styled.ul`
   list-style: none;

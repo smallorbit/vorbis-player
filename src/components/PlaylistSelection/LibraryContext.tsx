@@ -71,6 +71,8 @@ export interface LibraryDataContextValue {
   isLikedSongsSyncing: boolean;
   isUnifiedLikedActive: boolean;
   unifiedLikedCount: number;
+  /** Track count for the Dropbox "All Music" aggregate row. 0 when Dropbox is disabled. */
+  allMusicCount: number;
   activeDescriptor: ProviderDescriptor | null;
 }
 
