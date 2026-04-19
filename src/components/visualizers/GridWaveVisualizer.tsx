@@ -130,10 +130,9 @@ export const GridWaveVisualizer: React.FC<GridWaveVisualizerProps> = ({
       const state = states[0];
       if (!state) return;
 
-      const spacing = width < 768 ? g.spacingMobile : g.spacing;
       const intensityScale = Math.max(0.3, intensityValue / 60);
       const amplitude = g.amplitudeBase * Math.min(width, height) * intensityScale;
-      const rows = Math.ceil(height / spacing) + 1;
+      const rows = state.rows;
       const centerX = width / 2;
 
       state.particles.forEach(particle => {
