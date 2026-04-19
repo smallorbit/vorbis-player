@@ -293,6 +293,7 @@ const AudioPlayerComponent = () => {
               onQueueLikedTracks={handleQueueLikedTracks}
               lastSession={lastSession}
               onResume={handleResume}
+              onOpenSettings={handleOpenSettings}
             />
           </ProfiledComponent>
           {qapToast && (
@@ -406,37 +407,35 @@ const AudioPlayerComponent = () => {
         {disconnectToast && !reconnectPrompt && (
           <Toast message={disconnectToast} onDismiss={dismissDisconnectToast} />
         )}
-        {needsSetup && (
-          <>
-            <Suspense fallback={null}>
-              <VisualEffectsMenu
-                isOpen={showVisualEffects}
-                onClose={handleCloseSettings}
-                onClearCache={handleClearCache}
-                profilerEnabled={false}
-                onProfilerToggle={() => {}}
-                visualizerDebugEnabled={false}
-                onVisualizerDebugToggle={() => {}}
-                qapEnabled={false}
-                onQapToggle={() => {}}
-              />
-            </Suspense>
-            {state.showLibrary && (
-              <Suspense fallback={null}>
-                <LibraryPage
-                  onPlaylistSelect={(id, name, provider) => {
-                    handlers.handleCloseLibrary();
-                    handlePlaylistSelect(id, name, provider);
-                  }}
-                  onPlayLikedTracks={handlePlayLikedTracks}
-                  onQueueLikedTracks={handleQueueLikedTracks}
-                  footer={lastSession && handleResume ? (
-                    <ResumeCard session={lastSession} onResume={handleResume} />
-                  ) : undefined}
-                />
-              </Suspense>
-            )}
-          </>
+        {!isMainPlayerActive && (
+          <Suspense fallback={null}>
+            <VisualEffectsMenu
+              isOpen={showVisualEffects}
+              onClose={handleCloseSettings}
+              onClearCache={handleClearCache}
+              profilerEnabled={false}
+              onProfilerToggle={() => {}}
+              visualizerDebugEnabled={false}
+              onVisualizerDebugToggle={() => {}}
+              qapEnabled={false}
+              onQapToggle={() => {}}
+            />
+          </Suspense>
+        )}
+        {needsSetup && state.showLibrary && (
+          <Suspense fallback={null}>
+            <LibraryPage
+              onPlaylistSelect={(id, name, provider) => {
+                handlers.handleCloseLibrary();
+                handlePlaylistSelect(id, name, provider);
+              }}
+              onPlayLikedTracks={handlePlayLikedTracks}
+              onQueueLikedTracks={handleQueueLikedTracks}
+              footer={lastSession && handleResume ? (
+                <ResumeCard session={lastSession} onResume={handleResume} />
+              ) : undefined}
+            />
+          </Suspense>
         )}
       </Container>
     </ProfilingProvider>

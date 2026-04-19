@@ -11,6 +11,7 @@ import { useProviderContext } from '@/contexts/ProviderContext';
 import { useQapEnabled } from '@/hooks/useQapEnabled';
 import QuickAccessPanel from './QuickAccessPanel';
 import ResumeCard from './QuickAccessPanel/ResumeCard';
+import SettingsGearButton from './SettingsGearButton';
 
 const LibraryPage = React.lazy(() => import('./PlaylistSelection'));
 
@@ -177,6 +178,7 @@ interface PlayerStateRendererProps {
   onQueueLikedTracks?: (tracks: MediaTrack[], collectionName?: string) => void;
   lastSession: SessionSnapshot | null;
   onResume: () => void;
+  onOpenSettings: () => void;
 }
 
 const PlayerStateRenderer: React.FC<PlayerStateRendererProps> = ({
@@ -190,6 +192,7 @@ const PlayerStateRenderer: React.FC<PlayerStateRendererProps> = ({
   onQueueLikedTracks,
   lastSession,
   onResume,
+  onOpenSettings,
 }) => {
   const { activeDescriptor } = useProviderContext();
   const providerName = activeDescriptor?.name ?? 'Music Service';
@@ -268,38 +271,44 @@ const PlayerStateRenderer: React.FC<PlayerStateRendererProps> = ({
   if (selectedPlaylistId === null || tracks.length === 0) {
     if (showLibrary) {
       return (
-        <Suspense fallback={
-          <LoadingCard standalone>
-            <LoadingContainer>
-              <MusicIcon />
-              <LoadingText>
-                <LoadingTitle>Loading Your Library</LoadingTitle>
-                <LoadingSubtext>Discovering your playlists and albums</LoadingSubtext>
-              </LoadingText>
-              <ProgressBar />
-            </LoadingContainer>
-          </LoadingCard>
-        }>
-          <LibraryPage
-            onPlaylistSelect={handlePlaylistSelectWrapped}
-            onPlayLikedTracks={onPlayLikedTracks}
-            onQueueLikedTracks={onQueueLikedTracks}
-            footer={lastSession && onResume ? (
-              <ResumeCard session={lastSession} onResume={onResume} />
-            ) : undefined}
-          />
-        </Suspense>
+        <>
+          <SettingsGearButton onClick={onOpenSettings} />
+          <Suspense fallback={
+            <LoadingCard standalone>
+              <LoadingContainer>
+                <MusicIcon />
+                <LoadingText>
+                  <LoadingTitle>Loading Your Library</LoadingTitle>
+                  <LoadingSubtext>Discovering your playlists and albums</LoadingSubtext>
+                </LoadingText>
+                <ProgressBar />
+              </LoadingContainer>
+            </LoadingCard>
+          }>
+            <LibraryPage
+              onPlaylistSelect={handlePlaylistSelectWrapped}
+              onPlayLikedTracks={onPlayLikedTracks}
+              onQueueLikedTracks={onQueueLikedTracks}
+              footer={lastSession && onResume ? (
+                <ResumeCard session={lastSession} onResume={onResume} />
+              ) : undefined}
+            />
+          </Suspense>
+        </>
       );
     }
 
     return (
-      <QuickAccessPanel
-        onPlaylistSelect={handlePlaylistSelectWrapped}
-        onAddToQueue={onAddToQueue}
-        onBrowseLibrary={handleBrowseLibrary}
-        lastSession={lastSession}
-        onResume={onResume}
-      />
+      <>
+        <SettingsGearButton onClick={onOpenSettings} />
+        <QuickAccessPanel
+          onPlaylistSelect={handlePlaylistSelectWrapped}
+          onAddToQueue={onAddToQueue}
+          onBrowseLibrary={handleBrowseLibrary}
+          lastSession={lastSession}
+          onResume={onResume}
+        />
+      </>
     );
   }
 
