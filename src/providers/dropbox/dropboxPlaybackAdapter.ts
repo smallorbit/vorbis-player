@@ -195,7 +195,9 @@ export class DropboxPlaybackAdapter implements PlaybackProvider {
     });
   }
 
-  prepareTrack(track: MediaTrack): void {
+  prepareTrack(track: MediaTrack, _options?: { positionMs?: number }): void {
+    // Prefetch the temporary link so playTrack doesn't pay the fetch cost when invoked.
+    // positionMs is applied during playTrack, not here — HTML5 Audio can't seek without a src.
     this.catalog.prefetchTemporaryLink(track.playbackRef.ref);
   }
 
