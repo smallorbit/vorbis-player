@@ -1,13 +1,19 @@
 import React from 'react';
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent, act } from '@testing-library/react';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import { ThemeProvider } from 'styled-components';
 import { theme } from '@/styles/theme';
 import PlayerStateRenderer from '../PlayerStateRenderer';
 import { useQapEnabled } from '@/hooks/useQapEnabled';
+import { useWelcomeSeen } from '@/hooks/useWelcomeSeen';
+import { STALE_SESSION_MS, type SessionSnapshot } from '@/services/sessionPersistence';
 
 vi.mock('@/hooks/useQapEnabled', () => ({
   useQapEnabled: vi.fn(),
+}));
+
+vi.mock('@/hooks/useWelcomeSeen', () => ({
+  useWelcomeSeen: vi.fn(),
 }));
 
 vi.mock('@/contexts/ProviderContext', () => ({
@@ -16,7 +22,11 @@ vi.mock('@/contexts/ProviderContext', () => ({
       id: 'spotify',
       name: 'Spotify',
       capabilities: { hasSaveTrack: true, hasExternalLink: true },
+      auth: { beginLogin: vi.fn() },
     },
+    enabledProviderIds: [],
+    connectedProviderIds: [],
+    getDescriptor: () => undefined,
   })),
 }));
 
@@ -28,7 +38,32 @@ vi.mock('../QuickAccessPanel', () => ({
   default: () => <div data-testid="quick-access-panel">QuickAccessPanel</div>,
 }));
 
+vi.mock('../WelcomeScreen', () => ({
+  default: ({ onBrowseLibrary }: { onBrowseLibrary: () => void }) => (
+    <div data-testid="welcome-screen">
+      <button type="button" onClick={onBrowseLibrary}>browse</button>
+    </div>
+  ),
+}));
+
 const mockUseQapEnabled = vi.mocked(useQapEnabled);
+const mockUseWelcomeSeen = vi.mocked(useWelcomeSeen);
+
+const freshSession: SessionSnapshot = {
+  collectionId: 'col-1',
+  collectionName: 'Test',
+  trackIndex: 0,
+  savedAt: Date.now(),
+  queueTracks: [],
+};
+
+const staleSession: SessionSnapshot = {
+  collectionId: 'col-1',
+  collectionName: 'Test',
+  trackIndex: 0,
+  savedAt: Date.now() - STALE_SESSION_MS - 1000,
+  queueTracks: [],
+};
 
 const defaultProps = {
   isLoading: false,
@@ -40,87 +75,252 @@ const defaultProps = {
   lastSession: null,
   onResume: vi.fn(),
   onOpenSettings: vi.fn(),
+  onHydrate: vi.fn(async () => {}),
 };
 
 const Wrapper = ({ children }: { children: React.ReactNode }) => (
   <ThemeProvider theme={theme}>{children}</ThemeProvider>
 );
 
-describe('PlayerStateRenderer idle routing based on qapEnabled', () => {
+describe('PlayerStateRenderer idle routing', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockUseQapEnabled.mockReturnValue([false, vi.fn()]);
+    mockUseWelcomeSeen.mockReturnValue([true, vi.fn()]);
   });
 
-  it('renders PlaylistSelection when qapEnabled is false (default)', async () => {
+  it('renders WelcomeScreen when welcomeSeen is false (supersedes session + qap)', () => {
+    // #given — brand-new user even if they somehow had a valid session + qap on
+    mockUseWelcomeSeen.mockReturnValue([false, vi.fn()]);
+    mockUseQapEnabled.mockReturnValue([true, vi.fn()]);
+
+    // #when
+    render(
+      <Wrapper>
+        <PlayerStateRenderer {...defaultProps} lastSession={freshSession} />
+      </Wrapper>,
+    );
+
+    // #then
+    expect(screen.getByTestId('welcome-screen')).toBeInTheDocument();
+    expect(screen.queryByTestId('quick-access-panel')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('playlist-selection')).not.toBeInTheDocument();
+  });
+
+  it('renders QuickAccessPanel when welcomeSeen + qapEnabled + valid session', () => {
     // #given
+    mockUseWelcomeSeen.mockReturnValue([true, vi.fn()]);
+    mockUseQapEnabled.mockReturnValue([true, vi.fn()]);
+
+    // #when
+    render(
+      <Wrapper>
+        <PlayerStateRenderer {...defaultProps} lastSession={freshSession} />
+      </Wrapper>,
+    );
+
+    // #then
+    expect(screen.getByTestId('quick-access-panel')).toBeInTheDocument();
+    expect(screen.queryByTestId('welcome-screen')).not.toBeInTheDocument();
+  });
+
+  it('renders QuickAccessPanel when welcomeSeen + qapEnabled + no session', () => {
+    // #given
+    mockUseWelcomeSeen.mockReturnValue([true, vi.fn()]);
+    mockUseQapEnabled.mockReturnValue([true, vi.fn()]);
+
+    // #when
+    render(
+      <Wrapper>
+        <PlayerStateRenderer {...defaultProps} lastSession={null} />
+      </Wrapper>,
+    );
+
+    // #then
+    expect(screen.getByTestId('quick-access-panel')).toBeInTheDocument();
+  });
+
+  it('renders QuickAccessPanel when welcomeSeen + qapEnabled + stale session', () => {
+    // #given
+    mockUseWelcomeSeen.mockReturnValue([true, vi.fn()]);
+    mockUseQapEnabled.mockReturnValue([true, vi.fn()]);
+
+    // #when
+    render(
+      <Wrapper>
+        <PlayerStateRenderer {...defaultProps} lastSession={staleSession} />
+      </Wrapper>,
+    );
+
+    // #then
+    expect(screen.getByTestId('quick-access-panel')).toBeInTheDocument();
+  });
+
+  it('calls onHydrate once on mount when welcomeSeen + !qapEnabled + valid session', async () => {
+    // #given
+    mockUseWelcomeSeen.mockReturnValue([true, vi.fn()]);
+    mockUseQapEnabled.mockReturnValue([false, vi.fn()]);
+    const onHydrate = vi.fn(async () => {});
+
+    // #when
+    const { rerender } = render(
+      <Wrapper>
+        <PlayerStateRenderer
+          {...defaultProps}
+          onHydrate={onHydrate}
+          lastSession={freshSession}
+        />
+      </Wrapper>,
+    );
+
+    // #then
+    await waitFor(() => {
+      expect(onHydrate).toHaveBeenCalledTimes(1);
+    });
+    expect(onHydrate).toHaveBeenCalledWith(freshSession);
+
+    // #when — re-render shouldn't fire hydrate again
+    rerender(
+      <Wrapper>
+        <PlayerStateRenderer
+          {...defaultProps}
+          onHydrate={onHydrate}
+          lastSession={freshSession}
+        />
+      </Wrapper>,
+    );
+
+    // #then
+    expect(onHydrate).toHaveBeenCalledTimes(1);
+  });
+
+  it('renders a restoring placeholder (not the library) in the hydrate branch', () => {
+    // #given
+    mockUseWelcomeSeen.mockReturnValue([true, vi.fn()]);
     mockUseQapEnabled.mockReturnValue([false, vi.fn()]);
 
     // #when
     render(
       <Wrapper>
-        <PlayerStateRenderer {...defaultProps} />
-      </Wrapper>
+        <PlayerStateRenderer {...defaultProps} lastSession={freshSession} />
+      </Wrapper>,
+    );
+
+    // #then
+    expect(screen.getByText(/Restoring Your Session/i)).toBeInTheDocument();
+    expect(screen.queryByTestId('playlist-selection')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('quick-access-panel')).not.toBeInTheDocument();
+  });
+
+  it('renders LibraryPage when welcomeSeen + !qapEnabled + no session', async () => {
+    // #given
+    mockUseWelcomeSeen.mockReturnValue([true, vi.fn()]);
+    mockUseQapEnabled.mockReturnValue([false, vi.fn()]);
+
+    // #when
+    render(
+      <Wrapper>
+        <PlayerStateRenderer {...defaultProps} lastSession={null} />
+      </Wrapper>,
     );
 
     // #then
     await waitFor(() => {
       expect(screen.getByTestId('playlist-selection')).toBeInTheDocument();
     });
-    expect(screen.queryByTestId('quick-access-panel')).not.toBeInTheDocument();
   });
 
-  it('does not render QuickAccessPanel when qapEnabled is false (default)', async () => {
+  it('renders LibraryPage when welcomeSeen + !qapEnabled + stale session', async () => {
     // #given
+    mockUseWelcomeSeen.mockReturnValue([true, vi.fn()]);
     mockUseQapEnabled.mockReturnValue([false, vi.fn()]);
 
     // #when
     render(
       <Wrapper>
-        <PlayerStateRenderer {...defaultProps} />
-      </Wrapper>
+        <PlayerStateRenderer {...defaultProps} lastSession={staleSession} />
+      </Wrapper>,
     );
 
     // #then
     await waitFor(() => {
-      expect(screen.queryByTestId('quick-access-panel')).not.toBeInTheDocument();
+      expect(screen.getByTestId('playlist-selection')).toBeInTheDocument();
     });
   });
 
-  it('renders QuickAccessPanel when qapEnabled is true', () => {
+  it('does not call onHydrate for a stale session', async () => {
     // #given
+    mockUseWelcomeSeen.mockReturnValue([true, vi.fn()]);
+    mockUseQapEnabled.mockReturnValue([false, vi.fn()]);
+    const onHydrate = vi.fn(async () => {});
+
+    // #when
+    render(
+      <Wrapper>
+        <PlayerStateRenderer
+          {...defaultProps}
+          onHydrate={onHydrate}
+          lastSession={staleSession}
+        />
+      </Wrapper>,
+    );
+
+    // #then
+    await waitFor(() => {
+      expect(screen.getByTestId('playlist-selection')).toBeInTheDocument();
+    });
+    expect(onHydrate).not.toHaveBeenCalled();
+  });
+
+  it('welcomeSeen=false supersedes a valid session and QAP setting', () => {
+    // #given
+    mockUseWelcomeSeen.mockReturnValue([false, vi.fn()]);
+    mockUseQapEnabled.mockReturnValue([false, vi.fn()]);
+    const onHydrate = vi.fn(async () => {});
+
+    // #when
+    render(
+      <Wrapper>
+        <PlayerStateRenderer
+          {...defaultProps}
+          onHydrate={onHydrate}
+          lastSession={freshSession}
+        />
+      </Wrapper>,
+    );
+
+    // #then
+    expect(screen.getByTestId('welcome-screen')).toBeInTheDocument();
+    expect(onHydrate).not.toHaveBeenCalled();
+  });
+
+  it('switches to LibraryPage when Browse Library is clicked from WelcomeScreen', async () => {
+    // #given
+    mockUseWelcomeSeen.mockReturnValue([false, vi.fn()]);
     mockUseQapEnabled.mockReturnValue([true, vi.fn()]);
 
     // #when
     render(
       <Wrapper>
         <PlayerStateRenderer {...defaultProps} />
-      </Wrapper>
+      </Wrapper>,
     );
+    act(() => {
+      screen.getByText('browse').click();
+    });
 
     // #then
-    expect(screen.getByTestId('quick-access-panel')).toBeInTheDocument();
-    expect(screen.queryByTestId('playlist-selection')).not.toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByTestId('playlist-selection')).toBeInTheDocument();
+    });
   });
 
-  it('does not render PlaylistSelection when qapEnabled is true', () => {
-    // #given
-    mockUseQapEnabled.mockReturnValue([true, vi.fn()]);
-
-    // #when
-    render(
-      <Wrapper>
-        <PlayerStateRenderer {...defaultProps} />
-      </Wrapper>
-    );
-
-    // #then
-    expect(screen.queryByTestId('playlist-selection')).not.toBeInTheDocument();
-  });
 });
 
 describe('PlayerStateRenderer settings gear on idle views', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockUseWelcomeSeen.mockReturnValue([true, vi.fn()]);
   });
 
   it('renders the settings gear on the idle Library landing', async () => {

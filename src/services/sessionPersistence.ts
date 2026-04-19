@@ -2,6 +2,9 @@ import type { MediaTrack, ProviderId } from '@/types/domain';
 
 const SESSION_KEY = 'vorbis-player-last-session';
 
+/** Sessions older than this are treated as absent for landing routing. */
+export const STALE_SESSION_MS = 30 * 24 * 60 * 60 * 1000;
+
 export interface SessionSnapshot {
   collectionId: string;
   collectionName: string;
@@ -56,6 +59,20 @@ export function loadSession(): SessionSnapshot | null {
   } catch {
     return null;
   }
+}
+
+/**
+ * Returns true when the session is absent, missing a savedAt timestamp, or
+ * older than STALE_SESSION_MS. Callers use this to decide whether to surface
+ * resume affordances on the landing view.
+ */
+export function isSessionStale(
+  session: SessionSnapshot | null | undefined,
+  now: number = Date.now(),
+): boolean {
+  if (!session) return true;
+  if (typeof session.savedAt !== 'number') return true;
+  return now - session.savedAt > STALE_SESSION_MS;
 }
 
 export function clearSession(): void {
