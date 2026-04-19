@@ -4,7 +4,7 @@ import { createPortal } from 'react-dom';
 import type { AlbumInfo, PlaylistInfo } from '../../services/spotify';
 import type { AddToQueueResult, MediaTrack, ProviderId } from '@/types/domain';
 import type { ProviderDescriptor } from '@/types/providers';
-import { LIKED_SONGS_ID, isAlbumId, toAlbumPlaylistId } from '@/constants/playlist';
+import { LIKED_SONGS_ID, isAlbumId, isAllMusicPlaylist, toAlbumPlaylistId } from '@/constants/playlist';
 import TrackInfoPopover from '../controls/TrackInfoPopover';
 import Toast from '../Toast';
 import { useItemPopover } from './useItemPopover';
@@ -79,17 +79,22 @@ export function useItemActions({
       onQueue: onAddToQueue ? () => onAddToQueue(playlist.id, playlist.name, playlist.provider) : undefined,
     });
 
-    options.push(...buildLikedOptions({
-      collectionId: playlist.id,
-      collectionName: playlist.name,
-      collectionProvider: playlist.provider,
-      descriptor,
-      likedLoading,
-      onPlayLiked: onPlayLikedTracks ? handlePlayLiked : undefined,
-      onQueueLiked: onQueueLikedTracks ? handleQueueLiked : undefined,
-    }));
+    const isAllMusic = isAllMusicPlaylist(playlist);
 
-    const canDelete = descriptor?.capabilities.hasDeleteCollection &&
+    if (!isAllMusic) {
+      options.push(...buildLikedOptions({
+        collectionId: playlist.id,
+        collectionName: playlist.name,
+        collectionProvider: playlist.provider,
+        descriptor,
+        likedLoading,
+        onPlayLiked: onPlayLikedTracks ? handlePlayLiked : undefined,
+        onQueueLiked: onQueueLikedTracks ? handleQueueLiked : undefined,
+      }));
+    }
+
+    const canDelete = !isAllMusic &&
+      descriptor?.capabilities.hasDeleteCollection &&
       descriptor.catalog.deleteCollection &&
       playlist.id !== LIKED_SONGS_ID &&
       !isAlbumId(playlist.id);
