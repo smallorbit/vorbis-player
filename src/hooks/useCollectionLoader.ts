@@ -2,7 +2,7 @@ import { useCallback } from 'react';
 import type { CollectionRef, MediaTrack, ProviderId } from '@/types/domain';
 import type { ProviderDescriptor } from '@/types/providers';
 import type { TrackOperations } from '@/types/trackOperations';
-import { LIKED_SONGS_ID, LIKED_SONGS_NAME, resolvePlaylistRef } from '@/constants/playlist';
+import { LIKED_SONGS_ID, LIKED_SONGS_NAME, isAllMusicRef, resolvePlaylistRef } from '@/constants/playlist';
 import { shuffleArray } from '@/utils/shuffleArray';
 import { providerRegistry } from '@/providers/registry';
 import { logQueue } from '@/lib/debugLog';
@@ -66,9 +66,10 @@ export function useCollectionLoader({
     return clearWithError(err instanceof Error ? err.message : fallbackMessage);
   }, [clearWithError]);
 
-  const applyTracks = useCallback((tracks: MediaTrack[]) => {
+  const applyTracks = useCallback((tracks: MediaTrack[], options?: { forceShuffle?: boolean }) => {
     setOriginalTracks(tracks);
-    if (shuffleEnabled) {
+    const shouldShuffle = shuffleEnabled || options?.forceShuffle === true;
+    if (shouldShuffle) {
       const indices = shuffleArray(tracks.map((_, i) => i));
       const shuffled = indices.map(i => tracks[i]);
       mediaTracksRef.current = shuffled;
@@ -171,7 +172,7 @@ export function useCollectionLoader({
 
       if (list.length === 0) return clearWithError('No tracks found in this collection.');
 
-      applyTracks(list);
+      applyTracks(list, { forceShuffle: isAllMusicRef(collectionRef) });
       drivingProviderRef.current = providerId;
       queueSnapshot(`${providerId} playlist loaded`, list, mediaTracksRef.current.length, 0);
       await playTrack(0);

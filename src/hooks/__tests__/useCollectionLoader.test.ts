@@ -601,6 +601,90 @@ describe('useCollectionLoader', () => {
     );
   });
 
+  it('forces shuffle when loading Dropbox All Music even when global shuffleEnabled is false', async () => {
+    // #given — All Music is addressed as dropbox folder with empty id; provide an ordered list we can detect re-ordering on
+    const tracks = Array.from({ length: 20 }, (_, i) => makeMediaTrack(String(i + 1)));
+    const mockCatalog = { listTracks: vi.fn().mockResolvedValue(tracks) };
+    const dropboxDescriptor = {
+      id: 'dropbox' as const,
+      catalog: mockCatalog,
+      playback: { pause: vi.fn() },
+    };
+    mockGetDescriptor.mockReturnValue(dropboxDescriptor);
+    mockActiveDescriptor = { id: 'dropbox', playback: { pause: vi.fn() } };
+
+    const { result } = renderHook(() =>
+      useCollectionLoader({
+        trackOps: { setError: mockSetError, setIsLoading: mockSetIsLoading, setSelectedPlaylistId: mockSetSelectedPlaylistId, setTracks: mockSetTracks, setOriginalTracks: mockSetOriginalTracks, setCurrentTrackIndex: mockSetCurrentTrackIndex, mediaTracksRef },
+        activeDescriptor: mockActiveDescriptor,
+        getDescriptor: mockGetDescriptor,
+        setActiveProviderId: mockSetActiveProviderId,
+        connectedProviderIds: ['dropbox'],
+        shuffleEnabled: false,
+        isUnifiedLikedActive: false,
+        drivingProviderRef,
+        playTrack: mockPlayTrack,
+        spotifyHandlePlaylistSelect: mockSpotifyHandlePlaylistSelect,
+        stopRadioBase: mockStopRadioBase,
+        record: mockRecord,
+        radioStateIsActive: false,
+      })
+    );
+
+    // #when — loadCollection with empty id (All Music ref)
+    await act(async () => {
+      await result.current.loadCollection('', 'dropbox');
+    });
+
+    // #then — originalTracks preserves order; tracks is a permutation that is not guaranteed to equal input order
+    expect(mockSetOriginalTracks).toHaveBeenCalledWith(tracks);
+    const emittedTracks = mockSetTracks.mock.calls[0][0] as MediaTrack[];
+    expect(emittedTracks).toHaveLength(tracks.length);
+    expect(emittedTracks.map(t => t.id).sort((a, b) => Number(a) - Number(b))).toEqual(tracks.map(t => t.id));
+    // With 20 items a Fisher-Yates shuffle reordering equalling the original is vanishingly unlikely
+    const identical = emittedTracks.every((t, i) => t.id === tracks[i].id);
+    expect(identical).toBe(false);
+  });
+
+  it('does not force-shuffle non-All-Music Dropbox folder collections when shuffleEnabled is false', async () => {
+    // #given — regression guard: a normal dropbox folder (non-empty id) must keep catalog order
+    const tracks = Array.from({ length: 20 }, (_, i) => makeMediaTrack(String(i + 1)));
+    const mockCatalog = { listTracks: vi.fn().mockResolvedValue(tracks) };
+    const dropboxDescriptor = {
+      id: 'dropbox' as const,
+      catalog: mockCatalog,
+      playback: { pause: vi.fn() },
+    };
+    mockGetDescriptor.mockReturnValue(dropboxDescriptor);
+    mockActiveDescriptor = { id: 'dropbox', playback: { pause: vi.fn() } };
+
+    const { result } = renderHook(() =>
+      useCollectionLoader({
+        trackOps: { setError: mockSetError, setIsLoading: mockSetIsLoading, setSelectedPlaylistId: mockSetSelectedPlaylistId, setTracks: mockSetTracks, setOriginalTracks: mockSetOriginalTracks, setCurrentTrackIndex: mockSetCurrentTrackIndex, mediaTracksRef },
+        activeDescriptor: mockActiveDescriptor,
+        getDescriptor: mockGetDescriptor,
+        setActiveProviderId: mockSetActiveProviderId,
+        connectedProviderIds: ['dropbox'],
+        shuffleEnabled: false,
+        isUnifiedLikedActive: false,
+        drivingProviderRef,
+        playTrack: mockPlayTrack,
+        spotifyHandlePlaylistSelect: mockSpotifyHandlePlaylistSelect,
+        stopRadioBase: mockStopRadioBase,
+        record: mockRecord,
+        radioStateIsActive: false,
+      })
+    );
+
+    // #when — a specific album/folder path, not All Music
+    await act(async () => {
+      await result.current.loadCollection('/Music/Artist/Album', 'dropbox');
+    });
+
+    // #then — tracks should be in input (catalog) order
+    expect(mockSetTracks).toHaveBeenCalledWith(tracks);
+  });
+
   it('does not call record when the unified liked load returns no tracks', async () => {
     // #given
     mockGetDescriptor.mockReturnValue({

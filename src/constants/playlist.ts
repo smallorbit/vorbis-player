@@ -1,3 +1,5 @@
+import type { CollectionRef } from '@/types/domain';
+
 /** Prefix used when encoding an album ID as a playlist selection ID */
 export const ALBUM_ID_PREFIX = 'album:';
 
@@ -16,6 +18,11 @@ export const RADIO_PLAYLIST_ID = 'radio';
  * even if the catalog representation of All Music changes.
  */
 export const ALL_MUSIC_PIN_ID = 'dropbox-all-music';
+
+/** Returns true when the ref points at the Dropbox "All Music" aggregate (folder with empty id). */
+export function isAllMusicRef(ref: CollectionRef): boolean {
+  return ref.provider === 'dropbox' && ref.kind === 'folder' && 'id' in ref && ref.id === '';
+}
 
 /** Playlist IDs that stay in catalog order and are not reordered by library sort (Liked Songs row). */
 export const LIBRARY_PLAYLIST_SORT_ANCHOR_IDS: ReadonlySet<string> = new Set([LIKED_SONGS_ID]);

@@ -150,6 +150,77 @@ describe('useQueueManagement', () => {
     expect(response).toEqual({ added: 3, collectionName: 'My Playlist' });
   });
 
+  it('handleAddToQueue shuffles Dropbox All Music tracks before appending', async () => {
+    // #given — existing queue + All Music ref ('' id, dropbox folder) returning a large ordered list
+    mediaTracksRef.current = [makeMediaTrack('a'), makeMediaTrack('b')];
+    const tracks = [makeTrack({ id: 'a' }), makeTrack({ id: 'b' })];
+    const incoming = Array.from({ length: 20 }, (_, i) => makeMediaTrack(`n${i + 1}`));
+    const mockCatalog = { listTracks: vi.fn().mockResolvedValue(incoming) };
+    const dropboxDescriptor = { id: 'dropbox' as const, catalog: mockCatalog, playback: { pause: vi.fn() } };
+
+    const { result } = renderHook(() =>
+      useQueueManagement({
+        tracks,
+        currentTrackIndex: 0,
+        shuffleEnabled: false,
+        trackOps: { setTracks: mockSetTracks, setOriginalTracks: mockSetOriginalTracks, setCurrentTrackIndex: mockSetCurrentTrackIndex, mediaTracksRef },
+        loadCollection: mockHandlePlaylistSelect,
+        handleBackToLibrary: mockHandleBackToLibrary,
+        activeDescriptor: dropboxDescriptor,
+        getDescriptor: mockGetDescriptor,
+      })
+    );
+
+    // #when — empty playlist id resolves to All Music (dropbox/folder/'')
+    await act(async () => {
+      await result.current.handleAddToQueue('');
+    });
+
+    // #then — setTracks updater yields a shuffled permutation of the incoming tracks appended to the existing queue
+    expect(mockSetTracks).toHaveBeenCalledWith(expect.any(Function));
+    const tracksUpdater = mockSetTracks.mock.calls[0][0] as (prev: MediaTrack[]) => MediaTrack[];
+    const appended = tracksUpdater([makeMediaTrack('a'), makeMediaTrack('b')]);
+    expect(appended).toHaveLength(22);
+    expect(appended[0].id).toBe('a');
+    expect(appended[1].id).toBe('b');
+    const appendedIds = appended.slice(2).map(t => t.id);
+    expect(appendedIds.slice().sort()).toEqual(incoming.map(t => t.id).slice().sort());
+    const orderPreserved = appendedIds.every((id, i) => id === incoming[i].id);
+    expect(orderPreserved).toBe(false);
+  });
+
+  it('handleAddToQueue preserves catalog order when appending a non-All-Music Dropbox folder', async () => {
+    // #given — regression guard for shuffle-by-default semantics
+    mediaTracksRef.current = [makeMediaTrack('a')];
+    const tracks = [makeTrack({ id: 'a' })];
+    const incoming = Array.from({ length: 20 }, (_, i) => makeMediaTrack(`n${i + 1}`));
+    const mockCatalog = { listTracks: vi.fn().mockResolvedValue(incoming) };
+    const dropboxDescriptor = { id: 'dropbox' as const, catalog: mockCatalog, playback: { pause: vi.fn() } };
+
+    const { result } = renderHook(() =>
+      useQueueManagement({
+        tracks,
+        currentTrackIndex: 0,
+        shuffleEnabled: false,
+        trackOps: { setTracks: mockSetTracks, setOriginalTracks: mockSetOriginalTracks, setCurrentTrackIndex: mockSetCurrentTrackIndex, mediaTracksRef },
+        loadCollection: mockHandlePlaylistSelect,
+        handleBackToLibrary: mockHandleBackToLibrary,
+        activeDescriptor: dropboxDescriptor,
+        getDescriptor: mockGetDescriptor,
+      })
+    );
+
+    // #when — non-empty folder id (not All Music)
+    await act(async () => {
+      await result.current.handleAddToQueue('/Music/Artist/Album');
+    });
+
+    // #then — appended portion preserves incoming order
+    const tracksUpdater = mockSetTracks.mock.calls[0][0] as (prev: MediaTrack[]) => MediaTrack[];
+    const appended = tracksUpdater([makeMediaTrack('a')]);
+    expect(appended.slice(1).map(t => t.id)).toEqual(incoming.map(t => t.id));
+  });
+
   it('handleAddToQueue appends tracks to an existing queue without resetting currentTrackIndex', async () => {
     // #given
     mediaTracksRef.current = [makeMediaTrack('1'), makeMediaTrack('2')];
