@@ -17,7 +17,7 @@ import {
 } from '@/constants/zenAnimation';
 import type { MediaTrack, ProviderId } from '@/types/domain';
 import type { VisualizerStyle } from '@/types/visualizer';
-import { FlipInner, ZenTrackInfo, ZenTrackName, ZenTrackArtist } from './styled';
+import { FlipInner, ZenTrackInfo, ZenTrackInfoInner, ZenTrackName, ZenTrackArtist } from './styled';
 
 const ZEN_TRACK_INFO_WILL_CHANGE_FALLBACK_MS =
   ZEN_TRACK_INFO_ENTER_OPACITY_DURATION + ZEN_TRACK_INFO_ENTER_OPACITY_DELAY + 100;
@@ -131,7 +131,7 @@ export const AlbumArtSection: React.FC<AlbumArtSectionProps> = React.memo(({
   useTransitionWillChange(
     zenTrackInfoRef,
     zenModeEnabled,
-    'opacity, max-height',
+    'opacity, grid-template-rows',
     ZEN_TRACK_INFO_WILL_CHANGE_FALLBACK_MS,
   );
 
@@ -369,17 +369,19 @@ export const AlbumArtSection: React.FC<AlbumArtSectionProps> = React.memo(({
         </div>
       </CardContent>
       <ZenTrackInfo $zenMode={zenModeEnabled} ref={zenTrackInfoRef}>
-        <ZenTrackName $isMobile={isMobile} $isTablet={isTablet}>
-          {currentTrack?.name}
-          {zenModeEnabled && connectedProviderIds.length > 1 && currentTrackProvider != null && (
-            <ZenProviderBadgeInline>
-              <ProviderBadge providerId={currentTrackProvider} iconOnly />
-            </ZenProviderBadgeInline>
+        <ZenTrackInfoInner>
+          <ZenTrackName $isMobile={isMobile} $isTablet={isTablet}>
+            {currentTrack?.name}
+            {zenModeEnabled && connectedProviderIds.length > 1 && currentTrackProvider != null && (
+              <ZenProviderBadgeInline>
+                <ProviderBadge providerId={currentTrackProvider} iconOnly />
+              </ZenProviderBadgeInline>
+            )}
+          </ZenTrackName>
+          {currentTrack?.artists && (
+            <ZenTrackArtist>{currentTrack.artists}</ZenTrackArtist>
           )}
-        </ZenTrackName>
-        {currentTrack?.artists && (
-          <ZenTrackArtist>{currentTrack.artists}</ZenTrackArtist>
-        )}
+        </ZenTrackInfoInner>
       </ZenTrackInfo>
     </>
   );
