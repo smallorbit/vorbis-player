@@ -2,6 +2,7 @@ import React, { useCallback, useRef, useEffect } from 'react';
 import { generateColorVariant } from '../../utils/visualizerUtils';
 import { useCanvasVisualizer } from '../../hooks/useCanvasVisualizer';
 import { useVisualizerDebugConfig } from '../../contexts/VisualizerDebugContext';
+import { calculateParticleCount } from '../../utils/particleCount';
 
 interface AlbumArtBounds {
   left: number;
@@ -74,13 +75,7 @@ export const TrailVisualizer: React.FC<TrailVisualizerProps> = ({
   });
 
   const getParticleCount = useCallback((width: number, height: number, intensityValue: number): number => {
-    const pixelCount = width * height;
-    const isMobile = width < 768;
-    const scale = Math.max(0.1, intensityValue / 60);
-    if (isMobile) {
-      return Math.round(Math.min(t.countBaseMobile, Math.floor(pixelCount / t.countPixelDivisorMobile)) * scale);
-    }
-    return Math.round(Math.min(t.countBaseDesktop, Math.floor(pixelCount / t.countPixelDivisor)) * scale);
+    return calculateParticleCount(width, height, intensityValue, t);
   }, [t]);
 
   const initializeParticles = useCallback((
