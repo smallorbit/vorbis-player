@@ -15,7 +15,6 @@ describe('VisualEffectsToggleContext', () => {
   beforeEach(() => {
     vi.mocked(window.localStorage.getItem).mockReturnValue(null);
     vi.mocked(window.localStorage.setItem).mockClear();
-    vi.mocked(window.localStorage.removeItem).mockClear();
   });
 
   describe('defaults', () => {
