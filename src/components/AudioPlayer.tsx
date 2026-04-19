@@ -25,11 +25,11 @@ import { useTrackListContext, useCurrentTrackContext } from '@/contexts/TrackCon
 import { useProviderContext } from '@/contexts/ProviderContext';
 import { toAlbumPlaylistId } from '@/constants/playlist';
 import { STORAGE_KEYS } from '@/constants/storage';
-import type { ClearCacheOptions } from '@/components/VisualEffectsMenu';
+import type { ClearCacheOptions } from '@/components/AppSettingsMenu';
 import { useSessionPersistence } from '@/hooks/useSessionPersistence';
 import QuickAccessPanel from './QuickAccessPanel';
 
-const VisualEffectsMenu = lazy(() => import('./VisualEffectsMenu/index'));
+const VisualEffectsMenu = lazy(() => import('./AppSettingsMenu/index'));
 const LibraryPage = lazy(() => import('./PlaylistSelection'));
 
 const Container = styled.div`

@@ -21,7 +21,7 @@ import { BottomBarActionsProvider, type BottomBarActionsValue } from '@/contexts
 import { clearCacheWithOptions } from '@/services/cache/libraryCache';
 import { clearAllPins } from '@/services/settings/pinnedItemsStorage';
 import { STORAGE_KEYS } from '@/constants/storage';
-import type { ClearCacheOptions } from '@/components/VisualEffectsMenu';
+import type { ClearCacheOptions } from '@/components/AppSettingsMenu';
 import { useQapEnabled } from '@/hooks/useQapEnabled';
 import { usePlayerSizingContext } from '@/contexts/PlayerSizingContext';
 import { useTransitionWillChange } from '@/hooks/useTransitionWillChange';
@@ -36,7 +36,7 @@ import { LoadingCard, ZenControlsWrapper, ZenControlsInner } from './styled';
 const ZEN_CONTROLS_WILL_CHANGE_FALLBACK_MS =
   ZEN_CONTROLS_OPACITY_EXIT_DURATION + ZEN_CONTROLS_OPACITY_EXIT_DELAY + 100;
 
-const VisualEffectsMenu = lazy(() => import('@/components/VisualEffectsMenu/index'));
+const VisualEffectsMenu = lazy(() => import('@/components/AppSettingsMenu/index'));
 const KeyboardShortcutsHelp = lazy(() => import('@/components/KeyboardShortcutsHelp'));
 
 function ControlsLoadingFallback(): React.ReactElement {
