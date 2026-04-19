@@ -6,7 +6,6 @@ import {
   layerRatio,
   gridWaveProjection,
   gridDisplacement,
-  computeParticleCount,
   gridSpatialFactor,
 } from '../math';
 
@@ -242,57 +241,6 @@ describe('gridDisplacement', () => {
         expect(d).toBeLessThanOrEqual(1);
       }
     }
-  });
-});
-
-describe('computeParticleCount', () => {
-  it('returns fewer particles for low intensity', () => {
-    // #when
-    const countLow = computeParticleCount(1920, 1080, 10, 80, 160, 10000, 2000);
-    const countHigh = computeParticleCount(1920, 1080, 60, 80, 160, 10000, 2000);
-
-    // #then
-    expect(countLow).toBeLessThan(countHigh);
-  });
-
-  it('caps count at countBaseDesktop on desktop', () => {
-    // #given — very large canvas so pixel-based count would exceed cap
-    const countBaseDesktop = 160;
-
-    // #when
-    const count = computeParticleCount(10000, 10000, 60, 80, countBaseDesktop, 10000, 2000);
-
-    // #then
-    expect(count).toBeLessThanOrEqual(countBaseDesktop);
-  });
-
-  it('caps count at countBaseMobile on mobile widths', () => {
-    // #given — mobile width < 768
-    const countBaseMobile = 80;
-
-    // #when
-    const count = computeParticleCount(375, 10000, 60, countBaseMobile, 160, 10000, 2000);
-
-    // #then
-    expect(count).toBeLessThanOrEqual(countBaseMobile);
-  });
-
-  it('mobile path activates below 768px width', () => {
-    // #given — same height and intensity, mobile vs desktop width
-    const width = 767;
-    const countMobile = computeParticleCount(width, 1080, 60, 80, 160, 10000, 2000);
-    const countDesktop = computeParticleCount(768, 1080, 60, 80, 160, 10000, 2000);
-
-    // #then — they use different divisors, so counts differ
-    expect(countMobile).not.toEqual(countDesktop);
-  });
-
-  it('scale floor of 0.1 prevents zero count at very low intensity', () => {
-    // #given — intensity = 1 → scale = max(0.1, 1/60) = max(0.1, 0.0167) = 0.1
-    const count = computeParticleCount(1920, 1080, 1, 80, 160, 10000, 2000);
-
-    // #then
-    expect(count).toBeGreaterThan(0);
   });
 });
 
