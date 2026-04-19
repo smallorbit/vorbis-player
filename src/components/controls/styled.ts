@@ -92,7 +92,7 @@ export const PlayerTrackName = styled.div<{ $isMobile: boolean; $isTablet: boole
     border: none;
     padding: 0;
     margin: 0;
-    font: inherit;
+    font-family: inherit;
     text-align: inherit;
     cursor: pointer;
   }
