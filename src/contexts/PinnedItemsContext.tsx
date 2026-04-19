@@ -1,6 +1,14 @@
 import React, { createContext, useContext, useCallback, useMemo, useState, useEffect } from 'react';
 import { getPins, setPins, migratePinsFromLocalStorage, MAX_PINS, UNIFIED_PROVIDER, PINS_CHANGED_EVENT } from '@/services/settings/pinnedItemsStorage';
 import { getPreferencesSync } from '@/providers/dropbox/dropboxPreferencesSync';
+import { LIKED_SONGS_ID, ALL_MUSIC_PIN_ID } from '@/constants/playlist';
+
+/** IDs that are always rendered in the grid and should not count against MAX_PINS. */
+const SPECIAL_PIN_IDS: ReadonlySet<string> = new Set([LIKED_SONGS_ID, ALL_MUSIC_PIN_ID]);
+
+function countUserPins(ids: string[]): number {
+  return ids.filter(id => !SPECIAL_PIN_IDS.has(id)).length;
+}
 
 interface PinnedItemsContextValue {
   pinnedPlaylistIds: string[];
@@ -62,7 +70,7 @@ export function PinnedItemsProvider({ children }: { children: React.ReactNode })
 
   const togglePinPlaylist = useCallback((id: string) => {
     setPinnedPlaylistIds(prev => {
-      const next = prev.includes(id) ? prev.filter(pid => pid !== id) : prev.length + pinnedAlbumIds.length >= MAX_PINS ? prev : [...prev, id];
+      const next = prev.includes(id) ? prev.filter(pid => pid !== id) : countUserPins(prev) + countUserPins(pinnedAlbumIds) >= MAX_PINS && !SPECIAL_PIN_IDS.has(id) ? prev : [...prev, id];
       setPins(UNIFIED_PROVIDER, 'playlists', next).catch(err => console.warn('[PinnedItemsContext] pin write failed:', err));
       getPreferencesSync()?.schedulePush();
       return next;
@@ -71,16 +79,16 @@ export function PinnedItemsProvider({ children }: { children: React.ReactNode })
 
   const togglePinAlbum = useCallback((id: string) => {
     setPinnedAlbumIds(prev => {
-      const next = prev.includes(id) ? prev.filter(pid => pid !== id) : pinnedPlaylistIds.length + prev.length >= MAX_PINS ? prev : [...prev, id];
+      const next = prev.includes(id) ? prev.filter(pid => pid !== id) : countUserPins(pinnedPlaylistIds) + countUserPins(prev) >= MAX_PINS && !SPECIAL_PIN_IDS.has(id) ? prev : [...prev, id];
       setPins(UNIFIED_PROVIDER, 'albums', next).catch(err => console.warn('[PinnedItemsContext] pin write failed:', err));
       getPreferencesSync()?.schedulePush();
       return next;
     });
   }, [pinnedPlaylistIds]);
 
-  const totalPinned = pinnedPlaylistIds.length + pinnedAlbumIds.length;
-  const canPinMorePlaylists = totalPinned < MAX_PINS;
-  const canPinMoreAlbums = totalPinned < MAX_PINS;
+  const totalUserPinned = countUserPins(pinnedPlaylistIds) + countUserPins(pinnedAlbumIds);
+  const canPinMorePlaylists = totalUserPinned < MAX_PINS;
+  const canPinMoreAlbums = totalUserPinned < MAX_PINS;
 
   const value = useMemo<PinnedItemsContextValue>(() => ({
     pinnedPlaylistIds,
