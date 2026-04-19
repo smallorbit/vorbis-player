@@ -1,10 +1,16 @@
-import React, { useCallback, useRef, useEffect } from 'react';
+import React, { useCallback, useRef, useEffect, useLayoutEffect } from 'react';
 import { useQapEnabled } from '@/hooks/useQapEnabled';
 import { usePlayerSizingContext } from '@/contexts/PlayerSizingContext';
 import { useCurrentTrackContext } from '@/contexts/TrackContext';
 import { useVisualEffectsContext } from '@/contexts/VisualEffectsContext';
 import { useLikeTrack } from '@/hooks/useLikeTrack';
+import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { STORAGE_KEYS } from '@/constants/storage';
+import {
+  ZEN_ART_DURATION,
+  ZEN_ART_EASING,
+  ZEN_ART_ENTER_DELAY,
+} from '@/constants/zenAnimation';
 import type { AddToQueueResult, MediaTrack, ProviderId } from '@/types/domain';
 import type { RadioState, RadioProgress } from '@/types/radio';
 import type { SessionSnapshot } from '@/services/sessionPersistence';
@@ -79,12 +85,15 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({
   const { zenModeEnabled, setZenModeEnabled, setShowVisualEffects } = useVisualEffectsContext();
   const { dimensions, useFluidSizing, padding, transitionDuration, transitionEasing, isMobile, isTablet, hasPointerInput, isTouchDevice } = usePlayerSizingContext();
   const { isLiked, isLikePending, handleLikeToggle, canSaveTrack } = useLikeTrack(currentTrack?.id, currentTrack?.provider);
+  const reducedMotion = useReducedMotion();
 
   const [qapEnabled] = useQapEnabled();
 
   const controlsRef = useRef<HTMLDivElement>(null);
   const stableControlsHeightRef = useRef<number>(220);
   const flipToggleRef = useRef<(() => void) | null>(null);
+  const playerStackRef = useRef<HTMLDivElement>(null);
+  const lastStackWidthRef = useRef<number | null>(null);
 
   useEffect(() => {
     const el = controlsRef.current;
@@ -99,6 +108,74 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({
     const observer = new ResizeObserver(update);
     observer.observe(el);
     update();
+    return () => observer.disconnect();
+  }, []);
+
+  const playerStackWillChangeCleanupRef = useRef<(() => void) | null>(null);
+
+  useLayoutEffect(() => {
+    const el = playerStackRef.current;
+    if (!el) return;
+
+    playerStackWillChangeCleanupRef.current?.();
+
+    const prevWidth = lastStackWidthRef.current;
+    const nextWidth = el.offsetWidth;
+    lastStackWidthRef.current = nextWidth;
+
+    const resetTransform = () => {
+      el.style.transition = 'none';
+      el.style.transform = '';
+    };
+
+    if (prevWidth === null || prevWidth <= 0 || nextWidth <= 0 || reducedMotion) {
+      resetTransform();
+      return;
+    }
+
+    const ratio = prevWidth / nextWidth;
+    if (Math.abs(ratio - 1) < 0.001) {
+      resetTransform();
+      return;
+    }
+
+    const enterDelay = zenModeEnabled ? ZEN_ART_ENTER_DELAY : 0;
+    el.style.transition = 'none';
+    el.style.transform = `scale(${ratio})`;
+    void el.offsetWidth;
+
+    el.style.willChange = 'transform';
+    let timeoutId: number | null = null;
+    const clearWillChange = () => {
+      if (timeoutId !== null) {
+        window.clearTimeout(timeoutId);
+        timeoutId = null;
+      }
+      el.removeEventListener('transitionend', onTransitionEnd);
+      el.style.willChange = '';
+      playerStackWillChangeCleanupRef.current = null;
+    };
+    const onTransitionEnd = (event: TransitionEvent) => {
+      if (event.target !== el || event.propertyName !== 'transform') return;
+      clearWillChange();
+    };
+    el.addEventListener('transitionend', onTransitionEnd);
+    timeoutId = window.setTimeout(clearWillChange, ZEN_ART_DURATION + enterDelay + 100);
+    playerStackWillChangeCleanupRef.current = clearWillChange;
+
+    el.style.transition = `transform ${ZEN_ART_DURATION}ms ${ZEN_ART_EASING} ${enterDelay}ms`;
+    el.style.transform = 'scale(1)';
+
+    return clearWillChange;
+  }, [zenModeEnabled, reducedMotion]);
+
+  useEffect(() => {
+    const el = playerStackRef.current;
+    if (!el) return;
+    const observer = new ResizeObserver(() => {
+      lastStackWidthRef.current = el.offsetWidth;
+    });
+    observer.observe(el);
     return () => observer.disconnect();
   }, []);
 
@@ -183,7 +260,7 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({
       onClick={handleZenExitClick}
     >
       <PlayerContainer>
-        <PlayerStack $zenMode={zenModeEnabled}>
+        <PlayerStack $zenMode={zenModeEnabled} ref={playerStackRef}>
           <AlbumArtSection
             currentTrack={currentTrack}
             currentTrackProvider={currentTrackProvider}

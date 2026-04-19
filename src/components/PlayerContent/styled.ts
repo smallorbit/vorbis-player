@@ -74,11 +74,12 @@ export const PlayerStack = styled.div.withConfig({
     : `min(calc(100vw - 48px), calc(100dvh - var(--player-controls-height, 220px) - ${120 + BOTTOM_BAR_HEIGHT}px))`
   };
   margin: 0 auto;
-  /* Entering zen: art grows after controls fade out (300ms delay). Exiting zen: art shrinks immediately. */
-  transition: ${({ $zenMode }) => $zenMode
-    ? `max-width ${ZEN_ART_DURATION}ms ${ZEN_ART_EASING} ${ZEN_ART_ENTER_DELAY}ms`
-    : `max-width ${ZEN_ART_DURATION}ms ${ZEN_ART_EASING}`
-  };
+  /*
+   * Size is switched instantly via max-width (no transition). A FLIP transform
+   * in PlayerContent/index.tsx produces the visual resize on the compositor so
+   * no layout-triggering property animates per frame.
+   */
+  transform-origin: top center;
 
   @media (max-width: ${({ theme }) => theme.breakpoints.lg}) {
     ${({ $zenMode }) => $zenMode && `
@@ -118,20 +119,22 @@ export const ZenControlsInner = styled.div`
 export const ZenTrackInfo = styled.div.withConfig({
   shouldForwardProp: (prop) => !['$zenMode'].includes(prop),
 })<{ $zenMode: boolean }>`
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+  display: grid;
+  grid-template-rows: ${({ $zenMode }) => $zenMode ? '1fr' : '0fr'};
   text-align: center;
   pointer-events: none;
   margin-top: ${({ theme }) => theme.spacing.sm};
   padding: 0 ${({ theme }) => theme.spacing.md};
-  overflow: hidden;
   opacity: ${({ $zenMode }) => $zenMode ? 1 : 0};
-  max-height: ${({ $zenMode }) => $zenMode ? '5rem' : '0'};
   transition: ${({ $zenMode }) => $zenMode
-    ? `opacity ${ZEN_TRACK_INFO_ENTER_OPACITY_DURATION}ms ease ${ZEN_TRACK_INFO_ENTER_OPACITY_DELAY}ms, max-height ${ZEN_TRACK_INFO_ENTER_HEIGHT_DURATION}ms ease ${ZEN_TRACK_INFO_ENTER_HEIGHT_DELAY}ms`
-    : `opacity ${ZEN_TRACK_INFO_EXIT_DURATION}ms ease, max-height ${ZEN_TRACK_INFO_EXIT_DURATION}ms ease`
+    ? `opacity ${ZEN_TRACK_INFO_ENTER_OPACITY_DURATION}ms ease ${ZEN_TRACK_INFO_ENTER_OPACITY_DELAY}ms, grid-template-rows ${ZEN_TRACK_INFO_ENTER_HEIGHT_DURATION}ms ease ${ZEN_TRACK_INFO_ENTER_HEIGHT_DELAY}ms`
+    : `opacity ${ZEN_TRACK_INFO_EXIT_DURATION}ms ease, grid-template-rows ${ZEN_TRACK_INFO_EXIT_DURATION}ms ease`
   };
+`;
+
+export const ZenTrackInfoInner = styled.div`
+  min-height: 0;
+  overflow: hidden;
 `;
 
 export const ZenTrackName = styled.div.withConfig({
