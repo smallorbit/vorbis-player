@@ -4,7 +4,7 @@ import { vi, describe, it, expect, beforeEach } from 'vitest';
 import { usePlayerLogic } from '../../hooks/usePlayerLogic';
 import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts';
 import { TrackProvider } from '../../contexts/TrackContext';
-import { VisualEffectsProvider } from '../../contexts/VisualEffectsContext';
+import { VisualEffectsProvider } from '../../contexts/visualEffects';
 import { ColorProvider } from '../../contexts/ColorContext';
 import { ProviderProvider } from '../../contexts/ProviderContext';
 

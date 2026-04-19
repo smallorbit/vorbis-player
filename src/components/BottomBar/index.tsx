@@ -7,7 +7,7 @@ import { usePlayerSizingContext } from '@/contexts/PlayerSizingContext';
 import { useQapEnabled } from '@/hooks/useQapEnabled';
 import { useVolume } from '@/hooks/useVolume';
 import { useTrackListContext, useCurrentTrackContext } from '@/contexts/TrackContext';
-import { useVisualEffectsContext } from '@/contexts/VisualEffectsContext';
+import { useZenMode } from '@/contexts/visualEffects';
 import { useBottomBarActions } from '@/contexts/BottomBarActionsContext';
 import {
   VisualEffectsIcon,
@@ -27,7 +27,7 @@ const BottomBar = React.memo(function BottomBar() {
   const { currentTrack } = useCurrentTrackContext();
   const { isMuted, volume, handleMuteToggle, setVolumeLevel } = useVolume(currentTrack?.provider);
   const { shuffleEnabled, handleShuffleToggle } = useTrackListContext();
-  const { zenModeEnabled } = useVisualEffectsContext();
+  const { zenModeEnabled } = useZenMode();
   const {
     hidden,
     showSettings,

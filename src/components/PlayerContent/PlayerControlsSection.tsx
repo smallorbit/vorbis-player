@@ -6,7 +6,11 @@ import BottomBar from '@/components/BottomBar';
 import { ProfiledComponent } from '@/components/ProfiledComponent';
 import { useVisualEffectsState } from '@/hooks/useVisualEffectsState';
 import { useColorContext } from '@/contexts/ColorContext';
-import { useVisualEffectsContext } from '@/contexts/VisualEffectsContext';
+import {
+  useTranslucence,
+  useVisualEffectsToggle,
+  useVisualizer,
+} from '@/contexts/visualEffects';
 import { useProfilingContext } from '@/contexts/ProfilingContext';
 import type { VisualizerStyle } from '@/types/visualizer';
 import { useVisualizerDebug } from '@/contexts/VisualizerDebugContext';
@@ -137,12 +141,11 @@ export const PlayerControlsSection: React.FC<PlayerControlsSectionProps> = React
   const {
     visualEffectsEnabled,
     setVisualEffectsEnabled,
-    backgroundVisualizerStyle,
-    setBackgroundVisualizerStyle,
-    setTranslucenceEnabled,
     showVisualEffects,
     setShowVisualEffects,
-  } = useVisualEffectsContext();
+  } = useVisualEffectsToggle();
+  const { backgroundVisualizerStyle, setBackgroundVisualizerStyle } = useVisualizer();
+  const { setTranslucenceEnabled } = useTranslucence();
 
   const { enabled: profilerEnabled, toggle: profilerToggle } = useProfilingContext();
   const vizDebugCtx = useVisualizerDebug();

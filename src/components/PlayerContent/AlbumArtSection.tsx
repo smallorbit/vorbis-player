@@ -6,7 +6,11 @@ import AlbumArtQuickSwapBack from '@/components/AlbumArtQuickSwapBack';
 import { ProfiledComponent } from '@/components/ProfiledComponent';
 import { ProviderBadge } from '@/components/ProviderBadge';
 import { useColorContext } from '@/contexts/ColorContext';
-import { useVisualEffectsContext } from '@/contexts/VisualEffectsContext';
+import {
+  useTranslucence,
+  useVisualEffectsToggle,
+  useVisualizer,
+} from '@/contexts/visualEffects';
 import { useProviderContext } from '@/contexts/ProviderContext';
 import { useVisualEffectsState } from '@/hooks/useVisualEffectsState';
 import { useZenTouchGestures } from '@/hooks/useZenTouchGestures';
@@ -100,10 +104,9 @@ export const AlbumArtSection: React.FC<AlbumArtSectionProps> = React.memo(({
     handleRemoveCustomAccentColor,
   } = useColorContext();
 
+  const { visualEffectsEnabled, setVisualEffectsEnabled } = useVisualEffectsToggle();
+  const { translucenceEnabled, translucenceOpacity, setTranslucenceEnabled } = useTranslucence();
   const {
-    visualEffectsEnabled,
-    translucenceEnabled,
-    translucenceOpacity,
     backgroundVisualizerEnabled,
     setBackgroundVisualizerEnabled,
     backgroundVisualizerStyle,
@@ -112,9 +115,7 @@ export const AlbumArtSection: React.FC<AlbumArtSectionProps> = React.memo(({
     setBackgroundVisualizerIntensity,
     backgroundVisualizerSpeed,
     setBackgroundVisualizerSpeed,
-    setTranslucenceEnabled,
-    setVisualEffectsEnabled,
-  } = useVisualEffectsContext();
+  } = useVisualizer();
 
   const {
     effectiveGlow,
