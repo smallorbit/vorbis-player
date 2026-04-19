@@ -27,7 +27,7 @@ import { PinIcon, PlaylistImage, GridCardImageComponent } from './utils';
 import { useLibraryBrowsingContext, useLibraryPins, useLibraryActions, useLibraryData } from './LibraryContext';
 
 export const AlbumGrid: React.FC = React.memo(function AlbumGrid() {
-  const { searchQuery, artistFilter } = useLibraryBrowsingContext();
+  const { searchQuery } = useLibraryBrowsingContext();
   const { pinnedAlbums, unpinnedAlbums, isAlbumPinned, canPinMoreAlbums, onPinAlbumClick } = useLibraryPins();
   const { onAlbumContextMenu, onArtistClick } = useLibraryActions();
   const { inDrawer, isInitialLoadComplete, showProviderBadges } = useLibraryData();
@@ -112,7 +112,7 @@ export const AlbumGrid: React.FC = React.memo(function AlbumGrid() {
 
   const emptyState = pinnedAlbums.length === 0 && unpinnedAlbums.length === 0 && isInitialLoadComplete && (
     <EmptyState $fullWidth={inDrawer}>
-      {searchQuery || artistFilter
+      {searchQuery
         ? 'No albums match your filters.'
         : 'No albums found. Save some albums in Spotify to see them here!'}
     </EmptyState>

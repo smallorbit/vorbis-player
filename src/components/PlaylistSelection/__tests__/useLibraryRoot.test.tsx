@@ -400,6 +400,70 @@ describe('useLibraryRoot behavioral coverage', () => {
   });
 });
 
+describe('useLibraryRoot artist-click → search-clear flow', () => {
+  const fakeMouseEvent = { stopPropagation: vi.fn() } as unknown as React.MouseEvent;
+
+  function setupArtistClickFixture() {
+    setLibrarySync(
+      [],
+      [
+        makeAlbumInfo({ id: 'a-1', name: 'Kind of Blue', artists: 'Miles Davis' }),
+        makeAlbumInfo({ id: 'a-2', name: 'Bitches Brew', artists: 'Miles Davis' }),
+        makeAlbumInfo({ id: 'a-3', name: 'Nevermind', artists: 'Nirvana' }),
+      ],
+    );
+    return renderLibraryRoot();
+  }
+
+  beforeEach(() => {
+    window.localStorage.clear();
+    mockIsMobile.current = false;
+    vi.clearAllMocks();
+    setupDefaultMocks();
+  });
+
+  it('clicking an artist populates searchQuery with the artist name', () => {
+    const { result } = setupArtistClickFixture();
+
+    // #when
+    act(() => {
+      result.current.actionsValue.onArtistClick('Miles Davis', fakeMouseEvent);
+    });
+
+    // #then
+    expect(result.current.browsingValue.searchQuery).toBe('Miles Davis');
+  });
+
+  it('album list filters to only the clicked artist after artist click', () => {
+    const { result } = setupArtistClickFixture();
+
+    // #when
+    act(() => {
+      result.current.actionsValue.onArtistClick('Miles Davis', fakeMouseEvent);
+    });
+
+    // #then
+    expect(albumNames(result).sort()).toEqual(['Bitches Brew', 'Kind of Blue']);
+  });
+
+  it('clearing searchQuery restores the unfiltered album list', () => {
+    const { result } = setupArtistClickFixture();
+
+    // #given — artist filter applied
+    act(() => {
+      result.current.actionsValue.onArtistClick('Miles Davis', fakeMouseEvent);
+    });
+
+    // #when
+    act(() => {
+      result.current.browsingValue.setSearchQuery('');
+    });
+
+    // #then
+    expect(albumNames(result).sort()).toEqual(['Bitches Brew', 'Kind of Blue', 'Nevermind']);
+  });
+});
+
 describe('useLibraryRoot grid behavior', () => {
   beforeEach(() => {
     window.localStorage.clear();

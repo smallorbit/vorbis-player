@@ -315,14 +315,13 @@ export function filterAndSortPlaylists(
 }
 
 /**
- * Filter albums by search, decade, artist, and optional genre selection (no sorting).
+ * Filter albums by search, decade, and optional genre selection (no sorting).
  * When selectedGenres is non-empty, only albums whose genres overlap are shown.
  */
 export function filterAlbumsOnly(
   albums: AlbumInfo[],
   searchQuery: string,
   yearFilter: YearFilterOption = 'all',
-  artistFilter: string = '',
   selectedGenres: string[] = []
 ): AlbumInfo[] {
   let result = albums.filter(
@@ -334,11 +333,6 @@ export function filterAlbumsOnly(
       const year = extractYear(a.release_date);
       return matchesYearFilter(year, yearFilter);
     });
-  }
-
-  if (artistFilter) {
-    const normalizedArtistFilter = normalizeText(artistFilter);
-    result = result.filter(a => normalizeText(a.artists).includes(normalizedArtistFilter));
   }
 
   return result;
@@ -408,17 +402,16 @@ export function sortAlbumSubgroup(
 }
 
 /**
- * Filter and sort albums based on search query, sort option, year filter, artist filter, and genre filter.
+ * Filter and sort albums based on search query, sort option, year filter, and genre filter.
  */
 export function filterAndSortAlbums(
   albums: AlbumInfo[],
   searchQuery: string,
   sortOption: AlbumSortOption,
   yearFilter: YearFilterOption = 'all',
-  artistFilter: string = '',
   selectedGenres: string[] = []
 ): AlbumInfo[] {
-  const filtered = filterAlbumsOnly(albums, searchQuery, yearFilter, artistFilter, selectedGenres);
+  const filtered = filterAlbumsOnly(albums, searchQuery, yearFilter, selectedGenres);
   return sortAlbumSubgroup(filtered, sortOption);
 }
 

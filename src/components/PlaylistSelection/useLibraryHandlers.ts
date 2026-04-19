@@ -17,7 +17,7 @@ interface UseLibraryHandlersParams {
   activeDescriptor: ProviderDescriptor | null | undefined;
   togglePinPlaylist: (id: string) => void;
   togglePinAlbum: (id: string) => void;
-  setArtistFilter: (artistName: string) => void;
+  setSearchQuery: (query: string) => void;
 }
 
 export interface LibraryHandlers {
@@ -36,7 +36,7 @@ export function useLibraryHandlers({
   activeDescriptor,
   togglePinPlaylist,
   togglePinAlbum,
-  setArtistFilter,
+  setSearchQuery,
 }: UseLibraryHandlersParams): LibraryHandlers {
   function handlePlaylistClick(playlist: PlaylistInfo): void {
     logQueue('selected playlist: %s (%s)', playlist.name, playlist.id);
@@ -86,7 +86,7 @@ export function useLibraryHandlers({
 
   function handleArtistClick(artistName: string, event: React.MouseEvent): void {
     event.stopPropagation();
-    setArtistFilter(artistName);
+    setSearchQuery(artistName);
   }
 
   return {
