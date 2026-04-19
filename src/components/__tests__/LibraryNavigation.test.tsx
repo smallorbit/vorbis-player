@@ -66,24 +66,36 @@ vi.mock('@/contexts/PlayerSizingContext', () => ({
 // -------------------------------------------------------------------------- //
 
 import BottomBar from '../BottomBar';
+import {
+  BottomBarActionsProvider,
+  type BottomBarActionsValue,
+} from '@/contexts/BottomBarActionsContext';
 
-function renderBottomBar(overrides: Partial<React.ComponentProps<typeof BottomBar>> = {}) {
-  const defaults: React.ComponentProps<typeof BottomBar> = {
-    isMuted: false,
-    volume: 50,
-    onShowVisualEffects: vi.fn(),
-    onShowQueue: vi.fn(),
-    onBackToLibrary: vi.fn(),
+function makeActions(overrides?: Partial<BottomBarActionsValue>): BottomBarActionsValue {
+  return {
+    hidden: false,
+    showSettings: vi.fn(),
+    showQueue: vi.fn(),
+    openLibrary: vi.fn(),
+    toggleZenMode: vi.fn(),
+    startRadio: vi.fn(),
+    openQuickAccessPanel: vi.fn(),
+    radioGenerating: false,
+    ...overrides,
   };
-  const props = { ...defaults, ...overrides };
+}
+
+function renderBottomBar(actions: BottomBarActionsValue = makeActions()) {
   render(
     <ThemeProvider theme={theme}>
       <TestWrapper>
-        <BottomBar {...props} />
+        <BottomBarActionsProvider value={actions}>
+          <BottomBar />
+        </BottomBarActionsProvider>
       </TestWrapper>
     </ThemeProvider>
   );
-  return props;
+  return actions;
 }
 
 // ---------------------------------------------------------------------------
@@ -91,25 +103,24 @@ function renderBottomBar(overrides: Partial<React.ComponentProps<typeof BottomBa
 // ---------------------------------------------------------------------------
 
 describe('Library open/close via BottomBar', () => {
-  it('BottomBar onBackToLibrary callback is called when the "Back to Library" button is clicked', () => {
+  it('BottomBar openLibrary action is called when the "Back to Library" button is clicked', () => {
     // #given
-    const onBackToLibrary = vi.fn();
-
-    renderBottomBar({ onBackToLibrary });
+    const openLibrary = vi.fn();
+    renderBottomBar(makeActions({ openLibrary }));
 
     // #when
     fireEvent.click(screen.getByTitle('Back to Library'));
 
     // #then
-    expect(onBackToLibrary).toHaveBeenCalledOnce();
+    expect(openLibrary).toHaveBeenCalledOnce();
   });
 
-  it('does not render "Back to Library" button when onBackToLibrary is not provided', () => {
+  it('renders the "Back to Library" button as a permanent control', () => {
     // #given / #when
-    renderBottomBar({ onBackToLibrary: undefined });
+    renderBottomBar();
 
-    // #then
-    expect(screen.queryByTitle('Back to Library')).toBeNull();
+    // #then — context always supplies an openLibrary action, so the button is unconditional
+    expect(screen.queryByTitle('Back to Library')).not.toBeNull();
   });
 });
 
