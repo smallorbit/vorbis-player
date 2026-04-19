@@ -320,6 +320,7 @@ describe('PlayerStateRenderer idle routing', () => {
 describe('PlayerStateRenderer settings gear on idle views', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockUseWelcomeSeen.mockReturnValue([true, vi.fn()]);
   });
 
   it('renders the settings gear on the idle Library landing', async () => {
