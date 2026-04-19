@@ -9,7 +9,7 @@ import { useUnifiedLikedTracks } from '@/hooks/useUnifiedLikedTracks';
 import { LIKED_SONGS_ID, LIKED_SONGS_NAME } from '@/constants/playlist';
 import { Chip, ChipRow } from '@/components/styled/FilterChips';
 import ProviderIcon from '@/components/ProviderIcon';
-import ResumeCard from './ResumeCard';
+import ResumeHero from './ResumeHero';
 import PinRing from './PinRing';
 import {
   PanelRoot,
@@ -87,9 +87,14 @@ const QuickAccessPanel: React.FC<QuickAccessPanelProps> = ({
   };
 
   const showProviderChips = connectedProviderIds.length > 1;
+  const hasValidSession = Boolean(lastSession && lastSession.collectionId);
 
   return (
     <PanelRoot>
+      {hasValidSession && lastSession && (
+        <ResumeHero session={lastSession} onResume={onResume} />
+      )}
+
       <PinRing
         pinnedPlaylists={pinnedPlaylists}
         pinnedAlbums={pinnedAlbums}
@@ -128,10 +133,6 @@ const QuickAccessPanel: React.FC<QuickAccessPanelProps> = ({
           Browse Library →
         </BrowseButton>
       </BrowseSection>
-
-      {lastSession && lastSession.collectionId && (
-        <ResumeCard session={lastSession} onResume={onResume} />
-      )}
     </PanelRoot>
   );
 };
