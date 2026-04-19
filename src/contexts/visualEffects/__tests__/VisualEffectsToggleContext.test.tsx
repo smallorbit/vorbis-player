@@ -68,16 +68,6 @@ describe('VisualEffectsToggleContext', () => {
     });
   });
 
-  describe('album filters cleanup', () => {
-    it('removes the deprecated ALBUM_FILTERS key on mount', () => {
-      // #when
-      renderHook(() => useVisualEffectsToggle(), { wrapper });
-
-      // #then
-      expect(window.localStorage.removeItem).toHaveBeenCalledWith(STORAGE_KEYS.ALBUM_FILTERS);
-    });
-  });
-
   describe('guard', () => {
     it('throws when used outside VisualEffectsToggleProvider', () => {
       // #when / #then

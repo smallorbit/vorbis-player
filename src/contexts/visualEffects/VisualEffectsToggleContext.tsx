@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import React, { createContext, useContext, useMemo, useState } from 'react';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { STORAGE_KEYS } from '@/constants/storage';
 
@@ -17,10 +17,6 @@ export function VisualEffectsToggleProvider({ children }: { children: React.Reac
     true,
   );
   const [showVisualEffects, setShowVisualEffects] = useState<boolean>(false);
-
-  useEffect(() => {
-    localStorage.removeItem(STORAGE_KEYS.ALBUM_FILTERS);
-  }, []);
 
   const value = useMemo<VisualEffectsToggleContextValue>(
     () => ({
