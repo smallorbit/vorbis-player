@@ -294,6 +294,7 @@ const AudioPlayerComponent = () => {
               lastSession={lastSession}
               onResume={handleResume}
               onOpenSettings={handleOpenSettings}
+              onHydrate={handlers.handleHydrate}
             />
           </ProfiledComponent>
           {qapToast && (
