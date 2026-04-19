@@ -4,6 +4,7 @@ import type { MediaTrack } from '@/types/domain';
 import { useProviderContext } from '@/contexts/ProviderContext';
 import { providerRegistry } from '@/providers/registry';
 import type { PlaybackState, ProviderId } from '@/types/domain';
+import { AUTO_ADVANCE_DELAY_MS, AUTO_ADVANCE_END_THRESHOLD_MS, NEAR_END_FALLBACK_MS } from '@/constants/timing';
 
 interface UseAutoAdvanceProps {
   tracks: MediaTrack[];
@@ -22,7 +23,7 @@ export const useAutoAdvance = ({
   currentTrackIndex,
   playTrack,
   enabled = true,
-  endThreshold = 2000,
+  endThreshold = AUTO_ADVANCE_END_THRESHOLD_MS,
   currentPlaybackProviderRef: drivingProviderRef,
 }: UseAutoAdvanceProps) => {
   const hasEnded = useRef(false);
@@ -97,7 +98,7 @@ export const useAutoAdvance = ({
           // The useEffect on currentTrackIndex resets hasEnded when the track
           // actually changes (after playTrack succeeds and calls setCurrentTrackIndex).
         }
-      }, 100);
+      }, AUTO_ADVANCE_DELAY_MS);
     }
 
     function handleProviderStateChange(state: PlaybackState | null) {
@@ -113,7 +114,7 @@ export const useAutoAdvance = ({
       // Detect near-end of track while still playing
       if (!hasEnded.current && duration > 0 && position > 0 && (
         timeRemaining <= endThreshold ||
-        position >= duration - 1000
+        position >= duration - NEAR_END_FALLBACK_MS
       )) {
         logQueue('autoAdvance — near-end detected: pos=%d, dur=%d, remaining=%dms', position, duration, timeRemaining);
         advanceToNext();

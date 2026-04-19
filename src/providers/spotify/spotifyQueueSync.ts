@@ -9,6 +9,7 @@
 import { searchTrack, spotifyAuth } from '@/services/spotify';
 import { STORAGE_KEYS } from '@/constants/storage';
 import type { MediaTrack } from '@/types/domain';
+import { SPOTIFY_QUEUE_SYNC_DELAY_MS } from '@/constants/timing';
 
 const QUEUE_URI_LIMIT = 200;
 const MAX_CONCURRENT_SEARCHES = 3;
@@ -110,7 +111,7 @@ class SpotifyQueueSyncService {
 
       // Gentle delay between chunks to avoid rate limits
       if (i + MAX_CONCURRENT_SEARCHES < toResolve.length && !signal?.aborted) {
-        await new Promise(resolve => setTimeout(resolve, 200));
+        await new Promise(resolve => setTimeout(resolve, SPOTIFY_QUEUE_SYNC_DELAY_MS));
       }
     }
   }

@@ -9,6 +9,7 @@ import { spotifyPlayer } from '@/services/spotifyPlayer';
 import { spotifyAuth } from '@/services/spotify';
 import { isAlbumId, extractAlbumId } from '@/constants/playlist';
 import { SPOTIFY_MAX_RETRIES, SPOTIFY_BASE_BACKOFF_MS } from '@/constants/spotify';
+import { SPOTIFY_DEVICE_ACTIVATE_RETRIES, SPOTIFY_DEVICE_ACTIVATE_DELAY_MS } from '@/constants/timing';
 import { AuthExpiredError, UnavailableTrackError } from '@/providers/errors';
 import { spotifyQueueSync } from './spotifyQueueSync';
 import { logSpotify } from '@/lib/debugLog';
@@ -163,7 +164,7 @@ export class SpotifyPlaybackAdapter implements PlaybackProvider {
         logSpotify('403 during play, retrying (%d/%d) after %dms', retryCount + 1, SPOTIFY_MAX_RETRIES, backoffMs);
         await spotifyPlayer.transferPlaybackToDevice(true);
         await new Promise(resolve => setTimeout(resolve, backoffMs));
-        await spotifyPlayer.ensureDeviceIsActive(3, 1000);
+        await spotifyPlayer.ensureDeviceIsActive(SPOTIFY_DEVICE_ACTIVATE_RETRIES, SPOTIFY_DEVICE_ACTIVATE_DELAY_MS);
         return this.playWithRetry(uri, trackName, upcomingUris, retryCount + 1, positionMs);
       }
 
