@@ -59,13 +59,13 @@ export const ZenTriggerZone = styled.div`
   left: 0;
   right: 0;
   height: ${TOUCH_TARGET_MIN_PX}px;
-  z-index: ${({ theme }) => Number(theme.zIndex.mobileMenu) - 1};
+  z-index: ${({ theme }) => theme.zIndex.zenTrigger};
   background: transparent;
 `;
 
 export const ZenBackdrop = styled.div`
   position: fixed;
   inset: 0;
-  z-index: ${({ theme }) => Number(theme.zIndex.mobileMenu) - 2};
+  z-index: ${({ theme }) => theme.zIndex.zenBackdrop};
   background: transparent;
 `;
