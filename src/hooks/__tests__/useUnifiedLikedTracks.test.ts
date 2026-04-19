@@ -223,6 +223,33 @@ describe('useUnifiedLikedTracks', () => {
     });
   });
 
+  it('excludes enabled-but-disconnected providers from the merged result', async () => {
+    // #given - spotify is connected, dropbox is enabled but not in connectedProviderIds
+    const spotifyTracks = [makeTrack('s1', 'spotify', 2000)];
+    const dropboxTracks = [makeTrack('d1', 'dropbox', 1000)];
+    mockConnectedProviderIds.push('spotify'); // only spotify is connected
+    const spotifyDesc = makeDescriptor('spotify', spotifyTracks);
+    const dropboxDesc = makeDescriptor('dropbox', dropboxTracks);
+    mockGetDescriptor.mockImplementation((id: string) => {
+      if (id === 'spotify') return spotifyDesc;
+      if (id === 'dropbox') return dropboxDesc;
+      return undefined;
+    });
+    mockRegistryGet.mockImplementation((id: string) => {
+      if (id === 'spotify') return spotifyDesc;
+      if (id === 'dropbox') return dropboxDesc;
+      return undefined;
+    });
+
+    // #when - render hook with only one connected provider
+    const { result } = renderHook(() => useUnifiedLikedTracks());
+
+    // #then - unified mode inactive, no dropbox tracks fetched
+    expect(result.current.isUnifiedLikedActive).toBe(false);
+    expect(result.current.unifiedTracks).toEqual([]);
+    expect(vi.mocked(dropboxDesc.catalog.listTracks)).not.toHaveBeenCalled();
+  });
+
   it('serves cached data immediately on subsequent hook mounts', async () => {
     // #given - set up providers
     const spotifyTracks = [makeTrack('s1', 'spotify', 2000)];
