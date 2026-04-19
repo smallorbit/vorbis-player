@@ -350,8 +350,7 @@ describe('DropboxPlaybackAdapter', () => {
       await flush();
       // trackA's getTemporaryLink has resolved; src is set. Now kick off playTrack for trackB
       // before the loadedmetadata event for trackA fires.
-      const playPromise = adapter.playTrack(trackB);
-      await playPromise;
+      await adapter.playTrack(trackB);
 
       listener.mockClear();
 
@@ -362,7 +361,6 @@ describe('DropboxPlaybackAdapter', () => {
       await flush();
 
       // #then
-      // The stale prepareTrack should not emit with trackA as currentTrackId.
       const staleCall = listener.mock.calls.find(([state]) => state?.currentTrackId === 'track-a');
       expect(staleCall).toBeUndefined();
     });
