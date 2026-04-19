@@ -157,7 +157,7 @@ On mobile, `useLibraryRoot` sets `ignoreProviderFilters = isMobile` (line 125). 
 - Non-empty array = show only items from selected providers
 - Toggle semantics: clicking a provider in the filter adds/removes it; removing the last provider resets to "all"
 
-**Sort anchors:** Certain special collections (`LIKED_SONGS_ID`, Dropbox "All Music" with id `''`) are exempt from sort reordering -- they always stay in catalog order. Defined in `LIBRARY_PLAYLIST_SORT_ANCHOR_IDS` and `LIBRARY_ALBUM_SORT_ANCHOR_IDS` in `src/constants/playlist.ts`.
+**Sort anchors:** `LIKED_SONGS_ID` is exempt from sort reordering — it always stays in catalog order. Defined in `LIBRARY_PLAYLIST_SORT_ANCHOR_IDS` in `src/constants/playlist.ts`. The Dropbox "All Music" aggregate (id `''`) used to live here too, but it was retired when All Music moved out of the sortable lists into its own dedicated `AllMusicCard`. `LIBRARY_ALBUM_SORT_ANCHOR_IDS` is now empty.
 
 ## Pinned Items
 
@@ -207,6 +207,52 @@ Refresh triggers:
 
 When unified liked is active and user clicks "Liked Songs" without specifying a provider, `useCollectionLoader.loadUnifiedLiked` fetches from all providers, merges, sorts, and loads into the queue.
 
+## All Music Card
+
+**File:** `src/components/PlaylistSelection/AllMusicCard.tsx`
+
+Dropbox exposes a synthetic "All Music" collection (kind `'folder'`, id `''`) that aggregates every audio file in the user's library. The card representation lives in the **playlist grid** rather than the album grid.
+
+### Source of truth
+
+`useLibrarySync.splitCollections` intercepts the All Music collection and exposes its track total as `allMusicCount` on the hook result, separate from `playlists` and `albums`. It is then threaded through `useLibraryRoot` into `LibraryDataContextValue.allMusicCount`. Because All Music never enters the `albums` array, `AlbumGrid` cannot render it.
+
+### Placement
+
+`PlaylistGrid` renders `AllMusicCard` at the top anchor slot, alongside `LikedSongsCard`:
+
+- When `ALL_MUSIC_PIN_ID` is pinned, the card renders **above** the `Pinned` section label.
+- When unpinned, the card renders **above** the unpinned playlist list (still anchored to the top).
+- The card is hidden when Dropbox is not in `enabledProviderIds` or is excluded by the provider filter chip.
+- During the initial load, the card renders with a spinner subtitle until `allMusicCount` resolves.
+
+### Visual design
+
+- **Art:** Dropbox-tinted gradient (`getLikedSongsGradient('dropbox')`) with a prominent crossed-arrows shuffle SVG glyph (no emoji). The same component renders in both grid (64px glyph) and list (28px glyph) layouts.
+- **Title:** `"All Music"`.
+- **Subtitle:** `"{N} tracks • Shuffled"` — communicates the shuffle-by-default semantics.
+
+### Pin identifier
+
+Pin state uses `ALL_MUSIC_PIN_ID = 'dropbox-all-music'` (defined in `src/constants/playlist.ts`), distinct from the underlying collection id `''`. Using a stable pin identifier means the pin survives changes to how the catalog represents All Music. Pin/unpin flows through `PinnedItemsContext.togglePinPlaylist` like any other playlist pin and persists to IndexedDB.
+
+### Popover actions
+
+Clicking the card opens the standard playlist popover via `useItemActions`. The "Liked Songs" sub-options and the "Delete" option are suppressed for All Music (`isAllMusicPlaylist(playlist)` check) because the synthetic collection has no underlying playlist to like or delete.
+
+## Shuffle-by-default semantics
+
+The All Music aggregate always plays shuffled, independently of the global `shuffleEnabled` toggle. This is enforced at two entry points:
+
+| Entry point | Behavior |
+|------------|----------|
+| `useCollectionLoader.loadCollection(ref)` | Calls `applyTracks(list, { forceShuffle: isAllMusicRef(ref) })`. `applyTracks` ORs `forceShuffle` with `shuffleEnabled`, so All Music always shuffles regardless of the user's global preference. |
+| `useQueueManagement.handleAddToQueue(id, ...)` | When `isAllMusicRef(collectionRef)` is true, the fetched tracks are passed through `shuffleArray()` before deduping and appending to the queue. |
+
+The detection helper `isAllMusicRef(ref)` (from `src/constants/playlist.ts`) returns true when `ref.provider === 'dropbox' && ref.kind === 'folder' && ref.id === ''`.
+
+**The user's `shuffleEnabled` preference is never mutated.** Forcing shuffle for All Music is purely additive — it does not flip the global toggle, so loading All Music and then loading a different collection returns to the user's chosen shuffle state.
+
 ## ResumeCard
 
 `LibraryPage` accepts a `footer` prop. `AudioPlayer.tsx` passes a `ResumeCard` as the footer when `lastSession` and `handleResume` are available, allowing users to resume a previous playback session regardless of QAP state.
@@ -248,6 +294,7 @@ QAP preference is stored in `localStorage` key `vorbis-player-qap-enabled` (defa
 | `src/components/PlaylistSelection/PlaylistGrid.tsx` | Playlist card grid |
 | `src/components/PlaylistSelection/AlbumGrid.tsx` | Album card grid |
 | `src/components/PlaylistSelection/LikedSongsCard.tsx` | Liked songs entry card |
+| `src/components/PlaylistSelection/AllMusicCard.tsx` | Dropbox "All Music" entry card with shuffle branding |
 | `src/components/LibraryDrawer/FilterSidebar.tsx` | Collection type toggle and provider checkboxes (desktop only) |
 | `src/components/AudioPlayer.tsx` | Renders `LibraryPage` lazily when `showLibrary` is true |
 | `src/components/PlayerStateRenderer.tsx` | Idle view routing (QAP vs library) |
@@ -260,7 +307,7 @@ QAP preference is stored in `localStorage` key `vorbis-player-qap-enabled` (defa
 | `src/hooks/useRecentlyPlayedCollections.ts` | Recently played collection history (localStorage) |
 | `src/hooks/usePlayerLogic.ts` | `showLibrary`, `handleOpenLibrary`, `handleCloseLibrary` |
 | `src/utils/playlistFilters.ts` | Filter/sort/pin-split utilities |
-| `src/constants/playlist.ts` | LIKED_SONGS_ID, sort anchor IDs, ID encoding |
+| `src/constants/playlist.ts` | LIKED_SONGS_ID, ALL_MUSIC_PIN_ID, isAllMusicRef, isAllMusicPlaylist, sort anchor IDs, ID encoding |
 | `src/components/PlayerContent/DrawerOrchestrator.tsx` | Drawer switching and toast management |
 
 ## Cross-Cutting Concerns
