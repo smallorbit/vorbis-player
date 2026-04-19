@@ -2,6 +2,7 @@ import React, { useCallback } from 'react';
 import { generateColorVariant } from '../../utils/visualizerUtils';
 import { useCanvasVisualizer } from '../../hooks/useCanvasVisualizer';
 import { useVisualizerDebugConfig } from '../../contexts/VisualizerDebugContext';
+import { layerRatio, waveLayerPhaseSpeed, waveY } from './math';
 
 interface WaveVisualizerProps {
   intensity: number;
@@ -19,8 +20,6 @@ interface Wave {
   opacity: number;
   color: string;
 }
-
-const PHI = 1.6180339887;
 
 export const WaveVisualizer: React.FC<WaveVisualizerProps> = ({
   intensity,
@@ -42,19 +41,17 @@ export const WaveVisualizer: React.FC<WaveVisualizerProps> = ({
       const amplitudeScale = isMobile ? 0.65 : 1.0;
 
       return Array.from({ length: count }, (_, i) => {
-        const layerRatio = i / Math.max(1, count - 1);
-        const phiPower = Math.pow(PHI, i / Math.max(1, count - 1) * 2);
-        const normalizedPhi = phiPower / Math.pow(PHI, 2);
-        const phaseSpeed = w.phaseSpeedMin + normalizedPhi * w.phaseSpeedSpread;
+        const ratio = layerRatio(i, count);
+        const phaseSpeed = waveLayerPhaseSpeed(i, count, w.phaseSpeedMin, w.phaseSpeedSpread);
 
         return {
           phase: Math.random() * Math.PI * 2,
           phaseSpeed,
-          amplitude: height * (w.amplitudeBase + layerRatio * w.amplitudeLayerScale) * amplitudeScale,
+          amplitude: height * (w.amplitudeBase + ratio * w.amplitudeLayerScale) * amplitudeScale,
           frequency: w.frequencyMin + Math.random() * w.frequencySpread,
-          yBase: height * (w.yBaseStart + layerRatio * w.yBaseLayerScale),
-          opacity: w.opacityBase + layerRatio * w.opacityLayerScale,
-          color: generateColorVariant(baseColor, 0.2 + layerRatio * 0.6),
+          yBase: height * (w.yBaseStart + ratio * w.yBaseLayerScale),
+          opacity: w.opacityBase + ratio * w.opacityLayerScale,
+          color: generateColorVariant(baseColor, 0.2 + ratio * 0.6),
         };
       });
     },
@@ -73,9 +70,9 @@ export const WaveVisualizer: React.FC<WaveVisualizerProps> = ({
         wave.phase += wave.phaseSpeed * speedMult * dt;
         if (wave.phase > Math.PI * 2) wave.phase -= Math.PI * 2;
 
-        const layerRatio = i / Math.max(1, count - 1);
-        wave.yBase = height * (w.yBaseStart + layerRatio * w.yBaseLayerScale);
-        wave.amplitude = height * (w.amplitudeBase + layerRatio * w.amplitudeLayerScale) * amplitudeScale;
+        const ratio = layerRatio(i, count);
+        wave.yBase = height * (w.yBaseStart + ratio * w.yBaseLayerScale);
+        wave.amplitude = height * (w.amplitudeBase + ratio * w.amplitudeLayerScale) * amplitudeScale;
       });
     },
     [speed, w]
@@ -104,7 +101,7 @@ export const WaveVisualizer: React.FC<WaveVisualizerProps> = ({
         ctx.moveTo(0, height);
 
         for (let x = 0; x <= width; x += 4) {
-          const y = wave.yBase + Math.sin(x * wave.frequency + wave.phase) * wave.amplitude;
+          const y = waveY(x, wave.frequency, wave.phase, wave.amplitude, wave.yBase);
           ctx.lineTo(x, y);
         }
 

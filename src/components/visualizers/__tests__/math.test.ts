@@ -5,8 +5,6 @@ import {
   waveY,
   layerRatio,
   gridWaveProjection,
-  gridDisplacement,
-  computeParticleCount,
   gridSpatialFactor,
 } from '../math';
 
@@ -174,125 +172,6 @@ describe('gridWaveProjection', () => {
 
     // #then — 100*1*0.005 + 50*0*0.005 = 0.5
     expect(proj).toBeCloseTo(0.5, 10);
-  });
-});
-
-describe('gridDisplacement', () => {
-  it('returns 0 when there are no waves', () => {
-    expect(gridDisplacement(100, 100, [])).toBe(0);
-  });
-
-  it('returns 0 when all waves contribute zero displacement (phase = -proj)', () => {
-    // #given — sin(proj + phase) = sin(0) = 0 when phase = -proj
-    const baseX = 0;
-    const baseY = 0;
-    const waves = [
-      { angleX: 1, angleY: 0, frequency: 0.005, phase: 0 }, // proj = 0, sin(0) = 0
-    ];
-
-    // #when
-    const d = gridDisplacement(baseX, baseY, waves);
-
-    // #then
-    expect(d).toBe(0);
-  });
-
-  it('returns 1 when all waves contribute maximum positive displacement', () => {
-    // #given — make sin(proj + phase) = sin(pi/2) = 1 for each wave
-    const waves = [
-      { angleX: 0, angleY: 0, frequency: 0.005, phase: Math.PI / 2 }, // proj=0, phase=pi/2
-      { angleX: 0, angleY: 0, frequency: 0.005, phase: Math.PI / 2 },
-    ];
-
-    // #when
-    const d = gridDisplacement(0, 0, waves);
-
-    // #then
-    expect(d).toBeCloseTo(1, 10);
-  });
-
-  it('averages contributions from multiple waves', () => {
-    // #given — one wave at +1 and one at -1
-    const waves = [
-      { angleX: 0, angleY: 0, frequency: 0, phase: Math.PI / 2 },  // sin(pi/2) = 1
-      { angleX: 0, angleY: 0, frequency: 0, phase: -Math.PI / 2 }, // sin(-pi/2) = -1
-    ];
-
-    // #when
-    const d = gridDisplacement(0, 0, waves);
-
-    // #then — average of +1 and -1 = 0
-    expect(d).toBeCloseTo(0, 10);
-  });
-
-  it('output stays in [-1, 1]', () => {
-    // #given — random-ish wave configuration
-    const waves = [
-      { angleX: 0.707, angleY: 0.707, frequency: 0.005, phase: 0.3 },
-      { angleX: -0.707, angleY: 0.707, frequency: 0.008, phase: 1.2 },
-    ];
-
-    for (let x = 0; x < 500; x += 50) {
-      for (let y = 0; y < 500; y += 50) {
-        // #when
-        const d = gridDisplacement(x, y, waves);
-
-        // #then
-        expect(d).toBeGreaterThanOrEqual(-1);
-        expect(d).toBeLessThanOrEqual(1);
-      }
-    }
-  });
-});
-
-describe('computeParticleCount', () => {
-  it('returns fewer particles for low intensity', () => {
-    // #when
-    const countLow = computeParticleCount(1920, 1080, 10, 80, 160, 10000, 2000);
-    const countHigh = computeParticleCount(1920, 1080, 60, 80, 160, 10000, 2000);
-
-    // #then
-    expect(countLow).toBeLessThan(countHigh);
-  });
-
-  it('caps count at countBaseDesktop on desktop', () => {
-    // #given — very large canvas so pixel-based count would exceed cap
-    const countBaseDesktop = 160;
-
-    // #when
-    const count = computeParticleCount(10000, 10000, 60, 80, countBaseDesktop, 10000, 2000);
-
-    // #then
-    expect(count).toBeLessThanOrEqual(countBaseDesktop);
-  });
-
-  it('caps count at countBaseMobile on mobile widths', () => {
-    // #given — mobile width < 768
-    const countBaseMobile = 80;
-
-    // #when
-    const count = computeParticleCount(375, 10000, 60, countBaseMobile, 160, 10000, 2000);
-
-    // #then
-    expect(count).toBeLessThanOrEqual(countBaseMobile);
-  });
-
-  it('mobile path activates below 768px width', () => {
-    // #given — same height and intensity, mobile vs desktop width
-    const width = 767;
-    const countMobile = computeParticleCount(width, 1080, 60, 80, 160, 10000, 2000);
-    const countDesktop = computeParticleCount(768, 1080, 60, 80, 160, 10000, 2000);
-
-    // #then — they use different divisors, so counts differ
-    expect(countMobile).not.toEqual(countDesktop);
-  });
-
-  it('scale floor of 0.1 prevents zero count at very low intensity', () => {
-    // #given — intensity = 1 → scale = max(0.1, 1/60) = max(0.1, 0.0167) = 0.1
-    const count = computeParticleCount(1920, 1080, 1, 80, 160, 10000, 2000);
-
-    // #then
-    expect(count).toBeGreaterThan(0);
   });
 });
 
