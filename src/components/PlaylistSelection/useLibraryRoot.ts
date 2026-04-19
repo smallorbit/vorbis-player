@@ -173,7 +173,7 @@ export function useLibraryRoot({
     activeDescriptor,
     togglePinPlaylist,
     togglePinAlbum,
-    setArtistFilter: browsingState.setArtistFilter,
+    setSearchQuery: browsingState.setSearchQuery,
   });
 
   const { browsingValue, pinValue, actionsValue, dataValue } = useLibraryContextValues({
