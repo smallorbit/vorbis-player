@@ -149,7 +149,11 @@ Dropbox root/
     ├── cover.jpg     # also: album.jpg, folder.jpg, front.jpg
     └── 01 - Track.mp3
 ```
-Folders containing audio files become albums; parent folder = artist. A synthetic "All Music" collection is always prepended.
+Folders containing audio files become albums; parent folder = artist. A synthetic "All Music" collection (kind `'folder'`, id `''`) is always prepended.
+
+**Dropbox "All Music" card**: `useLibrarySync.splitCollections` intercepts the All Music collection and exposes its track total as `allMusicCount` instead of pushing it into the album list. `AllMusicCard` (`src/components/PlaylistSelection/AllMusicCard.tsx`) renders the row in the **playlist grid** at the top anchor slot, alongside `LikedSongsCard`. The card uses a Dropbox-tinted gradient and a crossed-arrows shuffle SVG glyph in both grid and list layouts; subtitle is `"{N} tracks • Shuffled"`. Hidden when Dropbox is not in `enabledProviderIds` or excluded by the provider filter chip. Pin/unpin uses `ALL_MUSIC_PIN_ID = 'dropbox-all-music'` (a stable identifier distinct from the underlying collection id `''`) and persists through `PinnedItemsContext` like any other pin. The legacy `id === ''` entries in `LIBRARY_PLAYLIST_SORT_ANCHOR_IDS` and `LIBRARY_ALBUM_SORT_ANCHOR_IDS` are retired — All Music is no longer mixed into the sortable lists, so it does not need a sort-anchor exemption.
+
+**All Music shuffle-by-default**: Loading or appending the All Music aggregate always shuffles, independently of the global `shuffleEnabled` toggle. Detection uses `isAllMusicRef(collectionRef)` from `src/constants/playlist.ts`. `useCollectionLoader.applyTracks` accepts a `forceShuffle` option that ORs with `shuffleEnabled`; `loadCollection` passes `{ forceShuffle: isAllMusicRef(ref) }`. `useQueueManagement.handleAddToQueue` shuffles the fetched tracks with `shuffleArray()` before deduping and appending. The user's `shuffleEnabled` preference is not mutated — it remains whatever they set globally.
 
 **Dropbox Liked Songs**: Stored in IndexedDB (`vorbis-dropbox-art` database v3, `likes` store). Mutations dispatch `vorbis-dropbox-likes-changed` events for real-time UI updates. Settings menu exposes Export/Import (JSON) and Refresh Metadata operations.
 

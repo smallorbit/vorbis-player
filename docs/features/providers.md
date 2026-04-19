@@ -417,7 +417,7 @@ Dropbox root/
 - Parent folder = artist name
 - Track ID = lowercase file path
 - Album ID = lowercase folder path
-- A synthetic "All Music" collection (kind `'folder'`, id `''`) is always prepended to the collection list
+- A synthetic "All Music" collection (kind `'folder'`, id `''`) is always prepended to the collection list. It is rendered by `AllMusicCard` in the playlist grid (not the album grid) and always plays shuffled. See [Library — All Music Card](./library.md#all-music-card) for placement, pin behavior (`ALL_MUSIC_PIN_ID = 'dropbox-all-music'`), and shuffle-by-default semantics.
 
 ### Token Refresh
 
