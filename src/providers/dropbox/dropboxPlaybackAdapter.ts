@@ -238,14 +238,8 @@ export class DropboxPlaybackAdapter implements PlaybackProvider {
       audio.currentTime = positionMs / 1000;
     }
 
-    const rawDuration = audio.duration;
-    const durationMs = Number.isFinite(rawDuration) && rawDuration > 0
-      ? Math.floor(rawDuration * 1000)
-      : undefined;
-
-    if (durationMs !== undefined) {
-      this.pendingDurationMs = durationMs;
-    }
+    // The 'loadedmetadata' listener in ensureAudio has already populated
+    // pendingDurationMs; this notify re-emits with the seeked positionMs.
     this.notifyListeners();
   }
 
