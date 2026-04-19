@@ -1,6 +1,9 @@
 import styled from 'styled-components';
 import { theme } from '../../styles/theme';
 
+const TRACK_INFO_ROW_Z = 10;
+const TRACK_INFO_TEXT_Z = 11;
+
 // --- Main Container ---
 export const PlayerControlsContainer = styled.div<{ $isMobile: boolean; $isTablet: boolean; $compact?: boolean }>`
   position: relative;
@@ -55,7 +58,7 @@ export const TrackInfoOnlyRow = styled.div<{ $compact?: boolean }>`
   margin-bottom: 0;
   margin-top: 0;
   position: relative;
-  z-index: 10;
+  z-index: ${TRACK_INFO_ROW_Z};
   text-shadow: ${({ theme }) => theme.shadows.textSm};
 
   @media (max-width: ${theme.breakpoints.lg}) {
@@ -83,7 +86,7 @@ export const PlayerTrackName = styled.div<{ $isMobile: boolean; $isTablet: boole
   white-space: nowrap;
   width: 100%;
   position: relative;
-  z-index: 11;
+  z-index: ${TRACK_INFO_TEXT_Z};
   text-shadow: ${({ theme }) => theme.shadows.textMd};
 
   /* Reset button-specific styles when rendered as a button (as="button") */
@@ -115,7 +118,7 @@ export const PlayerTrackAlbum = styled.div`
   white-space: nowrap;
   width: 100%;
   position: relative;
-  z-index: 11;
+  z-index: ${TRACK_INFO_TEXT_Z};
   text-shadow: ${({ theme }) => theme.shadows.textControl};
 `;
 
@@ -144,7 +147,7 @@ export const PlayerTrackArtist = styled.div`
   white-space: nowrap;
   width: 100%;
   position: relative;
-  z-index: 11;
+  z-index: ${TRACK_INFO_TEXT_Z};
   text-shadow: ${({ theme }) => theme.shadows.textControl};
 `;
 

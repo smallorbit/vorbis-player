@@ -25,6 +25,8 @@ import {
   SwipeRemoveBackdrop,
 } from './QueueTrackList.styled';
 
+const DRAG_ACTIVE_Z = 10;
+
 const GripIcon = () => (
   <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
     <circle cx="5" cy="3" r="1.5" />
@@ -185,7 +187,7 @@ export const SortableQueueItem = memo<QueueItemProps>(({
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.5 : 1,
-    zIndex: isDragging ? 10 : undefined,
+    zIndex: isDragging ? DRAG_ACTIVE_Z : undefined,
     position: 'relative' as const,
   };
 
