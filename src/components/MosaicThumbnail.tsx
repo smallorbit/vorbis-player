@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import * as React from 'react';
 import styled from 'styled-components';
 import { getAlbumArt } from '@/providers/dropbox/dropboxArtCache';
+import { IMAGE_LOAD_TIMEOUT_MS } from '@/constants/timing';
 
 const MosaicGrid = styled.div`
   display: grid;
@@ -51,7 +52,7 @@ export const MosaicThumbnail: React.FC<MosaicThumbnailProps> = React.memo(
         if (cancelled) return;
         const hasMissing = results.some(url => url == null);
         if (hasMissing) {
-          setTimeout(() => { if (!cancelled) resolve(); }, 3000);
+          setTimeout(() => { if (!cancelled) resolve(); }, IMAGE_LOAD_TIMEOUT_MS);
         }
       });
       return () => { cancelled = true; };

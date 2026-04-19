@@ -4,6 +4,7 @@ import type { MediaTrack, ProviderId } from '@/types/domain';
 import { providerRegistry } from '@/providers/registry';
 import { AuthExpiredError, UnavailableTrackError } from '@/providers/errors';
 import { logQueue } from '@/lib/debugLog';
+import { SKIP_ON_ERROR_DELAY_MS } from '@/constants/timing';
 
 interface UseProviderPlaybackProps {
   setCurrentTrackIndex: (index: number) => void;
@@ -90,14 +91,14 @@ export const useProviderPlayback = ({
       if (error instanceof UnavailableTrackError) {
         console.warn(`[${trackProvider}] ${error.message}`);
         if (skipOnError && index < tracks.length - 1) {
-          setTimeout(() => playTrack(index + 1, skipOnError), 500);
+          setTimeout(() => playTrack(index + 1, skipOnError), SKIP_ON_ERROR_DELAY_MS);
         }
         return;
       }
 
       console.error(`[${trackProvider}] Failed to play track:`, error);
       if (skipOnError && index < tracks.length - 1) {
-        setTimeout(() => playTrack(index + 1, skipOnError), 500);
+        setTimeout(() => playTrack(index + 1, skipOnError), SKIP_ON_ERROR_DELAY_MS);
       }
     }
   }, [setCurrentTrackIndex, pausePreviousProvider, resolveTrackProvider, onAuthExpired]);

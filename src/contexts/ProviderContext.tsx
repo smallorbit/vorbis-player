@@ -11,6 +11,7 @@ import { AUTH_STATE_CHANGED_EVENT } from '@/hooks/usePopupAuth';
 import { DROPBOX_AUTH_ERROR_EVENT } from '@/providers/dropbox/dropboxAuthAdapter';
 import { AUTH_COMPLETE_EVENT, SESSION_EXPIRED_EVENT } from '@/constants/events';
 import { STORAGE_KEYS } from '@/constants/storage';
+import { NOTIFICATION_DISMISS_MS } from '@/constants/timing';
 
 type ProviderSwitchInterceptor = (
   newProviderId: ProviderId,
@@ -287,7 +288,7 @@ export function ProviderProvider({ children }: { children: React.ReactNode }) {
   // Auto-dismiss fallthrough notification after 5 seconds
   useEffect(() => {
     if (!fallthroughNotification) return;
-    const timer = setTimeout(() => setFallthroughNotification(null), 5000);
+    const timer = setTimeout(() => setFallthroughNotification(null), NOTIFICATION_DISMISS_MS);
     return () => clearTimeout(timer);
   }, [fallthroughNotification]);
 
