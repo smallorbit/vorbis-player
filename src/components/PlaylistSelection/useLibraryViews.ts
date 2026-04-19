@@ -18,7 +18,6 @@ interface UseLibraryViewsParams {
   searchQuery: string;
   playlistSort: PlaylistSortOption;
   albumSort: AlbumSortOption;
-  artistFilter: string;
   providerFilters: ProviderId[];
   selectedGenres: string[];
   pinnedPlaylistIds: string[];
@@ -40,7 +39,6 @@ export function useLibraryViews({
   searchQuery,
   playlistSort,
   albumSort,
-  artistFilter,
   providerFilters,
   selectedGenres,
   pinnedPlaylistIds,
@@ -66,14 +64,14 @@ export function useLibraryViews({
     if (!ignoreProviderFilters && providerFilters.length > 0) {
       items = items.filter((a) => a.provider && providerFilters.includes(a.provider));
     }
-    const filtered = filterAlbumsOnly(items, searchQuery, 'all', artistFilter, selectedGenres);
+    const filtered = filterAlbumsOnly(items, searchQuery, 'all', selectedGenres);
     return buildLibraryViewWithPins(
       filtered,
       pinnedAlbumIds,
       (a) => a.id,
       (subgroup) => sortAlbumSubgroup(subgroup, albumSort)
     );
-  }, [albums, searchQuery, albumSort, artistFilter, providerFilters, ignoreProviderFilters, pinnedAlbumIds, selectedGenres]);
+  }, [albums, searchQuery, albumSort, providerFilters, ignoreProviderFilters, pinnedAlbumIds, selectedGenres]);
 
   const availableGenres = useMemo(() => getAvailableGenres(albums), [albums]);
 

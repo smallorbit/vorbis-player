@@ -55,7 +55,7 @@ Library state is split into four focused sub-contexts, each consumed independent
 2. `useLibrarySync` has already fetched and cached collections from all connected providers.
 3. User selects "Playlists" or "Albums" tab (`viewMode`).
 4. Collections are filtered and sorted via `playlistFilters.ts`:
-   - `filterPlaylistsOnly(items, searchQuery)` / `filterAlbumsOnly(items, searchQuery, yearFilter, artistFilter)` -- text matching on name, description, owner/artist.
+   - `filterPlaylistsOnly(items, searchQuery)` / `filterAlbumsOnly(items, searchQuery, yearFilter)` -- text matching on name, description, owner/artist.
    - `buildLibraryViewWithPins(filtered, pinnedIds, getId, sortFn)` -- splits into pinned (sorted to top) and unpinned groups, applies sort within each group.
 5. User clicks a collection -> `onPlaylistSelect(id, name, provider)` fires.
 6. `handleCloseLibrary()` is called first, then `handlePlaylistSelect` triggers `useCollectionLoader.loadCollection` which replaces the queue and starts playback.
@@ -71,10 +71,9 @@ When multiple providers are connected, `LibraryProviderBar` shows toggle buttons
 
 The library browser provides multi-level filtering and searching via a pipeline in `src/utils/playlistFilters.ts`:
 
-1. **Text search** — case-insensitive matching on name, description, owner, and artist fields
+1. **Text search** — case-insensitive matching on name, description, owner, and artist fields; clicking an artist name in `AlbumGrid` populates this with the artist name to filter by artist
 2. **Provider filter** — show items from selected providers only (empty array = all providers)
-3. **Artist filter** (albums only) — filter albums by a single artist
-4. **Pinned partitioning** — pinned items always sort to top
+3. **Pinned partitioning** — pinned items always sort to top
 
 **UI Components**:
 - **FilterSidebar** (`src/components/LibraryDrawer/FilterSidebar.tsx`) — collection type (Playlists/Albums) toggle buttons, provider checkboxes, a "Clear Filters" button, and a "Recently Played" shortcut list. Desktop-only (≥700px).
@@ -94,7 +93,7 @@ All filter and sort state is persisted to `localStorage` via `useLocalStorage`. 
 | `vorbis-player-library-provider-filters` | `[]` | Active provider filters |
 | `vorbis-player-library-genres` | `[]` | Genre filter (future expansion) |
 
-`artistFilter` is ephemeral (`useState`) — it is not persisted and resets on unmount.
+**Artist filter via search**: Clicking an artist name in `AlbumGrid` writes the artist name into `searchQuery`. Because `searchQuery` applies to both the albums and playlists views, this filter is active across all views — a slight behavior expansion from the previous albums-only artist filter. Users clear it via the search X button in `FilterSidebar` (desktop) or `MobileLibraryBottomBar` (mobile).
 
 **Opening library from QAP:** When the user taps "Browse Library" in the Quick Access Panel, the above filter keys are cleared from localStorage before `handleOpenLibrary()` is called, ensuring a clean state.
 
@@ -143,14 +142,11 @@ On mobile, `useLibraryRoot` sets `ignoreProviderFilters = isMobile` (line 125). 
 | `searchQuery` | `useLocalStorage('vorbis-player-library-search')` | `''` |
 | `playlistSort` | `useLocalStorage('vorbis-player-playlist-sort')` | `'recently-added'` |
 | `albumSort` | `useLocalStorage('vorbis-player-album-sort')` | `'recently-added'` |
-| `artistFilter` | `useState` | `''` |
 | `providerFilters` | `useLocalStorage('vorbis-player-library-provider-filters')` | `[]` (empty = all) |
 
 **Sort options** (from `src/utils/playlistFilters.ts`):
 - Playlists: `name-asc`, `name-desc`, `recently-added`
 - Albums: `name-asc`, `name-desc`, `artist-asc`, `artist-desc`, `release-newest`, `release-oldest`, `recently-added`
-
-**Artist filter** is cleared automatically when switching from albums to playlists view.
 
 **Provider filter** logic:
 - Empty array (`[]`) = show all providers (no filtering)
@@ -329,7 +325,7 @@ QAP preference is stored in `localStorage` key `vorbis-player-qap-enabled` (defa
 
 1. **LibraryContext sub-contexts are NOT global contexts.** They are created per `LibraryPage` mount. If you need library state outside of `LibraryPage`, you cannot use the library context hooks.
 
-2. **`LibraryPage` unmounts when `showLibrary` is false.** All state resets on close. Filter state survives because it is persisted to `localStorage`, but `artistFilter` (ephemeral `useState`) resets on every mount.
+2. **`LibraryPage` unmounts when `showLibrary` is false.** All state resets on close. Filter state survives because it is persisted to `localStorage` (including `searchQuery`, which doubles as the artist filter).
 
 3. **Opening library from QAP clears filter state.** The `onBrowseLibrary` handler in `AudioPlayer.tsx` removes the `vorbis-player-library-*` keys before calling `handleOpenLibrary`.
 
