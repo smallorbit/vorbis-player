@@ -2,6 +2,7 @@ import React, { useCallback } from 'react';
 import { generateColorVariant } from '../../utils/visualizerUtils';
 import { useCanvasVisualizer } from '../../hooks/useCanvasVisualizer';
 import { useVisualizerDebugConfig } from '../../contexts/VisualizerDebugContext';
+import { calculateParticleCount } from '../../utils/particleCount';
 
 interface ParticleVisualizerProps {
   intensity: number;
@@ -42,13 +43,7 @@ export const ParticleVisualizer: React.FC<ParticleVisualizerProps> = ({
   const p = config.particle;
 
   const getParticleCount = useCallback((width: number, height: number, intensityValue: number): number => {
-    const pixelCount = width * height;
-    const isMobile = width < 768;
-    const scale = Math.max(0.1, intensityValue / 60);
-    if (isMobile) {
-      return Math.round(Math.min(p.countBaseMobile, Math.floor(pixelCount / p.countPixelDivisorMobile)) * scale);
-    }
-    return Math.round(Math.min(p.countBaseDesktop, Math.floor(pixelCount / p.countPixelDivisor)) * scale);
+    return calculateParticleCount(width, height, intensityValue, p);
   }, [p]);
 
   const initializeParticles = useCallback((

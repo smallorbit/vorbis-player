@@ -54,6 +54,8 @@ interface VisualizerDebugContextValue {
   setOverrides: (next: VisualizerDebugOverrides | null | ((prev: VisualizerDebugOverrides | null) => VisualizerDebugOverrides | null)) => void;
   setParticleOverride: <K extends keyof VisualizerDebugConfig['particle']>(key: K, value: VisualizerDebugConfig['particle'][K]) => void;
   setTrailOverride: <K extends keyof VisualizerDebugConfig['trail']>(key: K, value: VisualizerDebugConfig['trail'][K]) => void;
+  setWaveOverride: <K extends keyof VisualizerDebugConfig['wave']>(key: K, value: VisualizerDebugConfig['wave'][K]) => void;
+  setGridOverride: <K extends keyof VisualizerDebugConfig['grid']>(key: K, value: VisualizerDebugConfig['grid'][K]) => void;
   reset: () => void;
   exportAsJson: () => string;
   copyExportToClipboard: () => Promise<void>;
@@ -92,6 +94,20 @@ export function VisualizerDebugProvider({ children }: { children: React.ReactNod
     setOverrides(prev => ({
       ...prev,
       trail: { ...prev?.trail, [key]: value },
+    }));
+  }, [setOverrides]);
+
+  const setWaveOverride = useCallback(<K extends keyof VisualizerDebugConfig['wave']>(key: K, value: VisualizerDebugConfig['wave'][K]) => {
+    setOverrides(prev => ({
+      ...prev,
+      wave: { ...prev?.wave, [key]: value },
+    }));
+  }, [setOverrides]);
+
+  const setGridOverride = useCallback(<K extends keyof VisualizerDebugConfig['grid']>(key: K, value: VisualizerDebugConfig['grid'][K]) => {
+    setOverrides(prev => ({
+      ...prev,
+      grid: { ...prev?.grid, [key]: value },
     }));
   }, [setOverrides]);
 
@@ -141,6 +157,8 @@ export function VisualizerDebugProvider({ children }: { children: React.ReactNod
       setOverrides,
       setParticleOverride,
       setTrailOverride,
+      setWaveOverride,
+      setGridOverride,
       reset,
       exportAsJson,
       copyExportToClipboard,
@@ -154,6 +172,8 @@ export function VisualizerDebugProvider({ children }: { children: React.ReactNod
       setOverrides,
       setParticleOverride,
       setTrailOverride,
+      setWaveOverride,
+      setGridOverride,
       reset,
       exportAsJson,
       copyExportToClipboard,

@@ -1,6 +1,7 @@
 import { spotifyAuth } from './spotify';
 import { SPOTIFY_TRANSFER_RETRY_COUNT } from '@/constants/spotify';
 import { logSpotify } from '@/lib/debugLog';
+import { TRANSFER_RETRY_DELAY_MS } from '@/constants/timing';
 
 export async function apiPlayTrack(
   deviceId: string,
@@ -163,7 +164,7 @@ export async function apiTransferPlayback(
     } catch (error) {
       if (attempt === 0) {
         console.warn('[spotifyPlayer] Transfer playback network error, retrying:', error);
-        await new Promise(resolve => setTimeout(resolve, 500));
+        await new Promise(resolve => setTimeout(resolve, TRANSFER_RETRY_DELAY_MS));
       } else {
         console.error('[spotifyPlayer] Failed to transfer playback to device:', error);
         throw error;

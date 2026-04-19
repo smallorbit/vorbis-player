@@ -87,6 +87,8 @@ export function VisualizerDebugPanel() {
   const [loadStatus, setLoadStatus] = useState<'idle' | 'ok' | 'err'>('idle');
   const [particleOpen, setParticleOpen] = useState(true);
   const [trailOpen, setTrailOpen] = useState(true);
+  const [waveOpen, setWaveOpen] = useState(true);
+  const [gridOpen, setGridOpen] = useState(true);
 
   const handleDownload = useCallback(() => {
     if (!ctx) return;
@@ -106,9 +108,11 @@ export function VisualizerDebugPanel() {
 
   if (!ctx?.isDebugMode) return null;
 
-  const { config, setParticleOverride, setTrailOverride, reset, copyExportToClipboard } = ctx;
+  const { config, setParticleOverride, setTrailOverride, setWaveOverride, setGridOverride, reset, copyExportToClipboard } = ctx;
   const p = config.particle;
   const t = config.trail;
+  const wv = config.wave;
+  const gv = config.grid;
 
   return (
     <Panel>
@@ -159,6 +163,53 @@ export function VisualizerDebugPanel() {
             <ParamNumber label="countPixelDivisor" value={t.countPixelDivisor} min={2000} max={10000} step={500} onChange={(v) => setTrailOverride('countPixelDivisor', v)} />
             <ParamNumber label="countPixelDivisorMobile" value={t.countPixelDivisorMobile} min={4000} max={15000} step={500} onChange={(v) => setTrailOverride('countPixelDivisorMobile', v)} />
             <ParamNumber label="driftDecay" value={t.driftDecay} min={0.99} max={1} step={0.0001} onChange={(v) => setTrailOverride('driftDecay', v)} />
+          </>
+        )}
+      </Section>
+
+      <Section>
+        <SectionHeader type="button" onClick={() => setWaveOpen((o) => !o)}>
+          Wave {waveOpen ? '▼' : '▶'}
+        </SectionHeader>
+        {waveOpen && (
+          <>
+            <ParamNumber label="waveCount" value={wv.waveCount} min={1} max={20} step={1} onChange={(v) => setWaveOverride('waveCount', v)} />
+            <ParamSlider label="phaseSpeedMin" value={wv.phaseSpeedMin} min={0.001} max={0.05} step={0.001} onChange={(v) => setWaveOverride('phaseSpeedMin', v)} />
+            <ParamSlider label="phaseSpeedSpread" value={wv.phaseSpeedSpread} min={0} max={0.05} step={0.001} onChange={(v) => setWaveOverride('phaseSpeedSpread', v)} />
+            <ParamSlider label="amplitudeBase" value={wv.amplitudeBase} min={0} max={0.15} step={0.005} onChange={(v) => setWaveOverride('amplitudeBase', v)} />
+            <ParamSlider label="amplitudeLayerScale" value={wv.amplitudeLayerScale} min={0} max={0.2} step={0.005} onChange={(v) => setWaveOverride('amplitudeLayerScale', v)} />
+            <ParamSlider label="frequencyMin" value={wv.frequencyMin} min={0.001} max={0.02} step={0.0005} onChange={(v) => setWaveOverride('frequencyMin', v)} />
+            <ParamSlider label="frequencySpread" value={wv.frequencySpread} min={0} max={0.01} step={0.0005} onChange={(v) => setWaveOverride('frequencySpread', v)} />
+            <ParamSlider label="yBaseStart" value={wv.yBaseStart} min={0} max={1} step={0.05} onChange={(v) => setWaveOverride('yBaseStart', v)} />
+            <ParamSlider label="yBaseLayerScale" value={wv.yBaseLayerScale} min={0} max={1} step={0.05} onChange={(v) => setWaveOverride('yBaseLayerScale', v)} />
+            <ParamSlider label="opacityBase" value={wv.opacityBase} min={0} max={0.5} step={0.01} onChange={(v) => setWaveOverride('opacityBase', v)} />
+            <ParamSlider label="opacityLayerScale" value={wv.opacityLayerScale} min={0} max={0.5} step={0.01} onChange={(v) => setWaveOverride('opacityLayerScale', v)} />
+            <ParamSlider label="pausedSpeedMult" value={wv.pausedSpeedMult} min={0} max={1} step={0.05} onChange={(v) => setWaveOverride('pausedSpeedMult', v)} />
+          </>
+        )}
+      </Section>
+
+      <Section>
+        <SectionHeader type="button" onClick={() => setGridOpen((o) => !o)}>
+          Grid Wave {gridOpen ? '▼' : '▶'}
+        </SectionHeader>
+        {gridOpen && (
+          <>
+            <ParamNumber label="spacing" value={gv.spacing} min={10} max={80} step={1} onChange={(v) => setGridOverride('spacing', v)} />
+            <ParamNumber label="spacingMobile" value={gv.spacingMobile} min={8} max={50} step={1} onChange={(v) => setGridOverride('spacingMobile', v)} />
+            <ParamNumber label="waveCount" value={gv.waveCount} min={1} max={10} step={1} onChange={(v) => setGridOverride('waveCount', v)} />
+            <ParamSlider label="waveSpeedBase" value={gv.waveSpeedBase} min={0.001} max={0.03} step={0.001} onChange={(v) => setGridOverride('waveSpeedBase', v)} />
+            <ParamSlider label="waveSpeedSpread" value={gv.waveSpeedSpread} min={0} max={0.02} step={0.001} onChange={(v) => setGridOverride('waveSpeedSpread', v)} />
+            <ParamSlider label="amplitudeBase" value={gv.amplitudeBase} min={0.01} max={0.4} step={0.01} onChange={(v) => setGridOverride('amplitudeBase', v)} />
+            <ParamSlider label="frequencyBase" value={gv.frequencyBase} min={0.001} max={0.02} step={0.0005} onChange={(v) => setGridOverride('frequencyBase', v)} />
+            <ParamSlider label="frequencySpread" value={gv.frequencySpread} min={0} max={0.01} step={0.0005} onChange={(v) => setGridOverride('frequencySpread', v)} />
+            <ParamSlider label="perspectiveStrength" value={gv.perspectiveStrength} min={0} max={0.5} step={0.01} onChange={(v) => setGridOverride('perspectiveStrength', v)} />
+            <ParamSlider label="edgeIntensity" value={gv.edgeIntensity} min={0} max={1} step={0.05} onChange={(v) => setGridOverride('edgeIntensity', v)} />
+            <ParamSlider label="baseRadius" value={gv.baseRadius} min={0.5} max={8} step={0.1} onChange={(v) => setGridOverride('baseRadius', v)} />
+            <ParamSlider label="radiusWaveScale" value={gv.radiusWaveScale} min={0} max={4} step={0.1} onChange={(v) => setGridOverride('radiusWaveScale', v)} />
+            <ParamSlider label="opacityBase" value={gv.opacityBase} min={0} max={1} step={0.05} onChange={(v) => setGridOverride('opacityBase', v)} />
+            <ParamSlider label="opacityWaveScale" value={gv.opacityWaveScale} min={0} max={1} step={0.05} onChange={(v) => setGridOverride('opacityWaveScale', v)} />
+            <ParamSlider label="pausedSpeedMult" value={gv.pausedSpeedMult} min={0} max={1} step={0.05} onChange={(v) => setGridOverride('pausedSpeedMult', v)} />
           </>
         )}
       </Section>

@@ -10,6 +10,8 @@ import TimelineControls from './controls/TimelineControls';
 import ProviderIcon from './ProviderIcon';
 import type { ProviderId } from '@/types/domain';
 
+const PROVIDER_BADGE_Z = 12;
+
 
 interface SpotifyPlayerControlsProps {
   currentTrack: MediaTrack | null;
@@ -77,7 +79,7 @@ const SpotifyPlayerControls = memo<SpotifyPlayerControlsProps>(({
   return (
     <PlayerControlsContainer $isMobile={isMobile} $isTablet={isTablet} $compact={!isDesktop}>
       {showProviderBadge && trackProvider && (
-        <div style={{ position: 'absolute', top: 6, right: 6, zIndex: 12 }}>
+        <div style={{ position: 'absolute', top: 6, right: 6, zIndex: PROVIDER_BADGE_Z }}>
           <ProviderIcon provider={trackProvider} size={22} />
         </div>
       )}

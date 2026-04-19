@@ -206,7 +206,12 @@ export const theme = {
     toast: '1700',
     tooltip: '1800',
     uiOverlay: '2000',
-    eyedropper: '10000'
+    eyedropper: '10000',
+    debug: '999000',
+    debugOverlay: '999980',
+    debugOverlayAbove: '999990',
+    debugModal: '999998',
+    debugTopmost: '999999'
   },
   
   // Player-specific sizing constraints

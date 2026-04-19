@@ -17,6 +17,7 @@ import { providerRegistry } from './providers/registry';
 import { getLikesSync } from './providers/dropbox/dropboxLikesSync';
 import { getPreferencesSync } from './providers/dropbox/dropboxPreferencesSync';
 import { AUTH_COMPLETE_EVENT } from '@/constants/events';
+import { WINDOW_CLOSE_DELAY_MS } from '@/constants/timing';
 import { logApp } from '@/lib/debugLog';
 import { DevBugProvider } from '@/contexts/DevBugContext';
 import { DevBugFAB } from '@/components/DevBug';
@@ -138,7 +139,7 @@ function App() {
               window.location.origin,
             );
             setIsPopupCallback(true);
-            setTimeout(() => window.close(), 1500);
+            setTimeout(() => window.close(), WINDOW_CLOSE_DELAY_MS);
           } else if (handled) {
             window.history.replaceState({}, document.title, '/');
           }

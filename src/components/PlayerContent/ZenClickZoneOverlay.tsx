@@ -1,6 +1,8 @@
 import React from 'react';
 import styled from 'styled-components';
 
+const ZEN_CLICK_ZONE_Z = 5;
+
 interface ZenClickZoneOverlayProps {
   isPlaying: boolean;
   visible: boolean;
@@ -13,7 +15,7 @@ const Overlay = styled.div`
   position: absolute;
   inset: 0;
   pointer-events: none;
-  z-index: 5;
+  z-index: ${ZEN_CLICK_ZONE_Z};
   border-radius: ${({ theme }) => theme.borderRadius['3xl']};
   overflow: hidden;
   display: flex;

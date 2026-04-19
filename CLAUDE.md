@@ -235,7 +235,7 @@ Four animated background styles, selectable via the flip menu's Speed/Style cont
 | `wave` | `WaveVisualizer` | Layered sine waves spread vertically |
 | `grid` | `GridWaveVisualizer` | Dot grid distorted by traveling waves |
 
-Type: `VisualizerStyle` in `src/types/visualizer.d.ts`. Components in `src/components/visualizers/`.
+Type: `VisualizerStyle` in `src/types/visualizer.ts`. Components in `src/components/visualizers/`.
 
 ### Debug logging (optional)
 

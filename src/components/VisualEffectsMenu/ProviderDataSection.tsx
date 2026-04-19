@@ -2,7 +2,8 @@ import React, { memo, useState, useCallback } from 'react';
 
 import type { CatalogProvider } from '@/types/providers';
 import { ART_REFRESHED_EVENT } from '@/hooks/useLibrarySync';
-import { useAsyncAction, FEEDBACK_DISPLAY_MS } from '@/hooks/useAsyncAction';
+import { useAsyncAction } from '@/hooks/useAsyncAction';
+import { STATUS_RESET_DELAY_MS } from '@/constants/statusTiming';
 
 import {
   ControlGroup,
@@ -78,7 +79,7 @@ export const ProviderDataSection = memo(({ providerName, catalog }: { providerNa
     }
     if (fileInputRef.current) fileInputRef.current.value = '';
     setImportStatus('done');
-    setTimeout(() => { setImportStatus('idle'); setResultMessage(''); }, FEEDBACK_DISPLAY_MS);
+    setTimeout(() => { setImportStatus('idle'); setResultMessage(''); }, STATUS_RESET_DELAY_MS);
   }, [catalog]);
 
   const artBusy = clearArtStatus === 'working' || refreshArtStatus === 'working';

@@ -15,6 +15,7 @@ import { shuffleArray } from '@/utils/shuffleArray';
 import type { ProviderId, MediaTrack } from '@/types/domain';
 import type { TrackOperations } from '@/types/trackOperations';
 import { logQueue } from '@/lib/debugLog';
+import { SPOTIFY_POST_ACTION_DELAY_MS, SPOTIFY_RETRY_DELAY_MS, SPOTIFY_DEVICE_ACTIVATE_RETRIES, SPOTIFY_DEVICE_ACTIVATE_DELAY_MS } from '@/constants/timing';
 
 const SPOTIFY_PROVIDER_ID: ProviderId = 'spotify';
 
@@ -22,7 +23,7 @@ async function waitForSpotifyReady(timeout = 10000): Promise<void> {
   const start = Date.now();
   while (!spotifyPlayer.getIsReady() || !spotifyPlayer.getDeviceId()) {
     if (Date.now() - start > timeout) throw new Error('Spotify player not ready after waiting');
-    await new Promise(res => setTimeout(res, 200));
+    await new Promise(res => setTimeout(res, SPOTIFY_POST_ACTION_DELAY_MS));
   }
 }
 
@@ -104,7 +105,7 @@ export const useSpotifyPlaylistManager = ({
         try {
           await spotifyPlayer.playContext(`spotify:playlist:${playlistId}`);
 
-          await new Promise(resolve => setTimeout(resolve, 2000));
+          await new Promise(resolve => setTimeout(resolve, SPOTIFY_RETRY_DELAY_MS));
           const state = await spotifyPlayer.getCurrentState();
 
           if (state?.track_window?.current_track) {
@@ -186,7 +187,7 @@ export const useSpotifyPlaylistManager = ({
               const backoffMs = 2000 * Math.pow(2, retryCount);
               await spotifyPlayer.transferPlaybackToDevice(true);
               await new Promise(resolve => setTimeout(resolve, backoffMs));
-              await spotifyPlayer.ensureDeviceIsActive(3, 1000);
+              await spotifyPlayer.ensureDeviceIsActive(SPOTIFY_DEVICE_ACTIVATE_RETRIES, SPOTIFY_DEVICE_ACTIVATE_DELAY_MS);
 
               return await playWithRetry(trackIndex, retryCount + 1, maxRetries);
             }

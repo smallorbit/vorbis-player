@@ -21,6 +21,12 @@ import {
   ZEN_ART_MARGIN_V_MOBILE,
 } from '@/constants/zenAnimation';
 
+const LOADING_CARD_BACKGROUND_Z = 0;
+const PLAYER_CONTAINER_Z = 1;
+const LOADING_CARD_OVERLAY_Z = 1;
+const CONTENT_WRAPPER_Z = 2;
+const ALBUM_ART_Z = 3;
+
 export const ContentWrapper = styled.div.withConfig({
   shouldForwardProp: (prop) => !['width', 'padding', 'useFluidSizing', 'transitionDuration', 'transitionEasing', '$zenMode'].includes(prop),
 }) <{
@@ -39,7 +45,7 @@ export const ContentWrapper = styled.div.withConfig({
   padding-bottom: ${props => props.padding}px;
   box-sizing: border-box;
   position: relative;
-  z-index: 2;
+  z-index: ${CONTENT_WRAPPER_Z};
   overflow: visible;
 
   transition: width ${props => props.$zenMode ? `${ZEN_ART_DURATION}ms ${ZEN_ART_EASING} ${ZEN_ART_ENTER_DELAY}ms` : `${ZEN_ART_DURATION}ms ${ZEN_ART_EASING}`},
@@ -56,7 +62,7 @@ export const ContentWrapper = styled.div.withConfig({
 
 export const PlayerContainer = styled.div`
   position: relative;
-  z-index: 1;
+  z-index: ${PLAYER_CONTAINER_Z};
   display: flex;
   flex-direction: column;
   width: 100%;
@@ -167,7 +173,7 @@ export const ZenTrackArtist = styled.div`
 export const ClickableAlbumArtContainer = styled.div<{ $swipeEnabled?: boolean; $bothGestures?: boolean }>`
   position: relative;
   cursor: pointer;
-  z-index: 3;
+  z-index: ${ALBUM_ART_Z};
   perspective: 1200px;
   filter: drop-shadow(${({ theme }) => theme.shadows.drop});
   ${({ $swipeEnabled, $bothGestures }) => $swipeEnabled && `
@@ -220,7 +226,7 @@ export const LoadingCard = styled.div.withConfig({
       background-position: center;
       background-repeat: no-repeat;
       border-radius: ${theme.borderRadius.xl};
-      z-index: 0;
+      z-index: ${LOADING_CARD_BACKGROUND_Z};
     }
     &::before {
       position: absolute;
@@ -229,7 +235,7 @@ export const LoadingCard = styled.div.withConfig({
       backdrop-filter: blur(40px) saturate(180%);
       -webkit-backdrop-filter: blur(40px) saturate(180%);
       border-radius: ${theme.borderRadius.xl};
-      z-index: 1;
+      z-index: ${LOADING_CARD_OVERLAY_Z};
     }
   ` : `
     background: linear-gradient(
