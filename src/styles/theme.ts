@@ -197,6 +197,8 @@ export const theme = {
     sticky: '1100',
     banner: '1200',
     overlay: '1300',
+    zenBackdrop: '1348',
+    zenTrigger: '1349',
     mobileMenu: '1350',
     modal: '1400',
     popover: '1500',

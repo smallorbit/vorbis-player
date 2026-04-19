@@ -1,93 +1,14 @@
 import { memo, useCallback, useState, useRef, useEffect, useLayoutEffect } from 'react';
 import { createPortal } from 'react-dom';
-import styled from 'styled-components';
-import { ControlButton } from './styled';
-import { theme } from '@/styles/theme';
-
-const PopoverContainer = styled.div`
-  position: fixed;
-  z-index: ${({ theme }) => theme.zIndex.popover};
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 12px ${({ theme }) => theme.spacing.sm};
-  gap: ${({ theme }) => theme.spacing.sm};
-  background: ${({ theme }) => theme.colors.popover.background};
-  border: 1px solid ${({ theme }) => theme.colors.popover.border};
-  border-radius: ${({ theme }) => theme.borderRadius.xl};
-  box-shadow: ${({ theme }) => theme.shadows.popover};
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-`;
-
-const SliderTrack = styled.div<{ $fillPercent: number }>`
-  position: relative;
-  width: 4px;
-  height: 120px;
-  background: ${({ theme }) => theme.colors.control.backgroundHover};
-  border-radius: ${({ theme }) => theme.borderRadius.sm};
-  cursor: pointer;
-  touch-action: none;
-
-  &::after {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: ${({ $fillPercent }) => $fillPercent}%;
-    background: var(--accent-color);
-    border-radius: ${({ theme }) => theme.borderRadius.sm};
-    pointer-events: none;
-  }
-`;
-
-const SliderThumb = styled.div<{ $percent: number }>`
-  position: absolute;
-  left: 50%;
-  bottom: ${({ $percent }) => $percent}%;
-  transform: translate(-50%, 50%);
-  width: 14px;
-  height: 14px;
-  background: var(--accent-color);
-  border-radius: 50%;
-  pointer-events: none;
-  box-shadow: ${({ theme }) => theme.shadows.xs};
-`;
-
-const MuteButton = styled.button<{ $isMuted: boolean }>`
-  border: none;
-  background: ${({ $isMuted }) => $isMuted ? 'color-mix(in srgb, var(--accent-color) 20%, transparent)' : 'transparent'};
-  color: ${({ $isMuted }) => $isMuted ? theme.colors.gray[300] : theme.colors.gray[400]};
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  padding: ${({ theme }) => theme.spacing.xs};
-  border-radius: ${({ theme }) => theme.borderRadius.md};
-  transition: all ${({ theme }) => theme.transitions.fast} ease;
-  touch-action: manipulation; /* Remove 300ms tap delay on iOS */
-
-  &:hover {
-    background: ${theme.colors.control.background};
-    color: ${theme.colors.white};
-  }
-
-  svg {
-    width: 16px;
-    height: 16px;
-    fill: currentColor;
-  }
-`;
-
-const VolumeLabel = styled.span`
-  font-size: 10px;
-  font-family: monospace;
-  color: ${theme.colors.gray[400]};
-  user-select: none;
-  min-width: 22px;
-  text-align: center;
-`;
+import { ControlButton } from '../styled';
+import { VolumeIcon, UnmuteIcon } from '@/components/icons/VolumeIcons';
+import {
+    PopoverContainer,
+    SliderTrack,
+    SliderThumb,
+    MuteButton,
+    VolumeLabel,
+} from './styled';
 
 interface VolumeControlProps {
     isMuted: boolean;
@@ -109,40 +30,6 @@ const areVolumeControlPropsEqual = (
         prevProps.isTablet === nextProps.isTablet
     );
 };
-
-const VolumeIcon = ({ isMuted, volume }: { isMuted: boolean; volume: number }) => {
-    if (isMuted || volume === 0) {
-        return (
-            <svg viewBox="0 0 24 24">
-                <path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L22.46 25L23.87 23.59L2.41 2.13Z" />
-            </svg>
-        );
-    }
-    if (volume > 50) {
-        return (
-            <svg viewBox="0 0 24 24">
-                <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z" />
-            </svg>
-        );
-    }
-    return (
-        <svg viewBox="0 0 24 24">
-            <path d="M18.5 12c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM5 9v6h4l5 5V4L9 9H5z" />
-        </svg>
-    );
-};
-
-const MuteIcon = () => (
-    <svg viewBox="0 0 24 24">
-        <path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L22.46 25L23.87 23.59L2.41 2.13Z" />
-    </svg>
-);
-
-const UnmuteIcon = () => (
-    <svg viewBox="0 0 24 24">
-        <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z" />
-    </svg>
-);
 
 const VolumeControl = memo<VolumeControlProps>(({
     isMuted,
@@ -276,7 +163,7 @@ const VolumeControl = memo<VolumeControlProps>(({
                         aria-label={isMuted ? 'Unmute' : 'Mute'}
                         aria-pressed={isMuted}
                     >
-                        {isMuted ? <UnmuteIcon /> : <MuteIcon />}
+                        {isMuted ? <UnmuteIcon /> : <VolumeIcon isMuted />}
                     </MuteButton>
                 </PopoverContainer>,
                 document.body
