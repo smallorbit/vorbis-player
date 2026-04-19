@@ -34,6 +34,8 @@ dist-ssr
 public/audio/
 .claude/settings.local.json
 .claude/HANDOFF.md
+.claude/scheduled_tasks.lock
+.claude/worktrees/
 
 # Electron build outputs
 dist-electron/
