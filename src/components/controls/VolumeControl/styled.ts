@@ -1,13 +1,21 @@
 import styled from 'styled-components';
 import { theme } from '@/styles/theme';
 
+const POPOVER_PADDING_Y = '12px';
+const SLIDER_TRACK_WIDTH = '4px';
+const SLIDER_TRACK_HEIGHT = '120px';
+const SLIDER_THUMB_SIZE = '14px';
+const VOLUME_LABEL_FONT_SIZE = '10px';
+const VOLUME_LABEL_MIN_WIDTH = '22px';
+const MUTE_BUTTON_ICON_SIZE = '16px';
+
 export const PopoverContainer = styled.div`
   position: fixed;
   z-index: ${({ theme }) => theme.zIndex.popover};
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 12px ${({ theme }) => theme.spacing.sm};
+  padding: ${POPOVER_PADDING_Y} ${({ theme }) => theme.spacing.sm};
   gap: ${({ theme }) => theme.spacing.sm};
   background: ${({ theme }) => theme.colors.popover.background};
   border: 1px solid ${({ theme }) => theme.colors.popover.border};
@@ -19,8 +27,8 @@ export const PopoverContainer = styled.div`
 
 export const SliderTrack = styled.div<{ $fillPercent: number }>`
   position: relative;
-  width: 4px;
-  height: 120px;
+  width: ${SLIDER_TRACK_WIDTH};
+  height: ${SLIDER_TRACK_HEIGHT};
   background: ${({ theme }) => theme.colors.control.backgroundHover};
   border-radius: ${({ theme }) => theme.borderRadius.sm};
   cursor: pointer;
@@ -44,8 +52,8 @@ export const SliderThumb = styled.div<{ $percent: number }>`
   left: 50%;
   bottom: ${({ $percent }) => $percent}%;
   transform: translate(-50%, 50%);
-  width: 14px;
-  height: 14px;
+  width: ${SLIDER_THUMB_SIZE};
+  height: ${SLIDER_THUMB_SIZE};
   background: var(--accent-color);
   border-radius: 50%;
   pointer-events: none;
@@ -71,17 +79,17 @@ export const MuteButton = styled.button<{ $isMuted: boolean }>`
   }
 
   svg {
-    width: 16px;
-    height: 16px;
+    width: ${MUTE_BUTTON_ICON_SIZE};
+    height: ${MUTE_BUTTON_ICON_SIZE};
     fill: currentColor;
   }
 `;
 
 export const VolumeLabel = styled.span`
-  font-size: 10px;
+  font-size: ${VOLUME_LABEL_FONT_SIZE};
   font-family: monospace;
   color: ${theme.colors.gray[400]};
   user-select: none;
-  min-width: 22px;
+  min-width: ${VOLUME_LABEL_MIN_WIDTH};
   text-align: center;
 `;
