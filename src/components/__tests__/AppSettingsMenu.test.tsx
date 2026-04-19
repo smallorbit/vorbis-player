@@ -68,7 +68,7 @@ vi.mock('@/hooks/useLibrarySync', () => ({
 }));
 
 import { useProviderContext } from '@/contexts/ProviderContext';
-import AppSettingsMenu from '../VisualEffectsMenu/index';
+import AppSettingsMenu from '../AppSettingsMenu/index';
 
 const Wrapper = ({ children }: { children: React.ReactNode }) => (
   <ThemeProvider theme={theme}>{children}</ThemeProvider>

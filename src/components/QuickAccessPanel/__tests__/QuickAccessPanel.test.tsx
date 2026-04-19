@@ -5,6 +5,7 @@ import { ThemeProvider } from 'styled-components';
 import { theme } from '@/styles/theme';
 import QuickAccessPanel from '../index';
 import type { ProviderId } from '@/types/domain';
+import type { SessionSnapshot } from '@/services/sessionPersistence';
 
 vi.mock('@/hooks/useLibrarySync', () => ({
   useLibrarySync: vi.fn(),
@@ -94,7 +95,12 @@ function setupUnifiedLiked(isUnifiedLikedActive: boolean, totalCount: number) {
   } as ReturnType<typeof useUnifiedLikedTracks>);
 }
 
-function renderPanel() {
+interface RenderPanelOptions {
+  lastSession?: SessionSnapshot | null;
+  onResume?: () => void;
+}
+
+function renderPanel(options: RenderPanelOptions = {}) {
   mockUsePinnedItemsContext.mockReturnValue({
     pinnedPlaylistIds: [],
     pinnedAlbumIds: [],
@@ -112,11 +118,22 @@ function renderPanel() {
         onPlaylistSelect={vi.fn()}
         onAddToQueue={vi.fn()}
         onBrowseLibrary={vi.fn()}
-        lastSession={null}
-        onResume={vi.fn()}
+        lastSession={options.lastSession ?? null}
+        onResume={options.onResume ?? vi.fn()}
       />
     </ThemeProvider>
   );
+}
+
+function makeSession(overrides: Partial<SessionSnapshot> = {}): SessionSnapshot {
+  return {
+    collectionId: 'col-1',
+    collectionName: 'My Playlist',
+    trackIndex: 3,
+    trackTitle: 'Track Title',
+    trackArtist: 'Artist Name',
+    ...overrides,
+  };
 }
 
 function getLikedCount(): number {
@@ -238,5 +255,72 @@ describe('QuickAccessPanel effectiveLikedCount', () => {
       // #then
       expect(getLikedCount()).toBe(150);
     });
+  });
+});
+
+describe('QuickAccessPanel Resume hero', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    setupProviderContext(['spotify']);
+    setupLibrarySync([{ provider: 'spotify', count: 10 }]);
+    setupUnifiedLiked(false, 0);
+  });
+
+  it('renders the hero when a valid lastSession is provided', () => {
+    // #given
+    const session = makeSession({ trackTitle: 'Hero Track', collectionName: 'Hero Mix' });
+
+    // #when
+    renderPanel({ lastSession: session });
+
+    // #then
+    expect(screen.getByText('Pick up where you left off')).toBeInTheDocument();
+    expect(screen.getByText('Hero Track')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Resume Hero Track/ })).toBeInTheDocument();
+  });
+
+  it('does not render the hero when lastSession is null', () => {
+    // #when
+    renderPanel({ lastSession: null });
+
+    // #then
+    expect(screen.queryByText('Pick up where you left off')).not.toBeInTheDocument();
+  });
+
+  it('does not render the hero when lastSession has an empty collectionId (stale/invalid)', () => {
+    // #given
+    const session = makeSession({ collectionId: '' });
+
+    // #when
+    renderPanel({ lastSession: session });
+
+    // #then
+    expect(screen.queryByText('Pick up where you left off')).not.toBeInTheDocument();
+  });
+
+  it('invokes onResume when the hero button is clicked', () => {
+    // #given
+    const onResume = vi.fn();
+    const session = makeSession({ trackTitle: 'Click Me' });
+
+    // #when
+    renderPanel({ lastSession: session, onResume });
+    fireEvent.click(screen.getByRole('button', { name: /Resume Click Me/ }));
+
+    // #then
+    expect(onResume).toHaveBeenCalledTimes(1);
+  });
+
+  it('suppresses the footer ResumeCard when the hero is visible', () => {
+    // #given
+    const session = makeSession({ trackTitle: 'Only Hero' });
+
+    // #when
+    renderPanel({ lastSession: session });
+
+    // #then — only one resume affordance, the hero button (matched by name)
+    const resumeAffordances = screen.getAllByRole('button', { name: /Resume/ });
+    expect(resumeAffordances).toHaveLength(1);
+    expect(resumeAffordances[0]).toHaveAccessibleName('Resume Only Hero');
   });
 });

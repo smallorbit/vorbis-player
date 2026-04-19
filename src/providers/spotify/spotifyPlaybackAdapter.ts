@@ -242,8 +242,10 @@ export class SpotifyPlaybackAdapter implements PlaybackProvider {
     return spotifyPlayer.lastPlayTrackTime;
   }
 
-  prepareTrack(_track: MediaTrack): void {
+  prepareTrack(_track: MediaTrack, _options?: { positionMs?: number }): void {
     // Pre-warm the auth token so no refresh delay hits the next transition.
+    // The Spotify Web Playback SDK has no preload-without-play mode, so positionMs
+    // is accepted for interface parity but applied when playTrack is later invoked.
     spotifyAuth.ensureValidToken().catch(() => {});
   }
 

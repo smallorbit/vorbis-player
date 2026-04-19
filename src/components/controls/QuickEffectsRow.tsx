@@ -5,7 +5,7 @@ import type { MediaTrack } from '@/types/domain';
 import type { VisualizerStyle } from '@/types/visualizer';
 import { extractTopVibrantColors } from '@/utils/colorExtractor';
 import type { ExtractedColor } from '@/utils/colorExtractor';
-import { OptionButton, OptionButtonGroup } from '@/components/VisualEffectsMenu/styled';
+import { OptionButton, OptionButtonGroup } from '@/components/AppSettingsMenu/styled';
 import EyedropperOverlay from '@/components/EyedropperOverlay';
 import Switch from '@/components/controls/Switch';
 import { theme } from '@/styles/theme';

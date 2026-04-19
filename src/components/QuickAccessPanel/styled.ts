@@ -23,6 +23,108 @@ export const PanelRoot = styled.div`
   animation: ${fadeIn} 0.25s ease-out;
 `;
 
+export const ResumeHeroSection = styled.section`
+  position: relative;
+  flex-shrink: 0;
+  margin: ${theme.spacing.md} ${theme.spacing.md} 0;
+  padding: ${theme.spacing.md};
+  display: flex;
+  align-items: center;
+  gap: ${theme.spacing.md};
+  border-radius: ${theme.borderRadius['2xl']};
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background:
+    linear-gradient(135deg, rgba(100, 108, 255, 0.22) 0%, rgba(144, 82, 82, 0.18) 100%),
+    rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  box-shadow: ${theme.shadows.drop};
+  overflow: hidden;
+`;
+
+export const ResumeHeroArt = styled.div`
+  width: 88px;
+  height: 88px;
+  border-radius: ${theme.borderRadius.xl};
+  overflow: hidden;
+  flex-shrink: 0;
+  background: ${theme.colors.control.background};
+  box-shadow: ${theme.shadows.albumArtDepth};
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+`;
+
+export const ResumeHeroText = styled.div`
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+`;
+
+export const ResumeHeroEyebrow = styled.span`
+  font-size: ${theme.fontSize.xs};
+  font-weight: ${theme.fontWeight.semibold};
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.72);
+`;
+
+export const ResumeHeroTitle = styled.span`
+  font-size: ${theme.fontSize.xl};
+  font-weight: ${theme.fontWeight.bold};
+  color: ${theme.colors.foreground};
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+`;
+
+export const ResumeHeroSubtitle = styled.span`
+  font-size: ${theme.fontSize.sm};
+  color: ${theme.colors.muted.foreground};
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+`;
+
+export const ResumeHeroButton = styled.button`
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: ${theme.spacing.xs};
+  padding: ${theme.spacing.sm} ${theme.spacing.lg};
+  border-radius: ${theme.borderRadius.full};
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.94);
+  color: #111;
+  font-size: ${theme.fontSize.sm};
+  font-weight: ${theme.fontWeight.semibold};
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: background ${theme.transitions.fast}, transform ${theme.transitions.fast};
+
+  svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  &:hover {
+    background: #ffffff;
+  }
+
+  &:active {
+    transform: scale(0.97);
+  }
+`;
+
 export const ResumeCardRoot = styled.button`
   display: flex;
   flex-shrink: 0;

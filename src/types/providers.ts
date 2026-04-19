@@ -79,8 +79,8 @@ export interface PlaybackProvider {
   getState(): Promise<PlaybackState | null>;
   /** Subscribe to state changes (returns unsubscribe). */
   subscribe(listener: (state: PlaybackState | null) => void): () => void;
-  /** Optional: pre-warm resources for an upcoming track (e.g. fetch temporary links). */
-  prepareTrack?(track: MediaTrack): void;
+  /** Optional: pre-warm resources for an upcoming track (e.g. fetch temporary links). Supplying positionMs lets the adapter prepare to resume at that offset. */
+  prepareTrack?(track: MediaTrack, options?: { positionMs?: number }): void;
   /** Optional: re-fetch album art for the currently playing track. */
   refreshCurrentTrackArt?(): void;
   /** Optional: epoch ms of the last playTrack call (used by auto-advance cooldown). */

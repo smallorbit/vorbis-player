@@ -1,7 +1,7 @@
-import React, { Suspense, useCallback, useState } from 'react';
+import React, { Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import styled, { keyframes } from 'styled-components';
 import type { MediaTrack } from '@/types/domain';
-import type { SessionSnapshot } from '@/services/sessionPersistence';
+import { isSessionStale, type SessionSnapshot } from '@/services/sessionPersistence';
 import { Card, CardHeader, CardContent } from '../components/styled';
 import { Button } from '../components/styled';
 import { Alert, AlertDescription } from '../components/styled';
@@ -9,8 +9,11 @@ import { flexColumn, cardBase } from '../styles/utils';
 import { theme } from '@/styles/theme';
 import { useProviderContext } from '@/contexts/ProviderContext';
 import { useQapEnabled } from '@/hooks/useQapEnabled';
+import { useWelcomeSeen } from '@/hooks/useWelcomeSeen';
 import QuickAccessPanel from './QuickAccessPanel';
 import ResumeCard from './QuickAccessPanel/ResumeCard';
+import SettingsGearButton from './SettingsGearButton';
+import WelcomeScreen from './WelcomeScreen';
 
 const LibraryPage = React.lazy(() => import('./PlaylistSelection'));
 
@@ -177,6 +180,21 @@ interface PlayerStateRendererProps {
   onQueueLikedTracks?: (tracks: MediaTrack[], collectionName?: string) => void;
   lastSession: SessionSnapshot | null;
   onResume: () => void;
+  onOpenSettings: () => void;
+  onHydrate: (session: SessionSnapshot) => Promise<void>;
+}
+
+type IdleRoute = 'welcome' | 'qap' | 'hydrate' | 'library';
+
+function resolveIdleRoute(
+  welcomeSeen: boolean,
+  qapEnabled: boolean,
+  hasValidSession: boolean,
+): IdleRoute {
+  if (!welcomeSeen) return 'welcome';
+  if (qapEnabled) return 'qap';
+  if (hasValidSession) return 'hydrate';
+  return 'library';
 }
 
 const PlayerStateRenderer: React.FC<PlayerStateRendererProps> = ({
@@ -190,27 +208,44 @@ const PlayerStateRenderer: React.FC<PlayerStateRendererProps> = ({
   onQueueLikedTracks,
   lastSession,
   onResume,
+  onOpenSettings,
+  onHydrate,
 }) => {
   const { activeDescriptor } = useProviderContext();
   const providerName = activeDescriptor?.name ?? 'Music Service';
   const [qapEnabled] = useQapEnabled();
-  const [showLibrary, setShowLibrary] = useState(!qapEnabled);
+  const [welcomeSeen] = useWelcomeSeen();
+  const hasValidSession = !isSessionStale(lastSession);
+  const route = resolveIdleRoute(welcomeSeen, qapEnabled, hasValidSession);
+  // "Browse Library" is a one-way door: once engaged, the idle view stays on
+  // Library even if routing inputs would otherwise pick QAP.
+  const [libraryOverride, setLibraryOverride] = useState(false);
+
+  const hydrateFiredRef = useRef(false);
+  useEffect(() => {
+    if (hydrateFiredRef.current) return;
+    if (route !== 'hydrate') return;
+    if (!lastSession) return;
+    hydrateFiredRef.current = true;
+    void onHydrate(lastSession);
+  }, [route, lastSession, onHydrate]);
 
   const handleConnectClick = useCallback(() => {
     activeDescriptor?.auth.beginLogin();
   }, [activeDescriptor]);
 
   const handleBrowseLibrary = useCallback(() => {
-    setShowLibrary(true);
+    setLibraryOverride(true);
   }, []);
 
   const handlePlaylistSelectWrapped = useCallback(
     (id: string, name?: string, provider?: import('@/types/domain').ProviderId) => {
-      setShowLibrary(false);
+      setLibraryOverride(false);
       onPlaylistSelect(id, name, provider);
     },
     [onPlaylistSelect],
   );
+
 
   if (isLoading) {
     return (
@@ -266,8 +301,9 @@ const PlayerStateRenderer: React.FC<PlayerStateRendererProps> = ({
   }
 
   if (selectedPlaylistId === null || tracks.length === 0) {
-    if (showLibrary) {
-      return (
+    const libraryView = (
+      <>
+        <SettingsGearButton onClick={onOpenSettings} />
         <Suspense fallback={
           <LoadingCard standalone>
             <LoadingContainer>
@@ -289,18 +325,54 @@ const PlayerStateRenderer: React.FC<PlayerStateRendererProps> = ({
             ) : undefined}
           />
         </Suspense>
+      </>
+    );
+
+    if (libraryOverride) return libraryView;
+
+    if (route === 'welcome') {
+      return (
+        <>
+          <SettingsGearButton onClick={onOpenSettings} />
+          <WelcomeScreen
+            onConnectProvider={handleConnectClick}
+            onBrowseLibrary={handleBrowseLibrary}
+          />
+        </>
       );
     }
 
-    return (
-      <QuickAccessPanel
-        onPlaylistSelect={handlePlaylistSelectWrapped}
-        onAddToQueue={onAddToQueue}
-        onBrowseLibrary={handleBrowseLibrary}
-        lastSession={lastSession}
-        onResume={onResume}
-      />
-    );
+    if (route === 'hydrate') {
+      return (
+        <LoadingCard standalone>
+          <LoadingContainer>
+            <MusicIcon />
+            <LoadingText>
+              <LoadingTitle>Restoring Your Session</LoadingTitle>
+              <LoadingSubtext>Loading your last queue</LoadingSubtext>
+            </LoadingText>
+            <ProgressBar />
+          </LoadingContainer>
+        </LoadingCard>
+      );
+    }
+
+    if (route === 'qap') {
+      return (
+        <>
+          <SettingsGearButton onClick={onOpenSettings} />
+          <QuickAccessPanel
+            onPlaylistSelect={handlePlaylistSelectWrapped}
+            onAddToQueue={onAddToQueue}
+            onBrowseLibrary={handleBrowseLibrary}
+            lastSession={hasValidSession ? lastSession : null}
+            onResume={onResume}
+          />
+        </>
+      );
+    }
+
+    return libraryView;
   }
 
   return null;

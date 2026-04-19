@@ -25,11 +25,11 @@ import { useTrackListContext, useCurrentTrackContext } from '@/contexts/TrackCon
 import { useProviderContext } from '@/contexts/ProviderContext';
 import { toAlbumPlaylistId } from '@/constants/playlist';
 import { STORAGE_KEYS } from '@/constants/storage';
-import type { ClearCacheOptions } from '@/components/VisualEffectsMenu';
+import type { ClearCacheOptions } from '@/components/AppSettingsMenu';
 import { useSessionPersistence } from '@/hooks/useSessionPersistence';
 import QuickAccessPanel from './QuickAccessPanel';
 
-const VisualEffectsMenu = lazy(() => import('./VisualEffectsMenu/index'));
+const VisualEffectsMenu = lazy(() => import('./AppSettingsMenu/index'));
 const LibraryPage = lazy(() => import('./PlaylistSelection'));
 
 const Container = styled.div`
@@ -293,6 +293,8 @@ const AudioPlayerComponent = () => {
               onQueueLikedTracks={handleQueueLikedTracks}
               lastSession={lastSession}
               onResume={handleResume}
+              onOpenSettings={handleOpenSettings}
+              onHydrate={handlers.handleHydrate}
             />
           </ProfiledComponent>
           {qapToast && (
@@ -406,37 +408,35 @@ const AudioPlayerComponent = () => {
         {disconnectToast && !reconnectPrompt && (
           <Toast message={disconnectToast} onDismiss={dismissDisconnectToast} />
         )}
-        {needsSetup && (
-          <>
-            <Suspense fallback={null}>
-              <VisualEffectsMenu
-                isOpen={showVisualEffects}
-                onClose={handleCloseSettings}
-                onClearCache={handleClearCache}
-                profilerEnabled={false}
-                onProfilerToggle={() => {}}
-                visualizerDebugEnabled={false}
-                onVisualizerDebugToggle={() => {}}
-                qapEnabled={false}
-                onQapToggle={() => {}}
-              />
-            </Suspense>
-            {state.showLibrary && (
-              <Suspense fallback={null}>
-                <LibraryPage
-                  onPlaylistSelect={(id, name, provider) => {
-                    handlers.handleCloseLibrary();
-                    handlePlaylistSelect(id, name, provider);
-                  }}
-                  onPlayLikedTracks={handlePlayLikedTracks}
-                  onQueueLikedTracks={handleQueueLikedTracks}
-                  footer={lastSession && handleResume ? (
-                    <ResumeCard session={lastSession} onResume={handleResume} />
-                  ) : undefined}
-                />
-              </Suspense>
-            )}
-          </>
+        {!isMainPlayerActive && (
+          <Suspense fallback={null}>
+            <VisualEffectsMenu
+              isOpen={showVisualEffects}
+              onClose={handleCloseSettings}
+              onClearCache={handleClearCache}
+              profilerEnabled={false}
+              onProfilerToggle={() => {}}
+              visualizerDebugEnabled={false}
+              onVisualizerDebugToggle={() => {}}
+              qapEnabled={false}
+              onQapToggle={() => {}}
+            />
+          </Suspense>
+        )}
+        {needsSetup && state.showLibrary && (
+          <Suspense fallback={null}>
+            <LibraryPage
+              onPlaylistSelect={(id, name, provider) => {
+                handlers.handleCloseLibrary();
+                handlePlaylistSelect(id, name, provider);
+              }}
+              onPlayLikedTracks={handlePlayLikedTracks}
+              onQueueLikedTracks={handleQueueLikedTracks}
+              footer={lastSession && handleResume ? (
+                <ResumeCard session={lastSession} onResume={handleResume} />
+              ) : undefined}
+            />
+          </Suspense>
         )}
       </Container>
     </ProfilingProvider>
