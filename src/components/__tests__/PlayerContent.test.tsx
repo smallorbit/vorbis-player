@@ -117,9 +117,41 @@ vi.mock('@/contexts/ColorContext', () => ({
   ColorProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
 
-vi.mock('@/contexts/VisualEffectsContext', () => ({
-  useVisualEffectsContext: vi.fn(() => ({
+vi.mock('@/contexts/visualEffects', () => ({
+  useVisualEffectsToggle: vi.fn(() => ({
+    visualEffectsEnabled: true,
+    setVisualEffectsEnabled: vi.fn(),
     showVisualEffects: false,
+    setShowVisualEffects: vi.fn(),
+  })),
+  useZenMode: vi.fn(() => ({
+    zenModeEnabled: false,
+    setZenModeEnabled: vi.fn(),
+  })),
+  useVisualizer: vi.fn(() => ({
+    backgroundVisualizerEnabled: true,
+    setBackgroundVisualizerEnabled: vi.fn(),
+    backgroundVisualizerStyle: 'fireflies',
+    setBackgroundVisualizerStyle: vi.fn(),
+    backgroundVisualizerIntensity: 40,
+    setBackgroundVisualizerIntensity: vi.fn(),
+    backgroundVisualizerSpeed: 1.0,
+    setBackgroundVisualizerSpeed: vi.fn(),
+  })),
+  useTranslucence: vi.fn(() => ({
+    translucenceEnabled: true,
+    setTranslucenceEnabled: vi.fn(),
+    translucenceOpacity: 0.8,
+    setTranslucenceOpacity: vi.fn(),
+  })),
+  useAccentColorBackground: vi.fn(() => ({
+    accentColorBackgroundPreferred: false,
+    setAccentColorBackgroundPreferred: vi.fn(),
+    accentColorBackgroundEnabled: false,
+  })),
+  useGlow: vi.fn(() => ({
+    perAlbumGlow: {},
+    setPerAlbumGlow: vi.fn(),
   })),
   VisualEffectsProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));

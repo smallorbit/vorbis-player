@@ -15,7 +15,11 @@ import { ProfilingOverlay } from '@/components/ProfilingOverlay';
 import { ProfiledComponent } from '@/components/ProfiledComponent';
 import { usePlayerLogic } from '@/hooks/usePlayerLogic';
 import { useColorContext } from '@/contexts/ColorContext';
-import { useVisualEffectsContext } from '@/contexts/VisualEffectsContext';
+import {
+  useAccentColorBackground,
+  useVisualEffectsToggle,
+  useVisualizer,
+} from '@/contexts/visualEffects';
 import { PlayerSizingProvider } from '@/contexts/PlayerSizingContext';
 import { useTrackListContext, useCurrentTrackContext } from '@/contexts/TrackContext';
 import { useProviderContext } from '@/contexts/ProviderContext';
@@ -61,10 +65,9 @@ const AudioPlayerComponent = () => {
     backgroundVisualizerStyle,
     backgroundVisualizerIntensity,
     backgroundVisualizerSpeed,
-    accentColorBackgroundEnabled,
-    showVisualEffects,
-    setShowVisualEffects,
-  } = useVisualEffectsContext();
+  } = useVisualizer();
+  const { accentColorBackgroundEnabled } = useAccentColorBackground();
+  const { showVisualEffects, setShowVisualEffects } = useVisualEffectsToggle();
   const { tracks, selectedPlaylistId, setTracks, setOriginalTracks, setSelectedPlaylistId } = useTrackListContext();
   const { currentTrack, currentTrackIndex, setCurrentTrackIndex, setShowQueue } = useCurrentTrackContext();
 

@@ -8,7 +8,7 @@ import { vi, describe, it, expect, beforeEach } from 'vitest';
 import { usePlayerLogic } from '../usePlayerLogic';
 import { useTrackListContext, useCurrentTrackContext } from '@/contexts/TrackContext';
 import { TrackProvider } from '@/contexts/TrackContext';
-import { VisualEffectsProvider } from '@/contexts/VisualEffectsContext';
+import { VisualEffectsProvider } from '@/contexts/visualEffects';
 import { ColorProvider } from '@/contexts/ColorContext';
 import { ProviderProvider } from '@/contexts/ProviderContext';
 import { RADIO_PLAYLIST_ID } from '@/constants/playlist';

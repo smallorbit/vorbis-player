@@ -2,7 +2,7 @@ import React, { useCallback, useRef, useEffect, useLayoutEffect } from 'react';
 import { useQapEnabled } from '@/hooks/useQapEnabled';
 import { usePlayerSizingContext } from '@/contexts/PlayerSizingContext';
 import { useCurrentTrackContext } from '@/contexts/TrackContext';
-import { useVisualEffectsContext } from '@/contexts/VisualEffectsContext';
+import { useVisualEffectsToggle, useZenMode } from '@/contexts/visualEffects';
 import { useLikeTrack } from '@/hooks/useLikeTrack';
 import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { STORAGE_KEYS } from '@/constants/storage';
@@ -82,7 +82,8 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({
   onResume,
 }) => {
   const { currentTrack, showQueue, setShowQueue } = useCurrentTrackContext();
-  const { zenModeEnabled, setZenModeEnabled, setShowVisualEffects } = useVisualEffectsContext();
+  const { zenModeEnabled, setZenModeEnabled } = useZenMode();
+  const { setShowVisualEffects } = useVisualEffectsToggle();
   const { dimensions, useFluidSizing, padding, transitionDuration, transitionEasing, isMobile, isTablet, hasPointerInput, isTouchDevice } = usePlayerSizingContext();
   const { isLiked, isLikePending, handleLikeToggle, canSaveTrack } = useLikeTrack(currentTrack?.id, currentTrack?.provider);
   const reducedMotion = useReducedMotion();
