@@ -1,4 +1,4 @@
-import React, { Suspense, lazy, useState, useCallback, useRef } from 'react';
+import React, { Suspense, lazy, useState, useCallback, useMemo, useRef } from 'react';
 import { useTheme } from 'styled-components';
 import { CardContent } from '@/components/styled';
 import SpotifyPlayerControls from '@/components/SpotifyPlayerControls';
@@ -13,6 +13,7 @@ import { useVisualizerDebug } from '@/contexts/VisualizerDebugContext';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
 import { useVolume } from '@/hooks/useVolume';
 import { useTrackListContext } from '@/contexts/TrackContext';
+import { BottomBarActionsProvider, type BottomBarActionsValue } from '@/contexts/BottomBarActionsContext';
 import { clearCacheWithOptions } from '@/services/cache/libraryCache';
 import { clearAllPins } from '@/services/settings/pinnedItemsStorage';
 import { STORAGE_KEYS } from '@/constants/storage';
@@ -127,11 +128,11 @@ export const PlayerControlsSection: React.FC<PlayerControlsSectionProps> = React
   isLikePending,
   onLikeToggle,
 }) => {
-  const { tracks, shuffleEnabled, handleShuffleToggle } = useTrackListContext();
+  const { tracks, handleShuffleToggle } = useTrackListContext();
   const { isMobile } = usePlayerSizingContext();
   const { accentColor } = useColorContext();
   const { effectiveGlow, restoreGlowSettings } = useVisualEffectsState();
-  const { handleMuteToggle, isMuted, volume, setVolumeLevel } = useVolume(currentTrackProvider);
+  const { handleMuteToggle, volume, setVolumeLevel } = useVolume(currentTrackProvider);
 
   const {
     visualEffectsEnabled,
@@ -274,6 +275,28 @@ export const PlayerControlsSection: React.FC<PlayerControlsSectionProps> = React
     setVolumeLevel(Math.max(0, (volume ?? 50) - 5));
   }, [volume, setVolumeLevel]);
 
+  const bottomBarActions = useMemo<BottomBarActionsValue>(() => ({
+    hidden: showLibrary && isMobile,
+    showSettings: handleShowVisualEffects,
+    showQueue: onShowQueue,
+    openLibrary: onOpenLibrary,
+    toggleZenMode: onZenModeToggle,
+    startRadio: isRadioAvailable ? onStartRadio : undefined,
+    openQuickAccessPanel: onOpenQuickAccessPanel,
+    radioGenerating: radioState?.isGenerating,
+  }), [
+    showLibrary,
+    isMobile,
+    handleShowVisualEffects,
+    onShowQueue,
+    onOpenLibrary,
+    onZenModeToggle,
+    isRadioAvailable,
+    onStartRadio,
+    onOpenQuickAccessPanel,
+    radioState?.isGenerating,
+  ]);
+
   useKeyboardShortcuts({
     onPlayPause: handlePlayPause,
     onNext: onNext,
@@ -340,23 +363,9 @@ export const PlayerControlsSection: React.FC<PlayerControlsSectionProps> = React
         </ZenControlsInner>
       </ZenControlsWrapper>
       <ProfiledComponent id="BottomBar">
-        <BottomBar
-          zenModeEnabled={zenModeEnabled}
-          hidden={showLibrary && isMobile}
-          isMuted={isMuted}
-          volume={volume}
-          onMuteToggle={handleMuteToggle}
-          onVolumeChange={setVolumeLevel}
-          onShowVisualEffects={handleShowVisualEffects}
-          onBackToLibrary={onOpenLibrary}
-          onShowQueue={onShowQueue}
-          onZenModeToggle={onZenModeToggle}
-          shuffleEnabled={shuffleEnabled}
-          onShuffleToggle={handleShuffleToggle}
-          onStartRadio={isRadioAvailable ? onStartRadio : undefined}
-          radioGenerating={radioState?.isGenerating}
-          onOpenQuickAccessPanel={onOpenQuickAccessPanel}
-        />
+        <BottomBarActionsProvider value={bottomBarActions}>
+          <BottomBar />
+        </BottomBarActionsProvider>
       </ProfiledComponent>
       {settingsHasBeenOpenedRef.current && (
         <Suspense fallback={<VisualEffectsLoadingFallback />}>

@@ -5,6 +5,10 @@ import { ControlButton } from '../controls/styled';
 import VolumeControl from '../controls/VolumeControl';
 import { usePlayerSizingContext } from '@/contexts/PlayerSizingContext';
 import { useQapEnabled } from '@/hooks/useQapEnabled';
+import { useVolume } from '@/hooks/useVolume';
+import { useTrackListContext, useCurrentTrackContext } from '@/contexts/TrackContext';
+import { useVisualEffectsContext } from '@/contexts/VisualEffectsContext';
+import { useBottomBarActions } from '@/contexts/BottomBarActionsContext';
 import {
   VisualEffectsIcon,
   BackToLibraryIcon,
@@ -16,45 +20,25 @@ import {
 } from '../icons/QuickActionIcons';
 
 const AUTOHIDE_DELAY = 1000;
-const noop = () => {};
 
-interface BottomBarProps {
-  zenModeEnabled?: boolean;
-  hidden?: boolean;
-  isMuted: boolean;
-  volume: number;
-  onMuteToggle?: () => void;
-  onVolumeChange?: (volume: number) => void;
-  onShowVisualEffects: () => void;
-  onBackToLibrary?: () => void;
-  onShowQueue: () => void;
-  onZenModeToggle?: () => void;
-  shuffleEnabled?: boolean;
-  onShuffleToggle?: () => void;
-  onStartRadio?: () => void;
-  radioGenerating?: boolean;
-  onOpenQuickAccessPanel?: () => void;
-}
-
-const BottomBar = React.memo(function BottomBar({
-  zenModeEnabled,
-  hidden,
-  isMuted,
-  volume,
-  onMuteToggle,
-  onVolumeChange,
-  onShowVisualEffects,
-  onBackToLibrary,
-  onShowQueue,
-  onZenModeToggle,
-  shuffleEnabled,
-  onShuffleToggle,
-  onStartRadio,
-  radioGenerating,
-  onOpenQuickAccessPanel,
-}: BottomBarProps) {
+const BottomBar = React.memo(function BottomBar() {
   const { isMobile, isTablet, isTouchDevice } = usePlayerSizingContext();
   const [qapEnabled] = useQapEnabled();
+  const { currentTrack } = useCurrentTrackContext();
+  const { isMuted, volume, handleMuteToggle, setVolumeLevel } = useVolume(currentTrack?.provider);
+  const { shuffleEnabled, handleShuffleToggle } = useTrackListContext();
+  const { zenModeEnabled } = useVisualEffectsContext();
+  const {
+    hidden,
+    showSettings,
+    showQueue,
+    openLibrary,
+    toggleZenMode,
+    startRadio,
+    openQuickAccessPanel,
+    radioGenerating,
+  } = useBottomBarActions();
+
   const [barVisible, setBarVisible] = useState(!zenModeEnabled);
   const hideTimerRef = useRef<ReturnType<typeof setTimeout>>();
   const isHoveringRef = useRef(false);
@@ -124,7 +108,7 @@ const BottomBar = React.memo(function BottomBar({
 
   if (hidden) return null;
 
-  const isHidden = !barVisible && !!zenModeEnabled;
+  const isHidden = !barVisible && zenModeEnabled;
 
   return createPortal(
     <>
@@ -148,32 +132,30 @@ const BottomBar = React.memo(function BottomBar({
           <VolumeControl
             isMuted={isMuted}
             volume={volume}
-            onClick={onMuteToggle ?? noop}
-            onVolumeChange={onVolumeChange ?? noop}
+            onClick={handleMuteToggle}
+            onVolumeChange={setVolumeLevel}
             isMobile={isMobile}
             isTablet={isTablet}
           />
 
-          {onShuffleToggle && (
-            <ControlButton
-              $isMobile={isMobile}
-              $isTablet={isTablet}
-              isActive={shuffleEnabled}
-              onClick={onShuffleToggle}
-              title={`Shuffle ${shuffleEnabled ? 'ON' : 'OFF'}`}
-              aria-label="Shuffle"
-              aria-pressed={shuffleEnabled}
-            >
-              <ShuffleIcon />
-            </ControlButton>
-          )}
+          <ControlButton
+            $isMobile={isMobile}
+            $isTablet={isTablet}
+            isActive={shuffleEnabled}
+            onClick={handleShuffleToggle}
+            title={`Shuffle ${shuffleEnabled ? 'ON' : 'OFF'}`}
+            aria-label="Shuffle"
+            aria-pressed={shuffleEnabled}
+          >
+            <ShuffleIcon />
+          </ControlButton>
 
-          {onStartRadio && (
+          {startRadio && (
             <ControlButton
               $isMobile={isMobile}
               $isTablet={isTablet}
               $compact
-              onClick={onStartRadio}
+              onClick={startRadio}
               title={radioGenerating ? 'Generating radio playlist...' : 'Generate radio playlist from current track'}
               disabled={radioGenerating}
               aria-label="Generate radio playlist from current track"
@@ -182,12 +164,12 @@ const BottomBar = React.memo(function BottomBar({
             </ControlButton>
           )}
 
-          {qapEnabled && onOpenQuickAccessPanel && (
+          {qapEnabled && openQuickAccessPanel && (
             <ControlButton
               $isMobile={isMobile}
               $isTablet={isTablet}
               $compact
-              onClick={onOpenQuickAccessPanel}
+              onClick={openQuickAccessPanel}
               title="Quick Access Panel"
               aria-label="Quick Access Panel"
             >
@@ -199,51 +181,47 @@ const BottomBar = React.memo(function BottomBar({
             $isMobile={isMobile}
             $isTablet={isTablet}
             $compact
-            onClick={onShowVisualEffects}
+            onClick={showSettings}
             title="App settings"
             aria-label="App settings"
           >
             <VisualEffectsIcon />
           </ControlButton>
 
-          {onBackToLibrary && (
-            <ControlButton
-              $isMobile={isMobile}
-              $isTablet={isTablet}
-              $compact
-              onClick={onBackToLibrary}
-              title="Back to Library"
-              aria-label="Back to Library"
-            >
-              <BackToLibraryIcon />
-            </ControlButton>
-          )}
+          <ControlButton
+            $isMobile={isMobile}
+            $isTablet={isTablet}
+            $compact
+            onClick={openLibrary}
+            title="Back to Library"
+            aria-label="Back to Library"
+          >
+            <BackToLibraryIcon />
+          </ControlButton>
 
           <ControlButton
             $isMobile={isMobile}
             $isTablet={isTablet}
             $compact
-            onClick={onShowQueue}
+            onClick={showQueue}
             title="Show Queue"
             aria-label="Show Queue"
           >
             <QueueIcon />
           </ControlButton>
 
-          {onZenModeToggle && (
-            <ControlButton
-              $isMobile={isMobile}
-              $isTablet={isTablet}
-              $compact
-              isActive={zenModeEnabled}
-              onClick={onZenModeToggle}
-              title={`Zen Mode ${zenModeEnabled ? 'ON' : 'OFF'}`}
-              aria-label="Zen Mode"
-              aria-pressed={zenModeEnabled}
-            >
-              <ZenModeIcon />
-            </ControlButton>
-          )}
+          <ControlButton
+            $isMobile={isMobile}
+            $isTablet={isTablet}
+            $compact
+            isActive={zenModeEnabled}
+            onClick={toggleZenMode}
+            title={`Zen Mode ${zenModeEnabled ? 'ON' : 'OFF'}`}
+            aria-label="Zen Mode"
+            aria-pressed={zenModeEnabled}
+          >
+            <ZenModeIcon />
+          </ControlButton>
         </BottomBarInner>
       </BottomBarContainer>
     </>,

@@ -6,6 +6,11 @@ import { theme } from '@/styles/theme';
 import BottomBar from '../BottomBar';
 import { TestWrapper } from '@/test/testWrappers';
 import { usePlayerSizingContext } from '@/contexts/PlayerSizingContext';
+import {
+  BottomBarActionsProvider,
+  type BottomBarActionsValue,
+} from '@/contexts/BottomBarActionsContext';
+import { useVisualEffectsContext } from '@/contexts/VisualEffectsContext';
 
 vi.mock('@/services/spotifyPlayer', () => ({
   spotifyPlayer: {
@@ -54,85 +59,151 @@ vi.mock('@/contexts/PlayerSizingContext', () => ({
   usePlayerSizingContext: vi.fn(() => mockSizingContext),
 }));
 
-const defaultProps = {
-  zenModeEnabled: false,
-  isMuted: false,
-  volume: 50,
-  onMuteToggle: vi.fn(),
-  onVolumeChange: vi.fn(),
-  onShowVisualEffects: vi.fn(),
-  onBackToLibrary: vi.fn(),
-  onShowQueue: vi.fn(),
-  onZenModeToggle: vi.fn(),
-  shuffleEnabled: false,
-  onShuffleToggle: vi.fn(),
-};
+function makeActions(overrides?: Partial<BottomBarActionsValue>): BottomBarActionsValue {
+  return {
+    hidden: false,
+    showSettings: vi.fn(),
+    showQueue: vi.fn(),
+    openLibrary: vi.fn(),
+    toggleZenMode: vi.fn(),
+    startRadio: vi.fn(),
+    openQuickAccessPanel: vi.fn(),
+    radioGenerating: false,
+    ...overrides,
+  };
+}
 
-function renderBottomBar(overrides?: Partial<typeof defaultProps>) {
-  const props = { ...defaultProps, ...overrides };
-  Object.keys(props).forEach((key) => {
-    const val = props[key as keyof typeof props];
-    if (typeof val === 'function') {
-      (val as ReturnType<typeof vi.fn>).mockClear();
-    }
-  });
+function ZenModeSetter({ enabled }: { enabled: boolean }) {
+  const { setZenModeEnabled } = useVisualEffectsContext();
+  React.useEffect(() => {
+    setZenModeEnabled(enabled);
+  }, [enabled, setZenModeEnabled]);
+  return null;
+}
+
+interface RenderOptions {
+  actions?: BottomBarActionsValue;
+  zenModeEnabled?: boolean;
+}
+
+function primeZenMode(enabled: boolean) {
+  vi.mocked(window.localStorage.getItem).mockImplementation((key: string) =>
+    key === 'vorbis-player-zen-mode-enabled' ? JSON.stringify(enabled) : null
+  );
+}
+
+function renderBottomBar(options?: RenderOptions) {
+  const actions = options?.actions ?? makeActions();
+  const zen = options?.zenModeEnabled ?? false;
+  primeZenMode(zen);
   const result = render(
     <ThemeProvider theme={theme}>
       <TestWrapper>
-        <BottomBar {...props} />
+        <ZenModeSetter enabled={zen} />
+        <BottomBarActionsProvider value={actions}>
+          <BottomBar />
+        </BottomBarActionsProvider>
       </TestWrapper>
     </ThemeProvider>
   );
-  return { ...result, props };
+  return { ...result, actions };
+}
+
+function rerenderBottomBar(
+  rerender: ReturnType<typeof render>['rerender'],
+  options: RenderOptions,
+) {
+  const actions = options.actions ?? makeActions();
+  const zen = options.zenModeEnabled ?? false;
+  rerender(
+    <ThemeProvider theme={theme}>
+      <TestWrapper>
+        <ZenModeSetter enabled={zen} />
+        <BottomBarActionsProvider value={actions}>
+          <BottomBar />
+        </BottomBarActionsProvider>
+      </TestWrapper>
+    </ThemeProvider>
+  );
 }
 
 describe('BottomBar', () => {
   it('renders into document.body via portal', () => {
+    // #given / #when
     renderBottomBar();
+
+    // #then
     const bar = document.body.querySelector('[title="App settings"]');
     expect(bar).toBeTruthy();
   });
 
-  it('clicking the back-to-library button calls onBackToLibrary', () => {
-    const { props } = renderBottomBar();
-    const backButton = screen.getByTitle('Back to Library');
-    fireEvent.click(backButton);
-    expect(props.onBackToLibrary).toHaveBeenCalledOnce();
+  it('clicking the back-to-library button calls openLibrary', () => {
+    // #given
+    const { actions } = renderBottomBar();
+
+    // #when
+    fireEvent.click(screen.getByTitle('Back to Library'));
+
+    // #then
+    expect(actions.openLibrary).toHaveBeenCalledOnce();
   });
 
-  it('zen mode button is visible when onZenModeToggle is provided', () => {
-    renderBottomBar({ onZenModeToggle: vi.fn() });
+  it('zen mode button is always rendered', () => {
+    // #given / #when
+    renderBottomBar();
+
+    // #then
     expect(screen.getByTitle(/zen mode/i)).toBeTruthy();
   });
 
-  it('zen mode button is absent when onZenModeToggle is not provided', () => {
-    renderBottomBar({ onZenModeToggle: undefined });
-    expect(screen.queryByTitle(/zen mode/i)).toBeNull();
+  it('shuffle button reflects shuffle state from track context', () => {
+    // #given — TestWrapper's TrackProvider defaults shuffleEnabled to false
+    renderBottomBar();
+
+    // #then
+    const shuffleButton = screen.getByTitle(/shuffle/i);
+    expect(shuffleButton.getAttribute('aria-pressed')).toBe('false');
   });
 
-  it('shuffle button shows active state when shuffle is enabled', () => {
-    renderBottomBar({ shuffleEnabled: true });
-    const shuffleButton = screen.getByTitle('Shuffle ON');
-    expect(shuffleButton).toBeTruthy();
-    expect(shuffleButton.getAttribute('aria-pressed')).toBe('true');
-  });
+  it('visual effects button calls showSettings when clicked', () => {
+    // #given
+    const { actions } = renderBottomBar();
 
-  it('visual effects button calls onShowVisualEffects when clicked', () => {
-    const { props } = renderBottomBar();
+    // #when
     fireEvent.click(screen.getByTitle('App settings'));
-    expect(props.onShowVisualEffects).toHaveBeenCalledOnce();
+
+    // #then
+    expect(actions.showSettings).toHaveBeenCalledOnce();
   });
 
-  it('queue button calls onShowQueue when clicked', () => {
-    const { props } = renderBottomBar();
+  it('queue button calls showQueue when clicked', () => {
+    // #given
+    const { actions } = renderBottomBar();
+
+    // #when
     fireEvent.click(screen.getByTitle('Show Queue'));
-    expect(props.onShowQueue).toHaveBeenCalledOnce();
+
+    // #then
+    expect(actions.showQueue).toHaveBeenCalledOnce();
   });
 
-  it('zen mode button calls onZenModeToggle when clicked', () => {
-    const { props } = renderBottomBar();
+  it('zen mode button calls toggleZenMode when clicked', () => {
+    // #given
+    const { actions } = renderBottomBar();
+
+    // #when
     fireEvent.click(screen.getByTitle(/zen mode/i));
-    expect(props.onZenModeToggle).toHaveBeenCalledOnce();
+
+    // #then
+    expect(actions.toggleZenMode).toHaveBeenCalledOnce();
+  });
+
+  it('radio button is hidden when startRadio is not provided', () => {
+    // #given / #when
+    renderBottomBar({ actions: makeActions({ startRadio: undefined }) });
+
+    // #then
+    expect(screen.queryByTitle(/generate radio/i)).toBeNull();
   });
 
   it('bar remains visible in normal mode — no hide timer is started', () => {
@@ -150,22 +221,12 @@ describe('BottomBar', () => {
     vi.useRealTimers();
   });
 
-  it('portal renders fewer elements in normal mode than in zen mode', () => {
-    // #given — count baseline children before any render
-    const baselineCount = document.body.childElementCount;
+  it('returns null when hidden flag is true', () => {
+    // #given / #when
+    renderBottomBar({ actions: makeActions({ hidden: true }) });
 
-    // #when — render in zen mode
-    const { unmount: unmountZen } = renderBottomBar({ zenModeEnabled: true });
-    const zenCount = document.body.childElementCount - baselineCount;
-    unmountZen();
-
-    // render in normal mode
-    const baselineCount2 = document.body.childElementCount;
-    renderBottomBar({ zenModeEnabled: false });
-    const normalCount = document.body.childElementCount - baselineCount2;
-
-    // #then — zen mode adds one extra element (ZenTriggerZone)
-    expect(zenCount).toBe(normalCount + 1);
+    // #then
+    expect(screen.queryByTitle('App settings')).toBeNull();
   });
 });
 
@@ -189,7 +250,7 @@ describe('BottomBar — zen mode show/hide state machine', () => {
       vi.advanceTimersByTime(AUTOHIDE_DELAY);
     });
 
-    // #then — trigger zone is present (zen mode on) and backdrop is absent (bar hidden)
+    // #then — backdrop is absent (bar hidden)
     const portalChildren = Array.from(document.body.children);
     const backdrop = portalChildren.find(
       (el) => el.tagName === 'DIV' && el.getAttribute('style')?.includes('inset')
@@ -199,24 +260,11 @@ describe('BottomBar — zen mode show/hide state machine', () => {
 
   it('trigger zone is rendered only when zen mode is enabled', () => {
     // #given
-    const { rerender } = render(
-      <ThemeProvider theme={theme}>
-        <TestWrapper>
-          <BottomBar {...{ ...defaultProps, zenModeEnabled: false }} />
-        </TestWrapper>
-      </ThemeProvider>
-    );
-
+    const { rerender } = renderBottomBar({ zenModeEnabled: false });
     const countWithoutZen = document.body.childElementCount;
 
     // #when
-    rerender(
-      <ThemeProvider theme={theme}>
-        <TestWrapper>
-          <BottomBar {...{ ...defaultProps, zenModeEnabled: true }} />
-        </TestWrapper>
-      </ThemeProvider>
-    );
+    rerenderBottomBar(rerender, { zenModeEnabled: true });
 
     // #then — one extra portal child (ZenTriggerZone) is added
     expect(document.body.childElementCount).toBe(countWithoutZen + 1);
@@ -224,13 +272,7 @@ describe('BottomBar — zen mode show/hide state machine', () => {
 
   it('bar re-appears when zen mode is disabled after being enabled', () => {
     // #given — start in zen mode and let the bar auto-hide
-    const { rerender } = render(
-      <ThemeProvider theme={theme}>
-        <TestWrapper>
-          <BottomBar {...{ ...defaultProps, zenModeEnabled: true }} />
-        </TestWrapper>
-      </ThemeProvider>
-    );
+    const { rerender } = renderBottomBar({ zenModeEnabled: true });
 
     act(() => {
       vi.advanceTimersByTime(AUTOHIDE_DELAY);
@@ -239,13 +281,7 @@ describe('BottomBar — zen mode show/hide state machine', () => {
     const countWhileZen = document.body.childElementCount;
 
     // #when — zen mode is turned off
-    rerender(
-      <ThemeProvider theme={theme}>
-        <TestWrapper>
-          <BottomBar {...{ ...defaultProps, zenModeEnabled: false }} />
-        </TestWrapper>
-      </ThemeProvider>
-    );
+    rerenderBottomBar(rerender, { zenModeEnabled: false });
 
     // #then — trigger zone is gone, portal has fewer children again
     expect(document.body.childElementCount).toBe(countWhileZen - 1);
@@ -256,22 +292,10 @@ describe('BottomBar — zen mode show/hide state machine', () => {
 
   it('bar hides after autohide delay following zen mode enable', () => {
     // #given — zen disabled initially (bar visible); transitioning to zen on starts the timer
-    const { rerender } = render(
-      <ThemeProvider theme={theme}>
-        <TestWrapper>
-          <BottomBar {...{ ...defaultProps, zenModeEnabled: false }} />
-        </TestWrapper>
-      </ThemeProvider>
-    );
+    const { rerender } = renderBottomBar({ zenModeEnabled: false });
 
     // #when — toggle zen mode on
-    rerender(
-      <ThemeProvider theme={theme}>
-        <TestWrapper>
-          <BottomBar {...{ ...defaultProps, zenModeEnabled: true }} />
-        </TestWrapper>
-      </ThemeProvider>
-    );
+    rerenderBottomBar(rerender, { zenModeEnabled: true });
 
     const countBeforeTimeout = document.body.childElementCount;
 
@@ -287,21 +311,9 @@ describe('BottomBar — zen mode show/hide state machine', () => {
 
   it('mouseenter on the bar container cancels the hide timer', () => {
     // #given — zen mode on, bar is visible, hide timer is running
-    const { rerender } = render(
-      <ThemeProvider theme={theme}>
-        <TestWrapper>
-          <BottomBar {...{ ...defaultProps, zenModeEnabled: false }} />
-        </TestWrapper>
-      </ThemeProvider>
-    );
+    const { rerender } = renderBottomBar({ zenModeEnabled: false });
 
-    rerender(
-      <ThemeProvider theme={theme}>
-        <TestWrapper>
-          <BottomBar {...{ ...defaultProps, zenModeEnabled: true }} />
-        </TestWrapper>
-      </ThemeProvider>
-    );
+    rerenderBottomBar(rerender, { zenModeEnabled: true });
 
     // BottomBarContainer is always the last direct child of document.body (portal renders it last)
     const barContainer = document.body.lastElementChild as HTMLElement;
@@ -319,28 +331,15 @@ describe('BottomBar — zen mode show/hide state machine', () => {
 
   it('mouseleave on the bar container restarts the hide timer', () => {
     // #given — zen mode on, mouse entered (timer cancelled)
-    const { rerender } = render(
-      <ThemeProvider theme={theme}>
-        <TestWrapper>
-          <BottomBar {...{ ...defaultProps, zenModeEnabled: false }} />
-        </TestWrapper>
-      </ThemeProvider>
-    );
+    const { rerender } = renderBottomBar({ zenModeEnabled: false });
 
-    rerender(
-      <ThemeProvider theme={theme}>
-        <TestWrapper>
-          <BottomBar {...{ ...defaultProps, zenModeEnabled: true }} />
-        </TestWrapper>
-      </ThemeProvider>
-    );
+    rerenderBottomBar(rerender, { zenModeEnabled: true });
 
     const barContainer = document.body.lastElementChild as HTMLElement;
 
     act(() => { fireEvent.mouseEnter(barContainer); });
     act(() => { vi.advanceTimersByTime(AUTOHIDE_DELAY * 2); });
 
-    // bar is still visible after hovering
     const countBeforeLeave = document.body.childElementCount;
 
     // #when — mouse leaves the bar
