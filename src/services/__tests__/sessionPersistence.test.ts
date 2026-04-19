@@ -1,5 +1,11 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { saveSession, loadSession, clearSession } from '../sessionPersistence';
+import {
+  saveSession,
+  loadSession,
+  clearSession,
+  isSessionStale,
+  STALE_SESSION_MS,
+} from '../sessionPersistence';
 import type { SessionSnapshot } from '../sessionPersistence';
 
 const localStorageMock = (() => {
@@ -126,6 +132,79 @@ describe('sessionPersistence', () => {
 
       // #then
       expect(loaded?.playbackPosition).toBe(500);
+    });
+  });
+
+  describe('isSessionStale', () => {
+    const now = 1_700_000_000_000;
+
+    it('returns true for null session', () => {
+      // #when / #then
+      expect(isSessionStale(null, now)).toBe(true);
+    });
+
+    it('returns true for undefined session', () => {
+      // #when / #then
+      expect(isSessionStale(undefined, now)).toBe(true);
+    });
+
+    it('returns true when savedAt is missing', () => {
+      // #given
+      const session: SessionSnapshot = { ...baseSnapshot };
+
+      // #when / #then
+      expect(isSessionStale(session, now)).toBe(true);
+    });
+
+    it('returns true when savedAt is undefined explicitly', () => {
+      // #given
+      const session: SessionSnapshot = { ...baseSnapshot, savedAt: undefined };
+
+      // #when / #then
+      expect(isSessionStale(session, now)).toBe(true);
+    });
+
+    it('returns false when savedAt is exactly at the 30-day cutoff', () => {
+      // #given — "older than 30 days" is strict, so exactly 30 days is still fresh
+      const session: SessionSnapshot = { ...baseSnapshot, savedAt: now - STALE_SESSION_MS };
+
+      // #when / #then
+      expect(isSessionStale(session, now)).toBe(false);
+    });
+
+    it('returns true when savedAt is 1ms past the 30-day cutoff', () => {
+      // #given
+      const session: SessionSnapshot = { ...baseSnapshot, savedAt: now - STALE_SESSION_MS - 1 };
+
+      // #when / #then
+      expect(isSessionStale(session, now)).toBe(true);
+    });
+
+    it('returns false for a session saved just now', () => {
+      // #given
+      const session: SessionSnapshot = { ...baseSnapshot, savedAt: now };
+
+      // #when / #then
+      expect(isSessionStale(session, now)).toBe(false);
+    });
+
+    it('returns false for a session saved 1 day ago', () => {
+      // #given
+      const session: SessionSnapshot = {
+        ...baseSnapshot,
+        savedAt: now - 24 * 60 * 60 * 1000,
+      };
+
+      // #when / #then
+      expect(isSessionStale(session, now)).toBe(false);
+    });
+
+    it('uses Date.now() when now is not provided', () => {
+      // #given — savedAt 1 second ago relative to real clock
+      const session: SessionSnapshot = { ...baseSnapshot, savedAt: Date.now() - 1000 };
+
+      // #when / #then
+      expect(isSessionStale(session)).toBe(false);
     });
   });
 
