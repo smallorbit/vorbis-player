@@ -11,7 +11,7 @@ Four canvas-based animated backgrounds that render behind the player UI. Each is
 | `wave` | `WaveVisualizer` | `src/components/visualizers/WaveVisualizer.tsx` | `Wave` | Layered sine waves rendered as filled regions from wave crest to canvas bottom |
 | `grid` | `GridWaveVisualizer` | `src/components/visualizers/GridWaveVisualizer.tsx` | `GridWaveState` | A dot grid displaced by traveling sine waves |
 
-The type union is `VisualizerStyle` in `src/types/visualizer.d.ts`:
+The type union is `VisualizerStyle` in `src/types/visualizer.ts`:
 
 ```ts
 export type VisualizerStyle = 'fireflies' | 'comet' | 'wave' | 'grid';
@@ -216,7 +216,7 @@ There is no pixel-level exclusion zone system. The visual separation relies enti
 
 | File | Role |
 |------|------|
-| `src/types/visualizer.d.ts` | `VisualizerStyle` type definition |
+| `src/types/visualizer.ts` | `VisualizerStyle` type definition |
 | `src/hooks/useCanvasVisualizer.ts` | Generic canvas lifecycle hook (Template Method) |
 | `src/hooks/useAnimationFrame.ts` | `requestAnimationFrame` wrapper with cleanup |
 | `src/components/BackgroundVisualizer.tsx` | Style switcher component |
