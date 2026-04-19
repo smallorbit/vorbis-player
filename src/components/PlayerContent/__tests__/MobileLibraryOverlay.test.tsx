@@ -57,8 +57,8 @@ describe('MobileLibraryOverlay', () => {
     );
 
     // #then
-    const overlay = await screen.findByTestId('mobile-library-overlay');
-    expect(overlay).toHaveAttribute('data-state', 'open');
+    await screen.findByTestId('library-page-stub');
+    expect(screen.getByTestId('mobile-library-overlay')).toHaveAttribute('data-state', 'open');
   });
 
   it('keeps the overlay mounted after closing so the CSS transition can run', async () => {
@@ -68,7 +68,7 @@ describe('MobileLibraryOverlay', () => {
         <MobileLibraryOverlay {...baseProps} isOpen={true} />
       </Wrapper>,
     );
-    await screen.findByTestId('mobile-library-overlay');
+    await screen.findByTestId('library-page-stub');
 
     // #when
     rerender(
@@ -78,9 +78,7 @@ describe('MobileLibraryOverlay', () => {
     );
 
     // #then
-    const overlay = screen.getByTestId('mobile-library-overlay');
-    expect(overlay).toHaveAttribute('data-state', 'closed');
-    expect(overlay).toBeInTheDocument();
+    expect(screen.getByTestId('mobile-library-overlay')).toHaveAttribute('data-state', 'closed');
   });
 
   it('returns to the open state when re-opened after a close', async () => {
@@ -90,7 +88,7 @@ describe('MobileLibraryOverlay', () => {
         <MobileLibraryOverlay {...baseProps} isOpen={true} />
       </Wrapper>,
     );
-    await screen.findByTestId('mobile-library-overlay');
+    await screen.findByTestId('library-page-stub');
     rerender(
       <Wrapper>
         <MobileLibraryOverlay {...baseProps} isOpen={false} />
