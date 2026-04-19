@@ -64,7 +64,7 @@ export function useLibraryViews({
     if (!ignoreProviderFilters && providerFilters.length > 0) {
       items = items.filter((a) => a.provider && providerFilters.includes(a.provider));
     }
-    const filtered = filterAlbumsOnly(items, searchQuery, 'all', '', selectedGenres);
+    const filtered = filterAlbumsOnly(items, searchQuery, 'all', selectedGenres);
     return buildLibraryViewWithPins(
       filtered,
       pinnedAlbumIds,
