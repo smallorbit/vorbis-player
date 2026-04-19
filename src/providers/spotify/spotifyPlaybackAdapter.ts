@@ -39,6 +39,11 @@ export class SpotifyPlaybackAdapter implements PlaybackProvider {
   /** True after the first successful playTrack; lets subsequent plays skip heavy API checks. */
   private playbackSessionActive = false;
 
+  private readonly listeners = new Set<(state: PlaybackState | null) => void>();
+  private sdkUnsubscribe: (() => void) | null = null;
+  /** Ref of the track most recently staged by prepareTrack; used for idempotency. */
+  private preparedTrackRef: string | null = null;
+
   private async waitForPlayerReady(): Promise<void> {
     const start = Date.now();
     while (!spotifyPlayer.getIsReady() || !spotifyPlayer.getDeviceId()) {
@@ -233,20 +238,99 @@ export class SpotifyPlaybackAdapter implements PlaybackProvider {
   }
 
   subscribe(listener: (state: PlaybackState | null) => void): () => void {
-    return spotifyPlayer.onPlayerStateChanged((spotifyState) => {
-      listener(mapPlaybackState(spotifyState));
+    this.listeners.add(listener);
+    this.ensureSdkSubscription();
+
+    return () => {
+      this.listeners.delete(listener);
+      if (this.listeners.size === 0) {
+        this.sdkUnsubscribe?.();
+        this.sdkUnsubscribe = null;
+      }
+    };
+  }
+
+  private ensureSdkSubscription(): void {
+    if (this.sdkUnsubscribe) return;
+    this.sdkUnsubscribe = spotifyPlayer.onPlayerStateChanged((spotifyState) => {
+      this.emitState(mapPlaybackState(spotifyState));
     });
+  }
+
+  private emitState(state: PlaybackState | null): void {
+    for (const listener of this.listeners) {
+      try {
+        listener(state);
+      } catch (err) {
+        console.error('[spotifyPlayback] listener error:', err);
+      }
+    }
   }
 
   getLastPlayTime(): number {
     return spotifyPlayer.lastPlayTrackTime;
   }
 
-  prepareTrack(_track: MediaTrack, _options?: { positionMs?: number }): void {
-    // Pre-warm the auth token so no refresh delay hits the next transition.
-    // The Spotify Web Playback SDK has no preload-without-play mode, so positionMs
-    // is accepted for interface parity but applied when playTrack is later invoked.
-    spotifyAuth.ensureValidToken().catch(() => {});
+  prepareTrack(track: MediaTrack, options?: { positionMs?: number }): void {
+    const uri = track.playbackRef.ref;
+    // Idempotency: same-URI repeat calls are a no-op so the state event isn't
+    // emitted twice for the same prepared track. A different URI re-primes.
+    if (this.preparedTrackRef === uri) {
+      return;
+    }
+    this.preparedTrackRef = uri;
+
+    void this.stageTrackPaused(track, options?.positionMs ?? 0).catch((err) => {
+      logSpotify('prepareTrack failed: %o', err);
+      // Allow another attempt if the stage failed.
+      if (this.preparedTrackRef === uri) {
+        this.preparedTrackRef = null;
+      }
+    });
+  }
+
+  /**
+   * Transfer playback to our device, loaded on `track` at `positionMs` and paused.
+   * Emits a PlaybackState event so subscribers (seek bar, duration readout) reflect
+   * the staged state before the user presses play.
+   */
+  private async stageTrackPaused(track: MediaTrack, positionMs: number): Promise<void> {
+    await this.ensurePlaybackReady();
+
+    const uri = track.playbackRef.ref;
+    const token = await spotifyAuth.ensureValidToken();
+    const deviceId = spotifyPlayer.getDeviceId();
+    if (!deviceId) return;
+
+    // Spotify's Web API has no "load paused at position" primitive, so we start
+    // playback at the saved offset then immediately pause. The net effect from
+    // the user's perspective is the track appearing as the paused context on
+    // this device (and mirrored on other Spotify Connect clients).
+    const playResponse = await fetch(
+      `https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`,
+      {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ uris: [uri], position_ms: Math.floor(positionMs) }),
+      },
+    );
+
+    if (!playResponse.ok && playResponse.status !== 204) {
+      throw new Error(`Spotify stage play failed: ${playResponse.status}`);
+    }
+
+    await spotifyPlayer.pause();
+
+    this.emitState({
+      isPlaying: false,
+      positionMs: Math.floor(positionMs),
+      durationMs: track.durationMs ?? 0,
+      currentTrackId: track.id,
+      currentPlaybackRef: { provider: 'spotify', ref: uri },
+    });
   }
 
   onQueueChanged(tracks: MediaTrack[], fromIndex: number): void {
