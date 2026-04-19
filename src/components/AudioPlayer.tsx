@@ -1,6 +1,7 @@
 import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import styled from 'styled-components';
 import { flexCenter, srOnly } from '@/styles/utils';
+import { theme } from '@/styles/theme';
 import PlayerStateRenderer from './PlayerStateRenderer';
 import PlayerContent from './PlayerContent';
 import BackgroundVisualizer from './BackgroundVisualizer';
@@ -37,7 +38,7 @@ const Container = styled.div`
 const QuickAccessOverlay = styled.div`
   position: fixed;
   inset: 0;
-  z-index: 1200;
+  z-index: ${({ theme }) => theme.zIndex.banner};
   display: flex;
   align-items: center;
   justify-content: center;
@@ -336,7 +337,7 @@ const AudioPlayerComponent = () => {
             left: 0,
             width: 44,
             height: 44,
-            zIndex: 999990,
+            zIndex: theme.zIndex.debugOverlayAbove,
           }}
         />
         <ProfiledComponent id="AccentColorBackground">
