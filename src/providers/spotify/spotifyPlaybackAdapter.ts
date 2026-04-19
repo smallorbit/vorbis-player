@@ -314,7 +314,7 @@ export class SpotifyPlaybackAdapter implements PlaybackProvider {
       positionMs: positionFloor,
       durationMs: track.durationMs ?? 0,
       currentTrackId: track.id,
-      currentPlaybackRef: { provider: 'spotify', ref: track.playbackRef.ref },
+      currentPlaybackRef: track.playbackRef,
     });
   }
 
