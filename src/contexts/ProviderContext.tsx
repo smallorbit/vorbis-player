@@ -60,6 +60,11 @@ interface ProviderContextValue {
   acceptReconnectPrompt: () => void;
   /** Dismiss the reconnect prompt without reconnecting. */
   dismissReconnectPrompt: () => void;
+
+  /** Auto-dismiss toast shown immediately when a provider is disconnected due to an unrecoverable 401. */
+  disconnectToast: string | null;
+  /** Dismiss the disconnect toast. */
+  dismissDisconnectToast: () => void;
 }
 
 const ProviderContext =
@@ -162,6 +167,10 @@ export function ProviderProvider({ children }: { children: React.ReactNode }) {
   // ── Session-expired reconnect prompt ─────────────────────────────────
   const [reconnectPrompt, setReconnectPrompt] = useState<{ providerId: ProviderId; message: string } | null>(null);
 
+  // ── Disconnect toast (auto-dismiss) ──────────────────────────────────
+  const [disconnectToast, setDisconnectToast] = useState<string | null>(null);
+  const dismissDisconnectToast = useCallback(() => setDisconnectToast(null), []);
+
   useEffect(() => {
     const handleSessionExpired = (event: Event) => {
       const detail = (event as CustomEvent<{ providerId: ProviderId }>).detail;
@@ -176,6 +185,7 @@ export function ProviderProvider({ children }: { children: React.ReactNode }) {
           message: `Your ${name} session has expired. Tap to reconnect.`,
         };
       });
+      setDisconnectToast(`${name} disconnected — session expired.`);
       setAuthRevision(prev => prev + 1);
     };
 
@@ -301,10 +311,12 @@ export function ProviderProvider({ children }: { children: React.ReactNode }) {
       reconnectPrompt,
       acceptReconnectPrompt,
       dismissReconnectPrompt,
+      disconnectToast,
+      dismissDisconnectToast,
     }),
     // authRevision triggers re-evaluation when a popup completes OAuth
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [storedProviderId, validProviderId, activeDescriptor, setActiveProviderId, setProviderSwitchInterceptor, needsProviderSelection, enabledProviderIds, toggleProvider, isProviderEnabled, allProviders.length, getDescriptor, connectedProviderIds, fallthroughNotification, dismissFallthroughNotification, reconnectPrompt, acceptReconnectPrompt, dismissReconnectPrompt, authRevision],
+    [storedProviderId, validProviderId, activeDescriptor, setActiveProviderId, setProviderSwitchInterceptor, needsProviderSelection, enabledProviderIds, toggleProvider, isProviderEnabled, allProviders.length, getDescriptor, connectedProviderIds, fallthroughNotification, dismissFallthroughNotification, reconnectPrompt, acceptReconnectPrompt, dismissReconnectPrompt, disconnectToast, dismissDisconnectToast, authRevision],
   );
 
   return (
