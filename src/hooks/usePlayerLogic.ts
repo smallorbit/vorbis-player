@@ -10,6 +10,7 @@ import { useAccentColor } from '@/hooks/useAccentColor';
 import { useUnifiedLikedTracks } from '@/hooks/useUnifiedLikedTracks';
 import { useRadio } from '@/hooks/useRadio';
 import type { ProviderId } from '@/types/domain';
+import type { SessionSnapshot } from '@/services/sessionPersistence';
 import type { TrackOperations } from '@/types/trackOperations';
 import { providerRegistry } from '@/providers/registry';
 import { logQueue } from '@/lib/debugLog';
@@ -77,6 +78,10 @@ export function usePlayerLogic() {
   const currentTrackIndexRef = useRef(currentTrackIndex);
   currentTrackIndexRef.current = currentTrackIndex;
   const expectedTrackIdRef = useRef<string | null>(null);
+  // Holds the target index + position when handleHydrate restores a session without autoplay.
+  // The next handlePlay consumes this to start playback at the saved offset; other control paths
+  // (next/previous/new collection) clear it so a stale hydrate can't hijack a fresh user action.
+  const hydratedPendingPlayRef = useRef<{ index: number; positionMs?: number } | null>(null);
 
   // Playback state from provider events (local — not shared via context)
   const [isPlaying, setIsPlaying] = useState(false);
@@ -95,8 +100,20 @@ export function usePlayerLogic() {
     mediaTracksRef,
     onAuthExpired: (providerId: ProviderId) => setAuthExpired(providerId),
   });
-  const { playTrack } = providerPlayback;
+  const providerPlayTrack = providerPlayback.playTrack;
   const drivingProviderRef = providerPlayback.currentPlaybackProviderRef;
+
+  // Any call into playTrack represents a concrete playback action, which supersedes
+  // a pending hydrate. Wrap the underlying playTrack so downstream consumers don't
+  // each have to clear the pending-hydrate ref individually.
+  const playTrack = useCallback(async (
+    index: number,
+    skipOnError = false,
+    options?: { positionMs?: number },
+  ) => {
+    hydratedPendingPlayRef.current = null;
+    return providerPlayTrack(index, skipOnError, options);
+  }, [providerPlayTrack]);
 
   /** Resolve provider currently driving playback; falls back to active provider when unknown. */
   const getDrivingProviderId = useCallback((): ProviderId | null => (
@@ -214,6 +231,21 @@ export function usePlayerLogic() {
   }, [tracks.length, playTrack, setCurrentTrackIndex]);
 
   const handlePlay = useCallback(async () => {
+    const pending = hydratedPendingPlayRef.current;
+    if (pending) {
+      hydratedPendingPlayRef.current = null;
+      logQueue(
+        'handlePlay — hydrated start index=%d, positionMs=%s',
+        pending.index,
+        pending.positionMs ?? 'NONE',
+      );
+      await playTrack(
+        pending.index,
+        false,
+        pending.positionMs ? { positionMs: pending.positionMs } : undefined,
+      );
+      return;
+    }
     const drivingId = getDrivingProviderId();
     logQueue(
       'handlePlay — drivingProvider=%s, index=%d, track=%s',
@@ -228,7 +260,57 @@ export function usePlayerLogic() {
     } catch {
       // Autoplay policy or network errors are handled by the playback adapter
     }
-  }, [getDrivingProviderId, getDrivingProviderDescriptor]);
+  }, [playTrack, getDrivingProviderId, getDrivingProviderDescriptor]);
+
+  const handleHydrate = useCallback(async (session: SessionSnapshot): Promise<void> => {
+    if (!session.queueTracks?.length) return;
+    const { queueTracks, trackId, trackIndex, collectionId, playbackPosition: savedPositionMs } = session;
+
+    const targetIdx = trackId
+      ? queueTracks.findIndex(t => t.id === trackId)
+      : Math.min(trackIndex, queueTracks.length - 1);
+    const resolvedIdx = targetIdx >= 0 ? targetIdx : Math.min(trackIndex, queueTracks.length - 1);
+
+    setTracks(queueTracks);
+    setOriginalTracks(queueTracks);
+    setSelectedPlaylistId(collectionId);
+    setCurrentTrackIndex(resolvedIdx);
+    mediaTracksRef.current = queueTracks;
+    expectedTrackIdRef.current = queueTracks[resolvedIdx]?.id ?? null;
+
+    const positionMs = savedPositionMs && savedPositionMs > 0 ? savedPositionMs : undefined;
+    setPlaybackPosition(positionMs ?? 0);
+    setIsPlaying(false);
+
+    const targetTrack = queueTracks[resolvedIdx];
+    const providerId = targetTrack?.provider ?? activeDescriptor?.id;
+    if (providerId && targetTrack) {
+      drivingProviderRef.current = providerId;
+      const descriptor = providerRegistry.get(providerId);
+      descriptor?.playback.prepareTrack?.(
+        targetTrack,
+        positionMs ? { positionMs } : undefined,
+      );
+    }
+
+    hydratedPendingPlayRef.current = { index: resolvedIdx, positionMs };
+
+    logQueue(
+      'handleHydrate — index=%d, track=%s, positionMs=%s, provider=%s',
+      resolvedIdx,
+      trkSummary(targetTrack),
+      positionMs ?? 'NONE',
+      providerId ?? 'NONE',
+    );
+  }, [
+    setTracks,
+    setOriginalTracks,
+    setSelectedPlaylistId,
+    setCurrentTrackIndex,
+    mediaTracksRef,
+    activeDescriptor,
+    drivingProviderRef,
+  ]);
 
   const handlePause = useCallback(() => {
     const drivingId = getDrivingProviderId();
@@ -303,6 +385,7 @@ export function usePlayerLogic() {
       handleStartRadio,
       handleRemoveFromQueue,
       handleReorderQueue,
+      handleHydrate,
     }),
     [
       loadCollection,
@@ -320,6 +403,7 @@ export function usePlayerLogic() {
       handleStartRadio,
       handleRemoveFromQueue,
       handleReorderQueue,
+      handleHydrate,
     ]
   );
 
