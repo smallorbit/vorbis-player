@@ -85,62 +85,6 @@ export function gridWaveProjection(
 }
 
 /**
- * Average the sine contributions from multiple waves at a single particle position.
- *
- * @param baseX - Particle's resting x position.
- * @param baseY - Particle's resting y position.
- * @param waves - Array of wave states (angleX, angleY, frequency, phase).
- * @returns Average displacement value in [-1, 1].
- */
-export function gridDisplacement(
-  baseX: number,
-  baseY: number,
-  waves: ReadonlyArray<{ angleX: number; angleY: number; frequency: number; phase: number }>
-): number {
-  if (waves.length === 0) return 0;
-  let sum = 0;
-  for (const wave of waves) {
-    const proj = gridWaveProjection(baseX, baseY, wave.angleX, wave.angleY, wave.frequency);
-    sum += Math.sin(proj + wave.phase);
-  }
-  return sum / waves.length;
-}
-
-/**
- * Compute the particle count for Particle / Trail visualizers.
- *
- * @param width - Canvas width in pixels.
- * @param height - Canvas height in pixels.
- * @param intensityValue - Intensity in [0, 100].
- * @param countBaseMobile - Maximum particle count cap on mobile.
- * @param countBaseDesktop - Maximum particle count cap on desktop.
- * @param countPixelDivisorMobile - Pixel-area divisor on mobile.
- * @param countPixelDivisor - Pixel-area divisor on desktop.
- * @returns Computed particle count (always >= 0).
- */
-export function computeParticleCount(
-  width: number,
-  height: number,
-  intensityValue: number,
-  countBaseMobile: number,
-  countBaseDesktop: number,
-  countPixelDivisorMobile: number,
-  countPixelDivisor: number
-): number {
-  const pixelCount = width * height;
-  const isMobile = width < 768;
-  const scale = Math.max(0.1, intensityValue / 60);
-  if (isMobile) {
-    return Math.round(
-      Math.min(countBaseMobile, Math.floor(pixelCount / countPixelDivisorMobile)) * scale
-    );
-  }
-  return Math.round(
-    Math.min(countBaseDesktop, Math.floor(pixelCount / countPixelDivisor)) * scale
-  );
-}
-
-/**
  * Compute the edge-weighted spatial factor used in GridWaveVisualizer for
  * perspective and opacity scaling.
  *

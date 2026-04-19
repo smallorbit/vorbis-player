@@ -1,3 +1,2 @@
 export const STATUS_RESET_DELAY_MS = 1500;
-export const ERROR_RESET_DELAY_MS = 2000;
 export const TOAST_DISPLAY_DURATION_MS = 4000;
