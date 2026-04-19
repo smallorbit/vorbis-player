@@ -11,6 +11,7 @@ import type {
 import { useLibraryBrowsingContext } from './LibraryContext';
 
 const MIN_TAP_TARGET = '44px';
+const SORT_SELECT_MAX_WIDTH = '9rem';
 
 const BarContainer = styled.div`
   display: flex;
@@ -123,7 +124,7 @@ const SortSelect = styled.select`
   cursor: pointer;
   transition: all ${theme.transitions.fast};
   appearance: none;
-  max-width: 9rem;
+  max-width: ${SORT_SELECT_MAX_WIDTH};
 
   &:hover {
     background: ${theme.colors.control.backgroundHover};
