@@ -2,6 +2,8 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import type { Category, SelectedElement, ConsoleEntry } from '@/types/devbug';
 
+import { TOAST_DISPLAY_DURATION_MS } from '@/constants/statusTiming';
+
 const PANEL_STYLES = `
   :host {
     all: initial;
@@ -586,7 +588,7 @@ export function FeedbackPanel(props: FeedbackPanelProps) {
           message: 'GitHub token not configured. Set VITE_DEVBUG_GITHUB_TOKEN.',
           type: 'error',
         });
-        setTimeout(() => setToast(null), 4000);
+        setTimeout(() => setToast(null), TOAST_DISPLAY_DURATION_MS);
         return;
       }
 
