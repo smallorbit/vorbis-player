@@ -135,21 +135,21 @@ const AudioPlayerComponent = () => {
   const [qapToast, setQapToast] = useState<{ message: string; actionLabel?: string; onAction?: () => void } | null>(null);
   const handleQapToastDismiss = useCallback(() => setQapToast(null), []);
 
-  const [resumeToast, setResumeToast] = useState<{ message: string } | null>(null);
-  const dismissResumeToast = useCallback(() => setResumeToast(null), []);
+  const [resumeToastMessage, setResumeToastMessage] = useState<string | null>(null);
+  const dismissResumeToast = useCallback(() => setResumeToastMessage(null), []);
   const handleHydrateFired = useCallback((track: import('@/types/domain').MediaTrack) => {
-    setResumeToast({ message: `Resuming '${track.name}' — press play to continue.` });
+    setResumeToastMessage(`Resuming '${track.name}' — press play to continue.`);
   }, []);
   const withResumeDismiss = useCallback(
     <T extends (...args: never[]) => unknown>(fn: T): T => ((...args) => {
-      setResumeToast(null);
+      setResumeToastMessage(null);
       return fn(...args);
     }) as T,
     [],
   );
   useEffect(() => {
-    if (resumeToast && showQueue) setResumeToast(null);
-  }, [resumeToast, showQueue]);
+    if (showQueue) setResumeToastMessage(null);
+  }, [showQueue]);
   const handleAddToQueueFromPanel = useCallback(
     async (id: string, name?: string, provider?: import('@/types/domain').ProviderId) => {
       const result = await handlers.handleAddToQueue(id, name, provider);
@@ -421,8 +421,8 @@ const AudioPlayerComponent = () => {
         {qapToast && (
           <Toast message={qapToast.message} actionLabel={qapToast.actionLabel} onAction={qapToast.onAction} onDismiss={handleQapToastDismiss} />
         )}
-        {resumeToast && (
-          <Toast message={resumeToast.message} onDismiss={dismissResumeToast} />
+        {resumeToastMessage && (
+          <Toast message={resumeToastMessage} onDismiss={dismissResumeToast} />
         )}
         {fallthroughNotification && (
           <Toast message={fallthroughNotification} onDismiss={dismissFallthroughNotification} />
