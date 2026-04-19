@@ -9,7 +9,7 @@ import type { MediaTrack } from '@/types/domain';
 
 type ResumeToastHarnessHandle = {
   fireHydrate: (track: MediaTrack) => void;
-  press: (action: 'play' | 'pause' | 'library' | 'queue') => void;
+  pressUserAction: () => void;
 };
 
 // Mirrors the AudioPlayer wire-up: state + dismissal triggers (play / pause /
@@ -22,10 +22,7 @@ const ResumeToastHarness = React.forwardRef<ResumeToastHarnessHandle, { showQueu
     const handleHydrateFired = useCallback((track: MediaTrack) => {
       setResumeToast({ message: `Resuming '${track.name}' — press play to continue.` });
     }, []);
-
-    const onPlay = useCallback(() => setResumeToast(null), []);
-    const onPause = useCallback(() => setResumeToast(null), []);
-    const onOpenLibrary = useCallback(() => setResumeToast(null), []);
+    const dismissOnAction = useCallback(() => setResumeToast(null), []);
 
     useEffect(() => {
       if (resumeToast && showQueue) setResumeToast(null);
@@ -33,11 +30,7 @@ const ResumeToastHarness = React.forwardRef<ResumeToastHarnessHandle, { showQueu
 
     React.useImperativeHandle(ref, () => ({
       fireHydrate: handleHydrateFired,
-      press: (action) => {
-        if (action === 'play') onPlay();
-        if (action === 'pause') onPause();
-        if (action === 'library') onOpenLibrary();
-      },
+      pressUserAction: dismissOnAction,
     }));
 
     return resumeToast ? (
@@ -115,7 +108,7 @@ describe('Resume toast behavior', () => {
 
     // #when
     act(() => {
-      ref.current?.press('play');
+      ref.current?.pressUserAction();
     });
 
     // #then
@@ -132,7 +125,7 @@ describe('Resume toast behavior', () => {
 
     // #when
     act(() => {
-      ref.current?.press('pause');
+      ref.current?.pressUserAction();
     });
 
     // #then
@@ -149,7 +142,7 @@ describe('Resume toast behavior', () => {
 
     // #when
     act(() => {
-      ref.current?.press('library');
+      ref.current?.pressUserAction();
     });
 
     // #then

@@ -9,7 +9,7 @@ import { useAutoAdvance } from '@/hooks/useAutoAdvance';
 import { useAccentColor } from '@/hooks/useAccentColor';
 import { useUnifiedLikedTracks } from '@/hooks/useUnifiedLikedTracks';
 import { useRadio } from '@/hooks/useRadio';
-import type { ProviderId } from '@/types/domain';
+import type { MediaTrack, ProviderId } from '@/types/domain';
 import type { SessionSnapshot } from '@/services/sessionPersistence';
 import type { TrackOperations } from '@/types/trackOperations';
 import { providerRegistry } from '@/providers/registry';
@@ -262,8 +262,8 @@ export function usePlayerLogic() {
     }
   }, [playTrack, getDrivingProviderId, getDrivingProviderDescriptor]);
 
-  const handleHydrate = useCallback(async (session: SessionSnapshot): Promise<void> => {
-    if (!session.queueTracks?.length) return;
+  const handleHydrate = useCallback(async (session: SessionSnapshot): Promise<MediaTrack | null> => {
+    if (!session.queueTracks?.length) return null;
     const { queueTracks, trackId, trackIndex, collectionId, playbackPosition: savedPositionMs } = session;
 
     const targetIdx = trackId
@@ -302,6 +302,8 @@ export function usePlayerLogic() {
       positionMs ?? 'NONE',
       providerId ?? 'NONE',
     );
+
+    return targetTrack ?? null;
   }, [
     setTracks,
     setOriginalTracks,

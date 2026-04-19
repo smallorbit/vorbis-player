@@ -140,18 +140,13 @@ const AudioPlayerComponent = () => {
   const handleHydrateFired = useCallback((track: import('@/types/domain').MediaTrack) => {
     setResumeToast({ message: `Resuming '${track.name}' — press play to continue.` });
   }, []);
-  const handlePlayWithResumeDismiss = useCallback(() => {
-    setResumeToast(null);
-    handlers.handlePlay();
-  }, [handlers]);
-  const handlePauseWithResumeDismiss = useCallback(() => {
-    setResumeToast(null);
-    handlers.handlePause();
-  }, [handlers]);
-  const handleOpenLibraryWithResumeDismiss = useCallback(() => {
-    setResumeToast(null);
-    handlers.handleOpenLibrary();
-  }, [handlers]);
+  const withResumeDismiss = useCallback(
+    <T extends (...args: never[]) => unknown>(fn: T): T => ((...args) => {
+      setResumeToast(null);
+      return fn(...args);
+    }) as T,
+    [],
+  );
   useEffect(() => {
     if (resumeToast && showQueue) setResumeToast(null);
   }, [resumeToast, showQueue]);
@@ -197,32 +192,35 @@ const AudioPlayerComponent = () => {
     [handlers, setShowQueue],
   );
 
-  const playbackHandlers = useMemo(() => ({
-    onPlay: handlePlayWithResumeDismiss,
-    onPause: handlePauseWithResumeDismiss,
-    onNext: handlers.handleNext,
-    onPrevious: handlers.handlePrevious,
-    onTrackSelect: handlers.playTrack,
-    onOpenLibrary: handleOpenLibraryWithResumeDismiss,
-    onCloseLibrary: handlers.handleCloseLibrary,
-    onOpenQuickAccessPanel: handleOpenQuickAccessPanel,
-    onPlaylistSelect: handlePlaylistSelect,
-    onAddToQueue: handlers.handleAddToQueue,
-    onPlayLikedTracks: handlePlayLikedTracks,
-    onQueueLikedTracks: handleQueueLikedTracks,
-    onAlbumPlay: handleAlbumPlay,
-    onBackToLibrary: handleOpenLibraryWithResumeDismiss,
-    onStartRadio: handlers.handleStartRadio,
-    onRemoveFromQueue: handlers.handleRemoveFromQueue,
-    onReorderQueue: handlers.handleReorderQueue,
-  }), [
+  const playbackHandlers = useMemo(() => {
+    const onOpenLibrary = withResumeDismiss(handlers.handleOpenLibrary);
+    return {
+      onPlay: withResumeDismiss(handlers.handlePlay),
+      onPause: withResumeDismiss(handlers.handlePause),
+      onNext: handlers.handleNext,
+      onPrevious: handlers.handlePrevious,
+      onTrackSelect: handlers.playTrack,
+      onOpenLibrary,
+      onCloseLibrary: handlers.handleCloseLibrary,
+      onOpenQuickAccessPanel: handleOpenQuickAccessPanel,
+      onPlaylistSelect: handlePlaylistSelect,
+      onAddToQueue: handlers.handleAddToQueue,
+      onPlayLikedTracks: handlePlayLikedTracks,
+      onQueueLikedTracks: handleQueueLikedTracks,
+      onAlbumPlay: handleAlbumPlay,
+      onBackToLibrary: onOpenLibrary,
+      onStartRadio: handlers.handleStartRadio,
+      onRemoveFromQueue: handlers.handleRemoveFromQueue,
+      onReorderQueue: handlers.handleReorderQueue,
+    };
+  }, [
     handlers,
     handleAlbumPlay,
     handlePlaylistSelect,
     handleOpenQuickAccessPanel,
-    handlePlayWithResumeDismiss,
-    handlePauseWithResumeDismiss,
-    handleOpenLibraryWithResumeDismiss,
+    handlePlayLikedTracks,
+    handleQueueLikedTracks,
+    withResumeDismiss,
   ]);
 
   const { chosenProviderId, activeDescriptor, connectedProviderIds, fallthroughNotification, dismissFallthroughNotification, reconnectPrompt, acceptReconnectPrompt, dismissReconnectPrompt, disconnectToast, dismissDisconnectToast } = useProviderContext();

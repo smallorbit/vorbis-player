@@ -75,7 +75,7 @@ const defaultProps = {
   lastSession: null,
   onResume: vi.fn(),
   onOpenSettings: vi.fn(),
-  onHydrate: vi.fn(async () => {}),
+  onHydrate: vi.fn(async () => null),
 };
 
 const Wrapper = ({ children }: { children: React.ReactNode }) => (
@@ -248,27 +248,21 @@ describe('PlayerStateRenderer idle routing', () => {
     });
   });
 
-  it('calls onHydrateFired with the resolved track when hydrate fires', async () => {
+  it('calls onHydrateFired with the track returned by onHydrate', async () => {
     // #given
     mockUseWelcomeSeen.mockReturnValue([true, vi.fn()]);
     mockUseQapEnabled.mockReturnValue([false, vi.fn()]);
+    const resolvedTrack = { id: 't2', name: 'Second', artists: 'A', album: 'Al', image: '', duration: 1, uri: '', provider: 'spotify', playbackRef: 'spotify:track:t2' };
+    const onHydrate = vi.fn(async () => resolvedTrack);
     const onHydrateFired = vi.fn();
-    const sessionWithTrack: SessionSnapshot = {
-      ...freshSession,
-      trackId: 't2',
-      trackIndex: 1,
-      queueTracks: [
-        { id: 't1', name: 'First', artists: 'A', album: 'Al', image: '', duration: 1, uri: '', provider: 'spotify', playbackRef: 'spotify:track:t1' },
-        { id: 't2', name: 'Second', artists: 'A', album: 'Al', image: '', duration: 1, uri: '', provider: 'spotify', playbackRef: 'spotify:track:t2' },
-      ],
-    };
 
     // #when
     render(
       <Wrapper>
         <PlayerStateRenderer
           {...defaultProps}
-          lastSession={sessionWithTrack}
+          onHydrate={onHydrate}
+          lastSession={freshSession}
           onHydrateFired={onHydrateFired}
         />
       </Wrapper>,
