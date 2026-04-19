@@ -53,6 +53,7 @@ export function useLibraryRoot({
     albums,
     likedSongsCount,
     likedSongsPerProvider,
+    allMusicCount,
     isInitialLoadComplete,
     isLikedSongsSyncing,
     removeCollection,
@@ -209,6 +210,7 @@ export function useLibraryRoot({
     isLikedSongsSyncing,
     isUnifiedLikedActive,
     unifiedLikedCount,
+    allMusicCount,
     activeDescriptor: activeDescriptor ?? null,
   });
 

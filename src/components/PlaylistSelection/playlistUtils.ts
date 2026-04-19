@@ -31,3 +31,16 @@ export function likedSongsAsPlaylistInfo(provider?: ProviderId): PlaylistInfo {
     provider,
   };
 }
+
+/** Minimal playlist row for the Dropbox "All Music" aggregate — used to open the playlist popover. */
+export function allMusicAsPlaylistInfo(): PlaylistInfo {
+  return {
+    id: '',
+    name: 'All Music',
+    description: null,
+    images: [],
+    tracks: null,
+    owner: null,
+    provider: 'dropbox',
+  };
+}

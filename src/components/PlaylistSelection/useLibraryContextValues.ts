@@ -52,6 +52,7 @@ interface UseLibraryContextValuesParams {
   isLikedSongsSyncing: boolean;
   isUnifiedLikedActive: boolean;
   unifiedLikedCount: number;
+  allMusicCount: number;
   activeDescriptor: ProviderDescriptor | null;
 }
 
@@ -96,6 +97,7 @@ export function useLibraryContextValues({
   isLikedSongsSyncing,
   isUnifiedLikedActive,
   unifiedLikedCount,
+  allMusicCount,
   activeDescriptor,
 }: UseLibraryContextValuesParams): LibraryContextValuesResult {
   const browsingValue: LibraryBrowsingContextValue = useMemo(
@@ -200,6 +202,7 @@ export function useLibraryContextValues({
       isLikedSongsSyncing,
       isUnifiedLikedActive,
       unifiedLikedCount,
+      allMusicCount,
       activeDescriptor,
     }),
     [
@@ -214,6 +217,7 @@ export function useLibraryContextValues({
       isLikedSongsSyncing,
       isUnifiedLikedActive,
       unifiedLikedCount,
+      allMusicCount,
       activeDescriptor,
     ]
   );
