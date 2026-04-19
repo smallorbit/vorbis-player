@@ -6,7 +6,7 @@ import { ThemeProvider } from './styles/ThemeProvider';
 import { flexCenter, buttonPrimary } from './styles/utils';
 import { AuthCallbackPage } from './components/AuthCallbackPage';
 import { TrackProvider } from './contexts/TrackContext';
-import { VisualEffectsProvider } from './contexts/VisualEffectsContext';
+import { VisualEffectsProvider } from './contexts/visualEffects';
 import { VisualizerDebugProvider } from './contexts/VisualizerDebugContext';
 import { ColorProvider } from './contexts/ColorContext';
 import { PinnedItemsProvider } from './contexts/PinnedItemsContext';

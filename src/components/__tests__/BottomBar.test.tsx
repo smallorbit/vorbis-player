@@ -10,7 +10,7 @@ import {
   BottomBarActionsProvider,
   type BottomBarActionsValue,
 } from '@/contexts/BottomBarActionsContext';
-import { useVisualEffectsContext } from '@/contexts/VisualEffectsContext';
+import { useZenMode } from '@/contexts/visualEffects';
 
 vi.mock('@/services/spotifyPlayer', () => ({
   spotifyPlayer: {
@@ -74,7 +74,7 @@ function makeActions(overrides?: Partial<BottomBarActionsValue>): BottomBarActio
 }
 
 function ZenModeSetter({ enabled }: { enabled: boolean }) {
-  const { setZenModeEnabled } = useVisualEffectsContext();
+  const { setZenModeEnabled } = useZenMode();
   React.useEffect(() => {
     setZenModeEnabled(enabled);
   }, [enabled, setZenModeEnabled]);

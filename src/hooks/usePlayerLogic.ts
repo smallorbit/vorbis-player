@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useTrackListContext, useCurrentTrackContext } from '@/contexts/TrackContext';
-import { useVisualEffectsContext } from '@/contexts/VisualEffectsContext';
+import { useVisualEffectsToggle } from '@/contexts/visualEffects';
 import { useColorContext } from '@/contexts/ColorContext';
 import { useProviderContext } from '@/contexts/ProviderContext';
 import { useSpotifyPlaylistManager } from '@/providers/spotify/useSpotifyPlaylistManager';
@@ -48,9 +48,7 @@ export function usePlayerLogic() {
     setShowQueue,
   } = useCurrentTrackContext();
 
-  const {
-    setShowVisualEffects,
-  } = useVisualEffectsContext();
+  const { setShowVisualEffects } = useVisualEffectsToggle();
 
   const {
     accentColorOverrides,
