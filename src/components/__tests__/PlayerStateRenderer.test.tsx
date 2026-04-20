@@ -279,6 +279,40 @@ describe('PlayerStateRenderer idle routing', () => {
     );
   });
 
+  it('routes to LibraryPage and calls onHydrateFailed when onHydrate returns totalFailure', async () => {
+    // #given — the whole saved queue is unplayable. handleHydrate resolves with
+    // totalFailure; the renderer must not remain on the "Restoring Your Session"
+    // spinner even though `lastSession` prop is still valid for a tick.
+    mockUseWelcomeSeen.mockReturnValue([true, vi.fn()]);
+    mockUseQapEnabled.mockReturnValue([false, vi.fn()]);
+    const onHydrate = vi.fn(async () => ({ track: null, skipped: false, totalFailure: true }));
+    const onHydrateFailed = vi.fn();
+    const onHydrateFired = vi.fn();
+
+    // #when
+    render(
+      <Wrapper>
+        <PlayerStateRenderer
+          {...defaultProps}
+          onHydrate={onHydrate}
+          onHydrateFailed={onHydrateFailed}
+          onHydrateFired={onHydrateFired}
+          lastSession={freshSession}
+        />
+      </Wrapper>,
+    );
+
+    // #then — totalFailure triggers the failed callback and unblocks the library view
+    await waitFor(() => {
+      expect(onHydrateFailed).toHaveBeenCalledTimes(1);
+    });
+    await waitFor(() => {
+      expect(screen.getByTestId('playlist-selection')).toBeInTheDocument();
+    });
+    expect(onHydrateFired).not.toHaveBeenCalled();
+    expect(screen.queryByText(/Restoring Your Session/i)).not.toBeInTheDocument();
+  });
+
   it('does not call onHydrateFired for a stale session', async () => {
     // #given
     mockUseWelcomeSeen.mockReturnValue([true, vi.fn()]);

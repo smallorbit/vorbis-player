@@ -97,7 +97,7 @@ const AudioPlayerComponent = () => {
     return ps?.positionMs ?? null;
   }, [playbackProviderRef]);
 
-  const { lastSession } = useSessionPersistence(
+  const { lastSession, resetLastSession } = useSessionPersistence(
     selectedPlaylistId,
     collectionNameRef.current,
     collectionProviderRef.current,
@@ -144,8 +144,9 @@ const AudioPlayerComponent = () => {
     setResumeToastMessage(message);
   }, []);
   const handleHydrateFailed = useCallback(() => {
+    resetLastSession();
     setResumeToastMessage(`Couldn't resume your last session.`);
-  }, []);
+  }, [resetLastSession]);
   const withResumeDismiss = useCallback(
     <T extends (...args: never[]) => unknown>(fn: T): T => ((...args) => {
       setResumeToastMessage(null);

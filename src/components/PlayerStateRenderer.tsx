@@ -235,6 +235,10 @@ const PlayerStateRenderer: React.FC<PlayerStateRendererProps> = ({
     void onHydrate(lastSession)
       .then((result) => {
         if (result.totalFailure) {
+          // Route past the hydrate spinner immediately — the resolved lastSession
+          // prop may still read as valid for a tick until the caller resets it,
+          // and the override wins over the idle-route check.
+          setLibraryOverride(true);
           onHydrateFailed?.();
           return;
         }
