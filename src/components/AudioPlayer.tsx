@@ -137,8 +137,14 @@ const AudioPlayerComponent = () => {
 
   const [resumeToastMessage, setResumeToastMessage] = useState<string | null>(null);
   const dismissResumeToast = useCallback(() => setResumeToastMessage(null), []);
-  const handleHydrateFired = useCallback((track: import('@/types/domain').MediaTrack) => {
-    setResumeToastMessage(`Resuming '${track.name}' — press play to continue.`);
+  const handleHydrateFired = useCallback((track: import('@/types/domain').MediaTrack, skipped: boolean) => {
+    const message = skipped
+      ? `Couldn't resume previous track — starting from next in queue.`
+      : `Resuming '${track.name}' — press play to continue.`;
+    setResumeToastMessage(message);
+  }, []);
+  const handleHydrateFailed = useCallback(() => {
+    setResumeToastMessage(`Couldn't resume your last session.`);
   }, []);
   const withResumeDismiss = useCallback(
     <T extends (...args: never[]) => unknown>(fn: T): T => ((...args) => {
@@ -323,6 +329,7 @@ const AudioPlayerComponent = () => {
               onOpenSettings={handleOpenSettings}
               onHydrate={handlers.handleHydrate}
               onHydrateFired={handleHydrateFired}
+              onHydrateFailed={handleHydrateFailed}
             />
           </ProfiledComponent>
           {qapToast && (

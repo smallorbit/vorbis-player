@@ -76,7 +76,7 @@ const defaultProps = {
   lastSession: null,
   onResume: vi.fn(),
   onOpenSettings: vi.fn(),
-  onHydrate: vi.fn(async () => null),
+  onHydrate: vi.fn(async () => ({ track: null, skipped: false, totalFailure: false })),
 };
 
 const Wrapper = ({ children }: { children: React.ReactNode }) => (
@@ -161,7 +161,7 @@ describe('PlayerStateRenderer idle routing', () => {
     // #given
     mockUseWelcomeSeen.mockReturnValue([true, vi.fn()]);
     mockUseQapEnabled.mockReturnValue([false, vi.fn()]);
-    const onHydrate = vi.fn(async () => {});
+    const onHydrate = vi.fn(async () => ({ track: null, skipped: false, totalFailure: false }));
 
     // #when
     const { rerender } = render(
@@ -254,7 +254,7 @@ describe('PlayerStateRenderer idle routing', () => {
     mockUseWelcomeSeen.mockReturnValue([true, vi.fn()]);
     mockUseQapEnabled.mockReturnValue([false, vi.fn()]);
     const resolvedTrack = makeMediaTrack({ id: 't2', name: 'Second' });
-    const onHydrate = vi.fn(async () => resolvedTrack);
+    const onHydrate = vi.fn(async () => ({ track: resolvedTrack, skipped: false, totalFailure: false }));
     const onHydrateFired = vi.fn();
 
     // #when
@@ -273,7 +273,10 @@ describe('PlayerStateRenderer idle routing', () => {
     await waitFor(() => {
       expect(onHydrateFired).toHaveBeenCalledTimes(1);
     });
-    expect(onHydrateFired).toHaveBeenCalledWith(expect.objectContaining({ id: 't2', name: 'Second' }));
+    expect(onHydrateFired).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 't2', name: 'Second' }),
+      false,
+    );
   });
 
   it('does not call onHydrateFired for a stale session', async () => {
@@ -304,7 +307,7 @@ describe('PlayerStateRenderer idle routing', () => {
     // #given
     mockUseWelcomeSeen.mockReturnValue([true, vi.fn()]);
     mockUseQapEnabled.mockReturnValue([false, vi.fn()]);
-    const onHydrate = vi.fn(async () => {});
+    const onHydrate = vi.fn(async () => ({ track: null, skipped: false, totalFailure: false }));
 
     // #when
     render(
@@ -328,7 +331,7 @@ describe('PlayerStateRenderer idle routing', () => {
     // #given
     mockUseWelcomeSeen.mockReturnValue([false, vi.fn()]);
     mockUseQapEnabled.mockReturnValue([false, vi.fn()]);
-    const onHydrate = vi.fn(async () => {});
+    const onHydrate = vi.fn(async () => ({ track: null, skipped: false, totalFailure: false }));
 
     // #when
     render(

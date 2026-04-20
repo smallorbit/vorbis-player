@@ -10,7 +10,8 @@ import type { MediaTrack } from '@/types/domain';
 type HandlerKey = 'play' | 'pause' | 'next' | 'previous' | 'library';
 
 type ResumeToastHarnessHandle = {
-  fireHydrate: (track: MediaTrack) => void;
+  fireHydrate: (track: MediaTrack, skipped?: boolean) => void;
+  fireHydrateFailed: () => void;
   invoke: (key: HandlerKey) => void;
 };
 
@@ -21,8 +22,16 @@ const ResumeToastHarness = React.forwardRef<ResumeToastHarnessHandle, { showQueu
     const [message, setMessage] = useState<string | null>(null);
     const dismiss = useCallback(() => setMessage(null), []);
 
-    const handleHydrateFired = useCallback((track: MediaTrack) => {
-      setMessage(`Resuming '${track.name}' — press play to continue.`);
+    const handleHydrateFired = useCallback((track: MediaTrack, skipped = false) => {
+      setMessage(
+        skipped
+          ? `Couldn't resume previous track — starting from next in queue.`
+          : `Resuming '${track.name}' — press play to continue.`,
+      );
+    }, []);
+
+    const handleHydrateFailed = useCallback(() => {
+      setMessage(`Couldn't resume your last session.`);
     }, []);
 
     const withResumeDismiss = useCallback(
@@ -51,6 +60,7 @@ const ResumeToastHarness = React.forwardRef<ResumeToastHarnessHandle, { showQueu
 
     React.useImperativeHandle(ref, () => ({
       fireHydrate: handleHydrateFired,
+      fireHydrateFailed: handleHydrateFailed,
       invoke: (key) => handlers[key](),
     }));
 
@@ -166,5 +176,37 @@ describe('Resume toast behavior', () => {
 
     // #then
     expect(screen.queryByText(/Resuming 'Four on Six'/)).not.toBeInTheDocument();
+  });
+
+  it('shows the partial-failure message when hydrate skipped to a later track', () => {
+    // #given
+    const { ref } = renderHarness();
+
+    // #when
+    act(() => {
+      ref.current?.fireHydrate(makeMediaTrack({ name: 'Skipped Track' }), true);
+    });
+
+    // #then
+    expect(
+      screen.getByText("Couldn't resume previous track — starting from next in queue."),
+    ).toBeInTheDocument();
+    // The specific track name must not leak into the partial-failure copy.
+    expect(screen.queryByText(/Skipped Track/)).not.toBeInTheDocument();
+  });
+
+  it('shows the full-failure message when hydrate could not prepare any track', () => {
+    // #given
+    const { ref } = renderHarness();
+
+    // #when
+    act(() => {
+      ref.current?.fireHydrateFailed();
+    });
+
+    // #then
+    expect(
+      screen.getByText("Couldn't resume your last session."),
+    ).toBeInTheDocument();
   });
 });
