@@ -229,9 +229,14 @@ const PlayerStateRenderer: React.FC<PlayerStateRendererProps> = ({
     if (route !== 'hydrate') return;
     if (!lastSession) return;
     hydrateFiredRef.current = true;
-    void onHydrate(lastSession).then((track) => {
-      if (track) onHydrateFired?.(track);
-    });
+    void onHydrate(lastSession)
+      .then((track) => {
+        if (track) onHydrateFired?.(track);
+      })
+      .catch(() => {
+        // Hydrate errors are surfaced inside handleHydrate; swallow here so
+        // a rejected promise doesn't bubble up as an unhandled rejection.
+      });
   }, [route, lastSession, onHydrate, onHydrateFired]);
 
   const handleConnectClick = useCallback(() => {
