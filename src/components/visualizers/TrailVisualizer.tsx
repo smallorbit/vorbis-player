@@ -3,13 +3,7 @@ import { generateColorVariant } from '../../utils/visualizerUtils';
 import { useCanvasVisualizer } from '../../hooks/useCanvasVisualizer';
 import { useVisualizerDebugConfig } from '../../contexts/VisualizerDebugContext';
 import { calculateParticleCount } from '../../utils/particleCount';
-
-interface AlbumArtBounds {
-  left: number;
-  top: number;
-  width: number;
-  height: number;
-}
+import type { AlbumArtBounds } from '@/types/visualizer';
 
 interface TrailVisualizerProps {
   intensity: number;

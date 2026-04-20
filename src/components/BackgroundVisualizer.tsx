@@ -1,17 +1,10 @@
 import React, { useMemo } from 'react';
 import styled from 'styled-components';
-import type { VisualizerStyle } from '../types/visualizer';
+import type { VisualizerStyle, AlbumArtBounds } from '../types/visualizer';
 import { ParticleVisualizer } from './visualizers/ParticleVisualizer';
 import { TrailVisualizer } from './visualizers/TrailVisualizer';
 import { WaveVisualizer } from './visualizers/WaveVisualizer';
 import { GridWaveVisualizer } from './visualizers/GridWaveVisualizer';
-
-interface AlbumArtBounds {
-  left: number;
-  top: number;
-  width: number;
-  height: number;
-}
 
 interface BackgroundVisualizerProps {
   enabled: boolean;

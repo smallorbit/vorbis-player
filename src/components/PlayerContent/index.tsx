@@ -12,6 +12,7 @@ import {
   ZEN_ART_ENTER_DELAY,
 } from '@/constants/zenAnimation';
 import type { AddToQueueResult, MediaTrack, ProviderId } from '@/types/domain';
+import type { AlbumArtBounds } from '@/types/visualizer';
 import type { RadioState, RadioProgress } from '@/types/radio';
 import type { SessionSnapshot } from '@/services/sessionPersistence';
 import { ContentWrapper, PlayerContainer, PlayerStack } from './styled';
@@ -41,13 +42,6 @@ export interface PlaybackHandlers {
   onStartRadio?: () => void;
   onRemoveFromQueue?: (index: number) => void;
   onReorderQueue?: (fromIndex: number, toIndex: number) => void;
-}
-
-interface AlbumArtBounds {
-  left: number;
-  top: number;
-  width: number;
-  height: number;
 }
 
 interface PlayerContentProps {
