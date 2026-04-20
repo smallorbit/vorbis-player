@@ -3,6 +3,7 @@ import { generateColorVariant } from '../../utils/visualizerUtils';
 import { useCanvasVisualizer } from '../../hooks/useCanvasVisualizer';
 import { useVisualizerDebugConfig } from '../../contexts/VisualizerDebugContext';
 import { gridSpatialFactor, gridWaveProjection } from './math';
+import { BREAKPOINTS_PX } from '../../styles/theme';
 
 interface GridWaveVisualizerProps {
   intensity: number;
@@ -48,7 +49,7 @@ export const GridWaveVisualizer: React.FC<GridWaveVisualizerProps> = ({
 
   const getItemCount = useCallback(
     (width: number, _height: number, _intensity: number): number => {
-      const isMobile = width < 768;
+      const isMobile = width < BREAKPOINTS_PX.lg;
       return isMobile ? g.countBaseMobile : g.countBaseDesktop;
     },
     [g]
@@ -56,7 +57,7 @@ export const GridWaveVisualizer: React.FC<GridWaveVisualizerProps> = ({
 
   const initializeItems = useCallback(
     (count: number, width: number, height: number, baseColor: string): GridWaveState[] => {
-      const spacing = width < 768 ? g.spacingMobile : g.spacing;
+      const spacing = width < BREAKPOINTS_PX.lg ? g.spacingMobile : g.spacing;
       const amplitude = g.amplitudeBase * Math.min(width, height);
       const margin = Math.ceil(amplitude / spacing);
 

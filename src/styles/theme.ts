@@ -177,6 +177,16 @@ export const theme = {
     '2xl': '1536px',
     '3xl': '1920px'
   },
+
+  breakpointPixels: {
+    xs: 320,
+    sm: 375,
+    md: 480,
+    lg: 700,
+    xl: 1280,
+    '2xl': 1536,
+    '3xl': 1920
+  },
   
   
   // Container query breakpoints for component-level responsive behavior
@@ -253,4 +263,6 @@ export const theme = {
     transitionEasing: 'cubic-bezier(0.4, 0, 0.2, 1)'
   }
 } as const;
+
+export const BREAKPOINTS_PX = theme.breakpointPixels;
 
