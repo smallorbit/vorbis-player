@@ -243,11 +243,8 @@ describe('DropboxPlaybackAdapter', () => {
   });
 
   describe('prepareTrack', () => {
-    const flush = async (): Promise<void> => {
-      for (let i = 0; i < 5; i += 1) {
-        await Promise.resolve();
-      }
-    };
+    const findHydrateCall = (listener: ReturnType<typeof vi.fn>, trackId: string) =>
+      listener.mock.calls.find(([state]) => state?.currentTrackId === trackId);
 
     it('emits paused state with positionMs and durationMs after metadata loads', async () => {
       // #given
@@ -258,20 +255,17 @@ describe('DropboxPlaybackAdapter', () => {
 
       // #when
       adapter.prepareTrack(track, { positionMs: 45_000 });
-      await flush();
+      await vi.waitFor(() => expect(mockAudio.src).toBe('https://example.com/stream.mp3'));
 
       mockAudio.duration = 200;
       mockAudio.readyState = 1;
       mockAudio.currentTime = 45;
       (mockAudio as any).__triggerEvent('loadedmetadata');
-      await flush();
 
       // #then
-      expect(mockAudio.src).toBe('https://example.com/stream.mp3');
+      await vi.waitFor(() => expect(findHydrateCall(listener, 'track-hydrate')).toBeDefined());
+      const state = findHydrateCall(listener, 'track-hydrate')![0] as PlaybackState;
       expect(mockAudio.currentTime).toBe(45);
-      const hydrateCall = listener.mock.calls.find(([state]) => state?.currentTrackId === 'track-hydrate');
-      expect(hydrateCall).toBeDefined();
-      const state = hydrateCall![0] as PlaybackState;
       expect(state.isPlaying).toBe(false);
       expect(state.positionMs).toBe(45_000);
       expect(state.durationMs).toBe(200_000);
@@ -287,18 +281,16 @@ describe('DropboxPlaybackAdapter', () => {
 
       // #when
       adapter.prepareTrack(track, { positionMs: 10_000 });
-      await flush();
+      await vi.waitFor(() => expect(mockAudio.src).toBe('https://example.com/stream.mp3'));
 
       mockAudio.duration = Infinity;
       mockAudio.readyState = 1;
       mockAudio.currentTime = 10;
       (mockAudio as any).__triggerEvent('loadedmetadata');
-      await flush();
 
       // #then
-      const hydrateCall = listener.mock.calls.find(([state]) => state?.currentTrackId === 'track-live');
-      expect(hydrateCall).toBeDefined();
-      const state = hydrateCall![0] as PlaybackState;
+      await vi.waitFor(() => expect(findHydrateCall(listener, 'track-live')).toBeDefined());
+      const state = findHydrateCall(listener, 'track-live')![0] as PlaybackState;
       expect(state.isPlaying).toBe(false);
       expect(state.positionMs).toBe(10_000);
       expect(state.durationMs).toBe(0);
@@ -321,11 +313,12 @@ describe('DropboxPlaybackAdapter', () => {
 
       // #when
       adapter.prepareTrack(upcoming);
-      await flush();
 
       // #then
+      await vi.waitFor(() =>
+        expect(mockCatalog.prefetchTemporaryLink).toHaveBeenCalledWith(upcoming.playbackRef.ref),
+      );
       expect(mockAudio.src).toBe('https://example.com/current.mp3');
-      expect(mockCatalog.prefetchTemporaryLink).toHaveBeenCalledWith(upcoming.playbackRef.ref);
     });
 
     it('cancels a pending prepareTrack when a new src is set by playTrack', async () => {
@@ -345,24 +338,44 @@ describe('DropboxPlaybackAdapter', () => {
       await adapter.initialize();
       adapter.subscribe(listener);
 
-      // #when
+      // #when — trackA's src is set and prepareTrack is awaiting loadedmetadata;
+      // playTrack(B) supersedes before the event fires.
       adapter.prepareTrack(trackA, { positionMs: 30_000 });
-      await flush();
-      // trackA's getTemporaryLink has resolved; src is set. Now kick off playTrack for trackB
-      // before the loadedmetadata event for trackA fires.
+      await vi.waitFor(() => expect(mockAudio.src).toBe('https://example.com/a.mp3'));
       await adapter.playTrack(trackB);
-
       listener.mockClear();
 
       // Now the stale loadedmetadata for the prior src fires.
       mockAudio.duration = 220;
       mockAudio.readyState = 1;
       (mockAudio as any).__triggerEvent('loadedmetadata');
-      await flush();
+      await Promise.resolve();
 
       // #then
-      const staleCall = listener.mock.calls.find(([state]) => state?.currentTrackId === 'track-a');
-      expect(staleCall).toBeUndefined();
+      expect(findHydrateCall(listener, 'track-a')).toBeUndefined();
+    });
+
+    it('emits no stale state when getTemporaryLink rejects', async () => {
+      // #given — hydrate is best-effort; a failed fetch must not leak state to subscribers
+      const track = makeMediaTrack({
+        id: 'track-fail',
+        playbackRef: { provider: 'dropbox', ref: '/Music/fail.mp3' },
+      });
+      const listener = vi.fn();
+      vi.mocked(mockCatalog.getTemporaryLink!).mockRejectedValueOnce(new Error('network down'));
+      await adapter.initialize();
+      adapter.subscribe(listener);
+
+      // #when
+      adapter.prepareTrack(track, { positionMs: 20_000 });
+
+      // #then — wait for the rejected fetch to settle, then assert nothing leaked
+      await vi.waitFor(() =>
+        expect(mockCatalog.getTemporaryLink).toHaveBeenCalledWith(track.playbackRef.ref),
+      );
+      await Promise.resolve();
+      expect(mockAudio.src).toBe('');
+      expect(findHydrateCall(listener, 'track-fail')).toBeUndefined();
     });
   });
 });
