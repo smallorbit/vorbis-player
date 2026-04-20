@@ -273,9 +273,11 @@ export class SpotifyPlaybackAdapter implements PlaybackProvider {
   }
 
   prepareTrack(track: MediaTrack, options?: { positionMs?: number }): void {
+    // Warm the auth token unconditionally so a token refresh delay can't stall
+    // the next transition even if the stage chain early-returns.
+    spotifyAuth.ensureValidToken().catch(() => {});
+
     const uri = track.playbackRef.ref;
-    // Idempotency: same-URI repeat calls are a no-op so the state event isn't
-    // emitted twice for the same prepared track. A different URI re-primes.
     if (this.preparedTrackRef === uri) {
       return;
     }
@@ -283,31 +285,24 @@ export class SpotifyPlaybackAdapter implements PlaybackProvider {
 
     void this.stageTrackPaused(track, options?.positionMs ?? 0).catch((err) => {
       logSpotify('prepareTrack failed: %o', err);
-      // Allow another attempt if the stage failed.
       if (this.preparedTrackRef === uri) {
         this.preparedTrackRef = null;
       }
     });
   }
 
-  /**
-   * Transfer playback to our device, loaded on `track` at `positionMs` and paused.
-   * Emits a PlaybackState event so subscribers (seek bar, duration readout) reflect
-   * the staged state before the user presses play.
-   */
   private async stageTrackPaused(track: MediaTrack, positionMs: number): Promise<void> {
     await this.ensurePlaybackReady();
 
     const deviceId = spotifyPlayer.getDeviceId();
     if (!deviceId) return;
 
-    // Spotify's Web API has no "load paused at position" primitive, so we start
-    // playback at the saved offset then immediately pause. The net effect from
-    // the user's perspective is the track appearing as the paused context on
-    // this device (and mirrored on other Spotify Connect clients).
+    const uri = track.playbackRef.ref;
     const positionFloor = Math.floor(positionMs);
-    await apiPlayTrack(deviceId, track.playbackRef.ref, undefined, positionFloor);
+    await apiPlayTrack(deviceId, uri, undefined, positionFloor);
     await spotifyPlayer.pause();
+
+    if (this.preparedTrackRef !== uri) return;
 
     this.emitState({
       isPlaying: false,
