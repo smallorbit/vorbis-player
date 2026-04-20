@@ -14,11 +14,11 @@ import { ColorProvider } from '@/contexts/ColorContext';
 import { ProviderProvider } from '@/contexts/ProviderContext';
 import { makeMediaTrack } from '@/test/fixtures';
 import { UnavailableTrackError } from '@/providers/errors';
-import * as sessionPersistence from '@/services/sessionPersistence';
 import type { SessionSnapshot } from '@/services/sessionPersistence';
 
 const playTrackSpy = vi.fn();
 const mockPrepareTrack = vi.fn();
+const mockProbePlayable = vi.fn();
 const mockIsAuthenticated = vi.fn(() => true);
 
 vi.mock('@/hooks/usePlaylistManager', () => ({
@@ -69,6 +69,7 @@ const mockDescriptor = {
     getState: vi.fn().mockResolvedValue(null),
     subscribe: vi.fn(() => vi.fn()),
     prepareTrack: mockPrepareTrack,
+    probePlayable: mockProbePlayable,
   },
   capabilities: { hasSaveTrack: true, hasExternalLink: true, hasLikedCollection: true },
 };
@@ -162,6 +163,8 @@ describe('usePlayerLogic — handleHydrate fallback', () => {
     vi.clearAllMocks();
     playTrackSpy.mockClear();
     mockPrepareTrack.mockClear();
+    mockProbePlayable.mockClear();
+    mockProbePlayable.mockResolvedValue(true);
     mockIsAuthenticated.mockReturnValue(true);
   });
 
@@ -231,10 +234,9 @@ describe('usePlayerLogic — handleHydrate fallback', () => {
     expect(mockPrepareTrack.mock.calls[2][0].id).toBe('track-c');
   });
 
-  it('routes to the library and clears the session when every track fails', async () => {
+  it('routes to the library and flags total failure when every track fails', async () => {
     // #given — both tracks throw
     mockPrepareTrack.mockImplementation(() => { throw new UnavailableTrackError('nope'); });
-    const clearSessionSpy = vi.spyOn(sessionPersistence, 'clearSession');
     const session = makeSession();
     const { result } = renderHook(() => usePlayerLogic(), { wrapper: AllProviders });
 
@@ -244,12 +246,11 @@ describe('usePlayerLogic — handleHydrate fallback', () => {
       hydrateResult = await result.current.handlers.handleHydrate(session);
     });
 
-    // #then — full-failure result, queue cleared, session dropped
+    // #then — full-failure result, queue cleared (persistence cleanup is the caller's job)
     expect(hydrateResult.track).toBeNull();
     expect(hydrateResult.skipped).toBe(false);
     expect(hydrateResult.totalFailure).toBe(true);
     expect(mockPrepareTrack).toHaveBeenCalledTimes(2);
-    expect(clearSessionSpy).toHaveBeenCalledTimes(1);
     await waitFor(() => {
       expect(result.current.state.tracks).toHaveLength(0);
       expect(result.current.state.selectedPlaylistId).toBeNull();
@@ -262,7 +263,6 @@ describe('usePlayerLogic — handleHydrate fallback', () => {
     // to always return false for this test — the ProviderProvider also consumes
     // isAuthenticated during render, so per-call flipping is racey.
     mockIsAuthenticated.mockReturnValue(false);
-    const clearSessionSpy = vi.spyOn(sessionPersistence, 'clearSession');
     const session = makeSession();
     const { result } = renderHook(() => usePlayerLogic(), { wrapper: AllProviders });
 
@@ -272,11 +272,10 @@ describe('usePlayerLogic — handleHydrate fallback', () => {
       hydrateResult = await result.current.handlers.handleHydrate(session);
     });
 
-    // #then — prepareTrack never ran; session wiped; total failure
+    // #then — prepareTrack never ran; total failure
     expect(hydrateResult.totalFailure).toBe(true);
     expect(hydrateResult.track).toBeNull();
     expect(mockPrepareTrack).not.toHaveBeenCalled();
-    expect(clearSessionSpy).toHaveBeenCalledTimes(1);
   });
 
   it('clears the pending hydrate ref on total failure so handlePlay does not resurrect it', async () => {
@@ -297,6 +296,49 @@ describe('usePlayerLogic — handleHydrate fallback', () => {
 
     // #then — no pending hydrate was consumed; nothing plays
     expect(playTrackSpy).not.toHaveBeenCalled();
+  });
+
+  it('skips tracks the adapter reports as unplayable via probePlayable without calling prepareTrack', async () => {
+    // #given — first candidate probes as unplayable (file moved / market-restricted),
+    // second probes playable. Because real adapters swallow prepareTrack errors
+    // internally, probePlayable is the real skip signal.
+    mockPrepareTrack.mockReset();
+    mockProbePlayable
+      .mockResolvedValueOnce(false)
+      .mockResolvedValueOnce(true);
+    const session = makeSession();
+    const { result } = renderHook(() => usePlayerLogic(), { wrapper: AllProviders });
+
+    // #when
+    let hydrateResult!: Awaited<ReturnType<typeof result.current.handlers.handleHydrate>>;
+    await act(async () => {
+      hydrateResult = await result.current.handlers.handleHydrate(session);
+    });
+
+    // #then — advanced to the second track; prepareTrack only ran for the playable one
+    expect(hydrateResult.track?.id).toBe('track-b');
+    expect(hydrateResult.skipped).toBe(true);
+    expect(mockProbePlayable).toHaveBeenCalledTimes(2);
+    expect(mockPrepareTrack).toHaveBeenCalledTimes(1);
+    expect(mockPrepareTrack.mock.calls[0][0].id).toBe('track-b');
+  });
+
+  it('aborts to library when probePlayable throws AuthExpiredError on every candidate', async () => {
+    // #given — provider auth is stale; probes throw for each candidate
+    const { AuthExpiredError } = await import('@/providers/errors');
+    mockProbePlayable.mockRejectedValue(new AuthExpiredError('spotify'));
+    const session = makeSession();
+    const { result } = renderHook(() => usePlayerLogic(), { wrapper: AllProviders });
+
+    // #when
+    let hydrateResult!: Awaited<ReturnType<typeof result.current.handlers.handleHydrate>>;
+    await act(async () => {
+      hydrateResult = await result.current.handlers.handleHydrate(session);
+    });
+
+    // #then
+    expect(hydrateResult.totalFailure).toBe(true);
+    expect(mockPrepareTrack).not.toHaveBeenCalled();
   });
 
   it('lets a subsequent handlePlay start the fallback track at position 0', async () => {

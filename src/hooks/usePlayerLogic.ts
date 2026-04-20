@@ -10,7 +10,7 @@ import { useAccentColor } from '@/hooks/useAccentColor';
 import { useUnifiedLikedTracks } from '@/hooks/useUnifiedLikedTracks';
 import { useRadio } from '@/hooks/useRadio';
 import type { MediaTrack, ProviderId } from '@/types/domain';
-import { type SessionSnapshot, clearSession } from '@/services/sessionPersistence';
+import type { SessionSnapshot } from '@/services/sessionPersistence';
 import type { TrackOperations } from '@/types/trackOperations';
 import { providerRegistry } from '@/providers/registry';
 import { AuthExpiredError, UnavailableTrackError } from '@/providers/errors';
@@ -357,6 +357,32 @@ export function usePlayerLogic() {
 
       const positionMs = offset === 0 && savedPositionIsValid ? savedPositionMs : undefined;
 
+      // Probe playability before we commit to this candidate. `prepareTrack`
+      // on both real adapters is fire-and-forget (internal promise; its errors
+      // don't surface to the caller), so without a probe the iterator would
+      // never advance against real provider failures like a market-restricted
+      // Spotify track or a moved Dropbox file.
+      if (descriptor.playback.probePlayable) {
+        try {
+          const playable = await descriptor.playback.probePlayable(candidateTrack);
+          if (!playable) {
+            logQueue(
+              'handleHydrate probePlayable=false on index=%d, track=%s',
+              candidateIdx,
+              trkSummary(candidateTrack),
+            );
+            continue;
+          }
+        } catch (error) {
+          if (error instanceof AuthExpiredError) {
+            logQueue('handleHydrate probePlayable AuthExpiredError on index=%d, provider=%s', candidateIdx, providerId);
+          } else {
+            logQueue('handleHydrate probePlayable threw on index=%d: %o', candidateIdx, error);
+          }
+          continue;
+        }
+      }
+
       try {
         descriptor.playback.prepareTrack?.(
           candidateTrack,
@@ -392,10 +418,10 @@ export function usePlayerLogic() {
       return { track: candidateTrack, skipped: offset > 0, totalFailure: false };
     }
 
-    // No track could be prepared — fully drop the session and route to library.
+    // No track could be prepared — drop the queue and let the caller clear the
+    // saved session via onHydrateFailed (AudioPlayer owns the session state).
     logQueue('handleHydrate — total failure, resetting to library');
     hydratedPendingPlayRef.current = null;
-    clearSession();
     handleBackToLibrary();
     return { track: null, skipped: false, totalFailure: true };
   }, [
