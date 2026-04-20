@@ -51,6 +51,11 @@ vi.mock('@/hooks/useRadio', () => ({
 const mockDescriptor = {
   id: 'spotify' as const,
   catalog: { listTracks: vi.fn().mockResolvedValue([]) },
+  auth: {
+    isAuthenticated: vi.fn().mockReturnValue(true),
+    beginLogin: vi.fn(),
+    logout: vi.fn(),
+  },
   playback: {
     initialize: vi.fn().mockResolvedValue(undefined),
     pause: vi.fn(),

@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { SpotifyPlaybackAdapter } from '@/providers/spotify/spotifyPlaybackAdapter';
 import { spotifyPlayer } from '@/services/spotifyPlayer';
+import { AuthExpiredError } from '@/providers/errors';
 import type { MediaTrack, PlaybackState } from '@/types/domain';
 
 vi.mock('@/services/spotifyPlayer', () => ({
@@ -161,6 +162,84 @@ describe('SpotifyPlaybackAdapter.prepareTrack', () => {
     // #then
     await vi.waitFor(() => expect(stageEmissions).toHaveLength(1));
     expect(vi.mocked(spotifyPlayer.transferPlaybackToDevice)).toHaveBeenCalledTimes(2);
+  });
+
+  describe('probePlayable', () => {
+    const findTrackProbeCall = (mock: ReturnType<typeof vi.fn>) =>
+      mock.mock.calls.find(([url]) => typeof url === 'string' && url.includes('/v1/tracks/'));
+
+    it('returns true when the track responds with is_playable=true', async () => {
+      // #given
+      const track = makeTrack();
+      fetchMock.mockResolvedValueOnce(
+        new Response(JSON.stringify({ is_playable: true }), { status: 200 }),
+      );
+
+      // #when
+      const result = await adapter.probePlayable(track);
+
+      // #then
+      expect(result).toBe(true);
+      const probe = findTrackProbeCall(fetchMock)!;
+      expect(probe[0]).toContain('/v1/tracks/abc');
+      expect(probe[0]).toContain('market=from_token');
+    });
+
+    it('returns false when is_playable is explicitly false (market-restricted)', async () => {
+      // #given
+      const track = makeTrack();
+      fetchMock.mockResolvedValueOnce(
+        new Response(JSON.stringify({ is_playable: false }), { status: 200 }),
+      );
+
+      // #when
+      const result = await adapter.probePlayable(track);
+
+      // #then
+      expect(result).toBe(false);
+    });
+
+    it('returns false when the track endpoint responds with 404', async () => {
+      // #given — Spotify removed the track from the catalog
+      const track = makeTrack();
+      fetchMock.mockResolvedValueOnce(new Response(null, { status: 404 }));
+
+      // #when
+      const result = await adapter.probePlayable(track);
+
+      // #then
+      expect(result).toBe(false);
+    });
+
+    it('returns false when the playback ref is not a spotify:track URI', async () => {
+      // #given — malformed ref (e.g., stale Spotify URI coming from a legacy session)
+      const track = makeTrack({ playbackRef: { provider: 'spotify', ref: 'spotify:episode:xyz' } });
+
+      // #when
+      const result = await adapter.probePlayable(track);
+
+      // #then — we never even hit fetch
+      expect(result).toBe(false);
+      expect(findTrackProbeCall(fetchMock)).toBeUndefined();
+    });
+
+    it('throws AuthExpiredError on 401 so the caller can abort hydrate', async () => {
+      // #given
+      const track = makeTrack();
+      fetchMock.mockResolvedValueOnce(new Response(null, { status: 401 }));
+
+      // #when / #then
+      await expect(adapter.probePlayable(track)).rejects.toBeInstanceOf(AuthExpiredError);
+    });
+
+    it('throws on unexpected non-ok responses (e.g. 500) to surface transient errors', async () => {
+      // #given
+      const track = makeTrack();
+      fetchMock.mockResolvedValueOnce(new Response(null, { status: 500 }));
+
+      // #when / #then
+      await expect(adapter.probePlayable(track)).rejects.toThrow(/probePlayable failed: 500/);
+    });
   });
 
   it('skips the stale stage emission when a different track is prepared mid-stage', async () => {

@@ -5,6 +5,7 @@
 
 import type { PlaybackProvider } from '@/types/providers';
 import type { ProviderId, MediaTrack, PlaybackState, CollectionRef } from '@/types/domain';
+import { AuthExpiredError } from '@/providers/errors';
 import { DropboxCatalogAdapter } from './dropboxCatalogAdapter';
 import { parseID3 } from '@/utils/id3Parser';
 import { bytesToDataUrl } from '@/utils/bytesToDataUrl';
@@ -196,6 +197,16 @@ export class DropboxPlaybackAdapter implements PlaybackProvider {
     doEnrich().catch(() => {
       // Metadata enrichment is best-effort; ignore failures
     });
+  }
+
+  async probePlayable(track: MediaTrack): Promise<boolean> {
+    try {
+      await this.catalog.getTemporaryLink(track.playbackRef.ref);
+      return true;
+    } catch (error) {
+      if (error instanceof AuthExpiredError) throw error;
+      return false;
+    }
   }
 
   prepareTrack(track: MediaTrack, options?: { positionMs?: number }): void {
