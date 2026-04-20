@@ -1,9 +1,3 @@
-/**
- * Tests for SpotifyPlaybackAdapter.prepareTrack: transfers playback to this device
- * staged paused at the saved position, and emits a PlaybackState so subscribers
- * (seek bar, duration readout) reflect the restored state before user presses play.
- */
-
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { SpotifyPlaybackAdapter } from '@/providers/spotify/spotifyPlaybackAdapter';
 import { spotifyPlayer } from '@/services/spotifyPlayer';
@@ -38,12 +32,11 @@ const makeTrack = (overrides: Partial<MediaTrack> = {}): MediaTrack => ({
   ...overrides,
 });
 
-/** Wait for prepareTrack's fire-and-forget stage chain to settle. */
-const flushStageTrack = async () => {
-  await new Promise(resolve => setTimeout(resolve, 0));
-  await new Promise(resolve => setTimeout(resolve, 0));
-  await new Promise(resolve => setTimeout(resolve, 0));
-};
+const findPlayCall = (mock: ReturnType<typeof vi.fn>) =>
+  mock.mock.calls.find(([url]) => typeof url === 'string' && url.includes('/me/player/play'));
+
+const countPlayCalls = (mock: ReturnType<typeof vi.fn>) =>
+  mock.mock.calls.filter(([url]) => typeof url === 'string' && url.includes('/me/player/play')).length;
 
 describe('SpotifyPlaybackAdapter.prepareTrack', () => {
   let adapter: SpotifyPlaybackAdapter;
@@ -62,23 +55,20 @@ describe('SpotifyPlaybackAdapter.prepareTrack', () => {
     vi.unstubAllGlobals();
   });
 
-  it('transfers playback with play=false and position_ms at the saved position', async () => {
+  it('transfers playback with the track uri and position_ms at the saved position', async () => {
     // #given
     const track = makeTrack();
     const positionMs = 42_000;
 
     // #when
     adapter.prepareTrack(track, { positionMs });
-    await flushStageTrack();
 
     // #then
-    const playCall = fetchMock.mock.calls.find(([url]) =>
-      typeof url === 'string' && url.includes('/me/player/play')
-    );
-    expect(playCall).toBeDefined();
-    const body = JSON.parse(playCall![1].body as string);
+    await vi.waitFor(() => expect(findPlayCall(fetchMock)).toBeDefined());
+    const playCall = findPlayCall(fetchMock)!;
+    const body = JSON.parse(playCall[1].body as string);
     expect(body).toEqual({ uris: ['spotify:track:abc'], position_ms: positionMs });
-    expect(spotifyPlayer.pause).toHaveBeenCalledTimes(1);
+    await vi.waitFor(() => expect(spotifyPlayer.pause).toHaveBeenCalledTimes(1));
   });
 
   it('emits a PlaybackState with correct positionMs, durationMs, and isPlaying=false', async () => {
@@ -89,11 +79,12 @@ describe('SpotifyPlaybackAdapter.prepareTrack', () => {
 
     // #when
     adapter.prepareTrack(track, { positionMs: 15_000 });
-    await flushStageTrack();
 
     // #then
-    const staged = received.find((s) => s?.currentTrackId === 'track-1');
-    expect(staged).toBeDefined();
+    await vi.waitFor(() => {
+      expect(received.find((s) => s?.currentTrackId === 'track-1')).toBeDefined();
+    });
+    const staged = received.find((s) => s?.currentTrackId === 'track-1')!;
     expect(staged).toMatchObject({
       isPlaying: false,
       positionMs: 15_000,
@@ -116,14 +107,10 @@ describe('SpotifyPlaybackAdapter.prepareTrack', () => {
     // #when
     adapter.prepareTrack(track, { positionMs: 10_000 });
     adapter.prepareTrack(track, { positionMs: 10_000 });
-    await flushStageTrack();
 
     // #then
-    expect(stageEmissions).toHaveLength(1);
-    const playCallCount = fetchMock.mock.calls.filter(([url]) =>
-      typeof url === 'string' && url.includes('/me/player/play')
-    ).length;
-    expect(playCallCount).toBe(1);
+    await vi.waitFor(() => expect(stageEmissions).toHaveLength(1));
+    expect(countPlayCalls(fetchMock)).toBe(1);
     expect(spotifyPlayer.pause).toHaveBeenCalledTimes(1);
   });
 
@@ -138,11 +125,64 @@ describe('SpotifyPlaybackAdapter.prepareTrack', () => {
 
     // #when
     adapter.prepareTrack(trackA, { positionMs: 5_000 });
-    await flushStageTrack();
+    await vi.waitFor(() => expect(staged).toHaveLength(1));
     adapter.prepareTrack(trackB, { positionMs: 8_000 });
-    await flushStageTrack();
 
     // #then
+    await vi.waitFor(() => expect(staged).toHaveLength(2));
     expect(staged.map((s) => s?.currentTrackId)).toEqual(['a', 'b']);
+  });
+
+  it('clears the idempotency guard on failure so a retry can re-stage', async () => {
+    // #given — first prepareTrack call fails at the play step
+    const track = makeTrack();
+    const stageEmissions: Array<PlaybackState | null> = [];
+    adapter.subscribe((state) => {
+      if (state?.currentTrackId === track.id && !state.isPlaying) {
+        stageEmissions.push(state);
+      }
+    });
+    fetchMock.mockRejectedValueOnce(new Error('network down'));
+
+    // #when
+    adapter.prepareTrack(track, { positionMs: 12_000 });
+    await vi.waitFor(() => expect(countPlayCalls(fetchMock)).toBe(1));
+
+    // Second call after failure should retry (not be treated as idempotent).
+    adapter.prepareTrack(track, { positionMs: 12_000 });
+
+    // #then
+    await vi.waitFor(() => expect(stageEmissions).toHaveLength(1));
+    expect(countPlayCalls(fetchMock)).toBe(2);
+  });
+
+  it('skips the stale stage emission when a different track is prepared mid-stage', async () => {
+    // #given — prepareTrack(A) is in flight when prepareTrack(B) overrides it
+    const trackA = makeTrack({ id: 'a', playbackRef: { provider: 'spotify', ref: 'spotify:track:a' } });
+    const trackB = makeTrack({ id: 'b', playbackRef: { provider: 'spotify', ref: 'spotify:track:b' } });
+    const stageEmissions: Array<PlaybackState | null> = [];
+    adapter.subscribe((state) => {
+      if (state && !state.isPlaying) stageEmissions.push(state);
+    });
+
+    let resolveFirstPlay!: () => void;
+    fetchMock.mockImplementationOnce(
+      () => new Promise<Response>((resolve) => {
+        resolveFirstPlay = () => resolve(new Response(null, { status: 204 }));
+      }),
+    );
+
+    // #when
+    adapter.prepareTrack(trackA, { positionMs: 1_000 });
+    await vi.waitFor(() => expect(resolveFirstPlay).toBeTypeOf('function'));
+    adapter.prepareTrack(trackB, { positionMs: 2_000 });
+    resolveFirstPlay();
+
+    // #then — only B's staged state should reach subscribers
+    await vi.waitFor(() => {
+      const bEmit = stageEmissions.find((s) => s?.currentTrackId === 'b');
+      expect(bEmit).toBeDefined();
+    });
+    expect(stageEmissions.find((s) => s?.currentTrackId === 'a')).toBeUndefined();
   });
 });
