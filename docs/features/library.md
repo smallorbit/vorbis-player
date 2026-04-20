@@ -126,7 +126,7 @@ const { history, record } = useRecentlyPlayedCollections();
 
 ### Mobile/Desktop Filter Divergence
 
-On mobile, `useLibraryRoot` sets `ignoreProviderFilters = isMobile` (line 125). When this flag is true, the `providerFilters` state is read but never applied to the playlist or album lists — all items from every enabled provider are always shown.
+On mobile, `useLibraryRoot` passes `ignoreProviderFilters: isMobile` to `useLibraryViews`. When this flag is true, the `providerFilters` state is read but never applied to the playlist or album lists — all items from every enabled provider are always shown.
 
 **Rationale:** The provider chip row is absent on mobile, so a stale filter set from a prior desktop session could leave mobile users seeing an unexpectedly empty library with no way to reset it. Ignoring `providerFilters` on mobile eliminates this failure mode without adding a mobile-specific chip UI.
 
