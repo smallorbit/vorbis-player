@@ -6,6 +6,7 @@
 import type { PlaybackProvider } from '@/types/providers';
 import type { ProviderId, MediaTrack, PlaybackState, CollectionRef } from '@/types/domain';
 import { spotifyPlayer } from '@/services/spotifyPlayer';
+import { apiPlayTrack } from '@/services/spotifyPlayerPlayback';
 import { spotifyAuth } from '@/services/spotify';
 import { isAlbumId, extractAlbumId } from '@/constants/playlist';
 import { SPOTIFY_MAX_RETRIES, SPOTIFY_BASE_BACKOFF_MS } from '@/constants/spotify';
@@ -38,6 +39,11 @@ export class SpotifyPlaybackAdapter implements PlaybackProvider {
   private pendingUpcomingUris: string[] | null = null;
   /** True after the first successful playTrack; lets subsequent plays skip heavy API checks. */
   private playbackSessionActive = false;
+
+  private readonly listeners = new Set<(state: PlaybackState | null) => void>();
+  private sdkUnsubscribe: (() => void) | null = null;
+  /** Ref of the track most recently staged by prepareTrack; used for idempotency. */
+  private preparedTrackRef: string | null = null;
 
   private async waitForPlayerReady(): Promise<void> {
     const start = Date.now();
@@ -233,20 +239,78 @@ export class SpotifyPlaybackAdapter implements PlaybackProvider {
   }
 
   subscribe(listener: (state: PlaybackState | null) => void): () => void {
-    return spotifyPlayer.onPlayerStateChanged((spotifyState) => {
-      listener(mapPlaybackState(spotifyState));
+    this.listeners.add(listener);
+    this.ensureSdkSubscription();
+
+    return () => {
+      this.listeners.delete(listener);
+      if (this.listeners.size === 0) {
+        this.sdkUnsubscribe?.();
+        this.sdkUnsubscribe = null;
+      }
+    };
+  }
+
+  private ensureSdkSubscription(): void {
+    if (this.sdkUnsubscribe) return;
+    this.sdkUnsubscribe = spotifyPlayer.onPlayerStateChanged((spotifyState) => {
+      this.emitState(mapPlaybackState(spotifyState));
     });
+  }
+
+  private emitState(state: PlaybackState | null): void {
+    for (const listener of this.listeners) {
+      try {
+        listener(state);
+      } catch (err) {
+        console.error('[spotifyPlayback] listener error:', err);
+      }
+    }
   }
 
   getLastPlayTime(): number {
     return spotifyPlayer.lastPlayTrackTime;
   }
 
-  prepareTrack(_track: MediaTrack, _options?: { positionMs?: number }): void {
-    // Pre-warm the auth token so no refresh delay hits the next transition.
-    // The Spotify Web Playback SDK has no preload-without-play mode, so positionMs
-    // is accepted for interface parity but applied when playTrack is later invoked.
+  prepareTrack(track: MediaTrack, options?: { positionMs?: number }): void {
+    // Warm the auth token unconditionally so a token refresh delay can't stall
+    // the next transition even if the stage chain early-returns.
     spotifyAuth.ensureValidToken().catch(() => {});
+
+    const uri = track.playbackRef.ref;
+    if (this.preparedTrackRef === uri) {
+      return;
+    }
+    this.preparedTrackRef = uri;
+
+    void this.stageTrackPaused(track, options?.positionMs ?? 0).catch((err) => {
+      logSpotify('prepareTrack failed: %o', err);
+      if (this.preparedTrackRef === uri) {
+        this.preparedTrackRef = null;
+      }
+    });
+  }
+
+  private async stageTrackPaused(track: MediaTrack, positionMs: number): Promise<void> {
+    await this.ensurePlaybackReady();
+
+    const deviceId = spotifyPlayer.getDeviceId();
+    if (!deviceId) return;
+
+    const uri = track.playbackRef.ref;
+    const positionFloor = Math.floor(positionMs);
+    await apiPlayTrack(deviceId, uri, undefined, positionFloor);
+    await spotifyPlayer.pause();
+
+    if (this.preparedTrackRef !== uri) return;
+
+    this.emitState({
+      isPlaying: false,
+      positionMs: positionFloor,
+      durationMs: track.durationMs ?? 0,
+      currentTrackId: track.id,
+      currentPlaybackRef: track.playbackRef,
+    });
   }
 
   onQueueChanged(tracks: MediaTrack[], fromIndex: number): void {
