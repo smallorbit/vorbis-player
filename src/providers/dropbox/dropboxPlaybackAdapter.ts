@@ -217,29 +217,44 @@ export class DropboxPlaybackAdapter implements PlaybackProvider {
     const streamUrl = await this.catalog.getTemporaryLink(track.playbackRef.ref);
     if (generation !== this.prepareGeneration) return;
 
-    this.currentTrack = track;
-    this.hydrateAlbumArtFromCache(track);
     audio.src = streamUrl;
 
     if (audio.readyState < HTMLMediaElement.HAVE_METADATA) {
       await new Promise<void>((resolve) => {
-        const onLoaded = () => {
-          audio.removeEventListener('loadedmetadata', onLoaded);
-          audio.removeEventListener('error', onLoaded);
+        // Resolve on either signal so the prime unblocks even when the
+        // resource fails to load. The generation re-check below drops stale
+        // primes, and the error fallback emits durationMs: 0 via getStateSync.
+        const onSettle = () => {
+          audio.removeEventListener('loadedmetadata', onSettle);
+          audio.removeEventListener('error', onSettle);
           resolve();
         };
-        audio.addEventListener('loadedmetadata', onLoaded);
-        audio.addEventListener('error', onLoaded);
+        audio.addEventListener('loadedmetadata', onSettle);
+        audio.addEventListener('error', onSettle);
       });
     }
     if (generation !== this.prepareGeneration) return;
+
+    // Commit track state only after metadata has settled and this prime
+    // hasn't been superseded, so getStateSync can't observe a mixed state
+    // where currentTrack points at a not-yet-loaded src.
+    this.currentTrack = track;
+    this.hydrateAlbumArtFromCache(track);
 
     if (positionMs && positionMs > 0) {
       audio.currentTime = positionMs / 1000;
     }
 
-    // The 'loadedmetadata' listener in ensureAudio has already populated
-    // pendingDurationMs; this notify re-emits with the seeked positionMs.
+    // The ensureAudio loadedmetadata listener short-circuits when it fires
+    // before currentTrack is set (see the guard there), so populate the
+    // persisted-duration side effects ourselves now that currentTrack is live.
+    const dur = audio.duration;
+    if (Number.isFinite(dur) && dur > 0) {
+      const durationMs = Math.floor(dur * 1000);
+      this.pendingDurationMs = durationMs;
+      putDurationMs(track.id, durationMs).catch(() => {});
+    }
+
     this.notifyListeners();
   }
 
