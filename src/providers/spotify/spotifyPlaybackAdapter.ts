@@ -6,7 +6,6 @@
 import type { PlaybackProvider } from '@/types/providers';
 import type { ProviderId, MediaTrack, PlaybackState, CollectionRef } from '@/types/domain';
 import { spotifyPlayer } from '@/services/spotifyPlayer';
-import { apiPlayTrack } from '@/services/spotifyPlayerPlayback';
 import { spotifyAuth } from '@/services/spotify';
 import { isAlbumId, extractAlbumId } from '@/constants/playlist';
 import { SPOTIFY_MAX_RETRIES, SPOTIFY_BASE_BACKOFF_MS } from '@/constants/spotify';
@@ -292,48 +291,29 @@ export class SpotifyPlaybackAdapter implements PlaybackProvider {
   }
 
   private async stageTrackPaused(track: MediaTrack, positionMs: number): Promise<void> {
+    // ensurePlaybackReady transfers Spotify Connect to this device with
+    // `play: false`, which paused-transfers any existing session and leaves
+    // the SDK ready. That's all the staging we need for hydrate — we do NOT
+    // call apiPlayTrack, because /me/player/play starts audio and Spotify's
+    // eventually-consistent server state makes a subsequent pause() race
+    // the just-started playback (leaked audio on a fresh tab).
+    //
+    // The UI staging (scrubbed seek bar + duration) is purely local: emit
+    // the expected paused state to subscribers. Actual audio playback is
+    // deferred to the user's next `playTrack` call, which starts from the
+    // saved position via handlePlay consuming hydratedPendingPlayRef.
     await this.ensurePlaybackReady();
 
-    const deviceId = spotifyPlayer.getDeviceId();
-    if (!deviceId) return;
-
     const uri = track.playbackRef.ref;
-    const positionFloor = Math.floor(positionMs);
-    await apiPlayTrack(deviceId, uri, undefined, positionFloor);
-    await spotifyPlayer.pause();
-    await this.ensurePausedLanded(uri);
-
     if (this.preparedTrackRef !== uri) return;
 
     this.emitState({
       isPlaying: false,
-      positionMs: positionFloor,
+      positionMs: Math.floor(positionMs),
       durationMs: track.durationMs ?? 0,
       currentTrackId: track.id,
       currentPlaybackRef: track.playbackRef,
     });
-  }
-
-  /**
-   * Spotify's server state is eventually-consistent: on a fresh tab where the
-   * account was last playing, a single pause() can race with SDK state events
-   * that re-establish play. Poll the SDK state and re-issue pause() until the
-   * adapter observes `paused=true`, with a bounded cap so we never block hydrate
-   * indefinitely. If the prepare has been superseded (another track staged),
-   * bail immediately.
-   */
-  private async ensurePausedLanded(uri: string): Promise<void> {
-    const MAX_ATTEMPTS = 5;
-    const POLL_MS = 100;
-    for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt += 1) {
-      if (this.preparedTrackRef !== uri) return;
-      const state = await spotifyPlayer.getCurrentState();
-      if (!state || state.paused) return;
-      logSpotify('stage pause race detected, re-issuing pause (attempt %d/%d)', attempt + 1, MAX_ATTEMPTS);
-      await spotifyPlayer.pause();
-      await new Promise((resolve) => setTimeout(resolve, POLL_MS));
-    }
-    logSpotify('stage pause did not settle after %d attempts', MAX_ATTEMPTS);
   }
 
   onQueueChanged(tracks: MediaTrack[], fromIndex: number): void {
