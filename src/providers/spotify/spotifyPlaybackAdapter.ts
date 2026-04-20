@@ -6,7 +6,6 @@
 import type { PlaybackProvider } from '@/types/providers';
 import type { ProviderId, MediaTrack, PlaybackState, CollectionRef } from '@/types/domain';
 import { spotifyPlayer } from '@/services/spotifyPlayer';
-import { apiPlayTrack } from '@/services/spotifyPlayerPlayback';
 import { spotifyAuth } from '@/services/spotify';
 import { isAlbumId, extractAlbumId } from '@/constants/playlist';
 import { SPOTIFY_MAX_RETRIES, SPOTIFY_BASE_BACKOFF_MS } from '@/constants/spotify';
@@ -292,21 +291,25 @@ export class SpotifyPlaybackAdapter implements PlaybackProvider {
   }
 
   private async stageTrackPaused(track: MediaTrack, positionMs: number): Promise<void> {
+    // ensurePlaybackReady transfers Spotify Connect to this device with
+    // `play: false`, which paused-transfers any existing session and leaves
+    // the SDK ready. That's all the staging we need for hydrate — we do NOT
+    // call apiPlayTrack, because /me/player/play starts audio and Spotify's
+    // eventually-consistent server state makes a subsequent pause() race
+    // the just-started playback (leaked audio on a fresh tab).
+    //
+    // The UI staging (scrubbed seek bar + duration) is purely local: emit
+    // the expected paused state to subscribers. Actual audio playback is
+    // deferred to the user's next `playTrack` call, which starts from the
+    // saved position via handlePlay consuming hydratedPendingPlayRef.
     await this.ensurePlaybackReady();
 
-    const deviceId = spotifyPlayer.getDeviceId();
-    if (!deviceId) return;
-
     const uri = track.playbackRef.ref;
-    const positionFloor = Math.floor(positionMs);
-    await apiPlayTrack(deviceId, uri, undefined, positionFloor);
-    await spotifyPlayer.pause();
-
     if (this.preparedTrackRef !== uri) return;
 
     this.emitState({
       isPlaying: false,
-      positionMs: positionFloor,
+      positionMs: Math.floor(positionMs),
       durationMs: track.durationMs ?? 0,
       currentTrackId: track.id,
       currentPlaybackRef: track.playbackRef,

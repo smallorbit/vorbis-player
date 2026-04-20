@@ -32,22 +32,15 @@ const makeTrack = (overrides: Partial<MediaTrack> = {}): MediaTrack => ({
   ...overrides,
 });
 
-const findPlayCall = (mock: ReturnType<typeof vi.fn>) =>
-  mock.mock.calls.find(([url]) => typeof url === 'string' && url.includes('/me/player/play'));
-
-const countPlayCalls = (mock: ReturnType<typeof vi.fn>) =>
-  mock.mock.calls.filter(([url]) => typeof url === 'string' && url.includes('/me/player/play')).length;
-
 describe('SpotifyPlaybackAdapter.prepareTrack', () => {
   let adapter: SpotifyPlaybackAdapter;
-  let fetchMock: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(spotifyPlayer.getIsReady).mockReturnValue(true);
     vi.mocked(spotifyPlayer.getDeviceId).mockReturnValue('device-1');
-    fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 204 }));
-    vi.stubGlobal('fetch', fetchMock);
+    vi.mocked(spotifyPlayer.transferPlaybackToDevice).mockResolvedValue(undefined);
+    vi.mocked(spotifyPlayer.ensureDeviceIsActive).mockResolvedValue(true);
     adapter = new SpotifyPlaybackAdapter();
   });
 
@@ -55,23 +48,7 @@ describe('SpotifyPlaybackAdapter.prepareTrack', () => {
     vi.unstubAllGlobals();
   });
 
-  it('transfers playback with the track uri and position_ms at the saved position', async () => {
-    // #given
-    const track = makeTrack();
-    const positionMs = 42_000;
-
-    // #when
-    adapter.prepareTrack(track, { positionMs });
-
-    // #then
-    await vi.waitFor(() => expect(findPlayCall(fetchMock)).toBeDefined());
-    const playCall = findPlayCall(fetchMock)!;
-    const body = JSON.parse(playCall[1].body as string);
-    expect(body).toEqual({ uris: ['spotify:track:abc'], position_ms: positionMs });
-    await vi.waitFor(() => expect(spotifyPlayer.pause).toHaveBeenCalledTimes(1));
-  });
-
-  it('emits a PlaybackState with correct positionMs, durationMs, and isPlaying=false', async () => {
+  it('emits a PlaybackState with the saved positionMs, track durationMs, and isPlaying=false', async () => {
     // #given
     const track = makeTrack({ durationMs: 180_000 });
     const received: Array<PlaybackState | null> = [];
@@ -94,6 +71,33 @@ describe('SpotifyPlaybackAdapter.prepareTrack', () => {
     });
   });
 
+  it('does not start actual playback — no /me/player/play call and no pause()', async () => {
+    // #given — the regression root cause (#1179): previously prepareTrack
+    // called /me/player/play then pause, which could land playing on a fresh
+    // tab. The fix stages state locally without touching Spotify playback.
+    const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 204 }));
+    vi.stubGlobal('fetch', fetchMock);
+    const track = makeTrack();
+
+    // #when
+    adapter.prepareTrack(track, { positionMs: 10_000 });
+
+    // #then — wait for the stage emission to ensure the whole flow ran, then
+    // verify no audio-starting calls were made.
+    const received: Array<PlaybackState | null> = [];
+    adapter.subscribe((state) => received.push(state));
+    await vi.waitFor(() => {
+      // Give the stage pipeline a beat to run.
+      expect(vi.mocked(spotifyPlayer.transferPlaybackToDevice)).toHaveBeenCalled();
+    });
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    const playCalls = fetchMock.mock.calls.filter(
+      ([url]) => typeof url === 'string' && url.includes('/me/player/play'),
+    );
+    expect(playCalls).toHaveLength(0);
+    expect(spotifyPlayer.pause).not.toHaveBeenCalled();
+  });
+
   it('does not double-emit when prepareTrack is called twice for the same track', async () => {
     // #given
     const track = makeTrack();
@@ -108,10 +112,10 @@ describe('SpotifyPlaybackAdapter.prepareTrack', () => {
     adapter.prepareTrack(track, { positionMs: 10_000 });
     adapter.prepareTrack(track, { positionMs: 10_000 });
 
-    // #then
+    // #then — ensurePlaybackReady runs once because the second call hits the
+    // preparedTrackRef idempotency guard; emission fires exactly once.
     await vi.waitFor(() => expect(stageEmissions).toHaveLength(1));
-    expect(countPlayCalls(fetchMock)).toBe(1);
-    expect(spotifyPlayer.pause).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(spotifyPlayer.transferPlaybackToDevice)).toHaveBeenCalledTimes(1);
   });
 
   it('re-stages when prepareTrack is called for a different track', async () => {
@@ -134,7 +138,7 @@ describe('SpotifyPlaybackAdapter.prepareTrack', () => {
   });
 
   it('clears the idempotency guard on failure so a retry can re-stage', async () => {
-    // #given — first prepareTrack call fails at the play step
+    // #given — ensurePlaybackReady fails on the first prepareTrack call
     const track = makeTrack();
     const stageEmissions: Array<PlaybackState | null> = [];
     adapter.subscribe((state) => {
@@ -142,22 +146,26 @@ describe('SpotifyPlaybackAdapter.prepareTrack', () => {
         stageEmissions.push(state);
       }
     });
-    fetchMock.mockRejectedValueOnce(new Error('network down'));
+    vi.mocked(spotifyPlayer.transferPlaybackToDevice)
+      .mockRejectedValueOnce(new Error('network down'))
+      .mockResolvedValue(undefined);
 
     // #when
     adapter.prepareTrack(track, { positionMs: 12_000 });
-    await vi.waitFor(() => expect(countPlayCalls(fetchMock)).toBe(1));
-
-    // Second call after failure should retry (not be treated as idempotent).
+    await vi.waitFor(() =>
+      expect(vi.mocked(spotifyPlayer.transferPlaybackToDevice)).toHaveBeenCalledTimes(1),
+    );
+    // Second call after the failure — guard was reset, so this retries.
     adapter.prepareTrack(track, { positionMs: 12_000 });
 
     // #then
     await vi.waitFor(() => expect(stageEmissions).toHaveLength(1));
-    expect(countPlayCalls(fetchMock)).toBe(2);
+    expect(vi.mocked(spotifyPlayer.transferPlaybackToDevice)).toHaveBeenCalledTimes(2);
   });
 
   it('skips the stale stage emission when a different track is prepared mid-stage', async () => {
-    // #given — prepareTrack(A) is in flight when prepareTrack(B) overrides it
+    // #given — prepareTrack(A) is in flight when prepareTrack(B) overrides it.
+    // Slow-resolve the first transfer so the supersede wins the race.
     const trackA = makeTrack({ id: 'a', playbackRef: { provider: 'spotify', ref: 'spotify:track:a' } });
     const trackB = makeTrack({ id: 'b', playbackRef: { provider: 'spotify', ref: 'spotify:track:b' } });
     const stageEmissions: Array<PlaybackState | null> = [];
@@ -165,18 +173,20 @@ describe('SpotifyPlaybackAdapter.prepareTrack', () => {
       if (state && !state.isPlaying) stageEmissions.push(state);
     });
 
-    let resolveFirstPlay!: () => void;
-    fetchMock.mockImplementationOnce(
-      () => new Promise<Response>((resolve) => {
-        resolveFirstPlay = () => resolve(new Response(null, { status: 204 }));
-      }),
-    );
+    let resolveFirstTransfer!: () => void;
+    vi.mocked(spotifyPlayer.transferPlaybackToDevice)
+      .mockImplementationOnce(
+        () => new Promise<void>((resolve) => {
+          resolveFirstTransfer = () => resolve();
+        }),
+      )
+      .mockResolvedValue(undefined);
 
     // #when
     adapter.prepareTrack(trackA, { positionMs: 1_000 });
-    await vi.waitFor(() => expect(resolveFirstPlay).toBeTypeOf('function'));
+    await vi.waitFor(() => expect(resolveFirstTransfer).toBeTypeOf('function'));
     adapter.prepareTrack(trackB, { positionMs: 2_000 });
-    resolveFirstPlay();
+    resolveFirstTransfer();
 
     // #then — only B's staged state should reach subscribers
     await vi.waitFor(() => {
