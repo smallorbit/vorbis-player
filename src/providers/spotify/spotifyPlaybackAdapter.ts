@@ -272,6 +272,25 @@ export class SpotifyPlaybackAdapter implements PlaybackProvider {
     return spotifyPlayer.lastPlayTrackTime;
   }
 
+  async probePlayable(track: MediaTrack): Promise<boolean> {
+    const uri = track.playbackRef.ref;
+    const match = /^spotify:track:([A-Za-z0-9]+)$/.exec(uri);
+    if (!match) return false;
+    const trackId = match[1];
+    const token = await spotifyAuth.ensureValidToken();
+    const res = await fetch(
+      `https://api.spotify.com/v1/tracks/${trackId}?market=from_token`,
+      { headers: { Authorization: `Bearer ${token}` } },
+    );
+    if (res.status === 401) throw new AuthExpiredError('spotify');
+    if (res.status === 404) return false;
+    if (!res.ok) {
+      throw new Error(`Spotify probePlayable failed: ${res.status}`);
+    }
+    const body = (await res.json()) as { is_playable?: boolean };
+    return body.is_playable !== false;
+  }
+
   prepareTrack(track: MediaTrack, options?: { positionMs?: number }): void {
     // Warm the auth token unconditionally so a token refresh delay can't stall
     // the next transition even if the stage chain early-returns.

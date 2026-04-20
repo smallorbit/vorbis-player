@@ -378,4 +378,54 @@ describe('DropboxPlaybackAdapter', () => {
       expect(findHydrateCall(listener, 'track-fail')).toBeUndefined();
     });
   });
+
+  describe('probePlayable', () => {
+    it('returns true when getTemporaryLink resolves', async () => {
+      // #given — live file: catalog hands back a fresh download link
+      const track = makeMediaTrack({
+        id: 'track-ok',
+        playbackRef: { provider: 'dropbox', ref: '/Music/ok.mp3' },
+      });
+      vi.mocked(mockCatalog.getTemporaryLink!).mockResolvedValueOnce('https://example.com/ok.mp3');
+
+      // #when
+      const result = await adapter.probePlayable(track);
+
+      // #then
+      expect(result).toBe(true);
+      expect(mockCatalog.getTemporaryLink).toHaveBeenCalledWith('/Music/ok.mp3');
+    });
+
+    it('returns false when getTemporaryLink rejects (file moved/gone)', async () => {
+      // #given — catalog couldn't find the file (moved/renamed/deleted)
+      const track = makeMediaTrack({
+        id: 'track-gone',
+        playbackRef: { provider: 'dropbox', ref: '/Music/gone.mp3' },
+      });
+      vi.mocked(mockCatalog.getTemporaryLink!).mockRejectedValueOnce(
+        new Error('path_lookup/not_found'),
+      );
+
+      // #when
+      const result = await adapter.probePlayable(track);
+
+      // #then
+      expect(result).toBe(false);
+    });
+
+    it('rethrows AuthExpiredError so the caller can abort hydrate', async () => {
+      // #given — Dropbox refresh-token exchange failed mid-probe
+      const { AuthExpiredError } = await import('@/providers/errors');
+      const track = makeMediaTrack({
+        id: 'track-auth',
+        playbackRef: { provider: 'dropbox', ref: '/Music/auth.mp3' },
+      });
+      vi.mocked(mockCatalog.getTemporaryLink!).mockRejectedValueOnce(
+        new AuthExpiredError('dropbox'),
+      );
+
+      // #when / #then
+      await expect(adapter.probePlayable(track)).rejects.toBeInstanceOf(AuthExpiredError);
+    });
+  });
 });

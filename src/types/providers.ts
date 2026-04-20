@@ -81,6 +81,14 @@ export interface PlaybackProvider {
   subscribe(listener: (state: PlaybackState | null) => void): () => void;
   /** Optional: pre-warm resources for an upcoming track (e.g. fetch temporary links). Supplying positionMs lets the adapter prepare to resume at that offset. */
   prepareTrack?(track: MediaTrack, options?: { positionMs?: number }): void;
+  /**
+   * Optional: quickly verify that a track can still be played by this provider
+   * without starting playback. Used by session hydrate to skip tracks that have
+   * become unavailable (file moved, market-restricted, removed from catalog).
+   * Return `false` for known-unplayable tracks; throw for transient errors
+   * (auth, network) that should abort the whole hydrate iteration.
+   */
+  probePlayable?(track: MediaTrack): Promise<boolean>;
   /** Optional: re-fetch album art for the currently playing track. */
   refreshCurrentTrackArt?(): void;
   /** Optional: epoch ms of the last playTrack call (used by auto-advance cooldown). */
