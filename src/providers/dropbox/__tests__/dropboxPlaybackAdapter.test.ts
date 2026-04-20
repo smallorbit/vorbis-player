@@ -29,11 +29,13 @@ const mockAudio = {
   volume: 1,
   src: '',
   preload: '',
+  readyState: 0,
   addEventListener: vi.fn(),
   removeEventListener: vi.fn(),
 };
 
 vi.stubGlobal('Audio', vi.fn(() => mockAudio) as any);
+vi.stubGlobal('HTMLMediaElement', { HAVE_METADATA: 1 } as any);
 
 // Mock ID3 parser
 vi.mock('@/utils/id3Parser', () => ({
@@ -76,6 +78,12 @@ describe('DropboxPlaybackAdapter', () => {
     mockAudio.duration = NaN;
     mockAudio.volume = 1;
     mockAudio.src = '';
+    mockAudio.readyState = 0;
+    mockAudio.removeEventListener.mockImplementation((event: string, listener: (e: any) => void) => {
+      if (eventListeners[event]) {
+        eventListeners[event] = eventListeners[event].filter((l) => l !== listener);
+      }
+    });
 
     adapter = new DropboxPlaybackAdapter(mockCatalog as DropboxCatalogAdapter);
   });
@@ -232,5 +240,192 @@ describe('DropboxPlaybackAdapter', () => {
     expect(state!.positionMs).toBe(30000);
     expect(state!.durationMs).toBe(210000);
     expect(state!.currentPlaybackRef).toEqual(track.playbackRef);
+  });
+
+  describe('prepareTrack', () => {
+    const findHydrateCall = (listener: ReturnType<typeof vi.fn>, trackId: string) =>
+      listener.mock.calls.find(([state]) => state?.currentTrackId === trackId);
+
+    it('emits paused state with positionMs and durationMs after metadata loads', async () => {
+      // #given
+      const track = makeMediaTrack({ id: 'track-hydrate', durationMs: 300000 });
+      const listener = vi.fn();
+      await adapter.initialize();
+      adapter.subscribe(listener);
+
+      // #when
+      adapter.prepareTrack(track, { positionMs: 45_000 });
+      await vi.waitFor(() => expect(mockAudio.src).toBe('https://example.com/stream.mp3'));
+
+      mockAudio.duration = 200;
+      mockAudio.readyState = 1;
+      mockAudio.currentTime = 45;
+      (mockAudio as any).__triggerEvent('loadedmetadata');
+
+      // #then
+      await vi.waitFor(() => expect(findHydrateCall(listener, 'track-hydrate')).toBeDefined());
+      const state = findHydrateCall(listener, 'track-hydrate')![0] as PlaybackState;
+      expect(mockAudio.currentTime).toBe(45);
+      expect(state.isPlaying).toBe(false);
+      expect(state.positionMs).toBe(45_000);
+      expect(state.durationMs).toBe(200_000);
+      expect(state.trackMetadata?.durationMs).toBe(200_000);
+    });
+
+    it('omits durationMs metadata when audio.duration is Infinity', async () => {
+      // #given
+      const track = makeMediaTrack({ id: 'track-live', durationMs: 180_000 });
+      const listener = vi.fn();
+      await adapter.initialize();
+      adapter.subscribe(listener);
+
+      // #when
+      adapter.prepareTrack(track, { positionMs: 10_000 });
+      await vi.waitFor(() => expect(mockAudio.src).toBe('https://example.com/stream.mp3'));
+
+      mockAudio.duration = Infinity;
+      mockAudio.readyState = 1;
+      mockAudio.currentTime = 10;
+      (mockAudio as any).__triggerEvent('loadedmetadata');
+
+      // #then
+      await vi.waitFor(() => expect(findHydrateCall(listener, 'track-live')).toBeDefined());
+      const state = findHydrateCall(listener, 'track-live')![0] as PlaybackState;
+      expect(state.isPlaying).toBe(false);
+      expect(state.positionMs).toBe(10_000);
+      expect(state.durationMs).toBe(0);
+      expect(state.trackMetadata?.durationMs).toBeUndefined();
+    });
+
+    it('does not clobber audio.src when a track is already loaded (next-track prewarm)', async () => {
+      // #given
+      const current = makeMediaTrack({
+        id: 'current',
+        playbackRef: { provider: 'dropbox', ref: '/Music/current.mp3' },
+      });
+      const upcoming = makeMediaTrack({
+        id: 'upcoming',
+        playbackRef: { provider: 'dropbox', ref: '/Music/upcoming.mp3' },
+      });
+      vi.mocked(mockCatalog.getTemporaryLink!).mockResolvedValueOnce('https://example.com/current.mp3');
+      await adapter.initialize();
+      await adapter.playTrack(current);
+
+      // #when
+      adapter.prepareTrack(upcoming);
+
+      // #then
+      await vi.waitFor(() =>
+        expect(mockCatalog.prefetchTemporaryLink).toHaveBeenCalledWith(upcoming.playbackRef.ref),
+      );
+      expect(mockAudio.src).toBe('https://example.com/current.mp3');
+    });
+
+    it('cancels a pending prepareTrack when a new src is set by playTrack', async () => {
+      // #given
+      const trackA = makeMediaTrack({
+        id: 'track-a',
+        playbackRef: { provider: 'dropbox', ref: '/Music/A/01.mp3' },
+      });
+      const trackB = makeMediaTrack({
+        id: 'track-b',
+        playbackRef: { provider: 'dropbox', ref: '/Music/B/01.mp3' },
+      });
+      const listener = vi.fn();
+      vi.mocked(mockCatalog.getTemporaryLink!)
+        .mockResolvedValueOnce('https://example.com/a.mp3')
+        .mockResolvedValueOnce('https://example.com/b.mp3');
+      await adapter.initialize();
+      adapter.subscribe(listener);
+
+      // #when — trackA's src is set and prepareTrack is awaiting loadedmetadata;
+      // playTrack(B) supersedes before the event fires.
+      adapter.prepareTrack(trackA, { positionMs: 30_000 });
+      await vi.waitFor(() => expect(mockAudio.src).toBe('https://example.com/a.mp3'));
+      await adapter.playTrack(trackB);
+      listener.mockClear();
+
+      // Now the stale loadedmetadata for the prior src fires.
+      mockAudio.duration = 220;
+      mockAudio.readyState = 1;
+      (mockAudio as any).__triggerEvent('loadedmetadata');
+      await Promise.resolve();
+
+      // #then
+      expect(findHydrateCall(listener, 'track-a')).toBeUndefined();
+    });
+
+    it('emits no stale state when getTemporaryLink rejects', async () => {
+      // #given — hydrate is best-effort; a failed fetch must not leak state to subscribers
+      const track = makeMediaTrack({
+        id: 'track-fail',
+        playbackRef: { provider: 'dropbox', ref: '/Music/fail.mp3' },
+      });
+      const listener = vi.fn();
+      vi.mocked(mockCatalog.getTemporaryLink!).mockRejectedValueOnce(new Error('network down'));
+      await adapter.initialize();
+      adapter.subscribe(listener);
+
+      // #when
+      adapter.prepareTrack(track, { positionMs: 20_000 });
+
+      // #then — wait for the rejected fetch to settle, then assert nothing leaked
+      await vi.waitFor(() =>
+        expect(mockCatalog.getTemporaryLink).toHaveBeenCalledWith(track.playbackRef.ref),
+      );
+      await Promise.resolve();
+      expect(mockAudio.src).toBe('');
+      expect(findHydrateCall(listener, 'track-fail')).toBeUndefined();
+    });
+  });
+
+  describe('probePlayable', () => {
+    it('returns true when getTemporaryLink resolves', async () => {
+      // #given — live file: catalog hands back a fresh download link
+      const track = makeMediaTrack({
+        id: 'track-ok',
+        playbackRef: { provider: 'dropbox', ref: '/Music/ok.mp3' },
+      });
+      vi.mocked(mockCatalog.getTemporaryLink!).mockResolvedValueOnce('https://example.com/ok.mp3');
+
+      // #when
+      const result = await adapter.probePlayable(track);
+
+      // #then
+      expect(result).toBe(true);
+      expect(mockCatalog.getTemporaryLink).toHaveBeenCalledWith('/Music/ok.mp3');
+    });
+
+    it('returns false when getTemporaryLink rejects (file moved/gone)', async () => {
+      // #given — catalog couldn't find the file (moved/renamed/deleted)
+      const track = makeMediaTrack({
+        id: 'track-gone',
+        playbackRef: { provider: 'dropbox', ref: '/Music/gone.mp3' },
+      });
+      vi.mocked(mockCatalog.getTemporaryLink!).mockRejectedValueOnce(
+        new Error('path_lookup/not_found'),
+      );
+
+      // #when
+      const result = await adapter.probePlayable(track);
+
+      // #then
+      expect(result).toBe(false);
+    });
+
+    it('rethrows AuthExpiredError so the caller can abort hydrate', async () => {
+      // #given — Dropbox refresh-token exchange failed mid-probe
+      const { AuthExpiredError } = await import('@/providers/errors');
+      const track = makeMediaTrack({
+        id: 'track-auth',
+        playbackRef: { provider: 'dropbox', ref: '/Music/auth.mp3' },
+      });
+      vi.mocked(mockCatalog.getTemporaryLink!).mockRejectedValueOnce(
+        new AuthExpiredError('dropbox'),
+      );
+
+      // #when / #then
+      await expect(adapter.probePlayable(track)).rejects.toBeInstanceOf(AuthExpiredError);
+    });
   });
 });

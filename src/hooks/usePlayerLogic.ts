@@ -9,10 +9,11 @@ import { useAutoAdvance } from '@/hooks/useAutoAdvance';
 import { useAccentColor } from '@/hooks/useAccentColor';
 import { useUnifiedLikedTracks } from '@/hooks/useUnifiedLikedTracks';
 import { useRadio } from '@/hooks/useRadio';
-import type { ProviderId } from '@/types/domain';
+import type { MediaTrack, ProviderId } from '@/types/domain';
 import type { SessionSnapshot } from '@/services/sessionPersistence';
 import type { TrackOperations } from '@/types/trackOperations';
 import { providerRegistry } from '@/providers/registry';
+import { AuthExpiredError, UnavailableTrackError } from '@/providers/errors';
 import { logQueue } from '@/lib/debugLog';
 import { useQueueThumbnailLoader } from '@/hooks/useQueueThumbnailLoader';
 import { useQueueDurationLoader } from '@/hooks/useQueueDurationLoader';
@@ -23,6 +24,15 @@ import { usePlaybackSubscription } from './usePlaybackSubscription';
 import { useRadioSession } from './useRadioSession';
 import { useRecentlyPlayedCollections } from './useRecentlyPlayedCollections';
 import type { RadioProgress } from '@/types/radio';
+
+export interface HydrateResult {
+  /** Track the player landed on, or null when the whole queue was unplayable. */
+  track: MediaTrack | null;
+  /** True when the saved track was unplayable and a later track in the queue was used instead. */
+  skipped: boolean;
+  /** True when no track in the queue could be prepared; the player was reset to the library. */
+  totalFailure: boolean;
+}
 
 export function usePlayerLogic() {
   // Terminology used in this hook:
@@ -262,56 +272,6 @@ export function usePlayerLogic() {
     }
   }, [playTrack, getDrivingProviderId, getDrivingProviderDescriptor]);
 
-  const handleHydrate = useCallback(async (session: SessionSnapshot): Promise<void> => {
-    if (!session.queueTracks?.length) return;
-    const { queueTracks, trackId, trackIndex, collectionId, playbackPosition: savedPositionMs } = session;
-
-    const targetIdx = trackId
-      ? queueTracks.findIndex(t => t.id === trackId)
-      : Math.min(trackIndex, queueTracks.length - 1);
-    const resolvedIdx = targetIdx >= 0 ? targetIdx : Math.min(trackIndex, queueTracks.length - 1);
-
-    setTracks(queueTracks);
-    setOriginalTracks(queueTracks);
-    setSelectedPlaylistId(collectionId);
-    setCurrentTrackIndex(resolvedIdx);
-    mediaTracksRef.current = queueTracks;
-    expectedTrackIdRef.current = queueTracks[resolvedIdx]?.id ?? null;
-
-    const positionMs = savedPositionMs && savedPositionMs > 0 ? savedPositionMs : undefined;
-    setPlaybackPosition(positionMs ?? 0);
-    setIsPlaying(false);
-
-    const targetTrack = queueTracks[resolvedIdx];
-    const providerId = targetTrack?.provider ?? activeDescriptor?.id;
-    if (providerId && targetTrack) {
-      drivingProviderRef.current = providerId;
-      const descriptor = providerRegistry.get(providerId);
-      descriptor?.playback.prepareTrack?.(
-        targetTrack,
-        positionMs ? { positionMs } : undefined,
-      );
-    }
-
-    hydratedPendingPlayRef.current = { index: resolvedIdx, positionMs };
-
-    logQueue(
-      'handleHydrate — index=%d, track=%s, positionMs=%s, provider=%s',
-      resolvedIdx,
-      trkSummary(targetTrack),
-      positionMs ?? 'NONE',
-      providerId ?? 'NONE',
-    );
-  }, [
-    setTracks,
-    setOriginalTracks,
-    setSelectedPlaylistId,
-    setCurrentTrackIndex,
-    mediaTracksRef,
-    activeDescriptor,
-    drivingProviderRef,
-  ]);
-
   const handlePause = useCallback(() => {
     const drivingId = getDrivingProviderId();
     logQueue('handlePause — drivingProvider=%s, index=%d', drivingId, currentTrackIndexRef.current);
@@ -353,6 +313,127 @@ export function usePlayerLogic() {
     setShowQueue(false);
     setShowVisualEffects(false);
   }, [handlePause, stopRadio, setSelectedPlaylistId, setTracks, setCurrentTrackIndex, setShowQueue, setShowVisualEffects]);
+
+  const handleHydrate = useCallback(async (session: SessionSnapshot): Promise<HydrateResult> => {
+    if (!session.queueTracks?.length) {
+      return { track: null, skipped: false, totalFailure: false };
+    }
+    const { queueTracks, trackId, trackIndex, collectionId, playbackPosition: savedPositionMs } = session;
+
+    const fallbackIdx = Math.max(0, Math.min(trackIndex, queueTracks.length - 1));
+    const matchedIdx = trackId ? queueTracks.findIndex(t => t.id === trackId) : -1;
+    const startIdx = matchedIdx >= 0 ? matchedIdx : fallbackIdx;
+
+    setTracks(queueTracks);
+    setOriginalTracks(queueTracks);
+    setSelectedPlaylistId(collectionId);
+    mediaTracksRef.current = queueTracks;
+
+    const savedPositionIsValid = savedPositionMs !== undefined && savedPositionMs > 0;
+
+    // Iterate through the queue starting at the saved index. If a candidate's
+    // provider is missing/unauthenticated or prepareTrack throws, advance to the
+    // next track and retry — bounded by queueTracks.length to avoid infinite
+    // loops on a fully-broken queue. Only the first candidate gets the saved
+    // position; subsequent fallbacks start at zero.
+    for (let offset = 0; offset < queueTracks.length; offset += 1) {
+      const candidateIdx = (startIdx + offset) % queueTracks.length;
+      const candidateTrack = queueTracks[candidateIdx];
+      if (!candidateTrack) continue;
+
+      const providerId = candidateTrack.provider ?? activeDescriptor?.id;
+      const descriptor = providerId ? providerRegistry.get(providerId) : undefined;
+      const providerAuthed = descriptor?.auth.isAuthenticated() ?? false;
+
+      if (!providerId || !descriptor || !providerAuthed) {
+        logQueue(
+          'handleHydrate skip — index=%d, track=%s, reason=%s',
+          candidateIdx,
+          trkSummary(candidateTrack),
+          !providerId ? 'no-provider' : !descriptor ? 'no-descriptor' : 'unauthenticated',
+        );
+        continue;
+      }
+
+      const positionMs = offset === 0 && savedPositionIsValid ? savedPositionMs : undefined;
+
+      // Probe playability before we commit to this candidate. `prepareTrack`
+      // on both real adapters is fire-and-forget (internal promise; its errors
+      // don't surface to the caller), so without a probe the iterator would
+      // never advance against real provider failures like a market-restricted
+      // Spotify track or a moved Dropbox file.
+      if (descriptor.playback.probePlayable) {
+        try {
+          const playable = await descriptor.playback.probePlayable(candidateTrack);
+          if (!playable) {
+            logQueue(
+              'handleHydrate probePlayable=false on index=%d, track=%s',
+              candidateIdx,
+              trkSummary(candidateTrack),
+            );
+            continue;
+          }
+        } catch (error) {
+          if (error instanceof AuthExpiredError) {
+            logQueue('handleHydrate probePlayable AuthExpiredError on index=%d, provider=%s', candidateIdx, providerId);
+          } else {
+            logQueue('handleHydrate probePlayable threw on index=%d: %o', candidateIdx, error);
+          }
+          continue;
+        }
+      }
+
+      try {
+        descriptor.playback.prepareTrack?.(
+          candidateTrack,
+          positionMs ? { positionMs } : undefined,
+        );
+      } catch (error) {
+        if (error instanceof AuthExpiredError) {
+          logQueue('handleHydrate AuthExpiredError on index=%d, provider=%s', candidateIdx, providerId);
+        } else if (error instanceof UnavailableTrackError) {
+          logQueue('handleHydrate UnavailableTrackError on index=%d: %s', candidateIdx, error.message);
+        } else {
+          logQueue('handleHydrate prepareTrack threw on index=%d: %o', candidateIdx, error);
+        }
+        continue;
+      }
+
+      setCurrentTrackIndex(candidateIdx);
+      expectedTrackIdRef.current = candidateTrack.id;
+      drivingProviderRef.current = providerId;
+      setPlaybackPosition(positionMs ?? 0);
+      setIsPlaying(false);
+      hydratedPendingPlayRef.current = { index: candidateIdx, positionMs };
+
+      logQueue(
+        'handleHydrate — index=%d, track=%s, positionMs=%s, provider=%s, skipped=%s',
+        candidateIdx,
+        trkSummary(candidateTrack),
+        positionMs ?? 'NONE',
+        providerId,
+        offset > 0 ? 'YES' : 'NO',
+      );
+
+      return { track: candidateTrack, skipped: offset > 0, totalFailure: false };
+    }
+
+    // No track could be prepared — drop the queue and let the caller clear the
+    // saved session via onHydrateFailed (AudioPlayer owns the session state).
+    logQueue('handleHydrate — total failure, resetting to library');
+    hydratedPendingPlayRef.current = null;
+    handleBackToLibrary();
+    return { track: null, skipped: false, totalFailure: true };
+  }, [
+    setTracks,
+    setOriginalTracks,
+    setSelectedPlaylistId,
+    setCurrentTrackIndex,
+    mediaTracksRef,
+    activeDescriptor,
+    drivingProviderRef,
+    handleBackToLibrary,
+  ]);
 
   // Initialize queue management handlers
   const { handleAddToQueue, queueTracksDirectly, handleRemoveFromQueue, handleReorderQueue } = useQueueManagement({

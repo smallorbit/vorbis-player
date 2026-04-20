@@ -5,6 +5,7 @@
 
 import type { PlaybackProvider } from '@/types/providers';
 import type { ProviderId, MediaTrack, PlaybackState, CollectionRef } from '@/types/domain';
+import { AuthExpiredError } from '@/providers/errors';
 import { DropboxCatalogAdapter } from './dropboxCatalogAdapter';
 import { parseID3 } from '@/utils/id3Parser';
 import { bytesToDataUrl } from '@/utils/bytesToDataUrl';
@@ -23,6 +24,7 @@ export class DropboxPlaybackAdapter implements PlaybackProvider {
   private pendingMetadataUpdate: PlaybackState['trackMetadata'] | null = null;
   private pendingDurationMs: number | null = null;
   private pendingError: PlaybackState['playbackError'] | null = null;
+  private prepareGeneration = 0;
 
   private catalog: DropboxCatalogAdapter;
   private lastPlayTime = 0;
@@ -42,7 +44,7 @@ export class DropboxPlaybackAdapter implements PlaybackProvider {
     this.audio.addEventListener('timeupdate', () => this.notifyListeners());
     this.audio.addEventListener('loadedmetadata', () => {
       const dur = this.audio!.duration;
-      if (!isNaN(dur) && dur > 0 && this.currentTrack) {
+      if (Number.isFinite(dur) && dur > 0 && this.currentTrack) {
         const durationMs = Math.floor(dur * 1000);
         this.pendingDurationMs = durationMs;
         putDurationMs(this.currentTrack.id, durationMs).catch(() => {});
@@ -66,6 +68,8 @@ export class DropboxPlaybackAdapter implements PlaybackProvider {
 
   async playTrack(track: MediaTrack, options?: { positionMs?: number }): Promise<void> {
     this.ensureAudio();
+    // Invalidate any pending prepareTrack so it can't emit stale state for the old src.
+    this.prepareGeneration += 1;
 
     const dropboxPath = track.playbackRef.ref;
 
@@ -195,10 +199,74 @@ export class DropboxPlaybackAdapter implements PlaybackProvider {
     });
   }
 
-  prepareTrack(track: MediaTrack, _options?: { positionMs?: number }): void {
-    // Prefetch the temporary link so playTrack doesn't pay the fetch cost when invoked.
-    // positionMs is applied during playTrack, not here — HTML5 Audio can't seek without a src.
+  async probePlayable(track: MediaTrack): Promise<boolean> {
+    try {
+      await this.catalog.getTemporaryLink(track.playbackRef.ref);
+      return true;
+    } catch (error) {
+      if (error instanceof AuthExpiredError) throw error;
+      return false;
+    }
+  }
+
+  prepareTrack(track: MediaTrack, options?: { positionMs?: number }): void {
     this.catalog.prefetchTemporaryLink(track.playbackRef.ref);
+    this.primeAudioForHydrate(track, options?.positionMs).catch(() => {
+      // Hydration is best-effort; playTrack will retry when invoked.
+    });
+  }
+
+  private async primeAudioForHydrate(track: MediaTrack, positionMs?: number): Promise<void> {
+    this.ensureAudio();
+    const audio = this.audio!;
+    // Only prime audio when nothing is loaded — during next-track pre-warm
+    // the current src is mid-playback and must not be replaced.
+    if (audio.src && this.currentTrack) return;
+
+    const generation = ++this.prepareGeneration;
+
+    const streamUrl = await this.catalog.getTemporaryLink(track.playbackRef.ref);
+    if (generation !== this.prepareGeneration) return;
+
+    audio.src = streamUrl;
+
+    if (audio.readyState < HTMLMediaElement.HAVE_METADATA) {
+      await new Promise<void>((resolve) => {
+        // Resolve on either signal so the prime unblocks even when the
+        // resource fails to load. The generation re-check below drops stale
+        // primes, and the error fallback emits durationMs: 0 via getStateSync.
+        const onSettle = () => {
+          audio.removeEventListener('loadedmetadata', onSettle);
+          audio.removeEventListener('error', onSettle);
+          resolve();
+        };
+        audio.addEventListener('loadedmetadata', onSettle);
+        audio.addEventListener('error', onSettle);
+      });
+    }
+    if (generation !== this.prepareGeneration) return;
+
+    // Commit track state only after metadata has settled and this prime
+    // hasn't been superseded, so getStateSync can't observe a mixed state
+    // where currentTrack points at a not-yet-loaded src.
+    this.currentTrack = track;
+    this.hydrateAlbumArtFromCache(track);
+
+    if (positionMs && positionMs > 0) {
+      audio.currentTime = positionMs / 1000;
+    }
+
+    // The ensureAudio loadedmetadata listener short-circuits when it fires
+    // before currentTrack is set (see the guard there), so populate the
+    // persisted-duration side effects ourselves now that currentTrack is live.
+    const dur = audio.duration;
+    if (Number.isFinite(dur) && dur > 0) {
+      const durationMs = Math.floor(dur * 1000);
+      this.pendingDurationMs = durationMs;
+      putDurationMs(track.id, durationMs).catch(() => {});
+    }
+
+    this.notifyListeners();
   }
 
   refreshCurrentTrackArt(): void {
@@ -292,10 +360,11 @@ export class DropboxPlaybackAdapter implements PlaybackProvider {
   private getStateSync(): PlaybackState | null {
     if (!this.audio || !this.currentTrack) return null;
 
+    const rawDuration = this.audio.duration;
     const state: PlaybackState = {
       isPlaying: !this.audio.paused && !this.audio.ended,
       positionMs: Math.floor(this.audio.currentTime * 1000),
-      durationMs: isNaN(this.audio.duration) ? 0 : Math.floor(this.audio.duration * 1000),
+      durationMs: Number.isFinite(rawDuration) ? Math.floor(rawDuration * 1000) : 0,
       currentTrackId: this.currentTrack.id,
       currentPlaybackRef: this.currentTrack.playbackRef,
     };

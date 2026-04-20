@@ -39,6 +39,11 @@ export class SpotifyPlaybackAdapter implements PlaybackProvider {
   /** True after the first successful playTrack; lets subsequent plays skip heavy API checks. */
   private playbackSessionActive = false;
 
+  private readonly listeners = new Set<(state: PlaybackState | null) => void>();
+  private sdkUnsubscribe: (() => void) | null = null;
+  /** Ref of the track most recently staged by prepareTrack; used for idempotency. */
+  private preparedTrackRef: string | null = null;
+
   private async waitForPlayerReady(): Promise<void> {
     const start = Date.now();
     while (!spotifyPlayer.getIsReady() || !spotifyPlayer.getDeviceId()) {
@@ -233,20 +238,101 @@ export class SpotifyPlaybackAdapter implements PlaybackProvider {
   }
 
   subscribe(listener: (state: PlaybackState | null) => void): () => void {
-    return spotifyPlayer.onPlayerStateChanged((spotifyState) => {
-      listener(mapPlaybackState(spotifyState));
+    this.listeners.add(listener);
+    this.ensureSdkSubscription();
+
+    return () => {
+      this.listeners.delete(listener);
+      if (this.listeners.size === 0) {
+        this.sdkUnsubscribe?.();
+        this.sdkUnsubscribe = null;
+      }
+    };
+  }
+
+  private ensureSdkSubscription(): void {
+    if (this.sdkUnsubscribe) return;
+    this.sdkUnsubscribe = spotifyPlayer.onPlayerStateChanged((spotifyState) => {
+      this.emitState(mapPlaybackState(spotifyState));
     });
+  }
+
+  private emitState(state: PlaybackState | null): void {
+    for (const listener of this.listeners) {
+      try {
+        listener(state);
+      } catch (err) {
+        console.error('[spotifyPlayback] listener error:', err);
+      }
+    }
   }
 
   getLastPlayTime(): number {
     return spotifyPlayer.lastPlayTrackTime;
   }
 
-  prepareTrack(_track: MediaTrack, _options?: { positionMs?: number }): void {
-    // Pre-warm the auth token so no refresh delay hits the next transition.
-    // The Spotify Web Playback SDK has no preload-without-play mode, so positionMs
-    // is accepted for interface parity but applied when playTrack is later invoked.
+  async probePlayable(track: MediaTrack): Promise<boolean> {
+    const uri = track.playbackRef.ref;
+    const match = /^spotify:track:([A-Za-z0-9]+)$/.exec(uri);
+    if (!match) return false;
+    const trackId = match[1];
+    const token = await spotifyAuth.ensureValidToken();
+    const res = await fetch(
+      `https://api.spotify.com/v1/tracks/${trackId}?market=from_token`,
+      { headers: { Authorization: `Bearer ${token}` } },
+    );
+    if (res.status === 401) throw new AuthExpiredError('spotify');
+    if (res.status === 404) return false;
+    if (!res.ok) {
+      throw new Error(`Spotify probePlayable failed: ${res.status}`);
+    }
+    const body = (await res.json()) as { is_playable?: boolean };
+    return body.is_playable !== false;
+  }
+
+  prepareTrack(track: MediaTrack, options?: { positionMs?: number }): void {
+    // Warm the auth token unconditionally so a token refresh delay can't stall
+    // the next transition even if the stage chain early-returns.
     spotifyAuth.ensureValidToken().catch(() => {});
+
+    const uri = track.playbackRef.ref;
+    if (this.preparedTrackRef === uri) {
+      return;
+    }
+    this.preparedTrackRef = uri;
+
+    void this.stageTrackPaused(track, options?.positionMs ?? 0).catch((err) => {
+      logSpotify('prepareTrack failed: %o', err);
+      if (this.preparedTrackRef === uri) {
+        this.preparedTrackRef = null;
+      }
+    });
+  }
+
+  private async stageTrackPaused(track: MediaTrack, positionMs: number): Promise<void> {
+    // ensurePlaybackReady transfers Spotify Connect to this device with
+    // `play: false`, which paused-transfers any existing session and leaves
+    // the SDK ready. That's all the staging we need for hydrate — we do NOT
+    // call apiPlayTrack, because /me/player/play starts audio and Spotify's
+    // eventually-consistent server state makes a subsequent pause() race
+    // the just-started playback (leaked audio on a fresh tab).
+    //
+    // The UI staging (scrubbed seek bar + duration) is purely local: emit
+    // the expected paused state to subscribers. Actual audio playback is
+    // deferred to the user's next `playTrack` call, which starts from the
+    // saved position via handlePlay consuming hydratedPendingPlayRef.
+    await this.ensurePlaybackReady();
+
+    const uri = track.playbackRef.ref;
+    if (this.preparedTrackRef !== uri) return;
+
+    this.emitState({
+      isPlaying: false,
+      positionMs: Math.floor(positionMs),
+      durationMs: track.durationMs ?? 0,
+      currentTrackId: track.id,
+      currentPlaybackRef: track.playbackRef,
+    });
   }
 
   onQueueChanged(tracks: MediaTrack[], fromIndex: number): void {

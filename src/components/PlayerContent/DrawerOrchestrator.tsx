@@ -1,5 +1,4 @@
 import React, { Suspense, lazy, useState, useCallback, useMemo } from 'react';
-import styled from 'styled-components';
 import { useTheme } from 'styled-components';
 import { ProfiledComponent } from '@/components/ProfiledComponent';
 import Toast from '@/components/Toast';
@@ -13,15 +12,8 @@ import { providerRegistry } from '@/providers/registry';
 import type { AddToQueueResult, MediaTrack, ProviderId } from '@/types/domain';
 import type { RadioState, RadioProgress } from '@/types/radio';
 import type { SessionSnapshot } from '@/services/sessionPersistence';
+import { MobileLibraryOverlay } from './MobileLibraryOverlay';
 
-const LibraryOverlay = styled.div`
-  position: fixed;
-  inset: 0;
-  z-index: ${({ theme }) => theme.zIndex.overlay};
-  overflow: hidden;
-`;
-
-const LibraryPage = lazy(() => import('@/components/PlaylistSelection'));
 const LibraryDrawer = lazy(() => import('@/components/LibraryDrawer'));
 const SaveQueueDialog = lazy(() => import('@/components/SaveQueueDialog'));
 const QueueDrawer = lazy(() => import('@/components/QueueDrawer'));
@@ -194,21 +186,16 @@ export const DrawerOrchestrator: React.FC<DrawerOrchestratorProps> = React.memo(
           </ProfiledComponent>
         )}
       </Suspense>
-      {showLibrary && isMobile && (
-        <LibraryOverlay>
-          <Suspense fallback={null}>
-            <ProfiledComponent id="LibraryPage">
-              <LibraryPage
-                onPlaylistSelect={handleLibraryPlaylistSelect}
-                onAddToQueue={onAddToQueue}
-                onPlayLikedTracks={onPlayLikedTracks}
-                onQueueLikedTracks={onQueueLikedTracks}
-                onNavigateToPlayer={onCloseLibrary}
-                isPlaying={isPlaying}
-              />
-            </ProfiledComponent>
-          </Suspense>
-        </LibraryOverlay>
+      {isMobile && (
+        <MobileLibraryOverlay
+          isOpen={showLibrary}
+          isPlaying={isPlaying}
+          onPlaylistSelect={handleLibraryPlaylistSelect}
+          onAddToQueue={onAddToQueue}
+          onPlayLikedTracks={onPlayLikedTracks}
+          onQueueLikedTracks={onQueueLikedTracks}
+          onCloseLibrary={onCloseLibrary}
+        />
       )}
       {!isMobile && (
         <Suspense fallback={null}>

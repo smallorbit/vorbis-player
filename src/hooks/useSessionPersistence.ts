@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import type { MediaTrack, ProviderId } from '@/types/domain';
-import { saveSession, loadSession } from '@/services/sessionPersistence';
+import { saveSession, loadSession, clearSession } from '@/services/sessionPersistence';
 import type { SessionSnapshot } from '@/services/sessionPersistence';
 import { logSession } from '@/lib/debugLog';
 
@@ -19,7 +19,7 @@ export function useSessionPersistence(
   trackImage: string | undefined,
   playbackPosition: number,
   getLivePosition?: () => Promise<number | null>,
-): { lastSession: SessionSnapshot | null } {
+): { lastSession: SessionSnapshot | null; resetLastSession: () => void } {
   const [lastSession, setLastSession] = useState<SessionSnapshot | null>(null);
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const periodicTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -126,5 +126,11 @@ export function useSessionPersistence(
     };
   }, []);
 
-  return { lastSession };
+  const resetLastSession = useCallback(() => {
+    clearSession();
+    snapshotRef.current = null;
+    setLastSession(null);
+  }, []);
+
+  return { lastSession, resetLastSession };
 }

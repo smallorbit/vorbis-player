@@ -2,6 +2,7 @@ import React, { Suspense, useCallback, useEffect, useRef, useState } from 'react
 import styled, { keyframes } from 'styled-components';
 import type { MediaTrack } from '@/types/domain';
 import { isSessionStale, type SessionSnapshot } from '@/services/sessionPersistence';
+import type { HydrateResult } from '@/hooks/usePlayerLogic';
 import { Card, CardHeader, CardContent } from '../components/styled';
 import { Button } from '../components/styled';
 import { Alert, AlertDescription } from '../components/styled';
@@ -181,7 +182,9 @@ interface PlayerStateRendererProps {
   lastSession: SessionSnapshot | null;
   onResume: () => void;
   onOpenSettings: () => void;
-  onHydrate: (session: SessionSnapshot) => Promise<void>;
+  onHydrate: (session: SessionSnapshot) => Promise<HydrateResult>;
+  onHydrateFired?: (track: MediaTrack, skipped: boolean) => void;
+  onHydrateFailed?: () => void;
 }
 
 type IdleRoute = 'welcome' | 'qap' | 'hydrate' | 'library';
@@ -210,6 +213,8 @@ const PlayerStateRenderer: React.FC<PlayerStateRendererProps> = ({
   onResume,
   onOpenSettings,
   onHydrate,
+  onHydrateFired,
+  onHydrateFailed,
 }) => {
   const { activeDescriptor } = useProviderContext();
   const providerName = activeDescriptor?.name ?? 'Music Service';
@@ -227,8 +232,23 @@ const PlayerStateRenderer: React.FC<PlayerStateRendererProps> = ({
     if (route !== 'hydrate') return;
     if (!lastSession) return;
     hydrateFiredRef.current = true;
-    void onHydrate(lastSession);
-  }, [route, lastSession, onHydrate]);
+    void onHydrate(lastSession)
+      .then((result) => {
+        if (result.totalFailure) {
+          // Route past the hydrate spinner immediately — the resolved lastSession
+          // prop may still read as valid for a tick until the caller resets it,
+          // and the override wins over the idle-route check.
+          setLibraryOverride(true);
+          onHydrateFailed?.();
+          return;
+        }
+        if (result.track) onHydrateFired?.(result.track, result.skipped);
+      })
+      .catch(() => {
+        // Hydrate errors are surfaced inside handleHydrate; swallow here so
+        // a rejected promise doesn't bubble up as an unhandled rejection.
+      });
+  }, [route, lastSession, onHydrate, onHydrateFired, onHydrateFailed]);
 
   const handleConnectClick = useCallback(() => {
     activeDescriptor?.auth.beginLogin();
