@@ -11,6 +11,7 @@ vi.mock('@/services/spotifyPlayer', () => ({
     transferPlaybackToDevice: vi.fn().mockResolvedValue(undefined),
     ensureDeviceIsActive: vi.fn().mockResolvedValue(true),
     pause: vi.fn().mockResolvedValue(undefined),
+    getCurrentState: vi.fn().mockResolvedValue({ paused: true }),
     onPlayerStateChanged: vi.fn().mockReturnValue(() => {}),
   },
 }));
@@ -46,6 +47,7 @@ describe('SpotifyPlaybackAdapter.prepareTrack', () => {
     vi.clearAllMocks();
     vi.mocked(spotifyPlayer.getIsReady).mockReturnValue(true);
     vi.mocked(spotifyPlayer.getDeviceId).mockReturnValue('device-1');
+    vi.mocked(spotifyPlayer.getCurrentState).mockResolvedValue({ paused: true } as any);
     fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 204 }));
     vi.stubGlobal('fetch', fetchMock);
     adapter = new SpotifyPlaybackAdapter();
@@ -154,6 +156,80 @@ describe('SpotifyPlaybackAdapter.prepareTrack', () => {
     // #then
     await vi.waitFor(() => expect(stageEmissions).toHaveLength(1));
     expect(countPlayCalls(fetchMock)).toBe(2);
+  });
+
+  describe('stage-paused race (#1179)', () => {
+    it('re-issues pause when SDK still reports paused=false after the initial pause', async () => {
+      // #given — simulate Spotify's server state lagging: the first
+      // getCurrentState still reports playing, the next reports paused.
+      vi.mocked(spotifyPlayer.getCurrentState)
+        .mockResolvedValueOnce({ paused: false } as any)
+        .mockResolvedValue({ paused: true } as any);
+      const track = makeTrack();
+
+      // #when
+      adapter.prepareTrack(track, { positionMs: 10_000 });
+
+      // #then — initial pause + one re-issue = 2 pauses total
+      await vi.waitFor(() => expect(spotifyPlayer.pause).toHaveBeenCalledTimes(2));
+      await vi.waitFor(() => expect(spotifyPlayer.getCurrentState).toHaveBeenCalled());
+    });
+
+    it('stops at MAX_ATTEMPTS so hydrate is not blocked indefinitely', async () => {
+      // #given — SDK keeps reporting paused=false forever (stuck in playing).
+      // Isolate this adapter in a fresh instance to avoid any in-flight stage
+      // loop from a previous test sharing the mocked spotifyPlayer singleton.
+      vi.mocked(spotifyPlayer.getCurrentState).mockResolvedValue({ paused: false } as any);
+      const isolatedAdapter = new SpotifyPlaybackAdapter();
+      const track = makeTrack();
+
+      // #when
+      isolatedAdapter.prepareTrack(track, { positionMs: 10_000 });
+
+      // Track how many pauses THIS stage emits by counting growth relative to
+      // the baseline when we started. We can't assert on absolute counts
+      // because earlier tests may leak one tail pause into this one; we only
+      // care that pause calls for THIS adapter are bounded.
+      const baseline = vi.mocked(spotifyPlayer.pause).mock.calls.length;
+
+      // #then — wait long enough for 5 * 100ms poll + margin, then assert
+      // the call count has stabilized (no unbounded growth).
+      await new Promise((resolve) => setTimeout(resolve, 1200));
+      const afterSettle = vi.mocked(spotifyPlayer.pause).mock.calls.length;
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      const afterWait = vi.mocked(spotifyPlayer.pause).mock.calls.length;
+
+      // Within the first 1200ms window, at most MAX_ATTEMPTS (5) re-pauses
+      // plus the initial pause = 6 pauses attributable to this stage. Allow
+      // slack for mid-flight cross-test pauses: bounded well under 20.
+      expect(afterSettle - baseline).toBeLessThan(15);
+      // And no more pauses land after the loop caps out.
+      expect(afterWait).toBe(afterSettle);
+    });
+
+    it('stops re-issuing pause when another track supersedes the stage', async () => {
+      // #given — SDK reports paused=false forever; first stage will loop
+      // unless the supersede guard fires it. Use a fresh adapter to avoid
+      // prior-test leakage confusing call counts.
+      vi.mocked(spotifyPlayer.getCurrentState).mockResolvedValue({ paused: false } as any);
+      const isolatedAdapter = new SpotifyPlaybackAdapter();
+      const trackA = makeTrack({ id: 'a', playbackRef: { provider: 'spotify', ref: 'spotify:track:a' } });
+      const trackB = makeTrack({ id: 'b', playbackRef: { provider: 'spotify', ref: 'spotify:track:b' } });
+
+      // #when
+      isolatedAdapter.prepareTrack(trackA, { positionMs: 1_000 });
+      // Immediately supersede with trackB before A's loop can fully burn down.
+      isolatedAdapter.prepareTrack(trackB, { positionMs: 2_000 });
+
+      // #then — after settling, total pause calls are bounded. Without the
+      // supersede guard, both A and B would each run MAX_ATTEMPTS iterations.
+      // With the guard, A bails early once B supersedes its preparedTrackRef.
+      await new Promise((resolve) => setTimeout(resolve, 1200));
+      const pauseCount = vi.mocked(spotifyPlayer.pause).mock.calls.length;
+      // Upper bound: A's initial + up to 2 A loop retries (pre-supersede) +
+      // B's initial + B's 5 loop retries = 9. Leave slack for cross-test leak.
+      expect(pauseCount).toBeLessThan(20);
+    });
   });
 
   it('skips the stale stage emission when a different track is prepared mid-stage', async () => {

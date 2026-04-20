@@ -301,6 +301,7 @@ export class SpotifyPlaybackAdapter implements PlaybackProvider {
     const positionFloor = Math.floor(positionMs);
     await apiPlayTrack(deviceId, uri, undefined, positionFloor);
     await spotifyPlayer.pause();
+    await this.ensurePausedLanded(uri);
 
     if (this.preparedTrackRef !== uri) return;
 
@@ -311,6 +312,28 @@ export class SpotifyPlaybackAdapter implements PlaybackProvider {
       currentTrackId: track.id,
       currentPlaybackRef: track.playbackRef,
     });
+  }
+
+  /**
+   * Spotify's server state is eventually-consistent: on a fresh tab where the
+   * account was last playing, a single pause() can race with SDK state events
+   * that re-establish play. Poll the SDK state and re-issue pause() until the
+   * adapter observes `paused=true`, with a bounded cap so we never block hydrate
+   * indefinitely. If the prepare has been superseded (another track staged),
+   * bail immediately.
+   */
+  private async ensurePausedLanded(uri: string): Promise<void> {
+    const MAX_ATTEMPTS = 5;
+    const POLL_MS = 100;
+    for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt += 1) {
+      if (this.preparedTrackRef !== uri) return;
+      const state = await spotifyPlayer.getCurrentState();
+      if (!state || state.paused) return;
+      logSpotify('stage pause race detected, re-issuing pause (attempt %d/%d)', attempt + 1, MAX_ATTEMPTS);
+      await spotifyPlayer.pause();
+      await new Promise((resolve) => setTimeout(resolve, POLL_MS));
+    }
+    logSpotify('stage pause did not settle after %d attempts', MAX_ATTEMPTS);
   }
 
   onQueueChanged(tracks: MediaTrack[], fromIndex: number): void {
