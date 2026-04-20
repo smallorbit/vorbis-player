@@ -7,6 +7,7 @@ import PlayerStateRenderer from '../PlayerStateRenderer';
 import { useQapEnabled } from '@/hooks/useQapEnabled';
 import { useWelcomeSeen } from '@/hooks/useWelcomeSeen';
 import { STALE_SESSION_MS, type SessionSnapshot } from '@/services/sessionPersistence';
+import { makeMediaTrack } from '@/test/fixtures';
 
 vi.mock('@/hooks/useQapEnabled', () => ({
   useQapEnabled: vi.fn(),
@@ -75,7 +76,7 @@ const defaultProps = {
   lastSession: null,
   onResume: vi.fn(),
   onOpenSettings: vi.fn(),
-  onHydrate: vi.fn(async () => {}),
+  onHydrate: vi.fn(async () => null),
 };
 
 const Wrapper = ({ children }: { children: React.ReactNode }) => (
@@ -246,6 +247,57 @@ describe('PlayerStateRenderer idle routing', () => {
     await waitFor(() => {
       expect(screen.getByTestId('playlist-selection')).toBeInTheDocument();
     });
+  });
+
+  it('calls onHydrateFired with the track returned by onHydrate', async () => {
+    // #given
+    mockUseWelcomeSeen.mockReturnValue([true, vi.fn()]);
+    mockUseQapEnabled.mockReturnValue([false, vi.fn()]);
+    const resolvedTrack = makeMediaTrack({ id: 't2', name: 'Second' });
+    const onHydrate = vi.fn(async () => resolvedTrack);
+    const onHydrateFired = vi.fn();
+
+    // #when
+    render(
+      <Wrapper>
+        <PlayerStateRenderer
+          {...defaultProps}
+          onHydrate={onHydrate}
+          lastSession={freshSession}
+          onHydrateFired={onHydrateFired}
+        />
+      </Wrapper>,
+    );
+
+    // #then
+    await waitFor(() => {
+      expect(onHydrateFired).toHaveBeenCalledTimes(1);
+    });
+    expect(onHydrateFired).toHaveBeenCalledWith(expect.objectContaining({ id: 't2', name: 'Second' }));
+  });
+
+  it('does not call onHydrateFired for a stale session', async () => {
+    // #given
+    mockUseWelcomeSeen.mockReturnValue([true, vi.fn()]);
+    mockUseQapEnabled.mockReturnValue([false, vi.fn()]);
+    const onHydrateFired = vi.fn();
+
+    // #when
+    render(
+      <Wrapper>
+        <PlayerStateRenderer
+          {...defaultProps}
+          lastSession={staleSession}
+          onHydrateFired={onHydrateFired}
+        />
+      </Wrapper>,
+    );
+
+    // #then
+    await waitFor(() => {
+      expect(screen.getByTestId('playlist-selection')).toBeInTheDocument();
+    });
+    expect(onHydrateFired).not.toHaveBeenCalled();
   });
 
   it('does not call onHydrate for a stale session', async () => {

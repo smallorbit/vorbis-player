@@ -181,7 +181,8 @@ interface PlayerStateRendererProps {
   lastSession: SessionSnapshot | null;
   onResume: () => void;
   onOpenSettings: () => void;
-  onHydrate: (session: SessionSnapshot) => Promise<void>;
+  onHydrate: (session: SessionSnapshot) => Promise<MediaTrack | null>;
+  onHydrateFired?: (track: MediaTrack) => void;
 }
 
 type IdleRoute = 'welcome' | 'qap' | 'hydrate' | 'library';
@@ -210,6 +211,7 @@ const PlayerStateRenderer: React.FC<PlayerStateRendererProps> = ({
   onResume,
   onOpenSettings,
   onHydrate,
+  onHydrateFired,
 }) => {
   const { activeDescriptor } = useProviderContext();
   const providerName = activeDescriptor?.name ?? 'Music Service';
@@ -227,8 +229,15 @@ const PlayerStateRenderer: React.FC<PlayerStateRendererProps> = ({
     if (route !== 'hydrate') return;
     if (!lastSession) return;
     hydrateFiredRef.current = true;
-    void onHydrate(lastSession);
-  }, [route, lastSession, onHydrate]);
+    void onHydrate(lastSession)
+      .then((track) => {
+        if (track) onHydrateFired?.(track);
+      })
+      .catch(() => {
+        // Hydrate errors are surfaced inside handleHydrate; swallow here so
+        // a rejected promise doesn't bubble up as an unhandled rejection.
+      });
+  }, [route, lastSession, onHydrate, onHydrateFired]);
 
   const handleConnectClick = useCallback(() => {
     activeDescriptor?.auth.beginLogin();
