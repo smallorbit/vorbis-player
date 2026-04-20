@@ -197,8 +197,8 @@ const AudioPlayerComponent = () => {
     return {
       onPlay: withResumeDismiss(handlers.handlePlay),
       onPause: withResumeDismiss(handlers.handlePause),
-      onNext: handlers.handleNext,
-      onPrevious: handlers.handlePrevious,
+      onNext: withResumeDismiss(handlers.handleNext),
+      onPrevious: withResumeDismiss(handlers.handlePrevious),
       onTrackSelect: handlers.playTrack,
       onOpenLibrary,
       onCloseLibrary: handlers.handleCloseLibrary,
