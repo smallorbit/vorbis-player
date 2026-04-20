@@ -4,16 +4,18 @@ import { ThemeProvider } from 'styled-components';
 import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { theme } from '@/styles/theme';
 import Toast from '../Toast';
-import { makeTrack } from '@/test/fixtures';
+import { makeMediaTrack } from '@/test/fixtures';
 import type { MediaTrack } from '@/types/domain';
+
+type HandlerKey = 'play' | 'pause' | 'next' | 'previous' | 'library';
 
 type ResumeToastHarnessHandle = {
   fireHydrate: (track: MediaTrack) => void;
-  pressUserAction: () => void;
+  invoke: (key: HandlerKey) => void;
 };
 
-// Mirrors the AudioPlayer resume-toast wire-up: state setter driven by
-// hydrate, user actions, and a showQueue effect, rendering the real Toast.
+// Mirrors the AudioPlayer resume-toast wire-up using the same withResumeDismiss
+// wrapping factory shape, so a drift in AudioPlayer's wiring surfaces here.
 const ResumeToastHarness = React.forwardRef<ResumeToastHarnessHandle, { showQueue: boolean }>(
   ({ showQueue }, ref) => {
     const [message, setMessage] = useState<string | null>(null);
@@ -23,13 +25,33 @@ const ResumeToastHarness = React.forwardRef<ResumeToastHarnessHandle, { showQueu
       setMessage(`Resuming '${track.name}' — press play to continue.`);
     }, []);
 
+    const withResumeDismiss = useCallback(
+      <T extends (...args: never[]) => unknown>(fn: T): T =>
+        ((...args) => {
+          setMessage(null);
+          return fn(...args);
+        }) as T,
+      [],
+    );
+
+    const handlers = React.useMemo(
+      () => ({
+        play: withResumeDismiss(() => {}),
+        pause: withResumeDismiss(() => {}),
+        next: withResumeDismiss(() => {}),
+        previous: withResumeDismiss(() => {}),
+        library: withResumeDismiss(() => {}),
+      }),
+      [withResumeDismiss],
+    );
+
     useEffect(() => {
       if (showQueue) setMessage(null);
     }, [showQueue]);
 
     React.useImperativeHandle(ref, () => ({
       fireHydrate: handleHydrateFired,
-      pressUserAction: dismiss,
+      invoke: (key) => handlers[key](),
     }));
 
     return message ? <Toast message={message} onDismiss={dismiss} /> : null;
@@ -51,6 +73,15 @@ const renderHarness = (initialShowQueue = false) => {
   };
 };
 
+const fireHydrateWith = (
+  ref: React.RefObject<ResumeToastHarnessHandle>,
+  trackName: string,
+) => {
+  act(() => {
+    ref.current?.fireHydrate(makeMediaTrack({ name: trackName }));
+  });
+};
+
 describe('Resume toast behavior', () => {
   beforeEach(() => {
     vi.useFakeTimers();
@@ -63,12 +94,9 @@ describe('Resume toast behavior', () => {
   it('appears with the hydrated track name when hydrate fires', () => {
     // #given
     const { ref } = renderHarness();
-    const track = makeTrack({ name: 'Bohemian Rhapsody' });
 
     // #when
-    act(() => {
-      ref.current?.fireHydrate(track);
-    });
+    fireHydrateWith(ref, 'Bohemian Rhapsody');
 
     // #then
     expect(
@@ -79,10 +107,7 @@ describe('Resume toast behavior', () => {
   it('auto-dismisses after ~5s', () => {
     // #given
     const { ref } = renderHarness();
-    const track = makeTrack({ name: 'Caravan' });
-    act(() => {
-      ref.current?.fireHydrate(track);
-    });
+    fireHydrateWith(ref, 'Caravan');
     expect(screen.getByText(/Resuming 'Caravan'/)).toBeInTheDocument();
 
     // #when — advance past the Toast's 5000ms auto-dismiss + exit animation
@@ -94,65 +119,28 @@ describe('Resume toast behavior', () => {
     expect(screen.queryByText(/Resuming 'Caravan'/)).not.toBeInTheDocument();
   });
 
-  it('dismisses immediately when the user presses play', () => {
-    // #given
-    const { ref } = renderHarness();
-    const track = makeTrack({ name: 'Take Five' });
-    act(() => {
-      ref.current?.fireHydrate(track);
-    });
-    expect(screen.getByText(/Resuming 'Take Five'/)).toBeInTheDocument();
+  it.each(['play', 'pause', 'next', 'previous', 'library'] as const)(
+    'dismisses when the user invokes the %s handler',
+    (handler) => {
+      // #given
+      const { ref } = renderHarness();
+      fireHydrateWith(ref, 'Take Five');
+      expect(screen.getByText(/Resuming 'Take Five'/)).toBeInTheDocument();
 
-    // #when
-    act(() => {
-      ref.current?.pressUserAction();
-    });
+      // #when
+      act(() => {
+        ref.current?.invoke(handler);
+      });
 
-    // #then
-    expect(screen.queryByText(/Resuming 'Take Five'/)).not.toBeInTheDocument();
-  });
-
-  it('dismisses immediately when the user presses pause', () => {
-    // #given
-    const { ref } = renderHarness();
-    const track = makeTrack({ name: 'So What' });
-    act(() => {
-      ref.current?.fireHydrate(track);
-    });
-
-    // #when
-    act(() => {
-      ref.current?.pressUserAction();
-    });
-
-    // #then
-    expect(screen.queryByText(/Resuming 'So What'/)).not.toBeInTheDocument();
-  });
-
-  it('dismisses immediately when the user navigates to the library', () => {
-    // #given
-    const { ref } = renderHarness();
-    const track = makeTrack({ name: 'Blue in Green' });
-    act(() => {
-      ref.current?.fireHydrate(track);
-    });
-
-    // #when
-    act(() => {
-      ref.current?.pressUserAction();
-    });
-
-    // #then
-    expect(screen.queryByText(/Resuming 'Blue in Green'/)).not.toBeInTheDocument();
-  });
+      // #then
+      expect(screen.queryByText(/Resuming 'Take Five'/)).not.toBeInTheDocument();
+    },
+  );
 
   it('dismisses immediately when the queue opens (showQueue flips true)', () => {
     // #given
     const { ref, rerender } = renderHarness(false);
-    const track = makeTrack({ name: 'Giant Steps' });
-    act(() => {
-      ref.current?.fireHydrate(track);
-    });
+    fireHydrateWith(ref, 'Giant Steps');
     expect(screen.getByText(/Resuming 'Giant Steps'/)).toBeInTheDocument();
 
     // #when
@@ -167,10 +155,7 @@ describe('Resume toast behavior', () => {
   it('dismisses when the Toast dismiss button is clicked', () => {
     // #given
     const { ref } = renderHarness();
-    const track = makeTrack({ name: 'Four on Six' });
-    act(() => {
-      ref.current?.fireHydrate(track);
-    });
+    fireHydrateWith(ref, 'Four on Six');
 
     // #when
     const dismissBtn = screen.getByRole('button', { name: /dismiss/i });
