@@ -20,7 +20,7 @@ import {
   ZEN_TRACK_INFO_ENTER_OPACITY_DELAY,
 } from '@/constants/zenAnimation';
 import type { MediaTrack, ProviderId } from '@/types/domain';
-import type { VisualizerStyle } from '@/types/visualizer';
+import type { VisualizerStyle, AlbumArtBounds } from '@/types/visualizer';
 import { FlipInner, ZenTrackInfo, ZenTrackInfoInner, ZenTrackName, ZenTrackArtist } from './styled';
 
 const ZEN_TRACK_INFO_WILL_CHANGE_FALLBACK_MS =
@@ -36,13 +36,6 @@ const ZenProviderBadgeInline = styled.span`
   position: relative;
   top: -1px;
 `;
-
-interface AlbumArtBounds {
-  left: number;
-  top: number;
-  width: number;
-  height: number;
-}
 
 interface AlbumArtSectionProps {
   currentTrack: MediaTrack | null;
