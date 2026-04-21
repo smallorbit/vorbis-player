@@ -1,16 +1,11 @@
-import React, { useCallback, useRef, useEffect, useLayoutEffect } from 'react';
+import React, { useCallback, useRef, useEffect, useState } from 'react';
 import { useQapEnabled } from '@/hooks/useQapEnabled';
 import { usePlayerSizingContext } from '@/contexts/PlayerSizingContext';
 import { useCurrentTrackContext } from '@/contexts/TrackContext';
 import { useVisualEffectsToggle, useZenMode } from '@/contexts/visualEffects';
 import { useLikeTrack } from '@/hooks/useLikeTrack';
-import { useReducedMotion } from '@/hooks/useReducedMotion';
 import { STORAGE_KEYS } from '@/constants/storage';
-import {
-  ZEN_ART_DURATION,
-  ZEN_ART_EASING,
-  ZEN_ART_ENTER_DELAY,
-} from '@/constants/zenAnimation';
+import { ZEN_ART_DURATION, ZEN_ART_ENTER_DELAY } from '@/constants/zenAnimation';
 import type { AddToQueueResult, MediaTrack, ProviderId } from '@/types/domain';
 import type { AlbumArtBounds } from '@/types/visualizer';
 import type { RadioState, RadioProgress } from '@/types/radio';
@@ -80,20 +75,29 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({
   const { setShowVisualEffects } = useVisualEffectsToggle();
   const { dimensions, useFluidSizing, padding, transitionDuration, transitionEasing, isMobile, isTablet, hasPointerInput, isTouchDevice } = usePlayerSizingContext();
   const { isLiked, isLikePending, handleLikeToggle, canSaveTrack } = useLikeTrack(currentTrack?.id, currentTrack?.provider);
-  const reducedMotion = useReducedMotion();
 
   const [qapEnabled] = useQapEnabled();
 
   const controlsRef = useRef<HTMLDivElement>(null);
   const stableControlsHeightRef = useRef<number>(220);
   const flipToggleRef = useRef<(() => void) | null>(null);
-  const playerStackRef = useRef<HTMLDivElement>(null);
-  const lastStackWidthRef = useRef<number | null>(null);
+  const zenTransitionTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const zenTransitioningRef = useRef(false);
+
+  const [zenTransitioning, setZenTransitioning] = useState(false);
 
   useEffect(() => {
     const el = controlsRef.current;
     if (!el) return;
+    /*
+     * Skip --player-controls-height updates while a zen transition is running. On exit the
+     * controls row expands 0 → full height via grid-template-rows; every intermediate frame
+     * would otherwise drive this variable from 0 up to the final value, causing
+     * PlayerStack.max-width's target to drift mid-transition and the album art to chase a
+     * moving target, then snap when the variable finally settles at the end of the shrink.
+     */
     const update = () => {
+      if (zenTransitioningRef.current) return;
       const h = Math.ceil(el.getBoundingClientRect().height);
       if (h > 50) {
         stableControlsHeightRef.current = h;
@@ -106,72 +110,13 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({
     return () => observer.disconnect();
   }, []);
 
-  const playerStackWillChangeCleanupRef = useRef<(() => void) | null>(null);
-
-  useLayoutEffect(() => {
-    const el = playerStackRef.current;
-    if (!el) return;
-
-    playerStackWillChangeCleanupRef.current?.();
-
-    const prevWidth = lastStackWidthRef.current;
-    const nextWidth = el.offsetWidth;
-    lastStackWidthRef.current = nextWidth;
-
-    const resetTransform = () => {
-      el.style.transition = 'none';
-      el.style.transform = '';
-    };
-
-    if (prevWidth === null || prevWidth <= 0 || nextWidth <= 0 || reducedMotion) {
-      resetTransform();
-      return;
-    }
-
-    const ratio = prevWidth / nextWidth;
-    if (Math.abs(ratio - 1) < 0.001) {
-      resetTransform();
-      return;
-    }
-
-    const enterDelay = zenModeEnabled ? ZEN_ART_ENTER_DELAY : 0;
-    el.style.transition = 'none';
-    el.style.transform = `scale(${ratio})`;
-    void el.offsetWidth;
-
-    el.style.willChange = 'transform';
-    let timeoutId: number | null = null;
-    const clearWillChange = () => {
-      if (timeoutId !== null) {
-        window.clearTimeout(timeoutId);
-        timeoutId = null;
-      }
-      el.removeEventListener('transitionend', onTransitionEnd);
-      el.style.willChange = '';
-      playerStackWillChangeCleanupRef.current = null;
-    };
-    const onTransitionEnd = (event: TransitionEvent) => {
-      if (event.target !== el || event.propertyName !== 'transform') return;
-      clearWillChange();
-    };
-    el.addEventListener('transitionend', onTransitionEnd);
-    timeoutId = window.setTimeout(clearWillChange, ZEN_ART_DURATION + enterDelay + 100);
-    playerStackWillChangeCleanupRef.current = clearWillChange;
-
-    el.style.transition = `transform ${ZEN_ART_DURATION}ms ${ZEN_ART_EASING} ${enterDelay}ms`;
-    el.style.transform = 'scale(1)';
-
-    return clearWillChange;
-  }, [zenModeEnabled, reducedMotion]);
-
   useEffect(() => {
-    const el = playerStackRef.current;
-    if (!el) return;
-    const observer = new ResizeObserver(() => {
-      lastStackWidthRef.current = el.offsetWidth;
-    });
-    observer.observe(el);
-    return () => observer.disconnect();
+    return () => {
+      if (zenTransitionTimeoutRef.current !== null) {
+        clearTimeout(zenTransitionTimeoutRef.current);
+        zenTransitionTimeoutRef.current = null;
+      }
+    };
   }, []);
 
   const handleShowQueue = useCallback(() => {
@@ -214,7 +159,18 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({
         `${stableControlsHeightRef.current}px`
       );
     }
+    if (zenTransitionTimeoutRef.current !== null) {
+      clearTimeout(zenTransitionTimeoutRef.current);
+      zenTransitionTimeoutRef.current = null;
+    }
+    zenTransitioningRef.current = true;
+    setZenTransitioning(true);
     setZenModeEnabled(prev => !prev);
+    zenTransitionTimeoutRef.current = setTimeout(() => {
+      zenTransitionTimeoutRef.current = null;
+      zenTransitioningRef.current = false;
+      setZenTransitioning(false);
+    }, ZEN_ART_DURATION + ZEN_ART_ENTER_DELAY + 50);
   }, [zenModeEnabled, setZenModeEnabled]);
 
   const handleZenExitClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
@@ -255,7 +211,7 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({
       onClick={handleZenExitClick}
     >
       <PlayerContainer>
-        <PlayerStack $zenMode={zenModeEnabled} ref={playerStackRef}>
+        <PlayerStack $zenMode={zenModeEnabled} $zenTransitioning={zenTransitioning}>
           <AlbumArtSection
             currentTrack={currentTrack}
             currentTrackProvider={currentTrackProvider}

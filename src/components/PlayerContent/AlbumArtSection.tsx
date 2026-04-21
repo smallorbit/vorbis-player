@@ -16,6 +16,8 @@ import { useVisualEffectsState } from '@/hooks/useVisualEffectsState';
 import { useZenTouchGestures } from '@/hooks/useZenTouchGestures';
 import { useTransitionWillChange } from '@/hooks/useTransitionWillChange';
 import {
+  ZEN_ART_DURATION,
+  ZEN_ART_EASING,
   ZEN_TRACK_INFO_ENTER_OPACITY_DURATION,
   ZEN_TRACK_INFO_ENTER_OPACITY_DELAY,
 } from '@/constants/zenAnimation';
@@ -287,7 +289,8 @@ export const AlbumArtSection: React.FC<AlbumArtSectionProps> = React.memo(({
         zIndex: 2,
         minHeight: 0,
         alignItems: 'center',
-        transform: zenModeEnabled ? 'translateY(0)' : `translateY(${isMobile ? '0.25rem' : '0.5rem'})`
+        transform: zenModeEnabled ? 'translateY(0)' : `translateY(${isMobile ? '0.25rem' : '0.5rem'})`,
+        transition: `transform ${ZEN_ART_DURATION}ms ${ZEN_ART_EASING}`,
       }}>
         <div ref={flipContainerRef} style={{ width: '100%', position: 'relative' }} onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
           <GestureLayer
