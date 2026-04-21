@@ -21,3 +21,16 @@ export const logApp = createDebug('vorbis:app');
 export const logSw = createDebug('vorbis:sw');
 export const logLibrary = createDebug('vorbis:library');
 export const logSession = createDebug('vorbis:session');
+
+/**
+ * Focused trace for the fresh-load album-art race: every event that can flip
+ * `currentTrackIndex` during a playTrack transition (guard set/clear,
+ * prepareTrack emit, subscription accept/reject) is logged with an absolute
+ * `performance.now()` timestamp so the ordering can be reconstructed
+ * deterministically from a single console capture.
+ *
+ * Enable with: localStorage.debug = 'vorbis:art-race' (or 'vorbis:*').
+ */
+const _logArtRace = createDebug('vorbis:art-race');
+export const logArtRace = (fmt: string, ...args: unknown[]) =>
+  _logArtRace(`[t=%sms] ${fmt}`, performance.now().toFixed(1), ...args);
