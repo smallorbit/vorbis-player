@@ -3,10 +3,12 @@ export const ZEN_ART_EASING = 'cubic-bezier(0.4, 0, 0.2, 1)';
 export const ZEN_ART_ENTER_DELAY = 300;
 
 export const ZEN_CONTROLS_DURATION = 300;
-export const ZEN_CONTROLS_EXIT_DELAY = 500;
-export const ZEN_CONTROLS_OPACITY_EXIT_DURATION = 700;
-export const ZEN_CONTROLS_OPACITY_EXIT_DELAY = 450;
-export const ZEN_CONTROLS_TRANSFORM_EXIT_DELAY = 200;
+// zen → normal: bottom bar, controls, and ContentWrapper's margin-bottom all wait this long
+// before re-entering, so the album-art shrink runs in a stable flex layout. Without it, the
+// parent re-centers mid-shrink and the art appears to drop, pause, then snap to its final
+// position as late transitions converge. Matched to ZEN_ART_DURATION so shrink ends exactly
+// when re-entry begins.
+export const ZEN_EXIT_REENTRY_DELAY = ZEN_ART_DURATION;
 
 export const ZEN_ART_MARGIN_H = 96;
 export const ZEN_ART_MARGIN_V = 196;

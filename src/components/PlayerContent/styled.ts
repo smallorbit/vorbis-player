@@ -6,10 +6,7 @@ import {
   ZEN_ART_EASING,
   ZEN_ART_ENTER_DELAY,
   ZEN_CONTROLS_DURATION,
-  ZEN_CONTROLS_EXIT_DELAY,
-  ZEN_CONTROLS_OPACITY_EXIT_DURATION,
-  ZEN_CONTROLS_OPACITY_EXIT_DELAY,
-  ZEN_CONTROLS_TRANSFORM_EXIT_DELAY,
+  ZEN_EXIT_REENTRY_DELAY,
   ZEN_TRACK_INFO_ENTER_OPACITY_DURATION,
   ZEN_TRACK_INFO_ENTER_OPACITY_DELAY,
   ZEN_TRACK_INFO_ENTER_HEIGHT_DURATION,
@@ -48,9 +45,16 @@ export const ContentWrapper = styled.div.withConfig({
   z-index: ${CONTENT_WRAPPER_Z};
   overflow: visible;
 
+  /*
+   * margin-bottom transitions over ZEN_ART_DURATION so the flex parent re-centers smoothly
+   * as the bar-reserved space grows back. Without this, margin-bottom snaps from 0 → 60px
+   * at the moment zen mode exits and the art gets pulled visibly downward before any other
+   * animation has started.
+   */
   transition: width ${props => props.$zenMode ? `${ZEN_ART_DURATION}ms ${ZEN_ART_EASING} ${ZEN_ART_ENTER_DELAY}ms` : `${ZEN_ART_DURATION}ms ${ZEN_ART_EASING}`},
             padding ${props => props.transitionDuration}ms ${props => props.transitionEasing},
-            padding-bottom ${ZEN_ART_DURATION}ms ${ZEN_ART_EASING};
+            padding-bottom ${ZEN_ART_DURATION}ms ${ZEN_ART_EASING},
+            margin-bottom ${ZEN_ART_DURATION}ms ${ZEN_ART_EASING};
 
   container-type: inline-size;
   container-name: player;
@@ -123,13 +127,21 @@ export const ZenControlsWrapper = styled.div.withConfig({
    * while grid-template-rows stays 1fr, keeping PlayerStack's layout height stable so the
    * album art does not drift upward. After ZEN_ART_ENTER_DELAY, the row collapses in parallel
    * with PlayerStack's max-width growth so the art resizes in a single layout-isolated motion.
-   * Exiting zen: art shrinks first (ZEN_ART_DURATION), then controls expand + fade in.
+   *
+   * Exiting zen is the symmetric reverse: grid-template-rows expands 0fr → 1fr over
+   * ZEN_ART_DURATION in parallel with the max-width shrink, so PlayerStack's height changes
+   * smoothly throughout the whole shrink (small growth as the row opens, big shrink as the
+   * art contracts). Opacity + transform restore only fire after the row is fully open — the
+   * controls appear in-place in their settled layout. If grid-template-rows were also
+   * delayed, the stack would shrink to art-only height and then snap back taller when the
+   * row reopened, which reads as a jump.
+   *
    * --player-controls-height is pre-set synchronously via stableControlsHeightRef before the
    * state flip, so PlayerStack has the correct target from the first animation frame.
    */
   transition: ${({ $zenMode }) => $zenMode
     ? `grid-template-rows ${ZEN_ART_DURATION}ms ease ${ZEN_ART_ENTER_DELAY}ms, opacity ${ZEN_CONTROLS_DURATION}ms ease, transform ${ZEN_CONTROLS_DURATION}ms ease`
-    : `grid-template-rows ${ZEN_CONTROLS_EXIT_DELAY}ms ease ${ZEN_CONTROLS_EXIT_DELAY}ms, opacity ${ZEN_CONTROLS_OPACITY_EXIT_DURATION}ms ease ${ZEN_CONTROLS_OPACITY_EXIT_DELAY}ms, transform ${ZEN_CONTROLS_DURATION}ms ease ${ZEN_CONTROLS_TRANSFORM_EXIT_DELAY}ms`
+    : `grid-template-rows ${ZEN_ART_DURATION}ms ease, opacity ${ZEN_CONTROLS_DURATION}ms ease ${ZEN_EXIT_REENTRY_DELAY}ms, transform ${ZEN_CONTROLS_DURATION}ms ease ${ZEN_EXIT_REENTRY_DELAY}ms`
   };
   pointer-events: ${({ $zenMode }) => $zenMode ? 'none' : 'auto'};
 

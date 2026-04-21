@@ -82,13 +82,22 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({
   const stableControlsHeightRef = useRef<number>(220);
   const flipToggleRef = useRef<(() => void) | null>(null);
   const zenTransitionTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const zenTransitioningRef = useRef(false);
 
   const [zenTransitioning, setZenTransitioning] = useState(false);
 
   useEffect(() => {
     const el = controlsRef.current;
     if (!el) return;
+    /*
+     * Skip --player-controls-height updates while a zen transition is running. On exit the
+     * controls row expands 0 → full height via grid-template-rows; every intermediate frame
+     * would otherwise drive this variable from 0 up to the final value, causing
+     * PlayerStack.max-width's target to drift mid-transition and the album art to chase a
+     * moving target, then snap when the variable finally settles at the end of the shrink.
+     */
     const update = () => {
+      if (zenTransitioningRef.current) return;
       const h = Math.ceil(el.getBoundingClientRect().height);
       if (h > 50) {
         stableControlsHeightRef.current = h;
@@ -154,10 +163,12 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({
       clearTimeout(zenTransitionTimeoutRef.current);
       zenTransitionTimeoutRef.current = null;
     }
+    zenTransitioningRef.current = true;
     setZenTransitioning(true);
     setZenModeEnabled(prev => !prev);
     zenTransitionTimeoutRef.current = setTimeout(() => {
       zenTransitionTimeoutRef.current = null;
+      zenTransitioningRef.current = false;
       setZenTransitioning(false);
     }, ZEN_ART_DURATION + ZEN_ART_ENTER_DELAY + 50);
   }, [zenModeEnabled, setZenModeEnabled]);
