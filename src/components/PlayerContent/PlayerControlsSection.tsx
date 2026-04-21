@@ -26,15 +26,20 @@ import { useQapEnabled } from '@/hooks/useQapEnabled';
 import { usePlayerSizingContext } from '@/contexts/PlayerSizingContext';
 import { useTransitionWillChange } from '@/hooks/useTransitionWillChange';
 import {
-  ZEN_CONTROLS_OPACITY_EXIT_DURATION,
-  ZEN_CONTROLS_OPACITY_EXIT_DELAY,
+  ZEN_CONTROLS_DURATION,
+  ZEN_EXIT_REENTRY_DELAY,
 } from '@/constants/zenAnimation';
 import type { MediaTrack, ProviderId } from '@/types/domain';
 import type { RadioState } from '@/types/radio';
 import { LoadingCard, ZenControlsWrapper, ZenControlsInner } from './styled';
 
+/**
+ * Upper bound on how long any zen-transition on the controls can still be running.
+ * Exit is the longer direction: ZEN_EXIT_REENTRY_DELAY of waiting + ZEN_CONTROLS_DURATION
+ * of fade/expand. Buffer accommodates frame jitter so will-change is not cleared early.
+ */
 const ZEN_CONTROLS_WILL_CHANGE_FALLBACK_MS =
-  ZEN_CONTROLS_OPACITY_EXIT_DURATION + ZEN_CONTROLS_OPACITY_EXIT_DELAY + 100;
+  ZEN_EXIT_REENTRY_DELAY + ZEN_CONTROLS_DURATION + 100;
 
 const VisualEffectsMenu = lazy(() => import('@/components/AppSettingsMenu/index'));
 const KeyboardShortcutsHelp = lazy(() => import('@/components/KeyboardShortcutsHelp'));

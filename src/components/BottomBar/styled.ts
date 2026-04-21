@@ -1,5 +1,5 @@
 import styled from 'styled-components';
-import { ZEN_BAR_DURATION } from '@/constants/zenAnimation';
+import { ZEN_BAR_DURATION, ZEN_EXIT_REENTRY_DELAY } from '@/constants/zenAnimation';
 import { TOUCH_TARGET_MIN_PX } from '@/constants/a11y';
 
 export const BOTTOM_BAR_HEIGHT = 60;
@@ -9,8 +9,8 @@ const ZEN_GRIP_PILL_HEIGHT = '4px';
 const ZEN_GRIP_PILL_BOTTOM_OFFSET = '10px';
 
 export const BottomBarContainer = styled.div.withConfig({
-  shouldForwardProp: (prop) => prop !== '$hidden',
-})<{ $hidden?: boolean }>`
+  shouldForwardProp: (prop) => !['$hidden', '$zenExiting'].includes(prop),
+})<{ $hidden?: boolean; $zenExiting?: boolean }>`
   position: fixed;
   bottom: 0;
   left: 0;
@@ -24,7 +24,18 @@ export const BottomBarContainer = styled.div.withConfig({
   opacity: ${({ $hidden }) => $hidden ? 0 : 1};
   transform: ${({ $hidden }) => $hidden ? 'translateY(100%)' : 'translateY(0)'};
   pointer-events: ${({ $hidden }) => $hidden ? 'none' : 'auto'};
-  transition: opacity ${ZEN_BAR_DURATION}ms ease, transform ${ZEN_BAR_DURATION}ms ease;
+  /*
+   * $zenExiting is raised for the duration of a zen → normal transition so the bar waits
+   * until the album-art shrink has finished before sliding up. Normal hover/touch reveals
+   * use 0ms delay so the affordance stays responsive.
+   */
+  transition:
+    opacity ${ZEN_BAR_DURATION}ms ease ${({ $zenExiting }) => $zenExiting ? `${ZEN_EXIT_REENTRY_DELAY}ms` : '0ms'},
+    transform ${ZEN_BAR_DURATION}ms ease ${({ $zenExiting }) => $zenExiting ? `${ZEN_EXIT_REENTRY_DELAY}ms` : '0ms'};
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 `;
 
 export const BottomBarInner = styled.div`
