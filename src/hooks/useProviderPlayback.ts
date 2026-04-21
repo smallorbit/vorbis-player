@@ -11,6 +11,14 @@ interface UseProviderPlaybackProps {
   activeDescriptor?: ProviderDescriptor | null;
   mediaTracksRef: React.MutableRefObject<MediaTrack[]>;
   onAuthExpired?: (providerId: ProviderId) => void;
+  /**
+   * Shared guard ref used by `usePlaybackSubscription` to ignore stale provider
+   * index updates during a transition. `playTrack` sets this to the target
+   * track id BEFORE any adapter call (including the pre-warm `prepareTrack` on
+   * the next track) so that provider state events emitted during the handoff
+   * cannot flip `currentTrackIndex` to the wrong track.
+   */
+  expectedTrackIdRef?: React.MutableRefObject<string | null>;
 }
 
 export const useProviderPlayback = ({
@@ -18,6 +26,7 @@ export const useProviderPlayback = ({
   activeDescriptor,
   mediaTracksRef,
   onAuthExpired,
+  expectedTrackIdRef,
 }: UseProviderPlaybackProps) => {
 
   const currentPlaybackProviderRef = useRef<ProviderId | null>(null);
@@ -63,6 +72,16 @@ export const useProviderPlayback = ({
       return;
     }
 
+    // Raise the expected-track guard BEFORE any adapter call so that the
+    // subscription layer ignores provider state events emitted during the
+    // transition (pausePreviousProvider pause, adapter playTrack start, and
+    // the next-track prepareTrack pre-warm below). Must run before all of
+    // those to cover every entry point into playTrack — fresh collection
+    // load at index 0, empty-queue append, next/previous, etc.
+    if (expectedTrackIdRef) {
+      expectedTrackIdRef.current = mediaTrack.id;
+    }
+
     pausePreviousProvider(trackProvider);
     currentPlaybackProviderRef.current = trackProvider;
 
@@ -101,7 +120,7 @@ export const useProviderPlayback = ({
         setTimeout(() => playTrack(index + 1, skipOnError), SKIP_ON_ERROR_DELAY_MS);
       }
     }
-  }, [setCurrentTrackIndex, pausePreviousProvider, resolveTrackProvider, onAuthExpired]);
+  }, [setCurrentTrackIndex, pausePreviousProvider, resolveTrackProvider, onAuthExpired, expectedTrackIdRef]);
 
   const resumePlayback = useCallback(async () => {
     const currentProvider = currentPlaybackProviderRef.current;
