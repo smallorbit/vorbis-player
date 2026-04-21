@@ -26,15 +26,20 @@ import { useQapEnabled } from '@/hooks/useQapEnabled';
 import { usePlayerSizingContext } from '@/contexts/PlayerSizingContext';
 import { useTransitionWillChange } from '@/hooks/useTransitionWillChange';
 import {
-  ZEN_CONTROLS_OPACITY_EXIT_DURATION,
-  ZEN_CONTROLS_OPACITY_EXIT_DELAY,
+  ZEN_ART_DURATION,
+  ZEN_CONTROLS_DURATION,
 } from '@/constants/zenAnimation';
 import type { MediaTrack, ProviderId } from '@/types/domain';
 import type { RadioState } from '@/types/radio';
 import { LoadingCard, ZenControlsWrapper, ZenControlsInner } from './styled';
 
+/**
+ * Maximum total time the zen controls need `will-change` set during exit:
+ * ZEN_ART_DURATION (art shrink delay) + ZEN_CONTROLS_DURATION (row expand + fade)
+ * + 100ms safety margin.
+ */
 const ZEN_CONTROLS_WILL_CHANGE_FALLBACK_MS =
-  ZEN_CONTROLS_OPACITY_EXIT_DURATION + ZEN_CONTROLS_OPACITY_EXIT_DELAY + 100;
+  ZEN_ART_DURATION + ZEN_CONTROLS_DURATION + 100;
 
 const VisualEffectsMenu = lazy(() => import('@/components/AppSettingsMenu/index'));
 const KeyboardShortcutsHelp = lazy(() => import('@/components/KeyboardShortcutsHelp'));

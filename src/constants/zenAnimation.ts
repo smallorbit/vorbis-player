@@ -3,10 +3,13 @@ export const ZEN_ART_EASING = 'cubic-bezier(0.4, 0, 0.2, 1)';
 export const ZEN_ART_ENTER_DELAY = 300;
 
 export const ZEN_CONTROLS_DURATION = 300;
-export const ZEN_CONTROLS_EXIT_DELAY = 500;
-export const ZEN_CONTROLS_OPACITY_EXIT_DURATION = 700;
-export const ZEN_CONTROLS_OPACITY_EXIT_DELAY = 450;
-export const ZEN_CONTROLS_TRANSFORM_EXIT_DELAY = 200;
+/**
+ * Delay before bottom bar / controls begin re-entering on zen → normal exit.
+ * Matches ZEN_ART_DURATION so the album art finishes shrinking before controls
+ * and the bottom bar reappear, preventing the parent flex from re-centering
+ * mid-shrink. See orchestration notes in PlayerContent/styled.ts.
+ */
+export const ZEN_EXIT_REENTRY_DELAY = ZEN_ART_DURATION;
 
 export const ZEN_ART_MARGIN_H = 96;
 export const ZEN_ART_MARGIN_V = 196;

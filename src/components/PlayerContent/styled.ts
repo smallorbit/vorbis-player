@@ -6,10 +6,7 @@ import {
   ZEN_ART_EASING,
   ZEN_ART_ENTER_DELAY,
   ZEN_CONTROLS_DURATION,
-  ZEN_CONTROLS_EXIT_DELAY,
-  ZEN_CONTROLS_OPACITY_EXIT_DURATION,
-  ZEN_CONTROLS_OPACITY_EXIT_DELAY,
-  ZEN_CONTROLS_TRANSFORM_EXIT_DELAY,
+  ZEN_EXIT_REENTRY_DELAY,
   ZEN_TRACK_INFO_ENTER_OPACITY_DURATION,
   ZEN_TRACK_INFO_ENTER_OPACITY_DELAY,
   ZEN_TRACK_INFO_ENTER_HEIGHT_DURATION,
@@ -48,9 +45,20 @@ export const ContentWrapper = styled.div.withConfig({
   z-index: ${CONTENT_WRAPPER_Z};
   overflow: visible;
 
+  /*
+   * margin-bottom transitions between 0 (zen) and BOTTOM_BAR_HEIGHT (normal). The flex
+   * parent centers ContentWrapper's outer box, so any instant margin change would snap
+   * the content up or down. Entry ($zenMode true): margin shrinks 60→0 after
+   * ZEN_ART_ENTER_DELAY so layout stays stable while controls fade. Exit ($zenMode false):
+   * margin grows 0→60 after ZEN_EXIT_REENTRY_DELAY so the art shrink runs in a stable
+   * layout frame; the margin then grows in sync with the bottom bar sliding back in.
+   */
   transition: width ${props => props.$zenMode ? `${ZEN_ART_DURATION}ms ${ZEN_ART_EASING} ${ZEN_ART_ENTER_DELAY}ms` : `${ZEN_ART_DURATION}ms ${ZEN_ART_EASING}`},
             padding ${props => props.transitionDuration}ms ${props => props.transitionEasing},
-            padding-bottom ${ZEN_ART_DURATION}ms ${ZEN_ART_EASING};
+            padding-bottom ${ZEN_ART_DURATION}ms ${ZEN_ART_EASING},
+            margin-bottom ${props => props.$zenMode
+              ? `${ZEN_ART_DURATION}ms ${ZEN_ART_EASING} ${ZEN_ART_ENTER_DELAY}ms`
+              : `${ZEN_CONTROLS_DURATION}ms ${ZEN_ART_EASING} ${ZEN_EXIT_REENTRY_DELAY}ms`};
 
   container-type: inline-size;
   container-name: player;
@@ -123,13 +131,16 @@ export const ZenControlsWrapper = styled.div.withConfig({
    * while grid-template-rows stays 1fr, keeping PlayerStack's layout height stable so the
    * album art does not drift upward. After ZEN_ART_ENTER_DELAY, the row collapses in parallel
    * with PlayerStack's max-width growth so the art resizes in a single layout-isolated motion.
-   * Exiting zen: art shrinks first (ZEN_ART_DURATION), then controls expand + fade in.
+   * Exiting zen: all three properties wait ZEN_EXIT_REENTRY_DELAY (= ZEN_ART_DURATION) so the
+   * album art finishes shrinking in a stable layout before the row expands and the controls
+   * fade back in. Without this delay, the row-expansion and art-shrink overlap and the parent
+   * flex re-centers mid-animation, producing the downward jump.
    * --player-controls-height is pre-set synchronously via stableControlsHeightRef before the
    * state flip, so PlayerStack has the correct target from the first animation frame.
    */
   transition: ${({ $zenMode }) => $zenMode
     ? `grid-template-rows ${ZEN_ART_DURATION}ms ease ${ZEN_ART_ENTER_DELAY}ms, opacity ${ZEN_CONTROLS_DURATION}ms ease, transform ${ZEN_CONTROLS_DURATION}ms ease`
-    : `grid-template-rows ${ZEN_CONTROLS_EXIT_DELAY}ms ease ${ZEN_CONTROLS_EXIT_DELAY}ms, opacity ${ZEN_CONTROLS_OPACITY_EXIT_DURATION}ms ease ${ZEN_CONTROLS_OPACITY_EXIT_DELAY}ms, transform ${ZEN_CONTROLS_DURATION}ms ease ${ZEN_CONTROLS_TRANSFORM_EXIT_DELAY}ms`
+    : `grid-template-rows ${ZEN_CONTROLS_DURATION}ms ease ${ZEN_EXIT_REENTRY_DELAY}ms, opacity ${ZEN_CONTROLS_DURATION}ms ease ${ZEN_EXIT_REENTRY_DELAY}ms, transform ${ZEN_CONTROLS_DURATION}ms ease ${ZEN_EXIT_REENTRY_DELAY}ms`
   };
   pointer-events: ${({ $zenMode }) => $zenMode ? 'none' : 'auto'};
 
