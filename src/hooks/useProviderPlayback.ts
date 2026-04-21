@@ -3,7 +3,7 @@ import type { ProviderDescriptor } from '@/types/providers';
 import type { MediaTrack, ProviderId } from '@/types/domain';
 import { providerRegistry } from '@/providers/registry';
 import { AuthExpiredError, UnavailableTrackError } from '@/providers/errors';
-import { logQueue } from '@/lib/debugLog';
+import { logQueue, logArtRace } from '@/lib/debugLog';
 import { SKIP_ON_ERROR_DELAY_MS } from '@/constants/timing';
 
 interface UseProviderPlaybackProps {
@@ -80,6 +80,8 @@ export const useProviderPlayback = ({
     // load at index 0, empty-queue append, next/previous, etc.
     if (expectedTrackIdRef) {
       expectedTrackIdRef.current = mediaTrack.id;
+      logArtRace('playTrack guard set: expected=%s (idx=%d, provider=%s)',
+        mediaTrack.id.slice(0, 8), index, trackProvider);
     }
 
     pausePreviousProvider(trackProvider);
@@ -99,7 +101,12 @@ export const useProviderPlayback = ({
       const nextTrack = tracks[nextIndex];
       if (nextTrack && nextIndex !== index) {
         const nextDescriptor = providerRegistry.get(nextTrack.provider);
-        nextDescriptor?.playback.prepareTrack?.(nextTrack);
+        if (nextDescriptor?.playback.prepareTrack) {
+          logArtRace('pre-warm dispatch: next=%s (idx=%d, provider=%s) — guard still=%s',
+            nextTrack.id.slice(0, 8), nextIndex, nextTrack.provider,
+            expectedTrackIdRef?.current ? expectedTrackIdRef.current.slice(0, 8) : 'null');
+          nextDescriptor.playback.prepareTrack(nextTrack);
+        }
       }
     } catch (error) {
       if (error instanceof AuthExpiredError) {

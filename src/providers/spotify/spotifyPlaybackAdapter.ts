@@ -12,7 +12,7 @@ import { SPOTIFY_MAX_RETRIES, SPOTIFY_BASE_BACKOFF_MS } from '@/constants/spotif
 import { SPOTIFY_DEVICE_ACTIVATE_RETRIES, SPOTIFY_DEVICE_ACTIVATE_DELAY_MS } from '@/constants/timing';
 import { AuthExpiredError, UnavailableTrackError } from '@/providers/errors';
 import { spotifyQueueSync } from './spotifyQueueSync';
-import { logSpotify } from '@/lib/debugLog';
+import { logSpotify, logArtRace } from '@/lib/debugLog';
 
 /** Map a SpotifyPlaybackState to the provider-agnostic PlaybackState. */
 function mapPlaybackState(state: SpotifyPlaybackState | null): PlaybackState | null {
@@ -253,7 +253,12 @@ export class SpotifyPlaybackAdapter implements PlaybackProvider {
   private ensureSdkSubscription(): void {
     if (this.sdkUnsubscribe) return;
     this.sdkUnsubscribe = spotifyPlayer.onPlayerStateChanged((spotifyState) => {
-      this.emitState(mapPlaybackState(spotifyState));
+      const mapped = mapPlaybackState(spotifyState);
+      logArtRace('spotify.sdk: emitState source=SDK currentTrackId=%s isPlaying=%s positionMs=%d',
+        mapped?.currentTrackId ? mapped.currentTrackId.slice(0, 8) : 'null',
+        String(mapped?.isPlaying ?? 'null'),
+        mapped?.positionMs ?? -1);
+      this.emitState(mapped);
     });
   }
 
@@ -297,9 +302,14 @@ export class SpotifyPlaybackAdapter implements PlaybackProvider {
 
     const uri = track.playbackRef.ref;
     if (this.preparedTrackRef === uri) {
+      logArtRace('spotify.prepareTrack: skip (already prepared) id=%s', track.id.slice(0, 8));
       return;
     }
     this.preparedTrackRef = uri;
+
+    logArtRace('spotify.prepareTrack: enter id=%s positionMs=%d intent=%s',
+      track.id.slice(0, 8), options?.positionMs ?? 0,
+      options?.positionMs !== undefined ? 'hydrate' : 'pre-warm');
 
     void this.stageTrackPaused(track, options?.positionMs ?? 0).catch((err) => {
       logSpotify('prepareTrack failed: %o', err);
@@ -326,6 +336,8 @@ export class SpotifyPlaybackAdapter implements PlaybackProvider {
     const uri = track.playbackRef.ref;
     if (this.preparedTrackRef !== uri) return;
 
+    logArtRace('spotify.stageTrackPaused: emitState currentTrackId=%s positionMs=%d',
+      track.id.slice(0, 8), Math.floor(positionMs));
     this.emitState({
       isPlaying: false,
       positionMs: Math.floor(positionMs),

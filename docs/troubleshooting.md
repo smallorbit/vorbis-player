@@ -72,7 +72,9 @@ In the browser devtools console:
 localStorage.debug = 'vorbis:*'; location.reload()
 ```
 
-Subset examples: `vorbis:queue`, `vorbis:spotify`, `vorbis:radio`, `vorbis:dropbox-sync`, `vorbis:app`, `vorbis:sw`. Disable: `localStorage.removeItem('debug'); location.reload()`.
+Subset examples: `vorbis:queue`, `vorbis:spotify`, `vorbis:radio`, `vorbis:dropbox-sync`, `vorbis:app`, `vorbis:sw`, `vorbis:art-race`. Disable: `localStorage.removeItem('debug'); location.reload()`.
+
+The `vorbis:art-race` channel is a focused trace for the fresh-load album-art race: every event that can flip `currentTrackIndex` during a `playTrack` transition (guard set/clear, `prepareTrack` pre-warm/hydrate emit, subscription accept/reject/fallback) is logged with an absolute `performance.now()` timestamp so the ordering can be reconstructed deterministically from a single console capture. Reproduce by enabling the channel, loading a fresh collection, and grepping the log for `[t=…ms]` entries in order.
 
 In Node (e.g. one-off scripts): `DEBUG=vorbis:* node …`.
 
