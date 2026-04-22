@@ -6,10 +6,7 @@ import {
   ZEN_ART_EASING,
   ZEN_ART_ENTER_DELAY,
   ZEN_CONTROLS_DURATION,
-  ZEN_CONTROLS_EXIT_DELAY,
-  ZEN_CONTROLS_OPACITY_EXIT_DURATION,
-  ZEN_CONTROLS_OPACITY_EXIT_DELAY,
-  ZEN_CONTROLS_TRANSFORM_EXIT_DELAY,
+  ZEN_EXIT_REENTRY_DELAY,
   ZEN_TRACK_INFO_ENTER_OPACITY_DURATION,
   ZEN_TRACK_INFO_ENTER_OPACITY_DELAY,
   ZEN_TRACK_INFO_ENTER_HEIGHT_DURATION,
@@ -48,9 +45,16 @@ export const ContentWrapper = styled.div.withConfig({
   z-index: ${CONTENT_WRAPPER_Z};
   overflow: visible;
 
+  /*
+   * margin-bottom transitions over ZEN_ART_DURATION so the flex parent re-centers smoothly
+   * as the bar-reserved space grows back. Without this, margin-bottom snaps from 0 → 60px
+   * at the moment zen mode exits and the art gets pulled visibly downward before any other
+   * animation has started.
+   */
   transition: width ${props => props.$zenMode ? `${ZEN_ART_DURATION}ms ${ZEN_ART_EASING} ${ZEN_ART_ENTER_DELAY}ms` : `${ZEN_ART_DURATION}ms ${ZEN_ART_EASING}`},
             padding ${props => props.transitionDuration}ms ${props => props.transitionEasing},
-            padding-bottom ${ZEN_ART_DURATION}ms ${ZEN_ART_EASING};
+            padding-bottom ${ZEN_ART_DURATION}ms ${ZEN_ART_EASING},
+            margin-bottom ${ZEN_ART_DURATION}ms ${ZEN_ART_EASING};
 
   container-type: inline-size;
   container-name: player;
@@ -69,8 +73,8 @@ export const PlayerContainer = styled.div`
 `;
 
 export const PlayerStack = styled.div.withConfig({
-  shouldForwardProp: (prop) => !['$zenMode'].includes(prop),
-})<{ $zenMode?: boolean }>`
+  shouldForwardProp: (prop) => !['$zenMode', '$zenTransitioning'].includes(prop),
+})<{ $zenMode?: boolean; $zenTransitioning?: boolean }>`
   display: flex;
   flex-direction: column;
   width: 100%;
@@ -80,12 +84,28 @@ export const PlayerStack = styled.div.withConfig({
     : `min(calc(100vw - 48px), calc(100dvh - var(--player-controls-height, 220px) - ${120 + BOTTOM_BAR_HEIGHT}px))`
   };
   margin: 0 auto;
-  /*
-   * Size is switched instantly via max-width (no transition). A FLIP transform
-   * in PlayerContent/index.tsx produces the visual resize on the compositor so
-   * no layout-triggering property animates per frame.
-   */
   transform-origin: top center;
+  /*
+   * max-width is animated on entry after ZEN_ART_ENTER_DELAY so controls and bar
+   * finish dismissing before the album art resizes. The resize happens in parallel
+   * with ZenControlsWrapper's grid-template-rows collapse, keeping the art's visual
+   * center stable as PlayerStack reflows from normal to zen dimensions.
+   *
+   * Scope: the transition is only applied while $zenTransitioning is true — a short-
+   * lived flag raised around the zen-mode state flip in handleZenModeToggle. When the
+   * flag is false, max-width updates are instantaneous so viewport changes (desktop
+   * window resize, iOS address-bar dvh changes) don't get a 1-second lag.
+   */
+  transition: ${({ $zenMode, $zenTransitioning }) => {
+    if (!$zenTransitioning) return 'none';
+    return $zenMode
+      ? `max-width ${ZEN_ART_DURATION}ms ${ZEN_ART_EASING} ${ZEN_ART_ENTER_DELAY}ms`
+      : `max-width ${ZEN_ART_DURATION}ms ${ZEN_ART_EASING}`;
+  }};
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 
   @media (max-width: ${({ theme }) => theme.breakpoints.lg}) {
     ${({ $zenMode }) => $zenMode && `
@@ -103,18 +123,31 @@ export const ZenControlsWrapper = styled.div.withConfig({
   transform: ${({ $zenMode }) => $zenMode ? 'scale(0.95) translateY(-8px)' : 'scale(1) translateY(0)'};
   transform-origin: top center;
   /*
-   * grid-template-rows animates over the actual element height (unlike max-height which
-   * animates over an arbitrary 500px range, causing non-linear perceived speed).
-   * Entering zen: controls collapse + fade in 300ms, then art expands (300ms delay).
-   * Exiting zen: art shrinks first (1000ms), then controls expand + fade in (350ms).
-   * --player-controls-height is pre-set synchronously via stableControlsHeightRef before
-   * the state flip, so PlayerStack has the correct target from the first animation frame.
+   * Entering zen: opacity + transform fade the controls in-place over ZEN_CONTROLS_DURATION
+   * while grid-template-rows stays 1fr, keeping PlayerStack's layout height stable so the
+   * album art does not drift upward. After ZEN_ART_ENTER_DELAY, the row collapses in parallel
+   * with PlayerStack's max-width growth so the art resizes in a single layout-isolated motion.
+   *
+   * Exiting zen is the symmetric reverse: grid-template-rows expands 0fr → 1fr over
+   * ZEN_ART_DURATION in parallel with the max-width shrink, so PlayerStack's height changes
+   * smoothly throughout the whole shrink (small growth as the row opens, big shrink as the
+   * art contracts). Opacity + transform restore only fire after the row is fully open — the
+   * controls appear in-place in their settled layout. If grid-template-rows were also
+   * delayed, the stack would shrink to art-only height and then snap back taller when the
+   * row reopened, which reads as a jump.
+   *
+   * --player-controls-height is pre-set synchronously via stableControlsHeightRef before the
+   * state flip, so PlayerStack has the correct target from the first animation frame.
    */
   transition: ${({ $zenMode }) => $zenMode
-    ? `grid-template-rows ${ZEN_CONTROLS_DURATION}ms ease, opacity ${ZEN_CONTROLS_DURATION}ms ease, transform ${ZEN_CONTROLS_DURATION}ms ease`
-    : `grid-template-rows ${ZEN_CONTROLS_EXIT_DELAY}ms ease ${ZEN_CONTROLS_EXIT_DELAY}ms, opacity ${ZEN_CONTROLS_OPACITY_EXIT_DURATION}ms ease ${ZEN_CONTROLS_OPACITY_EXIT_DELAY}ms, transform ${ZEN_CONTROLS_DURATION}ms ease ${ZEN_CONTROLS_TRANSFORM_EXIT_DELAY}ms`
+    ? `grid-template-rows ${ZEN_ART_DURATION}ms ease ${ZEN_ART_ENTER_DELAY}ms, opacity ${ZEN_CONTROLS_DURATION}ms ease, transform ${ZEN_CONTROLS_DURATION}ms ease`
+    : `grid-template-rows ${ZEN_ART_DURATION}ms ease, opacity ${ZEN_CONTROLS_DURATION}ms ease ${ZEN_EXIT_REENTRY_DELAY}ms, transform ${ZEN_CONTROLS_DURATION}ms ease ${ZEN_EXIT_REENTRY_DELAY}ms`
   };
   pointer-events: ${({ $zenMode }) => $zenMode ? 'none' : 'auto'};
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 `;
 
 export const ZenControlsInner = styled.div`

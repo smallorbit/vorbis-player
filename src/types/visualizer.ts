@@ -11,3 +11,10 @@ export type VisualizerStyle =
   | 'wave'
   | 'grid';
 
+export interface AlbumArtBounds {
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+}
+

@@ -3,6 +3,7 @@ import { generateColorVariant } from '../../utils/visualizerUtils';
 import { useCanvasVisualizer } from '../../hooks/useCanvasVisualizer';
 import { useVisualizerDebugConfig } from '../../contexts/VisualizerDebugContext';
 import { layerRatio, waveLayerPhaseSpeed, waveY } from './math';
+import { BREAKPOINTS_PX } from '../../styles/theme';
 
 interface WaveVisualizerProps {
   intensity: number;
@@ -37,7 +38,7 @@ export const WaveVisualizer: React.FC<WaveVisualizerProps> = ({
 
   const initializeItems = useCallback(
     (count: number, width: number, height: number, baseColor: string): Wave[] => {
-      const isMobile = width < 768;
+      const isMobile = width < BREAKPOINTS_PX.lg;
       const amplitudeScale = isMobile ? 0.65 : 1.0;
 
       return Array.from({ length: count }, (_, i) => {
@@ -62,7 +63,7 @@ export const WaveVisualizer: React.FC<WaveVisualizerProps> = ({
     (waves: Wave[], deltaTime: number, playing: boolean, width: number, height: number): void => {
       const speedMult = (playing ? 1.0 : w.pausedSpeedMult) * (speed ?? 1.0);
       const dt = deltaTime / 16;
-      const isMobile = width < 768;
+      const isMobile = width < BREAKPOINTS_PX.lg;
       const amplitudeScale = isMobile ? 0.65 : 1.0;
       const count = waves.length;
 

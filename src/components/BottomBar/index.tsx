@@ -9,6 +9,7 @@ import { useVolume } from '@/hooks/useVolume';
 import { useTrackListContext, useCurrentTrackContext } from '@/contexts/TrackContext';
 import { useZenMode } from '@/contexts/visualEffects';
 import { useBottomBarActions } from '@/contexts/BottomBarActionsContext';
+import { ZEN_EXIT_REENTRY_DELAY } from '@/constants/zenAnimation';
 import {
   VisualEffectsIcon,
   BackToLibraryIcon,
@@ -40,7 +41,10 @@ const BottomBar = React.memo(function BottomBar() {
   } = useBottomBarActions();
 
   const [barVisible, setBarVisible] = useState(!zenModeEnabled);
+  const [zenExiting, setZenExiting] = useState(false);
   const hideTimerRef = useRef<ReturnType<typeof setTimeout>>();
+  const zenExitingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const prevZenModeRef = useRef(zenModeEnabled);
   const isHoveringRef = useRef(false);
   const touchLockedRef = useRef(false);
 
@@ -106,6 +110,42 @@ const BottomBar = React.memo(function BottomBar() {
     setBarVisible(true);
   }, [zenModeEnabled, clearHideTimer]);
 
+  /*
+   * Detect the zen → normal edge so the bar can delay its re-entry until the album art
+   * has finished shrinking. Without this delay, the bar slides up during the shrink and
+   * the user's eye is pulled toward the bottom while the art is still animating, reading
+   * as a second discrete movement on top of the shrink.
+   */
+  useEffect(() => {
+    const wasZen = prevZenModeRef.current;
+    prevZenModeRef.current = zenModeEnabled;
+    if (wasZen && !zenModeEnabled) {
+      setZenExiting(true);
+      if (zenExitingTimerRef.current !== null) {
+        clearTimeout(zenExitingTimerRef.current);
+      }
+      zenExitingTimerRef.current = setTimeout(() => {
+        zenExitingTimerRef.current = null;
+        setZenExiting(false);
+      }, ZEN_EXIT_REENTRY_DELAY);
+      return;
+    }
+    if (zenModeEnabled) {
+      if (zenExitingTimerRef.current !== null) {
+        clearTimeout(zenExitingTimerRef.current);
+        zenExitingTimerRef.current = null;
+      }
+      setZenExiting(false);
+    }
+  }, [zenModeEnabled]);
+
+  useEffect(() => () => {
+    if (zenExitingTimerRef.current !== null) {
+      clearTimeout(zenExitingTimerRef.current);
+      zenExitingTimerRef.current = null;
+    }
+  }, []);
+
   if (hidden) return null;
 
   const isHidden = !barVisible && zenModeEnabled;
@@ -125,6 +165,7 @@ const BottomBar = React.memo(function BottomBar() {
       )}
       <BottomBarContainer
         $hidden={isHidden}
+        $zenExiting={zenExiting}
         onMouseEnter={handleBarMouseEnter}
         onMouseLeave={handleBarMouseLeave}
       >

@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import type { PlaybackState, ProviderId, MediaTrack } from '@/types/domain';
 import type { PlaybackProvider } from '@/types/providers';
 import { providerRegistry } from '@/providers/registry';
-import { logQueue } from '@/lib/debugLog';
+import { logQueue, logArtRace } from '@/lib/debugLog';
 
 interface UsePlaybackSubscriptionProps {
   activeDescriptor: { id: ProviderId; playback: PlaybackProvider } | undefined;
@@ -46,13 +46,21 @@ export function usePlaybackSubscription({
           const trackId = state.currentTrackId;
           const currentTracks = tracksRef.current;
           const trackIndex = currentTracks.findIndex((t: MediaTrack) => t.id === trackId);
-          if (expectedTrackIdRef.current !== null) {
-            if (trackId === expectedTrackIdRef.current) {
+          const expected = expectedTrackIdRef.current;
+          if (expected !== null) {
+            if (trackId === expected) {
+              logArtRace('subscription: expected arrived → guard cleared (id=%s, idx=%d)',
+                trackId.slice(0, 8), trackIndex);
               logQueue('Provider state — expected track arrived: %s', trackId.slice(0, 8));
               expectedTrackIdRef.current = null;
+            } else {
+              logArtRace('subscription: REJECT (id=%s, expected=%s, wouldFlipTo=%d, currentIdx=%d)',
+                trackId.slice(0, 8), expected.slice(0, 8), trackIndex, currentTrackIndexRef.current);
             }
             // while waiting for the expected track, ignore provider index updates
           } else if (trackIndex !== -1 && trackIndex !== currentTrackIndexRef.current) {
+            logArtRace('subscription: FALLBACK-ACCEPT flip %d → %d (id=%s, guard=null)',
+              currentTrackIndexRef.current, trackIndex, trackId.slice(0, 8));
             logQueue(
               'Provider state — index sync: %d → %d (trackId=%s, queueLen=%d)',
               currentTrackIndexRef.current,
@@ -61,6 +69,9 @@ export function usePlaybackSubscription({
               currentTracks.length,
             );
             setCurrentTrackIndex(trackIndex);
+          } else {
+            logArtRace('subscription: NOOP (id=%s, idx=%d, currentIdx=%d, guard=null)',
+              trackId.slice(0, 8), trackIndex, currentTrackIndexRef.current);
           }
 
           if (state.trackMetadata && trackIndex !== -1) {

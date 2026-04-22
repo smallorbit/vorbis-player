@@ -10,6 +10,7 @@ import { DropboxCatalogAdapter } from './dropboxCatalogAdapter';
 import { parseID3 } from '@/utils/id3Parser';
 import { bytesToDataUrl } from '@/utils/bytesToDataUrl';
 import { putDurationMs, putTagMetadata } from './dropboxArtCache';
+import { logArtRace } from '@/lib/debugLog';
 
 const PLAYBACK_POLL_INTERVAL_MS = 250;
 const FETCH_LIMIT = 262144; // 256KB — enough to cover large embedded cover art in ID3 headers
@@ -210,6 +211,9 @@ export class DropboxPlaybackAdapter implements PlaybackProvider {
   }
 
   prepareTrack(track: MediaTrack, options?: { positionMs?: number }): void {
+    logArtRace('dropbox.prepareTrack: enter id=%s positionMs=%d intent=%s',
+      track.id.slice(0, 8), options?.positionMs ?? 0,
+      options?.positionMs !== undefined ? 'hydrate' : 'pre-warm');
     this.catalog.prefetchTemporaryLink(track.playbackRef.ref);
     this.primeAudioForHydrate(track, options?.positionMs).catch(() => {
       // Hydration is best-effort; playTrack will retry when invoked.
@@ -221,7 +225,11 @@ export class DropboxPlaybackAdapter implements PlaybackProvider {
     const audio = this.audio!;
     // Only prime audio when nothing is loaded — during next-track pre-warm
     // the current src is mid-playback and must not be replaced.
-    if (audio.src && this.currentTrack) return;
+    if (audio.src && this.currentTrack) {
+      logArtRace('dropbox.prepareTrack: skip emit (audio already loaded for current track) id=%s',
+        track.id.slice(0, 8));
+      return;
+    }
 
     const generation = ++this.prepareGeneration;
 
@@ -348,6 +356,11 @@ export class DropboxPlaybackAdapter implements PlaybackProvider {
 
   private notifyListeners(): void {
     const state = this.getStateSync();
+    if (state) {
+      logArtRace('dropbox.notify: emitState currentTrackId=%s isPlaying=%s positionMs=%d',
+        state.currentTrackId ? state.currentTrackId.slice(0, 8) : 'null',
+        String(state.isPlaying), state.positionMs);
+    }
     for (const listener of this.listeners) {
       try {
         listener(state);
