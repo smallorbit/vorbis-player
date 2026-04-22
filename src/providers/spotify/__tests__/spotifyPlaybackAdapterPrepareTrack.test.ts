@@ -72,6 +72,51 @@ describe('SpotifyPlaybackAdapter.prepareTrack', () => {
     });
   });
 
+  it('does NOT emit or transfer the device for the pre-warm intent (called without positionMs)', async () => {
+    // #given — the next-track pre-warm caller in useProviderPlayback.playTrack
+    // invokes prepareTrack(track) with no options. Emitting a PlaybackState
+    // with currentTrackId = nextTrack.id during pre-warm races the SDK's
+    // player_state_changed for the actually-playing track and flickers album
+    // art (#1199 / `vorbis:art-race`). The /me/player transfer also adds
+    // nothing in steady state — the next playTrack runs its own readiness
+    // check. Token warming is the only meaningful side effect.
+    const track = makeTrack();
+    const received: Array<PlaybackState | null> = [];
+    adapter.subscribe((state) => received.push(state));
+
+    // #when
+    adapter.prepareTrack(track);
+
+    // #then — flush microtasks for the synchronous early-return + auth-warm
+    // .catch() chain, then assert no UI emission and no API calls.
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(received.find((s) => s?.currentTrackId === track.id)).toBeUndefined();
+    expect(vi.mocked(spotifyPlayer.transferPlaybackToDevice)).not.toHaveBeenCalled();
+    expect(vi.mocked(spotifyPlayer.ensureDeviceIsActive)).not.toHaveBeenCalled();
+  });
+
+  it('still emits when positionMs is explicitly 0 (hydrate intent at the very start)', async () => {
+    // #given — saved sessions can have positionMs === 0 (track started but
+    // not advanced). The hydrate caller passes `{ positionMs: 0 }` which is
+    // semantically distinct from omitting options entirely: the seek bar
+    // still needs the staged emission to reflect the staged track.
+    const track = makeTrack();
+    const received: Array<PlaybackState | null> = [];
+    adapter.subscribe((state) => received.push(state));
+
+    // #when
+    adapter.prepareTrack(track, { positionMs: 0 });
+
+    // #then
+    await vi.waitFor(() => {
+      expect(received.find((s) => s?.currentTrackId === track.id)).toBeDefined();
+    });
+    const staged = received.find((s) => s?.currentTrackId === track.id)!;
+    expect(staged.positionMs).toBe(0);
+    expect(staged.isPlaying).toBe(false);
+  });
+
   it('does not start actual playback — no /me/player/play call and no pause()', async () => {
     // #given — the regression root cause (#1179): previously prepareTrack
     // called /me/player/play then pause, which could land playing on a fresh

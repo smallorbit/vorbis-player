@@ -297,8 +297,21 @@ export class SpotifyPlaybackAdapter implements PlaybackProvider {
 
   prepareTrack(track: MediaTrack, options?: { positionMs?: number }): void {
     // Warm the auth token unconditionally so a token refresh delay can't stall
-    // the next transition even if the stage chain early-returns.
+    // the next transition even if the rest of the function early-returns.
     spotifyAuth.ensureValidToken().catch(() => {});
+
+    // Pre-warm intent (no positionMs): the next-track pre-warm caller in
+    // `useProviderPlayback.playTrack` doesn't pass options. The user is hearing
+    // a *different* track, so emitting a PlaybackState with
+    // `currentTrackId = nextTrack.id` would race the SDK's
+    // `player_state_changed` for the playing track and flicker album art
+    // (#1199 / `vorbis:art-race`). Device readiness is also unnecessary —
+    // the next `playTrack` call runs its own `ensurePlaybackReadyFastPath`,
+    // and the `/me/player` API call here adds nothing in steady state.
+    if (options?.positionMs === undefined) {
+      logArtRace('spotify.prepareTrack: skip (pre-warm intent) id=%s', track.id.slice(0, 8));
+      return;
+    }
 
     const uri = track.playbackRef.ref;
     if (this.preparedTrackRef === uri) {
@@ -307,11 +320,10 @@ export class SpotifyPlaybackAdapter implements PlaybackProvider {
     }
     this.preparedTrackRef = uri;
 
-    logArtRace('spotify.prepareTrack: enter id=%s positionMs=%d intent=%s',
-      track.id.slice(0, 8), options?.positionMs ?? 0,
-      options?.positionMs !== undefined ? 'hydrate' : 'pre-warm');
+    logArtRace('spotify.prepareTrack: enter id=%s positionMs=%d intent=hydrate',
+      track.id.slice(0, 8), options.positionMs);
 
-    void this.stageTrackPaused(track, options?.positionMs ?? 0).catch((err) => {
+    void this.stageTrackPaused(track, options.positionMs).catch((err) => {
       logSpotify('prepareTrack failed: %o', err);
       if (this.preparedTrackRef === uri) {
         this.preparedTrackRef = null;
