@@ -109,6 +109,7 @@ export function usePlayerLogic() {
     activeDescriptor,
     mediaTracksRef,
     onAuthExpired: (providerId: ProviderId) => setAuthExpired(providerId),
+    expectedTrackIdRef,
   });
   const providerPlayTrack = providerPlayback.playTrack;
   const drivingProviderRef = providerPlayback.currentPlaybackProviderRef;
@@ -219,7 +220,6 @@ export function usePlayerLogic() {
       tracks.length,
       mediaTracksRef.current.length,
     );
-    expectedTrackIdRef.current = tracksRef.current[nextIndex]?.id ?? null;
     setCurrentTrackIndex(nextIndex);
     playTrack(nextIndex, true);
   }, [tracks.length, playTrack, setCurrentTrackIndex]);
@@ -235,7 +235,6 @@ export function usePlayerLogic() {
       tracks.length,
       mediaTracksRef.current.length,
     );
-    expectedTrackIdRef.current = tracksRef.current[newIndex]?.id ?? null;
     setCurrentTrackIndex(newIndex);
     playTrack(newIndex, true);
   }, [tracks.length, playTrack, setCurrentTrackIndex]);
@@ -310,6 +309,7 @@ export function usePlayerLogic() {
     setTracks([]);
     setCurrentTrackIndex(0);
     mediaTracksRef.current = [];
+    expectedTrackIdRef.current = null;
     setShowQueue(false);
     setShowVisualEffects(false);
   }, [handlePause, stopRadio, setSelectedPlaylistId, setTracks, setCurrentTrackIndex, setShowQueue, setShowVisualEffects]);
