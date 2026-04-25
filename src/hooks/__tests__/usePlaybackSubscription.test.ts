@@ -11,6 +11,7 @@ vi.mock('@/providers/registry', () => ({
 
 vi.mock('@/lib/debugLog', () => ({
   logQueue: vi.fn(),
+  logArtRace: vi.fn(),
 }));
 
 import { usePlaybackSubscription } from '../usePlaybackSubscription';

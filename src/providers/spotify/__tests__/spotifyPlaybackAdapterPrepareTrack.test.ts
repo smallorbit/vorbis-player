@@ -35,6 +35,7 @@ const makeTrack = (overrides: Partial<MediaTrack> = {}): MediaTrack => ({
 
 describe('SpotifyPlaybackAdapter.prepareTrack', () => {
   let adapter: SpotifyPlaybackAdapter;
+  let fetchMock: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -42,6 +43,8 @@ describe('SpotifyPlaybackAdapter.prepareTrack', () => {
     vi.mocked(spotifyPlayer.getDeviceId).mockReturnValue('device-1');
     vi.mocked(spotifyPlayer.transferPlaybackToDevice).mockResolvedValue(undefined);
     vi.mocked(spotifyPlayer.ensureDeviceIsActive).mockResolvedValue(true);
+    fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 204 }));
+    vi.stubGlobal('fetch', fetchMock);
     adapter = new SpotifyPlaybackAdapter();
   });
 
@@ -121,8 +124,6 @@ describe('SpotifyPlaybackAdapter.prepareTrack', () => {
     // #given — the regression root cause (#1179): previously prepareTrack
     // called /me/player/play then pause, which could land playing on a fresh
     // tab. The fix stages state locally without touching Spotify playback.
-    const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 204 }));
-    vi.stubGlobal('fetch', fetchMock);
     const track = makeTrack();
 
     // #when
