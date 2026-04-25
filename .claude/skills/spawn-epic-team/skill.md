@@ -11,6 +11,19 @@ allowed-tools: Bash, Read, Agent, SendMessage, TeamCreate
 
 Recreate the standard 6-role team for epic work in this repo. The team's behavior, role boundaries, and tool allowlists are defined in the project-local `.claude/agents/*.md` files — this skill orchestrates the spawn; the agent files orchestrate the agents.
 
+## When to spawn the full team — proportionality
+
+The 5-specialist team is sized for **multi-file epics with non-trivial design surface**. Skip it for mechanical work:
+
+| Scope | Right team |
+|---|---|
+| Multi-file feature, new abstractions, multi-AC spec | Full 5-specialist team |
+| Single-file or 2-file fix with no design surface (test-mock fixes, dep bumps, file renames, single-export tweaks) | Lead-only or lead + builder + tester |
+| Refactor across 1 module with clear pattern | Lead + builder + reviewer |
+| Pure investigation / code reading | Lead + explorer |
+
+Spawning architect for mechanical fixes leaves the role idle the entire session, which surfaces silent-presence bugs (no inbound task → no SendMessage → invisible to lead). When in doubt, start smaller — additional specialists can be spawned later via this same skill (idempotent on existing members).
+
 ## Pre-conditions
 
 - `.claude/agents/` must contain definitions for all 5 specialist roles: `explorer.md`, `architect.md`, `builder.md`, `reviewer.md`, `tester.md`. (`team-lead.md` exists for retros and reference but the lead role is the running session itself, not a spawned subagent.) If any are missing, abort and tell the user to run `/agent-team-retro` (which bootstraps them) or to create them manually.

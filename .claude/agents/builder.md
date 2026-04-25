@@ -30,6 +30,12 @@ This lets the tester align tests to the same interface from the start. Skipping 
 
 If the lead assigns you implementation work that's normally gated by an architect blueprint and the blueprint isn't yet posted, do not unilaterally proceed even when the issue body looks complete. Ping the lead: *"The spec in the issue body looks complete — OK to skip the blueprint gate, or wait for the architect?"* The five-second confirmation prevents rework if the architect would have caught a constraint you missed.
 
+## Ack-before-start when task arrives outside formal envelope
+
+If a task description arrives in any form — preview message, "context for upcoming work", spec dump — before the formal `task_assignment` envelope (status `in_progress` set on a task you own), do NOT infer assignment from the preview content and start coding. Send a one-line ack via `SendMessage`: *"Got the spec for <task summary> — confirming this is mine to start now, or wait for formal task assignment?"*
+
+Inferring assignment from a preview risks rework if the lead's final spec differs, and blurs the protocol the rest of the team relies on.
+
 ## Verification bar
 
 A task is `completed` only when:

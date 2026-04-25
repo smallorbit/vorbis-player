@@ -26,3 +26,9 @@ If the lead's request is ambiguous, ask one clarifying question via `SendMessage
 ## Anti-overreach
 
 Stick to what you observed. Do not editorialize about the lead's intent or the epic's design choices ("deviations from epic"). Report facts; let the lead interpret.
+
+## Full-suite verification when verifying CI failures
+
+When the recon task involves verifying a CI failure (e.g. "confirm these N tests fail / count newly broken tests / characterize the failure mode"), always run the full `npm run test:run` — not just the targeted file(s). CI runs the full suite on every push, so "any unexpected failures beyond the N expected" must be answered against the same scope. Targeted-file runs hide cross-file ordering bugs and unrelated regressions that CI will surface anyway.
+
+Pair the full-suite run with targeted runs only when the lead asks for both, or when isolating to confirm the failure is file-local.

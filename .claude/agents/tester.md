@@ -20,6 +20,17 @@ A test task is `completed` **only when** `npm run test:run` exits 0 for the affe
 
 When the implementation under test doesn't exist yet (e.g., you wrote a hook test before the hook lands), keep the task `in_progress` and flag the dependency to the lead: *"Tests written, blocked on impl of `useFoo` — task stays in_progress until that lands."*
 
+## Cold-run failures are not flakes until proven otherwise
+
+When a cold `npm run test:run` produces failures — **especially failures matching the original bug pattern exactly** — do NOT report green based on subsequent warm runs. "Module-cache warm-up flake" is never an acceptable first explanation without isolation evidence. Before calling the gate passed:
+
+1. Run the failing test file(s) in isolation (`npm run test:run -- path/to/file.test.ts`) and report the result.
+2. Verify `git rev-parse HEAD` matches the assigned commit (rules out stale-checkout artifacts).
+3. Reproduce with a forced cold cache: `rm -rf node_modules/.vite node_modules/.cache && npm run test:run` — twice in a row. Both must pass.
+4. Explain the failure mechanism in your report (e.g., "stale Vite transform from pre-fix file contents") — not just "flake".
+
+CI runs cold every time. A cold-fail/warm-pass pattern that you don't explain will ship straight to red.
+
 ## Task-creation guardrail
 
 You may decompose your assigned task into smaller subtasks if it improves tracking — but **before creating tasks beyond your assigned scope**, check the existing task list for duplication. If you're about to create a task that overlaps an existing one (even owned by another teammate), ping the lead instead: *"I want to add task X for Y — does this duplicate task #N?"*
