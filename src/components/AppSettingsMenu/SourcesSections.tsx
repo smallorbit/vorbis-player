@@ -19,7 +19,7 @@ import {
   ProviderName,
   ProviderStatusBadge,
 } from './styled';
-import Switch from '@/components/controls/Switch';
+import { Switch } from '@/components/ui/switch';
 
 export const MusicSourcesSection = memo(() => {
   const { registry, enabledProviderIds, toggleProvider } = useProviderContext();
@@ -183,15 +183,15 @@ export const MusicSourcesSection = memo(() => {
                 {status === 'connected' ? 'Connected' : ''}
               </ProviderStatusBadge>
               <Switch
-                on={isEnabled}
-                onToggle={() => {
+                checked={isEnabled}
+                onCheckedChange={() => {
                   if (!isEnabled) {
                     handleToggleOn(descriptor);
                   } else {
                     setDisconnectDialogProviderId(descriptor.id);
                   }
                 }}
-                ariaLabel={`${isEnabled ? 'Disable' : 'Enable'} ${descriptor.name}`}
+                aria-label={`${isEnabled ? 'Disable' : 'Enable'} ${descriptor.name}`}
                 disabled={isLastEnabled}
                 variant="neutral"
               />
@@ -243,9 +243,9 @@ export const NativeQueueSyncSection = memo(() => {
       <ControlGroup>
         <ControlLabel>Keep {providerName} queue synced with Vorbis playback</ControlLabel>
         <Switch
-          on={syncEnabled}
-          onToggle={() => setSyncEnabled(!syncEnabled)}
-          ariaLabel={`Keep ${providerName} queue synced with Vorbis playback`}
+          checked={syncEnabled}
+          onCheckedChange={() => setSyncEnabled(!syncEnabled)}
+          aria-label={`Keep ${providerName} queue synced with Vorbis playback`}
           variant="neutral"
         />
       </ControlGroup>
@@ -253,9 +253,9 @@ export const NativeQueueSyncSection = memo(() => {
         <ControlGroup>
           <ControlLabel>Replace non-{providerName} tracks with {providerName} equivalents in queue</ControlLabel>
           <Switch
-            on={resolveEnabled}
-            onToggle={() => setResolveEnabled(!resolveEnabled)}
-            ariaLabel={`Replace non-${providerName} tracks with ${providerName} equivalents in queue`}
+            checked={resolveEnabled}
+            onCheckedChange={() => setResolveEnabled(!resolveEnabled)}
+            aria-label={`Replace non-${providerName} tracks with ${providerName} equivalents in queue`}
             variant="neutral"
           />
         </ControlGroup>
