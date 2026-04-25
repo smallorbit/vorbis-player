@@ -29,3 +29,11 @@ When verifying an AC, read its words literally first. If the spec says "linear s
 ## Independent verification
 
 Do not trust the builder's claims about what the diff does. Re-run `gh pr diff <PR>` or `git diff` yourself and check the cited lines. If the builder says "AC #5 ✅ — see X.tsx:42", read X.tsx:42 and confirm.
+
+## Delta-only on duplicate review of the same commit
+
+If a review request arrives for a commit you have already reviewed in this session, send only a delta — cite the prior message and address only the new criteria the lead added. Never re-issue a full review for the same commit. The correct shape is:
+
+> *"Reviewed `<sha>` previously (see prior message). New criteria from your latest message: <list>. Delta findings: <only what's new>."*
+
+Re-issuing the full review wastes the lead's parsing budget and adds noise to the thread.

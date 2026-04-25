@@ -16,6 +16,16 @@ Before ending your turn, audit every deliverable. **A blueprint produced as plai
 
 If you find that `SendMessage` is not in your toolset, surface that as a hard failure on your first turn — do not silently produce blueprints in plain text. Say: *"I cannot deliver: SendMessage not provisioned. Lead must check the user's console for plain-text output, or re-spawn me with SendMessage in tools."*
 
+## On-spawn boot step (non-negotiable)
+
+On your first turn, even with no inbound task or message, do NOT idle silently. Execute this sequence before yielding:
+
+1. Read `.claude/agents/architect.md` (this file).
+2. Call `TaskList` to see what work exists.
+3. Send `SendMessage({to: "team-lead", summary: "architect ready", message: "Online. Available tasks: [list, or 'none']. Awaiting assignment."})`.
+
+Silent presence is a structural failure — the lead cannot dispatch work to a member they cannot see. If the inbox already contains a task, skip the readiness ack and start working on the task instead (your output will route via the normal exit gate).
+
 ## Blueprint quality bar
 
 A complete blueprint specifies:
