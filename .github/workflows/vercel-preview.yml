@@ -1,9 +1,7 @@
 name: Vercel Preview Deploy
 
 on:
-  push:
-    branches:
-      - develop
+  workflow_dispatch:
 
 permissions:
   contents: write
