@@ -1,79 +1,16 @@
 import React, { memo } from 'react';
 import styled from 'styled-components';
-import { theme } from '../styles/theme';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
 interface KeyboardShortcutsHelpProps {
   isOpen: boolean;
   onClose: () => void;
 }
-
-const Overlay = styled.div<{ $isOpen: boolean }>`
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: ${theme.colors.overlay.light};
-  z-index: ${theme.zIndex.overlay};
-  opacity: ${({ $isOpen }) => ($isOpen ? '1' : '0')};
-  pointer-events: ${({ $isOpen }) => ($isOpen ? 'auto' : 'none')};
-  transition: opacity 200ms ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-`;
-
-const Modal = styled.div<{ $isOpen: boolean }>`
-  background: ${theme.colors.overlay.dark};
-  backdrop-filter: blur(20px);
-  border: 1px solid ${theme.colors.popover.border};
-  border-radius: ${theme.borderRadius.lg};
-  max-width: 400px;
-  width: 90%;
-  max-height: 80vh;
-  overflow-y: auto;
-  transform: scale(${({ $isOpen }) => ($isOpen ? '1' : '0.95')});
-  opacity: ${({ $isOpen }) => ($isOpen ? '1' : '0')};
-  transition: transform 200ms ease, opacity 200ms ease;
-  z-index: ${theme.zIndex.modal};
-`;
-
-const Header = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: ${({ theme }) => theme.spacing.sm} ${theme.spacing.xl} ${theme.spacing.lg};
-  border-bottom: 1px solid ${({ theme }) => theme.colors.popover.border};
-`;
-
-const Title = styled.h3`
-  margin: 0;
-  font-size: ${({ theme }) => theme.fontSize.base};
-  font-weight: ${({ theme }) => theme.fontWeight.semibold};
-  color: ${({ theme }) => theme.colors.foreground};
-`;
-
-const CloseButton = styled.button`
-  background: none;
-  border: none;
-  color: ${({ theme }) => theme.colors.muted.foreground};
-  cursor: pointer;
-  padding: ${({ theme }) => theme.spacing.sm};
-  border-radius: ${({ theme }) => theme.borderRadius.md};
-  transition: all ${({ theme }) => theme.transitions.fast} ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  
-  &:hover {
-    color: ${({ theme }) => theme.colors.white};
-    background: ${({ theme }) => theme.colors.muted.background};
-  }
-`;
-
-const Content = styled.div`
-  padding: ${({ theme }) => theme.spacing.lg} ${theme.spacing.xl} ${theme.spacing.md};
-`;
 
 const ShortcutList = styled.div`
   display: flex;
@@ -97,7 +34,7 @@ const ShortcutKey = styled.kbd`
   background: ${({ theme }) => theme.colors.control.background};
   border: 1px solid ${({ theme }) => theme.colors.border};
   border-radius: ${({ theme }) => theme.borderRadius.xs};
-  padding: ${({ theme }) => theme.spacing.xs} ${theme.spacing.xs};
+  padding: ${({ theme }) => `${theme.spacing.xs} ${theme.spacing.xs}`};
   font-family: 'Monaco', 'Menlo', monospace;
   font-size: ${({ theme }) => theme.fontSize.xs};
   color: ${({ theme }) => theme.colors.foreground};
@@ -123,35 +60,22 @@ const shortcuts = [
 ];
 
 const KeyboardShortcutsHelp: React.FC<KeyboardShortcutsHelpProps> = memo(({ isOpen, onClose }) => {
-  const handleOverlayClick = (e: React.MouseEvent) => {
-    if (e.target === e.currentTarget) {
-      onClose();
-    }
-  };
-
   return (
-    <Overlay $isOpen={isOpen} onClick={handleOverlayClick}>
-      <Modal $isOpen={isOpen}>
-        <Header>
-          <Title>Keyboard Shortcuts</Title>
-          <CloseButton onClick={onClose} aria-label="Close help">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M18 6L6 18M6 6l12 12" />
-            </svg>
-          </CloseButton>
-        </Header>
-        <Content>
-          <ShortcutList>
-            {shortcuts.map(({ key, description }) => (
-              <ShortcutItem key={key}>
-                <ShortcutDescription>{description}</ShortcutDescription>
-                <ShortcutKey>{key}</ShortcutKey>
-              </ShortcutItem>
-            ))}
-          </ShortcutList>
-        </Content>
-      </Modal>
-    </Overlay>
+    <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
+      <DialogContent aria-describedby={undefined}>
+        <DialogHeader>
+          <DialogTitle>Keyboard Shortcuts</DialogTitle>
+        </DialogHeader>
+        <ShortcutList>
+          {shortcuts.map(({ key, description }) => (
+            <ShortcutItem key={key}>
+              <ShortcutDescription>{description}</ShortcutDescription>
+              <ShortcutKey>{key}</ShortcutKey>
+            </ShortcutItem>
+          ))}
+        </ShortcutList>
+      </DialogContent>
+    </Dialog>
   );
 });
 
