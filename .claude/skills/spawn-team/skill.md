@@ -1,15 +1,17 @@
 ---
-name: spawn-epic-team
-description: Bootstrap the canonical 6-role epic team (team-lead + explorer + architect + builder + reviewer + tester) for working on an epic. Creates the team via TeamCreate, spawns all 5 specialists in parallel using the project-local agent definitions in `.claude/agents/`, waits for acknowledgments, and reports ready. Idempotent — re-running with an existing team only spawns missing members.
+name: spawn-team
+description: Bootstrap the canonical 6-role team (team-lead + explorer + architect + builder + reviewer + tester) for multi-file work in this repo. Creates the team via TeamCreate, spawns all 5 specialists in parallel using the project-local agent definitions in `.claude/agents/`, waits for acknowledgments, and reports ready. Idempotent — re-running with an existing team only spawns missing members.
 triggers:
-  - Explicit user request: "spin up the team", "spawn the epic team", "create the team", "set up the agents for this epic", "/spawn-epic-team"
-  - Before starting any new epic that benefits from parallel specialist work
+  - Explicit user request: "spin up the team", "spawn the team", "create the team", "set up the agents", "/spawn-team"
+  - Before starting any new multi-file work that benefits from parallel specialist work
 allowed-tools: Bash, Read, Agent, SendMessage, TeamCreate
 ---
 
-# Spawn Epic Team
+# Spawn Team
 
-Recreate the standard 6-role team for epic work in this repo. The team's behavior, role boundaries, and tool allowlists are defined in the project-local `.claude/agents/*.md` files — this skill orchestrates the spawn; the agent files orchestrate the agents.
+Recreate the standard 6-role team for multi-file work in this repo. The team's behavior, role boundaries, and tool allowlists are defined in the project-local `.claude/agents/*.md` files — this skill orchestrates the spawn; the agent files orchestrate the agents.
+
+The default team name is `vorbis-crew`. If a different team name is desired (e.g. for parallel teams), the user must say so explicitly; otherwise spawn under `vorbis-crew`.
 
 ## When to spawn the full team — proportionality
 
@@ -33,7 +35,7 @@ Spawning architect for mechanical fixes leaves the role idle the entire session,
 
 ### Phase 1 — Check existing team
 
-1. `cat ~/.claude/teams/vorbis-epic/config.json 2>/dev/null` to detect a pre-existing team.
+1. `cat ~/.claude/teams/vorbis-crew/config.json 2>/dev/null` to detect a pre-existing team.
 2. If the team exists:
    - Enumerate `members[]` and compare against the canonical 5 specialist names.
    - Identify any missing specialists.
@@ -46,7 +48,7 @@ Spawning architect for mechanical fixes leaves the role idle the entire session,
 Call `TeamCreate`:
 
 ```
-team_name: vorbis-epic
+team_name: vorbis-crew
 agent_type: lead
 description: Cross-functional team for epic work — lead orchestrates; specialists cover research, architecture, implementation, review, and testing.
 ```
@@ -80,14 +82,14 @@ If a project-local `subagent_type` is not resolved by Claude Code, fall back per
 For each spawn, the prompt should be terse — the agent's behavior is fully described in `.claude/agents/{name}.md`. Sample:
 
 ```
-You are "{name}" on the vorbis-epic team. Your full role definition is in
+You are "{name}" on the vorbis-crew team. Your full role definition is in
 .claude/agents/{name}.md — read it now.
 
 Acknowledge in one sentence (do not preload the codebase yet — wait for a specific task).
 Then go idle. Tasks will arrive via SendMessage from "team-lead" and the team task list.
 ```
 
-Set `team_name: vorbis-epic` and `name: {role}` on every Agent call so the spawned agent joins as a teammate.
+Set `team_name: vorbis-crew` and `name: {role}` on every Agent call so the spawned agent joins as a teammate.
 
 ### Phase 4 — Confirm ready
 
@@ -97,7 +99,7 @@ Set `team_name: vorbis-epic` and `name: {role}` on every Agent call so the spawn
 
 ## Constraints
 
-- **Never spawn duplicate members.** Always check `~/.claude/teams/vorbis-epic/config.json` first.
+- **Never spawn duplicate members.** Always check `~/.claude/teams/vorbis-crew/config.json` first.
 - **Never spawn the team-lead as a subagent.** The lead is the running session.
 - **Use project-local `subagent_type` first.** Fallback to upstream types only if the local resolution fails, and warn the user about the SendMessage gap when falling back to `feature-dev:*` types.
 - **Spawn in parallel via a single message** with multiple `Agent` tool calls — sequential spawning is wasted time.
