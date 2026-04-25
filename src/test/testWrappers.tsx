@@ -5,21 +5,24 @@ import { VisualEffectsProvider } from '@/contexts/visualEffects';
 import { PinnedItemsProvider } from '@/contexts/PinnedItemsContext';
 import { ProviderProvider } from '@/contexts/ProviderContext';
 import { PlayerSizingProvider } from '@/contexts/PlayerSizingContext';
+import { ThemeProvider } from '@/styles/ThemeProvider';
 
 export function TestWrapper({ children }: { children: React.ReactNode }) {
   return (
-    <ProviderProvider>
-      <PlayerSizingProvider>
-        <TrackProvider>
-          <ColorProvider>
-            <VisualEffectsProvider>
-              <PinnedItemsProvider>
-                {children}
-              </PinnedItemsProvider>
-            </VisualEffectsProvider>
-          </ColorProvider>
-        </TrackProvider>
-      </PlayerSizingProvider>
-    </ProviderProvider>
+    <ThemeProvider>
+      <ProviderProvider>
+        <PlayerSizingProvider>
+          <TrackProvider>
+            <ColorProvider>
+              <VisualEffectsProvider>
+                <PinnedItemsProvider>
+                  {children}
+                </PinnedItemsProvider>
+              </VisualEffectsProvider>
+            </ColorProvider>
+          </TrackProvider>
+        </PlayerSizingProvider>
+      </ProviderProvider>
+    </ThemeProvider>
   );
 }
