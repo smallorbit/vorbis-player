@@ -37,7 +37,7 @@ const shimmerSurface = css`
     );
     transform: translateX(-100%);
     will-change: transform;
-    animation: ${shimmerSlide} 1.6s ease-in-out infinite;
+    animation: ${shimmerSlide} 1.6s linear infinite;
   }
 
   @media (prefers-reduced-motion: reduce) {
