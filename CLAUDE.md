@@ -64,10 +64,10 @@ npm run deploy:preview # Deploy preview
 
 ```
 src/
-├── components/      # React components (~33 files); key subdirs: BottomBar/, controls/, DevBug/, icons/, LibraryDrawer/, PlayerContent/, PlaylistSelection/, QuickAccessPanel/, styled/, VisualEffectsMenu/, VisualizerDebugPanel/, visualizers/
+├── components/      # React components (~34 files); key subdirs: BottomBar/, controls/, DevBug/, icons/, LibraryDrawer/, PlayerContent/, PlaylistSelection/, QuickAccessPanel/, styled/, VisualEffectsMenu/, VisualizerDebugPanel/, visualizers/
 ├── constants/       # playlist.ts, zenAnimation.ts, storage.ts
 ├── providers/       # Multi-provider system; spotify/ and dropbox/ subdirs
-├── hooks/           # 30 custom hooks
+├── hooks/           # 31 custom hooks
 ├── services/        # spotify.ts (auth + API), spotifyPlayer.ts (lazy SDK loading + playback), cache/ (IndexedDB)
 ├── utils/           # colorExtractor, colorUtils, sizingUtils, playlistFilters, etc.
 ├── workers/         # imageProcessor.worker.ts
@@ -92,6 +92,7 @@ AppContainer (flexCenter, min-height: 100dvh)
 - **`100dvh`** throughout to handle iOS address bar changes
 - **BottomBar** renders via `createPortal()` to `document.body`, fixed at bottom
 - **Drawers** use fixed positioning with slide animations and swipe-to-dismiss; vertical swipes on album art toggle the **queue** (up) drawer (`QueueDrawer` / `QueueBottomSheet`)
+- **Queue Suspense fallback** — the queue drawers (`QueueDrawer`, `QueueBottomSheet`) render `QueueSkeleton` (`src/components/QueueSkeleton.tsx`) as their Suspense fallback — a row-shaped placeholder with a transform-based shimmer that respects `prefers-reduced-motion`. The lazy bundles are prefetched on first playback via `useQueueBundlePrefetch` (`src/hooks/useQueueBundlePrefetch.ts`), scheduled inside `requestIdleCallback` (with `setTimeout` fallback) once per session.
 - **Full-screen library** — the library browser opens as `LibraryPage` (a full-screen view), not a drawer. `showLibrary` state in `usePlayerLogic` gates it; `handleOpenLibrary` / `handleCloseLibrary` toggle it. `LibraryPage` is rendered in `AudioPlayer.tsx` via `React.lazy` when `showLibrary` is true.
 - **Opening the library**: swipe down on album art, BottomBar library button, or keyboard `↓` / `L`. Opening library closes the queue drawer.
 - **Filter state** for the library persists to localStorage via `useLocalStorage`. Keys are prefixed `vorbis-player-library-*` (e.g., `vorbis-player-library-search`, `vorbis-player-library-provider-filters`, `vorbis-player-library-genres`). Opening the library from the QAP "Browse Library" button clears these keys before navigating.

@@ -21,6 +21,7 @@ import { trkSummary } from './playerLogicUtils';
 import { useQueueManagement } from './useQueueManagement';
 import { useCollectionLoader } from './useCollectionLoader';
 import { usePlaybackSubscription } from './usePlaybackSubscription';
+import { useQueueBundlePrefetch } from './useQueueBundlePrefetch';
 import { useRadioSession } from './useRadioSession';
 import { useRecentlyPlayedCollections } from './useRecentlyPlayedCollections';
 import type { RadioProgress } from '@/types/radio';
@@ -208,6 +209,10 @@ export function usePlayerLogic() {
     setCurrentTrackIndex,
     setTracks,
   });
+
+  // Warm the lazy QueueDrawer/QueueBottomSheet bundles on first playback so the
+  // user-initiated "Up Next" open is instant. Fires once per session.
+  useQueueBundlePrefetch(isPlaying);
 
   const handleNext = useCallback(() => {
     if (tracks.length === 0) return;
