@@ -1,4 +1,3 @@
-import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { vi, describe, it, expect } from 'vitest';
 import { ThemeProvider } from 'styled-components';
@@ -88,24 +87,27 @@ describe('ProviderDisconnectDialog', () => {
       renderDialog({ onConfirm });
 
       // #when
-      fireEvent.click(screen.getByText('Disconnect'));
+      fireEvent.click(screen.getByRole('button', { name: 'Disconnect' }));
 
       // #then
       expect(onConfirm).toHaveBeenCalledOnce();
     });
 
-    it('calls onCancel when the overlay backdrop is clicked', () => {
+    it('calls onCancel when the overlay backdrop is clicked', async () => {
       // #given
       const onCancel = vi.fn();
       renderDialog({ onCancel });
-      // Dialog is portalled to document.body — query the overlay from there
-      const overlay = document.body.querySelector('[style]') ?? document.body.firstElementChild as HTMLElement;
-      // The overlay is the fixed-position div wrapping the dialog box
-      const dialogBox = screen.getByRole('dialog');
-      const overlayEl = dialogBox.parentElement as HTMLElement;
+      // Radix renders the overlay as a sibling of the dialog content under
+      // its Portal, so we query by the data-testid wired into our shadcn
+      // DialogOverlay override (src/components/ui/dialog.tsx).
+      const overlay = screen.getByTestId('dialog-overlay');
+      // Radix DismissableLayer registers its pointerdown listener via
+      // setTimeout(0); flush the macrotask before firing the event.
+      await new Promise((resolve) => setTimeout(resolve, 0));
 
-      // #when
-      fireEvent.click(overlayEl);
+      // #when — Radix's DismissableLayer dispatches dismiss on pointerdown
+      // outside the content; the overlay is "outside" by construction.
+      fireEvent.pointerDown(overlay);
 
       // #then
       expect(onCancel).toHaveBeenCalledOnce();
@@ -113,15 +115,13 @@ describe('ProviderDisconnectDialog', () => {
   });
 
   describe('keyboard interactions', () => {
-    it('calls onCancel when Escape is pressed on the overlay', () => {
+    it('calls onCancel when Escape is pressed', () => {
       // #given
       const onCancel = vi.fn();
       renderDialog({ onCancel });
-      const dialogBox = screen.getByRole('dialog');
-      const overlayEl = dialogBox.parentElement as HTMLElement;
 
-      // #when
-      fireEvent.keyDown(overlayEl, { key: 'Escape' });
+      // #when — Radix Dialog listens for Escape on document.body
+      fireEvent.keyDown(document.body, { key: 'Escape' });
 
       // #then
       expect(onCancel).toHaveBeenCalledOnce();
@@ -129,13 +129,13 @@ describe('ProviderDisconnectDialog', () => {
   });
 
   describe('destructive button styling', () => {
-    it('Disconnect button has $destructive prop applied', () => {
+    it('Disconnect button uses the shadcn destructive variant', () => {
       // #given / #when
       renderDialog();
-      const disconnectButton = screen.getByText('Disconnect');
+      const disconnectButton = screen.getByRole('button', { name: 'Disconnect' });
 
-      // #then — $destructive renders red background via styled-components
-      expect(disconnectButton).toHaveStyle({ background: 'rgba(239, 68, 68, 0.85)' });
+      // #then — shadcn Button variant="destructive" applies the `bg-destructive` class
+      expect(disconnectButton).toHaveClass(/destructive/);
     });
   });
 });

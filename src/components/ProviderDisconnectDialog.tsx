@@ -1,14 +1,13 @@
-import { useCallback } from 'react';
-import { createPortal } from 'react-dom';
 import styled from 'styled-components';
 import { theme } from '@/styles/theme';
 import {
-  DialogOverlay,
-  DialogBox,
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
   DialogTitle,
-  DialogButtonRow,
-  DialogButton,
-} from './styled/Dialog';
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
 
 const DialogMessage = styled.p`
   margin: 0;
@@ -41,25 +40,12 @@ export default function ProviderDisconnectDialog({
   onConfirm,
   onCancel,
 }: ProviderDisconnectDialogProps) {
-  const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        e.stopPropagation();
-        onCancel();
-      }
-    },
-    [onCancel],
-  );
-
-  return createPortal(
-    <DialogOverlay onClick={onCancel} onKeyDown={handleKeyDown}>
-      <DialogBox
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="provider-disconnect-title"
-        onClick={e => e.stopPropagation()}
-      >
-        <DialogTitle id="provider-disconnect-title">Disconnect {providerName}</DialogTitle>
+  return (
+    <Dialog open onOpenChange={(open) => { if (!open) onCancel(); }}>
+      <DialogContent aria-describedby={undefined}>
+        <DialogHeader>
+          <DialogTitle>Disconnect {providerName}</DialogTitle>
+        </DialogHeader>
         <DialogMessage>
           Are you sure you want to disconnect <strong>{providerName}</strong>?
         </DialogMessage>
@@ -69,14 +55,13 @@ export default function ProviderDisconnectDialog({
             {affectedQueueCount === 1 ? 'track' : 'tracks'}.
           </WarningText>
         )}
-        <DialogButtonRow>
-          <DialogButton onClick={onCancel}>Cancel</DialogButton>
-          <DialogButton $destructive onClick={onConfirm} autoFocus>
+        <DialogFooter>
+          <Button variant="outline" onClick={onCancel}>Cancel</Button>
+          <Button variant="destructive" onClick={onConfirm} autoFocus>
             Disconnect
-          </DialogButton>
-        </DialogButtonRow>
-      </DialogBox>
-    </DialogOverlay>,
-    document.body,
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

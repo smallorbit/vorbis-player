@@ -1,15 +1,14 @@
 import { useState, useCallback } from 'react';
-import { createPortal } from 'react-dom';
 import styled from 'styled-components';
 import { theme } from '@/styles/theme';
 import {
-  DialogOverlay,
-  DialogBox,
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
   DialogTitle,
-  DialogErrorText,
-  DialogButtonRow,
-  DialogButton,
-} from './styled/Dialog';
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
 
 const DialogMessage = styled.p`
   margin: 0;
@@ -26,6 +25,12 @@ const WarningText = styled.p`
   border-radius: ${theme.borderRadius.md};
   color: rgba(252, 165, 165, 0.9);
   font-size: ${theme.fontSize.xs};
+  line-height: 1.4;
+`;
+
+const ErrorText = styled.div`
+  font-size: ${theme.fontSize.xs};
+  color: #ef4444;
   line-height: 1.4;
 `;
 
@@ -51,37 +56,31 @@ export default function ConfirmDeleteDialog({ name, onConfirm, onClose }: Confir
     }
   }, [deleting, onConfirm]);
 
-  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (e.key === 'Escape') {
-      e.stopPropagation();
-      onClose();
-    }
-  }, [onClose]);
-
-  return createPortal(
-    <DialogOverlay onClick={deleting ? undefined : onClose} onKeyDown={handleKeyDown}>
-      <DialogBox onClick={e => e.stopPropagation()}>
-        <DialogTitle>Delete Playlist</DialogTitle>
+  return (
+    <Dialog open onOpenChange={(open) => { if (!open && !deleting) onClose(); }}>
+      <DialogContent aria-describedby={undefined}>
+        <DialogHeader>
+          <DialogTitle>Delete Playlist</DialogTitle>
+        </DialogHeader>
         <DialogMessage>
           Are you sure you want to delete <strong>{name}</strong>?
         </DialogMessage>
         <WarningText>This action cannot be undone.</WarningText>
-        {error && <DialogErrorText>{error}</DialogErrorText>}
-        <DialogButtonRow>
-          <DialogButton onClick={onClose} disabled={deleting}>
+        {error && <ErrorText>{error}</ErrorText>}
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose} disabled={deleting}>
             Cancel
-          </DialogButton>
-          <DialogButton
-            $destructive
+          </Button>
+          <Button
+            variant="destructive"
             onClick={handleConfirm}
             disabled={deleting}
             autoFocus
           >
             {deleting ? 'Deleting...' : 'Delete'}
-          </DialogButton>
-        </DialogButtonRow>
-      </DialogBox>
-    </DialogOverlay>,
-    document.body,
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
