@@ -7,9 +7,9 @@ interface TimelineControlsProps {
     currentPosition: number;
     duration: number;
     formatTime: (ms: number) => string;
-    onSliderChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-    onSliderMouseDown: () => void;
-    onSliderMouseUp: (e: React.MouseEvent<HTMLInputElement>) => void;
+    onSeek: (position: number) => void;
+    onScrubStart: () => void;
+    onScrubEnd: (position: number) => void;
     trackId?: string;
     isLiked: boolean;
     isLikePending: boolean;
@@ -37,9 +37,9 @@ const TimelineControls = memo<TimelineControlsProps>(({
     currentPosition,
     duration,
     formatTime,
-    onSliderChange,
-    onSliderMouseDown,
-    onSliderMouseUp,
+    onSeek,
+    onScrubStart,
+    onScrubEnd,
     trackId,
     isLiked,
     isLikePending,
@@ -53,9 +53,9 @@ const TimelineControls = memo<TimelineControlsProps>(({
                 currentPosition={currentPosition}
                 duration={duration}
                 formatTime={formatTime}
-                onSliderChange={onSliderChange}
-                onSliderMouseDown={onSliderMouseDown}
-                onSliderMouseUp={onSliderMouseUp}
+                onSeek={onSeek}
+                onScrubStart={onScrubStart}
+                onScrubEnd={onScrubEnd}
             />
 
             <TimelineRight>

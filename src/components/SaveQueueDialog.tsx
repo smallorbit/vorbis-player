@@ -5,19 +5,18 @@
  */
 
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { createPortal } from 'react-dom';
 import styled from 'styled-components';
 import { theme } from '@/styles/theme';
 import type { ProviderId } from '@/types/domain';
 import { providerRegistry } from '@/providers/registry';
 import {
-  DialogOverlay,
-  DialogBox,
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
   DialogTitle,
-  DialogErrorText,
-  DialogButtonRow,
-  DialogButton,
-} from './styled/Dialog';
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
 
 const Input = styled.input`
   width: 100%;
@@ -71,6 +70,12 @@ const ProviderOption = styled.button<{ $active: boolean }>`
   }
 `;
 
+const ErrorText = styled.div`
+  font-size: ${theme.fontSize.xs};
+  color: #ef4444;
+  line-height: 1.4;
+`;
+
 interface SaveQueueDialogProps {
   onSave: (name: string, provider: ProviderId) => Promise<boolean>;
   onClose: () => void;
@@ -114,20 +119,19 @@ export default function SaveQueueDialog({ onSave, onClose, availableProviders, t
     if (e.key === 'Enter') {
       e.preventDefault();
       handleSave();
-    } else if (e.key === 'Escape') {
-      e.stopPropagation();
-      onClose();
     }
-  }, [handleSave, onClose]);
+  }, [handleSave]);
 
   const showProviderSelector = availableProviders.length > 1;
   const targetDescriptor = providerRegistry.get(provider);
   const hasOtherProviderTracks = Array.from(trackProviders).some(p => p && p !== provider);
 
-  return createPortal(
-    <DialogOverlay onClick={saving ? undefined : onClose} onKeyDown={e => { if (e.key === 'Escape') { e.stopPropagation(); onClose(); } }}>
-      <DialogBox onClick={e => e.stopPropagation()}>
-        <DialogTitle>Save as Playlist</DialogTitle>
+  return (
+    <Dialog open onOpenChange={(open) => { if (!open && !saving) onClose(); }}>
+      <DialogContent aria-describedby={undefined}>
+        <DialogHeader>
+          <DialogTitle>Save as Playlist</DialogTitle>
+        </DialogHeader>
         {showProviderSelector && (
           <ProviderRow>
             {availableProviders.map(id => {
@@ -159,21 +163,19 @@ export default function SaveQueueDialog({ onSave, onClose, availableProviders, t
             This queue contains tracks from other providers. Some tracks may be skipped or require additional authentication when saving to {targetDescriptor?.name ?? provider}.
           </Warning>
         )}
-        {error && <DialogErrorText>{error}</DialogErrorText>}
-        <DialogButtonRow>
-          <DialogButton onClick={onClose} disabled={saving}>
+        {error && <ErrorText>{error}</ErrorText>}
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose} disabled={saving}>
             Cancel
-          </DialogButton>
-          <DialogButton
-            $primary
+          </Button>
+          <Button
             onClick={handleSave}
             disabled={saving || !name.trim()}
           >
             {saving ? 'Saving...' : 'Save'}
-          </DialogButton>
-        </DialogButtonRow>
-      </DialogBox>
-    </DialogOverlay>,
-    document.body,
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

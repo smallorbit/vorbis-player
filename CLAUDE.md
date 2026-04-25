@@ -297,6 +297,51 @@ Centralized in `useKeyboardShortcuts.ts`. Uses `pointer: fine` / `hover: hover` 
 
 `Q` and `L` are device-independent alternatives for drawer toggles. `↑`/`↓` have cross-dismiss behavior.
 
+### shadcn/ui integration
+
+vorbis-player uses a hybrid styling stack: **styled-components for bespoke surfaces, shadcn/ui (Radix primitives + Tailwind) for chrome**. Both coexist permanently — there is no migration goal to remove styled-components.
+
+**Stack coexistence rule** — pick by surface type:
+
+| Surface type | Stack | Examples |
+|---|---|---|
+| Visualizers, animations, gestures | styled-components (forever) | `BackgroundVisualizer`, zen-mode orchestration in `PlayerContent/styled.ts`, swipe gestures, album-art flip menu, `BottomBar` |
+| Standard chrome (modals, sliders, popovers, switches, toasts) | shadcn primitives | `src/components/ui/*.tsx`, currently `dialog.tsx`, `button.tsx` |
+| Whole-screen redesigns | shadcn, gated behind `?ui=v2` | future `SettingsV2`, `OnboardingV2`, command palette |
+
+**Theme bridge — `--accent-color` is player chrome ONLY:**
+
+The runtime `--accent-color` / `--accent-contrast-color` (injected on `document.documentElement` by `ColorContext.tsx:83-87`) belong exclusively to player chrome that intentionally retints with the playing track:
+
+- `BottomBar` (background tint, control hover states)
+- `LikeButton` (filled state)
+- `TimelineSlider` (fill + thumb gradient)
+- Glow effects (`--glow-intensity`, `--glow-rate`, `--glow-opacity`)
+- Accent color overrides menu in `VisualEffectsMenu`
+
+**shadcn primitives use the neutral palette** defined in `src/styles/shadcn-tokens.css` (`--background`, `--foreground`, `--primary`, `--muted`, `--border`, etc.). shadcn's `--accent` token is a static neutral surface and is **not** the same as the player's `--accent-color`. Never wire shadcn's `--primary` or `--accent` to `var(--accent-color)` — dialogs, popovers, and other chrome must stay neutral so they don't retint per track.
+
+**`?ui=v2` flag mechanism:**
+
+The `useUiV2()` hook (`src/hooks/useUiV2.ts`) returns `true` when EITHER:
+- `import.meta.env.VITE_UI_V2 === 'true'` (build-time opt-in for staging deploys), OR
+- the URL contains `?ui=v2` (per-session opt-in for testing).
+
+It subscribes to `popstate` so SPA navigation flips the flag without a reload. SSR-safe.
+
+Convention for flagged screens:
+- Components consuming the flag render the **legacy** path by default.
+- The v2 branch lives under `if (uiV2) { … }`.
+- Future redesign components are colocated next to the legacy file as `<ScreenName>V2.tsx` (e.g. `Settings.tsx` + `SettingsV2.tsx`). The parent component picks one or the other via `useUiV2()`.
+
+**Migration scope (current):**
+- `Dialog` cluster (`ProviderDisconnectDialog`, `ConfirmDeleteDialog`, `SaveQueueDialog`, `KeyboardShortcutsHelp`) → shadcn `Dialog` (landed unflagged — behavior parity).
+- `TimelineSlider` → wrapper around shadcn / Radix `Slider` (in flight; survives as a wrapper because the accent fill/thumb gradient is bespoke).
+
+**Out of scope for the foundation epic:** `Popover`, `Switch`, `Toast`, `Filter sidebar`, `Settings v2`, `Cmd-K`, `Onboarding v2`. Each is a separate future epic.
+
+**z-index for shadcn modals:** shadcn defaults to `z-50`. The player's `BottomBar` uses up to `theme.zIndex.modal` = 1400. `src/components/ui/dialog.tsx` overrides the overlay + content `z-index` to `1405` so dialogs always cover the BottomBar.
+
 ## Tech Stack
 
 See README.md for the full tech stack.
