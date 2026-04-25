@@ -56,9 +56,9 @@ const SpotifyPlayerControls = memo<SpotifyPlayerControlsProps>(({
     currentPosition,
     duration,
     handleLikeToggle,
-    handleSliderChange,
-    handleSliderMouseDown,
-    handleSliderMouseUp,
+    handleSeekDuringScrub,
+    handleScrubStart,
+    handleScrubEnd,
     formatTime,
   } = useSpotifyControls({
     currentTrack,
@@ -108,9 +108,9 @@ const SpotifyPlayerControls = memo<SpotifyPlayerControlsProps>(({
         currentPosition={currentPosition}
         duration={duration}
         formatTime={formatTime}
-        onSliderChange={handleSliderChange}
-        onSliderMouseDown={handleSliderMouseDown}
-        onSliderMouseUp={handleSliderMouseUp}
+        onSeek={handleSeekDuringScrub}
+        onScrubStart={handleScrubStart}
+        onScrubEnd={handleScrubEnd}
         trackId={currentTrack?.id}
         isLiked={effectiveIsLiked}
         isLikePending={effectiveIsLikePending}
