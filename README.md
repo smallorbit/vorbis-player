@@ -80,7 +80,7 @@ For radio recommendations, also set `VITE_LASTFM_API_KEY` in `.env.local` (see `
 
 ## Tech Stack
 
-React 18 · TypeScript 5 · Vite 6 · styled-components · Radix UI · Vitest
+React 18 · TypeScript 5 · Vite 6 · styled-components · Tailwind CSS · shadcn/ui · Radix UI · Vitest
 
 ## License
 
