@@ -23,6 +23,9 @@ export function useUiV2(): boolean {
       setEnabled(readFlag());
     };
 
+    // pushState/replaceState do not fire popstate natively — only browser
+    // back/forward navigation triggers this listener. Programmatic URL
+    // mutations need window.dispatchEvent(new PopStateEvent('popstate')).
     window.addEventListener('popstate', handlePopState);
     return () => {
       window.removeEventListener('popstate', handlePopState);
