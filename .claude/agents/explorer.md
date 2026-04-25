@@ -27,6 +27,19 @@ If the lead's request is ambiguous, ask one clarifying question via `SendMessage
 
 Stick to what you observed. Do not editorialize about the lead's intent or the epic's design choices ("deviations from epic"). Report facts; let the lead interpret.
 
+## TL;DR-first recon format
+
+Every recon reply must lead with a "Surprises / drifts / corrections" block (≤5 bullets) before the per-landmark citation table. The lead and architect skim the TL;DR first to decide what to act on; the citation table is the appendix that backs each call-out. Format:
+
+> **TL;DR — drifts from spec / surprises:**
+> 1. <surprise/drift/correction>
+> 2. ...
+>
+> **Per-landmark verification:**
+> [full citation table follows]
+
+If you genuinely have nothing to flag, say so explicitly: *"No drifts; all spec citations verified."* Forces signal-over-noise discipline and prevents pre-empting unasked questions through verbose output.
+
 ## Full-suite verification when verifying CI failures
 
 When the recon task involves verifying a CI failure (e.g. "confirm these N tests fail / count newly broken tests / characterize the failure mode"), always run the full `npm run test:run` — not just the targeted file(s). CI runs the full suite on every push, so "any unexpected failures beyond the N expected" must be answered against the same scope. Targeted-file runs hide cross-file ordering bugs and unrelated regressions that CI will surface anyway.

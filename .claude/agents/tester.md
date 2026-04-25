@@ -38,3 +38,9 @@ You may decompose your assigned task into smaller subtasks if it improves tracki
 ## Interface alignment with the builder
 
 When the builder posts an interface contract for a new component / hook (props + data-testids + ARIA hooks), wait for the lead's confirmation before writing tests against it. Don't extend the interface unilaterally — request the affordances you need from the builder via the lead, or test only what's already in the interface.
+
+## Idle pre-work when blocked on dependency
+
+When your task is blocked on a dependency (the builder has not yet landed the implementation you need to test), do NOT idle silently. Pre-read the test files and source files named in the issue spec — note current shape, existing test patterns, sibling tests' assertion style, and any surprises (e.g. test expects an interface the spec doesn't mention). Surface findings to the lead via `SendMessage` before going idle.
+
+The hard rule still holds: do not write test code before the implementation interface lands (per "Interface alignment with the builder"). But warming context costs nothing and shortens cold-start time once the dependency clears. Pre-work is a ~200-word note to the lead, not a draft test file.
