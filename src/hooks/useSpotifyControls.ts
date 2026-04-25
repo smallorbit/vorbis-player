@@ -159,17 +159,15 @@ export const useSpotifyControls = ({
     }
   }, [getPlayingDescriptor]);
 
-  const handleSliderChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const position = parseInt(e.target.value);
+  const handleSeekDuringScrub = useCallback((position: number) => {
     dispatchTiming({ type: 'position', positionMs: position });
   }, []);
 
-  const handleSliderMouseDown = useCallback(() => {
+  const handleScrubStart = useCallback(() => {
     setIsDragging(true);
   }, []);
 
-  const handleSliderMouseUp = useCallback((e: React.MouseEvent<HTMLInputElement>) => {
-    const position = parseInt((e.target as HTMLInputElement).value);
+  const handleScrubEnd = useCallback((position: number) => {
     setIsDragging(false);
     handleSeek(position);
   }, [handleSeek]);
@@ -191,9 +189,9 @@ export const useSpotifyControls = ({
     handlePlayPause,
     handleLikeToggle: onLikeToggle,
     handleSeek,
-    handleSliderChange,
-    handleSliderMouseDown,
-    handleSliderMouseUp,
+    handleSeekDuringScrub,
+    handleScrubStart,
+    handleScrubEnd,
     formatTime,
     onNext,
     onPrevious,
