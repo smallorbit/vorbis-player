@@ -13,6 +13,7 @@ import type { AddToQueueResult, MediaTrack, ProviderId } from '@/types/domain';
 import type { RadioState, RadioProgress } from '@/types/radio';
 import type { SessionSnapshot } from '@/services/sessionPersistence';
 import { MobileLibraryOverlay } from './MobileLibraryOverlay';
+import QueueSkeleton from '@/components/QueueSkeleton';
 
 const LibraryDrawer = lazy(() => import('@/components/LibraryDrawer'));
 const SaveQueueDialog = lazy(() => import('@/components/SaveQueueDialog'));
@@ -29,12 +30,12 @@ function QueueLoadingFallback(): React.ReactElement {
       bottom: 0,
       width: theme.drawer.widths.tablet,
       background: theme.colors.overlay.panel,
+      padding: theme.spacing.md,
+      boxSizing: 'border-box',
       display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      color: theme.colors.muted.foreground
+      flexDirection: 'column',
     }}>
-      Loading queue...
+      <QueueSkeleton />
     </div>
   );
 }

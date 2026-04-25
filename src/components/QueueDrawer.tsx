@@ -3,10 +3,12 @@ import { createPortal } from 'react-dom';
 import styled from 'styled-components';
 import type { MediaTrack } from '@/types/domain';
 import { theme } from '../styles/theme';
-import { DrawerFallback, DrawerFallbackCard } from './styled';
 import { usePlayerSizingContext } from '@/contexts/PlayerSizingContext';
+import QueueSkeleton from './QueueSkeleton';
 
 const QueueTrackList = React.lazy(() => import('./QueueTrackList'));
+
+const QUEUE_DRAWER_SKELETON_MAX_ROWS = 8;
 
 const QueueDrawerContainer = styled.div<{ $isOpen: boolean; $width: number; $transitionDuration: number; $transitionEasing: string }>`
   position: fixed;
@@ -269,17 +271,7 @@ const QueueDrawer = memo<QueueDrawerProps>(({
 
         <QueueContent>
           <Suspense fallback={
-            <DrawerFallback>
-              <DrawerFallbackCard>
-                <div style={{
-                  animation: theme.animations.pulse,
-                  color: theme.colors.muted.foreground,
-                  textAlign: 'center'
-                }}>
-                  Loading queue...
-                </div>
-              </DrawerFallbackCard>
-            </DrawerFallback>
+            <QueueSkeleton rowCount={Math.min(tracks.length, QUEUE_DRAWER_SKELETON_MAX_ROWS)} />
           }>
             <QueueTrackList
               tracks={tracks}

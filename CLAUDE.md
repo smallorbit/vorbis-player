@@ -64,10 +64,10 @@ npm run deploy:preview # Deploy preview
 
 ```
 src/
-├── components/      # React components (~33 files); key subdirs: BottomBar/, controls/, DevBug/, icons/, LibraryDrawer/, PlayerContent/, PlaylistSelection/, QuickAccessPanel/, styled/, VisualEffectsMenu/, VisualizerDebugPanel/, visualizers/
+├── components/      # React components (~34 files); key subdirs: BottomBar/, controls/, DevBug/, icons/, LibraryDrawer/, PlayerContent/, PlaylistSelection/, QuickAccessPanel/, styled/, VisualEffectsMenu/, VisualizerDebugPanel/, visualizers/
 ├── constants/       # playlist.ts, zenAnimation.ts, storage.ts
 ├── providers/       # Multi-provider system; spotify/ and dropbox/ subdirs
-├── hooks/           # 30 custom hooks
+├── hooks/           # 31 custom hooks
 ├── services/        # spotify.ts (auth + API), spotifyPlayer.ts (lazy SDK loading + playback), cache/ (IndexedDB)
 ├── utils/           # colorExtractor, colorUtils, sizingUtils, playlistFilters, etc.
 ├── workers/         # imageProcessor.worker.ts
@@ -92,6 +92,7 @@ AppContainer (flexCenter, min-height: 100dvh)
 - **`100dvh`** throughout to handle iOS address bar changes
 - **BottomBar** renders via `createPortal()` to `document.body`, fixed at bottom
 - **Drawers** use fixed positioning with slide animations and swipe-to-dismiss; vertical swipes on album art toggle the **queue** (up) drawer (`QueueDrawer` / `QueueBottomSheet`)
+- **Queue Suspense fallback** — the queue drawers (`QueueDrawer`, `QueueBottomSheet`) render `QueueSkeleton` (`src/components/QueueSkeleton.tsx`) as their Suspense fallback — a row-shaped placeholder with a transform-based shimmer that respects `prefers-reduced-motion`. The lazy bundles are prefetched on first playback via `useQueueBundlePrefetch` (`src/hooks/useQueueBundlePrefetch.ts`), scheduled inside `requestIdleCallback` (with `setTimeout` fallback) once per session.
 - **Full-screen library** — the library browser opens as `LibraryPage` (a full-screen view), not a drawer. `showLibrary` state in `usePlayerLogic` gates it; `handleOpenLibrary` / `handleCloseLibrary` toggle it. `LibraryPage` is rendered in `AudioPlayer.tsx` via `React.lazy` when `showLibrary` is true.
 - **Opening the library**: swipe down on album art, BottomBar library button, or keyboard `↓` / `L`. Opening library closes the queue drawer.
 - **Filter state** for the library persists to localStorage via `useLocalStorage`. Keys are prefixed `vorbis-player-library-*` (e.g., `vorbis-player-library-search`, `vorbis-player-library-provider-filters`, `vorbis-player-library-genres`). Opening the library from the QAP "Browse Library" button clears these keys before navigating.
@@ -395,3 +396,26 @@ For structured feature development, see `.claude/rules/`:
 - `generate_prd.md` — PRD creation process: asks clarifying questions, then generates a structured requirements doc
 - `generate_tasks_from_prd.md` — breaks a PRD into a detailed parent/subtask list; waits for "Go" confirmation before generating subtasks
 - `process_tasks.md` — task execution protocol: one subtask at a time, with test + commit gates before marking parent complete
+
+## Multi-Agent Team Workflows
+
+For epics that benefit from parallel specialist work, this project ships a six-role team (lead + explorer + architect + builder + reviewer + tester) defined in `.claude/agents/*.md`. Spawn it on demand and run retros against it.
+
+### Skills
+
+- **`/spawn-epic-team`** — bootstraps the six-role team via `TeamCreate` + parallel `Agent` calls. Idempotent: checks `~/.claude/teams/vorbis-epic/config.json` first; only spawns missing members. Uses project-local `subagent_type` names (`architect`, `reviewer`, etc.) so spawned agents inherit the `.claude/agents/*.md` tool allowlists.
+- **`/agent-team-retro`** — structured retrospective on a multi-agent team session. Polls every teammate via `SendMessage`, aggregates into action items, presents via `AskUserQuestion`, and applies approved edits directly to the agent definition files. Cataloging as a GitHub epic via `speckit:catalog` is opt-in.
+
+### Agent definitions
+
+`.claude/agents/*.md` files specify each role's tools, role description, and operating rules. Notable conventions:
+
+- **Universal exit-gate rule** (every agent file): before yielding a turn, audit deliverables; route via `SendMessage` or the turn is incomplete. Plain-text output is invisible to the lead.
+- **Tool allowlists explicitly include `SendMessage`, `TaskGet`, `TaskList`, `TaskUpdate`** — required for team participation. The architect and reviewer files restore these because the upstream `feature-dev:code-architect` and `feature-dev:code-reviewer` subagent types omit `SendMessage`, which structurally breaks team communication.
+- **Spawn via project-local `subagent_type`**, not upstream `feature-dev:*` types, so the agent inherits the local definition. The `spawn-epic-team` skill handles this automatically.
+- **Role-specific guardrails** (interface-contract-first for builder, `npm run test:run` exit-0 completion bar for tester, scope-clarification-up-front for explorer, `TaskList`-before-redirect for lead) — see each `.md` file for the full set.
+
+### When to use
+
+- **`/spawn-epic-team`** at the start of a multi-issue epic when parallel specialist work would help (typically 3+ child issues with distinct domains).
+- **`/agent-team-retro`** at the end of a substantive team session, especially before tearing down via `TeamDelete`. Captures lessons before context is lost and iterates the agent definitions.

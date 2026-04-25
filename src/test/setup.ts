@@ -60,6 +60,23 @@ Object.defineProperty(window, 'history', {
   writable: true
 });
 
+// Mock window.matchMedia (jsdom does not implement it; many components query
+// `prefers-reduced-motion` via useReducedMotion). Tests can override per-case.
+Object.defineProperty(window, 'matchMedia', {
+  writable: true,
+  configurable: true,
+  value: vi.fn().mockImplementation((query: string) => ({
+    matches: false,
+    media: query,
+    onchange: null,
+    addListener: vi.fn(),
+    removeListener: vi.fn(),
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    dispatchEvent: vi.fn(),
+  })),
+});
+
 // Mock fetch globally
 global.fetch = vi.fn();
 
