@@ -1,0 +1,51 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * shadcn/ui design tokens — dark-only.
+ *
+ * NOTE on the theme bridge:
+ *   `--accent` below is shadcn's neutral surface accent, NOT the player's
+ *   runtime `--accent-color` (defined in src/index.css and updated by
+ *   src/contexts/ColorContext.tsx). The two namespaces never collide:
+ *   shadcn primitives consume `hsl(var(--accent))`; player chrome
+ *   (BottomBar, LikeButton, TimelineSlider, glow effects) consumes
+ *   `var(--accent-color)` / `var(--accent-contrast-color)` directly.
+ *
+ *   `--primary` stays a static neutral so dialog chrome does not retint
+ *   when the playing track changes.
+ */
+@layer base {
+  :root {
+    --background: 0 0% 5%;
+    --foreground: 0 0% 98%;
+
+    --card: 0 0% 7%;
+    --card-foreground: 0 0% 98%;
+
+    --popover: 0 0% 7%;
+    --popover-foreground: 0 0% 98%;
+
+    --primary: 0 0% 98%;
+    --primary-foreground: 0 0% 9%;
+
+    --secondary: 0 0% 14.9%;
+    --secondary-foreground: 0 0% 98%;
+
+    --muted: 0 0% 14.9%;
+    --muted-foreground: 0 0% 63.9%;
+
+    --accent: 0 0% 14.9%;
+    --accent-foreground: 0 0% 98%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 0 0% 14.9%;
+    --input: 0 0% 14.9%;
+    --ring: 0 0% 83.1%;
+
+    --radius: 0.5rem;
+  }
+}

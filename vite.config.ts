@@ -51,7 +51,8 @@ export default defineConfig({
       output: {
         manualChunks: {
           vendor: ['react', 'react-dom'],
-styled: ['styled-components']
+          radix: ['@radix-ui/react-dialog'],
+          styled: ['styled-components']
         }
       }
     },
