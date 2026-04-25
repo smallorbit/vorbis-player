@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useRef } from 'react';
 import { generateColorVariant } from '../../utils/visualizerUtils';
 import { useCanvasVisualizer } from '../../hooks/useCanvasVisualizer';
 import { useVisualizerDebugConfig } from '../../contexts/VisualizerDebugContext';
@@ -29,11 +29,8 @@ interface WaveState {
   frequency: number;
 }
 
-interface GridWaveState {
-  particles: GridParticle[];
+interface GridMeta {
   waves: WaveState[];
-  width: number;
-  height: number;
   rows: number;
   cols: number;
 }
@@ -47,6 +44,8 @@ export const GridWaveVisualizer: React.FC<GridWaveVisualizerProps> = ({
   const config = useVisualizerDebugConfig();
   const g = config.grid;
 
+  const metaRef = useRef<GridMeta>({ waves: [], rows: 0, cols: 0 });
+
   const getItemCount = useCallback(
     (width: number, _height: number, _intensity: number): number => {
       const isMobile = width < BREAKPOINTS_PX.lg;
@@ -56,7 +55,7 @@ export const GridWaveVisualizer: React.FC<GridWaveVisualizerProps> = ({
   );
 
   const initializeItems = useCallback(
-    (count: number, width: number, height: number, baseColor: string): GridWaveState[] => {
+    (_count: number, width: number, height: number, baseColor: string): GridParticle[] => {
       const spacing = width < BREAKPOINTS_PX.lg ? g.spacingMobile : g.spacing;
       const amplitude = g.amplitudeBase * Math.min(width, height);
       const margin = Math.ceil(amplitude / spacing);
@@ -92,24 +91,18 @@ export const GridWaveVisualizer: React.FC<GridWaveVisualizerProps> = ({
         frequency: g.frequencyBase + (i / g.waveCount) * g.frequencySpread,
       }));
 
-      void count;
-      return [{ particles, waves, width, height, rows, cols }];
+      metaRef.current = { waves, rows, cols };
+      return particles;
     },
     [g]
   );
 
   const updateItems = useCallback(
-    (states: GridWaveState[], deltaTime: number, playing: boolean, width: number, height: number): void => {
+    (_particles: GridParticle[], deltaTime: number, playing: boolean, _width: number, _height: number): void => {
       const speedMult = (playing ? 1.0 : g.pausedSpeedMult) * (speed ?? 1.0);
       const dt = deltaTime / 16;
 
-      const state = states[0];
-      if (!state) return;
-
-      state.width = width;
-      state.height = height;
-
-      state.waves.forEach(wave => {
+      metaRef.current.waves.forEach(wave => {
         wave.phase += wave.speed * speedMult * dt;
         if (wave.phase > Math.PI * 2) wave.phase -= Math.PI * 2;
       });
@@ -120,24 +113,21 @@ export const GridWaveVisualizer: React.FC<GridWaveVisualizerProps> = ({
   const renderItems = useCallback(
     (
       ctx: CanvasRenderingContext2D,
-      states: GridWaveState[],
+      particles: GridParticle[],
       width: number,
       height: number,
       intensityValue: number
     ): void => {
       ctx.clearRect(0, 0, width, height);
 
-      const state = states[0];
-      if (!state) return;
-
+      const { waves, rows } = metaRef.current;
       const intensityScale = Math.max(0.3, intensityValue / 60);
       const amplitude = g.amplitudeBase * Math.min(width, height) * intensityScale;
-      const rows = state.rows;
       const centerX = width / 2;
 
-      state.particles.forEach(particle => {
+      particles.forEach(particle => {
         let dispX = 0, dispY = 0;
-        state.waves.forEach(wave => {
+        waves.forEach(wave => {
           const proj = gridWaveProjection(particle.baseX, particle.baseY, wave.angleX, wave.angleY, wave.frequency);
           const d = Math.sin(proj + wave.phase);
           dispX += d * wave.angleX;
@@ -173,7 +163,7 @@ export const GridWaveVisualizer: React.FC<GridWaveVisualizerProps> = ({
     [g]
   );
 
-  const canvasRef = useCanvasVisualizer<GridWaveState>({
+  const canvasRef = useCanvasVisualizer<GridParticle>({
     accentColor,
     isPlaying,
     intensity,
