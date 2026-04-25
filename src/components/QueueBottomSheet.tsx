@@ -7,14 +7,15 @@ import {
   DrawerOverlay,
   GripPill,
   SwipeHandle,
-  DrawerFallback,
-  DrawerFallbackCard,
   DRAWER_TRANSITION_DURATION,
   DRAWER_TRANSITION_EASING
 } from './styled';
 import type { MediaTrack } from '@/types/domain';
+import QueueSkeleton from './QueueSkeleton';
 
 const QueueTrackList = React.lazy(() => import('./QueueTrackList'));
+
+const QUEUE_BOTTOM_SHEET_SKELETON_MAX_ROWS = 6;
 
 const DrawerContainer = styled.div.withConfig({
   shouldForwardProp: (prop) => !['$isOpen', '$isDragging', '$dragOffset'].includes(prop),
@@ -191,19 +192,7 @@ const QueueBottomSheet = memo<QueueBottomSheetProps>(function QueueBottomSheet({
           {isOpen && (
             <Suspense
               fallback={
-                <DrawerFallback>
-                  <DrawerFallbackCard>
-                    <div
-                      style={{
-                        animation: theme.animations.pulse,
-                        color: theme.colors.muted.foreground,
-                        textAlign: 'center',
-                      }}
-                    >
-                      Loading queue...
-                    </div>
-                  </DrawerFallbackCard>
-                </DrawerFallback>
+                <QueueSkeleton rowCount={Math.min(tracks.length, QUEUE_BOTTOM_SHEET_SKELETON_MAX_ROWS)} />
               }
             >
               <QueueTrackList
