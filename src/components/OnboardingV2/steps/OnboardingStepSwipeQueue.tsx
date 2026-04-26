@@ -14,7 +14,7 @@ export const OnboardingStepSwipeQueue: React.FC = () => (
     </StepIllustration>
     <StepTitle>Swipe to explore your queue</StepTitle>
     <StepDescription>
-      Swipe right on the player to open your play queue. Reorder tracks, jump
+      Swipe up on the album art to open your queue. Reorder tracks, jump
       ahead, or clear what's coming up.
     </StepDescription>
   </StepContent>
