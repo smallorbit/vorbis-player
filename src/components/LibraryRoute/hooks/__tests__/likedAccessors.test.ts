@@ -1,75 +1,144 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import type { MediaTrack } from '@/types/domain';
-
-const { mockGet } = vi.hoisted(() => ({
-  mockGet: vi.fn(),
-}));
+import { fetchLikedForProvider } from '../likedAccessors';
+import type { ProviderId, MediaTrack } from '@/types/domain';
 
 vi.mock('@/providers/registry', () => ({
   providerRegistry: {
-    get: (...args: unknown[]) => mockGet(...args),
+    get: vi.fn(),
+    getAll: vi.fn(() => []),
+    register: vi.fn(),
   },
 }));
 
-import { fetchLikedForProvider } from '../likedAccessors';
+import { providerRegistry } from '@/providers/registry';
+
+const mockRegistry = vi.mocked(providerRegistry);
+
+const makeTrack = (id: string): MediaTrack => ({
+  id,
+  provider: 'spotify',
+  playbackRef: { provider: 'spotify', ref: `spotify:track:${id}` },
+  name: `Track ${id}`,
+  artists: 'Test Artist',
+  album: 'Test Album',
+  durationMs: 180000,
+});
 
 describe('fetchLikedForProvider', () => {
   beforeEach(() => {
-    mockGet.mockReset();
+    vi.clearAllMocks();
   });
 
-  it('returns [] when no descriptor is registered for the provider', async () => {
-    // #given
-    mockGet.mockReturnValue(undefined);
+  describe('when provider not in registry', () => {
+    it('returns empty array when providerRegistry has no entry for provider', async () => {
+      // #given
+      mockRegistry.get.mockReturnValue(undefined);
 
-    // #when
-    const tracks = await fetchLikedForProvider('spotify');
+      // #when
+      const result = await fetchLikedForProvider('spotify');
 
-    // #then
-    expect(tracks).toEqual([]);
+      // #then
+      expect(result).toEqual([]);
+    });
+
+    it('returns empty array when catalog is absent from descriptor', async () => {
+      // #given
+      mockRegistry.get.mockReturnValue({ id: 'spotify', catalog: undefined } as unknown as ReturnType<typeof providerRegistry.get>);
+
+      // #when
+      const result = await fetchLikedForProvider('spotify');
+
+      // #then
+      expect(result).toEqual([]);
+    });
   });
 
-  it('returns [] when descriptor lacks a catalog', async () => {
-    // #given
-    mockGet.mockReturnValue({});
+  describe('when provider exists in registry', () => {
+    it('delegates to catalog.listTracks', async () => {
+      // #given
+      const tracks = [makeTrack('t1'), makeTrack('t2')];
+      const listTracks = vi.fn().mockResolvedValue(tracks);
+      mockRegistry.get.mockReturnValue({
+        id: 'spotify',
+        catalog: { listTracks, providerId: 'spotify', listCollections: vi.fn() },
+      } as unknown as ReturnType<typeof providerRegistry.get>);
 
-    // #when
-    const tracks = await fetchLikedForProvider('spotify');
+      // #when
+      const result = await fetchLikedForProvider('spotify');
 
-    // #then
-    expect(tracks).toEqual([]);
+      // #then
+      expect(listTracks).toHaveBeenCalledWith(
+        expect.objectContaining({ kind: 'liked', provider: 'spotify' }),
+        undefined
+      );
+      expect(result).toEqual(tracks);
+    });
+
+    it('passes provider to listTracks', async () => {
+      // #given
+      const listTracks = vi.fn().mockResolvedValue([]);
+      mockRegistry.get.mockReturnValue({
+        id: 'dropbox',
+        catalog: { listTracks, providerId: 'dropbox', listCollections: vi.fn() },
+      } as unknown as ReturnType<typeof providerRegistry.get>);
+
+      // #when
+      await fetchLikedForProvider('dropbox' as ProviderId);
+
+      // #then
+      expect(listTracks).toHaveBeenCalledWith(
+        expect.objectContaining({ provider: 'dropbox' }),
+        undefined
+      );
+    });
+
+    it('passes AbortSignal to listTracks', async () => {
+      // #given
+      const signal = new AbortController().signal;
+      const listTracks = vi.fn().mockResolvedValue([]);
+      mockRegistry.get.mockReturnValue({
+        id: 'spotify',
+        catalog: { listTracks, providerId: 'spotify', listCollections: vi.fn() },
+      } as unknown as ReturnType<typeof providerRegistry.get>);
+
+      // #when
+      await fetchLikedForProvider('spotify', signal);
+
+      // #then
+      expect(listTracks).toHaveBeenCalledWith(
+        expect.objectContaining({ kind: 'liked' }),
+        signal
+      );
+    });
+
+    it('propagates rejection from listTracks', async () => {
+      // #given
+      const listTracks = vi.fn().mockRejectedValue(new Error('network error'));
+      mockRegistry.get.mockReturnValue({
+        id: 'spotify',
+        catalog: { listTracks, providerId: 'spotify', listCollections: vi.fn() },
+      } as unknown as ReturnType<typeof providerRegistry.get>);
+
+      // #when / #then
+      await expect(fetchLikedForProvider('spotify')).rejects.toThrow('network error');
+    });
   });
 
-  it('delegates to catalog.listTracks with a liked CollectionRef', async () => {
-    // #given
-    const fakeTracks: MediaTrack[] = [{ id: 't1' } as MediaTrack];
-    const listTracks = vi.fn().mockResolvedValue(fakeTracks);
-    mockGet.mockReturnValue({ catalog: { listTracks } });
+  describe('AbortSignal handling', () => {
+    it('handles already-aborted signal gracefully (does not hang)', async () => {
+      // #given — signal is already aborted
+      const controller = new AbortController();
+      controller.abort();
+      const signal = controller.signal;
+      const listTracks = vi.fn().mockRejectedValue(new DOMException('Aborted', 'AbortError'));
+      mockRegistry.get.mockReturnValue({
+        id: 'spotify',
+        catalog: { listTracks, providerId: 'spotify', listCollections: vi.fn() },
+      } as unknown as ReturnType<typeof providerRegistry.get>);
 
-    // #when
-    const tracks = await fetchLikedForProvider('spotify');
-
-    // #then
-    expect(listTracks).toHaveBeenCalledWith(
-      { provider: 'spotify', kind: 'liked' },
-      undefined,
-    );
-    expect(tracks).toBe(fakeTracks);
-  });
-
-  it('propagates the AbortSignal to listTracks', async () => {
-    // #given
-    const listTracks = vi.fn().mockResolvedValue([]);
-    mockGet.mockReturnValue({ catalog: { listTracks } });
-    const ac = new AbortController();
-
-    // #when
-    await fetchLikedForProvider('dropbox', ac.signal);
-
-    // #then
-    expect(listTracks).toHaveBeenCalledWith(
-      { provider: 'dropbox', kind: 'liked' },
-      ac.signal,
-    );
+      // #when / #then — either rejects with AbortError or returns [] per adapter contract
+      const resultPromise = fetchLikedForProvider('spotify', signal);
+      await expect(resultPromise).rejects.toThrow();
+    });
   });
 });
