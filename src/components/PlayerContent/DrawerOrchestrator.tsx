@@ -20,20 +20,40 @@ const SaveQueueDialog = lazy(() => import('@/components/SaveQueueDialog'));
 const QueueDrawer = lazy(() => import('@/components/QueueDrawer'));
 const QueueBottomSheet = lazy(() => import('@/components/QueueBottomSheet'));
 
-function QueueLoadingFallback(): React.ReactElement {
+function QueueLoadingFallback({ isMobile }: { isMobile: boolean }): React.ReactElement {
   const theme = useTheme();
+  const sharedStyle: React.CSSProperties = {
+    position: 'fixed',
+    background: theme.colors.overlay.panel,
+    padding: theme.spacing.md,
+    boxSizing: 'border-box',
+    display: 'flex',
+    flexDirection: 'column',
+    zIndex: theme.zIndex.modal,
+  };
+  if (isMobile) {
+    return (
+      <div style={{
+        ...sharedStyle,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        height: '66dvh',
+        maxHeight: '66dvh',
+        borderTopLeftRadius: theme.borderRadius['2xl'],
+        borderTopRightRadius: theme.borderRadius['2xl'],
+      }}>
+        <QueueSkeleton />
+      </div>
+    );
+  }
   return (
     <div style={{
-      position: 'fixed',
+      ...sharedStyle,
       top: 0,
       right: 0,
       bottom: 0,
       width: theme.drawer.widths.tablet,
-      background: theme.colors.overlay.panel,
-      padding: theme.spacing.md,
-      boxSizing: 'border-box',
-      display: 'flex',
-      flexDirection: 'column',
     }}>
       <QueueSkeleton />
     </div>
@@ -174,7 +194,7 @@ export const DrawerOrchestrator: React.FC<DrawerOrchestratorProps> = React.memo(
 
   return (
     <>
-      <Suspense fallback={showQueue ? <QueueLoadingFallback /> : null}>
+      <Suspense fallback={showQueue ? <QueueLoadingFallback isMobile={isMobile} /> : null}>
         {isMobile ? (
           <ProfiledComponent id="QueueBottomSheet">
             <QueueBottomSheet
