@@ -17,7 +17,14 @@ export interface LikedSummary {
   isLoading: boolean;
 }
 
-export type LibraryRouteView = 'home' | 'recently-played' | 'pinned' | 'playlists' | 'albums' | 'liked';
+export type LibraryRouteView =
+  | 'home'
+  | 'recently-played'
+  | 'pinned'
+  | 'playlists'
+  | 'albums'
+  | 'liked'
+  | 'search';
 
 export type LibraryItemKind = 'playlist' | 'album' | 'liked' | 'recently-played';
 

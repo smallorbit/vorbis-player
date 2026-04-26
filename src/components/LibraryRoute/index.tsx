@@ -7,9 +7,14 @@ import { toAlbumPlaylistId } from '@/constants/playlist';
 import { LibraryRouteRoot, MobileLayout, DesktopLayout } from './styled';
 import HomeView from './views/HomeView';
 import SeeAllView from './views/SeeAllView';
+import SearchResultsView from './views/SearchResultsView';
 import { fetchLikedForProvider } from './hooks';
 import type { ContextMenuRequest, LibraryItemKind, LibraryRouteView } from './types';
 import MiniPlayer from './MiniPlayer/MiniPlayer';
+import SearchBar from './search/SearchBar';
+import CommandPalette from './search/CommandPalette';
+import { useLibrarySearch } from './search/useLibrarySearch';
+import { useCommandPaletteShortcut } from './search/useCommandPaletteShortcut';
 
 // LibraryRoute assumes upstream guards have already filtered out cold-start cases:
 // - AudioPlayer.tsx routes to ProviderSetupScreen when needsSetup === true
@@ -58,25 +63,25 @@ const LibraryRoute: React.FC<LibraryRouteProps> = ({
   const { isMobile } = usePlayerSizingContext();
   const [view, setView] = useState<LibraryRouteView>('home');
   const { unifiedTracks, isUnifiedLikedActive } = useUnifiedLikedTracks();
+  const search = useLibrarySearch();
+  const [paletteOpen, setPaletteOpen] = useState(false);
+  useCommandPaletteShortcut(() => setPaletteOpen(true), !isMobile);
 
   const handleSelectCollection = useCallback(
     (kind: LibraryItemKind, id: string, name: string, provider?: ProviderId) => {
+      if (search.isSearching) search.setQuery('');
       if (kind === 'album') {
         onPlaylistSelect(toAlbumPlaylistId(id), name, provider);
         return;
       }
-      // playlist or recently-played-as-playlist: pass id through
       onPlaylistSelect(id, name, provider);
     },
-    [onPlaylistSelect],
+    [onPlaylistSelect, search],
   );
 
   const handleSelectLiked = useCallback(
     async (provider?: ProviderId) => {
       if (!onPlayLikedTracks) return;
-      // Why: when unified-liked is active and no provider was specified, the in-memory
-      // unifiedTracks list is the source. For a per-provider liked tile the unified list
-      // may not be authoritative for that single provider, so fetch it directly.
       let tracks: MediaTrack[];
       let collectionId: string;
       let providerArg: ProviderId | undefined;
@@ -89,7 +94,6 @@ const LibraryRoute: React.FC<LibraryRouteProps> = ({
         collectionId = 'liked-unified';
         providerArg = undefined;
       } else {
-        // single-provider, non-unified path — fall back to the active provider's liked
         const inferred: ProviderId = unifiedTracks[0]?.provider ?? 'spotify';
         tracks = await fetchLikedForProvider(inferred);
         collectionId = `liked-${inferred}`;
@@ -102,8 +106,6 @@ const LibraryRoute: React.FC<LibraryRouteProps> = ({
   );
 
   const handleContextMenuRequest = useCallback((req: ContextMenuRequest) => {
-    // #1297 will mount the context menu portal. For #1294 the request is logged in dev
-    // so click affordances are visible during integration without forcing menu shape now.
     if (import.meta.env.DEV) {
       console.debug('[LibraryRoute] context menu requested', req);
     }
@@ -113,38 +115,46 @@ const LibraryRoute: React.FC<LibraryRouteProps> = ({
   const Layout = isMobile ? MobileLayout : DesktopLayout;
   const layoutTestId = isMobile ? 'library-route-mobile' : 'library-route-desktop';
 
+  const effectiveView: LibraryRouteView = search.isSearching ? 'search' : view;
+
+  let body: React.ReactNode;
+  if (effectiveView === 'search') {
+    body = (
+      <SearchResultsView
+        search={search}
+        onSelectCollection={handleSelectCollection}
+        onContextMenuRequest={handleContextMenuRequest}
+      />
+    );
+  } else if (effectiveView === 'home' || effectiveView === 'liked') {
+    body = (
+      <HomeView
+        layout={layout}
+        lastSession={lastSession ?? null}
+        onResume={onResume}
+        onSelectCollection={handleSelectCollection}
+        onSelectLiked={handleSelectLiked}
+        onNavigate={setView}
+        onContextMenuRequest={handleContextMenuRequest}
+      />
+    );
+  } else {
+    body = (
+      <SeeAllView
+        view={effectiveView as Exclude<LibraryRouteView, 'home' | 'liked' | 'search'>}
+        onBack={() => setView('home')}
+        onSelectCollection={handleSelectCollection}
+        onContextMenuRequest={handleContextMenuRequest}
+      />
+    );
+  }
+
   return (
     <LibraryRouteRoot>
       <Layout data-testid={layoutTestId}>
-        {view === 'home' ? (
-          <HomeView
-            layout={layout}
-            lastSession={lastSession ?? null}
-            onResume={onResume}
-            onSelectCollection={handleSelectCollection}
-            onSelectLiked={handleSelectLiked}
-            onNavigate={setView}
-            onContextMenuRequest={handleContextMenuRequest}
-          />
-        ) : view === 'liked' ? (
-          // Liked has no SeeAll page — fall back to home defensively if navigated here.
-          <HomeView
-            layout={layout}
-            lastSession={lastSession ?? null}
-            onResume={onResume}
-            onSelectCollection={handleSelectCollection}
-            onSelectLiked={handleSelectLiked}
-            onNavigate={setView}
-            onContextMenuRequest={handleContextMenuRequest}
-          />
-        ) : (
-          <SeeAllView
-            view={view}
-            onBack={() => setView('home')}
-            onSelectCollection={handleSelectCollection}
-            onContextMenuRequest={handleContextMenuRequest}
-          />
-        )}
+        {!isMobile && <SearchBar variant="desktop" search={search} />}
+        {body}
+        {isMobile && <SearchBar variant="mobile" search={search} />}
       </Layout>
       <MiniPlayer
         isPlaying={isPlaying}
@@ -157,6 +167,13 @@ const LibraryRoute: React.FC<LibraryRouteProps> = ({
         onExpand={onMiniExpand}
         onStartRadio={onMiniStartRadio}
       />
+      {!isMobile && (
+        <CommandPalette
+          open={paletteOpen}
+          onClose={() => setPaletteOpen(false)}
+          onSelectCollection={handleSelectCollection}
+        />
+      )}
     </LibraryRouteRoot>
   );
 };
