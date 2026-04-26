@@ -6,6 +6,7 @@ import { useLikedSection } from '../hooks';
 import type { ContextMenuRequest } from '../types';
 import type { ProviderId, MediaTrack } from '@/types/domain';
 import { useLikedTracksForProvider } from './useLikedTracksForProvider';
+import { useAlbumSavedStatus } from './useAlbumSavedStatus';
 import {
   buildMenuItems,
   type MenuActions,
@@ -69,6 +70,17 @@ const LibraryContextMenu: React.FC<LibraryContextMenuProps> = ({
   const { remove: removeRecent } = useRecentlyPlayedCollections();
   const { perProvider } = useLikedSection();
   const { loadLikedTracks } = useLikedTracksForProvider();
+
+  const albumIdForSaveStatus =
+    request?.kind === 'album'
+      ? request.id
+      : request?.kind === 'recently-played' && request.originalKind === 'album'
+        ? request.id
+        : null;
+  const { isSaved, toggleSaved, canToggle: canToggleSaved } = useAlbumSavedStatus(
+    albumIdForSaveStatus,
+    request?.provider,
+  );
 
   const closeAfter = useCallback(
     (fn: () => void | Promise<unknown>): (() => void) =>
@@ -152,6 +164,11 @@ const LibraryContextMenu: React.FC<LibraryContextMenuProps> = ({
       likedProviderActions,
     };
 
+    if (isAlbumKind && canToggleSaved && isSaved !== null) {
+      actions.onToggleSave = closeAfter(toggleSaved);
+      actions.isSaved = isSaved;
+    }
+
     if (request.kind === 'recently-played' && request.recentRef) {
       const recentRef = request.recentRef;
       actions.onRemoveFromHistory = closeAfter(() => {
@@ -191,6 +208,9 @@ const LibraryContextMenu: React.FC<LibraryContextMenuProps> = ({
     closeAfter,
     playNextDisabled,
     startRadioDisabled,
+    canToggleSaved,
+    isSaved,
+    toggleSaved,
   ]);
 
   if (!request) return null;

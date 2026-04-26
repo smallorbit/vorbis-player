@@ -42,6 +42,16 @@ vi.mock('../useLikedTracksForProvider', () => ({
   useLikedTracksForProvider: () => ({ loadLikedTracks: mockLoadLiked }),
 }));
 
+vi.mock('../useAlbumSavedStatus', () => ({
+  useAlbumSavedStatus: () => ({
+    isSaved: null,
+    toggleSaved: vi.fn(),
+    canToggle: false,
+    saveError: null,
+    clearSaveError: vi.fn(),
+  }),
+}));
+
 import LibraryContextMenu, { type LibraryContextMenuProps } from '../LibraryContextMenu';
 
 function makeRequest(overrides: Partial<ContextMenuRequest> = {}): ContextMenuRequest {

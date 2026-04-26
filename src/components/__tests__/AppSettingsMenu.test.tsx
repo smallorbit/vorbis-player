@@ -85,8 +85,6 @@ describe('AppSettingsMenu', () => {
     onVisualizerDebugToggle: vi.fn(),
     qapEnabled: false,
     onQapToggle: vi.fn(),
-    newLibraryRouteEnabled: false,
-    onNewLibraryRouteToggle: vi.fn(),
   };
 
   beforeEach(() => {
@@ -187,7 +185,7 @@ describe('AppSettingsMenu', () => {
       // #when
       fireEvent.click(screen.getByText('Advanced'));
       const onButtons = screen.getAllByText('On');
-      fireEvent.click(onButtons[2]);
+      fireEvent.click(onButtons[1]);
 
       // #then
       expect(onProfilerToggle).toHaveBeenCalled();
@@ -205,7 +203,7 @@ describe('AppSettingsMenu', () => {
       // #when
       fireEvent.click(screen.getByText('Advanced'));
       const onButtons = screen.getAllByText('On');
-      fireEvent.click(onButtons[3]);
+      fireEvent.click(onButtons[2]);
 
       // #then
       expect(onVisualizerDebugToggle).toHaveBeenCalled();

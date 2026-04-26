@@ -99,11 +99,9 @@ export function usePlayerLogic() {
   const [playbackPosition, setPlaybackPosition] = useState(0);
   const [authExpired, setAuthExpired] = useState<ProviderId | null>(null);
 
-  // Library full-screen visibility (local UI state)
-  // currentView is the forward-looking compat slice; showLibrary is derived for legacy consumers.
+  // Library full-screen visibility (local UI state) — currentView is canonical.
   type PlayerView = 'player' | 'library';
   const [currentView, setCurrentView] = useState<PlayerView>('player');
-  const showLibrary = currentView === 'library';
 
   // Radio generation progress panel state
   const [radioProgress, setRadioProgress] = useState<RadioProgress | null>(null);
@@ -504,7 +502,6 @@ export function usePlayerLogic() {
       error,
       selectedPlaylistId,
       tracks,
-      showLibrary,
       currentView,
       isPlaying,
       playbackPosition,
