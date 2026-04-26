@@ -52,7 +52,7 @@ const Wrapper = ({ children }: { children: React.ReactNode }) => (
 function renderFlow() {
   return render(
     <Wrapper>
-      <OnboardingFlowV2 />
+      <OnboardingFlowV2 onConnectProvider={vi.fn()} onBrowseLibrary={vi.fn()} />
     </Wrapper>,
   );
 }
@@ -67,13 +67,14 @@ describe('OnboardingFlowV2', () => {
   });
 
   describe('ARIA root', () => {
-    it('has aria-label "Get started with Vorbis Player" on the root element', () => {
+    it('has role="region" with aria-label "Get started with Vorbis Player"', () => {
       // #given / #when
       renderFlow();
 
       // #then
-      const root = document.querySelector('[aria-label="Get started with Vorbis Player"]');
-      expect(root).not.toBeNull();
+      expect(
+        screen.getByRole('region', { name: 'Get started with Vorbis Player' }),
+      ).toBeInTheDocument();
     });
   });
 
@@ -81,6 +82,7 @@ describe('OnboardingFlowV2', () => {
     it('renders 3 progress dots', () => {
       // #given
       mockIsDesktop = true;
+      mockStep = 0;
 
       // #when
       renderFlow();
@@ -89,16 +91,42 @@ describe('OnboardingFlowV2', () => {
       expect(screen.getAllByRole('tab')).toHaveLength(3);
     });
 
-    it('renders all 3 step panels including ZenMode', () => {
+    it('shows SwipeQueue step on step 0', () => {
       // #given
       mockIsDesktop = true;
+      mockStep = 0;
 
       // #when
       renderFlow();
 
       // #then
       expect(screen.getByTestId('step-swipe-queue')).toBeInTheDocument();
+    });
+
+    it('shows Visualizers step on step 1', () => {
+      // #given
+      mockIsDesktop = true;
+      mockStep = 1;
+      mockIsFirst = false;
+
+      // #when
+      renderFlow();
+
+      // #then
       expect(screen.getByTestId('step-visualizers')).toBeInTheDocument();
+    });
+
+    it('shows ZenMode step on step 2 (desktop only)', () => {
+      // #given
+      mockIsDesktop = true;
+      mockStep = 2;
+      mockIsFirst = false;
+      mockIsLast = true;
+
+      // #when
+      renderFlow();
+
+      // #then
       expect(screen.getByTestId('step-zen-mode')).toBeInTheDocument();
     });
   });
@@ -107,27 +135,38 @@ describe('OnboardingFlowV2', () => {
     beforeEach(() => { mockIsDesktop = false; });
 
     it('renders 2 progress dots', () => {
-      // #given / #when
+      // #given
+      mockStep = 0;
+
+      // #when
       renderFlow();
 
       // #then
       expect(screen.getAllByRole('tab')).toHaveLength(2);
     });
 
-    it('renders 2 step panels (SwipeQueue + Visualizers)', () => {
-      // #given / #when
+    it('shows SwipeQueue step on step 0', () => {
+      // #given
+      mockStep = 0;
+
+      // #when
       renderFlow();
 
       // #then
       expect(screen.getByTestId('step-swipe-queue')).toBeInTheDocument();
-      expect(screen.getByTestId('step-visualizers')).toBeInTheDocument();
     });
 
-    it('does NOT render the ZenMode step', () => {
-      // #given / #when
+    it('does NOT render ZenMode step on mobile (step 1 is the last mobile step)', () => {
+      // #given — step 1 is the last step in the 2-step mobile flow
+      mockStep = 1;
+      mockIsFirst = false;
+      mockIsLast = true;
+
+      // #when
       renderFlow();
 
-      // #then
+      // #then — Visualizers shown, ZenMode absent
+      expect(screen.getByTestId('step-visualizers')).toBeInTheDocument();
       expect(screen.queryByTestId('step-zen-mode')).not.toBeInTheDocument();
     });
   });
@@ -158,7 +197,7 @@ describe('OnboardingFlowV2', () => {
   });
 
   describe('back button visibility', () => {
-    it('back button is hidden on step 0 (isFirst=true)', () => {
+    it('back button is hidden when isFirst=true (step 0)', () => {
       // #given
       mockIsFirst = true;
 
@@ -169,7 +208,7 @@ describe('OnboardingFlowV2', () => {
       expect(screen.queryByRole('button', { name: /back/i })).not.toBeInTheDocument();
     });
 
-    it('back button is visible on steps after the first (isFirst=false)', () => {
+    it('back button is visible when isFirst=false (steps 1+)', () => {
       // #given
       mockStep = 1;
       mockIsFirst = false;
