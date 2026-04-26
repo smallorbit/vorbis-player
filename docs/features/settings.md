@@ -136,6 +136,16 @@ export const useQapEnabled = (): [boolean, (value: boolean) => void] => {
 
 The QAP key is NOT centralized in `STORAGE_KEYS`. It is hardcoded as a string literal in `useQapEnabled.ts`. If you need to reference it elsewhere, use the hook or duplicate the string.
 
+### New Library Route (opt-in)
+
+A redesigned library surface (`LibraryRoute`) replacing the legacy `LibraryPage`. Toggle via the **New Library Route** On/Off pills in Settings. Persists to localStorage as `vorbis-player-new-library-route` (default `false`) via `useNewLibraryRoute()` hook. When enabled, both the idle library route (`PlayerStateRenderer`) and the active-player library overlay (`AudioPlayer`) render `LibraryRoute` instead of `LibraryPage`. The toggle is read in:
+
+- `src/components/AudioPlayer.tsx` — gates idle library mount
+- `src/components/PlayerStateRenderer.tsx` — gates idle library route
+- `src/components/PlayerContent/PlayerControlsSection.tsx` — wires the toggle setter into the active-player Settings menu
+
+**[NEW LIBRARY ROUTE — section removed when #1298 lands and the toggle disappears.]**
+
 ## Dropbox Preferences Sync
 
 File: `src/providers/dropbox/dropboxPreferencesSync.ts`
@@ -271,6 +281,7 @@ These are compatible because `JSON.parse('"true"')` and `'true' === 'true'` both
 | `src/constants/storage.ts` | `STORAGE_KEYS` constant object |
 | `src/hooks/useLocalStorage.ts` | Generic localStorage hook with cross-tab sync |
 | `src/hooks/useQapEnabled.ts` | QAP preference hook |
+| `src/hooks/useNewLibraryRoute.ts` | New Library Route flag (localStorage) **[NEW]** |
 | `src/contexts/VisualEffectsContext.tsx` | Visual effects state (glow, visualizer, translucence, zen) |
 | `src/providers/dropbox/dropboxPreferencesSync.ts` | Dropbox preferences sync service |
 | `src/components/PlayerContent/PlayerControlsSection.tsx` | Wires settings props from contexts to the drawer |
