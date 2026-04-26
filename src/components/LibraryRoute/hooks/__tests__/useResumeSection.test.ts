@@ -1,49 +1,93 @@
 import { describe, it, expect } from 'vitest';
 import { renderHook } from '@testing-library/react';
 import { useResumeSection } from '../useResumeSection';
-import { STALE_SESSION_MS, type SessionSnapshot } from '@/services/sessionPersistence';
+import { STALE_SESSION_MS } from '@/services/sessionPersistence';
+import type { SessionSnapshot } from '@/services/sessionPersistence';
 
-function makeSession(overrides: Partial<SessionSnapshot> = {}): SessionSnapshot {
-  return {
-    collectionId: 'playlist-1',
-    collectionName: 'My Playlist',
-    trackIndex: 0,
-    savedAt: Date.now(),
-    ...overrides,
-  };
-}
+const makeSession = (overrides?: Partial<SessionSnapshot>): SessionSnapshot => ({
+  collectionId: 'col-1',
+  collectionName: 'Test Playlist',
+  trackIndex: 0,
+  savedAt: Date.now(),
+  queueTracks: [],
+  ...overrides,
+});
 
 describe('useResumeSection', () => {
-  it('returns no resumable when lastSession is null', () => {
-    // #when
-    const { result } = renderHook(() => useResumeSection({ lastSession: null }));
+  describe('with null session', () => {
+    it('returns hasResumable false when lastSession is null', () => {
+      // #when
+      const { result } = renderHook(() => useResumeSection({ lastSession: null }));
 
-    // #then
-    expect(result.current.session).toBeNull();
-    expect(result.current.hasResumable).toBe(false);
+      // #then
+      expect(result.current.hasResumable).toBe(false);
+    });
+
+    it('returns session null when lastSession is null', () => {
+      // #when
+      const { result } = renderHook(() => useResumeSection({ lastSession: null }));
+
+      // #then
+      expect(result.current.session).toBeNull();
+    });
   });
 
-  it('returns no resumable when session is stale', () => {
-    // #given
-    const stale = makeSession({ savedAt: Date.now() - STALE_SESSION_MS - 1000 });
+  describe('with fresh session', () => {
+    it('returns hasResumable true for a recent session', () => {
+      // #given
+      const session = makeSession({ savedAt: Date.now() - 1000 });
 
-    // #when
-    const { result } = renderHook(() => useResumeSection({ lastSession: stale }));
+      // #when
+      const { result } = renderHook(() => useResumeSection({ lastSession: session }));
 
-    // #then
-    expect(result.current.session).toBeNull();
-    expect(result.current.hasResumable).toBe(false);
+      // #then
+      expect(result.current.hasResumable).toBe(true);
+    });
+
+    it('returns the session itself when hasResumable is true', () => {
+      // #given
+      const session = makeSession();
+
+      // #when
+      const { result } = renderHook(() => useResumeSection({ lastSession: session }));
+
+      // #then
+      expect(result.current.session).toBe(session);
+    });
   });
 
-  it('surfaces session when fresh', () => {
-    // #given
-    const fresh = makeSession();
+  describe('with stale session', () => {
+    it('returns hasResumable false when session is older than STALE_SESSION_MS', () => {
+      // #given
+      const session = makeSession({ savedAt: Date.now() - STALE_SESSION_MS - 1000 });
 
-    // #when
-    const { result } = renderHook(() => useResumeSection({ lastSession: fresh }));
+      // #when
+      const { result } = renderHook(() => useResumeSection({ lastSession: session }));
 
-    // #then
-    expect(result.current.session).toBe(fresh);
-    expect(result.current.hasResumable).toBe(true);
+      // #then
+      expect(result.current.hasResumable).toBe(false);
+    });
+
+    it('returns session null when session is stale', () => {
+      // #given
+      const session = makeSession({ savedAt: Date.now() - STALE_SESSION_MS - 1000 });
+
+      // #when
+      const { result } = renderHook(() => useResumeSection({ lastSession: session }));
+
+      // #then
+      expect(result.current.session).toBeNull();
+    });
+
+    it('treats session 1ms past STALE_SESSION_MS as stale (boundary: strict >)', () => {
+      // #given — 1ms beyond threshold; impl uses `>` so this is stale
+      const session = makeSession({ savedAt: Date.now() - STALE_SESSION_MS - 1 });
+
+      // #when
+      const { result } = renderHook(() => useResumeSection({ lastSession: session }));
+
+      // #then
+      expect(result.current.hasResumable).toBe(false);
+    });
   });
 });

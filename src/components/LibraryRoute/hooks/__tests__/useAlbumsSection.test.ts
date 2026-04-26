@@ -1,118 +1,197 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook } from '@testing-library/react';
-import type { AlbumInfo } from '@/services/spotify';
+import { useAlbumsSection } from '../useAlbumsSection';
 import type { ProviderId } from '@/types/domain';
 
-const { mockPinned, mockLibrarySync } = vi.hoisted(() => ({
-  mockPinned: vi.fn(),
-  mockLibrarySync: vi.fn(),
+vi.mock('@/hooks/useLibrarySync', () => ({
+  useLibrarySync: vi.fn(),
+  LIBRARY_REFRESH_EVENT: 'vorbis-library-refresh',
+  ART_REFRESHED_EVENT: 'vorbis-art-refreshed',
 }));
 
 vi.mock('@/hooks/usePinnedItems', () => ({
-  usePinnedItems: () => mockPinned(),
+  usePinnedItems: vi.fn(),
 }));
 
-vi.mock('@/hooks/useLibrarySync', () => ({
-  useLibrarySync: () => mockLibrarySync(),
-}));
+import { useLibrarySync } from '@/hooks/useLibrarySync';
+import { usePinnedItems } from '@/hooks/usePinnedItems';
 
-import { useAlbumsSection } from '../useAlbumsSection';
+const mockUseLibrarySync = vi.mocked(useLibrarySync);
+const mockUsePinnedItems = vi.mocked(usePinnedItems);
 
-function makeAlbum(id: string, provider: ProviderId = 'spotify'): AlbumInfo {
-  return {
-    id,
-    name: `Album ${id}`,
-    artists: 'Test',
-    images: [],
-    release_date: '2024-01-01',
-    total_tracks: 1,
-    uri: `spotify:album:${id}`,
-    provider,
-  };
-}
+const makeAlbum = (id: string, provider: ProviderId = 'spotify') => ({
+  id,
+  name: `Album ${id}`,
+  provider,
+  artists: 'Test Artist',
+  images: [{ url: `https://img.example/${id}.jpg`, height: 300, width: 300 }],
+  release_date: '2024',
+  total_tracks: 10,
+  uri: `spotify:album:${id}`,
+});
+
+const defaultPinnedItems = {
+  pinnedPlaylistIds: [] as string[],
+  pinnedAlbumIds: [] as string[],
+  isPlaylistPinned: vi.fn(() => false),
+  isAlbumPinned: vi.fn(() => false),
+  togglePinPlaylist: vi.fn(),
+  togglePinAlbum: vi.fn(),
+  canPinMorePlaylists: true,
+  canPinMoreAlbums: true,
+} as ReturnType<typeof usePinnedItems>;
+
+const makeLibraryReturn = (albums: ReturnType<typeof useLibrarySync>['albums'], overrides = {}) => ({
+  playlists: [],
+  albums,
+  likedSongsCount: 0,
+  likedSongsPerProvider: [],
+  isInitialLoadComplete: true,
+  isLikedSongsSyncing: false,
+  ...overrides,
+} as ReturnType<typeof useLibrarySync>);
 
 describe('useAlbumsSection', () => {
   beforeEach(() => {
-    mockPinned.mockReset();
-    mockLibrarySync.mockReset();
-    mockPinned.mockReturnValue({ pinnedAlbumIds: [] });
+    vi.clearAllMocks();
+    mockUsePinnedItems.mockReturnValue(defaultPinnedItems);
+    mockUseLibrarySync.mockReturnValue(makeLibraryReturn([]));
   });
 
-  it('returns full album list when no filter or pinning', () => {
-    // #given
-    mockLibrarySync.mockReturnValue({
-      albums: [makeAlbum('a1'), makeAlbum('a2')],
-      isInitialLoadComplete: true,
+  describe('loading state', () => {
+    it('returns isLoading true when library not yet loaded', () => {
+      // #given
+      mockUseLibrarySync.mockReturnValue(makeLibraryReturn([], { isInitialLoadComplete: false }));
+
+      // #when
+      const { result } = renderHook(() => useAlbumsSection({}));
+
+      // #then
+      expect(result.current.isLoading).toBe(true);
     });
 
-    // #when
-    const { result } = renderHook(() => useAlbumsSection({ excludePinned: false }));
+    it('returns isLoading false when library is loaded', () => {
+      // #when
+      const { result } = renderHook(() => useAlbumsSection({}));
 
-    // #then
-    expect(result.current.items.map((a) => a.id)).toEqual(['a1', 'a2']);
-    expect(result.current.isEmpty).toBe(false);
-    expect(result.current.isLoading).toBe(false);
+      // #then
+      expect(result.current.isLoading).toBe(false);
+    });
   });
 
-  it('excludes pinned albums when excludePinned is true (default)', () => {
-    // #given
-    mockPinned.mockReturnValue({ pinnedAlbumIds: ['a1'] });
-    mockLibrarySync.mockReturnValue({
-      albums: [makeAlbum('a1'), makeAlbum('a2')],
-      isInitialLoadComplete: true,
+  describe('empty state', () => {
+    it('returns isEmpty true when no albums', () => {
+      // #when
+      const { result } = renderHook(() => useAlbumsSection({}));
+
+      // #then
+      expect(result.current.isEmpty).toBe(true);
     });
-
-    // #when
-    const { result } = renderHook(() => useAlbumsSection());
-
-    // #then
-    expect(result.current.items.map((a) => a.id)).toEqual(['a2']);
   });
 
-  it('filters by providerFilter', () => {
-    // #given
-    mockLibrarySync.mockReturnValue({
-      albums: [makeAlbum('a1', 'spotify'), makeAlbum('a2', 'dropbox')],
-      isInitialLoadComplete: true,
+  describe('no filter', () => {
+    it('returns all albums when providerFilter is undefined', () => {
+      // #given
+      mockUseLibrarySync.mockReturnValue(makeLibraryReturn([
+        makeAlbum('alb-1'),
+        makeAlbum('alb-2', 'dropbox' as ProviderId),
+      ]));
+
+      // #when
+      const { result } = renderHook(() => useAlbumsSection({}));
+
+      // #then
+      expect(result.current.items).toHaveLength(2);
     });
 
-    // #when
-    const { result } = renderHook(() =>
-      useAlbumsSection({ providerFilter: ['dropbox'], excludePinned: false }),
-    );
+    it('returns all albums when providerFilter is empty array', () => {
+      // #given
+      mockUseLibrarySync.mockReturnValue(makeLibraryReturn([makeAlbum('alb-1'), makeAlbum('alb-2')]));
 
-    // #then
-    expect(result.current.items.map((a) => a.id)).toEqual(['a2']);
+      // #when
+      const { result } = renderHook(() => useAlbumsSection({ providerFilter: [] }));
+
+      // #then
+      expect(result.current.items).toHaveLength(2);
+    });
   });
 
-  it('treats empty providerFilter array as no filter', () => {
-    // #given
-    mockLibrarySync.mockReturnValue({
-      albums: [makeAlbum('a1', 'spotify'), makeAlbum('a2', 'dropbox')],
-      isInitialLoadComplete: true,
+  describe('provider filter', () => {
+    it('filters albums to specified provider', () => {
+      // #given
+      mockUseLibrarySync.mockReturnValue(makeLibraryReturn([
+        makeAlbum('alb-1', 'spotify'),
+        makeAlbum('alb-2', 'dropbox' as ProviderId),
+        makeAlbum('alb-3', 'spotify'),
+      ]));
+
+      // #when
+      const { result } = renderHook(() => useAlbumsSection({ providerFilter: ['spotify'] }));
+
+      // #then
+      expect(result.current.items).toHaveLength(2);
+      expect(result.current.items.every(a => a.provider === 'spotify')).toBe(true);
     });
 
-    // #when
-    const { result } = renderHook(() =>
-      useAlbumsSection({ providerFilter: [], excludePinned: false }),
-    );
+    it('falls back to "spotify" for albums without a provider field', () => {
+      // #given
+      const albumWithoutProvider = { ...makeAlbum('alb-1') };
+      delete (albumWithoutProvider as Record<string, unknown>).provider;
+      mockUseLibrarySync.mockReturnValue(makeLibraryReturn(
+        [albumWithoutProvider] as ReturnType<typeof useLibrarySync>['albums']
+      ));
 
-    // #then
-    expect(result.current.items.map((a) => a.id)).toEqual(['a1', 'a2']);
+      // #when
+      const { result } = renderHook(() => useAlbumsSection({ providerFilter: ['spotify'] }));
+
+      // #then
+      expect(result.current.items).toHaveLength(1);
+    });
   });
 
-  it('reports isLoading until initial load completes', () => {
-    // #given
-    mockLibrarySync.mockReturnValue({
-      albums: [],
-      isInitialLoadComplete: false,
+  describe('pinned exclusion', () => {
+    it('excludes pinned albums by default', () => {
+      // #given
+      mockUsePinnedItems.mockReturnValue({ ...defaultPinnedItems, pinnedAlbumIds: ['alb-1'] });
+      mockUseLibrarySync.mockReturnValue(makeLibraryReturn([makeAlbum('alb-1'), makeAlbum('alb-2')]));
+
+      // #when
+      const { result } = renderHook(() => useAlbumsSection({}));
+
+      // #then
+      expect(result.current.items).toHaveLength(1);
+      expect(result.current.items[0].id).toBe('alb-2');
     });
 
-    // #when
-    const { result } = renderHook(() => useAlbumsSection());
+    it('includes pinned albums when excludePinned is false', () => {
+      // #given
+      mockUsePinnedItems.mockReturnValue({ ...defaultPinnedItems, pinnedAlbumIds: ['alb-1'] });
+      mockUseLibrarySync.mockReturnValue(makeLibraryReturn([makeAlbum('alb-1'), makeAlbum('alb-2')]));
 
-    // #then
-    expect(result.current.isLoading).toBe(true);
-    expect(result.current.isEmpty).toBe(true);
+      // #when
+      const { result } = renderHook(() => useAlbumsSection({ excludePinned: false }));
+
+      // #then
+      expect(result.current.items).toHaveLength(2);
+    });
+
+    it('applies both provider filter and pinned exclusion together', () => {
+      // #given
+      mockUsePinnedItems.mockReturnValue({ ...defaultPinnedItems, pinnedAlbumIds: ['alb-1'] });
+      mockUseLibrarySync.mockReturnValue(makeLibraryReturn([
+        makeAlbum('alb-1', 'spotify'),
+        makeAlbum('alb-2', 'spotify'),
+        makeAlbum('alb-3', 'dropbox' as ProviderId),
+      ]));
+
+      // #when
+      const { result } = renderHook(() =>
+        useAlbumsSection({ providerFilter: ['spotify'], excludePinned: true })
+      );
+
+      // #then — only alb-2 remains
+      expect(result.current.items).toHaveLength(1);
+      expect(result.current.items[0].id).toBe('alb-2');
+    });
   });
 });
