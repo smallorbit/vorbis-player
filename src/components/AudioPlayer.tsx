@@ -8,6 +8,10 @@ import BackgroundVisualizer from './BackgroundVisualizer';
 import AccentColorBackground from './AccentColorBackground';
 import DebugOverlay, { useDebugActivator } from './DebugOverlay';
 import ProviderSetupScreen from './ProviderSetupScreen';
+import SettingsGearButton from './SettingsGearButton';
+import OnboardingFlowV2 from './OnboardingV2';
+import { useUiV2 } from '@/hooks/useUiV2';
+import { useWelcomeSeen } from '@/hooks/useWelcomeSeen';
 import { toast } from 'sonner';
 import ResumeCard from './QuickAccessPanel/ResumeCard';
 import { ProfilingProvider } from '@/contexts/ProfilingContext';
@@ -270,6 +274,9 @@ const AudioPlayerComponent = () => {
     ? connectedProviderIds.length === 0
     : !activeDescriptor?.auth.isAuthenticated() && connectedProviderIds.length === 0;
 
+  const isUiV2 = useUiV2();
+  const [welcomeSeen] = useWelcomeSeen();
+
   const autoSelectFired = useRef(false);
   useEffect(() => {
     if (needsSetup || autoSelectFired.current || selectedPlaylistId !== null) return;
@@ -335,6 +342,18 @@ const AudioPlayerComponent = () => {
   }, []);
 
   const renderContent = () => {
+    if (isUiV2 && !welcomeSeen) {
+      return (
+        <>
+          <SettingsGearButton onClick={handleOpenSettings} />
+          <OnboardingFlowV2
+            onConnectProvider={() => {}}
+            onBrowseLibrary={() => {}}
+          />
+        </>
+      );
+    }
+
     if (needsSetup) {
       return (
         <ProviderSetupScreen
