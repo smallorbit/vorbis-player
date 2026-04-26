@@ -24,13 +24,19 @@ import {
   CacheOptionLabel,
   CacheConfirmButtons,
   CacheCancelButton,
+  FilterSection,
 } from './styled';
 
 import { STATUS_RESET_DELAY_MS } from '@/constants/statusTiming';
 
 import { MusicSourcesSection, NativeQueueSyncSection } from './SourcesSections';
 import { ProviderDataSection } from './ProviderDataSection';
-import { CollapsibleSection } from './CollapsibleSection';
+import {
+  Accordion,
+  AccordionItem,
+  AccordionTrigger,
+  AccordionContent,
+} from '@/components/ui/accordion';
 
 export interface ClearCacheOptions {
   clearLikes: boolean;
@@ -156,7 +162,11 @@ const AppSettingsMenu: React.FC<AppSettingsMenuProps> = memo(({
             </OptionButtonGroup>
           </ControlGroup>
 
-          <CollapsibleSection title="Advanced">
+          <FilterSection>
+            <Accordion type="single" collapsible>
+              <AccordionItem value="advanced">
+                <AccordionTrigger>Advanced</AccordionTrigger>
+                <AccordionContent>
             <ControlGroup>
               <ControlLabel>Clear Library Cache</ControlLabel>
               {clearState === 'confirming' ? (
@@ -244,7 +254,10 @@ const AppSettingsMenu: React.FC<AppSettingsMenuProps> = memo(({
             {dataProviders.map((p) => (
               <ProviderDataSection key={p.id} providerName={p.name} catalog={p.catalog} />
             ))}
-          </CollapsibleSection>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+          </FilterSection>
         </DrawerContent>
       </DrawerContainer>
     </ProfiledComponent>,

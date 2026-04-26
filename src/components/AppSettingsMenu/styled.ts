@@ -133,49 +133,6 @@ export const SectionTitle = styled.h4`
   letter-spacing: 0.05em;
 `;
 
-export const CollapsibleHeader = styled.button`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  width: 100%;
-  background: none;
-  border: none;
-  padding: 0;
-  margin: 0 0 ${({ theme }) => theme.spacing.lg} 0;
-  cursor: pointer;
-  color: ${({ theme }) => theme.colors.muted.foreground};
-
-  &:hover {
-    color: ${({ theme }) => theme.colors.foreground};
-  }
-`;
-
-export const CollapsibleTitle = styled.h4`
-  margin: 0;
-  font-size: ${({ theme }) => theme.fontSize.sm};
-  font-weight: ${({ theme }) => theme.fontWeight.semibold};
-  color: inherit;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-`;
-
-export const CollapsibleChevron = styled.svg<{ $isOpen: boolean }>`
-  width: 14px;
-  height: 14px;
-  flex-shrink: 0;
-  transition: transform ${({ theme }) => theme.transitions.fast} ease;
-  transform: rotate(${({ $isOpen }) => ($isOpen ? '180deg' : '0deg')});
-`;
-
-export const CollapsibleBody = styled.div<{ $isOpen: boolean }>`
-  display: grid;
-  grid-template-rows: ${({ $isOpen }) => ($isOpen ? '1fr' : '0fr')};
-  transition: grid-template-rows 200ms ease;
-`;
-
-export const CollapsibleInner = styled.div`
-  overflow: hidden;
-`;
 
 export const FilterGrid = styled.div`
   display: flex;

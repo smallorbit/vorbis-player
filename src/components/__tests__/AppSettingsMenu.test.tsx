@@ -282,6 +282,11 @@ describe('AppSettingsMenu', () => {
 
       render(<Wrapper><AppSettingsMenu {...defaultProps} /></Wrapper>);
 
+      // #when
+      // Provider data sections are nested inside the (collapsed-by-default)
+      // Advanced accordion, so we must expand it before its children mount.
+      fireEvent.click(screen.getByText('Advanced'));
+
       // #then
       expect(screen.getByText('Dropbox Data')).toBeInTheDocument();
     });
