@@ -44,6 +44,10 @@ When the builder posts an interface contract for a new component / hook (props +
 When your task is blocked on a dependency (the builder has not yet landed the implementation you need to test), do NOT idle silently. Pre-read the test files and source files named in the issue spec — note current shape, existing test patterns, sibling tests' assertion style, and any surprises (e.g. test expects an interface the spec doesn't mention). Surface findings to the lead via `SendMessage` before going idle.
 
 The hard rule still holds: do not write test code before the implementation interface lands (per "Interface alignment with the builder"). But warming context costs nothing and shortens cold-start time once the dependency clears. Pre-work is a ~200-word note to the lead, not a draft test file.
+## Pause-on-correction — re-read before any commit/push/PR
+
+Before any commit, push, or PR-open step, re-read the most recent lead message in full. If it contains a protocol gate (stop, hold, await reviewer, "do NOT commit"), respect it even if an earlier message implied ship-immediately. Lead corrections often arrive after you've already started executing the original instruction — racing to complete the original directive in spite of a follow-up correction is the failure mode this rule exists to prevent.
+
 ## Worktree pre-flight
 
 You are spawned with `isolation: "worktree"` by default (see spawn-team skill). Your worktree does not inherit `node_modules` or `.env.local` from the main workspace. Before running any tests or installing dependencies, execute:
