@@ -126,6 +126,38 @@ describe('useLocalStorage', () => {
     expect(result.current[0]).toBe('original');
   });
 
+  it('syncs state across two same-tab hook instances sharing a key', () => {
+    // #given
+    vi.mocked(window.localStorage.setItem).mockImplementation(() => {});
+    const { result: instanceA } = renderHook(() => useLocalStorage('shared-key', 'initial'));
+    const { result: instanceB } = renderHook(() => useLocalStorage('shared-key', 'initial'));
+
+    // #when
+    act(() => {
+      instanceA.current[1]('updated-by-a');
+    });
+
+    // #then
+    expect(instanceA.current[0]).toBe('updated-by-a');
+    expect(instanceB.current[0]).toBe('updated-by-a');
+  });
+
+  it('does not sync same-tab updates for unrelated keys', () => {
+    // #given
+    vi.mocked(window.localStorage.setItem).mockImplementation(() => {});
+    const { result: instanceA } = renderHook(() => useLocalStorage('key-a', 'a-initial'));
+    const { result: instanceB } = renderHook(() => useLocalStorage('key-b', 'b-initial'));
+
+    // #when
+    act(() => {
+      instanceA.current[1]('a-updated');
+    });
+
+    // #then
+    expect(instanceA.current[0]).toBe('a-updated');
+    expect(instanceB.current[0]).toBe('b-initial');
+  });
+
   it('removes the storage event listener when the hook unmounts', () => {
     // #given
     const removeListenerSpy = vi.spyOn(window, 'removeEventListener');
@@ -136,6 +168,7 @@ describe('useLocalStorage', () => {
 
     // #then
     expect(removeListenerSpy).toHaveBeenCalledWith('storage', expect.any(Function));
+    expect(removeListenerSpy).toHaveBeenCalledWith('vorbis-player:localStorage', expect.any(Function));
 
     removeListenerSpy.mockRestore();
   });
