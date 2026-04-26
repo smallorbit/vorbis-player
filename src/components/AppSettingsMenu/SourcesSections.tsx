@@ -1,4 +1,5 @@
 import { memo, useMemo, useCallback, useEffect, useRef, useState } from 'react';
+import { toast } from 'sonner';
 
 import { useProviderContext } from '@/contexts/ProviderContext';
 import { useTrackListContext, useCurrentTrackContext } from '@/contexts/TrackContext';
@@ -6,7 +7,6 @@ import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { STORAGE_KEYS } from '@/constants/storage';
 import { AUTH_COMPLETE_EVENT } from '@/constants/events';
 import type { ProviderId } from '@/types/domain';
-import Toast from '@/components/Toast';
 import ProviderDisconnectDialog from '@/components/ProviderDisconnectDialog';
 
 import {
@@ -27,7 +27,6 @@ export const MusicSourcesSection = memo(() => {
   const { currentTrackIndex, setCurrentTrackIndex } = useCurrentTrackContext();
   const providers = useMemo(() => registry.getAll(), [registry]);
 
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [disconnectDialogProviderId, setDisconnectDialogProviderId] = useState<ProviderId | null>(null);
   const pendingPopup = useRef<{ providerId: ProviderId; popup: Window } | null>(null);
   const popupPollInterval = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -73,7 +72,7 @@ export const MusicSourcesSection = memo(() => {
         window.open = originalOpen;
         const win = originalOpen(...args);
         if (!win) {
-          setToastMessage(`Couldn't connect to ${providerName}. Try again.`);
+          toast(`Couldn't connect to ${providerName}. Try again.`);
           return win;
         }
 
@@ -86,7 +85,7 @@ export const MusicSourcesSection = memo(() => {
             const desc = registry.get(pending.providerId);
             if (!desc?.auth.isAuthenticated()) {
               const name = registry.get(pending.providerId)?.name ?? pending.providerId;
-              setToastMessage(`Couldn't connect to ${name}. Try again.`);
+              toast(`Couldn't connect to ${name}. Try again.`);
             } else {
               toggleProvider(pending.providerId);
             }
@@ -99,7 +98,7 @@ export const MusicSourcesSection = memo(() => {
       descriptor.auth.beginLogin({ popup: true }).catch(() => {
         window.open = originalOpen;
         clearPendingPopup();
-        setToastMessage(`Couldn't connect to ${providerName}. Try again.`);
+        toast(`Couldn't connect to ${providerName}. Try again.`);
       });
     },
     [registry, toggleProvider, clearPendingPopup],
@@ -167,9 +166,6 @@ export const MusicSourcesSection = memo(() => {
   return (
     <FilterSection>
       <SectionTitle>Music Sources</SectionTitle>
-      {toastMessage && (
-        <Toast message={toastMessage} onDismiss={() => setToastMessage(null)} />
-      )}
       <FilterGrid>
         {providers.map((descriptor) => {
           const isEnabled = enabledProviderIds.includes(descriptor.id);

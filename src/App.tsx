@@ -23,6 +23,7 @@ import { DevBugProvider } from '@/contexts/DevBugContext';
 import { DevBugFAB } from '@/components/DevBug';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { STORAGE_KEYS } from '@/constants/storage';
+import { Toaster } from '@/components/ui/sonner';
 
 /**
  * Cleanup function to remove deprecated localStorage keys
@@ -202,6 +203,7 @@ function App() {
 
   const player = (
     <ThemeProvider>
+      <Toaster />
       <ProviderProvider>
         <PlayerSizingProvider>
         <VisualizerDebugProvider>
