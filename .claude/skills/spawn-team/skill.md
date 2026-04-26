@@ -45,6 +45,12 @@ The user may override the count explicitly: *"spawn the team with 3 builders"*, 
 
 **`BUILDER_COUNT == 1`** can stay in shared workspace (no parallel conflict possible). But for any wave with parallel builders, set `isolation: "worktree"` on the spawn `Agent` call.
 
+**Default for tester: spawn with `isolation: "worktree"` whenever the lead operates in the main workspace** (which is essentially always — the lead cannot easily move). The tester runs `git checkout`, `git commit`, and `npm run test:run` operations that swap branch context; when both lead and tester share `/Users/roman/src/vorbis-player`, the tester's branch operations land under the lead's open session and corrupt the lead's commit graph. Worktree isolation eliminates this class of contamination at the same ~30s `npm install` cost paid by builders:
+
+- Lead's branch context stays stable for the entire session
+- Tester's `git commit` / `npm run test:run` operations are fully sandboxed
+- Test PRs from the tester carry clean diffs with no accidental lead-session commits absorbed
+
 When using worktrees, the spawn prompt should include the pre-flight setup instructions:
 
 ```
