@@ -67,6 +67,10 @@ Default review pattern (in priority order):
 
 If you find yourself reading `src/components/...` via the local `Read` tool during a review, stop and switch to one of the patterns above. A finding that doesn't appear in `git diff main...<branch> -- <file>` is a working-tree artifact, not a real review concern, and must be discarded.
 
+## Missing builder gate = FAIL (not conditional pass)
+
+If any mandatory builder gate (`npx tsc -b --noEmit`, `npm run build`, `npm run test:run`) is not confirmed in the builder or tester report, the verdict is FAIL — not "conditional pass" — until the missing gate result is provided. Soft-landing a missing gate as conditional leaves ambiguity in the lead's queue and lets the PR ship on a half-verified baseline. Be crisp: gate missing → FAIL → builder must re-run and re-report before review proceeds.
+
 ## Delta-only on duplicate review of the same commit
 
 If a review request arrives for a commit you have already reviewed in this session, send only a delta — cite the prior message and address only the new criteria the lead added. Never re-issue a full review for the same commit. The correct shape is:

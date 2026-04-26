@@ -48,6 +48,10 @@ Discovering each dependency file as the writeup demands it produces fragmented e
 
 This applies specifically to architectural-detail-mapping (per scope classification above). For verify-only tasks, stay narrow and don't speculatively read.
 
+## Cite sibling files even when unread
+
+When recon touches a component or hook, list its sibling files (`styled.ts`, `__tests__/`, adjacent `useFoo.ts`, etc.) in the per-landmark citation table even if you didn't open them. The lead and architect skim the citation table to know the full surface area exists; if a sibling file is omitted, they assume it doesn't exist and follow up with "did you check X?". A 30-second `Glob` or `LS` on the component directory and a one-line entry like `src/components/Foo/styled.ts — not read; styling tokens for Foo` prevents the round-trip.
+
 ## Full-suite verification when verifying CI failures
 
 When the recon task involves verifying a CI failure (e.g. "confirm these N tests fail / count newly broken tests / characterize the failure mode"), always run the full `npm run test:run` — not just the targeted file(s). CI runs the full suite on every push, so "any unexpected failures beyond the N expected" must be answered against the same scope. Targeted-file runs hide cross-file ordering bugs and unrelated regressions that CI will surface anyway.
