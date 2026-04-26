@@ -55,6 +55,21 @@ vi.mock('@/contexts/TrackContext', () => ({
   useCurrentTrackContext: () => mockCurrentTrack(),
 }));
 
+vi.mock('@/hooks/usePinnedItems', () => ({
+  usePinnedItems: () => ({
+    pinnedPlaylistIds: [],
+    pinnedAlbumIds: [],
+    isPlaylistPinned: () => false,
+    isAlbumPinned: () => false,
+    togglePinPlaylist: vi.fn(),
+    togglePinAlbum: vi.fn(),
+  }),
+}));
+
+vi.mock('@/hooks/useRecentlyPlayedCollections', () => ({
+  useRecentlyPlayedCollections: () => ({ history: [], record: vi.fn(), remove: vi.fn() }),
+}));
+
 import { usePlayerSizingContext } from '@/contexts/PlayerSizingContext';
 
 const baseProps = {

@@ -176,4 +176,44 @@ describe('useRecentlyPlayedCollections', () => {
     expect(result.current.history).toHaveLength(1);
     expect(result.current.history[0]).toEqual({ ref, name: 'Persisted Playlist' });
   });
+
+  it('removes an entry by CollectionRef key', () => {
+    // #given
+    const ref1 = makeRef({ id: 'p1' });
+    const ref2 = makeRef({ id: 'p2' });
+    const { result } = renderHook(() => useRecentlyPlayedCollections());
+    act(() => {
+      result.current.record(ref1, 'First');
+      result.current.record(ref2, 'Second');
+    });
+
+    // #when
+    act(() => {
+      result.current.remove(ref1);
+    });
+
+    // #then
+    const remainingIds = result.current.history.map((entry) =>
+      entry.ref.kind === 'playlist' || entry.ref.kind === 'album' ? (entry.ref as { id: string }).id : entry.ref.kind,
+    );
+    expect(remainingIds).toEqual(['p2']);
+  });
+
+  it('remove is a no-op when the ref is not in history', () => {
+    // #given
+    const ref = makeRef({ id: 'p1' });
+    const missing = makeRef({ id: 'p-missing' });
+    const { result } = renderHook(() => useRecentlyPlayedCollections());
+    act(() => {
+      result.current.record(ref, 'Only');
+    });
+
+    // #when
+    act(() => {
+      result.current.remove(missing);
+    });
+
+    // #then
+    expect(result.current.history).toHaveLength(1);
+  });
 });

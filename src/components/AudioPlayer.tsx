@@ -497,6 +497,9 @@ const AudioPlayerComponent = () => {
                 onMiniPrevious={playbackHandlers.onPrevious}
                 onMiniExpand={handlers.handleCloseLibrary}
                 onMiniStartRadio={radio.isRadioAvailable ? handlers.handleStartRadio : undefined}
+                /* onPlayNext + onStartRadioForCollection: disabled-fallback for #1297. Follow-up tickets implement queue-insert + radio orchestration. */
+                onPlayNext={undefined}
+                onStartRadioForCollection={undefined}
               />
             ) : (
               <LibraryPage

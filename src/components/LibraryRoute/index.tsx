@@ -15,6 +15,7 @@ import SearchBar from './search/SearchBar';
 import CommandPalette from './search/CommandPalette';
 import { useLibrarySearch } from './search/useLibrarySearch';
 import { useCommandPaletteShortcut } from './search/useCommandPaletteShortcut';
+import LibraryContextMenu from './contextMenu/LibraryContextMenu';
 
 // LibraryRoute assumes upstream guards have already filtered out cold-start cases:
 // - AudioPlayer.tsx routes to ProviderSetupScreen when needsSetup === true
@@ -34,6 +35,17 @@ export interface LibraryRouteProps {
   onOpenSettings: () => void;
   onResume?: () => void;
   lastSession?: SessionSnapshot | null;
+  onPlayNext?: (
+    kind: 'playlist' | 'album',
+    id: string,
+    name: string,
+    provider?: ProviderId,
+  ) => void;
+  onStartRadioForCollection?: (
+    kind: 'playlist' | 'album',
+    id: string,
+    provider?: ProviderId,
+  ) => void;
   isPlaying: boolean;
   isRadioAvailable?: boolean;
   isRadioGenerating?: boolean;
@@ -50,6 +62,9 @@ const LibraryRoute: React.FC<LibraryRouteProps> = ({
   onPlayLikedTracks,
   onResume,
   lastSession,
+  onAddToQueue,
+  onPlayNext,
+  onStartRadioForCollection,
   isPlaying,
   isRadioAvailable,
   isRadioGenerating,
@@ -105,11 +120,42 @@ const LibraryRoute: React.FC<LibraryRouteProps> = ({
     [onPlayLikedTracks, isUnifiedLikedActive, unifiedTracks],
   );
 
+  const [contextRequest, setContextRequest] = useState<ContextMenuRequest | null>(null);
+
   const handleContextMenuRequest = useCallback((req: ContextMenuRequest) => {
-    if (import.meta.env.DEV) {
-      console.debug('[LibraryRoute] context menu requested', req);
-    }
+    setContextRequest(req);
   }, []);
+
+  const handleCloseContextMenu = useCallback(() => {
+    setContextRequest(null);
+  }, []);
+
+  const handlePlayCollection = useCallback(
+    (kind: 'playlist' | 'album', id: string, name: string, provider?: ProviderId) => {
+      handleSelectCollection(kind, id, name, provider);
+    },
+    [handleSelectCollection],
+  );
+
+  const handleAddToQueueAction = useCallback(
+    (id: string, name: string, provider?: ProviderId) => {
+      void onAddToQueue?.(id, name, provider);
+    },
+    [onAddToQueue],
+  );
+
+  const handlePlayLikedFromMenu = useCallback(
+    async (
+      tracks: MediaTrack[],
+      collectionId: string,
+      collectionName: string,
+      provider?: ProviderId,
+    ) => {
+      if (!onPlayLikedTracks) return;
+      await onPlayLikedTracks(tracks, collectionId, collectionName, provider);
+    },
+    [onPlayLikedTracks],
+  );
 
   const layout: 'row' | 'grid' = isMobile ? 'row' : 'grid';
   const Layout = isMobile ? MobileLayout : DesktopLayout;
@@ -156,6 +202,15 @@ const LibraryRoute: React.FC<LibraryRouteProps> = ({
         {body}
         {isMobile && <SearchBar variant="mobile" search={search} />}
       </Layout>
+      <LibraryContextMenu
+        request={contextRequest}
+        onClose={handleCloseContextMenu}
+        onPlayCollection={handlePlayCollection}
+        onAddToQueue={handleAddToQueueAction}
+        onPlayNext={onPlayNext}
+        onStartRadioForCollection={onStartRadioForCollection}
+        onPlayLikedTracks={handlePlayLikedFromMenu}
+      />
       <MiniPlayer
         isPlaying={isPlaying}
         isRadioAvailable={isRadioAvailable}
