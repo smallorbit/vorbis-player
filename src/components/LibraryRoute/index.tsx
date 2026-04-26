@@ -9,6 +9,7 @@ import HomeView from './views/HomeView';
 import SeeAllView from './views/SeeAllView';
 import { fetchLikedForProvider } from './hooks';
 import type { ContextMenuRequest, LibraryItemKind, LibraryRouteView } from './types';
+import MiniPlayer from './MiniPlayer/MiniPlayer';
 
 // LibraryRoute assumes upstream guards have already filtered out cold-start cases:
 // - AudioPlayer.tsx routes to ProviderSetupScreen when needsSetup === true
@@ -28,6 +29,15 @@ export interface LibraryRouteProps {
   onOpenSettings: () => void;
   onResume?: () => void;
   lastSession?: SessionSnapshot | null;
+  isPlaying: boolean;
+  isRadioAvailable?: boolean;
+  isRadioGenerating?: boolean;
+  onMiniPlay: () => void;
+  onMiniPause: () => void;
+  onMiniNext: () => void;
+  onMiniPrevious: () => void;
+  onMiniExpand: () => void;
+  onMiniStartRadio?: () => void;
 }
 
 const LibraryRoute: React.FC<LibraryRouteProps> = ({
@@ -35,6 +45,15 @@ const LibraryRoute: React.FC<LibraryRouteProps> = ({
   onPlayLikedTracks,
   onResume,
   lastSession,
+  isPlaying,
+  isRadioAvailable,
+  isRadioGenerating,
+  onMiniPlay,
+  onMiniPause,
+  onMiniNext,
+  onMiniPrevious,
+  onMiniExpand,
+  onMiniStartRadio,
 }) => {
   const { isMobile } = usePlayerSizingContext();
   const [view, setView] = useState<LibraryRouteView>('home');
@@ -127,6 +146,17 @@ const LibraryRoute: React.FC<LibraryRouteProps> = ({
           />
         )}
       </Layout>
+      <MiniPlayer
+        isPlaying={isPlaying}
+        isRadioAvailable={isRadioAvailable}
+        isRadioGenerating={isRadioGenerating}
+        onPlay={onMiniPlay}
+        onPause={onMiniPause}
+        onNext={onMiniNext}
+        onPrevious={onMiniPrevious}
+        onExpand={onMiniExpand}
+        onStartRadio={onMiniStartRadio}
+      />
     </LibraryRouteRoot>
   );
 };

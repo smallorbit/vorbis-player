@@ -488,6 +488,15 @@ const AudioPlayerComponent = () => {
                 onOpenSettings={handleOpenSettings}
                 onResume={handleResume}
                 lastSession={lastSession}
+                isPlaying={state.isPlaying}
+                isRadioAvailable={radio.isRadioAvailable}
+                isRadioGenerating={radio.radioState?.isGenerating}
+                onMiniPlay={playbackHandlers.onPlay}
+                onMiniPause={playbackHandlers.onPause}
+                onMiniNext={playbackHandlers.onNext}
+                onMiniPrevious={playbackHandlers.onPrevious}
+                onMiniExpand={handlers.handleCloseLibrary}
+                onMiniStartRadio={radio.isRadioAvailable ? handlers.handleStartRadio : undefined}
               />
             ) : (
               <LibraryPage

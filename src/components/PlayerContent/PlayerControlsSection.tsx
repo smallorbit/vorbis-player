@@ -286,7 +286,7 @@ export const PlayerControlsSection: React.FC<PlayerControlsSectionProps> = React
   }, [volume, setVolumeLevel]);
 
   const bottomBarActions = useMemo<BottomBarActionsValue>(() => ({
-    hidden: showLibrary && isMobile,
+    hidden: showLibrary && (isMobile || newLibraryRouteEnabled),
     showSettings: handleShowVisualEffects,
     showQueue: onShowQueue,
     openLibrary: onOpenLibrary,
@@ -297,6 +297,7 @@ export const PlayerControlsSection: React.FC<PlayerControlsSectionProps> = React
   }), [
     showLibrary,
     isMobile,
+    newLibraryRouteEnabled,
     handleShowVisualEffects,
     onShowQueue,
     onOpenLibrary,
