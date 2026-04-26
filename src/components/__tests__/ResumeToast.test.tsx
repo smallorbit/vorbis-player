@@ -1,9 +1,10 @@
-import React, { useCallback, useEffect, useState } from 'react';
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import React, { useCallback, useEffect } from 'react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { ThemeProvider } from 'styled-components';
 import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { toast } from 'sonner';
 import { theme } from '@/styles/theme';
-import Toast from '../Toast';
+import { Toaster } from '@/components/ui/sonner';
 import { makeMediaTrack } from '@/test/fixtures';
 import type { MediaTrack } from '@/types/domain';
 
@@ -15,29 +16,27 @@ type ResumeToastHarnessHandle = {
   invoke: (key: HandlerKey) => void;
 };
 
+const RESUME_TOAST_ID = 'resume-toast';
+
 // Mirrors the AudioPlayer resume-toast wire-up using the same withResumeDismiss
 // wrapping factory shape, so a drift in AudioPlayer's wiring surfaces here.
 const ResumeToastHarness = React.forwardRef<ResumeToastHarnessHandle, { showQueue: boolean }>(
   ({ showQueue }, ref) => {
-    const [message, setMessage] = useState<string | null>(null);
-    const dismiss = useCallback(() => setMessage(null), []);
-
     const handleHydrateFired = useCallback((track: MediaTrack, skipped = false) => {
-      setMessage(
-        skipped
-          ? `Couldn't resume previous track — starting from next in queue.`
-          : `Resuming '${track.name}' — press play to continue.`,
-      );
+      const message = skipped
+        ? `Couldn't resume previous track — starting from next in queue.`
+        : `Resuming '${track.name}' — press play to continue.`;
+      toast(message, { id: RESUME_TOAST_ID, duration: Infinity });
     }, []);
 
     const handleHydrateFailed = useCallback(() => {
-      setMessage(`Couldn't resume your last session.`);
+      toast(`Couldn't resume your last session.`, { id: RESUME_TOAST_ID, duration: Infinity });
     }, []);
 
     const withResumeDismiss = useCallback(
       <T extends (...args: never[]) => unknown>(fn: T): T =>
         ((...args) => {
-          setMessage(null);
+          toast.dismiss(RESUME_TOAST_ID);
           return fn(...args);
         }) as T,
       [],
@@ -55,7 +54,7 @@ const ResumeToastHarness = React.forwardRef<ResumeToastHarnessHandle, { showQueu
     );
 
     useEffect(() => {
-      if (showQueue) setMessage(null);
+      if (showQueue) toast.dismiss(RESUME_TOAST_ID);
     }, [showQueue]);
 
     React.useImperativeHandle(ref, () => ({
@@ -64,7 +63,7 @@ const ResumeToastHarness = React.forwardRef<ResumeToastHarnessHandle, { showQueu
       invoke: (key) => handlers[key](),
     }));
 
-    return message ? <Toast message={message} onDismiss={dismiss} /> : null;
+    return null;
   }
 );
 ResumeToastHarness.displayName = 'ResumeToastHarness';
@@ -73,6 +72,7 @@ const renderHarness = (initialShowQueue = false) => {
   const ref = React.createRef<ResumeToastHarnessHandle>();
   const Wrapper = ({ showQueue }: { showQueue: boolean }) => (
     <ThemeProvider theme={theme}>
+      <Toaster />
       <ResumeToastHarness ref={ref} showQueue={showQueue} />
     </ThemeProvider>
   );
@@ -98,10 +98,13 @@ describe('Resume toast behavior', () => {
   });
 
   afterEach(() => {
+    act(() => {
+      toast.dismiss();
+    });
     vi.useRealTimers();
   });
 
-  it('appears with the hydrated track name when hydrate fires', () => {
+  it('appears with the hydrated track name when hydrate fires', async () => {
     // #given
     const { ref } = renderHarness();
 
@@ -109,33 +112,35 @@ describe('Resume toast behavior', () => {
     fireHydrateWith(ref, 'Bohemian Rhapsody');
 
     // #then
-    expect(
-      screen.getByText("Resuming 'Bohemian Rhapsody' — press play to continue."),
-    ).toBeInTheDocument();
+    await vi.waitFor(() => {
+      expect(
+        screen.getByText("Resuming 'Bohemian Rhapsody' — press play to continue."),
+      ).toBeInTheDocument();
+    });
   });
 
-  it('auto-dismisses after ~5s', () => {
+  it('persists past the legacy 5s window (Sonner duration: Infinity — only dismissed on user action)', async () => {
     // #given
     const { ref } = renderHarness();
     fireHydrateWith(ref, 'Caravan');
-    expect(screen.getByText(/Resuming 'Caravan'/)).toBeInTheDocument();
+    await vi.waitFor(() => expect(screen.getByText(/Resuming 'Caravan'/)).toBeInTheDocument());
 
-    // #when — advance past the Toast's 5000ms auto-dismiss + exit animation
+    // #when — advance well past the legacy auto-dismiss window
     act(() => {
-      vi.advanceTimersByTime(5400);
+      vi.advanceTimersByTime(10_000);
     });
 
-    // #then
-    expect(screen.queryByText(/Resuming 'Caravan'/)).not.toBeInTheDocument();
+    // #then — Sonner uses duration: Infinity, so the toast remains
+    expect(screen.getByText(/Resuming 'Caravan'/)).toBeInTheDocument();
   });
 
   it.each(['play', 'pause', 'next', 'previous', 'library'] as const)(
     'dismisses when the user invokes the %s handler',
-    (handler) => {
+    async (handler) => {
       // #given
       const { ref } = renderHarness();
       fireHydrateWith(ref, 'Take Five');
-      expect(screen.getByText(/Resuming 'Take Five'/)).toBeInTheDocument();
+      await vi.waitFor(() => expect(screen.getByText(/Resuming 'Take Five'/)).toBeInTheDocument());
 
       // #when
       act(() => {
@@ -143,15 +148,18 @@ describe('Resume toast behavior', () => {
       });
 
       // #then
-      expect(screen.queryByText(/Resuming 'Take Five'/)).not.toBeInTheDocument();
+      await vi.waitFor(
+        () => expect(screen.queryByText(/Resuming 'Take Five'/)).not.toBeInTheDocument(),
+        { timeout: 1000 },
+      );
     },
   );
 
-  it('dismisses immediately when the queue opens (showQueue flips true)', () => {
+  it('dismisses immediately when the queue opens (showQueue flips true)', async () => {
     // #given
     const { ref, rerender } = renderHarness(false);
     fireHydrateWith(ref, 'Giant Steps');
-    expect(screen.getByText(/Resuming 'Giant Steps'/)).toBeInTheDocument();
+    await vi.waitFor(() => expect(screen.getByText(/Resuming 'Giant Steps'/)).toBeInTheDocument());
 
     // #when
     act(() => {
@@ -159,26 +167,32 @@ describe('Resume toast behavior', () => {
     });
 
     // #then
-    expect(screen.queryByText(/Resuming 'Giant Steps'/)).not.toBeInTheDocument();
+    await vi.waitFor(
+      () => expect(screen.queryByText(/Resuming 'Giant Steps'/)).not.toBeInTheDocument(),
+      { timeout: 1000 },
+    );
   });
 
-  it('dismisses when the Toast dismiss button is clicked', () => {
+  it('dismisses when the Sonner close button is clicked', async () => {
     // #given
     const { ref } = renderHarness();
     fireHydrateWith(ref, 'Four on Six');
+    await vi.waitFor(() => expect(screen.getByText(/Resuming 'Four on Six'/)).toBeInTheDocument());
 
-    // #when
-    const dismissBtn = screen.getByRole('button', { name: /dismiss/i });
+    // #when — Sonner exposes its close button via aria-label "Close toast"
+    const dismissBtn = screen.getByLabelText(/close toast/i);
     act(() => {
       fireEvent.click(dismissBtn);
-      vi.advanceTimersByTime(400);
     });
 
     // #then
-    expect(screen.queryByText(/Resuming 'Four on Six'/)).not.toBeInTheDocument();
+    await vi.waitFor(
+      () => expect(screen.queryByText(/Resuming 'Four on Six'/)).not.toBeInTheDocument(),
+      { timeout: 1000 },
+    );
   });
 
-  it('shows the partial-failure message when hydrate skipped to a later track', () => {
+  it('shows the partial-failure message when hydrate skipped to a later track', async () => {
     // #given
     const { ref } = renderHarness();
 
@@ -188,14 +202,16 @@ describe('Resume toast behavior', () => {
     });
 
     // #then
-    expect(
-      screen.getByText("Couldn't resume previous track — starting from next in queue."),
-    ).toBeInTheDocument();
+    await vi.waitFor(() => {
+      expect(
+        screen.getByText("Couldn't resume previous track — starting from next in queue."),
+      ).toBeInTheDocument();
+    });
     // The specific track name must not leak into the partial-failure copy.
     expect(screen.queryByText(/Skipped Track/)).not.toBeInTheDocument();
   });
 
-  it('shows the full-failure message when hydrate could not prepare any track', () => {
+  it('shows the full-failure message when hydrate could not prepare any track', async () => {
     // #given
     const { ref } = renderHarness();
 
@@ -205,8 +221,10 @@ describe('Resume toast behavior', () => {
     });
 
     // #then
-    expect(
-      screen.getByText("Couldn't resume your last session."),
-    ).toBeInTheDocument();
+    await vi.waitFor(() => {
+      expect(
+        screen.getByText("Couldn't resume your last session."),
+      ).toBeInTheDocument();
+    });
   });
 });
