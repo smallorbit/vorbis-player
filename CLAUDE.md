@@ -306,7 +306,7 @@ vorbis-player uses a hybrid styling stack: **styled-components for bespoke surfa
 | Surface type | Stack | Examples |
 |---|---|---|
 | Visualizers, animations, gestures | styled-components (forever) | `BackgroundVisualizer`, zen-mode orchestration in `PlayerContent/styled.ts`, swipe gestures, album-art flip menu, `BottomBar` |
-| Standard chrome (modals, sliders, popovers, switches, toasts) | shadcn primitives | `src/components/ui/*.tsx`, currently `dialog.tsx`, `button.tsx` |
+| Standard chrome (modals, sliders, popovers, switches, toasts) | shadcn primitives | `src/components/ui/*.tsx`: `dialog.tsx`, `button.tsx`, `slider.tsx`, `switch.tsx`, `accordion.tsx`, `popover.tsx`, `sonner.tsx` |
 | Whole-screen redesigns | shadcn, gated behind `?ui=v2` | future `SettingsV2`, `OnboardingV2`, command palette |
 
 **Theme bridge — `--accent-color` is player chrome ONLY:**
@@ -315,7 +315,9 @@ The runtime `--accent-color` / `--accent-contrast-color` (injected on `document.
 
 - `BottomBar` (background tint, control hover states)
 - `LikeButton` (filled state)
-- `TimelineSlider` (fill + thumb gradient)
+- `TimelineSlider` (fill + thumb gradient — wraps shadcn `slider.tsx`)
+- `VolumeSlider` (fill + thumb gradient — wraps shadcn `slider.tsx`, vertical orientation)
+- `Switch` accent variant (`controls/QuickEffectsRow.tsx` glow/visualizer/translucence toggles — uses default `variant="accent"` of `src/components/ui/switch.tsx`, retints checked-state track with `var(--accent-color)`)
 - Glow effects (`--glow-intensity`, `--glow-rate`, `--glow-opacity`)
 - Accent color overrides menu in `VisualEffectsMenu`
 
@@ -334,13 +336,38 @@ Convention for flagged screens:
 - The v2 branch lives under `if (uiV2) { … }`.
 - Future redesign components are colocated next to the legacy file as `<ScreenName>V2.tsx` (e.g. `Settings.tsx` + `SettingsV2.tsx`). The parent component picks one or the other via `useUiV2()`.
 
-**Migration scope (current):**
-- `Dialog` cluster (`ProviderDisconnectDialog`, `ConfirmDeleteDialog`, `SaveQueueDialog`, `KeyboardShortcutsHelp`) → shadcn `Dialog` (landed unflagged — behavior parity).
-- `TimelineSlider` → wrapper around shadcn / Radix `Slider` (in flight; survives as a wrapper because the accent fill/thumb gradient is bespoke).
+**Migrations shipped (epic #1228 — foundation):**
+- `Dialog` cluster (`ProviderDisconnectDialog`, `ConfirmDeleteDialog`, `SaveQueueDialog`, `KeyboardShortcutsHelp`) → shadcn `Dialog` (unflagged, behavior parity)
+- `TimelineSlider` → wrapper around shadcn `slider.tsx` (preserves accent fill/thumb gradient via per-part style escape hatches)
 
-**Out of scope for the foundation epic:** `Popover`, `Switch`, `Toast`, `Filter sidebar`, `Settings v2`, `Cmd-K`, `Onboarding v2`. Each is a separate future epic.
+**Migrations shipped (epic #1245 — wave 2):**
+- `Switch` (`src/components/ui/switch.tsx`) — Radix-based, dual variants: `accent` (default, player chrome) and `neutral` (settings toggles). 8 call sites migrated; legacy `controls/Switch.tsx` deleted.
+- `Toast` → `Sonner` (`src/components/ui/sonner.tsx`) — `<Toaster />` mounted at app root in `App.tsx`. All 5 imperative toast call sites in `AudioPlayer.tsx` plus `SourcesSections.tsx`, `useItemActions.tsx`, and `RadioProgressToast.tsx` (extracted to `RadioProgressContent` rendered via `toast.custom()`). Legacy `Toast.tsx` deleted.
+- `Popover` (`src/components/ui/popover.tsx`) — Radix-based; `TrackInfoPopover.tsx` migrated via virtual-anchor pattern (zero-size fixed div positioned at `anchorRect` coordinates) so all consumer call sites stay unchanged.
+- `Accordion` (`src/components/ui/accordion.tsx`) — Radix-based; replaces `CollapsibleSection.tsx` in `AppSettingsMenu`. Each section is its own `Accordion.Root` with `type="single" collapsible` to preserve independent open state. Tailwind keyframes `accordion-down` / `accordion-up` (200ms ease) defined in `tailwind.config.ts`.
+- `VolumeSlider` — `controls/VolumeControl/index.tsx` migrated to wrap `src/components/ui/slider.tsx` (vertical orientation). Drag, touch, and keyboard interaction owned by Radix.
 
-**z-index for shadcn modals:** shadcn defaults to `z-50`. The player's `BottomBar` uses up to `theme.zIndex.modal` = 1400. `src/components/ui/dialog.tsx` overrides the overlay + content `z-index` to `1405` so dialogs always cover the BottomBar.
+**Out of scope (future epics):** `Filter sidebar`, `Settings v2`, `Cmd-K`, `Onboarding v2`. Each is a separate future epic.
+
+### Canonical patterns for new shadcn primitives
+
+When adding a new primitive in `src/components/ui/`:
+
+- **Per-part style escape hatches** (from `slider.tsx` / `switch.tsx`): expose `trackStyle` / `thumbStyle` / `rangeStyle` props that pass through to the relevant Radix part. Lets player-chrome consumers retint via inline `var(--accent-color)` without polluting the primitive's neutral default. The primitive itself stays neutral; opt-in retinting happens at the call site.
+- **z-index inline override** (from `dialog.tsx:19`): set `style={{ zIndex: <PRIMITIVE>_Z_INDEX, ...style }}` on the Content. Tailwind `z-50` is below the player's `BottomBar` (up to `theme.zIndex.modal` = 1400), so every primitive that renders above chrome needs an explicit override.
+- **Virtual-anchor pattern** (from `popover.tsx`): when a consumer passes a DOMRect rather than wrapping `<PopoverTrigger>`, render a hidden zero-size `aria-hidden` `<PopoverAnchor asChild>` `<div style={{ position: 'fixed', left: rect.left + rect.width/2, top: rect.bottom, width: 0, height: 0, pointerEvents: 'none' }} />` and let Radix position relative to it.
+- **`onOpenChange` handles both gestures** (from `Popover` migration): when `<Popover open onOpenChange={(open) => !open && onClose()}>` is used, do NOT also wire `onPointerDownOutside={onClose}` and `onEscapeKeyDown={onClose}` — Radix invokes `onOpenChange(false)` for both, and the explicit handlers double-fire. The single `onOpenChange` path is sufficient.
+- **`motion-reduce:` Tailwind variants** on animation classes — every primitive with entry/exit or transform animations should include `motion-reduce:animate-none` (or equivalent) to respect `prefers-reduced-motion`.
+
+### z-index for shadcn primitives
+
+shadcn defaults to `z-50` (Tailwind), which is below the player's `BottomBar` (up to `theme.zIndex.modal` = 1400). Each primitive that renders above chrome overrides via inline style:
+
+| Primitive | z-index | Source |
+|---|---|---|
+| `dialog.tsx` | `1405` | `DIALOG_Z_INDEX` constant |
+| `popover.tsx` | `1500` | `POPOVER_Z_INDEX` constant (matches `theme.zIndex.popover`) |
+| `sonner.tsx` (Toast) | `1410` | inline `--z-index` CSS custom property on `<Toaster />` |
 
 ## Tech Stack
 
