@@ -9,6 +9,16 @@ The library browser shows the user's music collections (playlists, albums, liked
 
 Both contexts render `LibraryPage` (default export from `src/components/PlaylistSelection/index.tsx`).
 
+## Implementations
+
+This document describes the **legacy** library implementation (`LibraryPage` + `useLibraryRoot`). A redesigned route (`LibraryRoute`) is available behind the `useNewLibraryRoute` feature flag (default off, set in Settings → New Library Route).
+
+The legacy implementation remains the default and authoritative documentation target through #1294–#1297. When #1298 retires the legacy view, this doc will be rewritten in full to cover the new route. Until then, sections describing `useLibraryRoot`, `LibraryPage`, `LibraryContext`, four-context bundling, and the `showLibrary` initialization in `PlayerStateRenderer` apply to the **flag-off path only**.
+
+For the new route's data hooks (`useResumeSection`, `useRecentlyPlayedSection`, `usePinnedSection`, `usePlaylistsSection`, `useAlbumsSection`, `useLikedSection`), see `src/components/LibraryRoute/hooks/`.
+
+**[NEW LIBRARY ROUTE — entire section removed when #1298 lands.]**
+
 ## LibraryPage
 
 **File:** `src/components/PlaylistSelection/index.tsx`
@@ -273,7 +283,7 @@ When no track is loaded (`selectedPlaylistId === null || tracks.length === 0`), 
 
 QAP preference is stored in `localStorage` key `vorbis-player-qap-enabled` (default `false`), read via `useQapEnabled()` hook.
 
-`PlayerStateRenderer` initializes `showLibrary = !qapEnabled`. When the user selects a playlist from either view, `showLibrary` resets to `false` and `onPlaylistSelect` fires.
+`PlayerStateRenderer` initializes `showLibrary = !qapEnabled` (legacy path). When `useNewLibraryRoute` is enabled, the same idle-route conditions instead mount `LibraryRoute`; the gating boolean and routing inputs are identical. **[NEW LIBRARY ROUTE — sentence removed when #1298 lands.]** When the user selects a playlist from either view, `showLibrary` resets to `false` and `onPlaylistSelect` fires.
 
 ## Key Files
 
@@ -297,6 +307,9 @@ QAP preference is stored in `localStorage` key `vorbis-player-qap-enabled` (defa
 | `src/components/QuickAccessPanel/ResumeCard.tsx` | Session resume card |
 | `src/contexts/PinnedItemsContext.tsx` | Pin state and IndexedDB persistence |
 | `src/services/settings/pinnedItemsStorage.ts` | IndexedDB pin storage, MAX_PINS, events |
+| `src/components/LibraryRoute/` | New library route shell + section composition (opt-in via useNewLibraryRoute) **[NEW]** |
+| `src/components/LibraryRoute/hooks/` | Section data hooks for the new route **[NEW]** |
+| `src/hooks/useNewLibraryRoute.ts` | Feature flag for the new library route **[NEW]** |
 | `src/hooks/useLibrarySync.ts` | Collection sync engine across providers |
 | `src/hooks/useUnifiedLikedTracks.ts` | Cross-provider liked songs merge |
 | `src/hooks/useQapEnabled.ts` | QAP preference (localStorage) |

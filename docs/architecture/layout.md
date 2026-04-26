@@ -24,15 +24,20 @@ The queue drawers (`QueueDrawer`, `QueueBottomSheet`) render `QueueSkeleton` (`s
 
 ## Full-screen library
 
-The library browser opens as `LibraryPage` (a full-screen view), not a drawer. `showLibrary` state in `usePlayerLogic` gates it; `handleOpenLibrary` / `handleCloseLibrary` toggle it. `LibraryPage` is rendered in `AudioPlayer.tsx` via `React.lazy` when `showLibrary` is true.
+Two implementations coexist behind the `useNewLibraryRoute` feature flag (`vorbis-player-new-library-route` localStorage key, default `false`):
 
-**Opening the library**: swipe down on album art, BottomBar library button, or keyboard `↓` / `L`. Opening library closes the queue drawer.
+- **Legacy library (`LibraryPage`)** — flag `false`. The library browser opens as `LibraryPage` (a full-screen view), not a drawer. `showLibrary` state in `usePlayerLogic` gates it; `handleOpenLibrary` / `handleCloseLibrary` toggle it. `LibraryPage` is rendered via `React.lazy` from `AudioPlayer.tsx` (idle library overlay) and `PlayerStateRenderer.tsx` (idle route).
+- **New Library Route (`LibraryRoute`)** — flag `true`. A new top-level surface composed of section components (Resume hero, Recently Played, Pinned, Liked, Playlists, Albums). Mounted from the same two render sites as `LibraryPage` via the same `showLibrary` / idle-route gates, so all open/close affordances continue to work. See `src/components/LibraryRoute/`. **[NEW LIBRARY ROUTE — temporary; section is consolidated into a single description when #1298 lands.]**
 
-**Filter state** for the library persists to localStorage via `useLocalStorage`. Keys are prefixed `vorbis-player-library-*` (e.g., `vorbis-player-library-search`, `vorbis-player-library-provider-filters`, `vorbis-player-library-genres`). Opening the library from the QAP "Browse Library" button clears these keys before navigating.
+`usePlayerLogic` exposes both `state.showLibrary` (legacy boolean) and `state.currentView: 'player' | 'library'` (new). `showLibrary` is derived from `currentView` (`currentView === 'library'`); writers (`handleOpenLibrary`, `handleCloseLibrary`) drive `currentView`. Legacy readers in `PlayerContent`, `DrawerOrchestrator`, `PlayerControlsSection`, and `AudioPlayer` continue using `showLibrary` unchanged.
 
-**Recently Played history** is tracked by `useRecentlyPlayedCollections` (`src/hooks/useRecentlyPlayedCollections.ts`). It exposes `history: RecentlyPlayedEntry[]` and `record(ref, name)`. Successful collection loads via `useCollectionLoader.loadCollection` call `record` automatically. History is stored under `vorbis-player-recently-played` (localStorage), capped at 5 entries, deduped by `CollectionRef` key, newest first. `FilterSidebar` renders a "Recently Played" section with up to 5 clickable shortcuts on desktop; the section is hidden when history is empty.
+**Opening the library**: swipe down on album art, BottomBar library button, or keyboard `↓` / `L`. Opening library closes the queue drawer. Behavior is identical between flag states.
 
-**Mobile library overlay** renders `MobileLibraryBottomBar` (full-width search input + trailing sort dropdown) instead of the provider chip row. Mobile intentionally bypasses `providerFilters` — `ignoreProviderFilters = isMobile` in `useLibraryRoot.ts` ensures items from every enabled provider are always shown. Desktop behavior is unchanged: `FilterSidebar` provides provider chips, sort, genre, and recently-played controls.
+**Filter state** for the legacy library persists to localStorage via `useLocalStorage`. Keys are prefixed `vorbis-player-library-*` (e.g., `vorbis-player-library-search`, `vorbis-player-library-provider-filters`, `vorbis-player-library-genres`). Opening the library from the QAP "Browse Library" button clears these keys before navigating. The new route's filter persistence is described in `docs/features/library.md` once #1296 lands.
+
+**Recently Played history** is tracked by `useRecentlyPlayedCollections` (`src/hooks/useRecentlyPlayedCollections.ts`). It exposes `history: RecentlyPlayedEntry[]` and `record(ref, name)`. Successful collection loads via `useCollectionLoader.loadCollection` call `record` automatically. History is stored under `vorbis-player-recently-played` (localStorage), capped at 5 entries, deduped by `CollectionRef` key, newest first. The legacy `FilterSidebar` renders a "Recently Played" section with up to 5 clickable shortcuts on desktop (hidden when history is empty); the new route surfaces the same data via `useRecentlyPlayedSection` as a top-level row.
+
+**Mobile library overlay** (legacy): `MobileLibraryBottomBar` (full-width search input + trailing sort dropdown) instead of the provider chip row. Mobile intentionally bypasses `providerFilters` — `ignoreProviderFilters = isMobile` in `useLibraryRoot.ts` ensures items from every enabled provider are always shown. Desktop behavior is unchanged: `FilterSidebar` provides provider chips, sort, genre, and recently-played controls. The new route handles mobile/desktop layouts via its own `MobileLayout` / `DesktopLayout` styled-components in `src/components/LibraryRoute/styled.ts`.
 
 ## Idle/home routing
 
@@ -55,6 +60,8 @@ QAP is opt-in via the "Quick Access Panel" On/Off control in `VisualEffectsMenu`
 **Resume hero** — `ResumeHero` (`src/components/QuickAccessPanel/ResumeHero.tsx`) renders at the top of `QuickAccessPanel` (above `PinRing`) when a valid `lastSession` is present; clicking the Resume CTA invokes `onResume` (autoplay). The footer `ResumeCard` is suppressed inside QAP to avoid duplicate affordances; it still renders as the `footer` prop of `LibraryPage` on the idle library route.
 
 **Settings gear on idle views** — `SettingsGearButton` (`src/components/SettingsGearButton/index.tsx`) is mounted top-right by `PlayerStateRenderer` on `WelcomeScreen`, idle `LibraryPage`, and `QuickAccessPanel` via the `onOpenSettings` prop, opening the existing `VisualEffectsMenu`. Hidden during loading and error states. The active-player gear continues to live in `BottomBar` / `PlayerControlsSection`.
+
+When `useNewLibraryRoute` is enabled, the `LibraryPage` mount in the idle library route is swapped for `LibraryRoute`. Routing logic (Welcome → QAP → Hydrate → Library) is unchanged; only the leaf component differs. The `SettingsGearButton` continues to mount above the library on the idle route in both flag states. **[NEW LIBRARY ROUTE — remove paragraph when #1298 lands.]**
 
 ## Hydrate without autoplay
 
