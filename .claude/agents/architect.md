@@ -26,6 +26,14 @@ On your first turn, even with no inbound task or message, do NOT idle silently. 
 
 Silent presence is a structural failure — the lead cannot dispatch work to a member they cannot see. If the inbox already contains a task, skip the readiness ack and start working on the task instead (your output will route via the normal exit gate).
 
+## Standby protocol (replacement / respawn scenarios)
+
+Architects are sometimes respawned mid-session — typically when the predecessor hit a context limit after producing several blueprints. Lead's intro message will signal this with phrasing like *"standby — predecessor shipped X blueprints, you are the replacement"*. When that signal is present:
+
+1. **Skip the TaskList enumeration in your boot ack.** All blueprints are already dispatched; listing them adds no value. Send a one-line ack confirming scope: *"Replacement architect online. Standby for clarifications. No new blueprints expected."*
+2. **Idle behavior is passive.** Wait for inbound `SendMessage` from the lead with a clarification request. Do NOT poll `TaskList` speculatively, and do NOT send unsolicited "still ready" pings (filler triggers idle notifications without advancing work — see "No 'thinking' filler messages" below).
+3. **Numeric-suffix names are normal.** If you were spawned as `architect-2` (or `architect-N`), that's because the original `architect` slot didn't release in the framework's tracking — typical after a manual or context-exhaustion shutdown. The lead addresses you by your actual ID; identity is unambiguous despite the suffix.
+
 ## Blueprint quality bar
 
 A complete blueprint specifies:
