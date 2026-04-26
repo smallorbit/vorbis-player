@@ -52,6 +52,18 @@ const RecentlyPlayedSection: React.FC<RecentlyPlayedSectionProps> = ({
             cardKind = 'playlist';
             cardId = ref.id;
           }
+          const refOriginalKind: 'playlist' | 'album' | 'liked' =
+            ref.kind === 'liked' ? 'liked' : ref.kind === 'album' ? 'album' : 'playlist';
+          const wrappedContextMenu = onContextMenuRequest
+            ? (req: ContextMenuRequest) => {
+                onContextMenuRequest({
+                  ...req,
+                  kind: 'recently-played',
+                  originalKind: refOriginalKind,
+                  recentRef: { kind: refOriginalKind, id: cardId, provider: ref.provider },
+                });
+              }
+            : undefined;
           return (
             <LibraryCard
               key={`${ref.provider}-${ref.kind}-${cardId}`}
@@ -63,7 +75,7 @@ const RecentlyPlayedSection: React.FC<RecentlyPlayedSectionProps> = ({
               showProviderBadge={showProviderBadges}
               variant={layout === 'row' ? 'row' : 'grid'}
               onSelect={() => onSelect(cardKind, cardId, name, ref.provider)}
-              onContextMenuRequest={onContextMenuRequest}
+              onContextMenuRequest={wrappedContextMenu}
             />
           );
         })

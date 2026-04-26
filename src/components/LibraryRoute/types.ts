@@ -34,6 +34,10 @@ export interface ContextMenuRequest {
   provider?: ProviderId;
   name: string;
   anchorRect: DOMRect;
+  /** When kind === 'recently-played', the underlying collection kind so the menu can dispatch the right schema. */
+  originalKind?: 'playlist' | 'album' | 'liked';
+  /** When kind === 'recently-played', back-pointer used by the "Remove from history" action. */
+  recentRef?: { kind: 'playlist' | 'album' | 'liked'; id: string; provider?: ProviderId };
 }
 
 export type {
