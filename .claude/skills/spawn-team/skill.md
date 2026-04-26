@@ -136,7 +136,7 @@ For each specialist not already alive, spawn via `Agent` in a single message wit
 | Role | `subagent_type` | `name` | `model` (override) |
 |---|---|---|---|
 | explorer | `explorer` | `explorer` | (default) |
-| architect | `architect` | `architect` | `sonnet` |
+| architect | `architect` | `architect` | `opus[1m]` |
 | builder (singleton, count=1) | `builder` | `builder` | `opus` |
 | builder (multi, count>1) | `builder` | `builder-1`, `builder-2`, … `builder-N` | `opus` |
 | reviewer | `reviewer` | `reviewer` | `sonnet` |
@@ -174,7 +174,16 @@ Set `team_name: vorbis-crew` and `name: {name}` on every Agent call so the spawn
 
 1. Wait for each spawned agent's first message (acknowledgment) — they should send via `SendMessage` per their role definition's exit gate. Each builder instance acks independently.
 2. If any agent goes silent for two turns (no ack), warn the user — likely a `SendMessage` provisioning gap (the architect/reviewer fallback caveat) or a spawn-flake. Name the silent agent(s) explicitly so the user can decide whether to respawn.
-3. Report final state with builder count broken out: e.g. `"Team ready: explorer, architect, builder-1, builder-2, reviewer, tester (6 specialists, 2 builders)"`. List any failed acks separately.
+3. **Verify architect toolset on ack.** Architect's blueprint quality depends on `Glob`, `Grep`, `LS`, and `BashOutput` for path discovery and pattern verification. After architect's first ack, send a one-line check: *"Confirm your toolset includes Glob, Grep, LS, BashOutput in addition to Read/SendMessage."* If architect reports any missing, the spawn fell back to a stripped subagent type — respawn with the project-local `architect` `subagent_type` or warn the user to investigate. Architect without `Glob` burns round-trips path-guessing through `Read` failures.
+4. Report final state with builder count broken out: e.g. `"Team ready: explorer, architect, builder-1, builder-2, reviewer, tester (6 specialists, 2 builders)"`. List any failed acks separately.
+
+## PR body convention for sub-PRs targeting a feature branch
+
+When the team's epic uses a long-lived feature branch (e.g. `feature/onboarding-v2-1264`) and builders open sub-PRs against it, the lead's dispatch must instruct builders to use **"Part of #EPIC"** (not "Closes #EPIC") in PR bodies. GitHub's auto-close fires only on default-branch merges, so "Closes" on a feature-branch-targeted PR never closes the issue and leaves stale tracking. The final PR (feature → develop/main) is the one merge that should include "Closes #EPIC".
+
+Lead's dispatch boilerplate when assigning a builder to open a sub-PR:
+
+> *"Open the PR with base `feature/<epic-branch>` and body containing `Part of #<EPIC>` (not Closes — only the final epic merge to develop closes the epic)."*
 
 ## Constraints
 

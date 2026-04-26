@@ -100,6 +100,27 @@ This applies especially to:
 - Deleting files (`controls/Switch.tsx`, `Toast.tsx`, `CollapsibleSection.tsx`-style)
 - Renaming public hook signatures consumed in multiple files
 
+## Pause-on-correction — re-read before any commit/push/PR
+
+Before any commit, push, or PR-open step, re-read the most recent lead message in full. If it contains a protocol gate (stop, hold, await reviewer, "do NOT commit"), respect it even if an earlier message implied ship-immediately. Lead corrections often arrive after you've already started executing the original instruction — racing to complete the original directive in spite of a follow-up correction is the failure mode this rule exists to prevent. The cost of one extra inbox read is far cheaper than recovering from a wrongly-shipped PR.
+
+## Shared-hook full-suite gate
+
+When a fix changes shared-hook semantics (anything in `src/hooks/` consumed by 5+ files — `useLocalStorage`, `useRecentlyPlayedCollections`, etc.), run the full `npm run test:run` BEFORE posting ship-state, even when targeted tests pass. Targeted runs hide cross-file regressions that the next reviewer or CI run will surface anyway; one extra full-suite run is cheaper than a fix-up cycle.
+
+## Branch hygiene when merging sibling work
+
+When pulling work from a sibling builder's branch, always create a new branch from the feature branch first — never merge sibling branches into your current PR branch. The wrong shape silently absorbs sibling commits into your PR's diff:
+
+```bash
+# WRONG — merges sibling into current PR branch
+git merge origin/worktree-agent-builder-2
+
+# RIGHT — create clean branch first, then merge sibling
+git checkout -b worktree-agent-<you>-phase2 origin/feature/<epic>
+git merge origin/worktree-agent-builder-2
+```
+
 ## Reviewer FAIL gates the PR
 
 If reviewer returns FAIL on a review, do NOT commit, push, or open a PR until the flagged blocker is fixed and reviewer reconfirms PASS. The order is: implement → run gates → ship-state report to lead → reviewer review → if FAIL: fix → re-review → PASS → only THEN commit/push/PR. A PR opened with a known unresolved reviewer block is process drift; recovering with a follow-up fixup commit is more expensive than gating the open. The "ship state" report deliberately does not include a commit/push step — wait for the lead's PASS-acknowledged go-ahead.
