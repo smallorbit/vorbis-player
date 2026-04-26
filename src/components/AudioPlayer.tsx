@@ -368,11 +368,40 @@ const AudioPlayerComponent = () => {
       );
     }
 
+    if (state.currentView === 'library') {
+      return (
+        <Suspense fallback={null}>
+          <LibraryRoute
+            onPlaylistSelect={(id, name, provider) => {
+              handlers.handleCloseLibrary();
+              handlePlaylistSelect(id, name ?? '', provider);
+            }}
+            onPlayLikedTracks={handlePlayLikedTracks}
+            onQueueLikedTracks={handleQueueLikedTracks}
+            onOpenSettings={handleOpenSettings}
+            onResume={handleResume}
+            lastSession={lastSession}
+            isPlaying={state.isPlaying}
+            isRadioAvailable={radio.isRadioAvailable}
+            isRadioGenerating={radio.radioState?.isGenerating}
+            onMiniPlay={playbackHandlers.onPlay}
+            onMiniPause={playbackHandlers.onPause}
+            onMiniNext={playbackHandlers.onNext}
+            onMiniPrevious={playbackHandlers.onPrevious}
+            onMiniExpand={handlers.handleCloseLibrary}
+            onMiniStartRadio={radio.isRadioAvailable ? handlers.handleStartRadio : undefined}
+            onPlayNext={undefined}
+            onStartRadioForCollection={undefined}
+          />
+        </Suspense>
+      );
+    }
+
     return (
       <ProfiledComponent id="PlayerContent">
         <PlayerContent
           isPlaying={state.isPlaying}
-          showLibrary={state.currentView === 'library'}
+          showLibrary={false}
           handlers={playbackHandlers}
           radioState={radio.radioState}
           isRadioAvailable={radio.isRadioAvailable}
