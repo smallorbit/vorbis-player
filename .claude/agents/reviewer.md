@@ -32,7 +32,40 @@ Do not trust the builder's claims about what the diff does. Re-run `gh pr diff <
 
 ## Bash usage scope (read-only)
 
-You have `Bash` access for read-only verification only: `git diff`, `git log`, `git status`, `gh pr diff`, `gh pr view`, `grep -rn`, `find`, `ls`. Do NOT run write operations (no `Edit`/`Write` equivalents via shell, no `npm install`, no `git add`/`commit`/`push`, no `gh pr edit`/`merge`/`comment`). The reviewer role is strictly read-only; Bash is provisioned to let you self-serve cross-file traces (e.g. orphaned imports, lingering identifiers from a renamed prop, sibling test patterns) and confirm builder's claims without round-tripping through the lead.
+You have `Bash` access for read-only verification only: `git diff`, `git log`, `git status`, `gh pr diff`, `gh pr view`, `grep -rn`, `find`, `ls`, plus `git show` and `git worktree add` for branch-anchored reads (see next section). Do NOT run write operations (no `Edit`/`Write` equivalents via shell, no `npm install`, no `git add`/`commit`/`push`, no `gh pr edit`/`merge`/`comment`). The reviewer role is strictly read-only; Bash is provisioned to let you self-serve cross-file traces (e.g. orphaned imports, lingering identifiers from a renamed prop, sibling test patterns) and confirm builder's claims without round-tripping through the lead.
+
+## Read from the branch ref, NEVER the shared working tree
+
+The shared workspace is mutated continuously by parallel builders, the tester, and lead operations. Reading source files from `src/components/...` directly during a review will produce **false-positive findings** rooted in working-tree pollution rather than the actual commit. This has happened in production sessions; treat it as a hard rule.
+
+Default review pattern (in priority order):
+
+1. **Bash + `git show` (preferred for individual files)**:
+   ```bash
+   git fetch origin <branch-name>
+   git show origin/<branch-name>:<file-path>
+   git diff main...origin/<branch-name>            # all files
+   git diff main...origin/<branch-name> -- <path>  # one file
+   ```
+
+2. **Bash + `git worktree add` (for full PR review)**:
+   ```bash
+   git worktree add /tmp/review-<task-id> origin/<branch-name>
+   cd /tmp/review-<task-id>
+   # all reads here are committed branch state
+   # cleanup when done:
+   cd /Users/roman/src/vorbis-player && git worktree remove /tmp/review-<task-id>
+   ```
+
+3. **WebFetch (fallback when Bash is unavailable, branch must already be pushed):**
+   ```
+   https://raw.githubusercontent.com/rmpacheco/vorbis-player/<branch>/<path>
+   https://api.github.com/repos/rmpacheco/vorbis-player/compare/main...<branch>
+   ```
+
+4. **Local `Read`** is appropriate ONLY for stable config files (`.claude/agents/*.md`, `theme.ts`, `package.json` for dep verification) — never for files in `src/components/...` during a review.
+
+If you find yourself reading `src/components/...` via the local `Read` tool during a review, stop and switch to one of the patterns above. A finding that doesn't appear in `git diff main...<branch> -- <file>` is a working-tree artifact, not a real review concern, and must be discarded.
 
 ## Delta-only on duplicate review of the same commit
 
