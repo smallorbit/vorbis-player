@@ -34,7 +34,7 @@ export const OnboardingNavControls: React.FC<OnboardingNavControlsProps> = ({
       Skip
     </SkipButton>
     <NextButton type="button" onClick={onNext}>
-      {isLast ? 'Get started' : 'Next'}
+      {isLast ? 'Get started' : 'Next →'}
     </NextButton>
   </NavRow>
 );
