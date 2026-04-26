@@ -25,10 +25,10 @@ export const stepEnter = keyframes`
 
 export const swipeHint = keyframes`
   0%, 100% {
-    transform: translateX(0);
+    transform: translateY(0);
   }
   50% {
-    transform: translateX(18px);
+    transform: translateY(-18px);
   }
 `;
 
