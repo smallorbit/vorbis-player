@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import styled, { keyframes } from 'styled-components';
 import { useProviderContext } from '@/contexts/ProviderContext';
 import { flexCenter, flexColumn } from '@/styles/utils';
-import Switch from '@/components/controls/Switch';
+import { Switch } from '@/components/ui/switch';
 import type { ProviderId } from '@/types/domain';
 
 interface ProviderSetupScreenProps {
@@ -285,9 +285,9 @@ export default function ProviderSetupScreen({ onOpenSettings, onOpenLibrary }: P
                   )}
                   {!isSingleProvider && (
                     <Switch
-                      on={isEnabled}
-                      onToggle={() => toggleProvider(descriptor.id)}
-                      ariaLabel={`${isEnabled ? 'Disable' : 'Enable'} ${descriptor.name}`}
+                      checked={isEnabled}
+                      onCheckedChange={() => toggleProvider(descriptor.id)}
+                      aria-label={`${isEnabled ? 'Disable' : 'Enable'} ${descriptor.name}`}
                       disabled={enabledProviderIds.length <= 1 && isEnabled}
                       variant="neutral"
                     />
