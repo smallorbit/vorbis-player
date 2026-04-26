@@ -28,9 +28,11 @@ import { STORAGE_KEYS } from '@/constants/storage';
 import type { ClearCacheOptions } from '@/components/AppSettingsMenu';
 import { useSessionPersistence } from '@/hooks/useSessionPersistence';
 import QuickAccessPanel from './QuickAccessPanel';
+import { useNewLibraryRoute } from '@/hooks/useNewLibraryRoute';
 
 const VisualEffectsMenu = lazy(() => import('./AppSettingsMenu/index'));
 const LibraryPage = lazy(() => import('./PlaylistSelection'));
+const LibraryRoute = lazy(() => import('./LibraryRoute'));
 
 const RESUME_TOAST_ID = 'resume-toast';
 const FALLTHROUGH_TOAST_ID = 'fallthrough-toast';
@@ -73,6 +75,7 @@ const AudioPlayerComponent = () => {
   } = useVisualizer();
   const { accentColorBackgroundEnabled } = useAccentColorBackground();
   const { showVisualEffects, setShowVisualEffects } = useVisualEffectsToggle();
+  const [newLibraryRouteEnabled, setNewLibraryRouteEnabled] = useNewLibraryRoute();
   const { tracks, selectedPlaylistId, setTracks, setOriginalTracks, setSelectedPlaylistId } = useTrackListContext();
   const { currentTrack, currentTrackIndex, setCurrentTrackIndex, showQueue, setShowQueue } = useCurrentTrackContext();
 
@@ -467,22 +470,38 @@ const AudioPlayerComponent = () => {
               onVisualizerDebugToggle={() => {}}
               qapEnabled={false}
               onQapToggle={() => {}}
+              newLibraryRouteEnabled={newLibraryRouteEnabled}
+              onNewLibraryRouteToggle={() => setNewLibraryRouteEnabled(!newLibraryRouteEnabled)}
             />
           </Suspense>
         )}
         {needsSetup && state.showLibrary && (
           <Suspense fallback={null}>
-            <LibraryPage
-              onPlaylistSelect={(id, name, provider) => {
-                handlers.handleCloseLibrary();
-                handlePlaylistSelect(id, name, provider);
-              }}
-              onPlayLikedTracks={handlePlayLikedTracks}
-              onQueueLikedTracks={handleQueueLikedTracks}
-              footer={lastSession && handleResume ? (
-                <ResumeCard session={lastSession} onResume={handleResume} />
-              ) : undefined}
-            />
+            {newLibraryRouteEnabled ? (
+              <LibraryRoute
+                onPlaylistSelect={(id, name, provider) => {
+                  handlers.handleCloseLibrary();
+                  handlePlaylistSelect(id, name ?? '', provider);
+                }}
+                onPlayLikedTracks={handlePlayLikedTracks}
+                onQueueLikedTracks={handleQueueLikedTracks}
+                onOpenSettings={handleOpenSettings}
+                onResume={handleResume}
+                hasResumableSession={!!lastSession?.queueTracks?.length}
+              />
+            ) : (
+              <LibraryPage
+                onPlaylistSelect={(id, name, provider) => {
+                  handlers.handleCloseLibrary();
+                  handlePlaylistSelect(id, name, provider);
+                }}
+                onPlayLikedTracks={handlePlayLikedTracks}
+                onQueueLikedTracks={handleQueueLikedTracks}
+                footer={lastSession && handleResume ? (
+                  <ResumeCard session={lastSession} onResume={handleResume} />
+                ) : undefined}
+              />
+            )}
           </Suspense>
         )}
       </Container>

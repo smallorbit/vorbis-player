@@ -10,6 +10,7 @@ import { flexColumn, cardBase } from '../styles/utils';
 import { theme } from '@/styles/theme';
 import { useProviderContext } from '@/contexts/ProviderContext';
 import { useQapEnabled } from '@/hooks/useQapEnabled';
+import { useNewLibraryRoute } from '@/hooks/useNewLibraryRoute';
 import { useWelcomeSeen } from '@/hooks/useWelcomeSeen';
 import QuickAccessPanel from './QuickAccessPanel';
 import ResumeCard from './QuickAccessPanel/ResumeCard';
@@ -17,6 +18,7 @@ import SettingsGearButton from './SettingsGearButton';
 import WelcomeScreen from './WelcomeScreen';
 
 const LibraryPage = React.lazy(() => import('./PlaylistSelection'));
+const LibraryRouteLazy = React.lazy(() => import('./LibraryRoute'));
 
 const pulseWave = keyframes`
   0%, 100% {
@@ -219,6 +221,7 @@ const PlayerStateRenderer: React.FC<PlayerStateRendererProps> = ({
   const { activeDescriptor } = useProviderContext();
   const providerName = activeDescriptor?.name ?? 'Music Service';
   const [qapEnabled] = useQapEnabled();
+  const [newLibraryRouteEnabled] = useNewLibraryRoute();
   const [welcomeSeen] = useWelcomeSeen();
   const hasValidSession = !isSessionStale(lastSession);
   const route = resolveIdleRoute(welcomeSeen, qapEnabled, hasValidSession);
@@ -336,14 +339,25 @@ const PlayerStateRenderer: React.FC<PlayerStateRendererProps> = ({
             </LoadingContainer>
           </LoadingCard>
         }>
-          <LibraryPage
-            onPlaylistSelect={handlePlaylistSelectWrapped}
-            onPlayLikedTracks={onPlayLikedTracks}
-            onQueueLikedTracks={onQueueLikedTracks}
-            footer={lastSession && onResume ? (
-              <ResumeCard session={lastSession} onResume={onResume} />
-            ) : undefined}
-          />
+          {newLibraryRouteEnabled ? (
+            <LibraryRouteLazy
+              onPlaylistSelect={(id, name, provider) => handlePlaylistSelectWrapped(id, name ?? '', provider)}
+              onPlayLikedTracks={onPlayLikedTracks}
+              onQueueLikedTracks={onQueueLikedTracks}
+              onOpenSettings={onOpenSettings}
+              onResume={onResume}
+              hasResumableSession={!!lastSession?.queueTracks?.length}
+            />
+          ) : (
+            <LibraryPage
+              onPlaylistSelect={handlePlaylistSelectWrapped}
+              onPlayLikedTracks={onPlayLikedTracks}
+              onQueueLikedTracks={onQueueLikedTracks}
+              footer={lastSession && onResume ? (
+                <ResumeCard session={lastSession} onResume={onResume} />
+              ) : undefined}
+            />
+          )}
         </Suspense>
       </>
     );

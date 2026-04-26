@@ -23,6 +23,7 @@ import { clearAllPins } from '@/services/settings/pinnedItemsStorage';
 import { STORAGE_KEYS } from '@/constants/storage';
 import type { ClearCacheOptions } from '@/components/AppSettingsMenu';
 import { useQapEnabled } from '@/hooks/useQapEnabled';
+import { useNewLibraryRoute } from '@/hooks/useNewLibraryRoute';
 import { usePlayerSizingContext } from '@/contexts/PlayerSizingContext';
 import { useTransitionWillChange } from '@/hooks/useTransitionWillChange';
 import {
@@ -156,6 +157,7 @@ export const PlayerControlsSection: React.FC<PlayerControlsSectionProps> = React
   const vizDebugCtx = useVisualizerDebug();
   const visualizerDebugEnabled = vizDebugCtx?.isDebugMode ?? false;
   const [qapEnabled, setQapEnabled] = useQapEnabled();
+  const [newLibraryRouteEnabled, setNewLibraryRouteEnabled] = useNewLibraryRoute();
 
   const settingsHasBeenOpenedRef = useRef(false);
   if (showVisualEffects) settingsHasBeenOpenedRef.current = true;
@@ -387,6 +389,8 @@ export const PlayerControlsSection: React.FC<PlayerControlsSectionProps> = React
             onVisualizerDebugToggle={handleVisualizerDebugToggle}
             qapEnabled={qapEnabled}
             onQapToggle={() => setQapEnabled(!qapEnabled)}
+            newLibraryRouteEnabled={newLibraryRouteEnabled}
+            onNewLibraryRouteToggle={() => setNewLibraryRouteEnabled(!newLibraryRouteEnabled)}
           />
         </Suspense>
       )}

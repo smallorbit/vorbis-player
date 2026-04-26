@@ -100,7 +100,10 @@ export function usePlayerLogic() {
   const [authExpired, setAuthExpired] = useState<ProviderId | null>(null);
 
   // Library full-screen visibility (local UI state)
-  const [showLibrary, setShowLibrary] = useState(false);
+  // currentView is the forward-looking compat slice; showLibrary is derived for legacy consumers.
+  type PlayerView = 'player' | 'library';
+  const [currentView, setCurrentView] = useState<PlayerView>('player');
+  const showLibrary = currentView === 'library';
 
   // Radio generation progress panel state
   const [radioProgress, setRadioProgress] = useState<RadioProgress | null>(null);
@@ -284,13 +287,13 @@ export function usePlayerLogic() {
   }, [getDrivingProviderId, getDrivingProviderDescriptor]);
 
   const handleOpenLibrary = useCallback(() => {
-    setShowLibrary(true);
+    setCurrentView('library');
     setShowQueue(false);
     setShowVisualEffects(false);
   }, [setShowQueue, setShowVisualEffects]);
 
   const handleCloseLibrary = useCallback(() => {
-    setShowLibrary(false);
+    setCurrentView('player');
   }, []);
 
   // Initialize radio session (before handleBackToLibrary, which needs stopRadio)
@@ -472,6 +475,7 @@ export function usePlayerLogic() {
       handleRemoveFromQueue,
       handleReorderQueue,
       handleHydrate,
+      setCurrentView,
     }),
     [
       loadCollection,
@@ -490,6 +494,7 @@ export function usePlayerLogic() {
       handleRemoveFromQueue,
       handleReorderQueue,
       handleHydrate,
+      setCurrentView,
     ]
   );
 
@@ -500,6 +505,7 @@ export function usePlayerLogic() {
       selectedPlaylistId,
       tracks,
       showLibrary,
+      currentView,
       isPlaying,
       playbackPosition,
     },
