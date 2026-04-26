@@ -15,6 +15,8 @@ import QuickAccessPanel from './QuickAccessPanel';
 import ResumeCard from './QuickAccessPanel/ResumeCard';
 import SettingsGearButton from './SettingsGearButton';
 import WelcomeScreen from './WelcomeScreen';
+import { useUiV2 } from '@/hooks/useUiV2';
+import OnboardingFlowV2 from './OnboardingV2';
 
 const LibraryPage = React.lazy(() => import('./PlaylistSelection'));
 
@@ -220,6 +222,7 @@ const PlayerStateRenderer: React.FC<PlayerStateRendererProps> = ({
   const providerName = activeDescriptor?.name ?? 'Music Service';
   const [qapEnabled] = useQapEnabled();
   const [welcomeSeen] = useWelcomeSeen();
+  const isUiV2 = useUiV2();
   const hasValidSession = !isSessionStale(lastSession);
   const route = resolveIdleRoute(welcomeSeen, qapEnabled, hasValidSession);
   // "Browse Library" is a one-way door: once engaged, the idle view stays on
@@ -354,10 +357,17 @@ const PlayerStateRenderer: React.FC<PlayerStateRendererProps> = ({
       return (
         <>
           <SettingsGearButton onClick={onOpenSettings} />
-          <WelcomeScreen
-            onConnectProvider={handleConnectClick}
-            onBrowseLibrary={handleBrowseLibrary}
-          />
+          {isUiV2 ? (
+            <OnboardingFlowV2
+              onConnectProvider={handleConnectClick}
+              onBrowseLibrary={handleBrowseLibrary}
+            />
+          ) : (
+            <WelcomeScreen
+              onConnectProvider={handleConnectClick}
+              onBrowseLibrary={handleBrowseLibrary}
+            />
+          )}
         </>
       );
     }
