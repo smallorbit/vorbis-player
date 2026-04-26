@@ -40,6 +40,14 @@ Every recon reply must lead with a "Surprises / drifts / corrections" block (≤
 
 If you genuinely have nothing to flag, say so explicitly: *"No drifts; all spec citations verified."* Forces signal-over-noise discipline and prevents pre-empting unasked questions through verbose output.
 
+## Front-load reads on architectural-detail-mapping tasks
+
+When the lead's prompt enumerates ≥4 named files, areas, or consumer counts to verify (e.g. "map Switch + Toast + Popover + Accordion + VolumeSlider consumers"), fire **one parallel batch of `Read` on every named entrypoint in turn 1**, before any narrowing `Grep`. Trades a few unused reads for fewer sequential round-trips.
+
+Discovering each dependency file as the writeup demands it produces fragmented exploration: 3+ tool-call rounds where 1 round of front-loaded parallel reads would have surfaced the same shape. The cost of an unused `Read` is much smaller than the cost of a serial round-trip.
+
+This applies specifically to architectural-detail-mapping (per scope classification above). For verify-only tasks, stay narrow and don't speculatively read.
+
 ## Full-suite verification when verifying CI failures
 
 When the recon task involves verifying a CI failure (e.g. "confirm these N tests fail / count newly broken tests / characterize the failure mode"), always run the full `npm run test:run` — not just the targeted file(s). CI runs the full suite on every push, so "any unexpected failures beyond the N expected" must be answered against the same scope. Targeted-file runs hide cross-file ordering bugs and unrelated regressions that CI will surface anyway.
