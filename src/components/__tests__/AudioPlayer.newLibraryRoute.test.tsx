@@ -7,11 +7,17 @@
  */
 
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import { ThemeProvider } from 'styled-components';
 import { theme } from '@/styles/theme';
 import AudioPlayer from '../AudioPlayer';
+
+// jsdom doesn't implement CSS.supports; stub it so styled-components container renders
+Object.defineProperty(global, 'CSS', {
+  value: { supports: vi.fn(() => false) },
+  writable: true,
+});
 
 // ── Minimal mock helpers ──────────────────────────────────────────────────────
 
@@ -126,6 +132,7 @@ vi.mock('../PlaylistSelection', () => ({
 }));
 
 vi.mock('../LibraryRoute', () => ({
+  default: () => <div data-testid="library-route">LibraryRoute</div>,
   LibraryRoute: () => <div data-testid="library-route">LibraryRoute</div>,
 }));
 
@@ -237,7 +244,7 @@ describe('AudioPlayer — new library route overlay swap (needsSetup path)', () 
     );
   });
 
-  it('renders LibraryPage in the overlay when flag is OFF and showLibrary is true', () => {
+  it('renders LibraryPage in the overlay when flag is OFF and showLibrary is true', async () => {
     // #given
     mockUsePlayerLogic.mockReturnValue(makeMinimalPlayerLogicReturn(true) as ReturnType<typeof usePlayerLogic>);
     mockUseNewLibraryRoute.mockReturnValue([false, vi.fn()]);
@@ -245,12 +252,12 @@ describe('AudioPlayer — new library route overlay swap (needsSetup path)', () 
     // #when
     render(<Wrapper><AudioPlayer /></Wrapper>);
 
-    // #then
-    expect(screen.getByTestId('library-page')).toBeInTheDocument();
+    // #then — waitFor lets Suspense resolve the lazy module on first load
+    await waitFor(() => expect(screen.getByTestId('library-page')).toBeInTheDocument());
     expect(screen.queryByTestId('library-route')).not.toBeInTheDocument();
   });
 
-  it('renders LibraryRoute in the overlay when flag is ON and showLibrary is true', () => {
+  it('renders LibraryRoute in the overlay when flag is ON and showLibrary is true', async () => {
     // #given
     mockUsePlayerLogic.mockReturnValue(makeMinimalPlayerLogicReturn(true) as ReturnType<typeof usePlayerLogic>);
     mockUseNewLibraryRoute.mockReturnValue([true, vi.fn()]);
@@ -258,8 +265,8 @@ describe('AudioPlayer — new library route overlay swap (needsSetup path)', () 
     // #when
     render(<Wrapper><AudioPlayer /></Wrapper>);
 
-    // #then
-    expect(screen.getByTestId('library-route')).toBeInTheDocument();
+    // #then — waitFor lets Suspense resolve the lazy module on first load
+    await waitFor(() => expect(screen.getByTestId('library-route')).toBeInTheDocument());
     expect(screen.queryByTestId('library-page')).not.toBeInTheDocument();
   });
 

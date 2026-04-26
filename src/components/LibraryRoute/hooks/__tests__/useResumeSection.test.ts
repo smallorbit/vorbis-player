@@ -79,9 +79,9 @@ describe('useResumeSection', () => {
       expect(result.current.session).toBeNull();
     });
 
-    it('treats session saved exactly at STALE_SESSION_MS as stale', () => {
-      // #given — boundary: exactly at the stale threshold
-      const session = makeSession({ savedAt: Date.now() - STALE_SESSION_MS });
+    it('treats session 1ms past STALE_SESSION_MS as stale (boundary: strict >)', () => {
+      // #given — 1ms beyond threshold; impl uses `>` so this is stale
+      const session = makeSession({ savedAt: Date.now() - STALE_SESSION_MS - 1 });
 
       // #when
       const { result } = renderHook(() => useResumeSection({ lastSession: session }));

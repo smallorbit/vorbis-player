@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import { ThemeProvider } from 'styled-components';
 import { theme } from '@/styles/theme';
@@ -44,6 +44,7 @@ vi.mock('../PlaylistSelection', () => ({
 }));
 
 vi.mock('../LibraryRoute', () => ({
+  default: () => <div data-testid="library-route">LibraryRoute</div>,
   LibraryRoute: () => <div data-testid="library-route">LibraryRoute</div>,
 }));
 
@@ -89,7 +90,7 @@ describe('PlayerStateRenderer — new library route render swap', () => {
     mockUseNewLibraryRoute.mockReturnValue([false, vi.fn()]);
   });
 
-  it('renders LibraryPage when newLibraryRoute flag is OFF (default)', () => {
+  it('renders LibraryPage when newLibraryRoute flag is OFF (default)', async () => {
     // #given — flag is off
     mockUseNewLibraryRoute.mockReturnValue([false, vi.fn()]);
 
@@ -100,12 +101,12 @@ describe('PlayerStateRenderer — new library route render swap', () => {
       </Wrapper>
     );
 
-    // #then
-    expect(screen.getByTestId('library-page')).toBeInTheDocument();
+    // #then — waitFor lets Suspense resolve the lazy module on first load
+    await waitFor(() => expect(screen.getByTestId('library-page')).toBeInTheDocument());
     expect(screen.queryByTestId('library-route')).not.toBeInTheDocument();
   });
 
-  it('renders LibraryRoute when newLibraryRoute flag is ON', () => {
+  it('renders LibraryRoute when newLibraryRoute flag is ON', async () => {
     // #given
     mockUseNewLibraryRoute.mockReturnValue([true, vi.fn()]);
 
@@ -116,8 +117,8 @@ describe('PlayerStateRenderer — new library route render swap', () => {
       </Wrapper>
     );
 
-    // #then
-    expect(screen.getByTestId('library-route')).toBeInTheDocument();
+    // #then — waitFor lets Suspense resolve the lazy module on first load
+    await waitFor(() => expect(screen.getByTestId('library-route')).toBeInTheDocument());
     expect(screen.queryByTestId('library-page')).not.toBeInTheDocument();
   });
 

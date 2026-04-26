@@ -126,7 +126,7 @@ describe('usePinnedSection', () => {
       // #then
       expect(result.current.pinnedPlaylists).toHaveLength(1);
       expect(result.current.pinnedPlaylists[0].id).toBe('pl-1');
-      expect(result.current.pinnedPlaylists[0].kind).toBe('playlist');
+      expect(result.current.combined[0].kind).toBe('playlist');
     });
 
     it('exposes imageUrl on pinned playlist', () => {
@@ -143,8 +143,8 @@ describe('usePinnedSection', () => {
       // #when
       const { result } = renderHook(() => usePinnedSection());
 
-      // #then
-      expect(result.current.pinnedPlaylists[0].imageUrl).toBe('https://img.example/pl-1.jpg');
+      // #then — imageUrl is on combined items, not on raw CachedPlaylistInfo
+      expect(result.current.combined[0].imageUrl).toBe('https://img.example/pl-1.jpg');
     });
   });
 
@@ -166,7 +166,7 @@ describe('usePinnedSection', () => {
       // #then
       expect(result.current.pinnedAlbums).toHaveLength(1);
       expect(result.current.pinnedAlbums[0].id).toBe('alb-1');
-      expect(result.current.pinnedAlbums[0].kind).toBe('album');
+      expect(result.current.combined[0].kind).toBe('album');
     });
   });
 
