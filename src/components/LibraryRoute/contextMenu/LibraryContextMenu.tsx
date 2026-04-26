@@ -106,8 +106,6 @@ const LibraryContextMenu: React.FC<LibraryContextMenuProps> = ({
       ? () => togglePinPlaylist(request.id)
       : () => togglePinAlbum(request.id);
 
-    const noopAction = () => {};
-
     const playLikedFor = async (provider: ProviderId) => {
       const tracks = await loadLikedTracks(provider);
       if (tracks.length === 0) return;
@@ -174,9 +172,6 @@ const LibraryContextMenu: React.FC<LibraryContextMenuProps> = ({
         }
       });
     }
-
-    // Quiet noopAction lint when not used in some branches.
-    void noopAction;
 
     return buildMenuItems(request, actions);
   }, [

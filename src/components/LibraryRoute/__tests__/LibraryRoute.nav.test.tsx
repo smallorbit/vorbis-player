@@ -18,6 +18,24 @@ vi.mock('@/contexts/TrackContext', () => ({
   useCurrentTrackContext: () => ({ currentTrack: null }),
 }));
 
+// LibraryRoute mounts LibraryContextMenu (added by #1297), which calls
+// usePinnedItems + useRecentlyPlayedCollections. Stub them so navigation tests
+// don't need full PinnedItems/RecentlyPlayed providers.
+vi.mock('@/hooks/usePinnedItems', () => ({
+  usePinnedItems: () => ({
+    pinnedPlaylistIds: [],
+    pinnedAlbumIds: [],
+    isPlaylistPinned: () => false,
+    isAlbumPinned: () => false,
+    togglePinPlaylist: vi.fn(),
+    togglePinAlbum: vi.fn(),
+  }),
+}));
+
+vi.mock('@/hooks/useRecentlyPlayedCollections', () => ({
+  useRecentlyPlayedCollections: () => ({ history: [], record: vi.fn(), remove: vi.fn() }),
+}));
+
 vi.mock('@/contexts/ProviderContext', () => ({
   useProviderContext: vi.fn(() => ({
     hasMultipleProviders: false,
