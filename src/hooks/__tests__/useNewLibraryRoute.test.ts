@@ -28,6 +28,22 @@ describe('useNewLibraryRoute', () => {
     expect(result.current[0]).toBe(true);
   });
 
+  it('can be set back to false', () => {
+    // #given
+    const { result } = renderHook(() => useNewLibraryRoute());
+    act(() => {
+      result.current[1](true);
+    });
+
+    // #when
+    act(() => {
+      result.current[1](false);
+    });
+
+    // #then
+    expect(result.current[0]).toBe(false);
+  });
+
   it('persists to localStorage under the correct key', () => {
     // #given
     const { result } = renderHook(() => useNewLibraryRoute());
@@ -56,5 +72,13 @@ describe('useNewLibraryRoute', () => {
 
     // #then
     expect(result.current[0]).toBe(true);
+  });
+
+  it('returns a setter as the second tuple element', () => {
+    // #when
+    const { result } = renderHook(() => useNewLibraryRoute());
+
+    // #then
+    expect(typeof result.current[1]).toBe('function');
   });
 });
