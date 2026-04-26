@@ -346,7 +346,7 @@ const PlayerStateRenderer: React.FC<PlayerStateRendererProps> = ({
               onQueueLikedTracks={onQueueLikedTracks}
               onOpenSettings={onOpenSettings}
               onResume={onResume}
-              hasResumableSession={!!lastSession?.queueTracks?.length}
+              lastSession={lastSession}
             />
           ) : (
             <LibraryPage

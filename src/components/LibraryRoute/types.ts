@@ -17,6 +17,18 @@ export interface LikedSummary {
   isLoading: boolean;
 }
 
+export type LibraryRouteView = 'home' | 'recently-played' | 'pinned' | 'playlists' | 'albums' | 'liked';
+
+export type LibraryItemKind = 'playlist' | 'album' | 'liked' | 'recently-played';
+
+export interface ContextMenuRequest {
+  kind: LibraryItemKind;
+  id: string;
+  provider?: ProviderId;
+  name: string;
+  anchorRect: DOMRect;
+}
+
 export type {
   CachedPlaylistInfo,
   AlbumInfo,

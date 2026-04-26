@@ -487,7 +487,7 @@ const AudioPlayerComponent = () => {
                 onQueueLikedTracks={handleQueueLikedTracks}
                 onOpenSettings={handleOpenSettings}
                 onResume={handleResume}
-                hasResumableSession={!!lastSession?.queueTracks?.length}
+                lastSession={lastSession}
               />
             ) : (
               <LibraryPage

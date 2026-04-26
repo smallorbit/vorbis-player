@@ -7,12 +7,49 @@ vi.mock('@/contexts/PlayerSizingContext', () => ({
   usePlayerSizingContext: vi.fn(),
 }));
 
+vi.mock('@/contexts/ProviderContext', () => ({
+  useProviderContext: vi.fn(() => ({
+    hasMultipleProviders: false,
+    enabledProviderIds: ['spotify'],
+  })),
+}));
+
+vi.mock('@/hooks/useUnifiedLikedTracks', () => ({
+  useUnifiedLikedTracks: vi.fn(() => ({
+    unifiedTracks: [],
+    isUnifiedLikedActive: false,
+    totalCount: 0,
+    isLoading: false,
+  })),
+}));
+
+vi.mock('../hooks', () => ({
+  useResumeSection: vi.fn(() => ({ session: null, hasResumable: false })),
+  useRecentlyPlayedSection: vi.fn(() => ({ items: [], isLoading: false, isEmpty: true })),
+  usePinnedSection: vi.fn(() => ({
+    pinnedPlaylists: [],
+    pinnedAlbums: [],
+    combined: [],
+    isLoading: false,
+    isEmpty: true,
+  })),
+  usePlaylistsSection: vi.fn(() => ({ items: [], isLoading: false, isEmpty: true })),
+  useAlbumsSection: vi.fn(() => ({ items: [], isLoading: false, isEmpty: true })),
+  useLikedSection: vi.fn(() => ({
+    totalCount: 0,
+    perProvider: [],
+    isUnified: false,
+    isLoading: false,
+  })),
+  fetchLikedForProvider: vi.fn(async () => []),
+}));
+
 import { usePlayerSizingContext } from '@/contexts/PlayerSizingContext';
 
 const baseProps = {
   onPlaylistSelect: vi.fn(),
   onOpenSettings: vi.fn(),
-  hasResumableSession: false,
+  lastSession: null,
 };
 
 describe('LibraryRoute', () => {
@@ -20,83 +57,38 @@ describe('LibraryRoute', () => {
     vi.clearAllMocks();
   });
 
-  describe('layout selection', () => {
-    it('renders mobile shell when isMobile is true', () => {
-      // #given
-      vi.mocked(usePlayerSizingContext).mockReturnValue({ isMobile: true } as ReturnType<typeof usePlayerSizingContext>);
+  it('renders mobile layout testid when isMobile is true', () => {
+    // #given
+    vi.mocked(usePlayerSizingContext).mockReturnValue({ isMobile: true } as ReturnType<typeof usePlayerSizingContext>);
 
-      // #when
-      render(<LibraryRoute {...baseProps} />);
+    // #when
+    render(<LibraryRoute {...baseProps} />);
 
-      // #then
-      expect(screen.getByTestId('library-route-mobile')).toBeInTheDocument();
-      expect(screen.queryByTestId('library-route-desktop')).not.toBeInTheDocument();
-    });
-
-    it('renders desktop shell when isMobile is false', () => {
-      // #given
-      vi.mocked(usePlayerSizingContext).mockReturnValue({ isMobile: false } as ReturnType<typeof usePlayerSizingContext>);
-
-      // #when
-      render(<LibraryRoute {...baseProps} />);
-
-      // #then
-      expect(screen.getByTestId('library-route-desktop')).toBeInTheDocument();
-      expect(screen.queryByTestId('library-route-mobile')).not.toBeInTheDocument();
-    });
+    // #then
+    expect(screen.getByTestId('library-route-mobile')).toBeInTheDocument();
+    expect(screen.queryByTestId('library-route-desktop')).not.toBeInTheDocument();
   });
 
-  describe('session props', () => {
-    it('renders with hasResumableSession true and callable onResume', () => {
-      // #given
-      const onResume = vi.fn();
-      vi.mocked(usePlayerSizingContext).mockReturnValue({ isMobile: false } as ReturnType<typeof usePlayerSizingContext>);
+  it('renders desktop layout testid when isMobile is false', () => {
+    // #given
+    vi.mocked(usePlayerSizingContext).mockReturnValue({ isMobile: false } as ReturnType<typeof usePlayerSizingContext>);
 
-      // #when
-      render(<LibraryRoute {...baseProps} hasResumableSession={true} onResume={onResume} />);
+    // #when
+    render(<LibraryRoute {...baseProps} />);
 
-      // #then
-      expect(screen.getByTestId('library-route-desktop')).toBeInTheDocument();
-    });
-
-    it('renders with hasResumableSession false without onResume', () => {
-      // #given
-      vi.mocked(usePlayerSizingContext).mockReturnValue({ isMobile: false } as ReturnType<typeof usePlayerSizingContext>);
-
-      // #when
-      render(<LibraryRoute {...baseProps} hasResumableSession={false} />);
-
-      // #then
-      expect(screen.getByTestId('library-route-desktop')).toBeInTheDocument();
-    });
+    // #then
+    expect(screen.getByTestId('library-route-desktop')).toBeInTheDocument();
+    expect(screen.queryByTestId('library-route-mobile')).not.toBeInTheDocument();
   });
 
-  describe('optional callback props', () => {
-    it('accepts onAddToQueue as optional', () => {
-      // #given
-      const onAddToQueue = vi.fn().mockResolvedValue(null);
-      vi.mocked(usePlayerSizingContext).mockReturnValue({ isMobile: false } as ReturnType<typeof usePlayerSizingContext>);
+  it('renders HomeView at home view by default', () => {
+    // #given
+    vi.mocked(usePlayerSizingContext).mockReturnValue({ isMobile: false } as ReturnType<typeof usePlayerSizingContext>);
 
-      // #when / #then — no error on render
-      expect(() => render(<LibraryRoute {...baseProps} onAddToQueue={onAddToQueue} />)).not.toThrow();
-    });
+    // #when
+    render(<LibraryRoute {...baseProps} />);
 
-    it('accepts onPlayLikedTracks as optional', () => {
-      // #given
-      const onPlayLikedTracks = vi.fn().mockResolvedValue(undefined);
-      vi.mocked(usePlayerSizingContext).mockReturnValue({ isMobile: false } as ReturnType<typeof usePlayerSizingContext>);
-
-      // #when / #then — no error on render
-      expect(() => render(<LibraryRoute {...baseProps} onPlayLikedTracks={onPlayLikedTracks} />)).not.toThrow();
-    });
-
-    it('accepts onQueueLikedTracks as optional', () => {
-      // #given
-      const onQueueLikedTracks = vi.fn();
-      vi.mocked(usePlayerSizingContext).mockReturnValue({ isMobile: false } as ReturnType<typeof usePlayerSizingContext>);
-
-      // #when / #then — no error on render
-      expect(() => render(<LibraryRoute {...baseProps} onQueueLikedTracks={onQueueLikedTracks} />)).not.toThrow();
-    });
+    // #then
+    expect(screen.getByTestId('library-home')).toBeInTheDocument();
   });
 });
