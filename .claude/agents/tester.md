@@ -44,3 +44,13 @@ When the builder posts an interface contract for a new component / hook (props +
 When your task is blocked on a dependency (the builder has not yet landed the implementation you need to test), do NOT idle silently. Pre-read the test files and source files named in the issue spec — note current shape, existing test patterns, sibling tests' assertion style, and any surprises (e.g. test expects an interface the spec doesn't mention). Surface findings to the lead via `SendMessage` before going idle.
 
 The hard rule still holds: do not write test code before the implementation interface lands (per "Interface alignment with the builder"). But warming context costs nothing and shortens cold-start time once the dependency clears. Pre-work is a ~200-word note to the lead, not a draft test file.
+## Worktree pre-flight
+
+You are spawned with `isolation: "worktree"` by default (see spawn-team skill). Your worktree does not inherit `node_modules` or `.env.local` from the main workspace. Before running any tests or installing dependencies, execute:
+
+```bash
+npm install
+cp ../../.env.local .env.local 2>/dev/null || true
+```
+
+Verify the setup with `npm run test:run` on a known-passing file before touching task files.
