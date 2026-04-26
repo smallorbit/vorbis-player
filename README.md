@@ -19,8 +19,6 @@ A music player with visualizers and multi-provider support (Spotify, Dropbox), b
 #### Library drawer
 <img src="public/assets/library-drawer.png" alt="Vorbis Player - Library" width="600">
 
-> **Note:** A redesigned library route is available behind the `useNewLibraryRoute` opt-in flag (Settings → New Library Route). Screenshots above show the current default (`LibraryDrawer` / `LibraryPage`); updated imagery will land when the new route becomes default. **[NEW LIBRARY ROUTE — remove note when #1298 lands.]**
-
 ## Features
 
 - **Multi-Provider Support** — Stream from Spotify or your personal Dropbox music library; enable/disable providers via a single toggle in settings (requires re-auth when not yet connected; disabling removes that provider's tracks from the queue)
@@ -28,7 +26,7 @@ A music player with visualizers and multi-provider support (Spotify, Dropbox), b
 - **Zen Mode** — Distraction-free playback with hover-activated controls (desktop) or touch gestures (mobile), album art focus, and auto-hiding bottom bar
 - **Queue** — See and edit what plays next (reorder, remove, deduplicate) in the queue drawer or mobile sheet
 - **Playlists & Albums** — Browse, search, sort, filter, and pin your **library** collections (not the same as the playback queue)
-- **Library Route (opt-in)** — Redesigned library surface organized as scannable rows (Resume, Recently Played, Pinned, Liked, Playlists, Albums). Enable via Settings → New Library Route. **[NEW LIBRARY ROUTE — remove bullet when #1298 lands.]**
+- **Library** — Full-screen library surface organized as scannable rows (Resume, Recently Played, Pinned, Liked, Playlists, Albums) with search, command palette, and per-card context menus
 - **All Music shuffle** — Dropbox users get an "All Music" card pinned to the top of the playlist grid that always plays your entire library shuffled
 - **Unified Liked Songs** — Merge liked tracks from connected providers into one queue; "Play Liked" and "Queue Liked" filter any collection to just your favorites
 - **Track Radio** — Generate a one-shot radio playlist from the current track (Last.fm-powered matching)

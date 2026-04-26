@@ -51,8 +51,6 @@ return {
 };
 ```
 
-> The active-player Settings menu (AppSettingsMenu rendered from PlayerControlsSection) gains a "New Library Route" toggle when this branch ships; flipping it changes which library component opens via the existing affordances (BottomBar button, swipe-down, keyboard ↓ / L). **[NEW LIBRARY ROUTE — note removed when #1298 lands.]**
-
 ### Ref-based state pattern
 
 `tracksRef`, `currentTrackIndexRef`, and `expectedTrackIdRef` are `useRef` mirrors of their corresponding React state. This is intentional: the `usePlaybackSubscription` effect depends only on `activeDescriptor`, not on tracks/index. Without refs, every track change would tear down and recreate the provider subscription, triggering a `getState()` call that briefly resets `currentTrackIndex` to the old track.
@@ -335,8 +333,6 @@ qapEnabled (from useQapEnabled) ?
 ### QAP preference
 
 Stored in `localStorage` under key `vorbis-player-qap-enabled` (default `false`). Toggled via the settings panel (`VisualEffectsMenu`). The `useQapEnabled()` hook wraps `useLocalStorage`.
-
-> See also docs/features/settings.md § "New Library Route (opt-in)" for the parallel library route flag. **[NEW LIBRARY ROUTE — line removed when #1298 lands.]**
 
 ### Other states
 

@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) and other AI assista
 
 **Vorbis Player** is a React/TypeScript music player with customizable visual effects and a pluggable provider architecture. Supports **Spotify** (streaming, Premium required) and **Dropbox** (personal files via HTML5 Audio), including cross-provider queues.
 
-Key capabilities: multi-provider auth/catalog/playback adapters, unified liked songs, cross-provider playback handoff, Last.fm-powered radio queue generation, background visualizers, album art flip menu, bottom bar, swipe gestures (queue drawer / full-screen library — legacy LibraryPage and opt-in LibraryRoute behind useNewLibraryRoute), keyboard shortcuts, IndexedDB caching, responsive layout.
+Key capabilities: multi-provider auth/catalog/playback adapters, unified liked songs, cross-provider playback handoff, Last.fm-powered radio queue generation, background visualizers, album art flip menu, bottom bar, swipe gestures (queue drawer / full-screen library), keyboard shortcuts, IndexedDB caching, responsive layout.
 
 ## Architecture docs
 
@@ -86,7 +86,7 @@ src/
 ## Terminology
 
 - **Queue** — tracks scheduled to play next (reorder/remove in `QueueDrawer` / `QueueBottomSheet`; list UI in `QueueTrackList.tsx`).
-- **Playlist** — a library **collection** from a provider (Spotify playlist, Dropbox folder-as-album, Liked Songs, etc.), browsed via `PlaylistSelection` (legacy `LibraryPage`) or `LibraryRoute` (opt-in via `useNewLibraryRoute`), and loaded through `usePlaylistManager` / catalog APIs.
+- **Playlist** — a library **collection** from a provider (Spotify playlist, Dropbox folder-as-album, Liked Songs, etc.), browsed via `LibraryRoute` and loaded through `usePlaylistManager` / catalog APIs.
 
 ## Tech Stack
 
