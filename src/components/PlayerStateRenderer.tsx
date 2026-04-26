@@ -347,6 +347,12 @@ const PlayerStateRenderer: React.FC<PlayerStateRendererProps> = ({
               onOpenSettings={onOpenSettings}
               onResume={onResume}
               lastSession={lastSession}
+              isPlaying={false}
+              onMiniPlay={() => {}}
+              onMiniPause={() => {}}
+              onMiniNext={() => {}}
+              onMiniPrevious={() => {}}
+              onMiniExpand={() => {}}
             />
           ) : (
             <LibraryPage

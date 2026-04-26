@@ -1,7 +1,10 @@
 import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
+import { ThemeProvider } from 'styled-components';
+import { theme } from '@/styles/theme';
 import LibraryRoute from '../index';
+import type { MediaTrack } from '@/types/domain';
 
 vi.mock('@/contexts/PlayerSizingContext', () => ({
   usePlayerSizingContext: vi.fn(),
@@ -44,17 +47,40 @@ vi.mock('../hooks', () => ({
   fetchLikedForProvider: vi.fn(async () => []),
 }));
 
+const { mockCurrentTrack } = vi.hoisted(() => ({
+  mockCurrentTrack: vi.fn<[], { currentTrack: MediaTrack | null }>(),
+}));
+
+vi.mock('@/contexts/TrackContext', () => ({
+  useCurrentTrackContext: () => mockCurrentTrack(),
+}));
+
 import { usePlayerSizingContext } from '@/contexts/PlayerSizingContext';
 
 const baseProps = {
   onPlaylistSelect: vi.fn(),
   onOpenSettings: vi.fn(),
   lastSession: null,
+  isPlaying: false,
+  onMiniPlay: vi.fn(),
+  onMiniPause: vi.fn(),
+  onMiniNext: vi.fn(),
+  onMiniPrevious: vi.fn(),
+  onMiniExpand: vi.fn(),
 };
+
+function renderRoute(propsOverrides: Partial<React.ComponentProps<typeof LibraryRoute>> = {}) {
+  return render(
+    <ThemeProvider theme={theme}>
+      <LibraryRoute {...baseProps} {...propsOverrides} />
+    </ThemeProvider>,
+  );
+}
 
 describe('LibraryRoute', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockCurrentTrack.mockReturnValue({ currentTrack: null });
   });
 
   it('renders mobile layout testid when isMobile is true', () => {
@@ -62,7 +88,7 @@ describe('LibraryRoute', () => {
     vi.mocked(usePlayerSizingContext).mockReturnValue({ isMobile: true } as ReturnType<typeof usePlayerSizingContext>);
 
     // #when
-    render(<LibraryRoute {...baseProps} />);
+    renderRoute();
 
     // #then
     expect(screen.getByTestId('library-route-mobile')).toBeInTheDocument();
@@ -74,7 +100,7 @@ describe('LibraryRoute', () => {
     vi.mocked(usePlayerSizingContext).mockReturnValue({ isMobile: false } as ReturnType<typeof usePlayerSizingContext>);
 
     // #when
-    render(<LibraryRoute {...baseProps} />);
+    renderRoute();
 
     // #then
     expect(screen.getByTestId('library-route-desktop')).toBeInTheDocument();
@@ -86,9 +112,56 @@ describe('LibraryRoute', () => {
     vi.mocked(usePlayerSizingContext).mockReturnValue({ isMobile: false } as ReturnType<typeof usePlayerSizingContext>);
 
     // #when
-    render(<LibraryRoute {...baseProps} />);
+    renderRoute();
 
     // #then
     expect(screen.getByTestId('library-home')).toBeInTheDocument();
+  });
+
+  it('does not mount mini-player when no current track', () => {
+    // #given
+    vi.mocked(usePlayerSizingContext).mockReturnValue({ isMobile: false } as ReturnType<typeof usePlayerSizingContext>);
+    mockCurrentTrack.mockReturnValue({ currentTrack: null });
+
+    // #when
+    renderRoute();
+
+    // #then
+    expect(screen.queryByTestId('library-mini-player')).toBeNull();
+  });
+
+  it('mounts mini-player when a current track is loaded', () => {
+    // #given
+    vi.mocked(usePlayerSizingContext).mockReturnValue({ isMobile: true } as ReturnType<typeof usePlayerSizingContext>);
+    mockCurrentTrack.mockReturnValue({
+      currentTrack: {
+        id: 't1',
+        name: 'Song',
+        artists: 'Artist',
+      } as MediaTrack,
+    });
+
+    // #when
+    renderRoute();
+
+    // #then
+    expect(screen.getByTestId('library-mini-player')).toBeInTheDocument();
+    expect(screen.getByText('Song')).toBeInTheDocument();
+  });
+
+  it('forwards onMiniExpand from the mini-player tap region', () => {
+    // #given
+    vi.mocked(usePlayerSizingContext).mockReturnValue({ isMobile: true } as ReturnType<typeof usePlayerSizingContext>);
+    mockCurrentTrack.mockReturnValue({
+      currentTrack: { id: 't1', name: 'Song', artists: 'Artist' } as MediaTrack,
+    });
+    const onMiniExpand = vi.fn();
+
+    // #when
+    renderRoute({ onMiniExpand });
+    fireEvent.click(screen.getByTestId('mini-expand'));
+
+    // #then
+    expect(onMiniExpand).toHaveBeenCalledTimes(1);
   });
 });
