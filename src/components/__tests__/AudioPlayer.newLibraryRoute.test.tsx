@@ -296,7 +296,7 @@ describe('AudioPlayer — new library route overlay swap (needsSetup path)', () 
     expect(screen.queryByTestId('library-route')).not.toBeInTheDocument();
   });
 
-  it('renders ProviderSetupScreen alongside the overlay (needsSetup path)', () => {
+  it('renders ProviderSetupScreen alongside the overlay (needsSetup path)', async () => {
     // #given — needsSetup = true, showLibrary = true
     mockUsePlayerLogic.mockReturnValue(makeMinimalPlayerLogicReturn(true) as ReturnType<typeof usePlayerLogic>);
     mockUseNewLibraryRoute.mockReturnValue([false, vi.fn()]);
@@ -306,6 +306,6 @@ describe('AudioPlayer — new library route overlay swap (needsSetup path)', () 
 
     // #then — ProviderSetupScreen is rendered by renderContent() AND library overlay is shown
     expect(screen.getByTestId('provider-setup-screen')).toBeInTheDocument();
-    expect(screen.getByTestId('library-page')).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByTestId('library-page')).toBeInTheDocument());
   });
 });

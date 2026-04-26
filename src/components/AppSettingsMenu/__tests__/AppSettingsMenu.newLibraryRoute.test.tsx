@@ -3,7 +3,7 @@
  */
 
 import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, within } from '@testing-library/react';
 import { ThemeProvider } from 'styled-components';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import { theme } from '@/styles/theme';
@@ -117,24 +117,13 @@ describe('AppSettingsMenu — New Library Route toggle', () => {
       </Wrapper>
     );
 
-    // #when — find the NLR control group's On button
-    const controlGroup = screen.getByText('New Library Route').closest('[data-testid="nlr-control-group"]')
-      ?? screen.getByText('New Library Route').parentElement;
-    const onButton = controlGroup
-      ? Array.from(controlGroup.querySelectorAll('button')).find(b => b.textContent === 'On')
-      : null;
+    // #when — scope to the ControlGroup containing the "New Library Route" label
+    const nlrGroup = screen.getByText('New Library Route').parentElement!;
+    const onButton = within(nlrGroup).getByRole('button', { name: 'On' });
+    fireEvent.click(onButton);
 
-    if (onButton) {
-      fireEvent.click(onButton);
-      // #then
-      expect(onNewLibraryRouteToggle).toHaveBeenCalled();
-    } else {
-      // Fallback: click the first On button that corresponds to NLR (it's the second pair of On/Off)
-      const allOnButtons = screen.getAllByText('On');
-      // NLR toggle is right after QAP toggle; click the last On in the non-Advanced section
-      fireEvent.click(allOnButtons[allOnButtons.length - 1]);
-      expect(onNewLibraryRouteToggle).toHaveBeenCalled();
-    }
+    // #then
+    expect(onNewLibraryRouteToggle).toHaveBeenCalled();
   });
 
   it('calls onNewLibraryRouteToggle when Off pill is clicked', () => {
@@ -150,9 +139,10 @@ describe('AppSettingsMenu — New Library Route toggle', () => {
       </Wrapper>
     );
 
-    // #when — click an Off button associated with NLR
-    const allOffButtons = screen.getAllByText('Off');
-    fireEvent.click(allOffButtons[allOffButtons.length - 1]);
+    // #when — scope to the ControlGroup containing the "New Library Route" label
+    const nlrGroup = screen.getByText('New Library Route').parentElement!;
+    const offButton = within(nlrGroup).getByRole('button', { name: 'Off' });
+    fireEvent.click(offButton);
 
     // #then
     expect(onNewLibraryRouteToggle).toHaveBeenCalled();

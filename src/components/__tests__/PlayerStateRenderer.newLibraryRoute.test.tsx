@@ -142,7 +142,7 @@ describe('PlayerStateRenderer — new library route render swap', () => {
     expect(screen.queryByTestId('library-route')).not.toBeInTheDocument();
   });
 
-  it('continues to render LibraryPage when flag flips from ON to OFF (library open)', () => {
+  it('continues to render LibraryPage when flag flips from ON to OFF (library open)', async () => {
     // #given — flag starts ON
     mockUseNewLibraryRoute.mockReturnValue([true, vi.fn()]);
     const { rerender } = render(
@@ -150,7 +150,7 @@ describe('PlayerStateRenderer — new library route render swap', () => {
         <PlayerStateRenderer {...defaultProps} />
       </Wrapper>
     );
-    expect(screen.getByTestId('library-route')).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByTestId('library-route')).toBeInTheDocument());
 
     // #when — flag turns OFF
     mockUseNewLibraryRoute.mockReturnValue([false, vi.fn()]);
@@ -161,11 +161,11 @@ describe('PlayerStateRenderer — new library route render swap', () => {
     );
 
     // #then — LibraryPage takes over
-    expect(screen.getByTestId('library-page')).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByTestId('library-page')).toBeInTheDocument());
     expect(screen.queryByTestId('library-route')).not.toBeInTheDocument();
   });
 
-  it('passes onOpenSettings to LibraryRoute when flag is ON', () => {
+  it('passes onOpenSettings to LibraryRoute when flag is ON', async () => {
     // #given
     mockUseNewLibraryRoute.mockReturnValue([true, vi.fn()]);
     const onOpenSettings = vi.fn();
@@ -178,6 +178,6 @@ describe('PlayerStateRenderer — new library route render swap', () => {
     );
 
     // #then — LibraryRoute renders (settings gear still available via LibraryRoute's escape hatch)
-    expect(screen.getByTestId('library-route')).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByTestId('library-route')).toBeInTheDocument());
   });
 });
