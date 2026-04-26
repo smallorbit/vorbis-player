@@ -9,7 +9,6 @@ import AccentColorBackground from './AccentColorBackground';
 import DebugOverlay, { useDebugActivator } from './DebugOverlay';
 import ProviderSetupScreen from './ProviderSetupScreen';
 import { toast } from 'sonner';
-import ResumeCard from './QuickAccessPanel/ResumeCard';
 import { ProfilingProvider } from '@/contexts/ProfilingContext';
 import { ProfilingOverlay } from '@/components/ProfilingOverlay';
 import { ProfiledComponent } from '@/components/ProfiledComponent';
@@ -28,10 +27,8 @@ import { STORAGE_KEYS } from '@/constants/storage';
 import type { ClearCacheOptions } from '@/components/AppSettingsMenu';
 import { useSessionPersistence } from '@/hooks/useSessionPersistence';
 import QuickAccessPanel from './QuickAccessPanel';
-import { useNewLibraryRoute } from '@/hooks/useNewLibraryRoute';
 
 const VisualEffectsMenu = lazy(() => import('./AppSettingsMenu/index'));
-const LibraryPage = lazy(() => import('./PlaylistSelection'));
 const LibraryRoute = lazy(() => import('./LibraryRoute'));
 
 const RESUME_TOAST_ID = 'resume-toast';
@@ -75,7 +72,6 @@ const AudioPlayerComponent = () => {
   } = useVisualizer();
   const { accentColorBackgroundEnabled } = useAccentColorBackground();
   const { showVisualEffects, setShowVisualEffects } = useVisualEffectsToggle();
-  const [newLibraryRouteEnabled, setNewLibraryRouteEnabled] = useNewLibraryRoute();
   const { tracks, selectedPlaylistId, setTracks, setOriginalTracks, setSelectedPlaylistId } = useTrackListContext();
   const { currentTrack, currentTrackIndex, setCurrentTrackIndex, showQueue, setShowQueue } = useCurrentTrackContext();
 
@@ -376,7 +372,7 @@ const AudioPlayerComponent = () => {
       <ProfiledComponent id="PlayerContent">
         <PlayerContent
           isPlaying={state.isPlaying}
-          showLibrary={state.showLibrary}
+          showLibrary={state.currentView === 'library'}
           handlers={playbackHandlers}
           radioState={radio.radioState}
           isRadioAvailable={radio.isRadioAvailable}
@@ -385,8 +381,6 @@ const AudioPlayerComponent = () => {
           mediaTracksRef={mediaTracksRef}
           radioProgress={radio.radioProgress}
           onDismissRadioProgress={radio.dismissRadioProgress}
-          lastSession={lastSession}
-          onResume={handleResume}
         />
       </ProfiledComponent>
     );
@@ -470,50 +464,33 @@ const AudioPlayerComponent = () => {
               onVisualizerDebugToggle={() => {}}
               qapEnabled={false}
               onQapToggle={() => {}}
-              newLibraryRouteEnabled={newLibraryRouteEnabled}
-              onNewLibraryRouteToggle={() => setNewLibraryRouteEnabled(!newLibraryRouteEnabled)}
             />
           </Suspense>
         )}
-        {needsSetup && state.showLibrary && (
+        {needsSetup && state.currentView === 'library' && (
           <Suspense fallback={null}>
-            {newLibraryRouteEnabled ? (
-              <LibraryRoute
-                onPlaylistSelect={(id, name, provider) => {
-                  handlers.handleCloseLibrary();
-                  handlePlaylistSelect(id, name ?? '', provider);
-                }}
-                onPlayLikedTracks={handlePlayLikedTracks}
-                onQueueLikedTracks={handleQueueLikedTracks}
-                onOpenSettings={handleOpenSettings}
-                onResume={handleResume}
-                lastSession={lastSession}
-                isPlaying={state.isPlaying}
-                isRadioAvailable={radio.isRadioAvailable}
-                isRadioGenerating={radio.radioState?.isGenerating}
-                onMiniPlay={playbackHandlers.onPlay}
-                onMiniPause={playbackHandlers.onPause}
-                onMiniNext={playbackHandlers.onNext}
-                onMiniPrevious={playbackHandlers.onPrevious}
-                onMiniExpand={handlers.handleCloseLibrary}
-                onMiniStartRadio={radio.isRadioAvailable ? handlers.handleStartRadio : undefined}
-                /* onPlayNext + onStartRadioForCollection: disabled-fallback for #1297. Follow-up tickets implement queue-insert + radio orchestration. */
-                onPlayNext={undefined}
-                onStartRadioForCollection={undefined}
-              />
-            ) : (
-              <LibraryPage
-                onPlaylistSelect={(id, name, provider) => {
-                  handlers.handleCloseLibrary();
-                  handlePlaylistSelect(id, name, provider);
-                }}
-                onPlayLikedTracks={handlePlayLikedTracks}
-                onQueueLikedTracks={handleQueueLikedTracks}
-                footer={lastSession && handleResume ? (
-                  <ResumeCard session={lastSession} onResume={handleResume} />
-                ) : undefined}
-              />
-            )}
+            <LibraryRoute
+              onPlaylistSelect={(id, name, provider) => {
+                handlers.handleCloseLibrary();
+                handlePlaylistSelect(id, name ?? '', provider);
+              }}
+              onPlayLikedTracks={handlePlayLikedTracks}
+              onQueueLikedTracks={handleQueueLikedTracks}
+              onOpenSettings={handleOpenSettings}
+              onResume={handleResume}
+              lastSession={lastSession}
+              isPlaying={state.isPlaying}
+              isRadioAvailable={radio.isRadioAvailable}
+              isRadioGenerating={radio.radioState?.isGenerating}
+              onMiniPlay={playbackHandlers.onPlay}
+              onMiniPause={playbackHandlers.onPause}
+              onMiniNext={playbackHandlers.onNext}
+              onMiniPrevious={playbackHandlers.onPrevious}
+              onMiniExpand={handlers.handleCloseLibrary}
+              onMiniStartRadio={radio.isRadioAvailable ? handlers.handleStartRadio : undefined}
+              onPlayNext={undefined}
+              onStartRadioForCollection={undefined}
+            />
           </Suspense>
         )}
       </Container>

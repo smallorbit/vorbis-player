@@ -9,13 +9,10 @@ import { useUnifiedLikedTracks } from '@/hooks/useUnifiedLikedTracks';
 import { LIKED_SONGS_ID } from '@/constants/playlist';
 import { LIBRARY_REFRESH_EVENT } from '@/hooks/useLibrarySync';
 import { providerRegistry } from '@/providers/registry';
-import type { AddToQueueResult, MediaTrack, ProviderId } from '@/types/domain';
+import type { MediaTrack, ProviderId } from '@/types/domain';
 import type { RadioState, RadioProgress } from '@/types/radio';
-import type { SessionSnapshot } from '@/services/sessionPersistence';
-import { MobileLibraryOverlay } from './MobileLibraryOverlay';
 import QueueSkeleton from '@/components/QueueSkeleton';
 
-const LibraryDrawer = lazy(() => import('@/components/LibraryDrawer'));
 const SaveQueueDialog = lazy(() => import('@/components/SaveQueueDialog'));
 const QueueDrawer = lazy(() => import('@/components/QueueDrawer'));
 const QueueBottomSheet = lazy(() => import('@/components/QueueBottomSheet'));
@@ -63,13 +60,6 @@ function QueueLoadingFallback({ isMobile }: { isMobile: boolean }): React.ReactE
 interface DrawerOrchestratorProps {
   showQueue: boolean;
   onCloseQueue: () => void;
-  showLibrary: boolean;
-  onCloseLibrary: () => void;
-  isPlaying?: boolean;
-  onPlaylistSelect: (playlistId: string, playlistName: string, provider?: ProviderId) => void;
-  onAddToQueue?: (playlistId: string, playlistName?: string, provider?: ProviderId) => Promise<AddToQueueResult | null>;
-  onPlayLikedTracks?: (tracks: MediaTrack[], collectionId: string, collectionName: string, provider?: ProviderId) => Promise<void>;
-  onQueueLikedTracks?: (tracks: MediaTrack[], collectionName?: string) => void;
   onTrackSelect: (index: number) => void;
   onRemoveFromQueue?: (index: number) => void;
   onReorderQueue?: (fromIndex: number, toIndex: number) => void;
@@ -80,20 +70,11 @@ interface DrawerOrchestratorProps {
   radioProgress?: RadioProgress | null;
   onDismissRadioProgress?: () => void;
   onOpenQueueFromToast: () => void;
-  lastSession?: SessionSnapshot | null;
-  onResume?: () => void;
 }
 
 export const DrawerOrchestrator: React.FC<DrawerOrchestratorProps> = React.memo(({
   showQueue,
   onCloseQueue,
-  showLibrary,
-  onCloseLibrary,
-  isPlaying,
-  onPlaylistSelect,
-  onAddToQueue,
-  onPlayLikedTracks,
-  onQueueLikedTracks,
   onTrackSelect,
   onRemoveFromQueue,
   onReorderQueue,
@@ -104,8 +85,6 @@ export const DrawerOrchestrator: React.FC<DrawerOrchestratorProps> = React.memo(
   radioProgress,
   onDismissRadioProgress,
   onOpenQueueFromToast,
-  lastSession,
-  onResume,
 }) => {
   const { tracks, selectedPlaylistId } = useTrackListContext();
   const { currentTrackIndex } = useCurrentTrackContext();
@@ -180,18 +159,6 @@ export const DrawerOrchestrator: React.FC<DrawerOrchestratorProps> = React.memo(
     );
   }, [radioProgress, onDismissRadioProgress, onOpenQueueFromToast]);
 
-  const handleCloseLibrary = useCallback(() => {
-    onCloseLibrary();
-  }, [onCloseLibrary]);
-
-  const handleLibraryPlaylistSelect = useCallback(
-    (playlistId: string, playlistName: string, provider?: ProviderId) => {
-      handleCloseLibrary();
-      onPlaylistSelect(playlistId, playlistName, provider);
-    },
-    [handleCloseLibrary, onPlaylistSelect],
-  );
-
   return (
     <>
       <Suspense fallback={showQueue ? <QueueLoadingFallback isMobile={isMobile} /> : null}>
@@ -231,31 +198,6 @@ export const DrawerOrchestrator: React.FC<DrawerOrchestratorProps> = React.memo(
           </ProfiledComponent>
         )}
       </Suspense>
-      {isMobile && (
-        <MobileLibraryOverlay
-          isOpen={showLibrary}
-          isPlaying={isPlaying}
-          onPlaylistSelect={handleLibraryPlaylistSelect}
-          onAddToQueue={onAddToQueue}
-          onPlayLikedTracks={onPlayLikedTracks}
-          onQueueLikedTracks={onQueueLikedTracks}
-          onCloseLibrary={onCloseLibrary}
-        />
-      )}
-      {!isMobile && (
-        <Suspense fallback={null}>
-          <LibraryDrawer
-            isOpen={showLibrary}
-            onClose={onCloseLibrary}
-            onPlaylistSelect={handleLibraryPlaylistSelect}
-            onAddToQueue={onAddToQueue}
-            onPlayLikedTracks={onPlayLikedTracks}
-            onQueueLikedTracks={onQueueLikedTracks}
-            lastSession={tracks.length === 0 ? lastSession : undefined}
-            onResume={tracks.length === 0 ? onResume : undefined}
-          />
-        </Suspense>
-      )}
       {showSaveQueueDialog && (
         <Suspense fallback={null}>
           <SaveQueueDialog

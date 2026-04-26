@@ -9,7 +9,6 @@ import { ZEN_ART_DURATION, ZEN_ART_ENTER_DELAY } from '@/constants/zenAnimation'
 import type { AddToQueueResult, MediaTrack, ProviderId } from '@/types/domain';
 import type { AlbumArtBounds } from '@/types/visualizer';
 import type { RadioState, RadioProgress } from '@/types/radio';
-import type { SessionSnapshot } from '@/services/sessionPersistence';
 import { ContentWrapper, PlayerContainer, PlayerStack } from './styled';
 import { AlbumArtSection } from './AlbumArtSection';
 import { PlayerControlsSection } from './PlayerControlsSection';
@@ -51,8 +50,6 @@ interface PlayerContentProps {
   mediaTracksRef?: React.RefObject<MediaTrack[]>;
   radioProgress?: RadioProgress | null;
   onDismissRadioProgress?: () => void;
-  lastSession?: SessionSnapshot | null;
-  onResume?: () => void;
 }
 
 const PlayerContent: React.FC<PlayerContentProps> = React.memo(({
@@ -67,8 +64,6 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({
   mediaTracksRef,
   radioProgress,
   onDismissRadioProgress,
-  lastSession,
-  onResume,
 }) => {
   const { currentTrack, showQueue, setShowQueue } = useCurrentTrackContext();
   const { zenModeEnabled, setZenModeEnabled } = useZenMode();
@@ -268,13 +263,6 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({
       <DrawerOrchestrator
         showQueue={showQueue}
         onCloseQueue={handleCloseQueue}
-        showLibrary={showLibrary}
-        onCloseLibrary={handleCloseLibrary}
-        isPlaying={isPlaying}
-        onPlaylistSelect={handlers.onPlaylistSelect}
-        onAddToQueue={handlers.onAddToQueue}
-        onPlayLikedTracks={handlers.onPlayLikedTracks}
-        onQueueLikedTracks={handlers.onQueueLikedTracks}
         onTrackSelect={handlers.onTrackSelect}
         onRemoveFromQueue={handlers.onRemoveFromQueue}
         onReorderQueue={handlers.onReorderQueue}
@@ -285,8 +273,6 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({
         radioProgress={radioProgress}
         onDismissRadioProgress={onDismissRadioProgress}
         onOpenQueueFromToast={handleOpenQueueFromToast}
-        lastSession={lastSession}
-        onResume={onResume}
       />
     </ContentWrapper>
   );

@@ -151,7 +151,7 @@ const Wrapper = ({ children }: { children: React.ReactNode }) => (
   </ProviderProvider>
 );
 
-describe('usePlayerLogic — currentView + showLibrary', () => {
+describe('usePlayerLogic — currentView', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -162,14 +162,6 @@ describe('usePlayerLogic — currentView + showLibrary', () => {
 
     // #then
     expect(result.current.state.currentView).toBe('player');
-  });
-
-  it('initialises showLibrary to false (derived from currentView)', () => {
-    // #when
-    const { result } = renderHook(() => usePlayerLogic(), { wrapper: Wrapper });
-
-    // #then
-    expect(result.current.state.showLibrary).toBe(false);
   });
 
   it('handleOpenLibrary sets currentView to "library"', () => {
@@ -185,19 +177,6 @@ describe('usePlayerLogic — currentView + showLibrary', () => {
     expect(result.current.state.currentView).toBe('library');
   });
 
-  it('handleOpenLibrary sets showLibrary to true', () => {
-    // #given
-    const { result } = renderHook(() => usePlayerLogic(), { wrapper: Wrapper });
-
-    // #when
-    act(() => {
-      result.current.handlers.handleOpenLibrary();
-    });
-
-    // #then
-    expect(result.current.state.showLibrary).toBe(true);
-  });
-
   it('handleCloseLibrary sets currentView back to "player"', () => {
     // #given
     const { result } = renderHook(() => usePlayerLogic(), { wrapper: Wrapper });
@@ -210,35 +189,6 @@ describe('usePlayerLogic — currentView + showLibrary', () => {
 
     // #then
     expect(result.current.state.currentView).toBe('player');
-  });
-
-  it('handleCloseLibrary sets showLibrary back to false', () => {
-    // #given
-    const { result } = renderHook(() => usePlayerLogic(), { wrapper: Wrapper });
-    act(() => { result.current.handlers.handleOpenLibrary(); });
-
-    // #when
-    act(() => {
-      result.current.handlers.handleCloseLibrary();
-    });
-
-    // #then
-    expect(result.current.state.showLibrary).toBe(false);
-  });
-
-  it('showLibrary stays in lockstep with currentView === "library"', () => {
-    // #given
-    const { result } = renderHook(() => usePlayerLogic(), { wrapper: Wrapper });
-
-    // #when — open
-    act(() => { result.current.handlers.handleOpenLibrary(); });
-    // #then
-    expect(result.current.state.showLibrary).toBe(result.current.state.currentView === 'library');
-
-    // #when — close
-    act(() => { result.current.handlers.handleCloseLibrary(); });
-    // #then
-    expect(result.current.state.showLibrary).toBe(result.current.state.currentView === 'library');
   });
 
   it('handleBackToLibrary does not change currentView', () => {

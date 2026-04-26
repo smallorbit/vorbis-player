@@ -1,16 +1,13 @@
 /**
- * Truth-table tests for BottomBar conservative-hide behavior.
+ * BottomBar hide behavior — collapsed truth table after #1298 removal of the
+ * useNewLibraryRoute flag.
  *
- * `bottomBarActions.hidden = showLibrary && (isMobile || newLibraryRouteEnabled)`
+ * `bottomBarActions.hidden = showLibrary`
  *
- *  showLibrary | isMobile | newLibraryRouteEnabled | hidden
- *  ----------- | -------- | ---------------------- | ------
- *      true    |  false   |         true           |  true     (mini-player owns bottom)
- *      true    |  true    |         false          |  true     (mobile-legacy)
- *      true    |  false   |         false          |  false    (desktop-legacy — REGRESSION GUARD)
- *      false   |   any    |          any           |  false
- *
- * Captured via a mocked BottomBarActionsProvider that records its `value` prop.
+ *  showLibrary | hidden
+ *  ----------- | ------
+ *      true    |  true
+ *      false   |  false
  */
 
 import React from 'react';
@@ -41,18 +38,13 @@ vi.mock('@/contexts/BottomBarActionsContext', () => ({
 
 // ---- light no-op mocks for every PlayerControlsSection dependency --------- //
 
-const { mockUseSizing, mockUseNewLibraryRoute, mockUseQapEnabled } = vi.hoisted(() => ({
+const { mockUseSizing, mockUseQapEnabled } = vi.hoisted(() => ({
   mockUseSizing: vi.fn(),
-  mockUseNewLibraryRoute: vi.fn(),
   mockUseQapEnabled: vi.fn(),
 }));
 
 vi.mock('@/contexts/PlayerSizingContext', () => ({
   usePlayerSizingContext: () => mockUseSizing(),
-}));
-
-vi.mock('@/hooks/useNewLibraryRoute', () => ({
-  useNewLibraryRoute: () => mockUseNewLibraryRoute(),
 }));
 
 vi.mock('@/hooks/useQapEnabled', () => ({
@@ -132,7 +124,6 @@ vi.mock('@/components/ProfiledComponent', () => ({
   ProfiledComponent: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
 
-// LoadingCard / ZenControls* are styled components from local sibling — pass-through.
 vi.mock('../styled', () => ({
   LoadingCard: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   ZenControlsWrapper: React.forwardRef<HTMLDivElement, { children: React.ReactNode }>(
@@ -143,8 +134,6 @@ vi.mock('../styled', () => ({
   ),
 }));
 
-// -------------------------------------------------------------------------- //
-
 import { PlayerControlsSection } from '../PlayerControlsSection';
 
 function makeTrack(): MediaTrack {
@@ -152,6 +141,7 @@ function makeTrack(): MediaTrack {
     id: 't1',
     name: 'Track',
     artists: 'Artist',
+    album: 'Album',
     duration_ms: 1000,
     image: 'https://example.com/art.png',
     provider: 'spotify',
@@ -161,21 +151,18 @@ function makeTrack(): MediaTrack {
 
 interface Scenario {
   showLibrary: boolean;
-  isMobile: boolean;
-  newLibraryRouteEnabled: boolean;
 }
 
 function renderWith(scenario: Scenario) {
   mockUseSizing.mockReturnValue({
-    isMobile: scenario.isMobile,
+    isMobile: false,
     isTablet: false,
-    isDesktop: !scenario.isMobile,
+    isDesktop: true,
     isTouchDevice: false,
     hasPointerInput: true,
     viewport: { width: 1024, height: 768, ratio: 1024 / 768 },
     dimensions: { width: 600, height: 600 },
   });
-  mockUseNewLibraryRoute.mockReturnValue([scenario.newLibraryRouteEnabled, vi.fn()]);
   mockUseQapEnabled.mockReturnValue([false, vi.fn()]);
 
   const controlsRef = React.createRef<HTMLDivElement>();
@@ -209,54 +196,26 @@ function renderWith(scenario: Scenario) {
   );
 }
 
-describe('PlayerControlsSection — BottomBar conservative-hide truth table', () => {
+describe('PlayerControlsSection — BottomBar hide', () => {
   beforeEach(() => {
     captured.value = null;
     mockUseSizing.mockReset();
-    mockUseNewLibraryRoute.mockReset();
     mockUseQapEnabled.mockReset();
   });
 
-  it('hidden=true when showLibrary + newLibraryRouteEnabled (desktop)', () => {
-    // #given showLibrary=true, isMobile=false, newLibraryRouteEnabled=true
+  it('hides BottomBar when showLibrary=true', () => {
+    // #given
     // #when
-    renderWith({ showLibrary: true, isMobile: false, newLibraryRouteEnabled: true });
+    renderWith({ showLibrary: true });
 
-    // #then — mini-player owns bottom strip; BottomBar hides
+    // #then — LibraryRoute owns the surface, BottomBar hides
     expect(captured.value?.hidden).toBe(true);
   });
 
-  it('hidden=true when showLibrary + isMobile (legacy mobile behavior preserved)', () => {
-    // #given showLibrary=true, isMobile=true, newLibraryRouteEnabled=false
+  it('shows BottomBar when showLibrary=false', () => {
+    // #given
     // #when
-    renderWith({ showLibrary: true, isMobile: true, newLibraryRouteEnabled: false });
-
-    // #then
-    expect(captured.value?.hidden).toBe(true);
-  });
-
-  it('hidden=false when showLibrary on legacy desktop (REGRESSION GUARD)', () => {
-    // #given showLibrary=true, isMobile=false, newLibraryRouteEnabled=false
-    // #when
-    renderWith({ showLibrary: true, isMobile: false, newLibraryRouteEnabled: false });
-
-    // #then — legacy desktop path MUST keep BottomBar visible
-    expect(captured.value?.hidden).toBe(false);
-  });
-
-  it('hidden=false when showLibrary=false regardless of flag (mobile + NLR on)', () => {
-    // #given showLibrary=false, isMobile=true, newLibraryRouteEnabled=true
-    // #when
-    renderWith({ showLibrary: false, isMobile: true, newLibraryRouteEnabled: true });
-
-    // #then
-    expect(captured.value?.hidden).toBe(false);
-  });
-
-  it('hidden=false when showLibrary=false on plain desktop', () => {
-    // #given showLibrary=false, isMobile=false, newLibraryRouteEnabled=false
-    // #when
-    renderWith({ showLibrary: false, isMobile: false, newLibraryRouteEnabled: false });
+    renderWith({ showLibrary: false });
 
     // #then
     expect(captured.value?.hidden).toBe(false);

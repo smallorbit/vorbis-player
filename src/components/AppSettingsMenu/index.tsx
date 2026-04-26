@@ -54,8 +54,6 @@ interface AppSettingsMenuProps {
   onVisualizerDebugToggle: () => void;
   qapEnabled: boolean;
   onQapToggle: () => void;
-  newLibraryRouteEnabled: boolean;
-  onNewLibraryRouteToggle: () => void;
 }
 
 const arePropsEqual = (
@@ -66,8 +64,7 @@ const arePropsEqual = (
     prevProps.isOpen !== nextProps.isOpen ||
     prevProps.profilerEnabled !== nextProps.profilerEnabled ||
     prevProps.visualizerDebugEnabled !== nextProps.visualizerDebugEnabled ||
-    prevProps.qapEnabled !== nextProps.qapEnabled ||
-    prevProps.newLibraryRouteEnabled !== nextProps.newLibraryRouteEnabled
+    prevProps.qapEnabled !== nextProps.qapEnabled
   ) {
     return false;
   }
@@ -85,8 +82,6 @@ const AppSettingsMenu: React.FC<AppSettingsMenuProps> = memo(({
   onVisualizerDebugToggle,
   qapEnabled,
   onQapToggle,
-  newLibraryRouteEnabled,
-  onNewLibraryRouteToggle,
 }) => {
   const { viewport, isMobile, isTablet, transitionDuration, transitionEasing } = usePlayerSizingContext();
   const { enabledProviderIds, registry } = useProviderContext();
@@ -161,24 +156,6 @@ const AppSettingsMenu: React.FC<AppSettingsMenuProps> = memo(({
               <OptionButton
                 $isActive={!qapEnabled}
                 onClick={onQapToggle}
-              >
-                Off
-              </OptionButton>
-            </OptionButtonGroup>
-          </ControlGroup>
-
-          <ControlGroup>
-            <ControlLabel>New Library Route</ControlLabel>
-            <OptionButtonGroup>
-              <OptionButton
-                $isActive={newLibraryRouteEnabled}
-                onClick={onNewLibraryRouteToggle}
-              >
-                On
-              </OptionButton>
-              <OptionButton
-                $isActive={!newLibraryRouteEnabled}
-                onClick={onNewLibraryRouteToggle}
               >
                 Off
               </OptionButton>
