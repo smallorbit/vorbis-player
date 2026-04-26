@@ -11,6 +11,13 @@ vi.mock('@/contexts/PlayerSizingContext', () => ({
   usePlayerSizingContext: vi.fn(),
 }));
 
+// LibraryRoute mounts MiniPlayer (added by #1295), which calls useCurrentTrackContext.
+// Stub the context so navigation tests don't need a full TrackProvider tree.
+// Default returns null → MiniPlayer renders null and stays out of the way.
+vi.mock('@/contexts/TrackContext', () => ({
+  useCurrentTrackContext: () => ({ currentTrack: null }),
+}));
+
 vi.mock('@/contexts/ProviderContext', () => ({
   useProviderContext: vi.fn(() => ({
     hasMultipleProviders: false,
