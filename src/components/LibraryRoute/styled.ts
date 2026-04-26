@@ -13,16 +13,17 @@ export const MobileLayout = styled.div`
   flex-direction: column;
   flex: 1;
   width: 100%;
-  padding: 1rem;
-  gap: 1rem;
+  height: 100%;
+  min-height: 0;
   overflow-y: auto;
 `;
 
 export const DesktopLayout = styled.div`
-  display: grid;
-  grid-template-columns: 280px 1fr;
+  display: flex;
+  flex-direction: column;
   flex: 1;
   width: 100%;
   height: 100%;
   min-height: 0;
+  overflow-y: auto;
 `;
