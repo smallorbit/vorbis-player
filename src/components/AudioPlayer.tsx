@@ -8,7 +8,7 @@ import BackgroundVisualizer from './BackgroundVisualizer';
 import AccentColorBackground from './AccentColorBackground';
 import DebugOverlay, { useDebugActivator } from './DebugOverlay';
 import ProviderSetupScreen from './ProviderSetupScreen';
-import Toast from './Toast';
+import { toast } from 'sonner';
 import ResumeCard from './QuickAccessPanel/ResumeCard';
 import { ProfilingProvider } from '@/contexts/ProfilingContext';
 import { ProfilingOverlay } from '@/components/ProfilingOverlay';
@@ -31,6 +31,11 @@ import QuickAccessPanel from './QuickAccessPanel';
 
 const VisualEffectsMenu = lazy(() => import('./AppSettingsMenu/index'));
 const LibraryPage = lazy(() => import('./PlaylistSelection'));
+
+const RESUME_TOAST_ID = 'resume-toast';
+const FALLTHROUGH_TOAST_ID = 'fallthrough-toast';
+const RECONNECT_TOAST_ID = 'reconnect-toast';
+const DISCONNECT_TOAST_ID = 'disconnect-toast';
 
 const Container = styled.div`
   width: 100%;
@@ -132,30 +137,25 @@ const AudioPlayerComponent = () => {
   const handleOpenQuickAccessPanel = useCallback(() => setShowQuickAccessPanel(true), []);
   const handleCloseQuickAccessPanel = useCallback(() => setShowQuickAccessPanel(false), []);
 
-  const [qapToast, setQapToast] = useState<{ message: string; actionLabel?: string; onAction?: () => void } | null>(null);
-  const handleQapToastDismiss = useCallback(() => setQapToast(null), []);
-
-  const [resumeToastMessage, setResumeToastMessage] = useState<string | null>(null);
-  const dismissResumeToast = useCallback(() => setResumeToastMessage(null), []);
   const handleHydrateFired = useCallback((track: import('@/types/domain').MediaTrack, skipped: boolean) => {
     const message = skipped
       ? `Couldn't resume previous track — starting from next in queue.`
       : `Resuming '${track.name}' — press play to continue.`;
-    setResumeToastMessage(message);
+    toast(message, { id: RESUME_TOAST_ID, duration: Infinity });
   }, []);
   const handleHydrateFailed = useCallback(() => {
     resetLastSession();
-    setResumeToastMessage(`Couldn't resume your last session.`);
+    toast(`Couldn't resume your last session.`, { id: RESUME_TOAST_ID, duration: Infinity });
   }, [resetLastSession]);
   const withResumeDismiss = useCallback(
     <T extends (...args: never[]) => unknown>(fn: T): T => ((...args) => {
-      setResumeToastMessage(null);
+      toast.dismiss(RESUME_TOAST_ID);
       return fn(...args);
     }) as T,
     [],
   );
   useEffect(() => {
-    if (showQueue) setResumeToastMessage(null);
+    if (showQueue) toast.dismiss(RESUME_TOAST_ID);
   }, [showQueue]);
   const handleAddToQueueFromPanel = useCallback(
     async (id: string, name?: string, provider?: import('@/types/domain').ProviderId) => {
@@ -163,10 +163,10 @@ const AudioPlayerComponent = () => {
       if (result && result.added > 0) {
         const title = result.collectionName?.trim();
         const label = title ? `"${title}"` : 'this collection';
-        setQapToast({
-          message: `Added ${result.added} ${result.added === 1 ? 'track' : 'tracks'} from ${label} to your`,
-          actionLabel: 'queue',
-          onAction: () => { setShowQueue(true); setQapToast(null); },
+        const trackWord = result.added === 1 ? 'track' : 'tracks';
+        toast(`Added ${result.added} ${trackWord} from ${label} to your queue.`, {
+          id: 'qap-add-queue',
+          action: { label: 'View', onClick: () => setShowQueue(true) },
         });
       }
       return result;
@@ -189,10 +189,10 @@ const AudioPlayerComponent = () => {
       if (result && result.added > 0) {
         const title = result.collectionName?.trim();
         const label = title ? `"${title}"` : 'this collection';
-        setQapToast({
-          message: `Added ${result.added} liked ${result.added === 1 ? 'track' : 'tracks'} from ${label} to your`,
-          actionLabel: 'queue',
-          onAction: () => { setShowQueue(true); setQapToast(null); },
+        const trackWord = result.added === 1 ? 'track' : 'tracks';
+        toast(`Added ${result.added} liked ${trackWord} from ${label} to your queue.`, {
+          id: 'qap-queue-liked',
+          action: { label: 'View', onClick: () => setShowQueue(true) },
         });
       }
     },
@@ -231,6 +231,38 @@ const AudioPlayerComponent = () => {
   ]);
 
   const { chosenProviderId, activeDescriptor, connectedProviderIds, fallthroughNotification, dismissFallthroughNotification, reconnectPrompt, acceptReconnectPrompt, dismissReconnectPrompt, disconnectToast, dismissDisconnectToast } = useProviderContext();
+
+  useEffect(() => {
+    if (!fallthroughNotification) return;
+    toast(fallthroughNotification, {
+      id: FALLTHROUGH_TOAST_ID,
+      onDismiss: dismissFallthroughNotification,
+      onAutoClose: dismissFallthroughNotification,
+    });
+  }, [fallthroughNotification, dismissFallthroughNotification]);
+
+  useEffect(() => {
+    if (!reconnectPrompt) {
+      toast.dismiss(RECONNECT_TOAST_ID);
+      return;
+    }
+    toast(reconnectPrompt.message, {
+      id: RECONNECT_TOAST_ID,
+      duration: Infinity,
+      action: { label: 'Reconnect', onClick: acceptReconnectPrompt },
+      onDismiss: dismissReconnectPrompt,
+    });
+  }, [reconnectPrompt, acceptReconnectPrompt, dismissReconnectPrompt]);
+
+  useEffect(() => {
+    if (!disconnectToast || reconnectPrompt) return;
+    toast(disconnectToast, {
+      id: DISCONNECT_TOAST_ID,
+      onDismiss: dismissDisconnectToast,
+      onAutoClose: dismissDisconnectToast,
+    });
+  }, [disconnectToast, reconnectPrompt, dismissDisconnectToast]);
+
   // Setup is needed when no provider has been chosen yet and none are connected,
   // or when the active provider isn't authenticated and no other enabled provider is either.
   // connectedProviderIds is the subset of enabledProviderIds with valid auth.
@@ -333,9 +365,6 @@ const AudioPlayerComponent = () => {
               onHydrateFailed={handleHydrateFailed}
             />
           </ProfiledComponent>
-          {qapToast && (
-            <Toast message={qapToast.message} actionLabel={qapToast.actionLabel} onAction={qapToast.onAction} onDismiss={handleQapToastDismiss} />
-          )}
         </>
       );
     }
@@ -425,27 +454,6 @@ const AudioPlayerComponent = () => {
               />
             </div>
           </QuickAccessOverlay>
-        )}
-        {qapToast && (
-          <Toast message={qapToast.message} actionLabel={qapToast.actionLabel} onAction={qapToast.onAction} onDismiss={handleQapToastDismiss} />
-        )}
-        {resumeToastMessage && (
-          <Toast message={resumeToastMessage} onDismiss={dismissResumeToast} />
-        )}
-        {fallthroughNotification && (
-          <Toast message={fallthroughNotification} onDismiss={dismissFallthroughNotification} />
-        )}
-        {reconnectPrompt && (
-          <Toast
-            message={reconnectPrompt.message}
-            actionLabel="Reconnect"
-            onAction={acceptReconnectPrompt}
-            onDismiss={dismissReconnectPrompt}
-            persistent
-          />
-        )}
-        {disconnectToast && !reconnectPrompt && (
-          <Toast message={disconnectToast} onDismiss={dismissDisconnectToast} />
         )}
         {!isMainPlayerActive && (
           <Suspense fallback={null}>
