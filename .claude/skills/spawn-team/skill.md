@@ -32,6 +32,43 @@ The user may override the count explicitly: *"spawn the team with 3 builders"*, 
 - Count = 1: name is `builder` (no suffix). Preserves the historical singleton convention.
 - Count > 1: names are `builder-1`, `builder-2`, ... `builder-N`. Numbered from 1 (not 0). The `-N` suffix here is **intentional and stable**, distinct from the spawn-flake `-2` ghost-name pattern that arises from failed retries.
 
+## Isolation mode — default to worktrees for parallel waves
+
+**Default for `BUILDER_COUNT > 1`: spawn each builder with `isolation: "worktree"`.** Each builder gets its own clean checkout of `main` (or develop), independent `node_modules`, isolated branch space. Strictly better than shared workspace for parallel-builder waves:
+
+- Zero verification-gate contamination — sibling builders' destructive edits (file deletions, shared-export removals) cannot break your `npx tsc -b --noEmit` baseline
+- Zero workspace HEAD drift — no risk of `git status` reporting you on a sibling's branch
+- Clean PR diffs — your commit cannot silently absorb sibling work in shared files
+- Each builder commits + pushes from their own worktree → reviewer pickup is canonical
+
+**Cost** (acceptable, paid once per worktree): `npm install` (~30s), `cp ../../.env.local .env.local` (Spotify env for tests, ~instant), node_modules disk space duplication (~500MB × N). Worth it.
+
+**`BUILDER_COUNT == 1`** can stay in shared workspace (no parallel conflict possible). But for any wave with parallel builders, set `isolation: "worktree"` on the spawn `Agent` call.
+
+When using worktrees, the spawn prompt should include the pre-flight setup instructions:
+
+```
+## Pre-flight (run first in your isolated worktree)
+npm install
+cp ../../.env.local .env.local 2>/dev/null || true
+# (then any task-specific dep install, e.g. `npm install @radix-ui/react-switch`)
+```
+
+## Route interface contracts to BOTH builder AND tester
+
+Per `builder.md`'s "Interface contract first" rule, contracts exist precisely so the tester can write tests in parallel with the builder writing implementation. **The lead must route every architect blueprint (and every builder-emitted interface contract) to BOTH the builder AND the tester in the same dispatch window.**
+
+Concrete pattern when dispatching task work:
+
+```
+SendMessage to builder-N: "task #X assigned + architect blueprint (full text)"
+SendMessage to tester:    "interface contract for task #X (extracted from blueprint) — write tests in parallel"
+```
+
+The tester writes tests against the architect-spec'd contract — not against impl details that haven't been written yet. Tests live on a separate branch (`test/<wave-name>`), get pushed once primitive PRs merge to main.
+
+**Failure mode this prevents**: tester architecturally orphaned for the entire dispatch wave. Sat idle for ~35 minutes in the wave-2 epic until lead realized contracts had never been routed. Real cost: ~one wave-cycle of unshipped test work, requiring a retrofit dispatch + delayed test PR.
+
 ## When to spawn the full team — proportionality
 
 The full specialist team is sized for **multi-file epics with non-trivial design surface**. Skip it for mechanical work:
