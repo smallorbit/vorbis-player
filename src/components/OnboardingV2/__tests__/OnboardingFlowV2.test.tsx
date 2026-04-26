@@ -79,7 +79,7 @@ describe('OnboardingFlowV2', () => {
   });
 
   describe('desktop layout (useIsDesktop → true)', () => {
-    it('renders 3 progress dots', () => {
+    it('renders 2 progress dots', () => {
       // #given
       mockIsDesktop = true;
       mockStep = 0;
@@ -88,26 +88,13 @@ describe('OnboardingFlowV2', () => {
       renderFlow();
 
       // #then
-      expect(screen.getAllByRole('tab')).toHaveLength(3);
+      expect(screen.getAllByRole('tab')).toHaveLength(2);
     });
 
-    it('shows SwipeQueue step on step 0', () => {
+    it('shows Visualizers step on step 0', () => {
       // #given
       mockIsDesktop = true;
       mockStep = 0;
-
-      // #when
-      renderFlow();
-
-      // #then
-      expect(screen.getByTestId('step-swipe-queue')).toBeInTheDocument();
-    });
-
-    it('shows Visualizers step on step 1', () => {
-      // #given
-      mockIsDesktop = true;
-      mockStep = 1;
-      mockIsFirst = false;
 
       // #when
       renderFlow();
@@ -116,10 +103,10 @@ describe('OnboardingFlowV2', () => {
       expect(screen.getByTestId('step-visualizers')).toBeInTheDocument();
     });
 
-    it('shows ZenMode step on step 2 (desktop only)', () => {
+    it('shows ZenMode step on step 1 (desktop only)', () => {
       // #given
       mockIsDesktop = true;
-      mockStep = 2;
+      mockStep = 1;
       mockIsFirst = false;
       mockIsLast = true;
 
@@ -128,6 +115,18 @@ describe('OnboardingFlowV2', () => {
 
       // #then
       expect(screen.getByTestId('step-zen-mode')).toBeInTheDocument();
+    });
+
+    it('does NOT render SwipeQueue step on desktop', () => {
+      // #given — desktop flow is [Visualizers, ZenMode]; SwipeQueue is mobile-only
+      mockIsDesktop = true;
+      mockStep = 0;
+
+      // #when
+      renderFlow();
+
+      // #then
+      expect(screen.queryByTestId('step-swipe-queue')).not.toBeInTheDocument();
     });
   });
 

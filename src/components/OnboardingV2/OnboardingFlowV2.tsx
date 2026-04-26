@@ -19,7 +19,10 @@ export interface OnboardingFlowV2Props {
 
 const OnboardingFlowV2Component: React.FC<OnboardingFlowV2Props> = () => {
   const isDesktop = useIsDesktop();
-  const totalSteps = isDesktop ? 3 : 2;
+  const steps = isDesktop
+    ? [<OnboardingStepVisualizers />, <OnboardingStepZenMode />]
+    : [<OnboardingStepSwipeQueue />, <OnboardingStepVisualizers />];
+  const totalSteps = steps.length;
   const { step, isFirst, isLast, next, back, complete, skipAll } =
     useOnboardingV2(totalSteps);
 
@@ -31,18 +34,7 @@ const OnboardingFlowV2Component: React.FC<OnboardingFlowV2Props> = () => {
     }
   }, [isLast, complete, next]);
 
-  const stepContent = (() => {
-    switch (step) {
-      case 0:
-        return <OnboardingStepSwipeQueue />;
-      case 1:
-        return <OnboardingStepVisualizers />;
-      case 2:
-        return isDesktop ? <OnboardingStepZenMode /> : null;
-      default:
-        return null;
-    }
-  })();
+  const stepContent = steps[step] ?? null;
 
   return (
     <OnboardingRoot role="region" aria-label="Get started with Vorbis Player">
