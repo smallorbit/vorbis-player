@@ -1,8 +1,8 @@
-import React, { Suspense, lazy, useState, useCallback, useMemo } from 'react';
+import React, { Suspense, lazy, useState, useCallback, useEffect, useMemo } from 'react';
 import { useTheme } from 'styled-components';
+import { toast } from 'sonner';
 import { ProfiledComponent } from '@/components/ProfiledComponent';
-import Toast from '@/components/Toast';
-import RadioProgressToast from '@/components/RadioProgressToast';
+import { RadioProgressContent } from '@/components/RadioProgressToast';
 import { useTrackListContext, useCurrentTrackContext } from '@/contexts/TrackContext';
 import { useProviderContext } from '@/contexts/ProviderContext';
 import { useUnifiedLikedTracks } from '@/hooks/useUnifiedLikedTracks';
@@ -95,11 +95,6 @@ export const DrawerOrchestrator: React.FC<DrawerOrchestratorProps> = React.memo(
   const showProviderIcons = (isUnifiedLikedActive && selectedPlaylistId === LIKED_SONGS_ID) || !!radioActive;
 
   const [showSaveQueueDialog, setShowSaveQueueDialog] = useState(false);
-  const [toast, setToast] = useState<{
-    message: string;
-    actionLabel?: string;
-    onAction?: () => void;
-  } | null>(null);
 
   const saveProviders = useMemo(
     () => connectedProviderIds.filter(id => {
@@ -113,7 +108,6 @@ export const DrawerOrchestrator: React.FC<DrawerOrchestratorProps> = React.memo(
 
   const handleOpenSaveQueue = useCallback(() => setShowSaveQueueDialog(true), []);
   const handleCloseSaveQueue = useCallback(() => setShowSaveQueueDialog(false), []);
-  const handleDismissToast = useCallback(() => setToast(null), []);
 
   const handleSaveQueue = useCallback(async (name: string, provider: ProviderId): Promise<boolean> => {
     try {
@@ -127,7 +121,7 @@ export const DrawerOrchestrator: React.FC<DrawerOrchestratorProps> = React.memo(
       if (!result) return false;
 
       setShowSaveQueueDialog(false);
-      setToast({ message: `Saved "${name}" to ${descriptor.name}` });
+      toast(`Saved "${name}" to ${descriptor.name}`, { id: 'save-queue-success' });
       window.dispatchEvent(new CustomEvent(LIBRARY_REFRESH_EVENT, { detail: { providerId: provider } }));
       return true;
     } catch (err) {
@@ -135,6 +129,36 @@ export const DrawerOrchestrator: React.FC<DrawerOrchestratorProps> = React.memo(
       return false;
     }
   }, [mediaTracksRef]);
+
+  useEffect(() => {
+    if (!radioProgress || !onDismissRadioProgress) {
+      toast.dismiss('radio-progress');
+      return;
+    }
+    const isDone = radioProgress.phase === 'done';
+    toast.custom(
+      (toastId: string | number) => (
+        <RadioProgressContent
+          phase={radioProgress.phase}
+          trackCount={radioProgress.trackCount}
+          onDismiss={() => {
+            toast.dismiss(toastId);
+            onDismissRadioProgress();
+          }}
+          onViewQueue={() => {
+            toast.dismiss(toastId);
+            onOpenQueueFromToast();
+            onDismissRadioProgress();
+          }}
+        />
+      ),
+      {
+        id: 'radio-progress',
+        duration: isDone ? 6000 : Infinity,
+        onAutoClose: isDone ? onDismissRadioProgress : undefined,
+      },
+    );
+  }, [radioProgress, onDismissRadioProgress, onOpenQueueFromToast]);
 
   const handleCloseLibrary = useCallback(() => {
     onCloseLibrary();
@@ -222,25 +246,6 @@ export const DrawerOrchestrator: React.FC<DrawerOrchestratorProps> = React.memo(
             defaultName={radioState?.isActive && radioState.seedDescription ? radioState.seedDescription.replace(/^Radio based on /i, '').replace(/\s+by\s+.+$/i, '') + ' Radio' : undefined}
           />
         </Suspense>
-      )}
-      {toast && (
-        <Toast
-          message={toast.message}
-          onDismiss={handleDismissToast}
-          actionLabel={toast.actionLabel}
-          onAction={toast.onAction}
-        />
-      )}
-      {radioProgress && onDismissRadioProgress && (
-        <RadioProgressToast
-          phase={radioProgress.phase}
-          trackCount={radioProgress.trackCount}
-          onDismiss={onDismissRadioProgress}
-          onViewQueue={() => {
-            onOpenQueueFromToast();
-            onDismissRadioProgress();
-          }}
-        />
       )}
     </>
   );

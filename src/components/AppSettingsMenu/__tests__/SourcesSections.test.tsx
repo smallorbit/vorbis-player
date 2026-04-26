@@ -49,9 +49,13 @@ vi.mock('@/hooks/useLocalStorage', () => ({
 
 // Import after mocks are set up
 import { MusicSourcesSection } from '../SourcesSections';
+import { Toaster } from '@/components/ui/sonner';
 
 const Wrapper = ({ children }: { children: React.ReactNode }) => (
-  <ThemeProvider theme={theme}>{children}</ThemeProvider>
+  <ThemeProvider theme={theme}>
+    <Toaster />
+    {children}
+  </ThemeProvider>
 );
 
 function makeSpotifyDescriptor(authOverrides?: Partial<ProviderDescriptor['auth']>): ProviderDescriptor {

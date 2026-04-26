@@ -1,12 +1,12 @@
-import { useCallback } from 'react';
+import { useCallback, useEffect } from 'react';
 import * as React from 'react';
 import { createPortal } from 'react-dom';
+import { toast } from 'sonner';
 import type { AlbumInfo, PlaylistInfo } from '../../services/spotify';
 import type { AddToQueueResult, MediaTrack, ProviderId } from '@/types/domain';
 import type { ProviderDescriptor } from '@/types/providers';
 import { LIKED_SONGS_ID, isAlbumId, isAllMusicPlaylist, toAlbumPlaylistId } from '@/constants/playlist';
 import TrackInfoPopover from '../controls/TrackInfoPopover';
-import Toast from '../Toast';
 import { useItemPopover } from './useItemPopover';
 import { useLikedTracksActions } from './useLikedTracksActions';
 import { useDeleteCollectionFlow } from './useDeleteCollectionFlow';
@@ -175,10 +175,14 @@ export function useItemActions({
     document.body,
   ) : null;
 
-  const saveErrorToast = saveError ? React.createElement(Toast, {
-    message: saveError,
-    onDismiss: clearSaveError,
-  }) : null;
+  useEffect(() => {
+    if (!saveError) return;
+    toast(saveError, {
+      id: 'save-error',
+      onDismiss: clearSaveError,
+      onAutoClose: clearSaveError,
+    });
+  }, [saveError, clearSaveError]);
 
   return {
     handlePlaylistContextMenu,
@@ -186,6 +190,5 @@ export function useItemActions({
     albumPopoverPortal,
     playlistPopoverPortal,
     confirmDeletePortal,
-    saveErrorToast,
   };
 }

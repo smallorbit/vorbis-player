@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import styled from 'styled-components';
 import { useProviderContext } from '@/contexts/ProviderContext';
-import Switch from '@/components/controls/Switch';
+import { Switch } from '@/components/ui/switch';
 
 const TOGGLE_ON_COLOR = '#4ade80';
 const TOGGLE_OFF_COLOR = 'rgba(255, 255, 255, 0.25)';
@@ -115,9 +115,9 @@ const LibraryProviderBar = React.memo(function LibraryProviderBar({ variant = 'd
             )}
             {!drawerBottom && (
               <Switch
-                on={isEnabled}
-                onToggle={() => toggleProvider(descriptor.id)}
-                ariaLabel={`${isEnabled ? 'Disable' : 'Enable'} ${descriptor.name}`}
+                checked={isEnabled}
+                onCheckedChange={() => toggleProvider(descriptor.id)}
+                aria-label={`${isEnabled ? 'Disable' : 'Enable'} ${descriptor.name}`}
                 disabled={isLastEnabled}
                 variant="neutral"
               />

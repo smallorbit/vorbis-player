@@ -46,6 +46,10 @@ A task is `completed` only when:
 
 Report all three explicitly in your completion message.
 
+## Reviewer FAIL gates the PR
+
+If reviewer returns FAIL on a review, do NOT commit, push, or open a PR until the flagged blocker is fixed and reviewer reconfirms PASS. The order is: implement → run gates → ship-state report to lead → reviewer review → if FAIL: fix → re-review → PASS → only THEN commit/push/PR. A PR opened with a known unresolved reviewer block is process drift; recovering with a follow-up fixup commit is more expensive than gating the open. The "ship state" report deliberately does not include a commit/push step — wait for the lead's PASS-acknowledged go-ahead.
+
 ## Convention adherence
 
 Follow `CLAUDE.md`'s coding conventions, comment policy, and constraints. No `as any`, no `@ts-ignore`, no test deletion, no commits without explicit instruction.

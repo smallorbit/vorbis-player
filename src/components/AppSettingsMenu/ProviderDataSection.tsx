@@ -9,8 +9,14 @@ import {
   ControlGroup,
   ControlLabel,
   ResetButton,
+  FilterSection,
 } from './styled';
-import { CollapsibleSection } from './CollapsibleSection';
+import {
+  Accordion,
+  AccordionItem,
+  AccordionTrigger,
+  AccordionContent,
+} from '@/components/ui/accordion';
 
 export const ProviderDataSection = memo(({ providerName, catalog }: { providerName: string; catalog: CatalogProvider }) => {
   const [resultMessage, setResultMessage] = useState('');
@@ -86,7 +92,11 @@ export const ProviderDataSection = memo(({ providerName, catalog }: { providerNa
   const likesBusy = exportStatus === 'working' || importStatus === 'working' || metadataStatus === 'working';
 
   return (
-    <CollapsibleSection title={`${providerName} Data`}>
+    <FilterSection>
+      <Accordion type="single" collapsible>
+        <AccordionItem value={`${providerName.toLowerCase()}-data`}>
+          <AccordionTrigger>{`${providerName} Data`}</AccordionTrigger>
+          <AccordionContent>
       {hasArtCache && (
         <ControlGroup>
           <ControlLabel>Clear cached art so it re-downloads on next library load</ControlLabel>
@@ -134,7 +144,10 @@ export const ProviderDataSection = memo(({ providerName, catalog }: { providerNa
           </ResetButton>
         </ControlGroup>
       )}
-    </CollapsibleSection>
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
+    </FilterSection>
   );
 });
 ProviderDataSection.displayName = 'ProviderDataSection';

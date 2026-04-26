@@ -1,6 +1,6 @@
-import { useEffect } from 'react';
+import * as React from 'react';
 import styled from 'styled-components';
-import { theme } from '../../styles/theme';
+import { Popover, PopoverAnchor, PopoverContent } from '@/components/ui/popover';
 
 type PopoverType = 'artist' | 'album' | 'playlist' | 'radio';
 
@@ -19,50 +19,20 @@ interface TrackInfoPopoverProps {
   onClose: () => void;
 }
 
-const Overlay = styled.div`
-  position: fixed;
-  inset: 0;
-  z-index: ${({ theme }) => theme.zIndex.modal};
-`;
-
-const PopoverContainer = styled.div<{ $x: number; $y: number }>`
-  position: fixed;
-  left: ${({ $x }) => $x}px;
-  top: ${({ $y }) => $y}px;
-  z-index: ${({ theme }) => theme.zIndex.popover};
-  min-width: 200px;
-  background: ${({ theme }) => theme.colors.popover.background};
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid ${({ theme }) => theme.colors.borderSubtle};
-  border-radius: ${({ theme }) => theme.borderRadius.xl};
-  box-shadow: ${({ theme }) => theme.shadows.popover};
-  padding: ${({ theme }) => theme.spacing.xs};
-  animation: popoverFadeIn ${({ theme }) => theme.transitions.fast} ease-out;
-  transform: translateX(-50%);
-
-  @keyframes popoverFadeIn {
-    from {
-      opacity: 0;
-      transform: translateX(-50%) translateY(${({ theme }) => theme.spacing.xs});
-    }
-    to {
-      opacity: 1;
-      transform: translateX(-50%) translateY(0);
-    }
-  }
-`;
-
+// OptionButton retained — purely visual, no layout role. Radix Popover owns
+// positioning, click-outside, Escape, focus return, and motion via the shadcn
+// `popover` primitive; this component just renders the option list.
 const OptionButton = styled.button<{ $disabled?: boolean }>`
   display: flex;
   align-items: center;
   gap: 0.625rem;
   width: 100%;
   min-height: 44px;
-  padding: ${({ theme }) => theme.spacing.sm} ${theme.spacing.lg};
+  padding: ${({ theme }) => theme.spacing.sm} ${({ theme }) => theme.spacing.lg};
   background: none;
   border: none;
-  color: ${({ theme, $disabled }) => ($disabled ? theme.colors.muted.foreground : theme.colors.foreground)};
+  color: ${({ theme, $disabled }) =>
+    $disabled ? theme.colors.muted.foreground : theme.colors.foreground};
   font-size: ${({ theme }) => theme.fontSize.sm};
   font-weight: ${({ theme }) => theme.fontWeight.medium};
   cursor: ${({ $disabled }) => ($disabled ? 'not-allowed' : 'pointer')};
@@ -90,25 +60,38 @@ const OptionButton = styled.button<{ $disabled?: boolean }>`
 `;
 
 function TrackInfoPopover({ options, anchorRect, onClose }: TrackInfoPopoverProps) {
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        onClose();
-      }
-    };
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [onClose]);
-
   if (!anchorRect) return null;
 
-  const x = anchorRect.left + anchorRect.width / 2;
-  const y = anchorRect.bottom + 8;
-
+  // Virtual anchor div: Radix Popover positions Content relative to a DOM element.
+  // Caller provides DOMRect, not a ref. We render a zero-size fixed div at the rect's
+  // centre-bottom as the Radix Anchor — avoids restructuring TrackInfo.tsx's click-handler
+  // + state model. aria-hidden + pointer-events:none so it's invisible to users and AT.
   return (
-    <>
-      <Overlay onClick={onClose} />
-      <PopoverContainer $x={x} $y={y}>
+    <Popover open onOpenChange={(open) => { if (!open) onClose(); }}>
+      <PopoverAnchor asChild>
+        <div
+          aria-hidden="true"
+          style={{
+            position: 'fixed',
+            left: anchorRect.left + anchorRect.width / 2,
+            top: anchorRect.bottom,
+            width: 0,
+            height: 0,
+            pointerEvents: 'none',
+          }}
+        />
+      </PopoverAnchor>
+      <PopoverContent
+        side="bottom"
+        align="center"
+        sideOffset={8}
+        // Escape + click-outside dismiss are handled via onOpenChange above —
+        // Radix already invokes onOpenChange(false) for both gestures. Adding
+        // onEscapeKeyDown/onPointerDownOutside handlers here would double-fire
+        // onClose (once from the gesture handler, once from onOpenChange).
+        // Suppress Radix's default focus-trap — popover is a lightweight menu, not a modal
+        onOpenAutoFocus={(e) => e.preventDefault()}
+      >
         {options.map((option, index) => (
           <OptionButton
             key={index}
@@ -125,8 +108,8 @@ function TrackInfoPopover({ options, anchorRect, onClose }: TrackInfoPopoverProp
             {option.label}
           </OptionButton>
         ))}
-      </PopoverContainer>
-    </>
+      </PopoverContent>
+    </Popover>
   );
 }
 
