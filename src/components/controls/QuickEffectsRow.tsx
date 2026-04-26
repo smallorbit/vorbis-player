@@ -7,7 +7,7 @@ import { extractTopVibrantColors } from '@/utils/colorExtractor';
 import type { ExtractedColor } from '@/utils/colorExtractor';
 import { OptionButton, OptionButtonGroup } from '@/components/AppSettingsMenu/styled';
 import EyedropperOverlay from '@/components/EyedropperOverlay';
-import Switch from '@/components/controls/Switch';
+import { Switch } from '@/components/ui/switch';
 import { theme } from '@/styles/theme';
 
 interface QuickEffectsRowProps {
@@ -267,7 +267,7 @@ function QuickEffectsRow({
       <SectionCard>
         <SectionHeader>
           <SectionTitle>Glow</SectionTitle>
-          <Switch on={glowEnabled} onToggle={onGlowToggle} ariaLabel="Toggle glow" />
+          <Switch checked={glowEnabled} onCheckedChange={onGlowToggle} aria-label="Toggle glow" />
         </SectionHeader>
         {(hasGlowSubSettings || hasGlowRate) && glowEnabled && (
           <SubSettings>
@@ -299,7 +299,7 @@ function QuickEffectsRow({
       <SectionCard>
         <SectionHeader>
           <SectionTitle>Visualizer</SectionTitle>
-          <Switch on={backgroundVisualizerEnabled} onToggle={onBackgroundVisualizerToggle} ariaLabel="Toggle visualizer" />
+          <Switch checked={backgroundVisualizerEnabled} onCheckedChange={onBackgroundVisualizerToggle} aria-label="Toggle visualizer" />
         </SectionHeader>
         {backgroundVisualizerEnabled && <SubSettings>
           <SubSettingRow>
@@ -373,7 +373,7 @@ function QuickEffectsRow({
       <SectionCard>
         <SectionHeader>
           <SectionTitle>Translucent</SectionTitle>
-          <Switch on={translucenceEnabled} onToggle={onTranslucenceToggle} ariaLabel="Toggle translucence" />
+          <Switch checked={translucenceEnabled} onCheckedChange={onTranslucenceToggle} aria-label="Toggle translucence" />
         </SectionHeader>
       </SectionCard>
 

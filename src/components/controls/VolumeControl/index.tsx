@@ -1,14 +1,12 @@
-import { memo, useCallback, useState, useRef, useEffect, useLayoutEffect } from 'react';
+import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import type { CSSProperties } from 'react';
 import { createPortal } from 'react-dom';
-import { ControlButton } from '../styled';
+
+import { Slider } from '@/components/ui/slider';
 import { VolumeIcon, UnmuteIcon } from '@/components/icons/VolumeIcons';
-import {
-    PopoverContainer,
-    SliderTrack,
-    SliderThumb,
-    MuteButton,
-    VolumeLabel,
-} from './styled';
+
+import { ControlButton } from '../styled';
+import { MuteButton, PopoverContainer, VolumeLabel } from './styled';
 
 interface VolumeControlProps {
     isMuted: boolean;
@@ -18,6 +16,31 @@ interface VolumeControlProps {
     isMobile: boolean;
     isTablet: boolean;
 }
+
+/**
+ * `flexGrow: 0` overrides Radix Track's base `flex-grow:1`. Without this the
+ * Track expands to fill remaining flex space in the column-oriented Root and
+ * the explicit 120px height is ignored. Inline style beats the Tailwind class.
+ */
+const TRACK_STYLE: CSSProperties = {
+    width: '4px',
+    height: '120px',
+    flexGrow: 0,
+    borderRadius: '2px',
+    background: 'rgba(115, 115, 115, 0.3)',
+};
+
+const RANGE_STYLE: CSSProperties = {
+    background: 'var(--accent-color)',
+};
+
+const THUMB_STYLE: CSSProperties = {
+    width: '14px',
+    height: '14px',
+    background: 'var(--accent-color)',
+    border: 'none',
+    boxShadow: '0 1px 3px rgba(0, 0, 0, 0.3)',
+};
 
 const areVolumeControlPropsEqual = (
     prevProps: VolumeControlProps,
@@ -42,9 +65,7 @@ const VolumeControl = memo<VolumeControlProps>(({
     const [isOpen, setIsOpen] = useState(false);
     const buttonRef = useRef<HTMLButtonElement>(null);
     const popoverRef = useRef<HTMLDivElement>(null);
-    const trackRef = useRef<HTMLDivElement>(null);
     const [popoverPos, setPopoverPos] = useState<{ left: number; top: number } | null>(null);
-    const draggingRef = useRef(false);
 
     const togglePopover = useCallback(() => {
         setIsOpen(prev => !prev);
@@ -77,48 +98,18 @@ const VolumeControl = memo<VolumeControlProps>(({
         };
     }, [isOpen]);
 
-    const volumeFromY = useCallback((clientY: number) => {
-        if (!trackRef.current) return;
-        const rect = trackRef.current.getBoundingClientRect();
-        const pct = 1 - (clientY - rect.top) / rect.height;
-        onVolumeChange(Math.round(Math.max(0, Math.min(100, pct * 100))));
-    }, [onVolumeChange]);
-
-    const handleTrackMouseDown = useCallback((e: React.MouseEvent) => {
-        e.preventDefault();
-        draggingRef.current = true;
-        volumeFromY(e.clientY);
-
-        const handleMove = (ev: MouseEvent) => {
-            if (draggingRef.current) volumeFromY(ev.clientY);
-        };
-        const handleUp = () => {
-            draggingRef.current = false;
-            document.removeEventListener('mousemove', handleMove);
-            document.removeEventListener('mouseup', handleUp);
-        };
-        document.addEventListener('mousemove', handleMove);
-        document.addEventListener('mouseup', handleUp);
-    }, [volumeFromY]);
-
-    const handleTrackTouchStart = useCallback((e: React.TouchEvent) => {
-        draggingRef.current = true;
-        volumeFromY(e.touches[0].clientY);
-
-        const handleMove = (ev: TouchEvent) => {
-            ev.preventDefault();
-            if (draggingRef.current) volumeFromY(ev.touches[0].clientY);
-        };
-        const handleEnd = () => {
-            draggingRef.current = false;
-            document.removeEventListener('touchmove', handleMove);
-            document.removeEventListener('touchend', handleEnd);
-        };
-        document.addEventListener('touchmove', handleMove, { passive: false });
-        document.addEventListener('touchend', handleEnd);
-    }, [volumeFromY]);
-
+    /**
+     * `displayVolume` (not `volume`) drives the slider so the thumb sits at 0
+     * while muted. `onVolumeChange` still updates the underlying volume on
+     * drag so unmuting restores the dragged level rather than the pre-mute one.
+     */
     const displayVolume = isMuted ? 0 : volume;
+
+    const sliderValue = useMemo(() => [displayVolume], [displayVolume]);
+
+    const handleSliderChange = useCallback(([next]: number[]) => {
+        onVolumeChange(next);
+    }, [onVolumeChange]);
 
     return (
         <>
@@ -147,14 +138,25 @@ const VolumeControl = memo<VolumeControlProps>(({
                 >
                     <VolumeLabel>{displayVolume}</VolumeLabel>
 
-                    <SliderTrack
-                        ref={trackRef}
-                        $fillPercent={displayVolume}
-                        onMouseDown={handleTrackMouseDown}
-                        onTouchStart={handleTrackTouchStart}
-                    >
-                        <SliderThumb $percent={displayVolume} />
-                    </SliderTrack>
+                    {/*
+                     * `w-[4px]` and `flex-col` override the base
+                     * `w-full`/row layout via tailwind-merge inside `cn()`.
+                     * `touch-none` from the base class supplies
+                     * `touch-action: none` for mobile drag.
+                     */}
+                    <Slider
+                        orientation="vertical"
+                        value={sliderValue}
+                        onValueChange={handleSliderChange}
+                        min={0}
+                        max={100}
+                        step={1}
+                        aria-label="Volume"
+                        className="flex-col justify-center w-[4px]"
+                        trackStyle={TRACK_STYLE}
+                        rangeStyle={RANGE_STYLE}
+                        thumbStyle={THUMB_STYLE}
+                    />
 
                     <MuteButton
                         $isMuted={isMuted}
