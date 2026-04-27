@@ -9,6 +9,7 @@ import type { ProviderId, MediaTrack } from '@/types/domain';
 import { useLikedTracksForProvider } from './useLikedTracksForProvider';
 import { useAlbumSavedStatus } from './useAlbumSavedStatus';
 import { useQueueLikedFromCollection } from './useQueueLikedFromCollection';
+import { toAlbumPlaylistId } from '@/constants/playlist';
 import {
   buildMenuItems,
   type MenuActions,
@@ -176,11 +177,15 @@ const LibraryContextMenu: React.FC<LibraryContextMenuProps> = ({
         }
       }),
       onAddToQueue: closeAfter(() => {
-        if (onAddToQueue) onAddToQueue(request.id, request.name, request.provider);
+        if (onAddToQueue) {
+          const id = isAlbumKind ? toAlbumPlaylistId(request.id) : request.id;
+          onAddToQueue(id, request.name, request.provider);
+        }
       }),
       onPlayNext: closeAfter(() => {
         if (onPlayNext && (isPlaylistKind || isAlbumKind)) {
-          onPlayNext(effectiveKind, request.id, request.name, request.provider);
+          const id = isAlbumKind ? toAlbumPlaylistId(request.id) : request.id;
+          onPlayNext(effectiveKind, id, request.name, request.provider);
         }
       }),
       onTogglePin: closeAfter(togglePin),

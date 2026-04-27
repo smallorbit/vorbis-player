@@ -267,7 +267,7 @@ describe('LibraryContextMenu', () => {
     expect(onReturnFocusClose).toHaveBeenCalled();
   });
 
-  it('Add to Queue invokes onAddToQueue', () => {
+  it('Add to Queue passes raw id for playlist kind', () => {
     // #given
     const onAddToQueue = vi.fn();
 
@@ -277,6 +277,21 @@ describe('LibraryContextMenu', () => {
 
     // #then
     expect(onAddToQueue).toHaveBeenCalledWith('p1', 'My Playlist', 'spotify');
+  });
+
+  it('Add to Queue wraps raw album id with album: prefix for album kind', () => {
+    // #given
+    const onAddToQueue = vi.fn();
+
+    // #when
+    renderMenu({
+      request: makeRequest({ kind: 'album', id: 'abc123', name: 'My Album' }),
+      onAddToQueue,
+    });
+    fireEvent.click(screen.getByTestId('menu-add-to-queue'));
+
+    // #then
+    expect(onAddToQueue).toHaveBeenCalledWith('album:abc123', 'My Album', 'spotify');
   });
 
   it('shows Queue Liked Songs item when onQueueLikedTracks provided for playlist', () => {
