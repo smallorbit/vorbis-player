@@ -32,6 +32,14 @@ export const InputWrap = styled.div`
   & > input::placeholder {
     color: ${theme.colors.muted.foreground};
   }
+
+  & > input::-webkit-search-cancel-button {
+    display: none;
+  }
+
+  & > input::-webkit-search-decoration {
+    display: none;
+  }
 `;
 
 export const ClearButton = styled.button`
