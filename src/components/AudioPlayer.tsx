@@ -137,11 +137,17 @@ const AudioPlayerComponent = () => {
   const handleCloseQuickAccessPanel = useCallback(() => setShowQuickAccessPanel(false), []);
 
   const handleHydrateFired = useCallback((track: import('@/types/domain').MediaTrack, skipped: boolean) => {
+    // Hydrate has been consumed — clear the saved session so a subsequent
+    // collection load (which transiently shows isLoading=true and remounts
+    // PlayerStateRenderer) doesn't trigger a second hydrate that would
+    // overwrite the just-loaded collection's index and position with the
+    // resumed session's.
+    resetLastSession();
     const message = skipped
       ? `Couldn't resume previous track — starting from next in queue.`
       : `Resuming '${track.name}' — press play to continue.`;
     toast(message, { id: RESUME_TOAST_ID, duration: Infinity });
-  }, []);
+  }, [resetLastSession]);
   const handleHydrateFailed = useCallback(() => {
     resetLastSession();
     toast(`Couldn't resume your last session.`, { id: RESUME_TOAST_ID, duration: Infinity });
