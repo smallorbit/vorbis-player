@@ -304,7 +304,7 @@ describe('LibraryContextMenu', () => {
     fireEvent.click(screen.getByTestId('menu-queue-liked'));
 
     // #then
-    expect(mockQueueLikedFromCollection).toHaveBeenCalledWith('p1', 'My Playlist', 'spotify');
+    expect(mockQueueLikedFromCollection).toHaveBeenCalledWith('p1', 'My Playlist', 'spotify', 'playlist');
     expect(onReturnFocusClose).toHaveBeenCalled();
   });
 

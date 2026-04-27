@@ -1,4 +1,5 @@
 import React, { useCallback, useMemo, useRef } from 'react';
+import { toast } from 'sonner';
 import { Popover, PopoverAnchor, PopoverContent } from '@/components/ui/popover';
 import { usePinnedItems } from '@/hooks/usePinnedItems';
 import { useRecentlyPlayedCollections } from '@/hooks/useRecentlyPlayedCollections';
@@ -95,7 +96,7 @@ const LibraryContextMenu: React.FC<LibraryContextMenuProps> = ({
       () => {
         onReturnFocusClose();
         Promise.resolve(fn()).catch(() => {
-          /* swallow — toast surfaces user-facing errors */
+          toast("Couldn't complete that action. Try again.");
         });
       },
     [onReturnFocusClose],
@@ -204,7 +205,7 @@ const LibraryContextMenu: React.FC<LibraryContextMenuProps> = ({
       const collectionName = request.name;
       const provider = request.provider;
       actions.onQueueLikedFromCollection = closeAfter(() =>
-        queueLikedFromCollection(collectionId, collectionName, provider),
+        queueLikedFromCollection(collectionId, collectionName, provider, effectiveKind),
       );
     }
 
