@@ -35,8 +35,8 @@ const SearchResultsView: React.FC<SearchResultsViewProps> = ({
 
   const { combined: pinned } = usePinnedSection();
   const { items: recently } = useRecentlyPlayedSection();
-  const { items: playlists } = usePlaylistsSection({ excludePinned: true });
-  const { items: albums } = useAlbumsSection({ excludePinned: true });
+  const { items: playlists } = usePlaylistsSection({ excludePinned: false });
+  const { items: albums } = useAlbumsSection({ excludePinned: false });
 
   const q = normalizeQuery(search.query);
 
