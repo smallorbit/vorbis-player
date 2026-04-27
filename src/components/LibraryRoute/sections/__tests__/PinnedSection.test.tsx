@@ -36,18 +36,21 @@ vi.mock('../../card/LibraryCard', () => ({
     kind,
     id,
     name,
+    subtitle,
     provider,
     onSelect,
   }: {
     kind: string;
     id: string;
     name: string;
+    subtitle?: string;
     provider?: string;
     onSelect: () => void;
   }) => (
     <button
       data-testid={`library-card-${kind}-${id}`}
       data-provider={provider}
+      data-subtitle={subtitle}
       onClick={onSelect}
     >
       {name}
@@ -206,5 +209,43 @@ describe('PinnedSection', () => {
 
     // #then
     expect(onSelect).toHaveBeenCalledWith('album', 'a1', 'Dark Side', 'spotify');
+  });
+
+  it('renders a kind:liked card from combined', () => {
+    // #given
+    mockUsePinnedSection.mockReturnValue({
+      combined: [{ kind: 'liked', id: 'liked-songs', name: 'Liked Songs', subtitle: '42 songs' }],
+      pinnedPlaylists: [],
+      pinnedAlbums: [],
+      isLoading: false,
+      isEmpty: false,
+    });
+
+    // #when
+    render(<PinnedSection {...baseProps} />);
+
+    // #then
+    const card = screen.getByTestId('library-card-liked-liked-songs');
+    expect(card).toBeInTheDocument();
+    expect(card).toHaveAttribute('data-subtitle', '42 songs');
+  });
+
+  it('calls onSelect with liked kind and id when a liked card is clicked', () => {
+    // #given
+    const onSelect = vi.fn();
+    mockUsePinnedSection.mockReturnValue({
+      combined: [{ kind: 'liked', id: 'liked-songs', name: 'Liked Songs', subtitle: '5 songs' }],
+      pinnedPlaylists: [],
+      pinnedAlbums: [],
+      isLoading: false,
+      isEmpty: false,
+    });
+
+    // #when
+    render(<PinnedSection {...baseProps} onSelect={onSelect} />);
+    fireEvent.click(screen.getByTestId('library-card-liked-liked-songs'));
+
+    // #then
+    expect(onSelect).toHaveBeenCalledWith('liked', 'liked-songs', 'Liked Songs', undefined);
   });
 });

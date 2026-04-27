@@ -1,14 +1,12 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { usePlayerSizingContext } from '@/contexts/PlayerSizingContext';
-import { useUnifiedLikedTracks } from '@/hooks/useUnifiedLikedTracks';
 import type { ProviderId, AddToQueueResult, MediaTrack } from '@/types/domain';
 import type { SessionSnapshot } from '@/services/sessionPersistence';
-import { toAlbumPlaylistId } from '@/constants/playlist';
+import { toAlbumPlaylistId, LIKED_SONGS_ID } from '@/constants/playlist';
 import { LibraryRouteRoot, MobileLayout, DesktopLayout } from './styled';
 import HomeView from './views/HomeView';
 import SeeAllView from './views/SeeAllView';
 import SearchResultsView from './views/SearchResultsView';
-import { fetchLikedForProvider } from './hooks';
 import type { ContextMenuRequest, LibraryItemKind, LibraryRouteView } from './types';
 import MiniPlayer from './MiniPlayer/MiniPlayer';
 import SearchBar from './search/SearchBar';
@@ -81,7 +79,6 @@ const LibraryRoute: React.FC<LibraryRouteProps> = ({
 }) => {
   const { isMobile } = usePlayerSizingContext();
   const [view, setView] = useState<LibraryRouteView>('home');
-  const { unifiedTracks, isUnifiedLikedActive } = useUnifiedLikedTracks();
   const search = useLibrarySearch();
   const [paletteOpen, setPaletteOpen] = useState(false);
   useCommandPaletteShortcut(() => setPaletteOpen(true), !isMobile);
@@ -104,6 +101,10 @@ const LibraryRoute: React.FC<LibraryRouteProps> = ({
   const handleSelectCollection = useCallback(
     (kind: LibraryItemKind, id: string, name: string, provider?: ProviderId) => {
       if (search.isSearching) search.setQuery('');
+      if (kind === 'liked') {
+        onPlaylistSelect(LIKED_SONGS_ID, name, provider);
+        return;
+      }
       if (kind === 'album') {
         onPlaylistSelect(toAlbumPlaylistId(id), name, provider);
         return;
@@ -111,32 +112,6 @@ const LibraryRoute: React.FC<LibraryRouteProps> = ({
       onPlaylistSelect(id, name, provider);
     },
     [onPlaylistSelect, search],
-  );
-
-  const handleSelectLiked = useCallback(
-    async (provider?: ProviderId) => {
-      if (!onPlayLikedTracks) return;
-      let tracks: MediaTrack[];
-      let collectionId: string;
-      let providerArg: ProviderId | undefined;
-      if (provider) {
-        tracks = await fetchLikedForProvider(provider);
-        collectionId = `liked-${provider}`;
-        providerArg = provider;
-      } else if (isUnifiedLikedActive) {
-        tracks = unifiedTracks;
-        collectionId = 'liked-unified';
-        providerArg = undefined;
-      } else {
-        const inferred: ProviderId = unifiedTracks[0]?.provider ?? 'spotify';
-        tracks = await fetchLikedForProvider(inferred);
-        collectionId = `liked-${inferred}`;
-        providerArg = inferred;
-      }
-      if (tracks.length === 0) return;
-      await onPlayLikedTracks(tracks, collectionId, 'Liked Songs', providerArg);
-    },
-    [onPlayLikedTracks, isUnifiedLikedActive, unifiedTracks],
   );
 
   const [contextRequest, setContextRequest] = useState<ContextMenuRequest | null>(null);
@@ -205,7 +180,6 @@ const LibraryRoute: React.FC<LibraryRouteProps> = ({
         lastSession={lastSession ?? null}
         onResume={onResume}
         onSelectCollection={handleSelectCollection}
-        onSelectLiked={handleSelectLiked}
         onNavigate={setView}
         onContextMenuRequest={handleContextMenuRequest}
       />

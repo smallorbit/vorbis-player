@@ -22,7 +22,6 @@ vi.mock('../../sections', () => ({
       {onSeeAll && <button onClick={onSeeAll}>see-all-pinned</button>}
     </div>
   ),
-  LikedSection: () => <div data-testid="stub-liked" />,
   PlaylistsSection: ({ onSeeAll }: { onSeeAll?: () => void }) => (
     <div data-testid="stub-playlists">
       {onSeeAll && <button onClick={onSeeAll}>see-all-playlists</button>}
@@ -41,7 +40,6 @@ const baseProps = {
   layout: 'row' as const,
   lastSession: null,
   onSelectCollection: vi.fn(),
-  onSelectLiked: vi.fn(),
   onNavigate: vi.fn(),
 };
 
@@ -58,15 +56,14 @@ describe('HomeView', () => {
     expect(screen.getByTestId('library-home')).toBeInTheDocument();
   });
 
-  it('renders all 6 section stubs', () => {
+  it('renders all 5 section stubs', () => {
     // #given + #when
     render(<HomeView {...baseProps} />);
 
-    // #then — all 6 sections appear
+    // #then — 5 sections appear (Liked Songs now renders inside Pinned)
     expect(screen.getByTestId('stub-resume')).toBeInTheDocument();
     expect(screen.getByTestId('stub-recently-played')).toBeInTheDocument();
     expect(screen.getByTestId('stub-pinned')).toBeInTheDocument();
-    expect(screen.getByTestId('stub-liked')).toBeInTheDocument();
     expect(screen.getByTestId('stub-playlists')).toBeInTheDocument();
     expect(screen.getByTestId('stub-albums')).toBeInTheDocument();
   });
