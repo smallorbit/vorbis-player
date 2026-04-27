@@ -51,6 +51,30 @@ describe('matchesQuery', () => {
     // #when / #then
     expect(matchesQuery(item, 'rock')).toBe(false);
   });
+
+  it('matches on ownerName when name does not match', () => {
+    // #given — album named "Core" by "Stone Temple Pilots"
+    const item = { name: 'Core', ownerName: 'Stone Temple Pilots' };
+
+    // #when / #then — query "stone" matches ownerName
+    expect(matchesQuery(item, 'stone')).toBe(true);
+  });
+
+  it('does not match when neither name nor ownerName contains the query', () => {
+    // #given
+    const item = { name: 'Core', ownerName: 'Stone Temple Pilots' };
+
+    // #when / #then
+    expect(matchesQuery(item, 'nirvana')).toBe(false);
+  });
+
+  it('matches ownerName case-insensitively', () => {
+    // #given
+    const item = { name: 'Purple', ownerName: 'Stone Temple Pilots' };
+
+    // #when / #then — normalizeQuery lowercases before calling matchesQuery
+    expect(matchesQuery(item, 'temple')).toBe(true);
+  });
 });
 
 describe('passesProviderFilter', () => {
