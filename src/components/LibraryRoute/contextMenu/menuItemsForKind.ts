@@ -16,6 +16,7 @@ export interface MenuActions {
   onTogglePin: () => void;
   onToggleSave?: () => void;
   onStartRadio: () => void;
+  onQueueLikedFromCollection?: () => void;
   likedProviderActions?: Array<{ provider: ProviderId; label: string; onPlay: () => void }>;
   onRemoveFromHistory?: () => void;
   isPinned?: boolean;
@@ -25,7 +26,7 @@ export interface MenuActions {
 }
 
 function buildPlaylistItems(actions: MenuActions): MenuItem[] {
-  return [
+  const items: MenuItem[] = [
     { id: 'play', label: 'Play', onSelect: actions.onPlay },
     { id: 'add-to-queue', label: 'Add to Queue', onSelect: actions.onAddToQueue },
     {
@@ -46,6 +47,14 @@ function buildPlaylistItems(actions: MenuActions): MenuItem[] {
       disabled: actions.startRadioDisabled === true,
     },
   ];
+  if (actions.onQueueLikedFromCollection) {
+    items.push({
+      id: 'queue-liked',
+      label: 'Queue Liked Songs',
+      onSelect: actions.onQueueLikedFromCollection,
+    });
+  }
+  return items;
 }
 
 function buildAlbumItems(actions: MenuActions): MenuItem[] {
@@ -77,6 +86,13 @@ function buildAlbumItems(actions: MenuActions): MenuItem[] {
     onSelect: actions.onStartRadio,
     disabled: actions.startRadioDisabled === true,
   });
+  if (actions.onQueueLikedFromCollection) {
+    items.push({
+      id: 'queue-liked',
+      label: 'Queue Liked Songs',
+      onSelect: actions.onQueueLikedFromCollection,
+    });
+  }
   return items;
 }
 

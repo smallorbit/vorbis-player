@@ -29,6 +29,14 @@ vi.mock('../useLikedTracksForProvider', () => ({
   useLikedTracksForProvider: () => ({ loadLikedTracks: mockLoadLiked }),
 }));
 
+const { mockQueueLikedFromCollection } = vi.hoisted(() => ({
+  mockQueueLikedFromCollection: vi.fn(),
+}));
+
+vi.mock('../useQueueLikedFromCollection', () => ({
+  useQueueLikedFromCollection: () => ({ queueLikedFromCollection: mockQueueLikedFromCollection }),
+}));
+
 vi.mock('../useAlbumSavedStatus', () => ({
   useAlbumSavedStatus: () => ({
     isSaved: null,
@@ -268,5 +276,55 @@ describe('LibraryContextMenu', () => {
 
     // #then
     expect(onAddToQueue).toHaveBeenCalledWith('p1', 'My Playlist', 'spotify');
+  });
+
+  it('shows Queue Liked Songs item when onQueueLikedTracks provided for playlist', () => {
+    // #when
+    renderMenu({
+      request: makeRequest({ kind: 'playlist' }),
+      onQueueLikedTracks: vi.fn(),
+    });
+
+    // #then
+    expect(screen.getByTestId('menu-queue-liked')).toBeInTheDocument();
+  });
+
+  it('Queue Liked Songs invokes queueLikedFromCollection with collection id/name/provider', () => {
+    // #given
+    const onQueueLikedTracks = vi.fn();
+    const onClose = vi.fn();
+
+    // #when
+    renderMenu({
+      request: makeRequest({ kind: 'playlist' }),
+      onQueueLikedTracks,
+      onClose,
+    });
+    fireEvent.click(screen.getByTestId('menu-queue-liked'));
+
+    // #then
+    expect(mockQueueLikedFromCollection).toHaveBeenCalledWith('p1', 'My Playlist', 'spotify');
+    expect(onClose).toHaveBeenCalled();
+  });
+
+  it('omits Queue Liked Songs when onQueueLikedTracks is not provided', () => {
+    // #when
+    renderMenu({
+      request: makeRequest({ kind: 'playlist' }),
+    });
+
+    // #then
+    expect(screen.queryByTestId('menu-queue-liked')).not.toBeInTheDocument();
+  });
+
+  it('omits Queue Liked Songs when provider is missing', () => {
+    // #when
+    renderMenu({
+      request: makeRequest({ kind: 'playlist', provider: undefined }),
+      onQueueLikedTracks: vi.fn(),
+    });
+
+    // #then
+    expect(screen.queryByTestId('menu-queue-liked')).not.toBeInTheDocument();
   });
 });
