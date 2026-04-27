@@ -2,7 +2,6 @@ import styled from 'styled-components';
 import { theme } from '@/styles/theme';
 
 export const SearchBarRoot = styled.div<{ $variant: 'mobile' | 'desktop' }>`
-  position: sticky;
   z-index: 6;
   display: flex;
   align-items: center;
@@ -14,8 +13,8 @@ export const SearchBarRoot = styled.div<{ $variant: 'mobile' | 'desktop' }>`
 
   ${({ $variant }) =>
     $variant === 'mobile'
-      ? `bottom: 0; border-top: 1px solid ${theme.colors.borderSubtle};`
-      : `top: 0; border-bottom: 1px solid ${theme.colors.borderSubtle};`}
+      ? `border-top: 1px solid ${theme.colors.borderSubtle}; flex: 0 0 auto;`
+      : `position: sticky; top: 0; border-bottom: 1px solid ${theme.colors.borderSubtle};`}
 `;
 
 export const InputWrap = styled.div`

@@ -201,8 +201,8 @@ const LibraryRoute: React.FC<LibraryRouteProps> = ({
       <Layout data-testid={layoutTestId}>
         {!isMobile && <SearchBar variant="desktop" search={search} />}
         {body}
-        {isMobile && <SearchBar variant="mobile" search={search} />}
       </Layout>
+      {isMobile && <SearchBar variant="mobile" search={search} />}
       <LibraryContextMenu
         request={contextRequest}
         onClose={handleCloseContextMenu}
