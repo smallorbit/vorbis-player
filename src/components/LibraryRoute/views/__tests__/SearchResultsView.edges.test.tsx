@@ -263,6 +263,36 @@ describe('SearchResultsView edges', () => {
     });
   });
 
+  describe('pinned items remain searchable in their type sections', () => {
+    it('shows a pinned album in the Albums section when the query matches', () => {
+      // #given — album is pinned; useAlbumsSection is called with excludePinned:false so it still appears
+      mockAlbumsSection.mockReturnValue({
+        items: [{ id: 'a-pinned', name: 'Pinned Album', artists: 'Artist', provider: 'spotify', images: [] }],
+      });
+
+      // #when
+      renderView({ query: 'pinned' });
+
+      // #then — the album appears under Albums, not just under Pinned
+      expect(screen.getByText('Albums')).toBeInTheDocument();
+      expect(screen.getByText('Pinned Album')).toBeInTheDocument();
+    });
+
+    it('shows a pinned playlist in the Playlists section when the query matches', () => {
+      // #given — playlist is pinned; usePlaylistsSection is called with excludePinned:false
+      mockPlaylistsSection.mockReturnValue({
+        items: [{ id: 'p-pinned', name: 'Pinned Playlist', provider: 'spotify' }],
+      });
+
+      // #when
+      renderView({ query: 'pinned' });
+
+      // #then
+      expect(screen.getByText('Playlists')).toBeInTheDocument();
+      expect(screen.getByText('Pinned Playlist')).toBeInTheDocument();
+    });
+  });
+
   describe('onContextMenuRequest forwarding', () => {
     it('forwards onContextMenuRequest to LibraryCard via right-click → menu request', () => {
       // #given
