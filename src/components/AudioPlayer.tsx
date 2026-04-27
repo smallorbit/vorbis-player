@@ -382,6 +382,7 @@ const AudioPlayerComponent = () => {
               handlers.handleCloseLibrary();
               handlePlaylistSelect(id, name ?? '', provider);
             }}
+            onAddToQueue={handleAddToQueueFromPanel}
             onPlayLikedTracks={handlePlayLikedTracks}
             onQueueLikedTracks={handleQueueLikedTracks}
             onOpenSettings={handleOpenSettings}
@@ -510,6 +511,7 @@ const AudioPlayerComponent = () => {
                 handlers.handleCloseLibrary();
                 handlePlaylistSelect(id, name ?? '', provider);
               }}
+              onAddToQueue={handleAddToQueueFromPanel}
               onPlayLikedTracks={handlePlayLikedTracks}
               onQueueLikedTracks={handleQueueLikedTracks}
               onOpenSettings={handleOpenSettings}
