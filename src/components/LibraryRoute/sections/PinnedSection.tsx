@@ -45,6 +45,7 @@ const PinnedSection: React.FC<PinnedSectionProps> = ({
             id={item.id}
             provider={item.provider}
             name={item.name}
+            subtitle={item.subtitle}
             imageUrl={item.imageUrl}
             showProviderBadge={showProviderBadges}
             variant={layout === 'row' ? 'row' : 'grid'}

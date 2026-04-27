@@ -12,5 +12,3 @@ export { default as PlaylistsSection } from './PlaylistsSection';
 export type { PlaylistsSectionProps } from './PlaylistsSection';
 export { default as AlbumsSection } from './AlbumsSection';
 export type { AlbumsSectionProps } from './AlbumsSection';
-export { default as LikedSection } from './LikedSection';
-export type { LikedSectionProps } from './LikedSection';

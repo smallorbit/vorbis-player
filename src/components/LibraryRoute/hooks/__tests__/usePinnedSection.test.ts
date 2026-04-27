@@ -13,11 +13,17 @@ vi.mock('@/hooks/usePinnedItems', () => ({
   usePinnedItems: vi.fn(),
 }));
 
+vi.mock('@/hooks/useUnifiedLikedTracks', () => ({
+  useUnifiedLikedTracks: vi.fn(),
+}));
+
 import { useLibrarySync } from '@/hooks/useLibrarySync';
 import { usePinnedItems } from '@/hooks/usePinnedItems';
+import { useUnifiedLikedTracks } from '@/hooks/useUnifiedLikedTracks';
 
 const mockUseLibrarySync = vi.mocked(useLibrarySync);
 const mockUsePinnedItems = vi.mocked(usePinnedItems);
+const mockUseUnifiedLikedTracks = vi.mocked(useUnifiedLikedTracks);
 
 const makePlaylist = (id: string, name = 'Playlist', provider: ProviderId = 'spotify') => ({
   id,
@@ -60,11 +66,19 @@ const defaultLibrarySyncReturn = {
   isLikedSongsSyncing: false,
 } as ReturnType<typeof useLibrarySync>;
 
+const defaultUnifiedLikedReturn = {
+  unifiedTracks: [],
+  isUnifiedLikedActive: false,
+  totalCount: 0,
+  isLoading: false,
+} as ReturnType<typeof useUnifiedLikedTracks>;
+
 describe('usePinnedSection', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockUsePinnedItems.mockReturnValue(defaultPinnedItems);
     mockUseLibrarySync.mockReturnValue(defaultLibrarySyncReturn);
+    mockUseUnifiedLikedTracks.mockReturnValue(defaultUnifiedLikedReturn);
   });
 
   describe('loading state', () => {
@@ -247,6 +261,153 @@ describe('usePinnedSection', () => {
 
       // #then — still just one entry (deduped by filter or by library having one entry)
       expect(result.current.pinnedPlaylists.filter(p => p.id === 'pl-1').length).toBeGreaterThanOrEqual(1);
+    });
+  });
+
+  describe('liked entries', () => {
+    it('prepends a unified liked entry when totalCount > 0', () => {
+      // #given
+      mockUseUnifiedLikedTracks.mockReturnValue({
+        ...defaultUnifiedLikedReturn,
+        isUnifiedLikedActive: true,
+        totalCount: 42,
+      });
+      mockUseLibrarySync.mockReturnValue({
+        ...defaultLibrarySyncReturn,
+        likedSongsCount: 42,
+        likedSongsPerProvider: [{ provider: 'spotify' as const, count: 42 }],
+      });
+
+      // #when
+      const { result } = renderHook(() => usePinnedSection());
+
+      // #then
+      expect(result.current.combined[0].kind).toBe('liked');
+      expect(result.current.combined[0].id).toBe('liked-songs');
+      expect(result.current.combined[0].subtitle).toBe('42 songs');
+    });
+
+    it('expands into per-provider liked entries when not unified and multiple providers', () => {
+      // #given
+      mockUseUnifiedLikedTracks.mockReturnValue({
+        ...defaultUnifiedLikedReturn,
+        isUnifiedLikedActive: false,
+        totalCount: 60,
+      });
+      mockUseLibrarySync.mockReturnValue({
+        ...defaultLibrarySyncReturn,
+        likedSongsCount: 60,
+        likedSongsPerProvider: [
+          { provider: 'spotify' as const, count: 40 },
+          { provider: 'dropbox' as const, count: 20 },
+        ],
+        isLikedSongsSyncing: false,
+      });
+
+      // #when
+      const { result } = renderHook(() => usePinnedSection());
+
+      // #then — two liked entries, one per provider
+      const liked = result.current.combined.filter((i) => i.kind === 'liked');
+      expect(liked).toHaveLength(2);
+      expect(liked[0].id).toBe('liked-spotify');
+      expect(liked[0].provider).toBe('spotify');
+      expect(liked[0].subtitle).toBe('40 songs');
+      expect(liked[1].id).toBe('liked-dropbox');
+      expect(liked[1].provider).toBe('dropbox');
+      expect(liked[1].subtitle).toBe('20 songs');
+    });
+
+    it('omits liked entries when totalCount is 0', () => {
+      // #given — default mocks have totalCount=0
+
+      // #when
+      const { result } = renderHook(() => usePinnedSection());
+
+      // #then
+      expect(result.current.combined.filter((i) => i.kind === 'liked')).toHaveLength(0);
+    });
+
+    it('isEmpty is false when liked is non-empty even with zero user pins', () => {
+      // #given
+      mockUseUnifiedLikedTracks.mockReturnValue({
+        ...defaultUnifiedLikedReturn,
+        isUnifiedLikedActive: true,
+        totalCount: 10,
+      });
+      mockUseLibrarySync.mockReturnValue({
+        ...defaultLibrarySyncReturn,
+        likedSongsCount: 10,
+        likedSongsPerProvider: [{ provider: 'spotify' as const, count: 10 }],
+      });
+
+      // #when
+      const { result } = renderHook(() => usePinnedSection());
+
+      // #then
+      expect(result.current.isEmpty).toBe(false);
+    });
+
+    it('isLoading is true while liked section is loading', () => {
+      // #given
+      mockUseUnifiedLikedTracks.mockReturnValue({
+        ...defaultUnifiedLikedReturn,
+        isUnifiedLikedActive: true,
+        totalCount: 0,
+        isLoading: true,
+      });
+
+      // #when
+      const { result } = renderHook(() => usePinnedSection());
+
+      // #then
+      expect(result.current.isLoading).toBe(true);
+    });
+
+    it('liked entries are prepended before pinned playlists', () => {
+      // #given
+      mockUseUnifiedLikedTracks.mockReturnValue({
+        ...defaultUnifiedLikedReturn,
+        isUnifiedLikedActive: true,
+        totalCount: 5,
+      });
+      mockUseLibrarySync.mockReturnValue({
+        ...defaultLibrarySyncReturn,
+        likedSongsCount: 5,
+        likedSongsPerProvider: [{ provider: 'spotify' as const, count: 5 }],
+        playlists: [makePlaylist('pl-1')] as ReturnType<typeof useLibrarySync>['playlists'],
+      });
+      mockUsePinnedItems.mockReturnValue({
+        ...defaultPinnedItems,
+        pinnedPlaylistIds: ['pl-1'],
+      });
+
+      // #when
+      const { result } = renderHook(() => usePinnedSection());
+
+      // #then
+      expect(result.current.combined[0].kind).toBe('liked');
+      expect(result.current.combined[1].kind).toBe('playlist');
+    });
+
+    it('subtitle uses singular "song" for count of 1', () => {
+      // #given
+      mockUseUnifiedLikedTracks.mockReturnValue({
+        ...defaultUnifiedLikedReturn,
+        isUnifiedLikedActive: true,
+        totalCount: 1,
+      });
+      mockUseLibrarySync.mockReturnValue({
+        ...defaultLibrarySyncReturn,
+        likedSongsCount: 1,
+        likedSongsPerProvider: [{ provider: 'spotify' as const, count: 1 }],
+      });
+
+      // #when
+      const { result } = renderHook(() => usePinnedSection());
+
+      // #then
+      expect(result.current.combined[0].subtitle).toBe('1 song');
     });
   });
 });
