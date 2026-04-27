@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { usePlayerSizingContext } from '@/contexts/PlayerSizingContext';
 import { useUnifiedLikedTracks } from '@/hooks/useUnifiedLikedTracks';
 import type { ProviderId, AddToQueueResult, MediaTrack } from '@/types/domain';
@@ -55,6 +55,7 @@ export interface LibraryRouteProps {
   onMiniPrevious: () => void;
   onMiniExpand: () => void;
   onMiniStartRadio?: () => void;
+  onClose?: () => void;
 }
 
 const LibraryRoute: React.FC<LibraryRouteProps> = ({
@@ -75,6 +76,7 @@ const LibraryRoute: React.FC<LibraryRouteProps> = ({
   onMiniPrevious,
   onMiniExpand,
   onMiniStartRadio,
+  onClose,
 }) => {
   const { isMobile } = usePlayerSizingContext();
   const [view, setView] = useState<LibraryRouteView>('home');
@@ -82,6 +84,21 @@ const LibraryRoute: React.FC<LibraryRouteProps> = ({
   const search = useLibrarySearch();
   const [paletteOpen, setPaletteOpen] = useState(false);
   useCommandPaletteShortcut(() => setPaletteOpen(true), !isMobile);
+
+  useEffect(() => {
+    if (!onClose) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      const target = (e.composedPath?.()[0] ?? e.target) as HTMLElement | null;
+      if (target instanceof HTMLElement) {
+        const tag = target.tagName;
+        if (tag === 'INPUT' || tag === 'TEXTAREA' || target.isContentEditable) return;
+      }
+      onClose();
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
 
   const handleSelectCollection = useCallback(
     (kind: LibraryItemKind, id: string, name: string, provider?: ProviderId) => {
