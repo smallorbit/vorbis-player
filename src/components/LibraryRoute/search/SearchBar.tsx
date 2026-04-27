@@ -27,7 +27,7 @@ const SearchBar: React.FC<SearchBarProps> = ({ variant, search }) => {
           }}
         />
         <Input
-          type="search"
+          type="text"
           aria-label="Search library"
           placeholder="Search your library"
           value={search.query}
