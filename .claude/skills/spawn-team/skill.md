@@ -32,33 +32,72 @@ The user may override the count explicitly: *"spawn the team with 3 builders"*, 
 - Count = 1: name is `builder` (no suffix). Preserves the historical singleton convention.
 - Count > 1: names are `builder-1`, `builder-2`, ... `builder-N`. Numbered from 1 (not 0). The `-N` suffix here is **intentional and stable**, distinct from the spawn-flake `-2` ghost-name pattern that arises from failed retries.
 
-## Isolation mode — default to worktrees for parallel waves
+## Worktree isolation — manual creation required
 
-**Default for `BUILDER_COUNT > 1`: spawn each builder with `isolation: "worktree"`.** Each builder gets its own clean checkout of `main` (or develop), independent `node_modules`, isolated branch space. Strictly better than shared workspace for parallel-builder waves:
+**Background**: `Agent({isolation: "worktree", team_name: ...})` does NOT fire — verified 2026-04-26. The `isolation` parameter is silently dropped when combined with `team_name`, and spawned agents land in the main workspace. Until the harness is fixed, **the lead must create worktrees manually before spawning** any builder beyond the first AND for the tester.
 
+**Why isolation matters**:
 - Zero verification-gate contamination — sibling builders' destructive edits (file deletions, shared-export removals) cannot break your `npx tsc -b --noEmit` baseline
 - Zero workspace HEAD drift — no risk of `git status` reporting you on a sibling's branch
 - Clean PR diffs — your commit cannot silently absorb sibling work in shared files
 - Each builder commits + pushes from their own worktree → reviewer pickup is canonical
+- Tester runs `git checkout`/`git commit`/`npm run test:run` operations that swap branch context — sharing the workspace with the lead corrupts the lead's commit graph
 
-**Cost** (acceptable, paid once per worktree): `npm install` (~30s), `cp ../../.env.local .env.local` (Spotify env for tests, ~instant), node_modules disk space duplication (~500MB × N). Worth it.
+**Cost** (paid once per worktree): `npm install` (~30s), `cp ../.env.local .env.local` (Spotify env for tests, ~instant), node_modules disk space duplication (~500MB × N). Acceptable.
 
-**`BUILDER_COUNT == 1`** can stay in shared workspace (no parallel conflict possible). But for any wave with parallel builders, set `isolation: "worktree"` on the spawn `Agent` call.
+### Worktree setup pattern (run BEFORE spawning each isolated agent)
 
-**Default for tester: spawn with `isolation: "worktree"` whenever the lead operates in the main workspace** (which is essentially always — the lead cannot easily move). The tester runs `git checkout`, `git commit`, and `npm run test:run` operations that swap branch context; when both lead and tester share `/Users/roman/src/vorbis-player`, the tester's branch operations land under the lead's open session and corrupt the lead's commit graph. Worktree isolation eliminates this class of contamination at the same ~30s `npm install` cost paid by builders:
+```bash
+# Once, up front: fetch latest develop
+git fetch origin develop --quiet
 
-- Lead's branch context stays stable for the entire session
-- Tester's `git commit` / `npm run test:run` operations are fully sandboxed
-- Test PRs from the tester carry clean diffs with no accidental lead-session commits absorbed
+# Per agent that needs isolation (each builder when BUILDER_COUNT > 1, plus tester):
+NAME="builder-1"  # or builder-2, ..., or "tester"
+WORKTREE_PATH=".claude/worktrees/${NAME}"
+git worktree add "${WORKTREE_PATH}" -b "worktree-agent-${NAME}" origin/develop
+cp .env.local "${WORKTREE_PATH}/.env.local" 2>/dev/null || true
+(cd "${WORKTREE_PATH}" && npm install) &  # background; wait at end
+```
 
-When using worktrees, the spawn prompt should include the pre-flight setup instructions:
+Run all `npm install` invocations in parallel (background `&`), then `wait` once before proceeding to spawn. Saves ~90s when spawning 3 builders + tester.
+
+After worktrees exist, spawn each agent and pass the worktree path explicitly in the prompt — agents otherwise have no knowledge of which directory they should target. **Do NOT pass `isolation: "worktree"`** on the Agent call — it's a no-op and creates confusion in logs.
+
+### Spawn prompt template (worktree-aware)
 
 ```
-## Pre-flight (run first in your isolated worktree)
-npm install
-cp ../../.env.local .env.local 2>/dev/null || true
-# (then any task-specific dep install, e.g. `npm install @radix-ui/react-switch`)
+You are "{name}" on the vorbis-crew team. Your full role definition is in
+.claude/agents/{role}.md — read it now.
+
+## YOUR ISOLATED WORKTREE
+**Working directory: `/Users/roman/src/vorbis-player/.claude/worktrees/{name}`**
+**Current branch: `worktree-agent-{name}`** (off origin/develop, clean)
+
+ALL work — Read, Edit, Write, Bash, git operations — must use absolute paths
+inside this worktree, NOT the main workspace at /Users/roman/src/vorbis-player.
+The main workspace is the lead's session; do not touch files there.
+
+`npm install` is already complete; `.env.local` is already copied.
+
+When you start an actual task, create a feature branch from your current
+worktree-agent-{name}:
+  git -C /Users/roman/src/vorbis-player/.claude/worktrees/{name} checkout -b feat/<slug>-<issue>
+
+Acknowledge in one sentence. Then go idle.
 ```
+
+**`BUILDER_COUNT == 1`** can stay in shared workspace (no parallel conflict possible) — skip worktree creation for that single builder.
+
+### When to clean up
+
+After the team disbands or the epic ships, remove worktrees and prune local branches:
+
+```bash
+git worktree remove .claude/worktrees/<name>
+git branch -D worktree-agent-<name>
+```
+
+Or use `swarmkit:clean-worktrees` for batch cleanup of all `worktree-agent-*` worktrees.
 
 ## Route interface contracts to BOTH builder AND tester
 
@@ -133,16 +172,23 @@ The current session becomes the team-lead by default.
 
 For each specialist not already alive, spawn via `Agent` in a single message with multiple parallel tool calls (background mode so the lead can continue). Builders are templated — instantiate one `Agent` call per builder name resolved in Phase 1.
 
-| Role | `subagent_type` | `name` | `model` (override) |
+| Role | `subagent_type` | `name` | `model` (Agent param) |
 |---|---|---|---|
-| explorer | `explorer` | `explorer` | (default) |
-| architect | `architect` | `architect` | `opus[1m]` |
+| explorer | `explorer` | `explorer` | `sonnet` |
+| architect | `architect` | `architect` | `opus` |
 | builder (singleton, count=1) | `builder` | `builder` | `opus` |
 | builder (multi, count>1) | `builder` | `builder-1`, `builder-2`, … `builder-N` | `opus` |
-| reviewer | `reviewer` | `reviewer` | `sonnet` |
-| tester | `tester` | `tester` | `sonnet` |
+| reviewer | `reviewer` | `reviewer` | `opus` |
+| tester | `tester` | `tester` | `opus` |
 
 All builder instances share the same `subagent_type` (`builder`) and the same `.claude/agents/builder.md` definition — they're parallel workers, not differentiated specialists. The `name` is the only thing that varies.
+
+**Model param constraints (verified 2026-04-26)**: `Agent({model})` strictly accepts ONE of `"sonnet" | "opus" | "haiku"`. Any other form is rejected with `InputValidationError`:
+- `"opus[1m]"` → ❌ rejected
+- `"sonnet[1m]"` → ❌ rejected
+- `"claude-opus-4-7[1m]"` → ❌ rejected
+
+Frontmatter `model:` in `.claude/agents/*.md` is **also ignored** by the spawn pathway — only the explicit Agent param controls the spawned model. The `[1m]` mechanism documented for top-level Claude Code config does not propagate to subagent spawns. The 1M context is unreachable until the harness is fixed; **compensate via proactive between-wave swaps** (per `team-lead.md`).
 
 **Use the project-local `subagent_type`** (the lowercase role name matching the `.claude/agents/{name}.md` file). This loads the agent definition with the correct tools (including `SendMessage` for architect and reviewer — the upstream `feature-dev:*` types omit it, which structurally breaks team communication).
 

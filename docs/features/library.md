@@ -1,5 +1,7 @@
 # Library Browser System
 
+> **Note:** This document predates the library redesign and partially describes legacy structure (`LibraryPage` / `useLibraryRoot`) that no longer exists. The current surface is `LibraryRoute` (`src/components/LibraryRoute/`) with section data hooks under `src/components/LibraryRoute/hooks/`. A full rewrite covering the new route is tracked as a follow-up issue.
+
 ## Overview
 
 The library browser shows the user's music collections (playlists, albums, liked songs) across all connected providers. It is implemented as `LibraryRoute` — a sections-first surface that replaces the legacy drawer/page split.

@@ -12,11 +12,10 @@ import { useProviderContext } from '@/contexts/ProviderContext';
 import { useQapEnabled } from '@/hooks/useQapEnabled';
 import { useWelcomeSeen } from '@/hooks/useWelcomeSeen';
 import QuickAccessPanel from './QuickAccessPanel';
-import ResumeCard from './QuickAccessPanel/ResumeCard';
 import SettingsGearButton from './SettingsGearButton';
 import WelcomeScreen from './WelcomeScreen';
 
-const LibraryPage = React.lazy(() => import('./PlaylistSelection'));
+const LibraryRouteLazy = React.lazy(() => import('./LibraryRoute'));
 
 const pulseWave = keyframes`
   0%, 100% {
@@ -336,13 +335,19 @@ const PlayerStateRenderer: React.FC<PlayerStateRendererProps> = ({
             </LoadingContainer>
           </LoadingCard>
         }>
-          <LibraryPage
-            onPlaylistSelect={handlePlaylistSelectWrapped}
+          <LibraryRouteLazy
+            onPlaylistSelect={(id, name, provider) => handlePlaylistSelectWrapped(id, name ?? '', provider)}
             onPlayLikedTracks={onPlayLikedTracks}
             onQueueLikedTracks={onQueueLikedTracks}
-            footer={lastSession && onResume ? (
-              <ResumeCard session={lastSession} onResume={onResume} />
-            ) : undefined}
+            onOpenSettings={onOpenSettings}
+            onResume={onResume}
+            lastSession={lastSession}
+            isPlaying={false}
+            onMiniPlay={() => {}}
+            onMiniPause={() => {}}
+            onMiniNext={() => {}}
+            onMiniPrevious={() => {}}
+            onMiniExpand={() => {}}
           />
         </Suspense>
       </>

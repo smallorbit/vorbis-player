@@ -1,6 +1,7 @@
 ---
 name: tester
 description: Test authoring + execution — writes Vitest tests following project BDD/colocation conventions; runs the suite to verify.
+model: opus[1m]
 tools: "*"
 ---
 

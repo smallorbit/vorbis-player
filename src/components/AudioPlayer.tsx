@@ -9,7 +9,6 @@ import AccentColorBackground from './AccentColorBackground';
 import DebugOverlay, { useDebugActivator } from './DebugOverlay';
 import ProviderSetupScreen from './ProviderSetupScreen';
 import { toast } from 'sonner';
-import ResumeCard from './QuickAccessPanel/ResumeCard';
 import { ProfilingProvider } from '@/contexts/ProfilingContext';
 import { ProfilingOverlay } from '@/components/ProfilingOverlay';
 import { ProfiledComponent } from '@/components/ProfiledComponent';
@@ -30,7 +29,7 @@ import { useSessionPersistence } from '@/hooks/useSessionPersistence';
 import QuickAccessPanel from './QuickAccessPanel';
 
 const VisualEffectsMenu = lazy(() => import('./AppSettingsMenu/index'));
-const LibraryPage = lazy(() => import('./PlaylistSelection'));
+const LibraryRoute = lazy(() => import('./LibraryRoute'));
 
 const RESUME_TOAST_ID = 'resume-toast';
 const FALLTHROUGH_TOAST_ID = 'fallthrough-toast';
@@ -138,11 +137,17 @@ const AudioPlayerComponent = () => {
   const handleCloseQuickAccessPanel = useCallback(() => setShowQuickAccessPanel(false), []);
 
   const handleHydrateFired = useCallback((track: import('@/types/domain').MediaTrack, skipped: boolean) => {
+    // Hydrate has been consumed — clear the saved session so a subsequent
+    // collection load (which transiently shows isLoading=true and remounts
+    // PlayerStateRenderer) doesn't trigger a second hydrate that would
+    // overwrite the just-loaded collection's index and position with the
+    // resumed session's.
+    resetLastSession();
     const message = skipped
       ? `Couldn't resume previous track — starting from next in queue.`
       : `Resuming '${track.name}' — press play to continue.`;
     toast(message, { id: RESUME_TOAST_ID, duration: Infinity });
-  }, []);
+  }, [resetLastSession]);
   const handleHydrateFailed = useCallback(() => {
     resetLastSession();
     toast(`Couldn't resume your last session.`, { id: RESUME_TOAST_ID, duration: Infinity });
@@ -369,11 +374,40 @@ const AudioPlayerComponent = () => {
       );
     }
 
+    if (state.currentView === 'library') {
+      return (
+        <Suspense fallback={null}>
+          <LibraryRoute
+            onPlaylistSelect={(id, name, provider) => {
+              handlers.handleCloseLibrary();
+              handlePlaylistSelect(id, name ?? '', provider);
+            }}
+            onPlayLikedTracks={handlePlayLikedTracks}
+            onQueueLikedTracks={handleQueueLikedTracks}
+            onOpenSettings={handleOpenSettings}
+            onResume={handleResume}
+            lastSession={null}
+            isPlaying={state.isPlaying}
+            isRadioAvailable={radio.isRadioAvailable}
+            isRadioGenerating={radio.radioState?.isGenerating}
+            onMiniPlay={playbackHandlers.onPlay}
+            onMiniPause={playbackHandlers.onPause}
+            onMiniNext={playbackHandlers.onNext}
+            onMiniPrevious={playbackHandlers.onPrevious}
+            onMiniExpand={handlers.handleCloseLibrary}
+            onMiniStartRadio={radio.isRadioAvailable ? handlers.handleStartRadio : undefined}
+            onPlayNext={undefined}
+            onStartRadioForCollection={undefined}
+          />
+        </Suspense>
+      );
+    }
+
     return (
       <ProfiledComponent id="PlayerContent">
         <PlayerContent
           isPlaying={state.isPlaying}
-          showLibrary={state.showLibrary}
+          showLibrary={false}
           handlers={playbackHandlers}
           radioState={radio.radioState}
           isRadioAvailable={radio.isRadioAvailable}
@@ -382,8 +416,6 @@ const AudioPlayerComponent = () => {
           mediaTracksRef={mediaTracksRef}
           radioProgress={radio.radioProgress}
           onDismissRadioProgress={radio.dismissRadioProgress}
-          lastSession={lastSession}
-          onResume={handleResume}
         />
       </ProfiledComponent>
     );
@@ -470,18 +502,29 @@ const AudioPlayerComponent = () => {
             />
           </Suspense>
         )}
-        {needsSetup && state.showLibrary && (
+        {needsSetup && state.currentView === 'library' && (
           <Suspense fallback={null}>
-            <LibraryPage
+            <LibraryRoute
               onPlaylistSelect={(id, name, provider) => {
                 handlers.handleCloseLibrary();
-                handlePlaylistSelect(id, name, provider);
+                handlePlaylistSelect(id, name ?? '', provider);
               }}
               onPlayLikedTracks={handlePlayLikedTracks}
               onQueueLikedTracks={handleQueueLikedTracks}
-              footer={lastSession && handleResume ? (
-                <ResumeCard session={lastSession} onResume={handleResume} />
-              ) : undefined}
+              onOpenSettings={handleOpenSettings}
+              onResume={handleResume}
+              lastSession={lastSession}
+              isPlaying={state.isPlaying}
+              isRadioAvailable={radio.isRadioAvailable}
+              isRadioGenerating={radio.radioState?.isGenerating}
+              onMiniPlay={playbackHandlers.onPlay}
+              onMiniPause={playbackHandlers.onPause}
+              onMiniNext={playbackHandlers.onNext}
+              onMiniPrevious={playbackHandlers.onPrevious}
+              onMiniExpand={handlers.handleCloseLibrary}
+              onMiniStartRadio={radio.isRadioAvailable ? handlers.handleStartRadio : undefined}
+              onPlayNext={undefined}
+              onStartRadioForCollection={undefined}
             />
           </Suspense>
         )}

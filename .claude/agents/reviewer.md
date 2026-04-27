@@ -1,6 +1,7 @@
 ---
 name: reviewer
 description: Read-only code review — flags bugs, logic errors, security issues, convention violations, and AC failures using confidence-based filtering.
+model: opus[1m]
 tools: Bash, Read, Glob, Grep, LS, NotebookRead, BashOutput, WebFetch, WebSearch, TodoWrite, TaskGet, TaskList, TaskUpdate, SendMessage
 ---
 

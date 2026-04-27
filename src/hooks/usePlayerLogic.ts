@@ -99,8 +99,9 @@ export function usePlayerLogic() {
   const [playbackPosition, setPlaybackPosition] = useState(0);
   const [authExpired, setAuthExpired] = useState<ProviderId | null>(null);
 
-  // Library full-screen visibility (local UI state)
-  const [showLibrary, setShowLibrary] = useState(false);
+  // Library full-screen visibility (local UI state) — currentView is canonical.
+  type PlayerView = 'player' | 'library';
+  const [currentView, setCurrentView] = useState<PlayerView>('player');
 
   // Radio generation progress panel state
   const [radioProgress, setRadioProgress] = useState<RadioProgress | null>(null);
@@ -164,14 +165,6 @@ export function usePlayerLogic() {
   });
 
   useAutoAdvance({ tracks, currentTrackIndex, playTrack, enabled: true, currentPlaybackProviderRef: drivingProviderRef });
-
-  // Notify the driving provider when the queue changes
-  useEffect(() => {
-    const drivingId = drivingProviderRef.current;
-    if (!drivingId || tracks.length === 0) return;
-    const descriptor = providerRegistry.get(drivingId);
-    descriptor?.playback.onQueueChanged?.(tracks, currentTrackIndex);
-  }, [tracks, currentTrackIndex, drivingProviderRef]);
 
   // Progressively load missing thumbnails for Dropbox tracks in the queue
   useQueueThumbnailLoader(tracks, setTracks);
@@ -284,13 +277,13 @@ export function usePlayerLogic() {
   }, [getDrivingProviderId, getDrivingProviderDescriptor]);
 
   const handleOpenLibrary = useCallback(() => {
-    setShowLibrary(true);
+    setCurrentView('library');
     setShowQueue(false);
     setShowVisualEffects(false);
   }, [setShowQueue, setShowVisualEffects]);
 
   const handleCloseLibrary = useCallback(() => {
-    setShowLibrary(false);
+    setCurrentView('player');
   }, []);
 
   // Initialize radio session (before handleBackToLibrary, which needs stopRadio)
@@ -472,6 +465,7 @@ export function usePlayerLogic() {
       handleRemoveFromQueue,
       handleReorderQueue,
       handleHydrate,
+      setCurrentView,
     }),
     [
       loadCollection,
@@ -490,6 +484,7 @@ export function usePlayerLogic() {
       handleRemoveFromQueue,
       handleReorderQueue,
       handleHydrate,
+      setCurrentView,
     ]
   );
 
@@ -499,7 +494,7 @@ export function usePlayerLogic() {
       error,
       selectedPlaylistId,
       tracks,
-      showLibrary,
+      currentView,
       isPlaying,
       playbackPosition,
     },

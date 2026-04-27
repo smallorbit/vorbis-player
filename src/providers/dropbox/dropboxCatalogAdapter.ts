@@ -58,6 +58,11 @@ export class DropboxCatalogAdapter implements CatalogProvider {
   private apiClient: DropboxApiClient;
   private artworkResolver: DropboxArtworkResolver;
   private knownTracks = new Map<string, MediaTrack>();
+  // Coalesce concurrent listCollections() callers onto a single in-flight fetch.
+  // Multiple LibraryRoute section hooks (albums/liked/pinned/playlists/recents) each
+  // call useLibrarySync() and fan out to listCollections() in parallel; without this,
+  // a cold cache triggers 5 simultaneous list_folder requests → Dropbox 429 storm.
+  private inflightListCollections: Promise<MediaCollection[]> | null = null;
 
   constructor(auth: DropboxAuthAdapter) {
     this.auth = auth;
@@ -92,6 +97,24 @@ export class DropboxCatalogAdapter implements CatalogProvider {
       }
     }
 
+    if (!options?.forceRefresh && this.inflightListCollections) {
+      return this.inflightListCollections;
+    }
+
+    const fetchPromise = this.fetchCollectionsFresh(signal);
+    if (!options?.forceRefresh) {
+      this.inflightListCollections = fetchPromise;
+    }
+    try {
+      return await fetchPromise;
+    } finally {
+      if (this.inflightListCollections === fetchPromise) {
+        this.inflightListCollections = null;
+      }
+    }
+  }
+
+  private async fetchCollectionsFresh(signal?: AbortSignal): Promise<MediaCollection[]> {
     try {
       const dirDisplayName = new Map<string, string>();
       const dirParent = new Map<string, string>();

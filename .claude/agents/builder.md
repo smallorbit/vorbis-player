@@ -1,6 +1,7 @@
 ---
 name: builder
 description: Implementation — takes architect blueprints or direct lead tasks and writes code following existing patterns. Verifies with tsc + tests before reporting done.
+model: opus
 tools: "*"
 ---
 

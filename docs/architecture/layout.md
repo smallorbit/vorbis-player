@@ -24,11 +24,11 @@ The queue drawers (`QueueDrawer`, `QueueBottomSheet`) render `QueueSkeleton` (`s
 
 ## Full-screen library
 
-The library browser opens as `LibraryRoute` (a full-screen view), not a drawer. `currentView === 'library'` in `usePlayerLogic` state gates it; `handleOpenLibrary` / `handleCloseLibrary` toggle it. `LibraryRoute` is rendered in `AudioPlayer.tsx` via `React.lazy` when `currentView === 'library'`.
+The library browser opens as `LibraryRoute` (a full-screen view, `src/components/LibraryRoute/`), not a drawer. `currentView === 'library'` in `usePlayerLogic` state gates the active-player overlay; `handleOpenLibrary` / `handleCloseLibrary` toggle it. `LibraryRoute` is rendered via `React.lazy` from `AudioPlayer.tsx` (active-player overlay, when `currentView === 'library'`) and from `PlayerStateRenderer.tsx` (idle route).
 
 **Opening the library**: swipe down on album art, BottomBar library button, or keyboard `↓` / `L`. Opening library closes the queue drawer.
 
-**Recently Played history** is tracked by `useRecentlyPlayedCollections` (`src/hooks/useRecentlyPlayedCollections.ts`). It exposes `history: RecentlyPlayedEntry[]` and `record(ref, name)`. Successful collection loads via `useCollectionLoader.loadCollection` call `record` automatically. History is stored under `vorbis-player-recently-played` (localStorage), capped at 5 entries, deduped by `CollectionRef` key, newest first. The Recently Played section in `LibraryRoute` reads from this hook.
+**Recently Played history** is tracked by `useRecentlyPlayedCollections` (`src/hooks/useRecentlyPlayedCollections.ts`). It exposes `history: RecentlyPlayedEntry[]` and `record(ref, name)`. Successful collection loads via `useCollectionLoader.loadCollection` call `record` automatically. History is stored under `vorbis-player-recently-played` (localStorage), capped at 5 entries, deduped by `CollectionRef` key, newest first. The Recently Played section in `LibraryRoute` reads from this hook via `useRecentlyPlayedSection`.
 
 See `docs/features/library.md` for the section taxonomy, sub-route nav, search/filters, context menu, and mini-player chrome.
 
@@ -50,7 +50,7 @@ QAP is opt-in via the "Quick Access Panel" On/Off control in `VisualEffectsMenu`
 
 **Stale session cutoff** — `isSessionStale(session, now?)` from `src/services/sessionPersistence.ts` returns true when the session is absent, missing `savedAt`, or older than `STALE_SESSION_MS` (30 days). Stale sessions are treated as no session for landing routing and resume affordances.
 
-**Resume hero** — `ResumeHero` (`src/components/QuickAccessPanel/ResumeHero.tsx`) renders at the top of `QuickAccessPanel` (above `PinRing`) when a valid `lastSession` is present; clicking the Resume CTA invokes `onResume` (autoplay). The footer `ResumeCard` is suppressed inside QAP to avoid duplicate affordances; it still renders as the `footer` prop of `LibraryRoute` on the idle library route.
+**Resume hero** — `ResumeHero` (`src/components/QuickAccessPanel/ResumeHero.tsx`) renders at the top of `QuickAccessPanel` (above `PinRing`) when a valid `lastSession` is present; clicking the Resume CTA invokes `onResume` (autoplay). On the idle library route, `LibraryRoute` renders its own resume hero from `useResumeSection`.
 
 **Settings gear on idle views** — `SettingsGearButton` (`src/components/SettingsGearButton/index.tsx`) is mounted top-right by `PlayerStateRenderer` on `WelcomeScreen`, idle `LibraryRoute`, and `QuickAccessPanel` via the `onOpenSettings` prop, opening the existing `VisualEffectsMenu`. Hidden during loading and error states. The active-player gear continues to live in `BottomBar` / `PlayerControlsSection`.
 

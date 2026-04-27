@@ -1,6 +1,7 @@
 ---
 name: architect
 description: Read-only feature design — produces concrete blueprints (files to create/modify, component shapes, data flow, build sequence) matching codebase patterns.
+model: opus[1m]
 tools: Read, Glob, Grep, LS, NotebookRead, BashOutput, WebFetch, WebSearch, TodoWrite, TaskGet, TaskList, TaskUpdate, SendMessage
 ---
 

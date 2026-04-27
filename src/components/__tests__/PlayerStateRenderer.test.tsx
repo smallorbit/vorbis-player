@@ -31,8 +31,8 @@ vi.mock('@/contexts/ProviderContext', () => ({
   })),
 }));
 
-vi.mock('../PlaylistSelection', () => ({
-  default: () => <div data-testid="playlist-selection">PlaylistSelection</div>,
+vi.mock('../LibraryRoute', () => ({
+  default: () => <div data-testid="library-route">LibraryRoute</div>,
 }));
 
 vi.mock('../QuickAccessPanel', () => ({
@@ -105,7 +105,7 @@ describe('PlayerStateRenderer idle routing', () => {
     // #then
     expect(screen.getByTestId('welcome-screen')).toBeInTheDocument();
     expect(screen.queryByTestId('quick-access-panel')).not.toBeInTheDocument();
-    expect(screen.queryByTestId('playlist-selection')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('library-route')).not.toBeInTheDocument();
   });
 
   it('renders QuickAccessPanel when welcomeSeen + qapEnabled + valid session', () => {
@@ -209,7 +209,7 @@ describe('PlayerStateRenderer idle routing', () => {
 
     // #then
     expect(screen.getByText(/Restoring Your Session/i)).toBeInTheDocument();
-    expect(screen.queryByTestId('playlist-selection')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('library-route')).not.toBeInTheDocument();
     expect(screen.queryByTestId('quick-access-panel')).not.toBeInTheDocument();
   });
 
@@ -227,7 +227,7 @@ describe('PlayerStateRenderer idle routing', () => {
 
     // #then
     await waitFor(() => {
-      expect(screen.getByTestId('playlist-selection')).toBeInTheDocument();
+      expect(screen.getByTestId('library-route')).toBeInTheDocument();
     });
   });
 
@@ -245,7 +245,7 @@ describe('PlayerStateRenderer idle routing', () => {
 
     // #then
     await waitFor(() => {
-      expect(screen.getByTestId('playlist-selection')).toBeInTheDocument();
+      expect(screen.getByTestId('library-route')).toBeInTheDocument();
     });
   });
 
@@ -307,7 +307,7 @@ describe('PlayerStateRenderer idle routing', () => {
       expect(onHydrateFailed).toHaveBeenCalledTimes(1);
     });
     await waitFor(() => {
-      expect(screen.getByTestId('playlist-selection')).toBeInTheDocument();
+      expect(screen.getByTestId('library-route')).toBeInTheDocument();
     });
     expect(onHydrateFired).not.toHaveBeenCalled();
     expect(screen.queryByText(/Restoring Your Session/i)).not.toBeInTheDocument();
@@ -332,7 +332,7 @@ describe('PlayerStateRenderer idle routing', () => {
 
     // #then
     await waitFor(() => {
-      expect(screen.getByTestId('playlist-selection')).toBeInTheDocument();
+      expect(screen.getByTestId('library-route')).toBeInTheDocument();
     });
     expect(onHydrateFired).not.toHaveBeenCalled();
   });
@@ -356,7 +356,7 @@ describe('PlayerStateRenderer idle routing', () => {
 
     // #then
     await waitFor(() => {
-      expect(screen.getByTestId('playlist-selection')).toBeInTheDocument();
+      expect(screen.getByTestId('library-route')).toBeInTheDocument();
     });
     expect(onHydrate).not.toHaveBeenCalled();
   });
@@ -400,7 +400,7 @@ describe('PlayerStateRenderer idle routing', () => {
 
     // #then
     await waitFor(() => {
-      expect(screen.getByTestId('playlist-selection')).toBeInTheDocument();
+      expect(screen.getByTestId('library-route')).toBeInTheDocument();
     });
   });
 
@@ -425,7 +425,7 @@ describe('PlayerStateRenderer settings gear on idle views', () => {
 
     // #then
     await waitFor(() => {
-      expect(screen.getByTestId('playlist-selection')).toBeInTheDocument();
+      expect(screen.getByTestId('library-route')).toBeInTheDocument();
     });
     expect(screen.getByTestId('settings-gear-button')).toBeInTheDocument();
   });
@@ -511,7 +511,7 @@ describe('PlayerStateRenderer settings gear on idle views', () => {
 
     // #then
     expect(screen.queryByTestId('settings-gear-button')).not.toBeInTheDocument();
-    expect(screen.queryByTestId('playlist-selection')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('library-route')).not.toBeInTheDocument();
     expect(screen.queryByTestId('quick-access-panel')).not.toBeInTheDocument();
   });
 });
