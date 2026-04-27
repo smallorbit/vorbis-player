@@ -380,7 +380,7 @@ const AudioPlayerComponent = () => {
             onQueueLikedTracks={handleQueueLikedTracks}
             onOpenSettings={handleOpenSettings}
             onResume={handleResume}
-            lastSession={lastSession}
+            lastSession={null}
             isPlaying={state.isPlaying}
             isRadioAvailable={radio.isRadioAvailable}
             isRadioGenerating={radio.radioState?.isGenerating}

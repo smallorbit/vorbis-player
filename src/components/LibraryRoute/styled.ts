@@ -5,7 +5,8 @@ export const LibraryRouteRoot = styled.div`
   flex-direction: column;
   flex: 1;
   width: 100%;
-  height: 100%;
+  height: 100vh;
+  height: 100dvh;
   min-height: 0;
 `;
 
