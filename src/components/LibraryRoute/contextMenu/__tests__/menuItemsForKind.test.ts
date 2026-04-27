@@ -179,4 +179,38 @@ describe('buildMenuItems', () => {
     // #then
     expect(items.find((i) => i.id === 'play-next')?.disabled).toBe(true);
   });
+
+  it('adds queue-liked item for playlist when onQueueLikedFromCollection provided', () => {
+    // #given
+    const actions = makeActions({ onQueueLikedFromCollection: vi.fn() });
+
+    // #when
+    const items = buildMenuItems(makeRequest({ kind: 'playlist' }), actions);
+
+    // #then
+    expect(items.find((i) => i.id === 'queue-liked')).toBeDefined();
+    expect(items.find((i) => i.id === 'queue-liked')?.label).toBe('Queue Liked Songs');
+  });
+
+  it('adds queue-liked item for album when onQueueLikedFromCollection provided', () => {
+    // #given
+    const actions = makeActions({ onQueueLikedFromCollection: vi.fn() });
+
+    // #when
+    const items = buildMenuItems(makeRequest({ kind: 'album' }), actions);
+
+    // #then
+    expect(items.find((i) => i.id === 'queue-liked')).toBeDefined();
+  });
+
+  it('omits queue-liked item when onQueueLikedFromCollection is undefined', () => {
+    // #given
+    const actions = makeActions();
+
+    // #when
+    const items = buildMenuItems(makeRequest({ kind: 'playlist' }), actions);
+
+    // #then
+    expect(items.find((i) => i.id === 'queue-liked')).toBeUndefined();
+  });
 });

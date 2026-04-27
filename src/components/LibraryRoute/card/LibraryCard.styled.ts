@@ -62,16 +62,11 @@ export const ArtPlaceholder = styled.div`
   color: ${theme.colors.muted.foreground};
 `;
 
-export const ProviderBadge = styled.span`
+export const ProviderBadge = styled.div`
   position: absolute;
   top: ${theme.spacing.xs};
   right: ${theme.spacing.xs};
-  padding: 0 ${theme.spacing.xs};
-  border-radius: ${theme.borderRadius.sm};
-  background: rgba(0, 0, 0, 0.6);
-  color: ${theme.colors.white};
-  font-size: ${theme.fontSize.xs};
-  text-transform: capitalize;
+  line-height: 0;
 `;
 
 export const Title = styled.div`

@@ -7,6 +7,7 @@ import type { ContextMenuRequest } from '../types';
 import type { ProviderId, MediaTrack } from '@/types/domain';
 import { useLikedTracksForProvider } from './useLikedTracksForProvider';
 import { useAlbumSavedStatus } from './useAlbumSavedStatus';
+import { useQueueLikedFromCollection } from './useQueueLikedFromCollection';
 import {
   buildMenuItems,
   type MenuActions,
@@ -50,6 +51,7 @@ export interface LibraryContextMenuProps {
     collectionName: string,
     provider?: ProviderId,
   ) => Promise<void> | void;
+  onQueueLikedTracks?: (tracks: MediaTrack[], collectionName?: string) => void;
 }
 
 const LibraryContextMenu: React.FC<LibraryContextMenuProps> = ({
@@ -60,6 +62,7 @@ const LibraryContextMenu: React.FC<LibraryContextMenuProps> = ({
   onPlayNext,
   onStartRadioForCollection,
   onPlayLikedTracks,
+  onQueueLikedTracks,
 }) => {
   const {
     isPlaylistPinned,
@@ -70,6 +73,7 @@ const LibraryContextMenu: React.FC<LibraryContextMenuProps> = ({
   const { remove: removeRecent } = useRecentlyPlayedCollections();
   const { perProvider } = useLikedSection();
   const { loadLikedTracks } = useLikedTracksForProvider();
+  const { queueLikedFromCollection } = useQueueLikedFromCollection(onQueueLikedTracks);
 
   const albumIdForSaveStatus =
     request?.kind === 'album'
@@ -169,6 +173,15 @@ const LibraryContextMenu: React.FC<LibraryContextMenuProps> = ({
       actions.isSaved = isSaved;
     }
 
+    if ((isPlaylistKind || isAlbumKind) && onQueueLikedTracks && request.provider) {
+      const collectionId = request.id;
+      const collectionName = request.name;
+      const provider = request.provider;
+      actions.onQueueLikedFromCollection = closeAfter(() =>
+        queueLikedFromCollection(collectionId, collectionName, provider),
+      );
+    }
+
     if (request.kind === 'recently-played' && request.recentRef) {
       const recentRef = request.recentRef;
       actions.onRemoveFromHistory = closeAfter(() => {
@@ -211,6 +224,8 @@ const LibraryContextMenu: React.FC<LibraryContextMenuProps> = ({
     canToggleSaved,
     isSaved,
     toggleSaved,
+    onQueueLikedTracks,
+    queueLikedFromCollection,
   ]);
 
   if (!request) return null;
