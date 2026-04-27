@@ -1,4 +1,5 @@
 import { spotifyAuth } from './spotify';
+import { AuthExpiredError } from '@/providers/errors';
 import { logSpotify } from '@/lib/debugLog';
 import {
   SPOTIFY_MAX_RETRIES,
@@ -52,7 +53,7 @@ class SpotifyPlayerService {
 
   async initialize(): Promise<void> {
     if (!spotifyAuth.isAuthenticated()) {
-      throw new Error('User must be authenticated before initializing player');
+      throw new AuthExpiredError('spotify');
     }
 
     if (this.player) {
@@ -65,7 +66,7 @@ class SpotifyPlayerService {
 
   private setupPlayer(): void {
     if (!spotifyAuth.isAuthenticated()) {
-      throw new Error('No Spotify access token available');
+      throw new AuthExpiredError('spotify');
     }
 
     this.player = new window.Spotify.Player({
