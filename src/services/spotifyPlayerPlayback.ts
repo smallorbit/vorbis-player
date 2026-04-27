@@ -47,7 +47,7 @@ export async function apiPlayTrack(
 
   logSpotify('Web API play track deviceId=%s queueSize=%d positionMs=%s', deviceId, uris.length, positionMs ?? 0);
 
-  apiSetShuffleOff(deviceId);
+  await apiSetShuffleOff(deviceId);
 
   const response = await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`, {
     method: 'PUT',
@@ -102,7 +102,7 @@ export async function apiPlayContext(
 
   logSpotify('Web API play context uri=%s offset=%s', contextUri, offsetPosition ?? '(none)');
 
-  apiSetShuffleOff(deviceId);
+  await apiSetShuffleOff(deviceId);
 
   const response = await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`, {
     method: 'PUT',
@@ -139,7 +139,7 @@ export async function apiPlayPlaylist(
 
   logSpotify('Web API play URIs list length=%d deviceId=%s', uris.length, deviceId);
 
-  apiSetShuffleOff(deviceId);
+  await apiSetShuffleOff(deviceId);
 
   const response = await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`, {
     method: 'PUT',
