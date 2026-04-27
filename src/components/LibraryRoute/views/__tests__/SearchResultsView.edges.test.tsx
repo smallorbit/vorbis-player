@@ -229,6 +229,40 @@ describe('SearchResultsView edges', () => {
     });
   });
 
+  describe('artist search for albums', () => {
+    it('includes an album when the query matches the artist name (not the album title)', () => {
+      // #given — album title "Core" does NOT contain "stone"; artist does
+      mockAlbumsSection.mockReturnValue({
+        items: [
+          { id: 'a1', name: 'Core', artists: 'Stone Temple Pilots', provider: 'spotify', images: [] },
+        ],
+      });
+
+      // #when
+      renderView({ query: 'stone' });
+
+      // #then — album appears even though the title "Core" doesn't match
+      expect(screen.getByText('Albums')).toBeInTheDocument();
+      expect(screen.getByText('Core')).toBeInTheDocument();
+    });
+
+    it('excludes an album when neither title nor artist matches the query', () => {
+      // #given
+      mockAlbumsSection.mockReturnValue({
+        items: [
+          { id: 'a1', name: 'Core', artists: 'Stone Temple Pilots', provider: 'spotify', images: [] },
+        ],
+      });
+
+      // #when
+      renderView({ query: 'nirvana' });
+
+      // #then
+      expect(screen.queryByText('Albums')).toBeNull();
+      expect(screen.queryByText('Core')).toBeNull();
+    });
+  });
+
   describe('onContextMenuRequest forwarding', () => {
     it('forwards onContextMenuRequest to LibraryCard via right-click → menu request', () => {
       // #given

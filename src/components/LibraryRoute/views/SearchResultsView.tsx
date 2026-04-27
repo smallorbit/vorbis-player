@@ -83,7 +83,7 @@ const SearchResultsView: React.FC<SearchResultsViewProps> = ({
       showAlbums
         ? sortItems(
             albums
-              .filter((a) => matchesQuery({ name: a.name }, q))
+              .filter((a) => matchesQuery({ name: a.name, ownerName: a.artists }, q))
               .filter((a) => passesProviderFilter({ provider: a.provider }, search.providerFilter)),
             search.sort,
           )
