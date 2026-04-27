@@ -2,6 +2,7 @@ import React, { useCallback } from 'react';
 import type { ContextMenuRequest, LibraryItemKind } from '../types';
 import type { ProviderId } from '@/types/domain';
 import { useLongPress } from './useLongPress';
+import ProviderIcon from '@/components/ProviderIcon';
 import {
   CardButton,
   ArtWrap,
@@ -96,7 +97,11 @@ const LibraryCard: React.FC<LibraryCardProps> = ({
         ) : (
           <ArtPlaceholder>{placeholderGlyphForKind(kind)}</ArtPlaceholder>
         )}
-        {showProviderBadge && provider && <ProviderBadge>{provider}</ProviderBadge>}
+        {showProviderBadge && provider && (
+          <ProviderBadge>
+            <ProviderIcon provider={provider} size={20} />
+          </ProviderBadge>
+        )}
       </ArtWrap>
       <Title>{name}</Title>
       {subtitle && <Subtitle>{subtitle}</Subtitle>}

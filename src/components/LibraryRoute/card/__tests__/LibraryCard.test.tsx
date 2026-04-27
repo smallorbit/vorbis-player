@@ -3,6 +3,12 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import LibraryCard from '../LibraryCard';
 
+vi.mock('@/components/ProviderIcon', () => ({
+  default: ({ provider }: { provider: string }) => (
+    <span data-testid={`provider-icon-${provider}`} />
+  ),
+}));
+
 const baseProps = {
   kind: 'playlist' as const,
   id: 'p1',
@@ -29,16 +35,16 @@ describe('LibraryCard', () => {
     expect(screen.getByText('♪')).toBeInTheDocument();
   });
 
-  it('shows provider badge only when showProviderBadge is true', () => {
+  it('shows provider icon only when showProviderBadge is true', () => {
     // #given
     const { rerender } = render(<LibraryCard {...baseProps} provider="spotify" />);
-    expect(screen.queryByText('spotify')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('provider-icon-spotify')).not.toBeInTheDocument();
 
     // #when
     rerender(<LibraryCard {...baseProps} provider="spotify" showProviderBadge />);
 
     // #then
-    expect(screen.getByText('spotify')).toBeInTheDocument();
+    expect(screen.getByTestId('provider-icon-spotify')).toBeInTheDocument();
   });
 
   it('fires onSelect on click when no onContextMenuRequest', () => {
