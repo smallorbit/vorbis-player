@@ -8,6 +8,8 @@ export const LibraryRouteRoot = styled.div`
   height: 100vh;
   height: 100dvh;
   min-height: 0;
+  position: relative;
+  z-index: 2;
 `;
 
 export const MobileLayout = styled.div`

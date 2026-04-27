@@ -60,6 +60,7 @@ export interface LibraryRouteProps {
 const LibraryRoute: React.FC<LibraryRouteProps> = ({
   onPlaylistSelect,
   onPlayLikedTracks,
+  onQueueLikedTracks,
   onResume,
   lastSession,
   onAddToQueue,
@@ -210,6 +211,7 @@ const LibraryRoute: React.FC<LibraryRouteProps> = ({
         onPlayNext={onPlayNext}
         onStartRadioForCollection={onStartRadioForCollection}
         onPlayLikedTracks={handlePlayLikedFromMenu}
+        onQueueLikedTracks={onQueueLikedTracks}
       />
       <MiniPlayer
         isPlaying={isPlaying}
