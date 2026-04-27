@@ -24,15 +24,13 @@ The queue drawers (`QueueDrawer`, `QueueBottomSheet`) render `QueueSkeleton` (`s
 
 ## Full-screen library
 
-The library browser opens as `LibraryPage` (a full-screen view), not a drawer. `showLibrary` state in `usePlayerLogic` gates it; `handleOpenLibrary` / `handleCloseLibrary` toggle it. `LibraryPage` is rendered in `AudioPlayer.tsx` via `React.lazy` when `showLibrary` is true.
+The library browser opens as `LibraryRoute` (a full-screen view, `src/components/LibraryRoute/`), not a drawer. `currentView === 'library'` in `usePlayerLogic` state gates the active-player overlay; `handleOpenLibrary` / `handleCloseLibrary` toggle it. `LibraryRoute` is rendered via `React.lazy` from `AudioPlayer.tsx` (active-player overlay, when `currentView === 'library'`) and from `PlayerStateRenderer.tsx` (idle route).
 
 **Opening the library**: swipe down on album art, BottomBar library button, or keyboard `↓` / `L`. Opening library closes the queue drawer.
 
-**Filter state** for the library persists to localStorage via `useLocalStorage`. Keys are prefixed `vorbis-player-library-*` (e.g., `vorbis-player-library-search`, `vorbis-player-library-provider-filters`, `vorbis-player-library-genres`). Opening the library from the QAP "Browse Library" button clears these keys before navigating.
+**Recently Played history** is tracked by `useRecentlyPlayedCollections` (`src/hooks/useRecentlyPlayedCollections.ts`). It exposes `history: RecentlyPlayedEntry[]` and `record(ref, name)`. Successful collection loads via `useCollectionLoader.loadCollection` call `record` automatically. History is stored under `vorbis-player-recently-played` (localStorage), capped at 5 entries, deduped by `CollectionRef` key, newest first. The Recently Played section in `LibraryRoute` reads from this hook via `useRecentlyPlayedSection`.
 
-**Recently Played history** is tracked by `useRecentlyPlayedCollections` (`src/hooks/useRecentlyPlayedCollections.ts`). It exposes `history: RecentlyPlayedEntry[]` and `record(ref, name)`. Successful collection loads via `useCollectionLoader.loadCollection` call `record` automatically. History is stored under `vorbis-player-recently-played` (localStorage), capped at 5 entries, deduped by `CollectionRef` key, newest first. `FilterSidebar` renders a "Recently Played" section with up to 5 clickable shortcuts on desktop; the section is hidden when history is empty.
-
-**Mobile library overlay** renders `MobileLibraryBottomBar` (full-width search input + trailing sort dropdown) instead of the provider chip row. Mobile intentionally bypasses `providerFilters` — `ignoreProviderFilters = isMobile` in `useLibraryRoot.ts` ensures items from every enabled provider are always shown. Desktop behavior is unchanged: `FilterSidebar` provides provider chips, sort, genre, and recently-played controls.
+See `docs/features/library.md` for the section taxonomy, sub-route nav, search/filters, context menu, and mini-player chrome.
 
 ## Idle/home routing
 
@@ -44,17 +42,17 @@ When no track is loaded, `PlayerStateRenderer` (`src/components/PlayerStateRende
 | valid `lastSession` + `qapEnabled` | `QuickAccessPanel` (with Resume hero) |
 | valid `lastSession` + `!qapEnabled` | player hydrated via `handleHydrate` (paused) |
 | no/stale session + `qapEnabled` | `QuickAccessPanel` |
-| no/stale session + `!qapEnabled` | `LibraryPage` |
+| no/stale session + `!qapEnabled` | `LibraryRoute` |
 
-QAP is opt-in via the "Quick Access Panel" On/Off control in `VisualEffectsMenu`; preference persists under `vorbis-player-qap-enabled` (default `false`) via `useQapEnabled()`. Clicking "Browse Library" from QAP or Welcome flips a local `libraryOverride` flag — once engaged, the idle view stays on `LibraryPage` for the rest of the session (one-way door).
+QAP is opt-in via the "Quick Access Panel" On/Off control in `VisualEffectsMenu`; preference persists under `vorbis-player-qap-enabled` (default `false`) via `useQapEnabled()`. Clicking "Browse Library" from QAP or Welcome flips a local `libraryOverride` flag — once engaged, the idle view stays on `LibraryRoute` for the rest of the session (one-way door).
 
 **Welcome screen** — `WelcomeScreen` (`src/components/WelcomeScreen/index.tsx`) shows once for new users with a per-provider status summary and context-aware primary CTA (*Connect a provider* when `connectedProviderIds.length === 0`, *Browse your library* otherwise). The dismiss-for-good flag persists via `useWelcomeSeen` (`src/hooks/useWelcomeSeen.ts`) under the `vorbis-player-welcome-seen` localStorage key (default `false`).
 
 **Stale session cutoff** — `isSessionStale(session, now?)` from `src/services/sessionPersistence.ts` returns true when the session is absent, missing `savedAt`, or older than `STALE_SESSION_MS` (30 days). Stale sessions are treated as no session for landing routing and resume affordances.
 
-**Resume hero** — `ResumeHero` (`src/components/QuickAccessPanel/ResumeHero.tsx`) renders at the top of `QuickAccessPanel` (above `PinRing`) when a valid `lastSession` is present; clicking the Resume CTA invokes `onResume` (autoplay). The footer `ResumeCard` is suppressed inside QAP to avoid duplicate affordances; it still renders as the `footer` prop of `LibraryPage` on the idle library route.
+**Resume hero** — `ResumeHero` (`src/components/QuickAccessPanel/ResumeHero.tsx`) renders at the top of `QuickAccessPanel` (above `PinRing`) when a valid `lastSession` is present; clicking the Resume CTA invokes `onResume` (autoplay). On the idle library route, `LibraryRoute` renders its own resume hero from `useResumeSection`.
 
-**Settings gear on idle views** — `SettingsGearButton` (`src/components/SettingsGearButton/index.tsx`) is mounted top-right by `PlayerStateRenderer` on `WelcomeScreen`, idle `LibraryPage`, and `QuickAccessPanel` via the `onOpenSettings` prop, opening the existing `VisualEffectsMenu`. Hidden during loading and error states. The active-player gear continues to live in `BottomBar` / `PlayerControlsSection`.
+**Settings gear on idle views** — `SettingsGearButton` (`src/components/SettingsGearButton/index.tsx`) is mounted top-right by `PlayerStateRenderer` on `WelcomeScreen`, idle `LibraryRoute`, and `QuickAccessPanel` via the `onOpenSettings` prop, opening the existing `VisualEffectsMenu`. Hidden during loading and error states. The active-player gear continues to live in `BottomBar` / `PlayerControlsSection`.
 
 ## Hydrate without autoplay
 

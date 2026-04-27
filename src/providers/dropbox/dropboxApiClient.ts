@@ -2,6 +2,43 @@ import type { DropboxFileEntry, DropboxListFolderResult, CachedLink } from './dr
 import { TEMP_LINK_TTL_MS } from './dropboxCatalogHelpers';
 import type { DropboxAuthAdapter } from './dropboxAuthAdapter';
 
+const DEFAULT_RETRY_AFTER_SECONDS = 5;
+const MAX_RETRY_AFTER_SECONDS = 30;
+
+async function parseRetryAfterSeconds(response: Response): Promise<number> {
+  const header = response.headers.get('retry-after');
+  if (header) {
+    const parsed = Number.parseInt(header, 10);
+    if (Number.isFinite(parsed) && parsed > 0) return parsed;
+  }
+  try {
+    const body = await response.clone().json() as { retry_after?: number };
+    if (typeof body?.retry_after === 'number' && body.retry_after > 0) return body.retry_after;
+  } catch {
+    // 429 body wasn't JSON; fall through to default.
+  }
+  return DEFAULT_RETRY_AFTER_SECONDS;
+}
+
+function sleep(ms: number, signal?: AbortSignal): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (signal?.aborted) {
+      reject(new DOMException('Request aborted', 'AbortError'));
+      return;
+    }
+    const timeout = setTimeout(() => {
+      signal?.removeEventListener('abort', onAbort);
+      resolve();
+    }, ms);
+    const onAbort = () => {
+      clearTimeout(timeout);
+      signal?.removeEventListener('abort', onAbort);
+      reject(new DOMException('Request aborted', 'AbortError'));
+    };
+    signal?.addEventListener('abort', onAbort);
+  });
+}
+
 export class DropboxApiClient {
   private auth: DropboxAuthAdapter;
   private tempLinkCache = new Map<string, CachedLink>();
@@ -39,6 +76,13 @@ export class DropboxApiClient {
         this.auth.reportUnauthorized();
         throw new Error('Dropbox authentication expired');
       }
+    }
+
+    if (response.status === 429) {
+      const retryAfter = await parseRetryAfterSeconds(response);
+      const waitMs = Math.min(Math.max(retryAfter, 1), MAX_RETRY_AFTER_SECONDS) * 1000;
+      await sleep(waitMs, signal);
+      response = await makeRequest(token);
     }
 
     if (!response.ok) {

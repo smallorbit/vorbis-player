@@ -88,6 +88,13 @@ export const theme = {
     popover: {
       background: '#232323',
       border: 'rgba(255, 255, 255, 0.05)'
+    },
+
+    // Context-menu specific overrides
+    // `menu.destructiveText` replaces `colors.error` (#ef4444, 4.18:1) which
+    // fails WCAG AA against the popover background. #f87171 achieves 5.68:1.
+    menu: {
+      destructiveText: '#f87171',
     }
   },
   

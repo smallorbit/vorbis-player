@@ -80,3 +80,6 @@ playwright/capture/.chrome-profile/
 
 # Claude Code sessionkit handoff docs
 .sessionkit/
+
+# Local-only stashes of skills moved out of .claude/skills/ so Claude won't load them
+.skill-backups/

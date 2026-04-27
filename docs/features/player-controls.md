@@ -35,11 +35,11 @@ Central dispatch hub. Composes all sub-hooks and returns a structured API:
 
 ```ts
 return {
-  state: { isLoading, error, selectedPlaylistId, tracks, showLibraryDrawer, isPlaying, playbackPosition },
+  state: { isLoading, error, selectedPlaylistId, tracks, currentView, isPlaying, playbackPosition },
   handlers: {
     loadCollection, playTracksDirectly, handleAddToQueue, queueTracksDirectly,
     handlePlay, handlePause, handleNext, handlePrevious, playTrack,
-    handleOpenLibraryDrawer, handleCloseLibraryDrawer, handleBackToLibrary,
+    handleOpenLibrary, handleCloseLibrary, handleBackToLibrary,
     handleStartRadio, handleRemoveFromQueue, handleReorderQueue,
   },
   radio: { radioState, isRadioAvailable, stopRadio, authExpired, clearAuthExpired, isActive, radioProgress, dismissRadioProgress },

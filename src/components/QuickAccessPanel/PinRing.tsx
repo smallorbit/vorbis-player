@@ -2,8 +2,24 @@ import React, { useCallback } from 'react';
 import type { PlaylistInfo, AlbumInfo } from '@/services/spotify';
 import type { ProviderId } from '@/types/domain';
 import { MAX_PINS } from '@/services/settings/pinnedItemsStorage';
-import { getLikedSongsGradient } from '@/components/PlaylistSelection/playlistUtils';
+import { theme } from '@/styles/theme';
+import { providerRegistry } from '@/providers/registry';
 import { useLongPress } from '@/hooks/useLongPress';
+
+function getLikedSongsGradient(providerId?: string | 'unified'): string {
+  if (providerId === 'unified') {
+    const allProviders = providerRegistry.getAll();
+    const colors = allProviders.map((p) => p.color).filter(Boolean);
+    if (colors.length >= 2) {
+      return `linear-gradient(135deg, ${colors[0]} 0%, ${colors[1]} 100%)`;
+    }
+    const fallback = colors[0] ?? theme.colors.accent;
+    return `linear-gradient(135deg, ${fallback} 0%, ${fallback} 100%)`;
+  }
+  const descriptor = providerId ? providerRegistry.get(providerId as ProviderId) : undefined;
+  const color = descriptor?.color ?? theme.colors.accent;
+  return `linear-gradient(135deg, ${color} 0%, ${color}cc 100%)`;
+}
 import { MosaicThumbnail } from '../MosaicThumbnail';
 import {
   GridSection,

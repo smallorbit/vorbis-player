@@ -48,9 +48,8 @@ src/
 │   ├── PlayerContent.tsx    # Main player layout (centering, responsive sizing)
 │   ├── PlayerStateRenderer.tsx  # Loading/error and library collection selection states
 │   ├── AlbumArt.tsx         # Album artwork with filters & glow effects
-│   ├── PlaylistSelection.tsx    # Playlist/album browser with search/sort/filter/pin
+│   ├── LibraryRoute/        # Sections-first library route (home + sub-routes, search, mini-player)
 │   ├── SpotifyPlayerControls.tsx # Player control interface
-│   ├── LibraryDrawer.tsx    # Full-screen library browser drawer
 │   ├── QueueDrawer.tsx      # Queue (up-next) side drawer (desktop/tablet)
 │   ├── QueueBottomSheet.tsx # Queue bottom sheet (mobile)
 │   ├── QueueTrackList.tsx   # Queue track list (reorder/remove); lazy-loaded by queue surfaces

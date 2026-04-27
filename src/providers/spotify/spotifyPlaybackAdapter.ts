@@ -83,15 +83,6 @@ export class SpotifyPlaybackAdapter implements PlaybackProvider {
     const uri = track.playbackRef.ref;
     const startPositionMs = options?.positionMs;
 
-    // If Spotify's SDK already natively advanced to this track, skip the API call entirely.
-    if (this.playbackSessionActive && !startPositionMs) {
-      const state = await spotifyPlayer.getCurrentState();
-      if (state?.track_window?.current_track?.uri === uri && !state.paused) {
-        logSpotify('Spotify already playing requested track natively, skipping API call');
-        return;
-      }
-    }
-
     if (this.playbackSessionActive) {
       await this.ensurePlaybackReadyFastPath();
     } else {
