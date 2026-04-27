@@ -78,6 +78,7 @@ function renderMenu(propsOverrides: Partial<LibraryContextMenuProps> = {}) {
   const props: LibraryContextMenuProps = {
     request: makeRequest(),
     onClose: vi.fn(),
+    onReturnFocusClose: vi.fn(),
     onPlayCollection: vi.fn(),
     onAddToQueue: vi.fn(),
     onPlayLikedTracks: vi.fn(),
@@ -134,14 +135,14 @@ describe('LibraryContextMenu', () => {
     // #given
     const onPlayNext = vi.fn();
     const onStartRadio = vi.fn();
-    const onClose = vi.fn();
+    const onReturnFocusClose = vi.fn();
 
     // #when
     renderMenu({
       request: makeRequest({ kind: 'playlist' }),
       onPlayNext,
       onStartRadioForCollection: onStartRadio,
-      onClose,
+      onReturnFocusClose,
     });
     fireEvent.click(screen.getByTestId('menu-play-next'));
     fireEvent.click(screen.getByTestId('menu-start-radio'));
@@ -149,7 +150,7 @@ describe('LibraryContextMenu', () => {
     // #then
     expect(onPlayNext).toHaveBeenCalledWith('playlist', 'p1', 'My Playlist', 'spotify');
     expect(onStartRadio).toHaveBeenCalledWith('playlist', 'p1', 'spotify');
-    expect(onClose).toHaveBeenCalledTimes(2);
+    expect(onReturnFocusClose).toHaveBeenCalledTimes(2);
   });
 
   it('shows Pin label when not pinned, Unpin when pinned', () => {
@@ -196,11 +197,11 @@ describe('LibraryContextMenu', () => {
     const tracks: MediaTrack[] = [{ id: 't1' } as MediaTrack];
     mockLoadLiked.mockResolvedValue(tracks);
     const onPlayLikedTracks = vi.fn();
-    const onClose = vi.fn();
+    const onReturnFocusClose = vi.fn();
     renderMenu({
       request: makeRequest({ kind: 'liked', id: 'liked', provider: undefined }),
       onPlayLikedTracks,
-      onClose,
+      onReturnFocusClose,
     });
 
     // #when
@@ -211,7 +212,7 @@ describe('LibraryContextMenu', () => {
     // #then
     expect(mockLoadLiked).toHaveBeenCalledWith('spotify');
     expect(onPlayLikedTracks).toHaveBeenCalledWith(tracks, 'liked-spotify', 'Liked Songs', 'spotify');
-    expect(onClose).toHaveBeenCalled();
+    expect(onReturnFocusClose).toHaveBeenCalled();
   });
 
   it('appends Remove from history for recently-played and dispatches by originalKind', () => {
@@ -251,19 +252,19 @@ describe('LibraryContextMenu', () => {
   it('Play action invokes onPlayCollection for playlist kind', () => {
     // #given
     const onPlayCollection = vi.fn();
-    const onClose = vi.fn();
+    const onReturnFocusClose = vi.fn();
 
     // #when
     renderMenu({
       request: makeRequest({ kind: 'playlist' }),
       onPlayCollection,
-      onClose,
+      onReturnFocusClose,
     });
     fireEvent.click(screen.getByTestId('menu-play'));
 
     // #then
     expect(onPlayCollection).toHaveBeenCalledWith('playlist', 'p1', 'My Playlist', 'spotify');
-    expect(onClose).toHaveBeenCalled();
+    expect(onReturnFocusClose).toHaveBeenCalled();
   });
 
   it('Add to Queue invokes onAddToQueue', () => {
@@ -292,19 +293,19 @@ describe('LibraryContextMenu', () => {
   it('Queue Liked Songs invokes queueLikedFromCollection with collection id/name/provider', () => {
     // #given
     const onQueueLikedTracks = vi.fn();
-    const onClose = vi.fn();
+    const onReturnFocusClose = vi.fn();
 
     // #when
     renderMenu({
       request: makeRequest({ kind: 'playlist' }),
       onQueueLikedTracks,
-      onClose,
+      onReturnFocusClose,
     });
     fireEvent.click(screen.getByTestId('menu-queue-liked'));
 
     // #then
-    expect(mockQueueLikedFromCollection).toHaveBeenCalledWith('p1', 'My Playlist', 'spotify');
-    expect(onClose).toHaveBeenCalled();
+    expect(mockQueueLikedFromCollection).toHaveBeenCalledWith('p1', 'My Playlist', 'spotify', 'playlist');
+    expect(onReturnFocusClose).toHaveBeenCalled();
   });
 
   it('omits Queue Liked Songs when onQueueLikedTracks is not provided', () => {

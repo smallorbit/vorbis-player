@@ -1,4 +1,5 @@
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useMemo, useRef } from 'react';
+import { toast } from 'sonner';
 import { Popover, PopoverAnchor, PopoverContent } from '@/components/ui/popover';
 import { usePinnedItems } from '@/hooks/usePinnedItems';
 import { useRecentlyPlayedCollections } from '@/hooks/useRecentlyPlayedCollections';
@@ -27,6 +28,7 @@ function providerLabel(provider: ProviderId): string {
 export interface LibraryContextMenuProps {
   request: ContextMenuRequest | null;
   onClose: () => void;
+  onReturnFocusClose: () => void;
   onPlayCollection: (
     kind: 'playlist' | 'album',
     id: string,
@@ -57,6 +59,7 @@ export interface LibraryContextMenuProps {
 const LibraryContextMenu: React.FC<LibraryContextMenuProps> = ({
   request,
   onClose,
+  onReturnFocusClose,
   onPlayCollection,
   onAddToQueue,
   onPlayNext,
@@ -75,6 +78,8 @@ const LibraryContextMenu: React.FC<LibraryContextMenuProps> = ({
   const { loadLikedTracks } = useLikedTracksForProvider();
   const { queueLikedFromCollection } = useQueueLikedFromCollection(onQueueLikedTracks);
 
+  const closeReasonRef = useRef<'return' | null>(null);
+
   const albumIdForSaveStatus =
     request?.kind === 'album'
       ? request.id
@@ -89,13 +94,35 @@ const LibraryContextMenu: React.FC<LibraryContextMenuProps> = ({
   const closeAfter = useCallback(
     (fn: () => void | Promise<unknown>): (() => void) =>
       () => {
-        onClose();
+        onReturnFocusClose();
         Promise.resolve(fn()).catch(() => {
-          /* swallow — toast surfaces user-facing errors */
+          toast("Couldn't complete that action. Try again.");
         });
       },
-    [onClose],
+    [onReturnFocusClose],
   );
+
+  const handleMenuKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
+    const items = Array.from(
+      e.currentTarget.querySelectorAll<HTMLButtonElement>('[role="menuitem"]:not(:disabled)'),
+    );
+    if (!items.length) return;
+    const idx = items.indexOf(document.activeElement as HTMLButtonElement);
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      items[(idx + 1) % items.length].focus();
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      items[(idx - 1 + items.length) % items.length].focus();
+    } else if (e.key === 'Home') {
+      e.preventDefault();
+      items[0].focus();
+    } else if (e.key === 'End') {
+      e.preventDefault();
+      items[items.length - 1].focus();
+    }
+  }, []);
 
   const playNextDisabled = !onPlayNext;
   const startRadioDisabled = !onStartRadioForCollection;
@@ -178,7 +205,7 @@ const LibraryContextMenu: React.FC<LibraryContextMenuProps> = ({
       const collectionName = request.name;
       const provider = request.provider;
       actions.onQueueLikedFromCollection = closeAfter(() =>
-        queueLikedFromCollection(collectionId, collectionName, provider),
+        queueLikedFromCollection(collectionId, collectionName, provider, effectiveKind),
       );
     }
 
@@ -239,7 +266,12 @@ const LibraryContextMenu: React.FC<LibraryContextMenuProps> = ({
     <Popover
       open
       onOpenChange={(open) => {
-        if (!open) onClose();
+        if (!open) {
+          const shouldReturn = closeReasonRef.current === 'return';
+          closeReasonRef.current = null;
+          if (shouldReturn) onReturnFocusClose();
+          else onClose();
+        }
       }}
     >
       <PopoverAnchor asChild>
@@ -250,8 +282,23 @@ const LibraryContextMenu: React.FC<LibraryContextMenuProps> = ({
         side="bottom"
         sideOffset={4}
         data-testid="library-context-menu"
+        onEscapeKeyDown={() => {
+          closeReasonRef.current = 'return';
+        }}
+        onOpenAutoFocus={(e) => {
+          e.preventDefault();
+          const container = e.currentTarget as HTMLElement | null;
+          const first = container?.querySelector<HTMLButtonElement>(
+            '[role="menuitem"]:not(:disabled)',
+          );
+          first?.focus();
+        }}
       >
-        <MenuRoot role="menu" aria-label={`Actions for ${request.name}`}>
+        <MenuRoot
+          role="menu"
+          aria-label={`Actions for ${request.name}`}
+          onKeyDown={handleMenuKeyDown}
+        >
           {items.map((item) => (
             <MenuItemButton
               key={item.id}

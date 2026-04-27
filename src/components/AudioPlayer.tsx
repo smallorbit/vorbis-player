@@ -398,6 +398,7 @@ const AudioPlayerComponent = () => {
             onMiniStartRadio={radio.isRadioAvailable ? handlers.handleStartRadio : undefined}
             onPlayNext={undefined}
             onStartRadioForCollection={undefined}
+            onClose={handlers.handleCloseLibrary}
           />
         </Suspense>
       );
@@ -525,6 +526,7 @@ const AudioPlayerComponent = () => {
               onMiniStartRadio={radio.isRadioAvailable ? handlers.handleStartRadio : undefined}
               onPlayNext={undefined}
               onStartRadioForCollection={undefined}
+              onClose={handlers.handleCloseLibrary}
             />
           </Suspense>
         )}

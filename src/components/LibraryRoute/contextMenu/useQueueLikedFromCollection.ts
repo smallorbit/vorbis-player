@@ -1,17 +1,16 @@
 import { useCallback } from 'react';
 import type { MediaTrack, ProviderId } from '@/types/domain';
 import { providerRegistry } from '@/providers/registry';
-import { resolvePlaylistRef } from '@/constants/playlist';
 
 async function fetchLikedTracksForCollection(
   collectionId: string,
   provider: ProviderId,
+  kind: 'playlist' | 'album',
 ): Promise<MediaTrack[]> {
   const descriptor = providerRegistry.get(provider);
   if (!descriptor?.catalog.listTracks || !descriptor.catalog.isTrackSaved) return [];
 
-  const { id, kind } = resolvePlaylistRef(collectionId, provider);
-  const allTracks = await descriptor.catalog.listTracks({ provider, kind, id });
+  const allTracks = await descriptor.catalog.listTracks({ provider, kind, id: collectionId });
 
   const savedResults = await Promise.all(
     allTracks.map((track) => descriptor.catalog.isTrackSaved!(track.id).catch(() => false)),
@@ -25,16 +24,17 @@ export interface UseQueueLikedFromCollectionResult {
     collectionId: string,
     collectionName: string,
     provider: ProviderId,
-  ) => void;
+    kind: 'playlist' | 'album',
+  ) => Promise<void>;
 }
 
 export function useQueueLikedFromCollection(
   onQueueLikedTracks: ((tracks: MediaTrack[], collectionName?: string) => void) | undefined,
 ): UseQueueLikedFromCollectionResult {
   const queueLikedFromCollection = useCallback(
-    (collectionId: string, collectionName: string, provider: ProviderId) => {
-      if (!onQueueLikedTracks) return;
-      void fetchLikedTracksForCollection(collectionId, provider).then((tracks) => {
+    (collectionId: string, collectionName: string, provider: ProviderId, kind: 'playlist' | 'album'): Promise<void> => {
+      if (!onQueueLikedTracks) return Promise.resolve();
+      return fetchLikedTracksForCollection(collectionId, provider, kind).then((tracks) => {
         if (tracks.length > 0) onQueueLikedTracks(tracks, collectionName);
       });
     },

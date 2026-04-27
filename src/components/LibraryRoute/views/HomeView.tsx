@@ -6,7 +6,6 @@ import {
   ResumeSection,
   RecentlyPlayedSection,
   PinnedSection,
-  LikedSection,
   PlaylistsSection,
   AlbumsSection,
 } from '../sections';
@@ -23,7 +22,6 @@ export interface HomeViewProps {
     name: string,
     provider?: ProviderId,
   ) => void;
-  onSelectLiked: (provider?: ProviderId) => void;
   onNavigate: (view: LibraryRouteView) => void;
   onContextMenuRequest?: (req: ContextMenuRequest) => void;
 }
@@ -33,7 +31,6 @@ const HomeView: React.FC<HomeViewProps> = ({
   lastSession,
   onResume,
   onSelectCollection,
-  onSelectLiked,
   onNavigate,
   onContextMenuRequest,
 }) => {
@@ -55,12 +52,6 @@ const HomeView: React.FC<HomeViewProps> = ({
         showProviderBadges={showProviderBadges}
         onSelect={onSelectCollection}
         onSeeAll={() => onNavigate('pinned')}
-        onContextMenuRequest={onContextMenuRequest}
-      />
-      <LikedSection
-        layout={layout}
-        showProviderBadges={showProviderBadges}
-        onSelectLiked={onSelectLiked}
         onContextMenuRequest={onContextMenuRequest}
       />
       <PlaylistsSection

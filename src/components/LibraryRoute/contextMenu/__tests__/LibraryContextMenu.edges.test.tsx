@@ -83,6 +83,7 @@ function renderMenu(propsOverrides: Partial<LibraryContextMenuProps> = {}) {
   const props: LibraryContextMenuProps = {
     request: makeRequest(),
     onClose: vi.fn(),
+    onReturnFocusClose: vi.fn(),
     onPlayCollection: vi.fn(),
     onAddToQueue: vi.fn(),
     onPlayLikedTracks: vi.fn(),
@@ -139,16 +140,16 @@ describe('LibraryContextMenu edges', () => {
         togglePinPlaylist,
         togglePinAlbum,
       });
-      const onClose = vi.fn();
+      const onReturnFocusClose = vi.fn();
 
       // #when
-      renderMenu({ request: makeRequest({ kind: 'playlist', id: 'p42' }), onClose });
+      renderMenu({ request: makeRequest({ kind: 'playlist', id: 'p42' }), onReturnFocusClose });
       fireEvent.click(screen.getByTestId('menu-toggle-pin'));
 
       // #then
       expect(togglePinPlaylist).toHaveBeenCalledWith('p42');
       expect(togglePinAlbum).not.toHaveBeenCalled();
-      expect(onClose).toHaveBeenCalledTimes(1);
+      expect(onReturnFocusClose).toHaveBeenCalledTimes(1);
     });
 
     it('album togglePin click invokes togglePinAlbum with request.id', () => {
@@ -227,16 +228,18 @@ describe('LibraryContextMenu edges', () => {
   });
 
   describe('outside-click / Escape close pathway', () => {
-    it('calls onClose when Escape is pressed (Radix onOpenChange(false))', () => {
-      // #given — Radix Popover closes on Escape via the document keydown handler
+    it('calls onReturnFocusClose (not onClose) when Escape is pressed', () => {
+      // #given — Radix Popover closes on Escape; onEscapeKeyDown sets the return-focus flag
       const onClose = vi.fn();
-      renderMenu({ onClose });
+      const onReturnFocusClose = vi.fn();
+      renderMenu({ onClose, onReturnFocusClose });
 
       // #when
       fireEvent.keyDown(document, { key: 'Escape' });
 
       // #then
-      expect(onClose).toHaveBeenCalled();
+      expect(onReturnFocusClose).toHaveBeenCalled();
+      expect(onClose).not.toHaveBeenCalled();
     });
   });
 });

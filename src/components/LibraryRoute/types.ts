@@ -34,6 +34,8 @@ export interface ContextMenuRequest {
   provider?: ProviderId;
   name: string;
   anchorRect: DOMRect;
+  /** The CardButton element that triggered the menu; used to return focus on keyboard dismiss. */
+  triggerElement?: HTMLElement;
   /** When kind === 'recently-played', the underlying collection kind so the menu can dispatch the right schema. */
   originalKind?: 'playlist' | 'album' | 'liked';
   /** When kind === 'recently-played', back-pointer used by the "Remove from history" action. */
