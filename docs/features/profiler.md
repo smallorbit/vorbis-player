@@ -48,7 +48,6 @@ Note: `recordContextUpdate` and `recordOperation` are available on the collector
 | `BackgroundVisualizer` | `AudioPlayer.tsx` |
 | `QueueBottomSheet` | `PlayerContent/DrawerOrchestrator.tsx` |
 | `QueueDrawer` | `PlayerContent/DrawerOrchestrator.tsx` |
-| `LibraryDrawer` | `PlayerContent/DrawerOrchestrator.tsx` |
 | `SpotifyPlayerControls` | `PlayerContent/PlayerControlsSection.tsx` |
 | `BottomBar` | `PlayerContent/PlayerControlsSection.tsx` |
 | `AlbumArt` | `PlayerContent/AlbumArtSection.tsx` |

@@ -24,13 +24,13 @@ The queue drawers (`QueueDrawer`, `QueueBottomSheet`) render `QueueSkeleton` (`s
 
 ## Full-screen library
 
-`LibraryRoute` (`src/components/LibraryRoute/`) is the full-screen library surface, composed of section rows (Resume hero, Recently Played, Pinned, Liked, Playlists, Albums). It is rendered via `React.lazy` from `AudioPlayer.tsx` (active-player library overlay) and `PlayerStateRenderer.tsx` (idle route). `state.currentView: 'player' | 'library'` swaps via `handleOpenLibrary` / `handleCloseLibrary`.
+The library browser opens as `LibraryRoute` (a full-screen view, `src/components/LibraryRoute/`), not a drawer. `currentView === 'library'` in `usePlayerLogic` state gates the active-player overlay; `handleOpenLibrary` / `handleCloseLibrary` toggle it. `LibraryRoute` is rendered via `React.lazy` from `AudioPlayer.tsx` (active-player overlay, when `currentView === 'library'`) and from `PlayerStateRenderer.tsx` (idle route).
 
 **Opening the library**: swipe down on album art, BottomBar library button, or keyboard `↓` / `L`. Opening library closes the queue drawer.
 
-**Recently Played history** is tracked by `useRecentlyPlayedCollections` (`src/hooks/useRecentlyPlayedCollections.ts`). It exposes `history: RecentlyPlayedEntry[]` and `record(ref, name)`. Successful collection loads via `useCollectionLoader.loadCollection` call `record` automatically. History is stored under `vorbis-player-recently-played` (localStorage), capped at 5 entries, deduped by `CollectionRef` key, newest first. `LibraryRoute` surfaces this data via `useRecentlyPlayedSection` as a top-level row.
+**Recently Played history** is tracked by `useRecentlyPlayedCollections` (`src/hooks/useRecentlyPlayedCollections.ts`). It exposes `history: RecentlyPlayedEntry[]` and `record(ref, name)`. Successful collection loads via `useCollectionLoader.loadCollection` call `record` automatically. History is stored under `vorbis-player-recently-played` (localStorage), capped at 5 entries, deduped by `CollectionRef` key, newest first. The Recently Played section in `LibraryRoute` reads from this hook via `useRecentlyPlayedSection`.
 
-`LibraryRoute` handles mobile/desktop layouts via its own `MobileLayout` / `DesktopLayout` styled-components in `src/components/LibraryRoute/styled.ts`.
+See `docs/features/library.md` for the section taxonomy, sub-route nav, search/filters, context menu, and mini-player chrome.
 
 ## Idle/home routing
 

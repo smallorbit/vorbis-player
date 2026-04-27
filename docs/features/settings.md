@@ -128,9 +128,9 @@ export const useQapEnabled = (): [boolean, (value: boolean) => void] => {
 
 ### Behavior
 
-- When QAP is disabled (default): `PlayerStateRenderer` initializes `showLibrary = true`, showing the library browser (`PlaylistSelection`) in the idle/home view.
-- When QAP is enabled: `PlayerStateRenderer` initializes `showLibrary = false`, showing the Quick Access Panel instead.
-- The down-arrow keyboard shortcut routes to either `onOpenQuickAccessPanel` or `onOpenLibraryDrawer` based on `qapEnabled`.
+- When QAP is disabled (default): `PlayerStateRenderer` initializes `currentView = 'library'`, showing the library route (`LibraryRoute`) in the idle/home view.
+- When QAP is enabled: `PlayerStateRenderer` initializes `currentView = 'player'`, showing the Quick Access Panel instead.
+- The down-arrow keyboard shortcut routes to either `onOpenQuickAccessPanel` or `onOpenLibrary` based on `qapEnabled`.
 
 ### Gotcha
 

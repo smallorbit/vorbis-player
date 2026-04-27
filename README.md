@@ -16,7 +16,7 @@ A music player with visualizers and multi-provider support (Spotify, Dropbox), b
 #### Queue drawer
 <img src="public/assets/queue-drawer.png" alt="Vorbis Player - Queue" width="600">
 
-#### Library drawer
+#### Library
 <img src="public/assets/library-drawer.png" alt="Vorbis Player - Library" width="600">
 
 ## Features
