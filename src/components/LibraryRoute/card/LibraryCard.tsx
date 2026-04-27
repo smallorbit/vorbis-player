@@ -3,6 +3,7 @@ import type { ContextMenuRequest, LibraryItemKind } from '../types';
 import type { ProviderId } from '@/types/domain';
 import { useLongPress } from './useLongPress';
 import ProviderIcon from '@/components/ProviderIcon';
+import { useLibraryContextMenuOpen } from '../contextMenu/LibraryContextMenuOpenContext';
 import {
   CardButton,
   ArtWrap,
@@ -51,6 +52,8 @@ const LibraryCard: React.FC<LibraryCardProps> = ({
   onSelect,
   onContextMenuRequest,
 }) => {
+  const openKey = useLibraryContextMenuOpen();
+  const isMenuOpen = openKey === `${kind}:${provider ?? '-'}:${id}`;
   const longPressEnabled = !!onContextMenuRequest;
 
   const fireContextMenu = useCallback(
@@ -76,9 +79,9 @@ const LibraryCard: React.FC<LibraryCardProps> = ({
       if (!onContextMenuRequest) return;
       e.preventDefault();
       const anchor = new DOMRect(e.clientX, e.clientY, 0, 0);
-      fireContextMenu(anchor);
+      onContextMenuRequest?.({ kind, id, provider, name, anchorRect: anchor, triggerElement: e.currentTarget as HTMLElement });
     },
-    [onContextMenuRequest, fireContextMenu],
+    [onContextMenuRequest, kind, id, provider, name],
   );
 
   return (
@@ -86,6 +89,7 @@ const LibraryCard: React.FC<LibraryCardProps> = ({
       type="button"
       $variant={variant}
       data-testid={`library-card-${kind}-${id}`}
+      data-context-menu-open={isMenuOpen || undefined}
       onClick={handleClick}
       onContextMenu={handleContextMenu}
       {...longPressHandlers}

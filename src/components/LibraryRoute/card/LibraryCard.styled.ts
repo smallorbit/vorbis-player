@@ -29,7 +29,8 @@ export const CardButton = styled.button<{ $variant: 'row' | 'grid' }>`
           width: 100%;
         `}
 
-  &:focus-visible {
+  &:focus-visible,
+  &[data-context-menu-open] {
     outline: 2px solid ${theme.colors.primary};
     outline-offset: 2px;
     border-radius: ${theme.borderRadius.lg};

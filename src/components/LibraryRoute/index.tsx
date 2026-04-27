@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { usePlayerSizingContext } from '@/contexts/PlayerSizingContext';
 import { useUnifiedLikedTracks } from '@/hooks/useUnifiedLikedTracks';
 import type { ProviderId, AddToQueueResult, MediaTrack } from '@/types/domain';
@@ -16,6 +16,7 @@ import CommandPalette from './search/CommandPalette';
 import { useLibrarySearch } from './search/useLibrarySearch';
 import { useCommandPaletteShortcut } from './search/useCommandPaletteShortcut';
 import LibraryContextMenu from './contextMenu/LibraryContextMenu';
+import { LibraryContextMenuOpenContext } from './contextMenu/LibraryContextMenuOpenContext';
 
 // LibraryRoute assumes upstream guards have already filtered out cold-start cases:
 // - AudioPlayer.tsx routes to ProviderSetupScreen when needsSetup === true
@@ -139,13 +140,20 @@ const LibraryRoute: React.FC<LibraryRouteProps> = ({
   );
 
   const [contextRequest, setContextRequest] = useState<ContextMenuRequest | null>(null);
+  const triggerRef = useRef<HTMLElement | null>(null);
 
   const handleContextMenuRequest = useCallback((req: ContextMenuRequest) => {
+    triggerRef.current = req.triggerElement ?? null;
     setContextRequest(req);
   }, []);
 
   const handleCloseContextMenu = useCallback(() => {
     setContextRequest(null);
+  }, []);
+
+  const handleReturnFocusClose = useCallback(() => {
+    setContextRequest(null);
+    triggerRef.current?.focus();
   }, []);
 
   const handlePlayCollection = useCallback(
@@ -213,7 +221,12 @@ const LibraryRoute: React.FC<LibraryRouteProps> = ({
     );
   }
 
+  const contextMenuOpenKey = contextRequest
+    ? `${contextRequest.kind}:${contextRequest.provider ?? '-'}:${contextRequest.id}`
+    : null;
+
   return (
+    <LibraryContextMenuOpenContext.Provider value={contextMenuOpenKey}>
     <LibraryRouteRoot>
       <Layout data-testid={layoutTestId}>
         {!isMobile && <SearchBar variant="desktop" search={search} />}
@@ -223,6 +236,7 @@ const LibraryRoute: React.FC<LibraryRouteProps> = ({
       <LibraryContextMenu
         request={contextRequest}
         onClose={handleCloseContextMenu}
+        onReturnFocusClose={handleReturnFocusClose}
         onPlayCollection={handlePlayCollection}
         onAddToQueue={handleAddToQueueAction}
         onPlayNext={onPlayNext}
@@ -249,6 +263,7 @@ const LibraryRoute: React.FC<LibraryRouteProps> = ({
         />
       )}
     </LibraryRouteRoot>
+    </LibraryContextMenuOpenContext.Provider>
   );
 };
 
