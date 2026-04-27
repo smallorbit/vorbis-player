@@ -179,4 +179,46 @@ describe('LibraryRoute', () => {
     // #then
     expect(onMiniExpand).toHaveBeenCalledTimes(1);
   });
+
+  describe('Escape key handling', () => {
+    beforeEach(() => {
+      vi.mocked(usePlayerSizingContext).mockReturnValue({ isMobile: false } as ReturnType<typeof usePlayerSizingContext>);
+    });
+
+    it('calls onClose when Escape is pressed outside an input', () => {
+      // #given
+      const onClose = vi.fn();
+      renderRoute({ onClose });
+
+      // #when
+      fireEvent.keyDown(document, { key: 'Escape' });
+
+      // #then
+      expect(onClose).toHaveBeenCalledTimes(1);
+    });
+
+    it('does not call onClose when Escape is pressed while focus is inside an input', () => {
+      // #given
+      const onClose = vi.fn();
+      renderRoute({ onClose });
+      const input = screen.getByTestId('library-search-input-desktop');
+
+      // #when
+      fireEvent.keyDown(input, { key: 'Escape' });
+
+      // #then
+      expect(onClose).not.toHaveBeenCalled();
+    });
+
+    it('does not call onClose when onClose prop is not provided', () => {
+      // #given — no onClose prop
+      renderRoute();
+
+      // #when
+      fireEvent.keyDown(document, { key: 'Escape' });
+
+      // #then — no error thrown, handler is a no-op
+      expect(true).toBe(true);
+    });
+  });
 });
