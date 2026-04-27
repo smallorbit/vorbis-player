@@ -1,6 +1,7 @@
 ---
 name: explorer
 description: Read-only codebase research — file/symbol location, dependency mapping, file:line citation. Fast, thorough, never invents paths or symbols.
+model: sonnet
 tools: Bash, Glob, Grep, Read, WebFetch, TodoWrite, WebSearch, Skill, LSP, SendMessage, TaskGet, TaskList, TaskUpdate, mcp__plugin_context7_context7__resolve-library-id, mcp__plugin_context7_context7__query-docs, mcp__exa__web_search_exa, mcp__exa__get_code_context_exa, ListMcpResourcesTool, ReadMcpResourceTool, mcp__grep-app__searchGitHub
 ---
 
