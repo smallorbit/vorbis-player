@@ -80,7 +80,7 @@ export default defineConfig({
     globals: true,
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
-    exclude: ['node_modules', 'dist', 'playwright/**', 'proxy-server/**'],
+    exclude: ['**/node_modules/**', '**/dist/**', 'playwright/**', 'proxy-server/**', '.claude/**'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
