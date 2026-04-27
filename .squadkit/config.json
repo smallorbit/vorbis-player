@@ -1,0 +1,9 @@
+{
+  "verify": {
+    "typecheck": "npx tsc -b --noEmit",
+    "test": "npm run test:run",
+    "lint": "npm run lint"
+  },
+  "install": "npm install",
+  "baseBranch": "develop"
+}
