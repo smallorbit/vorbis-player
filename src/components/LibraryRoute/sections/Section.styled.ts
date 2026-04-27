@@ -53,6 +53,7 @@ export const Body = styled.div<{ $layout: 'row' | 'grid' }>`
           overflow-x: auto;
           overflow-y: hidden;
           scroll-snap-type: x proximity;
+          scroll-padding-inline-start: ${theme.spacing.md};
           -webkit-overflow-scrolling: touch;
           scrollbar-width: none;
           &::-webkit-scrollbar {
