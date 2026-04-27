@@ -10,12 +10,17 @@ import { TRANSFER_RETRY_DELAY_MS } from '@/constants/timing';
  * then auto-advances through the rest in shuffled order, breaking UI/audio
  * sync because our subscription expects the linear order.
  *
- * Best-effort: failures are swallowed because shuffle-off is a courtesy,
- * not a precondition for play. A 403 here usually means the user is on
- * Spotify Free (no playback control) — the play call will fail next anyway
- * with a clearer error.
+ * Shuffle state is account-level and persists across tracks; one PUT per
+ * page session is enough to guarantee it stays off for the lifetime of our
+ * playback session. The call is still best-effort (errors are swallowed)
+ * because a 403 here usually means the user is on Spotify Free and the
+ * subsequent play call will fail next with a clearer error.
  */
+let shuffleOffFired = false;
+
 export async function apiSetShuffleOff(deviceId: string): Promise<void> {
+  if (shuffleOffFired) return;
+  shuffleOffFired = true;
   try {
     const token = await spotifyAuth.ensureValidToken();
     await fetch(
@@ -26,6 +31,7 @@ export async function apiSetShuffleOff(deviceId: string): Promise<void> {
       },
     );
   } catch (err) {
+    shuffleOffFired = false;
     logSpotify('apiSetShuffleOff failed: %o', err);
   }
 }
@@ -41,7 +47,7 @@ export async function apiPlayTrack(
 
   logSpotify('Web API play track deviceId=%s queueSize=%d positionMs=%s', deviceId, uris.length, positionMs ?? 0);
 
-  await apiSetShuffleOff(deviceId);
+  apiSetShuffleOff(deviceId);
 
   const response = await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`, {
     method: 'PUT',
@@ -96,7 +102,7 @@ export async function apiPlayContext(
 
   logSpotify('Web API play context uri=%s offset=%s', contextUri, offsetPosition ?? '(none)');
 
-  await apiSetShuffleOff(deviceId);
+  apiSetShuffleOff(deviceId);
 
   const response = await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`, {
     method: 'PUT',
@@ -133,7 +139,7 @@ export async function apiPlayPlaylist(
 
   logSpotify('Web API play URIs list length=%d deviceId=%s', uris.length, deviceId);
 
-  await apiSetShuffleOff(deviceId);
+  apiSetShuffleOff(deviceId);
 
   const response = await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${deviceId}`, {
     method: 'PUT',

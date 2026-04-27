@@ -166,14 +166,6 @@ export function usePlayerLogic() {
 
   useAutoAdvance({ tracks, currentTrackIndex, playTrack, enabled: true, currentPlaybackProviderRef: drivingProviderRef });
 
-  // Notify the driving provider when the queue changes
-  useEffect(() => {
-    const drivingId = drivingProviderRef.current;
-    if (!drivingId || tracks.length === 0) return;
-    const descriptor = providerRegistry.get(drivingId);
-    descriptor?.playback.onQueueChanged?.(tracks, currentTrackIndex);
-  }, [tracks, currentTrackIndex, drivingProviderRef]);
-
   // Progressively load missing thumbnails for Dropbox tracks in the queue
   useQueueThumbnailLoader(tracks, setTracks);
 
