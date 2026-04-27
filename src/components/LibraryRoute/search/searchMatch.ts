@@ -5,9 +5,14 @@ export function normalizeQuery(q: string): string {
   return q.trim().toLowerCase();
 }
 
-export function matchesQuery(item: { name: string }, normalizedQuery: string): boolean {
+export function matchesQuery(
+  item: { name: string; ownerName?: string | null },
+  normalizedQuery: string,
+): boolean {
   if (!normalizedQuery) return true;
-  return item.name.toLowerCase().includes(normalizedQuery);
+  if (item.name.toLowerCase().includes(normalizedQuery)) return true;
+  if (item.ownerName && item.ownerName.toLowerCase().includes(normalizedQuery)) return true;
+  return false;
 }
 
 export function passesProviderFilter(
