@@ -1,6 +1,5 @@
 import styled from 'styled-components';
 import { theme } from '@/styles/theme';
-import { MINI_PLAYER_HEIGHT_MOBILE } from '../MiniPlayer/MiniPlayer.styled';
 
 export const SearchBarRoot = styled.div<{ $variant: 'mobile' | 'desktop' }>`
   position: sticky;
@@ -15,7 +14,7 @@ export const SearchBarRoot = styled.div<{ $variant: 'mobile' | 'desktop' }>`
 
   ${({ $variant }) =>
     $variant === 'mobile'
-      ? `bottom: ${MINI_PLAYER_HEIGHT_MOBILE}px; border-top: 1px solid ${theme.colors.borderSubtle};`
+      ? `bottom: 0; border-top: 1px solid ${theme.colors.borderSubtle};`
       : `top: 0; border-bottom: 1px solid ${theme.colors.borderSubtle};`}
 `;
 
