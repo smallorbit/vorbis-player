@@ -15,6 +15,7 @@ export interface RecentlyPlayedEntry {
 export interface UseRecentlyPlayedCollectionsResult {
   history: RecentlyPlayedEntry[];
   record: (ref: CollectionRef, name: string, imageUrl?: string | null) => void;
+  remove: (ref: CollectionRef) => void;
 }
 
 export function useRecentlyPlayedCollections(): UseRecentlyPlayedCollectionsResult {
@@ -32,5 +33,13 @@ export function useRecentlyPlayedCollections(): UseRecentlyPlayedCollectionsResu
     [setHistory]
   );
 
-  return { history, record };
+  const remove = useCallback(
+    (ref: CollectionRef) => {
+      const key = collectionRefToKey(ref);
+      setHistory((prev) => prev.filter((entry) => collectionRefToKey(entry.ref) !== key));
+    },
+    [setHistory],
+  );
+
+  return { history, record, remove };
 }

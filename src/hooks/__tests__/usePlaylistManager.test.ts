@@ -140,8 +140,9 @@ describe('usePlaylistManager', () => {
   it('calls redirectToAuth on auth error', async () => {
     // #given - mock auth failure
     const { spotifyPlayer } = await import('@/services/spotifyPlayer');
+    const { AuthExpiredError } = await import('@/providers/errors');
     vi.mocked(spotifyPlayer.initialize).mockRejectedValueOnce(
-      new Error('User must be authenticated before initializing player')
+      new AuthExpiredError('spotify')
     );
 
     const { result } = renderHook(() => usePlaylistManager(defaultProps));

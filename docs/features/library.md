@@ -1,13 +1,13 @@
 # Library Browser System
 
+> **Note:** This document predates the library redesign and partially describes legacy structure (`LibraryPage` / `useLibraryRoot`) that no longer exists. The current surface is `LibraryRoute` (`src/components/LibraryRoute/`) with section data hooks under `src/components/LibraryRoute/hooks/`. A full rewrite covering the new route is tracked as a follow-up issue.
+
 ## Overview
 
 The library browser shows the user's music collections (playlists, albums, liked songs) across all connected providers. It appears in two contexts:
 
 1. **Idle/home view** -- rendered inline by `PlayerStateRenderer` when no track is loaded.
-2. **Full-screen library** -- `LibraryPage` opened during playback via swipe-down on album art, BottomBar library button, `L` key, or `Down Arrow`.
-
-Both contexts render `LibraryPage` (default export from `src/components/PlaylistSelection/index.tsx`).
+2. **Full-screen library** -- `LibraryRoute` opened during playback via swipe-down on album art, BottomBar library button, `L` key, or `Down Arrow`.
 
 ## LibraryPage
 
@@ -279,20 +279,14 @@ QAP preference is stored in `localStorage` key `vorbis-player-qap-enabled` (defa
 
 | File | Role |
 |------|------|
-| `src/components/PlaylistSelection/index.tsx` | `LibraryPage` component — full-screen library view |
-| `src/components/PlaylistSelection/LibraryContext.tsx` | Four sub-context definitions and providers |
-| `src/components/PlaylistSelection/LibraryMainContent.tsx` | Tabs, grid rendering, mobile/desktop bottom bar branching |
-| `src/components/PlaylistSelection/MobileLibraryBottomBar.tsx` | Mobile search + sort bar (replaces provider chip row on mobile) |
-| `src/components/PlaylistSelection/LibraryControls.tsx` | Search, sort, and filter controls |
-| `src/components/PlaylistSelection/useLibraryBrowsing.ts` | Browse state management (view mode, search, sort, filters) with localStorage persistence |
-| `src/components/PlaylistSelection/useLibraryRoot.ts` | Assembles all four context values for `LibraryPage` |
-| `src/components/PlaylistSelection/useItemActions.tsx` | Context menu actions (play, queue, delete) |
-| `src/components/PlaylistSelection/PlaylistGrid.tsx` | Playlist card grid |
-| `src/components/PlaylistSelection/AlbumGrid.tsx` | Album card grid |
-| `src/components/PlaylistSelection/LikedSongsCard.tsx` | Liked songs entry card |
-| `src/components/PlaylistSelection/AllMusicCard.tsx` | Dropbox "All Music" entry card with shuffle branding |
-| `src/components/LibraryDrawer/FilterSidebar.tsx` | Collection type toggle and provider checkboxes (desktop only) |
-| `src/components/AudioPlayer.tsx` | Renders `LibraryPage` lazily when `showLibrary` is true |
+| `src/components/LibraryRoute/` | Library route shell + section composition |
+| `src/components/LibraryRoute/hooks/` | Section data hooks (Resume, Recently Played, Pinned, Liked, Playlists, Albums) |
+| `src/components/LibraryRoute/sections/` | Section row components rendered inside the route |
+| `src/components/LibraryRoute/views/` | HomeView, SeeAllView, SearchResultsView |
+| `src/components/LibraryRoute/MiniPlayer/` | Sticky bottom mini-player shown while in library |
+| `src/components/LibraryRoute/contextMenu/` | Per-card context menu (long-press / right-click) |
+| `src/components/LibraryRoute/search/` | Search bar + command palette |
+| `src/components/AudioPlayer.tsx` | Renders `LibraryRoute` lazily when `showLibrary` is true |
 | `src/components/PlayerStateRenderer.tsx` | Idle view routing (QAP vs library) |
 | `src/components/QuickAccessPanel/ResumeCard.tsx` | Session resume card |
 | `src/contexts/PinnedItemsContext.tsx` | Pin state and IndexedDB persistence |

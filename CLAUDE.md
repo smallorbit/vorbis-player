@@ -86,7 +86,7 @@ src/
 ## Terminology
 
 - **Queue** — tracks scheduled to play next (reorder/remove in `QueueDrawer` / `QueueBottomSheet`; list UI in `QueueTrackList.tsx`).
-- **Playlist** — a library **collection** from a provider (Spotify playlist, Dropbox folder-as-album, Liked Songs, etc.), browsed via `PlaylistSelection` and loaded through `usePlaylistManager` / catalog APIs.
+- **Playlist** — a library **collection** from a provider (Spotify playlist, Dropbox folder-as-album, Liked Songs, etc.), browsed via `LibraryRoute` and loaded through `usePlaylistManager` / catalog APIs.
 
 ## Tech Stack
 

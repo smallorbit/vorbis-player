@@ -10,6 +10,7 @@
 import { useCallback } from 'react';
 import { getPlaylistTracks, getAlbumTracks, getLikedSongs, spotifyAuth, getLargestImage } from '@/services/spotify';
 import { spotifyPlayer } from '@/services/spotifyPlayer';
+import { AuthExpiredError } from '@/providers/errors';
 import { isAlbumId, extractAlbumId, LIKED_SONGS_ID } from '@/constants/playlist';
 import { shuffleArray } from '@/utils/shuffleArray';
 import type { ProviderId, MediaTrack } from '@/types/domain';
@@ -218,7 +219,7 @@ export const useSpotifyPlaylistManager = ({
       return tracksToPlay;
 
     } catch (err: unknown) {
-      if (err instanceof Error && err.message.includes('authenticated')) {
+      if (err instanceof AuthExpiredError) {
         setError("Authentication expired. Redirecting to Spotify login...");
         spotifyAuth.redirectToAuth();
       } else {
