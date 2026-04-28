@@ -1,7 +1,7 @@
 import { test as base } from '@playwright/test';
 
 export const test = base.extend({
-  page: async ({ page }, use) => {
+  page: async ({ page }, runFixture) => {
     await page.addInitScript(() => {
       localStorage.setItem('spotify_token', JSON.stringify({
         access_token: 'fake-e2e-token',
@@ -10,7 +10,7 @@ export const test = base.extend({
       }));
       localStorage.setItem('vorbis-player-active-provider', JSON.stringify('spotify'));
     });
-    await use(page);
+    await runFixture(page);
   },
 });
 

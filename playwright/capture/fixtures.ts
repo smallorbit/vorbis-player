@@ -23,7 +23,7 @@ function loadAuthState(): AuthState | null {
 }
 
 export const test = base.extend<{ capturePage: Page }>({
-  capturePage: async ({}, use, testInfo) => {
+  capturePage: async (_fixtures, runFixture, testInfo) => {
     const playlist = process.env.PLAYLIST || DEFAULT_PLAYLIST;
     const useCdp = process.env.USE_CDP === '1';
     const headless = process.env.HEADLESS === '1';
@@ -90,7 +90,7 @@ export const test = base.extend<{ capturePage: Page }>({
       };
     }
 
-    await use(page);
+    await runFixture(page);
     await cleanup();
   },
 });
