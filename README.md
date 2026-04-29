@@ -78,6 +78,78 @@ For radio recommendations, also set `VITE_LASTFM_API_KEY` in `.env.local` (see `
 |----------|-------|
 | Vercel | **[Deploy to Vercel](./docs/deployment/deploy-to-vercel.md)** |
 
+## Testing & Playwright
+
+Unit and integration tests run with Vitest (`npm run test:run`).
+
+End-to-end and visual-capture tests run with Playwright against the **mock provider** — a drop-in replacement for Spotify and Dropbox that serves catalog from committed JSON snapshots and plays bundled audio. No real credentials, no browser login, no SDK required.
+
+### Running Playwright tests
+
+```bash
+npm run test:e2e          # run all specs
+npm run test:e2e:ui       # Playwright UI mode
+```
+
+### Visual capture (screenshots / snapshots)
+
+```bash
+npm run capture           # both desktop + mobile
+npm run capture:desktop
+npm run capture:mobile
+```
+
+The dev server starts automatically with `VITE_MOCK_PROVIDER=true`. No login required.
+
+### Mock provider
+
+Activate in any environment:
+
+```bash
+VITE_MOCK_PROVIDER=true npm run dev   # env var
+# or open http://127.0.0.1:3000?provider=mock
+```
+
+The mock provider is tree-shaken from production builds — it only activates when `VITE_MOCK_PROVIDER=true` at build time or the `?provider=mock` URL parameter is present.
+
+### Curating fixtures
+
+Vorbis Player's Playwright tests run against committed JSON snapshots of a real
+Spotify/Dropbox library. Because each user's library is different, you curate which
+playlists/albums get captured before generating the snapshot.
+
+1. **Enumerate** your library (read-only):
+   ```
+   npm run dev &
+   npm run snapshot:spotify -- --list
+   npm run snapshot:dropbox -- --list
+   ```
+   Each command logs you in interactively (Chromium pops up; log in once and press
+   Enter when ready) and prints a list of available playlists / albums / folders
+   with their IDs.
+
+2. **Edit `playwright/fixtures/data/snapshot.config.json`** to include the IDs and
+   folder paths you want to curate. Aim for a small, representative set — about
+   5–10 playlists, a few saved albums, and the most-played folders. The committed
+   file ships with empty arrays so you can populate from scratch.
+
+3. **Generate the snapshot** (writes JSON + downloads art):
+   ```
+   npm run snapshot:spotify
+   npm run snapshot:dropbox
+   ```
+   Personal data is anonymized automatically (display name, owner names, profile
+   picture). Public catalog data (album/track/artist names, durations, ISRCs) is
+   preserved verbatim.
+
+4. **Review the diff** in `playwright/fixtures/data/*.json` and
+   `public/playwright-fixtures/art/` and commit. The PR review is the human gate
+   for any PII that slips past the automatic scrubber.
+
+Re-curate any time your library changes substantially. Re-running with the same
+`scripts/snapshot/seed.json` produces deterministic diffs (only changed content
+shows up).
+
 ## Tech Stack
 
 React 18 · TypeScript 5 · Vite 6 · styled-components · Tailwind CSS · shadcn/ui · Radix UI · Vitest
