@@ -231,8 +231,7 @@ async function runSnapshot(): Promise<void> {
     }
 
     const anonymizedId = anon.anonymizePlaylistId(playlistPath);
-    const anonymizedName = anon.nextPlaylistName();
-    fieldsScrubbedCount += 2; // playlist id + name
+    fieldsScrubbedCount += 1; // playlist id
 
     // Populate trackIds from the JSON's tracks array, cross-referencing the global tracks map.
     const trackIds = parsed.tracks.filter((id) => {
@@ -246,7 +245,7 @@ async function runSnapshot(): Promise<void> {
 
     playlists.push({
       id: anonymizedId,
-      name: anonymizedName,
+      name: parsed.name,
       description: SCRUBBED.EMPTY_STRING,
       ownerName: SCRUBBED.DISPLAY_NAME,
       trackCount: parsed.tracks.length,

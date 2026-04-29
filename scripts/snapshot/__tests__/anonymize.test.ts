@@ -57,13 +57,6 @@ describe('createAnonymizationContext', () => {
     expect(a).not.toBe(b);
   });
 
-  it('nextPlaylistName returns 1-based sequential names', () => {
-    const ctx = createAnonymizationContext(SEED);
-    expect(ctx.nextPlaylistName()).toBe('My Playlist 1');
-    expect(ctx.nextPlaylistName()).toBe('My Playlist 2');
-    expect(ctx.nextPlaylistName()).toBe('My Playlist 3');
-  });
-
   it('anonymized IDs have correct prefix format', () => {
     const ctx = createAnonymizationContext(SEED);
     const id = ctx.anonymizePlaylistId('test-id');

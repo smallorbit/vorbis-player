@@ -206,8 +206,7 @@ async function runSnapshot(): Promise<void> {
     const trackItems = await client.getPlaylistTracks(playlistId, spotifyCfg.playlistTrackLimit);
 
     const anonymizedId = anon.anonymizePlaylistId(playlistId);
-    const anonymizedName = anon.nextPlaylistName();
-    fieldsScrubbedCount += 2; // playlist id + name
+    fieldsScrubbedCount += 1; // playlist id
 
     let playlistImage: SnapshotImage | undefined;
     const rawImage = pickBestImage(playlistData.images);
@@ -245,7 +244,7 @@ async function runSnapshot(): Promise<void> {
 
     playlists.push({
       id: anonymizedId,
-      name: anonymizedName,
+      name: playlistData.name,
       description: SCRUBBED.EMPTY_STRING,
       ownerName: SCRUBBED.DISPLAY_NAME,
       trackCount: playlistData.tracks.total,
