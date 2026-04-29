@@ -4,9 +4,12 @@ import { providerRegistry } from '@/providers/registry';
 import type { ProviderId } from '@/types/domain';
 import type { ProviderDescriptor, ProviderRegistry } from '@/types/providers';
 
-// Ensure providers are registered before the context is used
+// Ensure providers are registered before the context is used.
+// Real providers register on import. Mock provider self-guards and overrides real registrations
+// when active (VITE_MOCK_PROVIDER=true env var OR ?provider=mock URL param).
 import '@/providers/spotify/spotifyProvider';
 import '@/providers/dropbox/dropboxProvider'; // conditionally registers if VITE_DROPBOX_CLIENT_ID is set
+import '@/providers/mock/mockProvider'; // registers AFTER real providers; overrides when mock is active
 import { AUTH_STATE_CHANGED_EVENT } from '@/hooks/usePopupAuth';
 import { DROPBOX_AUTH_ERROR_EVENT } from '@/providers/dropbox/dropboxAuthAdapter';
 import { AUTH_COMPLETE_EVENT, SESSION_EXPIRED_EVENT } from '@/constants/events';

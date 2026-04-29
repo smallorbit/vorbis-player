@@ -1,0 +1,21 @@
+{
+  "meta": {
+    "schemaVersion": 1,
+    "generatedAt": "2026-04-29T00:00:00.000Z",
+    "generatorVersion": "0.0.0",
+    "provider": "dropbox",
+    "anonymizationSeed": "0000000000000000"
+  },
+  "user": {
+    "displayName": "Anonymous User",
+    "hashedId": "user_00000000"
+  },
+  "tracks": {},
+  "playlists": [],
+  "albums": [],
+  "likedTrackIds": [],
+  "pins": {
+    "playlistIds": [],
+    "albumIds": []
+  }
+}
