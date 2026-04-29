@@ -93,8 +93,12 @@ function pickBestImage(
   images: Array<{ url: string; width: number | null; height: number | null }>,
 ): SnapshotImage | undefined {
   if (images.length === 0) return undefined;
-  const sorted = [...images].sort((a, b) => (b.width ?? 0) - (a.width ?? 0));
-  const img = sorted[0];
+  // Prefer the smallest image >= 200px wide. Spotify typically offers
+  // 640/300/64 per album; 300px keeps library cards sharp without bloating
+  // the committed fixture (640px → 27 MB across ~240 albums; 300px → ~5 MB).
+  // Fall back to the largest available if none meet the floor.
+  const ascending = [...images].sort((a, b) => (a.width ?? 0) - (b.width ?? 0));
+  const img = ascending.find((i) => (i.width ?? 0) >= 200) ?? ascending[ascending.length - 1];
   if (!img) return undefined;
   const result: SnapshotImage = { url: img.url };
   if (img.width != null) result.width = img.width;
