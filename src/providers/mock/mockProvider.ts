@@ -6,6 +6,7 @@ import { MockAuthAdapter } from './mockAuthAdapter';
 import { MockCatalogAdapter } from './mockCatalogAdapter';
 import { MockPlaybackAdapter } from './mockPlaybackAdapter';
 import { seedPinsFromSnapshots } from './pinSeeder';
+import { installMockTestApi } from './test-control';
 import { assertProviderSnapshot } from '../../../playwright/fixtures/data/snapshot.types';
 import spotifySnapshotJson from '../../../playwright/fixtures/data/spotify-snapshot.json' with { type: 'json' };
 import dropboxSnapshotJson from '../../../playwright/fixtures/data/dropbox-snapshot.json' with { type: 'json' };
@@ -74,3 +75,10 @@ providerRegistry.register(spotifyDescriptor);
 providerRegistry.register(dropboxDescriptor);
 
 void seedPinsFromSnapshots(spotifySnapshotJson.pins, dropboxSnapshotJson.pins);
+
+installMockTestApi({
+  spotifyCatalog: spotifyDescriptor.catalog as MockCatalogAdapter,
+  dropboxCatalog: dropboxDescriptor.catalog as MockCatalogAdapter,
+  spotifyPlayback: spotifyDescriptor.playback as MockPlaybackAdapter,
+  dropboxPlayback: dropboxDescriptor.playback as MockPlaybackAdapter,
+});
