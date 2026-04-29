@@ -14,6 +14,13 @@ import {
 } from '@/utils/queueTrackMirror';
 import { trkSummary } from './playerLogicUtils';
 
+const ADD_TO_QUEUE_ERROR_ID = 'qap-add-queue-error';
+const ADD_TO_QUEUE_DUP_ID = 'qap-add-queue-dup';
+const ADD_TO_QUEUE_EMPTY_ID = 'qap-add-queue-empty';
+const ADD_TO_QUEUE_ERROR_MSG = "Couldn't add to queue. Try again.";
+const ADD_TO_QUEUE_DUP_MSG = 'Already in your queue.';
+const ADD_TO_QUEUE_EMPTY_MSG = 'This collection is empty.';
+
 interface UseQueueManagementProps {
   trackOps: Pick<TrackOperations, 'setTracks' | 'setOriginalTracks' | 'setCurrentTrackIndex' | 'mediaTracksRef'>;
   tracks: MediaTrack[];
@@ -62,21 +69,21 @@ export function useQueueManagement({
         mediaTracksRef.current.length,
       );
 
+      const targetDescriptor = provider ? getDescriptor(provider) : activeDescriptor;
+      const targetProviderId = provider ?? activeDescriptor?.id;
+
+      if (!targetDescriptor || !targetProviderId) {
+        toast(ADD_TO_QUEUE_ERROR_MSG, { id: ADD_TO_QUEUE_ERROR_ID });
+        return null;
+      }
+
       if (isQueueEmpty) {
         logQueue('handleAddToQueue — queue empty, delegating to loadCollection');
         const loaded = await loadCollection(playlistId, provider, collectionName);
         if (loaded > 0) {
           return { added: loaded, collectionName };
         }
-        toast("Couldn't add to queue. Try again.", { id: 'qap-add-queue-error' });
-        return null;
-      }
-
-      const targetDescriptor = provider ? getDescriptor(provider) : activeDescriptor;
-      const targetProviderId = provider ?? activeDescriptor?.id;
-
-      if (!targetDescriptor || !targetProviderId) {
-        toast("Couldn't add to queue. Try again.", { id: 'qap-add-queue-error' });
+        toast(ADD_TO_QUEUE_EMPTY_MSG, { id: ADD_TO_QUEUE_EMPTY_ID });
         return null;
       }
 
@@ -94,7 +101,7 @@ export function useQueueManagement({
         }
 
         if (uniqueNewTracks.length === 0) {
-          toast('Already in your queue.', { id: 'qap-add-queue-dup' });
+          toast(ADD_TO_QUEUE_DUP_MSG, { id: ADD_TO_QUEUE_DUP_ID });
           return null;
         }
 
@@ -116,7 +123,7 @@ export function useQueueManagement({
         return { added: uniqueNewTracks.length, collectionName };
       } catch (err) {
         console.error('[Queue] Failed to add to queue:', err);
-        toast("Couldn't add to queue. Try again.", { id: 'qap-add-queue-error' });
+        toast(ADD_TO_QUEUE_ERROR_MSG, { id: ADD_TO_QUEUE_ERROR_ID });
         return null;
       }
     },
@@ -202,7 +209,10 @@ export function useQueueManagement({
       const existingIds = new Set(tracksRef.current.map((t) => t.id));
       const uniqueNewTracks = newTracks.filter((t) => !existingIds.has(t.id));
 
-      if (uniqueNewTracks.length === 0) return null;
+      if (uniqueNewTracks.length === 0) {
+        toast(ADD_TO_QUEUE_DUP_MSG, { id: ADD_TO_QUEUE_DUP_ID });
+        return null;
+      }
 
       logQueue(
         'queueTracksDirectly — appending %d tracks. Before: tracks=%d, mediaRef=%d',
