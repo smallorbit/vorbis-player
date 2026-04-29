@@ -25,8 +25,13 @@ describe('assertNoTokenLeak', () => {
     expect(() => assertNoTokenLeak(dirty)).toThrow(/Bearer/i);
   });
 
-  it('catches Stripe-style live key prefix', () => {
+  it('catches Stripe-style live key prefix at start of value', () => {
     const dirty = CLEAN_SNAPSHOT + '"s' + 'k_live_someApiKeyValue"';
+    expect(() => assertNoTokenLeak(dirty)).toThrow(/Stripe/i);
+  });
+
+  it('catches Stripe-style live key prefix mid-value', () => {
+    const dirty = CLEAN_SNAPSHOT + '"prefix-s' + 'k_live_someApiKeyValue"';
     expect(() => assertNoTokenLeak(dirty)).toThrow(/Stripe/i);
   });
 

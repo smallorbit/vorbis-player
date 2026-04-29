@@ -13,35 +13,38 @@
  * Spotify/Dropbox library. Because each user's library is different, you curate which
  * playlists/albums get captured before generating the snapshot.
  *
- * 1. Enumerate your library (read-only):
+ * 1. **Enumerate** your library (read-only):
  *    npm run dev &
  *    npm run snapshot:spotify -- --list
  *    npm run snapshot:dropbox -- --list
  *    Each command logs you in interactively (Chromium pops up; log in once and press
- *    Enter when ready) and prints a list of available playlists / albums / folders.
+ *    Enter when ready) and prints a list of available playlists / albums / folders
+ *    with their IDs.
  *
- * 2. Edit playwright/fixtures/data/snapshot.config.json to include the IDs you want to
- *    curate. Aim for a small, representative set — about 5–10 playlists, a few saved
- *    albums. The committed file ships with empty arrays so you can populate from scratch.
+ * 2. **Edit `playwright/fixtures/data/snapshot.config.json`** to include the IDs and
+ *    folder paths you want to curate. Aim for a small, representative set — about
+ *    5–10 playlists, a few saved albums, and the most-played folders. The committed
+ *    file ships with empty arrays so you can populate from scratch.
  *
- * 3. Generate the snapshot (writes JSON + downloads art):
+ * 3. **Generate the snapshot** (writes JSON + downloads art):
  *    npm run snapshot:spotify
  *    npm run snapshot:dropbox
  *    Personal data is anonymized automatically (display name, owner names, profile
  *    picture). Public catalog data (album/track/artist names, durations, ISRCs) is
  *    preserved verbatim.
  *
- * 4. Review the diff in playwright/fixtures/data/*.json and public/playwright-fixtures/art/
- *    and commit. The PR review is the human gate for any PII that slips past the scrubber.
+ * 4. **Review the diff** in `playwright/fixtures/data/*.json` and
+ *    `public/playwright-fixtures/art/` and commit. The PR review is the human gate
+ *    for any PII that slips past the automatic scrubber.
  *
  * Re-curate any time your library changes substantially. Re-running with the same
- * scripts/snapshot/seed.json produces deterministic diffs (only changed content shows up).
+ * `scripts/snapshot/seed.json` produces deterministic diffs (only changed content
+ * shows up).
  * ------------------------------------------------------------------
  */
 
-import { readFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { writeFileSync } from 'node:fs';
 
 import { assertProviderSnapshot, SNAPSHOT_SCHEMA_VERSION } from '../playwright/fixtures/data/snapshot.types.ts';
 import type {
@@ -86,7 +89,9 @@ async function checkDevServer(): Promise<void> {
   }
 }
 
-function pickBestImage(images: Array<{ url: string; width: number | null; height: number | null }>): SnapshotImage | undefined {
+function pickBestImage(
+  images: Array<{ url: string; width: number | null; height: number | null }>,
+): SnapshotImage | undefined {
   if (images.length === 0) return undefined;
   const sorted = [...images].sort((a, b) => (b.width ?? 0) - (a.width ?? 0));
   const img = sorted[0];
@@ -97,10 +102,7 @@ function pickBestImage(images: Array<{ url: string; width: number | null; height
   return result;
 }
 
-function trackFromRaw(
-  raw: RawSpotifyTrack,
-  artUrl: string | undefined,
-): SnapshotTrack | null {
+function trackFromRaw(raw: RawSpotifyTrack, artUrl: string | undefined): SnapshotTrack | null {
   if (!raw.track || !raw.track.id) return null;
   // After guard: raw.track.id is narrowed to string (non-null, non-empty).
   const trackId = raw.track.id;
@@ -185,31 +187,18 @@ async function runSnapshot(): Promise<void> {
   let artCached = 0;
   let fieldsScrubbedCount = 0;
 
-  // Collect all image URLs to download
-  const imageUrlQueue: Array<{ url: string; onResolved: (localUrl: string) => void }> = [];
+  // 1 for user.id scrub
+  fieldsScrubbedCount += 1;
 
-  const resolveImages = async () => {
-    for (const { url, onResolved } of imageUrlQueue) {
-      const localUrl = await art.download(url);
-      const wasNew = !localUrl.includes('cache-hit');
-      if (wasNew) artDownloaded++; else artCached++;
-      onResolved(localUrl);
-    }
-  };
-
-  // Helper to download art immediately and track counts
-  const downloadArt = async (imageUrl: string): Promise<string> => {
-    const before = artDownloaded + artCached;
-    const localUrl = await art.download(imageUrl);
-    const after = artDownloaded + artCached;
-    if (after > before) {
-      // Check file exists vs just returned (rough heuristic: new download happened)
-      artDownloaded++;
+  async function downloadArt(imageUrl: string): Promise<string> {
+    const { url, cacheHit } = await art.download(imageUrl);
+    if (cacheHit) {
+      artCached += 1;
     } else {
-      artCached++;
+      artDownloaded += 1;
     }
-    return localUrl;
-  };
+    return url;
+  }
 
   // Playlists
   for (const playlistId of spotifyCfg.playlistIds) {
@@ -218,13 +207,16 @@ async function runSnapshot(): Promise<void> {
 
     const anonymizedId = anon.anonymizePlaylistId(playlistId);
     const anonymizedName = anon.nextPlaylistName();
-    fieldsScrubbedCount += 2; // id and name
+    fieldsScrubbedCount += 2; // playlist id + name
 
     let playlistImage: SnapshotImage | undefined;
     const rawImage = pickBestImage(playlistData.images);
     if (rawImage) {
-      const localUrl = await art.download(rawImage.url);
-      playlistImage = { url: localUrl, ...(rawImage.width ? { width: rawImage.width, height: rawImage.height } : {}) };
+      const localUrl = await downloadArt(rawImage.url);
+      playlistImage = {
+        url: localUrl,
+        ...(rawImage.width != null ? { width: rawImage.width, height: rawImage.height } : {}),
+      };
     }
 
     warnPersonalName('playlist.owner.display_name', playlistData.owner.display_name ?? '');
@@ -232,20 +224,20 @@ async function runSnapshot(): Promise<void> {
     const trackIds: string[] = [];
     for (const item of trackItems) {
       if (!item.track || !item.track.id) {
-        skippedTracks++;
+        skippedTracks += 1;
         continue;
       }
       const albumImageRaw = pickBestImage(item.track.album.images);
       let artUrl: string | undefined;
       if (albumImageRaw) {
-        artUrl = await art.download(albumImageRaw.url);
+        artUrl = await downloadArt(albumImageRaw.url);
       }
       const track = trackFromRaw(item, artUrl);
-      if (!track) { skippedTracks++; continue; }
-
-      if (tracks[track.id]) {
-        // Idempotent: same track referenced by multiple playlists — OK
-      } else {
+      if (!track) {
+        skippedTracks += 1;
+        continue;
+      }
+      if (!tracks[track.id]) {
         tracks[track.id] = track;
       }
       trackIds.push(track.id);
@@ -270,8 +262,11 @@ async function runSnapshot(): Promise<void> {
     const albumImageRaw = pickBestImage(albumData.images);
     let albumImage: SnapshotImage | undefined;
     if (albumImageRaw) {
-      const localUrl = await art.download(albumImageRaw.url);
-      albumImage = { url: localUrl, ...(albumImageRaw.width ? { width: albumImageRaw.width, height: albumImageRaw.height } : {}) };
+      const localUrl = await downloadArt(albumImageRaw.url);
+      albumImage = {
+        url: localUrl,
+        ...(albumImageRaw.width != null ? { width: albumImageRaw.width, height: albumImageRaw.height } : {}),
+      };
     }
 
     warnPersonalName('album.name', albumData.name);
@@ -309,27 +304,35 @@ async function runSnapshot(): Promise<void> {
   // Liked tracks
   const likedItems = await client.getLikedTracks(spotifyCfg.likedTracks.limit);
   for (const item of likedItems) {
-    if (!item.track || !item.track.id) { skippedTracks++; continue; }
+    if (!item.track || !item.track.id) {
+      skippedTracks += 1;
+      continue;
+    }
     const albumImageRaw = pickBestImage(item.track.album.images);
     let artUrl: string | undefined;
     if (albumImageRaw) {
-      artUrl = await art.download(albumImageRaw.url);
+      artUrl = await downloadArt(albumImageRaw.url);
     }
     const track = trackFromRaw(item, artUrl);
-    if (!track) { skippedTracks++; continue; }
+    if (!track) {
+      skippedTracks += 1;
+      continue;
+    }
     if (!tracks[track.id]) tracks[track.id] = track;
     likedTrackIds.push(track.id);
   }
 
   // Pin remap (D17): original playlist IDs → anonymized synthetic IDs
-  const anonymizedPinPlaylistIds = spotifyCfg.pins.playlistIds.map((id) => {
-    const mapped = anon.anonymizePlaylistId(id);
-    if (!playlists.find((p) => p.id === mapped)) {
-      process.stderr.write(`[WARN] Pin id ${id} not found in captured snapshot — removing.\n`);
-      return null;
-    }
-    return mapped;
-  }).filter((id): id is string => id !== null);
+  const anonymizedPinPlaylistIds = spotifyCfg.pins.playlistIds
+    .map((id) => {
+      const mapped = anon.anonymizePlaylistId(id);
+      if (!playlists.find((p) => p.id === mapped)) {
+        process.stderr.write(`[WARN] Pin id ${id} not found in captured snapshot — removing.\n`);
+        return null;
+      }
+      return mapped;
+    })
+    .filter((id): id is string => id !== null);
 
   // Album pins: kept verbatim since album IDs are public catalog data
   const validPinAlbumIds = spotifyCfg.pins.albumIds.filter((id) => {
@@ -371,11 +374,6 @@ async function runSnapshot(): Promise<void> {
   assertNoTokenLeak(serialized);
 
   writeFileSync(OUTPUT_PATH, serialized);
-
-  // Resolve all queued images (in parallel download approach they'd be resolved here; above we did them inline)
-  void resolveImages;
-  void imageUrlQueue;
-  void downloadArt;
 
   console.log('\n  Snapshot written to', OUTPUT_PATH);
   console.log(`  Playlists: ${playlists.length}`);

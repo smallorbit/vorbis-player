@@ -13,30 +13,33 @@
  * Spotify/Dropbox library. Because each user's library is different, you curate which
  * playlists/albums get captured before generating the snapshot.
  *
- * 1. Enumerate your library (read-only):
+ * 1. **Enumerate** your library (read-only):
  *    npm run dev &
  *    npm run snapshot:spotify -- --list
  *    npm run snapshot:dropbox -- --list
  *    Each command logs you in interactively (Chromium pops up; log in once and press
- *    Enter when ready) and prints a list of available playlists / albums / folders.
+ *    Enter when ready) and prints a list of available playlists / albums / folders
+ *    with their IDs.
  *
- * 2. Edit playwright/fixtures/data/snapshot.config.json to include the IDs and folder
- *    paths you want to curate. Aim for a small, representative set — about 5–10
- *    playlists, a few saved albums, and the most-played folders. The committed file
- *    ships with empty arrays so you can populate from scratch.
+ * 2. **Edit `playwright/fixtures/data/snapshot.config.json`** to include the IDs and
+ *    folder paths you want to curate. Aim for a small, representative set — about
+ *    5–10 playlists, a few saved albums, and the most-played folders. The committed
+ *    file ships with empty arrays so you can populate from scratch.
  *
- * 3. Generate the snapshot (writes JSON + downloads art):
+ * 3. **Generate the snapshot** (writes JSON + downloads art):
  *    npm run snapshot:spotify
  *    npm run snapshot:dropbox
  *    Personal data is anonymized automatically (display name, owner names, profile
  *    picture). Public catalog data (album/track/artist names, durations, ISRCs) is
  *    preserved verbatim.
  *
- * 4. Review the diff in playwright/fixtures/data/*.json and public/playwright-fixtures/art/
- *    and commit. The PR review is the human gate for any PII that slips past the scrubber.
+ * 4. **Review the diff** in `playwright/fixtures/data/*.json` and
+ *    `public/playwright-fixtures/art/` and commit. The PR review is the human gate
+ *    for any PII that slips past the automatic scrubber.
  *
  * Re-curate any time your library changes substantially. Re-running with the same
- * scripts/snapshot/seed.json produces deterministic diffs (only changed content shows up).
+ * `scripts/snapshot/seed.json` produces deterministic diffs (only changed content
+ * shows up).
  * ------------------------------------------------------------------
  */
 
@@ -90,7 +93,7 @@ function warnPersonalName(field: string, value: string): void {
 
 interface SavedPlaylistJson {
   name?: string;
-  tracks?: unknown[];
+  tracks?: string[];
 }
 
 async function checkDevServer(): Promise<void> {
@@ -147,9 +150,8 @@ async function runSnapshot(): Promise<void> {
   const albums: SnapshotAlbum[] = [];
   const likedTrackIds: string[] = [];
 
-  const skippedTracks = 0;
   let skippedUnsupportedFormat = 0;
-  let fieldsScrubbedCount = 0;
+  let fieldsScrubbedCount = 1; // user.account_id
 
   // Folders → albums
   for (const folderPath of dropboxCfg.folderPaths) {
@@ -162,7 +164,7 @@ async function runSnapshot(): Promise<void> {
       if (!isAudioFile(entry.name)) {
         const lower = entry.name.toLowerCase();
         const hasExt = lower.lastIndexOf('.') > lower.lastIndexOf('/');
-        if (hasExt) skippedUnsupportedFormat++;
+        if (hasExt) skippedUnsupportedFormat += 1;
         continue;
       }
       const dir = parentDir(entry.path_lower);
@@ -230,7 +232,17 @@ async function runSnapshot(): Promise<void> {
 
     const anonymizedId = anon.anonymizePlaylistId(playlistPath);
     const anonymizedName = anon.nextPlaylistName();
-    fieldsScrubbedCount += 2;
+    fieldsScrubbedCount += 2; // playlist id + name
+
+    // Populate trackIds from the JSON's tracks array, cross-referencing the global tracks map.
+    const trackIds = parsed.tracks.filter((id) => {
+      if (typeof id !== 'string') return false;
+      if (!tracks[id]) {
+        process.stderr.write(`[INFO] Playlist ${playlistPath} references track ${id} not in captured folders — skipping track.\n`);
+        return false;
+      }
+      return true;
+    });
 
     playlists.push({
       id: anonymizedId,
@@ -239,7 +251,7 @@ async function runSnapshot(): Promise<void> {
       ownerName: SCRUBBED.DISPLAY_NAME,
       trackCount: parsed.tracks.length,
       revision: null,
-      trackIds: [],
+      trackIds,
     });
   }
 
@@ -257,20 +269,23 @@ async function runSnapshot(): Promise<void> {
         }
       }
     } catch {
-      // Likes file missing or malformed — not fatal
-      process.stderr.write(`[INFO] Likes file not found or invalid at ${dropboxCfg.likesFilePath} — skipping.\n`);
+      process.stderr.write(
+        `[INFO] Likes file not found or invalid at ${dropboxCfg.likesFilePath} — skipping.\n`,
+      );
     }
   }
 
   // Pin remap
-  const anonymizedPinPlaylistIds = dropboxCfg.pins.playlistIds.map((id) => {
-    const mapped = anon.anonymizePlaylistId(id);
-    if (!playlists.find((p) => p.id === mapped)) {
-      process.stderr.write(`[WARN] Pin id ${id} not found in captured snapshot — removing.\n`);
-      return null;
-    }
-    return mapped;
-  }).filter((id): id is string => id !== null);
+  const anonymizedPinPlaylistIds = dropboxCfg.pins.playlistIds
+    .map((id) => {
+      const mapped = anon.anonymizePlaylistId(id);
+      if (!playlists.find((p) => p.id === mapped)) {
+        process.stderr.write(`[WARN] Pin id ${id} not found in captured snapshot — removing.\n`);
+        return null;
+      }
+      return mapped;
+    })
+    .filter((id): id is string => id !== null);
 
   const validPinAlbumIds = dropboxCfg.pins.albumIds.filter((id) => {
     const found = albums.find((a) => a.id === id);
@@ -317,8 +332,8 @@ async function runSnapshot(): Promise<void> {
   console.log(`  Playlists: ${playlists.length}`);
   console.log(`  Tracks:    ${Object.keys(tracks).length}`);
   console.log(`  Liked:     ${likedTrackIds.length}`);
-  console.log(`  Skipped:   ${skippedTracks} null tracks, ${skippedUnsupportedFormat} unsupported formats`);
-  console.log(`  Scrubbed:  ${fieldsScrubbedCount} fields (playlist names/ids, user id)`);
+  console.log(`  Skipped:   ${skippedUnsupportedFormat} unsupported audio formats`);
+  console.log(`  Scrubbed:  ${fieldsScrubbedCount} fields (playlist names/ids, user account_id)`);
   console.log();
 }
 

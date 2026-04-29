@@ -53,6 +53,14 @@ describe('runListSpotify', () => {
     expect(playlistLines[1]).toContain('Zen Music');
   });
 
+  it('uses a single tab between id and the rest of the line', async () => {
+    await runListSpotify(makeClient());
+    const pl1Line = stdout.find((l) => l.includes('Acoustic'));
+    // Single tab between id and name+count — no second tab before the count
+    expect(pl1Line).toMatch(/- pl1\t/);
+    expect(pl1Line).not.toMatch(/pl1\t.*\t/);
+  });
+
   it('includes track count and followers in playlist lines', async () => {
     await runListSpotify(makeClient());
     const line = stdout.find((l) => l.includes('Acoustic'));

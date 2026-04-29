@@ -2,12 +2,19 @@ import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
+export interface ArtDownloadResult {
+  /** Web-root-relative URL to use in SnapshotImage.url. */
+  url: string;
+  /** True if the file already existed on disk (cache hit); false if downloaded now. */
+  cacheHit: boolean;
+}
+
 export interface ArtDownloader {
   /**
-   * Returns the web-root-relative URL for the given image.
+   * Downloads art from originalUrl to targetDir and returns the local URL.
    * Idempotent: same originalUrl → same local filename → no re-download if file exists.
    */
-  download(originalUrl: string, signal?: AbortSignal): Promise<string>;
+  download(originalUrl: string, signal?: AbortSignal): Promise<ArtDownloadResult>;
 }
 
 function extFromContentType(contentType: string): string {
@@ -22,17 +29,16 @@ export function createArtDownloader(targetDir: string, seed: string): ArtDownloa
   mkdirSync(targetDir, { recursive: true });
 
   return {
-    async download(originalUrl: string, signal?: AbortSignal): Promise<string> {
+    async download(originalUrl: string, signal?: AbortSignal): Promise<ArtDownloadResult> {
       const hash = createHash('sha1')
         .update(seed + ':' + originalUrl)
         .digest('hex')
         .slice(0, 16);
 
-      // Probe existing files — check for any extension variant.
       for (const ext of ['jpg', 'png', 'webp', 'gif']) {
         const candidate = join(targetDir, `${hash}.${ext}`);
         if (existsSync(candidate)) {
-          return `/playwright-fixtures/art/${hash}.${ext}`;
+          return { url: `/playwright-fixtures/art/${hash}.${ext}`, cacheHit: true };
         }
       }
 
@@ -49,7 +55,7 @@ export function createArtDownloader(targetDir: string, seed: string): ArtDownloa
       const buffer = Buffer.from(await response.arrayBuffer());
       writeFileSync(destPath, buffer);
 
-      return `/playwright-fixtures/art/${filename}`;
+      return { url: `/playwright-fixtures/art/${filename}`, cacheHit: false };
     },
   };
 }

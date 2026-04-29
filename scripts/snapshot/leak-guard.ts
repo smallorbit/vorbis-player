@@ -4,9 +4,9 @@
 // HTTP auth scheme prefix
 const BEARER_RE = new RegExp('B' + 'earer ');
 
-// Stripe-style API key prefixes
-const SK_LIVE_RE = new RegExp('"s' + 'k_live');
-const SK_TEST_RE = new RegExp('"s' + 'k_test');
+// Stripe-style API key prefixes (no leading-quote requirement — catches mid-value occurrences too)
+const SK_LIVE_RE = new RegExp('s' + 'k_live');
+const SK_TEST_RE = new RegExp('s' + 'k_test');
 
 // Long base64/token-length strings (>80 chars)
 const LONG_B64_RE = /[A-Za-z0-9+/=_-]{80,}/;
