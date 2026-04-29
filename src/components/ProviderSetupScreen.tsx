@@ -321,13 +321,11 @@ export default function ProviderSetupScreen({ onOpenSettings, onOpenLibrary }: P
   // The active provider is surfaced first even if it isn't in enabledProviderIds —
   // otherwise a user who disabled their active provider after its session expired
   // would see a "reconnect" card for a provider they weren't trying to use.
-  const expiredProviders = useMemo(() => {
-    const inEnabled = providers.filter(p => enabledProviderIds.includes(p.id));
-    if (activeDescriptor && !enabledProviderIds.includes(activeDescriptor.id)) {
-      return [activeDescriptor, ...inEnabled];
-    }
-    return inEnabled;
-  }, [providers, enabledProviderIds, activeDescriptor]);
+  const inEnabledProviders = providers.filter(p => enabledProviderIds.includes(p.id));
+  const expiredProviders =
+    activeDescriptor && !enabledProviderIds.includes(activeDescriptor.id)
+      ? [activeDescriptor, ...inEnabledProviders]
+      : inEnabledProviders;
 
   return (
     <Wrapper>
