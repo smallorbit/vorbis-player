@@ -1,8 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
+import { toast } from 'sonner';
 import { useQueueManagement } from '../useQueueManagement';
 import { makeTrack } from '@/test/fixtures';
 import type { MediaTrack } from '@/types/domain';
+
+vi.mock('sonner', () => ({
+  toast: vi.fn(),
+}));
 
 function makeMediaTrack(id: string): MediaTrack {
   return {
@@ -35,6 +40,7 @@ describe('useQueueManagement', () => {
     mockGetDescriptor = vi.fn();
     mockActiveDescriptor = { id: 'spotify' };
     mediaTracksRef = { current: [] };
+    vi.mocked(toast).mockClear();
   });
 
   it('handleRemoveFromQueue does nothing when index equals currentTrackIndex', () => {
@@ -264,5 +270,147 @@ describe('useQueueManagement', () => {
     expect(mockSetOriginalTracks).toHaveBeenCalled();
     expect(response).toEqual({ added: 2, collectionName: undefined });
     expect(mockSetCurrentTrackIndex).not.toHaveBeenCalled();
+  });
+
+  it('handleAddToQueue toasts the empty-collection message when loadCollection returns 0', async () => {
+    // #given — empty queue, descriptor present, but loadCollection yields nothing
+    mockHandlePlaylistSelect.mockResolvedValue(0);
+
+    const { result } = renderHook(() =>
+      useQueueManagement({
+        tracks: [],
+        currentTrackIndex: 0,
+        shuffleEnabled: false,
+        trackOps: { setTracks: mockSetTracks, setOriginalTracks: mockSetOriginalTracks, setCurrentTrackIndex: mockSetCurrentTrackIndex, mediaTracksRef },
+        loadCollection: mockHandlePlaylistSelect,
+        handleBackToLibrary: mockHandleBackToLibrary,
+        activeDescriptor: mockActiveDescriptor,
+        getDescriptor: mockGetDescriptor,
+      })
+    );
+
+    // #when
+    const response = await act(async () => result.current.handleAddToQueue('empty_playlist'));
+
+    // #then
+    expect(response).toBeNull();
+    expect(toast).toHaveBeenCalledWith('This collection is empty.', { id: 'qap-add-queue-empty' });
+  });
+
+  it('handleAddToQueue toasts the failure message when no descriptor resolves', async () => {
+    // #given — no active descriptor and no resolvable provider
+    const { result } = renderHook(() =>
+      useQueueManagement({
+        tracks: [makeTrack({ id: 'a' })],
+        currentTrackIndex: 0,
+        shuffleEnabled: false,
+        trackOps: { setTracks: mockSetTracks, setOriginalTracks: mockSetOriginalTracks, setCurrentTrackIndex: mockSetCurrentTrackIndex, mediaTracksRef },
+        loadCollection: mockHandlePlaylistSelect,
+        handleBackToLibrary: mockHandleBackToLibrary,
+        activeDescriptor: undefined,
+        getDescriptor: mockGetDescriptor,
+      })
+    );
+
+    // #when
+    const response = await act(async () => result.current.handleAddToQueue('playlist_id'));
+
+    // #then
+    expect(response).toBeNull();
+    expect(toast).toHaveBeenCalledWith("Couldn't add to queue. Try again.", { id: 'qap-add-queue-error' });
+    expect(mockSetTracks).not.toHaveBeenCalled();
+  });
+
+  it('handleAddToQueue toasts the duplicate message when every fetched track is already queued', async () => {
+    // #given — queue already contains every track listTracks will return
+    mediaTracksRef.current = [makeMediaTrack('1'), makeMediaTrack('2')];
+    const tracks = [makeTrack({ id: '1' }), makeTrack({ id: '2' })];
+    const mockCatalog = {
+      listTracks: vi.fn().mockResolvedValue([makeMediaTrack('1'), makeMediaTrack('2')]),
+    };
+    mockActiveDescriptor.catalog = mockCatalog;
+
+    const { result } = renderHook(() =>
+      useQueueManagement({
+        tracks,
+        currentTrackIndex: 0,
+        shuffleEnabled: false,
+        trackOps: { setTracks: mockSetTracks, setOriginalTracks: mockSetOriginalTracks, setCurrentTrackIndex: mockSetCurrentTrackIndex, mediaTracksRef },
+        loadCollection: mockHandlePlaylistSelect,
+        handleBackToLibrary: mockHandleBackToLibrary,
+        activeDescriptor: mockActiveDescriptor,
+        getDescriptor: mockGetDescriptor,
+      })
+    );
+
+    // #when
+    const response = await act(async () => result.current.handleAddToQueue('playlist_id'));
+
+    // #then
+    expect(response).toBeNull();
+    expect(toast).toHaveBeenCalledWith('Already in your queue.', { id: 'qap-add-queue-dup' });
+    expect(mockSetTracks).not.toHaveBeenCalled();
+  });
+
+  it('handleAddToQueue toasts the failure message when listTracks throws', async () => {
+    // #given — non-empty queue, descriptor whose catalog rejects
+    mediaTracksRef.current = [makeMediaTrack('1')];
+    const tracks = [makeTrack({ id: '1' })];
+    const mockCatalog = {
+      listTracks: vi.fn().mockRejectedValue(new Error('boom')),
+    };
+    mockActiveDescriptor.catalog = mockCatalog;
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    const { result } = renderHook(() =>
+      useQueueManagement({
+        tracks,
+        currentTrackIndex: 0,
+        shuffleEnabled: false,
+        trackOps: { setTracks: mockSetTracks, setOriginalTracks: mockSetOriginalTracks, setCurrentTrackIndex: mockSetCurrentTrackIndex, mediaTracksRef },
+        loadCollection: mockHandlePlaylistSelect,
+        handleBackToLibrary: mockHandleBackToLibrary,
+        activeDescriptor: mockActiveDescriptor,
+        getDescriptor: mockGetDescriptor,
+      })
+    );
+
+    // #when
+    const response = await act(async () => result.current.handleAddToQueue('playlist_id'));
+
+    // #then
+    expect(response).toBeNull();
+    expect(toast).toHaveBeenCalledWith("Couldn't add to queue. Try again.", { id: 'qap-add-queue-error' });
+    errorSpy.mockRestore();
+  });
+
+  it('queueTracksDirectly toasts the duplicate message when every track is already queued', () => {
+    // #given — queue already contains every incoming track
+    mediaTracksRef.current = [makeMediaTrack('1'), makeMediaTrack('2')];
+    const tracks = [makeTrack({ id: '1' }), makeTrack({ id: '2' })];
+
+    const { result } = renderHook(() =>
+      useQueueManagement({
+        tracks,
+        currentTrackIndex: 0,
+        shuffleEnabled: false,
+        trackOps: { setTracks: mockSetTracks, setOriginalTracks: mockSetOriginalTracks, setCurrentTrackIndex: mockSetCurrentTrackIndex, mediaTracksRef },
+        loadCollection: mockHandlePlaylistSelect,
+        handleBackToLibrary: mockHandleBackToLibrary,
+        activeDescriptor: mockActiveDescriptor,
+        getDescriptor: mockGetDescriptor,
+      })
+    );
+
+    // #when
+    let response: ReturnType<typeof result.current.queueTracksDirectly> = null;
+    act(() => {
+      response = result.current.queueTracksDirectly([makeMediaTrack('1'), makeMediaTrack('2')], 'Liked');
+    });
+
+    // #then
+    expect(response).toBeNull();
+    expect(toast).toHaveBeenCalledWith('Already in your queue.', { id: 'qap-add-queue-dup' });
+    expect(mockSetTracks).not.toHaveBeenCalled();
   });
 });
