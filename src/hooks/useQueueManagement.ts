@@ -1,4 +1,5 @@
 import { useCallback, useRef } from 'react';
+import { toast } from 'sonner';
 import type { AddToQueueResult, MediaTrack, ProviderId } from '@/types/domain';
 import type { ProviderDescriptor } from '@/types/providers';
 import type { TrackOperations } from '@/types/trackOperations';
@@ -67,13 +68,17 @@ export function useQueueManagement({
         if (loaded > 0) {
           return { added: loaded, collectionName };
         }
+        toast("Couldn't add to queue. Try again.", { id: 'qap-add-queue-error' });
         return null;
       }
 
       const targetDescriptor = provider ? getDescriptor(provider) : activeDescriptor;
       const targetProviderId = provider ?? activeDescriptor?.id;
 
-      if (!targetDescriptor || !targetProviderId) return null;
+      if (!targetDescriptor || !targetProviderId) {
+        toast("Couldn't add to queue. Try again.", { id: 'qap-add-queue-error' });
+        return null;
+      }
 
       try {
         const catalog = targetDescriptor.catalog;
@@ -88,7 +93,10 @@ export function useQueueManagement({
           logQueue('handleAddToQueue — deduped: %d → %d tracks', newMediaTracks.length, uniqueNewTracks.length);
         }
 
-        if (uniqueNewTracks.length === 0) return null;
+        if (uniqueNewTracks.length === 0) {
+          toast('Already in your queue.', { id: 'qap-add-queue-dup' });
+          return null;
+        }
 
         // Append to existing queue
         logQueue(
@@ -108,6 +116,7 @@ export function useQueueManagement({
         return { added: uniqueNewTracks.length, collectionName };
       } catch (err) {
         console.error('[Queue] Failed to add to queue:', err);
+        toast("Couldn't add to queue. Try again.", { id: 'qap-add-queue-error' });
         return null;
       }
     },
