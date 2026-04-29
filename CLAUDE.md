@@ -62,6 +62,10 @@ npm run lint           # Lint
 npm run test           # Watch mode
 npm run test:run       # Run once
 npm run test:coverage  # Coverage
+npm run test:e2e       # Playwright specs
+npm run capture        # Visual capture (desktop + mobile)
+npm run snapshot:spotify   # Regenerate Spotify fixture snapshot
+npm run snapshot:dropbox   # Regenerate Dropbox fixture snapshot
 npm run deploy         # Deploy to production
 npm run deploy:preview # Deploy preview
 ```
@@ -113,6 +117,12 @@ Optional (enables radio recommendations):
 VITE_LASTFM_API_KEY="your_lastfm_api_key"
 ```
 
+Optional (activates mock provider for dev/test; tree-shaken from prod):
+
+```
+VITE_MOCK_PROVIDER="true"
+```
+
 Vite dev server: host `127.0.0.1`, port `3000` (required for Spotify OAuth).
 Path alias: `@/` → `./src/` (e.g. `import { x } from '@/hooks/usePlayerState'`).
 
@@ -127,7 +137,58 @@ Path alias: `@/` → `./src/` (e.g. `import { x } from '@/hooks/usePlayerState'`
 
 ## Testing
 
+### Unit / integration (Vitest)
+
 Run with `npm run test:run`. Tests are colocated with source files in `__tests__/` subdirectories. Verify actual behavior, not mock implementations. See `docs/testing.md` for test utilities (`src/test/`) and the BDD `// #given / #when / #then` comment convention.
+
+### Playwright (end-to-end + visual capture)
+
+All Playwright work runs against the **mock provider** — no credentials, no browser login, no Spotify SDK.
+
+```bash
+npm run test:e2e       # run specs
+npm run capture        # visual capture (desktop + mobile)
+```
+
+The mock provider (`src/providers/mock/`) serves catalog from `playwright/fixtures/data/spotify-snapshot.json` and `dropbox-snapshot.json` and plays bundled audio. Activate manually with `VITE_MOCK_PROVIDER=true npm run dev` or `?provider=mock` URL param.
+
+### Curating fixtures
+
+Vorbis Player's Playwright tests run against committed JSON snapshots of a real
+Spotify/Dropbox library. Because each user's library is different, you curate which
+playlists/albums get captured before generating the snapshot.
+
+1. **Enumerate** your library (read-only):
+   ```
+   npm run dev &
+   npm run snapshot:spotify -- --list
+   npm run snapshot:dropbox -- --list
+   ```
+   Each command logs you in interactively (Chromium pops up; log in once and press
+   Enter when ready) and prints a list of available playlists / albums / folders
+   with their IDs.
+
+2. **Edit `playwright/fixtures/data/snapshot.config.json`** to include the IDs and
+   folder paths you want to curate. Aim for a small, representative set — about
+   5–10 playlists, a few saved albums, and the most-played folders. The committed
+   file ships with empty arrays so you can populate from scratch.
+
+3. **Generate the snapshot** (writes JSON + downloads art):
+   ```
+   npm run snapshot:spotify
+   npm run snapshot:dropbox
+   ```
+   Personal data is anonymized automatically (display name, owner names, profile
+   picture). Public catalog data (album/track/artist names, durations, ISRCs) is
+   preserved verbatim.
+
+4. **Review the diff** in `playwright/fixtures/data/*.json` and
+   `public/playwright-fixtures/art/` and commit. The PR review is the human gate
+   for any PII that slips past the automatic scrubber.
+
+Re-curate any time your library changes substantially. Re-running with the same
+`scripts/snapshot/seed.json` produces deterministic diffs (only changed content
+shows up).
 
 ## Keyboard Shortcuts
 
