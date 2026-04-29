@@ -177,7 +177,7 @@
   ],
   "meta": {
     "anonymizationSeed": "56f9157f0c7993deb37285f5207f1574",
-    "generatedAt": "2026-04-29T21:59:49.572Z",
+    "generatedAt": "2026-04-29T22:15:29.940Z",
     "generatorVersion": "0.0.0",
     "provider": "spotify",
     "schemaVersion": 1
@@ -187,6 +187,29 @@
     "playlistIds": []
   },
   "playlists": [
+    {
+      "description": "",
+      "id": "playlist_c14591a5",
+      "image": {
+        "height": 300,
+        "url": "/playwright-fixtures/art/896925e0fd4a7944.jpg",
+        "width": 300
+      },
+      "name": "Demo Mix",
+      "ownerName": "Anonymous User",
+      "revision": "AAAARNd79x/Xwvg6oHPZKoi3iqLEBh7+",
+      "trackCount": 35,
+      "trackIds": [
+        "3S6qD3X5lXJEzzjzfytC5u",
+        "1xbHFCBzdbDX9qOp6FcbtW",
+        "4V0x90QcMh4ZxwHzEWOdtK",
+        "5VIfexo4oPJFXB1I7e2i3B",
+        "1U3BASc885MPCYOzYwOIpO",
+        "5PtEpuVX03k9bOUwilL5EO",
+        "4EGilW7VYfTULk4RENDfJp",
+        "5K10oTBp9GEcLAQ2TC8wsf"
+      ]
+    },
     {
       "description": "",
       "id": "playlist_29c76609",
@@ -235,7 +258,7 @@
       "description": "",
       "id": "playlist_ab69ba76",
       "image": {
-        "url": "/playwright-fixtures/art/de36901d8bed5bcc.jpg"
+        "url": "/playwright-fixtures/art/c3220f82ad6bf9c3.jpg"
       },
       "name": "For testing headphones",
       "ownerName": "Anonymous User",
@@ -798,6 +821,30 @@
       "ref": "spotify:track:1JmRbZclLHgneDrpyA9e3X",
       "trackNumber": 3
     },
+    "1U3BASc885MPCYOzYwOIpO": {
+      "addedAt": 1775365948000,
+      "album": {
+        "id": "6smJTxDxrnxi6fPfFWYSQV",
+        "name": "Eyelid Movies"
+      },
+      "artists": [
+        {
+          "externalUrl": "https://open.spotify.com/artist/1l9d7B8W0IHy3LqWsxP2SH",
+          "name": "Phantogram"
+        }
+      ],
+      "artistsDisplay": "Phantogram",
+      "durationMs": 249066,
+      "externalUrl": "https://open.spotify.com/track/1U3BASc885MPCYOzYwOIpO",
+      "id": "1U3BASc885MPCYOzYwOIpO",
+      "image": {
+        "url": "/playwright-fixtures/art/ec2280cfdb4cd10c.jpg"
+      },
+      "isrc": "USBS50931058",
+      "name": "When I'm Small",
+      "ref": "spotify:track:1U3BASc885MPCYOzYwOIpO",
+      "trackNumber": 2
+    },
     "1kxeWHF9PrCVZHvVskv8lg": {
       "addedAt": 1689361194000,
       "album": {
@@ -894,6 +941,34 @@
       "isrc": "USQX92405785",
       "name": "Noid",
       "ref": "spotify:track:1tnZxHryc2wWtjUZC1LQw5",
+      "trackNumber": 1
+    },
+    "1xbHFCBzdbDX9qOp6FcbtW": {
+      "addedAt": 1775366286000,
+      "album": {
+        "id": "07lYzXVmqUBx3UwxXHdlcU",
+        "name": "Luminara"
+      },
+      "artists": [
+        {
+          "externalUrl": "https://open.spotify.com/artist/5XG0u0GsaiIvBEzznbjdCj",
+          "name": "lxst child"
+        },
+        {
+          "externalUrl": "https://open.spotify.com/artist/2ojS6yIcU29iRfOFEwQnIV",
+          "name": "ØFFalling"
+        }
+      ],
+      "artistsDisplay": "lxst child, ØFFalling",
+      "durationMs": 176013,
+      "externalUrl": "https://open.spotify.com/track/1xbHFCBzdbDX9qOp6FcbtW",
+      "id": "1xbHFCBzdbDX9qOp6FcbtW",
+      "image": {
+        "url": "/playwright-fixtures/art/772732f174724aee.jpg"
+      },
+      "isrc": "QZVEM2568573",
+      "name": "Luminara",
+      "ref": "spotify:track:1xbHFCBzdbDX9qOp6FcbtW",
       "trackNumber": 1
     },
     "1ykwKgmQkeih848JQmDF4C": {
@@ -1380,6 +1455,30 @@
       "ref": "spotify:track:3OqQMDKvkhyBblLYYEHmQR",
       "trackNumber": 1
     },
+    "3S6qD3X5lXJEzzjzfytC5u": {
+      "addedAt": 1775365948000,
+      "album": {
+        "id": "5ydKh3bO3jF6oZWkBrzwpn",
+        "name": "another eternity"
+      },
+      "artists": [
+        {
+          "externalUrl": "https://open.spotify.com/artist/1TtJ8j22Roc24e2Jx3OcU4",
+          "name": "Purity Ring"
+        }
+      ],
+      "artistsDisplay": "Purity Ring",
+      "durationMs": 217201,
+      "externalUrl": "https://open.spotify.com/track/3S6qD3X5lXJEzzjzfytC5u",
+      "id": "3S6qD3X5lXJEzzjzfytC5u",
+      "image": {
+        "url": "/playwright-fixtures/art/97cb1c08500010c5.jpg"
+      },
+      "isrc": "GBAFL1400342",
+      "name": "begin again",
+      "ref": "spotify:track:3S6qD3X5lXJEzzjzfytC5u",
+      "trackNumber": 6
+    },
     "3TzTMMTo17UExvHyX4Ecy4": {
       "album": {
         "id": "0wNjC8d3ve2L2yaomEWUsa",
@@ -1658,6 +1757,30 @@
       "ref": "spotify:track:4BMDuMaHNGPadx3t7tDUFu",
       "trackNumber": 1
     },
+    "4EGilW7VYfTULk4RENDfJp": {
+      "addedAt": 1775365948000,
+      "album": {
+        "id": "45ZWDMMVK0N0Hd2p7fLTCB",
+        "name": "The Universe Smiles Upon You ii"
+      },
+      "artists": [
+        {
+          "externalUrl": "https://open.spotify.com/artist/2mVVjNmdjXZZDvhgQWiakk",
+          "name": "Khruangbin"
+        }
+      ],
+      "artistsDisplay": "Khruangbin",
+      "durationMs": 291190,
+      "externalUrl": "https://open.spotify.com/track/4EGilW7VYfTULk4RENDfJp",
+      "id": "4EGilW7VYfTULk4RENDfJp",
+      "image": {
+        "url": "/playwright-fixtures/art/08d89132831cdc08.jpg"
+      },
+      "isrc": "USJ5G2538303",
+      "name": "White Gloves ii",
+      "ref": "spotify:track:4EGilW7VYfTULk4RENDfJp",
+      "trackNumber": 3
+    },
     "4HuiEuJ7ZW8jewUuZBg6sk": {
       "addedAt": 1777182812000,
       "album": {
@@ -1843,23 +1966,25 @@
       "trackNumber": 10
     },
     "4V0x90QcMh4ZxwHzEWOdtK": {
+      "addedAt": 1775365948000,
       "album": {
         "id": "1jMTPWTHJhsZev04IbmyCC",
         "name": "Life of Leisure"
       },
       "artists": [
         {
+          "externalUrl": "https://open.spotify.com/artist/5juOkIIy18sFw9L30syt1Z",
           "name": "Washed Out"
         }
       ],
       "artistsDisplay": "Washed Out",
       "durationMs": 192080,
+      "externalUrl": "https://open.spotify.com/track/4V0x90QcMh4ZxwHzEWOdtK",
       "id": "4V0x90QcMh4ZxwHzEWOdtK",
       "image": {
-        "height": 300,
-        "url": "/playwright-fixtures/art/6b145e1f6a32250d.jpg",
-        "width": 300
+        "url": "/playwright-fixtures/art/6b145e1f6a32250d.jpg"
       },
+      "isrc": "USMEX0800099",
       "name": "Feel It All Around",
       "ref": "spotify:track:4V0x90QcMh4ZxwHzEWOdtK",
       "trackNumber": 4
@@ -2140,6 +2265,54 @@
       "ref": "spotify:track:5AudrkLWtPGGyHb459MagI",
       "trackNumber": 1
     },
+    "5K10oTBp9GEcLAQ2TC8wsf": {
+      "addedAt": 1775365948000,
+      "album": {
+        "id": "4CdHUVyWF9VvYZa4GFqDLb",
+        "name": "Era Extraña"
+      },
+      "artists": [
+        {
+          "externalUrl": "https://open.spotify.com/artist/0KydPQPUUoTNhmiHKOg5Er",
+          "name": "Neon Indian"
+        }
+      ],
+      "artistsDisplay": "Neon Indian",
+      "durationMs": 264000,
+      "externalUrl": "https://open.spotify.com/track/5K10oTBp9GEcLAQ2TC8wsf",
+      "id": "5K10oTBp9GEcLAQ2TC8wsf",
+      "image": {
+        "url": "/playwright-fixtures/art/4a97a1945617cdec.jpg"
+      },
+      "isrc": "USQE91100051",
+      "name": "Polish Girl",
+      "ref": "spotify:track:5K10oTBp9GEcLAQ2TC8wsf",
+      "trackNumber": 2
+    },
+    "5PtEpuVX03k9bOUwilL5EO": {
+      "addedAt": 1775365948000,
+      "album": {
+        "id": "5ImvJCAX33Pt2XGMaYaMia",
+        "name": "Passive Me, Aggressive You"
+      },
+      "artists": [
+        {
+          "externalUrl": "https://open.spotify.com/artist/0oeUpvxWsC8bWS6SnpU8b9",
+          "name": "The Naked And Famous"
+        }
+      ],
+      "artistsDisplay": "The Naked And Famous",
+      "durationMs": 238133,
+      "externalUrl": "https://open.spotify.com/track/5PtEpuVX03k9bOUwilL5EO",
+      "id": "5PtEpuVX03k9bOUwilL5EO",
+      "image": {
+        "url": "/playwright-fixtures/art/3619528df1ed6f0c.jpg"
+      },
+      "isrc": "NZNK11000002",
+      "name": "Punching In A Dream",
+      "ref": "spotify:track:5PtEpuVX03k9bOUwilL5EO",
+      "trackNumber": 2
+    },
     "5Qv2Nby1xTr9pQyjkrc94J": {
       "album": {
         "id": "5vkqYmiPBYLaalcmjujWxK",
@@ -2201,6 +2374,30 @@
       "name": "Concerto for 2 Violins in D Minor, BWV 1043: I. Vivace",
       "ref": "spotify:track:5RUsUybr6L0iAkmo700FUT",
       "trackNumber": 7
+    },
+    "5VIfexo4oPJFXB1I7e2i3B": {
+      "addedAt": 1775366269000,
+      "album": {
+        "id": "24cNxGyApzpeu4jhMyAEMk",
+        "name": "Singularity"
+      },
+      "artists": [
+        {
+          "externalUrl": "https://open.spotify.com/artist/5XG0u0GsaiIvBEzznbjdCj",
+          "name": "lxst child"
+        }
+      ],
+      "artistsDisplay": "lxst child",
+      "durationMs": 218475,
+      "externalUrl": "https://open.spotify.com/track/5VIfexo4oPJFXB1I7e2i3B",
+      "id": "5VIfexo4oPJFXB1I7e2i3B",
+      "image": {
+        "url": "/playwright-fixtures/art/135985dc35e3b71e.jpg"
+      },
+      "isrc": "CA5KR2540583",
+      "name": "Singularity",
+      "ref": "spotify:track:5VIfexo4oPJFXB1I7e2i3B",
+      "trackNumber": 1
     },
     "5YVgRhi9e7S0DG1kCvkruK": {
       "addedAt": 1772142091000,
