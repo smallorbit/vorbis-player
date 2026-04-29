@@ -21,7 +21,7 @@ export async function getSpotifyAccessToken(opts: {
   appUrl: string;
 }): Promise<{ accessToken: string }> {
   const browser = await chromium.launch({ headless: false });
-  const context = await browser.newContext();
+  const context = await browser.newContext({ viewport: { width: 1600, height: 1000 } });
   const page = await context.newPage();
 
   try {
