@@ -111,7 +111,8 @@ export class MockPlaybackAdapter implements PlaybackProvider {
     this.notifyListeners();
   }
 
-  async playCollection(_: CollectionRef): Promise<void> {
+  async playCollection(collectionRef: CollectionRef): Promise<void> {
+    void collectionRef;
     // Collection playback is driven by the app's queue
   }
 
@@ -170,7 +171,8 @@ export class MockPlaybackAdapter implements PlaybackProvider {
     audio.load();
   }
 
-  probePlayable(_: MediaTrack): Promise<boolean> {
+  probePlayable(track: MediaTrack): Promise<boolean> {
+    void track;
     return Promise.resolve(true);
   }
 

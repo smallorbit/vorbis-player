@@ -30,8 +30,8 @@ export class MockCatalogAdapter implements CatalogProvider {
   private likedSet: Set<string>;
   private savedAlbums: Set<string>;
 
-  constructor(providerId: ProviderId, snapshot: ProviderSnapshot) {
-    this.providerId = providerId;
+  constructor(snapshot: ProviderSnapshot) {
+    this.providerId = snapshot.meta.provider;
     this.snapshot = snapshot;
     this.likedSet = new Set(snapshot.likedTrackIds);
     this.savedAlbums = new Set(snapshot.albums.map(a => a.id));

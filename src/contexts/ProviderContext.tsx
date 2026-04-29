@@ -5,11 +5,13 @@ import type { ProviderId } from '@/types/domain';
 import type { ProviderDescriptor, ProviderRegistry } from '@/types/providers';
 
 // Ensure providers are registered before the context is used.
-// Real providers register on import. Mock provider self-guards and overrides real registrations
-// when active (VITE_MOCK_PROVIDER=true env var OR ?provider=mock URL param).
+// Real providers register on import. Mock provider is loaded only when VITE_MOCK_PROVIDER=true
+// (Vite replaces the constant at build time, DCE-ing the import in production bundles).
 import '@/providers/spotify/spotifyProvider';
 import '@/providers/dropbox/dropboxProvider'; // conditionally registers if VITE_DROPBOX_CLIENT_ID is set
-import '@/providers/mock/mockProvider'; // registers AFTER real providers; overrides when mock is active
+if (import.meta.env.VITE_MOCK_PROVIDER === 'true') {
+  void import('@/providers/mock/mockProvider');
+}
 import { AUTH_STATE_CHANGED_EVENT } from '@/hooks/usePopupAuth';
 import { DROPBOX_AUTH_ERROR_EVENT } from '@/providers/dropbox/dropboxAuthAdapter';
 import { AUTH_COMPLETE_EVENT, SESSION_EXPIRED_EVENT } from '@/constants/events';

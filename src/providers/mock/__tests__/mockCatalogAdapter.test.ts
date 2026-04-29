@@ -74,7 +74,7 @@ describe('MockCatalogAdapter (spotify)', () => {
   let adapter: MockCatalogAdapter;
 
   beforeEach(() => {
-    adapter = new MockCatalogAdapter('spotify', makeSnapshot());
+    adapter = new MockCatalogAdapter(makeSnapshot());
   });
 
   // #given a snapshot with 1 playlist, 1 album, 2 liked tracks
@@ -91,7 +91,7 @@ describe('MockCatalogAdapter (spotify)', () => {
 
   it('listCollections omits liked when likedTrackIds is empty', async () => {
     const snapshot = makeSnapshot({ likedTrackIds: [] });
-    const emptyAdapter = new MockCatalogAdapter('spotify', snapshot);
+    const emptyAdapter = new MockCatalogAdapter(snapshot);
     const collections = await emptyAdapter.listCollections();
     expect(collections.find(c => c.kind === 'liked')).toBeUndefined();
   });
@@ -122,7 +122,7 @@ describe('MockCatalogAdapter (spotify)', () => {
 
   it('listTracks filters out broken liked refs with console.warn', async () => {
     const snapshot = makeSnapshot({ likedTrackIds: ['track-1', 'missing-id'] });
-    const adapter2 = new MockCatalogAdapter('spotify', snapshot);
+    const adapter2 = new MockCatalogAdapter(snapshot);
     const tracks = await adapter2.listTracks({ provider: 'spotify', kind: 'liked' });
     expect(tracks).toHaveLength(1);
     expect(tracks[0].id).toBe('track-1');
@@ -171,14 +171,15 @@ describe('MockCatalogAdapter (dropbox)', () => {
   it('listCollections includes All Music folder as first entry', async () => {
     const snapshot = makeSnapshot();
     (snapshot.meta as { provider: string }).provider = 'dropbox';
-    const adapter = new MockCatalogAdapter('dropbox', snapshot);
+    const adapter = new MockCatalogAdapter(snapshot);
     const collections = await adapter.listCollections();
     expect(collections[0]).toMatchObject({ kind: 'folder', id: '', name: 'All Music' });
   });
 
   it('listTracks for folder id="" returns all tracks', async () => {
     const snapshot = makeSnapshot();
-    const adapter = new MockCatalogAdapter('dropbox', snapshot);
+    (snapshot.meta as { provider: string }).provider = 'dropbox';
+    const adapter = new MockCatalogAdapter(snapshot);
     const tracks = await adapter.listTracks({ provider: 'dropbox', kind: 'folder', id: '' });
     expect(tracks).toHaveLength(Object.keys(snapshot.tracks).length);
   });

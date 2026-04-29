@@ -21,7 +21,8 @@ export class MockAuthAdapter implements AuthProvider {
   }
 
   handleCallback(url: URL): Promise<boolean> {
-    return Promise.resolve(url.href.length >= 0);
+    void url;
+    return Promise.resolve(true);
   }
 
   logout(): void {
