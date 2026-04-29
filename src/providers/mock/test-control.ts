@@ -1,3 +1,12 @@
+// Why CustomEvent indirection?
+//
+// `setQueue` needs to mutate React state (TrackContext). Directly importing
+// TrackContext here would couple this test-only module to production
+// state-management code and create a circular-dependency risk. Instead,
+// `setQueue` dispatches a `CustomEvent('mock:set-queue')` that TrackContext
+// listens for — keeping test-control's import surface limited to the mock
+// adapter types it already owns. The listener is registered only when
+// `shouldUseMockProvider()` is true, so it is a no-op in production.
 import type { MockCatalogAdapter } from './mockCatalogAdapter';
 import type { MockPlaybackAdapter } from './mockPlaybackAdapter';
 import type { MediaTrack } from '@/types/domain';
