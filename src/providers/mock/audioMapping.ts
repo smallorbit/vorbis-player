@@ -1,6 +1,9 @@
 export const AUDIO_CLIP_COUNT = 10;
 export const AUDIO_CLIP_BASE_PATH = '/playwright-fixtures/audio';
 
+// Blueprint D7 specifies sha256 → mod N. Using inline FNV-1a instead because
+// js-sha256 is not a transitive dependency in this project. For the use case
+// (stable uniform mapping to 0..9), the two algorithms are equivalent.
 function fnv1a32(str: string): number {
   let hash = 0x811c9dc5;
   for (let i = 0; i < str.length; i++) {
