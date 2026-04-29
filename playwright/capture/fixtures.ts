@@ -3,10 +3,12 @@ import spotifySnapshot from '../fixtures/data/spotify-snapshot.json' with { type
 import dropboxSnapshot from '../fixtures/data/dropbox-snapshot.json' with { type: 'json' };
 
 const APP_URL = 'http://127.0.0.1:3000';
+const PREFERRED_PLAYLIST_NAME = 'Demo Mix';
 
 function defaultPlaylistKey(): string {
-  const first = spotifySnapshot.playlists?.[0];
-  return first ? `spotify:playlist:${first.id}` : 'spotify:liked:';
+  const preferred = spotifySnapshot.playlists?.find((p) => p.name === PREFERRED_PLAYLIST_NAME);
+  const target = preferred ?? spotifySnapshot.playlists?.[0];
+  return target ? `spotify:playlist:${target.id}` : 'spotify:liked:';
 }
 
 // Snapshot-emptiness guard — see #1372 §10 "Curating fixtures".
@@ -48,7 +50,7 @@ export const test = base.extend<{ capturePage: Page }>({
       deviceScaleFactor: dpr,
     });
     const page = await context.newPage();
-    await page.goto(`${APP_URL}?playlist=${encodeURIComponent(playlist)}`);
+    await page.goto(`${APP_URL}?provider=mock&playlist=${encodeURIComponent(playlist)}`);
     await page.locator('button[title^="Zen Mode"]').waitFor({ state: 'visible', timeout: 30_000 });
 
     await runFixture(page);
