@@ -18,8 +18,8 @@
       "0wNjC8d3ve2L2yaomEWUsa",
       "1jMTPWTHJhsZev04IbmyCC"
     ],
-    "likedTracks": { "limit": 50 },
-    "playlistTrackLimit": 50,
+    "likedTracks": { "limit": 5 },
+    "playlistTrackLimit": 8,
     "pins": { "playlistIds": [], "albumIds": [] }
   },
   "dropbox": {

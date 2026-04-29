@@ -1,21 +1,2894 @@
 {
+  "albums": [
+    {
+      "artists": [
+        {
+          "name": "Andy Timmons"
+        }
+      ],
+      "id": "62bvGtckemXfkTyTs0sFbi",
+      "image": {
+        "height": 300,
+        "url": "/playwright-fixtures/art/c04c7ef19d9f928b.jpg",
+        "width": 300
+      },
+      "name": "Theme from a Perfect World",
+      "releaseDate": "2016-09-30",
+      "trackCount": 10,
+      "trackIds": [
+        "29Y4kb2iGiKisY8OzpR8tz",
+        "4YxsHfixhpcJ7m79DjLUmw",
+        "5s25dl6bXuRn6nyGJMgwe5",
+        "4NVVkwjYPkiCCuJZzTo6qd",
+        "1l0LSsR0TxeDkeKRNZWjyb",
+        "17e7keLZZv446lzn1veEGP",
+        "0oYM7W0ggjydEJt3aZfEah",
+        "19J90GDt9oQxIAUhDrsw5R",
+        "3uh9V6EpNmR3rmK8xlJZs3",
+        "4SFJBLKQnddNn8h2N52EKu"
+      ]
+    },
+    {
+      "artists": [
+        {
+          "name": "Clairo"
+        }
+      ],
+      "id": "1KNUCVXgIxKUGiuEB8eG0i",
+      "image": {
+        "height": 300,
+        "url": "/playwright-fixtures/art/8cb352ba5c6149b5.jpg",
+        "width": 300
+      },
+      "name": "Charm",
+      "releaseDate": "2024-07-12",
+      "trackCount": 11,
+      "trackIds": [
+        "4WJPxTsvWIdRZ9vMtqk7fj",
+        "3awweDjWIuXNMogMClJnvE",
+        "7cFwopK7QTOgaEwF9JgipA",
+        "2qmmnbJ9JR3f7vofbyje5r",
+        "0mMlo76aVZHpuvoR6fjBSK",
+        "32fwe7MW5koort1Ua3YFx6",
+        "2mWfVxEo4xZYDaz0v7hYrN",
+        "6FcDxtnGfsYHOcGkXN2OIG",
+        "6QlSPjiXHc1XwGKeEls6Gh",
+        "4JLBaHFkjxnbf9X0D8G3zQ",
+        "3lnEcmIHlkeqcgDiZ5cgN3"
+      ]
+    },
+    {
+      "artists": [
+        {
+          "name": "Radiohead"
+        }
+      ],
+      "id": "5vkqYmiPBYLaalcmjujWxK",
+      "image": {
+        "height": 300,
+        "url": "/playwright-fixtures/art/95111e33fa5b7e2a.jpg",
+        "width": 300
+      },
+      "name": "In Rainbows",
+      "releaseDate": "2007-12-28",
+      "trackCount": 10,
+      "trackIds": [
+        "4oXg7xT4ksBxHTx8PcmSXw",
+        "4pWIwnnqx8k01fuF95UMIg",
+        "35YyxFpE0ZTOoqFx5bADW8",
+        "4wajJ1o7jWIg62YqpkHC7S",
+        "5Qv2Nby1xTr9pQyjkrc94J",
+        "15irEKZ9D6FQqLoZ1qJ1Cx",
+        "02ppMPbg1OtEdHgoPqoqju",
+        "48X4D1FYOShPz2VF3YdfCF",
+        "0YJ9FWWHn9EfnN0lHwbzvV",
+        "4T1iiabe7G0UjWQJCY6NE2"
+      ]
+    },
+    {
+      "artists": [
+        {
+          "name": "Tame Impala"
+        }
+      ],
+      "id": "3C2MFZ2iHotUQOSBzdSvM7",
+      "image": {
+        "height": 300,
+        "url": "/playwright-fixtures/art/33dae541415fc8a2.jpg",
+        "width": 300
+      },
+      "name": "Lonerism",
+      "releaseDate": "2012-01-01",
+      "trackCount": 12,
+      "trackIds": [
+        "2Gl1Qdx5Px5kVYe0PQoGI0",
+        "0YuePEX4KyfLIPMdNLPwgQ",
+        "7qU7vhCPKhkDiJYGoboISc",
+        "6ewQE1dNPv9qqlnB1CxrvM",
+        "0pJTrMWCiR0TuJ5FApIqrz",
+        "6IM45SqAURH6PrvziDs1RQ",
+        "0LtOwyZoSNZKJWHqjzADpW",
+        "2UYHP0RQqPFvue0Ygs5Amm",
+        "6qZjm61s6u8Ead9sWxCDro",
+        "4Klyx5dYqZV9YefSecDwDv",
+        "33JMMgxQKL3zJsZeMNC3gR",
+        "7Jk2pg4g0c5rz5AfkEGMRp"
+      ]
+    },
+    {
+      "artists": [
+        {
+          "name": "Two Door Cinema Club"
+        }
+      ],
+      "id": "0wNjC8d3ve2L2yaomEWUsa",
+      "image": {
+        "height": 300,
+        "url": "/playwright-fixtures/art/652186e1fec542c9.jpg",
+        "width": 300
+      },
+      "name": "Tourist History",
+      "releaseDate": "2010-02-17",
+      "trackCount": 10,
+      "trackIds": [
+        "3TzTMMTo17UExvHyX4Ecy4",
+        "6X1yyl75llXExLdfAmStrw",
+        "1JmRbZclLHgneDrpyA9e3X",
+        "3sbgfpOXOMQGMQs68eL1sE",
+        "5teWpAL00TMLDXMC7d2rK2",
+        "0zo5H2QWXCkarmPSK2KJvH",
+        "6W7rf0mCRfcvz5RpRdwLfm",
+        "4iZxeyibg6w4EFCOoAQ6Eh",
+        "00829N8kbRmuLpppY407Qb",
+        "3YQfcHfpB5yugQXIzZTfb5"
+      ]
+    },
+    {
+      "artists": [
+        {
+          "name": "Washed Out"
+        }
+      ],
+      "id": "1jMTPWTHJhsZev04IbmyCC",
+      "image": {
+        "height": 300,
+        "url": "/playwright-fixtures/art/6b145e1f6a32250d.jpg",
+        "width": 300
+      },
+      "name": "Life of Leisure",
+      "releaseDate": "2009-09-08",
+      "trackCount": 6,
+      "trackIds": [
+        "6oFBHDOIyA01QkiEWAJcYS",
+        "230SHXjjyWkT7Zorx6hsiy",
+        "61a3jJKnYaUCAQDr07W8LH",
+        "4V0x90QcMh4ZxwHzEWOdtK",
+        "3OjjlGf0bwFLQaDiFn5WLk",
+        "4MTVOQ8SMdYEgBUkwJv07F"
+      ]
+    }
+  ],
+  "likedTrackIds": [
+    "6FcDxtnGfsYHOcGkXN2OIG",
+    "2pnnKbarWMmL28U2C3E7OS",
+    "4HuiEuJ7ZW8jewUuZBg6sk",
+    "4tf04WrZTy60CawyvueIdK",
+    "4WT3YEFYNeuML7XTaDgNeN"
+  ],
   "meta": {
-    "schemaVersion": 1,
-    "generatedAt": "2026-04-29T00:00:00.000Z",
+    "anonymizationSeed": "56f9157f0c7993deb37285f5207f1574",
+    "generatedAt": "2026-04-29T21:59:49.572Z",
     "generatorVersion": "0.0.0",
     "provider": "spotify",
-    "anonymizationSeed": "0000000000000000"
+    "schemaVersion": 1
+  },
+  "pins": {
+    "albumIds": [],
+    "playlistIds": []
+  },
+  "playlists": [
+    {
+      "description": "",
+      "id": "playlist_29c76609",
+      "image": {
+        "url": "/playwright-fixtures/art/da48037c1dd0f2c7.jpg"
+      },
+      "name": "awaken",
+      "ownerName": "Anonymous User",
+      "revision": "AAAAGkm9fRcKrEUxCdNy8tXBWHiHOPpg",
+      "trackCount": 23,
+      "trackIds": [
+        "1tnZxHryc2wWtjUZC1LQw5",
+        "3qiz8r4kKzXVlMTWGu3LiF",
+        "3pANfZVFdtuVnJsE6xa5Ox",
+        "5xJc58mBWz68WhwU2n5seR",
+        "2HBjPMwy9yAoMkUB1cSg2p",
+        "6HRWnBa2iwVWqbrKuVD565",
+        "2MBREe3NbK7ATDS7nZ3Hc3",
+        "27OqNFBwYkOOZKhXShri4n"
+      ]
+    },
+    {
+      "description": "",
+      "id": "playlist_50a6bd91",
+      "image": {
+        "height": 300,
+        "url": "/playwright-fixtures/art/ec03c49f5d274bcd.jpg",
+        "width": 300
+      },
+      "name": "Indie Pop/Rock Favs",
+      "ownerName": "Anonymous User",
+      "revision": "AAAAJEJLUVm8oJpcIeOI+EdrFPJTLNdz",
+      "trackCount": 35,
+      "trackIds": [
+        "1ykwKgmQkeih848JQmDF4C",
+        "1JIIgaf57phiom9Zxv50UL",
+        "0YqpRAVFiSdjydVG0c5NYM",
+        "273274Dx2I7ppuGyair64k",
+        "0JzkITZpPqKEvim8jmkfM6",
+        "5eqzYDycYdtxv3kM5RZrjr",
+        "6VJPSCUYdhoUce8ysd1KgM",
+        "0vxW3O5iVExkZ85iKnASOh"
+      ]
+    },
+    {
+      "description": "",
+      "id": "playlist_ab69ba76",
+      "image": {
+        "url": "/playwright-fixtures/art/de36901d8bed5bcc.jpg"
+      },
+      "name": "For testing headphones",
+      "ownerName": "Anonymous User",
+      "revision": "AAAABZMD1CN0NWLEVfVuPn/yrthOUQnp",
+      "trackCount": 21,
+      "trackIds": [
+        "2MELKsZzViyt0wMAxORdPV",
+        "5RUsUybr6L0iAkmo700FUT",
+        "0h4jHdNzUrV9eGR2PT5R8c",
+        "6ybViy2qrO9sIi41EgRJgx",
+        "1kxeWHF9PrCVZHvVskv8lg",
+        "0inVaFJ9yKJRBbvKKwSjz3",
+        "02kYCQFBEHKpArFdOyJVxt",
+        "2LlQb7Uoj1kKyGhlkBf9aC"
+      ]
+    },
+    {
+      "description": "",
+      "id": "playlist_fc231ac6",
+      "image": {
+        "url": "/playwright-fixtures/art/4f4a121b76d91c59.jpg"
+      },
+      "name": "reclaimance",
+      "ownerName": "Anonymous User",
+      "revision": "AAAAHJTXcNOgEIgm9EO5VNZN2uKTqCgS",
+      "trackCount": 41,
+      "trackIds": [
+        "6N0b6jlahlvHsV5MyZd0f8",
+        "6i9S6ehN5CvmUfJKtiK47m",
+        "2UYzU3lO9riFSwwVSusDJg",
+        "4c6DqwAUGF2yDGZqWVGQfz",
+        "3qAkUP6xTxl7CzbYEVisss",
+        "2zHaaHrJr6NvMDnVqVplmR",
+        "6EieVa9qUyLRo7aGUL6852"
+      ]
+    },
+    {
+      "description": "",
+      "id": "playlist_567fd4d9",
+      "image": {
+        "height": 300,
+        "url": "/playwright-fixtures/art/322952f7ac2cc61b.jpg",
+        "width": 300
+      },
+      "name": "Synthwave Chill",
+      "ownerName": "Anonymous User",
+      "revision": "AAAAA/nQpUgmMKljHvGBhzj+LepEy6y7",
+      "trackCount": 100,
+      "trackIds": [
+        "0EZkhX2ROJGSxsAaD3qLxA",
+        "5YVgRhi9e7S0DG1kCvkruK",
+        "5AudrkLWtPGGyHb459MagI",
+        "3OqQMDKvkhyBblLYYEHmQR",
+        "4zVEPRe3LjceP9IR8vGTrq",
+        "5xSxWpL9NhkR2B4lwKIK5v",
+        "3htQLQ5sBwlf8q7BwFHCyR",
+        "6Tsjt5Z1rPyYHpUT0rtimv"
+      ]
+    },
+    {
+      "description": "",
+      "id": "playlist_73f32c5e",
+      "image": {
+        "height": 300,
+        "url": "/playwright-fixtures/art/004cac0846d12849.jpg",
+        "width": 300
+      },
+      "name": "This Is lxst child",
+      "ownerName": "Anonymous User",
+      "revision": "AAAAA5KSgfheq0kUgnQY6hCn23JTFSMw",
+      "trackCount": 40,
+      "trackIds": [
+        "57fbBPLULyZaJG5pJJzoFh",
+        "1tbIKwrTfzmkPgGxlgxdND",
+        "5cZxROV2WySPJIfU46ZVGw",
+        "4BMDuMaHNGPadx3t7tDUFu",
+        "65jWAsL7oFHWGcfNFfdRWr",
+        "70BuDRi0ApR7xJxE3at5jf",
+        "4O5YWh6sm7jfWLy1vHXoZ7",
+        "7oQt7s2YBdOsblRKldrPCa"
+      ]
+    }
+  ],
+  "tracks": {
+    "00829N8kbRmuLpppY407Qb": {
+      "album": {
+        "id": "0wNjC8d3ve2L2yaomEWUsa",
+        "name": "Tourist History"
+      },
+      "artists": [
+        {
+          "name": "Two Door Cinema Club"
+        }
+      ],
+      "artistsDisplay": "Two Door Cinema Club",
+      "durationMs": 225426,
+      "id": "00829N8kbRmuLpppY407Qb",
+      "image": {
+        "height": 300,
+        "url": "/playwright-fixtures/art/652186e1fec542c9.jpg",
+        "width": 300
+      },
+      "name": "Eat That Up, Its Good for You",
+      "ref": "spotify:track:00829N8kbRmuLpppY407Qb",
+      "trackNumber": 9
+    },
+    "02kYCQFBEHKpArFdOyJVxt": {
+      "addedAt": 1689361194000,
+      "album": {
+        "id": "2WcHHCuMlmZRLpvCvtTITw",
+        "name": "The Book Of Secrets"
+      },
+      "artists": [
+        {
+          "externalUrl": "https://open.spotify.com/artist/1JdeDdujDbS6ZeSlkXqx3a",
+          "name": "Loreena McKennitt"
+        }
+      ],
+      "artistsDisplay": "Loreena McKennitt",
+      "durationMs": 431173,
+      "externalUrl": "https://open.spotify.com/track/02kYCQFBEHKpArFdOyJVxt",
+      "id": "02kYCQFBEHKpArFdOyJVxt",
+      "image": {
+        "url": "/playwright-fixtures/art/c2156c6b6bba833f.jpg"
+      },
+      "isrc": "CAQ119700073",
+      "name": "Dante's Prayer",
+      "ref": "spotify:track:02kYCQFBEHKpArFdOyJVxt",
+      "trackNumber": 8
+    },
+    "02ppMPbg1OtEdHgoPqoqju": {
+      "album": {
+        "id": "5vkqYmiPBYLaalcmjujWxK",
+        "name": "In Rainbows"
+      },
+      "artists": [
+        {
+          "name": "Radiohead"
+        }
+      ],
+      "artistsDisplay": "Radiohead",
+      "durationMs": 290213,
+      "id": "02ppMPbg1OtEdHgoPqoqju",
+      "image": {
+        "height": 300,
+        "url": "/playwright-fixtures/art/95111e33fa5b7e2a.jpg",
+        "width": 300
+      },
+      "name": "Reckoner",
+      "ref": "spotify:track:02ppMPbg1OtEdHgoPqoqju",
+      "trackNumber": 7
+    },
+    "0EZkhX2ROJGSxsAaD3qLxA": {
+      "addedAt": 1772142091000,
+      "album": {
+        "id": "4OWyKPQutGfrKK4sINSvmh",
+        "name": "Lost in 84"
+      },
+      "artists": [
+        {
+          "externalUrl": "https://open.spotify.com/artist/01oXEIT0WHf08pPiMUuY9k",
+          "name": "After Dark"
+        }
+      ],
+      "artistsDisplay": "After Dark",
+      "durationMs": 154000,
+      "externalUrl": "https://open.spotify.com/track/0EZkhX2ROJGSxsAaD3qLxA",
+      "id": "0EZkhX2ROJGSxsAaD3qLxA",
+      "image": {
+        "url": "/playwright-fixtures/art/effb9c07813005b4.jpg"
+      },
+      "isrc": "FXQ892500373",
+      "name": "Lost in 84",
+      "ref": "spotify:track:0EZkhX2ROJGSxsAaD3qLxA",
+      "trackNumber": 1
+    },
+    "0JzkITZpPqKEvim8jmkfM6": {
+      "addedAt": 1313508543000,
+      "album": {
+        "id": "0rk3wu2hqQCfjYTd22QZat",
+        "name": "Safe Away"
+      },
+      "artists": [
+        {
+          "externalUrl": "https://open.spotify.com/artist/2sJ5Iicthbc9d8Sl1dpeSB",
+          "name": "Denison Witmer"
+        }
+      ],
+      "artistsDisplay": "Denison Witmer",
+      "durationMs": 146973,
+      "externalUrl": "https://open.spotify.com/track/0JzkITZpPqKEvim8jmkfM6",
+      "id": "0JzkITZpPqKEvim8jmkfM6",
+      "image": {
+        "url": "/playwright-fixtures/art/30205af60024d97d.jpg"
+      },
+      "isrc": "US28B0600503",
+      "name": "Miles",
+      "ref": "spotify:track:0JzkITZpPqKEvim8jmkfM6",
+      "trackNumber": 7
+    },
+    "0LtOwyZoSNZKJWHqjzADpW": {
+      "album": {
+        "id": "3C2MFZ2iHotUQOSBzdSvM7",
+        "name": "Lonerism"
+      },
+      "artists": [
+        {
+          "name": "Tame Impala"
+        }
+      ],
+      "artistsDisplay": "Tame Impala",
+      "durationMs": 192960,
+      "id": "0LtOwyZoSNZKJWHqjzADpW",
+      "image": {
+        "height": 300,
+        "url": "/playwright-fixtures/art/33dae541415fc8a2.jpg",
+        "width": 300
+      },
+      "name": "Feels Like We Only Go Backwards",
+      "ref": "spotify:track:0LtOwyZoSNZKJWHqjzADpW",
+      "trackNumber": 7
+    },
+    "0YJ9FWWHn9EfnN0lHwbzvV": {
+      "album": {
+        "id": "5vkqYmiPBYLaalcmjujWxK",
+        "name": "In Rainbows"
+      },
+      "artists": [
+        {
+          "name": "Radiohead"
+        }
+      ],
+      "artistsDisplay": "Radiohead",
+      "durationMs": 248893,
+      "id": "0YJ9FWWHn9EfnN0lHwbzvV",
+      "image": {
+        "height": 300,
+        "url": "/playwright-fixtures/art/95111e33fa5b7e2a.jpg",
+        "width": 300
+      },
+      "name": "Jigsaw Falling Into Place",
+      "ref": "spotify:track:0YJ9FWWHn9EfnN0lHwbzvV",
+      "trackNumber": 9
+    },
+    "0YqpRAVFiSdjydVG0c5NYM": {
+      "addedAt": 1313508484000,
+      "album": {
+        "id": "4rJni44cbpaMaRmvvLwgyy",
+        "name": "Pershing"
+      },
+      "artists": [
+        {
+          "externalUrl": "https://open.spotify.com/artist/28V657x2IVJnSW3Srw6Ubd",
+          "name": "Someone Still Loves You Boris Yeltsin"
+        }
+      ],
+      "artistsDisplay": "Someone Still Loves You Boris Yeltsin",
+      "durationMs": 205533,
+      "externalUrl": "https://open.spotify.com/track/0YqpRAVFiSdjydVG0c5NYM",
+      "id": "0YqpRAVFiSdjydVG0c5NYM",
+      "image": {
+        "url": "/playwright-fixtures/art/e1f8d17cb211bc14.jpg"
+      },
+      "isrc": "US3R40815101",
+      "name": "Glue Girls",
+      "ref": "spotify:track:0YqpRAVFiSdjydVG0c5NYM",
+      "trackNumber": 1
+    },
+    "0YuePEX4KyfLIPMdNLPwgQ": {
+      "album": {
+        "id": "3C2MFZ2iHotUQOSBzdSvM7",
+        "name": "Lonerism"
+      },
+      "artists": [
+        {
+          "name": "Tame Impala"
+        }
+      ],
+      "artistsDisplay": "Tame Impala",
+      "durationMs": 186640,
+      "id": "0YuePEX4KyfLIPMdNLPwgQ",
+      "image": {
+        "height": 300,
+        "url": "/playwright-fixtures/art/33dae541415fc8a2.jpg",
+        "width": 300
+      },
+      "name": "Endors Toi",
+      "ref": "spotify:track:0YuePEX4KyfLIPMdNLPwgQ",
+      "trackNumber": 2
+    },
+    "0h4jHdNzUrV9eGR2PT5R8c": {
+      "addedAt": 1689361194000,
+      "album": {
+        "id": "1AL5oXZRtTc8PyhcTwg4xQ",
+        "name": "Texas Flood (Legacy Edition)"
+      },
+      "artists": [
+        {
+          "externalUrl": "https://open.spotify.com/artist/5fsDcuclIe8ZiBD5P787K1",
+          "name": "Stevie Ray Vaughan"
+        }
+      ],
+      "artistsDisplay": "Stevie Ray Vaughan",
+      "durationMs": 297373,
+      "externalUrl": "https://open.spotify.com/track/0h4jHdNzUrV9eGR2PT5R8c",
+      "id": "0h4jHdNzUrV9eGR2PT5R8c",
+      "image": {
+        "url": "/playwright-fixtures/art/4c748b7ebac96838.jpg"
+      },
+      "isrc": "USSM18300426",
+      "name": "Lenny",
+      "ref": "spotify:track:0h4jHdNzUrV9eGR2PT5R8c",
+      "trackNumber": 10
+    },
+    "0inVaFJ9yKJRBbvKKwSjz3": {
+      "addedAt": 1689361194000,
+      "album": {
+        "id": "7AUW3zs7IECZjVVks1tfb2",
+        "name": "Greatest Hits"
+      },
+      "artists": [
+        {
+          "externalUrl": "https://open.spotify.com/artist/7w29UYBi0qsHi5RTcv3lmA",
+          "name": "Björk"
+        }
+      ],
+      "artistsDisplay": "Björk",
+      "durationMs": 255173,
+      "externalUrl": "https://open.spotify.com/track/0inVaFJ9yKJRBbvKKwSjz3",
+      "id": "0inVaFJ9yKJRBbvKKwSjz3",
+      "image": {
+        "url": "/playwright-fixtures/art/eca9861bf63cf4f9.jpg"
+      },
+      "isrc": "GBBTF0200128",
+      "name": "Hunter",
+      "ref": "spotify:track:0inVaFJ9yKJRBbvKKwSjz3",
+      "trackNumber": 10
+    },
+    "0mMlo76aVZHpuvoR6fjBSK": {
+      "album": {
+        "id": "1KNUCVXgIxKUGiuEB8eG0i",
+        "name": "Charm"
+      },
+      "artists": [
+        {
+          "name": "Clairo"
+        }
+      ],
+      "artistsDisplay": "Clairo",
+      "durationMs": 205069,
+      "id": "0mMlo76aVZHpuvoR6fjBSK",
+      "image": {
+        "height": 300,
+        "url": "/playwright-fixtures/art/8cb352ba5c6149b5.jpg",
+        "width": 300
+      },
+      "name": "Thank You",
+      "ref": "spotify:track:0mMlo76aVZHpuvoR6fjBSK",
+      "trackNumber": 5
+    },
+    "0oYM7W0ggjydEJt3aZfEah": {
+      "album": {
+        "id": "62bvGtckemXfkTyTs0sFbi",
+        "name": "Theme from a Perfect World"
+      },
+      "artists": [
+        {
+          "name": "Andy Timmons"
+        }
+      ],
+      "artistsDisplay": "Andy Timmons",
+      "durationMs": 205717,
+      "id": "0oYM7W0ggjydEJt3aZfEah",
+      "image": {
+        "height": 300,
+        "url": "/playwright-fixtures/art/c04c7ef19d9f928b.jpg",
+        "width": 300
+      },
+      "name": "That Day Came",
+      "ref": "spotify:track:0oYM7W0ggjydEJt3aZfEah",
+      "trackNumber": 7
+    },
+    "0pJTrMWCiR0TuJ5FApIqrz": {
+      "album": {
+        "id": "3C2MFZ2iHotUQOSBzdSvM7",
+        "name": "Lonerism"
+      },
+      "artists": [
+        {
+          "name": "Tame Impala"
+        }
+      ],
+      "artistsDisplay": "Tame Impala",
+      "durationMs": 312213,
+      "id": "0pJTrMWCiR0TuJ5FApIqrz",
+      "image": {
+        "height": 300,
+        "url": "/playwright-fixtures/art/33dae541415fc8a2.jpg",
+        "width": 300
+      },
+      "name": "Music To Walk Home By",
+      "ref": "spotify:track:0pJTrMWCiR0TuJ5FApIqrz",
+      "trackNumber": 5
+    },
+    "0vxW3O5iVExkZ85iKnASOh": {
+      "addedAt": 1313508671000,
+      "album": {
+        "id": "4Q5tkG2i4EfKrvCzu1SxBe",
+        "name": "From A Basement On The Hill"
+      },
+      "artists": [
+        {
+          "externalUrl": "https://open.spotify.com/artist/2ApaG60P4r0yhBoDCGD8YG",
+          "name": "Elliott Smith"
+        }
+      ],
+      "artistsDisplay": "Elliott Smith",
+      "durationMs": 147240,
+      "externalUrl": "https://open.spotify.com/track/0vxW3O5iVExkZ85iKnASOh",
+      "id": "0vxW3O5iVExkZ85iKnASOh",
+      "image": {
+        "url": "/playwright-fixtures/art/1366ddf15f3f7a58.jpg"
+      },
+      "isrc": "USKRS1052402",
+      "name": "Let's Get Lost",
+      "ref": "spotify:track:0vxW3O5iVExkZ85iKnASOh",
+      "trackNumber": 2
+    },
+    "0zo5H2QWXCkarmPSK2KJvH": {
+      "album": {
+        "id": "0wNjC8d3ve2L2yaomEWUsa",
+        "name": "Tourist History"
+      },
+      "artists": [
+        {
+          "name": "Two Door Cinema Club"
+        }
+      ],
+      "artistsDisplay": "Two Door Cinema Club",
+      "durationMs": 164186,
+      "id": "0zo5H2QWXCkarmPSK2KJvH",
+      "image": {
+        "height": 300,
+        "url": "/playwright-fixtures/art/652186e1fec542c9.jpg",
+        "width": 300
+      },
+      "name": "Something Good Can Work",
+      "ref": "spotify:track:0zo5H2QWXCkarmPSK2KJvH",
+      "trackNumber": 6
+    },
+    "15irEKZ9D6FQqLoZ1qJ1Cx": {
+      "album": {
+        "id": "5vkqYmiPBYLaalcmjujWxK",
+        "name": "In Rainbows"
+      },
+      "artists": [
+        {
+          "name": "Radiohead"
+        }
+      ],
+      "artistsDisplay": "Radiohead",
+      "durationMs": 129679,
+      "id": "15irEKZ9D6FQqLoZ1qJ1Cx",
+      "image": {
+        "height": 300,
+        "url": "/playwright-fixtures/art/95111e33fa5b7e2a.jpg",
+        "width": 300
+      },
+      "name": "Faust Arp",
+      "ref": "spotify:track:15irEKZ9D6FQqLoZ1qJ1Cx",
+      "trackNumber": 6
+    },
+    "17e7keLZZv446lzn1veEGP": {
+      "album": {
+        "id": "62bvGtckemXfkTyTs0sFbi",
+        "name": "Theme from a Perfect World"
+      },
+      "artists": [
+        {
+          "name": "Andy Timmons"
+        }
+      ],
+      "artistsDisplay": "Andy Timmons",
+      "durationMs": 392875,
+      "id": "17e7keLZZv446lzn1veEGP",
+      "image": {
+        "height": 300,
+        "url": "/playwright-fixtures/art/c04c7ef19d9f928b.jpg",
+        "width": 300
+      },
+      "name": "Lift Us Up (Something Wicked This Way Comes)",
+      "ref": "spotify:track:17e7keLZZv446lzn1veEGP",
+      "trackNumber": 6
+    },
+    "19J90GDt9oQxIAUhDrsw5R": {
+      "album": {
+        "id": "62bvGtckemXfkTyTs0sFbi",
+        "name": "Theme from a Perfect World"
+      },
+      "artists": [
+        {
+          "name": "Andy Timmons"
+        }
+      ],
+      "artistsDisplay": "Andy Timmons",
+      "durationMs": 264026,
+      "id": "19J90GDt9oQxIAUhDrsw5R",
+      "image": {
+        "height": 300,
+        "url": "/playwright-fixtures/art/c04c7ef19d9f928b.jpg",
+        "width": 300
+      },
+      "name": "Firenze",
+      "ref": "spotify:track:19J90GDt9oQxIAUhDrsw5R",
+      "trackNumber": 8
+    },
+    "1JIIgaf57phiom9Zxv50UL": {
+      "addedAt": 1313507680000,
+      "album": {
+        "id": "4pwaQ1jEWLrcCvYFDJVWbl",
+        "name": "Vheissu"
+      },
+      "artists": [
+        {
+          "externalUrl": "https://open.spotify.com/artist/3NChzMpu9exTlNPiqUQ2DE",
+          "name": "Thrice"
+        }
+      ],
+      "artistsDisplay": "Thrice",
+      "durationMs": 240426,
+      "externalUrl": "https://open.spotify.com/track/1JIIgaf57phiom9Zxv50UL",
+      "id": "1JIIgaf57phiom9Zxv50UL",
+      "image": {
+        "url": "/playwright-fixtures/art/1736e2abec43c9db.jpg"
+      },
+      "isrc": "USUM70504406",
+      "name": "Atlantic",
+      "ref": "spotify:track:1JIIgaf57phiom9Zxv50UL",
+      "trackNumber": 4
+    },
+    "1JmRbZclLHgneDrpyA9e3X": {
+      "album": {
+        "id": "0wNjC8d3ve2L2yaomEWUsa",
+        "name": "Tourist History"
+      },
+      "artists": [
+        {
+          "name": "Two Door Cinema Club"
+        }
+      ],
+      "artistsDisplay": "Two Door Cinema Club",
+      "durationMs": 167773,
+      "id": "1JmRbZclLHgneDrpyA9e3X",
+      "image": {
+        "height": 300,
+        "url": "/playwright-fixtures/art/652186e1fec542c9.jpg",
+        "width": 300
+      },
+      "name": "Undercover Martyn",
+      "ref": "spotify:track:1JmRbZclLHgneDrpyA9e3X",
+      "trackNumber": 3
+    },
+    "1kxeWHF9PrCVZHvVskv8lg": {
+      "addedAt": 1689361194000,
+      "album": {
+        "id": "3WFTGIO6E3Xh4paEOBY9OU",
+        "name": "808s & Heartbreak"
+      },
+      "artists": [
+        {
+          "externalUrl": "https://open.spotify.com/artist/5K4W6rqBFWDnAN6FQUkS6x",
+          "name": "Kanye West"
+        }
+      ],
+      "artistsDisplay": "Kanye West",
+      "durationMs": 270306,
+      "externalUrl": "https://open.spotify.com/track/1kxeWHF9PrCVZHvVskv8lg",
+      "id": "1kxeWHF9PrCVZHvVskv8lg",
+      "image": {
+        "url": "/playwright-fixtures/art/68f6dde5ef6c58e8.jpg"
+      },
+      "isrc": "USUM70837229",
+      "name": "Love Lockdown",
+      "ref": "spotify:track:1kxeWHF9PrCVZHvVskv8lg",
+      "trackNumber": 5
+    },
+    "1l0LSsR0TxeDkeKRNZWjyb": {
+      "album": {
+        "id": "62bvGtckemXfkTyTs0sFbi",
+        "name": "Theme from a Perfect World"
+      },
+      "artists": [
+        {
+          "name": "Andy Timmons"
+        }
+      ],
+      "artistsDisplay": "Andy Timmons",
+      "durationMs": 390494,
+      "id": "1l0LSsR0TxeDkeKRNZWjyb",
+      "image": {
+        "height": 300,
+        "url": "/playwright-fixtures/art/c04c7ef19d9f928b.jpg",
+        "width": 300
+      },
+      "name": "The Next Voice You Hear",
+      "ref": "spotify:track:1l0LSsR0TxeDkeKRNZWjyb",
+      "trackNumber": 5
+    },
+    "1tbIKwrTfzmkPgGxlgxdND": {
+      "addedAt": 1772141993000,
+      "album": {
+        "id": "3iLaL1CWbMARl3vsasQWaT",
+        "name": "End of Beginning"
+      },
+      "artists": [
+        {
+          "externalUrl": "https://open.spotify.com/artist/5rzJf5cQnYXZx69aRQTato",
+          "name": "XENNON"
+        },
+        {
+          "externalUrl": "https://open.spotify.com/artist/5XG0u0GsaiIvBEzznbjdCj",
+          "name": "lxst child"
+        }
+      ],
+      "artistsDisplay": "XENNON, lxst child",
+      "durationMs": 245460,
+      "externalUrl": "https://open.spotify.com/track/1tbIKwrTfzmkPgGxlgxdND",
+      "id": "1tbIKwrTfzmkPgGxlgxdND",
+      "image": {
+        "url": "/playwright-fixtures/art/712420de5beed777.jpg"
+      },
+      "isrc": "QZHN92652632",
+      "name": "End of Beginning",
+      "ref": "spotify:track:1tbIKwrTfzmkPgGxlgxdND",
+      "trackNumber": 1
+    },
+    "1tnZxHryc2wWtjUZC1LQw5": {
+      "addedAt": 1729541690000,
+      "album": {
+        "id": "4OjzAZXWalqQN5STXHPJdl",
+        "name": "Noid"
+      },
+      "artists": [
+        {
+          "externalUrl": "https://open.spotify.com/artist/4V8LLVI7PbaPR0K2TGSxFF",
+          "name": "Tyler, The Creator"
+        }
+      ],
+      "artistsDisplay": "Tyler, The Creator",
+      "durationMs": 284363,
+      "externalUrl": "https://open.spotify.com/track/1tnZxHryc2wWtjUZC1LQw5",
+      "id": "1tnZxHryc2wWtjUZC1LQw5",
+      "image": {
+        "url": "/playwright-fixtures/art/96fb131099e441db.jpg"
+      },
+      "isrc": "USQX92405785",
+      "name": "Noid",
+      "ref": "spotify:track:1tnZxHryc2wWtjUZC1LQw5",
+      "trackNumber": 1
+    },
+    "1ykwKgmQkeih848JQmDF4C": {
+      "addedAt": 1313507650000,
+      "album": {
+        "id": "4SRs0AYEz1N0E5V4t6yK2L",
+        "name": "Beggars"
+      },
+      "artists": [
+        {
+          "externalUrl": "https://open.spotify.com/artist/3NChzMpu9exTlNPiqUQ2DE",
+          "name": "Thrice"
+        }
+      ],
+      "artistsDisplay": "Thrice",
+      "durationMs": 232493,
+      "externalUrl": "https://open.spotify.com/track/1ykwKgmQkeih848JQmDF4C",
+      "id": "1ykwKgmQkeih848JQmDF4C",
+      "image": {
+        "url": "/playwright-fixtures/art/df0c90a4485bcbf8.jpg"
+      },
+      "isrc": "USVR90955505",
+      "name": "In Exile",
+      "ref": "spotify:track:1ykwKgmQkeih848JQmDF4C",
+      "trackNumber": 5
+    },
+    "230SHXjjyWkT7Zorx6hsiy": {
+      "album": {
+        "id": "1jMTPWTHJhsZev04IbmyCC",
+        "name": "Life of Leisure"
+      },
+      "artists": [
+        {
+          "name": "Washed Out"
+        }
+      ],
+      "artistsDisplay": "Washed Out",
+      "durationMs": 168680,
+      "id": "230SHXjjyWkT7Zorx6hsiy",
+      "image": {
+        "height": 300,
+        "url": "/playwright-fixtures/art/6b145e1f6a32250d.jpg",
+        "width": 300
+      },
+      "name": "New Theory",
+      "ref": "spotify:track:230SHXjjyWkT7Zorx6hsiy",
+      "trackNumber": 2
+    },
+    "273274Dx2I7ppuGyair64k": {
+      "addedAt": 1313508493000,
+      "album": {
+        "id": "4rJni44cbpaMaRmvvLwgyy",
+        "name": "Pershing"
+      },
+      "artists": [
+        {
+          "externalUrl": "https://open.spotify.com/artist/28V657x2IVJnSW3Srw6Ubd",
+          "name": "Someone Still Loves You Boris Yeltsin"
+        }
+      ],
+      "artistsDisplay": "Someone Still Loves You Boris Yeltsin",
+      "durationMs": 191706,
+      "externalUrl": "https://open.spotify.com/track/273274Dx2I7ppuGyair64k",
+      "id": "273274Dx2I7ppuGyair64k",
+      "image": {
+        "url": "/playwright-fixtures/art/e1f8d17cb211bc14.jpg"
+      },
+      "isrc": "US3R40815106",
+      "name": "Some Constellation",
+      "ref": "spotify:track:273274Dx2I7ppuGyair64k",
+      "trackNumber": 6
+    },
+    "27OqNFBwYkOOZKhXShri4n": {
+      "addedAt": 1729627163000,
+      "album": {
+        "id": "2KSCZ4B1q3YqOKMBKsjA0a",
+        "name": "Rainbow Bridge"
+      },
+      "artists": [
+        {
+          "externalUrl": "https://open.spotify.com/artist/1GLnyPuL45vOsZPs5iANcC",
+          "name": "Sematary"
+        }
+      ],
+      "artistsDisplay": "Sematary",
+      "durationMs": 128450,
+      "externalUrl": "https://open.spotify.com/track/27OqNFBwYkOOZKhXShri4n",
+      "id": "27OqNFBwYkOOZKhXShri4n",
+      "image": {
+        "url": "/playwright-fixtures/art/0ebf84bb11a5da56.jpg"
+      },
+      "isrc": "QZHN81940404",
+      "name": "Cemetery",
+      "ref": "spotify:track:27OqNFBwYkOOZKhXShri4n",
+      "trackNumber": 10
+    },
+    "29Y4kb2iGiKisY8OzpR8tz": {
+      "album": {
+        "id": "62bvGtckemXfkTyTs0sFbi",
+        "name": "Theme from a Perfect World"
+      },
+      "artists": [
+        {
+          "name": "Andy Timmons"
+        }
+      ],
+      "artistsDisplay": "Andy Timmons",
+      "durationMs": 319488,
+      "id": "29Y4kb2iGiKisY8OzpR8tz",
+      "image": {
+        "height": 300,
+        "url": "/playwright-fixtures/art/c04c7ef19d9f928b.jpg",
+        "width": 300
+      },
+      "name": "Ascension",
+      "ref": "spotify:track:29Y4kb2iGiKisY8OzpR8tz",
+      "trackNumber": 1
+    },
+    "2Gl1Qdx5Px5kVYe0PQoGI0": {
+      "album": {
+        "id": "3C2MFZ2iHotUQOSBzdSvM7",
+        "name": "Lonerism"
+      },
+      "artists": [
+        {
+          "name": "Tame Impala"
+        }
+      ],
+      "artistsDisplay": "Tame Impala",
+      "durationMs": 201960,
+      "id": "2Gl1Qdx5Px5kVYe0PQoGI0",
+      "image": {
+        "height": 300,
+        "url": "/playwright-fixtures/art/33dae541415fc8a2.jpg",
+        "width": 300
+      },
+      "name": "Be Above It",
+      "ref": "spotify:track:2Gl1Qdx5Px5kVYe0PQoGI0",
+      "trackNumber": 1
+    },
+    "2HBjPMwy9yAoMkUB1cSg2p": {
+      "addedAt": 1729574551000,
+      "album": {
+        "id": "7uCnCAztzPYMtlNOEBLjqM",
+        "name": "Pieces Of A Dream"
+      },
+      "artists": [
+        {
+          "externalUrl": "https://open.spotify.com/artist/1wlzPS1hSNrkriIIwLFTmU",
+          "name": "MIKE"
+        }
+      ],
+      "artistsDisplay": "MIKE",
+      "durationMs": 158652,
+      "externalUrl": "https://open.spotify.com/track/2HBjPMwy9yAoMkUB1cSg2p",
+      "id": "2HBjPMwy9yAoMkUB1cSg2p",
+      "image": {
+        "url": "/playwright-fixtures/art/0c7bc2749020182c.jpg"
+      },
+      "isrc": "GBBPW2401238",
+      "name": "Pieces Of A Dream",
+      "ref": "spotify:track:2HBjPMwy9yAoMkUB1cSg2p",
+      "trackNumber": 1
+    },
+    "2LlQb7Uoj1kKyGhlkBf9aC": {
+      "addedAt": 1689361194000,
+      "album": {
+        "id": "2ANVost0y2y52ema1E9xAZ",
+        "name": "Thriller"
+      },
+      "artists": [
+        {
+          "externalUrl": "https://open.spotify.com/artist/3fMbdgg4jU18AjLCKBhRSm",
+          "name": "Michael Jackson"
+        }
+      ],
+      "artistsDisplay": "Michael Jackson",
+      "durationMs": 358807,
+      "externalUrl": "https://open.spotify.com/track/2LlQb7Uoj1kKyGhlkBf9aC",
+      "id": "2LlQb7Uoj1kKyGhlkBf9aC",
+      "image": {
+        "url": "/playwright-fixtures/art/c361aa578869c584.jpg"
+      },
+      "isrc": "USSM19902989",
+      "name": "Thriller",
+      "ref": "spotify:track:2LlQb7Uoj1kKyGhlkBf9aC",
+      "trackNumber": 4
+    },
+    "2MBREe3NbK7ATDS7nZ3Hc3": {
+      "addedAt": 1729622995000,
+      "album": {
+        "id": "1JhVJB6V3iGbEfbvvQUZuH",
+        "name": "I Need Your Love"
+      },
+      "artists": [
+        {
+          "externalUrl": "https://open.spotify.com/artist/0JNHpdag1QhEEdQkKQvquh",
+          "name": "Cartier God"
+        }
+      ],
+      "artistsDisplay": "Cartier God",
+      "durationMs": 208091,
+      "externalUrl": "https://open.spotify.com/track/2MBREe3NbK7ATDS7nZ3Hc3",
+      "id": "2MBREe3NbK7ATDS7nZ3Hc3",
+      "image": {
+        "url": "/playwright-fixtures/art/24c866d215afda78.jpg"
+      },
+      "isrc": "QZES61940206",
+      "name": "She All Ova Me",
+      "ref": "spotify:track:2MBREe3NbK7ATDS7nZ3Hc3",
+      "trackNumber": 5
+    },
+    "2MELKsZzViyt0wMAxORdPV": {
+      "addedAt": 1689361194000,
+      "album": {
+        "id": "1IM7HPqXdvQRIOy8Kg5V6k",
+        "name": "Keep Your Eyes Ahead"
+      },
+      "artists": [
+        {
+          "externalUrl": "https://open.spotify.com/artist/6JoxwT8CwvpxxNaP55R6q2",
+          "name": "The Helio Sequence"
+        }
+      ],
+      "artistsDisplay": "The Helio Sequence",
+      "durationMs": 269680,
+      "externalUrl": "https://open.spotify.com/track/2MELKsZzViyt0wMAxORdPV",
+      "id": "2MELKsZzViyt0wMAxORdPV",
+      "image": {
+        "url": "/playwright-fixtures/art/a6f0a3fb6c2f9be0.jpg"
+      },
+      "isrc": "USSUB0770908",
+      "name": "Hallelujah",
+      "ref": "spotify:track:2MELKsZzViyt0wMAxORdPV",
+      "trackNumber": 8
+    },
+    "2UYHP0RQqPFvue0Ygs5Amm": {
+      "album": {
+        "id": "3C2MFZ2iHotUQOSBzdSvM7",
+        "name": "Lonerism"
+      },
+      "artists": [
+        {
+          "name": "Tame Impala"
+        }
+      ],
+      "artistsDisplay": "Tame Impala",
+      "durationMs": 353933,
+      "id": "2UYHP0RQqPFvue0Ygs5Amm",
+      "image": {
+        "height": 300,
+        "url": "/playwright-fixtures/art/33dae541415fc8a2.jpg",
+        "width": 300
+      },
+      "name": "Keep On Lying",
+      "ref": "spotify:track:2UYHP0RQqPFvue0Ygs5Amm",
+      "trackNumber": 8
+    },
+    "2UYzU3lO9riFSwwVSusDJg": {
+      "addedAt": 1740451140000,
+      "album": {
+        "id": "4LbLtAfqt3UkQPVgXhRCBi",
+        "name": "krash"
+      },
+      "artists": [
+        {
+          "externalUrl": "https://open.spotify.com/artist/475Cbg3KjcioXssl8x3AGP",
+          "name": "dedwrite"
+        }
+      ],
+      "artistsDisplay": "dedwrite",
+      "durationMs": 128401,
+      "externalUrl": "https://open.spotify.com/track/2UYzU3lO9riFSwwVSusDJg",
+      "id": "2UYzU3lO9riFSwwVSusDJg",
+      "image": {
+        "url": "/playwright-fixtures/art/fd3d69fce99b8033.jpg"
+      },
+      "isrc": "QZES82582987",
+      "name": "krash",
+      "ref": "spotify:track:2UYzU3lO9riFSwwVSusDJg",
+      "trackNumber": 1
+    },
+    "2mWfVxEo4xZYDaz0v7hYrN": {
+      "album": {
+        "id": "1KNUCVXgIxKUGiuEB8eG0i",
+        "name": "Charm"
+      },
+      "artists": [
+        {
+          "name": "Clairo"
+        }
+      ],
+      "artistsDisplay": "Clairo",
+      "durationMs": 195109,
+      "id": "2mWfVxEo4xZYDaz0v7hYrN",
+      "image": {
+        "height": 300,
+        "url": "/playwright-fixtures/art/8cb352ba5c6149b5.jpg",
+        "width": 300
+      },
+      "name": "Juna",
+      "ref": "spotify:track:2mWfVxEo4xZYDaz0v7hYrN",
+      "trackNumber": 7
+    },
+    "2pnnKbarWMmL28U2C3E7OS": {
+      "addedAt": 1777220557000,
+      "album": {
+        "id": "7HQOEMCDGKY8eJyQPdsnYH",
+        "name": "Big Ideas"
+      },
+      "artists": [
+        {
+          "externalUrl": "https://open.spotify.com/artist/0NB5HROxc8dDBXpkIi1v3d",
+          "name": "Remi Wolf"
+        }
+      ],
+      "artistsDisplay": "Remi Wolf",
+      "durationMs": 266366,
+      "externalUrl": "https://open.spotify.com/track/2pnnKbarWMmL28U2C3E7OS",
+      "id": "2pnnKbarWMmL28U2C3E7OS",
+      "image": {
+        "url": "/playwright-fixtures/art/5102e4645ef6af6d.jpg"
+      },
+      "isrc": "USUG12401937",
+      "name": "Cherries & Cream",
+      "ref": "spotify:track:2pnnKbarWMmL28U2C3E7OS",
+      "trackNumber": 6
+    },
+    "2qmmnbJ9JR3f7vofbyje5r": {
+      "album": {
+        "id": "1KNUCVXgIxKUGiuEB8eG0i",
+        "name": "Charm"
+      },
+      "artists": [
+        {
+          "name": "Clairo"
+        }
+      ],
+      "artistsDisplay": "Clairo",
+      "durationMs": 234853,
+      "id": "2qmmnbJ9JR3f7vofbyje5r",
+      "image": {
+        "height": 300,
+        "url": "/playwright-fixtures/art/8cb352ba5c6149b5.jpg",
+        "width": 300
+      },
+      "name": "Slow Dance",
+      "ref": "spotify:track:2qmmnbJ9JR3f7vofbyje5r",
+      "trackNumber": 4
+    },
+    "2zHaaHrJr6NvMDnVqVplmR": {
+      "addedAt": 1740451140000,
+      "album": {
+        "id": "4PmXdIAlka3o0jAKoYgv1O",
+        "name": "Above & Beyond"
+      },
+      "artists": [
+        {
+          "externalUrl": "https://open.spotify.com/artist/5zIE5XrsBLymJoVVYznZlL",
+          "name": "jackzebra"
+        }
+      ],
+      "artistsDisplay": "jackzebra",
+      "durationMs": 126979,
+      "externalUrl": "https://open.spotify.com/track/2zHaaHrJr6NvMDnVqVplmR",
+      "id": "2zHaaHrJr6NvMDnVqVplmR",
+      "image": {
+        "url": "/playwright-fixtures/art/5d86aa889ce927b6.jpg"
+      },
+      "isrc": "QZES82549838",
+      "name": "黑色",
+      "ref": "spotify:track:2zHaaHrJr6NvMDnVqVplmR",
+      "trackNumber": 19
+    },
+    "32fwe7MW5koort1Ua3YFx6": {
+      "album": {
+        "id": "1KNUCVXgIxKUGiuEB8eG0i",
+        "name": "Charm"
+      },
+      "artists": [
+        {
+          "name": "Clairo"
+        }
+      ],
+      "artistsDisplay": "Clairo",
+      "durationMs": 180289,
+      "id": "32fwe7MW5koort1Ua3YFx6",
+      "image": {
+        "height": 300,
+        "url": "/playwright-fixtures/art/8cb352ba5c6149b5.jpg",
+        "width": 300
+      },
+      "name": "Terrapin",
+      "ref": "spotify:track:32fwe7MW5koort1Ua3YFx6",
+      "trackNumber": 6
+    },
+    "33JMMgxQKL3zJsZeMNC3gR": {
+      "album": {
+        "id": "3C2MFZ2iHotUQOSBzdSvM7",
+        "name": "Lonerism"
+      },
+      "artists": [
+        {
+          "name": "Tame Impala"
+        }
+      ],
+      "artistsDisplay": "Tame Impala",
+      "durationMs": 359946,
+      "id": "33JMMgxQKL3zJsZeMNC3gR",
+      "image": {
+        "height": 300,
+        "url": "/playwright-fixtures/art/33dae541415fc8a2.jpg",
+        "width": 300
+      },
+      "name": "Nothing That Has Happened So Far Has Been Anything We Could Control",
+      "ref": "spotify:track:33JMMgxQKL3zJsZeMNC3gR",
+      "trackNumber": 11
+    },
+    "35YyxFpE0ZTOoqFx5bADW8": {
+      "album": {
+        "id": "5vkqYmiPBYLaalcmjujWxK",
+        "name": "In Rainbows"
+      },
+      "artists": [
+        {
+          "name": "Radiohead"
+        }
+      ],
+      "artistsDisplay": "Radiohead",
+      "durationMs": 255386,
+      "id": "35YyxFpE0ZTOoqFx5bADW8",
+      "image": {
+        "height": 300,
+        "url": "/playwright-fixtures/art/95111e33fa5b7e2a.jpg",
+        "width": 300
+      },
+      "name": "Nude",
+      "ref": "spotify:track:35YyxFpE0ZTOoqFx5bADW8",
+      "trackNumber": 3
+    },
+    "3OjjlGf0bwFLQaDiFn5WLk": {
+      "album": {
+        "id": "1jMTPWTHJhsZev04IbmyCC",
+        "name": "Life of Leisure"
+      },
+      "artists": [
+        {
+          "name": "Washed Out"
+        }
+      ],
+      "artistsDisplay": "Washed Out",
+      "durationMs": 116960,
+      "id": "3OjjlGf0bwFLQaDiFn5WLk",
+      "image": {
+        "height": 300,
+        "url": "/playwright-fixtures/art/6b145e1f6a32250d.jpg",
+        "width": 300
+      },
+      "name": "Lately",
+      "ref": "spotify:track:3OjjlGf0bwFLQaDiFn5WLk",
+      "trackNumber": 5
+    },
+    "3OqQMDKvkhyBblLYYEHmQR": {
+      "addedAt": 1772142091000,
+      "album": {
+        "id": "5L5GUjk8wxSpWemLMBHG24",
+        "name": "Slow Orbit"
+      },
+      "artists": [
+        {
+          "externalUrl": "https://open.spotify.com/artist/3sCPjqofyWElqBsicU6DVh",
+          "name": "Ghost in Delay"
+        }
+      ],
+      "artistsDisplay": "Ghost in Delay",
+      "durationMs": 130177,
+      "externalUrl": "https://open.spotify.com/track/3OqQMDKvkhyBblLYYEHmQR",
+      "id": "3OqQMDKvkhyBblLYYEHmQR",
+      "image": {
+        "url": "/playwright-fixtures/art/c3c05399f7e81c07.jpg"
+      },
+      "isrc": "FXQ892500221",
+      "name": "Slow Orbit",
+      "ref": "spotify:track:3OqQMDKvkhyBblLYYEHmQR",
+      "trackNumber": 1
+    },
+    "3TzTMMTo17UExvHyX4Ecy4": {
+      "album": {
+        "id": "0wNjC8d3ve2L2yaomEWUsa",
+        "name": "Tourist History"
+      },
+      "artists": [
+        {
+          "name": "Two Door Cinema Club"
+        }
+      ],
+      "artistsDisplay": "Two Door Cinema Club",
+      "durationMs": 214253,
+      "id": "3TzTMMTo17UExvHyX4Ecy4",
+      "image": {
+        "height": 300,
+        "url": "/playwright-fixtures/art/652186e1fec542c9.jpg",
+        "width": 300
+      },
+      "name": "Cigarettes In the Theatre",
+      "ref": "spotify:track:3TzTMMTo17UExvHyX4Ecy4",
+      "trackNumber": 1
+    },
+    "3YQfcHfpB5yugQXIzZTfb5": {
+      "album": {
+        "id": "0wNjC8d3ve2L2yaomEWUsa",
+        "name": "Tourist History"
+      },
+      "artists": [
+        {
+          "name": "Two Door Cinema Club"
+        }
+      ],
+      "artistsDisplay": "Two Door Cinema Club",
+      "durationMs": 190866,
+      "id": "3YQfcHfpB5yugQXIzZTfb5",
+      "image": {
+        "height": 300,
+        "url": "/playwright-fixtures/art/652186e1fec542c9.jpg",
+        "width": 300
+      },
+      "name": "You're Not Stubborn",
+      "ref": "spotify:track:3YQfcHfpB5yugQXIzZTfb5",
+      "trackNumber": 10
+    },
+    "3awweDjWIuXNMogMClJnvE": {
+      "album": {
+        "id": "1KNUCVXgIxKUGiuEB8eG0i",
+        "name": "Charm"
+      },
+      "artists": [
+        {
+          "name": "Clairo"
+        }
+      ],
+      "artistsDisplay": "Clairo",
+      "durationMs": 207795,
+      "id": "3awweDjWIuXNMogMClJnvE",
+      "image": {
+        "height": 300,
+        "url": "/playwright-fixtures/art/8cb352ba5c6149b5.jpg",
+        "width": 300
+      },
+      "name": "Sexy to Someone",
+      "ref": "spotify:track:3awweDjWIuXNMogMClJnvE",
+      "trackNumber": 2
+    },
+    "3htQLQ5sBwlf8q7BwFHCyR": {
+      "addedAt": 1772142091000,
+      "album": {
+        "id": "7sTZ8nxCThLx23NJyXgVZY",
+        "name": "Youth"
+      },
+      "artists": [
+        {
+          "externalUrl": "https://open.spotify.com/artist/4AQ41dflvmpYLr59f4Fg16",
+          "name": "Aurora Wave"
+        }
+      ],
+      "artistsDisplay": "Aurora Wave",
+      "durationMs": 142500,
+      "externalUrl": "https://open.spotify.com/track/3htQLQ5sBwlf8q7BwFHCyR",
+      "id": "3htQLQ5sBwlf8q7BwFHCyR",
+      "image": {
+        "url": "/playwright-fixtures/art/8a8161c9964645dc.jpg"
+      },
+      "isrc": "SE7DX2500975",
+      "name": "Youth",
+      "ref": "spotify:track:3htQLQ5sBwlf8q7BwFHCyR",
+      "trackNumber": 1
+    },
+    "3lnEcmIHlkeqcgDiZ5cgN3": {
+      "album": {
+        "id": "1KNUCVXgIxKUGiuEB8eG0i",
+        "name": "Charm"
+      },
+      "artists": [
+        {
+          "name": "Clairo"
+        }
+      ],
+      "artistsDisplay": "Clairo",
+      "durationMs": 205072,
+      "id": "3lnEcmIHlkeqcgDiZ5cgN3",
+      "image": {
+        "height": 300,
+        "url": "/playwright-fixtures/art/8cb352ba5c6149b5.jpg",
+        "width": 300
+      },
+      "name": "Pier 4",
+      "ref": "spotify:track:3lnEcmIHlkeqcgDiZ5cgN3",
+      "trackNumber": 11
+    },
+    "3pANfZVFdtuVnJsE6xa5Ox": {
+      "addedAt": 1729563109000,
+      "album": {
+        "id": "42cH7mrkfljkqkxA2Ip9Xq",
+        "name": "Be the Cowboy"
+      },
+      "artists": [
+        {
+          "externalUrl": "https://open.spotify.com/artist/2uYWxilOVlUdk4oV9DvwqK",
+          "name": "Mitski"
+        }
+      ],
+      "artistsDisplay": "Mitski",
+      "durationMs": 137141,
+      "externalUrl": "https://open.spotify.com/track/3pANfZVFdtuVnJsE6xa5Ox",
+      "id": "3pANfZVFdtuVnJsE6xa5Ox",
+      "image": {
+        "url": "/playwright-fixtures/art/1d6ba3d3cdbd3a2d.jpg"
+      },
+      "isrc": "USJ5G1815007",
+      "name": "Me and My Husband",
+      "ref": "spotify:track:3pANfZVFdtuVnJsE6xa5Ox",
+      "trackNumber": 7
+    },
+    "3qAkUP6xTxl7CzbYEVisss": {
+      "addedAt": 1740451140000,
+      "album": {
+        "id": "4PmXdIAlka3o0jAKoYgv1O",
+        "name": "Above & Beyond"
+      },
+      "artists": [
+        {
+          "externalUrl": "https://open.spotify.com/artist/5zIE5XrsBLymJoVVYznZlL",
+          "name": "jackzebra"
+        }
+      ],
+      "artistsDisplay": "jackzebra",
+      "durationMs": 112215,
+      "externalUrl": "https://open.spotify.com/track/3qAkUP6xTxl7CzbYEVisss",
+      "id": "3qAkUP6xTxl7CzbYEVisss",
+      "image": {
+        "url": "/playwright-fixtures/art/5d86aa889ce927b6.jpg"
+      },
+      "isrc": "QZES82549824",
+      "name": "太乱太多太错",
+      "ref": "spotify:track:3qAkUP6xTxl7CzbYEVisss",
+      "trackNumber": 5
+    },
+    "3qiz8r4kKzXVlMTWGu3LiF": {
+      "addedAt": 1729555324000,
+      "album": {
+        "id": "4whHK0lCoTKit2dkPB2nPX",
+        "name": "Shields"
+      },
+      "artists": [
+        {
+          "externalUrl": "https://open.spotify.com/artist/2Jv5eshHtLycR6R8KQCdc4",
+          "name": "Grizzly Bear"
+        }
+      ],
+      "artistsDisplay": "Grizzly Bear",
+      "durationMs": 426591,
+      "externalUrl": "https://open.spotify.com/track/3qiz8r4kKzXVlMTWGu3LiF",
+      "id": "3qiz8r4kKzXVlMTWGu3LiF",
+      "image": {
+        "url": "/playwright-fixtures/art/0386a10446e1b5f7.jpg"
+      },
+      "isrc": "GBBPW1200150",
+      "name": "Sun In Your Eyes",
+      "ref": "spotify:track:3qiz8r4kKzXVlMTWGu3LiF",
+      "trackNumber": 10
+    },
+    "3sbgfpOXOMQGMQs68eL1sE": {
+      "album": {
+        "id": "0wNjC8d3ve2L2yaomEWUsa",
+        "name": "Tourist History"
+      },
+      "artists": [
+        {
+          "name": "Two Door Cinema Club"
+        }
+      ],
+      "artistsDisplay": "Two Door Cinema Club",
+      "durationMs": 209386,
+      "id": "3sbgfpOXOMQGMQs68eL1sE",
+      "image": {
+        "height": 300,
+        "url": "/playwright-fixtures/art/652186e1fec542c9.jpg",
+        "width": 300
+      },
+      "name": "Do You Want It All?",
+      "ref": "spotify:track:3sbgfpOXOMQGMQs68eL1sE",
+      "trackNumber": 4
+    },
+    "3uh9V6EpNmR3rmK8xlJZs3": {
+      "album": {
+        "id": "62bvGtckemXfkTyTs0sFbi",
+        "name": "Theme from a Perfect World"
+      },
+      "artists": [
+        {
+          "name": "Andy Timmons"
+        }
+      ],
+      "artistsDisplay": "Andy Timmons",
+      "durationMs": 247336,
+      "id": "3uh9V6EpNmR3rmK8xlJZs3",
+      "image": {
+        "height": 300,
+        "url": "/playwright-fixtures/art/c04c7ef19d9f928b.jpg",
+        "width": 300
+      },
+      "name": "Welcome Home",
+      "ref": "spotify:track:3uh9V6EpNmR3rmK8xlJZs3",
+      "trackNumber": 9
+    },
+    "48X4D1FYOShPz2VF3YdfCF": {
+      "album": {
+        "id": "5vkqYmiPBYLaalcmjujWxK",
+        "name": "In Rainbows"
+      },
+      "artists": [
+        {
+          "name": "Radiohead"
+        }
+      ],
+      "artistsDisplay": "Radiohead",
+      "durationMs": 328293,
+      "id": "48X4D1FYOShPz2VF3YdfCF",
+      "image": {
+        "height": 300,
+        "url": "/playwright-fixtures/art/95111e33fa5b7e2a.jpg",
+        "width": 300
+      },
+      "name": "House Of Cards",
+      "ref": "spotify:track:48X4D1FYOShPz2VF3YdfCF",
+      "trackNumber": 8
+    },
+    "4BMDuMaHNGPadx3t7tDUFu": {
+      "addedAt": 1772141993000,
+      "album": {
+        "id": "57MESweFH04IC2vZEfGqIL",
+        "name": "Solaris"
+      },
+      "artists": [
+        {
+          "externalUrl": "https://open.spotify.com/artist/5XG0u0GsaiIvBEzznbjdCj",
+          "name": "lxst child"
+        },
+        {
+          "externalUrl": "https://open.spotify.com/artist/77fiP4sVnbuqhLnEXmWF7h",
+          "name": "nømiS"
+        }
+      ],
+      "artistsDisplay": "lxst child, nømiS",
+      "durationMs": 136562,
+      "externalUrl": "https://open.spotify.com/track/4BMDuMaHNGPadx3t7tDUFu",
+      "id": "4BMDuMaHNGPadx3t7tDUFu",
+      "image": {
+        "url": "/playwright-fixtures/art/db66bdc2e24498c5.jpg"
+      },
+      "isrc": "US3DF2612929",
+      "name": "Solaris",
+      "ref": "spotify:track:4BMDuMaHNGPadx3t7tDUFu",
+      "trackNumber": 1
+    },
+    "4HuiEuJ7ZW8jewUuZBg6sk": {
+      "addedAt": 1777182812000,
+      "album": {
+        "id": "1i8WVUZhMVNurF8rmlMeSH",
+        "name": "Trick"
+      },
+      "artists": [
+        {
+          "externalUrl": "https://open.spotify.com/artist/6lcwlkAjBPSKnFBZjjZFJs",
+          "name": "Alex G"
+        }
+      ],
+      "artistsDisplay": "Alex G",
+      "durationMs": 176146,
+      "externalUrl": "https://open.spotify.com/track/4HuiEuJ7ZW8jewUuZBg6sk",
+      "id": "4HuiEuJ7ZW8jewUuZBg6sk",
+      "image": {
+        "url": "/playwright-fixtures/art/f49b261f41cbfed5.jpg"
+      },
+      "isrc": "GBJET1400060",
+      "name": "Sarah",
+      "ref": "spotify:track:4HuiEuJ7ZW8jewUuZBg6sk",
+      "trackNumber": 15
+    },
+    "4JLBaHFkjxnbf9X0D8G3zQ": {
+      "album": {
+        "id": "1KNUCVXgIxKUGiuEB8eG0i",
+        "name": "Charm"
+      },
+      "artists": [
+        {
+          "name": "Clairo"
+        }
+      ],
+      "artistsDisplay": "Clairo",
+      "durationMs": 170832,
+      "id": "4JLBaHFkjxnbf9X0D8G3zQ",
+      "image": {
+        "height": 300,
+        "url": "/playwright-fixtures/art/8cb352ba5c6149b5.jpg",
+        "width": 300
+      },
+      "name": "Glory of the Snow",
+      "ref": "spotify:track:4JLBaHFkjxnbf9X0D8G3zQ",
+      "trackNumber": 10
+    },
+    "4Klyx5dYqZV9YefSecDwDv": {
+      "album": {
+        "id": "3C2MFZ2iHotUQOSBzdSvM7",
+        "name": "Lonerism"
+      },
+      "artists": [
+        {
+          "name": "Tame Impala"
+        }
+      ],
+      "artistsDisplay": "Tame Impala",
+      "durationMs": 57173,
+      "id": "4Klyx5dYqZV9YefSecDwDv",
+      "image": {
+        "height": 300,
+        "url": "/playwright-fixtures/art/33dae541415fc8a2.jpg",
+        "width": 300
+      },
+      "name": "She Just Won't Believe Me",
+      "ref": "spotify:track:4Klyx5dYqZV9YefSecDwDv",
+      "trackNumber": 10
+    },
+    "4MTVOQ8SMdYEgBUkwJv07F": {
+      "album": {
+        "id": "1jMTPWTHJhsZev04IbmyCC",
+        "name": "Life of Leisure"
+      },
+      "artists": [
+        {
+          "name": "Washed Out"
+        }
+      ],
+      "artistsDisplay": "Washed Out",
+      "durationMs": 173746,
+      "id": "4MTVOQ8SMdYEgBUkwJv07F",
+      "image": {
+        "height": 300,
+        "url": "/playwright-fixtures/art/6b145e1f6a32250d.jpg",
+        "width": 300
+      },
+      "name": "You'll See It",
+      "ref": "spotify:track:4MTVOQ8SMdYEgBUkwJv07F",
+      "trackNumber": 6
+    },
+    "4NVVkwjYPkiCCuJZzTo6qd": {
+      "album": {
+        "id": "62bvGtckemXfkTyTs0sFbi",
+        "name": "Theme from a Perfect World"
+      },
+      "artists": [
+        {
+          "name": "Andy Timmons"
+        }
+      ],
+      "artistsDisplay": "Andy Timmons",
+      "durationMs": 269462,
+      "id": "4NVVkwjYPkiCCuJZzTo6qd",
+      "image": {
+        "height": 300,
+        "url": "/playwright-fixtures/art/c04c7ef19d9f928b.jpg",
+        "width": 300
+      },
+      "name": "Sanctuary",
+      "ref": "spotify:track:4NVVkwjYPkiCCuJZzTo6qd",
+      "trackNumber": 4
+    },
+    "4O5YWh6sm7jfWLy1vHXoZ7": {
+      "addedAt": 1772141993000,
+      "album": {
+        "id": "3G0aTwHbHYG0SwuzMejUlF",
+        "name": "Sunset Cassette"
+      },
+      "artists": [
+        {
+          "externalUrl": "https://open.spotify.com/artist/5XG0u0GsaiIvBEzznbjdCj",
+          "name": "lxst child"
+        },
+        {
+          "externalUrl": "https://open.spotify.com/artist/2Stpt1QF7b7PJZfISxjAmb",
+          "name": "Lush Blue Kid"
+        }
+      ],
+      "artistsDisplay": "lxst child, Lush Blue Kid",
+      "durationMs": 196718,
+      "externalUrl": "https://open.spotify.com/track/4O5YWh6sm7jfWLy1vHXoZ7",
+      "id": "4O5YWh6sm7jfWLy1vHXoZ7",
+      "image": {
+        "url": "/playwright-fixtures/art/16601542b735ef0b.jpg"
+      },
+      "isrc": "USANG2527773",
+      "name": "Sunset Cassette",
+      "ref": "spotify:track:4O5YWh6sm7jfWLy1vHXoZ7",
+      "trackNumber": 1
+    },
+    "4SFJBLKQnddNn8h2N52EKu": {
+      "album": {
+        "id": "62bvGtckemXfkTyTs0sFbi",
+        "name": "Theme from a Perfect World"
+      },
+      "artists": [
+        {
+          "name": "Andy Timmons"
+        }
+      ],
+      "artistsDisplay": "Andy Timmons",
+      "durationMs": 375065,
+      "id": "4SFJBLKQnddNn8h2N52EKu",
+      "image": {
+        "height": 300,
+        "url": "/playwright-fixtures/art/c04c7ef19d9f928b.jpg",
+        "width": 300
+      },
+      "name": "On Your Way Sweet Soul",
+      "ref": "spotify:track:4SFJBLKQnddNn8h2N52EKu",
+      "trackNumber": 10
+    },
+    "4T1iiabe7G0UjWQJCY6NE2": {
+      "album": {
+        "id": "5vkqYmiPBYLaalcmjujWxK",
+        "name": "In Rainbows"
+      },
+      "artists": [
+        {
+          "name": "Radiohead"
+        }
+      ],
+      "artistsDisplay": "Radiohead",
+      "durationMs": 279634,
+      "id": "4T1iiabe7G0UjWQJCY6NE2",
+      "image": {
+        "height": 300,
+        "url": "/playwright-fixtures/art/95111e33fa5b7e2a.jpg",
+        "width": 300
+      },
+      "name": "Videotape",
+      "ref": "spotify:track:4T1iiabe7G0UjWQJCY6NE2",
+      "trackNumber": 10
+    },
+    "4V0x90QcMh4ZxwHzEWOdtK": {
+      "album": {
+        "id": "1jMTPWTHJhsZev04IbmyCC",
+        "name": "Life of Leisure"
+      },
+      "artists": [
+        {
+          "name": "Washed Out"
+        }
+      ],
+      "artistsDisplay": "Washed Out",
+      "durationMs": 192080,
+      "id": "4V0x90QcMh4ZxwHzEWOdtK",
+      "image": {
+        "height": 300,
+        "url": "/playwright-fixtures/art/6b145e1f6a32250d.jpg",
+        "width": 300
+      },
+      "name": "Feel It All Around",
+      "ref": "spotify:track:4V0x90QcMh4ZxwHzEWOdtK",
+      "trackNumber": 4
+    },
+    "4WJPxTsvWIdRZ9vMtqk7fj": {
+      "album": {
+        "id": "1KNUCVXgIxKUGiuEB8eG0i",
+        "name": "Charm"
+      },
+      "artists": [
+        {
+          "name": "Clairo"
+        }
+      ],
+      "artistsDisplay": "Clairo",
+      "durationMs": 225572,
+      "id": "4WJPxTsvWIdRZ9vMtqk7fj",
+      "image": {
+        "height": 300,
+        "url": "/playwright-fixtures/art/8cb352ba5c6149b5.jpg",
+        "width": 300
+      },
+      "name": "Nomad",
+      "ref": "spotify:track:4WJPxTsvWIdRZ9vMtqk7fj",
+      "trackNumber": 1
+    },
+    "4WT3YEFYNeuML7XTaDgNeN": {
+      "addedAt": 1777138210000,
+      "album": {
+        "id": "50nvPOvceq4QENvfPhSEoC",
+        "name": "No Way To Relax When You Are On Fire"
+      },
+      "artists": [
+        {
+          "externalUrl": "https://open.spotify.com/artist/4V30Q8ACPdJCcAmAYibfrH",
+          "name": "Dora Jar"
+        }
+      ],
+      "artistsDisplay": "Dora Jar",
+      "durationMs": 161400,
+      "externalUrl": "https://open.spotify.com/track/4WT3YEFYNeuML7XTaDgNeN",
+      "id": "4WT3YEFYNeuML7XTaDgNeN",
+      "image": {
+        "url": "/playwright-fixtures/art/be983a89ff057849.jpg"
+      },
+      "isrc": "USUG12404031",
+      "name": "Timelapse",
+      "ref": "spotify:track:4WT3YEFYNeuML7XTaDgNeN",
+      "trackNumber": 2
+    },
+    "4YxsHfixhpcJ7m79DjLUmw": {
+      "album": {
+        "id": "62bvGtckemXfkTyTs0sFbi",
+        "name": "Theme from a Perfect World"
+      },
+      "artists": [
+        {
+          "name": "Andy Timmons"
+        }
+      ],
+      "artistsDisplay": "Andy Timmons",
+      "durationMs": 273289,
+      "id": "4YxsHfixhpcJ7m79DjLUmw",
+      "image": {
+        "height": 300,
+        "url": "/playwright-fixtures/art/c04c7ef19d9f928b.jpg",
+        "width": 300
+      },
+      "name": "Winterland",
+      "ref": "spotify:track:4YxsHfixhpcJ7m79DjLUmw",
+      "trackNumber": 2
+    },
+    "4c6DqwAUGF2yDGZqWVGQfz": {
+      "addedAt": 1740451140000,
+      "album": {
+        "id": "3iqw67w0xjeBM1zeQPXbcq",
+        "name": "The Path Less Travelled"
+      },
+      "artists": [
+        {
+          "externalUrl": "https://open.spotify.com/artist/5iUnvXddCpOrbWKm7QMr6o",
+          "name": "Vegyn"
+        }
+      ],
+      "artistsDisplay": "Vegyn",
+      "durationMs": 317835,
+      "externalUrl": "https://open.spotify.com/track/4c6DqwAUGF2yDGZqWVGQfz",
+      "id": "4c6DqwAUGF2yDGZqWVGQfz",
+      "image": {
+        "url": "/playwright-fixtures/art/df0cafaea9ebf64b.jpg"
+      },
+      "isrc": "GB5952300278",
+      "name": "Makeshift Tourniquet",
+      "ref": "spotify:track:4c6DqwAUGF2yDGZqWVGQfz",
+      "trackNumber": 3
+    },
+    "4iZxeyibg6w4EFCOoAQ6Eh": {
+      "album": {
+        "id": "0wNjC8d3ve2L2yaomEWUsa",
+        "name": "Tourist History"
+      },
+      "artists": [
+        {
+          "name": "Two Door Cinema Club"
+        }
+      ],
+      "artistsDisplay": "Two Door Cinema Club",
+      "durationMs": 191706,
+      "id": "4iZxeyibg6w4EFCOoAQ6Eh",
+      "image": {
+        "height": 300,
+        "url": "/playwright-fixtures/art/652186e1fec542c9.jpg",
+        "width": 300
+      },
+      "name": "What You Know",
+      "ref": "spotify:track:4iZxeyibg6w4EFCOoAQ6Eh",
+      "trackNumber": 8
+    },
+    "4oXg7xT4ksBxHTx8PcmSXw": {
+      "album": {
+        "id": "5vkqYmiPBYLaalcmjujWxK",
+        "name": "In Rainbows"
+      },
+      "artists": [
+        {
+          "name": "Radiohead"
+        }
+      ],
+      "artistsDisplay": "Radiohead",
+      "durationMs": 237293,
+      "id": "4oXg7xT4ksBxHTx8PcmSXw",
+      "image": {
+        "height": 300,
+        "url": "/playwright-fixtures/art/95111e33fa5b7e2a.jpg",
+        "width": 300
+      },
+      "name": "15 Step",
+      "ref": "spotify:track:4oXg7xT4ksBxHTx8PcmSXw",
+      "trackNumber": 1
+    },
+    "4pWIwnnqx8k01fuF95UMIg": {
+      "album": {
+        "id": "5vkqYmiPBYLaalcmjujWxK",
+        "name": "In Rainbows"
+      },
+      "artists": [
+        {
+          "name": "Radiohead"
+        }
+      ],
+      "artistsDisplay": "Radiohead",
+      "durationMs": 242293,
+      "id": "4pWIwnnqx8k01fuF95UMIg",
+      "image": {
+        "height": 300,
+        "url": "/playwright-fixtures/art/95111e33fa5b7e2a.jpg",
+        "width": 300
+      },
+      "name": "Bodysnatchers",
+      "ref": "spotify:track:4pWIwnnqx8k01fuF95UMIg",
+      "trackNumber": 2
+    },
+    "4tf04WrZTy60CawyvueIdK": {
+      "addedAt": 1777182453000,
+      "album": {
+        "id": "2rhNQbqRNxiNQkDXTffe1V",
+        "name": "Beatopia"
+      },
+      "artists": [
+        {
+          "externalUrl": "https://open.spotify.com/artist/35l9BRT7MXmM8bv2WDQiyB",
+          "name": "beabadoobee"
+        }
+      ],
+      "artistsDisplay": "beabadoobee",
+      "durationMs": 158293,
+      "externalUrl": "https://open.spotify.com/track/4tf04WrZTy60CawyvueIdK",
+      "id": "4tf04WrZTy60CawyvueIdK",
+      "image": {
+        "url": "/playwright-fixtures/art/67efbee0e6d7cc0c.jpg"
+      },
+      "isrc": "GBK3W2202095",
+      "name": "Talk",
+      "ref": "spotify:track:4tf04WrZTy60CawyvueIdK",
+      "trackNumber": 8
+    },
+    "4wajJ1o7jWIg62YqpkHC7S": {
+      "album": {
+        "id": "5vkqYmiPBYLaalcmjujWxK",
+        "name": "In Rainbows"
+      },
+      "artists": [
+        {
+          "name": "Radiohead"
+        }
+      ],
+      "artistsDisplay": "Radiohead",
+      "durationMs": 318186,
+      "id": "4wajJ1o7jWIg62YqpkHC7S",
+      "image": {
+        "height": 300,
+        "url": "/playwright-fixtures/art/95111e33fa5b7e2a.jpg",
+        "width": 300
+      },
+      "name": "Weird Fishes / Arpeggi",
+      "ref": "spotify:track:4wajJ1o7jWIg62YqpkHC7S",
+      "trackNumber": 4
+    },
+    "4zVEPRe3LjceP9IR8vGTrq": {
+      "addedAt": 1772142091000,
+      "album": {
+        "id": "3YKdzQIvPrDfnBHu1zbXvF",
+        "name": "Protocol"
+      },
+      "artists": [
+        {
+          "externalUrl": "https://open.spotify.com/artist/02P3vvY3sPom79sSRoYqkD",
+          "name": "RetroStrike"
+        }
+      ],
+      "artistsDisplay": "RetroStrike",
+      "durationMs": 177560,
+      "externalUrl": "https://open.spotify.com/track/4zVEPRe3LjceP9IR8vGTrq",
+      "id": "4zVEPRe3LjceP9IR8vGTrq",
+      "image": {
+        "url": "/playwright-fixtures/art/e08af03803872c07.jpg"
+      },
+      "isrc": "SE7DX2501594",
+      "name": "Protocol",
+      "ref": "spotify:track:4zVEPRe3LjceP9IR8vGTrq",
+      "trackNumber": 1
+    },
+    "57fbBPLULyZaJG5pJJzoFh": {
+      "addedAt": 1772141993000,
+      "album": {
+        "id": "6dJTWJWUmqRZV4yb0WSSky",
+        "name": "Saraia"
+      },
+      "artists": [
+        {
+          "externalUrl": "https://open.spotify.com/artist/5XG0u0GsaiIvBEzznbjdCj",
+          "name": "lxst child"
+        }
+      ],
+      "artistsDisplay": "lxst child",
+      "durationMs": 239321,
+      "externalUrl": "https://open.spotify.com/track/57fbBPLULyZaJG5pJJzoFh",
+      "id": "57fbBPLULyZaJG5pJJzoFh",
+      "image": {
+        "url": "/playwright-fixtures/art/eafdab8ac4b998c7.jpg"
+      },
+      "isrc": "US3DF2607955",
+      "name": "Saraia",
+      "ref": "spotify:track:57fbBPLULyZaJG5pJJzoFh",
+      "trackNumber": 1
+    },
+    "5AudrkLWtPGGyHb459MagI": {
+      "addedAt": 1772142091000,
+      "album": {
+        "id": "7Gz7z4o1bFmp3vceUQdwfC",
+        "name": "When the City Was Quiet"
+      },
+      "artists": [
+        {
+          "externalUrl": "https://open.spotify.com/artist/6UD8pS3KW4GX4PPxza4OW3",
+          "name": "Crystal Motel"
+        }
+      ],
+      "artistsDisplay": "Crystal Motel",
+      "durationMs": 125052,
+      "externalUrl": "https://open.spotify.com/track/5AudrkLWtPGGyHb459MagI",
+      "id": "5AudrkLWtPGGyHb459MagI",
+      "image": {
+        "url": "/playwright-fixtures/art/76cd52819b04cbb2.jpg"
+      },
+      "isrc": "FXQ892500432",
+      "name": "When the City Was Quiet",
+      "ref": "spotify:track:5AudrkLWtPGGyHb459MagI",
+      "trackNumber": 1
+    },
+    "5Qv2Nby1xTr9pQyjkrc94J": {
+      "album": {
+        "id": "5vkqYmiPBYLaalcmjujWxK",
+        "name": "In Rainbows"
+      },
+      "artists": [
+        {
+          "name": "Radiohead"
+        }
+      ],
+      "artistsDisplay": "Radiohead",
+      "durationMs": 228746,
+      "id": "5Qv2Nby1xTr9pQyjkrc94J",
+      "image": {
+        "height": 300,
+        "url": "/playwright-fixtures/art/95111e33fa5b7e2a.jpg",
+        "width": 300
+      },
+      "name": "All I Need",
+      "ref": "spotify:track:5Qv2Nby1xTr9pQyjkrc94J",
+      "trackNumber": 5
+    },
+    "5RUsUybr6L0iAkmo700FUT": {
+      "addedAt": 1689361194000,
+      "album": {
+        "id": "4fmlM2Ajs0LPPpX34gP9Hn",
+        "name": "Bach: Violin Concertos BWV 1041, 1042, 1043, 1060"
+      },
+      "artists": [
+        {
+          "externalUrl": "https://open.spotify.com/artist/5aIqB5nVVvmFsvSdExz408",
+          "name": "Johann Sebastian Bach"
+        },
+        {
+          "externalUrl": "https://open.spotify.com/artist/3FEd0qHPFOgcpfw7bCXB4x",
+          "name": "Zubin Mehta"
+        },
+        {
+          "externalUrl": "https://open.spotify.com/artist/3gacryguGmpmCvgPGt2CBI",
+          "name": "New York Philharmonic"
+        },
+        {
+          "externalUrl": "https://open.spotify.com/artist/3HYV4ZdJ1LSOhPo5ehlEqF",
+          "name": "Isaac Stern"
+        },
+        {
+          "externalUrl": "https://open.spotify.com/artist/0hIG9FXgjQxT8fKaYceFbA",
+          "name": "Itzhak Perlman"
+        }
+      ],
+      "artistsDisplay": "Johann Sebastian Bach, Zubin Mehta, New York Philharmonic, Isaac Stern, Itzhak Perlman",
+      "durationMs": 239226,
+      "externalUrl": "https://open.spotify.com/track/5RUsUybr6L0iAkmo700FUT",
+      "id": "5RUsUybr6L0iAkmo700FUT",
+      "image": {
+        "url": "/playwright-fixtures/art/5324c4caa265866f.jpg"
+      },
+      "isrc": "USSM19911581",
+      "name": "Concerto for 2 Violins in D Minor, BWV 1043: I. Vivace",
+      "ref": "spotify:track:5RUsUybr6L0iAkmo700FUT",
+      "trackNumber": 7
+    },
+    "5YVgRhi9e7S0DG1kCvkruK": {
+      "addedAt": 1772142091000,
+      "album": {
+        "id": "706DexETStSK2srKqdVbrt",
+        "name": "Moonlake"
+      },
+      "artists": [
+        {
+          "externalUrl": "https://open.spotify.com/artist/6wOyatkq0K10g7yVdniobk",
+          "name": "Azure Rooms"
+        }
+      ],
+      "artistsDisplay": "Azure Rooms",
+      "durationMs": 141176,
+      "externalUrl": "https://open.spotify.com/track/5YVgRhi9e7S0DG1kCvkruK",
+      "id": "5YVgRhi9e7S0DG1kCvkruK",
+      "image": {
+        "url": "/playwright-fixtures/art/4b15e5e5e116d161.jpg"
+      },
+      "isrc": "FXQ892500350",
+      "name": "Moonlake",
+      "ref": "spotify:track:5YVgRhi9e7S0DG1kCvkruK",
+      "trackNumber": 1
+    },
+    "5cZxROV2WySPJIfU46ZVGw": {
+      "addedAt": 1772141993000,
+      "album": {
+        "id": "32UABCFumfPYxi7EJVHCpH",
+        "name": "Afterlight"
+      },
+      "artists": [
+        {
+          "externalUrl": "https://open.spotify.com/artist/55DhV9I8VahoWvpa3QMPP5",
+          "name": "Rogue VHS"
+        },
+        {
+          "externalUrl": "https://open.spotify.com/artist/5XG0u0GsaiIvBEzznbjdCj",
+          "name": "lxst child"
+        }
+      ],
+      "artistsDisplay": "Rogue VHS, lxst child",
+      "durationMs": 220663,
+      "externalUrl": "https://open.spotify.com/track/5cZxROV2WySPJIfU46ZVGw",
+      "id": "5cZxROV2WySPJIfU46ZVGw",
+      "image": {
+        "url": "/playwright-fixtures/art/08edfdbd436e28d8.jpg"
+      },
+      "isrc": "QZWV32532113",
+      "name": "Afterlight - Slowed",
+      "ref": "spotify:track:5cZxROV2WySPJIfU46ZVGw",
+      "trackNumber": 3
+    },
+    "5eqzYDycYdtxv3kM5RZrjr": {
+      "addedAt": 1313508565000,
+      "album": {
+        "id": "7dGWooPVCg5cFIykKJQaC7",
+        "name": "Philadelphia Songs"
+      },
+      "artists": [
+        {
+          "externalUrl": "https://open.spotify.com/artist/2sJ5Iicthbc9d8Sl1dpeSB",
+          "name": "Denison Witmer"
+        }
+      ],
+      "artistsDisplay": "Denison Witmer",
+      "durationMs": 157280,
+      "externalUrl": "https://open.spotify.com/track/5eqzYDycYdtxv3kM5RZrjr",
+      "id": "5eqzYDycYdtxv3kM5RZrjr",
+      "image": {
+        "url": "/playwright-fixtures/art/30031ca6f53efd96.jpg"
+      },
+      "isrc": "USA970205007",
+      "name": "Do I Really Have To?",
+      "ref": "spotify:track:5eqzYDycYdtxv3kM5RZrjr",
+      "trackNumber": 7
+    },
+    "5s25dl6bXuRn6nyGJMgwe5": {
+      "album": {
+        "id": "62bvGtckemXfkTyTs0sFbi",
+        "name": "Theme from a Perfect World"
+      },
+      "artists": [
+        {
+          "name": "Andy Timmons"
+        }
+      ],
+      "artistsDisplay": "Andy Timmons",
+      "durationMs": 446927,
+      "id": "5s25dl6bXuRn6nyGJMgwe5",
+      "image": {
+        "height": 300,
+        "url": "/playwright-fixtures/art/c04c7ef19d9f928b.jpg",
+        "width": 300
+      },
+      "name": "Theme from a Perfect World",
+      "ref": "spotify:track:5s25dl6bXuRn6nyGJMgwe5",
+      "trackNumber": 3
+    },
+    "5teWpAL00TMLDXMC7d2rK2": {
+      "album": {
+        "id": "0wNjC8d3ve2L2yaomEWUsa",
+        "name": "Tourist History"
+      },
+      "artists": [
+        {
+          "name": "Two Door Cinema Club"
+        }
+      ],
+      "artistsDisplay": "Two Door Cinema Club",
+      "durationMs": 210733,
+      "id": "5teWpAL00TMLDXMC7d2rK2",
+      "image": {
+        "height": 300,
+        "url": "/playwright-fixtures/art/652186e1fec542c9.jpg",
+        "width": 300
+      },
+      "name": "This Is the Life",
+      "ref": "spotify:track:5teWpAL00TMLDXMC7d2rK2",
+      "trackNumber": 5
+    },
+    "5xJc58mBWz68WhwU2n5seR": {
+      "addedAt": 1729566387000,
+      "album": {
+        "id": "1HrMmB5useeZ0F5lHrMvl0",
+        "name": "Amnesiac"
+      },
+      "artists": [
+        {
+          "externalUrl": "https://open.spotify.com/artist/4Z8W4fKeB5YxbusRsdQVPb",
+          "name": "Radiohead"
+        }
+      ],
+      "artistsDisplay": "Radiohead",
+      "durationMs": 276693,
+      "externalUrl": "https://open.spotify.com/track/5xJc58mBWz68WhwU2n5seR",
+      "id": "5xJc58mBWz68WhwU2n5seR",
+      "image": {
+        "url": "/playwright-fixtures/art/37c6c8be9bf6d1eb.jpg"
+      },
+      "isrc": "GBAYE0001587",
+      "name": "Life In a Glasshouse",
+      "ref": "spotify:track:5xJc58mBWz68WhwU2n5seR",
+      "trackNumber": 11
+    },
+    "5xSxWpL9NhkR2B4lwKIK5v": {
+      "addedAt": 1772142091000,
+      "album": {
+        "id": "4Q5fTmh7p1FC2cO6G8vz1u",
+        "name": "Metrogate"
+      },
+      "artists": [
+        {
+          "externalUrl": "https://open.spotify.com/artist/5Lip3pKcScdUFzpJ4fJpHh",
+          "name": "Nocora"
+        }
+      ],
+      "artistsDisplay": "Nocora",
+      "durationMs": 122553,
+      "externalUrl": "https://open.spotify.com/track/5xSxWpL9NhkR2B4lwKIK5v",
+      "id": "5xSxWpL9NhkR2B4lwKIK5v",
+      "image": {
+        "url": "/playwright-fixtures/art/312d80a47b380d5f.jpg"
+      },
+      "isrc": "SE6YL2403009",
+      "name": "Metrogate",
+      "ref": "spotify:track:5xSxWpL9NhkR2B4lwKIK5v",
+      "trackNumber": 1
+    },
+    "61a3jJKnYaUCAQDr07W8LH": {
+      "album": {
+        "id": "1jMTPWTHJhsZev04IbmyCC",
+        "name": "Life of Leisure"
+      },
+      "artists": [
+        {
+          "name": "Washed Out"
+        }
+      ],
+      "artistsDisplay": "Washed Out",
+      "durationMs": 208506,
+      "id": "61a3jJKnYaUCAQDr07W8LH",
+      "image": {
+        "height": 300,
+        "url": "/playwright-fixtures/art/6b145e1f6a32250d.jpg",
+        "width": 300
+      },
+      "name": "Hold Out",
+      "ref": "spotify:track:61a3jJKnYaUCAQDr07W8LH",
+      "trackNumber": 3
+    },
+    "65jWAsL7oFHWGcfNFfdRWr": {
+      "addedAt": 1772141993000,
+      "album": {
+        "id": "1EcI9F0it9Zz1Ews5bMXVv",
+        "name": "Hiraeth"
+      },
+      "artists": [
+        {
+          "externalUrl": "https://open.spotify.com/artist/5XG0u0GsaiIvBEzznbjdCj",
+          "name": "lxst child"
+        },
+        {
+          "externalUrl": "https://open.spotify.com/artist/2ojS6yIcU29iRfOFEwQnIV",
+          "name": "ØFFalling"
+        }
+      ],
+      "artistsDisplay": "lxst child, ØFFalling",
+      "durationMs": 201333,
+      "externalUrl": "https://open.spotify.com/track/65jWAsL7oFHWGcfNFfdRWr",
+      "id": "65jWAsL7oFHWGcfNFfdRWr",
+      "image": {
+        "url": "/playwright-fixtures/art/adf6d080fbb939b8.jpg"
+      },
+      "isrc": "QZVEM2565251",
+      "name": "Hiraeth",
+      "ref": "spotify:track:65jWAsL7oFHWGcfNFfdRWr",
+      "trackNumber": 1
+    },
+    "6EieVa9qUyLRo7aGUL6852": {
+      "addedAt": 1740451140000,
+      "album": {
+        "id": "29mC8mr2hz5QqEG3JZFNww",
+        "name": "Pinback"
+      },
+      "artists": [
+        {
+          "externalUrl": "https://open.spotify.com/artist/4ZWvN9FEfdTea1SEHjpTNi",
+          "name": "Pinback"
+        }
+      ],
+      "artistsDisplay": "Pinback",
+      "durationMs": 337920,
+      "externalUrl": "https://open.spotify.com/track/6EieVa9qUyLRo7aGUL6852",
+      "id": "6EieVa9qUyLRo7aGUL6852",
+      "image": {
+        "url": "/playwright-fixtures/art/1884b33c1a17a97e.jpg"
+      },
+      "isrc": "US39Z0400710",
+      "name": "Montaigne",
+      "ref": "spotify:track:6EieVa9qUyLRo7aGUL6852",
+      "trackNumber": 10
+    },
+    "6FcDxtnGfsYHOcGkXN2OIG": {
+      "album": {
+        "id": "1KNUCVXgIxKUGiuEB8eG0i",
+        "name": "Charm"
+      },
+      "artists": [
+        {
+          "name": "Clairo"
+        }
+      ],
+      "artistsDisplay": "Clairo",
+      "durationMs": 205263,
+      "id": "6FcDxtnGfsYHOcGkXN2OIG",
+      "image": {
+        "height": 300,
+        "url": "/playwright-fixtures/art/8cb352ba5c6149b5.jpg",
+        "width": 300
+      },
+      "name": "Add Up My Love",
+      "ref": "spotify:track:6FcDxtnGfsYHOcGkXN2OIG",
+      "trackNumber": 8
+    },
+    "6HRWnBa2iwVWqbrKuVD565": {
+      "addedAt": 1729622987000,
+      "album": {
+        "id": "08ZBQtR6EmVmeOTtiwGinx",
+        "name": "Vanilla Sky"
+      },
+      "artists": [
+        {
+          "externalUrl": "https://open.spotify.com/artist/2xvtxDNInKDV4AvGmjw6d1",
+          "name": "Bladee"
+        }
+      ],
+      "artistsDisplay": "Bladee",
+      "durationMs": 100137,
+      "externalUrl": "https://open.spotify.com/track/6HRWnBa2iwVWqbrKuVD565",
+      "id": "6HRWnBa2iwVWqbrKuVD565",
+      "image": {
+        "url": "/playwright-fixtures/art/2979ae2ef3be1ff7.jpg"
+      },
+      "isrc": "SE5AJ1900771",
+      "name": "Birdbath",
+      "ref": "spotify:track:6HRWnBa2iwVWqbrKuVD565",
+      "trackNumber": 2
+    },
+    "6IM45SqAURH6PrvziDs1RQ": {
+      "album": {
+        "id": "3C2MFZ2iHotUQOSBzdSvM7",
+        "name": "Lonerism"
+      },
+      "artists": [
+        {
+          "name": "Tame Impala"
+        }
+      ],
+      "artistsDisplay": "Tame Impala",
+      "durationMs": 286093,
+      "id": "6IM45SqAURH6PrvziDs1RQ",
+      "image": {
+        "height": 300,
+        "url": "/playwright-fixtures/art/33dae541415fc8a2.jpg",
+        "width": 300
+      },
+      "name": "Why Won't They Talk To Me?",
+      "ref": "spotify:track:6IM45SqAURH6PrvziDs1RQ",
+      "trackNumber": 6
+    },
+    "6N0b6jlahlvHsV5MyZd0f8": {
+      "addedAt": 1740451140000,
+      "album": {
+        "id": "1ifU9X3dO0jDTLwzghijsM",
+        "name": "Valentine's Day Freestyle '25"
+      },
+      "artists": [
+        {
+          "externalUrl": "https://open.spotify.com/artist/6yJ6QQ3Y5l0s0tn7b0arrO",
+          "name": "JPEGMAFIA"
+        }
+      ],
+      "artistsDisplay": "JPEGMAFIA",
+      "durationMs": 209732,
+      "externalUrl": "https://open.spotify.com/track/6N0b6jlahlvHsV5MyZd0f8",
+      "id": "6N0b6jlahlvHsV5MyZd0f8",
+      "image": {
+        "url": "/playwright-fixtures/art/3fd71ebc9b9baa26.jpg"
+      },
+      "isrc": "QM4TX2552642",
+      "name": "Valentine's Day Freestyle '25",
+      "ref": "spotify:track:6N0b6jlahlvHsV5MyZd0f8",
+      "trackNumber": 1
+    },
+    "6QlSPjiXHc1XwGKeEls6Gh": {
+      "album": {
+        "id": "1KNUCVXgIxKUGiuEB8eG0i",
+        "name": "Charm"
+      },
+      "artists": [
+        {
+          "name": "Clairo"
+        }
+      ],
+      "artistsDisplay": "Clairo",
+      "durationMs": 229853,
+      "id": "6QlSPjiXHc1XwGKeEls6Gh",
+      "image": {
+        "height": 300,
+        "url": "/playwright-fixtures/art/8cb352ba5c6149b5.jpg",
+        "width": 300
+      },
+      "name": "Echo",
+      "ref": "spotify:track:6QlSPjiXHc1XwGKeEls6Gh",
+      "trackNumber": 9
+    },
+    "6Tsjt5Z1rPyYHpUT0rtimv": {
+      "addedAt": 1772142091000,
+      "album": {
+        "id": "5q7UFqrJAgGZ9aNrrjEX3F",
+        "name": "Mistline"
+      },
+      "artists": [
+        {
+          "externalUrl": "https://open.spotify.com/artist/6PRP1lwrRpqb8gfYERsnhV",
+          "name": "Night Shapes"
+        }
+      ],
+      "artistsDisplay": "Night Shapes",
+      "durationMs": 130000,
+      "externalUrl": "https://open.spotify.com/track/6Tsjt5Z1rPyYHpUT0rtimv",
+      "id": "6Tsjt5Z1rPyYHpUT0rtimv",
+      "image": {
+        "url": "/playwright-fixtures/art/366796c383cf2670.jpg"
+      },
+      "isrc": "FXQ892500433",
+      "name": "Mistline",
+      "ref": "spotify:track:6Tsjt5Z1rPyYHpUT0rtimv",
+      "trackNumber": 1
+    },
+    "6VJPSCUYdhoUce8ysd1KgM": {
+      "addedAt": 1313508568000,
+      "album": {
+        "id": "7dGWooPVCg5cFIykKJQaC7",
+        "name": "Philadelphia Songs"
+      },
+      "artists": [
+        {
+          "externalUrl": "https://open.spotify.com/artist/2sJ5Iicthbc9d8Sl1dpeSB",
+          "name": "Denison Witmer"
+        }
+      ],
+      "artistsDisplay": "Denison Witmer",
+      "durationMs": 207333,
+      "externalUrl": "https://open.spotify.com/track/6VJPSCUYdhoUce8ysd1KgM",
+      "id": "6VJPSCUYdhoUce8ysd1KgM",
+      "image": {
+        "url": "/playwright-fixtures/art/30031ca6f53efd96.jpg"
+      },
+      "isrc": "USA970205001",
+      "name": "Sets Of Keys",
+      "ref": "spotify:track:6VJPSCUYdhoUce8ysd1KgM",
+      "trackNumber": 1
+    },
+    "6W7rf0mCRfcvz5RpRdwLfm": {
+      "album": {
+        "id": "0wNjC8d3ve2L2yaomEWUsa",
+        "name": "Tourist History"
+      },
+      "artists": [
+        {
+          "name": "Two Door Cinema Club"
+        }
+      ],
+      "artistsDisplay": "Two Door Cinema Club",
+      "durationMs": 177426,
+      "id": "6W7rf0mCRfcvz5RpRdwLfm",
+      "image": {
+        "height": 300,
+        "url": "/playwright-fixtures/art/652186e1fec542c9.jpg",
+        "width": 300
+      },
+      "name": "I Can Talk",
+      "ref": "spotify:track:6W7rf0mCRfcvz5RpRdwLfm",
+      "trackNumber": 7
+    },
+    "6X1yyl75llXExLdfAmStrw": {
+      "album": {
+        "id": "0wNjC8d3ve2L2yaomEWUsa",
+        "name": "Tourist History"
+      },
+      "artists": [
+        {
+          "name": "Two Door Cinema Club"
+        }
+      ],
+      "artistsDisplay": "Two Door Cinema Club",
+      "durationMs": 203960,
+      "id": "6X1yyl75llXExLdfAmStrw",
+      "image": {
+        "height": 300,
+        "url": "/playwright-fixtures/art/652186e1fec542c9.jpg",
+        "width": 300
+      },
+      "name": "Come Back Home",
+      "ref": "spotify:track:6X1yyl75llXExLdfAmStrw",
+      "trackNumber": 2
+    },
+    "6ewQE1dNPv9qqlnB1CxrvM": {
+      "album": {
+        "id": "3C2MFZ2iHotUQOSBzdSvM7",
+        "name": "Lonerism"
+      },
+      "artists": [
+        {
+          "name": "Tame Impala"
+        }
+      ],
+      "artistsDisplay": "Tame Impala",
+      "durationMs": 271880,
+      "id": "6ewQE1dNPv9qqlnB1CxrvM",
+      "image": {
+        "height": 300,
+        "url": "/playwright-fixtures/art/33dae541415fc8a2.jpg",
+        "width": 300
+      },
+      "name": "Mind Mischief",
+      "ref": "spotify:track:6ewQE1dNPv9qqlnB1CxrvM",
+      "trackNumber": 4
+    },
+    "6i9S6ehN5CvmUfJKtiK47m": {
+      "addedAt": 1740451140000,
+      "album": {
+        "id": "24s0MyiXpmKLa3v9IMTwaL",
+        "name": "Frunk"
+      },
+      "artists": [
+        {
+          "externalUrl": "https://open.spotify.com/artist/7hkaLWxN3ZmMVTn1qEpPdM",
+          "name": "Joeyy"
+        }
+      ],
+      "artistsDisplay": "Joeyy",
+      "durationMs": 92150,
+      "externalUrl": "https://open.spotify.com/track/6i9S6ehN5CvmUfJKtiK47m",
+      "id": "6i9S6ehN5CvmUfJKtiK47m",
+      "image": {
+        "url": "/playwright-fixtures/art/325b366937f8e572.jpg"
+      },
+      "isrc": "QZZ4J2402035",
+      "name": "Frunk",
+      "ref": "spotify:track:6i9S6ehN5CvmUfJKtiK47m",
+      "trackNumber": 1
+    },
+    "6oFBHDOIyA01QkiEWAJcYS": {
+      "album": {
+        "id": "1jMTPWTHJhsZev04IbmyCC",
+        "name": "Life of Leisure"
+      },
+      "artists": [
+        {
+          "name": "Washed Out"
+        }
+      ],
+      "artistsDisplay": "Washed Out",
+      "durationMs": 180346,
+      "id": "6oFBHDOIyA01QkiEWAJcYS",
+      "image": {
+        "height": 300,
+        "url": "/playwright-fixtures/art/6b145e1f6a32250d.jpg",
+        "width": 300
+      },
+      "name": "Get Up",
+      "ref": "spotify:track:6oFBHDOIyA01QkiEWAJcYS",
+      "trackNumber": 1
+    },
+    "6qZjm61s6u8Ead9sWxCDro": {
+      "album": {
+        "id": "3C2MFZ2iHotUQOSBzdSvM7",
+        "name": "Lonerism"
+      },
+      "artists": [
+        {
+          "name": "Tame Impala"
+        }
+      ],
+      "artistsDisplay": "Tame Impala",
+      "durationMs": 211226,
+      "id": "6qZjm61s6u8Ead9sWxCDro",
+      "image": {
+        "height": 300,
+        "url": "/playwright-fixtures/art/33dae541415fc8a2.jpg",
+        "width": 300
+      },
+      "name": "Elephant",
+      "ref": "spotify:track:6qZjm61s6u8Ead9sWxCDro",
+      "trackNumber": 9
+    },
+    "6ybViy2qrO9sIi41EgRJgx": {
+      "addedAt": 1689361194000,
+      "album": {
+        "id": "1JvoMzqg04nC29gam4Qaiq",
+        "name": "Come Away With Me"
+      },
+      "artists": [
+        {
+          "externalUrl": "https://open.spotify.com/artist/2Kx7MNY7cI1ENniW7vT30N",
+          "name": "Norah Jones"
+        }
+      ],
+      "artistsDisplay": "Norah Jones",
+      "durationMs": 186146,
+      "externalUrl": "https://open.spotify.com/track/6ybViy2qrO9sIi41EgRJgx",
+      "id": "6ybViy2qrO9sIi41EgRJgx",
+      "image": {
+        "url": "/playwright-fixtures/art/4f2a49e30c7c94e5.jpg"
+      },
+      "isrc": "USBN20100529",
+      "name": "Don't Know Why",
+      "ref": "spotify:track:6ybViy2qrO9sIi41EgRJgx",
+      "trackNumber": 1
+    },
+    "70BuDRi0ApR7xJxE3at5jf": {
+      "addedAt": 1772141993000,
+      "album": {
+        "id": "3ev3ENFN2YeJvLBm1DQi9t",
+        "name": "Dreamline"
+      },
+      "artists": [
+        {
+          "externalUrl": "https://open.spotify.com/artist/5XG0u0GsaiIvBEzznbjdCj",
+          "name": "lxst child"
+        },
+        {
+          "externalUrl": "https://open.spotify.com/artist/3SR0CaSt7YGWawjsYAF1vN",
+          "name": "SANDSTØRM"
+        }
+      ],
+      "artistsDisplay": "lxst child, SANDSTØRM",
+      "durationMs": 155853,
+      "externalUrl": "https://open.spotify.com/track/70BuDRi0ApR7xJxE3at5jf",
+      "id": "70BuDRi0ApR7xJxE3at5jf",
+      "image": {
+        "url": "/playwright-fixtures/art/cd4d7d4c86333821.jpg"
+      },
+      "isrc": "USANG2567772",
+      "name": "Dreamline",
+      "ref": "spotify:track:70BuDRi0ApR7xJxE3at5jf",
+      "trackNumber": 1
+    },
+    "7Jk2pg4g0c5rz5AfkEGMRp": {
+      "album": {
+        "id": "3C2MFZ2iHotUQOSBzdSvM7",
+        "name": "Lonerism"
+      },
+      "artists": [
+        {
+          "name": "Tame Impala"
+        }
+      ],
+      "artistsDisplay": "Tame Impala",
+      "durationMs": 320293,
+      "id": "7Jk2pg4g0c5rz5AfkEGMRp",
+      "image": {
+        "height": 300,
+        "url": "/playwright-fixtures/art/33dae541415fc8a2.jpg",
+        "width": 300
+      },
+      "name": "Sun's Coming Up",
+      "ref": "spotify:track:7Jk2pg4g0c5rz5AfkEGMRp",
+      "trackNumber": 12
+    },
+    "7cFwopK7QTOgaEwF9JgipA": {
+      "album": {
+        "id": "1KNUCVXgIxKUGiuEB8eG0i",
+        "name": "Charm"
+      },
+      "artists": [
+        {
+          "name": "Clairo"
+        }
+      ],
+      "artistsDisplay": "Clairo",
+      "durationMs": 227409,
+      "id": "7cFwopK7QTOgaEwF9JgipA",
+      "image": {
+        "height": 300,
+        "url": "/playwright-fixtures/art/8cb352ba5c6149b5.jpg",
+        "width": 300
+      },
+      "name": "Second Nature",
+      "ref": "spotify:track:7cFwopK7QTOgaEwF9JgipA",
+      "trackNumber": 3
+    },
+    "7oQt7s2YBdOsblRKldrPCa": {
+      "addedAt": 1772141993000,
+      "album": {
+        "id": "3BYlETOllCaLAC6j3WI5tT",
+        "name": "Starfall"
+      },
+      "artists": [
+        {
+          "externalUrl": "https://open.spotify.com/artist/5XG0u0GsaiIvBEzznbjdCj",
+          "name": "lxst child"
+        },
+        {
+          "externalUrl": "https://open.spotify.com/artist/2Stpt1QF7b7PJZfISxjAmb",
+          "name": "Lush Blue Kid"
+        }
+      ],
+      "artistsDisplay": "lxst child, Lush Blue Kid",
+      "durationMs": 179804,
+      "externalUrl": "https://open.spotify.com/track/7oQt7s2YBdOsblRKldrPCa",
+      "id": "7oQt7s2YBdOsblRKldrPCa",
+      "image": {
+        "url": "/playwright-fixtures/art/50ab48793d0321d5.jpg"
+      },
+      "isrc": "USANG2535517",
+      "name": "Starfall",
+      "ref": "spotify:track:7oQt7s2YBdOsblRKldrPCa",
+      "trackNumber": 1
+    },
+    "7qU7vhCPKhkDiJYGoboISc": {
+      "album": {
+        "id": "3C2MFZ2iHotUQOSBzdSvM7",
+        "name": "Lonerism"
+      },
+      "artists": [
+        {
+          "name": "Tame Impala"
+        }
+      ],
+      "artistsDisplay": "Tame Impala",
+      "durationMs": 356946,
+      "id": "7qU7vhCPKhkDiJYGoboISc",
+      "image": {
+        "height": 300,
+        "url": "/playwright-fixtures/art/33dae541415fc8a2.jpg",
+        "width": 300
+      },
+      "name": "Apocalypse Dreams",
+      "ref": "spotify:track:7qU7vhCPKhkDiJYGoboISc",
+      "trackNumber": 3
+    }
   },
   "user": {
     "displayName": "Anonymous User",
-    "hashedId": "user_00000000"
-  },
-  "tracks": {},
-  "playlists": [],
-  "albums": [],
-  "likedTrackIds": [],
-  "pins": {
-    "playlistIds": [],
-    "albumIds": []
+    "hashedId": "user_b300108e"
   }
 }
