@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "spotify": {
+    "enabled": true,
+    "playlistIds": [],
+    "albumIds": [],
+    "likedTracks": { "limit": 50 },
+    "playlistTrackLimit": 50,
+    "pins": { "playlistIds": [], "albumIds": [] }
+  },
+  "dropbox": {
+    "enabled": true,
+    "folderPaths": [],
+    "trackLimitPerFolder": 30,
+    "savedPlaylistPaths": [],
+    "likesFilePath": "/.vorbis-player/likes.json",
+    "likedTracks": { "limit": 25 },
+    "pins": { "playlistIds": [], "albumIds": [] }
+  }
+}
