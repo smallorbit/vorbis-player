@@ -27,13 +27,10 @@ export interface AnonymizationContext {
   readonly seed: string;
   /** Returns the anonymized id for an original Spotify playlist id. Memoized within a run. */
   anonymizePlaylistId(originalId: string): string;
-  /** 1-based counter; increments each call. Used for "My Playlist <N>". */
-  nextPlaylistName(): string;
 }
 
 export function createAnonymizationContext(seed: string): AnonymizationContext {
   const playlistIdMap = new Map<string, string>();
-  let playlistCounter = 0;
 
   return {
     seed,
@@ -44,10 +41,6 @@ export function createAnonymizationContext(seed: string): AnonymizationContext {
         playlistIdMap.set(originalId, anonymized);
       }
       return anonymized;
-    },
-    nextPlaylistName(): string {
-      playlistCounter += 1;
-      return `My Playlist ${playlistCounter}`;
     },
   };
 }
