@@ -81,7 +81,7 @@ HTML5 `<audio>` element driven by `MockPlaybackAdapter` — no Spotify Web Playb
 
 **Test-control surface**
 
-`src/providers/mock/test-control.ts` exposes `window.__mockProvider` for Playwright scripts to drive playback state (skip, seek, force-error) without UI interaction.
+`src/providers/mock/test-control.ts` exposes `window.__mockTest` for Playwright scripts to drive playback state (skip, seek, force-error) without UI interaction.
 
 **Pin seeding**
 
