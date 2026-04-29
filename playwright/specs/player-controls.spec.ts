@@ -5,6 +5,10 @@ const hasContent = spotifySnapshot.playlists.length > 0;
 
 test.describe('Player Controls', () => {
   test.beforeEach(async ({ page }) => {
+    test.skip(
+      !hasContent,
+      'Specs require populated snapshots. Run `npm run snapshot:spotify -- --list` to enumerate your library, populate `snapshot.config.json`, then `npm run snapshot:spotify`. See #1372 §10 ("Curating fixtures").',
+    );
     await page.goto('/');
     await page.locator('button[title^="Zen Mode"]').waitFor({ state: 'visible', timeout: 30_000 });
 

@@ -3,6 +3,7 @@ import spotifySnapshot from '../fixtures/data/spotify-snapshot.json' with { type
 
 const hasPlaylists = spotifySnapshot.playlists.length > 0;
 const hasAlbums = spotifySnapshot.albums.length > 0;
+const hasContent = hasPlaylists || hasAlbums;
 
 async function navigateToLibrary(page: import('@playwright/test').Page) {
   await page.goto('/');
@@ -13,6 +14,10 @@ async function navigateToLibrary(page: import('@playwright/test').Page) {
 
 test.describe('Playlist Selection', () => {
   test('shows library UI when authenticated', async ({ page }) => {
+    test.skip(
+      !hasContent,
+      'Specs require populated snapshots. Run `npm run snapshot:spotify -- --list` to enumerate your library, populate `snapshot.config.json`, then `npm run snapshot:spotify`. See #1372 §10 ("Curating fixtures").',
+    );
     await navigateToLibrary(page);
     await expect(page.getByText('Connect Spotify')).not.toBeVisible({ timeout: 5000 });
     await expect(page.locator('[data-testid="library-home"]')).toBeVisible({ timeout: 5000 });
@@ -48,6 +53,10 @@ test.describe('Playlist Selection', () => {
   });
 
   test('library section renders without auth errors', async ({ page }) => {
+    test.skip(
+      !hasContent,
+      'Specs require populated snapshots. Run `npm run snapshot:spotify -- --list` to enumerate your library, populate `snapshot.config.json`, then `npm run snapshot:spotify`. See #1372 §10 ("Curating fixtures").',
+    );
     await navigateToLibrary(page);
     await expect(page.locator('[data-testid="library-home"]')).toBeVisible({ timeout: 5000 });
     await expect(page.getByText('Connect Spotify')).not.toBeVisible();
