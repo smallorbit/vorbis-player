@@ -75,7 +75,6 @@ test-results/
 
 # Capture toolkit
 playwright/capture/output/
-playwright/capture/.auth-state.json
 playwright/capture/.chrome-profile/
 
 # Playwright MCP server scratch (console logs, page snapshots)

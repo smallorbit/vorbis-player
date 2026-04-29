@@ -119,6 +119,11 @@ export class MockCatalogAdapter implements CatalogProvider {
     return [];
   }
 
+  getTrackById(id: string): MediaTrack | undefined {
+    const track = this.snapshot.tracks[id];
+    return track ? snapshotTrackToMediaTrack(track, this.providerId) : undefined;
+  }
+
   private resolveTrackIds(ids: string[]): MediaTrack[] {
     const tracks: MediaTrack[] = [];
     for (const id of ids) {
