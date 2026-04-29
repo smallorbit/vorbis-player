@@ -9,7 +9,7 @@ function defaultPlaylistKey(): string {
 }
 
 export const test = base.extend<{ capturePage: Page }>({
-  capturePage: async (_fixtures, runFixture, testInfo) => {
+  capturePage: async ({}, runFixture, testInfo) => {
     const playlist = process.env.PLAYLIST || defaultPlaylistKey();
     const headless = process.env.HEADLESS === '1';
     const viewport = testInfo.project.use.viewport as { width: number; height: number } | undefined;
