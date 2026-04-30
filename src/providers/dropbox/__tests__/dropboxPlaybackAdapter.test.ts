@@ -283,6 +283,37 @@ describe('DropboxPlaybackAdapter', () => {
       expect(finalState.trackMetadata?.durationMs).toBe(200_000);
     });
 
+    it('never emits positionMs:0 with a real durationMs during loadedmetadata transition', async () => {
+      // Regression: the constructor's loadedmetadata listener fires before primeAudioForHydrate
+      // re-seeks to savedPosition. In the real DOM audio.currentTime === 0 at that moment.
+      // Subscribers must never see { positionMs: 0, durationMs: <real> } during that window.
+
+      // #given — saved position 45s; real audio 200s; currentTime NOT pre-set (mirrors real DOM)
+      const track = makeMediaTrack({ id: 'track-noflicker', durationMs: 300_000 });
+      const listener = vi.fn();
+      await adapter.initialize();
+      adapter.subscribe(listener);
+
+      // #when — prepareTrack sets the hint and kicks off the async load
+      adapter.prepareTrack(track, { positionMs: 45_000 });
+
+      // Audio src is assigned; fire loadedmetadata with currentTime still 0 (real DOM)
+      await vi.waitFor(() => expect(mockAudio.src).toBe('https://example.com/stream.mp3'));
+      mockAudio.duration = 200;
+      mockAudio.readyState = 1;
+      // Intentionally leave mockAudio.currentTime = 0 — this is the flicker window
+      (mockAudio as any).__triggerEvent('loadedmetadata');
+
+      // Let primeAudioForHydrate continue (re-seeks and clears the hint)
+      await vi.waitFor(() => expect(mockAudio.currentTime).toBe(45));
+
+      // #then — no emission with positionMs:0 and a real (>0) durationMs
+      const flickerEmit = listener.mock.calls.find(
+        ([s]) => s?.currentTrackId === 'track-noflicker' && s.positionMs === 0 && s.durationMs > 0,
+      );
+      expect(flickerEmit).toBeUndefined();
+    });
+
     it('omits durationMs metadata when audio.duration is Infinity', async () => {
       // #given — track.durationMs = 180_000; audio stream has Infinity duration (live)
       const track = makeMediaTrack({ id: 'track-live', durationMs: 180_000 });

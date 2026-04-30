@@ -51,7 +51,9 @@ export class DropboxPlaybackAdapter implements PlaybackProvider {
         this.pendingDurationMs = durationMs;
         putDurationMs(this.currentTrack.id, durationMs).catch(() => {});
       }
-      this.hydrateHint = null;
+      // Do not clear hydrateHint here — primeAudioForHydrate clears it after
+      // re-applying audio.currentTime, preventing a brief positionMs:0 flash
+      // between loadedmetadata and the currentTime seek.
       this.notifyListeners();
     });
     this.audio.addEventListener('error', () => {
@@ -237,8 +239,10 @@ export class DropboxPlaybackAdapter implements PlaybackProvider {
     // Emit staged UI state synchronously before any network/load awaits so the
     // seek bar reflects the saved position and full duration immediately on
     // session hydrate. hydrateHint is consumed by getStateSync when the audio
-    // element doesn't yet have real metadata; it is cleared on loadedmetadata
-    // or when playTrack supersedes this prime.
+    // element doesn't yet have real metadata. It is cleared after currentTime
+    // is re-applied below, or by playTrack when it supersedes this prime.
+    // Intentional: if getTemporaryLink rejects below, hydrateHint persists so
+    // the seek bar keeps showing the saved position rather than snapping to 0:00.
     if (positionMs !== undefined) {
       this.currentTrack = track;
       this.hydrateHint = {
@@ -279,10 +283,11 @@ export class DropboxPlaybackAdapter implements PlaybackProvider {
     if (positionMs && positionMs > 0) {
       audio.currentTime = positionMs / 1000;
     }
+    // Clear hint only after re-seeking so no subscriber sees a positionMs:0 flash.
+    this.hydrateHint = null;
 
-    // persistedDuration side effects: the ensureAudio loadedmetadata listener
-    // may have fired before this point and stored pendingDurationMs already;
-    // if not (race window), do it here.
+    // loadedmetadata may have already stored pendingDurationMs; if it hasn't
+    // fired yet, capture duration here so the next notifyListeners emits it.
     const dur = audio.duration;
     if (Number.isFinite(dur) && dur > 0) {
       const durationMs = Math.floor(dur * 1000);
@@ -395,10 +400,12 @@ export class DropboxPlaybackAdapter implements PlaybackProvider {
 
     const state: PlaybackState = {
       isPlaying: !this.audio.paused && !this.audio.ended,
-      // Use audio.currentTime once audio has a src; fall back to the hydrate hint
-      // before the URL has been fetched and assigned.
+      // Use audio.currentTime once audio has a src. When hydrateHint is still
+      // present and currentTime is 0 (the window between loadedmetadata and
+      // primeAudioForHydrate re-seeking), fall back to the saved position so
+      // subscribers never see a transient positionMs:0 snap.
       positionMs: audioIsLoaded
-        ? Math.floor(this.audio.currentTime * 1000)
+        ? (this.audio.currentTime === 0 && hint ? hint.positionMs : Math.floor(this.audio.currentTime * 1000))
         : (hint?.positionMs ?? 0),
       // Use real duration when finite and non-zero; fall back to hint before load,
       // and to 0 for live streams (Infinity duration).
