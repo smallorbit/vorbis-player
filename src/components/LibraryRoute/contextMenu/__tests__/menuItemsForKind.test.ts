@@ -147,7 +147,7 @@ describe('buildMenuItems', () => {
     expect(items.find((i) => i.id === 'toggle-pin')?.label).toBe('Unpin');
   });
 
-  it('flips Save label to Unsave when isSaved=true', () => {
+  it('flips Like label to Unlike when isSaved=true', () => {
     // #given
     const actions = makeActions({ onToggleSave: vi.fn(), isSaved: true });
 
@@ -155,7 +155,7 @@ describe('buildMenuItems', () => {
     const items = buildMenuItems(makeRequest({ kind: 'album' }), actions);
 
     // #then
-    expect(items.find((i) => i.id === 'toggle-save')?.label).toBe('Unsave');
+    expect(items.find((i) => i.id === 'toggle-save')?.label).toBe('Unlike');
   });
 
   it('marks Start Radio disabled when startRadioDisabled=true', () => {
