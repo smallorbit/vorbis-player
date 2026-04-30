@@ -326,8 +326,10 @@ export class SpotifyPlaybackAdapter implements PlaybackProvider {
     // Emit the staged UI state synchronously — before awaiting the Connect
     // transfer — so the seek bar reflects the saved position and full duration
     // immediately on session hydrate, with no 0:00/0:00 window. The
-    // preparedTrackRef guard above in prepareTrack() ensures this emit only
-    // fires for the most-recently requested track.
+    // preparedTrackRef guard in prepareTrack() ensures stale stages are dropped
+    // post-Connect-transfer; back-to-back synchronous prepareTrack calls both
+    // emit here (the synchronous prefix runs before the first await), with the
+    // latter winning at the subscriber level.
     logArtRace('spotify.stageTrackPaused: emitState currentTrackId=%s positionMs=%d',
       track.id.slice(0, 8), Math.floor(positionMs));
     this.emitState({
@@ -347,12 +349,8 @@ export class SpotifyPlaybackAdapter implements PlaybackProvider {
     //
     // Actual audio playback is deferred to the user's next `playTrack` call,
     // which starts from the saved position via handlePlay consuming
-    // hydratedPendingPlayRef. The guard below drops the result if a newer
-    // prepareTrack supersedes this one while the transfer is in flight.
+    // hydratedPendingPlayRef.
     await this.ensurePlaybackReady();
-
-    const uri = track.playbackRef.ref;
-    if (this.preparedTrackRef !== uri) return;
   }
 
   onQueueChanged(tracks: MediaTrack[], fromIndex: number): void {
