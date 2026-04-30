@@ -19,7 +19,21 @@ const mockCatalog: Partial<DropboxCatalogAdapter> = {
 };
 
 // Mock HTML5 Audio API
-const mockAudio = {
+const mockAudio: {
+  play: ReturnType<typeof vi.fn>;
+  pause: ReturnType<typeof vi.fn>;
+  paused: boolean;
+  ended: boolean;
+  currentTime: number;
+  duration: number;
+  volume: number;
+  src: string;
+  preload: string;
+  readyState: number;
+  addEventListener: ReturnType<typeof vi.fn>;
+  removeEventListener: ReturnType<typeof vi.fn>;
+  __triggerEvent?: (event: string) => void;
+} = {
   play: vi.fn().mockResolvedValue(undefined),
   pause: vi.fn(),
   paused: true,
@@ -34,8 +48,8 @@ const mockAudio = {
   removeEventListener: vi.fn(),
 };
 
-vi.stubGlobal('Audio', vi.fn(() => mockAudio) as any);
-vi.stubGlobal('HTMLMediaElement', { HAVE_METADATA: 1 } as any);
+vi.stubGlobal('Audio', vi.fn(() => mockAudio) as unknown as typeof Audio);
+vi.stubGlobal('HTMLMediaElement', { HAVE_METADATA: 1 } as unknown as typeof HTMLMediaElement);
 
 // Mock ID3 parser
 vi.mock('@/utils/id3Parser', () => ({
@@ -57,8 +71,8 @@ describe('DropboxPlaybackAdapter', () => {
     listeners = new Map();
 
     // Track event listeners for testing
-    const eventListeners: { [key: string]: ((event: any) => void)[] } = {};
-    mockAudio.addEventListener.mockImplementation((event: string, listener: (e: any) => void) => {
+    const eventListeners: { [key: string]: ((event: Event) => void)[] } = {};
+    mockAudio.addEventListener.mockImplementation((event: string, listener: (e: Event) => void) => {
       if (!eventListeners[event]) eventListeners[event] = [];
       eventListeners[event].push(listener);
       const mock = vi.fn();
@@ -66,9 +80,9 @@ describe('DropboxPlaybackAdapter', () => {
     });
 
     // Helper to trigger events
-    (mockAudio as any).__triggerEvent = (event: string) => {
+    mockAudio.__triggerEvent = (event: string) => {
       if (eventListeners[event]) {
-        eventListeners[event].forEach((listener) => listener({}));
+        eventListeners[event].forEach((listener) => listener({} as Event));
       }
     };
 
@@ -79,7 +93,7 @@ describe('DropboxPlaybackAdapter', () => {
     mockAudio.volume = 1;
     mockAudio.src = '';
     mockAudio.readyState = 0;
-    mockAudio.removeEventListener.mockImplementation((event: string, listener: (e: any) => void) => {
+    mockAudio.removeEventListener.mockImplementation((event: string, listener: (e: Event) => void) => {
       if (eventListeners[event]) {
         eventListeners[event] = eventListeners[event].filter((l) => l !== listener);
       }
@@ -139,7 +153,7 @@ describe('DropboxPlaybackAdapter', () => {
     const unsubscribe = adapter.subscribe(listener);
 
     // Trigger a state change
-    (mockAudio as any).__triggerEvent('play');
+    mockAudio.__triggerEvent?.('play');
 
     // #then
     expect(listener).toHaveBeenCalled();
@@ -149,7 +163,7 @@ describe('DropboxPlaybackAdapter', () => {
 
     unsubscribe();
     listener.mockClear();
-    (mockAudio as any).__triggerEvent('play');
+    mockAudio.__triggerEvent?.('play');
     expect(listener).not.toHaveBeenCalled();
   });
 
@@ -265,7 +279,7 @@ describe('DropboxPlaybackAdapter', () => {
       mockAudio.duration = 200;
       mockAudio.readyState = 1;
       mockAudio.currentTime = 45;
-      (mockAudio as any).__triggerEvent('loadedmetadata');
+      mockAudio.__triggerEvent?.('loadedmetadata');
 
       // #then — final state uses the real audio duration; trackMetadata.durationMs updated
       const findLastHydrateCall = () => {
@@ -302,7 +316,7 @@ describe('DropboxPlaybackAdapter', () => {
       mockAudio.duration = 200;
       mockAudio.readyState = 1;
       // Intentionally leave mockAudio.currentTime = 0 — this is the flicker window
-      (mockAudio as any).__triggerEvent('loadedmetadata');
+      mockAudio.__triggerEvent?.('loadedmetadata');
 
       // Let primeAudioForHydrate continue (re-seeks and clears the hint)
       await vi.waitFor(() => expect(mockAudio.currentTime).toBe(45));
@@ -331,7 +345,7 @@ describe('DropboxPlaybackAdapter', () => {
       mockAudio.duration = Infinity;
       mockAudio.readyState = 1;
       mockAudio.currentTime = 10;
-      (mockAudio as any).__triggerEvent('loadedmetadata');
+      mockAudio.__triggerEvent?.('loadedmetadata');
 
       // #then — final state reports 0 for infinite-duration stream; no trackMetadata.durationMs
       const findLastHydrateCall = () => {
@@ -399,7 +413,7 @@ describe('DropboxPlaybackAdapter', () => {
       // Now the stale loadedmetadata for the prior src fires.
       mockAudio.duration = 220;
       mockAudio.readyState = 1;
-      (mockAudio as any).__triggerEvent('loadedmetadata');
+      mockAudio.__triggerEvent?.('loadedmetadata');
       await Promise.resolve();
 
       // #then

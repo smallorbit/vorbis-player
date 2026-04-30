@@ -31,7 +31,7 @@ describe('useCollectionLoader', () => {
   let mockSpotifyHandlePlaylistSelect: ReturnType<typeof vi.fn>;
   let mockStopRadioBase: ReturnType<typeof vi.fn>;
   let mockRecord: ReturnType<typeof vi.fn>;
-  let mockActiveDescriptor: any;
+  let mockActiveDescriptor: { id: string; [key: string]: unknown };
   let mediaTracksRef: React.MutableRefObject<MediaTrack[]>;
   let drivingProviderRef: React.MutableRefObject<string | null>;
 

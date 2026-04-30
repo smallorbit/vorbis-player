@@ -112,15 +112,11 @@ function App() {
           let handled = false;
           let handledProviderId: string | null = null;
           for (const descriptor of providerRegistry.getAll()) {
-            try {
-              const result = await descriptor.auth.handleCallback(currentUrl);
-              if (result) {
-                handled = true;
-                handledProviderId = descriptor.id;
-                break;
-              }
-            } catch (providerError) {
-              throw providerError;
+            const result = await descriptor.auth.handleCallback(currentUrl);
+            if (result) {
+              handled = true;
+              handledProviderId = descriptor.id;
+              break;
             }
           }
 

@@ -28,7 +28,7 @@ describe('useQueueManagement', () => {
   let mockSetOriginalTracks: ReturnType<typeof vi.fn>;
   let mockSetCurrentTrackIndex: ReturnType<typeof vi.fn>;
   let mockGetDescriptor: ReturnType<typeof vi.fn>;
-  let mockActiveDescriptor: any;
+  let mockActiveDescriptor: { id: string; [key: string]: unknown };
   let mediaTracksRef: React.MutableRefObject<MediaTrack[]>;
 
   beforeEach(() => {
