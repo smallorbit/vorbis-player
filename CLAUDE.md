@@ -153,8 +153,41 @@ For structured feature development, see `.claude/rules/`:
 
 ## Multi-Agent Team Workflows
 
-For epics that benefit from parallel specialist work, use **squadkit** crews:
+Pick the workflow by work shape. The pre-built squadkit profiles (`all-rounder`, `builder`, `qa`, `design`) are general-purpose; for vorbis-player epics use the project-specific shape below.
 
-- `/squadkit:spawn-team --profile <name>` — execution crew (architect + builders + reviewer + tester) that ships PRs. Profiles: `all-rounder`, `builder`, `qa`, `design`.
-- `/squadkit:spawn-team --profile discovery-3-role --brief <text|@path>` — read-only discovery crew (architect + explorer + designer) that posts blueprint comments to a batch of GitHub issues. No code, no PRs.
-- `/squadkit:agent-team-retro` — run a retrospective on the active squad and feed findings into role contracts or `/speckit:catalog`.
+| Work shape | Skill |
+|---|---|
+| Cross-cutting cleanup (naming, error handling, type hygiene) | `/simplify-scope <scope>` — single worktree, single PR |
+| Independent issues, no shared contract | `/swarm-plus <range>` — parallel workers + auto reviewer/fix pass |
+| Multi-issue epic with shared contracts | Execution crew (below) — stacked PRs into a feature branch |
+| Read-only blueprints for an issue batch | `/squadkit:spawn-team --profile discovery-3-role --brief <text\|@path>` — architect + explorer + designer post blueprint comments; no code, no PRs |
+
+### Preferred execution crew
+
+Architect + 2 builders + reviewer + tester. Spawn via:
+
+```
+/squadkit:spawn-team --profile builder --epic <slug>
+```
+
+Add `--with explorer` or `--with designer` only when an epic needs targeted code investigation or contract-shaping mid-flight; both idle most of the time and shouldn't be in the default crew.
+
+**Model assignments** (squadkit 0.6.0 defaults; deviations called out in retros under `.claude/retro-notes/`):
+
+| Role | Model | Notes |
+|---|---|---|
+| architect | `opus` | squadkit default — keeps full epic context across waves |
+| reviewer | `opus` | squadkit default — context scales with wave size, not single PR |
+| tester | `opus` ← override | squadkit default is `sonnet`; epic #1300 wave 1 retro showed sonnet runs out of context mid-rebase. Lead respawns tester on `opus` between waves |
+| builder-N | `sonnet` | squadkit default — per-issue execution is bounded |
+
+The harness rejects `[1m]` suffixes — rely on the team-lead's between-wave swap protocol to rotate in a fresh successor before context fills, rather than chasing a 1M variant.
+
+**Operating discipline** (each one regressed at least once in past epics — see retro notes):
+
+- Lead per-deliverable ack-gates dispatches. Never pipeline verify + commit + PR into a single round-trip.
+- Reviewer must return `accepted` before any sub-PR merges. No exceptions.
+- Sub-PRs into a feature branch use **"Part of #EPIC"** in their body, not "Closes" — auto-close only fires when the final feature→develop PR merges.
+- Builders halt on follow-up corrections from the lead instead of racing to complete the original directive.
+
+**Retros**: run `/squadkit:agent-team-retro` when an epic wraps. Findings land as project-local role overrides under `.claude/agents/<role>.md` (overlay on top of the squadkit contract; project-local wins on conflict) or feed into `/speckit:catalog` as upstream squadkit issues.
