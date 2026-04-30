@@ -6,6 +6,7 @@ import { MockAuthAdapter } from './mockAuthAdapter';
 import { MockCatalogAdapter } from './mockCatalogAdapter';
 import { MockPlaybackAdapter } from './mockPlaybackAdapter';
 import { seedPinsFromSnapshots } from './pinSeeder';
+import { shouldUseMockProvider } from './shouldUseMockProvider';
 import { installMockTestApi } from './test-control';
 import { assertProviderSnapshot } from '../../../playwright/fixtures/data/snapshot.types';
 import spotifySnapshotJson from '../../../playwright/fixtures/data/spotify-snapshot.json' with { type: 'json' };
@@ -71,14 +72,20 @@ const dropboxDescriptor: ProviderDescriptor = {
   playback: new MockPlaybackAdapter('dropbox'),
 };
 
-providerRegistry.register(spotifyDescriptor);
-providerRegistry.register(dropboxDescriptor);
+// `main.tsx` eager-imports this module in any dev build so `?provider=mock`
+// activation works without a restart. Gate the registry mutation so the real
+// Spotify/Dropbox descriptors survive in dev unless the user has actually
+// opted in (VITE_MOCK_PROVIDER=true or ?provider=mock).
+if (shouldUseMockProvider()) {
+  providerRegistry.register(spotifyDescriptor);
+  providerRegistry.register(dropboxDescriptor);
 
-void seedPinsFromSnapshots(spotifySnapshotJson.pins, dropboxSnapshotJson.pins);
+  void seedPinsFromSnapshots(spotifySnapshotJson.pins, dropboxSnapshotJson.pins);
 
-installMockTestApi({
-  spotifyCatalog: spotifyDescriptor.catalog as MockCatalogAdapter,
-  dropboxCatalog: dropboxDescriptor.catalog as MockCatalogAdapter,
-  spotifyPlayback: spotifyDescriptor.playback as MockPlaybackAdapter,
-  dropboxPlayback: dropboxDescriptor.playback as MockPlaybackAdapter,
-});
+  installMockTestApi({
+    spotifyCatalog: spotifyDescriptor.catalog as MockCatalogAdapter,
+    dropboxCatalog: dropboxDescriptor.catalog as MockCatalogAdapter,
+    spotifyPlayback: spotifyDescriptor.playback as MockPlaybackAdapter,
+    dropboxPlayback: dropboxDescriptor.playback as MockPlaybackAdapter,
+  });
+}
