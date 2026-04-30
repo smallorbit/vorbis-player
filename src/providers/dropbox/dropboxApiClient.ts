@@ -1,6 +1,7 @@
 import type { DropboxFileEntry, DropboxListFolderResult, CachedLink } from './dropboxCatalogHelpers';
 import { TEMP_LINK_TTL_MS } from './dropboxCatalogHelpers';
 import type { DropboxAuthAdapter } from './dropboxAuthAdapter';
+import { AuthExpiredError } from '@/providers/errors';
 
 const DEFAULT_RETRY_AFTER_SECONDS = 5;
 const MAX_RETRY_AFTER_SECONDS = 30;
@@ -53,7 +54,7 @@ export class DropboxApiClient {
     signal?: AbortSignal,
   ): Promise<T> {
     let token = await this.auth.ensureValidToken();
-    if (!token) throw new Error('Not authenticated with Dropbox');
+    if (!token) throw new AuthExpiredError('dropbox');
 
     const makeRequest = (accessToken: string) =>
       fetch(`https://api.dropboxapi.com/2${endpoint}`, {
@@ -70,11 +71,11 @@ export class DropboxApiClient {
 
     if (response.status === 401) {
       token = await this.auth.refreshAccessToken();
-      if (!token) throw new Error('Dropbox authentication expired');
+      if (!token) throw new AuthExpiredError('dropbox');
       response = await makeRequest(token);
       if (response.status === 401) {
         this.auth.reportUnauthorized();
-        throw new Error('Dropbox authentication expired');
+        throw new AuthExpiredError('dropbox');
       }
     }
 
