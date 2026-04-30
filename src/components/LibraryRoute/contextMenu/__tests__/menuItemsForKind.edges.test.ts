@@ -136,15 +136,15 @@ describe('buildMenuItems edges', () => {
       expect(items.find((i) => i.id === 'toggle-pin')?.label).toBe('Unpin');
     });
 
-    it('Like label is shown when isSaved is false', () => {
-      // #given
-      const actions = makeActions({ onToggleSave: vi.fn(), isSaved: false });
+    it('toggle-save label stays Unlike for albums regardless of caller flags', () => {
+      // #given — library only ever surfaces albums the user has already liked
+      const actions = makeActions({ onToggleSave: vi.fn() });
 
       // #when
       const items = buildMenuItems(makeRequest({ kind: 'album' }), actions);
 
       // #then
-      expect(items.find((i) => i.id === 'toggle-save')?.label).toBe('Like');
+      expect(items.find((i) => i.id === 'toggle-save')?.label).toBe('Unlike');
     });
   });
 

@@ -147,9 +147,9 @@ describe('buildMenuItems', () => {
     expect(items.find((i) => i.id === 'toggle-pin')?.label).toBe('Unpin');
   });
 
-  it('flips Like label to Unlike when isSaved=true', () => {
+  it('always labels album toggle-save as Unlike (library only shows liked albums)', () => {
     // #given
-    const actions = makeActions({ onToggleSave: vi.fn(), isSaved: true });
+    const actions = makeActions({ onToggleSave: vi.fn() });
 
     // #when
     const items = buildMenuItems(makeRequest({ kind: 'album' }), actions);
