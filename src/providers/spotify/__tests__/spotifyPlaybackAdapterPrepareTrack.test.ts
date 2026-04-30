@@ -75,6 +75,35 @@ describe('SpotifyPlaybackAdapter.prepareTrack', () => {
     });
   });
 
+  it('emits the PlaybackState synchronously before ensurePlaybackReady resolves (regression #1387)', async () => {
+    // #given — stall the Connect transfer so we can assert timing independently
+    let resolveTransfer: (() => void) | undefined;
+    vi.mocked(spotifyPlayer.transferPlaybackToDevice).mockImplementationOnce(
+      () => new Promise<void>((resolve) => { resolveTransfer = resolve; }),
+    );
+    const track = makeTrack({ durationMs: 180_000 });
+    const received: Array<PlaybackState | null> = [];
+    adapter.subscribe((state) => received.push(state));
+
+    // #when
+    adapter.prepareTrack(track, { positionMs: 15_000 });
+
+    // #then — emission fires synchronously before the stalled transfer resolves
+    const staged = received.find((s) => s?.currentTrackId === 'track-1');
+    expect(staged).toBeDefined();
+    expect(staged).toMatchObject({ isPlaying: false, positionMs: 15_000, durationMs: 180_000 });
+
+    // The transfer has not resolved yet — the emission preceded it
+    expect(vi.mocked(spotifyPlayer.transferPlaybackToDevice)).not.toHaveBeenCalled();
+
+    // Unblock the transfer so the test cleans up without dangling promises
+    await vi.waitFor(() => expect(resolveTransfer).toBeTypeOf('function'));
+    resolveTransfer!();
+    await vi.waitFor(() =>
+      expect(vi.mocked(spotifyPlayer.transferPlaybackToDevice)).toHaveBeenCalledTimes(1),
+    );
+  });
+
   it('does NOT emit or transfer the device for the pre-warm intent (called without positionMs)', async () => {
     // #given — the next-track pre-warm caller in useProviderPlayback.playTrack
     // invokes prepareTrack(track) with no options. Emitting a PlaybackState
@@ -159,10 +188,13 @@ describe('SpotifyPlaybackAdapter.prepareTrack', () => {
     adapter.prepareTrack(track, { positionMs: 10_000 });
     adapter.prepareTrack(track, { positionMs: 10_000 });
 
-    // #then — ensurePlaybackReady runs once because the second call hits the
-    // preparedTrackRef idempotency guard; emission fires exactly once.
-    await vi.waitFor(() => expect(stageEmissions).toHaveLength(1));
-    expect(vi.mocked(spotifyPlayer.transferPlaybackToDevice)).toHaveBeenCalledTimes(1);
+    // #then — emission fires synchronously on the first call; the second call
+    // hits the preparedTrackRef idempotency guard and emits nothing.
+    // ensurePlaybackReady runs only once (for the first call).
+    expect(stageEmissions).toHaveLength(1);
+    await vi.waitFor(() =>
+      expect(vi.mocked(spotifyPlayer.transferPlaybackToDevice)).toHaveBeenCalledTimes(1),
+    );
   });
 
   it('re-stages when prepareTrack is called for a different track', async () => {
@@ -199,15 +231,21 @@ describe('SpotifyPlaybackAdapter.prepareTrack', () => {
 
     // #when
     adapter.prepareTrack(track, { positionMs: 12_000 });
+
+    // #then — emitState fires synchronously so we already have the first emission
+    expect(stageEmissions).toHaveLength(1);
+
     await vi.waitFor(() =>
       expect(vi.mocked(spotifyPlayer.transferPlaybackToDevice)).toHaveBeenCalledTimes(1),
     );
     // Second call after the failure — guard was reset, so this retries.
     adapter.prepareTrack(track, { positionMs: 12_000 });
 
-    // #then
-    await vi.waitFor(() => expect(stageEmissions).toHaveLength(1));
-    expect(vi.mocked(spotifyPlayer.transferPlaybackToDevice)).toHaveBeenCalledTimes(2);
+    // #then — second prepareTrack emits synchronously; retry triggers a second transfer.
+    expect(stageEmissions).toHaveLength(2);
+    await vi.waitFor(() =>
+      expect(vi.mocked(spotifyPlayer.transferPlaybackToDevice)).toHaveBeenCalledTimes(2),
+    );
   });
 
   describe('probePlayable', () => {
@@ -288,9 +326,11 @@ describe('SpotifyPlaybackAdapter.prepareTrack', () => {
     });
   });
 
-  it('skips the stale stage emission when a different track is prepared mid-stage', async () => {
+  it('emits A synchronously then emits B when B supersedes A mid-connect-transfer', async () => {
     // #given — prepareTrack(A) is in flight when prepareTrack(B) overrides it.
-    // Slow-resolve the first transfer so the supersede wins the race.
+    // emitState for A fires synchronously before the Connect transfer. When the
+    // transfer for A eventually resolves, the preparedTrackRef guard drops the
+    // post-transfer path for A, so no second emission for A occurs.
     const trackA = makeTrack({ id: 'a', playbackRef: { provider: 'spotify', ref: 'spotify:track:a' } });
     const trackB = makeTrack({ id: 'b', playbackRef: { provider: 'spotify', ref: 'spotify:track:b' } });
     const stageEmissions: Array<PlaybackState | null> = [];
@@ -307,17 +347,23 @@ describe('SpotifyPlaybackAdapter.prepareTrack', () => {
       )
       .mockResolvedValue(undefined);
 
-    // #when
+    // #when — A emits synchronously the moment prepareTrack is called
     adapter.prepareTrack(trackA, { positionMs: 1_000 });
+    expect(stageEmissions.find((s) => s?.currentTrackId === 'a')).toBeDefined();
+
     await vi.waitFor(() => expect(resolveFirstTransfer).toBeTypeOf('function'));
     adapter.prepareTrack(trackB, { positionMs: 2_000 });
-    resolveFirstTransfer();
 
-    // #then — only B's staged state should reach subscribers
-    await vi.waitFor(() => {
-      const bEmit = stageEmissions.find((s) => s?.currentTrackId === 'b');
-      expect(bEmit).toBeDefined();
-    });
-    expect(stageEmissions.find((s) => s?.currentTrackId === 'a')).toBeUndefined();
+    // #then — B emits synchronously
+    expect(stageEmissions.find((s) => s?.currentTrackId === 'b')).toBeDefined();
+
+    // Resolve A's stalled transfer — should be a no-op (guard drops it)
+    resolveFirstTransfer();
+    await vi.waitFor(() =>
+      expect(vi.mocked(spotifyPlayer.transferPlaybackToDevice)).toHaveBeenCalledTimes(2),
+    );
+
+    // A's emission count stays at 1 (only the synchronous emit; no post-transfer re-emit)
+    expect(stageEmissions.filter((s) => s?.currentTrackId === 'a')).toHaveLength(1);
   });
 });

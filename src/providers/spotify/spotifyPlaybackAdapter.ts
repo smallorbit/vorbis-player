@@ -323,22 +323,11 @@ export class SpotifyPlaybackAdapter implements PlaybackProvider {
   }
 
   private async stageTrackPaused(track: MediaTrack, positionMs: number): Promise<void> {
-    // ensurePlaybackReady transfers Spotify Connect to this device with
-    // `play: false`, which paused-transfers any existing session and leaves
-    // the SDK ready. That's all the staging we need for hydrate — we do NOT
-    // call apiPlayTrack, because /me/player/play starts audio and Spotify's
-    // eventually-consistent server state makes a subsequent pause() race
-    // the just-started playback (leaked audio on a fresh tab).
-    //
-    // The UI staging (scrubbed seek bar + duration) is purely local: emit
-    // the expected paused state to subscribers. Actual audio playback is
-    // deferred to the user's next `playTrack` call, which starts from the
-    // saved position via handlePlay consuming hydratedPendingPlayRef.
-    await this.ensurePlaybackReady();
-
-    const uri = track.playbackRef.ref;
-    if (this.preparedTrackRef !== uri) return;
-
+    // Emit the staged UI state synchronously — before awaiting the Connect
+    // transfer — so the seek bar reflects the saved position and full duration
+    // immediately on session hydrate, with no 0:00/0:00 window. The
+    // preparedTrackRef guard above in prepareTrack() ensures this emit only
+    // fires for the most-recently requested track.
     logArtRace('spotify.stageTrackPaused: emitState currentTrackId=%s positionMs=%d',
       track.id.slice(0, 8), Math.floor(positionMs));
     this.emitState({
@@ -348,6 +337,22 @@ export class SpotifyPlaybackAdapter implements PlaybackProvider {
       currentTrackId: track.id,
       currentPlaybackRef: track.playbackRef,
     });
+
+    // ensurePlaybackReady transfers Spotify Connect to this device with
+    // `play: false`, which paused-transfers any existing session and leaves
+    // the SDK ready. That's all the staging we need for hydrate — we do NOT
+    // call apiPlayTrack, because /me/player/play starts audio and Spotify's
+    // eventually-consistent server state makes a subsequent pause() race
+    // the just-started playback (leaked audio on a fresh tab).
+    //
+    // Actual audio playback is deferred to the user's next `playTrack` call,
+    // which starts from the saved position via handlePlay consuming
+    // hydratedPendingPlayRef. The guard below drops the result if a newer
+    // prepareTrack supersedes this one while the transfer is in flight.
+    await this.ensurePlaybackReady();
+
+    const uri = track.playbackRef.ref;
+    if (this.preparedTrackRef !== uri) return;
   }
 
   onQueueChanged(tracks: MediaTrack[], fromIndex: number): void {
