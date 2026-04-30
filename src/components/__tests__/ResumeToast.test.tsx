@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect } from 'react';
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import { ThemeProvider } from 'styled-components';
 import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { toast } from 'sonner';

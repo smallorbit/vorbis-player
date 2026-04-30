@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import { ThemeProvider } from 'styled-components';
 import { theme } from '@/styles/theme';
@@ -260,8 +260,6 @@ describe('MusicSourcesSection', () => {
       );
 
       // The popup window is immediately closed (user dismissed the OAuth popup)
-      const mockPopup = { closed: true } as Window;
-      // Use Object.defineProperty to bypass any lingering spy on window.open
       const mockPopupObj = { closed: true };
       const originalDescriptor = Object.getOwnPropertyDescriptor(window, 'open');
       Object.defineProperty(window, 'open', {
