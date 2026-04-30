@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { renderHook, act, waitFor } from '@testing-library/react';
+import { renderHook, act } from '@testing-library/react';
 import React from 'react';
 import { PinnedItemsProvider, usePinnedItemsContext } from '@/contexts/PinnedItemsContext';
 import { LIKED_SONGS_ID, ALL_MUSIC_PIN_ID } from '@/constants/playlist';

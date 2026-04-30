@@ -17,7 +17,7 @@ vi.mock('@/contexts/PlayerSizingContext', () => ({
 }));
 
 vi.mock('@/components/QueueTrackList', () => ({
-  default: ({ tracks, currentTrackIndex, onTrackSelect, onRemoveTrack }: {
+  default: ({ tracks, currentTrackIndex: _currentTrackIndex, onTrackSelect, onRemoveTrack }: {
     tracks: { id: string; name: string }[];
     currentTrackIndex: number;
     onTrackSelect: (i: number) => void;

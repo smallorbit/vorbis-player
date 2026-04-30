@@ -8,7 +8,6 @@ import { ThemeProvider } from 'styled-components';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import PlayerContent from '../PlayerContent';
 import type { PlaybackHandlers } from '../PlayerContent';
-import { makeMediaTrack } from '@/test/fixtures';
 import { theme } from '@/styles/theme';
 
 // Mock ResizeObserver
