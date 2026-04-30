@@ -174,7 +174,7 @@ export async function saveQueueAsPlaylist(
     tracks: mediaTracks.map(mediaTrackToSavedTrack),
   };
 
-  let token = await auth.ensureValidToken();
+  const token = await auth.ensureValidToken();
   if (!token) return null;
 
   const apiArg = jsonToHttpHeader(
@@ -347,7 +347,7 @@ async function loadPlaylistFile(
   auth: DropboxAuthAdapter,
   playlistPath: string,
 ): Promise<PlaylistFile | null> {
-  let token = await auth.ensureValidToken();
+  const token = await auth.ensureValidToken();
   if (!token) return null;
 
   const apiArg = jsonToHttpHeader(JSON.stringify({ path: playlistPath }));
@@ -404,7 +404,7 @@ export async function deleteSavedPlaylist(
   auth: DropboxAuthAdapter,
   playlistPath: string,
 ): Promise<boolean> {
-  let token = await auth.ensureValidToken();
+  const token = await auth.ensureValidToken();
   if (!token) return false;
 
   const deleteFile = (accessToken: string) =>
