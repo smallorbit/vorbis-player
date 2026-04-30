@@ -285,11 +285,8 @@ const AudioPlayerComponent = () => {
     autoSelectFired.current = true;
     window.history.replaceState({}, '', '/');
 
-    // Accept both raw playlist IDs (legacy) and `provider:kind:id` keys
-    // (used by capture/Playwright via `?playlist=spotify:playlist:<id>`).
-    // The key form decomposes into a CollectionRef so the mock catalog can
-    // resolve the playlist by its actual snapshot id, instead of falling
-    // through to the Spotify SDK fallback.
+    // Structured `provider:kind:id` keys let the mock catalog resolve by snapshot id
+    // instead of falling through to the Spotify SDK; raw IDs work for legacy links.
     const ref = keyToCollectionRef(playlistParam);
     if (ref) {
       const playlistId = ref.kind === 'liked'
