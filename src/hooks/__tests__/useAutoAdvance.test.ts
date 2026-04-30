@@ -24,7 +24,7 @@ import { ProviderWrapper } from '@/test/providerTestUtils';
 
 const opts = { wrapper: ProviderWrapper };
 
-const createMockPlaybackDescriptor = (playbackOverrides?: Record<string, any>) => {
+const createMockPlaybackDescriptor = (playbackOverrides?: Record<string, unknown>) => {
   return makeProviderDescriptor({
     playback: {
       providerId: 'spotify',

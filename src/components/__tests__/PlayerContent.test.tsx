@@ -15,7 +15,7 @@ global.ResizeObserver = vi.fn(() => ({
   observe: vi.fn(),
   unobserve: vi.fn(),
   disconnect: vi.fn(),
-})) as any;
+})) as unknown as typeof ResizeObserver;
 
 vi.mock('@/hooks/useLibrarySync', () => ({
   useLibrarySync: vi.fn(() => ({

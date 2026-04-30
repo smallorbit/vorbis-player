@@ -79,7 +79,7 @@ export function backfillProvider(tracks: Track[]): Track[] {
  * Convert Spotify Track objects to provider-neutral MediaTrack format.
  */
 export function tracksToMediaTracks(tracks: Track[]): MediaTrack[] {
-  return tracks.map((t: any) => ({
+  return tracks.map((t) => ({
     id: t.id,
     provider: t.provider as ProviderId,
     playbackRef: { provider: 'spotify' as ProviderId, ref: t.uri },
