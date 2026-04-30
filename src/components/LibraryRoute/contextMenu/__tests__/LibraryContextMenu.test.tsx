@@ -29,8 +29,9 @@ vi.mock('../useLikedTracksForProvider', () => ({
   useLikedTracksForProvider: () => ({ loadLikedTracks: mockLoadLiked }),
 }));
 
-const { mockQueueLikedFromCollection } = vi.hoisted(() => ({
+const { mockQueueLikedFromCollection, mockUseAlbumSavedStatus } = vi.hoisted(() => ({
   mockQueueLikedFromCollection: vi.fn(),
+  mockUseAlbumSavedStatus: vi.fn(),
 }));
 
 vi.mock('../useQueueLikedFromCollection', () => ({
@@ -38,13 +39,7 @@ vi.mock('../useQueueLikedFromCollection', () => ({
 }));
 
 vi.mock('../useAlbumSavedStatus', () => ({
-  useAlbumSavedStatus: () => ({
-    isSaved: null,
-    toggleSaved: vi.fn(),
-    canToggle: false,
-    saveError: null,
-    clearSaveError: vi.fn(),
-  }),
+  useAlbumSavedStatus: (...args: unknown[]) => mockUseAlbumSavedStatus(...args),
 }));
 
 import LibraryContextMenu, { type LibraryContextMenuProps } from '../LibraryContextMenu';
@@ -72,6 +67,13 @@ function defaultMocks() {
   });
   mockRecent.mockReturnValue({ remove: vi.fn() });
   mockLoadLiked.mockResolvedValue([]);
+  mockUseAlbumSavedStatus.mockReturnValue({
+    isSaved: null,
+    toggleSaved: vi.fn(),
+    canToggle: false,
+    saveError: null,
+    clearSaveError: vi.fn(),
+  });
 }
 
 function renderMenu(propsOverrides: Partial<LibraryContextMenuProps> = {}) {
@@ -342,5 +344,60 @@ describe('LibraryContextMenu', () => {
 
     // #then
     expect(screen.queryByTestId('menu-queue-liked')).not.toBeInTheDocument();
+  });
+
+  describe('album Like/Unlike toggle', () => {
+    it('shows "Unlike" label when album is already liked (isSaved=true)', () => {
+      // #given
+      mockUseAlbumSavedStatus.mockReturnValue({
+        isSaved: true,
+        toggleSaved: vi.fn(),
+        canToggle: true,
+        saveError: null,
+        clearSaveError: vi.fn(),
+      });
+
+      // #when
+      renderMenu({ request: makeRequest({ kind: 'album', id: 'a1', name: 'My Album' }) });
+
+      // #then
+      expect(screen.getByTestId('menu-toggle-save').textContent).toBe('Unlike');
+    });
+
+    it('shows "Like" label when album is not liked (isSaved=false)', () => {
+      // #given
+      mockUseAlbumSavedStatus.mockReturnValue({
+        isSaved: false,
+        toggleSaved: vi.fn(),
+        canToggle: true,
+        saveError: null,
+        clearSaveError: vi.fn(),
+      });
+
+      // #when
+      renderMenu({ request: makeRequest({ kind: 'album', id: 'a1', name: 'My Album' }) });
+
+      // #then
+      expect(screen.getByTestId('menu-toggle-save').textContent).toBe('Like');
+    });
+
+    it('omits toggle-save when isSaved is null (status still loading)', () => {
+      // #given — default mock: isSaved=null, canToggle=false
+      // #when
+      renderMenu({ request: makeRequest({ kind: 'album', id: 'a1', name: 'My Album' }) });
+
+      // #then
+      expect(screen.queryByTestId('menu-toggle-save')).not.toBeInTheDocument();
+    });
+
+    it('useAlbumSavedStatus is called with the album id and provider', () => {
+      // #when
+      renderMenu({
+        request: makeRequest({ kind: 'album', id: 'album99', provider: 'spotify' as ProviderId }),
+      });
+
+      // #then
+      expect(mockUseAlbumSavedStatus).toHaveBeenCalledWith('album99', 'spotify');
+    });
   });
 });

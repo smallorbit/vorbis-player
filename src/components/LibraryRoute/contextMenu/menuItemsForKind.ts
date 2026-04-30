@@ -76,7 +76,7 @@ function buildAlbumItems(actions: MenuActions): MenuItem[] {
   if (actions.onToggleSave) {
     items.push({
       id: 'toggle-save',
-      label: actions.isSaved ? 'Unsave' : 'Save',
+      label: actions.isSaved ? 'Unlike' : 'Like',
       onSelect: actions.onToggleSave,
     });
   }

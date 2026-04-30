@@ -136,7 +136,7 @@ describe('buildMenuItems edges', () => {
       expect(items.find((i) => i.id === 'toggle-pin')?.label).toBe('Unpin');
     });
 
-    it('Save label remains "Save" when isSaved is false', () => {
+    it('Like label remains "Like" when isSaved is false', () => {
       // #given
       const actions = makeActions({ onToggleSave: vi.fn(), isSaved: false });
 
@@ -144,7 +144,7 @@ describe('buildMenuItems edges', () => {
       const items = buildMenuItems(makeRequest({ kind: 'album' }), actions);
 
       // #then
-      expect(items.find((i) => i.id === 'toggle-save')?.label).toBe('Save');
+      expect(items.find((i) => i.id === 'toggle-save')?.label).toBe('Like');
     });
   });
 
