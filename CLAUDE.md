@@ -153,4 +153,8 @@ For structured feature development, see `.claude/rules/`:
 
 ## Multi-Agent Team Workflows
 
-For epics that benefit from parallel specialist work, this project ships a six-role team (lead + explorer + architect + builder + reviewer + tester). See `.claude/agents/README.md` for spawn/retro skills (`/spawn-team`, `/agent-team-retro`), agent-definition conventions, and when to use the team.
+For epics that benefit from parallel specialist work, use **squadkit** crews:
+
+- `/squadkit:spawn-team --profile <name>` — execution crew (architect + builders + reviewer + tester) that ships PRs. Profiles: `all-rounder`, `builder`, `qa`, `design`.
+- `/squadkit:spawn-team --profile discovery-3-role --brief <text|@path>` — read-only discovery crew (architect + explorer + designer) that posts blueprint comments to a batch of GitHub issues. No code, no PRs.
+- `/squadkit:agent-team-retro` — run a retrospective on the active squad and feed findings into role contracts or `/speckit:catalog`.
