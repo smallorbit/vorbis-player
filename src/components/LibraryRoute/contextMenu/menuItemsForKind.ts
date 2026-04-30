@@ -74,6 +74,8 @@ function buildAlbumItems(actions: MenuActions): MenuItem[] {
     },
   ];
   if (actions.onToggleSave) {
+    // User-facing copy uses "Like"/"Unlike" for vocabulary parity with the track heart;
+    // internal field names mirror the Spotify API ("saved"). See #1386.
     items.push({
       id: 'toggle-save',
       label: actions.isSaved ? 'Unlike' : 'Like',

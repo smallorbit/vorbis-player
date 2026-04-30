@@ -136,7 +136,7 @@ describe('buildMenuItems edges', () => {
       expect(items.find((i) => i.id === 'toggle-pin')?.label).toBe('Unpin');
     });
 
-    it('Like label remains "Like" when isSaved is false', () => {
+    it('Like label is shown when isSaved is false', () => {
       // #given
       const actions = makeActions({ onToggleSave: vi.fn(), isSaved: false });
 
