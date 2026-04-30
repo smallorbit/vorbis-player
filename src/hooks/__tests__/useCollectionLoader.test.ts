@@ -5,6 +5,12 @@ import { makeTrack } from '@/test/fixtures';
 import { LIKED_SONGS_ID, LIKED_SONGS_NAME } from '@/constants/playlist';
 import type { MediaTrack } from '@/types/domain';
 
+vi.mock('@/providers/mock/shouldUseMockProvider', () => ({
+  shouldUseMockProvider: vi.fn(() => false),
+}));
+
+import { shouldUseMockProvider } from '@/providers/mock/shouldUseMockProvider';
+
 function makeMediaTrack(id: string, addedAt?: number): MediaTrack {
   return {
     id,
@@ -195,6 +201,44 @@ describe('useCollectionLoader', () => {
     // #then
     expect(mockSetError).toHaveBeenCalledWith('No tracks found in this collection.');
     expect(mockSetTracks).toHaveBeenCalledWith([]);
+    expect(trackCount).toBe(0);
+  });
+
+  it('skips the legacy SDK fallback when the mock provider is active even if playCollection is defined', async () => {
+    // #given — mock active, empty catalog, playback advertises playCollection
+    vi.mocked(shouldUseMockProvider).mockReturnValueOnce(true);
+    const mockCatalog = {
+      listTracks: vi.fn().mockResolvedValue([]),
+    };
+    mockActiveDescriptor.catalog = mockCatalog;
+    mockActiveDescriptor.playback = { pause: vi.fn(), playCollection: vi.fn() };
+
+    const { result } = renderHook(() =>
+      useCollectionLoader({
+        trackOps: { setError: mockSetError, setIsLoading: mockSetIsLoading, setSelectedPlaylistId: mockSetSelectedPlaylistId, setTracks: mockSetTracks, setOriginalTracks: mockSetOriginalTracks, setCurrentTrackIndex: mockSetCurrentTrackIndex, mediaTracksRef },
+        activeDescriptor: mockActiveDescriptor,
+        getDescriptor: mockGetDescriptor,
+        setActiveProviderId: mockSetActiveProviderId,
+        connectedProviderIds: ['spotify'],
+        shuffleEnabled: false,
+        isUnifiedLikedActive: false,
+        drivingProviderRef,
+        playTrack: mockPlayTrack,
+        spotifyHandlePlaylistSelect: mockSpotifyHandlePlaylistSelect,
+        stopRadioBase: mockStopRadioBase,
+        record: mockRecord,
+        radioStateIsActive: false,
+      })
+    );
+
+    // #when
+    const trackCount = await act(async () => {
+      return result.current.loadCollection('playlist_123');
+    });
+
+    // #then — legacy spotify path is never invoked; surfaces empty-collection state
+    expect(mockSpotifyHandlePlaylistSelect).not.toHaveBeenCalled();
+    expect(mockSetError).toHaveBeenCalledWith('No tracks found in this collection.');
     expect(trackCount).toBe(0);
   });
 

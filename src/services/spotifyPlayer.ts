@@ -1,5 +1,6 @@
 import { spotifyAuth } from './spotify';
 import { AuthExpiredError } from '@/providers/errors';
+import { shouldUseMockProvider } from '@/providers/mock/shouldUseMockProvider';
 import { logSpotify } from '@/lib/debugLog';
 import {
   SPOTIFY_MAX_RETRIES,
@@ -73,6 +74,7 @@ class SpotifyPlayerService {
       name: 'Vorbis Player',
       getOAuthToken: (cb) => {
         spotifyAuth.ensureValidToken().then(cb).catch(() => {
+          if (shouldUseMockProvider()) return;
           spotifyAuth.redirectToAuth();
         });
       },
@@ -98,6 +100,7 @@ class SpotifyPlayerService {
 
     this.player.addListener('authentication_error', ({ message }: { message: string }) => {
       console.error('Failed to authenticate', message);
+      if (shouldUseMockProvider()) return;
       spotifyAuth.redirectToAuth();
     });
 
