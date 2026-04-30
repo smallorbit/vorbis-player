@@ -1,6 +1,6 @@
-import type { AlbumInfo, PlaylistInfo, SpotifyPlaybackState } from '@/services/spotify';
+import type { AlbumInfo } from '@/services/spotify';
 import type { CachedPlaylistInfo } from '@/services/cache/cacheTypes';
-import type { MediaTrack, PlaybackState, ProviderId } from '@/types/domain';
+import type { MediaTrack, ProviderId } from '@/types/domain';
 import type { ProviderDescriptor } from '@/types/providers';
 import { vi } from 'vitest';
 
