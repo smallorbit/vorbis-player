@@ -112,7 +112,7 @@ export class SpotifyPlaybackAdapter implements PlaybackProvider {
           });
         }
       } catch (error) {
-        console.error('Failed to activate device:', error);
+        console.error('[SpotifyPlayback] Failed to activate device:', error);
       }
     };
 
