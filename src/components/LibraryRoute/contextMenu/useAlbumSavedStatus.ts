@@ -52,25 +52,31 @@ export function useAlbumSavedStatus(
     const next = !isSaved;
     setIsSaved(next);
     setSaveError(null);
-    descriptor!
-      .catalog
-      .setAlbumSaved!(albumId, next)
-      .then(() => {
-        // Optimistically refresh the library view so an unliked album disappears
-        // from LibraryRoute within a frame instead of waiting for the next poll.
-        // Spotify is the only provider with a saved-album surface today; mirror
-        // the pattern when Dropbox (or others) gain one.
-        if (descriptor!.id === 'spotify' && !next) {
-          librarySyncEngine.optimisticRemoveAlbum(albumId).catch((err) => {
-            logLibrary('optimisticRemoveAlbum failed', err);
-          });
-        }
-      })
-      .catch((err) => {
+
+    async function run() {
+      try {
+        await descriptor!.catalog.setAlbumSaved!(albumId!, next);
+      } catch (err) {
         logLibrary('setAlbumSaved failed', err);
         setIsSaved(!next);
         setSaveError(next ? 'Failed to add album.' : 'Failed to remove album.');
-      });
+        return;
+      }
+
+      // Optimistically refresh the library view so an unliked album disappears
+      // from LibraryRoute within a frame instead of waiting for the next poll.
+      // Spotify is the only provider with a saved-album surface today; mirror
+      // the pattern when Dropbox (or others) gain one.
+      if (descriptor!.id === 'spotify' && !next) {
+        try {
+          await librarySyncEngine.optimisticRemoveAlbum(albumId!);
+        } catch (err) {
+          logLibrary('optimisticRemoveAlbum failed', err);
+        }
+      }
+    }
+
+    run().catch((err) => logLibrary('toggleSaved unexpected error', err));
   }, [canToggle, albumId, isSaved, descriptor]);
 
   const clearSaveError = useCallback(() => setSaveError(null), []);
