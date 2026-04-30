@@ -346,9 +346,9 @@ describe('LibraryContextMenu', () => {
     expect(screen.queryByTestId('menu-queue-liked')).not.toBeInTheDocument();
   });
 
-  describe('album Like/Unlike toggle', () => {
-    it('shows "Unlike" label when album is already liked (isSaved=true)', () => {
-      // #given
+  describe('album Unlike toggle', () => {
+    it('always labels the toggle as "Unlike" for liked albums', () => {
+      // #given — library only ever surfaces albums already saved by the user
       mockUseAlbumSavedStatus.mockReturnValue({
         isSaved: true,
         toggleSaved: vi.fn(),
@@ -362,23 +362,6 @@ describe('LibraryContextMenu', () => {
 
       // #then
       expect(screen.getByTestId('menu-toggle-save').textContent).toBe('Unlike');
-    });
-
-    it('shows "Like" label when album is not liked (isSaved=false)', () => {
-      // #given
-      mockUseAlbumSavedStatus.mockReturnValue({
-        isSaved: false,
-        toggleSaved: vi.fn(),
-        canToggle: true,
-        saveError: null,
-        clearSaveError: vi.fn(),
-      });
-
-      // #when
-      renderMenu({ request: makeRequest({ kind: 'album', id: 'a1', name: 'My Album' }) });
-
-      // #then
-      expect(screen.getByTestId('menu-toggle-save').textContent).toBe('Like');
     });
 
     it('omits toggle-save when isSaved is null (status still loading)', () => {

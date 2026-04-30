@@ -20,7 +20,6 @@ export interface MenuActions {
   likedProviderActions?: Array<{ provider: ProviderId; label: string; onPlay: () => void }>;
   onRemoveFromHistory?: () => void;
   isPinned?: boolean;
-  isSaved?: boolean;
   startRadioDisabled?: boolean;
   playNextDisabled?: boolean;
 }
@@ -74,11 +73,13 @@ function buildAlbumItems(actions: MenuActions): MenuItem[] {
     },
   ];
   if (actions.onToggleSave) {
-    // User-facing copy uses "Like"/"Unlike" for vocabulary parity with the track heart;
-    // internal field names mirror the Spotify API ("saved"). See #1386.
+    // Library only surfaces albums the user has already liked, so the toggle is
+    // always Unlike. If the menu is reused in a non-library context (e.g. search
+    // results) the caller should branch via an explicit prop, not by inferring
+    // from a saved flag. See #1395.
     items.push({
       id: 'toggle-save',
-      label: actions.isSaved ? 'Unlike' : 'Like',
+      label: 'Unlike',
       onSelect: actions.onToggleSave,
     });
   }
