@@ -171,7 +171,13 @@ const AudioPlayerComponent = () => {
         const trackWord = result.added === 1 ? 'track' : 'tracks';
         toast(`Added ${result.added} ${trackWord} from ${label} to your queue.`, {
           id: 'qap-add-queue',
-          action: { label: 'View', onClick: () => setShowQueue(true) },
+          action: {
+            label: 'View',
+            onClick: () => {
+              handlers.handleCloseLibrary();
+              setShowQueue(true);
+            },
+          },
         });
       }
       return result;
@@ -197,7 +203,13 @@ const AudioPlayerComponent = () => {
         const trackWord = result.added === 1 ? 'track' : 'tracks';
         toast(`Added ${result.added} liked ${trackWord} from ${label} to your queue.`, {
           id: 'qap-queue-liked',
-          action: { label: 'View', onClick: () => setShowQueue(true) },
+          action: {
+            label: 'View',
+            onClick: () => {
+              handlers.handleCloseLibrary();
+              setShowQueue(true);
+            },
+          },
         });
       }
     },
