@@ -2,7 +2,7 @@ import type { MediaTrack } from '@/types/domain';
 import type { Track, PlaylistInfo, AlbumInfo, SpotifyAlbum, SpotifyTrackItem, PaginatedResponse } from './types';
 import { spotifyApiRequest, fetchAllPaginated } from './api';
 import { spotifyAuth } from './auth';
-import { trackListCache, TRACK_LIST_CACHE_TTL, TRACK_LIST_PERSIST_TTL } from './cache';
+import { trackListCache, albumSavedCache, TRACK_LIST_CACHE_TTL, TRACK_LIST_PERSIST_TTL } from './cache';
 import { formatArtists, transformTrackItem, backfillProvider, tracksToMediaTracks } from './tracks';
 import * as libraryCache from '../cache/libraryCache';
 
@@ -90,8 +90,12 @@ export async function getUserLibraryInterleaved(
       fetches.push(
         spotifyApiRequest<PaginatedResponse<SavedAlbumItem>>(url, token, { signal })
           .then((data) => {
+            const now = Date.now();
             for (const item of data.items ?? []) {
               albumResults.push(transformAlbum(item));
+              if (item.album.id) {
+                albumSavedCache.set(item.album.id, { value: true, timestamp: now });
+              }
             }
             albumNextUrl = data.next;
             const isComplete = albumNextUrl === null;
