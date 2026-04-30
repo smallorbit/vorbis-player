@@ -75,8 +75,12 @@ test-results/
 
 # Capture toolkit
 playwright/capture/output/
-playwright/capture/.auth-state.json
 playwright/capture/.chrome-profile/
+# Defensive: legacy real-auth state from the old capture flow (deleted in #1373).
+# The current mock-provider capture flow never produces this file, but this
+# gitignore guards against accidental token commits if a regression or a
+# contributor running an old script ever re-creates it.
+playwright/capture/.auth-state.json
 
 # Claude Code sessionkit handoff docs
 .sessionkit/

@@ -4,7 +4,8 @@ import { providerRegistry } from '@/providers/registry';
 import type { ProviderId } from '@/types/domain';
 import type { ProviderDescriptor, ProviderRegistry } from '@/types/providers';
 
-// Ensure providers are registered before the context is used
+// Ensure real providers are registered before the context is used.
+// Mock provider, if active, is loaded synchronously in main.tsx before render.
 import '@/providers/spotify/spotifyProvider';
 import '@/providers/dropbox/dropboxProvider'; // conditionally registers if VITE_DROPBOX_CLIENT_ID is set
 import { AUTH_STATE_CHANGED_EVENT } from '@/hooks/usePopupAuth';

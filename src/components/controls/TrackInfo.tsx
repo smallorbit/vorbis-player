@@ -293,16 +293,17 @@ const TrackInfo = memo<TrackInfoProps>(({ track, isMobile, isTablet, onArtistBro
                         onClick={handleTrackNameClick}
                         $isMobile={isMobile}
                         $isTablet={isTablet}
+                        data-testid="player-track-info-name"
                     >
                         {trackNameContent}
                     </PlayerTrackName>
                 ) : (
-                    <PlayerTrackName $isMobile={isMobile} $isTablet={isTablet}>
+                    <PlayerTrackName $isMobile={isMobile} $isTablet={isTablet} data-testid="player-track-info-name">
                         {trackNameContent}
                     </PlayerTrackName>
                 )}
                 {track?.album && (
-                    <PlayerTrackAlbum>{renderAlbum()}</PlayerTrackAlbum>
+                    <PlayerTrackAlbum data-testid="player-track-info-album">{renderAlbum()}</PlayerTrackAlbum>
                 )}
                 <PlayerTrackArtist>{renderArtists()}</PlayerTrackArtist>
             </TrackInfoOnlyRow>
