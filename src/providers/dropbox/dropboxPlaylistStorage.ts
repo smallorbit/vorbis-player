@@ -394,12 +394,7 @@ export async function loadPlaylistTracks(
   const data = await loadPlaylistFile(auth, playlistPath);
   if (!data) return [];
 
-  try {
-    return data.tracks.map(savedTrackToMediaTrack);
-  } catch {
-    console.warn('[DropboxPlaylistStorage] Failed to parse playlist file');
-    return [];
-  }
+  return data.tracks.map(savedTrackToMediaTrack);
 }
 
 /**
