@@ -46,10 +46,10 @@ export interface LibrarySearchOptions {
 }
 
 const EMPTY_RESULT: LibrarySearchResult = Object.freeze({
-  tracks: [],
-  albums: [],
-  artists: [],
-  playlists: [],
+  tracks: Object.freeze([]) as unknown as Track[],
+  albums: Object.freeze([]) as unknown as AlbumInfo[],
+  artists: Object.freeze([]) as unknown as SearchArtist[],
+  playlists: Object.freeze([]) as unknown as CachedPlaylistInfo[],
 }) as LibrarySearchResult;
 
 function isBlank(query: string): boolean {

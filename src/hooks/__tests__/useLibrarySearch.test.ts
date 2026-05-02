@@ -41,6 +41,7 @@ function makeAlbum(id: string, name: string, artists = 'Test Artist'): AlbumInfo
 function makeTrack(id: string, name: string, artists = 'Artist'): Track {
   return {
     id,
+    provider: 'spotify',
     name,
     artists,
     album: 'Album',

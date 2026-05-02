@@ -40,6 +40,7 @@ function makeAlbum(id: string, name: string, artists = 'Test Artist'): AlbumInfo
 function makeTrack(id: string, name: string, artists = 'Test Artist', album = 'Test Album'): Track {
   return {
     id,
+    provider: 'spotify',
     name,
     artists,
     album,
@@ -234,6 +235,48 @@ describe('searchLibraryCache', () => {
       expect(result.albums).toHaveLength(0);
       expect(result.artists).toHaveLength(0);
       expect(result.playlists).toHaveLength(0);
+    });
+  });
+
+  describe('artistsData structured path', () => {
+    it('derives artists from artistsData when present, matching and deduping by slug', async () => {
+      // #given — two tracks sharing one artist via the structured artistsData array
+      const trackWithArtistsData: Track = {
+        ...makeTrack('t1', 'Lose Yourself', ''),
+        artistsData: [
+          { name: 'Eminem', url: 'https://open.spotify.com/artist/7dGJo4pcD2V6oG8kP0tJRR' },
+        ],
+      };
+      const trackDuplicate: Track = {
+        ...makeTrack('t2', 'Rap God', ''),
+        artistsData: [
+          { name: 'Eminem', url: 'https://open.spotify.com/artist/7dGJo4pcD2V6oG8kP0tJRR' },
+        ],
+      };
+      await putTrackList('liked-songs', [trackWithArtistsData, trackDuplicate]);
+
+      // #when
+      const result = await searchLibraryCache('eminem');
+
+      // #then — matched via artistsData, deduped to a single entry
+      expect(result.artists).toEqual([{ id: 'eminem', name: 'Eminem' }]);
+    });
+  });
+
+  describe('multi-source deduplication', () => {
+    it('returns each track once when it appears in both liked-songs and a playlist', async () => {
+      // #given — same track id stored in two separate track lists
+      const sharedTrack = makeTrack('t1', 'Bohemian Rhapsody', 'Queen');
+      await putAllPlaylists([makePlaylist('p1', 'Classics')]);
+      await putTrackList('liked-songs', [sharedTrack]);
+      await putTrackList('playlist:p1', [sharedTrack]);
+
+      // #when
+      const result = await searchLibraryCache('bohemian');
+
+      // #then — deduplicated to a single result despite appearing in two lists
+      expect(result.tracks).toHaveLength(1);
+      expect(result.tracks[0].id).toBe('t1');
     });
   });
 
