@@ -1,12 +1,37 @@
 import type { MediaTrack } from '@/types/domain';
 import type { Track, AlbumInfo, SpotifyAlbum, SpotifyImage, SpotifyTrackItem, PaginatedResponse } from './types';
 import { getLargestImage } from './types';
-import { spotifyApiRequest } from './api';
+import { spotifyApiRequest, fetchAllPaginated } from './api';
 import { spotifyAuth } from './auth';
 import { albumSavedCache, trackListCache, TRACK_LIST_CACHE_TTL, TRACK_LIST_PERSIST_TTL, TRACK_SAVED_CACHE_TTL } from './cache';
 import { formatArtists, transformTrackItem, backfillProvider, tracksToMediaTracks } from './tracks';
 import * as libraryCache from '../cache/libraryCache';
 import { ALBUM_ID_PREFIX } from '@/constants/playlist';
+
+// =============================================================================
+// Shared Helpers
+// =============================================================================
+
+interface SavedAlbumItem {
+  added_at: string;
+  album: SpotifyAlbum;
+}
+
+function transformSavedAlbumItem(item: SavedAlbumItem): AlbumInfo {
+  const album = item.album;
+  return {
+    id: album.id ?? '',
+    name: album.name ?? 'Unknown Album',
+    artists: formatArtists(album.artists),
+    images: album.images ?? [],
+    release_date: album.release_date ?? '',
+    total_tracks: album.total_tracks ?? 0,
+    uri: album.uri ?? '',
+    album_type: album.album_type,
+    added_at: item.added_at,
+    genres: album.genres,
+  };
+}
 
 // =============================================================================
 // Album Functions
@@ -128,34 +153,13 @@ export async function getAlbumsPage(
 ): Promise<{ albums: AlbumInfo[]; total: number; hasMore: boolean }> {
   const token = await spotifyAuth.ensureValidToken();
 
-  interface SavedAlbumItem {
-    added_at: string;
-    album: SpotifyAlbum;
-  }
-
   const data = await spotifyApiRequest<PaginatedResponse<SavedAlbumItem>>(
     `https://api.spotify.com/v1/me/albums?limit=${limit}&offset=0`,
     token,
     { signal }
   );
-  const albums = (data.items ?? []).map((item) => {
-    const album = item.album;
-    return {
-      id: album.id ?? '',
-      name: album.name ?? 'Unknown Album',
-      artists: formatArtists(album.artists),
-      images: album.images ?? [],
-      release_date: album.release_date ?? '',
-      total_tracks: album.total_tracks ?? 0,
-      uri: album.uri ?? '',
-      album_type: album.album_type,
-      added_at: item.added_at,
-      // Genres are present on full album objects; simplified library objects may omit them
-      genres: album.genres,
-    } as AlbumInfo;
-  });
   return {
-    albums,
+    albums: (data.items ?? []).map(transformSavedAlbumItem),
     total: data.total ?? 0,
     hasMore: data.next !== null,
   };
@@ -164,37 +168,10 @@ export async function getAlbumsPage(
 /** Fetch ALL user saved albums with full pagination (not capped at 50). */
 export async function getAllUserAlbums(signal?: AbortSignal): Promise<AlbumInfo[]> {
   const token = await spotifyAuth.ensureValidToken();
-
-  interface SavedAlbumItem {
-    added_at: string;
-    album: SpotifyAlbum;
-  }
-
-  const albums: AlbumInfo[] = [];
-  let nextUrl: string | null = 'https://api.spotify.com/v1/me/albums?limit=50';
-
-  while (nextUrl) {
-    if (signal?.aborted) throw new DOMException('Request aborted', 'AbortError');
-    const url = nextUrl;
-    const data: PaginatedResponse<SavedAlbumItem> = await spotifyApiRequest(url, token, { signal });
-    for (const item of data.items ?? []) {
-      const album = item.album;
-      albums.push({
-        id: album.id ?? '',
-        name: album.name ?? 'Unknown Album',
-        artists: formatArtists(album.artists),
-        images: album.images ?? [],
-        release_date: album.release_date ?? '',
-        total_tracks: album.total_tracks ?? 0,
-        uri: album.uri ?? '',
-        album_type: album.album_type,
-        added_at: item.added_at,
-        // Genres are present on full album objects; simplified library objects may omit them
-        genres: album.genres,
-      });
-    }
-    nextUrl = data.next;
-  }
-
-  return albums;
+  return fetchAllPaginated<SavedAlbumItem, AlbumInfo>(
+    'https://api.spotify.com/v1/me/albums?limit=50',
+    token,
+    transformSavedAlbumItem,
+    { signal },
+  );
 }

@@ -25,9 +25,7 @@ export function formatArtists(artists?: SpotifyArtist[]): string {
   if (!artists || artists.length === 0) {
     return 'Unknown Artist';
   }
-  return artists.map(function (artist) {
-    return artist.name;
-  }).join(', ');
+  return artists.map((artist) => artist.name).join(', ');
 }
 
 export function buildArtistsData(artists?: SpotifyArtist[]): ArtistInfo[] | undefined {
