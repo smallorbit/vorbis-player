@@ -18,13 +18,14 @@ export interface LikedEntry {
   likedAt: number;
 }
 
-/**
- * Open a transaction on the likes store and run the callback.
- * Returns `fallback` if the database is unavailable or the transaction fails.
- */
 const TOMBSTONE_STORE = 'tombstones';
 
-async function withStore<T>(
+/**
+ * Open a transaction on the given store name and run the callback.
+ * Returns `fallback` if the database is unavailable or the transaction fails.
+ */
+async function withIdbStore<T>(
+  storeName: string,
   mode: IDBTransactionMode,
   fallback: T,
   fn: (store: IDBObjectStore, resolve: (value: T) => void) => void,
@@ -33,8 +34,8 @@ async function withStore<T>(
   if (!database) return fallback;
   return new Promise((resolve) => {
     try {
-      const tx = database.transaction(STORE, mode);
-      const store = tx.objectStore(STORE);
+      const tx = database.transaction(storeName, mode);
+      const store = tx.objectStore(storeName);
       fn(store, resolve);
       tx.onerror = () => resolve(fallback);
     } catch {
@@ -43,23 +44,20 @@ async function withStore<T>(
   });
 }
 
-async function withTombstoneStore<T>(
+function withStore<T>(
   mode: IDBTransactionMode,
   fallback: T,
   fn: (store: IDBObjectStore, resolve: (value: T) => void) => void,
 ): Promise<T> {
-  const database = await getDb();
-  if (!database) return fallback;
-  return new Promise((resolve) => {
-    try {
-      const tx = database.transaction(TOMBSTONE_STORE, mode);
-      const store = tx.objectStore(TOMBSTONE_STORE);
-      fn(store, resolve);
-      tx.onerror = () => resolve(fallback);
-    } catch {
-      resolve(fallback);
-    }
-  });
+  return withIdbStore(STORE, mode, fallback, fn);
+}
+
+function withTombstoneStore<T>(
+  mode: IDBTransactionMode,
+  fallback: T,
+  fn: (store: IDBObjectStore, resolve: (value: T) => void) => void,
+): Promise<T> {
+  return withIdbStore(TOMBSTONE_STORE, mode, fallback, fn);
 }
 
 export async function getLikedTracks(): Promise<MediaTrack[]> {

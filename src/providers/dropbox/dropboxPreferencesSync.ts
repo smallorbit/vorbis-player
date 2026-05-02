@@ -26,6 +26,16 @@ export interface RemotePreferencesFile {
 const PREFERENCES_FILE_PATH = '/.vorbis/preferences.json';
 const UPLOAD_DEBOUNCE_MS = 2000;
 
+function parseJsonObject(raw: string | null): Record<string, string> {
+  if (!raw) return {};
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    return typeof parsed === 'object' && parsed !== null ? (parsed as Record<string, string>) : {};
+  } catch {
+    return {};
+  }
+}
+
 // ── Adapter: build from local / apply to local ───────────────────────────────
 
 export async function buildPreferencesFromLocal(): Promise<Omit<RemotePreferencesFile, 'version' | 'updatedAt'>> {
@@ -33,24 +43,8 @@ export async function buildPreferencesFromLocal(): Promise<Omit<RemotePreference
     getPins(UNIFIED_PROVIDER, 'playlists'),
     getPins(UNIFIED_PROVIDER, 'albums'),
   ]);
-  const overridesRaw = localStorage.getItem(STORAGE_KEYS.ACCENT_COLOR_OVERRIDES);
-  const customRaw = localStorage.getItem(STORAGE_KEYS.CUSTOM_ACCENT_COLORS);
-  const overrides: Record<string, string> = overridesRaw ? (() => {
-    try {
-      const o = JSON.parse(overridesRaw);
-      return typeof o === 'object' && o !== null ? o : {};
-    } catch {
-      return {};
-    }
-  })() : {};
-  const customColors: Record<string, string> = customRaw ? (() => {
-    try {
-      const o = JSON.parse(customRaw);
-      return typeof o === 'object' && o !== null ? o : {};
-    } catch {
-      return {};
-    }
-  })() : {};
+  const overrides = parseJsonObject(localStorage.getItem(STORAGE_KEYS.ACCENT_COLOR_OVERRIDES));
+  const customColors = parseJsonObject(localStorage.getItem(STORAGE_KEYS.CUSTOM_ACCENT_COLORS));
   return {
     pins: { playlists, albums },
     accent: { overrides, customColors },

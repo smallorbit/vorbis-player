@@ -11,51 +11,54 @@ const RETRY_DELAY_MS = 1500;
 let folderConfirmed = false;
 let inflightPromise: Promise<boolean> | null = null;
 
+const MAX_RATE_LIMIT_RETRIES = 3;
+
 async function doEnsureFolder(auth: DropboxAuthAdapter): Promise<boolean> {
-  const token = await auth.ensureValidToken();
+  let token = await auth.ensureValidToken();
   if (!token) return false;
 
-  let response = await fetch('https://api.dropboxapi.com/2/files/create_folder_v2', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ path: FOLDER_PATH, autorename: false }),
-  });
-
-  if (response.status === 401) {
-    const refreshed = await auth.refreshAccessToken();
-    if (!refreshed) return false;
-    response = await fetch('https://api.dropboxapi.com/2/files/create_folder_v2', {
+  const createFolder = (accessToken: string) =>
+    fetch('https://api.dropboxapi.com/2/files/create_folder_v2', {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${refreshed}`,
+        Authorization: `Bearer ${accessToken}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({ path: FOLDER_PATH, autorename: false }),
     });
+
+  for (let attempt = 0; attempt <= MAX_RATE_LIMIT_RETRIES; attempt++) {
+    let response = await createFolder(token);
+
     if (response.status === 401) {
-      auth.reportUnauthorized();
+      const refreshed = await auth.refreshAccessToken();
+      if (!refreshed) return false;
+      token = refreshed;
+      response = await createFolder(token);
+      if (response.status === 401) {
+        auth.reportUnauthorized();
+        return false;
+      }
+    }
+
+    if (response.status === 409) return true;
+
+    if (response.status === 429 && attempt < MAX_RATE_LIMIT_RETRIES) {
+      const retryAfter = response.headers.get('Retry-After');
+      const delayMs = retryAfter ? parseInt(retryAfter, 10) * 1000 : RETRY_DELAY_MS;
+      await new Promise((r) => setTimeout(r, delayMs));
+      continue;
+    }
+
+    if (!response.ok) {
+      console.warn('[DropboxSyncFolder] Failed to ensure /.vorbis folder:', response.status);
       return false;
     }
+
+    return true;
   }
 
-  if (response.status === 409) return true;
-
-  if (response.status === 429) {
-    const retryAfter = response.headers.get('Retry-After');
-    const delayMs = retryAfter ? parseInt(retryAfter, 10) * 1000 : RETRY_DELAY_MS;
-    await new Promise((r) => setTimeout(r, delayMs));
-    return doEnsureFolder(auth);
-  }
-
-  if (!response.ok) {
-    console.warn('[DropboxSyncFolder] Failed to ensure /.vorbis folder:', response.status);
-    return false;
-  }
-
-  return true;
+  return false;
 }
 
 /**

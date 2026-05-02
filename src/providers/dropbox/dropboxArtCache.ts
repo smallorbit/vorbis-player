@@ -157,6 +157,7 @@ export async function putTagMetadata(trackId: string, tags: Omit<CachedTagMetada
 }
 
 function batchGetFromStore<T>(database: IDBDatabase, storeName: string, ids: string[]): Promise<Map<string, T>> {
+  if (ids.length === 0) return Promise.resolve(new Map<string, T>());
   return new Promise((resolve) => {
     const result = new Map<string, T>();
     try {
