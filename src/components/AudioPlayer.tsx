@@ -141,9 +141,9 @@ const AudioPlayerComponent = () => {
     (track: Track) => {
       const [mediaTrack] = tracksToMediaTracks([track]);
       if (!mediaTrack) return;
-      const result = handlers.queueTracksDirectly([mediaTrack], track.name);
+      const result = handlers.insertTracksNext([mediaTrack], track.name);
       if (result && result.added > 0) {
-        toast(`Added "${track.name}" to your queue.`, {
+        toast(`Added "${track.name}" to play next.`, {
           id: 'cmdk-add-track',
           action: {
             label: 'View',
@@ -158,20 +158,43 @@ const AudioPlayerComponent = () => {
     [handlers, setShowQueue],
   );
 
+  const handleCmdKInsertCollectionNext = useCallback(
+    async (
+      id: string,
+      name: string,
+      provider?: import('@/types/domain').ProviderId,
+    ) => {
+      const result = await handlers.insertCollectionNext(id, name, provider);
+      if (result && result.added > 0) {
+        const trackWord = result.added === 1 ? 'track' : 'tracks';
+        toast(`Added ${result.added} ${trackWord} from "${name}" to play next.`, {
+          id: 'cmdk-add-collection',
+          action: {
+            label: 'View',
+            onClick: () => {
+              handlers.handleCloseLibrary();
+              setShowQueue(true);
+            },
+          },
+        });
+      }
+      return result;
+    },
+    [handlers, setShowQueue],
+  );
+
   const handleCmdKSelectAlbum = useCallback(
     (album: AlbumInfo) => {
-      handlers.handleOpenLibrary();
-      handlePlaylistSelect(toAlbumPlaylistId(album.id), album.name, album.provider);
+      void handleCmdKInsertCollectionNext(toAlbumPlaylistId(album.id), album.name, album.provider);
     },
-    [handlers, handlePlaylistSelect],
+    [handleCmdKInsertCollectionNext],
   );
 
   const handleCmdKSelectPlaylist = useCallback(
     (playlist: CachedPlaylistInfo) => {
-      handlers.handleOpenLibrary();
-      handlePlaylistSelect(playlist.id, playlist.name, playlist.provider);
+      void handleCmdKInsertCollectionNext(playlist.id, playlist.name, playlist.provider);
     },
-    [handlers, handlePlaylistSelect],
+    [handleCmdKInsertCollectionNext],
   );
 
   const handleCmdKSelectArtist = useCallback((_artist: SearchArtist) => {
