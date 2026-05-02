@@ -27,6 +27,7 @@ import { STORAGE_KEYS } from '@/constants/storage';
 import type { ClearCacheOptions } from '@/components/AppSettingsMenu';
 import { useSessionPersistence } from '@/hooks/useSessionPersistence';
 import QuickAccessPanel from './QuickAccessPanel';
+import { CmdKPalette } from './CmdKPalette';
 
 const VisualEffectsMenu = lazy(() => import('./AppSettingsMenu/index'));
 const LibraryRoute = lazy(() => import('./LibraryRoute'));
@@ -502,6 +503,7 @@ const AudioPlayerComponent = () => {
             </div>
           </QuickAccessOverlay>
         )}
+        <CmdKPalette />
         {!isMainPlayerActive && (
           <Suspense fallback={null}>
             <VisualEffectsMenu
