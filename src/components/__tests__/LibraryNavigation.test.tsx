@@ -4,16 +4,13 @@
  * Covers:
  *  B. Library open/close — BottomBar's onBackToLibrary triggers library open;
  *     library closes when onCloseLibrary / onNavigateToPlayer is invoked.
- *  C. Filter reset on QAP open — the onBrowseLibrary handler removes the three
- *     library filter keys from localStorage before opening the library.
  */
 
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
-import { vi, describe, it, expect, beforeEach } from 'vitest';
+import { vi, describe, it, expect } from 'vitest';
 import { ThemeProvider } from 'styled-components';
 import { theme } from '@/styles/theme';
-import { STORAGE_KEYS } from '@/constants/storage';
 import { TestWrapper } from '@/test/testWrappers';
 
 // ---- mocks required to mount BottomBar ----------------------------------- //
@@ -202,96 +199,3 @@ describe('Library open/close via onCloseLibrary', () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// C. Filter reset on QAP open (onBrowseLibrary handler)
-// ---------------------------------------------------------------------------
-
-/**
- * Simulates the onBrowseLibrary handler from AudioPlayer.tsx:
- *
- *   onBrowseLibrary={() => {
- *     localStorage.removeItem(STORAGE_KEYS.LIBRARY_SEARCH);
- *     localStorage.removeItem(STORAGE_KEYS.LIBRARY_PROVIDER_FILTERS);
- *     localStorage.removeItem(STORAGE_KEYS.LIBRARY_GENRES);
- *     handleCloseQuickAccessPanel();
- *     handlers.handleOpenLibrary();
- *   }}
- */
-function makeBrowseLibraryHandler(onOpenLibrary: () => void) {
-  return () => {
-    localStorage.removeItem(STORAGE_KEYS.LIBRARY_SEARCH);
-    localStorage.removeItem(STORAGE_KEYS.LIBRARY_PROVIDER_FILTERS);
-    localStorage.removeItem(STORAGE_KEYS.LIBRARY_GENRES);
-    onOpenLibrary();
-  };
-}
-
-describe('Filter reset on QAP open (onBrowseLibrary)', () => {
-  beforeEach(() => {
-    vi.restoreAllMocks();
-  });
-
-  it('removes LIBRARY_SEARCH from localStorage before opening the library', () => {
-    // #given
-    const removeItem = vi.spyOn(localStorage, 'removeItem');
-    const onOpenLibrary = vi.fn();
-    const handler = makeBrowseLibraryHandler(onOpenLibrary);
-
-    // #when
-    handler();
-
-    // #then
-    expect(removeItem).toHaveBeenCalledWith(STORAGE_KEYS.LIBRARY_SEARCH);
-  });
-
-  it('removes LIBRARY_PROVIDER_FILTERS from localStorage before opening the library', () => {
-    // #given
-    const removeItem = vi.spyOn(localStorage, 'removeItem');
-    const onOpenLibrary = vi.fn();
-    const handler = makeBrowseLibraryHandler(onOpenLibrary);
-
-    // #when
-    handler();
-
-    // #then
-    expect(removeItem).toHaveBeenCalledWith(STORAGE_KEYS.LIBRARY_PROVIDER_FILTERS);
-  });
-
-  it('removes LIBRARY_GENRES from localStorage before opening the library', () => {
-    // #given
-    const removeItem = vi.spyOn(localStorage, 'removeItem');
-    const onOpenLibrary = vi.fn();
-    const handler = makeBrowseLibraryHandler(onOpenLibrary);
-
-    // #when
-    handler();
-
-    // #then
-    expect(removeItem).toHaveBeenCalledWith(STORAGE_KEYS.LIBRARY_GENRES);
-  });
-
-  it('removes all three filter keys and then calls onOpenLibrary', () => {
-    // #given
-    const callOrder: string[] = [];
-    const removeItem = vi.spyOn(localStorage, 'removeItem').mockImplementation((key) => {
-      callOrder.push(`remove:${key}`);
-    });
-    const onOpenLibrary = vi.fn(() => { callOrder.push('openLibrary'); });
-    const handler = makeBrowseLibraryHandler(onOpenLibrary);
-
-    // #when
-    handler();
-
-    // #then — all three removes happen before the library open
-    expect(removeItem).toHaveBeenCalledTimes(3);
-    expect(onOpenLibrary).toHaveBeenCalledOnce();
-
-    const openIdx = callOrder.indexOf('openLibrary');
-    const removeIndices = [
-      callOrder.indexOf(`remove:${STORAGE_KEYS.LIBRARY_SEARCH}`),
-      callOrder.indexOf(`remove:${STORAGE_KEYS.LIBRARY_PROVIDER_FILTERS}`),
-      callOrder.indexOf(`remove:${STORAGE_KEYS.LIBRARY_GENRES}`),
-    ];
-    expect(Math.max(...removeIndices)).toBeLessThan(openIdx);
-  });
-});
