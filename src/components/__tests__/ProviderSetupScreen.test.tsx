@@ -4,7 +4,6 @@ import { ThemeProvider } from 'styled-components';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import { theme } from '@/styles/theme';
 import { makeProviderDescriptor } from '@/test/fixtures';
-import type { ProviderDescriptor } from '@/types/providers';
 
 const mockSetActiveProviderId = vi.fn();
 const mockToggleProvider = vi.fn();

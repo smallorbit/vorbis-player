@@ -28,7 +28,7 @@ describe('useQueueManagement', () => {
   let mockSetOriginalTracks: ReturnType<typeof vi.fn>;
   let mockSetCurrentTrackIndex: ReturnType<typeof vi.fn>;
   let mockGetDescriptor: ReturnType<typeof vi.fn>;
-  let mockActiveDescriptor: any;
+  let mockActiveDescriptor: { id: string; [key: string]: unknown };
   let mediaTracksRef: React.MutableRefObject<MediaTrack[]>;
 
   beforeEach(() => {
@@ -377,6 +377,228 @@ describe('useQueueManagement', () => {
 
     // #when
     const response = await act(async () => result.current.handleAddToQueue('playlist_id'));
+
+    // #then
+    expect(response).toBeNull();
+    expect(toast).toHaveBeenCalledWith("Couldn't add to queue. Try again.", { id: 'qap-add-queue-error' });
+    errorSpy.mockRestore();
+  });
+
+  it('insertTracksNext inserts a single track at currentTrackIndex + 1', () => {
+    // #given — queue of 4 tracks, currently playing index 1
+    mediaTracksRef.current = [makeMediaTrack('a'), makeMediaTrack('b'), makeMediaTrack('c'), makeMediaTrack('d')];
+    const tracks = [
+      makeTrack({ id: 'a' }),
+      makeTrack({ id: 'b' }),
+      makeTrack({ id: 'c' }),
+      makeTrack({ id: 'd' }),
+    ];
+
+    const { result } = renderHook(() =>
+      useQueueManagement({
+        tracks,
+        currentTrackIndex: 1,
+        shuffleEnabled: false,
+        trackOps: { setTracks: mockSetTracks, setOriginalTracks: mockSetOriginalTracks, setCurrentTrackIndex: mockSetCurrentTrackIndex, mediaTracksRef },
+        loadCollection: mockHandlePlaylistSelect,
+        handleBackToLibrary: mockHandleBackToLibrary,
+        activeDescriptor: mockActiveDescriptor,
+        getDescriptor: mockGetDescriptor,
+      })
+    );
+
+    // #when
+    let response: ReturnType<typeof result.current.insertTracksNext> = null;
+    act(() => {
+      response = result.current.insertTracksNext([makeMediaTrack('x')], 'X');
+    });
+
+    // #then — setTracks called with full array (insert-next path uses non-functional update)
+    expect(response).toEqual({ added: 1, collectionName: 'X' });
+    expect(mockSetTracks).toHaveBeenCalledWith([
+      expect.objectContaining({ id: 'a' }),
+      expect.objectContaining({ id: 'b' }),
+      expect.objectContaining({ id: 'x' }),
+      expect.objectContaining({ id: 'c' }),
+      expect.objectContaining({ id: 'd' }),
+    ]);
+    expect(mediaTracksRef.current.map((t) => t.id)).toEqual(['a', 'b', 'x', 'c', 'd']);
+    expect(mockSetCurrentTrackIndex).not.toHaveBeenCalled();
+  });
+
+  it('insertTracksNext appends when queue is empty (no current track to insert after)', () => {
+    // #given — empty queue
+    const { result } = renderHook(() =>
+      useQueueManagement({
+        tracks: [],
+        currentTrackIndex: 0,
+        shuffleEnabled: false,
+        trackOps: { setTracks: mockSetTracks, setOriginalTracks: mockSetOriginalTracks, setCurrentTrackIndex: mockSetCurrentTrackIndex, mediaTracksRef },
+        loadCollection: mockHandlePlaylistSelect,
+        handleBackToLibrary: mockHandleBackToLibrary,
+        activeDescriptor: mockActiveDescriptor,
+        getDescriptor: mockGetDescriptor,
+      })
+    );
+
+    // #when
+    let response: ReturnType<typeof result.current.insertTracksNext> = null;
+    act(() => {
+      response = result.current.insertTracksNext([makeMediaTrack('1'), makeMediaTrack('2')]);
+    });
+
+    // #then
+    expect(response).toEqual({ added: 2, collectionName: undefined });
+    expect(mockSetTracks).toHaveBeenCalledWith([
+      expect.objectContaining({ id: '1' }),
+      expect.objectContaining({ id: '2' }),
+    ]);
+    expect(mediaTracksRef.current.map((t) => t.id)).toEqual(['1', '2']);
+  });
+
+  it('insertTracksNext returns null and toasts when every track is already queued', () => {
+    // #given
+    mediaTracksRef.current = [makeMediaTrack('1'), makeMediaTrack('2')];
+    const tracks = [makeTrack({ id: '1' }), makeTrack({ id: '2' })];
+
+    const { result } = renderHook(() =>
+      useQueueManagement({
+        tracks,
+        currentTrackIndex: 0,
+        shuffleEnabled: false,
+        trackOps: { setTracks: mockSetTracks, setOriginalTracks: mockSetOriginalTracks, setCurrentTrackIndex: mockSetCurrentTrackIndex, mediaTracksRef },
+        loadCollection: mockHandlePlaylistSelect,
+        handleBackToLibrary: mockHandleBackToLibrary,
+        activeDescriptor: mockActiveDescriptor,
+        getDescriptor: mockGetDescriptor,
+      })
+    );
+
+    // #when
+    let response: ReturnType<typeof result.current.insertTracksNext> = null;
+    act(() => {
+      response = result.current.insertTracksNext([makeMediaTrack('1'), makeMediaTrack('2')]);
+    });
+
+    // #then
+    expect(response).toBeNull();
+    expect(toast).toHaveBeenCalledWith('Already in your queue.', { id: 'qap-add-queue-dup' });
+    expect(mockSetTracks).not.toHaveBeenCalled();
+  });
+
+  it('insertTracksNext dedups against existing queue and inserts only the unique tracks', () => {
+    // #given — '1' is already queued, 'x' and 'y' are new
+    mediaTracksRef.current = [makeMediaTrack('1'), makeMediaTrack('2')];
+    const tracks = [makeTrack({ id: '1' }), makeTrack({ id: '2' })];
+
+    const { result } = renderHook(() =>
+      useQueueManagement({
+        tracks,
+        currentTrackIndex: 0,
+        shuffleEnabled: false,
+        trackOps: { setTracks: mockSetTracks, setOriginalTracks: mockSetOriginalTracks, setCurrentTrackIndex: mockSetCurrentTrackIndex, mediaTracksRef },
+        loadCollection: mockHandlePlaylistSelect,
+        handleBackToLibrary: mockHandleBackToLibrary,
+        activeDescriptor: mockActiveDescriptor,
+        getDescriptor: mockGetDescriptor,
+      })
+    );
+
+    // #when — mix of duplicate '1' with new 'x' and 'y'
+    let response: ReturnType<typeof result.current.insertTracksNext> = null;
+    act(() => {
+      response = result.current.insertTracksNext([makeMediaTrack('1'), makeMediaTrack('x'), makeMediaTrack('y')]);
+    });
+
+    // #then — only x and y are inserted, currentTrackIndex preserved
+    expect(response).toEqual({ added: 2, collectionName: undefined });
+    expect(mediaTracksRef.current.map((t) => t.id)).toEqual(['1', 'x', 'y', '2']);
+    expect(mockSetCurrentTrackIndex).not.toHaveBeenCalled();
+  });
+
+  it('insertCollectionNext delegates to loadCollection when queue is empty', async () => {
+    // #given
+    mockHandlePlaylistSelect.mockResolvedValue(5);
+
+    const { result } = renderHook(() =>
+      useQueueManagement({
+        tracks: [],
+        currentTrackIndex: 0,
+        shuffleEnabled: false,
+        trackOps: { setTracks: mockSetTracks, setOriginalTracks: mockSetOriginalTracks, setCurrentTrackIndex: mockSetCurrentTrackIndex, mediaTracksRef },
+        loadCollection: mockHandlePlaylistSelect,
+        handleBackToLibrary: mockHandleBackToLibrary,
+        activeDescriptor: mockActiveDescriptor,
+        getDescriptor: mockGetDescriptor,
+      })
+    );
+
+    // #when
+    const response = await act(async () =>
+      result.current.insertCollectionNext('playlist_id', 'My Playlist'),
+    );
+
+    // #then
+    expect(mockHandlePlaylistSelect).toHaveBeenCalledWith('playlist_id', undefined, 'My Playlist');
+    expect(response).toEqual({ added: 5, collectionName: 'My Playlist' });
+  });
+
+  it('insertCollectionNext fetches via catalog and inserts at currentTrackIndex + 1 when queue is non-empty', async () => {
+    // #given
+    mediaTracksRef.current = [makeMediaTrack('a'), makeMediaTrack('b')];
+    const tracks = [makeTrack({ id: 'a' }), makeTrack({ id: 'b' })];
+    const fetched = [makeMediaTrack('p1'), makeMediaTrack('p2'), makeMediaTrack('p3')];
+    const mockCatalog = { listTracks: vi.fn().mockResolvedValue(fetched) };
+    mockActiveDescriptor.catalog = mockCatalog;
+
+    const { result } = renderHook(() =>
+      useQueueManagement({
+        tracks,
+        currentTrackIndex: 0,
+        shuffleEnabled: false,
+        trackOps: { setTracks: mockSetTracks, setOriginalTracks: mockSetOriginalTracks, setCurrentTrackIndex: mockSetCurrentTrackIndex, mediaTracksRef },
+        loadCollection: mockHandlePlaylistSelect,
+        handleBackToLibrary: mockHandleBackToLibrary,
+        activeDescriptor: mockActiveDescriptor,
+        getDescriptor: mockGetDescriptor,
+      })
+    );
+
+    // #when
+    const response = await act(async () =>
+      result.current.insertCollectionNext('playlist_id', 'P'),
+    );
+
+    // #then — 3 tracks inserted at index 1 (currentTrackIndex + 1)
+    expect(response).toEqual({ added: 3, collectionName: 'P' });
+    expect(mockCatalog.listTracks).toHaveBeenCalled();
+    expect(mediaTracksRef.current.map((t) => t.id)).toEqual(['a', 'p1', 'p2', 'p3', 'b']);
+    expect(mockSetCurrentTrackIndex).not.toHaveBeenCalled();
+  });
+
+  it('insertCollectionNext toasts the failure message when listTracks throws', async () => {
+    // #given
+    mediaTracksRef.current = [makeMediaTrack('a')];
+    const tracks = [makeTrack({ id: 'a' })];
+    const mockCatalog = { listTracks: vi.fn().mockRejectedValue(new Error('boom')) };
+    mockActiveDescriptor.catalog = mockCatalog;
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    const { result } = renderHook(() =>
+      useQueueManagement({
+        tracks,
+        currentTrackIndex: 0,
+        shuffleEnabled: false,
+        trackOps: { setTracks: mockSetTracks, setOriginalTracks: mockSetOriginalTracks, setCurrentTrackIndex: mockSetCurrentTrackIndex, mediaTracksRef },
+        loadCollection: mockHandlePlaylistSelect,
+        handleBackToLibrary: mockHandleBackToLibrary,
+        activeDescriptor: mockActiveDescriptor,
+        getDescriptor: mockGetDescriptor,
+      })
+    );
+
+    // #when
+    const response = await act(async () => result.current.insertCollectionNext('p1'));
 
     // #then
     expect(response).toBeNull();

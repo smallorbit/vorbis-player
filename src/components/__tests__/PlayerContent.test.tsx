@@ -8,7 +8,6 @@ import { ThemeProvider } from 'styled-components';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import PlayerContent from '../PlayerContent';
 import type { PlaybackHandlers } from '../PlayerContent';
-import { makeMediaTrack } from '@/test/fixtures';
 import { theme } from '@/styles/theme';
 
 // Mock ResizeObserver
@@ -16,7 +15,7 @@ global.ResizeObserver = vi.fn(() => ({
   observe: vi.fn(),
   unobserve: vi.fn(),
   disconnect: vi.fn(),
-})) as any;
+})) as unknown as typeof ResizeObserver;
 
 vi.mock('@/hooks/useLibrarySync', () => ({
   useLibrarySync: vi.fn(() => ({

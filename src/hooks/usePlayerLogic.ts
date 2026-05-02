@@ -434,7 +434,7 @@ export function usePlayerLogic() {
   ]);
 
   // Initialize queue management handlers
-  const { handleAddToQueue, queueTracksDirectly, handleRemoveFromQueue, handleReorderQueue } = useQueueManagement({
+  const { handleAddToQueue, queueTracksDirectly, insertTracksNext, insertCollectionNext, handleRemoveFromQueue, handleReorderQueue } = useQueueManagement({
     trackOps,
     tracks,
     currentTrackIndex,
@@ -453,6 +453,8 @@ export function usePlayerLogic() {
       playTracksDirectly,
       handleAddToQueue,
       queueTracksDirectly,
+      insertTracksNext,
+      insertCollectionNext,
       handlePlay,
       handlePause,
       handleNext,
@@ -472,6 +474,8 @@ export function usePlayerLogic() {
       playTracksDirectly,
       handleAddToQueue,
       queueTracksDirectly,
+      insertTracksNext,
+      insertCollectionNext,
       handlePlay,
       handlePause,
       handleNext,

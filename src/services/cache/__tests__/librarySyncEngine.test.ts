@@ -391,4 +391,73 @@ describe('LibrarySyncEngine', () => {
       expect(playlists).toHaveLength(1);
     });
   });
+
+  describe('optimisticRemoveAlbum', () => {
+    it('should evict the album from the cached album list', async () => {
+      // #given
+      await seedCacheMeta({
+        albums: [makeAlbum('a1', 'Keep'), makeAlbum('a2', 'Remove')],
+        albumCount: 2,
+      });
+
+      // #when
+      await engine.optimisticRemoveAlbum('a2');
+
+      // #then
+      const albums = await cache.getAllAlbums();
+      expect(albums).toHaveLength(1);
+      expect(albums[0].id).toBe('a1');
+    });
+
+    it('should decrement the album totalCount in cache metadata', async () => {
+      // #given
+      await seedCacheMeta({
+        albums: [makeAlbum('a1'), makeAlbum('a2')],
+        albumCount: 2,
+      });
+
+      // #when
+      await engine.optimisticRemoveAlbum('a1');
+
+      // #then
+      const meta = await cache.getMeta('albums');
+      expect(meta!.totalCount).toBe(1);
+    });
+
+    it('should notify subscribers with the updated album list', async () => {
+      // #given
+      await seedCacheMeta({
+        albums: [makeAlbum('a1', 'Keep'), makeAlbum('a2', 'Remove')],
+        albumCount: 2,
+      });
+
+      let notifiedAlbums: AlbumInfo[] | undefined;
+      engine.subscribe((_state, _playlists, albums) => {
+        if (albums) notifiedAlbums = albums;
+      });
+
+      // #when
+      await engine.optimisticRemoveAlbum('a2');
+
+      // #then
+      expect(notifiedAlbums).toBeDefined();
+      expect(notifiedAlbums!.some((a) => a.id === 'a2')).toBe(false);
+      expect(notifiedAlbums!.some((a) => a.id === 'a1')).toBe(true);
+    });
+
+    it('should not go below zero when totalCount is already zero', async () => {
+      // #given
+      await seedCacheMeta({
+        albums: [makeAlbum('a1')],
+        albumCount: 0,
+      });
+
+      // #when
+      await engine.optimisticRemoveAlbum('a1');
+
+      // #then — totalCount must not underflow below zero
+      const meta = await cache.getMeta('albums');
+      expect(meta!.totalCount).toBe(0);
+    });
+  });
 });

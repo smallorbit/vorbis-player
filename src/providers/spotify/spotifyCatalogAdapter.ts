@@ -173,7 +173,8 @@ export class SpotifyCatalogAdapter implements CatalogProvider {
       const track = await searchTrack(artist, title);
       if (!track) return null;
       return spotifyTrackToMediaTrack(track);
-    } catch {
+    } catch (err) {
+      console.warn('[SpotifyCatalog] searchTrack failed:', err);
       return null;
     }
   }
