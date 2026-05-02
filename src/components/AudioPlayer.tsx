@@ -31,6 +31,7 @@ import { CmdKPalette } from './CmdKPalette';
 import { tracksToMediaTracks } from '@/services/spotify/tracks';
 import type { Track, AlbumInfo } from '@/services/spotify';
 import type { CachedPlaylistInfo } from '@/services/cache/cacheTypes';
+import type { SearchArtist } from '@/services/cache/librarySearch';
 
 const VisualEffectsMenu = lazy(() => import('./AppSettingsMenu/index'));
 const LibraryRoute = lazy(() => import('./LibraryRoute'));
@@ -173,7 +174,7 @@ const AudioPlayerComponent = () => {
     [handlers, handlePlaylistSelect],
   );
 
-  const handleCmdKSelectArtist = useCallback(() => {
+  const handleCmdKSelectArtist = useCallback((_artist: SearchArtist) => {
     // #1408 deferral: there is no programmatic "filter Library by artist"
     // mechanism today. Falling back to opening Library without a filter so the
     // user can navigate to the artist manually. A follow-up should add a

@@ -121,7 +121,7 @@ export const CmdKPalette = ({
         autoFocus
       />
       <CommandList>
-        {!hasAny && <CommandEmpty>No results.</CommandEmpty>}
+        {!hasAny && query.trim().length > 0 && <CommandEmpty>No results.</CommandEmpty>}
 
         {tracks.length > 0 && (
           <CommandGroup heading="Tracks">

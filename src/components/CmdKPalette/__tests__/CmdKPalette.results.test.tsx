@@ -170,7 +170,7 @@ describe('CmdKPalette — categorized rendering', () => {
     expect(artists.compareDocumentPosition(playlists) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
-  it('shows "No results" when all buckets are empty', () => {
+  it('shows "No results" when all buckets are empty and a query is typed', () => {
     // #given
     setSearchResult({});
     render(<CmdKPalette />);
@@ -181,6 +181,18 @@ describe('CmdKPalette — categorized rendering', () => {
 
     // #then
     expect(screen.getByText(/no results/i)).toBeInTheDocument();
+  });
+
+  it('does NOT show "No results." when the palette opens with an empty query', () => {
+    // #given
+    setSearchResult({});
+    render(<CmdKPalette />);
+
+    // #when — open without typing anything
+    openPalette();
+
+    // #then — "No results." must not appear before the user types
+    expect(screen.queryByText(/no results/i)).not.toBeInTheDocument();
   });
 
   it('renders track subtitle as the artist string', () => {
