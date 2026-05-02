@@ -13,11 +13,12 @@ interface BackgroundVisualizerProps {
   speed?: number;
   accentColor: string;
   isPlaying: boolean;
+  dimmed?: boolean;
   /** When style is 'comet', the trail head is constrained to this rect so it appears to come from the album art */
   albumArtBounds?: AlbumArtBounds | null;
 }
 
-const VisualizerContainer = styled.div`
+const VisualizerContainer = styled.div<{ $dimmed: boolean }>`
   position: fixed;
   top: 0;
   left: 0;
@@ -26,6 +27,9 @@ const VisualizerContainer = styled.div`
   z-index: 1;
   pointer-events: none;
   overflow: hidden;
+  opacity: ${({ $dimmed }) => ($dimmed ? 0.2 : 1)};
+  transition: opacity 250ms ease;
+  will-change: opacity;
 `;
 
 /**
@@ -50,6 +54,7 @@ const BackgroundVisualizer: React.FC<BackgroundVisualizerProps> = React.memo(({
   speed,
   accentColor,
   isPlaying,
+  dimmed = false,
   albumArtBounds,
 }) => {
   const VisualizerComponent = useMemo(() => {
@@ -74,7 +79,7 @@ const BackgroundVisualizer: React.FC<BackgroundVisualizerProps> = React.memo(({
   }
 
   return (
-    <VisualizerContainer>
+    <VisualizerContainer $dimmed={dimmed}>
       <VisualizerComponent
         intensity={intensity}
         speed={speed ?? 1.0}

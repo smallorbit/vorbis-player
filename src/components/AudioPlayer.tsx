@@ -470,6 +470,7 @@ const AudioPlayerComponent = () => {
             speed={backgroundVisualizerSpeed}
             accentColor={accentColor}
             isPlaying={state.isPlaying}
+            dimmed={state.currentView === 'library'}
           />
         </ProfiledComponent>
         {renderContent()}
