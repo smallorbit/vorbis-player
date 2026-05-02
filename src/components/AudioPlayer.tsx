@@ -28,6 +28,10 @@ import type { ClearCacheOptions } from '@/components/AppSettingsMenu';
 import { useSessionPersistence } from '@/hooks/useSessionPersistence';
 import QuickAccessPanel from './QuickAccessPanel';
 import { CmdKPalette } from './CmdKPalette';
+import { tracksToMediaTracks } from '@/services/spotify/tracks';
+import type { Track, AlbumInfo } from '@/services/spotify';
+import type { CachedPlaylistInfo } from '@/services/cache/cacheTypes';
+import type { SearchArtist } from '@/services/cache/librarySearch';
 
 const VisualEffectsMenu = lazy(() => import('./AppSettingsMenu/index'));
 const LibraryRoute = lazy(() => import('./LibraryRoute'));
@@ -133,6 +137,74 @@ const AudioPlayerComponent = () => {
     [handlers]
   );
 
+  const handleCmdKSelectTrack = useCallback(
+    (track: Track) => {
+      const [mediaTrack] = tracksToMediaTracks([track]);
+      if (!mediaTrack) return;
+      const result = handlers.insertTracksNext([mediaTrack], track.name);
+      if (result && result.added > 0) {
+        toast(`Added "${track.name}" to play next.`, {
+          id: 'cmdk-add-track',
+          action: {
+            label: 'View',
+            onClick: () => {
+              handlers.handleCloseLibrary();
+              setShowQueue(true);
+            },
+          },
+        });
+      }
+    },
+    [handlers, setShowQueue],
+  );
+
+  const handleCmdKInsertCollectionNext = useCallback(
+    async (
+      id: string,
+      name: string,
+      provider?: import('@/types/domain').ProviderId,
+    ) => {
+      const result = await handlers.insertCollectionNext(id, name, provider);
+      if (result && result.added > 0) {
+        const trackWord = result.added === 1 ? 'track' : 'tracks';
+        toast(`Added ${result.added} ${trackWord} from "${name}" to play next.`, {
+          id: 'cmdk-add-collection',
+          action: {
+            label: 'View',
+            onClick: () => {
+              handlers.handleCloseLibrary();
+              setShowQueue(true);
+            },
+          },
+        });
+      }
+      return result;
+    },
+    [handlers, setShowQueue],
+  );
+
+  const handleCmdKSelectAlbum = useCallback(
+    (album: AlbumInfo) => {
+      void handleCmdKInsertCollectionNext(toAlbumPlaylistId(album.id), album.name, album.provider);
+    },
+    [handleCmdKInsertCollectionNext],
+  );
+
+  const handleCmdKSelectPlaylist = useCallback(
+    (playlist: CachedPlaylistInfo) => {
+      void handleCmdKInsertCollectionNext(playlist.id, playlist.name, playlist.provider);
+    },
+    [handleCmdKInsertCollectionNext],
+  );
+
+  const handleCmdKSelectArtist = useCallback((_artist: SearchArtist) => {
+    // #1408 deferral: there is no programmatic "filter Library by artist"
+    // mechanism today. Falling back to opening Library without a filter so the
+    // user can navigate to the artist manually. A follow-up should add a
+    // proper artist-filter route into Library.
+    handlers.handleOpenLibrary();
+  }, [handlers]);
+
   const [showQuickAccessPanel, setShowQuickAccessPanel] = useState(false);
   const handleOpenQuickAccessPanel = useCallback(() => setShowQuickAccessPanel(true), []);
   const handleCloseQuickAccessPanel = useCallback(() => setShowQuickAccessPanel(false), []);
@@ -163,6 +235,31 @@ const AudioPlayerComponent = () => {
   useEffect(() => {
     if (showQueue) toast.dismiss(RESUME_TOAST_ID);
   }, [showQueue]);
+  const handleLibraryPlayNext = useCallback(
+    async (
+      _kind: 'playlist' | 'album',
+      id: string,
+      name: string,
+      provider?: import('@/types/domain').ProviderId,
+    ) => {
+      const result = await handlers.insertCollectionNext(id, name, provider);
+      if (result && result.added > 0) {
+        const trackWord = result.added === 1 ? 'track' : 'tracks';
+        toast(`Added ${result.added} ${trackWord} from "${name}" to play next.`, {
+          id: 'lib-play-next',
+          action: {
+            label: 'View',
+            onClick: () => {
+              handlers.handleCloseLibrary();
+              setShowQueue(true);
+            },
+          },
+        });
+      }
+    },
+    [handlers, setShowQueue],
+  );
+
   const handleAddToQueueFromPanel = useCallback(
     async (id: string, name?: string, provider?: import('@/types/domain').ProviderId) => {
       const result = await handlers.handleAddToQueue(id, name, provider);
@@ -410,7 +507,7 @@ const AudioPlayerComponent = () => {
             onMiniPrevious={playbackHandlers.onPrevious}
             onMiniExpand={handlers.handleCloseLibrary}
             onMiniStartRadio={radio.isRadioAvailable ? handlers.handleStartRadio : undefined}
-            onPlayNext={undefined}
+            onPlayNext={handleLibraryPlayNext}
             onStartRadioForCollection={undefined}
             onClose={handlers.handleCloseLibrary}
           />
@@ -503,7 +600,12 @@ const AudioPlayerComponent = () => {
             </div>
           </QuickAccessOverlay>
         )}
-        <CmdKPalette />
+        <CmdKPalette
+          onSelectTrack={handleCmdKSelectTrack}
+          onSelectAlbum={handleCmdKSelectAlbum}
+          onSelectPlaylist={handleCmdKSelectPlaylist}
+          onSelectArtist={handleCmdKSelectArtist}
+        />
         {!isMainPlayerActive && (
           <Suspense fallback={null}>
             <VisualEffectsMenu
@@ -541,7 +643,7 @@ const AudioPlayerComponent = () => {
               onMiniPrevious={playbackHandlers.onPrevious}
               onMiniExpand={handlers.handleCloseLibrary}
               onMiniStartRadio={radio.isRadioAvailable ? handlers.handleStartRadio : undefined}
-              onPlayNext={undefined}
+              onPlayNext={handleLibraryPlayNext}
               onStartRadioForCollection={undefined}
               onClose={handlers.handleCloseLibrary}
             />

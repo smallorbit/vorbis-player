@@ -133,6 +133,8 @@ Run with `npm run test:run`. Tests are colocated with source files in `__tests__
 
 See `docs/keyboard.md` for the full table. Centralized in `useKeyboardShortcuts.ts`.
 
+The command palette (`Cmd+K` / `Ctrl+K`, desktop-only) lives in `src/components/CmdKPalette/` and registers its own listener — it is intentionally not routed through `useKeyboardShortcuts.ts` because it owns dialog open/close state. Search backend: `src/hooks/useLibrarySearch.ts` (debounced) over `src/services/cache/librarySearch.ts` (IndexedDB-cached, never touches the network).
+
 ## Common Issues
 
 See `docs/troubleshooting.md` for layout, provider, and radio issues. Layout invariants are documented in `docs/architecture/layout.md`.
