@@ -23,7 +23,7 @@ import { LibraryContextMenuOpenContext } from './contextMenu/LibraryContextMenuO
 
 export interface LibraryRouteProps {
   onPlaylistSelect: (playlistId: string, playlistName: string, provider?: ProviderId) => void;
-  onAddToQueue?: (id: string, name?: string, provider?: ProviderId) => Promise<AddToQueueResult | null>;
+  onAddToQueue: (id: string, name?: string, provider?: ProviderId) => Promise<AddToQueueResult | null>;
   onPlayLikedTracks?: (
     tracks: MediaTrack[],
     collectionId: string,
@@ -140,7 +140,7 @@ const LibraryRoute: React.FC<LibraryRouteProps> = ({
 
   const handleAddToQueueAction = useCallback(
     (id: string, name: string, provider?: ProviderId) => {
-      void onAddToQueue?.(id, name, provider);
+      void onAddToQueue(id, name, provider);
     },
     [onAddToQueue],
   );

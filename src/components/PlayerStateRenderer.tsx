@@ -1,6 +1,6 @@
 import React, { Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import styled, { keyframes } from 'styled-components';
-import type { MediaTrack } from '@/types/domain';
+import type { AddToQueueResult, MediaTrack, ProviderId } from '@/types/domain';
 import { isSessionStale, type SessionSnapshot } from '@/services/sessionPersistence';
 import type { HydrateResult } from '@/hooks/usePlayerLogic';
 import { Card, CardHeader, CardContent } from '../components/styled';
@@ -174,9 +174,9 @@ interface PlayerStateRendererProps {
   error: string | null;
   selectedPlaylistId: string | null;
   tracks: MediaTrack[];
-  onPlaylistSelect: (playlistId: string, playlistName?: string, provider?: import('@/types/domain').ProviderId) => void;
-  onAddToQueue: (id: string, name?: string, provider?: import('@/types/domain').ProviderId) => void;
-  onPlayLikedTracks?: (tracks: MediaTrack[], collectionId: string, collectionName: string, provider?: import('@/types/domain').ProviderId) => Promise<void>;
+  onPlaylistSelect: (playlistId: string, playlistName?: string, provider?: ProviderId) => void;
+  onAddToQueue: (id: string, name?: string, provider?: ProviderId) => Promise<AddToQueueResult | null>;
+  onPlayLikedTracks?: (tracks: MediaTrack[], collectionId: string, collectionName: string, provider?: ProviderId) => Promise<void>;
   onQueueLikedTracks?: (tracks: MediaTrack[], collectionName?: string) => void;
   lastSession: SessionSnapshot | null;
   onResume: () => void;
@@ -337,6 +337,7 @@ const PlayerStateRenderer: React.FC<PlayerStateRendererProps> = ({
         }>
           <LibraryRouteLazy
             onPlaylistSelect={(id, name, provider) => handlePlaylistSelectWrapped(id, name ?? '', provider)}
+            onAddToQueue={onAddToQueue}
             onPlayLikedTracks={onPlayLikedTracks}
             onQueueLikedTracks={onQueueLikedTracks}
             onOpenSettings={onOpenSettings}
