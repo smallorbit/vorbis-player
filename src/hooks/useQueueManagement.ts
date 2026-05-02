@@ -8,6 +8,7 @@ import { logQueue } from '@/lib/debugLog';
 import { shuffleArray } from '@/utils/shuffleArray';
 import {
   appendMediaTracks,
+  insertMediaTracksAt,
   moveItemInArray,
   removeMediaTrackById,
   reorderMediaTracksToMatchTracks,
@@ -35,6 +36,8 @@ interface UseQueueManagementProps {
 interface UseQueueManagementReturn {
   handleAddToQueue: (playlistId: string, collectionName?: string, provider?: ProviderId) => Promise<AddToQueueResult | null>;
   queueTracksDirectly: (tracks: MediaTrack[], collectionName?: string) => AddToQueueResult | null;
+  insertTracksNext: (tracks: MediaTrack[], collectionName?: string) => AddToQueueResult | null;
+  insertCollectionNext: (playlistId: string, collectionName?: string, provider?: ProviderId) => Promise<AddToQueueResult | null>;
   handleRemoveFromQueue: (index: number) => void;
   handleReorderQueue: (fromIndex: number, toIndex: number) => void;
 }
@@ -228,9 +231,111 @@ export function useQueueManagement({
     [mediaTracksRef, setOriginalTracks, setTracks]
   );
 
+  /**
+   * Insert tracks at `currentTrackIndex + 1` (the "play next" slot). Dedups
+   * against the existing queue. When the queue is empty there is no current
+   * track, so this falls back to appending — matching `queueTracksDirectly`.
+   */
+  const insertTracksNext = useCallback(
+    (newTracks: MediaTrack[], collectionName?: string): AddToQueueResult | null => {
+      if (newTracks.length === 0) return null;
+
+      const existingIds = new Set(tracksRef.current.map((t) => t.id));
+      const uniqueNewTracks = newTracks.filter((t) => !existingIds.has(t.id));
+
+      if (uniqueNewTracks.length === 0) {
+        toast(ADD_TO_QUEUE_DUP_MSG, { id: ADD_TO_QUEUE_DUP_ID });
+        return null;
+      }
+
+      if (tracksRef.current.length === 0) {
+        logQueue('insertTracksNext — queue empty, appending %d tracks', uniqueNewTracks.length);
+        mediaTracksRef.current = appendMediaTracks(mediaTracksRef.current, uniqueNewTracks);
+        setOriginalTracks([...uniqueNewTracks]);
+        setTracks([...uniqueNewTracks]);
+        return { added: uniqueNewTracks.length, collectionName };
+      }
+
+      const insertAt = currentTrackIndex + 1;
+      logQueue(
+        'insertTracksNext — inserting %d tracks at index=%d. Before: tracks=%d, mediaRef=%d',
+        uniqueNewTracks.length,
+        insertAt,
+        tracksRef.current.length,
+        mediaTracksRef.current.length,
+      );
+
+      const nextTracks = [...tracksRef.current];
+      nextTracks.splice(insertAt, 0, ...uniqueNewTracks);
+      mediaTracksRef.current = insertMediaTracksAt(mediaTracksRef.current, insertAt, uniqueNewTracks);
+      setOriginalTracks(nextTracks);
+      setTracks(nextTracks);
+
+      logQueue(
+        'insertTracksNext — after insert: mediaRef=%d, newTracks added: %s',
+        mediaTracksRef.current.length,
+        uniqueNewTracks.map((t: MediaTrack) => trkSummary(t)).join(', '),
+      );
+      return { added: uniqueNewTracks.length, collectionName };
+    },
+    [currentTrackIndex, mediaTracksRef, setOriginalTracks, setTracks],
+  );
+
+  /**
+   * Fetch a collection's tracks and splice them in at `currentTrackIndex + 1`.
+   * Mirrors `handleAddToQueue` but uses insert-next semantics on a non-empty
+   * queue. Empty queue still delegates to `loadCollection` (start playback).
+   */
+  const insertCollectionNext = useCallback(
+    async (playlistId: string, collectionName?: string, provider?: ProviderId): Promise<AddToQueueResult | null> => {
+      const isQueueEmpty = tracksRef.current.length === 0;
+      logQueue(
+        'insertCollectionNext — playlistId=%s, provider=%s, currentQueueLen=%d, mediaLen=%d',
+        playlistId,
+        provider ?? 'active',
+        tracksRef.current.length,
+        mediaTracksRef.current.length,
+      );
+
+      const targetDescriptor = provider ? getDescriptor(provider) : activeDescriptor;
+      const targetProviderId = provider ?? activeDescriptor?.id;
+
+      if (!targetDescriptor || !targetProviderId) {
+        toast(ADD_TO_QUEUE_ERROR_MSG, { id: ADD_TO_QUEUE_ERROR_ID });
+        return null;
+      }
+
+      if (isQueueEmpty) {
+        logQueue('insertCollectionNext — queue empty, delegating to loadCollection');
+        const loaded = await loadCollection(playlistId, provider, collectionName);
+        if (loaded > 0) {
+          return { added: loaded, collectionName };
+        }
+        toast(ADD_TO_QUEUE_EMPTY_MSG, { id: ADD_TO_QUEUE_EMPTY_ID });
+        return null;
+      }
+
+      try {
+        const catalog = targetDescriptor.catalog;
+        const { id: collectionId, kind: collectionKind } = resolvePlaylistRef(playlistId, targetProviderId);
+        const collectionRef = { provider: targetProviderId, kind: collectionKind, id: collectionId } as const;
+        const fetchedTracks = await catalog.listTracks(collectionRef);
+        const newMediaTracks = isAllMusicRef(collectionRef) ? shuffleArray(fetchedTracks) : fetchedTracks;
+        return insertTracksNext(newMediaTracks, collectionName);
+      } catch (err) {
+        console.error('[Queue] Failed to insert collection next:', err);
+        toast(ADD_TO_QUEUE_ERROR_MSG, { id: ADD_TO_QUEUE_ERROR_ID });
+        return null;
+      }
+    },
+    [activeDescriptor, getDescriptor, insertTracksNext, loadCollection, mediaTracksRef],
+  );
+
   return {
     handleAddToQueue,
     queueTracksDirectly,
+    insertTracksNext,
+    insertCollectionNext,
     handleRemoveFromQueue,
     handleReorderQueue,
   };

@@ -32,6 +32,21 @@ export function appendMediaTracks(
   return [...mediaTracks, ...additions];
 }
 
+/**
+ * Insert tracks at a given position (used for "play next"). Clamps the index
+ * to the valid range [0, mediaTracks.length] without mutating the source list.
+ */
+export function insertMediaTracksAt(
+  mediaTracks: readonly MediaTrack[],
+  index: number,
+  additions: readonly MediaTrack[],
+): MediaTrack[] {
+  const clamped = Math.max(0, Math.min(index, mediaTracks.length));
+  const result = [...mediaTracks];
+  result.splice(clamped, 0, ...additions);
+  return result;
+}
+
 /** Move one element; returns a new array (immutable). */
 export function moveItemInArray<T>(arr: readonly T[], fromIndex: number, toIndex: number): T[] {
   const result = [...arr];
