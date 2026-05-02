@@ -4,7 +4,6 @@ import { usePlayerSizingContext } from '@/contexts/PlayerSizingContext';
 import { useCurrentTrackContext } from '@/contexts/TrackContext';
 import { useVisualEffectsToggle, useZenMode } from '@/contexts/visualEffects';
 import { useLikeTrack } from '@/hooks/useLikeTrack';
-import { STORAGE_KEYS } from '@/constants/storage';
 import { ZEN_ART_DURATION, ZEN_ART_ENTER_DELAY } from '@/constants/zenAnimation';
 import type { AddToQueueResult, MediaTrack, ProviderId } from '@/types/domain';
 import type { AlbumArtBounds } from '@/types/visualizer';
@@ -134,8 +133,7 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({
     handlers.onOpenLibrary();
   }, [handlers, setShowQueue, setShowVisualEffects]);
 
-  const handleArtistBrowse = useCallback((artistName: string) => {
-    localStorage.setItem(STORAGE_KEYS.LIBRARY_SEARCH, JSON.stringify(artistName));
+  const handleArtistBrowse = useCallback((_artistName: string) => {
     handleOpenLibrary();
   }, [handleOpenLibrary]);
 
