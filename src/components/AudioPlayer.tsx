@@ -28,6 +28,9 @@ import type { ClearCacheOptions } from '@/components/AppSettingsMenu';
 import { useSessionPersistence } from '@/hooks/useSessionPersistence';
 import QuickAccessPanel from './QuickAccessPanel';
 import { CmdKPalette } from './CmdKPalette';
+import { tracksToMediaTracks } from '@/services/spotify/tracks';
+import type { Track, AlbumInfo } from '@/services/spotify';
+import type { CachedPlaylistInfo } from '@/services/cache/cacheTypes';
 
 const VisualEffectsMenu = lazy(() => import('./AppSettingsMenu/index'));
 const LibraryRoute = lazy(() => import('./LibraryRoute'));
@@ -132,6 +135,51 @@ const AudioPlayerComponent = () => {
     },
     [handlers]
   );
+
+  const handleCmdKSelectTrack = useCallback(
+    (track: Track) => {
+      const [mediaTrack] = tracksToMediaTracks([track]);
+      if (!mediaTrack) return;
+      const result = handlers.queueTracksDirectly([mediaTrack], track.name);
+      if (result && result.added > 0) {
+        toast(`Added "${track.name}" to your queue.`, {
+          id: 'cmdk-add-track',
+          action: {
+            label: 'View',
+            onClick: () => {
+              handlers.handleCloseLibrary();
+              setShowQueue(true);
+            },
+          },
+        });
+      }
+    },
+    [handlers, setShowQueue],
+  );
+
+  const handleCmdKSelectAlbum = useCallback(
+    (album: AlbumInfo) => {
+      handlers.handleOpenLibrary();
+      handlePlaylistSelect(toAlbumPlaylistId(album.id), album.name, album.provider);
+    },
+    [handlers, handlePlaylistSelect],
+  );
+
+  const handleCmdKSelectPlaylist = useCallback(
+    (playlist: CachedPlaylistInfo) => {
+      handlers.handleOpenLibrary();
+      handlePlaylistSelect(playlist.id, playlist.name, playlist.provider);
+    },
+    [handlers, handlePlaylistSelect],
+  );
+
+  const handleCmdKSelectArtist = useCallback(() => {
+    // #1408 deferral: there is no programmatic "filter Library by artist"
+    // mechanism today. Falling back to opening Library without a filter so the
+    // user can navigate to the artist manually. A follow-up should add a
+    // proper artist-filter route into Library.
+    handlers.handleOpenLibrary();
+  }, [handlers]);
 
   const [showQuickAccessPanel, setShowQuickAccessPanel] = useState(false);
   const handleOpenQuickAccessPanel = useCallback(() => setShowQuickAccessPanel(true), []);
@@ -503,7 +551,12 @@ const AudioPlayerComponent = () => {
             </div>
           </QuickAccessOverlay>
         )}
-        <CmdKPalette />
+        <CmdKPalette
+          onSelectTrack={handleCmdKSelectTrack}
+          onSelectAlbum={handleCmdKSelectAlbum}
+          onSelectPlaylist={handleCmdKSelectPlaylist}
+          onSelectArtist={handleCmdKSelectArtist}
+        />
         {!isMainPlayerActive && (
           <Suspense fallback={null}>
             <VisualEffectsMenu
