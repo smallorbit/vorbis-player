@@ -235,6 +235,31 @@ const AudioPlayerComponent = () => {
   useEffect(() => {
     if (showQueue) toast.dismiss(RESUME_TOAST_ID);
   }, [showQueue]);
+  const handleLibraryPlayNext = useCallback(
+    async (
+      _kind: 'playlist' | 'album',
+      id: string,
+      name: string,
+      provider?: import('@/types/domain').ProviderId,
+    ) => {
+      const result = await handlers.insertCollectionNext(id, name, provider);
+      if (result && result.added > 0) {
+        const trackWord = result.added === 1 ? 'track' : 'tracks';
+        toast(`Added ${result.added} ${trackWord} from "${name}" to play next.`, {
+          id: 'lib-play-next',
+          action: {
+            label: 'View',
+            onClick: () => {
+              handlers.handleCloseLibrary();
+              setShowQueue(true);
+            },
+          },
+        });
+      }
+    },
+    [handlers, setShowQueue],
+  );
+
   const handleAddToQueueFromPanel = useCallback(
     async (id: string, name?: string, provider?: import('@/types/domain').ProviderId) => {
       const result = await handlers.handleAddToQueue(id, name, provider);
@@ -482,7 +507,7 @@ const AudioPlayerComponent = () => {
             onMiniPrevious={playbackHandlers.onPrevious}
             onMiniExpand={handlers.handleCloseLibrary}
             onMiniStartRadio={radio.isRadioAvailable ? handlers.handleStartRadio : undefined}
-            onPlayNext={undefined}
+            onPlayNext={handleLibraryPlayNext}
             onStartRadioForCollection={undefined}
             onClose={handlers.handleCloseLibrary}
           />
@@ -618,7 +643,7 @@ const AudioPlayerComponent = () => {
               onMiniPrevious={playbackHandlers.onPrevious}
               onMiniExpand={handlers.handleCloseLibrary}
               onMiniStartRadio={radio.isRadioAvailable ? handlers.handleStartRadio : undefined}
-              onPlayNext={undefined}
+              onPlayNext={handleLibraryPlayNext}
               onStartRadioForCollection={undefined}
               onClose={handlers.handleCloseLibrary}
             />
