@@ -7,7 +7,7 @@
  * Falls back to in-memory Maps if IndexedDB is unavailable.
  */
 
-import type { AlbumInfo } from '../spotify';
+import type { AlbumInfo, Track } from '../spotify';
 import type {
   CachedPlaylistInfo,
   CachedTrackList,
@@ -325,7 +325,7 @@ export async function getTrackList(id: string): Promise<CachedTrackList | undefi
   }
 }
 
-export async function putTrackList(id: string, tracks: import('../spotify').Track[], snapshotId?: string): Promise<void> {
+export async function putTrackList(id: string, tracks: Track[], snapshotId?: string): Promise<void> {
   const entry: CachedTrackList = { id, tracks, timestamp: Date.now(), snapshotId };
   await initCache();
   if (fallbackMode) { fallbackStores.trackLists.set(id, entry); return; }

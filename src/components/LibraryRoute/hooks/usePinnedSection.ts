@@ -31,15 +31,15 @@ export function usePinnedSection(): PinnedSectionState {
   const { playlists, albums, isInitialLoadComplete } = useLibrarySync();
   const { totalCount, perProvider, isUnified, isLoading: likedIsLoading } = useLikedSection();
 
-  const pinnedPlaylists = useMemo(
-    () => playlists.filter((p) => pinnedPlaylistIds.includes(p.id)),
-    [playlists, pinnedPlaylistIds],
-  );
+  const pinnedPlaylists = useMemo(() => {
+    const pinnedSet = new Set(pinnedPlaylistIds);
+    return playlists.filter((p) => pinnedSet.has(p.id));
+  }, [playlists, pinnedPlaylistIds]);
 
-  const pinnedAlbums = useMemo(
-    () => albums.filter((a) => pinnedAlbumIds.includes(a.id)),
-    [albums, pinnedAlbumIds],
-  );
+  const pinnedAlbums = useMemo(() => {
+    const pinnedSet = new Set(pinnedAlbumIds);
+    return albums.filter((a) => pinnedSet.has(a.id));
+  }, [albums, pinnedAlbumIds]);
 
   const likedEntries = useMemo<PinnedItem[]>(() => {
     if (totalCount === 0) return [];
