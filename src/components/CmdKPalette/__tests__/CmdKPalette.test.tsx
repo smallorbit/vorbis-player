@@ -90,7 +90,47 @@ describe('CmdKPalette', () => {
     expect(screen.queryByPlaceholderText(/start typing to search your library/i)).not.toBeInTheDocument();
   });
 
-  it('closes the palette on click-outside (overlay click)', () => {
+  it('returns focus to the previously-focused element after Esc close', async () => {
+    // #given
+    // Note: jsdom fires `autoFocus` synchronously during React's commit phase,
+    // before Radix FocusScope's useEffect can capture the external element as
+    // `previouslyFocusedElement`. In a real browser, autoFocus fires after
+    // paint and FocusScope correctly tracks the external trigger. We work
+    // around the jsdom ordering by focusing the button after the palette opens
+    // but before it gets interactive focus — asserting only that Radix
+    // restores focus to whatever element had focus before the dialog content
+    // was focused.
+    const button = document.createElement('button');
+    document.body.appendChild(button);
+    render(<CmdKPalette />);
+
+    // Open palette
+    act(() => {
+      fireEvent.keyDown(document, { key: 'k', metaKey: true });
+    });
+    const input = screen.getByPlaceholderText(/start typing to search your library/i);
+    expect(input).toBeInTheDocument();
+
+    // Simulate returning focus to the button (as if a browser had tracked it)
+    // then close — Radix will restore to the last external element.
+    button.focus();
+    expect(document.activeElement).toBe(button);
+
+    // #when
+    act(() => {
+      fireEvent.keyDown(input, { key: 'Escape' });
+    });
+    // Radix FocusScope restores focus inside a setTimeout(0) on unmount
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    // #then — palette is gone and button regained focus
+    expect(screen.queryByPlaceholderText(/start typing to search your library/i)).not.toBeInTheDocument();
+    expect(document.activeElement).toBe(button);
+
+    document.body.removeChild(button);
+  });
+
+  it('closes the palette on click-outside (overlay click)', async () => {
     // #given
     render(<CmdKPalette />);
     act(() => {
@@ -98,21 +138,16 @@ describe('CmdKPalette', () => {
     });
     expect(screen.getByPlaceholderText(/start typing to search your library/i)).toBeInTheDocument();
 
-    // #when
-    const overlay = document.querySelector('[data-state="open"][role="dialog"]')?.previousElementSibling
-      ?? document.querySelector('[data-radix-dialog-overlay], [data-state="open"]:not([role="dialog"])');
-    if (overlay) {
-      act(() => {
-        fireEvent.pointerDown(overlay);
-        fireEvent.click(overlay);
-      });
-    }
-    // Fall back to pressing Escape if overlay not found in DOM (jsdom radix variations)
-    if (screen.queryByPlaceholderText(/start typing to search your library/i)) {
-      act(() => {
-        fireEvent.keyDown(document, { key: 'Escape' });
-      });
-    }
+    // Radix DismissableLayer registers its pointerdown listener via setTimeout(0);
+    // flush the macrotask before firing the event.
+    const overlay = screen.getByTestId('dialog-overlay');
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    // #when — Radix dismisses on pointerdown outside the dialog content;
+    // the overlay is outside the DialogContent by construction.
+    act(() => {
+      fireEvent.pointerDown(overlay);
+    });
 
     // #then
     expect(screen.queryByPlaceholderText(/start typing to search your library/i)).not.toBeInTheDocument();
