@@ -10,9 +10,7 @@ import SearchResultsView from './views/SearchResultsView';
 import type { ContextMenuRequest, LibraryItemKind, LibraryRouteView } from './types';
 import MiniPlayer from './MiniPlayer/MiniPlayer';
 import SearchBar from './search/SearchBar';
-import CommandPalette from './search/CommandPalette';
 import { useLibrarySearch } from './search/useLibrarySearch';
-import { useCommandPaletteShortcut } from './search/useCommandPaletteShortcut';
 import LibraryContextMenu from './contextMenu/LibraryContextMenu';
 import { LibraryContextMenuOpenContext } from './contextMenu/LibraryContextMenuOpenContext';
 
@@ -80,9 +78,6 @@ const LibraryRoute: React.FC<LibraryRouteProps> = ({
   const { isMobile } = usePlayerSizingContext();
   const [view, setView] = useState<LibraryRouteView>('home');
   const search = useLibrarySearch();
-  const [paletteOpen, setPaletteOpen] = useState(false);
-  useCommandPaletteShortcut(() => setPaletteOpen(true), !isMobile);
-
   useEffect(() => {
     if (!onClose) return;
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -229,13 +224,7 @@ const LibraryRoute: React.FC<LibraryRouteProps> = ({
         onExpand={onMiniExpand}
         onStartRadio={onMiniStartRadio}
       />
-      {!isMobile && (
-        <CommandPalette
-          open={paletteOpen}
-          onClose={() => setPaletteOpen(false)}
-          onSelectCollection={handleSelectCollection}
-        />
-      )}
+
     </LibraryRouteRoot>
     </LibraryContextMenuOpenContext.Provider>
   );
