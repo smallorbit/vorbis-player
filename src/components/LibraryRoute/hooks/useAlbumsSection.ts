@@ -23,7 +23,8 @@ export function useAlbumsSection(
       result = result.filter((a) => allowed.has((a.provider ?? 'spotify') as ProviderId));
     }
     if (excludePinned) {
-      result = result.filter((a) => !pinnedAlbumIds.includes(a.id));
+      const pinnedSet = new Set(pinnedAlbumIds);
+      result = result.filter((a) => !pinnedSet.has(a.id));
     }
     return result;
   }, [albums, providerFilter, excludePinned, pinnedAlbumIds]);

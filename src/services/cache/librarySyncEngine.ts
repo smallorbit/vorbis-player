@@ -213,10 +213,9 @@ export class LibrarySyncEngine {
   // =========================================================================
 
   private async initialLoad(): Promise<void> {
-    const [cachedPlaylists, cachedAlbums, , likedMeta] = await Promise.all([
+    const [cachedPlaylists, cachedAlbums, likedMeta] = await Promise.all([
       cache.getAllPlaylists(),
       cache.getAllAlbums(),
-      cache.getMeta('playlists'),
       cache.getMeta('likedSongs'),
     ]);
 
