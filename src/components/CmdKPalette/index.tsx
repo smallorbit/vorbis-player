@@ -47,7 +47,7 @@ export const CmdKPalette = (): JSX.Element | null => {
         autoFocus
       />
       <CommandList>
-        <CommandEmpty />
+        <CommandEmpty>No results.</CommandEmpty>
       </CommandList>
     </CommandDialog>
   );
