@@ -3,6 +3,23 @@ import { SPOTIFY_TRANSFER_RETRY_COUNT } from '@/constants/spotify';
 import { logSpotify } from '@/lib/debugLog';
 import { TRANSFER_RETRY_DELAY_MS } from '@/constants/timing';
 
+async function parsePlayError(response: Response): Promise<string> {
+  const errorText = await response.text();
+  let reason = '';
+  try {
+    const json = JSON.parse(errorText);
+    if (json.error?.message) reason = ` - ${json.error.message}`;
+    if (json.error?.reason) reason += ` (${json.error.reason})`;
+  } catch {
+    reason = errorText ? ` - ${errorText}` : '';
+  }
+  if (response.status === 429) {
+    const retryAfter = response.headers.get('Retry-After');
+    if (retryAfter) reason += ` Retry-After: ${retryAfter}`;
+  }
+  return `Spotify API error: ${response.status}${reason}`;
+}
+
 /**
  * Force Spotify shuffle off so the queue we hand the SDK plays in our order.
  * If the user has shuffle on at the account level (set in another client),
@@ -61,30 +78,7 @@ export async function apiPlayTrack(
   logSpotify('Web API play track response status=%d ok=%s', response.status, response.ok);
 
   if (!response.ok) {
-    const errorText = await response.text();
-    console.error('[spotifyPlayer] Spotify API error response:', errorText);
-
-    let errorReason = '';
-    try {
-      const errorJson = JSON.parse(errorText);
-      if (errorJson.error?.reason) {
-        errorReason = ` (${errorJson.error.reason})`;
-      }
-      if (errorJson.error?.message) {
-        errorReason = ` - ${errorJson.error.message}${errorReason}`;
-      }
-    } catch {
-      errorReason = errorText ? ` - ${errorText}` : '';
-    }
-
-    if (response.status === 429) {
-      const retryAfter = response.headers.get('Retry-After');
-      if (retryAfter) {
-        errorReason += ` Retry-After: ${retryAfter}`;
-      }
-    }
-
-    throw new Error(`Spotify API error: ${response.status}${errorReason}`);
+    throw new Error(await parsePlayError(response));
   }
 }
 
@@ -114,20 +108,7 @@ export async function apiPlayContext(
   });
 
   if (!response.ok) {
-    const errorText = await response.text();
-    console.error('[spotifyPlayer] Context playback error:', errorText);
-
-    let errorReason = '';
-    try {
-      const errorJson = JSON.parse(errorText);
-      if (errorJson.error?.message) {
-        errorReason = ` - ${errorJson.error.message}`;
-      }
-    } catch {
-      errorReason = errorText ? ` - ${errorText}` : '';
-    }
-
-    throw new Error(`Spotify API error: ${response.status}${errorReason}`);
+    throw new Error(await parsePlayError(response));
   }
 }
 
@@ -153,9 +134,7 @@ export async function apiPlayPlaylist(
   logSpotify('Web API play URIs response status=%d ok=%s', response.status, response.ok);
 
   if (!response.ok) {
-    const errorText = await response.text();
-    console.error('[spotifyPlayer] Spotify API error response:', errorText);
-    throw new Error(`Spotify API error: ${response.status} ${response.statusText} - ${errorText}`);
+    throw new Error(await parsePlayError(response));
   }
 }
 
