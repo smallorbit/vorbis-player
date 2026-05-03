@@ -9,27 +9,20 @@
 
 import { useCallback } from 'react';
 import { getPlaylistTracks, getAlbumTracks, getLikedSongs, spotifyAuth, getLargestImage } from '@/services/spotify';
-import { spotifyPlayer } from '@/services/spotifyPlayer';
+import { spotifyPlayer, waitForSpotifyReady } from '@/services/spotifyPlayer';
 import { AuthExpiredError } from '@/providers/errors';
 import { isAlbumId, extractAlbumId, LIKED_SONGS_ID } from '@/constants/playlist';
 import { shuffleArray } from '@/utils/shuffleArray';
 import type { ProviderId, MediaTrack } from '@/types/domain';
 import type { TrackOperations } from '@/types/trackOperations';
 import { logQueue } from '@/lib/debugLog';
-import { SPOTIFY_POST_ACTION_DELAY_MS, SPOTIFY_RETRY_DELAY_MS, SPOTIFY_DEVICE_ACTIVATE_RETRIES, SPOTIFY_DEVICE_ACTIVATE_DELAY_MS } from '@/constants/timing';
+import { shouldUseMockProvider } from '@/providers/mock/shouldUseMockProvider';
+import { SPOTIFY_RETRY_DELAY_MS, SPOTIFY_DEVICE_ACTIVATE_RETRIES, SPOTIFY_DEVICE_ACTIVATE_DELAY_MS } from '@/constants/timing';
 
 const SPOTIFY_PROVIDER_ID: ProviderId = 'spotify';
 
 const PLAYBACK_START_DELAY_MS = 1500;
 const PLAYBACK_RETRY_BASE_BACKOFF_MS = 2000;
-
-async function waitForSpotifyReady(timeout = 10000): Promise<void> {
-  const start = Date.now();
-  while (!spotifyPlayer.getIsReady() || !spotifyPlayer.getDeviceId()) {
-    if (Date.now() - start > timeout) throw new Error('Spotify player not ready after waiting');
-    await new Promise(res => setTimeout(res, SPOTIFY_POST_ACTION_DELAY_MS));
-  }
-}
 
 function buildTracksFromWindow(state: SpotifyPlaybackState): MediaTrack[] {
   const tracks: MediaTrack[] = [];
@@ -79,6 +72,16 @@ export const useSpotifyPlaylistManager = ({
 
   const handlePlaylistSelect = useCallback(async (playlistId: string): Promise<MediaTrack[]> => {
     logQueue('useSpotifyPlaylistManager.handlePlaylistSelect — playlistId=%s, shuffle=%s', playlistId, String(shuffleEnabled));
+
+    // The mock provider replaces the spotify descriptor at the registry level,
+    // but this hook still calls real Spotify SDK/API helpers directly. Short-
+    // circuit when the mock is active so capture/Playwright runs never hit
+    // accounts.spotify.com or the Web Playback SDK.
+    if (shouldUseMockProvider()) {
+      logQueue('useSpotifyPlaylistManager — mock provider active, skipping real Spotify path');
+      return [];
+    }
+
     try {
       setError(null);
       setIsLoading(true);

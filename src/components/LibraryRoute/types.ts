@@ -1,8 +1,13 @@
 import type { CachedPlaylistInfo } from '@/services/cache/cacheTypes';
 import type { AlbumInfo } from '@/services/spotify';
-import type { MediaTrack, ProviderId } from '@/types/domain';
+import type { CollectionRef, MediaTrack, ProviderId } from '@/types/domain';
 import type { RecentlyPlayedEntry } from '@/hooks/useRecentlyPlayedCollections';
 import type { SessionSnapshot } from '@/services/sessionPersistence';
+
+export interface UseCollectionSectionParams {
+  providerFilter?: ProviderId[];
+  excludePinned?: boolean;
+}
 
 export interface SectionState<T> {
   items: T[];
@@ -39,7 +44,7 @@ export interface ContextMenuRequest {
   /** When kind === 'recently-played', the underlying collection kind so the menu can dispatch the right schema. */
   originalKind?: 'playlist' | 'album' | 'liked';
   /** When kind === 'recently-played', back-pointer used by the "Remove from history" action. */
-  recentRef?: { kind: 'playlist' | 'album' | 'liked'; id: string; provider?: ProviderId };
+  recentRef?: CollectionRef;
 }
 
 export type {

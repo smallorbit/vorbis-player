@@ -1,6 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { makeTrack } from '@/test/fixtures';
+import type { MediaTrack } from '@/types/domain';
+
+vi.mock('@/providers/mock/shouldUseMockProvider', () => ({
+  shouldUseMockProvider: vi.fn().mockReturnValue(false),
+}));
 
 vi.mock('@/services/spotifyPlayer', () => ({
   spotifyPlayer: {
@@ -14,6 +19,7 @@ vi.mock('@/services/spotifyPlayer', () => ({
     getCurrentState: vi.fn().mockResolvedValue(null),
     resume: vi.fn().mockResolvedValue(undefined),
   },
+  waitForSpotifyReady: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock('@/services/spotify', () => ({
@@ -29,6 +35,7 @@ vi.mock('@/services/spotify', () => ({
 
 import { useSpotifyPlaylistManager as usePlaylistManager } from '@/providers/spotify/useSpotifyPlaylistManager';
 import { getPlaylistTracks, getAlbumTracks, getLikedSongs, spotifyAuth } from '@/services/spotify';
+import { shouldUseMockProvider } from '@/providers/mock/shouldUseMockProvider';
 
 describe('usePlaylistManager', () => {
   const setError = vi.fn();
@@ -170,5 +177,24 @@ describe('usePlaylistManager', () => {
 
     // #then
     expect(setIsLoading).toHaveBeenLastCalledWith(false);
+  });
+
+  describe('mock provider short-circuit', () => {
+    it('returns [] without calling spotifyPlayer.initialize when mock provider is active', async () => {
+      // #given — mock provider is active
+      vi.mocked(shouldUseMockProvider).mockReturnValue(true);
+      const { spotifyPlayer } = await import('@/services/spotifyPlayer');
+      const { result } = renderHook(() => usePlaylistManager(defaultProps));
+
+      // #when
+      let tracks: MediaTrack[] = [];
+      await act(async () => {
+        tracks = await result.current.handlePlaylistSelect('playlist-123');
+      });
+
+      // #then
+      expect(tracks).toEqual([]);
+      expect(spotifyPlayer.initialize).not.toHaveBeenCalled();
+    });
   });
 });

@@ -16,4 +16,4 @@ export { useLikedSection } from './useLikedSection';
 
 export { fetchLikedForProvider } from './likedAccessors';
 
-export type { SectionState, LikedSummary } from '../types';
+export type { SectionState, LikedSummary, UseCollectionSectionParams } from '../types';

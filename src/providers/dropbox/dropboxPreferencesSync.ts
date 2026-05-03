@@ -6,6 +6,7 @@
 import type { DropboxAuthAdapter } from './dropboxAuthAdapter';
 import { getPins, setPins, UNIFIED_PROVIDER, notifyPinsChanged } from '@/services/settings/pinnedItemsStorage';
 import { ensureVorbisFolder } from './dropboxSyncFolder';
+import { contentApiRequest } from './dropboxContentApiClient';
 import { STORAGE_KEYS } from '@/constants/storage';
 
 // ── Types ───────────────────────────────────────────────────────────────────
@@ -82,34 +83,19 @@ export class DropboxPreferencesSyncService {
   }
 
   async downloadPreferencesFile(): Promise<RemotePreferencesFile | null> {
-    const token = await this.auth.ensureValidToken();
-    if (!token) return null;
-
     const apiArg = JSON.stringify({ path: PREFERENCES_FILE_PATH });
 
-    let response = await fetch('https://content.dropboxapi.com/2/files/download', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Dropbox-API-Arg': apiArg,
-      },
-    });
-
-    if (response.status === 401) {
-      const refreshed = await this.auth.refreshAccessToken();
-      if (!refreshed) return null;
-      response = await fetch('https://content.dropboxapi.com/2/files/download', {
+    const response = await contentApiRequest(this.auth, (token) =>
+      fetch('https://content.dropboxapi.com/2/files/download', {
         method: 'POST',
         headers: {
-          Authorization: `Bearer ${refreshed}`,
+          Authorization: `Bearer ${token}`,
           'Dropbox-API-Arg': apiArg,
         },
-      });
-      if (response.status === 401) {
-        this.auth.reportUnauthorized();
-        return null;
-      }
-    }
+      }),
+    );
+
+    if (!response) return null;
 
     if (response.status === 409) return null; // path/not_found
 
@@ -132,9 +118,6 @@ export class DropboxPreferencesSyncService {
   }
 
   async uploadPreferencesFile(data: RemotePreferencesFile): Promise<boolean> {
-    let token = await this.auth.ensureValidToken();
-    if (!token) return false;
-
     const folderReady = await ensureVorbisFolder(this.auth);
     if (!folderReady) return false;
 
@@ -143,29 +126,21 @@ export class DropboxPreferencesSyncService {
       mode: 'overwrite',
     });
 
-    const upload = (accessToken: string) =>
+    const body = JSON.stringify(data);
+
+    const response = await contentApiRequest(this.auth, (token) =>
       fetch('https://content.dropboxapi.com/2/files/upload', {
         method: 'POST',
         headers: {
-          Authorization: `Bearer ${accessToken}`,
+          Authorization: `Bearer ${token}`,
           'Dropbox-API-Arg': apiArg,
           'Content-Type': 'application/octet-stream',
         },
-        body: JSON.stringify(data),
-      });
+        body,
+      }),
+    );
 
-    let response = await upload(token);
-
-    if (response.status === 401) {
-      const refreshed = await this.auth.refreshAccessToken();
-      if (!refreshed) return false;
-      token = refreshed;
-      response = await upload(token);
-      if (response.status === 401) {
-        this.auth.reportUnauthorized();
-        return false;
-      }
-    }
+    if (!response) return false;
 
     if (!response.ok) {
       const errText = await response.text();

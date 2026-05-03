@@ -215,23 +215,7 @@ const LibraryContextMenu: React.FC<LibraryContextMenuProps> = ({
 
     if (request.kind === 'recently-played' && request.recentRef) {
       const recentRef = request.recentRef;
-      actions.onRemoveFromHistory = closeAfter(() => {
-        if (recentRef.kind === 'liked') {
-          removeRecent({ provider: recentRef.provider as ProviderId, kind: 'liked' });
-        } else if (recentRef.kind === 'album') {
-          removeRecent({
-            provider: recentRef.provider as ProviderId,
-            kind: 'album',
-            id: recentRef.id,
-          });
-        } else {
-          removeRecent({
-            provider: recentRef.provider as ProviderId,
-            kind: 'playlist',
-            id: recentRef.id,
-          });
-        }
-      });
+      actions.onRemoveFromHistory = closeAfter(() => removeRecent(recentRef));
     }
 
     return buildMenuItems(request, actions);

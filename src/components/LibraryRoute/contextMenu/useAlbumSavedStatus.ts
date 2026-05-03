@@ -47,13 +47,8 @@ export function useAlbumSavedStatus(
     };
   }, [albumId, descriptor]);
 
-  const toggleSaved = useCallback(() => {
-    if (!canToggle || !albumId || isSaved === null) return;
-    const next = !isSaved;
-    setIsSaved(next);
-    setSaveError(null);
-
-    async function run() {
+  const commitToggle = useCallback(
+    async (next: boolean) => {
       try {
         await descriptor!.catalog.setAlbumSaved!(albumId!, next);
       } catch (err) {
@@ -74,10 +69,17 @@ export function useAlbumSavedStatus(
           logLibrary('optimisticRemoveAlbum failed', err);
         }
       }
-    }
+    },
+    [albumId, descriptor],
+  );
 
-    run().catch((err) => logLibrary('toggleSaved unexpected error', err));
-  }, [canToggle, albumId, isSaved, descriptor]);
+  const toggleSaved = useCallback(() => {
+    if (!canToggle || !albumId || isSaved === null) return;
+    const next = !isSaved;
+    setIsSaved(next);
+    setSaveError(null);
+    commitToggle(next).catch((err) => logLibrary('toggleSaved unexpected error', err));
+  }, [canToggle, albumId, isSaved, commitToggle]);
 
   const clearSaveError = useCallback(() => setSaveError(null), []);
 

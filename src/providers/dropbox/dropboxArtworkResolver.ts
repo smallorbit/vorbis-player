@@ -78,6 +78,9 @@ export class DropboxArtworkResolver {
           const imageUrl = await this.fetchArtDataUrl(imagePath);
           if (imageUrl) {
             dirToImageUrl.set(dir, imageUrl);
+            // Dual-key cache: fetchArtDataUrl already stored under the file path (fast
+            // per-track lookup); this second write keys on the directory so album-level
+            // lookups (resolveAlbumArt, getAlbumArtForAlbum) can hit without re-scanning.
             await putAlbumArt(dir, imageUrl);
             return;
           }

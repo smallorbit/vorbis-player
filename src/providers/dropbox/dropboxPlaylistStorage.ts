@@ -8,6 +8,7 @@ import type { MediaTrack, MediaCollection, ProviderId, PlaybackItemRef } from '@
 import { toSavedPlaylistId } from '@/constants/playlist';
 import { logLibrary } from '@/lib/debugLog';
 import { buildAlbumCoverMap, selectMosaicCovers } from '@/utils/mosaicSelection';
+import { contentApiRequest } from './dropboxContentApiClient';
 
 // ── Helpers ──────────────────────────────────────────────────────────
 
@@ -53,31 +54,18 @@ let playlistsFolderConfirmed = false;
 async function ensurePlaylistsFolder(auth: DropboxAuthAdapter): Promise<boolean> {
   if (playlistsFolderConfirmed) return true;
 
-  let token = await auth.ensureValidToken();
-  if (!token) return false;
-
-  const create = async (accessToken: string) =>
+  const response = await contentApiRequest(auth, (token) =>
     fetch('https://api.dropboxapi.com/2/files/create_folder_v2', {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${accessToken}`,
+        Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({ path: PLAYLISTS_FOLDER, autorename: false }),
-    });
+    }),
+  );
 
-  let response = await create(token);
-
-  if (response.status === 401) {
-    const refreshed = await auth.refreshAccessToken();
-    if (!refreshed) return false;
-    token = refreshed;
-    response = await create(token);
-    if (response.status === 401) {
-      auth.reportUnauthorized();
-      return false;
-    }
-  }
+  if (!response) return false;
 
   // 409 = folder already exists
   if (response.status === 409 || response.ok) {
@@ -174,36 +162,24 @@ export async function saveQueueAsPlaylist(
     tracks: mediaTracks.map(mediaTrackToSavedTrack),
   };
 
-  const token = await auth.ensureValidToken();
-  if (!token) return null;
-
   const apiArg = jsonToHttpHeader(
     JSON.stringify({ path: filePath, mode: 'overwrite' }),
   );
   const body = JSON.stringify(data);
 
-  const upload = (accessToken: string) =>
+  const response = await contentApiRequest(auth, (token) =>
     fetch('https://content.dropboxapi.com/2/files/upload', {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${accessToken}`,
+        Authorization: `Bearer ${token}`,
         'Dropbox-API-Arg': apiArg,
         'Content-Type': 'application/octet-stream',
       },
       body,
-    });
+    }),
+  );
 
-  let response = await upload(token);
-
-  if (response.status === 401) {
-    const refreshed = await auth.refreshAccessToken();
-    if (!refreshed) return null;
-    response = await upload(refreshed);
-    if (response.status === 401) {
-      auth.reportUnauthorized();
-      return null;
-    }
-  }
+  if (!response) return null;
 
   if (!response.ok) {
     console.warn('[DropboxPlaylistStorage] Upload failed:', response.status);
@@ -219,37 +195,24 @@ export async function saveQueueAsPlaylist(
 export async function listSavedPlaylists(
   auth: DropboxAuthAdapter,
 ): Promise<MediaCollection[]> {
-  let token = await auth.ensureValidToken();
-  if (!token) return [];
-
   interface ListResult {
     entries: Array<{ '.tag': string; name: string; path_lower: string; path_display: string }>;
     has_more: boolean;
     cursor: string;
   }
 
-  const listFolder = async (accessToken: string) =>
+  const response = await contentApiRequest(auth, (token) =>
     fetch('https://api.dropboxapi.com/2/files/list_folder', {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${accessToken}`,
+        Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({ path: PLAYLISTS_FOLDER, recursive: false }),
-    });
+    }),
+  );
 
-  let response = await listFolder(token);
-
-  if (response.status === 401) {
-    const refreshed = await auth.refreshAccessToken();
-    if (!refreshed) return [];
-    token = refreshed;
-    response = await listFolder(token);
-    if (response.status === 401) {
-      auth.reportUnauthorized();
-      return [];
-    }
-  }
+  if (!response) return [];
 
   // 409 = folder doesn't exist yet → no playlists
   if (response.status === 409) return [];
@@ -283,29 +246,19 @@ export async function listSavedPlaylists(
   // Handle pagination
   let cursor = result.cursor;
   let hasMore = result.has_more;
-  const continueFetch = (accessToken: string) =>
-    fetch('https://api.dropboxapi.com/2/files/list_folder/continue', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ cursor }),
-    });
 
   while (hasMore) {
-    let continueResp = await continueFetch(token);
-    if (continueResp.status === 401) {
-      const refreshed = await auth.refreshAccessToken();
-      if (!refreshed) break;
-      token = refreshed;
-      continueResp = await continueFetch(token);
-      if (continueResp.status === 401) {
-        auth.reportUnauthorized();
-        break;
-      }
-    }
-    if (!continueResp.ok) break;
+    const continueResp = await contentApiRequest(auth, (token) =>
+      fetch('https://api.dropboxapi.com/2/files/list_folder/continue', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ cursor }),
+      }),
+    );
+    if (!continueResp || !continueResp.ok) break;
     const cont: ListResult = await continueResp.json();
     collectEntries(cont.entries);
     cursor = cont.cursor;
@@ -347,33 +300,19 @@ async function loadPlaylistFile(
   auth: DropboxAuthAdapter,
   playlistPath: string,
 ): Promise<PlaylistFile | null> {
-  const token = await auth.ensureValidToken();
-  if (!token) return null;
-
   const apiArg = jsonToHttpHeader(JSON.stringify({ path: playlistPath }));
 
-  const download = (accessToken: string) =>
+  const response = await contentApiRequest(auth, (token) =>
     fetch('https://content.dropboxapi.com/2/files/download', {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${accessToken}`,
+        Authorization: `Bearer ${token}`,
         'Dropbox-API-Arg': apiArg,
       },
-    });
+    }),
+  );
 
-  let response = await download(token);
-
-  if (response.status === 401) {
-    const refreshed = await auth.refreshAccessToken();
-    if (!refreshed) return null;
-    response = await download(refreshed);
-    if (response.status === 401) {
-      auth.reportUnauthorized();
-      return null;
-    }
-  }
-
-  if (!response.ok) return null;
+  if (!response || !response.ok) return null;
 
   try {
     const data: PlaylistFile = await response.json();
@@ -404,30 +343,16 @@ export async function deleteSavedPlaylist(
   auth: DropboxAuthAdapter,
   playlistPath: string,
 ): Promise<boolean> {
-  const token = await auth.ensureValidToken();
-  if (!token) return false;
-
-  const deleteFile = (accessToken: string) =>
+  const response = await contentApiRequest(auth, (token) =>
     fetch('https://api.dropboxapi.com/2/files/delete_v2', {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${accessToken}`,
+        Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({ path: playlistPath }),
-    });
+    }),
+  );
 
-  let response = await deleteFile(token);
-
-  if (response.status === 401) {
-    const refreshed = await auth.refreshAccessToken();
-    if (!refreshed) return false;
-    response = await deleteFile(refreshed);
-    if (response.status === 401) {
-      auth.reportUnauthorized();
-      return false;
-    }
-  }
-
-  return response.ok;
+  return response?.ok ?? false;
 }
