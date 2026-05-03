@@ -1,5 +1,5 @@
 import React from 'react';
-import type { ProviderId } from '@/types/domain';
+import type { CollectionRef, ProviderId } from '@/types/domain';
 import { useRecentlyPlayedSection } from '../hooks';
 import type { ContextMenuRequest, LibraryItemKind } from '../types';
 import Section from './Section';
@@ -54,13 +54,17 @@ const RecentlyPlayedSection: React.FC<RecentlyPlayedSectionProps> = ({
           }
           const refOriginalKind: 'playlist' | 'album' | 'liked' =
             ref.kind === 'liked' ? 'liked' : ref.kind === 'album' ? 'album' : 'playlist';
+          const recentRef: CollectionRef =
+            refOriginalKind === 'liked'
+              ? { provider: ref.provider, kind: 'liked' }
+              : { provider: ref.provider, kind: refOriginalKind, id: cardId };
           const wrappedContextMenu = onContextMenuRequest
             ? (req: ContextMenuRequest) => {
                 onContextMenuRequest({
                   ...req,
                   kind: 'recently-played',
                   originalKind: refOriginalKind,
-                  recentRef: { kind: refOriginalKind, id: cardId, provider: ref.provider },
+                  recentRef,
                 });
               }
             : undefined;
