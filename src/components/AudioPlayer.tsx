@@ -27,6 +27,7 @@ import { keyToCollectionRef } from '@/types/domain';
 import { STORAGE_KEYS } from '@/constants/storage';
 import type { ClearCacheOptions } from '@/components/AppSettingsMenu';
 import { useSessionPersistence } from '@/hooks/useSessionPersistence';
+import { useUiV2 } from '@/hooks/useUiV2';
 import QuickAccessPanel from './QuickAccessPanel';
 import { CmdKPalette } from './CmdKPalette';
 import { tracksToMediaTracks } from '@/services/spotify/tracks';
@@ -35,6 +36,7 @@ import type { CachedPlaylistInfo } from '@/services/cache/cacheTypes';
 import type { SearchArtist } from '@/services/cache/librarySearch';
 
 const VisualEffectsMenu = lazy(() => import('./AppSettingsMenu/index'));
+const SettingsV2 = lazy(() => import('./SettingsV2/SettingsV2'));
 const LibraryRoute = lazy(() => import('./LibraryRoute'));
 
 const RESUME_TOAST_ID = 'resume-toast';
@@ -78,6 +80,7 @@ const AudioPlayerComponent = () => {
   } = useVisualizer();
   const { accentColorBackgroundEnabled } = useAccentColorBackground();
   const { showVisualEffects, setShowVisualEffects } = useVisualEffectsToggle();
+  const uiV2 = useUiV2();
   const { tracks, selectedPlaylistId, setTracks, setOriginalTracks, setSelectedPlaylistId } = useTrackListContext();
   const { currentTrack, currentTrackIndex, setCurrentTrackIndex, showQueue, setShowQueue } = useCurrentTrackContext();
 
@@ -619,17 +622,21 @@ const AudioPlayerComponent = () => {
         />
         {!isMainPlayerActive && (
           <Suspense fallback={null}>
-            <VisualEffectsMenu
-              isOpen={showVisualEffects}
-              onClose={handleCloseSettings}
-              onClearCache={handleClearCache}
-              profilerEnabled={false}
-              onProfilerToggle={() => {}}
-              visualizerDebugEnabled={false}
-              onVisualizerDebugToggle={() => {}}
-              qapEnabled={false}
-              onQapToggle={() => {}}
-            />
+            {uiV2 ? (
+              <SettingsV2 isOpen={showVisualEffects} onClose={handleCloseSettings} />
+            ) : (
+              <VisualEffectsMenu
+                isOpen={showVisualEffects}
+                onClose={handleCloseSettings}
+                onClearCache={handleClearCache}
+                profilerEnabled={false}
+                onProfilerToggle={() => {}}
+                visualizerDebugEnabled={false}
+                onVisualizerDebugToggle={() => {}}
+                qapEnabled={false}
+                onQapToggle={() => {}}
+              />
+            )}
           </Suspense>
         )}
         {needsSetup && state.currentView === 'library' && (
