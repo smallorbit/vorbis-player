@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef } from 'react';
-import { createPortal } from 'react-dom';
+import * as DialogPrimitive from '@radix-ui/react-dialog';
+import { Dialog, DialogPortal, DialogOverlay } from '@/components/ui/dialog';
 import { useUiV2 } from '@/hooks/useUiV2';
 import { useSettingsUrl } from '@/hooks/useSettingsUrl';
 import { usePlayerSizingContext } from '@/contexts/PlayerSizingContext';
@@ -12,18 +13,6 @@ import {
   type SettingsV2SectionId,
 } from './sections';
 import { Overlay, DesktopShell, MobileTakeover } from './styled';
-
-/**
- * `SETTINGS_V2_Z_INDEX = 1405` — sits above the player's `BottomBar`
- * (`theme.zIndex.modal = 1400`) and matches `dialog.tsx`'s `DIALOG_Z_INDEX`
- * (intentionally identical — substitution should be clean when Dialog adoption lands).
- * The overlay renders one level below at `1404`.
- *
- * Inline at the component level mirrors the existing convention used by
- * `dialog.tsx`, `sheet.tsx`, `popover.tsx`, `select.tsx`. There is no
- * project-wide z-index constants file (see `docs/architecture/shadcn.md#z-index-for-shadcn-primitives`).
- */
-export const SETTINGS_V2_Z_INDEX = 1405;
 
 /** Sentinel for "show the mobile list view". Uses `__list` (not a valid URL param value) to avoid colliding with `?settings=open` deep-links. */
 const MOBILE_LIST_VIEW = '__list';
@@ -47,10 +36,15 @@ interface SettingsV2Props {
  * `useSettingsUrl()` so deep-links (`?settings=appearance`) and the
  * browser back-button work end-to-end.
  *
- * Close gestures handled here:
- *   - Esc — `keydown` listener calls `onClose()`
- *   - Browser back — popstate listener fires `onClose()` when the
- *     `settings` param disappears
+ * Close gestures handled by Radix `Dialog`:
+ *   - Esc — Radix emits `onOpenChange(false)` natively
+ *   - Overlay click — Radix emits `onOpenChange(false)` natively
+ *   - Focus trap + return-to-trigger on close — handled by Radix
+ *
+ * Close gestures handled by this component:
+ *   - Browser back — popstate listener mirrors URL changes from outside
+ *     into `onClose()` (Dialog only handles its own internal close, not
+ *     the URL state owned by `useSettingsUrl()`).
  *   - Shift+S — already routed through `setShowVisualEffects(prev => !prev)`
  *     by `useKeyboardShortcuts.ts`; flipping the parent's `isOpen` prop
  *     is sufficient.
@@ -72,21 +66,12 @@ export const SettingsV2: React.FC<SettingsV2Props> = ({ isOpen, onClose }) => {
     onClose();
   }, [setSection, onClose]);
 
-  useEffect(() => {
-    if (!uiV2 || !isOpen) return;
-    if (typeof window === 'undefined') return;
-
-    const handleKeyDown = (event: KeyboardEvent): void => {
-      if (event.key === 'Escape') {
-        closeShell();
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [uiV2, isOpen, closeShell]);
+  const handleOpenChange = useCallback(
+    (open: boolean) => {
+      if (!open) closeShell();
+    },
+    [closeShell],
+  );
 
   useEffect(() => {
     if (!uiV2) return;
@@ -110,8 +95,6 @@ export const SettingsV2: React.FC<SettingsV2Props> = ({ isOpen, onClose }) => {
   }, [uiV2, isOpen, onClose]);
 
   if (!uiV2) return null;
-  if (typeof document === 'undefined') return null;
-  if (!isOpen) return null;
 
   const handleSelectSection = (next: SettingsV2SectionId): void => {
     setSection(next);
@@ -119,40 +102,62 @@ export const SettingsV2: React.FC<SettingsV2Props> = ({ isOpen, onClose }) => {
 
   const validSection = isSettingsV2SectionId(section) ? section : null;
 
-  const shell = isMobile ? (
-    <MobileTakeover
-      $isOpen={isOpen}
-      $zIndex={SETTINGS_V2_Z_INDEX}
-      role="dialog"
-      aria-modal="true"
-      aria-label="Settings"
-      data-testid="settings-v2-mobile"
-    >
-      <SettingsV2MobileTakeover
-        activeSection={validSection}
-        onSelectSection={handleSelectSection}
-        onBackToList={() => setSection(MOBILE_LIST_VIEW)}
-        onClose={closeShell}
-      />
-    </MobileTakeover>
-  ) : (
-    <>
-      <Overlay $isOpen={isOpen} $zIndex={SETTINGS_V2_Z_INDEX} onClick={closeShell} aria-hidden="true" />
-      <DesktopShell
-        $isOpen={isOpen}
-        $zIndex={SETTINGS_V2_Z_INDEX}
-        role="dialog"
-        aria-modal="true"
-        aria-label="Settings"
-        data-testid="settings-v2-desktop"
-      >
-        <SettingsV2Sidebar activeSection={activeSection} onSelect={handleSelectSection} />
-        <SettingsV2Content activeSection={activeSection} onClose={closeShell} />
-      </DesktopShell>
-    </>
+  return (
+    <Dialog open={isOpen} onOpenChange={handleOpenChange}>
+      <DialogPortal>
+        {isMobile ? (
+          <DialogPrimitive.Content asChild aria-label="Settings" aria-describedby={undefined}>
+            <MobileTakeover data-testid="settings-v2-mobile">
+              <VisuallyHiddenDialogTitle />
+              <SettingsV2MobileTakeover
+                activeSection={validSection}
+                onSelectSection={handleSelectSection}
+                onBackToList={() => setSection(MOBILE_LIST_VIEW)}
+                onClose={closeShell}
+              />
+            </MobileTakeover>
+          </DialogPrimitive.Content>
+        ) : (
+          <>
+            <DialogOverlay asChild>
+              <Overlay aria-hidden="true" />
+            </DialogOverlay>
+            <DialogPrimitive.Content asChild aria-label="Settings" aria-describedby={undefined}>
+              <DesktopShell data-testid="settings-v2-desktop">
+                <VisuallyHiddenDialogTitle />
+                <SettingsV2Sidebar activeSection={activeSection} onSelect={handleSelectSection} />
+                <SettingsV2Content activeSection={activeSection} onClose={closeShell} />
+              </DesktopShell>
+            </DialogPrimitive.Content>
+          </>
+        )}
+      </DialogPortal>
+    </Dialog>
   );
-
-  return createPortal(shell, document.body);
 };
+
+/**
+ * Radix `Dialog` requires a `Title` for screen readers and warns in dev when
+ * one is missing. The visible heading lives inside `SettingsV2Content` /
+ * `SettingsV2MobileTakeover`, so render an SR-only title to satisfy the
+ * primitive without disturbing the layout.
+ */
+const VisuallyHiddenDialogTitle: React.FC = () => (
+  <DialogPrimitive.Title
+    style={{
+      position: 'absolute',
+      width: 1,
+      height: 1,
+      padding: 0,
+      margin: -1,
+      overflow: 'hidden',
+      clip: 'rect(0, 0, 0, 0)',
+      whiteSpace: 'nowrap',
+      border: 0,
+    }}
+  >
+    Settings
+  </DialogPrimitive.Title>
+);
 
 export default SettingsV2;
