@@ -15,6 +15,7 @@ import { useProfilingContext } from '@/contexts/ProfilingContext';
 import type { VisualizerStyle } from '@/types/visualizer';
 import { useVisualizerDebug } from '@/contexts/VisualizerDebugContext';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
+import { useUiV2 } from '@/hooks/useUiV2';
 import { useVolume } from '@/hooks/useVolume';
 import { useTrackListContext } from '@/contexts/TrackContext';
 import { BottomBarActionsProvider, type BottomBarActionsValue } from '@/contexts/BottomBarActionsContext';
@@ -42,6 +43,7 @@ const ZEN_CONTROLS_WILL_CHANGE_FALLBACK_MS =
   ZEN_EXIT_REENTRY_DELAY + ZEN_CONTROLS_DURATION + 100;
 
 const VisualEffectsMenu = lazy(() => import('@/components/AppSettingsMenu/index'));
+const SettingsV2 = lazy(() => import('@/components/SettingsV2/SettingsV2'));
 const KeyboardShortcutsHelp = lazy(() => import('@/components/KeyboardShortcutsHelp'));
 
 function ControlsLoadingFallback(): React.ReactElement {
@@ -156,6 +158,7 @@ export const PlayerControlsSection: React.FC<PlayerControlsSectionProps> = React
   const vizDebugCtx = useVisualizerDebug();
   const visualizerDebugEnabled = vizDebugCtx?.isDebugMode ?? false;
   const [qapEnabled, setQapEnabled] = useQapEnabled();
+  const uiV2 = useUiV2();
 
   const settingsHasBeenOpenedRef = useRef(false);
   if (showVisualEffects) settingsHasBeenOpenedRef.current = true;
@@ -377,17 +380,21 @@ export const PlayerControlsSection: React.FC<PlayerControlsSectionProps> = React
       </ProfiledComponent>
       {settingsHasBeenOpenedRef.current && (
         <Suspense fallback={<VisualEffectsLoadingFallback />}>
-          <VisualEffectsMenu
-            isOpen={showVisualEffects}
-            onClose={handleCloseVisualEffects}
-            onClearCache={handleClearCache}
-            profilerEnabled={profilerEnabled}
-            onProfilerToggle={handleProfilerToggle}
-            visualizerDebugEnabled={visualizerDebugEnabled}
-            onVisualizerDebugToggle={handleVisualizerDebugToggle}
-            qapEnabled={qapEnabled}
-            onQapToggle={() => setQapEnabled(!qapEnabled)}
-          />
+          {uiV2 ? (
+            <SettingsV2 isOpen={showVisualEffects} onClose={handleCloseVisualEffects} />
+          ) : (
+            <VisualEffectsMenu
+              isOpen={showVisualEffects}
+              onClose={handleCloseVisualEffects}
+              onClearCache={handleClearCache}
+              profilerEnabled={profilerEnabled}
+              onProfilerToggle={handleProfilerToggle}
+              visualizerDebugEnabled={visualizerDebugEnabled}
+              onVisualizerDebugToggle={handleVisualizerDebugToggle}
+              qapEnabled={qapEnabled}
+              onQapToggle={() => setQapEnabled(!qapEnabled)}
+            />
+          )}
         </Suspense>
       )}
       <Suspense fallback={null}>
