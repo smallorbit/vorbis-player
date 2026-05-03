@@ -1,9 +1,10 @@
 import type { MediaTrack } from '@/types/domain';
-import type { Track, PlaylistInfo, AlbumInfo, SpotifyAlbum, SpotifyTrackItem, PaginatedResponse } from './types';
+import type { Track, PlaylistInfo, AlbumInfo, SpotifyTrackItem, PaginatedResponse } from './types';
 import { spotifyApiRequest, fetchAllPaginated } from './api';
 import { spotifyAuth } from './auth';
 import { trackListCache, albumSavedCache, TRACK_LIST_CACHE_TTL, TRACK_LIST_PERSIST_TTL } from './cache';
-import { formatArtists, transformTrackItem, backfillProvider, tracksToMediaTracks } from './tracks';
+import { transformTrackItem, backfillProvider, tracksToMediaTracks } from './tracks';
+import { type SavedAlbumItem, transformSavedAlbumItem } from './albums';
 import * as libraryCache from '../cache/libraryCache';
 
 // =============================================================================
@@ -32,26 +33,6 @@ export async function getUserLibraryInterleaved(
       added_at: playlist.added_at || fetchTimestamp,
       tracks: playlist.tracks ?? { total: 0 },
       owner: playlist.owner ?? { display_name: '' },
-    };
-  }
-
-  interface SavedAlbumItem {
-    added_at: string;
-    album: SpotifyAlbum;
-  }
-
-  function transformAlbum(item: SavedAlbumItem): AlbumInfo {
-    const album = item.album;
-    return {
-      id: album.id ?? '',
-      name: album.name ?? 'Unknown Album',
-      artists: formatArtists(album.artists),
-      images: album.images ?? [],
-      release_date: album.release_date ?? '',
-      total_tracks: album.total_tracks ?? 0,
-      uri: album.uri ?? '',
-      album_type: album.album_type,
-      added_at: item.added_at,
     };
   }
 
@@ -92,7 +73,7 @@ export async function getUserLibraryInterleaved(
           .then((data) => {
             const now = Date.now();
             for (const item of data.items ?? []) {
-              albumResults.push(transformAlbum(item));
+              albumResults.push(transformSavedAlbumItem(item, { withGenres: false }));
               if (item.album.id) {
                 albumSavedCache.set(item.album.id, { value: true, timestamp: now });
               }
@@ -193,23 +174,15 @@ export async function getPlaylistsPage(
 /** Fetch ALL user playlists with full pagination (not capped at 50). */
 export async function getAllUserPlaylists(signal?: AbortSignal): Promise<PlaylistInfo[]> {
   const token = await spotifyAuth.ensureValidToken();
-  const playlists: PlaylistInfo[] = [];
-  let nextUrl: string | null = 'https://api.spotify.com/v1/me/playlists?limit=50';
   let index = 0;
 
-  while (nextUrl) {
-    if (signal?.aborted) throw new DOMException('Request aborted', 'AbortError');
-    const url = nextUrl;
-    const data: PaginatedResponse<PlaylistInfo> = await spotifyApiRequest(url, token, { signal });
-    for (const item of data.items ?? []) {
-      playlists.push({
-        ...item,
-        added_at: item.added_at || new Date(Date.now() - index * 60000).toISOString(),
-      });
-      index++;
-    }
-    nextUrl = data.next;
-  }
-
-  return playlists;
+  return fetchAllPaginated<PlaylistInfo, PlaylistInfo>(
+    'https://api.spotify.com/v1/me/playlists?limit=50',
+    token,
+    (item) => ({
+      ...item,
+      added_at: item.added_at || new Date(Date.now() - index++ * 60000).toISOString(),
+    }),
+    { signal },
+  );
 }
