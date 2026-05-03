@@ -2,6 +2,7 @@ import React from 'react';
 import { X } from 'lucide-react';
 import type { SettingsV2SectionId } from './sections';
 import { SETTINGS_V2_SECTIONS } from './sections';
+import { SettingsV2SectionBody } from './SettingsV2Content';
 import {
   Header,
   HeaderTitle,
@@ -10,8 +11,6 @@ import {
   MobileSectionRow,
   MobileChevron,
   MobileDetailBody,
-  SectionTitle,
-  SectionPlaceholder,
 } from './styled';
 
 interface SettingsV2MobileTakeoverProps {
@@ -66,8 +65,7 @@ export const SettingsV2MobileTakeover: React.FC<SettingsV2MobileTakeoverProps> =
         </IconButton>
       </Header>
       <MobileDetailBody>
-        <SectionTitle>{section.label}</SectionTitle>
-        <SectionPlaceholder>{section.description}</SectionPlaceholder>
+        <SettingsV2SectionBody activeSection={activeSection} />
       </MobileDetailBody>
     </>
   );
