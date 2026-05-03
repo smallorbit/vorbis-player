@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { SpotifyPlaybackAdapter } from '@/providers/spotify/spotifyPlaybackAdapter';
-import { spotifyPlayer } from '@/services/spotifyPlayer';
+import { spotifyPlayer, waitForSpotifyReady } from '@/services/spotifyPlayer';
 import { AuthExpiredError } from '@/providers/errors';
 import type { MediaTrack, PlaybackState } from '@/types/domain';
 
@@ -14,6 +14,7 @@ vi.mock('@/services/spotifyPlayer', () => ({
     pause: vi.fn().mockResolvedValue(undefined),
     onPlayerStateChanged: vi.fn().mockReturnValue(() => {}),
   },
+  waitForSpotifyReady: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock('@/services/spotify', () => ({
@@ -43,6 +44,7 @@ describe('SpotifyPlaybackAdapter.prepareTrack', () => {
     vi.mocked(spotifyPlayer.getDeviceId).mockReturnValue('device-1');
     vi.mocked(spotifyPlayer.transferPlaybackToDevice).mockResolvedValue(undefined);
     vi.mocked(spotifyPlayer.ensureDeviceIsActive).mockResolvedValue(true);
+    vi.mocked(waitForSpotifyReady).mockResolvedValue(undefined);
     fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 204 }));
     vi.stubGlobal('fetch', fetchMock);
     adapter = new SpotifyPlaybackAdapter();
@@ -322,7 +324,7 @@ describe('SpotifyPlaybackAdapter.prepareTrack', () => {
       fetchMock.mockResolvedValueOnce(new Response(null, { status: 500 }));
 
       // #when / #then
-      await expect(adapter.probePlayable(track)).rejects.toThrow(/probePlayable failed: 500/);
+      await expect(adapter.probePlayable(track)).rejects.toThrow(/500/);
     });
   });
 

@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { SpotifyPlaybackAdapter } from '@/providers/spotify/spotifyPlaybackAdapter';
 import type { MediaTrack } from '@/types/domain';
 import type { CollectionRef } from '@/types/domain';
-import { spotifyPlayer } from '@/services/spotifyPlayer';
+import { spotifyPlayer, waitForSpotifyReady } from '@/services/spotifyPlayer';
 
 vi.mock('@/services/spotifyPlayer', () => ({
   spotifyPlayer: {
@@ -23,6 +23,7 @@ vi.mock('@/services/spotifyPlayer', () => ({
     waitForPlaybackOrResume: vi.fn(),
     lastPlayTrackTime: 0,
   },
+  waitForSpotifyReady: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock('@/services/spotify', () => ({
@@ -59,6 +60,7 @@ describe('SpotifyPlaybackAdapter', () => {
     vi.mocked(spotifyPlayer.ensureDeviceIsActive).mockResolvedValue(true);
     vi.mocked(spotifyPlayer.playTrack).mockResolvedValue(undefined);
     vi.mocked(spotifyPlayer.playContext).mockResolvedValue(undefined);
+    vi.mocked(waitForSpotifyReady).mockResolvedValue(undefined);
     adapter = new SpotifyPlaybackAdapter();
   });
 
@@ -84,17 +86,10 @@ describe('SpotifyPlaybackAdapter', () => {
 
   it('times out if SDK never becomes ready', async () => {
     // #given
-    vi.useFakeTimers();
-    vi.mocked(spotifyPlayer.getIsReady).mockReturnValue(false);
-    vi.mocked(spotifyPlayer.getDeviceId).mockReturnValue(null);
+    vi.mocked(waitForSpotifyReady).mockRejectedValue(new Error('Spotify player not ready after waiting'));
 
-    // #when
-    const playPromise = adapter.playTrack(makeSpotifyTrack());
-    const rejection = expect(playPromise).rejects.toThrow('Spotify player not ready after waiting');
-    await vi.advanceTimersByTimeAsync(10_500);
-
-    // #then
-    await rejection;
+    // #when / #then
+    await expect(adapter.playTrack(makeSpotifyTrack())).rejects.toThrow('Spotify player not ready after waiting');
     expect(spotifyPlayer.playTrack).not.toHaveBeenCalled();
   });
 

@@ -5,8 +5,9 @@
 
 import type { PlaybackProvider } from '@/types/providers';
 import type { ProviderId, MediaTrack, PlaybackState, CollectionRef } from '@/types/domain';
-import { spotifyPlayer } from '@/services/spotifyPlayer';
+import { spotifyPlayer, waitForSpotifyReady } from '@/services/spotifyPlayer';
 import { spotifyAuth } from '@/services/spotify';
+import { spotifyApiRequest } from '@/services/spotify/api';
 import { isAlbumId, extractAlbumId } from '@/constants/playlist';
 import { SPOTIFY_MAX_RETRIES, SPOTIFY_BASE_BACKOFF_MS } from '@/constants/spotify';
 import { SPOTIFY_DEVICE_ACTIVATE_RETRIES, SPOTIFY_DEVICE_ACTIVATE_DELAY_MS } from '@/constants/timing';
@@ -33,7 +34,6 @@ function mapPlaybackState(state: SpotifyPlaybackState | null): PlaybackState | n
 export class SpotifyPlaybackAdapter implements PlaybackProvider {
   readonly providerId: ProviderId = 'spotify';
   private static readonly READY_TIMEOUT_MS = 10_000;
-  private static readonly READY_POLL_MS = 200;
 
   private pendingUpcomingUris: string[] | null = null;
   /** True after the first successful playTrack; lets subsequent plays skip heavy API checks. */
@@ -44,19 +44,9 @@ export class SpotifyPlaybackAdapter implements PlaybackProvider {
   /** Ref of the track most recently staged by prepareTrack; used for idempotency. */
   private preparedTrackRef: string | null = null;
 
-  private async waitForPlayerReady(): Promise<void> {
-    const start = Date.now();
-    while (!spotifyPlayer.getIsReady() || !spotifyPlayer.getDeviceId()) {
-      if (Date.now() - start > SpotifyPlaybackAdapter.READY_TIMEOUT_MS) {
-        throw new Error('Spotify player not ready after waiting');
-      }
-      await new Promise(resolve => setTimeout(resolve, SpotifyPlaybackAdapter.READY_POLL_MS));
-    }
-  }
-
   private async ensurePlaybackReady(): Promise<void> {
     await spotifyPlayer.initialize();
-    await this.waitForPlayerReady();
+    await waitForSpotifyReady(SpotifyPlaybackAdapter.READY_TIMEOUT_MS);
     await spotifyPlayer.transferPlaybackToDevice();
     await spotifyPlayer.ensureDeviceIsActive();
   }
@@ -99,16 +89,10 @@ export class SpotifyPlaybackAdapter implements PlaybackProvider {
         const token = await spotifyAuth.ensureValidToken();
         const deviceId = spotifyPlayer.getDeviceId();
         if (deviceId) {
-          await fetch('https://api.spotify.com/v1/me/player', {
+          await spotifyApiRequest<void>('https://api.spotify.com/v1/me/player', token, {
             method: 'PUT',
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              device_ids: [deviceId],
-              play: true,
-            }),
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ device_ids: [deviceId], play: true }),
           });
         }
       } catch (error) {
@@ -202,12 +186,10 @@ export class SpotifyPlaybackAdapter implements PlaybackProvider {
     const deviceId = spotifyPlayer.getDeviceId();
     if (!deviceId) return;
 
-    await fetch(
+    await spotifyApiRequest<void>(
       `https://api.spotify.com/v1/me/player/seek?position_ms=${Math.floor(positionMs)}&device_id=${deviceId}`,
-      {
-        method: 'PUT',
-        headers: { Authorization: `Bearer ${token}` },
-      },
+      token,
+      { method: 'PUT' },
     );
   }
 
@@ -273,17 +255,18 @@ export class SpotifyPlaybackAdapter implements PlaybackProvider {
     if (!match) return false;
     const trackId = match[1];
     const token = await spotifyAuth.ensureValidToken();
-    const res = await fetch(
-      `https://api.spotify.com/v1/tracks/${trackId}?market=from_token`,
-      { headers: { Authorization: `Bearer ${token}` } },
-    );
-    if (res.status === 401) throw new AuthExpiredError('spotify');
-    if (res.status === 404) return false;
-    if (!res.ok) {
-      throw new Error(`Spotify probePlayable failed: ${res.status}`);
+    try {
+      const body = await spotifyApiRequest<{ is_playable?: boolean }>(
+        `https://api.spotify.com/v1/tracks/${trackId}?market=from_token`,
+        token,
+      );
+      return body.is_playable !== false;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      if (message.includes('401')) throw new AuthExpiredError('spotify');
+      if (message.includes('404')) return false;
+      throw err;
     }
-    const body = (await res.json()) as { is_playable?: boolean };
-    return body.is_playable !== false;
   }
 
   prepareTrack(track: MediaTrack, options?: { positionMs?: number }): void {
