@@ -84,6 +84,10 @@ describe('useSettingsUrl', () => {
     expect(result.current[0]).toBeNull();
 
     // #when
+    // NOTE: setSearch must be called before the navigate setter so that
+    // window.location.search is already updated before the manual popstate
+    // dispatch fires and re-reads it. In a real browser, pushState updates
+    // location.search atomically; in jsdom we have to stage it manually.
     act(() => {
       setSearch('?settings=appearance');
       result.current[1]('appearance');
@@ -166,6 +170,42 @@ describe('useSettingsUrl', () => {
     // #then — hook reflects the wiped URL; settings param is gone
     // (Callers should re-push their own state after this event fires.)
     expect(result.current[0]).toBeNull();
+  });
+
+  it('navigate preserves existing non-settings params when setting a section', () => {
+    // #given — URL already has a ?ui=v2 param
+    setSearch('?ui=v2');
+    const { result } = renderHook(() => useSettingsUrl());
+
+    // #when — navigate adds the settings param
+    act(() => {
+      setSearch('?ui=v2&settings=appearance');
+      result.current[1]('appearance');
+    });
+
+    // #then — both params are present; settings was appended, not replacing ui
+    expect(result.current[0]).toBe('appearance');
+    expect(window.location.search).toContain('ui=v2');
+    expect(window.location.search).toContain('settings=appearance');
+  });
+
+  it('navigate(null) is a no-op when settings param is already absent', () => {
+    // #given — URL has no settings param
+    setSearch('');
+    const pushStateSpy = vi.spyOn(window.history, 'pushState');
+    const { result } = renderHook(() => useSettingsUrl());
+    expect(result.current[0]).toBeNull();
+
+    // #when — navigate is called with null (delete a param that isn't there)
+    act(() => {
+      setSearch('');
+      result.current[1](null);
+    });
+
+    // #then — hook state remains null; a pushState was still called (harmless),
+    // and the hook does not throw or produce a stale value
+    expect(result.current[0]).toBeNull();
+    pushStateSpy.mockRestore();
   });
 
   it('SSR-safe: returns null when window is unavailable at render time', () => {

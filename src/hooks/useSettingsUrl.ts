@@ -50,7 +50,7 @@ export function useSettingsUrl(): [string | null, (section: string | null) => vo
     }
 
     const search = params.toString();
-    const next = search ? `?${search}` : window.location.pathname;
+    const next = `${window.location.pathname}${search ? `?${search}` : ''}`;
     window.history.pushState({}, '', next);
     window.dispatchEvent(new PopStateEvent('popstate'));
   };
