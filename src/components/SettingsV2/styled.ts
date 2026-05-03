@@ -204,12 +204,6 @@ export const SectionTitle = styled.h3`
   color: hsl(var(--foreground));
 `;
 
-export const SectionPlaceholder = styled.p`
-  margin: 0;
-  color: hsl(var(--muted-foreground));
-  font-size: ${({ theme }) => theme.fontSize.sm};
-`;
-
 export const MobileSectionList = styled.div`
   flex: 1;
   display: flex;
