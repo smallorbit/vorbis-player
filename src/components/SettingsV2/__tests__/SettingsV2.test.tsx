@@ -1,5 +1,6 @@
 import React from 'react';
 import { render, screen, fireEvent, act } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { ThemeProvider } from 'styled-components';
 import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { theme } from '@/styles/theme';
@@ -216,21 +217,20 @@ describe('SettingsV2', () => {
   });
 
   describe('close gestures', () => {
-    it('clears URL state and calls onClose when Esc is pressed', () => {
+    it('clears URL state and calls onClose when Esc is pressed', async () => {
       // #given — open with a real section in the URL so closeShell has something to clear
       const onClose = vi.fn();
       setSearch('?settings=advanced');
       const pushStateSpy = vi.spyOn(window.history, 'pushState');
+      const user = userEvent.setup();
       render(
         <Wrapper>
           <SettingsV2 isOpen={true} onClose={onClose} />
         </Wrapper>,
       );
 
-      // #when — fire keydown WITHOUT pre-emptying the URL; closeShell must do the clearing
-      act(() => {
-        fireEvent.keyDown(window, { key: 'Escape' });
-      });
+      // #when — Radix Dialog handles Esc natively and emits onOpenChange(false) → closeShell()
+      await user.keyboard('{Escape}');
 
       // #then — onClose called, and the most recent pushState produced a URL without settings=
       expect(onClose).toHaveBeenCalledTimes(1);
@@ -275,28 +275,31 @@ describe('SettingsV2', () => {
       expect(onClose).toHaveBeenCalled();
     });
 
-    it('calls onClose when the desktop overlay is clicked', () => {
+    it('calls onClose when the desktop overlay is clicked', async () => {
       // #given
       const onClose = vi.fn();
+      const user = userEvent.setup();
       render(
         <Wrapper>
           <SettingsV2 isOpen={true} onClose={onClose} />
         </Wrapper>,
       );
 
-      // #when
-      const overlay = document.body.querySelector('[aria-hidden="true"]');
+      // #when — Radix DialogOverlay carries data-testid="dialog-overlay";
+      // clicking it dispatches the pointerdown-outside event Radix listens for.
+      const overlay = document.body.querySelector('[data-testid="dialog-overlay"]');
       expect(overlay).not.toBeNull();
-      if (overlay) fireEvent.click(overlay);
+      if (overlay) await user.click(overlay);
 
       // #then
       expect(onClose).toHaveBeenCalled();
     });
 
-    it('calls onClose exactly once when Esc is pressed — isSelfClosingRef prevents popstate echo', () => {
+    it('calls onClose exactly once when Esc is pressed — isSelfClosingRef prevents popstate echo', async () => {
       // #given — open with a section so closeShell will pushState (which triggers isSelfClosingRef guard)
       const onClose = vi.fn();
       setSearch('?settings=appearance');
+      const user = userEvent.setup();
       render(
         <Wrapper>
           <SettingsV2 isOpen={true} onClose={onClose} />
@@ -304,8 +307,8 @@ describe('SettingsV2', () => {
       );
 
       // #when — Esc fires closeShell; the resulting pushState must not echo back through popstate
+      await user.keyboard('{Escape}');
       act(() => {
-        fireEvent.keyDown(window, { key: 'Escape' });
         // Simulate the browser echoing a popstate after pushState (isSelfClosingRef should absorb it)
         window.dispatchEvent(new PopStateEvent('popstate'));
       });
@@ -315,14 +318,27 @@ describe('SettingsV2', () => {
     });
   });
 
-  describe('z-index invariant', () => {
-    it('exports SETTINGS_V2_Z_INDEX = 1405 (above BottomBar modal=1400)', async () => {
+  describe('focus management (Radix Dialog)', () => {
+    it('moves focus into the dialog when opened', async () => {
       // #given + #when
-      const mod = await import('../SettingsV2');
+      render(
+        <Wrapper>
+          <SettingsV2 isOpen={true} onClose={vi.fn()} />
+        </Wrapper>,
+      );
 
-      // #then
-      expect(mod.SETTINGS_V2_Z_INDEX).toBe(1405);
-      expect(mod.SETTINGS_V2_Z_INDEX).toBeGreaterThan(parseInt(theme.zIndex.modal, 10));
+      // #then — Radix moves focus to the first focusable descendant (or the
+      // Content element itself) after open. Either way, the active element
+      // must live inside the dialog subtree, not on document.body.
+      const dialog = screen.getByTestId('settings-v2-desktop');
+      const active = document.activeElement as HTMLElement | null;
+      expect(active).not.toBe(document.body);
+      expect(dialog.contains(active)).toBe(true);
     });
+
+    // Return-focus-to-trigger on close is delegated to Radix and validated in
+    // the live browser; jsdom's focus model does not faithfully simulate the
+    // synthetic focusin/focusout cascade Radix relies on. Coverage lives in
+    // Playwright e2e specs (see docs/testing.md).
   });
 });

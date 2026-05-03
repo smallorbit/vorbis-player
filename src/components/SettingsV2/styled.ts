@@ -11,69 +11,98 @@ import styled from 'styled-components';
  * Container queries are the primary responsive strategy; the desktop /
  * mobile-takeover fork itself runs off `usePlayerSizingContext().isMobile`
  * (mirrors `PlayerContent/DrawerOrchestrator.tsx:164-188`).
+ *
+ * Z-index parity: 1405 matches `DIALOG_Z_INDEX` in `src/components/ui/dialog.tsx`
+ * (above `theme.zIndex.modal = 1400` / `BottomBar` max 1350). The overlay
+ * sits one level below at 1404. These values are coupled to `dialog.tsx` —
+ * the wrappers in `SettingsV2.tsx` are now rendered via Radix Dialog primitives
+ * (`asChild`), so visibility/pointer-events/transitions are driven by Radix
+ * `data-state` rather than the previous `$isOpen` prop wiring.
  */
 
-export const Overlay = styled.div<{ $isOpen: boolean; $zIndex: number }>`
+export const Overlay = styled.div`
   position: fixed;
   inset: 0;
   background: ${({ theme }) => theme.colors.overlay.light};
-  z-index: ${({ $zIndex }) => $zIndex - 1};
-  opacity: ${({ $isOpen }) => ($isOpen ? '1' : '0')};
-  visibility: ${({ $isOpen }) => ($isOpen ? 'visible' : 'hidden')};
-  pointer-events: ${({ $isOpen }) => ($isOpen ? 'auto' : 'none')};
-  transition:
-    opacity ${({ theme }) => theme.drawer.transitionDuration}ms ${({ theme }) => theme.drawer.transitionEasing},
-    visibility ${({ theme }) => theme.drawer.transitionDuration}ms ${({ theme }) => theme.drawer.transitionEasing};
+  z-index: 1404;
+  opacity: 0;
+  transition: opacity ${({ theme }) => theme.drawer.transitionDuration}ms ${({ theme }) => theme.drawer.transitionEasing};
+
+  &[data-state='open'] {
+    opacity: 1;
+  }
+
+  &[data-state='closed'] {
+    pointer-events: none;
+  }
 `;
 
-export const DesktopShell = styled.div<{ $isOpen: boolean; $zIndex: number }>`
+export const DesktopShell = styled.div`
   position: fixed;
   top: 50%;
   left: 50%;
   width: min(960px, 92vw);
   height: min(640px, 80vh);
-  transform: translate(-50%, -50%) scale(${({ $isOpen }) => ($isOpen ? '1' : '0.96')});
+  transform: translate(-50%, -50%) scale(0.96);
   background: hsl(var(--background));
   color: hsl(var(--foreground));
   border: 1px solid hsl(var(--border));
   border-radius: ${({ theme }) => theme.borderRadius.lg};
   box-shadow: ${({ theme }) => theme.shadows.xl};
-  z-index: ${({ $zIndex }) => $zIndex};
-  opacity: ${({ $isOpen }) => ($isOpen ? '1' : '0')};
-  visibility: ${({ $isOpen }) => ($isOpen ? 'visible' : 'hidden')};
-  pointer-events: ${({ $isOpen }) => ($isOpen ? 'auto' : 'none')};
+  z-index: 1405;
+  opacity: 0;
   display: grid;
   grid-template-columns: 240px 1fr;
   overflow: hidden;
   transition:
     opacity ${({ theme }) => theme.drawer.transitionDuration}ms ${({ theme }) => theme.drawer.transitionEasing},
-    transform ${({ theme }) => theme.drawer.transitionDuration}ms ${({ theme }) => theme.drawer.transitionEasing},
-    visibility ${({ theme }) => theme.drawer.transitionDuration}ms ${({ theme }) => theme.drawer.transitionEasing};
+    transform ${({ theme }) => theme.drawer.transitionDuration}ms ${({ theme }) => theme.drawer.transitionEasing};
 
   container-type: inline-size;
   container-name: settings-v2;
+
+  &[data-state='open'] {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+  }
+
+  &[data-state='closed'] {
+    pointer-events: none;
+  }
+
+  &:focus {
+    outline: none;
+  }
 
   @container settings-v2 (max-width: 700px) {
     grid-template-columns: 200px 1fr;
   }
 `;
 
-export const MobileTakeover = styled.div<{ $isOpen: boolean; $zIndex: number }>`
+export const MobileTakeover = styled.div`
   position: fixed;
   inset: 0;
   background: hsl(var(--background));
   color: hsl(var(--foreground));
-  z-index: ${({ $zIndex }) => $zIndex};
-  transform: translateX(${({ $isOpen }) => ($isOpen ? '0' : '100%')});
-  visibility: ${({ $isOpen }) => ($isOpen ? 'visible' : 'hidden')};
-  pointer-events: ${({ $isOpen }) => ($isOpen ? 'auto' : 'none')};
-  transition:
-    transform ${({ theme }) => theme.drawer.transitionDuration}ms ${({ theme }) => theme.drawer.transitionEasing},
-    visibility ${({ theme }) => theme.drawer.transitionDuration}ms ${({ theme }) => theme.drawer.transitionEasing};
+  z-index: 1405;
+  transform: translateX(100%);
+  transition: transform ${({ theme }) => theme.drawer.transitionDuration}ms ${({ theme }) => theme.drawer.transitionEasing};
   display: flex;
   flex-direction: column;
   padding-top: env(safe-area-inset-top, 0px);
   padding-bottom: env(safe-area-inset-bottom, 0px);
+
+  &[data-state='open'] {
+    transform: translateX(0);
+  }
+
+  &[data-state='closed'] {
+    pointer-events: none;
+  }
+
+  &:focus {
+    outline: none;
+  }
 `;
 
 export const Header = styled.div`
