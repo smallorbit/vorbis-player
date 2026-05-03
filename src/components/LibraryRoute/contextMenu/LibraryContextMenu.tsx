@@ -216,7 +216,7 @@ const LibraryContextMenu: React.FC<LibraryContextMenuProps> = ({
     };
 
     if (isAlbumKind && canToggleSaved && isSaved !== null) {
-      actions.onToggleSave = closeAfter('Unlike', toggleSaved);
+      actions.onToggleSave = closeAfter(isSaved ? 'Unlike' : 'Like', toggleSaved);
     }
 
     if ((isPlaylistKind || isAlbumKind) && onQueueLikedTracks && request.provider) {
