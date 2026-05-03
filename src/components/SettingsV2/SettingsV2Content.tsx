@@ -21,6 +21,9 @@ const SourcesSection = lazy(() =>
 const AdvancedSection = lazy(() =>
   import('./sections/AdvancedSection').then((m) => ({ default: m.AdvancedSection })),
 );
+const AppearanceSection = lazy(() =>
+  import('./sections/AppearanceSection').then((m) => ({ default: m.AppearanceSection })),
+);
 
 interface SettingsV2ContentProps {
   activeSection: SettingsV2SectionId;
@@ -48,8 +51,8 @@ export const SettingsV2Content: React.FC<SettingsV2ContentProps> = ({ activeSect
 /**
  * Maps a section ID to the live-content component, or to a placeholder for
  * sections still scheduled for future phases. Phase 2 (#1450) ships
- * `sources` + `advanced`; `playback` (#1452) and `appearance` (#1451) keep
- * the placeholder treatment from phase 1.
+ * `sources` + `advanced`; phase 3 (#1451) ships `appearance`; `playback`
+ * (#1452) keeps the placeholder treatment from phase 1.
  */
 export const SettingsV2SectionBody: React.FC<{ activeSection: SettingsV2SectionId }> = ({ activeSection }) => {
   switch (activeSection) {
@@ -69,8 +72,15 @@ export const SettingsV2SectionBody: React.FC<{ activeSection: SettingsV2SectionI
         </Suspense>
       );
     }
+    case 'appearance': {
+      const section = SETTINGS_V2_SECTIONS.find((entry) => entry.id === activeSection) ?? SETTINGS_V2_SECTIONS[0];
+      return (
+        <Suspense fallback={<SectionTitle>{section.label}</SectionTitle>}>
+          <AppearanceSection />
+        </Suspense>
+      );
+    }
     case 'playback':
-    case 'appearance':
     default: {
       const section = SETTINGS_V2_SECTIONS.find((entry) => entry.id === activeSection) ?? SETTINGS_V2_SECTIONS[0];
       return (
