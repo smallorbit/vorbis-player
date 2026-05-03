@@ -329,10 +329,6 @@ export const spotifyPlayer = new SpotifyPlayerService();
 
 const WAIT_FOR_READY_POLL_MS = 200;
 
-/**
- * Polls until the Spotify Web Playback SDK reports ready and has a device ID.
- * Throws if the player does not become ready within `timeoutMs`.
- */
 export async function waitForSpotifyReady(timeoutMs = 10_000): Promise<void> {
   const start = Date.now();
   while (!spotifyPlayer.getIsReady() || !spotifyPlayer.getDeviceId()) {
