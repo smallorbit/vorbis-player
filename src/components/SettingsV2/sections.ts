@@ -26,7 +26,7 @@ export const SETTINGS_V2_SECTIONS: readonly SettingsV2SectionDescriptor[] = [
   {
     id: 'playback',
     label: 'Playback',
-    description: 'Crossfade, gapless playback, and queue behavior. Coming soon.',
+    description: 'Default volume and shuffle behaviour.',
   },
   {
     id: 'appearance',

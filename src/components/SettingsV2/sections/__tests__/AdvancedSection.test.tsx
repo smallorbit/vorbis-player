@@ -88,6 +88,11 @@ vi.mock('@/hooks/useQapEnabled', () => ({
   ]),
 }));
 
+const mockSetSettingsSection = vi.fn();
+vi.mock('@/hooks/useSettingsUrl', () => ({
+  useSettingsUrl: vi.fn(() => [null, mockSetSettingsSection]),
+}));
+
 import { AdvancedSection } from '../AdvancedSection';
 
 const Wrapper = ({ children }: { children: React.ReactNode }) => (
@@ -385,6 +390,110 @@ describe('SettingsV2 AdvancedSection', () => {
       // #then
       expect(screen.queryByText('Provider Data')).not.toBeInTheDocument();
       expect(screen.queryByText('Dropbox Data')).not.toBeInTheDocument();
+    });
+  });
+
+  describe('Settings v2 persistence toggle', () => {
+    const SETTINGS_V2_KEY = 'vorbis-player-settings-v2-enabled';
+
+    let originalLocation: Location;
+    let reloadSpy: ReturnType<typeof vi.fn>;
+
+    beforeEach(() => {
+      originalLocation = window.location;
+      reloadSpy = vi.fn();
+      Object.defineProperty(window, 'location', {
+        value: {
+          ...originalLocation,
+          search: '',
+          pathname: '/',
+          reload: reloadSpy,
+        },
+        writable: true,
+        configurable: true,
+      });
+    });
+
+    afterEach(() => {
+      Object.defineProperty(window, 'location', {
+        value: originalLocation,
+        writable: true,
+        configurable: true,
+      });
+    });
+
+    it('writes the persistence storage key as true when toggled on', () => {
+      // #given
+      render(
+        <Wrapper>
+          <AdvancedSection />
+        </Wrapper>,
+      );
+
+      // #when
+      const toggle = screen.getByLabelText('Keep Settings v2 enabled across sessions');
+      fireEvent.click(toggle);
+
+      // #then
+      expect(memoryStorage.get(SETTINGS_V2_KEY)).toBe('true');
+    });
+
+    it('reflects the persisted value on mount', () => {
+      // #given
+      memoryStorage.set(SETTINGS_V2_KEY, 'true');
+
+      // #when
+      render(
+        <Wrapper>
+          <AdvancedSection />
+        </Wrapper>,
+      );
+
+      // #then
+      expect(screen.getByLabelText('Keep Settings v2 enabled across sessions')).toHaveAttribute(
+        'data-state',
+        'checked',
+      );
+    });
+
+    it('clears the ?settings=* URL state and reloads when toggled off without ?ui=v2', () => {
+      // #given — toggle is currently on, URL has no ui=v2 fallback
+      memoryStorage.set(SETTINGS_V2_KEY, 'true');
+      window.location.search = '?settings=advanced';
+
+      render(
+        <Wrapper>
+          <AdvancedSection />
+        </Wrapper>,
+      );
+
+      // #when
+      fireEvent.click(screen.getByLabelText('Keep Settings v2 enabled across sessions'));
+
+      // #then
+      expect(memoryStorage.get(SETTINGS_V2_KEY)).toBe('false');
+      expect(mockSetSettingsSection).toHaveBeenCalledWith(null);
+      expect(reloadSpy).toHaveBeenCalledOnce();
+    });
+
+    it('does not reload when toggled off if ?ui=v2 still in URL', () => {
+      // #given — URL still carries ui=v2, so v2 stays mounted on next render
+      memoryStorage.set(SETTINGS_V2_KEY, 'true');
+      window.location.search = '?ui=v2&settings=advanced';
+
+      render(
+        <Wrapper>
+          <AdvancedSection />
+        </Wrapper>,
+      );
+
+      // #when
+      fireEvent.click(screen.getByLabelText('Keep Settings v2 enabled across sessions'));
+
+      // #then
+      expect(memoryStorage.get(SETTINGS_V2_KEY)).toBe('false');
+      expect(mockSetSettingsSection).toHaveBeenCalledWith(null);
+      expect(reloadSpy).not.toHaveBeenCalled();
     });
   });
 

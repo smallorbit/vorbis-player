@@ -4,6 +4,8 @@ import { useProviderContext } from '@/contexts/ProviderContext';
 import { useProfilingContext } from '@/contexts/ProfilingContext';
 import { useVisualizerDebug } from '@/contexts/VisualizerDebugContext';
 import { useQapEnabled } from '@/hooks/useQapEnabled';
+import { useLocalStorage } from '@/hooks/useLocalStorage';
+import { useSettingsUrl } from '@/hooks/useSettingsUrl';
 import { clearCacheWithOptions } from '@/services/cache/libraryCache';
 import { clearAllPins } from '@/services/settings/pinnedItemsStorage';
 import { STORAGE_KEYS } from '@/constants/storage';
@@ -53,6 +55,34 @@ export const AdvancedSection: React.FC = () => {
   const vizDebugCtx = useVisualizerDebug();
   const visualizerDebugEnabled = vizDebugCtx?.isDebugMode ?? false;
   const [qapEnabled, setQapEnabled] = useQapEnabled();
+  const [settingsV2Persisted, setSettingsV2Persisted] = useLocalStorage<boolean>(
+    STORAGE_KEYS.SETTINGS_V2_ENABLED,
+    false,
+  );
+  const [, setSettingsSection] = useSettingsUrl();
+
+  const handleSettingsV2PersistenceToggle = useCallback(
+    (checked: boolean) => {
+      setSettingsV2Persisted(checked);
+      if (!checked) {
+        // Toggle-off: clear ?settings=* so the URL doesn't keep deep-linking
+        // back into a v2 section the user has just opted out of.
+        setSettingsSection(null);
+
+        // If the URL no longer carries ?ui=v2 either, useUiV2() will resolve
+        // false on the next render and AudioPlayer.tsx will fork to the
+        // legacy panel. A reload guarantees a clean re-mount even if the
+        // user is mid-interaction.
+        if (typeof window !== 'undefined') {
+          const urlParams = new URLSearchParams(window.location.search);
+          if (urlParams.get('ui') !== 'v2') {
+            window.location.reload();
+          }
+        }
+      }
+    },
+    [setSettingsV2Persisted, setSettingsSection],
+  );
 
   const dataProviders = useMemo(() => {
     return registry.getAll().filter(
@@ -233,6 +263,30 @@ export const AdvancedSection: React.FC = () => {
           </ControlBlock>
         </>
       )}
+
+      <Divider />
+
+      <ControlBlock>
+        <SectionGroupTitle>Settings v2</SectionGroupTitle>
+        <ControlRow>
+          <div>
+            <ControlLabelText htmlFor="settings-v2-persistence-toggle">
+              Keep Settings v2 enabled across sessions
+            </ControlLabelText>
+            <ControlHelp>
+              Remember this UI without the <code>?ui=v2</code> URL flag. Turning this off
+              returns to the legacy settings panel.
+            </ControlHelp>
+          </div>
+          <Switch
+            id="settings-v2-persistence-toggle"
+            checked={settingsV2Persisted}
+            onCheckedChange={handleSettingsV2PersistenceToggle}
+            aria-label="Keep Settings v2 enabled across sessions"
+            variant="neutral"
+          />
+        </ControlRow>
+      </ControlBlock>
 
       <Divider />
 
