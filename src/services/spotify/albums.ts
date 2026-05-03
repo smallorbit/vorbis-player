@@ -12,12 +12,12 @@ import { ALBUM_ID_PREFIX } from '@/constants/playlist';
 // Shared Helpers
 // =============================================================================
 
-interface SavedAlbumItem {
+export interface SavedAlbumItem {
   added_at: string;
   album: SpotifyAlbum;
 }
 
-function transformSavedAlbumItem(item: SavedAlbumItem): AlbumInfo {
+export function transformSavedAlbumItem(item: SavedAlbumItem): AlbumInfo {
   const album = item.album;
   return {
     id: album.id ?? '',
