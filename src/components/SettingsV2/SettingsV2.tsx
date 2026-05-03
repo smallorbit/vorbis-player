@@ -73,6 +73,26 @@ export const SettingsV2: React.FC<SettingsV2Props> = ({ isOpen, onClose }) => {
     [closeShell],
   );
 
+  /**
+   * `AccentColorManager` portals `EyedropperOverlay` to `document.body` so
+   * the overlay can cover the entire viewport for pixel picking. That places
+   * the overlay outside this Dialog's content tree, so Radix's
+   * `DismissableLayer` would otherwise treat clicks on the eyedropper canvas
+   * as pointer-down-outside and dismiss the Dialog before the canvas `click`
+   * handler fires. The portaled overlay tags itself with
+   * `data-eyedropper-overlay="true"` (see `EyedropperOverlay.tsx`); when the
+   * dismiss event originates inside that subtree we keep the Dialog open.
+   *
+   * Mirrors the legacy guard in `PlayerContent/AlbumArtSection.tsx` which
+   * uses the same selector to keep the flip-menu open during eyedropper picks.
+   */
+  const preventDismissOnEyedropper = useCallback((event: Event) => {
+    const target = event.target as HTMLElement | null;
+    if (target?.closest?.('[data-eyedropper-overlay]')) {
+      event.preventDefault();
+    }
+  }, []);
+
   useEffect(() => {
     if (!uiV2) return;
     if (typeof window === 'undefined') return;
@@ -106,7 +126,13 @@ export const SettingsV2: React.FC<SettingsV2Props> = ({ isOpen, onClose }) => {
     <Dialog open={isOpen} onOpenChange={handleOpenChange}>
       <DialogPortal>
         {isMobile ? (
-          <DialogPrimitive.Content asChild aria-label="Settings" aria-describedby={undefined}>
+          <DialogPrimitive.Content
+            asChild
+            aria-label="Settings"
+            aria-describedby={undefined}
+            onPointerDownOutside={preventDismissOnEyedropper}
+            onInteractOutside={preventDismissOnEyedropper}
+          >
             <MobileTakeover data-testid="settings-v2-mobile">
               <VisuallyHiddenDialogTitle />
               <SettingsV2MobileTakeover
@@ -122,7 +148,13 @@ export const SettingsV2: React.FC<SettingsV2Props> = ({ isOpen, onClose }) => {
             <DialogOverlay asChild style={{ zIndex: 1404 }}>
               <Overlay aria-hidden="true" />
             </DialogOverlay>
-            <DialogPrimitive.Content asChild aria-label="Settings" aria-describedby={undefined}>
+            <DialogPrimitive.Content
+              asChild
+              aria-label="Settings"
+              aria-describedby={undefined}
+              onPointerDownOutside={preventDismissOnEyedropper}
+              onInteractOutside={preventDismissOnEyedropper}
+            >
               <DesktopShell data-testid="settings-v2-desktop">
                 <VisuallyHiddenDialogTitle />
                 <SettingsV2Sidebar activeSection={activeSection} onSelect={handleSelectSection} />
