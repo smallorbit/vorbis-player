@@ -20,6 +20,9 @@ import { SPOTIFY_POST_ACTION_DELAY_MS, SPOTIFY_RETRY_DELAY_MS, SPOTIFY_DEVICE_AC
 
 const SPOTIFY_PROVIDER_ID: ProviderId = 'spotify';
 
+const PLAYBACK_START_DELAY_MS = 1500;
+const PLAYBACK_RETRY_BASE_BACKOFF_MS = 2000;
+
 async function waitForSpotifyReady(timeout = 10000): Promise<void> {
   const start = Date.now();
   while (!spotifyPlayer.getIsReady() || !spotifyPlayer.getDeviceId()) {
@@ -164,7 +167,7 @@ export const useSpotifyPlaylistManager = ({
                 console.error('Failed to check/resume playback state:', error);
               }
             })();
-          }, 1500);
+          }, PLAYBACK_START_DELAY_MS);
 
           return true;
         } catch (error) {
@@ -185,7 +188,7 @@ export const useSpotifyPlaylistManager = ({
             }
 
             if (retryCount < maxRetries) {
-              const backoffMs = 2000 * Math.pow(2, retryCount);
+              const backoffMs = PLAYBACK_RETRY_BASE_BACKOFF_MS * Math.pow(2, retryCount);
               await spotifyPlayer.transferPlaybackToDevice(true);
               await new Promise(resolve => setTimeout(resolve, backoffMs));
               await spotifyPlayer.ensureDeviceIsActive(SPOTIFY_DEVICE_ACTIVATE_RETRIES, SPOTIFY_DEVICE_ACTIVATE_DELAY_MS);
@@ -213,7 +216,7 @@ export const useSpotifyPlaylistManager = ({
             console.error('Failed to start playback after all retries:', error);
           }
         })();
-      }, 1500);
+      }, PLAYBACK_START_DELAY_MS);
 
       logQueue('useSpotifyPlaylistManager — returning %d tracks, first="%s"', tracksToPlay.length, tracksToPlay[0]?.name ?? '');
       return tracksToPlay;

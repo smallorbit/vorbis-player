@@ -23,7 +23,8 @@ export function usePlaylistsSection(
       result = result.filter((p) => allowed.has((p.provider ?? 'spotify') as ProviderId));
     }
     if (excludePinned) {
-      result = result.filter((p) => !pinnedPlaylistIds.includes(p.id));
+      const pinnedSet = new Set(pinnedPlaylistIds);
+      result = result.filter((p) => !pinnedSet.has(p.id));
     }
     return result;
   }, [playlists, providerFilter, excludePinned, pinnedPlaylistIds]);

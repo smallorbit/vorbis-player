@@ -29,11 +29,11 @@ interface SwipeGestureReturn {
 const DIRECTION_LOCK_THRESHOLD = 10;
 const DAMPENING_FACTOR = 0.8;
 
-export const DEFAULT_SWIPE_THRESHOLD = 50;
-export const DEFAULT_VELOCITY_THRESHOLD = 0.3;
-export const DEFAULT_TAP_MAX_DURATION = 250;
-export const DEFAULT_TAP_MAX_DISTANCE = 10;
-export const DEFAULT_ANIMATION_DURATION = 300;
+const DEFAULT_SWIPE_THRESHOLD = 50;
+const DEFAULT_VELOCITY_THRESHOLD = 0.3;
+const DEFAULT_TAP_MAX_DURATION = 250;
+const DEFAULT_TAP_MAX_DISTANCE = 10;
+const DEFAULT_ANIMATION_DURATION = 300;
 
 const noopHandlers: SwipeGestureReturn = {
   offsetX: 0,

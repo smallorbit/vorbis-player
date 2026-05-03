@@ -30,11 +30,6 @@ export const LIBRARY_PLAYLIST_SORT_ANCHOR_IDS: ReadonlySet<string> = new Set([LI
 /** Album IDs that stay in catalog order and are not reordered by library sort. */
 export const LIBRARY_ALBUM_SORT_ANCHOR_IDS: ReadonlySet<string> = new Set();
 
-/** Returns true when the playlist info represents the Dropbox "All Music" aggregate row. */
-export function isAllMusicPlaylist(playlist: { id: string; provider?: string }): boolean {
-  return playlist.id === '' && playlist.provider === 'dropbox';
-}
-
 /** Check whether a playlist selection ID represents an album */
 export function isAlbumId(playlistId: string): boolean {
   return playlistId.startsWith(ALBUM_ID_PREFIX);
@@ -54,12 +49,12 @@ export function toAlbumPlaylistId(albumId: string): string {
 const SAVED_PLAYLIST_PREFIX = 'dbplaylist:';
 
 /** Check whether a playlist selection ID represents a saved Dropbox playlist */
-export function isSavedPlaylistId(playlistId: string): boolean {
+function isSavedPlaylistId(playlistId: string): boolean {
   return playlistId.startsWith(SAVED_PLAYLIST_PREFIX);
 }
 
 /** Extract the playlist file path from a saved playlist selection ID */
-export function extractPlaylistPath(playlistId: string): string {
+function extractPlaylistPath(playlistId: string): string {
   return playlistId.slice(SAVED_PLAYLIST_PREFIX.length);
 }
 
