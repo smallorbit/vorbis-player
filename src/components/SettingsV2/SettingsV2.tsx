@@ -15,7 +15,8 @@ import { Overlay, DesktopShell, MobileTakeover } from './styled';
 
 /**
  * `SETTINGS_V2_Z_INDEX = 1405` — sits above the player's `BottomBar`
- * (`theme.zIndex.modal = 1400`) and matches `dialog.tsx`'s `DIALOG_Z_INDEX`.
+ * (`theme.zIndex.modal = 1400`) and matches `dialog.tsx`'s `DIALOG_Z_INDEX`
+ * (intentionally identical — substitution should be clean when Dialog adoption lands).
  * The overlay renders one level below at `1404`.
  *
  * Inline at the component level mirrors the existing convention used by
@@ -24,7 +25,8 @@ import { Overlay, DesktopShell, MobileTakeover } from './styled';
  */
 export const SETTINGS_V2_Z_INDEX = 1405;
 
-const MOBILE_LIST_SENTINEL = 'open';
+/** Sentinel for "show the mobile list view". Uses `__list` (not a valid URL param value) to avoid colliding with `?settings=open` deep-links. */
+const MOBILE_LIST_VIEW = '__list';
 
 interface SettingsV2Props {
   isOpen: boolean;
@@ -76,7 +78,6 @@ export const SettingsV2: React.FC<SettingsV2Props> = ({ isOpen, onClose }) => {
 
     const handleKeyDown = (event: KeyboardEvent): void => {
       if (event.key === 'Escape') {
-        event.stopPropagation();
         closeShell();
       }
     };
@@ -116,7 +117,7 @@ export const SettingsV2: React.FC<SettingsV2Props> = ({ isOpen, onClose }) => {
     setSection(next);
   };
 
-  const mobileShowsList = !isSettingsV2SectionId(section);
+  const validSection = isSettingsV2SectionId(section) ? section : null;
 
   const shell = isMobile ? (
     <MobileTakeover
@@ -128,9 +129,9 @@ export const SettingsV2: React.FC<SettingsV2Props> = ({ isOpen, onClose }) => {
       data-testid="settings-v2-mobile"
     >
       <SettingsV2MobileTakeover
-        activeSection={mobileShowsList ? null : (section as SettingsV2SectionId)}
+        activeSection={validSection}
         onSelectSection={handleSelectSection}
-        onBackToList={() => setSection(MOBILE_LIST_SENTINEL)}
+        onBackToList={() => setSection(MOBILE_LIST_VIEW)}
         onClose={closeShell}
       />
     </MobileTakeover>

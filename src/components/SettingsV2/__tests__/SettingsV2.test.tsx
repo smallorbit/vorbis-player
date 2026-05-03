@@ -139,6 +139,29 @@ describe('SettingsV2', () => {
       const headings = screen.getAllByText('Advanced');
       expect(headings.length).toBeGreaterThan(0);
     });
+
+    it('renders the desktop shell with the default section when ?settings=open', () => {
+      // #given — 'open' is not a valid SettingsV2SectionId; it falls through to DEFAULT_SETTINGS_V2_SECTION ('sources')
+      setSearch('?settings=open');
+
+      // #when
+      render(
+        <Wrapper>
+          <SettingsV2 isOpen={true} onClose={vi.fn()} />
+        </Wrapper>,
+      );
+
+      // #then — shell renders and shows the default 'Sources' section (not a blank/broken state)
+      expect(screen.getByTestId('settings-v2-desktop')).toBeInTheDocument();
+      expect(screen.getAllByText('Sources').length).toBeGreaterThan(0);
+    });
+
+    // Shift+S open→close round-trip is NOT tested here — the toggle is wired upstream via
+    // useKeyboardShortcuts.ts (setShowVisualEffects(prev => !prev)) and belongs in a higher-level
+    // integration test or e2e spec, not in this component unit test.
+    //
+    // Container query behavior at max-width:700px cannot be asserted in jsdom.
+    // Defer to Playwright visual coverage.
   });
 
   describe('mobile takeover', () => {
@@ -194,9 +217,9 @@ describe('SettingsV2', () => {
 
   describe('close gestures', () => {
     it('clears URL state and calls onClose when Esc is pressed', () => {
-      // #given
+      // #given — open with a real section in the URL so closeShell has something to clear
       const onClose = vi.fn();
-      setSearch('?settings=playback');
+      setSearch('?settings=advanced');
       const pushStateSpy = vi.spyOn(window.history, 'pushState');
       render(
         <Wrapper>
@@ -204,16 +227,15 @@ describe('SettingsV2', () => {
         </Wrapper>,
       );
 
-      // #when
+      // #when — fire keydown WITHOUT pre-emptying the URL; closeShell must do the clearing
       act(() => {
-        setSearch('');
         fireEvent.keyDown(window, { key: 'Escape' });
       });
 
-      // #then
+      // #then — onClose called, and the most recent pushState produced a URL without settings=
       expect(onClose).toHaveBeenCalledTimes(1);
-      const lastCall = pushStateSpy.mock.calls[pushStateSpy.mock.calls.length - 1];
-      expect(String(lastCall?.[2] ?? '')).not.toContain('settings=');
+      const lastPush = pushStateSpy.mock.calls.at(-1)?.[2];
+      expect(String(lastPush ?? '')).not.toContain('settings=');
       pushStateSpy.mockRestore();
     });
 
@@ -269,6 +291,27 @@ describe('SettingsV2', () => {
 
       // #then
       expect(onClose).toHaveBeenCalled();
+    });
+
+    it('calls onClose exactly once when Esc is pressed — isSelfClosingRef prevents popstate echo', () => {
+      // #given — open with a section so closeShell will pushState (which triggers isSelfClosingRef guard)
+      const onClose = vi.fn();
+      setSearch('?settings=appearance');
+      render(
+        <Wrapper>
+          <SettingsV2 isOpen={true} onClose={onClose} />
+        </Wrapper>,
+      );
+
+      // #when — Esc fires closeShell; the resulting pushState must not echo back through popstate
+      act(() => {
+        fireEvent.keyDown(window, { key: 'Escape' });
+        // Simulate the browser echoing a popstate after pushState (isSelfClosingRef should absorb it)
+        window.dispatchEvent(new PopStateEvent('popstate'));
+      });
+
+      // #then — onClose called exactly once, not twice
+      expect(onClose).toHaveBeenCalledTimes(1);
     });
   });
 

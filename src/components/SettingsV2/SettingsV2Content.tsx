@@ -1,4 +1,5 @@
 import React from 'react';
+import { X } from 'lucide-react';
 import type { SettingsV2SectionId } from './sections';
 import { SETTINGS_V2_SECTIONS } from './sections';
 import {
@@ -24,7 +25,7 @@ export const SettingsV2Content: React.FC<SettingsV2ContentProps> = ({ activeSect
       <Header>
         <HeaderTitle id="settings-v2-section-title">{section.label}</HeaderTitle>
         <IconButton type="button" onClick={onClose} aria-label="Close settings">
-          <CloseIcon />
+          <X width={18} height={18} aria-hidden="true" />
         </IconButton>
       </Header>
       <ContentBody>
@@ -35,19 +36,3 @@ export const SettingsV2Content: React.FC<SettingsV2ContentProps> = ({ activeSect
   );
 };
 
-const CloseIcon: React.FC = () => (
-  <svg
-    width="18"
-    height="18"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    aria-hidden="true"
-  >
-    <line x1="18" y1="6" x2="6" y2="18" />
-    <line x1="6" y1="6" x2="18" y2="18" />
-  </svg>
-);
