@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useState } from 'react';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import type { ProviderId } from '@/types/domain';
+import { toggleInArray } from '@/utils/toggleInArray';
 
 export type LibraryKindFilter = 'playlist' | 'album';
 export type LibrarySort = 'recent' | 'name-asc' | 'name-desc';
@@ -45,20 +46,14 @@ export function useLibrarySearch(): LibrarySearchState {
 
   const toggleProvider = useCallback(
     (id: ProviderId) => {
-      setProviderFilter(
-        providerFilter.includes(id)
-          ? providerFilter.filter((p) => p !== id)
-          : [...providerFilter, id],
-      );
+      setProviderFilter(toggleInArray(providerFilter, id));
     },
     [providerFilter, setProviderFilter],
   );
 
   const toggleKind = useCallback(
     (kind: LibraryKindFilter) => {
-      setKindFilter(
-        kindFilter.includes(kind) ? kindFilter.filter((k) => k !== kind) : [...kindFilter, kind],
-      );
+      setKindFilter(toggleInArray(kindFilter, kind));
     },
     [kindFilter, setKindFilter],
   );
