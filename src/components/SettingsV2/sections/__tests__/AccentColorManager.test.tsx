@@ -85,14 +85,14 @@ describe('SettingsV2 AccentColorManager', () => {
     mockCustomAccentColors = {};
     mockCurrentTrack = {
       id: 't1',
+      provider: 'spotify',
+      playbackRef: { provider: 'spotify', ref: 'spotify:track:t1' },
       name: 'Test Track',
-      artist: 'Test Artist',
+      artists: 'Test Artist',
       album: 'Test Album',
       albumId: 'album-123',
-      duration_ms: 1000,
+      durationMs: 1000,
       image: 'https://example.com/image.jpg',
-      uri: 'spotify:track:t1',
-      provider: 'spotify',
     };
   });
 

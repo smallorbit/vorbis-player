@@ -22,15 +22,13 @@ import {
 /**
  * Mirrors the dual-key write contract used by
  * `PlayerContent/AlbumArtSection.handleCustomAccentColor` (writes BOTH
- * `ACCENT_COLOR_OVERRIDES` AND `CUSTOM_ACCENT_COLORS`) and
- * `handleAccentColorChange` (intercepts the `'RESET_TO_DEFAULT'` sentinel).
+ * `ACCENT_COLOR_OVERRIDES` AND `CUSTOM_ACCENT_COLORS`).
  *
  * The eyedropper picks must dual-write so the chrome's "custom" swatch
  * (`controls/QuickEffectsRow`) keeps rendering. Palette swatches single-write
  * to `ACCENT_COLOR_OVERRIDES` (matches legacy behaviour — palette clicks
  * never overwrite the eyedropper-picked custom swatch).
  */
-const RESET_SENTINEL = 'RESET_TO_DEFAULT' as const;
 
 export const AccentColorManager: React.FC = () => {
   const { currentTrack } = useCurrentTrackContext();
@@ -181,5 +179,4 @@ export const AccentColorManager: React.FC = () => {
 
 AccentColorManager.displayName = 'SettingsV2.AccentColorManager';
 
-export { RESET_SENTINEL };
 export default AccentColorManager;
