@@ -17,9 +17,13 @@ export interface SavedAlbumItem {
   album: SpotifyAlbum;
 }
 
-export function transformSavedAlbumItem(item: SavedAlbumItem): AlbumInfo {
+export function transformSavedAlbumItem(
+  item: SavedAlbumItem,
+  options: { withGenres?: boolean } = {},
+): AlbumInfo {
+  const { withGenres = true } = options;
   const album = item.album;
-  return {
+  const result: AlbumInfo = {
     id: album.id ?? '',
     name: album.name ?? 'Unknown Album',
     artists: formatArtists(album.artists),
@@ -29,8 +33,11 @@ export function transformSavedAlbumItem(item: SavedAlbumItem): AlbumInfo {
     uri: album.uri ?? '',
     album_type: album.album_type,
     added_at: item.added_at,
-    genres: album.genres,
   };
+  if (withGenres) {
+    result.genres = album.genres;
+  }
+  return result;
 }
 
 // =============================================================================
@@ -159,7 +166,7 @@ export async function getAlbumsPage(
     { signal }
   );
   return {
-    albums: (data.items ?? []).map(transformSavedAlbumItem),
+    albums: (data.items ?? []).map((item) => transformSavedAlbumItem(item)),
     total: data.total ?? 0,
     hasMore: data.next !== null,
   };

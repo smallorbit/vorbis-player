@@ -73,7 +73,7 @@ export async function getUserLibraryInterleaved(
           .then((data) => {
             const now = Date.now();
             for (const item of data.items ?? []) {
-              albumResults.push(transformSavedAlbumItem(item));
+              albumResults.push(transformSavedAlbumItem(item, { withGenres: false }));
               if (item.album.id) {
                 albumSavedCache.set(item.album.id, { value: true, timestamp: now });
               }
