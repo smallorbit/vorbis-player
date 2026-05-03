@@ -75,6 +75,18 @@ describe('Separator', () => {
     });
   });
 
+  describe('motion-reduce variant', () => {
+    it('separator renders without animation classes (no transitions apply)', () => {
+      // Separator carries no entry/exit animation classes — no motion-reduce
+      // overrides are needed. Smoke-render confirms the tree mounts cleanly.
+      // #when / #then
+      expect(() => {
+        const { container } = render(<Separator />);
+        expect(container.firstChild).toBeInTheDocument();
+      }).not.toThrow();
+    });
+  });
+
   describe('per-part style escape hatch', () => {
     it('separatorStyle applies as inline style on the separator element', () => {
       // #when

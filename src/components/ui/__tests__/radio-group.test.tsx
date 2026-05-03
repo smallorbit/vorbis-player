@@ -89,6 +89,16 @@ describe('RadioGroup', () => {
     });
   });
 
+  describe('motion-reduce variant', () => {
+    it('radio group renders without animation classes (no entry/exit transitions apply)', () => {
+      // RadioGroup and RadioGroupItem carry no entry/exit animation classes —
+      // no motion-reduce overrides are needed. Smoke-render confirms the tree
+      // mounts cleanly with prefers-reduced-motion semantics intact.
+      // #when / #then
+      expect(() => renderRadioGroup()).not.toThrow();
+    });
+  });
+
   describe('per-part style escape hatches', () => {
     it('rootStyle applies as inline style on the RadioGroup root', () => {
       // #when

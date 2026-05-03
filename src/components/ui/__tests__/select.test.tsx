@@ -153,7 +153,7 @@ describe('Select', () => {
       });
     });
 
-    it('contentStyle applies as inline style on the SelectContent listbox element', async () => {
+    it('contentStyle applies as inline style on the SelectContent element', async () => {
       // #given
       const user = userEvent.setup();
       render(
@@ -167,11 +167,13 @@ describe('Select', () => {
         </Select>,
       );
       await user.click(screen.getByRole('combobox'));
-      const listbox = screen.getByRole('listbox');
 
-      // contentStyle is spread onto SelectPrimitive.Content which renders as role="listbox"
+      // Radix SelectPrimitive.Content renders as [role="listbox"] — contentStyle
+      // is spread directly onto this element (not the Viewport child).
+      const content = screen.getByRole('listbox');
+
       // #then
-      expect(listbox).toHaveStyle({ minWidth: '300px' });
+      expect(content).toHaveStyle({ minWidth: '300px' });
     });
   });
 });

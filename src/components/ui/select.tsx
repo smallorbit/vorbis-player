@@ -18,6 +18,7 @@ const SelectGroup = SelectPrimitive.Group
 
 const SelectValue = SelectPrimitive.Value
 
+// Intentionally matches theme.zIndex.popover = 1500; same level as popover.tsx.
 const SELECT_Z_INDEX = 1500
 
 type SelectTriggerProps = React.ComponentPropsWithoutRef<typeof SelectPrimitive.Trigger> & {
@@ -89,7 +90,7 @@ const SelectContent = React.forwardRef<
     <SelectPrimitive.Content
       ref={ref}
       className={cn(
-        "relative z-50 max-h-96 min-w-[8rem] overflow-hidden rounded-md border bg-popover text-popover-foreground shadow-md",
+        "relative max-h-96 min-w-[8rem] overflow-hidden rounded-md border bg-popover text-popover-foreground shadow-md",
         "data-[state=open]:animate-in data-[state=closed]:animate-out",
         "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
         "data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
@@ -101,7 +102,7 @@ const SelectContent = React.forwardRef<
         className
       )}
       position={position}
-      style={{ zIndex: SELECT_Z_INDEX, ...contentStyle, ...style }}
+      style={{ ...contentStyle, zIndex: SELECT_Z_INDEX, ...style }}
       {...props}
     >
       <SelectScrollUpButton />
