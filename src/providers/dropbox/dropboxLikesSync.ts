@@ -13,6 +13,7 @@ import {
   setTombstones,
 } from './dropboxLikesCache';
 import { ensureVorbisFolder } from './dropboxSyncFolder';
+import { contentApiRequest } from './dropboxContentApiClient';
 import { logDropboxSync } from '@/lib/debugLog';
 
 export interface RemoteLikesFile {
@@ -26,6 +27,21 @@ const SYNC_FILE_PATH = '/.vorbis/likes.json';
 const TOMBSTONE_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 const UPLOAD_DEBOUNCE_MS = 2000;
 
+function entriesEqual<T extends { trackId: string }>(
+  a: T[],
+  b: T[],
+  valuesMatch: (a: T, b: T) => boolean,
+): boolean {
+  if (a.length !== b.length) return false;
+  const mapB = new Map<string, T>();
+  for (const entry of b) mapB.set(entry.trackId, entry);
+  for (const entryA of a) {
+    const entryB = mapB.get(entryA.trackId);
+    if (!entryB || !valuesMatch(entryA, entryB)) return false;
+  }
+  return true;
+}
+
 export class DropboxLikesSyncService {
   private auth: DropboxAuthAdapter;
   private pushTimer: ReturnType<typeof setTimeout> | null = null;
@@ -36,69 +52,29 @@ export class DropboxLikesSyncService {
   }
 
   private likesEqual(a: LikedEntry[], b: LikedEntry[]): boolean {
-    if (a.length !== b.length) return false;
-
-    const mapB = new Map<string, LikedEntry>();
-    for (const entry of b) {
-      mapB.set(entry.trackId, entry);
-    }
-
-    for (const entryA of a) {
-      const entryB = mapB.get(entryA.trackId);
-      if (!entryB) return false;
-      if (entryA.likedAt !== entryB.likedAt) return false;
-      // Track metadata can differ even when IDs match.
-      if (JSON.stringify(entryA.track) !== JSON.stringify(entryB.track)) return false;
-    }
-
-    return true;
+    return entriesEqual(a, b, (ea, eb) =>
+      ea.likedAt === eb.likedAt && JSON.stringify(ea.track) === JSON.stringify(eb.track),
+    );
   }
 
   private tombstonesEqual(a: Tombstone[], b: Tombstone[]): boolean {
-    if (a.length !== b.length) return false;
-
-    const mapB = new Map<string, number>();
-    for (const entry of b) {
-      mapB.set(entry.trackId, entry.deletedAt);
-    }
-
-    for (const entryA of a) {
-      const deletedAtB = mapB.get(entryA.trackId);
-      if (deletedAtB !== entryA.deletedAt) return false;
-    }
-
-    return true;
+    return entriesEqual(a, b, (ea, eb) => ea.deletedAt === eb.deletedAt);
   }
 
   async downloadLikesFile(): Promise<RemoteLikesFile | null> {
-    const token = await this.auth.ensureValidToken();
-    if (!token) return null;
-
     const apiArg = JSON.stringify({ path: SYNC_FILE_PATH });
 
-    let response = await fetch('https://content.dropboxapi.com/2/files/download', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Dropbox-API-Arg': apiArg,
-      },
-    });
-
-    if (response.status === 401) {
-      const refreshed = await this.auth.refreshAccessToken();
-      if (!refreshed) return null;
-      response = await fetch('https://content.dropboxapi.com/2/files/download', {
+    const response = await contentApiRequest(this.auth, (token) =>
+      fetch('https://content.dropboxapi.com/2/files/download', {
         method: 'POST',
         headers: {
-          Authorization: `Bearer ${refreshed}`,
+          Authorization: `Bearer ${token}`,
           'Dropbox-API-Arg': apiArg,
         },
-      });
-      if (response.status === 401) {
-        this.auth.reportUnauthorized();
-        return null;
-      }
-    }
+      }),
+    );
+
+    if (!response) return null;
 
     if (response.status === 409) {
       // path/not_found — file doesn't exist yet
@@ -124,9 +100,6 @@ export class DropboxLikesSyncService {
   }
 
   async uploadLikesFile(data: RemoteLikesFile): Promise<boolean> {
-    let token = await this.auth.ensureValidToken();
-    if (!token) return false;
-
     const folderReady = await ensureVorbisFolder(this.auth);
     if (!folderReady) return false;
 
@@ -137,7 +110,7 @@ export class DropboxLikesSyncService {
 
     const body = JSON.stringify(data);
 
-    const upload = (accessToken: string) =>
+    const response = await contentApiRequest(this.auth, (accessToken) =>
       fetch('https://content.dropboxapi.com/2/files/upload', {
         method: 'POST',
         headers: {
@@ -146,20 +119,10 @@ export class DropboxLikesSyncService {
           'Content-Type': 'application/octet-stream',
         },
         body,
-      });
+      }),
+    );
 
-    let response = await upload(token);
-
-    if (response.status === 401) {
-      const refreshed = await this.auth.refreshAccessToken();
-      if (!refreshed) return false;
-      token = refreshed;
-      response = await upload(token);
-      if (response.status === 401) {
-        this.auth.reportUnauthorized();
-        return false;
-      }
-    }
+    if (!response) return false;
 
     if (!response.ok) {
       const errText = await response.text();

@@ -4,6 +4,7 @@
  */
 
 import type { DropboxAuthAdapter } from './dropboxAuthAdapter';
+import { contentApiRequest } from './dropboxContentApiClient';
 
 const FOLDER_PATH = '/.vorbis';
 const RETRY_DELAY_MS = 1500;
@@ -14,32 +15,20 @@ let inflightPromise: Promise<boolean> | null = null;
 const MAX_RATE_LIMIT_RETRIES = 3;
 
 async function doEnsureFolder(auth: DropboxAuthAdapter): Promise<boolean> {
-  let token = await auth.ensureValidToken();
-  if (!token) return false;
-
-  const createFolder = (accessToken: string) =>
+  const createFolder = (token: string) =>
     fetch('https://api.dropboxapi.com/2/files/create_folder_v2', {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${accessToken}`,
+        Authorization: `Bearer ${token}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({ path: FOLDER_PATH, autorename: false }),
     });
 
   for (let attempt = 0; attempt <= MAX_RATE_LIMIT_RETRIES; attempt++) {
-    let response = await createFolder(token);
+    const response = await contentApiRequest(auth, createFolder);
 
-    if (response.status === 401) {
-      const refreshed = await auth.refreshAccessToken();
-      if (!refreshed) return false;
-      token = refreshed;
-      response = await createFolder(token);
-      if (response.status === 401) {
-        auth.reportUnauthorized();
-        return false;
-      }
-    }
+    if (!response) return false;
 
     if (response.status === 409) return true;
 
