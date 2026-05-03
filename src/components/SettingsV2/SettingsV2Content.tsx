@@ -53,18 +53,22 @@ export const SettingsV2Content: React.FC<SettingsV2ContentProps> = ({ activeSect
  */
 export const SettingsV2SectionBody: React.FC<{ activeSection: SettingsV2SectionId }> = ({ activeSection }) => {
   switch (activeSection) {
-    case 'sources':
+    case 'sources': {
+      const section = SETTINGS_V2_SECTIONS.find((entry) => entry.id === activeSection) ?? SETTINGS_V2_SECTIONS[0];
       return (
-        <Suspense fallback={null}>
+        <Suspense fallback={<SectionTitle>{section.label}</SectionTitle>}>
           <SourcesSection />
         </Suspense>
       );
-    case 'advanced':
+    }
+    case 'advanced': {
+      const section = SETTINGS_V2_SECTIONS.find((entry) => entry.id === activeSection) ?? SETTINGS_V2_SECTIONS[0];
       return (
-        <Suspense fallback={null}>
+        <Suspense fallback={<SectionTitle>{section.label}</SectionTitle>}>
           <AdvancedSection />
         </Suspense>
       );
+    }
     case 'playback':
     case 'appearance':
     default: {
