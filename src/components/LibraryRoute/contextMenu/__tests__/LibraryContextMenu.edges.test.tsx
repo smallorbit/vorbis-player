@@ -9,15 +9,20 @@
  *  - Remove-from-history with recentRef.kind='album' calls remove with album shape
  *  - Remove-from-history with recentRef.kind='liked' calls remove with liked shape
  *  - When no recentRef on a recently-played request, no Remove item is rendered
+ *  - closeAfter error handling: label + cause surfaced in toast
  */
 
 import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, act } from '@testing-library/react';
 import { ThemeProvider } from 'styled-components';
 import { theme } from '@/styles/theme';
 import type { ContextMenuRequest } from '../../types';
 import type { ProviderId } from '@/types/domain';
+import { createMenuActionError } from '../menuItemsForKind';
+
+const mockToast = vi.fn();
+vi.mock('sonner', () => ({ toast: (...args: unknown[]) => mockToast(...args) }));
 
 const { mockPinned, mockLikedSection, mockRecent, mockLoadLiked } = vi.hoisted(() => ({
   mockPinned: vi.fn(),
@@ -240,6 +245,81 @@ describe('LibraryContextMenu edges', () => {
       // #then
       expect(onReturnFocusClose).toHaveBeenCalled();
       expect(onClose).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('closeAfter structured error handling', () => {
+    // Tests use the liked-provider play path because playLikedFor is async and
+    // properly propagates loadLikedTracks rejections through closeAfter's .catch.
+    beforeEach(() => {
+      mockToast.mockClear();
+      mockLikedSection.mockReturnValue({
+        perProvider: [{ provider: 'spotify' as ProviderId, count: 10 }],
+      });
+    });
+
+    it('shows label + Error.message in toast when the action rejects with a plain Error', async () => {
+      // #given
+      mockLoadLiked.mockRejectedValue(new Error('network timeout'));
+
+      // #when
+      renderMenu({ request: makeRequest({ kind: 'liked', id: 'liked', provider: undefined }) });
+      await act(async () => {
+        fireEvent.click(screen.getByTestId('menu-play-liked-spotify'));
+      });
+
+      // #then — label is the per-provider entry label "Play (Spotify)"
+      expect(mockToast).toHaveBeenCalledWith(
+        "Couldn't play (spotify): network timeout. Try again.",
+      );
+    });
+
+    it('shows label without cause detail when the rejection is a non-Error non-string', async () => {
+      // #given
+      mockLoadLiked.mockRejectedValue({ code: 42 });
+
+      // #when
+      renderMenu({ request: makeRequest({ kind: 'liked', id: 'liked', provider: undefined }) });
+      await act(async () => {
+        fireEvent.click(screen.getByTestId('menu-play-liked-spotify'));
+      });
+
+      // #then
+      expect(mockToast).toHaveBeenCalledWith("Couldn't play (spotify). Try again.");
+    });
+
+    it('uses MenuActionError label and cause when the action throws createMenuActionError', async () => {
+      // #given — loadLikedTracks itself throws a structured error with a custom label
+      mockLoadLiked.mockRejectedValue(
+        createMenuActionError('Load Liked Tracks', new Error('quota exceeded')),
+      );
+
+      // #when
+      renderMenu({ request: makeRequest({ kind: 'liked', id: 'liked', provider: undefined }) });
+      await act(async () => {
+        fireEvent.click(screen.getByTestId('menu-play-liked-spotify'));
+      });
+
+      // #then — MenuActionError overrides both label and cause
+      expect(mockToast).toHaveBeenCalledWith(
+        "Couldn't load liked tracks: quota exceeded. Try again.",
+      );
+    });
+
+    it('surfaces a string rejection as the cause message in the toast', async () => {
+      // #given
+      mockLoadLiked.mockRejectedValue('service unavailable');
+
+      // #when
+      renderMenu({ request: makeRequest({ kind: 'liked', id: 'liked', provider: undefined }) });
+      await act(async () => {
+        fireEvent.click(screen.getByTestId('menu-play-liked-spotify'));
+      });
+
+      // #then
+      expect(mockToast).toHaveBeenCalledWith(
+        "Couldn't play (spotify): service unavailable. Try again.",
+      );
     });
   });
 });

@@ -12,6 +12,7 @@ import { useQueueLikedFromCollection } from './useQueueLikedFromCollection';
 import { toAlbumPlaylistId } from '@/constants/playlist';
 import {
   buildMenuItems,
+  isMenuActionError,
   type MenuActions,
   type MenuItem,
 } from './menuItemsForKind';
@@ -93,11 +94,22 @@ const LibraryContextMenu: React.FC<LibraryContextMenuProps> = ({
   );
 
   const closeAfter = useCallback(
-    (fn: () => void | Promise<unknown>): (() => void) =>
+    (label: string, fn: () => void | Promise<unknown>): (() => void) =>
       () => {
         onReturnFocusClose();
-        Promise.resolve(fn()).catch(() => {
-          toast("Couldn't complete that action. Try again.");
+        Promise.resolve(fn()).catch((err: unknown) => {
+          const actionLabel = isMenuActionError(err) ? err.label : label;
+          const cause = isMenuActionError(err) ? err.cause : err;
+          const causeMessage =
+            cause instanceof Error
+              ? cause.message
+              : typeof cause === 'string'
+                ? cause
+                : null;
+          const message = causeMessage
+            ? `Couldn't ${actionLabel.toLowerCase()}: ${causeMessage}. Try again.`
+            : `Couldn't ${actionLabel.toLowerCase()}. Try again.`;
+          toast(message);
         });
       },
     [onReturnFocusClose],
@@ -157,15 +169,18 @@ const LibraryContextMenu: React.FC<LibraryContextMenuProps> = ({
     };
 
     const likedProviderActions = isLikedKind
-      ? perProvider.map((entry) => ({
-          provider: entry.provider,
-          label: `Play (${providerLabel(entry.provider)})`,
-          onPlay: closeAfter(() => playLikedFor(entry.provider)),
-        }))
+      ? perProvider.map((entry) => {
+          const entryLabel = `Play (${providerLabel(entry.provider)})`;
+          return {
+            provider: entry.provider,
+            label: entryLabel,
+            onPlay: closeAfter(entryLabel, () => playLikedFor(entry.provider)),
+          };
+        })
       : undefined;
 
     const actions: MenuActions = {
-      onPlay: closeAfter(() => {
+      onPlay: closeAfter('Play', () => {
         if (isLikedKind) {
           // "Play All" routes through the library's own liked-handler via the parent.
           const inferred = perProvider[0]?.provider;
@@ -176,20 +191,20 @@ const LibraryContextMenu: React.FC<LibraryContextMenuProps> = ({
           onPlayCollection(effectiveKind, request.id, request.name, request.provider);
         }
       }),
-      onAddToQueue: closeAfter(() => {
+      onAddToQueue: closeAfter('Add to Queue', () => {
         if (onAddToQueue) {
           const id = isAlbumKind ? toAlbumPlaylistId(request.id) : request.id;
           onAddToQueue(id, request.name, request.provider);
         }
       }),
-      onPlayNext: closeAfter(() => {
+      onPlayNext: closeAfter('Play Next', () => {
         if (onPlayNext && (isPlaylistKind || isAlbumKind)) {
           const id = isAlbumKind ? toAlbumPlaylistId(request.id) : request.id;
           onPlayNext(effectiveKind, id, request.name, request.provider);
         }
       }),
-      onTogglePin: closeAfter(togglePin),
-      onStartRadio: closeAfter(() => {
+      onTogglePin: closeAfter(isPinned ? 'Unpin' : 'Pin', togglePin),
+      onStartRadio: closeAfter('Start Radio', () => {
         if (onStartRadioForCollection && (isPlaylistKind || isAlbumKind)) {
           onStartRadioForCollection(effectiveKind, request.id, request.provider);
         }
@@ -201,21 +216,21 @@ const LibraryContextMenu: React.FC<LibraryContextMenuProps> = ({
     };
 
     if (isAlbumKind && canToggleSaved && isSaved !== null) {
-      actions.onToggleSave = closeAfter(toggleSaved);
+      actions.onToggleSave = closeAfter(isSaved ? 'Unlike' : 'Like', toggleSaved);
     }
 
     if ((isPlaylistKind || isAlbumKind) && onQueueLikedTracks && request.provider) {
       const collectionId = request.id;
       const collectionName = request.name;
       const provider = request.provider;
-      actions.onQueueLikedFromCollection = closeAfter(() =>
+      actions.onQueueLikedFromCollection = closeAfter('Queue Liked Songs', () =>
         queueLikedFromCollection(collectionId, collectionName, provider, effectiveKind),
       );
     }
 
     if (request.kind === 'recently-played' && request.recentRef) {
       const recentRef = request.recentRef;
-      actions.onRemoveFromHistory = closeAfter(() => removeRecent(recentRef));
+      actions.onRemoveFromHistory = closeAfter('Remove from history', () => removeRecent(recentRef));
     }
 
     return buildMenuItems(request, actions);

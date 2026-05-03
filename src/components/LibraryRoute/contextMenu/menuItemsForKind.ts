@@ -1,6 +1,24 @@
 import type { ProviderId } from '@/types/domain';
 import type { ContextMenuRequest } from '../types';
 
+export interface MenuActionError {
+  readonly type: 'menu-action-error';
+  readonly label: string;
+  readonly cause: unknown;
+}
+
+export function isMenuActionError(err: unknown): err is MenuActionError {
+  return (
+    typeof err === 'object' &&
+    err !== null &&
+    (err as Record<string, unknown>)['type'] === 'menu-action-error'
+  );
+}
+
+export function createMenuActionError(label: string, cause: unknown): MenuActionError {
+  return { type: 'menu-action-error', label, cause };
+}
+
 export interface MenuItem {
   id: string;
   label: string;

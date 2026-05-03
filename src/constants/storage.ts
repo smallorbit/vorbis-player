@@ -57,6 +57,9 @@ export const STORAGE_KEYS = {
   LIBRARY: 'vorbis-player-library',
   SETTINGS: 'vorbis-player-settings',
 
+  // Settings v2 — persistence graduation (#1452)
+  SETTINGS_V2_ENABLED: 'vorbis-player-settings-v2-enabled',
+
   // Debug and development
   PROFILING: 'vorbis-player-profiling',
   DEBUG_OVERLAY: 'vorbis-player-debug-overlay',

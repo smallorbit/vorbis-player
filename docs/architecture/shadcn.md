@@ -49,6 +49,11 @@ Convention for flagged screens:
 | `Toast` (Sonner) | `sonner.tsx` | `<Toaster />` mounted at app root in `App.tsx`. `RadioProgressContent` rendered via `toast.custom()`. |
 | `Popover` | `popover.tsx` | Used by `TrackInfoPopover` via virtual-anchor pattern (zero-size fixed div positioned at `anchorRect` coordinates) so consumer call sites stay unchanged. |
 | `Accordion` | `accordion.tsx` | Used by `AppSettingsMenu` — each section is its own `Accordion.Root` with `type="single" collapsible` to preserve independent open state. Tailwind keyframes `accordion-down` / `accordion-up` (200ms ease) defined in `tailwind.config.ts`. |
+| `Tabs` | `tabs.tsx` | Per-part escape hatches: `listStyle` → `TabsList`, `triggerStyle` → `TabsTrigger`, `contentStyle` → `TabsContent`. |
+| `RadioGroup` | `radio-group.tsx` | Per-part escape hatches: `rootStyle` → `RadioGroup` root, `itemStyle` → `RadioGroupItem` button, `indicatorStyle` → indicator wrapper. |
+| `Select` | `select.tsx` | Per-part escape hatches: `triggerStyle` → `SelectTrigger`, `contentStyle` → `SelectContent` panel, `itemStyle` → `SelectItem` row. z-index 1500 (matches `theme.zIndex.popover`). |
+| `ScrollArea` | `scroll-area.tsx` | Per-part escape hatches: `viewportStyle` → viewport, `scrollbarStyle` → scrollbar track, `thumbStyle` → scrollbar thumb. |
+| `Separator` | `separator.tsx` | Per-part escape hatch: `separatorStyle` → separator element. |
 
 **Next-wave primitives** (tracked as on-hold epics; need decomposition via `/speckit:interview`): #1265 (FilterSidebar — shadcn wave 3), #1262 (Settings v2), #1263 (Cmd-K palette), #1264 (Onboarding v2).
 
