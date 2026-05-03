@@ -9,27 +9,19 @@
 
 import { useCallback } from 'react';
 import { getPlaylistTracks, getAlbumTracks, getLikedSongs, spotifyAuth, getLargestImage } from '@/services/spotify';
-import { spotifyPlayer } from '@/services/spotifyPlayer';
+import { spotifyPlayer, waitForSpotifyReady } from '@/services/spotifyPlayer';
 import { AuthExpiredError } from '@/providers/errors';
 import { isAlbumId, extractAlbumId, LIKED_SONGS_ID } from '@/constants/playlist';
 import { shuffleArray } from '@/utils/shuffleArray';
 import type { ProviderId, MediaTrack } from '@/types/domain';
 import type { TrackOperations } from '@/types/trackOperations';
 import { logQueue } from '@/lib/debugLog';
-import { SPOTIFY_POST_ACTION_DELAY_MS, SPOTIFY_RETRY_DELAY_MS, SPOTIFY_DEVICE_ACTIVATE_RETRIES, SPOTIFY_DEVICE_ACTIVATE_DELAY_MS } from '@/constants/timing';
+import { SPOTIFY_RETRY_DELAY_MS, SPOTIFY_DEVICE_ACTIVATE_RETRIES, SPOTIFY_DEVICE_ACTIVATE_DELAY_MS } from '@/constants/timing';
 
 const SPOTIFY_PROVIDER_ID: ProviderId = 'spotify';
 
 const PLAYBACK_START_DELAY_MS = 1500;
 const PLAYBACK_RETRY_BASE_BACKOFF_MS = 2000;
-
-async function waitForSpotifyReady(timeout = 10000): Promise<void> {
-  const start = Date.now();
-  while (!spotifyPlayer.getIsReady() || !spotifyPlayer.getDeviceId()) {
-    if (Date.now() - start > timeout) throw new Error('Spotify player not ready after waiting');
-    await new Promise(res => setTimeout(res, SPOTIFY_POST_ACTION_DELAY_MS));
-  }
-}
 
 function buildTracksFromWindow(state: SpotifyPlaybackState): MediaTrack[] {
   const tracks: MediaTrack[] = [];

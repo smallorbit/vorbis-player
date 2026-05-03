@@ -14,6 +14,7 @@ vi.mock('@/services/spotifyPlayer', () => ({
     getCurrentState: vi.fn().mockResolvedValue(null),
     resume: vi.fn().mockResolvedValue(undefined),
   },
+  waitForSpotifyReady: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock('@/services/spotify', () => ({

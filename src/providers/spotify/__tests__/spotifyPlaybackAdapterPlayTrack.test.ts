@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { SpotifyPlaybackAdapter } from '@/providers/spotify/spotifyPlaybackAdapter';
-import { spotifyPlayer } from '@/services/spotifyPlayer';
+import { spotifyPlayer, waitForSpotifyReady } from '@/services/spotifyPlayer';
 import type { MediaTrack } from '@/types/domain';
 
 vi.mock('@/services/spotifyPlayer', () => ({
@@ -15,6 +15,7 @@ vi.mock('@/services/spotifyPlayer', () => ({
     waitForPlaybackOrResume: vi.fn(),
     onPlayerStateChanged: vi.fn().mockReturnValue(() => {}),
   },
+  waitForSpotifyReady: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock('@/services/spotify', () => ({
@@ -46,6 +47,7 @@ describe('SpotifyPlaybackAdapter.playTrack', () => {
     vi.mocked(spotifyPlayer.ensureDeviceIsActive).mockResolvedValue(true);
     vi.mocked(spotifyPlayer.playTrack).mockResolvedValue(undefined);
     vi.mocked(spotifyPlayer.getCurrentState).mockResolvedValue(null);
+    vi.mocked(waitForSpotifyReady).mockResolvedValue(undefined);
     fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 204 }));
     vi.stubGlobal('fetch', fetchMock);
     adapter = new SpotifyPlaybackAdapter();
