@@ -31,6 +31,10 @@ export const Overlay = styled.div`
   &[data-state='open'] {
     opacity: 1;
   }
+
+  &[data-state='closed'] {
+    pointer-events: none;
+  }
 `;
 
 export const DesktopShell = styled.div`
@@ -62,6 +66,10 @@ export const DesktopShell = styled.div`
     opacity: 1;
   }
 
+  &[data-state='closed'] {
+    pointer-events: none;
+  }
+
   &:focus {
     outline: none;
   }
@@ -86,6 +94,10 @@ export const MobileTakeover = styled.div`
 
   &[data-state='open'] {
     transform: translateX(0);
+  }
+
+  &[data-state='closed'] {
+    pointer-events: none;
   }
 
   &:focus {
