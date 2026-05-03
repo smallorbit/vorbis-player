@@ -154,8 +154,8 @@ export const ResetButton = styled.button`
   margin-top: ${({ theme }) => theme.spacing.lg};
 
   &:hover {
-    background: color-mix(in srgb, var(--accent-color) 13%, transparent);
-    border-color: color-mix(in srgb, var(--accent-color) 27%, transparent);
+    background: hsl(var(--muted));
+    border-color: hsl(var(--ring));
     color: ${({ theme }) => theme.colors.foreground};
     transform: translateY(-1px);
   }
@@ -219,8 +219,8 @@ export const CacheCheckbox = styled.input`
   transition: all ${({ theme }) => theme.transitions.fast};
 
   &:checked {
-    background: var(--accent-color);
-    border-color: var(--accent-color);
+    background: hsl(var(--primary));
+    border-color: hsl(var(--primary));
   }
 
   &:checked::after {
@@ -271,9 +271,9 @@ export const CacheCancelButton = styled.button`
 `;
 
 export const OptionButton = styled.button<{ $isActive: boolean }>`
-  background: ${({ $isActive, theme }) => $isActive ? 'var(--accent-color)' : theme.colors.muted.background};
-  border: 1px solid ${({ $isActive, theme }) => $isActive ? 'var(--accent-color)' : theme.colors.border};
-  color: ${({ $isActive, theme }) => $isActive ? 'var(--accent-contrast-color)' : theme.colors.muted.foreground};
+  background: ${({ $isActive, theme }) => $isActive ? 'hsl(var(--primary))' : theme.colors.muted.background};
+  border: 1px solid ${({ $isActive, theme }) => $isActive ? 'hsl(var(--primary))' : theme.colors.border};
+  color: ${({ $isActive, theme }) => $isActive ? 'hsl(var(--primary-foreground))' : theme.colors.muted.foreground};
   padding: 0.375rem 0.75rem;
   border-radius: ${({ theme }) => theme.borderRadius.sm};
   cursor: pointer;
@@ -283,9 +283,9 @@ export const OptionButton = styled.button<{ $isActive: boolean }>`
   min-width: 60px;
 
   &:hover {
-    background: ${({ $isActive }) => $isActive ? 'color-mix(in srgb, var(--accent-color) 87%, transparent)' : 'color-mix(in srgb, var(--accent-color) 13%, transparent)'};
-    border-color: var(--accent-color);
-    color: ${({ $isActive, theme }) => $isActive ? 'var(--accent-contrast-color)' : theme.colors.white};
+    background: ${({ $isActive }) => $isActive ? 'hsl(var(--primary) / 0.87)' : 'hsl(var(--muted))'};
+    border-color: hsl(var(--ring));
+    color: ${({ $isActive, theme }) => $isActive ? 'hsl(var(--primary-foreground))' : theme.colors.white};
     transform: translateY(-1px);
   }
 `;
