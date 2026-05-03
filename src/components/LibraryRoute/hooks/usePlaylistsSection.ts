@@ -3,12 +3,9 @@ import { useLibrarySync } from '@/hooks/useLibrarySync';
 import { usePinnedItems } from '@/hooks/usePinnedItems';
 import type { CachedPlaylistInfo } from '@/services/cache/cacheTypes';
 import type { ProviderId } from '@/types/domain';
-import type { SectionState } from '../types';
+import type { SectionState, UseCollectionSectionParams } from '../types';
 
-export interface UsePlaylistsSectionParams {
-  providerFilter?: ProviderId[];
-  excludePinned?: boolean;
-}
+export type UsePlaylistsSectionParams = UseCollectionSectionParams;
 
 export function usePlaylistsSection(
   { providerFilter, excludePinned = true }: UsePlaylistsSectionParams = {},

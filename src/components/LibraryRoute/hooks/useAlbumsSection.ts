@@ -3,12 +3,9 @@ import { useLibrarySync } from '@/hooks/useLibrarySync';
 import { usePinnedItems } from '@/hooks/usePinnedItems';
 import type { AlbumInfo } from '@/services/spotify';
 import type { ProviderId } from '@/types/domain';
-import type { SectionState } from '../types';
+import type { SectionState, UseCollectionSectionParams } from '../types';
 
-export interface UseAlbumsSectionParams {
-  providerFilter?: ProviderId[];
-  excludePinned?: boolean;
-}
+export type UseAlbumsSectionParams = UseCollectionSectionParams;
 
 export function useAlbumsSection(
   { providerFilter, excludePinned = true }: UseAlbumsSectionParams = {},

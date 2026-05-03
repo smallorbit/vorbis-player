@@ -4,6 +4,11 @@ import type { MediaTrack, ProviderId } from '@/types/domain';
 import type { RecentlyPlayedEntry } from '@/hooks/useRecentlyPlayedCollections';
 import type { SessionSnapshot } from '@/services/sessionPersistence';
 
+export interface UseCollectionSectionParams {
+  providerFilter?: ProviderId[];
+  excludePinned?: boolean;
+}
+
 export interface SectionState<T> {
   items: T[];
   isLoading: boolean;
