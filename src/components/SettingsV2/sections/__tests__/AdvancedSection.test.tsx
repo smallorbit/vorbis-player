@@ -495,6 +495,23 @@ describe('SettingsV2 AdvancedSection', () => {
       expect(mockSetSettingsSection).toHaveBeenCalledWith(null);
       expect(reloadSpy).not.toHaveBeenCalled();
     });
+
+    it('never touches the dormant legacy settings key', () => {
+      // #given
+      render(
+        <Wrapper>
+          <AdvancedSection />
+        </Wrapper>,
+      );
+      const toggle = screen.getByLabelText('Keep Settings v2 enabled across sessions');
+
+      // #when — toggle on then off
+      fireEvent.click(toggle);
+      fireEvent.click(toggle);
+
+      // #then — the dormant 'vorbis-player-settings' key must remain untouched
+      expect(memoryStorage.get(STORAGE_KEYS.SETTINGS)).toBeUndefined();
+    });
   });
 
   describe('About section', () => {
