@@ -1,4 +1,4 @@
-import React, { memo, useCallback } from 'react';
+import React, { memo } from 'react';
 import { useCurrentTrackContext } from '@/contexts/TrackContext';
 import MiniArt from './MiniArt';
 import MiniControls from './MiniControls';
@@ -35,10 +35,6 @@ const MiniPlayer: React.FC<MiniPlayerProps> = ({
 }) => {
   const { currentTrack } = useCurrentTrackContext();
 
-  const handleExpand = useCallback(() => {
-    onExpand();
-  }, [onExpand]);
-
   if (!currentTrack) return null;
 
   const trackName = currentTrack.name ?? '';
@@ -51,7 +47,7 @@ const MiniPlayer: React.FC<MiniPlayerProps> = ({
         type="button"
         aria-label={`Expand player — ${trackName}`}
         data-testid="mini-expand"
-        onClick={handleExpand}
+        onClick={onExpand}
       >
         <MiniArt imageUrl={artUrl} alt={trackName || 'Now playing'} isPlaying={isPlaying} />
         <TextStack>
