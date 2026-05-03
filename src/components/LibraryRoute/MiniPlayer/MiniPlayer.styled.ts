@@ -1,10 +1,8 @@
 import styled, { css, keyframes } from 'styled-components';
 import { theme } from '@/styles/theme';
 
-export const MINI_PLAYER_HEIGHT_MOBILE = 64;
-export const MINI_PLAYER_HEIGHT_DESKTOP = 72;
-const HEIGHT_MOBILE = MINI_PLAYER_HEIGHT_MOBILE;
-const HEIGHT_DESKTOP = MINI_PLAYER_HEIGHT_DESKTOP;
+const HEIGHT_MOBILE = 64;
+const HEIGHT_DESKTOP = 72;
 
 export const MiniPlayerRoot = styled.div`
   position: sticky;
