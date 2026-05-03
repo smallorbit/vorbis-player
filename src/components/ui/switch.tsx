@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils"
 //   Player-chrome surfaces (QuickEffectsRow glow/visualizer/translucence).
 //
 // variant="neutral": checked track = shadcn --primary (near-white, static).
-//   Settings-panel toggles (SourcesSections, LibraryProviderBar, ProviderSetupScreen).
+//   Settings-panel toggles (SourcesSections, ProviderSetupScreen).
 //
 // trackStyle / thumbStyle: escape hatches for dimensions or one-off overrides.
 //   For checked-state colour overrides use className="data-[state=checked]:bg-[...]"

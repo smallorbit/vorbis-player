@@ -35,7 +35,7 @@ async function parsePlayError(response: Response): Promise<string> {
  */
 let shuffleOffFired = false;
 
-export async function apiSetShuffleOff(deviceId: string): Promise<void> {
+async function apiSetShuffleOff(deviceId: string): Promise<void> {
   if (shuffleOffFired) return;
   shuffleOffFired = true;
   try {
