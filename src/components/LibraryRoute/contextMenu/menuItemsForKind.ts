@@ -24,8 +24,8 @@ export interface MenuActions {
   playNextDisabled?: boolean;
 }
 
-function buildPlaylistItems(actions: MenuActions): MenuItem[] {
-  const items: MenuItem[] = [
+function buildCommonItems(actions: MenuActions): MenuItem[] {
+  return [
     { id: 'play', label: 'Play', onSelect: actions.onPlay },
     { id: 'add-to-queue', label: 'Add to Queue', onSelect: actions.onAddToQueue },
     {
@@ -39,13 +39,17 @@ function buildPlaylistItems(actions: MenuActions): MenuItem[] {
       label: actions.isPinned ? 'Unpin' : 'Pin',
       onSelect: actions.onTogglePin,
     },
-    {
-      id: 'start-radio',
-      label: 'Start Radio',
-      onSelect: actions.onStartRadio,
-      disabled: actions.startRadioDisabled === true,
-    },
   ];
+}
+
+function buildPlaylistItems(actions: MenuActions): MenuItem[] {
+  const items = buildCommonItems(actions);
+  items.push({
+    id: 'start-radio',
+    label: 'Start Radio',
+    onSelect: actions.onStartRadio,
+    disabled: actions.startRadioDisabled === true,
+  });
   if (actions.onQueueLikedFromCollection) {
     items.push({
       id: 'queue-liked',
@@ -57,21 +61,7 @@ function buildPlaylistItems(actions: MenuActions): MenuItem[] {
 }
 
 function buildAlbumItems(actions: MenuActions): MenuItem[] {
-  const items: MenuItem[] = [
-    { id: 'play', label: 'Play', onSelect: actions.onPlay },
-    { id: 'add-to-queue', label: 'Add to Queue', onSelect: actions.onAddToQueue },
-    {
-      id: 'play-next',
-      label: 'Play Next',
-      onSelect: actions.onPlayNext,
-      disabled: actions.playNextDisabled === true,
-    },
-    {
-      id: 'toggle-pin',
-      label: actions.isPinned ? 'Unpin' : 'Pin',
-      onSelect: actions.onTogglePin,
-    },
-  ];
+  const items = buildCommonItems(actions);
   if (actions.onToggleSave) {
     // Library only surfaces albums the user has already liked, so the toggle is
     // always Unlike. If the menu is reused in a non-library context (e.g. search
