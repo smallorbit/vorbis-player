@@ -60,6 +60,7 @@ function createMockAuth(token = 'test-token') {
     logout: vi.fn(),
     ensureValidToken: vi.fn().mockResolvedValue(token),
     refreshAccessToken: vi.fn().mockResolvedValue(token),
+    reportUnauthorized: vi.fn(),
   };
 }
 

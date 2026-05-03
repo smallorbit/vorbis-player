@@ -1,9 +1,17 @@
 import type { DropboxAuthAdapter } from './dropboxAuthAdapter';
 
 /**
- * Executes a content-API (or any Dropbox-facing) request with one automatic
- * token refresh on 401.  A second consecutive 401 calls reportUnauthorized and
- * returns null, signalling the caller to abort.
+ * Executes a Dropbox API request with one automatic token refresh on 401.
+ *
+ * Returns null (telling the caller to abort) in three distinct cases:
+ *   1. `ensureValidToken()` returns null — initial auth missing; `requestFn` is never invoked.
+ *   2. Initial 401 + `refreshAccessToken()` returns null — refresh failed; `reportUnauthorized` is **not** called
+ *      (a failed refresh is treated the same as a missing initial token).
+ *   3. Initial 401, refresh succeeds, retry returns 401 — `reportUnauthorized()` is invoked before returning null.
+ *
+ * Any non-401 response (including other 4xx/5xx, 409 path errors, 429 rate limits) is
+ * returned as-is for the caller to handle. Used for both `content.dropboxapi.com`
+ * uploads/downloads and `api.dropboxapi.com` metadata calls.
  *
  * @param auth        - Auth adapter supplying and refreshing tokens.
  * @param requestFn   - Factory that receives an access token and returns a fetch Promise.
