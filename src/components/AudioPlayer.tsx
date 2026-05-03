@@ -22,7 +22,8 @@ import {
 import { PlayerSizingProvider } from '@/contexts/PlayerSizingContext';
 import { useTrackListContext, useCurrentTrackContext } from '@/contexts/TrackContext';
 import { useProviderContext } from '@/contexts/ProviderContext';
-import { toAlbumPlaylistId } from '@/constants/playlist';
+import { toAlbumPlaylistId, LIKED_SONGS_ID } from '@/constants/playlist';
+import { keyToCollectionRef } from '@/types/domain';
 import { STORAGE_KEYS } from '@/constants/storage';
 import type { ClearCacheOptions } from '@/components/AppSettingsMenu';
 import { useSessionPersistence } from '@/hooks/useSessionPersistence';
@@ -393,7 +394,20 @@ const AudioPlayerComponent = () => {
     if (!playlistParam) return;
     autoSelectFired.current = true;
     window.history.replaceState({}, '', '/');
-    handlers.loadCollection(playlistParam);
+
+    // Structured `provider:kind:id` keys let the mock catalog resolve by snapshot id
+    // instead of falling through to the Spotify SDK; raw IDs work for legacy links.
+    const ref = keyToCollectionRef(playlistParam);
+    if (ref) {
+      const playlistId = ref.kind === 'liked'
+        ? LIKED_SONGS_ID
+        : ref.kind === 'album'
+          ? toAlbumPlaylistId(ref.id)
+          : ref.id;
+      handlers.loadCollection(playlistId, ref.provider);
+    } else {
+      handlers.loadCollection(playlistParam);
+    }
   }, [needsSetup, selectedPlaylistId, handlers]);
 
   const isMainPlayerActive = !state.isLoading && !state.error && selectedPlaylistId !== null && tracks.length > 0;

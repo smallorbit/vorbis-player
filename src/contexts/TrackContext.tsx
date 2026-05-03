@@ -5,6 +5,7 @@ import { isProfilingEnabled } from '@/contexts/ProfilingContext';
 import { shuffleArray } from '@/utils/shuffleArray';
 import { logQueue } from '@/lib/debugLog';
 import { STORAGE_KEYS } from '@/constants/storage';
+import { shouldUseMockProvider } from '@/providers/mock/shouldUseMockProvider';
 
 // --- TrackListContext ---
 
@@ -139,6 +140,30 @@ export function TrackProvider({ children }: { children: React.ReactNode }) {
     currentProfilingRef.current += 1;
     console.debug(`[Profiling] CurrentTrackContext update #${currentProfilingRef.current}`);
   }, [currentTrackValue]);
+
+  useEffect(() => {
+    if (!shouldUseMockProvider()) return;
+
+    const handleSetQueue = (e: Event) => {
+      const tracks = (e as CustomEvent<MediaTrack[]>).detail;
+      setTracks(tracks);
+      setOriginalTracks(tracks);
+      setCurrentTrackIndex(0);
+    };
+
+    const handleReset = () => {
+      setTracks([]);
+      setOriginalTracks([]);
+      setCurrentTrackIndex(0);
+    };
+
+    window.addEventListener('mock:set-queue', handleSetQueue);
+    window.addEventListener('mock:reset', handleReset);
+    return () => {
+      window.removeEventListener('mock:set-queue', handleSetQueue);
+      window.removeEventListener('mock:reset', handleReset);
+    };
+  }, [setTracks, setOriginalTracks, setCurrentTrackIndex]);
 
   return (
     <TrackListContext.Provider value={trackListValue}>

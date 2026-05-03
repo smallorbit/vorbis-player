@@ -10,7 +10,7 @@
  * - Vendor bundle separation (React, Radix UI, styled-components)
  * - CSS code splitting for faster initial loads
  * - Asset inlining for small files (<4KB)
- * - ES2020 target for modern browser features
+ * - ES2022 target for modern browser features (top-level await, etc.)
  * 
  * @chunk-strategy
  * - vendor: React and React DOM
@@ -59,7 +59,7 @@ export default defineConfig({
     chunkSizeWarningLimit: 1000,
     cssCodeSplit: true,
     minify: 'esbuild',
-    target: 'es2020',
+    target: 'es2022',
     sourcemap: false,
     assetsInlineLimit: 4096
   },

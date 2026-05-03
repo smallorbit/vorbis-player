@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "spotify": {
+    "enabled": true,
+    "playlistIds": [
+      "4RcYjhQzIoZd7FNDXrpepm",
+      "7HIiroe0F45MjYBODkrEsb",
+      "4cBVWHYHy0o962NbKfqu98",
+      "1ZIQBuNgpXxQ2Orlb8yKz2",
+      "4DfBYhWJOUbEvVhzOrv7u4",
+      "1UQ617b2vZWhw5NkUlBe50",
+      "1nv9JKEknsqTXFsHcrA9Fy"
+    ],
+    "albumIds": [
+      "62bvGtckemXfkTyTs0sFbi",
+      "1KNUCVXgIxKUGiuEB8eG0i",
+      "5vkqYmiPBYLaalcmjujWxK",
+      "3C2MFZ2iHotUQOSBzdSvM7",
+      "0wNjC8d3ve2L2yaomEWUsa",
+      "1jMTPWTHJhsZev04IbmyCC"
+    ],
+    "likedTracks": { "limit": 5 },
+    "playlistTrackLimit": 8,
+    "pins": { "playlistIds": [], "albumIds": [] }
+  },
+  "dropbox": {
+    "enabled": true,
+    "folderPaths": [],
+    "trackLimitPerFolder": 30,
+    "savedPlaylistPaths": [],
+    "likesFilePath": "/.vorbis-player/likes.json",
+    "likedTracks": { "limit": 25 },
+    "pins": { "playlistIds": [], "albumIds": [] }
+  }
+}

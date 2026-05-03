@@ -53,6 +53,40 @@ Defined in `src/types/providers.ts` and `src/types/domain.ts`.
 
 ## Provider implementation details
 
+### Mock provider (dev/test only)
+
+`src/providers/mock/` — a drop-in replacement for Spotify and Dropbox used by Playwright tests and visual-capture runs. Never included in production builds.
+
+**Activation**
+
+- Build-time env var: `VITE_MOCK_PROVIDER=true` (sets the Vite build flag; the entire module is tree-shaken when the var is absent or `false`)
+- Runtime URL param: `?provider=mock` (overrides at page load without a rebuild)
+
+**Catalog**
+
+Served from committed JSON snapshots:
+
+- `playwright/fixtures/data/spotify-snapshot.json`
+- `playwright/fixtures/data/dropbox-snapshot.json`
+
+Both files are validated against the `ProviderSnapshot` schema (`playwright/fixtures/data/snapshot.types.ts`) at module load. Regenerate with `npm run snapshot:spotify` / `npm run snapshot:dropbox` (requires a real authenticated session; see README.md § Curating fixtures).
+
+**Playback**
+
+HTML5 `<audio>` element driven by `MockPlaybackAdapter` — no Spotify Web Playback SDK. Bundled audio clips in `src/providers/mock/audioMapping.ts` stand in for real tracks so capture tests produce consistent waveforms without network calls.
+
+**Auth**
+
+`MockAuthAdapter` returns a pre-authenticated session immediately; no OAuth popup. The provider is auto-connected on page load when the mock is active.
+
+**Test-control surface**
+
+`src/providers/mock/test-control.ts` exposes `window.__mockTest` for Playwright scripts to drive playback state (skip, seek, force-error) without UI interaction.
+
+**Pin seeding**
+
+`pinSeeder.ts` pre-populates pinned playlists from the snapshot on first load so the Library view is populated without user interaction.
+
 ### Dropbox folder structure
 
 ```
