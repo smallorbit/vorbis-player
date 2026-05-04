@@ -292,8 +292,7 @@ export const AdvancedSection: React.FC = () => {
 
       <ControlBlock>
         <SectionGroupTitle>About</SectionGroupTitle>
-        {/* TODO(#1462): surface app version once a build-time constant is wired */}
-        <ControlHelp>Vorbis Player — keyboard-first music player.</ControlHelp>
+        <ControlHelp>Vorbis Player {__APP_VERSION__} — keyboard-first music player.</ControlHelp>
         <ShortcutHintList>
           <ShortcutHintRow>
             <span>Show keyboard shortcuts</span>
