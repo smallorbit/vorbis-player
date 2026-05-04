@@ -135,7 +135,7 @@ export const useProviderPlayback = ({
         setTimeout(() => playTrack(index + 1, skipOnError), SKIP_ON_ERROR_DELAY_MS);
       }
     }
-  }, [setCurrentTrackIndex, pausePreviousProvider, resolveTrackProvider, onAuthExpired, expectedTrackIdRef]);
+  }, [setCurrentTrackIndex, pausePreviousProvider, resolveTrackProvider, onAuthExpired, expectedTrackIdRef, mediaTracksRef]);
 
   const resumePlayback = useCallback(async () => {
     const currentProvider = currentPlaybackProviderRef.current;

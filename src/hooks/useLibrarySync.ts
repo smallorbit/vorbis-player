@@ -139,7 +139,14 @@ export function useLibrarySync(): UseLibrarySyncResult {
   const catalogDataRef = useRef<Map<ProviderId, { playlists: CachedPlaylistInfo[]; albums: AlbumInfo[]; likedCount: number; allMusicCount: number }>>(new Map());
 
   const isEngineProviderEnabled = !!engineProviderId && enabledProviderIds.includes(engineProviderId);
-  const catalogProviderIds = enabledProviderIds.filter(id => id !== engineProviderId);
+  const catalogProviderIdsKey = useMemo(
+    () => enabledProviderIds.filter(id => id !== engineProviderId).sort().join(','),
+    [enabledProviderIds, engineProviderId],
+  );
+  const catalogProviderIds = useMemo(
+    () => (catalogProviderIdsKey ? catalogProviderIdsKey.split(',') as ProviderId[] : []),
+    [catalogProviderIdsKey],
+  );
 
   const mergeAndSetData = useCallback(() => {
     const allPlaylists: CachedPlaylistInfo[] = [];
@@ -281,7 +288,7 @@ export function useLibrarySync(): UseLibrarySyncResult {
       cancelled = true;
       controller.abort();
     };
-  }, [[...catalogProviderIds].sort().join(','), getDescriptor, mergeAndSetData]);
+  }, [catalogProviderIds, getDescriptor, mergeAndSetData]);
 
   useEffect(() => {
     const cleanups: Array<() => void> = [];
@@ -308,7 +315,7 @@ export function useLibrarySync(): UseLibrarySyncResult {
       cleanups.push(() => window.removeEventListener(eventName, handleLikesChanged));
     }
     return () => cleanups.forEach(cleanup => cleanup());
-  }, [[...catalogProviderIds].sort().join(','), getDescriptor, mergeAndSetData]);
+  }, [catalogProviderIds, getDescriptor, mergeAndSetData]);
 
   const refreshNow = useCallback(async (scopeProviderId?: ProviderId) => {
     if (!scopeProviderId || scopeProviderId === engineProviderId) {

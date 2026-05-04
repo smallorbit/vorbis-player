@@ -130,7 +130,7 @@ export function useQueueManagement({
         return null;
       }
     },
-    [tracks.length, loadCollection, activeDescriptor, getDescriptor, setTracks, setOriginalTracks]
+    [tracks.length, loadCollection, activeDescriptor, getDescriptor, setTracks, setOriginalTracks, mediaTracksRef]
   );
 
   const handleRemoveFromQueue = useCallback(
@@ -161,7 +161,7 @@ export function useQueueManagement({
 
       logQueue('handleRemoveFromQueue — done, new queueLen=%d', tracks.length - 1);
     },
-    [tracks, currentTrackIndex, handleBackToLibrary, setTracks, setOriginalTracks, setCurrentTrackIndex]
+    [tracks, currentTrackIndex, handleBackToLibrary, setTracks, setOriginalTracks, setCurrentTrackIndex, mediaTracksRef]
   );
 
   const handleReorderQueue = useCallback(
@@ -202,7 +202,7 @@ export function useQueueManagement({
 
       logQueue('handleReorderQueue — done, currentIndex=%d', newCurrentIndex);
     },
-    [tracks, currentTrackIndex, shuffleEnabled, setTracks, setOriginalTracks, setCurrentTrackIndex]
+    [tracks, currentTrackIndex, shuffleEnabled, setTracks, setOriginalTracks, setCurrentTrackIndex, mediaTracksRef]
   );
 
   const queueTracksDirectly = useCallback(

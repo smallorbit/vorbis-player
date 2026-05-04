@@ -156,5 +156,5 @@ export const useAutoAdvance = ({
     }
 
     return () => unsubscribes.forEach((unsub) => unsub());
-  }, [enabled, tracks.length, endThreshold, activeDescriptor, activeProviderId]);
+  }, [enabled, tracks.length, endThreshold, activeDescriptor, activeProviderId, drivingProviderRef]);
 };
