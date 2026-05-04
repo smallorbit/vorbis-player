@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import styled, { keyframes } from 'styled-components';
 import AudioPlayerComponent from './components/AudioPlayer';
 import { spotifyAuth } from './services/spotify';
-import { shouldUseMockProvider } from './providers/mock/shouldUseMockProvider';
 import { ThemeProvider } from './styles/ThemeProvider';
 import { flexCenter, buttonPrimary } from './styles/utils';
 import { AuthCallbackPage } from './components/AuthCallbackPage';
@@ -169,8 +168,12 @@ function App() {
             <RetryButton
               onClick={() => {
                 setAuthError(null);
-                if (shouldUseMockProvider()) return;
-                spotifyAuth.redirectToAuth();
+                const spotifyDescriptor = providerRegistry.get('spotify');
+                if (spotifyDescriptor) {
+                  spotifyDescriptor.auth.beginLogin().catch((err) => {
+                    setAuthError(err instanceof Error ? err.message : 'Failed to start login.');
+                  });
+                }
               }}
             >
               Try Again

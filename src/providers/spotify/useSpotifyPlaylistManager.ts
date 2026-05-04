@@ -16,7 +16,6 @@ import { shuffleArray } from '@/utils/shuffleArray';
 import type { ProviderId, MediaTrack } from '@/types/domain';
 import type { TrackOperations } from '@/types/trackOperations';
 import { logQueue } from '@/lib/debugLog';
-import { shouldUseMockProvider } from '@/providers/mock/shouldUseMockProvider';
 import { SPOTIFY_RETRY_DELAY_MS, SPOTIFY_DEVICE_ACTIVATE_RETRIES, SPOTIFY_DEVICE_ACTIVATE_DELAY_MS } from '@/constants/timing';
 
 const SPOTIFY_PROVIDER_ID: ProviderId = 'spotify';
@@ -72,15 +71,6 @@ export const useSpotifyPlaylistManager = ({
 
   const handlePlaylistSelect = useCallback(async (playlistId: string): Promise<MediaTrack[]> => {
     logQueue('useSpotifyPlaylistManager.handlePlaylistSelect — playlistId=%s, shuffle=%s', playlistId, String(shuffleEnabled));
-
-    // The mock provider replaces the spotify descriptor at the registry level,
-    // but this hook still calls real Spotify SDK/API helpers directly. Short-
-    // circuit when the mock is active so capture/Playwright runs never hit
-    // accounts.spotify.com or the Web Playback SDK.
-    if (shouldUseMockProvider()) {
-      logQueue('useSpotifyPlaylistManager — mock provider active, skipping real Spotify path');
-      return [];
-    }
 
     try {
       setError(null);
