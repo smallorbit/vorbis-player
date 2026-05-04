@@ -156,5 +156,6 @@ export const useAutoAdvance = ({
     }
 
     return () => unsubscribes.forEach((unsub) => unsub());
+    // drivingProviderRef included for exhaustive-deps; ref identity is stable so it does not cause extra re-subscriptions.
   }, [enabled, tracks.length, endThreshold, activeDescriptor, activeProviderId, drivingProviderRef]);
 };
