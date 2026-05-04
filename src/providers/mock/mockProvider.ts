@@ -8,6 +8,7 @@ import { MockPlaybackAdapter } from './mockPlaybackAdapter';
 import { seedPinsFromSnapshots } from './pinSeeder';
 import { shouldUseMockProvider } from './shouldUseMockProvider';
 import { installMockTestApi } from './test-control';
+import { seedMockSession } from './mockSessionSeed';
 import { assertProviderSnapshot } from '../../../playwright/fixtures/data/snapshot.types';
 import spotifySnapshotJson from '../../../playwright/fixtures/data/spotify-snapshot.json' with { type: 'json' };
 import dropboxSnapshotJson from '../../../playwright/fixtures/data/dropbox-snapshot.json' with { type: 'json' };
@@ -77,6 +78,8 @@ const dropboxDescriptor: ProviderDescriptor = {
 // Spotify/Dropbox descriptors survive in dev unless the user has actually
 // opted in (VITE_MOCK_PROVIDER=true or ?provider=mock).
 if (shouldUseMockProvider()) {
+  seedMockSession();
+
   providerRegistry.register(spotifyDescriptor);
   providerRegistry.register(dropboxDescriptor);
 
