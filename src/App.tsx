@@ -26,26 +26,8 @@ import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { STORAGE_KEYS } from '@/constants/storage';
 import { Toaster } from '@/components/ui/sonner';
 
-/**
- * Cleanup function to remove deprecated localStorage keys
- * 
- * This function removes the old 'customAccentColorOverrides' key from localStorage
- * as part of the migration to unified accent color state management in usePlayerState.
- * 
- * @function cleanupDeprecatedLocalStorage
- * @returns {void}
- * 
- * @throws {Error} If localStorage access fails
- * 
- * @example
- * ```typescript
- * // Called on app initialization
- * cleanupDeprecatedLocalStorage();
- * ```
- */
 const cleanupDeprecatedLocalStorage = () => {
   try {
-    // Remove the deprecated customAccentColorOverrides key
     localStorage.removeItem('customAccentColorOverrides');
     logApp('cleaned up deprecated localStorage key: customAccentColorOverrides');
   } catch (error) {
