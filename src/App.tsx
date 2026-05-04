@@ -168,6 +168,13 @@ function App() {
             <RetryButton
               onClick={() => {
                 setAuthError(null);
+                // This branch renders before <ProviderProvider>, so we read the registry
+                // directly. The Spotify descriptor is available here because
+                // ProviderContext.tsx has a top-level `import '@/providers/spotify/spotifyProvider'`
+                // that self-registers at module evaluation; under mock mode, main.tsx awaits
+                // the mock import before createRoot, so the mock descriptor (whose auth.beginLogin
+                // is a no-op) overwrites it. The defensive `?.` guard surfaces a future regression
+                // if that import side-effect is ever removed or made lazy.
                 const spotifyDescriptor = providerRegistry.get('spotify');
                 if (spotifyDescriptor) {
                   spotifyDescriptor.auth.beginLogin().catch((err) => {
