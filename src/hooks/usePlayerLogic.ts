@@ -207,7 +207,21 @@ export function usePlayerLogic() {
   // user-initiated "Up Next" open is instant. Fires once per session.
   useQueueBundlePrefetch(isPlaying);
 
-  const handleNext = useCallback(() => {
+  // Skip-while-paused is almost always "play this instead", not "queue and stay
+  // paused" — match Spotify/Apple Music by auto-resuming after a manual skip,
+  // even when playTrack's adapter call lands during a transition that would
+  // otherwise leave the driving provider in its prior paused state.
+  const ensurePlaybackResumed = useCallback(async () => {
+    const drivingDescriptor = getDrivingProviderDescriptor();
+    if (!drivingDescriptor) return;
+    try {
+      await drivingDescriptor.playback.resume();
+    } catch {
+      // Autoplay policy or network errors are handled by the playback adapter
+    }
+  }, [getDrivingProviderDescriptor]);
+
+  const handleNext = useCallback(async () => {
     if (tracks.length === 0) return;
     const nextIndex = (currentTrackIndexRef.current + 1) % tracks.length;
     logQueue(
@@ -219,10 +233,11 @@ export function usePlayerLogic() {
       mediaTracksRef.current.length,
     );
     setCurrentTrackIndex(nextIndex);
-    playTrack(nextIndex, true);
-  }, [tracks.length, playTrack, setCurrentTrackIndex]);
+    await playTrack(nextIndex, true);
+    await ensurePlaybackResumed();
+  }, [tracks.length, playTrack, setCurrentTrackIndex, ensurePlaybackResumed]);
 
-  const handlePrevious = useCallback(() => {
+  const handlePrevious = useCallback(async () => {
     if (tracks.length === 0) return;
     const newIndex = currentTrackIndexRef.current === 0 ? tracks.length - 1 : currentTrackIndexRef.current - 1;
     logQueue(
@@ -234,8 +249,9 @@ export function usePlayerLogic() {
       mediaTracksRef.current.length,
     );
     setCurrentTrackIndex(newIndex);
-    playTrack(newIndex, true);
-  }, [tracks.length, playTrack, setCurrentTrackIndex]);
+    await playTrack(newIndex, true);
+    await ensurePlaybackResumed();
+  }, [tracks.length, playTrack, setCurrentTrackIndex, ensurePlaybackResumed]);
 
   const handlePlay = useCallback(async () => {
     const pending = hydratedPendingPlayRef.current;
