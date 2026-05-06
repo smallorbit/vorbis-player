@@ -1,0 +1,10 @@
+language: typescript
+ignore_all_files_in_gitignore: true
+ignored_paths:
+  - dist
+  - dist-electron
+  - node_modules
+  - playwright/capture/output
+  - public/playwright-fixtures/art
+  - "*.snapshot.json"
+read_only: false
