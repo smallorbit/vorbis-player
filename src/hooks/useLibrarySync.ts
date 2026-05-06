@@ -8,6 +8,7 @@ import { librarySyncEngine } from '@/services/cache/librarySyncEngine';
 import { logLibrary } from '@/lib/debugLog';
 import { getOrSetFirstSeenAddedAtIso } from '@/utils/libraryFirstSeen';
 import { readLikedCountSnapshots, writeLikedCountSnapshot } from '@/services/cache/likedCountSnapshot';
+import { useStableSet } from '@/hooks/useStableSet';
 
 export const ART_REFRESHED_EVENT = 'vorbis-art-refreshed';
 export const LIBRARY_REFRESH_EVENT = 'vorbis-library-refresh';
@@ -139,7 +140,11 @@ export function useLibrarySync(): UseLibrarySyncResult {
   const catalogDataRef = useRef<Map<ProviderId, { playlists: CachedPlaylistInfo[]; albums: AlbumInfo[]; likedCount: number; allMusicCount: number }>>(new Map());
 
   const isEngineProviderEnabled = !!engineProviderId && enabledProviderIds.includes(engineProviderId);
-  const catalogProviderIds = enabledProviderIds.filter(id => id !== engineProviderId);
+  // Stabilize catalogProviderIds so downstream effects don't re-fire when the
+  // parent renders with a new array reference for the same logical set.
+  const catalogProviderIds = useStableSet(
+    enabledProviderIds.filter((id) => id !== engineProviderId),
+  );
 
   const mergeAndSetData = useCallback(() => {
     const allPlaylists: CachedPlaylistInfo[] = [];
@@ -281,7 +286,7 @@ export function useLibrarySync(): UseLibrarySyncResult {
       cancelled = true;
       controller.abort();
     };
-  }, [[...catalogProviderIds].sort().join(','), getDescriptor, mergeAndSetData]);
+  }, [catalogProviderIds, getDescriptor, mergeAndSetData]);
 
   useEffect(() => {
     const cleanups: Array<() => void> = [];
@@ -308,7 +313,7 @@ export function useLibrarySync(): UseLibrarySyncResult {
       cleanups.push(() => window.removeEventListener(eventName, handleLikesChanged));
     }
     return () => cleanups.forEach(cleanup => cleanup());
-  }, [[...catalogProviderIds].sort().join(','), getDescriptor, mergeAndSetData]);
+  }, [catalogProviderIds, getDescriptor, mergeAndSetData]);
 
   const refreshNow = useCallback(async (scopeProviderId?: ProviderId) => {
     if (!scopeProviderId || scopeProviderId === engineProviderId) {

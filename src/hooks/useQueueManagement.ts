@@ -130,7 +130,8 @@ export function useQueueManagement({
         return null;
       }
     },
-    [tracks.length, loadCollection, activeDescriptor, getDescriptor, setTracks, setOriginalTracks]
+    // mediaTracksRef included for exhaustive-deps; ref identity is stable so it does not cause callback re-creation.
+    [tracks.length, loadCollection, activeDescriptor, getDescriptor, setTracks, setOriginalTracks, mediaTracksRef]
   );
 
   const handleRemoveFromQueue = useCallback(
@@ -161,7 +162,8 @@ export function useQueueManagement({
 
       logQueue('handleRemoveFromQueue — done, new queueLen=%d', tracks.length - 1);
     },
-    [tracks, currentTrackIndex, handleBackToLibrary, setTracks, setOriginalTracks, setCurrentTrackIndex]
+    // mediaTracksRef included for exhaustive-deps; ref identity is stable so it does not cause callback re-creation.
+    [tracks, currentTrackIndex, handleBackToLibrary, setTracks, setOriginalTracks, setCurrentTrackIndex, mediaTracksRef]
   );
 
   const handleReorderQueue = useCallback(
@@ -202,7 +204,8 @@ export function useQueueManagement({
 
       logQueue('handleReorderQueue — done, currentIndex=%d', newCurrentIndex);
     },
-    [tracks, currentTrackIndex, shuffleEnabled, setTracks, setOriginalTracks, setCurrentTrackIndex]
+    // mediaTracksRef included for exhaustive-deps; ref identity is stable so it does not cause callback re-creation.
+    [tracks, currentTrackIndex, shuffleEnabled, setTracks, setOriginalTracks, setCurrentTrackIndex, mediaTracksRef]
   );
 
   const queueTracksDirectly = useCallback(
