@@ -284,4 +284,86 @@ describe.each([
     expect(playTrackSpy).not.toHaveBeenCalled();
     expect(descriptor.playback.resume).not.toHaveBeenCalled();
   });
+
+  it('handleNext still advances when descriptor.playback.resume rejects', async () => {
+    // #given — paused player; resume rejects with an autoplay-policy-style error
+    const result = await setupPausedQueue(0);
+    descriptor.playback.resume.mockRejectedValueOnce(new Error('autoplay-blocked'));
+
+    // #when — handleNext awaits resume, but the rejection is swallowed by
+    // ensurePlaybackResumed's try/catch and must not bubble out of handleNext.
+    let thrown: unknown = null;
+    await act(async () => {
+      try {
+        await result.current.handlers.handleNext();
+      } catch (e) {
+        thrown = e;
+      }
+    });
+
+    // #then — handleNext resolved cleanly, the index advanced, and playTrack
+    // was invoked exactly once for the next slot
+    expect(thrown).toBeNull();
+    expect(playTrackSpy).toHaveBeenCalledTimes(1);
+    expect(playTrackSpy.mock.calls[0][0]).toBe(1);
+  });
+
+  it('handleNext invokes resume *after* playTrack (preserves ordering)', async () => {
+    // #given — paused player at index 0
+    const result = await setupPausedQueue(0);
+
+    // #when
+    await act(async () => {
+      await result.current.handlers.handleNext();
+    });
+
+    // #then — vitest's invocationCallOrder is a monotonically-increasing global
+    // counter across every vi.fn() call, so a strictly-greater order proves
+    // resume() landed AFTER playTrack(). This guards against a future
+    // optimisation that races resume ahead of playTrack and leaves the
+    // adapter pointed at the prior track.
+    expect(playTrackSpy).toHaveBeenCalledTimes(1);
+    expect(descriptor.playback.resume).toHaveBeenCalledTimes(1);
+    const playTrackOrder = playTrackSpy.mock.invocationCallOrder[0];
+    const resumeOrder = descriptor.playback.resume.mock.invocationCallOrder[0];
+    expect(resumeOrder).toBeGreaterThan(playTrackOrder);
+  });
+
+  it('handleNext invokes resume even when already playing (race-guard)', async () => {
+    // #given — paused queue, then a subscription event raises isPlaying to true
+    // before the user-initiated skip lands
+    const result = await setupPausedQueue(0);
+
+    expect(descriptor.playback.subscribe).toHaveBeenCalled();
+    const subscribeCall = descriptor.playback.subscribe.mock.calls[0];
+    const stateCallback = subscribeCall?.[0] as
+      | ((state: { isPlaying: boolean; positionMs: number; durationMs: number; currentTrackId: string; currentPlaybackRef: { provider: string; ref: string } }) => void)
+      | undefined;
+    expect(typeof stateCallback).toBe('function');
+
+    await act(async () => {
+      stateCallback?.({
+        isPlaying: true,
+        positionMs: 1000,
+        durationMs: 60_000,
+        currentTrackId: 'track-a',
+        currentPlaybackRef: { provider: descriptor.id, ref: `${descriptor.id}:track:track-a` },
+      });
+    });
+
+    expect(result.current.state.isPlaying).toBe(true);
+
+    // #when
+    await act(async () => {
+      await result.current.handlers.handleNext();
+    });
+
+    // #then — resume must still be called exactly once, even though we entered
+    // handleNext with isPlaying=true. A future "if (!isPlaying) resume()"
+    // optimisation would silently regress this and leave the new track stuck
+    // in the prior track's resumed-at-position state on adapters that don't
+    // auto-fire resume from playTrack.
+    expect(playTrackSpy).toHaveBeenCalledTimes(1);
+    expect(descriptor.playback.resume).toHaveBeenCalledTimes(1);
+  });
 });
