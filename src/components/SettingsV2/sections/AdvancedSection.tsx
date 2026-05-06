@@ -292,7 +292,7 @@ export const AdvancedSection: React.FC = () => {
 
       <ControlBlock>
         <SectionGroupTitle>About</SectionGroupTitle>
-        <ControlHelp>Vorbis Player {__APP_VERSION__} — keyboard-first music player.</ControlHelp>
+        <ControlHelp>{`Vorbis Player${__APP_VERSION__ !== '0.0.0' ? ` ${__APP_VERSION__}` : ''} — keyboard-first music player.`}</ControlHelp>
         <ShortcutHintList>
           <ShortcutHintRow>
             <span>Show keyboard shortcuts</span>
