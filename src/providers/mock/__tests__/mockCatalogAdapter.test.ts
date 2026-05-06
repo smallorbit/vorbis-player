@@ -79,21 +79,15 @@ describe('MockCatalogAdapter (spotify)', () => {
 
   // #given a snapshot with 1 playlist, 1 album, 2 liked tracks
   // #when listCollections is called
-  // #then returns liked + playlist + album in the right count
-  it('listCollections returns liked + playlist + album', async () => {
+  // #then returns playlist + album only — Liked Songs is exposed via getLikedCount,
+  //  matching the real Spotify catalog's listCollections shape
+  it('listCollections returns playlist + album', async () => {
     const collections = await adapter.listCollections();
     const kinds = collections.map(c => c.kind);
-    expect(kinds).toContain('liked');
     expect(kinds).toContain('playlist');
     expect(kinds).toContain('album');
-    expect(collections).toHaveLength(3);
-  });
-
-  it('listCollections omits liked when likedTrackIds is empty', async () => {
-    const snapshot = makeSnapshot({ likedTrackIds: [] });
-    const emptyAdapter = new MockCatalogAdapter(snapshot);
-    const collections = await emptyAdapter.listCollections();
-    expect(collections.find(c => c.kind === 'liked')).toBeUndefined();
+    expect(kinds).not.toContain('liked');
+    expect(collections).toHaveLength(2);
   });
 
   it('listTracks resolves liked tracks', async () => {
