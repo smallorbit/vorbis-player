@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from '../fixtures/auth-state';
 import spotifySnapshot from '../fixtures/data/spotify-snapshot.json' with { type: 'json' };
 
 const hasPlaylists = spotifySnapshot.playlists.length > 0;
@@ -7,9 +7,7 @@ const hasContent = hasPlaylists || hasAlbums;
 
 async function navigateToLibrary(page: import('@playwright/test').Page) {
   await page.goto('/');
-  await page.locator('button[title^="Zen Mode"]').waitFor({ state: 'visible', timeout: 30_000 });
-  await page.locator('button[title="Back to Library"]').click();
-  await page.locator('[data-testid="library-home"]').waitFor({ state: 'visible', timeout: 10_000 });
+  await page.locator('[data-testid="library-home"]').waitFor({ state: 'visible', timeout: 30_000 });
 }
 
 test.describe('Playlist Selection', () => {
