@@ -5,9 +5,11 @@ import type { MediaCollection, ProviderId } from '@/types/domain';
 import { useProviderContext } from '@/contexts/ProviderContext';
 import { providerRegistry } from '@/providers/registry';
 import { librarySyncEngine } from '@/services/cache/librarySyncEngine';
+import { shouldUseMockProvider } from '@/providers/mock/shouldUseMockProvider';
 import { logLibrary } from '@/lib/debugLog';
 import { getOrSetFirstSeenAddedAtIso } from '@/utils/libraryFirstSeen';
 import { readLikedCountSnapshots, writeLikedCountSnapshot } from '@/services/cache/likedCountSnapshot';
+import { useStableSet } from '@/hooks/useStableSet';
 
 export const ART_REFRESHED_EVENT = 'vorbis-art-refreshed';
 export const LIBRARY_REFRESH_EVENT = 'vorbis-library-refresh';
@@ -131,7 +133,12 @@ export function useLibrarySync(): UseLibrarySyncResult {
 
   const engineRef = useRef(librarySyncEngine);
 
-  const engineProviderId = librarySyncEngine.providerId as ProviderId | undefined;
+  // The sync engine talks directly to the real Spotify Web API. In mock mode,
+  // bypass it so the registry-aware catalog path (further down) loads spotify
+  // collections via the mock catalog adapter instead.
+  const engineProviderId = shouldUseMockProvider()
+    ? undefined
+    : (librarySyncEngine.providerId as ProviderId | undefined);
 
   const engineDataRef = useRef<{ playlists: CachedPlaylistInfo[]; albums: AlbumInfo[]; likedCount: number }>({
     playlists: [], albums: [], likedCount: 0,
@@ -139,7 +146,11 @@ export function useLibrarySync(): UseLibrarySyncResult {
   const catalogDataRef = useRef<Map<ProviderId, { playlists: CachedPlaylistInfo[]; albums: AlbumInfo[]; likedCount: number; allMusicCount: number }>>(new Map());
 
   const isEngineProviderEnabled = !!engineProviderId && enabledProviderIds.includes(engineProviderId);
-  const catalogProviderIds = enabledProviderIds.filter(id => id !== engineProviderId);
+  // Stabilize catalogProviderIds so downstream effects don't re-fire when the
+  // parent renders with a new array reference for the same logical set.
+  const catalogProviderIds = useStableSet(
+    enabledProviderIds.filter((id) => id !== engineProviderId),
+  );
 
   const mergeAndSetData = useCallback(() => {
     const allPlaylists: CachedPlaylistInfo[] = [];
@@ -281,7 +292,7 @@ export function useLibrarySync(): UseLibrarySyncResult {
       cancelled = true;
       controller.abort();
     };
-  }, [[...catalogProviderIds].sort().join(','), getDescriptor, mergeAndSetData]);
+  }, [catalogProviderIds, getDescriptor, mergeAndSetData]);
 
   useEffect(() => {
     const cleanups: Array<() => void> = [];
@@ -308,7 +319,7 @@ export function useLibrarySync(): UseLibrarySyncResult {
       cleanups.push(() => window.removeEventListener(eventName, handleLikesChanged));
     }
     return () => cleanups.forEach(cleanup => cleanup());
-  }, [[...catalogProviderIds].sort().join(','), getDescriptor, mergeAndSetData]);
+  }, [catalogProviderIds, getDescriptor, mergeAndSetData]);
 
   const refreshNow = useCallback(async (scopeProviderId?: ProviderId) => {
     if (!scopeProviderId || scopeProviderId === engineProviderId) {

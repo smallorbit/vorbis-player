@@ -90,3 +90,7 @@ playwright/capture/.auth-state.json
 
 # Local-only stashes of skills moved out of .claude/skills/ so Claude won't load them
 .skill-backups/
+
+# Serena MCP — commit project.yml + memories, ignore cache/logs
+.serena/cache/
+.serena/logs/

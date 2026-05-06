@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from '../fixtures/auth-state';
 import spotifySnapshot from '../fixtures/data/spotify-snapshot.json' with { type: 'json' };
 
 const hasContent = spotifySnapshot.playlists.length > 0;
@@ -10,11 +10,9 @@ test.describe('Zen Mode', () => {
       'Specs require populated snapshots. Run `npm run snapshot:spotify -- --list` to enumerate your library, populate `snapshot.config.json`, then `npm run snapshot:spotify`. See #1372 §10 ("Curating fixtures").',
     );
     await page.goto('/');
-    await page.locator('button[title^="Zen Mode"]').waitFor({ state: 'visible', timeout: 30_000 });
+    await page.locator('[data-testid="library-home"]').waitFor({ state: 'visible', timeout: 30_000 });
 
     if (hasContent) {
-      await page.locator('button[title="Back to Library"]').click();
-      await page.locator('[data-testid="library-home"]').waitFor({ state: 'visible', timeout: 10_000 });
       await page.locator('[data-testid^="library-card-playlist-"]').first().click();
       await page.locator('[data-testid="player-track-info-name"]').waitFor({ state: 'visible', timeout: 10_000 });
     }

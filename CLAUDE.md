@@ -32,6 +32,18 @@ npm run build             # Full build
 
 Check for dangling references in `vite.config.ts`, `tsconfig.json`, etc.
 
+## MCP Tooling
+
+This repo registers [Serena MCP](https://github.com/oraios/serena) via `.mcp.json`
+for symbol-aware code navigation and editing. Prerequisite: `uv` installed
+(`curl -LsSf https://astral.sh/uv/install.sh | sh`). Claude Code launches it
+automatically; verify with `/mcp` (should show `serena` connected).
+
+Prefer `mcp__serena__find_symbol` / `find_referencing_symbols` over `grep`
+for cross-file symbol lookups, especially across the parallel
+`src/providers/{spotify,dropbox,mock}/` trees. Use Read/Edit for
+non-symbol files (CSS, JSON, MD).
+
 ## UI & CSS Guidelines
 
 When modifying CSS layout or styling, avoid making additional 'clever' adjustments beyond what was requested. If the user asks to constrain width or center an element, do exactly that — don't add spacers, override calculated dimensions, or restructure containers unless explicitly asked.
@@ -52,6 +64,8 @@ cp ../.env.local .env.local
 ```
 
 Worktrees don't inherit `node_modules`. `.env.local` contains Spotify credentials needed for tests. Verify with `npm run test:run`.
+
+`.serena/cache/` rebuilds on first launch in a fresh worktree (~30s) — that's expected.
 
 ## Development Commands
 

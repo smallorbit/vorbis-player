@@ -1,5 +1,7 @@
 /// <reference types="vite/client" />
 
+declare const __APP_VERSION__: string
+
 interface ImportMetaEnv {
   readonly VITE_DROPBOX_APP_KEY: string
   readonly VITE_SPOTIFY_CLIENT_ID: string

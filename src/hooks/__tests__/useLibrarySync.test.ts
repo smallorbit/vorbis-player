@@ -599,6 +599,37 @@ describe('useLibrarySync', () => {
     });
   });
 
+  describe('catalogProviderIds stabilization', () => {
+    it('does not re-fire catalog load effect across re-renders when the enabled-provider set is unchanged', async () => {
+      // #given
+      mockEnabledProviderIds.length = 0;
+      mockEnabledProviderIds.push('spotify', 'dropbox');
+
+      const dropboxDescriptor = makeCatalogDescriptor('dropbox', [], 0);
+      mockGetDescriptor.mockImplementation((id: ProviderId) =>
+        id === 'dropbox' ? dropboxDescriptor : undefined,
+      );
+
+      const { rerender } = renderHook(() => useLibrarySync());
+
+      await waitFor(() => {
+        expect(dropboxDescriptor.catalog.listCollections).toHaveBeenCalledTimes(1);
+      });
+
+      const callsBeforeRerender = dropboxDescriptor.catalog.listCollections.mock.calls.length;
+
+      // #when — force several re-renders without changing the provider set
+      rerender();
+      rerender();
+      rerender();
+
+      await new Promise(r => setTimeout(r, 20));
+
+      // #then — the catalog load effect should NOT have re-fired
+      expect(dropboxDescriptor.catalog.listCollections).toHaveBeenCalledTimes(callsBeforeRerender);
+    });
+  });
+
   describe('removeCollection', () => {
     it('removes a collection from engine playlist data and re-merges', async () => {
       // #given

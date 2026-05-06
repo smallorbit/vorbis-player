@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import styled, { keyframes } from 'styled-components';
 import AudioPlayerComponent from './components/AudioPlayer';
 import { spotifyAuth } from './services/spotify';
-import { shouldUseMockProvider } from './providers/mock/shouldUseMockProvider';
 import { ThemeProvider } from './styles/ThemeProvider';
 import { flexCenter, buttonPrimary } from './styles/utils';
 import { AuthCallbackPage } from './components/AuthCallbackPage';
@@ -26,26 +25,8 @@ import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { STORAGE_KEYS } from '@/constants/storage';
 import { Toaster } from '@/components/ui/sonner';
 
-/**
- * Cleanup function to remove deprecated localStorage keys
- * 
- * This function removes the old 'customAccentColorOverrides' key from localStorage
- * as part of the migration to unified accent color state management in usePlayerState.
- * 
- * @function cleanupDeprecatedLocalStorage
- * @returns {void}
- * 
- * @throws {Error} If localStorage access fails
- * 
- * @example
- * ```typescript
- * // Called on app initialization
- * cleanupDeprecatedLocalStorage();
- * ```
- */
 const cleanupDeprecatedLocalStorage = () => {
   try {
-    // Remove the deprecated customAccentColorOverrides key
     localStorage.removeItem('customAccentColorOverrides');
     logApp('cleaned up deprecated localStorage key: customAccentColorOverrides');
   } catch (error) {
@@ -187,8 +168,19 @@ function App() {
             <RetryButton
               onClick={() => {
                 setAuthError(null);
-                if (shouldUseMockProvider()) return;
-                spotifyAuth.redirectToAuth();
+                // This branch renders before <ProviderProvider>, so we read the registry
+                // directly. The Spotify descriptor is available here because
+                // ProviderContext.tsx has a top-level `import '@/providers/spotify/spotifyProvider'`
+                // that self-registers at module evaluation; under mock mode, main.tsx awaits
+                // the mock import before createRoot, so the mock descriptor (whose auth.beginLogin
+                // is a no-op) overwrites it. The defensive `?.` guard surfaces a future regression
+                // if that import side-effect is ever removed or made lazy.
+                const spotifyDescriptor = providerRegistry.get('spotify');
+                if (spotifyDescriptor) {
+                  spotifyDescriptor.auth.beginLogin().catch((err) => {
+                    setAuthError(err instanceof Error ? err.message : 'Failed to start login.');
+                  });
+                }
               }}
             >
               Try Again

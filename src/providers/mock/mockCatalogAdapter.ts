@@ -52,16 +52,6 @@ export class MockCatalogAdapter implements CatalogProvider {
       });
     }
 
-    if (this.snapshot.likedTrackIds.length > 0) {
-      collections.push({
-        id: 'liked',
-        provider: this.providerId,
-        kind: 'liked',
-        name: 'Liked Songs',
-        trackCount: this.likedSet.size,
-      });
-    }
-
     for (const playlist of this.snapshot.playlists) {
       collections.push({
         id: playlist.id,

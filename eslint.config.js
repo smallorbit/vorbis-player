@@ -33,4 +33,11 @@ export default tseslint.config(
       ],
     },
   },
+  {
+    files: ['playwright/**/*.{ts,tsx}'],
+    rules: {
+      'react-hooks/rules-of-hooks': 'off',
+      'react-hooks/exhaustive-deps': 'off',
+    },
+  },
 )

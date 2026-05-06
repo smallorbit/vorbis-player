@@ -528,5 +528,19 @@ describe('SettingsV2 AdvancedSection', () => {
       expect(screen.getByText('Show keyboard shortcuts')).toBeInTheDocument();
       expect(screen.getByText('Open settings')).toBeInTheDocument();
     });
+
+    it('renders the About tagline matching "Vorbis Player … — keyboard-first music player."', () => {
+      // #given + #when
+      render(
+        <Wrapper>
+          <AdvancedSection />
+        </Wrapper>,
+      );
+
+      // #then — tagline renders with or without a version prefix; the gate in
+      // AdvancedSection suppresses the placeholder "0.0.0" so the suffix is
+      // optional, but the surrounding copy is invariant.
+      expect(screen.getByText(/Vorbis Player.* — keyboard-first music player\./)).toBeInTheDocument();
+    });
   });
 });
