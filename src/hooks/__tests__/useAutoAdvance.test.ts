@@ -235,6 +235,33 @@ describe('useAutoAdvance', () => {
     expect(playTrack).not.toHaveBeenCalled();
   });
 
+  it('does not re-subscribe across re-renders when ref deps are unchanged', () => {
+    // #given — drivingProviderRef has stable identity across renders
+    const drivingProviderRef = { current: 'spotify' as const };
+
+    const { rerender } = renderHook(
+      (props: { tracks: typeof tracks; currentTrackIndex: number }) =>
+        useAutoAdvance({
+          tracks: props.tracks,
+          currentTrackIndex: props.currentTrackIndex,
+          playTrack,
+          currentPlaybackProviderRef: drivingProviderRef,
+        }),
+      { ...opts, initialProps: { tracks, currentTrackIndex: 0 } },
+    );
+
+    const callsAfterInitialMount = mockSubscribe.mock.calls.length;
+    expect(callsAfterInitialMount).toBeGreaterThan(0);
+
+    // #when — re-render multiple times with the same logical inputs
+    rerender({ tracks, currentTrackIndex: 0 });
+    rerender({ tracks, currentTrackIndex: 0 });
+    rerender({ tracks, currentTrackIndex: 0 });
+
+    // #then — subscribe is not called again because the effect's deps are stable
+    expect(mockSubscribe).toHaveBeenCalledTimes(callsAfterInitialMount);
+  });
+
   it('stops at the end of the queue instead of wrapping', () => {
     // #given
     renderHook(() =>

@@ -8,6 +8,7 @@ import { librarySyncEngine } from '@/services/cache/librarySyncEngine';
 import { logLibrary } from '@/lib/debugLog';
 import { getOrSetFirstSeenAddedAtIso } from '@/utils/libraryFirstSeen';
 import { readLikedCountSnapshots, writeLikedCountSnapshot } from '@/services/cache/likedCountSnapshot';
+import { useStableSet } from '@/hooks/useStableSet';
 
 export const ART_REFRESHED_EVENT = 'vorbis-art-refreshed';
 export const LIBRARY_REFRESH_EVENT = 'vorbis-library-refresh';
@@ -140,22 +141,10 @@ export function useLibrarySync(): UseLibrarySyncResult {
 
   const isEngineProviderEnabled = !!engineProviderId && enabledProviderIds.includes(engineProviderId);
   // Stabilize catalogProviderIds so downstream effects don't re-fire when the
-  // parent renders with a new array reference for the same logical set. The
-  // ref holds the previously-returned array; we return that same reference
-  // whenever the next computed contents are equal as a sorted set.
-  const catalogProviderIdsRef = useRef<ProviderId[]>([]);
-  const catalogProviderIds = useMemo(() => {
-    const next = enabledProviderIds.filter(id => id !== engineProviderId);
-    const prev = catalogProviderIdsRef.current;
-    if (prev.length === next.length) {
-      const prevSet = new Set(prev);
-      if (next.every(id => prevSet.has(id))) {
-        return prev;
-      }
-    }
-    catalogProviderIdsRef.current = next;
-    return next;
-  }, [enabledProviderIds, engineProviderId]);
+  // parent renders with a new array reference for the same logical set.
+  const catalogProviderIds = useStableSet(
+    enabledProviderIds.filter((id) => id !== engineProviderId),
+  );
 
   const mergeAndSetData = useCallback(() => {
     const allPlaylists: CachedPlaylistInfo[] = [];

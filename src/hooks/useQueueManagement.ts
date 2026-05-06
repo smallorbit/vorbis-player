@@ -130,6 +130,7 @@ export function useQueueManagement({
         return null;
       }
     },
+    // mediaTracksRef included for exhaustive-deps; ref identity is stable so it does not cause callback re-creation.
     [tracks.length, loadCollection, activeDescriptor, getDescriptor, setTracks, setOriginalTracks, mediaTracksRef]
   );
 
@@ -161,6 +162,7 @@ export function useQueueManagement({
 
       logQueue('handleRemoveFromQueue — done, new queueLen=%d', tracks.length - 1);
     },
+    // mediaTracksRef included for exhaustive-deps; ref identity is stable so it does not cause callback re-creation.
     [tracks, currentTrackIndex, handleBackToLibrary, setTracks, setOriginalTracks, setCurrentTrackIndex, mediaTracksRef]
   );
 
@@ -202,6 +204,7 @@ export function useQueueManagement({
 
       logQueue('handleReorderQueue — done, currentIndex=%d', newCurrentIndex);
     },
+    // mediaTracksRef included for exhaustive-deps; ref identity is stable so it does not cause callback re-creation.
     [tracks, currentTrackIndex, shuffleEnabled, setTracks, setOriginalTracks, setCurrentTrackIndex, mediaTracksRef]
   );
 

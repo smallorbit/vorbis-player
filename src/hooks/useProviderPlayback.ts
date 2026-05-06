@@ -135,6 +135,7 @@ export const useProviderPlayback = ({
         setTimeout(() => playTrack(index + 1, skipOnError), SKIP_ON_ERROR_DELAY_MS);
       }
     }
+    // mediaTracksRef included for exhaustive-deps; ref identity is stable so it does not cause callback re-creation.
   }, [setCurrentTrackIndex, pausePreviousProvider, resolveTrackProvider, onAuthExpired, expectedTrackIdRef, mediaTracksRef]);
 
   const resumePlayback = useCallback(async () => {

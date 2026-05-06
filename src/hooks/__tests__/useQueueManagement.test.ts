@@ -606,6 +606,48 @@ describe('useQueueManagement', () => {
     errorSpy.mockRestore();
   });
 
+  it('keeps callback identities stable across re-renders when inputs are unchanged', () => {
+    // #given — identical input references on every render
+    const tracks = [makeTrack({ id: '1' }), makeTrack({ id: '2' }), makeTrack({ id: '3' })];
+    mediaTracksRef.current = [makeMediaTrack('1'), makeMediaTrack('2'), makeMediaTrack('3')];
+
+    const props = {
+      tracks,
+      currentTrackIndex: 0,
+      shuffleEnabled: false,
+      trackOps: {
+        setTracks: mockSetTracks,
+        setOriginalTracks: mockSetOriginalTracks,
+        setCurrentTrackIndex: mockSetCurrentTrackIndex,
+        mediaTracksRef,
+      },
+      loadCollection: mockHandlePlaylistSelect,
+      handleBackToLibrary: mockHandleBackToLibrary,
+      activeDescriptor: mockActiveDescriptor,
+      getDescriptor: mockGetDescriptor,
+    };
+
+    const { result, rerender } = renderHook((p: typeof props) => useQueueManagement(p), {
+      initialProps: props,
+    });
+
+    const initialRemove = result.current.handleRemoveFromQueue;
+    const initialReorder = result.current.handleReorderQueue;
+    const initialAdd = result.current.handleAddToQueue;
+
+    // #when — re-render with identical references (mediaTracksRef identity is stable
+    // even as its `.current` array contents mutate; this test guards against the
+    // exhaustive-deps fix re-introducing callback churn).
+    rerender(props);
+    rerender(props);
+    rerender(props);
+
+    // #then
+    expect(result.current.handleRemoveFromQueue).toBe(initialRemove);
+    expect(result.current.handleReorderQueue).toBe(initialReorder);
+    expect(result.current.handleAddToQueue).toBe(initialAdd);
+  });
+
   it('queueTracksDirectly toasts the duplicate message when every track is already queued', () => {
     // #given — queue already contains every incoming track
     mediaTracksRef.current = [makeMediaTrack('1'), makeMediaTrack('2')];
