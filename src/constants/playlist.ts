@@ -24,12 +24,6 @@ export function isAllMusicRef(ref: CollectionRef): boolean {
   return ref.provider === 'dropbox' && ref.kind === 'folder' && 'id' in ref && ref.id === '';
 }
 
-/** Playlist IDs that stay in catalog order and are not reordered by library sort (Liked Songs row). */
-export const LIBRARY_PLAYLIST_SORT_ANCHOR_IDS: ReadonlySet<string> = new Set([LIKED_SONGS_ID]);
-
-/** Album IDs that stay in catalog order and are not reordered by library sort. */
-export const LIBRARY_ALBUM_SORT_ANCHOR_IDS: ReadonlySet<string> = new Set();
-
 /** Check whether a playlist selection ID represents an album */
 export function isAlbumId(playlistId: string): boolean {
   return playlistId.startsWith(ALBUM_ID_PREFIX);
