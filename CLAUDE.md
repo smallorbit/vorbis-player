@@ -44,6 +44,29 @@ for cross-file symbol lookups, especially across the parallel
 `src/providers/{spotify,dropbox,mock}/` trees. Use Read/Edit for
 non-symbol files (CSS, JSON, MD).
 
+### Worktree hazard — Serena edit tools are pinned to the main worktree
+
+Serena MCP launches once with `--project .` relative to the cwd Claude Code
+started in (the main worktree). All sub-agents share that single MCP
+connection, so Serena **write** tools — `replace_symbol_body`,
+`insert_after_symbol`, `insert_before_symbol`, `rename_symbol`,
+`safe_delete_symbol`, `replace_content` — silently land in the main
+worktree's files even when the calling agent works in
+`.claude/worktrees/agent-*`.
+
+In any sub-agent context (anything spawned with `isolation: worktree`):
+
+- **Mutations**: use `Read` + `Edit` only. Never use Serena edit tools.
+- **Navigation**: Serena read tools (`find_symbol`,
+  `find_referencing_symbols`, `get_symbols_overview`, `search_for_pattern`)
+  remain useful, but treat the absolute paths in their output as
+  informational — they point to the main worktree, not yours.
+
+The `.claude/hooks/serena-worktree-guard.sh` PreToolUse hook denies the
+unsafe write tools when the session cwd doesn't match the Serena project
+root (i.e. when an agent in a worktree tries to call one). If you see a
+denial, switch to `Read` + `Edit` for the rest of the task.
+
 ## UI & CSS Guidelines
 
 When modifying CSS layout or styling, avoid making additional 'clever' adjustments beyond what was requested. If the user asks to constrain width or center an element, do exactly that — don't add spacers, override calculated dimensions, or restructure containers unless explicitly asked.

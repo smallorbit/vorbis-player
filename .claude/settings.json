@@ -10,5 +10,18 @@
       "mcp__serena__read_memory",
       "mcp__serena__list_memories"
     ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "mcp__serena__(replace_symbol_body|insert_after_symbol|insert_before_symbol|rename_symbol|safe_delete_symbol|replace_content)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash $CLAUDE_PROJECT_DIR/.claude/hooks/serena-worktree-guard.sh"
+          }
+        ]
+      }
+    ]
   }
 }
