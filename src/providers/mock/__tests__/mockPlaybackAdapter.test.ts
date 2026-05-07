@@ -163,6 +163,55 @@ describe('MockPlaybackAdapter', () => {
     expect(result).toBe(true);
   });
 
+  describe('prepareTrack', () => {
+    it('emits staged state when positionMs is provided', () => {
+      // #given a subscribed listener and no prior track
+      const listener = vi.fn();
+      adapter.subscribe(listener);
+      // #when prepareTrack is called with positionMs > 0
+      adapter.prepareTrack(makeTrack('seed-track'), { positionMs: 45000 });
+      // #then listener is notified with the staged state
+      expect(listener).toHaveBeenCalledOnce();
+      const state = listener.mock.calls[0][0];
+      expect(state?.currentTrackId).toBe('seed-track');
+      expect(state?.positionMs).toBe(45000);
+    });
+
+    it('emits staged state when positionMs is 0', () => {
+      // #given a subscribed listener
+      const listener = vi.fn();
+      adapter.subscribe(listener);
+      // #when prepareTrack is called with positionMs: 0 (valid start-of-track seed)
+      adapter.prepareTrack(makeTrack('seed-track'), { positionMs: 0 });
+      // #then listener is notified — positionMs=0 is semantically distinct from
+      // omitting options, matching the Spotify and Dropbox adapter contracts
+      expect(listener).toHaveBeenCalledOnce();
+      const state = listener.mock.calls[0][0];
+      expect(state?.currentTrackId).toBe('seed-track');
+      expect(state?.positionMs).toBe(0);
+    });
+
+    it('does not emit state when options is omitted', () => {
+      // #given a subscribed listener
+      const listener = vi.fn();
+      adapter.subscribe(listener);
+      // #when prepareTrack is called with no options (pre-warm intent)
+      adapter.prepareTrack(makeTrack('seed-track'));
+      // #then listener is not notified
+      expect(listener).not.toHaveBeenCalled();
+    });
+
+    it('does not emit state when positionMs is undefined', () => {
+      // #given a subscribed listener
+      const listener = vi.fn();
+      adapter.subscribe(listener);
+      // #when prepareTrack is called with positionMs explicitly undefined
+      adapter.prepareTrack(makeTrack('seed-track'), { positionMs: undefined });
+      // #then listener is not notified
+      expect(listener).not.toHaveBeenCalled();
+    });
+  });
+
   it('getLastPlayTime returns 0 before first play', () => {
     expect(adapter.getLastPlayTime()).toBe(0);
   });

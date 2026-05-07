@@ -69,6 +69,8 @@ export function seedSessionFromUrlParam(
       collectionId: track.albumId ?? track.provider,
       collectionName: track.album,
       collectionProvider: track.provider,
+      // trackIndex: 0 — single-element queue; handleHydrate resolves by trackId first so
+      // this is benign. Multi-track reload scenarios are a known limitation of the seed.
       trackIndex: 0,
       trackId: track.id,
       queueTracks: [track],

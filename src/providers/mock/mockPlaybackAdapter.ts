@@ -170,7 +170,7 @@ export class MockPlaybackAdapter implements PlaybackProvider {
     audio.src = clipUrlForTrack(track.id);
     audio.load();
 
-    if (options?.positionMs !== undefined && options.positionMs > 0) {
+    if (options?.positionMs !== undefined) {
       this.currentTrack = track;
       this.startedAtPositionMs = options.positionMs;
       this.startedAtMs = Date.now();
