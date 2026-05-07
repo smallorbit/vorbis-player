@@ -1,5 +1,3 @@
-import type { AlbumInfo } from '@/services/spotify';
-import type { CachedPlaylistInfo } from '@/services/cache/cacheTypes';
 import type { MediaTrack, ProviderId } from '@/types/domain';
 import type { ProviderDescriptor } from '@/types/providers';
 import { vi } from 'vitest';
@@ -15,31 +13,6 @@ export function makeTrack(overrides?: Partial<MediaTrack>): MediaTrack {
     albumId: 'album-1',
     durationMs: 210000,
     image: 'https://i.scdn.co/image/test',
-    ...overrides,
-  };
-}
-
-export function makePlaylistInfo(overrides?: Partial<CachedPlaylistInfo>): CachedPlaylistInfo {
-  return {
-    id: 'playlist-1',
-    name: 'Test Playlist',
-    description: 'A test playlist',
-    images: [{ url: 'https://i.scdn.co/image/playlist', height: 300, width: 300 }],
-    tracks: { total: 25 },
-    owner: { display_name: 'Test User' },
-    ...overrides,
-  };
-}
-
-export function makeAlbumInfo(overrides?: Partial<AlbumInfo>): AlbumInfo {
-  return {
-    id: 'album-1',
-    name: 'Test Album',
-    artists: 'Test Artist',
-    images: [{ url: 'https://i.scdn.co/image/album', height: 300, width: 300 }],
-    release_date: '2024-01-15',
-    total_tracks: 12,
-    uri: 'spotify:album:album-1',
     ...overrides,
   };
 }

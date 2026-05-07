@@ -5,7 +5,6 @@ import type { TrackOperations } from '@/types/trackOperations';
 import { LIKED_SONGS_ID, LIKED_SONGS_NAME, isAllMusicRef, resolvePlaylistRef } from '@/constants/playlist';
 import { shuffleArray } from '@/utils/shuffleArray';
 import { providerRegistry } from '@/providers/registry';
-import { shouldUseMockProvider } from '@/providers/mock/shouldUseMockProvider';
 import { logQueue } from '@/lib/debugLog';
 import { queueSnapshot } from './playerLogicUtils';
 
@@ -167,7 +166,7 @@ export function useCollectionLoader({
       const collectionRef = { provider: providerId, kind: collectionKind, id: collectionId } as const;
       const list = await targetDescriptor.catalog.listTracks(collectionRef);
 
-      if (list.length === 0 && targetDescriptor.playback.playCollection && !shouldUseMockProvider()) {
+      if (list.length === 0 && targetDescriptor.capabilities.hasContextPlaybackFallback) {
         return loadContextPlayback(playlistId, providerId);
       }
 

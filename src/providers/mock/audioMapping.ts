@@ -1,5 +1,5 @@
 export const AUDIO_CLIP_COUNT = 10;
-export const AUDIO_CLIP_BASE_PATH = '/playwright-fixtures/audio';
+const AUDIO_CLIP_BASE_PATH = '/playwright-fixtures/audio';
 
 // Blueprint D7 specifies sha256 → mod N. Using inline FNV-1a instead because
 // js-sha256 is not a transitive dependency in this project. For the use case

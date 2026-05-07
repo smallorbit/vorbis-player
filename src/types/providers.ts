@@ -113,6 +113,16 @@ export interface ProviderCapabilities {
   hasTrackSearch?: boolean;
   /** Provider syncs its native queue with the app queue. */
   hasNativeQueueSync?: boolean;
+  /**
+   * Provider's `playback.playCollection` is a true context-playback path that
+   * also populates the queue UI from native SDK state when the catalog returns
+   * no tracks (Spotify only — region-restricted playlists, etc.).
+   *
+   * Other providers (Dropbox, mock) implement `playCollection` as a no-op
+   * because they drive playback track-by-track via the app queue, so this flag
+   * stays false for them.
+   */
+  hasContextPlaybackFallback?: boolean;
 }
 
 export interface ProviderDescriptor {

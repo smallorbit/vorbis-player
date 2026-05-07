@@ -2,7 +2,7 @@ import { useState, useCallback, useRef } from 'react';
 
 import { STATUS_RESET_DELAY_MS } from '@/constants/statusTiming';
 
-export const FEEDBACK_DISPLAY_MS = STATUS_RESET_DELAY_MS;
+const FEEDBACK_DISPLAY_MS = STATUS_RESET_DELAY_MS;
 
 type AsyncStatus = 'idle' | 'working' | 'done';
 
