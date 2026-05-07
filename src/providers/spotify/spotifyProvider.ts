@@ -32,6 +32,7 @@ const spotifyDescriptor: ProviderDescriptor = {
     externalLinkLabel: 'Open in Spotify',
     hasTrackSearch: true,
     hasNativeQueueSync: true,
+    hasContextPlaybackFallback: true,
   },
   auth: new SpotifyAuthAdapter(),
   catalog: new SpotifyCatalogAdapter(),
