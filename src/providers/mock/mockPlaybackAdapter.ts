@@ -165,10 +165,17 @@ export class MockPlaybackAdapter implements PlaybackProvider {
     return () => this.listeners.delete(listener);
   }
 
-  prepareTrack(track: MediaTrack): void {
+  prepareTrack(track: MediaTrack, options?: { positionMs?: number }): void {
     const audio = this.ensureAudio();
     audio.src = clipUrlForTrack(track.id);
     audio.load();
+
+    if (options?.positionMs !== undefined && options.positionMs > 0) {
+      this.currentTrack = track;
+      this.startedAtPositionMs = options.positionMs;
+      this.startedAtMs = Date.now();
+      this.notifyListeners();
+    }
   }
 
   probePlayable(track: MediaTrack): Promise<boolean> {
