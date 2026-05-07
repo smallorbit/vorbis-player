@@ -15,7 +15,6 @@ import {
   getAllAlbums,
   getAllPlaylists,
   getTrackList,
-  _testing as cacheInternals,
 } from './libraryCache';
 
 const DEFAULT_LIMIT_PER_CATEGORY = 10;
@@ -195,8 +194,3 @@ export async function searchLibraryCache(
 export function emptySearchResult(): LibrarySearchResult {
   return EMPTY_RESULT;
 }
-
-/** Internal handle for tests — exposes the underlying cache state. */
-export const _searchTesting = {
-  cacheInternals,
-};
