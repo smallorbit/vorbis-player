@@ -5,12 +5,6 @@ import { makeTrack } from '@/test/fixtures';
 import { LIKED_SONGS_ID, LIKED_SONGS_NAME } from '@/constants/playlist';
 import type { MediaTrack } from '@/types/domain';
 
-vi.mock('@/providers/mock/shouldUseMockProvider', () => ({
-  shouldUseMockProvider: vi.fn(() => false),
-}));
-
-import { shouldUseMockProvider } from '@/providers/mock/shouldUseMockProvider';
-
 function makeMediaTrack(id: string, addedAt?: number): MediaTrack {
   return {
     id,
@@ -56,7 +50,7 @@ describe('useCollectionLoader', () => {
     mockRecord = vi.fn();
     mediaTracksRef = { current: [] };
     drivingProviderRef = { current: null };
-    mockActiveDescriptor = { id: 'spotify' };
+    mockActiveDescriptor = { id: 'spotify', capabilities: { hasContextPlaybackFallback: false } };
   });
 
   it('loading a standard provider collection sets tracks and calls playTrack(0)', async () => {
@@ -204,14 +198,14 @@ describe('useCollectionLoader', () => {
     expect(trackCount).toBe(0);
   });
 
-  it('skips the legacy SDK fallback when the mock provider is active even if playCollection is defined', async () => {
-    // #given — mock active, empty catalog, playback advertises playCollection
-    vi.mocked(shouldUseMockProvider).mockReturnValueOnce(true);
+  it('skips the legacy SDK fallback when the descriptor lacks hasContextPlaybackFallback even if playCollection is defined', async () => {
+    // #given — empty catalog, playback advertises playCollection, but capability flag is unset (mock/dropbox shape)
     const mockCatalog = {
       listTracks: vi.fn().mockResolvedValue([]),
     };
     mockActiveDescriptor.catalog = mockCatalog;
     mockActiveDescriptor.playback = { pause: vi.fn(), playCollection: vi.fn() };
+    mockActiveDescriptor.capabilities = { hasContextPlaybackFallback: false };
 
     const { result } = renderHook(() =>
       useCollectionLoader({
@@ -242,7 +236,7 @@ describe('useCollectionLoader', () => {
     expect(trackCount).toBe(0);
   });
 
-  it('the legacy SDK fallback path is invoked when list.length === 0 and playCollection is defined', async () => {
+  it('the legacy SDK fallback path is invoked when list.length === 0 and the descriptor declares hasContextPlaybackFallback', async () => {
     // #given
     mockSpotifyHandlePlaylistSelect.mockResolvedValue([makeTrack('1'), makeTrack('2')]);
 
@@ -251,6 +245,7 @@ describe('useCollectionLoader', () => {
     };
     mockActiveDescriptor.catalog = mockCatalog;
     mockActiveDescriptor.playback = { pause: vi.fn(), playCollection: vi.fn() };
+    mockActiveDescriptor.capabilities = { hasContextPlaybackFallback: true };
 
     const { result } = renderHook(() =>
       useCollectionLoader({
