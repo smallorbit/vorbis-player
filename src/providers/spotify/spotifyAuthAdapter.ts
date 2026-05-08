@@ -7,6 +7,7 @@ import type { AuthProvider } from '@/types/providers';
 import type { ProviderId } from '@/types/domain';
 import { spotifyAuth } from '@/services/spotify';
 import { clearLikedCountSnapshot } from '@/services/cache/likedCountSnapshot';
+import { logCaughtError } from '@/utils/logCaughtError';
 
 export class SpotifyAuthAdapter implements AuthProvider {
   readonly providerId: ProviderId = 'spotify';
@@ -18,7 +19,8 @@ export class SpotifyAuthAdapter implements AuthProvider {
   async getAccessToken(): Promise<string | null> {
     try {
       return await spotifyAuth.ensureValidToken();
-    } catch {
+    } catch (err) {
+      logCaughtError('spotifyAuthAdapter.getAccessToken', err);
       return spotifyAuth.getAccessToken();
     }
   }

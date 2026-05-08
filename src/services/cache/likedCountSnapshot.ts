@@ -1,5 +1,6 @@
 import type { ProviderId } from '@/types/domain';
 import { STORAGE_KEYS } from '@/constants/storage';
+import { logCaughtError } from '@/utils/logCaughtError';
 
 interface SnapshotEntry {
   count: number;
@@ -13,7 +14,8 @@ export function readLikedCountSnapshots(): LikedCountSnapshots {
     const raw = localStorage.getItem(STORAGE_KEYS.LIKED_COUNT_SNAPSHOTS);
     if (!raw) return {};
     return JSON.parse(raw) as LikedCountSnapshots;
-  } catch {
+  } catch (err) {
+    logCaughtError('likedCountSnapshot.readLikedCountSnapshots', err);
     return {};
   }
 }
@@ -23,7 +25,10 @@ export function writeLikedCountSnapshot(providerId: ProviderId, count: number): 
     const snapshots = readLikedCountSnapshots();
     snapshots[providerId] = { count, cachedAt: Date.now() };
     localStorage.setItem(STORAGE_KEYS.LIKED_COUNT_SNAPSHOTS, JSON.stringify(snapshots));
-  } catch { /* quota exceeded — silent */ }
+  } catch (err) {
+    /* quota exceeded — silent */
+    logCaughtError('likedCountSnapshot.writeLikedCountSnapshot', err);
+  }
 }
 
 export function clearLikedCountSnapshot(providerId: ProviderId): void {
@@ -31,5 +36,8 @@ export function clearLikedCountSnapshot(providerId: ProviderId): void {
     const snapshots = readLikedCountSnapshots();
     delete snapshots[providerId];
     localStorage.setItem(STORAGE_KEYS.LIKED_COUNT_SNAPSHOTS, JSON.stringify(snapshots));
-  } catch { /* silent */ }
+  } catch (err) {
+    /* silent */
+    logCaughtError('likedCountSnapshot.clearLikedCountSnapshot', err);
+  }
 }

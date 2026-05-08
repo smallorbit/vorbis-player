@@ -4,6 +4,8 @@
  * without hitting the Dropbox API.
  */
 
+import { logCaughtError } from '@/utils/logCaughtError';
+
 const DB_NAME = 'vorbis-dropbox-art';
 const DB_VERSION = 7;
 const STORE = 'art';
@@ -76,7 +78,8 @@ export async function getArt(path: string): Promise<string | null> {
         resolve(entry && Date.now() - entry.cachedAt < ART_TTL_MS ? entry.dataUrl : null);
       };
       req.onerror = () => resolve(null);
-    } catch {
+    } catch (err) {
+      logCaughtError('dropboxArtCache.getArt', err);
       resolve(null);
     }
   });
@@ -92,7 +95,8 @@ export async function putArt(path: string, dataUrl: string): Promise<void> {
       tx.objectStore(STORE).put(entry);
       tx.oncomplete = () => resolve();
       tx.onerror = () => resolve();
-    } catch {
+    } catch (err) {
+      logCaughtError('dropboxArtCache.putArt', err);
       resolve();
     }
   });
@@ -121,7 +125,8 @@ export async function clearArt(): Promise<void> {
       tx.objectStore(STORE).clear();
       tx.oncomplete = () => resolve();
       tx.onerror = () => resolve();
-    } catch {
+    } catch (err) {
+      logCaughtError('dropboxArtCache.clearArt', err);
       resolve();
     }
   });
@@ -133,8 +138,9 @@ export async function putDurationMs(trackId: string, durationMs: number): Promis
   try {
     const tx = database.transaction('durations', 'readwrite');
     tx.objectStore('durations').put({ trackId, durationMs });
-  } catch {
+  } catch (err) {
     // fire-and-forget
+    logCaughtError('dropboxArtCache.putDurationMs', err);
   }
 }
 
@@ -151,8 +157,9 @@ export async function putTagMetadata(trackId: string, tags: Omit<CachedTagMetada
   try {
     const tx = database.transaction('tags', 'readwrite');
     tx.objectStore('tags').put({ trackId, ...tags });
-  } catch {
+  } catch (err) {
     // fire-and-forget
+    logCaughtError('dropboxArtCache.putTagMetadata', err);
   }
 }
 
@@ -173,7 +180,8 @@ function batchGetFromStore<T>(database: IDBDatabase, storeName: string, ids: str
           if (--pending === 0) resolve(result);
         };
       }
-    } catch {
+    } catch (err) {
+      logCaughtError('dropboxArtCache.batchGetFromStore', err);
       resolve(result);
     }
   });
@@ -211,8 +219,9 @@ export async function putTrackDate(albumId: string, releaseYear: number): Promis
   try {
     const tx = database.transaction('trackDates', 'readwrite');
     tx.objectStore('trackDates').put({ albumId, releaseYear });
-  } catch {
+  } catch (err) {
     // fire-and-forget
+    logCaughtError('dropboxArtCache.putTrackDate', err);
   }
 }
 

@@ -13,6 +13,7 @@ import {
   type VisualizerDebugOverrides,
 } from '@/constants/visualizerDebugConfig';
 import { STORAGE_KEYS } from '@/constants/storage';
+import { logCaughtError } from '@/utils/logCaughtError';
 
 const DEBUG_PARAM = 'debug';
 const DEBUG_VALUE = 'visualizer';
@@ -29,7 +30,8 @@ function readStoredOverrides(): VisualizerDebugOverrides | null {
     if (!raw) return null;
     const parsed = JSON.parse(raw) as VisualizerDebugOverrides;
     return parsed;
-  } catch {
+  } catch (err) {
+    logCaughtError('VisualizerDebugContext.readStoredOverrides', err);
     return null;
   }
 }
@@ -41,8 +43,9 @@ function writeStoredOverrides(overrides: VisualizerDebugOverrides | null): void 
       return;
     }
     localStorage.setItem(STORAGE_KEYS.VISUALIZER_DEBUG_OVERRIDES, JSON.stringify(overrides));
-  } catch {
+  } catch (err) {
     // ignore
+    logCaughtError('VisualizerDebugContext.writeStoredOverrides', err);
   }
 }
 
@@ -128,8 +131,9 @@ export function VisualizerDebugProvider({ children }: { children: React.ReactNod
   const copyExportToClipboard = useCallback(async () => {
     try {
       await navigator.clipboard.writeText(exportAsJson());
-    } catch {
+    } catch (err) {
       // ignore
+      logCaughtError('VisualizerDebugContext.copyExportToClipboard', err);
     }
   }, [exportAsJson]);
 
@@ -143,7 +147,8 @@ export function VisualizerDebugProvider({ children }: { children: React.ReactNod
       setOverridesState(overrides);
       writeStoredOverrides(overrides);
       return true;
-    } catch {
+    } catch (err) {
+      logCaughtError('VisualizerDebugContext.loadOverridesFromJson', err);
       return false;
     }
   }, []);

@@ -1,5 +1,6 @@
 import createDebug from 'debug';
 import { CircularBuffer } from './circularBuffer';
+import { logCaughtError } from '@/utils/logCaughtError';
 
 const log = createDebug('vorbis:devbug');
 
@@ -74,7 +75,8 @@ function safeStringify(value: unknown, seen = new Set<unknown>()): string {
     seen.delete(value);
     const result = `{${entries.join(', ')}}`;
     return result.length > MAX_STRING_LENGTH ? result.slice(0, MAX_STRING_LENGTH) + '...[truncated]' : result;
-  } catch {
+  } catch (err) {
+    logCaughtError('consoleCapture.safeStringify', err);
     seen.delete(value);
     return '[Unserializable]';
   }

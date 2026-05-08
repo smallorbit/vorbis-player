@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { STORAGE_KEYS } from '@/constants/storage';
+import { logCaughtError } from '@/utils/logCaughtError';
 
 /**
  * `?ui=v2` flag — opt-in mechanism for whole-screen redesigns shipped behind
@@ -63,7 +64,8 @@ function readPersistedFlag(): boolean {
     const raw = window.localStorage.getItem(STORAGE_KEYS.SETTINGS_V2_ENABLED);
     if (raw === null) return false;
     return JSON.parse(raw) === true;
-  } catch {
+  } catch (err) {
+    logCaughtError('useUiV2.readPersistedFlag', err);
     return false;
   }
 }

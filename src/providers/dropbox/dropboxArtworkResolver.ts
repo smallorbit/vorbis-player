@@ -9,6 +9,7 @@ import {
   putAlbumArt,
 } from './dropboxArtCache';
 import { bytesToDataUrl } from '@/utils/bytesToDataUrl';
+import { logCaughtError } from '@/utils/logCaughtError';
 
 export class DropboxArtworkResolver {
   private apiClient: DropboxApiClient;
@@ -46,7 +47,8 @@ export class DropboxArtworkResolver {
 
       await putArt(path, dataUrl);
       return dataUrl;
-    } catch {
+    } catch (err) {
+      logCaughtError('dropboxArtworkResolver.doFetchArtDataUrl', err);
       return null;
     }
   }
@@ -120,7 +122,8 @@ export class DropboxArtworkResolver {
         await putAlbumArt(albumDir, imageUrl);
       }
       return imageUrl;
-    } catch {
+    } catch (err) {
+      logCaughtError('dropboxArtworkResolver.resolveAlbumArt', err);
       return null;
     }
   }

@@ -1,5 +1,6 @@
 import type { BugReport } from '@/types/devbug';
 import { formatIssueBody, formatIssueTitle } from './issueFormatter';
+import { logCaughtError } from '@/utils/logCaughtError';
 
 const GITHUB_API_BASE = 'https://api.github.com';
 const SCREENSHOT_PATH_PREFIX = 'docs/bug-screenshots';
@@ -85,8 +86,9 @@ export function createGitHubService(config: GitHubServiceConfig): GitHubService 
       const filename = `${report.id}.png`;
       try {
         screenshotUrl = await uploadScreenshot(report.screenshotDataUrl, filename);
-      } catch {
+      } catch (err) {
         // Continue without screenshot — don't block issue creation
+        logCaughtError('githubService.createIssue.uploadScreenshot', err);
       }
     }
 

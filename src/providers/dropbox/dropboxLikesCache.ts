@@ -1,4 +1,5 @@
 import type { MediaTrack } from '@/types/domain';
+import { logCaughtError } from '@/utils/logCaughtError';
 import { getDb } from './dropboxArtCache';
 
 const STORE = 'likes';
@@ -38,7 +39,8 @@ async function withIdbStore<T>(
       const store = tx.objectStore(storeName);
       fn(store, resolve);
       tx.onerror = () => resolve(fallback);
-    } catch {
+    } catch (err) {
+      logCaughtError('dropboxLikesCache.withIdbStore', err);
       resolve(fallback);
     }
   });
@@ -129,7 +131,8 @@ export async function importLikes(json: string): Promise<number> {
   try {
     entries = JSON.parse(json);
     if (!Array.isArray(entries)) return 0;
-  } catch {
+  } catch (err) {
+    logCaughtError('dropboxLikesCache.importLikes', err);
     return 0;
   }
 
