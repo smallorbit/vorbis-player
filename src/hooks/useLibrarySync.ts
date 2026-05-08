@@ -4,7 +4,7 @@ import type { AlbumInfo } from '@/services/spotify';
 import type { MediaCollection, ProviderId } from '@/types/domain';
 import { useProviderContext } from '@/contexts/ProviderContext';
 import { providerRegistry } from '@/providers/registry';
-import { librarySyncEngine } from '@/services/cache/librarySyncEngine';
+import { spotifyLibrarySyncEngine } from '@/services/cache/librarySyncEngine';
 import { shouldUseMockProvider } from '@/providers/mock/shouldUseMockProvider';
 import { logLibrary } from '@/lib/debugLog';
 import { getOrSetFirstSeenAddedAtIso } from '@/utils/libraryFirstSeen';
@@ -131,14 +131,14 @@ export function useLibrarySync(): UseLibrarySyncResult {
     error: null,
   });
 
-  const engineRef = useRef(librarySyncEngine);
+  const engineRef = useRef(spotifyLibrarySyncEngine);
 
   // The sync engine talks directly to the real Spotify Web API. In mock mode,
   // bypass it so the registry-aware catalog path (further down) loads spotify
   // collections via the mock catalog adapter instead.
-  const engineProviderId = shouldUseMockProvider()
+  const engineProviderId: ProviderId | undefined = shouldUseMockProvider()
     ? undefined
-    : (librarySyncEngine.providerId as ProviderId | undefined);
+    : spotifyLibrarySyncEngine.providerId;
 
   const engineDataRef = useRef<{ playlists: CachedPlaylistInfo[]; albums: AlbumInfo[]; likedCount: number }>({
     playlists: [], albums: [], likedCount: 0,

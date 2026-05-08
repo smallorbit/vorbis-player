@@ -39,8 +39,8 @@ type SyncListener = (
 
 const OPTIMISTIC_GRACE_MS = 30 * 1000;
 
-export class LibrarySyncEngine {
-  readonly providerId = 'spotify';
+export class SpotifyLibrarySyncEngine {
+  readonly providerId: 'spotify' = 'spotify';
   private intervalId: ReturnType<typeof setInterval> | null = null;
   private listeners = new Set<SyncListener>();
   private abortController: AbortController | null = null;
@@ -352,7 +352,7 @@ export class LibrarySyncEngine {
     if (albums !== undefined) this.lastKnownAlbums = albums;
     if (likedSongsCount !== undefined) {
       this.lastKnownLikedCount = likedSongsCount;
-      writeLikedCountSnapshot(this.providerId as 'spotify', likedSongsCount);
+      writeLikedCountSnapshot(this.providerId, likedSongsCount);
     }
 
     for (const listener of this.listeners) {
@@ -384,4 +384,4 @@ export class LibrarySyncEngine {
 }
 
 /** Singleton instance for app-wide use. */
-export const librarySyncEngine = new LibrarySyncEngine();
+export const spotifyLibrarySyncEngine = new SpotifyLibrarySyncEngine();

@@ -1,6 +1,6 @@
 import 'fake-indexeddb/auto';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { LibrarySyncEngine } from '../librarySyncEngine';
+import { SpotifyLibrarySyncEngine } from '../librarySyncEngine';
 import * as cache from '../libraryCache';
 import type { CachedPlaylistInfo, SyncState } from '../cacheTypes';
 import type { AlbumInfo, SpotifyImage } from '../../spotify';
@@ -92,14 +92,14 @@ async function seedCacheMeta(opts: {
   });
 }
 
-describe('LibrarySyncEngine', () => {
-  let engine: LibrarySyncEngine;
+describe('SpotifyLibrarySyncEngine', () => {
+  let engine: SpotifyLibrarySyncEngine;
 
   beforeEach(async () => {
     vi.clearAllMocks();
     await cache.initCache();
     await cache.clearAll();
-    engine = new LibrarySyncEngine();
+    engine = new SpotifyLibrarySyncEngine();
   });
 
   afterEach(() => {
