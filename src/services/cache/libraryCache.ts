@@ -1,10 +1,10 @@
 /**
  * IndexedDB-based persistent cache for Spotify library data.
  *
- * Stores playlists, albums, and track lists as individual records so that
- * incremental updates (add/remove/update single entries) are efficient.
- *
- * Falls back to in-memory Maps if IndexedDB is unavailable.
+ * This module is the public surface: typed per-store CRUD wrappers built on
+ * top of `getStore<T>` from `./libraryCacheStorage`. The storage layer hides
+ * the IndexedDB / in-memory fallback split, and the lifecycle layer owns the
+ * singleton state plus the open/upgrade and migration steps.
  */
 
 import type { AlbumInfo, Track } from '../spotify';
@@ -13,302 +13,63 @@ import type {
   CachedTrackList,
   LibraryCacheMeta,
 } from './cacheTypes';
-import { STORAGE_KEYS } from '@/constants/storage';
+import {
+  closeCache,
+  getDb,
+  initCache,
+  isFallback,
+  STORE_ALBUMS,
+  STORE_META,
+  STORE_PLAYLISTS,
+  STORE_TRACK_LISTS,
+} from './libraryCacheLifecycle';
+import { fallbackStores, getStore } from './libraryCacheStorage';
 
-const DB_NAME = 'vorbis-player-library';
-const DB_VERSION = 1;
+export { initCache, closeCache };
 
-const STORE_PLAYLISTS = 'playlists';
-const STORE_ALBUMS = 'albums';
-const STORE_TRACK_LISTS = 'trackLists';
-const STORE_META = 'meta';
-
-// =============================================================================
-// In-Memory Fallback
-// =============================================================================
-
-interface FallbackStores {
-  playlists: Map<string, CachedPlaylistInfo>;
-  albums: Map<string, AlbumInfo>;
-  trackLists: Map<string, CachedTrackList>;
-  meta: Map<string, LibraryCacheMeta>;
-}
-
-const fallbackStores: FallbackStores = {
-  playlists: new Map(),
-  albums: new Map(),
-  trackLists: new Map(),
-  meta: new Map(),
-};
-
-// =============================================================================
-// State
-// =============================================================================
-
-let db: IDBDatabase | null = null;
-let fallbackMode = false;
-let initPromise: Promise<void> | null = null;
-
-// =============================================================================
-// Database Lifecycle
-// =============================================================================
-
-function openIDB(): Promise<IDBDatabase> {
-  return new Promise((resolve, reject) => {
-    const request = indexedDB.open(DB_NAME, DB_VERSION);
-
-    request.onerror = () => reject(request.error);
-
-    request.onsuccess = () => resolve(request.result);
-
-    request.onupgradeneeded = (event) => {
-      const database = (event.target as IDBOpenDBRequest).result;
-      if (!database.objectStoreNames.contains(STORE_PLAYLISTS)) {
-        database.createObjectStore(STORE_PLAYLISTS, { keyPath: 'id' });
-      }
-      if (!database.objectStoreNames.contains(STORE_ALBUMS)) {
-        database.createObjectStore(STORE_ALBUMS, { keyPath: 'id' });
-      }
-      if (!database.objectStoreNames.contains(STORE_TRACK_LISTS)) {
-        database.createObjectStore(STORE_TRACK_LISTS, { keyPath: 'id' });
-      }
-      if (!database.objectStoreNames.contains(STORE_META)) {
-        database.createObjectStore(STORE_META, { keyPath: 'key' });
-      }
-    };
-  });
-}
-
-/**
- * Initialize the cache. Opens IndexedDB, migrates from localStorage,
- * or activates the in-memory fallback.
- * Safe to call multiple times — subsequent calls return the same promise.
- */
-export async function initCache(): Promise<void> {
-  if (initPromise) return initPromise;
-
-  initPromise = (async () => {
-    try {
-      if (typeof indexedDB === 'undefined') {
-        throw new Error('IndexedDB not available');
-      }
-      db = await openIDB();
-      await migrateFromLocalStorage();
-    } catch (err) {
-      console.warn('[libraryCache] IndexedDB unavailable, using in-memory fallback:', err);
-      fallbackMode = true;
-      db = null;
-    }
-  })();
-
-  return initPromise;
-}
-
-/** Close the database connection (primarily for testing). */
-export function closeCache(): void {
-  if (db) {
-    db.close();
-    db = null;
-  }
-  fallbackMode = false;
-  initPromise = null;
-  fallbackStores.playlists.clear();
-  fallbackStores.albums.clear();
-  fallbackStores.trackLists.clear();
-  fallbackStores.meta.clear();
-}
-
-// =============================================================================
-// Internal Helpers
-// =============================================================================
-
-function idbGet<T>(storeName: string, key: string): Promise<T | undefined> {
-  return new Promise((resolve, reject) => {
-    if (!db) { reject(new Error('DB not initialized')); return; }
-    const tx = db.transaction(storeName, 'readonly');
-    const store = tx.objectStore(storeName);
-    const request = store.get(key);
-    request.onsuccess = () => resolve(request.result as T | undefined);
-    request.onerror = () => reject(request.error);
-  });
-}
-
-function idbGetAll<T>(storeName: string): Promise<T[]> {
-  return new Promise((resolve, reject) => {
-    if (!db) { reject(new Error('DB not initialized')); return; }
-    const tx = db.transaction(storeName, 'readonly');
-    const store = tx.objectStore(storeName);
-    const request = store.getAll();
-    request.onsuccess = () => resolve(request.result as T[]);
-    request.onerror = () => reject(request.error);
-  });
-}
-
-function idbPut<T>(storeName: string, value: T): Promise<void> {
-  return new Promise((resolve, reject) => {
-    if (!db) { reject(new Error('DB not initialized')); return; }
-    const tx = db.transaction(storeName, 'readwrite');
-    const store = tx.objectStore(storeName);
-    const request = store.put(value);
-    request.onsuccess = () => resolve();
-    request.onerror = () => reject(request.error);
-  });
-}
-
-function idbDelete(storeName: string, key: string): Promise<void> {
-  return new Promise((resolve, reject) => {
-    if (!db) { reject(new Error('DB not initialized')); return; }
-    const tx = db.transaction(storeName, 'readwrite');
-    const store = tx.objectStore(storeName);
-    const request = store.delete(key);
-    request.onsuccess = () => resolve();
-    request.onerror = () => reject(request.error);
-  });
-}
-
-function idbClear(storeName: string): Promise<void> {
-  return new Promise((resolve, reject) => {
-    if (!db) { reject(new Error('DB not initialized')); return; }
-    const tx = db.transaction(storeName, 'readwrite');
-    const store = tx.objectStore(storeName);
-    const request = store.clear();
-    request.onsuccess = () => resolve();
-    request.onerror = () => reject(request.error);
-  });
-}
-
-function idbPutAll<T>(storeName: string, items: T[]): Promise<void> {
-  return new Promise((resolve, reject) => {
-    if (!db) { reject(new Error('DB not initialized')); return; }
-    const tx = db.transaction(storeName, 'readwrite');
-    const store = tx.objectStore(storeName);
-    for (const item of items) {
-      store.put(item);
-    }
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error);
-  });
-}
-
-/** Atomically replace all records in a store: clear + putAll in a single transaction. */
-function idbReplaceAll<T>(storeName: string, items: T[]): Promise<void> {
-  return new Promise((resolve, reject) => {
-    if (!db) { reject(new Error('DB not initialized')); return; }
-    const tx = db.transaction(storeName, 'readwrite');
-    const store = tx.objectStore(storeName);
-    store.clear();
-    for (const item of items) {
-      store.put(item);
-    }
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error);
-  });
-}
-
-// =============================================================================
-// Generic Store Operations Factory
-// =============================================================================
-
-interface StoreOps<T extends { id: string }> {
-  getAll: () => Promise<T[]>;
-  put: (item: T) => Promise<void>;
-  remove: (id: string) => Promise<void>;
-  replaceAll: (items: T[]) => Promise<void>;
-}
-
-function createStoreOps<T extends { id: string }>(
-  storeName: string,
-  fallback: Map<string, T>,
-): StoreOps<T> {
-  return {
-    async getAll(): Promise<T[]> {
-      await initCache();
-      if (fallbackMode) return Array.from(fallback.values());
-      try {
-        return await idbGetAll<T>(storeName);
-      } catch {
-        return Array.from(fallback.values());
-      }
-    },
-
-    async put(item: T): Promise<void> {
-      await initCache();
-      if (fallbackMode) { fallback.set(item.id, item); return; }
-      try {
-        await idbPut(storeName, item);
-      } catch {
-        fallback.set(item.id, item);
-      }
-    },
-
-    async remove(id: string): Promise<void> {
-      await initCache();
-      if (fallbackMode) { fallback.delete(id); return; }
-      try {
-        await idbDelete(storeName, id);
-      } catch {
-        fallback.delete(id);
-      }
-    },
-
-    async replaceAll(items: T[]): Promise<void> {
-      await initCache();
-      if (fallbackMode) {
-        fallback.clear();
-        for (const item of items) fallback.set(item.id, item);
-        return;
-      }
-      try {
-        await idbReplaceAll(storeName, items);
-      } catch {
-        for (const item of items) fallback.set(item.id, item);
-      }
-    },
-  };
-}
+const playlists = getStore<CachedPlaylistInfo>(STORE_PLAYLISTS);
+const albums = getStore<AlbumInfo>(STORE_ALBUMS);
+const trackLists = getStore<CachedTrackList>(STORE_TRACK_LISTS);
+const meta = getStore<LibraryCacheMeta>(STORE_META);
 
 // =============================================================================
 // Playlist Operations
 // =============================================================================
 
-const playlistOps = createStoreOps<CachedPlaylistInfo>(STORE_PLAYLISTS, fallbackStores.playlists);
-
 export async function getAllPlaylists(): Promise<CachedPlaylistInfo[]> {
-  return playlistOps.getAll();
+  return playlists.getAll();
 }
 
-export async function putAllPlaylists(playlists: CachedPlaylistInfo[]): Promise<void> {
-  return playlistOps.replaceAll(playlists);
+export async function putAllPlaylists(items: CachedPlaylistInfo[]): Promise<void> {
+  return playlists.replaceAll(items.map((p) => [p.id, p]));
 }
 
 export async function putPlaylist(playlist: CachedPlaylistInfo): Promise<void> {
-  return playlistOps.put(playlist);
+  return playlists.put(playlist.id, playlist);
 }
 
 export async function removePlaylist(id: string): Promise<void> {
-  return playlistOps.remove(id);
+  return playlists.remove(id);
 }
 
 // =============================================================================
 // Album Operations
 // =============================================================================
 
-const albumOps = createStoreOps<AlbumInfo>(STORE_ALBUMS, fallbackStores.albums);
-
 export async function getAllAlbums(): Promise<AlbumInfo[]> {
-  return albumOps.getAll();
+  return albums.getAll();
 }
 
-export async function putAllAlbums(albums: AlbumInfo[]): Promise<void> {
-  return albumOps.replaceAll(albums);
+export async function putAllAlbums(items: AlbumInfo[]): Promise<void> {
+  return albums.replaceAll(items.map((a) => [a.id, a]));
 }
 
 export async function putAlbum(album: AlbumInfo): Promise<void> {
-  return albumOps.put(album);
+  return albums.put(album.id, album);
 }
 
 export async function removeAlbum(id: string): Promise<void> {
-  return albumOps.remove(id);
+  return albums.remove(id);
 }
 
 // =============================================================================
@@ -316,34 +77,20 @@ export async function removeAlbum(id: string): Promise<void> {
 // =============================================================================
 
 export async function getTrackList(id: string): Promise<CachedTrackList | undefined> {
-  await initCache();
-  if (fallbackMode) return fallbackStores.trackLists.get(id);
-  try {
-    return await idbGet<CachedTrackList>(STORE_TRACK_LISTS, id);
-  } catch {
-    return fallbackStores.trackLists.get(id);
-  }
+  return trackLists.get(id);
 }
 
-export async function putTrackList(id: string, tracks: Track[], snapshotId?: string): Promise<void> {
+export async function putTrackList(
+  id: string,
+  tracks: Track[],
+  snapshotId?: string,
+): Promise<void> {
   const entry: CachedTrackList = { id, tracks, timestamp: Date.now(), snapshotId };
-  await initCache();
-  if (fallbackMode) { fallbackStores.trackLists.set(id, entry); return; }
-  try {
-    await idbPut(STORE_TRACK_LISTS, entry);
-  } catch {
-    fallbackStores.trackLists.set(id, entry);
-  }
+  return trackLists.put(id, entry);
 }
 
 export async function removeTrackList(id: string): Promise<void> {
-  await initCache();
-  if (fallbackMode) { fallbackStores.trackLists.delete(id); return; }
-  try {
-    await idbDelete(STORE_TRACK_LISTS, id);
-  } catch {
-    fallbackStores.trackLists.delete(id);
-  }
+  return trackLists.remove(id);
 }
 
 // =============================================================================
@@ -351,80 +98,14 @@ export async function removeTrackList(id: string): Promise<void> {
 // =============================================================================
 
 export async function getMeta(key: string): Promise<LibraryCacheMeta | undefined> {
-  await initCache();
-  if (fallbackMode) return fallbackStores.meta.get(key);
-  try {
-    return await idbGet<LibraryCacheMeta>(STORE_META, key);
-  } catch {
-    return fallbackStores.meta.get(key);
-  }
+  return meta.get(key);
 }
 
-export async function putMeta(key: string, meta: Omit<LibraryCacheMeta, 'key'>): Promise<void> {
-  const entry = { ...meta, key };
-  await initCache();
-  if (fallbackMode) { fallbackStores.meta.set(key, entry); return; }
-  try {
-    await idbPut(STORE_META, entry);
-  } catch {
-    fallbackStores.meta.set(key, entry);
-  }
-}
-
-// =============================================================================
-// Migration from localStorage
-// =============================================================================
-
-interface LocalStorageCacheEntry<T> {
-  data: T;
-  timestamp: number;
-}
-
-async function migrateFromLocalStorage(): Promise<void> {
-  try {
-    const playlistsRaw = localStorage.getItem(STORAGE_KEYS.CACHE_PLAYLISTS);
-    const albumsRaw = localStorage.getItem(STORAGE_KEYS.CACHE_ALBUMS);
-
-    if (!playlistsRaw && !albumsRaw) return;
-
-    if (playlistsRaw) {
-      const entry = JSON.parse(playlistsRaw) as LocalStorageCacheEntry<CachedPlaylistInfo[]>;
-      if (entry?.data?.length) {
-        await idbPutAll(STORE_PLAYLISTS, entry.data);
-        const snapshotIds: Record<string, string> = {};
-        for (const p of entry.data) {
-          if (p.snapshot_id) snapshotIds[p.id] = p.snapshot_id;
-        }
-        await idbPut(STORE_META, {
-          key: 'playlists',
-          lastValidated: entry.timestamp,
-          totalCount: entry.data.length,
-          snapshotIds,
-        } satisfies LibraryCacheMeta);
-        localStorage.removeItem(STORAGE_KEYS.CACHE_PLAYLISTS);
-      }
-    }
-
-    if (albumsRaw) {
-      const entry = JSON.parse(albumsRaw) as LocalStorageCacheEntry<AlbumInfo[]>;
-      if (entry?.data?.length) {
-        await idbPutAll(STORE_ALBUMS, entry.data);
-        const latestAddedAt = entry.data.reduce(
-          (latest, a) => (a.added_at && a.added_at > latest ? a.added_at : latest),
-          '',
-        );
-        await idbPut(STORE_META, {
-          key: 'albums',
-          lastValidated: entry.timestamp,
-          totalCount: entry.data.length,
-          latestAddedAt: latestAddedAt || undefined,
-        } satisfies LibraryCacheMeta);
-        localStorage.removeItem(STORAGE_KEYS.CACHE_ALBUMS);
-      }
-    }
-  } catch (err) {
-    console.warn('[libraryCache] localStorage migration failed:', err);
-  }
+export async function putMeta(
+  key: string,
+  value: Omit<LibraryCacheMeta, 'key'>,
+): Promise<void> {
+  return meta.put(key, { ...value, key });
 }
 
 // =============================================================================
@@ -458,32 +139,21 @@ export async function clearCacheWithOptions(options: ClearCacheOptions = {}): Pr
 }
 
 export async function clearAll(): Promise<void> {
-  await initCache();
-  if (fallbackMode) {
-    fallbackStores.playlists.clear();
-    fallbackStores.albums.clear();
-    fallbackStores.trackLists.clear();
-    fallbackStores.meta.clear();
-    return;
-  }
-  try {
-    await Promise.all([
-      idbClear(STORE_PLAYLISTS),
-      idbClear(STORE_ALBUMS),
-      idbClear(STORE_TRACK_LISTS),
-      idbClear(STORE_META),
-    ]);
-  } catch {
-    fallbackStores.playlists.clear();
-    fallbackStores.albums.clear();
-    fallbackStores.trackLists.clear();
-    fallbackStores.meta.clear();
-  }
+  await Promise.all([
+    playlists.clear(),
+    albums.clear(),
+    trackLists.clear(),
+    meta.clear(),
+  ]);
 }
 
 /** Exported for testing only */
 export const _testing = {
-  get fallbackMode() { return fallbackMode; },
-  get db() { return db; },
+  get fallbackMode() {
+    return isFallback();
+  },
+  get db() {
+    return getDb();
+  },
   fallbackStores,
 };
