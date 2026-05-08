@@ -6,6 +6,7 @@ import { trackListCache, albumSavedCache, TRACK_LIST_CACHE_TTL, TRACK_LIST_PERSI
 import { transformTrackItem, backfillProvider, tracksToMediaTracks } from './tracks';
 import { type SavedAlbumItem, transformSavedAlbumItem } from './albums';
 import * as libraryCache from '../cache/libraryCache';
+import { logCaughtError } from '@/utils/logCaughtError';
 
 // =============================================================================
 // Callback Types
@@ -108,8 +109,9 @@ export async function getPlaylistTracks(playlistId: string): Promise<MediaTrack[
       trackListCache.set(cacheKey, { data: tracks, timestamp: idbCached.timestamp });
       return tracksToMediaTracks(tracks);
     }
-  } catch {
+  } catch (err) {
     // IndexedDB read failed, continue to API fetch
+    logCaughtError('spotify.playlists.getPlaylistTracks.idbRead', err);
   }
 
   // L3: Fetch from Spotify API

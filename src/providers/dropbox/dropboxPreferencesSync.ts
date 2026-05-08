@@ -8,6 +8,7 @@ import { getPins, setPins, UNIFIED_PROVIDER, notifyPinsChanged } from '@/service
 import { ensureVorbisFolder } from './dropboxSyncFolder';
 import { contentApiRequest } from './dropboxContentApiClient';
 import { STORAGE_KEYS } from '@/constants/storage';
+import { logCaughtError } from '@/utils/logCaughtError';
 
 // ── Types ───────────────────────────────────────────────────────────────────
 
@@ -32,7 +33,8 @@ function parseJsonObject(raw: string | null): Record<string, string> {
   try {
     const parsed: unknown = JSON.parse(raw);
     return typeof parsed === 'object' && parsed !== null ? (parsed as Record<string, string>) : {};
-  } catch {
+  } catch (err) {
+    logCaughtError('dropboxPreferencesSync.parseJsonObject', err);
     return {};
   }
 }
@@ -111,7 +113,8 @@ export class DropboxPreferencesSyncService {
         return null;
       }
       return data;
-    } catch {
+    } catch (err) {
+      logCaughtError('dropboxPreferencesSync.downloadPreferencesFile', err);
       console.warn('[DropboxPreferencesSync] Failed to parse remote preferences file');
       return null;
     }
@@ -148,7 +151,8 @@ export class DropboxPreferencesSyncService {
       try {
         const errJson = JSON.parse(errText);
         errMsg = (errJson?.error_summary ?? errJson?.error ?? errText) || response.statusText;
-      } catch {
+      } catch (err) {
+        logCaughtError('dropboxPreferencesSync.uploadPreferencesFile.parseError', err);
         errMsg = errText || response.statusText;
       }
       console.warn('[DropboxPreferencesSync] Upload failed:', response.status, errMsg);

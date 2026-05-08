@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { STORAGE_KEYS } from '@/constants/storage';
 import { theme } from '@/styles/theme';
+import { logCaughtError } from '@/utils/logCaughtError';
 
 interface LogEntry {
   time: string;
@@ -15,11 +16,11 @@ const TAP_WINDOW_MS = 2000;
 function isDebugEnabled(): boolean {
   if (typeof window === 'undefined') return false;
   if (new URLSearchParams(window.location.search).get('debug') === 'true') return true;
-  try { return localStorage.getItem(STORAGE_KEYS.DEBUG_OVERLAY) === 'true'; } catch { return false; }
+  try { return localStorage.getItem(STORAGE_KEYS.DEBUG_OVERLAY) === 'true'; } catch (err) { logCaughtError('DebugOverlay.isDebugEnabled', err); return false; }
 }
 
 function setDebugEnabled(enabled: boolean) {
-  try { localStorage.setItem(STORAGE_KEYS.DEBUG_OVERLAY, String(enabled)); } catch { /* noop */ }
+  try { localStorage.setItem(STORAGE_KEYS.DEBUG_OVERLAY, String(enabled)); } catch (err) { /* noop */ logCaughtError('DebugOverlay.setDebugEnabled', err); }
 }
 
 export function useDebugActivator() {

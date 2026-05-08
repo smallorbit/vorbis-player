@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { STORAGE_KEYS } from '@/constants/storage';
+import { logCaughtError } from '@/utils/logCaughtError';
 
 interface RenderStats {
   renderCount: number; mountCount: number; updateCount: number;
@@ -89,7 +90,10 @@ class MetricsCollector {
         }
       });
       this.longTaskObserver.observe({ entryTypes: ['longtask'] });
-    } catch { /* longtask not supported */ }
+    } catch (err) {
+      /* longtask not supported */
+      logCaughtError('ProfilingContext.startLongTaskObserver', err);
+    }
   }
 
   recordRender(

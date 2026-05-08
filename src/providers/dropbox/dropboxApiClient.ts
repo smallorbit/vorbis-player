@@ -2,6 +2,7 @@ import type { DropboxFileEntry, DropboxListFolderResult, CachedLink } from './dr
 import { TEMP_LINK_TTL_MS } from './dropboxCatalogHelpers';
 import type { DropboxAuthAdapter } from './dropboxAuthAdapter';
 import { AuthExpiredError } from '@/providers/errors';
+import { logCaughtError } from '@/utils/logCaughtError';
 
 const DEFAULT_RETRY_AFTER_SECONDS = 5;
 const MAX_RETRY_AFTER_SECONDS = 30;
@@ -15,8 +16,9 @@ async function parseRetryAfterSeconds(response: Response): Promise<number> {
   try {
     const body = await response.clone().json() as { retry_after?: number };
     if (typeof body?.retry_after === 'number' && body.retry_after > 0) return body.retry_after;
-  } catch {
+  } catch (err) {
     // 429 body wasn't JSON; fall through to default.
+    logCaughtError('dropboxApiClient.parseRetryAfterSeconds', err);
   }
   return DEFAULT_RETRY_AFTER_SECONDS;
 }

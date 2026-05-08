@@ -1,5 +1,6 @@
 import type { TokenData } from './types';
 import { SESSION_EXPIRED_EVENT } from '@/constants/events';
+import { logCaughtError } from '@/utils/logCaughtError';
 
 const SPOTIFY_CLIENT_ID = import.meta.env.VITE_SPOTIFY_CLIENT_ID;
 
@@ -55,7 +56,8 @@ class SpotifyAuth {
         return;
       }
       this.tokenData = tokenData;
-    } catch {
+    } catch (err) {
+      logCaughtError('spotify.auth.loadTokenFromStorage', err);
       localStorage.removeItem('spotify_token');
     }
   }

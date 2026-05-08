@@ -2,6 +2,7 @@ import { useEffect, useRef, useCallback } from 'react';
 import type { MediaTrack } from '@/types/domain';
 import { providerRegistry } from '@/providers/registry';
 import { logQueue } from '@/lib/debugLog';
+import { logCaughtError } from '@/utils/logCaughtError';
 
 /** Maximum number of concurrent duration resolution calls per batch. */
 const RESOLVE_CONCURRENCY = 2;
@@ -70,7 +71,8 @@ export function useQueueDurationLoader(
                 batchResults.set(track.id, durationMs);
               }
               if (!controller.signal.aborted) attemptedTrackIds.current.add(track.id);
-            } catch {
+            } catch (err) {
+              logCaughtError('useQueueDurationLoader.resolveDuration', err);
               if (!controller.signal.aborted) attemptedTrackIds.current.add(track.id);
             }
           }),

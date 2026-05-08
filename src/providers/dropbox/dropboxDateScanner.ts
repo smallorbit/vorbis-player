@@ -2,6 +2,7 @@ import type { MediaCollection } from '@/types/domain';
 import type { DropboxApiClient } from './dropboxApiClient';
 import { getTrackDatesMap, putTrackDate } from './dropboxArtCache';
 import { parseID3 } from '@/utils/id3Parser';
+import { logCaughtError } from '@/utils/logCaughtError';
 
 const BATCH_SIZE = 5;
 const BATCH_DELAY_MS = 200;
@@ -34,8 +35,9 @@ export async function scanAlbumDatesInBackground(
             await putTrackDate(album.id, meta.releaseYear);
             album.releaseDate = String(meta.releaseYear);
           }
-        } catch {
+        } catch (err) {
           // Silently skip -- will retry on next catalog refresh
+          logCaughtError('dropboxDateScanner.scanAlbumDatesInBackground', err);
         }
       }),
     );

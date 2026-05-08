@@ -1,4 +1,5 @@
 import type { MediaTrack, ProviderId } from '@/types/domain';
+import { logCaughtError } from '@/utils/logCaughtError';
 
 const SESSION_KEY = 'vorbis-player-last-session';
 
@@ -56,7 +57,8 @@ export function loadSession(): SessionSnapshot | null {
       return parsed as SessionSnapshot;
     }
     return null;
-  } catch {
+  } catch (err) {
+    logCaughtError('sessionPersistence.loadSession', err);
     return null;
   }
 }
@@ -78,7 +80,8 @@ export function isSessionStale(
 export function clearSession(): void {
   try {
     localStorage.removeItem(SESSION_KEY);
-  } catch {
+  } catch (err) {
     // Ignore
+    logCaughtError('sessionPersistence.clearSession', err);
   }
 }

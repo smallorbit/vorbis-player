@@ -2,6 +2,7 @@ import { spotifyAuth } from './spotify';
 import { AuthExpiredError } from '@/providers/errors';
 import { shouldUseMockProvider } from '@/providers/mock/shouldUseMockProvider';
 import { logSpotify } from '@/lib/debugLog';
+import { logCaughtError } from '@/utils/logCaughtError';
 import {
   SPOTIFY_MAX_RETRIES,
   SPOTIFY_INITIAL_RETRY_DELAY_MS,
@@ -178,8 +179,9 @@ class SpotifyPlayerService {
     if (!isIOS) {
       try {
         await this.player.setVolume(volume);
-      } catch {
+      } catch (err) {
         // SDK setVolume failed; fall through to debounced API call
+        logCaughtError('spotifyPlayer.setVolume', err);
       }
     }
 
@@ -299,7 +301,7 @@ class SpotifyPlayerService {
 
       if (state) {
         if (state.paused && state.position === 0) {
-          try { await this.resume(); } catch { /* ignore */ }
+          try { await this.resume(); } catch (err) { /* ignore */ logCaughtError('spotifyPlayer.waitForPlaybackOrResume.onStateChange.resume', err); }
         }
       } else {
         await activateDevice();
@@ -318,7 +320,7 @@ class SpotifyPlayerService {
         const state = await this.getCurrentState();
         if (state) {
           if (state.paused && state.position === 0) {
-            try { await this.resume(); } catch { /* ignore */ }
+            try { await this.resume(); } catch (err) { /* ignore */ logCaughtError('spotifyPlayer.waitForPlaybackOrResume.timeout.resume', err); }
           }
         } else {
           await activateDevice();
