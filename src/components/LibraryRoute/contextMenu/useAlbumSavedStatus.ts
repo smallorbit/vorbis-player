@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useProviderContext } from '@/contexts/ProviderContext';
 import type { ProviderId } from '@/types/domain';
 import { logLibrary } from '@/lib/debugLog';
-import { librarySyncEngine } from '@/services/cache/librarySyncEngine';
+import { spotifyLibrarySyncEngine } from '@/services/cache/librarySyncEngine';
 
 export interface UseAlbumSavedStatusResult {
   isSaved: boolean | null;
@@ -64,7 +64,7 @@ export function useAlbumSavedStatus(
       // the pattern when Dropbox (or others) gain one.
       if (descriptor!.id === 'spotify' && !next) {
         try {
-          await librarySyncEngine.optimisticRemoveAlbum(albumId!);
+          await spotifyLibrarySyncEngine.optimisticRemoveAlbum(albumId!);
         } catch (err) {
           logLibrary('optimisticRemoveAlbum failed', err);
         }

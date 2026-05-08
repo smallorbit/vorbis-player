@@ -14,7 +14,7 @@ const { mockSubscribe, mockStart, mockStop, mockSyncNow } = vi.hoisted(() => ({
 }));
 
 vi.mock('../../services/cache/librarySyncEngine', () => ({
-  librarySyncEngine: {
+  spotifyLibrarySyncEngine: {
     providerId: 'spotify',
     subscribe: mockSubscribe,
     start: mockStart,
