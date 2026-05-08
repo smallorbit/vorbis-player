@@ -10,6 +10,10 @@ import {
 import * as cache from './libraryCache';
 import type { CachedPlaylistInfo, LibraryChanges } from './cacheTypes';
 
+// One-minute stride per ordinal so synthesised timestamps preserve the
+// fetched order when the upstream playlist lacks a real added_at.
+const SYNTHETIC_ADDED_AT_STRIDE_MS = 60_000;
+
 export async function detectChanges(signal: AbortSignal): Promise<LibraryChanges> {
   const [playlistsMeta, albumsMeta, likedMeta] = await Promise.all([
     cache.getMeta('playlists'),
@@ -90,7 +94,7 @@ async function syncPlaylists(newTotal: number, signal: AbortSignal): Promise<Cac
     p.added_at =
       cached?.added_at ||
       p.added_at ||
-      new Date(Date.now() - i * 60000).toISOString();
+      new Date(Date.now() - i * SYNTHETIC_ADDED_AT_STRIDE_MS).toISOString();
   }
 
   const fetchedIds = new Set(allFetched.map(p => p.id));
