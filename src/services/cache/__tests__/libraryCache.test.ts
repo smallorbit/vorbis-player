@@ -412,5 +412,64 @@ describe('libraryCache', () => {
       // Restore
       vi.mocked(indexedDB.open).mockImplementation(originalOpen);
     });
+
+    it('should round-trip every store via the in-memory fallback', async () => {
+      // #given — IndexedDB is unavailable, so initCache routes everything to memory
+      const originalOpen = indexedDB.open;
+      vi.spyOn(indexedDB, 'open').mockImplementation(() => {
+        throw new Error('IndexedDB blocked');
+      });
+      closeCache();
+      await initCache();
+      expect(_testing.fallbackMode).toBe(true);
+      expect(_testing.db).toBeNull();
+
+      // #when — exercise CRUD on each typed wrapper
+      await putPlaylist(makePlaylist('p1', 'In-Memory'));
+      await putAlbum(makeAlbum('a1', 'In-Memory Album'));
+      await putTrackList('playlist:p1', [makeTrack('t1')], 'snap-mem');
+      await putMeta('playlists', { lastValidated: 42, totalCount: 1 });
+
+      // #then — values come back from the in-memory maps
+      expect((await getAllPlaylists())[0]?.name).toBe('In-Memory');
+      expect((await getAllAlbums())[0]?.name).toBe('In-Memory Album');
+      expect((await getTrackList('playlist:p1'))?.snapshotId).toBe('snap-mem');
+      expect((await getMeta('playlists'))?.totalCount).toBe(1);
+
+      // #then — and removal from the fallback map propagates
+      await removePlaylist('p1');
+      await removeAlbum('a1');
+      await removeTrackList('playlist:p1');
+      expect(await getAllPlaylists()).toEqual([]);
+      expect(await getAllAlbums()).toEqual([]);
+      expect(await getTrackList('playlist:p1')).toBeUndefined();
+
+      vi.mocked(indexedDB.open).mockImplementation(originalOpen);
+    });
+
+    it('should clear every fallback map when clearAll runs in fallback mode', async () => {
+      // #given
+      const originalOpen = indexedDB.open;
+      vi.spyOn(indexedDB, 'open').mockImplementation(() => {
+        throw new Error('IndexedDB blocked');
+      });
+      closeCache();
+      await initCache();
+      await putPlaylist(makePlaylist('p1'));
+      await putAlbum(makeAlbum('a1'));
+      await putTrackList('playlist:p1', [makeTrack('t1')]);
+      await putMeta('playlists', { lastValidated: 1, totalCount: 1 });
+
+      // #when
+      await clearAll();
+
+      // #then
+      expect(await getAllPlaylists()).toEqual([]);
+      expect(await getAllAlbums()).toEqual([]);
+      expect(await getTrackList('playlist:p1')).toBeUndefined();
+      expect(await getMeta('playlists')).toBeUndefined();
+
+      vi.mocked(indexedDB.open).mockImplementation(originalOpen);
+    });
   });
 });
