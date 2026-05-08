@@ -2,6 +2,7 @@ import { spotifyAuth } from './spotify';
 import { SPOTIFY_TRANSFER_RETRY_COUNT } from '@/constants/spotify';
 import { logSpotify } from '@/lib/debugLog';
 import { TRANSFER_RETRY_DELAY_MS } from '@/constants/timing';
+import { logCaughtError } from '@/utils/logCaughtError';
 
 async function parsePlayError(response: Response): Promise<string> {
   const errorText = await response.text();
@@ -10,7 +11,8 @@ async function parsePlayError(response: Response): Promise<string> {
     const json = JSON.parse(errorText);
     if (json.error?.message) reason = ` - ${json.error.message}`;
     if (json.error?.reason) reason += ` (${json.error.reason})`;
-  } catch {
+  } catch (err) {
+    logCaughtError('spotifyPlayerPlayback.parsePlayError', err);
     reason = errorText ? ` - ${errorText}` : '';
   }
   if (response.status === 429) {

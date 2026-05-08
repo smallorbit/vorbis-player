@@ -1,4 +1,5 @@
 import type { MediaCollection } from '@/types/domain';
+import { logCaughtError } from '@/utils/logCaughtError';
 import { getDb } from './dropboxArtCache';
 
 const STORE = 'catalog';
@@ -35,7 +36,8 @@ export async function getCachedCatalog(): Promise<{
         });
       };
       req.onerror = () => resolve(null);
-    } catch {
+    } catch (err) {
+      logCaughtError('dropboxCatalogCache.getCachedCatalog', err);
       resolve(null);
     }
   });
@@ -48,8 +50,9 @@ export async function putCatalogCache(collections: MediaCollection[]): Promise<v
     const entry: CachedCatalog = { key: KEY, collections, cachedAt: Date.now() };
     const tx = database.transaction(STORE, 'readwrite');
     tx.objectStore(STORE).put(entry);
-  } catch {
+  } catch (err) {
     // fire-and-forget
+    logCaughtError('dropboxCatalogCache.putCatalogCache', err);
   }
 }
 
@@ -62,7 +65,8 @@ export async function clearCatalogCache(): Promise<void> {
       tx.objectStore(STORE).clear();
       tx.oncomplete = () => resolve();
       tx.onerror = () => resolve();
-    } catch {
+    } catch (err) {
+      logCaughtError('dropboxCatalogCache.clearCatalogCache', err);
       resolve();
     }
   });

@@ -10,6 +10,7 @@ import { searchTrack, spotifyAuth } from '@/services/spotify';
 import { STORAGE_KEYS } from '@/constants/storage';
 import type { MediaTrack } from '@/types/domain';
 import { SPOTIFY_QUEUE_SYNC_DELAY_MS } from '@/constants/timing';
+import { logCaughtError } from '@/utils/logCaughtError';
 
 const QUEUE_URI_LIMIT = 200;
 const MAX_CONCURRENT_SEARCHES = 3;
@@ -25,7 +26,8 @@ class SpotifyQueueSyncService {
       const stored = localStorage.getItem(STORAGE_KEYS.SPOTIFY_QUEUE_SYNC);
       if (stored === null) return true; // default on
       return JSON.parse(stored);
-    } catch {
+    } catch (err) {
+      logCaughtError('spotifyQueueSync.isSyncEnabled', err);
       return true;
     }
   }
@@ -36,7 +38,8 @@ class SpotifyQueueSyncService {
       const stored = localStorage.getItem(STORAGE_KEYS.SPOTIFY_QUEUE_CROSS_PROVIDER);
       if (stored === null) return true; // default on
       return JSON.parse(stored);
-    } catch {
+    } catch (err) {
+      logCaughtError('spotifyQueueSync.isResolveEnabled', err);
       return true;
     }
   }
@@ -101,8 +104,9 @@ class SpotifyQueueSyncService {
           try {
             const result = await searchTrack(track.artists, track.name);
             this.resolutionCache.set(track.id, result?.uri ?? null);
-          } catch {
+          } catch (err) {
             // Network errors — don't cache, might succeed later
+            logCaughtError('spotifyQueueSync.resolveTracksInBackground', err);
           } finally {
             this.pendingResolutions.delete(track.id);
           }

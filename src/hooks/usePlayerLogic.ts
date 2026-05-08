@@ -15,6 +15,7 @@ import type { TrackOperations } from '@/types/trackOperations';
 import { providerRegistry } from '@/providers/registry';
 import { AuthExpiredError, UnavailableTrackError } from '@/providers/errors';
 import { logQueue } from '@/lib/debugLog';
+import { logCaughtError } from '@/utils/logCaughtError';
 import { useQueueThumbnailLoader } from '@/hooks/useQueueThumbnailLoader';
 import { useQueueDurationLoader } from '@/hooks/useQueueDurationLoader';
 import { trkSummary } from './playerLogicUtils';
@@ -216,8 +217,9 @@ export function usePlayerLogic() {
     if (!drivingDescriptor) return;
     try {
       await drivingDescriptor.playback.resume();
-    } catch {
+    } catch (err) {
       // Autoplay policy or network errors are handled by the playback adapter
+      logCaughtError('usePlayerLogic.ensurePlaybackResumed', err);
     }
   }, [getDrivingProviderDescriptor]);
 
@@ -280,8 +282,9 @@ export function usePlayerLogic() {
       const drivingDescriptor = getDrivingProviderDescriptor();
       if (!drivingDescriptor) return;
       await drivingDescriptor.playback.resume();
-    } catch {
+    } catch (err) {
       // Autoplay policy or network errors are handled by the playback adapter
+      logCaughtError('usePlayerLogic.handlePlay', err);
     }
   }, [playTrack, getDrivingProviderId, getDrivingProviderDescriptor]);
 

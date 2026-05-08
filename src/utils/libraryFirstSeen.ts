@@ -1,4 +1,5 @@
 import type { ProviderId } from '@/types/domain';
+import { logCaughtError } from './logCaughtError';
 
 /**
  * Stable "added to this app" time for catalog-backed collections (e.g. Dropbox)
@@ -20,7 +21,8 @@ export function getOrSetFirstSeenAddedAtIso(
     const now = new Date(Date.now() - ordinalForNew * 60000).toISOString();
     window.localStorage.setItem(key, now);
     return now;
-  } catch {
+  } catch (err) {
+    logCaughtError('libraryFirstSeen.getOrSetFirstSeenAddedAtIso', err);
     return new Date(Date.now() - ordinalForNew * 60000).toISOString();
   }
 }

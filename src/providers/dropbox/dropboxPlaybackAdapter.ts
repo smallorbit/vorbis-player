@@ -11,6 +11,7 @@ import { parseID3 } from '@/utils/id3Parser';
 import { bytesToDataUrl } from '@/utils/bytesToDataUrl';
 import { putDurationMs, putTagMetadata } from './dropboxArtCache';
 import { logArtRace } from '@/lib/debugLog';
+import { logCaughtError } from '@/utils/logCaughtError';
 
 const PLAYBACK_POLL_INTERVAL_MS = 250;
 const FETCH_LIMIT = 262144; // 256KB — enough to cover large embedded cover art in ID3 headers
@@ -136,7 +137,8 @@ export class DropboxPlaybackAdapter implements PlaybackProvider {
       let res: Response;
       try {
         res = await fetch(streamUrl, { headers: { Range: `bytes=0-${FETCH_LIMIT - 1}` } });
-      } catch {
+      } catch (err) {
+        logCaughtError('dropboxPlaybackAdapter.enrichMetadataInBackground', err);
         return;
       }
 

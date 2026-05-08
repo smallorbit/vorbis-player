@@ -148,6 +148,7 @@ Path alias: `@/` → `./src/` (e.g. `import { x } from '@/hooks/usePlayerState'`
 - Container queries as primary responsive strategy, media queries as fallback
 - `useLocalStorage` hook for persistence with `'vorbis-player-'` key prefix
 - Strict TypeScript; `import type` when possible; types in `src/types/`
+- Empty `catch` blocks are permitted only when paired with `logCaughtError('<context>', err)` from `src/utils/logCaughtError.ts` so swallowed failures still surface in dev. Existing rationale comments inside the catch should stay; the helper call is additive.
 
 ## Testing
 

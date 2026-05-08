@@ -4,6 +4,7 @@ import { useAsyncAction } from '@/hooks/useAsyncAction';
 import { ART_REFRESHED_EVENT } from '@/hooks/useLibrarySync';
 import { STATUS_RESET_DELAY_MS } from '@/constants/statusTiming';
 import type { CatalogProvider } from '@/types/providers';
+import { logCaughtError } from '@/utils/logCaughtError';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -50,7 +51,8 @@ export const ProviderDataBlock: React.FC<ProviderDataBlockProps> = ({ providerNa
       a.click();
       URL.revokeObjectURL(url);
       setResultMessage('Exported!');
-    } catch {
+    } catch (err) {
+      logCaughtError('ProviderDataBlock.exportFn', err);
       setResultMessage('Export failed');
     }
   }, [catalog]);
@@ -62,7 +64,8 @@ export const ProviderDataBlock: React.FC<ProviderDataBlockProps> = ({ providerNa
       if (result.updated > 0) parts.push(`${result.updated} updated`);
       if (result.removed > 0) parts.push(`${result.removed} removed`);
       setResultMessage(parts.length > 0 ? parts.join(', ') : 'No changes');
-    } catch {
+    } catch (err) {
+      logCaughtError('ProviderDataBlock.refreshMetadataFn', err);
       setResultMessage('Refresh failed');
     }
   }, [catalog]);
@@ -81,7 +84,8 @@ export const ProviderDataBlock: React.FC<ProviderDataBlockProps> = ({ providerNa
       const json = await file.text();
       const count = await catalog.importLikes!(json);
       setResultMessage(`Imported ${count} tracks`);
-    } catch {
+    } catch (err) {
+      logCaughtError('ProviderDataBlock.handleImport', err);
       setResultMessage('Import failed');
     }
     if (fileInputRef.current) fileInputRef.current.value = '';

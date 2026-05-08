@@ -4,6 +4,8 @@
  * Follows the same singleton + initPromise + in-memory fallback pattern as libraryCache.ts.
  */
 
+import { logCaughtError } from '@/utils/logCaughtError';
+
 export const STORE_NAMES = { PINS: 'pins' } as const;
 
 const DB_NAME = 'vorbis-player-settings';
@@ -64,7 +66,8 @@ export async function settingsGet<T>(store: string, key: string): Promise<T | un
   }
   try {
     return await idbGet<T>(store, key);
-  } catch {
+  } catch (err) {
+    logCaughtError('settingsDb.settingsGet', err);
     return fallbackStores[store]?.get(key) as T | undefined;
   }
 }
@@ -78,7 +81,8 @@ export async function settingsPut<T extends { key: string }>(store: string, valu
   }
   try {
     await idbPut(store, value);
-  } catch {
+  } catch (err) {
+    logCaughtError('settingsDb.settingsPut', err);
     ensureFallbackStore(store);
     fallbackStores[store].set(value.key, value);
   }
@@ -92,7 +96,8 @@ export async function settingsClearStore(store: string): Promise<void> {
   }
   try {
     await idbClear(store);
-  } catch {
+  } catch (err) {
+    logCaughtError('settingsDb.settingsClearStore', err);
     fallbackStores[store]?.clear();
   }
 }

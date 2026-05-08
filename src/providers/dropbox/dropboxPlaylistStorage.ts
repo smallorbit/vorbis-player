@@ -8,6 +8,7 @@ import type { MediaTrack, MediaCollection, ProviderId, PlaybackItemRef } from '@
 import { toSavedPlaylistId } from '@/constants/playlist';
 import { logLibrary } from '@/lib/debugLog';
 import { buildAlbumCoverMap, selectMosaicCovers } from '@/utils/mosaicSelection';
+import { logCaughtError } from '@/utils/logCaughtError';
 import { contentApiRequest } from './dropboxContentApiClient';
 
 // ── Helpers ──────────────────────────────────────────────────────────
@@ -150,8 +151,9 @@ export async function saveQueueAsPlaylist(
   try {
     const existing = await loadPlaylistFile(auth, filePath);
     if (existing?.createdAt) createdAt = existing.createdAt;
-  } catch {
+  } catch (err) {
     // New file — use current time
+    logCaughtError('dropboxPlaylistStorage.savePlaylist.loadExisting', err);
   }
 
   const data: PlaylistFile = {
@@ -317,7 +319,8 @@ async function loadPlaylistFile(
   try {
     const data: PlaylistFile = await response.json();
     return data.version === 1 ? data : null;
-  } catch {
+  } catch (err) {
+    logCaughtError('dropboxPlaylistStorage.loadPlaylistFile', err);
     return null;
   }
 }

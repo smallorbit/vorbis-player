@@ -6,6 +6,7 @@
  * Consumers don't see the branching.
  */
 
+import { logCaughtError } from '@/utils/logCaughtError';
 import {
   fallbackStores,
   getDb,
@@ -118,7 +119,8 @@ export function getStore<T>(storeName: string): KVStore<T> {
       if (isFallback()) return fallback().get(key);
       try {
         return await idbGet<T>(storeName, key);
-      } catch {
+      } catch (err) {
+        logCaughtError(`libraryCacheStorage.${storeName}.get`, err);
         return fallback().get(key);
       }
     },
@@ -128,7 +130,8 @@ export function getStore<T>(storeName: string): KVStore<T> {
       if (isFallback()) return Array.from(fallback().values());
       try {
         return await idbGetAll<T>(storeName);
-      } catch {
+      } catch (err) {
+        logCaughtError(`libraryCacheStorage.${storeName}.getAll`, err);
         return Array.from(fallback().values());
       }
     },
@@ -141,7 +144,8 @@ export function getStore<T>(storeName: string): KVStore<T> {
       }
       try {
         await idbPut(storeName, value);
-      } catch {
+      } catch (err) {
+        logCaughtError(`libraryCacheStorage.${storeName}.put`, err);
         fallback().set(key, value);
       }
     },
@@ -156,7 +160,8 @@ export function getStore<T>(storeName: string): KVStore<T> {
       }
       try {
         await idbPutAll(storeName, items);
-      } catch {
+      } catch (err) {
+        logCaughtError(`libraryCacheStorage.${storeName}.putAll`, err);
         const map = fallback();
         for (const [key, value] of entries) map.set(key, value);
       }
@@ -170,7 +175,8 @@ export function getStore<T>(storeName: string): KVStore<T> {
       }
       try {
         await idbDelete(storeName, key);
-      } catch {
+      } catch (err) {
+        logCaughtError(`libraryCacheStorage.${storeName}.remove`, err);
         fallback().delete(key);
       }
     },
@@ -186,7 +192,8 @@ export function getStore<T>(storeName: string): KVStore<T> {
       }
       try {
         await idbReplaceAll(storeName, items);
-      } catch {
+      } catch (err) {
+        logCaughtError(`libraryCacheStorage.${storeName}.replaceAll`, err);
         const map = fallback();
         map.clear();
         for (const [key, value] of entries) map.set(key, value);
@@ -201,7 +208,8 @@ export function getStore<T>(storeName: string): KVStore<T> {
       }
       try {
         await idbClear(storeName);
-      } catch {
+      } catch (err) {
+        logCaughtError(`libraryCacheStorage.${storeName}.clear`, err);
         fallback().clear();
       }
     },

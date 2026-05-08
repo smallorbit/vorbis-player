@@ -51,6 +51,7 @@ import {
 import { DropboxApiClient } from './dropboxApiClient';
 import { DropboxArtworkResolver } from './dropboxArtworkResolver';
 import { scanAlbumDatesInBackground } from './dropboxDateScanner';
+import { logCaughtError } from '@/utils/logCaughtError';
 
 export class DropboxCatalogAdapter implements CatalogProvider {
   readonly providerId: ProviderId = 'dropbox';
@@ -190,8 +191,9 @@ export class DropboxCatalogAdapter implements CatalogProvider {
       let savedPlaylists: MediaCollection[] = [];
       try {
         savedPlaylists = await listSavedPlaylists(this.auth);
-      } catch {
+      } catch (err) {
         // Silently ignore -- saved playlists are optional
+        logCaughtError('dropboxCatalogAdapter.listSavedPlaylists', err);
       }
 
       const collections = [allMusic, ...savedPlaylists, ...albums];
@@ -368,7 +370,8 @@ export class DropboxCatalogAdapter implements CatalogProvider {
         putDurationMs(track.id, durationMs).catch(() => {});
       }
       return durationMs;
-    } catch {
+    } catch (err) {
+      logCaughtError('dropboxCatalogAdapter.fetchTrackDuration', err);
       return null;
     }
   }

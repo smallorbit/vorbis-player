@@ -1,5 +1,6 @@
 import { saveSession } from '@/services/sessionPersistence';
 import type { SessionSnapshot } from '@/services/sessionPersistence';
+import { logCaughtError } from '@/utils/logCaughtError';
 import type { MockCatalogAdapter } from './mockCatalogAdapter';
 
 const PARAM_NAME = 'mock-session';
@@ -38,7 +39,8 @@ export function parseMockSessionParam(search: string): MockSessionSeed | null {
     }
 
     return { trackId, positionMs };
-  } catch {
+  } catch (err) {
+    logCaughtError('mock.sessionSeed.parseMockSessionParam', err);
     return null;
   }
 }
@@ -82,7 +84,8 @@ export function seedSessionFromUrlParam(
     };
 
     saveSession(snapshot);
-  } catch {
+  } catch (err) {
     // Fail closed — log nothing, let the app start in default state.
+    logCaughtError('mock.sessionSeed.seedSessionFromUrlParam', err);
   }
 }

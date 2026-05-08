@@ -16,6 +16,7 @@ import {
   setLikedSongsCache,
 } from './cache';
 import * as libraryCache from '../cache/libraryCache';
+import { logCaughtError } from '@/utils/logCaughtError';
 
 // =============================================================================
 // Shared Utilities
@@ -118,7 +119,10 @@ export async function getLikedSongs(limit?: number): Promise<MediaTrack[]> {
         setLikedSongsCache({ data: idbCached.tracks, limit: Infinity, timestamp: idbCached.timestamp });
         return tracksToMediaTracks(idbCached.tracks);
       }
-    } catch { /* IndexedDB unavailable — fall through to API */ }
+    } catch (err) {
+      /* IndexedDB unavailable — fall through to API */
+      logCaughtError('spotify.tracks.getLikedSongs.idbRead', err);
+    }
   }
 
   const token = await spotifyAuth.ensureValidToken();
