@@ -2,7 +2,7 @@ import { memo, Fragment, useState, useCallback, useRef, useEffect } from 'react'
 import { createPortal } from 'react-dom';
 import type { ArtistInfo } from '../../services/spotify';
 import { useProviderContext } from '../../contexts/ProviderContext';
-import { librarySyncEngine } from '../../services/cache/librarySyncEngine';
+import { spotifyLibrarySyncEngine } from '../../services/cache/librarySyncEngine';
 import { PlayerTrackName, PlayerTrackAlbum, AlbumLink, PlayerTrackArtist, TrackInfoOnlyRow, ArtistLink } from './styled';
 import TrackInfoPopover, { LibraryIcon, SpotifyIcon, PlayIcon, DiscogsIcon, AddToLibraryIcon, RemoveFromLibraryIcon, ICON_MAP } from './TrackInfoPopover';
 import TrackRadioPopover from './TrackRadioPopover';
@@ -219,9 +219,9 @@ const TrackInfo = memo<TrackInfoProps>(({ track, isMobile, isTablet, onArtistBro
                 onClick: () => {
                     catalog.setAlbumSaved!(popover.albumId, !saved).then(() => {
                         if (saved) {
-                            librarySyncEngine.optimisticRemoveAlbum(popover.albumId).catch(() => {});
+                            spotifyLibrarySyncEngine.optimisticRemoveAlbum(popover.albumId).catch(() => {});
                         } else {
-                            librarySyncEngine.optimisticAddAlbum({
+                            spotifyLibrarySyncEngine.optimisticAddAlbum({
                                 id: popover.albumId,
                                 name: popover.albumName,
                                 artists: track?.artists ?? '',
