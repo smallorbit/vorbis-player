@@ -2,6 +2,7 @@ import { useEffect, useRef, useCallback } from 'react';
 import type { MediaTrack } from '@/types/domain';
 import { providerRegistry } from '@/providers/registry';
 import { logQueue } from '@/lib/debugLog';
+import { logCaughtError } from '@/utils/logCaughtError';
 
 /** Maximum number of concurrent art resolution calls per batch. */
 const FETCH_CONCURRENCY = 3;
@@ -73,8 +74,9 @@ export function useQueueThumbnailLoader(
               const provider = providerRegistry.get(mt.provider);
               const art = await provider?.catalog.resolveArtwork?.(albumId, controller.signal);
               if (art) batchResults.set(albumId, art);
-            } catch {
+            } catch (err) {
               // Swallow errors for individual album art resolution
+              logCaughtError('useQueueThumbnailLoader.resolveArtwork', err);
             }
           }),
         );

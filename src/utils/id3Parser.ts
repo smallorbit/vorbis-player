@@ -4,6 +4,8 @@
  * Extracts title, artist, album, and embedded cover art (APIC/PIC frames).
  */
 
+import { logCaughtError } from './logCaughtError';
+
 interface AudioMetadata {
   title?: string;
   artist?: string;
@@ -203,8 +205,9 @@ function parseFlac(bytes: Uint8Array): AudioMetadata {
             const dataLen = (picBytes[p] << 24) | (picBytes[p+1] << 16) | (picBytes[p+2] << 8) | picBytes[p+3];
             p += 4;
             result.coverArt = { data: picBytes.slice(p, p + dataLen), mimeType };
-          } catch {
+          } catch (err) {
             // malformed picture block — skip
+            logCaughtError('id3Parser.pictureBlock', err);
           }
         }
       }

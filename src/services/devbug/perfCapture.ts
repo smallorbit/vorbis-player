@@ -1,4 +1,5 @@
 import type { PerfData } from '@/types/devbug';
+import { logCaughtError } from '@/utils/logCaughtError';
 
 interface MemoryInfo {
   usedJSHeapSize: number;
@@ -20,7 +21,8 @@ function readFcp(): number | null {
     const entries = performance.getEntriesByType('paint');
     const fcp = entries.find((e) => e.name === 'first-contentful-paint');
     return fcp ? fcp.startTime : null;
-  } catch {
+  } catch (err) {
+    logCaughtError('perfCapture.readFcp', err);
     return null;
   }
 }
@@ -33,7 +35,8 @@ function readMemory(): Pick<PerfData, 'memoryUsed' | 'memoryTotal'> {
       memoryUsed: mem.usedJSHeapSize,
       memoryTotal: mem.totalJSHeapSize,
     };
-  } catch {
+  } catch (err) {
+    logCaughtError('perfCapture.readMemory', err);
     return { memoryUsed: null, memoryTotal: null };
   }
 }
@@ -61,7 +64,8 @@ export function startPerfCapture(): void {
       }
     });
     lcpObserver.observe({ type: 'largest-contentful-paint', buffered: true });
-  } catch {
+  } catch (err) {
+    logCaughtError('perfCapture.startPerfCapture.lcpObserver', err);
     lcpObserver = null;
   }
 
@@ -74,7 +78,8 @@ export function startPerfCapture(): void {
       }
     });
     longTaskObserver.observe({ type: 'longtask', buffered: false });
-  } catch {
+  } catch (err) {
+    logCaughtError('perfCapture.startPerfCapture.longTaskObserver', err);
     longTaskObserver = null;
   }
 }
@@ -85,8 +90,9 @@ export function stopPerfCapture(): PerfData {
   if (lcpObserver) {
     try {
       lcpObserver.disconnect();
-    } catch {
+    } catch (err) {
       // ignore
+      logCaughtError('perfCapture.stopPerfCapture.lcpDisconnect', err);
     }
     lcpObserver = null;
   }
@@ -94,8 +100,9 @@ export function stopPerfCapture(): PerfData {
   if (longTaskObserver) {
     try {
       longTaskObserver.disconnect();
-    } catch {
+    } catch (err) {
       // ignore
+      logCaughtError('perfCapture.stopPerfCapture.longTaskDisconnect', err);
     }
     longTaskObserver = null;
   }

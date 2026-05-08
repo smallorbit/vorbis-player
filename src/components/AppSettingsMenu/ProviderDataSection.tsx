@@ -4,6 +4,7 @@ import type { CatalogProvider } from '@/types/providers';
 import { ART_REFRESHED_EVENT } from '@/hooks/useLibrarySync';
 import { useAsyncAction } from '@/hooks/useAsyncAction';
 import { STATUS_RESET_DELAY_MS } from '@/constants/statusTiming';
+import { logCaughtError } from '@/utils/logCaughtError';
 
 import {
   ControlGroup,
@@ -49,7 +50,8 @@ export const ProviderDataSection = memo(({ providerName, catalog }: { providerNa
       a.click();
       URL.revokeObjectURL(url);
       setResultMessage('Exported!');
-    } catch {
+    } catch (err) {
+      logCaughtError('ProviderDataSection.exportFn', err);
       setResultMessage('Export failed');
     }
   }, [catalog]);
@@ -61,7 +63,8 @@ export const ProviderDataSection = memo(({ providerName, catalog }: { providerNa
       if (result.updated > 0) parts.push(`${result.updated} updated`);
       if (result.removed > 0) parts.push(`${result.removed} removed`);
       setResultMessage(parts.length > 0 ? parts.join(', ') : 'No changes');
-    } catch {
+    } catch (err) {
+      logCaughtError('ProviderDataSection.refreshMetadataFn', err);
       setResultMessage('Refresh failed');
     }
   }, [catalog]);
@@ -80,7 +83,8 @@ export const ProviderDataSection = memo(({ providerName, catalog }: { providerNa
       const json = await file.text();
       const count = await catalog.importLikes!(json);
       setResultMessage(`Imported ${count} tracks`);
-    } catch {
+    } catch (err) {
+      logCaughtError('ProviderDataSection.handleImport', err);
       setResultMessage('Import failed');
     }
     if (fileInputRef.current) fileInputRef.current.value = '';

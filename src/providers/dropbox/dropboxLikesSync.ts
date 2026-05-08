@@ -15,6 +15,7 @@ import {
 import { ensureVorbisFolder } from './dropboxSyncFolder';
 import { contentApiRequest } from './dropboxContentApiClient';
 import { logDropboxSync } from '@/lib/debugLog';
+import { logCaughtError } from '@/utils/logCaughtError';
 
 export interface RemoteLikesFile {
   version: 1;
@@ -93,7 +94,8 @@ export class DropboxLikesSyncService {
         return null;
       }
       return data;
-    } catch {
+    } catch (err) {
+      logCaughtError('dropboxLikesSync.downloadLikesFile', err);
       console.warn('[DropboxLikesSync] Failed to parse remote likes file');
       return null;
     }
@@ -130,7 +132,8 @@ export class DropboxLikesSyncService {
       try {
         const errJson = JSON.parse(errText);
         errMsg = (errJson?.error_summary ?? errJson?.error ?? errText) || response.statusText;
-      } catch {
+      } catch (err) {
+        logCaughtError('dropboxLikesSync.uploadLikesFile.parseError', err);
         errMsg = errText || response.statusText;
       }
       console.warn('[DropboxLikesSync] Upload failed:', response.status, errMsg);
