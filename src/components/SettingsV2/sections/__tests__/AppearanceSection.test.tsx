@@ -100,7 +100,7 @@ describe('SettingsV2 AppearanceSection', () => {
     expect(screen.getByText('Translucence')).toBeInTheDocument();
   });
 
-  it('writes TRANSLUCENCE_ENABLED only (no opacity slider) when toggled', () => {
+  it('writes TRANSLUCENCE_ENABLED only (no opacity side-effect) when master toggled', () => {
     // #given
     render(
       <Wrapper>
@@ -111,22 +111,46 @@ describe('SettingsV2 AppearanceSection', () => {
     // #when — translucence default is `true`, click toggles to `false`
     fireEvent.click(screen.getByLabelText('Toggle translucence'));
 
-    // #then — single key is written; TRANSLUCENCE_OPACITY is untouched (deferred to #1463)
+    // #then — single key is written; opacity preset must not auto-write on master flip
     expect(memoryStorage.get(STORAGE_KEYS.TRANSLUCENCE_ENABLED)).toBe('false');
     expect(memoryStorage.has(STORAGE_KEYS.TRANSLUCENCE_OPACITY)).toBe(false);
   });
 
-  it('does not render an opacity slider for translucence', () => {
-    // #given + #when
+  it('renders the opacity preset only when translucence is enabled', () => {
+    // #given
     render(
       <Wrapper>
         <AppearanceSection />
       </Wrapper>,
     );
 
-    // #then — TranslucenceToggle is on/off only per stage 2 scope
-    expect(screen.queryByRole('slider')).not.toBeInTheDocument();
-    expect(screen.queryByText(/opacity/i)).not.toBeInTheDocument();
+    // #then — translucence default is `true`, all three presets are visible
+    expect(screen.getByRole('button', { name: 'Subtle' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Default' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Strong' })).toBeInTheDocument();
+
+    // #when — flip the master off
+    fireEvent.click(screen.getByLabelText('Toggle translucence'));
+
+    // #then — presets unmount
+    expect(screen.queryByRole('button', { name: 'Subtle' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Default' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Strong' })).not.toBeInTheDocument();
+  });
+
+  it('writes the chosen opacity to TRANSLUCENCE_OPACITY when a preset is clicked', () => {
+    // #given
+    render(
+      <Wrapper>
+        <AppearanceSection />
+      </Wrapper>,
+    );
+
+    // #when
+    fireEvent.click(screen.getByRole('button', { name: 'Subtle' }));
+
+    // #then
+    expect(memoryStorage.get(STORAGE_KEYS.TRANSLUCENCE_OPACITY)).toBe('0.6');
   });
 
   describe('v1 ↔ v2 storage round-trip', () => {
