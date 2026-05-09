@@ -65,15 +65,27 @@ vi.mock('@/providers/dropbox/dropboxPreferencesSync', () => ({
 }));
 
 import { AppearanceSection } from '../AppearanceSection';
-import { VisualizerProvider, VisualEffectsToggleProvider, TranslucenceProvider } from '@/contexts/visualEffects';
-import { useVisualizer, useTranslucence, useVisualEffectsToggle } from '@/contexts/visualEffects';
+import {
+  VisualizerProvider,
+  VisualEffectsToggleProvider,
+  TranslucenceProvider,
+  AccentColorBackgroundProvider,
+} from '@/contexts/visualEffects';
+import {
+  useVisualizer,
+  useTranslucence,
+  useVisualEffectsToggle,
+  useAccentColorBackground,
+} from '@/contexts/visualEffects';
 
 const Wrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <ThemeProvider theme={theme}>
     <VisualEffectsToggleProvider>
-      <VisualizerProvider>
-        <TranslucenceProvider>{children}</TranslucenceProvider>
-      </VisualizerProvider>
+      <AccentColorBackgroundProvider>
+        <VisualizerProvider>
+          <TranslucenceProvider>{children}</TranslucenceProvider>
+        </VisualizerProvider>
+      </AccentColorBackgroundProvider>
     </VisualEffectsToggleProvider>
   </ThemeProvider>
 );
@@ -85,7 +97,7 @@ describe('SettingsV2 AppearanceSection', () => {
     installLocalStorageShim();
   });
 
-  it('renders all four control groups', () => {
+  it('renders all five control groups', () => {
     // #given + #when
     render(
       <Wrapper>
@@ -97,6 +109,7 @@ describe('SettingsV2 AppearanceSection', () => {
     expect(screen.getByText('Accent Color')).toBeInTheDocument();
     expect(screen.getByText('Glow')).toBeInTheDocument();
     expect(screen.getByText('Visualizer')).toBeInTheDocument();
+    expect(screen.getByText('Background gradient')).toBeInTheDocument();
     expect(screen.getByText('Translucence')).toBeInTheDocument();
   });
 
@@ -187,6 +200,14 @@ describe('SettingsV2 AppearanceSection', () => {
       return null;
     };
 
+    const AccentBgStateProbe: React.FC<{ onState: (state: ReturnType<typeof useAccentColorBackground>) => void }> = ({
+      onState,
+    }) => {
+      const state = useAccentColorBackground();
+      onState(state);
+      return null;
+    };
+
     it('reflects a v2 visualizer-style change in a sibling v1-style reader', () => {
       // #given — both surfaces mounted against the same provider
       let lastVizState: ReturnType<typeof useVisualizer> | null = null;
@@ -260,6 +281,26 @@ describe('SettingsV2 AppearanceSection', () => {
       // #then
       expect(lastTransState!.translucenceEnabled).toBe(false);
       expect(memoryStorage.get(STORAGE_KEYS.TRANSLUCENCE_ENABLED)).toBe('false');
+    });
+
+    it('reflects a v2 accent-color-background toggle in a sibling reader and persists the key', () => {
+      // #given
+      let lastAccentBgState: ReturnType<typeof useAccentColorBackground> | null = null;
+      render(
+        <Wrapper>
+          <AppearanceSection />
+          <AccentBgStateProbe onState={(s) => (lastAccentBgState = s)} />
+        </Wrapper>,
+      );
+
+      // #when — default is `false`, click flips it to `true`
+      act(() => {
+        fireEvent.click(screen.getByLabelText('Toggle accent-color background'));
+      });
+
+      // #then
+      expect(lastAccentBgState!.accentColorBackgroundPreferred).toBe(true);
+      expect(memoryStorage.get(STORAGE_KEYS.ACCENT_COLOR_BG_PREFERRED)).toBe('true');
     });
   });
 });

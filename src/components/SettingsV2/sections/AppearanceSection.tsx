@@ -5,6 +5,7 @@ import { Switch } from '@/components/ui/switch';
 import { OptionButton, OptionButtonGroup } from '@/components/AppSettingsMenu/styled';
 
 import { AccentColorManager } from './appearance/AccentColorManager';
+import { AccentColorBackgroundToggle } from './appearance/AccentColorBackgroundToggle';
 import { GlowControls } from './appearance/GlowControls';
 import { VisualizerStylePicker } from './appearance/VisualizerStylePicker';
 import {
@@ -109,6 +110,8 @@ export const AppearanceSection: React.FC = () => {
       <GlowControls />
       <Divider />
       <VisualizerStylePicker />
+      <Divider />
+      <AccentColorBackgroundToggle />
       <Divider />
       <TranslucenceToggle />
     </Container>
