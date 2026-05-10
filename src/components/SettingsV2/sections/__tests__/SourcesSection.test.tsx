@@ -197,4 +197,25 @@ describe('SettingsV2 SourcesSection', () => {
       expect(screen.queryByText(/Queue$/)).not.toBeInTheDocument();
     });
   });
+
+  describe('token-expired reconnect state', () => {
+    it('shows "Reconnect needed" badge when a provider is enabled but isAuthenticated returns false', () => {
+      // #given — Spotify is enabled but its auth token has expired
+      const spotify = makeDescriptor('spotify', 'Spotify', { isAuthenticated: false });
+      const dropbox = makeDescriptor('dropbox', 'Dropbox');
+      mockEnabledProviderIds = ['spotify', 'dropbox'];
+      mockRegistry.getAll.mockReturnValue([spotify, dropbox]);
+      mockRegistry.get.mockImplementation((id) => (id === 'spotify' ? spotify : dropbox));
+
+      // #when
+      render(
+        <Wrapper>
+          <SourcesSection />
+        </Wrapper>,
+      );
+
+      // #then
+      expect(screen.getByText('Reconnect needed')).toBeInTheDocument();
+    });
+  });
 });

@@ -1,6 +1,5 @@
 import React, { useCallback, useMemo } from 'react';
 import { useProviderContext } from '@/contexts/ProviderContext';
-import { useWelcomeSeen } from '@/hooks/useWelcomeSeen';
 import ProviderIcon from '@/components/ProviderIcon';
 import type { ProviderId } from '@/types/domain';
 import {
@@ -32,7 +31,6 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
   onDismiss,
 }) => {
   const { enabledProviderIds, connectedProviderIds, getDescriptor } = useProviderContext();
-  const [, setWelcomeSeen] = useWelcomeSeen();
 
   const hasConnectedProvider = connectedProviderIds.length > 0;
 
@@ -59,11 +57,6 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
       onConnectProvider();
     }
   }, [hasConnectedProvider, onBrowseLibrary, onConnectProvider]);
-
-  const handleDismiss = useCallback(() => {
-    setWelcomeSeen(true);
-    onDismiss?.();
-  }, [setWelcomeSeen, onDismiss]);
 
   const primaryCtaLabel = hasConnectedProvider ? 'Browse your library' : 'Connect a provider';
   const subtitle = hasConnectedProvider
@@ -103,7 +96,7 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
           <PrimaryCta type="button" onClick={handlePrimaryCta}>
             {primaryCtaLabel}
           </PrimaryCta>
-          <DismissButton type="button" onClick={handleDismiss}>
+          <DismissButton type="button" onClick={() => onDismiss?.()}>
             Don&apos;t show this again
           </DismissButton>
         </CtaRow>

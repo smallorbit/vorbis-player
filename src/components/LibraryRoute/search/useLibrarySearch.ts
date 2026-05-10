@@ -32,8 +32,8 @@ export interface LibrarySearchState {
   clearAll: () => void;
 }
 
-export function useLibrarySearch(): LibrarySearchState {
-  const [query, setQuery] = useState('');
+export function useLibrarySearch(initialQuery?: string): LibrarySearchState {
+  const [query, setQuery] = useState(initialQuery ?? '');
   const [providerFilter, setProviderFilter] = useLocalStorage<ProviderId[]>(
     STORAGE_KEYS.providerFilter,
     DEFAULT_PROVIDER_FILTER,
