@@ -189,4 +189,29 @@ describe('useLongPress', () => {
     // #then
     expect(onTap).toHaveBeenCalledTimes(1);
   });
+
+  it('ignores secondary-button pointerup during an active primary-button long-press', () => {
+    // #given
+    const onLongPress = vi.fn();
+    const onTap = vi.fn();
+    const { result } = renderHook(() => useLongPress({ onLongPress, onTap }));
+
+    // #when — start a primary-button long-press
+    act(() => {
+      result.current.onPointerDown(makeEvent({ pointerType: 'mouse', button: 0 }));
+    });
+    // stray right-button pointerup fires before the primary button is released
+    act(() => {
+      result.current.onPointerUp(makeEvent({ pointerType: 'mouse', button: 2 }));
+    });
+
+    // #then — secondary-button release must not abort the long-press or fire onTap
+    expect(onTap).not.toHaveBeenCalled();
+
+    // primary button released — long-press window still intact, tap fires
+    act(() => {
+      result.current.onPointerUp(makeEvent({ pointerType: 'mouse', button: 0 }));
+    });
+    expect(onTap).toHaveBeenCalledTimes(1);
+  });
 });

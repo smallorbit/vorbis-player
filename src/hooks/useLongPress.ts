@@ -47,7 +47,8 @@ export function useLongPress({
     }, LONG_PRESS_DURATION_MS);
   }, [enabled, onLongPress]);
 
-  const onPointerUp = useCallback((_e: React.PointerEvent) => {
+  const onPointerUp = useCallback((e: React.PointerEvent) => {
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
     if (!enabled) return;
     const wasPending = timerRef.current !== null;
     cancel();

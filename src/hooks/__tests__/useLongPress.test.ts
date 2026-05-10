@@ -211,4 +211,30 @@ describe('useLongPress', () => {
     // #then
     expect(onShortPress).toHaveBeenCalledTimes(1);
   });
+
+  it('ignores secondary-button pointerup during an active primary-button long-press', () => {
+    // #given
+    const onLongPress = vi.fn();
+    const onShortPress = vi.fn();
+    const { result } = renderHook(() => useLongPress({ onLongPress, onShortPress }));
+
+    // #when — start a primary-button press
+    act(() => {
+      result.current.onPointerDown(createPointerEvent(100, 100, { pointerType: 'mouse', button: 0 }));
+    });
+    // stray right-button pointerup fires before the primary button is released
+    act(() => {
+      result.current.onPointerUp(createPointerEvent(100, 100, { pointerType: 'mouse', button: 2 }));
+    });
+
+    // #then — secondary-button release must not fire onShortPress or corrupt state
+    expect(onShortPress).not.toHaveBeenCalled();
+
+    // primary button released — timer still pending, short-press fires
+    act(() => {
+      result.current.onPointerUp(createPointerEvent(100, 100, { pointerType: 'mouse', button: 0 }));
+    });
+    expect(onShortPress).toHaveBeenCalledTimes(1);
+    expect(onLongPress).not.toHaveBeenCalled();
+  });
 });
