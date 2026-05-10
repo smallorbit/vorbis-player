@@ -65,15 +65,27 @@ vi.mock('@/providers/dropbox/dropboxPreferencesSync', () => ({
 }));
 
 import { AppearanceSection } from '../AppearanceSection';
-import { VisualizerProvider, VisualEffectsToggleProvider, TranslucenceProvider } from '@/contexts/visualEffects';
-import { useVisualizer, useTranslucence, useVisualEffectsToggle } from '@/contexts/visualEffects';
+import {
+  VisualizerProvider,
+  VisualEffectsToggleProvider,
+  TranslucenceProvider,
+  AccentColorBackgroundProvider,
+} from '@/contexts/visualEffects';
+import {
+  useVisualizer,
+  useTranslucence,
+  useVisualEffectsToggle,
+  useAccentColorBackground,
+} from '@/contexts/visualEffects';
 
 const Wrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <ThemeProvider theme={theme}>
     <VisualEffectsToggleProvider>
-      <VisualizerProvider>
-        <TranslucenceProvider>{children}</TranslucenceProvider>
-      </VisualizerProvider>
+      <AccentColorBackgroundProvider>
+        <VisualizerProvider>
+          <TranslucenceProvider>{children}</TranslucenceProvider>
+        </VisualizerProvider>
+      </AccentColorBackgroundProvider>
     </VisualEffectsToggleProvider>
   </ThemeProvider>
 );
@@ -85,7 +97,7 @@ describe('SettingsV2 AppearanceSection', () => {
     installLocalStorageShim();
   });
 
-  it('renders all four control groups', () => {
+  it('renders all five control groups', () => {
     // #given + #when
     render(
       <Wrapper>
@@ -97,10 +109,11 @@ describe('SettingsV2 AppearanceSection', () => {
     expect(screen.getByText('Accent Color')).toBeInTheDocument();
     expect(screen.getByText('Glow')).toBeInTheDocument();
     expect(screen.getByText('Visualizer')).toBeInTheDocument();
+    expect(screen.getByText('Background gradient')).toBeInTheDocument();
     expect(screen.getByText('Translucence')).toBeInTheDocument();
   });
 
-  it('writes TRANSLUCENCE_ENABLED only (no opacity slider) when toggled', () => {
+  it('writes TRANSLUCENCE_ENABLED only (no opacity side-effect) when master toggled', () => {
     // #given
     render(
       <Wrapper>
@@ -111,22 +124,46 @@ describe('SettingsV2 AppearanceSection', () => {
     // #when — translucence default is `true`, click toggles to `false`
     fireEvent.click(screen.getByLabelText('Toggle translucence'));
 
-    // #then — single key is written; TRANSLUCENCE_OPACITY is untouched (deferred to #1463)
+    // #then — single key is written; opacity preset must not auto-write on master flip
     expect(memoryStorage.get(STORAGE_KEYS.TRANSLUCENCE_ENABLED)).toBe('false');
     expect(memoryStorage.has(STORAGE_KEYS.TRANSLUCENCE_OPACITY)).toBe(false);
   });
 
-  it('does not render an opacity slider for translucence', () => {
-    // #given + #when
+  it('renders the opacity preset only when translucence is enabled', () => {
+    // #given
     render(
       <Wrapper>
         <AppearanceSection />
       </Wrapper>,
     );
 
-    // #then — TranslucenceToggle is on/off only per stage 2 scope
-    expect(screen.queryByRole('slider')).not.toBeInTheDocument();
-    expect(screen.queryByText(/opacity/i)).not.toBeInTheDocument();
+    // #then — translucence default is `true`, all three presets are visible
+    expect(screen.getByRole('button', { name: 'Subtle' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Default' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Strong' })).toBeInTheDocument();
+
+    // #when — flip the master off
+    fireEvent.click(screen.getByLabelText('Toggle translucence'));
+
+    // #then — presets unmount
+    expect(screen.queryByRole('button', { name: 'Subtle' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Default' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Strong' })).not.toBeInTheDocument();
+  });
+
+  it('writes the chosen opacity to TRANSLUCENCE_OPACITY when a preset is clicked', () => {
+    // #given
+    render(
+      <Wrapper>
+        <AppearanceSection />
+      </Wrapper>,
+    );
+
+    // #when
+    fireEvent.click(screen.getByRole('button', { name: 'Subtle' }));
+
+    // #then
+    expect(memoryStorage.get(STORAGE_KEYS.TRANSLUCENCE_OPACITY)).toBe('0.6');
   });
 
   describe('v1 ↔ v2 storage round-trip', () => {
@@ -159,6 +196,14 @@ describe('SettingsV2 AppearanceSection', () => {
       onState,
     }) => {
       const state = useVisualEffectsToggle();
+      onState(state);
+      return null;
+    };
+
+    const AccentBgStateProbe: React.FC<{ onState: (state: ReturnType<typeof useAccentColorBackground>) => void }> = ({
+      onState,
+    }) => {
+      const state = useAccentColorBackground();
       onState(state);
       return null;
     };
@@ -236,6 +281,26 @@ describe('SettingsV2 AppearanceSection', () => {
       // #then
       expect(lastTransState!.translucenceEnabled).toBe(false);
       expect(memoryStorage.get(STORAGE_KEYS.TRANSLUCENCE_ENABLED)).toBe('false');
+    });
+
+    it('reflects a v2 accent-color-background toggle in a sibling reader and persists the key', () => {
+      // #given
+      let lastAccentBgState: ReturnType<typeof useAccentColorBackground> | null = null;
+      render(
+        <Wrapper>
+          <AppearanceSection />
+          <AccentBgStateProbe onState={(s) => (lastAccentBgState = s)} />
+        </Wrapper>,
+      );
+
+      // #when — default is `false`, click flips it to `true`
+      act(() => {
+        fireEvent.click(screen.getByLabelText('Toggle accent-color background'));
+      });
+
+      // #then
+      expect(lastAccentBgState!.accentColorBackgroundPreferred).toBe(true);
+      expect(memoryStorage.get(STORAGE_KEYS.ACCENT_COLOR_BG_PREFERRED)).toBe('true');
     });
   });
 });
