@@ -8,7 +8,7 @@ import { GlowProvider } from './GlowContext';
 
 export { VisualEffectsToggleProvider, useVisualEffectsToggle } from './VisualEffectsToggleContext';
 export { VisualizerProvider, useVisualizer } from './VisualizerContext';
-export { useAccentColorBackground } from './AccentColorBackgroundContext';
+export { AccentColorBackgroundProvider, useAccentColorBackground } from './AccentColorBackgroundContext';
 export { TranslucenceProvider, useTranslucence } from './TranslucenceContext';
 export { useZenMode } from './ZenModeContext';
 
