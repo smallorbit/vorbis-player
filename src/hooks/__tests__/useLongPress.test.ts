@@ -2,9 +2,15 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useLongPress } from '../useLongPress';
 
-const createPointerEvent = (x: number, y: number): React.PointerEvent => ({
+const createPointerEvent = (
+  x: number,
+  y: number,
+  overrides: Partial<{ pointerType: string; button: number }> = {},
+): React.PointerEvent => ({
   clientX: x,
   clientY: y,
+  pointerType: overrides.pointerType ?? 'touch',
+  button: overrides.button ?? 0,
   preventDefault: vi.fn(),
   stopPropagation: vi.fn(),
 } as unknown as React.PointerEvent);
@@ -153,5 +159,82 @@ describe('useLongPress', () => {
     // #then
     expect(onLongPress).not.toHaveBeenCalled();
     expect(onShortPress).not.toHaveBeenCalled();
+  });
+
+  it('does not invoke onShortPress on right-click (mouse button 2)', () => {
+    // #given
+    const onLongPress = vi.fn();
+    const onShortPress = vi.fn();
+    const { result } = renderHook(() => useLongPress({ onLongPress, onShortPress }));
+
+    // #when
+    act(() => {
+      result.current.onPointerDown(createPointerEvent(100, 100, { pointerType: 'mouse', button: 2 }));
+      result.current.onPointerUp(createPointerEvent(100, 100, { pointerType: 'mouse', button: 2 }));
+    });
+
+    // #then
+    expect(onShortPress).not.toHaveBeenCalled();
+    expect(onLongPress).not.toHaveBeenCalled();
+  });
+
+  it('does not start long-press timer on right-click (mouse button 2)', () => {
+    // #given
+    const onLongPress = vi.fn();
+    const { result } = renderHook(() => useLongPress({ onLongPress }));
+
+    // #when
+    act(() => {
+      result.current.onPointerDown(createPointerEvent(100, 100, { pointerType: 'mouse', button: 2 }));
+      vi.advanceTimersByTime(600);
+    });
+
+    // #then
+    expect(onLongPress).not.toHaveBeenCalled();
+  });
+
+  it('still fires onShortPress on primary mouse button (button 0)', () => {
+    // #given
+    const onLongPress = vi.fn();
+    const onShortPress = vi.fn();
+    const { result } = renderHook(() => useLongPress({ onLongPress, onShortPress }));
+
+    // #when
+    act(() => {
+      result.current.onPointerDown(createPointerEvent(100, 100, { pointerType: 'mouse', button: 0 }));
+    });
+    act(() => {
+      vi.advanceTimersByTime(100);
+      result.current.onPointerUp(createPointerEvent(100, 100, { pointerType: 'mouse', button: 0 }));
+    });
+
+    // #then
+    expect(onShortPress).toHaveBeenCalledTimes(1);
+  });
+
+  it('ignores secondary-button pointerup during an active primary-button long-press', () => {
+    // #given
+    const onLongPress = vi.fn();
+    const onShortPress = vi.fn();
+    const { result } = renderHook(() => useLongPress({ onLongPress, onShortPress }));
+
+    // #when — start a primary-button press
+    act(() => {
+      result.current.onPointerDown(createPointerEvent(100, 100, { pointerType: 'mouse', button: 0 }));
+    });
+    // stray right-button pointerup fires before the primary button is released
+    act(() => {
+      result.current.onPointerUp(createPointerEvent(100, 100, { pointerType: 'mouse', button: 2 }));
+    });
+
+    // #then — secondary-button release must not fire onShortPress or corrupt state
+    expect(onShortPress).not.toHaveBeenCalled();
+
+    // primary button released — timer still pending, short-press fires
+    act(() => {
+      result.current.onPointerUp(createPointerEvent(100, 100, { pointerType: 'mouse', button: 0 }));
+    });
+    expect(onShortPress).toHaveBeenCalledTimes(1);
+    expect(onLongPress).not.toHaveBeenCalled();
   });
 });
