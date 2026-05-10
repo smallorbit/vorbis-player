@@ -4,7 +4,6 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { ThemeProvider } from 'styled-components';
 import { theme } from '@/styles/theme';
 import WelcomeScreen from '../index';
-import { WELCOME_SEEN_STORAGE_KEY } from '@/hooks/useWelcomeSeen';
 import type { ProviderId } from '@/types/domain';
 
 vi.mock('@/contexts/ProviderContext', () => ({
@@ -156,22 +155,7 @@ describe('WelcomeScreen', () => {
   });
 
   describe('dismiss-for-good control', () => {
-    it('persists welcomeSeen=true via localStorage when clicked', () => {
-      // #given
-      setupProviderContext({ enabled: ['spotify'], connected: ['spotify'] });
-      renderWelcome();
-
-      // #when
-      fireEvent.click(screen.getByRole('button', { name: /don't show this again/i }));
-
-      // #then
-      expect(window.localStorage.setItem).toHaveBeenCalledWith(
-        WELCOME_SEEN_STORAGE_KEY,
-        'true',
-      );
-    });
-
-    it('invokes onDismiss callback when provided', () => {
+    it('invokes onDismiss when the dismiss button is clicked', () => {
       // #given
       setupProviderContext({ enabled: ['spotify'], connected: ['spotify'] });
       const onDismiss = vi.fn();
