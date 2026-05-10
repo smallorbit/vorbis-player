@@ -28,7 +28,7 @@ export const MusicSourcesSection = memo(() => {
   const providers = useMemo(() => registry.getAll(), [registry]);
 
   const [disconnectDialogProviderId, setDisconnectDialogProviderId] = useState<ProviderId | null>(null);
-  const pendingPopup = useRef<{ providerId: ProviderId; popup: Window } | null>(null);
+  const pendingPopup = useRef<{ providerId: ProviderId; popup: Window; onSuccess: (id: ProviderId) => void } | null>(null);
   const popupPollInterval = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const clearPendingPopup = useCallback(() => {
@@ -48,25 +48,23 @@ export const MusicSourcesSection = memo(() => {
       if (!pending) return;
       if (event.data?.provider !== pending.providerId) return;
 
+      const { providerId, onSuccess } = pending;
       clearPendingPopup();
-      toggleProvider(pending.providerId);
+      onSuccess(providerId);
     };
 
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
-  }, [toggleProvider, clearPendingPopup]);
+  }, [clearPendingPopup]);
 
-  const handleToggleOn = useCallback(
-    (descriptor: ReturnType<typeof registry.getAll>[number]) => {
-      if (descriptor.auth.isAuthenticated()) {
-        toggleProvider(descriptor.id);
-        return;
-      }
-
+  const openLoginPopup = useCallback(
+    (
+      descriptor: ReturnType<typeof registry.getAll>[number],
+      onSuccess: (providerId: ProviderId) => void,
+    ) => {
       const providerId = descriptor.id;
       const providerName = descriptor.name;
 
-      // Intercept window.open to capture the popup reference when beginLogin opens it
       const originalOpen = window.open.bind(window);
       window.open = (...args: Parameters<typeof window.open>) => {
         window.open = originalOpen;
@@ -76,7 +74,7 @@ export const MusicSourcesSection = memo(() => {
           return win;
         }
 
-        pendingPopup.current = { providerId, popup: win };
+        pendingPopup.current = { providerId, popup: win, onSuccess };
         popupPollInterval.current = setInterval(() => {
           if (!pendingPopup.current) return;
           if (pendingPopup.current.popup.closed) {
@@ -87,7 +85,7 @@ export const MusicSourcesSection = memo(() => {
               const name = registry.get(pending.providerId)?.name ?? pending.providerId;
               toast(`Couldn't connect to ${name}. Try again.`);
             } else {
-              toggleProvider(pending.providerId);
+              onSuccess(pending.providerId);
             }
           }
         }, 500);
@@ -101,7 +99,28 @@ export const MusicSourcesSection = memo(() => {
         toast(`Couldn't connect to ${providerName}. Try again.`);
       });
     },
-    [registry, toggleProvider, clearPendingPopup],
+    [registry, clearPendingPopup],
+  );
+
+  const handleToggleOn = useCallback(
+    (descriptor: ReturnType<typeof registry.getAll>[number]) => {
+      if (descriptor.auth.isAuthenticated()) {
+        toggleProvider(descriptor.id);
+        return;
+      }
+
+      openLoginPopup(descriptor, (providerId) => toggleProvider(providerId));
+    },
+    [openLoginPopup, toggleProvider],
+  );
+
+  const handleReconnect = useCallback(
+    (descriptor: ReturnType<typeof registry.getAll>[number]) => {
+      openLoginPopup(descriptor, () => {
+        // Provider is already in enabledProviderIds — no toggleProvider call needed.
+      });
+    },
+    [openLoginPopup],
   );
 
   useEffect(() => () => clearPendingPopup(), [clearPendingPopup]);
@@ -170,19 +189,22 @@ export const MusicSourcesSection = memo(() => {
         {providers.map((descriptor) => {
           const isEnabled = enabledProviderIds.includes(descriptor.id);
           const isConnected = descriptor.auth.isAuthenticated();
+          const needsReconnect = isEnabled && !isConnected;
           const isLastEnabled = enabledProviderIds.length <= 1 && isEnabled;
-          const status = isEnabled && isConnected ? 'connected' : 'disabled';
+          const status = isEnabled && isConnected ? 'connected' : needsReconnect ? 'reconnect' : 'disabled';
           return (
             <ProviderRow key={descriptor.id}>
               <ProviderName>{descriptor.name}</ProviderName>
               <ProviderStatusBadge $status={status}>
-                {status === 'connected' ? 'Connected' : ''}
+                {status === 'connected' ? 'Connected' : status === 'reconnect' ? 'Reconnect needed' : ''}
               </ProviderStatusBadge>
               <Switch
                 checked={isEnabled}
                 onCheckedChange={() => {
                   if (!isEnabled) {
                     handleToggleOn(descriptor);
+                  } else if (needsReconnect) {
+                    handleReconnect(descriptor);
                   } else {
                     setDisconnectDialogProviderId(descriptor.id);
                   }
