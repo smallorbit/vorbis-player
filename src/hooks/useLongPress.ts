@@ -35,6 +35,7 @@ export function useLongPress({
 
   const onPointerDown = useCallback((e: React.PointerEvent) => {
     if (!enabled) return;
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
     firedRef.current = false;
     startXRef.current = e.clientX;
     startYRef.current = e.clientY;

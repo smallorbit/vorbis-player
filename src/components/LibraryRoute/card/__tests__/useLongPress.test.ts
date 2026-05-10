@@ -2,11 +2,15 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useLongPress } from '../useLongPress';
 
-function makeEvent(overrides: Partial<{ clientX: number; clientY: number }> = {}): React.PointerEvent<HTMLElement> {
+function makeEvent(
+  overrides: Partial<{ clientX: number; clientY: number; pointerType: string; button: number }> = {},
+): React.PointerEvent<HTMLElement> {
   const target = document.createElement('div');
   return {
     clientX: overrides.clientX ?? 0,
     clientY: overrides.clientY ?? 0,
+    pointerType: overrides.pointerType ?? 'touch',
+    button: overrides.button ?? 0,
     currentTarget: target,
   } as unknown as React.PointerEvent<HTMLElement>;
 }
@@ -120,5 +124,69 @@ describe('useLongPress', () => {
 
     // #then
     expect(onLongPress).not.toHaveBeenCalled();
+  });
+
+  it('does not invoke onTap on right-click (mouse button 2)', () => {
+    // #given
+    const onLongPress = vi.fn();
+    const onTap = vi.fn();
+    const { result } = renderHook(() => useLongPress({ onLongPress, onTap }));
+
+    // #when
+    act(() => {
+      result.current.onPointerDown(makeEvent({ pointerType: 'mouse', button: 2 }));
+      result.current.onPointerUp(makeEvent({ pointerType: 'mouse', button: 2 }));
+    });
+
+    // #then
+    expect(onTap).not.toHaveBeenCalled();
+    expect(onLongPress).not.toHaveBeenCalled();
+  });
+
+  it('does not start long-press timer on right-click (mouse button 2)', () => {
+    // #given
+    const onLongPress = vi.fn();
+    const { result } = renderHook(() => useLongPress({ onLongPress }));
+
+    // #when
+    act(() => {
+      result.current.onPointerDown(makeEvent({ pointerType: 'mouse', button: 2 }));
+      vi.advanceTimersByTime(600);
+    });
+
+    // #then
+    expect(onLongPress).not.toHaveBeenCalled();
+  });
+
+  it('still fires onTap on primary mouse button (button 0)', () => {
+    // #given
+    const onLongPress = vi.fn();
+    const onTap = vi.fn();
+    const { result } = renderHook(() => useLongPress({ onLongPress, onTap }));
+
+    // #when
+    act(() => {
+      result.current.onPointerDown(makeEvent({ pointerType: 'mouse', button: 0 }));
+      result.current.onPointerUp(makeEvent({ pointerType: 'mouse', button: 0 }));
+    });
+
+    // #then
+    expect(onTap).toHaveBeenCalledTimes(1);
+  });
+
+  it('still fires onTap on touch (pointerType touch, button 0)', () => {
+    // #given
+    const onLongPress = vi.fn();
+    const onTap = vi.fn();
+    const { result } = renderHook(() => useLongPress({ onLongPress, onTap }));
+
+    // #when
+    act(() => {
+      result.current.onPointerDown(makeEvent({ pointerType: 'touch', button: 0 }));
+      result.current.onPointerUp(makeEvent({ pointerType: 'touch', button: 0 }));
+    });
+
+    // #then
+    expect(onTap).toHaveBeenCalledTimes(1);
   });
 });
