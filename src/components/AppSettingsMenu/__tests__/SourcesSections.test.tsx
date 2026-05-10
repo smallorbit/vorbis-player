@@ -357,6 +357,20 @@ describe('MusicSourcesSection', () => {
       expect(screen.getByText('Reconnect needed')).toBeInTheDocument();
     });
 
+    it('sets aria-label to "Reconnect <name>" when provider is enabled but auth has expired', () => {
+      // #given — Spotify is enabled but its auth token has expired
+      const spotifyDesc = makeSpotifyDescriptor({ isAuthenticated: vi.fn().mockReturnValue(false) });
+      const dropboxDesc = makeDropboxDescriptor();
+      mockEnabledProviderIds = ['spotify', 'dropbox'];
+      mockRegistry.getAll.mockReturnValue([spotifyDesc, dropboxDesc]);
+
+      // #when
+      render(<Wrapper><MusicSourcesSection /></Wrapper>);
+
+      // #then — screen readers hear "Reconnect Spotify", not "Disable Spotify"
+      expect(screen.getByLabelText('Reconnect Spotify')).toBeInTheDocument();
+    });
+
     it('does not open ProviderDisconnectDialog when clicking the toggle on an expired provider', async () => {
       // #given — Spotify is enabled but its auth token has expired
       const spotifyDesc = makeSpotifyDescriptor({ isAuthenticated: vi.fn().mockReturnValue(false) });
@@ -373,7 +387,7 @@ describe('MusicSourcesSection', () => {
       render(<Wrapper><MusicSourcesSection /></Wrapper>);
 
       // #when
-      fireEvent.click(screen.getByLabelText('Disable Spotify'));
+      fireEvent.click(screen.getByLabelText('Reconnect Spotify'));
 
       // #then — disconnect dialog must NOT appear
       expect(screen.queryByText('Disconnect Spotify')).not.toBeInTheDocument();
@@ -395,7 +409,7 @@ describe('MusicSourcesSection', () => {
       render(<Wrapper><MusicSourcesSection /></Wrapper>);
 
       // #when
-      fireEvent.click(screen.getByLabelText('Disable Spotify'));
+      fireEvent.click(screen.getByLabelText('Reconnect Spotify'));
 
       // #then — OAuth popup must be initiated
       await waitFor(() => {
@@ -423,25 +437,32 @@ describe('MusicSourcesSection', () => {
         isAuthenticated.mockReturnValue(true);
         window.open('https://accounts.spotify.com/authorize', '_blank');
       });
+      const originalOpenDescriptor = Object.getOwnPropertyDescriptor(window, 'open');
       Object.defineProperty(window, 'open', {
         value: () => mockPopupObj,
         writable: true,
         configurable: true,
       });
 
-      render(<Wrapper><MusicSourcesSection /></Wrapper>);
+      try {
+        render(<Wrapper><MusicSourcesSection /></Wrapper>);
 
-      // #when
-      fireEvent.click(screen.getByLabelText('Disable Spotify'));
-      await waitFor(() => expect(spotifyDesc.auth.beginLogin).toHaveBeenCalled());
+        // #when
+        fireEvent.click(screen.getByLabelText('Reconnect Spotify'));
+        await waitFor(() => expect(spotifyDesc.auth.beginLogin).toHaveBeenCalled());
 
-      // #then — toggleProvider must NOT be called (provider is already enabled)
-      await waitFor(
-        () => {
-          expect(mockToggleProvider).not.toHaveBeenCalled();
-        },
-        { timeout: 2000 },
-      );
+        // #then — toggleProvider must NOT be called (provider is already enabled)
+        await waitFor(
+          () => {
+            expect(mockToggleProvider).not.toHaveBeenCalled();
+          },
+          { timeout: 2000 },
+        );
+      } finally {
+        if (originalOpenDescriptor) {
+          Object.defineProperty(window, 'open', originalOpenDescriptor);
+        }
+      }
     });
   });
 });
