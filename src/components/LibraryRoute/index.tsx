@@ -43,6 +43,7 @@ export interface LibraryRouteProps {
     id: string,
     provider?: ProviderId,
   ) => void;
+  initialSearchQuery?: string;
   isPlaying: boolean;
   isRadioAvailable?: boolean;
   isRadioGenerating?: boolean;
@@ -64,6 +65,7 @@ const LibraryRoute: React.FC<LibraryRouteProps> = ({
   onAddToQueue,
   onPlayNext,
   onStartRadioForCollection,
+  initialSearchQuery,
   isPlaying,
   isRadioAvailable,
   isRadioGenerating,
@@ -77,7 +79,7 @@ const LibraryRoute: React.FC<LibraryRouteProps> = ({
 }) => {
   const { isMobile } = usePlayerSizingContext();
   const [view, setView] = useState<LibraryRouteView>('home');
-  const search = useLibrarySearch();
+  const search = useLibrarySearch(initialSearchQuery);
   useEffect(() => {
     if (!onClose) return;
     const handleKeyDown = (e: KeyboardEvent) => {

@@ -100,6 +100,7 @@ const AudioPlayerComponent = () => {
 
   const collectionNameRef = useRef<string>('');
   const collectionProviderRef = useRef<import('@/types/domain').ProviderId | undefined>(undefined);
+  const pendingLibraryQueryRef = useRef<string | undefined>(undefined);
 
   const getLivePosition = useCallback(async (): Promise<number | null> => {
     const drivingId = playbackProviderRef.current;
@@ -123,6 +124,11 @@ const AudioPlayerComponent = () => {
     state.playbackPosition,
     getLivePosition,
   );
+
+  const handleOpenLibraryWithQuery = useCallback((query: string) => {
+    pendingLibraryQueryRef.current = query;
+    handlers.handleOpenLibrary();
+  }, [handlers]);
 
   const handleAlbumPlay = useCallback((albumId: string) => {
     collectionProviderRef.current = currentTrack?.provider as import('@/types/domain').ProviderId | undefined;
@@ -327,6 +333,7 @@ const AudioPlayerComponent = () => {
       onPrevious: withResumeDismiss(handlers.handlePrevious),
       onTrackSelect: handlers.playTrack,
       onOpenLibrary,
+      onOpenLibraryWithQuery: handleOpenLibraryWithQuery,
       onCloseLibrary: handlers.handleCloseLibrary,
       onOpenQuickAccessPanel: handleOpenQuickAccessPanel,
       onPlaylistSelect: handlePlaylistSelect,
@@ -342,6 +349,7 @@ const AudioPlayerComponent = () => {
   }, [
     handlers,
     handleAlbumPlay,
+    handleOpenLibraryWithQuery,
     handlePlaylistSelect,
     handleOpenQuickAccessPanel,
     handlePlayLikedTracks,
@@ -502,6 +510,8 @@ const AudioPlayerComponent = () => {
     }
 
     if (state.currentView === 'library') {
+      const initialSearchQuery = pendingLibraryQueryRef.current;
+      pendingLibraryQueryRef.current = undefined;
       return (
         <Suspense fallback={null}>
           <LibraryRoute
@@ -515,6 +525,7 @@ const AudioPlayerComponent = () => {
             onOpenSettings={handleOpenSettings}
             onResume={handleResume}
             lastSession={null}
+            initialSearchQuery={initialSearchQuery}
             isPlaying={state.isPlaying}
             isRadioAvailable={radio.isRadioAvailable}
             isRadioGenerating={radio.radioState?.isGenerating}
