@@ -58,10 +58,6 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
     }
   }, [hasConnectedProvider, onBrowseLibrary, onConnectProvider]);
 
-  const handleDismiss = useCallback(() => {
-    onDismiss?.();
-  }, [onDismiss]);
-
   const primaryCtaLabel = hasConnectedProvider ? 'Browse your library' : 'Connect a provider';
   const subtitle = hasConnectedProvider
     ? 'Jump into your music whenever you are ready.'
@@ -100,7 +96,7 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
           <PrimaryCta type="button" onClick={handlePrimaryCta}>
             {primaryCtaLabel}
           </PrimaryCta>
-          <DismissButton type="button" onClick={handleDismiss}>
+          <DismissButton type="button" onClick={() => onDismiss?.()}>
             Don&apos;t show this again
           </DismissButton>
         </CtaRow>
