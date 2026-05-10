@@ -209,7 +209,7 @@ export const MusicSourcesSection = memo(() => {
                     setDisconnectDialogProviderId(descriptor.id);
                   }
                 }}
-                aria-label={`${isEnabled ? 'Disable' : 'Enable'} ${descriptor.name}`}
+                aria-label={needsReconnect ? `Reconnect ${descriptor.name}` : isEnabled ? `Disable ${descriptor.name}` : `Enable ${descriptor.name}`}
                 disabled={isLastEnabled}
                 variant="neutral"
               />
