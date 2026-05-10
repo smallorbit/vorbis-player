@@ -125,11 +125,6 @@ const AudioPlayerComponent = () => {
     getLivePosition,
   );
 
-  const handleOpenLibraryWithQuery = useCallback((query: string) => {
-    pendingLibraryQueryRef.current = query;
-    handlers.handleOpenLibrary();
-  }, [handlers]);
-
   const handleAlbumPlay = useCallback((albumId: string) => {
     collectionProviderRef.current = currentTrack?.provider as import('@/types/domain').ProviderId | undefined;
     handlers.loadCollection(
@@ -242,6 +237,10 @@ const AudioPlayerComponent = () => {
     }) as T,
     [],
   );
+  const handleOpenLibraryWithQuery = useCallback((query: string) => {
+    pendingLibraryQueryRef.current = query;
+    withResumeDismiss(handlers.handleOpenLibrary)();
+  }, [handlers, withResumeDismiss]);
   useEffect(() => {
     if (showQueue) toast.dismiss(RESUME_TOAST_ID);
   }, [showQueue]);
