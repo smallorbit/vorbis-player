@@ -218,7 +218,7 @@ const PlayerStateRenderer: React.FC<PlayerStateRendererProps> = ({
   const { activeDescriptor } = useProviderContext();
   const providerName = activeDescriptor?.name ?? 'Music Service';
   const [qapEnabled] = useQapEnabled();
-  const [welcomeSeen] = useWelcomeSeen();
+  const [welcomeSeen, setWelcomeSeen] = useWelcomeSeen();
   const hasValidSession = !isSessionStale(lastSession);
   const route = resolveIdleRoute(welcomeSeen, qapEnabled, hasValidSession);
   // "Browse Library" is a one-way door: once engaged, the idle view stays on
@@ -363,6 +363,7 @@ const PlayerStateRenderer: React.FC<PlayerStateRendererProps> = ({
           <WelcomeScreen
             onConnectProvider={handleConnectClick}
             onBrowseLibrary={handleBrowseLibrary}
+            onDismiss={() => setWelcomeSeen(true)}
           />
         </>
       );

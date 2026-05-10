@@ -40,9 +40,10 @@ vi.mock('../QuickAccessPanel', () => ({
 }));
 
 vi.mock('../WelcomeScreen', () => ({
-  default: ({ onBrowseLibrary }: { onBrowseLibrary: () => void }) => (
+  default: ({ onBrowseLibrary, onDismiss }: { onBrowseLibrary: () => void; onDismiss?: () => void }) => (
     <div data-testid="welcome-screen">
       <button type="button" onClick={onBrowseLibrary}>browse</button>
+      <button type="button" onClick={onDismiss}>dismiss</button>
     </div>
   ),
 }));
@@ -401,6 +402,41 @@ describe('PlayerStateRenderer idle routing', () => {
     // #then
     await waitFor(() => {
       expect(screen.getByTestId('library-route')).toBeInTheDocument();
+    });
+  });
+
+  it('immediately routes off welcome screen when onDismiss is invoked', async () => {
+    // #given — welcomeSeen starts false; setWelcomeSeen toggles it true in the parent
+    const setWelcomeSeen = vi.fn();
+    mockUseWelcomeSeen
+      .mockReturnValueOnce([false, setWelcomeSeen])
+      .mockReturnValue([true, setWelcomeSeen]);
+    mockUseQapEnabled.mockReturnValue([false, vi.fn()]);
+
+    // #when
+    const { rerender } = render(
+      <Wrapper>
+        <PlayerStateRenderer {...defaultProps} lastSession={null} />
+      </Wrapper>,
+    );
+    expect(screen.getByTestId('welcome-screen')).toBeInTheDocument();
+
+    act(() => {
+      screen.getByText('dismiss').click();
+    });
+
+    // #then — setWelcomeSeen(true) was called by the parent's onDismiss handler
+    expect(setWelcomeSeen).toHaveBeenCalledWith(true);
+
+    // re-render with the updated hook value to simulate state update
+    rerender(
+      <Wrapper>
+        <PlayerStateRenderer {...defaultProps} lastSession={null} />
+      </Wrapper>,
+    );
+
+    await waitFor(() => {
+      expect(screen.queryByTestId('welcome-screen')).not.toBeInTheDocument();
     });
   });
 

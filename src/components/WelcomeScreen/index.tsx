@@ -1,6 +1,5 @@
 import React, { useCallback, useMemo } from 'react';
 import { useProviderContext } from '@/contexts/ProviderContext';
-import { useWelcomeSeen } from '@/hooks/useWelcomeSeen';
 import ProviderIcon from '@/components/ProviderIcon';
 import type { ProviderId } from '@/types/domain';
 import {
@@ -32,7 +31,6 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
   onDismiss,
 }) => {
   const { enabledProviderIds, connectedProviderIds, getDescriptor } = useProviderContext();
-  const [, setWelcomeSeen] = useWelcomeSeen();
 
   const hasConnectedProvider = connectedProviderIds.length > 0;
 
@@ -61,9 +59,8 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({
   }, [hasConnectedProvider, onBrowseLibrary, onConnectProvider]);
 
   const handleDismiss = useCallback(() => {
-    setWelcomeSeen(true);
     onDismiss?.();
-  }, [setWelcomeSeen, onDismiss]);
+  }, [onDismiss]);
 
   const primaryCtaLabel = hasConnectedProvider ? 'Browse your library' : 'Connect a provider';
   const subtitle = hasConnectedProvider
