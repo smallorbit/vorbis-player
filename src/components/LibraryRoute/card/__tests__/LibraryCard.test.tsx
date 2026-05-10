@@ -1,6 +1,6 @@
 import React from 'react';
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, act } from '@testing-library/react';
 import LibraryCard from '../LibraryCard';
 
 vi.mock('@/components/ProviderIcon', () => ({
@@ -82,5 +82,47 @@ describe('LibraryCard', () => {
 
     // #then
     expect(screen.getByTestId('library-card-album-a1')).toBeInTheDocument();
+  });
+
+  it('right-click opens context menu without firing onSelect', () => {
+    // #given
+    const onSelect = vi.fn();
+    const onContextMenuRequest = vi.fn();
+    render(
+      <LibraryCard
+        {...baseProps}
+        onSelect={onSelect}
+        onContextMenuRequest={onContextMenuRequest}
+      />,
+    );
+    const card = screen.getByTestId('library-card-playlist-p1');
+
+    // #when — dispatch native-style events with pointerType so useLongPress guard fires.
+    // jsdom's fireEvent helpers don't propagate pointerType; patching via Object.assign does.
+    act(() => {
+      card.dispatchEvent(
+        Object.assign(new Event('pointerdown', { bubbles: true }), {
+          button: 2,
+          pointerType: 'mouse',
+          clientX: 50,
+          clientY: 75,
+        }),
+      );
+    });
+    fireEvent.contextMenu(card, { clientX: 50, clientY: 75 });
+    act(() => {
+      card.dispatchEvent(
+        Object.assign(new Event('pointerup', { bubbles: true }), {
+          button: 2,
+          pointerType: 'mouse',
+          clientX: 50,
+          clientY: 75,
+        }),
+      );
+    });
+
+    // #then
+    expect(onContextMenuRequest).toHaveBeenCalledTimes(1);
+    expect(onSelect).not.toHaveBeenCalled();
   });
 });

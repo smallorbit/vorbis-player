@@ -20,6 +20,7 @@ export interface PlaybackHandlers {
   onPrevious: () => void;
   onTrackSelect: (index: number) => void;
   onOpenLibrary: () => void;
+  onOpenLibraryWithQuery?: (query: string) => void;
   onCloseLibrary: () => void;
   onOpenQuickAccessPanel?: () => void;
   onPlaylistSelect: (playlistId: string, playlistName: string, provider?: ProviderId) => void;
@@ -133,9 +134,13 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({
     handlers.onOpenLibrary();
   }, [handlers, setShowQueue, setShowVisualEffects]);
 
-  const handleArtistBrowse = useCallback((_artistName: string) => {
-    handleOpenLibrary();
-  }, [handleOpenLibrary]);
+  const handleArtistBrowse = useCallback((artistName: string) => {
+    if (handlers.onOpenLibraryWithQuery) {
+      handlers.onOpenLibraryWithQuery(artistName);
+    } else {
+      handleOpenLibrary();
+    }
+  }, [handlers, handleOpenLibrary]);
 
   const handleAlbumPlay = useCallback((albumId: string, albumName: string) => {
     handlers.onAlbumPlay(albumId, albumName);
