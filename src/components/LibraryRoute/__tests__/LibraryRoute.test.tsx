@@ -180,6 +180,34 @@ describe('LibraryRoute', () => {
     expect(onMiniExpand).toHaveBeenCalledTimes(1);
   });
 
+  describe('initialSearchQuery', () => {
+    it('pre-fills search input and shows search results view when initialSearchQuery is provided', () => {
+      // #given
+      vi.mocked(usePlayerSizingContext).mockReturnValue({ isMobile: false } as ReturnType<typeof usePlayerSizingContext>);
+
+      // #when
+      renderRoute({ initialSearchQuery: 'Pink Floyd' });
+
+      // #then — search input is pre-populated
+      expect(screen.getByTestId('library-search-input-desktop')).toHaveValue('Pink Floyd');
+      // #then — SearchResultsView renders instead of HomeView
+      expect(screen.getByTestId('library-search-results')).toBeInTheDocument();
+      expect(screen.queryByTestId('library-home')).not.toBeInTheDocument();
+    });
+
+    it('leaves search input empty and shows home view when initialSearchQuery is not provided', () => {
+      // #given
+      vi.mocked(usePlayerSizingContext).mockReturnValue({ isMobile: false } as ReturnType<typeof usePlayerSizingContext>);
+
+      // #when
+      renderRoute();
+
+      // #then
+      expect(screen.getByTestId('library-search-input-desktop')).toHaveValue('');
+      expect(screen.getByTestId('library-home')).toBeInTheDocument();
+    });
+  });
+
   describe('Escape key handling', () => {
     beforeEach(() => {
       vi.mocked(usePlayerSizingContext).mockReturnValue({ isMobile: false } as ReturnType<typeof usePlayerSizingContext>);
