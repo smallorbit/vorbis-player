@@ -2,8 +2,10 @@ import React, { useCallback } from 'react';
 
 import { useTranslucence } from '@/contexts/visualEffects';
 import { Switch } from '@/components/ui/switch';
+import { OptionButton, OptionButtonGroup } from '@/components/AppSettingsMenu/styled';
 
 import { AccentColorManager } from './appearance/AccentColorManager';
+import { AccentColorBackgroundToggle } from './appearance/AccentColorBackgroundToggle';
 import { GlowControls } from './appearance/GlowControls';
 import { VisualizerStylePicker } from './appearance/VisualizerStylePicker';
 import {
@@ -13,8 +15,16 @@ import {
   ControlLabelText,
   ControlHelp,
   SectionGroupTitle,
+  SubControlRow,
+  SubControlLabel,
   Divider,
 } from './AppearanceSection.styled';
+
+const OPACITY_OPTIONS: ReadonlyArray<{ value: number; label: string }> = [
+  { value: 0.6, label: 'Subtle' },
+  { value: 0.8, label: 'Default' },
+  { value: 0.95, label: 'Strong' },
+] as const;
 
 /**
  * SettingsV2 Appearance section — phase 3 port (#1451).
@@ -29,16 +39,21 @@ import {
  *     `useVisualEffectsState` (`VISUAL_EFFECTS_ENABLED` + `GLOW_INTENSITY` +
  *     `GLOW_RATE`).
  *   - {@link VisualizerStylePicker} → `VisualizerContext` (`BG_VISUALIZER_*`).
- *   - Translucence on/off          → `TranslucenceContext`
- *     (`TRANSLUCENCE_ENABLED`). Opacity slider is intentionally omitted —
- *     `TRANSLUCENCE_OPACITY` has no v1 UI today and is deferred to #1463.
+ *   - Translucence on/off + opacity → `TranslucenceContext`
+ *     (`TRANSLUCENCE_ENABLED` + `TRANSLUCENCE_OPACITY`). The opacity preset
+ *     (Subtle / Default / Strong) is revealed only when translucence is on.
  *
  * v2 chrome stays neutral (`hsl(var(--*))` only) — the player-chrome accent
  * variant lives in `controls/QuickEffectsRow` and is intentionally not
  * mirrored here.
  */
 const TranslucenceToggle: React.FC = () => {
-  const { translucenceEnabled, setTranslucenceEnabled } = useTranslucence();
+  const {
+    translucenceEnabled,
+    setTranslucenceEnabled,
+    translucenceOpacity,
+    setTranslucenceOpacity,
+  } = useTranslucence();
 
   const handleToggle = useCallback(
     (checked: boolean) => {
@@ -63,6 +78,24 @@ const TranslucenceToggle: React.FC = () => {
           variant="neutral"
         />
       </ControlRow>
+
+      {translucenceEnabled && (
+        <SubControlRow>
+          <SubControlLabel>Opacity</SubControlLabel>
+          <OptionButtonGroup aria-label="Translucence opacity">
+            {OPACITY_OPTIONS.map((opt) => (
+              <OptionButton
+                key={opt.value}
+                type="button"
+                $isActive={translucenceOpacity === opt.value}
+                onClick={() => setTranslucenceOpacity(opt.value)}
+              >
+                {opt.label}
+              </OptionButton>
+            ))}
+          </OptionButtonGroup>
+        </SubControlRow>
+      )}
     </ControlBlock>
   );
 };
@@ -77,6 +110,8 @@ export const AppearanceSection: React.FC = () => {
       <GlowControls />
       <Divider />
       <VisualizerStylePicker />
+      <Divider />
+      <AccentColorBackgroundToggle />
       <Divider />
       <TranslucenceToggle />
     </Container>
