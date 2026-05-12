@@ -158,6 +158,42 @@ describe('SettingsV2 + real EyedropperOverlay (issue #1467)', () => {
     expect(screen.getByTestId('settings-v2-desktop')).toBeInTheDocument();
   });
 
+  it('keeps the eyedropper portal interactive (pointer-events: auto) so the X close button is not blocked by Radix body pointer-events lockout', async () => {
+    // #given — real SettingsV2 Dialog open with the eyedropper portal mounted.
+    // Radix's modal Dialog sets `body { pointer-events: none }` while open,
+    // and the eyedropper portals to body. Without an explicit override on the
+    // overlay root, every click (including the X close button) is swallowed.
+    const onClose = vi.fn();
+    render(
+      <Wrapper>
+        <SettingsV2 isOpen={true} onClose={onClose} />
+      </Wrapper>,
+    );
+    await waitFor(() => screen.getByTestId('settings-v2-desktop'));
+    fireEvent.click(screen.getByLabelText('Pick color from album art'));
+    const overlay = (await waitFor(() =>
+      document.body.querySelector('[data-eyedropper-overlay="true"]'),
+    )) as HTMLElement;
+
+    // #when / #then — the overlay root carries `pointer-events: auto` inline,
+    // overriding the inherited `none` from Radix's body lockout. jsdom does
+    // not enforce CSS pointer-events for synthetic events, so we assert the
+    // inline style directly — the contract that keeps real-browser clicks alive.
+    expect(overlay.style.pointerEvents).toBe('auto');
+
+    // And the X close button inside the overlay must dismiss the picker
+    // without dismissing the surrounding Settings v2 Dialog.
+    const closeButton = overlay.querySelector('button');
+    expect(closeButton).not.toBeNull();
+    fireEvent.click(closeButton!);
+
+    await waitFor(() =>
+      expect(document.body.querySelector('[data-eyedropper-overlay="true"]')).toBeNull(),
+    );
+    expect(onClose).not.toHaveBeenCalled();
+    expect(screen.getByTestId('settings-v2-desktop')).toBeInTheDocument();
+  });
+
   it('captures the picked color and dual-writes ACCENT_COLOR_OVERRIDES + CUSTOM_ACCENT_COLORS', async () => {
     // #given — real SettingsV2 Dialog open with AccentColorManager mounted
     const onClose = vi.fn();
