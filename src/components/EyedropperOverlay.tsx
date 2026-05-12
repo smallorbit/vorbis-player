@@ -65,6 +65,14 @@ const EyedropperOverlay: React.FC<EyedropperOverlayProps> = ({ image, onPick, on
         alignItems: 'center',
         justifyContent: 'center',
         flexDirection: 'column',
+        // When invoked from a Radix modal Dialog (e.g. SettingsV2's
+        // AccentColorManager), Radix sets `body { pointer-events: none }` and
+        // only re-enables pointer events on the dialog's DismissableLayer.
+        // The eyedropper portals to `document.body`, so it inherits `none`
+        // and every click — including the X close button — is swallowed.
+        // Forcing `auto` here restores interactivity regardless of the
+        // ancestor modal context. See issue #1467.
+        pointerEvents: 'auto',
       }}>
       <div style={{
         position: 'relative',
