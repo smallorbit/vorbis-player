@@ -65,11 +65,13 @@ vi.mock('@/providers/dropbox/dropboxPreferencesSync', () => ({
 }));
 
 import { AppearanceSection } from '../AppearanceSection';
+import { useCurrentTrackContext } from '@/contexts/TrackContext';
 import {
   VisualizerProvider,
   VisualEffectsToggleProvider,
   TranslucenceProvider,
   AccentColorBackgroundProvider,
+  GlowProvider,
 } from '@/contexts/visualEffects';
 import {
   useVisualizer,
@@ -83,7 +85,9 @@ const Wrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
     <VisualEffectsToggleProvider>
       <AccentColorBackgroundProvider>
         <VisualizerProvider>
-          <TranslucenceProvider>{children}</TranslucenceProvider>
+          <TranslucenceProvider>
+            <GlowProvider>{children}</GlowProvider>
+          </TranslucenceProvider>
         </VisualizerProvider>
       </AccentColorBackgroundProvider>
     </VisualEffectsToggleProvider>
@@ -111,6 +115,37 @@ describe('SettingsV2 AppearanceSection', () => {
     expect(screen.getByText('Visualizer')).toBeInTheDocument();
     expect(screen.getByText('Background gradient')).toBeInTheDocument();
     expect(screen.getByText('Translucence')).toBeInTheDocument();
+  });
+
+  it('renders the per-album glow override row when a track with albumId is playing', () => {
+    // #given
+    vi.mocked(useCurrentTrackContext).mockReturnValue({
+      currentTrack: {
+        id: 'track-1',
+        name: 'Track One',
+        artist: 'Artist',
+        album: 'Album One',
+        albumId: 'album-1',
+        duration: 1000,
+        uri: 'spotify:track:1',
+      },
+      currentTrackIndex: 0,
+      setCurrentTrackIndex: vi.fn(),
+      showQueue: false,
+      setShowQueue: vi.fn(),
+    } as unknown as ReturnType<typeof useCurrentTrackContext>);
+
+    // #when
+    render(
+      <Wrapper>
+        <AppearanceSection />
+      </Wrapper>,
+    );
+
+    // #then
+    expect(screen.getByLabelText('Album glow intensity')).toBeInTheDocument();
+    expect(screen.getByLabelText('Album glow rate')).toBeInTheDocument();
+    expect(screen.getByText('Album One')).toBeInTheDocument();
   });
 
   it('writes TRANSLUCENCE_ENABLED only (no opacity side-effect) when master toggled', () => {

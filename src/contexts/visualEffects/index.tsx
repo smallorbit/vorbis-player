@@ -11,6 +11,7 @@ export { VisualizerProvider, useVisualizer } from './VisualizerContext';
 export { AccentColorBackgroundProvider, useAccentColorBackground } from './AccentColorBackgroundContext';
 export { TranslucenceProvider, useTranslucence } from './TranslucenceContext';
 export { useZenMode } from './ZenModeContext';
+export { GlowProvider, useGlow } from './GlowContext';
 
 export function VisualEffectsProvider({ children }: { children: React.ReactNode }) {
   return (
