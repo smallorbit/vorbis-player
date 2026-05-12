@@ -67,8 +67,8 @@ const TranslucenceToggle: React.FC = () => {
       <SectionGroupTitle>Translucence</SectionGroupTitle>
       <ControlRow>
         <div>
-          <ControlLabelText htmlFor="settings-v2-translucence-toggle">Translucent surfaces</ControlLabelText>
-          <ControlHelp>Apply a frosted-glass effect to layered panels.</ControlHelp>
+          <ControlLabelText htmlFor="settings-v2-translucence-toggle">Translucent album art</ControlLabelText>
+          <ControlHelp>Fade the album art so the background visualizer shows through.</ControlHelp>
         </div>
         <Switch
           id="settings-v2-translucence-toggle"
