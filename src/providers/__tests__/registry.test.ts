@@ -1,27 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import type { ProviderDescriptor } from '@/types/providers';
-
-// We test the class directly by creating a fresh instance each time,
-// rather than using the singleton (which may have providers registered by other modules).
-class TestableRegistry {
-  private providers = new Map<string, ProviderDescriptor>();
-
-  register(descriptor: ProviderDescriptor): void {
-    this.providers.set(descriptor.id, descriptor);
-  }
-
-  get(id: string): ProviderDescriptor | undefined {
-    return this.providers.get(id);
-  }
-
-  getAll(): ProviderDescriptor[] {
-    return Array.from(this.providers.values());
-  }
-
-  has(id: string): boolean {
-    return this.providers.has(id);
-  }
-}
+import { ProviderRegistryImpl } from '../registry';
+import { InvalidProviderDescriptorError } from '../errors';
 
 function makeStubDescriptor(id: 'spotify' | 'dropbox', name: string): ProviderDescriptor {
   return {
@@ -63,10 +43,10 @@ function makeStubDescriptor(id: 'spotify' | 'dropbox', name: string): ProviderDe
 }
 
 describe('ProviderRegistry', () => {
-  let registry: TestableRegistry;
+  let registry: ProviderRegistryImpl;
 
   beforeEach(() => {
-    registry = new TestableRegistry();
+    registry = new ProviderRegistryImpl();
   });
 
   it('returns undefined for unregistered provider', () => {
@@ -121,5 +101,72 @@ describe('ProviderRegistry', () => {
     // #then
     expect(registry.get('spotify')).toBe(second);
     expect(registry.getAll()).toHaveLength(1);
+  });
+
+  describe('descriptor validation', () => {
+    it('rejects a descriptor missing the auth adapter', () => {
+      // #given
+      const descriptor = makeStubDescriptor('spotify', 'Spotify');
+      const broken = { ...descriptor, auth: undefined as unknown as ProviderDescriptor['auth'] };
+
+      // #when / #then
+      expect(() => registry.register(broken)).toThrow(InvalidProviderDescriptorError);
+      try {
+        registry.register(broken);
+      } catch (err) {
+        expect(err).toBeInstanceOf(InvalidProviderDescriptorError);
+        const e = err as InvalidProviderDescriptorError;
+        expect(e.providerId).toBe('spotify');
+        expect(e.missingAdapter).toBe('auth');
+      }
+    });
+
+    it('rejects a descriptor missing the catalog adapter', () => {
+      // #given
+      const descriptor = makeStubDescriptor('spotify', 'Spotify');
+      const broken = { ...descriptor, catalog: undefined as unknown as ProviderDescriptor['catalog'] };
+
+      // #when / #then
+      try {
+        registry.register(broken);
+        throw new Error('expected register to throw');
+      } catch (err) {
+        expect(err).toBeInstanceOf(InvalidProviderDescriptorError);
+        const e = err as InvalidProviderDescriptorError;
+        expect(e.providerId).toBe('spotify');
+        expect(e.missingAdapter).toBe('catalog');
+      }
+    });
+
+    it('rejects a descriptor missing the playback adapter', () => {
+      // #given
+      const descriptor = makeStubDescriptor('spotify', 'Spotify');
+      const broken = { ...descriptor, playback: null as unknown as ProviderDescriptor['playback'] };
+
+      // #when / #then
+      try {
+        registry.register(broken);
+        throw new Error('expected register to throw');
+      } catch (err) {
+        expect(err).toBeInstanceOf(InvalidProviderDescriptorError);
+        const e = err as InvalidProviderDescriptorError;
+        expect(e.providerId).toBe('spotify');
+        expect(e.missingAdapter).toBe('playback');
+      }
+    });
+
+    it('does not insert a rejected descriptor into the registry', () => {
+      // #given
+      const descriptor = makeStubDescriptor('spotify', 'Spotify');
+      const broken = { ...descriptor, auth: undefined as unknown as ProviderDescriptor['auth'] };
+
+      // #when
+      expect(() => registry.register(broken)).toThrow(InvalidProviderDescriptorError);
+
+      // #then
+      expect(registry.get('spotify')).toBeUndefined();
+      expect(registry.has('spotify')).toBe(false);
+      expect(registry.getAll()).toEqual([]);
+    });
   });
 });
