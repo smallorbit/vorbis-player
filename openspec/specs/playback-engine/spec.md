@@ -76,11 +76,11 @@ After a track begins playing successfully, the engine SHALL pre-warm the next tr
 
 ### Requirement: Driving-Provider State Synchronization
 
-React state for play status, playback position, and current-track index SHALL track the driving provider's emitted state. State from non-driving providers SHALL be ignored.
+UI play status, playback position, and current-track index SHALL track the driving provider's emitted state. State from non-driving providers SHALL be ignored.
 
 #### Scenario: Non-driving provider emits state
 - **WHEN** a registered but non-driving provider emits a playback state
-- **THEN** React state is not updated
+- **THEN** the UI state is not updated
 
 #### Scenario: Tab returns to foreground
 - **WHEN** the browser tab returns to foreground while audio is playing
