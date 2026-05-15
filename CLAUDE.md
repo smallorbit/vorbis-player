@@ -52,7 +52,9 @@ Make the minimal change first, confirm it works visually, then iterate. Do not c
 
 ## Git & PR Workflow
 
-Run `npm test` before `git push` and before creating any PR. Feature branches from main (`feature/name`, `fix/name`). Atomic commits with conventional format. Reference issue numbers.
+**Default branch is `develop`, not `main`.** The GitHub repo's default branch is `develop`; `main` is the release branch (only updated when a release ships). PRs target `develop`. The session-start `gitStatus` block reports "Main branch (you will usually use this for PRs): main" via a `main`/`master` heuristic — ignore it and treat `develop` as the base.
+
+Run `npm test` before `git push` and before creating any PR. Feature branches from `develop` (`feature/name`, `fix/name`). Atomic commits with conventional format. Reference issue numbers.
 
 ## Worktree Setup
 
