@@ -3,12 +3,10 @@
 ## Purpose
 
 Vorbis Player SHALL support multiple music providers (streaming services, personal file sources, test doubles) behind one provider-neutral contract, so the queue, library, and player UI can mix providers without coupling to any specific source.
-
 ## Requirements
-
 ### Requirement: Three-Adapter Provider Contract
 
-A provider SHALL be expressed as a bundle of three adapters — auth, catalog, playback — registered as a single descriptor in the provider registry.
+A provider SHALL be expressed as a bundle of three adapters — auth, catalog, playback — registered as a single descriptor in the provider registry. The registry SHALL enforce this contract at registration time by throwing a typed error when any of the three required adapters is missing or non-object, so a malformed descriptor never enters the registry.
 
 #### Scenario: Provider registered at startup
 - **WHEN** the app starts and a provider's module loads
@@ -16,7 +14,7 @@ A provider SHALL be expressed as a bundle of three adapters — auth, catalog, p
 
 #### Scenario: Provider missing a required adapter
 - **WHEN** a descriptor is registered without one of the three required adapters
-- **THEN** registration is rejected and the provider is not exposed
+- **THEN** registration throws an `InvalidProviderDescriptorError` naming the provider id and the missing adapter, and the provider is not exposed by the registry
 
 ### Requirement: Provider-Neutral Domain Types
 
@@ -69,3 +67,4 @@ The app SHALL maintain a persisted set of **enabled** providers representing whi
 #### Scenario: Last enabled provider cannot be removed
 - **WHEN** only one provider remains in the enabled set
 - **THEN** removing that provider is blocked so the app never reaches a zero-enabled-provider state
+
