@@ -65,6 +65,7 @@ Thumbs.db
 .env
 .cursor/commands/
 .cursor/plans/
+.cursor/*.log
 .certs/
 
 # Conversation exports
@@ -94,3 +95,10 @@ playwright/capture/.auth-state.json
 # Serena MCP — commit project.yml + memories, ignore cache/logs
 .serena/cache/
 .serena/logs/
+
+# OpenSpec install artifacts (per-user; install via `openspec init`)
+.claude/commands/opsx/
+.claude/skills/openspec-apply-change/
+.claude/skills/openspec-archive-change/
+.claude/skills/openspec-explore/
+.claude/skills/openspec-propose/
