@@ -231,6 +231,18 @@ For structured feature development, see `.claude/rules/`:
 - `generate_tasks_from_prd.md` — breaks a PRD into a detailed parent/subtask list; waits for "Go" confirmation before generating subtasks
 - `process_tasks.md` — task execution protocol: one subtask at a time, with test + commit gates before marking parent complete
 
+## OpenSpec
+
+Behavior specs for the app's durable capabilities live in `openspec/specs/` — one folder per capability (`provider-system`, `auth-system`, `playback-engine`, `queue-management`, …). The specs are **plain documentation** and are useful to anyone reading the code, regardless of toolchain.
+
+For AI-assisted change proposals, the project ships the OpenSpec opsx commands and skills in-tree under `.claude/commands/opsx/`, `.claude/skills/openspec-*/`, and `.cursor/skills/openspec-*/` so adoption is zero-setup:
+
+- `/opsx:propose` — interview + draft a new change (proposal, design, tasks, delta specs).
+- `/opsx:apply` — implement the tasks for an active change.
+- `/opsx:archive` — finalize a completed change and merge its delta specs.
+
+Using opsx is **optional** — contributors not using Claude Code or Cursor can ignore the tooling and either edit `openspec/specs/` directly or open a PR against the relevant spec(s). Specs are the source of truth, not the tooling.
+
 ## Multi-Agent Team Workflows
 
 Pick the workflow by work shape. The pre-built squadkit profiles (`all-rounder`, `builder`, `qa`, `design`) are general-purpose; for vorbis-player epics use the project-specific shape below.
