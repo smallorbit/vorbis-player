@@ -65,6 +65,7 @@ Thumbs.db
 .env
 .cursor/commands/
 .cursor/plans/
+.cursor/*.log
 .certs/
 
 # Conversation exports
