@@ -6,10 +6,20 @@
 import type { ProviderId } from '@/types/domain';
 import type { ProviderDescriptor, ProviderRegistry } from '@/types/providers';
 
-class ProviderRegistryImpl implements ProviderRegistry {
+import { InvalidProviderDescriptorError, type RequiredProviderAdapter } from './errors';
+
+const REQUIRED_ADAPTERS: readonly RequiredProviderAdapter[] = ['auth', 'catalog', 'playback'];
+
+export class ProviderRegistryImpl implements ProviderRegistry {
   private providers = new Map<ProviderId, ProviderDescriptor>();
 
   register(descriptor: ProviderDescriptor): void {
+    for (const adapter of REQUIRED_ADAPTERS) {
+      const value = descriptor[adapter];
+      if (typeof value !== 'object' || value === null) {
+        throw new InvalidProviderDescriptorError(descriptor.id, adapter);
+      }
+    }
     this.providers.set(descriptor.id, descriptor);
   }
 
