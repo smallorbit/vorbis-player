@@ -1,5 +1,25 @@
 import type { PaginatedResponse } from './types';
 import { SPOTIFY_RATE_LIMIT_WAIT_S } from '@/constants/spotify';
+import { spotifyAuth } from './auth';
+import { AuthExpiredError } from '@/providers/errors';
+
+/**
+ * Structured error thrown for any non-OK Spotify Web API response.
+ * Carries the HTTP `status` so downstream consumers can branch on the status
+ * code without parsing the error message string. The message format is kept
+ * stable (`Spotify API error: <status> <statusText>`) so log/breadcrumb queries
+ * targeting the legacy generic-Error message continue to match.
+ */
+export class SpotifyApiError extends Error {
+  readonly status: number;
+  readonly statusText: string;
+  constructor(status: number, statusText: string, message?: string) {
+    super(message ?? `Spotify API error: ${status} ${statusText}`);
+    this.name = 'SpotifyApiError';
+    this.status = status;
+    this.statusText = statusText;
+  }
+}
 
 // =============================================================================
 // Rate Limiting & Request Deduplication
@@ -57,7 +77,7 @@ async function executeApiRequest<T>(
   handleRateLimitResponse(response);
 
   if (!response.ok) {
-    throw new Error(`Spotify API error: ${response.status} ${response.statusText}`);
+    throw new SpotifyApiError(response.status, response.statusText);
   }
 
   if (response.status === 204) {
@@ -69,6 +89,54 @@ async function executeApiRequest<T>(
     return undefined as T;
   }
   return JSON.parse(text);
+}
+
+/**
+ * Wrap a single `executeApiRequest` call with one-shot retry-after-refresh on
+ * 401: on the first 401 we force a token refresh and re-issue the request with
+ * the freshly-minted access token; on a second 401 we throw `AuthExpiredError`
+ * and notify the auth layer via `reportUnauthorized()`, which logs out and
+ * dispatches `SESSION_EXPIRED_EVENT`.
+ *
+ * Non-401 errors propagate as `SpotifyApiError` (transient — no logout).
+ */
+async function executeWithAuthRetry<T>(
+  url: string,
+  token: string,
+  options: RequestInit,
+): Promise<T> {
+  try {
+    return await executeApiRequest<T>(url, token, options);
+  } catch (err) {
+    if (!(err instanceof SpotifyApiError) || err.status !== 401) {
+      throw err;
+    }
+
+    let refreshedToken: string;
+    try {
+      await spotifyAuth.refreshAccessToken();
+      const next = spotifyAuth.getAccessToken();
+      if (!next) {
+        spotifyAuth.reportUnauthorized();
+        throw new AuthExpiredError('spotify');
+      }
+      refreshedToken = next;
+    } catch (refreshErr) {
+      if (refreshErr instanceof AuthExpiredError) throw refreshErr;
+      spotifyAuth.reportUnauthorized();
+      throw new AuthExpiredError('spotify');
+    }
+
+    try {
+      return await executeApiRequest<T>(url, refreshedToken, options);
+    } catch (retryErr) {
+      if (retryErr instanceof SpotifyApiError && retryErr.status === 401) {
+        spotifyAuth.reportUnauthorized();
+        throw new AuthExpiredError('spotify');
+      }
+      throw retryErr;
+    }
+  }
 }
 
 export async function spotifyApiRequest<T>(
@@ -93,14 +161,14 @@ export async function spotifyApiRequest<T>(
       return existing as Promise<T>;
     }
 
-    const promise = executeApiRequest<T>(url, token, options).finally(() => {
+    const promise = executeWithAuthRetry<T>(url, token, options).finally(() => {
       inflightRequests.delete(key);
     });
     inflightRequests.set(key, promise);
     return promise;
   }
 
-  return executeApiRequest<T>(url, token, options);
+  return executeWithAuthRetry<T>(url, token, options);
 }
 
 export async function fetchAllPaginated<TItem, TResult>(

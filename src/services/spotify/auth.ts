@@ -176,8 +176,7 @@ class SpotifyAuth {
 
     if (!response.ok) {
       if (response.status === 400 || response.status === 401) {
-        this.logout();
-        this.notifySessionExpired();
+        this.reportUnauthorized();
       }
       throw new Error(`Token refresh failed: ${response.statusText}`);
     }
@@ -190,7 +189,14 @@ class SpotifyAuth {
     });
   }
 
-  private notifySessionExpired(): void {
+  /**
+   * Called by API consumers when a freshly-refreshed token is still rejected (401).
+   * Treats this as an invalid session: clears all tokens and notifies the UI.
+   */
+  public reportUnauthorized(): void {
+    if (!this.tokenData) return;
+    console.warn('[spotifyAuth] Persistent 401 — logging out');
+    this.logout();
     if (typeof window === 'undefined') return;
     window.dispatchEvent(
       new CustomEvent(SESSION_EXPIRED_EVENT, { detail: { providerId: 'spotify' } }),
