@@ -20,18 +20,26 @@ This three-state model — connected / reconnect / disabled — predates the cur
 
 ### Toggle off via ref pattern, not effect deps
 
-The existing `SESSION_EXPIRED_EVENT` listener lives in a `useEffect` with `[]` deps so it attaches once and never re-binds. It must now call `toggleProvider(providerId)`, which closes over the latest `enabledProviderIds` and `setStoredEnabledIds`. Re-binding the listener on every state change would race the user's own toggle interactions and risk dropping events fired during a re-render.
+The existing `SESSION_EXPIRED_EVENT` listener lives in a `useEffect` with `[]` deps so it attaches once and never re-binds. It must now flip the provider off, which depends on the latest `enabledProviderIds` and the underlying `setStoredEnabledIds` setter. Re-binding the listener on every state change would race the user's own toggle interactions and risk dropping events fired during a re-render.
 
 Standard React pattern: keep a `latestRef` for each function or value the handler needs, update it in a separate `useEffect` on every render, and read `.current` inside the handler.
 
 ```ts
-const toggleProviderRef = useRef(toggleProvider);
+const setStoredEnabledIdsRef = useRef(setStoredEnabledIds);
 const enabledProviderIdsRef = useRef(enabledProviderIds);
-useEffect(() => { toggleProviderRef.current = toggleProvider; }, [toggleProvider]);
+useEffect(() => { setStoredEnabledIdsRef.current = setStoredEnabledIds; }, [setStoredEnabledIds]);
 useEffect(() => { enabledProviderIdsRef.current = enabledProviderIds; }, [enabledProviderIds]);
 ```
 
-Inside `handleSessionExpired`, gate the toggle on `enabledProviderIdsRef.current.includes(providerId)` so we don't accidentally re-add a provider the user just turned off.
+Inside `handleSessionExpired`, gate the write on `enabledProviderIdsRef.current.includes(providerId)` so we don't accidentally re-add a provider the user just turned off.
+
+### Session-expired bypasses the "last enabled" guard
+
+The user-facing `toggleProvider` action refuses to disable the last remaining enabled provider — it returns the current set unchanged when `current.length <= 1`. That guard exists to protect against accidental user-initiated zero-providers state (the picker would have nothing to pick from).
+
+Session-expired must not honor that guard. If the sole enabled provider has its auth fail, leaving it enabled would resurrect exactly the forbidden third state the change is removing: enabled + unauthenticated, with no badge or affordance to telegraph what's wrong. So `handleSessionExpired` writes through `setStoredEnabledIds` directly with a custom updater that always removes the expired id, bypassing the guard. The user re-enables via the existing toggle, which kicks off OAuth.
+
+`toggleProvider` retains its guard for the user-driven path; only the forced session-expired path bypasses it.
 
 ### Drop `RECONNECT_TOAST_ID` entirely
 

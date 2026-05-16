@@ -126,6 +126,46 @@ describe('ProviderContext', () => {
       expect(result.current.enabledProviderIds).toEqual(['dropbox']);
     });
 
+    it('removes the sole enabled provider on session expiry, bypassing the "last enabled" guard', () => {
+      // #given — only Spotify is enabled (Dropbox registered but disabled)
+      const spotify = registerProvider({
+        id: 'spotify',
+        name: 'Spotify',
+        auth: {
+          ...makeProviderDescriptor().auth,
+          isAuthenticated: vi.fn().mockReturnValue(true),
+        },
+      });
+      registerProvider({
+        id: 'dropbox' as ProviderDescriptor['id'],
+        name: 'Dropbox',
+        auth: {
+          ...makeProviderDescriptor().auth,
+          providerId: 'dropbox' as ProviderDescriptor['id'],
+          isAuthenticated: vi.fn().mockReturnValue(false),
+        },
+      });
+      stubLocalStorage({
+        [STORAGE_KEYS.ENABLED_PROVIDERS]: JSON.stringify(['spotify']),
+      });
+
+      const { result } = renderHook(() => useProviderContext(), { wrapper });
+      expect(result.current.enabledProviderIds).toEqual(['spotify']);
+
+      // #when — Spotify's session expires while it is the sole enabled provider
+      act(() => {
+        spotify.auth.isAuthenticated = vi.fn().mockReturnValue(false);
+        window.dispatchEvent(
+          new CustomEvent(SESSION_EXPIRED_EVENT, { detail: { providerId: 'spotify' } }),
+        );
+      });
+
+      // #then — Spotify is removed even though it was the last enabled provider
+      expect(result.current.enabledProviderIds).toEqual([]);
+      // #then — the disconnect toast still surfaces so the user knows why
+      expect(result.current.disconnectToast).toBe('Spotify disconnected — session expired.');
+    });
+
     it('surfaces the disconnect toast', () => {
       // #given
       registerProvider({

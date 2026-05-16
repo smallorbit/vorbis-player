@@ -104,29 +104,31 @@ export function ProviderProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   // ── Enabled providers (multi-toggle) ───────────────────────────────────
-  const [storedEnabledIds, setStoredEnabledIds] = useLocalStorage<ProviderId[]>(
+  // Stored value uses `null` as the "uninitialized" sentinel (default to all
+  // registered providers). An explicit `[]` means the user — or a forced
+  // session-expired toggle-off — has emptied the set, and we must honor it
+  // rather than re-defaulting.
+  const [storedEnabledIds, setStoredEnabledIds] = useLocalStorage<ProviderId[] | null>(
     STORAGE_KEYS.ENABLED_PROVIDERS,
-    [],
+    null,
   );
 
-  // Validate stored enabled IDs — only keep those that are actually registered.
-  // If nothing is stored yet, default to all registered providers.
   const enabledProviderIds = useMemo(() => {
-    const valid = storedEnabledIds.filter(id => providerRegistry.has(id));
-    if (valid.length > 0) return valid;
-    // Default: enable all registered providers
-    return allProviderIds;
+    if (storedEnabledIds === null) return allProviderIds;
+    return storedEnabledIds.filter(id => providerRegistry.has(id));
   }, [storedEnabledIds, allProviderIds]);
 
   const toggleProvider = useCallback(
     (id: ProviderId) => {
       if (!providerRegistry.has(id)) return;
       setStoredEnabledIds(prev => {
-        const validPrev = prev.filter(pid => providerRegistry.has(pid));
-        const current = validPrev.length > 0 ? validPrev : allProviderIds;
+        const current =
+          prev === null ? allProviderIds : prev.filter(pid => providerRegistry.has(pid));
         const isCurrentlyEnabled = current.includes(id);
         if (isCurrentlyEnabled) {
-          // Don't disable the last remaining provider
+          // Don't disable the last remaining provider via the user-facing
+          // toggle. Session-expired bypasses this guard by writing through
+          // `setStoredEnabledIds` directly (see handleSessionExpired below).
           if (current.length <= 1) return current;
           return current.filter(pid => pid !== id);
         } else {
@@ -164,17 +166,28 @@ export function ProviderProvider({ children }: { children: React.ReactNode }) {
   const dismissDisconnectToast = useCallback(() => setDisconnectToast(null), []);
 
   // Latest-value refs so the SESSION_EXPIRED_EVENT listener (attached once,
-  // []-deps) can read the current toggle helpers without re-binding on every
+  // []-deps) can read the current state setters without re-binding on every
   // render. Re-binding would race user-driven toggles and risk dropping events
   // fired during a re-render.
-  const toggleProviderRef = useRef(toggleProvider);
+  //
+  // Session-expired uses `setStoredEnabledIds` directly instead of going
+  // through `toggleProvider` so it can bypass the "do not disable the last
+  // remaining provider" guard. That guard exists to prevent accidental
+  // user-initiated zero-provider states; a forced session-expired toggle-off
+  // must accurately reflect that the underlying auth has failed, regardless
+  // of how many providers remain enabled.
+  const setStoredEnabledIdsRef = useRef(setStoredEnabledIds);
   const enabledProviderIdsRef = useRef(enabledProviderIds);
+  const allProviderIdsRef = useRef(allProviderIds);
   useEffect(() => {
-    toggleProviderRef.current = toggleProvider;
-  }, [toggleProvider]);
+    setStoredEnabledIdsRef.current = setStoredEnabledIds;
+  }, [setStoredEnabledIds]);
   useEffect(() => {
     enabledProviderIdsRef.current = enabledProviderIds;
   }, [enabledProviderIds]);
+  useEffect(() => {
+    allProviderIdsRef.current = allProviderIds;
+  }, [allProviderIds]);
 
   useEffect(() => {
     const handleSessionExpired = (event: Event) => {
@@ -186,7 +199,14 @@ export function ProviderProvider({ children }: { children: React.ReactNode }) {
       setDisconnectToast(`${name} disconnected — session expired.`);
       setAuthRevision(prev => prev + 1);
       if (enabledProviderIdsRef.current.includes(providerId)) {
-        toggleProviderRef.current(providerId);
+        setStoredEnabledIdsRef.current(prev => {
+          const current =
+            prev === null
+              ? allProviderIdsRef.current
+              : prev.filter(pid => providerRegistry.has(pid));
+          if (!current.includes(providerId)) return current;
+          return current.filter(pid => pid !== providerId);
+        });
       }
     };
 
