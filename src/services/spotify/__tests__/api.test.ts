@@ -105,10 +105,13 @@ describe('spotifyApiRequest — structured errors and retry-after-refresh', () =
     expect(reportUnauthorized).toHaveBeenCalledTimes(1);
   });
 
-  it('throws AuthExpiredError and calls reportUnauthorized when refresh itself fails', async () => {
-    // #given — first call 401, refresh throws (e.g. no refresh token)
+  it('throws AuthExpiredError when refresh fails terminally (auth cleared by performRefresh)', async () => {
+    // #given — first call 401, refresh throws AND performRefresh cleared tokenData
+    //          (i.e. accounts.spotify.com/api/token returned 400/401 and the auth
+    //          singleton already invoked reportUnauthorized → logout → getAccessToken null)
     fetchMock.mockResolvedValueOnce(emptyResponse(401, 'Unauthorized'));
-    refreshAccessToken.mockRejectedValue(new Error('No refresh token available'));
+    refreshAccessToken.mockRejectedValue(new Error('Token refresh failed: Bad Request'));
+    getAccessToken.mockReturnValue(null);
 
     // #when / #then
     const promise = spotifyApiRequest<unknown>(
@@ -117,7 +120,28 @@ describe('spotifyApiRequest — structured errors and retry-after-refresh', () =
       { method: 'POST' },
     );
     await expect(promise).rejects.toBeInstanceOf(AuthExpiredError);
-    expect(reportUnauthorized).toHaveBeenCalledTimes(1);
+    // reportUnauthorized was called by performRefresh itself, not by the wrapper —
+    // the wrapper relies on the cleared-token signal and does not re-invoke it.
+    expect(reportUnauthorized).not.toHaveBeenCalled();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('rethrows original SpotifyApiError(401) on transient refresh failure (network blip / 5xx)', async () => {
+    // #given — first call 401, refresh throws a transient error (network blip),
+    //          and the auth singleton still has its tokenData (getAccessToken returns the stale token)
+    fetchMock.mockResolvedValueOnce(emptyResponse(401, 'Unauthorized'));
+    refreshAccessToken.mockRejectedValue(new Error('network blip'));
+    getAccessToken.mockReturnValue('token-1-stale');
+
+    // #when / #then — caller sees the original 401, not AuthExpiredError; user is NOT logged out
+    const promise = spotifyApiRequest<unknown>(
+      'https://api.spotify.com/v1/me',
+      'token-1-stale',
+      { method: 'POST' },
+    );
+    await expect(promise).rejects.toBeInstanceOf(SpotifyApiError);
+    await expect(promise).rejects.toMatchObject({ status: 401 });
+    expect(reportUnauthorized).not.toHaveBeenCalled();
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 

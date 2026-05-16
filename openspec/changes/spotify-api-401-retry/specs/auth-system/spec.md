@@ -16,9 +16,10 @@ A provider SHALL distinguish transient failures from terminal authentication fai
 
 #### Scenario: Spotify Web API request receives a 401 with a non-expired refresh token
 
-- **WHEN** a Spotify Web API request returns HTTP 401 and the auth singleton holds a refresh token
+- **WHEN** a `spotifyApiRequest`-based catalog/library request (i.e. requests routed through the shared API wrapper, excluding the player-playback control endpoints in `spotifyPlayerPlayback.ts`) returns HTTP 401 and the auth singleton holds a refresh token
 - **THEN** the provider forces a token refresh, retries the request once with the fresh access token, and treats the result as success if the retry returns a 2xx
 - **AND** the user is NOT logged out
+- **AND** if the refresh endpoint itself fails with a transient error (network blip, 5xx), the original `SpotifyApiError` carrying `status: 401` is rethrown — the user is NOT logged out and the refresh token is preserved
 
 #### Scenario: Spotify Web API exposes status via structured error
 

@@ -98,7 +98,17 @@ async function executeApiRequest<T>(
  * and notify the auth layer via `reportUnauthorized()`, which logs out and
  * dispatches `SESSION_EXPIRED_EVENT`.
  *
- * Non-401 errors propagate as `SpotifyApiError` (transient — no logout).
+ * Refresh-endpoint failures are split: a terminal 400/401 from
+ * `accounts.spotify.com/api/token` (`performRefresh` already cleared
+ * `tokenData` and called `reportUnauthorized()`) escalates to
+ * `AuthExpiredError`. Any other refresh exception (network blip, 5xx) is
+ * treated as transient — we rethrow the original `SpotifyApiError(401)` so
+ * the caller can retry later without the user being logged out. This mirrors
+ * `performRefresh`'s policy of only treating 400/401 from the refresh
+ * endpoint as terminal.
+ *
+ * Non-401 errors from the resource request propagate as `SpotifyApiError`
+ * (transient — no logout).
  */
 async function executeWithAuthRetry<T>(
   url: string,
@@ -123,8 +133,10 @@ async function executeWithAuthRetry<T>(
       refreshedToken = next;
     } catch (refreshErr) {
       if (refreshErr instanceof AuthExpiredError) throw refreshErr;
-      spotifyAuth.reportUnauthorized();
-      throw new AuthExpiredError('spotify');
+      if (spotifyAuth.getAccessToken() === null) {
+        throw new AuthExpiredError('spotify');
+      }
+      throw err;
     }
 
     try {
