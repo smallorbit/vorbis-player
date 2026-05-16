@@ -189,5 +189,3 @@ export const CmdKPalette = ({
     </CommandDialog>
   );
 };
-
-export default CmdKPalette;

@@ -135,5 +135,3 @@ export const VisualizerStylePicker: React.FC = () => {
 };
 
 VisualizerStylePicker.displayName = 'SettingsV2.VisualizerStylePicker';
-
-export default VisualizerStylePicker;
