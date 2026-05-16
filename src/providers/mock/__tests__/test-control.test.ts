@@ -1,8 +1,10 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { installMockTestApi } from '../test-control';
+import { MockAuthAdapter } from '../mockAuthAdapter';
 import type { MockCatalogAdapter } from '../mockCatalogAdapter';
 import type { MockPlaybackAdapter } from '../mockPlaybackAdapter';
 import type { MediaTrack } from '@/types/domain';
+import { AUTH_STATE_CHANGED_EVENT } from '@/hooks/usePopupAuth';
 
 function makeTrack(overrides: Partial<MediaTrack> & Pick<MediaTrack, 'id' | 'provider'>): MediaTrack {
   return {
@@ -37,16 +39,22 @@ const dropboxTrack = makeTrack({ id: 'db-1', provider: 'dropbox' });
 describe('installMockTestApi', () => {
   let spotifyPlayback: MockPlaybackAdapter;
   let dropboxPlayback: MockPlaybackAdapter;
+  let spotifyAuth: MockAuthAdapter;
+  let dropboxAuth: MockAuthAdapter;
 
   beforeEach(() => {
     delete window.__mockTest;
     spotifyPlayback = makePlaybackStub();
     dropboxPlayback = makePlaybackStub();
+    spotifyAuth = new MockAuthAdapter('spotify');
+    dropboxAuth = new MockAuthAdapter('dropbox');
     installMockTestApi({
       spotifyCatalog: makeCatalogStub([spotifyTrack]),
       dropboxCatalog: makeCatalogStub([dropboxTrack]),
       spotifyPlayback,
       dropboxPlayback,
+      spotifyAuth,
+      dropboxAuth,
     });
   });
 
@@ -65,6 +73,8 @@ describe('installMockTestApi', () => {
       dropboxCatalog: makeCatalogStub([]),
       spotifyPlayback: makePlaybackStub(),
       dropboxPlayback: makePlaybackStub(),
+      spotifyAuth: new MockAuthAdapter('spotify'),
+      dropboxAuth: new MockAuthAdapter('dropbox'),
     });
 
     // #then
@@ -141,6 +151,35 @@ describe('installMockTestApi', () => {
       await expect(
         window.__mockTest!.setPlaybackState({ trackId: 'no-such-track' }),
       ).rejects.toThrow('Track id "no-such-track" not found in snapshots.');
+    });
+  });
+
+  describe('expireAuth / restoreAuth', () => {
+    it('expireAuth flips the adapter to unauthenticated and dispatches AUTH_STATE_CHANGED_EVENT', async () => {
+      // #given
+      let fired = 0;
+      window.addEventListener(AUTH_STATE_CHANGED_EVENT, () => { fired += 1; });
+
+      // #when
+      await window.__mockTest!.expireAuth('spotify');
+
+      // #then
+      expect(spotifyAuth.isAuthenticated()).toBe(false);
+      expect(fired).toBe(1);
+    });
+
+    it('restoreAuth flips the adapter back to authenticated and dispatches AUTH_STATE_CHANGED_EVENT', async () => {
+      // #given
+      spotifyAuth.__testExpire();
+      let fired = 0;
+      window.addEventListener(AUTH_STATE_CHANGED_EVENT, () => { fired += 1; });
+
+      // #when
+      await window.__mockTest!.restoreAuth('spotify');
+
+      // #then
+      expect(spotifyAuth.isAuthenticated()).toBe(true);
+      expect(fired).toBe(1);
     });
   });
 

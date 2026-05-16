@@ -111,6 +111,7 @@ export function usePlayerLogic() {
     setCurrentTrackIndex,
     activeDescriptor,
     mediaTracksRef,
+    currentTrackIndexRef,
     onAuthExpired: (providerId: ProviderId) => setAuthExpired(providerId),
     expectedTrackIdRef,
   });

@@ -1,15 +1,22 @@
-import { useCallback, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import type { ProviderDescriptor } from '@/types/providers';
 import type { MediaTrack, ProviderId } from '@/types/domain';
 import { providerRegistry } from '@/providers/registry';
 import { AuthExpiredError, UnavailableTrackError } from '@/providers/errors';
 import { logQueue, logArtRace } from '@/lib/debugLog';
 import { SKIP_ON_ERROR_DELAY_MS } from '@/constants/timing';
+import { PROVIDER_RECONNECTED_EVENT } from '@/constants/events';
+import { loadSession } from '@/services/sessionPersistence';
 
 interface UseProviderPlaybackProps {
   setCurrentTrackIndex: (index: number) => void;
   activeDescriptor?: ProviderDescriptor | null;
   mediaTracksRef: React.MutableRefObject<MediaTrack[]>;
+  /**
+   * Ref tracking the current track index. Used by the re-prime listener so
+   * the handler reads the live index without re-binding on every change.
+   */
+  currentTrackIndexRef?: React.MutableRefObject<number>;
   onAuthExpired?: (providerId: ProviderId) => void;
   /**
    * Shared guard ref used by `usePlaybackSubscription` to ignore stale provider
@@ -25,11 +32,49 @@ export const useProviderPlayback = ({
   setCurrentTrackIndex,
   activeDescriptor,
   mediaTracksRef,
+  currentTrackIndexRef,
   onAuthExpired,
   expectedTrackIdRef,
 }: UseProviderPlaybackProps) => {
 
   const currentPlaybackProviderRef = useRef<ProviderId | null>(null);
+
+  // Re-prime the current track when its provider re-authenticates after a
+  // session expiry. The dispatcher (ProviderContext) skips the initial mount,
+  // so this only fires on genuine `not authenticated → authenticated`
+  // transitions. The handler is silent — no auto-play, no queue mutation.
+  useEffect(() => {
+    const handler = (event: Event) => {
+      const detail = (event as CustomEvent<{ providerId: ProviderId }>).detail;
+      const providerId = detail?.providerId;
+      if (!providerId) return;
+
+      const tracks = mediaTracksRef.current;
+      const index = currentTrackIndexRef?.current ?? -1;
+      const currentTrack = index >= 0 ? tracks[index] : undefined;
+      if (!currentTrack) return;
+      if (currentTrack.provider !== providerId) return;
+
+      const descriptor = providerRegistry.get(providerId);
+      if (!descriptor?.playback.prepareTrack) return;
+
+      const snapshot = loadSession();
+      const resolvedPosition =
+        snapshot?.trackId === currentTrack.id &&
+        typeof snapshot.playbackPosition === 'number'
+          ? snapshot.playbackPosition
+          : 0;
+
+      try {
+        descriptor.playback.prepareTrack(currentTrack, { positionMs: resolvedPosition });
+      } catch (error) {
+        logQueue('PROVIDER_RECONNECTED re-prime failed: %o', error);
+      }
+    };
+
+    window.addEventListener(PROVIDER_RECONNECTED_EVENT, handler);
+    return () => window.removeEventListener(PROVIDER_RECONNECTED_EVENT, handler);
+  }, [mediaTracksRef, currentTrackIndexRef]);
 
   const resolveTrackProvider = useCallback((mediaTrack?: MediaTrack): ProviderId | undefined => (
     mediaTrack?.provider

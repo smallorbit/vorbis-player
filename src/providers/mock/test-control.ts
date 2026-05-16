@@ -9,11 +9,15 @@
 // `shouldUseMockProvider()` is true, so it is a no-op in production.
 import type { MockCatalogAdapter } from './mockCatalogAdapter';
 import type { MockPlaybackAdapter } from './mockPlaybackAdapter';
-import type { MediaTrack } from '@/types/domain';
+import type { MockAuthAdapter } from './mockAuthAdapter';
+import type { MediaTrack, ProviderId } from '@/types/domain';
+import { AUTH_STATE_CHANGED_EVENT } from '@/hooks/usePopupAuth';
 
 export interface MockTestApi {
   setQueue(trackIds: string[]): Promise<void>;
   setPlaybackState(state: { trackId: string; positionMs?: number; isPlaying?: boolean }): Promise<void>;
+  expireAuth(providerId: ProviderId): Promise<void>;
+  restoreAuth(providerId: ProviderId): Promise<void>;
   reset(): Promise<void>;
 }
 
@@ -22,13 +26,28 @@ export interface InstallOptions {
   dropboxCatalog: MockCatalogAdapter;
   spotifyPlayback: MockPlaybackAdapter;
   dropboxPlayback: MockPlaybackAdapter;
+  spotifyAuth: MockAuthAdapter;
+  dropboxAuth: MockAuthAdapter;
 }
 
 export function installMockTestApi(opts: InstallOptions): void {
   if (typeof window === 'undefined') return;
   if (window.__mockTest) return;
 
-  const { spotifyCatalog, dropboxCatalog, spotifyPlayback, dropboxPlayback } = opts;
+  const {
+    spotifyCatalog,
+    dropboxCatalog,
+    spotifyPlayback,
+    dropboxPlayback,
+    spotifyAuth,
+    dropboxAuth,
+  } = opts;
+
+  function resolveAuth(providerId: ProviderId): MockAuthAdapter {
+    if (providerId === 'spotify') return spotifyAuth;
+    if (providerId === 'dropbox') return dropboxAuth;
+    throw new Error(`[MockTestApi] Unknown providerId "${providerId}"`);
+  }
 
   function resolveTrack(id: string): MediaTrack {
     const track =
@@ -53,6 +72,16 @@ export function installMockTestApi(opts: InstallOptions): void {
       if (!isPlaying) {
         await adapter.pause();
       }
+    },
+
+    async expireAuth(providerId) {
+      resolveAuth(providerId).__testExpire();
+      window.dispatchEvent(new CustomEvent(AUTH_STATE_CHANGED_EVENT));
+    },
+
+    async restoreAuth(providerId) {
+      resolveAuth(providerId).__testRestoreAuth();
+      window.dispatchEvent(new CustomEvent(AUTH_STATE_CHANGED_EVENT));
     },
 
     async reset() {

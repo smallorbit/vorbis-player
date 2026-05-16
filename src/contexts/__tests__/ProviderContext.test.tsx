@@ -2,9 +2,11 @@ import React from 'react';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 
-import { SESSION_EXPIRED_EVENT } from '@/constants/events';
+import { PROVIDER_RECONNECTED_EVENT, SESSION_EXPIRED_EVENT } from '@/constants/events';
+import { AUTH_STATE_CHANGED_EVENT } from '@/hooks/usePopupAuth';
 import { STORAGE_KEYS } from '@/constants/storage';
 import type { ProviderDescriptor } from '@/types/providers';
+import type { ProviderId } from '@/types/domain';
 import { makeProviderDescriptor } from '@/test/fixtures';
 
 vi.mock('@/providers/spotify/spotifyProvider', () => ({}));
@@ -200,6 +202,127 @@ describe('ProviderContext', () => {
 
       // #then
       expect(result.current.disconnectToast).toBe('Spotify disconnected — session expired.');
+    });
+  });
+
+  describe('PROVIDER_RECONNECTED_EVENT dispatch', () => {
+    function collectReconnects(): {
+      events: Array<{ providerId: ProviderId }>;
+      detach: () => void;
+    } {
+      const events: Array<{ providerId: ProviderId }> = [];
+      const listener = (e: Event) => {
+        events.push((e as CustomEvent<{ providerId: ProviderId }>).detail);
+      };
+      window.addEventListener(PROVIDER_RECONNECTED_EVENT, listener);
+      return {
+        events,
+        detach: () => window.removeEventListener(PROVIDER_RECONNECTED_EVENT, listener),
+      };
+    }
+
+    it('does NOT dispatch PROVIDER_RECONNECTED_EVENT on initial mount for already-authenticated providers', () => {
+      // #given — dropbox is already authenticated at mount
+      registerProvider({
+        id: 'dropbox' as ProviderDescriptor['id'],
+        name: 'Dropbox',
+        auth: {
+          ...makeProviderDescriptor().auth,
+          providerId: 'dropbox' as ProviderDescriptor['id'],
+          isAuthenticated: vi.fn().mockReturnValue(true),
+        },
+      });
+      stubLocalStorage({
+        [STORAGE_KEYS.ENABLED_PROVIDERS]: JSON.stringify(['dropbox']),
+      });
+      const { events, detach } = collectReconnects();
+
+      // #when — mount
+      renderHook(() => useProviderContext(), { wrapper });
+
+      // #then — the initial-render snapshot was seeded into previousConnectedRef
+      // so dropbox (already authed) is NOT reported as a transition.
+      expect(events).toEqual([]);
+      detach();
+    });
+
+    it('dispatches PROVIDER_RECONNECTED_EVENT exactly once when a provider transitions to authenticated', () => {
+      // #given — spotify starts unauthenticated, dropbox is already authed
+      const spotify = registerProvider({
+        id: 'spotify',
+        name: 'Spotify',
+        auth: {
+          ...makeProviderDescriptor().auth,
+          isAuthenticated: vi.fn().mockReturnValue(false),
+        },
+      });
+      registerProvider({
+        id: 'dropbox' as ProviderDescriptor['id'],
+        name: 'Dropbox',
+        auth: {
+          ...makeProviderDescriptor().auth,
+          providerId: 'dropbox' as ProviderDescriptor['id'],
+          isAuthenticated: vi.fn().mockReturnValue(true),
+        },
+      });
+      stubLocalStorage({
+        [STORAGE_KEYS.ENABLED_PROVIDERS]: JSON.stringify(['spotify', 'dropbox']),
+      });
+      const { events, detach } = collectReconnects();
+      renderHook(() => useProviderContext(), { wrapper });
+
+      // #when — spotify auth flips to true, then AUTH_STATE_CHANGED_EVENT fires
+      // (production flow: usePopupAuth posts the event after a successful OAuth
+      // popup, which bumps authRevision and recomputes connectedProviderIds).
+      act(() => {
+        spotify.auth.isAuthenticated = vi.fn().mockReturnValue(true);
+        window.dispatchEvent(new CustomEvent(AUTH_STATE_CHANGED_EVENT));
+      });
+
+      // #then — exactly one event for the newly-connected provider
+      expect(events).toEqual([{ providerId: 'spotify' }]);
+      detach();
+    });
+
+    it('does NOT re-dispatch on subsequent renders if no new provider is newly connected', () => {
+      // #given — spotify already transitioned once
+      const spotify = registerProvider({
+        id: 'spotify',
+        name: 'Spotify',
+        auth: {
+          ...makeProviderDescriptor().auth,
+          isAuthenticated: vi.fn().mockReturnValue(false),
+        },
+      });
+      registerProvider({
+        id: 'dropbox' as ProviderDescriptor['id'],
+        name: 'Dropbox',
+        auth: {
+          ...makeProviderDescriptor().auth,
+          providerId: 'dropbox' as ProviderDescriptor['id'],
+          isAuthenticated: vi.fn().mockReturnValue(true),
+        },
+      });
+      stubLocalStorage({
+        [STORAGE_KEYS.ENABLED_PROVIDERS]: JSON.stringify(['spotify', 'dropbox']),
+      });
+      const { events, detach } = collectReconnects();
+      renderHook(() => useProviderContext(), { wrapper });
+
+      act(() => {
+        spotify.auth.isAuthenticated = vi.fn().mockReturnValue(true);
+        window.dispatchEvent(new CustomEvent(AUTH_STATE_CHANGED_EVENT));
+      });
+      expect(events).toHaveLength(1);
+
+      // #when — another auth-state change fires but no provider newly connects
+      act(() => {
+        window.dispatchEvent(new CustomEvent(AUTH_STATE_CHANGED_EVENT));
+      });
+
+      // #then — no additional dispatches
+      expect(events).toHaveLength(1);
+      detach();
     });
   });
 });
