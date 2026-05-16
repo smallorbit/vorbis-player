@@ -55,7 +55,21 @@ describe('keyToCollectionRef', () => {
   });
 
   it('returns null for unknown provider', () => {
+    // #given a well-formed key whose provider id is not registered
+    // #when
+    // #then
     expect(keyToCollectionRef('apple:playlist:abc')).toBeNull();
+  });
+
+  it('returns null for a well-formed key with an unregistered provider id', () => {
+    // #given
+    const key = 'fakeprov:playlist:abc';
+
+    // #when
+    const result = keyToCollectionRef(key);
+
+    // #then — must be null, not a partial object
+    expect(result).toBeNull();
   });
 
   it('returns null for unknown kind', () => {
