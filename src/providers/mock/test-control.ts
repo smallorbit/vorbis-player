@@ -12,11 +12,27 @@ import type { MockPlaybackAdapter } from './mockPlaybackAdapter';
 import type { MockAuthAdapter } from './mockAuthAdapter';
 import type { MediaTrack, ProviderId } from '@/types/domain';
 import { AUTH_STATE_CHANGED_EVENT } from '@/hooks/usePopupAuth';
+import { SESSION_EXPIRED_EVENT } from '@/constants/events';
+
+export interface ExpireAuthOptions {
+  /**
+   * When true, ALSO dispatch SESSION_EXPIRED_EVENT alongside the
+   * AUTH_STATE_CHANGED_EVENT. Defaults to false — the narrower simulation
+   * mirrors the legacy behavior and keeps existing Playwright specs stable.
+   *
+   * Real expiry in production dispatches both events (the refresh-token
+   * rejection path fires SESSION_EXPIRED; the resulting state flip fires
+   * AUTH_STATE_CHANGED). Opt in to this flag when an end-to-end test needs
+   * the SESSION_EXPIRED handler in the SpotifyPlaybackAdapter (and other
+   * listeners) to run ahead of the reconnect.
+   */
+  alsoDispatchSessionExpired?: boolean;
+}
 
 export interface MockTestApi {
   setQueue(trackIds: string[]): Promise<void>;
   setPlaybackState(state: { trackId: string; positionMs?: number; isPlaying?: boolean }): Promise<void>;
-  expireAuth(providerId: ProviderId): Promise<void>;
+  expireAuth(providerId: ProviderId, opts?: ExpireAuthOptions): Promise<void>;
   restoreAuth(providerId: ProviderId): Promise<void>;
   reset(): Promise<void>;
 }
@@ -74,9 +90,14 @@ export function installMockTestApi(opts: InstallOptions): void {
       }
     },
 
-    async expireAuth(providerId) {
+    async expireAuth(providerId, opts) {
       resolveAuth(providerId).__testExpire();
       window.dispatchEvent(new CustomEvent(AUTH_STATE_CHANGED_EVENT));
+      if (opts?.alsoDispatchSessionExpired) {
+        window.dispatchEvent(
+          new CustomEvent(SESSION_EXPIRED_EVENT, { detail: { providerId } }),
+        );
+      }
     },
 
     async restoreAuth(providerId) {
