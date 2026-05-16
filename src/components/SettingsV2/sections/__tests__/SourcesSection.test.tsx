@@ -198,9 +198,10 @@ describe('SettingsV2 SourcesSection', () => {
     });
   });
 
-  describe('token-expired reconnect state', () => {
-    it('shows "Reconnect needed" badge when a provider is enabled but isAuthenticated returns false', () => {
-      // #given — Spotify is enabled but its auth token has expired
+  describe('session-expired: no reconnect affordance', () => {
+    it('does not render a "Reconnect needed" badge when a provider is enabled but isAuthenticated returns false', () => {
+      // #given — Spotify is enabled but its auth token has expired; the session-expired
+      // handler in ProviderContext will toggle it off, so the reconnect state never surfaces
       const spotify = makeDescriptor('spotify', 'Spotify', { isAuthenticated: false });
       const dropbox = makeDescriptor('dropbox', 'Dropbox');
       mockEnabledProviderIds = ['spotify', 'dropbox'];
@@ -215,7 +216,7 @@ describe('SettingsV2 SourcesSection', () => {
       );
 
       // #then
-      expect(screen.getByText('Reconnect needed')).toBeInTheDocument();
+      expect(screen.queryByText('Reconnect needed')).not.toBeInTheDocument();
     });
   });
 });

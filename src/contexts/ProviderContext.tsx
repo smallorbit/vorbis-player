@@ -56,13 +56,6 @@ interface ProviderContextValue {
   /** Dismiss the fallthrough notification. */
   dismissFallthroughNotification: () => void;
 
-  /** Reconnect prompt shown when a provider's refresh token is rejected (400/401). Persists until acted upon. */
-  reconnectPrompt: { providerId: ProviderId; message: string } | null;
-  /** Trigger the OAuth flow for the provider with a pending reconnect prompt. */
-  acceptReconnectPrompt: () => void;
-  /** Dismiss the reconnect prompt without reconnecting. */
-  dismissReconnectPrompt: () => void;
-
   /** Auto-dismiss toast shown immediately when a provider is disconnected due to an unrecoverable 401. */
   disconnectToast: string | null;
   /** Dismiss the disconnect toast. */
@@ -166,12 +159,22 @@ export function ProviderProvider({ children }: { children: React.ReactNode }) {
   const [fallthroughNotification, setFallthroughNotification] = useState<string | null>(null);
   const dismissFallthroughNotification = useCallback(() => setFallthroughNotification(null), []);
 
-  // ── Session-expired reconnect prompt ─────────────────────────────────
-  const [reconnectPrompt, setReconnectPrompt] = useState<{ providerId: ProviderId; message: string } | null>(null);
-
   // ── Disconnect toast (auto-dismiss) ──────────────────────────────────
   const [disconnectToast, setDisconnectToast] = useState<string | null>(null);
   const dismissDisconnectToast = useCallback(() => setDisconnectToast(null), []);
+
+  // Latest-value refs so the SESSION_EXPIRED_EVENT listener (attached once,
+  // []-deps) can read the current toggle helpers without re-binding on every
+  // render. Re-binding would race user-driven toggles and risk dropping events
+  // fired during a re-render.
+  const toggleProviderRef = useRef(toggleProvider);
+  const enabledProviderIdsRef = useRef(enabledProviderIds);
+  useEffect(() => {
+    toggleProviderRef.current = toggleProvider;
+  }, [toggleProvider]);
+  useEffect(() => {
+    enabledProviderIdsRef.current = enabledProviderIds;
+  }, [enabledProviderIds]);
 
   useEffect(() => {
     const handleSessionExpired = (event: Event) => {
@@ -180,32 +183,15 @@ export function ProviderProvider({ children }: { children: React.ReactNode }) {
       if (!providerId) return;
       const descriptor = providerRegistry.get(providerId);
       const name = descriptor?.name ?? providerId;
-      setReconnectPrompt(prev => {
-        if (prev?.providerId === providerId) return prev;
-        return {
-          providerId,
-          message: `Your ${name} session has expired. Tap to reconnect.`,
-        };
-      });
       setDisconnectToast(`${name} disconnected — session expired.`);
       setAuthRevision(prev => prev + 1);
+      if (enabledProviderIdsRef.current.includes(providerId)) {
+        toggleProviderRef.current(providerId);
+      }
     };
 
     window.addEventListener(SESSION_EXPIRED_EVENT, handleSessionExpired);
     return () => window.removeEventListener(SESSION_EXPIRED_EVENT, handleSessionExpired);
-  }, []);
-
-  const dismissReconnectPrompt = useCallback(() => setReconnectPrompt(null), []);
-
-  const acceptReconnectPrompt = useCallback(() => {
-    setReconnectPrompt(current => {
-      if (!current) return null;
-      const descriptor = providerRegistry.get(current.providerId);
-      descriptor?.auth.beginLogin({ popup: true }).catch(error => {
-        console.warn('[ProviderContext] Failed to begin login for reconnect:', error);
-      });
-      return null;
-    });
   }, []);
 
   // ── Active provider (for playback) ─────────────────────────────────────
@@ -270,7 +256,7 @@ export function ProviderProvider({ children }: { children: React.ReactNode }) {
     // Notify the user
     const expiredName = activeDescriptor?.name ?? storedProviderId;
     setFallthroughNotification(
-      `${expiredName} session expired — switched to ${fallbackDesc.name}. Reconnect in Settings.`,
+      `${expiredName} session expired — switched to ${fallbackDesc.name}. Re-enable in Settings.`,
     );
   }, [storedProviderId, activeDescriptor, enabledProviderIds, validProviderId, setStoredProviderId]);
 
@@ -310,15 +296,12 @@ export function ProviderProvider({ children }: { children: React.ReactNode }) {
       connectedProviderIds,
       fallthroughNotification,
       dismissFallthroughNotification,
-      reconnectPrompt,
-      acceptReconnectPrompt,
-      dismissReconnectPrompt,
       disconnectToast,
       dismissDisconnectToast,
     }),
     // authRevision triggers re-evaluation when a popup completes OAuth
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [storedProviderId, validProviderId, activeDescriptor, setActiveProviderId, setProviderSwitchInterceptor, needsProviderSelection, enabledProviderIds, toggleProvider, isProviderEnabled, allProviders.length, getDescriptor, connectedProviderIds, fallthroughNotification, dismissFallthroughNotification, reconnectPrompt, acceptReconnectPrompt, dismissReconnectPrompt, disconnectToast, dismissDisconnectToast, authRevision],
+    [storedProviderId, validProviderId, activeDescriptor, setActiveProviderId, setProviderSwitchInterceptor, needsProviderSelection, enabledProviderIds, toggleProvider, isProviderEnabled, allProviders.length, getDescriptor, connectedProviderIds, fallthroughNotification, dismissFallthroughNotification, disconnectToast, dismissDisconnectToast, authRevision],
   );
 
   return (

@@ -114,15 +114,6 @@ export const MusicSourcesSection = memo(() => {
     [openLoginPopup, toggleProvider],
   );
 
-  const handleReconnect = useCallback(
-    (descriptor: ReturnType<typeof registry.getAll>[number]) => {
-      openLoginPopup(descriptor, () => {
-        // Provider is already in enabledProviderIds — no toggleProvider call needed.
-      });
-    },
-    [openLoginPopup],
-  );
-
   useEffect(() => () => clearPendingPopup(), [clearPendingPopup]);
 
   const handleConfirmDisconnect = useCallback(() => {
@@ -189,27 +180,24 @@ export const MusicSourcesSection = memo(() => {
         {providers.map((descriptor) => {
           const isEnabled = enabledProviderIds.includes(descriptor.id);
           const isConnected = descriptor.auth.isAuthenticated();
-          const needsReconnect = isEnabled && !isConnected;
           const isLastEnabled = enabledProviderIds.length <= 1 && isEnabled;
-          const status = isEnabled && isConnected ? 'connected' : needsReconnect ? 'reconnect' : 'disabled';
+          const status: 'connected' | 'disabled' = isEnabled && isConnected ? 'connected' : 'disabled';
           return (
             <ProviderRow key={descriptor.id}>
               <ProviderName>{descriptor.name}</ProviderName>
               <ProviderStatusBadge $status={status}>
-                {status === 'connected' ? 'Connected' : status === 'reconnect' ? 'Reconnect needed' : ''}
+                {status === 'connected' ? 'Connected' : ''}
               </ProviderStatusBadge>
               <Switch
                 checked={isEnabled}
                 onCheckedChange={() => {
                   if (!isEnabled) {
                     handleToggleOn(descriptor);
-                  } else if (needsReconnect) {
-                    handleReconnect(descriptor);
                   } else {
                     setDisconnectDialogProviderId(descriptor.id);
                   }
                 }}
-                aria-label={needsReconnect ? `Reconnect ${descriptor.name}` : isEnabled ? `Disable ${descriptor.name}` : `Enable ${descriptor.name}`}
+                aria-label={isEnabled ? `Disable ${descriptor.name}` : `Enable ${descriptor.name}`}
                 disabled={isLastEnabled}
                 variant="neutral"
               />

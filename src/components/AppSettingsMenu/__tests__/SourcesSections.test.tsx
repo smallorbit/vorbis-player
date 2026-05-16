@@ -342,8 +342,8 @@ describe('MusicSourcesSection', () => {
     });
   });
 
-  describe('token-expired reconnect flow', () => {
-    it('shows "Reconnect needed" badge when provider is enabled but auth has expired', () => {
+  describe('session-expired: provider toggles off (no reconnect affordance)', () => {
+    it('does not render a "Reconnect needed" badge when a provider is enabled but auth has expired', () => {
       // #given — Spotify is enabled but its auth token has expired
       const spotifyDesc = makeSpotifyDescriptor({ isAuthenticated: vi.fn().mockReturnValue(false) });
       const dropboxDesc = makeDropboxDescriptor();
@@ -353,30 +353,36 @@ describe('MusicSourcesSection', () => {
       // #when
       render(<Wrapper><MusicSourcesSection /></Wrapper>);
 
-      // #then
-      expect(screen.getByText('Reconnect needed')).toBeInTheDocument();
+      // #then — the third "reconnect" state is gone
+      expect(screen.queryByText('Reconnect needed')).not.toBeInTheDocument();
+      expect(screen.queryByLabelText('Reconnect Spotify')).not.toBeInTheDocument();
     });
 
-    it('sets aria-label to "Reconnect <name>" when provider is enabled but auth has expired', () => {
-      // #given — Spotify is enabled but its auth token has expired
+    it('shows Spotify toggle as unchecked once SESSION_EXPIRED has removed it from enabledProviderIds', () => {
+      // #given — SESSION_EXPIRED handler in ProviderContext has already removed Spotify
+      // from the enabled set; Dropbox stays enabled+connected
       const spotifyDesc = makeSpotifyDescriptor({ isAuthenticated: vi.fn().mockReturnValue(false) });
       const dropboxDesc = makeDropboxDescriptor();
-      mockEnabledProviderIds = ['spotify', 'dropbox'];
+      mockEnabledProviderIds = ['dropbox'];
       mockRegistry.getAll.mockReturnValue([spotifyDesc, dropboxDesc]);
 
       // #when
       render(<Wrapper><MusicSourcesSection /></Wrapper>);
 
-      // #then — screen readers hear "Reconnect Spotify", not "Disable Spotify"
-      expect(screen.getByLabelText('Reconnect Spotify')).toBeInTheDocument();
+      // #then — Spotify toggle reads "Enable Spotify" (i.e. off) and is unchecked
+      const spotifyToggle = screen.getByLabelText('Enable Spotify');
+      expect(spotifyToggle).toHaveAttribute('aria-checked', 'false');
+      // Dropbox toggle stays on
+      const dropboxToggle = screen.getByLabelText('Disable Dropbox');
+      expect(dropboxToggle).toHaveAttribute('aria-checked', 'true');
     });
 
-    it('does not open ProviderDisconnectDialog when clicking the toggle on an expired provider', async () => {
-      // #given — Spotify is enabled but its auth token has expired
+    it('routes a re-enable click on the expired provider through the standard OAuth flow', async () => {
+      // #given — Spotify has been toggled off (session expired); user is about to flip it back on
       const spotifyDesc = makeSpotifyDescriptor({ isAuthenticated: vi.fn().mockReturnValue(false) });
       vi.mocked(spotifyDesc.auth.beginLogin).mockResolvedValue(undefined);
       const dropboxDesc = makeDropboxDescriptor();
-      mockEnabledProviderIds = ['spotify', 'dropbox'];
+      mockEnabledProviderIds = ['dropbox'];
       mockRegistry.getAll.mockReturnValue([spotifyDesc, dropboxDesc]);
       mockRegistry.get.mockImplementation((id: string) =>
         id === 'spotify' ? spotifyDesc : dropboxDesc,
@@ -386,83 +392,13 @@ describe('MusicSourcesSection', () => {
 
       render(<Wrapper><MusicSourcesSection /></Wrapper>);
 
-      // #when
-      fireEvent.click(screen.getByLabelText('Reconnect Spotify'));
+      // #when — user flips the off toggle back on
+      fireEvent.click(screen.getByLabelText('Enable Spotify'));
 
-      // #then — disconnect dialog must NOT appear
-      expect(screen.queryByText('Disconnect Spotify')).not.toBeInTheDocument();
-    });
-
-    it('calls descriptor.auth.beginLogin when clicking the toggle on an expired provider', async () => {
-      // #given — Spotify is enabled but its auth token has expired
-      const spotifyDesc = makeSpotifyDescriptor({ isAuthenticated: vi.fn().mockReturnValue(false) });
-      vi.mocked(spotifyDesc.auth.beginLogin).mockResolvedValue(undefined);
-      const dropboxDesc = makeDropboxDescriptor();
-      mockEnabledProviderIds = ['spotify', 'dropbox'];
-      mockRegistry.getAll.mockReturnValue([spotifyDesc, dropboxDesc]);
-      mockRegistry.get.mockImplementation((id: string) =>
-        id === 'spotify' ? spotifyDesc : dropboxDesc,
-      );
-      const mockPopup = { closed: false } as Window;
-      vi.spyOn(window, 'open').mockReturnValue(mockPopup);
-
-      render(<Wrapper><MusicSourcesSection /></Wrapper>);
-
-      // #when
-      fireEvent.click(screen.getByLabelText('Reconnect Spotify'));
-
-      // #then — OAuth popup must be initiated
+      // #then — standard "toggle on while not authenticated" flow kicks off OAuth
       await waitFor(() => {
         expect(spotifyDesc.auth.beginLogin).toHaveBeenCalledWith({ popup: true });
       });
-    });
-
-    it('does not call toggleProvider after a successful reconnect (provider already enabled)', async () => {
-      // #given — Spotify is enabled but its auth token has expired; reconnect completes successfully
-      const isAuthenticated = vi.fn().mockReturnValue(false);
-      const spotifyDesc = makeSpotifyDescriptor({ isAuthenticated });
-      const dropboxDesc = makeDropboxDescriptor();
-      mockEnabledProviderIds = ['spotify', 'dropbox'];
-      mockRegistry.getAll.mockReturnValue([spotifyDesc, dropboxDesc]);
-      mockRegistry.get.mockImplementation((id: string) =>
-        id === 'spotify' ? spotifyDesc : dropboxDesc,
-      );
-
-      // beginLogin opens a popup that is already closed (immediate dismiss).
-      // isAuthenticated stays false until after the popup reference is captured,
-      // then switches to true so the poll detects a successful reconnect.
-      const mockPopupObj = { closed: true };
-      vi.mocked(spotifyDesc.auth.beginLogin).mockImplementation(async () => {
-        // Switch auth to "succeeded" before window.open fires so the poll sees it
-        isAuthenticated.mockReturnValue(true);
-        window.open('https://accounts.spotify.com/authorize', '_blank');
-      });
-      const originalOpenDescriptor = Object.getOwnPropertyDescriptor(window, 'open');
-      Object.defineProperty(window, 'open', {
-        value: () => mockPopupObj,
-        writable: true,
-        configurable: true,
-      });
-
-      try {
-        render(<Wrapper><MusicSourcesSection /></Wrapper>);
-
-        // #when
-        fireEvent.click(screen.getByLabelText('Reconnect Spotify'));
-        await waitFor(() => expect(spotifyDesc.auth.beginLogin).toHaveBeenCalled());
-
-        // #then — toggleProvider must NOT be called (provider is already enabled)
-        await waitFor(
-          () => {
-            expect(mockToggleProvider).not.toHaveBeenCalled();
-          },
-          { timeout: 2000 },
-        );
-      } finally {
-        if (originalOpenDescriptor) {
-          Object.defineProperty(window, 'open', originalOpenDescriptor);
-        }
-      }
     });
   });
 });
