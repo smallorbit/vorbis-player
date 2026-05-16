@@ -758,4 +758,103 @@ describe('useCollectionLoader', () => {
     // #then
     expect(mockRecord).not.toHaveBeenCalled();
   });
+
+  it('does not invoke listTracks for a provider whose hasLikedCollection is false when loading unified liked', async () => {
+    // #given — one provider supports liked collection, one does not
+    const spotifyListTracks = vi.fn().mockResolvedValue([makeMediaTrack('s1', 1000)]);
+    const dropboxListTracks = vi.fn().mockResolvedValue([makeMediaTrack('d1', 500)]);
+
+    mockGetDescriptor.mockImplementation((id: string) => {
+      if (id === 'spotify') {
+        return {
+          id: 'spotify',
+          catalog: { listTracks: spotifyListTracks },
+          capabilities: { hasLikedCollection: true },
+        };
+      }
+      return {
+        id: 'dropbox',
+        catalog: { listTracks: dropboxListTracks },
+        capabilities: { hasLikedCollection: false },
+      };
+    });
+    mockPlayTrack.mockResolvedValue(undefined);
+    mockActiveDescriptor = {
+      id: 'spotify',
+      capabilities: { hasContextPlaybackFallback: false },
+      playback: { pause: vi.fn() },
+    };
+
+    const { result } = renderHook(() =>
+      useCollectionLoader({
+        trackOps: { setError: mockSetError, setIsLoading: mockSetIsLoading, setSelectedPlaylistId: mockSetSelectedPlaylistId, setTracks: mockSetTracks, setOriginalTracks: mockSetOriginalTracks, setCurrentTrackIndex: mockSetCurrentTrackIndex, mediaTracksRef },
+        activeDescriptor: mockActiveDescriptor,
+        getDescriptor: mockGetDescriptor,
+        setActiveProviderId: mockSetActiveProviderId,
+        connectedProviderIds: ['spotify', 'dropbox'],
+        shuffleEnabled: false,
+        isUnifiedLikedActive: true,
+        drivingProviderRef,
+        playTrack: mockPlayTrack,
+        spotifyHandlePlaylistSelect: mockSpotifyHandlePlaylistSelect,
+        stopRadioBase: mockStopRadioBase,
+        record: mockRecord,
+        radioStateIsActive: false,
+      })
+    );
+
+    // #when
+    await act(async () => {
+      await result.current.loadCollection(LIKED_SONGS_ID);
+    });
+
+    // #then — adapter method not invoked for the provider that lacks the capability
+    expect(dropboxListTracks).not.toHaveBeenCalled();
+    expect(spotifyListTracks).toHaveBeenCalled();
+  });
+
+  it('does not invoke spotifyHandlePlaylistSelect when hasContextPlaybackFallback is false and catalog returns empty', async () => {
+    // #given — provider with context-playback method available but capability flag false
+    const mockCatalog = {
+      listTracks: vi.fn().mockResolvedValue([]),
+    };
+    mockGetDescriptor.mockReturnValue({
+      id: 'spotify',
+      catalog: mockCatalog,
+      capabilities: { hasContextPlaybackFallback: false },
+      playback: { pause: vi.fn() },
+    });
+    mockActiveDescriptor = {
+      id: 'spotify',
+      catalog: mockCatalog,
+      capabilities: { hasContextPlaybackFallback: false },
+      playback: { pause: vi.fn() },
+    };
+
+    const { result } = renderHook(() =>
+      useCollectionLoader({
+        trackOps: { setError: mockSetError, setIsLoading: mockSetIsLoading, setSelectedPlaylistId: mockSetSelectedPlaylistId, setTracks: mockSetTracks, setOriginalTracks: mockSetOriginalTracks, setCurrentTrackIndex: mockSetCurrentTrackIndex, mediaTracksRef },
+        activeDescriptor: mockActiveDescriptor,
+        getDescriptor: mockGetDescriptor,
+        setActiveProviderId: mockSetActiveProviderId,
+        connectedProviderIds: ['spotify'],
+        shuffleEnabled: false,
+        isUnifiedLikedActive: false,
+        drivingProviderRef,
+        playTrack: mockPlayTrack,
+        spotifyHandlePlaylistSelect: mockSpotifyHandlePlaylistSelect,
+        stopRadioBase: mockStopRadioBase,
+        record: mockRecord,
+        radioStateIsActive: false,
+      })
+    );
+
+    // #when
+    await act(async () => {
+      await result.current.loadCollection('playlist_empty');
+    });
+
+    // #then — context playback adapter not invoked because capability flag is false
+    expect(mockSpotifyHandlePlaylistSelect).not.toHaveBeenCalled();
+  });
 });
