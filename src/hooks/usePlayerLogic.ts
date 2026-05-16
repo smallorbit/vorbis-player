@@ -462,6 +462,7 @@ export function usePlayerLogic() {
     handleBackToLibrary,
     activeDescriptor,
     getDescriptor,
+    getDrivingProviderDescriptor,
   });
 
   const dismissRadioProgress = useCallback(() => setRadioProgress(null), []);
