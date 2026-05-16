@@ -273,12 +273,25 @@ export function ProviderProvider({ children }: { children: React.ReactNode }) {
     activeDescriptor?.playback.pause().catch(() => {});
     setStoredProviderId(fallback);
 
+    // Toggle the expired provider off so the settings UI reflects its
+    // not-connected state. Mirrors handleSessionExpired and bypasses
+    // toggleProvider's "last enabled" guard by writing setStoredEnabledIds
+    // directly — the underlying auth has failed and the toggle must
+    // accurately reflect that regardless of how many providers remain.
+    const expiredId = storedProviderId;
+    setStoredEnabledIds(prev => {
+      const current =
+        prev === null ? allProviderIds : prev.filter(pid => providerRegistry.has(pid));
+      if (!current.includes(expiredId)) return current;
+      return current.filter(pid => pid !== expiredId);
+    });
+
     // Notify the user
     const expiredName = activeDescriptor?.name ?? storedProviderId;
     setFallthroughNotification(
       `${expiredName} session expired — switched to ${fallbackDesc.name}. Re-enable in Settings.`,
     );
-  }, [storedProviderId, activeDescriptor, enabledProviderIds, validProviderId, setStoredProviderId]);
+  }, [storedProviderId, activeDescriptor, enabledProviderIds, validProviderId, setStoredProviderId, setStoredEnabledIds, allProviderIds]);
 
   // ── Auto-switch when active provider is disabled ──────────────────────
   useEffect(() => {
