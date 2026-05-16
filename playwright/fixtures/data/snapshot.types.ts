@@ -108,9 +108,6 @@ export interface ProviderSnapshot {
   pins: SnapshotPins;
 }
 
-export type SpotifySnapshot = ProviderSnapshot & { meta: { provider: 'spotify' } };
-export type DropboxSnapshot = ProviderSnapshot & { meta: { provider: 'dropbox' } };
-
 /**
  * Runtime guard the loader uses; throws on bad shape.
  * LENIENT: extra/unknown fields are tolerated and ignored — only the required structural fields are validated.
