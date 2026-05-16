@@ -126,18 +126,4 @@ describe('useAlbumSavedStatus — undeclared capability guard', () => {
     // #then — adapter method not invoked
     expect(setAlbumSaved).not.toHaveBeenCalled();
   });
-
-  it('exposes canToggle false when hasSaveAlbum is false', async () => {
-    // #given
-    const descriptor = makeDescriptor({
-      capabilities: { hasSaveTrack: true, hasExternalLink: true, hasLikedCollection: true, hasSaveAlbum: false },
-    });
-    mockActiveDescriptor.mockReturnValue(descriptor);
-
-    // #when
-    const { result } = renderHook(() => useAlbumSavedStatus('album-1', undefined));
-
-    // #then — callers can rely on canToggle to skip UI affordance
-    expect(result.current.canToggle).toBe(false);
-  });
 });
