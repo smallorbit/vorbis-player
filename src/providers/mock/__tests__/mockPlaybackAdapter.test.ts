@@ -201,6 +201,20 @@ describe('MockPlaybackAdapter', () => {
       expect(listener).not.toHaveBeenCalled();
     });
 
+    it('preserves audio.src when pre-warming against an already-playing track', () => {
+      // #given an audio element already loaded with a clip (mid-playback)
+      const originalSrc = 'blob:mock/currently-playing-clip';
+      mockAudio.src = originalSrc;
+      // #when prepareTrack is called without positionMs (pre-warm intent) —
+      // this happens in single-provider queues where nextDescriptor ===
+      // currentDescriptor at the pre-warm call site
+      adapter.prepareTrack(makeTrack('seed-track'));
+      // #then audio.src is unchanged and load() is not invoked, so the
+      // currently-playing audio is not interrupted
+      expect(mockAudio.src).toBe(originalSrc);
+      expect(mockAudio.load).not.toHaveBeenCalled();
+    });
+
     it('does not emit state when positionMs is undefined', () => {
       // #given a subscribed listener
       const listener = vi.fn();

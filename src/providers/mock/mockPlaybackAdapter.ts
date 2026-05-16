@@ -167,15 +167,24 @@ export class MockPlaybackAdapter implements PlaybackProvider {
 
   prepareTrack(track: MediaTrack, options?: { positionMs?: number }): void {
     const audio = this.ensureAudio();
-    audio.src = clipUrlForTrack(track.id);
-    audio.load();
 
     if (options?.positionMs !== undefined) {
+      // Hydrate intent: load the requested clip and emit staged state. Skip
+      // the load when the audio element already holds the same track to avoid
+      // restarting a mid-flight playback.
+      if (!(audio.src && this.currentTrack?.id === track.id)) {
+        audio.src = clipUrlForTrack(track.id);
+        audio.load();
+      }
       this.currentTrack = track;
       this.startedAtPositionMs = options.positionMs;
       this.startedAtMs = Date.now();
       this.notifyListeners();
     }
+    // Pre-warm intent (options omitted / positionMs undefined): no-op. The
+    // real providers do not mutate the audio element during pre-warm, so the
+    // mock must preserve the currently-playing src — see Dropbox's
+    // primeAudioForHydrate guard at dropboxPlaybackAdapter.ts:235.
   }
 
   probePlayable(track: MediaTrack): Promise<boolean> {
