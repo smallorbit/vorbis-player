@@ -463,4 +463,43 @@ describe('useRadioSession', () => {
     // #then
     expect(initMock).toHaveBeenCalled();
   });
+
+  it('does not invoke searchTrack on a provider whose hasTrackSearch is false', async () => {
+    // #given — provider with searchTrack method present but hasTrackSearch capability false
+    const searchTrack = vi.fn().mockResolvedValue(track('resolved-1', 'Fake Plastic Trees', 'Radiohead'));
+    const nonSearchProvider = makeProviderDescriptor({
+      id: 'spotify',
+      capabilities: { hasSaveTrack: true, hasExternalLink: true, hasLikedCollection: true, hasTrackSearch: false },
+      auth: {
+        providerId: 'spotify',
+        isAuthenticated: vi.fn().mockReturnValue(true),
+        getAccessToken: vi.fn(),
+        beginLogin: vi.fn(),
+        handleCallback: vi.fn(),
+        logout: vi.fn(),
+      },
+      catalog: {
+        providerId: 'spotify',
+        listCollections: vi.fn(),
+        listTracks: vi.fn().mockResolvedValue([]),
+        searchTrack,
+      },
+    });
+    vi.mocked(providerRegistry.getAll).mockReturnValue([nonSearchProvider]);
+
+    mockStartRadio.mockResolvedValue({
+      queue: [track('g1', 'Karma Police', 'Radiohead')],
+      unmatchedSuggestions: [{ name: 'Fake Plastic Trees', artist: 'Radiohead', matchScore: 0.8 }],
+    });
+
+    const { result } = renderSession();
+
+    // #when
+    await act(async () => {
+      await result.current.handleStartRadio();
+    });
+
+    // #then — searchTrack not invoked because hasTrackSearch is false
+    expect(searchTrack).not.toHaveBeenCalled();
+  });
 });
