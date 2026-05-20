@@ -31,6 +31,13 @@ interface UseQueueManagementProps {
   handleBackToLibrary: () => void;
   activeDescriptor: ProviderDescriptor | undefined;
   getDescriptor: (providerId: ProviderId) => ProviderDescriptor | undefined;
+  /**
+   * Resolves the **driving** provider descriptor — the one producing audio, which
+   * may differ from `activeDescriptor` for cross-provider queues. Native-queue-sync
+   * notifications must target this descriptor so the SDK whose queue we are mirroring
+   * receives the update.
+   */
+  getDrivingProviderDescriptor: () => ProviderDescriptor | undefined;
 }
 
 interface UseQueueManagementReturn {
@@ -51,10 +58,21 @@ export function useQueueManagement({
   handleBackToLibrary,
   activeDescriptor,
   getDescriptor,
+  getDrivingProviderDescriptor,
 }: UseQueueManagementProps): UseQueueManagementReturn {
   const { setTracks, setOriginalTracks, setCurrentTrackIndex, mediaTracksRef } = trackOps;
   const tracksRef = useRef(tracks);
   tracksRef.current = tracks;
+
+  const notifyQueueChanged = useCallback(
+    (nextTracks: MediaTrack[], nextIndex: number): void => {
+      const driving = getDrivingProviderDescriptor();
+      if (!driving) return;
+      if (!driving.capabilities?.hasNativeQueueSync) return;
+      driving.playback.onQueueChanged?.(nextTracks, nextIndex);
+    },
+    [getDrivingProviderDescriptor],
+  );
 
   /**
    * Fetch tracks from a collection (album/playlist) and append them to the
@@ -115,9 +133,11 @@ export function useQueueManagement({
           tracksRef.current.length,
           mediaTracksRef.current.length,
         );
+        const nextTracks = [...tracksRef.current, ...uniqueNewTracks];
         mediaTracksRef.current = appendMediaTracks(mediaTracksRef.current, uniqueNewTracks);
-        setOriginalTracks([...tracksRef.current, ...uniqueNewTracks]);
+        setOriginalTracks(nextTracks);
         setTracks((prev: MediaTrack[]) => [...prev, ...uniqueNewTracks]);
+        notifyQueueChanged(nextTracks, currentTrackIndex);
         logQueue(
           'handleAddToQueue — after append: mediaRef=%d, newTracks added: %s',
           mediaTracksRef.current.length,
@@ -131,7 +151,7 @@ export function useQueueManagement({
       }
     },
     // mediaTracksRef included for exhaustive-deps; ref identity is stable so it does not cause callback re-creation.
-    [tracks.length, loadCollection, activeDescriptor, getDescriptor, setTracks, setOriginalTracks, mediaTracksRef]
+    [tracks.length, loadCollection, activeDescriptor, getDescriptor, setTracks, setOriginalTracks, mediaTracksRef, notifyQueueChanged, currentTrackIndex]
   );
 
   const handleRemoveFromQueue = useCallback(
@@ -153,17 +173,21 @@ export function useQueueManagement({
       setOriginalTracks((prev) => prev.filter((t) => t.id !== removedTrack.id));
 
       // Adjust currentTrackIndex if removing before current
+      const adjustedIndex = index < currentTrackIndex ? currentTrackIndex - 1 : currentTrackIndex;
       if (index < currentTrackIndex) {
         setCurrentTrackIndex(prev => prev - 1);
       }
 
       // Remove from tracks by index
+      const nextTracks = tracks.filter((_, i) => i !== index);
       setTracks(prev => prev.filter((_, i) => i !== index));
+
+      notifyQueueChanged(nextTracks, adjustedIndex);
 
       logQueue('handleRemoveFromQueue — done, new queueLen=%d', tracks.length - 1);
     },
     // mediaTracksRef included for exhaustive-deps; ref identity is stable so it does not cause callback re-creation.
-    [tracks, currentTrackIndex, handleBackToLibrary, setTracks, setOriginalTracks, setCurrentTrackIndex, mediaTracksRef]
+    [tracks, currentTrackIndex, handleBackToLibrary, setTracks, setOriginalTracks, setCurrentTrackIndex, mediaTracksRef, notifyQueueChanged]
   );
 
   const handleReorderQueue = useCallback(
@@ -199,13 +223,16 @@ export function useQueueManagement({
         setOriginalTracks(newTracks);
       }
 
-      setCurrentTrackIndex(newCurrentIndex >= 0 ? newCurrentIndex : 0);
+      const finalIndex = newCurrentIndex >= 0 ? newCurrentIndex : 0;
+      setCurrentTrackIndex(finalIndex);
       setTracks(newTracks);
+
+      notifyQueueChanged(newTracks, finalIndex);
 
       logQueue('handleReorderQueue — done, currentIndex=%d', newCurrentIndex);
     },
     // mediaTracksRef included for exhaustive-deps; ref identity is stable so it does not cause callback re-creation.
-    [tracks, currentTrackIndex, shuffleEnabled, setTracks, setOriginalTracks, setCurrentTrackIndex, mediaTracksRef]
+    [tracks, currentTrackIndex, shuffleEnabled, setTracks, setOriginalTracks, setCurrentTrackIndex, mediaTracksRef, notifyQueueChanged]
   );
 
   const queueTracksDirectly = useCallback(
@@ -226,12 +253,14 @@ export function useQueueManagement({
         tracksRef.current.length,
         mediaTracksRef.current.length,
       );
+      const nextTracks = [...tracksRef.current, ...uniqueNewTracks];
       mediaTracksRef.current = appendMediaTracks(mediaTracksRef.current, uniqueNewTracks);
-      setOriginalTracks([...tracksRef.current, ...uniqueNewTracks]);
+      setOriginalTracks(nextTracks);
       setTracks((prev: MediaTrack[]) => [...prev, ...uniqueNewTracks]);
+      notifyQueueChanged(nextTracks, currentTrackIndex);
       return { added: uniqueNewTracks.length, collectionName };
     },
-    [mediaTracksRef, setOriginalTracks, setTracks]
+    [mediaTracksRef, setOriginalTracks, setTracks, notifyQueueChanged, currentTrackIndex]
   );
 
   /**
@@ -256,6 +285,7 @@ export function useQueueManagement({
         mediaTracksRef.current = appendMediaTracks(mediaTracksRef.current, uniqueNewTracks);
         setOriginalTracks([...uniqueNewTracks]);
         setTracks([...uniqueNewTracks]);
+        notifyQueueChanged([...uniqueNewTracks], 0);
         return { added: uniqueNewTracks.length, collectionName };
       }
 
@@ -274,6 +304,8 @@ export function useQueueManagement({
       setOriginalTracks(nextTracks);
       setTracks(nextTracks);
 
+      notifyQueueChanged(nextTracks, currentTrackIndex);
+
       logQueue(
         'insertTracksNext — after insert: mediaRef=%d, newTracks added: %s',
         mediaTracksRef.current.length,
@@ -281,7 +313,7 @@ export function useQueueManagement({
       );
       return { added: uniqueNewTracks.length, collectionName };
     },
-    [currentTrackIndex, mediaTracksRef, setOriginalTracks, setTracks],
+    [currentTrackIndex, mediaTracksRef, setOriginalTracks, setTracks, notifyQueueChanged],
   );
 
   /**
