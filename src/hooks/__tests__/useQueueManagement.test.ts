@@ -30,6 +30,7 @@ describe('useQueueManagement', () => {
   let mockGetDescriptor: ReturnType<typeof vi.fn>;
   let mockActiveDescriptor: { id: string; [key: string]: unknown };
   let mediaTracksRef: React.MutableRefObject<MediaTrack[]>;
+  let mockGetDrivingProviderDescriptor: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
     mockHandlePlaylistSelect = vi.fn();
@@ -40,6 +41,9 @@ describe('useQueueManagement', () => {
     mockGetDescriptor = vi.fn();
     mockActiveDescriptor = { id: 'spotify' };
     mediaTracksRef = { current: [] };
+    // Default: no driving descriptor (notify is a no-op). Tests covering native-sync
+    // override this with a descriptor that declares `hasNativeQueueSync`.
+    mockGetDrivingProviderDescriptor = vi.fn(() => undefined);
     vi.mocked(toast).mockClear();
   });
 
@@ -55,6 +59,7 @@ describe('useQueueManagement', () => {
         handleBackToLibrary: mockHandleBackToLibrary,
         activeDescriptor: mockActiveDescriptor,
         getDescriptor: mockGetDescriptor,
+        getDrivingProviderDescriptor: mockGetDrivingProviderDescriptor,
       })
     );
 
@@ -81,6 +86,7 @@ describe('useQueueManagement', () => {
         handleBackToLibrary: mockHandleBackToLibrary,
         activeDescriptor: mockActiveDescriptor,
         getDescriptor: mockGetDescriptor,
+        getDrivingProviderDescriptor: mockGetDrivingProviderDescriptor,
       })
     );
 
@@ -116,6 +122,7 @@ describe('useQueueManagement', () => {
         handleBackToLibrary: mockHandleBackToLibrary,
         activeDescriptor: mockActiveDescriptor,
         getDescriptor: mockGetDescriptor,
+        getDrivingProviderDescriptor: mockGetDrivingProviderDescriptor,
       })
     );
 
@@ -143,6 +150,7 @@ describe('useQueueManagement', () => {
         handleBackToLibrary: mockHandleBackToLibrary,
         activeDescriptor: mockActiveDescriptor,
         getDescriptor: mockGetDescriptor,
+        getDrivingProviderDescriptor: mockGetDrivingProviderDescriptor,
       })
     );
 
@@ -174,6 +182,7 @@ describe('useQueueManagement', () => {
         handleBackToLibrary: mockHandleBackToLibrary,
         activeDescriptor: dropboxDescriptor,
         getDescriptor: mockGetDescriptor,
+        getDrivingProviderDescriptor: mockGetDrivingProviderDescriptor,
       })
     );
 
@@ -213,6 +222,7 @@ describe('useQueueManagement', () => {
         handleBackToLibrary: mockHandleBackToLibrary,
         activeDescriptor: dropboxDescriptor,
         getDescriptor: mockGetDescriptor,
+        getDrivingProviderDescriptor: mockGetDrivingProviderDescriptor,
       })
     );
 
@@ -248,6 +258,7 @@ describe('useQueueManagement', () => {
         handleBackToLibrary: mockHandleBackToLibrary,
         activeDescriptor: mockActiveDescriptor,
         getDescriptor: mockGetDescriptor,
+        getDrivingProviderDescriptor: mockGetDrivingProviderDescriptor,
       })
     );
 
@@ -286,6 +297,7 @@ describe('useQueueManagement', () => {
         handleBackToLibrary: mockHandleBackToLibrary,
         activeDescriptor: mockActiveDescriptor,
         getDescriptor: mockGetDescriptor,
+        getDrivingProviderDescriptor: mockGetDrivingProviderDescriptor,
       })
     );
 
@@ -309,6 +321,7 @@ describe('useQueueManagement', () => {
         handleBackToLibrary: mockHandleBackToLibrary,
         activeDescriptor: undefined,
         getDescriptor: mockGetDescriptor,
+        getDrivingProviderDescriptor: mockGetDrivingProviderDescriptor,
       })
     );
 
@@ -340,6 +353,7 @@ describe('useQueueManagement', () => {
         handleBackToLibrary: mockHandleBackToLibrary,
         activeDescriptor: mockActiveDescriptor,
         getDescriptor: mockGetDescriptor,
+        getDrivingProviderDescriptor: mockGetDrivingProviderDescriptor,
       })
     );
 
@@ -372,6 +386,7 @@ describe('useQueueManagement', () => {
         handleBackToLibrary: mockHandleBackToLibrary,
         activeDescriptor: mockActiveDescriptor,
         getDescriptor: mockGetDescriptor,
+        getDrivingProviderDescriptor: mockGetDrivingProviderDescriptor,
       })
     );
 
@@ -404,6 +419,7 @@ describe('useQueueManagement', () => {
         handleBackToLibrary: mockHandleBackToLibrary,
         activeDescriptor: mockActiveDescriptor,
         getDescriptor: mockGetDescriptor,
+        getDrivingProviderDescriptor: mockGetDrivingProviderDescriptor,
       })
     );
 
@@ -438,6 +454,7 @@ describe('useQueueManagement', () => {
         handleBackToLibrary: mockHandleBackToLibrary,
         activeDescriptor: mockActiveDescriptor,
         getDescriptor: mockGetDescriptor,
+        getDrivingProviderDescriptor: mockGetDrivingProviderDescriptor,
       })
     );
 
@@ -471,6 +488,7 @@ describe('useQueueManagement', () => {
         handleBackToLibrary: mockHandleBackToLibrary,
         activeDescriptor: mockActiveDescriptor,
         getDescriptor: mockGetDescriptor,
+        getDrivingProviderDescriptor: mockGetDrivingProviderDescriptor,
       })
     );
 
@@ -501,6 +519,7 @@ describe('useQueueManagement', () => {
         handleBackToLibrary: mockHandleBackToLibrary,
         activeDescriptor: mockActiveDescriptor,
         getDescriptor: mockGetDescriptor,
+        getDrivingProviderDescriptor: mockGetDrivingProviderDescriptor,
       })
     );
 
@@ -530,6 +549,7 @@ describe('useQueueManagement', () => {
         handleBackToLibrary: mockHandleBackToLibrary,
         activeDescriptor: mockActiveDescriptor,
         getDescriptor: mockGetDescriptor,
+        getDrivingProviderDescriptor: mockGetDrivingProviderDescriptor,
       })
     );
 
@@ -561,6 +581,7 @@ describe('useQueueManagement', () => {
         handleBackToLibrary: mockHandleBackToLibrary,
         activeDescriptor: mockActiveDescriptor,
         getDescriptor: mockGetDescriptor,
+        getDrivingProviderDescriptor: mockGetDrivingProviderDescriptor,
       })
     );
 
@@ -594,6 +615,7 @@ describe('useQueueManagement', () => {
         handleBackToLibrary: mockHandleBackToLibrary,
         activeDescriptor: mockActiveDescriptor,
         getDescriptor: mockGetDescriptor,
+        getDrivingProviderDescriptor: mockGetDrivingProviderDescriptor,
       })
     );
 
@@ -625,6 +647,7 @@ describe('useQueueManagement', () => {
       handleBackToLibrary: mockHandleBackToLibrary,
       activeDescriptor: mockActiveDescriptor,
       getDescriptor: mockGetDescriptor,
+      getDrivingProviderDescriptor: mockGetDrivingProviderDescriptor,
     };
 
     const { result, rerender } = renderHook((p: typeof props) => useQueueManagement(p), {
@@ -648,6 +671,347 @@ describe('useQueueManagement', () => {
     expect(result.current.handleAddToQueue).toBe(initialAdd);
   });
 
+  describe('native-queue-sync notifications', () => {
+    function makeDrivingDescriptor(opts: { hasNativeQueueSync: boolean }): {
+      descriptor: { id: 'spotify'; capabilities: { hasNativeQueueSync: boolean }; playback: { onQueueChanged: ReturnType<typeof vi.fn>; pause: ReturnType<typeof vi.fn> } };
+      onQueueChanged: ReturnType<typeof vi.fn>;
+    } {
+      const onQueueChanged = vi.fn();
+      return {
+        descriptor: {
+          id: 'spotify',
+          capabilities: { hasNativeQueueSync: opts.hasNativeQueueSync },
+          playback: { onQueueChanged, pause: vi.fn() },
+        },
+        onQueueChanged,
+      };
+    }
+
+    it('handleAddToQueue notifies the driving provider with the post-append tracks and unchanged index', async () => {
+      // #given — non-empty queue, driving provider declares native-queue-sync
+      mediaTracksRef.current = [makeMediaTrack('1'), makeMediaTrack('2')];
+      const tracks = [makeTrack({ id: '1' }), makeTrack({ id: '2' })];
+      const mockCatalog = { listTracks: vi.fn().mockResolvedValue([makeMediaTrack('3'), makeMediaTrack('4')]) };
+      mockActiveDescriptor.catalog = mockCatalog;
+      const { descriptor, onQueueChanged } = makeDrivingDescriptor({ hasNativeQueueSync: true });
+      mockGetDrivingProviderDescriptor.mockReturnValue(descriptor);
+
+      const { result } = renderHook(() =>
+        useQueueManagement({
+          tracks,
+          currentTrackIndex: 0,
+          shuffleEnabled: false,
+          trackOps: { setTracks: mockSetTracks, setOriginalTracks: mockSetOriginalTracks, setCurrentTrackIndex: mockSetCurrentTrackIndex, mediaTracksRef },
+          loadCollection: mockHandlePlaylistSelect,
+          handleBackToLibrary: mockHandleBackToLibrary,
+          activeDescriptor: mockActiveDescriptor,
+          getDescriptor: mockGetDescriptor,
+          getDrivingProviderDescriptor: mockGetDrivingProviderDescriptor,
+        })
+      );
+
+      // #when
+      await act(async () => {
+        await result.current.handleAddToQueue('playlist_id');
+      });
+
+      // #then
+      expect(onQueueChanged).toHaveBeenCalledTimes(1);
+      const [notifiedTracks, notifiedIndex] = onQueueChanged.mock.calls[0];
+      expect((notifiedTracks as MediaTrack[]).map((t) => t.id)).toEqual(['1', '2', '3', '4']);
+      expect(notifiedIndex).toBe(0);
+    });
+
+    it('handleRemoveFromQueue notifies with the post-removal tracks and adjusted index', () => {
+      // #given — currently playing index 2; remove index 0 → adjusted to 1
+      mediaTracksRef.current = [makeMediaTrack('1'), makeMediaTrack('2'), makeMediaTrack('3')];
+      const tracks = [makeTrack({ id: '1' }), makeTrack({ id: '2' }), makeTrack({ id: '3' })];
+      const { descriptor, onQueueChanged } = makeDrivingDescriptor({ hasNativeQueueSync: true });
+      mockGetDrivingProviderDescriptor.mockReturnValue(descriptor);
+
+      const { result } = renderHook(() =>
+        useQueueManagement({
+          tracks,
+          currentTrackIndex: 2,
+          shuffleEnabled: false,
+          trackOps: { setTracks: mockSetTracks, setOriginalTracks: mockSetOriginalTracks, setCurrentTrackIndex: mockSetCurrentTrackIndex, mediaTracksRef },
+          loadCollection: mockHandlePlaylistSelect,
+          handleBackToLibrary: mockHandleBackToLibrary,
+          activeDescriptor: mockActiveDescriptor,
+          getDescriptor: mockGetDescriptor,
+          getDrivingProviderDescriptor: mockGetDrivingProviderDescriptor,
+        })
+      );
+
+      // #when
+      act(() => {
+        result.current.handleRemoveFromQueue(0);
+      });
+
+      // #then
+      expect(onQueueChanged).toHaveBeenCalledTimes(1);
+      const [notifiedTracks, notifiedIndex] = onQueueChanged.mock.calls[0];
+      expect((notifiedTracks as MediaTrack[]).map((t) => t.id)).toEqual(['2', '3']);
+      expect(notifiedIndex).toBe(1);
+    });
+
+    it('handleReorderQueue notifies with the reordered tracks and the followed-current index', () => {
+      // #given — playing index 0 ('a'); reorder 0→2 follows the playing track to index 2
+      mediaTracksRef.current = [makeMediaTrack('a'), makeMediaTrack('b'), makeMediaTrack('c')];
+      const tracks = [makeTrack({ id: 'a' }), makeTrack({ id: 'b' }), makeTrack({ id: 'c' })];
+      const { descriptor, onQueueChanged } = makeDrivingDescriptor({ hasNativeQueueSync: true });
+      mockGetDrivingProviderDescriptor.mockReturnValue(descriptor);
+
+      const { result } = renderHook(() =>
+        useQueueManagement({
+          tracks,
+          currentTrackIndex: 0,
+          shuffleEnabled: false,
+          trackOps: { setTracks: mockSetTracks, setOriginalTracks: mockSetOriginalTracks, setCurrentTrackIndex: mockSetCurrentTrackIndex, mediaTracksRef },
+          loadCollection: mockHandlePlaylistSelect,
+          handleBackToLibrary: mockHandleBackToLibrary,
+          activeDescriptor: mockActiveDescriptor,
+          getDescriptor: mockGetDescriptor,
+          getDrivingProviderDescriptor: mockGetDrivingProviderDescriptor,
+        })
+      );
+
+      // #when
+      act(() => {
+        result.current.handleReorderQueue(0, 2);
+      });
+
+      // #then
+      expect(onQueueChanged).toHaveBeenCalledTimes(1);
+      const [notifiedTracks, notifiedIndex] = onQueueChanged.mock.calls[0];
+      expect((notifiedTracks as MediaTrack[]).map((t) => t.id)).toEqual(['b', 'c', 'a']);
+      expect(notifiedIndex).toBe(2);
+    });
+
+    it('insertTracksNext notifies with the spliced tracks and unchanged current index', () => {
+      // #given — playing index 1 of 4; insert one track at index 2
+      mediaTracksRef.current = [makeMediaTrack('a'), makeMediaTrack('b'), makeMediaTrack('c'), makeMediaTrack('d')];
+      const tracks = [makeTrack({ id: 'a' }), makeTrack({ id: 'b' }), makeTrack({ id: 'c' }), makeTrack({ id: 'd' })];
+      const { descriptor, onQueueChanged } = makeDrivingDescriptor({ hasNativeQueueSync: true });
+      mockGetDrivingProviderDescriptor.mockReturnValue(descriptor);
+
+      const { result } = renderHook(() =>
+        useQueueManagement({
+          tracks,
+          currentTrackIndex: 1,
+          shuffleEnabled: false,
+          trackOps: { setTracks: mockSetTracks, setOriginalTracks: mockSetOriginalTracks, setCurrentTrackIndex: mockSetCurrentTrackIndex, mediaTracksRef },
+          loadCollection: mockHandlePlaylistSelect,
+          handleBackToLibrary: mockHandleBackToLibrary,
+          activeDescriptor: mockActiveDescriptor,
+          getDescriptor: mockGetDescriptor,
+          getDrivingProviderDescriptor: mockGetDrivingProviderDescriptor,
+        })
+      );
+
+      // #when
+      act(() => {
+        result.current.insertTracksNext([makeMediaTrack('x')]);
+      });
+
+      // #then
+      expect(onQueueChanged).toHaveBeenCalledTimes(1);
+      const [notifiedTracks, notifiedIndex] = onQueueChanged.mock.calls[0];
+      expect((notifiedTracks as MediaTrack[]).map((t) => t.id)).toEqual(['a', 'b', 'x', 'c', 'd']);
+      expect(notifiedIndex).toBe(1);
+    });
+
+    it('insertTracksNext notifies with index 0 when the queue starts empty', () => {
+      // #given — empty queue; fall-through path treats inserted tracks as the new queue
+      const { descriptor, onQueueChanged } = makeDrivingDescriptor({ hasNativeQueueSync: true });
+      mockGetDrivingProviderDescriptor.mockReturnValue(descriptor);
+
+      const { result } = renderHook(() =>
+        useQueueManagement({
+          tracks: [],
+          currentTrackIndex: 0,
+          shuffleEnabled: false,
+          trackOps: { setTracks: mockSetTracks, setOriginalTracks: mockSetOriginalTracks, setCurrentTrackIndex: mockSetCurrentTrackIndex, mediaTracksRef },
+          loadCollection: mockHandlePlaylistSelect,
+          handleBackToLibrary: mockHandleBackToLibrary,
+          activeDescriptor: mockActiveDescriptor,
+          getDescriptor: mockGetDescriptor,
+          getDrivingProviderDescriptor: mockGetDrivingProviderDescriptor,
+        })
+      );
+
+      // #when
+      act(() => {
+        result.current.insertTracksNext([makeMediaTrack('1'), makeMediaTrack('2')]);
+      });
+
+      // #then
+      expect(onQueueChanged).toHaveBeenCalledTimes(1);
+      const [notifiedTracks, notifiedIndex] = onQueueChanged.mock.calls[0];
+      expect((notifiedTracks as MediaTrack[]).map((t) => t.id)).toEqual(['1', '2']);
+      expect(notifiedIndex).toBe(0);
+    });
+
+    it('queueTracksDirectly notifies with the post-append tracks and unchanged index', () => {
+      // #given — non-empty queue, driving provider declares native-queue-sync
+      mediaTracksRef.current = [makeMediaTrack('1')];
+      const tracks = [makeTrack({ id: '1' })];
+      const { descriptor, onQueueChanged } = makeDrivingDescriptor({ hasNativeQueueSync: true });
+      mockGetDrivingProviderDescriptor.mockReturnValue(descriptor);
+
+      const { result } = renderHook(() =>
+        useQueueManagement({
+          tracks,
+          currentTrackIndex: 0,
+          shuffleEnabled: false,
+          trackOps: { setTracks: mockSetTracks, setOriginalTracks: mockSetOriginalTracks, setCurrentTrackIndex: mockSetCurrentTrackIndex, mediaTracksRef },
+          loadCollection: mockHandlePlaylistSelect,
+          handleBackToLibrary: mockHandleBackToLibrary,
+          activeDescriptor: mockActiveDescriptor,
+          getDescriptor: mockGetDescriptor,
+          getDrivingProviderDescriptor: mockGetDrivingProviderDescriptor,
+        })
+      );
+
+      // #when
+      act(() => {
+        result.current.queueTracksDirectly([makeMediaTrack('2'), makeMediaTrack('3')]);
+      });
+
+      // #then
+      expect(onQueueChanged).toHaveBeenCalledTimes(1);
+      const [notifiedTracks, notifiedIndex] = onQueueChanged.mock.calls[0];
+      expect((notifiedTracks as MediaTrack[]).map((t) => t.id)).toEqual(['1', '2', '3']);
+      expect(notifiedIndex).toBe(0);
+    });
+
+    it('insertCollectionNext notifies through insertTracksNext on the non-empty path', async () => {
+      // #given
+      mediaTracksRef.current = [makeMediaTrack('a'), makeMediaTrack('b')];
+      const tracks = [makeTrack({ id: 'a' }), makeTrack({ id: 'b' })];
+      const fetched = [makeMediaTrack('p1'), makeMediaTrack('p2')];
+      const mockCatalog = { listTracks: vi.fn().mockResolvedValue(fetched) };
+      mockActiveDescriptor.catalog = mockCatalog;
+      const { descriptor, onQueueChanged } = makeDrivingDescriptor({ hasNativeQueueSync: true });
+      mockGetDrivingProviderDescriptor.mockReturnValue(descriptor);
+
+      const { result } = renderHook(() =>
+        useQueueManagement({
+          tracks,
+          currentTrackIndex: 0,
+          shuffleEnabled: false,
+          trackOps: { setTracks: mockSetTracks, setOriginalTracks: mockSetOriginalTracks, setCurrentTrackIndex: mockSetCurrentTrackIndex, mediaTracksRef },
+          loadCollection: mockHandlePlaylistSelect,
+          handleBackToLibrary: mockHandleBackToLibrary,
+          activeDescriptor: mockActiveDescriptor,
+          getDescriptor: mockGetDescriptor,
+          getDrivingProviderDescriptor: mockGetDrivingProviderDescriptor,
+        })
+      );
+
+      // #when
+      await act(async () => {
+        await result.current.insertCollectionNext('p1');
+      });
+
+      // #then
+      expect(onQueueChanged).toHaveBeenCalledTimes(1);
+      const [notifiedTracks, notifiedIndex] = onQueueChanged.mock.calls[0];
+      expect((notifiedTracks as MediaTrack[]).map((t) => t.id)).toEqual(['a', 'p1', 'p2', 'b']);
+      expect(notifiedIndex).toBe(0);
+    });
+
+    it('does not notify when the driving provider lacks the native-queue-sync capability', () => {
+      // #given — driving descriptor without the capability flag
+      mediaTracksRef.current = [makeMediaTrack('a'), makeMediaTrack('b'), makeMediaTrack('c')];
+      const tracks = [makeTrack({ id: 'a' }), makeTrack({ id: 'b' }), makeTrack({ id: 'c' })];
+      const { descriptor, onQueueChanged } = makeDrivingDescriptor({ hasNativeQueueSync: false });
+      mockGetDrivingProviderDescriptor.mockReturnValue(descriptor);
+
+      const { result } = renderHook(() =>
+        useQueueManagement({
+          tracks,
+          currentTrackIndex: 0,
+          shuffleEnabled: false,
+          trackOps: { setTracks: mockSetTracks, setOriginalTracks: mockSetOriginalTracks, setCurrentTrackIndex: mockSetCurrentTrackIndex, mediaTracksRef },
+          loadCollection: mockHandlePlaylistSelect,
+          handleBackToLibrary: mockHandleBackToLibrary,
+          activeDescriptor: mockActiveDescriptor,
+          getDescriptor: mockGetDescriptor,
+          getDrivingProviderDescriptor: mockGetDrivingProviderDescriptor,
+        })
+      );
+
+      // #when
+      act(() => {
+        result.current.handleReorderQueue(0, 2);
+      });
+
+      // #then
+      expect(onQueueChanged).not.toHaveBeenCalled();
+    });
+
+    it('does not notify when a mutation bails before committing new state', () => {
+      // #given — removing the currently playing index is a no-op
+      mediaTracksRef.current = [makeMediaTrack('a'), makeMediaTrack('b'), makeMediaTrack('c')];
+      const tracks = [makeTrack({ id: 'a' }), makeTrack({ id: 'b' }), makeTrack({ id: 'c' })];
+      const { descriptor, onQueueChanged } = makeDrivingDescriptor({ hasNativeQueueSync: true });
+      mockGetDrivingProviderDescriptor.mockReturnValue(descriptor);
+
+      const { result } = renderHook(() =>
+        useQueueManagement({
+          tracks,
+          currentTrackIndex: 1,
+          shuffleEnabled: false,
+          trackOps: { setTracks: mockSetTracks, setOriginalTracks: mockSetOriginalTracks, setCurrentTrackIndex: mockSetCurrentTrackIndex, mediaTracksRef },
+          loadCollection: mockHandlePlaylistSelect,
+          handleBackToLibrary: mockHandleBackToLibrary,
+          activeDescriptor: mockActiveDescriptor,
+          getDescriptor: mockGetDescriptor,
+          getDrivingProviderDescriptor: mockGetDrivingProviderDescriptor,
+        })
+      );
+
+      // #when — attempt to remove the playing track (bails)
+      act(() => {
+        result.current.handleRemoveFromQueue(1);
+      });
+
+      // #then
+      expect(onQueueChanged).not.toHaveBeenCalled();
+    });
+
+    it('does not notify when insertTracksNext dedups to zero new tracks', () => {
+      // #given — every incoming track is already in the queue
+      mediaTracksRef.current = [makeMediaTrack('1'), makeMediaTrack('2')];
+      const tracks = [makeTrack({ id: '1' }), makeTrack({ id: '2' })];
+      const { descriptor, onQueueChanged } = makeDrivingDescriptor({ hasNativeQueueSync: true });
+      mockGetDrivingProviderDescriptor.mockReturnValue(descriptor);
+
+      const { result } = renderHook(() =>
+        useQueueManagement({
+          tracks,
+          currentTrackIndex: 0,
+          shuffleEnabled: false,
+          trackOps: { setTracks: mockSetTracks, setOriginalTracks: mockSetOriginalTracks, setCurrentTrackIndex: mockSetCurrentTrackIndex, mediaTracksRef },
+          loadCollection: mockHandlePlaylistSelect,
+          handleBackToLibrary: mockHandleBackToLibrary,
+          activeDescriptor: mockActiveDescriptor,
+          getDescriptor: mockGetDescriptor,
+          getDrivingProviderDescriptor: mockGetDrivingProviderDescriptor,
+        })
+      );
+
+      // #when
+      act(() => {
+        result.current.insertTracksNext([makeMediaTrack('1'), makeMediaTrack('2')]);
+      });
+
+      // #then
+      expect(onQueueChanged).not.toHaveBeenCalled();
+    });
+  });
+
   it('queueTracksDirectly toasts the duplicate message when every track is already queued', () => {
     // #given — queue already contains every incoming track
     mediaTracksRef.current = [makeMediaTrack('1'), makeMediaTrack('2')];
@@ -663,6 +1027,7 @@ describe('useQueueManagement', () => {
         handleBackToLibrary: mockHandleBackToLibrary,
         activeDescriptor: mockActiveDescriptor,
         getDescriptor: mockGetDescriptor,
+        getDrivingProviderDescriptor: mockGetDrivingProviderDescriptor,
       })
     );
 
