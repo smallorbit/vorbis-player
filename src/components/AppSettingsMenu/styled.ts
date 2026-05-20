@@ -181,15 +181,13 @@ export const ProviderName = styled.span`
   flex-shrink: 0;
 `;
 
-export const ProviderStatusBadge = styled.span<{ $status: 'connected' | 'disabled' | 'reconnect' }>`
+export const ProviderStatusBadge = styled.span<{ $status: 'connected' | 'disabled' }>`
   font-size: 0.6875rem;
   font-weight: ${({ theme }) => theme.fontWeight.medium};
   color: ${({ $status, theme }) =>
     $status === 'connected'
       ? theme.colors.success
-      : $status === 'reconnect'
-        ? theme.colors.warning
-        : theme.colors.muted.foreground};
+      : theme.colors.muted.foreground};
   flex: 1;
 `;
 

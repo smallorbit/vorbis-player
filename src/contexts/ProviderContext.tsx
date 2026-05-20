@@ -56,13 +56,6 @@ interface ProviderContextValue {
   /** Dismiss the fallthrough notification. */
   dismissFallthroughNotification: () => void;
 
-  /** Reconnect prompt shown when a provider's refresh token is rejected (400/401). Persists until acted upon. */
-  reconnectPrompt: { providerId: ProviderId; message: string } | null;
-  /** Trigger the OAuth flow for the provider with a pending reconnect prompt. */
-  acceptReconnectPrompt: () => void;
-  /** Dismiss the reconnect prompt without reconnecting. */
-  dismissReconnectPrompt: () => void;
-
   /** Auto-dismiss toast shown immediately when a provider is disconnected due to an unrecoverable 401. */
   disconnectToast: string | null;
   /** Dismiss the disconnect toast. */
@@ -111,29 +104,31 @@ export function ProviderProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   // ── Enabled providers (multi-toggle) ───────────────────────────────────
-  const [storedEnabledIds, setStoredEnabledIds] = useLocalStorage<ProviderId[]>(
+  // Stored value uses `null` as the "uninitialized" sentinel (default to all
+  // registered providers). An explicit `[]` means the user — or a forced
+  // session-expired toggle-off — has emptied the set, and we must honor it
+  // rather than re-defaulting.
+  const [storedEnabledIds, setStoredEnabledIds] = useLocalStorage<ProviderId[] | null>(
     STORAGE_KEYS.ENABLED_PROVIDERS,
-    [],
+    null,
   );
 
-  // Validate stored enabled IDs — only keep those that are actually registered.
-  // If nothing is stored yet, default to all registered providers.
   const enabledProviderIds = useMemo(() => {
-    const valid = storedEnabledIds.filter(id => providerRegistry.has(id));
-    if (valid.length > 0) return valid;
-    // Default: enable all registered providers
-    return allProviderIds;
+    if (storedEnabledIds === null) return allProviderIds;
+    return storedEnabledIds.filter(id => providerRegistry.has(id));
   }, [storedEnabledIds, allProviderIds]);
 
   const toggleProvider = useCallback(
     (id: ProviderId) => {
       if (!providerRegistry.has(id)) return;
       setStoredEnabledIds(prev => {
-        const validPrev = prev.filter(pid => providerRegistry.has(pid));
-        const current = validPrev.length > 0 ? validPrev : allProviderIds;
+        const current =
+          prev === null ? allProviderIds : prev.filter(pid => providerRegistry.has(pid));
         const isCurrentlyEnabled = current.includes(id);
         if (isCurrentlyEnabled) {
-          // Don't disable the last remaining provider
+          // Don't disable the last remaining provider via the user-facing
+          // toggle. Session-expired bypasses this guard by writing through
+          // `setStoredEnabledIds` directly (see handleSessionExpired below).
           if (current.length <= 1) return current;
           return current.filter(pid => pid !== id);
         } else {
@@ -166,12 +161,33 @@ export function ProviderProvider({ children }: { children: React.ReactNode }) {
   const [fallthroughNotification, setFallthroughNotification] = useState<string | null>(null);
   const dismissFallthroughNotification = useCallback(() => setFallthroughNotification(null), []);
 
-  // ── Session-expired reconnect prompt ─────────────────────────────────
-  const [reconnectPrompt, setReconnectPrompt] = useState<{ providerId: ProviderId; message: string } | null>(null);
-
   // ── Disconnect toast (auto-dismiss) ──────────────────────────────────
   const [disconnectToast, setDisconnectToast] = useState<string | null>(null);
   const dismissDisconnectToast = useCallback(() => setDisconnectToast(null), []);
+
+  // Latest-value refs so the SESSION_EXPIRED_EVENT listener (attached once,
+  // []-deps) can read the current state setters without re-binding on every
+  // render. Re-binding would race user-driven toggles and risk dropping events
+  // fired during a re-render.
+  //
+  // Session-expired uses `setStoredEnabledIds` directly instead of going
+  // through `toggleProvider` so it can bypass the "do not disable the last
+  // remaining provider" guard. That guard exists to prevent accidental
+  // user-initiated zero-provider states; a forced session-expired toggle-off
+  // must accurately reflect that the underlying auth has failed, regardless
+  // of how many providers remain enabled.
+  const setStoredEnabledIdsRef = useRef(setStoredEnabledIds);
+  const enabledProviderIdsRef = useRef(enabledProviderIds);
+  const allProviderIdsRef = useRef(allProviderIds);
+  useEffect(() => {
+    setStoredEnabledIdsRef.current = setStoredEnabledIds;
+  }, [setStoredEnabledIds]);
+  useEffect(() => {
+    enabledProviderIdsRef.current = enabledProviderIds;
+  }, [enabledProviderIds]);
+  useEffect(() => {
+    allProviderIdsRef.current = allProviderIds;
+  }, [allProviderIds]);
 
   useEffect(() => {
     const handleSessionExpired = (event: Event) => {
@@ -180,32 +196,22 @@ export function ProviderProvider({ children }: { children: React.ReactNode }) {
       if (!providerId) return;
       const descriptor = providerRegistry.get(providerId);
       const name = descriptor?.name ?? providerId;
-      setReconnectPrompt(prev => {
-        if (prev?.providerId === providerId) return prev;
-        return {
-          providerId,
-          message: `Your ${name} session has expired. Tap to reconnect.`,
-        };
-      });
       setDisconnectToast(`${name} disconnected — session expired.`);
       setAuthRevision(prev => prev + 1);
+      if (enabledProviderIdsRef.current.includes(providerId)) {
+        setStoredEnabledIdsRef.current(prev => {
+          const current =
+            prev === null
+              ? allProviderIdsRef.current
+              : prev.filter(pid => providerRegistry.has(pid));
+          if (!current.includes(providerId)) return current;
+          return current.filter(pid => pid !== providerId);
+        });
+      }
     };
 
     window.addEventListener(SESSION_EXPIRED_EVENT, handleSessionExpired);
     return () => window.removeEventListener(SESSION_EXPIRED_EVENT, handleSessionExpired);
-  }, []);
-
-  const dismissReconnectPrompt = useCallback(() => setReconnectPrompt(null), []);
-
-  const acceptReconnectPrompt = useCallback(() => {
-    setReconnectPrompt(current => {
-      if (!current) return null;
-      const descriptor = providerRegistry.get(current.providerId);
-      descriptor?.auth.beginLogin({ popup: true }).catch(error => {
-        console.warn('[ProviderContext] Failed to begin login for reconnect:', error);
-      });
-      return null;
-    });
   }, []);
 
   // ── Active provider (for playback) ─────────────────────────────────────
@@ -267,12 +273,25 @@ export function ProviderProvider({ children }: { children: React.ReactNode }) {
     activeDescriptor?.playback.pause().catch(() => {});
     setStoredProviderId(fallback);
 
+    // Toggle the expired provider off so the settings UI reflects its
+    // not-connected state. Mirrors handleSessionExpired and bypasses
+    // toggleProvider's "last enabled" guard by writing setStoredEnabledIds
+    // directly — the underlying auth has failed and the toggle must
+    // accurately reflect that regardless of how many providers remain.
+    const expiredId = storedProviderId;
+    setStoredEnabledIds(prev => {
+      const current =
+        prev === null ? allProviderIds : prev.filter(pid => providerRegistry.has(pid));
+      if (!current.includes(expiredId)) return current;
+      return current.filter(pid => pid !== expiredId);
+    });
+
     // Notify the user
     const expiredName = activeDescriptor?.name ?? storedProviderId;
     setFallthroughNotification(
-      `${expiredName} session expired — switched to ${fallbackDesc.name}. Reconnect in Settings.`,
+      `${expiredName} session expired — switched to ${fallbackDesc.name}. Re-enable in Settings.`,
     );
-  }, [storedProviderId, activeDescriptor, enabledProviderIds, validProviderId, setStoredProviderId]);
+  }, [storedProviderId, activeDescriptor, enabledProviderIds, validProviderId, setStoredProviderId, setStoredEnabledIds, allProviderIds]);
 
   // ── Auto-switch when active provider is disabled ──────────────────────
   useEffect(() => {
@@ -310,15 +329,12 @@ export function ProviderProvider({ children }: { children: React.ReactNode }) {
       connectedProviderIds,
       fallthroughNotification,
       dismissFallthroughNotification,
-      reconnectPrompt,
-      acceptReconnectPrompt,
-      dismissReconnectPrompt,
       disconnectToast,
       dismissDisconnectToast,
     }),
     // authRevision triggers re-evaluation when a popup completes OAuth
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [storedProviderId, validProviderId, activeDescriptor, setActiveProviderId, setProviderSwitchInterceptor, needsProviderSelection, enabledProviderIds, toggleProvider, isProviderEnabled, allProviders.length, getDescriptor, connectedProviderIds, fallthroughNotification, dismissFallthroughNotification, reconnectPrompt, acceptReconnectPrompt, dismissReconnectPrompt, disconnectToast, dismissDisconnectToast, authRevision],
+    [storedProviderId, validProviderId, activeDescriptor, setActiveProviderId, setProviderSwitchInterceptor, needsProviderSelection, enabledProviderIds, toggleProvider, isProviderEnabled, allProviders.length, getDescriptor, connectedProviderIds, fallthroughNotification, dismissFallthroughNotification, disconnectToast, dismissDisconnectToast, authRevision],
   );
 
   return (
