@@ -27,7 +27,7 @@ function hasSnapshotContent(): boolean {
 }
 
 export const test = base.extend<{ capturePage: Page }>({
-  capturePage: async (_fixtures, runFixture, testInfo) => {
+  capturePage: async ({}, runFixture, testInfo) => {
     if (!hasSnapshotContent()) {
       testInfo.skip(
         true,
