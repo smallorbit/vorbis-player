@@ -58,3 +58,15 @@ export function getLikedSongsCache(): { data: Track[]; limit: number; timestamp:
 export function setLikedSongsCache(value: { data: Track[]; limit: number; timestamp: number } | null): void {
   likedSongsCacheData = value;
 }
+
+/**
+ * Clear all in-memory Spotify caches. Called on logout so the next session
+ * starts with a clean slate instead of serving stale data from a previous account.
+ */
+export function clearAllSpotifyInMemoryCaches(): void {
+  trackSavedCache.clear();
+  albumSavedCache.clear();
+  trackListCache.clear();
+  likedSongsCountCacheData = null;
+  likedSongsCacheData = null;
+}
