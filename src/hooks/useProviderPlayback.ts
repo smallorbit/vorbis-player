@@ -93,12 +93,12 @@ export const useProviderPlayback = ({
       return;
     }
 
-    // Sync the queue to the provider synchronously before playTrack so the
-    // adapter sees the current track list. The persistent useEffect-based
-    // onQueueChanged in usePlayerLogic only fires after React commits new
-    // state — too late for the playTrack we're about to await, which would
-    // otherwise hand Spotify a stale upcomingUris list (or no list at all
-    // on cold start) and let the SDK auto-advance into the wrong tracks.
+    // Push the latest queue snapshot to the driving provider before invoking
+    // playTrack so adapters that build their native queue from this signal
+    // (Spotify's upcomingUris) see the current list for the imminent
+    // playback call. User-driven queue mutations notify separately via
+    // useQueueManagement.ts; this call covers track transitions
+    // (next/previous/hydrate/auto-advance) that bypass that hook.
     descriptor.playback.onQueueChanged?.(tracks, index);
 
     try {
