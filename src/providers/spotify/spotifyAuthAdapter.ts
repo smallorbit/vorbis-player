@@ -62,4 +62,8 @@ export class SpotifyAuthAdapter implements AuthProvider {
     spotifyAuth.logout();
     clearLikedCountSnapshot('spotify');
   }
+
+  reportUnauthorized(): void {
+    spotifyAuth.reportUnauthorized();
+  }
 }
