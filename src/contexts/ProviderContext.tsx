@@ -10,7 +10,7 @@ import '@/providers/spotify/spotifyProvider';
 import '@/providers/dropbox/dropboxProvider'; // conditionally registers if VITE_DROPBOX_CLIENT_ID is set
 import { AUTH_STATE_CHANGED_EVENT } from '@/hooks/usePopupAuth';
 import { DROPBOX_AUTH_ERROR_EVENT } from '@/providers/dropbox/dropboxAuthAdapter';
-import { AUTH_COMPLETE_EVENT, SESSION_EXPIRED_EVENT } from '@/constants/events';
+import { AUTH_COMPLETE_EVENT, PROVIDER_RECONNECTED_EVENT, SESSION_EXPIRED_EVENT } from '@/constants/events';
 import { STORAGE_KEYS } from '@/constants/storage';
 import { NOTIFICATION_DISMISS_MS } from '@/constants/timing';
 
@@ -156,6 +156,26 @@ export function ProviderProvider({ children }: { children: React.ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [enabledProviderIds, authRevision],
   );
+
+  // ── Detect `not authenticated → authenticated` transitions ─────────────
+  // The first render seeds previousConnectedRef without dispatching, so
+  // providers that are already authenticated at mount are not treated as a
+  // transition (the persisted-session hydrate path owns the initial primed
+  // state). On subsequent renders, every provider newly present in
+  // connectedProviderIds emits PROVIDER_RECONNECTED_EVENT exactly once.
+  const previousConnectedRef = useRef<Set<ProviderId> | null>(null);
+  useEffect(() => {
+    const current = new Set(connectedProviderIds);
+    const previous = previousConnectedRef.current;
+    previousConnectedRef.current = current;
+    if (previous === null) return;
+    for (const providerId of current) {
+      if (previous.has(providerId)) continue;
+      window.dispatchEvent(
+        new CustomEvent(PROVIDER_RECONNECTED_EVENT, { detail: { providerId } }),
+      );
+    }
+  }, [connectedProviderIds]);
 
   // ── Auto-fallthrough notification ─────────────────────────────────────
   const [fallthroughNotification, setFallthroughNotification] = useState<string | null>(null);
