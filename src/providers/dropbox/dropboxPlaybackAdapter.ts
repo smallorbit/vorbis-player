@@ -5,7 +5,7 @@
 
 import type { PlaybackProvider } from '@/types/providers';
 import type { ProviderId, MediaTrack, PlaybackState, CollectionRef } from '@/types/domain';
-import { AuthExpiredError } from '@/providers/errors';
+import { AuthExpiredError, UnavailableTrackError } from '@/providers/errors';
 import { DropboxCatalogAdapter } from './dropboxCatalogAdapter';
 import { parseID3 } from '@/utils/id3Parser';
 import { bytesToDataUrl } from '@/utils/bytesToDataUrl';
@@ -98,7 +98,8 @@ export class DropboxPlaybackAdapter implements PlaybackProvider {
     this.hydrateHint = null;
     this.audio!.pause();
     this.audio!.src = streamUrl;
-    await this.audio!.play();
+
+    await this.awaitInitialPlay(track, this.prepareGeneration);
 
     if (options?.positionMs) {
       this.audio!.currentTime = options.positionMs / 1000;
@@ -106,6 +107,58 @@ export class DropboxPlaybackAdapter implements PlaybackProvider {
 
     this.startUpdateInterval();
     this.enrichMetadataInBackground(track, streamUrl);
+  }
+
+  private awaitInitialPlay(track: MediaTrack, generation: number): Promise<void> {
+    const audio = this.audio!;
+    return new Promise<void>((resolve, reject) => {
+      let settled = false;
+
+      const cleanup = () => {
+        audio.removeEventListener('playing', onPlaying);
+        audio.removeEventListener('error', onError);
+      };
+
+      const onPlaying = () => {
+        if (settled) return;
+        if (generation !== this.prepareGeneration) {
+          cleanup();
+          resolve();
+          return;
+        }
+        settled = true;
+        cleanup();
+        resolve();
+      };
+
+      const onError = () => {
+        if (settled) return;
+        if (generation !== this.prepareGeneration) {
+          cleanup();
+          resolve();
+          return;
+        }
+        settled = true;
+        cleanup();
+        reject(new UnavailableTrackError(track.name));
+      };
+
+      audio.addEventListener('playing', onPlaying);
+      audio.addEventListener('error', onError);
+
+      audio.play().catch((err) => {
+        if (settled) return;
+        if (generation !== this.prepareGeneration) {
+          cleanup();
+          resolve();
+          return;
+        }
+        settled = true;
+        cleanup();
+        logCaughtError('dropboxPlaybackAdapter.awaitInitialPlay.audioPlay', err);
+        reject(new UnavailableTrackError(track.name));
+      });
+    });
   }
 
   private hydrateAlbumArtFromCache(track: MediaTrack): void {

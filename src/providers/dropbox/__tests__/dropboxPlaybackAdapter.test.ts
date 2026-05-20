@@ -8,6 +8,7 @@ import { DropboxPlaybackAdapter } from '../dropboxPlaybackAdapter';
 import type { DropboxCatalogAdapter } from '../dropboxCatalogAdapter';
 import { makeMediaTrack } from '@/test/fixtures';
 import type { PlaybackState } from '@/types/domain';
+import { AuthExpiredError, UnavailableTrackError } from '@/providers/errors';
 
 // Mock DropboxCatalogAdapter
 const mockCatalog: Partial<DropboxCatalogAdapter> = {
@@ -97,6 +98,14 @@ describe('DropboxPlaybackAdapter', () => {
       if (eventListeners[event]) {
         eventListeners[event] = eventListeners[event].filter((l) => l !== listener);
       }
+    });
+
+    // Default play() behavior: resolve immediately and asynchronously fire
+    // the `playing` event so awaitInitialPlay settles. Individual tests
+    // override this to simulate error or supersession scenarios.
+    mockAudio.play.mockImplementation(() => {
+      queueMicrotask(() => mockAudio.__triggerEvent?.('playing'));
+      return Promise.resolve();
     });
 
     adapter = new DropboxPlaybackAdapter(mockCatalog as DropboxCatalogAdapter);
@@ -498,6 +507,91 @@ describe('DropboxPlaybackAdapter', () => {
 
       // #when / #then
       await expect(adapter.probePlayable(track)).rejects.toBeInstanceOf(AuthExpiredError);
+    });
+  });
+
+  describe('playTrack error recovery', () => {
+    it('rejects with UnavailableTrackError when the audio element fires error during initial play', async () => {
+      // #given — audio element fails to decode/load; play() resolves but error event fires
+      const track = makeMediaTrack({
+        id: 'track-broken',
+        name: 'Broken Track',
+        playbackRef: { provider: 'dropbox', ref: '/Music/broken.mp3' },
+      });
+      await adapter.initialize();
+      mockAudio.play.mockImplementation(() => {
+        queueMicrotask(() => mockAudio.__triggerEvent?.('error'));
+        return Promise.resolve();
+      });
+
+      // #when / #then
+      await expect(adapter.playTrack(track)).rejects.toBeInstanceOf(UnavailableTrackError);
+    });
+
+    it('rejects with UnavailableTrackError when audio.play() itself rejects', async () => {
+      // #given — autoplay policy blocks play, or some other terminal play() rejection
+      const track = makeMediaTrack({
+        id: 'track-blocked',
+        name: 'Blocked Track',
+        playbackRef: { provider: 'dropbox', ref: '/Music/blocked.mp3' },
+      });
+      await adapter.initialize();
+      mockAudio.play.mockImplementation(() => Promise.reject(new Error('NotAllowedError')));
+
+      // #when / #then
+      await expect(adapter.playTrack(track)).rejects.toBeInstanceOf(UnavailableTrackError);
+    });
+
+    it('rethrows AuthExpiredError from catalog.getTemporaryLink unchanged', async () => {
+      // #given — Dropbox refresh-token exchange failed before audio src is assigned
+      const track = makeMediaTrack({
+        id: 'track-auth',
+        name: 'Auth Track',
+        playbackRef: { provider: 'dropbox', ref: '/Music/auth.mp3' },
+      });
+      await adapter.initialize();
+      vi.mocked(mockCatalog.getTemporaryLink!).mockRejectedValueOnce(
+        new AuthExpiredError('dropbox'),
+      );
+
+      // #when / #then
+      await expect(adapter.playTrack(track)).rejects.toBeInstanceOf(AuthExpiredError);
+    });
+
+    it('ignores a stale error event after a superseding playTrack', async () => {
+      // #given — first playTrack pending; a second playTrack supersedes it via prepareGeneration
+      const trackA = makeMediaTrack({
+        id: 'track-a',
+        name: 'Track A',
+        playbackRef: { provider: 'dropbox', ref: '/Music/a.mp3' },
+      });
+      const trackB = makeMediaTrack({
+        id: 'track-b',
+        name: 'Track B',
+        playbackRef: { provider: 'dropbox', ref: '/Music/b.mp3' },
+      });
+      vi.mocked(mockCatalog.getTemporaryLink!)
+        .mockResolvedValueOnce('https://example.com/a.mp3')
+        .mockResolvedValueOnce('https://example.com/b.mp3');
+      await adapter.initialize();
+
+      // First play: never fires playing or error itself; the test will fire error AFTER B settles
+      mockAudio.play.mockImplementationOnce(() => Promise.resolve());
+
+      // #when — start A but don't let it settle; immediately supersede with B (which fires playing)
+      const playA = adapter.playTrack(trackA);
+      // Yield so A reaches awaitInitialPlay and attaches listeners
+      await Promise.resolve();
+      await Promise.resolve();
+
+      // Default mock (set in beforeEach) auto-fires playing for B
+      await adapter.playTrack(trackB);
+
+      // Now fire a stale error from A's prior src — must NOT reject A (or anything)
+      mockAudio.__triggerEvent?.('error');
+
+      // #then — A resolves cleanly because generation moved past it; no rejection
+      await expect(playA).resolves.toBeUndefined();
     });
   });
 });
