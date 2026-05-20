@@ -19,6 +19,12 @@ export interface AuthProvider {
   /** Handle OAuth callback (e.g. parse URL and exchange code). */
   handleCallback(url: URL): Promise<boolean>;
   logout(): void;
+  /**
+   * Called when the provider encounters an unrecoverable auth failure during
+   * playback. Implementations should log out and dispatch SESSION_EXPIRED_EVENT.
+   * Optional — providers that don't implement this fall back to logout() + event dispatch.
+   */
+  reportUnauthorized?(): void;
 }
 
 // -----------------------------------------------------------------------------
