@@ -1,10 +1,11 @@
 import { spotifyAuth } from './spotify';
+import { SpotifyApiError } from './spotify/api';
 import { SPOTIFY_TRANSFER_RETRY_COUNT } from '@/constants/spotify';
 import { logSpotify } from '@/lib/debugLog';
 import { TRANSFER_RETRY_DELAY_MS } from '@/constants/timing';
 import { logCaughtError } from '@/utils/logCaughtError';
 
-async function parsePlayError(response: Response): Promise<string> {
+async function buildPlayApiError(response: Response): Promise<SpotifyApiError> {
   const errorText = await response.text();
   let reason = '';
   try {
@@ -12,14 +13,18 @@ async function parsePlayError(response: Response): Promise<string> {
     if (json.error?.message) reason = ` - ${json.error.message}`;
     if (json.error?.reason) reason += ` (${json.error.reason})`;
   } catch (err) {
-    logCaughtError('spotifyPlayerPlayback.parsePlayError', err);
+    logCaughtError('spotifyPlayerPlayback.buildPlayApiError', err);
     reason = errorText ? ` - ${errorText}` : '';
   }
   if (response.status === 429) {
     const retryAfter = response.headers.get('Retry-After');
     if (retryAfter) reason += ` Retry-After: ${retryAfter}`;
   }
-  return `Spotify API error: ${response.status}${reason}`;
+  return new SpotifyApiError(
+    response.status,
+    response.statusText,
+    `Spotify API error: ${response.status}${reason}`,
+  );
 }
 
 /**
@@ -80,7 +85,7 @@ export async function apiPlayTrack(
   logSpotify('Web API play track response status=%d ok=%s', response.status, response.ok);
 
   if (!response.ok) {
-    throw new Error(await parsePlayError(response));
+    throw await buildPlayApiError(response);
   }
 }
 
@@ -110,7 +115,7 @@ export async function apiPlayContext(
   });
 
   if (!response.ok) {
-    throw new Error(await parsePlayError(response));
+    throw await buildPlayApiError(response);
   }
 }
 
@@ -136,7 +141,7 @@ export async function apiPlayPlaylist(
   logSpotify('Web API play URIs response status=%d ok=%s', response.status, response.ok);
 
   if (!response.ok) {
-    throw new Error(await parsePlayError(response));
+    throw await buildPlayApiError(response);
   }
 }
 

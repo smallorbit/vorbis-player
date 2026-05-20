@@ -405,4 +405,46 @@ describe('SpotifyAuth', () => {
       expect(window.history.replaceState).toHaveBeenCalled();
     });
   });
+
+  describe('reportUnauthorized', () => {
+    it('dispatches SESSION_EXPIRED_EVENT even when tokenData is already null', async () => {
+      // #given — no token in storage, so tokenData starts as null
+      const auth = await freshAuth();
+      const dispatchSpy = vi.spyOn(window, 'dispatchEvent');
+
+      // #when
+      auth.reportUnauthorized();
+
+      // #then — the event still fires; the absent-tokenData branch no longer
+      // silently suppresses the toast for callers invoking after logout().
+      const dispatchedEvents = dispatchSpy.mock.calls.map(call => (call[0] as Event).type);
+      expect(dispatchedEvents).toContain('vorbis-session-expired');
+      dispatchSpy.mockRestore();
+    });
+
+    it('does not double-dispatch when called twice in the same session', async () => {
+      // #given — token present, then reportUnauthorized twice (simulates
+      // performRefresh 400/401 → reportUnauthorized → executeWithAuthRetry
+      // catch → reportUnauthorized again).
+      const token = {
+        access_token: 'old-token',
+        refresh_token: 'my-refresh',
+        expires_at: Date.now() + 30 * 60 * 1000,
+      };
+      vi.mocked(localStorage.getItem).mockReturnValue(JSON.stringify(token));
+      const auth = await freshAuth();
+      const dispatchSpy = vi.spyOn(window, 'dispatchEvent');
+
+      // #when
+      auth.reportUnauthorized();
+      auth.reportUnauthorized();
+
+      // #then — exactly one session-expired event reaches listeners
+      const sessionExpiredEvents = dispatchSpy.mock.calls.filter(
+        call => (call[0] as Event).type === 'vorbis-session-expired',
+      );
+      expect(sessionExpiredEvents).toHaveLength(1);
+      dispatchSpy.mockRestore();
+    });
+  });
 });
