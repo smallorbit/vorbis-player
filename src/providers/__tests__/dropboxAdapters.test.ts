@@ -98,10 +98,18 @@ describe('DropboxPlaybackAdapter', () => {
       currentTime: 0,
       duration: 180,
       volume: 1,
-      play: vi.fn().mockResolvedValue(undefined),
+      play: vi.fn().mockImplementation(() => {
+        queueMicrotask(() => audioListeners['playing']?.({} as Event));
+        return Promise.resolve();
+      }),
       pause: vi.fn(),
       addEventListener: vi.fn((event: string, handler: EventListener) => {
         audioListeners[event] = handler;
+      }),
+      removeEventListener: vi.fn((event: string, handler: EventListener) => {
+        if (audioListeners[event] === handler) {
+          delete audioListeners[event];
+        }
       }),
     };
 
