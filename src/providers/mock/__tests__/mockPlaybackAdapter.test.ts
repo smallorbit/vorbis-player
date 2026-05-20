@@ -257,4 +257,67 @@ describe('MockPlaybackAdapter', () => {
     const posAfterWait = (await adapter.getState())?.positionMs ?? 0;
     expect(posAfterWait).toBe(posAfterPause);
   });
+
+  describe('simulateNaturalEnd', () => {
+    it('is a no-op when no track is loaded', () => {
+      // #given no track loaded
+      const listener = vi.fn();
+      adapter.subscribe(listener);
+
+      // #when
+      adapter.simulateNaturalEnd();
+
+      // #then: no notification emitted
+      expect(listener).not.toHaveBeenCalled();
+    });
+
+    it('emits a mid-track playing state then a paused-at-zero state', async () => {
+      // #given a track loaded
+      const track = makeTrack();
+      track.durationMs = 300000;
+      await adapter.playTrack(track);
+
+      const states: Array<{ isPlaying: boolean; positionMs: number } | null> = [];
+      adapter.subscribe(state => states.push(state ? { isPlaying: state.isPlaying, positionMs: state.positionMs } : null));
+
+      // #when
+      adapter.simulateNaturalEnd();
+
+      // #then: exactly two synthetic states emitted (no extra from audio.pause event)
+      expect(states).toHaveLength(2);
+
+      // first: mid-track playing
+      expect(states[0]?.isPlaying).toBe(true);
+      expect(states[0]?.positionMs).toBeGreaterThan(0);
+      expect(states[0]?.positionMs).toBeLessThan(300000);
+
+      // second: paused at zero (natural-end signal)
+      expect(states[1]?.isPlaying).toBe(false);
+      expect(states[1]?.positionMs).toBe(0);
+    });
+
+    it('backdates lastPlayTimeMs past the 5 000 ms cooldown', async () => {
+      // #given a track just started
+      await adapter.playTrack(makeTrack());
+
+      // #when
+      adapter.simulateNaturalEnd();
+
+      // #then: msSinceLastPlay > 5 000 ms
+      expect(Date.now() - adapter.getLastPlayTime()).toBeGreaterThan(5000);
+    });
+
+    it('getState returns positionMs 0 after simulateNaturalEnd', async () => {
+      // #given a track that has played for 5 seconds
+      await adapter.playTrack(makeTrack());
+      vi.advanceTimersByTime(5000);
+
+      // #when
+      adapter.simulateNaturalEnd();
+
+      // #then
+      const state = await adapter.getState();
+      expect(state?.positionMs).toBe(0);
+    });
+  });
 });

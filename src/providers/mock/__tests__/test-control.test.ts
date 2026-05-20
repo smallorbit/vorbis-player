@@ -31,6 +31,7 @@ function makePlaybackStub(): MockPlaybackAdapter {
   return {
     playTrack: vi.fn().mockResolvedValue(undefined),
     pause: vi.fn().mockResolvedValue(undefined),
+    simulateNaturalEnd: vi.fn(),
   } as unknown as MockPlaybackAdapter;
 }
 
@@ -152,6 +153,26 @@ describe('installMockTestApi', () => {
       await expect(
         window.__mockTest!.setPlaybackState({ trackId: 'no-such-track' }),
       ).rejects.toThrow('Track id "no-such-track" not found in snapshots.');
+    });
+  });
+
+  describe('simulateNaturalEnd', () => {
+    it('calls simulateNaturalEnd on the spotify adapter for the spotify provider', async () => {
+      // #when
+      await window.__mockTest!.simulateNaturalEnd('spotify');
+
+      // #then
+      expect(spotifyPlayback.simulateNaturalEnd).toHaveBeenCalledOnce();
+      expect(dropboxPlayback.simulateNaturalEnd).not.toHaveBeenCalled();
+    });
+
+    it('calls simulateNaturalEnd on the dropbox adapter for the dropbox provider', async () => {
+      // #when
+      await window.__mockTest!.simulateNaturalEnd('dropbox');
+
+      // #then
+      expect(dropboxPlayback.simulateNaturalEnd).toHaveBeenCalledOnce();
+      expect(spotifyPlayback.simulateNaturalEnd).not.toHaveBeenCalled();
     });
   });
 

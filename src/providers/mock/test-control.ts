@@ -34,6 +34,14 @@ export interface MockTestApi {
   setPlaybackState(state: { trackId: string; positionMs?: number; isPlaying?: boolean }): Promise<void>;
   expireAuth(providerId: ProviderId, opts?: ExpireAuthOptions): Promise<void>;
   restoreAuth(providerId: ProviderId): Promise<void>;
+  /**
+   * Emit a synthetic natural-end signal on the given provider's playback
+   * adapter. Backdates the last-play timestamp past the cooldown guard so
+   * the signal is not suppressed by useAutoAdvance's false-trigger filter.
+   * Use this in Playwright specs to exercise the natural-end auto-advance
+   * path without waiting for real audio playback to finish.
+   */
+  simulateNaturalEnd(providerId: ProviderId): Promise<void>;
   reset(): Promise<void>;
 }
 
@@ -88,6 +96,11 @@ export function installMockTestApi(opts: InstallOptions): void {
       if (!isPlaying) {
         await adapter.pause();
       }
+    },
+
+    async simulateNaturalEnd(providerId) {
+      const adapter = providerId === 'dropbox' ? dropboxPlayback : spotifyPlayback;
+      adapter.simulateNaturalEnd();
     },
 
     async expireAuth(providerId, opts) {

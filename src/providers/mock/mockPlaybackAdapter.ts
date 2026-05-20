@@ -195,4 +195,52 @@ export class MockPlaybackAdapter implements PlaybackProvider {
   getLastPlayTime(): number {
     return this.lastPlayTimeMs;
   }
+
+  /**
+   * Test-only: emit a synthetic natural-end signal so Playwright specs can
+   * exercise the "driving provider transitions from playing to paused at
+   * position zero" branch in useAutoAdvance without waiting for real audio
+   * playback to finish (which may be blocked by autoplay policy).
+   *
+   * Steps:
+   * 1. Backdate lastPlayTimeMs past the 5 000 ms cooldown guard.
+   * 2. Emit a mid-track "playing" state so wasPlayingRef is set to true.
+   * 3. Emit the natural-end state (isPlaying: false, positionMs: 0).
+   */
+  simulateNaturalEnd(): void {
+    if (!this.currentTrack) return;
+    const { id, durationMs, playbackRef } = this.currentTrack;
+
+    // Backdate past the PLAY_COOLDOWN_MS guard (5 000 ms) in useAutoAdvance
+    this.lastPlayTimeMs = Date.now() - 6000;
+
+    // Mid-track position avoids triggering the near-end advance path
+    const midPosition = Math.floor(durationMs / 2);
+    for (const listener of this.listeners) {
+      listener({
+        isPlaying: true,
+        positionMs: midPosition,
+        durationMs,
+        currentTrackId: id,
+        currentPlaybackRef: playbackRef,
+      });
+    }
+
+    // Natural-end signal: paused at position zero
+    for (const listener of this.listeners) {
+      listener({
+        isPlaying: false,
+        positionMs: 0,
+        durationMs,
+        currentTrackId: id,
+        currentPlaybackRef: playbackRef,
+      });
+    }
+
+    // Sync internal position so subsequent getState() calls are consistent.
+    // Reset startedAtMs to now so elapsed-time calculation starts from 0.
+    this.startedAtPositionMs = 0;
+    this.startedAtMs = Date.now();
+    this.stopPositionTimer();
+  }
 }
