@@ -93,8 +93,9 @@ describe('MusicSourcesSection', () => {
   });
 
   describe('toggle-off: disconnect dialog flow', () => {
-    it('opens ProviderDisconnectDialog when an enabled provider toggle is turned off', () => {
+    it('opens ProviderDisconnectDialog when an enabled provider with queued tracks is toggled off', () => {
       // #given
+      mockTracks = [makeMediaTrack({ id: 'track-1', provider: 'spotify' })];
       const spotifyDesc = makeSpotifyDescriptor();
       const dropboxDesc = makeDropboxDescriptor();
       mockRegistry.getAll.mockReturnValue([spotifyDesc, dropboxDesc]);
@@ -113,6 +114,7 @@ describe('MusicSourcesSection', () => {
 
     it('calls descriptor.auth.logout() and toggleProvider when dialog is confirmed', () => {
       // #given
+      mockTracks = [makeMediaTrack({ id: 'track-1', provider: 'spotify' })];
       const spotifyDesc = makeSpotifyDescriptor();
       const dropboxDesc = makeDropboxDescriptor();
       mockRegistry.getAll.mockReturnValue([spotifyDesc, dropboxDesc]);
@@ -133,6 +135,7 @@ describe('MusicSourcesSection', () => {
 
     it('closes the dialog and leaves state unchanged when Cancel is clicked', () => {
       // #given
+      mockTracks = [makeMediaTrack({ id: 'track-1', provider: 'spotify' })];
       const spotifyDesc = makeSpotifyDescriptor();
       const dropboxDesc = makeDropboxDescriptor();
       mockRegistry.getAll.mockReturnValue([spotifyDesc, dropboxDesc]);
@@ -147,6 +150,26 @@ describe('MusicSourcesSection', () => {
       expect(screen.queryByText('Disconnect Spotify')).not.toBeInTheDocument();
       expect(spotifyDesc.auth.logout).not.toHaveBeenCalled();
       expect(mockToggleProvider).not.toHaveBeenCalled();
+    });
+
+    it('performs logout and toggleProvider immediately without opening the dialog when the provider has no queued tracks', () => {
+      // #given — only dropbox has queued tracks; toggling off spotify should skip the prompt
+      mockTracks = [makeMediaTrack({ id: 'track-1', provider: 'dropbox' as 'spotify' })];
+      const spotifyDesc = makeSpotifyDescriptor();
+      const dropboxDesc = makeDropboxDescriptor();
+      mockRegistry.getAll.mockReturnValue([spotifyDesc, dropboxDesc]);
+      mockRegistry.get.mockImplementation((id: string) =>
+        id === 'spotify' ? spotifyDesc : dropboxDesc,
+      );
+      render(<Wrapper><MusicSourcesSection /></Wrapper>);
+
+      // #when
+      fireEvent.click(screen.getByLabelText('Disable Spotify'));
+
+      // #then
+      expect(screen.queryByText('Disconnect Spotify')).not.toBeInTheDocument();
+      expect(spotifyDesc.auth.logout).toHaveBeenCalledOnce();
+      expect(mockToggleProvider).toHaveBeenCalledWith('spotify');
     });
 
     it('shows affected-track count in disconnect dialog when provider has queued tracks', () => {
