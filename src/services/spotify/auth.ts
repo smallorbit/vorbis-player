@@ -34,6 +34,7 @@ const TOKEN_REFRESH_BUFFER_MS = 5 * 60 * 1000;
 class SpotifyAuth {
   private tokenData: TokenData | null = null;
   private refreshInFlight: Promise<void> | null = null;
+  private sessionExpiredNotified = false;
 
   constructor() {
     this.loadTokenFromStorage();
@@ -64,6 +65,7 @@ class SpotifyAuth {
 
   private saveTokenToStorage(tokenData: TokenData): void {
     this.tokenData = tokenData;
+    this.sessionExpiredNotified = false;
     localStorage.setItem('spotify_token', JSON.stringify(tokenData));
   }
 
@@ -176,8 +178,7 @@ class SpotifyAuth {
 
     if (!response.ok) {
       if (response.status === 400 || response.status === 401) {
-        this.logout();
-        this.notifySessionExpired();
+        this.reportUnauthorized();
       }
       throw new Error(`Token refresh failed: ${response.statusText}`);
     }
@@ -190,7 +191,25 @@ class SpotifyAuth {
     });
   }
 
-  private notifySessionExpired(): void {
+  /**
+   * Called by API consumers (and `performRefresh` itself on a 400/401 from the
+   * refresh endpoint) when the session is no longer recoverable. Clears any
+   * surviving tokens and dispatches `SESSION_EXPIRED_EVENT` once per session.
+   *
+   * Idempotent: a follow-up invocation after `logout()` (e.g. a wrapper catch
+   * path after `performRefresh` already cleared `tokenData`) re-dispatches
+   * nothing thanks to `sessionExpiredNotified`, but earlier we would have
+   * silently skipped the event entirely whenever `tokenData` was already null.
+   * The notification flag resets on the next successful `saveTokenToStorage`,
+   * so a fresh login can surface a future session-expired toast.
+   */
+  public reportUnauthorized(): void {
+    if (this.sessionExpiredNotified) return;
+    this.sessionExpiredNotified = true;
+    console.warn('[spotifyAuth] Persistent 401 — logging out');
+    if (this.tokenData) {
+      this.logout();
+    }
     if (typeof window === 'undefined') return;
     window.dispatchEvent(
       new CustomEvent(SESSION_EXPIRED_EVENT, { detail: { providerId: 'spotify' } }),

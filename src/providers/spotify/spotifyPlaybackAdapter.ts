@@ -7,7 +7,7 @@ import type { PlaybackProvider } from '@/types/providers';
 import type { ProviderId, MediaTrack, PlaybackState, CollectionRef } from '@/types/domain';
 import { spotifyPlayer, waitForSpotifyReady } from '@/services/spotifyPlayer';
 import { spotifyAuth } from '@/services/spotify';
-import { spotifyApiRequest } from '@/services/spotify/api';
+import { spotifyApiRequest, SpotifyApiError } from '@/services/spotify/api';
 import { isAlbumId, extractAlbumId } from '@/constants/playlist';
 import { SPOTIFY_MAX_RETRIES, SPOTIFY_BASE_BACKOFF_MS } from '@/constants/spotify';
 import { SPOTIFY_DEVICE_ACTIVATE_RETRIES, SPOTIFY_DEVICE_ACTIVATE_DELAY_MS } from '@/constants/timing';
@@ -113,17 +113,24 @@ export class SpotifyPlaybackAdapter implements PlaybackProvider {
     try {
       await spotifyPlayer.playTrack(uri, upcomingUris, positionMs);
     } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-
-      if (message.includes('401') || message.toLowerCase().includes('unauthorized')) {
+      if (error instanceof AuthExpiredError) {
+        throw error;
+      }
+      if (error instanceof SpotifyApiError && error.status === 401) {
         throw new AuthExpiredError('spotify');
       }
+
+      const message = error instanceof Error ? error.message : String(error);
 
       if (retryCount >= SPOTIFY_MAX_RETRIES) {
         throw error;
       }
 
-      if (message.includes('429')) {
+      const status = error instanceof SpotifyApiError ? error.status : null;
+      const is429 = status === 429 || (status === null && message.includes('429'));
+      const is403 = status === 403 || (status === null && message.includes('403'));
+
+      if (is429) {
         const retryAfterMatch = message.match(/retry.?after[:\s]+(\d+)/i);
         const retryAfterSec = retryAfterMatch ? parseInt(retryAfterMatch[1], 10) : 0;
         const backoffMs = retryAfterSec > 0
@@ -134,7 +141,7 @@ export class SpotifyPlaybackAdapter implements PlaybackProvider {
         return this.playWithRetry(uri, trackName, upcomingUris, retryCount + 1, positionMs);
       }
 
-      if (message.includes('403')) {
+      if (is403) {
         if (message.includes('Restriction violated')) {
           throw new UnavailableTrackError(trackName);
         }
@@ -262,9 +269,11 @@ export class SpotifyPlaybackAdapter implements PlaybackProvider {
       );
       return body.is_playable !== false;
     } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      if (message.includes('401')) throw new AuthExpiredError('spotify');
-      if (message.includes('404')) return false;
+      if (err instanceof AuthExpiredError) throw err;
+      if (err instanceof SpotifyApiError) {
+        if (err.status === 401) throw new AuthExpiredError('spotify');
+        if (err.status === 404) return false;
+      }
       throw err;
     }
   }
