@@ -11,6 +11,7 @@ import { spotifyApiRequest, SpotifyApiError } from '@/services/spotify/api';
 import { isAlbumId, extractAlbumId } from '@/constants/playlist';
 import { SPOTIFY_MAX_RETRIES, SPOTIFY_BASE_BACKOFF_MS } from '@/constants/spotify';
 import { SPOTIFY_DEVICE_ACTIVATE_RETRIES, SPOTIFY_DEVICE_ACTIVATE_DELAY_MS } from '@/constants/timing';
+import { SESSION_EXPIRED_EVENT } from '@/constants/events';
 import { AuthExpiredError, UnavailableTrackError } from '@/providers/errors';
 import { spotifyQueueSync } from './spotifyQueueSync';
 import { logSpotify, logArtRace } from '@/lib/debugLog';
@@ -43,6 +44,30 @@ export class SpotifyPlaybackAdapter implements PlaybackProvider {
   private sdkUnsubscribe: (() => void) | null = null;
   /** Ref of the track most recently staged by prepareTrack; used for idempotency. */
   private preparedTrackRef: string | null = null;
+  /**
+   * Listener that resets `preparedTrackRef` when the Spotify session expires.
+   *
+   * Why: `prepareTrack` short-circuits when `preparedTrackRef === uri` to keep
+   * back-to-back hydrate calls cheap. Across a session boundary that guard
+   * becomes a bug — after SESSION_EXPIRED + reconnect, the SDK has detached
+   * and emitted no state, so a same-track re-prime is the only thing that
+   * repaints the seek bar (issue #1571). Resetting on SESSION_EXPIRED lets
+   * the next `prepareTrack(currentTrack, { positionMs })` from
+   * `useProviderPlayback`'s `PROVIDER_RECONNECTED_EVENT` handler stage state
+   * again.
+   */
+  private readonly handleSessionExpired = (event: Event): void => {
+    const detail = (event as CustomEvent<{ providerId: ProviderId }>).detail;
+    if (detail?.providerId !== 'spotify') return;
+    this.preparedTrackRef = null;
+    this.playbackSessionActive = false;
+  };
+
+  constructor() {
+    if (typeof window !== 'undefined') {
+      window.addEventListener(SESSION_EXPIRED_EVENT, this.handleSessionExpired);
+    }
+  }
 
   private async ensurePlaybackReady(): Promise<void> {
     await spotifyPlayer.initialize();
