@@ -11,6 +11,7 @@ vi.mock('@/services/spotify', () => ({
     isAuthenticated: vi.fn().mockReturnValue(true),
     ensureValidToken: vi.fn().mockResolvedValue('token'),
     redirectToAuth: vi.fn(),
+    reportUnauthorized: vi.fn(),
   },
 }));
 

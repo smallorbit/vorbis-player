@@ -102,7 +102,7 @@ class SpotifyPlayerService {
     this.player.addListener('authentication_error', ({ message }: { message: string }) => {
       console.error('Failed to authenticate', message);
       if (shouldUseMockProvider()) return;
-      spotifyAuth.redirectToAuth();
+      spotifyAuth.reportUnauthorized();
     });
 
     this.player.addListener('account_error', ({ message }: { message: string }) => {
