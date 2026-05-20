@@ -93,5 +93,7 @@ if (shouldUseMockProvider()) {
     dropboxCatalog: dropboxDescriptor.catalog as MockCatalogAdapter,
     spotifyPlayback: spotifyDescriptor.playback as MockPlaybackAdapter,
     dropboxPlayback: dropboxDescriptor.playback as MockPlaybackAdapter,
+    spotifyAuth: spotifyDescriptor.auth as MockAuthAdapter,
+    dropboxAuth: dropboxDescriptor.auth as MockAuthAdapter,
   });
 }
