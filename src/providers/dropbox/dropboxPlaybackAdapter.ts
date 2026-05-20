@@ -283,9 +283,15 @@ export class DropboxPlaybackAdapter implements PlaybackProvider {
   private async primeAudioForHydrate(track: MediaTrack, positionMs?: number): Promise<void> {
     this.ensureAudio();
     const audio = this.audio!;
-    // Only prime audio when nothing is loaded — during next-track pre-warm
-    // the current src is mid-playback and must not be replaced.
-    if (audio.src && this.currentTrack) {
+    // Skip when audio is mid-playback for a *different* track — that's the
+    // next-track pre-warm path; we must not clobber the playing src.
+    // Allow the prime to proceed when the call targets the current track AND
+    // explicitly carries a positionMs (re-prime after re-authentication: the
+    // existing audio src holds an expired temporary link, so we want to fetch
+    // a fresh one and re-seat the seek bar at the saved position).
+    const isCurrentTrackReprime =
+      this.currentTrack?.id === track.id && positionMs !== undefined;
+    if (audio.src && this.currentTrack && !isCurrentTrackReprime) {
       logArtRace('dropbox.prepareTrack: skip emit (audio already loaded for current track) id=%s',
         track.id.slice(0, 8));
       return;

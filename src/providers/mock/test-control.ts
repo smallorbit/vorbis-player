@@ -9,11 +9,31 @@
 // `shouldUseMockProvider()` is true, so it is a no-op in production.
 import type { MockCatalogAdapter } from './mockCatalogAdapter';
 import type { MockPlaybackAdapter } from './mockPlaybackAdapter';
-import type { MediaTrack } from '@/types/domain';
+import type { MockAuthAdapter } from './mockAuthAdapter';
+import type { MediaTrack, ProviderId } from '@/types/domain';
+import { AUTH_STATE_CHANGED_EVENT } from '@/hooks/usePopupAuth';
+import { SESSION_EXPIRED_EVENT } from '@/constants/events';
+
+export interface ExpireAuthOptions {
+  /**
+   * When true, ALSO dispatch SESSION_EXPIRED_EVENT alongside the
+   * AUTH_STATE_CHANGED_EVENT. Defaults to false — the narrower simulation
+   * mirrors the legacy behavior and keeps existing Playwright specs stable.
+   *
+   * Real expiry in production dispatches both events (the refresh-token
+   * rejection path fires SESSION_EXPIRED; the resulting state flip fires
+   * AUTH_STATE_CHANGED). Opt in to this flag when an end-to-end test needs
+   * the SESSION_EXPIRED handler in the SpotifyPlaybackAdapter (and other
+   * listeners) to run ahead of the reconnect.
+   */
+  alsoDispatchSessionExpired?: boolean;
+}
 
 export interface MockTestApi {
   setQueue(trackIds: string[]): Promise<void>;
   setPlaybackState(state: { trackId: string; positionMs?: number; isPlaying?: boolean }): Promise<void>;
+  expireAuth(providerId: ProviderId, opts?: ExpireAuthOptions): Promise<void>;
+  restoreAuth(providerId: ProviderId): Promise<void>;
   reset(): Promise<void>;
 }
 
@@ -22,13 +42,28 @@ export interface InstallOptions {
   dropboxCatalog: MockCatalogAdapter;
   spotifyPlayback: MockPlaybackAdapter;
   dropboxPlayback: MockPlaybackAdapter;
+  spotifyAuth: MockAuthAdapter;
+  dropboxAuth: MockAuthAdapter;
 }
 
 export function installMockTestApi(opts: InstallOptions): void {
   if (typeof window === 'undefined') return;
   if (window.__mockTest) return;
 
-  const { spotifyCatalog, dropboxCatalog, spotifyPlayback, dropboxPlayback } = opts;
+  const {
+    spotifyCatalog,
+    dropboxCatalog,
+    spotifyPlayback,
+    dropboxPlayback,
+    spotifyAuth,
+    dropboxAuth,
+  } = opts;
+
+  function resolveAuth(providerId: ProviderId): MockAuthAdapter {
+    if (providerId === 'spotify') return spotifyAuth;
+    if (providerId === 'dropbox') return dropboxAuth;
+    throw new Error(`[MockTestApi] Unknown providerId "${providerId}"`);
+  }
 
   function resolveTrack(id: string): MediaTrack {
     const track =
@@ -53,6 +88,21 @@ export function installMockTestApi(opts: InstallOptions): void {
       if (!isPlaying) {
         await adapter.pause();
       }
+    },
+
+    async expireAuth(providerId, opts) {
+      resolveAuth(providerId).__testExpire();
+      window.dispatchEvent(new CustomEvent(AUTH_STATE_CHANGED_EVENT));
+      if (opts?.alsoDispatchSessionExpired) {
+        window.dispatchEvent(
+          new CustomEvent(SESSION_EXPIRED_EVENT, { detail: { providerId } }),
+        );
+      }
+    },
+
+    async restoreAuth(providerId) {
+      resolveAuth(providerId).__testRestoreAuth();
+      window.dispatchEvent(new CustomEvent(AUTH_STATE_CHANGED_EVENT));
     },
 
     async reset() {

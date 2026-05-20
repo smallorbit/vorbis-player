@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { SpotifyPlaybackAdapter } from '@/providers/spotify/spotifyPlaybackAdapter';
 import { spotifyPlayer, waitForSpotifyReady } from '@/services/spotifyPlayer';
 import { AuthExpiredError } from '@/providers/errors';
+import { SESSION_EXPIRED_EVENT } from '@/constants/events';
 import type { MediaTrack, PlaybackState } from '@/types/domain';
 
 vi.mock('@/services/spotifyPlayer', () => ({
@@ -367,5 +368,65 @@ describe('SpotifyPlaybackAdapter.prepareTrack', () => {
 
     // A's emission count stays at 1 (only the synchronous emit; no post-transfer re-emit)
     expect(stageEmissions.filter((s) => s?.currentTrackId === 'a')).toHaveLength(1);
+  });
+
+  describe('SESSION_EXPIRED re-prime', () => {
+    it('re-emits state on a same-track prepareTrack after SESSION_EXPIRED resets the guard', async () => {
+      // #given — adapter has staged track-1 once already; without the
+      // SESSION_EXPIRED reset, the `preparedTrackRef === uri` guard would
+      // silently drop a same-track re-prime fired by `PROVIDER_RECONNECTED`,
+      // and the seek bar would remain stuck at 0:00 / 0:00 after re-auth
+      // (issue #1571).
+      const track = makeTrack();
+      const stageEmissions: PlaybackState[] = [];
+      adapter.subscribe((state) => {
+        if (state?.currentTrackId === track.id && !state.isPlaying) {
+          stageEmissions.push(state);
+        }
+      });
+
+      adapter.prepareTrack(track, { positionMs: 15_000 });
+      await vi.waitFor(() => expect(stageEmissions).toHaveLength(1));
+      await vi.waitFor(() =>
+        expect(vi.mocked(spotifyPlayer.transferPlaybackToDevice)).toHaveBeenCalledTimes(1),
+      );
+
+      // #when — simulate provider session expiry, then re-prime same track
+      window.dispatchEvent(
+        new CustomEvent(SESSION_EXPIRED_EVENT, { detail: { providerId: 'spotify' } }),
+      );
+      adapter.prepareTrack(track, { positionMs: 15_000 });
+
+      // #then — second prepareTrack must re-emit (guard cleared) and trigger
+      // another Connect transfer.
+      expect(stageEmissions).toHaveLength(2);
+      await vi.waitFor(() =>
+        expect(vi.mocked(spotifyPlayer.transferPlaybackToDevice)).toHaveBeenCalledTimes(2),
+      );
+    });
+
+    it('ignores SESSION_EXPIRED events for other providers', async () => {
+      // #given — only Spotify's preparedTrackRef should reset; a Dropbox
+      // session-expiry event should not clear Spotify's guard.
+      const track = makeTrack();
+      const stageEmissions: PlaybackState[] = [];
+      adapter.subscribe((state) => {
+        if (state?.currentTrackId === track.id && !state.isPlaying) {
+          stageEmissions.push(state);
+        }
+      });
+
+      adapter.prepareTrack(track, { positionMs: 10_000 });
+      await vi.waitFor(() => expect(stageEmissions).toHaveLength(1));
+
+      // #when
+      window.dispatchEvent(
+        new CustomEvent(SESSION_EXPIRED_EVENT, { detail: { providerId: 'dropbox' } }),
+      );
+      adapter.prepareTrack(track, { positionMs: 10_000 });
+
+      // #then — Spotify guard still set → second prepare is a no-op
+      expect(stageEmissions).toHaveLength(1);
+    });
   });
 });
