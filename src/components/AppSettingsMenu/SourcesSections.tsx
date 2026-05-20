@@ -125,10 +125,7 @@ export const MusicSourcesSection = memo(() => {
 
   useEffect(() => () => clearPendingPopup(), [clearPendingPopup]);
 
-  const handleConfirmDisconnect = useCallback(() => {
-    const id = disconnectDialogProviderId;
-    if (!id) return;
-
+  const performDisconnect = useCallback((id: ProviderId) => {
     setDisconnectDialogProviderId(null);
 
     const descriptor = registry.get(id);
@@ -163,7 +160,6 @@ export const MusicSourcesSection = memo(() => {
     descriptor?.auth.logout();
     toggleProvider(id);
   }, [
-    disconnectDialogProviderId,
     registry,
     tracks,
     currentTrackIndex,
@@ -172,6 +168,23 @@ export const MusicSourcesSection = memo(() => {
     setCurrentTrackIndex,
     toggleProvider,
   ]);
+
+  const handleConfirmDisconnect = useCallback(() => {
+    if (!disconnectDialogProviderId) return;
+    performDisconnect(disconnectDialogProviderId);
+  }, [disconnectDialogProviderId, performDisconnect]);
+
+  const handleToggleOff = useCallback(
+    (descriptor: ReturnType<typeof registry.getAll>[number]) => {
+      const affectedQueueCount = tracks.filter(t => t.provider === descriptor.id).length;
+      if (affectedQueueCount > 0) {
+        setDisconnectDialogProviderId(descriptor.id);
+      } else {
+        performDisconnect(descriptor.id);
+      }
+    },
+    [tracks, performDisconnect],
+  );
 
   if (providers.length < 2) return null;
 
@@ -206,7 +219,7 @@ export const MusicSourcesSection = memo(() => {
                   } else if (needsReconnect) {
                     handleReconnect(descriptor);
                   } else {
-                    setDisconnectDialogProviderId(descriptor.id);
+                    handleToggleOff(descriptor);
                   }
                 }}
                 aria-label={needsReconnect ? `Reconnect ${descriptor.name}` : isEnabled ? `Disable ${descriptor.name}` : `Enable ${descriptor.name}`}
