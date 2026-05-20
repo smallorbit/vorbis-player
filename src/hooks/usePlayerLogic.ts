@@ -107,12 +107,17 @@ export function usePlayerLogic() {
   // Radio generation progress panel state
   const [radioProgress, setRadioProgress] = useState<RadioProgress | null>(null);
 
+  const handleAuthExpired = useCallback((providerId: ProviderId) => {
+    providerRegistry.get(providerId)?.auth.reportUnauthorized?.();
+    setAuthExpired(providerId);
+  }, []);
+
   const providerPlayback = useProviderPlayback({
     setCurrentTrackIndex,
     activeDescriptor,
     mediaTracksRef,
     currentTrackIndexRef,
-    onAuthExpired: (providerId: ProviderId) => setAuthExpired(providerId),
+    onAuthExpired: handleAuthExpired,
     expectedTrackIdRef,
   });
   const providerPlayTrack = providerPlayback.playTrack;

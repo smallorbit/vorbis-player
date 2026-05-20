@@ -66,4 +66,8 @@ export class SpotifyAuthAdapter implements AuthProvider {
     clearAllSpotifyInMemoryCaches();
     void clearLibraryCache();
   }
+
+  reportUnauthorized(): void {
+    spotifyAuth.reportUnauthorized();
+  }
 }
