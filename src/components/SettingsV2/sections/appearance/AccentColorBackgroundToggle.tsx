@@ -53,5 +53,3 @@ export const AccentColorBackgroundToggle: React.FC = () => {
 };
 
 AccentColorBackgroundToggle.displayName = 'SettingsV2.AccentColorBackgroundToggle';
-
-export default AccentColorBackgroundToggle;

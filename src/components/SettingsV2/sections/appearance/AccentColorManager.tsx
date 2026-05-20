@@ -178,5 +178,3 @@ export const AccentColorManager: React.FC = () => {
 };
 
 AccentColorManager.displayName = 'SettingsV2.AccentColorManager';
-
-export default AccentColorManager;

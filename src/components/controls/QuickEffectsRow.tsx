@@ -72,13 +72,12 @@ const SwatchButton = styled.button<{ $color: string; $isActive: boolean }>`
   height: 24px;
   border-radius: 50%;
   background: ${({ $color }) => $color};
-  border: ${({ theme, $isActive }) =>
-    $isActive ? `2px solid ${theme.colors.white}` : `1px solid ${theme.colors.control.border}`};
+  border: 1px solid ${({ theme }) => theme.colors.control.border};
   outline: ${({ theme, $isActive }) => ($isActive ? `2px solid ${theme.colors.selection}` : 'none')};
   cursor: pointer;
   padding: 0;
   flex-shrink: 0;
-  transition: border ${({ theme }) => theme.transitions.fast};
+  transition: outline ${({ theme }) => theme.transitions.fast};
 `;
 
 const IconButton = styled.button`
@@ -275,9 +274,9 @@ function QuickEffectsRow({
               <SubSettingRow>
                 <SubLabel>Intensity</SubLabel>
                 <OptionButtonGroup>
-                  <OptionButton $isActive={glowIntensity === 95} onClick={() => onGlowIntensityChange(95)}>Less</OptionButton>
-                  <OptionButton $isActive={glowIntensity === 110} onClick={() => onGlowIntensityChange(110)}>Normal</OptionButton>
-                  <OptionButton $isActive={glowIntensity === 125} onClick={() => onGlowIntensityChange(125)}>More</OptionButton>
+                  <OptionButton $variant="accent" $isActive={glowIntensity === 95} onClick={() => onGlowIntensityChange(95)}>Less</OptionButton>
+                  <OptionButton $variant="accent" $isActive={glowIntensity === 110} onClick={() => onGlowIntensityChange(110)}>Normal</OptionButton>
+                  <OptionButton $variant="accent" $isActive={glowIntensity === 125} onClick={() => onGlowIntensityChange(125)}>More</OptionButton>
                 </OptionButtonGroup>
               </SubSettingRow>
             )}
@@ -285,9 +284,9 @@ function QuickEffectsRow({
               <SubSettingRow>
                 <SubLabel>Rate</SubLabel>
                 <OptionButtonGroup>
-                  <OptionButton $isActive={glowRate === 5.0} onClick={() => onGlowRateChange(5.0)}>Slower</OptionButton>
-                  <OptionButton $isActive={glowRate === 4.0} onClick={() => onGlowRateChange(4.0)}>Normal</OptionButton>
-                  <OptionButton $isActive={glowRate === 3.0} onClick={() => onGlowRateChange(3.0)}>Faster</OptionButton>
+                  <OptionButton $variant="accent" $isActive={glowRate === 5.0} onClick={() => onGlowRateChange(5.0)}>Slower</OptionButton>
+                  <OptionButton $variant="accent" $isActive={glowRate === 4.0} onClick={() => onGlowRateChange(4.0)}>Normal</OptionButton>
+                  <OptionButton $variant="accent" $isActive={glowRate === 3.0} onClick={() => onGlowRateChange(3.0)}>Faster</OptionButton>
                 </OptionButtonGroup>
               </SubSettingRow>
             )}
@@ -306,24 +305,28 @@ function QuickEffectsRow({
             <SubLabel>Style</SubLabel>
             <OptionButtonGroup>
               <OptionButton
+                $variant="accent"
                 $isActive={backgroundVisualizerStyle === 'fireflies'}
                 onClick={() => onBackgroundVisualizerStyleChange('fireflies')}
               >
                 Fireflies
               </OptionButton>
               <OptionButton
+                $variant="accent"
                 $isActive={backgroundVisualizerStyle === 'comet'}
                 onClick={() => onBackgroundVisualizerStyleChange('comet')}
               >
                 Comet
               </OptionButton>
               <OptionButton
+                $variant="accent"
                 $isActive={backgroundVisualizerStyle === 'wave'}
                 onClick={() => onBackgroundVisualizerStyleChange('wave')}
               >
                 Wave
               </OptionButton>
               <OptionButton
+                $variant="accent"
                 $isActive={backgroundVisualizerStyle === 'grid'}
                 onClick={() => onBackgroundVisualizerStyleChange('grid')}
               >
@@ -336,18 +339,21 @@ function QuickEffectsRow({
               <SubLabel>Intensity</SubLabel>
               <OptionButtonGroup>
                 <OptionButton
+                  $variant="accent"
                   $isActive={backgroundVisualizerIntensity === 20}
                   onClick={() => onBackgroundVisualizerIntensityChange(20)}
                 >
                   Less
                 </OptionButton>
                 <OptionButton
+                  $variant="accent"
                   $isActive={backgroundVisualizerIntensity === 40}
                   onClick={() => onBackgroundVisualizerIntensityChange(40)}
                 >
                   Normal
                 </OptionButton>
                 <OptionButton
+                  $variant="accent"
                   $isActive={backgroundVisualizerIntensity === 60}
                   onClick={() => onBackgroundVisualizerIntensityChange(60)}
                 >
@@ -360,9 +366,9 @@ function QuickEffectsRow({
             <SubSettingRow>
               <SubLabel>Speed</SubLabel>
               <OptionButtonGroup>
-                <OptionButton $isActive={backgroundVisualizerSpeed === 0.5} onClick={() => onBackgroundVisualizerSpeedChange(0.5)}>Slower</OptionButton>
-                <OptionButton $isActive={backgroundVisualizerSpeed === 0.7} onClick={() => onBackgroundVisualizerSpeedChange(0.7)}>Normal</OptionButton>
-                <OptionButton $isActive={backgroundVisualizerSpeed === 1.2} onClick={() => onBackgroundVisualizerSpeedChange(1.2)}>Faster</OptionButton>
+                <OptionButton $variant="accent" $isActive={backgroundVisualizerSpeed === 0.5} onClick={() => onBackgroundVisualizerSpeedChange(0.5)}>Slower</OptionButton>
+                <OptionButton $variant="accent" $isActive={backgroundVisualizerSpeed === 0.7} onClick={() => onBackgroundVisualizerSpeedChange(0.7)}>Normal</OptionButton>
+                <OptionButton $variant="accent" $isActive={backgroundVisualizerSpeed === 1.2} onClick={() => onBackgroundVisualizerSpeedChange(1.2)}>Faster</OptionButton>
               </OptionButtonGroup>
             </SubSettingRow>
           )}

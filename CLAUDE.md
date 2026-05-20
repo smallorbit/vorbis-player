@@ -52,7 +52,9 @@ Make the minimal change first, confirm it works visually, then iterate. Do not c
 
 ## Git & PR Workflow
 
-Run `npm test` before `git push` and before creating any PR. Feature branches from main (`feature/name`, `fix/name`). Atomic commits with conventional format. Reference issue numbers.
+**Default branch is `develop`, not `main`.** The GitHub repo's default branch is `develop`; `main` is the release branch (only updated when a release ships). PRs target `develop`. The session-start `gitStatus` block reports "Main branch (you will usually use this for PRs): main" via a `main`/`master` heuristic — ignore it and treat `develop` as the base.
+
+Run `npm test` before `git push` and before creating any PR. Feature branches from `develop` (`feature/name`, `fix/name`). Atomic commits with conventional format. Reference issue numbers.
 
 ## Worktree Setup
 
@@ -228,6 +230,18 @@ For structured feature development, see `.claude/rules/`:
 - `generate_prd.md` — PRD creation process: asks clarifying questions, then generates a structured requirements doc
 - `generate_tasks_from_prd.md` — breaks a PRD into a detailed parent/subtask list; waits for "Go" confirmation before generating subtasks
 - `process_tasks.md` — task execution protocol: one subtask at a time, with test + commit gates before marking parent complete
+
+## OpenSpec
+
+Behavior specs for the app's durable capabilities live in `openspec/specs/` — one folder per capability (`provider-system`, `auth-system`, `playback-engine`, `queue-management`, …). The specs are **plain documentation** and are useful to anyone reading the code, regardless of toolchain.
+
+For AI-assisted change proposals, the project ships the OpenSpec opsx commands and skills in-tree under `.claude/commands/opsx/`, `.claude/skills/openspec-*/`, and `.cursor/skills/openspec-*/` so adoption is zero-setup:
+
+- `/opsx:propose` — interview + draft a new change (proposal, design, tasks, delta specs).
+- `/opsx:apply` — implement the tasks for an active change.
+- `/opsx:archive` — finalize a completed change and merge its delta specs.
+
+Using opsx is **optional** — contributors not using Claude Code or Cursor can ignore the tooling and either edit `openspec/specs/` directly or open a PR against the relevant spec(s). Specs are the source of truth, not the tooling.
 
 ## Multi-Agent Team Workflows
 

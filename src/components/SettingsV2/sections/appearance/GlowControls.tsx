@@ -115,5 +115,3 @@ export const GlowControls: React.FC = () => {
 };
 
 GlowControls.displayName = 'SettingsV2.GlowControls';
-
-export default GlowControls;
