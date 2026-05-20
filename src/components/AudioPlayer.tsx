@@ -41,7 +41,6 @@ const LibraryRoute = lazy(() => import('./LibraryRoute'));
 
 const RESUME_TOAST_ID = 'resume-toast';
 const FALLTHROUGH_TOAST_ID = 'fallthrough-toast';
-const RECONNECT_TOAST_ID = 'reconnect-toast';
 const DISCONNECT_TOAST_ID = 'disconnect-toast';
 
 const Container = styled.div`
@@ -356,7 +355,7 @@ const AudioPlayerComponent = () => {
     withResumeDismiss,
   ]);
 
-  const { chosenProviderId, activeDescriptor, connectedProviderIds, fallthroughNotification, dismissFallthroughNotification, reconnectPrompt, acceptReconnectPrompt, dismissReconnectPrompt, disconnectToast, dismissDisconnectToast } = useProviderContext();
+  const { chosenProviderId, activeDescriptor, connectedProviderIds, fallthroughNotification, dismissFallthroughNotification, disconnectToast, dismissDisconnectToast } = useProviderContext();
 
   useEffect(() => {
     if (!fallthroughNotification) return;
@@ -368,26 +367,13 @@ const AudioPlayerComponent = () => {
   }, [fallthroughNotification, dismissFallthroughNotification]);
 
   useEffect(() => {
-    if (!reconnectPrompt) {
-      toast.dismiss(RECONNECT_TOAST_ID);
-      return;
-    }
-    toast(reconnectPrompt.message, {
-      id: RECONNECT_TOAST_ID,
-      duration: Infinity,
-      action: { label: 'Reconnect', onClick: acceptReconnectPrompt },
-      onDismiss: dismissReconnectPrompt,
-    });
-  }, [reconnectPrompt, acceptReconnectPrompt, dismissReconnectPrompt]);
-
-  useEffect(() => {
-    if (!disconnectToast || reconnectPrompt) return;
+    if (!disconnectToast) return;
     toast(disconnectToast, {
       id: DISCONNECT_TOAST_ID,
       onDismiss: dismissDisconnectToast,
       onAutoClose: dismissDisconnectToast,
     });
-  }, [disconnectToast, reconnectPrompt, dismissDisconnectToast]);
+  }, [disconnectToast, dismissDisconnectToast]);
 
   // Setup is needed when no provider has been chosen yet and none are connected,
   // or when the active provider isn't authenticated and no other enabled provider is either.
