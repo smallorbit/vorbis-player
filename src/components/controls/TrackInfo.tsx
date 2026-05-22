@@ -116,11 +116,11 @@ const TrackInfo = memo<TrackInfoProps>(({ track, isMobile, isTablet, onArtistBro
 
     const getAlbumExternalUrl = (albumId: string, albumName: string): string | undefined => {
         if (trackDescriptor?.getExternalUrls) {
-            const urls = trackDescriptor.getExternalUrls({ type: 'album', name: albumName, artistName: track?.artists });
+            const urls = trackDescriptor.getExternalUrls({ type: 'album', name: albumName, artistName: track?.artists ?? '' });
             return urls?.[0]?.url;
         }
         if (trackDescriptor?.getExternalUrl) {
-            return trackDescriptor.getExternalUrl({ type: 'album', name: albumName, artistName: track?.artists });
+            return trackDescriptor.getExternalUrl({ type: 'album', name: albumName, artistName: track?.artists ?? '' });
         }
         if (trackDescriptor?.id === 'spotify' && albumId) {
             return `https://open.spotify.com/album/${albumId}`;
@@ -237,7 +237,7 @@ const TrackInfo = memo<TrackInfoProps>(({ track, isMobile, isTablet, onArtistBro
             });
         }
         if (hasExternalLink) {
-            const externalUrls = trackDescriptor?.getExternalUrls?.({ type: 'album', name: popover.albumName, artistName: track?.artists });
+            const externalUrls = trackDescriptor?.getExternalUrls?.({ type: 'album', name: popover.albumName, artistName: track?.artists ?? '' });
             if (externalUrls) {
                 for (const entry of externalUrls) {
                     const IconComponent = ICON_MAP[entry.icon] ?? DiscogsIcon;
