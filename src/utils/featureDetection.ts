@@ -183,7 +183,7 @@ export const getEnhancedViewportInfo = (features: BrowserFeatures): ViewportInfo
   return {
     width: fallbacks.getViewportWidth(),
     height: fallbacks.getViewportHeight(),
-    orientation: (fallbacks.getViewportWidth() > fallbacks.getViewportHeight() ? 'landscape' : 'portrait') as 'portrait' | 'landscape',
+    orientation: fallbacks.getViewportWidth() > fallbacks.getViewportHeight() ? 'landscape' as const : 'portrait' as const,
     devicePixelRatio: features.devicePixelRatio ? window.devicePixelRatio || 1 : 1
   };
 };
