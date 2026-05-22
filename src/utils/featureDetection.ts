@@ -229,8 +229,8 @@ export const createEnhancedEventListeners = (
     listeners.forEach(({ element, event, handler }) => {
       if (event === 'observe') {
         handler();
-      } else if (element && typeof element === 'object' && 'removeEventListener' in element) {
-        (element as { removeEventListener: (event: string, handler: () => void) => void }).removeEventListener(event, handler);
+      } else {
+        element.removeEventListener(event, handler);
       }
     });
   };
