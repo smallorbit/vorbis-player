@@ -22,14 +22,14 @@ function weightedPick(
 ): number {
   let totalWeight = 0;
   for (let i = 0; i < albums.length; i++) {
-    if (!exclude.has(i)) totalWeight += albums[i].trackCount;
+    if (!exclude.has(i)) totalWeight += albums[i]?.trackCount ?? 0;
   }
   if (totalWeight === 0) return -1;
 
   let target = rng() * totalWeight;
   for (let i = 0; i < albums.length; i++) {
     if (exclude.has(i)) continue;
-    target -= albums[i].trackCount;
+    target -= albums[i]?.trackCount ?? 0;
     if (target <= 0) return i;
   }
   return albums.length - 1;
@@ -50,11 +50,13 @@ export function selectMosaicCovers(
   }
 
   if (albums.length === 0) return [];
-  if (albums.length === 1) return [albums[0].key];
+  const [first, second] = albums;
+  if (albums.length === 1 || !second) return first ? [first.key] : [];
 
   if (albums.length <= 3) {
     const sorted = [...albums].sort((a, b) => b.trackCount - a.trackCount);
-    return [sorted[0].key, sorted[1].key];
+    const [s0, s1] = sorted;
+    return s0 && s1 ? [s0.key, s1.key] : [];
   }
 
   const seed = hashString(playlistId);
@@ -65,7 +67,9 @@ export function selectMosaicCovers(
   for (let i = 0; i < 4 && excluded.size < albums.length; i++) {
     const idx = weightedPick(albums, rng, excluded);
     if (idx === -1) break;
-    picked.push(albums[idx].key);
+    const album = albums[idx];
+    if (!album) break;
+    picked.push(album.key);
     excluded.add(idx);
   }
 

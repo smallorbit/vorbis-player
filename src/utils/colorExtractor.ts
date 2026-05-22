@@ -111,10 +111,10 @@ export async function extractDominantColor(imageUrl: string): Promise<ExtractedC
           const colorMap = new Map<string, ColorData>();
 
           for (let i = 0; i < data.length; i += PIXEL_SAMPLE_STRIDE) {
-            const r = data[i];
-            const g = data[i + 1];
-            const b = data[i + 2];
-            const a = data[i + 3];
+            const r = data[i] ?? 0;
+            const g = data[i + 1] ?? 0;
+            const b = data[i + 2] ?? 0;
+            const a = data[i + 3] ?? 0;
 
             if (a < ALPHA_THRESHOLD) continue;
 
@@ -195,7 +195,7 @@ export function getTransparentVariant(color: string, opacity = 0.2): string {
   } else if (color.startsWith('rgb')) {
     const matches = color.match(/\d+/g);
     if (!matches) return color;
-    [r, g, b] = matches.map(Number);
+    [r = 0, g = 0, b = 0] = matches.map(Number);
   } else {
     return color;
   }
@@ -231,10 +231,10 @@ export async function extractTopVibrantColors(imageUrl: string, count = 3): Prom
           const colorMap = new Map<string, ColorData>();
 
           for (let i = 0; i < data.length; i += PIXEL_SAMPLE_STRIDE) {
-            const r = data[i];
-            const g = data[i + 1];
-            const b = data[i + 2];
-            const a = data[i + 3];
+            const r = data[i] ?? 0;
+            const g = data[i + 1] ?? 0;
+            const b = data[i + 2] ?? 0;
+            const a = data[i + 3] ?? 0;
             if (a < ALPHA_THRESHOLD) continue;
             const rBucket = Math.floor(r / COLOR_BUCKET_SIZE) * COLOR_BUCKET_SIZE;
             const gBucket = Math.floor(g / COLOR_BUCKET_SIZE) * COLOR_BUCKET_SIZE;
