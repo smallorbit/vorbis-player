@@ -162,7 +162,7 @@ export class DropboxCatalogAdapter implements CatalogProvider {
           kind: 'album',
           name,
           trackCount: count,
-          ownerName: artistName ?? null,
+          ownerName: artistName,
           imageUrl: dirToImageUrl.get(dirPath),
           // Dropbox folder metadata does not include genre information
           genres: [],
