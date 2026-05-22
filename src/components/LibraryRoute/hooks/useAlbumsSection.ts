@@ -2,7 +2,6 @@ import { useMemo } from 'react';
 import { useLibrarySync } from '@/hooks/useLibrarySync';
 import { usePinnedItems } from '@/hooks/usePinnedItems';
 import type { AlbumInfo } from '@/services/spotify';
-import type { ProviderId } from '@/types/domain';
 import type { SectionState, UseCollectionSectionParams } from '../types';
 
 export type UseAlbumsSectionParams = UseCollectionSectionParams;
@@ -17,7 +16,7 @@ export function useAlbumsSection(
     let result = albums;
     if (providerFilter && providerFilter.length > 0) {
       const allowed = new Set(providerFilter);
-      result = result.filter((a) => allowed.has((a.provider ?? 'spotify') as ProviderId));
+      result = result.filter((a) => allowed.has(a.provider ?? 'spotify'));
     }
     if (excludePinned) {
       const pinnedSet = new Set(pinnedAlbumIds);
