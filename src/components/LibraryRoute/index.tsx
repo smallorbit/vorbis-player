@@ -188,7 +188,7 @@ const LibraryRoute: React.FC<LibraryRouteProps> = ({
   } else {
     body = (
       <SeeAllView
-        view={effectiveView as Exclude<LibraryRouteView, 'home' | 'liked' | 'search'>}
+        view={effectiveView}
         onBack={() => setView('home')}
         onSelectCollection={handleSelectCollection}
         onContextMenuRequest={handleContextMenuRequest}

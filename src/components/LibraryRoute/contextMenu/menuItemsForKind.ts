@@ -127,9 +127,8 @@ export function buildMenuItems(request: ContextMenuRequest, actions: MenuActions
 
   if (request.kind === 'recently-played') {
     isRecentlyPlayed = true;
-    const original = request.originalKind ?? 'playlist';
-    if (original === 'album') items = buildAlbumItems(actions);
-    else if (original === 'liked') items = buildLikedItems(actions);
+    if (request.originalKind === 'album') items = buildAlbumItems(actions);
+    else if (request.originalKind === 'liked') items = buildLikedItems(actions);
     else items = buildPlaylistItems(actions);
   } else if (request.kind === 'album') {
     items = buildAlbumItems(actions);
