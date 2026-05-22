@@ -15,7 +15,7 @@
  */
 
 import type { CatalogProvider } from '@/types/providers';
-import type { ProviderId, MediaTrack, MediaCollection, CollectionRef } from '@/types/domain';
+import type { ArtistRef, ProviderId, MediaTrack, MediaCollection, CollectionRef } from '@/types/domain';
 import { DropboxAuthAdapter } from './dropboxAuthAdapter';
 import {
   getDurationsMap,
@@ -279,7 +279,8 @@ export class DropboxCatalogAdapter implements CatalogProvider {
             if (cached.name) t.name = cached.name;
             if (cached.artists) {
               t.artists = cached.artists;
-              t.artistsData = [{ name: cached.artists }];
+              const refs: ArtistRef[] = [{ name: cached.artists }];
+              t.artistsData = refs;
             }
             if (cached.album) t.album = cached.album;
           }
