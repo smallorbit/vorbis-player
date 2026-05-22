@@ -50,20 +50,22 @@ export function transformTrackItem(
   if (!item.id || item.type !== 'track') return null;
 
   const albumImage = albumOverride?.image ?? getLargestImage(item.album?.images);
+  const artistsData = buildArtistsData(item.artists);
+  const albumId = albumOverride?.id ?? item.album?.id;
 
   return {
     id: item.id,
     provider: 'spotify',
     name: item.name,
     artists: formatArtists(item.artists),
-    artistsData: buildArtistsData(item.artists),
     album: albumOverride?.name ?? item.album?.name ?? 'Unknown Album',
-    album_id: albumOverride?.id ?? item.album?.id,
-    track_number: item.track_number,
     duration_ms: item.duration_ms ?? 0,
     uri: item.uri,
-    preview_url: item.preview_url,
-    image: albumImage,
+    ...(artistsData !== undefined && { artistsData }),
+    ...(albumId !== undefined && { album_id: albumId }),
+    ...(item.track_number !== undefined && { track_number: item.track_number }),
+    ...(item.preview_url !== undefined && { preview_url: item.preview_url }),
+    ...(albumImage !== undefined && { image: albumImage }),
   };
 }
 
@@ -84,15 +86,15 @@ export function tracksToMediaTracks(tracks: Track[]): MediaTrack[] {
     playbackRef: { provider: 'spotify', ref: t.uri },
     name: t.name,
     artists: t.artists,
-    artistsData: t.artistsData,
     album: t.album,
-    albumId: t.album_id,
-    trackNumber: t.track_number,
     durationMs: t.duration_ms,
-    image: t.image,
-    externalUrl: t.preview_url,
-    addedAt: t.added_at,
     genres: t.genres ?? [],
+    ...(t.artistsData !== undefined && { artistsData: t.artistsData }),
+    ...(t.album_id !== undefined && { albumId: t.album_id }),
+    ...(t.track_number !== undefined && { trackNumber: t.track_number }),
+    ...(t.image !== undefined && { image: t.image }),
+    ...(t.preview_url !== undefined && { externalUrl: t.preview_url }),
+    ...(t.added_at !== undefined && { addedAt: t.added_at }),
   }));
 }
 
@@ -173,7 +175,7 @@ export async function getLikedSongsCount(signal?: AbortSignal): Promise<number> 
   const data = await spotifyApiRequest<LikedSongsResponse>(
     'https://api.spotify.com/v1/me/tracks?limit=1',
     token,
-    { signal }
+    signal ? { signal } : {},
   );
 
   const count = data.total ?? 0;

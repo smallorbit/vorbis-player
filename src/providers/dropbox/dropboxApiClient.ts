@@ -68,7 +68,7 @@ export class DropboxApiClient {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(body),
-        signal,
+        ...(signal && { signal }),
       });
 
     let response = await makeRequest(token);

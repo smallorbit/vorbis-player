@@ -28,58 +28,58 @@ import { ALBUM_ID_PREFIX, isAlbumId, extractAlbumId } from '@/constants/playlist
 
 /** Map a Spotify Track to a MediaTrack. */
 function spotifyTrackToMediaTrack(track: Track): MediaTrack {
+  const artistsData = track.artistsData?.map((a) =>
+    a.url !== undefined ? { name: a.name, url: a.url } : { name: a.name },
+  );
   return {
     id: track.id,
     provider: 'spotify',
     playbackRef: { provider: 'spotify', ref: track.uri },
     name: track.name,
     artists: track.artists,
-    artistsData: track.artistsData?.map((a) => ({
-      name: a.name,
-      url: a.url,
-    })),
     album: track.album,
-    albumId: track.album_id,
-    trackNumber: track.track_number,
     durationMs: track.duration_ms,
-    image: track.image,
-    externalUrl: track.uri
-      ? `https://open.spotify.com/track/${track.id}`
-      : undefined,
-    addedAt: track.added_at,
     genres: track.genres ?? [],
+    ...(artistsData !== undefined && { artistsData }),
+    ...(track.album_id !== undefined && { albumId: track.album_id }),
+    ...(track.track_number !== undefined && { trackNumber: track.track_number }),
+    ...(track.image !== undefined && { image: track.image }),
+    ...(track.uri ? { externalUrl: `https://open.spotify.com/track/${track.id}` } : {}),
+    ...(track.added_at !== undefined && { addedAt: track.added_at }),
   };
 }
 
 /** Map a PlaylistInfo to a MediaCollection. */
 function spotifyPlaylistToMediaCollection(pl: PlaylistInfo): MediaCollection {
+  const imageUrl = getLargestImage(pl.images);
   return {
     id: pl.id,
     provider: 'spotify',
     kind: 'playlist',
     name: pl.name,
-    description: pl.description ?? undefined,
-    imageUrl: getLargestImage(pl.images),
-    trackCount: pl.tracks?.total ?? undefined,
-    ownerName: pl.owner?.display_name ?? undefined,
-    revision: pl.snapshot_id,
     // Spotify playlist API doesn't return genre information
     genres: [],
+    ...(pl.description != null && { description: pl.description }),
+    ...(imageUrl !== undefined && { imageUrl }),
+    ...(pl.tracks?.total !== undefined && { trackCount: pl.tracks.total }),
+    ...(pl.owner?.display_name !== undefined && { ownerName: pl.owner.display_name }),
+    ...(pl.snapshot_id !== undefined && { revision: pl.snapshot_id }),
   };
 }
 
 /** Map an AlbumInfo to a MediaCollection. */
 function spotifyAlbumToMediaCollection(album: AlbumInfo): MediaCollection {
+  const imageUrl = getLargestImage(album.images);
   return {
     id: `${ALBUM_ID_PREFIX}${album.id}`,
     provider: 'spotify',
     kind: 'album',
     name: album.name,
     description: album.artists,
-    imageUrl: getLargestImage(album.images),
     trackCount: album.total_tracks,
     // Genres come from the Spotify album object (may be empty for simplified library responses)
     genres: album.genres ?? [],
+    ...(imageUrl !== undefined && { imageUrl }),
   };
 }
 

@@ -169,7 +169,7 @@ async function syncAlbums(
   await cache.putMeta('albums', {
     lastValidated: Date.now(),
     totalCount: deduped.length,
-    latestAddedAt: latestAddedAt || undefined,
+    ...(latestAddedAt && { latestAddedAt }),
   });
 
   return deduped;

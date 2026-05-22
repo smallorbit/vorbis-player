@@ -45,14 +45,14 @@ export function useSessionPersistence(
     return {
       collectionId,
       collectionName,
-      collectionProvider,
       trackIndex: currentTrackIndex,
-      trackId,
       queueTracks: tracks,
-      trackTitle,
-      trackArtist,
-      trackImage,
       playbackPosition,
+      ...(collectionProvider !== undefined && { collectionProvider }),
+      ...(trackId !== undefined && { trackId }),
+      ...(trackTitle !== undefined && { trackTitle }),
+      ...(trackArtist !== undefined && { trackArtist }),
+      ...(trackImage !== undefined && { trackImage }),
     };
   }, [collectionId, collectionName, collectionProvider, tracks, currentTrackIndex, trackId, trackTitle, trackArtist, trackImage, playbackPosition]);
 

@@ -78,10 +78,8 @@ const createDefaultSizingConstraints = (viewport: ViewportInfo): SizingConstrain
     allowAspectRatioAdjustment: true,
     viewportUsageWidth,
     viewportUsageHeight,
-    // These will be calculated by getOptimalAspectRatio and calculateAspectRatioConstraints
-    preferredAspectRatio: undefined,
-    minAspectRatio: undefined,
-    maxAspectRatio: undefined
+    // preferredAspectRatio / minAspectRatio / maxAspectRatio are calculated downstream
+    // by getOptimalAspectRatio and calculateAspectRatioConstraints; omitted here.
   };
 };
 
