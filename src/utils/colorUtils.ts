@@ -15,11 +15,14 @@ export const getRelativeLuminance = (hex: string): number => {
   const [r, g, b] = hexToRgb(hex);
   
   // Convert to 0-1 range
-  const [rs, gs, bs] = [r, g, b].map(c => {
+  const linearize = (c: number): number => {
     const val = c / 255;
     return val <= 0.03928 ? val / 12.92 : Math.pow((val + 0.055) / 1.055, 2.4);
-  });
-  
+  };
+  const rs = linearize(r);
+  const gs = linearize(g);
+  const bs = linearize(b);
+
   return 0.2126 * rs + 0.7152 * gs + 0.0722 * bs;
 };
 

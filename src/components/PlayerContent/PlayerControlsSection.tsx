@@ -203,7 +203,8 @@ export const PlayerControlsSection: React.FC<PlayerControlsSectionProps> = React
   const handleCycleVisualizerStyle = useCallback(() => {
     const currentIndex = VISUALIZER_CYCLE.indexOf(backgroundVisualizerStyle);
     const nextIndex = (currentIndex + 1) % VISUALIZER_CYCLE.length;
-    setBackgroundVisualizerStyle(VISUALIZER_CYCLE[nextIndex]);
+    const next = VISUALIZER_CYCLE[nextIndex];
+    if (next) setBackgroundVisualizerStyle(next);
   }, [backgroundVisualizerStyle, setBackgroundVisualizerStyle]);
 
   const handleTranslucenceToggle = useCallback(() => {

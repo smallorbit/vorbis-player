@@ -60,6 +60,7 @@ export function useVerticalSwipeGesture(
 
     const handleTouchStart = (e: TouchEvent) => {
       const touch = e.touches[0];
+      if (!touch) return;
       startYRef.current = touch.clientY;
       startXRef.current = touch.clientX;
       startTimeRef.current = Date.now();
@@ -71,6 +72,7 @@ export function useVerticalSwipeGesture(
       if (directionLockedRef.current === 'horizontal') return;
 
       const touch = e.touches[0];
+      if (!touch) return;
       const deltaY = touch.clientY - startYRef.current;
       const deltaX = touch.clientX - startXRef.current;
 

@@ -48,8 +48,9 @@ function findArtByNames(entries: DropboxFileEntry[], names: string[]): string | 
 }
 
 export function pickAlbumArtPath(entries: DropboxFileEntry[]): string | null {
-  if (entries.length === 0) return null;
-  return findArtByNames(entries, ALBUM_ART_NAMES) ?? entries[0].path_lower;
+  const first = entries[0];
+  if (!first) return null;
+  return findArtByNames(entries, ALBUM_ART_NAMES) ?? first.path_lower;
 }
 
 export function parentDir(path: string): string {
@@ -59,7 +60,7 @@ export function parentDir(path: string): string {
 function parseFilename(filename: string): { name: string; trackNumber?: number } {
   const base = filename.replace(/\.[^/.]+$/, '');
   const match = base.match(/^(\d{1,3})\s*[-.\s]\s*(.+)$/);
-  if (match) {
+  if (match && match[1] && match[2]) {
     return { name: match[2].trim(), trackNumber: parseInt(match[1], 10) };
   }
   return { name: base };
@@ -75,7 +76,7 @@ export function entryToMediaTrack(entry: DropboxFileEntry, imageUrl?: string): M
   const { name, trackNumber } = parseFilename(entry.name);
 
   const displayParts = entry.path_display.split('/').filter(Boolean);
-  const albumName = displayParts.length >= 2 ? displayParts[displayParts.length - 2] : 'Unknown Album';
+  const albumName = (displayParts.length >= 2 ? displayParts[displayParts.length - 2] : undefined) ?? 'Unknown Album';
   const artistName = displayParts.length >= 3 ? displayParts[displayParts.length - 3] : undefined;
 
   const albumId = parentDir(entry.path_lower);

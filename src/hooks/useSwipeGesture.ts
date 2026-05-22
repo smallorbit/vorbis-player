@@ -93,6 +93,7 @@ export function useSwipeGesture(
     if (isAnimating) return;
 
     const touch = e.touches[0];
+    if (!touch) return;
     startXRef.current = touch.clientX;
     startYRef.current = touch.clientY;
     startTimeRef.current = Date.now();
@@ -104,6 +105,7 @@ export function useSwipeGesture(
     if (directionLockedRef.current === 'vertical') return;
 
     const touch = e.touches[0];
+    if (!touch) return;
     const deltaX = touch.clientX - startXRef.current;
     const deltaY = touch.clientY - startYRef.current;
 

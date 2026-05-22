@@ -160,7 +160,7 @@ const getFallbackValues = (features: BrowserFeatures) => {
         return `aspect-ratio: ${ratio}`;
       }
       // Use padding-bottom trick for aspect ratio
-      const [width, height] = ratio.split('/').map(Number);
+      const [width = 1, height = 1] = ratio.split('/').map(Number);
       const percentage = (height / width) * 100;
       return `padding-bottom: ${percentage}%`;
     },

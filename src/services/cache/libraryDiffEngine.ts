@@ -89,6 +89,7 @@ async function syncPlaylists(newTotal: number, signal: AbortSignal): Promise<Cac
 
   for (let i = 0; i < allFetched.length; i++) {
     const p = allFetched[i];
+    if (!p) continue;
     const cached = cachedMap.get(p.id);
     p.added_at =
       cached?.added_at ||

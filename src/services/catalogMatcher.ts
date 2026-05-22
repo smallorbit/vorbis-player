@@ -73,9 +73,10 @@ export function matchTrack(
 
   const key = makeNormalizedKey(candidate.artist, candidate.name);
   const nameMatches = indexes.byNormalizedKey.get(key);
-  if (nameMatches && nameMatches.length > 0) {
+  const firstMatch = nameMatches?.[0];
+  if (firstMatch) {
     return {
-      track: nameMatches[0],
+      track: firstMatch,
       confidence: 'name-exact',
       lastfmMatchScore: candidate.matchScore,
     };
