@@ -14,6 +14,8 @@ async function parseRetryAfterSeconds(response: Response): Promise<number> {
     if (Number.isFinite(parsed) && parsed > 0) return parsed;
   }
   try {
+    // HTTP error-body boundary: shape isn't validated; only retry_after is read,
+    // and a wrong type falls through to the default below.
     const body = await response.clone().json() as { retry_after?: number };
     if (typeof body?.retry_after === 'number' && body.retry_after > 0) return body.retry_after;
   } catch (err) {

@@ -117,7 +117,6 @@ function savedTrackToMediaTrack(track: SavedTrack): MediaTrack {
     playbackRef: track.playbackRef,
     name: track.name,
     artists: track.artists,
-    artistsData: undefined,
     album: track.album,
     albumId: track.albumId,
     durationMs: track.durationMs,
