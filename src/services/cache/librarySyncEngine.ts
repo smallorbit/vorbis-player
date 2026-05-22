@@ -250,7 +250,7 @@ export class SpotifyLibrarySyncEngine {
     let allAlbums: AlbumInfo[] = [];
 
     const onPlaylistsUpdate: PlaylistsUpdateCallback = (playlists, isComplete) => {
-      allPlaylists = playlists as CachedPlaylistInfo[];
+      allPlaylists = playlists;
       this.notifyListeners(allPlaylists, allAlbums);
       if (isComplete) {
         cache.putAllPlaylists(allPlaylists).catch(() => {});

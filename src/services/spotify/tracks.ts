@@ -1,4 +1,4 @@
-import type { ProviderId, MediaTrack } from '@/types/domain';
+import type { MediaTrack } from '@/types/domain';
 import type { ArtistInfo, Track, SpotifyArtist, SpotifyTrackItem } from './types';
 import { getLargestImage } from './types';
 import { spotifyApiRequest, fetchAllPaginated } from './api';
@@ -80,8 +80,8 @@ export function backfillProvider(tracks: Track[]): Track[] {
 export function tracksToMediaTracks(tracks: Track[]): MediaTrack[] {
   return tracks.map((t) => ({
     id: t.id,
-    provider: t.provider as ProviderId,
-    playbackRef: { provider: 'spotify' as ProviderId, ref: t.uri },
+    provider: t.provider,
+    playbackRef: { provider: 'spotify', ref: t.uri },
     name: t.name,
     artists: t.artists,
     artistsData: t.artistsData,

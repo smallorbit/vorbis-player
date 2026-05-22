@@ -6,11 +6,7 @@
  */
 
 import type { AlbumInfo } from '../spotify';
-import type {
-  CachedPlaylistInfo,
-  CachedTrackList,
-  LibraryCacheMeta,
-} from './cacheTypes';
+import type { CachedPlaylistInfo, LibraryCacheMeta } from './cacheTypes';
 import { STORAGE_KEYS } from '@/constants/storage';
 
 const DB_NAME = 'vorbis-player-library';
@@ -21,18 +17,19 @@ export const STORE_ALBUMS = 'albums';
 export const STORE_TRACK_LISTS = 'trackLists';
 export const STORE_META = 'meta';
 
-export interface FallbackStores {
-  playlists: Map<string, CachedPlaylistInfo>;
-  albums: Map<string, AlbumInfo>;
-  trackLists: Map<string, CachedTrackList>;
-  meta: Map<string, LibraryCacheMeta>;
-}
+/**
+ * In-memory fallback stores keyed by store name (matches the IDB store names).
+ * Values are typed as `unknown` because the consumer-facing `getFallbackMap`
+ * API has to serve any store, and IDB itself persists structured-cloneable
+ * data without per-store typing.
+ */
+export type FallbackStores = Record<string, Map<string, unknown>>;
 
 export const fallbackStores: FallbackStores = {
-  playlists: new Map(),
-  albums: new Map(),
-  trackLists: new Map(),
-  meta: new Map(),
+  [STORE_PLAYLISTS]: new Map(),
+  [STORE_ALBUMS]: new Map(),
+  [STORE_TRACK_LISTS]: new Map(),
+  [STORE_META]: new Map(),
 };
 
 let db: IDBDatabase | null = null;
@@ -48,18 +45,9 @@ export function isFallback(): boolean {
 }
 
 export function getFallbackMap(storeName: string): Map<string, unknown> {
-  switch (storeName) {
-    case STORE_PLAYLISTS:
-      return fallbackStores.playlists as Map<string, unknown>;
-    case STORE_ALBUMS:
-      return fallbackStores.albums as Map<string, unknown>;
-    case STORE_TRACK_LISTS:
-      return fallbackStores.trackLists as Map<string, unknown>;
-    case STORE_META:
-      return fallbackStores.meta as Map<string, unknown>;
-    default:
-      throw new Error(`[libraryCache] Unknown store: ${storeName}`);
-  }
+  const store = fallbackStores[storeName];
+  if (!store) throw new Error(`[libraryCache] Unknown store: ${storeName}`);
+  return store;
 }
 
 function openIDB(): Promise<IDBDatabase> {
@@ -121,10 +109,9 @@ export function closeCache(): void {
   }
   fallbackMode = false;
   initPromise = null;
-  fallbackStores.playlists.clear();
-  fallbackStores.albums.clear();
-  fallbackStores.trackLists.clear();
-  fallbackStores.meta.clear();
+  for (const store of Object.values(fallbackStores)) {
+    store.clear();
+  }
 }
 
 interface LocalStorageCacheEntry<T> {

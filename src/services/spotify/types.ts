@@ -10,7 +10,7 @@ import type { ProviderId } from '@/types/domain';
  */
 export interface Track {
   id: string;
-  provider: string;
+  provider: ProviderId;
   name: string;
   artists: string;
   artistsData?: { name: string; url?: string }[];
