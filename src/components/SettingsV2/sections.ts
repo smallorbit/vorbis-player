@@ -43,5 +43,5 @@ export const SETTINGS_V2_SECTIONS: readonly SettingsV2SectionDescriptor[] = [
 export const DEFAULT_SETTINGS_V2_SECTION: SettingsV2SectionId = 'sources';
 
 export function isSettingsV2SectionId(value: string | null | undefined): value is SettingsV2SectionId {
-  return typeof value === 'string' && (SETTINGS_V2_SECTION_IDS as readonly string[]).includes(value);
+  return typeof value === 'string' && SETTINGS_V2_SECTION_IDS.some((id) => id === value);
 }
