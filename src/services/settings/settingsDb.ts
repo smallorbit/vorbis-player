@@ -76,7 +76,7 @@ export async function settingsPut<T extends { key: string }>(store: string, valu
   await initSettingsDb();
   if (fallbackMode) {
     ensureFallbackStore(store);
-    fallbackStores[store].set(value.key, value);
+    fallbackStores[store]?.set(value.key, value);
     return;
   }
   try {
@@ -84,7 +84,7 @@ export async function settingsPut<T extends { key: string }>(store: string, valu
   } catch (err) {
     logCaughtError('settingsDb.settingsPut', err);
     ensureFallbackStore(store);
-    fallbackStores[store].set(value.key, value);
+    fallbackStores[store]?.set(value.key, value);
   }
 }
 

@@ -82,7 +82,7 @@ const QuickAccessPanel: React.FC<QuickAccessPanelProps> = ({
     const perProvider = likedSongsPerProvider.filter(e =>
       providerIds.length === 0 || providerIds.includes(e.provider),
     );
-    const resolvedProvider = perProvider.length === 1 ? perProvider[0].provider : undefined;
+    const resolvedProvider = perProvider.length === 1 ? perProvider[0]?.provider : undefined;
     onPlaylistSelect(LIKED_SONGS_ID, LIKED_SONGS_NAME, resolvedProvider);
   };
 

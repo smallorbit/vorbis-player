@@ -17,7 +17,7 @@ export interface SettingsV2SectionDescriptor {
   description: string;
 }
 
-export const SETTINGS_V2_SECTIONS: readonly SettingsV2SectionDescriptor[] = [
+export const SETTINGS_V2_SECTIONS: readonly [SettingsV2SectionDescriptor, ...SettingsV2SectionDescriptor[]] = [
   {
     id: 'sources',
     label: 'Sources',

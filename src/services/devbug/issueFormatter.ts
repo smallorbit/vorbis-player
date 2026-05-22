@@ -13,8 +13,8 @@ function resolveComponentLabel(element: SelectedElement): string {
 
 export function formatIssueTitle(report: BugReport): string {
   const categories = report.categories.length > 0 ? report.categories.join(', ') : 'general';
-  const component =
-    report.elements.length > 0 ? resolveComponentLabel(report.elements[0]) : 'unknown';
+  const firstElement = report.elements[0];
+  const component = firstElement ? resolveComponentLabel(firstElement) : 'unknown';
   return `[DevBug] ${categories} — ${component}`;
 }
 

@@ -71,7 +71,7 @@ export function useCollectionLoader({
     const shouldShuffle = shuffleEnabled || options?.forceShuffle === true;
     if (shouldShuffle) {
       const indices = shuffleArray(tracks.map((_, i) => i));
-      const shuffled = indices.map(i => tracks[i]);
+      const shuffled = indices.map(i => tracks[i]).filter((t): t is MediaTrack => t !== undefined);
       mediaTracksRef.current = shuffled;
       setTracks(shuffled);
     } else {
@@ -106,19 +106,21 @@ export function useCollectionLoader({
       applyTracks(merged);
 
       const firstTrack = mediaTracksRef.current[0];
-      const firstProvider = getDescriptor(firstTrack.provider);
-      if (firstProvider) {
-        drivingProviderRef.current = firstTrack.provider;
-        if (firstTrack.provider !== activeDescriptor?.id) {
-          setActiveProviderId(firstTrack.provider);
+      if (firstTrack) {
+        const firstProvider = getDescriptor(firstTrack.provider);
+        if (firstProvider) {
+          drivingProviderRef.current = firstTrack.provider;
+          if (firstTrack.provider !== activeDescriptor?.id) {
+            setActiveProviderId(firstTrack.provider);
+          }
+          queueSnapshot('Unified Liked loaded', merged, mediaTracksRef.current.length, 0);
+          await playTrack(0);
+          record(
+            { provider: firstTrack.provider, kind: 'liked' },
+            name ?? LIKED_SONGS_NAME,
+            firstTrack.image ?? null,
+          );
         }
-        queueSnapshot('Unified Liked loaded', merged, mediaTracksRef.current.length, 0);
-        await playTrack(0);
-        record(
-          { provider: firstTrack.provider, kind: 'liked' },
-          name ?? LIKED_SONGS_NAME,
-          firstTrack.image ?? null,
-        );
       }
       return merged.length;
     } catch (err) {
