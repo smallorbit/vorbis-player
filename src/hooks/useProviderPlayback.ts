@@ -163,7 +163,7 @@ export const useProviderPlayback = ({
       }
     } catch (error) {
       if (error instanceof AuthExpiredError) {
-        onAuthExpired?.(error.providerId as ProviderId);
+        onAuthExpired?.(error.providerId);
         return;
       }
 

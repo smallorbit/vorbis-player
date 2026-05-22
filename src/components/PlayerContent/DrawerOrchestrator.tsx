@@ -175,7 +175,7 @@ export const DrawerOrchestrator: React.FC<DrawerOrchestratorProps> = React.memo(
               onReorderTracks={onReorderQueue}
               showProviderIcons={showProviderIcons}
               radioActive={radioActive}
-              radioSeedDescription={radioState?.seedDescription}
+              radioSeedDescription={radioState?.isActive ? radioState.seedDescription : undefined}
               onSaveQueue={handleOpenSaveQueue}
               canSaveQueue={canSaveQueue}
             />
@@ -192,7 +192,7 @@ export const DrawerOrchestrator: React.FC<DrawerOrchestratorProps> = React.memo(
               onReorderTracks={onReorderQueue}
               showProviderIcons={showProviderIcons}
               radioActive={radioActive}
-              radioSeedDescription={radioState?.seedDescription}
+              radioSeedDescription={radioState?.isActive ? radioState.seedDescription : undefined}
               onSaveQueue={handleOpenSaveQueue}
               canSaveQueue={canSaveQueue}
             />
