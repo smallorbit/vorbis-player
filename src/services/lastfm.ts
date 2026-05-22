@@ -65,32 +65,81 @@ async function lastfmGet(params: Record<string, string>): Promise<unknown> {
   return data;
 }
 
+// ── Structural narrowers ────────────────────────────────────────────
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
+function readString(obj: Record<string, unknown>, key: string): string {
+  const v = obj[key];
+  return typeof v === 'string' ? v : '';
+}
+
+function readNullableString(obj: Record<string, unknown>, key: string): string | null {
+  const v = obj[key];
+  return typeof v === 'string' && v.length > 0 ? v : null;
+}
+
+function readNumber(obj: Record<string, unknown>, key: string): number {
+  const v = obj[key];
+  if (typeof v === 'number') return Number.isFinite(v) ? v : 0;
+  if (typeof v === 'string') {
+    const parsed = parseFloat(v);
+    return Number.isFinite(parsed) ? parsed : 0;
+  }
+  return 0;
+}
+
+function readObject(obj: Record<string, unknown>, key: string): Record<string, unknown> | null {
+  const v = obj[key];
+  return isPlainObject(v) ? v : null;
+}
+
+function readArray(obj: Record<string, unknown>, key: string): unknown[] {
+  const v = obj[key];
+  return Array.isArray(v) ? v : [];
+}
+
 // ── Response parsers ────────────────────────────────────────────────
 
-function parseSimilarTrack(raw: Record<string, unknown>): LastFmSimilarTrack {
-  const artist =
-    typeof raw.artist === 'object' && raw.artist !== null
-      ? ((raw.artist as Record<string, unknown>).name as string) ?? ''
-      : (raw.artist as string) ?? '';
-
+function parseSimilarTrack(raw: unknown): LastFmSimilarTrack | null {
+  if (!isPlainObject(raw)) return null;
+  const artistObj = readObject(raw, 'artist');
+  const artist = artistObj ? readString(artistObj, 'name') : readString(raw, 'artist');
   return {
-    name: (raw.name as string) ?? '',
+    name: readString(raw, 'name'),
     artist,
-    artistMbid:
-      typeof raw.artist === 'object' && raw.artist !== null
-        ? ((raw.artist as Record<string, unknown>).mbid as string) || null
-        : null,
-    trackMbid: (raw.mbid as string) || null,
-    matchScore: parseFloat(raw.match as string) || 0,
+    artistMbid: artistObj ? readNullableString(artistObj, 'mbid') : null,
+    trackMbid: readNullableString(raw, 'mbid'),
+    matchScore: readNumber(raw, 'match'),
   };
 }
 
-function parseSimilarArtist(raw: Record<string, unknown>): LastFmSimilarArtist {
+function parseSimilarArtist(raw: unknown): LastFmSimilarArtist | null {
+  if (!isPlainObject(raw)) return null;
   return {
-    name: (raw.name as string) ?? '',
-    mbid: (raw.mbid as string) || null,
-    matchScore: parseFloat(raw.match as string) || 0,
+    name: readString(raw, 'name'),
+    mbid: readNullableString(raw, 'mbid'),
+    matchScore: readNumber(raw, 'match'),
   };
+}
+
+function parseAlbumTrack(raw: unknown, fallbackArtist: string): { name: string; artist: string } | null {
+  if (!isPlainObject(raw)) return null;
+  const artistObj = readObject(raw, 'artist');
+  return {
+    name: readString(raw, 'name'),
+    artist: artistObj ? readString(artistObj, 'name') || fallbackArtist : fallbackArtist,
+  };
+}
+
+function isNotNull<T>(value: T | null): value is T {
+  return value !== null;
+}
+
+function asObject(data: unknown): Record<string, unknown> {
+  return isPlainObject(data) ? data : {};
 }
 
 // ── Public API ──────────────────────────────────────────────────────
@@ -100,93 +149,85 @@ export async function getSimilarTracks(
   track: string,
   limit = SIMILAR_TRACKS_DEFAULT_LIMIT,
 ): Promise<LastFmSimilarTrack[]> {
-  const data = (await lastfmGet({
-    method: 'track.getsimilar',
-    artist,
-    track,
-    limit: String(limit),
-    autocorrect: '1',
-  })) as Record<string, unknown>;
+  const data = asObject(
+    await lastfmGet({
+      method: 'track.getsimilar',
+      artist,
+      track,
+      limit: String(limit),
+      autocorrect: '1',
+    }),
+  );
 
-  const container = data.similartracks as Record<string, unknown> | undefined;
+  const container = readObject(data, 'similartracks');
   if (!container) return [];
 
-  const rawTracks = container.track;
-  if (!Array.isArray(rawTracks)) return [];
-
-  return rawTracks.map((t: Record<string, unknown>) => parseSimilarTrack(t));
+  return readArray(container, 'track').map(parseSimilarTrack).filter(isNotNull);
 }
 
 export async function getSimilarArtists(
   artist: string,
   limit = SIMILAR_ARTISTS_DEFAULT_LIMIT,
 ): Promise<LastFmSimilarArtist[]> {
-  const data = (await lastfmGet({
-    method: 'artist.getsimilar',
-    artist,
-    limit: String(limit),
-    autocorrect: '1',
-  })) as Record<string, unknown>;
+  const data = asObject(
+    await lastfmGet({
+      method: 'artist.getsimilar',
+      artist,
+      limit: String(limit),
+      autocorrect: '1',
+    }),
+  );
 
-  const container = data.similarartists as Record<string, unknown> | undefined;
+  const container = readObject(data, 'similarartists');
   if (!container) return [];
 
-  const rawArtists = container.artist;
-  if (!Array.isArray(rawArtists)) return [];
-
-  return rawArtists.map((a: Record<string, unknown>) => parseSimilarArtist(a));
+  return readArray(container, 'artist').map(parseSimilarArtist).filter(isNotNull);
 }
 
 export async function getArtistTopTracks(
   artist: string,
   limit = TOP_TRACKS_DEFAULT_LIMIT,
 ): Promise<LastFmSimilarTrack[]> {
-  const data = (await lastfmGet({
-    method: 'artist.gettoptracks',
-    artist,
-    limit: String(limit),
-    autocorrect: '1',
-  })) as Record<string, unknown>;
+  const data = asObject(
+    await lastfmGet({
+      method: 'artist.gettoptracks',
+      artist,
+      limit: String(limit),
+      autocorrect: '1',
+    }),
+  );
 
-  const container = data.toptracks as Record<string, unknown> | undefined;
+  const container = readObject(data, 'toptracks');
   if (!container) return [];
 
-  const rawTracks = container.track;
-  if (!Array.isArray(rawTracks)) return [];
-
-  return rawTracks.map((t: Record<string, unknown>) => ({
-    ...parseSimilarTrack(t),
-    matchScore: 1.0,
-  }));
+  return readArray(container, 'track')
+    .map(parseSimilarTrack)
+    .filter(isNotNull)
+    .map((t) => ({ ...t, matchScore: 1.0 }));
 }
 
 export async function getAlbumTracks(
   artist: string,
   album: string,
 ): Promise<{ name: string; artist: string }[]> {
-  const data = (await lastfmGet({
-    method: 'album.getinfo',
-    artist,
-    album,
-    autocorrect: '1',
-  })) as Record<string, unknown>;
+  const data = asObject(
+    await lastfmGet({
+      method: 'album.getinfo',
+      artist,
+      album,
+      autocorrect: '1',
+    }),
+  );
 
-  const albumInfo = data.album as Record<string, unknown> | undefined;
+  const albumInfo = readObject(data, 'album');
   if (!albumInfo) return [];
 
-  const tracksContainer = albumInfo.tracks as Record<string, unknown> | undefined;
+  const tracksContainer = readObject(albumInfo, 'tracks');
   if (!tracksContainer) return [];
 
-  const rawTracks = tracksContainer.track;
-  if (!Array.isArray(rawTracks)) return [];
-
-  return rawTracks.map((t: Record<string, unknown>) => ({
-    name: (t.name as string) ?? '',
-    artist:
-      typeof t.artist === 'object' && t.artist !== null
-        ? ((t.artist as Record<string, unknown>).name as string) ?? artist
-        : artist,
-  }));
+  return readArray(tracksContainer, 'track')
+    .map((raw) => parseAlbumTrack(raw, artist))
+    .filter(isNotNull);
 }
 
 /** Returns true if the Last.fm API key is configured. */
