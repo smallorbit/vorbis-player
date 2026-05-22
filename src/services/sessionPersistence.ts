@@ -42,21 +42,26 @@ export function saveSession(snapshot: SessionSnapshot): void {
   }
 }
 
+/**
+ * Structural check on the three required fields (collectionId, collectionName, trackIndex).
+ * Optional fields (queueTracks, trackTitle, savedAt, …) are trusted as-shaped without per-element validation.
+ */
+function isSessionSnapshot(value: unknown): value is SessionSnapshot {
+  if (typeof value !== 'object' || value === null) return false;
+  const obj = value as Record<string, unknown>;
+  return (
+    typeof obj.collectionId === 'string' &&
+    typeof obj.collectionName === 'string' &&
+    typeof obj.trackIndex === 'number'
+  );
+}
+
 export function loadSession(): SessionSnapshot | null {
   try {
     const raw = localStorage.getItem(SESSION_KEY);
     if (!raw) return null;
-    const parsed = JSON.parse(raw) as unknown;
-    if (
-      typeof parsed === 'object' &&
-      parsed !== null &&
-      typeof (parsed as SessionSnapshot).collectionId === 'string' &&
-      typeof (parsed as SessionSnapshot).collectionName === 'string' &&
-      typeof (parsed as SessionSnapshot).trackIndex === 'number'
-    ) {
-      return parsed as SessionSnapshot;
-    }
-    return null;
+    const parsed: unknown = JSON.parse(raw);
+    return isSessionSnapshot(parsed) ? parsed : null;
   } catch (err) {
     logCaughtError('sessionPersistence.loadSession', err);
     return null;
