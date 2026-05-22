@@ -220,6 +220,7 @@ export class DropboxPlaybackAdapter implements PlaybackProvider {
         offset += chunk.length;
       }
 
+      // WebAudio API boundary: parseID3 expects ArrayBuffer; combined.buffer is ArrayBufferLike under DOM lib typings.
       const { title, artist, album, coverArt, musicbrainzRecordingId, musicbrainzArtistId, isrc } = parseID3(combined.buffer as ArrayBuffer);
       const update: PlaybackState['trackMetadata'] = {};
       if (title && title !== track.name) update.name = title;
