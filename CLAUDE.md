@@ -152,6 +152,41 @@ Path alias: `@/` → `./src/` (e.g. `import { x } from '@/hooks/usePlayerState'`
 - Strict TypeScript; `import type` when possible; types in `src/types/`
 - Empty `catch` blocks are permitted only when paired with `logCaughtError('<context>', err)` from `src/utils/logCaughtError.ts` so swallowed failures still surface in dev. Existing rationale comments inside the catch should stay; the helper call is additive.
 
+### Type strictness baseline
+
+`tsconfig.app.json` enables the strictest reasonable set of compiler flags:
+`strict`, `noUncheckedIndexedAccess`, `noImplicitOverride`,
+`noUnusedLocals`, `noUnusedParameters`, `noFallthroughCasesInSwitch`,
+`noUncheckedSideEffectImports`, `erasableSyntaxOnly`, `verbatimModuleSyntax`.
+`exactOptionalPropertyTypes` is intentionally deferred — see issue #1598
+for the architectural decision pending on React prop conventions.
+
+Patterns this enforces:
+
+- **No unjustified `as` casts.** Casts are only acceptable at deserialization
+  boundaries (`JSON.parse`, IndexedDB `req.result`, `MessageEvent.data`,
+  `CustomEvent.detail`, `event.target as HTMLElement`, `import.meta.env.*`).
+  Anywhere else, fix the underlying type instead. Forbidden: `as any`, `@ts-ignore`,
+  `@ts-expect-error`, non-null `!` to silence a strictness error.
+- **Discriminated unions for variant shapes.** When a shape has variants that
+  carry different required fields, use a discriminated union with a literal
+  `kind` / `type` / `phase` / `isActive` field — not optional fields on a flat
+  interface. See `CollectionRef`, `ExternalLinkRequest`, `RadioProgress`,
+  `RadioState`, `ContextMenuRequest` for examples.
+- **Optional XOR nullable, never both.** A field is either `field?: T`
+  (absence means "not provided") or `field: T | null` (always present, `null`
+  is meaningful). `field?: T | null` is forbidden — under
+  `exactOptionalPropertyTypes` it becomes a three-way mess of
+  missing-vs-null-vs-undefined.
+- **Canonical types live in `src/types/`.** Inline object types repeated across
+  files should be lifted to a named export and colocated with their conceptual
+  owner (`domain.ts`, `providers.ts`, `radio.ts`, etc.). Test fixture and
+  component-local shapes can stay local.
+- **Indexed access returns `T | undefined`.** Bounds-check (`if (!item) return`),
+  default-coalesce (`?? fallback`), or destructure-with-default. Never `arr[i]!`.
+
+These conventions were established by the TypeScript strictness audit epic (#1589).
+
 ## Testing
 
 ### Unit / integration (Vitest)

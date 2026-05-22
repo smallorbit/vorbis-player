@@ -55,6 +55,7 @@ export function useHorizontalSwipeToRemove(
 
     const handleTouchStart = (e: TouchEvent) => {
       const touch = e.touches[0];
+      if (!touch) return;
       startXRef.current = touch.clientX;
       startYRef.current = touch.clientY;
       currentDeltaXRef.current = 0;
@@ -70,6 +71,7 @@ export function useHorizontalSwipeToRemove(
       if (directionLockedRef.current === 'vertical') return;
 
       const touch = e.touches[0];
+      if (!touch) return;
       const deltaX = touch.clientX - startXRef.current;
       const deltaY = touch.clientY - startYRef.current;
 

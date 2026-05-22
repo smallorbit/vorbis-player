@@ -21,31 +21,35 @@ interface AudioMetadata {
   releaseYear?: number;
 }
 
+// Byte reads use `?? 0` to satisfy noUncheckedIndexedAccess. Callers gate the
+// read with explicit length checks (`offset + N <= bytes.length`), so the
+// fallback is unreachable; treating a missing byte as zero matches the
+// pre-flag runtime behavior of bitwise ops on `undefined`.
 function readSynchsafeInt(bytes: Uint8Array, offset: number): number {
   return (
-    ((bytes[offset] & 0x7f) << 21) |
-    ((bytes[offset + 1] & 0x7f) << 14) |
-    ((bytes[offset + 2] & 0x7f) << 7) |
-    (bytes[offset + 3] & 0x7f)
+    (((bytes[offset] ?? 0) & 0x7f) << 21) |
+    (((bytes[offset + 1] ?? 0) & 0x7f) << 14) |
+    (((bytes[offset + 2] ?? 0) & 0x7f) << 7) |
+    ((bytes[offset + 3] ?? 0) & 0x7f)
   );
 }
 
 function readUint32BE(bytes: Uint8Array, offset: number): number {
   return (
-    (bytes[offset] << 24) |
-    (bytes[offset + 1] << 16) |
-    (bytes[offset + 2] << 8) |
-    bytes[offset + 3]
+    ((bytes[offset] ?? 0) << 24) |
+    ((bytes[offset + 1] ?? 0) << 16) |
+    ((bytes[offset + 2] ?? 0) << 8) |
+    (bytes[offset + 3] ?? 0)
   );
 }
 
 function readUint24BE(bytes: Uint8Array, offset: number): number {
-  return (bytes[offset] << 16) | (bytes[offset + 1] << 8) | bytes[offset + 2];
+  return ((bytes[offset] ?? 0) << 16) | ((bytes[offset + 1] ?? 0) << 8) | (bytes[offset + 2] ?? 0);
 }
 
 function decodeTextFrame(data: Uint8Array): string {
   if (data.length === 0) return '';
-  const encoding = data[0];
+  const encoding = data[0] ?? 0;
   const raw = data.slice(1);
 
   let decoded: string;
@@ -74,7 +78,7 @@ function skipNullTerminatedString(data: Uint8Array, pos: number, encoding: numbe
 
 function decodeAPIC(data: Uint8Array): { data: Uint8Array; mimeType: string } | null {
   if (data.length < 4) return null;
-  const encoding = data[0];
+  const encoding = data[0] ?? 0;
 
   let mimeEnd = 1;
   while (mimeEnd < data.length && data[mimeEnd] !== 0) mimeEnd++;
@@ -88,7 +92,7 @@ function decodeAPIC(data: Uint8Array): { data: Uint8Array; mimeType: string } | 
 
 function decodePIC(data: Uint8Array): { data: Uint8Array; mimeType: string } | null {
   if (data.length < 6) return null;
-  const encoding = data[0];
+  const encoding = data[0] ?? 0;
   const format = new TextDecoder('latin1').decode(data.slice(1, 4));
 
   // Skip past: format (3 bytes) + picture type (1 byte) = offset 5, then description
@@ -105,7 +109,7 @@ function decodePIC(data: Uint8Array): { data: Uint8Array; mimeType: string } | n
  */
 function decodeTXXX(data: Uint8Array): { description: string; value: string } | null {
   if (data.length < 2) return null;
-  const encoding = data[0];
+  const encoding = data[0] ?? 0;
 
   // Find end of description (null-terminated)
   const descEnd = skipNullTerminatedString(data, 1, encoding);
@@ -135,12 +139,12 @@ function decodeTXXX(data: Uint8Array): { description: string; value: string } | 
 function extractYearFromDateString(value: string): number | null {
   const match = value.match(/^(\d{4})/);
   if (!match) return null;
-  const year = parseInt(match[1], 10);
+  const year = parseInt(match[1] ?? '', 10);
   return year > 0 && year < 3000 ? year : null;
 }
 
 function readUint32LE(bytes: Uint8Array, offset: number): number {
-  return bytes[offset] | (bytes[offset + 1] << 8) | (bytes[offset + 2] << 16) | (bytes[offset + 3] << 24);
+  return (bytes[offset] ?? 0) | ((bytes[offset + 1] ?? 0) << 8) | ((bytes[offset + 2] ?? 0) << 16) | ((bytes[offset + 3] ?? 0) << 24);
 }
 
 function parseFlac(bytes: Uint8Array): AudioMetadata {
@@ -148,7 +152,7 @@ function parseFlac(bytes: Uint8Array): AudioMetadata {
   let offset = 4; // skip "fLaC"
 
   while (offset + 4 <= bytes.length) {
-    const header = bytes[offset];
+    const header = bytes[offset] ?? 0;
     const isLast = (header & 0x80) !== 0;
     const blockType = header & 0x7f;
     const blockLength = readUint24BE(bytes, offset + 1);
@@ -196,13 +200,13 @@ function parseFlac(bytes: Uint8Array): AudioMetadata {
             const picBytes = Uint8Array.from(atob(value), (c) => c.charCodeAt(0));
             let p = 0;
             p += 4; // picture type
-            const mimeLen = (picBytes[p] << 24) | (picBytes[p+1] << 16) | (picBytes[p+2] << 8) | picBytes[p+3];
+            const mimeLen = ((picBytes[p] ?? 0) << 24) | ((picBytes[p+1] ?? 0) << 16) | ((picBytes[p+2] ?? 0) << 8) | (picBytes[p+3] ?? 0);
             p += 4;
             const mimeType = new TextDecoder('latin1').decode(picBytes.slice(p, p + mimeLen)) || 'image/jpeg';
             p += mimeLen;
-            const descLen = (picBytes[p] << 24) | (picBytes[p+1] << 16) | (picBytes[p+2] << 8) | picBytes[p+3];
+            const descLen = ((picBytes[p] ?? 0) << 24) | ((picBytes[p+1] ?? 0) << 16) | ((picBytes[p+2] ?? 0) << 8) | (picBytes[p+3] ?? 0);
             p += 4 + descLen + 16; // skip desc + width/height/depth/colors
-            const dataLen = (picBytes[p] << 24) | (picBytes[p+1] << 16) | (picBytes[p+2] << 8) | picBytes[p+3];
+            const dataLen = ((picBytes[p] ?? 0) << 24) | ((picBytes[p+1] ?? 0) << 16) | ((picBytes[p+2] ?? 0) << 8) | (picBytes[p+3] ?? 0);
             p += 4;
             result.coverArt = { data: picBytes.slice(p, p + dataLen), mimeType };
           } catch (err) {
@@ -242,8 +246,8 @@ export function parseID3(buffer: ArrayBuffer): AudioMetadata {
     return {};
   }
 
-  const majorVersion = bytes[3];
-  const flags = bytes[5];
+  const majorVersion = bytes[3] ?? 0;
+  const flags = bytes[5] ?? 0;
   const tagSize = readSynchsafeInt(bytes, 6);
 
   let offset = 10;
@@ -265,8 +269,8 @@ export function parseID3(buffer: ArrayBuffer): AudioMetadata {
   if (majorVersion === 2) {
     // ID3v2.2: 3-char IDs, 3-byte sizes, no frame flags
     while (offset + 6 <= end) {
-      if (bytes[offset] === 0) break;
-      const frameId = String.fromCharCode(bytes[offset], bytes[offset + 1], bytes[offset + 2]);
+      if ((bytes[offset] ?? 0) === 0) break;
+      const frameId = String.fromCharCode(bytes[offset] ?? 0, bytes[offset + 1] ?? 0, bytes[offset + 2] ?? 0);
       const frameSize = readUint24BE(bytes, offset + 3);
       offset += 6;
 
@@ -288,12 +292,12 @@ export function parseID3(buffer: ArrayBuffer): AudioMetadata {
   } else {
     // ID3v2.3 and v2.4: 4-char IDs, 4-byte sizes, 2-byte frame flags
     while (offset + 10 <= end) {
-      if (bytes[offset] === 0) break;
+      if ((bytes[offset] ?? 0) === 0) break;
       const frameId = String.fromCharCode(
-        bytes[offset],
-        bytes[offset + 1],
-        bytes[offset + 2],
-        bytes[offset + 3],
+        bytes[offset] ?? 0,
+        bytes[offset + 1] ?? 0,
+        bytes[offset + 2] ?? 0,
+        bytes[offset + 3] ?? 0,
       );
       const frameSize =
         majorVersion === 4

@@ -221,8 +221,9 @@ export function DevBugFAB() {
 
   const handleAreaSelected = useCallback(
     (_elements: Element[], infos: SelectedElement[]) => {
-      if (infos.length > 0) {
-        panel.open(infos[0]);
+      const first = infos[0];
+      if (first) {
+        panel.open(first);
       }
     },
     [panel],

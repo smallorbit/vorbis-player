@@ -59,8 +59,9 @@ export function startPerfCapture(): void {
   try {
     lcpObserver = new PerformanceObserver((list) => {
       const entries = list.getEntries();
-      if (entries.length > 0) {
-        latestLcp = entries[entries.length - 1].startTime;
+      const last = entries[entries.length - 1];
+      if (last) {
+        latestLcp = last.startTime;
       }
     });
     lcpObserver.observe({ type: 'largest-contentful-paint', buffered: true });

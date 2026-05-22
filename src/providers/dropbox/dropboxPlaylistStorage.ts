@@ -273,9 +273,11 @@ export async function listSavedPlaylists(
   await Promise.all(
     collections.map(async (collection, i) => {
       try {
-        const data = await loadPlaylistFile(auth, filePaths[i]);
+        const path = filePaths[i];
+        if (!path) return;
+        const data = await loadPlaylistFile(auth, path);
         logLibrary('listSavedPlaylists: "%s" file=%s data=%s tracks=%d',
-          collection.name, filePaths[i], data ? 'loaded' : 'null', data?.tracks?.length ?? -1);
+          collection.name, path, data ? 'loaded' : 'null', data?.tracks?.length ?? -1);
         if (data) {
           collection.trackCount = data.tracks.length;
           const albumMap = buildAlbumCoverMap(data.tracks);
