@@ -141,10 +141,15 @@ function renderAnnotation(ctx: CanvasRenderingContext2D, annotation: Annotation,
       ctx.restore();
       return;
     }
+    const [first, ...rest] = annotation.points;
+    if (!first) {
+      ctx.restore();
+      return;
+    }
     ctx.beginPath();
-    ctx.moveTo(annotation.points[0].x * dpr, annotation.points[0].y * dpr);
-    for (let i = 1; i < annotation.points.length; i++) {
-      ctx.lineTo(annotation.points[i].x * dpr, annotation.points[i].y * dpr);
+    ctx.moveTo(first.x * dpr, first.y * dpr);
+    for (const point of rest) {
+      ctx.lineTo(point.x * dpr, point.y * dpr);
     }
     ctx.stroke();
   }

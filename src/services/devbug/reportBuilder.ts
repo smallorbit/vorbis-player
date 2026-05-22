@@ -91,7 +91,7 @@ function isGenericName(name: string): boolean {
 
 function unwrapDisplayName(displayName: string): string {
   const match = displayName.match(/^(?:Styled|ForwardRef|Memo)\((.+)\)$/);
-  return match ? match[1] : displayName;
+  return match?.[1] ?? displayName;
 }
 
 export function getReactComponentName(element: Element): string | null {

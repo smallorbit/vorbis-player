@@ -69,7 +69,7 @@ export const MosaicThumbnail: React.FC<MosaicThumbnailProps> = React.memo(
     // Build the 4 quadrants
     let quadrants: (string | null)[];
     if (resolved.length >= 4) {
-      quadrants = [resolved[0], resolved[1], resolved[2], resolved[3]];
+      quadrants = [resolved[0] ?? null, resolved[1] ?? null, resolved[2] ?? null, resolved[3] ?? null];
     } else {
       // 2-3 paths → diagonal duplication: A in Q1+Q4, B in Q2+Q3
       const a = resolved[0] ?? null;

@@ -94,7 +94,7 @@ export default function SaveQueueDialog({ onSave, onClose, availableProviders, t
     });
     return `Queue — ${date}`;
   });
-  const [provider, setProvider] = useState<ProviderId>(availableProviders[0]);
+  const [provider, setProvider] = useState<ProviderId>(availableProviders[0] ?? 'spotify');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
