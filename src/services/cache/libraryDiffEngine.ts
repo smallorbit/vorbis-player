@@ -85,8 +85,7 @@ async function syncPlaylists(newTotal: number, signal: AbortSignal): Promise<Cac
 
   if (signal.aborted) throw new DOMException('Request aborted', 'AbortError');
 
-  const playlists = await getAllUserPlaylists(signal);
-  const allFetched = playlists as CachedPlaylistInfo[];
+  const allFetched: CachedPlaylistInfo[] = await getAllUserPlaylists(signal);
 
   for (let i = 0; i < allFetched.length; i++) {
     const p = allFetched[i];
