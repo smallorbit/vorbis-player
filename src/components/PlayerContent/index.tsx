@@ -41,15 +41,15 @@ export interface PlaybackHandlers {
 interface PlayerContentProps {
   isPlaying: boolean;
   showLibrary: boolean;
-  onAlbumArtBoundsChange?: (bounds: AlbumArtBounds | null) => void;
+  onAlbumArtBoundsChange?: ((bounds: AlbumArtBounds | null) => void) | undefined;
   handlers: PlaybackHandlers;
-  currentTrackProvider?: ProviderId;
-  radioState?: RadioState;
-  isRadioAvailable?: boolean;
-  radioActive?: boolean;
-  mediaTracksRef?: React.RefObject<MediaTrack[]>;
-  radioProgress?: RadioProgress | null;
-  onDismissRadioProgress?: () => void;
+  currentTrackProvider?: ProviderId | undefined;
+  radioState?: RadioState | undefined;
+  isRadioAvailable?: boolean | undefined;
+  radioActive?: boolean | undefined;
+  mediaTracksRef?: React.RefObject<MediaTrack[]> | undefined;
+  radioProgress?: RadioProgress | null | undefined;
+  onDismissRadioProgress?: (() => void) | undefined;
 }
 
 const PlayerContent: React.FC<PlayerContentProps> = React.memo(({

@@ -81,7 +81,7 @@ interface SaveQueueDialogProps {
   onClose: () => void;
   availableProviders: ProviderId[];
   trackProviders: Set<ProviderId>;
-  defaultName?: string;
+  defaultName?: string | undefined;
 }
 
 export default function SaveQueueDialog({ onSave, onClose, availableProviders, trackProviders, defaultName }: SaveQueueDialogProps) {

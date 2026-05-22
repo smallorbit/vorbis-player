@@ -68,11 +68,11 @@ interface QueueTrackListProps {
   tracks: MediaTrack[];
   currentTrackIndex: number;
   onTrackSelect: (index: number) => void;
-  onRemoveTrack?: (index: number) => void;
-  onReorderTracks?: (fromIndex: number, toIndex: number) => void;
-  isOpen?: boolean;
-  showProviderIcons?: boolean;
-  canEdit?: boolean;
+  onRemoveTrack?: ((index: number) => void) | undefined;
+  onReorderTracks?: ((fromIndex: number, toIndex: number) => void) | undefined;
+  isOpen?: boolean | undefined;
+  showProviderIcons?: boolean | undefined;
+  canEdit?: boolean | undefined;
 }
 
 const useIsTouchDevice = () => {

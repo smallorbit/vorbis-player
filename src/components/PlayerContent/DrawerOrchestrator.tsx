@@ -61,14 +61,14 @@ interface DrawerOrchestratorProps {
   showQueue: boolean;
   onCloseQueue: () => void;
   onTrackSelect: (index: number) => void;
-  onRemoveFromQueue?: (index: number) => void;
-  onReorderQueue?: (fromIndex: number, toIndex: number) => void;
+  onRemoveFromQueue?: ((index: number) => void) | undefined;
+  onReorderQueue?: ((fromIndex: number, toIndex: number) => void) | undefined;
   isMobile: boolean;
-  radioActive?: boolean;
-  radioState?: RadioState;
-  mediaTracksRef?: React.RefObject<MediaTrack[]>;
-  radioProgress?: RadioProgress | null;
-  onDismissRadioProgress?: () => void;
+  radioActive?: boolean | undefined;
+  radioState?: RadioState | undefined;
+  mediaTracksRef?: React.RefObject<MediaTrack[]> | undefined;
+  radioProgress?: RadioProgress | null | undefined;
+  onDismissRadioProgress?: (() => void) | undefined;
   onOpenQueueFromToast: () => void;
 }
 
@@ -155,7 +155,9 @@ export const DrawerOrchestrator: React.FC<DrawerOrchestratorProps> = React.memo(
       {
         id: 'radio-progress',
         duration: isDone ? 6000 : Infinity,
-        onAutoClose: isDone ? onDismissRadioProgress : undefined,
+        // sonner's ExternalToast types `onAutoClose?: (...)` as not-undefined under EOPT;
+        // spread it conditionally to honour the third-party boundary.
+        ...(isDone && { onAutoClose: onDismissRadioProgress }),
       },
     );
   }, [radioProgress, onDismissRadioProgress, onOpenQueueFromToast]);

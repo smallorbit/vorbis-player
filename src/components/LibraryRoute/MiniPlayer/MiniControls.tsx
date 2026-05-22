@@ -3,13 +3,13 @@ import { ControlButton, ControlButtonRow } from './MiniPlayer.styled';
 
 export interface MiniControlsProps {
   isPlaying: boolean;
-  isRadioAvailable?: boolean;
-  isRadioGenerating?: boolean;
+  isRadioAvailable?: boolean | undefined;
+  isRadioGenerating?: boolean | undefined;
   onPlay: () => void;
   onPause: () => void;
   onNext: () => void;
   onPrevious: () => void;
-  onStartRadio?: () => void;
+  onStartRadio?: (() => void) | undefined;
 }
 
 // SVG path data sourced from src/components/controls/PlaybackControls.tsx

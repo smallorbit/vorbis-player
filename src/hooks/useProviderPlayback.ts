@@ -10,14 +10,14 @@ import { loadSession } from '@/services/sessionPersistence';
 
 interface UseProviderPlaybackProps {
   setCurrentTrackIndex: (index: number) => void;
-  activeDescriptor?: ProviderDescriptor | null;
+  activeDescriptor?: ProviderDescriptor | null | undefined;
   mediaTracksRef: React.MutableRefObject<MediaTrack[]>;
   /**
    * Ref tracking the current track index. Used by the re-prime listener so
    * the handler reads the live index without re-binding on every change.
    */
-  currentTrackIndexRef?: React.MutableRefObject<number>;
-  onAuthExpired?: (providerId: ProviderId) => void;
+  currentTrackIndexRef?: React.MutableRefObject<number> | undefined;
+  onAuthExpired?: ((providerId: ProviderId) => void) | undefined;
   /**
    * Shared guard ref used by `usePlaybackSubscription` to ignore stale provider
    * index updates during a transition. `playTrack` sets this to the target
@@ -25,7 +25,7 @@ interface UseProviderPlaybackProps {
    * the next track) so that provider state events emitted during the handoff
    * cannot flip `currentTrackIndex` to the wrong track.
    */
-  expectedTrackIdRef?: React.MutableRefObject<string | null>;
+  expectedTrackIdRef?: React.MutableRefObject<string | null> | undefined;
 }
 
 export const useProviderPlayback = ({

@@ -10,10 +10,10 @@ import type { ProviderId } from '@/types/domain';
 export interface PinnedItem {
   kind: 'playlist' | 'album' | 'liked';
   id: string;
-  provider?: ProviderId;
+  provider?: ProviderId | undefined;
   name: string;
-  imageUrl?: string;
-  subtitle?: string;
+  imageUrl?: string | undefined;
+  subtitle?: string | undefined;
 }
 
 export interface PinnedSectionState {

@@ -15,7 +15,7 @@ import { HomeStack } from './views.styled';
 export interface HomeViewProps {
   layout: 'row' | 'grid';
   lastSession: SessionSnapshot | null;
-  onResume?: () => void;
+  onResume?: (() => void) | undefined;
   onSelectCollection: (
     kind: LibraryItemKind,
     id: string,
@@ -23,7 +23,7 @@ export interface HomeViewProps {
     provider?: ProviderId,
   ) => void;
   onNavigate: (view: LibraryRouteView) => void;
-  onContextMenuRequest?: (req: ContextMenuRequest) => void;
+  onContextMenuRequest?: ((req: ContextMenuRequest) => void) | undefined;
 }
 
 const HomeView: React.FC<HomeViewProps> = ({

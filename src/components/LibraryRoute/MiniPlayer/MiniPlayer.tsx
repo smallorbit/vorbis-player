@@ -12,14 +12,14 @@ import {
 
 export interface MiniPlayerProps {
   isPlaying: boolean;
-  isRadioAvailable?: boolean;
-  isRadioGenerating?: boolean;
+  isRadioAvailable?: boolean | undefined;
+  isRadioGenerating?: boolean | undefined;
   onPlay: () => void;
   onPause: () => void;
   onNext: () => void;
   onPrevious: () => void;
   onExpand: () => void;
-  onStartRadio?: () => void;
+  onStartRadio?: (() => void) | undefined;
 }
 
 const MiniPlayer: React.FC<MiniPlayerProps> = ({

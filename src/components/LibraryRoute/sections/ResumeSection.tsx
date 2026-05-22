@@ -5,7 +5,7 @@ import ResumeHero from './ResumeHero';
 
 export interface ResumeSectionProps {
   lastSession: SessionSnapshot | null;
-  onResume?: () => void;
+  onResume?: (() => void) | undefined;
 }
 
 const ResumeSection: React.FC<ResumeSectionProps> = ({ lastSession, onResume }) => {
