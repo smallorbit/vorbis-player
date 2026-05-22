@@ -31,21 +31,33 @@ export type LibraryRouteView =
   | 'liked'
   | 'search';
 
-export type LibraryItemKind = 'playlist' | 'album' | 'liked' | 'recently-played';
+/** Kinds a library card represents directly (no meta-wrappers). */
+export type LibraryCollectionKind = 'playlist' | 'album' | 'liked';
 
-export interface ContextMenuRequest {
-  kind: LibraryItemKind;
+export type LibraryItemKind = LibraryCollectionKind | 'recently-played';
+
+interface ContextMenuRequestBase {
   id: string;
   provider?: ProviderId;
   name: string;
   anchorRect: DOMRect;
   /** The CardButton element that triggered the menu; used to return focus on keyboard dismiss. */
   triggerElement?: HTMLElement;
-  /** When kind === 'recently-played', the underlying collection kind so the menu can dispatch the right schema. */
-  originalKind?: 'playlist' | 'album' | 'liked';
-  /** When kind === 'recently-played', back-pointer used by the "Remove from history" action. */
-  recentRef?: CollectionRef;
 }
+
+export type ContextMenuRequest = ContextMenuRequestBase &
+  (
+    | { kind: 'playlist' }
+    | { kind: 'album' }
+    | { kind: 'liked' }
+    | {
+        kind: 'recently-played';
+        /** Underlying collection kind so the menu can dispatch the right schema. */
+        originalKind: 'playlist' | 'album' | 'liked';
+        /** Back-pointer used by the "Remove from history" action. */
+        recentRef: CollectionRef;
+      }
+  );
 
 export type {
   CachedPlaylistInfo,

@@ -1,6 +1,7 @@
 import { memo, Fragment, useState, useCallback, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import type { ArtistInfo } from '../../services/spotify';
+import type { ProviderId } from '@/types/domain';
 import { useProviderContext } from '../../contexts/ProviderContext';
 import { spotifyLibrarySyncEngine } from '../../services/cache/librarySyncEngine';
 import { PlayerTrackName, PlayerTrackAlbum, AlbumLink, PlayerTrackArtist, TrackInfoOnlyRow, ArtistLink } from './styled';
@@ -10,7 +11,7 @@ import TrackRadioPopover from './TrackRadioPopover';
 interface TrackInfoProps {
     track: {
         name?: string;
-        provider?: string;
+        provider?: ProviderId;
         artists?: string;
         artistsData?: ArtistInfo[];
         album?: string;
@@ -45,7 +46,7 @@ const areTrackInfoPropsEqual = (
 
 type PopoverState =
     | { type: 'artist'; artistName: string; artistUrl: string; rect: DOMRect }
-    | { type: 'album'; albumId: string; albumName: string; rect: DOMRect }
+    | { type: 'album'; albumId: string; albumName: string; artistName: string; trackImage: string; rect: DOMRect }
     | { type: 'radio'; trackName: string; rect: DOMRect }
     | null;
 
@@ -55,7 +56,7 @@ const TrackInfo = memo<TrackInfoProps>(({ track, isMobile, isTablet, onArtistBro
     const artistRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
     const albumRef = useRef<HTMLButtonElement>(null);
     const { activeDescriptor, getDescriptor } = useProviderContext();
-    const trackDescriptor = track?.provider ? getDescriptor(track.provider as import('@/types/domain').ProviderId) : activeDescriptor;
+    const trackDescriptor = track?.provider ? getDescriptor(track.provider) : activeDescriptor;
     const capabilities = trackDescriptor?.capabilities;
     const catalog = trackDescriptor?.catalog;
 
@@ -90,8 +91,19 @@ const TrackInfo = memo<TrackInfoProps>(({ track, isMobile, isTablet, onArtistBro
         if (!track?.albumId || !track?.album) return;
         const target = e.currentTarget as HTMLElement;
         const rect = target.getBoundingClientRect();
-        setPopover({ type: 'album', albumId: track.albumId, albumName: track.album, rect });
-    }, [track?.albumId, track?.album]);
+        // Capture artistName + image at click time. The popover may outlive the
+        // current `track` value (e.g. next song starts mid-popover), so reading
+        // `track.artists` during render in buildAlbumOptions/optimisticAddAlbum
+        // could surface the wrong artist. Snapshot what the user clicked.
+        setPopover({
+            type: 'album',
+            albumId: track.albumId,
+            albumName: track.album,
+            artistName: track.artists ?? '',
+            trackImage: track.image ?? '',
+            rect,
+        });
+    }, [track?.albumId, track?.album, track?.artists, track?.image]);
 
     const handleTrackNameClick = useCallback((e: React.MouseEvent) => {
         e.preventDefault();
@@ -114,13 +126,13 @@ const TrackInfo = memo<TrackInfoProps>(({ track, isMobile, isTablet, onArtistBro
         ? DiscogsIcon
         : SpotifyIcon;
 
-    const getAlbumExternalUrl = (albumId: string, albumName: string): string | undefined => {
+    const getAlbumExternalUrl = (albumId: string, albumName: string, artistName: string): string | undefined => {
         if (trackDescriptor?.getExternalUrls) {
-            const urls = trackDescriptor.getExternalUrls({ type: 'album', name: albumName, artistName: track?.artists ?? '' });
+            const urls = trackDescriptor.getExternalUrls({ type: 'album', name: albumName, artistName });
             return urls?.[0]?.url;
         }
         if (trackDescriptor?.getExternalUrl) {
-            return trackDescriptor.getExternalUrl({ type: 'album', name: albumName, artistName: track?.artists ?? '' });
+            return trackDescriptor.getExternalUrl({ type: 'album', name: albumName, artistName });
         }
         if (trackDescriptor?.id === 'spotify' && albumId) {
             return `https://open.spotify.com/album/${albumId}`;
@@ -224,8 +236,8 @@ const TrackInfo = memo<TrackInfoProps>(({ track, isMobile, isTablet, onArtistBro
                             spotifyLibrarySyncEngine.optimisticAddAlbum({
                                 id: popover.albumId,
                                 name: popover.albumName,
-                                artists: track?.artists ?? '',
-                                images: track?.image ? [{ url: track.image, height: null, width: null }] : [],
+                                artists: popover.artistName,
+                                images: popover.trackImage ? [{ url: popover.trackImage, height: null, width: null }] : [],
                                 release_date: '',
                                 total_tracks: 0,
                                 uri: `spotify:album:${popover.albumId}`,
@@ -237,7 +249,7 @@ const TrackInfo = memo<TrackInfoProps>(({ track, isMobile, isTablet, onArtistBro
             });
         }
         if (hasExternalLink) {
-            const externalUrls = trackDescriptor?.getExternalUrls?.({ type: 'album', name: popover.albumName, artistName: track?.artists ?? '' });
+            const externalUrls = trackDescriptor?.getExternalUrls?.({ type: 'album', name: popover.albumName, artistName: popover.artistName });
             if (externalUrls) {
                 for (const entry of externalUrls) {
                     const IconComponent = ICON_MAP[entry.icon] ?? DiscogsIcon;
@@ -248,7 +260,7 @@ const TrackInfo = memo<TrackInfoProps>(({ track, isMobile, isTablet, onArtistBro
                     });
                 }
             } else {
-                const albumUrl = getAlbumExternalUrl(popover.albumId, popover.albumName);
+                const albumUrl = getAlbumExternalUrl(popover.albumId, popover.albumName, popover.artistName);
                 if (albumUrl) {
                     options.push({
                         label: `View album on ${providerName}`,
