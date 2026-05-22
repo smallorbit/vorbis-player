@@ -103,7 +103,7 @@ export const DrawerOrchestrator: React.FC<DrawerOrchestratorProps> = React.memo(
     [connectedProviderIds],
   );
   const canSaveQueue = saveProviders.length > 0 && tracks.length > 0;
-  const trackProviders = useMemo(() => new Set(tracks.map(t => t.provider).filter(Boolean)), [tracks]);
+  const trackProviders = useMemo(() => new Set(tracks.map(t => t.provider)), [tracks]);
 
   const handleOpenSaveQueue = useCallback(() => setShowSaveQueueDialog(true), []);
   const handleCloseSaveQueue = useCallback(() => setShowSaveQueueDialog(false), []);
