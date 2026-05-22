@@ -80,7 +80,7 @@ interface SaveQueueDialogProps {
   onSave: (name: string, provider: ProviderId) => Promise<boolean>;
   onClose: () => void;
   availableProviders: ProviderId[];
-  trackProviders: Set<string | undefined>;
+  trackProviders: Set<ProviderId>;
   defaultName?: string;
 }
 
@@ -124,7 +124,7 @@ export default function SaveQueueDialog({ onSave, onClose, availableProviders, t
 
   const showProviderSelector = availableProviders.length > 1;
   const targetDescriptor = providerRegistry.get(provider);
-  const hasOtherProviderTracks = Array.from(trackProviders).some(p => p && p !== provider);
+  const hasOtherProviderTracks = Array.from(trackProviders).some(p => p !== provider);
 
   return (
     <Dialog open onOpenChange={(open) => { if (!open && !saving) onClose(); }}>

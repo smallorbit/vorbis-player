@@ -84,7 +84,7 @@ const AudioPlayerComponent = () => {
   const { currentTrack, currentTrackIndex, setCurrentTrackIndex, showQueue, setShowQueue } = useCurrentTrackContext();
 
   const resolveDisplayProvider = useCallback((): import('@/types/domain').ProviderId | undefined => (
-    (currentTrack?.provider as import('@/types/domain').ProviderId | undefined)
+    currentTrack?.provider
     ?? playbackProviderRef.current
     ?? undefined
   ), [currentTrack, playbackProviderRef]);
@@ -125,7 +125,7 @@ const AudioPlayerComponent = () => {
   );
 
   const handleAlbumPlay = useCallback((albumId: string) => {
-    collectionProviderRef.current = currentTrack?.provider as import('@/types/domain').ProviderId | undefined;
+    collectionProviderRef.current = currentTrack?.provider;
     handlers.loadCollection(
       toAlbumPlaylistId(albumId),
       currentTrack?.provider,
@@ -230,6 +230,7 @@ const AudioPlayerComponent = () => {
     toast(`Couldn't resume your last session.`, { id: RESUME_TOAST_ID, duration: Infinity });
   }, [resetLastSession]);
   const withResumeDismiss = useCallback(
+    // Generic-recovery cast: TS can't re-derive T from the wrapper's parameter list.
     <T extends (...args: never[]) => unknown>(fn: T): T => ((...args) => {
       toast.dismiss(RESUME_TOAST_ID);
       return fn(...args);
