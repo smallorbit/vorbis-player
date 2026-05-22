@@ -48,7 +48,7 @@ const SpotifyPlayerControls = memo<SpotifyPlayerControlsProps>(({
   const { isMobile, isTablet, isDesktop } = usePlayerSizingContext();
   const { hasMultipleProviders, enabledProviderIds } = useProviderContext();
   const showProviderBadge = hasMultipleProviders && enabledProviderIds.length > 1;
-  const trackProvider = currentTrack?.provider as ProviderId | undefined;
+  const trackProvider = currentTrack?.provider;
 
   // Use Spotify controls hook — like state is always provided via props from usePlayerLogic
   const {
