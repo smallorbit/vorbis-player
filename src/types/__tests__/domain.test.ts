@@ -19,7 +19,7 @@ describe('collectionRefToKey', () => {
   });
 
   it('serializes a spotify liked ref', () => {
-    const ref: CollectionRef = { provider: 'spotify', kind: 'liked', id: '' };
+    const ref: CollectionRef = { provider: 'spotify', kind: 'liked' };
     expect(collectionRefToKey(ref)).toBe('spotify:liked:');
   });
 });
@@ -81,7 +81,7 @@ describe('keyToCollectionRef', () => {
     const refs: CollectionRef[] = [
       { provider: 'spotify', kind: 'playlist', id: 'p1' },
       { provider: 'spotify', kind: 'album', id: 'a1' },
-      { provider: 'spotify', kind: 'liked', id: '' },
+      { provider: 'spotify', kind: 'liked' },
       { provider: 'dropbox', kind: 'folder', id: '/path/to/music' },
     ];
 
@@ -91,5 +91,13 @@ describe('keyToCollectionRef', () => {
       const parsed = keyToCollectionRef(key);
       expect(parsed).toEqual(ref);
     }
+  });
+
+  it('parses a spotify liked key (no id segment)', () => {
+    // #given a key with an empty id segment (the canonical 'liked' serialization)
+    // #when
+    const parsed = keyToCollectionRef('spotify:liked:');
+    // #then — must omit the id field, matching the 'liked' variant shape
+    expect(parsed).toEqual({ provider: 'spotify', kind: 'liked' });
   });
 });

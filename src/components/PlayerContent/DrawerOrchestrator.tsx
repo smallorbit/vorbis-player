@@ -135,11 +135,12 @@ export const DrawerOrchestrator: React.FC<DrawerOrchestratorProps> = React.memo(
       return;
     }
     const isDone = radioProgress.phase === 'done';
+    const trackCount = isDone ? radioProgress.trackCount : undefined;
     toast.custom(
       (toastId: string | number) => (
         <RadioProgressContent
           phase={radioProgress.phase}
-          trackCount={radioProgress.trackCount}
+          trackCount={trackCount}
           onDismiss={() => {
             toast.dismiss(toastId);
             onDismissRadioProgress();

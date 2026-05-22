@@ -50,8 +50,10 @@ const dropboxDescriptor: ProviderDescriptor = {
     hasExternalLink: true,
     externalLinkLabel: 'Search Discogs',
   },
-  getExternalUrls({ type, name, artistName }) {
-    const isArtist = type === 'artist';
+  getExternalUrls(info) {
+    const isArtist = info.type === 'artist';
+    const name = info.name;
+    const artistName = info.type === 'album' ? info.artistName : '';
     const query = isArtist ? name : (artistName ? `${artistName} ${name}` : name);
     const discogsType = isArtist ? 'artist' : 'release';
     const mbType = isArtist ? 'artist' : 'release';

@@ -47,6 +47,7 @@ function spotifyTrackToMediaTrack(track: Track): MediaTrack {
       ? `https://open.spotify.com/track/${track.id}`
       : undefined,
     addedAt: track.added_at,
+    genres: track.genres ?? [],
   };
 }
 
@@ -57,11 +58,13 @@ function spotifyPlaylistToMediaCollection(pl: PlaylistInfo): MediaCollection {
     provider: 'spotify',
     kind: 'playlist',
     name: pl.name,
-    description: pl.description,
+    description: pl.description ?? undefined,
     imageUrl: getLargestImage(pl.images),
     trackCount: pl.tracks?.total ?? undefined,
     ownerName: pl.owner?.display_name ?? undefined,
     revision: pl.snapshot_id,
+    // Spotify playlist API doesn't return genre information
+    genres: [],
   };
 }
 
@@ -76,7 +79,7 @@ function spotifyAlbumToMediaCollection(album: AlbumInfo): MediaCollection {
     imageUrl: getLargestImage(album.images),
     trackCount: album.total_tracks,
     // Genres come from the Spotify album object (may be empty for simplified library responses)
-    genres: album.genres,
+    genres: album.genres ?? [],
   };
 }
 

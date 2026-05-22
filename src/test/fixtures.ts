@@ -13,6 +13,7 @@ export function makeTrack(overrides?: Partial<MediaTrack>): MediaTrack {
     albumId: 'album-1',
     durationMs: 210000,
     image: 'https://i.scdn.co/image/test',
+    genres: [],
     ...overrides,
   };
 }
@@ -29,6 +30,7 @@ export function makeMediaTrack(overrides?: Partial<MediaTrack>): MediaTrack {
     artists: 'Test Artist',
     album: 'Test Album',
     durationMs: 210000,
+    genres: [],
     ...overrides,
   };
 }
