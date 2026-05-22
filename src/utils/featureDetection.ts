@@ -5,11 +5,6 @@
 
 import type { ViewportInfo } from './sizingUtils';
 
-// Type definition for Window with Visual Viewport API support
-interface WindowWithVisualViewport extends Window {
-  visualViewport: VisualViewport | null;
-}
-
 export interface BrowserFeatures {
   visualViewport: boolean;
   containerQueries: boolean;
@@ -43,7 +38,7 @@ export interface BrowserFeatures {
 export const detectBrowserFeatures = (): BrowserFeatures => {
   const features: BrowserFeatures = {
     // Visual Viewport API
-    visualViewport: 'visualViewport' in window && !!(window as WindowWithVisualViewport).visualViewport,
+    visualViewport: !!window.visualViewport,
     
     // CSS Container Queries
     containerQueries: CSS.supports('container-type', 'inline-size'),
@@ -117,15 +112,15 @@ const getFallbackValues = (features: BrowserFeatures) => {
   return {
     // Viewport fallbacks
     getViewportWidth: () => {
-      if (features.visualViewport && (window as WindowWithVisualViewport).visualViewport) {
-        return (window as WindowWithVisualViewport).visualViewport!.width || window.innerWidth;
+      if (features.visualViewport && window.visualViewport) {
+        return window.visualViewport.width || window.innerWidth;
       }
       return window.innerWidth;
     },
     
     getViewportHeight: () => {
-      if (features.visualViewport && (window as WindowWithVisualViewport).visualViewport) {
-        return (window as WindowWithVisualViewport).visualViewport!.height || window.innerHeight;
+      if (features.visualViewport && window.visualViewport) {
+        return window.visualViewport.height || window.innerHeight;
       }
       return window.innerHeight;
     },
@@ -213,8 +208,8 @@ export const createEnhancedEventListeners = (
   listeners.push({ element: window, event: 'orientationchange', handler: orientationHandler });
   
   // Visual Viewport API listener (if supported)
-  if (features.visualViewport && (window as WindowWithVisualViewport).visualViewport) {
-    const visualViewport = (window as WindowWithVisualViewport).visualViewport!;
+  if (features.visualViewport && window.visualViewport) {
+    const visualViewport = window.visualViewport;
     const visualViewportHandler = () => callback();
     visualViewport.addEventListener('resize', visualViewportHandler);
     visualViewport.addEventListener('scroll', visualViewportHandler);
