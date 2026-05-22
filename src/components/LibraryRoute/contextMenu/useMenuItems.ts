@@ -91,9 +91,7 @@ export function useMenuItems(
     if (!request) return [];
 
     const effectiveKind: 'playlist' | 'album' | 'liked' =
-      request.kind === 'recently-played'
-        ? request.originalKind ?? 'playlist'
-        : (request.kind as 'playlist' | 'album' | 'liked');
+      request.kind === 'recently-played' ? request.originalKind : request.kind;
 
     const isPlaylistKind = effectiveKind === 'playlist';
     const isAlbumKind = effectiveKind === 'album';
