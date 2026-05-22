@@ -94,14 +94,14 @@ export interface RadioResult {
 
 // ── Radio state ──────────────────────────────────────────────────────
 
-// TODO(#1589): discriminate RadioState by `isActive` once #1582 lands.
-// Proposed shape:
-//   type RadioState =
-//     | { isActive: false; isGenerating: boolean; error: string | null; lastMatchStats: RadioMatchStats | null }
-//     | { isActive: true; seedDescription: string; isGenerating: boolean; error: string | null; lastMatchStats: RadioMatchStats | null };
-// Deferred because the flat → discriminated rewrite ripples through useRadio.ts,
-// 5+ test fixtures, and 3 UI components reading isGenerating/error without an
-// isActive narrowing. Will be picked up by the hooks/contexts phase:2 sweep (#1586).
+// TODO(#1589 / #1586): discriminate by isActive — see .claude/blueprints/issue-1582-foundation.md §3b (revised).
+// Canonical shape:
+//   | { isActive: false; isGenerating: boolean; error: string | null; lastMatchStats: RadioMatchStats | null }
+//   | { isActive: true;  seedDescription: string; isGenerating: boolean; error: string | null; lastMatchStats: RadioMatchStats | null }
+// Only seedDescription is variant-locked; lastMatchStats and error persist across
+// the active boundary ("last" + post-session semantics). Deferred from #1582
+// because the rewrite ripples through useRadio.ts, 3 UI consumers, and 6 inline
+// test fixtures — hooks/contexts phase:2 sweep (#1586) takes ownership.
 export interface RadioState {
   /** Whether a radio session is currently active. */
   isActive: boolean;
