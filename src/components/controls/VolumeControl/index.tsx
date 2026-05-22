@@ -108,6 +108,7 @@ const VolumeControl = memo<VolumeControlProps>(({
     const sliderValue = useMemo(() => [displayVolume], [displayVolume]);
 
     const handleSliderChange = useCallback(([next]: number[]) => {
+        if (next === undefined) return;
         onVolumeChange(next);
     }, [onVolumeChange]);
 

@@ -35,7 +35,7 @@ const EyedropperOverlay: React.FC<EyedropperOverlayProps> = ({ image, onPick, on
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
     const pixel = ctx.getImageData(x, y, 1, 1).data;
-    const color = `#${[pixel[0], pixel[1], pixel[2]].map(v => v.toString(16).padStart(2, '0')).join('')}`;
+    const color = `#${[pixel[0] ?? 0, pixel[1] ?? 0, pixel[2] ?? 0].map(v => v.toString(16).padStart(2, '0')).join('')}`;
     onPick(color);
     onClose();
   };
@@ -49,7 +49,7 @@ const EyedropperOverlay: React.FC<EyedropperOverlayProps> = ({ image, onPick, on
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
     const pixel = ctx.getImageData(x, y, 1, 1).data;
-    const color = `#${[pixel[0], pixel[1], pixel[2]].map(v => v.toString(16).padStart(2, '0')).join('')}`;
+    const color = `#${[pixel[0] ?? 0, pixel[1] ?? 0, pixel[2] ?? 0].map(v => v.toString(16).padStart(2, '0')).join('')}`;
     setHoverColor(color);
   };
 

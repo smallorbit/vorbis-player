@@ -157,7 +157,7 @@ export class SpotifyPlaybackAdapter implements PlaybackProvider {
 
       if (is429) {
         const retryAfterMatch = message.match(/retry.?after[:\s]+(\d+)/i);
-        const retryAfterSec = retryAfterMatch ? parseInt(retryAfterMatch[1], 10) : 0;
+        const retryAfterSec = retryAfterMatch ? parseInt(retryAfterMatch[1] ?? '0', 10) : 0;
         const backoffMs = retryAfterSec > 0
           ? retryAfterSec * 1000
           : SPOTIFY_BASE_BACKOFF_MS * Math.pow(2, retryCount);

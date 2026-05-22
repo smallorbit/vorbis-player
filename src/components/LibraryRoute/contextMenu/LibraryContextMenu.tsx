@@ -82,16 +82,16 @@ const LibraryContextMenu: React.FC<LibraryContextMenuProps> = ({
 
     if (e.key === 'ArrowDown') {
       e.preventDefault();
-      items[(idx + 1) % items.length].focus();
+      items[(idx + 1) % items.length]?.focus();
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
-      items[(idx - 1 + items.length) % items.length].focus();
+      items[(idx - 1 + items.length) % items.length]?.focus();
     } else if (e.key === 'Home') {
       e.preventDefault();
-      items[0].focus();
+      items[0]?.focus();
     } else if (e.key === 'End') {
       e.preventDefault();
-      items[items.length - 1].focus();
+      items[items.length - 1]?.focus();
     }
   }, []);
 

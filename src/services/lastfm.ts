@@ -29,7 +29,7 @@ async function waitForRateLimit(): Promise<void> {
   const now = Date.now();
   requestTimestamps = requestTimestamps.filter((t) => now - t < WINDOW_MS);
   if (requestTimestamps.length >= RATE_LIMIT) {
-    const oldest = requestTimestamps[0];
+    const oldest = requestTimestamps[0] ?? now;
     const waitMs = WINDOW_MS - (now - oldest) + RATE_LIMIT_PADDING_MS;
     await new Promise((resolve) => setTimeout(resolve, waitMs));
   }

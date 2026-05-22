@@ -144,7 +144,7 @@ function isCollectionKind(x: string): x is ParseableCollectionKind {
 export function keyToCollectionRef(key: string): CollectionRef | null {
   const parts = key.split(':');
   if (parts.length < 3) return null;
-  const [provider, kind, ...idParts] = parts;
+  const [provider = '', kind = '', ...idParts] = parts;
   if (!isProviderId(provider) || !isCollectionKind(kind)) return null;
   if (kind === 'liked') return { provider, kind };
   const id = idParts.join(':');

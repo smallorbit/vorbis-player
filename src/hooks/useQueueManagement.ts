@@ -160,6 +160,7 @@ export function useQueueManagement({
       if (index === currentTrackIndex) return;
 
       const removedTrack = tracks[index];
+      if (!removedTrack) return;
       logQueue('handleRemoveFromQueue — removing index=%d, track=%s, queueLen=%d', index, trkSummary(removedTrack), tracks.length);
 
       if (tracks.length <= 1) {
