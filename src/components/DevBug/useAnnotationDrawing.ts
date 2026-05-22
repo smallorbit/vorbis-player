@@ -131,7 +131,8 @@ export function useAnnotationDrawing(): UseAnnotationDrawingResult {
     startRef.current = null;
 
     if (annotation) {
-      setAnnotations(prev => [...prev, annotation as Annotation]);
+      const finalized = annotation;
+      setAnnotations(prev => [...prev, finalized]);
     }
 
     updatePhase('tool_selected');

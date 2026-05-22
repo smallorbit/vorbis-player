@@ -617,6 +617,6 @@ export function FeedbackPanel(props: FeedbackPanelProps) {
       submitting={submitting}
       onSubmitClick={handleSubmitClick}
     />,
-    shadowRef.current as unknown as Element,
+    shadowRef.current,
   );
 }
