@@ -44,7 +44,7 @@ vi.mock('@/hooks/useUnifiedLikedTracks', () => ({
 
 vi.mock('@/hooks/useRadio', () => ({
   useRadio: vi.fn(() => ({
-    radioState: { isActive: false, seedDescription: null, isGenerating: false, error: null, lastMatchStats: null },
+    radioState: { isActive: false, isGenerating: false, error: null, lastMatchStats: null },
     startRadio: vi.fn(),
     stopRadio: vi.fn(),
     isRadioAvailable: true,
