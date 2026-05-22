@@ -32,8 +32,8 @@ const GlowBackgroundLayer = styled.div<{
 
 interface AccentColorGlowOverlayProps {
   glowIntensity: number;
-  glowRate?: number;
-  backgroundImage?: string;
+  glowRate?: number | undefined;
+  backgroundImage?: string | undefined;
 }
 
 const areGlowPropsEqual = (

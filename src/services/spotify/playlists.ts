@@ -55,7 +55,7 @@ export async function getUserLibraryInterleaved(
     if (playlistNextUrl) {
       const url = playlistNextUrl;
       fetches.push(
-        spotifyApiRequest<PaginatedResponse<PlaylistInfo>>(url, token, { signal })
+        spotifyApiRequest<PaginatedResponse<PlaylistInfo>>(url, token, signal ? { signal } : {})
           .then((data) => {
             for (const item of data.items ?? []) {
               playlistResults.push(transformPlaylist(item));
@@ -70,7 +70,7 @@ export async function getUserLibraryInterleaved(
     if (albumNextUrl) {
       const url = albumNextUrl;
       fetches.push(
-        spotifyApiRequest<PaginatedResponse<SavedAlbumItem>>(url, token, { signal })
+        spotifyApiRequest<PaginatedResponse<SavedAlbumItem>>(url, token, signal ? { signal } : {})
           .then((data) => {
             const now = Date.now();
             for (const item of data.items ?? []) {
@@ -146,7 +146,7 @@ export async function getPlaylistCount(signal?: AbortSignal): Promise<number> {
   const data = await spotifyApiRequest<PaginatedResponse<unknown>>(
     'https://api.spotify.com/v1/me/playlists?limit=1&offset=0',
     token,
-    { signal }
+    signal ? { signal } : {},
   );
   return data.total ?? 0;
 }
@@ -160,7 +160,7 @@ export async function getPlaylistsPage(
   const data = await spotifyApiRequest<PaginatedResponse<PlaylistInfo>>(
     `https://api.spotify.com/v1/me/playlists?limit=${limit}&offset=0`,
     token,
-    { signal }
+    signal ? { signal } : {},
   );
   const playlists = (data.items ?? []).map((p, i) => ({
     ...p,
@@ -185,6 +185,6 @@ export async function getAllUserPlaylists(signal?: AbortSignal): Promise<Playlis
       ...item,
       added_at: item.added_at || new Date(Date.now() - index++ * 60000).toISOString(),
     }),
-    { signal },
+    signal ? { signal } : {},
   );
 }

@@ -230,12 +230,12 @@ export const FlipInner = styled.div.withConfig({
 export const LoadingCard = styled.div.withConfig({
   shouldForwardProp: (prop: string) => !['backgroundImage', 'standalone', 'accentColor', 'glowEnabled', 'glowIntensity', 'glowRate'].includes(prop),
 }) <{
-  backgroundImage?: string;
-  standalone?: boolean;
-  accentColor?: string;
-  glowEnabled?: boolean;
-  glowIntensity?: number;
-  glowRate?: number;
+  backgroundImage?: string | undefined;
+  standalone?: boolean | undefined;
+  accentColor?: string | undefined;
+  glowEnabled?: boolean | undefined;
+  glowIntensity?: number | undefined;
+  glowRate?: number | undefined;
 }>`
   ${cardBase};
   margin-top: 0.5rem;

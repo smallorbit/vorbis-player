@@ -22,7 +22,7 @@ export interface SearchResultsViewProps {
     name: string,
     provider?: ProviderId,
   ) => void;
-  onContextMenuRequest?: (req: ContextMenuRequest) => void;
+  onContextMenuRequest?: ((req: ContextMenuRequest) => void) | undefined;
 }
 
 const SearchResultsView: React.FC<SearchResultsViewProps> = ({

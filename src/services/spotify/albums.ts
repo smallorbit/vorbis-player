@@ -32,10 +32,10 @@ export function transformSavedAlbumItem(
     release_date: album.release_date ?? '',
     total_tracks: album.total_tracks ?? 0,
     uri: album.uri ?? '',
-    album_type: album.album_type,
     added_at: item.added_at,
+    ...(album.album_type !== undefined && { album_type: album.album_type }),
   };
-  if (withGenres) {
+  if (withGenres && album.genres !== undefined) {
     result.genres = album.genres;
   }
   return result;
@@ -91,7 +91,7 @@ export async function getAlbumTracks(albumId: string): Promise<MediaTrack[]> {
     const track = transformTrackItem(trackItem, {
       name: album.name,
       id: album.id,
-      image: albumImage,
+      ...(albumImage !== undefined && { image: albumImage }),
     });
     if (track) {
       // Propagate album genres to each track (Spotify genres live at album level)
@@ -150,7 +150,7 @@ export async function getAlbumCount(signal?: AbortSignal): Promise<number> {
   const data = await spotifyApiRequest<PaginatedResponse<unknown>>(
     'https://api.spotify.com/v1/me/albums?limit=1&offset=0',
     token,
-    { signal }
+    signal ? { signal } : {},
   );
   return data.total ?? 0;
 }
@@ -165,7 +165,7 @@ export async function getAlbumsPage(
   const data = await spotifyApiRequest<PaginatedResponse<SavedAlbumItem>>(
     `https://api.spotify.com/v1/me/albums?limit=${limit}&offset=0`,
     token,
-    { signal }
+    signal ? { signal } : {},
   );
   return {
     albums: (data.items ?? []).map((item) => transformSavedAlbumItem(item)),
@@ -181,6 +181,6 @@ export async function getAllUserAlbums(signal?: AbortSignal): Promise<AlbumInfo[
     'https://api.spotify.com/v1/me/albums?limit=50',
     token,
     transformSavedAlbumItem,
-    { signal },
+    signal ? { signal } : {},
   );
 }

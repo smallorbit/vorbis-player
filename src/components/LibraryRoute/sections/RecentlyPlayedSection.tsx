@@ -10,10 +10,10 @@ const SEE_ALL_THRESHOLD = 4;
 
 export interface RecentlyPlayedSectionProps {
   layout: 'row' | 'grid';
-  showProviderBadges?: boolean;
+  showProviderBadges?: boolean | undefined;
   onSelect: (kind: LibraryItemKind, id: string, name: string, provider?: ProviderId) => void;
-  onSeeAll?: () => void;
-  onContextMenuRequest?: (req: ContextMenuRequest) => void;
+  onSeeAll?: (() => void) | undefined;
+  onContextMenuRequest?: ((req: ContextMenuRequest) => void) | undefined;
 }
 
 const RecentlyPlayedSection: React.FC<RecentlyPlayedSectionProps> = ({

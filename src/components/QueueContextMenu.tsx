@@ -49,7 +49,7 @@ const MenuContainer = styled.div<{ $x: number; $y: number }>`
   }
 `;
 
-const MenuItem = styled.button<{ $destructive?: boolean }>`
+const MenuItem = styled.button<{ $destructive?: boolean | undefined }>`
   display: flex;
   align-items: center;
   gap: 0.625rem;

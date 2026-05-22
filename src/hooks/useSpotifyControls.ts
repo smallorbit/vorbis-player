@@ -13,7 +13,7 @@ interface UseSpotifyControlsProps {
   onNext: () => void;
   onPrevious: () => void;
   onLikeToggle: () => void;
-  currentTrackProvider?: ProviderId;
+  currentTrackProvider?: ProviderId | undefined;
 }
 
 interface PlaybackTimingState {

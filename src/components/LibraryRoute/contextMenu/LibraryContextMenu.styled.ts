@@ -16,7 +16,7 @@ export const MenuRoot = styled.div`
   gap: 1px;
 `;
 
-export const MenuItemButton = styled.button<{ $variant?: 'default' | 'destructive' }>`
+export const MenuItemButton = styled.button<{ $variant?: 'default' | 'destructive' | undefined }>`
   display: block;
   width: 100%;
   text-align: left;

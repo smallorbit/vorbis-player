@@ -153,7 +153,7 @@ describe('usePlayerLogic — onAuthExpired handler', () => {
 
   it('calls reportUnauthorized on the provider when auth expires during playback', async () => {
     // #given
-    const { result } = renderHook(() => usePlayerLogic(), { wrapper: AllProviders });
+    renderHook(() => usePlayerLogic(), { wrapper: AllProviders });
 
     // #when — simulate AuthExpiredError surfacing from playback adapter
     await act(async () => {

@@ -32,14 +32,14 @@ export interface MenuActions {
   onAddToQueue: () => void;
   onPlayNext: () => void;
   onTogglePin: () => void;
-  onToggleSave?: () => void;
+  onToggleSave?: (() => void) | undefined;
   onStartRadio: () => void;
-  onQueueLikedFromCollection?: () => void;
-  likedProviderActions?: Array<{ provider: ProviderId; label: string; onPlay: () => void }>;
-  onRemoveFromHistory?: () => void;
-  isPinned?: boolean;
-  startRadioDisabled?: boolean;
-  playNextDisabled?: boolean;
+  onQueueLikedFromCollection?: (() => void) | undefined;
+  likedProviderActions?: Array<{ provider: ProviderId; label: string; onPlay: () => void }> | undefined;
+  onRemoveFromHistory?: (() => void) | undefined;
+  isPinned?: boolean | undefined;
+  startRadioDisabled?: boolean | undefined;
+  playNextDisabled?: boolean | undefined;
 }
 
 function buildCommonItems(actions: MenuActions): MenuItem[] {

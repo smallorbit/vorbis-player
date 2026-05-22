@@ -85,7 +85,12 @@ export async function putTrackList(
   tracks: Track[],
   snapshotId?: string,
 ): Promise<void> {
-  const entry: CachedTrackList = { id, tracks, timestamp: Date.now(), snapshotId };
+  const entry: CachedTrackList = {
+    id,
+    tracks,
+    timestamp: Date.now(),
+    ...(snapshotId !== undefined && { snapshotId }),
+  };
   return trackLists.put(id, entry);
 }
 

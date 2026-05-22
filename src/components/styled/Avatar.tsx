@@ -2,10 +2,10 @@ import styled from 'styled-components';
 import { useState } from 'react';
 
 interface AvatarProps {
-  src?: string;
-  alt?: string;
-  fallback?: React.ReactNode;
-  style?: React.CSSProperties;
+  src?: string | undefined;
+  alt?: string | undefined;
+  fallback?: React.ReactNode | undefined;
+  style?: React.CSSProperties | undefined;
 }
 
 const StyledAvatar = styled.div`

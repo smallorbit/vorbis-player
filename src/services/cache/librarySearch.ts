@@ -41,7 +41,7 @@ export interface LibrarySearchResult {
 
 export interface LibrarySearchOptions {
   /** Maximum results returned per category. Defaults to 10. */
-  limitPerCategory?: number;
+  limitPerCategory?: number | undefined;
 }
 
 const EMPTY_RESULT: LibrarySearchResult = Object.freeze({

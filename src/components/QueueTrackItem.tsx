@@ -104,12 +104,12 @@ interface QueueItemProps {
   index: number;
   isSelected: boolean;
   onSelect: (index: number) => void;
-  onRemove?: (index: number) => void;
-  onPlayNext?: (index: number) => void;
-  itemRef?: React.RefObject<HTMLDivElement>;
-  showProviderIcon?: boolean;
-  isDragActive?: boolean;
-  isEditMode?: boolean;
+  onRemove?: ((index: number) => void) | undefined;
+  onPlayNext?: ((index: number) => void) | undefined;
+  itemRef?: React.RefObject<HTMLDivElement> | undefined;
+  showProviderIcon?: boolean | undefined;
+  isDragActive?: boolean | undefined;
+  isEditMode?: boolean | undefined;
 }
 
 function useQueueItemContextMenu(

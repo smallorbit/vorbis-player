@@ -153,13 +153,13 @@ interface QueueDrawerProps {
   tracks: MediaTrack[];
   currentTrackIndex: number;
   onTrackSelect: (index: number) => void;
-  onRemoveTrack?: (index: number) => void;
-  onReorderTracks?: (fromIndex: number, toIndex: number) => void;
-  showProviderIcons?: boolean;
-  radioActive?: boolean;
-  radioSeedDescription?: string | null;
-  onSaveQueue?: () => void;
-  canSaveQueue?: boolean;
+  onRemoveTrack?: ((index: number) => void) | undefined;
+  onReorderTracks?: ((fromIndex: number, toIndex: number) => void) | undefined;
+  showProviderIcons?: boolean | undefined;
+  radioActive?: boolean | undefined;
+  radioSeedDescription?: string | undefined;
+  onSaveQueue?: (() => void) | undefined;
+  canSaveQueue?: boolean | undefined;
 }
 
 // Custom comparison function for QueueDrawer memo optimization

@@ -22,38 +22,38 @@ import { LibraryContextMenuOpenContext } from './contextMenu/LibraryContextMenuO
 export interface LibraryRouteProps {
   onPlaylistSelect: (playlistId: string, playlistName: string, provider?: ProviderId) => void;
   onAddToQueue: (id: string, name?: string, provider?: ProviderId) => Promise<AddToQueueResult | null>;
-  onPlayLikedTracks?: (
+  onPlayLikedTracks?: ((
     tracks: MediaTrack[],
     collectionId: string,
     collectionName: string,
     provider?: ProviderId,
-  ) => Promise<void>;
-  onQueueLikedTracks?: (tracks: MediaTrack[], collectionName?: string) => void;
+  ) => Promise<void>) | undefined;
+  onQueueLikedTracks?: ((tracks: MediaTrack[], collectionName?: string) => void) | undefined;
   onOpenSettings: () => void;
-  onResume?: () => void;
-  lastSession?: SessionSnapshot | null;
-  onPlayNext?: (
+  onResume?: (() => void) | undefined;
+  lastSession?: SessionSnapshot | null | undefined;
+  onPlayNext?: ((
     kind: 'playlist' | 'album',
     id: string,
     name: string,
     provider?: ProviderId,
-  ) => void;
-  onStartRadioForCollection?: (
+  ) => void) | undefined;
+  onStartRadioForCollection?: ((
     kind: 'playlist' | 'album',
     id: string,
     provider?: ProviderId,
-  ) => void;
-  initialSearchQuery?: string;
+  ) => void) | undefined;
+  initialSearchQuery?: string | undefined;
   isPlaying: boolean;
-  isRadioAvailable?: boolean;
-  isRadioGenerating?: boolean;
+  isRadioAvailable?: boolean | undefined;
+  isRadioGenerating?: boolean | undefined;
   onMiniPlay: () => void;
   onMiniPause: () => void;
   onMiniNext: () => void;
   onMiniPrevious: () => void;
   onMiniExpand: () => void;
-  onMiniStartRadio?: () => void;
-  onClose?: () => void;
+  onMiniStartRadio?: (() => void) | undefined;
+  onClose?: (() => void) | undefined;
 }
 
 const LibraryRoute: React.FC<LibraryRouteProps> = ({

@@ -20,13 +20,13 @@ interface SpotifyPlayerControlsProps {
   onNext: () => void;
   onPrevious: () => void;
   trackCount: number;
-  isLiked?: boolean;
-  isLikePending?: boolean;
-  onToggleLike?: () => void;
-  onArtistBrowse?: (artistName: string) => void;
-  onAlbumPlay?: (albumId: string, albumName: string) => void;
-  onPlayRadio?: () => void;
-  currentTrackProvider?: ProviderId;
+  isLiked?: boolean | undefined;
+  isLikePending?: boolean | undefined;
+  onToggleLike?: (() => void) | undefined;
+  onArtistBrowse?: ((artistName: string) => void) | undefined;
+  onAlbumPlay?: ((albumId: string, albumName: string) => void) | undefined;
+  onPlayRadio?: (() => void) | undefined;
+  currentTrackProvider?: ProviderId | undefined;
 }
 
 // --- SpotifyPlayerControls Component ---
