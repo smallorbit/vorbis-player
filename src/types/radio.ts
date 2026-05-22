@@ -61,19 +61,32 @@ export interface UnmatchedSuggestion {
 // ── Radio progress ──────────────────────────────────────────────────
 
 export type RadioProgressPhase = 'fetching-catalog' | 'generating' | 'resolving' | 'done';
-export interface RadioProgress { phase: RadioProgressPhase; trackCount?: number; }
+
+/**
+ * Progress event emitted by the radio pipeline. `trackCount` is only carried
+ * by the `done` phase (the only emit site that knows the final queue length).
+ */
+export type RadioProgress =
+  | { phase: 'fetching-catalog' }
+  | { phase: 'generating' }
+  | { phase: 'resolving' }
+  | { phase: 'done'; trackCount: number };
+
+// ── Radio match stats ───────────────────────────────────────────────
+
+export interface RadioMatchStats {
+  lastfmCandidates: number;
+  matched: number;
+  byMbid: number;
+  byName: number;
+}
 
 // ── Radio result ────────────────────────────────────────────────────
 
 export interface RadioResult {
   queue: MediaTrack[];
   seedDescription: string;
-  matchStats: {
-    lastfmCandidates: number;
-    matched: number;
-    byMbid: number;
-    byName: number;
-  };
+  matchStats: RadioMatchStats;
   /** Last.fm suggestions that didn't match the local catalog, sorted by matchScore descending. */
   unmatchedSuggestions: UnmatchedSuggestion[];
 }
@@ -81,6 +94,14 @@ export interface RadioResult {
 
 // ── Radio state ──────────────────────────────────────────────────────
 
+// TODO(#1589): discriminate RadioState by `isActive` once #1582 lands.
+// Proposed shape:
+//   type RadioState =
+//     | { isActive: false; isGenerating: boolean; error: string | null; lastMatchStats: RadioMatchStats | null }
+//     | { isActive: true; seedDescription: string; isGenerating: boolean; error: string | null; lastMatchStats: RadioMatchStats | null };
+// Deferred because the flat → discriminated rewrite ripples through useRadio.ts,
+// 5+ test fixtures, and 3 UI components reading isGenerating/error without an
+// isActive narrowing. Will be picked up by the hooks/contexts phase:2 sweep (#1586).
 export interface RadioState {
   /** Whether a radio session is currently active. */
   isActive: boolean;
@@ -91,5 +112,5 @@ export interface RadioState {
   /** Error message from the last radio attempt. */
   error: string | null;
   /** Match stats from the last successful radio generation. */
-  lastMatchStats: RadioResult['matchStats'] | null;
+  lastMatchStats: RadioMatchStats | null;
 }
