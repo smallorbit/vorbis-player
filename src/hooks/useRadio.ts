@@ -18,7 +18,6 @@ interface UseRadioReturn {
 export function useRadio(): UseRadioReturn {
   const [radioState, setRadioState] = useState<RadioState>({
     isActive: false,
-    seedDescription: null,
     isGenerating: false,
     error: null,
     lastMatchStats: null,
@@ -34,7 +33,6 @@ export function useRadio(): UseRadioReturn {
 
     setRadioState({
       isActive: false,
-      seedDescription: null,
       isGenerating: true,
       error: null,
       lastMatchStats: null,
@@ -48,7 +46,6 @@ export function useRadio(): UseRadioReturn {
       if (result.queue.length === 0) {
         setRadioState({
           isActive: false,
-          seedDescription: null,
           isGenerating: false,
           error: 'No similar tracks found in your library.',
           lastMatchStats: result.matchStats,
@@ -72,7 +69,6 @@ export function useRadio(): UseRadioReturn {
       const message = err instanceof Error ? err.message : 'Failed to generate radio queue.';
       setRadioState({
         isActive: false,
-        seedDescription: null,
         isGenerating: false,
         error: message,
         lastMatchStats: null,
@@ -85,7 +81,6 @@ export function useRadio(): UseRadioReturn {
     generationRef.current++;
     setRadioState({
       isActive: false,
-      seedDescription: null,
       isGenerating: false,
       error: null,
       lastMatchStats: null,

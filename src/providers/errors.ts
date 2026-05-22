@@ -1,6 +1,8 @@
+import type { ProviderId } from '@/types/domain';
+
 export class AuthExpiredError extends Error {
-  readonly providerId: string;
-  constructor(providerId: string) {
+  readonly providerId: ProviderId;
+  constructor(providerId: ProviderId) {
     super(`Auth expired for provider: ${providerId}`);
     this.name = 'AuthExpiredError';
     this.providerId = providerId;

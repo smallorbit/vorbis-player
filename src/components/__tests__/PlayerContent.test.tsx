@@ -278,8 +278,7 @@ describe('PlayerContent', () => {
   it('handles radioState prop when provided', () => {
     // #given
     const radioState = {
-      isActive: false,
-      seedDescription: null,
+      isActive: false as const,
       isGenerating: false,
       error: null,
       lastMatchStats: null,

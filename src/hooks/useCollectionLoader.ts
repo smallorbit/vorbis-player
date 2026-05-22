@@ -95,7 +95,7 @@ export function useCollectionLoader({
         likedProviderIds.map(async (id) => {
           const catalog = descriptorMap.get(id)?.catalog;
           if (!catalog) return [];
-          return catalog.listTracks({ provider: id, kind: 'liked' }).catch(() => [] as MediaTrack[]);
+          return catalog.listTracks({ provider: id, kind: 'liked' }).catch((): MediaTrack[] => []);
         }),
       );
       const merged = results.flat();
