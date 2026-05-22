@@ -124,7 +124,7 @@ function makeMediaTrack(overrides: Partial<MediaTrack> & { name: string; artists
 }
 
 const defaultRadioReturn = {
-  radioState: { isActive: false, seedDescription: null, isGenerating: false, error: null, lastMatchStats: null },
+  radioState: { isActive: false, isGenerating: false, error: null, lastMatchStats: null },
   stopRadio: vi.fn(),
   isRadioAvailable: true,
 };

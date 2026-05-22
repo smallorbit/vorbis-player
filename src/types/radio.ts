@@ -94,23 +94,30 @@ export interface RadioResult {
 
 // ── Radio state ──────────────────────────────────────────────────────
 
-// TODO(#1589 / #1586): discriminate by isActive — see .claude/blueprints/issue-1582-foundation.md §3b (revised).
-// Canonical shape:
-//   | { isActive: false; isGenerating: boolean; error: string | null; lastMatchStats: RadioMatchStats | null }
-//   | { isActive: true;  seedDescription: string; isGenerating: boolean; error: string | null; lastMatchStats: RadioMatchStats | null }
-// Only seedDescription is variant-locked; lastMatchStats and error persist across
-// the active boundary ("last" + post-session semantics). Deferred from #1582
-// because the rewrite ripples through useRadio.ts, 3 UI consumers, and 6 inline
-// test fixtures — hooks/contexts phase:2 sweep (#1586) takes ownership.
-export interface RadioState {
-  /** Whether a radio session is currently active. */
-  isActive: boolean;
-  /** Description of the current radio seed (e.g., "Radio based on Creep by Radiohead"). */
-  seedDescription: string | null;
-  /** Whether radio queue is currently being generated. */
-  isGenerating: boolean;
-  /** Error message from the last radio attempt. */
-  error: string | null;
-  /** Match stats from the last successful radio generation. */
-  lastMatchStats: RadioMatchStats | null;
-}
+/**
+ * Discriminated by `isActive`. `seedDescription` is variant-locked to the
+ * active branch (only meaningful while a session is live); the rest
+ * (`isGenerating`, `error`, `lastMatchStats`) persist across the active
+ * boundary because they carry "last attempt" / post-session semantics.
+ */
+export type RadioState =
+  | {
+      isActive: false;
+      /** Whether radio queue is currently being generated. */
+      isGenerating: boolean;
+      /** Error message from the last radio attempt. */
+      error: string | null;
+      /** Match stats from the last successful radio generation. */
+      lastMatchStats: RadioMatchStats | null;
+    }
+  | {
+      isActive: true;
+      /** Description of the current radio seed (e.g., "Radio based on Creep by Radiohead"). */
+      seedDescription: string;
+      /** Whether radio queue is currently being generated. */
+      isGenerating: boolean;
+      /** Error message from the last radio attempt. */
+      error: string | null;
+      /** Match stats from the last successful radio generation. */
+      lastMatchStats: RadioMatchStats | null;
+    };

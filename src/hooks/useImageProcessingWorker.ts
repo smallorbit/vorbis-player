@@ -2,8 +2,6 @@ import { useRef, useEffect, useCallback, useState } from 'react';
 import type {
   WorkerResponse,
   ImageProcessingRequest,
-  ImageProcessingResponse,
-  ImageProcessingError
 } from '@/workers/imageProcessor.worker';
 
 interface UseImageProcessingWorkerReturn {
@@ -33,8 +31,7 @@ export const useImageProcessingWorker = (): UseImageProcessingWorkerReturn => {
         );
 
         workerRef.current.onmessage = (event: MessageEvent<WorkerResponse>) => {
-          const { type } = event.data;
-          const requestId = (event.data as WorkerResponse & { requestId: number }).requestId;
+          const { requestId } = event.data;
           const pendingPromise = pendingPromisesRef.current.get(requestId);
 
           if (!pendingPromise) {
@@ -42,12 +39,10 @@ export const useImageProcessingWorker = (): UseImageProcessingWorkerReturn => {
             return;
           }
 
-          if (type === 'IMAGE_PROCESSED') {
-            const response = event.data as ImageProcessingResponse;
-            pendingPromise.resolve(response.processedImageData);
-          } else if (type === 'IMAGE_PROCESSING_ERROR') {
-            const response = event.data as ImageProcessingError;
-            pendingPromise.reject(new Error(response.error));
+          if (event.data.type === 'IMAGE_PROCESSED') {
+            pendingPromise.resolve(event.data.processedImageData);
+          } else if (event.data.type === 'IMAGE_PROCESSING_ERROR') {
+            pendingPromise.reject(new Error(event.data.error));
           }
 
           pendingPromisesRef.current.delete(requestId);
