@@ -38,11 +38,11 @@ export type LibraryItemKind = LibraryCollectionKind | 'recently-played';
 
 interface ContextMenuRequestBase {
   id: string;
-  provider?: ProviderId;
+  provider?: ProviderId | undefined;
   name: string;
   anchorRect: DOMRect;
   /** The CardButton element that triggered the menu; used to return focus on keyboard dismiss. */
-  triggerElement?: HTMLElement;
+  triggerElement?: HTMLElement | undefined;
 }
 
 export type ContextMenuRequest = ContextMenuRequestBase &

@@ -137,11 +137,11 @@ export function getReactComponentName(element: Element): string | null {
 interface BuildBugReportParams {
   selectionMode: SelectionMode;
   elements: SelectedElement[];
-  screenshotDataUrl?: string;
-  comment?: string;
-  categories?: Category[];
-  consoleLogs?: ConsoleEntry[];
-  performanceMetrics?: PerfData;
+  screenshotDataUrl?: string | undefined;
+  comment?: string | undefined;
+  categories?: Category[] | undefined;
+  consoleLogs?: ConsoleEntry[] | undefined;
+  performanceMetrics?: PerfData | undefined;
 }
 
 export function buildBugReport(params: BuildBugReportParams): BugReport {

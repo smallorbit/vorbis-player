@@ -3,8 +3,8 @@ import { SectionRoot, Header, Title, SeeAllButton, Body } from './Section.styled
 
 export interface SectionProps {
   title: string;
-  onSeeAll?: () => void;
-  hidden?: boolean;
+  onSeeAll?: (() => void) | undefined;
+  hidden?: boolean | undefined;
   layout: 'row' | 'grid';
   children: React.ReactNode;
   id: string;

@@ -200,9 +200,11 @@ export async function fetchAllPaginated<TItem, TResult>(
       throw new DOMException('Request aborted', 'AbortError');
     }
 
-    const data: PaginatedResponse<TItem> = await spotifyApiRequest<PaginatedResponse<TItem>>(nextUrl, token, {
-      signal: options?.signal,
-    });
+    const data: PaginatedResponse<TItem> = await spotifyApiRequest<PaginatedResponse<TItem>>(
+      nextUrl,
+      token,
+      options?.signal ? { signal: options.signal } : {},
+    );
 
     for (const item of data.items ?? []) {
       if (options?.maxItems && results.length >= options.maxItems) {

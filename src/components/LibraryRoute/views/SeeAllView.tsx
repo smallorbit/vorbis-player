@@ -27,7 +27,7 @@ export interface SeeAllViewProps {
     name: string,
     provider?: ProviderId,
   ) => void;
-  onContextMenuRequest?: (req: ContextMenuRequest) => void;
+  onContextMenuRequest?: ((req: ContextMenuRequest) => void) | undefined;
 }
 
 const SeeAllView: React.FC<SeeAllViewProps> = ({

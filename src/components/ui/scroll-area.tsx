@@ -32,7 +32,10 @@ const ScrollArea = React.forwardRef<
     >
       {children}
     </ScrollAreaPrimitive.Viewport>
-    <ScrollBar scrollbarStyle={scrollbarStyle} thumbStyle={thumbStyle} />
+    <ScrollBar
+      {...(scrollbarStyle !== undefined && { scrollbarStyle })}
+      {...(thumbStyle !== undefined && { thumbStyle })}
+    />
     <ScrollAreaPrimitive.Corner />
   </ScrollAreaPrimitive.Root>
 ))

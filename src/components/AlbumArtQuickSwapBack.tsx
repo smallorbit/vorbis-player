@@ -43,7 +43,7 @@ const BacksideRoot = styled.div`
   overflow: hidden;
 `;
 
-const BlurredBg = styled.div<{ $image?: string }>`
+const BlurredBg = styled.div<{ $image?: string | undefined }>`
   position: absolute;
   inset: 0;
   background-image: ${({ $image }) => ($image ? `url(${$image})` : 'none')};

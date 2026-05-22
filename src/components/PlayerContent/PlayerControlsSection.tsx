@@ -84,7 +84,7 @@ function VisualEffectsLoadingFallback(): React.ReactElement {
 
 interface PlayerControlsSectionProps {
   currentTrack: MediaTrack | null;
-  currentTrackProvider?: ProviderId;
+  currentTrackProvider?: ProviderId | undefined;
   isPlaying: boolean;
   zenModeEnabled: boolean;
   hasPointerInput: boolean;
@@ -101,11 +101,11 @@ interface PlayerControlsSectionProps {
   onCloseQueue: () => void;
   onOpenLibrary: () => void;
   onCloseLibrary: () => void;
-  onOpenQuickAccessPanel?: () => void;
+  onOpenQuickAccessPanel?: (() => void) | undefined;
   onZenModeToggle: () => void;
-  isRadioAvailable?: boolean;
-  onStartRadio?: () => void;
-  radioState?: RadioState;
+  isRadioAvailable?: boolean | undefined;
+  onStartRadio?: (() => void) | undefined;
+  radioState?: RadioState | undefined;
   isLiked: boolean;
   isLikePending: boolean;
   onLikeToggle: () => void;

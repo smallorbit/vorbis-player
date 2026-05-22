@@ -34,7 +34,7 @@ export interface CmdKPaletteProps {
 }
 
 interface ItemSubtitleProps {
-  text?: string;
+  text?: string | undefined;
 }
 
 const ItemSubtitle = ({ text }: ItemSubtitleProps): JSX.Element | null => {

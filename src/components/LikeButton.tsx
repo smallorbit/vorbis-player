@@ -3,13 +3,13 @@ import styled, { keyframes, css } from 'styled-components';
 import { theme } from '../styles/theme';
 
 interface LikeButtonProps {
-  trackId?: string;
+  trackId?: string | undefined;
   isLiked: boolean;
-  isLoading?: boolean;
+  isLoading?: boolean | undefined;
   onToggleLike: () => void;
-  className?: string;
-  $isMobile?: boolean;
-  $isTablet?: boolean;
+  className?: string | undefined;
+  $isMobile?: boolean | undefined;
+  $isTablet?: boolean | undefined;
 }
 
 const heartBeat = keyframes`

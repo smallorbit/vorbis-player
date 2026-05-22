@@ -66,9 +66,9 @@ type GridSatelliteItem =
 interface GridItemCardProps {
   id: string;
   name: string;
-  provider?: ProviderId;
-  imgUrl?: string;
-  mosaicAlbumPaths?: string[];
+  provider?: ProviderId | undefined;
+  imgUrl?: string | undefined;
+  mosaicAlbumPaths?: string[] | undefined;
   fallback: string;
   onPlay: (id: string, name: string, provider?: ProviderId) => void;
   onAddToQueue: (id: string, name: string, provider?: ProviderId) => void;

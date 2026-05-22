@@ -142,7 +142,12 @@ export function VisualizerDebugProvider({ children }: { children: React.ReactNod
       const parsed = JSON.parse(json) as VisualizerDebugConfig | VisualizerDebugOverrides;
       const overrides: VisualizerDebugOverrides =
         parsed?.particle && parsed?.trail
-          ? { particle: parsed.particle, trail: parsed.trail, wave: parsed.wave, grid: parsed.grid }
+          ? {
+              particle: parsed.particle,
+              trail: parsed.trail,
+              ...(parsed.wave !== undefined && { wave: parsed.wave }),
+              ...(parsed.grid !== undefined && { grid: parsed.grid }),
+            }
           : (parsed as VisualizerDebugOverrides);
       setOverridesState(overrides);
       writeStoredOverrides(overrides);

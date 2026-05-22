@@ -41,7 +41,7 @@ const ZenProviderBadgeInline = styled.span`
 
 interface AlbumArtSectionProps {
   currentTrack: MediaTrack | null;
-  currentTrackProvider?: ProviderId;
+  currentTrackProvider?: ProviderId | undefined;
   zenModeEnabled: boolean;
   isMobile: boolean;
   isTablet: boolean;
@@ -52,7 +52,7 @@ interface AlbumArtSectionProps {
   onSwipeRight: () => void;
   onSwipeUp: () => void;
   onSwipeDown: () => void;
-  onAlbumArtBoundsChange?: (bounds: AlbumArtBounds | null) => void;
+  onAlbumArtBoundsChange?: ((bounds: AlbumArtBounds | null) => void) | undefined;
   onPlay: () => void;
   onPause: () => void;
   onNext: () => void;
@@ -60,7 +60,7 @@ interface AlbumArtSectionProps {
   isLiked: boolean;
   canSaveTrack: boolean;
   onLikeToggle: () => void;
-  flipToggleRef?: React.MutableRefObject<(() => void) | null>;
+  flipToggleRef?: React.MutableRefObject<(() => void) | null> | undefined;
 }
 
 export const AlbumArtSection: React.FC<AlbumArtSectionProps> = React.memo(({

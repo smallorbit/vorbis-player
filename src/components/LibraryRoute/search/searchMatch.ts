@@ -16,7 +16,7 @@ export function matchesQuery(
 }
 
 export function passesProviderFilter(
-  item: { provider?: ProviderId },
+  item: { provider?: ProviderId | undefined },
   providerFilter: ProviderId[],
 ): boolean {
   if (providerFilter.length === 0) return true;

@@ -78,9 +78,9 @@ export function seedSessionFromUrlParam(
       queueTracks: [track],
       trackTitle: track.name,
       trackArtist: track.artists,
-      trackImage: track.image,
       playbackPosition: seed.positionMs,
       savedAt: Date.now(),
+      ...(track.image !== undefined && { trackImage: track.image }),
     };
 
     saveSession(snapshot);

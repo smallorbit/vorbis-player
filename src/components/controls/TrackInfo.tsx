@@ -20,9 +20,9 @@ interface TrackInfoProps {
     } | null;
     isMobile: boolean;
     isTablet: boolean;
-    onArtistBrowse?: (artistName: string) => void;
-    onAlbumPlay?: (albumId: string, albumName: string) => void;
-    onPlayRadio?: () => void;
+    onArtistBrowse?: ((artistName: string) => void) | undefined;
+    onAlbumPlay?: ((albumId: string, albumName: string) => void) | undefined;
+    onPlayRadio?: (() => void) | undefined;
 }
 
 // Custom comparison function for memo optimization

@@ -186,7 +186,7 @@ async function migrateFromLocalStorage(): Promise<void> {
           key: 'albums',
           lastValidated: entry.timestamp,
           totalCount: entry.data.length,
-          latestAddedAt: latestAddedAt || undefined,
+          ...(latestAddedAt && { latestAddedAt }),
         } satisfies LibraryCacheMeta);
         localStorage.removeItem(STORAGE_KEYS.CACHE_ALBUMS);
       }
