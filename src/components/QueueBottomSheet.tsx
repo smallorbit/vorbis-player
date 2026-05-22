@@ -118,7 +118,7 @@ interface QueueBottomSheetProps {
   onReorderTracks?: ((fromIndex: number, toIndex: number) => void) | undefined;
   showProviderIcons?: boolean | undefined;
   radioActive?: boolean | undefined;
-  radioSeedDescription?: string | null | undefined;
+  radioSeedDescription?: string | undefined;
   onSaveQueue?: (() => void) | undefined;
   canSaveQueue?: boolean | undefined;
 }
