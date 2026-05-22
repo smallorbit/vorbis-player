@@ -39,6 +39,7 @@ function buildTracksFromWindow(state: SpotifyPlaybackState): MediaTrack[] {
       albumId,
       durationMs: item.duration_ms ?? 0,
       image: getLargestImage(item.album?.images),
+      genres: [],
     };
   }
 

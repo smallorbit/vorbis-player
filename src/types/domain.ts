@@ -13,6 +13,12 @@ export interface PlaybackItemRef {
   ref: string;
 }
 
+/** Structured artist reference used for display and external links. */
+export interface ArtistRef {
+  name: string;
+  url?: string;
+}
+
 /**
  * Normalized track for UI and queue. All providers map their native track to this shape.
  */
@@ -24,7 +30,7 @@ export interface MediaTrack {
   name: string;
   artists: string;
   /** Optional structured artist data for links/display. */
-  artistsData?: { name: string; url?: string }[];
+  artistsData?: ArtistRef[];
   album: string;
   albumId?: string;
   trackNumber?: number;
@@ -39,7 +45,7 @@ export interface MediaTrack {
   /** Epoch ms when the track was added/liked. Populated for liked tracks to enable cross-provider sorting. */
   addedAt?: number;
   /** Genre tags for the track (e.g. from album metadata). Empty array means unavailable. */
-  genres?: string[];
+  genres: string[];
 }
 
 /**
@@ -65,19 +71,33 @@ export interface MediaCollection {
   provider: ProviderId;
   kind: CollectionKind;
   name: string;
-  description?: string | null;
+  description?: string;
   imageUrl?: string;
   trackCount?: number;
-  ownerName?: string | null;
+  ownerName?: string;
   /** Revision/cursor for change detection (e.g. snapshot_id, cursor, hash). */
-  revision?: string | null;
+  revision?: string;
   /** Release date string (e.g. "2023", "2023-05-17") for sorting. */
   releaseDate?: string;
   /** Album paths for mosaic thumbnails (multi-album playlists). Resolved to art at render time via IndexedDB cache. */
   mosaicAlbumPaths?: string[];
   /** Genre tags for the collection (e.g. from album metadata). Empty array means unavailable. */
-  genres?: string[];
+  genres: string[];
 }
+
+/** Structured playback error reported by providers. */
+export interface PlaybackError {
+  code: number;
+  message: string;
+}
+
+/**
+ * Subset of `MediaTrack` fields that may be overlaid by enriched metadata
+ * (e.g. ID3 tags) over the values produced by the catalog adapter.
+ */
+export type TrackMetadataOverlay = Partial<Pick<MediaTrack,
+  'name' | 'artists' | 'album' | 'image' | 'durationMs'
+>>;
 
 /**
  * Playback state as seen by the app (provider-agnostic).
@@ -89,9 +109,9 @@ export interface PlaybackState {
   currentTrackId: string | null;
   currentPlaybackRef: PlaybackItemRef | null;
   /** Enriched metadata read from audio file tags (e.g. ID3). Overrides filename-derived values. */
-  trackMetadata?: Partial<Pick<MediaTrack, 'name' | 'artists' | 'album' | 'image' | 'durationMs'>>;
+  trackMetadata?: TrackMetadataOverlay;
   /** Set when the provider encounters a playback error; cleared after one notification cycle. */
-  playbackError?: { code: number; message: string };
+  playbackError?: PlaybackError;
 }
 
 /** Serializable form of CollectionRef for storage/URL (e.g. "spotify:playlist:xxx", "dropbox:folder:/Music"). */
@@ -109,13 +129,25 @@ export interface AddToQueueResult {
   collectionName?: string;
 }
 
+const COLLECTION_KINDS = ['playlist', 'album', 'folder', 'liked'] as const;
+type ParseableCollectionKind = typeof COLLECTION_KINDS[number];
+
+function isProviderId(x: string): x is ProviderId {
+  return x === 'spotify' || x === 'dropbox';
+}
+
+function isCollectionKind(x: string): x is ParseableCollectionKind {
+  return (COLLECTION_KINDS as readonly string[]).includes(x);
+}
+
 /** Parse a stored key back into CollectionRef if possible. */
 export function keyToCollectionRef(key: string): CollectionRef | null {
   const parts = key.split(':');
   if (parts.length < 3) return null;
   const [provider, kind, ...idParts] = parts;
+  if (!isProviderId(provider) || !isCollectionKind(kind)) return null;
+  if (kind === 'liked') return { provider, kind };
   const id = idParts.join(':');
-  if (provider !== 'spotify' && provider !== 'dropbox') return null;
-  if (!['playlist', 'album', 'folder', 'liked'].includes(kind)) return null;
-  return { provider: provider as ProviderId, kind: kind as CollectionRef['kind'], id };
+  if (!id) return null;
+  return { provider, kind, id };
 }

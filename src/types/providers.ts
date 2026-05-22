@@ -3,8 +3,49 @@
  * All music sources (Spotify, Dropbox, future) implement these interfaces.
  */
 
-import type { MediaTrack, MediaCollection, CollectionRef, PlaybackState, ProviderId } from './domain';
+import type {
+  MediaTrack,
+  MediaCollection,
+  CollectionRef,
+  CollectionKind,
+  PlaybackState,
+  ProviderId,
+} from './domain';
 import type { ComponentType } from 'react';
+
+// -----------------------------------------------------------------------------
+// External link helpers (provider-defined deep links / search URLs)
+// -----------------------------------------------------------------------------
+
+/**
+ * Request shape for building an external URL (Discogs search, Spotify deep link, etc.).
+ * `artistName` is required on the album variant so callers can construct
+ * artist-scoped album searches; the artist variant has no use for it.
+ */
+export type ExternalLinkRequest =
+  | { type: 'artist'; name: string }
+  | { type: 'album'; name: string; artistName: string };
+
+export interface ExternalLink {
+  label: string;
+  url: string;
+  icon: string;
+}
+
+// -----------------------------------------------------------------------------
+// Catalog mutation result shapes
+// -----------------------------------------------------------------------------
+
+export interface SavePlaylistResult {
+  url?: string;
+  totalTracks: number;
+  skippedTracks: number;
+}
+
+export interface RefreshLikedMetadataResult {
+  updated: number;
+  removed: number;
+}
 
 // -----------------------------------------------------------------------------
 // Auth
@@ -46,7 +87,7 @@ export interface CatalogProvider {
   setAlbumSaved?(albumId: string, saved: boolean): Promise<void>;
   isAlbumSaved?(albumId: string): Promise<boolean>;
   /** Optional: delete/unfollow a collection (playlist). */
-  deleteCollection?(collectionId: string, kind: import('./domain').CollectionKind): Promise<void>;
+  deleteCollection?(collectionId: string, kind: CollectionKind): Promise<void>;
   /** Optional: resolve missing duration for a track (e.g. probe audio metadata). */
   resolveDuration?(track: MediaTrack): Promise<number | null>;
   /** Optional: resolve missing artwork for an album. Returns image URL/data-URL or null. */
@@ -62,7 +103,7 @@ export interface CatalogProvider {
   /** Optional: import liked songs from JSON. Returns number of imported tracks. */
   importLikes?(json: string): Promise<number>;
   /** Optional: refresh metadata for liked tracks. */
-  refreshLikedMetadata?(): Promise<{ updated: number; removed: number }>;
+  refreshLikedMetadata?(): Promise<RefreshLikedMetadataResult>;
 }
 
 // -----------------------------------------------------------------------------
@@ -147,11 +188,11 @@ export interface ProviderDescriptor {
   /** Window event name dispatched when this provider's liked tracks change. */
   likesChangedEvent?: string;
   /** Build an external URL for an artist or album (e.g. Discogs search). */
-  getExternalUrl?(info: { type: 'artist' | 'album'; name: string; artistName?: string }): string;
+  getExternalUrl?(info: ExternalLinkRequest): string;
   /** Build multiple external URLs for an artist or album. Takes precedence over getExternalUrl. */
-  getExternalUrls?(info: { type: 'artist' | 'album'; name: string; artistName?: string }): Array<{ label: string; url: string; icon: string }>;
+  getExternalUrls?(info: ExternalLinkRequest): ExternalLink[];
   /** Optional: save a list of tracks as a new playlist. */
-  savePlaylist?(name: string, tracks: MediaTrack[]): Promise<{ url?: string; totalTracks: number; skippedTracks: number } | null>;
+  savePlaylist?(name: string, tracks: MediaTrack[]): Promise<SavePlaylistResult | null>;
 }
 
 /** Registry of available providers; used by app to resolve active provider by id. */
