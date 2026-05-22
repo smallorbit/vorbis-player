@@ -1,5 +1,5 @@
 import React, { useCallback } from 'react';
-import type { ContextMenuRequest, LibraryItemKind } from '../types';
+import type { ContextMenuRequest, LibraryItemKind, LibraryCollectionKind } from '../types';
 import type { ProviderId } from '@/types/domain';
 import { useLongPress } from './useLongPress';
 import ProviderIcon from '@/components/ProviderIcon';
@@ -15,7 +15,7 @@ import {
 } from './LibraryCard.styled';
 
 export interface LibraryCardProps {
-  kind: LibraryItemKind;
+  kind: LibraryCollectionKind;
   id: string;
   provider?: ProviderId;
   name: string;
