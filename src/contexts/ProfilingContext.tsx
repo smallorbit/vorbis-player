@@ -144,6 +144,9 @@ class MetricsCollector {
     const perfMem = (performance as unknown as { memory?: { usedJSHeapSize: number } }).memory;
     const curMem = perfMem ? perfMem.usedJSHeapSize / 1024 / 1024 : undefined;
     if (curMem !== undefined && curMem > this.peakMemory) this.peakMemory = curMem;
+    const memory: ProfilingSnapshot['memory'] = {};
+    if (curMem !== undefined) memory.current = curMem;
+    if (this.peakMemory > 0) memory.peak = this.peakMemory;
     return {
       sessionStart: this.sessionStart,
       duration: performance.now() - this.sessionStart,
@@ -152,7 +155,7 @@ class MetricsCollector {
       operations: Object.fromEntries(this.operations),
       frameRate: { current: this.currentFps, avg: Math.round(avgFps * 10) / 10, min: this.minFps === Infinity ? 0 : this.minFps },
       longTasks: { count: this.longTaskCount, totalDuration: this.longTaskTotal, maxDuration: this.longTaskMax },
-      memory: { current: curMem, peak: this.peakMemory > 0 ? this.peakMemory : undefined },
+      memory,
       recentEvents: [...this.recentEvents],
     };
   }

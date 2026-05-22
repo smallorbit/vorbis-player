@@ -34,7 +34,7 @@ export function saveSession(snapshot: SessionSnapshot): void {
     const sanitized: SessionSnapshot = {
       ...snapshot,
       savedAt: Date.now(),
-      queueTracks: snapshot.queueTracks?.map(sanitizeTrack),
+      ...(snapshot.queueTracks !== undefined && { queueTracks: snapshot.queueTracks.map(sanitizeTrack) }),
     };
     localStorage.setItem(SESSION_KEY, JSON.stringify(sanitized));
   } catch (err) {

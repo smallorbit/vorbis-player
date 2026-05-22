@@ -20,13 +20,13 @@ interface GestureLayerProps {
   onSwipeDown: () => void;
   isTouchDevice: boolean;
   onClick: (e: React.MouseEvent) => void;
-  onLongPress?: () => void;
-  zenTouchHandlers?: ZenTouchHandlers;
+  onLongPress?: (() => void) | undefined;
+  zenTouchHandlers?: ZenTouchHandlers | undefined;
   albumArtContainerRef: React.MutableRefObject<HTMLDivElement | null>;
   children: React.ReactNode;
-  onZoneHover?: (zone: Zone | null) => void;
-  zenModeEnabled?: boolean;
-  hasPointerInput?: boolean;
+  onZoneHover?: ((zone: Zone | null) => void) | undefined;
+  zenModeEnabled?: boolean | undefined;
+  hasPointerInput?: boolean | undefined;
 }
 
 export const GestureLayer: React.FC<GestureLayerProps> = React.memo(({

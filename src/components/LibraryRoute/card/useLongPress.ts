@@ -5,8 +5,8 @@ const MOVE_TOLERANCE_PX = 8;
 
 export interface UseLongPressOptions {
   onLongPress: (anchor: DOMRect) => void;
-  onTap?: () => void;
-  enabled?: boolean;
+  onTap?: (() => void) | undefined;
+  enabled?: boolean | undefined;
 }
 
 interface PointerState {

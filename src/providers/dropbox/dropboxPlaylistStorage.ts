@@ -103,10 +103,10 @@ function mediaTrackToSavedTrack(track: MediaTrack): SavedTrack {
     name: track.name,
     artists: track.artists,
     album: track.album,
-    albumId: track.albumId,
     durationMs: track.durationMs,
-    externalUrl: track.externalUrl,
-    image,
+    ...(track.albumId !== undefined && { albumId: track.albumId }),
+    ...(track.externalUrl !== undefined && { externalUrl: track.externalUrl }),
+    ...(image !== undefined && { image }),
   };
 }
 
@@ -118,10 +118,10 @@ function savedTrackToMediaTrack(track: SavedTrack): MediaTrack {
     name: track.name,
     artists: track.artists,
     album: track.album,
-    albumId: track.albumId,
     durationMs: track.durationMs,
-    externalUrl: track.externalUrl,
-    image: track.image,
+    ...(track.albumId !== undefined && { albumId: track.albumId }),
+    ...(track.externalUrl !== undefined && { externalUrl: track.externalUrl }),
+    ...(track.image !== undefined && { image: track.image }),
     genres: [],
   };
 }
@@ -237,7 +237,6 @@ export async function listSavedPlaylists(
         provider: 'dropbox',
         kind: 'playlist',
         name: entry.name.replace(/\.json$/, ''),
-        imageUrl: undefined,
         genres: [],
       });
       filePaths.push(entry.path_lower);

@@ -154,7 +154,8 @@ export class DropboxCatalogAdapter implements CatalogProvider {
 
         const name = dirDisplayName.get(dirPath) ?? (dirPath.split('/').pop() || 'Unknown Album');
         const parentPath = dirParent.get(dirPath) ?? '';
-        const artistName = parentPath ? (dirDisplayName.get(parentPath) ?? undefined) : undefined;
+        const artistName = parentPath ? dirDisplayName.get(parentPath) : undefined;
+        const imageUrl = dirToImageUrl.get(dirPath);
 
         albums.push({
           id: dirPath,
@@ -162,8 +163,8 @@ export class DropboxCatalogAdapter implements CatalogProvider {
           kind: 'album',
           name,
           trackCount: count,
-          ownerName: artistName,
-          imageUrl: dirToImageUrl.get(dirPath),
+          ...(artistName !== undefined && { ownerName: artistName }),
+          ...(imageUrl !== undefined && { imageUrl }),
           // Dropbox folder metadata does not include genre information
           genres: [],
         });

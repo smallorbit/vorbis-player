@@ -156,10 +156,9 @@ Path alias: `@/` → `./src/` (e.g. `import { x } from '@/hooks/usePlayerState'`
 
 `tsconfig.app.json` enables the strictest reasonable set of compiler flags:
 `strict`, `noUncheckedIndexedAccess`, `noImplicitOverride`,
-`noUnusedLocals`, `noUnusedParameters`, `noFallthroughCasesInSwitch`,
-`noUncheckedSideEffectImports`, `erasableSyntaxOnly`, `verbatimModuleSyntax`.
-`exactOptionalPropertyTypes` is intentionally deferred — see issue #1598
-for the architectural decision pending on React prop conventions.
+`exactOptionalPropertyTypes`, `noUnusedLocals`, `noUnusedParameters`,
+`noFallthroughCasesInSwitch`, `noUncheckedSideEffectImports`,
+`erasableSyntaxOnly`, `verbatimModuleSyntax`.
 
 Patterns this enforces:
 
@@ -178,6 +177,16 @@ Patterns this enforces:
   is meaningful). `field?: T | null` is forbidden — under
   `exactOptionalPropertyTypes` it becomes a three-way mess of
   missing-vs-null-vs-undefined.
+- **React component prop interfaces use `field?: T | undefined`, not `field?: T`.**
+  React's runtime treats `<Foo prop={undefined} />` and `<Foo />` as identical, so
+  the type system should too. This applies to any interface named `*Props` used by
+  a function component, styled-component type arguments, hook option-bag
+  parameters, and context-value interfaces — anything consumed via an object-literal
+  call site that benefits from the canonical `<Foo prop={cond ? value : undefined} />`
+  pattern. Domain models and non-JSX data shapes keep `field?: T` (the
+  optional-XOR-nullable rule above). At third-party boundaries (Radix, sonner, etc.)
+  that expect `field?: T`, use conditional spread
+  (`{...(value !== undefined && { prop: value })}`) — never `!`.
 - **Canonical types live in `src/types/`.** Inline object types repeated across
   files should be lifted to a named export and colocated with their conceptual
   owner (`domain.ts`, `providers.ts`, `radio.ts`, etc.). Test fixture and
@@ -185,7 +194,8 @@ Patterns this enforces:
 - **Indexed access returns `T | undefined`.** Bounds-check (`if (!item) return`),
   default-coalesce (`?? fallback`), or destructure-with-default. Never `arr[i]!`.
 
-These conventions were established by the TypeScript strictness audit epic (#1589).
+These conventions were established by the TypeScript strictness audit epic (#1589)
+and finalized by #1598 (the React prop convention).
 
 ## Testing
 

@@ -6,9 +6,9 @@ export interface BottomBarActionsValue {
   showQueue: () => void;
   openLibrary: () => void;
   toggleZenMode: () => void;
-  startRadio?: () => void;
-  openQuickAccessPanel?: () => void;
-  radioGenerating?: boolean;
+  startRadio?: (() => void) | undefined;
+  openQuickAccessPanel?: (() => void) | undefined;
+  radioGenerating?: boolean | undefined;
 }
 
 const BottomBarActionsContext = createContext<BottomBarActionsValue | null>(null);

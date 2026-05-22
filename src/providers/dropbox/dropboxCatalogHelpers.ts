@@ -91,11 +91,11 @@ export function entryToMediaTrack(entry: DropboxFileEntry, imageUrl?: string): M
     artistsData: [{ name: artist }],
     album: albumName,
     albumId,
-    trackNumber,
     durationMs: 0,
-    image: imageUrl,
     // Dropbox file metadata does not include genre information
     genres: [],
+    ...(trackNumber !== undefined && { trackNumber }),
+    ...(imageUrl !== undefined && { image: imageUrl }),
   };
 }
 

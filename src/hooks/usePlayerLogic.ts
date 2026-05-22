@@ -427,7 +427,10 @@ export function usePlayerLogic() {
       drivingProviderRef.current = providerId;
       setPlaybackPosition(positionMs ?? 0);
       setIsPlaying(false);
-      hydratedPendingPlayRef.current = { index: candidateIdx, positionMs };
+      hydratedPendingPlayRef.current = {
+        index: candidateIdx,
+        ...(positionMs !== undefined && { positionMs }),
+      };
 
       logQueue(
         'handleHydrate — index=%d, track=%s, positionMs=%s, provider=%s, skipped=%s',

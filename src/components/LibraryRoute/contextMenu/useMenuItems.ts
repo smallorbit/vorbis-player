@@ -27,25 +27,25 @@ export interface UseMenuItemsCallbacks {
     name: string,
     provider?: ProviderId,
   ) => void;
-  onAddToQueue?: (id: string, name: string, provider?: ProviderId) => void | Promise<unknown>;
-  onPlayNext?: (
+  onAddToQueue?: ((id: string, name: string, provider?: ProviderId) => void | Promise<unknown>) | undefined;
+  onPlayNext?: ((
     kind: 'playlist' | 'album',
     id: string,
     name: string,
     provider?: ProviderId,
-  ) => void;
-  onStartRadioForCollection?: (
+  ) => void) | undefined;
+  onStartRadioForCollection?: ((
     kind: 'playlist' | 'album',
     id: string,
     provider?: ProviderId,
-  ) => void;
+  ) => void) | undefined;
   onPlayLikedTracks: (
     tracks: MediaTrack[],
     collectionId: string,
     collectionName: string,
     provider?: ProviderId,
   ) => Promise<void> | void;
-  onQueueLikedTracks?: (tracks: MediaTrack[], collectionName?: string) => void;
+  onQueueLikedTracks?: ((tracks: MediaTrack[], collectionName?: string) => void) | undefined;
 }
 
 export function useMenuItems(

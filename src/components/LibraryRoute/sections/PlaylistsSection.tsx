@@ -10,11 +10,11 @@ const SEE_ALL_THRESHOLD = 8;
 
 export interface PlaylistsSectionProps {
   layout: 'row' | 'grid';
-  excludePinned?: boolean;
-  showProviderBadges?: boolean;
+  excludePinned?: boolean | undefined;
+  showProviderBadges?: boolean | undefined;
   onSelect: (kind: LibraryItemKind, id: string, name: string, provider?: ProviderId) => void;
-  onSeeAll?: () => void;
-  onContextMenuRequest?: (req: ContextMenuRequest) => void;
+  onSeeAll?: (() => void) | undefined;
+  onContextMenuRequest?: ((req: ContextMenuRequest) => void) | undefined;
 }
 
 const PlaylistsSection: React.FC<PlaylistsSectionProps> = ({

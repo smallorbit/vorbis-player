@@ -4,7 +4,7 @@ import type { RadioProgressPhase } from '@/types/radio';
 
 interface RadioProgressContentProps {
   phase: RadioProgressPhase;
-  trackCount?: number;
+  trackCount?: number | undefined;
   onDismiss: () => void;
   onViewQueue: () => void;
 }

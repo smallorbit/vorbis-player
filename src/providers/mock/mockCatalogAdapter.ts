@@ -9,18 +9,20 @@ function snapshotTrackToMediaTrack(track: SnapshotTrack, providerId: ProviderId)
     playbackRef: { provider: providerId, ref: track.ref },
     name: track.name,
     artists: track.artistsDisplay,
-    artistsData: track.artists.map(a => ({ name: a.name, url: a.externalUrl })),
+    artistsData: track.artists.map((a) =>
+      a.externalUrl !== undefined ? { name: a.name, url: a.externalUrl } : { name: a.name },
+    ),
     album: track.album.name,
     albumId: track.album.id,
-    trackNumber: track.trackNumber,
     durationMs: track.durationMs,
-    image: track.image?.url,
-    externalUrl: track.externalUrl,
-    musicbrainzRecordingId: track.musicbrainzRecordingId,
-    musicbrainzArtistId: track.musicbrainzArtistId,
-    isrc: track.isrc,
-    addedAt: track.addedAt,
     genres: track.genres ?? [],
+    ...(track.trackNumber !== undefined && { trackNumber: track.trackNumber }),
+    ...(track.image?.url !== undefined && { image: track.image.url }),
+    ...(track.externalUrl !== undefined && { externalUrl: track.externalUrl }),
+    ...(track.musicbrainzRecordingId !== undefined && { musicbrainzRecordingId: track.musicbrainzRecordingId }),
+    ...(track.musicbrainzArtistId !== undefined && { musicbrainzArtistId: track.musicbrainzArtistId }),
+    ...(track.isrc !== undefined && { isrc: track.isrc }),
+    ...(track.addedAt !== undefined && { addedAt: track.addedAt }),
   };
 }
 
@@ -59,25 +61,26 @@ export class MockCatalogAdapter implements CatalogProvider {
         kind: 'playlist',
         name: playlist.name,
         description: playlist.description,
-        imageUrl: playlist.image?.url,
         trackCount: playlist.trackCount,
         ownerName: playlist.ownerName,
-        revision: playlist.revision ?? undefined,
         genres: [],
+        ...(playlist.image?.url !== undefined && { imageUrl: playlist.image.url }),
+        ...(playlist.revision != null && { revision: playlist.revision }),
       });
     }
 
     for (const album of this.snapshot.albums) {
+      const ownerName = album.artists[0]?.name;
       collections.push({
         id: album.id,
         provider: this.providerId,
         kind: 'album',
         name: album.name,
-        imageUrl: album.image?.url,
         trackCount: album.trackCount,
-        ownerName: album.artists[0]?.name,
-        releaseDate: album.releaseDate,
         genres: album.genres ?? [],
+        ...(album.image?.url !== undefined && { imageUrl: album.image.url }),
+        ...(ownerName !== undefined && { ownerName }),
+        ...(album.releaseDate !== undefined && { releaseDate: album.releaseDate }),
       });
     }
 

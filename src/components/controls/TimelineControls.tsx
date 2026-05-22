@@ -10,7 +10,7 @@ interface TimelineControlsProps {
     onSeek: (position: number) => void;
     onScrubStart: () => void;
     onScrubEnd: (position: number) => void;
-    trackId?: string;
+    trackId?: string | undefined;
     isLiked: boolean;
     isLikePending: boolean;
     onLikeToggle: () => void;

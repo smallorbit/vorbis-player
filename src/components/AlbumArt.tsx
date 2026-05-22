@@ -56,12 +56,12 @@ interface AlbumArtProps {
 const AlbumArtContainer = styled.div.withConfig({
   shouldForwardProp: (prop) => !['accentColor', 'glowIntensity', 'glowRate', 'glowEnabled', '$zenMode', '$translucenceOpacity'].includes(prop),
 }) <{
-  accentColor?: string;
-  glowIntensity?: number;
-  glowRate?: number;
-  glowEnabled?: boolean;
-  $zenMode?: boolean;
-  $translucenceOpacity?: number;
+  accentColor?: string | undefined;
+  glowIntensity?: number | undefined;
+  glowRate?: number | undefined;
+  glowEnabled?: boolean | undefined;
+  $zenMode?: boolean | undefined;
+  $translucenceOpacity?: number | undefined;
 }>`
   transform: translateZ(0);
   will-change: transform, opacity;

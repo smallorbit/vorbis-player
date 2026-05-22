@@ -22,7 +22,7 @@ interface TrackInfoPopoverProps {
 // OptionButton retained — purely visual, no layout role. Radix Popover owns
 // positioning, click-outside, Escape, focus return, and motion via the shadcn
 // `popover` primitive; this component just renders the option list.
-const OptionButton = styled.button<{ $disabled?: boolean }>`
+const OptionButton = styled.button<{ $disabled?: boolean | undefined }>`
   display: flex;
   align-items: center;
   gap: 0.625rem;

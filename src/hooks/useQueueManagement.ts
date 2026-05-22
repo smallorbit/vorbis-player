@@ -102,7 +102,7 @@ export function useQueueManagement({
         logQueue('handleAddToQueue — queue empty, delegating to loadCollection');
         const loaded = await loadCollection(playlistId, provider, collectionName);
         if (loaded > 0) {
-          return { added: loaded, collectionName };
+          return { added: loaded, ...(collectionName !== undefined && { collectionName }) };
         }
         toast(ADD_TO_QUEUE_EMPTY_MSG, { id: ADD_TO_QUEUE_EMPTY_ID });
         return null;
@@ -143,7 +143,7 @@ export function useQueueManagement({
           mediaTracksRef.current.length,
           uniqueNewTracks.map((t: MediaTrack) => trkSummary(t)).join(', '),
         );
-        return { added: uniqueNewTracks.length, collectionName };
+        return { added: uniqueNewTracks.length, ...(collectionName !== undefined && { collectionName }) };
       } catch (err) {
         console.error('[Queue] Failed to add to queue:', err);
         toast(ADD_TO_QUEUE_ERROR_MSG, { id: ADD_TO_QUEUE_ERROR_ID });
@@ -259,7 +259,7 @@ export function useQueueManagement({
       setOriginalTracks(nextTracks);
       setTracks((prev: MediaTrack[]) => [...prev, ...uniqueNewTracks]);
       notifyQueueChanged(nextTracks, currentTrackIndex);
-      return { added: uniqueNewTracks.length, collectionName };
+      return { added: uniqueNewTracks.length, ...(collectionName !== undefined && { collectionName }) };
     },
     [mediaTracksRef, setOriginalTracks, setTracks, notifyQueueChanged, currentTrackIndex]
   );
@@ -287,7 +287,7 @@ export function useQueueManagement({
         setOriginalTracks([...uniqueNewTracks]);
         setTracks([...uniqueNewTracks]);
         notifyQueueChanged([...uniqueNewTracks], 0);
-        return { added: uniqueNewTracks.length, collectionName };
+        return { added: uniqueNewTracks.length, ...(collectionName !== undefined && { collectionName }) };
       }
 
       const insertAt = currentTrackIndex + 1;
@@ -312,7 +312,7 @@ export function useQueueManagement({
         mediaTracksRef.current.length,
         uniqueNewTracks.map((t: MediaTrack) => trkSummary(t)).join(', '),
       );
-      return { added: uniqueNewTracks.length, collectionName };
+      return { added: uniqueNewTracks.length, ...(collectionName !== undefined && { collectionName }) };
     },
     [currentTrackIndex, mediaTracksRef, setOriginalTracks, setTracks, notifyQueueChanged],
   );
@@ -345,7 +345,7 @@ export function useQueueManagement({
         logQueue('insertCollectionNext — queue empty, delegating to loadCollection');
         const loaded = await loadCollection(playlistId, provider, collectionName);
         if (loaded > 0) {
-          return { added: loaded, collectionName };
+          return { added: loaded, ...(collectionName !== undefined && { collectionName }) };
         }
         toast(ADD_TO_QUEUE_EMPTY_MSG, { id: ADD_TO_QUEUE_EMPTY_ID });
         return null;

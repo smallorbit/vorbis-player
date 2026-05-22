@@ -280,11 +280,12 @@ export class DropboxLikesSyncService {
         (t) => now - t.deletedAt < TOMBSTONE_TTL_MS,
       );
 
-      const leanEntries = entries.map(({ trackId, track, likedAt }) => ({
-        trackId,
-        track: { ...track, image: undefined },
-        likedAt,
-      }));
+      const leanEntries = entries.map(({ trackId, track, likedAt }) => {
+        // Strip the (large, presigned) Dropbox image URL before uploading; the playbackRef
+        // path is the permanent identifier. MediaTrack.image is optional, so we omit it.
+        const { image: _image, ...rest } = track;
+        return { trackId, track: rest, likedAt };
+      });
 
       const data: RemoteLikesFile = {
         version: 1,

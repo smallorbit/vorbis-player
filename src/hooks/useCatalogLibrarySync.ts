@@ -51,10 +51,10 @@ function collectionToPlaylistInfo(c: MediaCollection, ordinal: number): CachedPl
     images,
     tracks: c.trackCount != null ? { total: c.trackCount } : null,
     owner: c.ownerName ? { display_name: c.ownerName } : null,
-    snapshot_id: c.revision ?? undefined,
     provider: c.provider,
     added_at: getOrSetFirstSeenAddedAtIso(c.provider, `playlist:${c.id}`, ordinal),
-    mosaicAlbumPaths: c.mosaicAlbumPaths,
+    ...(c.revision !== undefined && { snapshot_id: c.revision }),
+    ...(c.mosaicAlbumPaths !== undefined && { mosaicAlbumPaths: c.mosaicAlbumPaths }),
   };
 }
 

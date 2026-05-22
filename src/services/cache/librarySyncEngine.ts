@@ -194,10 +194,11 @@ export class SpotifyLibrarySyncEngine {
     this.pendingRemovals.delete(album.id);
     await cache.putAlbum(album);
     const meta = await cache.getMeta('albums');
+    const latestAddedAt = album.added_at ?? meta?.latestAddedAt;
     await cache.putMeta('albums', {
       lastValidated: meta?.lastValidated ?? Date.now(),
       totalCount: (meta?.totalCount ?? 0) + 1,
-      latestAddedAt: album.added_at ?? meta?.latestAddedAt,
+      ...(latestAddedAt !== undefined && { latestAddedAt }),
     });
     const albums = await cache.getAllAlbums();
     this.notifyListeners(undefined, albums, undefined);
@@ -278,7 +279,7 @@ export class SpotifyLibrarySyncEngine {
         cache.putMeta('albums', {
           lastValidated: Date.now(),
           totalCount: allAlbums.length,
-          latestAddedAt: latestAddedAt || undefined,
+          ...(latestAddedAt && { latestAddedAt }),
         }).catch(() => {});
       }
     };

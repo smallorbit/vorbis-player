@@ -29,6 +29,7 @@ function buildTracksFromWindow(state: SpotifyPlaybackState): MediaTrack[] {
   function toTrack(item: SpotifyTrack): MediaTrack {
     const albumId = item.album?.uri?.split(':').pop();
     const uri = item.uri;
+    const image = getLargestImage(item.album?.images);
     return {
       id: item.id || '',
       provider: SPOTIFY_PROVIDER_ID,
@@ -36,10 +37,10 @@ function buildTracksFromWindow(state: SpotifyPlaybackState): MediaTrack[] {
       name: item.name,
       artists: item.artists.map(a => a.name).join(', '),
       album: item.album?.name ?? 'Unknown Album',
-      albumId,
       durationMs: item.duration_ms ?? 0,
-      image: getLargestImage(item.album?.images),
       genres: [],
+      ...(albumId !== undefined && { albumId }),
+      ...(image !== undefined && { image }),
     };
   }
 

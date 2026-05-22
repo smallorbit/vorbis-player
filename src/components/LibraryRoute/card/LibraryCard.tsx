@@ -17,14 +17,14 @@ import {
 export interface LibraryCardProps {
   kind: LibraryCollectionKind;
   id: string;
-  provider?: ProviderId;
+  provider?: ProviderId | undefined;
   name: string;
-  subtitle?: string;
-  imageUrl?: string;
-  showProviderBadge?: boolean;
+  subtitle?: string | undefined;
+  imageUrl?: string | undefined;
+  showProviderBadge?: boolean | undefined;
   variant: 'row' | 'grid';
   onSelect: () => void;
-  onContextMenuRequest?: (req: ContextMenuRequest) => void;
+  onContextMenuRequest?: ((req: ContextMenuRequest) => void) | undefined;
 }
 
 const placeholderGlyphForKind = (kind: LibraryItemKind): string => {
