@@ -92,7 +92,7 @@ export class SpotifyCatalogAdapter implements CatalogProvider {
     await getUserLibraryInterleaved(
       (fetchedPlaylists, _isComplete) => {
         for (const p of fetchedPlaylists) {
-          collections.push(spotifyPlaylistToMediaCollection(p as PlaylistInfo));
+          collections.push(spotifyPlaylistToMediaCollection(p));
         }
       },
       (fetchedAlbums, _isComplete) => {
