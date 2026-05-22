@@ -16,6 +16,7 @@ function getLikedSongsGradient(providerId?: string | 'unified'): string {
     const fallback = colors[0] ?? theme.colors.accent;
     return `linear-gradient(135deg, ${fallback} 0%, ${fallback} 100%)`;
   }
+  // providerId comes from snapshot/storage strings; registry.get returns undefined for unknown ids.
   const descriptor = providerId ? providerRegistry.get(providerId as ProviderId) : undefined;
   const color = descriptor?.color ?? theme.colors.accent;
   return `linear-gradient(135deg, ${color} 0%, ${color}cc 100%)`;
