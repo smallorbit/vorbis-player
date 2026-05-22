@@ -123,6 +123,7 @@ function savedTrackToMediaTrack(track: SavedTrack): MediaTrack {
     durationMs: track.durationMs,
     externalUrl: track.externalUrl,
     image: track.image,
+    genres: [],
   };
 }
 
@@ -238,6 +239,7 @@ export async function listSavedPlaylists(
         kind: 'playlist',
         name: entry.name.replace(/\.json$/, ''),
         imageUrl: undefined,
+        genres: [],
       });
       filePaths.push(entry.path_lower);
     }

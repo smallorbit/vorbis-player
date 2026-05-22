@@ -62,7 +62,8 @@ export class MockCatalogAdapter implements CatalogProvider {
         imageUrl: playlist.image?.url,
         trackCount: playlist.trackCount,
         ownerName: playlist.ownerName,
-        revision: playlist.revision,
+        revision: playlist.revision ?? undefined,
+        genres: [],
       });
     }
 
@@ -74,7 +75,7 @@ export class MockCatalogAdapter implements CatalogProvider {
         name: album.name,
         imageUrl: album.image?.url,
         trackCount: album.trackCount,
-        ownerName: album.artists[0]?.name ?? null,
+        ownerName: album.artists[0]?.name,
         releaseDate: album.releaseDate,
         genres: album.genres ?? [],
       });
