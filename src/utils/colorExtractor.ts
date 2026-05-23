@@ -124,8 +124,9 @@ export async function extractDominantColor(imageUrl: string): Promise<ExtractedC
 
             const key = `${rBucket}-${gBucket}-${bBucket}`;
 
-            if (colorMap.has(key)) {
-              colorMap.get(key)!.count++;
+            const existing = colorMap.get(key);
+            if (existing) {
+              existing.count++;
             } else {
               colorMap.set(key, { r: rBucket, g: gBucket, b: bBucket, count: 1 });
             }
@@ -240,8 +241,9 @@ export async function extractTopVibrantColors(imageUrl: string, count = 3): Prom
             const gBucket = Math.floor(g / COLOR_BUCKET_SIZE) * COLOR_BUCKET_SIZE;
             const bBucket = Math.floor(b / COLOR_BUCKET_SIZE) * COLOR_BUCKET_SIZE;
             const key = `${rBucket}-${gBucket}-${bBucket}`;
-            if (colorMap.has(key)) {
-              colorMap.get(key)!.count++;
+            const existing = colorMap.get(key);
+            if (existing) {
+              existing.count++;
             } else {
               colorMap.set(key, { r: rBucket, g: gBucket, b: bBucket, count: 1 });
             }
