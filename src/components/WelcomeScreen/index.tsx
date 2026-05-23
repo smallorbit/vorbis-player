@@ -22,7 +22,7 @@ import {
 interface WelcomeScreenProps {
   onConnectProvider: () => void;
   onBrowseLibrary: () => void;
-  onDismiss?: () => void;
+  onDismiss?: (() => void) | undefined;
 }
 
 const WelcomeScreen: React.FC<WelcomeScreenProps> = ({

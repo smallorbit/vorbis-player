@@ -39,7 +39,7 @@ const Line = styled.div`
 `;
 
 interface SectionSkeletonProps {
-  count?: number;
+  count?: number | undefined;
   variant: 'row' | 'grid';
 }
 

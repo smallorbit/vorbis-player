@@ -3,7 +3,7 @@ import { cardBase } from '../../styles/utils';
 
 interface CardProps {
   children: React.ReactNode;
-  className?: string;
+  className?: string | undefined;
 }
 
 const StyledCard = styled.div`

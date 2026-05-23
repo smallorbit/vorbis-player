@@ -30,7 +30,7 @@ interface AlbumArtQuickSwapBackProps {
   isMobile: boolean;
   isTablet: boolean;
   onClose: () => void;
-  onRetryAlbumArt?: () => void;
+  onRetryAlbumArt?: (() => void) | undefined;
 }
 
 const BacksideRoot = styled.div`

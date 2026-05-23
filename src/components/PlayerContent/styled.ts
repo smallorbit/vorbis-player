@@ -203,7 +203,7 @@ export const ZenTrackArtist = styled.div`
   width: 100%;
 `;
 
-export const ClickableAlbumArtContainer = styled.div<{ $swipeEnabled?: boolean; $bothGestures?: boolean }>`
+export const ClickableAlbumArtContainer = styled.div<{ $swipeEnabled?: boolean | undefined; $bothGestures?: boolean | undefined }>`
   position: relative;
   cursor: pointer;
   z-index: ${ALBUM_ART_Z};

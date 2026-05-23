@@ -33,7 +33,7 @@ export default tseslint.config(
           caughtErrorsIgnorePattern: '^_',
         },
       ],
-      'vorbis/props-explicit-undefined': 'warn',
+      'vorbis/props-explicit-undefined': 'error',
     },
   },
   {
