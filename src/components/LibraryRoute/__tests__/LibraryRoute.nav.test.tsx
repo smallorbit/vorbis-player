@@ -74,7 +74,6 @@ vi.mock('../views/HomeView', () => ({
     <div data-testid="home-view">
       <button onClick={() => onNavigate('playlists')}>go-playlists</button>
       <button onClick={() => onNavigate('albums')}>go-albums</button>
-      <button onClick={() => onNavigate('liked')}>go-liked</button>
       <button onClick={() => onSelectCollection('album', 'a1', 'Dark Side', 'spotify')}>select-album</button>
       <button onClick={() => onSelectCollection('playlist', 'p1', 'Chill', 'spotify')}>select-playlist</button>
     </div>
@@ -96,7 +95,6 @@ const mockUsePlayerSizingContext = vi.mocked(usePlayerSizingContext);
 
 const baseProps = {
   onPlaylistSelect: vi.fn(),
-  onOpenSettings: vi.fn(),
   lastSession: null,
 };
 
@@ -136,18 +134,6 @@ describe('LibraryRoute — navigation', () => {
 
     // #then
     expect(screen.getByTestId('see-all-view-albums')).toBeInTheDocument();
-  });
-
-  it('falls back to HomeView when navigating to "liked" (no SeeAll page)', () => {
-    // #given
-    render(<LibraryRoute {...baseProps} />);
-
-    // #when
-    fireEvent.click(screen.getByRole('button', { name: 'go-liked' }));
-
-    // #then — "liked" has no SeeAll; LibraryRoute renders HomeView defensively
-    expect(screen.getByTestId('home-view')).toBeInTheDocument();
-    expect(screen.queryByTestId('see-all-view-liked')).not.toBeInTheDocument();
   });
 
   it('navigates back to HomeView from SeeAllView when onBack fires', () => {

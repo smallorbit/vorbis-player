@@ -74,7 +74,6 @@ import { usePlayerSizingContext } from '@/contexts/PlayerSizingContext';
 
 const baseProps = {
   onPlaylistSelect: vi.fn(),
-  onOpenSettings: vi.fn(),
   lastSession: null,
   isPlaying: false,
   onMiniPlay: vi.fn(),
