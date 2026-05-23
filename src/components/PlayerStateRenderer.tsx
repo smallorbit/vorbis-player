@@ -340,7 +340,6 @@ const PlayerStateRenderer: React.FC<PlayerStateRendererProps> = ({
             onAddToQueue={onAddToQueue}
             onPlayLikedTracks={onPlayLikedTracks}
             onQueueLikedTracks={onQueueLikedTracks}
-            onOpenSettings={onOpenSettings}
             onResume={onResume}
             lastSession={lastSession}
             isPlaying={false}

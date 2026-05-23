@@ -14,11 +14,6 @@ import { useLibrarySearch } from './search/useLibrarySearch';
 import LibraryContextMenu from './contextMenu/LibraryContextMenu';
 import { LibraryContextMenuOpenContext } from './contextMenu/LibraryContextMenuOpenContext';
 
-// LibraryRoute assumes upstream guards have already filtered out cold-start cases:
-// - AudioPlayer.tsx routes to ProviderSetupScreen when needsSetup === true
-// - PlayerStateRenderer.tsx routes to WelcomeScreen when !welcomeSeen
-// If this component renders, at least one provider is connected AND welcome has been dismissed.
-
 export interface LibraryRouteProps {
   onPlaylistSelect: (playlistId: string, playlistName: string, provider?: ProviderId) => void;
   onAddToQueue: (id: string, name?: string, provider?: ProviderId) => Promise<AddToQueueResult | null>;
@@ -29,7 +24,6 @@ export interface LibraryRouteProps {
     provider?: ProviderId,
   ) => Promise<void>) | undefined;
   onQueueLikedTracks?: ((tracks: MediaTrack[], collectionName?: string) => void) | undefined;
-  onOpenSettings: () => void;
   onResume?: (() => void) | undefined;
   lastSession?: SessionSnapshot | null | undefined;
   onPlayNext?: ((
@@ -132,13 +126,6 @@ const LibraryRoute: React.FC<LibraryRouteProps> = ({
     triggerRef.current?.focus();
   }, []);
 
-  const handlePlayCollection = useCallback(
-    (kind: 'playlist' | 'album', id: string, name: string, provider?: ProviderId) => {
-      handleSelectCollection(kind, id, name, provider);
-    },
-    [handleSelectCollection],
-  );
-
   const handleAddToQueueAction = useCallback(
     (id: string, name: string, provider?: ProviderId) => {
       void onAddToQueue(id, name, provider);
@@ -174,7 +161,7 @@ const LibraryRoute: React.FC<LibraryRouteProps> = ({
         onContextMenuRequest={handleContextMenuRequest}
       />
     );
-  } else if (effectiveView === 'home' || effectiveView === 'liked') {
+  } else if (effectiveView === 'home') {
     body = (
       <HomeView
         layout={layout}
@@ -212,7 +199,7 @@ const LibraryRoute: React.FC<LibraryRouteProps> = ({
         request={contextRequest}
         onClose={handleCloseContextMenu}
         onReturnFocusClose={handleReturnFocusClose}
-        onPlayCollection={handlePlayCollection}
+        onPlayCollection={handleSelectCollection}
         onAddToQueue={handleAddToQueueAction}
         onPlayNext={onPlayNext}
         onStartRadioForCollection={onStartRadioForCollection}

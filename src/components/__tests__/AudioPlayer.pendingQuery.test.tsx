@@ -79,7 +79,6 @@ import LibraryRoute from '../LibraryRoute';
 
 const baseProps = {
   onPlaylistSelect: vi.fn(),
-  onOpenSettings: vi.fn(),
   lastSession: null,
   isPlaying: false,
   onMiniPlay: vi.fn(),

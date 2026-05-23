@@ -8,8 +8,6 @@ export interface UseAlbumSavedStatusResult {
   isSaved: boolean | null;
   toggleSaved: () => void;
   canToggle: boolean;
-  saveError: string | null;
-  clearSaveError: () => void;
 }
 
 export function useAlbumSavedStatus(
@@ -18,7 +16,6 @@ export function useAlbumSavedStatus(
 ): UseAlbumSavedStatusResult {
   const { activeDescriptor, getDescriptor } = useProviderContext();
   const [isSaved, setIsSaved] = useState<boolean | null>(null);
-  const [saveError, setSaveError] = useState<string | null>(null);
 
   const descriptor = provider ? getDescriptor(provider) : activeDescriptor;
   const canToggle = !!(
@@ -57,7 +54,6 @@ export function useAlbumSavedStatus(
       } catch (err) {
         logLibrary('setAlbumSaved failed', err);
         setIsSaved(!next);
-        setSaveError(next ? 'Failed to add album.' : 'Failed to remove album.');
         return;
       }
 
@@ -80,11 +76,8 @@ export function useAlbumSavedStatus(
     if (!canToggle || !albumId || isSaved === null) return;
     const next = !isSaved;
     setIsSaved(next);
-    setSaveError(null);
     commitToggle(next).catch((err) => logLibrary('toggleSaved unexpected error', err));
   }, [canToggle, albumId, isSaved, commitToggle]);
 
-  const clearSaveError = useCallback(() => setSaveError(null), []);
-
-  return { isSaved, toggleSaved, canToggle, saveError, clearSaveError };
+  return { isSaved, toggleSaved, canToggle };
 }
