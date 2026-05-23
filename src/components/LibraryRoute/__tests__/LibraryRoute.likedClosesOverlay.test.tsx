@@ -97,7 +97,6 @@ vi.mock('../views/HomeView', () => ({
 import LibraryRoute from '../index';
 
 const baseProps = {
-  onOpenSettings: vi.fn(),
   lastSession: null,
   isPlaying: false,
   onMiniPlay: vi.fn(),
