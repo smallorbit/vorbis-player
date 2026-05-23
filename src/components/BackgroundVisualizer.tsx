@@ -10,12 +10,12 @@ interface BackgroundVisualizerProps {
   enabled: boolean;
   style: VisualizerStyle;
   intensity: number;
-  speed?: number;
+  speed?: number | undefined;
   accentColor: string;
   isPlaying: boolean;
-  dimmed?: boolean;
+  dimmed?: boolean | undefined;
   /** When style is 'comet', the trail head is constrained to this rect so it appears to come from the album art */
-  albumArtBounds?: AlbumArtBounds | null;
+  albumArtBounds?: AlbumArtBounds | null | undefined;
 }
 
 const VisualizerContainer = styled.div<{ $dimmed: boolean }>`

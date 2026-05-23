@@ -5,7 +5,7 @@ const TRACK_INFO_ROW_Z = 10;
 const TRACK_INFO_TEXT_Z = 11;
 
 // --- Main Container ---
-export const PlayerControlsContainer = styled.div<{ $isMobile: boolean; $isTablet: boolean; $compact?: boolean }>`
+export const PlayerControlsContainer = styled.div<{ $isMobile: boolean; $isTablet: boolean; $compact?: boolean | undefined }>`
   position: relative;
   z-index: 2;
   display: flex;
@@ -48,7 +48,7 @@ export const PlayerControlsContainer = styled.div<{ $isMobile: boolean; $isTable
 `;
 
 // --- Track Info Components ---
-export const TrackInfoOnlyRow = styled.div<{ $compact?: boolean }>`
+export const TrackInfoOnlyRow = styled.div<{ $compact?: boolean | undefined }>`
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -196,7 +196,7 @@ export const ControlButton = styled.button.withConfig({
 `;
 
 // --- Timeline Components ---
-export const TimelineControlsContainer = styled.div<{ $isMobile?: boolean }>`
+export const TimelineControlsContainer = styled.div<{ $isMobile?: boolean | undefined }>`
   display: flex;
   align-items: center;
   justify-content: space-between;

@@ -61,7 +61,7 @@ const ToolButton = styled.button<{ $active: boolean }>`
   }
 `;
 
-const ActionButton = styled.button<{ $variant?: 'primary' | 'cancel' }>`
+const ActionButton = styled.button<{ $variant?: 'primary' | 'cancel' | undefined }>`
   background: ${({ $variant }) =>
     $variant === 'primary' ? '#3182ce' : $variant === 'cancel' ? 'transparent' : 'transparent'};
   border: 1px solid

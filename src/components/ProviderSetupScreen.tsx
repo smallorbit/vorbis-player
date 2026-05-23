@@ -6,8 +6,8 @@ import { Switch } from '@/components/ui/switch';
 import type { ProviderId } from '@/types/domain';
 
 interface ProviderSetupScreenProps {
-  onOpenSettings?: () => void;
-  onOpenLibrary?: () => void;
+  onOpenSettings?: (() => void) | undefined;
+  onOpenLibrary?: (() => void) | undefined;
 }
 
 const fadeInUp = keyframes`
@@ -82,7 +82,7 @@ const ProviderGrid = styled.div`
   width: 100%;
 `;
 
-const ProviderCardContainer = styled.div<{ $accentColor: string; $isEnabled?: boolean }>`
+const ProviderCardContainer = styled.div<{ $accentColor: string; $isEnabled?: boolean | undefined }>`
   display: flex;
   align-items: center;
   gap: ${({ theme }) => theme.spacing.md};

@@ -3,8 +3,8 @@ import { customScrollbar } from '../../styles/utils';
 
 interface ScrollAreaProps {
   children: React.ReactNode;
-  style?: React.CSSProperties;
-  className?: string;
+  style?: React.CSSProperties | undefined;
+  className?: string | undefined;
 }
 
 export const ScrollArea = styled.div<ScrollAreaProps>`

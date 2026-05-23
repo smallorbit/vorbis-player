@@ -63,7 +63,7 @@ export const ClearButton = styled.button`
   }
 `;
 
-export const FilterButton = styled.button<{ $hasActive?: boolean }>`
+export const FilterButton = styled.button<{ $hasActive?: boolean | undefined }>`
   appearance: none;
   background: transparent;
   border: 1px solid ${theme.colors.borderSubtle};

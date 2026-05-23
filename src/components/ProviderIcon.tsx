@@ -21,9 +21,9 @@ const BadgeWrapper = styled.div<{ $size: number }>`
 interface ProviderIconProps {
   provider: ProviderId;
   /** Icon diameter in pixels. Default: 20 */
-  size?: number;
-  className?: string;
-  style?: React.CSSProperties;
+  size?: number | undefined;
+  className?: string | undefined;
+  style?: React.CSSProperties | undefined;
 }
 
 export default function ProviderIcon({ provider, size = 20, className, style }: ProviderIconProps) {

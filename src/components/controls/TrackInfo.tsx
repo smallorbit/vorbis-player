@@ -141,8 +141,9 @@ const TrackInfo = memo<TrackInfoProps>(({ track, isMobile, isTablet, onArtistBro
     };
 
     const renderArtists = () => {
-        if (track?.artistsData && track.artistsData.length > 0) {
-            return track.artistsData.map((artist, index) => (
+        const artistsData = track?.artistsData;
+        if (artistsData && artistsData.length > 0) {
+            return artistsData.map((artist, index) => (
                 <Fragment key={artist.url || artist.name}>
                     <ArtistLink
                         as="button"
@@ -155,7 +156,7 @@ const TrackInfo = memo<TrackInfoProps>(({ track, isMobile, isTablet, onArtistBro
                     >
                         {artist.name}
                     </ArtistLink>
-                    {index < track.artistsData!.length - 1 && ', '}
+                    {index < artistsData.length - 1 && ', '}
                 </Fragment>
             ));
         }

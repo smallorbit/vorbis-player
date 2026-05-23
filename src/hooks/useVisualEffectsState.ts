@@ -4,8 +4,8 @@ import { useLocalStorage } from './useLocalStorage';
 import { STORAGE_KEYS } from '@/constants/storage';
 
 interface UseVisualEffectsStateProps {
-  initialGlowIntensity?: number;
-  initialGlowRate?: number;
+  initialGlowIntensity?: number | undefined;
+  initialGlowRate?: number | undefined;
 }
 
 export const useVisualEffectsState = ({

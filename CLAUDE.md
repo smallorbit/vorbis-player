@@ -177,15 +177,16 @@ Patterns this enforces:
   is meaningful). `field?: T | null` is forbidden — under
   `exactOptionalPropertyTypes` it becomes a three-way mess of
   missing-vs-null-vs-undefined.
-- **React component prop interfaces use `field?: T | undefined`, not `field?: T`.**
+- **React component prop interfaces always use `field?: T | undefined`, not `field?: T`.**
   React's runtime treats `<Foo prop={undefined} />` and `<Foo />` as identical, so
-  the type system should too. This applies to any interface named `*Props` used by
-  a function component, styled-component type arguments, hook option-bag
-  parameters, and context-value interfaces — anything consumed via an object-literal
-  call site that benefits from the canonical `<Foo prop={cond ? value : undefined} />`
-  pattern. Domain models and non-JSX data shapes keep `field?: T` (the
-  optional-XOR-nullable rule above). At third-party boundaries (Radix, sonner, etc.)
-  that expect `field?: T`, use conditional spread
+  the type system should too. This applies uniformly to any interface named
+  `*Props`, `Use*Props`, or `*Value`, plus inline styled-component type arguments
+  (`styled.x<{ ... }>`). The widening is unconditional: it does not depend on
+  whether a current caller happens to pass `prop={cond ? value : undefined}`. The
+  lint rule `vorbis/props-explicit-undefined` (see `eslint-rules/`) enforces this
+  automatically and auto-fixes new violations. Domain models and non-JSX data
+  shapes keep `field?: T` (the optional-XOR-nullable rule above). At third-party
+  boundaries (Radix, sonner, etc.) that expect `field?: T`, use conditional spread
   (`{...(value !== undefined && { prop: value })}`) — never `!`.
 - **Canonical types live in `src/types/`.** Inline object types repeated across
   files should be lifted to a named export and colocated with their conceptual

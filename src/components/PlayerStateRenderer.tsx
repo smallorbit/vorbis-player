@@ -48,7 +48,7 @@ const shimmer = keyframes`
   }
 `;
 
-const LoadingCard = styled(Card)<{ backgroundImage?: string; standalone?: boolean }>`
+const LoadingCard = styled(Card)<{ backgroundImage?: string | undefined; standalone?: boolean | undefined }>`
   ${cardBase};
   position: absolute;
   top: 0;
@@ -176,14 +176,14 @@ interface PlayerStateRendererProps {
   tracks: MediaTrack[];
   onPlaylistSelect: (playlistId: string, playlistName?: string, provider?: ProviderId) => void;
   onAddToQueue: (id: string, name?: string, provider?: ProviderId) => Promise<AddToQueueResult | null>;
-  onPlayLikedTracks?: (tracks: MediaTrack[], collectionId: string, collectionName: string, provider?: ProviderId) => Promise<void>;
-  onQueueLikedTracks?: (tracks: MediaTrack[], collectionName?: string) => void;
+  onPlayLikedTracks?: ((tracks: MediaTrack[], collectionId: string, collectionName: string, provider?: ProviderId) => Promise<void>) | undefined;
+  onQueueLikedTracks?: ((tracks: MediaTrack[], collectionName?: string) => void) | undefined;
   lastSession: SessionSnapshot | null;
   onResume: () => void;
   onOpenSettings: () => void;
   onHydrate: (session: SessionSnapshot) => Promise<HydrateResult>;
-  onHydrateFired?: (track: MediaTrack, skipped: boolean) => void;
-  onHydrateFailed?: () => void;
+  onHydrateFired?: ((track: MediaTrack, skipped: boolean) => void) | undefined;
+  onHydrateFailed?: (() => void) | undefined;
 }
 
 type IdleRoute = 'welcome' | 'qap' | 'hydrate' | 'library';

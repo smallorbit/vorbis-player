@@ -49,8 +49,11 @@ export function useAlbumSavedStatus(
 
   const commitToggle = useCallback(
     async (next: boolean) => {
+      const setAlbumSaved = descriptor?.catalog.setAlbumSaved;
+      if (!setAlbumSaved || !albumId || !descriptor) return;
+
       try {
-        await descriptor!.catalog.setAlbumSaved!(albumId!, next);
+        await setAlbumSaved(albumId, next);
       } catch (err) {
         logLibrary('setAlbumSaved failed', err);
         setIsSaved(!next);
@@ -62,9 +65,9 @@ export function useAlbumSavedStatus(
       // from LibraryRoute within a frame instead of waiting for the next poll.
       // Spotify is the only provider with a saved-album surface today; mirror
       // the pattern when Dropbox (or others) gain one.
-      if (descriptor!.id === 'spotify' && !next) {
+      if (descriptor.id === 'spotify' && !next) {
         try {
-          await spotifyLibrarySyncEngine.optimisticRemoveAlbum(albumId!);
+          await spotifyLibrarySyncEngine.optimisticRemoveAlbum(albumId);
         } catch (err) {
           logLibrary('optimisticRemoveAlbum failed', err);
         }
