@@ -6,7 +6,7 @@ import { calculateParticleCount } from '../../utils/particleCount';
 
 interface ParticleVisualizerProps {
   intensity: number;
-  speed?: number;
+  speed?: number | undefined;
   accentColor: string;
   isPlaying: boolean;
 }

@@ -90,7 +90,7 @@ export const ButtonRow = styled.div`
   margin-top: ${({ theme }) => theme.spacing.sm};
 `;
 
-export const Button = styled.button<{ $variant?: 'primary' | 'secondary' }>`
+export const Button = styled.button<{ $variant?: 'primary' | 'secondary' | undefined }>`
   padding: ${({ theme }) => theme.spacing.xs} ${({ theme }) => theme.spacing.sm};
   font-size: 11px;
   border-radius: ${({ theme }) => theme.borderRadius.sm};

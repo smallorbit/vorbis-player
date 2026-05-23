@@ -16,8 +16,8 @@ export interface TrackRadioPopoverProps {
   anchorRect: DOMRect | null;
   onClose: () => void;
   onPlayRadio: () => void;
-  isAvailable?: boolean;
-  disabledReason?: string;
+  isAvailable?: boolean | undefined;
+  disabledReason?: string | undefined;
 }
 
 export function TrackRadioPopover({

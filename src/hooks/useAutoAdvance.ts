@@ -10,10 +10,10 @@ interface UseAutoAdvanceProps {
   tracks: MediaTrack[];
   currentTrackIndex: number;
   playTrack: (index: number, skipOnError?: boolean) => void;
-  enabled?: boolean;
-  endThreshold?: number;
+  enabled?: boolean | undefined;
+  endThreshold?: number | undefined;
   /** Ref tracking driving provider; active provider may differ during mixed/cross-provider queues. */
-  currentPlaybackProviderRef?: React.RefObject<ProviderId | null>;
+  currentPlaybackProviderRef?: React.RefObject<ProviderId | null> | undefined;
 }
 
 const PLAY_COOLDOWN_MS = 5000;

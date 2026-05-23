@@ -45,7 +45,7 @@ interface PinRingProps {
   onLoadCollection: (id: string, name: string, provider?: ProviderId) => void;
   onLoadLikedSongs: (providerIds: ProviderId[]) => void;
   onAddToQueue: (id: string, name: string, provider?: ProviderId) => void;
-  accentColor?: string;
+  accentColor?: string | undefined;
 }
 
 function getImageUrl(

@@ -1,12 +1,12 @@
 import styled from 'styled-components';
 
 interface AlertProps {
-  variant?: 'default' | 'destructive';
+  variant?: 'default' | 'destructive' | undefined;
   children: React.ReactNode;
-  style?: React.CSSProperties;
+  style?: React.CSSProperties | undefined;
 }
 
-const StyledAlert = styled.div<{ $variant?: string }>`
+const StyledAlert = styled.div<{ $variant?: string | undefined }>`
   padding: ${({ theme }) => theme.spacing.md};
   border-radius: ${({ theme }) => theme.borderRadius.md};
   border: 1px solid ${({ theme }) => theme.colors.border};

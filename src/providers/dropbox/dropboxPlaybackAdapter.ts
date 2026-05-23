@@ -36,17 +36,17 @@ export class DropboxPlaybackAdapter implements PlaybackProvider {
     this.catalog = catalog;
   }
 
-  private ensureAudio(): void {
-    if (this.audio) return;
-    this.audio = new Audio();
-    this.audio.preload = 'auto';
+  private ensureAudio(): HTMLAudioElement {
+    if (this.audio) return this.audio;
+    const audio = new Audio();
+    audio.preload = 'auto';
 
-    this.audio.addEventListener('play', () => this.notifyListeners());
-    this.audio.addEventListener('pause', () => this.notifyListeners());
-    this.audio.addEventListener('ended', () => this.notifyListeners());
-    this.audio.addEventListener('timeupdate', () => this.notifyListeners());
-    this.audio.addEventListener('loadedmetadata', () => {
-      const dur = this.audio!.duration;
+    audio.addEventListener('play', () => this.notifyListeners());
+    audio.addEventListener('pause', () => this.notifyListeners());
+    audio.addEventListener('ended', () => this.notifyListeners());
+    audio.addEventListener('timeupdate', () => this.notifyListeners());
+    audio.addEventListener('loadedmetadata', () => {
+      const dur = audio.duration;
       if (Number.isFinite(dur) && dur > 0 && this.currentTrack) {
         const durationMs = Math.floor(dur * 1000);
         this.pendingDurationMs = durationMs;
@@ -57,8 +57,8 @@ export class DropboxPlaybackAdapter implements PlaybackProvider {
       // between loadedmetadata and the currentTime seek.
       this.notifyListeners();
     });
-    this.audio.addEventListener('error', () => {
-      const mediaError = this.audio?.error;
+    audio.addEventListener('error', () => {
+      const mediaError = audio.error;
       this.pendingError = {
         code: mediaError?.code ?? 0,
         message: mediaError?.message || `MediaError code ${mediaError?.code ?? 0}`,
@@ -66,6 +66,9 @@ export class DropboxPlaybackAdapter implements PlaybackProvider {
       console.error('[DropboxPlayback] Audio error:', mediaError);
       this.notifyListeners();
     });
+
+    this.audio = audio;
+    return audio;
   }
 
   async initialize(): Promise<void> {
@@ -73,7 +76,7 @@ export class DropboxPlaybackAdapter implements PlaybackProvider {
   }
 
   async playTrack(track: MediaTrack, options?: { positionMs?: number }): Promise<void> {
-    this.ensureAudio();
+    const audio = this.ensureAudio();
     // Invalidate any pending prepareTrack so it can't emit stale state for the old src.
     this.prepareGeneration += 1;
 
@@ -84,8 +87,8 @@ export class DropboxPlaybackAdapter implements PlaybackProvider {
     // Calling it here (before any await) ensures the subsequent async play()
     // — after the Dropbox URL fetch — succeeds on iOS even though the
     // network request breaks the gesture activation window.
-    if (this.audio!.paused) {
-      this.audio!.play().catch(() => {});
+    if (audio.paused) {
+      audio.play().catch(() => {});
     }
 
     const streamUrl = await this.catalog.getTemporaryLink(dropboxPath);
@@ -96,13 +99,13 @@ export class DropboxPlaybackAdapter implements PlaybackProvider {
     this.pendingMetadataUpdate = null;
     this.pendingDurationMs = null;
     this.hydrateHint = null;
-    this.audio!.pause();
-    this.audio!.src = streamUrl;
+    audio.pause();
+    audio.src = streamUrl;
 
     await this.awaitInitialPlay(track, this.prepareGeneration);
 
     if (options?.positionMs) {
-      this.audio!.currentTime = options.positionMs / 1000;
+      audio.currentTime = options.positionMs / 1000;
     }
 
     this.startUpdateInterval();
@@ -110,7 +113,7 @@ export class DropboxPlaybackAdapter implements PlaybackProvider {
   }
 
   private awaitInitialPlay(track: MediaTrack, generation: number): Promise<void> {
-    const audio = this.audio!;
+    const audio = this.ensureAudio();
     return new Promise<void>((resolve, reject) => {
       let settled = false;
 
@@ -282,8 +285,7 @@ export class DropboxPlaybackAdapter implements PlaybackProvider {
   }
 
   private async primeAudioForHydrate(track: MediaTrack, positionMs?: number): Promise<void> {
-    this.ensureAudio();
-    const audio = this.audio!;
+    const audio = this.ensureAudio();
     // Skip when audio is mid-playback for a *different* track — that's the
     // next-track pre-warm path; we must not clobber the playing src.
     // Allow the prime to proceed when the call targets the current track AND

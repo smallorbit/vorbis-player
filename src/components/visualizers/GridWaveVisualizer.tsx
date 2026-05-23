@@ -7,7 +7,7 @@ import { BREAKPOINTS_PX } from '../../styles/theme';
 
 interface GridWaveVisualizerProps {
   intensity: number;
-  speed?: number;
+  speed?: number | undefined;
   accentColor: string;
   isPlaying: boolean;
 }

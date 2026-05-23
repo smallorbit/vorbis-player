@@ -7,11 +7,11 @@ import type { AlbumArtBounds } from '@/types/visualizer';
 
 interface TrailVisualizerProps {
   intensity: number;
-  speed?: number;
+  speed?: number | undefined;
   accentColor: string;
   isPlaying: boolean;
   /** When set, the trail head (ship) stays inside this rect so the trail appears to come from the album art */
-  albumArtBounds?: AlbumArtBounds | null;
+  albumArtBounds?: AlbumArtBounds | null | undefined;
 }
 
 interface TrailParticle {

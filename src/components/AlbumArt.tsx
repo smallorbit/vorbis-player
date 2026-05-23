@@ -41,15 +41,15 @@ const ProcessingSpinner = styled.div.withConfig({
 
 interface AlbumArtProps {
   currentTrack: MediaTrack | null;
-  objectPosition?: string;
-  accentColor?: string;
-  glowIntensity?: number;
-  glowRate?: number;
-  glowEnabled?: boolean;
-  zenMode?: boolean;
-  translucenceEnabled?: boolean;
-  translucenceOpacity?: number;
-  onRetryAlbumArt?: () => void;
+  objectPosition?: string | undefined;
+  accentColor?: string | undefined;
+  glowIntensity?: number | undefined;
+  glowRate?: number | undefined;
+  glowEnabled?: boolean | undefined;
+  zenMode?: boolean | undefined;
+  translucenceEnabled?: boolean | undefined;
+  translucenceOpacity?: number | undefined;
+  onRetryAlbumArt?: (() => void) | undefined;
 }
 
 

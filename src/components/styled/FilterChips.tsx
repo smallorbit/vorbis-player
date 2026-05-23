@@ -17,7 +17,7 @@ export const ChipRow = styled.div`
 `;
 
 /** Individual filter chip — pill-style toggle button. */
-export const Chip = styled.button<{ $active?: boolean }>`
+export const Chip = styled.button<{ $active?: boolean | undefined }>`
   display: inline-flex;
   align-items: center;
   gap: ${theme.spacing.xs};
