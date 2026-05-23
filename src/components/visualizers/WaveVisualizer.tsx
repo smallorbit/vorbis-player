@@ -7,7 +7,7 @@ import { BREAKPOINTS_PX } from '../../styles/theme';
 
 interface WaveVisualizerProps {
   intensity: number;
-  speed?: number;
+  speed?: number | undefined;
   accentColor: string;
   isPlaying: boolean;
 }

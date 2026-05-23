@@ -39,9 +39,9 @@ const ProviderName = styled.span`
 
 interface ProviderBadgeProps {
   providerId: ProviderId;
-  iconSize?: number;
-  iconOnly?: boolean;
-  className?: string;
+  iconSize?: number | undefined;
+  iconOnly?: boolean | undefined;
+  className?: string | undefined;
 }
 
 export const ProviderBadge: React.FC<ProviderBadgeProps> = React.memo(({ providerId, iconSize = 16, iconOnly = false, className }) => {

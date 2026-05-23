@@ -91,7 +91,7 @@ const SkeletonDuration = styled.div`
 `;
 
 interface QueueSkeletonProps {
-  rowCount?: number;
+  rowCount?: number | undefined;
 }
 
 const QueueSkeleton = memo<QueueSkeletonProps>(({ rowCount = DEFAULT_ROW_COUNT }) => {

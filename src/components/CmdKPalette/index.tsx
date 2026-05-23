@@ -18,11 +18,11 @@ const PLACEHOLDER = 'Start typing to search your library';
 
 export interface CmdKPaletteProps {
   /** Called when a track is selected — implementations should enqueue and close the palette. */
-  onSelectTrack?: (track: Track) => void;
+  onSelectTrack?: ((track: Track) => void) | undefined;
   /** Called when an album is selected — implementations should open it in the Library view. */
-  onSelectAlbum?: (album: AlbumInfo) => void;
+  onSelectAlbum?: ((album: AlbumInfo) => void) | undefined;
   /** Called when a playlist is selected — implementations should open it in the Library view. */
-  onSelectPlaylist?: (playlist: CachedPlaylistInfo) => void;
+  onSelectPlaylist?: ((playlist: CachedPlaylistInfo) => void) | undefined;
   /**
    * Called when an artist is selected.
    *
@@ -30,7 +30,7 @@ export interface CmdKPaletteProps {
    * see #1408 deferral. The default routing in AudioPlayer falls back to opening
    * Library without a filter; a follow-up issue should add filter-by-artist.
    */
-  onSelectArtist?: (artist: SearchArtist) => void;
+  onSelectArtist?: ((artist: SearchArtist) => void) | undefined;
 }
 
 interface ItemSubtitleProps {

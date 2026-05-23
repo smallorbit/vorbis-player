@@ -21,7 +21,7 @@ export interface FilterSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   search: LibrarySearchState;
-  side?: 'right' | 'bottom';
+  side?: 'right' | 'bottom' | undefined;
 }
 
 const KIND_OPTIONS: LibraryKindFilter[] = ['playlist', 'album'];

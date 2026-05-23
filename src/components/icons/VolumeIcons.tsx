@@ -1,6 +1,6 @@
 interface VolumeIconProps {
-  isMuted?: boolean;
-  volume?: number;
+  isMuted?: boolean | undefined;
+  volume?: number | undefined;
 }
 
 export const VolumeIcon = ({ isMuted, volume }: VolumeIconProps) => {

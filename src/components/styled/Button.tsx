@@ -2,15 +2,15 @@ import styled, { css } from 'styled-components';
 import { buttonPrimary, buttonSecondary, buttonOutline, buttonGhost, buttonBase } from '../../styles/utils';
 
 interface ButtonProps {
-  variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'default' | 'destructive' | 'link';
-  size?: 'sm' | 'md' | 'lg';
-  disabled?: boolean;
-  className?: string;
+  variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'default' | 'destructive' | 'link' | undefined;
+  size?: 'sm' | 'md' | 'lg' | undefined;
+  disabled?: boolean | undefined;
+  className?: string | undefined;
   children: React.ReactNode;
-  onClick?: () => void;
-  style?: React.CSSProperties;
-  onMouseEnter?: (e: React.MouseEvent<HTMLButtonElement>) => void;
-  onMouseLeave?: (e: React.MouseEvent<HTMLButtonElement>) => void;
+  onClick?: (() => void) | undefined;
+  style?: React.CSSProperties | undefined;
+  onMouseEnter?: ((e: React.MouseEvent<HTMLButtonElement>) => void) | undefined;
+  onMouseLeave?: ((e: React.MouseEvent<HTMLButtonElement>) => void) | undefined;
 }
 
 const getVariantStyles = (variant: ButtonProps['variant']) => {

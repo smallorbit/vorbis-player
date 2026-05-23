@@ -3,9 +3,10 @@ import globals from 'globals'
 import reactHooks from 'eslint-plugin-react-hooks'
 import reactRefresh from 'eslint-plugin-react-refresh'
 import tseslint from 'typescript-eslint'
+import propsExplicitUndefined from './eslint-rules/props-explicit-undefined.js'
 
 export default tseslint.config(
-  { ignores: ['dist'] },
+  { ignores: ['dist', 'eslint-rules/__tests__/**'] },
   {
     extends: [js.configs.recommended, ...tseslint.configs.recommended],
     files: ['**/*.{ts,tsx}'],
@@ -16,6 +17,7 @@ export default tseslint.config(
     plugins: {
       'react-hooks': reactHooks,
       'react-refresh': reactRefresh,
+      vorbis: { rules: { 'props-explicit-undefined': propsExplicitUndefined } },
     },
     rules: {
       ...reactHooks.configs.recommended.rules,
@@ -31,6 +33,7 @@ export default tseslint.config(
           caughtErrorsIgnorePattern: '^_',
         },
       ],
+      'vorbis/props-explicit-undefined': 'error',
     },
   },
   {

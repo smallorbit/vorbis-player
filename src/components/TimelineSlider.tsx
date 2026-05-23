@@ -34,7 +34,7 @@ interface TimelineSliderProps {
   onSeek: (position: number) => void;
   onScrubStart: () => void;
   onScrubEnd: (position: number) => void;
-  children?: React.ReactNode;
+  children?: React.ReactNode | undefined;
 }
 
 const areTimelineSliderPropsEqual = (

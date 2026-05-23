@@ -29,7 +29,7 @@ const WarningText = styled.p`
 
 interface ProviderDisconnectDialogProps {
   providerName: string;
-  affectedQueueCount?: number;
+  affectedQueueCount?: number | undefined;
   onConfirm: () => void;
   onCancel: () => void;
 }

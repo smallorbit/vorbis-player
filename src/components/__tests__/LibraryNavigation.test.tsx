@@ -127,8 +127,8 @@ describe('Library open/close via BottomBar', () => {
 // ---------------------------------------------------------------------------
 
 interface LibraryHostProps {
-  onOpenLibrary?: () => void;
-  onCloseLibrary?: () => void;
+  onOpenLibrary?: (() => void) | undefined;
+  onCloseLibrary?: (() => void) | undefined;
 }
 
 function LibraryHost({ onOpenLibrary, onCloseLibrary }: LibraryHostProps) {
