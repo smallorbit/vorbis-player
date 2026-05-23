@@ -80,8 +80,6 @@ function defaultMocks() {
     isSaved: null,
     toggleSaved: vi.fn(),
     canToggle: false,
-    saveError: null,
-    clearSaveError: vi.fn(),
   });
 }
 
@@ -236,8 +234,6 @@ describe('useMenuItems', () => {
       isSaved: true,
       toggleSaved: vi.fn(),
       canToggle: true,
-      saveError: null,
-      clearSaveError: vi.fn(),
     });
 
     // #when

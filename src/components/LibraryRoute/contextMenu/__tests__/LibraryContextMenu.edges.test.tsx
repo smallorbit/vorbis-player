@@ -52,8 +52,6 @@ vi.mock('../useAlbumSavedStatus', () => ({
     isSaved: null,
     toggleSaved: vi.fn(),
     canToggle: false,
-    saveError: null,
-    clearSaveError: vi.fn(),
   }),
 }));
 

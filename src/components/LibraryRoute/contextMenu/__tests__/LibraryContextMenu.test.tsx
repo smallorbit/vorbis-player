@@ -71,8 +71,6 @@ function defaultMocks() {
     isSaved: null,
     toggleSaved: vi.fn(),
     canToggle: false,
-    saveError: null,
-    clearSaveError: vi.fn(),
   });
 }
 
@@ -353,8 +351,6 @@ describe('LibraryContextMenu', () => {
         isSaved: true,
         toggleSaved: vi.fn(),
         canToggle: true,
-        saveError: null,
-        clearSaveError: vi.fn(),
       });
 
       // #when
