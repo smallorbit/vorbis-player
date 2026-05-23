@@ -508,7 +508,6 @@ const AudioPlayerComponent = () => {
             onAddToQueue={handleAddToQueueFromPanel}
             onPlayLikedTracks={handlePlayLikedTracks}
             onQueueLikedTracks={handleQueueLikedTracks}
-            onOpenSettings={handleOpenSettings}
             onResume={handleResume}
             lastSession={null}
             initialSearchQuery={initialSearchQuery}
@@ -646,7 +645,6 @@ const AudioPlayerComponent = () => {
               onAddToQueue={handleAddToQueueFromPanel}
               onPlayLikedTracks={handlePlayLikedTracks}
               onQueueLikedTracks={handleQueueLikedTracks}
-              onOpenSettings={handleOpenSettings}
               onResume={handleResume}
               lastSession={lastSession}
               isPlaying={state.isPlaying}

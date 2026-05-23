@@ -28,7 +28,6 @@ export type LibraryRouteView =
   | 'pinned'
   | 'playlists'
   | 'albums'
-  | 'liked'
   | 'search';
 
 /** Kinds a library card represents directly (no meta-wrappers). */

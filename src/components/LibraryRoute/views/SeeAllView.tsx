@@ -11,7 +11,7 @@ import { BackToLibraryIcon } from '@/components/icons/QuickActionIcons';
 import type { ContextMenuRequest, LibraryItemKind, LibraryRouteView } from '../types';
 import { SeeAllRoot, BackBar, BackButton, BackTitle } from './views.styled';
 
-const TITLES: Record<Exclude<LibraryRouteView, 'home' | 'liked' | 'search'>, string> = {
+const TITLES: Record<Exclude<LibraryRouteView, 'home' | 'search'>, string> = {
   'recently-played': 'Recently Played',
   pinned: 'Pinned',
   playlists: 'Playlists',
@@ -19,7 +19,7 @@ const TITLES: Record<Exclude<LibraryRouteView, 'home' | 'liked' | 'search'>, str
 };
 
 export interface SeeAllViewProps {
-  view: Exclude<LibraryRouteView, 'home' | 'liked' | 'search'>;
+  view: Exclude<LibraryRouteView, 'home' | 'search'>;
   onBack: () => void;
   onSelectCollection: (
     kind: LibraryItemKind,
