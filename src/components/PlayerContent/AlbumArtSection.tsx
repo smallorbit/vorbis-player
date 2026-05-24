@@ -30,6 +30,7 @@ const ZEN_TRACK_INFO_WILL_CHANGE_FALLBACK_MS =
 import { GestureLayer } from './GestureLayer';
 import { ZenClickZoneOverlay } from './ZenClickZoneOverlay';
 import { ZenLikeOverlay } from './ZenLikeOverlay';
+import { ZenEyedropperOverlay } from './ZenEyedropperOverlay';
 
 const ZenProviderBadgeInline = styled.span`
   display: inline-flex;
@@ -362,6 +363,11 @@ export const AlbumArtSection: React.FC<AlbumArtSectionProps> = React.memo(({
             canSaveTrack={canSaveTrack}
             onToggleLike={onLikeToggle}
             zenModeEnabled={zenModeEnabled}
+          />
+          <ZenEyedropperOverlay
+            image={currentTrack?.image ?? ''}
+            isVisible={zenModeEnabled && hasPointerInput && isHovered && !isFlipped && !!currentTrack?.image}
+            onPick={handleCustomAccentColor}
           />
         </div>
       </CardContent>
