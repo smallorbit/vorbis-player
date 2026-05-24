@@ -10,7 +10,6 @@ const LASTFM_BASE = 'https://ws.audioscrobbler.com/2.0/';
 const RATE_LIMIT_PADDING_MS = 10;
 const SIMILAR_TRACKS_DEFAULT_LIMIT = 50;
 const SIMILAR_ARTISTS_DEFAULT_LIMIT = 20;
-const TOP_TRACKS_DEFAULT_LIMIT = 10;
 
 function getApiKey(): string {
   const key = import.meta.env.VITE_LASTFM_API_KEY as string | undefined;
@@ -125,15 +124,6 @@ function parseSimilarArtist(raw: unknown): LastFmSimilarArtist | null {
   };
 }
 
-function parseAlbumTrack(raw: unknown, fallbackArtist: string): { name: string; artist: string } | null {
-  if (!isPlainObject(raw)) return null;
-  const artistObj = readObject(raw, 'artist');
-  return {
-    name: readString(raw, 'name'),
-    artist: artistObj ? readString(artistObj, 'name') || fallbackArtist : fallbackArtist,
-  };
-}
-
 function isNotNull<T>(value: T | null): value is T {
   return value !== null;
 }
@@ -182,52 +172,6 @@ export async function getSimilarArtists(
   if (!container) return [];
 
   return readArray(container, 'artist').map(parseSimilarArtist).filter(isNotNull);
-}
-
-export async function getArtistTopTracks(
-  artist: string,
-  limit = TOP_TRACKS_DEFAULT_LIMIT,
-): Promise<LastFmSimilarTrack[]> {
-  const data = asObject(
-    await lastfmGet({
-      method: 'artist.gettoptracks',
-      artist,
-      limit: String(limit),
-      autocorrect: '1',
-    }),
-  );
-
-  const container = readObject(data, 'toptracks');
-  if (!container) return [];
-
-  return readArray(container, 'track')
-    .map(parseSimilarTrack)
-    .filter(isNotNull)
-    .map((t) => ({ ...t, matchScore: 1.0 }));
-}
-
-export async function getAlbumTracks(
-  artist: string,
-  album: string,
-): Promise<{ name: string; artist: string }[]> {
-  const data = asObject(
-    await lastfmGet({
-      method: 'album.getinfo',
-      artist,
-      album,
-      autocorrect: '1',
-    }),
-  );
-
-  const albumInfo = readObject(data, 'album');
-  if (!albumInfo) return [];
-
-  const tracksContainer = readObject(albumInfo, 'tracks');
-  if (!tracksContainer) return [];
-
-  return readArray(tracksContainer, 'track')
-    .map((raw) => parseAlbumTrack(raw, artist))
-    .filter(isNotNull);
 }
 
 /** Returns true if the Last.fm API key is configured. */

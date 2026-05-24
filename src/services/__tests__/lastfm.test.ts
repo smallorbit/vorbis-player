@@ -2,8 +2,6 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import {
   getSimilarTracks,
   getSimilarArtists,
-  getArtistTopTracks,
-  getAlbumTracks,
   isLastFmConfigured,
   _resetRateLimiter,
 } from '../lastfm';
@@ -120,65 +118,6 @@ describe('getSimilarArtists', () => {
   it('returns empty array for missing container', async () => {
     mockFetch.mockResolvedValueOnce(jsonResponse({}));
     const result = await getSimilarArtists('X');
-    expect(result).toEqual([]);
-  });
-});
-
-describe('getArtistTopTracks', () => {
-  it('parses a valid response and sets matchScore to 1.0', async () => {
-    // #given
-    mockFetch.mockResolvedValueOnce(
-      jsonResponse({
-        toptracks: {
-          track: [
-            {
-              name: 'Creep',
-              artist: { name: 'Radiohead', mbid: 'rh-mbid' },
-              mbid: 'creep-mbid',
-              match: '0',
-            },
-          ],
-        },
-      }),
-    );
-
-    // #when
-    const result = await getArtistTopTracks('Radiohead', 10);
-
-    // #then
-    expect(result).toHaveLength(1);
-    expect(result[0].matchScore).toBe(1.0);
-    expect(result[0].name).toBe('Creep');
-  });
-});
-
-describe('getAlbumTracks', () => {
-  it('parses album track list', async () => {
-    // #given
-    mockFetch.mockResolvedValueOnce(
-      jsonResponse({
-        album: {
-          tracks: {
-            track: [
-              { name: 'Everything in Its Right Place', artist: { name: 'Radiohead' } },
-              { name: 'Kid A', artist: { name: 'Radiohead' } },
-            ],
-          },
-        },
-      }),
-    );
-
-    // #when
-    const result = await getAlbumTracks('Radiohead', 'Kid A');
-
-    // #then
-    expect(result).toHaveLength(2);
-    expect(result[0]).toEqual({ name: 'Everything in Its Right Place', artist: 'Radiohead' });
-  });
-
-  it('returns empty array for missing album data', async () => {
-    mockFetch.mockResolvedValueOnce(jsonResponse({}));
-    const result = await getAlbumTracks('X', 'Y');
     expect(result).toEqual([]);
   });
 });
