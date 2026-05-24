@@ -82,6 +82,9 @@ export const ZenEyedropperOverlay: React.FC<ZenEyedropperOverlayProps> = React.m
     setHoverColor(null);
   }, []);
 
+  // Outside-click cancel uses a document mousedown listener rather than a fixed
+  // backdrop: the album art card has a CSS transform that creates a containing
+  // block, which would trap a position:fixed backdrop inside the card.
   useEffect(() => {
     if (!isPicking) return;
     const handlePointerDownOutside = (e: MouseEvent) => {
@@ -167,6 +170,8 @@ export const ZenEyedropperOverlay: React.FC<ZenEyedropperOverlayProps> = React.m
             onMouseMove={handleCanvasMouseMove}
           />
           {hoverColor && (
+            // Panel-relative offsets (offsetX/offsetY), not viewport coords: the
+            // card's CSS transform makes position:fixed unreliable here.
             <ColorTooltip
               style={{
                 left: tooltipPos.x + 16,
