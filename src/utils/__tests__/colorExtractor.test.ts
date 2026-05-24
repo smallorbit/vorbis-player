@@ -1,9 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { getTransparentVariant } from '../colorExtractor';
 
-// The module-level functions rgbToHsl, rgbToHex, isGoodContrast, isVibrant are not exported,
-// so we test them indirectly through getTransparentVariant and the LRU cache behavior.
-// We import and re-implement the pure functions locally to verify correctness.
+// The module-level functions rgbToHsl, rgbToHex, isGoodContrast, isVibrant are not exported.
+// We re-implement the pure functions locally to verify correctness, and exercise the LRU
+// cache behavior through the module's dynamic import below.
 
 function rgbToHsl(r: number, g: number, b: number): [number, number, number] {
   r /= 255;
@@ -102,28 +101,6 @@ describe('colorExtractor', () => {
     it('returns false for gray (0% saturation)', () => {
       // #when / #then
       expect(isVibrant(128, 128, 128)).toBe(false);
-    });
-  });
-
-  describe('getTransparentVariant', () => {
-    it('handles hex input', () => {
-      // #when / #then
-      expect(getTransparentVariant('#ff8040')).toBe('rgba(255, 128, 64, 0.2)');
-    });
-
-    it('handles rgb input', () => {
-      // #when / #then
-      expect(getTransparentVariant('rgb(255, 128, 64)')).toBe('rgba(255, 128, 64, 0.2)');
-    });
-
-    it('accepts custom opacity', () => {
-      // #when / #then
-      expect(getTransparentVariant('#ff0000', 0.5)).toBe('rgba(255, 0, 0, 0.5)');
-    });
-
-    it('returns original string for unsupported format', () => {
-      // #when / #then
-      expect(getTransparentVariant('red')).toBe('red');
     });
   });
 

@@ -185,25 +185,6 @@ export async function extractDominantColor(imageUrl: string): Promise<ExtractedC
   });
 }
 
-export function getTransparentVariant(color: string, opacity = 0.2): string {
-  let r: number, g: number, b: number;
-
-  if (color.startsWith('#')) {
-    const hex = color.slice(1);
-    r = parseInt(hex.substr(0, 2), 16);
-    g = parseInt(hex.substr(2, 2), 16);
-    b = parseInt(hex.substr(4, 2), 16);
-  } else if (color.startsWith('rgb')) {
-    const matches = color.match(/\d+/g);
-    if (!matches) return color;
-    [r = 0, g = 0, b = 0] = matches.map(Number);
-  } else {
-    return color;
-  }
-
-  return `rgba(${r}, ${g}, ${b}, ${opacity})`;
-}
-
 export async function extractTopVibrantColors(imageUrl: string, count = 3): Promise<ExtractedColor[]> {
   return new Promise((resolve) => {
     try {

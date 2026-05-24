@@ -138,13 +138,14 @@ export const useProviderPlayback = ({
       return;
     }
 
-    // Push the latest queue snapshot to the driving provider before invoking
-    // playTrack so adapters that build their native queue from this signal
-    // (Spotify's upcomingUris) see the current list for the imminent
-    // playback call. User-driven queue mutations notify separately via
-    // useQueueManagement.ts; this call covers track transitions
-    // (next/previous/hydrate/auto-advance) that bypass that hook.
-    descriptor.playback.onQueueChanged?.(tracks, index);
+    // Push the latest queue snapshot before invoking playTrack, but only for
+    // providers that declare hasNativeQueueSync. Spotify builds upcomingUris
+    // from this signal; providers without the capability must not receive it
+    // (spec Req 8). User-driven mutations go through useQueueManagement.ts;
+    // this covers track transitions (next/previous/hydrate/auto-advance).
+    if (descriptor.capabilities.hasNativeQueueSync) {
+      descriptor.playback.onQueueChanged?.(tracks, index);
+    }
 
     try {
       await descriptor.playback.playTrack(mediaTrack, options);

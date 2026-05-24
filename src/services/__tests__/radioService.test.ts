@@ -5,8 +5,6 @@ import type { RadioSeed } from '@/types/radio';
 vi.mock('@/services/lastfm', () => ({
   getSimilarTracks: vi.fn(),
   getSimilarArtists: vi.fn(),
-  getArtistTopTracks: vi.fn(),
-  getAlbumTracks: vi.fn(),
 }));
 
 function makeRadioTrack(name: string, artist: string, extra?: Partial<MediaTrack>): MediaTrack {
