@@ -35,6 +35,7 @@ interface MockTestApi {
   expireAuth(providerId: ProviderId, opts?: ExpireAuthOptions): Promise<void>;
   restoreAuth(providerId: ProviderId): Promise<void>;
   reset(): Promise<void>;
+  triggerNaturalEnd(providerId: ProviderId): Promise<void>;
 }
 
 interface InstallOptions {
@@ -62,6 +63,12 @@ export function installMockTestApi(opts: InstallOptions): void {
   function resolveAuth(providerId: ProviderId): MockAuthAdapter {
     if (providerId === 'spotify') return spotifyAuth;
     if (providerId === 'dropbox') return dropboxAuth;
+    throw new Error(`[MockTestApi] Unknown providerId "${providerId}"`);
+  }
+
+  function resolvePlayback(providerId: ProviderId): MockPlaybackAdapter {
+    if (providerId === 'spotify') return spotifyPlayback;
+    if (providerId === 'dropbox') return dropboxPlayback;
     throw new Error(`[MockTestApi] Unknown providerId "${providerId}"`);
   }
 
@@ -111,6 +118,10 @@ export function installMockTestApi(opts: InstallOptions): void {
         spotifyPlayback.pause().catch(() => undefined),
         dropboxPlayback.pause().catch(() => undefined),
       ]);
+    },
+
+    async triggerNaturalEnd(providerId) {
+      resolvePlayback(providerId).__testTriggerNaturalEnd();
     },
   };
 }

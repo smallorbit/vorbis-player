@@ -195,4 +195,30 @@ export class MockPlaybackAdapter implements PlaybackProvider {
   getLastPlayTime(): number {
     return this.lastPlayTimeMs;
   }
+
+  /**
+   * Test-only: emit a synthetic paused-at-position-zero state that triggers
+   * the natural-end branch in useAutoAdvance. Backdates lastPlayTimeMs so the
+   * PLAY_COOLDOWN_MS guard (5 000 ms) is already satisfied.
+   */
+  __testTriggerNaturalEnd(): void {
+    if (!this.currentTrack) return;
+    // Backdate by 6 s so the 5 s cooldown guard passes immediately.
+    this.lastPlayTimeMs = Date.now() - 6_000;
+    this.startedAtPositionMs = 0;
+    if (this.audio && !this.audio.paused) {
+      this.audio.pause();
+    }
+    this.stopPositionTimer();
+    const syntheticState: import('@/types/domain').PlaybackState = {
+      isPlaying: false,
+      positionMs: 0,
+      durationMs: this.currentTrack.durationMs,
+      currentTrackId: this.currentTrack.id,
+      currentPlaybackRef: this.currentTrack.playbackRef,
+    };
+    for (const listener of this.listeners) {
+      listener(syntheticState);
+    }
+  }
 }
