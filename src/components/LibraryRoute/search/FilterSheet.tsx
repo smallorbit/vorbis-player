@@ -17,7 +17,7 @@ import {
   ClearAllButton,
 } from './FilterSheet.styled';
 
-export interface FilterSheetProps {
+interface FilterSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   search: LibrarySearchState;

@@ -2,7 +2,7 @@ import React from 'react';
 import type { SessionSnapshot } from '@/services/sessionPersistence';
 import { Root, Art, TextStack, TrackName, ArtistName, CollectionName, ResumeButton } from './ResumeHero.styled';
 
-export interface ResumeHeroProps {
+interface ResumeHeroProps {
   session: SessionSnapshot;
   onResume: () => void;
 }

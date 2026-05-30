@@ -6,7 +6,7 @@ import { useProviderContext } from '../../contexts/ProviderContext';
 import { spotifyLibrarySyncEngine } from '../../services/cache/librarySyncEngine';
 import { PlayerTrackName, PlayerTrackAlbum, AlbumLink, PlayerTrackArtist, TrackInfoOnlyRow, ArtistLink } from './styled';
 import TrackInfoPopover, { LibraryIcon, SpotifyIcon, PlayIcon, DiscogsIcon, AddToLibraryIcon, RemoveFromLibraryIcon, ICON_MAP } from './TrackInfoPopover';
-import TrackRadioPopover from './TrackRadioPopover';
+import { TrackRadioPopover } from './TrackRadioPopover';
 
 interface TrackInfoProps {
     track: {

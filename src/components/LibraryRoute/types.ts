@@ -1,8 +1,4 @@
-import type { CachedPlaylistInfo } from '@/services/cache/cacheTypes';
-import type { AlbumInfo } from '@/services/spotify';
-import type { CollectionRef, MediaTrack, ProviderId } from '@/types/domain';
-import type { RecentlyPlayedEntry } from '@/hooks/useRecentlyPlayedCollections';
-import type { SessionSnapshot } from '@/services/sessionPersistence';
+import type { CollectionRef, ProviderId } from '@/types/domain';
 
 export interface UseCollectionSectionParams {
   providerFilter?: ProviderId[];

@@ -3,7 +3,7 @@ import { useCallback, useEffect, useRef } from 'react';
 const LONG_PRESS_MS = 500;
 const MOVE_TOLERANCE_PX = 8;
 
-export interface UseLongPressOptions {
+interface UseLongPressOptions {
   onLongPress: (anchor: DOMRect) => void;
   onTap?: (() => void) | undefined;
   enabled?: boolean | undefined;
@@ -17,7 +17,7 @@ interface PointerState {
   active: boolean;
 }
 
-export interface UseLongPressHandlers {
+interface UseLongPressHandlers {
   onPointerDown: (e: React.PointerEvent<HTMLElement>) => void;
   onPointerMove: (e: React.PointerEvent<HTMLElement>) => void;
   onPointerUp: (e: React.PointerEvent<HTMLElement>) => void;

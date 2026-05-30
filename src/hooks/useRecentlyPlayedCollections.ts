@@ -12,7 +12,7 @@ export interface RecentlyPlayedEntry {
   imageUrl?: string | null;
 }
 
-export interface UseRecentlyPlayedCollectionsResult {
+interface UseRecentlyPlayedCollectionsResult {
   history: RecentlyPlayedEntry[];
   record: (ref: CollectionRef, name: string, imageUrl?: string | null) => void;
   remove: (ref: CollectionRef) => void;

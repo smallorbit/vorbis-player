@@ -11,7 +11,7 @@ export function truncateTrackName(name: string, maxLen = DEFAULT_TRUNCATE_LEN): 
   return `${name.slice(0, maxLen).trimEnd()}…`;
 }
 
-export interface TrackRadioPopoverProps {
+interface TrackRadioPopoverProps {
   trackName: string;
   anchorRect: DOMRect | null;
   onClose: () => void;
@@ -50,4 +50,3 @@ export function TrackRadioPopover({
   );
 }
 
-export default TrackRadioPopover;

@@ -32,5 +32,3 @@ export const SourcesSection: React.FC = () => {
 };
 
 SourcesSection.displayName = 'SettingsV2.SourcesSection';
-
-export default SourcesSection;

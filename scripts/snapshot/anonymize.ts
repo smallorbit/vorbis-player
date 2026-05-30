@@ -23,7 +23,7 @@ export function hashId(
   return `${prefix}_${hash}`;
 }
 
-export interface AnonymizationContext {
+interface AnonymizationContext {
   readonly seed: string;
   /** Returns the anonymized id for an original Spotify playlist id. Memoized within a run. */
   anonymizePlaylistId(originalId: string): string;

@@ -2,7 +2,7 @@ import { useState, useRef, useCallback } from 'react';
 
 export type AnnotationTool = 'rectangle' | 'arrow' | 'freehand';
 
-export type DrawingPhase = 'idle' | 'tool_selected' | 'drawing' | 'done';
+type DrawingPhase = 'idle' | 'tool_selected' | 'drawing' | 'done';
 
 interface Point {
   x: number;
@@ -30,7 +30,7 @@ interface FreehandAnnotation {
 
 export type Annotation = RectangleAnnotation | ArrowAnnotation | FreehandAnnotation;
 
-export interface UseAnnotationDrawingResult {
+interface UseAnnotationDrawingResult {
   tool: AnnotationTool;
   phase: DrawingPhase;
   annotations: Annotation[];

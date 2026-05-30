@@ -43,7 +43,7 @@ const ZEN_CONTROLS_WILL_CHANGE_FALLBACK_MS =
   ZEN_EXIT_REENTRY_DELAY + ZEN_CONTROLS_DURATION + 100;
 
 const VisualEffectsMenu = lazy(() => import('@/components/AppSettingsMenu/index'));
-const SettingsV2 = lazy(() => import('@/components/SettingsV2/SettingsV2'));
+const SettingsV2 = lazy(() => import('@/components/SettingsV2'));
 const KeyboardShortcutsHelp = lazy(() => import('@/components/KeyboardShortcutsHelp'));
 
 function ControlsLoadingFallback(): React.ReactElement {

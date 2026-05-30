@@ -14,7 +14,7 @@ import type { LibrarySearchState } from '../search/useLibrarySearch';
 import { matchesQuery, normalizeQuery, passesProviderFilter, sortItems } from '../search/searchMatch';
 import { SeeAllRoot } from './views.styled';
 
-export interface SearchResultsViewProps {
+interface SearchResultsViewProps {
   search: LibrarySearchState;
   onSelectCollection: (
     kind: LibraryItemKind,

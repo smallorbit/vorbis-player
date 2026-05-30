@@ -92,7 +92,7 @@ const HintText = styled.span`
   font-size: 12px;
 `;
 
-export interface AnnotationOverlayProps {
+interface AnnotationOverlayProps {
   onComplete: (annotatedDataUrl: string) => void;
   onCancel: () => void;
 }

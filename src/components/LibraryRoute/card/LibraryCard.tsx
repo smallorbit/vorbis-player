@@ -14,8 +14,8 @@ import {
   Subtitle,
 } from './LibraryCard.styled';
 
-export interface LibraryCardProps {
-  kind: LibraryCollectionKind;
+interface LibraryCardProps {
+  kind: LibraryItemKind;
   id: string;
   provider?: ProviderId | undefined;
   name: string;

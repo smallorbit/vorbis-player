@@ -11,7 +11,7 @@ export const SETTINGS_V2_SECTION_IDS = ['sources', 'playback', 'appearance', 'ad
 
 export type SettingsV2SectionId = (typeof SETTINGS_V2_SECTION_IDS)[number];
 
-export interface SettingsV2SectionDescriptor {
+interface SettingsV2SectionDescriptor {
   id: SettingsV2SectionId;
   label: string;
   description: string;

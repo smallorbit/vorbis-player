@@ -272,7 +272,7 @@ export const CacheCancelButton = styled.button`
   }
 `;
 
-export type OptionButtonVariant = 'accent' | 'neutral';
+type OptionButtonVariant = 'accent' | 'neutral';
 
 // $variant mirrors the Switch variant pattern in src/components/ui/switch.tsx.
 export const OptionButton = styled.button<{ $isActive: boolean; $variant?: OptionButtonVariant | undefined }>`

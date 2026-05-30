@@ -4,10 +4,8 @@ import { usePinnedItems } from '@/hooks/usePinnedItems';
 import type { CachedPlaylistInfo } from '@/services/cache/cacheTypes';
 import type { SectionState, UseCollectionSectionParams } from '../types';
 
-export type UsePlaylistsSectionParams = UseCollectionSectionParams;
-
 export function usePlaylistsSection(
-  { providerFilter, excludePinned = true }: UsePlaylistsSectionParams = {},
+  { providerFilter, excludePinned = true }: UseCollectionSectionParams = {},
 ): SectionState<CachedPlaylistInfo> {
   const { playlists, isInitialLoadComplete } = useLibrarySync();
   const { pinnedPlaylistIds } = usePinnedItems();

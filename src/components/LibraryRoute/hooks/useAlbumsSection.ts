@@ -4,10 +4,8 @@ import { usePinnedItems } from '@/hooks/usePinnedItems';
 import type { AlbumInfo } from '@/services/spotify';
 import type { SectionState, UseCollectionSectionParams } from '../types';
 
-export type UseAlbumsSectionParams = UseCollectionSectionParams;
-
 export function useAlbumsSection(
-  { providerFilter, excludePinned = true }: UseAlbumsSectionParams = {},
+  { providerFilter, excludePinned = true }: UseCollectionSectionParams = {},
 ): SectionState<AlbumInfo> {
   const { albums, isInitialLoadComplete } = useLibrarySync();
   const { pinnedAlbumIds } = usePinnedItems();

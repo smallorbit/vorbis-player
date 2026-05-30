@@ -29,7 +29,7 @@ async function getLikedForProvider(
   return tracks;
 }
 
-export interface UseLikedTracksForProviderResult {
+interface UseLikedTracksForProviderResult {
   loadLikedTracks: (provider: ProviderId, signal?: AbortSignal) => Promise<MediaTrack[]>;
 }
 

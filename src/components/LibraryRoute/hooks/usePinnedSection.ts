@@ -7,7 +7,7 @@ import type { CachedPlaylistInfo } from '@/services/cache/cacheTypes';
 import type { AlbumInfo } from '@/services/spotify';
 import type { ProviderId } from '@/types/domain';
 
-export interface PinnedItem {
+interface PinnedItem {
   kind: 'playlist' | 'album' | 'liked';
   id: string;
   provider?: ProviderId | undefined;
@@ -16,7 +16,7 @@ export interface PinnedItem {
   subtitle?: string | undefined;
 }
 
-export interface PinnedSectionState {
+interface PinnedSectionState {
   pinnedPlaylists: CachedPlaylistInfo[];
   pinnedAlbums: AlbumInfo[];
   combined: PinnedItem[];

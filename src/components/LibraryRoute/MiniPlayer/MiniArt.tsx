@@ -1,8 +1,8 @@
 import React from 'react';
 import { ArtFrame, ArtImage, PulseDot } from './MiniPlayer.styled';
 
-export interface MiniArtProps {
-  imageUrl?: string | undefined;
+interface MiniArtProps {
+  imageUrl?: string;
   alt: string;
   isPlaying: boolean;
 }

@@ -8,7 +8,7 @@ import LibraryCard from '../card/LibraryCard';
 
 const SEE_ALL_THRESHOLD = 8;
 
-export interface PlaylistsSectionProps {
+interface PlaylistsSectionProps {
   layout: 'row' | 'grid';
   excludePinned?: boolean | undefined;
   showProviderBadges?: boolean | undefined;

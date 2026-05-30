@@ -1,10 +1,10 @@
 import { isSessionStale, type SessionSnapshot } from '@/services/sessionPersistence';
 
-export interface UseResumeSectionParams {
+interface UseResumeSectionParams {
   lastSession: SessionSnapshot | null;
 }
 
-export interface ResumeSectionState {
+interface ResumeSectionState {
   session: SessionSnapshot | null;
   hasResumable: boolean;
 }

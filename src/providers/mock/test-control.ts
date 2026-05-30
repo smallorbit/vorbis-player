@@ -14,7 +14,7 @@ import type { MediaTrack, ProviderId } from '@/types/domain';
 import { AUTH_STATE_CHANGED_EVENT } from '@/hooks/usePopupAuth';
 import { SESSION_EXPIRED_EVENT } from '@/constants/events';
 
-export interface ExpireAuthOptions {
+interface ExpireAuthOptions {
   /**
    * When true, ALSO dispatch SESSION_EXPIRED_EVENT alongside the
    * AUTH_STATE_CHANGED_EVENT. Defaults to false — the narrower simulation
@@ -29,7 +29,7 @@ export interface ExpireAuthOptions {
   alsoDispatchSessionExpired?: boolean;
 }
 
-export interface MockTestApi {
+interface MockTestApi {
   setQueue(trackIds: string[]): Promise<void>;
   setPlaybackState(state: { trackId: string; positionMs?: number; isPlaying?: boolean }): Promise<void>;
   expireAuth(providerId: ProviderId, opts?: ExpireAuthOptions): Promise<void>;
@@ -37,7 +37,7 @@ export interface MockTestApi {
   reset(): Promise<void>;
 }
 
-export interface InstallOptions {
+interface InstallOptions {
   spotifyCatalog: MockCatalogAdapter;
   dropboxCatalog: MockCatalogAdapter;
   spotifyPlayback: MockPlaybackAdapter;

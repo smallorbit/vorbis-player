@@ -1,7 +1,7 @@
 import React, { useCallback } from 'react';
 import { ControlButton, ControlButtonRow } from './MiniPlayer.styled';
 
-export interface MiniControlsProps {
+interface MiniControlsProps {
   isPlaying: boolean;
   isRadioAvailable?: boolean | undefined;
   isRadioGenerating?: boolean | undefined;

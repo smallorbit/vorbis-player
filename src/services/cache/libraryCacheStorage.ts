@@ -19,7 +19,7 @@ import {
   STORE_TRACK_LISTS,
 } from './libraryCacheLifecycle';
 
-export interface KVStore<T> {
+interface KVStore<T> {
   get(key: string): Promise<T | undefined>;
   getAll(): Promise<T[]>;
   put(key: string, value: T): Promise<void>;

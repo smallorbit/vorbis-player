@@ -14,7 +14,7 @@ export interface PerProviderLikedCount {
   count: number;
 }
 
-export interface CatalogLibrarySyncResult {
+interface CatalogLibrarySyncResult {
   playlists: CachedPlaylistInfo[];
   albums: AlbumInfo[];
   likedCounts: PerProviderLikedCount[];

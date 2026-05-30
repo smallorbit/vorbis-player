@@ -5,7 +5,7 @@ import type { MockCatalogAdapter } from './mockCatalogAdapter';
 
 const PARAM_NAME = 'mock-session';
 
-export interface MockSessionSeed {
+interface MockSessionSeed {
   trackId: string;
   positionMs: number;
 }

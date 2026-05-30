@@ -122,5 +122,3 @@ export const PlaybackSection: React.FC = () => {
 };
 
 PlaybackSection.displayName = 'SettingsV2.PlaybackSection';
-
-export default PlaybackSection;

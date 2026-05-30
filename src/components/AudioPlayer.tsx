@@ -36,7 +36,7 @@ import type { CachedPlaylistInfo } from '@/services/cache/cacheTypes';
 import type { SearchArtist } from '@/services/cache/librarySearch';
 
 const VisualEffectsMenu = lazy(() => import('./AppSettingsMenu/index'));
-const SettingsV2 = lazy(() => import('./SettingsV2/SettingsV2'));
+const SettingsV2 = lazy(() => import('./SettingsV2'));
 const LibraryRoute = lazy(() => import('./LibraryRoute'));
 
 const RESUME_TOAST_ID = 'resume-toast';

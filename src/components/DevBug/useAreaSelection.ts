@@ -2,7 +2,7 @@ import { useState, useRef, useCallback } from 'react';
 import { extractElementInfo } from '@/services/devbug/reportBuilder';
 import type { SelectedElement } from '@/types/devbug';
 
-export type SelectionPhase = 'idle' | 'dragging' | 'done';
+type SelectionPhase = 'idle' | 'dragging' | 'done';
 
 export interface SelectionRect {
   x: number;
@@ -11,7 +11,7 @@ export interface SelectionRect {
   height: number;
 }
 
-export interface UseAreaSelectionResult {
+interface UseAreaSelectionResult {
   phase: SelectionPhase;
   selectionRect: SelectionRect | null;
   collectedElements: Element[];

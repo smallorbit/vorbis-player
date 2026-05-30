@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import type { Category, SelectedElement } from '@/types/devbug';
 
-export interface FeedbackPanelState {
+interface FeedbackPanelState {
   isOpen: boolean;
   selectedElement: SelectedElement | null;
   screenshotDataUrl: string | null;
@@ -9,7 +9,7 @@ export interface FeedbackPanelState {
   comment: string;
 }
 
-export interface FeedbackPanelActions {
+interface FeedbackPanelActions {
   open: (element: SelectedElement, screenshotDataUrl?: string) => void;
   close: () => void;
   toggleCategory: (category: Category) => void;
