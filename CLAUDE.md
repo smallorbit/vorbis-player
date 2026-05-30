@@ -52,9 +52,9 @@ Make the minimal change first, confirm it works visually, then iterate. Do not c
 
 ## Git & PR Workflow
 
-**Default branch is `develop`, not `main`.** The GitHub repo's default branch is `develop`; `main` is the release branch (only updated when a release ships). PRs target `develop`. The session-start `gitStatus` block reports "Main branch (you will usually use this for PRs): main" via a `main`/`master` heuristic — ignore it and treat `develop` as the base.
+**Default branch is `main`.** PRs target `main` and squash-merge directly. Feature branches from `main` (`feature/name`, `fix/name`). Atomic commits with conventional format. Reference issue numbers.
 
-Run `npm test` before `git push` and before creating any PR. Feature branches from `develop` (`feature/name`, `fix/name`). Atomic commits with conventional format. Reference issue numbers.
+Run `npm test` before `git push` and before creating any PR.
 
 ## Worktree Setup
 
@@ -325,7 +325,7 @@ The harness rejects `[1m]` suffixes — rely on the team-lead's between-wave swa
 
 - Lead per-deliverable ack-gates dispatches. Never pipeline verify + commit + PR into a single round-trip.
 - Reviewer must return `accepted` before any sub-PR merges. No exceptions.
-- Sub-PRs into a feature branch use **"Part of #EPIC"** in their body, not "Closes" — auto-close only fires when the final feature→develop PR merges.
+- Sub-PRs into a feature branch use **"Part of #EPIC"** in their body, not "Closes" — auto-close only fires when the final feature→main PR merges.
 - Builders halt on follow-up corrections from the lead instead of racing to complete the original directive.
 
 **Retros**: run `/squadkit:agent-team-retro` when an epic wraps. Findings land as project-local role overrides under `.claude/agents/<role>.md` (overlay on top of the squadkit contract; project-local wins on conflict) or feed into `/speckit:catalog` as upstream squadkit issues.
