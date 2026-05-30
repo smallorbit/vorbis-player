@@ -16,7 +16,7 @@ import { useIsTouchDevice } from './useIsTouchDevice';
 
 const PLACEHOLDER = 'Start typing to search your library';
 
-export interface CmdKPaletteProps {
+interface CmdKPaletteProps {
   /** Called when a track is selected — implementations should enqueue and close the palette. */
   onSelectTrack?: ((track: Track) => void) | undefined;
   /** Called when an album is selected — implementations should open it in the Library view. */

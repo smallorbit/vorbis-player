@@ -309,5 +309,3 @@ export const AdvancedSection: React.FC = () => {
 };
 
 AdvancedSection.displayName = 'SettingsV2.AdvancedSection';
-
-export default AdvancedSection;

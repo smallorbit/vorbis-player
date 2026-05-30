@@ -8,7 +8,7 @@ export async function waitForPlayerReady(page: Page): Promise<void> {
   await page.locator('button[title^="Zen Mode"]').waitFor({ state: 'visible', timeout: 15_000 });
 }
 
-export async function focusPage(page: Page): Promise<void> {
+async function focusPage(page: Page): Promise<void> {
   await page.mouse.click(1, 1);
   await page.waitForTimeout(100);
 }

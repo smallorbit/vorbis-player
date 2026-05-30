@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useCallback, useMemo } from 'react';
 import type { ReactNode } from 'react';
 
-export type DevBugMode = 'inspect' | 'area' | 'annotate';
+type DevBugMode = 'inspect' | 'area' | 'annotate';
 
 interface DevBugContextValue {
   isActive: boolean;

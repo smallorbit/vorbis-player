@@ -1,7 +1,7 @@
 import React from 'react';
 import { SectionRoot, Header, Title, SeeAllButton, Body } from './Section.styled';
 
-export interface SectionProps {
+interface SectionProps {
   title: string;
   onSeeAll?: (() => void) | undefined;
   hidden?: boolean | undefined;

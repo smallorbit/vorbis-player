@@ -5,7 +5,7 @@ import type { LibrarySearchState } from './useLibrarySearch';
 import FilterSheet from './FilterSheet';
 import { SearchBarRoot, InputWrap, ClearButton, FilterButton } from './SearchBar.styled';
 
-export interface SearchBarProps {
+interface SearchBarProps {
   variant: 'mobile' | 'desktop';
   search: LibrarySearchState;
 }

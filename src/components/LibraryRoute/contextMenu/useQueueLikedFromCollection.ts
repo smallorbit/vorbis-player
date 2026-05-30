@@ -19,7 +19,7 @@ async function fetchLikedTracksForCollection(
   return allTracks.filter((_, i) => savedResults[i]);
 }
 
-export interface UseQueueLikedFromCollectionResult {
+interface UseQueueLikedFromCollectionResult {
   queueLikedFromCollection: (
     collectionId: string,
     collectionName: string,

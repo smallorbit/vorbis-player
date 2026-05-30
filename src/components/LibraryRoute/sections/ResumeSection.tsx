@@ -3,7 +3,7 @@ import type { SessionSnapshot } from '@/services/sessionPersistence';
 import { useResumeSection } from '../hooks';
 import ResumeHero from './ResumeHero';
 
-export interface ResumeSectionProps {
+interface ResumeSectionProps {
   lastSession: SessionSnapshot | null;
   onResume?: (() => void) | undefined;
 }

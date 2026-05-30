@@ -12,7 +12,7 @@ import {
 import type { ContextMenuRequest, LibraryItemKind, LibraryRouteView } from '../types';
 import { HomeStack } from './views.styled';
 
-export interface HomeViewProps {
+interface HomeViewProps {
   layout: 'row' | 'grid';
   lastSession: SessionSnapshot | null;
   onResume?: (() => void) | undefined;

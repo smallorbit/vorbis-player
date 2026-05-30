@@ -119,5 +119,3 @@ export const AppearanceSection: React.FC = () => {
 };
 
 AppearanceSection.displayName = 'SettingsV2.AppearanceSection';
-
-export default AppearanceSection;

@@ -6,6 +6,7 @@
   "ignore": [
     "public/sw.js",
     "src/types/spotify.d.ts",
-    "src/types/styled.d.ts"
+    "src/types/styled.d.ts",
+    "src/components/ui/**"
   ]
 }

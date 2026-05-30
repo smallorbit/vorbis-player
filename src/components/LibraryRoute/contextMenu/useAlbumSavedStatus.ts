@@ -4,7 +4,7 @@ import type { ProviderId } from '@/types/domain';
 import { logLibrary } from '@/lib/debugLog';
 import { spotifyLibrarySyncEngine } from '@/services/cache/librarySyncEngine';
 
-export interface UseAlbumSavedStatusResult {
+interface UseAlbumSavedStatusResult {
   isSaved: boolean | null;
   toggleSaved: () => void;
   canToggle: boolean;

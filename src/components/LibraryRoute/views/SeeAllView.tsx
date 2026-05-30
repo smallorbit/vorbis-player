@@ -18,8 +18,8 @@ const TITLES: Record<Exclude<LibraryRouteView, 'home' | 'search'>, string> = {
   albums: 'Albums',
 };
 
-export interface SeeAllViewProps {
-  view: Exclude<LibraryRouteView, 'home' | 'search'>;
+interface SeeAllViewProps {
+  view: Exclude<LibraryRouteView, 'home' | 'liked' | 'search'>;
   onBack: () => void;
   onSelectCollection: (
     kind: LibraryItemKind,

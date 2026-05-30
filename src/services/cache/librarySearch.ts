@@ -39,7 +39,7 @@ export interface LibrarySearchResult {
   playlists: CachedPlaylistInfo[];
 }
 
-export interface LibrarySearchOptions {
+interface LibrarySearchOptions {
   /** Maximum results returned per category. Defaults to 10. */
   limitPerCategory?: number | undefined;
 }

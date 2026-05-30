@@ -39,7 +39,7 @@ const GearButton = styled.button`
   }
 `;
 
-export function SettingsGearButton({ onClick }: SettingsGearButtonProps): JSX.Element {
+function SettingsGearButton({ onClick }: SettingsGearButtonProps): JSX.Element {
   return (
     <GearButton
       type="button"

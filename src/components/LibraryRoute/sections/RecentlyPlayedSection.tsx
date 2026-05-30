@@ -8,7 +8,7 @@ import LibraryCard from '../card/LibraryCard';
 
 const SEE_ALL_THRESHOLD = 4;
 
-export interface RecentlyPlayedSectionProps {
+interface RecentlyPlayedSectionProps {
   layout: 'row' | 'grid';
   showProviderBadges?: boolean | undefined;
   onSelect: (kind: LibraryItemKind, id: string, name: string, provider?: ProviderId) => void;

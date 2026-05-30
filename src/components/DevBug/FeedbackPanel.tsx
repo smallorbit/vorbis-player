@@ -371,7 +371,7 @@ interface ToastState {
   type: 'success' | 'error';
 }
 
-export interface FeedbackPanelProps {
+interface FeedbackPanelProps {
   isOpen: boolean;
   selectedElement: SelectedElement | null;
   screenshotDataUrl: string | null;

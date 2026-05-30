@@ -1,7 +1,7 @@
 import type { ProviderId } from '@/types/domain';
 import type { ContextMenuRequest } from '../types';
 
-export interface MenuActionError {
+interface MenuActionError {
   readonly type: 'menu-action-error';
   readonly label: string;
   readonly cause: unknown;

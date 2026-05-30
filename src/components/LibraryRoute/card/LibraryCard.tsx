@@ -1,5 +1,5 @@
 import React, { useCallback } from 'react';
-import type { ContextMenuRequest, LibraryItemKind, LibraryCollectionKind } from '../types';
+import type { ContextMenuRequest, LibraryCollectionKind } from '../types';
 import type { ProviderId } from '@/types/domain';
 import { useLongPress } from './useLongPress';
 import ProviderIcon from '@/components/ProviderIcon';
@@ -14,7 +14,7 @@ import {
   Subtitle,
 } from './LibraryCard.styled';
 
-export interface LibraryCardProps {
+interface LibraryCardProps {
   kind: LibraryCollectionKind;
   id: string;
   provider?: ProviderId | undefined;
@@ -27,14 +27,12 @@ export interface LibraryCardProps {
   onContextMenuRequest?: ((req: ContextMenuRequest) => void) | undefined;
 }
 
-const placeholderGlyphForKind = (kind: LibraryItemKind): string => {
+const placeholderGlyphForKind = (kind: LibraryCollectionKind): string => {
   switch (kind) {
     case 'album':
       return '💿';
     case 'liked':
       return '♥';
-    case 'recently-played':
-      return '⏱';
     default:
       return '♪';
   }

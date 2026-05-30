@@ -28,7 +28,7 @@ const CaptureLayer = styled.div`
   user-select: none;
 `;
 
-export interface AreaSelectOverlayProps {
+interface AreaSelectOverlayProps {
   onAreaSelected: (elements: Element[], infos: SelectedElement[]) => void;
   onCancel: () => void;
 }

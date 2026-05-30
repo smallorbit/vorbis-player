@@ -5,7 +5,7 @@ import type { ProviderId } from '@/types/domain';
 import { spotifyLibrarySyncEngine } from '@/services/cache/librarySyncEngine';
 import { logLibrary } from '@/lib/debugLog';
 
-export interface EngineLibrarySyncResult {
+interface EngineLibrarySyncResult {
   playlists: CachedPlaylistInfo[];
   albums: AlbumInfo[];
   likedCount: number;

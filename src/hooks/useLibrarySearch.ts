@@ -15,14 +15,14 @@ import {
 
 const DEFAULT_DEBOUNCE_MS = 150;
 
-export interface UseLibrarySearchOptions {
+interface UseLibrarySearchOptions {
   /** Debounce window in ms before the cache is queried. Defaults to 150. */
   debounceMs?: number;
   /** Maximum results per category. Defaults to 10. */
   limitPerCategory?: number;
 }
 
-export interface UseLibrarySearchReturn {
+interface UseLibrarySearchReturn {
   results: LibrarySearchResult;
   isLoading: boolean;
 }

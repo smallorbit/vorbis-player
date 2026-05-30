@@ -192,4 +192,3 @@ const VisuallyHiddenDialogTitle: React.FC = () => (
   </DialogPrimitive.Title>
 );
 
-export default SettingsV2;

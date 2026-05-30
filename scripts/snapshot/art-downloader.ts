@@ -2,14 +2,14 @@ import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-export interface ArtDownloadResult {
+interface ArtDownloadResult {
   /** Web-root-relative URL to use in SnapshotImage.url. */
   url: string;
   /** True if the file already existed on disk (cache hit); false if downloaded now. */
   cacheHit: boolean;
 }
 
-export interface ArtDownloader {
+interface ArtDownloader {
   /**
    * Downloads art from originalUrl to targetDir and returns the local URL.
    * Idempotent: same originalUrl → same local filename → no re-download if file exists.

@@ -14,6 +14,9 @@ vi.mock('@/providers/registry', () => ({
   providerRegistry: {
     get: vi.fn((id: string) => ({
       id,
+      capabilities: {
+        hasNativeQueueSync: id === 'spotify',
+      },
       playback: {
         providerId: id,
         playTrack: mockPlayTrack,

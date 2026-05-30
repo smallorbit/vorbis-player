@@ -61,4 +61,3 @@ export const test = base.extend<{ capturePage: Page }>({
   },
 });
 
-export { expect } from '@playwright/test';
