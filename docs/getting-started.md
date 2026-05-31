@@ -59,7 +59,7 @@ Open [http://127.0.0.1:3000](http://127.0.0.1:3000) in your browser.
 
 ## First Run
 
-1. Click **Connect Spotify** to authenticate with Spotify, **or** open App Settings (gear icon) and connect Dropbox
+1. On the **Welcome to Vorbis Player** screen, click **Connect** on the Spotify and/or Dropbox provider card to authenticate
 2. Choose from your playlists/albums (Spotify) or browse your Dropbox folders
 3. Start playing music!
 

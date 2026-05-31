@@ -45,7 +45,7 @@ npm run deploy:preview # Deploy preview (Vercel)
 src/
 ├── components/              # React components
 │   ├── AudioPlayer.tsx      # Main orchestrator with centralized state
-│   ├── PlayerContent.tsx    # Main player layout (centering, responsive sizing)
+│   ├── PlayerContent/       # Main player layout (centering, responsive sizing)
 │   ├── PlayerStateRenderer.tsx  # Loading/error and library collection selection states
 │   ├── AlbumArt.tsx         # Album artwork with filters & glow effects
 │   ├── LibraryRoute/        # Sections-first library route (home + sub-routes, search, mini-player)
@@ -53,20 +53,20 @@ src/
 │   ├── QueueDrawer.tsx      # Queue (up-next) side drawer (desktop/tablet)
 │   ├── QueueBottomSheet.tsx # Queue bottom sheet (mobile)
 │   ├── QueueTrackList.tsx   # Queue track list (reorder/remove); lazy-loaded by queue surfaces
-│   ├── ColorPickerPopover.tsx   # Per-album color picker
-│   ├── AlbumArtBackside.tsx     # Flip menu back face
+│   ├── AlbumArtQuickSwapBack.tsx # Flip menu back face
 │   ├── BottomBar/               # Bottom bar components
 │   ├── controls/            # Player control sub-components
 │   ├── styled/              # Reusable styled-components library
 │   ├── icons/               # SVG icon components
 │   ├── visualizers/         # Background visualizer components
-│   └── VisualEffectsMenu/   # Visual effects configuration panel
+│   └── ui/                  # shadcn/ui primitives
 ├── constants/               # Shared constants (playlist IDs, prefixes)
-├── hooks/                   # 30 custom React hooks
+├── hooks/                   # 45 custom React hooks
 ├── providers/               # Multi-provider system
 │   ├── registry.ts          # Singleton ProviderRegistry
 │   ├── spotify/             # Spotify auth, catalog, playback adapters
-│   └── dropbox/             # Dropbox auth, catalog, playback adapters + art/catalog cache
+│   ├── dropbox/             # Dropbox auth, catalog, playback adapters + art/catalog cache
+│   └── mock/                # Mock provider (Playwright/dev; tree-shaken from prod)
 ├── services/                # Spotify API, Playback SDK, IndexedDB cache
 ├── utils/                   # Utility functions (color, sizing, filters)
 ├── styles/                  # Theme, global styles, CSS animations
@@ -83,7 +83,7 @@ src/
 - **Authentication**: PKCE OAuth 2.0 (Spotify and Dropbox)
 - **Testing**: Vitest + React Testing Library + jsdom
 - **Performance**: Web Workers, LRU caching, IndexedDB persistence, lazy loading, container queries
-- **Build**: ES2020 target, esbuild, manual chunks (vendor/radix/styled)
+- **Build**: ES2022 target, esbuild, manual chunks (vendor/radix/styled)
 
 ## Coding Conventions
 
@@ -113,7 +113,7 @@ Guidelines:
 
 ## Git Workflow
 
-- Feature branches from `develop`: `feature/name`, `fix/name`
+- Feature branches from `main`: `feature/name`, `fix/name`
 - Atomic commits with conventional format (`feat:`, `fix:`, `refactor:`, etc.)
 - Reference issue numbers in commit messages
 - Run `npm run test:run` and `npm run build` before pushing

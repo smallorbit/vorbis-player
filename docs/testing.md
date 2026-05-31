@@ -9,9 +9,9 @@ Run with `npm run test:run`. Tests are colocated with source files in `__tests__
 
 | File | Purpose |
 |------|---------|
-| `setup.ts` | Global test setup: mocks `localStorage`, `sessionStorage`, `window.location`, `history`, `fetch`, `crypto` (for PKCE), `btoa`/`atob`; imports `fake-indexeddb/auto` and `@testing-library/jest-dom`; clears all mocks in `afterEach` |
-| `fixtures.ts` | Factory functions for domain objects: `makeTrack()`, `makeMediaTrack()`, `makePlaylistInfo()`, `makeAlbumInfo()`, `makeProviderDescriptor()` — all accept partial overrides |
-| `testWrappers.tsx` | `TestWrapper` component that nests all app context providers (`ProviderProvider`, `PlayerSizingProvider`, `TrackProvider`, `ColorProvider`, `VisualEffectsProvider`, `PinnedItemsProvider`) for component/hook tests |
+| `setup.ts` | Global test setup: mocks `localStorage`, `sessionStorage`, `window.location`, `history`, `window.matchMedia`, `fetch`, `crypto` (for PKCE), `btoa`/`atob`; imports `fake-indexeddb/auto` and `@testing-library/jest-dom`; clears all mocks in `afterEach` |
+| `fixtures.ts` | Factory functions for domain objects: `makeTrack()`, `makeMediaTrack()`, `makeProviderDescriptor()` — all accept partial overrides |
+| `testWrappers.tsx` | `TestWrapper` component that nests all app context providers (`ThemeProvider`, `ProviderProvider`, `PlayerSizingProvider`, `TrackProvider`, `ColorProvider`, `VisualEffectsProvider`, `PinnedItemsProvider`) for component/hook tests |
 | `providerTestUtils.tsx` | `ProviderWrapper` — lighter wrapper with only `ProviderProvider`, for hooks that only need provider context |
 
 ## BDD comment convention
