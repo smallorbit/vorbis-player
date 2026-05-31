@@ -131,7 +131,7 @@ playlists/albums get captured before generating the snapshot.
 2. **Edit `playwright/fixtures/data/snapshot.config.json`** to include the IDs and
    folder paths you want to curate. Aim for a small, representative set — about
    5–10 playlists, a few saved albums, and the most-played folders. The committed
-   file ships with empty arrays so you can populate from scratch.
+   file already contains a representative set; adjust the IDs to match your own library.
 
 3. **Generate the snapshot** (writes JSON + downloads art):
    ```
