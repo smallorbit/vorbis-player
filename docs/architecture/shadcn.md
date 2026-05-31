@@ -8,7 +8,7 @@ vorbis-player uses a hybrid styling stack: **styled-components for bespoke surfa
 |---|---|---|
 | Visualizers, animations, gestures | styled-components (forever) | `BackgroundVisualizer`, zen-mode orchestration in `PlayerContent/styled.ts`, swipe gestures, album-art flip menu, `BottomBar` |
 | Standard chrome (modals, sliders, popovers, switches, toasts) | shadcn primitives | `src/components/ui/*.tsx`: `dialog.tsx`, `button.tsx`, `slider.tsx`, `switch.tsx`, `accordion.tsx`, `popover.tsx`, `sonner.tsx` |
-| Whole-screen redesigns | shadcn, gated behind `?ui=v2` | future `SettingsV2`, `OnboardingV2`, command palette |
+| Whole-screen redesigns | shadcn, gated behind `?ui=v2` | `SettingsV2` (`src/components/SettingsV2/`), command palette (`src/components/CmdKPalette/`) |
 
 ## Theme bridge — `--accent-color` is player chrome ONLY
 
@@ -20,18 +20,19 @@ The runtime `--accent-color` / `--accent-contrast-color` (injected on `document.
 - `VolumeSlider` (fill + thumb gradient — wraps shadcn `slider.tsx`, vertical orientation)
 - `Switch` accent variant (`controls/QuickEffectsRow.tsx` glow/visualizer/translucence toggles — uses default `variant="accent"` of `src/components/ui/switch.tsx`, retints checked-state track with `var(--accent-color)`)
 - Glow effects (`--glow-intensity`, `--glow-rate`, `--glow-opacity`)
-- Accent color overrides menu in `VisualEffectsMenu`
+- Accent color overrides menu (`SettingsV2/sections/appearance/AccentColorManager.tsx`)
 
 **shadcn primitives use the neutral palette** defined in `src/styles/shadcn-tokens.css` (`--background`, `--foreground`, `--primary`, `--muted`, `--border`, etc.). shadcn's `--accent` token is a static neutral surface and is **not** the same as the player's `--accent-color`. Never wire shadcn's `--primary` or `--accent` to `var(--accent-color)` — dialogs, popovers, and other chrome must stay neutral so they don't retint per track.
 
 ## `?ui=v2` flag mechanism
 
-The `useUiV2()` hook (`src/hooks/useUiV2.ts`) returns `true` when EITHER:
+The `useUiV2()` hook (`src/hooks/useUiV2.ts`) returns `true` when ANY of:
 
 - `import.meta.env.VITE_UI_V2 === 'true'` (build-time opt-in for staging deploys), OR
-- the URL contains `?ui=v2` (per-session opt-in for testing).
+- the URL contains `?ui=v2` (per-session opt-in for testing), OR
+- the `vorbis-player-settings-v2-enabled` localStorage key is `true` (cross-session persistence, set by the "Keep v2 enabled" toggle in `SettingsV2/sections/AdvancedSection.tsx`).
 
-It subscribes to `popstate` so SPA navigation flips the flag without a reload. SSR-safe.
+It subscribes to `popstate` so SPA navigation flips the flag without a reload, and to `storage` so cross-tab toggles propagate. SSR-safe.
 
 Convention for flagged screens:
 
@@ -43,7 +44,7 @@ Convention for flagged screens:
 
 | Primitive | File | Notes |
 |---|---|---|
-| `Dialog` | `dialog.tsx` | Used by `ProviderDisconnectDialog`, `ConfirmDeleteDialog`, `SaveQueueDialog`, `KeyboardShortcutsHelp`. Unflagged. |
+| `Dialog` | `dialog.tsx` | Used by `ProviderDisconnectDialog`, `SaveQueueDialog`, `KeyboardShortcutsHelp`, and `SettingsV2`. Unflagged. |
 | `Slider` | `slider.tsx` | Wrapped by `TimelineSlider` (horizontal, accent fill/thumb gradient) and `VolumeSlider` (vertical). Per-part `trackStyle` / `thumbStyle` / `rangeStyle` escape hatches preserve accent retinting. |
 | `Switch` | `switch.tsx` | Dual variants: `accent` (default, player chrome) and `neutral` (settings toggles). |
 | `Toast` (Sonner) | `sonner.tsx` | `<Toaster />` mounted at app root in `App.tsx`. `RadioProgressContent` rendered via `toast.custom()`. |
@@ -54,8 +55,11 @@ Convention for flagged screens:
 | `Select` | `select.tsx` | Per-part escape hatches: `triggerStyle` → `SelectTrigger`, `contentStyle` → `SelectContent` panel, `itemStyle` → `SelectItem` row. z-index 1500 (matches `theme.zIndex.popover`). |
 | `ScrollArea` | `scroll-area.tsx` | Per-part escape hatches: `viewportStyle` → viewport, `scrollbarStyle` → scrollbar track, `thumbStyle` → scrollbar thumb. |
 | `Separator` | `separator.tsx` | Per-part escape hatch: `separatorStyle` → separator element. |
+| `Command` | `command.tsx` | Powers the desktop Cmd-K palette (`CmdKPalette/index.tsx`). |
+| `Sheet` | `sheet.tsx` | Side panel used by `FilterSheet` (`LibraryRoute/search/`). |
+| `Input` | `input.tsx` | Text input primitive; used by `SearchBar` (`LibraryRoute/search/`). |
 
-**Next-wave primitives** (tracked as on-hold epics; need decomposition via `/speckit:interview`): #1265 (FilterSidebar — shadcn wave 3), #1262 (Settings v2), #1263 (Cmd-K palette), #1264 (Onboarding v2).
+**Shipped follow-on work**: #1265 (FilterSidebar — shipped as `FilterSheet`, `src/components/LibraryRoute/search/FilterSheet.tsx`, uses `sheet.tsx`), #1262 (Settings v2 — `src/components/SettingsV2/`), #1263 (Cmd-K palette — `src/components/CmdKPalette/`, uses `command.tsx`), #1264 (Onboarding v2). All four epics are closed.
 
 ## Canonical patterns for new shadcn primitives
 

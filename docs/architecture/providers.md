@@ -26,7 +26,7 @@ Defined in `src/types/providers.ts` and `src/types/domain.ts`.
 - Toggle-ON when not authenticated: calls `beginLogin({ popup: true })` immediately. The provider is added to `enabledProviderIds` only after the OAuth popup reports success via `AUTH_COMPLETE_EVENT`.
 - OAuth cancel/failure: toggle reverts; a toast shows `"Couldn't connect to {provider}. Try again."`.
 - Mid-session unrecoverable 401: `logout()` is called automatically; a toast shows `"{Provider} disconnected — session expired."`.
-- Implementation: `src/components/VisualEffectsMenu/SourcesSections.tsx` (`MusicSourcesSection`).
+- Implementation: `src/components/AppSettingsMenu/SourcesSections.tsx` (`MusicSourcesSection`).
 
 ## Unified playback across providers
 
@@ -47,7 +47,7 @@ Defined in `src/types/providers.ts` and `src/types/domain.ts`.
 
 - Radio is a one-shot action (not a sticky toggle) that builds a playlist from the current track.
 - `useRadio` + `radioService` generate suggestions from Last.fm, then match against the active provider catalog.
-- Unmatched suggestions can be resolved via Spotify search (`spotifyResolver`) when authenticated and Spotify is in `connectedProviderIds`.
+- Unmatched suggestions can be resolved via catalog search against any search-capable authenticated provider (`searchCapableProviders` filtered by `capabilities.hasTrackSearch` in `src/services/radioPipeline.ts`, calling each provider's `catalog.searchTrack`).
 - Provider switches during radio now follow the same driving-provider routing (no special queue handoff modal).
 - **Track name context menu**: clicking the track name (in both normal and zen mode) opens a `TrackRadioPopover` with a single "Play {trackName} Radio" option. This mirrors the existing artist/album popover pattern (`TrackInfoPopover`). The option is disabled with a tooltip when Last.fm is not configured. Components: `TrackRadioPopover.tsx` (popover wrapper), `TrackInfo.tsx` (normal mode), `AlbumArtSection.tsx` (zen mode).
 
@@ -100,7 +100,7 @@ Folders containing audio files become albums; parent folder = artist. A syntheti
 
 ### Dropbox "All Music" card
 
-`useLibrarySync.splitCollections` intercepts the All Music collection and exposes its track total as `allMusicCount` instead of pushing it into the album list. `AllMusicCard` (`src/components/PlaylistSelection/AllMusicCard.tsx`) renders the row in the **playlist grid** at the top anchor slot, alongside `LikedSongsCard`. The card uses a Dropbox-tinted gradient and a crossed-arrows shuffle SVG glyph in both grid and list layouts; subtitle is `"{N} tracks • Shuffled"`. Hidden when Dropbox is not in `enabledProviderIds` or excluded by the provider filter chip. Pin/unpin uses `ALL_MUSIC_PIN_ID = 'dropbox-all-music'` (a stable identifier distinct from the underlying collection id `''`) and persists through `PinnedItemsContext` like any other pin. The legacy `id === ''` entries in `LIBRARY_PLAYLIST_SORT_ANCHOR_IDS` and `LIBRARY_ALBUM_SORT_ANCHOR_IDS` are retired — All Music is no longer mixed into the sortable lists, so it does not need a sort-anchor exemption.
+`splitCollections` in `src/hooks/useCatalogLibrarySync.ts` intercepts the All Music collection and exposes its track total as `allMusicCount` instead of pushing it into the album list. The library UI is rendered by `src/components/LibraryRoute` (cards via `LibraryRoute/card/LibraryCard.tsx`); the All Music row is surfaced through the LibraryRoute sections rather than a dedicated `AllMusicCard` component. Hidden when Dropbox is not in `enabledProviderIds` or excluded by the provider filter chip. Pin/unpin uses `ALL_MUSIC_PIN_ID = 'dropbox-all-music'` (a stable identifier distinct from the underlying collection id `''`) and persists through `PinnedItemsContext` like any other pin. The legacy `id === ''` entries in `LIBRARY_PLAYLIST_SORT_ANCHOR_IDS` and `LIBRARY_ALBUM_SORT_ANCHOR_IDS` are retired — All Music is no longer mixed into the sortable lists, so it does not need a sort-anchor exemption.
 
 ### All Music shuffle-by-default
 
@@ -108,7 +108,7 @@ Loading or appending the All Music aggregate always shuffles, independently of t
 
 ### Dropbox Liked Songs
 
-Stored in IndexedDB (`vorbis-dropbox-art` database v3, `likes` store). Mutations dispatch `vorbis-dropbox-likes-changed` events for real-time UI updates. Settings menu exposes Export/Import (JSON) and Refresh Metadata operations.
+Stored in IndexedDB (`vorbis-dropbox-art` database v7, `likes` store). Mutations dispatch `vorbis-dropbox-likes-changed` events for real-time UI updates. Settings menu exposes Export/Import (JSON) and Refresh Metadata operations.
 
 ### Dropbox preferences sync
 
@@ -120,7 +120,7 @@ Both providers preserve refresh tokens during transient failures and proactively
 
 ### Spotify SDK loading
 
-The Spotify Web Playback SDK is loaded lazily by `SpotifyPlayerService.loadSDK()` — no global script tag in `index.html`. The SDK is only injected when the Spotify provider activates.
+The Spotify Web Playback SDK is loaded lazily by `loadSpotifySDK()` in `src/services/spotifyPlayerSdk.ts` — no global script tag in `index.html`. The SDK is only injected when the Spotify provider activates.
 
 ### Spotify API batching
 

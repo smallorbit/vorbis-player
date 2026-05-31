@@ -26,7 +26,7 @@ The queue drawers (`QueueDrawer`, `QueueBottomSheet`) render `QueueSkeleton` (`s
 
 The library browser opens as `LibraryRoute` (a full-screen view, `src/components/LibraryRoute/`), not a drawer. `currentView === 'library'` in `usePlayerLogic` state gates the active-player overlay; `handleOpenLibrary` / `handleCloseLibrary` toggle it. `LibraryRoute` is rendered via `React.lazy` from `AudioPlayer.tsx` (active-player overlay, when `currentView === 'library'`) and from `PlayerStateRenderer.tsx` (idle route).
 
-**Opening the library**: swipe down on album art, BottomBar library button, or keyboard `↓` / `L`. Opening library closes the queue drawer.
+**Opening the library**: BottomBar library button, or swipe down on album art when the Quick Access Panel is disabled (with QAP enabled, swipe down opens the QAP instead). Keyboard `↓` / `L` open the Quick Access Panel, not the library. Opening library closes the queue drawer.
 
 **Recently Played history** is tracked by `useRecentlyPlayedCollections` (`src/hooks/useRecentlyPlayedCollections.ts`). It exposes `history: RecentlyPlayedEntry[]` and `record(ref, name)`. Successful collection loads via `useCollectionLoader.loadCollection` call `record` automatically. History is stored under `vorbis-player-recently-played` (localStorage), capped at 5 entries, deduped by `CollectionRef` key, newest first. The Recently Played section in `LibraryRoute` reads from this hook via `useRecentlyPlayedSection`.
 
