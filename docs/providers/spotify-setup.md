@@ -48,7 +48,7 @@ Open [http://127.0.0.1:3000](http://127.0.0.1:3000) in your browser (not `localh
 
 ## Step 5: Connect Spotify
 
-1. Click **Connect Spotify** on the welcome screen
+1. Click **Connect** on the Spotify card on the welcome screen
 2. You'll be redirected to Spotify to authorize the app
 3. After authorizing, you'll be sent back to the player
 4. Your playlists and Liked Songs will load automatically
