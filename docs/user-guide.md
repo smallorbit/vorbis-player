@@ -13,7 +13,7 @@ Tap or click the album art to flip it and reveal quick-access controls:
 - **Accent color swatches** — extracted from art, custom, eyedropper, reset
 - **Glow effect toggle**
 - **Background visualizer toggle**
-- **Visualizer style selector** — Particles / Geometric
+- **Visualizer style selector** — Fireflies / Comet / Wave / Grid
 
 ### Bottom Bar
 
@@ -59,7 +59,7 @@ The library drawer supports:
 - **Sort** — Sort by recently added, name, artist, or release date
 - **Filter** — Filter albums by decade or by artist (click artist name in album grid)
 - **View Modes** — Toggle between Playlists and Albums tabs
-- **Pinning** — Pin up to 12 playlists and 12 albums to the top of their tabs
+- **Pinning** — Pin up to 12 collections total (playlists and albums combined) to the top of their tabs
 - **Liked Songs** — Special entry with shuffle indicator
 - **Play Liked / Queue Liked** — Long-press or right-click a collection to play or queue only your liked tracks from it
 
@@ -94,13 +94,8 @@ Opened via the gear icon in the bottom bar. Provides full control over:
 
 ### Background Visualizer
 
-- **Style** — Particles or Geometric
-- **Intensity** — 0-100%
-
-### Album Art Filters
-
-- Brightness, Saturation, Sepia, Contrast
-- One-click reset to defaults
+- **Style** — Fireflies, Comet, Wave, or Grid
+- **Intensity** — Less / Normal / More
 
 ## Keyboard Shortcuts
 
@@ -110,13 +105,14 @@ Opened via the gear icon in the bottom bar. Provides full control over:
 | `ArrowRight` / `ArrowLeft` | Next / Previous track | Next / Previous track |
 | `ArrowUp` / `Q` | Toggle queue drawer | Volume up (ArrowUp only) |
 | `ArrowDown` / `L` | Toggle library drawer | Volume down (ArrowDown only) |
-| `V` | Toggle background visualizer | Toggle background visualizer |
+| `V` | Cycle visualizer style | Cycle visualizer style |
 | `G` | Toggle glow effect | Toggle glow effect |
 | `S` | Toggle shuffle | Toggle shuffle |
 | `T` | Toggle translucence | Toggle translucence |
-| `O` | Open visual effects menu | Open visual effects menu |
+| `Shift+S` | Open visual effects menu | Open visual effects menu |
 | `K` | Like/unlike current track | Like/unlike current track |
 | `M` | Mute/unmute | Mute/unmute |
+| `Z` | Toggle zen mode | Toggle zen mode |
 | `/` or `?` | Show keyboard shortcuts help | Show keyboard shortcuts help |
 | `Escape` | Close all menus | Close all menus |
 

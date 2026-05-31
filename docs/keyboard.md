@@ -10,7 +10,7 @@ Centralized in `useKeyboardShortcuts.ts`. Uses `pointer: fine` / `hover: hover` 
 | `↓` / `L` | Toggle library | Volume down (↓ only) |
 | `V` / `G` / `S` / `T` | Visualizer / Glow / Shuffle / Translucence | same |
 | `Z` | Toggle zen mode | same |
-| `O` / `K` / `M` | Effects menu / Like / Mute | same |
+| `Shift+S` / `K` / `M` | Effects menu / Like / Mute | same |
 | `Cmd+K` / `Ctrl+K` | Open command palette (search library) | not bound |
 | `?` / `/` | Keyboard help | same |
 | `Escape` | Close all menus | same |

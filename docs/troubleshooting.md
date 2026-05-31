@@ -39,7 +39,7 @@ For the full Spotify setup walkthrough, see the [Spotify Setup Guide](./provider
 
 ### No Albums / No Tracks
 
-- Ensure your Dropbox contains audio files (MP3, FLAC, OGG, M4A, WAV) organized in folders
+- Ensure your Dropbox contains audio files (MP3, FLAC, OGG, M4A, WAV, AAC, WMA, OPUS) organized in folders
 - Expected structure: `/<Artist>/<Album>/<track.mp3>` or `/<Album>/<track.mp3>`
 - Folders with no audio files are not listed as albums
 - After connecting, give the app a moment to scan your Dropbox (the first load enumerates all files recursively)
