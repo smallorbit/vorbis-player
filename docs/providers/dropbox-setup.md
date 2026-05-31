@@ -24,7 +24,7 @@ Dropbox/
 - Each folder containing audio files becomes an **album**
 - The parent folder name is used as the **artist**
 - Audio files at the root of your Dropbox (not in a subfolder) are skipped
-- Supported formats: **MP3, FLAC, OGG/Vorbis, M4A/AAC, WAV**
+- Supported formats: **MP3, FLAC, OGG/Vorbis, M4A/AAC, WAV, WMA, Opus**
 
 **Album art**: Place an image file named `cover.jpg`, `cover.png`, `folder.jpg`, `album.jpg`, or `front.jpg` alongside your audio files. Track metadata (title, artist, track number) is read from embedded ID3 tags when available.
 
