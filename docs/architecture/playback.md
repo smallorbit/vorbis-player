@@ -24,7 +24,7 @@ Queue state lives in `TrackContext` (`tracks`, `originalTracks`, `currentTrackIn
 
 - Resolves the target provider and collection ref
 - Fetches tracks via `catalog.listTracks(collectionRef)`
-- Calls `applyTracks()` which stores `originalTracks`, optionally shuffles, sets `tracks` + `mediaTracksRef`, resets `currentTrackIndex` to 0, then calls `playTrack(0)`
+- Calls `applyTracks()` which stores `originalTracks`, optionally shuffles, sets `tracks` + `mediaTracksRef`, and resets `currentTrackIndex` to 0; the loader then calls `playTrack(0)`
 - Unified Liked Songs path merges tracks from all connected providers sorted by `addedAt`
 
 ### Adding to queue (`useQueueManagement.handleAddToQueue`)
@@ -48,10 +48,10 @@ Queue state lives in `TrackContext` (`tracks`, `originalTracks`, `currentTrackIn
 
 ### Shuffle interaction (`TrackContext.handleShuffleToggle`)
 
-- Enable: shuffles `originalTracks` (excluding current track), places current track first, resets index to 0
+- Enable: shuffles the current `tracks` (excluding the current track; not `originalTracks`, whose objects may be stale), places current track first, resets index to 0
 - Disable: restores `originalTracks`, finds current track's original index
 - Persisted via `useLocalStorage`
 
 ### Queue change notification
 
-`usePlayerLogic` calls `descriptor.playback.onQueueChanged?(tracks, currentTrackIndex)` whenever `tracks` or `currentTrackIndex` change, allowing providers with native queue sync (Spotify) to stay aligned.
+Two call sites push queue snapshots to the driving provider, both gated on `descriptor.capabilities.hasNativeQueueSync`: `useQueueManagement.notifyQueueChanged` fires on user-driven mutations (add/remove/reorder/insert), and `useProviderPlayback.playTrack` fires on track transitions (next/previous/hydrate/auto-advance). Each calls `descriptor.playback.onQueueChanged?.(tracks, index)` so providers with native queue sync (Spotify) stay aligned; providers without the capability never receive it.
