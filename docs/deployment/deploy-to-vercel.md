@@ -17,7 +17,7 @@ This guide will help you deploy your Vorbis Player to Vercel in just a few simpl
    - **App Description**: Modern Spotify music player
    - **Website**: Your Vercel URL (you'll update this after deployment)
    - **Redirect URI**: `https://your-app-name.vercel.app/auth/spotify/callback`
-   - **Which API/SDKs are you planning to use?**: Web Playbook SDK
+   - **Which API/SDKs are you planning to use?**: Web Playback SDK
 4. Save your app and copy the **Client ID**
 
 ## Step 2: Deploy to Vercel
@@ -166,7 +166,6 @@ For ongoing development:
 Your app is already optimized for Vercel with:
 - ✅ Static site generation
 - ✅ Automatic code splitting
-- ✅ Image optimization
 - ✅ Edge caching
 - ✅ Gzip compression
 - ✅ Security headers
