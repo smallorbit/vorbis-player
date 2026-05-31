@@ -94,11 +94,11 @@ src/
 ├── contexts/        # React context providers (TrackContext, ColorContext, etc.)
 ├── providers/       # Multi-provider system; spotify/ and dropbox/ subdirs
 ├── hooks/           # Custom hooks
-├── services/        # spotify.ts (auth + API), spotifyPlayer.ts (lazy SDK + playback), cache/ (IndexedDB)
+├── services/        # spotify/ (auth + API), spotifyPlayer.ts (lazy SDK + playback), cache/ (IndexedDB)
 ├── constants/       # playlist.ts, zenAnimation.ts, storage.ts
-├── utils/           # colorExtractor, sizingUtils, playlistFilters, etc.
+├── utils/           # colorExtractor, sizingUtils, logCaughtError, etc.
 ├── workers/         # imageProcessor.worker.ts
-├── types/           # domain.ts, providers.ts, filters.ts
+├── types/           # domain.ts, providers.ts, radio.ts
 ├── styles/          # theme.ts, ThemeProvider, shadcn-tokens.css, global styles
 └── lib/utils.ts
 ```
@@ -106,11 +106,11 @@ src/
 ## Terminology
 
 - **Queue** — tracks scheduled to play next (reorder/remove in `QueueDrawer` / `QueueBottomSheet`; list UI in `QueueTrackList.tsx`).
-- **Playlist** — a library **collection** from a provider (Spotify playlist, Dropbox folder-as-album, Liked Songs, etc.), browsed via `LibraryRoute` and loaded through `usePlaylistManager` / catalog APIs.
+- **Playlist** — a library **collection** from a provider (Spotify playlist, Dropbox folder-as-album, Liked Songs, etc.), browsed via `LibraryRoute` and loaded through `useSpotifyPlaylistManager` / catalog APIs.
 
 ## Tech Stack
 
-See README.md for the full tech stack. Build: ES2020, esbuild, manual chunks (vendor/radix/styled).
+See README.md for the full tech stack. Build: ES2022, esbuild, manual chunks (vendor/radix/styled).
 
 ## Environment Configuration
 
@@ -140,7 +140,7 @@ VITE_MOCK_PROVIDER="true"
 ```
 
 Vite dev server: host `127.0.0.1`, port `3000` (required for Spotify OAuth).
-Path alias: `@/` → `./src/` (e.g. `import { x } from '@/hooks/usePlayerState'`).
+Path alias: `@/` → `./src/` (e.g. `import { x } from '@/hooks/useKeyboardShortcuts'`).
 
 ## Coding Conventions
 
@@ -268,14 +268,6 @@ See `docs/troubleshooting.md` for layout, provider, and radio issues. Layout inv
 - `/commit` — Commit current changes, split into logical commits
 - `/doc` — Update README.md
 - `/comdoc` — Update README.md then commit
-
-## AI Workflow Rules
-
-For structured feature development, see `.claude/rules/`:
-
-- `generate_prd.md` — PRD creation process: asks clarifying questions, then generates a structured requirements doc
-- `generate_tasks_from_prd.md` — breaks a PRD into a detailed parent/subtask list; waits for "Go" confirmation before generating subtasks
-- `process_tasks.md` — task execution protocol: one subtask at a time, with test + commit gates before marking parent complete
 
 ## OpenSpec
 
