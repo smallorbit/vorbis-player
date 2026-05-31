@@ -1,6 +1,6 @@
 # Library Browser System
 
-> **Note:** This document predates the library redesign and partially describes legacy structure (`LibraryPage` / `useLibraryRoot`) that no longer exists. The current surface is `LibraryRoute` (`src/components/LibraryRoute/`) with section data hooks under `src/components/LibraryRoute/hooks/`. A full rewrite covering the new route is tracked as a follow-up issue.
+> **Note:** This document describes the current `LibraryRoute` surface (`src/components/LibraryRoute/`) with section data hooks under `src/components/LibraryRoute/hooks/`.
 
 ## Overview
 
@@ -9,7 +9,7 @@ The library browser shows the user's music collections (playlists, albums, liked
 It appears in two contexts:
 
 1. **Idle/home view** — rendered inline by `PlayerStateRenderer` when no track is loaded and QAP is disabled.
-2. **Full-screen library** — `LibraryRoute` opened during playback via swipe-down on album art, BottomBar library button, `L` key, or `↓`.
+2. **Full-screen library** — `LibraryRoute` opened during playback via swipe-down on album art or the BottomBar library button. (The `L` key and `↓` open the Quick Access Panel, not the library route.)
 
 Both contexts render the same `LibraryRoute` component (default export from `src/components/LibraryRoute/index.tsx`).
 
@@ -21,20 +21,20 @@ Both contexts render the same `LibraryRoute` component (default export from `src
 
 Internally `LibraryRoute` owns:
 
-- `view` — sub-route state (`home` | `recently-played` | `pinned` | `playlists` | `albums` | `liked` | `search`). Local to `LibraryRoute`, not in `usePlayerLogic`. Discarded when `currentView` swaps back to `'player'`.
+- `view` — sub-route state (`home` | `recently-played` | `pinned` | `playlists` | `albums` | `search`). Local to `LibraryRoute`, not in `usePlayerLogic`. Discarded when `currentView` swaps back to `'player'`.
 - `search` — the `LibrarySearchState` returned by `useLibrarySearch`. Active query forces `view === 'search'`.
 - `contextRequest` — the active virtual-anchor for `LibraryContextMenu` (long-press / right-click target).
-- `paletteOpen` — desktop-only Cmd-K palette open flag (gated by `useCommandPaletteShortcut`).
+
 
 The body picks one of three views:
 
 | Effective view | Component |
 |---|---|
 | `search` (any non-empty query) | `SearchResultsView` |
-| `home`, `liked` | `HomeView` |
+| `home` | `HomeView` |
 | `recently-played`, `pinned`, `playlists`, `albums` | `SeeAllView` |
 
-`SearchBar` mounts above (`desktop`) or below (`mobile`) the body. `MiniPlayer` is sticky-bottom. `CommandPalette` is desktop-only.
+`SearchBar` mounts above (`desktop`) or below (`mobile`) the body. `MiniPlayer` is sticky-bottom.
 
 ## Section taxonomy
 
@@ -43,22 +43,21 @@ The body picks one of three views:
 1. **Resume** — last session hero (`ResumeHero`), gated on a fresh `lastSession`.
 2. **Recently Played** — last 5 collections from `useRecentlyPlayedCollections`.
 3. **Pinned** — pinned playlists/albums.
-4. **Liked** — unified or per-provider liked tracks, from `useUnifiedLikedTracks`.
-5. **Playlists** — all playlists across enabled providers.
-6. **Albums** — all saved albums across enabled providers.
+4. **Playlists** — all playlists across enabled providers.
+5. **Albums** — all saved albums across enabled providers.
 
 Each section is a `Section` shell (header + horizontal/vertical card group) backed by a dedicated data hook in `LibraryRoute/hooks/`:
 
 | Hook | State |
 |---|---|
-| `useResumeSection` | `{ session, isReady }` |
+| `useResumeSection` | `{ session, hasResumable }` |
 | `useRecentlyPlayedSection` | `SectionState<RecentlyPlayedEntry>` |
-| `usePinnedSection` | `SectionState<PinnedItem>` |
+| `usePinnedSection` | `PinnedSectionState` ({ pinnedPlaylists, pinnedAlbums, combined, isLoading, isEmpty }) |
 | `useLikedSection` | `LikedSummary` |
 | `usePlaylistsSection` | `SectionState<CachedPlaylistInfo>` |
 | `useAlbumsSection` | `SectionState<AlbumInfo>` |
 
-Hook params accept the active provider filter / kind filter / sort, so the same hooks back both `HomeView` and `SeeAllView`.
+The collection hooks (`usePlaylistsSection`, `useAlbumsSection`) accept `UseCollectionSectionParams` (`providerFilter`, `excludePinned`), so the same hooks back both `HomeView` and `SeeAllView`.
 
 `SectionSkeleton` renders shimmer cards while loading. Sections collapse when `isEmpty === true`.
 
@@ -102,24 +101,24 @@ Long-press is implemented by `useLongPress` (500 ms hold, 8 px move tolerance). 
 
 - `SearchBar` — text input + filter button. Renders different chrome on mobile (bottom dock) vs desktop (top of body).
 - `FilterSheet` — Radix `Sheet` (mobile) / `Popover` (desktop) with provider checkboxes, kind toggles, sort radio.
-- `CommandPalette` — desktop-only Cmd-K palette. Built on `cmdk@^1.1.1`. Triggered by `useCommandPaletteShortcut`.
+- The desktop-only Cmd-K palette is a separate component, `CmdKPalette` (`src/components/CmdKPalette/`), built on the shadcn `CommandDialog` (`cmdk@^1.1.1`). It registers its own Cmd/Ctrl+K listener and is rendered by `AudioPlayer`, not by `LibraryRoute`.
 - `searchMatch.ts` — case- and diacritic-insensitive substring match used by both `useLibrarySearch` results and the palette.
 
 ## Context menu
 
 **File:** `src/components/LibraryRoute/contextMenu/LibraryContextMenu.tsx`
 
-Single-instance virtual-anchored Popover (NOT Radix `ContextMenu`). Reads `request: ContextMenuRequest | null` from `LibraryRoute`, anchors at `request.anchorRect`. Items are derived per `LibraryItemKind` by `menuItemsForKind`.
+Single-instance virtual-anchored Popover (NOT Radix `ContextMenu`). Reads `request: ContextMenuRequest | null` from `LibraryRoute`, anchors at `request.anchorRect`. Items are derived by the `useMenuItems` hook (which calls `buildMenuItems` in `menuItemsForKind.ts`).
 
 Common actions:
 
 - Play
 - Add to queue
-- Play next *(rendered disabled — wiring deferred)*
-- Start radio for collection *(rendered disabled — wiring deferred)*
+- Play next (disabled when no `onPlayNext` handler, or for the liked kind)
+- Start radio for collection (disabled when no `onStartRadioForCollection` handler, or for the liked kind)
 - Pin / Unpin (playlists, albums)
-- Save / Unsave album (albums) — uses `useAlbumSavedStatus`
-- Like / Unlike all tracks (liked) — uses `useLikedTracksForProvider`
+- Like / Unlike album (albums) — uses `useAlbumSavedStatus`
+- Play All + per-provider Play (liked) — uses `useLikedTracksForProvider` to load tracks
 - Remove from history (recently-played)
 
 The "Save album" path no longer pre-populates an optimistic `AlbumInfo` — newly-saved albums appear after the next library sync. Acceptable trade-off per the redesign blueprint.
@@ -156,14 +155,14 @@ Sub-components: `MiniArt`, `MiniControls`. Wired via `onMini*` props on `Library
 | `src/components/LibraryRoute/card/LibraryCard.tsx` | Universal card primitive |
 | `src/components/LibraryRoute/card/useLongPress.ts` | Long-press detection |
 | `src/components/LibraryRoute/search/useLibrarySearch.ts` | Query + filter state |
-| `src/components/LibraryRoute/search/CommandPalette.tsx` | Desktop Cmd-K palette |
+| `src/components/CmdKPalette/index.tsx` | Desktop Cmd-K palette (rendered by AudioPlayer, not LibraryRoute) |
 | `src/components/LibraryRoute/contextMenu/LibraryContextMenu.tsx` | Single-instance virtual-anchored menu |
 | `src/components/LibraryRoute/MiniPlayer/MiniPlayer.tsx` | Sticky mini-player |
 | `src/components/LibraryRoute/types.ts` | `SectionState`, `LibraryRouteView`, `LibraryItemKind`, `ContextMenuRequest` |
 
 ## Architectural notes
 
-- **Sections-first taxonomy**: Resume → Recently Played → Pinned → Liked → Playlists → Albums (fixed order).
+- **Sections-first taxonomy**: Resume → Recently Played → Pinned → Playlists → Albums (fixed order).
 - **Mobile = horizontal-scroll rows + "See all" sub-route**; **desktop = vertical wrapped grids**.
 - **Sub-route nav state is local** to `LibraryRoute` (not in `usePlayerLogic`) — discarded naturally when `currentView` swaps.
 - **Native overflow-x with scroll-snap** on mobile (NOT Radix `ScrollArea` — preserves iOS momentum).

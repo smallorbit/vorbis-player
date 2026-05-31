@@ -9,7 +9,7 @@ Four canvas-based animated backgrounds that render behind the player UI. Each is
 | `fireflies` | `ParticleVisualizer` | `src/components/visualizers/ParticleVisualizer.tsx` | `Particle` | Drifting circles with pulsing radius and opacity |
 | `comet` | `TrailVisualizer` | `src/components/visualizers/TrailVisualizer.tsx` | `TrailParticle` | A "ship" moves along a curving path, spawning trail particles that fade |
 | `wave` | `WaveVisualizer` | `src/components/visualizers/WaveVisualizer.tsx` | `Wave` | Layered sine waves rendered as filled regions from wave crest to canvas bottom |
-| `grid` | `GridWaveVisualizer` | `src/components/visualizers/GridWaveVisualizer.tsx` | `GridWaveState` | A dot grid displaced by traveling sine waves |
+| `grid` | `GridWaveVisualizer` | `src/components/visualizers/GridWaveVisualizer.tsx` | `GridParticle` | A dot grid displaced by traveling sine waves |
 
 The type union is `VisualizerStyle` in `src/types/visualizer.ts`:
 
@@ -34,7 +34,6 @@ interface UseCanvasVisualizerProps<T> {
   initializeItems: (count: number, width: number, height: number, color: string) => T[];
   updateItems: (items: T[], deltaTime: number, isPlaying: boolean, width: number, height: number) => void;
   renderItems: (ctx: CanvasRenderingContext2D, items: T[], width: number, height: number, intensity: number) => void;
-  onColorChange: (items: T[], color: string) => void;
 }
 ```
 
@@ -60,7 +59,7 @@ Returns `React.RefObject<HTMLCanvasElement>`. The caller attaches this to a `<ca
 
 ### Invariants and Gotchas
 
-- **Re-initialization on color change**: When `accentColor` changes, the entire item array is re-created (the effect depends on `accentColor`). The `onColorChange` callback is declared in the interface but **not called** by the hook -- it exists for future incremental color updates. Currently, color changes trigger full re-init.
+- **Re-initialization on color change**: When `accentColor` changes, the entire item array is re-created (the effect depends on `accentColor`). Currently, color changes trigger full re-init.
 - **Canvas sizing uses `window.innerWidth/Height`**, not CSS dimensions. The canvas element is styled `width: 100%; height: 100%` with `display: block`. The pixel dimensions are set imperatively on the canvas element, so there is **no DPI scaling** (`devicePixelRatio` is not applied). This means on high-DPI screens, the canvas renders at 1x resolution, which is intentional for performance -- these are ambient backgrounds, not crisp UI elements.
 - **Delta time normalization**: All visualizers normalize deltaTime by dividing by 16 (`dt = deltaTime / 16`), treating 16ms (~60fps) as the baseline.
 - **`useAnimationFrame`** (`src/hooks/useAnimationFrame.ts`) wraps `requestAnimationFrame` with cleanup. It skips the first frame to establish a baseline timestamp. The `callback` is a dependency of its internal effect, so it must be stable (wrapped in `useCallback`).
@@ -81,7 +80,8 @@ interface BackgroundVisualizerProps {
   speed?: number;            // multiplier, default 1.0
   accentColor: string;       // hex color from current track
   isPlaying: boolean;
-  albumArtBounds?: AlbumArtBounds | null;  // only used by 'comet' style
+  dimmed?: boolean | undefined;            // fades the container to 0.2 opacity (e.g. when library view is open)
+  albumArtBounds?: AlbumArtBounds | null | undefined;  // only used by 'comet' style
 }
 ```
 
@@ -92,6 +92,7 @@ Wrapped in a `VisualizerContainer` styled-component:
 - `z-index: 1` (below ContentWrapper at z-index 2, above AccentColorBackground at z-index 0)
 - `pointer-events: none` -- never intercepts clicks
 - `overflow: hidden`
+- `opacity` 1, or 0.2 when `dimmed` (with a 250ms ease transition and `will-change: opacity`)
 
 ### Wiring in AudioPlayer
 
@@ -100,6 +101,7 @@ Wrapped in a `VisualizerContainer` styled-component:
 - `style`, `intensity`, `speed` from `VisualEffectsContext`
 - `accentColor` from `ColorContext`
 - `isPlaying` from player state
+- `dimmed` = `state.currentView === 'library'`
 
 Note: `albumArtBounds` is declared in the props interface but is **not currently wired** from `AudioPlayer`. The `TrailVisualizer` supports it (constraining the ship to the album art rect) but falls back to viewport center when not provided.
 
@@ -129,7 +131,7 @@ Note: `albumArtBounds` is declared in the props interface but is **not currently
 - Each wave has a unique phase speed distributed via golden ratio (`PHI^(i/count*2)`)
 - Waves render back-to-front as filled shapes from the sine curve down to the bottom of the canvas
 - `yBase` distributes waves vertically across the canvas (`yBaseStart` to `yBaseStart + yBaseLayerScale`)
-- Amplitude scales by 0.65x on mobile (`width < 768`)
+- Amplitude scales by 0.65x on mobile (`width < BREAKPOINTS_PX.lg`, i.e. 700px)
 - Item count is fixed (always `waveCount`), not dependent on screen area
 
 ### Grid (`GridWaveVisualizer`)
@@ -138,8 +140,8 @@ Note: `albumArtBounds` is declared in the props interface but is **not currently
 - Multiple `WaveState` objects (default 2) travel through the grid
 - Dot displacement is the average of all wave sine projections
 - Edge and depth factors create a perspective-like intensity gradient
-- **Unusual `T` usage**: The generic type is `GridWaveState[]` but the hook always creates a single-element array (`[{ particles, waves, width, height }]`). The hook's `getItemCount` returns 1 (mobile or desktop), and `initializeItems` returns one `GridWaveState` containing all grid particles and wave states. This is a pattern to pack multiple data structures into the generic slot.
-- `void count` on line 87 suppresses the unused-parameter warning for the count arg
+- **Item type and metadata split**: The generic type is `GridParticle` (`useCanvasVisualizer<GridParticle>`); `initializeItems` returns a `GridParticle[]` with one entry per grid dot. The traveling `WaveState[]` plus `rows`/`cols` are stored in a separate `metaRef` (not in the generic item slot), so `updateItems` advances the wave phases on `metaRef.current.waves` while `renderItems` reads `metaRef.current` to displace each particle.
+- `getItemCount` returns `countBaseMobile`/`countBaseDesktop` from config (both default to 1)
 
 ## Debug Panel System
 
@@ -161,8 +163,8 @@ Profiler and Visualizer Debug are mutually exclusive: enabling one disables the 
 
 ```ts
 interface VisualizerDebugConfig {
-  particle: ParticleVisualizerConfig;  // 14 params
-  trail: TrailVisualizerConfig;        // 20 params
+  particle: ParticleVisualizerConfig;  // 15 params
+  trail: TrailVisualizerConfig;        // 21 params
   wave: WaveVisualizerConfig;          // 12 params
   grid: GridWaveVisualizerConfig;      // 17 params
 }
@@ -177,7 +179,7 @@ Default values are in `DEFAULT_VISUALIZER_DEBUG_CONFIG` (exported from `visualiz
    - Merged config (defaults + overrides) when debug mode is on
 2. Overrides are stored in localStorage under `STORAGE_KEYS.VISUALIZER_DEBUG_OVERRIDES` (`vorbis-player-visualizer-debug-overrides`)
 3. `mergeVisualizerConfig()` does a shallow merge per section (override keys replace defaults, unset keys keep defaults)
-4. The debug panel exposes per-param sliders for `particle` and `trail` sections only (wave and grid are not yet in the panel UI but their overrides are loaded/saved)
+4. The debug panel exposes per-param sliders/number inputs for all four sections: Fireflies (`particle`), Comet (`trail`), Wave (`wave`), and Grid Wave (`grid`)
 
 ### Export/Import
 

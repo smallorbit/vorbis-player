@@ -1,6 +1,6 @@
 # Profiling and Debug Tools
 
-The app has four independent debug/profiling systems. They are activated differently and serve different purposes.
+The app has five independent debug/profiling systems. They are activated differently and serve different purposes.
 
 ## 1. Performance Profiler
 
@@ -21,7 +21,7 @@ State is persisted in localStorage at `vorbis-player-profiling` (raw string `'tr
 
 **Context**: `src/contexts/ProfilingContext.tsx`
 
-- `ProfilingProvider` wraps the app (in `src/App.tsx` via context providers)
+- `ProfilingProvider` wraps the player content (in `src/components/AudioPlayer.tsx`, alongside `ProfilingOverlay`)
 - `useProfilingContext()` returns `{ enabled, collector, toggle }`
 - When disabled, `collector` is `null` and `ProfiledComponent` renders children without a `React.Profiler` wrapper (zero overhead)
 
@@ -41,7 +41,7 @@ Note: `recordContextUpdate` and `recordOperation` are available on the collector
 
 | Profiler ID | Location |
 |---|---|
-| `app-settings-menu` | `VisualEffectsMenu/index.tsx` |
+| `app-settings-menu` | `AppSettingsMenu/index.tsx` |
 | `PlayerStateRenderer` | `AudioPlayer.tsx` |
 | `PlayerContent` | `AudioPlayer.tsx` |
 | `AccentColorBackground` | `AudioPlayer.tsx` |
@@ -64,7 +64,7 @@ Fixed-position panel at top-left (`z-index: 999980`). Polls the collector every 
 - Heap size (Chrome only)
 - Long task count and max duration
 - Recent render events (last 20)
-- Buttons: Reset, Export JSON, Copy to clipboard
+- Buttons: Reset, Export JSON, Copy
 
 ### Mutual Exclusivity with Visualizer Debug
 
@@ -144,7 +144,7 @@ File: `src/components/DebugOverlay.tsx`
 - `useDebugActivator()` hook: tracks tap timestamps, toggles after 5 taps within 2 seconds
 - `DebugOverlay` component: patches `console.warn` and `console.error` to capture output. Shows a fixed badge (bottom-left, `z-index: 999999`) with log count; click to expand full-screen log viewer
 - Max 200 log entries retained
-- Buttons: Close, Clear, Copy all
+- Buttons: Close, Clear, Copy
 
 ### Not Connected to Profiler
 
@@ -183,6 +183,7 @@ Defined in `src/lib/debugLog.ts`:
 | `logSw` | `vorbis:sw` | Service worker events |
 | `logLibrary` | `vorbis:library` | Library loading and caching |
 | `logSession` | `vorbis:session` | Session persistence |
+| `logArtRace` | `vorbis:art-race` | Fresh-load album-art race tracing (timestamps every event that can flip `currentTrackIndex` during a `playTrack` transition) |
 
 ### Relationship to Other Tools
 

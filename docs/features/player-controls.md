@@ -24,8 +24,8 @@ Key concept: **active provider** (selected for browsing/catalog) vs **driving pr
 | `src/components/PlayerContent/ZenClickZoneOverlay.tsx` | Desktop zen: hover-reveal prev/play/next buttons over album art |
 | `src/components/PlayerContent/ZenLikeOverlay.tsx` | Desktop zen: hover-reveal like button (bottom-right of album art) |
 | `src/providers/errors.ts` | `AuthExpiredError`, `UnavailableTrackError` |
-| `src/types/providers.ts` | `PlaybackProvider` interface (line 66) |
-| `src/types/domain.ts` | `PlaybackState` interface (line 81) |
+| `src/types/providers.ts` | `PlaybackProvider` interface (line 113) |
+| `src/types/domain.ts` | `PlaybackState` interface (line 105) |
 
 ## usePlayerLogic
 
@@ -38,9 +38,11 @@ return {
   state: { isLoading, error, selectedPlaylistId, tracks, currentView, isPlaying, playbackPosition },
   handlers: {
     loadCollection, playTracksDirectly, handleAddToQueue, queueTracksDirectly,
+    insertTracksNext, insertCollectionNext,
     handlePlay, handlePause, handleNext, handlePrevious, playTrack,
     handleOpenLibrary, handleCloseLibrary, handleBackToLibrary,
     handleStartRadio, handleRemoveFromQueue, handleReorderQueue,
+    handleHydrate, setCurrentView,
   },
   radio: { radioState, isRadioAvailable, stopRadio, authExpired, clearAuthExpired, isActive, radioProgress, dismissRadioProgress },
   mediaTracksRef,         // imperative mirror of tracks[]
@@ -57,7 +59,7 @@ return {
 
 ### handleNext / handlePrevious
 
-Both wrap around the queue circularly (`% tracks.length`). Before calling `playTrack`, they set `expectedTrackIdRef.current` to the target track's ID. This tells `usePlaybackSubscription` to ignore any stale provider index updates until the expected track arrives.
+Both wrap around the queue circularly (`% tracks.length`). They call `setCurrentTrackIndex(targetIndex)`, then `await playTrack(targetIndex, true)`, then `ensurePlaybackResumed()` (manual skip auto-resumes, matching Spotify/Apple Music). The `expectedTrackIdRef` guard is not set here — `playTrack` itself raises it (to the target track's ID) before any adapter call, telling `usePlaybackSubscription` to ignore stale provider index updates until the expected track arrives.
 
 ### handlePlay / handlePause
 
@@ -69,7 +71,7 @@ Pauses playback, stops radio, clears all queue state (`tracks`, `originalTracks`
 
 ### Queue change notification
 
-An effect watches `tracks` and `currentTrackIndex` and calls `descriptor.playback.onQueueChanged?.(tracks, currentTrackIndex)` on the driving provider. Spotify uses this to sync its native queue.
+On every track transition, `playTrack` (in useProviderPlayback) pushes the latest queue snapshot via `descriptor.playback.onQueueChanged?.(tracks, index)` — but only for providers whose `descriptor.capabilities.hasNativeQueueSync` is true. Spotify declares this capability and uses the signal to build its native upcoming-queue; providers without it never receive the call. User-driven queue mutations are handled separately in `useQueueManagement`.
 
 ## useProviderPlayback
 
@@ -80,9 +82,11 @@ An effect watches `tracks` and `currentTrackIndex` and calls `descriptor.playbac
 ```ts
 interface UseProviderPlaybackProps {
   setCurrentTrackIndex: (index: number) => void;
-  activeDescriptor?: ProviderDescriptor | null;
+  activeDescriptor?: ProviderDescriptor | null | undefined;
   mediaTracksRef: React.MutableRefObject<MediaTrack[]>;
-  onAuthExpired?: (providerId: ProviderId) => void;
+  currentTrackIndexRef?: React.MutableRefObject<number> | undefined;
+  onAuthExpired?: ((providerId: ProviderId) => void) | undefined;
+  expectedTrackIdRef?: React.MutableRefObject<string | null> | undefined;
 }
 ```
 
@@ -116,7 +120,7 @@ interface UseProviderPlaybackProps {
 | `UnavailableTrackError` | Logs warning. If `skipOnError` and not at end of queue, schedules `playTrack(index + 1)` after 500ms. |
 | Generic error | Logs error. Same skip logic as `UnavailableTrackError`. |
 
-The 500ms delay before skip prevents rapid-fire skipping through consecutive unavailable tracks.
+The skip delay (`SKIP_ON_ERROR_DELAY_MS` from `src/constants/timing.ts`, currently 500ms) prevents rapid-fire skipping through consecutive unavailable tracks.
 
 ## usePlaybackSubscription
 
@@ -318,21 +322,24 @@ From `src/constants/zenAnimation.ts`:
 
 **Location:** `src/components/PlayerStateRenderer.tsx`
 
-Renders the idle/home view when no track is loaded (`selectedPlaylistId === null || tracks.length === 0`).
+Renders the idle/home view when no track is loaded (`selectedPlaylistId === null || tracks.length === 0`). Beyond the loading / auth-error / generic-error cards, the idle view also has a 'welcome' route (WelcomeScreen, first run until dismissed) and a 'hydrate' route (a 'Restoring Your Session' spinner that fires `onHydrate` to restore the last queue).
 
 ### View routing
 
+Idle routing is resolved by `resolveIdleRoute(welcomeSeen, qapEnabled, hasValidSession)`:
+
 ```
-qapEnabled (from useQapEnabled) ?
-  -> QuickAccessPanel (with browseLibrary callback)
-  : -> PlaylistSelection (lazy-loaded via React.lazy)
+!welcomeSeen      -> 'welcome'  (WelcomeScreen)
+qapEnabled        -> 'qap'      (QuickAccessPanel)
+hasValidSession   -> 'hydrate'  (session-restore spinner; fires onHydrate)
+else              -> 'library'  (LibraryRoute, lazy-loaded via React.lazy as LibraryRouteLazy)
 ```
 
-`showLibrary` state initializes to `!qapEnabled`. When the user selects a playlist from the library browser, `showLibrary` is set to `false` and the selection callback fires.
+A `libraryOverride` state is a one-way door: once "Browse Library" is engaged it pins the idle view to the library browser even if routing inputs would otherwise pick QAP. Selecting a playlist resets `libraryOverride` to `false` and fires the selection callback.
 
 ### QAP preference
 
-Stored in `localStorage` under key `vorbis-player-qap-enabled` (default `false`). Toggled via the settings panel (`VisualEffectsMenu`). The `useQapEnabled()` hook wraps `useLocalStorage`.
+Stored in `localStorage` under key `vorbis-player-qap-enabled` (default `false`). Toggled via the Advanced settings section (`src/components/SettingsV2/sections/AdvancedSection.tsx`). The `useQapEnabled()` hook wraps `useLocalStorage`.
 
 ### Other states
 

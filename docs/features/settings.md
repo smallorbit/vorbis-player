@@ -4,12 +4,12 @@ The settings panel is a right-side sliding drawer rendered via `createPortal` to
 
 ## Entry Point
 
-Component: `src/components/VisualEffectsMenu/index.tsx` (exported as `AppSettingsMenu`).
+Component: `src/components/AppSettingsMenu/index.tsx` (default export, `AppSettingsMenu`).
 
 Opened via:
 - Gear icon on the flip menu back face
-- Keyboard shortcut `O`
-- `useVisualEffectsContext().setShowVisualEffects(true)`
+- Keyboard shortcut `Shift+S`
+- `useVisualEffectsToggle().setShowVisualEffects(true)`
 
 The drawer is lazy-loaded (`React.lazy`) in two places:
 - `src/components/PlayerContent/PlayerControlsSection.tsx` (when a track is loaded)
@@ -39,7 +39,7 @@ The drawer content is structured top-to-bottom:
 
 ### 1. Music Sources (`MusicSourcesSection`)
 
-File: `src/components/VisualEffectsMenu/SourcesSections.tsx`
+File: `src/components/AppSettingsMenu/SourcesSections.tsx`
 
 Only renders when 2+ providers are registered. Shows each provider with:
 - Name
@@ -51,7 +51,7 @@ Uses `useProviderContext()` for `registry`, `enabledProviderIds`, `toggleProvide
 
 ### 2. Native Queue Sync (`NativeQueueSyncSection`)
 
-File: `src/components/VisualEffectsMenu/SourcesSections.tsx`
+File: `src/components/AppSettingsMenu/SourcesSections.tsx`
 
 Only renders when a connected provider has `capabilities.hasNativeQueueSync` (currently only Spotify). Shows:
 - **Queue sync toggle**: keeps Spotify's native queue synced with Vorbis playback. Key: `STORAGE_KEYS.SPOTIFY_QUEUE_SYNC` (default: `true`).
@@ -63,7 +63,7 @@ Inline in `index.tsx`. On/Off `OptionButton` pair that toggles the QAP preferenc
 
 ### 4. Advanced (Collapsible)
 
-Wrapped in `CollapsibleSection` (file: `src/components/VisualEffectsMenu/CollapsibleSection.tsx`). Starts collapsed by default.
+Rendered with a shadcn `Accordion` (`type="single" collapsible`) from `@/components/ui/accordion`, wrapped in a `FilterSection` styled component (from `./styled`) in `src/components/AppSettingsMenu/index.tsx`. Starts collapsed by default.
 
 Contains:
 
@@ -96,7 +96,7 @@ Invariant: enabling visualizer debug disables the profiler (`profilerToggle()`).
 
 #### Provider Data Sections
 
-File: `src/components/VisualEffectsMenu/ProviderDataSection.tsx`
+File: `src/components/AppSettingsMenu/ProviderDataSection.tsx`
 
 One `ProviderDataSection` per enabled provider that has `catalog.clearArtCache` or `catalog.exportLikes`. Each is a collapsible section titled "{ProviderName} Data". Controls depend on which `CatalogProvider` capabilities exist:
 
@@ -248,6 +248,7 @@ All keys from `src/constants/storage.ts` (`STORAGE_KEYS`) plus standalone keys:
 | `vorbis-player-visualizer-debug-overrides` | -- | `JSON` | Visualizer param overrides |
 | `vorbis-player-devbug` | `false` | `boolean` | DevBug FAB enabled |
 | `vorbis-player-qap-enabled` | `false` | `boolean` | Quick Access Panel enabled (NOT in STORAGE_KEYS) |
+| `vorbis-player-settings-v2-enabled` | -- | `boolean` | Render the SettingsV2 drawer instead of AppSettingsMenu |
 
 ### Gotcha: Raw vs JSON Storage
 
@@ -263,14 +264,13 @@ These are compatible because `JSON.parse('"true"')` and `'true' === 'true'` both
 
 | File | Role |
 |---|---|
-| `src/components/VisualEffectsMenu/index.tsx` | Settings drawer component |
-| `src/components/VisualEffectsMenu/SourcesSections.tsx` | Music Sources + Queue Sync sections |
-| `src/components/VisualEffectsMenu/ProviderDataSection.tsx` | Per-provider data management |
-| `src/components/VisualEffectsMenu/CollapsibleSection.tsx` | Generic collapsible section wrapper |
-| `src/components/VisualEffectsMenu/styled.ts` | All styled-components for the drawer |
+| `src/components/AppSettingsMenu/index.tsx` | Settings drawer component |
+| `src/components/AppSettingsMenu/SourcesSections.tsx` | Music Sources + Queue Sync sections |
+| `src/components/AppSettingsMenu/ProviderDataSection.tsx` | Per-provider data management |
+| `src/components/AppSettingsMenu/styled.ts` | All styled-components for the drawer |
 | `src/constants/storage.ts` | `STORAGE_KEYS` constant object |
 | `src/hooks/useLocalStorage.ts` | Generic localStorage hook with cross-tab sync |
 | `src/hooks/useQapEnabled.ts` | QAP preference hook |
-| `src/contexts/VisualEffectsContext.tsx` | Visual effects state (glow, visualizer, translucence, zen) |
+| `src/contexts/visualEffects/VisualEffectsToggleContext.tsx` | Visual effects drawer open/close state (`showVisualEffects` / `setShowVisualEffects`) |
 | `src/providers/dropbox/dropboxPreferencesSync.ts` | Dropbox preferences sync service |
 | `src/components/PlayerContent/PlayerControlsSection.tsx` | Wires settings props from contexts to the drawer |

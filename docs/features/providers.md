@@ -123,7 +123,7 @@ interface PlaybackProvider {
 
 - `subscribe` returns an unsubscribe function. Multiple subscribers are supported.
 - `getLastPlayTime` returns epoch ms of the last `playTrack` call. Used by `useAutoAdvance` to implement a 5-second cooldown (`PLAY_COOLDOWN_MS`) that prevents false end-of-track triggers during buffering.
-- `onQueueChanged` is called by `usePlayerLogic` whenever `tracks` or `currentTrackIndex` change. Spotify uses this to build upcoming URIs for native queue sync.
+- `onQueueChanged` is invoked on track transitions (`useProviderPlayback.playTrack`) and on user-driven queue mutations (`useQueueManagement`), and only for providers whose descriptor declares `hasNativeQueueSync`. Spotify uses this to build upcoming URIs for native queue sync.
 
 ### PlaybackState
 
@@ -334,7 +334,7 @@ Like `usePlaybackSubscription`, auto-advance subscribes to **all** registered pr
 
 The Spotify Web Playback SDK (`https://sdk.scdn.co/spotify-player.js`) is NOT loaded via a `<script>` tag in `index.html`. Instead:
 
-1. `SpotifyPlayerService.loadSDK()` (in `spotifyPlayerSdk.ts`) dynamically creates a `<script>` element
+1. `loadSpotifySDK()` (an exported function in `spotifyPlayerSdk.ts`, called from `SpotifyPlayerService.initialize()`) dynamically creates a `<script>` element
 2. Waits for `window.onSpotifyWebPlaybackSDKReady` callback (10s timeout)
 3. Only called when the Spotify provider activates (first `initialize()` call)
 4. The pending promise is stored in a ref to deduplicate concurrent calls
@@ -363,7 +363,7 @@ This prevents 429 rate limiting when rendering a playlist with many tracks.
 
 `SpotifyPlaybackAdapter.playWithRetry()` handles:
 - **401**: Throws `AuthExpiredError` (no retry)
-- **429**: Respects `Retry-After` header, exponential backoff, up to `MAX_PLAY_RETRIES` (5)
+- **429**: Respects `Retry-After` header, exponential backoff, up to `SPOTIFY_MAX_RETRIES` (5)
 - **403 + "Restriction violated"**: Throws `UnavailableTrackError` (no retry)
 - **403 (other)**: Re-transfers playback to device, exponential backoff, retries
 
@@ -373,9 +373,9 @@ After the first successful `playTrack`, `playbackSessionActive` is set to `true`
 
 ### Native Queue Sync
 
-`SpotifyQueueSyncService` (`src/providers/spotify/spotifyQueueSync.ts`):
-- `onQueueChanged` calls `buildUpcomingUris(tracks, fromIndex)` to build a list of upcoming Spotify URIs
-- These URIs are stored in `pendingUpcomingUris` and passed to `spotifyPlayer.playTrack(uri, upcomingUris)` on the next play call
+`SpotifyQueueSyncService` (`src/providers/spotify/spotifyQueueSync.ts`) provides `buildUpcomingUris(tracks, fromIndex)` and `resolveTracksInBackground()`. The adapter (`spotifyPlaybackAdapter.ts`) wires them up:
+- `SpotifyPlaybackAdapter.onQueueChanged` calls `spotifyQueueSync.buildUpcomingUris(tracks, fromIndex)` to build a list of upcoming Spotify URIs
+- These URIs are stored on the adapter's `pendingUpcomingUris` field and passed to `spotifyPlayer.playTrack(uri, upcomingUris)` on the next play call
 - Non-Spotify tracks are included only if a cached Spotify URI exists (from background resolution)
 - `resolveTracksInBackground()` searches Spotify for non-Spotify tracks, caching results
 - Settings: `STORAGE_KEYS.SPOTIFY_QUEUE_SYNC` (sync on/off), `STORAGE_KEYS.SPOTIFY_QUEUE_CROSS_PROVIDER` (cross-provider resolution on/off)
@@ -392,7 +392,7 @@ After the first successful `playTrack`, `playbackSessionActive` is set to `true`
 | `src/providers/dropbox/dropboxPlaybackAdapter.ts` | HTML5 Audio, ID3 metadata enrichment |
 | `src/providers/dropbox/dropboxApiClient.ts` | Authenticated Dropbox API calls |
 | `src/providers/dropbox/dropboxArtworkResolver.ts` | Album art resolution (folder images, IndexedDB cache) |
-| `src/providers/dropbox/dropboxArtCache.ts` | IndexedDB database (`vorbis-dropbox-art` v3) |
+| `src/providers/dropbox/dropboxArtCache.ts` | IndexedDB database (`vorbis-dropbox-art` v7) |
 | `src/providers/dropbox/dropboxCatalogCache.ts` | Catalog cache in IndexedDB |
 | `src/providers/dropbox/dropboxCatalogHelpers.ts` | Audio file detection, path parsing, track creation |
 | `src/providers/dropbox/dropboxLikesCache.ts` | IndexedDB `likes` store, `LIKES_CHANGED_EVENT` |
@@ -417,7 +417,7 @@ Dropbox root/
 - Parent folder = artist name
 - Track ID = lowercase file path
 - Album ID = lowercase folder path
-- A synthetic "All Music" collection (kind `'folder'`, id `''`) is always prepended to the collection list. It is rendered by `AllMusicCard` in the playlist grid (not the album grid) and always plays shuffled. See [Library — All Music Card](./library.md#all-music-card) for placement, pin behavior (`ALL_MUSIC_PIN_ID = 'dropbox-all-music'`), and shuffle-by-default semantics.
+- A synthetic "All Music" collection (kind `'folder'`, id `''`) is always prepended to the collection list. It is surfaced in the playlist grid (not the album grid) via `useLibrarySync` (`allMusicCount`) and always plays shuffled. Pin behavior uses `ALL_MUSIC_PIN_ID = 'dropbox-all-music'` (distinct from the underlying collection id `''`).
 
 ### Token Refresh
 
@@ -453,7 +453,7 @@ After starting playback, `enrichMetadataInBackground()`:
 
 ### Liked Songs
 
-Stored in IndexedDB (`vorbis-dropbox-art` database v3, `likes` store). Each entry is `{ trackId, track: MediaTrack, likedAt: number }`.
+Stored in IndexedDB (`vorbis-dropbox-art` database v7, `likes` store). Each entry is `{ trackId, track: MediaTrack, likedAt: number }`.
 
 Mutations dispatch `vorbis-dropbox-likes-changed` (the `LIKES_CHANGED_EVENT` constant) as a window event. The descriptor sets `likesChangedEvent` to this value, enabling real-time UI updates.
 
@@ -519,7 +519,7 @@ Currently only Spotify has `hasTrackSearch: true`. This means a Dropbox-seeded r
 
 ```ts
 class AuthExpiredError extends Error {
-  readonly providerId: string;
+  readonly providerId: ProviderId;
 }
 
 class UnavailableTrackError extends Error {
