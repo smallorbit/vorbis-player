@@ -16,7 +16,7 @@ The album art system handles display, color extraction, accent color propagation
 | `src/components/PlayerContent/GestureLayer.tsx` | Swipe/click/long-press routing; merges touch + pointer handlers |
 | `src/components/PlayerContent/ZenClickZoneOverlay.tsx` | Desktop zen: hover-reveal prev/play/next buttons |
 | `src/components/PlayerContent/ZenLikeOverlay.tsx` | Desktop zen: hover-reveal like button |
-| `src/components/PlayerContent/styled.tsx` | `FlipInner`, `ClickableAlbumArtContainer`, zen track info styled components |
+| `src/components/PlayerContent/styled.ts` | `FlipInner`, `ClickableAlbumArtContainer`, zen track info styled components |
 | `src/hooks/useAccentColor.ts` | Auto-extract color on track change; manages override lifecycle |
 | `src/hooks/usePlayerSizing.ts` | Viewport-aware dimensions, breakpoints, device detection |
 | `src/hooks/useImageProcessingWorker.ts` | Hook wrapping the web worker for accent-mask image processing |
@@ -99,7 +99,7 @@ The component uses a custom `React.memo` comparator that checks: `currentTrack.i
 
 ### Architecture
 
-Album art has a front (artwork) and back (visual effects controls). The flip is a CSS 3D transform (`rotateY(180deg)`) applied via `FlipInner` in `src/components/PlayerContent/styled.tsx`.
+Album art has a front (artwork) and back (visual effects controls). The flip is a CSS 3D transform (`rotateY(180deg)`) applied via `FlipInner` in `src/components/PlayerContent/styled.ts`.
 
 ### Flip state
 
@@ -315,12 +315,12 @@ interface UsePlayerSizingReturn {
 
 ### Album art max-width calculation
 
-In `AlbumArt.tsx`, `AlbumArtContainer` uses CSS `max-width`:
-- Normal mode: `min(calc(100vw - 48px), calc(100dvh - var(--player-controls-height, 220px) - 120px))`
+In `src/components/PlayerContent/styled.ts`, the `PlayerStack` styled component uses CSS `max-width` (constants from `src/constants/zenAnimation.ts` and `BOTTOM_BAR_HEIGHT = 60`):
+- Normal mode: `min(calc(100vw - 48px), calc(100dvh - var(--player-controls-height, 220px) - 180px))`
 - Zen mode: `min(calc(100vw - 96px), calc(100dvh - 196px))`
 - Zen mode mobile: `min(calc(100vw - 32px), calc(100dvh - 120px))`
 
-The `aspect-ratio: 1` rule ensures square art. The `max-width` constraint is the sole sizing mechanism -- no explicit width or height is set.
+The `aspect-ratio: 1` rule on `AlbumArtContainer` ensures square art. The `max-width` constraint on the surrounding `PlayerStack` is the sole sizing mechanism -- no explicit width or height is set on the art itself.
 
 ### AlbumArtSection bounds reporting
 

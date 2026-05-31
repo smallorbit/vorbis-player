@@ -20,7 +20,7 @@ interface TrackListContextValue {
   originalTracks: MediaTrack[];      // pre-shuffle order, used to restore on unshuffle
   isLoading: boolean;
   error: string | null;
-  shuffleEnabled: boolean;           // persisted via useLocalStorage (key: vorbis-player-shuffle)
+  shuffleEnabled: boolean;           // persisted via useLocalStorage (key: vorbis-player-shuffle-enabled)
   selectedPlaylistId: string | null; // ID of the loaded collection
   // + setters for all above
   handleShuffleToggle: () => void;
@@ -82,7 +82,7 @@ Constructed once in `usePlayerLogic` via `useMemo` and passed to `useCollectionL
    - `LIKED_SONGS_ID` + unified liked active + no explicit provider -> `loadUnifiedLiked()` (merges liked tracks from all connected providers, sorted by `addedAt` descending).
    - Otherwise -> `loadProviderCollection()`.
 3. `loadProviderCollection` resolves the collection ref via `resolvePlaylistRef(playlistId, providerId)` -> `{ id, kind }`, then calls `catalog.listTracks(collectionRef)`.
-4. If `listTracks` returns 0 tracks and `playback.playCollection` exists (Spotify context playback), falls back to `loadContextPlayback`.
+4. If `listTracks` returns 0 tracks and the target descriptor declares `capabilities.hasContextPlaybackFallback` (Spotify only), falls back to `loadContextPlayback`.
 5. `applyTracks(tracks)` stores `originalTracks`, optionally shuffles if `shuffleEnabled`, sets `tracks` + `mediaTracksRef`, resets `currentTrackIndex` to 0, then calls `playTrack(0)`.
 
 **Invariant:** `loadCollection` always resets `currentTrackIndex` to 0. The previous queue is fully replaced.
@@ -145,7 +145,7 @@ Constructed once in `usePlayerLogic` via `useMemo` and passed to `useCollectionL
 
 **Invariant:** `originalTracks` represents the canonical order. Shuffle only reorders `tracks`. Queue additions append to both.
 
-**Persistence:** `shuffleEnabled` is stored in localStorage via `useLocalStorage` (key: `vorbis-player-shuffle`).
+**Persistence:** `shuffleEnabled` is stored in localStorage via `useLocalStorage` (key: `vorbis-player-shuffle-enabled`).
 
 ## Cross-Provider Queue
 
@@ -160,17 +160,22 @@ The **driving provider** (the one currently controlling audio output) can differ
 
 ## Queue Change Notification
 
-`usePlayerLogic` calls the driving provider's `onQueueChanged` whenever `tracks` or `currentTrackIndex` change:
+The driving provider's `onQueueChanged` is invoked only when that provider declares the `hasNativeQueueSync` capability. Two call sites:
+
+- **Track transitions** (`useProviderPlayback.playTrack`, `src/hooks/useProviderPlayback.ts`):
 
 ```ts
-// src/hooks/usePlayerLogic.ts ~line 142
-descriptor?.playback.onQueueChanged?.(tracks, currentTrackIndex);
+if (descriptor.capabilities.hasNativeQueueSync) {
+  descriptor.playback.onQueueChanged?.(tracks, index);
+}
 ```
+
+- **User-driven mutations** (`useQueueManagement.ts`, via the `notifyQueueChanged` helper) for add/remove/reorder, which also checks `driving.capabilities?.hasNativeQueueSync` before calling.
 
 - **Spotify adapter** (`src/providers/spotify/spotifyPlaybackAdapter.ts`): uses this to build upcoming URIs for Spotify's native queue sync.
 - **Dropbox adapter** (`src/providers/dropbox/dropboxPlaybackAdapter.ts`): no-op.
 
-The `onQueueChanged` method is optional on `PlaybackProvider` (`src/types/providers.ts` line 89).
+The `onQueueChanged` method is optional on `PlaybackProvider` (`src/types/providers.ts` line 144).
 
 ## UI Components
 

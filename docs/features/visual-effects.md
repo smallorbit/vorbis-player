@@ -4,9 +4,20 @@ The visual effects system controls ambient visual enhancements around the player
 
 ## VisualEffectsContext
 
-**File**: `src/contexts/VisualEffectsContext.tsx`
+**Directory**: `src/contexts/visualEffects/`
 
-Central state store for all visual effect preferences. Wraps the app and provides both state values and setters.
+Visual effect state is split across six focused context modules, each with its own provider and `use*` hook:
+
+| Context module | Hook | Owns |
+|---|---|---|
+| `VisualEffectsToggleContext.tsx` | `useVisualEffectsToggle` | `visualEffectsEnabled` (master toggle), `showVisualEffects` (transient menu-open state) |
+| `AccentColorBackgroundContext.tsx` | `useAccentColorBackground` | `accentColorBackgroundPreferred`, derived `accentColorBackgroundEnabled` |
+| `VisualizerContext.tsx` | `useVisualizer` | `backgroundVisualizerEnabled/Style/Intensity/Speed` + legacy-style migration |
+| `TranslucenceContext.tsx` | `useTranslucence` | `translucenceEnabled`, `translucenceOpacity` |
+| `ZenModeContext.tsx` | `useZenMode` | `zenModeEnabled` |
+| `GlowContext.tsx` | `useGlow` | `perAlbumGlow` |
+
+`src/contexts/visualEffects/index.tsx` re-exports these hooks and composes them via the `VisualEffectsProvider`.
 
 ### State Shape
 
@@ -59,12 +70,10 @@ All persisted fields use `useLocalStorage` with keys from `src/constants/storage
 
 ### Migration
 
-On mount, the context runs a one-time migration for old style names:
+On mount, `VisualizerContext` runs a one-time migration for old style names:
 - `'particles'` -> `'fireflies'`
 - `'trail'` -> `'comet'`
 - `'geometric'` -> `'fireflies'`
-
-It also removes the deprecated `vorbis-player-album-filters` key.
 
 ## Glow Effect
 
@@ -99,14 +108,14 @@ interface AccentColorGlowOverlayProps {
 
 ### Per-Album Glow
 
-`perAlbumGlow` in `VisualEffectsContext` is a `Record<string, { intensity: number; rate: number }>` keyed by some track/album identifier. This allows different glow settings per album. The data is persisted but the per-album override logic lives in the consuming components.
+`perAlbumGlow` in `GlowContext` is a `Record<string, { intensity: number; rate: number }>` keyed by some track/album identifier. This allows different glow settings per album. The data is persisted but the per-album override logic lives in the consuming components.
 
 ### Master Toggle Behavior
 
 The `visualEffectsEnabled` flag is the master glow toggle:
 - When toggled off: glow intensity passed to `AccentColorGlowOverlay` becomes 0
 - When toggled back on: `restoreGlowSettings()` restores the last user-set intensity/rate
-- Keyboard shortcut: `G` key (via `handleGlowToggle` in `PlayerControlsSection.tsx`)
+- Keyboard shortcut: `G` key (via `handleGlowToggle` in `PlayerControlsSection.tsx`); `visualEffectsEnabled` lives in `VisualEffectsToggleContext`
 
 ## Translucence
 
@@ -152,7 +161,7 @@ interface AccentColorBackgroundProps {
 
 ### Activation
 
-Controlled by `accentColorBackgroundEnabled` in `VisualEffectsContext`, which requires both:
+Controlled by `accentColorBackgroundEnabled` in `AccentColorBackgroundContext`, which requires both:
 1. `accentColorBackgroundPreferred` is `true` (user opted in)
 2. `visualEffectsEnabled` is `true` (master toggle is on)
 
@@ -164,9 +173,9 @@ The `backgroundVisualizerSpeed` value (default `1.0`) is a global speed multipli
 
 Controlled via a slider on the flip menu back (`QuickEffectsRow`). Persisted under `vorbis-player-background-visualizer-speed`.
 
-## Settings Menu (VisualEffectsMenu)
+## Settings Menu (AppSettingsMenu)
 
-**File**: `src/components/VisualEffectsMenu/index.tsx`
+**File**: `src/components/AppSettingsMenu/index.tsx` (imported in `AudioPlayer.tsx` under the local alias `VisualEffectsMenu`)
 
 Despite the name, this is the **app settings drawer**, not just visual effects. It renders as a right-side drawer via `createPortal` to `document.body`.
 
@@ -188,8 +197,8 @@ The glow, visualizer style, visualizer speed/intensity, translucence, and accent
 ### Opening
 
 - Gear icon in player controls
-- `O` keyboard shortcut
-- `showVisualEffects` state in `VisualEffectsContext` (transient, not persisted)
+- `Shift+S` keyboard shortcut
+- `showVisualEffects` state in `VisualEffectsToggleContext` (transient, not persisted)
 
 ## Keyboard Shortcuts
 
@@ -198,8 +207,8 @@ The glow, visualizer style, visualizer speed/intensity, translucence, and accent
 | `V` | Cycle visualizer style (fireflies -> comet -> wave -> grid -> fireflies) | `PlayerControlsSection.tsx` `handleCycleVisualizerStyle` |
 | `G` | Toggle glow (master visual effects toggle) | `PlayerControlsSection.tsx` `handleGlowToggle` |
 | `T` | Toggle translucence | `PlayerControlsSection.tsx` `handleTranslucenceToggle` |
-| `O` | Toggle settings menu | `PlayerControlsSection.tsx` `handleToggleVisualEffectsMenu` |
-| `Z` | Toggle zen mode | `PlayerControlsSection.tsx` |
+| `Shift+S` | Toggle settings menu | `PlayerControlsSection.tsx` `handleToggleVisualEffectsMenu` |
+| `Z` | Toggle zen mode | toggle defined in `PlayerContent/index.tsx`, forwarded via `onToggleZenMode` |
 
 ## Z-Index Stacking
 
@@ -215,7 +224,7 @@ From back to front:
 |---------|-------------|
 | **ColorContext** | Provides `accentColor` used by glow overlay and accent background gradient |
 | **Visualizers** | Speed multiplier and enabled/style/intensity flow from this context to `BackgroundVisualizer` |
-| **Zen mode** | `zenModeEnabled` stored here; glow and translucence remain active in zen mode |
+| **Zen mode** | `zenModeEnabled` stored in `ZenModeContext`; glow and translucence remain active in zen mode |
 | **Flip menu** | Primary UI surface for effect controls (`QuickEffectsRow` in `AlbumArtQuickSwapBack`) |
 | **Player sizing** | Settings drawer width adapts to viewport via `usePlayerSizingContext` |
 | **Dropbox preferences sync** | Clearing accent colors triggers a Dropbox preferences sync reset |
@@ -224,11 +233,11 @@ From back to front:
 
 | File | Role |
 |------|------|
-| `src/contexts/VisualEffectsContext.tsx` | Central state provider for all visual effect settings |
+| `src/contexts/visualEffects/` | Six split context modules + `VisualEffectsProvider` (index.tsx) for all visual effect settings |
 | `src/hooks/useVisualEffectsState.ts` | Glow intensity/rate state with save/restore |
 | `src/components/AccentColorGlowOverlay.tsx` | Pulsing glow layer behind album art |
 | `src/components/AccentColorBackground.tsx` | Full-viewport accent color gradient |
-| `src/components/VisualEffectsMenu/index.tsx` | Settings drawer (gear icon) |
+| `src/components/AppSettingsMenu/index.tsx` | Settings drawer (gear icon); aliased as `VisualEffectsMenu` in `AudioPlayer.tsx` |
 | `src/components/AlbumArtQuickSwapBack.tsx` | Flip menu back face, hosts `QuickEffectsRow` |
 | `src/components/controls/QuickEffectsRow.tsx` | Actual effect controls (glow, visualizer, translucence, accent color) |
 | `src/styles/animations.ts` | `breatheGlow` keyframes for glow animation |
