@@ -1,8 +1,4 @@
-import type { CollectionRef, ProviderId, MediaTrack } from '@/types/domain';
-import type { CachedPlaylistInfo } from '@/services/cache/cacheTypes';
-import type { AlbumInfo } from '@/services/spotify/types';
-import type { RecentlyPlayedEntry } from '@/hooks/useRecentlyPlayedCollections';
-import type { SessionSnapshot } from '@/services/sessionPersistence';
+import type { CollectionRef, ProviderId } from '@/types/domain';
 
 export interface UseCollectionSectionParams {
   providerFilter?: ProviderId[];
@@ -58,11 +54,4 @@ export type ContextMenuRequest = ContextMenuRequestBase &
       }
   );
 
-export type {
-  CachedPlaylistInfo,
-  AlbumInfo,
-  MediaTrack,
-  ProviderId,
-  RecentlyPlayedEntry,
-  SessionSnapshot,
-};
+export type { ProviderId };

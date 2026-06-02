@@ -23,7 +23,7 @@ export const STORE_META = 'meta';
  * API has to serve any store, and IDB itself persists structured-cloneable
  * data without per-store typing.
  */
-export type FallbackStores = Record<string, Map<string, unknown>>;
+type FallbackStores = Record<string, Map<string, unknown>>;
 
 export const fallbackStores: FallbackStores = {
   [STORE_PLAYLISTS]: new Map(),
