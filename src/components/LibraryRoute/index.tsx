@@ -14,7 +14,7 @@ import { useLibrarySearch } from './search/useLibrarySearch';
 import LibraryContextMenu from './contextMenu/LibraryContextMenu';
 import { LibraryContextMenuOpenContext } from './contextMenu/LibraryContextMenuOpenContext';
 
-export interface LibraryRouteProps {
+interface LibraryRouteProps {
   onPlaylistSelect: (playlistId: string, playlistName: string, provider?: ProviderId) => void;
   onAddToQueue: (id: string, name?: string, provider?: ProviderId) => Promise<AddToQueueResult | null>;
   onPlayLikedTracks?: ((
