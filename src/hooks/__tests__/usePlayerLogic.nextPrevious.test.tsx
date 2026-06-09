@@ -243,7 +243,7 @@ describe.each([
     expect(descriptor.playback.resume).toHaveBeenCalled();
   });
 
-  it('handleNext wraps around to the first track at the end of the queue', async () => {
+  it('handleNext is a no-op at the end of the queue', async () => {
     // #given — paused player at the last index
     const result = await setupPausedQueue(2);
 
@@ -252,12 +252,12 @@ describe.each([
       await result.current.handlers.handleNext();
     });
 
-    // #then
-    expect(playTrackSpy.mock.calls[0][0]).toBe(0);
-    expect(descriptor.playback.resume).toHaveBeenCalled();
+    // #then — queue is finite: no playback initiated, index unchanged
+    expect(playTrackSpy).not.toHaveBeenCalled();
+    expect(descriptor.playback.resume).not.toHaveBeenCalled();
   });
 
-  it('handlePrevious wraps to the last track from index 0', async () => {
+  it('handlePrevious restarts the first track from index 0', async () => {
     // #given — paused player at the first index
     const result = await setupPausedQueue(0);
 
@@ -266,8 +266,8 @@ describe.each([
       await result.current.handlers.handlePrevious();
     });
 
-    // #then
-    expect(playTrackSpy.mock.calls[0][0]).toBe(2);
+    // #then — clamps at the queue start and replays track 0
+    expect(playTrackSpy.mock.calls[0][0]).toBe(0);
     expect(descriptor.playback.resume).toHaveBeenCalled();
   });
 

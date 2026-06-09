@@ -231,7 +231,11 @@ export function usePlayerLogic() {
 
   const handleNext = useCallback(async () => {
     if (tracks.length === 0) return;
-    const nextIndex = (currentTrackIndexRef.current + 1) % tracks.length;
+    if (currentTrackIndexRef.current >= tracks.length - 1) {
+      logQueue('handleNext — at end of queue (%d/%d), stopping', currentTrackIndexRef.current, tracks.length);
+      return;
+    }
+    const nextIndex = currentTrackIndexRef.current + 1;
     logQueue(
       'handleNext — %d → %d, target=%s, queueLen=%d, mediaLen=%d',
       currentTrackIndexRef.current,
@@ -247,7 +251,7 @@ export function usePlayerLogic() {
 
   const handlePrevious = useCallback(async () => {
     if (tracks.length === 0) return;
-    const newIndex = currentTrackIndexRef.current === 0 ? tracks.length - 1 : currentTrackIndexRef.current - 1;
+    const newIndex = Math.max(0, currentTrackIndexRef.current - 1);
     logQueue(
       'handlePrevious — %d → %d, target=%s, queueLen=%d, mediaLen=%d',
       currentTrackIndexRef.current,

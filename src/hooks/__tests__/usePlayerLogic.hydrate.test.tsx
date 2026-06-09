@@ -289,8 +289,8 @@ describe('usePlayerLogic — handleHydrate', () => {
   });
 
   it('discards a pending hydrate when handleNext runs first', async () => {
-    // #given
-    const session = makeSession();
+    // #given — hydrate at index 0 so handleNext has a next track to advance to
+    const session = makeSession({ trackIndex: 0, trackId: 'track-a' });
     const { result } = renderHook(() => usePlayerLogic(), { wrapper: AllProviders });
 
     await act(async () => {
@@ -309,7 +309,7 @@ describe('usePlayerLogic — handleHydrate', () => {
     });
 
     // #then — handleNext took over; subsequent handlePlay uses resume, not a hydrated start
-    expect(nextCall?.[0]).toBe(0); // wrapped around from index 1 -> 0 in a 2-track queue
+    expect(nextCall?.[0]).toBe(1); // advanced from index 0 -> 1 in a 2-track queue
     expect(playTrackSpy).not.toHaveBeenCalled();
     expect(mockDescriptor.playback.resume).toHaveBeenCalled();
   });
