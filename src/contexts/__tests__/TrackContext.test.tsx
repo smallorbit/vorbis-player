@@ -177,14 +177,19 @@ describe('TrackContext', () => {
       result.current.setCurrentTrackIndex(0);
     });
 
-    // #when — enable shuffle (t1 moves to front; rest is shuffled)
+    // #when — enable shuffle (t1 moves to front; rest is shuffled).
+    // Math.random pinned to 0 forces the Fisher-Yates swap so the shuffled
+    // order is deterministically [t1, t3, t2] — never the identity permutation,
+    // which a 2-element shuffle would otherwise produce 50% of the time.
+    const randomSpy = vi.spyOn(Math, 'random').mockReturnValue(0);
     act(() => {
       result.current.handleShuffleToggle();
     });
+    randomSpy.mockRestore();
 
     expect(result.current.shuffleEnabled).toBe(true);
-    // Capture the shuffled arrangement so we can assert the final order differs from it
     const shuffledIds = result.current.tracks.map((t) => t.id);
+    expect(shuffledIds).toEqual(['t1', 't3', 't2']);
 
     // #when — add new tracks via queueTracksDirectly while shuffle is ON
     const newTracks = [makeTrack({ id: 'n1' }), makeTrack({ id: 'n2' })];
