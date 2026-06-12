@@ -48,7 +48,7 @@ vi.mock('@/hooks/useLocalStorage', () => ({
 }));
 
 // Import after mocks are set up
-import { MusicSourcesSection } from '../SourcesSections';
+import { MusicSourcesSection } from '../MusicSourcesSection';
 import { Toaster } from '@/components/ui/sonner';
 
 const Wrapper = ({ children }: { children: React.ReactNode }) => (

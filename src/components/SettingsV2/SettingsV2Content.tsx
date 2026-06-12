@@ -12,8 +12,7 @@ import {
 } from './styled';
 
 // Lazy-load section bodies so the shell can mount (and unit-test) without
-// eagerly pulling in the provider registry, profiling/visualizer contexts,
-// or the legacy AppSettingsMenu module graph.
+// eagerly pulling in the provider registry or profiling/visualizer contexts.
 const SourcesSection = lazy(() =>
   import('./sections/SourcesSection').then((m) => ({ default: m.SourcesSection })),
 );
