@@ -46,7 +46,7 @@ Future redesigns should be promoted the same way: build the v2 component, wire i
 | `Sheet` | `sheet.tsx` | Side panel used by `FilterSheet` (`LibraryRoute/search/`). |
 | `Input` | `input.tsx` | Text input primitive; used by `SearchBar` (`LibraryRoute/search/`). |
 
-**Shipped follow-on work**: #1265 (FilterSidebar — shipped as `FilterSheet`, `src/components/LibraryRoute/search/FilterSheet.tsx`, uses `sheet.tsx`), #1262 (Settings v2 — `src/components/SettingsV2/`), #1263 (Cmd-K palette — `src/components/CmdKPalette/`, uses `command.tsx`), #1264 (Onboarding v2). All four epics are closed.
+**Shipped follow-on work**: #1265 (FilterSidebar — shipped as `FilterSheet`, `src/components/LibraryRoute/search/FilterSheet.tsx`, uses `sheet.tsx`), #1262 (Settings v2 — `src/components/SettingsV2/`), #1263 (Cmd-K palette — `src/components/CmdKPalette/`, uses `command.tsx`). These epics are closed.
 
 ## Canonical patterns for new shadcn primitives
 
