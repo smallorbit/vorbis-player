@@ -813,6 +813,72 @@ describe('useCollectionLoader', () => {
     expect(spotifyListTracks).toHaveBeenCalled();
   });
 
+  it('a new load that begins during the context-playback spotifyHandlePlaylistSelect call does not write stale tracks', async () => {
+    // #given — provider A uses context-playback fallback; its spotifyHandlePlaylistSelect is slow
+    const slowContextDeferred = makeDeferred<MediaTrack[]>();
+    const contextTracks = [makeMediaTrack('CTX1'), makeMediaTrack('CTX2')];
+    const fastTracks = [makeMediaTrack('B1')];
+
+    mockSpotifyHandlePlaylistSelect.mockReturnValueOnce(slowContextDeferred.promise);
+
+    const emptyCatalog = { listTracks: vi.fn().mockResolvedValue([]) };
+    const fastCatalog = { listTracks: vi.fn().mockResolvedValue(fastTracks) };
+
+    mockGetDescriptor.mockImplementation((id: string) => {
+      if (id === 'spotify') {
+        return {
+          id: 'spotify',
+          catalog: emptyCatalog,
+          capabilities: { hasContextPlaybackFallback: true },
+          playback: { pause: vi.fn() },
+        };
+      }
+      return { id: 'dropbox', catalog: fastCatalog, playback: { pause: vi.fn() } };
+    });
+    mockActiveDescriptor = {
+      id: 'spotify',
+      catalog: emptyCatalog,
+      capabilities: { hasContextPlaybackFallback: true },
+      playback: { pause: vi.fn().mockResolvedValue(undefined) },
+    };
+
+    const { result } = renderHook(() =>
+      useCollectionLoader({
+        trackOps: { setError: mockSetError, setIsLoading: mockSetIsLoading, setSelectedPlaylistId: mockSetSelectedPlaylistId, setTracks: mockSetTracks, setOriginalTracks: mockSetOriginalTracks, setCurrentTrackIndex: mockSetCurrentTrackIndex, mediaTracksRef },
+        activeDescriptor: mockActiveDescriptor,
+        getDescriptor: mockGetDescriptor,
+        setActiveProviderId: mockSetActiveProviderId,
+        connectedProviderIds: ['spotify', 'dropbox'],
+        shuffleEnabled: false,
+        isUnifiedLikedActive: false,
+        drivingProviderRef,
+        playTrack: mockPlayTrack,
+        spotifyHandlePlaylistSelect: mockSpotifyHandlePlaylistSelect,
+        stopRadioBase: mockStopRadioBase,
+        record: mockRecord,
+        radioStateIsActive: false,
+      })
+    );
+
+    // #when — load A goes through context-playback (catalog empty → spotifyHandlePlaylistSelect);
+    // load B starts and completes while A awaits spotifyHandlePlaylistSelect
+    await act(async () => {
+      const slowLoad = result.current.loadCollection('playlist_ctx', 'spotify');
+      // wait for A to have called spotifyHandlePlaylistSelect and be suspended
+      await Promise.resolve();
+      await Promise.resolve();
+      await result.current.loadCollection('playlist_B', 'dropbox');
+      // now unblock A's spotifyHandlePlaylistSelect — stale check should stop mediaTracksRef write
+      slowContextDeferred.resolve(contextTracks);
+      await slowLoad;
+    });
+
+    // #then — context-playback result never wrote to mediaTracksRef; B's tracks are the state
+    expect(mediaTracksRef.current.map(t => t.id)).toEqual(['B1']);
+    const lastApplied = mockSetTracks.mock.calls.at(-1)?.[0] as MediaTrack[];
+    expect(lastApplied.map(t => t.id)).toEqual(['B1']);
+  });
+
   it('does not invoke spotifyHandlePlaylistSelect when hasContextPlaybackFallback is false and catalog returns empty', async () => {
     // #given — provider with context-playback method available but capability flag false
     const mockCatalog = {
@@ -949,6 +1015,71 @@ describe('useCollectionLoader', () => {
     expect(trackCalls).not.toContainEqual(['A1', 'A2']);
     const lastApplied = mockSetTracks.mock.calls.at(-1)?.[0] as MediaTrack[];
     expect(lastApplied.map(t => t.id)).toEqual(['B1']);
+  });
+
+  it('a new load that begins during await playTrack(0) prevents the stale load from overwriting tracks', async () => {
+    // #given — load A resolves listTracks immediately but playTrack is deferred,
+    // giving load B time to apply its tracks before A resumes
+    const playTrackDeferred = makeDeferred<void>();
+    let playTrackCallCount = 0;
+    mockPlayTrack.mockImplementation(() => {
+      playTrackCallCount += 1;
+      if (playTrackCallCount === 1) return playTrackDeferred.promise;
+      return Promise.resolve();
+    });
+
+    const tracksA = [makeMediaTrack('A1'), makeMediaTrack('A2')];
+    const tracksB = [makeMediaTrack('B1')];
+    const catalogA = { listTracks: vi.fn().mockResolvedValue(tracksA) };
+    const catalogB = { listTracks: vi.fn().mockResolvedValue(tracksB) };
+
+    mockGetDescriptor.mockImplementation((id: string) => {
+      if (id === 'spotify') return { id: 'spotify', catalog: catalogA, playback: { pause: vi.fn() } };
+      return { id: 'dropbox', catalog: catalogB, playback: { pause: vi.fn() } };
+    });
+    mockActiveDescriptor = { id: 'spotify', catalog: catalogA, playback: { pause: vi.fn().mockResolvedValue(undefined) } };
+
+    const { result } = renderHook(() =>
+      useCollectionLoader({
+        trackOps: { setError: mockSetError, setIsLoading: mockSetIsLoading, setSelectedPlaylistId: mockSetSelectedPlaylistId, setTracks: mockSetTracks, setOriginalTracks: mockSetOriginalTracks, setCurrentTrackIndex: mockSetCurrentTrackIndex, mediaTracksRef },
+        activeDescriptor: mockActiveDescriptor,
+        getDescriptor: mockGetDescriptor,
+        setActiveProviderId: mockSetActiveProviderId,
+        connectedProviderIds: ['spotify', 'dropbox'],
+        shuffleEnabled: false,
+        isUnifiedLikedActive: false,
+        drivingProviderRef,
+        playTrack: mockPlayTrack,
+        spotifyHandlePlaylistSelect: mockSpotifyHandlePlaylistSelect,
+        stopRadioBase: mockStopRadioBase,
+        record: mockRecord,
+        radioStateIsActive: false,
+      })
+    );
+
+    // #when — load A starts and reaches playTrack(0); load B completes while A is suspended there
+    await act(async () => {
+      const slowLoad = result.current.loadCollection('playlist_A', 'spotify');
+      // wait one microtask so A has called setTracks and is now awaiting playTrack
+      await Promise.resolve();
+      // B starts and completes fully
+      await result.current.loadCollection('playlist_B', 'dropbox');
+      // unblock A's playTrack — the stale-check guard should stop A here
+      playTrackDeferred.resolve();
+      await slowLoad;
+    });
+
+    // #then — A's playTrack resolved but A is stale; B's tracks are the final state.
+    // A legitimately applied its tracks before B ran (that write is expected);
+    // what matters is that A did NOT perform a second write after B's generation took over.
+    const lastApplied = mockSetTracks.mock.calls.at(-1)?.[0] as MediaTrack[];
+    expect(lastApplied.map(t => t.id)).toEqual(['B1']);
+    // A must not have called record — it was stale when it resumed after playTrack
+    expect(mockRecord).not.toHaveBeenCalledWith(
+      expect.objectContaining({ provider: 'spotify' }),
+      expect.any(String),
+      expect.anything(),
+    );
   });
 
   it('aborts the previous load controller when a new load begins', async () => {

@@ -117,7 +117,10 @@ export function useCollectionLoader({
         likedProviderIds.map(async (id) => {
           const catalog = descriptorMap.get(id)?.catalog;
           if (!catalog) return [];
-          return catalog.listTracks({ provider: id, kind: 'liked' }, signal).catch((): MediaTrack[] => []);
+          return catalog.listTracks({ provider: id, kind: 'liked' }, signal).catch((err: unknown): MediaTrack[] => {
+            if (!isAbortError(err)) logCaughtError(`useCollectionLoader.loadUnifiedLiked[${id}]`, err);
+            return [];
+          });
         }),
       );
 
@@ -139,6 +142,7 @@ export function useCollectionLoader({
             setActiveProviderId(firstTrack.provider);
           }
           queueSnapshot('Unified Liked loaded', merged, mediaTracksRef.current.length, 0);
+          if (isStale(generation)) return loadGenerationRef.current;
           await playTrack(0);
           record(
             { provider: firstTrack.provider, kind: 'liked' },
@@ -162,7 +166,7 @@ export function useCollectionLoader({
   ]);
 
   const loadContextPlayback = useCallback(async (
-    playlistId: string, providerId: ProviderId,
+    playlistId: string, providerId: ProviderId, generation: number,
   ): Promise<number> => {
     setIsLoading(false);
     const prevProvider = drivingProviderRef.current;
@@ -173,6 +177,7 @@ export function useCollectionLoader({
     mediaTracksRef.current = [];
     logQueue('Context playback path — delegating to legacy handler for %s on %s', playlistId, providerId);
     const sdkTracks = await spotifyHandlePlaylistSelect(playlistId);
+    if (isStale(generation)) return loadGenerationRef.current;
     if (sdkTracks.length > 0) {
       mediaTracksRef.current = sdkTracks;
       queueSnapshot('Context playback loaded', sdkTracks, mediaTracksRef.current.length, 0);
@@ -180,7 +185,7 @@ export function useCollectionLoader({
       logQueue('Context playback returned 0 tracks');
     }
     return sdkTracks.length;
-  }, [drivingProviderRef, mediaTracksRef, setIsLoading, spotifyHandlePlaylistSelect]);
+  }, [drivingProviderRef, mediaTracksRef, setIsLoading, spotifyHandlePlaylistSelect, isStale]);
 
   const loadProviderCollection = useCallback(async (
     playlistId: string, targetDescriptor: ProviderDescriptor, name?: string,
@@ -200,7 +205,7 @@ export function useCollectionLoader({
       if (isStale(generation)) return loadGenerationRef.current;
 
       if (list.length === 0 && targetDescriptor.capabilities.hasContextPlaybackFallback) {
-        return loadContextPlayback(playlistId, providerId);
+        return loadContextPlayback(playlistId, providerId, generation);
       }
 
       if (list.length === 0) return clearWithError('No tracks found in this collection.');
@@ -208,6 +213,7 @@ export function useCollectionLoader({
       applyTracks(list, { forceShuffle: isAllMusicRef(collectionRef) });
       drivingProviderRef.current = providerId;
       queueSnapshot(`${providerId} playlist loaded`, list, mediaTracksRef.current.length, 0);
+      if (isStale(generation)) return loadGenerationRef.current;
       await playTrack(0);
       record(collectionRef, name ?? collectionId, list[0]?.image ?? null);
       return list.length;
