@@ -62,6 +62,19 @@ describe('ToggleGroup', () => {
       // #then
       expect(onValueChange).toHaveBeenCalledWith('l');
     });
+
+    it('clicking the active item emits the empty-string deselection value', async () => {
+      // #given consumers guard with `v && ...`, relying on Radix emitting ''
+      const onValueChange = vi.fn();
+      const user = userEvent.setup();
+      renderGroup({ type: 'single', value: 's', onValueChange });
+
+      // #when
+      await user.click(screen.getByRole('radio', { name: 'Small' }));
+
+      // #then
+      expect(onValueChange).toHaveBeenCalledWith('');
+    });
   });
 
   describe('variant', () => {
