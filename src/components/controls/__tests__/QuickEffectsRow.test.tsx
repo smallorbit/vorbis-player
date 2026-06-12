@@ -1,30 +1,11 @@
 import React from 'react';
-import { render } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import { ThemeProvider } from 'styled-components';
 
 import { theme } from '@/styles/theme';
 import type { MediaTrack } from '@/types/domain';
-
-const optionButtonRenders: Array<Record<string, unknown>> = [];
-
-vi.mock('@/components/AppSettingsMenu/styled', async () => {
-  const actual = await vi.importActual<typeof import('@/components/AppSettingsMenu/styled')>(
-    '@/components/AppSettingsMenu/styled',
-  );
-  return {
-    ...actual,
-    OptionButton: (props: Record<string, unknown>) => {
-      optionButtonRenders.push(props);
-      const { children, $isActive: _$isActive, $variant: _$variant, ...rest } = props as {
-        children?: React.ReactNode;
-        $isActive?: boolean;
-        $variant?: string;
-      } & Record<string, unknown>;
-      return <button {...rest}>{children}</button>;
-    },
-  };
-});
 
 vi.mock('@/utils/colorExtractor', () => ({
   extractTopVibrantColors: vi.fn().mockResolvedValue([]),
@@ -62,45 +43,61 @@ const baseProps = {
   isTablet: false,
 };
 
-describe('QuickEffectsRow OptionButton variant wiring', () => {
+const renderRow = (overrides: Partial<typeof baseProps> = {}) =>
+  render(
+    <ThemeProvider theme={theme}>
+      <QuickEffectsRow {...baseProps} {...overrides} />
+    </ThemeProvider>,
+  );
+
+describe('QuickEffectsRow ToggleGroup wiring', () => {
   beforeEach(() => {
-    optionButtonRenders.length = 0;
     vi.clearAllMocks();
   });
 
-  it('renders every OptionButton with $variant="accent"', () => {
-    // #given — Glow + Visualizer both enabled so all sub-setting pills mount
+  it('renders the accent toggle groups with the active item selected', () => {
+    // #given — glow + visualizer enabled so all sub-setting groups mount
     // #when
-    render(
-      <ThemeProvider theme={theme}>
-        <QuickEffectsRow {...baseProps} />
-      </ThemeProvider>,
-    );
+    renderRow();
 
-    // #then — every rendered pill carries the accent variant. React 18 StrictMode
-    // can double-invoke the render, so we assert against the full set instead of a
-    // fixed count: at least the 16 expected pills (3 glow intensity + 3 glow rate +
-    // 4 viz style + 3 viz intensity + 3 viz speed) must be present.
-    expect(optionButtonRenders.length).toBeGreaterThanOrEqual(16);
-    for (const props of optionButtonRenders) {
-      expect(props.$variant).toBe('accent');
-    }
+    // #then — the value matching current props is marked active (data-state="on")
+    const fireflies = screen.getByRole('radio', { name: 'Fireflies' });
+    expect(fireflies).toHaveAttribute('data-state', 'on');
+    expect(fireflies.className).toContain('data-[state=on]:bg-[var(--accent-color)]');
+    expect(screen.getByRole('radio', { name: 'Comet' })).toHaveAttribute('data-state', 'off');
   });
 
-  it('omits sub-setting pills (and so OptionButtons) when glow + visualizer are disabled', () => {
+  it('invokes the style change callback with the typed visualizer style on click', async () => {
     // #given
+    const user = userEvent.setup();
+    renderRow();
+
     // #when
-    render(
-      <ThemeProvider theme={theme}>
-        <QuickEffectsRow
-          {...baseProps}
-          glowEnabled={false}
-          backgroundVisualizerEnabled={false}
-        />
-      </ThemeProvider>,
-    );
+    await user.click(screen.getByRole('radio', { name: 'Wave' }));
 
     // #then
-    expect(optionButtonRenders).toHaveLength(0);
+    expect(baseProps.onBackgroundVisualizerStyleChange).toHaveBeenCalledWith('wave');
+  });
+
+  it('invokes the numeric glow intensity callback parsed back from the string value', async () => {
+    // #given — visualizer off so "More" is unambiguously the glow-intensity pill
+    const user = userEvent.setup();
+    renderRow({ backgroundVisualizerEnabled: false });
+
+    // #when
+    await user.click(screen.getByRole('radio', { name: 'More' }));
+
+    // #then — "125" parses back to the numeric option value
+    expect(baseProps.onGlowIntensityChange).toHaveBeenCalledWith(125);
+  });
+
+  it('omits sub-setting toggle groups when glow + visualizer are disabled', () => {
+    // #given
+    // #when
+    renderRow({ glowEnabled: false, backgroundVisualizerEnabled: false });
+
+    // #then — no Fireflies/More pills mount
+    expect(screen.queryByRole('radio', { name: 'Fireflies' })).toBeNull();
+    expect(screen.queryByRole('radio', { name: 'More' })).toBeNull();
   });
 });

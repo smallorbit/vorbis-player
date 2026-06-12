@@ -5,7 +5,7 @@ import type { MediaTrack } from '@/types/domain';
 import type { VisualizerStyle } from '@/types/visualizer';
 import { extractTopVibrantColors } from '@/utils/colorExtractor';
 import type { ExtractedColor } from '@/utils/colorExtractor';
-import { OptionButton, OptionButtonGroup } from '@/components/AppSettingsMenu/styled';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import EyedropperOverlay from '@/components/EyedropperOverlay';
 import { Switch } from '@/components/ui/switch';
 import { theme } from '@/styles/theme';
@@ -35,6 +35,11 @@ interface QuickEffectsRowProps {
   isMobile: boolean;
   isTablet: boolean;
 }
+
+const VISUALIZER_STYLES: readonly VisualizerStyle[] = ['fireflies', 'comet', 'wave', 'grid'];
+
+const isVisualizerStyle = (value: string): value is VisualizerStyle =>
+  (VISUALIZER_STYLES as readonly string[]).includes(value);
 
 const QuickRow = styled.div`
   display: flex;
@@ -273,21 +278,33 @@ function QuickEffectsRow({
             {hasGlowSubSettings && (
               <SubSettingRow>
                 <SubLabel>Intensity</SubLabel>
-                <OptionButtonGroup>
-                  <OptionButton $variant="accent" $isActive={glowIntensity === 95} onClick={() => onGlowIntensityChange(95)}>Less</OptionButton>
-                  <OptionButton $variant="accent" $isActive={glowIntensity === 110} onClick={() => onGlowIntensityChange(110)}>Normal</OptionButton>
-                  <OptionButton $variant="accent" $isActive={glowIntensity === 125} onClick={() => onGlowIntensityChange(125)}>More</OptionButton>
-                </OptionButtonGroup>
+                <ToggleGroup
+                  type="single"
+                  variant="accent"
+                  aria-label="Glow intensity"
+                  value={String(glowIntensity)}
+                  onValueChange={(v) => v && onGlowIntensityChange(Number(v))}
+                >
+                  <ToggleGroupItem value="95">Less</ToggleGroupItem>
+                  <ToggleGroupItem value="110">Normal</ToggleGroupItem>
+                  <ToggleGroupItem value="125">More</ToggleGroupItem>
+                </ToggleGroup>
               </SubSettingRow>
             )}
             {hasGlowRate && (
               <SubSettingRow>
                 <SubLabel>Rate</SubLabel>
-                <OptionButtonGroup>
-                  <OptionButton $variant="accent" $isActive={glowRate === 5.0} onClick={() => onGlowRateChange(5.0)}>Slower</OptionButton>
-                  <OptionButton $variant="accent" $isActive={glowRate === 4.0} onClick={() => onGlowRateChange(4.0)}>Normal</OptionButton>
-                  <OptionButton $variant="accent" $isActive={glowRate === 3.0} onClick={() => onGlowRateChange(3.0)}>Faster</OptionButton>
-                </OptionButtonGroup>
+                <ToggleGroup
+                  type="single"
+                  variant="accent"
+                  aria-label="Glow rate"
+                  value={String(glowRate)}
+                  onValueChange={(v) => v && onGlowRateChange(Number(v))}
+                >
+                  <ToggleGroupItem value="5">Slower</ToggleGroupItem>
+                  <ToggleGroupItem value="4">Normal</ToggleGroupItem>
+                  <ToggleGroupItem value="3">Faster</ToggleGroupItem>
+                </ToggleGroup>
               </SubSettingRow>
             )}
           </SubSettings>
@@ -303,73 +320,49 @@ function QuickEffectsRow({
         {backgroundVisualizerEnabled && <SubSettings>
           <SubSettingRow>
             <SubLabel>Style</SubLabel>
-            <OptionButtonGroup>
-              <OptionButton
-                $variant="accent"
-                $isActive={backgroundVisualizerStyle === 'fireflies'}
-                onClick={() => onBackgroundVisualizerStyleChange('fireflies')}
-              >
-                Fireflies
-              </OptionButton>
-              <OptionButton
-                $variant="accent"
-                $isActive={backgroundVisualizerStyle === 'comet'}
-                onClick={() => onBackgroundVisualizerStyleChange('comet')}
-              >
-                Comet
-              </OptionButton>
-              <OptionButton
-                $variant="accent"
-                $isActive={backgroundVisualizerStyle === 'wave'}
-                onClick={() => onBackgroundVisualizerStyleChange('wave')}
-              >
-                Wave
-              </OptionButton>
-              <OptionButton
-                $variant="accent"
-                $isActive={backgroundVisualizerStyle === 'grid'}
-                onClick={() => onBackgroundVisualizerStyleChange('grid')}
-              >
-                Grid
-              </OptionButton>
-            </OptionButtonGroup>
+            <ToggleGroup
+              type="single"
+              variant="accent"
+              aria-label="Visualizer style"
+              value={backgroundVisualizerStyle}
+              onValueChange={(v) => isVisualizerStyle(v) && onBackgroundVisualizerStyleChange(v)}
+            >
+              <ToggleGroupItem value="fireflies">Fireflies</ToggleGroupItem>
+              <ToggleGroupItem value="comet">Comet</ToggleGroupItem>
+              <ToggleGroupItem value="wave">Wave</ToggleGroupItem>
+              <ToggleGroupItem value="grid">Grid</ToggleGroupItem>
+            </ToggleGroup>
           </SubSettingRow>
           {hasVizIntensity && (
             <SubSettingRow>
               <SubLabel>Intensity</SubLabel>
-              <OptionButtonGroup>
-                <OptionButton
-                  $variant="accent"
-                  $isActive={backgroundVisualizerIntensity === 20}
-                  onClick={() => onBackgroundVisualizerIntensityChange(20)}
-                >
-                  Less
-                </OptionButton>
-                <OptionButton
-                  $variant="accent"
-                  $isActive={backgroundVisualizerIntensity === 40}
-                  onClick={() => onBackgroundVisualizerIntensityChange(40)}
-                >
-                  Normal
-                </OptionButton>
-                <OptionButton
-                  $variant="accent"
-                  $isActive={backgroundVisualizerIntensity === 60}
-                  onClick={() => onBackgroundVisualizerIntensityChange(60)}
-                >
-                  More
-                </OptionButton>
-              </OptionButtonGroup>
+              <ToggleGroup
+                type="single"
+                variant="accent"
+                aria-label="Visualizer intensity"
+                value={String(backgroundVisualizerIntensity)}
+                onValueChange={(v) => v && onBackgroundVisualizerIntensityChange(Number(v))}
+              >
+                <ToggleGroupItem value="20">Less</ToggleGroupItem>
+                <ToggleGroupItem value="40">Normal</ToggleGroupItem>
+                <ToggleGroupItem value="60">More</ToggleGroupItem>
+              </ToggleGroup>
             </SubSettingRow>
           )}
           {hasVizSpeed && (
             <SubSettingRow>
               <SubLabel>Speed</SubLabel>
-              <OptionButtonGroup>
-                <OptionButton $variant="accent" $isActive={backgroundVisualizerSpeed === 0.5} onClick={() => onBackgroundVisualizerSpeedChange(0.5)}>Slower</OptionButton>
-                <OptionButton $variant="accent" $isActive={backgroundVisualizerSpeed === 0.7} onClick={() => onBackgroundVisualizerSpeedChange(0.7)}>Normal</OptionButton>
-                <OptionButton $variant="accent" $isActive={backgroundVisualizerSpeed === 1.2} onClick={() => onBackgroundVisualizerSpeedChange(1.2)}>Faster</OptionButton>
-              </OptionButtonGroup>
+              <ToggleGroup
+                type="single"
+                variant="accent"
+                aria-label="Visualizer speed"
+                value={String(backgroundVisualizerSpeed)}
+                onValueChange={(v) => v && onBackgroundVisualizerSpeedChange(Number(v))}
+              >
+                <ToggleGroupItem value="0.5">Slower</ToggleGroupItem>
+                <ToggleGroupItem value="0.7">Normal</ToggleGroupItem>
+                <ToggleGroupItem value="1.2">Faster</ToggleGroupItem>
+              </ToggleGroup>
             </SubSettingRow>
           )}
         </SubSettings>}

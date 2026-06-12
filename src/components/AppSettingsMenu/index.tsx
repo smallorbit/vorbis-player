@@ -15,8 +15,6 @@ import {
   DrawerContent,
   ControlGroup,
   ControlLabel,
-  OptionButtonGroup,
-  OptionButton,
   ResetButton,
   CacheOptionsList,
   CacheOptionItem,
@@ -26,6 +24,8 @@ import {
   CacheCancelButton,
   FilterSection,
 } from './styled';
+
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 
 import { STATUS_RESET_DELAY_MS } from '@/constants/statusTiming';
 
@@ -146,20 +146,15 @@ const AppSettingsMenu: React.FC<AppSettingsMenuProps> = memo(({
 
           <ControlGroup>
             <ControlLabel>Quick Access Panel</ControlLabel>
-            <OptionButtonGroup>
-              <OptionButton
-                $isActive={qapEnabled}
-                onClick={onQapToggle}
-              >
-                On
-              </OptionButton>
-              <OptionButton
-                $isActive={!qapEnabled}
-                onClick={onQapToggle}
-              >
-                Off
-              </OptionButton>
-            </OptionButtonGroup>
+            <ToggleGroup
+              type="single"
+              aria-label="Quick Access Panel"
+              value={qapEnabled ? 'on' : 'off'}
+              onValueChange={(v) => v && v !== (qapEnabled ? 'on' : 'off') && onQapToggle()}
+            >
+              <ToggleGroupItem value="on">On</ToggleGroupItem>
+              <ToggleGroupItem value="off">Off</ToggleGroupItem>
+            </ToggleGroup>
           </ControlGroup>
 
           <FilterSection>
@@ -219,37 +214,27 @@ const AppSettingsMenu: React.FC<AppSettingsMenuProps> = memo(({
             </ControlGroup>
             <ControlGroup>
               <ControlLabel>Performance Profiler</ControlLabel>
-              <OptionButtonGroup>
-                <OptionButton
-                  $isActive={profilerEnabled}
-                  onClick={onProfilerToggle}
-                >
-                  On
-                </OptionButton>
-                <OptionButton
-                  $isActive={!profilerEnabled}
-                  onClick={onProfilerToggle}
-                >
-                  Off
-                </OptionButton>
-              </OptionButtonGroup>
+              <ToggleGroup
+                type="single"
+                aria-label="Performance Profiler"
+                value={profilerEnabled ? 'on' : 'off'}
+                onValueChange={(v) => v && v !== (profilerEnabled ? 'on' : 'off') && onProfilerToggle()}
+              >
+                <ToggleGroupItem value="on">On</ToggleGroupItem>
+                <ToggleGroupItem value="off">Off</ToggleGroupItem>
+              </ToggleGroup>
             </ControlGroup>
             <ControlGroup>
               <ControlLabel>Visualizer Debug</ControlLabel>
-              <OptionButtonGroup>
-                <OptionButton
-                  $isActive={visualizerDebugEnabled}
-                  onClick={onVisualizerDebugToggle}
-                >
-                  On
-                </OptionButton>
-                <OptionButton
-                  $isActive={!visualizerDebugEnabled}
-                  onClick={onVisualizerDebugToggle}
-                >
-                  Off
-                </OptionButton>
-              </OptionButtonGroup>
+              <ToggleGroup
+                type="single"
+                aria-label="Visualizer Debug"
+                value={visualizerDebugEnabled ? 'on' : 'off'}
+                onValueChange={(v) => v && v !== (visualizerDebugEnabled ? 'on' : 'off') && onVisualizerDebugToggle()}
+              >
+                <ToggleGroupItem value="on">On</ToggleGroupItem>
+                <ToggleGroupItem value="off">Off</ToggleGroupItem>
+              </ToggleGroup>
             </ControlGroup>
             {dataProviders.map((p) => (
               <ProviderDataSection key={p.id} providerName={p.name} catalog={p.catalog} />

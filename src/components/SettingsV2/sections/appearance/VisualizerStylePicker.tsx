@@ -3,7 +3,7 @@ import React, { useCallback } from 'react';
 import type { VisualizerStyle } from '@/types/visualizer';
 import { useVisualizer } from '@/contexts/visualEffects';
 import { Switch } from '@/components/ui/switch';
-import { OptionButton, OptionButtonGroup } from '@/components/AppSettingsMenu/styled';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 
 import {
   ControlBlock,
@@ -21,6 +21,9 @@ const VISUALIZER_STYLES: ReadonlyArray<{ value: VisualizerStyle; label: string }
   { value: 'wave', label: 'Wave' },
   { value: 'grid', label: 'Grid' },
 ] as const;
+
+const isVisualizerStyle = (value: string): value is VisualizerStyle =>
+  VISUALIZER_STYLES.some((opt) => opt.value === value);
 
 const INTENSITY_OPTIONS: ReadonlyArray<{ value: number; label: string }> = [
   { value: 20, label: 'Less' },
@@ -79,54 +82,52 @@ export const VisualizerStylePicker: React.FC = () => {
 
       {backgroundVisualizerEnabled && (
         <>
-          <SubControlRow role="radiogroup" aria-label="Visualizer style">
+          <SubControlRow>
             <SubControlLabel id="settings-v2-visualizer-style-label">Style</SubControlLabel>
-            <OptionButtonGroup>
+            <ToggleGroup
+              type="single"
+              aria-label="Visualizer style"
+              value={backgroundVisualizerStyle}
+              onValueChange={(v) => isVisualizerStyle(v) && setBackgroundVisualizerStyle(v)}
+            >
               {VISUALIZER_STYLES.map((opt) => (
-                <OptionButton
-                  key={opt.value}
-                  type="button"
-                  role="radio"
-                  aria-checked={backgroundVisualizerStyle === opt.value}
-                  $isActive={backgroundVisualizerStyle === opt.value}
-                  onClick={() => setBackgroundVisualizerStyle(opt.value)}
-                >
+                <ToggleGroupItem key={opt.value} value={opt.value}>
                   {opt.label}
-                </OptionButton>
+                </ToggleGroupItem>
               ))}
-            </OptionButtonGroup>
+            </ToggleGroup>
           </SubControlRow>
 
           <SubControlRow>
             <SubControlLabel>Intensity</SubControlLabel>
-            <OptionButtonGroup aria-label="Visualizer intensity">
+            <ToggleGroup
+              type="single"
+              aria-label="Visualizer intensity"
+              value={String(backgroundVisualizerIntensity)}
+              onValueChange={(v) => v && setBackgroundVisualizerIntensity(Number(v))}
+            >
               {INTENSITY_OPTIONS.map((opt) => (
-                <OptionButton
-                  key={opt.value}
-                  type="button"
-                  $isActive={backgroundVisualizerIntensity === opt.value}
-                  onClick={() => setBackgroundVisualizerIntensity(opt.value)}
-                >
+                <ToggleGroupItem key={opt.value} value={String(opt.value)}>
                   {opt.label}
-                </OptionButton>
+                </ToggleGroupItem>
               ))}
-            </OptionButtonGroup>
+            </ToggleGroup>
           </SubControlRow>
 
           <SubControlRow>
             <SubControlLabel>Speed</SubControlLabel>
-            <OptionButtonGroup aria-label="Visualizer speed">
+            <ToggleGroup
+              type="single"
+              aria-label="Visualizer speed"
+              value={String(backgroundVisualizerSpeed)}
+              onValueChange={(v) => v && setBackgroundVisualizerSpeed(Number(v))}
+            >
               {SPEED_OPTIONS.map((opt) => (
-                <OptionButton
-                  key={opt.value}
-                  type="button"
-                  $isActive={backgroundVisualizerSpeed === opt.value}
-                  onClick={() => setBackgroundVisualizerSpeed(opt.value)}
-                >
+                <ToggleGroupItem key={opt.value} value={String(opt.value)}>
                   {opt.label}
-                </OptionButton>
+                </ToggleGroupItem>
               ))}
-            </OptionButtonGroup>
+            </ToggleGroup>
           </SubControlRow>
         </>
       )}

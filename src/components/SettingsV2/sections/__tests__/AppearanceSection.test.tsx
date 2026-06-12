@@ -138,17 +138,17 @@ describe('SettingsV2 AppearanceSection', () => {
     );
 
     // #then — translucence default is `true`, all three presets are visible
-    expect(screen.getByRole('button', { name: 'Subtle' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Default' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Strong' })).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: 'Subtle' })).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: 'Default' })).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: 'Strong' })).toBeInTheDocument();
 
     // #when — flip the master off
     fireEvent.click(screen.getByLabelText('Toggle translucence'));
 
     // #then — presets unmount
-    expect(screen.queryByRole('button', { name: 'Subtle' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Default' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Strong' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('radio', { name: 'Subtle' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('radio', { name: 'Default' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('radio', { name: 'Strong' })).not.toBeInTheDocument();
   });
 
   it('writes the chosen opacity to TRANSLUCENCE_OPACITY when a preset is clicked', () => {
@@ -160,7 +160,7 @@ describe('SettingsV2 AppearanceSection', () => {
     );
 
     // #when
-    fireEvent.click(screen.getByRole('button', { name: 'Subtle' }));
+    fireEvent.click(screen.getByRole('radio', { name: 'Subtle' }));
 
     // #then
     expect(memoryStorage.get(STORAGE_KEYS.TRANSLUCENCE_OPACITY)).toBe('0.6');

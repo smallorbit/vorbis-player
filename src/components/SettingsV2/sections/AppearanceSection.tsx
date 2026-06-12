@@ -2,7 +2,7 @@ import React, { useCallback } from 'react';
 
 import { useTranslucence } from '@/contexts/visualEffects';
 import { Switch } from '@/components/ui/switch';
-import { OptionButton, OptionButtonGroup } from '@/components/AppSettingsMenu/styled';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 
 import { AccentColorManager } from './appearance/AccentColorManager';
 import { AccentColorBackgroundToggle } from './appearance/AccentColorBackgroundToggle';
@@ -82,18 +82,18 @@ const TranslucenceToggle: React.FC = () => {
       {translucenceEnabled && (
         <SubControlRow>
           <SubControlLabel>Opacity</SubControlLabel>
-          <OptionButtonGroup aria-label="Translucence opacity">
+          <ToggleGroup
+            type="single"
+            aria-label="Translucence opacity"
+            value={String(translucenceOpacity)}
+            onValueChange={(v) => v && setTranslucenceOpacity(Number(v))}
+          >
             {OPACITY_OPTIONS.map((opt) => (
-              <OptionButton
-                key={opt.value}
-                type="button"
-                $isActive={translucenceOpacity === opt.value}
-                onClick={() => setTranslucenceOpacity(opt.value)}
-              >
+              <ToggleGroupItem key={opt.value} value={String(opt.value)}>
                 {opt.label}
-              </OptionButton>
+              </ToggleGroupItem>
             ))}
-          </OptionButtonGroup>
+          </ToggleGroup>
         </SubControlRow>
       )}
     </ControlBlock>

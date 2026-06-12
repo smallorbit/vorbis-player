@@ -3,7 +3,7 @@ import React, { useCallback } from 'react';
 import { useVisualEffectsToggle } from '@/contexts/visualEffects';
 import { useVisualEffectsState } from '@/hooks/useVisualEffectsState';
 import { Switch } from '@/components/ui/switch';
-import { OptionButton, OptionButtonGroup } from '@/components/AppSettingsMenu/styled';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 
 import {
   ControlBlock,
@@ -79,34 +79,34 @@ export const GlowControls: React.FC = () => {
         <>
           <SubControlRow>
             <SubControlLabel>Intensity</SubControlLabel>
-            <OptionButtonGroup aria-label="Glow intensity">
+            <ToggleGroup
+              type="single"
+              aria-label="Glow intensity"
+              value={String(glowIntensity)}
+              onValueChange={(v) => v && handleGlowIntensityChange(Number(v))}
+            >
               {INTENSITY_OPTIONS.map((opt) => (
-                <OptionButton
-                  key={opt.value}
-                  type="button"
-                  $isActive={glowIntensity === opt.value}
-                  onClick={() => handleGlowIntensityChange(opt.value)}
-                >
+                <ToggleGroupItem key={opt.value} value={String(opt.value)}>
                   {opt.label}
-                </OptionButton>
+                </ToggleGroupItem>
               ))}
-            </OptionButtonGroup>
+            </ToggleGroup>
           </SubControlRow>
 
           <SubControlRow>
             <SubControlLabel>Rate</SubControlLabel>
-            <OptionButtonGroup aria-label="Glow rate">
+            <ToggleGroup
+              type="single"
+              aria-label="Glow rate"
+              value={String(glowRate)}
+              onValueChange={(v) => v && handleGlowRateChange(Number(v))}
+            >
               {RATE_OPTIONS.map((opt) => (
-                <OptionButton
-                  key={opt.value}
-                  type="button"
-                  $isActive={glowRate === opt.value}
-                  onClick={() => handleGlowRateChange(opt.value)}
-                >
+                <ToggleGroupItem key={opt.value} value={String(opt.value)}>
                   {opt.label}
-                </OptionButton>
+                </ToggleGroupItem>
               ))}
-            </OptionButtonGroup>
+            </ToggleGroup>
           </SubControlRow>
         </>
       )}
