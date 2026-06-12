@@ -65,6 +65,7 @@ export default defineConfig({
             '@radix-ui/react-separator',
             '@radix-ui/react-slider',
             '@radix-ui/react-tabs',
+            '@radix-ui/react-toggle-group',
           ],
           styled: ['styled-components']
         }
