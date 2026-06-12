@@ -24,10 +24,7 @@ import { useTrackListContext, useCurrentTrackContext } from '@/contexts/TrackCon
 import { useProviderContext } from '@/contexts/ProviderContext';
 import { toAlbumPlaylistId, LIKED_SONGS_ID } from '@/constants/playlist';
 import { keyToCollectionRef } from '@/types/domain';
-import { STORAGE_KEYS } from '@/constants/storage';
-import type { ClearCacheOptions } from '@/components/AppSettingsMenu';
 import { useSessionPersistence } from '@/hooks/useSessionPersistence';
-import { useUiV2 } from '@/hooks/useUiV2';
 import QuickAccessPanel from './QuickAccessPanel';
 import { CmdKPalette } from './CmdKPalette';
 import { tracksToMediaTracks } from '@/services/spotify/tracks';
@@ -35,7 +32,6 @@ import type { Track, AlbumInfo } from '@/services/spotify';
 import type { CachedPlaylistInfo } from '@/services/cache/cacheTypes';
 import type { SearchArtist } from '@/services/cache/librarySearch';
 
-const VisualEffectsMenu = lazy(() => import('./AppSettingsMenu/index'));
 const SettingsV2 = lazy(() => import('./SettingsV2'));
 const LibraryRoute = lazy(() => import('./LibraryRoute'));
 
@@ -79,7 +75,6 @@ const AudioPlayerComponent = () => {
   } = useVisualizer();
   const { accentColorBackgroundEnabled } = useAccentColorBackground();
   const { showVisualEffects, setShowVisualEffects } = useVisualEffectsToggle();
-  const uiV2 = useUiV2();
   const { tracks, selectedPlaylistId, setTracks, setOriginalTracks, setSelectedPlaylistId } = useTrackListContext();
   const { currentTrack, currentTrackIndex, setCurrentTrackIndex, showQueue, setShowQueue } = useCurrentTrackContext();
 
@@ -441,25 +436,6 @@ const AudioPlayerComponent = () => {
     await handlers.playTrack(resolvedIdx, false, positionMs ? { positionMs } : undefined);
   }, [lastSession, setTracks, setOriginalTracks, setSelectedPlaylistId, setCurrentTrackIndex, mediaTracksRef, expectedTrackIdRef, handlers]);
 
-  const handleClearCache = useCallback(async (options: ClearCacheOptions) => {
-    const { clearCacheWithOptions } = await import('@/services/cache/libraryCache');
-    await clearCacheWithOptions({ clearLikes: options.clearLikes });
-    if (options.clearPins) {
-      const { clearAllPins } = await import('@/services/settings/pinnedItemsStorage');
-      await clearAllPins();
-    }
-    if (options.clearAccentColors) {
-      localStorage.removeItem(STORAGE_KEYS.ACCENT_COLOR_OVERRIDES);
-      localStorage.removeItem(STORAGE_KEYS.CUSTOM_ACCENT_COLORS);
-    }
-    if (options.clearPins || options.clearAccentColors) {
-      const { clearPreferencesSyncTimestamp, getPreferencesSync } =
-        await import('@/providers/dropbox/dropboxPreferencesSync');
-      clearPreferencesSyncTimestamp();
-      getPreferencesSync()?.initialSync();
-    }
-  }, []);
-
   const renderContent = () => {
     if (needsSetup) {
       return (
@@ -618,21 +594,7 @@ const AudioPlayerComponent = () => {
         />
         {!isMainPlayerActive && (
           <Suspense fallback={null}>
-            {uiV2 ? (
-              <SettingsV2 isOpen={showVisualEffects} onClose={handleCloseSettings} />
-            ) : (
-              <VisualEffectsMenu
-                isOpen={showVisualEffects}
-                onClose={handleCloseSettings}
-                onClearCache={handleClearCache}
-                profilerEnabled={false}
-                onProfilerToggle={() => {}}
-                visualizerDebugEnabled={false}
-                onVisualizerDebugToggle={() => {}}
-                qapEnabled={false}
-                onQapToggle={() => {}}
-              />
-            )}
+            <SettingsV2 isOpen={showVisualEffects} onClose={handleCloseSettings} />
           </Suspense>
         )}
         {needsSetup && state.currentView === 'library' && (

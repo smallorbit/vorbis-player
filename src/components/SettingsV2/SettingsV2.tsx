@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useRef } from 'react';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { Dialog, DialogPortal, DialogOverlay } from '@/components/ui/dialog';
-import { useUiV2 } from '@/hooks/useUiV2';
 import { useSettingsUrl } from '@/hooks/useSettingsUrl';
 import { usePlayerSizingContext } from '@/contexts/PlayerSizingContext';
 import { SettingsV2Sidebar } from './SettingsV2Sidebar';
@@ -23,11 +22,10 @@ interface SettingsV2Props {
 }
 
 /**
- * Settings v2 shell — phase 1 scaffold.
+ * Settings v2 shell.
  *
- * Mounts when `useUiV2()` is true. Renders nothing otherwise so the
- * parent's legacy `<VisualEffectsMenu />` fallback takes over via the
- * existing entry-point fork in `AudioPlayer.tsx`.
+ * The primary settings surface — mounted unconditionally by the entry-point
+ * forks in `AudioPlayer.tsx` and `PlayerControlsSection.tsx`.
  *
  * Open/close still flows through `useVisualEffectsToggle` (same context
  * the legacy panel uses), so all five entry points (BottomBar gear,
@@ -50,7 +48,6 @@ interface SettingsV2Props {
  *     is sufficient.
  */
 export const SettingsV2: React.FC<SettingsV2Props> = ({ isOpen, onClose }) => {
-  const uiV2 = useUiV2();
   const [section, setSection] = useSettingsUrl();
   const { isMobile } = usePlayerSizingContext();
 
@@ -94,7 +91,6 @@ export const SettingsV2: React.FC<SettingsV2Props> = ({ isOpen, onClose }) => {
   }, []);
 
   useEffect(() => {
-    if (!uiV2) return;
     if (typeof window === 'undefined') return;
 
     const handlePopState = (): void => {
@@ -112,9 +108,7 @@ export const SettingsV2: React.FC<SettingsV2Props> = ({ isOpen, onClose }) => {
     return () => {
       window.removeEventListener('popstate', handlePopState);
     };
-  }, [uiV2, isOpen, onClose]);
-
-  if (!uiV2) return null;
+  }, [isOpen, onClose]);
 
   const handleSelectSection = (next: SettingsV2SectionId): void => {
     setSection(next);

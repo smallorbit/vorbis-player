@@ -11,18 +11,11 @@ import {
   useVisualEffectsToggle,
   useVisualizer,
 } from '@/contexts/visualEffects';
-import { useProfilingContext } from '@/contexts/ProfilingContext';
 import type { VisualizerStyle } from '@/types/visualizer';
-import { useVisualizerDebug } from '@/contexts/VisualizerDebugContext';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
-import { useUiV2 } from '@/hooks/useUiV2';
 import { useVolume } from '@/hooks/useVolume';
 import { useTrackListContext } from '@/contexts/TrackContext';
 import { BottomBarActionsProvider, type BottomBarActionsValue } from '@/contexts/BottomBarActionsContext';
-import { clearCacheWithOptions } from '@/services/cache/libraryCache';
-import { clearAllPins } from '@/services/settings/pinnedItemsStorage';
-import { STORAGE_KEYS } from '@/constants/storage';
-import type { ClearCacheOptions } from '@/components/AppSettingsMenu';
 import { useQapEnabled } from '@/hooks/useQapEnabled';
 import { usePlayerSizingContext } from '@/contexts/PlayerSizingContext';
 import { useTransitionWillChange } from '@/hooks/useTransitionWillChange';
@@ -42,7 +35,6 @@ import { LoadingCard, ZenControlsWrapper, ZenControlsInner } from './styled';
 const ZEN_CONTROLS_WILL_CHANGE_FALLBACK_MS =
   ZEN_EXIT_REENTRY_DELAY + ZEN_CONTROLS_DURATION + 100;
 
-const VisualEffectsMenu = lazy(() => import('@/components/AppSettingsMenu/index'));
 const SettingsV2 = lazy(() => import('@/components/SettingsV2'));
 const KeyboardShortcutsHelp = lazy(() => import('@/components/KeyboardShortcutsHelp'));
 
@@ -154,11 +146,7 @@ export const PlayerControlsSection: React.FC<PlayerControlsSectionProps> = React
   const { backgroundVisualizerStyle, setBackgroundVisualizerStyle } = useVisualizer();
   const { setTranslucenceEnabled } = useTranslucence();
 
-  const { enabled: profilerEnabled, toggle: profilerToggle } = useProfilingContext();
-  const vizDebugCtx = useVisualizerDebug();
-  const visualizerDebugEnabled = vizDebugCtx?.isDebugMode ?? false;
-  const [qapEnabled, setQapEnabled] = useQapEnabled();
-  const uiV2 = useUiV2();
+  const [qapEnabled] = useQapEnabled();
 
   const settingsHasBeenOpenedRef = useRef(false);
   if (showVisualEffects) settingsHasBeenOpenedRef.current = true;
@@ -211,36 +199,6 @@ export const PlayerControlsSection: React.FC<PlayerControlsSectionProps> = React
     setTranslucenceEnabled(prev => !prev);
   }, [setTranslucenceEnabled]);
 
-  const handleClearCache = useCallback(async (options: ClearCacheOptions) => {
-    await clearCacheWithOptions({ clearLikes: options.clearLikes });
-    if (options.clearPins) {
-      await clearAllPins();
-    }
-    if (options.clearAccentColors) {
-      localStorage.removeItem(STORAGE_KEYS.ACCENT_COLOR_OVERRIDES);
-      localStorage.removeItem(STORAGE_KEYS.CUSTOM_ACCENT_COLORS);
-    }
-    if (options.clearPins || options.clearAccentColors) {
-      const { clearPreferencesSyncTimestamp, getPreferencesSync } =
-        await import('@/providers/dropbox/dropboxPreferencesSync');
-      clearPreferencesSyncTimestamp();
-      getPreferencesSync()?.initialSync();
-    }
-  }, []);
-
-  const handleProfilerToggle = useCallback(() => {
-    if (!profilerEnabled) {
-      vizDebugCtx?.setIsDebugMode(false);
-    }
-    profilerToggle();
-  }, [profilerEnabled, profilerToggle, vizDebugCtx]);
-
-  const handleVisualizerDebugToggle = useCallback(() => {
-    if (!visualizerDebugEnabled && profilerEnabled) {
-      profilerToggle();
-    }
-    vizDebugCtx?.setIsDebugMode(prev => !prev);
-  }, [visualizerDebugEnabled, profilerEnabled, profilerToggle, vizDebugCtx]);
 
   const handlePlayPause = useCallback(() => {
     if (isPlaying) {
@@ -381,21 +339,7 @@ export const PlayerControlsSection: React.FC<PlayerControlsSectionProps> = React
       </ProfiledComponent>
       {settingsHasBeenOpenedRef.current && (
         <Suspense fallback={<VisualEffectsLoadingFallback />}>
-          {uiV2 ? (
-            <SettingsV2 isOpen={showVisualEffects} onClose={handleCloseVisualEffects} />
-          ) : (
-            <VisualEffectsMenu
-              isOpen={showVisualEffects}
-              onClose={handleCloseVisualEffects}
-              onClearCache={handleClearCache}
-              profilerEnabled={profilerEnabled}
-              onProfilerToggle={handleProfilerToggle}
-              visualizerDebugEnabled={visualizerDebugEnabled}
-              onVisualizerDebugToggle={handleVisualizerDebugToggle}
-              qapEnabled={qapEnabled}
-              onQapToggle={() => setQapEnabled(!qapEnabled)}
-            />
-          )}
+          <SettingsV2 isOpen={showVisualEffects} onClose={handleCloseVisualEffects} />
         </Suspense>
       )}
       <Suspense fallback={null}>
