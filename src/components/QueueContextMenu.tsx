@@ -1,12 +1,13 @@
-import { useEffect, useRef } from 'react';
-import { createPortal } from 'react-dom';
+import React, { useCallback } from 'react';
 import styled from 'styled-components';
+import { theme } from '@/styles/theme';
+import { Popover, PopoverAnchor, PopoverContent } from '@/components/ui/popover';
 
 interface ContextMenuOption {
   label: string;
   icon: React.ReactNode;
   onClick: () => void;
-  destructive?: boolean;
+  destructive?: boolean | undefined;
 }
 
 interface QueueContextMenuProps {
@@ -16,114 +17,124 @@ interface QueueContextMenuProps {
   onClose: () => void;
 }
 
-const Overlay = styled.div`
+const VirtualAnchor = styled.div`
   position: fixed;
-  inset: 0;
-  z-index: ${({ theme }) => theme.zIndex.modal};
+  width: 0;
+  height: 0;
+  pointer-events: none;
 `;
 
-const MenuContainer = styled.div<{ $x: number; $y: number }>`
-  position: fixed;
-  left: ${({ $x }) => $x}px;
-  top: ${({ $y }) => $y}px;
-  z-index: ${({ theme }) => theme.zIndex.popover};
+const MenuRoot = styled.div`
+  display: flex;
+  flex-direction: column;
   min-width: 180px;
-  background: ${({ theme }) => theme.colors.popover.background};
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid ${({ theme }) => theme.colors.borderSubtle};
-  border-radius: ${({ theme }) => theme.borderRadius.xl};
-  box-shadow: ${({ theme }) => theme.shadows.popover};
-  padding: ${({ theme }) => theme.spacing.xs};
-  animation: contextMenuFadeIn ${({ theme }) => theme.transitions.fast} ease-out;
-
-  @keyframes contextMenuFadeIn {
-    from {
-      opacity: 0;
-      transform: scale(0.96) translateY(-4px);
-    }
-    to {
-      opacity: 1;
-      transform: scale(1) translateY(0);
-    }
-  }
+  padding: ${theme.spacing.xs};
+  gap: 1px;
 `;
 
-const MenuItem = styled.button<{ $destructive?: boolean | undefined }>`
+const MenuItemButton = styled.button<{ $destructive?: boolean | undefined }>`
   display: flex;
   align-items: center;
   gap: 0.625rem;
   width: 100%;
-  padding: ${({ theme }) => theme.spacing.sm} ${({ theme }) => theme.spacing.lg};
-  background: none;
-  border: none;
-  color: ${({ theme, $destructive }) =>
-    $destructive ? theme.colors.error : theme.colors.foreground};
-  font-size: ${({ theme }) => theme.fontSize.sm};
-  font-weight: ${({ theme }) => theme.fontWeight.medium};
-  cursor: pointer;
-  border-radius: ${({ theme }) => theme.borderRadius.lg};
-  transition: background ${({ theme }) => theme.transitions.fast} ease;
-  white-space: nowrap;
   text-align: left;
+  background: transparent;
+  border: none;
+  padding: ${theme.spacing.sm} ${theme.spacing.lg};
+  font-size: ${theme.fontSize.sm};
+  font-weight: ${theme.fontWeight.medium};
+  color: ${({ $destructive }) =>
+    $destructive ? theme.colors.error : theme.colors.foreground};
+  border-radius: ${theme.borderRadius.lg};
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background ${theme.transitions.fast};
 
-  &:hover {
-    background: ${({ theme }) => theme.colors.control.background};
+  &:hover:not(:disabled) {
+    background: ${theme.colors.control.background};
   }
 
-  &:active {
-    background: ${({ theme }) => theme.colors.control.backgroundHover};
+  &:active:not(:disabled) {
+    background: ${theme.colors.control.backgroundHover};
+  }
+
+  &:focus-visible {
+    background: ${theme.colors.control.background};
+    outline: 2px solid rgba(255, 255, 255, 0.6);
+    outline-offset: -2px;
   }
 
   svg {
     flex-shrink: 0;
     width: 16px;
     height: 16px;
-    color: ${({ theme, $destructive }) =>
+    color: ${({ $destructive }) =>
       $destructive ? theme.colors.error : theme.colors.muted.foreground};
   }
 `;
 
-function clampToViewport(x: number, y: number, menuWidth = 200, menuHeight = 120): { x: number; y: number } {
-  const vw = window.innerWidth;
-  const vh = window.innerHeight;
-  return {
-    x: Math.min(x, vw - menuWidth - 8),
-    y: Math.min(y, vh - menuHeight - 8),
-  };
-}
-
 export function QueueContextMenu({ x, y, options, onClose }: QueueContextMenuProps) {
-  const menuRef = useRef<HTMLDivElement>(null);
-  const { x: cx, y: cy } = clampToViewport(x, y);
+  const anchorStyle: React.CSSProperties = { left: x, top: y };
 
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [onClose]);
+  const handleMenuKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
+    const items = Array.from(
+      e.currentTarget.querySelectorAll<HTMLButtonElement>('[role="menuitem"]:not(:disabled)'),
+    );
+    if (!items.length) return;
+    const idx = items.indexOf(document.activeElement as HTMLButtonElement);
 
-  return createPortal(
-    <>
-      <Overlay onClick={onClose} onContextMenu={(e) => { e.preventDefault(); onClose(); }} />
-      <MenuContainer ref={menuRef} $x={cx} $y={cy}>
-        {options.map((option, index) => (
-          <MenuItem
-            key={index}
-            $destructive={option.destructive}
-            onClick={() => {
-              option.onClick();
-              onClose();
-            }}
-          >
-            {option.icon}
-            {option.label}
-          </MenuItem>
-        ))}
-      </MenuContainer>
-    </>,
-    document.body
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      items[(idx + 1) % items.length]?.focus();
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      items[(idx - 1 + items.length) % items.length]?.focus();
+    } else if (e.key === 'Home') {
+      e.preventDefault();
+      items[0]?.focus();
+    } else if (e.key === 'End') {
+      e.preventDefault();
+      items[items.length - 1]?.focus();
+    }
+  }, []);
+
+  return (
+    <Popover open onOpenChange={(open) => { if (!open) onClose(); }}>
+      <PopoverAnchor asChild>
+        <VirtualAnchor aria-hidden style={anchorStyle} />
+      </PopoverAnchor>
+      <PopoverContent
+        align="start"
+        side="bottom"
+        sideOffset={4}
+        data-testid="queue-context-menu"
+        onOpenAutoFocus={(e) => {
+          e.preventDefault();
+          const container = e.currentTarget as HTMLElement | null;
+          const first = container?.querySelector<HTMLButtonElement>(
+            '[role="menuitem"]:not(:disabled)',
+          );
+          first?.focus();
+        }}
+      >
+        <MenuRoot role="menu" aria-label="Queue track actions" onKeyDown={handleMenuKeyDown}>
+          {options.map((option, index) => (
+            <MenuItemButton
+              key={index}
+              type="button"
+              role="menuitem"
+              $destructive={option.destructive}
+              onClick={() => {
+                option.onClick();
+                onClose();
+              }}
+            >
+              {option.icon}
+              {option.label}
+            </MenuItemButton>
+          ))}
+        </MenuRoot>
+      </PopoverContent>
+    </Popover>
   );
 }
