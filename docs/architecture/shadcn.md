@@ -8,7 +8,7 @@ vorbis-player uses a hybrid styling stack: **styled-components for bespoke surfa
 |---|---|---|
 | Visualizers, animations, gestures | styled-components (forever) | `BackgroundVisualizer`, zen-mode orchestration in `PlayerContent/styled.ts`, swipe gestures, album-art flip menu, `BottomBar` |
 | Standard chrome (modals, sliders, popovers, switches, toasts) | shadcn primitives | `src/components/ui/*.tsx`: `dialog.tsx`, `button.tsx`, `slider.tsx`, `switch.tsx`, `accordion.tsx`, `popover.tsx`, `sonner.tsx` |
-| Whole-screen redesigns | shadcn, gated behind `?ui=v2` | `SettingsV2` (`src/components/SettingsV2/`), command palette (`src/components/CmdKPalette/`) |
+| Whole-screen redesigns | shadcn (UI v2, primary surface) | `SettingsV2` (`src/components/SettingsV2/`), command palette (`src/components/CmdKPalette/`) |
 
 ## Theme bridge — `--accent-color` is player chrome ONLY
 
@@ -24,21 +24,11 @@ The runtime `--accent-color` / `--accent-contrast-color` (injected on `document.
 
 **shadcn primitives use the neutral palette** defined in `src/styles/shadcn-tokens.css` (`--background`, `--foreground`, `--primary`, `--muted`, `--border`, etc.). shadcn's `--accent` token is a static neutral surface and is **not** the same as the player's `--accent-color`. Never wire shadcn's `--primary` or `--accent` to `var(--accent-color)` — dialogs, popovers, and other chrome must stay neutral so they don't retint per track.
 
-## `?ui=v2` flag mechanism
+## UI v2 is the default surface
 
-The `useUiV2()` hook (`src/hooks/useUiV2.ts`) returns `true` when ANY of:
+The v2 redesign shipped across the wave epics and is now the unconditional default — there is no opt-in flag. `SettingsV2` (`src/components/SettingsV2/`) mounts directly from the entry-point forks in `AudioPlayer.tsx` and `PlayerContent/PlayerControlsSection.tsx`; the legacy `AppSettingsMenu` is no longer reachable from those callsites.
 
-- `import.meta.env.VITE_UI_V2 === 'true'` (build-time opt-in for staging deploys), OR
-- the URL contains `?ui=v2` (per-session opt-in for testing), OR
-- the `vorbis-player-settings-v2-enabled` localStorage key is `true` (cross-session persistence, set by the "Keep v2 enabled" toggle in `SettingsV2/sections/AdvancedSection.tsx`).
-
-It subscribes to `popstate` so SPA navigation flips the flag without a reload, and to `storage` so cross-tab toggles propagate. SSR-safe.
-
-Convention for flagged screens:
-
-- Components consuming the flag render the **legacy** path by default.
-- The v2 branch lives under `if (uiV2) { … }`.
-- Future redesign components are colocated next to the legacy file as `<ScreenName>V2.tsx` (e.g. `Settings.tsx` + `SettingsV2.tsx`). The parent component picks one or the other via `useUiV2()`.
+Future redesigns should be promoted the same way: build the v2 component, wire it in directly, and remove the legacy switch once it is the default.
 
 ## Current shadcn primitives
 

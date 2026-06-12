@@ -248,7 +248,6 @@ All keys from `src/constants/storage.ts` (`STORAGE_KEYS`) plus standalone keys:
 | `vorbis-player-visualizer-debug-overrides` | -- | `JSON` | Visualizer param overrides |
 | `vorbis-player-devbug` | `false` | `boolean` | DevBug FAB enabled |
 | `vorbis-player-qap-enabled` | `false` | `boolean` | Quick Access Panel enabled (NOT in STORAGE_KEYS) |
-| `vorbis-player-settings-v2-enabled` | -- | `boolean` | Render the SettingsV2 drawer instead of AppSettingsMenu |
 
 ### Gotcha: Raw vs JSON Storage
 
