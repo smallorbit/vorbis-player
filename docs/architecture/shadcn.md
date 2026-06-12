@@ -27,7 +27,7 @@ The runtime `--accent-color` / `--accent-contrast-color` (injected on `document.
 
 ## UI v2 is the default surface
 
-The v2 redesign shipped across the wave epics and is now the unconditional default — there is no opt-in flag. `SettingsV2` (`src/components/SettingsV2/`) mounts directly from the entry-point forks in `AudioPlayer.tsx` and `PlayerContent/PlayerControlsSection.tsx`; the legacy `AppSettingsMenu` is no longer reachable from those callsites.
+The v2 redesign shipped across the wave epics and is now the unconditional default — there is no opt-in flag. `SettingsV2` (`src/components/SettingsV2/`) mounts directly from the entry-point forks in `AudioPlayer.tsx` and `PlayerContent/PlayerControlsSection.tsx`; the legacy `AppSettingsMenu` drawer has been deleted.
 
 Future redesigns should be promoted the same way: build the v2 component, wire it in directly, and remove the legacy switch once it is the default.
 
@@ -40,10 +40,10 @@ Future redesigns should be promoted the same way: build the v2 component, wire i
 | `Switch` | `switch.tsx` | Dual variants: `accent` (default, player chrome) and `neutral` (settings toggles). |
 | `Toast` (Sonner) | `sonner.tsx` | `<Toaster />` mounted at app root in `App.tsx`. `RadioProgressContent` rendered via `toast.custom()`. |
 | `Popover` | `popover.tsx` | Used by `TrackInfoPopover` via virtual-anchor pattern (zero-size fixed div positioned at `anchorRect` coordinates) so consumer call sites stay unchanged. |
-| `Accordion` | `accordion.tsx` | Used by `AppSettingsMenu` — each section is its own `Accordion.Root` with `type="single" collapsible` to preserve independent open state. Tailwind keyframes `accordion-down` / `accordion-up` (200ms ease) defined in `tailwind.config.ts`. |
+| `Accordion` | `accordion.tsx` | Used by `SettingsV2` (`AdvancedSection`, `ProviderDataBlock`) — each section is its own `Accordion.Root` with `type="single" collapsible` to preserve independent open state. Tailwind keyframes `accordion-down` / `accordion-up` (200ms ease) defined in `tailwind.config.ts`. |
 | `Tabs` | `tabs.tsx` | Per-part escape hatches: `listStyle` → `TabsList`, `triggerStyle` → `TabsTrigger`, `contentStyle` → `TabsContent`. |
 | `RadioGroup` | `radio-group.tsx` | Per-part escape hatches: `rootStyle` → `RadioGroup` root, `itemStyle` → `RadioGroupItem` button, `indicatorStyle` → indicator wrapper. |
-| `ToggleGroup` | `toggle-group.tsx` | Dual variants: `neutral` (default, shadcn `--primary`) and `accent` (on-state = `var(--accent-color)`). Replaced the styled-components `OptionButton`/`OptionButtonGroup` from `AppSettingsMenu/styled.ts`. Per-part escape hatches: `rootStyle` → root, `itemStyle` → each item. Radix roving tabindex + selection semantics. |
+| `ToggleGroup` | `toggle-group.tsx` | Dual variants: `neutral` (default, shadcn `--primary`) and `accent` (on-state = `var(--accent-color)`). Replaced the legacy styled-components `OptionButton`/`OptionButtonGroup`. Per-part escape hatches: `rootStyle` → root, `itemStyle` → each item. Radix roving tabindex + selection semantics. |
 | `Select` | `select.tsx` | Per-part escape hatches: `triggerStyle` → `SelectTrigger`, `contentStyle` → `SelectContent` panel, `itemStyle` → `SelectItem` row. z-index 1500 (matches `theme.zIndex.popover`). |
 | `ScrollArea` | `scroll-area.tsx` | Per-part escape hatches: `viewportStyle` → viewport, `scrollbarStyle` → scrollbar track, `thumbStyle` → scrollbar thumb. |
 | `Separator` | `separator.tsx` | Per-part escape hatch: `separatorStyle` → separator element. |

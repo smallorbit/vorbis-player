@@ -8,6 +8,7 @@ import { STORAGE_KEYS } from '@/constants/storage';
 import { AUTH_COMPLETE_EVENT } from '@/constants/events';
 import type { ProviderId } from '@/types/domain';
 import ProviderDisconnectDialog from '@/components/ProviderDisconnectDialog';
+import { Switch } from '@/components/ui/switch';
 
 import {
   FilterSection,
@@ -18,8 +19,7 @@ import {
   ProviderRow,
   ProviderName,
   ProviderStatusBadge,
-} from './styled';
-import { Switch } from '@/components/ui/switch';
+} from './MusicSourcesSection.styled';
 
 export const MusicSourcesSection = memo(() => {
   const { registry, enabledProviderIds, toggleProvider } = useProviderContext();

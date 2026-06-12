@@ -1,47 +1,42 @@
 # Settings System
 
-The settings panel is a right-side sliding drawer rendered via `createPortal` to `document.body`. It is the single entry point for all user-configurable preferences: provider management, visual effects, QAP, cache clearing, profiler, visualizer debug, and provider-specific data operations.
+The settings surface is **Settings v2** (`src/components/SettingsV2/`): a full-screen shadcn `Dialog` with a sidebar shell on desktop and a takeover list view on mobile. It is the single entry point for all user-configurable preferences: provider management, playback defaults, appearance, QAP, cache clearing, profiler, visualizer debug, and provider-specific data operations.
 
 ## Entry Point
 
-Component: `src/components/AppSettingsMenu/index.tsx` (default export, `AppSettingsMenu`).
+Component: `src/components/SettingsV2/SettingsV2.tsx` (exported through `src/components/SettingsV2/index.ts`).
 
 Opened via:
 - Gear icon on the flip menu back face
 - Keyboard shortcut `Shift+S`
 - `useVisualEffectsToggle().setShowVisualEffects(true)`
 
-The drawer is lazy-loaded (`React.lazy`) in two places:
+The dialog is lazy-loaded (`React.lazy`) in two places:
 - `src/components/PlayerContent/PlayerControlsSection.tsx` (when a track is loaded)
 - `src/components/AudioPlayer.tsx` (when no track is loaded / idle state)
+
+URL deep-links are handled by `useSettingsUrl` (`?settings=<section>`); section IDs and labels live in `src/components/SettingsV2/sections.ts`.
 
 ## Props Interface
 
 ```ts
-interface AppSettingsMenuProps {
+interface SettingsV2Props {
   isOpen: boolean;
   onClose: () => void;
-  onClearCache: (options: ClearCacheOptions) => Promise<void>;
-  profilerEnabled: boolean;
-  onProfilerToggle: () => void;
-  visualizerDebugEnabled: boolean;
-  onVisualizerDebugToggle: () => void;
-  qapEnabled: boolean;
-  onQapToggle: () => void;
 }
 ```
 
-The component uses `React.memo` with a custom `arePropsEqual` that only compares `isOpen`, `profilerEnabled`, `visualizerDebugEnabled`, and `qapEnabled`. Callback identity changes are intentionally ignored.
+All section state (profiler, visualizer debug, QAP, cache clearing) is read from contexts and hooks inside the sections themselves — nothing else is threaded through props.
 
 ## Panel Organization
 
-The drawer content is structured top-to-bottom:
+Four sidebar sections, catalogued in `src/components/SettingsV2/sections.ts` (`SETTINGS_V2_SECTIONS`): **Sources**, **Playback**, **Appearance**, **Advanced**.
 
-### 1. Music Sources (`MusicSourcesSection`)
+### Sources (`SourcesSection`)
 
-File: `src/components/AppSettingsMenu/SourcesSections.tsx`
+File: `src/components/SettingsV2/sections/SourcesSection.tsx`, composing `MusicSourcesSection` + `NativeQueueSyncSection` from `src/components/SettingsV2/sections/MusicSourcesSection.tsx`.
 
-Only renders when 2+ providers are registered. Shows each provider with:
+**Music Sources** only renders when 2+ providers are registered. Shows each provider with:
 - Name
 - Status badge: `connected` / `expired` / (empty when disabled)
 - Reconnect button (when enabled but not authenticated)
@@ -49,23 +44,27 @@ Only renders when 2+ providers are registered. Shows each provider with:
 
 Uses `useProviderContext()` for `registry`, `enabledProviderIds`, `toggleProvider`.
 
-### 2. Native Queue Sync (`NativeQueueSyncSection`)
-
-File: `src/components/AppSettingsMenu/SourcesSections.tsx`
-
-Only renders when a connected provider has `capabilities.hasNativeQueueSync` (currently only Spotify). Shows:
+**Native Queue Sync** only renders when a connected provider has `capabilities.hasNativeQueueSync` (currently only Spotify). Shows:
 - **Queue sync toggle**: keeps Spotify's native queue synced with Vorbis playback. Key: `STORAGE_KEYS.SPOTIFY_QUEUE_SYNC` (default: `true`).
 - **Cross-provider resolve toggle**: replaces non-Spotify tracks with Spotify equivalents in the synced queue. Only visible when sync is enabled AND another provider is connected. Key: `STORAGE_KEYS.SPOTIFY_QUEUE_CROSS_PROVIDER` (default: `true`).
 
-### 3. Quick Access Panel Toggle
+### Playback (`PlaybackSection`)
 
-Inline in `index.tsx`. On/Off `OptionButton` pair that toggles the QAP preference. See [QAP section](#quick-access-panel-qap) below.
+File: `src/components/SettingsV2/sections/PlaybackSection.tsx`. Default volume and shuffle behaviour.
 
-### 4. Advanced (Collapsible)
+### Appearance (`AppearanceSection`)
 
-Rendered with a shadcn `Accordion` (`type="single" collapsible`) from `@/components/ui/accordion`, wrapped in a `FilterSection` styled component (from `./styled`) in `src/components/AppSettingsMenu/index.tsx`. Starts collapsed by default.
+File: `src/components/SettingsV2/sections/AppearanceSection.tsx` (+ `sections/appearance/`). Visual effects: glow controls, visualizer style/intensity/speed pickers (shadcn `ToggleGroup`), translucence, and the accent color manager. The flip-menu back (`QuickEffectsRow`) remains the quick-access surface for the same settings.
+
+### Advanced (`AdvancedSection`)
+
+File: `src/components/SettingsV2/sections/AdvancedSection.tsx`.
 
 Contains:
+
+#### Quick Access Panel Toggle
+
+On/Off `Switch` that toggles the QAP preference. See [QAP section](#quick-access-panel-qap) below.
 
 #### Clear Library Cache
 
@@ -76,7 +75,7 @@ On `confirming`, shows checkboxes:
 - "Also clear Pins"
 - "Also clear Accent Colors"
 
-The `onClearCache` callback in `PlayerControlsSection` calls:
+The clear handler (owned by `AdvancedSection`) calls:
 - `clearCacheWithOptions({ clearLikes })` from `src/services/cache/libraryCache`
 - `clearAllPins()` from `src/services/settings/pinnedItemsStorage` (if clearPins)
 - Removes `ACCENT_COLOR_OVERRIDES` and `CUSTOM_ACCENT_COLORS` from localStorage (if clearAccentColors)
@@ -94,11 +93,11 @@ On/Off toggle. Controlled by `VisualizerDebugContext.isDebugMode`.
 
 Invariant: enabling visualizer debug disables the profiler (`profilerToggle()`). These two are mutually exclusive.
 
-#### Provider Data Sections
+#### Provider Data Blocks
 
-File: `src/components/AppSettingsMenu/ProviderDataSection.tsx`
+File: `src/components/SettingsV2/sections/ProviderDataBlock.tsx`
 
-One `ProviderDataSection` per enabled provider that has `catalog.clearArtCache` or `catalog.exportLikes`. Each is a collapsible section titled "{ProviderName} Data". Controls depend on which `CatalogProvider` capabilities exist:
+One `ProviderDataBlock` per enabled provider that has `catalog.clearArtCache` or `catalog.exportLikes`. Each is a collapsible block titled "{ProviderName} Data". Controls depend on which `CatalogProvider` capabilities exist:
 
 | Capability | Control | Description |
 |---|---|---|
@@ -263,13 +262,13 @@ These are compatible because `JSON.parse('"true"')` and `'true' === 'true'` both
 
 | File | Role |
 |---|---|
-| `src/components/AppSettingsMenu/index.tsx` | Settings drawer component |
-| `src/components/AppSettingsMenu/SourcesSections.tsx` | Music Sources + Queue Sync sections |
-| `src/components/AppSettingsMenu/ProviderDataSection.tsx` | Per-provider data management |
-| `src/components/AppSettingsMenu/styled.ts` | All styled-components for the drawer |
+| `src/components/SettingsV2/SettingsV2.tsx` | Settings dialog shell (desktop sidebar + mobile takeover) |
+| `src/components/SettingsV2/sections.ts` | Section catalog (IDs, labels, deep-link mapping) |
+| `src/components/SettingsV2/sections/MusicSourcesSection.tsx` | Music Sources + Queue Sync sections |
+| `src/components/SettingsV2/sections/ProviderDataBlock.tsx` | Per-provider data management |
 | `src/constants/storage.ts` | `STORAGE_KEYS` constant object |
 | `src/hooks/useLocalStorage.ts` | Generic localStorage hook with cross-tab sync |
 | `src/hooks/useQapEnabled.ts` | QAP preference hook |
 | `src/contexts/visualEffects/VisualEffectsToggleContext.tsx` | Visual effects drawer open/close state (`showVisualEffects` / `setShowVisualEffects`) |
 | `src/providers/dropbox/dropboxPreferencesSync.ts` | Dropbox preferences sync service |
-| `src/components/PlayerContent/PlayerControlsSection.tsx` | Wires settings props from contexts to the drawer |
+| `src/components/PlayerContent/PlayerControlsSection.tsx` | Hosts the lazy `SettingsV2` mount when a track is loaded |

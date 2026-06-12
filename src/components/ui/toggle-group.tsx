@@ -4,7 +4,7 @@ import * as ToggleGroupPrimitive from "@radix-ui/react-toggle-group"
 import { cn } from "@/lib/utils"
 
 // ToggleGroup primitive — replaces the legacy styled-components `OptionButton`
-// (formerly src/components/AppSettingsMenu/styled.ts). Radix gives roving-tabindex
+// (from the deleted AppSettingsMenu drawer). Radix gives roving-tabindex
 // keyboard navigation and single-selection semantics for free.
 //
 // variant (mirrors src/components/ui/switch.tsx):
@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils"
 //               Flip-menu chrome (controls/QuickEffectsRow) that retints with the
 //               playing track.
 //   "neutral" → active item = shadcn --primary (static near-white). Settings
-//               surfaces (AppSettingsMenu drawer, SettingsV2). Default.
+//               surfaces (SettingsV2). Default.
 //
 // Per-part style escape hatches:
 //   rootStyle → ToggleGroup.Root element

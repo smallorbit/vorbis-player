@@ -32,12 +32,10 @@ import {
 } from './AdvancedSection.styled';
 
 /**
- * SettingsV2 Advanced section — phase 2 port (#1450).
+ * SettingsV2 Advanced section.
  *
- * Ports the legacy AppSettingsMenu controls into v2 chrome (neutral shadcn
- * palette only — no `var(--accent-color)` references). Each control reads /
- * writes the same hook + storage key as the v1 surface, so toggling in
- * either UI reflects in the other immediately:
+ * Neutral shadcn palette only — no `var(--accent-color)` references. Each
+ * control reads / writes a hook + storage key:
  *
  *   - Quick Access Panel ↔ `useQapEnabled()` ↔ `vorbis-player-qap-enabled`
  *   - Performance Profiler ↔ `useProfilingContext()` ↔ `STORAGE_KEYS.PROFILING`

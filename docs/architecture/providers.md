@@ -26,7 +26,7 @@ Defined in `src/types/providers.ts` and `src/types/domain.ts`.
 - Toggle-ON when not authenticated: calls `beginLogin({ popup: true })` immediately. The provider is added to `enabledProviderIds` only after the OAuth popup reports success via `AUTH_COMPLETE_EVENT`.
 - OAuth cancel/failure: toggle reverts; a toast shows `"Couldn't connect to {provider}. Try again."`.
 - Mid-session unrecoverable 401: `logout()` is called automatically; a toast shows `"{Provider} disconnected — session expired."`.
-- Implementation: `src/components/AppSettingsMenu/SourcesSections.tsx` (`MusicSourcesSection`).
+- Implementation: `src/components/SettingsV2/sections/MusicSourcesSection.tsx` (`MusicSourcesSection`).
 
 ## Unified playback across providers
 

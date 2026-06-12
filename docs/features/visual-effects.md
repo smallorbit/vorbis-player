@@ -173,26 +173,11 @@ The `backgroundVisualizerSpeed` value (default `1.0`) is a global speed multipli
 
 Controlled via a slider on the flip menu back (`QuickEffectsRow`). Persisted under `vorbis-player-background-visualizer-speed`.
 
-## Settings Menu (AppSettingsMenu)
+## Settings (SettingsV2)
 
-**File**: `src/components/AppSettingsMenu/index.tsx` (imported in `AudioPlayer.tsx` under the local alias `VisualEffectsMenu`)
+**File**: `src/components/SettingsV2/SettingsV2.tsx` — the full-screen settings dialog. See `docs/features/settings.md` for the full breakdown.
 
-Despite the name, this is the **app settings drawer**, not just visual effects. It renders as a right-side drawer via `createPortal` to `document.body`.
-
-### What It Contains
-
-- **Music Sources**: Provider connection management
-- **Native Queue Sync**: Spotify queue sync toggle
-- **Quick Access Panel**: On/Off toggle
-- **Advanced** (collapsible):
-  - Clear Library Cache (with sub-options for likes, pins, accent colors)
-  - Performance Profiler toggle
-  - Visualizer Debug toggle
-  - Per-provider data operations (export/import likes, refresh metadata, clear art cache)
-
-### Visual Effects Controls Are NOT Here
-
-The glow, visualizer style, visualizer speed/intensity, translucence, and accent color controls live on the **flip menu back** (`AlbumArtQuickSwapBack` > `QuickEffectsRow`), not in this settings drawer. The settings drawer is accessed via the gear icon; the flip menu is accessed by long-pressing or clicking the album art.
+Its **Appearance** section (`SettingsV2/sections/AppearanceSection.tsx`) hosts the durable visual-effects controls: glow, visualizer style/intensity/speed, translucence, and the accent color manager. The **flip menu back** (`AlbumArtQuickSwapBack` > `QuickEffectsRow`) remains the quick-access surface for the same settings.
 
 ### Opening
 
@@ -237,7 +222,7 @@ From back to front:
 | `src/hooks/useVisualEffectsState.ts` | Glow intensity/rate state with save/restore |
 | `src/components/AccentColorGlowOverlay.tsx` | Pulsing glow layer behind album art |
 | `src/components/AccentColorBackground.tsx` | Full-viewport accent color gradient |
-| `src/components/AppSettingsMenu/index.tsx` | Settings drawer (gear icon); aliased as `VisualEffectsMenu` in `AudioPlayer.tsx` |
+| `src/components/SettingsV2/SettingsV2.tsx` | Settings dialog (gear icon); Appearance section hosts the effect controls |
 | `src/components/AlbumArtQuickSwapBack.tsx` | Flip menu back face, hosts `QuickEffectsRow` |
 | `src/components/controls/QuickEffectsRow.tsx` | Actual effect controls (glow, visualizer, translucence, accent color) |
 | `src/styles/animations.ts` | `breatheGlow` keyframes for glow animation |

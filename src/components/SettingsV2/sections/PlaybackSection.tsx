@@ -18,10 +18,9 @@ import {
 } from './PlaybackSection.styled';
 
 /**
- * SettingsV2 Playback section — phase 4 (#1452).
+ * SettingsV2 Playback section.
  *
- * Inventory note: the legacy `AppSettingsMenu` exposes zero playback-specific
- * controls. The genuinely user-facing playback preferences are:
+ * The user-facing playback preferences are:
  *
  *   - Default volume — `STORAGE_KEYS.VOLUME` (`useVolume()`). The chrome
  *     `controls/VolumeControl` slider already writes this; the settings UI
