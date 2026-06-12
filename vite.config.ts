@@ -59,12 +59,7 @@ export default defineConfig({
           vendor: ['react', 'react-dom'],
           radix: [
             '@radix-ui/react-dialog',
-            '@radix-ui/react-radio-group',
-            '@radix-ui/react-scroll-area',
-            '@radix-ui/react-select',
-            '@radix-ui/react-separator',
             '@radix-ui/react-slider',
-            '@radix-ui/react-tabs',
             '@radix-ui/react-toggle-group',
           ],
           styled: ['styled-components']
