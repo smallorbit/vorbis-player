@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useRef } from 'react';
 import type { CollectionRef, MediaTrack, ProviderId } from '@/types/domain';
 import type { ProviderDescriptor } from '@/types/providers';
 import type { TrackOperations } from '@/types/trackOperations';
@@ -6,7 +6,12 @@ import { LIKED_SONGS_ID, LIKED_SONGS_NAME, isAllMusicRef, resolvePlaylistRef } f
 import { shuffleArray } from '@/utils/shuffleArray';
 import { providerRegistry } from '@/providers/registry';
 import { logQueue } from '@/lib/debugLog';
+import { logCaughtError } from '@/utils/logCaughtError';
 import { queueSnapshot } from './playerLogicUtils';
+
+function isAbortError(err: unknown): boolean {
+  return err instanceof DOMException && err.name === 'AbortError';
+}
 
 interface UseCollectionLoaderProps {
   trackOps: TrackOperations;
@@ -46,12 +51,29 @@ export function useCollectionLoader({
 }: UseCollectionLoaderProps): UseCollectionLoaderReturn {
   const { setError, setIsLoading, setSelectedPlaylistId, setTracks, setOriginalTracks, setCurrentTrackIndex, mediaTracksRef } = trackOps;
 
-  const beginLoad = useCallback((playlistId: string) => {
+  const loadGenerationRef = useRef(0);
+  const abortControllerRef = useRef<AbortController | null>(null);
+
+  const beginLoadGeneration = useCallback((): { generation: number; signal: AbortSignal } => {
+    abortControllerRef.current?.abort();
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+    loadGenerationRef.current += 1;
+    return { generation: loadGenerationRef.current, signal: controller.signal };
+  }, []);
+
+  const isStale = useCallback((generation: number): boolean => {
+    return loadGenerationRef.current !== generation;
+  }, []);
+
+  const beginLoad = useCallback((playlistId: string): { generation: number; signal: AbortSignal } => {
+    const token = beginLoadGeneration();
     setError(null);
     setIsLoading(true);
     setSelectedPlaylistId(playlistId);
     mediaTracksRef.current = [];
-  }, [setError, setIsLoading, setSelectedPlaylistId, mediaTracksRef]);
+    return token;
+  }, [beginLoadGeneration, setError, setIsLoading, setSelectedPlaylistId, mediaTracksRef]);
 
   const clearWithError = useCallback((message: string): 0 => {
     setError(message);
@@ -83,7 +105,7 @@ export function useCollectionLoader({
   }, [shuffleEnabled, mediaTracksRef, setOriginalTracks, setTracks, setCurrentTrackIndex, setIsLoading]);
 
   const loadUnifiedLiked = useCallback(async (playlistId: string, name?: string): Promise<number> => {
-    beginLoad(playlistId);
+    const { generation, signal } = beginLoad(playlistId);
     try {
       const descriptorMap = new Map(
         connectedProviderIds.map(id => [id, getDescriptor(id)])
@@ -95,9 +117,15 @@ export function useCollectionLoader({
         likedProviderIds.map(async (id) => {
           const catalog = descriptorMap.get(id)?.catalog;
           if (!catalog) return [];
-          return catalog.listTracks({ provider: id, kind: 'liked' }).catch((): MediaTrack[] => []);
+          return catalog.listTracks({ provider: id, kind: 'liked' }, signal).catch((err: unknown): MediaTrack[] => {
+            if (!isAbortError(err)) logCaughtError(`useCollectionLoader.loadUnifiedLiked[${id}]`, err);
+            return [];
+          });
         }),
       );
+
+      if (isStale(generation)) return loadGenerationRef.current;
+
       const merged = results.flat();
       merged.sort((a, b) => (b.addedAt ?? 0) - (a.addedAt ?? 0));
 
@@ -114,6 +142,7 @@ export function useCollectionLoader({
             setActiveProviderId(firstTrack.provider);
           }
           queueSnapshot('Unified Liked loaded', merged, mediaTracksRef.current.length, 0);
+          if (isStale(generation)) return loadGenerationRef.current;
           await playTrack(0);
           record(
             { provider: firstTrack.provider, kind: 'liked' },
@@ -124,16 +153,20 @@ export function useCollectionLoader({
       }
       return merged.length;
     } catch (err) {
+      if (isAbortError(err) || isStale(generation)) {
+        logCaughtError('useCollectionLoader.loadUnifiedLiked', err);
+        return loadGenerationRef.current;
+      }
       return handleLoadError(err, 'Failed to load liked tracks.');
     }
   }, [
-    beginLoad, clearWithError, handleLoadError, applyTracks,
+    beginLoad, isStale, clearWithError, handleLoadError, applyTracks,
     connectedProviderIds, getDescriptor, activeDescriptor,
     setActiveProviderId, drivingProviderRef, mediaTracksRef, playTrack, record,
   ]);
 
   const loadContextPlayback = useCallback(async (
-    playlistId: string, providerId: ProviderId,
+    playlistId: string, providerId: ProviderId, generation: number,
   ): Promise<number> => {
     setIsLoading(false);
     const prevProvider = drivingProviderRef.current;
@@ -144,6 +177,7 @@ export function useCollectionLoader({
     mediaTracksRef.current = [];
     logQueue('Context playback path — delegating to legacy handler for %s on %s', playlistId, providerId);
     const sdkTracks = await spotifyHandlePlaylistSelect(playlistId);
+    if (isStale(generation)) return loadGenerationRef.current;
     if (sdkTracks.length > 0) {
       mediaTracksRef.current = sdkTracks;
       queueSnapshot('Context playback loaded', sdkTracks, mediaTracksRef.current.length, 0);
@@ -151,7 +185,7 @@ export function useCollectionLoader({
       logQueue('Context playback returned 0 tracks');
     }
     return sdkTracks.length;
-  }, [drivingProviderRef, mediaTracksRef, setIsLoading, spotifyHandlePlaylistSelect]);
+  }, [drivingProviderRef, mediaTracksRef, setIsLoading, spotifyHandlePlaylistSelect, isStale]);
 
   const loadProviderCollection = useCallback(async (
     playlistId: string, targetDescriptor: ProviderDescriptor, name?: string,
@@ -162,14 +196,16 @@ export function useCollectionLoader({
       activeDescriptor.playback.pause().catch(() => {});
     }
 
-    beginLoad(playlistId);
+    const { generation, signal } = beginLoad(playlistId);
     try {
       const { id: collectionId, kind: collectionKind } = resolvePlaylistRef(playlistId, providerId);
       const collectionRef = { provider: providerId, kind: collectionKind, id: collectionId } as const;
-      const list = await targetDescriptor.catalog.listTracks(collectionRef);
+      const list = await targetDescriptor.catalog.listTracks(collectionRef, signal);
+
+      if (isStale(generation)) return loadGenerationRef.current;
 
       if (list.length === 0 && targetDescriptor.capabilities.hasContextPlaybackFallback) {
-        return loadContextPlayback(playlistId, providerId);
+        return loadContextPlayback(playlistId, providerId, generation);
       }
 
       if (list.length === 0) return clearWithError('No tracks found in this collection.');
@@ -177,14 +213,19 @@ export function useCollectionLoader({
       applyTracks(list, { forceShuffle: isAllMusicRef(collectionRef) });
       drivingProviderRef.current = providerId;
       queueSnapshot(`${providerId} playlist loaded`, list, mediaTracksRef.current.length, 0);
+      if (isStale(generation)) return loadGenerationRef.current;
       await playTrack(0);
       record(collectionRef, name ?? collectionId, list[0]?.image ?? null);
       return list.length;
     } catch (err) {
+      if (isAbortError(err) || isStale(generation)) {
+        logCaughtError('useCollectionLoader.loadProviderCollection', err);
+        return loadGenerationRef.current;
+      }
       return handleLoadError(err, 'Failed to load collection.');
     }
   }, [
-    activeDescriptor, beginLoad, clearWithError, handleLoadError,
+    activeDescriptor, beginLoad, isStale, clearWithError, handleLoadError,
     applyTracks, loadContextPlayback, drivingProviderRef, mediaTracksRef, playTrack, record,
   ]);
 
@@ -222,6 +263,8 @@ export function useCollectionLoader({
     async (tracks: MediaTrack[], collectionId: string, provider?: ProviderId): Promise<number> => {
       if (radioStateIsActive) stopRadioBase();
 
+      const { generation } = beginLoadGeneration();
+
       const targetDescriptor = provider ? getDescriptor(provider) : activeDescriptor;
       const targetProviderId = provider ?? activeDescriptor?.id;
 
@@ -252,11 +295,13 @@ export function useCollectionLoader({
       }
 
       queueSnapshot('Direct tracks loaded', tracks, mediaTracksRef.current.length, 0);
+      if (isStale(generation)) return loadGenerationRef.current;
       await playTrack(0);
       return tracks.length;
     },
     [
-      radioStateIsActive, stopRadioBase, getDescriptor, activeDescriptor,
+      radioStateIsActive, stopRadioBase, beginLoadGeneration, isStale,
+      getDescriptor, activeDescriptor,
       setError, setIsLoading, setSelectedPlaylistId, mediaTracksRef,
       setTracks, setOriginalTracks, setCurrentTrackIndex,
       applyTracks, drivingProviderRef, setActiveProviderId, playTrack,

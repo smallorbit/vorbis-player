@@ -8,7 +8,7 @@ Vorbis Player SHALL maintain an ordered queue of provider-neutral tracks that ca
 
 ### Requirement: Loading a Collection
 
-Loading a collection SHALL replace the queue with the collection's tracks, reset the current-track index to the start, and begin playback from the first track.
+Loading a collection SHALL replace the queue with the collection's tracks, reset the current-track index to the start, and begin playback from the first track. When a new load begins before an earlier one completes, the newest load SHALL win: the superseded load SHALL be cancelled and SHALL NOT alter the queue, playback, or the active provider.
 
 #### Scenario: Loading a collection with tracks
 
@@ -21,6 +21,13 @@ Loading a collection SHALL replace the queue with the collection's tracks, reset
 
 - **WHEN** the user loads a collection that returns no tracks
 - **THEN** the queue remains empty and playback does not begin
+
+#### Scenario: Newer load supersedes an in-flight load
+
+- **WHEN** the user loads collection B while collection A is still loading
+- **THEN** the queue and playback reflect collection B
+- **AND** collection A's late-arriving results are discarded without altering the queue, playback, or the active provider
+- **AND** collection A's in-flight catalog requests are cancelled
 
 ### Requirement: Adding to the Queue
 
@@ -64,7 +71,7 @@ Removing a queued track SHALL preserve the playing track's position. Removing th
 
 ### Requirement: Reordering the Queue
 
-Reordering the queue SHALL move a track from one position to another and SHALL keep the currently playing track's index aligned with its new position.
+Reordering the queue SHALL move a track from one position to another and SHALL keep the currently playing track's index aligned with its new position. Reorder operations SHALL identify tracks by their immutable track id, so an asynchronous metadata update (such as a title enrichment) cannot invalidate an in-progress drag.
 
 #### Scenario: Reordering relative to the current track
 
@@ -72,9 +79,15 @@ Reordering the queue SHALL move a track from one position to another and SHALL k
 - **THEN** the track order reflects the move
 - **AND** the current-track index now points to the same track that was playing before the reorder
 
+#### Scenario: Track metadata updates during a drag
+
+- **WHEN** a queued track's display name updates while the user is dragging a queue row
+- **THEN** the drag gesture is not interrupted
+- **AND** dropping the row still applies the reorder
+
 ### Requirement: Shuffle Mode
 
-Shuffle SHALL be a persisted toggle. Enabling shuffle SHALL randomize the queue order while keeping the currently playing track at the front; disabling shuffle SHALL restore the queue's original order with the current track's index pointing at its original position. The user's preference SHALL persist across sessions.
+Shuffle SHALL be a persisted toggle. Enabling shuffle SHALL randomize the queue order while keeping the currently playing track at the front; disabling shuffle SHALL restore the queue's original order with the current track's index pointing at its original position. Tracks added to the queue while shuffle is enabled SHALL be appended to the preserved original order, so the true unshuffled order remains recoverable. The user's preference SHALL persist across sessions.
 
 #### Scenario: Enabling shuffle
 
@@ -88,6 +101,12 @@ Shuffle SHALL be a persisted toggle. Enabling shuffle SHALL randomize the queue 
 - **WHEN** the user disables shuffle
 - **THEN** the queue's original order is restored
 - **AND** the current-track index points to the currently playing track's position in the original order
+
+#### Scenario: Disabling shuffle after adding tracks while shuffled
+
+- **WHEN** the user adds tracks to the queue while shuffle is enabled and then disables shuffle
+- **THEN** the queue's original (unshuffled) order is restored with the added tracks appended after it
+- **AND** the restored order is not the shuffled arrangement
 
 #### Scenario: Shuffle preference persists
 

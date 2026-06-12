@@ -1012,6 +1012,256 @@ describe('useQueueManagement', () => {
     });
   });
 
+  describe('shuffle-safe originalTracks preservation', () => {
+    it('handleAddToQueue while shuffled appends new tracks to originalTracks, not the shuffled snapshot', async () => {
+      // #given — queue is shuffled [b, a]; originalTracks is [a, b] (the true order)
+      mediaTracksRef.current = [makeMediaTrack('b'), makeMediaTrack('a')];
+      const tracks = [makeTrack({ id: 'b' }), makeTrack({ id: 'a' })];
+      const originalTracksState = [makeMediaTrack('a'), makeMediaTrack('b')];
+      const mockCatalog = { listTracks: vi.fn().mockResolvedValue([makeMediaTrack('c')]) };
+      mockActiveDescriptor.catalog = mockCatalog;
+
+      let capturedOriginalTracks = originalTracksState;
+      mockSetOriginalTracks.mockImplementation((updater: unknown) => {
+        if (typeof updater === 'function') {
+          capturedOriginalTracks = (updater as (prev: MediaTrack[]) => MediaTrack[])(capturedOriginalTracks);
+        } else {
+          capturedOriginalTracks = updater as MediaTrack[];
+        }
+      });
+
+      const { result } = renderHook(() =>
+        useQueueManagement({
+          tracks,
+          currentTrackIndex: 0,
+          shuffleEnabled: true,
+          trackOps: { setTracks: mockSetTracks, setOriginalTracks: mockSetOriginalTracks, setCurrentTrackIndex: mockSetCurrentTrackIndex, mediaTracksRef },
+          loadCollection: mockHandlePlaylistSelect,
+          handleBackToLibrary: mockHandleBackToLibrary,
+          activeDescriptor: mockActiveDescriptor,
+          getDescriptor: mockGetDescriptor,
+          getDrivingProviderDescriptor: mockGetDrivingProviderDescriptor,
+        })
+      );
+
+      // #when
+      await act(async () => {
+        await result.current.handleAddToQueue('playlist_id');
+      });
+
+      // #then — originalTracks gets [a, b, c], not [b, a, c] (the shuffled snapshot)
+      expect(capturedOriginalTracks.map((t) => t.id)).toEqual(['a', 'b', 'c']);
+    });
+
+    it('handleAddToQueue while shuffle is OFF overwrites originalTracks with the full queue (existing behavior)', async () => {
+      // #given
+      mediaTracksRef.current = [makeMediaTrack('a'), makeMediaTrack('b')];
+      const tracks = [makeTrack({ id: 'a' }), makeTrack({ id: 'b' })];
+      const mockCatalog = { listTracks: vi.fn().mockResolvedValue([makeMediaTrack('c')]) };
+      mockActiveDescriptor.catalog = mockCatalog;
+
+      const { result } = renderHook(() =>
+        useQueueManagement({
+          tracks,
+          currentTrackIndex: 0,
+          shuffleEnabled: false,
+          trackOps: { setTracks: mockSetTracks, setOriginalTracks: mockSetOriginalTracks, setCurrentTrackIndex: mockSetCurrentTrackIndex, mediaTracksRef },
+          loadCollection: mockHandlePlaylistSelect,
+          handleBackToLibrary: mockHandleBackToLibrary,
+          activeDescriptor: mockActiveDescriptor,
+          getDescriptor: mockGetDescriptor,
+          getDrivingProviderDescriptor: mockGetDrivingProviderDescriptor,
+        })
+      );
+
+      // #when
+      await act(async () => {
+        await result.current.handleAddToQueue('playlist_id');
+      });
+
+      // #then — setOriginalTracks called with the full nextTracks array directly (not a functional updater)
+      expect(mockSetOriginalTracks).toHaveBeenCalledWith(
+        expect.arrayContaining([
+          expect.objectContaining({ id: 'a' }),
+          expect.objectContaining({ id: 'b' }),
+          expect.objectContaining({ id: 'c' }),
+        ]),
+      );
+      const callArg = mockSetOriginalTracks.mock.calls[0][0];
+      expect(typeof callArg).not.toBe('function');
+    });
+
+    it('queueTracksDirectly while shuffled appends new tracks to originalTracks, not the shuffled snapshot', () => {
+      // #given — queue is shuffled [b, a]; true originalTracks order is [a, b]
+      mediaTracksRef.current = [makeMediaTrack('b'), makeMediaTrack('a')];
+      const tracks = [makeTrack({ id: 'b' }), makeTrack({ id: 'a' })];
+      const originalTracksState = [makeMediaTrack('a'), makeMediaTrack('b')];
+
+      let capturedOriginalTracks = originalTracksState;
+      mockSetOriginalTracks.mockImplementation((updater: unknown) => {
+        if (typeof updater === 'function') {
+          capturedOriginalTracks = (updater as (prev: MediaTrack[]) => MediaTrack[])(capturedOriginalTracks);
+        } else {
+          capturedOriginalTracks = updater as MediaTrack[];
+        }
+      });
+
+      const { result } = renderHook(() =>
+        useQueueManagement({
+          tracks,
+          currentTrackIndex: 0,
+          shuffleEnabled: true,
+          trackOps: { setTracks: mockSetTracks, setOriginalTracks: mockSetOriginalTracks, setCurrentTrackIndex: mockSetCurrentTrackIndex, mediaTracksRef },
+          loadCollection: mockHandlePlaylistSelect,
+          handleBackToLibrary: mockHandleBackToLibrary,
+          activeDescriptor: mockActiveDescriptor,
+          getDescriptor: mockGetDescriptor,
+          getDrivingProviderDescriptor: mockGetDrivingProviderDescriptor,
+        })
+      );
+
+      // #when
+      act(() => {
+        result.current.queueTracksDirectly([makeMediaTrack('c')]);
+      });
+
+      // #then — originalTracks is [a, b, c], not the shuffled snapshot [b, a, c]
+      expect(capturedOriginalTracks.map((t) => t.id)).toEqual(['a', 'b', 'c']);
+    });
+
+    it('queueTracksDirectly while shuffle is OFF overwrites originalTracks with the full queue (existing behavior)', () => {
+      // #given
+      mediaTracksRef.current = [makeMediaTrack('a'), makeMediaTrack('b')];
+      const tracks = [makeTrack({ id: 'a' }), makeTrack({ id: 'b' })];
+
+      const { result } = renderHook(() =>
+        useQueueManagement({
+          tracks,
+          currentTrackIndex: 0,
+          shuffleEnabled: false,
+          trackOps: { setTracks: mockSetTracks, setOriginalTracks: mockSetOriginalTracks, setCurrentTrackIndex: mockSetCurrentTrackIndex, mediaTracksRef },
+          loadCollection: mockHandlePlaylistSelect,
+          handleBackToLibrary: mockHandleBackToLibrary,
+          activeDescriptor: mockActiveDescriptor,
+          getDescriptor: mockGetDescriptor,
+          getDrivingProviderDescriptor: mockGetDrivingProviderDescriptor,
+        })
+      );
+
+      // #when
+      act(() => {
+        result.current.queueTracksDirectly([makeMediaTrack('c')]);
+      });
+
+      // #then — setOriginalTracks called with a plain array (not a functional updater)
+      const callArg = mockSetOriginalTracks.mock.calls[0][0];
+      expect(typeof callArg).not.toBe('function');
+      expect((callArg as MediaTrack[]).map((t) => t.id)).toEqual(['a', 'b', 'c']);
+    });
+
+    it('insertTracksNext while shuffled appends new tracks to originalTracks, not the shuffled snapshot', () => {
+      // #given — queue is shuffled [c, a, b]; true originalTracks order is [a, b, c]
+      mediaTracksRef.current = [makeMediaTrack('c'), makeMediaTrack('a'), makeMediaTrack('b')];
+      const tracks = [makeTrack({ id: 'c' }), makeTrack({ id: 'a' }), makeTrack({ id: 'b' })];
+      const originalTracksState = [makeMediaTrack('a'), makeMediaTrack('b'), makeMediaTrack('c')];
+
+      let capturedOriginalTracks = originalTracksState;
+      mockSetOriginalTracks.mockImplementation((updater: unknown) => {
+        if (typeof updater === 'function') {
+          capturedOriginalTracks = (updater as (prev: MediaTrack[]) => MediaTrack[])(capturedOriginalTracks);
+        } else {
+          capturedOriginalTracks = updater as MediaTrack[];
+        }
+      });
+
+      const { result } = renderHook(() =>
+        useQueueManagement({
+          tracks,
+          currentTrackIndex: 0,
+          shuffleEnabled: true,
+          trackOps: { setTracks: mockSetTracks, setOriginalTracks: mockSetOriginalTracks, setCurrentTrackIndex: mockSetCurrentTrackIndex, mediaTracksRef },
+          loadCollection: mockHandlePlaylistSelect,
+          handleBackToLibrary: mockHandleBackToLibrary,
+          activeDescriptor: mockActiveDescriptor,
+          getDescriptor: mockGetDescriptor,
+          getDrivingProviderDescriptor: mockGetDrivingProviderDescriptor,
+        })
+      );
+
+      // #when
+      act(() => {
+        result.current.insertTracksNext([makeMediaTrack('x')]);
+      });
+
+      // #then — originalTracks is [a, b, c, x], not the shuffled snapshot with x spliced in
+      expect(capturedOriginalTracks.map((t) => t.id)).toEqual(['a', 'b', 'c', 'x']);
+    });
+
+    it('insertTracksNext while shuffle is OFF splices into originalTracks at currentTrackIndex+1 (existing behavior)', () => {
+      // #given — playing index 0; original and queue order both [a, b, c]
+      mediaTracksRef.current = [makeMediaTrack('a'), makeMediaTrack('b'), makeMediaTrack('c')];
+      const tracks = [makeTrack({ id: 'a' }), makeTrack({ id: 'b' }), makeTrack({ id: 'c' })];
+
+      const { result } = renderHook(() =>
+        useQueueManagement({
+          tracks,
+          currentTrackIndex: 0,
+          shuffleEnabled: false,
+          trackOps: { setTracks: mockSetTracks, setOriginalTracks: mockSetOriginalTracks, setCurrentTrackIndex: mockSetCurrentTrackIndex, mediaTracksRef },
+          loadCollection: mockHandlePlaylistSelect,
+          handleBackToLibrary: mockHandleBackToLibrary,
+          activeDescriptor: mockActiveDescriptor,
+          getDescriptor: mockGetDescriptor,
+          getDrivingProviderDescriptor: mockGetDrivingProviderDescriptor,
+        })
+      );
+
+      // #when
+      act(() => {
+        result.current.insertTracksNext([makeMediaTrack('x')]);
+      });
+
+      // #then — originalTracks is set to the full spliced array [a, x, b, c]
+      const callArg = mockSetOriginalTracks.mock.calls[0][0];
+      expect(typeof callArg).not.toBe('function');
+      expect((callArg as MediaTrack[]).map((t) => t.id)).toEqual(['a', 'x', 'b', 'c']);
+    });
+
+    it('insertTracksNext with shuffle ON and empty queue sets originalTracks to the inserted batch', () => {
+      // #given — empty queue with shuffle enabled (fast-path at the top of insertTracksNext)
+      const { result } = renderHook(() =>
+        useQueueManagement({
+          tracks: [],
+          currentTrackIndex: 0,
+          shuffleEnabled: true,
+          trackOps: { setTracks: mockSetTracks, setOriginalTracks: mockSetOriginalTracks, setCurrentTrackIndex: mockSetCurrentTrackIndex, mediaTracksRef },
+          loadCollection: mockHandlePlaylistSelect,
+          handleBackToLibrary: mockHandleBackToLibrary,
+          activeDescriptor: mockActiveDescriptor,
+          getDescriptor: mockGetDescriptor,
+          getDrivingProviderDescriptor: mockGetDrivingProviderDescriptor,
+        })
+      );
+
+      // #when
+      let response: ReturnType<typeof result.current.insertTracksNext> = null;
+      act(() => {
+        response = result.current.insertTracksNext([makeMediaTrack('1'), makeMediaTrack('2')], 'Fresh');
+      });
+
+      // #then — originalTracks receives the inserted batch directly (plain array, not functional updater)
+      // because this is a fresh queue: there is no prior unshuffled order to merge with.
+      expect(response).toEqual({ added: 2, collectionName: 'Fresh' });
+      const callArg = mockSetOriginalTracks.mock.calls[0][0];
+      expect(typeof callArg).not.toBe('function');
+      expect((callArg as MediaTrack[]).map((t) => t.id)).toEqual(['1', '2']);
+      expect(mockSetTracks).toHaveBeenCalledWith([
+        expect.objectContaining({ id: '1' }),
+        expect.objectContaining({ id: '2' }),
+      ]);
+    });
+  });
+
   it('queueTracksDirectly toasts the duplicate message when every track is already queued', () => {
     // #given — queue already contains every incoming track
     mediaTracksRef.current = [makeMediaTrack('1'), makeMediaTrack('2')];
