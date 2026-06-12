@@ -135,7 +135,14 @@ export function useQueueManagement({
         );
         const nextTracks = [...tracksRef.current, ...uniqueNewTracks];
         mediaTracksRef.current = appendMediaTracks(mediaTracksRef.current, uniqueNewTracks);
-        setOriginalTracks(nextTracks);
+        // When shuffle is ON, preserve the true unshuffled order by appending only the
+        // new tracks to originalTracks. Overwriting with nextTracks (the shuffled queue
+        // snapshot) would corrupt the restore-on-unshuffle path — mirrors handleReorderQueue.
+        if (shuffleEnabled) {
+          setOriginalTracks((prev) => [...prev, ...uniqueNewTracks]);
+        } else {
+          setOriginalTracks(nextTracks);
+        }
         setTracks((prev: MediaTrack[]) => [...prev, ...uniqueNewTracks]);
         notifyQueueChanged(nextTracks, currentTrackIndex);
         logQueue(
@@ -151,7 +158,7 @@ export function useQueueManagement({
       }
     },
     // mediaTracksRef included for exhaustive-deps; ref identity is stable so it does not cause callback re-creation.
-    [tracks.length, loadCollection, activeDescriptor, getDescriptor, setTracks, setOriginalTracks, mediaTracksRef, notifyQueueChanged, currentTrackIndex]
+    [tracks.length, loadCollection, activeDescriptor, getDescriptor, setTracks, setOriginalTracks, mediaTracksRef, notifyQueueChanged, currentTrackIndex, shuffleEnabled]
   );
 
   const handleRemoveFromQueue = useCallback(
@@ -256,12 +263,17 @@ export function useQueueManagement({
       );
       const nextTracks = [...tracksRef.current, ...uniqueNewTracks];
       mediaTracksRef.current = appendMediaTracks(mediaTracksRef.current, uniqueNewTracks);
-      setOriginalTracks(nextTracks);
+      // When shuffle is ON, preserve the true unshuffled order — mirrors handleReorderQueue.
+      if (shuffleEnabled) {
+        setOriginalTracks((prev) => [...prev, ...uniqueNewTracks]);
+      } else {
+        setOriginalTracks(nextTracks);
+      }
       setTracks((prev: MediaTrack[]) => [...prev, ...uniqueNewTracks]);
       notifyQueueChanged(nextTracks, currentTrackIndex);
       return { added: uniqueNewTracks.length, ...(collectionName !== undefined && { collectionName }) };
     },
-    [mediaTracksRef, setOriginalTracks, setTracks, notifyQueueChanged, currentTrackIndex]
+    [shuffleEnabled, mediaTracksRef, setOriginalTracks, setTracks, notifyQueueChanged, currentTrackIndex]
   );
 
   /**
@@ -302,7 +314,15 @@ export function useQueueManagement({
       const nextTracks = [...tracksRef.current];
       nextTracks.splice(insertAt, 0, ...uniqueNewTracks);
       mediaTracksRef.current = insertMediaTracksAt(mediaTracksRef.current, insertAt, uniqueNewTracks);
-      setOriginalTracks(nextTracks);
+      // When shuffle is ON, append to originalTracks to preserve the true unshuffled
+      // order. Splicing into originalTracks at currentTrackIndex+1 is not meaningful
+      // because the shuffled queue position does not correspond to an unshuffled slot.
+      // Appending keeps the collection's natural order intact for restore-on-unshuffle.
+      if (shuffleEnabled) {
+        setOriginalTracks((prev) => [...prev, ...uniqueNewTracks]);
+      } else {
+        setOriginalTracks(nextTracks);
+      }
       setTracks(nextTracks);
 
       notifyQueueChanged(nextTracks, currentTrackIndex);
@@ -314,7 +334,7 @@ export function useQueueManagement({
       );
       return { added: uniqueNewTracks.length, ...(collectionName !== undefined && { collectionName }) };
     },
-    [currentTrackIndex, mediaTracksRef, setOriginalTracks, setTracks, notifyQueueChanged],
+    [currentTrackIndex, shuffleEnabled, mediaTracksRef, setOriginalTracks, setTracks, notifyQueueChanged],
   );
 
   /**
