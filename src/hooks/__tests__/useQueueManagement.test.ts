@@ -1226,6 +1226,40 @@ describe('useQueueManagement', () => {
       expect(typeof callArg).not.toBe('function');
       expect((callArg as MediaTrack[]).map((t) => t.id)).toEqual(['a', 'x', 'b', 'c']);
     });
+
+    it('insertTracksNext with shuffle ON and empty queue sets originalTracks to the inserted batch', () => {
+      // #given — empty queue with shuffle enabled (fast-path at the top of insertTracksNext)
+      const { result } = renderHook(() =>
+        useQueueManagement({
+          tracks: [],
+          currentTrackIndex: 0,
+          shuffleEnabled: true,
+          trackOps: { setTracks: mockSetTracks, setOriginalTracks: mockSetOriginalTracks, setCurrentTrackIndex: mockSetCurrentTrackIndex, mediaTracksRef },
+          loadCollection: mockHandlePlaylistSelect,
+          handleBackToLibrary: mockHandleBackToLibrary,
+          activeDescriptor: mockActiveDescriptor,
+          getDescriptor: mockGetDescriptor,
+          getDrivingProviderDescriptor: mockGetDrivingProviderDescriptor,
+        })
+      );
+
+      // #when
+      let response: ReturnType<typeof result.current.insertTracksNext> = null;
+      act(() => {
+        response = result.current.insertTracksNext([makeMediaTrack('1'), makeMediaTrack('2')], 'Fresh');
+      });
+
+      // #then — originalTracks receives the inserted batch directly (plain array, not functional updater)
+      // because this is a fresh queue: there is no prior unshuffled order to merge with.
+      expect(response).toEqual({ added: 2, collectionName: 'Fresh' });
+      const callArg = mockSetOriginalTracks.mock.calls[0][0];
+      expect(typeof callArg).not.toBe('function');
+      expect((callArg as MediaTrack[]).map((t) => t.id)).toEqual(['1', '2']);
+      expect(mockSetTracks).toHaveBeenCalledWith([
+        expect.objectContaining({ id: '1' }),
+        expect.objectContaining({ id: '2' }),
+      ]);
+    });
   });
 
   it('queueTracksDirectly toasts the duplicate message when every track is already queued', () => {
