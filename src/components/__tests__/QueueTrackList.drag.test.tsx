@@ -100,6 +100,7 @@ async function flush(): Promise<void> {
 
 beforeAll(() => {
   global.PointerEvent = FakePointerEvent as unknown as typeof PointerEvent;
+  HTMLElement.prototype.scrollIntoView = vi.fn();
   Object.defineProperty(HTMLElement.prototype, 'offsetHeight', {
     configurable: true,
     value: ROW_HEIGHT,
