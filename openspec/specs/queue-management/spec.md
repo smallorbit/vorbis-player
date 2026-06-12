@@ -74,7 +74,7 @@ Reordering the queue SHALL move a track from one position to another and SHALL k
 
 ### Requirement: Shuffle Mode
 
-Shuffle SHALL be a persisted toggle. Enabling shuffle SHALL randomize the queue order while keeping the currently playing track at the front; disabling shuffle SHALL restore the queue's original order with the current track's index pointing at its original position. The user's preference SHALL persist across sessions.
+Shuffle SHALL be a persisted toggle. Enabling shuffle SHALL randomize the queue order while keeping the currently playing track at the front; disabling shuffle SHALL restore the queue's original order with the current track's index pointing at its original position. Tracks added to the queue while shuffle is enabled SHALL be appended to the preserved original order, so the true unshuffled order remains recoverable. The user's preference SHALL persist across sessions.
 
 #### Scenario: Enabling shuffle
 
@@ -88,6 +88,12 @@ Shuffle SHALL be a persisted toggle. Enabling shuffle SHALL randomize the queue 
 - **WHEN** the user disables shuffle
 - **THEN** the queue's original order is restored
 - **AND** the current-track index points to the currently playing track's position in the original order
+
+#### Scenario: Disabling shuffle after adding tracks while shuffled
+
+- **WHEN** the user adds tracks to the queue while shuffle is enabled and then disables shuffle
+- **THEN** the queue's original (unshuffled) order is restored with the added tracks appended after it
+- **AND** the restored order is not the shuffled arrangement
 
 #### Scenario: Shuffle preference persists
 
