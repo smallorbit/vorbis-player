@@ -181,7 +181,7 @@ export const SortableQueueItem = memo<QueueItemProps>(({
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: `${track.name}-${track.id}` });
+  } = useSortable({ id: track.id });
 
   const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),

@@ -129,7 +129,7 @@ const QueueTrackList = memo<QueueTrackListProps>(({
     })
   );
 
-  const sortableIds = tracks.map(t => `${t.name}-${t.id}`);
+  const sortableIds = tracks.map(t => t.id);
 
   const handleDragStart = useCallback((_event: DragStartEvent) => {
     setIsDragActive(true);
@@ -181,7 +181,7 @@ const QueueTrackList = memo<QueueTrackListProps>(({
               <QueueListItems>
                 {tracks.map((track, index) => (
                   <SwipeableQueueItem
-                    key={`${track.name}-${track.id}`}
+                    key={track.id}
                     track={track}
                     index={index}
                     isSelected={index === currentTrackIndex}
@@ -223,7 +223,7 @@ const QueueTrackList = memo<QueueTrackListProps>(({
                   <QueueListItems>
                     {tracks.map((track, index) => (
                       <SortableQueueItem
-                        key={`${track.name}-${track.id}`}
+                        key={track.id}
                         track={track}
                         index={index}
                         isSelected={index === currentTrackIndex}
@@ -257,7 +257,7 @@ const QueueTrackList = memo<QueueTrackListProps>(({
             <QueueListItems>
               {tracks.map((track: MediaTrack, index: number) => (
                 <QueueListItem
-                  key={`${track.name}-${track.id}`}
+                  key={track.id}
                   ref={index === currentTrackIndex ? currentTrackRef : undefined}
                   onClick={() => onTrackSelect(index)}
                   $isSelected={index === currentTrackIndex}
