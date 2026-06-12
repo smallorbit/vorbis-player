@@ -8,7 +8,7 @@ Vorbis Player SHALL maintain an ordered queue of provider-neutral tracks that ca
 
 ### Requirement: Loading a Collection
 
-Loading a collection SHALL replace the queue with the collection's tracks, reset the current-track index to the start, and begin playback from the first track.
+Loading a collection SHALL replace the queue with the collection's tracks, reset the current-track index to the start, and begin playback from the first track. When a new load begins before an earlier one completes, the newest load SHALL win: the superseded load SHALL be cancelled and SHALL NOT alter the queue, playback, or the active provider.
 
 #### Scenario: Loading a collection with tracks
 
@@ -21,6 +21,13 @@ Loading a collection SHALL replace the queue with the collection's tracks, reset
 
 - **WHEN** the user loads a collection that returns no tracks
 - **THEN** the queue remains empty and playback does not begin
+
+#### Scenario: Newer load supersedes an in-flight load
+
+- **WHEN** the user loads collection B while collection A is still loading
+- **THEN** the queue and playback reflect collection B
+- **AND** collection A's late-arriving results are discarded without altering the queue, playback, or the active provider
+- **AND** collection A's in-flight catalog requests are cancelled
 
 ### Requirement: Adding to the Queue
 
