@@ -161,12 +161,6 @@ export const ResetButton = styled.button`
   }
 `;
 
-export const OptionButtonGroup = styled.div`
-  display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-`;
-
 export const ProviderRow = styled.div`
   display: flex;
   align-items: center;
@@ -272,50 +266,3 @@ export const CacheCancelButton = styled.button`
   }
 `;
 
-type OptionButtonVariant = 'accent' | 'neutral';
-
-// $variant mirrors the Switch variant pattern in src/components/ui/switch.tsx.
-export const OptionButton = styled.button<{ $isActive: boolean; $variant?: OptionButtonVariant | undefined }>`
-  background: ${({ $isActive, $variant = 'neutral', theme }) =>
-    $isActive
-      ? $variant === 'accent'
-        ? 'var(--accent-color)'
-        : 'hsl(var(--primary))'
-      : theme.colors.muted.background};
-  border: 1px solid ${({ $isActive, $variant = 'neutral', theme }) =>
-    $isActive
-      ? $variant === 'accent'
-        ? 'var(--accent-color)'
-        : 'hsl(var(--primary))'
-      : theme.colors.border};
-  color: ${({ $isActive, $variant = 'neutral', theme }) =>
-    $isActive
-      ? $variant === 'accent'
-        ? 'var(--accent-contrast-color)'
-        : 'hsl(var(--primary-foreground))'
-      : theme.colors.muted.foreground};
-  padding: 0.375rem 0.75rem;
-  border-radius: ${({ theme }) => theme.borderRadius.sm};
-  cursor: pointer;
-  font-size: 0.75rem;
-  font-weight: ${({ theme }) => theme.fontWeight.medium};
-  transition: all ${({ theme }) => theme.transitions.fast} ease;
-  min-width: 60px;
-
-  &:hover {
-    background: ${({ $isActive, $variant = 'neutral' }) =>
-      $isActive
-        ? $variant === 'accent'
-          ? 'color-mix(in srgb, var(--accent-color) 87%, transparent)'
-          : 'hsl(var(--primary) / 0.87)'
-        : 'hsl(var(--muted))'};
-    border-color: hsl(var(--ring));
-    color: ${({ $isActive, $variant = 'neutral', theme }) =>
-      $isActive
-        ? $variant === 'accent'
-          ? 'var(--accent-contrast-color)'
-          : 'hsl(var(--primary-foreground))'
-        : theme.colors.white};
-    transform: translateY(-1px);
-  }
-`;
