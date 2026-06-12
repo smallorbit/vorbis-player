@@ -64,13 +64,19 @@ Removing a queued track SHALL preserve the playing track's position. Removing th
 
 ### Requirement: Reordering the Queue
 
-Reordering the queue SHALL move a track from one position to another and SHALL keep the currently playing track's index aligned with its new position.
+Reordering the queue SHALL move a track from one position to another and SHALL keep the currently playing track's index aligned with its new position. Reorder operations SHALL identify tracks by their immutable track id, so an asynchronous metadata update (such as a title enrichment) cannot invalidate an in-progress drag.
 
 #### Scenario: Reordering relative to the current track
 
 - **WHEN** a track is moved to a new position in the queue
 - **THEN** the track order reflects the move
 - **AND** the current-track index now points to the same track that was playing before the reorder
+
+#### Scenario: Track metadata updates during a drag
+
+- **WHEN** a queued track's display name updates while the user is dragging a queue row
+- **THEN** the drag gesture is not interrupted
+- **AND** dropping the row still applies the reorder
 
 ### Requirement: Shuffle Mode
 
