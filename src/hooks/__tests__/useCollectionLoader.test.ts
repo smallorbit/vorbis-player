@@ -1176,4 +1176,65 @@ describe('useCollectionLoader', () => {
     const lastApplied = mockSetTracks.mock.calls.at(-1)?.[0] as MediaTrack[];
     expect(lastApplied.map(t => t.id)).toEqual(['B1']);
   });
+
+  it('a stale unified liked load does not switch the active provider after the newer load wins', async () => {
+    // #given — active provider is spotify; liked load A is slow and would return a dropbox track as
+    // the first result (which, if non-stale, would call setActiveProviderId('dropbox')); load B is a
+    // fast spotify collection that wins before A resolves
+    const slowDeferred = makeDeferred<MediaTrack[]>();
+    const dropboxLikedTrack: MediaTrack = {
+      id: 'D1',
+      provider: 'dropbox',
+      playbackRef: { provider: 'dropbox', ref: '/music/d1.ogg' },
+      name: 'Track D1',
+      artists: 'Artist',
+      album: 'Album',
+      durationMs: 180000,
+      addedAt: 2000,
+      genres: [],
+    };
+    const fastSpotifyTracks = [makeMediaTrack('S1')];
+
+    const slowDropboxCatalog = { listTracks: vi.fn().mockReturnValue(slowDeferred.promise) };
+    const fastSpotifyCatalog = { listTracks: vi.fn().mockResolvedValue(fastSpotifyTracks) };
+
+    mockGetDescriptor.mockImplementation((id: string) => {
+      if (id === 'spotify') {
+        return { id: 'spotify', catalog: fastSpotifyCatalog, capabilities: { hasLikedCollection: false }, playback: { pause: vi.fn() } };
+      }
+      return { id: 'dropbox', catalog: slowDropboxCatalog, capabilities: { hasLikedCollection: true }, playback: { pause: vi.fn() } };
+    });
+    mockActiveDescriptor = { id: 'spotify', catalog: fastSpotifyCatalog, playback: { pause: vi.fn().mockResolvedValue(undefined) } };
+
+    const { result } = renderHook(() =>
+      useCollectionLoader({
+        trackOps: { setError: mockSetError, setIsLoading: mockSetIsLoading, setSelectedPlaylistId: mockSetSelectedPlaylistId, setTracks: mockSetTracks, setOriginalTracks: mockSetOriginalTracks, setCurrentTrackIndex: mockSetCurrentTrackIndex, mediaTracksRef },
+        activeDescriptor: mockActiveDescriptor,
+        getDescriptor: mockGetDescriptor,
+        setActiveProviderId: mockSetActiveProviderId,
+        connectedProviderIds: ['spotify', 'dropbox'],
+        shuffleEnabled: false,
+        isUnifiedLikedActive: true,
+        drivingProviderRef,
+        playTrack: mockPlayTrack,
+        spotifyHandlePlaylistSelect: mockSpotifyHandlePlaylistSelect,
+        stopRadioBase: mockStopRadioBase,
+        record: mockRecord,
+        radioStateIsActive: false,
+      })
+    );
+
+    // #when — start slow unified liked load A, then fast spotify load B which wins first
+    await act(async () => {
+      const slowLoad = result.current.loadCollection(LIKED_SONGS_ID);
+      await result.current.loadCollection('playlist_S', 'spotify');
+      // now resolve the stale liked load A — its dropbox track would switch the active provider
+      // if the stale guard were absent
+      slowDeferred.resolve([dropboxLikedTrack]);
+      await slowLoad;
+    });
+
+    // #then — the stale liked load must not have switched the active provider to dropbox
+    expect(mockSetActiveProviderId).not.toHaveBeenCalledWith('dropbox');
+  });
 });
