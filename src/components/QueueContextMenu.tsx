@@ -2,6 +2,11 @@ import React, { useCallback } from 'react';
 import styled from 'styled-components';
 import { theme } from '@/styles/theme';
 import { Popover, PopoverAnchor, PopoverContent } from '@/components/ui/popover';
+import {
+  MenuItemButton,
+  MenuRoot,
+  VirtualAnchor,
+} from './LibraryRoute/contextMenu/LibraryContextMenu.styled';
 
 interface ContextMenuOption {
   label: string;
@@ -17,59 +22,20 @@ interface QueueContextMenuProps {
   onClose: () => void;
 }
 
-const VirtualAnchor = styled.div`
-  position: fixed;
-  width: 0;
-  height: 0;
-  pointer-events: none;
-`;
-
-const MenuRoot = styled.div`
-  display: flex;
-  flex-direction: column;
-  min-width: 180px;
-  padding: ${theme.spacing.xs};
-  gap: 1px;
-`;
-
-const MenuItemButton = styled.button<{ $destructive?: boolean | undefined }>`
+const QueueMenuItemButton = styled(MenuItemButton)`
   display: flex;
   align-items: center;
   gap: 0.625rem;
-  width: 100%;
-  text-align: left;
-  background: transparent;
-  border: none;
-  padding: ${theme.spacing.sm} ${theme.spacing.lg};
-  font-size: ${theme.fontSize.sm};
-  font-weight: ${theme.fontWeight.medium};
-  color: ${({ $destructive }) =>
-    $destructive ? theme.colors.error : theme.colors.foreground};
-  border-radius: ${theme.borderRadius.lg};
-  cursor: pointer;
   white-space: nowrap;
-  transition: background ${theme.transitions.fast};
-
-  &:hover:not(:disabled) {
-    background: ${theme.colors.control.background};
-  }
-
-  &:active:not(:disabled) {
-    background: ${theme.colors.control.backgroundHover};
-  }
-
-  &:focus-visible {
-    background: ${theme.colors.control.background};
-    outline: 2px solid rgba(255, 255, 255, 0.6);
-    outline-offset: -2px;
-  }
 
   svg {
     flex-shrink: 0;
     width: 16px;
     height: 16px;
-    color: ${({ $destructive }) =>
-      $destructive ? theme.colors.error : theme.colors.muted.foreground};
+    color: ${({ $variant }) =>
+      $variant === 'destructive'
+        ? theme.colors.menu.destructiveText
+        : theme.colors.muted.foreground};
   }
 `;
 
@@ -119,11 +85,11 @@ export function QueueContextMenu({ x, y, options, onClose }: QueueContextMenuPro
       >
         <MenuRoot role="menu" aria-label="Queue track actions" onKeyDown={handleMenuKeyDown}>
           {options.map((option, index) => (
-            <MenuItemButton
+            <QueueMenuItemButton
               key={index}
               type="button"
               role="menuitem"
-              $destructive={option.destructive}
+              $variant={option.destructive ? 'destructive' : 'default'}
               onClick={() => {
                 option.onClick();
                 onClose();
@@ -131,7 +97,7 @@ export function QueueContextMenu({ x, y, options, onClose }: QueueContextMenuPro
             >
               {option.icon}
               {option.label}
-            </MenuItemButton>
+            </QueueMenuItemButton>
           ))}
         </MenuRoot>
       </PopoverContent>
