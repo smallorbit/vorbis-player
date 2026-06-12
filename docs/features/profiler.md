@@ -41,7 +41,6 @@ Note: `recordContextUpdate` and `recordOperation` are available on the collector
 
 | Profiler ID | Location |
 |---|---|
-| `app-settings-menu` | `AppSettingsMenu/index.tsx` |
 | `PlayerStateRenderer` | `AudioPlayer.tsx` |
 | `PlayerContent` | `AudioPlayer.tsx` |
 | `AccentColorBackground` | `AudioPlayer.tsx` |
