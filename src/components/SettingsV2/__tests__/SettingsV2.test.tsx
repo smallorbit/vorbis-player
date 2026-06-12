@@ -5,12 +5,7 @@ import { ThemeProvider } from 'styled-components';
 import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { theme } from '@/styles/theme';
 
-const mockUseUiV2 = vi.fn<[], boolean>();
 const mockUsePlayerSizingContext = vi.fn<[], { isMobile: boolean }>();
-
-vi.mock('@/hooks/useUiV2', () => ({
-  useUiV2: () => mockUseUiV2(),
-}));
 
 vi.mock('@/contexts/PlayerSizingContext', () => ({
   usePlayerSizingContext: () => mockUsePlayerSizingContext(),
@@ -39,7 +34,6 @@ function setSearch(search: string): void {
 describe('SettingsV2', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockUseUiV2.mockReturnValue(true);
     mockUsePlayerSizingContext.mockReturnValue({ isMobile: false });
     setSearch('');
   });
@@ -48,24 +42,8 @@ describe('SettingsV2', () => {
     setSearch('');
   });
 
-  describe('feature gate', () => {
-    it('renders nothing when useUiV2 is false', () => {
-      // #given
-      mockUseUiV2.mockReturnValue(false);
-
-      // #when
-      const { container } = render(
-        <Wrapper>
-          <SettingsV2 isOpen={true} onClose={vi.fn()} />
-        </Wrapper>,
-      );
-
-      // #then
-      expect(container.querySelector('[data-testid="settings-v2-desktop"]')).toBeNull();
-      expect(container.querySelector('[data-testid="settings-v2-mobile"]')).toBeNull();
-    });
-
-    it('renders nothing when useUiV2 is true but isOpen is false', () => {
+  describe('closed state', () => {
+    it('renders nothing when isOpen is false', () => {
       // #given + #when
       const { container } = render(
         <Wrapper>
@@ -79,7 +57,7 @@ describe('SettingsV2', () => {
   });
 
   describe('desktop layout', () => {
-    it('renders the desktop shell when v2 is on, isOpen is true, and viewport is desktop', () => {
+    it('renders the desktop shell when isOpen is true and viewport is desktop', () => {
       // #given + #when
       render(
         <Wrapper>

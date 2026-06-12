@@ -48,7 +48,7 @@ describe('useSettingsUrl', () => {
 
   it('reads the settings param when surrounded by other params', () => {
     // #given
-    setSearch('?ui=v2&playlist=abc123&settings=appearance');
+    setSearch('?provider=mock&playlist=abc123&settings=appearance');
 
     // #when
     const { result } = renderHook(() => useSettingsUrl());
@@ -146,7 +146,7 @@ describe('useSettingsUrl', () => {
    * AudioPlayer.tsx:395 runs `window.history.replaceState({}, '', '/')` to
    * clean up the `?playlist=` param after auto-selecting a collection from a
    * deep link. That call replaces the ENTIRE URL with `/`, stripping every
-   * query param — including `?settings=` and `?ui=v2`.
+   * query param — including `?settings=` and `?provider=`.
    *
    * This test documents that invariant: after the AudioPlayer cleanup fires,
    * the hook correctly reflects the wiped state rather than serving a stale
@@ -155,7 +155,7 @@ describe('useSettingsUrl', () => {
    */
   it('multi-param: AudioPlayer replaceState cleanup strips all params including settings', () => {
     // #given — URL has multiple params including settings and playlist
-    setSearch('?ui=v2&playlist=spotify:playlist:abc&settings=appearance');
+    setSearch('?provider=mock&playlist=spotify:playlist:abc&settings=appearance');
     const { result } = renderHook(() => useSettingsUrl());
     expect(result.current[0]).toBe('appearance');
 
@@ -173,19 +173,19 @@ describe('useSettingsUrl', () => {
   });
 
   it('navigate preserves existing non-settings params when setting a section', () => {
-    // #given — URL already has a ?ui=v2 param
-    setSearch('?ui=v2');
+    // #given — URL already has a ?provider= param
+    setSearch('?provider=mock');
     const { result } = renderHook(() => useSettingsUrl());
 
     // #when — navigate adds the settings param
     act(() => {
-      setSearch('?ui=v2&settings=appearance');
+      setSearch('?provider=mock&settings=appearance');
       result.current[1]('appearance');
     });
 
-    // #then — both params are present; settings was appended, not replacing ui
+    // #then — both params are present; settings was appended, not replacing provider
     expect(result.current[0]).toBe('appearance');
-    expect(window.location.search).toContain('ui=v2');
+    expect(window.location.search).toContain('provider=mock');
     expect(window.location.search).toContain('settings=appearance');
   });
 

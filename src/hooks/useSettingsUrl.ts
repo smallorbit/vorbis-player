@@ -17,8 +17,7 @@ import { useEffect, useState } from 'react';
  * Call `window.dispatchEvent(new PopStateEvent('popstate'))` after any
  * programmatic `pushState`/`replaceState` mutation to keep the hook in sync.
  *
- * SSR-safe: returns `null` during a render where `window` is undefined
- * (mirrors `useUiV2.ts:16` structure).
+ * SSR-safe: returns `null` during a render where `window` is undefined.
  */
 export function useSettingsUrl(): [string | null, (section: string | null) => void] {
   const [section, setSection] = useState<string | null>(() => readSection());

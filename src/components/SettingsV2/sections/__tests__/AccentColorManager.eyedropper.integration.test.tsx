@@ -42,7 +42,6 @@ const mockCurrentTrack: MediaTrack = {
   image: 'https://example.com/image.jpg',
 };
 
-vi.mock('@/hooks/useUiV2', () => ({ useUiV2: () => true }));
 vi.mock('@/contexts/PlayerSizingContext', () => ({
   usePlayerSizingContext: () => ({ isMobile: false }),
 }));
