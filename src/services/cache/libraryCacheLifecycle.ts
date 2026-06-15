@@ -44,6 +44,10 @@ export function isFallback(): boolean {
   return fallbackMode;
 }
 
+export function enterFallback(): void {
+  fallbackMode = true;
+}
+
 export function getFallbackMap(storeName: string): Map<string, unknown> {
   const store = fallbackStores[storeName];
   if (!store) throw new Error(`[libraryCache] Unknown store: ${storeName}`);
