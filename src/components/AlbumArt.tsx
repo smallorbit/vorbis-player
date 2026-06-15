@@ -255,6 +255,7 @@ const AlbumArt: React.FC<AlbumArtProps> = memo(({ currentTrack = null, accentCol
       cancelled = true;
       image.onload = null;
       image.onerror = null;
+      setIsProcessing(false);
     };
   }, [currentTrack, accentColor, processImageWithWorker]);
 
