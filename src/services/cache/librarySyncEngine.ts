@@ -73,7 +73,8 @@ export class SpotifyLibrarySyncEngine {
 
   /** Start the background polling loop and perform initial load. */
   async start(intervalMs?: number): Promise<void> {
-    if (this.intervalId ?? this.startPromise) return this.startPromise ?? undefined;
+    if (this.intervalId) return;
+    if (this.startPromise) return this.startPromise;
 
     this.startPromise = (async () => {
       this.pollIntervalMs = intervalMs ?? DEFAULT_POLL_INTERVAL_MS;
@@ -93,6 +94,7 @@ export class SpotifyLibrarySyncEngine {
 
   /** Stop polling and cancel any in-flight requests. */
   stop(): void {
+    this.startPromise = null;
     if (this.intervalId) {
       clearInterval(this.intervalId);
       this.intervalId = null;
