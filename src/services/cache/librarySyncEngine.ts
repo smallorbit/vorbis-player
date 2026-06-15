@@ -42,6 +42,7 @@ const OPTIMISTIC_GRACE_MS = 30 * 1000;
 export class SpotifyLibrarySyncEngine {
   readonly providerId = 'spotify' as const;
   private intervalId: ReturnType<typeof setInterval> | null = null;
+  private startPromise: Promise<void> | null = null;
   private listeners = new Set<SyncListener>();
   private abortController: AbortController | null = null;
   private pollIntervalMs = DEFAULT_POLL_INTERVAL_MS;
@@ -72,16 +73,22 @@ export class SpotifyLibrarySyncEngine {
 
   /** Start the background polling loop and perform initial load. */
   async start(intervalMs?: number): Promise<void> {
-    if (this.intervalId) return;
+    if (this.intervalId ?? this.startPromise) return this.startPromise ?? undefined;
 
-    this.pollIntervalMs = intervalMs ?? DEFAULT_POLL_INTERVAL_MS;
+    this.startPromise = (async () => {
+      this.pollIntervalMs = intervalMs ?? DEFAULT_POLL_INTERVAL_MS;
 
-    if (typeof document !== 'undefined') {
-      document.addEventListener('visibilitychange', this.handleVisibilityChange);
-    }
+      if (typeof document !== 'undefined') {
+        document.addEventListener('visibilitychange', this.handleVisibilityChange);
+      }
 
-    await this.initialLoad();
-    this.startPollingInterval();
+      await this.initialLoad();
+      this.startPollingInterval();
+    })().finally(() => {
+      this.startPromise = null;
+    });
+
+    return this.startPromise;
   }
 
   /** Stop polling and cancel any in-flight requests. */
