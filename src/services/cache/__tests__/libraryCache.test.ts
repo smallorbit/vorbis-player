@@ -472,4 +472,96 @@ describe('libraryCache', () => {
       vi.mocked(indexedDB.open).mockImplementation(originalOpen);
     });
   });
+
+  describe('runtime write-path IDB failure', () => {
+    /**
+     * Helper: after initCache succeeds, mock IDBDatabase.prototype.transaction so
+     * that readwrite transactions throw, simulating a QuotaExceededError or closed
+     * connection. readonly transactions are left intact so beforeEach/afterEach can
+     * still use clearAll and close without hanging.
+     */
+    function mockWriteTransactionFailure(db: IDBDatabase): () => void {
+      const original = db.transaction.bind(db);
+      const spy = vi.spyOn(db, 'transaction').mockImplementation(
+        (storeNames: string | string[], mode?: IDBTransactionMode) => {
+          if (mode === 'readwrite') {
+            throw new DOMException('QuotaExceededError', 'QuotaExceededError');
+          }
+          return original(storeNames, mode);
+        },
+      );
+      return () => spy.mockRestore();
+    }
+
+    it('should flip to fallback mode when a put fails at runtime', async () => {
+      // #given — IDB opens successfully, then readwrite transactions start failing
+      await initCache();
+      expect(_testing.fallbackMode).toBe(false);
+      const restore = mockWriteTransactionFailure(_testing.db!);
+
+      // #when — write fails at runtime (IDB was healthy at init)
+      await putPlaylist(makePlaylist('p1', 'Fallback Playlist'));
+
+      // #then — fallback mode is now active
+      expect(_testing.fallbackMode).toBe(true);
+
+      restore();
+    });
+
+    it('should serve the written value from the in-memory map after a runtime put failure', async () => {
+      // #given — IDB opens, then readwrite transactions start throwing
+      await initCache();
+      expect(_testing.fallbackMode).toBe(false);
+      const restore = mockWriteTransactionFailure(_testing.db!);
+
+      // #when — write fails at runtime; the value lands in the fallback Map
+      await putPlaylist(makePlaylist('p1', 'Quota Playlist'));
+
+      // #then — fallback mode flipped and the subsequent read returns the in-memory value,
+      //          not stale IDB data
+      expect(_testing.fallbackMode).toBe(true);
+      const result = await getAllPlaylists();
+      expect(result).toHaveLength(1);
+      expect(result[0]?.name).toBe('Quota Playlist');
+
+      restore();
+    });
+
+    it('should flip to fallback mode when a putAll fails at runtime', async () => {
+      // #given — IDB opens successfully, then readwrite transactions start throwing
+      await initCache();
+      expect(_testing.fallbackMode).toBe(false);
+      const restore = mockWriteTransactionFailure(_testing.db!);
+
+      // #when — putAll touches multiple items; the entire batch goes to fallback
+      const batch = [makePlaylist('p2', 'Batch A'), makePlaylist('p3', 'Batch B')];
+      await putAllPlaylists(batch);
+
+      // #then
+      expect(_testing.fallbackMode).toBe(true);
+      const result = await getAllPlaylists();
+      expect(result.map((p) => p.id).sort()).toEqual(['p2', 'p3']);
+
+      restore();
+    });
+
+    it('should keep fallback mode true for all subsequent reads after a write failure', async () => {
+      // #given — IDB opens; one write fails
+      await initCache();
+      const restore = mockWriteTransactionFailure(_testing.db!);
+      await putPlaylist(makePlaylist('p1'));
+      restore();
+      expect(_testing.fallbackMode).toBe(true);
+
+      // #when — subsequent reads and writes (IDB transaction mock removed)
+      await putPlaylist(makePlaylist('p2', 'After Failure'));
+      const playlists = await getAllPlaylists();
+      const albums = await getAllAlbums();
+
+      // #then — still in fallback; reads come from the in-memory map, not IDB
+      expect(_testing.fallbackMode).toBe(true);
+      expect(playlists.map((p) => p.id).sort()).toEqual(['p1', 'p2']);
+      expect(albums).toEqual([]);
+    });
+  });
 });
