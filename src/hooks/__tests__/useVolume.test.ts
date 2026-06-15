@@ -202,12 +202,7 @@ describe('useVolume', () => {
   });
 
   it('reapplies current volume (not mount-time value) on cross-provider handoff', () => {
-    // #given - mount with default volume 50, then change to 80
-    vi.mocked(window.localStorage.getItem).mockImplementation((key: string) => {
-      if (key === 'vorbis-player-volume') return '80';
-      return null;
-    });
-
+    // #given - app mounts at default volume 50
     const dropboxSetVolume = vi.fn().mockResolvedValue(undefined);
     const dropboxDescriptor = makeProviderDescriptor({
       id: 'dropbox',
@@ -231,19 +226,68 @@ describe('useVolume', () => {
       id === 'dropbox' ? dropboxDescriptor : undefined
     );
 
-    // activeDescriptor is spotify; currentTrackProvider starts as spotify
-    const { rerender } = renderHook(
+    const { result, rerender } = renderHook(
       ({ provider }: { provider: 'spotify' | 'dropbox' }) => useVolume(provider),
       { wrapper: ProviderWrapper, initialProps: { provider: 'spotify' as const } }
     );
+
+    // #given - user drags volume to 80 mid-session (after mount)
+    act(() => {
+      result.current.setVolumeLevel(80);
+    });
 
     vi.clearAllMocks();
 
     // #when - queue advances from Spotify to Dropbox (cross-provider handoff)
     rerender({ provider: 'dropbox' });
 
-    // #then - Dropbox playback receives the current volume (80), not the mount-time value
+    // #then - Dropbox playback receives the current volume (80), not the mount-time value (50)
     expect(dropboxSetVolume).toHaveBeenCalledWith(0.8); // 80 / 100
     expect(dropboxSetVolume).not.toHaveBeenCalledWith(0.5); // mount-time 50 / 100 must not appear
+  });
+
+  it('stays muted on cross-provider handoff', () => {
+    // #given - app mounts at default volume 50, user mutes
+    const dropboxSetVolume = vi.fn().mockResolvedValue(undefined);
+    const dropboxDescriptor = makeProviderDescriptor({
+      id: 'dropbox',
+      playback: {
+        providerId: 'dropbox',
+        initialize: vi.fn().mockResolvedValue(undefined),
+        playTrack: vi.fn().mockResolvedValue(undefined),
+        pause: vi.fn().mockResolvedValue(undefined),
+        resume: vi.fn().mockResolvedValue(undefined),
+        seek: vi.fn().mockResolvedValue(undefined),
+        next: vi.fn().mockResolvedValue(undefined),
+        previous: vi.fn().mockResolvedValue(undefined),
+        setVolume: dropboxSetVolume,
+        getState: vi.fn().mockResolvedValue(null),
+        subscribe: vi.fn().mockReturnValue(vi.fn()),
+        getLastPlayTime: vi.fn().mockReturnValue(Date.now()),
+      },
+    });
+
+    vi.mocked(providerRegistry.get).mockImplementation((id) =>
+      id === 'dropbox' ? dropboxDescriptor : undefined
+    );
+
+    const { result, rerender } = renderHook(
+      ({ provider }: { provider: 'spotify' | 'dropbox' }) => useVolume(provider),
+      { wrapper: ProviderWrapper, initialProps: { provider: 'spotify' as const } }
+    );
+
+    // #given - user mutes mid-session
+    act(() => {
+      result.current.handleMuteToggle();
+    });
+
+    vi.clearAllMocks();
+
+    // #when - queue advances from Spotify to Dropbox (cross-provider handoff)
+    rerender({ provider: 'dropbox' });
+
+    // #then - Dropbox playback receives 0 (muted), not the underlying volume
+    expect(dropboxSetVolume).toHaveBeenCalledWith(0);
+    expect(result.current.isMuted).toBe(true);
   });
 });
