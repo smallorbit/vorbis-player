@@ -62,7 +62,7 @@ const ProviderOption = styled.button<{ $active: boolean }>`
   cursor: pointer;
   transition: all ${theme.transitions.fast};
   border: 1px solid ${({ $active }) => $active ? 'rgba(255, 255, 255, 0.5)' : theme.colors.control.border};
-  background: ${({ $active }) => $active ? 'rgba(255, 255, 255, 0.12)' : 'transparent'};
+  background: ${({ $active }) => $active ? theme.colors.borderSubtle : 'transparent'};
   color: ${({ $active }) => $active ? theme.colors.white : theme.colors.gray[400]};
 
   &:hover {
@@ -72,7 +72,7 @@ const ProviderOption = styled.button<{ $active: boolean }>`
 
 const ErrorText = styled.div`
   font-size: ${theme.fontSize.xs};
-  color: #ef4444;
+  color: ${theme.colors.error};
   line-height: 1.4;
 `;
 

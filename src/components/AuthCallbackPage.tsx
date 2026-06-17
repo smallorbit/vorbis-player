@@ -23,7 +23,7 @@ const Checkmark = styled.div`
 `;
 
 const Message = styled.p`
-  font-size: 1.1rem;
+  font-size:  ${({ theme }) => theme.fontSize.base};
   opacity: 0.8;
 `;
 

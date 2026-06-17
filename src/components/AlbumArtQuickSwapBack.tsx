@@ -94,7 +94,7 @@ const CloseButton = styled.button`
   color: rgba(255, 255, 255, 0.8);
   border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 50%;
-  font-size: 18px;
+  font-size: ${theme.fontSize.lg};
   line-height: 1;
   cursor: pointer;
   transition: background 0.2s ease, color 0.2s ease;

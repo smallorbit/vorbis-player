@@ -5,6 +5,7 @@
 
 import type { ProviderDescriptor } from '@/types/providers';
 import type { MediaTrack } from '@/types/domain';
+import { theme } from '@/styles/theme';
 import { SpotifyAuthAdapter } from './spotifyAuthAdapter';
 import { SpotifyCatalogAdapter } from './spotifyCatalogAdapter';
 import { SpotifyPlaybackAdapter } from './spotifyPlaybackAdapter';
@@ -20,7 +21,7 @@ import {
 const spotifyDescriptor: ProviderDescriptor = {
   id: 'spotify',
   name: 'Spotify',
-  color: '#1db954',
+  color: theme.colors.spotify,
   icon: SpotifyIcon,
   subscriptionNote: 'Requires Spotify Premium.',
   capabilities: {

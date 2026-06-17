@@ -1,4 +1,5 @@
 import type { ProviderDescriptor } from '@/types/providers';
+import { theme } from '@/styles/theme';
 import { SpotifyIcon } from '@/providers/spotify/SpotifyIcon';
 import { DropboxIcon } from '@/providers/dropbox/DropboxIcon';
 import { providerRegistry } from '@/providers/registry';
@@ -44,7 +45,7 @@ const spotify = createMockProvider(
   {
     id: 'spotify',
     name: 'Spotify',
-    color: '#1db954',
+    color: theme.colors.spotify,
     icon: SpotifyIcon,
     subscriptionNote: 'Requires Spotify Premium.',
     capabilities: {
@@ -65,7 +66,7 @@ const dropbox = createMockProvider(
   {
     id: 'dropbox',
     name: 'Dropbox',
-    color: '#0061FF',
+    color: theme.colors.dropbox,
     icon: DropboxIcon,
     likesChangedEvent: 'mock-dropbox-likes-changed',
     capabilities: {
