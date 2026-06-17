@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import styled, { keyframes } from 'styled-components';
 import { useProviderContext } from '@/contexts/ProviderContext';
+import { theme } from '@/styles/theme';
 import { flexCenter, flexColumn } from '@/styles/utils';
 import { Switch } from '@/components/ui/switch';
 import type { ProviderId } from '@/types/domain';
@@ -140,14 +141,14 @@ const ConnectButton = styled.button<{ $accentColor: string }>`
   -webkit-appearance: none;
   padding: ${({ theme }) => theme.spacing.xs} ${({ theme }) => theme.spacing.md};
   background: ${({ $accentColor }) => $accentColor};
-  color: #fff;
+  color: ${({ theme }) => theme.colors.white};
   border: none;
   border-radius: ${({ theme }) => theme.borderRadius.lg};
   font-size: ${({ theme }) => theme.fontSize.xs};
   font-weight: ${({ theme }) => theme.fontWeight.semibold};
   cursor: pointer;
   flex-shrink: 0;
-  transition: opacity 0.15s ease;
+  transition: opacity ${({ theme }) => theme.transitions.fast};
 
   &:hover {
     opacity: 0.85;
@@ -164,7 +165,7 @@ const ActionButton = styled.button`
   font-size: ${({ theme }) => theme.fontSize.base};
   font-weight: ${({ theme }) => theme.fontWeight.semibold};
   cursor: pointer;
-  transition: opacity 0.15s ease;
+  transition: opacity ${({ theme }) => theme.transitions.fast};
 
   &:hover {
     opacity: 0.9;
@@ -191,8 +192,8 @@ const BrowseLibraryLink = styled.button`
 `;
 
 const PROVIDER_META: Record<ProviderId, { icon: string; accentColor: string; note: string }> = {
-  spotify: { icon: '\u266B', accentColor: '#1db954', note: 'Requires Spotify Premium' },
-  dropbox: { icon: '\uD83D\uDCC1', accentColor: '#0061ff', note: 'Play files from your Dropbox' },
+  spotify: { icon: '\u266B', accentColor: theme.colors.spotify, note: 'Requires Spotify Premium' },
+  dropbox: { icon: '\uD83D\uDCC1', accentColor: theme.colors.dropbox, note: 'Play files from your Dropbox' },
 };
 
 const Wrapper = styled.div`
@@ -254,7 +255,7 @@ export default function ProviderSetupScreen({ onOpenSettings, onOpenLibrary }: P
           </Subtitle>
           <ProviderGrid>
             {providers.map((descriptor) => {
-              const meta = PROVIDER_META[descriptor.id] ?? { icon: '\u266A', accentColor: '#646cff', note: '' };
+              const meta = PROVIDER_META[descriptor.id] ?? { icon: '\u266A', accentColor: theme.colors.primary, note: '' };
               const isAuthenticated = descriptor.auth.isAuthenticated();
               const isEnabled = enabledProviderIds.includes(descriptor.id);
 
@@ -345,7 +346,7 @@ export default function ProviderSetupScreen({ onOpenSettings, onOpenLibrary }: P
         </Subtitle>
         <ProviderGrid>
           {expiredProviders.map((descriptor) => {
-            const meta = PROVIDER_META[descriptor.id] ?? { icon: '\u266A', accentColor: '#646cff', note: '' };
+            const meta = PROVIDER_META[descriptor.id] ?? { icon: '\u266A', accentColor: theme.colors.primary, note: '' };
             const isAuthenticated = descriptor.auth.isAuthenticated();
             return (
               <ProviderCardContainer

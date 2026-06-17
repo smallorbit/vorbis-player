@@ -6,6 +6,7 @@
  */
 
 import type { ProviderDescriptor } from '@/types/providers';
+import { theme } from '@/styles/theme';
 import { DropboxAuthAdapter } from './dropboxAuthAdapter';
 import { DropboxCatalogAdapter } from './dropboxCatalogAdapter';
 import { DropboxPlaybackAdapter } from './dropboxPlaybackAdapter';
@@ -41,7 +42,7 @@ if (DROPBOX_CLIENT_ID) {
   dropboxDescriptor = {
     id: 'dropbox',
     name: 'Dropbox',
-    color: '#0061FF',
+    color: theme.colors.dropbox,
     icon: DropboxIcon,
     likesChangedEvent: LIKES_CHANGED_EVENT,
     capabilities: {
