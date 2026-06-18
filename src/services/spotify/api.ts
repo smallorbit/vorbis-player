@@ -80,9 +80,9 @@ async function executeApiRequest<T>(
     throw new SpotifyApiError(response.status, response.statusText);
   }
 
-  // TODO(#1589 / #1584): callers' return-type generic `T` should widen to `T | undefined`
+  // TODO: callers' return-type generic `T` should widen to `T | undefined`
   // to honestly model 204/empty-body responses. Ripple touches 7+ files (every caller of
-  // `spotifyApiRequest`), so deferred from the services/ sweep.
+  // `spotifyApiRequest`), so deferred.
   if (response.status === 204) {
     return undefined as T;
   }
