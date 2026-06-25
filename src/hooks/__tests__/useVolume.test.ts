@@ -7,72 +7,14 @@ vi.mock('@/services/spotifyPlayer', () => ({
   },
 }));
 
-vi.mock('@/contexts/ProviderContext', () => ({
-  useProviderContext: vi.fn(),
-  ProviderProvider: ({ children }: { children: React.ReactNode }) => children,
-}));
-
-vi.mock('@/providers/registry', () => ({
-  providerRegistry: {
-    get: vi.fn().mockReturnValue(undefined),
-    getAll: vi.fn().mockReturnValue([]),
-    has: vi.fn().mockReturnValue(false),
-  },
-}));
-
 import { useVolume } from '../useVolume';
 import { spotifyPlayer } from '@/services/spotifyPlayer';
-import { useProviderContext } from '@/contexts/ProviderContext';
-import { providerRegistry } from '@/providers/registry';
 import { ProviderWrapper } from '@/test/providerTestUtils';
-import { makeProviderDescriptor } from '@/test/fixtures';
 
 describe('useVolume', () => {
-  let mockSpotifyDescriptor: ReturnType<typeof makeProviderDescriptor>;
-
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(window.localStorage.getItem).mockReturnValue(null);
-
-    mockSpotifyDescriptor = makeProviderDescriptor({
-      id: 'spotify',
-      playback: {
-        providerId: 'spotify',
-        initialize: vi.fn().mockResolvedValue(undefined),
-        playTrack: vi.fn().mockResolvedValue(undefined),
-        pause: vi.fn().mockResolvedValue(undefined),
-        resume: vi.fn().mockResolvedValue(undefined),
-        seek: vi.fn().mockResolvedValue(undefined),
-        next: vi.fn().mockResolvedValue(undefined),
-        previous: vi.fn().mockResolvedValue(undefined),
-        setVolume: vi.mocked(spotifyPlayer.setVolume),
-        getState: vi.fn().mockResolvedValue(null),
-        subscribe: vi.fn().mockReturnValue(vi.fn()),
-        getLastPlayTime: vi.fn().mockReturnValue(Date.now()),
-      },
-    });
-
-    vi.mocked(useProviderContext).mockReturnValue({
-      chosenProviderId: 'spotify',
-      activeProviderId: 'spotify',
-      activeDescriptor: mockSpotifyDescriptor,
-      setActiveProviderId: vi.fn(),
-      setProviderSwitchInterceptor: vi.fn(),
-      registry: { get: vi.fn(), getAll: vi.fn().mockReturnValue([]), has: vi.fn() },
-      needsProviderSelection: false,
-      enabledProviderIds: ['spotify'],
-      toggleProvider: vi.fn(),
-      isProviderEnabled: vi.fn().mockReturnValue(true),
-      hasMultipleProviders: false,
-      getDescriptor: vi.fn(),
-      connectedProviderIds: ['spotify'],
-      fallthroughNotification: null,
-      dismissFallthroughNotification: vi.fn(),
-      disconnectToast: null,
-      dismissDisconnectToast: vi.fn(),
-    });
-
-    vi.mocked(providerRegistry.get).mockReturnValue(undefined);
   });
 
   it('defaults volume to 50 when localStorage is empty', () => {
@@ -200,9 +142,4 @@ describe('useVolume', () => {
       '80'
     );
   });
-
-  // Cross-provider handoff behavior (live volume/mute applied to the new
-  // provider on switch — bug #1648) is covered with real registry + provider
-  // wiring in useVolume.integration.test.ts, which supersedes the mocked-registry
-  // versions that previously lived here.
 });
