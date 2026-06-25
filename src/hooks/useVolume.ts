@@ -11,7 +11,6 @@ export const useVolume = (currentTrackProvider?: ProviderId) => {
   const [volume, setVolume] = useLocalStorage<number>(STORAGE_KEYS.VOLUME, DEFAULT_VOLUME);
   const [isMuted, setIsMuted] = useLocalStorage<boolean>(STORAGE_KEYS.MUTED, false);
   const previousVolumeRef = useRef(volume > 0 ? volume : DEFAULT_VOLUME);
-  const initialVolumeRef = useRef(isMuted ? 0 : volume / 100);
 
   const { activeDescriptor } = useProviderContext();
 
@@ -24,8 +23,8 @@ export const useVolume = (currentTrackProvider?: ProviderId) => {
   }, [activeDescriptor, currentTrackProvider]);
 
   useEffect(() => {
-    getPlayingPlayback()?.setVolume(initialVolumeRef.current);
-  }, [getPlayingPlayback]);
+    getPlayingPlayback()?.setVolume(isMuted ? 0 : volume / 100);
+  }, [getPlayingPlayback, isMuted, volume]);
 
   const handleMuteToggle = useCallback(() => {
     setIsMuted((prev) => {
