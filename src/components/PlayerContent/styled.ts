@@ -162,12 +162,12 @@ export const ZenTrackInfo = styled.div.withConfig({
   grid-template-rows: ${({ $zenMode }) => $zenMode ? '1fr' : '0fr'};
   text-align: center;
   pointer-events: none;
-  margin-top: ${({ theme }) => theme.spacing.sm};
+  margin-top: ${({ $zenMode, theme }) => $zenMode ? theme.spacing.xl : theme.spacing.sm};
   padding: 0 ${({ theme }) => theme.spacing.md};
   opacity: ${({ $zenMode }) => $zenMode ? 1 : 0};
   transition: ${({ $zenMode }) => $zenMode
-    ? `opacity ${ZEN_TRACK_INFO_ENTER_OPACITY_DURATION}ms ease ${ZEN_TRACK_INFO_ENTER_OPACITY_DELAY}ms, grid-template-rows ${ZEN_TRACK_INFO_ENTER_HEIGHT_DURATION}ms ease ${ZEN_TRACK_INFO_ENTER_HEIGHT_DELAY}ms`
-    : `opacity ${ZEN_TRACK_INFO_EXIT_DURATION}ms ease, grid-template-rows ${ZEN_TRACK_INFO_EXIT_DURATION}ms ease`
+    ? `opacity ${ZEN_TRACK_INFO_ENTER_OPACITY_DURATION}ms ease ${ZEN_TRACK_INFO_ENTER_OPACITY_DELAY}ms, grid-template-rows ${ZEN_TRACK_INFO_ENTER_HEIGHT_DURATION}ms ease ${ZEN_TRACK_INFO_ENTER_HEIGHT_DELAY}ms, margin-top ${ZEN_TRACK_INFO_ENTER_HEIGHT_DURATION}ms ease ${ZEN_TRACK_INFO_ENTER_HEIGHT_DELAY}ms`
+    : `opacity ${ZEN_TRACK_INFO_EXIT_DURATION}ms ease, grid-template-rows ${ZEN_TRACK_INFO_EXIT_DURATION}ms ease, margin-top ${ZEN_TRACK_INFO_EXIT_DURATION}ms ease`
   };
 `;
 
