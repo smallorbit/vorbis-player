@@ -1,6 +1,6 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { BottomBarContainer, BottomBarInner, ZenGripPill, ZenTriggerZone, ZenBackdrop } from './styled';
+import { BottomBarContainer, BottomBarInner, ZenGripPill, ZenTriggerZone, ZenBackdrop, BOTTOM_BAR_HEIGHT } from './styled';
 import { ControlButton } from '../controls/styled';
 import VolumeControl from '../controls/VolumeControl';
 import { usePlayerSizingContext } from '@/contexts/PlayerSizingContext';
@@ -145,6 +145,29 @@ const BottomBar = React.memo(function BottomBar() {
       zenExitingTimerRef.current = null;
     }
   }, []);
+
+  /*
+   * Publish the vertical space the bar occupies as `--vp-toast-offset` on :root so toasts
+   * (mounted at the app root, see ui/sonner.tsx) can sit above the bar while it is visible
+   * and drop near the bottom edge when it is not. The bar is "visible" when it is mounted
+   * (`!hidden`) and not slid away by zen auto-hide; in normal mode `barVisible` is forced
+   * true so this reduces to `!hidden`.
+   */
+  const barOccupiesSpace = !hidden && (barVisible || !zenModeEnabled);
+  useEffect(() => {
+    const root = document.documentElement;
+    if (barOccupiesSpace) {
+      root.style.setProperty(
+        '--vp-toast-offset',
+        `calc(${BOTTOM_BAR_HEIGHT}px + env(safe-area-inset-bottom, 0px) + 12px)`,
+      );
+    } else {
+      root.style.removeProperty('--vp-toast-offset');
+    }
+    return () => {
+      root.style.removeProperty('--vp-toast-offset');
+    };
+  }, [barOccupiesSpace]);
 
   if (hidden) return null;
 
