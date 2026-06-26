@@ -196,9 +196,11 @@ const AlbumArt: React.FC<AlbumArtProps> = memo(({ currentTrack = null, accentCol
 
   const processImageWithWorker = useCallback(async (
     imageElement: HTMLImageElement,
-    accentColorRgb: [number, number, number]
+    accentColorRgb: [number, number, number],
+    isCancelled: () => boolean
   ) => {
     try {
+      if (isCancelled()) return;
       setIsProcessing(true);
       const canvas = document.createElement('canvas');
       canvas.width = imageElement.width;
@@ -210,6 +212,7 @@ const AlbumArt: React.FC<AlbumArtProps> = memo(({ currentTrack = null, accentCol
       ctx.drawImage(imageElement, 0, 0);
       const imageData = ctx.getImageData(0, 0, imageElement.width, imageElement.height);
       const processedImageData = await processImage(imageData, accentColorRgb, 40);
+      if (isCancelled()) return;
       ctx.putImageData(processedImageData, 0, 0);
       setCanvasUrl(canvas.toDataURL());
     } catch (error) {
@@ -217,10 +220,13 @@ const AlbumArt: React.FC<AlbumArtProps> = memo(({ currentTrack = null, accentCol
       if (error instanceof Error && error.message === 'Component unmounted') {
         return;
       }
+      if (isCancelled()) return;
       console.error('Image processing failed:', error);
       setCanvasUrl(null);
     } finally {
-      setIsProcessing(false);
+      if (!isCancelled()) {
+        setIsProcessing(false);
+      }
     }
   }, [processImage]);
 
@@ -229,16 +235,26 @@ const AlbumArt: React.FC<AlbumArtProps> = memo(({ currentTrack = null, accentCol
       setCanvasUrl(null);
       return;
     }
+    let cancelled = false;
+    const isCancelled = () => cancelled;
     const accentColorRgb = hexToRgb(accentColor || '#000000');
     const image = new window.Image();
     image.crossOrigin = 'anonymous';
     image.src = currentTrack.image;
     image.onload = () => {
-      processImageWithWorker(image, accentColorRgb);
+      if (!cancelled) processImageWithWorker(image, accentColorRgb, isCancelled);
     };
     image.onerror = () => {
-      console.error('Failed to load image:', currentTrack.image);
-      setCanvasUrl(null);
+      if (!cancelled) {
+        console.error('Failed to load image:', currentTrack.image);
+        setCanvasUrl(null);
+        setIsProcessing(false);
+      }
+    };
+    return () => {
+      cancelled = true;
+      image.onload = null;
+      image.onerror = null;
       setIsProcessing(false);
     };
   }, [currentTrack, accentColor, processImageWithWorker]);
