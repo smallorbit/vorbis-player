@@ -23,7 +23,7 @@ import {
 } from '@/constants/zenAnimation';
 import type { MediaTrack, ProviderId } from '@/types/domain';
 import type { VisualizerStyle, AlbumArtBounds } from '@/types/visualizer';
-import { FlipInner, ZenTrackInfo, ZenTrackInfoInner, ZenTrackName, ZenTrackArtist } from './styled';
+import { FlipInner, ZenTrackInfo, ZenTrackInfoInner, ZenTrackName, ZenTrackAlbum, ZenTrackArtist } from './styled';
 
 const ZEN_TRACK_INFO_WILL_CHANGE_FALLBACK_MS =
   ZEN_TRACK_INFO_ENTER_OPACITY_DURATION + ZEN_TRACK_INFO_ENTER_OPACITY_DELAY + 100;
@@ -381,6 +381,9 @@ export const AlbumArtSection: React.FC<AlbumArtSectionProps> = React.memo(({
               </ZenProviderBadgeInline>
             )}
           </ZenTrackName>
+          {currentTrack?.album && (
+            <ZenTrackAlbum>{currentTrack.album}</ZenTrackAlbum>
+          )}
           {currentTrack?.artists && (
             <ZenTrackArtist>{currentTrack.artists}</ZenTrackArtist>
           )}
