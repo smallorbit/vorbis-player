@@ -4,6 +4,9 @@ import { TOUCH_TARGET_MIN_PX } from '@/constants/a11y';
 
 export const BOTTOM_BAR_HEIGHT = 60;
 
+/** Gap between the top of the bottom bar and a toast resting above it (issue #1664). */
+export const TOAST_BAR_GAP = 12;
+
 const ZEN_GRIP_PILL_WIDTH = '36px';
 const ZEN_GRIP_PILL_HEIGHT = '4px';
 const ZEN_GRIP_PILL_BOTTOM_OFFSET = '10px';
