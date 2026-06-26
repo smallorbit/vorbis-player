@@ -193,6 +193,19 @@ export const ZenTrackName = styled.div.withConfig({
   width: 100%;
 `;
 
+export const ZenTrackAlbum = styled.div`
+  font-size: ${({ theme }) => theme.fontSize.sm};
+  line-height: 1.4;
+  color: ${({ theme }) => theme.colors.gray[400]};
+  font-weight: ${({ theme }) => theme.fontWeight.medium};
+  letter-spacing: 0.02em;
+  text-shadow: ${({ theme }) => theme.shadows.textSm};
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
+`;
+
 export const ZenTrackArtist = styled.div`
   font-size: ${({ theme }) => theme.fontSize.base};
   line-height: 1.4;
