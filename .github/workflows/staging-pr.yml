@@ -1,0 +1,87 @@
+name: Deploy PR to Staging
+
+# Manually-triggered workflow: rebuild the `staging` branch from `main`,
+# then merge a chosen pull request on top so it can be tested in isolation.
+on:
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: 'Pull request number to merge onto staging'
+        required: true
+        type: string
+
+concurrency:
+  # Only one staging deploy at a time; cancel any in-flight run.
+  group: staging-pr
+  cancel-in-progress: false
+
+jobs:
+  deploy-to-staging:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          # Need full history so we can reset staging and merge the PR.
+          fetch-depth: 0
+          # Persist credentials so the final `git push` is authenticated.
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure git identity
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Resolve PR details
+        id: pr
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.inputs.pr_number }}
+        run: |
+          set -euo pipefail
+          state=$(gh pr view "$PR_NUMBER" --json state --jq '.state')
+          if [ "$state" != "OPEN" ] && [ "$state" != "MERGED" ]; then
+            echo "::error::PR #$PR_NUMBER is in state '$state'; refusing to deploy."
+            exit 1
+          fi
+          headRef=$(gh pr view "$PR_NUMBER" --json headRefName --jq '.headRefName')
+          echo "head_ref=$headRef" >> "$GITHUB_OUTPUT"
+          echo "Deploying PR #$PR_NUMBER ($headRef) to staging."
+
+      - name: Sync staging with main
+        run: |
+          set -euo pipefail
+          git fetch origin main
+          # Rebuild staging from the current tip of main so it is a clean base.
+          git checkout -B staging origin/main
+
+      - name: Merge PR onto staging
+        env:
+          PR_NUMBER: ${{ github.event.inputs.pr_number }}
+        run: |
+          set -euo pipefail
+          # Fetch the PR head commit directly (works even for forks).
+          git fetch origin "pull/$PR_NUMBER/head:pr-$PR_NUMBER"
+          if ! git merge --no-ff "pr-$PR_NUMBER" \
+              -m "Merge PR #$PR_NUMBER onto staging"; then
+            echo "::error::Merge conflict integrating PR #$PR_NUMBER onto staging (rebuilt from main). Resolve conflicts and re-run."
+            git merge --abort || true
+            exit 1
+          fi
+
+      - name: Push staging
+        run: |
+          set -euo pipefail
+          # staging was rebuilt from main, so force the update (with lease for safety).
+          for attempt in 1 2 3 4; do
+            if git push --force-with-lease origin staging; then
+              exit 0
+            fi
+            echo "Push failed (attempt $attempt); retrying..."
+            sleep $((2 ** attempt))
+          done
+          echo "::error::Failed to push staging after multiple attempts."
+          exit 1
