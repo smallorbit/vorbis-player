@@ -199,6 +199,7 @@ export const ZenTrackAlbum = styled.div`
   color: ${({ theme }) => theme.colors.gray[400]};
   font-weight: ${({ theme }) => theme.fontWeight.medium};
   letter-spacing: 0.02em;
+  text-shadow: ${({ theme }) => theme.shadows.textSm};
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
