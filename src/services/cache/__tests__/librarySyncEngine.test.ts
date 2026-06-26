@@ -164,6 +164,48 @@ describe('SpotifyLibrarySyncEngine', () => {
       expect(emittedPlaylists![0].name).toBe('Fresh');
       expect(mockGetUserLibraryInterleaved).toHaveBeenCalledOnce();
     });
+
+    it('should deduplicate concurrent start() calls during cold load', async () => {
+      // #given — make the cold load block until we explicitly unblock it
+      // Create the deferred gate before start() is called so it's available immediately
+      let unblockLoad!: () => void;
+      const gate = new Promise<void>((resolve) => { unblockLoad = resolve; });
+      mockGetUserLibraryInterleaved.mockImplementation(() => gate);
+      mockGetLikedSongsCount.mockResolvedValue(0);
+
+      // #when — two concurrent start() calls while cold load is in flight
+      const p1 = engine.start();
+      const p2 = engine.start();
+
+      // unblock the cold load and wait for both to settle
+      unblockLoad();
+      await Promise.all([p1, p2]);
+
+      // #then — getUserLibraryInterleaved must have been called exactly once
+      expect(mockGetUserLibraryInterleaved).toHaveBeenCalledOnce();
+    });
+
+    it('should allow restart after stop() is called between start cycles', async () => {
+      // #given — use a fresh engine with empty cache for both start cycles
+      mockGetUserLibraryInterleaved.mockImplementation(async (onPlaylists, onAlbums) => {
+        onPlaylists([makePlaylist('p1', 'Cycle1')], true);
+        onAlbums([], true);
+      });
+      mockGetLikedSongsCount.mockResolvedValue(0);
+
+      // Complete the first cycle
+      await engine.start();
+      engine.stop();
+
+      // Clear the cache so the second start() also takes the cold path
+      await cache.clearAll();
+
+      // #when — second start() after stop(); must not be blocked by a stale startPromise
+      await engine.start();
+
+      // #then — cold load ran twice (once per cycle)
+      expect(mockGetUserLibraryInterleaved).toHaveBeenCalledTimes(2);
+    });
   });
 
   describe('change detection', () => {
