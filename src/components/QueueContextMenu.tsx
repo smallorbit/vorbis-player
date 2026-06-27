@@ -1,4 +1,5 @@
 import React, { useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import styled from 'styled-components';
 import { theme } from '@/styles/theme';
 import { Popover, PopoverAnchor, PopoverContent } from '@/components/ui/popover';
@@ -64,7 +65,13 @@ export function QueueContextMenu({ x, y, options, onClose }: QueueContextMenuPro
     }
   }, []);
 
-  return (
+  // Render the Popover (and its position:fixed VirtualAnchor) in a portal to
+  // document.body so it escapes any transform:ed ancestor (e.g. the queue
+  // drawer / bottom sheet, which use transform for their slide animation).
+  // A transform establishes a containing block for fixed-positioned children,
+  // which otherwise shifts the anchor — and the menu Radix pins to it — off
+  // the viewport.
+  return createPortal(
     <Popover open onOpenChange={(open) => { if (!open) onClose(); }}>
       <PopoverAnchor asChild>
         <VirtualAnchor aria-hidden style={anchorStyle} />
@@ -101,6 +108,7 @@ export function QueueContextMenu({ x, y, options, onClose }: QueueContextMenuPro
           ))}
         </MenuRoot>
       </PopoverContent>
-    </Popover>
+    </Popover>,
+    document.body,
   );
 }
