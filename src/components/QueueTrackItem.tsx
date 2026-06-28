@@ -212,6 +212,7 @@ export const SortableQueueItem = memo<QueueItemProps>(({
         ref={itemRef}
         onClick={handleClick}
         onContextMenu={handleContextMenu}
+        data-testid="queue-track-row"
         $isSelected={isSelected}
         {...longPressHandlers}
         {...(isEditMode && onRemove ? { ...attributes, ...listeners } : {})}
@@ -316,6 +317,7 @@ export const SwipeableQueueItem = memo<QueueItemProps>(({
             if (!isEditMode) onSelect(index);
           }}
           onContextMenu={handleContextMenu}
+          data-testid="queue-track-row"
           $isSelected={isSelected}
           {...longPressHandlers}
         >
@@ -385,6 +387,7 @@ export const SwipeableQueueItem = memo<QueueItemProps>(({
             ref={itemRef}
             onClick={() => !isRevealed && !isEditMode && onSelect(index)}
             onContextMenu={handleContextMenu}
+            data-testid="queue-track-row"
             $isSelected={isSelected}
             {...longPressHandlers}
           >
