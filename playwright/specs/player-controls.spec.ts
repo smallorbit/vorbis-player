@@ -3,6 +3,8 @@ import spotifySnapshot from '../fixtures/data/spotify-snapshot.json' with { type
 
 const hasContent = spotifySnapshot.playlists.length > 0;
 
+// Transport controls expose stable aria-labels ("Previous track", "Play"/"Pause",
+// "Next track") — assert those and the behavior behind them, not SVG path data.
 test.describe('Player Controls', () => {
   test.beforeEach(async ({ page }) => {
     test.skip(
@@ -11,42 +13,63 @@ test.describe('Player Controls', () => {
     );
     await page.goto('/');
     await page.locator('[data-testid="library-home"]').waitFor({ state: 'visible', timeout: 30_000 });
-
-    if (hasContent) {
-      await page.locator('[data-testid^="library-card-playlist-"]').first().click();
-      await page.locator('[data-testid="player-track-info-name"]').waitFor({ state: 'visible', timeout: 10_000 });
-    }
+    await page.locator('[data-testid^="library-card-playlist-"]').first().click();
+    await page.locator('[data-testid="player-track-info-name"]').waitFor({ state: 'visible', timeout: 15_000 });
   });
 
-  test('play/pause button is present in the player UI', async ({ page }) => {
-    const playSvg = page.locator('svg path[d="M8 5v14l11-7z"]');
-    const pauseSvg = page.locator('svg path[d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"]');
-    await expect(playSvg.or(pauseSvg).first()).toBeVisible({ timeout: 5000 });
+  test('play/pause button toggles playing state', async ({ page }) => {
+    // The play/pause control's aria-label reflects the state: "Pause" while
+    // playing, "Play" while paused. Clicking it must flip that state.
+    const playPause = page.getByRole('button', { name: /^(Play|Pause)$/ });
+    await expect(playPause).toBeVisible({ timeout: 5000 });
+
+    const before = await playPause.getAttribute('aria-label');
+    await playPause.click();
+    await expect(playPause).not.toHaveAttribute('aria-label', before!, { timeout: 5000 });
+
+    // ...and toggling back returns to the original state.
+    await playPause.click();
+    await expect(playPause).toHaveAttribute('aria-label', before!, { timeout: 5000 });
   });
 
-  test('next track button is present and clickable', async ({ page }) => {
-    const nextButton = page.locator('svg path[d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"]').locator('..');
-    await expect(nextButton).toBeVisible({ timeout: 5000 });
-    await nextButton.click();
+  test('next track button advances to a different track', async ({ page }) => {
+    const trackName = page.locator('[data-testid="player-track-info-name"]');
+    const before = await trackName.textContent();
+
+    await page.getByRole('button', { name: 'Next track' }).click();
+
+    // The displayed track name must change — not merely that the button was clickable.
+    await expect(trackName).not.toHaveText(before ?? '', { timeout: 5000 });
   });
 
-  test('previous track button is present and clickable', async ({ page }) => {
-    const prevButton = page.locator('svg path[d="M6 6h2v12H6zm3.5 6l8.5 6V6z"]').locator('..');
-    await expect(prevButton).toBeVisible({ timeout: 5000 });
-    await prevButton.click();
+  test('previous track returns to the prior track', async ({ page }) => {
+    const trackName = page.locator('[data-testid="player-track-info-name"]');
+    const first = await trackName.textContent();
+
+    // Advance, then go back — the round-trip must land on the original track.
+    await page.getByRole('button', { name: 'Next track' }).click();
+    await expect(trackName).not.toHaveText(first ?? '', { timeout: 5000 });
+
+    await page.getByRole('button', { name: 'Previous track' }).click();
+    await expect(trackName).toHaveText(first ?? '', { timeout: 5000 });
   });
 
-  test('track info displays current track name', async ({ page }) => {
-    if (!hasContent) {
-      test.skip(true, 'Snapshot has no playlists — skipping content-dependent track name test');
-      return;
-    }
-    await expect(page.locator('[data-testid="player-track-info-name"]')).toBeVisible({ timeout: 5000 });
-    await expect(page.locator('[data-testid="player-track-info-name"]')).not.toHaveText('');
+  test('track info displays a non-empty current track name', async ({ page }) => {
+    const trackName = page.locator('[data-testid="player-track-info-name"]');
+    await expect(trackName).toBeVisible({ timeout: 5000 });
+    await expect(trackName).not.toHaveText('');
   });
 
-  test('volume control is present in the bottom bar', async ({ page }) => {
-    const settingsButton = page.locator('button[title="App settings"]');
-    await expect(settingsButton).toBeVisible({ timeout: 5000 });
+  test('volume control opens its popover on click', async ({ page }) => {
+    // The bottom bar renders a real volume control: a button (aria-label="Volume")
+    // whose aria-pressed reflects the open state of its slider popover. (The prior
+    // version of this test asserted the App Settings button instead — it never
+    // touched volume at all.)
+    const volumeButton = page.locator('button[aria-label="Volume"]');
+    await expect(volumeButton).toBeVisible({ timeout: 5000 });
+    await expect(volumeButton).toHaveAttribute('aria-pressed', 'false');
+
+    await volumeButton.click();
+    await expect(volumeButton).toHaveAttribute('aria-pressed', 'true', { timeout: 5000 });
   });
 });
