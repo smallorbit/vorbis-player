@@ -91,7 +91,19 @@ async function executeApiRequest<T>(
   if (!text) {
     return undefined as T;
   }
-  return JSON.parse(text);
+  try {
+    return JSON.parse(text);
+  } catch (err) {
+    // Some successful write endpoints (e.g. player seek/pause) occasionally
+    // return a non-JSON body instead of a clean 204, so a void-returning caller
+    // has nothing to parse. Only swallow when the body wasn't declared JSON —
+    // a malformed *application/json* body is a real error and still throws.
+    const contentType = response.headers.get('content-type') ?? '';
+    if (!contentType.includes('application/json')) {
+      return undefined as T;
+    }
+    throw err;
+  }
 }
 
 /**
