@@ -3,6 +3,16 @@ import type { MediaTrack } from '@/types/domain';
 import { useProviderContext } from '@/contexts/ProviderContext';
 import { providerRegistry } from '@/providers/registry';
 import type { PlaybackState, ProviderId } from '@/types/domain';
+import { logSeek } from '@/lib/debugLog';
+
+// After a seek, the SDK can still emit a stale pre-seek position (notably after
+// a re-auth re-subscribe / getState), which would yank the timeline cursor back
+// and "disconnect" it from playback (#1671). Until a position emit lands near the
+// seek target, reject stale ones. Tolerance absorbs normal play drift between
+// emits; the window is a safety valve so the cursor can never get stuck if the
+// SDK never reports near the target.
+const SEEK_TOLERANCE_MS = 2000;
+const SEEK_GUARD_WINDOW_MS = 5000;
 
 interface UseSpotifyControlsProps {
   currentTrack: MediaTrack | null;
@@ -63,8 +73,47 @@ export const useSpotifyControls = ({
   );
   const [isDragging, setIsDragging] = useState(false);
   const isDraggingRef = useRef(false);
+  // Set when a seek is issued; cleared once a position emit is accepted near the
+  // target (or the guard window lapses). See SEEK_* constants above.
+  const pendingSeekRef = useRef<{ target: number; at: number } | null>(null);
 
   const { activeDescriptor } = useProviderContext();
+
+  // Decide whether an incoming position emit should move the cursor. Returns
+  // true (accept) when no seek is pending, when the emit is near the expected
+  // post-seek position, or when the guard window has lapsed; false (reject) for a
+  // stale pre-seek position. Reads/writes refs only, so it is stable and does not
+  // re-subscribe the playback listeners.
+  const shouldAcceptPosition = useCallback((positionMs: number, playing: boolean): boolean => {
+    const pending = pendingSeekRef.current;
+    if (!pending) return true;
+
+    const elapsed = performance.now() - pending.at;
+    if (elapsed > SEEK_GUARD_WINDOW_MS) {
+      pendingSeekRef.current = null;
+      logSeek('guard window lapsed → accept (pos=%dms)', Math.round(positionMs));
+      return true;
+    }
+
+    const expected = pending.target + (playing ? elapsed : 0);
+    const drift = Math.abs(positionMs - expected);
+    if (drift <= SEEK_TOLERANCE_MS) {
+      pendingSeekRef.current = null;
+      logSeek('post-seek confirmed → accept (pos=%dms, expected=%dms, drift=%dms)',
+        Math.round(positionMs), Math.round(expected), Math.round(drift));
+      return true;
+    }
+
+    logSeek('REJECT stale position (pos=%dms, expected=%dms, drift=%dms, target=%dms)',
+      Math.round(positionMs), Math.round(expected), Math.round(drift), Math.round(pending.target));
+    return false;
+  }, []);
+
+  // Drop the guard on track change — a new track starts at 0, unrelated to any
+  // pending seek on the previous one.
+  useEffect(() => {
+    pendingSeekRef.current = null;
+  }, [currentTrack?.id]);
 
   const getPlayingDescriptor = useCallback(() =>
     currentTrackProvider && currentTrackProvider !== activeDescriptor?.id
@@ -88,7 +137,9 @@ export const useSpotifyControls = ({
 
     function handleProviderStateChange(state: PlaybackState | null) {
       if (!state) return;
-      if (isDraggingRef.current) {
+      // While dragging, or when a stale pre-seek position arrives, sync
+      // isPlaying/duration but leave the cursor where the user/seek put it.
+      if (isDraggingRef.current || !shouldAcceptPosition(state.positionMs, state.isPlaying)) {
         dispatchTiming({ type: 'update_no_position', isPlaying: state.isPlaying, durationMs: state.durationMs });
       } else {
         dispatchTiming({ type: 'update', isPlaying: state.isPlaying, positionMs: state.positionMs, durationMs: state.durationMs });
@@ -99,13 +150,13 @@ export const useSpotifyControls = ({
 
     // Also check initial state once
     playback.getState().then((state) => {
-      if (state) {
+      if (state && shouldAcceptPosition(state.positionMs, state.isPlaying)) {
         dispatchTiming({ type: 'update', isPlaying: state.isPlaying, positionMs: state.positionMs, durationMs: state.durationMs });
       }
     });
 
     return unsubscribe;
-  }, [getPlayingDescriptor]);
+  }, [getPlayingDescriptor, shouldAcceptPosition]);
 
   // Lightweight position poll — only to update the timeline slider smoothly.
   // Poll the adapter that is actually playing, which may differ from the active
@@ -119,13 +170,13 @@ export const useSpotifyControls = ({
     const interval = setInterval(async () => {
       if (isDraggingRef.current) return;
       const state = await playback.getState();
-      if (state) {
+      if (state && shouldAcceptPosition(state.positionMs, state.isPlaying)) {
         dispatchTiming({ type: 'position', positionMs: state.positionMs });
       }
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [isPlaying, getPlayingDescriptor]);
+  }, [isPlaying, getPlayingDescriptor, shouldAcceptPosition]);
 
   const handlePlayPause = useCallback(async () => {
     const playingDescriptor = getPlayingDescriptor();
@@ -153,6 +204,12 @@ export const useSpotifyControls = ({
       const playingDescriptor = getPlayingDescriptor();
       const playback = playingDescriptor?.playback;
       if (!playback) return;
+      // Arm the guard and optimistically move the cursor to the target so it
+      // reflects the seek immediately and cannot be dragged back by a stale
+      // pre-seek emit before the SDK reports the new position (#1671).
+      pendingSeekRef.current = { target: position, at: performance.now() };
+      logSeek('seek issued → target=%dms (guard armed)', Math.round(position));
+      dispatchTiming({ type: 'position', positionMs: position });
       await playback.seek(position);
     } catch (error) {
       console.error('Failed to seek:', error);

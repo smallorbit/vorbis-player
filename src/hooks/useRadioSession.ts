@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useRef } from 'react';
 import type { MediaTrack, ProviderId } from '@/types/domain';
 import type { ProviderDescriptor } from '@/types/providers';
 import type { TrackOperations } from '@/types/trackOperations';
@@ -40,17 +40,27 @@ export function useRadioSession({
   setAuthExpired,
 }: UseRadioSessionProps): UseRadioSessionReturn {
   const { setError, setTracks, setOriginalTracks, setCurrentTrackIndex, setSelectedPlaylistId, mediaTracksRef } = trackOps;
+
+  // Monotonic generation guard. Radio generation is async (catalog fetch +
+  // Last.fm pipeline); a second start — or a stop — must supersede an in-flight
+  // one so its late result cannot clobber the newer queue. Mirrors the guard in
+  // useCollectionLoader.
+  const generationRef = useRef(0);
+
   const clearAuthExpired = useCallback(() => {
     setAuthExpired(null);
   }, [setAuthExpired]);
 
   const stopRadio = useCallback(() => {
+    generationRef.current += 1;
     stopRadioBase();
     setAuthExpired(null);
   }, [stopRadioBase]);
 
   const handleStartRadio = useCallback(async () => {
     if (!activeDescriptor || !currentTrack) return;
+
+    const generation = ++generationRef.current;
 
     try {
       const searchProviders = providerRegistry.getAll().filter(
@@ -74,6 +84,10 @@ export function useRadioSession({
         generateQueue: startRadio,
       });
 
+      // Superseded by a newer start or a stop while we were generating — drop
+      // this stale result rather than overwrite the current queue / progress.
+      if (generationRef.current !== generation) return;
+
       if (!pipelineResult) {
         onProgress(null);
         return;
@@ -92,6 +106,9 @@ export function useRadioSession({
         onProgress(null);
       }
     } catch (err) {
+      // A superseded generation's failure must not surface an error or clear the
+      // newer generation's progress.
+      if (generationRef.current !== generation) return;
       console.warn('[Radio] Generation failed:', err);
       setError(err instanceof Error ? err.message : 'Failed to start radio.');
       onProgress(null);

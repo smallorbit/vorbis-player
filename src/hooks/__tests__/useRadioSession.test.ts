@@ -1,10 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { renderHook, act } from '@testing-library/react';
+import { renderHook, act, waitFor } from '@testing-library/react';
 import { useRadioSession } from '../useRadioSession';
-import type { RadioProgress } from '@/types/radio';
+import type { RadioProgress, RadioResult } from '@/types/radio';
 import { makeMediaTrack, makeProviderDescriptor } from '@/test/fixtures';
 import type { MediaTrack } from '@/types/domain';
 import type { ProviderDescriptor } from '@/types/providers';
+import { createDeferredFn } from '@/test/asyncRace';
 
 vi.mock('@/providers/registry', () => ({
   providerRegistry: {
@@ -462,6 +463,99 @@ describe('useRadioSession', () => {
 
     // #then
     expect(initMock).toHaveBeenCalled();
+  });
+
+  it('newer radio generation wins when an older one resolves later (stale-write race)', async () => {
+    // #given a catalog with tracks so the pipeline proceeds to generateQueue,
+    // and a generateQueue whose two invocations we settle out of order.
+    descriptor = makeProviderDescriptor({
+      id: 'spotify',
+      catalog: {
+        providerId: 'spotify',
+        listCollections: vi.fn(),
+        listTracks: vi.fn().mockResolvedValue([track('a1', 'OK Computer', 'Radiohead')]),
+      },
+    });
+
+    const gen = createDeferredFn<[unknown, MediaTrack[]], RadioResult | null>();
+    const queueA = [track('A1', 'Stale Song', 'Old Seed')];
+    const queueB = [track('B1', 'Fresh Song', 'New Seed')];
+    const asResult = (queue: MediaTrack[]): RadioResult => ({
+      queue,
+      seedDescription: 'seed',
+      matchStats: { requested: queue.length, matched: queue.length, unmatched: 0 },
+      unmatchedSuggestions: [],
+    });
+
+    const { result } = renderSession({ startRadio: gen.fn });
+
+    // #when two radio generations overlap — the second (B) supersedes the first
+    // (A). Sequence the starts so each reaches the awaited generateQueue before
+    // the next begins: this pins call index 0 → A (older), index 1 → B (newer).
+    let pA!: Promise<void>;
+    let pB!: Promise<void>;
+    await act(async () => {
+      pA = result.current.handleStartRadio();
+      await waitFor(() => expect(gen.callCount).toBe(1));
+      pB = result.current.handleStartRadio();
+      await waitFor(() => expect(gen.callCount).toBe(2));
+    });
+
+    // ...and B (the newer, call index 1) resolves BEFORE the stale A (index 0).
+    await act(async () => {
+      gen.resolve(1, asResult(queueB));
+      gen.resolve(0, asResult(queueA));
+      await Promise.all([pA, pB]);
+    });
+
+    // #then the committed queue must reflect the newer generation B, not the
+    // stale A that resolved last. (runRadioPipeline prepends the seed and returns
+    // a new combined array, so assert on content, not reference.) Without a
+    // generation guard the late A clobbers B.
+    const committedNames = trackOps.mediaTracksRef.current.map((t) => t.name);
+    expect(committedNames).toContain('Fresh Song');
+    expect(committedNames).not.toContain('Stale Song');
+
+    const lastSetTracks = trackOps.setTracks.mock.calls.at(-1)?.[0] as MediaTrack[];
+    expect(lastSetTracks.map((t) => t.name)).toContain('Fresh Song');
+    expect(lastSetTracks.map((t) => t.name)).not.toContain('Stale Song');
+  });
+
+  it('does not commit a radio queue that finishes generating after stopRadio', async () => {
+    // #given a generation in flight
+    descriptor = makeProviderDescriptor({
+      id: 'spotify',
+      catalog: {
+        providerId: 'spotify',
+        listCollections: vi.fn(),
+        listTracks: vi.fn().mockResolvedValue([track('a1', 'OK Computer', 'Radiohead')]),
+      },
+    });
+    const gen = createDeferredFn<[unknown, MediaTrack[]], RadioResult | null>();
+    const queue = [track('g1', 'Karma Police', 'Radiohead')];
+    const { result } = renderSession({ startRadio: gen.fn });
+
+    let started!: Promise<void>;
+    await act(async () => {
+      started = result.current.handleStartRadio();
+      await waitFor(() => expect(gen.callCount).toBe(1));
+    });
+
+    // #when the user stops radio before generation completes, then it completes
+    await act(async () => {
+      result.current.stopRadio();
+      gen.resolve(0, {
+        queue,
+        seedDescription: 'seed',
+        matchStats: { requested: 1, matched: 1, unmatched: 0 },
+        unmatchedSuggestions: [],
+      });
+      await started;
+    });
+
+    // #then the stale result must not populate the queue
+    expect(trackOps.setTracks).not.toHaveBeenCalled();
+    expect(trackOps.mediaTracksRef.current).toEqual([seedTrack]);
   });
 
   it('does not invoke searchTrack on a provider whose hasTrackSearch is false', async () => {

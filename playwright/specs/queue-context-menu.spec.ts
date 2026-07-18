@@ -30,12 +30,23 @@ test('queue item context menu opens on right-click', async ({ page }) => {
   // drawer's transform:ed container. toBeVisible() alone does NOT catch that —
   // an off-screen element is still "visible" to Playwright — so assert the
   // bounding box is within the viewport.
-  const box = await menu.boundingBox();
+  //
+  // Radix/floating-ui mounts the popover at a default position and repositions
+  // it on the next frame, so a single boundingBox() snapshot can catch the
+  // pre-settle placement (observed y=-262 ~25% of runs). Poll until the box has
+  // settled inside the viewport — that settled position is what a user sees.
   const viewport = page.viewportSize();
-  expect(box).not.toBeNull();
   expect(viewport).not.toBeNull();
-  expect(box!.x).toBeGreaterThanOrEqual(0);
-  expect(box!.y).toBeGreaterThanOrEqual(0);
-  expect(box!.x + box!.width).toBeLessThanOrEqual(viewport!.width + 1);
-  expect(box!.y + box!.height).toBeLessThanOrEqual(viewport!.height + 1);
+  await expect
+    .poll(async () => {
+      const box = await menu.boundingBox();
+      if (!box) return null;
+      const inside =
+        box.x >= 0 &&
+        box.y >= 0 &&
+        box.x + box.width <= viewport!.width + 1 &&
+        box.y + box.height <= viewport!.height + 1;
+      return inside;
+    }, { timeout: 5_000 })
+    .toBe(true);
 });

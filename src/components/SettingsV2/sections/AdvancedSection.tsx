@@ -237,6 +237,7 @@ export const AdvancedSection: React.FC = () => {
       <ControlBlock>
         <SectionGroupTitle>About</SectionGroupTitle>
         <ControlHelp>{`Vorbis Player${__APP_VERSION__ !== '0.0.0' ? ` ${__APP_VERSION__}` : ''} — keyboard-first music player.`}</ControlHelp>
+        <ControlHelp data-testid="build-info">{`Build ${__BUILD_SHA__ === 'unknown' ? 'dev' : __BUILD_SHA__.slice(0, 7)} · ${__BUILD_REF__} · ${__BUILD_ENV__}`}</ControlHelp>
         <ShortcutHintList>
           <ShortcutHintRow>
             <span>Show keyboard shortcuts</span>

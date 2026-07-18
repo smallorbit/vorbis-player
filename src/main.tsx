@@ -4,6 +4,19 @@ import './styles/shadcn-tokens.css'
 import App from './App.tsx'
 import { logSw } from '@/lib/debugLog'
 
+// Deploy provenance: always log the running build and expose it on window so the
+// exact deployed commit can be confirmed from any environment (staging/prod).
+const buildInfo: BuildInfo = {
+  sha: __BUILD_SHA__,
+  ref: __BUILD_REF__,
+  env: __BUILD_ENV__,
+  version: __APP_VERSION__,
+};
+window.__BUILD__ = buildInfo;
+console.info(
+  `Vorbis build ${buildInfo.sha === 'unknown' ? 'dev' : buildInfo.sha.slice(0, 7)} · ${buildInfo.ref} · ${buildInfo.env}`,
+);
+
 // Mock provider loads when VITE_MOCK_PROVIDER=true or in any dev build (so
 // `?provider=mock` URL activation works without restarting). Both constants are
 // build-time, so production builds DCE the branch and tree-shake the mock.
