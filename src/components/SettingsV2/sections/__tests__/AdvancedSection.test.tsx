@@ -124,6 +124,23 @@ describe('SettingsV2 AdvancedSection', () => {
     memoryStorage.clear();
   });
 
+  describe('build info', () => {
+    it('renders the deployed build SHA / ref / env for deploy verification', () => {
+      // #given / #when
+      render(
+        <Wrapper>
+          <AdvancedSection />
+        </Wrapper>,
+      );
+
+      // #then — the About block surfaces the baked-in build provenance so a
+      // tester can confirm exactly which commit is deployed.
+      const buildInfo = screen.getByTestId('build-info');
+      expect(buildInfo).toBeInTheDocument();
+      expect(buildInfo).toHaveTextContent(/^Build .+ · .+ · .+$/);
+    });
+  });
+
   describe('Quick Access Panel toggle', () => {
     it('writes the QAP-enabled storage key when toggled on', () => {
       // #given

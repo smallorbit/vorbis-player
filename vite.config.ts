@@ -42,14 +42,32 @@ import react from '@vitejs/plugin-react'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { createRequire } from 'node:module'
+import { execSync } from 'node:child_process'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const require = createRequire(import.meta.url)
 const pkg = require('./package.json') as { version: string }
 
+// Build provenance, baked in at build time so the running app can report exactly
+// which commit is deployed (staging / production verification). On Vercel the
+// VERCEL_GIT_* system env vars are authoritative; locally we fall back to git.
+function git(args: string): string {
+  try {
+    return execSync(`git ${args}`, { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim()
+  } catch {
+    return 'unknown'
+  }
+}
+const buildSha = process.env.VERCEL_GIT_COMMIT_SHA || git('rev-parse HEAD')
+const buildRef = process.env.VERCEL_GIT_COMMIT_REF || git('rev-parse --abbrev-ref HEAD')
+const buildEnv = process.env.VERCEL_ENV || (process.env.NODE_ENV === 'production' ? 'production' : 'local')
+
 export default defineConfig({
   define: {
     __APP_VERSION__: JSON.stringify(pkg.version),
+    __BUILD_SHA__: JSON.stringify(buildSha),
+    __BUILD_REF__: JSON.stringify(buildRef),
+    __BUILD_ENV__: JSON.stringify(buildEnv),
   },
   plugins: [react()],
   build: {
