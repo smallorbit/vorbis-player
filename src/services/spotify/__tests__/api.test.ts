@@ -162,3 +162,63 @@ describe('spotifyApiRequest — structured errors and retry-after-refresh', () =
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 });
+
+describe('spotifyApiRequest — response body parsing', () => {
+  let fetchMock: ReturnType<typeof vi.fn>;
+
+  beforeEach(() => {
+    fetchMock = vi.fn();
+    vi.stubGlobal('fetch', fetchMock);
+    getAccessToken.mockReset();
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('resolves undefined for a successful non-JSON body (e.g. player seek) instead of throwing', async () => {
+    // #given a 200 with a non-JSON body and no application/json content-type,
+    // as Spotify's player seek endpoint sometimes returns (#1671 diagnosis).
+    fetchMock.mockResolvedValueOnce(
+      new Response('FERpzaDjxZabc', { status: 200, headers: { 'Content-Type': 'text/plain' } }),
+    );
+
+    // #when a void-returning write is issued
+    const result = await spotifyApiRequest<void>(
+      'https://api.spotify.com/v1/me/player/seek?position_ms=1000',
+      'token-1',
+      { method: 'PUT' },
+    );
+
+    // #then it resolves cleanly rather than throwing a JSON parse error
+    expect(result).toBeUndefined();
+  });
+
+  it('resolves undefined for a 204 no-content response', async () => {
+    fetchMock.mockResolvedValueOnce(emptyResponse(204));
+    const result = await spotifyApiRequest<void>(
+      'https://api.spotify.com/v1/me/player/pause',
+      'token-1',
+      { method: 'PUT' },
+    );
+    expect(result).toBeUndefined();
+  });
+
+  it('still throws when an application/json body is malformed (a real error)', async () => {
+    // #given a body declared as JSON but syntactically broken
+    fetchMock.mockResolvedValueOnce(
+      new Response('{ not json', { status: 200, headers: { 'Content-Type': 'application/json' } }),
+    );
+
+    // #then the parse error surfaces — we only swallow non-JSON bodies
+    await expect(
+      spotifyApiRequest<{ id: string }>('https://api.spotify.com/v1/me', 'token-1'),
+    ).rejects.toThrow();
+  });
+
+  it('parses a well-formed JSON body', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse({ id: 'me-1' }));
+    const result = await spotifyApiRequest<{ id: string }>('https://api.spotify.com/v1/me', 'token-1');
+    expect(result).toEqual({ id: 'me-1' });
+  });
+});
