@@ -18,7 +18,8 @@ Step-by-step setup guides for each supported music provider:
 
 ## Deployment
 
-- **[Deploy to Vercel](./deployment/deploy-to-vercel.md)** — Vercel deployment instructions
+- **[Deploy contract](./deploy.md)** — provider-agnostic deploy path: the static `dist/` build, `npm run deploy` / `DEPLOY_TARGET`, and staging PR deploys
+- **[Deploy to Vercel](./deployment/deploy-to-vercel.md)** — worked example deploying to one specific host
 
 ## Quick Links
 

@@ -1,7 +1,16 @@
 name: Deploy PR to Staging
 
-# Manually-triggered workflow: rebuild the `staging` branch from `main`,
-# then merge a chosen pull request on top so it can be tested in isolation.
+# Manually-triggered workflow: rebuild the `staging` branch from `main`, then
+# merge a chosen pull request on top so it can be tested in isolation.
+#
+# This workflow is deliberately host-agnostic. Its job is purely git plumbing:
+# it publishes a `staging` branch containing main + the PR. How that branch
+# becomes a live URL is left to whatever host you point at it:
+#   - Git-integration hosts (Vercel/Netlify/Cloudflare Pages/…) that watch the
+#     `staging` branch build and serve it automatically — nothing more to do.
+#   - Otherwise, configure the STAGING_DEPLOY_TARGET repository variable with a
+#     deploy command (see the "Deploy staging build" step and docs/deploy.md);
+#     it runs `npm run deploy` against that target after the branch is pushed.
 on:
   workflow_dispatch:
     inputs:
@@ -85,3 +94,27 @@ jobs:
           done
           echo "::error::Failed to push staging after multiple attempts."
           exit 1
+
+      # Optional explicit deploy for hosts that do NOT auto-build the `staging`
+      # branch. Skipped entirely unless the STAGING_DEPLOY_TARGET repository
+      # variable is set, so git-integration hosts stay a no-op here.
+      # STAGING_DEPLOY_TARGET is passed through as DEPLOY_TARGET; see docs/deploy.md.
+      - name: Set up Node
+        if: ${{ vars.STAGING_DEPLOY_TARGET != '' }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Deploy staging build
+        if: ${{ vars.STAGING_DEPLOY_TARGET != '' }}
+        env:
+          DEPLOY_TARGET: ${{ vars.STAGING_DEPLOY_TARGET }}
+          VITE_SPOTIFY_CLIENT_ID: ${{ secrets.VITE_SPOTIFY_CLIENT_ID }}
+          VITE_SPOTIFY_REDIRECT_URI: ${{ vars.VITE_SPOTIFY_REDIRECT_URI }}
+          VITE_DROPBOX_CLIENT_ID: ${{ secrets.VITE_DROPBOX_CLIENT_ID }}
+          VITE_LASTFM_API_KEY: ${{ secrets.VITE_LASTFM_API_KEY }}
+        run: |
+          set -euo pipefail
+          npm ci
+          npm run deploy:preview

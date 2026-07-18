@@ -74,9 +74,12 @@ For radio recommendations, also set `VITE_LASTFM_API_KEY` in `.env.local` (see `
 
 ### Deployment
 
-| Platform | Guide |
-|----------|-------|
-| Vercel | **[Deploy to Vercel](./docs/deployment/deploy-to-vercel.md)** |
+Vorbis Player builds to a static `dist/` bundle that any static host can serve.
+
+| Guide | Scope |
+|-------|-------|
+| **[Deploy contract](./docs/deploy.md)** | Provider-agnostic deploy path (`npm run deploy`, `DEPLOY_TARGET`, staging) |
+| **[Deploy to Vercel](./docs/deployment/deploy-to-vercel.md)** | Worked example using one host |
 
 ## Testing & Playwright
 
