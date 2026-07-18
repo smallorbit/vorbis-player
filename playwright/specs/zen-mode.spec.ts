@@ -11,16 +11,8 @@ test.describe('Zen Mode', () => {
     );
     await page.goto('/');
     await page.locator('[data-testid="library-home"]').waitFor({ state: 'visible', timeout: 30_000 });
-
-    if (hasContent) {
-      await page.locator('[data-testid^="library-card-playlist-"]').first().click();
-      await page.locator('[data-testid="player-track-info-name"]').waitFor({ state: 'visible', timeout: 10_000 });
-    }
-  });
-
-  test('zen mode button exists in the bottom bar', async ({ page }) => {
-    const zenButton = page.locator('button[title^="Zen Mode"]');
-    await expect(zenButton).toBeVisible({ timeout: 5000 });
+    await page.locator('[data-testid^="library-card-playlist-"]').first().click();
+    await page.locator('[data-testid="player-track-info-name"]').waitFor({ state: 'visible', timeout: 15_000 });
   });
 
   // Playwright's isVisible() checks the element's own opacity, not inherited opacity from
@@ -39,12 +31,12 @@ test.describe('Zen Mode', () => {
     }, { timeout: 2000 });
   }
 
-  test('clicking zen mode button hides player controls', async ({ page }) => {
-    if (!hasContent) {
-      test.skip(true, 'Snapshot has no playlists — skipping content-dependent zen mode test');
-      return;
-    }
+  test('zen mode button exists in the bottom bar', async ({ page }) => {
+    const zenButton = page.locator('button[title^="Zen Mode"]');
+    await expect(zenButton).toBeVisible({ timeout: 5000 });
+  });
 
+  test('clicking zen mode button hides player controls', async ({ page }) => {
     await expect(page.locator('[data-testid="player-track-info-album"]')).toBeVisible({ timeout: 5000 });
 
     const zenButton = page.locator('button[title="Zen Mode OFF"]');
@@ -57,11 +49,6 @@ test.describe('Zen Mode', () => {
   });
 
   test('escape key exits zen mode', async ({ page }) => {
-    if (!hasContent) {
-      test.skip(true, 'Snapshot has no playlists — skipping content-dependent zen mode test');
-      return;
-    }
-
     const zenButton = page.locator('button[title="Zen Mode OFF"]');
     await expect(zenButton).toBeVisible({ timeout: 5000 });
     await zenButton.click();
@@ -73,34 +60,43 @@ test.describe('Zen Mode', () => {
     await expect(page.locator('[data-testid="player-track-info-album"]')).toBeVisible({ timeout: 5000 });
   });
 
-  test('zen mode expands album art area', async ({ page }) => {
-    const zenButton = page.locator('button[title="Zen Mode OFF"]');
-    await expect(zenButton).toBeVisible({ timeout: 5000 });
+  test('zen mode enlarges the album art area', async ({ page }) => {
+    // Measure the album art before entering zen, then after. Zen mode reclaims
+    // the space freed by the hidden controls, so the art must grow — assert the
+    // actual size increase, not merely that some element still exists.
+    const art = page.locator('img[alt]').first();
+    const before = await art.boundingBox();
+    expect(before).not.toBeNull();
 
-    await zenButton.click();
-
-    const zenButtonOn = page.locator('button[title="Zen Mode ON"]');
-    await expect(zenButtonOn).toBeVisible({ timeout: 5000 });
-
-    const albumArtSvg = page.locator('img[alt]').first();
-    const artContainer = page.locator('[style*="position: relative"]').first();
-    const isArtVisible = await albumArtSvg.isVisible().catch(() => false);
-    const isContainerVisible = await artContainer.isVisible().catch(() => false);
-    expect(isArtVisible || isContainerVisible).toBe(true);
-  });
-
-  test('clicking album art in zen mode triggers play/pause (not flip)', async ({ page }) => {
-    const zenButton = page.locator('button[title="Zen Mode OFF"]');
-    await expect(zenButton).toBeVisible({ timeout: 5000 });
-    await zenButton.click();
+    await page.locator('button[title="Zen Mode OFF"]').click();
     await expect(page.locator('button[title="Zen Mode ON"]')).toBeVisible({ timeout: 5000 });
 
-    await page.waitForTimeout(500);
+    await expect
+      .poll(async () => {
+        const box = await art.boundingBox();
+        if (!box) return 0;
+        return box.width * box.height;
+      }, { timeout: 5000 })
+      .toBeGreaterThan(before!.width * before!.height);
+  });
 
-    const artArea = page.locator('[style*="transform"]').first();
-    if (await artArea.isVisible()) {
-      await artArea.click();
-      await expect(page.locator('button[title="Zen Mode ON"]')).toBeVisible({ timeout: 3000 });
-    }
+  test('clicking album art in zen mode toggles play/pause without flipping', async ({ page }) => {
+    await page.locator('button[title="Zen Mode OFF"]').click();
+    await expect(page.locator('button[title="Zen Mode ON"]')).toBeVisible({ timeout: 5000 });
+
+    // The zen center click-zone overlays the album art and toggles play/pause.
+    const playPauseZone = page.locator('[data-testid="zen-playpause-zone"]');
+    await expect(playPauseZone).toBeVisible({ timeout: 5000 });
+
+    const before = await playPauseZone.getAttribute('aria-label'); // "Play" | "Pause"
+    await playPauseZone.click();
+
+    // Play/pause state must flip...
+    await expect(playPauseZone).not.toHaveAttribute('aria-label', before!, { timeout: 5000 });
+
+    // ...and the art must NOT have flipped to the menu: the zen click-zone is
+    // rendered only while the art shows its front (visible && !isFlipped), so its
+    // continued presence proves the click toggled playback rather than flipping.
+    await expect(playPauseZone).toBeVisible();
   });
 });

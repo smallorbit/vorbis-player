@@ -72,6 +72,7 @@ export const ZenClickZoneOverlay: React.FC<ZenClickZoneOverlayProps> = React.mem
       <IconButton
         onClick={(e) => { e.stopPropagation(); onPrevious(); }}
         aria-label="Previous track"
+        data-testid="zen-prev-zone"
       >
         <Icon>
           <path d="M6 6h2v12H6zm3.5 6l8.5 6V6z" />
@@ -80,6 +81,7 @@ export const ZenClickZoneOverlay: React.FC<ZenClickZoneOverlayProps> = React.mem
       <CenterIconButton
         onClick={(e) => { e.stopPropagation(); onPlayPause(); }}
         aria-label={isPlaying ? 'Pause' : 'Play'}
+        data-testid="zen-playpause-zone"
       >
         <Icon>
           {isPlaying
@@ -91,6 +93,7 @@ export const ZenClickZoneOverlay: React.FC<ZenClickZoneOverlayProps> = React.mem
       <IconButton
         onClick={(e) => { e.stopPropagation(); onNext(); }}
         aria-label="Next track"
+        data-testid="zen-next-zone"
       >
         <Icon>
           <path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z" />
