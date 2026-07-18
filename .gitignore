@@ -73,6 +73,7 @@ it.txt
 
 # Playwright
 test-results/
+playwright-report/
 
 # Capture toolkit
 playwright/capture/output/
