@@ -34,3 +34,15 @@ export const logSession = createDebug('vorbis:session');
 const _logArtRace = createDebug('vorbis:art-race');
 export const logArtRace = (fmt: string, ...args: unknown[]) =>
   _logArtRace(`[t=%sms] ${fmt}`, performance.now().toFixed(1), ...args);
+
+/**
+ * Focused trace for the seek-cursor guard (#1671): every seek arms a guard, and
+ * each subsequent position emit is logged as accepted or rejected (with target /
+ * expected / drift) so a post-reauth "cursor disconnects after seek" repro can be
+ * diagnosed from a single console capture.
+ *
+ * Enable with: localStorage.debug = 'vorbis:seek' (or 'vorbis:*').
+ */
+const _logSeek = createDebug('vorbis:seek');
+export const logSeek = (fmt: string, ...args: unknown[]) =>
+  _logSeek(`[t=%sms] ${fmt}`, performance.now().toFixed(1), ...args);
