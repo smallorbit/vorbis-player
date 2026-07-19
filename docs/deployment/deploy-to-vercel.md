@@ -1,6 +1,10 @@
 # 🚀 Deploy Vorbis Player to Vercel
 
-This guide will help you deploy your Vorbis Player to Vercel in just a few simple steps.
+This guide walks through deploying to Vercel as **one worked example**. Vorbis
+Player is host-agnostic — it builds to a static `dist/` bundle that any static
+host can serve. For the provider-neutral deploy contract (the `DEPLOY_TARGET`
+env var, `npm run deploy`, and staging PR deploys), see
+[deploy.md](../deploy.md).
 
 ## Prerequisites
 

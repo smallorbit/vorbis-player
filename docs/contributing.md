@@ -35,8 +35,8 @@ npm run test           # Run tests in watch mode
 npm run test:run       # Run tests once
 npm run test:ui        # Run tests with UI
 npm run test:coverage  # Run tests with coverage
-npm run deploy         # Deploy to production (Vercel)
-npm run deploy:preview # Deploy preview (Vercel)
+npm run deploy         # Deploy to production (see docs/deploy.md)
+npm run deploy:preview # Deploy preview (see docs/deploy.md)
 ```
 
 ## Project Structure
