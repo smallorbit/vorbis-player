@@ -1,4 +1,4 @@
-import { useCallback, useEffect, startTransition } from 'react';
+import { useCallback, useEffect, useRef, startTransition } from 'react';
 import type { MediaTrack } from '@/types/domain';
 import { isProfilingEnabled } from '@/contexts/ProfilingContext';
 import { theme } from '@/styles/theme';
@@ -14,34 +14,46 @@ export const useAccentColor = (
   const albumImage = currentTrack?.image;
   const albumOverride = albumId ? accentColorOverrides[albumId] : undefined;
 
+  // Monotonic generation guard shared by the track-change effect and the
+  // user-invoked "auto" re-extraction. Both do async color extraction; the
+  // latest request wins, so a superseded extraction (a previous track, or an
+  // effect the user's auto pick replaced) cannot commit its stale color. The
+  // mounted ref covers the unmount case. Mirrors useCollectionLoader /
+  // useRadioSession.
+  const accentGenerationRef = useRef(0);
+  const isMountedRef = useRef(true);
+  useEffect(() => () => { isMountedRef.current = false; }, []);
+
+  const commitAccentColor = useCallback((generation: number, colorValue: string) => {
+    if (!isMountedRef.current) return;
+    if (accentGenerationRef.current !== generation) return;
+    setAccentColor(colorValue);
+  }, [setAccentColor]);
+
   useEffect(() => {
-    let isCurrent = true;
+    const generation = ++accentGenerationRef.current;
 
     if (!albumId && !albumImage) {
-      setAccentColor(theme.colors.accent);
-      return () => {
-        isCurrent = false;
-      };
+      commitAccentColor(generation, theme.colors.accent);
+      return;
     }
 
     if (albumId && albumOverride) {
-      setAccentColor(albumOverride);
-      return () => {
-        isCurrent = false;
-      };
+      commitAccentColor(generation, albumOverride);
+      return;
     }
 
     if (albumImage) {
       const extractStart = isProfilingEnabled() ? performance.now() : 0;
       extractDominantColor(albumImage)
         .then(dominantColor => {
-          if (!isCurrent) return;
+          if (accentGenerationRef.current !== generation) return;
           if (extractStart > 0) {
             console.debug(`[Profiling] useAccentColor.extract: ${(performance.now() - extractStart).toFixed(1)}ms`);
           }
           const applyColor = () => {
             startTransition(() => {
-              setAccentColor(dominantColor ? dominantColor.hex : theme.colors.accent);
+              commitAccentColor(generation, dominantColor ? dominantColor.hex : theme.colors.accent);
             });
           };
           if (typeof requestIdleCallback === 'function') {
@@ -51,20 +63,20 @@ export const useAccentColor = (
           }
         })
         .catch(() => {
-          if (!isCurrent) return;
-          setAccentColor(theme.colors.accent);
+          commitAccentColor(generation, theme.colors.accent);
         });
     } else {
-      setAccentColor(theme.colors.accent);
+      commitAccentColor(generation, theme.colors.accent);
     }
-
-    return () => {
-      isCurrent = false;
-    };
-  }, [albumId, albumImage, albumOverride, setAccentColor]);
+  }, [albumId, albumImage, albumOverride, commitAccentColor]);
 
   const handleAccentColorChange = useCallback((color: string) => {
     const currentAlbumId = currentTrack?.albumId;
+
+    // Every path here is a fresh user intent — claim the newest generation so a
+    // still-in-flight extraction from the track-change effect cannot overwrite
+    // it, and (for the auto path) so a later track change supersedes this.
+    const generation = ++accentGenerationRef.current;
 
     if (color === 'auto') {
       if (currentAlbumId) {
@@ -78,28 +90,22 @@ export const useAccentColor = (
       if (currentTrack?.image) {
         extractDominantColor(currentTrack.image)
           .then(dominantColor => {
-            if (dominantColor) {
-              setAccentColor(dominantColor.hex);
-            } else {
-              setAccentColor(theme.colors.accent);
-            }
+            commitAccentColor(generation, dominantColor ? dominantColor.hex : theme.colors.accent);
           })
           .catch(() => {
-            setAccentColor(theme.colors.accent);
+            commitAccentColor(generation, theme.colors.accent);
           });
       } else {
-        setAccentColor(theme.colors.accent);
+        commitAccentColor(generation, theme.colors.accent);
       }
       return;
     }
 
     if (currentAlbumId) {
       setAccentColorOverrides(prev => ({ ...prev, [currentAlbumId]: color }));
-      setAccentColor(color);
-    } else {
-      setAccentColor(color);
     }
-  }, [currentTrack?.albumId, currentTrack?.image, setAccentColorOverrides, setAccentColor]);
+    commitAccentColor(generation, color);
+  }, [currentTrack?.albumId, currentTrack?.image, setAccentColorOverrides, commitAccentColor]);
 
   const resetToAutoColor = useCallback(() => {
     handleAccentColorChange('auto');

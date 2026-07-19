@@ -39,6 +39,14 @@ export const useProviderPlayback = ({
 
   const currentPlaybackProviderRef = useRef<ProviderId | null>(null);
 
+  // Monotonic generation guard. `playTrack` awaits the provider adapter (a
+  // network round-trip for Spotify transfer/play); overlapping invocations —
+  // e.g. mashing next — can resolve out of order. A later invocation supersedes
+  // an earlier one, so the earlier one's late resolution must not commit its
+  // (now-stale) index or fire its pre-warm. Mirrors the guard in
+  // useCollectionLoader / useRadioSession.
+  const playGenerationRef = useRef(0);
+
   // Re-prime the current track when its provider re-authenticates after a
   // session expiry. The dispatcher (ProviderContext) skips the initial mount,
   // so this only fires on genuine `not authenticated → authenticated`
@@ -129,6 +137,11 @@ export const useProviderPlayback = ({
         mediaTrack.id.slice(0, 8), index, trackProvider);
     }
 
+    // Claim this as the newest intended playback. A concurrent later call bumps
+    // this again; when our awaited adapter call resolves we drop the result if
+    // we're no longer the newest.
+    const generation = ++playGenerationRef.current;
+
     pausePreviousProvider(trackProvider);
     currentPlaybackProviderRef.current = trackProvider;
 
@@ -149,6 +162,11 @@ export const useProviderPlayback = ({
 
     try {
       await descriptor.playback.playTrack(mediaTrack, options);
+
+      // Superseded by a newer playTrack while the adapter was starting — drop
+      // this stale result rather than commit its index or pre-warm its next.
+      if (playGenerationRef.current !== generation) return;
+
       setCurrentTrackIndex(index);
 
       const nextIndex = (index + 1) % tracks.length;

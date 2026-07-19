@@ -32,6 +32,12 @@ export function usePlaybackSubscription({
     if (!playback) return;
     const activeProviderId = activeDescriptor.id;
 
+    // The initial and visibilitychange getState() calls are async and outlive
+    // this effect if the active provider switches or the component unmounts
+    // mid-flight. Cleanup flips this so a superseded getState cannot write the
+    // previous provider's playback state into a torn-down subscription.
+    let cancelled = false;
+
     function handleProviderStateChange(providerId: ProviderId, state: PlaybackState | null) {
       const drivingProviderId = drivingProviderRef.current ?? activeProviderId;
       if (providerId !== drivingProviderId) {
@@ -120,6 +126,7 @@ export function usePlaybackSubscription({
     const stateProviderId = drivingProviderRef.current ?? activeProviderId;
     const stateDescriptor = providerRegistry.get(stateProviderId);
     stateDescriptor?.playback.getState().then((state) => {
+      if (cancelled) return;
       if (state) {
         setIsPlaying(state.isPlaying);
         setPlaybackPosition(state.positionMs);
@@ -132,6 +139,7 @@ export function usePlaybackSubscription({
       const resyncProviderId = drivingProviderRef.current ?? activeProviderId;
       const resyncDescriptor = providerRegistry.get(resyncProviderId);
       resyncDescriptor?.playback.getState().then((state) => {
+        if (cancelled) return;
         if (state) {
           handleProviderStateChange(resyncProviderId, state);
         }
@@ -141,6 +149,7 @@ export function usePlaybackSubscription({
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
     return () => {
+      cancelled = true;
       unsubscribes.forEach((unsub) => unsub());
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
