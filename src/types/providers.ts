@@ -7,7 +7,6 @@ import type {
   MediaTrack,
   MediaCollection,
   CollectionRef,
-  CollectionKind,
   PlaybackState,
   ProviderId,
 } from './domain';
@@ -86,8 +85,6 @@ export interface CatalogProvider {
   /** Optional: save/unsave album to library. */
   setAlbumSaved?(albumId: string, saved: boolean): Promise<void>;
   isAlbumSaved?(albumId: string): Promise<boolean>;
-  /** Optional: delete/unfollow a collection (playlist). */
-  deleteCollection?(collectionId: string, kind: CollectionKind): Promise<void>;
   /** Optional: resolve missing duration for a track (e.g. probe audio metadata). */
   resolveDuration?(track: MediaTrack): Promise<number | null>;
   /** Optional: resolve missing artwork for an album. Returns image URL/data-URL or null. */
@@ -148,16 +145,16 @@ export interface PlaybackProvider {
 // Provider descriptor (for settings UI and registry)
 // -----------------------------------------------------------------------------
 
-export interface ProviderCapabilities {
-  hasLikedCollection: boolean;
-  hasSaveTrack: boolean;
-  hasSaveAlbum?: boolean;
-  hasDeleteCollection?: boolean;
+/**
+ * Capabilities a provider must declare because they cannot be inferred from
+ * method presence — the method may exist as a documented no-op (Dropbox's
+ * `onQueueChanged`, mock's `playCollection`), or the capability isn't a method
+ * at all (a display label, a UI affordance backed by track data).
+ */
+export interface DeclaredProviderCapabilities {
   hasExternalLink: boolean;
   /** e.g. "Open in Spotify" */
   externalLinkLabel?: string;
-  /** Provider supports cross-provider track search/resolution. */
-  hasTrackSearch?: boolean;
   /** Provider syncs its native queue with the app queue. */
   hasNativeQueueSync?: boolean;
   /**
@@ -170,6 +167,22 @@ export interface ProviderCapabilities {
    * stays false for them.
    */
   hasContextPlaybackFallback?: boolean;
+}
+
+/**
+ * Full capability set exposed on registered descriptors. The non-declared
+ * flags are derived from catalog method presence in `registry.register()` —
+ * a provider cannot declare them out of agreement with its adapter.
+ */
+export interface ProviderCapabilities extends DeclaredProviderCapabilities {
+  /** Derived from `catalog.getLikedCount`. */
+  hasLikedCollection: boolean;
+  /** Derived from `catalog.setTrackSaved` + `catalog.isTrackSaved`. */
+  hasSaveTrack: boolean;
+  /** Derived from `catalog.setAlbumSaved` + `catalog.isAlbumSaved`. */
+  hasSaveAlbum: boolean;
+  /** Derived from `catalog.searchTrack`. */
+  hasTrackSearch: boolean;
 }
 
 /**
@@ -216,6 +229,11 @@ export interface ProviderDescriptor {
   /** Optional: save a list of tracks as a new playlist. */
   savePlaylist?(name: string, tracks: MediaTrack[]): Promise<SavePlaylistResult | null>;
 }
+
+/** What providers hand to `registry.register()`: behavioral capabilities only. */
+export type ProviderRegistration = Omit<ProviderDescriptor, 'capabilities'> & {
+  capabilities: DeclaredProviderCapabilities;
+};
 
 /** Registry of available providers; used by app to resolve active provider by id. */
 export interface ProviderRegistry {

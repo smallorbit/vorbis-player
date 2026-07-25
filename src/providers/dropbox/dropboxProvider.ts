@@ -5,7 +5,7 @@
  * Only registered when VITE_DROPBOX_CLIENT_ID is configured.
  */
 
-import type { ProviderDescriptor } from '@/types/providers';
+import type { ProviderRegistration } from '@/types/providers';
 import { theme } from '@/styles/theme';
 import { DropboxAuthAdapter, DROPBOX_AUTH_ERROR_EVENT } from './dropboxAuthAdapter';
 import { DropboxCatalogAdapter } from './dropboxCatalogAdapter';
@@ -19,7 +19,7 @@ import { DropboxIcon } from './DropboxIcon';
 
 const DROPBOX_CLIENT_ID = import.meta.env.VITE_DROPBOX_CLIENT_ID ?? '';
 
-let dropboxDescriptor: ProviderDescriptor | null = null;
+let dropboxDescriptor: ProviderRegistration | null = null;
 
 if (DROPBOX_CLIENT_ID) {
   const auth = new DropboxAuthAdapter();
@@ -52,9 +52,6 @@ if (DROPBOX_CLIENT_ID) {
       clearSyncTimestamp: () => clearPreferencesSyncTimestamp(),
     },
     capabilities: {
-      hasLikedCollection: true,
-      hasSaveTrack: true,
-      hasDeleteCollection: true,
       hasExternalLink: true,
       externalLinkLabel: 'Search Discogs',
     },

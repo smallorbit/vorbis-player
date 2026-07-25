@@ -342,23 +342,3 @@ export async function loadPlaylistTracks(
   return data.tracks.map(savedTrackToMediaTrack);
 }
 
-/**
- * Delete a saved playlist file.
- */
-export async function deleteSavedPlaylist(
-  auth: DropboxAuthAdapter,
-  playlistPath: string,
-): Promise<boolean> {
-  const response = await contentApiRequest(auth, (token) =>
-    fetch('https://api.dropboxapi.com/2/files/delete_v2', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ path: playlistPath }),
-    }),
-  );
-
-  return response?.ok ?? false;
-}

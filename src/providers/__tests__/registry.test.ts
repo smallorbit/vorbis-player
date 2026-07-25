@@ -1,17 +1,15 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import type { ProviderDescriptor } from '@/types/providers';
+import type { ProviderRegistration } from '@/types/providers';
 import { ProviderRegistryImpl } from '../registry';
-import { InvalidProviderDescriptorError } from '../errors';
+import { InvalidProviderDescriptorError, ProviderCapabilityMismatchError } from '../errors';
 
-function makeStubDescriptor(id: 'spotify' | 'dropbox', name: string): ProviderDescriptor {
+function makeStubDescriptor(id: 'spotify' | 'dropbox', name: string): ProviderRegistration {
   return {
     id,
     name,
     capabilities: {
-      hasLikedCollection: id === 'spotify',
-      hasSaveTrack: id === 'spotify',
       hasExternalLink: id === 'spotify',
-      externalLinkLabel: id === 'spotify' ? 'Open in Spotify' : undefined,
+      ...(id === 'spotify' && { externalLinkLabel: 'Open in Spotify' }),
     },
     auth: {
       providerId: id,
@@ -49,6 +47,49 @@ describe('ProviderRegistry', () => {
     registry = new ProviderRegistryImpl();
   });
 
+  describe('capability derivation', () => {
+    it('derives optional-feature flags from catalog method presence', () => {
+      // #given — a bare catalog with none of the optional methods
+      const registration = makeStubDescriptor('dropbox', 'Dropbox');
+
+      // #when
+      registry.register(registration);
+
+      // #then
+      expect(registry.get('dropbox')?.capabilities).toMatchObject({
+        hasLikedCollection: false,
+        hasSaveTrack: false,
+        hasSaveAlbum: false,
+        hasTrackSearch: false,
+      });
+    });
+
+    it('derives true flags when the catalog implements the methods', () => {
+      // #given
+      const registration = makeStubDescriptor('spotify', 'Spotify');
+      registration.catalog = {
+        ...registration.catalog,
+        getLikedCount: async () => 0,
+        setTrackSaved: async () => {},
+        isTrackSaved: async () => false,
+        setAlbumSaved: async () => {},
+        isAlbumSaved: async () => false,
+        searchTrack: async () => null,
+      };
+
+      // #when
+      registry.register(registration);
+
+      // #then
+      expect(registry.get('spotify')?.capabilities).toMatchObject({
+        hasLikedCollection: true,
+        hasSaveTrack: true,
+        hasSaveAlbum: true,
+        hasTrackSearch: true,
+      });
+    });
+  });
+
   it('returns undefined for unregistered provider', () => {
     expect(registry.get('spotify')).toBeUndefined();
   });
@@ -70,7 +111,7 @@ describe('ProviderRegistry', () => {
 
     // #then
     expect(registry.has('spotify')).toBe(true);
-    expect(registry.get('spotify')).toBe(descriptor);
+    expect(registry.get('spotify')).toMatchObject({ id: 'spotify', name: 'Spotify' });
   });
 
   it('getAll() returns all registered providers', () => {
@@ -85,8 +126,7 @@ describe('ProviderRegistry', () => {
 
     // #then
     expect(all).toHaveLength(2);
-    expect(all).toContain(spotify);
-    expect(all).toContain(dropbox);
+    expect(all.map((d) => d.id)).toEqual(['spotify', 'dropbox']);
   });
 
   it('overwrites a provider if registered twice with the same id', () => {
@@ -99,7 +139,7 @@ describe('ProviderRegistry', () => {
     registry.register(second);
 
     // #then
-    expect(registry.get('spotify')).toBe(second);
+    expect(registry.get('spotify')?.name).toBe('Spotify v2');
     expect(registry.getAll()).toHaveLength(1);
   });
 
@@ -107,7 +147,7 @@ describe('ProviderRegistry', () => {
     it('rejects a descriptor missing the auth adapter', () => {
       // #given
       const descriptor = makeStubDescriptor('spotify', 'Spotify');
-      const broken = { ...descriptor, auth: undefined as unknown as ProviderDescriptor['auth'] };
+      const broken = { ...descriptor, auth: undefined as unknown as ProviderRegistration['auth'] };
 
       // #when / #then
       expect(() => registry.register(broken)).toThrow(InvalidProviderDescriptorError);
@@ -124,7 +164,7 @@ describe('ProviderRegistry', () => {
     it('rejects a descriptor missing the catalog adapter', () => {
       // #given
       const descriptor = makeStubDescriptor('spotify', 'Spotify');
-      const broken = { ...descriptor, catalog: undefined as unknown as ProviderDescriptor['catalog'] };
+      const broken = { ...descriptor, catalog: undefined as unknown as ProviderRegistration['catalog'] };
 
       // #when / #then
       try {
@@ -141,7 +181,7 @@ describe('ProviderRegistry', () => {
     it('rejects a descriptor missing the playback adapter', () => {
       // #given
       const descriptor = makeStubDescriptor('spotify', 'Spotify');
-      const broken = { ...descriptor, playback: null as unknown as ProviderDescriptor['playback'] };
+      const broken = { ...descriptor, playback: null as unknown as ProviderRegistration['playback'] };
 
       // #when / #then
       try {
@@ -155,10 +195,28 @@ describe('ProviderRegistry', () => {
       }
     });
 
+    it('rejects hasNativeQueueSync without playback.onQueueChanged', () => {
+      // #given
+      const descriptor = makeStubDescriptor('spotify', 'Spotify');
+      descriptor.capabilities.hasNativeQueueSync = true;
+
+      // #when / #then
+      expect(() => registry.register(descriptor)).toThrow(ProviderCapabilityMismatchError);
+    });
+
+    it('rejects hasContextPlaybackFallback without playback.playCollection', () => {
+      // #given
+      const descriptor = makeStubDescriptor('spotify', 'Spotify');
+      descriptor.capabilities.hasContextPlaybackFallback = true;
+
+      // #when / #then
+      expect(() => registry.register(descriptor)).toThrow(ProviderCapabilityMismatchError);
+    });
+
     it('does not insert a rejected descriptor into the registry', () => {
       // #given
       const descriptor = makeStubDescriptor('spotify', 'Spotify');
-      const broken = { ...descriptor, auth: undefined as unknown as ProviderDescriptor['auth'] };
+      const broken = { ...descriptor, auth: undefined as unknown as ProviderRegistration['auth'] };
 
       // #when
       expect(() => registry.register(broken)).toThrow(InvalidProviderDescriptorError);

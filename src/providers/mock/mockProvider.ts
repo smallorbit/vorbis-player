@@ -1,4 +1,4 @@
-import type { ProviderDescriptor } from '@/types/providers';
+import type { ProviderRegistration } from '@/types/providers';
 import { theme } from '@/styles/theme';
 import { SpotifyIcon } from '@/providers/spotify/SpotifyIcon';
 import { DropboxIcon } from '@/providers/dropbox/DropboxIcon';
@@ -24,20 +24,20 @@ assertProviderSnapshot(dropboxSnapshotJson, 'dropbox');
  * `descriptor.catalog as MockCatalogAdapter` etc. at every consumption site.
  */
 interface MockProviderHandles {
-  descriptor: ProviderDescriptor;
+  descriptor: ProviderRegistration;
   auth: MockAuthAdapter;
   catalog: MockCatalogAdapter;
   playback: MockPlaybackAdapter;
 }
 
 function createMockProvider(
-  base: Omit<ProviderDescriptor, 'auth' | 'catalog' | 'playback'>,
+  base: Omit<ProviderRegistration, 'auth' | 'catalog' | 'playback'>,
   snapshot: ProviderSnapshot,
 ): MockProviderHandles {
   const auth = new MockAuthAdapter(base.id);
   const catalog = new MockCatalogAdapter(snapshot);
   const playback = new MockPlaybackAdapter(base.id);
-  const descriptor: ProviderDescriptor = { ...base, auth, catalog, playback };
+  const descriptor: ProviderRegistration = { ...base, auth, catalog, playback };
   return { descriptor, auth, catalog, playback };
 }
 
@@ -49,13 +49,8 @@ const spotify = createMockProvider(
     icon: SpotifyIcon,
     subscriptionNote: 'Requires Spotify Premium.',
     capabilities: {
-      hasLikedCollection: true,
-      hasSaveTrack: true,
-      hasSaveAlbum: true,
-      hasDeleteCollection: true,
       hasExternalLink: true,
       externalLinkLabel: 'Open in Spotify',
-      hasTrackSearch: true,
       hasNativeQueueSync: false,
     },
   },
@@ -70,9 +65,6 @@ const dropbox = createMockProvider(
     icon: DropboxIcon,
     likesChangedEvent: 'mock-dropbox-likes-changed',
     capabilities: {
-      hasLikedCollection: true,
-      hasSaveTrack: true,
-      hasDeleteCollection: true,
       hasExternalLink: true,
       externalLinkLabel: 'Search Discogs',
     },

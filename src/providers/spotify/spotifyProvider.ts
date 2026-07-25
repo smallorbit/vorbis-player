@@ -3,7 +3,7 @@
  * into a single ProviderDescriptor and registers it with the global registry.
  */
 
-import type { ProviderDescriptor } from '@/types/providers';
+import type { ProviderRegistration } from '@/types/providers';
 import type { MediaTrack } from '@/types/domain';
 import { theme } from '@/styles/theme';
 import { SpotifyAuthAdapter } from './spotifyAuthAdapter';
@@ -18,20 +18,15 @@ import {
   addTracksToPlaylist,
 } from '@/services/spotify';
 
-const spotifyDescriptor: ProviderDescriptor = {
+const spotifyDescriptor: ProviderRegistration = {
   id: 'spotify',
   name: 'Spotify',
   color: theme.colors.spotify,
   icon: SpotifyIcon,
   subscriptionNote: 'Requires Spotify Premium.',
   capabilities: {
-    hasLikedCollection: true,
-    hasSaveTrack: true,
-    hasSaveAlbum: true,
-    hasDeleteCollection: true,
     hasExternalLink: true,
     externalLinkLabel: 'Open in Spotify',
-    hasTrackSearch: true,
     hasNativeQueueSync: true,
     hasContextPlaybackFallback: true,
   },

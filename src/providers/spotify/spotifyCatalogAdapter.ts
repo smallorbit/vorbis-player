@@ -19,7 +19,6 @@ import {
   checkAlbumSaved,
   saveAlbum,
   unsaveAlbum,
-  unfollowPlaylist,
   searchTrack,
 } from '@/services/spotify';
 
@@ -94,14 +93,6 @@ export class SpotifyCatalogAdapter implements CatalogProvider {
 
   async isAlbumSaved(albumId: string): Promise<boolean> {
     return checkAlbumSaved(albumId);
-  }
-
-  async deleteCollection(collectionId: string, kind: 'playlist' | 'album' | 'folder' | 'liked'): Promise<void> {
-    if (kind === 'playlist') {
-      await unfollowPlaylist(collectionId);
-    } else if (kind === 'album') {
-      await unsaveAlbum(collectionId);
-    }
   }
 
   async searchTrack(artist: string, title: string): Promise<MediaTrack | null> {
