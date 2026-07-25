@@ -29,8 +29,6 @@ export type LibraryRouteView =
 /** Kinds a library card represents directly (no meta-wrappers). */
 export type LibraryCollectionKind = 'playlist' | 'album' | 'liked';
 
-export type LibraryItemKind = LibraryCollectionKind | 'recently-played';
-
 interface ContextMenuRequestBase {
   id: string;
   provider?: ProviderId | undefined;
