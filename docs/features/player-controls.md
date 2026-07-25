@@ -339,7 +339,7 @@ A `libraryOverride` state is a one-way door: once "Browse Library" is engaged it
 
 ### QAP preference
 
-Stored in `localStorage` under key `vorbis-player-qap-enabled` (default `false`). Toggled via the Advanced settings section (`src/components/SettingsV2/sections/AdvancedSection.tsx`). The `useQapEnabled()` hook wraps `useLocalStorage`.
+Stored in `localStorage` under key `vorbis-player-qap-enabled` (default `false`). Toggled via the Advanced settings section (`src/components/Settings/sections/AdvancedSection.tsx`). The `useQapEnabled()` hook wraps `useLocalStorage`.
 
 ### Other states
 

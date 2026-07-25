@@ -1,0 +1,127 @@
+import { memo } from 'react';
+import type { MediaTrack } from '@/types/domain';
+import { usePlaybackControls } from '../hooks/usePlaybackControls';
+import { usePlayerSizingContext } from '@/contexts/PlayerSizingContext';
+import { useProviderContext } from '@/contexts/ProviderContext';
+import { PlayerControlsContainer } from './controls/styled';
+import TrackInfo from './controls/TrackInfo';
+import PlaybackControls from './controls/PlaybackControls';
+import TimelineControls from './controls/TimelineControls';
+import ProviderIcon from './ProviderIcon';
+import type { ProviderId } from '@/types/domain';
+
+const PROVIDER_BADGE_Z = 12;
+
+
+interface PlayerControlsProps {
+  currentTrack: MediaTrack | null;
+  onPlay: () => void;
+  onPause: () => void;
+  onNext: () => void;
+  onPrevious: () => void;
+  trackCount: number;
+  isLiked?: boolean | undefined;
+  isLikePending?: boolean | undefined;
+  onToggleLike?: (() => void) | undefined;
+  onArtistBrowse?: ((artistName: string) => void) | undefined;
+  onAlbumPlay?: ((albumId: string, albumName: string) => void) | undefined;
+  onPlayRadio?: (() => void) | undefined;
+  currentTrackProvider?: ProviderId | undefined;
+}
+
+// --- PlayerControls Component ---
+const PlayerControls = memo<PlayerControlsProps>(({
+  currentTrack,
+  onPlay,
+  onPause,
+  onNext,
+  onPrevious,
+  isLiked: propIsLiked,
+  isLikePending: propIsLikePending,
+  onToggleLike: propOnToggleLike,
+  onArtistBrowse,
+  onAlbumPlay,
+  onPlayRadio,
+  currentTrackProvider,
+}) => {
+  // Get responsive sizing information
+  const { isMobile, isTablet, isDesktop } = usePlayerSizingContext();
+  const { hasMultipleProviders, enabledProviderIds } = useProviderContext();
+  const showProviderBadge = hasMultipleProviders && enabledProviderIds.length > 1;
+  const trackProvider = currentTrack?.provider;
+
+  // Use Spotify controls hook — like state is always provided via props from usePlayerLogic
+  const {
+    isPlaying,
+    currentPosition,
+    duration,
+    handleLikeToggle,
+    handleSeekDuringScrub,
+    handleScrubStart,
+    handleScrubEnd,
+    formatTime,
+  } = usePlaybackControls({
+    currentTrack,
+    isLiked: propIsLiked ?? false,
+    isLikePending: propIsLikePending ?? false,
+    onPlay,
+    onPause,
+    onNext,
+    onPrevious,
+    onLikeToggle: propOnToggleLike ?? (() => {}),
+    currentTrackProvider,
+  });
+
+  const effectiveIsLiked = propIsLiked ?? false;
+  const effectiveIsLikePending = propIsLikePending ?? false;
+  const effectiveHandleLikeToggle = handleLikeToggle;
+  
+  return (
+    <PlayerControlsContainer $isMobile={isMobile} $isTablet={isTablet} $compact={!isDesktop}>
+      {showProviderBadge && trackProvider && (
+        <div style={{ position: 'absolute', top: 6, right: 6, zIndex: PROVIDER_BADGE_Z }}>
+          <ProviderIcon provider={trackProvider} size={22} />
+        </div>
+      )}
+      <TrackInfo
+        track={currentTrack}
+        isMobile={isMobile}
+        isTablet={isTablet}
+        onArtistBrowse={onArtistBrowse}
+        onAlbumPlay={onAlbumPlay}
+        onPlayRadio={onPlayRadio}
+      />
+
+      <div style={{ display: 'flex', justifyContent: 'center', width: '100%', gap: '0.5rem' }}>
+        <PlaybackControls
+          onPrevious={onPrevious}
+          onPlay={onPlay}
+          onPause={onPause}
+          onNext={onNext}
+          isPlaying={isPlaying}
+          isMobile={isMobile}
+          isTablet={isTablet}
+        />
+      </div>
+
+      <TimelineControls
+        currentPosition={currentPosition}
+        duration={duration}
+        formatTime={formatTime}
+        onSeek={handleSeekDuringScrub}
+        onScrubStart={handleScrubStart}
+        onScrubEnd={handleScrubEnd}
+        trackId={currentTrack?.id}
+        isLiked={effectiveIsLiked}
+        isLikePending={effectiveIsLikePending}
+        onLikeToggle={effectiveHandleLikeToggle}
+        isMobile={isMobile}
+        isTablet={isTablet}
+      />
+    </PlayerControlsContainer>
+  );
+});
+
+PlayerControls.displayName = 'PlayerControls';
+
+export default PlayerControls; 

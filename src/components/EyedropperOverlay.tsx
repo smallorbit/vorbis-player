@@ -65,7 +65,7 @@ const EyedropperOverlay: React.FC<EyedropperOverlayProps> = ({ image, onPick, on
         alignItems: 'center',
         justifyContent: 'center',
         flexDirection: 'column',
-        // When invoked from a Radix modal Dialog (e.g. SettingsV2's
+        // When invoked from a Radix modal Dialog (e.g. Settings's
         // AccentColorManager), Radix sets `body { pointer-events: none }` and
         // only re-enables pointer events on the dialog's DismissableLayer.
         // The eyedropper portals to `document.body`, so it inherits `none`

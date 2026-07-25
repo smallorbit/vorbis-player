@@ -61,7 +61,7 @@ export function usePlayerLogic() {
     setShowQueue,
   } = useCurrentTrackContext();
 
-  const { setShowVisualEffects } = useVisualEffectsToggle();
+  const { setIsSettingsOpen } = useVisualEffectsToggle();
 
   const {
     accentColorOverrides,
@@ -307,8 +307,8 @@ export function usePlayerLogic() {
   const handleOpenLibrary = useCallback(() => {
     setCurrentView('library');
     setShowQueue(false);
-    setShowVisualEffects(false);
-  }, [setShowQueue, setShowVisualEffects]);
+    setIsSettingsOpen(false);
+  }, [setShowQueue, setIsSettingsOpen]);
 
   const handleCloseLibrary = useCallback(() => {
     setCurrentView('player');
@@ -337,8 +337,8 @@ export function usePlayerLogic() {
     mediaTracksRef.current = [];
     expectedTrackIdRef.current = null;
     setShowQueue(false);
-    setShowVisualEffects(false);
-  }, [handlePause, stopRadio, setSelection, setTracks, setCurrentTrackIndex, setShowQueue, setShowVisualEffects]);
+    setIsSettingsOpen(false);
+  }, [handlePause, stopRadio, setSelection, setTracks, setCurrentTrackIndex, setShowQueue, setIsSettingsOpen]);
 
   const handleHydrate = useCallback(async (session: SessionSnapshot): Promise<HydrateResult> => {
     if (!session.queueTracks?.length) {

@@ -1,26 +1,26 @@
 # Settings System
 
-The settings surface is **Settings v2** (`src/components/SettingsV2/`): a full-screen shadcn `Dialog` with a sidebar shell on desktop and a takeover list view on mobile. It is the single entry point for all user-configurable preferences: provider management, playback defaults, appearance, QAP, cache clearing, profiler, visualizer debug, and provider-specific data operations.
+The settings surface is **Settings v2** (`src/components/Settings/`): a full-screen shadcn `Dialog` with a sidebar shell on desktop and a takeover list view on mobile. It is the single entry point for all user-configurable preferences: provider management, playback defaults, appearance, QAP, cache clearing, profiler, visualizer debug, and provider-specific data operations.
 
 ## Entry Point
 
-Component: `src/components/SettingsV2/SettingsV2.tsx` (exported through `src/components/SettingsV2/index.ts`).
+Component: `src/components/Settings/Settings.tsx` (exported through `src/components/Settings/index.ts`).
 
 Opened via:
 - Gear icon on the flip menu back face
 - Keyboard shortcut `Shift+S`
-- `useVisualEffectsToggle().setShowVisualEffects(true)`
+- `useVisualEffectsToggle().setIsSettingsOpen(true)`
 
 The dialog is lazy-loaded (`React.lazy`) in two places:
 - `src/components/PlayerContent/PlayerControlsSection.tsx` (when a track is loaded)
 - `src/components/AudioPlayer.tsx` (when no track is loaded / idle state)
 
-URL deep-links are handled by `useSettingsUrl` (`?settings=<section>`); section IDs and labels live in `src/components/SettingsV2/sections.ts`.
+URL deep-links are handled by `useSettingsUrl` (`?settings=<section>`); section IDs and labels live in `src/components/Settings/sections.ts`.
 
 ## Props Interface
 
 ```ts
-interface SettingsV2Props {
+interface SettingsProps {
   isOpen: boolean;
   onClose: () => void;
 }
@@ -30,11 +30,11 @@ All section state (profiler, visualizer debug, QAP, cache clearing) is read from
 
 ## Panel Organization
 
-Four sidebar sections, catalogued in `src/components/SettingsV2/sections.ts` (`SETTINGS_V2_SECTIONS`): **Sources**, **Playback**, **Appearance**, **Advanced**.
+Four sidebar sections, catalogued in `src/components/Settings/sections.ts` (`SETTINGS_SECTIONS`): **Sources**, **Playback**, **Appearance**, **Advanced**.
 
 ### Sources (`SourcesSection`)
 
-File: `src/components/SettingsV2/sections/SourcesSection.tsx`, composing `MusicSourcesSection` + `NativeQueueSyncSection` from `src/components/SettingsV2/sections/MusicSourcesSection.tsx`.
+File: `src/components/Settings/sections/SourcesSection.tsx`, composing `MusicSourcesSection` + `NativeQueueSyncSection` from `src/components/Settings/sections/MusicSourcesSection.tsx`.
 
 **Music Sources** only renders when 2+ providers are registered. Shows each provider with:
 - Name
@@ -50,15 +50,15 @@ Uses `useProviderContext()` for `registry`, `enabledProviderIds`, `toggleProvide
 
 ### Playback (`PlaybackSection`)
 
-File: `src/components/SettingsV2/sections/PlaybackSection.tsx`. Default volume and shuffle behaviour.
+File: `src/components/Settings/sections/PlaybackSection.tsx`. Default volume and shuffle behaviour.
 
 ### Appearance (`AppearanceSection`)
 
-File: `src/components/SettingsV2/sections/AppearanceSection.tsx` (+ `sections/appearance/`). Visual effects: glow controls, visualizer style/intensity/speed pickers (shadcn `ToggleGroup`), translucence, and the accent color manager. The flip-menu back (`QuickEffectsRow`) remains the quick-access surface for the same settings.
+File: `src/components/Settings/sections/AppearanceSection.tsx` (+ `sections/appearance/`). Visual effects: glow controls, visualizer style/intensity/speed pickers (shadcn `ToggleGroup`), translucence, and the accent color manager. The flip-menu back (`QuickEffectsRow`) remains the quick-access surface for the same settings.
 
 ### Advanced (`AdvancedSection`)
 
-File: `src/components/SettingsV2/sections/AdvancedSection.tsx`.
+File: `src/components/Settings/sections/AdvancedSection.tsx`.
 
 Contains:
 
@@ -95,7 +95,7 @@ Invariant: enabling visualizer debug disables the profiler (`profilerToggle()`).
 
 #### Provider Data Blocks
 
-File: `src/components/SettingsV2/sections/ProviderDataBlock.tsx`
+File: `src/components/Settings/sections/ProviderDataBlock.tsx`
 
 One `ProviderDataBlock` per enabled provider that has `catalog.clearArtCache` or `catalog.exportLikes`. Each is a collapsible block titled "{ProviderName} Data". Controls depend on which `CatalogProvider` capabilities exist:
 
@@ -262,13 +262,13 @@ These are compatible because `JSON.parse('"true"')` and `'true' === 'true'` both
 
 | File | Role |
 |---|---|
-| `src/components/SettingsV2/SettingsV2.tsx` | Settings dialog shell (desktop sidebar + mobile takeover) |
-| `src/components/SettingsV2/sections.ts` | Section catalog (IDs, labels, deep-link mapping) |
-| `src/components/SettingsV2/sections/MusicSourcesSection.tsx` | Music Sources + Queue Sync sections |
-| `src/components/SettingsV2/sections/ProviderDataBlock.tsx` | Per-provider data management |
+| `src/components/Settings/Settings.tsx` | Settings dialog shell (desktop sidebar + mobile takeover) |
+| `src/components/Settings/sections.ts` | Section catalog (IDs, labels, deep-link mapping) |
+| `src/components/Settings/sections/MusicSourcesSection.tsx` | Music Sources + Queue Sync sections |
+| `src/components/Settings/sections/ProviderDataBlock.tsx` | Per-provider data management |
 | `src/constants/storage.ts` | `STORAGE_KEYS` constant object |
 | `src/hooks/useLocalStorage.ts` | Generic localStorage hook with cross-tab sync |
 | `src/hooks/useQapEnabled.ts` | QAP preference hook |
-| `src/contexts/visualEffects/VisualEffectsToggleContext.tsx` | Visual effects drawer open/close state (`showVisualEffects` / `setShowVisualEffects`) |
+| `src/contexts/visualEffects/VisualEffectsToggleContext.tsx` | Visual effects drawer open/close state (`isSettingsOpen` / `setIsSettingsOpen`) |
 | `src/providers/dropbox/dropboxPreferencesSync.ts` | Dropbox preferences sync service |
-| `src/components/PlayerContent/PlayerControlsSection.tsx` | Hosts the lazy `SettingsV2` mount when a track is loaded |
+| `src/components/PlayerContent/PlayerControlsSection.tsx` | Hosts the lazy `Settings` mount when a track is loaded |

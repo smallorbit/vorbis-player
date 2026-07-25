@@ -30,7 +30,7 @@ import type { CollectionSelection, MediaCollection, MediaTrack } from '@/types/d
 import { collectionToRef, keyToCollectionRef } from '@/types/domain';
 import type { SearchArtist } from '@/services/cache/librarySearch';
 
-const SettingsV2 = lazy(() => import('./SettingsV2'));
+const Settings = lazy(() => import('./Settings'));
 const LibraryRoute = lazy(() => import('./LibraryRoute'));
 
 const RESUME_TOAST_ID = 'resume-toast';
@@ -72,7 +72,7 @@ const AudioPlayerComponent = () => {
     backgroundVisualizerSpeed,
   } = useVisualizer();
   const { accentColorBackgroundEnabled } = useAccentColorBackground();
-  const { showVisualEffects, setShowVisualEffects } = useVisualEffectsToggle();
+  const { isSettingsOpen, setIsSettingsOpen } = useVisualEffectsToggle();
   const { tracks, selection, setTracks, setOriginalTracks, setSelection } = useTrackListContext();
   const { currentTrack, currentTrackIndex, setCurrentTrackIndex, showQueue, setShowQueue } = useCurrentTrackContext();
 
@@ -395,12 +395,12 @@ const AudioPlayerComponent = () => {
   const isMainPlayerActive = !state.isLoading && !state.error && selection !== null && tracks.length > 0;
 
   const handleOpenSettings = useCallback(() => {
-    setShowVisualEffects(true);
-  }, [setShowVisualEffects]);
+    setIsSettingsOpen(true);
+  }, [setIsSettingsOpen]);
 
   const handleCloseSettings = useCallback(() => {
-    setShowVisualEffects(false);
-  }, [setShowVisualEffects]);
+    setIsSettingsOpen(false);
+  }, [setIsSettingsOpen]);
 
   const handleResume = useCallback(async () => {
     if (!lastSession?.queueTracks?.length) return;
@@ -584,7 +584,7 @@ const AudioPlayerComponent = () => {
         />
         {!isMainPlayerActive && (
           <Suspense fallback={null}>
-            <SettingsV2 isOpen={showVisualEffects} onClose={handleCloseSettings} />
+            <Settings isOpen={isSettingsOpen} onClose={handleCloseSettings} />
           </Suspense>
         )}
         {needsSetup && state.currentView === 'library' && (

@@ -76,7 +76,7 @@ npm run deploy:preview # Deploy preview
 
 ```
 src/
-├── components/      # React components; key subdirs: ui/ (shadcn primitives), PlayerContent/, BottomBar/, PlaylistSelection/, QuickAccessPanel/, SettingsV2/, controls/, visualizers/
+├── components/      # React components; key subdirs: ui/ (shadcn primitives), PlayerContent/, BottomBar/, PlaylistSelection/, QuickAccessPanel/, Settings/, controls/, visualizers/
 ├── contexts/        # React context providers (TrackContext, ColorContext, etc.)
 ├── providers/       # Multi-provider system; spotify/ and dropbox/ subdirs
 ├── hooks/           # Custom hooks

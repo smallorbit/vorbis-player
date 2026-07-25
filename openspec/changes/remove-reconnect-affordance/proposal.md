@@ -38,5 +38,5 @@ None.
 - `src/components/AppSettingsMenu/styled.ts` — `ProviderStatusBadge` `$status` union narrowed to `'connected' | 'disabled'`; reconnect color branch removed.
 - `src/components/AudioPlayer.tsx` — reconnect-toast effect + `RECONNECT_TOAST_ID` deleted; disconnect-toast effect no longer gates on `reconnectPrompt`.
 - `src/components/AppSettingsMenu/__tests__/SourcesSections.test.tsx` — token-expired tests replaced with an assertion that the toggle is unchecked when the provider is enabled-but-unauth (matches the new spec) and a baseline "no Reconnect button visible" assertion stays.
-- `src/components/SettingsV2/sections/__tests__/SourcesSection.test.tsx` — stale "Reconnect needed" badge test deleted.
+- `src/components/Settings/sections/__tests__/SourcesSection.test.tsx` — stale "Reconnect needed" badge test deleted.
 - `src/contexts/__tests__/ProviderContext.test.tsx` — new test asserting that a `SESSION_EXPIRED_EVENT` removes the provider id from `enabledProviderIds`.

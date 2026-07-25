@@ -1,7 +1,7 @@
 import React, { Suspense, lazy, useState, useCallback, useMemo, useRef } from 'react';
 import { useTheme } from 'styled-components';
 import { CardContent } from '@/components/styled';
-import SpotifyPlayerControls from '@/components/SpotifyPlayerControls';
+import PlayerControls from '@/components/PlayerControls';
 import BottomBar from '@/components/BottomBar';
 import { ProfiledComponent } from '@/components/ProfiledComponent';
 import { useVisualEffectsState } from '@/hooks/useVisualEffectsState';
@@ -35,7 +35,7 @@ import { LoadingCard, ZenControlsWrapper, ZenControlsInner } from './styled';
 const ZEN_CONTROLS_WILL_CHANGE_FALLBACK_MS =
   ZEN_EXIT_REENTRY_DELAY + ZEN_CONTROLS_DURATION + 100;
 
-const SettingsV2 = lazy(() => import('@/components/SettingsV2'));
+const Settings = lazy(() => import('@/components/Settings'));
 const KeyboardShortcutsHelp = lazy(() => import('@/components/KeyboardShortcutsHelp'));
 
 function ControlsLoadingFallback(): React.ReactElement {
@@ -53,7 +53,7 @@ function ControlsLoadingFallback(): React.ReactElement {
   );
 }
 
-function VisualEffectsLoadingFallback(): React.ReactElement {
+function SettingsLoadingFallback(): React.ReactElement {
   const theme = useTheme();
   return (
     <div style={{
@@ -140,8 +140,8 @@ export const PlayerControlsSection: React.FC<PlayerControlsSectionProps> = React
   const {
     visualEffectsEnabled,
     setVisualEffectsEnabled,
-    showVisualEffects,
-    setShowVisualEffects,
+    isSettingsOpen,
+    setIsSettingsOpen,
   } = useVisualEffectsToggle();
   const { backgroundVisualizerStyle, setBackgroundVisualizerStyle } = useVisualizer();
   const { setTranslucenceEnabled } = useTranslucence();
@@ -149,7 +149,7 @@ export const PlayerControlsSection: React.FC<PlayerControlsSectionProps> = React
   const [qapEnabled] = useQapEnabled();
 
   const settingsHasBeenOpenedRef = useRef(false);
-  if (showVisualEffects) settingsHasBeenOpenedRef.current = true;
+  if (isSettingsOpen) settingsHasBeenOpenedRef.current = true;
 
   const zenControlsWrapperRef = useRef<HTMLDivElement>(null);
   useTransitionWillChange(
@@ -166,16 +166,16 @@ export const PlayerControlsSection: React.FC<PlayerControlsSectionProps> = React
   const handleShowVisualEffects = useCallback(() => {
     onCloseQueue();
     onCloseLibrary();
-    setShowVisualEffects(true);
-  }, [onCloseQueue, onCloseLibrary, setShowVisualEffects]);
+    setIsSettingsOpen(true);
+  }, [onCloseQueue, onCloseLibrary, setIsSettingsOpen]);
 
-  const handleCloseVisualEffects = useCallback(() => setShowVisualEffects(false), [setShowVisualEffects]);
+  const handleCloseSettings = useCallback(() => setIsSettingsOpen(false), [setIsSettingsOpen]);
 
   const handleToggleVisualEffectsMenu = useCallback(() => {
     onCloseQueue();
     onCloseLibrary();
-    setShowVisualEffects(prev => !prev);
-  }, [setShowVisualEffects, onCloseQueue, onCloseLibrary]);
+    setIsSettingsOpen(prev => !prev);
+  }, [setIsSettingsOpen, onCloseQueue, onCloseLibrary]);
 
   const handleGlowToggle = useCallback(() => {
     if (visualEffectsEnabled) {
@@ -210,9 +210,9 @@ export const PlayerControlsSection: React.FC<PlayerControlsSectionProps> = React
 
   const handleEscapeClose = useCallback(() => {
     onCloseLibrary();
-    handleCloseVisualEffects();
+    handleCloseSettings();
     if (showHelp) closeHelp();
-  }, [onCloseLibrary, handleCloseVisualEffects, showHelp, closeHelp]);
+  }, [onCloseLibrary, handleCloseSettings, showHelp, closeHelp]);
 
   const handleArrowUp = useCallback(() => {
     if (showLibrary) {
@@ -310,8 +310,8 @@ export const PlayerControlsSection: React.FC<PlayerControlsSectionProps> = React
               justifyContent: 'center'
             }}>
               <Suspense fallback={<ControlsLoadingFallback />}>
-                <ProfiledComponent id="SpotifyPlayerControls">
-                  <SpotifyPlayerControls
+                <ProfiledComponent id="PlayerControls">
+                  <PlayerControls
                     currentTrack={currentTrack}
                     trackCount={tracks.length}
                     isLiked={isLiked}
@@ -338,8 +338,8 @@ export const PlayerControlsSection: React.FC<PlayerControlsSectionProps> = React
         </BottomBarActionsProvider>
       </ProfiledComponent>
       {settingsHasBeenOpenedRef.current && (
-        <Suspense fallback={<VisualEffectsLoadingFallback />}>
-          <SettingsV2 isOpen={showVisualEffects} onClose={handleCloseVisualEffects} />
+        <Suspense fallback={<SettingsLoadingFallback />}>
+          <Settings isOpen={isSettingsOpen} onClose={handleCloseSettings} />
         </Suspense>
       )}
       <Suspense fallback={null}>

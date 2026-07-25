@@ -11,7 +11,7 @@
 ## 2. Tests
 
 - [x] 2.1 Replace the `'token-expired reconnect flow'` test block in `src/components/AppSettingsMenu/__tests__/SourcesSections.test.tsx` with assertions that match the new behavior (toggle is unchecked when the provider is enabled-but-unauth after a SESSION_EXPIRED_EVENT propagates; no `"Reconnect needed"` text in DOM).
-- [x] 2.2 Remove the stale `"Reconnect needed" badge` test from `src/components/SettingsV2/sections/__tests__/SourcesSection.test.tsx`.
+- [x] 2.2 Remove the stale `"Reconnect needed" badge` test from `src/components/Settings/sections/__tests__/SourcesSection.test.tsx`.
 - [x] 2.3 Add `src/contexts/__tests__/ProviderContext.test.tsx` asserting that dispatching `SESSION_EXPIRED_EVENT` removes the provider id from `enabledProviderIds`.
 
 ## 3. Verify

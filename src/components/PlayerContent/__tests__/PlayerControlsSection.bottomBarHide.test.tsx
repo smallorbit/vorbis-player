@@ -67,8 +67,8 @@ vi.mock('@/contexts/visualEffects', () => ({
   useVisualEffectsToggle: () => ({
     visualEffectsEnabled: false,
     setVisualEffectsEnabled: vi.fn(),
-    showVisualEffects: false,
-    setShowVisualEffects: vi.fn(),
+    isSettingsOpen: false,
+    setIsSettingsOpen: vi.fn(),
   }),
   useVisualizer: () => ({
     backgroundVisualizerStyle: 'fireflies',
@@ -116,7 +116,7 @@ vi.mock('@/components/BottomBar', () => ({
   default: () => <div data-testid="bottom-bar" />,
 }));
 
-vi.mock('@/components/SpotifyPlayerControls', () => ({
+vi.mock('@/components/PlayerControls', () => ({
   default: () => <div data-testid="spotify-controls" />,
 }));
 
