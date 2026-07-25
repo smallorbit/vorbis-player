@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook } from '@testing-library/react';
 import { usePlaylistsSection } from '../usePlaylistsSection';
-import type { ProviderId } from '@/types/domain';
+import type { MediaCollection, ProviderId } from '@/types/domain';
 
 vi.mock('@/hooks/useLibrarySync', () => ({
   useLibrarySync: vi.fn(),
@@ -19,14 +19,15 @@ import { usePinnedItems } from '@/hooks/usePinnedItems';
 const mockUseLibrarySync = vi.mocked(useLibrarySync);
 const mockUsePinnedItems = vi.mocked(usePinnedItems);
 
-const makePlaylist = (id: string, provider: ProviderId = 'spotify') => ({
+const makePlaylist = (id: string, provider: ProviderId = 'spotify'): MediaCollection => ({
   id,
-  name: `Playlist ${id}`,
   provider,
-  images: [{ url: `https://img.example/${id}.jpg`, height: 300, width: 300 }],
-  tracks: { total: 10 },
-  description: null,
-  owner: { display_name: 'User' },
+  kind: 'playlist',
+  name: `Playlist ${id}`,
+  imageUrl: `https://img.example/${id}.jpg`,
+  trackCount: 10,
+  ownerName: 'User',
+  genres: [],
 });
 
 const defaultPinnedItems = {
@@ -88,7 +89,7 @@ describe('usePlaylistsSection', () => {
     it('returns all playlists when providerFilter is undefined', () => {
       // #given
       mockUseLibrarySync.mockReturnValue({
-        playlists: [makePlaylist('pl-1'), makePlaylist('pl-2', 'dropbox' as ProviderId)],
+        playlists: [makePlaylist('pl-1'), makePlaylist('pl-2', 'dropbox')],
         albums: [],
         likedSongsCount: 0,
         likedSongsPerProvider: [],
@@ -106,7 +107,7 @@ describe('usePlaylistsSection', () => {
     it('returns all playlists when providerFilter is empty array', () => {
       // #given
       mockUseLibrarySync.mockReturnValue({
-        playlists: [makePlaylist('pl-1'), makePlaylist('pl-2', 'dropbox' as ProviderId)],
+        playlists: [makePlaylist('pl-1'), makePlaylist('pl-2', 'dropbox')],
         albums: [],
         likedSongsCount: 0,
         likedSongsPerProvider: [],
@@ -128,7 +129,7 @@ describe('usePlaylistsSection', () => {
       mockUseLibrarySync.mockReturnValue({
         playlists: [
           makePlaylist('pl-1', 'spotify'),
-          makePlaylist('pl-2', 'dropbox' as ProviderId),
+          makePlaylist('pl-2', 'dropbox'),
           makePlaylist('pl-3', 'spotify'),
         ],
         albums: [],
@@ -146,12 +147,10 @@ describe('usePlaylistsSection', () => {
       expect(result.current.items.every(p => p.provider === 'spotify')).toBe(true);
     });
 
-    it('falls back to "spotify" for playlists without a provider field', () => {
-      // #given — playlist has no provider field (uses fallback p.provider ?? 'spotify')
-      const playlistWithoutProvider = { ...makePlaylist('pl-1') };
-      delete (playlistWithoutProvider as Record<string, unknown>).provider;
+    it('matches on the required provider field stamped on each collection', () => {
+      // #given — provider is required on MediaCollection; no fallback is applied
       mockUseLibrarySync.mockReturnValue({
-        playlists: [playlistWithoutProvider] as ReturnType<typeof useLibrarySync>['playlists'],
+        playlists: [makePlaylist('pl-1', 'dropbox')],
         albums: [],
         likedSongsCount: 0,
         likedSongsPerProvider: [],
@@ -160,10 +159,11 @@ describe('usePlaylistsSection', () => {
       } as ReturnType<typeof useLibrarySync>);
 
       // #when
-      const { result } = renderHook(() => usePlaylistsSection({ providerFilter: ['spotify'] }));
+      const { result } = renderHook(() => usePlaylistsSection({ providerFilter: ['dropbox'] }));
 
-      // #then — playlist without provider is treated as spotify and included
+      // #then — the dropbox-stamped playlist matches the dropbox filter
       expect(result.current.items).toHaveLength(1);
+      expect(result.current.items[0].provider).toBe('dropbox');
     });
 
     it('returns empty items when no playlists match the provider filter', () => {
@@ -178,7 +178,7 @@ describe('usePlaylistsSection', () => {
       } as ReturnType<typeof useLibrarySync>);
 
       // #when
-      const { result } = renderHook(() => usePlaylistsSection({ providerFilter: ['dropbox' as ProviderId] }));
+      const { result } = renderHook(() => usePlaylistsSection({ providerFilter: ['dropbox'] }));
 
       // #then
       expect(result.current.items).toHaveLength(0);
@@ -242,7 +242,7 @@ describe('usePlaylistsSection', () => {
         playlists: [
           makePlaylist('pl-1', 'spotify'),  // pinned
           makePlaylist('pl-2', 'spotify'),  // not pinned
-          makePlaylist('pl-3', 'dropbox' as ProviderId),  // different provider
+          makePlaylist('pl-3', 'dropbox'),  // different provider
         ],
         albums: [],
         likedSongsCount: 0,

@@ -1,9 +1,8 @@
 import 'fake-indexeddb/auto';
 import { renderHook, waitFor, act } from '@testing-library/react';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
-import type { CachedPlaylistInfo, SyncState } from '../../services/cache/cacheTypes';
-import type { AlbumInfo, SpotifyImage } from '../../services/spotify';
-import type { ProviderId } from '@/types/domain';
+import type { SyncState } from '../../services/cache/cacheTypes';
+import type { MediaCollection, ProviderId } from '@/types/domain';
 
 const { mockSubscribe, mockStart, mockStop, mockSyncNow } = vi.hoisted(() => ({
   mockSubscribe: vi.fn(),
@@ -24,31 +23,33 @@ vi.mock('../../services/cache/librarySyncEngine', () => ({
 
 import { useEngineLibrarySync } from '../useEngineLibrarySync';
 
-function makePlaylist(id: string, name?: string): CachedPlaylistInfo {
+function makePlaylist(id: string, name?: string): MediaCollection {
   return {
     id,
+    provider: 'spotify',
+    kind: 'playlist',
     name: name ?? `Playlist ${id}`,
-    description: null,
-    images: [] as SpotifyImage[],
-    tracks: { total: 10 },
-    owner: { display_name: 'TestUser' },
+    trackCount: 10,
+    ownerName: 'TestUser',
+    genres: [],
   };
 }
 
-function makeAlbum(id: string, name?: string): AlbumInfo {
+function makeAlbum(id: string, name?: string): MediaCollection {
   return {
     id,
+    provider: 'spotify',
+    kind: 'album',
     name: name ?? `Album ${id}`,
-    artists: 'Test Artist',
-    images: [] as SpotifyImage[],
-    release_date: '2024-01-01',
-    total_tracks: 12,
-    uri: `spotify:album:${id}`,
+    ownerName: 'Test Artist',
+    trackCount: 12,
+    releaseDate: '2024-01-01',
+    genres: [],
   };
 }
 
 describe('useEngineLibrarySync', () => {
-  let capturedListener: ((state: SyncState, pl?: CachedPlaylistInfo[], al?: AlbumInfo[], lc?: number) => void) | null = null;
+  let capturedListener: ((state: SyncState, pl?: MediaCollection[], al?: MediaCollection[], lc?: number) => void) | null = null;
   let unsubscribeFn: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
@@ -127,31 +128,35 @@ describe('useEngineLibrarySync', () => {
     // #then
     await waitFor(() => {
       expect(result.current.playlists).toHaveLength(1);
-      expect(result.current.playlists[0].name).toBe('My Playlist');
-      expect(result.current.albums[0].name).toBe('My Album');
+      expect(result.current.playlists[0]?.name).toBe('My Playlist');
+      expect(result.current.albums[0]?.name).toBe('My Album');
       expect(result.current.likedCount).toBe(42);
       expect(result.current.syncState.isInitialLoadComplete).toBe(true);
     });
   });
 
-  it('stamps the engine providerId onto playlists and albums', async () => {
-    // #given
+  it('passes through provider-stamped engine records unchanged', async () => {
+    // #given — the engine emits records already stamped with its provider
+    const playlist = makePlaylist('p1');
+    const album = makeAlbum('a1');
     const { result } = renderHook(() => useEngineLibrarySync('spotify' as ProviderId));
 
     // #when
     act(() => {
       capturedListener!(
         { isInitialLoadComplete: true, isSyncing: false, lastSyncTimestamp: 1000, error: null },
-        [makePlaylist('p1')],
-        [makeAlbum('a1')],
+        [playlist],
+        [album],
         0,
       );
     });
 
-    // #then
+    // #then — the hook does not re-stamp; the engine's records flow through as-is
     await waitFor(() => {
-      expect(result.current.playlists[0].provider).toBe('spotify');
-      expect(result.current.albums[0].provider).toBe('spotify');
+      expect(result.current.playlists[0]).toEqual(playlist);
+      expect(result.current.albums[0]).toEqual(album);
+      expect(result.current.playlists[0]?.provider).toBe('spotify');
+      expect(result.current.albums[0]?.provider).toBe('spotify');
     });
   });
 
@@ -219,6 +224,6 @@ describe('useEngineLibrarySync', () => {
 
     // #then
     expect(result.current.playlists).toHaveLength(1);
-    expect(result.current.playlists[0].id).toBe('p1');
+    expect(result.current.playlists[0]?.id).toBe('p1');
   });
 });

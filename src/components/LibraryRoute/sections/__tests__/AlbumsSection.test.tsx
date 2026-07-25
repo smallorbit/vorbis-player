@@ -6,6 +6,7 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import type { MediaCollection } from '@/types/domain';
 
 vi.mock('../../hooks', () => ({
   useAlbumsSection: vi.fn(),
@@ -56,6 +57,15 @@ import AlbumsSection from '../AlbumsSection';
 
 const mockUseAlbumsSection = vi.mocked(useAlbumsSection);
 
+const makeAlbum = (id: string, name: string, ownerName: string): MediaCollection => ({
+  id,
+  provider: 'spotify',
+  kind: 'album',
+  name,
+  ownerName,
+  genres: [],
+});
+
 const baseProps = {
   layout: 'row' as const,
   onSelect: vi.fn(),
@@ -92,9 +102,7 @@ describe('AlbumsSection', () => {
   it('renders a card for each album with artist subtitle', () => {
     // #given
     mockUseAlbumsSection.mockReturnValue({
-      items: [
-        { id: 'a1', name: 'Dark Side', artists: 'Pink Floyd', provider: 'spotify' as const, images: [] },
-      ],
+      items: [makeAlbum('a1', 'Dark Side', 'Pink Floyd')],
       isLoading: false,
       isEmpty: false,
     });
@@ -111,13 +119,7 @@ describe('AlbumsSection', () => {
   it('shows See all when layout is row and items exceed 8', () => {
     // #given
     mockUseAlbumsSection.mockReturnValue({
-      items: Array.from({ length: 9 }, (_, i) => ({
-        id: `a${i}`,
-        name: `Album ${i}`,
-        artists: 'Artist',
-        provider: 'spotify' as const,
-        images: [],
-      })),
+      items: Array.from({ length: 9 }, (_, i) => makeAlbum(`a${i}`, `Album ${i}`, 'Artist')),
       isLoading: false,
       isEmpty: false,
     });
@@ -133,7 +135,7 @@ describe('AlbumsSection', () => {
     // #given
     const onSelect = vi.fn();
     mockUseAlbumsSection.mockReturnValue({
-      items: [{ id: 'a1', name: 'OK Computer', artists: 'Radiohead', provider: 'spotify' as const, images: [] }],
+      items: [makeAlbum('a1', 'OK Computer', 'Radiohead')],
       isLoading: false,
       isEmpty: false,
     });

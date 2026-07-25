@@ -1,7 +1,6 @@
 import { render, screen, act, fireEvent } from '@testing-library/react';
 import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
-import type { Track, AlbumInfo, SpotifyImage } from '@/services/spotify';
-import type { CachedPlaylistInfo } from '@/services/cache/cacheTypes';
+import type { MediaCollection, MediaTrack } from '@/types/domain';
 import type { LibrarySearchResult, SearchArtist } from '@/services/cache/librarySearch';
 
 const mockUseLibrarySearch = vi.fn();
@@ -40,33 +39,36 @@ const mockMatchMedia = (matches: boolean) => {
   });
 };
 
-const makeTrack = (id: string, name: string, artists = 'Artist'): Track => ({
+const makeTrack = (id: string, name: string, artists = 'Artist'): MediaTrack => ({
   id,
   provider: 'spotify',
+  playbackRef: { provider: 'spotify', ref: `spotify:track:${id}` },
   name,
   artists,
   album: 'Album',
-  duration_ms: 200_000,
-  uri: `spotify:track:${id}`,
+  durationMs: 200_000,
+  genres: [],
 });
 
-const makeAlbum = (id: string, name: string, artists = 'Artist'): AlbumInfo => ({
+const makeAlbum = (id: string, name: string, ownerName = 'Artist'): MediaCollection => ({
   id,
+  provider: 'spotify',
+  kind: 'album',
   name,
-  artists,
-  images: [] as SpotifyImage[],
-  release_date: '2024-01-01',
-  total_tracks: 10,
-  uri: `spotify:album:${id}`,
+  ownerName,
+  trackCount: 10,
+  releaseDate: '2024-01-01',
+  genres: [],
 });
 
-const makePlaylist = (id: string, name: string, total = 5): CachedPlaylistInfo => ({
+const makePlaylist = (id: string, name: string, trackCount = 5): MediaCollection => ({
   id,
+  provider: 'spotify',
+  kind: 'playlist',
   name,
-  description: null,
-  images: [] as SpotifyImage[],
-  tracks: { total },
-  owner: { display_name: 'Owner' },
+  ownerName: 'Owner',
+  trackCount,
+  genres: [],
 });
 
 const makeArtist = (id: string, name: string): SearchArtist => ({ id, name });

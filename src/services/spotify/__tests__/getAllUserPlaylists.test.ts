@@ -7,7 +7,7 @@ vi.mock('../auth', () => ({
 }));
 
 vi.mock('@/services/cache/libraryCache', () => ({
-  getTrackList: vi.fn().mockResolvedValue(null),
+  getTrackList: vi.fn().mockResolvedValue(undefined),
   putTrackList: vi.fn().mockResolvedValue(undefined),
 }));
 
@@ -20,7 +20,7 @@ function jsonResponse(body: unknown): Response {
   });
 }
 
-describe('getAllUserPlaylists — fallback added_at stamping across pages', () => {
+describe('getAllUserPlaylists — pagination and domain mapping', () => {
   let fetchMock: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
@@ -32,8 +32,8 @@ describe('getAllUserPlaylists — fallback added_at stamping across pages', () =
     vi.unstubAllGlobals();
   });
 
-  it('assigns unique fallback added_at stamps that span page boundaries', async () => {
-    // #given two pages of two playlists each, none carrying added_at
+  it('fetches every page and returns collections in API order', async () => {
+    // #given two pages of two playlists each
     fetchMock
       .mockResolvedValueOnce(
         jsonResponse({
@@ -59,44 +59,84 @@ describe('getAllUserPlaylists — fallback added_at stamping across pages', () =
     // #when
     const playlists = await getAllUserPlaylists();
 
-    // #then — four playlists fetched in order
+    // #then — four playlists fetched in order, spanning the page boundary
     expect(playlists.map((p) => p.id)).toEqual(['p0', 'p1', 'p2', 'p3']);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
 
-    // #then — every fallback added_at is set, all unique (closure counter survived page boundary)
-    const stamps = playlists.map((p) => p.added_at) as string[];
-    expect(new Set(stamps).size).toBe(4);
-
-    // #then — each subsequent stamp is ~60_000ms earlier than the previous
-    // (uses Date.now() at transform time so absolute spacing has small jitter)
-    const times = stamps.map((s) => new Date(s).getTime());
-    for (let i = 0; i < times.length - 1; i++) {
-      const delta = times[i] - times[i + 1];
-      expect(delta).toBeGreaterThan(59_000);
-      expect(delta).toBeLessThan(61_000);
+    // #then — every record is a neutral spotify playlist collection
+    for (const playlist of playlists) {
+      expect(playlist.provider).toBe('spotify');
+      expect(playlist.kind).toBe('playlist');
     }
   });
 
-  it('preserves explicit added_at when present and applies fallback only when absent', async () => {
-    // #given an item with explicit added_at and one without
-    const explicit = '2024-06-15T12:00:00.000Z';
+  it('maps wire fields to the neutral MediaCollection shape', async () => {
+    // #given a fully populated wire playlist
     fetchMock.mockResolvedValueOnce(
       jsonResponse({
         items: [
-          { id: 'p0', name: 'P0', added_at: explicit },
-          { id: 'p1', name: 'P1' },
+          {
+            id: 'p1',
+            name: 'Chill',
+            description: 'late night mix',
+            images: [
+              { url: 'small.jpg', width: 64, height: 64 },
+              { url: 'big.jpg', width: 640, height: 640 },
+            ],
+            tracks: { total: 42 },
+            owner: { display_name: 'Alice' },
+            snapshot_id: 'snap-1',
+          },
         ],
         next: null,
-        total: 2,
+        total: 1,
       }),
     );
 
     // #when
     const playlists = await getAllUserPlaylists();
 
-    // #then — explicit stamp preserved
-    expect(playlists[0].added_at).toBe(explicit);
-    // #then — fallback applied to second item
-    expect(playlists[1].added_at).not.toBe(explicit);
-    expect(typeof playlists[1].added_at).toBe('string');
+    // #then — wire shape converted once at the boundary (snapshot_id → revision,
+    // largest image → imageUrl, tracks.total → trackCount)
+    expect(playlists).toEqual([
+      {
+        id: 'p1',
+        provider: 'spotify',
+        kind: 'playlist',
+        name: 'Chill',
+        description: 'late night mix',
+        imageUrl: 'big.jpg',
+        trackCount: 42,
+        ownerName: 'Alice',
+        revision: 'snap-1',
+        genres: [],
+      },
+    ]);
+  });
+
+  it('omits optional fields that the wire payload does not provide', async () => {
+    // #given a minimal wire playlist (no description, images, owner, or snapshot_id)
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse({
+        items: [{ id: 'p1', name: 'Bare', description: null, images: [], tracks: null, owner: null }],
+        next: null,
+        total: 1,
+      }),
+    );
+
+    // #when
+    const playlists = await getAllUserPlaylists();
+
+    // #then — optional fields are absent rather than null/empty
+    expect(playlists).toEqual([
+      {
+        id: 'p1',
+        provider: 'spotify',
+        kind: 'playlist',
+        name: 'Bare',
+        trackCount: 0,
+        genres: [],
+      },
+    ]);
   });
 });

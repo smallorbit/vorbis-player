@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook } from '@testing-library/react';
 import { usePinnedSection } from '../usePinnedSection';
-import type { ProviderId } from '@/types/domain';
+import type { MediaCollection, ProviderId } from '@/types/domain';
 
 vi.mock('@/hooks/useLibrarySync', () => ({
   useLibrarySync: vi.fn(),
@@ -25,25 +25,27 @@ const mockUseLibrarySync = vi.mocked(useLibrarySync);
 const mockUsePinnedItems = vi.mocked(usePinnedItems);
 const mockUseUnifiedLikedTracks = vi.mocked(useUnifiedLikedTracks);
 
-const makePlaylist = (id: string, name = 'Playlist', provider: ProviderId = 'spotify') => ({
+const makePlaylist = (id: string, name = 'Playlist', provider: ProviderId = 'spotify'): MediaCollection => ({
   id,
-  name,
   provider,
-  images: [{ url: `https://img.example/${id}.jpg`, height: 300, width: 300 }],
-  tracks: { total: 10 },
-  description: null,
-  owner: { display_name: 'User' },
+  kind: 'playlist',
+  name,
+  imageUrl: `https://img.example/${id}.jpg`,
+  trackCount: 10,
+  ownerName: 'User',
+  genres: [],
 });
 
-const makeAlbum = (id: string, name = 'Album', provider: ProviderId = 'spotify') => ({
+const makeAlbum = (id: string, name = 'Album', provider: ProviderId = 'spotify'): MediaCollection => ({
   id,
-  name,
   provider,
-  artists: 'Artist',
-  images: [{ url: `https://img.example/${id}.jpg`, height: 300, width: 300 }],
-  release_date: '2024',
-  total_tracks: 10,
-  uri: `spotify:album:${id}`,
+  kind: 'album',
+  name,
+  imageUrl: `https://img.example/${id}.jpg`,
+  trackCount: 10,
+  ownerName: 'Artist',
+  releaseDate: '2024',
+  genres: [],
 });
 
 const defaultPinnedItems = {
@@ -131,7 +133,7 @@ describe('usePinnedSection', () => {
       });
       mockUseLibrarySync.mockReturnValue({
         ...defaultLibrarySyncReturn,
-        playlists: [makePlaylist('pl-1'), makePlaylist('pl-2')] as ReturnType<typeof useLibrarySync>['playlists'],
+        playlists: [makePlaylist('pl-1'), makePlaylist('pl-2')],
       });
 
       // #when
@@ -151,13 +153,13 @@ describe('usePinnedSection', () => {
       });
       mockUseLibrarySync.mockReturnValue({
         ...defaultLibrarySyncReturn,
-        playlists: [makePlaylist('pl-1')] as ReturnType<typeof useLibrarySync>['playlists'],
+        playlists: [makePlaylist('pl-1')],
       });
 
       // #when
       const { result } = renderHook(() => usePinnedSection());
 
-      // #then — imageUrl is on combined items, not on raw CachedPlaylistInfo
+      // #then — combined items surface the collection's imageUrl
       expect(result.current.combined[0].imageUrl).toBe('https://img.example/pl-1.jpg');
     });
   });
@@ -171,7 +173,7 @@ describe('usePinnedSection', () => {
       });
       mockUseLibrarySync.mockReturnValue({
         ...defaultLibrarySyncReturn,
-        albums: [makeAlbum('alb-1'), makeAlbum('alb-2')] as ReturnType<typeof useLibrarySync>['albums'],
+        albums: [makeAlbum('alb-1'), makeAlbum('alb-2')],
       });
 
       // #when
@@ -194,8 +196,8 @@ describe('usePinnedSection', () => {
       });
       mockUseLibrarySync.mockReturnValue({
         ...defaultLibrarySyncReturn,
-        playlists: [makePlaylist('pl-1')] as ReturnType<typeof useLibrarySync>['playlists'],
-        albums: [makeAlbum('alb-1')] as ReturnType<typeof useLibrarySync>['albums'],
+        playlists: [makePlaylist('pl-1')],
+        albums: [makeAlbum('alb-1')],
       });
 
       // #when
@@ -215,7 +217,7 @@ describe('usePinnedSection', () => {
       });
       mockUseLibrarySync.mockReturnValue({
         ...defaultLibrarySyncReturn,
-        playlists: [makePlaylist('pl-1')] as ReturnType<typeof useLibrarySync>['playlists'],
+        playlists: [makePlaylist('pl-1')],
       });
 
       // #when
@@ -235,7 +237,7 @@ describe('usePinnedSection', () => {
       });
       mockUseLibrarySync.mockReturnValue({
         ...defaultLibrarySyncReturn,
-        playlists: [makePlaylist('pl-1')] as ReturnType<typeof useLibrarySync>['playlists'],
+        playlists: [makePlaylist('pl-1')],
       });
 
       // #when
@@ -253,7 +255,7 @@ describe('usePinnedSection', () => {
       });
       mockUseLibrarySync.mockReturnValue({
         ...defaultLibrarySyncReturn,
-        playlists: [makePlaylist('pl-1')] as ReturnType<typeof useLibrarySync>['playlists'],
+        playlists: [makePlaylist('pl-1')],
       });
 
       // #when
@@ -375,7 +377,7 @@ describe('usePinnedSection', () => {
         ...defaultLibrarySyncReturn,
         likedSongsCount: 5,
         likedSongsPerProvider: [{ provider: 'spotify' as const, count: 5 }],
-        playlists: [makePlaylist('pl-1')] as ReturnType<typeof useLibrarySync>['playlists'],
+        playlists: [makePlaylist('pl-1')],
       });
       mockUsePinnedItems.mockReturnValue({
         ...defaultPinnedItems,

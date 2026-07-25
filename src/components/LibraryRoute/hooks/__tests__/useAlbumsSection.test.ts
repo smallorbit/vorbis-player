@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook } from '@testing-library/react';
 import { useAlbumsSection } from '../useAlbumsSection';
-import type { ProviderId } from '@/types/domain';
+import type { MediaCollection, ProviderId } from '@/types/domain';
 
 vi.mock('@/hooks/useLibrarySync', () => ({
   useLibrarySync: vi.fn(),
@@ -19,15 +19,16 @@ import { usePinnedItems } from '@/hooks/usePinnedItems';
 const mockUseLibrarySync = vi.mocked(useLibrarySync);
 const mockUsePinnedItems = vi.mocked(usePinnedItems);
 
-const makeAlbum = (id: string, provider: ProviderId = 'spotify') => ({
+const makeAlbum = (id: string, provider: ProviderId = 'spotify'): MediaCollection => ({
   id,
-  name: `Album ${id}`,
   provider,
-  artists: 'Test Artist',
-  images: [{ url: `https://img.example/${id}.jpg`, height: 300, width: 300 }],
-  release_date: '2024',
-  total_tracks: 10,
-  uri: `spotify:album:${id}`,
+  kind: 'album',
+  name: `Album ${id}`,
+  imageUrl: `https://img.example/${id}.jpg`,
+  trackCount: 10,
+  ownerName: 'Test Artist',
+  releaseDate: '2024',
+  genres: [],
 });
 
 const defaultPinnedItems = {
@@ -94,7 +95,7 @@ describe('useAlbumsSection', () => {
       // #given
       mockUseLibrarySync.mockReturnValue(makeLibraryReturn([
         makeAlbum('alb-1'),
-        makeAlbum('alb-2', 'dropbox' as ProviderId),
+        makeAlbum('alb-2', 'dropbox'),
       ]));
 
       // #when
@@ -121,7 +122,7 @@ describe('useAlbumsSection', () => {
       // #given
       mockUseLibrarySync.mockReturnValue(makeLibraryReturn([
         makeAlbum('alb-1', 'spotify'),
-        makeAlbum('alb-2', 'dropbox' as ProviderId),
+        makeAlbum('alb-2', 'dropbox'),
         makeAlbum('alb-3', 'spotify'),
       ]));
 
@@ -133,19 +134,16 @@ describe('useAlbumsSection', () => {
       expect(result.current.items.every(a => a.provider === 'spotify')).toBe(true);
     });
 
-    it('falls back to "spotify" for albums without a provider field', () => {
-      // #given
-      const albumWithoutProvider = { ...makeAlbum('alb-1') };
-      delete (albumWithoutProvider as Record<string, unknown>).provider;
-      mockUseLibrarySync.mockReturnValue(makeLibraryReturn(
-        [albumWithoutProvider] as ReturnType<typeof useLibrarySync>['albums']
-      ));
+    it('matches on the required provider field stamped on each collection', () => {
+      // #given — provider is required on MediaCollection; no fallback is applied
+      mockUseLibrarySync.mockReturnValue(makeLibraryReturn([makeAlbum('alb-1', 'dropbox')]));
 
       // #when
-      const { result } = renderHook(() => useAlbumsSection({ providerFilter: ['spotify'] }));
+      const { result } = renderHook(() => useAlbumsSection({ providerFilter: ['dropbox'] }));
 
-      // #then
+      // #then — the dropbox-stamped album matches the dropbox filter
       expect(result.current.items).toHaveLength(1);
+      expect(result.current.items[0].provider).toBe('dropbox');
     });
   });
 
@@ -181,7 +179,7 @@ describe('useAlbumsSection', () => {
       mockUseLibrarySync.mockReturnValue(makeLibraryReturn([
         makeAlbum('alb-1', 'spotify'),
         makeAlbum('alb-2', 'spotify'),
-        makeAlbum('alb-3', 'dropbox' as ProviderId),
+        makeAlbum('alb-3', 'dropbox'),
       ]));
 
       // #when
