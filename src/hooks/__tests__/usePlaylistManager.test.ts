@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { makeTrack } from '@/test/fixtures';
+import type { CollectionRef } from '@/types/domain';
 
 vi.mock('@/services/spotifyPlayer', () => ({
   spotifyPlayer: {
@@ -31,16 +32,20 @@ vi.mock('@/services/spotify', () => ({
 import { useSpotifyPlaylistManager as usePlaylistManager } from '@/providers/spotify/useSpotifyPlaylistManager';
 import { getPlaylistTracks, getAlbumTracks, getLikedSongs, spotifyAuth } from '@/services/spotify';
 
+function playlistRef(id: string): CollectionRef {
+  return { provider: 'spotify', kind: 'playlist', id };
+}
+
 describe('usePlaylistManager', () => {
   const setError = vi.fn();
   const setIsLoading = vi.fn();
-  const setSelectedPlaylistId = vi.fn();
+  const setSelection = vi.fn();
   const setTracks = vi.fn();
   const setOriginalTracks = vi.fn();
   const setCurrentTrackIndex = vi.fn();
 
   const defaultProps = {
-    trackOps: { setError, setIsLoading, setSelectedPlaylistId, setTracks, setOriginalTracks, setCurrentTrackIndex },
+    trackOps: { setError, setIsLoading, setSelection, setTracks, setOriginalTracks, setCurrentTrackIndex },
     shuffleEnabled: false,
   };
 
@@ -64,7 +69,7 @@ describe('usePlaylistManager', () => {
 
     // #when - select a regular playlist
     await act(async () => {
-      await result.current.handlePlaylistSelect('playlist-123');
+      await result.current.handlePlaylistSelect(playlistRef('playlist-123'));
     });
 
     // #then
@@ -72,26 +77,26 @@ describe('usePlaylistManager', () => {
     expect(setTracks).toHaveBeenCalled();
   });
 
-  it('calls getLikedSongs for LIKED_SONGS_ID', async () => {
+  it('calls getLikedSongs for the liked ref', async () => {
     // #given
     const { result } = renderHook(() => usePlaylistManager(defaultProps));
 
     // #when - select liked songs
     await act(async () => {
-      await result.current.handlePlaylistSelect('liked-songs');
+      await result.current.handlePlaylistSelect({ provider: 'spotify', kind: 'liked' });
     });
 
     // #then
     expect(getLikedSongs).toHaveBeenCalled();
   });
 
-  it('calls getAlbumTracks for album IDs (album: prefix)', async () => {
+  it('calls getAlbumTracks for album refs', async () => {
     // #given
     const { result } = renderHook(() => usePlaylistManager(defaultProps));
 
-    // #when - select an album using album: prefix
+    // #when - select an album ref
     await act(async () => {
-      await result.current.handlePlaylistSelect('album:album-456');
+      await result.current.handlePlaylistSelect({ provider: 'spotify', kind: 'album', id: 'album-456' });
     });
 
     // #then
@@ -106,7 +111,7 @@ describe('usePlaylistManager', () => {
 
     // #when - select empty playlist
     await act(async () => {
-      await result.current.handlePlaylistSelect('liked-songs');
+      await result.current.handlePlaylistSelect({ provider: 'spotify', kind: 'liked' });
     });
 
     // #then
@@ -128,7 +133,7 @@ describe('usePlaylistManager', () => {
 
     // #when - select playlist with shuffle enabled
     await act(async () => {
-      await result.current.handlePlaylistSelect('playlist-shuffle');
+      await result.current.handlePlaylistSelect(playlistRef('playlist-shuffle'));
     });
 
     // #then - original order preserved, shuffled order applied
@@ -150,7 +155,7 @@ describe('usePlaylistManager', () => {
 
     // #when - select playlist while auth fails
     await act(async () => {
-      await result.current.handlePlaylistSelect('playlist-auth-fail');
+      await result.current.handlePlaylistSelect(playlistRef('playlist-auth-fail'));
     });
 
     // #then
@@ -166,7 +171,7 @@ describe('usePlaylistManager', () => {
 
     // #when - select playlist while error occurs
     await act(async () => {
-      await result.current.handlePlaylistSelect('playlist-error');
+      await result.current.handlePlaylistSelect(playlistRef('playlist-error'));
     });
 
     // #then

@@ -147,9 +147,12 @@ function makeSession(overrides?: Partial<SessionSnapshot>): SessionSnapshot {
   const trackA = makeMediaTrack({ id: 'track-a', name: 'Song A', artists: 'Artist A' });
   const trackB = makeMediaTrack({ id: 'track-b', name: 'Song B', artists: 'Artist B' });
   return {
-    collectionId: 'playlist-xyz',
+    selection: {
+      type: 'collection',
+      ref: { provider: 'spotify', kind: 'playlist', id: 'playlist-xyz' },
+      name: 'My Playlist',
+    },
     collectionName: 'My Playlist',
-    collectionProvider: 'spotify',
     trackIndex: 0,
     trackId: 'track-a',
     queueTracks: [trackA, trackB],
@@ -253,7 +256,7 @@ describe('usePlayerLogic — handleHydrate fallback', () => {
     expect(mockPrepareTrack).toHaveBeenCalledTimes(2);
     await waitFor(() => {
       expect(result.current.state.tracks).toHaveLength(0);
-      expect(result.current.state.selectedPlaylistId).toBeNull();
+      expect(result.current.state.selection).toBeNull();
     });
   });
 

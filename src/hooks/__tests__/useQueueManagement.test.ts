@@ -3,11 +3,29 @@ import { renderHook, act } from '@testing-library/react';
 import { toast } from 'sonner';
 import { useQueueManagement } from '../useQueueManagement';
 import { makeTrack } from '@/test/fixtures';
-import type { MediaTrack } from '@/types/domain';
+import type { CollectionSelection, MediaTrack } from '@/types/domain';
 
 vi.mock('sonner', () => ({
   toast: vi.fn(),
 }));
+
+/** Spotify playlist selection, as produced by the library UI. */
+function playlistSel(id: string, name?: string): CollectionSelection {
+  return {
+    type: 'collection',
+    ref: { provider: 'spotify', kind: 'playlist', id },
+    ...(name !== undefined && { name }),
+  };
+}
+
+/** Dropbox folder selection (empty id = the All Music aggregate). */
+function folderSel(id: string, name?: string): CollectionSelection {
+  return {
+    type: 'collection',
+    ref: { provider: 'dropbox', kind: 'folder', id },
+    ...(name !== undefined && { name }),
+  };
+}
 
 function makeMediaTrack(id: string): MediaTrack {
   return {
@@ -38,7 +56,11 @@ describe('useQueueManagement', () => {
     mockSetTracks = vi.fn();
     mockSetOriginalTracks = vi.fn();
     mockSetCurrentTrackIndex = vi.fn();
-    mockGetDescriptor = vi.fn();
+    // Selections always carry an explicit provider now, so resolve the active
+    // descriptor by id unless the test overrides the implementation.
+    mockGetDescriptor = vi.fn((providerId: string) =>
+      providerId === mockActiveDescriptor.id ? mockActiveDescriptor : undefined
+    );
     mockActiveDescriptor = { id: 'spotify' };
     mediaTracksRef = { current: [] };
     // Default: no driving descriptor (notify is a no-op). Tests covering native-sync
@@ -156,11 +178,11 @@ describe('useQueueManagement', () => {
 
     // #when
     const response = await act(async () => {
-      return result.current.handleAddToQueue('playlist_id', 'My Playlist');
+      return result.current.handleAddToQueue(playlistSel('playlist_id', 'My Playlist'));
     });
 
     // #then
-    expect(mockHandlePlaylistSelect).toHaveBeenCalledWith('playlist_id', undefined, 'My Playlist');
+    expect(mockHandlePlaylistSelect).toHaveBeenCalledWith(playlistSel('playlist_id', 'My Playlist'));
     expect(response).toEqual({ added: 3, collectionName: 'My Playlist' });
   });
 
@@ -171,6 +193,7 @@ describe('useQueueManagement', () => {
     const incoming = Array.from({ length: 20 }, (_, i) => makeMediaTrack(`n${i + 1}`));
     const mockCatalog = { listTracks: vi.fn().mockResolvedValue(incoming) };
     const dropboxDescriptor = { id: 'dropbox' as const, catalog: mockCatalog, playback: { pause: vi.fn() } };
+    mockGetDescriptor.mockReturnValue(dropboxDescriptor);
 
     const { result } = renderHook(() =>
       useQueueManagement({
@@ -186,9 +209,9 @@ describe('useQueueManagement', () => {
       })
     );
 
-    // #when — empty playlist id resolves to All Music (dropbox/folder/'')
+    // #when — the All Music selection (dropbox/folder/'')
     await act(async () => {
-      await result.current.handleAddToQueue('');
+      await result.current.handleAddToQueue(folderSel(''));
     });
 
     // #then — setTracks updater yields a shuffled permutation of the incoming tracks appended to the existing queue
@@ -211,6 +234,7 @@ describe('useQueueManagement', () => {
     const incoming = Array.from({ length: 20 }, (_, i) => makeMediaTrack(`n${i + 1}`));
     const mockCatalog = { listTracks: vi.fn().mockResolvedValue(incoming) };
     const dropboxDescriptor = { id: 'dropbox' as const, catalog: mockCatalog, playback: { pause: vi.fn() } };
+    mockGetDescriptor.mockReturnValue(dropboxDescriptor);
 
     const { result } = renderHook(() =>
       useQueueManagement({
@@ -228,7 +252,7 @@ describe('useQueueManagement', () => {
 
     // #when — non-empty folder id (not All Music)
     await act(async () => {
-      await result.current.handleAddToQueue('/Music/Artist/Album');
+      await result.current.handleAddToQueue(folderSel('/Music/Artist/Album'));
     });
 
     // #then — appended portion preserves incoming order
@@ -264,7 +288,7 @@ describe('useQueueManagement', () => {
 
     // #when
     const response = await act(async () => {
-      return result.current.handleAddToQueue('playlist_id');
+      return result.current.handleAddToQueue(playlistSel('playlist_id'));
     });
 
     // #then
@@ -302,7 +326,7 @@ describe('useQueueManagement', () => {
     );
 
     // #when
-    const response = await act(async () => result.current.handleAddToQueue('empty_playlist'));
+    const response = await act(async () => result.current.handleAddToQueue(playlistSel('empty_playlist')));
 
     // #then
     expect(response).toBeNull();
@@ -311,6 +335,7 @@ describe('useQueueManagement', () => {
 
   it('handleAddToQueue toasts the failure message when no descriptor resolves', async () => {
     // #given — no active descriptor and no resolvable provider
+    mockGetDescriptor.mockReturnValue(undefined);
     const { result } = renderHook(() =>
       useQueueManagement({
         tracks: [makeTrack({ id: 'a' })],
@@ -326,7 +351,7 @@ describe('useQueueManagement', () => {
     );
 
     // #when
-    const response = await act(async () => result.current.handleAddToQueue('playlist_id'));
+    const response = await act(async () => result.current.handleAddToQueue(playlistSel('playlist_id')));
 
     // #then
     expect(response).toBeNull();
@@ -358,7 +383,7 @@ describe('useQueueManagement', () => {
     );
 
     // #when
-    const response = await act(async () => result.current.handleAddToQueue('playlist_id'));
+    const response = await act(async () => result.current.handleAddToQueue(playlistSel('playlist_id')));
 
     // #then
     expect(response).toBeNull();
@@ -391,7 +416,7 @@ describe('useQueueManagement', () => {
     );
 
     // #when
-    const response = await act(async () => result.current.handleAddToQueue('playlist_id'));
+    const response = await act(async () => result.current.handleAddToQueue(playlistSel('playlist_id')));
 
     // #then
     expect(response).toBeNull();
@@ -555,11 +580,11 @@ describe('useQueueManagement', () => {
 
     // #when
     const response = await act(async () =>
-      result.current.insertCollectionNext('playlist_id', 'My Playlist'),
+      result.current.insertCollectionNext(playlistSel('playlist_id', 'My Playlist')),
     );
 
     // #then
-    expect(mockHandlePlaylistSelect).toHaveBeenCalledWith('playlist_id', undefined, 'My Playlist');
+    expect(mockHandlePlaylistSelect).toHaveBeenCalledWith(playlistSel('playlist_id', 'My Playlist'));
     expect(response).toEqual({ added: 5, collectionName: 'My Playlist' });
   });
 
@@ -587,7 +612,7 @@ describe('useQueueManagement', () => {
 
     // #when
     const response = await act(async () =>
-      result.current.insertCollectionNext('playlist_id', 'P'),
+      result.current.insertCollectionNext(playlistSel('playlist_id', 'P')),
     );
 
     // #then — 3 tracks inserted at index 1 (currentTrackIndex + 1)
@@ -620,7 +645,7 @@ describe('useQueueManagement', () => {
     );
 
     // #when
-    const response = await act(async () => result.current.insertCollectionNext('p1'));
+    const response = await act(async () => result.current.insertCollectionNext(playlistSel('p1')));
 
     // #then
     expect(response).toBeNull();
@@ -712,7 +737,7 @@ describe('useQueueManagement', () => {
 
       // #when
       await act(async () => {
-        await result.current.handleAddToQueue('playlist_id');
+        await result.current.handleAddToQueue(playlistSel('playlist_id'));
       });
 
       // #then
@@ -911,7 +936,7 @@ describe('useQueueManagement', () => {
 
       // #when
       await act(async () => {
-        await result.current.insertCollectionNext('p1');
+        await result.current.insertCollectionNext(playlistSel('p1'));
       });
 
       // #then
@@ -1046,7 +1071,7 @@ describe('useQueueManagement', () => {
 
       // #when
       await act(async () => {
-        await result.current.handleAddToQueue('playlist_id');
+        await result.current.handleAddToQueue(playlistSel('playlist_id'));
       });
 
       // #then — originalTracks gets [a, b, c], not [b, a, c] (the shuffled snapshot)
@@ -1076,7 +1101,7 @@ describe('useQueueManagement', () => {
 
       // #when
       await act(async () => {
-        await result.current.handleAddToQueue('playlist_id');
+        await result.current.handleAddToQueue(playlistSel('playlist_id'));
       });
 
       // #then — setOriginalTracks called with the full nextTracks array directly (not a functional updater)

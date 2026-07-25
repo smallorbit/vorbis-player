@@ -2,8 +2,26 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { useCollectionLoader } from '../useCollectionLoader';
 import { makeTrack } from '@/test/fixtures';
-import { LIKED_SONGS_ID, LIKED_SONGS_NAME } from '@/constants/playlist';
-import type { MediaTrack } from '@/types/domain';
+import { LIKED_SONGS_NAME } from '@/constants/playlist';
+import type { CollectionSelection, MediaTrack } from '@/types/domain';
+
+/** Spotify playlist selection, as produced by the library UI. */
+function playlistSel(id: string, name?: string): CollectionSelection {
+  return {
+    type: 'collection',
+    ref: { provider: 'spotify', kind: 'playlist', id },
+    ...(name !== undefined && { name }),
+  };
+}
+
+/** Dropbox folder selection (empty id = the All Music aggregate). */
+function folderSel(id: string, name?: string): CollectionSelection {
+  return {
+    type: 'collection',
+    ref: { provider: 'dropbox', kind: 'folder', id },
+    ...(name !== undefined && { name }),
+  };
+}
 
 function makeMediaTrack(id: string, addedAt?: number): MediaTrack {
   return {
@@ -25,7 +43,7 @@ describe('useCollectionLoader', () => {
   let mockSetTracks: ReturnType<typeof vi.fn>;
   let mockSetOriginalTracks: ReturnType<typeof vi.fn>;
   let mockSetCurrentTrackIndex: ReturnType<typeof vi.fn>;
-  let mockSetSelectedPlaylistId: ReturnType<typeof vi.fn>;
+  let mockSetSelection: ReturnType<typeof vi.fn>;
   let mockSetActiveProviderId: ReturnType<typeof vi.fn>;
   let mockGetDescriptor: ReturnType<typeof vi.fn>;
   let mockSpotifyHandlePlaylistSelect: ReturnType<typeof vi.fn>;
@@ -42,9 +60,13 @@ describe('useCollectionLoader', () => {
     mockSetTracks = vi.fn();
     mockSetOriginalTracks = vi.fn();
     mockSetCurrentTrackIndex = vi.fn();
-    mockSetSelectedPlaylistId = vi.fn();
+    mockSetSelection = vi.fn();
     mockSetActiveProviderId = vi.fn();
-    mockGetDescriptor = vi.fn();
+    // Selections always carry an explicit provider now, so resolve the active
+    // descriptor by id unless the test overrides the implementation.
+    mockGetDescriptor = vi.fn((providerId: string) =>
+      providerId === mockActiveDescriptor.id ? mockActiveDescriptor : undefined
+    );
     mockSpotifyHandlePlaylistSelect = vi.fn().mockResolvedValue([]);
     mockStopRadioBase = vi.fn();
     mockRecord = vi.fn();
@@ -72,7 +94,7 @@ describe('useCollectionLoader', () => {
 
     const { result } = renderHook(() =>
       useCollectionLoader({
-        trackOps: { setError: mockSetError, setIsLoading: mockSetIsLoading, setSelectedPlaylistId: mockSetSelectedPlaylistId, setTracks: mockSetTracks, setOriginalTracks: mockSetOriginalTracks, setCurrentTrackIndex: mockSetCurrentTrackIndex, mediaTracksRef },
+        trackOps: { setError: mockSetError, setIsLoading: mockSetIsLoading, setSelection: mockSetSelection, setTracks: mockSetTracks, setOriginalTracks: mockSetOriginalTracks, setCurrentTrackIndex: mockSetCurrentTrackIndex, mediaTracksRef },
         activeDescriptor: mockActiveDescriptor,
         getDescriptor: mockGetDescriptor,
         setActiveProviderId: mockSetActiveProviderId,
@@ -90,7 +112,7 @@ describe('useCollectionLoader', () => {
 
     // #when
     const trackCount = await act(async () => {
-      return result.current.loadCollection('playlist_123');
+      return result.current.loadCollection(playlistSel('playlist_123'));
     });
 
     // #then
@@ -135,7 +157,7 @@ describe('useCollectionLoader', () => {
       useCollectionLoader({
         activeDescriptor: mockActiveDescriptor,
         getDescriptor: mockGetDescriptor,
-        trackOps: { setError: mockSetError, setIsLoading: mockSetIsLoading, setSelectedPlaylistId: mockSetSelectedPlaylistId, setTracks: mockSetTracks, setOriginalTracks: mockSetOriginalTracks, setCurrentTrackIndex: mockSetCurrentTrackIndex, mediaTracksRef },
+        trackOps: { setError: mockSetError, setIsLoading: mockSetIsLoading, setSelection: mockSetSelection, setTracks: mockSetTracks, setOriginalTracks: mockSetOriginalTracks, setCurrentTrackIndex: mockSetCurrentTrackIndex, mediaTracksRef },
         setActiveProviderId: mockSetActiveProviderId,
         connectedProviderIds: ['spotify', 'dropbox'],
         shuffleEnabled: false,
@@ -151,7 +173,7 @@ describe('useCollectionLoader', () => {
 
     // #when
     const trackCount = await act(async () => {
-      return result.current.loadCollection(LIKED_SONGS_ID);
+      return result.current.loadCollection({ type: 'liked' });
     });
 
     // #then
@@ -171,7 +193,7 @@ describe('useCollectionLoader', () => {
 
     const { result } = renderHook(() =>
       useCollectionLoader({
-        trackOps: { setError: mockSetError, setIsLoading: mockSetIsLoading, setSelectedPlaylistId: mockSetSelectedPlaylistId, setTracks: mockSetTracks, setOriginalTracks: mockSetOriginalTracks, setCurrentTrackIndex: mockSetCurrentTrackIndex, mediaTracksRef },
+        trackOps: { setError: mockSetError, setIsLoading: mockSetIsLoading, setSelection: mockSetSelection, setTracks: mockSetTracks, setOriginalTracks: mockSetOriginalTracks, setCurrentTrackIndex: mockSetCurrentTrackIndex, mediaTracksRef },
         activeDescriptor: mockActiveDescriptor,
         getDescriptor: mockGetDescriptor,
         setActiveProviderId: mockSetActiveProviderId,
@@ -189,7 +211,7 @@ describe('useCollectionLoader', () => {
 
     // #when
     const trackCount = await act(async () => {
-      return result.current.loadCollection('playlist_123');
+      return result.current.loadCollection(playlistSel('playlist_123'));
     });
 
     // #then
@@ -209,7 +231,7 @@ describe('useCollectionLoader', () => {
 
     const { result } = renderHook(() =>
       useCollectionLoader({
-        trackOps: { setError: mockSetError, setIsLoading: mockSetIsLoading, setSelectedPlaylistId: mockSetSelectedPlaylistId, setTracks: mockSetTracks, setOriginalTracks: mockSetOriginalTracks, setCurrentTrackIndex: mockSetCurrentTrackIndex, mediaTracksRef },
+        trackOps: { setError: mockSetError, setIsLoading: mockSetIsLoading, setSelection: mockSetSelection, setTracks: mockSetTracks, setOriginalTracks: mockSetOriginalTracks, setCurrentTrackIndex: mockSetCurrentTrackIndex, mediaTracksRef },
         activeDescriptor: mockActiveDescriptor,
         getDescriptor: mockGetDescriptor,
         setActiveProviderId: mockSetActiveProviderId,
@@ -227,7 +249,7 @@ describe('useCollectionLoader', () => {
 
     // #when
     const trackCount = await act(async () => {
-      return result.current.loadCollection('playlist_123');
+      return result.current.loadCollection(playlistSel('playlist_123'));
     });
 
     // #then — legacy spotify path is never invoked; surfaces empty-collection state
@@ -249,7 +271,7 @@ describe('useCollectionLoader', () => {
 
     const { result } = renderHook(() =>
       useCollectionLoader({
-        trackOps: { setError: mockSetError, setIsLoading: mockSetIsLoading, setSelectedPlaylistId: mockSetSelectedPlaylistId, setTracks: mockSetTracks, setOriginalTracks: mockSetOriginalTracks, setCurrentTrackIndex: mockSetCurrentTrackIndex, mediaTracksRef },
+        trackOps: { setError: mockSetError, setIsLoading: mockSetIsLoading, setSelection: mockSetSelection, setTracks: mockSetTracks, setOriginalTracks: mockSetOriginalTracks, setCurrentTrackIndex: mockSetCurrentTrackIndex, mediaTracksRef },
         activeDescriptor: mockActiveDescriptor,
         getDescriptor: mockGetDescriptor,
         setActiveProviderId: mockSetActiveProviderId,
@@ -267,11 +289,11 @@ describe('useCollectionLoader', () => {
 
     // #when
     const trackCount = await act(async () => {
-      return result.current.loadCollection('playlist_123');
+      return result.current.loadCollection(playlistSel('playlist_123'));
     });
 
     // #then
-    expect(mockSpotifyHandlePlaylistSelect).toHaveBeenCalledWith('playlist_123');
+    expect(mockSpotifyHandlePlaylistSelect).toHaveBeenCalledWith({ provider: 'spotify', kind: 'playlist', id: 'playlist_123' });
     expect(trackCount).toBe(2);
   });
 
@@ -285,7 +307,7 @@ describe('useCollectionLoader', () => {
 
     const { result } = renderHook(() =>
       useCollectionLoader({
-        trackOps: { setError: mockSetError, setIsLoading: mockSetIsLoading, setSelectedPlaylistId: mockSetSelectedPlaylistId, setTracks: mockSetTracks, setOriginalTracks: mockSetOriginalTracks, setCurrentTrackIndex: mockSetCurrentTrackIndex, mediaTracksRef },
+        trackOps: { setError: mockSetError, setIsLoading: mockSetIsLoading, setSelection: mockSetSelection, setTracks: mockSetTracks, setOriginalTracks: mockSetOriginalTracks, setCurrentTrackIndex: mockSetCurrentTrackIndex, mediaTracksRef },
         activeDescriptor: mockActiveDescriptor,
         getDescriptor: mockGetDescriptor,
         setActiveProviderId: mockSetActiveProviderId,
@@ -303,7 +325,7 @@ describe('useCollectionLoader', () => {
 
     // #when
     await act(async () => {
-      await result.current.loadCollection('playlist_123');
+      await result.current.loadCollection(playlistSel('playlist_123'));
     });
 
     // #then
@@ -319,7 +341,7 @@ describe('useCollectionLoader', () => {
 
     const { result } = renderHook(() =>
       useCollectionLoader({
-        trackOps: { setError: mockSetError, setIsLoading: mockSetIsLoading, setSelectedPlaylistId: mockSetSelectedPlaylistId, setTracks: mockSetTracks, setOriginalTracks: mockSetOriginalTracks, setCurrentTrackIndex: mockSetCurrentTrackIndex, mediaTracksRef },
+        trackOps: { setError: mockSetError, setIsLoading: mockSetIsLoading, setSelection: mockSetSelection, setTracks: mockSetTracks, setOriginalTracks: mockSetOriginalTracks, setCurrentTrackIndex: mockSetCurrentTrackIndex, mediaTracksRef },
         activeDescriptor: mockActiveDescriptor,
         getDescriptor: mockGetDescriptor,
         setActiveProviderId: mockSetActiveProviderId,
@@ -337,7 +359,7 @@ describe('useCollectionLoader', () => {
 
     // #when
     await act(async () => {
-      await result.current.loadCollection('playlist_123');
+      await result.current.loadCollection(playlistSel('playlist_123'));
     });
 
     // #then
@@ -361,7 +383,7 @@ describe('useCollectionLoader', () => {
 
     const { result } = renderHook(() =>
       useCollectionLoader({
-        trackOps: { setError: mockSetError, setIsLoading: mockSetIsLoading, setSelectedPlaylistId: mockSetSelectedPlaylistId, setTracks: mockSetTracks, setOriginalTracks: mockSetOriginalTracks, setCurrentTrackIndex: mockSetCurrentTrackIndex, mediaTracksRef },
+        trackOps: { setError: mockSetError, setIsLoading: mockSetIsLoading, setSelection: mockSetSelection, setTracks: mockSetTracks, setOriginalTracks: mockSetOriginalTracks, setCurrentTrackIndex: mockSetCurrentTrackIndex, mediaTracksRef },
         activeDescriptor: mockActiveDescriptor,
         getDescriptor: mockGetDescriptor,
         setActiveProviderId: mockSetActiveProviderId,
@@ -379,7 +401,7 @@ describe('useCollectionLoader', () => {
 
     // #when
     await act(async () => {
-      await result.current.loadCollection('playlist_123', 'dropbox');
+      await result.current.loadCollection(folderSel('playlist_123'));
     });
 
     // #then
@@ -393,7 +415,7 @@ describe('useCollectionLoader', () => {
 
     const { result } = renderHook(() =>
       useCollectionLoader({
-        trackOps: { setError: mockSetError, setIsLoading: mockSetIsLoading, setSelectedPlaylistId: mockSetSelectedPlaylistId, setTracks: mockSetTracks, setOriginalTracks: mockSetOriginalTracks, setCurrentTrackIndex: mockSetCurrentTrackIndex, mediaTracksRef },
+        trackOps: { setError: mockSetError, setIsLoading: mockSetIsLoading, setSelection: mockSetSelection, setTracks: mockSetTracks, setOriginalTracks: mockSetOriginalTracks, setCurrentTrackIndex: mockSetCurrentTrackIndex, mediaTracksRef },
         activeDescriptor: mockActiveDescriptor,
         getDescriptor: mockGetDescriptor,
         setActiveProviderId: mockSetActiveProviderId,
@@ -410,7 +432,7 @@ describe('useCollectionLoader', () => {
     );
 
     const trackCount = await act(async () => {
-      return result.current.loadCollection('playlist_123');
+      return result.current.loadCollection(playlistSel('playlist_123'));
     });
 
     expect(mockSetError).toHaveBeenCalledWith('Network error');
@@ -428,7 +450,7 @@ describe('useCollectionLoader', () => {
 
     const { result } = renderHook(() =>
       useCollectionLoader({
-        trackOps: { setError: mockSetError, setIsLoading: mockSetIsLoading, setSelectedPlaylistId: mockSetSelectedPlaylistId, setTracks: mockSetTracks, setOriginalTracks: mockSetOriginalTracks, setCurrentTrackIndex: mockSetCurrentTrackIndex, mediaTracksRef },
+        trackOps: { setError: mockSetError, setIsLoading: mockSetIsLoading, setSelection: mockSetSelection, setTracks: mockSetTracks, setOriginalTracks: mockSetOriginalTracks, setCurrentTrackIndex: mockSetCurrentTrackIndex, mediaTracksRef },
         activeDescriptor: mockActiveDescriptor,
         getDescriptor: mockGetDescriptor,
         setActiveProviderId: mockSetActiveProviderId,
@@ -445,7 +467,7 @@ describe('useCollectionLoader', () => {
     );
 
     const trackCount = await act(async () => {
-      return result.current.loadCollection(LIKED_SONGS_ID);
+      return result.current.loadCollection({ type: 'liked' });
     });
 
     expect(mockSetError).toHaveBeenCalledWith('No liked tracks found.');
@@ -457,7 +479,7 @@ describe('useCollectionLoader', () => {
 
     const { result } = renderHook(() =>
       useCollectionLoader({
-        trackOps: { setError: mockSetError, setIsLoading: mockSetIsLoading, setSelectedPlaylistId: mockSetSelectedPlaylistId, setTracks: mockSetTracks, setOriginalTracks: mockSetOriginalTracks, setCurrentTrackIndex: mockSetCurrentTrackIndex, mediaTracksRef },
+        trackOps: { setError: mockSetError, setIsLoading: mockSetIsLoading, setSelection: mockSetSelection, setTracks: mockSetTracks, setOriginalTracks: mockSetOriginalTracks, setCurrentTrackIndex: mockSetCurrentTrackIndex, mediaTracksRef },
         activeDescriptor: undefined,
         getDescriptor: mockGetDescriptor,
         setActiveProviderId: mockSetActiveProviderId,
@@ -474,7 +496,7 @@ describe('useCollectionLoader', () => {
     );
 
     const trackCount = await act(async () => {
-      return result.current.loadCollection('playlist_123');
+      return result.current.loadCollection(playlistSel('playlist_123'));
     });
 
     expect(trackCount).toBe(0);
@@ -491,7 +513,7 @@ describe('useCollectionLoader', () => {
 
     const { result } = renderHook(() =>
       useCollectionLoader({
-        trackOps: { setError: mockSetError, setIsLoading: mockSetIsLoading, setSelectedPlaylistId: mockSetSelectedPlaylistId, setTracks: mockSetTracks, setOriginalTracks: mockSetOriginalTracks, setCurrentTrackIndex: mockSetCurrentTrackIndex, mediaTracksRef },
+        trackOps: { setError: mockSetError, setIsLoading: mockSetIsLoading, setSelection: mockSetSelection, setTracks: mockSetTracks, setOriginalTracks: mockSetOriginalTracks, setCurrentTrackIndex: mockSetCurrentTrackIndex, mediaTracksRef },
         activeDescriptor: mockActiveDescriptor,
         getDescriptor: mockGetDescriptor,
         setActiveProviderId: mockSetActiveProviderId,
@@ -509,7 +531,7 @@ describe('useCollectionLoader', () => {
 
     // #when
     await act(async () => {
-      await result.current.loadCollection('playlist_123', undefined, 'My Playlist');
+      await result.current.loadCollection(playlistSel('playlist_123', 'My Playlist'));
     });
 
     // #then
@@ -532,7 +554,7 @@ describe('useCollectionLoader', () => {
 
     const { result } = renderHook(() =>
       useCollectionLoader({
-        trackOps: { setError: mockSetError, setIsLoading: mockSetIsLoading, setSelectedPlaylistId: mockSetSelectedPlaylistId, setTracks: mockSetTracks, setOriginalTracks: mockSetOriginalTracks, setCurrentTrackIndex: mockSetCurrentTrackIndex, mediaTracksRef },
+        trackOps: { setError: mockSetError, setIsLoading: mockSetIsLoading, setSelection: mockSetSelection, setTracks: mockSetTracks, setOriginalTracks: mockSetOriginalTracks, setCurrentTrackIndex: mockSetCurrentTrackIndex, mediaTracksRef },
         activeDescriptor: mockActiveDescriptor,
         getDescriptor: mockGetDescriptor,
         setActiveProviderId: mockSetActiveProviderId,
@@ -550,7 +572,7 @@ describe('useCollectionLoader', () => {
 
     // #when
     await act(async () => {
-      await result.current.loadCollection('playlist_123', undefined, 'My Playlist');
+      await result.current.loadCollection(playlistSel('playlist_123', 'My Playlist'));
     });
 
     // #then
@@ -571,7 +593,7 @@ describe('useCollectionLoader', () => {
 
     const { result } = renderHook(() =>
       useCollectionLoader({
-        trackOps: { setError: mockSetError, setIsLoading: mockSetIsLoading, setSelectedPlaylistId: mockSetSelectedPlaylistId, setTracks: mockSetTracks, setOriginalTracks: mockSetOriginalTracks, setCurrentTrackIndex: mockSetCurrentTrackIndex, mediaTracksRef },
+        trackOps: { setError: mockSetError, setIsLoading: mockSetIsLoading, setSelection: mockSetSelection, setTracks: mockSetTracks, setOriginalTracks: mockSetOriginalTracks, setCurrentTrackIndex: mockSetCurrentTrackIndex, mediaTracksRef },
         activeDescriptor: mockActiveDescriptor,
         getDescriptor: mockGetDescriptor,
         setActiveProviderId: mockSetActiveProviderId,
@@ -589,7 +611,7 @@ describe('useCollectionLoader', () => {
 
     // #when
     await act(async () => {
-      await result.current.loadCollection('playlist_123', undefined, 'My Playlist');
+      await result.current.loadCollection(playlistSel('playlist_123', 'My Playlist'));
     });
 
     // #then
@@ -610,7 +632,7 @@ describe('useCollectionLoader', () => {
 
     const { result } = renderHook(() =>
       useCollectionLoader({
-        trackOps: { setError: mockSetError, setIsLoading: mockSetIsLoading, setSelectedPlaylistId: mockSetSelectedPlaylistId, setTracks: mockSetTracks, setOriginalTracks: mockSetOriginalTracks, setCurrentTrackIndex: mockSetCurrentTrackIndex, mediaTracksRef },
+        trackOps: { setError: mockSetError, setIsLoading: mockSetIsLoading, setSelection: mockSetSelection, setTracks: mockSetTracks, setOriginalTracks: mockSetOriginalTracks, setCurrentTrackIndex: mockSetCurrentTrackIndex, mediaTracksRef },
         activeDescriptor: mockActiveDescriptor,
         getDescriptor: mockGetDescriptor,
         setActiveProviderId: mockSetActiveProviderId,
@@ -628,7 +650,7 @@ describe('useCollectionLoader', () => {
 
     // #when
     await act(async () => {
-      await result.current.loadCollection(LIKED_SONGS_ID);
+      await result.current.loadCollection({ type: 'liked' });
     });
 
     // #then
@@ -654,7 +676,7 @@ describe('useCollectionLoader', () => {
 
     const { result } = renderHook(() =>
       useCollectionLoader({
-        trackOps: { setError: mockSetError, setIsLoading: mockSetIsLoading, setSelectedPlaylistId: mockSetSelectedPlaylistId, setTracks: mockSetTracks, setOriginalTracks: mockSetOriginalTracks, setCurrentTrackIndex: mockSetCurrentTrackIndex, mediaTracksRef },
+        trackOps: { setError: mockSetError, setIsLoading: mockSetIsLoading, setSelection: mockSetSelection, setTracks: mockSetTracks, setOriginalTracks: mockSetOriginalTracks, setCurrentTrackIndex: mockSetCurrentTrackIndex, mediaTracksRef },
         activeDescriptor: mockActiveDescriptor,
         getDescriptor: mockGetDescriptor,
         setActiveProviderId: mockSetActiveProviderId,
@@ -672,7 +694,7 @@ describe('useCollectionLoader', () => {
 
     // #when — loadCollection with empty id (All Music ref)
     await act(async () => {
-      await result.current.loadCollection('', 'dropbox');
+      await result.current.loadCollection(folderSel(''));
     });
 
     // #then — originalTracks preserves order; tracks is a permutation that is not guaranteed to equal input order
@@ -699,7 +721,7 @@ describe('useCollectionLoader', () => {
 
     const { result } = renderHook(() =>
       useCollectionLoader({
-        trackOps: { setError: mockSetError, setIsLoading: mockSetIsLoading, setSelectedPlaylistId: mockSetSelectedPlaylistId, setTracks: mockSetTracks, setOriginalTracks: mockSetOriginalTracks, setCurrentTrackIndex: mockSetCurrentTrackIndex, mediaTracksRef },
+        trackOps: { setError: mockSetError, setIsLoading: mockSetIsLoading, setSelection: mockSetSelection, setTracks: mockSetTracks, setOriginalTracks: mockSetOriginalTracks, setCurrentTrackIndex: mockSetCurrentTrackIndex, mediaTracksRef },
         activeDescriptor: mockActiveDescriptor,
         getDescriptor: mockGetDescriptor,
         setActiveProviderId: mockSetActiveProviderId,
@@ -717,7 +739,7 @@ describe('useCollectionLoader', () => {
 
     // #when — a specific album/folder path, not All Music
     await act(async () => {
-      await result.current.loadCollection('/Music/Artist/Album', 'dropbox');
+      await result.current.loadCollection(folderSel('/Music/Artist/Album'));
     });
 
     // #then — tracks should be in input (catalog) order
@@ -734,7 +756,7 @@ describe('useCollectionLoader', () => {
 
     const { result } = renderHook(() =>
       useCollectionLoader({
-        trackOps: { setError: mockSetError, setIsLoading: mockSetIsLoading, setSelectedPlaylistId: mockSetSelectedPlaylistId, setTracks: mockSetTracks, setOriginalTracks: mockSetOriginalTracks, setCurrentTrackIndex: mockSetCurrentTrackIndex, mediaTracksRef },
+        trackOps: { setError: mockSetError, setIsLoading: mockSetIsLoading, setSelection: mockSetSelection, setTracks: mockSetTracks, setOriginalTracks: mockSetOriginalTracks, setCurrentTrackIndex: mockSetCurrentTrackIndex, mediaTracksRef },
         activeDescriptor: mockActiveDescriptor,
         getDescriptor: mockGetDescriptor,
         setActiveProviderId: mockSetActiveProviderId,
@@ -752,7 +774,7 @@ describe('useCollectionLoader', () => {
 
     // #when
     await act(async () => {
-      await result.current.loadCollection(LIKED_SONGS_ID);
+      await result.current.loadCollection({ type: 'liked' });
     });
 
     // #then
@@ -787,7 +809,7 @@ describe('useCollectionLoader', () => {
 
     const { result } = renderHook(() =>
       useCollectionLoader({
-        trackOps: { setError: mockSetError, setIsLoading: mockSetIsLoading, setSelectedPlaylistId: mockSetSelectedPlaylistId, setTracks: mockSetTracks, setOriginalTracks: mockSetOriginalTracks, setCurrentTrackIndex: mockSetCurrentTrackIndex, mediaTracksRef },
+        trackOps: { setError: mockSetError, setIsLoading: mockSetIsLoading, setSelection: mockSetSelection, setTracks: mockSetTracks, setOriginalTracks: mockSetOriginalTracks, setCurrentTrackIndex: mockSetCurrentTrackIndex, mediaTracksRef },
         activeDescriptor: mockActiveDescriptor,
         getDescriptor: mockGetDescriptor,
         setActiveProviderId: mockSetActiveProviderId,
@@ -805,7 +827,7 @@ describe('useCollectionLoader', () => {
 
     // #when
     await act(async () => {
-      await result.current.loadCollection(LIKED_SONGS_ID);
+      await result.current.loadCollection({ type: 'liked' });
     });
 
     // #then — adapter method not invoked for the provider that lacks the capability
@@ -844,7 +866,7 @@ describe('useCollectionLoader', () => {
 
     const { result } = renderHook(() =>
       useCollectionLoader({
-        trackOps: { setError: mockSetError, setIsLoading: mockSetIsLoading, setSelectedPlaylistId: mockSetSelectedPlaylistId, setTracks: mockSetTracks, setOriginalTracks: mockSetOriginalTracks, setCurrentTrackIndex: mockSetCurrentTrackIndex, mediaTracksRef },
+        trackOps: { setError: mockSetError, setIsLoading: mockSetIsLoading, setSelection: mockSetSelection, setTracks: mockSetTracks, setOriginalTracks: mockSetOriginalTracks, setCurrentTrackIndex: mockSetCurrentTrackIndex, mediaTracksRef },
         activeDescriptor: mockActiveDescriptor,
         getDescriptor: mockGetDescriptor,
         setActiveProviderId: mockSetActiveProviderId,
@@ -863,11 +885,11 @@ describe('useCollectionLoader', () => {
     // #when — load A goes through context-playback (catalog empty → spotifyHandlePlaylistSelect);
     // load B starts and completes while A awaits spotifyHandlePlaylistSelect
     await act(async () => {
-      const slowLoad = result.current.loadCollection('playlist_ctx', 'spotify');
+      const slowLoad = result.current.loadCollection(playlistSel('playlist_ctx'));
       // wait for A to have called spotifyHandlePlaylistSelect and be suspended
       await Promise.resolve();
       await Promise.resolve();
-      await result.current.loadCollection('playlist_B', 'dropbox');
+      await result.current.loadCollection(folderSel('playlist_B'));
       // now unblock A's spotifyHandlePlaylistSelect — stale check should stop mediaTracksRef write
       slowContextDeferred.resolve(contextTracks);
       await slowLoad;
@@ -899,7 +921,7 @@ describe('useCollectionLoader', () => {
 
     const { result } = renderHook(() =>
       useCollectionLoader({
-        trackOps: { setError: mockSetError, setIsLoading: mockSetIsLoading, setSelectedPlaylistId: mockSetSelectedPlaylistId, setTracks: mockSetTracks, setOriginalTracks: mockSetOriginalTracks, setCurrentTrackIndex: mockSetCurrentTrackIndex, mediaTracksRef },
+        trackOps: { setError: mockSetError, setIsLoading: mockSetIsLoading, setSelection: mockSetSelection, setTracks: mockSetTracks, setOriginalTracks: mockSetOriginalTracks, setCurrentTrackIndex: mockSetCurrentTrackIndex, mediaTracksRef },
         activeDescriptor: mockActiveDescriptor,
         getDescriptor: mockGetDescriptor,
         setActiveProviderId: mockSetActiveProviderId,
@@ -917,7 +939,7 @@ describe('useCollectionLoader', () => {
 
     // #when
     await act(async () => {
-      await result.current.loadCollection('playlist_empty');
+      await result.current.loadCollection(playlistSel('playlist_empty'));
     });
 
     // #then — context playback adapter not invoked because capability flag is false
@@ -940,7 +962,7 @@ describe('useCollectionLoader', () => {
 
     const { result } = renderHook(() =>
       useCollectionLoader({
-        trackOps: { setError: mockSetError, setIsLoading: mockSetIsLoading, setSelectedPlaylistId: mockSetSelectedPlaylistId, setTracks: mockSetTracks, setOriginalTracks: mockSetOriginalTracks, setCurrentTrackIndex: mockSetCurrentTrackIndex, mediaTracksRef },
+        trackOps: { setError: mockSetError, setIsLoading: mockSetIsLoading, setSelection: mockSetSelection, setTracks: mockSetTracks, setOriginalTracks: mockSetOriginalTracks, setCurrentTrackIndex: mockSetCurrentTrackIndex, mediaTracksRef },
         activeDescriptor: mockActiveDescriptor,
         getDescriptor: mockGetDescriptor,
         setActiveProviderId: mockSetActiveProviderId,
@@ -958,7 +980,7 @@ describe('useCollectionLoader', () => {
 
     // #when
     await act(async () => {
-      await result.current.loadCollection('playlist_123');
+      await result.current.loadCollection(playlistSel('playlist_123'));
     });
 
     // #then — second argument is an AbortSignal
@@ -984,7 +1006,7 @@ describe('useCollectionLoader', () => {
 
     const { result } = renderHook(() =>
       useCollectionLoader({
-        trackOps: { setError: mockSetError, setIsLoading: mockSetIsLoading, setSelectedPlaylistId: mockSetSelectedPlaylistId, setTracks: mockSetTracks, setOriginalTracks: mockSetOriginalTracks, setCurrentTrackIndex: mockSetCurrentTrackIndex, mediaTracksRef },
+        trackOps: { setError: mockSetError, setIsLoading: mockSetIsLoading, setSelection: mockSetSelection, setTracks: mockSetTracks, setOriginalTracks: mockSetOriginalTracks, setCurrentTrackIndex: mockSetCurrentTrackIndex, mediaTracksRef },
         activeDescriptor: mockActiveDescriptor,
         getDescriptor: mockGetDescriptor,
         setActiveProviderId: mockSetActiveProviderId,
@@ -1002,8 +1024,8 @@ describe('useCollectionLoader', () => {
 
     // #when — start slow load A, then fast load B which resolves while A is still pending
     await act(async () => {
-      const slowLoad = result.current.loadCollection('playlist_A', 'spotify');
-      await result.current.loadCollection('playlist_B', 'dropbox');
+      const slowLoad = result.current.loadCollection(playlistSel('playlist_A'));
+      await result.current.loadCollection(folderSel('playlist_B'));
       // now resolve the stale load A
       slowDeferred.resolve(slowTracks);
       await slowLoad;
@@ -1041,7 +1063,7 @@ describe('useCollectionLoader', () => {
 
     const { result } = renderHook(() =>
       useCollectionLoader({
-        trackOps: { setError: mockSetError, setIsLoading: mockSetIsLoading, setSelectedPlaylistId: mockSetSelectedPlaylistId, setTracks: mockSetTracks, setOriginalTracks: mockSetOriginalTracks, setCurrentTrackIndex: mockSetCurrentTrackIndex, mediaTracksRef },
+        trackOps: { setError: mockSetError, setIsLoading: mockSetIsLoading, setSelection: mockSetSelection, setTracks: mockSetTracks, setOriginalTracks: mockSetOriginalTracks, setCurrentTrackIndex: mockSetCurrentTrackIndex, mediaTracksRef },
         activeDescriptor: mockActiveDescriptor,
         getDescriptor: mockGetDescriptor,
         setActiveProviderId: mockSetActiveProviderId,
@@ -1059,11 +1081,11 @@ describe('useCollectionLoader', () => {
 
     // #when — load A starts and reaches playTrack(0); load B completes while A is suspended there
     await act(async () => {
-      const slowLoad = result.current.loadCollection('playlist_A', 'spotify');
+      const slowLoad = result.current.loadCollection(playlistSel('playlist_A'));
       // wait one microtask so A has called setTracks and is now awaiting playTrack
       await Promise.resolve();
       // B starts and completes fully
-      await result.current.loadCollection('playlist_B', 'dropbox');
+      await result.current.loadCollection(folderSel('playlist_B'));
       // unblock A's playTrack — the stale-check guard should stop A here
       playTrackDeferred.resolve();
       await slowLoad;
@@ -1102,7 +1124,7 @@ describe('useCollectionLoader', () => {
 
     const { result } = renderHook(() =>
       useCollectionLoader({
-        trackOps: { setError: mockSetError, setIsLoading: mockSetIsLoading, setSelectedPlaylistId: mockSetSelectedPlaylistId, setTracks: mockSetTracks, setOriginalTracks: mockSetOriginalTracks, setCurrentTrackIndex: mockSetCurrentTrackIndex, mediaTracksRef },
+        trackOps: { setError: mockSetError, setIsLoading: mockSetIsLoading, setSelection: mockSetSelection, setTracks: mockSetTracks, setOriginalTracks: mockSetOriginalTracks, setCurrentTrackIndex: mockSetCurrentTrackIndex, mediaTracksRef },
         activeDescriptor: mockActiveDescriptor,
         getDescriptor: mockGetDescriptor,
         setActiveProviderId: mockSetActiveProviderId,
@@ -1120,8 +1142,8 @@ describe('useCollectionLoader', () => {
 
     // #when — start load A, then load B
     await act(async () => {
-      const slowLoad = result.current.loadCollection('playlist_A', 'spotify');
-      await result.current.loadCollection('playlist_B', 'dropbox');
+      const slowLoad = result.current.loadCollection(playlistSel('playlist_A'));
+      await result.current.loadCollection(folderSel('playlist_B'));
       slowDeferred.resolve([makeMediaTrack('A1')]);
       await slowLoad;
     });
@@ -1146,7 +1168,7 @@ describe('useCollectionLoader', () => {
 
     const { result } = renderHook(() =>
       useCollectionLoader({
-        trackOps: { setError: mockSetError, setIsLoading: mockSetIsLoading, setSelectedPlaylistId: mockSetSelectedPlaylistId, setTracks: mockSetTracks, setOriginalTracks: mockSetOriginalTracks, setCurrentTrackIndex: mockSetCurrentTrackIndex, mediaTracksRef },
+        trackOps: { setError: mockSetError, setIsLoading: mockSetIsLoading, setSelection: mockSetSelection, setTracks: mockSetTracks, setOriginalTracks: mockSetOriginalTracks, setCurrentTrackIndex: mockSetCurrentTrackIndex, mediaTracksRef },
         activeDescriptor: mockActiveDescriptor,
         getDescriptor: mockGetDescriptor,
         setActiveProviderId: mockSetActiveProviderId,
@@ -1164,8 +1186,8 @@ describe('useCollectionLoader', () => {
 
     // #when — start slow unified liked load, then fast provider load B
     await act(async () => {
-      const slowLoad = result.current.loadCollection(LIKED_SONGS_ID);
-      await result.current.loadCollection('playlist_B', 'dropbox');
+      const slowLoad = result.current.loadCollection({ type: 'liked' });
+      await result.current.loadCollection(folderSel('playlist_B'));
       slowDeferred.resolve([makeMediaTrack('A1', 1000)]);
       await slowLoad;
     });
@@ -1208,7 +1230,7 @@ describe('useCollectionLoader', () => {
 
     const { result } = renderHook(() =>
       useCollectionLoader({
-        trackOps: { setError: mockSetError, setIsLoading: mockSetIsLoading, setSelectedPlaylistId: mockSetSelectedPlaylistId, setTracks: mockSetTracks, setOriginalTracks: mockSetOriginalTracks, setCurrentTrackIndex: mockSetCurrentTrackIndex, mediaTracksRef },
+        trackOps: { setError: mockSetError, setIsLoading: mockSetIsLoading, setSelection: mockSetSelection, setTracks: mockSetTracks, setOriginalTracks: mockSetOriginalTracks, setCurrentTrackIndex: mockSetCurrentTrackIndex, mediaTracksRef },
         activeDescriptor: mockActiveDescriptor,
         getDescriptor: mockGetDescriptor,
         setActiveProviderId: mockSetActiveProviderId,
@@ -1226,8 +1248,8 @@ describe('useCollectionLoader', () => {
 
     // #when — start slow unified liked load A, then fast spotify load B which wins first
     await act(async () => {
-      const slowLoad = result.current.loadCollection(LIKED_SONGS_ID);
-      await result.current.loadCollection('playlist_S', 'spotify');
+      const slowLoad = result.current.loadCollection({ type: 'liked' });
+      await result.current.loadCollection(playlistSel('playlist_S'));
       // now resolve the stale liked load A — its dropbox track would switch the active provider
       // if the stale guard were absent
       slowDeferred.resolve([dropboxLikedTrack]);

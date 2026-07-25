@@ -7,6 +7,7 @@ import {
   STALE_SESSION_MS,
 } from '../sessionPersistence';
 import type { SessionSnapshot } from '../sessionPersistence';
+import type { PlaybackSelection } from '@/types/domain';
 
 const localStorageMock = (() => {
   let store: Record<string, string> = {};
@@ -18,8 +19,14 @@ const localStorageMock = (() => {
   };
 })();
 
+const baseSelection: PlaybackSelection = {
+  type: 'collection',
+  ref: { provider: 'spotify', kind: 'playlist', id: 'col-1' },
+  name: 'Test Album',
+};
+
 const baseSnapshot: SessionSnapshot = {
-  collectionId: 'col-1',
+  selection: baseSelection,
   collectionName: 'Test Album',
   trackIndex: 2,
   trackId: 'track-abc',
@@ -93,7 +100,6 @@ describe('sessionPersistence', () => {
       // #given
       const snapshot: SessionSnapshot = {
         ...baseSnapshot,
-        collectionProvider: 'spotify',
         playbackPosition: 123.456,
       };
 
@@ -102,10 +108,171 @@ describe('sessionPersistence', () => {
       const loaded = loadSession();
 
       // #then
-      expect(loaded?.collectionId).toBe('col-1');
+      expect(loaded?.selection).toEqual(baseSelection);
       expect(loaded?.trackIndex).toBe(2);
-      expect(loaded?.collectionProvider).toBe('spotify');
       expect(loaded?.playbackPosition).toBe(123.456);
+    });
+  });
+
+  describe('legacy snapshot upgrade shim', () => {
+    const SESSION_KEY = 'vorbis-player-last-session';
+
+    function saveLegacy(fields: Record<string, unknown>): void {
+      localStorageMock.setItem(SESSION_KEY, JSON.stringify({
+        collectionName: 'Legacy Name',
+        trackIndex: 3,
+        ...fields,
+      }));
+    }
+
+    it("upgrades 'radio' to the radio selection", () => {
+      // #given
+      saveLegacy({ collectionId: 'radio' });
+
+      // #when
+      const loaded = loadSession();
+
+      // #then
+      expect(loaded?.selection).toEqual({ type: 'radio' });
+      expect(loaded?.collectionName).toBe('Legacy Name');
+      expect(loaded?.trackIndex).toBe(3);
+    });
+
+    it("upgrades 'liked-songs' with a provider to a provider-pinned liked selection", () => {
+      // #given
+      saveLegacy({ collectionId: 'liked-songs', collectionProvider: 'spotify' });
+
+      // #when
+      const loaded = loadSession();
+
+      // #then
+      expect(loaded?.selection).toEqual({ type: 'liked', provider: 'spotify', name: 'Legacy Name' });
+    });
+
+    it("upgrades 'liked-songs' without a provider to the unified liked selection", () => {
+      // #given
+      saveLegacy({ collectionId: 'liked-songs' });
+
+      // #when
+      const loaded = loadSession();
+
+      // #then — no provider means unified/auto
+      expect(loaded?.selection).toEqual({ type: 'liked', name: 'Legacy Name' });
+    });
+
+    it("upgrades 'liked-' prefixed ids to a liked selection", () => {
+      // #given
+      saveLegacy({ collectionId: 'liked-dropbox', collectionProvider: 'dropbox' });
+
+      // #when
+      const loaded = loadSession();
+
+      // #then
+      expect(loaded?.selection).toEqual({ type: 'liked', provider: 'dropbox', name: 'Legacy Name' });
+    });
+
+    it('parses structured provider:kind:id keys via keyToCollectionRef', () => {
+      // #given
+      saveLegacy({ collectionId: 'spotify:playlist:abc123' });
+
+      // #when
+      const loaded = loadSession();
+
+      // #then
+      expect(loaded?.selection).toEqual({
+        type: 'collection',
+        ref: { provider: 'spotify', kind: 'playlist', id: 'abc123' },
+        name: 'Legacy Name',
+      });
+    });
+
+    it("upgrades 'album:X' ids to an album ref", () => {
+      // #given
+      saveLegacy({ collectionId: 'album:alb-42', collectionProvider: 'spotify' });
+
+      // #when
+      const loaded = loadSession();
+
+      // #then
+      expect(loaded?.selection).toEqual({
+        type: 'collection',
+        ref: { provider: 'spotify', kind: 'album', id: 'alb-42' },
+        name: 'Legacy Name',
+      });
+    });
+
+    it("upgrades 'dbplaylist:/path' ids to a Dropbox playlist ref", () => {
+      // #given
+      saveLegacy({ collectionId: 'dbplaylist:/playlists/road-trip.m3u', collectionProvider: 'dropbox' });
+
+      // #when
+      const loaded = loadSession();
+
+      // #then
+      expect(loaded?.selection).toEqual({
+        type: 'collection',
+        ref: { provider: 'dropbox', kind: 'playlist', id: '/playlists/road-trip.m3u' },
+        name: 'Legacy Name',
+      });
+    });
+
+    it('upgrades a bare id without a provider to a Spotify playlist ref', () => {
+      // #given
+      saveLegacy({ collectionId: 'plain-playlist-id' });
+
+      // #when
+      const loaded = loadSession();
+
+      // #then
+      expect(loaded?.selection).toEqual({
+        type: 'collection',
+        ref: { provider: 'spotify', kind: 'playlist', id: 'plain-playlist-id' },
+        name: 'Legacy Name',
+      });
+    });
+
+    it('upgrades a bare id with the dropbox provider to a folder ref', () => {
+      // #given
+      saveLegacy({ collectionId: '/Music/Artist/Album', collectionProvider: 'dropbox' });
+
+      // #when
+      const loaded = loadSession();
+
+      // #then
+      expect(loaded?.selection).toEqual({
+        type: 'collection',
+        ref: { provider: 'dropbox', kind: 'folder', id: '/Music/Artist/Album' },
+        name: 'Legacy Name',
+      });
+    });
+
+    it('carries optional display fields through the upgrade', () => {
+      // #given
+      saveLegacy({
+        collectionId: 'radio',
+        trackId: 'track-1',
+        trackTitle: 'My Track',
+        trackArtist: 'Artist Name',
+        trackImage: 'https://cdn.example/cover.jpg',
+        savedAt: 1_700_000_000_000,
+        playbackPosition: 42_000,
+      });
+
+      // #when
+      const loaded = loadSession();
+
+      // #then
+      expect(loaded).toEqual({
+        selection: { type: 'radio' },
+        collectionName: 'Legacy Name',
+        trackIndex: 3,
+        trackId: 'track-1',
+        trackTitle: 'My Track',
+        trackArtist: 'Artist Name',
+        trackImage: 'https://cdn.example/cover.jpg',
+        savedAt: 1_700_000_000_000,
+        playbackPosition: 42_000,
+      });
     });
   });
 
