@@ -5,11 +5,8 @@ import type { ProviderId } from '@/types/domain';
 import type { ProviderDescriptor, ProviderRegistry } from '@/types/providers';
 
 // Ensure real providers are registered before the context is used.
-// Mock provider, if active, is loaded synchronously in main.tsx before render.
-import '@/providers/spotify/spotifyProvider';
-import '@/providers/dropbox/dropboxProvider'; // conditionally registers if VITE_DROPBOX_CLIENT_ID is set
+import '@/providers/registerProviders';
 import { AUTH_STATE_CHANGED_EVENT } from '@/hooks/usePopupAuth';
-import { DROPBOX_AUTH_ERROR_EVENT } from '@/providers/dropbox/dropboxAuthAdapter';
 import { AUTH_COMPLETE_EVENT, PROVIDER_RECONNECTED_EVENT, SESSION_EXPIRED_EVENT } from '@/constants/events';
 import { STORAGE_KEYS } from '@/constants/storage';
 import { NOTIFICATION_DISMISS_MS } from '@/constants/timing';
@@ -87,7 +84,14 @@ export function ProviderProvider({ children }: { children: React.ReactNode }) {
     const bumpRevision = () => setAuthRevision((prev) => prev + 1);
 
     window.addEventListener(AUTH_STATE_CHANGED_EVENT, bumpRevision);
-    window.addEventListener(DROPBOX_AUTH_ERROR_EVENT, bumpRevision);
+    // Provider-specific auth events (e.g. token revocation detected mid-request)
+    // come from descriptors, so any registered provider can participate.
+    const providerAuthEvents = providerRegistry.getAll()
+      .map((descriptor) => descriptor.authStateChangedEvent)
+      .filter((eventName): eventName is string => typeof eventName === 'string');
+    for (const eventName of providerAuthEvents) {
+      window.addEventListener(eventName, bumpRevision);
+    }
 
     const handleMessage = (event: MessageEvent) => {
       if (event.origin !== window.location.origin) return;
@@ -98,7 +102,9 @@ export function ProviderProvider({ children }: { children: React.ReactNode }) {
 
     return () => {
       window.removeEventListener(AUTH_STATE_CHANGED_EVENT, bumpRevision);
-      window.removeEventListener(DROPBOX_AUTH_ERROR_EVENT, bumpRevision);
+      for (const eventName of providerAuthEvents) {
+        window.removeEventListener(eventName, bumpRevision);
+      }
       window.removeEventListener('message', handleMessage);
     };
   }, []);

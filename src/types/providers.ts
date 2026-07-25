@@ -172,6 +172,20 @@ export interface ProviderCapabilities {
   hasContextPlaybackFallback?: boolean;
 }
 
+/**
+ * Optional provider-backed preferences synchronization (pins, accent colors).
+ * Providers that can persist app preferences remotely expose this; neutral
+ * contexts iterate registered descriptors instead of importing provider code.
+ */
+export interface ProviderPreferencesSync {
+  /** Debounced push of local preferences to the provider's storage. */
+  schedulePush(): void;
+  /** Pull remote preferences, merge with local state, and push back if needed. */
+  initialSync(): Promise<void>;
+  /** Forget the last-sync marker (e.g. after local preferences are cleared). */
+  clearSyncTimestamp(): void;
+}
+
 export interface ProviderDescriptor {
   id: ProviderId;
   name: string;
@@ -187,6 +201,14 @@ export interface ProviderDescriptor {
   icon?: ComponentType<{ size?: number }>;
   /** Window event name dispatched when this provider's liked tracks change. */
   likesChangedEvent?: string;
+  /**
+   * Window event name dispatched when this provider's auth state may have
+   * changed outside the shared popup-auth flow (e.g. token revocation detected
+   * mid-request). Neutral contexts subscribe to re-evaluate connected state.
+   */
+  authStateChangedEvent?: string;
+  /** Optional remote preferences sync (pins, accent colors). */
+  preferencesSync?: ProviderPreferencesSync;
   /** Build an external URL for an artist or album (e.g. Discogs search). */
   getExternalUrl?(info: ExternalLinkRequest): string;
   /** Build multiple external URLs for an artist or album. Takes precedence over getExternalUrl. */

@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import * as React from 'react';
 import styled from 'styled-components';
-import { getAlbumArt } from '@/providers/dropbox/dropboxArtCache';
+import type { ProviderId } from '@/types/domain';
+import { providerRegistry } from '@/providers/registry';
 import { IMAGE_LOAD_TIMEOUT_MS } from '@/constants/timing';
 
 const MosaicGrid = styled.div`
@@ -32,18 +33,23 @@ const Placeholder = styled.div`
 `;
 
 interface MosaicThumbnailProps {
+  /** Provider whose catalog resolves the album paths to artwork. */
+  provider: ProviderId;
   albumPaths: string[];
   alt: string;
 }
 
 export const MosaicThumbnail: React.FC<MosaicThumbnailProps> = React.memo(
-  function MosaicThumbnail({ albumPaths, alt }) {
+  function MosaicThumbnail({ provider, albumPaths, alt }) {
     const [resolved, setResolved] = useState<(string | null)[]>([]);
 
     useEffect(() => {
       let cancelled = false;
+      const resolveArtwork = providerRegistry.get(provider)?.catalog.resolveArtwork;
       const resolve = () =>
-        Promise.all(albumPaths.map(path => getAlbumArt(path))).then(results => {
+        Promise.all(
+          albumPaths.map(path => resolveArtwork?.(path) ?? Promise.resolve(null)),
+        ).then(results => {
           if (!cancelled) setResolved(results);
           return results;
         });
@@ -56,7 +62,7 @@ export const MosaicThumbnail: React.FC<MosaicThumbnailProps> = React.memo(
         }
       });
       return () => { cancelled = true; };
-    }, [albumPaths]);
+    }, [provider, albumPaths]);
 
     const hasAny = resolved.some(url => url != null);
     if (!hasAny) return null;

@@ -84,10 +84,8 @@ export const AdvancedSection: React.FC = () => {
       localStorage.removeItem(STORAGE_KEYS.CUSTOM_ACCENT_COLORS);
     }
     if (clearPins || clearAccentColors) {
-      const { clearPreferencesSyncTimestamp, getPreferencesSync } =
-        await import('@/providers/dropbox/dropboxPreferencesSync');
-      clearPreferencesSyncTimestamp();
-      getPreferencesSync()?.initialSync();
+      const { resetPreferencesSync } = await import('@/providers/preferencesSync');
+      void resetPreferencesSync();
     }
     setClearState('success');
     setClearLikes(false);

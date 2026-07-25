@@ -3,7 +3,7 @@ import { theme } from '@/styles/theme';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { isProfilingEnabled } from '@/contexts/ProfilingContext';
 import { getContrastColor } from '@/utils/colorUtils';
-import { getPreferencesSync } from '@/providers/dropbox/dropboxPreferencesSync';
+import { schedulePreferencesPush as schedulePreferencesPushForProviders } from '@/providers/preferencesSync';
 import { STORAGE_KEYS } from '@/constants/storage';
 
 interface ColorContextValue {
@@ -36,7 +36,7 @@ export function ColorProvider({ children }: { children: React.ReactNode }) {
   );
 
   const schedulePreferencesPush = useCallback(() => {
-    getPreferencesSync()?.schedulePush();
+    schedulePreferencesPushForProviders();
   }, []);
 
   const handleSetAccentColorOverride = useCallback((albumId: string, color: string) => {

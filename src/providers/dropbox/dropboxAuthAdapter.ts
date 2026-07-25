@@ -8,6 +8,8 @@ import type { ProviderId } from '@/types/domain';
 import { STORAGE_KEYS } from '@/constants/storage';
 import { SESSION_EXPIRED_EVENT } from '@/constants/events';
 import { resetPlaylistsFolderCache } from './dropboxPlaylistStorage';
+import { getLikesSync } from './dropboxLikesSync';
+import { getPreferencesSync } from './dropboxPreferencesSync';
 import { clearLikedCountSnapshot } from '@/services/cache/likedCountSnapshot';
 
 export const DROPBOX_AUTH_ERROR_EVENT = 'vorbis-dropbox-auth-error';
@@ -194,6 +196,15 @@ export class DropboxAuthAdapter implements AuthProvider {
       localStorage.setItem(STORAGE_KEYS.DROPBOX_TOKEN_EXPIRY, String(this.tokenExpiresAt));
     }
     localStorage.removeItem(STORAGE_KEYS.DROPBOX_CODE_VERIFIER);
+
+    // Kick provider-owned syncs now that a fresh token is in place. Fire and
+    // forget: login success must not depend on sync availability.
+    getLikesSync()?.initialSync().catch((err) => {
+      console.warn('[DropboxAuth] Post-login likes sync failed:', err);
+    });
+    getPreferencesSync()?.initialSync().catch((err) => {
+      console.warn('[DropboxAuth] Post-login preferences sync failed:', err);
+    });
 
     return true;
   }

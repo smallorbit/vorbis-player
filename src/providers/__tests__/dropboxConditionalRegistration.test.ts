@@ -15,6 +15,7 @@ describe('dropboxProvider conditional registration', () => {
       DropboxAuthAdapter: vi.fn().mockImplementation(() => ({
         isAuthenticated: vi.fn().mockReturnValue(false),
       })),
+      DROPBOX_AUTH_ERROR_EVENT: 'dropbox-auth-error',
     }));
     vi.doMock('@/providers/dropbox/dropboxCatalogAdapter', () => ({
       DropboxCatalogAdapter: vi.fn().mockImplementation(() => ({})),
@@ -28,6 +29,7 @@ describe('dropboxProvider conditional registration', () => {
     vi.doMock('@/providers/dropbox/dropboxPreferencesSync', () => ({
       initPreferencesSync: vi.fn(),
       getPreferencesSync: vi.fn().mockReturnValue(null),
+      clearPreferencesSyncTimestamp: vi.fn(),
     }));
     vi.doMock('@/providers/dropbox/dropboxPlaylistStorage', () => ({
       saveQueueAsPlaylist: vi.fn(),

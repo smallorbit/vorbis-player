@@ -54,6 +54,7 @@ type GridSatelliteItem =
 
 interface GridItemCardProps {
   selection: CollectionSelection;
+  provider: ProviderId;
   name: string;
   imgUrl?: string | undefined;
   mosaicAlbumPaths?: string[] | undefined;
@@ -63,7 +64,7 @@ interface GridItemCardProps {
 }
 
 const GridItemCard: React.FC<GridItemCardProps> = ({
-  selection, name, imgUrl, mosaicAlbumPaths, fallback, onPlay, onAddToQueue,
+  selection, provider, name, imgUrl, mosaicAlbumPaths, fallback, onPlay, onAddToQueue,
 }) => {
   const handlePlay = useCallback(() => onPlay(selection), [selection, onPlay]);
   const handleAdd = useCallback(() => onAddToQueue(selection), [selection, onAddToQueue]);
@@ -71,7 +72,7 @@ const GridItemCard: React.FC<GridItemCardProps> = ({
   const longPress = useLongPress({ onShortPress: handlePlay, onLongPress: handleAdd });
 
   const artContent = mosaicAlbumPaths && mosaicAlbumPaths.length >= 2
-    ? <MosaicThumbnail albumPaths={mosaicAlbumPaths} alt={name} />
+    ? <MosaicThumbnail provider={provider} albumPaths={mosaicAlbumPaths} alt={name} />
     : imgUrl ? <img src={imgUrl} alt={name} loading="lazy" /> : fallback;
 
   return (
@@ -148,6 +149,7 @@ const PinRing: React.FC<PinRingProps> = ({
                   <GridItemCard
                     key={`playlist-${p.id}`}
                     selection={{ type: 'collection', ref: collectionToRef(p), name: p.name }}
+                    provider={p.provider}
                     name={p.name}
                     imgUrl={p.imageUrl}
                     mosaicAlbumPaths={p.mosaicAlbumPaths}
@@ -162,6 +164,7 @@ const PinRing: React.FC<PinRingProps> = ({
                 <GridItemCard
                   key={`album-${a.id}`}
                   selection={{ type: 'collection', ref: collectionToRef(a), name: a.name }}
+                  provider={a.provider}
                   name={a.name}
                   imgUrl={a.imageUrl}
                   fallback="💿"
