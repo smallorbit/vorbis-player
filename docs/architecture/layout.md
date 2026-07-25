@@ -28,7 +28,7 @@ The library browser opens as `LibraryRoute` (a full-screen view, `src/components
 
 **Opening the library**: BottomBar library button, or swipe down on album art when the Quick Access Panel is disabled (with QAP enabled, swipe down opens the QAP instead). Keyboard `↓` / `L` open the Quick Access Panel, not the library. Opening library closes the queue drawer.
 
-**Recently Played history** is tracked by `useRecentlyPlayedCollections` (`src/hooks/useRecentlyPlayedCollections.ts`). It exposes `history: RecentlyPlayedEntry[]` and `record(ref, name)`. Successful collection loads via `useCollectionLoader.loadCollection` call `record` automatically. History is stored under `vorbis-player-recently-played` (localStorage), capped at 5 entries, deduped by `CollectionRef` key, newest first. The Recently Played section in `LibraryRoute` reads from this hook via `useRecentlyPlayedSection`.
+**Recently Played history** is tracked by `useRecentlyPlayedCollections` (`src/hooks/useRecentlyPlayedCollections.ts`). It exposes `history: RecentlyPlayedEntry[]` and `record(ref, name, imageUrl?)`. Successful collection loads via `useCollectionLoader.loadCollection` call `record` automatically. History is stored under `vorbis-player-recently-played` (localStorage), capped at 5 entries, deduped by `CollectionRef` key, newest first. The Recently Played section in `LibraryRoute` reads from this hook via `useRecentlyPlayedSection`.
 
 See `docs/features/library.md` for the section taxonomy, sub-route nav, search/filters, context menu, and mini-player chrome.
 
@@ -44,19 +44,19 @@ When no track is loaded, `PlayerStateRenderer` (`src/components/PlayerStateRende
 | no/stale session + `qapEnabled` | `QuickAccessPanel` |
 | no/stale session + `!qapEnabled` | `LibraryRoute` |
 
-QAP is opt-in via the "Quick Access Panel" On/Off control in `VisualEffectsMenu`; preference persists under `vorbis-player-qap-enabled` (default `false`) via `useQapEnabled()`. Clicking "Browse Library" from QAP or Welcome flips a local `libraryOverride` flag — once engaged, the idle view stays on `LibraryRoute` for the rest of the session (one-way door).
+QAP is opt-in via the "Quick Access Panel" On/Off control in the Settings dialog's Advanced section (`src/components/Settings/sections/AdvancedSection.tsx`); preference persists under `vorbis-player-qap-enabled` (default `false`) via `useQapEnabled()`. Clicking "Browse Library" from QAP or Welcome flips a local `libraryOverride` flag — once engaged, the idle view stays on `LibraryRoute` for the rest of the session (one-way door).
 
 **Welcome screen** — `WelcomeScreen` (`src/components/WelcomeScreen/index.tsx`) shows once for new users with a per-provider status summary and context-aware primary CTA (*Connect a provider* when `connectedProviderIds.length === 0`, *Browse your library* otherwise). The dismiss-for-good flag persists via `useWelcomeSeen` (`src/hooks/useWelcomeSeen.ts`) under the `vorbis-player-welcome-seen` localStorage key (default `false`).
 
-**Stale session cutoff** — `isSessionStale(session, now?)` from `src/services/sessionPersistence.ts` returns true when the session is absent, missing `savedAt`, or older than `STALE_SESSION_MS` (30 days). Stale sessions are treated as no session for landing routing and resume affordances.
+**Stale session cutoff** — `isSessionStale(session, now?)` from `src/services/sessionPersistence.ts` returns true when the session is absent, missing `savedAt`, or older than `STALE_SESSION_MS` (30 days). Stale sessions are treated as no session for landing routing and resume affordances. `SessionSnapshot` persists a typed `selection: PlaybackSelection`; `loadSession()` upgrades legacy prefix-encoded snapshots (`collectionId` + `collectionProvider`) into the typed shape on load.
 
 **Resume hero** — `ResumeHero` (`src/components/QuickAccessPanel/ResumeHero.tsx`) renders at the top of `QuickAccessPanel` (above `PinRing`) when a valid `lastSession` is present; clicking the Resume CTA invokes `onResume` (autoplay). On the idle library route, `LibraryRoute` renders its own resume hero from `useResumeSection`.
 
-**Settings gear on idle views** — `SettingsGearButton` (`src/components/SettingsGearButton/index.tsx`) is mounted top-right by `PlayerStateRenderer` on `WelcomeScreen`, idle `LibraryRoute`, and `QuickAccessPanel` via the `onOpenSettings` prop, opening the existing `VisualEffectsMenu`. Hidden during loading and error states. The active-player gear continues to live in `BottomBar` / `PlayerControlsSection`.
+**Settings gear on idle views** — `SettingsGearButton` (`src/components/SettingsGearButton/index.tsx`) is mounted top-right by `PlayerStateRenderer` on `WelcomeScreen`, idle `LibraryRoute`, and `QuickAccessPanel` via the `onOpenSettings` prop, opening the Settings dialog. Hidden during loading and error states. The active-player gear continues to live in `BottomBar` / `PlayerControlsSection`.
 
 ## Hydrate without autoplay
 
-`handleHydrate(session): Promise<HydrateResult>` in `usePlayerLogic` (`src/hooks/usePlayerLogic.ts`) restores `tracks` / `originalTracks` / `mediaTracksRef` / `currentTrackIndex` / `selectedPlaylistId`, sets the seek bar to `savedPositionMs`, and calls `prepareTrack(track, { positionMs })` on the driving provider — but does NOT call `play()`. A `hydratedPendingPlayRef = { index, positionMs }` records the target so the next user-initiated `handlePlay` starts from the saved offset. Any call into `playTrack` (next/previous/new collection) clears the ref.
+`handleHydrate(session): Promise<HydrateResult>` in `usePlayerLogic` (`src/hooks/usePlayerLogic.ts`) restores `tracks` / `originalTracks` / `mediaTracksRef` / `currentTrackIndex` / `selection`, sets the seek bar to `savedPositionMs`, and calls `prepareTrack(track, { positionMs })` on the driving provider — but does NOT call `play()`. A `hydratedPendingPlayRef = { index, positionMs }` records the target so the next user-initiated `handlePlay` starts from the saved offset. Any call into `playTrack` (next/previous/new collection) clears the ref.
 
 - `HydrateResult` shape: `{ track: MediaTrack | null, skipped: boolean, totalFailure: boolean }`.
 - **prepareTrack is emit-only** — both adapters emit a `PlaybackState` event with `positionMs` + `durationMs` so the seek bar reflects the saved position before any user action. No audio actually starts.

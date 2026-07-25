@@ -24,7 +24,7 @@ Key concept: **active provider** (selected for browsing/catalog) vs **driving pr
 | `src/components/PlayerContent/ZenClickZoneOverlay.tsx` | Desktop zen: hover-reveal prev/play/next buttons over album art |
 | `src/components/PlayerContent/ZenLikeOverlay.tsx` | Desktop zen: hover-reveal like button (bottom-right of album art) |
 | `src/providers/errors.ts` | `AuthExpiredError`, `UnavailableTrackError` |
-| `src/types/providers.ts` | `PlaybackProvider` interface (line 113) |
+| `src/types/providers.ts` | `PlaybackProvider` interface (line 115) |
 | `src/types/domain.ts` | `PlaybackState` interface (line 105) |
 
 ## usePlayerLogic
@@ -35,7 +35,7 @@ Central dispatch hub. Composes all sub-hooks and returns a structured API:
 
 ```ts
 return {
-  state: { isLoading, error, selectedPlaylistId, tracks, currentView, isPlaying, playbackPosition },
+  state: { isLoading, error, selection, tracks, currentView, isPlaying, playbackPosition },
   handlers: {
     loadCollection, playTracksDirectly, handleAddToQueue, queueTracksDirectly,
     insertTracksNext, insertCollectionNext,
@@ -59,7 +59,7 @@ return {
 
 ### handleNext / handlePrevious
 
-Both wrap around the queue circularly (`% tracks.length`). They call `setCurrentTrackIndex(targetIndex)`, then `await playTrack(targetIndex, true)`, then `ensurePlaybackResumed()` (manual skip auto-resumes, matching Spotify/Apple Music). The `expectedTrackIdRef` guard is not set here — `playTrack` itself raises it (to the target track's ID) before any adapter call, telling `usePlaybackSubscription` to ignore stale provider index updates until the expected track arrives.
+Skip is app-queue-owned — the `PlaybackProvider` interface has no `next()`/`previous()` methods. `handleNext` stops at the end of the queue (no wrap); `handlePrevious` clamps at index 0. Each computes the target index, calls `setCurrentTrackIndex(targetIndex)`, then `await playTrack(targetIndex, true)`, then `ensurePlaybackResumed()` (manual skip auto-resumes, matching Spotify/Apple Music). The `expectedTrackIdRef` guard is not set here — `playTrack` itself raises it (to the target track's ID) before any adapter call, telling `usePlaybackSubscription` to ignore stale provider index updates until the expected track arrives.
 
 ### handlePlay / handlePause
 
@@ -67,7 +67,7 @@ Route through `getDrivingProviderDescriptor()` -- resolves the driving provider 
 
 ### handleBackToLibrary
 
-Pauses playback, stops radio, clears all queue state (`tracks`, `originalTracks`, `mediaTracksRef`, `selectedPlaylistId`, `currentTrackIndex`), and closes drawers.
+Pauses playback, stops radio, clears all queue state (`selection`, `tracks`, `mediaTracksRef`, `currentTrackIndex`, `expectedTrackIdRef`), and closes drawers.
 
 ### Queue change notification
 
@@ -322,7 +322,7 @@ From `src/constants/zenAnimation.ts`:
 
 **Location:** `src/components/PlayerStateRenderer.tsx`
 
-Renders the idle/home view when no track is loaded (`selectedPlaylistId === null || tracks.length === 0`). Beyond the loading / auth-error / generic-error cards, the idle view also has a 'welcome' route (WelcomeScreen, first run until dismissed) and a 'hydrate' route (a 'Restoring Your Session' spinner that fires `onHydrate` to restore the last queue).
+Renders the idle/home view when no track is loaded (`selection === null || tracks.length === 0`). Beyond the loading / auth-error / generic-error cards, the idle view also has a 'welcome' route (WelcomeScreen, first run until dismissed) and a 'hydrate' route (a 'Restoring Your Session' spinner that fires `onHydrate` to restore the last queue).
 
 ### View routing
 
@@ -352,9 +352,9 @@ Stored in `localStorage` under key `vorbis-player-qap-enabled` (default `false`)
 ```
 User presses Next
   -> usePlayerLogic.handleNext()
-    -> sets expectedTrackIdRef to target track ID
     -> setCurrentTrackIndex(nextIndex)
     -> useProviderPlayback.playTrack(nextIndex, skipOnError=true)
+      -> sets expectedTrackIdRef to target track ID
       -> resolveTrackProvider(mediaTracksRef[nextIndex])
       -> pausePreviousProvider(resolvedProvider)    // handoff if provider changed
       -> currentPlaybackProviderRef.current = resolvedProvider

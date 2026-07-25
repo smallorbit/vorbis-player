@@ -173,7 +173,7 @@ The `backgroundVisualizerSpeed` value (default `1.0`) is a global speed multipli
 
 Controlled via a slider on the flip menu back (`QuickEffectsRow`). Persisted under `vorbis-player-background-visualizer-speed`.
 
-## Settings (Settings)
+## Settings
 
 **File**: `src/components/Settings/Settings.tsx` — the full-screen settings dialog. See `docs/features/settings.md` for the full breakdown.
 

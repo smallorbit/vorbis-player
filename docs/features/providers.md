@@ -33,7 +33,7 @@ Provider-agnostic track. Key fields:
 
 ### MediaCollection
 
-Provider-agnostic collection. `kind` is `'playlist' | 'album' | 'folder' | 'liked'`. Dropbox uses `'album'` for folders containing audio and `'folder'` for the synthetic "All Music" collection.
+Provider-agnostic collection. `kind` is `'playlist' | 'album' | 'folder' | 'liked'`. Dropbox uses `'album'` for folders containing audio and `'folder'` for the synthetic "All Music" collection. Display/metadata fields are neutral: `imageUrl`, `trackCount`, `ownerName`, and `revision` (a change-detection cursor, e.g. Spotify's snapshot_id at the wire level). Provider wire shapes never leave the adapter layer — `MediaCollection`/`MediaTrack` are the app-wide currency (library UI, IndexedDB cache, CmdK search).
 
 ### CollectionRef
 
@@ -75,14 +75,13 @@ interface AuthProvider {
 ```ts
 interface CatalogProvider {
   readonly providerId: ProviderId;
-  listCollections(signal?: AbortSignal, options?: { forceRefresh?: boolean }): Promise<MediaCollection[]>;
+  listCollections?(signal?: AbortSignal, options?: { forceRefresh?: boolean }): Promise<MediaCollection[]>;
   listTracks(collectionRef: CollectionRef, signal?: AbortSignal): Promise<MediaTrack[]>;
   getLikedCount?(signal?: AbortSignal): Promise<number>;
   setTrackSaved?(trackId: string, saved: boolean): Promise<void>;
   isTrackSaved?(trackId: string): Promise<boolean>;
   setAlbumSaved?(albumId: string, saved: boolean): Promise<void>;
   isAlbumSaved?(albumId: string): Promise<boolean>;
-  deleteCollection?(collectionId: string, kind: CollectionKind): Promise<void>;
   resolveDuration?(track: MediaTrack): Promise<number | null>;
   resolveArtwork?(albumId: string, signal?: AbortSignal): Promise<string | null>;
   searchTrack?(artist: string, title: string): Promise<MediaTrack | null>;
@@ -90,11 +89,11 @@ interface CatalogProvider {
   refreshArtCache?(): Promise<void>;
   exportLikes?(): Promise<string>;
   importLikes?(json: string): Promise<number>;
-  refreshLikedMetadata?(): Promise<{ updated: number; removed: number }>;
+  refreshLikedMetadata?(): Promise<RefreshLikedMetadataResult>;
 }
 ```
 
-All methods after `listTracks` are optional. The UI checks `capabilities` flags on the descriptor before calling optional methods.
+`listTracks` is the only required method. `listCollections` is optional: it is absent when a background sync engine provides library listing for that provider — the real Spotify adapter omits it, and `useLibrarySync` routes providers to the sync-engine path by that absence (everyone else, including the mock Spotify adapter, takes the catalog path). The UI checks `capabilities` flags on the descriptor before calling optional methods.
 
 **Invariant**: `listTracks` must return `MediaTrack[]` with `provider` set to the provider's own ID and `playbackRef.provider` matching. Violating this breaks the provider resolution chain.
 
@@ -109,18 +108,18 @@ interface PlaybackProvider {
   pause(): Promise<void>;
   resume(): Promise<void>;
   seek(positionMs: number): Promise<void>;
-  next(): Promise<void>;
-  previous(): Promise<void>;
   setVolume(volume0to1: number): Promise<void>;
   getState(): Promise<PlaybackState | null>;
   subscribe(listener: (state: PlaybackState | null) => void): () => void;
-  prepareTrack?(track: MediaTrack): void;
+  prepareTrack?(track: MediaTrack, options?: { positionMs?: number }): void;
+  probePlayable?(track: MediaTrack): Promise<boolean>;
   refreshCurrentTrackArt?(): void;
   getLastPlayTime?(): number;
   onQueueChanged?(tracks: MediaTrack[], fromIndex: number): void;
 }
 ```
 
+- There are no `next()`/`previous()` methods — skip is app-queue-owned. `usePlayerLogic.handleNext`/`handlePrevious` pick the target index in the app queue and call `playTrack` on the resolved provider.
 - `subscribe` returns an unsubscribe function. Multiple subscribers are supported.
 - `getLastPlayTime` returns epoch ms of the last `playTrack` call. Used by `useAutoAdvance` to implement a 5-second cooldown (`PLAY_COOLDOWN_MS`) that prevents false end-of-track triggers during buffering.
 - `onQueueChanged` is invoked on track transitions (`useProviderPlayback.playTrack`) and on user-driven queue mutations (`useQueueManagement`), and only for providers whose descriptor declares `hasNativeQueueSync`. Spotify uses this to build upcoming URIs for native queue sync.
@@ -155,25 +154,32 @@ interface ProviderDescriptor {
   subscriptionNote?: string;          // Shown on auth screen
   icon?: ComponentType<{ size?: number }>;
   likesChangedEvent?: string;         // Window event name for real-time UI
+  authStateChangedEvent?: string;     // Window event name for out-of-band auth changes
+  preferencesSync?: ProviderPreferencesSync;  // Remote pins/accent-color sync
   getExternalUrl?(info): string;
   getExternalUrls?(info): Array<{ label; url; icon }>;
   savePlaylist?(name, tracks): Promise<{ url?; totalTracks; skippedTracks } | null>;
 }
 ```
 
+- `authStateChangedEvent` names a window event the provider dispatches when its auth state may have changed outside the shared popup flow (e.g. token revocation mid-request). Neutral contexts (`ProviderContext`) subscribe to re-evaluate connected state. Only Dropbox sets it today.
+- `preferencesSync` (`{ schedulePush, initialSync, clearSyncTimestamp }`) is the optional provider-backed preferences sync extension point. Neutral code goes through the registry helpers in `src/providers/preferencesSync.ts` (`schedulePreferencesPush`, `resetPreferencesSync`) instead of importing provider modules.
+
 ### ProviderCapabilities
 
-| Flag | Spotify | Dropbox | UI Effect |
-|------|---------|---------|-----------|
-| `hasLikedCollection` | `true` | `true` | Shows "Liked Songs" in library |
-| `hasSaveTrack` | `true` | `true` | Heart icon on tracks |
-| `hasSaveAlbum` | `true` | -- | Save album button |
-| `hasDeleteCollection` | `true` | `true` | Delete/unfollow in context menu |
-| `hasExternalLink` | `true` | `true` | "Open in Spotify" / "Search Discogs" |
-| `hasTrackSearch` | `true` | -- | Used for radio cross-provider resolution |
-| `hasNativeQueueSync` | `true` | -- | Syncs queue to Spotify's native player |
+There is exactly one variability mechanism on the provider contract: optional-method presence. Capability flags that mirror a catalog method (`hasLikedCollection`, `hasSaveTrack`, `hasSaveAlbum`, `hasTrackSearch`) are **derived** in `registry.register()` from the adapter — a provider cannot declare them out of agreement with its methods. Providers declare only the **behavioral** flags (`DeclaredProviderCapabilities`): `hasExternalLink`, `externalLinkLabel`, `hasNativeQueueSync`, `hasContextPlaybackFallback` — flags where the method may exist as a documented no-op or the capability isn't a method at all.
 
-**Invariant**: Always check `capabilities` before calling optional catalog/playback methods or rendering provider-specific UI. Both `hasSaveTrack` and `hasLikedCollection` are true for both providers, but `hasSaveAlbum` and `hasTrackSearch` are Spotify-only.
+| Flag | Derived from | Spotify | Dropbox | UI Effect |
+|------|--------------|---------|---------|-----------|
+| `hasLikedCollection` | `catalog.getLikedCount` | `true` | `true` | Shows "Liked Songs" in library |
+| `hasSaveTrack` | `catalog.setTrackSaved` + `isTrackSaved` | `true` | `true` | Heart icon on tracks |
+| `hasSaveAlbum` | `catalog.setAlbumSaved` + `isAlbumSaved` | `true` | -- | Save album button |
+| `hasTrackSearch` | `catalog.searchTrack` | `true` | -- | Used for radio cross-provider resolution |
+| `hasExternalLink` | declared | `true` | `true` | "Open in Spotify" / "Search Discogs" |
+| `hasNativeQueueSync` | declared | `true` | -- | Syncs queue to Spotify's native player |
+| `hasContextPlaybackFallback` | declared | `true` | -- | Context-playback fallback when `listTracks` returns 0 |
+
+**Invariant**: Always check `capabilities` before calling optional catalog/playback methods or rendering provider-specific UI. `register()` validates declared behavioral flags against the adapter (`hasNativeQueueSync` requires `playback.onQueueChanged`; `hasContextPlaybackFallback` requires `playback.playCollection`) and throws `ProviderCapabilityMismatchError` on disagreement.
 
 ## Provider Registration
 
@@ -184,7 +190,7 @@ Singleton `providerRegistry` backed by a `Map<ProviderId, ProviderDescriptor>`.
 ```ts
 class ProviderRegistryImpl implements ProviderRegistry {
   private providers = new Map<ProviderId, ProviderDescriptor>();
-  register(descriptor: ProviderDescriptor): void;
+  register(registration: ProviderRegistration): void;
   get(id: ProviderId): ProviderDescriptor | undefined;
   getAll(): ProviderDescriptor[];
   has(id: ProviderId): boolean;
@@ -192,9 +198,11 @@ class ProviderRegistryImpl implements ProviderRegistry {
 export const providerRegistry = new ProviderRegistryImpl();
 ```
 
+`register()` takes a `ProviderRegistration` (a descriptor whose `capabilities` are the declared behavioral flags only), verifies the three adapters exist, validates declared flags against the adapter, and stores a full `ProviderDescriptor` with the method-mirroring capability flags derived from catalog method presence (`deriveCapabilities`).
+
 ### Self-Registration Pattern
 
-Each provider module calls `providerRegistry.register(descriptor)` at module scope. Registration happens via ES module side effects when the module is imported.
+Each provider module calls `providerRegistry.register(registration)` at module scope. Registration happens via ES module side effects when the module is imported.
 
 **Spotify** (`src/providers/spotify/spotifyProvider.ts`): Always registers. The descriptor is a module-level constant.
 
@@ -202,14 +210,14 @@ Each provider module calls `providerRegistry.register(descriptor)` at module sco
 
 ### Import Trigger
 
-`src/contexts/ProviderContext.tsx` has bare imports that trigger registration:
+`src/providers/registerProviders.ts` is the composition root — the only neutral module allowed to import provider packages:
 
 ```ts
-import '@/providers/spotify/spotifyProvider';
-import '@/providers/dropbox/dropboxProvider';
+import './spotify/spotifyProvider';
+import './dropbox/dropboxProvider'; // conditionally registers if VITE_DROPBOX_CLIENT_ID is set
 ```
 
-These run before the context renders, ensuring the registry is populated.
+`src/contexts/ProviderContext.tsx` imports `@/providers/registerProviders`, so registration runs before the context renders. (The mock provider, when active, is loaded synchronously in `main.tsx` before render.)
 
 ## ProviderContext
 
@@ -235,7 +243,7 @@ This is the most important architectural distinction in the provider system.
 - **Active provider** (`activeProviderId` / `activeDescriptor`): The provider context for browsing, catalog actions, and library UI. Stored in localStorage, user-selectable.
 - **Driving provider** (`currentPlaybackProviderRef` / `drivingProviderRef`): The provider currently controlling audio output. A `useRef<ProviderId | null>` in `useProviderPlayback`, exposed as `currentPlaybackProviderRef` from `usePlayerLogic`.
 
-**When they differ**: In a mixed queue (Unified Liked Songs, radio with cross-provider tracks), the user might have Dropbox as the active provider but the current track is a Spotify track. Playback controls (`play`, `pause`, `seek`, `next`) must route to the driving provider, not the active one.
+**When they differ**: In a mixed queue (Unified Liked Songs, radio with cross-provider tracks), the user might have Dropbox as the active provider but the current track is a Spotify track. Playback controls (`play`, `pause`, `seek`) must route to the driving provider, not the active one; skip (next/previous) is app-queue-owned and routes each target track to its own provider via `playTrack`.
 
 ### Provider Resolution Chain
 
@@ -439,7 +447,7 @@ Dropbox root/
   3. Sets `audio.src` and plays
   4. Starts a 250ms polling interval for smooth position updates
   5. Kicks off background metadata enrichment (delayed 2s to not compete with audio buffering)
-- `next()` and `previous()` are no-ops; track advance is handled by `useAutoAdvance`
+- Track advance is app-owned (`useAutoAdvance` / `handleNext`); the adapter has no skip methods
 - `prepareTrack()` calls `catalog.prefetchTemporaryLink(path)` to pre-fetch the Dropbox temporary link
 
 ### ID3 Metadata Enrichment
@@ -511,7 +519,7 @@ Currently only Spotify has `hasTrackSearch: true`. This means a Dropbox-seeded r
 `src/hooks/useRadioSession.ts` connects the pipeline to React state:
 - `handleStartRadio()` runs the pipeline with the current track as seed
 - On success, replaces the queue with the radio results
-- Sets `selectedPlaylistId` to `RADIO_PLAYLIST_ID`
+- Sets the playback selection to `{ type: 'radio' }` (the radio variant of `PlaybackSelection`)
 
 ## Error Types
 
@@ -544,16 +552,16 @@ class UnavailableTrackError extends Error {
    - `<Name>PlaybackAdapter implements PlaybackProvider`
 
 4. **Create the provider module** (`<name>Provider.ts`):
-   - Assemble a `ProviderDescriptor` with adapters, capabilities, and metadata
-   - Call `providerRegistry.register(descriptor)` at module scope
+   - Assemble a `ProviderRegistration` with adapters, declared behavioral capabilities, and metadata
+   - Call `providerRegistry.register(registration)` at module scope
    - Gate registration behind an env var check if the provider is optional
 
-5. **Import the provider module** in `src/contexts/ProviderContext.tsx`:
+5. **Import the provider module** in `src/providers/registerProviders.ts` (the composition root — do not import provider packages from other neutral modules):
    ```ts
-   import '@/providers/<name>/<name>Provider';
+   import './<name>/<name>Provider';
    ```
 
-6. **Set capabilities** accurately. The UI relies on these flags.
+6. **Declare only behavioral capabilities** (`hasExternalLink`, `externalLinkLabel`, `hasNativeQueueSync`, `hasContextPlaybackFallback`). The method-mirroring flags are derived from your catalog adapter's method presence at registration; declared flags are validated against the adapter.
 
 7. **Map all API responses to domain types** (`MediaTrack`, `MediaCollection`). Ensure `provider` is set correctly on every object.
 
@@ -575,8 +583,9 @@ class UnavailableTrackError extends Error {
 
 ```
 ProviderContext.tsx
-  imports: providers/spotify/spotifyProvider.ts
-           providers/dropbox/dropboxProvider.ts
+  imports: providers/registerProviders.ts   -- composition root
+             -> providers/spotify/spotifyProvider.ts
+             -> providers/dropbox/dropboxProvider.ts
   uses:    providers/registry.ts
 
 usePlayerLogic.ts

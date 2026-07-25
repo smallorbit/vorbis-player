@@ -1,6 +1,6 @@
 # Settings System
 
-The settings surface is **Settings v2** (`src/components/Settings/`): a full-screen shadcn `Dialog` with a sidebar shell on desktop and a takeover list view on mobile. It is the single entry point for all user-configurable preferences: provider management, playback defaults, appearance, QAP, cache clearing, profiler, visualizer debug, and provider-specific data operations.
+The settings surface is **Settings** (`src/components/Settings/`): a full-screen shadcn `Dialog` with a sidebar shell on desktop and a takeover list view on mobile. It is the single entry point for all user-configurable preferences: provider management, playback defaults, appearance, QAP, cache clearing, profiler, visualizer debug, and provider-specific data operations.
 
 ## Entry Point
 
@@ -79,7 +79,7 @@ The clear handler (owned by `AdvancedSection`) calls:
 - `clearCacheWithOptions({ clearLikes })` from `src/services/cache/libraryCache`
 - `clearAllPins()` from `src/services/settings/pinnedItemsStorage` (if clearPins)
 - Removes `ACCENT_COLOR_OVERRIDES` and `CUSTOM_ACCENT_COLORS` from localStorage (if clearAccentColors)
-- If pins or accent colors were cleared, resets the Dropbox preferences sync timestamp and triggers `initialSync()` to pull remote state
+- If pins or accent colors were cleared, calls `resetPreferencesSync()` from `src/providers/preferencesSync.ts`, which clears each registered provider's sync timestamp and re-runs its `initialSync()` to pull remote state
 
 #### Performance Profiler
 
@@ -146,7 +146,7 @@ Syncs two categories of local state to `/.vorbis/preferences.json` in the user's
 
 ### Architecture
 
-`DropboxPreferencesSyncService` is a singleton created via `initPreferencesSync(auth)`. Access the instance via `getPreferencesSync()`.
+`DropboxPreferencesSyncService` is a singleton created via `initPreferencesSync(auth)`. Access the instance via `getPreferencesSync()`. The Dropbox descriptor exposes it through the neutral `ProviderDescriptor.preferencesSync` extension point (`schedulePush` / `initialSync` / `clearSyncTimestamp`); app code goes through the registry helpers in `src/providers/preferencesSync.ts` (`schedulePreferencesPush`, `resetPreferencesSync`) rather than importing Dropbox modules.
 
 ### Remote File Format
 
@@ -171,15 +171,16 @@ Local `updatedAt` is tracked in localStorage under `STORAGE_KEYS.PREFERENCES_SYN
 ### Trigger Points
 
 - **Initial sync**: called after Dropbox OAuth completion and when Dropbox is already authenticated at app startup (in `App.tsx` and `dropboxProvider.ts`).
-- **Push (debounced)**: `PinnedItemsContext` and `ColorContext` call `getPreferencesSync()?.schedulePush()` after local changes. The push is debounced by 2 seconds (`UPLOAD_DEBOUNCE_MS`).
-- **After cache clear**: when pins or accent colors are cleared, `clearPreferencesSyncTimestamp()` resets the local timestamp so the next `initialSync()` pulls from remote.
+- **Push (debounced)**: `PinnedItemsContext` and `ColorContext` call `schedulePreferencesPush()` (from `src/providers/preferencesSync.ts`) after local changes, which invokes each registered descriptor's `preferencesSync.schedulePush()`. The Dropbox push is debounced by 2 seconds (`UPLOAD_DEBOUNCE_MS`).
+- **After cache clear**: when pins or accent colors are cleared, `resetPreferencesSync()` clears each provider's local timestamp and re-runs `initialSync()` to pull from remote.
 
 ### Key Files
 
 - `src/providers/dropbox/dropboxPreferencesSync.ts` -- service class, singleton, merge logic
 - `src/providers/dropbox/dropboxSyncFolder.ts` -- `ensureVorbisFolder()` helper
-- `src/contexts/PinnedItemsContext.tsx` -- calls `schedulePush()` after pin mutations
-- `src/contexts/ColorContext.tsx` -- calls `schedulePush()` after accent color changes
+- `src/providers/preferencesSync.ts` -- registry helpers (`schedulePreferencesPush`, `resetPreferencesSync`) over `descriptor.preferencesSync`
+- `src/contexts/PinnedItemsContext.tsx` -- calls `schedulePreferencesPush()` after pin mutations
+- `src/contexts/ColorContext.tsx` -- calls `schedulePreferencesPush()` after accent color changes
 
 ## useLocalStorage Hook
 
