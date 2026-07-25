@@ -11,9 +11,8 @@ import { useCallback } from 'react';
 import { getPlaylistTracks, getAlbumTracks, getLikedSongs, spotifyAuth, getLargestImage } from '@/services/spotify';
 import { spotifyPlayer, waitForSpotifyReady } from '@/services/spotifyPlayer';
 import { AuthExpiredError } from '@/providers/errors';
-import { isAlbumId, extractAlbumId, LIKED_SONGS_ID } from '@/constants/playlist';
 import { shuffleArray } from '@/utils/shuffleArray';
-import type { ProviderId, MediaTrack } from '@/types/domain';
+import type { CollectionRef, ProviderId, MediaTrack } from '@/types/domain';
 import type { TrackOperations } from '@/types/trackOperations';
 import { logQueue } from '@/lib/debugLog';
 import { SPOTIFY_RETRY_DELAY_MS, SPOTIFY_DEVICE_ACTIVATE_RETRIES, SPOTIFY_DEVICE_ACTIVATE_DELAY_MS } from '@/constants/timing';
@@ -69,15 +68,15 @@ export const useSpotifyPlaylistManager = ({
   trackOps,
   shuffleEnabled
 }: UseSpotifyPlaylistManagerProps) => {
-  const { setError, setIsLoading, setSelectedPlaylistId, setTracks, setOriginalTracks, setCurrentTrackIndex } = trackOps;
+  const { setError, setIsLoading, setSelection, setTracks, setOriginalTracks, setCurrentTrackIndex } = trackOps;
 
-  const handlePlaylistSelect = useCallback(async (playlistId: string): Promise<MediaTrack[]> => {
-    logQueue('useSpotifyPlaylistManager.handlePlaylistSelect — playlistId=%s, shuffle=%s', playlistId, String(shuffleEnabled));
+  const handlePlaylistSelect = useCallback(async (ref: CollectionRef): Promise<MediaTrack[]> => {
+    logQueue('useSpotifyPlaylistManager.handlePlaylistSelect — ref=%o, shuffle=%s', ref, String(shuffleEnabled));
 
     try {
       setError(null);
       setIsLoading(true);
-      setSelectedPlaylistId(playlistId);
+      setSelection({ type: 'collection', ref });
 
       await spotifyPlayer.initialize();
       await waitForSpotifyReady();
@@ -87,22 +86,22 @@ export const useSpotifyPlaylistManager = ({
 
       let fetchedTracks: MediaTrack[] = [];
 
-      if (isAlbumId(playlistId)) {
-        fetchedTracks = await getAlbumTracks(extractAlbumId(playlistId));
-      } else if (playlistId === LIKED_SONGS_ID) {
+      if (ref.kind === 'album') {
+        fetchedTracks = await getAlbumTracks(ref.id);
+      } else if (ref.kind === 'liked') {
         fetchedTracks = await getLikedSongs();
-      } else {
+      } else if (ref.kind === 'playlist') {
         try {
-          fetchedTracks = await getPlaylistTracks(playlistId);
+          fetchedTracks = await getPlaylistTracks(ref.id);
         } catch (trackError) {
           console.warn('Failed to fetch playlist tracks, will try context playback:', trackError);
           fetchedTracks = [];
         }
       }
 
-      if (fetchedTracks.length === 0 && !isAlbumId(playlistId) && playlistId !== LIKED_SONGS_ID) {
+      if (fetchedTracks.length === 0 && ref.kind === 'playlist') {
         try {
-          await spotifyPlayer.playContext(`spotify:playlist:${playlistId}`);
+          await spotifyPlayer.playContext(`spotify:playlist:${ref.id}`);
 
           await new Promise(resolve => setTimeout(resolve, SPOTIFY_RETRY_DELAY_MS));
           const state = await spotifyPlayer.getCurrentState();
@@ -123,9 +122,9 @@ export const useSpotifyPlaylistManager = ({
       }
 
       if (fetchedTracks.length === 0) {
-        if (isAlbumId(playlistId)) {
+        if (ref.kind === 'album') {
           setError("No tracks found in this album.");
-        } else if (playlistId === LIKED_SONGS_ID) {
+        } else if (ref.kind === 'liked') {
           setError("No liked songs found. Please like some songs in Spotify first.");
         } else {
           setError("No tracks found in this playlist.");
@@ -227,7 +226,7 @@ export const useSpotifyPlaylistManager = ({
     } finally {
       setIsLoading(false);
     }
-  }, [setError, setIsLoading, setSelectedPlaylistId, setTracks, setOriginalTracks, setCurrentTrackIndex, shuffleEnabled]);
+  }, [setError, setIsLoading, setSelection, setTracks, setOriginalTracks, setCurrentTrackIndex, shuffleEnabled]);
 
   return {
     handlePlaylistSelect

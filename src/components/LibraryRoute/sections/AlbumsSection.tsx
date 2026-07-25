@@ -1,7 +1,8 @@
 import React from 'react';
-import type { ProviderId } from '@/types/domain';
+import type { CollectionSelection } from '@/types/domain';
+import { collectionToRef } from '@/types/domain';
 import { useAlbumsSection } from '../hooks';
-import type { ContextMenuRequest, LibraryItemKind } from '../types';
+import type { ContextMenuRequest } from '../types';
 import Section from './Section';
 import SectionSkeleton from './SectionSkeleton';
 import LibraryCard from '../card/LibraryCard';
@@ -12,7 +13,7 @@ interface AlbumsSectionProps {
   layout: 'row' | 'grid';
   excludePinned?: boolean | undefined;
   showProviderBadges?: boolean | undefined;
-  onSelect: (kind: LibraryItemKind, id: string, name: string, provider?: ProviderId) => void;
+  onSelect: (selection: CollectionSelection) => void;
   onSeeAll?: (() => void) | undefined;
   onContextMenuRequest?: ((req: ContextMenuRequest) => void) | undefined;
 }
@@ -40,21 +41,25 @@ const AlbumsSection: React.FC<AlbumsSectionProps> = ({
       {isLoading && items.length === 0 ? (
         <SectionSkeleton variant={layout} />
       ) : (
-        items.map((a) => (
-          <LibraryCard
-            key={`${a.provider}-${a.id}`}
-            kind="album"
-            id={a.id}
-            provider={a.provider}
-            name={a.name}
-            subtitle={a.ownerName}
-            imageUrl={a.imageUrl}
-            showProviderBadge={showProviderBadges}
-            variant={layout === 'row' ? 'row' : 'grid'}
-            onSelect={() => onSelect('album', a.id, a.name, a.provider)}
-            onContextMenuRequest={onContextMenuRequest}
-          />
-        ))
+        items.map((a) => {
+          const selection: CollectionSelection = { type: 'collection', ref: collectionToRef(a), name: a.name };
+          return (
+            <LibraryCard
+              key={`${a.provider}-${a.id}`}
+              kind="album"
+              id={a.id}
+              provider={a.provider}
+              selection={selection}
+              name={a.name}
+              subtitle={a.ownerName}
+              imageUrl={a.imageUrl}
+              showProviderBadge={showProviderBadges}
+              variant={layout === 'row' ? 'row' : 'grid'}
+              onSelect={() => onSelect(selection)}
+              onContextMenuRequest={onContextMenuRequest}
+            />
+          );
+        })
       )}
     </Section>
   );

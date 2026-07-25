@@ -22,7 +22,6 @@ import {
   unfollowPlaylist,
   searchTrack,
 } from '@/services/spotify';
-import { isAlbumId, extractAlbumId } from '@/constants/playlist';
 
 export class SpotifyCatalogAdapter implements CatalogProvider {
   readonly providerId: ProviderId = 'spotify';
@@ -53,13 +52,9 @@ export class SpotifyCatalogAdapter implements CatalogProvider {
       case 'playlist':
         tracks = await getPlaylistTracks(collectionRef.id);
         break;
-      case 'album': {
-        const albumId = isAlbumId(collectionRef.id)
-          ? extractAlbumId(collectionRef.id)
-          : collectionRef.id;
-        tracks = await getAlbumTracks(albumId);
+      case 'album':
+        tracks = await getAlbumTracks(collectionRef.id);
         break;
-      }
       case 'liked':
         tracks = await getLikedSongs();
         break;

@@ -3,13 +3,16 @@ import { useLibrarySync } from '@/hooks/useLibrarySync';
 import { usePinnedItems } from '@/hooks/usePinnedItems';
 import { LIKED_SONGS_ID } from '@/constants/playlist';
 import { useLikedSection } from './useLikedSection';
-import type { MediaCollection, ProviderId } from '@/types/domain';
+import type { CollectionSelection, MediaCollection, ProviderId } from '@/types/domain';
+import { collectionToRef } from '@/types/domain';
 
 interface PinnedItem {
   kind: 'playlist' | 'album' | 'liked';
   id: string;
   provider?: ProviderId | undefined;
   name: string;
+  /** Typed identity for select/play actions. */
+  selection: CollectionSelection;
   imageUrl?: string | undefined;
   subtitle?: string | undefined;
 }
@@ -47,6 +50,7 @@ export function usePinnedSection(): PinnedSectionState {
         id: `liked-${provider}`,
         provider,
         name: 'Liked Songs',
+        selection: { type: 'liked' as const, provider, name: 'Liked Songs' },
         subtitle: formatLikedSubtitle(count),
       }));
     }
@@ -55,6 +59,7 @@ export function usePinnedSection(): PinnedSectionState {
         kind: 'liked' as const,
         id: LIKED_SONGS_ID,
         name: 'Liked Songs',
+        selection: { type: 'liked' as const, name: 'Liked Songs' },
         subtitle: formatLikedSubtitle(totalCount),
       },
     ];
@@ -68,6 +73,7 @@ export function usePinnedSection(): PinnedSectionState {
         id: p.id,
         provider: p.provider,
         name: p.name,
+        selection: { type: 'collection' as const, ref: collectionToRef(p), name: p.name },
         imageUrl: p.imageUrl,
       })),
       ...pinnedAlbums.map((a) => ({
@@ -75,6 +81,7 @@ export function usePinnedSection(): PinnedSectionState {
         id: a.id,
         provider: a.provider,
         name: a.name,
+        selection: { type: 'collection' as const, ref: collectionToRef(a), name: a.name },
         imageUrl: a.imageUrl,
       })),
     ],

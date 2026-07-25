@@ -5,7 +5,7 @@ import { useCurrentTrackContext } from '@/contexts/TrackContext';
 import { useVisualEffectsToggle, useZenMode } from '@/contexts/visualEffects';
 import { useLikeTrack } from '@/hooks/useLikeTrack';
 import { ZEN_ART_DURATION, ZEN_ART_ENTER_DELAY } from '@/constants/zenAnimation';
-import type { AddToQueueResult, MediaTrack, ProviderId } from '@/types/domain';
+import type { AddToQueueResult, CollectionSelection, MediaTrack, ProviderId } from '@/types/domain';
 import type { AlbumArtBounds } from '@/types/visualizer';
 import type { RadioState, RadioProgress } from '@/types/radio';
 import { ContentWrapper, PlayerContainer, PlayerStack } from './styled';
@@ -23,13 +23,9 @@ export interface PlaybackHandlers {
   onOpenLibraryWithQuery?: (query: string) => void;
   onCloseLibrary: () => void;
   onOpenQuickAccessPanel?: () => void;
-  onPlaylistSelect: (playlistId: string, playlistName: string, provider?: ProviderId) => void;
-  onAddToQueue?: (
-    playlistId: string,
-    playlistName?: string,
-    provider?: ProviderId,
-  ) => Promise<AddToQueueResult | null>;
-  onPlayLikedTracks?: (tracks: MediaTrack[], collectionId: string, collectionName: string, provider?: ProviderId) => Promise<void>;
+  onSelectCollection: (selection: CollectionSelection) => void;
+  onAddToQueue?: (selection: CollectionSelection) => Promise<AddToQueueResult | null>;
+  onPlayLikedTracks?: (tracks: MediaTrack[], selection: CollectionSelection) => Promise<void>;
   onQueueLikedTracks?: (tracks: MediaTrack[], collectionName?: string) => void;
   onAlbumPlay: (albumId: string, albumName: string) => void;
   onBackToLibrary: () => void;

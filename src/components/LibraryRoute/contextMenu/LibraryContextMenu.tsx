@@ -2,7 +2,7 @@ import React, { useCallback, useMemo, useRef } from 'react';
 import { toast } from 'sonner';
 import { Popover, PopoverAnchor, PopoverContent } from '@/components/ui/popover';
 import type { ContextMenuRequest } from '../types';
-import type { ProviderId, MediaTrack } from '@/types/domain';
+import type { CollectionRef, CollectionSelection, MediaTrack } from '@/types/domain';
 import { isMenuActionError } from './menuItemsForKind';
 import { useMenuItems, type UseMenuItemsCallbacks } from './useMenuItems';
 import { MenuItemButton, MenuRoot, VirtualAnchor } from './LibraryContextMenu.styled';
@@ -11,29 +11,13 @@ export interface LibraryContextMenuProps {
   request: ContextMenuRequest | null;
   onClose: () => void;
   onReturnFocusClose: () => void;
-  onPlayCollection: (
-    kind: 'playlist' | 'album',
-    id: string,
-    name: string,
-    provider?: ProviderId,
-  ) => void;
-  onAddToQueue?: ((id: string, name: string, provider?: ProviderId) => void | Promise<unknown>) | undefined;
-  onPlayNext?: ((
-    kind: 'playlist' | 'album',
-    id: string,
-    name: string,
-    provider?: ProviderId,
-  ) => void) | undefined;
-  onStartRadioForCollection?: ((
-    kind: 'playlist' | 'album',
-    id: string,
-    provider?: ProviderId,
-  ) => void) | undefined;
+  onPlayCollection: (selection: CollectionSelection) => void;
+  onAddToQueue?: ((selection: CollectionSelection) => void | Promise<unknown>) | undefined;
+  onPlayNext?: ((selection: CollectionSelection) => void) | undefined;
+  onStartRadioForCollection?: ((ref: CollectionRef) => void) | undefined;
   onPlayLikedTracks: (
     tracks: MediaTrack[],
-    collectionId: string,
-    collectionName: string,
-    provider?: ProviderId,
+    selection: CollectionSelection,
   ) => Promise<void> | void;
   onQueueLikedTracks?: ((tracks: MediaTrack[], collectionName?: string) => void) | undefined;
 }

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import type { MediaTrack, ProviderId } from '@/types/domain';
+import type { MediaTrack, PlaybackSelection } from '@/types/domain';
 import { saveSession, loadSession, clearSession } from '@/services/sessionPersistence';
 import type { SessionSnapshot } from '@/services/sessionPersistence';
 import { logSession } from '@/lib/debugLog';
@@ -8,9 +8,8 @@ const DEBOUNCE_MS = 1000;
 const PERIODIC_SAVE_INTERVAL_MS = 10_000;
 
 export function useSessionPersistence(
-  collectionId: string | null,
+  selection: PlaybackSelection | null,
   collectionName: string,
-  collectionProvider: ProviderId | undefined,
   tracks: MediaTrack[],
   currentTrackIndex: number,
   trackId: string | undefined,
@@ -34,27 +33,26 @@ export function useSessionPersistence(
     hasLoadedRef.current = true;
     const loaded = loadSession();
     logSession('loaded session from storage: %o', loaded
-      ? { collectionId: loaded.collectionId, collectionName: loaded.collectionName, trackIndex: loaded.trackIndex, provider: loaded.collectionProvider, queueLength: loaded.queueTracks?.length }
+      ? { selection: loaded.selection, collectionName: loaded.collectionName, trackIndex: loaded.trackIndex, queueLength: loaded.queueTracks?.length }
       : null
     );
     setLastSession(loaded);
   }, []);
 
   const buildSnapshot = useCallback((): SessionSnapshot | null => {
-    if (!collectionId || tracks.length === 0) return null;
+    if (!selection || tracks.length === 0) return null;
     return {
-      collectionId,
+      selection,
       collectionName,
       trackIndex: currentTrackIndex,
       queueTracks: tracks,
       playbackPosition,
-      ...(collectionProvider !== undefined && { collectionProvider }),
       ...(trackId !== undefined && { trackId }),
       ...(trackTitle !== undefined && { trackTitle }),
       ...(trackArtist !== undefined && { trackArtist }),
       ...(trackImage !== undefined && { trackImage }),
     };
-  }, [collectionId, collectionName, collectionProvider, tracks, currentTrackIndex, trackId, trackTitle, trackArtist, trackImage, playbackPosition]);
+  }, [selection, collectionName, tracks, currentTrackIndex, trackId, trackTitle, trackArtist, trackImage, playbackPosition]);
 
   // Keep snapshotRef in sync so event-driven saves (beforeunload, interval) are always fresh.
   useEffect(() => {
@@ -63,13 +61,13 @@ export function useSessionPersistence(
 
   // Debounced save on any state change.
   useEffect(() => {
-    if (!collectionId || tracks.length === 0) {
-      logSession('skipping save — no collectionId or empty tracks');
+    if (!selection || tracks.length === 0) {
+      logSession('skipping save — no selection or empty tracks');
       return;
     }
 
-    logSession('save effect fired — collectionId=%s, provider=%s, trackIndex=%d, position=%dms, queueLength=%d',
-      collectionId, collectionProvider, currentTrackIndex, Math.floor(playbackPosition), tracks.length
+    logSession('save effect fired — selection=%o, trackIndex=%d, position=%dms, queueLength=%d',
+      selection, currentTrackIndex, Math.floor(playbackPosition), tracks.length
     );
 
     if (debounceTimerRef.current !== null) clearTimeout(debounceTimerRef.current);
@@ -77,8 +75,8 @@ export function useSessionPersistence(
     debounceTimerRef.current = setTimeout(() => {
       const snapshot = snapshotRef.current;
       if (!snapshot) return;
-      logSession('saving session — collectionId=%s, provider=%s, trackIndex=%d, position=%dms, queueLength=%d',
-        snapshot.collectionId, snapshot.collectionProvider, snapshot.trackIndex, Math.floor(snapshot.playbackPosition ?? 0), snapshot.queueTracks?.length
+      logSession('saving session — selection=%o, trackIndex=%d, position=%dms, queueLength=%d',
+        snapshot.selection, snapshot.trackIndex, Math.floor(snapshot.playbackPosition ?? 0), snapshot.queueTracks?.length
       );
       saveSession(snapshot);
       logSession('save complete');
@@ -87,7 +85,7 @@ export function useSessionPersistence(
     return () => {
       if (debounceTimerRef.current !== null) clearTimeout(debounceTimerRef.current);
     };
-  }, [collectionId, collectionName, collectionProvider, tracks, currentTrackIndex, trackId, trackTitle, trackArtist, trackImage, playbackPosition]);
+  }, [selection, collectionName, tracks, currentTrackIndex, trackId, trackTitle, trackArtist, trackImage, playbackPosition]);
 
   const getLivePositionRef = useRef(getLivePosition);
   getLivePositionRef.current = getLivePosition;

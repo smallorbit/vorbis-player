@@ -117,6 +117,24 @@ export interface PlaybackState {
 /** All known provider ids. Kept in sync with the `ProviderId` union. */
 export const PROVIDER_IDS: readonly ProviderId[] = ['spotify', 'dropbox'];
 
+/**
+ * A user-facing selection of something playable from the library.
+ *
+ * - `collection` — a concrete collection, including per-provider Liked Songs
+ *   (`ref.kind === 'liked'`).
+ * - `liked` — Liked Songs without a fixed provider: resolves to the unified
+ *   cross-provider list when active, otherwise to the active provider's list.
+ */
+export type CollectionSelection =
+  | { type: 'collection'; ref: CollectionRef; name?: string }
+  | { type: 'liked'; provider?: ProviderId; name?: string };
+
+/**
+ * What the player is currently playing (or has been asked to play).
+ * Radio is a playback mode, not a library collection, so it gets its own variant.
+ */
+export type PlaybackSelection = CollectionSelection | { type: 'radio' };
+
 /** Build the CollectionRef that identifies a MediaCollection. */
 export function collectionToRef(collection: MediaCollection): CollectionRef {
   const { provider, kind, id } = collection;
@@ -158,6 +176,8 @@ export function keyToCollectionRef(key: string): CollectionRef | null {
   if (!isProviderId(provider) || !isCollectionKind(kind)) return null;
   if (kind === 'liked') return { provider, kind };
   const id = idParts.join(':');
-  if (!id) return null;
+  // An empty id is legal for folders (the Dropbox "All Music" aggregate is
+  // `{ kind: 'folder', id: '' }`) but invalid for playlists and albums.
+  if (!id && kind !== 'folder') return null;
   return { provider, kind, id };
 }

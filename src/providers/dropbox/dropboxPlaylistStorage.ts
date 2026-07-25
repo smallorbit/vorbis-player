@@ -5,7 +5,6 @@
 
 import type { DropboxAuthAdapter } from './dropboxAuthAdapter';
 import type { MediaTrack, MediaCollection, ProviderId, PlaybackItemRef } from '@/types/domain';
-import { toSavedPlaylistId } from '@/constants/playlist';
 import { logLibrary } from '@/lib/debugLog';
 import { buildAlbumCoverMap, selectMosaicCovers } from '@/utils/mosaicSelection';
 import { logCaughtError } from '@/utils/logCaughtError';
@@ -233,7 +232,9 @@ export async function listSavedPlaylists(
     for (const entry of entries) {
       if (entry['.tag'] !== 'file' || !entry.name.endsWith('.json')) continue;
       collections.push({
-        id: toSavedPlaylistId(entry.path_lower),
+        // The file path is the id; `kind: 'playlist'` distinguishes saved
+        // playlists from folders, so no prefix encoding is needed.
+        id: entry.path_lower,
         provider: 'dropbox',
         kind: 'playlist',
         name: entry.name.replace(/\.json$/, ''),

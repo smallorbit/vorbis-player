@@ -1,4 +1,5 @@
-import type { MediaTrack, ProviderId } from '@/types/domain';
+import type { MediaTrack, PlaybackSelection, ProviderId } from '@/types/domain';
+import { keyToCollectionRef } from '@/types/domain';
 import { logCaughtError } from '@/utils/logCaughtError';
 
 const SESSION_KEY = 'vorbis-player-last-session';
@@ -7,9 +8,9 @@ const SESSION_KEY = 'vorbis-player-last-session';
 export const STALE_SESSION_MS = 30 * 24 * 60 * 60 * 1000;
 
 export interface SessionSnapshot {
-  collectionId: string;
+  /** What was playing when the session was saved. */
+  selection: PlaybackSelection;
   collectionName: string;
-  collectionProvider?: ProviderId;
   trackIndex: number;
   trackId?: string;
   /** Full ordered queue. Dropbox image URLs are stripped (presigned, large); playbackRef kept (permanent path). */
@@ -42,11 +43,37 @@ export function saveSession(snapshot: SessionSnapshot): void {
   }
 }
 
+const SELECTION_TYPES = ['collection', 'liked', 'radio'] as const;
+
+function isPlaybackSelection(value: unknown): value is PlaybackSelection {
+  if (typeof value !== 'object' || value === null) return false;
+  const obj = value as Record<string, unknown>;
+  return (SELECTION_TYPES as readonly string[]).includes(obj.type as string);
+}
+
 /**
- * Structural check on the three required fields (collectionId, collectionName, trackIndex).
+ * Structural check on the required fields (selection, collectionName, trackIndex).
  * Optional fields (queueTracks, trackTitle, savedAt, …) are trusted as-shaped without per-element validation.
  */
 function isSessionSnapshot(value: unknown): value is SessionSnapshot {
+  if (typeof value !== 'object' || value === null) return false;
+  const obj = value as Record<string, unknown>;
+  return (
+    isPlaybackSelection(obj.selection) &&
+    typeof obj.collectionName === 'string' &&
+    typeof obj.trackIndex === 'number'
+  );
+}
+
+/** Pre-#1687 snapshot shape: a prefix-encoded collection id plus optional provider. */
+interface LegacySessionFields {
+  collectionId: string;
+  collectionName: string;
+  collectionProvider?: ProviderId;
+  trackIndex: number;
+}
+
+function isLegacySnapshot(value: unknown): value is LegacySessionFields & Record<string, unknown> {
   if (typeof value !== 'object' || value === null) return false;
   const obj = value as Record<string, unknown>;
   return (
@@ -56,12 +83,56 @@ function isSessionSnapshot(value: unknown): value is SessionSnapshot {
   );
 }
 
+/**
+ * Compatibility shim: decode a legacy prefix-encoded collection id
+ * ('liked-songs', 'radio', 'album:X', 'dbplaylist:/path', bare id) into a
+ * PlaybackSelection. This is the only place the old encoding survives.
+ */
+function legacySelection(collectionId: string, provider: ProviderId | undefined, name: string): PlaybackSelection {
+  if (collectionId === 'radio') return { type: 'radio' };
+  if (collectionId === 'liked-songs' || collectionId.startsWith('liked-')) {
+    return { type: 'liked', name, ...(provider !== undefined && { provider }) };
+  }
+  // Structured keys were also stored by some seeds (e.g. "spotify:playlist:x").
+  const parsedRef = keyToCollectionRef(collectionId);
+  if (parsedRef) return { type: 'collection', ref: parsedRef, name };
+  const resolvedProvider = provider ?? 'spotify';
+  if (collectionId.startsWith('album:')) {
+    return { type: 'collection', ref: { provider: resolvedProvider, kind: 'album', id: collectionId.slice('album:'.length) }, name };
+  }
+  if (collectionId.startsWith('dbplaylist:')) {
+    return { type: 'collection', ref: { provider: 'dropbox', kind: 'playlist', id: collectionId.slice('dbplaylist:'.length) }, name };
+  }
+  const kind = resolvedProvider === 'dropbox' ? 'folder' : 'playlist';
+  return { type: 'collection', ref: { provider: resolvedProvider, kind, id: collectionId }, name };
+}
+
+function upgradeLegacySnapshot(value: LegacySessionFields & Record<string, unknown>): SessionSnapshot {
+  // Optional fields are trusted as-shaped, matching isSessionSnapshot's policy
+  // for the same deserialization boundary.
+  const opt = value as Partial<SessionSnapshot>;
+  return {
+    selection: legacySelection(value.collectionId, value.collectionProvider, value.collectionName),
+    collectionName: value.collectionName,
+    trackIndex: value.trackIndex,
+    ...(opt.trackId !== undefined && { trackId: opt.trackId }),
+    ...(opt.queueTracks !== undefined && { queueTracks: opt.queueTracks }),
+    ...(opt.trackTitle !== undefined && { trackTitle: opt.trackTitle }),
+    ...(opt.trackArtist !== undefined && { trackArtist: opt.trackArtist }),
+    ...(opt.trackImage !== undefined && { trackImage: opt.trackImage }),
+    ...(opt.savedAt !== undefined && { savedAt: opt.savedAt }),
+    ...(opt.playbackPosition !== undefined && { playbackPosition: opt.playbackPosition }),
+  };
+}
+
 export function loadSession(): SessionSnapshot | null {
   try {
     const raw = localStorage.getItem(SESSION_KEY);
     if (!raw) return null;
     const parsed: unknown = JSON.parse(raw);
-    return isSessionSnapshot(parsed) ? parsed : null;
+    if (isSessionSnapshot(parsed)) return parsed;
+    if (isLegacySnapshot(parsed)) return upgradeLegacySnapshot(parsed);
+    return null;
   } catch (err) {
     logCaughtError('sessionPersistence.loadSession', err);
     return null;

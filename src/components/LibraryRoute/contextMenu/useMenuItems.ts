@@ -3,11 +3,10 @@ import { usePinnedItems } from '@/hooks/usePinnedItems';
 import { useRecentlyPlayedCollections } from '@/hooks/useRecentlyPlayedCollections';
 import { useLikedSection } from '../hooks';
 import type { ContextMenuRequest } from '../types';
-import type { ProviderId, MediaTrack } from '@/types/domain';
+import type { CollectionRef, CollectionSelection, MediaTrack, ProviderId } from '@/types/domain';
 import { useLikedTracksForProvider } from './useLikedTracksForProvider';
 import { useAlbumSavedStatus } from './useAlbumSavedStatus';
 import { useQueueLikedFromCollection } from './useQueueLikedFromCollection';
-import { toAlbumPlaylistId } from '@/constants/playlist';
 import { buildMenuItems, type MenuActions, type MenuItem } from './menuItemsForKind';
 
 const PROVIDER_LABEL: Record<string, string> = {
@@ -21,29 +20,13 @@ function providerLabel(provider: ProviderId): string {
 
 export interface UseMenuItemsCallbacks {
   closeAfter: (label: string, fn: () => void | Promise<unknown>) => () => void;
-  onPlayCollection: (
-    kind: 'playlist' | 'album',
-    id: string,
-    name: string,
-    provider?: ProviderId,
-  ) => void;
-  onAddToQueue?: ((id: string, name: string, provider?: ProviderId) => void | Promise<unknown>) | undefined;
-  onPlayNext?: ((
-    kind: 'playlist' | 'album',
-    id: string,
-    name: string,
-    provider?: ProviderId,
-  ) => void) | undefined;
-  onStartRadioForCollection?: ((
-    kind: 'playlist' | 'album',
-    id: string,
-    provider?: ProviderId,
-  ) => void) | undefined;
+  onPlayCollection: (selection: CollectionSelection) => void;
+  onAddToQueue?: ((selection: CollectionSelection) => void | Promise<unknown>) | undefined;
+  onPlayNext?: ((selection: CollectionSelection) => void) | undefined;
+  onStartRadioForCollection?: ((ref: CollectionRef) => void) | undefined;
   onPlayLikedTracks: (
     tracks: MediaTrack[],
-    collectionId: string,
-    collectionName: string,
-    provider?: ProviderId,
+    selection: CollectionSelection,
   ) => Promise<void> | void;
   onQueueLikedTracks?: ((tracks: MediaTrack[], collectionName?: string) => void) | undefined;
 }
@@ -110,7 +93,7 @@ export function useMenuItems(
     const playLikedFor = async (provider: ProviderId) => {
       const tracks = await loadLikedTracks(provider);
       if (tracks.length === 0) return;
-      await onPlayLikedTracks(tracks, `liked-${provider}`, 'Liked Songs', provider);
+      await onPlayLikedTracks(tracks, { type: 'liked', provider, name: 'Liked Songs' });
     };
 
     const likedProviderActions = isLikedKind
@@ -132,25 +115,23 @@ export function useMenuItems(
           return;
         }
         if (isPlaylistKind || isAlbumKind) {
-          onPlayCollection(effectiveKind, request.id, request.name, request.provider);
+          onPlayCollection(request.selection);
         }
       }),
       onAddToQueue: closeAfter('Add to Queue', () => {
         if (onAddToQueue) {
-          const id = isAlbumKind ? toAlbumPlaylistId(request.id) : request.id;
-          onAddToQueue(id, request.name, request.provider);
+          onAddToQueue(request.selection);
         }
       }),
       onPlayNext: closeAfter('Play Next', () => {
         if (onPlayNext && (isPlaylistKind || isAlbumKind)) {
-          const id = isAlbumKind ? toAlbumPlaylistId(request.id) : request.id;
-          onPlayNext(effectiveKind, id, request.name, request.provider);
+          onPlayNext(request.selection);
         }
       }),
       onTogglePin: closeAfter(isPinned ? 'Unpin' : 'Pin', togglePin),
       onStartRadio: closeAfter('Start Radio', () => {
-        if (onStartRadioForCollection && (isPlaylistKind || isAlbumKind)) {
-          onStartRadioForCollection(effectiveKind, request.id, request.provider);
+        if (onStartRadioForCollection && request.selection.type === 'collection' && (isPlaylistKind || isAlbumKind)) {
+          onStartRadioForCollection(request.selection.ref);
         }
       }),
       isPinned,

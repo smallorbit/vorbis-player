@@ -1,11 +1,11 @@
 import React, { useState, useMemo } from 'react';
-import type { MediaCollection, ProviderId } from '@/types/domain';
+import type { CollectionSelection, MediaCollection, ProviderId } from '@/types/domain';
 import type { SessionSnapshot } from '@/services/sessionPersistence';
 import { usePinnedItemsContext } from '@/contexts/PinnedItemsContext';
 import { useProviderContext } from '@/contexts/ProviderContext';
 import { useLibrarySync } from '@/hooks/useLibrarySync';
 import { useUnifiedLikedTracks } from '@/hooks/useUnifiedLikedTracks';
-import { LIKED_SONGS_ID, LIKED_SONGS_NAME } from '@/constants/playlist';
+import { LIKED_SONGS_NAME } from '@/constants/playlist';
 import { Chip, ChipRow } from '@/components/styled/FilterChips';
 import ProviderIcon from '@/components/ProviderIcon';
 import ResumeHero from './ResumeHero';
@@ -18,15 +18,15 @@ import {
 } from './styled';
 
 interface QuickAccessPanelProps {
-  onPlaylistSelect: (id: string, name: string, provider?: ProviderId) => void;
-  onAddToQueue: (id: string, name?: string, provider?: ProviderId) => void;
+  onSelectCollection: (selection: CollectionSelection) => void;
+  onAddToQueue: (selection: CollectionSelection) => void;
   onBrowseLibrary: () => void;
   lastSession: SessionSnapshot | null;
   onResume: () => void;
 }
 
 const QuickAccessPanel: React.FC<QuickAccessPanelProps> = ({
-  onPlaylistSelect,
+  onSelectCollection,
   onAddToQueue,
   onBrowseLibrary,
   lastSession,
@@ -73,20 +73,20 @@ const QuickAccessPanel: React.FC<QuickAccessPanelProps> = ({
     ? unifiedLikedCount
     : filteredLikedSongsPerProvider.reduce((sum, e) => sum + e.count, 0);
 
-  const handleLoadCollection = (id: string, name: string, provider?: ProviderId) => {
-    onPlaylistSelect(id, name, provider);
-  };
-
   const handleLoadLikedSongs = (providerIds: ProviderId[]) => {
     const perProvider = likedSongsPerProvider.filter(e =>
       providerIds.length === 0 || providerIds.includes(e.provider),
     );
     const resolvedProvider = perProvider.length === 1 ? perProvider[0]?.provider : undefined;
-    onPlaylistSelect(LIKED_SONGS_ID, LIKED_SONGS_NAME, resolvedProvider);
+    onSelectCollection({
+      type: 'liked',
+      name: LIKED_SONGS_NAME,
+      ...(resolvedProvider !== undefined && { provider: resolvedProvider }),
+    });
   };
 
   const showProviderChips = connectedProviderIds.length > 1;
-  const hasValidSession = Boolean(lastSession && lastSession.collectionId);
+  const hasValidSession = Boolean(lastSession && lastSession.selection);
 
   return (
     <PanelRoot>
@@ -99,7 +99,7 @@ const QuickAccessPanel: React.FC<QuickAccessPanelProps> = ({
         pinnedAlbums={pinnedAlbums}
         activeProviderIds={filteredProviders}
         likedSongsCount={effectiveLikedCount}
-        onLoadCollection={handleLoadCollection}
+        onLoadCollection={onSelectCollection}
         onLoadLikedSongs={handleLoadLikedSongs}
         onAddToQueue={onAddToQueue}
       />

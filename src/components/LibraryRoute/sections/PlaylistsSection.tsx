@@ -1,7 +1,8 @@
 import React from 'react';
-import type { ProviderId } from '@/types/domain';
+import type { CollectionSelection } from '@/types/domain';
+import { collectionToRef } from '@/types/domain';
 import { usePlaylistsSection } from '../hooks';
-import type { ContextMenuRequest, LibraryItemKind } from '../types';
+import type { ContextMenuRequest } from '../types';
 import Section from './Section';
 import SectionSkeleton from './SectionSkeleton';
 import LibraryCard from '../card/LibraryCard';
@@ -12,7 +13,7 @@ interface PlaylistsSectionProps {
   layout: 'row' | 'grid';
   excludePinned?: boolean | undefined;
   showProviderBadges?: boolean | undefined;
-  onSelect: (kind: LibraryItemKind, id: string, name: string, provider?: ProviderId) => void;
+  onSelect: (selection: CollectionSelection) => void;
   onSeeAll?: (() => void) | undefined;
   onContextMenuRequest?: ((req: ContextMenuRequest) => void) | undefined;
 }
@@ -40,20 +41,24 @@ const PlaylistsSection: React.FC<PlaylistsSectionProps> = ({
       {isLoading && items.length === 0 ? (
         <SectionSkeleton variant={layout} />
       ) : (
-        items.map((p) => (
-          <LibraryCard
-            key={`${p.provider}-${p.id}`}
-            kind="playlist"
-            id={p.id}
-            provider={p.provider}
-            name={p.name}
-            imageUrl={p.imageUrl}
-            showProviderBadge={showProviderBadges}
-            variant={layout === 'row' ? 'row' : 'grid'}
-            onSelect={() => onSelect('playlist', p.id, p.name, p.provider)}
-            onContextMenuRequest={onContextMenuRequest}
-          />
-        ))
+        items.map((p) => {
+          const selection: CollectionSelection = { type: 'collection', ref: collectionToRef(p), name: p.name };
+          return (
+            <LibraryCard
+              key={`${p.provider}-${p.id}`}
+              kind="playlist"
+              id={p.id}
+              provider={p.provider}
+              selection={selection}
+              name={p.name}
+              imageUrl={p.imageUrl}
+              showProviderBadge={showProviderBadges}
+              variant={layout === 'row' ? 'row' : 'grid'}
+              onSelect={() => onSelect(selection)}
+              onContextMenuRequest={onContextMenuRequest}
+            />
+          );
+        })
       )}
     </Section>
   );

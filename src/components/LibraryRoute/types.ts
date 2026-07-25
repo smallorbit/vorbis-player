@@ -1,4 +1,4 @@
-import type { CollectionRef, ProviderId } from '@/types/domain';
+import type { CollectionRef, CollectionSelection, ProviderId } from '@/types/domain';
 
 export interface UseCollectionSectionParams {
   providerFilter?: ProviderId[];
@@ -35,6 +35,8 @@ interface ContextMenuRequestBase {
   id: string;
   provider?: ProviderId | undefined;
   name: string;
+  /** Typed selection for play/queue actions — the only identity currency above the card. */
+  selection: CollectionSelection;
   anchorRect: DOMRect;
   /** The CardButton element that triggered the menu; used to return focus on keyboard dismiss. */
   triggerElement?: HTMLElement | undefined;

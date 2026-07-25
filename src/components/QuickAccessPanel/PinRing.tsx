@@ -1,5 +1,6 @@
 import React, { useCallback } from 'react';
-import type { MediaCollection, ProviderId } from '@/types/domain';
+import type { CollectionSelection, MediaCollection, ProviderId } from '@/types/domain';
+import { collectionToRef } from '@/types/domain';
 import { MAX_PINS } from '@/services/settings/pinnedItemsStorage';
 import { theme } from '@/styles/theme';
 import { providerRegistry } from '@/providers/registry';
@@ -41,9 +42,9 @@ interface PinRingProps {
   pinnedAlbums: MediaCollection[];
   activeProviderIds: ProviderId[];
   likedSongsCount: number;
-  onLoadCollection: (id: string, name: string, provider?: ProviderId) => void;
+  onLoadCollection: (selection: CollectionSelection) => void;
   onLoadLikedSongs: (providerIds: ProviderId[]) => void;
-  onAddToQueue: (id: string, name: string, provider?: ProviderId) => void;
+  onAddToQueue: (selection: CollectionSelection) => void;
   accentColor?: string | undefined;
 }
 
@@ -52,21 +53,20 @@ type GridSatelliteItem =
   | { kind: 'album'; item: MediaCollection };
 
 interface GridItemCardProps {
-  id: string;
+  selection: CollectionSelection;
   name: string;
-  provider?: ProviderId | undefined;
   imgUrl?: string | undefined;
   mosaicAlbumPaths?: string[] | undefined;
   fallback: string;
-  onPlay: (id: string, name: string, provider?: ProviderId) => void;
-  onAddToQueue: (id: string, name: string, provider?: ProviderId) => void;
+  onPlay: (selection: CollectionSelection) => void;
+  onAddToQueue: (selection: CollectionSelection) => void;
 }
 
 const GridItemCard: React.FC<GridItemCardProps> = ({
-  id, name, provider, imgUrl, mosaicAlbumPaths, fallback, onPlay, onAddToQueue,
+  selection, name, imgUrl, mosaicAlbumPaths, fallback, onPlay, onAddToQueue,
 }) => {
-  const handlePlay = useCallback(() => onPlay(id, name, provider), [id, name, provider, onPlay]);
-  const handleAdd = useCallback(() => onAddToQueue(id, name, provider), [id, name, provider, onAddToQueue]);
+  const handlePlay = useCallback(() => onPlay(selection), [selection, onPlay]);
+  const handleAdd = useCallback(() => onAddToQueue(selection), [selection, onAddToQueue]);
 
   const longPress = useLongPress({ onShortPress: handlePlay, onLongPress: handleAdd });
 
@@ -147,9 +147,8 @@ const PinRing: React.FC<PinRingProps> = ({
                 return (
                   <GridItemCard
                     key={`playlist-${p.id}`}
-                    id={p.id}
+                    selection={{ type: 'collection', ref: collectionToRef(p), name: p.name }}
                     name={p.name}
-                    provider={p.provider}
                     imgUrl={p.imageUrl}
                     mosaicAlbumPaths={p.mosaicAlbumPaths}
                     fallback="♪"
@@ -162,9 +161,8 @@ const PinRing: React.FC<PinRingProps> = ({
               return (
                 <GridItemCard
                   key={`album-${a.id}`}
-                  id={`album:${a.id}`}
+                  selection={{ type: 'collection', ref: collectionToRef(a), name: a.name }}
                   name={a.name}
-                  provider={a.provider}
                   imgUrl={a.imageUrl}
                   fallback="💿"
                   onPlay={onLoadCollection}

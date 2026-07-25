@@ -3,14 +3,13 @@ import type { MediaTrack, ProviderId } from '@/types/domain';
 import type { ProviderDescriptor } from '@/types/providers';
 import type { TrackOperations } from '@/types/trackOperations';
 import type { RadioSeed, RadioProgress, RadioResult } from '@/types/radio';
-import { RADIO_PLAYLIST_ID } from '@/constants/playlist';
 import { providerRegistry } from '@/providers/registry';
 import { runRadioPipeline } from '@/services/radioPipeline';
 import { queueSnapshot } from './playerLogicUtils';
 
 
 interface UseRadioSessionProps {
-  trackOps: Pick<TrackOperations, 'setError' | 'setTracks' | 'setOriginalTracks' | 'setCurrentTrackIndex' | 'setSelectedPlaylistId' | 'mediaTracksRef'>;
+  trackOps: Pick<TrackOperations, 'setError' | 'setTracks' | 'setOriginalTracks' | 'setCurrentTrackIndex' | 'setSelection' | 'mediaTracksRef'>;
   activeDescriptor: ProviderDescriptor | undefined;
   currentTrack: MediaTrack | null;
   currentTrackIndex: number;
@@ -39,7 +38,7 @@ export function useRadioSession({
   authExpired,
   setAuthExpired,
 }: UseRadioSessionProps): UseRadioSessionReturn {
-  const { setError, setTracks, setOriginalTracks, setCurrentTrackIndex, setSelectedPlaylistId, mediaTracksRef } = trackOps;
+  const { setError, setTracks, setOriginalTracks, setCurrentTrackIndex, setSelection, mediaTracksRef } = trackOps;
 
   // Monotonic generation guard. Radio generation is async (catalog fetch +
   // Last.fm pipeline); a second start — or a stop — must supersede an in-flight
@@ -100,7 +99,7 @@ export function useRadioSession({
         setOriginalTracks(combinedQueue);
         setTracks(combinedQueue);
         setCurrentTrackIndex(0);
-        setSelectedPlaylistId(RADIO_PLAYLIST_ID);
+        setSelection({ type: 'radio' });
         queueSnapshot('Radio queue built', combinedQueue, mediaTracksRef.current.length, 0);
       } else {
         onProgress(null);
@@ -113,7 +112,7 @@ export function useRadioSession({
       setError(err instanceof Error ? err.message : 'Failed to start radio.');
       onProgress(null);
     }
-  }, [activeDescriptor, currentTrack, currentTrackIndex, startRadio, onProgress, setError, setOriginalTracks, setTracks, setCurrentTrackIndex, setSelectedPlaylistId]);
+  }, [activeDescriptor, currentTrack, currentTrackIndex, startRadio, onProgress, setError, setOriginalTracks, setTracks, setCurrentTrackIndex, setSelection]);
 
   return {
     handleStartRadio,

@@ -46,12 +46,12 @@ export function usePlayerLogic() {
     isLoading,
     error,
     shuffleEnabled,
-    selectedPlaylistId,
+    selection,
     setTracks,
     setOriginalTracks,
     setIsLoading,
     setError,
-    setSelectedPlaylistId,
+    setSelection,
   } = useTrackListContext();
 
   const {
@@ -78,8 +78,8 @@ export function usePlayerLogic() {
 
   const trackOps: TrackOperations = useMemo(() => ({
     setTracks, setOriginalTracks, setCurrentTrackIndex,
-    setSelectedPlaylistId, setError, setIsLoading, mediaTracksRef,
-  }), [setTracks, setOriginalTracks, setCurrentTrackIndex, setSelectedPlaylistId, setError, setIsLoading]);
+    setSelection, setError, setIsLoading, mediaTracksRef,
+  }), [setTracks, setOriginalTracks, setCurrentTrackIndex, setSelection, setError, setIsLoading]);
 
   // Refs so the provider subscription handler always sees the latest values
   // without needing them in the effect's dependency array (which would cause
@@ -332,20 +332,20 @@ export function usePlayerLogic() {
     logQueue('handleBackToLibrary — clearing all queue state');
     handlePause();
     stopRadio();
-    setSelectedPlaylistId(null);
+    setSelection(null);
     setTracks([]);
     setCurrentTrackIndex(0);
     mediaTracksRef.current = [];
     expectedTrackIdRef.current = null;
     setShowQueue(false);
     setShowVisualEffects(false);
-  }, [handlePause, stopRadio, setSelectedPlaylistId, setTracks, setCurrentTrackIndex, setShowQueue, setShowVisualEffects]);
+  }, [handlePause, stopRadio, setSelection, setTracks, setCurrentTrackIndex, setShowQueue, setShowVisualEffects]);
 
   const handleHydrate = useCallback(async (session: SessionSnapshot): Promise<HydrateResult> => {
     if (!session.queueTracks?.length) {
       return { track: null, skipped: false, totalFailure: false };
     }
-    const { queueTracks, trackId, trackIndex, collectionId, playbackPosition: savedPositionMs } = session;
+    const { queueTracks, trackId, trackIndex, selection: savedSelection, playbackPosition: savedPositionMs } = session;
 
     const fallbackIdx = Math.max(0, Math.min(trackIndex, queueTracks.length - 1));
     const matchedIdx = trackId ? queueTracks.findIndex(t => t.id === trackId) : -1;
@@ -353,7 +353,7 @@ export function usePlayerLogic() {
 
     setTracks(queueTracks);
     setOriginalTracks(queueTracks);
-    setSelectedPlaylistId(collectionId);
+    setSelection(savedSelection);
     mediaTracksRef.current = queueTracks;
 
     const savedPositionIsValid = savedPositionMs !== undefined && savedPositionMs > 0;
@@ -457,7 +457,7 @@ export function usePlayerLogic() {
   }, [
     setTracks,
     setOriginalTracks,
-    setSelectedPlaylistId,
+    setSelection,
     setCurrentTrackIndex,
     mediaTracksRef,
     activeDescriptor,
@@ -529,7 +529,7 @@ export function usePlayerLogic() {
     state: {
       isLoading,
       error,
-      selectedPlaylistId,
+      selection,
       tracks,
       currentView,
       isPlaying,

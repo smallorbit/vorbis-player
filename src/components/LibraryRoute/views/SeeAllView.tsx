@@ -1,5 +1,5 @@
 import React from 'react';
-import type { ProviderId } from '@/types/domain';
+import type { CollectionSelection } from '@/types/domain';
 import { useProviderContext } from '@/contexts/ProviderContext';
 import {
   RecentlyPlayedSection,
@@ -8,7 +8,7 @@ import {
   AlbumsSection,
 } from '../sections';
 import { BackToLibraryIcon } from '@/components/icons/QuickActionIcons';
-import type { ContextMenuRequest, LibraryItemKind, LibraryRouteView } from '../types';
+import type { ContextMenuRequest, LibraryRouteView } from '../types';
 import { SeeAllRoot, BackBar, BackButton, BackTitle } from './views.styled';
 
 const TITLES: Record<Exclude<LibraryRouteView, 'home' | 'search'>, string> = {
@@ -21,12 +21,7 @@ const TITLES: Record<Exclude<LibraryRouteView, 'home' | 'search'>, string> = {
 interface SeeAllViewProps {
   view: Exclude<LibraryRouteView, 'home' | 'liked' | 'search'>;
   onBack: () => void;
-  onSelectCollection: (
-    kind: LibraryItemKind,
-    id: string,
-    name: string,
-    provider?: ProviderId,
-  ) => void;
+  onSelectCollection: (selection: CollectionSelection) => void;
   onContextMenuRequest?: ((req: ContextMenuRequest) => void) | undefined;
 }
 

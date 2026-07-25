@@ -8,20 +8,16 @@ import {
 } from '../hooks';
 import LibraryCard from '../card/LibraryCard';
 import Section from '../sections/Section';
-import type { ContextMenuRequest, LibraryItemKind } from '../types';
-import type { ProviderId } from '@/types/domain';
+import type { ContextMenuRequest, LibraryCollectionKind } from '../types';
+import type { CollectionSelection } from '@/types/domain';
+import { collectionToRef } from '@/types/domain';
 import type { LibrarySearchState } from '../search/useLibrarySearch';
 import { matchesQuery, normalizeQuery, passesProviderFilter, sortItems } from '../search/searchMatch';
 import { SeeAllRoot } from './views.styled';
 
 interface SearchResultsViewProps {
   search: LibrarySearchState;
-  onSelectCollection: (
-    kind: LibraryItemKind,
-    id: string,
-    name: string,
-    provider?: ProviderId,
-  ) => void;
+  onSelectCollection: (selection: CollectionSelection) => void;
   onContextMenuRequest?: ((req: ContextMenuRequest) => void) | undefined;
 }
 
@@ -114,11 +110,12 @@ const SearchResultsView: React.FC<SearchResultsViewProps> = ({
               kind={item.kind}
               id={item.id}
               provider={item.provider}
+              selection={item.selection}
               name={item.name}
               imageUrl={item.imageUrl}
               showProviderBadge={showProviderBadges}
               variant="grid"
-              onSelect={() => onSelectCollection(item.kind, item.id, item.name, item.provider)}
+              onSelect={() => onSelectCollection(item.selection)}
               onContextMenuRequest={onContextMenuRequest}
             />
           ))}
@@ -127,19 +124,23 @@ const SearchResultsView: React.FC<SearchResultsViewProps> = ({
       {recentlyFiltered.length > 0 && (
         <Section title="Recently Played" id="search-recent" layout="grid">
           {recentlyFiltered.map((entry) => {
-            const cardKind: LibraryItemKind = entry.ref.kind === 'album' ? 'album' : 'playlist';
+            const cardKind: LibraryCollectionKind = entry.ref.kind === 'album' ? 'album' : 'playlist';
             const id = entry.ref.kind === 'liked' ? 'liked' : entry.ref.id;
+            const selection: CollectionSelection = entry.ref.kind === 'liked'
+              ? { type: 'liked', provider: entry.ref.provider, name: entry.name }
+              : { type: 'collection', ref: entry.ref, name: entry.name };
             return (
               <LibraryCard
                 key={`${entry.ref.provider}-${entry.ref.kind}-${id}`}
                 kind={cardKind}
                 id={id}
                 provider={entry.ref.provider}
+                selection={selection}
                 name={entry.name}
                 imageUrl={entry.imageUrl ?? undefined}
                 showProviderBadge={showProviderBadges}
                 variant="grid"
-                onSelect={() => onSelectCollection(cardKind, id, entry.name, entry.ref.provider)}
+                onSelect={() => onSelectCollection(selection)}
                 onContextMenuRequest={onContextMenuRequest}
               />
             );
@@ -148,39 +149,47 @@ const SearchResultsView: React.FC<SearchResultsViewProps> = ({
       )}
       {playlistsFiltered.length > 0 && (
         <Section title="Playlists" id="search-playlists" layout="grid">
-          {playlistsFiltered.map((p) => (
-            <LibraryCard
-              key={`${p.provider}-${p.id}`}
-              kind="playlist"
-              id={p.id}
-              provider={p.provider}
-              name={p.name}
-              imageUrl={p.imageUrl}
-              showProviderBadge={showProviderBadges}
-              variant="grid"
-              onSelect={() => onSelectCollection('playlist', p.id, p.name, p.provider)}
-              onContextMenuRequest={onContextMenuRequest}
-            />
-          ))}
+          {playlistsFiltered.map((p) => {
+            const selection: CollectionSelection = { type: 'collection', ref: collectionToRef(p), name: p.name };
+            return (
+              <LibraryCard
+                key={`${p.provider}-${p.id}`}
+                kind="playlist"
+                id={p.id}
+                provider={p.provider}
+                selection={selection}
+                name={p.name}
+                imageUrl={p.imageUrl}
+                showProviderBadge={showProviderBadges}
+                variant="grid"
+                onSelect={() => onSelectCollection(selection)}
+                onContextMenuRequest={onContextMenuRequest}
+              />
+            );
+          })}
         </Section>
       )}
       {albumsFiltered.length > 0 && (
         <Section title="Albums" id="search-albums" layout="grid">
-          {albumsFiltered.map((a) => (
-            <LibraryCard
-              key={`${a.provider}-${a.id}`}
-              kind="album"
-              id={a.id}
-              provider={a.provider}
-              name={a.name}
-              subtitle={a.ownerName}
-              imageUrl={a.imageUrl}
-              showProviderBadge={showProviderBadges}
-              variant="grid"
-              onSelect={() => onSelectCollection('album', a.id, a.name, a.provider)}
-              onContextMenuRequest={onContextMenuRequest}
-            />
-          ))}
+          {albumsFiltered.map((a) => {
+            const selection: CollectionSelection = { type: 'collection', ref: collectionToRef(a), name: a.name };
+            return (
+              <LibraryCard
+                key={`${a.provider}-${a.id}`}
+                kind="album"
+                id={a.id}
+                provider={a.provider}
+                selection={selection}
+                name={a.name}
+                subtitle={a.ownerName}
+                imageUrl={a.imageUrl}
+                showProviderBadge={showProviderBadges}
+                variant="grid"
+                onSelect={() => onSelectCollection(selection)}
+                onContextMenuRequest={onContextMenuRequest}
+              />
+            );
+          })}
         </Section>
       )}
     </SeeAllRoot>

@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useMemo, useCallback, useEffect, useRef } from 'react';
-import type { MediaTrack } from '@/types/domain';
+import type { MediaTrack, PlaybackSelection } from '@/types/domain';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { isProfilingEnabled } from '@/contexts/ProfilingContext';
 import { shuffleArray } from '@/utils/shuffleArray';
@@ -15,13 +15,13 @@ interface TrackListContextValue {
   isLoading: boolean;
   error: string | null;
   shuffleEnabled: boolean;
-  selectedPlaylistId: string | null;
+  selection: PlaybackSelection | null;
   setTracks: (tracks: MediaTrack[] | ((prev: MediaTrack[]) => MediaTrack[])) => void;
   setOriginalTracks: (tracks: MediaTrack[] | ((prev: MediaTrack[]) => MediaTrack[])) => void;
   setIsLoading: (loading: boolean | ((prev: boolean) => boolean)) => void;
   setError: (error: string | null | ((prev: string | null) => string | null)) => void;
   setShuffleEnabled: (enabled: boolean) => void;
-  setSelectedPlaylistId: (id: string | null | ((prev: string | null) => string | null)) => void;
+  setSelection: (selection: PlaybackSelection | null | ((prev: PlaybackSelection | null) => PlaybackSelection | null)) => void;
   handleShuffleToggle: () => void;
 }
 
@@ -45,7 +45,7 @@ export function TrackProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [shuffleEnabled, setShuffleEnabled] = useLocalStorage(STORAGE_KEYS.SHUFFLE_ENABLED, false);
-  const [selectedPlaylistId, setSelectedPlaylistId] = useState<string | null>(null);
+  const [selection, setSelection] = useState<PlaybackSelection | null>(null);
   const [showQueue, setShowQueue] = useState(false);
 
   const currentTrack = useMemo(
@@ -100,13 +100,13 @@ export function TrackProvider({ children }: { children: React.ReactNode }) {
     isLoading,
     error,
     shuffleEnabled,
-    selectedPlaylistId,
+    selection,
     setTracks,
     setOriginalTracks,
     setIsLoading,
     setError,
     setShuffleEnabled,
-    setSelectedPlaylistId,
+    setSelection,
     handleShuffleToggle,
   }), [
     tracks,
@@ -114,7 +114,7 @@ export function TrackProvider({ children }: { children: React.ReactNode }) {
     isLoading,
     error,
     shuffleEnabled,
-    selectedPlaylistId,
+    selection,
     setShuffleEnabled,
     handleShuffleToggle,
   ]);
