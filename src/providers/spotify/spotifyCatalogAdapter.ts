@@ -3,12 +3,15 @@
  * The underlying Spotify services already return neutral domain shapes
  * (conversion happens once at the wire boundary in `src/services/spotify/`),
  * so this adapter is a thin routing layer.
+ *
+ * `listCollections` is intentionally absent: the background library sync
+ * engine (`spotifyLibrarySyncEngine`) owns Spotify library listing, and the
+ * library-sync hooks route by that absence.
  */
 
 import type { CatalogProvider } from '@/types/providers';
-import type { ProviderId, MediaTrack, MediaCollection, CollectionRef } from '@/types/domain';
+import type { ProviderId, MediaTrack, CollectionRef } from '@/types/domain';
 import {
-  getUserLibraryInterleaved,
   getPlaylistTracks,
   getAlbumTracks,
   getLikedSongs,
@@ -24,23 +27,6 @@ import {
 
 export class SpotifyCatalogAdapter implements CatalogProvider {
   readonly providerId: ProviderId = 'spotify';
-
-  async listCollections(signal?: AbortSignal): Promise<MediaCollection[]> {
-    let playlists: MediaCollection[] = [];
-    let albums: MediaCollection[] = [];
-
-    await getUserLibraryInterleaved(
-      (fetchedPlaylists, _isComplete) => {
-        playlists = fetchedPlaylists;
-      },
-      (fetchedAlbums, _isComplete) => {
-        albums = fetchedAlbums;
-      },
-      signal,
-    );
-
-    return [...playlists, ...albums];
-  }
 
   async listTracks(collectionRef: CollectionRef, signal?: AbortSignal): Promise<MediaTrack[]> {
     if (collectionRef.provider !== 'spotify') return [];

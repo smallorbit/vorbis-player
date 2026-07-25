@@ -221,14 +221,6 @@ export class SpotifyPlaybackAdapter implements PlaybackProvider {
     );
   }
 
-  async next(): Promise<void> {
-    await spotifyPlayer.nextTrack();
-  }
-
-  async previous(): Promise<void> {
-    await spotifyPlayer.previousTrack();
-  }
-
   async setVolume(volume0to1: number): Promise<void> {
     await spotifyPlayer.setVolume(volume0to1);
   }

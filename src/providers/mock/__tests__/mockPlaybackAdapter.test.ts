@@ -139,14 +139,6 @@ describe('MockPlaybackAdapter', () => {
     expect(state?.positionMs).toBe(60000);
   });
 
-  it('next() throws', async () => {
-    await expect(adapter.next()).rejects.toThrow();
-  });
-
-  it('previous() throws', async () => {
-    await expect(adapter.previous()).rejects.toThrow();
-  });
-
   it('unsubscribed listener is not called', async () => {
     // #given a listener that immediately unsubscribes
     const listener = vi.fn();

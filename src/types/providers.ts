@@ -73,8 +73,13 @@ export interface AuthProvider {
 
 export interface CatalogProvider {
   readonly providerId: ProviderId;
-  /** List collections (playlists, albums, folders) for library browser. */
-  listCollections(signal?: AbortSignal, options?: { forceRefresh?: boolean }): Promise<MediaCollection[]>;
+  /**
+   * List collections (playlists, albums, folders) for the library browser.
+   * Absent when a background sync engine provides library listing for this
+   * provider instead (the real Spotify adapter) — the library-sync hooks
+   * route by this method's presence.
+   */
+  listCollections?(signal?: AbortSignal, options?: { forceRefresh?: boolean }): Promise<MediaCollection[]>;
   /** List tracks for a collection. */
   listTracks(collectionRef: CollectionRef, signal?: AbortSignal): Promise<MediaTrack[]>;
   /** Optional: total count for "Liked" or similar (Spotify). */
@@ -117,8 +122,6 @@ export interface PlaybackProvider {
   pause(): Promise<void>;
   resume(): Promise<void>;
   seek(positionMs: number): Promise<void>;
-  next(): Promise<void>;
-  previous(): Promise<void>;
   setVolume(volume0to1: number): Promise<void>;
   getState(): Promise<PlaybackState | null>;
   /** Subscribe to state changes (returns unsubscribe). */

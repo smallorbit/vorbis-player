@@ -149,7 +149,6 @@ export function usePlayerLogic() {
 
   const { handlePlaylistSelect: spotifyHandlePlaylistSelect } = useSpotifyPlaylistManager({
     trackOps,
-    shuffleEnabled,
   });
 
   const { record } = useRecentlyPlayedCollections();

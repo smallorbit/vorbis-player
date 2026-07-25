@@ -1,42 +1,62 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
-import { makeTrack } from '@/test/fixtures';
 import type { CollectionRef } from '@/types/domain';
 
 vi.mock('@/services/spotifyPlayer', () => ({
   spotifyPlayer: {
-    initialize: vi.fn().mockResolvedValue(undefined),
-    getIsReady: vi.fn().mockReturnValue(true),
-    getDeviceId: vi.fn().mockReturnValue('device-1'),
-    transferPlaybackToDevice: vi.fn().mockResolvedValue(undefined),
-    ensureDeviceIsActive: vi.fn().mockResolvedValue(true),
-    playTrack: vi.fn().mockResolvedValue(undefined),
-    playContext: vi.fn().mockResolvedValue(undefined),
     getCurrentState: vi.fn().mockResolvedValue(null),
-    resume: vi.fn().mockResolvedValue(undefined),
   },
-  waitForSpotifyReady: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock('@/services/spotify', () => ({
-  getPlaylistTracks: vi.fn(),
-  getAlbumTracks: vi.fn(),
-  getLikedSongs: vi.fn(),
+  getLargestImage: vi.fn().mockReturnValue(undefined),
   spotifyAuth: {
     redirectToAuth: vi.fn(),
     isAuthenticated: vi.fn().mockReturnValue(true),
-    ensureValidToken: vi.fn().mockResolvedValue('token'),
   },
 }));
 
+const playCollection = vi.fn().mockResolvedValue(undefined);
+
+vi.mock('@/providers/registry', () => ({
+  providerRegistry: {
+    get: vi.fn(() => ({ playback: { playCollection } })),
+  },
+}));
+
+vi.mock('@/constants/timing', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/constants/timing')>()),
+  SPOTIFY_RETRY_DELAY_MS: 0,
+}));
+
 import { useSpotifyPlaylistManager as usePlaylistManager } from '@/providers/spotify/useSpotifyPlaylistManager';
-import { getPlaylistTracks, getAlbumTracks, getLikedSongs, spotifyAuth } from '@/services/spotify';
+import { spotifyPlayer } from '@/services/spotifyPlayer';
+import { spotifyAuth } from '@/services/spotify';
+import { providerRegistry } from '@/providers/registry';
 
 function playlistRef(id: string): CollectionRef {
   return { provider: 'spotify', kind: 'playlist', id };
 }
 
-describe('usePlaylistManager', () => {
+function makeSdkState(): SpotifyPlaybackState {
+  const makeSdkTrack = (id: string, name: string): SpotifyTrack => ({
+    id,
+    uri: `spotify:track:${id}`,
+    name,
+    artists: [{ name: 'SDK Artist', uri: 'spotify:artist:a1' }],
+    album: { name: 'SDK Album', uri: 'spotify:album:al1', images: [] },
+    duration_ms: 1000,
+  } as unknown as SpotifyTrack);
+  return {
+    track_window: {
+      previous_tracks: [makeSdkTrack('p1', 'Previous')],
+      current_track: makeSdkTrack('c1', 'Current'),
+      next_tracks: [makeSdkTrack('n1', 'Next')],
+    },
+  } as unknown as SpotifyPlaybackState;
+}
+
+describe('usePlaylistManager (context-playback fallback)', () => {
   const setError = vi.fn();
   const setIsLoading = vi.fn();
   const setSelection = vi.fn();
@@ -46,114 +66,111 @@ describe('usePlaylistManager', () => {
 
   const defaultProps = {
     trackOps: { setError, setIsLoading, setSelection, setTracks, setOriginalTracks, setCurrentTrackIndex },
-    shuffleEnabled: false,
   };
 
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(getPlaylistTracks).mockResolvedValue([
-      makeTrack({ id: 't1', name: 'Track 1' }),
-      makeTrack({ id: 't2', name: 'Track 2' }),
-    ]);
-    vi.mocked(getAlbumTracks).mockResolvedValue([
-      makeTrack({ id: 'at1', name: 'Album Track 1' }),
-    ]);
-    vi.mocked(getLikedSongs).mockResolvedValue([
-      makeTrack({ id: 'lt1', name: 'Liked Track 1' }),
-    ]);
+    playCollection.mockResolvedValue(undefined);
+    vi.mocked(providerRegistry.get).mockReturnValue(
+      { playback: { playCollection } } as unknown as ReturnType<typeof providerRegistry.get>,
+    );
+    vi.mocked(spotifyPlayer.getCurrentState).mockResolvedValue(makeSdkState());
   });
 
-  it('calls getPlaylistTracks for regular playlist IDs', async () => {
+  it('routes playlist refs through descriptor playback.playCollection', async () => {
     // #given
     const { result } = renderHook(() => usePlaylistManager(defaultProps));
 
-    // #when - select a regular playlist
+    // #when
     await act(async () => {
       await result.current.handlePlaylistSelect(playlistRef('playlist-123'));
     });
 
     // #then
-    expect(getPlaylistTracks).toHaveBeenCalledWith('playlist-123');
-    expect(setTracks).toHaveBeenCalled();
+    expect(playCollection).toHaveBeenCalledWith(playlistRef('playlist-123'));
   });
 
-  it('calls getLikedSongs for the liked ref', async () => {
+  it('routes album refs through descriptor playback.playCollection', async () => {
+    // #given
+    const albumRef: CollectionRef = { provider: 'spotify', kind: 'album', id: 'album-456' };
+    const { result } = renderHook(() => usePlaylistManager(defaultProps));
+
+    // #when
+    await act(async () => {
+      await result.current.handlePlaylistSelect(albumRef);
+    });
+
+    // #then
+    expect(playCollection).toHaveBeenCalledWith(albumRef);
+  });
+
+  it('mirrors the SDK track window into the queue', async () => {
     // #given
     const { result } = renderHook(() => usePlaylistManager(defaultProps));
 
-    // #when - select liked songs
+    // #when
+    let returned: unknown;
     await act(async () => {
-      await result.current.handlePlaylistSelect({ provider: 'spotify', kind: 'liked' });
+      returned = await result.current.handlePlaylistSelect(playlistRef('playlist-123'));
     });
 
-    // #then
-    expect(getLikedSongs).toHaveBeenCalled();
-  });
-
-  it('calls getAlbumTracks for album refs', async () => {
-    // #given
-    const { result } = renderHook(() => usePlaylistManager(defaultProps));
-
-    // #when - select an album ref
-    await act(async () => {
-      await result.current.handlePlaylistSelect({ provider: 'spotify', kind: 'album', id: 'album-456' });
-    });
-
-    // #then
-    expect(getAlbumTracks).toHaveBeenCalledWith('album-456');
-  });
-
-  it('sets error when playlist returns empty tracks', async () => {
-    // #given - mock empty liked songs
-    vi.mocked(getLikedSongs).mockResolvedValue([]);
-
-    const { result } = renderHook(() => usePlaylistManager(defaultProps));
-
-    // #when - select empty playlist
-    await act(async () => {
-      await result.current.handlePlaylistSelect({ provider: 'spotify', kind: 'liked' });
-    });
-
-    // #then
-    expect(setError).toHaveBeenCalledWith(
-      expect.stringContaining('No liked songs')
-    );
-  });
-
-  it('applies shuffle when shuffleEnabled=true', async () => {
-    // #given - create 20 tracks and mock shuffle enabled
-    const tracks = Array.from({ length: 20 }, (_, i) =>
-      makeTrack({ id: `t${i}`, name: `Track ${i}` })
-    );
-    vi.mocked(getPlaylistTracks).mockResolvedValue(tracks);
-
-    const { result } = renderHook(() =>
-      usePlaylistManager({ ...defaultProps, shuffleEnabled: true })
-    );
-
-    // #when - select playlist with shuffle enabled
-    await act(async () => {
-      await result.current.handlePlaylistSelect(playlistRef('playlist-shuffle'));
-    });
-
-    // #then - original order preserved, shuffled order applied
+    // #then — previous + current + next, deduped, in window order
+    const tracks = setTracks.mock.calls[0]?.[0] as Array<{ id: string }>;
+    expect(tracks.map((t) => t.id)).toEqual(['p1', 'c1', 'n1']);
     expect(setOriginalTracks).toHaveBeenCalledWith(tracks);
+    expect(setCurrentTrackIndex).toHaveBeenCalledWith(0);
+    expect(returned).toEqual(tracks);
+  });
 
-    const shuffledTracks = setTracks.mock.calls[0][0] as typeof tracks;
-    expect(shuffledTracks).toHaveLength(20);
+  it('sets the typed selection for the ref before playback starts', async () => {
+    // #given
+    const { result } = renderHook(() => usePlaylistManager(defaultProps));
+
+    // #when
+    await act(async () => {
+      await result.current.handlePlaylistSelect(playlistRef('playlist-123'));
+    });
+
+    // #then
+    expect(setSelection).toHaveBeenCalledWith({ type: 'collection', ref: playlistRef('playlist-123') });
+  });
+
+  it('errors on liked refs without touching playback', async () => {
+    // #given
+    const { result } = renderHook(() => usePlaylistManager(defaultProps));
+
+    // #when
+    await act(async () => {
+      await result.current.handlePlaylistSelect({ provider: 'spotify', kind: 'liked' });
+    });
+
+    // #then
+    expect(setError).toHaveBeenCalledWith(expect.stringContaining('No liked songs'));
+    expect(playCollection).not.toHaveBeenCalled();
+  });
+
+  it('sets error when the SDK window is empty after context playback', async () => {
+    // #given
+    vi.mocked(spotifyPlayer.getCurrentState).mockResolvedValue(null);
+    const { result } = renderHook(() => usePlaylistManager(defaultProps));
+
+    // #when
+    await act(async () => {
+      await result.current.handlePlaylistSelect(playlistRef('playlist-empty'));
+    });
+
+    // #then
+    expect(setError).toHaveBeenCalledWith(expect.stringContaining('No tracks found in this playlist'));
+    expect(setTracks).not.toHaveBeenCalled();
   });
 
   it('calls redirectToAuth on auth error', async () => {
-    // #given - mock auth failure
-    const { spotifyPlayer } = await import('@/services/spotifyPlayer');
+    // #given
     const { AuthExpiredError } = await import('@/providers/errors');
-    vi.mocked(spotifyPlayer.initialize).mockRejectedValueOnce(
-      new AuthExpiredError('spotify')
-    );
-
+    playCollection.mockRejectedValueOnce(new AuthExpiredError('spotify'));
     const { result } = renderHook(() => usePlaylistManager(defaultProps));
 
-    // #when - select playlist while auth fails
+    // #when
     await act(async () => {
       await result.current.handlePlaylistSelect(playlistRef('playlist-auth-fail'));
     });
@@ -163,13 +180,11 @@ describe('usePlaylistManager', () => {
   });
 
   it('sets isLoading false in finally block on error', async () => {
-    // #given - mock generic error
-    const { spotifyPlayer } = await import('@/services/spotifyPlayer');
-    vi.mocked(spotifyPlayer.initialize).mockRejectedValueOnce(new Error('Some error'));
-
+    // #given
+    playCollection.mockRejectedValueOnce(new Error('Some error'));
     const { result } = renderHook(() => usePlaylistManager(defaultProps));
 
-    // #when - select playlist while error occurs
+    // #when
     await act(async () => {
       await result.current.handlePlaylistSelect(playlistRef('playlist-error'));
     });

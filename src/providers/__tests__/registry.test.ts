@@ -31,8 +31,6 @@ function makeStubDescriptor(id: 'spotify' | 'dropbox', name: string): ProviderRe
       pause: async () => {},
       resume: async () => {},
       seek: async () => {},
-      next: async () => {},
-      previous: async () => {},
       setVolume: async () => {},
       getState: async () => null,
       subscribe: () => () => {},

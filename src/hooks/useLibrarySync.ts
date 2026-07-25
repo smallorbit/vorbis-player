@@ -2,7 +2,6 @@ import { useEffect, useCallback, useMemo, useRef } from 'react';
 import type { MediaCollection, ProviderId } from '@/types/domain';
 import { useProviderContext } from '@/contexts/ProviderContext';
 import { spotifyLibrarySyncEngine } from '@/services/cache/librarySyncEngine';
-import { shouldUseMockProvider } from '@/providers/mock/shouldUseMockProvider';
 import { readLikedCountSnapshots } from '@/services/cache/likedCountSnapshot';
 import { useEngineLibrarySync } from '@/hooks/useEngineLibrarySync';
 import { useCatalogLibrarySync, type PerProviderLikedCount } from '@/hooks/useCatalogLibrarySync';
@@ -40,15 +39,19 @@ function initialLikedTotalFromSnapshot(): number {
 }
 
 export function useLibrarySync(): UseLibrarySyncResult {
-  const { enabledProviderIds } = useProviderContext();
+  const { enabledProviderIds, getDescriptor } = useProviderContext();
   const initialLikedSnapshotTotal = useMemo(() => initialLikedTotalFromSnapshot(), []);
 
-  // The sync engine talks directly to the real Spotify Web API. In mock mode,
-  // bypass it so the registry-aware catalog path loads spotify collections
-  // via the mock catalog adapter instead.
-  const rawEngineProviderId: ProviderId | undefined = shouldUseMockProvider()
-    ? undefined
-    : spotifyLibrarySyncEngine.providerId;
+  // Route each provider by its catalog's shape: a provider whose adapter has
+  // no `listCollections` delegates library listing to the background sync
+  // engine (the real Spotify adapter); everyone else — including the mock
+  // spotify adapter — takes the registry-aware catalog path.
+  const engineCandidateId = spotifyLibrarySyncEngine.providerId;
+  const candidateDescriptor = getDescriptor(engineCandidateId);
+  const rawEngineProviderId: ProviderId | undefined =
+    candidateDescriptor && typeof candidateDescriptor.catalog.listCollections !== 'function'
+      ? engineCandidateId
+      : undefined;
   const engineProviderId = rawEngineProviderId && enabledProviderIds.includes(rawEngineProviderId)
     ? rawEngineProviderId
     : undefined;

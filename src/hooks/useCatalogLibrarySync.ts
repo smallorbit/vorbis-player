@@ -152,7 +152,7 @@ export function useCatalogLibrarySync(catalogProviderIdsInput: readonly Provider
       const descriptor = getDescriptor(providerId);
       const catalog = descriptor?.catalog;
       const auth = descriptor?.auth;
-      if (!catalog || !auth || !auth.isAuthenticated()) {
+      if (!catalog?.listCollections || !auth || !auth.isAuthenticated()) {
         dataRef.current.set(providerId, { playlists: [], albums: [], likedCount: 0, allMusicCount: 0 });
         return;
       }
@@ -236,7 +236,7 @@ export function useCatalogLibrarySync(catalogProviderIdsInput: readonly Provider
     for (const providerId of providerIdsToRefresh) {
       const descriptor = getDescriptor(providerId);
       const catalog = descriptor?.catalog;
-      if (!catalog) continue;
+      if (!catalog?.listCollections) continue;
 
       setSyncState(prev => ({ ...prev, isSyncing: true, error: null }));
       try {

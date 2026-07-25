@@ -1,26 +1,24 @@
 /**
- * Spotify-specific playlist manager hook.
+ * Spotify context-playback fallback.
  *
- * Handles Spotify SDK initialization, context-based playback for restricted
- * playlists, and 403 retry logic. Only used as a fallback when the generic
- * catalog path returns empty results for a provider with native collection
- * playback support (i.e. Spotify).
+ * Only used when the generic catalog path returns empty results for a
+ * provider with native collection playback support (i.e. Spotify —
+ * region-restricted playlists, etc.). Routes through the descriptor's
+ * `playback.playCollection` (which owns SDK init, device transfer, and
+ * retry) and then mirrors the SDK's track window into the app queue.
  */
 
 import { useCallback } from 'react';
-import { getPlaylistTracks, getAlbumTracks, getLikedSongs, spotifyAuth, getLargestImage } from '@/services/spotify';
-import { spotifyPlayer, waitForSpotifyReady } from '@/services/spotifyPlayer';
+import { getLargestImage, spotifyAuth } from '@/services/spotify';
+import { spotifyPlayer } from '@/services/spotifyPlayer';
 import { AuthExpiredError } from '@/providers/errors';
-import { shuffleArray } from '@/utils/shuffleArray';
+import { providerRegistry } from '@/providers/registry';
 import type { CollectionRef, ProviderId, MediaTrack } from '@/types/domain';
 import type { TrackOperations } from '@/types/trackOperations';
 import { logQueue } from '@/lib/debugLog';
-import { SPOTIFY_RETRY_DELAY_MS, SPOTIFY_DEVICE_ACTIVATE_RETRIES, SPOTIFY_DEVICE_ACTIVATE_DELAY_MS } from '@/constants/timing';
+import { SPOTIFY_RETRY_DELAY_MS } from '@/constants/timing';
 
 const SPOTIFY_PROVIDER_ID: ProviderId = 'spotify';
-
-const PLAYBACK_START_DELAY_MS = 1500;
-const PLAYBACK_RETRY_BASE_BACKOFF_MS = 2000;
 
 function buildTracksFromWindow(state: SpotifyPlaybackState): MediaTrack[] {
   const tracks: MediaTrack[] = [];
@@ -61,160 +59,55 @@ function buildTracksFromWindow(state: SpotifyPlaybackState): MediaTrack[] {
 
 interface UseSpotifyPlaylistManagerProps {
   trackOps: Omit<TrackOperations, 'mediaTracksRef'>;
-  shuffleEnabled: boolean;
 }
 
 export const useSpotifyPlaylistManager = ({
   trackOps,
-  shuffleEnabled
 }: UseSpotifyPlaylistManagerProps) => {
   const { setError, setIsLoading, setSelection, setTracks, setOriginalTracks, setCurrentTrackIndex } = trackOps;
 
   const handlePlaylistSelect = useCallback(async (ref: CollectionRef): Promise<MediaTrack[]> => {
-    logQueue('useSpotifyPlaylistManager.handlePlaylistSelect — ref=%o, shuffle=%s', ref, String(shuffleEnabled));
+    logQueue('useSpotifyPlaylistManager.handlePlaylistSelect — ref=%o', ref);
 
     try {
       setError(null);
       setIsLoading(true);
       setSelection({ type: 'collection', ref });
 
-      await spotifyPlayer.initialize();
-      await waitForSpotifyReady();
-      await spotifyPlayer.transferPlaybackToDevice();
-
-      await spotifyPlayer.ensureDeviceIsActive();
-
-      let fetchedTracks: MediaTrack[] = [];
-
-      if (ref.kind === 'album') {
-        fetchedTracks = await getAlbumTracks(ref.id);
-      } else if (ref.kind === 'liked') {
-        fetchedTracks = await getLikedSongs();
-      } else if (ref.kind === 'playlist') {
-        try {
-          fetchedTracks = await getPlaylistTracks(ref.id);
-        } catch (trackError) {
-          console.warn('Failed to fetch playlist tracks, will try context playback:', trackError);
-          fetchedTracks = [];
-        }
+      if (ref.kind === 'liked') {
+        setError('No liked songs found. Please like some songs in Spotify first.');
+        return [];
       }
-
-      if (fetchedTracks.length === 0 && ref.kind === 'playlist') {
-        try {
-          await spotifyPlayer.playContext(`spotify:playlist:${ref.id}`);
-
-          await new Promise(resolve => setTimeout(resolve, SPOTIFY_RETRY_DELAY_MS));
-          const state = await spotifyPlayer.getCurrentState();
-
-          if (state?.track_window?.current_track) {
-            const tracksFromWindow = buildTracksFromWindow(state);
-            setOriginalTracks(tracksFromWindow);
-            setTracks(tracksFromWindow);
-            setCurrentTrackIndex(0);
-            return tracksFromWindow;
-          }
-          return [];
-        } catch (contextError) {
-          console.error('Context playback also failed:', contextError);
-          setError("No tracks found in this playlist. It may be empty or unavailable.");
-          return [];
-        }
-      }
-
-      if (fetchedTracks.length === 0) {
-        if (ref.kind === 'album') {
-          setError("No tracks found in this album.");
-        } else if (ref.kind === 'liked') {
-          setError("No liked songs found. Please like some songs in Spotify first.");
-        } else {
-          setError("No tracks found in this playlist.");
-        }
+      if (ref.kind === 'folder') {
+        setError('No tracks found in this collection.');
         return [];
       }
 
-      setOriginalTracks(fetchedTracks);
+      const playback = providerRegistry.get(SPOTIFY_PROVIDER_ID)?.playback;
+      if (!playback?.playCollection) {
+        setError('No tracks found in this collection.');
+        return [];
+      }
 
-      const tracksToPlay = shuffleEnabled ? shuffleArray(fetchedTracks) : fetchedTracks;
+      await playback.playCollection(ref);
 
-      logQueue('useSpotifyPlaylistManager — setting %d tracks (fetched=%d, shuffled=%s)', tracksToPlay.length, fetchedTracks.length, String(shuffleEnabled));
-      setTracks(tracksToPlay);
+      // Give the SDK a beat to populate its track window, then mirror it.
+      await new Promise(resolve => setTimeout(resolve, SPOTIFY_RETRY_DELAY_MS));
+      const state = await spotifyPlayer.getCurrentState();
+
+      if (!state?.track_window?.current_track) {
+        setError(ref.kind === 'album'
+          ? 'No tracks found in this album.'
+          : 'No tracks found in this playlist. It may be empty or unavailable.');
+        return [];
+      }
+
+      const tracksFromWindow = buildTracksFromWindow(state);
+      setOriginalTracks(tracksFromWindow);
+      setTracks(tracksFromWindow);
       setCurrentTrackIndex(0);
-
-      const playWithRetry = async (trackIndex: number, retryCount = 0, maxRetries = 2): Promise<boolean> => {
-        const trackUri = tracksToPlay[trackIndex]?.playbackRef.ref;
-        if (!trackUri) {
-          console.error('No track URI at index', trackIndex);
-          return false;
-        }
-
-        try {
-          await spotifyPlayer.playTrack(trackUri);
-
-          setTimeout(() => {
-            void (async () => {
-              try {
-                const state = await spotifyPlayer.getCurrentState();
-                if (!state || state.paused) {
-                  await spotifyPlayer.resume();
-                }
-              } catch (error) {
-                console.error('Failed to check/resume playback state:', error);
-              }
-            })();
-          }, PLAYBACK_START_DELAY_MS);
-
-          return true;
-        } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : String(error);
-
-          if (errorMessage.includes('403')) {
-            const isRestrictionViolated = errorMessage.includes('Restriction violated');
-
-            if (isRestrictionViolated) {
-              console.warn(`Track "${tracksToPlay[trackIndex]?.name}" is unavailable (region-locked or removed)`);
-
-              if (trackIndex < tracksToPlay.length - 1) {
-                setCurrentTrackIndex(trackIndex + 1);
-                return await playWithRetry(trackIndex + 1, 0, maxRetries);
-              }
-
-              return false;
-            }
-
-            if (retryCount < maxRetries) {
-              const backoffMs = PLAYBACK_RETRY_BASE_BACKOFF_MS * Math.pow(2, retryCount);
-              await spotifyPlayer.transferPlaybackToDevice(true);
-              await new Promise(resolve => setTimeout(resolve, backoffMs));
-              await spotifyPlayer.ensureDeviceIsActive(SPOTIFY_DEVICE_ACTIVATE_RETRIES, SPOTIFY_DEVICE_ACTIVATE_DELAY_MS);
-
-              return await playWithRetry(trackIndex, retryCount + 1, maxRetries);
-            }
-          }
-
-          console.error('Failed to start playback:', error);
-          throw error;
-        }
-      };
-
-      setTimeout(() => {
-        void (async () => {
-          try {
-            if (tracksToPlay.length > 0) {
-              const success = await playWithRetry(0);
-              if (!success) {
-                console.error('Failed to play any track from the playlist');
-                setError('Unable to play any tracks from this playlist. They may be unavailable in your region.');
-              }
-            }
-          } catch (error) {
-            console.error('Failed to start playback after all retries:', error);
-          }
-        })();
-      }, PLAYBACK_START_DELAY_MS);
-
-      logQueue('useSpotifyPlaylistManager — returning %d tracks, first="%s"', tracksToPlay.length, tracksToPlay[0]?.name ?? '');
-      return tracksToPlay;
-
+      logQueue('useSpotifyPlaylistManager — mirrored %d tracks from SDK window', tracksFromWindow.length);
+      return tracksFromWindow;
     } catch (err: unknown) {
       if (err instanceof AuthExpiredError) {
         setError("Authentication expired. Redirecting to Spotify login...");
@@ -226,7 +119,7 @@ export const useSpotifyPlaylistManager = ({
     } finally {
       setIsLoading(false);
     }
-  }, [setError, setIsLoading, setSelection, setTracks, setOriginalTracks, setCurrentTrackIndex, shuffleEnabled]);
+  }, [setError, setIsLoading, setSelection, setTracks, setOriginalTracks, setCurrentTrackIndex]);
 
   return {
     handlePlaylistSelect

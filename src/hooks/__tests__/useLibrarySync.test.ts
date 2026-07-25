@@ -85,6 +85,32 @@ function makeCatalogDescriptor(
   };
 }
 
+/**
+ * Engine-flavored spotify descriptor: its catalog has NO `listCollections`,
+ * which is how useLibrarySync recognizes that the background sync engine owns
+ * this provider's library listing.
+ */
+function makeEngineDescriptor(id: ProviderId) {
+  return {
+    id,
+    catalog: {
+      providerId: id,
+      listTracks: vi.fn().mockResolvedValue([]),
+      getLikedCount: vi.fn().mockResolvedValue(0),
+    },
+    auth: {
+      providerId: id,
+      isAuthenticated: vi.fn().mockReturnValue(true),
+      getAccessToken: vi.fn(),
+      beginLogin: vi.fn(),
+      handleCallback: vi.fn(),
+      logout: vi.fn(),
+    },
+  };
+}
+
+const engineSpotifyDescriptor = makeEngineDescriptor('spotify');
+
 function makeCollection(id: string, kind: 'playlist' | 'album' | 'folder' = 'playlist'): MediaCollection {
   return {
     id,
@@ -148,6 +174,9 @@ describe('useLibrarySync', () => {
     mockStart.mockResolvedValue(undefined);
     mockSyncNow.mockResolvedValue(undefined);
     mockRegistryGet.mockReturnValue(undefined);
+    mockGetDescriptor.mockImplementation((id: ProviderId) =>
+      id === 'spotify' ? engineSpotifyDescriptor : undefined,
+    );
   });
 
   afterEach(() => {
@@ -249,7 +278,7 @@ describe('useLibrarySync', () => {
       const dropboxPlaylist = makeCollection('folder-1', 'folder');
       const dropboxDescriptor = makeCatalogDescriptor('dropbox', [dropboxAlbum, dropboxPlaylist], 7);
       mockGetDescriptor.mockImplementation((id: ProviderId) =>
-        id === 'dropbox' ? dropboxDescriptor : undefined,
+        id === 'dropbox' ? dropboxDescriptor : id === 'spotify' ? engineSpotifyDescriptor : undefined,
       );
 
       // #when
@@ -278,7 +307,7 @@ describe('useLibrarySync', () => {
 
       const dropboxDescriptor = makeCatalogDescriptor('dropbox', [], 7);
       mockGetDescriptor.mockImplementation((id: ProviderId) =>
-        id === 'dropbox' ? dropboxDescriptor : undefined,
+        id === 'dropbox' ? dropboxDescriptor : id === 'spotify' ? engineSpotifyDescriptor : undefined,
       );
 
       // #when
@@ -304,7 +333,7 @@ describe('useLibrarySync', () => {
 
       const dropboxDescriptor = makeCatalogDescriptor('dropbox', [], 7);
       mockGetDescriptor.mockImplementation((id: ProviderId) =>
-        id === 'dropbox' ? dropboxDescriptor : undefined,
+        id === 'dropbox' ? dropboxDescriptor : id === 'spotify' ? engineSpotifyDescriptor : undefined,
       );
 
       // #when
@@ -350,7 +379,7 @@ describe('useLibrarySync', () => {
         },
       };
       mockGetDescriptor.mockImplementation((id: ProviderId) =>
-        id === 'dropbox' ? failingDescriptor : undefined,
+        id === 'dropbox' ? failingDescriptor : id === 'spotify' ? engineSpotifyDescriptor : undefined,
       );
 
       // #when
@@ -393,7 +422,7 @@ describe('useLibrarySync', () => {
         },
       };
       mockGetDescriptor.mockImplementation((id: ProviderId) =>
-        id === 'dropbox' ? failingDescriptor : undefined,
+        id === 'dropbox' ? failingDescriptor : id === 'spotify' ? engineSpotifyDescriptor : undefined,
       );
 
       // #when
@@ -428,7 +457,7 @@ describe('useLibrarySync', () => {
         },
       };
       mockGetDescriptor.mockImplementation((id: ProviderId) =>
-        id === 'dropbox' ? unauthDescriptor : undefined,
+        id === 'dropbox' ? unauthDescriptor : id === 'spotify' ? engineSpotifyDescriptor : undefined,
       );
 
       // #when
@@ -458,7 +487,7 @@ describe('useLibrarySync', () => {
       const getLikedCount = vi.fn().mockResolvedValue(3);
       const dropboxDescriptor = makeCatalogDescriptor('dropbox', [], 3, getLikedCount);
       mockGetDescriptor.mockImplementation((id: ProviderId) =>
-        id === 'dropbox' ? dropboxDescriptor : undefined,
+        id === 'dropbox' ? dropboxDescriptor : id === 'spotify' ? engineSpotifyDescriptor : undefined,
       );
 
       mockRegistryGet.mockImplementation((id: ProviderId) =>
@@ -492,7 +521,7 @@ describe('useLibrarySync', () => {
       const getLikedCount = vi.fn().mockResolvedValue(5);
       const dropboxDescriptor = makeCatalogDescriptor('dropbox', [], 5, getLikedCount);
       mockGetDescriptor.mockImplementation((id: ProviderId) =>
-        id === 'dropbox' ? dropboxDescriptor : undefined,
+        id === 'dropbox' ? dropboxDescriptor : id === 'spotify' ? engineSpotifyDescriptor : undefined,
       );
 
       mockRegistryGet.mockReturnValue(undefined);
@@ -525,7 +554,7 @@ describe('useLibrarySync', () => {
 
       const dropboxDescriptor = makeCatalogDescriptor('dropbox', [], 4);
       mockGetDescriptor.mockImplementation((id: ProviderId) =>
-        id === 'dropbox' ? dropboxDescriptor : undefined,
+        id === 'dropbox' ? dropboxDescriptor : id === 'spotify' ? engineSpotifyDescriptor : undefined,
       );
 
       const { result } = renderHook(() => useLibrarySync());
@@ -577,7 +606,7 @@ describe('useLibrarySync', () => {
 
       const dropboxDescriptor = makeCatalogDescriptor('dropbox', [], 0);
       mockGetDescriptor.mockImplementation((id: ProviderId) =>
-        id === 'dropbox' ? dropboxDescriptor : undefined,
+        id === 'dropbox' ? dropboxDescriptor : id === 'spotify' ? engineSpotifyDescriptor : undefined,
       );
 
       const { result } = renderHook(() => useLibrarySync());
@@ -600,7 +629,7 @@ describe('useLibrarySync', () => {
 
       const dropboxDescriptor = makeCatalogDescriptor('dropbox', [], 0);
       mockGetDescriptor.mockImplementation((id: ProviderId) =>
-        id === 'dropbox' ? dropboxDescriptor : undefined,
+        id === 'dropbox' ? dropboxDescriptor : id === 'spotify' ? engineSpotifyDescriptor : undefined,
       );
 
       const { rerender } = renderHook(() => useLibrarySync());
@@ -681,7 +710,7 @@ describe('useLibrarySync', () => {
         0,
       );
       mockGetDescriptor.mockImplementation((id: ProviderId) =>
-        id === 'dropbox' ? dropboxDescriptor : undefined,
+        id === 'dropbox' ? dropboxDescriptor : id === 'spotify' ? engineSpotifyDescriptor : undefined,
       );
 
       const { result } = renderHook(() => useLibrarySync());

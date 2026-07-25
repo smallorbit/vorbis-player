@@ -143,14 +143,6 @@ export class MockPlaybackAdapter implements PlaybackProvider {
     this.notifyListeners();
   }
 
-  async next(): Promise<void> {
-    throw new Error('[MockPlayback] next() is managed by the app queue, not the adapter');
-  }
-
-  async previous(): Promise<void> {
-    throw new Error('[MockPlayback] previous() is managed by the app queue, not the adapter');
-  }
-
   async setVolume(volume0to1: number): Promise<void> {
     const audio = this.ensureAudio();
     audio.volume = Math.max(0, Math.min(1, volume0to1));
