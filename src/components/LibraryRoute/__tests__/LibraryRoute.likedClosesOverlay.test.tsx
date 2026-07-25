@@ -1,16 +1,15 @@
 /**
- * Regression test for #1347 — clicking a Liked Songs card must invoke onPlaylistSelect
- * (which AudioPlayer wires to handleCloseLibrary + handlePlaylistSelect), closing the library.
+ * Regression test for #1347 — clicking a Liked Songs card must invoke onSelectCollection
+ * (which AudioPlayer wires to handleCloseLibrary + collection loading), closing the library.
  *
- * The test is written test-first: it is RED before the liked branch is added to
- * handleSelectCollection in step 5 of the refactor (per-provider case calls
- * onPlaylistSelect with 'liked-spotify' ≠ LIKED_SONGS_ID until the branch remaps it).
+ * Since #1687, liked cards emit a typed CollectionSelection ({ type: 'liked', provider? })
+ * instead of the legacy LIKED_SONGS_ID string remapping.
  */
 
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { LIKED_SONGS_ID } from '@/constants/playlist';
+import type { CollectionSelection } from '@/types/domain';
 
 vi.mock('@/contexts/PlayerSizingContext', () => ({
   usePlayerSizingContext: vi.fn(() => ({ isMobile: false })),
@@ -68,25 +67,27 @@ vi.mock('../views/SeeAllView', () => ({
 
 /**
  * Stub HomeView to surface the two liked-activation paths we want to test.
- * Simulates what PinnedSection will do after the liked-consolidation refactor:
- * call onSelectCollection with kind='liked' and the card's id.
+ * Simulates what PinnedSection does since #1687: call onSelectCollection with a
+ * typed liked selection (provider-less for unified, provider-tagged otherwise).
  */
 vi.mock('../views/HomeView', () => ({
   default: ({
     onSelectCollection,
   }: {
-    onSelectCollection: (kind: string, id: string, name: string, provider?: string) => void;
+    onSelectCollection: (selection: CollectionSelection) => void;
   }) => (
     <div data-testid="home-view">
       <button
         data-testid="select-liked-unified"
-        onClick={() => onSelectCollection('liked', LIKED_SONGS_ID, 'Liked Songs', undefined)}
+        onClick={() => onSelectCollection({ type: 'liked', name: 'Liked Songs' })}
       >
         Liked Songs
       </button>
       <button
         data-testid="select-liked-per-provider"
-        onClick={() => onSelectCollection('liked', 'liked-spotify', 'Liked Songs', 'spotify')}
+        onClick={() =>
+          onSelectCollection({ type: 'liked', provider: 'spotify', name: 'Liked Songs' })
+        }
       >
         Liked Songs (Spotify)
       </button>
@@ -97,6 +98,7 @@ vi.mock('../views/HomeView', () => ({
 import LibraryRoute from '../index';
 
 const baseProps = {
+  onAddToQueue: vi.fn(async () => null),
   lastSession: null,
   isPlaying: false,
   onMiniPlay: vi.fn(),
@@ -111,31 +113,39 @@ describe('LibraryRoute — Liked Songs activation closes the library overlay (#1
     vi.clearAllMocks();
   });
 
-  it('invokes onPlaylistSelect with LIKED_SONGS_ID when unified Liked card is clicked', () => {
+  it('invokes onSelectCollection with a provider-less liked selection when unified Liked card is clicked', () => {
     // #given
     const onClose = vi.fn();
-    const onPlaylistSelect = vi.fn().mockImplementation(() => onClose());
-    render(<LibraryRoute {...baseProps} onPlaylistSelect={onPlaylistSelect} onClose={onClose} />);
+    const onSelectCollection = vi.fn().mockImplementation(() => onClose());
+    render(
+      <LibraryRoute {...baseProps} onSelectCollection={onSelectCollection} onClose={onClose} />,
+    );
 
     // #when
     fireEvent.click(screen.getByTestId('select-liked-unified'));
 
     // #then
-    expect(onPlaylistSelect).toHaveBeenCalledWith(LIKED_SONGS_ID, 'Liked Songs', undefined);
+    expect(onSelectCollection).toHaveBeenCalledWith({ type: 'liked', name: 'Liked Songs' });
     expect(onClose).toHaveBeenCalled();
   });
 
-  it('invokes onPlaylistSelect with LIKED_SONGS_ID (not liked-spotify) when per-provider Liked card is clicked', () => {
-    // #given — this test is RED before the kind==='liked' branch remaps per-provider ids
+  it('invokes onSelectCollection with a provider-tagged liked selection when per-provider Liked card is clicked', () => {
+    // #given
     const onClose = vi.fn();
-    const onPlaylistSelect = vi.fn().mockImplementation(() => onClose());
-    render(<LibraryRoute {...baseProps} onPlaylistSelect={onPlaylistSelect} onClose={onClose} />);
+    const onSelectCollection = vi.fn().mockImplementation(() => onClose());
+    render(
+      <LibraryRoute {...baseProps} onSelectCollection={onSelectCollection} onClose={onClose} />,
+    );
 
     // #when
     fireEvent.click(screen.getByTestId('select-liked-per-provider'));
 
-    // #then — id must be LIKED_SONGS_ID, not 'liked-spotify'
-    expect(onPlaylistSelect).toHaveBeenCalledWith(LIKED_SONGS_ID, 'Liked Songs', 'spotify');
+    // #then — the selection stays typed; no LIKED_SONGS_ID string remapping
+    expect(onSelectCollection).toHaveBeenCalledWith({
+      type: 'liked',
+      provider: 'spotify',
+      name: 'Liked Songs',
+    });
     expect(onClose).toHaveBeenCalled();
   });
 });

@@ -1,11 +1,12 @@
 /**
- * Tests for LibraryRoute — sub-route navigation, liked fallback, album encoding (#1294).
+ * Tests for LibraryRoute — sub-route navigation and typed collection selection (#1294, #1687).
  * Supplements the existing LibraryRoute.test.tsx (layout shell tests).
  */
 
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import type { CollectionSelection } from '@/types/domain';
 
 vi.mock('@/contexts/PlayerSizingContext', () => ({
   usePlayerSizingContext: vi.fn(),
@@ -69,13 +70,33 @@ vi.mock('../views/HomeView', () => ({
     onSelectCollection,
   }: {
     onNavigate: (view: string) => void;
-    onSelectCollection: (kind: string, id: string, name: string, provider?: string) => void;
+    onSelectCollection: (selection: CollectionSelection) => void;
   }) => (
     <div data-testid="home-view">
       <button onClick={() => onNavigate('playlists')}>go-playlists</button>
       <button onClick={() => onNavigate('albums')}>go-albums</button>
-      <button onClick={() => onSelectCollection('album', 'a1', 'Dark Side', 'spotify')}>select-album</button>
-      <button onClick={() => onSelectCollection('playlist', 'p1', 'Chill', 'spotify')}>select-playlist</button>
+      <button
+        onClick={() =>
+          onSelectCollection({
+            type: 'collection',
+            ref: { provider: 'spotify', kind: 'album', id: 'a1' },
+            name: 'Dark Side',
+          })
+        }
+      >
+        select-album
+      </button>
+      <button
+        onClick={() =>
+          onSelectCollection({
+            type: 'collection',
+            ref: { provider: 'spotify', kind: 'playlist', id: 'p1' },
+            name: 'Chill',
+          })
+        }
+      >
+        select-playlist
+      </button>
     </div>
   ),
 }));
@@ -94,8 +115,15 @@ import LibraryRoute from '../index';
 const mockUsePlayerSizingContext = vi.mocked(usePlayerSizingContext);
 
 const baseProps = {
-  onPlaylistSelect: vi.fn(),
+  onSelectCollection: vi.fn(),
+  onAddToQueue: vi.fn(async () => null),
   lastSession: null,
+  isPlaying: false,
+  onMiniPlay: vi.fn(),
+  onMiniPause: vi.fn(),
+  onMiniNext: vi.fn(),
+  onMiniPrevious: vi.fn(),
+  onMiniExpand: vi.fn(),
 };
 
 describe('LibraryRoute — navigation', () => {
@@ -150,31 +178,36 @@ describe('LibraryRoute — navigation', () => {
     expect(screen.queryByTestId(/see-all-view/)).not.toBeInTheDocument();
   });
 
-  it('calls onPlaylistSelect with toAlbumPlaylistId encoding for album selection', () => {
+  it('calls onSelectCollection with the typed album selection (bare id, no album: prefix)', () => {
     // #given
-    const onPlaylistSelect = vi.fn();
-    render(<LibraryRoute {...baseProps} onPlaylistSelect={onPlaylistSelect} />);
+    const onSelectCollection = vi.fn();
+    render(<LibraryRoute {...baseProps} onSelectCollection={onSelectCollection} />);
 
     // #when — select an album
     fireEvent.click(screen.getByRole('button', { name: 'select-album' }));
 
-    // #then — album id must be encoded via toAlbumPlaylistId
-    expect(onPlaylistSelect).toHaveBeenCalledTimes(1);
-    const [playlistId, name, provider] = onPlaylistSelect.mock.calls[0];
-    expect(playlistId).toMatch(/album/i); // toAlbumPlaylistId wraps with "album:" prefix
-    expect(name).toBe('Dark Side');
-    expect(provider).toBe('spotify');
+    // #then — the typed selection carries the bare album id inside a CollectionRef
+    expect(onSelectCollection).toHaveBeenCalledTimes(1);
+    expect(onSelectCollection).toHaveBeenCalledWith({
+      type: 'collection',
+      ref: { provider: 'spotify', kind: 'album', id: 'a1' },
+      name: 'Dark Side',
+    });
   });
 
-  it('calls onPlaylistSelect with plain id for playlist selection', () => {
+  it('calls onSelectCollection with the typed playlist selection', () => {
     // #given
-    const onPlaylistSelect = vi.fn();
-    render(<LibraryRoute {...baseProps} onPlaylistSelect={onPlaylistSelect} />);
+    const onSelectCollection = vi.fn();
+    render(<LibraryRoute {...baseProps} onSelectCollection={onSelectCollection} />);
 
     // #when
     fireEvent.click(screen.getByRole('button', { name: 'select-playlist' }));
 
     // #then
-    expect(onPlaylistSelect).toHaveBeenCalledWith('p1', 'Chill', 'spotify');
+    expect(onSelectCollection).toHaveBeenCalledWith({
+      type: 'collection',
+      ref: { provider: 'spotify', kind: 'playlist', id: 'p1' },
+      name: 'Chill',
+    });
   });
 });

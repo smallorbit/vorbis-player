@@ -4,7 +4,7 @@ import { render, screen, fireEvent, act } from '@testing-library/react';
 import { ThemeProvider } from 'styled-components';
 import { theme } from '@/styles/theme';
 import type { ContextMenuRequest } from '../../types';
-import type { ProviderId, MediaTrack } from '@/types/domain';
+import type { CollectionRef, CollectionSelection, ProviderId, MediaTrack } from '@/types/domain';
 
 const { mockPinned, mockLikedSection, mockRecent, mockLoadLiked } = vi.hoisted(() => ({
   mockPinned: vi.fn(),
@@ -44,15 +44,54 @@ vi.mock('../useAlbumSavedStatus', () => ({
 
 import LibraryContextMenu, { type LibraryContextMenuProps } from '../LibraryContextMenu';
 
-function makeRequest(overrides: Partial<ContextMenuRequest> = {}): ContextMenuRequest {
-  return {
-    kind: 'playlist',
-    id: 'p1',
-    name: 'My Playlist',
-    provider: 'spotify' as ProviderId,
+interface MakeRequestOptions {
+  kind?: 'playlist' | 'album' | 'liked' | 'recently-played';
+  id?: string;
+  name?: string;
+  provider?: ProviderId | undefined;
+  selection?: CollectionSelection;
+  originalKind?: 'playlist' | 'album' | 'liked';
+  recentRef?: CollectionRef;
+}
+
+function makeRequest(overrides: MakeRequestOptions = {}): ContextMenuRequest {
+  const kind = overrides.kind ?? 'playlist';
+  const id = overrides.id ?? 'p1';
+  const name = overrides.name ?? 'My Playlist';
+  const provider: ProviderId | undefined =
+    'provider' in overrides ? overrides.provider : 'spotify';
+
+  const effectiveKind = kind === 'recently-played' ? (overrides.originalKind ?? 'playlist') : kind;
+  const selection: CollectionSelection =
+    overrides.selection ??
+    (effectiveKind === 'liked'
+      ? { type: 'liked', name, ...(provider !== undefined && { provider }) }
+      : {
+          type: 'collection',
+          ref: { provider: provider ?? 'spotify', kind: effectiveKind, id },
+          name,
+        });
+
+  const base = {
+    id,
+    name,
+    selection,
     anchorRect: new DOMRect(10, 10, 100, 40),
-    ...overrides,
+    ...(provider !== undefined && { provider }),
   };
+
+  if (kind === 'recently-played') {
+    return {
+      ...base,
+      kind: 'recently-played',
+      originalKind: overrides.originalKind ?? 'playlist',
+      recentRef:
+        overrides.recentRef ?? { provider: provider ?? 'spotify', kind: 'playlist', id },
+    };
+  }
+  if (kind === 'album') return { ...base, kind: 'album' };
+  if (kind === 'liked') return { ...base, kind: 'liked' };
+  return { ...base, kind: 'playlist' };
 }
 
 function defaultMocks() {
@@ -148,8 +187,12 @@ describe('LibraryContextMenu', () => {
     fireEvent.click(screen.getByTestId('menu-start-radio'));
 
     // #then
-    expect(onPlayNext).toHaveBeenCalledWith('playlist', 'p1', 'My Playlist', 'spotify');
-    expect(onStartRadio).toHaveBeenCalledWith('playlist', 'p1', 'spotify');
+    expect(onPlayNext).toHaveBeenCalledWith({
+      type: 'collection',
+      ref: { provider: 'spotify', kind: 'playlist', id: 'p1' },
+      name: 'My Playlist',
+    });
+    expect(onStartRadio).toHaveBeenCalledWith({ provider: 'spotify', kind: 'playlist', id: 'p1' });
     expect(onReturnFocusClose).toHaveBeenCalledTimes(2);
   });
 
@@ -211,7 +254,11 @@ describe('LibraryContextMenu', () => {
 
     // #then
     expect(mockLoadLiked).toHaveBeenCalledWith('spotify');
-    expect(onPlayLikedTracks).toHaveBeenCalledWith(tracks, 'liked-spotify', 'Liked Songs', 'spotify');
+    expect(onPlayLikedTracks).toHaveBeenCalledWith(tracks, {
+      type: 'liked',
+      provider: 'spotify',
+      name: 'Liked Songs',
+    });
     expect(onReturnFocusClose).toHaveBeenCalled();
   });
 
@@ -263,11 +310,15 @@ describe('LibraryContextMenu', () => {
     fireEvent.click(screen.getByTestId('menu-play'));
 
     // #then
-    expect(onPlayCollection).toHaveBeenCalledWith('playlist', 'p1', 'My Playlist', 'spotify');
+    expect(onPlayCollection).toHaveBeenCalledWith({
+      type: 'collection',
+      ref: { provider: 'spotify', kind: 'playlist', id: 'p1' },
+      name: 'My Playlist',
+    });
     expect(onReturnFocusClose).toHaveBeenCalled();
   });
 
-  it('Add to Queue passes raw id for playlist kind', () => {
+  it('Add to Queue forwards the playlist selection', () => {
     // #given
     const onAddToQueue = vi.fn();
 
@@ -276,10 +327,14 @@ describe('LibraryContextMenu', () => {
     fireEvent.click(screen.getByTestId('menu-add-to-queue'));
 
     // #then
-    expect(onAddToQueue).toHaveBeenCalledWith('p1', 'My Playlist', 'spotify');
+    expect(onAddToQueue).toHaveBeenCalledWith({
+      type: 'collection',
+      ref: { provider: 'spotify', kind: 'playlist', id: 'p1' },
+      name: 'My Playlist',
+    });
   });
 
-  it('Add to Queue wraps raw album id with album: prefix for album kind', () => {
+  it('Add to Queue forwards the album selection with a bare album id (no album: prefix)', () => {
     // #given
     const onAddToQueue = vi.fn();
 
@@ -291,7 +346,11 @@ describe('LibraryContextMenu', () => {
     fireEvent.click(screen.getByTestId('menu-add-to-queue'));
 
     // #then
-    expect(onAddToQueue).toHaveBeenCalledWith('album:abc123', 'My Album', 'spotify');
+    expect(onAddToQueue).toHaveBeenCalledWith({
+      type: 'collection',
+      ref: { provider: 'spotify', kind: 'album', id: 'abc123' },
+      name: 'My Album',
+    });
   });
 
   it('shows Queue Liked Songs item when onQueueLikedTracks provided for playlist', () => {

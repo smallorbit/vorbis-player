@@ -115,7 +115,7 @@ function renderPanel(options: RenderPanelOptions = {}) {
   return render(
     <ThemeProvider theme={theme}>
       <QuickAccessPanel
-        onPlaylistSelect={vi.fn()}
+        onSelectCollection={vi.fn()}
         onAddToQueue={vi.fn()}
         onBrowseLibrary={vi.fn()}
         lastSession={options.lastSession ?? null}
@@ -127,7 +127,11 @@ function renderPanel(options: RenderPanelOptions = {}) {
 
 function makeSession(overrides: Partial<SessionSnapshot> = {}): SessionSnapshot {
   return {
-    collectionId: 'col-1',
+    selection: {
+      type: 'collection',
+      ref: { provider: 'spotify', kind: 'playlist', id: 'col-1' },
+      name: 'My Playlist',
+    },
     collectionName: 'My Playlist',
     trackIndex: 3,
     trackTitle: 'Track Title',
@@ -287,9 +291,11 @@ describe('QuickAccessPanel Resume hero', () => {
     expect(screen.queryByText('Pick up where you left off')).not.toBeInTheDocument();
   });
 
-  it('does not render the hero when lastSession has an empty collectionId (stale/invalid)', () => {
-    // #given
-    const session = makeSession({ collectionId: '' });
+  it('does not render the hero when lastSession lacks a selection (stale/invalid snapshot)', () => {
+    // #given — a pre-#1687 snapshot deserialized from storage without the selection field
+    const session = JSON.parse(
+      '{"collectionName":"My Playlist","trackIndex":3,"trackTitle":"Track Title"}',
+    ) as SessionSnapshot;
 
     // #when
     renderPanel({ lastSession: session });

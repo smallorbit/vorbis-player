@@ -131,7 +131,7 @@ describe('AlbumsSection', () => {
     expect(screen.getByRole('button', { name: 'See all' })).toBeInTheDocument();
   });
 
-  it('calls onSelect with album kind, id, name, provider on card click', () => {
+  it('calls onSelect with the typed album selection on card click', () => {
     // #given
     const onSelect = vi.fn();
     mockUseAlbumsSection.mockReturnValue({
@@ -145,6 +145,10 @@ describe('AlbumsSection', () => {
     fireEvent.click(screen.getByTestId('library-card-album-a1'));
 
     // #then
-    expect(onSelect).toHaveBeenCalledWith('album', 'a1', 'OK Computer', 'spotify');
+    expect(onSelect).toHaveBeenCalledWith({
+      type: 'collection',
+      ref: { provider: 'spotify', kind: 'album', id: 'a1' },
+      name: 'OK Computer',
+    });
   });
 });
