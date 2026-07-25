@@ -114,6 +114,16 @@ export interface PlaybackState {
   playbackError?: PlaybackError;
 }
 
+/** All known provider ids. Kept in sync with the `ProviderId` union. */
+export const PROVIDER_IDS: readonly ProviderId[] = ['spotify', 'dropbox'];
+
+/** Build the CollectionRef that identifies a MediaCollection. */
+export function collectionToRef(collection: MediaCollection): CollectionRef {
+  const { provider, kind, id } = collection;
+  if (kind === 'liked') return { provider, kind };
+  return { provider, kind, id };
+}
+
 /** Serializable form of CollectionRef for storage/URL (e.g. "spotify:playlist:xxx", "dropbox:folder:/Music"). */
 export function collectionRefToKey(ref: CollectionRef): string {
   if (ref.kind === 'liked') {

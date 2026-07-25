@@ -1,12 +1,12 @@
-import type { MediaTrack } from '@/types/domain';
-import type { Track, AlbumInfo, SpotifyAlbum, SpotifyImage, SpotifyTrackItem, PaginatedResponse } from './types';
+import type { CollectionRef, MediaCollection, MediaTrack } from '@/types/domain';
+import type { SpotifyAlbum, SpotifyImage, SpotifyTrackItem, PaginatedResponse } from './types';
 import { getLargestImage } from './types';
 import { spotifyApiRequest, fetchAllPaginated } from './api';
 import { spotifyAuth } from './auth';
 import { albumSavedCache, trackListCache, TRACK_LIST_CACHE_TTL, TRACK_LIST_PERSIST_TTL, TRACK_SAVED_CACHE_TTL } from './cache';
-import { formatArtists, transformTrackItem, backfillProvider, tracksToMediaTracks } from './tracks';
+import { formatArtists, transformTrackItem } from './tracks';
 import * as libraryCache from '../cache/libraryCache';
-import { ALBUM_ID_PREFIX } from '@/constants/playlist';
+import { collectionRefToKey } from '@/types/domain';
 import { logCaughtError } from '@/utils/logCaughtError';
 
 // =============================================================================
@@ -18,27 +18,28 @@ export interface SavedAlbumItem {
   album: SpotifyAlbum;
 }
 
-export function transformSavedAlbumItem(
-  item: SavedAlbumItem,
-  options: { withGenres?: boolean } = {},
-): AlbumInfo {
-  const { withGenres = true } = options;
+/**
+ * Convert a raw saved-album item into the neutral `MediaCollection` shape.
+ * This is the single Spotify→domain conversion point for albums.
+ */
+export function transformSavedAlbumItem(item: SavedAlbumItem): MediaCollection {
   const album = item.album;
-  const result: AlbumInfo = {
+  const imageUrl = getLargestImage(album.images);
+  return {
     id: album.id ?? '',
+    provider: 'spotify',
+    kind: 'album',
     name: album.name ?? 'Unknown Album',
-    artists: formatArtists(album.artists),
-    images: album.images ?? [],
-    release_date: album.release_date ?? '',
-    total_tracks: album.total_tracks ?? 0,
-    uri: album.uri ?? '',
-    added_at: item.added_at,
-    ...(album.album_type !== undefined && { album_type: album.album_type }),
+    ownerName: formatArtists(album.artists),
+    trackCount: album.total_tracks ?? 0,
+    genres: album.genres ?? [],
+    ...(imageUrl !== undefined && { imageUrl }),
+    ...(album.release_date !== undefined && { releaseDate: album.release_date }),
   };
-  if (withGenres && album.genres !== undefined) {
-    result.genres = album.genres;
-  }
-  return result;
+}
+
+function albumRef(albumId: string): CollectionRef {
+  return { provider: 'spotify', kind: 'album', id: albumId };
 }
 
 // =============================================================================
@@ -46,21 +47,21 @@ export function transformSavedAlbumItem(
 // =============================================================================
 
 export async function getAlbumTracks(albumId: string): Promise<MediaTrack[]> {
-  const cacheKey = `${ALBUM_ID_PREFIX}${albumId}`;
+  const ref = albumRef(albumId);
+  const cacheKey = collectionRefToKey(ref);
 
   // L1: Check in-memory cache (instant)
   const cached = trackListCache.get(cacheKey);
   if (cached && Date.now() - cached.timestamp < TRACK_LIST_CACHE_TTL) {
-    return tracksToMediaTracks(cached.data);
+    return cached.data;
   }
 
   // L2: Check IndexedDB persistent cache (survives page reload)
   try {
-    const idbCached = await libraryCache.getTrackList(cacheKey);
+    const idbCached = await libraryCache.getTrackList(ref);
     if (idbCached && Date.now() - idbCached.timestamp < TRACK_LIST_PERSIST_TTL) {
-      const tracks = backfillProvider(idbCached.tracks);
-      trackListCache.set(cacheKey, { data: tracks, timestamp: idbCached.timestamp });
-      return tracksToMediaTracks(tracks);
+      trackListCache.set(cacheKey, { data: idbCached.tracks, timestamp: idbCached.timestamp });
+      return idbCached.tracks;
     }
   } catch (err) {
     // IndexedDB read failed, continue to API fetch
@@ -85,7 +86,7 @@ export async function getAlbumTracks(albumId: string): Promise<MediaTrack[]> {
   );
 
   const albumImage = getLargestImage(album.images);
-  const tracks: Track[] = [];
+  const tracks: MediaTrack[] = [];
 
   for (const trackItem of album.tracks.items ?? []) {
     const track = transformTrackItem(trackItem, {
@@ -100,12 +101,12 @@ export async function getAlbumTracks(albumId: string): Promise<MediaTrack[]> {
     }
   }
 
-  const sorted = tracks.sort((a, b) => (a.track_number ?? 0) - (b.track_number ?? 0));
+  const sorted = tracks.sort((a, b) => (a.trackNumber ?? 0) - (b.trackNumber ?? 0));
 
   // Write to both L1 and L2
   trackListCache.set(cacheKey, { data: sorted, timestamp: Date.now() });
-  libraryCache.putTrackList(cacheKey, sorted).catch(() => {});
-  return tracksToMediaTracks(sorted);
+  libraryCache.putTrackList(ref, sorted).catch(() => {});
+  return sorted;
 }
 
 export async function checkAlbumSaved(albumId: string): Promise<boolean> {
@@ -155,29 +156,10 @@ export async function getAlbumCount(signal?: AbortSignal): Promise<number> {
   return data.total ?? 0;
 }
 
-/** Fetch first page of albums for change comparison. */
-export async function getAlbumsPage(
-  limit: number = 50,
-  signal?: AbortSignal
-): Promise<{ albums: AlbumInfo[]; total: number; hasMore: boolean }> {
-  const token = await spotifyAuth.ensureValidToken();
-
-  const data = await spotifyApiRequest<PaginatedResponse<SavedAlbumItem>>(
-    `https://api.spotify.com/v1/me/albums?limit=${limit}&offset=0`,
-    token,
-    signal ? { signal } : {},
-  );
-  return {
-    albums: (data.items ?? []).map((item) => transformSavedAlbumItem(item)),
-    total: data.total ?? 0,
-    hasMore: data.next !== null,
-  };
-}
-
 /** Fetch ALL user saved albums with full pagination (not capped at 50). */
-export async function getAllUserAlbums(signal?: AbortSignal): Promise<AlbumInfo[]> {
+export async function getAllUserAlbums(signal?: AbortSignal): Promise<MediaCollection[]> {
   const token = await spotifyAuth.ensureValidToken();
-  return fetchAllPaginated<SavedAlbumItem, AlbumInfo>(
+  return fetchAllPaginated<SavedAlbumItem, MediaCollection>(
     'https://api.spotify.com/v1/me/albums?limit=50',
     token,
     transformSavedAlbumItem,

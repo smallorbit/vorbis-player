@@ -1,7 +1,5 @@
 import { useEffect, useCallback, useMemo, useRef } from 'react';
-import type { CachedPlaylistInfo } from '@/services/cache/cacheTypes';
-import type { AlbumInfo } from '@/services/spotify';
-import type { ProviderId } from '@/types/domain';
+import type { MediaCollection, ProviderId } from '@/types/domain';
 import { useProviderContext } from '@/contexts/ProviderContext';
 import { spotifyLibrarySyncEngine } from '@/services/cache/librarySyncEngine';
 import { shouldUseMockProvider } from '@/providers/mock/shouldUseMockProvider';
@@ -13,8 +11,8 @@ export const ART_REFRESHED_EVENT = 'vorbis-art-refreshed';
 export const LIBRARY_REFRESH_EVENT = 'vorbis-library-refresh';
 
 interface UseLibrarySyncResult {
-  playlists: CachedPlaylistInfo[];
-  albums: AlbumInfo[];
+  playlists: MediaCollection[];
+  albums: MediaCollection[];
   likedSongsCount: number;
   /** Liked counts broken down by provider (for multi-provider liked songs cards). */
   likedSongsPerProvider: PerProviderLikedCount[];
@@ -61,8 +59,8 @@ export function useLibrarySync(): UseLibrarySyncResult {
   const catalog = useCatalogLibrarySync(catalogProviderIds);
 
   const merged = useMemo(() => {
-    const playlists: CachedPlaylistInfo[] = [];
-    const albums: AlbumInfo[] = [];
+    const playlists: MediaCollection[] = [];
+    const albums: MediaCollection[] = [];
     const likedSongsPerProvider: PerProviderLikedCount[] = [];
     let likedSongsCount = 0;
 

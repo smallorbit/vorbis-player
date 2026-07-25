@@ -1,6 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import type { PlaylistInfo, AlbumInfo } from '@/services/spotify';
-import type { ProviderId } from '@/types/domain';
+import type { MediaCollection, ProviderId } from '@/types/domain';
 import type { SessionSnapshot } from '@/services/sessionPersistence';
 import { usePinnedItemsContext } from '@/contexts/PinnedItemsContext';
 import { useProviderContext } from '@/contexts/ProviderContext';
@@ -51,14 +50,14 @@ const QuickAccessPanel: React.FC<QuickAccessPanelProps> = ({
 
   const filteredProviders = activeProviderIds.length > 0 ? activeProviderIds : connectedProviderIds;
 
-  const pinnedPlaylists = useMemo<PlaylistInfo[]>(() => {
+  const pinnedPlaylists = useMemo<MediaCollection[]>(() => {
     const idSet = new Set(pinnedPlaylistIds);
     return playlists
       .filter(p => idSet.has(p.id))
       .sort((a, b) => pinnedPlaylistIds.indexOf(a.id) - pinnedPlaylistIds.indexOf(b.id));
   }, [playlists, pinnedPlaylistIds]);
 
-  const pinnedAlbums = useMemo<AlbumInfo[]>(() => {
+  const pinnedAlbums = useMemo<MediaCollection[]>(() => {
     const idSet = new Set(pinnedAlbumIds);
     return albums
       .filter(a => idSet.has(a.id))

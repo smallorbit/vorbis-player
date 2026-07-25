@@ -1,15 +1,19 @@
 /**
- * IndexedDB-based persistent cache for Spotify library data.
+ * IndexedDB-based persistent cache for library data (all providers).
  *
  * This module is the public surface: typed per-store CRUD wrappers built on
  * top of `getStore<T>` from `./libraryCacheStorage`. The storage layer hides
  * the IndexedDB / in-memory fallback split, and the lifecycle layer owns the
- * singleton state plus the open/upgrade and migration steps.
+ * singleton state plus the open/upgrade step.
+ *
+ * Records are neutral domain shapes keyed by `(provider, id)`:
+ * collections under `"{provider}:{id}"`, track lists under the
+ * collection-ref key (`collectionRefToKey`).
  */
 
-import type { AlbumInfo, Track } from '../spotify';
+import type { CollectionRef, MediaCollection, MediaTrack, ProviderId } from '@/types/domain';
+import { collectionRefToKey, keyToCollectionRef } from '@/types/domain';
 import type {
-  CachedPlaylistInfo,
   CachedTrackList,
   LibraryCacheMeta,
 } from './cacheTypes';
@@ -27,75 +31,106 @@ import { fallbackStores, getStore } from './libraryCacheStorage';
 
 export { initCache, closeCache };
 
-const playlists = getStore<CachedPlaylistInfo>(STORE_PLAYLISTS);
-const albums = getStore<AlbumInfo>(STORE_ALBUMS);
+const playlists = getStore<MediaCollection>(STORE_PLAYLISTS);
+const albums = getStore<MediaCollection>(STORE_ALBUMS);
 const trackLists = getStore<CachedTrackList>(STORE_TRACK_LISTS);
 const meta = getStore<LibraryCacheMeta>(STORE_META);
+
+function collectionKey(provider: ProviderId, id: string): string {
+  return `${provider}:${id}`;
+}
+
+type CollectionStore = ReturnType<typeof getStore<MediaCollection>>;
+
+/**
+ * Replace every record belonging to `provider` with `items`, leaving other
+ * providers' records untouched.
+ */
+async function replaceProviderCollections(
+  store: CollectionStore,
+  provider: ProviderId,
+  items: MediaCollection[],
+): Promise<void> {
+  const existing = await store.getAll();
+  const nextIds = new Set(items.map((c) => c.id));
+  const removals = existing
+    .filter((c) => c.provider === provider && !nextIds.has(c.id))
+    .map((c) => store.remove(collectionKey(provider, c.id)));
+  await Promise.all(removals);
+  await store.putAll(items.map((c) => [collectionKey(c.provider, c.id), c]));
+}
 
 // =============================================================================
 // Playlist Operations
 // =============================================================================
 
-export async function getAllPlaylists(): Promise<CachedPlaylistInfo[]> {
+export async function getAllPlaylists(): Promise<MediaCollection[]> {
   return playlists.getAll();
 }
 
-export async function putAllPlaylists(items: CachedPlaylistInfo[]): Promise<void> {
-  return playlists.replaceAll(items.map((p) => [p.id, p]));
+export async function replaceProviderPlaylists(
+  provider: ProviderId,
+  items: MediaCollection[],
+): Promise<void> {
+  return replaceProviderCollections(playlists, provider, items);
 }
 
-export async function putPlaylist(playlist: CachedPlaylistInfo): Promise<void> {
-  return playlists.put(playlist.id, playlist);
+export async function putPlaylist(playlist: MediaCollection): Promise<void> {
+  return playlists.put(collectionKey(playlist.provider, playlist.id), playlist);
 }
 
-export async function removePlaylist(id: string): Promise<void> {
-  return playlists.remove(id);
+export async function removePlaylist(provider: ProviderId, id: string): Promise<void> {
+  return playlists.remove(collectionKey(provider, id));
 }
 
 // =============================================================================
 // Album Operations
 // =============================================================================
 
-export async function getAllAlbums(): Promise<AlbumInfo[]> {
+export async function getAllAlbums(): Promise<MediaCollection[]> {
   return albums.getAll();
 }
 
-export async function putAllAlbums(items: AlbumInfo[]): Promise<void> {
-  return albums.replaceAll(items.map((a) => [a.id, a]));
+export async function replaceProviderAlbums(
+  provider: ProviderId,
+  items: MediaCollection[],
+): Promise<void> {
+  return replaceProviderCollections(albums, provider, items);
 }
 
-export async function putAlbum(album: AlbumInfo): Promise<void> {
-  return albums.put(album.id, album);
+export async function putAlbum(album: MediaCollection): Promise<void> {
+  return albums.put(collectionKey(album.provider, album.id), album);
 }
 
-export async function removeAlbum(id: string): Promise<void> {
-  return albums.remove(id);
+export async function removeAlbum(provider: ProviderId, id: string): Promise<void> {
+  return albums.remove(collectionKey(provider, id));
 }
 
 // =============================================================================
 // Track List Operations
 // =============================================================================
 
-export async function getTrackList(id: string): Promise<CachedTrackList | undefined> {
-  return trackLists.get(id);
+export async function getTrackList(ref: CollectionRef): Promise<CachedTrackList | undefined> {
+  return trackLists.get(collectionRefToKey(ref));
 }
 
 export async function putTrackList(
-  id: string,
-  tracks: Track[],
-  snapshotId?: string,
+  ref: CollectionRef,
+  tracks: MediaTrack[],
+  revision?: string,
 ): Promise<void> {
+  const key = collectionRefToKey(ref);
   const entry: CachedTrackList = {
-    id,
+    key,
     tracks,
     timestamp: Date.now(),
-    ...(snapshotId !== undefined && { snapshotId }),
+    ...(revision !== undefined && { revision }),
   };
-  return trackLists.put(id, entry);
+  return trackLists.put(key, entry);
 }
 
-export async function removeTrackList(id: string): Promise<void> {
-  return trackLists.remove(id);
+export async function removeTrackList(ref: CollectionRef): Promise<void> {
+  return trackLists.remove(collectionRefToKey(ref));
 }
 
 // =============================================================================
@@ -117,10 +152,8 @@ export async function putMeta(
 // Clear All
 // =============================================================================
 
-const LIKED_SONGS_TRACK_LIST_ID = 'liked-songs';
-
 interface ClearCacheOptions {
-  /** When true, liked songs track list is also cleared. Default: false (preserve). */
+  /** When true, liked songs track lists are also cleared. Default: false (preserve). */
   clearLikes?: boolean;
 }
 
@@ -131,15 +164,16 @@ interface ClearCacheOptions {
 export async function clearCacheWithOptions(options: ClearCacheOptions = {}): Promise<void> {
   const { clearLikes = false } = options;
 
-  let savedLikedSongs: CachedTrackList | undefined;
+  let savedLikedLists: CachedTrackList[] = [];
   if (!clearLikes) {
-    savedLikedSongs = await getTrackList(LIKED_SONGS_TRACK_LIST_ID);
+    const allLists = await trackLists.getAll();
+    savedLikedLists = allLists.filter((list) => keyToCollectionRef(list.key)?.kind === 'liked');
   }
 
   await clearAll();
 
-  if (!clearLikes && savedLikedSongs) {
-    await putTrackList(LIKED_SONGS_TRACK_LIST_ID, savedLikedSongs.tracks, savedLikedSongs.snapshotId);
+  if (savedLikedLists.length > 0) {
+    await trackLists.putAll(savedLikedLists.map((list) => [list.key, list]));
   }
 }
 

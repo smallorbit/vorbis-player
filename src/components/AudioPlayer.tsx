@@ -27,9 +27,7 @@ import { keyToCollectionRef } from '@/types/domain';
 import { useSessionPersistence } from '@/hooks/useSessionPersistence';
 import QuickAccessPanel from './QuickAccessPanel';
 import { CmdKPalette } from './CmdKPalette';
-import { tracksToMediaTracks } from '@/services/spotify/tracks';
-import type { Track, AlbumInfo } from '@/services/spotify';
-import type { CachedPlaylistInfo } from '@/services/cache/cacheTypes';
+import type { MediaCollection, MediaTrack } from '@/types/domain';
 import type { SearchArtist } from '@/services/cache/librarySearch';
 
 const SettingsV2 = lazy(() => import('./SettingsV2'));
@@ -137,10 +135,8 @@ const AudioPlayerComponent = () => {
   );
 
   const handleCmdKSelectTrack = useCallback(
-    (track: Track) => {
-      const [mediaTrack] = tracksToMediaTracks([track]);
-      if (!mediaTrack) return;
-      const result = handlers.insertTracksNext([mediaTrack], track.name);
+    (track: MediaTrack) => {
+      const result = handlers.insertTracksNext([track], track.name);
       if (result && result.added > 0) {
         toast(`Added "${track.name}" to play next.`, {
           id: 'cmdk-add-track',
@@ -183,14 +179,14 @@ const AudioPlayerComponent = () => {
   );
 
   const handleCmdKSelectAlbum = useCallback(
-    (album: AlbumInfo) => {
+    (album: MediaCollection) => {
       void handleCmdKInsertCollectionNext(toAlbumPlaylistId(album.id), album.name, album.provider);
     },
     [handleCmdKInsertCollectionNext],
   );
 
   const handleCmdKSelectPlaylist = useCallback(
-    (playlist: CachedPlaylistInfo) => {
+    (playlist: MediaCollection) => {
       void handleCmdKInsertCollectionNext(playlist.id, playlist.name, playlist.provider);
     },
     [handleCmdKInsertCollectionNext],

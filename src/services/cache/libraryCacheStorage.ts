@@ -64,9 +64,9 @@ function idbGetAll<T>(storeName: string): Promise<T[]> {
   return withStore<T[]>(storeName, 'readonly', (store) => store.getAll());
 }
 
-function idbPut<T>(storeName: string, value: T): Promise<void> {
+function idbPut<T>(storeName: string, key: string, value: T): Promise<void> {
   return withStore<void>(storeName, 'readwrite', (store) => {
-    store.put(value);
+    store.put(value, key);
     return null;
   });
 }
@@ -85,17 +85,17 @@ function idbClear(storeName: string): Promise<void> {
   });
 }
 
-function idbPutAll<T>(storeName: string, items: T[]): Promise<void> {
+function idbPutAll<T>(storeName: string, entries: Array<[string, T]>): Promise<void> {
   return withStore<void>(storeName, 'readwrite', (store) => {
-    for (const item of items) store.put(item);
+    for (const [key, value] of entries) store.put(value, key);
     return null;
   });
 }
 
-function idbReplaceAll<T>(storeName: string, items: T[]): Promise<void> {
+function idbReplaceAll<T>(storeName: string, entries: Array<[string, T]>): Promise<void> {
   return withStore<void>(storeName, 'readwrite', (store) => {
     store.clear();
-    for (const item of items) store.put(item);
+    for (const [key, value] of entries) store.put(value, key);
     return null;
   });
 }
@@ -144,7 +144,7 @@ export function getStore<T>(storeName: string): KVStore<T> {
         return;
       }
       try {
-        await idbPut(storeName, value);
+        await idbPut(storeName, key, value);
       } catch (err) {
         logCaughtError(`libraryCacheStorage.${storeName}.put`, err);
         enterFallback();
@@ -154,14 +154,13 @@ export function getStore<T>(storeName: string): KVStore<T> {
 
     async putAll(entries: Array<[string, T]>): Promise<void> {
       await initCache();
-      const items = entries.map(([, value]) => value);
       if (isFallback()) {
         const map = fallback();
         for (const [key, value] of entries) map.set(key, value);
         return;
       }
       try {
-        await idbPutAll(storeName, items);
+        await idbPutAll(storeName, entries);
       } catch (err) {
         logCaughtError(`libraryCacheStorage.${storeName}.putAll`, err);
         enterFallback();
@@ -187,7 +186,6 @@ export function getStore<T>(storeName: string): KVStore<T> {
 
     async replaceAll(entries: Array<[string, T]>): Promise<void> {
       await initCache();
-      const items = entries.map(([, value]) => value);
       if (isFallback()) {
         const map = fallback();
         map.clear();
@@ -195,7 +193,7 @@ export function getStore<T>(storeName: string): KVStore<T> {
         return;
       }
       try {
-        await idbReplaceAll(storeName, items);
+        await idbReplaceAll(storeName, entries);
       } catch (err) {
         logCaughtError(`libraryCacheStorage.${storeName}.replaceAll`, err);
         enterFallback();

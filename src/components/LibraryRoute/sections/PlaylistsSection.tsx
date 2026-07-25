@@ -42,12 +42,12 @@ const PlaylistsSection: React.FC<PlaylistsSectionProps> = ({
       ) : (
         items.map((p) => (
           <LibraryCard
-            key={`${p.provider ?? 'spotify'}-${p.id}`}
+            key={`${p.provider}-${p.id}`}
             kind="playlist"
             id={p.id}
             provider={p.provider}
             name={p.name}
-            imageUrl={p.images?.[0]?.url}
+            imageUrl={p.imageUrl}
             showProviderBadge={showProviderBadges}
             variant={layout === 'row' ? 'row' : 'grid'}
             onSelect={() => onSelect('playlist', p.id, p.name, p.provider)}

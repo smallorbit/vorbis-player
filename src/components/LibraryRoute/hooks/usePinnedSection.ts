@@ -3,9 +3,7 @@ import { useLibrarySync } from '@/hooks/useLibrarySync';
 import { usePinnedItems } from '@/hooks/usePinnedItems';
 import { LIKED_SONGS_ID } from '@/constants/playlist';
 import { useLikedSection } from './useLikedSection';
-import type { CachedPlaylistInfo } from '@/services/cache/cacheTypes';
-import type { AlbumInfo } from '@/services/spotify';
-import type { ProviderId } from '@/types/domain';
+import type { MediaCollection, ProviderId } from '@/types/domain';
 
 interface PinnedItem {
   kind: 'playlist' | 'album' | 'liked';
@@ -17,8 +15,8 @@ interface PinnedItem {
 }
 
 interface PinnedSectionState {
-  pinnedPlaylists: CachedPlaylistInfo[];
-  pinnedAlbums: AlbumInfo[];
+  pinnedPlaylists: MediaCollection[];
+  pinnedAlbums: MediaCollection[];
   combined: PinnedItem[];
   isLoading: boolean;
   isEmpty: boolean;
@@ -70,14 +68,14 @@ export function usePinnedSection(): PinnedSectionState {
         id: p.id,
         provider: p.provider,
         name: p.name,
-        imageUrl: p.images?.[0]?.url,
+        imageUrl: p.imageUrl,
       })),
       ...pinnedAlbums.map((a) => ({
         kind: 'album' as const,
         id: a.id,
         provider: a.provider,
         name: a.name,
-        imageUrl: a.images?.[0]?.url,
+        imageUrl: a.imageUrl,
       })),
     ],
     [likedEntries, pinnedPlaylists, pinnedAlbums],

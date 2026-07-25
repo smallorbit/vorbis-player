@@ -103,7 +103,7 @@ class SpotifyQueueSyncService {
 
           try {
             const result = await searchTrack(track.artists, track.name);
-            this.resolutionCache.set(track.id, result?.uri ?? null);
+            this.resolutionCache.set(track.id, result?.playbackRef.ref ?? null);
           } catch (err) {
             // Network errors — don't cache, might succeed later
             logCaughtError('spotifyQueueSync.resolveTracksInBackground', err);

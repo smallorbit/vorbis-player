@@ -1,30 +1,11 @@
-import type { ProviderId } from '@/types/domain';
-
 // =============================================================================
-// Types
+// Spotify wire types
 // =============================================================================
-
-/**
- * Internal Spotify Track type — used for caching and transformations.
- * Converted to MediaTrack for use throughout the application.
- */
-export interface Track {
-  id: string;
-  provider: ProviderId;
-  name: string;
-  artists: string;
-  artistsData?: { name: string; url?: string }[];
-  album: string;
-  album_id?: string;
-  track_number?: number;
-  duration_ms: number;
-  uri: string;
-  preview_url?: string;
-  image?: string;
-  added_at?: number;
-  /** Genre tags inherited from the parent album (Spotify stores genres at album/artist level). */
-  genres?: string[];
-}
+//
+// These shapes mirror the Spotify Web API responses. They are internal to
+// `src/services/spotify/` — every public function converts them to the neutral
+// domain model (`MediaTrack` / `MediaCollection`) exactly once, at this
+// boundary. Nothing outside the Spotify perimeter may import from this module.
 
 interface TokenData {
   access_token: string;
@@ -32,11 +13,7 @@ interface TokenData {
   expires_at: number;
 }
 
-export interface ArtistInfo {
-  name: string;
-  url?: string;
-}
-
+/** Raw playlist object as returned by GET /me/playlists. */
 export interface PlaylistInfo {
   id: string;
   name: string;
@@ -44,28 +21,7 @@ export interface PlaylistInfo {
   images: SpotifyImage[];
   tracks: { total: number } | null;
   owner: { display_name: string } | null;
-  added_at?: string; // ISO 8601 timestamp when added to library
   snapshot_id?: string; // Spotify revision identifier for change detection
-  /** Which provider this playlist belongs to (for multi-provider library view). */
-  provider?: ProviderId;
-  /** Album folder paths for Dropbox mosaic thumbnails — resolved to art at render time via IndexedDB cache. */
-  mosaicAlbumPaths?: string[];
-}
-
-export interface AlbumInfo {
-  id: string;
-  name: string;
-  artists: string;
-  images: SpotifyImage[];
-  release_date: string;
-  total_tracks: number;
-  uri: string;
-  album_type?: string;
-  added_at?: string; // ISO 8601 timestamp when saved to library
-  /** Which provider this album belongs to (for multi-provider library view). */
-  provider?: ProviderId;
-  /** Genre tags returned by the Spotify album object. */
-  genres?: string[];
 }
 
 interface SpotifyArtist {

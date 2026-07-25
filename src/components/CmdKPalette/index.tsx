@@ -9,8 +9,7 @@ import {
 } from '@/components/ui/command';
 import { DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import { useLibrarySearch } from '@/hooks/useLibrarySearch';
-import type { AlbumInfo, Track } from '@/services/spotify';
-import type { CachedPlaylistInfo } from '@/services/cache/cacheTypes';
+import type { MediaCollection, MediaTrack } from '@/types/domain';
 import type { SearchArtist } from '@/services/cache/librarySearch';
 import { useIsTouchDevice } from './useIsTouchDevice';
 
@@ -18,11 +17,11 @@ const PLACEHOLDER = 'Start typing to search your library';
 
 interface CmdKPaletteProps {
   /** Called when a track is selected — implementations should enqueue and close the palette. */
-  onSelectTrack?: ((track: Track) => void) | undefined;
+  onSelectTrack?: ((track: MediaTrack) => void) | undefined;
   /** Called when an album is selected — implementations should open it in the Library view. */
-  onSelectAlbum?: ((album: AlbumInfo) => void) | undefined;
+  onSelectAlbum?: ((album: MediaCollection) => void) | undefined;
   /** Called when a playlist is selected — implementations should open it in the Library view. */
-  onSelectPlaylist?: ((playlist: CachedPlaylistInfo) => void) | undefined;
+  onSelectPlaylist?: ((playlist: MediaCollection) => void) | undefined;
   /**
    * Called when an artist is selected.
    *
@@ -46,8 +45,8 @@ const ItemSubtitle = ({ text }: ItemSubtitleProps): JSX.Element | null => {
   );
 };
 
-const playlistSubtitle = (playlist: CachedPlaylistInfo): string | undefined => {
-  const total = playlist.tracks?.total;
+const playlistSubtitle = (playlist: MediaCollection): string | undefined => {
+  const total = playlist.trackCount;
   if (typeof total !== 'number' || total <= 0) return undefined;
   return total === 1 ? '1 track' : `${total} tracks`;
 };
@@ -91,15 +90,15 @@ export const CmdKPalette = ({
   const hasAny =
     tracks.length > 0 || albums.length > 0 || artists.length > 0 || playlists.length > 0;
 
-  const handleTrack = (track: Track): void => {
+  const handleTrack = (track: MediaTrack): void => {
     onSelectTrack?.(track);
     closePalette();
   };
-  const handleAlbum = (album: AlbumInfo): void => {
+  const handleAlbum = (album: MediaCollection): void => {
     onSelectAlbum?.(album);
     closePalette();
   };
-  const handlePlaylist = (playlist: CachedPlaylistInfo): void => {
+  const handlePlaylist = (playlist: MediaCollection): void => {
     onSelectPlaylist?.(playlist);
     closePalette();
   };
@@ -144,12 +143,12 @@ export const CmdKPalette = ({
             {albums.map((album) => (
               <CommandItem
                 key={`album:${album.id}`}
-                value={`album:${album.id}:${album.name}:${album.artists}`}
+                value={`album:${album.id}:${album.name}:${album.ownerName ?? ''}`}
                 onSelect={() => handleAlbum(album)}
                 data-testid="cmdk-item-album"
               >
                 <span className="truncate">{album.name}</span>
-                <ItemSubtitle text={album.artists} />
+                <ItemSubtitle text={album.ownerName} />
               </CommandItem>
             ))}
           </CommandGroup>

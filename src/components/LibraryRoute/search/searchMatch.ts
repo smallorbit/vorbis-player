@@ -6,7 +6,7 @@ export function normalizeQuery(q: string): string {
 }
 
 export function matchesQuery(
-  item: { name: string; ownerName?: string | null },
+  item: { name: string; ownerName?: string | null | undefined },
   normalizedQuery: string,
 ): boolean {
   if (!normalizedQuery) return true;
@@ -24,7 +24,7 @@ export function passesProviderFilter(
   return providerFilter.includes(provider);
 }
 
-export function sortItems<T extends { name: string; added_at?: string }>(
+export function sortItems<T extends { name: string }>(
   items: T[],
   sort: LibrarySort,
 ): T[] {

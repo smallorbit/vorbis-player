@@ -5,12 +5,25 @@ import type { TrackOperations } from '@/types/trackOperations';
 import { LIKED_SONGS_ID, LIKED_SONGS_NAME, isAllMusicRef, resolvePlaylistRef } from '@/constants/playlist';
 import { shuffleArray } from '@/utils/shuffleArray';
 import { providerRegistry } from '@/providers/registry';
+import { putTrackList } from '@/services/cache/libraryCache';
 import { logQueue } from '@/lib/debugLog';
 import { logCaughtError } from '@/utils/logCaughtError';
 import { queueSnapshot } from './playerLogicUtils';
 
 function isAbortError(err: unknown): boolean {
   return err instanceof DOMException && err.name === 'AbortError';
+}
+
+/**
+ * Persist a fetched track list into the shared library cache so cache-backed
+ * consumers (e.g. CmdK search) can see any collection the user has opened,
+ * regardless of provider. Fire-and-forget: playback never waits on the cache.
+ */
+function cacheTrackList(ref: CollectionRef, tracks: MediaTrack[]): void {
+  if (tracks.length === 0) return;
+  putTrackList(ref, tracks).catch((err) => {
+    logCaughtError('useCollectionLoader.cacheTrackList', err);
+  });
 }
 
 interface UseCollectionLoaderProps {
@@ -117,10 +130,15 @@ export function useCollectionLoader({
         likedProviderIds.map(async (id) => {
           const catalog = descriptorMap.get(id)?.catalog;
           if (!catalog) return [];
-          return catalog.listTracks({ provider: id, kind: 'liked' }, signal).catch((err: unknown): MediaTrack[] => {
-            if (!isAbortError(err)) logCaughtError(`useCollectionLoader.loadUnifiedLiked[${id}]`, err);
-            return [];
-          });
+          return catalog.listTracks({ provider: id, kind: 'liked' }, signal)
+            .then((tracks) => {
+              cacheTrackList({ provider: id, kind: 'liked' }, tracks);
+              return tracks;
+            })
+            .catch((err: unknown): MediaTrack[] => {
+              if (!isAbortError(err)) logCaughtError(`useCollectionLoader.loadUnifiedLiked[${id}]`, err);
+              return [];
+            });
         }),
       );
 
@@ -201,6 +219,7 @@ export function useCollectionLoader({
       const { id: collectionId, kind: collectionKind } = resolvePlaylistRef(playlistId, providerId);
       const collectionRef = { provider: providerId, kind: collectionKind, id: collectionId } as const;
       const list = await targetDescriptor.catalog.listTracks(collectionRef, signal);
+      cacheTrackList(collectionRef, list);
 
       if (isStale(generation)) return loadGenerationRef.current;
 

@@ -6,10 +6,13 @@
  * 2. If changes detected, fetch the changed data incrementally
  * 3. Update IndexedDB cache and notify listeners
  *
+ * The Spotify services return neutral domain shapes (`MediaCollection` /
+ * `MediaTrack`), so everything the engine caches and emits is provider-neutral.
+ *
  * Pauses when the browser tab is hidden, resumes + immediate sync on focus.
  */
 
-import type { AlbumInfo } from '../spotify';
+import type { MediaCollection } from '@/types/domain';
 import {
   getPlaylistCount,
   getAlbumCount,
@@ -21,19 +24,17 @@ import * as cache from './libraryCache';
 import { detectChanges, applyChanges } from './libraryDiffEngine';
 import { writeLikedCountSnapshot } from './likedCountSnapshot';
 import type {
-  CachedPlaylistInfo,
   LibraryChanges,
   SyncState,
-  PlaylistsUpdateCallback,
-  AlbumsUpdateCallback,
+  CollectionsUpdateCallback,
 } from './cacheTypes';
 
 const DEFAULT_POLL_INTERVAL_MS = 90 * 1000; // 90 seconds
 
 type SyncListener = (
   state: SyncState,
-  playlists?: CachedPlaylistInfo[],
-  albums?: AlbumInfo[],
+  playlists?: MediaCollection[],
+  albums?: MediaCollection[],
   likedSongsCount?: number,
 ) => void;
 
@@ -57,8 +58,8 @@ export class SpotifyLibrarySyncEngine {
 
   // Last-known data, kept in memory so new subscribers get data immediately
   // instead of seeing an empty state while IndexedDB is read asynchronously.
-  private lastKnownPlaylists: CachedPlaylistInfo[] | undefined;
-  private lastKnownAlbums: AlbumInfo[] | undefined;
+  private lastKnownPlaylists: MediaCollection[] | undefined;
+  private lastKnownAlbums: MediaCollection[] | undefined;
   private lastKnownLikedCount: number | undefined;
 
   // Optimistic mutations: album IDs that were recently added/removed locally.
@@ -170,22 +171,22 @@ export class SpotifyLibrarySyncEngine {
     };
   }
 
-  /** Get current playlists from cache. */
-  async getPlaylists(): Promise<CachedPlaylistInfo[]> {
-    return cache.getAllPlaylists();
+  /** Get this engine's playlists from cache. */
+  async getPlaylists(): Promise<MediaCollection[]> {
+    return (await cache.getAllPlaylists()).filter((p) => p.provider === this.providerId);
   }
 
-  /** Get current albums from cache. */
-  async getAlbums(): Promise<AlbumInfo[]> {
-    return cache.getAllAlbums();
+  /** Get this engine's albums from cache. */
+  async getAlbums(): Promise<MediaCollection[]> {
+    return (await cache.getAllAlbums()).filter((a) => a.provider === this.providerId);
   }
 
   /** Optimistically remove an album from cache and notify listeners immediately. */
   async optimisticRemoveAlbum(albumId: string): Promise<void> {
     this.pendingRemovals.set(albumId, Date.now());
     this.pendingAdditions.delete(albumId);
-    await cache.removeAlbum(albumId);
-    await cache.removeTrackList(`album:${albumId}`);
+    await cache.removeAlbum(this.providerId, albumId);
+    await cache.removeTrackList({ provider: this.providerId, kind: 'album', id: albumId });
     const meta = await cache.getMeta('albums');
     if (meta) {
       await cache.putMeta('albums', {
@@ -193,23 +194,21 @@ export class SpotifyLibrarySyncEngine {
         totalCount: Math.max(0, (meta.totalCount ?? 1) - 1),
       });
     }
-    const albums = await cache.getAllAlbums();
+    const albums = await this.getAlbums();
     this.notifyListeners(undefined, albums, undefined);
   }
 
   /** Optimistically add an album to cache and notify listeners immediately. */
-  async optimisticAddAlbum(album: AlbumInfo): Promise<void> {
+  async optimisticAddAlbum(album: MediaCollection): Promise<void> {
     this.pendingAdditions.set(album.id, Date.now());
     this.pendingRemovals.delete(album.id);
     await cache.putAlbum(album);
     const meta = await cache.getMeta('albums');
-    const latestAddedAt = album.added_at ?? meta?.latestAddedAt;
     await cache.putMeta('albums', {
       lastValidated: meta?.lastValidated ?? Date.now(),
       totalCount: (meta?.totalCount ?? 0) + 1,
-      ...(latestAddedAt !== undefined && { latestAddedAt }),
     });
-    const albums = await cache.getAllAlbums();
+    const albums = await this.getAlbums();
     this.notifyListeners(undefined, albums, undefined);
   }
 
@@ -224,8 +223,8 @@ export class SpotifyLibrarySyncEngine {
 
   private async initialLoad(): Promise<void> {
     const [cachedPlaylists, cachedAlbums, likedMeta] = await Promise.all([
-      cache.getAllPlaylists(),
-      cache.getAllAlbums(),
+      this.getPlaylists(),
+      this.getAlbums(),
       cache.getMeta('likedSongs'),
     ]);
 
@@ -256,39 +255,34 @@ export class SpotifyLibrarySyncEngine {
     this.updateState({ isSyncing: true });
     this.abortController = new AbortController();
 
-    let allPlaylists: CachedPlaylistInfo[] = [];
-    let allAlbums: AlbumInfo[] = [];
+    let allPlaylists: MediaCollection[] = [];
+    let allAlbums: MediaCollection[] = [];
 
-    const onPlaylistsUpdate: PlaylistsUpdateCallback = (playlists, isComplete) => {
+    const onPlaylistsUpdate: CollectionsUpdateCallback = (playlists, isComplete) => {
       allPlaylists = playlists;
       this.notifyListeners(allPlaylists, allAlbums);
       if (isComplete) {
-        cache.putAllPlaylists(allPlaylists).catch(() => {});
-        const snapshotIds: Record<string, string> = {};
+        cache.replaceProviderPlaylists(this.providerId, allPlaylists).catch(() => {});
+        const revisions: Record<string, string> = {};
         for (const p of allPlaylists) {
-          if (p.snapshot_id) snapshotIds[p.id] = p.snapshot_id;
+          if (p.revision) revisions[p.id] = p.revision;
         }
         cache.putMeta('playlists', {
           lastValidated: Date.now(),
           totalCount: allPlaylists.length,
-          snapshotIds,
+          revisions,
         }).catch(() => {});
       }
     };
 
-    const onAlbumsUpdate: AlbumsUpdateCallback = (albums, isComplete) => {
+    const onAlbumsUpdate: CollectionsUpdateCallback = (albums, isComplete) => {
       allAlbums = albums;
       this.notifyListeners(allPlaylists, allAlbums);
       if (isComplete) {
-        cache.putAllAlbums(allAlbums).catch(() => {});
-        const latestAddedAt = allAlbums.reduce(
-          (latest, a) => (a.added_at && a.added_at > latest ? a.added_at : latest),
-          '',
-        );
+        cache.replaceProviderAlbums(this.providerId, allAlbums).catch(() => {});
         cache.putMeta('albums', {
           lastValidated: Date.now(),
           totalCount: allAlbums.length,
-          ...(latestAddedAt && { latestAddedAt }),
         }).catch(() => {});
       }
     };
@@ -354,8 +348,8 @@ export class SpotifyLibrarySyncEngine {
   }
 
   private notifyListeners(
-    playlists?: CachedPlaylistInfo[],
-    albums?: AlbumInfo[],
+    playlists?: MediaCollection[],
+    albums?: MediaCollection[],
     likedSongsCount?: number,
   ): void {
     if (playlists !== undefined) this.lastKnownPlaylists = playlists;

@@ -1,6 +1,5 @@
 import React, { useCallback } from 'react';
-import type { PlaylistInfo, AlbumInfo } from '@/services/spotify';
-import type { ProviderId } from '@/types/domain';
+import type { MediaCollection, ProviderId } from '@/types/domain';
 import { MAX_PINS } from '@/services/settings/pinnedItemsStorage';
 import { theme } from '@/styles/theme';
 import { providerRegistry } from '@/providers/registry';
@@ -38,8 +37,8 @@ import {
 
 
 interface PinRingProps {
-  pinnedPlaylists: PlaylistInfo[];
-  pinnedAlbums: AlbumInfo[];
+  pinnedPlaylists: MediaCollection[];
+  pinnedAlbums: MediaCollection[];
   activeProviderIds: ProviderId[];
   likedSongsCount: number;
   onLoadCollection: (id: string, name: string, provider?: ProviderId) => void;
@@ -48,20 +47,9 @@ interface PinRingProps {
   accentColor?: string | undefined;
 }
 
-function getImageUrl(
-  images: { url: string; width: number | null; height: number | null }[],
-  targetWidth = 300,
-): string | undefined {
-  if (!images?.length) return undefined;
-  const sorted = [...images].sort(
-    (a, b) => Math.abs((a.width ?? 0) - targetWidth) - Math.abs((b.width ?? 0) - targetWidth),
-  );
-  return sorted[0]?.url;
-}
-
 type GridSatelliteItem =
-  | { kind: 'playlist'; item: PlaylistInfo }
-  | { kind: 'album'; item: AlbumInfo };
+  | { kind: 'playlist'; item: MediaCollection }
+  | { kind: 'album'; item: MediaCollection };
 
 interface GridItemCardProps {
   id: string;
@@ -108,11 +96,11 @@ const PinRing: React.FC<PinRingProps> = ({
   onAddToQueue,
 }) => {
   const filteredPlaylists = activeProviderIds.length > 0
-    ? pinnedPlaylists.filter(p => !p.provider || activeProviderIds.includes(p.provider))
+    ? pinnedPlaylists.filter(p => activeProviderIds.includes(p.provider))
     : pinnedPlaylists;
 
   const filteredAlbums = activeProviderIds.length > 0
-    ? pinnedAlbums.filter(a => !a.provider || activeProviderIds.includes(a.provider))
+    ? pinnedAlbums.filter(a => activeProviderIds.includes(a.provider))
     : pinnedAlbums;
 
   // 4-col grid, Liked Songs occupies center 2×2 (cols 2-3, rows 2-3).
@@ -162,7 +150,7 @@ const PinRing: React.FC<PinRingProps> = ({
                     id={p.id}
                     name={p.name}
                     provider={p.provider}
-                    imgUrl={getImageUrl(p.images)}
+                    imgUrl={p.imageUrl}
                     mosaicAlbumPaths={p.mosaicAlbumPaths}
                     fallback="♪"
                     onPlay={onLoadCollection}
@@ -177,7 +165,7 @@ const PinRing: React.FC<PinRingProps> = ({
                   id={`album:${a.id}`}
                   name={a.name}
                   provider={a.provider}
-                  imgUrl={getImageUrl(a.images)}
+                  imgUrl={a.imageUrl}
                   fallback="💿"
                   onPlay={onLoadCollection}
                   onAddToQueue={onAddToQueue}

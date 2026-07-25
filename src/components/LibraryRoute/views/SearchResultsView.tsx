@@ -83,7 +83,7 @@ const SearchResultsView: React.FC<SearchResultsViewProps> = ({
       showAlbums
         ? sortItems(
             albums
-              .filter((a) => matchesQuery({ name: a.name, ownerName: a.artists }, q))
+              .filter((a) => matchesQuery({ name: a.name, ownerName: a.ownerName }, q))
               .filter((a) => passesProviderFilter({ provider: a.provider }, search.providerFilter)),
             search.sort,
           )
@@ -150,12 +150,12 @@ const SearchResultsView: React.FC<SearchResultsViewProps> = ({
         <Section title="Playlists" id="search-playlists" layout="grid">
           {playlistsFiltered.map((p) => (
             <LibraryCard
-              key={`${p.provider ?? 'spotify'}-${p.id}`}
+              key={`${p.provider}-${p.id}`}
               kind="playlist"
               id={p.id}
               provider={p.provider}
               name={p.name}
-              imageUrl={p.images?.[0]?.url}
+              imageUrl={p.imageUrl}
               showProviderBadge={showProviderBadges}
               variant="grid"
               onSelect={() => onSelectCollection('playlist', p.id, p.name, p.provider)}
@@ -168,13 +168,13 @@ const SearchResultsView: React.FC<SearchResultsViewProps> = ({
         <Section title="Albums" id="search-albums" layout="grid">
           {albumsFiltered.map((a) => (
             <LibraryCard
-              key={`${a.provider ?? 'spotify'}-${a.id}`}
+              key={`${a.provider}-${a.id}`}
               kind="album"
               id={a.id}
               provider={a.provider}
               name={a.name}
-              subtitle={a.artists}
-              imageUrl={a.images?.[0]?.url}
+              subtitle={a.ownerName}
+              imageUrl={a.imageUrl}
               showProviderBadge={showProviderBadges}
               variant="grid"
               onSelect={() => onSelectCollection('album', a.id, a.name, a.provider)}
