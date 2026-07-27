@@ -1,12 +1,12 @@
 import { useMemo } from 'react';
 import { useLibrarySync } from '@/hooks/useLibrarySync';
 import { usePinnedItems } from '@/hooks/usePinnedItems';
-import type { AlbumInfo } from '@/services/spotify';
+import type { MediaCollection } from '@/types/domain';
 import type { SectionState, UseCollectionSectionParams } from '../types';
 
 export function useAlbumsSection(
   { providerFilter, excludePinned = true }: UseCollectionSectionParams = {},
-): SectionState<AlbumInfo> {
+): SectionState<MediaCollection> {
   const { albums, isInitialLoadComplete } = useLibrarySync();
   const { pinnedAlbumIds } = usePinnedItems();
 
@@ -14,7 +14,7 @@ export function useAlbumsSection(
     let result = albums;
     if (providerFilter && providerFilter.length > 0) {
       const allowed = new Set(providerFilter);
-      result = result.filter((a) => allowed.has(a.provider ?? 'spotify'));
+      result = result.filter((a) => allowed.has(a.provider));
     }
     if (excludePinned) {
       const pinnedSet = new Set(pinnedAlbumIds);

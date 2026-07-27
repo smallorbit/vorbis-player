@@ -8,7 +8,6 @@ import type { ProviderId, MediaTrack, PlaybackState, CollectionRef } from '@/typ
 import { spotifyPlayer, waitForSpotifyReady } from '@/services/spotifyPlayer';
 import { spotifyAuth } from '@/services/spotify';
 import { spotifyApiRequest, SpotifyApiError } from '@/services/spotify/api';
-import { isAlbumId, extractAlbumId } from '@/constants/playlist';
 import { SPOTIFY_MAX_RETRIES, SPOTIFY_BASE_BACKOFF_MS } from '@/constants/spotify';
 import { SPOTIFY_DEVICE_ACTIVATE_RETRIES, SPOTIFY_DEVICE_ACTIVATE_DELAY_MS } from '@/constants/timing';
 import { SESSION_EXPIRED_EVENT } from '@/constants/events';
@@ -195,11 +194,8 @@ export class SpotifyPlaybackAdapter implements PlaybackProvider {
         options?.offset,
       );
     } else if (collectionRef.kind === 'album') {
-      const albumId = isAlbumId(collectionRef.id)
-        ? extractAlbumId(collectionRef.id)
-        : collectionRef.id;
       await spotifyPlayer.playContext(
-        `spotify:album:${albumId}`,
+        `spotify:album:${collectionRef.id}`,
         options?.offset,
       );
     }
@@ -223,14 +219,6 @@ export class SpotifyPlaybackAdapter implements PlaybackProvider {
       token,
       { method: 'PUT' },
     );
-  }
-
-  async next(): Promise<void> {
-    await spotifyPlayer.nextTrack();
-  }
-
-  async previous(): Promise<void> {
-    await spotifyPlayer.previousTrack();
   }
 
   async setVolume(volume0to1: number): Promise<void> {

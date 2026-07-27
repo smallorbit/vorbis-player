@@ -1,7 +1,6 @@
 import { memo, Fragment, useState, useCallback, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import type { ArtistInfo } from '../../services/spotify';
-import type { ProviderId } from '@/types/domain';
+import type { ArtistRef, ProviderId } from '@/types/domain';
 import { useProviderContext } from '../../contexts/ProviderContext';
 import { spotifyLibrarySyncEngine } from '../../services/cache/librarySyncEngine';
 import { PlayerTrackName, PlayerTrackAlbum, AlbumLink, PlayerTrackArtist, TrackInfoOnlyRow, ArtistLink } from './styled';
@@ -13,7 +12,7 @@ interface TrackInfoProps {
         name?: string;
         provider?: ProviderId;
         artists?: string;
-        artistsData?: ArtistInfo[];
+        artistsData?: ArtistRef[];
         album?: string;
         albumId?: string;
         image?: string;
@@ -77,7 +76,7 @@ const TrackInfo = memo<TrackInfoProps>(({ track, isMobile, isTablet, onArtistBro
 
     const closePopover = useCallback(() => setPopover(null), []);
 
-    const handleArtistClick = useCallback((e: React.MouseEvent, artist: ArtistInfo) => {
+    const handleArtistClick = useCallback((e: React.MouseEvent, artist: ArtistRef) => {
         e.preventDefault();
         e.stopPropagation();
         const target = e.currentTarget as HTMLElement;
@@ -236,13 +235,12 @@ const TrackInfo = memo<TrackInfoProps>(({ track, isMobile, isTablet, onArtistBro
                         } else {
                             spotifyLibrarySyncEngine.optimisticAddAlbum({
                                 id: popover.albumId,
+                                provider: 'spotify',
+                                kind: 'album',
                                 name: popover.albumName,
-                                artists: popover.artistName,
-                                images: popover.trackImage ? [{ url: popover.trackImage, height: null, width: null }] : [],
-                                release_date: '',
-                                total_tracks: 0,
-                                uri: `spotify:album:${popover.albumId}`,
-                                added_at: new Date().toISOString(),
+                                ownerName: popover.artistName,
+                                genres: [],
+                                ...(popover.trackImage && { imageUrl: popover.trackImage }),
                             }).catch(() => {});
                         }
                     }).catch(() => {});

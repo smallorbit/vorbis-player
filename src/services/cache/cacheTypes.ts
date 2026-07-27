@@ -1,21 +1,21 @@
 /**
- * Shared TypeScript types for the Spotify library cache system.
+ * Shared TypeScript types for the library cache system.
+ *
+ * The cache stores only neutral domain shapes (`MediaCollection` /
+ * `MediaTrack`), keyed by `(provider, id)` — provider wire shapes never
+ * cross this boundary.
  */
 
-import type { PlaylistInfo, AlbumInfo, Track } from '../spotify';
-
-/** Extends PlaylistInfo with Spotify's snapshot_id for change detection */
-export interface CachedPlaylistInfo extends PlaylistInfo {
-  snapshot_id?: string;
-}
+import type { MediaCollection, MediaTrack } from '@/types/domain';
 
 /** A cached track list entry stored in IndexedDB */
 export interface CachedTrackList {
-  id: string; // "playlist:{playlistId}" or "album:{albumId}"
-  tracks: Track[];
+  /** Collection-ref key (`collectionRefToKey`), e.g. "spotify:album:xxx" or "dropbox:liked:". */
+  key: string;
+  tracks: MediaTrack[];
   timestamp: number;
-  /** snapshot_id for playlists — used to detect when tracks need re-fetch */
-  snapshotId?: string;
+  /** Collection revision (e.g. Spotify snapshot_id) — used to detect when tracks need re-fetch */
+  revision?: string;
 }
 
 /** Metadata stored alongside each cached collection for change detection */
@@ -25,10 +25,8 @@ export interface LibraryCacheMeta {
   lastValidated: number;
   /** Total count from the API (used for quick change detection) */
   totalCount: number;
-  /** For playlists: map of playlistId -> snapshot_id */
-  snapshotIds?: Record<string, string>;
-  /** For albums: most recent added_at timestamp */
-  latestAddedAt?: string;
+  /** For playlists: map of playlistId -> revision */
+  revisions?: Record<string, string>;
 }
 
 /** Result of the lightweight change detection phase */
@@ -36,7 +34,7 @@ export interface LibraryChanges {
   playlistsChanged: boolean;
   albumsChanged: boolean;
   likedSongsChanged: boolean;
-  /** Specific playlist IDs whose snapshot_id changed (need track list re-fetch) */
+  /** Specific playlist IDs whose revision changed (need track list re-fetch) */
   changedPlaylistIds: string[];
   /** New counts from the API */
   newPlaylistCount: number;
@@ -52,6 +50,5 @@ export interface SyncState {
   error: string | null;
 }
 
-/** Callback types for progressive loading during cold start */
-export type PlaylistsUpdateCallback = (playlists: CachedPlaylistInfo[], isComplete: boolean) => void;
-export type AlbumsUpdateCallback = (albums: AlbumInfo[], isComplete: boolean) => void;
+/** Callback type for progressive loading during cold start */
+export type CollectionsUpdateCallback = (collections: MediaCollection[], isComplete: boolean) => void;

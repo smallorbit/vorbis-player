@@ -7,46 +7,47 @@ import {
   initCache,
   closeCache,
   clearAll,
-  putAllPlaylists,
-  putAllAlbums,
+  replaceProviderPlaylists,
+  replaceProviderAlbums,
   putTrackList,
 } from '@/services/cache/libraryCache';
-import type { CachedPlaylistInfo } from '@/services/cache/cacheTypes';
-import type { AlbumInfo, Track, SpotifyImage } from '@/services/spotify';
+import type { MediaCollection, MediaTrack } from '@/types/domain';
 
-function makePlaylist(id: string, name: string): CachedPlaylistInfo {
-  return {
-    id,
-    name,
-    description: null,
-    images: [] as SpotifyImage[],
-    tracks: { total: 10 },
-    owner: { display_name: 'TestUser' },
-  };
-}
-
-function makeAlbum(id: string, name: string, artists = 'Test Artist'): AlbumInfo {
-  return {
-    id,
-    name,
-    artists,
-    images: [] as SpotifyImage[],
-    release_date: '2024-01-01',
-    total_tracks: 12,
-    uri: `spotify:album:${id}`,
-    added_at: '2024-06-15T00:00:00Z',
-  };
-}
-
-function makeTrack(id: string, name: string, artists = 'Artist'): Track {
+function makePlaylist(id: string, name: string): MediaCollection {
   return {
     id,
     provider: 'spotify',
+    kind: 'playlist',
+    name,
+    trackCount: 10,
+    ownerName: 'TestUser',
+    genres: [],
+  };
+}
+
+function makeAlbum(id: string, name: string, ownerName = 'Test Artist'): MediaCollection {
+  return {
+    id,
+    provider: 'spotify',
+    kind: 'album',
+    name,
+    ownerName,
+    trackCount: 12,
+    releaseDate: '2024-01-01',
+    genres: [],
+  };
+}
+
+function makeTrack(id: string, name: string, artists = 'Artist'): MediaTrack {
+  return {
+    id,
+    provider: 'spotify',
+    playbackRef: { provider: 'spotify', ref: `spotify:track:${id}` },
     name,
     artists,
     album: 'Album',
-    duration_ms: 200_000,
-    uri: `spotify:track:${id}`,
+    durationMs: 200_000,
+    genres: [],
   };
 }
 
@@ -79,7 +80,7 @@ describe('useLibrarySearch', () => {
 
   it('does not query the cache before the debounce window elapses', async () => {
     // #given
-    await putAllPlaylists([makePlaylist('p1', 'Rock Mix')]);
+    await replaceProviderPlaylists('spotify', [makePlaylist('p1', 'Rock Mix')]);
 
     const { result } = renderHook(() => useLibrarySearch('rock', { debounceMs: 150 }));
 
@@ -96,7 +97,7 @@ describe('useLibrarySearch', () => {
 
   it('clears results immediately when the query is reset to empty', async () => {
     // #given
-    await putAllPlaylists([makePlaylist('p1', 'Rock Mix')]);
+    await replaceProviderPlaylists('spotify', [makePlaylist('p1', 'Rock Mix')]);
 
     const { result, rerender } = renderHook(
       ({ q }: { q: string }) => useLibrarySearch(q, { debounceMs: 50 }),
@@ -117,12 +118,15 @@ describe('useLibrarySearch', () => {
 
   it('discards stale responses from superseded queries', async () => {
     // #given
-    await putAllPlaylists([
+    await replaceProviderPlaylists('spotify', [
       makePlaylist('p1', 'Rock Mix'),
       makePlaylist('p2', 'Jazz Hour'),
     ]);
-    await putAllAlbums([makeAlbum('a1', 'Funeral', 'Arcade Fire')]);
-    await putTrackList('liked-songs', [makeTrack('t1', 'Wake Up', 'Arcade Fire')]);
+    await replaceProviderAlbums('spotify', [makeAlbum('a1', 'Funeral', 'Arcade Fire')]);
+    await putTrackList(
+      { provider: 'spotify', kind: 'liked' },
+      [makeTrack('t1', 'Wake Up', 'Arcade Fire')],
+    );
 
     const { result, rerender } = renderHook(
       ({ q }: { q: string }) => useLibrarySearch(q, { debounceMs: 50 }),
@@ -141,7 +145,7 @@ describe('useLibrarySearch', () => {
 
   it('respects a custom debounce window using fake timers', async () => {
     // #given
-    await putAllPlaylists([makePlaylist('p1', 'Rock Mix')]);
+    await replaceProviderPlaylists('spotify', [makePlaylist('p1', 'Rock Mix')]);
 
     vi.useFakeTimers({ shouldAdvanceTime: true });
     try {

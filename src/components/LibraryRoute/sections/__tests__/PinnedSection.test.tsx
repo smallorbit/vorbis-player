@@ -69,6 +69,38 @@ const baseProps = {
   onSeeAll: vi.fn(),
 };
 
+const makePinnedPlaylist = (id: string, name: string, provider?: 'spotify' | 'dropbox') => ({
+  kind: 'playlist' as const,
+  id,
+  name,
+  ...(provider !== undefined && { provider }),
+  selection: {
+    type: 'collection' as const,
+    ref: { provider: provider ?? 'spotify', kind: 'playlist' as const, id },
+    name,
+  },
+});
+
+const makePinnedAlbum = (id: string, name: string, provider: 'spotify' | 'dropbox') => ({
+  kind: 'album' as const,
+  id,
+  name,
+  provider,
+  selection: {
+    type: 'collection' as const,
+    ref: { provider, kind: 'album' as const, id },
+    name,
+  },
+});
+
+const makePinnedLiked = (id: string, subtitle: string) => ({
+  kind: 'liked' as const,
+  id,
+  name: 'Liked Songs',
+  subtitle,
+  selection: { type: 'liked' as const, name: 'Liked Songs' },
+});
+
 describe('PinnedSection', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -112,8 +144,8 @@ describe('PinnedSection', () => {
     // #given
     mockUsePinnedSection.mockReturnValue({
       combined: [
-        { kind: 'playlist', id: 'p1', name: 'Alpha', provider: 'spotify' },
-        { kind: 'album', id: 'a1', name: 'Beta', provider: 'spotify' },
+        makePinnedPlaylist('p1', 'Alpha', 'spotify'),
+        makePinnedAlbum('a1', 'Beta', 'spotify'),
       ],
       pinnedPlaylists: [],
       pinnedAlbums: [],
@@ -132,11 +164,7 @@ describe('PinnedSection', () => {
   it('shows See all when layout is row and items exceed 6', () => {
     // #given
     mockUsePinnedSection.mockReturnValue({
-      combined: Array.from({ length: 7 }, (_, i) => ({
-        kind: 'playlist' as const,
-        id: `p${i}`,
-        name: `Playlist ${i}`,
-      })),
+      combined: Array.from({ length: 7 }, (_, i) => makePinnedPlaylist(`p${i}`, `Playlist ${i}`)),
       pinnedPlaylists: [],
       pinnedAlbums: [],
       isLoading: false,
@@ -153,11 +181,7 @@ describe('PinnedSection', () => {
   it('does not show See all when layout is row and items are at or below 6', () => {
     // #given
     mockUsePinnedSection.mockReturnValue({
-      combined: Array.from({ length: 6 }, (_, i) => ({
-        kind: 'playlist' as const,
-        id: `p${i}`,
-        name: `Playlist ${i}`,
-      })),
+      combined: Array.from({ length: 6 }, (_, i) => makePinnedPlaylist(`p${i}`, `Playlist ${i}`)),
       pinnedPlaylists: [],
       pinnedAlbums: [],
       isLoading: false,
@@ -174,11 +198,7 @@ describe('PinnedSection', () => {
   it('does not show See all when layout is grid even with many items', () => {
     // #given
     mockUsePinnedSection.mockReturnValue({
-      combined: Array.from({ length: 10 }, (_, i) => ({
-        kind: 'playlist' as const,
-        id: `p${i}`,
-        name: `Playlist ${i}`,
-      })),
+      combined: Array.from({ length: 10 }, (_, i) => makePinnedPlaylist(`p${i}`, `Playlist ${i}`)),
       pinnedPlaylists: [],
       pinnedAlbums: [],
       isLoading: false,
@@ -192,11 +212,11 @@ describe('PinnedSection', () => {
     expect(screen.queryByRole('button', { name: 'See all' })).not.toBeInTheDocument();
   });
 
-  it('calls onSelect with kind, id, name, provider when a card is clicked', () => {
+  it('calls onSelect with the item selection when a card is clicked', () => {
     // #given
     const onSelect = vi.fn();
     mockUsePinnedSection.mockReturnValue({
-      combined: [{ kind: 'album', id: 'a1', name: 'Dark Side', provider: 'spotify' as const }],
+      combined: [makePinnedAlbum('a1', 'Dark Side', 'spotify')],
       pinnedPlaylists: [],
       pinnedAlbums: [],
       isLoading: false,
@@ -208,13 +228,17 @@ describe('PinnedSection', () => {
     fireEvent.click(screen.getByTestId('library-card-album-a1'));
 
     // #then
-    expect(onSelect).toHaveBeenCalledWith('album', 'a1', 'Dark Side', 'spotify');
+    expect(onSelect).toHaveBeenCalledWith({
+      type: 'collection',
+      ref: { provider: 'spotify', kind: 'album', id: 'a1' },
+      name: 'Dark Side',
+    });
   });
 
   it('renders a kind:liked card from combined', () => {
     // #given
     mockUsePinnedSection.mockReturnValue({
-      combined: [{ kind: 'liked', id: 'liked-songs', name: 'Liked Songs', subtitle: '42 songs' }],
+      combined: [makePinnedLiked('liked-songs', '42 songs')],
       pinnedPlaylists: [],
       pinnedAlbums: [],
       isLoading: false,
@@ -230,11 +254,11 @@ describe('PinnedSection', () => {
     expect(card).toHaveAttribute('data-subtitle', '42 songs');
   });
 
-  it('calls onSelect with liked kind and id when a liked card is clicked', () => {
+  it('calls onSelect with the liked selection when a liked card is clicked', () => {
     // #given
     const onSelect = vi.fn();
     mockUsePinnedSection.mockReturnValue({
-      combined: [{ kind: 'liked', id: 'liked-songs', name: 'Liked Songs', subtitle: '5 songs' }],
+      combined: [makePinnedLiked('liked-songs', '5 songs')],
       pinnedPlaylists: [],
       pinnedAlbums: [],
       isLoading: false,
@@ -246,6 +270,6 @@ describe('PinnedSection', () => {
     fireEvent.click(screen.getByTestId('library-card-liked-liked-songs'));
 
     // #then
-    expect(onSelect).toHaveBeenCalledWith('liked', 'liked-songs', 'Liked Songs', undefined);
+    expect(onSelect).toHaveBeenCalledWith({ type: 'liked', name: 'Liked Songs' });
   });
 });

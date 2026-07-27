@@ -5,7 +5,7 @@ import { useCurrentTrackContext } from '@/contexts/TrackContext';
 import { useVisualEffectsToggle, useZenMode } from '@/contexts/visualEffects';
 import { useLikeTrack } from '@/hooks/useLikeTrack';
 import { ZEN_ART_DURATION, ZEN_ART_ENTER_DELAY } from '@/constants/zenAnimation';
-import type { AddToQueueResult, MediaTrack, ProviderId } from '@/types/domain';
+import type { AddToQueueResult, CollectionSelection, MediaTrack, ProviderId } from '@/types/domain';
 import type { AlbumArtBounds } from '@/types/visualizer';
 import type { RadioState, RadioProgress } from '@/types/radio';
 import { ContentWrapper, PlayerContainer, PlayerStack } from './styled';
@@ -23,13 +23,9 @@ export interface PlaybackHandlers {
   onOpenLibraryWithQuery?: (query: string) => void;
   onCloseLibrary: () => void;
   onOpenQuickAccessPanel?: () => void;
-  onPlaylistSelect: (playlistId: string, playlistName: string, provider?: ProviderId) => void;
-  onAddToQueue?: (
-    playlistId: string,
-    playlistName?: string,
-    provider?: ProviderId,
-  ) => Promise<AddToQueueResult | null>;
-  onPlayLikedTracks?: (tracks: MediaTrack[], collectionId: string, collectionName: string, provider?: ProviderId) => Promise<void>;
+  onSelectCollection: (selection: CollectionSelection) => void;
+  onAddToQueue?: (selection: CollectionSelection) => Promise<AddToQueueResult | null>;
+  onPlayLikedTracks?: (tracks: MediaTrack[], selection: CollectionSelection) => Promise<void>;
   onQueueLikedTracks?: (tracks: MediaTrack[], collectionName?: string) => void;
   onAlbumPlay: (albumId: string, albumName: string) => void;
   onBackToLibrary: () => void;
@@ -67,7 +63,7 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({
 }) => {
   const { currentTrack, showQueue, setShowQueue } = useCurrentTrackContext();
   const { zenModeEnabled, setZenModeEnabled } = useZenMode();
-  const { setShowVisualEffects } = useVisualEffectsToggle();
+  const { setIsSettingsOpen } = useVisualEffectsToggle();
   const { dimensions, useFluidSizing, padding, transitionDuration, transitionEasing, isMobile, isTablet, hasPointerInput, isTouchDevice } = usePlayerSizingContext();
   const { isLiked, isLikePending, handleLikeToggle, canSaveTrack } = useLikeTrack(currentTrack?.id, currentTrack?.provider);
 
@@ -116,23 +112,23 @@ const PlayerContent: React.FC<PlayerContentProps> = React.memo(({
 
   const handleShowQueue = useCallback(() => {
     handlers.onCloseLibrary();
-    setShowVisualEffects(false);
+    setIsSettingsOpen(false);
     setShowQueue(prev => !prev);
-  }, [setShowQueue, handlers, setShowVisualEffects]);
+  }, [setShowQueue, handlers, setIsSettingsOpen]);
 
   const handleCloseQueue = useCallback(() => setShowQueue(false), [setShowQueue]);
 
   const handleOpenQueueFromToast = useCallback(() => {
     handlers.onCloseLibrary();
-    setShowVisualEffects(false);
+    setIsSettingsOpen(false);
     setShowQueue(true);
-  }, [handlers, setShowVisualEffects, setShowQueue]);
+  }, [handlers, setIsSettingsOpen, setShowQueue]);
 
   const handleOpenLibrary = useCallback(() => {
     setShowQueue(false);
-    setShowVisualEffects(false);
+    setIsSettingsOpen(false);
     handlers.onOpenLibrary();
-  }, [handlers, setShowQueue, setShowVisualEffects]);
+  }, [handlers, setShowQueue, setIsSettingsOpen]);
 
   const handleArtistBrowse = useCallback((artistName: string) => {
     if (handlers.onOpenLibraryWithQuery) {

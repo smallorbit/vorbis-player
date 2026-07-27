@@ -2,16 +2,14 @@ import 'fake-indexeddb/auto';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { SpotifyLibrarySyncEngine } from '../librarySyncEngine';
 import * as cache from '../libraryCache';
-import type { CachedPlaylistInfo, SyncState } from '../cacheTypes';
-import type { AlbumInfo, SpotifyImage } from '../../spotify';
+import type { SyncState } from '../cacheTypes';
+import type { MediaCollection, MediaTrack } from '@/types/domain';
 
 // Mock the spotify module
 vi.mock('../../spotify', () => ({
   getPlaylistCount: vi.fn(),
   getAlbumCount: vi.fn(),
   getLikedSongsCount: vi.fn(),
-  getPlaylistsPage: vi.fn(),
-  getAlbumsPage: vi.fn(),
   getAllUserPlaylists: vi.fn(),
   getAllUserAlbums: vi.fn(),
   getUserLibraryInterleaved: vi.fn(),
@@ -40,47 +38,60 @@ const mockGetAllUserAlbums = vi.mocked(getAllUserAlbums);
 const mockGetUserLibraryInterleaved = vi.mocked(getUserLibraryInterleaved);
 const mockInvalidateLikedSongsCaches = vi.mocked(invalidateLikedSongsCaches);
 
-function makePlaylist(id: string, name?: string, snapshotId?: string): CachedPlaylistInfo {
+function makePlaylist(id: string, name?: string, revision?: string): MediaCollection {
   return {
     id,
+    provider: 'spotify',
+    kind: 'playlist',
     name: name ?? `Playlist ${id}`,
-    description: null,
-    images: [] as SpotifyImage[],
-    tracks: { total: 10 },
-    owner: { display_name: 'TestUser' },
-    snapshot_id: snapshotId,
-    added_at: '2024-01-01T00:00:00Z',
+    trackCount: 10,
+    ownerName: 'TestUser',
+    genres: [],
+    ...(revision !== undefined && { revision }),
   };
 }
 
-function makeAlbum(id: string, name?: string): AlbumInfo {
+function makeAlbum(id: string, name?: string): MediaCollection {
   return {
     id,
+    provider: 'spotify',
+    kind: 'album',
     name: name ?? `Album ${id}`,
+    ownerName: 'Test Artist',
+    trackCount: 12,
+    releaseDate: '2024-01-01',
+    genres: [],
+  };
+}
+
+function makeTrack(id: string, name?: string): MediaTrack {
+  return {
+    id,
+    provider: 'spotify',
+    playbackRef: { provider: 'spotify', ref: `spotify:track:${id}` },
+    name: name ?? `Track ${id}`,
     artists: 'Test Artist',
-    images: [] as SpotifyImage[],
-    release_date: '2024-01-01',
-    total_tracks: 12,
-    uri: `spotify:album:${id}`,
-    added_at: '2024-06-15T00:00:00Z',
+    album: 'Test Album',
+    durationMs: 200000,
+    genres: [],
   };
 }
 
 /** Helper to set up cache with metadata so syncNow() works */
 async function seedCacheMeta(opts: {
-  playlists?: CachedPlaylistInfo[];
-  albums?: AlbumInfo[];
+  playlists?: MediaCollection[];
+  albums?: MediaCollection[];
   playlistCount?: number;
   albumCount?: number;
   likedCount?: number;
-  snapshotIds?: Record<string, string>;
+  revisions?: Record<string, string>;
 }): Promise<void> {
-  if (opts.playlists) await cache.putAllPlaylists(opts.playlists);
-  if (opts.albums) await cache.putAllAlbums(opts.albums);
+  if (opts.playlists) await cache.replaceProviderPlaylists('spotify', opts.playlists);
+  if (opts.albums) await cache.replaceProviderAlbums('spotify', opts.albums);
   await cache.putMeta('playlists', {
     lastValidated: Date.now(),
     totalCount: opts.playlistCount ?? opts.playlists?.length ?? 0,
-    snapshotIds: opts.snapshotIds,
+    ...(opts.revisions !== undefined && { revisions: opts.revisions }),
   });
   await cache.putMeta('albums', {
     lastValidated: Date.now(),
@@ -113,7 +124,7 @@ describe('SpotifyLibrarySyncEngine', () => {
         playlists: [makePlaylist('p1', 'Cached Playlist', 'snap1')],
         albums: [makeAlbum('a1', 'Cached Album')],
         likedCount: 5,
-        snapshotIds: { p1: 'snap1' },
+        revisions: { p1: 'snap1' },
       });
 
       // Counts match — no changes
@@ -121,8 +132,8 @@ describe('SpotifyLibrarySyncEngine', () => {
       mockGetAlbumCount.mockResolvedValue(1);
       mockGetLikedSongsCount.mockResolvedValue(5);
 
-      let emittedPlaylists: CachedPlaylistInfo[] | undefined;
-      let emittedAlbums: AlbumInfo[] | undefined;
+      let emittedPlaylists: MediaCollection[] | undefined;
+      let emittedAlbums: MediaCollection[] | undefined;
 
       engine.subscribe((_state, playlists, albums) => {
         if (playlists) emittedPlaylists = playlists;
@@ -150,7 +161,7 @@ describe('SpotifyLibrarySyncEngine', () => {
       mockGetLikedSongsCount.mockResolvedValue(3);
 
       let latestState: SyncState | null = null;
-      let emittedPlaylists: CachedPlaylistInfo[] | undefined;
+      let emittedPlaylists: MediaCollection[] | undefined;
 
       engine.subscribe((state, pl) => {
         latestState = state;
@@ -197,6 +208,12 @@ describe('SpotifyLibrarySyncEngine', () => {
       await engine.start();
       engine.stop();
 
+      // The cold-start cache write is fire-and-forget; wait for it to land so
+      // clearAll below can't race against it
+      await vi.waitFor(async () => {
+        expect(await cache.getAllPlaylists()).toHaveLength(1);
+      });
+
       // Clear the cache so the second start() also takes the cold path
       await cache.clearAll();
 
@@ -215,7 +232,7 @@ describe('SpotifyLibrarySyncEngine', () => {
         playlists: [makePlaylist('p1', 'Existing', 'snap1')],
         albums: [makeAlbum('a1')],
         likedCount: 5,
-        snapshotIds: { p1: 'snap1' },
+        revisions: { p1: 'snap1' },
       });
 
       mockGetPlaylistCount.mockResolvedValue(1);
@@ -243,7 +260,7 @@ describe('SpotifyLibrarySyncEngine', () => {
       // #given
       await seedCacheMeta({
         playlists: [makePlaylist('p1', 'Existing', 'snap1')],
-        snapshotIds: { p1: 'snap1' },
+        revisions: { p1: 'snap1' },
       });
 
       mockGetPlaylistCount.mockResolvedValue(1);
@@ -276,7 +293,7 @@ describe('SpotifyLibrarySyncEngine', () => {
       // #given
       await seedCacheMeta({
         playlists: [makePlaylist('p1')],
-        snapshotIds: {},
+        revisions: {},
         likedCount: 5,
       });
 
@@ -308,7 +325,7 @@ describe('SpotifyLibrarySyncEngine', () => {
       await seedCacheMeta({
         playlists: [makePlaylist('p1', 'Keep', 'snap1'), makePlaylist('p2', 'Remove', 'snap2')],
         playlistCount: 2,
-        snapshotIds: { p1: 'snap1', p2: 'snap2' },
+        revisions: { p1: 'snap1', p2: 'snap2' },
       });
 
       mockGetPlaylistCount.mockResolvedValue(2);
@@ -335,14 +352,13 @@ describe('SpotifyLibrarySyncEngine', () => {
       expect(playlists[0].id).toBe('p1');
     });
 
-    it('should invalidate track list when snapshot_id changes', async () => {
+    it('should invalidate track list when revision changes', async () => {
       // #given
-      await cache.putTrackList('playlist:p1', [
-        { id: 't1', name: 'Old', artists: 'A', album: 'B', duration_ms: 100, uri: 'u' },
-      ], 'snap-old');
+      const p1Ref = { provider: 'spotify', kind: 'playlist', id: 'p1' } as const;
+      await cache.putTrackList(p1Ref, [makeTrack('t1', 'Old')], 'snap-old');
       await seedCacheMeta({
         playlists: [makePlaylist('p1', 'Modified', 'snap-old')],
-        snapshotIds: { p1: 'snap-old' },
+        revisions: { p1: 'snap-old' },
       });
 
       mockGetPlaylistCount.mockResolvedValue(1);
@@ -365,7 +381,7 @@ describe('SpotifyLibrarySyncEngine', () => {
       await engine.syncNow();
 
       // #then
-      const trackList = await cache.getTrackList('playlist:p1');
+      const trackList = await cache.getTrackList(p1Ref);
       expect(trackList).toBeUndefined();
     });
   });
@@ -406,7 +422,7 @@ describe('SpotifyLibrarySyncEngine', () => {
       // #given
       await seedCacheMeta({
         playlists: [makePlaylist('p1')],
-        snapshotIds: {},
+        revisions: {},
       });
 
       mockGetPlaylistCount.mockResolvedValue(1);
@@ -473,7 +489,7 @@ describe('SpotifyLibrarySyncEngine', () => {
         albumCount: 2,
       });
 
-      let notifiedAlbums: AlbumInfo[] | undefined;
+      let notifiedAlbums: MediaCollection[] | undefined;
       engine.subscribe((_state, _playlists, albums) => {
         if (albums) notifiedAlbums = albums;
       });
@@ -500,6 +516,32 @@ describe('SpotifyLibrarySyncEngine', () => {
       // #then — totalCount must not underflow below zero
       const meta = await cache.getMeta('albums');
       expect(meta!.totalCount).toBe(0);
+    });
+  });
+
+  describe('optimisticAddAlbum', () => {
+    it('should insert the album into cache and notify subscribers', async () => {
+      // #given
+      await seedCacheMeta({
+        albums: [makeAlbum('a1', 'Existing')],
+        albumCount: 1,
+      });
+
+      let notifiedAlbums: MediaCollection[] | undefined;
+      engine.subscribe((_state, _playlists, albums) => {
+        if (albums) notifiedAlbums = albums;
+      });
+
+      // #when
+      await engine.optimisticAddAlbum(makeAlbum('a2', 'Added'));
+
+      // #then — cache has the new album and subscribers saw it
+      const albums = await cache.getAllAlbums();
+      expect(albums.map((a) => a.id).sort()).toEqual(['a1', 'a2']);
+      expect(notifiedAlbums!.some((a) => a.name === 'Added')).toBe(true);
+
+      const meta = await cache.getMeta('albums');
+      expect(meta!.totalCount).toBe(2);
     });
   });
 });

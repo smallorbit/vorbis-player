@@ -1,13 +1,12 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { usePlayerSizingContext } from '@/contexts/PlayerSizingContext';
-import type { ProviderId, AddToQueueResult, MediaTrack } from '@/types/domain';
+import type { AddToQueueResult, CollectionRef, CollectionSelection, MediaTrack } from '@/types/domain';
 import type { SessionSnapshot } from '@/services/sessionPersistence';
-import { toAlbumPlaylistId, LIKED_SONGS_ID } from '@/constants/playlist';
 import { LibraryRouteRoot, MobileLayout, DesktopLayout } from './styled';
 import HomeView from './views/HomeView';
 import SeeAllView from './views/SeeAllView';
 import SearchResultsView from './views/SearchResultsView';
-import type { ContextMenuRequest, LibraryItemKind, LibraryRouteView } from './types';
+import type { ContextMenuRequest, LibraryRouteView } from './types';
 import MiniPlayer from './MiniPlayer/MiniPlayer';
 import SearchBar from './search/SearchBar';
 import { useLibrarySearch } from './search/useLibrarySearch';
@@ -15,28 +14,17 @@ import LibraryContextMenu from './contextMenu/LibraryContextMenu';
 import { LibraryContextMenuOpenContext } from './contextMenu/LibraryContextMenuOpenContext';
 
 interface LibraryRouteProps {
-  onPlaylistSelect: (playlistId: string, playlistName: string, provider?: ProviderId) => void;
-  onAddToQueue: (id: string, name?: string, provider?: ProviderId) => Promise<AddToQueueResult | null>;
+  onSelectCollection: (selection: CollectionSelection) => void;
+  onAddToQueue: (selection: CollectionSelection) => Promise<AddToQueueResult | null>;
   onPlayLikedTracks?: ((
     tracks: MediaTrack[],
-    collectionId: string,
-    collectionName: string,
-    provider?: ProviderId,
+    selection: CollectionSelection,
   ) => Promise<void>) | undefined;
   onQueueLikedTracks?: ((tracks: MediaTrack[], collectionName?: string) => void) | undefined;
   onResume?: (() => void) | undefined;
   lastSession?: SessionSnapshot | null | undefined;
-  onPlayNext?: ((
-    kind: 'playlist' | 'album',
-    id: string,
-    name: string,
-    provider?: ProviderId,
-  ) => void) | undefined;
-  onStartRadioForCollection?: ((
-    kind: 'playlist' | 'album',
-    id: string,
-    provider?: ProviderId,
-  ) => void) | undefined;
+  onPlayNext?: ((selection: CollectionSelection) => void) | undefined;
+  onStartRadioForCollection?: ((ref: CollectionRef) => void) | undefined;
   initialSearchQuery?: string | undefined;
   isPlaying: boolean;
   isRadioAvailable?: boolean | undefined;
@@ -51,7 +39,7 @@ interface LibraryRouteProps {
 }
 
 const LibraryRoute: React.FC<LibraryRouteProps> = ({
-  onPlaylistSelect,
+  onSelectCollection,
   onPlayLikedTracks,
   onQueueLikedTracks,
   onResume,
@@ -94,19 +82,11 @@ const LibraryRoute: React.FC<LibraryRouteProps> = ({
   }, [onClose]);
 
   const handleSelectCollection = useCallback(
-    (kind: LibraryItemKind, id: string, name: string, provider?: ProviderId) => {
+    (selection: CollectionSelection) => {
       if (search.isSearching) search.setQuery('');
-      if (kind === 'liked') {
-        onPlaylistSelect(LIKED_SONGS_ID, name, provider);
-        return;
-      }
-      if (kind === 'album') {
-        onPlaylistSelect(toAlbumPlaylistId(id), name, provider);
-        return;
-      }
-      onPlaylistSelect(id, name, provider);
+      onSelectCollection(selection);
     },
-    [onPlaylistSelect, search],
+    [onSelectCollection, search],
   );
 
   const [contextRequest, setContextRequest] = useState<ContextMenuRequest | null>(null);
@@ -127,21 +107,16 @@ const LibraryRoute: React.FC<LibraryRouteProps> = ({
   }, []);
 
   const handleAddToQueueAction = useCallback(
-    (id: string, name: string, provider?: ProviderId) => {
-      void onAddToQueue(id, name, provider);
+    (selection: CollectionSelection) => {
+      void onAddToQueue(selection);
     },
     [onAddToQueue],
   );
 
   const handlePlayLikedFromMenu = useCallback(
-    async (
-      tracks: MediaTrack[],
-      collectionId: string,
-      collectionName: string,
-      provider?: ProviderId,
-    ) => {
+    async (tracks: MediaTrack[], selection: CollectionSelection) => {
       if (!onPlayLikedTracks) return;
-      await onPlayLikedTracks(tracks, collectionId, collectionName, provider);
+      await onPlayLikedTracks(tracks, selection);
     },
     [onPlayLikedTracks],
   );

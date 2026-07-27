@@ -18,12 +18,12 @@ Key files: `usePlayerLogic.ts` → `useProviderPlayback.ts` → `PlaybackProvide
 
 ## Queue mutation flow
 
-Queue state lives in `TrackContext` (`tracks`, `originalTracks`, `currentTrackIndex`, `shuffleEnabled`) and is mutated through `TrackOperations` (defined in `types/trackOperations.ts`). A parallel `mediaTracksRef` keeps an imperative mirror for index-based playback without waiting for React renders.
+Queue state lives in `TrackContext` (`tracks`, `originalTracks`, `currentTrackIndex`, `shuffleEnabled`, `selection: PlaybackSelection | null`) and is mutated through `TrackOperations` (defined in `types/trackOperations.ts`). A parallel `mediaTracksRef` keeps an imperative mirror for index-based playback without waiting for React renders.
 
 ### Loading a collection (`useCollectionLoader.loadCollection`)
 
-- Resolves the target provider and collection ref
-- Fetches tracks via `catalog.listTracks(collectionRef)`
+- Takes a typed `CollectionSelection` (`{ type: 'collection', ref } | { type: 'liked', provider? }`) and resolves the target provider and `CollectionRef` from it
+- Fetches tracks via `catalog.listTracks(collectionRef)`; the fetched list is write-through cached into the shared library cache (`putTrackList`) so cache-backed consumers (CmdK search) see any opened collection
 - Calls `applyTracks()` which stores `originalTracks`, optionally shuffles, sets `tracks` + `mediaTracksRef`, and resets `currentTrackIndex` to 0; the loader then calls `playTrack(0)`
 - Unified Liked Songs path merges tracks from all connected providers sorted by `addedAt`
 

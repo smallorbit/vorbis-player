@@ -1,9 +1,11 @@
-import type { MediaTrack } from '@/types/domain';
-import type { Track, PlaylistInfo, AlbumInfo, SpotifyTrackItem, PaginatedResponse } from './types';
+import type { CollectionRef, MediaCollection, MediaTrack } from '@/types/domain';
+import { collectionRefToKey } from '@/types/domain';
+import type { PlaylistInfo, SpotifyTrackItem, PaginatedResponse } from './types';
+import { getLargestImage } from './types';
 import { spotifyApiRequest, fetchAllPaginated } from './api';
 import { spotifyAuth } from './auth';
 import { trackListCache, albumSavedCache, TRACK_LIST_CACHE_TTL, TRACK_LIST_PERSIST_TTL } from './cache';
-import { transformTrackItem, backfillProvider, tracksToMediaTracks } from './tracks';
+import { transformTrackItem } from './tracks';
 import { type SavedAlbumItem, transformSavedAlbumItem } from './albums';
 import * as libraryCache from '../cache/libraryCache';
 import { logCaughtError } from '@/utils/logCaughtError';
@@ -12,36 +14,45 @@ import { logCaughtError } from '@/utils/logCaughtError';
 // Callback Types
 // =============================================================================
 
-type PlaylistsIncrementalCallback = (playlistsSoFar: PlaylistInfo[], isComplete: boolean) => void;
-type AlbumsIncrementalCallback = (albumsSoFar: AlbumInfo[], isComplete: boolean) => void;
+type CollectionsIncrementalCallback = (collectionsSoFar: MediaCollection[], isComplete: boolean) => void;
 
 // =============================================================================
 // Playlist Functions
 // =============================================================================
 
+/**
+ * Convert a raw playlist object into the neutral `MediaCollection` shape.
+ * This is the single Spotify→domain conversion point for playlists.
+ */
+function transformPlaylist(playlist: PlaylistInfo): MediaCollection {
+  const imageUrl = getLargestImage(playlist.images);
+  return {
+    id: playlist.id,
+    provider: 'spotify',
+    kind: 'playlist',
+    name: playlist.name,
+    trackCount: playlist.tracks?.total ?? 0,
+    // Spotify playlist API doesn't return genre information
+    genres: [],
+    ...(playlist.owner?.display_name && { ownerName: playlist.owner.display_name }),
+    ...(playlist.description != null && playlist.description !== '' && { description: playlist.description }),
+    ...(imageUrl !== undefined && { imageUrl }),
+    ...(playlist.snapshot_id !== undefined && { revision: playlist.snapshot_id }),
+  };
+}
+
 export async function getUserLibraryInterleaved(
-  onPlaylistsUpdate: PlaylistsIncrementalCallback,
-  onAlbumsUpdate: AlbumsIncrementalCallback,
+  onPlaylistsUpdate: CollectionsIncrementalCallback,
+  onAlbumsUpdate: CollectionsIncrementalCallback,
   signal?: AbortSignal
 ): Promise<void> {
   const token = await spotifyAuth.ensureValidToken();
 
-  const fetchTimestamp = new Date().toISOString();
-
-  function transformPlaylist(playlist: PlaylistInfo): PlaylistInfo {
-    return {
-      ...playlist,
-      added_at: playlist.added_at || fetchTimestamp,
-      tracks: playlist.tracks ?? { total: 0 },
-      owner: playlist.owner ?? { display_name: '' },
-    };
-  }
-
   // Pagination state
   let playlistNextUrl: string | null = 'https://api.spotify.com/v1/me/playlists?limit=50';
   let albumNextUrl: string | null = 'https://api.spotify.com/v1/me/albums?limit=50';
-  const playlistResults: PlaylistInfo[] = [];
-  const albumResults: AlbumInfo[] = [];
+  const playlistResults: MediaCollection[] = [];
+  const albumResults: MediaCollection[] = [];
 
   // Interleave: fetch one page of each per round
   while (playlistNextUrl || albumNextUrl) {
@@ -74,7 +85,7 @@ export async function getUserLibraryInterleaved(
           .then((data) => {
             const now = Date.now();
             for (const item of data.items ?? []) {
-              albumResults.push(transformSavedAlbumItem(item, { withGenres: false }));
+              albumResults.push(transformSavedAlbumItem(item));
               if (item.album.id) {
                 albumSavedCache.set(item.album.id, { value: true, timestamp: now });
               }
@@ -93,21 +104,21 @@ export async function getUserLibraryInterleaved(
 }
 
 export async function getPlaylistTracks(playlistId: string): Promise<MediaTrack[]> {
-  const cacheKey = `playlist:${playlistId}`;
+  const ref: CollectionRef = { provider: 'spotify', kind: 'playlist', id: playlistId };
+  const cacheKey = collectionRefToKey(ref);
 
   // L1: Check in-memory cache (instant)
   const cached = trackListCache.get(cacheKey);
   if (cached && Date.now() - cached.timestamp < TRACK_LIST_CACHE_TTL) {
-    return tracksToMediaTracks(cached.data);
+    return cached.data;
   }
 
   // L2: Check IndexedDB persistent cache (survives page reload)
   try {
-    const idbCached = await libraryCache.getTrackList(cacheKey);
+    const idbCached = await libraryCache.getTrackList(ref);
     if (idbCached && Date.now() - idbCached.timestamp < TRACK_LIST_PERSIST_TTL) {
-      const tracks = backfillProvider(idbCached.tracks);
-      trackListCache.set(cacheKey, { data: tracks, timestamp: idbCached.timestamp });
-      return tracksToMediaTracks(tracks);
+      trackListCache.set(cacheKey, { data: idbCached.tracks, timestamp: idbCached.timestamp });
+      return idbCached.tracks;
     }
   } catch (err) {
     // IndexedDB read failed, continue to API fetch
@@ -121,14 +132,14 @@ export async function getPlaylistTracks(playlistId: string): Promise<MediaTrack[
     track: SpotifyTrackItem | null;
   }
 
-  function transformPlaylistTrack(item: PlaylistTrackItem): Track | null {
+  function transformPlaylistTrack(item: PlaylistTrackItem): MediaTrack | null {
     if (!item.track) {
       return null;
     }
     return transformTrackItem(item.track);
   }
 
-  const tracks = await fetchAllPaginated<PlaylistTrackItem, Track>(
+  const tracks = await fetchAllPaginated<PlaylistTrackItem, MediaTrack>(
     `https://api.spotify.com/v1/playlists/${playlistId}/tracks?limit=50`,
     token,
     transformPlaylistTrack
@@ -136,8 +147,8 @@ export async function getPlaylistTracks(playlistId: string): Promise<MediaTrack[
 
   // Write to both L1 and L2
   trackListCache.set(cacheKey, { data: tracks, timestamp: Date.now() });
-  libraryCache.putTrackList(cacheKey, tracks).catch(() => {});
-  return tracksToMediaTracks(tracks);
+  libraryCache.putTrackList(ref, tracks).catch(() => {});
+  return tracks;
 }
 
 /** Get just the total count of user's playlists (1 API call, returns 1 item). */
@@ -151,40 +162,14 @@ export async function getPlaylistCount(signal?: AbortSignal): Promise<number> {
   return data.total ?? 0;
 }
 
-/** Fetch first page of playlists with snapshot_ids for change comparison. */
-export async function getPlaylistsPage(
-  limit: number = 50,
-  signal?: AbortSignal
-): Promise<{ playlists: PlaylistInfo[]; total: number; hasMore: boolean }> {
-  const token = await spotifyAuth.ensureValidToken();
-  const data = await spotifyApiRequest<PaginatedResponse<PlaylistInfo>>(
-    `https://api.spotify.com/v1/me/playlists?limit=${limit}&offset=0`,
-    token,
-    signal ? { signal } : {},
-  );
-  const playlists = (data.items ?? []).map((p, i) => ({
-    ...p,
-    added_at: p.added_at || new Date(Date.now() - i * 60000).toISOString(),
-  }));
-  return {
-    playlists,
-    total: data.total ?? 0,
-    hasMore: data.next !== null,
-  };
-}
-
 /** Fetch ALL user playlists with full pagination (not capped at 50). */
-export async function getAllUserPlaylists(signal?: AbortSignal): Promise<PlaylistInfo[]> {
+export async function getAllUserPlaylists(signal?: AbortSignal): Promise<MediaCollection[]> {
   const token = await spotifyAuth.ensureValidToken();
-  let index = 0;
 
-  return fetchAllPaginated<PlaylistInfo, PlaylistInfo>(
+  return fetchAllPaginated<PlaylistInfo, MediaCollection>(
     'https://api.spotify.com/v1/me/playlists?limit=50',
     token,
-    (item) => ({
-      ...item,
-      added_at: item.added_at || new Date(Date.now() - index++ * 60000).toISOString(),
-    }),
+    transformPlaylist,
     signal ? { signal } : {},
   );
 }

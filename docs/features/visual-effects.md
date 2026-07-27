@@ -10,7 +10,7 @@ Visual effect state is split across six focused context modules, each with its o
 
 | Context module | Hook | Owns |
 |---|---|---|
-| `VisualEffectsToggleContext.tsx` | `useVisualEffectsToggle` | `visualEffectsEnabled` (master toggle), `showVisualEffects` (transient menu-open state) |
+| `VisualEffectsToggleContext.tsx` | `useVisualEffectsToggle` | `visualEffectsEnabled` (master toggle), `isSettingsOpen` (transient menu-open state) |
 | `AccentColorBackgroundContext.tsx` | `useAccentColorBackground` | `accentColorBackgroundPreferred`, derived `accentColorBackgroundEnabled` |
 | `VisualizerContext.tsx` | `useVisualizer` | `backgroundVisualizerEnabled/Style/Intensity/Speed` + legacy-style migration |
 | `TranslucenceContext.tsx` | `useTranslucence` | `translucenceEnabled`, `translucenceOpacity` |
@@ -37,7 +37,7 @@ interface VisualEffectsContextValue {
 
   // Derived / transient
   accentColorBackgroundEnabled: boolean;          // computed from preferred + master toggle
-  showVisualEffects: boolean;                     // whether settings menu is open (transient)
+  isSettingsOpen: boolean;                     // whether settings menu is open (transient)
 
   // Setters (all accept value or updater function)
   setVisualEffectsEnabled: (enabled: boolean | ((prev: boolean) => boolean)) => void;
@@ -173,17 +173,17 @@ The `backgroundVisualizerSpeed` value (default `1.0`) is a global speed multipli
 
 Controlled via a slider on the flip menu back (`QuickEffectsRow`). Persisted under `vorbis-player-background-visualizer-speed`.
 
-## Settings (SettingsV2)
+## Settings
 
-**File**: `src/components/SettingsV2/SettingsV2.tsx` — the full-screen settings dialog. See `docs/features/settings.md` for the full breakdown.
+**File**: `src/components/Settings/Settings.tsx` — the full-screen settings dialog. See `docs/features/settings.md` for the full breakdown.
 
-Its **Appearance** section (`SettingsV2/sections/AppearanceSection.tsx`) hosts the durable visual-effects controls: glow, visualizer style/intensity/speed, translucence, and the accent color manager. The **flip menu back** (`AlbumArtQuickSwapBack` > `QuickEffectsRow`) remains the quick-access surface for the same settings.
+Its **Appearance** section (`Settings/sections/AppearanceSection.tsx`) hosts the durable visual-effects controls: glow, visualizer style/intensity/speed, translucence, and the accent color manager. The **flip menu back** (`AlbumArtQuickSwapBack` > `QuickEffectsRow`) remains the quick-access surface for the same settings.
 
 ### Opening
 
 - Gear icon in player controls
 - `Shift+S` keyboard shortcut
-- `showVisualEffects` state in `VisualEffectsToggleContext` (transient, not persisted)
+- `isSettingsOpen` state in `VisualEffectsToggleContext` (transient, not persisted)
 
 ## Keyboard Shortcuts
 
@@ -222,7 +222,7 @@ From back to front:
 | `src/hooks/useVisualEffectsState.ts` | Glow intensity/rate state with save/restore |
 | `src/components/AccentColorGlowOverlay.tsx` | Pulsing glow layer behind album art |
 | `src/components/AccentColorBackground.tsx` | Full-viewport accent color gradient |
-| `src/components/SettingsV2/SettingsV2.tsx` | Settings dialog (gear icon); Appearance section hosts the effect controls |
+| `src/components/Settings/Settings.tsx` | Settings dialog (gear icon); Appearance section hosts the effect controls |
 | `src/components/AlbumArtQuickSwapBack.tsx` | Flip menu back face, hosts `QuickEffectsRow` |
 | `src/components/controls/QuickEffectsRow.tsx` | Actual effect controls (glow, visualizer, translucence, accent color) |
 | `src/styles/animations.ts` | `breatheGlow` keyframes for glow animation |

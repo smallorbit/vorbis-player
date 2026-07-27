@@ -13,8 +13,7 @@ export function useRecentlyPlayedSection(): SectionState<RecentlyPlayedEntry> {
   const playlistImageMap = useMemo(() => {
     const map = new Map<string, string>();
     for (const p of playlists) {
-      const url = p.images?.[0]?.url;
-      if (url) map.set(`${p.id}:${p.provider ?? 'spotify'}`, url);
+      if (p.imageUrl) map.set(`${p.id}:${p.provider}`, p.imageUrl);
     }
     return map;
   }, [playlists]);
@@ -22,8 +21,7 @@ export function useRecentlyPlayedSection(): SectionState<RecentlyPlayedEntry> {
   const albumImageMap = useMemo(() => {
     const map = new Map<string, string>();
     for (const a of albums) {
-      const url = a.images?.[0]?.url;
-      if (url) map.set(`${a.id}:${a.provider ?? 'spotify'}`, url);
+      if (a.imageUrl) map.set(`${a.id}:${a.provider}`, a.imageUrl);
     }
     return map;
   }, [albums]);
@@ -33,11 +31,11 @@ export function useRecentlyPlayedSection(): SectionState<RecentlyPlayedEntry> {
       if (entry.imageUrl) return entry;
       const { ref } = entry;
       if (ref.kind === 'playlist') {
-        const imageUrl = playlistImageMap.get(`${ref.id}:${ref.provider ?? 'spotify'}`);
+        const imageUrl = playlistImageMap.get(`${ref.id}:${ref.provider}`);
         return imageUrl ? { ...entry, imageUrl } : entry;
       }
       if (ref.kind === 'album') {
-        const imageUrl = albumImageMap.get(`${ref.id}:${ref.provider ?? 'spotify'}`);
+        const imageUrl = albumImageMap.get(`${ref.id}:${ref.provider}`);
         return imageUrl ? { ...entry, imageUrl } : entry;
       }
       return entry;

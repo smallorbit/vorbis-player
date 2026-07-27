@@ -1,4 +1,5 @@
-import type { Track, SpotifyTrackItem, PaginatedResponse } from './types';
+import type { MediaTrack } from '@/types/domain';
+import type { SpotifyTrackItem, PaginatedResponse } from './types';
 import { spotifyApiRequest } from './api';
 import { spotifyAuth } from './auth';
 import { transformTrackItem } from './tracks';
@@ -14,7 +15,7 @@ import { transformTrackItem } from './tracks';
 export async function searchTrack(
   artist: string,
   trackName: string,
-): Promise<Track | null> {
+): Promise<MediaTrack | null> {
   const token = await spotifyAuth.ensureValidToken();
   const query = encodeURIComponent(`track:${trackName} artist:${artist}`);
   const url = `https://api.spotify.com/v1/search?q=${query}&type=track&limit=5`;

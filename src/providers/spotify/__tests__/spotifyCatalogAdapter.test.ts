@@ -60,22 +60,9 @@ describe('SpotifyCatalogAdapter.listTracks', () => {
     expect(result).toEqual([TRACK]);
   });
 
-  it('routes album kind with raw id to getAlbumTracks', async () => {
-    // #given — raw id as supplied by the engine path (no "album:" prefix)
+  it('routes album kind to getAlbumTracks with the bare id', async () => {
+    // #given — refs always carry bare ids (no "album:" prefix)
     const ref = { provider: 'spotify' as const, kind: 'album' as const, id: '1KNUCVXgIxKUGiuEB8eG0i' };
-
-    // #when
-    const result = await adapter.listTracks(ref);
-
-    // #then
-    expect(mockGetAlbumTracks).toHaveBeenCalledWith('1KNUCVXgIxKUGiuEB8eG0i');
-    expect(mockGetPlaylistTracks).not.toHaveBeenCalled();
-    expect(result).toEqual([TRACK]);
-  });
-
-  it('routes album kind with prefixed id to getAlbumTracks (strips prefix)', async () => {
-    // #given — prefixed id as supplied by the catalog-adapter path
-    const ref = { provider: 'spotify' as const, kind: 'album' as const, id: 'album:1KNUCVXgIxKUGiuEB8eG0i' };
 
     // #when
     const result = await adapter.listTracks(ref);

@@ -120,8 +120,8 @@ vi.mock('@/contexts/visualEffects', () => ({
   useVisualEffectsToggle: vi.fn(() => ({
     visualEffectsEnabled: true,
     setVisualEffectsEnabled: vi.fn(),
-    showVisualEffects: false,
-    setShowVisualEffects: vi.fn(),
+    isSettingsOpen: false,
+    setIsSettingsOpen: vi.fn(),
   })),
   useZenMode: vi.fn(() => ({
     zenModeEnabled: false,

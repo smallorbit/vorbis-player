@@ -5,7 +5,7 @@
 Defined in `src/types/providers.ts` and `src/types/domain.ts`.
 
 - **Provider interfaces**: `AuthProvider`, `CatalogProvider`, `PlaybackProvider`
-- **Registration**: `src/providers/registry.ts` — singleton `providerRegistry`; providers self-register on import
+- **Registration**: `src/providers/registry.ts` — singleton `providerRegistry`; providers self-register on import. `src/providers/registerProviders.ts` is the composition root (the only neutral module that imports provider packages); `ProviderContext` imports it.
 - **Dropbox** only registers when `VITE_DROPBOX_CLIENT_ID` is set
 
 **Domain types** (`src/types/domain.ts`):
@@ -14,7 +14,7 @@ Defined in `src/types/providers.ts` and `src/types/domain.ts`.
 - `MediaCollection` — provider-agnostic collection (playlist or album)
 - `CollectionRef` — `{ provider, kind, id }`; serialized via `collectionRefToKey` / `keyToCollectionRef`
 
-**Capability-aware UI**: check `activeDescriptor.capabilities` before rendering provider-specific controls (`hasSaveTrack`, `hasExternalLink`, `hasLikedCollection`). Both Spotify and Dropbox support `hasSaveTrack` and `hasLikedCollection`.
+**Capability-aware UI**: check `activeDescriptor.capabilities` before rendering provider-specific controls (`hasSaveTrack`, `hasExternalLink`, `hasLikedCollection`). Both Spotify and Dropbox support `hasSaveTrack` and `hasLikedCollection`. Flags that mirror a catalog method (`hasLikedCollection`, `hasSaveTrack`, `hasSaveAlbum`, `hasTrackSearch`) are derived from method presence in `registry.register()`; providers declare only behavioral flags (`hasExternalLink`, `externalLinkLabel`, `hasNativeQueueSync`, `hasContextPlaybackFallback`), which `register()` validates against the adapter.
 
 ## Provider toggle (Music Sources section in settings)
 
@@ -26,7 +26,7 @@ Defined in `src/types/providers.ts` and `src/types/domain.ts`.
 - Toggle-ON when not authenticated: calls `beginLogin({ popup: true })` immediately. The provider is added to `enabledProviderIds` only after the OAuth popup reports success via `AUTH_COMPLETE_EVENT`.
 - OAuth cancel/failure: toggle reverts; a toast shows `"Couldn't connect to {provider}. Try again."`.
 - Mid-session unrecoverable 401: `logout()` is called automatically; a toast shows `"{Provider} disconnected — session expired."`.
-- Implementation: `src/components/SettingsV2/sections/MusicSourcesSection.tsx` (`MusicSourcesSection`).
+- Implementation: `src/components/Settings/sections/MusicSourcesSection.tsx` (`MusicSourcesSection`).
 
 ## Unified playback across providers
 
@@ -35,7 +35,7 @@ Defined in `src/types/providers.ts` and `src/types/domain.ts`.
   - **Active provider** = selected provider context for browsing/catalog actions.
   - **Driving provider** = provider currently controlling audio output.
   - These can differ in mixed queues (Unified Liked Songs, radio, cross-provider handoff).
-- Playback controls (`play`, `pause`, `next`, `previous`) route via the **driving provider**, not just the active provider.
+- Playback controls (`play`, `pause`, `seek`) route via the **driving provider**, not just the active provider. Skip (next/previous) is app-queue-owned — `PlaybackProvider` has no skip methods; the app picks the target index and calls `playTrack` on that track's provider.
 - Provider state subscriptions are multiplexed and filtered by the **driving provider** so visualizer/play state stays in sync.
 - Routing structure:
   - `useProviderPlayback` resolves provider per index (`track.provider` → `drivingProviderRef` → `activeDescriptor.id` fallback).
@@ -112,7 +112,7 @@ Stored in IndexedDB (`vorbis-dropbox-art` database v7, `likes` store). Mutations
 
 ### Dropbox preferences sync
 
-Pins (unified playlists/albums) and accent overrides/custom colors are synced to `/.vorbis/preferences.json`. Merge is last-write-wins by `updatedAt`. `dropboxPreferencesSync.ts` provides `initPreferencesSync(auth)`, `getPreferencesSync()`, `initialSync()`, and `schedulePush()` (2s debounce). PinnedItemsContext and ColorContext call `schedulePush()` after local changes; App and provider trigger `initialSync()` after Dropbox OAuth and when already authenticated.
+Pins (unified playlists/albums) and accent overrides/custom colors are synced to `/.vorbis/preferences.json`. Merge is last-write-wins by `updatedAt`. `dropboxPreferencesSync.ts` provides `initPreferencesSync(auth)`, `getPreferencesSync()`, `initialSync()`, and `schedulePush()` (2s debounce). The Dropbox descriptor exposes the service through `ProviderDescriptor.preferencesSync`; neutral contexts never import it directly — PinnedItemsContext and ColorContext call `schedulePreferencesPush()` from `src/providers/preferencesSync.ts`, which fans out to every registered descriptor's `preferencesSync.schedulePush()`. `initialSync()` runs after Dropbox OAuth (inside `dropboxAuthAdapter.handleCallback`) and at startup when already authenticated (in `dropboxProvider.ts`).
 
 ### Token refresh
 

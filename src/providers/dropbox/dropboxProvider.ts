@@ -5,21 +5,21 @@
  * Only registered when VITE_DROPBOX_CLIENT_ID is configured.
  */
 
-import type { ProviderDescriptor } from '@/types/providers';
+import type { ProviderRegistration } from '@/types/providers';
 import { theme } from '@/styles/theme';
-import { DropboxAuthAdapter } from './dropboxAuthAdapter';
+import { DropboxAuthAdapter, DROPBOX_AUTH_ERROR_EVENT } from './dropboxAuthAdapter';
 import { DropboxCatalogAdapter } from './dropboxCatalogAdapter';
 import { DropboxPlaybackAdapter } from './dropboxPlaybackAdapter';
 import { providerRegistry } from '@/providers/registry';
 import { initLikesSync } from './dropboxLikesSync';
 import { LIKES_CHANGED_EVENT } from './dropboxLikesCache';
-import { initPreferencesSync, getPreferencesSync } from './dropboxPreferencesSync';
+import { initPreferencesSync, getPreferencesSync, clearPreferencesSyncTimestamp } from './dropboxPreferencesSync';
 import { saveQueueAsPlaylist } from './dropboxPlaylistStorage';
 import { DropboxIcon } from './DropboxIcon';
 
 const DROPBOX_CLIENT_ID = import.meta.env.VITE_DROPBOX_CLIENT_ID ?? '';
 
-let dropboxDescriptor: ProviderDescriptor | null = null;
+let dropboxDescriptor: ProviderRegistration | null = null;
 
 if (DROPBOX_CLIENT_ID) {
   const auth = new DropboxAuthAdapter();
@@ -45,10 +45,13 @@ if (DROPBOX_CLIENT_ID) {
     color: theme.colors.dropbox,
     icon: DropboxIcon,
     likesChangedEvent: LIKES_CHANGED_EVENT,
+    authStateChangedEvent: DROPBOX_AUTH_ERROR_EVENT,
+    preferencesSync: {
+      schedulePush: () => getPreferencesSync()?.schedulePush(),
+      initialSync: async () => { await getPreferencesSync()?.initialSync(); },
+      clearSyncTimestamp: () => clearPreferencesSyncTimestamp(),
+    },
     capabilities: {
-      hasLikedCollection: true,
-      hasSaveTrack: true,
-      hasDeleteCollection: true,
       hasExternalLink: true,
       externalLinkLabel: 'Search Discogs',
     },

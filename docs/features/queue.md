@@ -21,7 +21,7 @@ interface TrackListContextValue {
   isLoading: boolean;
   error: string | null;
   shuffleEnabled: boolean;           // persisted via useLocalStorage (key: vorbis-player-shuffle-enabled)
-  selectedPlaylistId: string | null; // ID of the loaded collection
+  selection: PlaybackSelection | null; // typed identity of what's loaded (collection / liked / radio)
   // + setters for all above
   handleShuffleToggle: () => void;
 }
@@ -60,7 +60,7 @@ interface TrackOperations {
   setTracks: (tracks: MediaTrack[] | ((prev: MediaTrack[]) => MediaTrack[])) => void;
   setOriginalTracks: (tracks: MediaTrack[] | ((prev: MediaTrack[]) => MediaTrack[])) => void;
   setCurrentTrackIndex: (index: number | ((prev: number) => number)) => void;
-  setSelectedPlaylistId: (id: string | null) => void;
+  setSelection: (selection: PlaybackSelection | null) => void;
   setError: (error: string | null) => void;
   setIsLoading: (loading: boolean) => void;
   mediaTracksRef: React.MutableRefObject<MediaTrack[]>;
@@ -75,29 +75,29 @@ Constructed once in `usePlayerLogic` via `useMemo` and passed to `useCollectionL
 
 **Hook:** `useCollectionLoader` (`src/hooks/useCollectionLoader.ts`)
 
-**Entry:** `loadCollection(playlistId, provider?)` -- replaces the entire queue.
+**Entry:** `loadCollection(selection: CollectionSelection)` -- replaces the entire queue. `CollectionSelection` (from `src/types/domain.ts`) is `{ type: 'collection', ref: CollectionRef, name? }` or `{ type: 'liked', provider?, name? }`.
 
 1. If radio is active, stops it (`stopRadioBase()`).
-2. Routes based on collection type:
-   - `LIKED_SONGS_ID` + unified liked active + no explicit provider -> `loadUnifiedLiked()` (merges liked tracks from all connected providers, sorted by `addedAt` descending).
+2. Routes based on the selection:
+   - `type: 'liked'` with no pinned provider + unified liked active -> `loadUnifiedLiked()` (merges liked tracks from all connected providers, sorted by `addedAt` descending).
    - Otherwise -> `loadProviderCollection()`.
-3. `loadProviderCollection` resolves the collection ref via `resolvePlaylistRef(playlistId, providerId)` -> `{ id, kind }`, then calls `catalog.listTracks(collectionRef)`.
-4. If `listTracks` returns 0 tracks and the target descriptor declares `capabilities.hasContextPlaybackFallback` (Spotify only), falls back to `loadContextPlayback`.
+3. `loadProviderCollection` uses `selection.ref` directly (or builds `{ provider, kind: 'liked' }` for a provider-pinned liked selection), then calls `catalog.listTracks(collectionRef)`. The fetched list is write-through cached into the shared library cache (`putTrackList`) so cache-backed consumers (e.g. CmdK search) can see any opened collection.
+4. If `listTracks` returns 0 tracks and the target descriptor declares `capabilities.hasContextPlaybackFallback` (Spotify only), falls back to `loadContextPlayback` — a thin wrapper (`useSpotifyPlaylistManager`, `src/providers/spotify/useSpotifyPlaylistManager.ts`) over `descriptor.playback.playCollection` that mirrors the SDK's track window into the app queue.
 5. `applyTracks(tracks)` stores `originalTracks`, optionally shuffles if `shuffleEnabled`, sets `tracks` + `mediaTracksRef`, resets `currentTrackIndex` to 0, then calls `playTrack(0)`.
 
 **Invariant:** `loadCollection` always resets `currentTrackIndex` to 0. The previous queue is fully replaced.
 
-**Also:** `playTracksDirectly(tracks, collectionId, provider?)` -- same as loadCollection but accepts pre-fetched tracks (used by liked-songs direct play from the library).
+**Also:** `playTracksDirectly(tracks, selection)` -- same as loadCollection but accepts pre-fetched tracks (used by liked-songs direct play from the library).
 
 ### Add to Queue
 
 **Hook:** `useQueueManagement` (`src/hooks/useQueueManagement.ts`)
 
-**Entry:** `handleAddToQueue(playlistId, collectionName?, provider?)`
+**Entry:** `handleAddToQueue(selection: CollectionSelection)`
 
 1. If queue is empty, delegates to `loadCollection` (full load + autoplay).
 2. Otherwise:
-   - Resolves provider descriptor and collection ref.
+   - Resolves the provider descriptor and collection ref from the selection.
    - Fetches tracks via `catalog.listTracks(collectionRef)`.
    - **Deduplicates** by track ID: builds `Set` of existing track IDs, filters new tracks. Already-present tracks are silently skipped.
    - Appends unique tracks to `mediaTracksRef`, `originalTracks`, and `tracks`.
@@ -273,7 +273,7 @@ Cross-dismiss behavior: opening the queue closes the library drawer, and vice ve
 | `src/components/QueueTrackList.tsx` | Track list rendering with DnD |
 | `src/components/QueueTrackItem.tsx` | Individual track items (sortable + swipeable variants) |
 | `src/components/PlayerContent/DrawerOrchestrator.tsx` | Drawer switching (mobile vs desktop) |
-| `src/constants/playlist.ts` | LIKED_SONGS_ID, resolvePlaylistRef, ID encoding |
+| `src/constants/playlist.ts` | LIKED_SONGS_ID / ALL_MUSIC_PIN_ID pin ids, isAllMusicRef |
 
 ## Gotchas
 

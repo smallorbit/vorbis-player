@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils"
 //               Flip-menu chrome (controls/QuickEffectsRow) that retints with the
 //               playing track.
 //   "neutral" → active item = shadcn --primary (static near-white). Settings
-//               surfaces (SettingsV2). Default.
+//               surfaces (Settings). Default.
 //
 // Per-part style escape hatches:
 //   rootStyle → ToggleGroup.Root element

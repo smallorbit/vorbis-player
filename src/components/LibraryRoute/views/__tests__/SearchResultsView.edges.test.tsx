@@ -12,11 +12,12 @@
  *  - Recently-Played 'liked' ref + recently-played re-render: liked entries never render
  */
 
-import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { ThemeProvider } from 'styled-components';
 import { theme } from '@/styles/theme';
+import type { MediaCollection, ProviderId } from '@/types/domain';
+import type { RecentlyPlayedEntry } from '@/hooks/useRecentlyPlayedCollections';
 import type { LibrarySearchState } from '../../search/useLibrarySearch';
 
 const {
@@ -45,6 +46,32 @@ vi.mock('../../hooks', () => ({
 }));
 
 import SearchResultsView from '../SearchResultsView';
+
+const makePlaylist = (
+  id: string,
+  name: string,
+  provider: ProviderId = 'spotify',
+): MediaCollection => ({
+  id,
+  provider,
+  kind: 'playlist',
+  name,
+  genres: [],
+});
+
+const makeAlbum = (
+  id: string,
+  name: string,
+  ownerName: string,
+  provider: ProviderId = 'spotify',
+): MediaCollection => ({
+  id,
+  provider,
+  kind: 'album',
+  name,
+  ownerName,
+  genres: [],
+});
 
 function makeSearch(overrides: Partial<LibrarySearchState> = {}): LibrarySearchState {
   return {
@@ -127,10 +154,10 @@ describe('SearchResultsView edges', () => {
     it('kindFilter=["playlist"] hides the Albums section entirely', () => {
       // #given — both kinds present, only playlists pass filter
       mockPlaylistsSection.mockReturnValue({
-        items: [{ id: 'p1', name: 'Playlist One', provider: 'spotify' }],
+        items: [makePlaylist('p1', 'Playlist One')],
       });
       mockAlbumsSection.mockReturnValue({
-        items: [{ id: 'a1', name: 'Album One', artists: 'Artist', provider: 'spotify' }],
+        items: [makeAlbum('a1', 'Album One', 'Artist')],
       });
 
       // #when
@@ -144,10 +171,10 @@ describe('SearchResultsView edges', () => {
     it('kindFilter=["album"] hides the Playlists section entirely', () => {
       // #given
       mockPlaylistsSection.mockReturnValue({
-        items: [{ id: 'p1', name: 'P One', provider: 'spotify' }],
+        items: [makePlaylist('p1', 'P One')],
       });
       mockAlbumsSection.mockReturnValue({
-        items: [{ id: 'a1', name: 'A One', artists: 'A', provider: 'spotify' }],
+        items: [makeAlbum('a1', 'A One', 'A')],
       });
 
       // #when
@@ -164,8 +191,8 @@ describe('SearchResultsView edges', () => {
       // #given
       mockPlaylistsSection.mockReturnValue({
         items: [
-          { id: 'p1', name: 'Match Spotify', provider: 'spotify' },
-          { id: 'p2', name: 'Match Dropbox', provider: 'dropbox' },
+          makePlaylist('p1', 'Match Spotify'),
+          makePlaylist('p2', 'Match Dropbox', 'dropbox'),
         ],
       });
 
@@ -181,20 +208,19 @@ describe('SearchResultsView edges', () => {
   describe('Recently-played section semantics', () => {
     it("filters out 'liked' refs from Recently Played always", () => {
       // #given — recently-played has a liked entry that name-matches
-      mockRecentlyPlayed.mockReturnValue({
-        items: [
-          {
-            ref: { kind: 'liked', provider: 'spotify' },
-            name: 'Liked Songs',
-            imageUrl: null,
-          },
-          {
-            ref: { kind: 'playlist', id: 'p1', provider: 'spotify' },
-            name: 'Liked Songs',
-            imageUrl: null,
-          },
-        ],
-      });
+      const entries: RecentlyPlayedEntry[] = [
+        {
+          ref: { kind: 'liked', provider: 'spotify' },
+          name: 'Liked Songs',
+          imageUrl: null,
+        },
+        {
+          ref: { kind: 'playlist', id: 'p1', provider: 'spotify' },
+          name: 'Liked Songs',
+          imageUrl: null,
+        },
+      ];
+      mockRecentlyPlayed.mockReturnValue({ items: entries });
 
       // #when
       renderView({ query: 'liked' });
@@ -207,18 +233,17 @@ describe('SearchResultsView edges', () => {
 
     it("filters out 'album' refs from Recently Played when kindFilter=['playlist']", () => {
       // #given
-      mockRecentlyPlayed.mockReturnValue({
-        items: [
-          {
-            ref: { kind: 'album', id: 'a1', provider: 'spotify' },
-            name: 'Match Album',
-          },
-          {
-            ref: { kind: 'playlist', id: 'p1', provider: 'spotify' },
-            name: 'Match Playlist',
-          },
-        ],
-      });
+      const entries: RecentlyPlayedEntry[] = [
+        {
+          ref: { kind: 'album', id: 'a1', provider: 'spotify' },
+          name: 'Match Album',
+        },
+        {
+          ref: { kind: 'playlist', id: 'p1', provider: 'spotify' },
+          name: 'Match Playlist',
+        },
+      ];
+      mockRecentlyPlayed.mockReturnValue({ items: entries });
 
       // #when
       renderView({ query: 'match', kindFilter: ['playlist'] });
@@ -231,11 +256,9 @@ describe('SearchResultsView edges', () => {
 
   describe('artist search for albums', () => {
     it('includes an album when the query matches the artist name (not the album title)', () => {
-      // #given — album title "Core" does NOT contain "stone"; artist does
+      // #given — album title "Core" does NOT contain "stone"; ownerName (artist) does
       mockAlbumsSection.mockReturnValue({
-        items: [
-          { id: 'a1', name: 'Core', artists: 'Stone Temple Pilots', provider: 'spotify', images: [] },
-        ],
+        items: [makeAlbum('a1', 'Core', 'Stone Temple Pilots')],
       });
 
       // #when
@@ -249,9 +272,7 @@ describe('SearchResultsView edges', () => {
     it('excludes an album when neither title nor artist matches the query', () => {
       // #given
       mockAlbumsSection.mockReturnValue({
-        items: [
-          { id: 'a1', name: 'Core', artists: 'Stone Temple Pilots', provider: 'spotify', images: [] },
-        ],
+        items: [makeAlbum('a1', 'Core', 'Stone Temple Pilots')],
       });
 
       // #when
@@ -267,7 +288,7 @@ describe('SearchResultsView edges', () => {
     it('shows a pinned album in the Albums section when the query matches', () => {
       // #given — album is pinned; useAlbumsSection is called with excludePinned:false so it still appears
       mockAlbumsSection.mockReturnValue({
-        items: [{ id: 'a-pinned', name: 'Pinned Album', artists: 'Artist', provider: 'spotify', images: [] }],
+        items: [makeAlbum('a-pinned', 'Pinned Album', 'Artist')],
       });
 
       // #when
@@ -281,7 +302,7 @@ describe('SearchResultsView edges', () => {
     it('shows a pinned playlist in the Playlists section when the query matches', () => {
       // #given — playlist is pinned; usePlaylistsSection is called with excludePinned:false
       mockPlaylistsSection.mockReturnValue({
-        items: [{ id: 'p-pinned', name: 'Pinned Playlist', provider: 'spotify' }],
+        items: [makePlaylist('p-pinned', 'Pinned Playlist')],
       });
 
       // #when
@@ -297,7 +318,7 @@ describe('SearchResultsView edges', () => {
     it('forwards onContextMenuRequest to LibraryCard via right-click → menu request', () => {
       // #given
       mockPlaylistsSection.mockReturnValue({
-        items: [{ id: 'p1', name: 'Forwarded', provider: 'spotify' }],
+        items: [makePlaylist('p1', 'Forwarded')],
       });
       const onContextMenuRequest = vi.fn();
 
@@ -309,10 +330,10 @@ describe('SearchResultsView edges', () => {
 
       // #then
       expect(onContextMenuRequest).toHaveBeenCalledTimes(1);
-      const arg = onContextMenuRequest.mock.calls[0][0];
-      expect(arg.kind).toBe('playlist');
-      expect(arg.id).toBe('p1');
-      expect(arg.name).toBe('Forwarded');
+      const arg = onContextMenuRequest.mock.calls[0]?.[0];
+      expect(arg?.kind).toBe('playlist');
+      expect(arg?.id).toBe('p1');
+      expect(arg?.name).toBe('Forwarded');
     });
   });
 });

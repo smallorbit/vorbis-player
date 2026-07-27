@@ -1,4 +1,4 @@
-import type { CollectionRef, ProviderId } from '@/types/domain';
+import type { CollectionRef, CollectionSelection, ProviderId } from '@/types/domain';
 
 export interface UseCollectionSectionParams {
   providerFilter?: ProviderId[];
@@ -29,12 +29,12 @@ export type LibraryRouteView =
 /** Kinds a library card represents directly (no meta-wrappers). */
 export type LibraryCollectionKind = 'playlist' | 'album' | 'liked';
 
-export type LibraryItemKind = LibraryCollectionKind | 'recently-played';
-
 interface ContextMenuRequestBase {
   id: string;
   provider?: ProviderId | undefined;
   name: string;
+  /** Typed selection for play/queue actions — the only identity currency above the card. */
+  selection: CollectionSelection;
   anchorRect: DOMRect;
   /** The CardButton element that triggered the menu; used to return focus on keyboard dismiss. */
   triggerElement?: HTMLElement | undefined;

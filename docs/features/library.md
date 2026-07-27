@@ -54,8 +54,8 @@ Each section is a `Section` shell (header + horizontal/vertical card group) back
 | `useRecentlyPlayedSection` | `SectionState<RecentlyPlayedEntry>` |
 | `usePinnedSection` | `PinnedSectionState` ({ pinnedPlaylists, pinnedAlbums, combined, isLoading, isEmpty }) |
 | `useLikedSection` | `LikedSummary` |
-| `usePlaylistsSection` | `SectionState<CachedPlaylistInfo>` |
-| `useAlbumsSection` | `SectionState<AlbumInfo>` |
+| `usePlaylistsSection` | `SectionState<MediaCollection>` |
+| `useAlbumsSection` | `SectionState<MediaCollection>` |
 
 The collection hooks (`usePlaylistsSection`, `useAlbumsSection`) accept `UseCollectionSectionParams` (`providerFilter`, `excludePinned`), so the same hooks back both `HomeView` and `SeeAllView`.
 
@@ -78,8 +78,8 @@ Section headers expose a "See all" affordance that calls `onNavigate(view)` on `
 
 A single card primitive renders all collection types. It supports:
 
-- Click → `onSelectCollection(kind, id, name, provider)` — routes to the same `onPlaylistSelect` handler used by the legacy library (album IDs are wrapped via `toAlbumPlaylistId`).
-- **Long-press / right-click** → `onContextMenuRequest({ kind, id, provider, name, anchorRect })`.
+- Each card carries a typed `selection: CollectionSelection` prop (its playable identity). Click → `onSelect()`, which routes to `LibraryRoute`'s `onSelectCollection(selection)` callback — no string ID encoding.
+- **Long-press / right-click** → `onContextMenuRequest({ kind, id, provider, name, anchorRect, ... })`, carrying the same selection into the context menu.
 
 Long-press is implemented by `useLongPress` (500 ms hold, 8 px move tolerance). On touch devices the synthetic event fires after the timeout; on pointer devices `contextmenu` fires immediately.
 
@@ -101,7 +101,7 @@ Long-press is implemented by `useLongPress` (500 ms hold, 8 px move tolerance). 
 
 - `SearchBar` — text input + filter button. Renders different chrome on mobile (bottom dock) vs desktop (top of body).
 - `FilterSheet` — Radix `Sheet` (mobile) / `Popover` (desktop) with provider checkboxes, kind toggles, sort radio.
-- The desktop-only Cmd-K palette is a separate component, `CmdKPalette` (`src/components/CmdKPalette/`), built on the shadcn `CommandDialog` (`cmdk@^1.1.1`). It registers its own Cmd/Ctrl+K listener and is rendered by `AudioPlayer`, not by `LibraryRoute`.
+- The desktop-only Cmd-K palette is a separate component, `CmdKPalette` (`src/components/CmdKPalette/`), built on the shadcn `CommandDialog` (`cmdk@^1.1.1`). It registers its own Cmd/Ctrl+K listener and is rendered by `AudioPlayer`, not by `LibraryRoute`. Its backend (`src/hooks/useLibrarySearch.ts`, debounced, over `src/services/cache/librarySearch.ts`) queries the IndexedDB library cache, which stores neutral `MediaCollection`/`MediaTrack` records keyed by `provider:id` — search is cross-provider by construction and never touches the network. Track results cover any collection whose track list has reached the cache: opened collections are write-through cached by `useCollectionLoader`, and `useCatalogLibrarySync` write-throughs collections during library sync.
 - `searchMatch.ts` — case- and diacritic-insensitive substring match used by both `useLibrarySearch` results and the palette.
 
 ## Context menu
@@ -121,7 +121,7 @@ Common actions:
 - Play All + per-provider Play (liked) — uses `useLikedTracksForProvider` to load tracks
 - Remove from history (recently-played)
 
-The "Save album" path no longer pre-populates an optimistic `AlbumInfo` — newly-saved albums appear after the next library sync. Acceptable trade-off per the redesign blueprint.
+The "Save album" path no longer pre-populates an optimistic collection record — newly-saved albums appear after the next library sync. Acceptable trade-off per the redesign blueprint.
 
 ## Mini-player
 
@@ -133,7 +133,7 @@ Sub-components: `MiniArt`, `MiniControls`. Wired via `onMini*` props on `Library
 
 ## Recently Played history
 
-`useRecentlyPlayedCollections` (`src/hooks/useRecentlyPlayedCollections.ts`) tracks history. It exposes `history: RecentlyPlayedEntry[]` and `record(ref, name)`. Successful collection loads via `useCollectionLoader.loadCollection` call `record` automatically. Storage: `vorbis-player-recently-played` (localStorage), capped at 5 entries, deduped by `CollectionRef` key, newest first.
+`useRecentlyPlayedCollections` (`src/hooks/useRecentlyPlayedCollections.ts`) tracks history. It exposes `history: RecentlyPlayedEntry[]` and `record(ref, name, imageUrl?)`. Successful collection loads via `useCollectionLoader.loadCollection` call `record` automatically. Storage: `vorbis-player-recently-played` (localStorage), capped at 5 entries, deduped by `CollectionRef` key, newest first.
 
 `useRecentlyPlayedSection` adapts this hook into the section data shape.
 

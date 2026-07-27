@@ -7,7 +7,6 @@ import type {
   MediaTrack,
   MediaCollection,
   CollectionRef,
-  CollectionKind,
   PlaybackState,
   ProviderId,
 } from './domain';
@@ -74,8 +73,13 @@ export interface AuthProvider {
 
 export interface CatalogProvider {
   readonly providerId: ProviderId;
-  /** List collections (playlists, albums, folders) for library browser. */
-  listCollections(signal?: AbortSignal, options?: { forceRefresh?: boolean }): Promise<MediaCollection[]>;
+  /**
+   * List collections (playlists, albums, folders) for the library browser.
+   * Absent when a background sync engine provides library listing for this
+   * provider instead (the real Spotify adapter) — the library-sync hooks
+   * route by this method's presence.
+   */
+  listCollections?(signal?: AbortSignal, options?: { forceRefresh?: boolean }): Promise<MediaCollection[]>;
   /** List tracks for a collection. */
   listTracks(collectionRef: CollectionRef, signal?: AbortSignal): Promise<MediaTrack[]>;
   /** Optional: total count for "Liked" or similar (Spotify). */
@@ -86,8 +90,6 @@ export interface CatalogProvider {
   /** Optional: save/unsave album to library. */
   setAlbumSaved?(albumId: string, saved: boolean): Promise<void>;
   isAlbumSaved?(albumId: string): Promise<boolean>;
-  /** Optional: delete/unfollow a collection (playlist). */
-  deleteCollection?(collectionId: string, kind: CollectionKind): Promise<void>;
   /** Optional: resolve missing duration for a track (e.g. probe audio metadata). */
   resolveDuration?(track: MediaTrack): Promise<number | null>;
   /** Optional: resolve missing artwork for an album. Returns image URL/data-URL or null. */
@@ -120,8 +122,6 @@ export interface PlaybackProvider {
   pause(): Promise<void>;
   resume(): Promise<void>;
   seek(positionMs: number): Promise<void>;
-  next(): Promise<void>;
-  previous(): Promise<void>;
   setVolume(volume0to1: number): Promise<void>;
   getState(): Promise<PlaybackState | null>;
   /** Subscribe to state changes (returns unsubscribe). */
@@ -148,16 +148,16 @@ export interface PlaybackProvider {
 // Provider descriptor (for settings UI and registry)
 // -----------------------------------------------------------------------------
 
-export interface ProviderCapabilities {
-  hasLikedCollection: boolean;
-  hasSaveTrack: boolean;
-  hasSaveAlbum?: boolean;
-  hasDeleteCollection?: boolean;
+/**
+ * Capabilities a provider must declare because they cannot be inferred from
+ * method presence — the method may exist as a documented no-op (Dropbox's
+ * `onQueueChanged`, mock's `playCollection`), or the capability isn't a method
+ * at all (a display label, a UI affordance backed by track data).
+ */
+export interface DeclaredProviderCapabilities {
   hasExternalLink: boolean;
   /** e.g. "Open in Spotify" */
   externalLinkLabel?: string;
-  /** Provider supports cross-provider track search/resolution. */
-  hasTrackSearch?: boolean;
   /** Provider syncs its native queue with the app queue. */
   hasNativeQueueSync?: boolean;
   /**
@@ -170,6 +170,36 @@ export interface ProviderCapabilities {
    * stays false for them.
    */
   hasContextPlaybackFallback?: boolean;
+}
+
+/**
+ * Full capability set exposed on registered descriptors. The non-declared
+ * flags are derived from catalog method presence in `registry.register()` —
+ * a provider cannot declare them out of agreement with its adapter.
+ */
+export interface ProviderCapabilities extends DeclaredProviderCapabilities {
+  /** Derived from `catalog.getLikedCount`. */
+  hasLikedCollection: boolean;
+  /** Derived from `catalog.setTrackSaved` + `catalog.isTrackSaved`. */
+  hasSaveTrack: boolean;
+  /** Derived from `catalog.setAlbumSaved` + `catalog.isAlbumSaved`. */
+  hasSaveAlbum: boolean;
+  /** Derived from `catalog.searchTrack`. */
+  hasTrackSearch: boolean;
+}
+
+/**
+ * Optional provider-backed preferences synchronization (pins, accent colors).
+ * Providers that can persist app preferences remotely expose this; neutral
+ * contexts iterate registered descriptors instead of importing provider code.
+ */
+export interface ProviderPreferencesSync {
+  /** Debounced push of local preferences to the provider's storage. */
+  schedulePush(): void;
+  /** Pull remote preferences, merge with local state, and push back if needed. */
+  initialSync(): Promise<void>;
+  /** Forget the last-sync marker (e.g. after local preferences are cleared). */
+  clearSyncTimestamp(): void;
 }
 
 export interface ProviderDescriptor {
@@ -187,6 +217,14 @@ export interface ProviderDescriptor {
   icon?: ComponentType<{ size?: number }>;
   /** Window event name dispatched when this provider's liked tracks change. */
   likesChangedEvent?: string;
+  /**
+   * Window event name dispatched when this provider's auth state may have
+   * changed outside the shared popup-auth flow (e.g. token revocation detected
+   * mid-request). Neutral contexts subscribe to re-evaluate connected state.
+   */
+  authStateChangedEvent?: string;
+  /** Optional remote preferences sync (pins, accent colors). */
+  preferencesSync?: ProviderPreferencesSync;
   /** Build an external URL for an artist or album (e.g. Discogs search). */
   getExternalUrl?(info: ExternalLinkRequest): string;
   /** Build multiple external URLs for an artist or album. Takes precedence over getExternalUrl. */
@@ -194,6 +232,11 @@ export interface ProviderDescriptor {
   /** Optional: save a list of tracks as a new playlist. */
   savePlaylist?(name: string, tracks: MediaTrack[]): Promise<SavePlaylistResult | null>;
 }
+
+/** What providers hand to `registry.register()`: behavioral capabilities only. */
+export type ProviderRegistration = Omit<ProviderDescriptor, 'capabilities'> & {
+  capabilities: DeclaredProviderCapabilities;
+};
 
 /** Registry of available providers; used by app to resolve active provider by id. */
 export interface ProviderRegistry {

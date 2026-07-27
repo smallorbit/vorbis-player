@@ -6,7 +6,6 @@ import { RadioProgressContent } from '@/components/RadioProgressToast';
 import { useTrackListContext, useCurrentTrackContext } from '@/contexts/TrackContext';
 import { useProviderContext } from '@/contexts/ProviderContext';
 import { useUnifiedLikedTracks } from '@/hooks/useUnifiedLikedTracks';
-import { LIKED_SONGS_ID } from '@/constants/playlist';
 import { LIBRARY_REFRESH_EVENT } from '@/hooks/useLibrarySync';
 import { providerRegistry } from '@/providers/registry';
 import type { MediaTrack, ProviderId } from '@/types/domain';
@@ -86,12 +85,12 @@ export const DrawerOrchestrator: React.FC<DrawerOrchestratorProps> = React.memo(
   onDismissRadioProgress,
   onOpenQueueFromToast,
 }) => {
-  const { tracks, selectedPlaylistId } = useTrackListContext();
+  const { tracks, selection } = useTrackListContext();
   const { currentTrackIndex } = useCurrentTrackContext();
   const { isUnifiedLikedActive } = useUnifiedLikedTracks();
   const { connectedProviderIds } = useProviderContext();
 
-  const showProviderIcons = (isUnifiedLikedActive && selectedPlaylistId === LIKED_SONGS_ID) || !!radioActive;
+  const showProviderIcons = (isUnifiedLikedActive && selection?.type === 'liked') || !!radioActive;
 
   const [showSaveQueueDialog, setShowSaveQueueDialog] = useState(false);
 

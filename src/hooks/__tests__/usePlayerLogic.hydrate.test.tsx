@@ -141,9 +141,12 @@ function makeSession(overrides?: Partial<SessionSnapshot>): SessionSnapshot {
   const trackA = makeMediaTrack({ id: 'track-a', name: 'Song A', artists: 'Artist A' });
   const trackB = makeMediaTrack({ id: 'track-b', name: 'Song B', artists: 'Artist B' });
   return {
-    collectionId: 'playlist-xyz',
+    selection: {
+      type: 'collection',
+      ref: { provider: 'spotify', kind: 'playlist', id: 'playlist-xyz' },
+      name: 'My Playlist',
+    },
     collectionName: 'My Playlist',
-    collectionProvider: 'spotify',
     trackIndex: 1,
     trackId: 'track-b',
     queueTracks: [trackA, trackB],
@@ -173,7 +176,11 @@ describe('usePlayerLogic — handleHydrate', () => {
     expect(result.current.state.tracks).toHaveLength(2);
     expect(result.current.state.tracks[0].id).toBe('track-a');
     expect(result.current.state.tracks[1].id).toBe('track-b');
-    expect(result.current.state.selectedPlaylistId).toBe('playlist-xyz');
+    expect(result.current.state.selection).toEqual({
+      type: 'collection',
+      ref: { provider: 'spotify', kind: 'playlist', id: 'playlist-xyz' },
+      name: 'My Playlist',
+    });
     expect(result.current.state.isPlaying).toBe(false);
     expect(result.current.state.playbackPosition).toBe(42_000);
     expect(playTrackSpy).not.toHaveBeenCalled();
@@ -283,7 +290,7 @@ describe('usePlayerLogic — handleHydrate', () => {
 
     // #then
     expect(result.current.state.tracks).toHaveLength(0);
-    expect(result.current.state.selectedPlaylistId).toBeNull();
+    expect(result.current.state.selection).toBeNull();
     expect(mockPrepareTrack).not.toHaveBeenCalled();
     expect(playTrackSpy).not.toHaveBeenCalled();
   });

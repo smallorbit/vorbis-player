@@ -49,7 +49,7 @@ src/
 │   ├── PlayerStateRenderer.tsx  # Loading/error and library collection selection states
 │   ├── AlbumArt.tsx         # Album artwork with filters & glow effects
 │   ├── LibraryRoute/        # Sections-first library route (home + sub-routes, search, mini-player)
-│   ├── SpotifyPlayerControls.tsx # Player control interface
+│   ├── PlayerControls.tsx # Player control interface
 │   ├── QueueDrawer.tsx      # Queue (up-next) side drawer (desktop/tablet)
 │   ├── QueueBottomSheet.tsx # Queue bottom sheet (mobile)
 │   ├── QueueTrackList.tsx   # Queue track list (reorder/remove); lazy-loaded by queue surfaces

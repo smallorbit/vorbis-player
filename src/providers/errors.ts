@@ -30,3 +30,16 @@ export class InvalidProviderDescriptorError extends Error {
     this.missingAdapter = missingAdapter;
   }
 }
+
+export class ProviderCapabilityMismatchError extends Error {
+  readonly providerId: string;
+  readonly capability: string;
+  readonly requiredMethod: string;
+  constructor(providerId: string, capability: string, requiredMethod: string) {
+    super(`Provider '${providerId}' declares '${capability}' but its adapter lacks ${requiredMethod}()`);
+    this.name = 'ProviderCapabilityMismatchError';
+    this.providerId = providerId;
+    this.capability = capability;
+    this.requiredMethod = requiredMethod;
+  }
+}

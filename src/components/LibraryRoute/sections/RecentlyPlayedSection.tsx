@@ -1,7 +1,7 @@
 import React from 'react';
-import type { CollectionRef, ProviderId } from '@/types/domain';
+import type { CollectionSelection } from '@/types/domain';
 import { useRecentlyPlayedSection } from '../hooks';
-import type { ContextMenuRequest, LibraryItemKind } from '../types';
+import type { ContextMenuRequest, LibraryCollectionKind } from '../types';
 import Section from './Section';
 import SectionSkeleton from './SectionSkeleton';
 import LibraryCard from '../card/LibraryCard';
@@ -11,7 +11,7 @@ const SEE_ALL_THRESHOLD = 4;
 interface RecentlyPlayedSectionProps {
   layout: 'row' | 'grid';
   showProviderBadges?: boolean | undefined;
-  onSelect: (kind: LibraryItemKind, id: string, name: string, provider?: ProviderId) => void;
+  onSelect: (selection: CollectionSelection) => void;
   onSeeAll?: (() => void) | undefined;
   onContextMenuRequest?: ((req: ContextMenuRequest) => void) | undefined;
 }
@@ -40,31 +40,19 @@ const RecentlyPlayedSection: React.FC<RecentlyPlayedSectionProps> = ({
       ) : (
         items.map((entry) => {
           const { ref, name, imageUrl } = entry;
-          let cardKind: LibraryItemKind;
-          let cardId: string;
-          if (ref.kind === 'liked') {
-            cardKind = 'liked';
-            cardId = 'liked';
-          } else if (ref.kind === 'album') {
-            cardKind = 'album';
-            cardId = ref.id;
-          } else {
-            cardKind = 'playlist';
-            cardId = ref.id;
-          }
-          const refOriginalKind: 'playlist' | 'album' | 'liked' =
+          const cardKind: LibraryCollectionKind =
             ref.kind === 'liked' ? 'liked' : ref.kind === 'album' ? 'album' : 'playlist';
-          const recentRef: CollectionRef =
-            refOriginalKind === 'liked'
-              ? { provider: ref.provider, kind: 'liked' }
-              : { provider: ref.provider, kind: refOriginalKind, id: cardId };
+          const cardId = ref.kind === 'liked' ? 'liked' : ref.id;
+          const selection: CollectionSelection = ref.kind === 'liked'
+            ? { type: 'liked', provider: ref.provider, name }
+            : { type: 'collection', ref, name };
           const wrappedContextMenu = onContextMenuRequest
             ? (req: ContextMenuRequest) => {
                 onContextMenuRequest({
                   ...req,
                   kind: 'recently-played',
-                  originalKind: refOriginalKind,
-                  recentRef,
+                  originalKind: cardKind,
+                  recentRef: ref,
                 });
               }
             : undefined;
@@ -74,11 +62,12 @@ const RecentlyPlayedSection: React.FC<RecentlyPlayedSectionProps> = ({
               kind={cardKind}
               id={cardId}
               provider={ref.provider}
+              selection={selection}
               name={name}
               imageUrl={imageUrl ?? undefined}
               showProviderBadge={showProviderBadges}
               variant={layout === 'row' ? 'row' : 'grid'}
-              onSelect={() => onSelect(cardKind, cardId, name, ref.provider)}
+              onSelect={() => onSelect(selection)}
               onContextMenuRequest={wrappedContextMenu}
             />
           );

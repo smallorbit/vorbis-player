@@ -411,14 +411,6 @@ export class DropboxPlaybackAdapter implements PlaybackProvider {
     }
   }
 
-  async next(): Promise<void> {
-    // Managed at the hook level via useAutoAdvance
-  }
-
-  async previous(): Promise<void> {
-    // Managed at the hook level
-  }
-
   async setVolume(volume0to1: number): Promise<void> {
     if (this.audio) {
       this.audio.volume = Math.max(0, Math.min(1, volume0to1));

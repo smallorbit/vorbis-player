@@ -5,8 +5,8 @@ import { STORAGE_KEYS } from '@/constants/storage';
 interface VisualEffectsToggleContextValue {
   visualEffectsEnabled: boolean;
   setVisualEffectsEnabled: (enabled: boolean | ((prev: boolean) => boolean)) => void;
-  showVisualEffects: boolean;
-  setShowVisualEffects: (visible: boolean | ((prev: boolean) => boolean)) => void;
+  isSettingsOpen: boolean;
+  setIsSettingsOpen: (visible: boolean | ((prev: boolean) => boolean)) => void;
 }
 
 const VisualEffectsToggleContext = createContext<VisualEffectsToggleContextValue | null>(null);
@@ -16,16 +16,16 @@ export function VisualEffectsToggleProvider({ children }: { children: React.Reac
     STORAGE_KEYS.VISUAL_EFFECTS_ENABLED,
     true,
   );
-  const [showVisualEffects, setShowVisualEffects] = useState<boolean>(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
 
   const value = useMemo<VisualEffectsToggleContextValue>(
     () => ({
       visualEffectsEnabled,
       setVisualEffectsEnabled,
-      showVisualEffects,
-      setShowVisualEffects,
+      isSettingsOpen,
+      setIsSettingsOpen,
     }),
-    [visualEffectsEnabled, setVisualEffectsEnabled, showVisualEffects],
+    [visualEffectsEnabled, setVisualEffectsEnabled, isSettingsOpen],
   );
 
   return (

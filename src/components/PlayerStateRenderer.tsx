@@ -1,6 +1,6 @@
 import React, { Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import styled, { keyframes } from 'styled-components';
-import type { AddToQueueResult, MediaTrack, ProviderId } from '@/types/domain';
+import type { AddToQueueResult, CollectionSelection, MediaTrack, PlaybackSelection } from '@/types/domain';
 import { isSessionStale, type SessionSnapshot } from '@/services/sessionPersistence';
 import type { HydrateResult } from '@/hooks/usePlayerLogic';
 import { Card, CardHeader, CardContent } from '../components/styled';
@@ -172,11 +172,11 @@ const ProgressBar = styled.div`
 interface PlayerStateRendererProps {
   isLoading: boolean;
   error: string | null;
-  selectedPlaylistId: string | null;
+  selection: PlaybackSelection | null;
   tracks: MediaTrack[];
-  onPlaylistSelect: (playlistId: string, playlistName?: string, provider?: ProviderId) => void;
-  onAddToQueue: (id: string, name?: string, provider?: ProviderId) => Promise<AddToQueueResult | null>;
-  onPlayLikedTracks?: ((tracks: MediaTrack[], collectionId: string, collectionName: string, provider?: ProviderId) => Promise<void>) | undefined;
+  onSelectCollection: (selection: CollectionSelection) => void;
+  onAddToQueue: (selection: CollectionSelection) => Promise<AddToQueueResult | null>;
+  onPlayLikedTracks?: ((tracks: MediaTrack[], selection: CollectionSelection) => Promise<void>) | undefined;
   onQueueLikedTracks?: ((tracks: MediaTrack[], collectionName?: string) => void) | undefined;
   lastSession: SessionSnapshot | null;
   onResume: () => void;
@@ -202,9 +202,9 @@ function resolveIdleRoute(
 const PlayerStateRenderer: React.FC<PlayerStateRendererProps> = ({
   isLoading,
   error,
-  selectedPlaylistId,
+  selection,
   tracks,
-  onPlaylistSelect,
+  onSelectCollection,
   onAddToQueue,
   onPlayLikedTracks,
   onQueueLikedTracks,
@@ -257,12 +257,12 @@ const PlayerStateRenderer: React.FC<PlayerStateRendererProps> = ({
     setLibraryOverride(true);
   }, []);
 
-  const handlePlaylistSelectWrapped = useCallback(
-    (id: string, name?: string, provider?: import('@/types/domain').ProviderId) => {
+  const handleSelectCollectionWrapped = useCallback(
+    (collectionSelection: CollectionSelection) => {
       setLibraryOverride(false);
-      onPlaylistSelect(id, name, provider);
+      onSelectCollection(collectionSelection);
     },
-    [onPlaylistSelect],
+    [onSelectCollection],
   );
 
 
@@ -319,7 +319,7 @@ const PlayerStateRenderer: React.FC<PlayerStateRendererProps> = ({
     );
   }
 
-  if (selectedPlaylistId === null || tracks.length === 0) {
+  if (selection === null || tracks.length === 0) {
     const libraryView = (
       <>
         <SettingsGearButton onClick={onOpenSettings} />
@@ -336,7 +336,7 @@ const PlayerStateRenderer: React.FC<PlayerStateRendererProps> = ({
           </LoadingCard>
         }>
           <LibraryRouteLazy
-            onPlaylistSelect={(id, name, provider) => handlePlaylistSelectWrapped(id, name ?? '', provider)}
+            onSelectCollection={handleSelectCollectionWrapped}
             onAddToQueue={onAddToQueue}
             onPlayLikedTracks={onPlayLikedTracks}
             onQueueLikedTracks={onQueueLikedTracks}
@@ -388,7 +388,7 @@ const PlayerStateRenderer: React.FC<PlayerStateRendererProps> = ({
         <>
           <SettingsGearButton onClick={onOpenSettings} />
           <QuickAccessPanel
-            onPlaylistSelect={handlePlaylistSelectWrapped}
+            onSelectCollection={handleSelectCollectionWrapped}
             onAddToQueue={onAddToQueue}
             onBrowseLibrary={handleBrowseLibrary}
             lastSession={hasValidSession ? lastSession : null}

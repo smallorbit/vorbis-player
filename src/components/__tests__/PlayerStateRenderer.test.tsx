@@ -7,6 +7,7 @@ import PlayerStateRenderer from '../PlayerStateRenderer';
 import { useQapEnabled } from '@/hooks/useQapEnabled';
 import { useWelcomeSeen } from '@/hooks/useWelcomeSeen';
 import { STALE_SESSION_MS, type SessionSnapshot } from '@/services/sessionPersistence';
+import type { PlaybackSelection } from '@/types/domain';
 import { makeMediaTrack } from '@/test/fixtures';
 
 vi.mock('@/hooks/useQapEnabled', () => ({
@@ -51,8 +52,14 @@ vi.mock('../WelcomeScreen', () => ({
 const mockUseQapEnabled = vi.mocked(useQapEnabled);
 const mockUseWelcomeSeen = vi.mocked(useWelcomeSeen);
 
+const sessionSelection: PlaybackSelection = {
+  type: 'collection',
+  ref: { provider: 'spotify', kind: 'playlist', id: 'col-1' },
+  name: 'Test',
+};
+
 const freshSession: SessionSnapshot = {
-  collectionId: 'col-1',
+  selection: sessionSelection,
   collectionName: 'Test',
   trackIndex: 0,
   savedAt: Date.now(),
@@ -60,7 +67,7 @@ const freshSession: SessionSnapshot = {
 };
 
 const staleSession: SessionSnapshot = {
-  collectionId: 'col-1',
+  selection: sessionSelection,
   collectionName: 'Test',
   trackIndex: 0,
   savedAt: Date.now() - STALE_SESSION_MS - 1000,
@@ -70,9 +77,9 @@ const staleSession: SessionSnapshot = {
 const defaultProps = {
   isLoading: false,
   error: null,
-  selectedPlaylistId: null,
+  selection: null,
   tracks: [],
-  onPlaylistSelect: vi.fn(),
+  onSelectCollection: vi.fn(),
   onAddToQueue: vi.fn(),
   lastSession: null,
   onResume: vi.fn(),
@@ -530,7 +537,7 @@ describe('PlayerStateRenderer settings gear on idle views', () => {
   });
 
   it('does not render when a playlist is already loaded with tracks (player-active path)', () => {
-    // #given — selectedPlaylistId present and tracks.length > 0 mimics the active player state
+    // #given — a selection present and tracks.length > 0 mimics the active player state
     // in which PlayerStateRenderer returns null and BottomBar owns the gear affordance instead.
     mockUseQapEnabled.mockReturnValue([false, vi.fn()]);
 
@@ -539,8 +546,17 @@ describe('PlayerStateRenderer settings gear on idle views', () => {
       <Wrapper>
         <PlayerStateRenderer
           {...defaultProps}
-          selectedPlaylistId="pl1"
-          tracks={[{ id: 't1', name: 'Song', artists: 'A', album: 'Al', image: '', duration: 1, uri: '', provider: 'spotify', playbackRef: 'spotify:track:t1' }]}
+          selection={{ type: 'collection', ref: { provider: 'spotify', kind: 'playlist', id: 'pl1' }, name: 'Playlist 1' }}
+          tracks={[{
+            id: 't1',
+            provider: 'spotify',
+            playbackRef: { provider: 'spotify', ref: 'spotify:track:t1' },
+            name: 'Song',
+            artists: 'A',
+            album: 'Al',
+            durationMs: 1000,
+            genres: [],
+          }]}
         />
       </Wrapper>
     );

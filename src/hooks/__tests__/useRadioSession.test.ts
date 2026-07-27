@@ -36,7 +36,7 @@ function makeTrackOps() {
     setTracks: vi.fn(),
     setOriginalTracks: vi.fn(),
     setCurrentTrackIndex: vi.fn(),
-    setSelectedPlaylistId: vi.fn(),
+    setSelection: vi.fn(),
     mediaTracksRef: { current: [] as MediaTrack[] },
   };
 }
@@ -196,6 +196,8 @@ describe('useRadioSession', () => {
     // #then
     const phases = mockOnProgress.mock.calls.map((c: [RadioProgress | null]) => c[0]?.phase ?? null);
     expect(phases).toEqual(['fetching-catalog', 'generating', 'done']);
+    // Committing the radio queue marks the playback selection as radio mode.
+    expect(trackOps.setSelection).toHaveBeenCalledWith({ type: 'radio' });
   });
 
   it('includes resolving phase when there are unmatched suggestions', async () => {

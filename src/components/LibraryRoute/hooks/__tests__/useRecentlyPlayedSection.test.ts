@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook } from '@testing-library/react';
 import { useRecentlyPlayedSection } from '../useRecentlyPlayedSection';
 import type { RecentlyPlayedEntry } from '@/hooks/useRecentlyPlayedCollections';
-import type { ProviderId } from '@/types/domain';
+import type { MediaCollection, ProviderId } from '@/types/domain';
 
 vi.mock('@/hooks/useRecentlyPlayedCollections', () => ({
   useRecentlyPlayedCollections: vi.fn(),
@@ -103,14 +103,17 @@ describe('useRecentlyPlayedSection', () => {
       // #given — entry without imageUrl, library has matching playlist
       const entry = makeEntry({ imageUrl: undefined });
       mockUseRecentlyPlayed.mockReturnValue({ history: [entry], record: vi.fn() });
+      const libraryPlaylist: MediaCollection = {
+        id: 'pl-1',
+        provider: 'spotify',
+        kind: 'playlist',
+        name: 'Test Playlist',
+        imageUrl: 'https://library.example/img.jpg',
+        genres: [],
+      };
       mockUseLibrarySync.mockReturnValue({
         ...defaultLibrarySyncReturn,
-        playlists: [{
-          id: 'pl-1',
-          name: 'Test Playlist',
-          provider: 'spotify' as ProviderId,
-          images: [{ url: 'https://library.example/img.jpg', height: 300, width: 300 }],
-        }] as ReturnType<typeof useLibrarySync>['playlists'],
+        playlists: [libraryPlaylist],
       });
 
       // #when
@@ -127,18 +130,20 @@ describe('useRecentlyPlayedSection', () => {
         imageUrl: undefined,
       });
       mockUseRecentlyPlayed.mockReturnValue({ history: [entry], record: vi.fn() });
+      const libraryAlbum: MediaCollection = {
+        id: 'alb-1',
+        provider: 'spotify',
+        kind: 'album',
+        name: 'Test Album',
+        ownerName: 'Test Artist',
+        imageUrl: 'https://album.example/img.jpg',
+        releaseDate: '2024',
+        trackCount: 10,
+        genres: [],
+      };
       mockUseLibrarySync.mockReturnValue({
         ...defaultLibrarySyncReturn,
-        albums: [{
-          id: 'alb-1',
-          name: 'Test Album',
-          provider: 'spotify' as ProviderId,
-          artists: 'Test Artist',
-          images: [{ url: 'https://album.example/img.jpg', height: 300, width: 300 }],
-          release_date: '2024',
-          total_tracks: 10,
-          uri: 'spotify:album:alb-1',
-        }] as ReturnType<typeof useLibrarySync>['albums'],
+        albums: [libraryAlbum],
       });
 
       // #when
@@ -164,14 +169,17 @@ describe('useRecentlyPlayedSection', () => {
       // #given — entry is spotify, library has same id but dropbox provider
       const entry = makeEntry({ imageUrl: undefined });
       mockUseRecentlyPlayed.mockReturnValue({ history: [entry], record: vi.fn() });
+      const wrongProviderPlaylist: MediaCollection = {
+        id: 'pl-1',
+        provider: 'dropbox',
+        kind: 'playlist',
+        name: 'Test Playlist',
+        imageUrl: 'https://wrong.example/img.jpg',
+        genres: [],
+      };
       mockUseLibrarySync.mockReturnValue({
         ...defaultLibrarySyncReturn,
-        playlists: [{
-          id: 'pl-1',
-          name: 'Test Playlist',
-          provider: 'dropbox' as ProviderId,
-          images: [{ url: 'https://wrong.example/img.jpg', height: 300, width: 300 }],
-        }] as ReturnType<typeof useLibrarySync>['playlists'],
+        playlists: [wrongProviderPlaylist],
       });
 
       // #when

@@ -1,4 +1,4 @@
-import type { AlbumInfo } from '../spotify';
+import type { MediaCollection } from '@/types/domain';
 import {
   getPlaylistCount,
   getAlbumCount,
@@ -8,11 +8,9 @@ import {
   invalidateLikedSongsCaches,
 } from '../spotify';
 import * as cache from './libraryCache';
-import type { CachedPlaylistInfo, LibraryChanges } from './cacheTypes';
+import type { LibraryChanges } from './cacheTypes';
 
-// One-minute stride per ordinal so synthesised timestamps preserve the
-// fetched order when the upstream playlist lacks a real added_at.
-const SYNTHETIC_ADDED_AT_STRIDE_MS = 60_000;
+const ENGINE_PROVIDER = 'spotify' as const;
 
 export async function detectChanges(signal: AbortSignal): Promise<LibraryChanges> {
   const [playlistsMeta, albumsMeta, likedMeta] = await Promise.all([
@@ -47,9 +45,9 @@ export async function applyChanges(
   signal: AbortSignal,
   pendingRemovals: Map<string, number>,
   pendingAdditions: Map<string, number>,
-): Promise<{ playlists: CachedPlaylistInfo[]; albums: AlbumInfo[]; likedSongsCount: number }> {
-  let updatedPlaylists: CachedPlaylistInfo[] | undefined;
-  let updatedAlbums: AlbumInfo[] | undefined;
+): Promise<{ playlists: MediaCollection[]; albums: MediaCollection[]; likedSongsCount: number }> {
+  let updatedPlaylists: MediaCollection[] | undefined;
+  let updatedAlbums: MediaCollection[] | undefined;
 
   if (changes.playlistsChanged) {
     updatedPlaylists = await syncPlaylists(changes.newPlaylistCount, signal);
@@ -67,44 +65,42 @@ export async function applyChanges(
     });
   }
 
-  const playlists = updatedPlaylists ?? await cache.getAllPlaylists();
-  const albums = updatedAlbums ?? await cache.getAllAlbums();
+  // The cache holds all providers' collections; the engine owns only its own.
+  const playlists = updatedPlaylists
+    ?? (await cache.getAllPlaylists()).filter((p) => p.provider === ENGINE_PROVIDER);
+  const albums = updatedAlbums
+    ?? (await cache.getAllAlbums()).filter((a) => a.provider === ENGINE_PROVIDER);
 
   return { playlists, albums, likedSongsCount: changes.newLikedSongsCount };
 }
 
-async function syncPlaylists(newTotal: number, signal: AbortSignal): Promise<CachedPlaylistInfo[]> {
+async function syncPlaylists(newTotal: number, signal: AbortSignal): Promise<MediaCollection[]> {
   const [cachedPlaylists, meta] = await Promise.all([
     cache.getAllPlaylists(),
     cache.getMeta('playlists'),
   ]);
 
-  const cachedMap = new Map<string, CachedPlaylistInfo>(
-    cachedPlaylists.map(p => [p.id, p])
+  const cachedMap = new Map<string, MediaCollection>(
+    cachedPlaylists
+      .filter((p) => p.provider === ENGINE_PROVIDER)
+      .map((p) => [p.id, p]),
   );
 
   if (signal.aborted) throw new DOMException('Request aborted', 'AbortError');
 
-  const allFetched: CachedPlaylistInfo[] = await getAllUserPlaylists(signal);
+  const allFetched = await getAllUserPlaylists(signal);
 
-  for (let i = 0; i < allFetched.length; i++) {
-    const p = allFetched[i];
-    if (!p) continue;
-    const cached = cachedMap.get(p.id);
-    p.added_at =
-      cached?.added_at ||
-      p.added_at ||
-      new Date(Date.now() - i * SYNTHETIC_ADDED_AT_STRIDE_MS).toISOString();
-  }
-
-  const fetchedIds = new Set(allFetched.map(p => p.id));
-  const snapshotIds: Record<string, string> = { ...(meta?.snapshotIds ?? {}) };
+  const fetchedIds = new Set(allFetched.map((p) => p.id));
+  const revisions: Record<string, string> = { ...(meta?.revisions ?? {}) };
 
   const removals: Promise<void>[] = [];
-  for (const cached of cachedPlaylists) {
+  for (const cached of cachedMap.values()) {
     if (!fetchedIds.has(cached.id)) {
-      removals.push(cache.removePlaylist(cached.id), cache.removeTrackList(`playlist:${cached.id}`));
-      delete snapshotIds[cached.id];
+      removals.push(
+        cache.removePlaylist(ENGINE_PROVIDER, cached.id),
+        cache.removeTrackList({ provider: ENGINE_PROVIDER, kind: 'playlist', id: cached.id }),
+      );
+      delete revisions[cached.id];
     }
   }
   await Promise.all(removals);
@@ -112,12 +108,12 @@ async function syncPlaylists(newTotal: number, signal: AbortSignal): Promise<Cac
   const writes: Promise<void>[] = [];
   for (const fetched of allFetched) {
     const cached = cachedMap.get(fetched.id);
-    if (cached && fetched.snapshot_id && fetched.snapshot_id !== cached.snapshot_id) {
-      writes.push(cache.removeTrackList(`playlist:${fetched.id}`));
+    if (cached && fetched.revision && fetched.revision !== cached.revision) {
+      writes.push(cache.removeTrackList({ provider: ENGINE_PROVIDER, kind: 'playlist', id: fetched.id }));
     }
     writes.push(cache.putPlaylist(fetched));
-    if (fetched.snapshot_id) {
-      snapshotIds[fetched.id] = fetched.snapshot_id;
+    if (fetched.revision) {
+      revisions[fetched.id] = fetched.revision;
     }
   }
   await Promise.all(writes);
@@ -125,7 +121,7 @@ async function syncPlaylists(newTotal: number, signal: AbortSignal): Promise<Cac
   await cache.putMeta('playlists', {
     lastValidated: Date.now(),
     totalCount: newTotal,
-    snapshotIds,
+    revisions,
   });
 
   return allFetched;
@@ -135,17 +131,21 @@ async function syncAlbums(
   signal: AbortSignal,
   pendingRemovals: Map<string, number>,
   pendingAdditions: Map<string, number>,
-): Promise<AlbumInfo[]> {
-  const cachedAlbums = await cache.getAllAlbums();
+): Promise<MediaCollection[]> {
+  const cachedAlbums = (await cache.getAllAlbums())
+    .filter((a) => a.provider === ENGINE_PROVIDER);
 
   const allFetched = await getAllUserAlbums(signal);
 
-  const fetchedIds = new Set(allFetched.map(a => a.id));
+  const fetchedIds = new Set(allFetched.map((a) => a.id));
 
   const ops: Promise<void>[] = [];
   for (const cached of cachedAlbums) {
     if (!fetchedIds.has(cached.id) && !pendingAdditions.has(cached.id)) {
-      ops.push(cache.removeAlbum(cached.id), cache.removeTrackList(`album:${cached.id}`));
+      ops.push(
+        cache.removeAlbum(ENGINE_PROVIDER, cached.id),
+        cache.removeTrackList({ provider: ENGINE_PROVIDER, kind: 'album', id: cached.id }),
+      );
     }
   }
   for (const fetched of allFetched) {
@@ -155,21 +155,16 @@ async function syncAlbums(
   }
   await Promise.all(ops);
 
-  const finalAlbums: AlbumInfo[] = [
+  const finalAlbums: MediaCollection[] = [
     ...allFetched.filter(f => !pendingRemovals.has(f.id)),
     ...cachedAlbums.filter(a => pendingAdditions.has(a.id) && !fetchedIds.has(a.id)),
   ];
   const seen = new Set<string>();
   const deduped = finalAlbums.filter(a => seen.has(a.id) ? false : (seen.add(a.id), true));
 
-  const latestAddedAt = deduped.reduce(
-    (latest, a) => (a.added_at && a.added_at > latest ? a.added_at : latest),
-    '',
-  );
   await cache.putMeta('albums', {
     lastValidated: Date.now(),
     totalCount: deduped.length,
-    ...(latestAddedAt && { latestAddedAt }),
   });
 
   return deduped;

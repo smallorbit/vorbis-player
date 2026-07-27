@@ -20,10 +20,6 @@ vi.mock('@/providers/registry', () => ({
   },
 }));
 
-vi.mock('@/utils/libraryFirstSeen', () => ({
-  getOrSetFirstSeenAddedAtIso: vi.fn().mockReturnValue('2024-01-01T00:00:00.000Z'),
-}));
-
 vi.mock('@/services/cache/likedCountSnapshot', () => ({
   readLikedCountSnapshots: vi.fn().mockReturnValue({}),
   writeLikedCountSnapshot: vi.fn(),
@@ -62,12 +58,8 @@ function makeCollection(id: string, kind: 'playlist' | 'album' | 'folder' = 'pla
     provider: 'dropbox' as ProviderId,
     kind,
     name: `Collection ${id}`,
-    description: null,
-    imageUrl: null,
     trackCount: 5,
-    ownerName: null,
-    releaseDate: null,
-    revision: null,
+    genres: [],
   };
 }
 

@@ -22,17 +22,16 @@ import {
 import { PlayerSizingProvider } from '@/contexts/PlayerSizingContext';
 import { useTrackListContext, useCurrentTrackContext } from '@/contexts/TrackContext';
 import { useProviderContext } from '@/contexts/ProviderContext';
-import { toAlbumPlaylistId, LIKED_SONGS_ID } from '@/constants/playlist';
-import { keyToCollectionRef } from '@/types/domain';
+import { LIKED_SONGS_NAME } from '@/constants/playlist';
 import { useSessionPersistence } from '@/hooks/useSessionPersistence';
+import { decodeLegacySelection } from '@/services/sessionPersistence';
 import QuickAccessPanel from './QuickAccessPanel';
 import { CmdKPalette } from './CmdKPalette';
-import { tracksToMediaTracks } from '@/services/spotify/tracks';
-import type { Track, AlbumInfo } from '@/services/spotify';
-import type { CachedPlaylistInfo } from '@/services/cache/cacheTypes';
+import type { CollectionSelection, MediaCollection, MediaTrack } from '@/types/domain';
+import { collectionToRef, keyToCollectionRef } from '@/types/domain';
 import type { SearchArtist } from '@/services/cache/librarySearch';
 
-const SettingsV2 = lazy(() => import('./SettingsV2'));
+const Settings = lazy(() => import('./Settings'));
 const LibraryRoute = lazy(() => import('./LibraryRoute'));
 
 const RESUME_TOAST_ID = 'resume-toast';
@@ -74,8 +73,8 @@ const AudioPlayerComponent = () => {
     backgroundVisualizerSpeed,
   } = useVisualizer();
   const { accentColorBackgroundEnabled } = useAccentColorBackground();
-  const { showVisualEffects, setShowVisualEffects } = useVisualEffectsToggle();
-  const { tracks, selectedPlaylistId, setTracks, setOriginalTracks, setSelectedPlaylistId } = useTrackListContext();
+  const { isSettingsOpen, setIsSettingsOpen } = useVisualEffectsToggle();
+  const { tracks, selection, setTracks, setOriginalTracks, setSelection } = useTrackListContext();
   const { currentTrack, currentTrackIndex, setCurrentTrackIndex, showQueue, setShowQueue } = useCurrentTrackContext();
 
   const resolveDisplayProvider = useCallback((): import('@/types/domain').ProviderId | undefined => (
@@ -93,7 +92,6 @@ const AudioPlayerComponent = () => {
   }, [resolveDisplayProvider]);
 
   const collectionNameRef = useRef<string>('');
-  const collectionProviderRef = useRef<import('@/types/domain').ProviderId | undefined>(undefined);
   const pendingLibraryQueryRef = useRef<string | undefined>(undefined);
 
   const getLivePosition = useCallback(async (): Promise<number | null> => {
@@ -106,9 +104,8 @@ const AudioPlayerComponent = () => {
   }, [playbackProviderRef]);
 
   const { lastSession, resetLastSession } = useSessionPersistence(
-    selectedPlaylistId,
+    selection,
     collectionNameRef.current,
-    collectionProviderRef.current,
     tracks,
     currentTrackIndex,
     currentTrack?.id,
@@ -119,28 +116,27 @@ const AudioPlayerComponent = () => {
     getLivePosition,
   );
 
-  const handleAlbumPlay = useCallback((albumId: string) => {
-    collectionProviderRef.current = currentTrack?.provider;
-    handlers.loadCollection(
-      toAlbumPlaylistId(albumId),
-      currentTrack?.provider,
-    );
+  const handleAlbumPlay = useCallback((albumId: string, albumName: string) => {
+    const provider = currentTrack?.provider ?? 'spotify';
+    collectionNameRef.current = albumName;
+    handlers.loadCollection({
+      type: 'collection',
+      ref: { provider, kind: 'album', id: albumId },
+      name: albumName,
+    });
   }, [handlers, currentTrack?.provider]);
 
-  const handlePlaylistSelect = useCallback(
-    (id: string, name?: string, provider?: import('@/types/domain').ProviderId) => {
-      if (name) collectionNameRef.current = name;
-      collectionProviderRef.current = provider;
-      handlers.loadCollection(id, provider, name);
+  const handleSelectCollection = useCallback(
+    (collectionSelection: CollectionSelection) => {
+      if (collectionSelection.name) collectionNameRef.current = collectionSelection.name;
+      handlers.loadCollection(collectionSelection);
     },
     [handlers]
   );
 
   const handleCmdKSelectTrack = useCallback(
-    (track: Track) => {
-      const [mediaTrack] = tracksToMediaTracks([track]);
-      if (!mediaTrack) return;
-      const result = handlers.insertTracksNext([mediaTrack], track.name);
+    (track: MediaTrack) => {
+      const result = handlers.insertTracksNext([track], track.name);
       if (result && result.added > 0) {
         toast(`Added "${track.name}" to play next.`, {
           id: 'cmdk-add-track',
@@ -158,12 +154,9 @@ const AudioPlayerComponent = () => {
   );
 
   const handleCmdKInsertCollectionNext = useCallback(
-    async (
-      id: string,
-      name: string,
-      provider?: import('@/types/domain').ProviderId,
-    ) => {
-      const result = await handlers.insertCollectionNext(id, name, provider);
+    async (collectionSelection: CollectionSelection) => {
+      const name = collectionSelection.name ?? '';
+      const result = await handlers.insertCollectionNext(collectionSelection);
       if (result && result.added > 0) {
         const trackWord = result.added === 1 ? 'track' : 'tracks';
         toast(`Added ${result.added} ${trackWord} from "${name}" to play next.`, {
@@ -183,15 +176,15 @@ const AudioPlayerComponent = () => {
   );
 
   const handleCmdKSelectAlbum = useCallback(
-    (album: AlbumInfo) => {
-      void handleCmdKInsertCollectionNext(toAlbumPlaylistId(album.id), album.name, album.provider);
+    (album: MediaCollection) => {
+      void handleCmdKInsertCollectionNext({ type: 'collection', ref: collectionToRef(album), name: album.name });
     },
     [handleCmdKInsertCollectionNext],
   );
 
   const handleCmdKSelectPlaylist = useCallback(
-    (playlist: CachedPlaylistInfo) => {
-      void handleCmdKInsertCollectionNext(playlist.id, playlist.name, playlist.provider);
+    (playlist: MediaCollection) => {
+      void handleCmdKInsertCollectionNext({ type: 'collection', ref: collectionToRef(playlist), name: playlist.name });
     },
     [handleCmdKInsertCollectionNext],
   );
@@ -240,13 +233,9 @@ const AudioPlayerComponent = () => {
     if (showQueue) toast.dismiss(RESUME_TOAST_ID);
   }, [showQueue]);
   const handleLibraryPlayNext = useCallback(
-    async (
-      _kind: 'playlist' | 'album',
-      id: string,
-      name: string,
-      provider?: import('@/types/domain').ProviderId,
-    ) => {
-      const result = await handlers.insertCollectionNext(id, name, provider);
+    async (collectionSelection: CollectionSelection) => {
+      const name = collectionSelection.name ?? '';
+      const result = await handlers.insertCollectionNext(collectionSelection);
       if (result && result.added > 0) {
         const trackWord = result.added === 1 ? 'track' : 'tracks';
         toast(`Added ${result.added} ${trackWord} from "${name}" to play next.`, {
@@ -265,8 +254,8 @@ const AudioPlayerComponent = () => {
   );
 
   const handleAddToQueueFromPanel = useCallback(
-    async (id: string, name?: string, provider?: import('@/types/domain').ProviderId) => {
-      const result = await handlers.handleAddToQueue(id, name, provider);
+    async (collectionSelection: CollectionSelection) => {
+      const result = await handlers.handleAddToQueue(collectionSelection);
       if (result && result.added > 0) {
         const title = result.collectionName?.trim();
         const label = title ? `"${title}"` : 'this collection';
@@ -288,10 +277,9 @@ const AudioPlayerComponent = () => {
   );
 
   const handlePlayLikedTracks = useCallback(
-    async (likedTracks: import('@/types/domain').MediaTrack[], collectionId: string, collectionName: string, provider?: import('@/types/domain').ProviderId) => {
-      collectionNameRef.current = collectionName;
-      collectionProviderRef.current = provider;
-      await handlers.playTracksDirectly(likedTracks, collectionId, provider);
+    async (likedTracks: import('@/types/domain').MediaTrack[], collectionSelection: CollectionSelection) => {
+      collectionNameRef.current = collectionSelection.name ?? '';
+      await handlers.playTracksDirectly(likedTracks, collectionSelection);
     },
     [handlers],
   );
@@ -330,7 +318,7 @@ const AudioPlayerComponent = () => {
       onOpenLibraryWithQuery: handleOpenLibraryWithQuery,
       onCloseLibrary: handlers.handleCloseLibrary,
       onOpenQuickAccessPanel: handleOpenQuickAccessPanel,
-      onPlaylistSelect: handlePlaylistSelect,
+      onSelectCollection: handleSelectCollection,
       onAddToQueue: handlers.handleAddToQueue,
       onPlayLikedTracks: handlePlayLikedTracks,
       onQueueLikedTracks: handleQueueLikedTracks,
@@ -344,7 +332,7 @@ const AudioPlayerComponent = () => {
     handlers,
     handleAlbumPlay,
     handleOpenLibraryWithQuery,
-    handlePlaylistSelect,
+    handleSelectCollection,
     handleOpenQuickAccessPanel,
     handlePlayLikedTracks,
     handleQueueLikedTracks,
@@ -380,7 +368,7 @@ const AudioPlayerComponent = () => {
 
   const autoSelectFired = useRef(false);
   useEffect(() => {
-    if (needsSetup || autoSelectFired.current || selectedPlaylistId !== null) return;
+    if (needsSetup || autoSelectFired.current || selection !== null) return;
     const params = new URLSearchParams(window.location.search);
     const playlistParam = params.get('playlist');
     if (!playlistParam) return;
@@ -388,40 +376,43 @@ const AudioPlayerComponent = () => {
     window.history.replaceState({}, '', '/');
 
     // Structured `provider:kind:id` keys let the mock catalog resolve by snapshot id
-    // instead of falling through to the Spotify SDK; raw IDs work for legacy links.
+    // instead of falling through to the Spotify SDK; raw legacy ids
+    // ('liked-songs', 'album:X', bare id) go through the shared legacy decoder.
     const ref = keyToCollectionRef(playlistParam);
     if (ref) {
-      const playlistId = ref.kind === 'liked'
-        ? LIKED_SONGS_ID
-        : ref.kind === 'album'
-          ? toAlbumPlaylistId(ref.id)
-          : ref.id;
-      handlers.loadCollection(playlistId, ref.provider);
+      if (ref.kind === 'liked') {
+        handlers.loadCollection({ type: 'liked', provider: ref.provider, name: LIKED_SONGS_NAME });
+      } else {
+        handlers.loadCollection({ type: 'collection', ref });
+      }
     } else {
-      handlers.loadCollection(playlistParam);
+      const legacy = decodeLegacySelection(playlistParam, activeDescriptor?.id, playlistParam);
+      if (legacy.type !== 'radio') {
+        handlers.loadCollection(legacy);
+      }
     }
-  }, [needsSetup, selectedPlaylistId, handlers]);
+  }, [needsSetup, selection, handlers, activeDescriptor]);
 
-  const isMainPlayerActive = !state.isLoading && !state.error && selectedPlaylistId !== null && tracks.length > 0;
+  const isMainPlayerActive = !state.isLoading && !state.error && selection !== null && tracks.length > 0;
 
   const handleOpenSettings = useCallback(() => {
-    setShowVisualEffects(true);
-  }, [setShowVisualEffects]);
+    setIsSettingsOpen(true);
+  }, [setIsSettingsOpen]);
 
   const handleCloseSettings = useCallback(() => {
-    setShowVisualEffects(false);
-  }, [setShowVisualEffects]);
+    setIsSettingsOpen(false);
+  }, [setIsSettingsOpen]);
 
   const handleResume = useCallback(async () => {
     if (!lastSession?.queueTracks?.length) return;
-    const { queueTracks, trackId, trackIndex, collectionId, playbackPosition: savedPositionMs } = lastSession;
+    const { queueTracks, trackId, trackIndex, selection: savedSelection, playbackPosition: savedPositionMs } = lastSession;
     const targetIdx = trackId
       ? queueTracks.findIndex(t => t.id === trackId)
       : Math.min(trackIndex, queueTracks.length - 1);
     const resolvedIdx = targetIdx >= 0 ? targetIdx : Math.min(trackIndex, queueTracks.length - 1);
     setTracks(queueTracks);
     setOriginalTracks(queueTracks);
-    setSelectedPlaylistId(collectionId);
+    setSelection(savedSelection);
     setCurrentTrackIndex(resolvedIdx);
     // Update the imperative tracks mirror synchronously so playTrack can resolve
     // the right track before React re-renders. Required for iOS Safari, which
@@ -434,7 +425,7 @@ const AudioPlayerComponent = () => {
 
     const positionMs = savedPositionMs && savedPositionMs > 0 ? savedPositionMs : undefined;
     await handlers.playTrack(resolvedIdx, false, positionMs ? { positionMs } : undefined);
-  }, [lastSession, setTracks, setOriginalTracks, setSelectedPlaylistId, setCurrentTrackIndex, mediaTracksRef, expectedTrackIdRef, handlers]);
+  }, [lastSession, setTracks, setOriginalTracks, setSelection, setCurrentTrackIndex, mediaTracksRef, expectedTrackIdRef, handlers]);
 
   const renderContent = () => {
     if (needsSetup) {
@@ -446,16 +437,16 @@ const AudioPlayerComponent = () => {
       );
     }
 
-    if (state.isLoading || state.error || selectedPlaylistId === null || tracks.length === 0) {
+    if (state.isLoading || state.error || selection === null || tracks.length === 0) {
       return (
         <>
           <ProfiledComponent id="PlayerStateRenderer">
             <PlayerStateRenderer
               isLoading={state.isLoading}
               error={state.error}
-              selectedPlaylistId={selectedPlaylistId}
+              selection={selection}
               tracks={tracks}
-              onPlaylistSelect={handlePlaylistSelect}
+              onSelectCollection={handleSelectCollection}
               onAddToQueue={handleAddToQueueFromPanel}
               onPlayLikedTracks={handlePlayLikedTracks}
               onQueueLikedTracks={handleQueueLikedTracks}
@@ -477,9 +468,9 @@ const AudioPlayerComponent = () => {
       return (
         <Suspense fallback={null}>
           <LibraryRoute
-            onPlaylistSelect={(id, name, provider) => {
+            onSelectCollection={(collectionSelection) => {
               handlers.handleCloseLibrary();
-              handlePlaylistSelect(id, name ?? '', provider);
+              handleSelectCollection(collectionSelection);
             }}
             onAddToQueue={handleAddToQueueFromPanel}
             onPlayLikedTracks={handlePlayLikedTracks}
@@ -568,13 +559,13 @@ const AudioPlayerComponent = () => {
               style={{ width: '92%', maxWidth: 900, height: '80%', maxHeight: 'calc(100dvh - 120px)', margin: 'auto', position: 'relative' }}
             >
               <QuickAccessPanel
-                onPlaylistSelect={(id, name, provider) => {
+                onSelectCollection={(collectionSelection) => {
                   handleCloseQuickAccessPanel();
-                  handlePlaylistSelect(id, name, provider);
+                  handleSelectCollection(collectionSelection);
                 }}
-                onAddToQueue={async (id, name, provider) => {
+                onAddToQueue={(collectionSelection) => {
                   handleCloseQuickAccessPanel();
-                  return handleAddToQueueFromPanel(id, name, provider);
+                  void handleAddToQueueFromPanel(collectionSelection);
                 }}
                 onBrowseLibrary={() => {
                   handleCloseQuickAccessPanel();
@@ -594,15 +585,15 @@ const AudioPlayerComponent = () => {
         />
         {!isMainPlayerActive && (
           <Suspense fallback={null}>
-            <SettingsV2 isOpen={showVisualEffects} onClose={handleCloseSettings} />
+            <Settings isOpen={isSettingsOpen} onClose={handleCloseSettings} />
           </Suspense>
         )}
         {needsSetup && state.currentView === 'library' && (
           <Suspense fallback={null}>
             <LibraryRoute
-              onPlaylistSelect={(id, name, provider) => {
+              onSelectCollection={(collectionSelection) => {
                 handlers.handleCloseLibrary();
-                handlePlaylistSelect(id, name ?? '', provider);
+                handleSelectCollection(collectionSelection);
               }}
               onAddToQueue={handleAddToQueueFromPanel}
               onPlayLikedTracks={handlePlayLikedTracks}

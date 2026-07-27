@@ -26,12 +26,12 @@ describe('VisualEffectsToggleContext', () => {
       expect(result.current.visualEffectsEnabled).toBe(true);
     });
 
-    it('exposes default showVisualEffects of false', () => {
+    it('exposes default isSettingsOpen of false', () => {
       // #when
       const { result } = renderHook(() => useVisualEffectsToggle(), { wrapper });
 
       // #then
-      expect(result.current.showVisualEffects).toBe(false);
+      expect(result.current.isSettingsOpen).toBe(false);
     });
   });
 
@@ -53,17 +53,17 @@ describe('VisualEffectsToggleContext', () => {
       );
     });
 
-    it('updates showVisualEffects without persisting (UI-only state)', () => {
+    it('updates isSettingsOpen without persisting (UI-only state)', () => {
       // #given
       const { result } = renderHook(() => useVisualEffectsToggle(), { wrapper });
 
       // #when
       act(() => {
-        result.current.setShowVisualEffects(true);
+        result.current.setIsSettingsOpen(true);
       });
 
       // #then
-      expect(result.current.showVisualEffects).toBe(true);
+      expect(result.current.isSettingsOpen).toBe(true);
     });
   });
 

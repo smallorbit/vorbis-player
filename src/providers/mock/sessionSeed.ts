@@ -68,9 +68,14 @@ export function seedSessionFromUrlParam(
     if (!track) return;
 
     const snapshot: SessionSnapshot = {
-      collectionId: track.albumId ?? track.provider,
+      selection: track.albumId !== undefined
+        ? {
+            type: 'collection',
+            ref: { provider: track.provider, kind: 'album', id: track.albumId },
+            name: track.album,
+          }
+        : { type: 'liked', provider: track.provider, name: track.album },
       collectionName: track.album,
-      collectionProvider: track.provider,
       // trackIndex: 0 — single-element queue; handleHydrate resolves by trackId first so
       // this is benign. Multi-track reload scenarios are a known limitation of the seed.
       trackIndex: 0,

@@ -8,7 +8,7 @@ import type { ProviderId } from '@/types/domain';
 import { spotifyAuth } from '@/services/spotify';
 import { clearLikedCountSnapshot } from '@/services/cache/likedCountSnapshot';
 import { clearAllSpotifyInMemoryCaches } from '@/services/spotify/cache';
-import { clearAll as clearLibraryCache } from '@/services/cache/libraryCache';
+import { clearProviderData } from '@/services/cache/libraryCache';
 import { logCaughtError } from '@/utils/logCaughtError';
 
 export class SpotifyAuthAdapter implements AuthProvider {
@@ -64,7 +64,7 @@ export class SpotifyAuthAdapter implements AuthProvider {
     spotifyAuth.logout();
     clearLikedCountSnapshot('spotify');
     clearAllSpotifyInMemoryCaches();
-    void clearLibraryCache();
+    void clearProviderData('spotify');
   }
 
   reportUnauthorized(): void {

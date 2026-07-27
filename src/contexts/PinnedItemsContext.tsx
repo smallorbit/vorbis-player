@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useCallback, useMemo, useState, useEffect } from 'react';
 import { getPins, setPins, migratePinsFromLocalStorage, MAX_PINS, UNIFIED_PROVIDER, PINS_CHANGED_EVENT } from '@/services/settings/pinnedItemsStorage';
-import { getPreferencesSync } from '@/providers/dropbox/dropboxPreferencesSync';
+import { schedulePreferencesPush } from '@/providers/preferencesSync';
 import { LIKED_SONGS_ID, ALL_MUSIC_PIN_ID } from '@/constants/playlist';
 
 /** IDs that are always rendered in the grid and should not count against MAX_PINS. */
@@ -8,6 +8,16 @@ const SPECIAL_PIN_IDS: ReadonlySet<string> = new Set([LIKED_SONGS_ID, ALL_MUSIC_
 
 function countUserPins(ids: string[]): number {
   return ids.filter(id => !SPECIAL_PIN_IDS.has(id)).length;
+}
+
+/**
+ * Compatibility shim for pins persisted before collection ids lost their
+ * prefix encoding (#1687): saved Dropbox playlists were pinned under
+ * `dbplaylist:{path}` ids. Runs on every read so remote (Dropbox-synced)
+ * copies stay readable without a one-shot rewrite.
+ */
+function normalizePinIds(ids: string[]): string[] {
+  return ids.map(id => id.startsWith('dbplaylist:') ? id.slice('dbplaylist:'.length) : id);
 }
 
 interface PinnedItemsContextValue {
@@ -36,8 +46,8 @@ export function PinnedItemsProvider({ children }: { children: React.ReactNode })
         getPins(UNIFIED_PROVIDER, 'albums'),
       ]);
       if (cancelled) return;
-      setPinnedPlaylistIds(playlists);
-      setPinnedAlbumIds(albums);
+      setPinnedPlaylistIds(normalizePinIds(playlists));
+      setPinnedAlbumIds(normalizePinIds(albums));
     }
     load().catch(err => console.warn('[PinnedItemsContext] Failed to load pins:', err));
     return () => { cancelled = true; };
@@ -50,8 +60,8 @@ export function PinnedItemsProvider({ children }: { children: React.ReactNode })
         getPins(UNIFIED_PROVIDER, 'playlists'),
         getPins(UNIFIED_PROVIDER, 'albums'),
       ]).then(([playlists, albums]) => {
-        setPinnedPlaylistIds(playlists);
-        setPinnedAlbumIds(albums);
+        setPinnedPlaylistIds(normalizePinIds(playlists));
+        setPinnedAlbumIds(normalizePinIds(albums));
       }).catch(err => console.warn('[PinnedItemsContext] Failed to reload pins:', err));
     }
     window.addEventListener(PINS_CHANGED_EVENT, onPinsChanged);
@@ -72,7 +82,7 @@ export function PinnedItemsProvider({ children }: { children: React.ReactNode })
     setPinnedPlaylistIds(prev => {
       const next = prev.includes(id) ? prev.filter(pid => pid !== id) : countUserPins(prev) + countUserPins(pinnedAlbumIds) >= MAX_PINS && !SPECIAL_PIN_IDS.has(id) ? prev : [...prev, id];
       setPins(UNIFIED_PROVIDER, 'playlists', next).catch(err => console.warn('[PinnedItemsContext] pin write failed:', err));
-      getPreferencesSync()?.schedulePush();
+      schedulePreferencesPush();
       return next;
     });
   }, [pinnedAlbumIds]);
@@ -81,7 +91,7 @@ export function PinnedItemsProvider({ children }: { children: React.ReactNode })
     setPinnedAlbumIds(prev => {
       const next = prev.includes(id) ? prev.filter(pid => pid !== id) : countUserPins(pinnedPlaylistIds) + countUserPins(prev) >= MAX_PINS && !SPECIAL_PIN_IDS.has(id) ? prev : [...prev, id];
       setPins(UNIFIED_PROVIDER, 'albums', next).catch(err => console.warn('[PinnedItemsContext] pin write failed:', err));
-      getPreferencesSync()?.schedulePush();
+      schedulePreferencesPush();
       return next;
     });
   }, [pinnedPlaylistIds]);

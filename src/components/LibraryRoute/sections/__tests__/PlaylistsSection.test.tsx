@@ -50,8 +50,17 @@ vi.mock('../../card/LibraryCard', () => ({
 
 import { usePlaylistsSection } from '../../hooks';
 import PlaylistsSection from '../PlaylistsSection';
+import type { MediaCollection } from '@/types/domain';
 
 const mockUsePlaylistsSection = vi.mocked(usePlaylistsSection);
+
+const makePlaylist = (id: string, name: string): MediaCollection => ({
+  id,
+  provider: 'spotify',
+  kind: 'playlist',
+  name,
+  genres: [],
+});
 
 const baseProps = {
   layout: 'row' as const,
@@ -89,10 +98,7 @@ describe('PlaylistsSection', () => {
   it('renders a card for each playlist item', () => {
     // #given
     mockUsePlaylistsSection.mockReturnValue({
-      items: [
-        { id: 'p1', name: 'Chill Vibes', provider: 'spotify' as const, images: [] },
-        { id: 'p2', name: 'Workout Mix', provider: 'spotify' as const, images: [] },
-      ],
+      items: [makePlaylist('p1', 'Chill Vibes'), makePlaylist('p2', 'Workout Mix')],
       isLoading: false,
       isEmpty: false,
     });
@@ -108,12 +114,7 @@ describe('PlaylistsSection', () => {
   it('shows See all when layout is row and items exceed 8', () => {
     // #given
     mockUsePlaylistsSection.mockReturnValue({
-      items: Array.from({ length: 9 }, (_, i) => ({
-        id: `p${i}`,
-        name: `Playlist ${i}`,
-        provider: 'spotify' as const,
-        images: [],
-      })),
+      items: Array.from({ length: 9 }, (_, i) => makePlaylist(`p${i}`, `Playlist ${i}`)),
       isLoading: false,
       isEmpty: false,
     });
@@ -128,12 +129,7 @@ describe('PlaylistsSection', () => {
   it('does not show See all when items are at or below 8', () => {
     // #given
     mockUsePlaylistsSection.mockReturnValue({
-      items: Array.from({ length: 8 }, (_, i) => ({
-        id: `p${i}`,
-        name: `Playlist ${i}`,
-        provider: 'spotify' as const,
-        images: [],
-      })),
+      items: Array.from({ length: 8 }, (_, i) => makePlaylist(`p${i}`, `Playlist ${i}`)),
       isLoading: false,
       isEmpty: false,
     });
@@ -145,11 +141,11 @@ describe('PlaylistsSection', () => {
     expect(screen.queryByRole('button', { name: 'See all' })).not.toBeInTheDocument();
   });
 
-  it('calls onSelect with playlist kind, id, name, provider on card click', () => {
+  it('calls onSelect with the typed playlist selection on card click', () => {
     // #given
     const onSelect = vi.fn();
     mockUsePlaylistsSection.mockReturnValue({
-      items: [{ id: 'p1', name: 'My Mix', provider: 'spotify' as const, images: [] }],
+      items: [makePlaylist('p1', 'My Mix')],
       isLoading: false,
       isEmpty: false,
     });
@@ -159,6 +155,10 @@ describe('PlaylistsSection', () => {
     fireEvent.click(screen.getByTestId('library-card-playlist-p1'));
 
     // #then
-    expect(onSelect).toHaveBeenCalledWith('playlist', 'p1', 'My Mix', 'spotify');
+    expect(onSelect).toHaveBeenCalledWith({
+      type: 'collection',
+      ref: { provider: 'spotify', kind: 'playlist', id: 'p1' },
+      name: 'My Mix',
+    });
   });
 });

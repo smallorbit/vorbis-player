@@ -1,5 +1,5 @@
 import React from 'react';
-import type { ProviderId } from '@/types/domain';
+import type { CollectionSelection } from '@/types/domain';
 import type { SessionSnapshot } from '@/services/sessionPersistence';
 import { useProviderContext } from '@/contexts/ProviderContext';
 import {
@@ -9,19 +9,14 @@ import {
   PlaylistsSection,
   AlbumsSection,
 } from '../sections';
-import type { ContextMenuRequest, LibraryItemKind, LibraryRouteView } from '../types';
+import type { ContextMenuRequest, LibraryRouteView } from '../types';
 import { HomeStack } from './views.styled';
 
 interface HomeViewProps {
   layout: 'row' | 'grid';
   lastSession: SessionSnapshot | null;
   onResume?: (() => void) | undefined;
-  onSelectCollection: (
-    kind: LibraryItemKind,
-    id: string,
-    name: string,
-    provider?: ProviderId,
-  ) => void;
+  onSelectCollection: (selection: CollectionSelection) => void;
   onNavigate: (view: LibraryRouteView) => void;
   onContextMenuRequest?: ((req: ContextMenuRequest) => void) | undefined;
 }

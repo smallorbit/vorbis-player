@@ -1,26 +1,26 @@
 # Settings System
 
-The settings surface is **Settings v2** (`src/components/SettingsV2/`): a full-screen shadcn `Dialog` with a sidebar shell on desktop and a takeover list view on mobile. It is the single entry point for all user-configurable preferences: provider management, playback defaults, appearance, QAP, cache clearing, profiler, visualizer debug, and provider-specific data operations.
+The settings surface is **Settings** (`src/components/Settings/`): a full-screen shadcn `Dialog` with a sidebar shell on desktop and a takeover list view on mobile. It is the single entry point for all user-configurable preferences: provider management, playback defaults, appearance, QAP, cache clearing, profiler, visualizer debug, and provider-specific data operations.
 
 ## Entry Point
 
-Component: `src/components/SettingsV2/SettingsV2.tsx` (exported through `src/components/SettingsV2/index.ts`).
+Component: `src/components/Settings/Settings.tsx` (exported through `src/components/Settings/index.ts`).
 
 Opened via:
 - Gear icon on the flip menu back face
 - Keyboard shortcut `Shift+S`
-- `useVisualEffectsToggle().setShowVisualEffects(true)`
+- `useVisualEffectsToggle().setIsSettingsOpen(true)`
 
 The dialog is lazy-loaded (`React.lazy`) in two places:
 - `src/components/PlayerContent/PlayerControlsSection.tsx` (when a track is loaded)
 - `src/components/AudioPlayer.tsx` (when no track is loaded / idle state)
 
-URL deep-links are handled by `useSettingsUrl` (`?settings=<section>`); section IDs and labels live in `src/components/SettingsV2/sections.ts`.
+URL deep-links are handled by `useSettingsUrl` (`?settings=<section>`); section IDs and labels live in `src/components/Settings/sections.ts`.
 
 ## Props Interface
 
 ```ts
-interface SettingsV2Props {
+interface SettingsProps {
   isOpen: boolean;
   onClose: () => void;
 }
@@ -30,11 +30,11 @@ All section state (profiler, visualizer debug, QAP, cache clearing) is read from
 
 ## Panel Organization
 
-Four sidebar sections, catalogued in `src/components/SettingsV2/sections.ts` (`SETTINGS_V2_SECTIONS`): **Sources**, **Playback**, **Appearance**, **Advanced**.
+Four sidebar sections, catalogued in `src/components/Settings/sections.ts` (`SETTINGS_SECTIONS`): **Sources**, **Playback**, **Appearance**, **Advanced**.
 
 ### Sources (`SourcesSection`)
 
-File: `src/components/SettingsV2/sections/SourcesSection.tsx`, composing `MusicSourcesSection` + `NativeQueueSyncSection` from `src/components/SettingsV2/sections/MusicSourcesSection.tsx`.
+File: `src/components/Settings/sections/SourcesSection.tsx`, composing `MusicSourcesSection` + `NativeQueueSyncSection` from `src/components/Settings/sections/MusicSourcesSection.tsx`.
 
 **Music Sources** only renders when 2+ providers are registered. Shows each provider with:
 - Name
@@ -50,15 +50,15 @@ Uses `useProviderContext()` for `registry`, `enabledProviderIds`, `toggleProvide
 
 ### Playback (`PlaybackSection`)
 
-File: `src/components/SettingsV2/sections/PlaybackSection.tsx`. Default volume and shuffle behaviour.
+File: `src/components/Settings/sections/PlaybackSection.tsx`. Default volume and shuffle behaviour.
 
 ### Appearance (`AppearanceSection`)
 
-File: `src/components/SettingsV2/sections/AppearanceSection.tsx` (+ `sections/appearance/`). Visual effects: glow controls, visualizer style/intensity/speed pickers (shadcn `ToggleGroup`), translucence, and the accent color manager. The flip-menu back (`QuickEffectsRow`) remains the quick-access surface for the same settings.
+File: `src/components/Settings/sections/AppearanceSection.tsx` (+ `sections/appearance/`). Visual effects: glow controls, visualizer style/intensity/speed pickers (shadcn `ToggleGroup`), translucence, and the accent color manager. The flip-menu back (`QuickEffectsRow`) remains the quick-access surface for the same settings.
 
 ### Advanced (`AdvancedSection`)
 
-File: `src/components/SettingsV2/sections/AdvancedSection.tsx`.
+File: `src/components/Settings/sections/AdvancedSection.tsx`.
 
 Contains:
 
@@ -79,7 +79,7 @@ The clear handler (owned by `AdvancedSection`) calls:
 - `clearCacheWithOptions({ clearLikes })` from `src/services/cache/libraryCache`
 - `clearAllPins()` from `src/services/settings/pinnedItemsStorage` (if clearPins)
 - Removes `ACCENT_COLOR_OVERRIDES` and `CUSTOM_ACCENT_COLORS` from localStorage (if clearAccentColors)
-- If pins or accent colors were cleared, resets the Dropbox preferences sync timestamp and triggers `initialSync()` to pull remote state
+- If pins or accent colors were cleared, calls `resetPreferencesSync()` from `src/providers/preferencesSync.ts`, which clears each registered provider's sync timestamp and re-runs its `initialSync()` to pull remote state
 
 #### Performance Profiler
 
@@ -95,7 +95,7 @@ Invariant: enabling visualizer debug disables the profiler (`profilerToggle()`).
 
 #### Provider Data Blocks
 
-File: `src/components/SettingsV2/sections/ProviderDataBlock.tsx`
+File: `src/components/Settings/sections/ProviderDataBlock.tsx`
 
 One `ProviderDataBlock` per enabled provider that has `catalog.clearArtCache` or `catalog.exportLikes`. Each is a collapsible block titled "{ProviderName} Data". Controls depend on which `CatalogProvider` capabilities exist:
 
@@ -146,7 +146,7 @@ Syncs two categories of local state to `/.vorbis/preferences.json` in the user's
 
 ### Architecture
 
-`DropboxPreferencesSyncService` is a singleton created via `initPreferencesSync(auth)`. Access the instance via `getPreferencesSync()`.
+`DropboxPreferencesSyncService` is a singleton created via `initPreferencesSync(auth)`. Access the instance via `getPreferencesSync()`. The Dropbox descriptor exposes it through the neutral `ProviderDescriptor.preferencesSync` extension point (`schedulePush` / `initialSync` / `clearSyncTimestamp`); app code goes through the registry helpers in `src/providers/preferencesSync.ts` (`schedulePreferencesPush`, `resetPreferencesSync`) rather than importing Dropbox modules.
 
 ### Remote File Format
 
@@ -170,16 +170,17 @@ Local `updatedAt` is tracked in localStorage under `STORAGE_KEYS.PREFERENCES_SYN
 
 ### Trigger Points
 
-- **Initial sync**: called after Dropbox OAuth completion and when Dropbox is already authenticated at app startup (in `App.tsx` and `dropboxProvider.ts`).
-- **Push (debounced)**: `PinnedItemsContext` and `ColorContext` call `getPreferencesSync()?.schedulePush()` after local changes. The push is debounced by 2 seconds (`UPLOAD_DEBOUNCE_MS`).
-- **After cache clear**: when pins or accent colors are cleared, `clearPreferencesSyncTimestamp()` resets the local timestamp so the next `initialSync()` pulls from remote.
+- **Initial sync**: called after Dropbox OAuth completion (inside `dropboxAuthAdapter.handleCallback`) and when Dropbox is already authenticated at app startup (in `dropboxProvider.ts`).
+- **Push (debounced)**: `PinnedItemsContext` and `ColorContext` call `schedulePreferencesPush()` (from `src/providers/preferencesSync.ts`) after local changes, which invokes each registered descriptor's `preferencesSync.schedulePush()`. The Dropbox push is debounced by 2 seconds (`UPLOAD_DEBOUNCE_MS`).
+- **After cache clear**: when pins or accent colors are cleared, `resetPreferencesSync()` clears each provider's local timestamp and re-runs `initialSync()` to pull from remote.
 
 ### Key Files
 
 - `src/providers/dropbox/dropboxPreferencesSync.ts` -- service class, singleton, merge logic
 - `src/providers/dropbox/dropboxSyncFolder.ts` -- `ensureVorbisFolder()` helper
-- `src/contexts/PinnedItemsContext.tsx` -- calls `schedulePush()` after pin mutations
-- `src/contexts/ColorContext.tsx` -- calls `schedulePush()` after accent color changes
+- `src/providers/preferencesSync.ts` -- registry helpers (`schedulePreferencesPush`, `resetPreferencesSync`) over `descriptor.preferencesSync`
+- `src/contexts/PinnedItemsContext.tsx` -- calls `schedulePreferencesPush()` after pin mutations
+- `src/contexts/ColorContext.tsx` -- calls `schedulePreferencesPush()` after accent color changes
 
 ## useLocalStorage Hook
 
@@ -262,13 +263,13 @@ These are compatible because `JSON.parse('"true"')` and `'true' === 'true'` both
 
 | File | Role |
 |---|---|
-| `src/components/SettingsV2/SettingsV2.tsx` | Settings dialog shell (desktop sidebar + mobile takeover) |
-| `src/components/SettingsV2/sections.ts` | Section catalog (IDs, labels, deep-link mapping) |
-| `src/components/SettingsV2/sections/MusicSourcesSection.tsx` | Music Sources + Queue Sync sections |
-| `src/components/SettingsV2/sections/ProviderDataBlock.tsx` | Per-provider data management |
+| `src/components/Settings/Settings.tsx` | Settings dialog shell (desktop sidebar + mobile takeover) |
+| `src/components/Settings/sections.ts` | Section catalog (IDs, labels, deep-link mapping) |
+| `src/components/Settings/sections/MusicSourcesSection.tsx` | Music Sources + Queue Sync sections |
+| `src/components/Settings/sections/ProviderDataBlock.tsx` | Per-provider data management |
 | `src/constants/storage.ts` | `STORAGE_KEYS` constant object |
 | `src/hooks/useLocalStorage.ts` | Generic localStorage hook with cross-tab sync |
 | `src/hooks/useQapEnabled.ts` | QAP preference hook |
-| `src/contexts/visualEffects/VisualEffectsToggleContext.tsx` | Visual effects drawer open/close state (`showVisualEffects` / `setShowVisualEffects`) |
+| `src/contexts/visualEffects/VisualEffectsToggleContext.tsx` | Visual effects drawer open/close state (`isSettingsOpen` / `setIsSettingsOpen`) |
 | `src/providers/dropbox/dropboxPreferencesSync.ts` | Dropbox preferences sync service |
-| `src/components/PlayerContent/PlayerControlsSection.tsx` | Hosts the lazy `SettingsV2` mount when a track is loaded |
+| `src/components/PlayerContent/PlayerControlsSection.tsx` | Hosts the lazy `Settings` mount when a track is loaded |

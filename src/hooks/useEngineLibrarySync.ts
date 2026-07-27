@@ -1,13 +1,12 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import type { CachedPlaylistInfo, SyncState } from '@/services/cache/cacheTypes';
-import type { AlbumInfo } from '@/services/spotify';
-import type { ProviderId } from '@/types/domain';
+import type { SyncState } from '@/services/cache/cacheTypes';
+import type { MediaCollection, ProviderId } from '@/types/domain';
 import { spotifyLibrarySyncEngine } from '@/services/cache/librarySyncEngine';
 import { logLibrary } from '@/lib/debugLog';
 
 interface EngineLibrarySyncResult {
-  playlists: CachedPlaylistInfo[];
-  albums: AlbumInfo[];
+  playlists: MediaCollection[];
+  albums: MediaCollection[];
   likedCount: number;
   syncState: SyncState;
   refresh: () => Promise<void>;
@@ -31,8 +30,8 @@ const INITIAL_SYNC_STATE: SyncState = {
  * data and does not subscribe.
  */
 export function useEngineLibrarySync(engineProviderId: ProviderId | undefined): EngineLibrarySyncResult {
-  const [playlists, setPlaylists] = useState<CachedPlaylistInfo[]>([]);
-  const [albums, setAlbums] = useState<AlbumInfo[]>([]);
+  const [playlists, setPlaylists] = useState<MediaCollection[]>([]);
+  const [albums, setAlbums] = useState<MediaCollection[]>([]);
   const [likedCount, setLikedCount] = useState(0);
   const [syncState, setSyncState] = useState<SyncState>(INITIAL_SYNC_STATE);
 
@@ -57,11 +56,11 @@ export function useEngineLibrarySync(engineProviderId: ProviderId | undefined): 
       }));
       if (newPlaylists !== undefined) {
         logLibrary('[%s] sync engine playlists: %o', epId,
-          newPlaylists.map(p => ({ name: p.name, tracks: p.tracks })));
-        setPlaylists(newPlaylists.map(p => ({ ...p, provider: epId })));
+          newPlaylists.map(p => ({ name: p.name, trackCount: p.trackCount })));
+        setPlaylists(newPlaylists);
       }
       if (newAlbums !== undefined) {
-        setAlbums(newAlbums.map(a => ({ ...a, provider: epId })));
+        setAlbums(newAlbums);
       }
       if (newLikedCount !== undefined) {
         setLikedCount(newLikedCount);

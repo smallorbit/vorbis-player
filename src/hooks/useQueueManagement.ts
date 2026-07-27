@@ -1,9 +1,9 @@
 import { useCallback, useRef } from 'react';
 import { toast } from 'sonner';
-import type { AddToQueueResult, MediaTrack, ProviderId } from '@/types/domain';
+import type { AddToQueueResult, CollectionRef, CollectionSelection, MediaTrack, ProviderId } from '@/types/domain';
 import type { ProviderDescriptor } from '@/types/providers';
 import type { TrackOperations } from '@/types/trackOperations';
-import { isAllMusicRef, resolvePlaylistRef } from '@/constants/playlist';
+import { isAllMusicRef } from '@/constants/playlist';
 import { logQueue } from '@/lib/debugLog';
 import { shuffleArray } from '@/utils/shuffleArray';
 import {
@@ -27,7 +27,7 @@ interface UseQueueManagementProps {
   tracks: MediaTrack[];
   currentTrackIndex: number;
   shuffleEnabled: boolean;
-  loadCollection: (playlistId: string, provider?: ProviderId, name?: string) => Promise<number>;
+  loadCollection: (selection: CollectionSelection) => Promise<number>;
   handleBackToLibrary: () => void;
   activeDescriptor: ProviderDescriptor | undefined;
   getDescriptor: (providerId: ProviderId) => ProviderDescriptor | undefined;
@@ -41,10 +41,10 @@ interface UseQueueManagementProps {
 }
 
 interface UseQueueManagementReturn {
-  handleAddToQueue: (playlistId: string, collectionName?: string, provider?: ProviderId) => Promise<AddToQueueResult | null>;
+  handleAddToQueue: (selection: CollectionSelection) => Promise<AddToQueueResult | null>;
   queueTracksDirectly: (tracks: MediaTrack[], collectionName?: string) => AddToQueueResult | null;
   insertTracksNext: (tracks: MediaTrack[], collectionName?: string) => AddToQueueResult | null;
-  insertCollectionNext: (playlistId: string, collectionName?: string, provider?: ProviderId) => Promise<AddToQueueResult | null>;
+  insertCollectionNext: (selection: CollectionSelection) => Promise<AddToQueueResult | null>;
   handleRemoveFromQueue: (index: number) => void;
   handleReorderQueue: (fromIndex: number, toIndex: number) => void;
 }
@@ -80,12 +80,13 @@ export function useQueueManagement({
    * starts playback of the first added track.
    */
   const handleAddToQueue = useCallback(
-    async (playlistId: string, collectionName?: string, provider?: ProviderId): Promise<AddToQueueResult | null> => {
+    async (selection: CollectionSelection): Promise<AddToQueueResult | null> => {
       const isQueueEmpty = tracks.length === 0;
+      const collectionName = selection.name;
+      const provider = selection.type === 'collection' ? selection.ref.provider : selection.provider;
       logQueue(
-        'handleAddToQueue — playlistId=%s, provider=%s, currentQueueLen=%d, mediaLen=%d',
-        playlistId,
-        provider ?? 'active',
+        'handleAddToQueue — selection=%o, currentQueueLen=%d, mediaLen=%d',
+        selection,
         tracks.length,
         mediaTracksRef.current.length,
       );
@@ -100,7 +101,7 @@ export function useQueueManagement({
 
       if (isQueueEmpty) {
         logQueue('handleAddToQueue — queue empty, delegating to loadCollection');
-        const loaded = await loadCollection(playlistId, provider, collectionName);
+        const loaded = await loadCollection(selection);
         if (loaded > 0) {
           return { added: loaded, ...(collectionName !== undefined && { collectionName }) };
         }
@@ -110,8 +111,9 @@ export function useQueueManagement({
 
       try {
         const catalog = targetDescriptor.catalog;
-        const { id: collectionId, kind: collectionKind } = resolvePlaylistRef(playlistId, targetProviderId);
-        const collectionRef = { provider: targetProviderId, kind: collectionKind, id: collectionId } as const;
+        const collectionRef: CollectionRef = selection.type === 'collection'
+          ? selection.ref
+          : { provider: targetProviderId, kind: 'liked' };
         const fetchedTracks = await catalog.listTracks(collectionRef);
         const newMediaTracks = isAllMusicRef(collectionRef) ? shuffleArray(fetchedTracks) : fetchedTracks;
 
@@ -343,12 +345,13 @@ export function useQueueManagement({
    * queue. Empty queue still delegates to `loadCollection` (start playback).
    */
   const insertCollectionNext = useCallback(
-    async (playlistId: string, collectionName?: string, provider?: ProviderId): Promise<AddToQueueResult | null> => {
+    async (selection: CollectionSelection): Promise<AddToQueueResult | null> => {
       const isQueueEmpty = tracksRef.current.length === 0;
+      const collectionName = selection.name;
+      const provider = selection.type === 'collection' ? selection.ref.provider : selection.provider;
       logQueue(
-        'insertCollectionNext — playlistId=%s, provider=%s, currentQueueLen=%d, mediaLen=%d',
-        playlistId,
-        provider ?? 'active',
+        'insertCollectionNext — selection=%o, currentQueueLen=%d, mediaLen=%d',
+        selection,
         tracksRef.current.length,
         mediaTracksRef.current.length,
       );
@@ -363,7 +366,7 @@ export function useQueueManagement({
 
       if (isQueueEmpty) {
         logQueue('insertCollectionNext — queue empty, delegating to loadCollection');
-        const loaded = await loadCollection(playlistId, provider, collectionName);
+        const loaded = await loadCollection(selection);
         if (loaded > 0) {
           return { added: loaded, ...(collectionName !== undefined && { collectionName }) };
         }
@@ -373,8 +376,9 @@ export function useQueueManagement({
 
       try {
         const catalog = targetDescriptor.catalog;
-        const { id: collectionId, kind: collectionKind } = resolvePlaylistRef(playlistId, targetProviderId);
-        const collectionRef = { provider: targetProviderId, kind: collectionKind, id: collectionId } as const;
+        const collectionRef: CollectionRef = selection.type === 'collection'
+          ? selection.ref
+          : { provider: targetProviderId, kind: 'liked' };
         const fetchedTracks = await catalog.listTracks(collectionRef);
         const newMediaTracks = isAllMusicRef(collectionRef) ? shuffleArray(fetchedTracks) : fetchedTracks;
         return insertTracksNext(newMediaTracks, collectionName);

@@ -1,7 +1,7 @@
 import React from 'react';
-import type { ProviderId } from '@/types/domain';
+import type { CollectionSelection } from '@/types/domain';
 import { usePinnedSection } from '../hooks';
-import type { ContextMenuRequest, LibraryItemKind } from '../types';
+import type { ContextMenuRequest } from '../types';
 import Section from './Section';
 import SectionSkeleton from './SectionSkeleton';
 import LibraryCard from '../card/LibraryCard';
@@ -11,7 +11,7 @@ const SEE_ALL_THRESHOLD = 6;
 interface PinnedSectionProps {
   layout: 'row' | 'grid';
   showProviderBadges?: boolean | undefined;
-  onSelect: (kind: LibraryItemKind, id: string, name: string, provider?: ProviderId) => void;
+  onSelect: (selection: CollectionSelection) => void;
   onSeeAll?: (() => void) | undefined;
   onContextMenuRequest?: ((req: ContextMenuRequest) => void) | undefined;
 }
@@ -44,12 +44,13 @@ const PinnedSection: React.FC<PinnedSectionProps> = ({
             kind={item.kind}
             id={item.id}
             provider={item.provider}
+            selection={item.selection}
             name={item.name}
             subtitle={item.subtitle}
             imageUrl={item.imageUrl}
             showProviderBadge={showProviderBadges}
             variant={layout === 'row' ? 'row' : 'grid'}
-            onSelect={() => onSelect(item.kind, item.id, item.name, item.provider)}
+            onSelect={() => onSelect(item.selection)}
             onContextMenuRequest={onContextMenuRequest}
           />
         ))

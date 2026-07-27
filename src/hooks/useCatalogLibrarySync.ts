@@ -1,12 +1,12 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import type { CachedPlaylistInfo, SyncState } from '@/services/cache/cacheTypes';
-import type { AlbumInfo } from '@/services/spotify';
+import type { SyncState } from '@/services/cache/cacheTypes';
 import type { MediaCollection, ProviderId } from '@/types/domain';
 import { useProviderContext } from '@/contexts/ProviderContext';
 import { providerRegistry } from '@/providers/registry';
 import { logLibrary } from '@/lib/debugLog';
-import { getOrSetFirstSeenAddedAtIso } from '@/utils/libraryFirstSeen';
+import { replaceProviderAlbums, replaceProviderPlaylists } from '@/services/cache/libraryCache';
 import { writeLikedCountSnapshot } from '@/services/cache/likedCountSnapshot';
+import { logCaughtError } from '@/utils/logCaughtError';
 import { useStableSet } from '@/hooks/useStableSet';
 
 export interface PerProviderLikedCount {
@@ -15,8 +15,8 @@ export interface PerProviderLikedCount {
 }
 
 interface CatalogLibrarySyncResult {
-  playlists: CachedPlaylistInfo[];
-  albums: AlbumInfo[];
+  playlists: MediaCollection[];
+  albums: MediaCollection[];
   likedCounts: PerProviderLikedCount[];
   totalLikedCount: number;
   allMusicCount: number;
@@ -26,8 +26,8 @@ interface CatalogLibrarySyncResult {
 }
 
 interface PerProviderData {
-  playlists: CachedPlaylistInfo[];
-  albums: AlbumInfo[];
+  playlists: MediaCollection[];
+  albums: MediaCollection[];
   likedCount: number;
   allMusicCount: number;
 }
@@ -39,54 +39,18 @@ const INITIAL_SYNC_STATE: SyncState = {
   error: null,
 };
 
-function collectionToPlaylistInfo(c: MediaCollection, ordinal: number): CachedPlaylistInfo {
-  const images: { url: string; height: number | null; width: number | null }[] = c.imageUrl
-    ? [{ url: c.imageUrl, height: null, width: null }]
-    : [];
-
-  return {
-    id: c.id,
-    name: c.name,
-    description: c.description ?? null,
-    images,
-    tracks: c.trackCount != null ? { total: c.trackCount } : null,
-    owner: c.ownerName ? { display_name: c.ownerName } : null,
-    provider: c.provider,
-    added_at: getOrSetFirstSeenAddedAtIso(c.provider, `playlist:${c.id}`, ordinal),
-    ...(c.revision !== undefined && { snapshot_id: c.revision }),
-    ...(c.mosaicAlbumPaths !== undefined && { mosaicAlbumPaths: c.mosaicAlbumPaths }),
-  };
-}
-
-function collectionToAlbumInfo(c: MediaCollection, ordinal: number): AlbumInfo {
-  return {
-    id: c.id,
-    name: c.name,
-    artists: c.ownerName ?? '',
-    images: c.imageUrl ? [{ url: c.imageUrl, height: null, width: null }] : [],
-    release_date: c.releaseDate ?? '',
-    total_tracks: c.trackCount ?? 0,
-    uri: '',
-    album_type: c.kind === 'folder' ? 'folder' : 'album',
-    provider: c.provider,
-    added_at: getOrSetFirstSeenAddedAtIso(c.provider, `album:${c.id}`, ordinal),
-  };
-}
-
 /** Returns true when the collection is the Dropbox "All Music" aggregate row. */
 function isAllMusicCollection(c: MediaCollection): boolean {
   return c.provider === 'dropbox' && c.id === '';
 }
 
 function splitCollections(collections: MediaCollection[]): {
-  playlists: CachedPlaylistInfo[];
-  albums: AlbumInfo[];
+  playlists: MediaCollection[];
+  albums: MediaCollection[];
   allMusicCount: number;
 } {
-  const playlists: CachedPlaylistInfo[] = [];
-  const albums: AlbumInfo[] = [];
-  let playlistOrdinal = 0;
-  let albumOrdinal = 0;
+  const playlists: MediaCollection[] = [];
+  const albums: MediaCollection[] = [];
   let allMusicCount = 0;
   for (const c of collections) {
     if (isAllMusicCollection(c)) {
@@ -94,23 +58,40 @@ function splitCollections(collections: MediaCollection[]): {
       continue;
     }
     if (c.kind === 'album') {
-      albums.push(collectionToAlbumInfo(c, albumOrdinal++));
+      albums.push(c);
     } else {
-      playlists.push(collectionToPlaylistInfo(c, playlistOrdinal++));
+      playlists.push(c);
     }
   }
   return { playlists, albums, allMusicCount };
 }
 
+/**
+ * Persist a provider's collections into the shared library cache so
+ * cache-backed consumers (e.g. CmdK search) can see them.
+ */
+function writeCollectionsToCache(
+  providerId: ProviderId,
+  playlists: MediaCollection[],
+  albums: MediaCollection[],
+): void {
+  replaceProviderPlaylists(providerId, playlists).catch((err) => {
+    logCaughtError('useCatalogLibrarySync.writePlaylistsToCache', err);
+  });
+  replaceProviderAlbums(providerId, albums).catch((err) => {
+    logCaughtError('useCatalogLibrarySync.writeAlbumsToCache', err);
+  });
+}
+
 function aggregate(map: Map<ProviderId, PerProviderData>, enabled: readonly ProviderId[]): {
-  playlists: CachedPlaylistInfo[];
-  albums: AlbumInfo[];
+  playlists: MediaCollection[];
+  albums: MediaCollection[];
   likedCounts: PerProviderLikedCount[];
   totalLikedCount: number;
   allMusicCount: number;
 } {
-  const playlists: CachedPlaylistInfo[] = [];
-  const albums: AlbumInfo[] = [];
+  const playlists: MediaCollection[] = [];
+  const albums: MediaCollection[] = [];
   const likedCounts: PerProviderLikedCount[] = [];
   let totalLikedCount = 0;
   let allMusicCount = 0;
@@ -141,8 +122,8 @@ export function useCatalogLibrarySync(catalogProviderIdsInput: readonly Provider
   const catalogProviderIds = useStableSet(catalogProviderIdsInput);
   const { getDescriptor } = useProviderContext();
   const [aggregated, setAggregated] = useState<{
-    playlists: CachedPlaylistInfo[];
-    albums: AlbumInfo[];
+    playlists: MediaCollection[];
+    albums: MediaCollection[];
     likedCounts: PerProviderLikedCount[];
     totalLikedCount: number;
     allMusicCount: number;
@@ -171,7 +152,7 @@ export function useCatalogLibrarySync(catalogProviderIdsInput: readonly Provider
       const descriptor = getDescriptor(providerId);
       const catalog = descriptor?.catalog;
       const auth = descriptor?.auth;
-      if (!catalog || !auth || !auth.isAuthenticated()) {
+      if (!catalog?.listCollections || !auth || !auth.isAuthenticated()) {
         dataRef.current.set(providerId, { playlists: [], albums: [], likedCount: 0, allMusicCount: 0 });
         return;
       }
@@ -189,11 +170,8 @@ export function useCatalogLibrarySync(catalogProviderIdsInput: readonly Provider
           collections.map(c => ({ name: c.name, kind: c.kind, trackCount: c.trackCount })));
 
         const { playlists, albums, allMusicCount } = splitCollections(collections);
-        logLibrary('[%s] after splitCollections — playlists: %o', providerId,
-          playlists.map(p => ({ name: p.name, tracks: p.tracks })));
-        logLibrary('[%s] after splitCollections — albums: %o', providerId,
-          albums.map(a => ({ name: a.name, total_tracks: a.total_tracks })));
         dataRef.current.set(providerId, { playlists, albums, likedCount, allMusicCount });
+        writeCollectionsToCache(providerId, playlists, albums);
         writeLikedCountSnapshot(providerId, likedCount);
         recomputeAggregate();
         setSyncState(prev => ({
@@ -258,7 +236,7 @@ export function useCatalogLibrarySync(catalogProviderIdsInput: readonly Provider
     for (const providerId of providerIdsToRefresh) {
       const descriptor = getDescriptor(providerId);
       const catalog = descriptor?.catalog;
-      if (!catalog) continue;
+      if (!catalog?.listCollections) continue;
 
       setSyncState(prev => ({ ...prev, isSyncing: true, error: null }));
       try {
@@ -268,6 +246,7 @@ export function useCatalogLibrarySync(catalogProviderIdsInput: readonly Provider
         ]);
         const { playlists, albums, allMusicCount } = splitCollections(collections);
         dataRef.current.set(providerId, { playlists, albums, likedCount, allMusicCount });
+        writeCollectionsToCache(providerId, playlists, albums);
         writeLikedCountSnapshot(providerId, likedCount);
         recomputeAggregate();
         setSyncState(prev => ({

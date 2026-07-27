@@ -66,8 +66,6 @@ export function makeProviderDescriptor(
       pause: vi.fn().mockResolvedValue(undefined),
       resume: vi.fn().mockResolvedValue(undefined),
       seek: vi.fn().mockResolvedValue(undefined),
-      next: vi.fn().mockResolvedValue(undefined),
-      previous: vi.fn().mockResolvedValue(undefined),
       setVolume: vi.fn().mockResolvedValue(undefined),
       getState: vi.fn().mockResolvedValue(null),
       subscribe: vi.fn().mockReturnValue(vi.fn()),

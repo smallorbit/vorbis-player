@@ -37,7 +37,7 @@ import {
   clearTombstones,
 } from './dropboxLikesCache';
 import { getLikesSync } from './dropboxLikesSync';
-import { listSavedPlaylists, loadPlaylistTracks, deleteSavedPlaylist } from './dropboxPlaylistStorage';
+import { listSavedPlaylists, loadPlaylistTracks } from './dropboxPlaylistStorage';
 import type { DropboxFileEntry } from './dropboxCatalogHelpers';
 import {
   isAudioFile,
@@ -345,13 +345,6 @@ export class DropboxCatalogAdapter implements CatalogProvider {
     await getLikesSync()?.initialSync();
   }
 
-  async deleteCollection(collectionId: string, kind: 'playlist' | 'album' | 'folder' | 'liked'): Promise<void> {
-    if (kind === 'playlist') {
-      const success = await deleteSavedPlaylist(this.auth, collectionId);
-      if (!success) throw new Error('Failed to delete playlist');
-    }
-  }
-
   async refreshLikedMetadata(): Promise<{ updated: number; removed: number }> {
     const allMusicRef: CollectionRef = { provider: 'dropbox', kind: 'folder', id: '' };
     const freshTracks = await this.listTracks(allMusicRef);
@@ -386,7 +379,4 @@ export class DropboxCatalogAdapter implements CatalogProvider {
     return this.artworkResolver.resolveAlbumArt(albumId, signal);
   }
 
-  async searchTrack(_artist: string, _title: string): Promise<MediaTrack | null> {
-    return null;
-  }
 }

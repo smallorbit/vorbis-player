@@ -1,6 +1,6 @@
 import React, { useCallback } from 'react';
 import type { ContextMenuRequest, LibraryCollectionKind } from '../types';
-import type { ProviderId } from '@/types/domain';
+import type { CollectionSelection, ProviderId } from '@/types/domain';
 import { useLongPress } from './useLongPress';
 import ProviderIcon from '@/components/ProviderIcon';
 import { useLibraryContextMenuOpen } from '../contextMenu/LibraryContextMenuOpenContext';
@@ -18,6 +18,8 @@ interface LibraryCardProps {
   kind: LibraryCollectionKind;
   id: string;
   provider?: ProviderId | undefined;
+  /** Typed identity of what this card plays; carried into context-menu requests. */
+  selection: CollectionSelection;
   name: string;
   subtitle?: string | undefined;
   imageUrl?: string | undefined;
@@ -42,6 +44,7 @@ const LibraryCard: React.FC<LibraryCardProps> = ({
   kind,
   id,
   provider,
+  selection,
   name,
   subtitle,
   imageUrl,
@@ -56,9 +59,9 @@ const LibraryCard: React.FC<LibraryCardProps> = ({
 
   const fireContextMenu = useCallback(
     (anchorRect: DOMRect) => {
-      onContextMenuRequest?.({ kind, id, provider, name, anchorRect });
+      onContextMenuRequest?.({ kind, id, provider, name, selection, anchorRect });
     },
-    [onContextMenuRequest, kind, id, provider, name],
+    [onContextMenuRequest, kind, id, provider, name, selection],
   );
 
   const longPressHandlers = useLongPress({
@@ -77,9 +80,9 @@ const LibraryCard: React.FC<LibraryCardProps> = ({
       if (!onContextMenuRequest) return;
       e.preventDefault();
       const anchor = new DOMRect(e.clientX, e.clientY, 0, 0);
-      onContextMenuRequest?.({ kind, id, provider, name, anchorRect: anchor, triggerElement: e.currentTarget as HTMLElement });
+      onContextMenuRequest?.({ kind, id, provider, name, selection, anchorRect: anchor, triggerElement: e.currentTarget as HTMLElement });
     },
-    [onContextMenuRequest, kind, id, provider, name],
+    [onContextMenuRequest, kind, id, provider, name, selection],
   );
 
   return (

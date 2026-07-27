@@ -100,4 +100,23 @@ describe('keyToCollectionRef', () => {
     // #then — must omit the id field, matching the 'liked' variant shape
     expect(parsed).toEqual({ provider: 'spotify', kind: 'liked' });
   });
+
+  it('round-trips the empty-id folder ref (Dropbox All Music)', () => {
+    // #given — All Music is addressed as a dropbox folder with an empty id
+    const ref: CollectionRef = { provider: 'dropbox', kind: 'folder', id: '' };
+
+    // #when
+    const key = collectionRefToKey(ref);
+    const parsed = keyToCollectionRef(key);
+
+    // #then — an empty id is legal for folders and survives the round-trip
+    expect(key).toBe('dropbox:folder:');
+    expect(parsed).toEqual(ref);
+  });
+
+  it('still rejects empty ids for playlist and album kinds', () => {
+    // #given / #when / #then
+    expect(keyToCollectionRef('spotify:playlist:')).toBeNull();
+    expect(keyToCollectionRef('spotify:album:')).toBeNull();
+  });
 });

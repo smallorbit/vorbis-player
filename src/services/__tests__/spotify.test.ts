@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import * as libraryCache from '@/services/cache/libraryCache';
 
 vi.mock('@/services/cache/libraryCache', () => ({
-  getTrackList: vi.fn().mockResolvedValue(null),
+  getTrackList: vi.fn().mockResolvedValue(undefined),
   putTrackList: vi.fn().mockResolvedValue(undefined),
 }));
 
@@ -41,7 +41,7 @@ describe('Spotify API', () => {
     vi.mocked(localStorage.getItem).mockReturnValue(null);
     vi.mocked(localStorage.setItem).mockImplementation(() => {});
     vi.mocked(localStorage.removeItem).mockImplementation(() => {});
-    vi.mocked(libraryCache.getTrackList).mockResolvedValue(null);
+    vi.mocked(libraryCache.getTrackList).mockResolvedValue(undefined);
     vi.mocked(libraryCache.putTrackList).mockResolvedValue(undefined);
   });
 
@@ -153,15 +153,17 @@ describe('Spotify API', () => {
     it('falls through to IndexedDB (L2) on L1 miss, promotes to L1', async () => {
       // #given
       vi.mocked(libraryCache.getTrackList).mockResolvedValueOnce({
-        id: 'playlist:l2-test',
+        key: 'spotify:playlist:l2-test',
         tracks: [
           {
             id: 'l2-track',
+            provider: 'spotify',
+            playbackRef: { provider: 'spotify', ref: 'spotify:track:l2-track' },
             name: 'From IDB',
             artists: 'IDB Artist',
             album: 'IDB Album',
-            duration_ms: 200000,
-            uri: 'spotify:track:l2-track',
+            durationMs: 200000,
+            genres: [],
           },
         ],
         timestamp: Date.now() - 1000,
@@ -206,7 +208,7 @@ describe('Spotify API', () => {
       expect(tracks).toHaveLength(1);
       expect(tracks[0].name).toBe('From API');
       expect(libraryCache.putTrackList).toHaveBeenCalledWith(
-        'playlist:api-test',
+        { provider: 'spotify', kind: 'playlist', id: 'api-test' },
         expect.arrayContaining([expect.objectContaining({ name: 'From API' })])
       );
     });

@@ -5,12 +5,16 @@
  * non-empty query string by reading already-cached records — never makes
  * network calls and never triggers lazy provider catalog loads.
  *
+ * The cache holds neutral domain shapes keyed by `(provider, id)`, so search
+ * is cross-provider by construction: any provider whose collections and track
+ * lists reach the cache is searchable.
+ *
  * Artists are derived from cached tracks + albums (the cache does not store
  * a dedicated artist entity).
  */
 
-import type { AlbumInfo, Track } from '../spotify';
-import type { CachedPlaylistInfo } from './cacheTypes';
+import type { CollectionRef, MediaCollection, MediaTrack } from '@/types/domain';
+import { PROVIDER_IDS, collectionToRef } from '@/types/domain';
 import {
   getAllAlbums,
   getAllPlaylists,
@@ -18,7 +22,6 @@ import {
 } from './libraryCache';
 
 const DEFAULT_LIMIT_PER_CATEGORY = 10;
-const LIKED_SONGS_TRACK_LIST_ID = 'liked-songs';
 
 /**
  * Lightweight artist record produced by the search query.
@@ -33,10 +36,10 @@ export interface SearchArtist {
 }
 
 export interface LibrarySearchResult {
-  tracks: Track[];
-  albums: AlbumInfo[];
+  tracks: MediaTrack[];
+  albums: MediaCollection[];
   artists: SearchArtist[];
-  playlists: CachedPlaylistInfo[];
+  playlists: MediaCollection[];
 }
 
 interface LibrarySearchOptions {
@@ -45,10 +48,10 @@ interface LibrarySearchOptions {
 }
 
 const EMPTY_RESULT: LibrarySearchResult = Object.freeze({
-  tracks: Object.freeze([]) as unknown as Track[],
-  albums: Object.freeze([]) as unknown as AlbumInfo[],
+  tracks: Object.freeze([]) as unknown as MediaTrack[],
+  albums: Object.freeze([]) as unknown as MediaCollection[],
   artists: Object.freeze([]) as unknown as SearchArtist[],
-  playlists: Object.freeze([]) as unknown as CachedPlaylistInfo[],
+  playlists: Object.freeze([]) as unknown as MediaCollection[],
 }) as LibrarySearchResult;
 
 function isBlank(query: string): boolean {
@@ -74,25 +77,28 @@ function splitArtists(rawArtists: string | undefined): string[] {
 
 /**
  * Collect every cached track. Reads from all stored track lists (per-playlist,
- * per-album, and the liked-songs list). Strictly cache-only — no network.
+ * per-album, and every provider's liked-songs list). Strictly cache-only — no network.
  */
 async function collectAllCachedTracks(
-  playlists: CachedPlaylistInfo[],
-  albums: AlbumInfo[],
-): Promise<Track[]> {
-  const trackListIds = new Set<string>();
-  trackListIds.add(LIKED_SONGS_TRACK_LIST_ID);
-  for (const p of playlists) trackListIds.add(`playlist:${p.id}`);
-  for (const a of albums) trackListIds.add(`album:${a.id}`);
+  playlists: MediaCollection[],
+  albums: MediaCollection[],
+): Promise<MediaTrack[]> {
+  const refs: CollectionRef[] = [
+    ...PROVIDER_IDS.map((provider): CollectionRef => ({ provider, kind: 'liked' })),
+    ...playlists.map(collectionToRef),
+    ...albums.map(collectionToRef),
+  ];
 
-  const lists = await Promise.all(Array.from(trackListIds).map((id) => getTrackList(id)));
+  const lists = await Promise.all(refs.map((ref) => getTrackList(ref)));
   const seen = new Set<string>();
-  const out: Track[] = [];
+  const out: MediaTrack[] = [];
   for (const list of lists) {
     if (!list) continue;
     for (const track of list.tracks) {
-      if (!track?.id || seen.has(track.id)) continue;
-      seen.add(track.id);
+      if (!track?.id) continue;
+      const trackKey = `${track.provider}:${track.id}`;
+      if (seen.has(trackKey)) continue;
+      seen.add(trackKey);
       out.push(track);
     }
   }
@@ -100,8 +106,8 @@ async function collectAllCachedTracks(
 }
 
 function deriveArtists(
-  tracks: Track[],
-  albums: AlbumInfo[],
+  tracks: MediaTrack[],
+  albums: MediaCollection[],
   needle: string,
   limit: number,
 ): SearchArtist[] {
@@ -128,7 +134,7 @@ function deriveArtists(
 
   if (seen.size < limit) {
     for (const album of albums) {
-      for (const name of splitArtists(album.artists)) consider(name);
+      for (const name of splitArtists(album.ownerName)) consider(name);
       if (seen.size >= limit) break;
     }
   }
@@ -141,7 +147,7 @@ function deriveArtists(
  *
  * - Case-insensitive substring match.
  * - Tracks match on `name` or `artists`.
- * - Albums match on `name` or `artists`.
+ * - Albums match on `name` or `ownerName` (artist).
  * - Artists match on `name` (derived from cached tracks + albums).
  * - Playlists match on `name`.
  * - Each category is capped (default: 10).
@@ -161,7 +167,7 @@ export async function searchLibraryCache(
   const [playlistsAll, albumsAll] = await Promise.all([getAllPlaylists(), getAllAlbums()]);
   const tracksAll = await collectAllCachedTracks(playlistsAll, albumsAll);
 
-  const tracks: Track[] = [];
+  const tracks: MediaTrack[] = [];
   for (const t of tracksAll) {
     if (includesCI(t.name, needle) || includesCI(t.artists, needle)) {
       tracks.push(t);
@@ -169,15 +175,15 @@ export async function searchLibraryCache(
     }
   }
 
-  const albums: AlbumInfo[] = [];
+  const albums: MediaCollection[] = [];
   for (const a of albumsAll) {
-    if (includesCI(a.name, needle) || includesCI(a.artists, needle)) {
+    if (includesCI(a.name, needle) || includesCI(a.ownerName, needle)) {
       albums.push(a);
       if (albums.length >= limit) break;
     }
   }
 
-  const playlists: CachedPlaylistInfo[] = [];
+  const playlists: MediaCollection[] = [];
   for (const p of playlistsAll) {
     if (includesCI(p.name, needle)) {
       playlists.push(p);

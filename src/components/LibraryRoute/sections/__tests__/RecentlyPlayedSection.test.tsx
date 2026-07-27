@@ -1,6 +1,6 @@
 /**
  * Tests for RecentlyPlayedSection — renders recently-played collection cards (#1294).
- * onSelect receives (kind, id, name, provider) derived from each entry's CollectionRef.
+ * onSelect receives a typed CollectionSelection derived from each entry's CollectionRef (#1687).
  */
 
 import React from 'react';
@@ -150,7 +150,7 @@ describe('RecentlyPlayedSection', () => {
     expect(screen.getByRole('button', { name: 'See all' })).toBeInTheDocument();
   });
 
-  it('calls onSelect with derived kind, id, name, provider when a card is clicked', () => {
+  it('calls onSelect with the typed selection derived from the entry ref when a card is clicked', () => {
     // #given
     const onSelect = vi.fn();
     mockUseRecentlyPlayedSection.mockReturnValue({
@@ -164,6 +164,10 @@ describe('RecentlyPlayedSection', () => {
     fireEvent.click(screen.getByTestId('library-card-album-a1'));
 
     // #then
-    expect(onSelect).toHaveBeenCalledWith('album', 'a1', 'Revolver', 'spotify');
+    expect(onSelect).toHaveBeenCalledWith({
+      type: 'collection',
+      ref: { provider: 'spotify', kind: 'album', id: 'a1' },
+      name: 'Revolver',
+    });
   });
 });

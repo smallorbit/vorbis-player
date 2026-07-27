@@ -1,12 +1,17 @@
 /**
  * Spotify CatalogProvider adapter.
- * Wraps existing Spotify API functions and maps results to domain types.
+ * The underlying Spotify services already return neutral domain shapes
+ * (conversion happens once at the wire boundary in `src/services/spotify/`),
+ * so this adapter is a thin routing layer.
+ *
+ * `listCollections` is intentionally absent: the background library sync
+ * engine (`spotifyLibrarySyncEngine`) owns Spotify library listing, and the
+ * library-sync hooks route by that absence.
  */
 
 import type { CatalogProvider } from '@/types/providers';
-import type { ProviderId, MediaTrack, MediaCollection, CollectionRef } from '@/types/domain';
+import type { ProviderId, MediaTrack, CollectionRef } from '@/types/domain';
 import {
-  getUserLibraryInterleaved,
   getPlaylistTracks,
   getAlbumTracks,
   getLikedSongs,
@@ -17,94 +22,11 @@ import {
   checkAlbumSaved,
   saveAlbum,
   unsaveAlbum,
-  unfollowPlaylist,
-  getLargestImage,
   searchTrack,
-  type Track,
-  type PlaylistInfo,
-  type AlbumInfo,
 } from '@/services/spotify';
-import { ALBUM_ID_PREFIX, isAlbumId, extractAlbumId } from '@/constants/playlist';
-
-/** Map a Spotify Track to a MediaTrack. */
-function spotifyTrackToMediaTrack(track: Track): MediaTrack {
-  const artistsData = track.artistsData?.map((a) =>
-    a.url !== undefined ? { name: a.name, url: a.url } : { name: a.name },
-  );
-  return {
-    id: track.id,
-    provider: 'spotify',
-    playbackRef: { provider: 'spotify', ref: track.uri },
-    name: track.name,
-    artists: track.artists,
-    album: track.album,
-    durationMs: track.duration_ms,
-    genres: track.genres ?? [],
-    ...(artistsData !== undefined && { artistsData }),
-    ...(track.album_id !== undefined && { albumId: track.album_id }),
-    ...(track.track_number !== undefined && { trackNumber: track.track_number }),
-    ...(track.image !== undefined && { image: track.image }),
-    ...(track.uri ? { externalUrl: `https://open.spotify.com/track/${track.id}` } : {}),
-    ...(track.added_at !== undefined && { addedAt: track.added_at }),
-  };
-}
-
-/** Map a PlaylistInfo to a MediaCollection. */
-function spotifyPlaylistToMediaCollection(pl: PlaylistInfo): MediaCollection {
-  const imageUrl = getLargestImage(pl.images);
-  return {
-    id: pl.id,
-    provider: 'spotify',
-    kind: 'playlist',
-    name: pl.name,
-    // Spotify playlist API doesn't return genre information
-    genres: [],
-    ...(pl.description != null && { description: pl.description }),
-    ...(imageUrl !== undefined && { imageUrl }),
-    ...(pl.tracks?.total !== undefined && { trackCount: pl.tracks.total }),
-    ...(pl.owner?.display_name !== undefined && { ownerName: pl.owner.display_name }),
-    ...(pl.snapshot_id !== undefined && { revision: pl.snapshot_id }),
-  };
-}
-
-/** Map an AlbumInfo to a MediaCollection. */
-function spotifyAlbumToMediaCollection(album: AlbumInfo): MediaCollection {
-  const imageUrl = getLargestImage(album.images);
-  return {
-    id: `${ALBUM_ID_PREFIX}${album.id}`,
-    provider: 'spotify',
-    kind: 'album',
-    name: album.name,
-    description: album.artists,
-    trackCount: album.total_tracks,
-    // Genres come from the Spotify album object (may be empty for simplified library responses)
-    genres: album.genres ?? [],
-    ...(imageUrl !== undefined && { imageUrl }),
-  };
-}
 
 export class SpotifyCatalogAdapter implements CatalogProvider {
   readonly providerId: ProviderId = 'spotify';
-
-  async listCollections(signal?: AbortSignal): Promise<MediaCollection[]> {
-    const collections: MediaCollection[] = [];
-
-    await getUserLibraryInterleaved(
-      (fetchedPlaylists, _isComplete) => {
-        for (const p of fetchedPlaylists) {
-          collections.push(spotifyPlaylistToMediaCollection(p));
-        }
-      },
-      (fetchedAlbums, _isComplete) => {
-        for (const a of fetchedAlbums) {
-          collections.push(spotifyAlbumToMediaCollection(a));
-        }
-      },
-      signal,
-    );
-
-    return collections;
-  }
 
   async listTracks(collectionRef: CollectionRef, signal?: AbortSignal): Promise<MediaTrack[]> {
     if (collectionRef.provider !== 'spotify') return [];
@@ -115,13 +37,9 @@ export class SpotifyCatalogAdapter implements CatalogProvider {
       case 'playlist':
         tracks = await getPlaylistTracks(collectionRef.id);
         break;
-      case 'album': {
-        const albumId = isAlbumId(collectionRef.id)
-          ? extractAlbumId(collectionRef.id)
-          : collectionRef.id;
-        tracks = await getAlbumTracks(albumId);
+      case 'album':
+        tracks = await getAlbumTracks(collectionRef.id);
         break;
-      }
       case 'liked':
         tracks = await getLikedSongs();
         break;
@@ -163,19 +81,9 @@ export class SpotifyCatalogAdapter implements CatalogProvider {
     return checkAlbumSaved(albumId);
   }
 
-  async deleteCollection(collectionId: string, kind: 'playlist' | 'album' | 'folder' | 'liked'): Promise<void> {
-    if (kind === 'playlist') {
-      await unfollowPlaylist(collectionId);
-    } else if (kind === 'album') {
-      await unsaveAlbum(collectionId);
-    }
-  }
-
   async searchTrack(artist: string, title: string): Promise<MediaTrack | null> {
     try {
-      const track = await searchTrack(artist, title);
-      if (!track) return null;
-      return spotifyTrackToMediaTrack(track);
+      return await searchTrack(artist, title);
     } catch (err) {
       console.warn('[SpotifyCatalog] searchTrack failed:', err);
       return null;

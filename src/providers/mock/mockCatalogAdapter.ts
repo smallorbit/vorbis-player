@@ -32,11 +32,40 @@ export class MockCatalogAdapter implements CatalogProvider {
   private likedSet: Set<string>;
   private savedAlbums: Set<string>;
 
+  // Optional-surface methods mirror the real adapters: Dropbox has no album
+  // save and no track search, so the dropbox-flavored mock omits them and the
+  // registry derives the matching capability flags from their absence.
+  isAlbumSaved?: (albumId: string) => Promise<boolean>;
+  setAlbumSaved?: (albumId: string, saved: boolean) => Promise<void>;
+  searchTrack?: (artist: string, title: string) => Promise<MediaTrack | null>;
+
   constructor(snapshot: ProviderSnapshot) {
     this.providerId = snapshot.meta.provider;
     this.snapshot = snapshot;
     this.likedSet = new Set(snapshot.likedTrackIds);
     this.savedAlbums = new Set(snapshot.albums.map(a => a.id));
+
+    if (this.providerId !== 'dropbox') {
+      this.isAlbumSaved = async (albumId) => this.savedAlbums.has(albumId);
+      this.setAlbumSaved = async (albumId, saved) => {
+        if (saved) {
+          this.savedAlbums.add(albumId);
+        } else {
+          this.savedAlbums.delete(albumId);
+        }
+      };
+      this.searchTrack = async (artist, title) => {
+        const artistLc = artist.toLowerCase();
+        const titleLc = title.toLowerCase();
+        const track = Object.values(this.snapshot.tracks).find(t => {
+          return (
+            t.name.toLowerCase().includes(titleLc) &&
+            t.artistsDisplay.toLowerCase().includes(artistLc)
+          );
+        });
+        return track ? snapshotTrackToMediaTrack(track, this.providerId) : null;
+      };
+    }
   }
 
   async listCollections(): Promise<MediaCollection[]> {
@@ -148,30 +177,6 @@ export class MockCatalogAdapter implements CatalogProvider {
     if (this.providerId === 'dropbox') {
       window.dispatchEvent(new Event('mock-dropbox-likes-changed'));
     }
-  }
-
-  async isAlbumSaved(albumId: string): Promise<boolean> {
-    return this.savedAlbums.has(albumId);
-  }
-
-  async setAlbumSaved(albumId: string, saved: boolean): Promise<void> {
-    if (saved) {
-      this.savedAlbums.add(albumId);
-    } else {
-      this.savedAlbums.delete(albumId);
-    }
-  }
-
-  async searchTrack(artist: string, title: string): Promise<MediaTrack | null> {
-    const artistLc = artist.toLowerCase();
-    const titleLc = title.toLowerCase();
-    const track = Object.values(this.snapshot.tracks).find(t => {
-      return (
-        t.name.toLowerCase().includes(titleLc) &&
-        t.artistsDisplay.toLowerCase().includes(artistLc)
-      );
-    });
-    return track ? snapshotTrackToMediaTrack(track, this.providerId) : null;
   }
 
   async resolveDuration(track: MediaTrack): Promise<number | null> {

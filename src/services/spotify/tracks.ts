@@ -1,5 +1,5 @@
-import type { MediaTrack } from '@/types/domain';
-import type { ArtistInfo, Track, SpotifyArtist, SpotifyTrackItem } from './types';
+import type { ArtistRef, CollectionRef, MediaTrack } from '@/types/domain';
+import type { SpotifyArtist, SpotifyTrackItem } from './types';
 import { getLargestImage } from './types';
 import { spotifyApiRequest, fetchAllPaginated } from './api';
 import { spotifyAuth } from './auth';
@@ -18,6 +18,8 @@ import {
 import * as libraryCache from '../cache/libraryCache';
 import { logCaughtError } from '@/utils/logCaughtError';
 
+const LIKED_SONGS_REF: CollectionRef = { provider: 'spotify', kind: 'liked' };
+
 // =============================================================================
 // Shared Utilities
 // =============================================================================
@@ -29,10 +31,10 @@ export function formatArtists(artists?: SpotifyArtist[]): string {
   return artists.map((artist) => artist.name).join(', ');
 }
 
-export function buildArtistsData(artists?: SpotifyArtist[]): ArtistInfo[] | undefined {
+export function buildArtistsData(artists?: SpotifyArtist[]): ArtistRef[] | undefined {
   if (!artists || artists.length === 0) return undefined;
 
-  const data: ArtistInfo[] = [];
+  const data: ArtistRef[] = [];
   for (const artist of artists) {
     const url = artist.external_urls?.spotify
       ?? (artist.id ? `https://open.spotify.com/artist/${artist.id}` : '');
@@ -43,10 +45,14 @@ export function buildArtistsData(artists?: SpotifyArtist[]): ArtistInfo[] | unde
   return data.length > 0 ? data : undefined;
 }
 
+/**
+ * Convert a raw Spotify track item into the neutral `MediaTrack` shape.
+ * This is the single Spotify→domain conversion point for tracks.
+ */
 export function transformTrackItem(
   item: SpotifyTrackItem,
   albumOverride?: { name: string; id?: string; image?: string }
-): Track | null {
+): MediaTrack | null {
   if (!item.id || item.type !== 'track') return null;
 
   const albumImage = albumOverride?.image ?? getLargestImage(item.album?.images);
@@ -56,46 +62,18 @@ export function transformTrackItem(
   return {
     id: item.id,
     provider: 'spotify',
+    playbackRef: { provider: 'spotify', ref: item.uri },
     name: item.name,
     artists: formatArtists(item.artists),
     album: albumOverride?.name ?? item.album?.name ?? 'Unknown Album',
-    duration_ms: item.duration_ms ?? 0,
-    uri: item.uri,
+    durationMs: item.duration_ms ?? 0,
+    externalUrl: `https://open.spotify.com/track/${item.id}`,
+    genres: [],
     ...(artistsData !== undefined && { artistsData }),
-    ...(albumId !== undefined && { album_id: albumId }),
-    ...(item.track_number !== undefined && { track_number: item.track_number }),
-    ...(item.preview_url !== undefined && { preview_url: item.preview_url }),
+    ...(albumId !== undefined && { albumId }),
+    ...(item.track_number !== undefined && { trackNumber: item.track_number }),
     ...(albumImage !== undefined && { image: albumImage }),
   };
-}
-
-export function backfillProvider(tracks: Track[]): Track[] {
-  for (const t of tracks) {
-    if (!t.provider) t.provider = 'spotify';
-  }
-  return tracks;
-}
-
-/**
- * Convert Spotify Track objects to provider-neutral MediaTrack format.
- */
-export function tracksToMediaTracks(tracks: Track[]): MediaTrack[] {
-  return tracks.map((t) => ({
-    id: t.id,
-    provider: t.provider,
-    playbackRef: { provider: 'spotify', ref: t.uri },
-    name: t.name,
-    artists: t.artists,
-    album: t.album,
-    durationMs: t.duration_ms,
-    genres: t.genres ?? [],
-    ...(t.artistsData !== undefined && { artistsData: t.artistsData }),
-    ...(t.album_id !== undefined && { albumId: t.album_id }),
-    ...(t.track_number !== undefined && { trackNumber: t.track_number }),
-    ...(t.image !== undefined && { image: t.image }),
-    ...(t.preview_url !== undefined && { externalUrl: t.preview_url }),
-    ...(t.added_at !== undefined && { addedAt: t.added_at }),
-  }));
 }
 
 // =============================================================================
@@ -105,21 +83,20 @@ export function tracksToMediaTracks(tracks: Track[]): MediaTrack[] {
 export async function getLikedSongs(limit?: number): Promise<MediaTrack[]> {
   const likedSongsCache = getLikedSongsCache();
   if (likedSongsCache && Date.now() - likedSongsCache.timestamp < LIKED_SONGS_CACHE_TTL) {
-    const data = tracksToMediaTracks(likedSongsCache.data);
     if (limit === undefined && likedSongsCache.limit === Infinity) {
-      return data;
+      return likedSongsCache.data;
     }
     if (limit !== undefined && likedSongsCache.limit >= limit) {
-      return data.slice(0, limit);
+      return likedSongsCache.data.slice(0, limit);
     }
   }
 
   if (limit === undefined) {
     try {
-      const idbCached = await libraryCache.getTrackList('liked-songs');
+      const idbCached = await libraryCache.getTrackList(LIKED_SONGS_REF);
       if (idbCached && Date.now() - idbCached.timestamp < TRACK_LIST_PERSIST_TTL) {
         setLikedSongsCache({ data: idbCached.tracks, limit: Infinity, timestamp: idbCached.timestamp });
-        return tracksToMediaTracks(idbCached.tracks);
+        return idbCached.tracks;
       }
     } catch (err) {
       /* IndexedDB unavailable — fall through to API */
@@ -134,19 +111,19 @@ export async function getLikedSongs(limit?: number): Promise<MediaTrack[]> {
     track: SpotifyTrackItem | null;
   }
 
-  function transformSavedTrack(item: SavedTrackItem): Track | null {
+  function transformSavedTrack(item: SavedTrackItem): MediaTrack | null {
     if (!item.track) {
       return null;
     }
     const track = transformTrackItem(item.track);
     if (!track) return null;
     if (item.added_at) {
-      track.added_at = new Date(item.added_at).getTime();
+      track.addedAt = new Date(item.added_at).getTime();
     }
     return track;
   }
 
-  const tracks = await fetchAllPaginated<SavedTrackItem, Track>(
+  const tracks = await fetchAllPaginated<SavedTrackItem, MediaTrack>(
     'https://api.spotify.com/v1/me/tracks?limit=50',
     token,
     transformSavedTrack,
@@ -155,9 +132,9 @@ export async function getLikedSongs(limit?: number): Promise<MediaTrack[]> {
 
   setLikedSongsCache({ data: tracks, limit: limit ?? Infinity, timestamp: Date.now() });
   if (limit === undefined) {
-    libraryCache.putTrackList('liked-songs', tracks).catch(() => {});
+    libraryCache.putTrackList(LIKED_SONGS_REF, tracks).catch(() => {});
   }
-  return tracksToMediaTracks(tracks);
+  return tracks;
 }
 
 export async function getLikedSongsCount(signal?: AbortSignal): Promise<number> {

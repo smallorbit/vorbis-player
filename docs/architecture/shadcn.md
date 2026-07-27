@@ -8,7 +8,7 @@ vorbis-player uses a hybrid styling stack: **styled-components for bespoke surfa
 |---|---|---|
 | Visualizers, animations, gestures | styled-components (forever) | `BackgroundVisualizer`, zen-mode orchestration in `PlayerContent/styled.ts`, swipe gestures, album-art flip menu, `BottomBar` |
 | Standard chrome (modals, sliders, popovers, switches, toasts) | shadcn primitives | `src/components/ui/*.tsx`: `dialog.tsx`, `button.tsx`, `slider.tsx`, `switch.tsx`, `accordion.tsx`, `popover.tsx`, `sonner.tsx` |
-| Whole-screen redesigns | shadcn (UI v2, primary surface) | `SettingsV2` (`src/components/SettingsV2/`), command palette (`src/components/CmdKPalette/`) |
+| Whole-screen redesigns | shadcn (UI v2, primary surface) | `Settings` (`src/components/Settings/`), command palette (`src/components/CmdKPalette/`) |
 
 ## Theme bridge — `--accent-color` is player chrome ONLY
 
@@ -19,15 +19,15 @@ The runtime `--accent-color` / `--accent-contrast-color` (injected on `document.
 - `TimelineSlider` (fill + thumb gradient — wraps shadcn `slider.tsx`)
 - `VolumeSlider` (fill + thumb gradient — wraps shadcn `slider.tsx`, vertical orientation)
 - `Switch` accent variant (`controls/QuickEffectsRow.tsx` glow/visualizer/translucence toggles — uses default `variant="accent"` of `src/components/ui/switch.tsx`, retints checked-state track with `var(--accent-color)`)
-- `ToggleGroup` accent variant (`controls/QuickEffectsRow.tsx` and the `SettingsV2` appearance pickers — uses `variant="accent"` of `src/components/ui/toggle-group.tsx`, retints the on-state pill with `var(--accent-color)`)
+- `ToggleGroup` accent variant (`controls/QuickEffectsRow.tsx` and the `Settings` appearance pickers — uses `variant="accent"` of `src/components/ui/toggle-group.tsx`, retints the on-state pill with `var(--accent-color)`)
 - Glow effects (`--glow-intensity`, `--glow-rate`, `--glow-opacity`)
-- Accent color overrides menu (`SettingsV2/sections/appearance/AccentColorManager.tsx`)
+- Accent color overrides menu (`Settings/sections/appearance/AccentColorManager.tsx`)
 
 **shadcn primitives use the neutral palette** defined in `src/styles/shadcn-tokens.css` (`--background`, `--foreground`, `--primary`, `--muted`, `--border`, etc.). shadcn's `--accent` token is a static neutral surface and is **not** the same as the player's `--accent-color`. Never wire shadcn's `--primary` or `--accent` to `var(--accent-color)` — dialogs, popovers, and other chrome must stay neutral so they don't retint per track.
 
 ## UI v2 is the default surface
 
-The v2 redesign shipped across the wave epics and is now the unconditional default — there is no opt-in flag. `SettingsV2` (`src/components/SettingsV2/`) mounts directly from the entry-point forks in `AudioPlayer.tsx` and `PlayerContent/PlayerControlsSection.tsx`; the legacy `AppSettingsMenu` drawer has been deleted.
+The v2 redesign shipped across the wave epics and is now the unconditional default — there is no opt-in flag. `Settings` (`src/components/Settings/`) mounts directly from the entry-point forks in `AudioPlayer.tsx` and `PlayerContent/PlayerControlsSection.tsx`; the legacy `AppSettingsMenu` drawer has been deleted.
 
 Future redesigns should be promoted the same way: build the v2 component, wire it in directly, and remove the legacy switch once it is the default.
 
@@ -35,18 +35,18 @@ Future redesigns should be promoted the same way: build the v2 component, wire i
 
 | Primitive | File | Notes |
 |---|---|---|
-| `Dialog` | `dialog.tsx` | Used by `ProviderDisconnectDialog`, `SaveQueueDialog`, `KeyboardShortcutsHelp`, and `SettingsV2`. Unflagged. |
+| `Dialog` | `dialog.tsx` | Used by `ProviderDisconnectDialog`, `SaveQueueDialog`, `KeyboardShortcutsHelp`, and `Settings`. Unflagged. |
 | `Slider` | `slider.tsx` | Wrapped by `TimelineSlider` (horizontal, accent fill/thumb gradient) and `VolumeSlider` (vertical). Per-part `trackStyle` / `thumbStyle` / `rangeStyle` escape hatches preserve accent retinting. |
 | `Switch` | `switch.tsx` | Dual variants: `accent` (default, player chrome) and `neutral` (settings toggles). |
 | `Toast` (Sonner) | `sonner.tsx` | `<Toaster />` mounted at app root in `App.tsx`. `RadioProgressContent` rendered via `toast.custom()`. |
 | `Popover` | `popover.tsx` | Used by `TrackInfoPopover` via virtual-anchor pattern (zero-size fixed div positioned at `anchorRect` coordinates) so consumer call sites stay unchanged. |
-| `Accordion` | `accordion.tsx` | Used by `SettingsV2` (`AdvancedSection`, `ProviderDataBlock`) — each section is its own `Accordion.Root` with `type="single" collapsible` to preserve independent open state. Tailwind keyframes `accordion-down` / `accordion-up` (200ms ease) defined in `tailwind.config.ts`. |
+| `Accordion` | `accordion.tsx` | Used by `Settings` (`AdvancedSection`, `ProviderDataBlock`) — each section is its own `Accordion.Root` with `type="single" collapsible` to preserve independent open state. Tailwind keyframes `accordion-down` / `accordion-up` (200ms ease) defined in `tailwind.config.ts`. |
 | `ToggleGroup` | `toggle-group.tsx` | Dual variants: `neutral` (default, shadcn `--primary`) and `accent` (on-state = `var(--accent-color)`). Replaced the legacy styled-components `OptionButton`/`OptionButtonGroup`. Per-part escape hatches: `rootStyle` → root, `itemStyle` → each item. Radix roving tabindex + selection semantics. |
 | `Command` | `command.tsx` | Powers the desktop Cmd-K palette (`CmdKPalette/index.tsx`). |
 | `Sheet` | `sheet.tsx` | Side panel used by `FilterSheet` (`LibraryRoute/search/`). |
 | `Input` | `input.tsx` | Text input primitive; used by `SearchBar` (`LibraryRoute/search/`). |
 
-**Shipped follow-on work**: #1265 (FilterSidebar — shipped as `FilterSheet`, `src/components/LibraryRoute/search/FilterSheet.tsx`, uses `sheet.tsx`), #1262 (Settings v2 — `src/components/SettingsV2/`), #1263 (Cmd-K palette — `src/components/CmdKPalette/`, uses `command.tsx`). These epics are closed.
+**Shipped follow-on work**: #1265 (FilterSidebar — shipped as `FilterSheet`, `src/components/LibraryRoute/search/FilterSheet.tsx`, uses `sheet.tsx`), #1262 (Settings v2 — `src/components/Settings/`), #1263 (Cmd-K palette — `src/components/CmdKPalette/`, uses `command.tsx`). These epics are closed.
 
 ## Canonical patterns for new shadcn primitives
 

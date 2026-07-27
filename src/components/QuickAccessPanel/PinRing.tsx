@@ -1,6 +1,6 @@
 import React, { useCallback } from 'react';
-import type { PlaylistInfo, AlbumInfo } from '@/services/spotify';
-import type { ProviderId } from '@/types/domain';
+import type { CollectionSelection, MediaCollection, ProviderId } from '@/types/domain';
+import { collectionToRef } from '@/types/domain';
 import { MAX_PINS } from '@/services/settings/pinnedItemsStorage';
 import { theme } from '@/styles/theme';
 import { providerRegistry } from '@/providers/registry';
@@ -38,52 +38,41 @@ import {
 
 
 interface PinRingProps {
-  pinnedPlaylists: PlaylistInfo[];
-  pinnedAlbums: AlbumInfo[];
+  pinnedPlaylists: MediaCollection[];
+  pinnedAlbums: MediaCollection[];
   activeProviderIds: ProviderId[];
   likedSongsCount: number;
-  onLoadCollection: (id: string, name: string, provider?: ProviderId) => void;
+  onLoadCollection: (selection: CollectionSelection) => void;
   onLoadLikedSongs: (providerIds: ProviderId[]) => void;
-  onAddToQueue: (id: string, name: string, provider?: ProviderId) => void;
+  onAddToQueue: (selection: CollectionSelection) => void;
   accentColor?: string | undefined;
 }
 
-function getImageUrl(
-  images: { url: string; width: number | null; height: number | null }[],
-  targetWidth = 300,
-): string | undefined {
-  if (!images?.length) return undefined;
-  const sorted = [...images].sort(
-    (a, b) => Math.abs((a.width ?? 0) - targetWidth) - Math.abs((b.width ?? 0) - targetWidth),
-  );
-  return sorted[0]?.url;
-}
-
 type GridSatelliteItem =
-  | { kind: 'playlist'; item: PlaylistInfo }
-  | { kind: 'album'; item: AlbumInfo };
+  | { kind: 'playlist'; item: MediaCollection }
+  | { kind: 'album'; item: MediaCollection };
 
 interface GridItemCardProps {
-  id: string;
+  selection: CollectionSelection;
+  provider: ProviderId;
   name: string;
-  provider?: ProviderId | undefined;
   imgUrl?: string | undefined;
   mosaicAlbumPaths?: string[] | undefined;
   fallback: string;
-  onPlay: (id: string, name: string, provider?: ProviderId) => void;
-  onAddToQueue: (id: string, name: string, provider?: ProviderId) => void;
+  onPlay: (selection: CollectionSelection) => void;
+  onAddToQueue: (selection: CollectionSelection) => void;
 }
 
 const GridItemCard: React.FC<GridItemCardProps> = ({
-  id, name, provider, imgUrl, mosaicAlbumPaths, fallback, onPlay, onAddToQueue,
+  selection, provider, name, imgUrl, mosaicAlbumPaths, fallback, onPlay, onAddToQueue,
 }) => {
-  const handlePlay = useCallback(() => onPlay(id, name, provider), [id, name, provider, onPlay]);
-  const handleAdd = useCallback(() => onAddToQueue(id, name, provider), [id, name, provider, onAddToQueue]);
+  const handlePlay = useCallback(() => onPlay(selection), [selection, onPlay]);
+  const handleAdd = useCallback(() => onAddToQueue(selection), [selection, onAddToQueue]);
 
   const longPress = useLongPress({ onShortPress: handlePlay, onLongPress: handleAdd });
 
   const artContent = mosaicAlbumPaths && mosaicAlbumPaths.length >= 2
-    ? <MosaicThumbnail albumPaths={mosaicAlbumPaths} alt={name} />
+    ? <MosaicThumbnail provider={provider} albumPaths={mosaicAlbumPaths} alt={name} />
     : imgUrl ? <img src={imgUrl} alt={name} loading="lazy" /> : fallback;
 
   return (
@@ -108,11 +97,11 @@ const PinRing: React.FC<PinRingProps> = ({
   onAddToQueue,
 }) => {
   const filteredPlaylists = activeProviderIds.length > 0
-    ? pinnedPlaylists.filter(p => !p.provider || activeProviderIds.includes(p.provider))
+    ? pinnedPlaylists.filter(p => activeProviderIds.includes(p.provider))
     : pinnedPlaylists;
 
   const filteredAlbums = activeProviderIds.length > 0
-    ? pinnedAlbums.filter(a => !a.provider || activeProviderIds.includes(a.provider))
+    ? pinnedAlbums.filter(a => activeProviderIds.includes(a.provider))
     : pinnedAlbums;
 
   // 4-col grid, Liked Songs occupies center 2×2 (cols 2-3, rows 2-3).
@@ -159,10 +148,10 @@ const PinRing: React.FC<PinRingProps> = ({
                 return (
                   <GridItemCard
                     key={`playlist-${p.id}`}
-                    id={p.id}
-                    name={p.name}
+                    selection={{ type: 'collection', ref: collectionToRef(p), name: p.name }}
                     provider={p.provider}
-                    imgUrl={getImageUrl(p.images)}
+                    name={p.name}
+                    imgUrl={p.imageUrl}
                     mosaicAlbumPaths={p.mosaicAlbumPaths}
                     fallback="♪"
                     onPlay={onLoadCollection}
@@ -174,10 +163,10 @@ const PinRing: React.FC<PinRingProps> = ({
               return (
                 <GridItemCard
                   key={`album-${a.id}`}
-                  id={`album:${a.id}`}
-                  name={a.name}
+                  selection={{ type: 'collection', ref: collectionToRef(a), name: a.name }}
                   provider={a.provider}
-                  imgUrl={getImageUrl(a.images)}
+                  name={a.name}
+                  imgUrl={a.imageUrl}
                   fallback="💿"
                   onPlay={onLoadCollection}
                   onAddToQueue={onAddToQueue}
