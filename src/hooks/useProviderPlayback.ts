@@ -3,6 +3,7 @@ import type { ProviderDescriptor } from '@/types/providers';
 import type { MediaTrack, ProviderId } from '@/types/domain';
 import { providerRegistry } from '@/providers/registry';
 import { AuthExpiredError, UnavailableTrackError } from '@/providers/errors';
+import { useNewestWins } from '@/hooks/useNewestWins';
 import { logQueue, logArtRace } from '@/lib/debugLog';
 import { SKIP_ON_ERROR_DELAY_MS } from '@/constants/timing';
 import { PROVIDER_RECONNECTED_EVENT } from '@/constants/events';
@@ -39,13 +40,12 @@ export const useProviderPlayback = ({
 
   const currentPlaybackProviderRef = useRef<ProviderId | null>(null);
 
-  // Monotonic generation guard. `playTrack` awaits the provider adapter (a
-  // network round-trip for Spotify transfer/play); overlapping invocations —
-  // e.g. mashing next — can resolve out of order. A later invocation supersedes
-  // an earlier one, so the earlier one's late resolution must not commit its
-  // (now-stale) index or fire its pre-warm. Mirrors the guard in
-  // useCollectionLoader / useRadioSession.
-  const playGenerationRef = useRef(0);
+  // Newest-wins guard. `playTrack` awaits the provider adapter (a network
+  // round-trip for Spotify transfer/play); overlapping invocations — e.g.
+  // mashing next — can resolve out of order. A later invocation supersedes an
+  // earlier one, so the earlier one's late resolution must not commit its
+  // (now-stale) index or fire its pre-warm.
+  const playGuard = useNewestWins();
 
   // Re-prime the current track when its provider re-authenticates after a
   // session expiry. The dispatcher (ProviderContext) skips the initial mount,
@@ -137,10 +137,10 @@ export const useProviderPlayback = ({
         mediaTrack.id.slice(0, 8), index, trackProvider);
     }
 
-    // Claim this as the newest intended playback. A concurrent later call bumps
-    // this again; when our awaited adapter call resolves we drop the result if
-    // we're no longer the newest.
-    const generation = ++playGenerationRef.current;
+    // Claim this as the newest intended playback. A concurrent later call
+    // supersedes this token; when our awaited adapter call resolves we drop
+    // the result if we're no longer the newest.
+    const token = playGuard.begin();
 
     pausePreviousProvider(trackProvider);
     currentPlaybackProviderRef.current = trackProvider;
@@ -165,7 +165,7 @@ export const useProviderPlayback = ({
 
       // Superseded by a newer playTrack while the adapter was starting — drop
       // this stale result rather than commit its index or pre-warm its next.
-      if (playGenerationRef.current !== generation) return;
+      if (token.isStale()) return;
 
       setCurrentTrackIndex(index);
 
@@ -200,7 +200,7 @@ export const useProviderPlayback = ({
       }
     }
     // mediaTracksRef included for exhaustive-deps; ref identity is stable so it does not cause callback re-creation.
-  }, [setCurrentTrackIndex, pausePreviousProvider, resolveTrackProvider, onAuthExpired, expectedTrackIdRef, mediaTracksRef]);
+  }, [playGuard, setCurrentTrackIndex, pausePreviousProvider, resolveTrackProvider, onAuthExpired, expectedTrackIdRef, mediaTracksRef]);
 
   const resumePlayback = useCallback(async () => {
     const currentProvider = currentPlaybackProviderRef.current;

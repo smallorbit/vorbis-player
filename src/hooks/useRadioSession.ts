@@ -1,10 +1,11 @@
-import { useCallback, useRef } from 'react';
+import { useCallback } from 'react';
 import type { MediaTrack, ProviderId } from '@/types/domain';
 import type { ProviderDescriptor } from '@/types/providers';
 import type { TrackOperations } from '@/types/trackOperations';
 import type { RadioSeed, RadioProgress, RadioResult } from '@/types/radio';
 import { providerRegistry } from '@/providers/registry';
 import { runRadioPipeline } from '@/services/radioPipeline';
+import { useNewestWins } from '@/hooks/useNewestWins';
 import { queueSnapshot } from './playerLogicUtils';
 
 
@@ -40,26 +41,25 @@ export function useRadioSession({
 }: UseRadioSessionProps): UseRadioSessionReturn {
   const { setError, setTracks, setOriginalTracks, setCurrentTrackIndex, setSelection, mediaTracksRef } = trackOps;
 
-  // Monotonic generation guard. Radio generation is async (catalog fetch +
-  // Last.fm pipeline); a second start — or a stop — must supersede an in-flight
-  // one so its late result cannot clobber the newer queue. Mirrors the guard in
-  // useCollectionLoader.
-  const generationRef = useRef(0);
+  // Newest-wins guard. Radio generation is async (catalog fetch + Last.fm
+  // pipeline); a second start — or a stop — must supersede an in-flight one so
+  // its late result cannot clobber the newer queue.
+  const radioGuard = useNewestWins();
 
   const clearAuthExpired = useCallback(() => {
     setAuthExpired(null);
   }, [setAuthExpired]);
 
   const stopRadio = useCallback(() => {
-    generationRef.current += 1;
+    radioGuard.invalidate();
     stopRadioBase();
     setAuthExpired(null);
-  }, [stopRadioBase]);
+  }, [radioGuard, stopRadioBase]);
 
   const handleStartRadio = useCallback(async () => {
     if (!activeDescriptor || !currentTrack) return;
 
-    const generation = ++generationRef.current;
+    const token = radioGuard.begin();
 
     try {
       const searchProviders = providerRegistry.getAll().filter(
@@ -85,7 +85,7 @@ export function useRadioSession({
 
       // Superseded by a newer start or a stop while we were generating — drop
       // this stale result rather than overwrite the current queue / progress.
-      if (generationRef.current !== generation) return;
+      if (token.isStale()) return;
 
       if (!pipelineResult) {
         onProgress(null);
@@ -107,12 +107,12 @@ export function useRadioSession({
     } catch (err) {
       // A superseded generation's failure must not surface an error or clear the
       // newer generation's progress.
-      if (generationRef.current !== generation) return;
+      if (token.isStale()) return;
       console.warn('[Radio] Generation failed:', err);
       setError(err instanceof Error ? err.message : 'Failed to start radio.');
       onProgress(null);
     }
-  }, [activeDescriptor, currentTrack, currentTrackIndex, startRadio, onProgress, setError, setOriginalTracks, setTracks, setCurrentTrackIndex, setSelection]);
+  }, [radioGuard, activeDescriptor, currentTrack, currentTrackIndex, startRadio, onProgress, setError, setOriginalTracks, setTracks, setCurrentTrackIndex, setSelection]);
 
   return {
     handleStartRadio,

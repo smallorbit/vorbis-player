@@ -1,6 +1,7 @@
 import { useEffect, useRef, useCallback } from 'react';
 import type { MediaTrack } from '@/types/domain';
 import { providerRegistry } from '@/providers/registry';
+import { useNewestWins } from '@/hooks/useNewestWins';
 import { logQueue } from '@/lib/debugLog';
 import { logCaughtError } from '@/utils/logCaughtError';
 
@@ -21,7 +22,8 @@ export function useQueueDurationLoader(
   setTracks: React.Dispatch<React.SetStateAction<MediaTrack[]>>,
 ) {
   const attemptedTrackIds = useRef(new Set<string>());
-  const abortRef = useRef<AbortController | null>(null);
+  // Newest-wins guard: a queue change supersedes the previous resolution run.
+  const resolveGuard = useNewestWins();
 
   const applyDurationUpdates = useCallback(
     (updates: Map<string, number>) => {
@@ -50,15 +52,13 @@ export function useQueueDurationLoader(
     const toResolve = missing.filter((t) => !attemptedTrackIds.current.has(t.id));
     if (toResolve.length === 0) return;
 
-    abortRef.current?.abort();
-    const controller = new AbortController();
-    abortRef.current = controller;
+    const token = resolveGuard.begin();
 
     logQueue('durationLoader — resolving durations for %d tracks', toResolve.length);
 
     const run = async () => {
       for (let i = 0; i < toResolve.length; i += RESOLVE_CONCURRENCY) {
-        if (controller.signal.aborted) return;
+        if (token.isStale()) return;
         const batch = toResolve.slice(i, i + RESOLVE_CONCURRENCY);
         const batchResults = new Map<string, number>();
 
@@ -70,15 +70,15 @@ export function useQueueDurationLoader(
               if (durationMs) {
                 batchResults.set(track.id, durationMs);
               }
-              if (!controller.signal.aborted) attemptedTrackIds.current.add(track.id);
+              if (!token.isStale()) attemptedTrackIds.current.add(track.id);
             } catch (err) {
               logCaughtError('useQueueDurationLoader.resolveDuration', err);
-              if (!controller.signal.aborted) attemptedTrackIds.current.add(track.id);
+              if (!token.isStale()) attemptedTrackIds.current.add(track.id);
             }
           }),
         );
 
-        if (batchResults.size > 0 && !controller.signal.aborted) {
+        if (batchResults.size > 0 && !token.isStale()) {
           applyDurationUpdates(batchResults);
           logQueue('durationLoader — resolved %d in batch', batchResults.size);
         }
@@ -87,8 +87,8 @@ export function useQueueDurationLoader(
 
     run().catch(() => {});
 
-    return () => controller.abort();
-  }, [tracks, applyDurationUpdates]);
+    return () => resolveGuard.invalidate();
+  }, [tracks, applyDurationUpdates, resolveGuard]);
 
   useEffect(() => {
     if (tracks.length === 0) {

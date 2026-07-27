@@ -7,6 +7,7 @@ import { logLibrary } from '@/lib/debugLog';
 import { replaceProviderAlbums, replaceProviderPlaylists } from '@/services/cache/libraryCache';
 import { writeLikedCountSnapshot } from '@/services/cache/likedCountSnapshot';
 import { logCaughtError } from '@/utils/logCaughtError';
+import { useNewestWins } from '@/hooks/useNewestWins';
 import { useStableSet } from '@/hooks/useStableSet';
 
 export interface PerProviderLikedCount {
@@ -134,6 +135,9 @@ export function useCatalogLibrarySync(catalogProviderIdsInput: readonly Provider
   const enabledRef = useRef<readonly ProviderId[]>(catalogProviderIds);
   enabledRef.current = catalogProviderIds;
 
+  // Newest-wins guard: a provider-set change supersedes the in-flight sync.
+  const syncGuard = useNewestWins();
+
   const recomputeAggregate = useCallback(() => {
     setAggregated(aggregate(dataRef.current, enabledRef.current));
   }, []);
@@ -145,8 +149,7 @@ export function useCatalogLibrarySync(catalogProviderIdsInput: readonly Provider
       return;
     }
 
-    let cancelled = false;
-    const controller = new AbortController();
+    const token = syncGuard.begin();
 
     async function loadProviderCollections(providerId: ProviderId) {
       const descriptor = getDescriptor(providerId);
@@ -161,10 +164,10 @@ export function useCatalogLibrarySync(catalogProviderIdsInput: readonly Provider
 
       try {
         const [collections, likedCount] = await Promise.all([
-          catalog.listCollections(controller.signal),
-          catalog.getLikedCount ? catalog.getLikedCount(controller.signal) : Promise.resolve(0),
+          catalog.listCollections(token.signal),
+          catalog.getLikedCount ? catalog.getLikedCount(token.signal) : Promise.resolve(0),
         ]);
-        if (cancelled) return;
+        if (token.isStale()) return;
 
         logLibrary('[%s] raw collections from catalog: %o', providerId,
           collections.map(c => ({ name: c.name, kind: c.kind, trackCount: c.trackCount })));
@@ -181,7 +184,7 @@ export function useCatalogLibrarySync(catalogProviderIdsInput: readonly Provider
           lastSyncTimestamp: Date.now(),
         }));
       } catch (err) {
-        if (cancelled) return;
+        if (token.isStale()) return;
         if (err instanceof DOMException && err.name === 'AbortError') return;
         console.error(`[useCatalogLibrarySync] Failed to load collections for ${providerId}:`, err);
         setSyncState(prev => ({
@@ -195,11 +198,8 @@ export function useCatalogLibrarySync(catalogProviderIdsInput: readonly Provider
 
     Promise.all(catalogProviderIds.map(loadProviderCollections)).catch(() => {});
 
-    return () => {
-      cancelled = true;
-      controller.abort();
-    };
-  }, [catalogProviderIds, getDescriptor, recomputeAggregate]);
+    return () => syncGuard.invalidate();
+  }, [catalogProviderIds, getDescriptor, recomputeAggregate, syncGuard]);
 
   useEffect(() => {
     const cleanups: Array<() => void> = [];
