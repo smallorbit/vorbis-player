@@ -157,6 +157,19 @@ export interface AddToQueueResult {
   collectionName?: string;
 }
 
+/**
+ * Outcome of loading a collection (or a direct track list) into the queue.
+ *
+ * Discriminated so callers can tell a real load apart from a superseded or
+ * empty one — `loaded.count` is the number of tracks actually queued, never
+ * an internal counter. `superseded` means a newer load/stop won while this
+ * one was in flight; callers must not surface any UI for it.
+ */
+export type LoadCollectionResult =
+  | { status: 'loaded'; count: number }
+  | { status: 'superseded' }
+  | { status: 'empty' };
+
 const COLLECTION_KINDS = ['playlist', 'album', 'folder', 'liked'] as const;
 type ParseableCollectionKind = typeof COLLECTION_KINDS[number];
 

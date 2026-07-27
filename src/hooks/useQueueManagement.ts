@@ -1,6 +1,6 @@
 import { useCallback, useRef } from 'react';
 import { toast } from 'sonner';
-import type { AddToQueueResult, CollectionRef, CollectionSelection, MediaTrack, ProviderId } from '@/types/domain';
+import type { AddToQueueResult, CollectionRef, CollectionSelection, LoadCollectionResult, MediaTrack, ProviderId } from '@/types/domain';
 import type { ProviderDescriptor } from '@/types/providers';
 import type { TrackOperations } from '@/types/trackOperations';
 import { isAllMusicRef } from '@/constants/playlist';
@@ -27,7 +27,7 @@ interface UseQueueManagementProps {
   tracks: MediaTrack[];
   currentTrackIndex: number;
   shuffleEnabled: boolean;
-  loadCollection: (selection: CollectionSelection) => Promise<number>;
+  loadCollection: (selection: CollectionSelection) => Promise<LoadCollectionResult>;
   handleBackToLibrary: () => void;
   activeDescriptor: ProviderDescriptor | undefined;
   getDescriptor: (providerId: ProviderId) => ProviderDescriptor | undefined;
@@ -101,10 +101,13 @@ export function useQueueManagement({
 
       if (isQueueEmpty) {
         logQueue('handleAddToQueue — queue empty, delegating to loadCollection');
-        const loaded = await loadCollection(selection);
-        if (loaded > 0) {
-          return { added: loaded, ...(collectionName !== undefined && { collectionName }) };
+        const result = await loadCollection(selection);
+        if (result.status === 'loaded') {
+          return { added: result.count, ...(collectionName !== undefined && { collectionName }) };
         }
+        // A superseded load means a newer user action owns the queue now — no
+        // confirmation and no error belongs to this one.
+        if (result.status === 'superseded') return null;
         toast(ADD_TO_QUEUE_EMPTY_MSG, { id: ADD_TO_QUEUE_EMPTY_ID });
         return null;
       }
@@ -366,10 +369,12 @@ export function useQueueManagement({
 
       if (isQueueEmpty) {
         logQueue('insertCollectionNext — queue empty, delegating to loadCollection');
-        const loaded = await loadCollection(selection);
-        if (loaded > 0) {
-          return { added: loaded, ...(collectionName !== undefined && { collectionName }) };
+        const result = await loadCollection(selection);
+        if (result.status === 'loaded') {
+          return { added: result.count, ...(collectionName !== undefined && { collectionName }) };
         }
+        // Superseded loads surface no UI — a newer user action owns the queue.
+        if (result.status === 'superseded') return null;
         toast(ADD_TO_QUEUE_EMPTY_MSG, { id: ADD_TO_QUEUE_EMPTY_ID });
         return null;
       }

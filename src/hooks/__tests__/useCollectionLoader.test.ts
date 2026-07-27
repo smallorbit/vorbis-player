@@ -121,7 +121,7 @@ describe('useCollectionLoader', () => {
     expect(mockSetTracks).toHaveBeenCalledWith(expectedTracks);
     expect(mockSetOriginalTracks).toHaveBeenCalledWith(expectedTracks);
     expect(mockPlayTrack).toHaveBeenCalledWith(0);
-    expect(trackCount).toBe(3);
+    expect(trackCount).toEqual({ status: 'loaded', count: 3 });
   });
 
   it('loading unified liked songs merges results from multiple providers sorted by addedAt', async () => {
@@ -180,7 +180,7 @@ describe('useCollectionLoader', () => {
     const expectedMergedOrder = [makeMediaTrack('3', 1500), makeMediaTrack('1', 1000), makeMediaTrack('2', 500)];
     expect(mockSetTracks).toHaveBeenCalledWith(expectedMergedOrder);
     expect(mockSetOriginalTracks).toHaveBeenCalledWith(expectedMergedOrder);
-    expect(trackCount).toBe(3);
+    expect(trackCount).toEqual({ status: 'loaded', count: 3 });
   });
 
   it('an empty collection result sets error state', async () => {
@@ -217,7 +217,7 @@ describe('useCollectionLoader', () => {
     // #then
     expect(mockSetError).toHaveBeenCalledWith('No tracks found in this collection.');
     expect(mockSetTracks).toHaveBeenCalledWith([]);
-    expect(trackCount).toBe(0);
+    expect(trackCount).toEqual({ status: 'empty' });
   });
 
   it('skips the legacy SDK fallback when the descriptor lacks hasContextPlaybackFallback even if playCollection is defined', async () => {
@@ -255,7 +255,7 @@ describe('useCollectionLoader', () => {
     // #then — legacy spotify path is never invoked; surfaces empty-collection state
     expect(mockSpotifyHandlePlaylistSelect).not.toHaveBeenCalled();
     expect(mockSetError).toHaveBeenCalledWith('No tracks found in this collection.');
-    expect(trackCount).toBe(0);
+    expect(trackCount).toEqual({ status: 'empty' });
   });
 
   it('the legacy SDK fallback path is invoked when list.length === 0 and the descriptor declares hasContextPlaybackFallback', async () => {
@@ -294,7 +294,7 @@ describe('useCollectionLoader', () => {
 
     // #then
     expect(mockSpotifyHandlePlaylistSelect).toHaveBeenCalledWith({ provider: 'spotify', kind: 'playlist', id: 'playlist_123' });
-    expect(trackCount).toBe(2);
+    expect(trackCount).toEqual({ status: 'loaded', count: 2 });
   });
 
   it('stops radio before loading a new collection when radio is active', async () => {
@@ -436,7 +436,7 @@ describe('useCollectionLoader', () => {
     });
 
     expect(mockSetError).toHaveBeenCalledWith('Network error');
-    expect(trackCount).toBe(0);
+    expect(trackCount).toEqual({ status: 'empty' });
   });
 
   it('shows empty-collection error when all unified liked catalogs fail or return no tracks', async () => {
@@ -471,10 +471,10 @@ describe('useCollectionLoader', () => {
     });
 
     expect(mockSetError).toHaveBeenCalledWith('No liked tracks found.');
-    expect(trackCount).toBe(0);
+    expect(trackCount).toEqual({ status: 'empty' });
   });
 
-  it('returns 0 without loading when no descriptor is found for the requested provider', async () => {
+  it('returns empty without loading when no descriptor is found for the requested provider', async () => {
     mockGetDescriptor.mockReturnValue(undefined);
 
     const { result } = renderHook(() =>
@@ -499,7 +499,7 @@ describe('useCollectionLoader', () => {
       return result.current.loadCollection(playlistSel('playlist_123'));
     });
 
-    expect(trackCount).toBe(0);
+    expect(trackCount).toEqual({ status: 'empty' });
     expect(mockSetIsLoading).not.toHaveBeenCalled();
   });
 

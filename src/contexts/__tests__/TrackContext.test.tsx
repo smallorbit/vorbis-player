@@ -153,7 +153,7 @@ describe('TrackContext', () => {
         tracks: ctx.tracks,
         currentTrackIndex: ctx.currentTrackIndex,
         shuffleEnabled: ctx.shuffleEnabled,
-        loadCollection: vi.fn<() => Promise<number>>().mockResolvedValue(0),
+        loadCollection: vi.fn<() => Promise<import('@/types/domain').LoadCollectionResult>>().mockResolvedValue({ status: 'empty' }),
         handleBackToLibrary: vi.fn(),
         activeDescriptor: undefined,
         getDescriptor: vi.fn().mockReturnValue(undefined),

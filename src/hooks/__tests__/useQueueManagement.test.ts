@@ -160,7 +160,7 @@ describe('useQueueManagement', () => {
 
   it('handleAddToQueue delegates to loadCollection when queue is empty', async () => {
     // #given
-    mockHandlePlaylistSelect.mockResolvedValue(3);
+    mockHandlePlaylistSelect.mockResolvedValue({ status: 'loaded', count: 3 });
 
     const { result } = renderHook(() =>
       useQueueManagement({
@@ -307,9 +307,9 @@ describe('useQueueManagement', () => {
     expect(mockSetCurrentTrackIndex).not.toHaveBeenCalled();
   });
 
-  it('handleAddToQueue toasts the empty-collection message when loadCollection returns 0', async () => {
+  it('handleAddToQueue toasts the empty-collection message when loadCollection reports empty', async () => {
     // #given — empty queue, descriptor present, but loadCollection yields nothing
-    mockHandlePlaylistSelect.mockResolvedValue(0);
+    mockHandlePlaylistSelect.mockResolvedValue({ status: 'empty' });
 
     const { result } = renderHook(() =>
       useQueueManagement({
@@ -331,6 +331,34 @@ describe('useQueueManagement', () => {
     // #then
     expect(response).toBeNull();
     expect(toast).toHaveBeenCalledWith('This collection is empty.', { id: 'qap-add-queue-empty' });
+  });
+
+  it('handleAddToQueue surfaces nothing when loadCollection was superseded by a newer load', async () => {
+    // #given — empty queue; the delegated load loses to a newer one mid-flight.
+    // Historically this returned the internal generation counter, producing a
+    // bogus "Added N tracks" toast (F30).
+    mockHandlePlaylistSelect.mockResolvedValue({ status: 'superseded' });
+
+    const { result } = renderHook(() =>
+      useQueueManagement({
+        tracks: [],
+        currentTrackIndex: 0,
+        shuffleEnabled: false,
+        trackOps: { setTracks: mockSetTracks, setOriginalTracks: mockSetOriginalTracks, setCurrentTrackIndex: mockSetCurrentTrackIndex, mediaTracksRef },
+        loadCollection: mockHandlePlaylistSelect,
+        handleBackToLibrary: mockHandleBackToLibrary,
+        activeDescriptor: mockActiveDescriptor,
+        getDescriptor: mockGetDescriptor,
+        getDrivingProviderDescriptor: mockGetDrivingProviderDescriptor,
+      })
+    );
+
+    // #when
+    const response = await act(async () => result.current.handleAddToQueue(playlistSel('playlist_id')));
+
+    // #then — no added-count result and no toast of any kind
+    expect(response).toBeNull();
+    expect(toast).not.toHaveBeenCalled();
   });
 
   it('handleAddToQueue toasts the failure message when no descriptor resolves', async () => {
@@ -562,7 +590,7 @@ describe('useQueueManagement', () => {
 
   it('insertCollectionNext delegates to loadCollection when queue is empty', async () => {
     // #given
-    mockHandlePlaylistSelect.mockResolvedValue(5);
+    mockHandlePlaylistSelect.mockResolvedValue({ status: 'loaded', count: 5 });
 
     const { result } = renderHook(() =>
       useQueueManagement({
