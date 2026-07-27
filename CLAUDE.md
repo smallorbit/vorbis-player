@@ -81,6 +81,7 @@ src/
 ├── providers/       # Multi-provider system; spotify/ and dropbox/ subdirs
 ├── hooks/           # Custom hooks
 ├── services/        # spotify/ (auth + API), spotifyPlayer.ts (lazy SDK + playback), cache/ (IndexedDB)
+├── stores/          # Module-level state stores (useSyncExternalStore): playbackStore (playback state + driving-provider resolver), queueStore (queue + shuffle)
 ├── constants/       # playlist.ts, zenAnimation.ts, storage.ts
 ├── utils/           # colorExtractor, sizingUtils, logCaughtError, etc.
 ├── workers/         # imageProcessor.worker.ts
