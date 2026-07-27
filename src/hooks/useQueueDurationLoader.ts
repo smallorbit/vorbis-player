@@ -1,6 +1,7 @@
 import { useEffect, useRef, useCallback } from 'react';
 import type { MediaTrack } from '@/types/domain';
 import { providerRegistry } from '@/providers/registry';
+import { queueStore } from '@/stores/queueStore';
 import { useNewestWins } from '@/hooks/useNewestWins';
 import { logQueue } from '@/lib/debugLog';
 import { logCaughtError } from '@/utils/logCaughtError';
@@ -17,10 +18,7 @@ const RESOLVE_CONCURRENCY = 2;
  *
  * Updates are applied progressively so the queue UI fills in durations.
  */
-export function useQueueDurationLoader(
-  tracks: readonly MediaTrack[],
-  setTracks: React.Dispatch<React.SetStateAction<MediaTrack[]>>,
-) {
+export function useQueueDurationLoader(tracks: readonly MediaTrack[]) {
   const attemptedTrackIds = useRef(new Set<string>());
   // Newest-wins guard: a queue change supersedes the previous resolution run.
   const resolveGuard = useNewestWins();
@@ -30,19 +28,15 @@ export function useQueueDurationLoader(
       if (updates.size === 0) return;
       logQueue('durationLoader — applying %d duration updates', updates.size);
 
-      setTracks((prev) => {
-        let changed = false;
-        const next = prev.map((t) => {
-          if (!t.durationMs) {
-            const dur = updates.get(t.id);
-            if (dur) { changed = true; return { ...t, durationMs: dur }; }
-          }
-          return t;
-        });
-        return changed ? next : prev;
+      queueStore.mapTracks((t) => {
+        if (!t.durationMs) {
+          const dur = updates.get(t.id);
+          if (dur) return { ...t, durationMs: dur };
+        }
+        return t;
       });
     },
-    [setTracks],
+    [],
   );
 
   useEffect(() => {

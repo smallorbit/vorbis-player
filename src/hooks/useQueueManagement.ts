@@ -1,18 +1,11 @@
-import { useCallback, useRef } from 'react';
+import { useCallback } from 'react';
 import { toast } from 'sonner';
 import type { AddToQueueResult, CollectionRef, CollectionSelection, LoadCollectionResult, MediaTrack, ProviderId } from '@/types/domain';
 import type { ProviderDescriptor } from '@/types/providers';
-import type { TrackOperations } from '@/types/trackOperations';
 import { isAllMusicRef } from '@/constants/playlist';
+import { queueStore, type AddTracksPosition } from '@/stores/queueStore';
 import { logQueue } from '@/lib/debugLog';
 import { shuffleArray } from '@/utils/shuffleArray';
-import {
-  appendMediaTracks,
-  insertMediaTracksAt,
-  moveItemInArray,
-  removeMediaTrackById,
-  reorderMediaTracksToMatchTracks,
-} from '@/utils/queueTrackMirror';
 import { trkSummary } from './playerLogicUtils';
 
 const ADD_TO_QUEUE_ERROR_ID = 'qap-add-queue-error';
@@ -23,10 +16,6 @@ const ADD_TO_QUEUE_DUP_MSG = 'Already in your queue.';
 const ADD_TO_QUEUE_EMPTY_MSG = 'This collection is empty.';
 
 interface UseQueueManagementProps {
-  trackOps: Pick<TrackOperations, 'setTracks' | 'setOriginalTracks' | 'setCurrentTrackIndex' | 'mediaTracksRef'>;
-  tracks: MediaTrack[];
-  currentTrackIndex: number;
-  shuffleEnabled: boolean;
   loadCollection: (selection: CollectionSelection) => Promise<LoadCollectionResult>;
   handleBackToLibrary: () => void;
   activeDescriptor: ProviderDescriptor | undefined;
@@ -49,58 +38,100 @@ interface UseQueueManagementReturn {
   handleReorderQueue: (fromIndex: number, toIndex: number) => void;
 }
 
+/**
+ * Queue mutation handlers, rebuilt on two primitives:
+ * `fetchCollectionTracks` (resolve + fetch a collection's tracks) and
+ * `queueStore.addTracks({position})` (the single owner of the
+ * append/dedupe/shuffle invariant). Everything here is policy — which toast
+ * to show, when to delegate to a full load, when to leave the player.
+ */
 export function useQueueManagement({
-  trackOps,
-  tracks,
-  currentTrackIndex,
-  shuffleEnabled,
   loadCollection,
   handleBackToLibrary,
   activeDescriptor,
   getDescriptor,
   getDrivingProviderDescriptor,
 }: UseQueueManagementProps): UseQueueManagementReturn {
-  const { setTracks, setOriginalTracks, setCurrentTrackIndex, mediaTracksRef } = trackOps;
-  const tracksRef = useRef(tracks);
-  tracksRef.current = tracks;
+  const notifyQueueChanged = useCallback((): void => {
+    const driving = getDrivingProviderDescriptor();
+    if (!driving) return;
+    if (!driving.capabilities?.hasNativeQueueSync) return;
+    driving.playback.onQueueChanged?.(queueStore.getTracks(), queueStore.getCurrentIndex());
+  }, [getDrivingProviderDescriptor]);
 
-  const notifyQueueChanged = useCallback(
-    (nextTracks: MediaTrack[], nextIndex: number): void => {
-      const driving = getDrivingProviderDescriptor();
-      if (!driving) return;
-      if (!driving.capabilities?.hasNativeQueueSync) return;
-      driving.playback.onQueueChanged?.(nextTracks, nextIndex);
+  /**
+   * Shared append/insert path: adds pre-fetched tracks via the store (which
+   * owns dedupe + the shuffle-aware originalTracks invariant) and reports the
+   * outcome. Returns null (with the dup toast) when every track was already
+   * queued.
+   */
+  const addTracksToQueue = useCallback(
+    (newTracks: MediaTrack[], position: AddTracksPosition, collectionName?: string): AddToQueueResult | null => {
+      if (newTracks.length === 0) return null;
+
+      const { added } = queueStore.addTracks(newTracks, { position });
+      if (added === 0) {
+        toast(ADD_TO_QUEUE_DUP_MSG, { id: ADD_TO_QUEUE_DUP_ID });
+        return null;
+      }
+
+      notifyQueueChanged();
+      logQueue(
+        'addTracksToQueue — added %d tracks (%s), queueLen=%d: %s',
+        added,
+        position,
+        queueStore.getTracks().length,
+        newTracks.slice(0, 5).map((t: MediaTrack) => trkSummary(t)).join(', '),
+      );
+      return { added, ...(collectionName !== undefined && { collectionName }) };
     },
-    [getDrivingProviderDescriptor],
+    [notifyQueueChanged],
   );
 
   /**
-   * Fetch tracks from a collection (album/playlist) and append them to the
-   * current queue without interrupting playback. If nothing is playing yet,
-   * starts playback of the first added track.
+   * Fetch a collection's tracks from its resolved provider catalog. The All
+   * Music pseudo-collection is pre-shuffled to match its load behavior.
+   * Throws on catalog errors.
    */
-  const handleAddToQueue = useCallback(
-    async (selection: CollectionSelection): Promise<AddToQueueResult | null> => {
-      const isQueueEmpty = tracks.length === 0;
+  const fetchCollectionTracks = useCallback(
+    async (
+      selection: CollectionSelection,
+      targetDescriptor: ProviderDescriptor,
+      targetProviderId: ProviderId,
+    ): Promise<MediaTrack[]> => {
+      const collectionRef: CollectionRef = selection.type === 'collection'
+        ? selection.ref
+        : { provider: targetProviderId, kind: 'liked' };
+      const fetched = await targetDescriptor.catalog.listTracks(collectionRef);
+      return isAllMusicRef(collectionRef) ? shuffleArray(fetched) : fetched;
+    },
+    [],
+  );
+
+  /**
+   * Fetch a collection and add it to the queue without interrupting playback.
+   * An empty queue delegates to `loadCollection` (full load + autoplay).
+   */
+  const addCollection = useCallback(
+    async (selection: CollectionSelection, position: AddTracksPosition): Promise<AddToQueueResult | null> => {
       const collectionName = selection.name;
-      const provider = selection.type === 'collection' ? selection.ref.provider : selection.provider;
       logQueue(
-        'handleAddToQueue — selection=%o, currentQueueLen=%d, mediaLen=%d',
+        'addCollection(%s) — selection=%o, currentQueueLen=%d',
+        position,
         selection,
-        tracks.length,
-        mediaTracksRef.current.length,
+        queueStore.getTracks().length,
       );
 
+      const provider = selection.type === 'collection' ? selection.ref.provider : selection.provider;
       const targetDescriptor = provider ? getDescriptor(provider) : activeDescriptor;
       const targetProviderId = provider ?? activeDescriptor?.id;
-
       if (!targetDescriptor || !targetProviderId) {
         toast(ADD_TO_QUEUE_ERROR_MSG, { id: ADD_TO_QUEUE_ERROR_ID });
         return null;
       }
 
-      if (isQueueEmpty) {
-        logQueue('handleAddToQueue — queue empty, delegating to loadCollection');
+      if (queueStore.getTracks().length === 0) {
+        logQueue('addCollection — queue empty, delegating to loadCollection');
         const result = await loadCollection(selection);
         if (result.status === 'loaded') {
           return { added: result.count, ...(collectionName !== undefined && { collectionName }) };
@@ -113,287 +144,75 @@ export function useQueueManagement({
       }
 
       try {
-        const catalog = targetDescriptor.catalog;
-        const collectionRef: CollectionRef = selection.type === 'collection'
-          ? selection.ref
-          : { provider: targetProviderId, kind: 'liked' };
-        const fetchedTracks = await catalog.listTracks(collectionRef);
-        const newMediaTracks = isAllMusicRef(collectionRef) ? shuffleArray(fetchedTracks) : fetchedTracks;
-
-        const existingIds = new Set(tracksRef.current.map((t) => t.id));
-        const uniqueNewTracks = newMediaTracks.filter((t) => !existingIds.has(t.id));
-        if (uniqueNewTracks.length < newMediaTracks.length) {
-          logQueue('handleAddToQueue — deduped: %d → %d tracks', newMediaTracks.length, uniqueNewTracks.length);
-        }
-
-        if (uniqueNewTracks.length === 0) {
-          toast(ADD_TO_QUEUE_DUP_MSG, { id: ADD_TO_QUEUE_DUP_ID });
-          return null;
-        }
-
-        // Append to existing queue
-        logQueue(
-          'handleAddToQueue — appending %d tracks. Before: tracks=%d, mediaRef=%d',
-          uniqueNewTracks.length,
-          tracksRef.current.length,
-          mediaTracksRef.current.length,
-        );
-        const nextTracks = [...tracksRef.current, ...uniqueNewTracks];
-        mediaTracksRef.current = appendMediaTracks(mediaTracksRef.current, uniqueNewTracks);
-        // When shuffle is ON, preserve the true unshuffled order by appending only the
-        // new tracks to originalTracks. Overwriting with nextTracks (the shuffled queue
-        // snapshot) would corrupt the restore-on-unshuffle path — mirrors handleReorderQueue.
-        if (shuffleEnabled) {
-          setOriginalTracks((prev) => [...prev, ...uniqueNewTracks]);
-        } else {
-          setOriginalTracks(nextTracks);
-        }
-        setTracks((prev: MediaTrack[]) => [...prev, ...uniqueNewTracks]);
-        notifyQueueChanged(nextTracks, currentTrackIndex);
-        logQueue(
-          'handleAddToQueue — after append: mediaRef=%d, newTracks added: %s',
-          mediaTracksRef.current.length,
-          uniqueNewTracks.map((t: MediaTrack) => trkSummary(t)).join(', '),
-        );
-        return { added: uniqueNewTracks.length, ...(collectionName !== undefined && { collectionName }) };
+        const fetched = await fetchCollectionTracks(selection, targetDescriptor, targetProviderId);
+        return addTracksToQueue(fetched, position, collectionName);
       } catch (err) {
         console.error('[Queue] Failed to add to queue:', err);
         toast(ADD_TO_QUEUE_ERROR_MSG, { id: ADD_TO_QUEUE_ERROR_ID });
         return null;
       }
     },
-    // mediaTracksRef included for exhaustive-deps; ref identity is stable so it does not cause callback re-creation.
-    [tracks.length, loadCollection, activeDescriptor, getDescriptor, setTracks, setOriginalTracks, mediaTracksRef, notifyQueueChanged, currentTrackIndex, shuffleEnabled]
+    [activeDescriptor, getDescriptor, loadCollection, fetchCollectionTracks, addTracksToQueue],
+  );
+
+  const handleAddToQueue = useCallback(
+    (selection: CollectionSelection) => addCollection(selection, 'end'),
+    [addCollection],
+  );
+
+  const insertCollectionNext = useCallback(
+    (selection: CollectionSelection) => addCollection(selection, 'next'),
+    [addCollection],
+  );
+
+  const queueTracksDirectly = useCallback(
+    (newTracks: MediaTrack[], collectionName?: string) => addTracksToQueue(newTracks, 'end', collectionName),
+    [addTracksToQueue],
+  );
+
+  const insertTracksNext = useCallback(
+    (newTracks: MediaTrack[], collectionName?: string) => addTracksToQueue(newTracks, 'next', collectionName),
+    [addTracksToQueue],
   );
 
   const handleRemoveFromQueue = useCallback(
     (index: number) => {
+      const { tracks, currentIndex } = queueStore.getSnapshot();
       if (index < 0 || index >= tracks.length) return;
-      if (index === currentTrackIndex) return;
+      if (index === currentIndex) return;
 
-      const removedTrack = tracks[index];
-      if (!removedTrack) return;
-      logQueue('handleRemoveFromQueue — removing index=%d, track=%s, queueLen=%d', index, trkSummary(removedTrack), tracks.length);
+      const target = tracks[index];
+      if (!target) return;
+      logQueue('handleRemoveFromQueue — removing index=%d, track=%s, queueLen=%d', index, trkSummary(target), tracks.length);
 
       if (tracks.length <= 1) {
         handleBackToLibrary();
         return;
       }
 
-      mediaTracksRef.current = removeMediaTrackById(mediaTracksRef.current, removedTrack.id);
+      queueStore.removeTrackAt(index);
+      notifyQueueChanged();
 
-      // Remove from originalTracks by ID (order-independent for shuffle)
-      setOriginalTracks((prev) => prev.filter((t) => t.id !== removedTrack.id));
-
-      // Adjust currentTrackIndex if removing before current
-      const adjustedIndex = index < currentTrackIndex ? currentTrackIndex - 1 : currentTrackIndex;
-      if (index < currentTrackIndex) {
-        setCurrentTrackIndex(prev => prev - 1);
-      }
-
-      // Remove from tracks by index
-      const nextTracks = tracks.filter((_, i) => i !== index);
-      setTracks(prev => prev.filter((_, i) => i !== index));
-
-      notifyQueueChanged(nextTracks, adjustedIndex);
-
-      logQueue('handleRemoveFromQueue — done, new queueLen=%d', tracks.length - 1);
+      logQueue('handleRemoveFromQueue — done, new queueLen=%d', queueStore.getTracks().length);
     },
-    // mediaTracksRef included for exhaustive-deps; ref identity is stable so it does not cause callback re-creation.
-    [tracks, currentTrackIndex, handleBackToLibrary, setTracks, setOriginalTracks, setCurrentTrackIndex, mediaTracksRef, notifyQueueChanged]
+    [handleBackToLibrary, notifyQueueChanged]
   );
 
   const handleReorderQueue = useCallback(
     (fromIndex: number, toIndex: number) => {
+      const { tracks } = queueStore.getSnapshot();
       if (fromIndex === toIndex) return;
       if (fromIndex < 0 || fromIndex >= tracks.length) return;
       if (toIndex < 0 || toIndex >= tracks.length) return;
 
       logQueue('handleReorderQueue — from=%d to=%d, queueLen=%d', fromIndex, toIndex, tracks.length);
 
-      const currentTrackId = tracks[currentTrackIndex]?.id;
+      queueStore.reorderTrack(fromIndex, toIndex);
+      notifyQueueChanged();
 
-      const newTracks = moveItemInArray(tracks, fromIndex, toIndex);
-
-      // Update currentTrackIndex to follow the currently playing track
-      const newCurrentIndex = currentTrackId
-        ? newTracks.findIndex(t => t.id === currentTrackId)
-        : currentTrackIndex;
-
-      // Explicitly sync mediaTracksRef before setTracks triggers a re-render, so
-      // index-based playback reads the correct track even during the render cycle.
-      // useMediaTracksMirror will also re-sync afterward, but this ensures the ref
-      // is correct synchronously.
-      const reorderedMedia = reorderMediaTracksToMatchTracks(newTracks, mediaTracksRef.current);
-      if (reorderedMedia) {
-        mediaTracksRef.current = reorderedMedia;
-      } else {
-        logQueue('handleReorderQueue — mediaTracksRef out of sync (len %d vs tracks len %d); layout effect will recover', mediaTracksRef.current.length, newTracks.length);
-      }
-
-      // Only update originalTracks if shuffle is off
-      if (!shuffleEnabled) {
-        setOriginalTracks(newTracks);
-      }
-
-      const finalIndex = newCurrentIndex >= 0 ? newCurrentIndex : 0;
-      setCurrentTrackIndex(finalIndex);
-      setTracks(newTracks);
-
-      notifyQueueChanged(newTracks, finalIndex);
-
-      logQueue('handleReorderQueue — done, currentIndex=%d', newCurrentIndex);
+      logQueue('handleReorderQueue — done, currentIndex=%d', queueStore.getCurrentIndex());
     },
-    // mediaTracksRef included for exhaustive-deps; ref identity is stable so it does not cause callback re-creation.
-    [tracks, currentTrackIndex, shuffleEnabled, setTracks, setOriginalTracks, setCurrentTrackIndex, mediaTracksRef, notifyQueueChanged]
-  );
-
-  const queueTracksDirectly = useCallback(
-    (newTracks: MediaTrack[], collectionName?: string): AddToQueueResult | null => {
-      if (newTracks.length === 0) return null;
-
-      const existingIds = new Set(tracksRef.current.map((t) => t.id));
-      const uniqueNewTracks = newTracks.filter((t) => !existingIds.has(t.id));
-
-      if (uniqueNewTracks.length === 0) {
-        toast(ADD_TO_QUEUE_DUP_MSG, { id: ADD_TO_QUEUE_DUP_ID });
-        return null;
-      }
-
-      logQueue(
-        'queueTracksDirectly — appending %d tracks. Before: tracks=%d, mediaRef=%d',
-        uniqueNewTracks.length,
-        tracksRef.current.length,
-        mediaTracksRef.current.length,
-      );
-      const nextTracks = [...tracksRef.current, ...uniqueNewTracks];
-      mediaTracksRef.current = appendMediaTracks(mediaTracksRef.current, uniqueNewTracks);
-      // When shuffle is ON, preserve the true unshuffled order — mirrors handleReorderQueue.
-      if (shuffleEnabled) {
-        setOriginalTracks((prev) => [...prev, ...uniqueNewTracks]);
-      } else {
-        setOriginalTracks(nextTracks);
-      }
-      setTracks((prev: MediaTrack[]) => [...prev, ...uniqueNewTracks]);
-      notifyQueueChanged(nextTracks, currentTrackIndex);
-      return { added: uniqueNewTracks.length, ...(collectionName !== undefined && { collectionName }) };
-    },
-    [shuffleEnabled, mediaTracksRef, setOriginalTracks, setTracks, notifyQueueChanged, currentTrackIndex]
-  );
-
-  /**
-   * Insert tracks at `currentTrackIndex + 1` (the "play next" slot). Dedups
-   * against the existing queue. When the queue is empty there is no current
-   * track, so this falls back to appending — matching `queueTracksDirectly`.
-   */
-  const insertTracksNext = useCallback(
-    (newTracks: MediaTrack[], collectionName?: string): AddToQueueResult | null => {
-      if (newTracks.length === 0) return null;
-
-      const existingIds = new Set(tracksRef.current.map((t) => t.id));
-      const uniqueNewTracks = newTracks.filter((t) => !existingIds.has(t.id));
-
-      if (uniqueNewTracks.length === 0) {
-        toast(ADD_TO_QUEUE_DUP_MSG, { id: ADD_TO_QUEUE_DUP_ID });
-        return null;
-      }
-
-      if (tracksRef.current.length === 0) {
-        logQueue('insertTracksNext — queue empty, appending %d tracks', uniqueNewTracks.length);
-        mediaTracksRef.current = appendMediaTracks(mediaTracksRef.current, uniqueNewTracks);
-        setOriginalTracks([...uniqueNewTracks]);
-        setTracks([...uniqueNewTracks]);
-        notifyQueueChanged([...uniqueNewTracks], 0);
-        return { added: uniqueNewTracks.length, ...(collectionName !== undefined && { collectionName }) };
-      }
-
-      const insertAt = currentTrackIndex + 1;
-      logQueue(
-        'insertTracksNext — inserting %d tracks at index=%d. Before: tracks=%d, mediaRef=%d',
-        uniqueNewTracks.length,
-        insertAt,
-        tracksRef.current.length,
-        mediaTracksRef.current.length,
-      );
-
-      const nextTracks = [...tracksRef.current];
-      nextTracks.splice(insertAt, 0, ...uniqueNewTracks);
-      mediaTracksRef.current = insertMediaTracksAt(mediaTracksRef.current, insertAt, uniqueNewTracks);
-      // When shuffle is ON, append to originalTracks to preserve the true unshuffled
-      // order. Splicing into originalTracks at currentTrackIndex+1 is not meaningful
-      // because the shuffled queue position does not correspond to an unshuffled slot.
-      // Appending keeps the collection's natural order intact for restore-on-unshuffle.
-      if (shuffleEnabled) {
-        setOriginalTracks((prev) => [...prev, ...uniqueNewTracks]);
-      } else {
-        setOriginalTracks(nextTracks);
-      }
-      setTracks(nextTracks);
-
-      notifyQueueChanged(nextTracks, currentTrackIndex);
-
-      logQueue(
-        'insertTracksNext — after insert: mediaRef=%d, newTracks added: %s',
-        mediaTracksRef.current.length,
-        uniqueNewTracks.map((t: MediaTrack) => trkSummary(t)).join(', '),
-      );
-      return { added: uniqueNewTracks.length, ...(collectionName !== undefined && { collectionName }) };
-    },
-    [currentTrackIndex, shuffleEnabled, mediaTracksRef, setOriginalTracks, setTracks, notifyQueueChanged],
-  );
-
-  /**
-   * Fetch a collection's tracks and splice them in at `currentTrackIndex + 1`.
-   * Mirrors `handleAddToQueue` but uses insert-next semantics on a non-empty
-   * queue. Empty queue still delegates to `loadCollection` (start playback).
-   */
-  const insertCollectionNext = useCallback(
-    async (selection: CollectionSelection): Promise<AddToQueueResult | null> => {
-      const isQueueEmpty = tracksRef.current.length === 0;
-      const collectionName = selection.name;
-      const provider = selection.type === 'collection' ? selection.ref.provider : selection.provider;
-      logQueue(
-        'insertCollectionNext — selection=%o, currentQueueLen=%d, mediaLen=%d',
-        selection,
-        tracksRef.current.length,
-        mediaTracksRef.current.length,
-      );
-
-      const targetDescriptor = provider ? getDescriptor(provider) : activeDescriptor;
-      const targetProviderId = provider ?? activeDescriptor?.id;
-
-      if (!targetDescriptor || !targetProviderId) {
-        toast(ADD_TO_QUEUE_ERROR_MSG, { id: ADD_TO_QUEUE_ERROR_ID });
-        return null;
-      }
-
-      if (isQueueEmpty) {
-        logQueue('insertCollectionNext — queue empty, delegating to loadCollection');
-        const result = await loadCollection(selection);
-        if (result.status === 'loaded') {
-          return { added: result.count, ...(collectionName !== undefined && { collectionName }) };
-        }
-        // Superseded loads surface no UI — a newer user action owns the queue.
-        if (result.status === 'superseded') return null;
-        toast(ADD_TO_QUEUE_EMPTY_MSG, { id: ADD_TO_QUEUE_EMPTY_ID });
-        return null;
-      }
-
-      try {
-        const catalog = targetDescriptor.catalog;
-        const collectionRef: CollectionRef = selection.type === 'collection'
-          ? selection.ref
-          : { provider: targetProviderId, kind: 'liked' };
-        const fetchedTracks = await catalog.listTracks(collectionRef);
-        const newMediaTracks = isAllMusicRef(collectionRef) ? shuffleArray(fetchedTracks) : fetchedTracks;
-        return insertTracksNext(newMediaTracks, collectionName);
-      } catch (err) {
-        console.error('[Queue] Failed to insert collection next:', err);
-        toast(ADD_TO_QUEUE_ERROR_MSG, { id: ADD_TO_QUEUE_ERROR_ID });
-        return null;
-      }
-    },
-    [activeDescriptor, getDescriptor, insertTracksNext, loadCollection, mediaTracksRef],
+    [notifyQueueChanged]
   );
 
   return {

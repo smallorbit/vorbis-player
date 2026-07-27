@@ -1,12 +1,12 @@
 import { useCallback } from 'react';
 import type { CollectionRef, CollectionSelection, LoadCollectionResult, MediaTrack, ProviderId } from '@/types/domain';
-import { useNewestWins, type NewestWinsToken } from '@/hooks/useNewestWins';
 import type { ProviderDescriptor } from '@/types/providers';
 import type { TrackOperations } from '@/types/trackOperations';
 import { LIKED_SONGS_NAME, isAllMusicRef } from '@/constants/playlist';
-import { shuffleArray } from '@/utils/shuffleArray';
 import { providerRegistry } from '@/providers/registry';
 import { putTrackList } from '@/services/cache/libraryCache';
+import { queueStore } from '@/stores/queueStore';
+import { useNewestWins, type NewestWinsToken } from '@/hooks/useNewestWins';
 import { logQueue } from '@/lib/debugLog';
 import { logCaughtError } from '@/utils/logCaughtError';
 import { queueSnapshot } from './playerLogicUtils';
@@ -33,7 +33,6 @@ interface UseCollectionLoaderProps {
   getDescriptor: (providerId: ProviderId) => ProviderDescriptor | undefined;
   setActiveProviderId: (providerId: ProviderId) => void;
   connectedProviderIds: ProviderId[];
-  shuffleEnabled: boolean;
   isUnifiedLikedActive: boolean;
   drivingProviderRef: React.MutableRefObject<ProviderId | null>;
   playTrack: (index: number, isSkip?: boolean) => Promise<void>;
@@ -66,7 +65,6 @@ export function useCollectionLoader({
   getDescriptor,
   setActiveProviderId,
   connectedProviderIds,
-  shuffleEnabled,
   isUnifiedLikedActive,
   drivingProviderRef,
   playTrack,
@@ -75,7 +73,7 @@ export function useCollectionLoader({
   radioStateIsActive,
   record,
 }: UseCollectionLoaderProps): UseCollectionLoaderReturn {
-  const { setError, setIsLoading, setSelection, setTracks, setOriginalTracks, setCurrentTrackIndex, mediaTracksRef } = trackOps;
+  const { setError, setIsLoading, setSelection } = trackOps;
 
   // Newest-wins guard for the queue's collection load: a later load (or a
   // direct-play) supersedes an in-flight one, aborting its fetch and staling
@@ -87,38 +85,24 @@ export function useCollectionLoader({
     setError(null);
     setIsLoading(true);
     setSelection(selection);
-    mediaTracksRef.current = [];
     return token;
-  }, [loadGuard, setError, setIsLoading, setSelection, mediaTracksRef]);
+  }, [loadGuard, setError, setIsLoading, setSelection]);
 
   const clearWithError = useCallback((message: string): LoadCollectionResult => {
     setError(message);
-    setTracks([]);
-    setOriginalTracks([]);
-    setCurrentTrackIndex(0);
+    queueStore.clear();
     setIsLoading(false);
     return EMPTY;
-  }, [setError, setTracks, setOriginalTracks, setCurrentTrackIndex, setIsLoading]);
+  }, [setError, setIsLoading]);
 
   const handleLoadError = useCallback((err: unknown, fallbackMessage: string): LoadCollectionResult => {
     return clearWithError(err instanceof Error ? err.message : fallbackMessage);
   }, [clearWithError]);
 
   const applyTracks = useCallback((tracks: MediaTrack[], options?: { forceShuffle?: boolean }) => {
-    setOriginalTracks(tracks);
-    const shouldShuffle = shuffleEnabled || options?.forceShuffle === true;
-    if (shouldShuffle) {
-      const indices = shuffleArray(tracks.map((_, i) => i));
-      const shuffled = indices.map(i => tracks[i]).filter((t): t is MediaTrack => t !== undefined);
-      mediaTracksRef.current = shuffled;
-      setTracks(shuffled);
-    } else {
-      mediaTracksRef.current = tracks;
-      setTracks(tracks);
-    }
-    setCurrentTrackIndex(0);
+    queueStore.loadQueue(tracks, { forceShuffle: options?.forceShuffle === true });
     setIsLoading(false);
-  }, [shuffleEnabled, mediaTracksRef, setOriginalTracks, setTracks, setCurrentTrackIndex, setIsLoading]);
+  }, [setIsLoading]);
 
   const loadUnifiedLiked = useCallback(async (selection: CollectionSelection): Promise<LoadCollectionResult> => {
     const token = beginLoad(selection);
@@ -156,7 +140,7 @@ export function useCollectionLoader({
 
       applyTracks(merged);
 
-      const firstTrack = mediaTracksRef.current[0];
+      const firstTrack = queueStore.getTracks()[0];
       if (firstTrack) {
         const firstProvider = getDescriptor(firstTrack.provider);
         if (firstProvider) {
@@ -164,7 +148,7 @@ export function useCollectionLoader({
           if (firstTrack.provider !== activeDescriptor?.id) {
             setActiveProviderId(firstTrack.provider);
           }
-          queueSnapshot('Unified Liked loaded', merged, mediaTracksRef.current.length, 0);
+          queueSnapshot('Unified Liked loaded', merged, queueStore.getTracks().length, 0);
           if (token.isStale()) return SUPERSEDED;
           await playTrack(0);
           record(
@@ -185,7 +169,7 @@ export function useCollectionLoader({
   }, [
     beginLoad, clearWithError, handleLoadError, applyTracks,
     connectedProviderIds, getDescriptor, activeDescriptor,
-    setActiveProviderId, drivingProviderRef, mediaTracksRef, playTrack, record,
+    setActiveProviderId, drivingProviderRef, playTrack, record,
   ]);
 
   const loadContextPlayback = useCallback(async (
@@ -198,18 +182,18 @@ export function useCollectionLoader({
       providerRegistry.get(prevProvider)?.playback.pause().catch(() => {});
     }
     drivingProviderRef.current = providerId;
-    mediaTracksRef.current = [];
     logQueue('Context playback path — delegating to legacy handler for %o', ref);
+    // spotifyHandlePlaylistSelect mirrors the SDK's track window straight into
+    // the queue store when it succeeds.
     const sdkTracks = await spotifyHandlePlaylistSelect(ref);
     if (token.isStale()) return SUPERSEDED;
     if (sdkTracks.length === 0) {
       logQueue('Context playback returned 0 tracks');
       return EMPTY;
     }
-    mediaTracksRef.current = sdkTracks;
-    queueSnapshot('Context playback loaded', sdkTracks, mediaTracksRef.current.length, 0);
+    queueSnapshot('Context playback loaded', sdkTracks, queueStore.getTracks().length, 0);
     return loaded(sdkTracks.length);
-  }, [drivingProviderRef, mediaTracksRef, setIsLoading, spotifyHandlePlaylistSelect]);
+  }, [drivingProviderRef, setIsLoading, spotifyHandlePlaylistSelect]);
 
   const loadProviderCollection = useCallback(async (
     selection: CollectionSelection, collectionRef: CollectionRef, targetDescriptor: ProviderDescriptor,
@@ -236,7 +220,7 @@ export function useCollectionLoader({
 
       applyTracks(list, { forceShuffle: isAllMusicRef(collectionRef) });
       drivingProviderRef.current = providerId;
-      queueSnapshot(`${providerId} playlist loaded`, list, mediaTracksRef.current.length, 0);
+      queueSnapshot(`${providerId} playlist loaded`, list, queueStore.getTracks().length, 0);
       if (token.isStale()) return SUPERSEDED;
       await playTrack(0);
       record(collectionRef, name ?? ('id' in collectionRef ? collectionRef.id : LIKED_SONGS_NAME), list[0]?.image ?? null);
@@ -250,7 +234,7 @@ export function useCollectionLoader({
     }
   }, [
     activeDescriptor, beginLoad, clearWithError, handleLoadError,
-    applyTracks, loadContextPlayback, drivingProviderRef, mediaTracksRef, playTrack, record,
+    applyTracks, loadContextPlayback, drivingProviderRef, playTrack, record,
   ]);
 
   const loadCollection = useCallback(
@@ -304,12 +288,9 @@ export function useCollectionLoader({
       setError(null);
       setIsLoading(true);
       setSelection(selection);
-      mediaTracksRef.current = [];
 
       if (tracks.length === 0) {
-        setTracks([]);
-        setOriginalTracks([]);
-        setCurrentTrackIndex(0);
+        queueStore.clear();
         setIsLoading(false);
         return EMPTY;
       }
@@ -323,7 +304,7 @@ export function useCollectionLoader({
         }
       }
 
-      queueSnapshot('Direct tracks loaded', tracks, mediaTracksRef.current.length, 0);
+      queueSnapshot('Direct tracks loaded', tracks, queueStore.getTracks().length, 0);
       if (token.isStale()) return SUPERSEDED;
       await playTrack(0);
       return loaded(tracks.length);
@@ -331,8 +312,7 @@ export function useCollectionLoader({
     [
       radioStateIsActive, stopRadioBase, loadGuard,
       getDescriptor, activeDescriptor,
-      setError, setIsLoading, setSelection, mediaTracksRef,
-      setTracks, setOriginalTracks, setCurrentTrackIndex,
+      setError, setIsLoading, setSelection,
       applyTracks, drivingProviderRef, setActiveProviderId, playTrack,
     ]
   );

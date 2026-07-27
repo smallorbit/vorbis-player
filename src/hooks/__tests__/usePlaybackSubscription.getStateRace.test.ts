@@ -21,6 +21,7 @@ vi.mock('@/lib/debugLog', () => ({
 }));
 
 import { usePlaybackSubscription } from '../usePlaybackSubscription';
+import { queueStore } from '@/stores/queueStore';
 import { makeMediaTrack, makeProviderDescriptor } from '@/test/fixtures';
 
 describe('usePlaybackSubscription — initial getState stale-write race', () => {
@@ -43,16 +44,13 @@ describe('usePlaybackSubscription — initial getState stale-write race', () => 
         getState: getState.fn,
       },
     });
+    queueStore.replaceQueue(tracks, { currentIndex: 0 });
     return {
       activeDescriptor: descriptor,
       drivingProviderRef: { current: null as string | null },
-      tracksRef: { current: tracks },
-      currentTrackIndexRef: { current: 0 },
       expectedTrackIdRef: { current: null as string | null },
       setIsPlaying,
       setPlaybackPosition,
-      setCurrentTrackIndex: vi.fn(),
-      setTracks: vi.fn(),
     };
   }
 

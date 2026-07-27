@@ -15,14 +15,13 @@ vi.mock('@/lib/debugLog', () => ({
 }));
 
 import { usePlaybackSubscription } from '../usePlaybackSubscription';
+import { queueStore } from '@/stores/queueStore';
 import { makeMediaTrack, makeProviderDescriptor } from '@/test/fixtures';
 
 describe('usePlaybackSubscription — expectedTrackIdRef guard', () => {
   let emit: (state: PlaybackState | null) => void;
-  let setCurrentTrackIndex: ReturnType<typeof vi.fn>;
   let setIsPlaying: ReturnType<typeof vi.fn>;
   let setPlaybackPosition: ReturnType<typeof vi.fn>;
-  let setTracks: ReturnType<typeof vi.fn>;
 
   const trackA = makeMediaTrack({ id: 'track-a', provider: 'spotify' });
   const trackB = makeMediaTrack({ id: 'track-b', provider: 'spotify' });
@@ -40,10 +39,9 @@ describe('usePlaybackSubscription — expectedTrackIdRef guard', () => {
 
   beforeEach(() => {
     emit = () => {};
-    setCurrentTrackIndex = vi.fn();
     setIsPlaying = vi.fn();
     setPlaybackPosition = vi.fn();
-    setTracks = vi.fn();
+    queueStore.__resetForTests();
   });
 
   function makeProps(
@@ -61,21 +59,17 @@ describe('usePlaybackSubscription — expectedTrackIdRef guard', () => {
       },
     });
 
+    queueStore.replaceQueue(tracks, { currentIndex });
+
     const drivingProviderRef = { current: null as string | null };
-    const tracksRef = { current: tracks };
-    const currentTrackIndexRef = { current: currentIndex };
     const expectedTrackIdRef = { current: expectedTrackId };
 
     return {
       activeDescriptor: descriptor,
       drivingProviderRef,
-      tracksRef,
-      currentTrackIndexRef,
       expectedTrackIdRef,
       setIsPlaying,
       setPlaybackPosition,
-      setCurrentTrackIndex,
-      setTracks,
     };
   }
 
@@ -91,9 +85,9 @@ describe('usePlaybackSubscription — expectedTrackIdRef guard', () => {
     });
 
     // #then — expectedTrackIdRef is cleared (match consumed) and index is NOT updated
-    // because the guard branch sets ref to null but does not call setCurrentTrackIndex
+    // because the guard branch clears the ref without syncing the index
     expect(props.expectedTrackIdRef.current).toBeNull();
-    expect(setCurrentTrackIndex).not.toHaveBeenCalled();
+    expect(queueStore.getCurrentIndex()).toBe(0);
   });
 
   it('ignores a state update when expectedTrackIdRef is non-null and does not match', () => {
@@ -109,7 +103,7 @@ describe('usePlaybackSubscription — expectedTrackIdRef guard', () => {
 
     // #then — ref is unchanged and no index update is applied
     expect(props.expectedTrackIdRef.current).toBe('track-b');
-    expect(setCurrentTrackIndex).not.toHaveBeenCalled();
+    expect(queueStore.getCurrentIndex()).toBe(0);
   });
 
   it('falls back to accepting any state update when expectedTrackIdRef is null', () => {
@@ -123,8 +117,8 @@ describe('usePlaybackSubscription — expectedTrackIdRef guard', () => {
       emit(makeState('track-b'));
     });
 
-    // #then — index sync runs: currentTrackIndex is updated to 1
-    expect(setCurrentTrackIndex).toHaveBeenCalledWith(1);
+    // #then — index sync runs: the queue's current index is updated to 1
+    expect(queueStore.getCurrentIndex()).toBe(1);
     expect(props.expectedTrackIdRef.current).toBeNull();
   });
 });

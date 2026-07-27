@@ -2,30 +2,23 @@ import { useEffect } from 'react';
 import type { PlaybackState, ProviderId, MediaTrack } from '@/types/domain';
 import type { PlaybackProvider } from '@/types/providers';
 import { providerRegistry } from '@/providers/registry';
+import { queueStore } from '@/stores/queueStore';
 import { logQueue, logArtRace } from '@/lib/debugLog';
 
 interface UsePlaybackSubscriptionProps {
   activeDescriptor: { id: ProviderId; playback: PlaybackProvider } | undefined;
   drivingProviderRef: React.MutableRefObject<ProviderId | null>;
-  tracksRef: React.MutableRefObject<MediaTrack[]>;
-  currentTrackIndexRef: React.MutableRefObject<number>;
   expectedTrackIdRef: React.MutableRefObject<string | null>;
   setIsPlaying: (isPlaying: boolean) => void;
   setPlaybackPosition: (position: number) => void;
-  setCurrentTrackIndex: (index: number | ((prev: number) => number)) => void;
-  setTracks: (tracks: MediaTrack[] | ((prev: MediaTrack[]) => MediaTrack[])) => void;
 }
 
 export function usePlaybackSubscription({
   activeDescriptor,
   drivingProviderRef,
-  tracksRef,
-  currentTrackIndexRef,
   expectedTrackIdRef,
   setIsPlaying,
   setPlaybackPosition,
-  setCurrentTrackIndex,
-  setTracks,
 }: UsePlaybackSubscriptionProps): void {
   useEffect(() => {
     const playback = activeDescriptor?.playback;
@@ -50,7 +43,8 @@ export function usePlaybackSubscription({
 
         if (state.currentTrackId) {
           const trackId = state.currentTrackId;
-          const currentTracks = tracksRef.current;
+          const currentTracks = queueStore.getTracks();
+          const currentIndex = queueStore.getCurrentIndex();
           const trackIndex = currentTracks.findIndex((t: MediaTrack) => t.id === trackId);
           const expected = expectedTrackIdRef.current;
           if (expected !== null) {
@@ -61,23 +55,23 @@ export function usePlaybackSubscription({
               expectedTrackIdRef.current = null;
             } else {
               logArtRace('subscription: REJECT (id=%s, expected=%s, wouldFlipTo=%d, currentIdx=%d)',
-                trackId.slice(0, 8), expected.slice(0, 8), trackIndex, currentTrackIndexRef.current);
+                trackId.slice(0, 8), expected.slice(0, 8), trackIndex, currentIndex);
             }
             // while waiting for the expected track, ignore provider index updates
-          } else if (trackIndex !== -1 && trackIndex !== currentTrackIndexRef.current) {
+          } else if (trackIndex !== -1 && trackIndex !== currentIndex) {
             logArtRace('subscription: FALLBACK-ACCEPT flip %d → %d (id=%s, guard=null)',
-              currentTrackIndexRef.current, trackIndex, trackId.slice(0, 8));
+              currentIndex, trackIndex, trackId.slice(0, 8));
             logQueue(
               'Provider state — index sync: %d → %d (trackId=%s, queueLen=%d)',
-              currentTrackIndexRef.current,
+              currentIndex,
               trackIndex,
               trackId.slice(0, 8),
               currentTracks.length,
             );
-            setCurrentTrackIndex(trackIndex);
+            queueStore.setCurrentIndex(trackIndex);
           } else {
             logArtRace('subscription: NOOP (id=%s, idx=%d, currentIdx=%d, guard=null)',
-              trackId.slice(0, 8), trackIndex, currentTrackIndexRef.current);
+              trackId.slice(0, 8), trackIndex, currentIndex);
           }
 
           if (state.trackMetadata && trackIndex !== -1) {
@@ -90,11 +84,7 @@ export function usePlaybackSubscription({
             if (meta.durationMs !== undefined) updates.durationMs = meta.durationMs;
 
             if (Object.keys(updates).length > 0) {
-              setTracks((prev: MediaTrack[]) =>
-                prev.map((t, i) =>
-                  i === trackIndex ? { ...t, ...updates } : t
-                )
-              );
+              queueStore.mapTracks((t, i) => (i === trackIndex ? { ...t, ...updates } : t));
             }
           }
         }
@@ -153,9 +143,8 @@ export function usePlaybackSubscription({
       unsubscribes.forEach((unsub) => unsub());
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  // Intentionally omit `tracks` and `currentTrackIndex` from deps — we read
-  // them via refs so the subscription is only recreated when the active
-  // provider changes, not on every track transition.
+  // Queue state is read from queueStore at event time, so the subscription is
+  // only recreated when the active provider changes, not on track transitions.
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeDescriptor, setCurrentTrackIndex, setTracks]);
+  }, [activeDescriptor, setIsPlaying, setPlaybackPosition]);
 }

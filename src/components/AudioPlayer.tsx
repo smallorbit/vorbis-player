@@ -25,6 +25,7 @@ import { useProviderContext } from '@/contexts/ProviderContext';
 import { LIKED_SONGS_NAME } from '@/constants/playlist';
 import { useSessionPersistence } from '@/hooks/useSessionPersistence';
 import { decodeLegacySelection } from '@/services/sessionPersistence';
+import { queueStore } from '@/stores/queueStore';
 import QuickAccessPanel from './QuickAccessPanel';
 import { CmdKPalette } from './CmdKPalette';
 import type { CollectionSelection, MediaCollection, MediaTrack } from '@/types/domain';
@@ -63,7 +64,7 @@ const ScreenReaderAnnouncement = styled.div`
 `;
 
 const AudioPlayerComponent = () => {
-  const { state, handlers, radio, currentPlaybackProviderRef: playbackProviderRef, mediaTracksRef, expectedTrackIdRef } = usePlayerLogic();
+  const { state, handlers, radio, currentPlaybackProviderRef: playbackProviderRef, expectedTrackIdRef } = usePlayerLogic();
   const { debugActive, handleActivatorTap } = useDebugActivator();
   const { accentColor } = useColorContext();
   const {
@@ -74,8 +75,8 @@ const AudioPlayerComponent = () => {
   } = useVisualizer();
   const { accentColorBackgroundEnabled } = useAccentColorBackground();
   const { isSettingsOpen, setIsSettingsOpen } = useVisualEffectsToggle();
-  const { tracks, selection, setTracks, setOriginalTracks, setSelection } = useTrackListContext();
-  const { currentTrack, currentTrackIndex, setCurrentTrackIndex, showQueue, setShowQueue } = useCurrentTrackContext();
+  const { tracks, selection, setSelection } = useTrackListContext();
+  const { currentTrack, currentTrackIndex, showQueue, setShowQueue } = useCurrentTrackContext();
 
   const resolveDisplayProvider = useCallback((): import('@/types/domain').ProviderId | undefined => (
     currentTrack?.provider
@@ -410,14 +411,11 @@ const AudioPlayerComponent = () => {
       ? queueTracks.findIndex(t => t.id === trackId)
       : Math.min(trackIndex, queueTracks.length - 1);
     const resolvedIdx = targetIdx >= 0 ? targetIdx : Math.min(trackIndex, queueTracks.length - 1);
-    setTracks(queueTracks);
-    setOriginalTracks(queueTracks);
+    // The store update is synchronous, so playTrack resolves the right track
+    // inside the same user-gesture call stack. Required for iOS Safari, which
+    // blocks audio.play() called outside it.
+    queueStore.replaceQueue(queueTracks, { currentIndex: resolvedIdx });
     setSelection(savedSelection);
-    setCurrentTrackIndex(resolvedIdx);
-    // Update the imperative tracks mirror synchronously so playTrack can resolve
-    // the right track before React re-renders. Required for iOS Safari, which
-    // blocks audio.play() called outside the synchronous user-gesture call stack.
-    mediaTracksRef.current = queueTracks;
     // Guard the playback subscription against index-sync racing during load:
     // without this, usePlaybackSubscription may overwrite resolvedIdx with a
     // stale provider track index before the new track's ID is confirmed.
@@ -425,7 +423,7 @@ const AudioPlayerComponent = () => {
 
     const positionMs = savedPositionMs && savedPositionMs > 0 ? savedPositionMs : undefined;
     await handlers.playTrack(resolvedIdx, false, positionMs ? { positionMs } : undefined);
-  }, [lastSession, setTracks, setOriginalTracks, setSelection, setCurrentTrackIndex, mediaTracksRef, expectedTrackIdRef, handlers]);
+  }, [lastSession, setSelection, expectedTrackIdRef, handlers]);
 
   const renderContent = () => {
     if (needsSetup) {
@@ -505,7 +503,6 @@ const AudioPlayerComponent = () => {
           isRadioAvailable={radio.isRadioAvailable}
           radioActive={radio.isActive}
           currentTrackProvider={displayProviderId}
-          mediaTracksRef={mediaTracksRef}
           radioProgress={radio.radioProgress}
           onDismissRadioProgress={radio.dismissRadioProgress}
         />

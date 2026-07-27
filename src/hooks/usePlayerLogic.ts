@@ -14,6 +14,7 @@ import type { SessionSnapshot } from '@/services/sessionPersistence';
 import type { TrackOperations } from '@/types/trackOperations';
 import { providerRegistry } from '@/providers/registry';
 import { AuthExpiredError, UnavailableTrackError } from '@/providers/errors';
+import { queueStore } from '@/stores/queueStore';
 import { logQueue } from '@/lib/debugLog';
 import { logCaughtError } from '@/utils/logCaughtError';
 import { useQueueThumbnailLoader } from '@/hooks/useQueueThumbnailLoader';
@@ -45,10 +46,7 @@ export function usePlayerLogic() {
     tracks,
     isLoading,
     error,
-    shuffleEnabled,
     selection,
-    setTracks,
-    setOriginalTracks,
     setIsLoading,
     setError,
     setSelection,
@@ -57,7 +55,6 @@ export function usePlayerLogic() {
   const {
     currentTrack,
     currentTrackIndex,
-    setCurrentTrackIndex,
     setShowQueue,
   } = useCurrentTrackContext();
 
@@ -72,23 +69,12 @@ export function usePlayerLogic() {
   const { activeDescriptor, setActiveProviderId, getDescriptor, connectedProviderIds } = useProviderContext();
   const { isUnifiedLikedActive } = useUnifiedLikedTracks();
 
-  // MediaTrack[] mirror of `tracks` for index-based playback across all providers
-  const mediaTracksRef = useRef(tracks);
-  mediaTracksRef.current = tracks;
-
   const trackOps: TrackOperations = useMemo(() => ({
-    setTracks, setOriginalTracks, setCurrentTrackIndex,
-    setSelection, setError, setIsLoading, mediaTracksRef,
-  }), [setTracks, setOriginalTracks, setCurrentTrackIndex, setSelection, setError, setIsLoading]);
+    setSelection, setError, setIsLoading,
+  }), [setSelection, setError, setIsLoading]);
 
-  // Refs so the provider subscription handler always sees the latest values
-  // without needing them in the effect's dependency array (which would cause
-  // the subscription to tear down and recreate on every track change, triggering
-  // a getState() call that can briefly reset currentTrackIndex to the old track).
-  const tracksRef = useRef(tracks);
-  tracksRef.current = tracks;
-  const currentTrackIndexRef = useRef(currentTrackIndex);
-  currentTrackIndexRef.current = currentTrackIndex;
+  // Transition guard shared with the playback subscription: while set, stale
+  // provider index updates are ignored (see useProviderPlayback.playTrack).
   const expectedTrackIdRef = useRef<string | null>(null);
   // Holds the target index + position when handleHydrate restores a session without autoplay.
   // The next handlePlay consumes this to start playback at the saved offset; other control paths
@@ -113,10 +99,7 @@ export function usePlayerLogic() {
   }, []);
 
   const providerPlayback = useProviderPlayback({
-    setCurrentTrackIndex,
     activeDescriptor,
-    mediaTracksRef,
-    currentTrackIndexRef,
     onAuthExpired: handleAuthExpired,
     expectedTrackIdRef,
   });
@@ -160,7 +143,6 @@ export function usePlayerLogic() {
     getDescriptor,
     setActiveProviderId,
     connectedProviderIds,
-    shuffleEnabled,
     isUnifiedLikedActive,
     drivingProviderRef,
     playTrack,
@@ -173,10 +155,10 @@ export function usePlayerLogic() {
   useAutoAdvance({ tracks, currentTrackIndex, playTrack, enabled: true, currentPlaybackProviderRef: drivingProviderRef });
 
   // Progressively load missing thumbnails for Dropbox tracks in the queue
-  useQueueThumbnailLoader(tracks, setTracks);
+  useQueueThumbnailLoader(tracks);
 
   // Progressively discover missing durations for Dropbox tracks in the queue
-  useQueueDurationLoader(tracks, setTracks);
+  useQueueDurationLoader(tracks);
 
   // Auto-extract accent color from album artwork; respects overrides in ColorContext
   useAccentColor(currentTrack, accentColorOverrides, setAccentColor, setAccentColorOverrides);
@@ -200,13 +182,9 @@ export function usePlayerLogic() {
   usePlaybackSubscription({
     activeDescriptor,
     drivingProviderRef,
-    tracksRef,
-    currentTrackIndexRef,
     expectedTrackIdRef,
     setIsPlaying,
     setPlaybackPosition,
-    setCurrentTrackIndex,
-    setTracks,
   });
 
   // Warm the lazy QueueDrawer/QueueBottomSheet bundles on first playback so the
@@ -229,40 +207,42 @@ export function usePlayerLogic() {
   }, [getDrivingProviderDescriptor]);
 
   const handleNext = useCallback(async () => {
-    if (tracks.length === 0) return;
-    if (currentTrackIndexRef.current >= tracks.length - 1) {
-      logQueue('handleNext — at end of queue (%d/%d), stopping', currentTrackIndexRef.current, tracks.length);
+    const queueTracks = queueStore.getTracks();
+    const queueIndex = queueStore.getCurrentIndex();
+    if (queueTracks.length === 0) return;
+    if (queueIndex >= queueTracks.length - 1) {
+      logQueue('handleNext — at end of queue (%d/%d), stopping', queueIndex, queueTracks.length);
       return;
     }
-    const nextIndex = currentTrackIndexRef.current + 1;
+    const nextIndex = queueIndex + 1;
     logQueue(
-      'handleNext — %d → %d, target=%s, queueLen=%d, mediaLen=%d',
-      currentTrackIndexRef.current,
+      'handleNext — %d → %d, target=%s, queueLen=%d',
+      queueIndex,
       nextIndex,
-      trkSummary(tracksRef.current[nextIndex]),
-      tracks.length,
-      mediaTracksRef.current.length,
+      trkSummary(queueTracks[nextIndex]),
+      queueTracks.length,
     );
-    setCurrentTrackIndex(nextIndex);
+    queueStore.setCurrentIndex(nextIndex);
     await playTrack(nextIndex, true);
     await ensurePlaybackResumed();
-  }, [tracks.length, playTrack, setCurrentTrackIndex, ensurePlaybackResumed]);
+  }, [playTrack, ensurePlaybackResumed]);
 
   const handlePrevious = useCallback(async () => {
-    if (tracks.length === 0) return;
-    const newIndex = Math.max(0, currentTrackIndexRef.current - 1);
+    const queueTracks = queueStore.getTracks();
+    const queueIndex = queueStore.getCurrentIndex();
+    if (queueTracks.length === 0) return;
+    const newIndex = Math.max(0, queueIndex - 1);
     logQueue(
-      'handlePrevious — %d → %d, target=%s, queueLen=%d, mediaLen=%d',
-      currentTrackIndexRef.current,
+      'handlePrevious — %d → %d, target=%s, queueLen=%d',
+      queueIndex,
       newIndex,
-      trkSummary(tracksRef.current[newIndex]),
-      tracks.length,
-      mediaTracksRef.current.length,
+      trkSummary(queueTracks[newIndex]),
+      queueTracks.length,
     );
-    setCurrentTrackIndex(newIndex);
+    queueStore.setCurrentIndex(newIndex);
     await playTrack(newIndex, true);
     await ensurePlaybackResumed();
-  }, [tracks.length, playTrack, setCurrentTrackIndex, ensurePlaybackResumed]);
+  }, [playTrack, ensurePlaybackResumed]);
 
   const handlePlay = useCallback(async () => {
     const pending = hydratedPendingPlayRef.current;
@@ -284,8 +264,8 @@ export function usePlayerLogic() {
     logQueue(
       'handlePlay — drivingProvider=%s, index=%d, track=%s',
       drivingId,
-      currentTrackIndexRef.current,
-      trkSummary(tracksRef.current[currentTrackIndexRef.current]),
+      queueStore.getCurrentIndex(),
+      trkSummary(queueStore.getCurrentTrack()),
     );
     try {
       const drivingDescriptor = getDrivingProviderDescriptor();
@@ -299,7 +279,7 @@ export function usePlayerLogic() {
 
   const handlePause = useCallback(() => {
     const drivingId = getDrivingProviderId();
-    logQueue('handlePause — drivingProvider=%s, index=%d', drivingId, currentTrackIndexRef.current);
+    logQueue('handlePause — drivingProvider=%s, index=%d', drivingId, queueStore.getCurrentIndex());
     const drivingDescriptor = getDrivingProviderDescriptor();
     drivingDescriptor?.playback.pause();
   }, [getDrivingProviderId, getDrivingProviderDescriptor]);
@@ -332,13 +312,11 @@ export function usePlayerLogic() {
     handlePause();
     stopRadio();
     setSelection(null);
-    setTracks([]);
-    setCurrentTrackIndex(0);
-    mediaTracksRef.current = [];
+    queueStore.clear();
     expectedTrackIdRef.current = null;
     setShowQueue(false);
     setIsSettingsOpen(false);
-  }, [handlePause, stopRadio, setSelection, setTracks, setCurrentTrackIndex, setShowQueue, setIsSettingsOpen]);
+  }, [handlePause, stopRadio, setSelection, setShowQueue, setIsSettingsOpen]);
 
   const handleHydrate = useCallback(async (session: SessionSnapshot): Promise<HydrateResult> => {
     if (!session.queueTracks?.length) {
@@ -350,10 +328,8 @@ export function usePlayerLogic() {
     const matchedIdx = trackId ? queueTracks.findIndex(t => t.id === trackId) : -1;
     const startIdx = matchedIdx >= 0 ? matchedIdx : fallbackIdx;
 
-    setTracks(queueTracks);
-    setOriginalTracks(queueTracks);
+    queueStore.replaceQueue(queueTracks);
     setSelection(savedSelection);
-    mediaTracksRef.current = queueTracks;
 
     const savedPositionIsValid = savedPositionMs !== undefined && savedPositionMs > 0;
 
@@ -425,7 +401,7 @@ export function usePlayerLogic() {
         continue;
       }
 
-      setCurrentTrackIndex(candidateIdx);
+      queueStore.setCurrentIndex(candidateIdx);
       expectedTrackIdRef.current = candidateTrack.id;
       drivingProviderRef.current = providerId;
       setPlaybackPosition(positionMs ?? 0);
@@ -454,11 +430,7 @@ export function usePlayerLogic() {
     handleBackToLibrary();
     return { track: null, skipped: false, totalFailure: true };
   }, [
-    setTracks,
-    setOriginalTracks,
     setSelection,
-    setCurrentTrackIndex,
-    mediaTracksRef,
     activeDescriptor,
     drivingProviderRef,
     handleBackToLibrary,
@@ -466,10 +438,6 @@ export function usePlayerLogic() {
 
   // Initialize queue management handlers
   const { handleAddToQueue, queueTracksDirectly, insertTracksNext, insertCollectionNext, handleRemoveFromQueue, handleReorderQueue } = useQueueManagement({
-    trackOps,
-    tracks,
-    currentTrackIndex,
-    shuffleEnabled,
     loadCollection,
     handleBackToLibrary,
     activeDescriptor,
@@ -545,9 +513,6 @@ export function usePlayerLogic() {
       radioProgress,
       dismissRadioProgress,
     },
-    mediaTracksRef,
-    setTracks,
-    setOriginalTracks,
     currentPlaybackProviderRef: drivingProviderRef,
     expectedTrackIdRef,
   };

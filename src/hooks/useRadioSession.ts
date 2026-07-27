@@ -5,12 +5,13 @@ import type { TrackOperations } from '@/types/trackOperations';
 import type { RadioSeed, RadioProgress, RadioResult } from '@/types/radio';
 import { providerRegistry } from '@/providers/registry';
 import { runRadioPipeline } from '@/services/radioPipeline';
+import { queueStore } from '@/stores/queueStore';
 import { useNewestWins } from '@/hooks/useNewestWins';
 import { queueSnapshot } from './playerLogicUtils';
 
 
 interface UseRadioSessionProps {
-  trackOps: Pick<TrackOperations, 'setError' | 'setTracks' | 'setOriginalTracks' | 'setCurrentTrackIndex' | 'setSelection' | 'mediaTracksRef'>;
+  trackOps: Pick<TrackOperations, 'setError' | 'setSelection'>;
   activeDescriptor: ProviderDescriptor | undefined;
   currentTrack: MediaTrack | null;
   currentTrackIndex: number;
@@ -39,7 +40,7 @@ export function useRadioSession({
   authExpired,
   setAuthExpired,
 }: UseRadioSessionProps): UseRadioSessionReturn {
-  const { setError, setTracks, setOriginalTracks, setCurrentTrackIndex, setSelection, mediaTracksRef } = trackOps;
+  const { setError, setSelection } = trackOps;
 
   // Newest-wins guard. Radio generation is async (catalog fetch + Last.fm
   // pipeline); a second start — or a stop — must supersede an in-flight one so
@@ -69,10 +70,10 @@ export function useRadioSession({
         sp.playback.initialize().catch(() => {});
       }
 
-      const mediaTracks = mediaTracksRef.current;
+      const queueTracks = queueStore.getTracks();
       const seedTrack: MediaTrack =
-        mediaTracks[currentTrackIndex]?.id === currentTrack.id
-          ? mediaTracks[currentTrackIndex]
+        queueTracks[currentTrackIndex]?.id === currentTrack.id
+          ? queueTracks[currentTrackIndex]
           : currentTrack;
 
       const pipelineResult = await runRadioPipeline({
@@ -95,12 +96,9 @@ export function useRadioSession({
       const { queue: combinedQueue } = pipelineResult;
 
       if (combinedQueue.length > 0) {
-        mediaTracksRef.current = combinedQueue;
-        setOriginalTracks(combinedQueue);
-        setTracks(combinedQueue);
-        setCurrentTrackIndex(0);
+        queueStore.replaceQueue(combinedQueue);
         setSelection({ type: 'radio' });
-        queueSnapshot('Radio queue built', combinedQueue, mediaTracksRef.current.length, 0);
+        queueSnapshot('Radio queue built', combinedQueue, queueStore.getTracks().length, 0);
       } else {
         onProgress(null);
       }
@@ -112,7 +110,7 @@ export function useRadioSession({
       setError(err instanceof Error ? err.message : 'Failed to start radio.');
       onProgress(null);
     }
-  }, [radioGuard, activeDescriptor, currentTrack, currentTrackIndex, startRadio, onProgress, setError, setOriginalTracks, setTracks, setCurrentTrackIndex, setSelection]);
+  }, [radioGuard, activeDescriptor, currentTrack, currentTrackIndex, startRadio, onProgress, setError, setSelection]);
 
   return {
     handleStartRadio,

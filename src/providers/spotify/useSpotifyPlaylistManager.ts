@@ -15,6 +15,7 @@ import { AuthExpiredError } from '@/providers/errors';
 import { providerRegistry } from '@/providers/registry';
 import type { CollectionRef, ProviderId, MediaTrack } from '@/types/domain';
 import type { TrackOperations } from '@/types/trackOperations';
+import { queueStore } from '@/stores/queueStore';
 import { logQueue } from '@/lib/debugLog';
 import { SPOTIFY_RETRY_DELAY_MS } from '@/constants/timing';
 
@@ -58,13 +59,13 @@ function buildTracksFromWindow(state: SpotifyPlaybackState): MediaTrack[] {
 }
 
 interface UseSpotifyPlaylistManagerProps {
-  trackOps: Omit<TrackOperations, 'mediaTracksRef'>;
+  trackOps: TrackOperations;
 }
 
 export const useSpotifyPlaylistManager = ({
   trackOps,
 }: UseSpotifyPlaylistManagerProps) => {
-  const { setError, setIsLoading, setSelection, setTracks, setOriginalTracks, setCurrentTrackIndex } = trackOps;
+  const { setError, setIsLoading, setSelection } = trackOps;
 
   const handlePlaylistSelect = useCallback(async (ref: CollectionRef): Promise<MediaTrack[]> => {
     logQueue('useSpotifyPlaylistManager.handlePlaylistSelect — ref=%o', ref);
@@ -112,9 +113,7 @@ export const useSpotifyPlaylistManager = ({
       }
 
       const tracksFromWindow = buildTracksFromWindow(state);
-      setOriginalTracks(tracksFromWindow);
-      setTracks(tracksFromWindow);
-      setCurrentTrackIndex(0);
+      queueStore.replaceQueue(tracksFromWindow);
       logQueue('useSpotifyPlaylistManager — mirrored %d tracks from SDK window', tracksFromWindow.length);
       return tracksFromWindow;
     } catch (err: unknown) {
@@ -128,7 +127,7 @@ export const useSpotifyPlaylistManager = ({
     } finally {
       setIsLoading(false);
     }
-  }, [setError, setIsLoading, setSelection, setTracks, setOriginalTracks, setCurrentTrackIndex]);
+  }, [setError, setIsLoading, setSelection]);
 
   return {
     handlePlaylistSelect

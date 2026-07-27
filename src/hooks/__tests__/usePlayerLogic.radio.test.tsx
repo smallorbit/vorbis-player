@@ -7,6 +7,7 @@ import { renderHook, act } from '@testing-library/react';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import { usePlayerLogic } from '../usePlayerLogic';
 import { useTrackListContext, useCurrentTrackContext } from '@/contexts/TrackContext';
+import { queueStore } from '@/stores/queueStore';
 import { TrackProvider } from '@/contexts/TrackContext';
 import { VisualEffectsProvider } from '@/contexts/visualEffects';
 import { ColorProvider } from '@/contexts/ColorContext';
@@ -174,8 +175,7 @@ describe('usePlayerLogic — radio start', () => {
     const { result } = renderHook(() => useTrackContextAndPlayerLogic(), { wrapper: AllProviders });
 
     act(() => {
-      result.current.setTracks([seedTrack]);
-      result.current.setCurrentTrackIndex(0);
+      queueStore.replaceQueue([seedTrack], { currentIndex: 0 });
     });
 
     // #when
@@ -206,8 +206,7 @@ describe('usePlayerLogic — radio start', () => {
     const { result } = renderHook(() => useTrackContextAndPlayerLogic(), { wrapper: AllProviders });
 
     act(() => {
-      result.current.setTracks([seedTrack]);
-      result.current.setCurrentTrackIndex(0);
+      queueStore.replaceQueue([seedTrack], { currentIndex: 0 });
     });
 
     // #when
@@ -245,8 +244,7 @@ describe('usePlayerLogic — radio start', () => {
     const { result } = renderHook(() => useTrackContextAndPlayerLogic(), { wrapper: AllProviders });
 
     act(() => {
-      result.current.setTracks([seedTrack]);
-      result.current.setCurrentTrackIndex(0);
+      queueStore.replaceQueue([seedTrack], { currentIndex: 0 });
     });
 
     // #when
@@ -280,8 +278,7 @@ describe('usePlayerLogic — radio start', () => {
     const { result } = renderHook(() => useTrackContextAndPlayerLogic(), { wrapper: AllProviders });
 
     act(() => {
-      result.current.setTracks([seedTrack]);
-      result.current.setCurrentTrackIndex(0);
+      queueStore.replaceQueue([seedTrack], { currentIndex: 0 });
     });
 
     // #when
@@ -296,7 +293,7 @@ describe('usePlayerLogic — radio start', () => {
     expect(result.current.state.tracks[1].name).toBe('No Surprises');
   });
 
-  it('uses currentTrack as fallback seed when mediaTracksRef is empty (Spotify flow)', async () => {
+  it('uses currentTrack as fallback seed when the queue entry does not match (Spotify flow)', async () => {
     // #given
     const seedTrack = makeTrack({ id: 'seed-1', name: 'Creep', artists: 'Radiohead', playbackRef: { provider: 'spotify', ref: 'spotify:track:creep' } });
     const generatedA = makeMediaTrack({ name: 'Karma Police', artists: 'Radiohead' });
@@ -314,8 +311,7 @@ describe('usePlayerLogic — radio start', () => {
     const { result } = renderHook(() => useTrackContextAndPlayerLogic(), { wrapper: AllProviders });
 
     act(() => {
-      result.current.setTracks([seedTrack]);
-      result.current.setCurrentTrackIndex(0);
+      queueStore.replaceQueue([seedTrack], { currentIndex: 0 });
     });
 
     // #when

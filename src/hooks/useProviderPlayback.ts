@@ -3,6 +3,7 @@ import type { ProviderDescriptor } from '@/types/providers';
 import type { MediaTrack, ProviderId } from '@/types/domain';
 import { providerRegistry } from '@/providers/registry';
 import { AuthExpiredError, UnavailableTrackError } from '@/providers/errors';
+import { queueStore } from '@/stores/queueStore';
 import { useNewestWins } from '@/hooks/useNewestWins';
 import { logQueue, logArtRace } from '@/lib/debugLog';
 import { SKIP_ON_ERROR_DELAY_MS } from '@/constants/timing';
@@ -10,30 +11,20 @@ import { PROVIDER_RECONNECTED_EVENT } from '@/constants/events';
 import { loadSession } from '@/services/sessionPersistence';
 
 interface UseProviderPlaybackProps {
-  setCurrentTrackIndex: (index: number) => void;
   activeDescriptor?: ProviderDescriptor | null | undefined;
-  mediaTracksRef: React.MutableRefObject<MediaTrack[]>;
-  /**
-   * Ref tracking the current track index. Used by the re-prime listener so
-   * the handler reads the live index without re-binding on every change.
-   */
-  currentTrackIndexRef?: React.MutableRefObject<number> | undefined;
   onAuthExpired?: ((providerId: ProviderId) => void) | undefined;
   /**
    * Shared guard ref used by `usePlaybackSubscription` to ignore stale provider
    * index updates during a transition. `playTrack` sets this to the target
    * track id BEFORE any adapter call (including the pre-warm `prepareTrack` on
    * the next track) so that provider state events emitted during the handoff
-   * cannot flip `currentTrackIndex` to the wrong track.
+   * cannot flip the queue's current index to the wrong track.
    */
   expectedTrackIdRef?: React.MutableRefObject<string | null> | undefined;
 }
 
 export const useProviderPlayback = ({
-  setCurrentTrackIndex,
   activeDescriptor,
-  mediaTracksRef,
-  currentTrackIndexRef,
   onAuthExpired,
   expectedTrackIdRef,
 }: UseProviderPlaybackProps) => {
@@ -57,9 +48,7 @@ export const useProviderPlayback = ({
       const providerId = detail?.providerId;
       if (!providerId) return;
 
-      const tracks = mediaTracksRef.current;
-      const index = currentTrackIndexRef?.current ?? -1;
-      const currentTrack = index >= 0 ? tracks[index] : undefined;
+      const currentTrack = queueStore.getCurrentTrack();
       if (!currentTrack) return;
       if (currentTrack.provider !== providerId) return;
 
@@ -82,7 +71,7 @@ export const useProviderPlayback = ({
 
     window.addEventListener(PROVIDER_RECONNECTED_EVENT, handler);
     return () => window.removeEventListener(PROVIDER_RECONNECTED_EVENT, handler);
-  }, [mediaTracksRef, currentTrackIndexRef]);
+  }, []);
 
   const resolveTrackProvider = useCallback((mediaTrack?: MediaTrack): ProviderId | undefined => (
     mediaTrack?.provider
@@ -99,12 +88,12 @@ export const useProviderPlayback = ({
   }, []);
 
   const playTrack = useCallback(async (index: number, skipOnError = false, options?: { positionMs?: number }) => {
-    const tracks = mediaTracksRef.current;
+    const tracks = queueStore.getTracks();
     const mediaTrack = tracks[index];
     const trackProvider = resolveTrackProvider(mediaTrack);
 
     logQueue(
-      'playTrack(%d) — provider=%s, track=%s, mediaLen=%d, skipOnError=%s',
+      'playTrack(%d) — provider=%s, track=%s, queueLen=%d, skipOnError=%s',
       index,
       trackProvider ?? 'NONE',
       mediaTrack ? `"${mediaTrack.name}" (${mediaTrack.id.slice(0, 8)})` : 'NO_MEDIA_TRACK',
@@ -119,7 +108,7 @@ export const useProviderPlayback = ({
 
     if (!mediaTrack) {
       if (tracks.length > 0) {
-        console.warn(`[Playback] playTrack(${index}) — index out of bounds! mediaTracksRef has ${tracks.length} items`);
+        console.warn(`[Playback] playTrack(${index}) — index out of bounds! queue has ${tracks.length} items`);
       }
       console.error(`[Playback] playTrack(${index}) — no track at index`);
       return;
@@ -167,7 +156,7 @@ export const useProviderPlayback = ({
       // this stale result rather than commit its index or pre-warm its next.
       if (token.isStale()) return;
 
-      setCurrentTrackIndex(index);
+      queueStore.setCurrentIndex(index);
 
       const nextIndex = (index + 1) % tracks.length;
       const nextTrack = tracks[nextIndex];
@@ -199,8 +188,7 @@ export const useProviderPlayback = ({
         setTimeout(() => playTrack(index + 1, skipOnError), SKIP_ON_ERROR_DELAY_MS);
       }
     }
-    // mediaTracksRef included for exhaustive-deps; ref identity is stable so it does not cause callback re-creation.
-  }, [playGuard, setCurrentTrackIndex, pausePreviousProvider, resolveTrackProvider, onAuthExpired, expectedTrackIdRef, mediaTracksRef]);
+  }, [playGuard, pausePreviousProvider, resolveTrackProvider, onAuthExpired, expectedTrackIdRef]);
 
   const resumePlayback = useCallback(async () => {
     const currentProvider = currentPlaybackProviderRef.current;

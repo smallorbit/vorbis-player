@@ -1,6 +1,7 @@
 import { useEffect, useRef, useCallback } from 'react';
 import type { MediaTrack } from '@/types/domain';
 import { providerRegistry } from '@/providers/registry';
+import { queueStore } from '@/stores/queueStore';
 import { useNewestWins } from '@/hooks/useNewestWins';
 import { logQueue } from '@/lib/debugLog';
 import { logCaughtError } from '@/utils/logCaughtError';
@@ -17,10 +18,7 @@ const FETCH_CONCURRENCY = 3;
  *
  * Updates are batched so the queue UI re-renders efficiently.
  */
-export function useQueueThumbnailLoader(
-  tracks: readonly MediaTrack[],
-  setTracks: React.Dispatch<React.SetStateAction<MediaTrack[]>>,
-) {
+export function useQueueThumbnailLoader(tracks: readonly MediaTrack[]) {
   const attemptedAlbumIds = useRef(new Set<string>());
   // Newest-wins guard: a queue change supersedes the previous resolution run.
   const resolveGuard = useNewestWins();
@@ -30,19 +28,15 @@ export function useQueueThumbnailLoader(
       if (updates.size === 0) return;
       logQueue('thumbnailLoader — applying %d image updates', updates.size);
 
-      setTracks((prev) => {
-        let changed = false;
-        const next = prev.map((t) => {
-          if (!t.image && t.albumId) {
-            const img = updates.get(t.albumId);
-            if (img) { changed = true; return { ...t, image: img }; }
-          }
-          return t;
-        });
-        return changed ? next : prev;
+      queueStore.mapTracks((t) => {
+        if (!t.image && t.albumId) {
+          const img = updates.get(t.albumId);
+          if (img) return { ...t, image: img };
+        }
+        return t;
       });
     },
-    [setTracks],
+    [],
   );
 
   useEffect(() => {

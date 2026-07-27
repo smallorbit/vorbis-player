@@ -1,6 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
-import { useRef, useState } from 'react';
+import { useRef } from 'react';
 import type { MediaTrack, PlaybackState, ProviderId } from '@/types/domain';
 import type { PlaybackProvider, ProviderDescriptor } from '@/types/providers';
 
@@ -20,6 +20,7 @@ vi.mock('@/providers/registry', () => {
 import { useProviderPlayback } from '../useProviderPlayback';
 import { usePlaybackSubscription } from '../usePlaybackSubscription';
 import { providerRegistry } from '@/providers/registry';
+import { queueStore } from '@/stores/queueStore';
 
 function makeTrack(id: string, image: string): MediaTrack {
   return {
@@ -102,62 +103,53 @@ function makeRaceDescriptor(): RaceDescriptor {
   return { descriptor, emit };
 }
 
-function useHarness(tracks: MediaTrack[], descriptor: ProviderDescriptor) {
-  const [currentTrackIndex, setCurrentTrackIndexState] = useState(0);
-  const tracksRef = useRef(tracks);
-  const currentTrackIndexRef = useRef(0);
-  const mediaTracksRef = useRef(tracks);
+function useHarness(descriptor: ProviderDescriptor) {
   const drivingProviderRef = useRef<ProviderId | null>('spotify');
   const expectedTrackIdRef = useRef<string | null>(null);
-  const indexHistoryRef = useRef<number[]>([]);
-
-  const setCurrentTrackIndex = useRef((v: number | ((prev: number) => number)) => {
-    setCurrentTrackIndexState(prev => {
-      const next = typeof v === 'function' ? v(prev) : v;
-      currentTrackIndexRef.current = next;
-      indexHistoryRef.current.push(next);
-      return next;
-    });
-  }).current;
-
-  const setTracks = useRef((_v: MediaTrack[] | ((prev: MediaTrack[]) => MediaTrack[])) => {}).current;
 
   const { playTrack } = useProviderPlayback({
-    setCurrentTrackIndex,
     activeDescriptor: descriptor,
-    mediaTracksRef,
     expectedTrackIdRef,
   });
 
   usePlaybackSubscription({
     activeDescriptor: descriptor,
     drivingProviderRef,
-    tracksRef,
-    currentTrackIndexRef,
     expectedTrackIdRef,
     setIsPlaying: () => {},
     setPlaybackPosition: () => {},
-    setCurrentTrackIndex,
-    setTracks,
   });
 
-  return {
-    playTrack,
-    currentTrackIndex,
-    indexHistory: indexHistoryRef.current,
-    expectedTrackIdRef,
-    tracks,
-  };
+  return { playTrack, expectedTrackIdRef };
 }
 
 describe('fresh-load album-art race', () => {
   let descriptor: ProviderDescriptor;
+  // Every index committed through the store during the transition, in call
+  // order. queueStore.setCurrentIndex is the single write path for the current
+  // index — both playTrack's post-adapter commit and the subscription layer's
+  // fallback index sync go through it — so spying on it observes even calls
+  // the store would treat as no-ops (e.g. setCurrentIndex(0) while already 0).
+  let indexHistory: number[];
 
   beforeEach(() => {
     const race = makeRaceDescriptor();
     descriptor = race.descriptor;
     (providerRegistry as unknown as { __clear: () => void }).__clear();
     providerRegistry.register!(descriptor);
+
+    indexHistory = [];
+    const realSetCurrentIndex = queueStore.setCurrentIndex;
+    vi.spyOn(queueStore, 'setCurrentIndex').mockImplementation((index: number) => {
+      indexHistory.push(index);
+      realSetCurrentIndex(index);
+    });
+  });
+
+  afterEach(() => {
+    // Un-spy queueStore.setCurrentIndex so the next test's beforeEach captures
+    // the real implementation instead of wrapping the previous spy.
+    vi.restoreAllMocks();
   });
 
   it('keeps currentTrackIndex at 0 when the next-track pre-warm emits a PlaybackState during a fresh playTrack(0)', async () => {
@@ -165,7 +157,8 @@ describe('fresh-load album-art race', () => {
     // a PlaybackState with currentTrackId = track-1.id, exactly reproducing
     // the fresh-load race introduced by commit f5689a4.
     const tracks = [makeTrack('track-0', 'art-0'), makeTrack('track-1', 'art-1')];
-    const { result } = renderHook(() => useHarness(tracks, descriptor));
+    queueStore.replaceQueue(tracks);
+    const { result } = renderHook(() => useHarness(descriptor));
 
     // #when — drive the fresh-load path: playTrack(0) sets the guard,
     // awaits the adapter's playTrack for track 0, then pre-warms track 1
@@ -175,34 +168,35 @@ describe('fresh-load album-art race', () => {
     });
 
     // #then — the guard set by the centralised expectedTrackIdRef owner must
-    // have rejected the mismatched state. Every observed value of
-    // currentTrackIndex during the transition is 0 — this rules out a
-    // 0 → 1 → 0 flicker that a final-state-only assertion would miss.
-    expect(result.current.indexHistory.every(v => v === 0)).toBe(true);
-    expect(result.current.currentTrackIndex).toBe(0);
+    // have rejected the mismatched state. Every index committed through
+    // queueStore.setCurrentIndex during the transition is 0 — this rules out
+    // a 0 → 1 → 0 flicker that a final-state-only assertion would miss.
+    expect(indexHistory.every(v => v === 0)).toBe(true);
+    expect(queueStore.getCurrentIndex()).toBe(0);
 
     // Derived album art must stay on track 0's image — the user-visible
     // symptom of the race is a brief (or persistent) flash of the wrong art.
-    const imageShown = tracks[result.current.currentTrackIndex].image;
+    const imageShown = queueStore.getCurrentTrack()?.image;
     expect(imageShown).toBe('art-0');
   });
 
-  it('records at least one explicit setCurrentTrackIndex(0) call so the assertion is not vacuously true', async () => {
+  it('records at least one explicit setCurrentIndex(0) commit so the assertion is not vacuously true', async () => {
     // #given — same two-track fresh-load setup.
     const tracks = [makeTrack('track-0', 'art-0'), makeTrack('track-1', 'art-1')];
-    const { result } = renderHook(() => useHarness(tracks, descriptor));
+    queueStore.replaceQueue(tracks);
+    const { result } = renderHook(() => useHarness(descriptor));
 
     // #when
     await act(async () => {
       await result.current.playTrack(0);
     });
 
-    // #then — useProviderPlayback.playTrack always calls setCurrentTrackIndex
-    // with the target index after the adapter resolves. Asserting this
-    // guarantees the every-value-is-0 check above is meaningful — if the
+    // #then — useProviderPlayback.playTrack always commits the target index
+    // via queueStore.setCurrentIndex after the adapter resolves. Asserting
+    // this guarantees the every-value-is-0 check above is meaningful — if the
     // history were empty, that assertion would pass trivially.
-    expect(result.current.indexHistory.length).toBeGreaterThan(0);
-    expect(result.current.indexHistory.includes(0)).toBe(true);
-    expect(result.current.indexHistory.includes(1)).toBe(false);
+    expect(indexHistory.length).toBeGreaterThan(0);
+    expect(indexHistory.includes(0)).toBe(true);
+    expect(indexHistory.includes(1)).toBe(false);
   });
 });
