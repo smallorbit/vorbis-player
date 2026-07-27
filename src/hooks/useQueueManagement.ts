@@ -3,6 +3,7 @@ import { toast } from 'sonner';
 import type { AddToQueueResult, CollectionRef, CollectionSelection, LoadCollectionResult, MediaTrack, ProviderId } from '@/types/domain';
 import type { ProviderDescriptor } from '@/types/providers';
 import { isAllMusicRef } from '@/constants/playlist';
+import { playbackStore } from '@/stores/playbackStore';
 import { queueStore, type AddTracksPosition } from '@/stores/queueStore';
 import { logQueue } from '@/lib/debugLog';
 import { shuffleArray } from '@/utils/shuffleArray';
@@ -20,13 +21,6 @@ interface UseQueueManagementProps {
   handleBackToLibrary: () => void;
   activeDescriptor: ProviderDescriptor | undefined;
   getDescriptor: (providerId: ProviderId) => ProviderDescriptor | undefined;
-  /**
-   * Resolves the **driving** provider descriptor — the one producing audio, which
-   * may differ from `activeDescriptor` for cross-provider queues. Native-queue-sync
-   * notifications must target this descriptor so the SDK whose queue we are mirroring
-   * receives the update.
-   */
-  getDrivingProviderDescriptor: () => ProviderDescriptor | undefined;
 }
 
 interface UseQueueManagementReturn {
@@ -50,14 +44,16 @@ export function useQueueManagement({
   handleBackToLibrary,
   activeDescriptor,
   getDescriptor,
-  getDrivingProviderDescriptor,
 }: UseQueueManagementProps): UseQueueManagementReturn {
+  // Native-queue-sync notifications target the **driving** provider — the one
+  // producing audio, which may differ from `activeDescriptor` for
+  // cross-provider queues — so the SDK whose queue we mirror gets the update.
   const notifyQueueChanged = useCallback((): void => {
-    const driving = getDrivingProviderDescriptor();
+    const driving = playbackStore.getDrivingDescriptor();
     if (!driving) return;
     if (!driving.capabilities?.hasNativeQueueSync) return;
     driving.playback.onQueueChanged?.(queueStore.getTracks(), queueStore.getCurrentIndex());
-  }, [getDrivingProviderDescriptor]);
+  }, []);
 
   /**
    * Shared append/insert path: adds pre-fetched tracks via the store (which

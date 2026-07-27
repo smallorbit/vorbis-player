@@ -1,8 +1,8 @@
-import { useCallback, useEffect, useRef } from 'react';
-import type { ProviderDescriptor } from '@/types/providers';
-import type { MediaTrack, ProviderId } from '@/types/domain';
+import { useCallback, useEffect } from 'react';
+import type { ProviderId } from '@/types/domain';
 import { providerRegistry } from '@/providers/registry';
 import { AuthExpiredError, UnavailableTrackError } from '@/providers/errors';
+import { playbackStore } from '@/stores/playbackStore';
 import { queueStore } from '@/stores/queueStore';
 import { useNewestWins } from '@/hooks/useNewestWins';
 import { logQueue, logArtRace } from '@/lib/debugLog';
@@ -11,25 +11,12 @@ import { PROVIDER_RECONNECTED_EVENT } from '@/constants/events';
 import { loadSession } from '@/services/sessionPersistence';
 
 interface UseProviderPlaybackProps {
-  activeDescriptor?: ProviderDescriptor | null | undefined;
   onAuthExpired?: ((providerId: ProviderId) => void) | undefined;
-  /**
-   * Shared guard ref used by `usePlaybackSubscription` to ignore stale provider
-   * index updates during a transition. `playTrack` sets this to the target
-   * track id BEFORE any adapter call (including the pre-warm `prepareTrack` on
-   * the next track) so that provider state events emitted during the handoff
-   * cannot flip the queue's current index to the wrong track.
-   */
-  expectedTrackIdRef?: React.MutableRefObject<string | null> | undefined;
 }
 
 export const useProviderPlayback = ({
-  activeDescriptor,
   onAuthExpired,
-  expectedTrackIdRef,
 }: UseProviderPlaybackProps) => {
-
-  const currentPlaybackProviderRef = useRef<ProviderId | null>(null);
 
   // Newest-wins guard. `playTrack` awaits the provider adapter (a network
   // round-trip for Spotify transfer/play); overlapping invocations — e.g.
@@ -73,15 +60,8 @@ export const useProviderPlayback = ({
     return () => window.removeEventListener(PROVIDER_RECONNECTED_EVENT, handler);
   }, []);
 
-  const resolveTrackProvider = useCallback((mediaTrack?: MediaTrack): ProviderId | undefined => (
-    mediaTrack?.provider
-    ?? currentPlaybackProviderRef.current
-    ?? activeDescriptor?.id
-    ?? undefined
-  ), [activeDescriptor]);
-
   const pausePreviousProvider = useCallback((nextProvider: ProviderId): void => {
-    const previousProvider = currentPlaybackProviderRef.current;
+    const previousProvider = playbackStore.getSnapshot().drivingProviderId;
     if (previousProvider && previousProvider !== nextProvider) {
       providerRegistry.get(previousProvider)?.playback.pause().catch(() => {});
     }
@@ -90,7 +70,7 @@ export const useProviderPlayback = ({
   const playTrack = useCallback(async (index: number, skipOnError = false, options?: { positionMs?: number }) => {
     const tracks = queueStore.getTracks();
     const mediaTrack = tracks[index];
-    const trackProvider = resolveTrackProvider(mediaTrack);
+    const trackProvider = playbackStore.resolveDrivingProviderId(mediaTrack?.provider);
 
     logQueue(
       'playTrack(%d) — provider=%s, track=%s, queueLen=%d, skipOnError=%s',
@@ -114,17 +94,13 @@ export const useProviderPlayback = ({
       return;
     }
 
-    // Raise the expected-track guard BEFORE any adapter call so that the
-    // subscription layer ignores provider state events emitted during the
+    // Raise the transition guard BEFORE any adapter call so that the playback
+    // store's pipeline ignores provider state events emitted during the
     // transition (pausePreviousProvider pause, adapter playTrack start, and
     // the next-track prepareTrack pre-warm below). Must run before all of
     // those to cover every entry point into playTrack — fresh collection
     // load at index 0, empty-queue append, next/previous, etc.
-    if (expectedTrackIdRef) {
-      expectedTrackIdRef.current = mediaTrack.id;
-      logArtRace('playTrack guard set: expected=%s (idx=%d, provider=%s)',
-        mediaTrack.id.slice(0, 8), index, trackProvider);
-    }
+    playbackStore.beginTransition(mediaTrack.id);
 
     // Claim this as the newest intended playback. A concurrent later call
     // supersedes this token; when our awaited adapter call resolves we drop
@@ -132,7 +108,7 @@ export const useProviderPlayback = ({
     const token = playGuard.begin();
 
     pausePreviousProvider(trackProvider);
-    currentPlaybackProviderRef.current = trackProvider;
+    playbackStore.setDrivingProvider(trackProvider);
 
     const descriptor = providerRegistry.get(trackProvider);
     if (!descriptor) {
@@ -163,9 +139,8 @@ export const useProviderPlayback = ({
       if (nextTrack && nextIndex !== index) {
         const nextDescriptor = providerRegistry.get(nextTrack.provider);
         if (nextDescriptor?.playback.prepareTrack) {
-          logArtRace('pre-warm dispatch: next=%s (idx=%d, provider=%s) — guard still=%s',
-            nextTrack.id.slice(0, 8), nextIndex, nextTrack.provider,
-            expectedTrackIdRef?.current ? expectedTrackIdRef.current.slice(0, 8) : 'null');
+          logArtRace('pre-warm dispatch: next=%s (idx=%d, provider=%s)',
+            nextTrack.id.slice(0, 8), nextIndex, nextTrack.provider);
           nextDescriptor.playback.prepareTrack(nextTrack);
         }
       }
@@ -188,34 +163,20 @@ export const useProviderPlayback = ({
         setTimeout(() => playTrack(index + 1, skipOnError), SKIP_ON_ERROR_DELAY_MS);
       }
     }
-  }, [playGuard, pausePreviousProvider, resolveTrackProvider, onAuthExpired, expectedTrackIdRef]);
+  }, [playGuard, pausePreviousProvider, onAuthExpired]);
 
   const resumePlayback = useCallback(async () => {
-    const currentProvider = currentPlaybackProviderRef.current;
-    if (currentProvider) {
-      const descriptor = providerRegistry.get(currentProvider);
-      if (descriptor) {
-        try {
-          await descriptor.playback.resume();
-        } catch (error) {
-          console.error(`[${currentProvider}] Failed to resume playback:`, error);
-        }
-        return;
-      }
+    const descriptor = playbackStore.getDrivingDescriptor();
+    if (!descriptor) return;
+    try {
+      await descriptor.playback.resume();
+    } catch (error) {
+      console.error(`[${descriptor.id}] Failed to resume playback:`, error);
     }
-
-    if (activeDescriptor) {
-      try {
-        await activeDescriptor.playback.resume();
-      } catch (error) {
-        console.error('Failed to resume playback:', error);
-      }
-    }
-  }, [activeDescriptor]);
+  }, []);
 
   return {
     playTrack,
     resumePlayback,
-    currentPlaybackProviderRef,
   };
 };

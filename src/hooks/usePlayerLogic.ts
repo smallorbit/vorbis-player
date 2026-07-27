@@ -14,7 +14,9 @@ import type { SessionSnapshot } from '@/services/sessionPersistence';
 import type { TrackOperations } from '@/types/trackOperations';
 import { providerRegistry } from '@/providers/registry';
 import { AuthExpiredError, UnavailableTrackError } from '@/providers/errors';
+import { playbackStore } from '@/stores/playbackStore';
 import { queueStore } from '@/stores/queueStore';
+import { usePlaybackState } from '@/hooks/usePlaybackState';
 import { logQueue } from '@/lib/debugLog';
 import { logCaughtError } from '@/utils/logCaughtError';
 import { useQueueThumbnailLoader } from '@/hooks/useQueueThumbnailLoader';
@@ -22,7 +24,6 @@ import { useQueueDurationLoader } from '@/hooks/useQueueDurationLoader';
 import { trkSummary } from './playerLogicUtils';
 import { useQueueManagement } from './useQueueManagement';
 import { useCollectionLoader } from './useCollectionLoader';
-import { usePlaybackSubscription } from './usePlaybackSubscription';
 import { useQueueBundlePrefetch } from './useQueueBundlePrefetch';
 import { useRadioSession } from './useRadioSession';
 import { useRecentlyPlayedCollections } from './useRecentlyPlayedCollections';
@@ -73,18 +74,22 @@ export function usePlayerLogic() {
     setSelection, setError, setIsLoading,
   }), [setSelection, setError, setIsLoading]);
 
-  // Transition guard shared with the playback subscription: while set, stale
-  // provider index updates are ignored (see useProviderPlayback.playTrack).
-  const expectedTrackIdRef = useRef<string | null>(null);
   // Holds the target index + position when handleHydrate restores a session without autoplay.
   // The next handlePlay consumes this to start playback at the saved offset; other control paths
   // (next/previous/new collection) clear it so a stale hydrate can't hijack a fresh user action.
   const hydratedPendingPlayRef = useRef<{ index: number; positionMs?: number } | null>(null);
 
-  // Playback state from provider events (local — not shared via context)
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [playbackPosition, setPlaybackPosition] = useState(0);
+  // Playback state lives in playbackStore, fed by the single provider fan-out.
+  const { isPlaying, positionMs: playbackPosition } = usePlaybackState();
   const [authExpired, setAuthExpired] = useState<ProviderId | null>(null);
+
+  // Keep the resolver's last-resort fallback in sync with the active provider,
+  // and (re)attach the store's fan-out subscription — reattaching on active
+  // provider change re-primes state from whichever provider now drives.
+  useEffect(() => {
+    playbackStore.setActiveProviderFallback(activeDescriptor?.id ?? null);
+  }, [activeDescriptor]);
+  useEffect(() => playbackStore.attach(), [activeDescriptor]);
 
   // Library full-screen visibility (local UI state) — currentView is canonical.
   type PlayerView = 'player' | 'library';
@@ -99,12 +104,9 @@ export function usePlayerLogic() {
   }, []);
 
   const providerPlayback = useProviderPlayback({
-    activeDescriptor,
     onAuthExpired: handleAuthExpired,
-    expectedTrackIdRef,
   });
   const providerPlayTrack = providerPlayback.playTrack;
-  const drivingProviderRef = providerPlayback.currentPlaybackProviderRef;
 
   // Any call into playTrack represents a concrete playback action, which supersedes
   // a pending hydrate. Wrap the underlying playTrack so downstream consumers don't
@@ -117,16 +119,6 @@ export function usePlayerLogic() {
     hydratedPendingPlayRef.current = null;
     return providerPlayTrack(index, skipOnError, options);
   }, [providerPlayTrack]);
-
-  /** Resolve provider currently driving playback; falls back to active provider when unknown. */
-  const getDrivingProviderId = useCallback((): ProviderId | null => (
-    drivingProviderRef.current ?? activeDescriptor?.id ?? null
-  ), [activeDescriptor, drivingProviderRef]);
-
-  const getDrivingProviderDescriptor = useCallback(() => {
-    const drivingProviderId = getDrivingProviderId();
-    return drivingProviderId ? providerRegistry.get(drivingProviderId) : undefined;
-  }, [getDrivingProviderId]);
 
   const { radioState, startRadio, stopRadio: stopRadioBase, isRadioAvailable } = useRadio();
 
@@ -144,7 +136,6 @@ export function usePlayerLogic() {
     setActiveProviderId,
     connectedProviderIds,
     isUnifiedLikedActive,
-    drivingProviderRef,
     playTrack,
     spotifyHandlePlaylistSelect,
     stopRadioBase,
@@ -152,7 +143,7 @@ export function usePlayerLogic() {
     record,
   });
 
-  useAutoAdvance({ tracks, currentTrackIndex, playTrack, enabled: true, currentPlaybackProviderRef: drivingProviderRef });
+  useAutoAdvance({ playTrack, enabled: true });
 
   // Progressively load missing thumbnails for Dropbox tracks in the queue
   useQueueThumbnailLoader(tracks);
@@ -178,15 +169,6 @@ export function usePlayerLogic() {
     handleAuthRedirect();
   }, [setError]);
 
-  // Subscribe to playback state from all relevant providers
-  usePlaybackSubscription({
-    activeDescriptor,
-    drivingProviderRef,
-    expectedTrackIdRef,
-    setIsPlaying,
-    setPlaybackPosition,
-  });
-
   // Warm the lazy QueueDrawer/QueueBottomSheet bundles on first playback so the
   // user-initiated "Up Next" open is instant. Fires once per session.
   useQueueBundlePrefetch(isPlaying);
@@ -196,7 +178,7 @@ export function usePlayerLogic() {
   // even when playTrack's adapter call lands during a transition that would
   // otherwise leave the driving provider in its prior paused state.
   const ensurePlaybackResumed = useCallback(async () => {
-    const drivingDescriptor = getDrivingProviderDescriptor();
+    const drivingDescriptor = playbackStore.getDrivingDescriptor();
     if (!drivingDescriptor) return;
     try {
       await drivingDescriptor.playback.resume();
@@ -204,7 +186,7 @@ export function usePlayerLogic() {
       // Autoplay policy or network errors are handled by the playback adapter
       logCaughtError('usePlayerLogic.ensurePlaybackResumed', err);
     }
-  }, [getDrivingProviderDescriptor]);
+  }, []);
 
   const handleNext = useCallback(async () => {
     const queueTracks = queueStore.getTracks();
@@ -260,29 +242,26 @@ export function usePlayerLogic() {
       );
       return;
     }
-    const drivingId = getDrivingProviderId();
     logQueue(
       'handlePlay — drivingProvider=%s, index=%d, track=%s',
-      drivingId,
+      playbackStore.resolveDrivingProviderId(),
       queueStore.getCurrentIndex(),
       trkSummary(queueStore.getCurrentTrack()),
     );
     try {
-      const drivingDescriptor = getDrivingProviderDescriptor();
+      const drivingDescriptor = playbackStore.getDrivingDescriptor();
       if (!drivingDescriptor) return;
       await drivingDescriptor.playback.resume();
     } catch (err) {
       // Autoplay policy or network errors are handled by the playback adapter
       logCaughtError('usePlayerLogic.handlePlay', err);
     }
-  }, [playTrack, getDrivingProviderId, getDrivingProviderDescriptor]);
+  }, [playTrack]);
 
   const handlePause = useCallback(() => {
-    const drivingId = getDrivingProviderId();
-    logQueue('handlePause — drivingProvider=%s, index=%d', drivingId, queueStore.getCurrentIndex());
-    const drivingDescriptor = getDrivingProviderDescriptor();
-    drivingDescriptor?.playback.pause();
-  }, [getDrivingProviderId, getDrivingProviderDescriptor]);
+    logQueue('handlePause — drivingProvider=%s, index=%d', playbackStore.resolveDrivingProviderId(), queueStore.getCurrentIndex());
+    playbackStore.getDrivingDescriptor()?.playback.pause();
+  }, []);
 
   const handleOpenLibrary = useCallback(() => {
     setCurrentView('library');
@@ -313,7 +292,7 @@ export function usePlayerLogic() {
     stopRadio();
     setSelection(null);
     queueStore.clear();
-    expectedTrackIdRef.current = null;
+    playbackStore.clearTransition();
     setShowQueue(false);
     setIsSettingsOpen(false);
   }, [handlePause, stopRadio, setSelection, setShowQueue, setIsSettingsOpen]);
@@ -402,10 +381,9 @@ export function usePlayerLogic() {
       }
 
       queueStore.setCurrentIndex(candidateIdx);
-      expectedTrackIdRef.current = candidateTrack.id;
-      drivingProviderRef.current = providerId;
-      setPlaybackPosition(positionMs ?? 0);
-      setIsPlaying(false);
+      playbackStore.beginTransition(candidateTrack.id);
+      playbackStore.setDrivingProvider(providerId);
+      playbackStore.primeRestoredPlayback(positionMs ?? 0);
       hydratedPendingPlayRef.current = {
         index: candidateIdx,
         ...(positionMs !== undefined && { positionMs }),
@@ -432,7 +410,6 @@ export function usePlayerLogic() {
   }, [
     setSelection,
     activeDescriptor,
-    drivingProviderRef,
     handleBackToLibrary,
   ]);
 
@@ -442,7 +419,6 @@ export function usePlayerLogic() {
     handleBackToLibrary,
     activeDescriptor,
     getDescriptor,
-    getDrivingProviderDescriptor,
   });
 
   const dismissRadioProgress = useCallback(() => setRadioProgress(null), []);
@@ -513,7 +489,5 @@ export function usePlayerLogic() {
       radioProgress,
       dismissRadioProgress,
     },
-    currentPlaybackProviderRef: drivingProviderRef,
-    expectedTrackIdRef,
   };
 }

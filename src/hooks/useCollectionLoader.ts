@@ -5,6 +5,7 @@ import type { TrackOperations } from '@/types/trackOperations';
 import { LIKED_SONGS_NAME, isAllMusicRef } from '@/constants/playlist';
 import { providerRegistry } from '@/providers/registry';
 import { putTrackList } from '@/services/cache/libraryCache';
+import { playbackStore } from '@/stores/playbackStore';
 import { queueStore } from '@/stores/queueStore';
 import { useNewestWins, type NewestWinsToken } from '@/hooks/useNewestWins';
 import { logQueue } from '@/lib/debugLog';
@@ -34,7 +35,6 @@ interface UseCollectionLoaderProps {
   setActiveProviderId: (providerId: ProviderId) => void;
   connectedProviderIds: ProviderId[];
   isUnifiedLikedActive: boolean;
-  drivingProviderRef: React.MutableRefObject<ProviderId | null>;
   playTrack: (index: number, isSkip?: boolean) => Promise<void>;
   spotifyHandlePlaylistSelect: (ref: CollectionRef) => Promise<MediaTrack[]>;
   stopRadioBase: () => void;
@@ -66,7 +66,6 @@ export function useCollectionLoader({
   setActiveProviderId,
   connectedProviderIds,
   isUnifiedLikedActive,
-  drivingProviderRef,
   playTrack,
   spotifyHandlePlaylistSelect,
   stopRadioBase,
@@ -144,7 +143,7 @@ export function useCollectionLoader({
       if (firstTrack) {
         const firstProvider = getDescriptor(firstTrack.provider);
         if (firstProvider) {
-          drivingProviderRef.current = firstTrack.provider;
+          playbackStore.setDrivingProvider(firstTrack.provider);
           if (firstTrack.provider !== activeDescriptor?.id) {
             setActiveProviderId(firstTrack.provider);
           }
@@ -169,7 +168,7 @@ export function useCollectionLoader({
   }, [
     beginLoad, clearWithError, handleLoadError, applyTracks,
     connectedProviderIds, getDescriptor, activeDescriptor,
-    setActiveProviderId, drivingProviderRef, playTrack, record,
+    setActiveProviderId, playTrack, record,
   ]);
 
   const loadContextPlayback = useCallback(async (
@@ -177,11 +176,11 @@ export function useCollectionLoader({
   ): Promise<LoadCollectionResult> => {
     const providerId = ref.provider;
     setIsLoading(false);
-    const prevProvider = drivingProviderRef.current;
+    const prevProvider = playbackStore.getSnapshot().drivingProviderId;
     if (prevProvider && prevProvider !== providerId) {
       providerRegistry.get(prevProvider)?.playback.pause().catch(() => {});
     }
-    drivingProviderRef.current = providerId;
+    playbackStore.setDrivingProvider(providerId);
     logQueue('Context playback path — delegating to legacy handler for %o', ref);
     // spotifyHandlePlaylistSelect mirrors the SDK's track window straight into
     // the queue store when it succeeds.
@@ -193,7 +192,7 @@ export function useCollectionLoader({
     }
     queueSnapshot('Context playback loaded', sdkTracks, queueStore.getTracks().length, 0);
     return loaded(sdkTracks.length);
-  }, [drivingProviderRef, setIsLoading, spotifyHandlePlaylistSelect]);
+  }, [setIsLoading, spotifyHandlePlaylistSelect]);
 
   const loadProviderCollection = useCallback(async (
     selection: CollectionSelection, collectionRef: CollectionRef, targetDescriptor: ProviderDescriptor,
@@ -219,7 +218,7 @@ export function useCollectionLoader({
       if (list.length === 0) return clearWithError('No tracks found in this collection.');
 
       applyTracks(list, { forceShuffle: isAllMusicRef(collectionRef) });
-      drivingProviderRef.current = providerId;
+      playbackStore.setDrivingProvider(providerId);
       queueSnapshot(`${providerId} playlist loaded`, list, queueStore.getTracks().length, 0);
       if (token.isStale()) return SUPERSEDED;
       await playTrack(0);
@@ -234,7 +233,7 @@ export function useCollectionLoader({
     }
   }, [
     activeDescriptor, beginLoad, clearWithError, handleLoadError,
-    applyTracks, loadContextPlayback, drivingProviderRef, playTrack, record,
+    applyTracks, loadContextPlayback, playTrack, record,
   ]);
 
   const loadCollection = useCallback(
@@ -298,7 +297,7 @@ export function useCollectionLoader({
       applyTracks(tracks);
 
       if (targetProviderId) {
-        drivingProviderRef.current = targetProviderId;
+        playbackStore.setDrivingProvider(targetProviderId);
         if (targetProviderId !== activeDescriptor?.id) {
           setActiveProviderId(targetProviderId);
         }
@@ -313,7 +312,7 @@ export function useCollectionLoader({
       radioStateIsActive, stopRadioBase, loadGuard,
       getDescriptor, activeDescriptor,
       setError, setIsLoading, setSelection,
-      applyTracks, drivingProviderRef, setActiveProviderId, playTrack,
+      applyTracks, setActiveProviderId, playTrack,
     ]
   );
 

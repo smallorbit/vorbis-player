@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
-import { useRef } from 'react';
-import type { MediaTrack, PlaybackState, ProviderId } from '@/types/domain';
+import type { MediaTrack, PlaybackState } from '@/types/domain';
 import type { PlaybackProvider, ProviderDescriptor } from '@/types/providers';
 
 vi.mock('@/providers/registry', () => {
@@ -18,8 +17,8 @@ vi.mock('@/providers/registry', () => {
 });
 
 import { useProviderPlayback } from '../useProviderPlayback';
-import { usePlaybackSubscription } from '../usePlaybackSubscription';
 import { providerRegistry } from '@/providers/registry';
+import { playbackStore } from '@/stores/playbackStore';
 import { queueStore } from '@/stores/queueStore';
 
 function makeTrack(id: string, image: string): MediaTrack {
@@ -103,31 +102,17 @@ function makeRaceDescriptor(): RaceDescriptor {
   return { descriptor, emit };
 }
 
-function useHarness(descriptor: ProviderDescriptor) {
-  const drivingProviderRef = useRef<ProviderId | null>('spotify');
-  const expectedTrackIdRef = useRef<string | null>(null);
-
-  const { playTrack } = useProviderPlayback({
-    activeDescriptor: descriptor,
-    expectedTrackIdRef,
-  });
-
-  usePlaybackSubscription({
-    activeDescriptor: descriptor,
-    drivingProviderRef,
-    expectedTrackIdRef,
-    setIsPlaying: () => {},
-    setPlaybackPosition: () => {},
-  });
-
-  return { playTrack, expectedTrackIdRef };
+function useHarness() {
+  const { playTrack } = useProviderPlayback({});
+  return { playTrack };
 }
 
 describe('fresh-load album-art race', () => {
   let descriptor: ProviderDescriptor;
+  let detach: () => void;
   // Every index committed through the store during the transition, in call
   // order. queueStore.setCurrentIndex is the single write path for the current
-  // index — both playTrack's post-adapter commit and the subscription layer's
+  // index — both playTrack's post-adapter commit and the playback pipeline's
   // fallback index sync go through it — so spying on it observes even calls
   // the store would treat as no-ops (e.g. setCurrentIndex(0) while already 0).
   let indexHistory: number[];
@@ -138,6 +123,12 @@ describe('fresh-load album-art race', () => {
     (providerRegistry as unknown as { __clear: () => void }).__clear();
     providerRegistry.register!(descriptor);
 
+    // The playback store is the single fan-out subscriber; attach it to the
+    // fake registry and mark spotify as the driving provider so the pipeline
+    // processes the fake's events.
+    playbackStore.setDrivingProvider('spotify');
+    detach = playbackStore.attach();
+
     indexHistory = [];
     const realSetCurrentIndex = queueStore.setCurrentIndex;
     vi.spyOn(queueStore, 'setCurrentIndex').mockImplementation((index: number) => {
@@ -147,6 +138,7 @@ describe('fresh-load album-art race', () => {
   });
 
   afterEach(() => {
+    detach();
     // Un-spy queueStore.setCurrentIndex so the next test's beforeEach captures
     // the real implementation instead of wrapping the previous spy.
     vi.restoreAllMocks();
@@ -158,7 +150,7 @@ describe('fresh-load album-art race', () => {
     // the fresh-load race introduced by commit f5689a4.
     const tracks = [makeTrack('track-0', 'art-0'), makeTrack('track-1', 'art-1')];
     queueStore.replaceQueue(tracks);
-    const { result } = renderHook(() => useHarness(descriptor));
+    const { result } = renderHook(() => useHarness());
 
     // #when — drive the fresh-load path: playTrack(0) sets the guard,
     // awaits the adapter's playTrack for track 0, then pre-warms track 1
@@ -167,7 +159,7 @@ describe('fresh-load album-art race', () => {
       await result.current.playTrack(0);
     });
 
-    // #then — the guard set by the centralised expectedTrackIdRef owner must
+    // #then — the transition guard raised by playTrack (beginTransition) must
     // have rejected the mismatched state. Every index committed through
     // queueStore.setCurrentIndex during the transition is 0 — this rules out
     // a 0 → 1 → 0 flicker that a final-state-only assertion would miss.
@@ -184,7 +176,7 @@ describe('fresh-load album-art race', () => {
     // #given — same two-track fresh-load setup.
     const tracks = [makeTrack('track-0', 'art-0'), makeTrack('track-1', 'art-1')];
     queueStore.replaceQueue(tracks);
-    const { result } = renderHook(() => useHarness(descriptor));
+    const { result } = renderHook(() => useHarness());
 
     // #when
     await act(async () => {

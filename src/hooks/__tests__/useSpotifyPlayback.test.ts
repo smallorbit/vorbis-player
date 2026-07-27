@@ -36,7 +36,7 @@ vi.mock('@/providers/registry', () => ({
 }));
 
 import { useProviderPlayback } from '../useProviderPlayback';
-import { providerRegistry } from '@/providers/registry';
+import { playbackStore } from '@/stores/playbackStore';
 
 function makeMediaTrack(overrides?: Partial<MediaTrack>): MediaTrack {
   return {
@@ -69,13 +69,12 @@ describe('useProviderPlayback', () => {
   });
 
   it('returns early when no media track at index', async () => {
-    // #given — queue seeded, but index 99 is out of bounds; activeDescriptor
-    // resolves the provider so the no-track branch (not the no-provider
-    // branch) is the one that returns early
+    // #given — queue seeded, but index 99 is out of bounds; the active-provider
+    // fallback resolves the provider so the no-track branch (not the
+    // no-provider branch) is the one that returns early
     queueStore.replaceQueue(mediaTracks);
-    const { result } = renderHook(() =>
-      useProviderPlayback({ activeDescriptor: providerRegistry.get('spotify') })
-    );
+    playbackStore.setActiveProviderFallback('spotify');
+    const { result } = renderHook(() => useProviderPlayback({}));
 
     // #when
     await act(async () => {
@@ -223,10 +222,11 @@ describe('useProviderPlayback', () => {
     // #given
     const { result } = renderHook(() => useProviderPlayback({}));
 
-    // #when / #then
+    // #when / #then — the hook's surface is exactly playTrack + resumePlayback;
+    // provider tracking moved into playbackStore, so no ref leaks out either
     expect(result.current).toHaveProperty('playTrack');
     expect(result.current).toHaveProperty('resumePlayback');
-    expect(result.current).toHaveProperty('currentPlaybackProviderRef');
+    expect(result.current).not.toHaveProperty('currentPlaybackProviderRef');
     expect(result.current).not.toHaveProperty('activateDevice');
   });
 });

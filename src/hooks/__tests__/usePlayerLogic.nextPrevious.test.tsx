@@ -58,6 +58,7 @@ const makeMockDescriptor = (id: ProviderId) => ({
     isAuthenticated: vi.fn().mockReturnValue(true),
     beginLogin: vi.fn(),
     logout: vi.fn(),
+    handleCallback: vi.fn().mockResolvedValue(false),
   },
   playback: {
     initialize: vi.fn().mockResolvedValue(undefined),
@@ -133,7 +134,10 @@ vi.mock('@/providers/registry', () => ({
       if (id === 'dropbox') return dropboxDescriptor;
       return activeDescriptor;
     }),
-    getAll: vi.fn(() => []),
+    // playbackStore.attach() fans out over getAll() — the descriptors must be
+    // registered here for their subscribe() to feed the store's pipeline.
+    getAll: vi.fn(() => [spotifyDescriptor, dropboxDescriptor]),
+    has: vi.fn((id: ProviderId) => id === 'spotify' || id === 'dropbox'),
     register: vi.fn(),
   },
 }));

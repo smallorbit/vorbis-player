@@ -3,13 +3,27 @@ import type { Mock } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import { toast } from 'sonner';
 import { useQueueManagement } from '../useQueueManagement';
+import { playbackStore } from '@/stores/playbackStore';
 import { queueStore } from '@/stores/queueStore';
+import { providerRegistry } from '@/providers/registry';
 import { makeProviderDescriptor } from '@/test/fixtures';
 import type { CollectionSelection, MediaTrack, ProviderId } from '@/types/domain';
 import type { CatalogProvider, ProviderDescriptor } from '@/types/providers';
 
 vi.mock('sonner', () => ({
   toast: vi.fn(),
+}));
+
+// notifyQueueChanged resolves the driving descriptor through
+// playbackStore.getDrivingDescriptor() → providerRegistry.get(<driving id>),
+// so the registry is mocked to let native-sync tests wire a fake driving
+// descriptor behind the store's resolver.
+vi.mock('@/providers/registry', () => ({
+  providerRegistry: {
+    get: vi.fn(),
+    getAll: vi.fn(() => []),
+    has: vi.fn(() => false),
+  },
 }));
 
 /** Spotify playlist selection, as produced by the library UI. */
@@ -52,7 +66,6 @@ describe('useQueueManagement', () => {
   let mockHandleBackToLibrary: ReturnType<typeof vi.fn>;
   let mockGetDescriptor: ReturnType<typeof vi.fn>;
   let mockActiveDescriptor: ProviderDescriptor;
-  let mockGetDrivingProviderDescriptor: ReturnType<typeof vi.fn>;
 
   /** Descriptor for `providerId` whose catalog resolves `listTracks` with the given mock. */
   function makeDescriptorWithListTracks(
@@ -79,7 +92,6 @@ describe('useQueueManagement', () => {
         handleBackToLibrary: mockHandleBackToLibrary,
         activeDescriptor: mockActiveDescriptor,
         getDescriptor: mockGetDescriptor,
-        getDrivingProviderDescriptor: mockGetDrivingProviderDescriptor,
         ...overrides,
       })
     );
@@ -96,9 +108,9 @@ describe('useQueueManagement', () => {
     mockGetDescriptor = vi.fn((providerId: ProviderId) =>
       providerId === mockActiveDescriptor.id ? mockActiveDescriptor : undefined
     );
-    // Default: no driving descriptor (notify is a no-op). Tests covering native-sync
-    // override this with a descriptor that declares `hasNativeQueueSync`.
-    mockGetDrivingProviderDescriptor = vi.fn(() => undefined);
+    // Default: no driving provider (src/test/setup.ts resets playbackStore, so
+    // drivingProviderId starts null and notify is a no-op). Tests covering
+    // native-sync wire a driving descriptor via setDrivingDescriptor.
     vi.mocked(toast).mockClear();
   });
 
@@ -432,7 +444,6 @@ describe('useQueueManagement', () => {
       handleBackToLibrary: mockHandleBackToLibrary,
       activeDescriptor: mockActiveDescriptor,
       getDescriptor: mockGetDescriptor,
-      getDrivingProviderDescriptor: mockGetDrivingProviderDescriptor,
     };
 
     const { result, rerender } = renderHook((p: typeof props) => useQueueManagement(p), {
@@ -473,12 +484,23 @@ describe('useQueueManagement', () => {
       };
     }
 
+    /**
+     * Make `descriptor` the driving provider: the playback store resolves the
+     * driving id, and the mocked registry serves the descriptor for that id.
+     */
+    function setDrivingDescriptor(descriptor: ProviderDescriptor): void {
+      vi.mocked(providerRegistry.get).mockImplementation((providerId: ProviderId) =>
+        providerId === descriptor.id ? descriptor : undefined
+      );
+      playbackStore.setDrivingProvider(descriptor.id);
+    }
+
     it('handleAddToQueue notifies the driving provider with the post-append tracks and unchanged index', async () => {
       // #given — non-empty queue, driving provider declares native-queue-sync
       queueStore.replaceQueue(t('1', '2'), { currentIndex: 0 });
       stubActiveListTracks(vi.fn().mockResolvedValue(t('3', '4')));
       const { descriptor, onQueueChanged } = makeDrivingDescriptor({ hasNativeQueueSync: true });
-      mockGetDrivingProviderDescriptor.mockReturnValue(descriptor);
+      setDrivingDescriptor(descriptor);
       const { result } = renderQueueManagement();
 
       // #when
@@ -497,7 +519,7 @@ describe('useQueueManagement', () => {
       // #given — currently playing index 2; remove index 0 → adjusted to 1
       queueStore.replaceQueue(t('1', '2', '3'), { currentIndex: 2 });
       const { descriptor, onQueueChanged } = makeDrivingDescriptor({ hasNativeQueueSync: true });
-      mockGetDrivingProviderDescriptor.mockReturnValue(descriptor);
+      setDrivingDescriptor(descriptor);
       const { result } = renderQueueManagement();
 
       // #when
@@ -516,7 +538,7 @@ describe('useQueueManagement', () => {
       // #given — playing index 0 ('a'); reorder 0→2 follows the playing track to index 2
       queueStore.replaceQueue(t('a', 'b', 'c'), { currentIndex: 0 });
       const { descriptor, onQueueChanged } = makeDrivingDescriptor({ hasNativeQueueSync: true });
-      mockGetDrivingProviderDescriptor.mockReturnValue(descriptor);
+      setDrivingDescriptor(descriptor);
       const { result } = renderQueueManagement();
 
       // #when
@@ -535,7 +557,7 @@ describe('useQueueManagement', () => {
       // #given — playing index 1 of 4; insert one track at index 2
       queueStore.replaceQueue(t('a', 'b', 'c', 'd'), { currentIndex: 1 });
       const { descriptor, onQueueChanged } = makeDrivingDescriptor({ hasNativeQueueSync: true });
-      mockGetDrivingProviderDescriptor.mockReturnValue(descriptor);
+      setDrivingDescriptor(descriptor);
       const { result } = renderQueueManagement();
 
       // #when
@@ -553,7 +575,7 @@ describe('useQueueManagement', () => {
     it('insertTracksNext notifies with index 0 when the queue starts empty', () => {
       // #given — empty queue; the store treats inserted tracks as the new queue
       const { descriptor, onQueueChanged } = makeDrivingDescriptor({ hasNativeQueueSync: true });
-      mockGetDrivingProviderDescriptor.mockReturnValue(descriptor);
+      setDrivingDescriptor(descriptor);
       const { result } = renderQueueManagement();
 
       // #when
@@ -572,7 +594,7 @@ describe('useQueueManagement', () => {
       // #given — non-empty queue, driving provider declares native-queue-sync
       queueStore.replaceQueue(t('1'), { currentIndex: 0 });
       const { descriptor, onQueueChanged } = makeDrivingDescriptor({ hasNativeQueueSync: true });
-      mockGetDrivingProviderDescriptor.mockReturnValue(descriptor);
+      setDrivingDescriptor(descriptor);
       const { result } = renderQueueManagement();
 
       // #when
@@ -592,7 +614,7 @@ describe('useQueueManagement', () => {
       queueStore.replaceQueue(t('a', 'b'), { currentIndex: 0 });
       stubActiveListTracks(vi.fn().mockResolvedValue(t('p1', 'p2')));
       const { descriptor, onQueueChanged } = makeDrivingDescriptor({ hasNativeQueueSync: true });
-      mockGetDrivingProviderDescriptor.mockReturnValue(descriptor);
+      setDrivingDescriptor(descriptor);
       const { result } = renderQueueManagement();
 
       // #when
@@ -611,7 +633,7 @@ describe('useQueueManagement', () => {
       // #given — driving descriptor without the capability flag
       queueStore.replaceQueue(t('a', 'b', 'c'), { currentIndex: 0 });
       const { descriptor, onQueueChanged } = makeDrivingDescriptor({ hasNativeQueueSync: false });
-      mockGetDrivingProviderDescriptor.mockReturnValue(descriptor);
+      setDrivingDescriptor(descriptor);
       const { result } = renderQueueManagement();
 
       // #when
@@ -627,7 +649,7 @@ describe('useQueueManagement', () => {
       // #given — removing the currently playing index is a no-op
       queueStore.replaceQueue(t('a', 'b', 'c'), { currentIndex: 1 });
       const { descriptor, onQueueChanged } = makeDrivingDescriptor({ hasNativeQueueSync: true });
-      mockGetDrivingProviderDescriptor.mockReturnValue(descriptor);
+      setDrivingDescriptor(descriptor);
       const { result } = renderQueueManagement();
 
       // #when — attempt to remove the playing track (bails)
@@ -643,7 +665,7 @@ describe('useQueueManagement', () => {
       // #given — every incoming track is already in the queue
       queueStore.replaceQueue(t('1', '2'), { currentIndex: 0 });
       const { descriptor, onQueueChanged } = makeDrivingDescriptor({ hasNativeQueueSync: true });
-      mockGetDrivingProviderDescriptor.mockReturnValue(descriptor);
+      setDrivingDescriptor(descriptor);
       const { result } = renderQueueManagement();
 
       // #when
