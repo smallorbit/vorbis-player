@@ -52,7 +52,7 @@ describe('Settings', () => {
       );
 
       // #then
-      expect(container.querySelector('[data-testid="settings-v2-desktop"]')).toBeNull();
+      expect(container.querySelector('[data-testid="settings-desktop"]')).toBeNull();
     });
   });
 
@@ -66,7 +66,7 @@ describe('Settings', () => {
       );
 
       // #then
-      expect(screen.getByTestId('settings-v2-desktop')).toBeInTheDocument();
+      expect(screen.getByTestId('settings-desktop')).toBeInTheDocument();
     });
 
     it('exposes all four section labels in the sidebar', () => {
@@ -131,7 +131,7 @@ describe('Settings', () => {
       );
 
       // #then — shell renders and shows the default 'Sources' section (not a blank/broken state)
-      expect(screen.getByTestId('settings-v2-desktop')).toBeInTheDocument();
+      expect(screen.getByTestId('settings-desktop')).toBeInTheDocument();
       expect(screen.getAllByText('Sources').length).toBeGreaterThan(0);
     });
 
@@ -157,7 +157,7 @@ describe('Settings', () => {
       );
 
       // #then
-      expect(screen.getByTestId('settings-v2-mobile')).toBeInTheDocument();
+      expect(screen.getByTestId('settings-mobile')).toBeInTheDocument();
     });
 
     it('shows the section list before any section is selected', () => {
@@ -308,7 +308,7 @@ describe('Settings', () => {
       // #then — Radix moves focus to the first focusable descendant (or the
       // Content element itself) after open. Either way, the active element
       // must live inside the dialog subtree, not on document.body.
-      const dialog = screen.getByTestId('settings-v2-desktop');
+      const dialog = screen.getByTestId('settings-desktop');
       const active = document.activeElement as HTMLElement | null;
       expect(active).not.toBe(document.body);
       expect(dialog.contains(active)).toBe(true);

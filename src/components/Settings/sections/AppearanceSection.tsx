@@ -67,11 +67,11 @@ const TranslucenceToggle: React.FC = () => {
       <SectionGroupTitle>Translucence</SectionGroupTitle>
       <ControlRow>
         <div>
-          <ControlLabelText htmlFor="settings-v2-translucence-toggle">Translucent album art</ControlLabelText>
+          <ControlLabelText htmlFor="settings-translucence-toggle">Translucent album art</ControlLabelText>
           <ControlHelp>Fade the album art so the background visualizer shows through.</ControlHelp>
         </div>
         <Switch
-          id="settings-v2-translucence-toggle"
+          id="settings-translucence-toggle"
           checked={translucenceEnabled}
           onCheckedChange={handleToggle}
           aria-label="Toggle translucence"

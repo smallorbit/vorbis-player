@@ -24,6 +24,7 @@ import { useTrackListContext, useCurrentTrackContext } from '@/contexts/TrackCon
 import { useProviderContext } from '@/contexts/ProviderContext';
 import { LIKED_SONGS_NAME } from '@/constants/playlist';
 import { useSessionPersistence } from '@/hooks/useSessionPersistence';
+import { decodeLegacySelection } from '@/services/sessionPersistence';
 import QuickAccessPanel from './QuickAccessPanel';
 import { CmdKPalette } from './CmdKPalette';
 import type { CollectionSelection, MediaCollection, MediaTrack } from '@/types/domain';
@@ -375,7 +376,8 @@ const AudioPlayerComponent = () => {
     window.history.replaceState({}, '', '/');
 
     // Structured `provider:kind:id` keys let the mock catalog resolve by snapshot id
-    // instead of falling through to the Spotify SDK; raw IDs work for legacy links.
+    // instead of falling through to the Spotify SDK; raw legacy ids
+    // ('liked-songs', 'album:X', bare id) go through the shared legacy decoder.
     const ref = keyToCollectionRef(playlistParam);
     if (ref) {
       if (ref.kind === 'liked') {
@@ -384,11 +386,10 @@ const AudioPlayerComponent = () => {
         handlers.loadCollection({ type: 'collection', ref });
       }
     } else {
-      // Legacy raw-id link: assume a playlist on the active (or default) provider.
-      handlers.loadCollection({
-        type: 'collection',
-        ref: { provider: activeDescriptor?.id ?? 'spotify', kind: 'playlist', id: playlistParam },
-      });
+      const legacy = decodeLegacySelection(playlistParam, activeDescriptor?.id, playlistParam);
+      if (legacy.type !== 'radio') {
+        handlers.loadCollection(legacy);
+      }
     }
   }, [needsSetup, selection, handlers, activeDescriptor]);
 

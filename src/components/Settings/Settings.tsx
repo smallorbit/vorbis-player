@@ -127,7 +127,7 @@ export const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
             onPointerDownOutside={preventDismissOnEyedropper}
             onInteractOutside={preventDismissOnEyedropper}
           >
-            <MobileTakeover data-testid="settings-v2-mobile">
+            <MobileTakeover data-testid="settings-mobile">
               <VisuallyHiddenDialogTitle />
               <SettingsMobileTakeover
                 activeSection={validSection}
@@ -149,7 +149,7 @@ export const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
               onPointerDownOutside={preventDismissOnEyedropper}
               onInteractOutside={preventDismissOnEyedropper}
             >
-              <DesktopShell data-testid="settings-v2-desktop">
+              <DesktopShell data-testid="settings-desktop">
                 <VisuallyHiddenDialogTitle />
                 <SettingsSidebar activeSection={activeSection} onSelect={handleSelectSection} />
                 <SettingsContent activeSection={activeSection} onClose={closeShell} />

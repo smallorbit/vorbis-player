@@ -86,9 +86,11 @@ function isLegacySnapshot(value: unknown): value is LegacySessionFields & Record
 /**
  * Compatibility shim: decode a legacy prefix-encoded collection id
  * ('liked-songs', 'radio', 'album:X', 'dbplaylist:/path', bare id) into a
- * PlaybackSelection. This is the only place the old encoding survives.
+ * PlaybackSelection. This is the only place the old encoding survives; it also
+ * serves the `?playlist=` deep link's raw-id fallback so there is exactly one
+ * legacy decoder.
  */
-function legacySelection(collectionId: string, provider: ProviderId | undefined, name: string): PlaybackSelection {
+export function decodeLegacySelection(collectionId: string, provider: ProviderId | undefined, name: string): PlaybackSelection {
   if (collectionId === 'radio') return { type: 'radio' };
   if (collectionId === 'liked-songs' || collectionId.startsWith('liked-')) {
     return { type: 'liked', name, ...(provider !== undefined && { provider }) };
@@ -112,7 +114,7 @@ function upgradeLegacySnapshot(value: LegacySessionFields & Record<string, unkno
   // for the same deserialization boundary.
   const opt = value as Partial<SessionSnapshot>;
   return {
-    selection: legacySelection(value.collectionId, value.collectionProvider, value.collectionName),
+    selection: decodeLegacySelection(value.collectionId, value.collectionProvider, value.collectionName),
     collectionName: value.collectionName,
     trackIndex: value.trackIndex,
     ...(opt.trackId !== undefined && { trackId: opt.trackId }),

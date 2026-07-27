@@ -170,7 +170,7 @@ Local `updatedAt` is tracked in localStorage under `STORAGE_KEYS.PREFERENCES_SYN
 
 ### Trigger Points
 
-- **Initial sync**: called after Dropbox OAuth completion and when Dropbox is already authenticated at app startup (in `App.tsx` and `dropboxProvider.ts`).
+- **Initial sync**: called after Dropbox OAuth completion (inside `dropboxAuthAdapter.handleCallback`) and when Dropbox is already authenticated at app startup (in `dropboxProvider.ts`).
 - **Push (debounced)**: `PinnedItemsContext` and `ColorContext` call `schedulePreferencesPush()` (from `src/providers/preferencesSync.ts`) after local changes, which invokes each registered descriptor's `preferencesSync.schedulePush()`. The Dropbox push is debounced by 2 seconds (`UPLOAD_DEBOUNCE_MS`).
 - **After cache clear**: when pins or accent colors are cleared, `resetPreferencesSync()` clears each provider's local timestamp and re-runs `initialSync()` to pull from remote.
 

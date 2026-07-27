@@ -3,6 +3,7 @@ import * as React from 'react';
 import styled from 'styled-components';
 import type { ProviderId } from '@/types/domain';
 import { providerRegistry } from '@/providers/registry';
+import { logCaughtError } from '@/utils/logCaughtError';
 import { IMAGE_LOAD_TIMEOUT_MS } from '@/constants/timing';
 
 const MosaicGrid = styled.div`
@@ -45,10 +46,17 @@ export const MosaicThumbnail: React.FC<MosaicThumbnailProps> = React.memo(
 
     useEffect(() => {
       let cancelled = false;
-      const resolveArtwork = providerRegistry.get(provider)?.catalog.resolveArtwork;
+      // Call through the catalog instance — adapters are classes, so a
+      // detached method reference would lose its `this` binding.
+      const catalog = providerRegistry.get(provider)?.catalog;
       const resolve = () =>
         Promise.all(
-          albumPaths.map(path => resolveArtwork?.(path) ?? Promise.resolve(null)),
+          albumPaths.map(path =>
+            Promise.resolve(catalog?.resolveArtwork?.(path) ?? null).catch((err: unknown) => {
+              logCaughtError('MosaicThumbnail.resolveArtwork', err);
+              return null;
+            }),
+          ),
         ).then(results => {
           if (!cancelled) setResolved(results);
           return results;

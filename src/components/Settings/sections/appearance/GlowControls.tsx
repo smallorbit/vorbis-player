@@ -63,11 +63,11 @@ export const GlowControls: React.FC = () => {
       <SectionGroupTitle>Glow</SectionGroupTitle>
       <ControlRow>
         <div>
-          <ControlLabelText htmlFor="settings-v2-glow-toggle">Album-art glow</ControlLabelText>
+          <ControlLabelText htmlFor="settings-glow-toggle">Album-art glow</ControlLabelText>
           <ControlHelp>Pulse a soft halo behind the album art.</ControlHelp>
         </div>
         <Switch
-          id="settings-v2-glow-toggle"
+          id="settings-glow-toggle"
           checked={visualEffectsEnabled}
           onCheckedChange={handleToggle}
           aria-label="Toggle album-art glow"

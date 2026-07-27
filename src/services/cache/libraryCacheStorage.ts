@@ -26,7 +26,6 @@ interface KVStore<T> {
   put(key: string, value: T): Promise<void>;
   putAll(entries: Array<[string, T]>): Promise<void>;
   remove(key: string): Promise<void>;
-  replaceAll(entries: Array<[string, T]>): Promise<void>;
   clear(): Promise<void>;
 }
 
@@ -87,14 +86,6 @@ function idbClear(storeName: string): Promise<void> {
 
 function idbPutAll<T>(storeName: string, entries: Array<[string, T]>): Promise<void> {
   return withStore<void>(storeName, 'readwrite', (store) => {
-    for (const [key, value] of entries) store.put(value, key);
-    return null;
-  });
-}
-
-function idbReplaceAll<T>(storeName: string, entries: Array<[string, T]>): Promise<void> {
-  return withStore<void>(storeName, 'readwrite', (store) => {
-    store.clear();
     for (const [key, value] of entries) store.put(value, key);
     return null;
   });
@@ -181,25 +172,6 @@ export function getStore<T>(storeName: string): KVStore<T> {
         logCaughtError(`libraryCacheStorage.${storeName}.remove`, err);
         enterFallback();
         fallback().delete(key);
-      }
-    },
-
-    async replaceAll(entries: Array<[string, T]>): Promise<void> {
-      await initCache();
-      if (isFallback()) {
-        const map = fallback();
-        map.clear();
-        for (const [key, value] of entries) map.set(key, value);
-        return;
-      }
-      try {
-        await idbReplaceAll(storeName, entries);
-      } catch (err) {
-        logCaughtError(`libraryCacheStorage.${storeName}.replaceAll`, err);
-        enterFallback();
-        const map = fallback();
-        map.clear();
-        for (const [key, value] of entries) map.set(key, value);
       }
     },
 

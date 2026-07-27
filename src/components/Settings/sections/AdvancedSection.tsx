@@ -113,11 +113,11 @@ export const AdvancedSection: React.FC = () => {
       <ControlBlock>
         <ControlRow>
           <div>
-            <ControlLabelText htmlFor="settings-v2-qap-toggle">Quick Access Panel</ControlLabelText>
+            <ControlLabelText htmlFor="settings-qap-toggle">Quick Access Panel</ControlLabelText>
             <ControlHelp>Show the quick-access overlay on the idle screen.</ControlHelp>
           </div>
           <Switch
-            id="settings-v2-qap-toggle"
+            id="settings-qap-toggle"
             checked={qapEnabled}
             onCheckedChange={(checked) => setQapEnabled(checked)}
             aria-label="Toggle Quick Access Panel"
@@ -136,31 +136,31 @@ export const AdvancedSection: React.FC = () => {
               {dataProviders.length === 0 && (
                 <CacheOptionItem>
                   <CacheCheckbox
-                    id="settings-v2-clear-likes"
+                    id="settings-clear-likes"
                     type="checkbox"
                     checked={clearLikes}
                     onChange={(e) => setClearLikes(e.target.checked)}
                   />
-                  <ControlHelp as="label" htmlFor="settings-v2-clear-likes">Also clear Likes</ControlHelp>
+                  <ControlHelp as="label" htmlFor="settings-clear-likes">Also clear Likes</ControlHelp>
                 </CacheOptionItem>
               )}
               <CacheOptionItem>
                 <CacheCheckbox
-                  id="settings-v2-clear-pins"
+                  id="settings-clear-pins"
                   type="checkbox"
                   checked={clearPins}
                   onChange={(e) => setClearPins(e.target.checked)}
                 />
-                <ControlHelp as="label" htmlFor="settings-v2-clear-pins">Also clear Pins</ControlHelp>
+                <ControlHelp as="label" htmlFor="settings-clear-pins">Also clear Pins</ControlHelp>
               </CacheOptionItem>
               <CacheOptionItem>
                 <CacheCheckbox
-                  id="settings-v2-clear-accent-colors"
+                  id="settings-clear-accent-colors"
                   type="checkbox"
                   checked={clearAccentColors}
                   onChange={(e) => setClearAccentColors(e.target.checked)}
                 />
-                <ControlHelp as="label" htmlFor="settings-v2-clear-accent-colors">Also clear Accent Colors</ControlHelp>
+                <ControlHelp as="label" htmlFor="settings-clear-accent-colors">Also clear Accent Colors</ControlHelp>
               </CacheOptionItem>
             </CacheOptionList>
             <CacheButtons>
@@ -190,11 +190,11 @@ export const AdvancedSection: React.FC = () => {
         <SectionGroupTitle>Diagnostics</SectionGroupTitle>
         <ControlRow>
           <div>
-            <ControlLabelText htmlFor="settings-v2-profiler-toggle">Performance Profiler</ControlLabelText>
+            <ControlLabelText htmlFor="settings-profiler-toggle">Performance Profiler</ControlLabelText>
             <ControlHelp>Capture render and timing metrics for diagnostics.</ControlHelp>
           </div>
           <Switch
-            id="settings-v2-profiler-toggle"
+            id="settings-profiler-toggle"
             checked={profilerEnabled}
             onCheckedChange={handleProfilerToggle}
             aria-label="Toggle Performance Profiler"
@@ -203,11 +203,11 @@ export const AdvancedSection: React.FC = () => {
         </ControlRow>
         <ControlRow>
           <div>
-            <ControlLabelText htmlFor="settings-v2-viz-debug-toggle">Visualizer Debug</ControlLabelText>
+            <ControlLabelText htmlFor="settings-viz-debug-toggle">Visualizer Debug</ControlLabelText>
             <ControlHelp>Show on-screen overlays for visualizer tuning.</ControlHelp>
           </div>
           <Switch
-            id="settings-v2-viz-debug-toggle"
+            id="settings-viz-debug-toggle"
             checked={visualizerDebugEnabled}
             onCheckedChange={handleVisualizerDebugToggle}
             aria-label="Toggle Visualizer Debug"

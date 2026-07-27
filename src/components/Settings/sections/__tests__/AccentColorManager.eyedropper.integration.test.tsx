@@ -133,7 +133,7 @@ describe('Settings + real EyedropperOverlay (issue #1467)', () => {
         <Settings isOpen={true} onClose={onClose} />
       </Wrapper>,
     );
-    await waitFor(() => screen.getByTestId('settings-v2-desktop'));
+    await waitFor(() => screen.getByTestId('settings-desktop'));
     fireEvent.click(screen.getByLabelText('Pick color from album art'));
     const overlay = await waitFor(() =>
       document.body.querySelector('[data-eyedropper-overlay="true"]'),
@@ -154,7 +154,7 @@ describe('Settings + real EyedropperOverlay (issue #1467)', () => {
     // #then — Dialog stays open. Without the fix, Radix DismissableLayer
     // would treat this as an outside-click and call onClose().
     expect(onClose).not.toHaveBeenCalled();
-    expect(screen.getByTestId('settings-v2-desktop')).toBeInTheDocument();
+    expect(screen.getByTestId('settings-desktop')).toBeInTheDocument();
   });
 
   it('keeps the eyedropper portal interactive (pointer-events: auto) so the X close button is not blocked by Radix body pointer-events lockout', async () => {
@@ -168,7 +168,7 @@ describe('Settings + real EyedropperOverlay (issue #1467)', () => {
         <Settings isOpen={true} onClose={onClose} />
       </Wrapper>,
     );
-    await waitFor(() => screen.getByTestId('settings-v2-desktop'));
+    await waitFor(() => screen.getByTestId('settings-desktop'));
     fireEvent.click(screen.getByLabelText('Pick color from album art'));
     const overlay = (await waitFor(() =>
       document.body.querySelector('[data-eyedropper-overlay="true"]'),
@@ -190,7 +190,7 @@ describe('Settings + real EyedropperOverlay (issue #1467)', () => {
       expect(document.body.querySelector('[data-eyedropper-overlay="true"]')).toBeNull(),
     );
     expect(onClose).not.toHaveBeenCalled();
-    expect(screen.getByTestId('settings-v2-desktop')).toBeInTheDocument();
+    expect(screen.getByTestId('settings-desktop')).toBeInTheDocument();
   });
 
   it('captures the picked color and dual-writes ACCENT_COLOR_OVERRIDES + CUSTOM_ACCENT_COLORS', async () => {
@@ -201,7 +201,7 @@ describe('Settings + real EyedropperOverlay (issue #1467)', () => {
         <Settings isOpen={true} onClose={onClose} />
       </Wrapper>,
     );
-    await waitFor(() => screen.getByTestId('settings-v2-desktop'));
+    await waitFor(() => screen.getByTestId('settings-desktop'));
     fireEvent.click(screen.getByLabelText('Pick color from album art'));
     const canvas = (await waitFor(() =>
       document.body.querySelector('[data-eyedropper-overlay="true"] canvas'),
@@ -217,7 +217,7 @@ describe('Settings + real EyedropperOverlay (issue #1467)', () => {
     // #then — Dialog still open, dual-key write hit localStorage with the
     // canonical `vorbis-player-` prefixed keys.
     expect(onClose).not.toHaveBeenCalled();
-    expect(screen.getByTestId('settings-v2-desktop')).toBeInTheDocument();
+    expect(screen.getByTestId('settings-desktop')).toBeInTheDocument();
 
     const setItemCalls = (window.localStorage.setItem as ReturnType<typeof vi.fn>).mock.calls;
     const overrideWrite = setItemCalls.find(([key]) => key === STORAGE_KEYS.ACCENT_COLOR_OVERRIDES);

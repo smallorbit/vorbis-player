@@ -37,11 +37,11 @@ export const AccentColorBackgroundToggle: React.FC = () => {
       <SectionGroupTitle>Background gradient</SectionGroupTitle>
       <ControlRow>
         <div>
-          <ControlLabelText htmlFor="settings-v2-accent-color-bg-toggle">Accent-color background</ControlLabelText>
+          <ControlLabelText htmlFor="settings-accent-color-bg-toggle">Accent-color background</ControlLabelText>
           <ControlHelp>Tint the page background with the current accent color. Visible when album-art glow is on.</ControlHelp>
         </div>
         <Switch
-          id="settings-v2-accent-color-bg-toggle"
+          id="settings-accent-color-bg-toggle"
           checked={accentColorBackgroundPreferred}
           onCheckedChange={handleToggle}
           aria-label="Toggle accent-color background"

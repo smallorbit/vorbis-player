@@ -64,7 +64,18 @@ function openIDB(): Promise<IDBDatabase> {
 
     request.onerror = () => reject(request.error);
 
-    request.onsuccess = () => resolve(request.result);
+    // Another tab still holds a lower-version connection: `success` will never
+    // fire until it closes. Reject so initCache() falls back to the in-memory
+    // store for this session instead of hanging every cache read forever.
+    request.onblocked = () => reject(new Error('IndexedDB upgrade blocked by another tab'));
+
+    request.onsuccess = () => {
+      const database = request.result;
+      // Close our connection when a newer version wants to upgrade elsewhere,
+      // so this tab never becomes the blocker described above.
+      database.onversionchange = () => database.close();
+      resolve(database);
+    };
 
     request.onupgradeneeded = (event) => {
       const database = (event.target as IDBOpenDBRequest).result;

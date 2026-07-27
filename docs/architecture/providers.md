@@ -112,7 +112,7 @@ Stored in IndexedDB (`vorbis-dropbox-art` database v7, `likes` store). Mutations
 
 ### Dropbox preferences sync
 
-Pins (unified playlists/albums) and accent overrides/custom colors are synced to `/.vorbis/preferences.json`. Merge is last-write-wins by `updatedAt`. `dropboxPreferencesSync.ts` provides `initPreferencesSync(auth)`, `getPreferencesSync()`, `initialSync()`, and `schedulePush()` (2s debounce). The Dropbox descriptor exposes the service through `ProviderDescriptor.preferencesSync`; neutral contexts never import it directly — PinnedItemsContext and ColorContext call `schedulePreferencesPush()` from `src/providers/preferencesSync.ts`, which fans out to every registered descriptor's `preferencesSync.schedulePush()`. App and provider trigger `initialSync()` after Dropbox OAuth and when already authenticated.
+Pins (unified playlists/albums) and accent overrides/custom colors are synced to `/.vorbis/preferences.json`. Merge is last-write-wins by `updatedAt`. `dropboxPreferencesSync.ts` provides `initPreferencesSync(auth)`, `getPreferencesSync()`, `initialSync()`, and `schedulePush()` (2s debounce). The Dropbox descriptor exposes the service through `ProviderDescriptor.preferencesSync`; neutral contexts never import it directly — PinnedItemsContext and ColorContext call `schedulePreferencesPush()` from `src/providers/preferencesSync.ts`, which fans out to every registered descriptor's `preferencesSync.schedulePush()`. `initialSync()` runs after Dropbox OAuth (inside `dropboxAuthAdapter.handleCallback`) and at startup when already authenticated (in `dropboxProvider.ts`).
 
 ### Token refresh
 

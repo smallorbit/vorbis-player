@@ -35,9 +35,9 @@ export const SettingsContent: React.FC<SettingsContentProps> = ({ activeSection,
   const section = SETTINGS_SECTIONS.find((entry) => entry.id === activeSection) ?? SETTINGS_SECTIONS[0];
 
   return (
-    <ContentRoot aria-labelledby="settings-v2-section-title">
+    <ContentRoot aria-labelledby="settings-section-title">
       <Header>
-        <HeaderTitle id="settings-v2-section-title">{section.label}</HeaderTitle>
+        <HeaderTitle id="settings-section-title">{section.label}</HeaderTitle>
         <IconButton type="button" onClick={onClose} aria-label="Close settings">
           <X width={18} height={18} aria-hidden="true" />
         </IconButton>

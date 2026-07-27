@@ -56,14 +56,14 @@ const VolumeBlock: React.FC = () => {
       <SectionGroupTitle>Volume</SectionGroupTitle>
       <ControlRow>
         <div>
-          <ControlLabelText htmlFor="settings-v2-volume-slider">Default volume</ControlLabelText>
+          <ControlLabelText htmlFor="settings-volume-slider">Default volume</ControlLabelText>
           <ControlHelp>Persisted across sessions and applied to the active player.</ControlHelp>
         </div>
         <SliderValue aria-live="polite">{volume}%</SliderValue>
       </ControlRow>
       <SliderRow>
         <Slider
-          id="settings-v2-volume-slider"
+          id="settings-volume-slider"
           value={[volume]}
           min={0}
           max={100}
@@ -88,7 +88,7 @@ const ShuffleBlock: React.FC = () => {
       <SectionGroupTitle>Shuffle</SectionGroupTitle>
       <ControlRow>
         <div>
-          <ControlLabelText htmlFor="settings-v2-shuffle-toggle">Shuffle queue</ControlLabelText>
+          <ControlLabelText htmlFor="settings-shuffle-toggle">Shuffle queue</ControlLabelText>
           <ControlHelp>
             {canToggle
               ? 'Reorder the current queue and remember the preference for next time.'
@@ -96,7 +96,7 @@ const ShuffleBlock: React.FC = () => {
           </ControlHelp>
         </div>
         <Switch
-          id="settings-v2-shuffle-toggle"
+          id="settings-shuffle-toggle"
           checked={shuffleEnabled}
           onCheckedChange={() => handleShuffleToggle()}
           disabled={!canToggle}

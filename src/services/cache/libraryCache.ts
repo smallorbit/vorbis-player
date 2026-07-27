@@ -149,8 +149,34 @@ export async function putMeta(
 }
 
 // =============================================================================
-// Clear All
+// Clear
 // =============================================================================
+
+/**
+ * Remove one provider's records from every store, leaving other providers'
+ * data intact. Used on provider logout — disconnecting Spotify must not strip
+ * Dropbox collections and track lists out of CmdK search (and vice versa).
+ * The `meta` store is engine bookkeeping and self-corrects on the next cold
+ * start, so it is left alone.
+ */
+export async function clearProviderData(provider: ProviderId): Promise<void> {
+  const [allPlaylists, allAlbums, allTrackLists] = await Promise.all([
+    playlists.getAll(),
+    albums.getAll(),
+    trackLists.getAll(),
+  ]);
+  await Promise.all([
+    ...allPlaylists
+      .filter((c) => c.provider === provider)
+      .map((c) => playlists.remove(collectionKey(provider, c.id))),
+    ...allAlbums
+      .filter((c) => c.provider === provider)
+      .map((c) => albums.remove(collectionKey(provider, c.id))),
+    ...allTrackLists
+      .filter((list) => keyToCollectionRef(list.key)?.provider === provider)
+      .map((list) => trackLists.remove(list.key)),
+  ]);
+}
 
 interface ClearCacheOptions {
   /** When true, liked songs track lists are also cleared. Default: false (preserve). */

@@ -51,8 +51,6 @@ export const STORAGE_KEYS = {
   SPOTIFY_QUEUE_CROSS_PROVIDER: 'vorbis-player-spotify-queue-resolve-cross-provider',
 
   // Cache
-  CACHE_ALBUMS: 'vorbis-player-cache-albums',
-  CACHE_PLAYLISTS: 'vorbis-player-cache-playlists',
   LIKED_COUNT_SNAPSHOTS: 'vorbis-player-liked-count-snapshots',
   LIBRARY: 'vorbis-player-library',
   SETTINGS: 'vorbis-player-settings',

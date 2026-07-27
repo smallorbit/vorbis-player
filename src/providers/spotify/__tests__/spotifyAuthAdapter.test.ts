@@ -5,13 +5,13 @@ const {
   mockSpotifyIsAuthenticated,
   mockClearLikedCountSnapshot,
   mockClearAllSpotifyInMemoryCaches,
-  mockClearLibraryCache,
+  mockClearProviderData,
 } = vi.hoisted(() => ({
   mockSpotifyLogout: vi.fn(),
   mockSpotifyIsAuthenticated: vi.fn().mockReturnValue(true),
   mockClearLikedCountSnapshot: vi.fn(),
   mockClearAllSpotifyInMemoryCaches: vi.fn(),
-  mockClearLibraryCache: vi.fn().mockResolvedValue(undefined),
+  mockClearProviderData: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock('@/services/spotify', () => ({
@@ -35,7 +35,7 @@ vi.mock('@/services/spotify/cache', () => ({
 }));
 
 vi.mock('@/services/cache/libraryCache', () => ({
-  clearAll: mockClearLibraryCache,
+  clearProviderData: mockClearProviderData,
 }));
 
 import { SpotifyAuthAdapter } from '@/providers/spotify/spotifyAuthAdapter';
@@ -46,7 +46,7 @@ describe('SpotifyAuthAdapter.logout', () => {
   beforeEach(() => {
     adapter = new SpotifyAuthAdapter();
     vi.clearAllMocks();
-    mockClearLibraryCache.mockResolvedValue(undefined);
+    mockClearProviderData.mockResolvedValue(undefined);
   });
 
   it('calls spotifyAuth.logout', () => {
@@ -73,11 +73,12 @@ describe('SpotifyAuthAdapter.logout', () => {
     expect(mockClearAllSpotifyInMemoryCaches).toHaveBeenCalledOnce();
   });
 
-  it('fires IDB library cache clear', () => {
+  it('clears only spotify rows from the IDB library cache', () => {
     // #when
     adapter.logout();
 
-    // #then
-    expect(mockClearLibraryCache).toHaveBeenCalledOnce();
+    // #then — provider-scoped: a Spotify disconnect must not wipe
+    // other providers' cached collections/track lists
+    expect(mockClearProviderData).toHaveBeenCalledExactlyOnceWith('spotify');
   });
 });

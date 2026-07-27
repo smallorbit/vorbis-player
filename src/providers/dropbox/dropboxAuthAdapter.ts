@@ -10,6 +10,7 @@ import { SESSION_EXPIRED_EVENT } from '@/constants/events';
 import { resetPlaylistsFolderCache } from './dropboxPlaylistStorage';
 import { getLikesSync } from './dropboxLikesSync';
 import { getPreferencesSync } from './dropboxPreferencesSync';
+import { clearProviderData } from '@/services/cache/libraryCache';
 import { clearLikedCountSnapshot } from '@/services/cache/likedCountSnapshot';
 
 export const DROPBOX_AUTH_ERROR_EVENT = 'vorbis-dropbox-auth-error';
@@ -225,6 +226,7 @@ export class DropboxAuthAdapter implements AuthProvider {
     localStorage.removeItem(STORAGE_KEYS.DROPBOX_OAUTH_STATE);
     resetPlaylistsFolderCache();
     clearLikedCountSnapshot('dropbox');
+    void clearProviderData('dropbox');
   }
 
   /**

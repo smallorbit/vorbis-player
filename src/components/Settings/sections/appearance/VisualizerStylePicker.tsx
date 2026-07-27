@@ -68,11 +68,11 @@ export const VisualizerStylePicker: React.FC = () => {
       <SectionGroupTitle>Visualizer</SectionGroupTitle>
       <ControlRow>
         <div>
-          <ControlLabelText htmlFor="settings-v2-visualizer-toggle">Background visualizer</ControlLabelText>
+          <ControlLabelText htmlFor="settings-visualizer-toggle">Background visualizer</ControlLabelText>
           <ControlHelp>Animate the background based on the current track.</ControlHelp>
         </div>
         <Switch
-          id="settings-v2-visualizer-toggle"
+          id="settings-visualizer-toggle"
           checked={backgroundVisualizerEnabled}
           onCheckedChange={handleToggle}
           aria-label="Toggle background visualizer"
@@ -83,7 +83,7 @@ export const VisualizerStylePicker: React.FC = () => {
       {backgroundVisualizerEnabled && (
         <>
           <SubControlRow>
-            <SubControlLabel id="settings-v2-visualizer-style-label">Style</SubControlLabel>
+            <SubControlLabel id="settings-visualizer-style-label">Style</SubControlLabel>
             <ToggleGroup
               type="single"
               aria-label="Visualizer style"

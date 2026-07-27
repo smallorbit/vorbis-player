@@ -89,7 +89,16 @@ export const useSpotifyPlaylistManager = ({
         return [];
       }
 
-      await playback.playCollection(ref);
+      try {
+        await playback.playCollection(ref);
+      } catch (playError) {
+        if (playError instanceof AuthExpiredError) throw playError;
+        console.warn('[useSpotifyPlaylistManager] Context playback failed:', playError);
+        setError(ref.kind === 'album'
+          ? 'No tracks found in this album.'
+          : 'No tracks found in this playlist. It may be empty or unavailable.');
+        return [];
+      }
 
       // Give the SDK a beat to populate its track window, then mirror it.
       await new Promise(resolve => setTimeout(resolve, SPOTIFY_RETRY_DELAY_MS));
