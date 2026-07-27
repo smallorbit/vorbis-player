@@ -10,20 +10,33 @@ Loading a playlist replaces the queue. Adding a playlist appends to it.
 
 ## State Shape
 
-Queue state lives in `TrackContext` (`src/contexts/TrackContext.tsx`), split into two React contexts for render optimization:
+Queue state (`tracks` / `originalTracks` / `currentIndex` / `shuffle`) is owned by `queueStore` (`src/stores/queueStore.ts`), a module-level store outside React. `TrackContext` (`src/contexts/TrackContext.tsx`) is the thin React read bridge over it (via `useSyncExternalStore`), split into two contexts for render optimization; it also carries the remaining load-status state (`isLoading` / `error` / `selection`).
+
+### queueStore
+
+```ts
+interface QueueSnapshot {
+  tracks: MediaTrack[];          // current playback order (shuffled or original)
+  originalTracks: MediaTrack[];  // pre-shuffle order, used to restore on unshuffle
+  currentIndex: number;
+  shuffle: boolean;              // persisted to localStorage (key: vorbis-player-shuffle-enabled)
+}
+```
+
+Every mutation goes through a store mutator (`loadQueue`, `replaceQueue`, `addTracks`, `removeTrackAt`, `removeTracksByProvider`, `reorderTrack`, `setCurrentIndex`, `syncIndexToTrackId`, `mapTracks`, `toggleShuffle`, `clear`) — never through React state, so the dedupe/shuffle/index invariants hold by construction. Reads (`getTracks()`, `getCurrentIndex()`, `getCurrentTrack()`, `getSnapshot()`) are synchronous, which is what index-based playback needs on iOS Safari (`audio.play()` must stay inside the user-gesture call stack). There is no parallel mirror to keep in sync.
 
 ### TrackListContext
 
 ```ts
 interface TrackListContextValue {
-  tracks: MediaTrack[];              // current playback order (shuffled or original)
-  originalTracks: MediaTrack[];      // pre-shuffle order, used to restore on unshuffle
+  tracks: MediaTrack[];              // read from queueStore
+  originalTracks: MediaTrack[];      // read from queueStore
   isLoading: boolean;
   error: string | null;
-  shuffleEnabled: boolean;           // persisted via useLocalStorage (key: vorbis-player-shuffle-enabled)
+  shuffleEnabled: boolean;           // queueStore's shuffle flag
   selection: PlaybackSelection | null; // typed identity of what's loaded (collection / liked / radio)
-  // + setters for all above
-  handleShuffleToggle: () => void;
+  // + setters for isLoading/error/selection only (queue content has no context setters)
+  handleShuffleToggle: () => void;   // delegates to queueStore.toggleShuffle
 }
 ```
 
@@ -32,42 +45,25 @@ interface TrackListContextValue {
 ```ts
 interface CurrentTrackContextValue {
   currentTrack: MediaTrack | null;       // derived: tracks[currentTrackIndex] || null
-  currentTrackIndex: number;
-  setCurrentTrackIndex: (index: number | ((prev: number) => number)) => void;
+  currentTrackIndex: number;             // queueStore's currentIndex
   showQueue: boolean;                    // controls QueueDrawer/QueueBottomSheet visibility
   setShowQueue: (visible: boolean | ((prev: boolean) => boolean)) => void;
 }
 ```
 
-### mediaTracksRef
-
-`usePlayerLogic` maintains `mediaTracksRef: React.MutableRefObject<MediaTrack[]>` -- an imperative mirror of `tracks` that allows index-based playback without waiting for React renders. It is updated synchronously on every mutation **before** `setTracks` is called.
-
-```ts
-// src/hooks/usePlayerLogic.ts
-const mediaTracksRef = useRef(tracks);
-mediaTracksRef.current = tracks;  // kept in sync every render
-```
-
-This ref is passed into `TrackOperations` and consumed by `useProviderPlayback` and `useCollectionLoader`.
-
 ### TrackOperations
 
-Defined in `src/types/trackOperations.ts`. A bag of setters passed to hooks that mutate the queue:
+Defined in `src/types/trackOperations.ts`. The load-status setter bag passed to hooks that load the queue:
 
 ```ts
 interface TrackOperations {
-  setTracks: (tracks: MediaTrack[] | ((prev: MediaTrack[]) => MediaTrack[])) => void;
-  setOriginalTracks: (tracks: MediaTrack[] | ((prev: MediaTrack[]) => MediaTrack[])) => void;
-  setCurrentTrackIndex: (index: number | ((prev: number) => number)) => void;
   setSelection: (selection: PlaybackSelection | null) => void;
   setError: (error: string | null) => void;
   setIsLoading: (loading: boolean) => void;
-  mediaTracksRef: React.MutableRefObject<MediaTrack[]>;
 }
 ```
 
-Constructed once in `usePlayerLogic` via `useMemo` and passed to `useCollectionLoader` and `useQueueManagement`.
+Queue content itself is mutated through `queueStore`, never through these. Constructed once in `usePlayerLogic` via `useMemo` and passed to `useCollectionLoader`, `useRadioSession`, and `useSpotifyPlaylistManager`.
 
 ## Queue Mutation Flows
 
@@ -83,77 +79,82 @@ Constructed once in `usePlayerLogic` via `useMemo` and passed to `useCollectionL
    - Otherwise -> `loadProviderCollection()`.
 3. `loadProviderCollection` uses `selection.ref` directly (or builds `{ provider, kind: 'liked' }` for a provider-pinned liked selection), then calls `catalog.listTracks(collectionRef)`. The fetched list is write-through cached into the shared library cache (`putTrackList`) so cache-backed consumers (e.g. CmdK search) can see any opened collection.
 4. If `listTracks` returns 0 tracks and the target descriptor declares `capabilities.hasContextPlaybackFallback` (Spotify only), falls back to `loadContextPlayback` — a thin wrapper (`useSpotifyPlaylistManager`, `src/providers/spotify/useSpotifyPlaylistManager.ts`) over `descriptor.playback.playCollection` that mirrors the SDK's track window into the app queue.
-5. `applyTracks(tracks)` stores `originalTracks`, optionally shuffles if `shuffleEnabled`, sets `tracks` + `mediaTracksRef`, resets `currentTrackIndex` to 0, then calls `playTrack(0)`.
+5. `queueStore.loadQueue(tracks, { forceShuffle })` stores `originalTracks` in collection order, shuffles the play order when `shuffleEnabled` (or `forceShuffle` — the All Music pseudo-collection), and resets `currentIndex` to 0. The loader then sets the driving provider and calls `playTrack(0)`.
 
-**Invariant:** `loadCollection` always resets `currentTrackIndex` to 0. The previous queue is fully replaced.
+**Return type:** `LoadCollectionResult` — `{ status: 'loaded', count } | { status: 'superseded' } | { status: 'empty' }`. A superseded load (a newer load or direct-play claimed the `useNewestWins` guard) surfaces no UI.
 
-**Also:** `playTracksDirectly(tracks, selection)` -- same as loadCollection but accepts pre-fetched tracks (used by liked-songs direct play from the library).
+**Invariant:** `loadCollection` always resets `currentIndex` to 0. The previous queue is fully replaced.
+
+**Also:** `playTracksDirectly(tracks, selection)` -- same as loadCollection (including the `LoadCollectionResult` return) but accepts pre-fetched tracks (used by liked-songs direct play from the library).
 
 ### Add to Queue
 
 **Hook:** `useQueueManagement` (`src/hooks/useQueueManagement.ts`)
 
-**Entry:** `handleAddToQueue(selection: CollectionSelection)`
+**Entry:** `handleAddToQueue(selection: CollectionSelection)` (append) and `insertCollectionNext(selection)` (insert after the current track). Both route through a shared `addCollection(selection, position)` built on two primitives: `fetchCollectionTracks` (resolve + fetch) and `queueStore.addTracks(tracks, { position: 'end' | 'next' })`.
 
-1. If queue is empty, delegates to `loadCollection` (full load + autoplay).
+1. If queue is empty, delegates to `loadCollection` (full load + autoplay). A `superseded` result surfaces no toast.
 2. Otherwise:
    - Resolves the provider descriptor and collection ref from the selection.
-   - Fetches tracks via `catalog.listTracks(collectionRef)`.
-   - **Deduplicates** by track ID: builds `Set` of existing track IDs, filters new tracks. Already-present tracks are silently skipped.
-   - Appends unique tracks to `mediaTracksRef`, `originalTracks`, and `tracks`.
-   - Does NOT reset `currentTrackIndex`.
-3. Returns `{ added: number, collectionName?: string }` or `null` on failure.
+   - Fetches tracks via `fetchCollectionTracks` (`catalog.listTracks(collectionRef)`; the All Music pseudo-collection is pre-shuffled).
+   - `queueStore.addTracks(fetched, { position })` — the single append path. The store **deduplicates** by track ID against the current queue (already-present tracks are silently skipped), populates an empty queue directly, and keeps the shuffle-aware `originalTracks` invariant (see Shuffle below).
+   - Does NOT reset `currentIndex`.
+   - `notifyQueueChanged()` pushes the new queue to the driving provider when it declares `hasNativeQueueSync`.
+3. Returns `{ added: number, collectionName?: string }` or `null` (all duplicates, failure, or superseded).
 
-**Also:** `queueTracksDirectly(tracks, collectionName?)` -- same append logic but accepts pre-fetched `MediaTrack[]` directly (used by radio and liked-songs queueing).
+**Also:** `queueTracksDirectly(tracks, collectionName?)` / `insertTracksNext(tracks, collectionName?)` -- same append/insert logic but accept pre-fetched `MediaTrack[]` directly (used by radio and liked-songs queueing).
 
 ### Remove from Queue
 
 **Entry:** `handleRemoveFromQueue(index)`
 
-**Rules:**
-- Cannot remove the currently playing track (`index === currentTrackIndex` -> no-op).
+**Rules** (policy in the hook, mechanics in the store):
+- Cannot remove the currently playing track (`index === currentIndex` -> no-op).
 - If only 1 track remains, calls `handleBackToLibrary()` (full reset to idle state).
-- Removes from `mediaTracksRef` by ID, from `originalTracks` by ID, from `tracks` by index.
-- If the removed track was before `currentTrackIndex`, decrements `currentTrackIndex` by 1.
+- Otherwise `queueStore.removeTrackAt(index)` removes from `tracks` by index and from `originalTracks` by ID.
+- If the removed track was before `currentIndex`, the store decrements `currentIndex` by 1.
+- `notifyQueueChanged()` afterwards.
 
 ### Reorder Queue
 
 **Entry:** `handleReorderQueue(fromIndex, toIndex)`
 
-1. `moveItemInArray(tracks, fromIndex, toIndex)` produces new array.
-2. `reorderMediaTracksToMatchTracks(newTracks, mediaTracksRef)` syncs the imperative mirror **synchronously** before `setTracks`.
-3. Recalculates `currentTrackIndex` by finding the currently playing track's ID in the new order.
-4. Only updates `originalTracks` when shuffle is OFF. When shuffle is ON, `originalTracks` preserves the pre-shuffle order.
+1. Bounds-checks, then calls `queueStore.reorderTrack(fromIndex, toIndex)`.
+2. Inside the store: `currentIndex` follows the currently playing track's ID in the new order.
+3. `originalTracks` only tracks the new order when shuffle is OFF. When shuffle is ON, it preserves the pre-shuffle order.
+4. `notifyQueueChanged()` afterwards.
+
+**Also:** provider disconnect removes that provider's tracks via `queueStore.removeTracksByProvider(id)`.
 
 ## Shuffle
 
-**Location:** `TrackContext.handleShuffleToggle`
+**Location:** `queueStore.toggleShuffle` (exposed to the UI as `handleShuffleToggle` on `TrackListContext`)
 
 ### Enable shuffle
 1. Takes the current `tracks` array.
 2. Filters out the currently playing track.
-3. Shuffles the rest via `shuffleArray()`.
+3. Shuffles the rest via `shuffleArray()` (using live track objects — `originalTracks` objects may be stale).
 4. Prepends the current track at index 0.
-5. Sets `currentTrackIndex` to 0.
+5. Sets `currentIndex` to 0.
 6. `originalTracks` is NOT modified (it preserves the original load order for restore).
 
 ### Disable shuffle
 1. Reorders `tracks` to match `originalTracks` order by ID.
 2. Tracks that were added after the original load (queue additions) are appended at the end.
 3. Finds the currently playing track's position in the restored order.
-4. Updates `currentTrackIndex` to the found position.
+4. Updates `currentIndex` to the found position.
 
-**Invariant:** `originalTracks` represents the canonical order. Shuffle only reorders `tracks`. Queue additions append to both.
+**Invariant:** `originalTracks` represents the canonical unshuffled order. Shuffle only reorders `tracks`. While shuffle is OFF, `originalTracks` mirrors the play order; while ON, appends go to the END of `originalTracks` (a shuffled queue position has no meaningful unshuffled slot).
 
-**Persistence:** `shuffleEnabled` is stored in localStorage via `useLocalStorage` (key: `vorbis-player-shuffle-enabled`).
+**Persistence:** the shuffle flag is stored in localStorage (key: `vorbis-player-shuffle-enabled`), read at store init and written on toggle.
 
 ## Cross-Provider Queue
 
 Tracks are provider-agnostic `MediaTrack` records (defined in `src/types/domain.ts`). Each track carries a `provider: ProviderId` field. A single queue can mix Spotify and Dropbox tracks.
 
 When playback advances to a track from a different provider:
-- `useProviderPlayback.playTrack(index)` resolves the provider for that track: `track.provider` -> `drivingProviderRef` -> `activeDescriptor.id` fallback.
-- `pausePreviousProvider()` pauses the old provider.
+- `useProviderPlayback.playTrack(index)` resolves the provider for that track via `playbackStore.resolveDrivingProviderId(track.provider)`: `track.provider` -> driving provider -> active-provider fallback.
+- `pausePreviousProvider()` pauses the old provider, then `playbackStore.setDrivingProvider()` commits the new one.
 - The new provider's `playback.playTrack(mediaTrack)` is called.
 
 The **driving provider** (the one currently controlling audio output) can differ from the **active provider** (the one selected for browsing). This happens in unified liked songs, radio queues, or manual cross-provider additions.
@@ -170,7 +171,7 @@ if (descriptor.capabilities.hasNativeQueueSync) {
 }
 ```
 
-- **User-driven mutations** (`useQueueManagement.ts`, via the `notifyQueueChanged` helper) for add/remove/reorder, which also checks `driving.capabilities?.hasNativeQueueSync` before calling.
+- **User-driven mutations** (`useQueueManagement.ts`, via the `notifyQueueChanged` helper) for add/remove/reorder, which resolves the target via `playbackStore.getDrivingDescriptor()` and checks `driving.capabilities?.hasNativeQueueSync` before calling.
 
 - **Spotify adapter** (`src/providers/spotify/spotifyPlaybackAdapter.ts`): uses this to build upcoming URIs for Spotify's native queue sync.
 - **Dropbox adapter** (`src/providers/dropbox/dropboxPlaybackAdapter.ts`): no-op.
@@ -262,12 +263,12 @@ Cross-dismiss behavior: opening the queue closes the library drawer, and vice ve
 
 | File | Role |
 |------|------|
-| `src/contexts/TrackContext.tsx` | Queue state (tracks, originalTracks, currentTrackIndex, shuffle) |
-| `src/types/trackOperations.ts` | TrackOperations interface (setter bag) |
-| `src/hooks/usePlayerLogic.ts` | Orchestrates queue mutations, playback, onQueueChanged |
-| `src/hooks/useQueueManagement.ts` | Add, remove, reorder queue operations |
+| `src/stores/queueStore.ts` | Queue state owner (tracks, originalTracks, currentIndex, shuffle) + mutation invariants |
+| `src/contexts/TrackContext.tsx` | React read bridge over queueStore + load-status state (isLoading/error/selection) |
+| `src/types/trackOperations.ts` | TrackOperations interface (load-status setter bag) |
+| `src/hooks/usePlayerLogic.ts` | Orchestrates queue mutations, playback, session restore |
+| `src/hooks/useQueueManagement.ts` | Add, remove, reorder queue operations (policy over queueStore) |
 | `src/hooks/useCollectionLoader.ts` | Load/replace queue from a collection |
-| `src/utils/queueTrackMirror.ts` | Imperative array helpers (reorder, remove, append, move) |
 | `src/components/QueueDrawer.tsx` | Desktop queue UI |
 | `src/components/QueueBottomSheet.tsx` | Mobile queue UI (bottom sheet) |
 | `src/components/QueueTrackList.tsx` | Track list rendering with DnD |
@@ -277,7 +278,7 @@ Cross-dismiss behavior: opening the queue closes the library drawer, and vice ve
 
 ## Gotchas
 
-1. **mediaTracksRef must be updated synchronously** before `setTracks`. Playback index lookup reads from `mediaTracksRef.current`, not from React state. If the ref is stale during a render cycle, the wrong track will play.
+1. **Mutate the queue only through `queueStore`.** There is no context setter for queue content — components read via `TrackContext` (React) or `queueStore.getSnapshot()` (imperative), and every mutation goes through a store mutator so the dedupe/shuffle/index invariants hold by construction. Playback index lookup (`queueStore.getTracks()[index]`) is a synchronous store read, so there is no mirror to fall out of sync.
 
 2. **Deduplication is by track ID only.** If a track appears in multiple collections with the same ID, only the first instance is kept. This is intentional to prevent duplicate playback.
 

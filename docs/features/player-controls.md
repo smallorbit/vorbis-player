@@ -10,10 +10,13 @@ Key concept: **active provider** (selected for browsing/catalog) vs **driving pr
 
 | File | Role |
 |------|------|
-| `src/hooks/usePlayerLogic.ts` | Central orchestrator; assembles handlers, wires subscriptions, owns local playback state |
+| `src/hooks/usePlayerLogic.ts` | Central orchestrator; assembles handlers, attaches the playback store, owns view/radio UI state |
 | `src/hooks/useProviderPlayback.ts` | Resolves provider per track, handles cross-provider handoff, error recovery |
-| `src/hooks/usePlaybackSubscription.ts` | Subscribes to all provider state events, filters by driving provider, syncs React state |
-| `src/hooks/useAutoAdvance.ts` | Detects track-end signals, triggers `playTrack(nextIndex)` with cooldown guard |
+| `src/stores/playbackStore.ts` | Owns `isPlaying`/`positionMs`/`durationMs`/`currentTrackId`/`drivingProviderId`, the single provider fan-out subscription, and all stale-event heuristics |
+| `src/stores/queueStore.ts` | Owns the queue (`tracks`/`originalTracks`/`currentIndex`/`shuffle`); synchronous reads for index-based playback |
+| `src/hooks/usePlaybackState.ts` | React read hook for the playback store (`useSyncExternalStore`) |
+| `src/hooks/useAutoAdvance.ts` | Advance-to-next policy on the store's `trackEnded` events |
+| `src/hooks/useNewestWins.ts` | Newest-wins async guard for superseded operations (mashed next, overlapping loads) |
 | `src/hooks/useKeyboardShortcuts.ts` | Keyboard event handler; device-aware (pointer vs touch) |
 | `src/hooks/useVolume.ts` | Volume + mute state; persisted via `useLocalStorage` |
 | `src/hooks/useZenTouchGestures.ts` | Touch gesture recognizer for zen mode (single tap, double tap, long press) |
@@ -42,36 +45,31 @@ return {
     handlePlay, handlePause, handleNext, handlePrevious, playTrack,
     handleOpenLibrary, handleCloseLibrary, handleBackToLibrary,
     handleStartRadio, handleRemoveFromQueue, handleReorderQueue,
-    handleHydrate, setCurrentView,
+    restoreSession, setCurrentView,
   },
   radio: { radioState, isRadioAvailable, stopRadio, authExpired, clearAuthExpired, isActive, radioProgress, dismissRadioProgress },
-  mediaTracksRef,         // imperative mirror of tracks[]
-  setTracks,
-  setOriginalTracks,
-  currentPlaybackProviderRef,  // ref to driving provider ID
-  expectedTrackIdRef,          // guards against stale provider index updates during transitions
 };
 ```
 
-### Ref-based state pattern
+### Store-based state
 
-`tracksRef`, `currentTrackIndexRef`, and `expectedTrackIdRef` are `useRef` mirrors of their corresponding React state. This is intentional: the `usePlaybackSubscription` effect depends only on `activeDescriptor`, not on tracks/index. Without refs, every track change would tear down and recreate the provider subscription, triggering a `getState()` call that briefly resets `currentTrackIndex` to the old track.
+Queue and playback state live in module stores outside React, not in hook-local state. `usePlayerLogic` reads playback state via `usePlaybackState()` (a `useSyncExternalStore` bridge over `playbackStore`) and reads the queue synchronously inside handlers via `queueStore.getTracks()` / `queueStore.getCurrentIndex()`. It attaches the store's single provider fan-out with `useEffect(() => playbackStore.attach(), [activeDescriptor])` — re-attaching on active-provider change re-primes state via `getState()` — and mirrors the active provider into the resolver's last-resort fallback with `playbackStore.setActiveProviderFallback(activeDescriptor?.id ?? null)`. Because store reads are synchronous, there are no ref mirrors to keep in sync and no subscription teardown on track changes.
 
 ### handleNext / handlePrevious
 
-Skip is app-queue-owned — the `PlaybackProvider` interface has no `next()`/`previous()` methods. `handleNext` stops at the end of the queue (no wrap); `handlePrevious` clamps at index 0. Each computes the target index, calls `setCurrentTrackIndex(targetIndex)`, then `await playTrack(targetIndex, true)`, then `ensurePlaybackResumed()` (manual skip auto-resumes, matching Spotify/Apple Music). The `expectedTrackIdRef` guard is not set here — `playTrack` itself raises it (to the target track's ID) before any adapter call, telling `usePlaybackSubscription` to ignore stale provider index updates until the expected track arrives.
+Skip is app-queue-owned — the `PlaybackProvider` interface has no `next()`/`previous()` methods. `handleNext` stops at the end of the queue (no wrap); `handlePrevious` clamps at index 0. Each reads the queue synchronously from `queueStore`, computes the target index, calls `queueStore.setCurrentIndex(targetIndex)`, then `await playTrack(targetIndex, true)`, then `ensurePlaybackResumed()` (manual skip auto-resumes, matching Spotify/Apple Music). The transition guard is not raised here — `playTrack` itself calls `playbackStore.beginTransition(track.id)` before any adapter call, telling the store's event pipeline to ignore stale provider index updates until the expected track arrives.
 
 ### handlePlay / handlePause
 
-Route through `getDrivingProviderDescriptor()` -- resolves the driving provider (not the active provider). `handlePlay` calls `descriptor.playback.resume()`. `handlePause` calls `descriptor.playback.pause()`.
+Route through `playbackStore.getDrivingDescriptor()` -- resolves the driving provider (not the active provider). `handlePlay` first consumes a pending hydrate (`hydratedPendingPlayRef`, stashed by `restoreSession` with `autoplay: false`) by calling `playTrack(pending.index, false, { positionMs })`; otherwise it calls `descriptor.playback.resume()`. `handlePause` calls `descriptor.playback.pause()`.
 
 ### handleBackToLibrary
 
-Pauses playback, stops radio, clears all queue state (`selection`, `tracks`, `mediaTracksRef`, `currentTrackIndex`, `expectedTrackIdRef`), and closes drawers.
+Pauses playback, stops radio, clears the selection, empties the queue (`queueStore.clear()`), drops any transition guard (`playbackStore.clearTransition()`), and closes drawers.
 
 ### Queue change notification
 
-On every track transition, `playTrack` (in useProviderPlayback) pushes the latest queue snapshot via `descriptor.playback.onQueueChanged?.(tracks, index)` — but only for providers whose `descriptor.capabilities.hasNativeQueueSync` is true. Spotify declares this capability and uses the signal to build its native upcoming-queue; providers without it never receive the call. User-driven queue mutations are handled separately in `useQueueManagement`.
+On every track transition, `playTrack` (in useProviderPlayback) pushes the latest queue snapshot via `descriptor.playback.onQueueChanged?.(tracks, index)` — but only for providers whose `descriptor.capabilities.hasNativeQueueSync` is true. Spotify declares this capability and uses the signal to build its native upcoming-queue; providers without it never receive the call. User-driven queue mutations are handled separately in `useQueueManagement` (its `notifyQueueChanged` helper resolves the target via `playbackStore.getDrivingDescriptor()`).
 
 ## useProviderPlayback
 
@@ -81,36 +79,35 @@ On every track transition, `playTrack` (in useProviderPlayback) pushes the lates
 
 ```ts
 interface UseProviderPlaybackProps {
-  setCurrentTrackIndex: (index: number) => void;
-  activeDescriptor?: ProviderDescriptor | null | undefined;
-  mediaTracksRef: React.MutableRefObject<MediaTrack[]>;
-  currentTrackIndexRef?: React.MutableRefObject<number> | undefined;
   onAuthExpired?: ((providerId: ProviderId) => void) | undefined;
-  expectedTrackIdRef?: React.MutableRefObject<string | null> | undefined;
 }
 ```
 
+Everything else it needs — the queue, the driving provider, the transition guard — comes straight from `queueStore` and `playbackStore`. Returns `{ playTrack, resumePlayback }`.
+
 ### Provider resolution chain
 
-`resolveTrackProvider(mediaTrack)` returns the first defined value from:
+`playbackStore.resolveDrivingProviderId(mediaTrack?.provider)` is the single resolver, returning the first defined value from:
 
 1. `mediaTrack.provider` -- per-track provider ID (set when track was loaded)
-2. `currentPlaybackProviderRef.current` -- last known driving provider
-3. `activeDescriptor.id` -- currently selected provider in UI
+2. `drivingProviderId` -- the provider currently producing audio (store snapshot)
+3. the active-provider fallback -- mirrored in by `usePlayerLogic` via `setActiveProviderFallback`
 
 ### Cross-provider handoff
 
-`pausePreviousProvider(nextProvider)` checks if the driving provider is changing. If so, it pauses the old provider before updating `currentPlaybackProviderRef`.
+`pausePreviousProvider(nextProvider)` reads `playbackStore.getSnapshot().drivingProviderId`; if it differs from the next provider it pauses the old one (fire-and-forget). `playTrack` then commits the new provider via `playbackStore.setDrivingProvider(trackProvider)`.
 
 ### playTrack(index, skipOnError?, options?)
 
-1. Read `mediaTracksRef.current[index]`
-2. Resolve provider via `resolveTrackProvider`
-3. `pausePreviousProvider(trackProvider)` -- handoff if needed
-4. Update `currentPlaybackProviderRef.current = trackProvider`
-5. Call `descriptor.playback.playTrack(mediaTrack, options)`
-6. On success: `setCurrentTrackIndex(index)`, then pre-warm next track via `prepareTrack?.(nextTrack)`
-7. On error: see Error Recovery below
+1. Read the queue synchronously: `queueStore.getTracks()[index]`
+2. Resolve provider via `playbackStore.resolveDrivingProviderId(mediaTrack?.provider)`
+3. `playbackStore.beginTransition(mediaTrack.id)` -- raise the transition guard before ANY adapter call
+4. Claim a newest-wins token (`useNewestWins`) so an overlapping `playTrack` that resolves late drops its stale result
+5. `pausePreviousProvider(trackProvider)` -- handoff if needed, then `playbackStore.setDrivingProvider(trackProvider)`
+6. If the descriptor declares `hasNativeQueueSync`: `descriptor.playback.onQueueChanged?.(tracks, index)`
+7. Call `descriptor.playback.playTrack(mediaTrack, options)`
+8. On success (token not stale): `queueStore.setCurrentIndex(index)`, then pre-warm the next track via its own provider's `prepareTrack?.(nextTrack)`
+9. On error: see Error Recovery below
 
 ### Error recovery
 
@@ -122,48 +119,49 @@ interface UseProviderPlaybackProps {
 
 The skip delay (`SKIP_ON_ERROR_DELAY_MS` from `src/constants/timing.ts`, currently 500ms) prevents rapid-fire skipping through consecutive unavailable tracks.
 
-## usePlaybackSubscription
+## playbackStore (the single subscription)
 
-**Location:** `src/hooks/usePlaybackSubscription.ts`
+**Location:** `src/stores/playbackStore.ts`
 
-Subscribes to playback state events from ALL registered providers (not just the active one). Only processes events from the driving provider.
+A module-level store (read from React via `usePlaybackState()`) that owns `isPlaying`, `positionMs`, `durationMs`, `currentTrackId`, and `drivingProviderId`. There is exactly ONE subscription to provider playback events in the app: `playbackStore.attach()` subscribes to every registered provider and routes events through one pipeline.
 
-### Subscription setup
+### Attachment
 
-1. Subscribe to `activeDescriptor.playback.subscribe()`
-2. Iterate `providerRegistry.getAll()` and subscribe to every other provider
-3. Each callback passes `providerId` to `handleProviderStateChange`
+1. `attach()` iterates `providerRegistry.getAll()` and subscribes to every provider's `playback.subscribe()`
+2. Each callback passes the provider's id into `handleProviderEvent`
+3. `usePlayerLogic` calls `attach()` once, re-attaching when `activeDescriptor` changes (which re-primes state from the driving provider's `getState()`)
+
+At most one attachment is live at a time; a generation counter keeps async `getState()` continuations from a superseded attachment from writing state. The attachment also owns the `visibilitychange` resync and a 1 s position poll that runs only while playing.
 
 ### Driving provider filter
 
 ```ts
-const drivingProviderId = drivingProviderRef.current ?? activeProviderId;
-if (providerId !== drivingProviderId) return;
+if (providerId !== resolveDrivingProviderId()) return;
 ```
 
 Events from non-driving providers are silently dropped.
 
-### State sync
+### State sync (the pipeline)
 
-From each `PlaybackState`:
-- `setIsPlaying(state.isPlaying)`
-- `setPlaybackPosition(state.positionMs)`
-- If `state.currentTrackId` is present, find it in `tracksRef.current` and sync `currentTrackIndex`
-- If `state.trackMetadata` is present (Dropbox ID3 enrichment), merge into `tracks[trackIndex]`
+From each accepted `PlaybackState`:
+- Commit `isPlaying` and `durationMs`; commit `positionMs` only when the seek guard accepts it
+- If `state.currentTrackId` is present, sync the queue index (`queueStore.setCurrentIndex`), subject to the transition guard
+- If `state.trackMetadata` is present (Dropbox ID3 enrichment), overlay it onto the queue track via `queueStore.mapTracks`
+- Run ended detection, emitting `trackEnded` at most once per track
 
-### expectedTrackIdRef guard
+### Transition guard
 
-During transitions (next/previous), `expectedTrackIdRef` is set to the target track ID. While non-null, provider index updates are ignored. When the expected track ID arrives, the ref is cleared and normal sync resumes. This prevents a brief flash of the old track's index being set by a stale provider event.
+During transitions, `playTrack` calls `beginTransition(trackId)` before any adapter call. While the guard is up, provider index updates for other track ids are ignored. When the expected track ID arrives, the guard is consumed and normal sync resumes. This prevents a brief flash of the old track's index being set by a stale provider event.
+
+### Seek guard
+
+`playbackStore.seek(positionMs)` commits the target optimistically and rejects stale pre-seek position emits until one lands within 2 s of the expected post-seek position (5 s safety window so the cursor can never get stuck; #1671). `usePlaybackControls` issues all seeks through it.
 
 ### Visibility change handler
 
 On `visibilitychange` (tab returns to foreground):
-1. Clear `expectedTrackIdRef` (stale transition guards no longer relevant)
-2. Call `getState()` on the driving provider to resync all playback state
-
-### Dependency strategy (invariant)
-
-The effect depends only on `[activeDescriptor, setCurrentTrackIndex, setTracks]`. Tracks and index are read via refs. This prevents subscription teardown/recreation on every track change.
+1. Drop the transition guard (stale guards no longer relevant)
+2. Call `getState()` on the driving provider and run the result through the pipeline to resync all playback state
 
 ## useAutoAdvance
 
@@ -173,41 +171,33 @@ The effect depends only on `[activeDescriptor, setCurrentTrackIndex, setTracks]`
 
 ```ts
 interface UseAutoAdvanceProps {
-  tracks: MediaTrack[];
-  currentTrackIndex: number;
   playTrack: (index: number, skipOnError?: boolean) => void;
-  enabled?: boolean;          // default: true
-  endThreshold?: number;      // default: 2000ms
-  currentPlaybackProviderRef?: React.RefObject<ProviderId | null>;
+  enabled?: boolean | undefined;   // default: true
 }
 ```
 
-### End detection signals
+### End detection lives in the store
 
-Two independent detection paths:
+Detection moved into `playbackStore`, which emits a `trackEnded` event at most once per track. Two independent signals:
 
-1. **Near-end**: `timeRemaining <= endThreshold` OR `position >= duration - 1000` while still playing
-2. **Natural end**: `wasPlayingRef.current && isPaused && position === 0 && duration > 0` -- track was playing, is now paused at position 0
+1. **Near-end**: `timeRemaining <= AUTO_ADVANCE_END_THRESHOLD_MS` (2000ms) OR `position >= duration - NEAR_END_FALLBACK_MS` (1000ms)
+2. **Natural end**: `wasPlaying && isPaused && position === 0 && duration > 0` -- track was playing, is now paused at position 0
 
 ### Cooldown guard (PLAY_COOLDOWN_MS = 5000)
 
-The natural-end signal has a cooldown: it checks `msSinceLastPlay > 5000` before advancing. Both Spotify SDK and HTML5 Audio briefly pause at position 0 during buffering, which would falsely trigger advance without this guard. The cooldown reads from `descriptor.playback.getLastPlayTime?.()` if available, falling back to `lastPlayInitiatedRef`.
+The natural-end signal has a cooldown: the store checks `msSinceLastPlay > 5000` before emitting. Both Spotify SDK and HTML5 Audio briefly pause at position 0 during buffering, which would falsely trigger advance without this guard. The cooldown reads from `descriptor.playback.getLastPlayTime?.()` if available, falling back to the store's `lastPlayInitiatedAt` (stamped by `beginTransition`).
 
-### Advance behavior
+### Advance behavior (the hook's only job)
 
-`advanceToNext()` sets `hasEnded = true` and schedules a 100ms timeout. Inside the timeout:
-- If at end of queue (`currentIdx >= totalTracks - 1`): stop, do not wrap
+`useAutoAdvance` subscribes via `playbackStore.subscribeTrackEnded` and owns policy only: it schedules a timeout of `AUTO_ADVANCE_DELAY_MS` (100ms). Inside the timeout it re-reads the live queue (`queueStore.getCurrentIndex()` / `getTracks()`):
+- If at end of queue (`currentIdx >= tracks.length - 1`): stop, do not wrap
 - Otherwise: `playTrack(currentIdx + 1, true)` with `skipOnError`
 
-The 100ms delay + computing `nextIndex` inside the timeout (not at schedule time) ensures shuffle toggles during the delay use fresh refs.
+The 100ms delay + computing `nextIndex` inside the timeout (not at schedule time) ensures shuffle toggles during the delay use fresh queue state.
 
 ### Reset on track/queue change
 
-`hasEnded` resets and pending advance timers are cancelled whenever `currentTrackIndex` or `tracks` changes. This prevents stale advance from playing the wrong track after shuffle toggle.
-
-### Subscription pattern
-
-Same as `usePlaybackSubscription`: subscribes to active provider + all others. Events from non-driving providers are only processed when `drivingProviderRef.current === descriptor.id`.
+A `queueStore.subscribe` listener cancels any pending advance timer whenever `tracks` or `currentIndex` changes (reorder, shuffle toggle, manual track change). This prevents a stale advance from playing the wrong track after shuffle toggle. The store re-arms its once-per-track `trackEnded` emission whenever the reported track id changes or a new transition begins.
 
 ## useKeyboardShortcuts
 
@@ -352,25 +342,29 @@ Stored in `localStorage` under key `vorbis-player-qap-enabled` (default `false`)
 ```
 User presses Next
   -> usePlayerLogic.handleNext()
-    -> setCurrentTrackIndex(nextIndex)
+    -> queueStore.setCurrentIndex(nextIndex)
     -> useProviderPlayback.playTrack(nextIndex, skipOnError=true)
-      -> sets expectedTrackIdRef to target track ID
-      -> resolveTrackProvider(mediaTracksRef[nextIndex])
+      -> playbackStore.beginTransition(track.id)    // guard up before any adapter call
+      -> claims a newest-wins token
+      -> playbackStore.resolveDrivingProviderId(track.provider)
       -> pausePreviousProvider(resolvedProvider)    // handoff if provider changed
-      -> currentPlaybackProviderRef.current = resolvedProvider
+      -> playbackStore.setDrivingProvider(resolvedProvider)
+      -> descriptor.playback.onQueueChanged?.(tracks, index)  // hasNativeQueueSync only
       -> descriptor.playback.playTrack(mediaTrack)  // Spotify SDK or HTML5 Audio
-      -> on success: prepareTrack(nextTrack)         // pre-warm next
+      -> on success: queueStore.setCurrentIndex(index); prepareTrack(nextTrack)  // pre-warm next
       -> on error: skip or surface auth prompt
 
 Provider emits PlaybackState
-  -> usePlaybackSubscription receives event
-    -> filters by drivingProviderRef (ignores non-driving providers)
-    -> expectedTrackIdRef check (ignores stale events during transition)
-    -> syncs isPlaying, playbackPosition, currentTrackIndex to React state
-    -> merges trackMetadata if present
+  -> playbackStore pipeline receives event (single fan-out from attach())
+    -> filters by resolveDrivingProviderId() (ignores non-driving providers)
+    -> transition guard check (ignores stale index updates during transition)
+    -> seek guard check on positionMs (rejects stale pre-seek emits)
+    -> commits isPlaying/positionMs/durationMs/currentTrackId; syncs queue index
+    -> overlays trackMetadata via queueStore.mapTracks if present
+    -> ended detection may emit trackEnded (once per track)
 
-Track nears end (timeRemaining <= 2000ms)
-  -> useAutoAdvance detects near-end signal
-    -> schedules advanceToNext after 100ms
-      -> playTrack(currentIdx + 1, skipOnError=true)
+trackEnded fires (near-end threshold or paused-at-0 outside cooldown)
+  -> useAutoAdvance schedules advance after 100ms
+    -> re-reads queueStore; stops at end of queue
+    -> playTrack(currentIdx + 1, skipOnError=true)
 ```
