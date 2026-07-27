@@ -174,7 +174,7 @@ async function setupPausedQueue(startIndex = 1) {
   const session = makeSession({ trackIndex: startIndex, trackId: ['track-a', 'track-b', 'track-c'][startIndex] });
   const { result } = renderHook(() => usePlayerLogic(), { wrapper: AllProviders });
   await act(async () => {
-    await result.current.handlers.handleHydrate(session);
+    await result.current.handlers.restoreSession(session, { autoplay: false });
   });
   // After hydrate, queue is loaded but isPlaying is false (paused).
   playTrackSpy.mockClear();

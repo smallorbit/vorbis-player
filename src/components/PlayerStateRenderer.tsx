@@ -2,7 +2,7 @@ import React, { Suspense, useCallback, useEffect, useRef, useState } from 'react
 import styled, { keyframes } from 'styled-components';
 import type { AddToQueueResult, CollectionSelection, MediaTrack, PlaybackSelection } from '@/types/domain';
 import { isSessionStale, type SessionSnapshot } from '@/services/sessionPersistence';
-import type { HydrateResult } from '@/hooks/usePlayerLogic';
+import type { RestoreSessionResult } from '@/hooks/usePlayerLogic';
 import { Card, CardHeader, CardContent } from '../components/styled';
 import { Button } from '../components/styled';
 import { Alert, AlertDescription } from '../components/styled';
@@ -181,7 +181,7 @@ interface PlayerStateRendererProps {
   lastSession: SessionSnapshot | null;
   onResume: () => void;
   onOpenSettings: () => void;
-  onHydrate: (session: SessionSnapshot) => Promise<HydrateResult>;
+  onHydrate: (session: SessionSnapshot) => Promise<RestoreSessionResult>;
   onHydrateFired?: ((track: MediaTrack, skipped: boolean) => void) | undefined;
   onHydrateFailed?: (() => void) | undefined;
 }
@@ -244,7 +244,7 @@ const PlayerStateRenderer: React.FC<PlayerStateRendererProps> = ({
         if (result.track) onHydrateFired?.(result.track, result.skipped);
       })
       .catch(() => {
-        // Hydrate errors are surfaced inside handleHydrate; swallow here so
+        // Hydrate errors are surfaced inside restoreSession; swallow here so
         // a rejected promise doesn't bubble up as an unhandled rejection.
       });
   }, [route, lastSession, onHydrate, onHydrateFired, onHydrateFailed]);

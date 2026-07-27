@@ -29,13 +29,22 @@ import { useRadioSession } from './useRadioSession';
 import { useRecentlyPlayedCollections } from './useRecentlyPlayedCollections';
 import type { RadioProgress } from '@/types/radio';
 
-export interface HydrateResult {
+export interface RestoreSessionResult {
   /** Track the player landed on, or null when the whole queue was unplayable. */
   track: MediaTrack | null;
   /** True when the saved track was unplayable and a later track in the queue was used instead. */
   skipped: boolean;
-  /** True when no track in the queue could be prepared; the player was reset to the library. */
+  /** True when no track in the queue could be restored; the player was reset to the library. */
   totalFailure: boolean;
+}
+
+export interface RestoreSessionOptions {
+  /**
+   * true — start playback of the restored track immediately (Resume card).
+   * false — prime the player paused at the saved position; the next
+   * handlePlay starts it (landing-page hydrate).
+   */
+  autoplay: boolean;
 }
 
 export function usePlayerLogic() {
@@ -74,7 +83,7 @@ export function usePlayerLogic() {
     setSelection, setError, setIsLoading,
   }), [setSelection, setError, setIsLoading]);
 
-  // Holds the target index + position when handleHydrate restores a session without autoplay.
+  // Holds the target index + position when restoreSession hydrates without autoplay.
   // The next handlePlay consumes this to start playback at the saved offset; other control paths
   // (next/previous/new collection) clear it so a stale hydrate can't hijack a fresh user action.
   const hydratedPendingPlayRef = useRef<{ index: number; positionMs?: number } | null>(null);
@@ -297,7 +306,20 @@ export function usePlayerLogic() {
     setIsSettingsOpen(false);
   }, [handlePause, stopRadio, setSelection, setShowQueue, setIsSettingsOpen]);
 
-  const handleHydrate = useCallback(async (session: SessionSnapshot): Promise<HydrateResult> => {
+  /**
+   * The single session-restore path, shared by the landing page's hydrate
+   * flow (autoplay: false — prime the player, wait for the user's play
+   * press) and the Resume card (autoplay: true — start playing now). Both
+   * get the same candidate-iteration playability fallback: starting at the
+   * saved track, skip candidates whose provider is missing/unauthenticated
+   * or that fail the playability probe, bounded by one full pass over the
+   * queue. Only the first candidate gets the saved position; fallbacks
+   * start at zero.
+   */
+  const restoreSession = useCallback(async (
+    session: SessionSnapshot,
+    { autoplay }: RestoreSessionOptions,
+  ): Promise<RestoreSessionResult> => {
     if (!session.queueTracks?.length) {
       return { track: null, skipped: false, totalFailure: false };
     }
@@ -312,11 +334,6 @@ export function usePlayerLogic() {
 
     const savedPositionIsValid = savedPositionMs !== undefined && savedPositionMs > 0;
 
-    // Iterate through the queue starting at the saved index. If a candidate's
-    // provider is missing/unauthenticated or prepareTrack throws, advance to the
-    // next track and retry — bounded by queueTracks.length to avoid infinite
-    // loops on a fully-broken queue. Only the first candidate gets the saved
-    // position; subsequent fallbacks start at zero.
     for (let offset = 0; offset < queueTracks.length; offset += 1) {
       const candidateIdx = (startIdx + offset) % queueTracks.length;
       const candidateTrack = queueTracks[candidateIdx];
@@ -328,7 +345,7 @@ export function usePlayerLogic() {
 
       if (!providerId || !descriptor || !providerAuthed) {
         logQueue(
-          'handleHydrate skip — index=%d, track=%s, reason=%s',
+          'restoreSession skip — index=%d, track=%s, reason=%s',
           candidateIdx,
           trkSummary(candidateTrack),
           !providerId ? 'no-provider' : !descriptor ? 'no-descriptor' : 'unauthenticated',
@@ -348,7 +365,7 @@ export function usePlayerLogic() {
           const playable = await descriptor.playback.probePlayable(candidateTrack);
           if (!playable) {
             logQueue(
-              'handleHydrate probePlayable=false on index=%d, track=%s',
+              'restoreSession probePlayable=false on index=%d, track=%s',
               candidateIdx,
               trkSummary(candidateTrack),
             );
@@ -356,14 +373,37 @@ export function usePlayerLogic() {
           }
         } catch (error) {
           if (error instanceof AuthExpiredError) {
-            logQueue('handleHydrate probePlayable AuthExpiredError on index=%d, provider=%s', candidateIdx, providerId);
+            logQueue('restoreSession probePlayable AuthExpiredError on index=%d, provider=%s', candidateIdx, providerId);
           } else {
-            logQueue('handleHydrate probePlayable threw on index=%d: %o', candidateIdx, error);
+            logQueue('restoreSession probePlayable threw on index=%d: %o', candidateIdx, error);
           }
           continue;
         }
       }
 
+      if (autoplay) {
+        // Resume: start playback of the restored candidate now. playTrack
+        // owns the transition guard, driving-provider handoff, and index
+        // commit; the guard is raised here too so a stale provider event
+        // cannot flip the just-restored index before playTrack runs.
+        queueStore.setCurrentIndex(candidateIdx);
+        playbackStore.beginTransition(candidateTrack.id);
+
+        logQueue(
+          'restoreSession(autoplay) — index=%d, track=%s, positionMs=%s, provider=%s, skipped=%s',
+          candidateIdx,
+          trkSummary(candidateTrack),
+          positionMs ?? 'NONE',
+          providerId,
+          offset > 0 ? 'YES' : 'NO',
+        );
+
+        await playTrack(candidateIdx, false, positionMs ? { positionMs } : undefined);
+        return { track: candidateTrack, skipped: offset > 0, totalFailure: false };
+      }
+
+      // Hydrate: prime the player paused at the saved position; the next
+      // handlePlay consumes the stashed pending play.
       try {
         descriptor.playback.prepareTrack?.(
           candidateTrack,
@@ -371,11 +411,11 @@ export function usePlayerLogic() {
         );
       } catch (error) {
         if (error instanceof AuthExpiredError) {
-          logQueue('handleHydrate AuthExpiredError on index=%d, provider=%s', candidateIdx, providerId);
+          logQueue('restoreSession AuthExpiredError on index=%d, provider=%s', candidateIdx, providerId);
         } else if (error instanceof UnavailableTrackError) {
-          logQueue('handleHydrate UnavailableTrackError on index=%d: %s', candidateIdx, error.message);
+          logQueue('restoreSession UnavailableTrackError on index=%d: %s', candidateIdx, error.message);
         } else {
-          logQueue('handleHydrate prepareTrack threw on index=%d: %o', candidateIdx, error);
+          logQueue('restoreSession prepareTrack threw on index=%d: %o', candidateIdx, error);
         }
         continue;
       }
@@ -390,7 +430,7 @@ export function usePlayerLogic() {
       };
 
       logQueue(
-        'handleHydrate — index=%d, track=%s, positionMs=%s, provider=%s, skipped=%s',
+        'restoreSession(hydrate) — index=%d, track=%s, positionMs=%s, provider=%s, skipped=%s',
         candidateIdx,
         trkSummary(candidateTrack),
         positionMs ?? 'NONE',
@@ -401,15 +441,16 @@ export function usePlayerLogic() {
       return { track: candidateTrack, skipped: offset > 0, totalFailure: false };
     }
 
-    // No track could be prepared — drop the queue and let the caller clear the
-    // saved session via onHydrateFailed (AudioPlayer owns the session state).
-    logQueue('handleHydrate — total failure, resetting to library');
+    // No track could be restored — drop the queue and let the caller clear the
+    // saved session (AudioPlayer owns the session state).
+    logQueue('restoreSession — total failure, resetting to library');
     hydratedPendingPlayRef.current = null;
     handleBackToLibrary();
     return { track: null, skipped: false, totalFailure: true };
   }, [
     setSelection,
     activeDescriptor,
+    playTrack,
     handleBackToLibrary,
   ]);
 
@@ -442,7 +483,7 @@ export function usePlayerLogic() {
       handleStartRadio,
       handleRemoveFromQueue,
       handleReorderQueue,
-      handleHydrate,
+      restoreSession,
       setCurrentView,
     }),
     [
@@ -463,7 +504,7 @@ export function usePlayerLogic() {
       handleStartRadio,
       handleRemoveFromQueue,
       handleReorderQueue,
-      handleHydrate,
+      restoreSession,
       setCurrentView,
     ]
   );

@@ -26,7 +26,6 @@ import { LIKED_SONGS_NAME } from '@/constants/playlist';
 import { useSessionPersistence } from '@/hooks/useSessionPersistence';
 import { decodeLegacySelection } from '@/services/sessionPersistence';
 import { playbackStore } from '@/stores/playbackStore';
-import { queueStore } from '@/stores/queueStore';
 import { usePlaybackState } from '@/hooks/usePlaybackState';
 import QuickAccessPanel from './QuickAccessPanel';
 import { CmdKPalette } from './CmdKPalette';
@@ -77,7 +76,7 @@ const AudioPlayerComponent = () => {
   } = useVisualizer();
   const { accentColorBackgroundEnabled } = useAccentColorBackground();
   const { isSettingsOpen, setIsSettingsOpen } = useVisualEffectsToggle();
-  const { tracks, selection, setSelection } = useTrackListContext();
+  const { tracks, selection } = useTrackListContext();
   const { currentTrack, currentTrackIndex, showQueue, setShowQueue } = useCurrentTrackContext();
 
   // Provider badge shown in the player — the track's own provider, falling
@@ -396,25 +395,22 @@ const AudioPlayerComponent = () => {
 
   const handleResume = useCallback(async () => {
     if (!lastSession?.queueTracks?.length) return;
-    const { queueTracks, trackId, trackIndex, selection: savedSelection, playbackPosition: savedPositionMs } = lastSession;
-    const targetIdx = trackId
-      ? queueTracks.findIndex(t => t.id === trackId)
-      : Math.min(trackIndex, queueTracks.length - 1);
-    const resolvedIdx = targetIdx >= 0 ? targetIdx : Math.min(trackIndex, queueTracks.length - 1);
-    // The store update is synchronous, so playTrack resolves the right track
-    // inside the same user-gesture call stack. Required for iOS Safari, which
-    // blocks audio.play() called outside it.
-    queueStore.replaceQueue(queueTracks, { currentIndex: resolvedIdx });
-    setSelection(savedSelection);
-    // Guard the playback pipeline against index-sync racing during load:
-    // without this a stale provider track event could overwrite resolvedIdx
-    // before the new track's ID is confirmed.
-    const restoredTrackId = queueTracks[resolvedIdx]?.id;
-    if (restoredTrackId) playbackStore.beginTransition(restoredTrackId);
+    const result = await handlers.restoreSession(lastSession, { autoplay: true });
+    if (result.totalFailure) {
+      resetLastSession();
+      toast(`Couldn't resume your last session.`, { id: RESUME_TOAST_ID, duration: Infinity });
+      return;
+    }
+    if (result.skipped && result.track) {
+      toast(`Couldn't resume previous track — playing '${result.track.name}' instead.`, { id: RESUME_TOAST_ID });
+    }
+  }, [lastSession, handlers, resetLastSession]);
 
-    const positionMs = savedPositionMs && savedPositionMs > 0 ? savedPositionMs : undefined;
-    await handlers.playTrack(resolvedIdx, false, positionMs ? { positionMs } : undefined);
-  }, [lastSession, setSelection, handlers]);
+  const handleHydrateSession = useCallback(
+    (session: import('@/services/sessionPersistence').SessionSnapshot) =>
+      handlers.restoreSession(session, { autoplay: false }),
+    [handlers],
+  );
 
   const renderContent = () => {
     if (needsSetup) {
@@ -442,7 +438,7 @@ const AudioPlayerComponent = () => {
               lastSession={lastSession}
               onResume={handleResume}
               onOpenSettings={handleOpenSettings}
-              onHydrate={handlers.handleHydrate}
+              onHydrate={handleHydrateSession}
               onHydrateFired={handleHydrateFired}
               onHydrateFailed={handleHydrateFailed}
             />

@@ -1,5 +1,5 @@
 /**
- * Tests for usePlayerLogic.handleHydrate fallback behavior — when the saved
+ * Tests for usePlayerLogic.restoreSession (hydrate path) fallback behavior — when the saved
  * track can't be loaded, the player should skip forward through the queue
  * until a playable track is found, or reset to the library if none is.
  */
@@ -161,7 +161,7 @@ function makeSession(overrides?: Partial<SessionSnapshot>): SessionSnapshot {
   };
 }
 
-describe('usePlayerLogic — handleHydrate fallback', () => {
+describe('usePlayerLogic — restoreSession (hydrate) fallback', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     playTrackSpy.mockClear();
@@ -180,9 +180,9 @@ describe('usePlayerLogic — handleHydrate fallback', () => {
     const { result } = renderHook(() => usePlayerLogic(), { wrapper: AllProviders });
 
     // #when
-    let hydrateResult!: Awaited<ReturnType<typeof result.current.handlers.handleHydrate>>;
+    let hydrateResult!: Awaited<ReturnType<typeof result.current.handlers.restoreSession>>;
     await act(async () => {
-      hydrateResult = await result.current.handlers.handleHydrate(session);
+      hydrateResult = await result.current.handlers.restoreSession(session, { autoplay: false });
     });
 
     // #then — landed on second track, flagged as skipped
@@ -204,7 +204,7 @@ describe('usePlayerLogic — handleHydrate fallback', () => {
 
     // #when
     await act(async () => {
-      await result.current.handlers.handleHydrate(session);
+      await result.current.handlers.restoreSession(session, { autoplay: false });
     });
 
     // #then — first call had positionMs, second had undefined
@@ -226,7 +226,7 @@ describe('usePlayerLogic — handleHydrate fallback', () => {
 
     // #when
     await act(async () => {
-      await result.current.handlers.handleHydrate(session);
+      await result.current.handlers.restoreSession(session, { autoplay: false });
     });
 
     // #then
@@ -244,9 +244,9 @@ describe('usePlayerLogic — handleHydrate fallback', () => {
     const { result } = renderHook(() => usePlayerLogic(), { wrapper: AllProviders });
 
     // #when
-    let hydrateResult!: Awaited<ReturnType<typeof result.current.handlers.handleHydrate>>;
+    let hydrateResult!: Awaited<ReturnType<typeof result.current.handlers.restoreSession>>;
     await act(async () => {
-      hydrateResult = await result.current.handlers.handleHydrate(session);
+      hydrateResult = await result.current.handlers.restoreSession(session, { autoplay: false });
     });
 
     // #then — full-failure result, queue cleared (persistence cleanup is the caller's job)
@@ -270,9 +270,9 @@ describe('usePlayerLogic — handleHydrate fallback', () => {
     const { result } = renderHook(() => usePlayerLogic(), { wrapper: AllProviders });
 
     // #when
-    let hydrateResult!: Awaited<ReturnType<typeof result.current.handlers.handleHydrate>>;
+    let hydrateResult!: Awaited<ReturnType<typeof result.current.handlers.restoreSession>>;
     await act(async () => {
-      hydrateResult = await result.current.handlers.handleHydrate(session);
+      hydrateResult = await result.current.handlers.restoreSession(session, { autoplay: false });
     });
 
     // #then — prepareTrack never ran; total failure
@@ -288,7 +288,7 @@ describe('usePlayerLogic — handleHydrate fallback', () => {
     const { result } = renderHook(() => usePlayerLogic(), { wrapper: AllProviders });
 
     await act(async () => {
-      await result.current.handlers.handleHydrate(session);
+      await result.current.handlers.restoreSession(session, { autoplay: false });
     });
     playTrackSpy.mockClear();
 
@@ -313,9 +313,9 @@ describe('usePlayerLogic — handleHydrate fallback', () => {
     const { result } = renderHook(() => usePlayerLogic(), { wrapper: AllProviders });
 
     // #when
-    let hydrateResult!: Awaited<ReturnType<typeof result.current.handlers.handleHydrate>>;
+    let hydrateResult!: Awaited<ReturnType<typeof result.current.handlers.restoreSession>>;
     await act(async () => {
-      hydrateResult = await result.current.handlers.handleHydrate(session);
+      hydrateResult = await result.current.handlers.restoreSession(session, { autoplay: false });
     });
 
     // #then — advanced to the second track; prepareTrack only ran for the playable one
@@ -334,9 +334,9 @@ describe('usePlayerLogic — handleHydrate fallback', () => {
     const { result } = renderHook(() => usePlayerLogic(), { wrapper: AllProviders });
 
     // #when
-    let hydrateResult!: Awaited<ReturnType<typeof result.current.handlers.handleHydrate>>;
+    let hydrateResult!: Awaited<ReturnType<typeof result.current.handlers.restoreSession>>;
     await act(async () => {
-      hydrateResult = await result.current.handlers.handleHydrate(session);
+      hydrateResult = await result.current.handlers.restoreSession(session, { autoplay: false });
     });
 
     // #then
@@ -353,7 +353,7 @@ describe('usePlayerLogic — handleHydrate fallback', () => {
     const { result } = renderHook(() => usePlayerLogic(), { wrapper: AllProviders });
 
     await act(async () => {
-      await result.current.handlers.handleHydrate(session);
+      await result.current.handlers.restoreSession(session, { autoplay: false });
     });
     playTrackSpy.mockClear();
 
@@ -368,5 +368,80 @@ describe('usePlayerLogic — handleHydrate fallback', () => {
     expect(idx).toBe(1);
     expect(skipOnError).toBe(false);
     expect(options).toBeUndefined();
+  });
+});
+
+describe('usePlayerLogic — restoreSession (autoplay/resume) fallback', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    playTrackSpy.mockClear();
+    mockPrepareTrack.mockClear();
+    mockProbePlayable.mockClear();
+    mockProbePlayable.mockResolvedValue(true);
+    mockIsAuthenticated.mockReturnValue(true);
+  });
+
+  it('starts playback of the saved track at the saved position', async () => {
+    // #given
+    const session = makeSession({ playbackPosition: 42_000 });
+    const { result } = renderHook(() => usePlayerLogic(), { wrapper: AllProviders });
+
+    // #when
+    let restoreResult!: Awaited<ReturnType<typeof result.current.handlers.restoreSession>>;
+    await act(async () => {
+      restoreResult = await result.current.handlers.restoreSession(session, { autoplay: true });
+    });
+
+    // #then — played immediately (no pending-play stash, no prepareTrack)
+    expect(restoreResult.track?.id).toBe('track-a');
+    expect(restoreResult.skipped).toBe(false);
+    expect(playTrackSpy).toHaveBeenCalledTimes(1);
+    const [idx, skipOnError, options] = playTrackSpy.mock.calls[0];
+    expect(idx).toBe(0);
+    expect(skipOnError).toBe(false);
+    expect(options).toEqual({ positionMs: 42_000 });
+    expect(mockPrepareTrack).not.toHaveBeenCalled();
+  });
+
+  it('falls forward to the next playable track when the saved track is unplayable (F31)', async () => {
+    // #given — the saved track fails the playability probe; the next one passes.
+    // Before restoreSession unified the two restore paths, the Resume flow had
+    // no fallback at all and would try to play the dead track.
+    mockProbePlayable.mockImplementation(async (track: { id: string }) => track.id !== 'track-a');
+    const session = makeSession({ playbackPosition: 42_000 });
+    const { result } = renderHook(() => usePlayerLogic(), { wrapper: AllProviders });
+
+    // #when
+    let restoreResult!: Awaited<ReturnType<typeof result.current.handlers.restoreSession>>;
+    await act(async () => {
+      restoreResult = await result.current.handlers.restoreSession(session, { autoplay: true });
+    });
+
+    // #then — playback starts on the fallback track, at position 0 (the saved
+    // position belongs to the saved track only)
+    expect(restoreResult.track?.id).toBe('track-b');
+    expect(restoreResult.skipped).toBe(true);
+    expect(playTrackSpy).toHaveBeenCalledTimes(1);
+    const [idx, skipOnError, options] = playTrackSpy.mock.calls[0];
+    expect(idx).toBe(1);
+    expect(skipOnError).toBe(false);
+    expect(options).toBeUndefined();
+  });
+
+  it('reports total failure without playing when no candidate is playable', async () => {
+    // #given
+    mockProbePlayable.mockResolvedValue(false);
+    const session = makeSession();
+    const { result } = renderHook(() => usePlayerLogic(), { wrapper: AllProviders });
+
+    // #when
+    let restoreResult!: Awaited<ReturnType<typeof result.current.handlers.restoreSession>>;
+    await act(async () => {
+      restoreResult = await result.current.handlers.restoreSession(session, { autoplay: true });
+    });
+
+    // #then
+    expect(restoreResult.totalFailure).toBe(true);
+    expect(playTrackSpy).not.toHaveBeenCalled();
   });
 });
