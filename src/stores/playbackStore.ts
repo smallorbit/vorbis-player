@@ -368,6 +368,9 @@ function updatePolling(): void {
 function attach(): () => void {
   attachCleanup?.();
 
+  // Note: when re-attaching, the cleanup above already bumped the generation;
+  // this second bump is redundant but harmless — staleness checks compare for
+  // inequality only, never count increments.
   attachGeneration += 1;
   const generation = attachGeneration;
 

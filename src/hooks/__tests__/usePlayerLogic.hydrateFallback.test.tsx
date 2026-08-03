@@ -14,6 +14,8 @@ import { ColorProvider } from '@/contexts/ColorContext';
 import { ProviderProvider } from '@/contexts/ProviderContext';
 import { makeMediaTrack } from '@/test/fixtures';
 import { UnavailableTrackError } from '@/providers/errors';
+import { deferred } from '@/test/asyncRace';
+import { queueStore } from '@/stores/queueStore';
 import type { SessionSnapshot } from '@/services/sessionPersistence';
 
 const playTrackSpy = vi.fn();
@@ -443,5 +445,48 @@ describe('usePlayerLogic — restoreSession (autoplay/resume) fallback', () => {
     // #then
     expect(restoreResult.totalFailure).toBe(true);
     expect(playTrackSpy).not.toHaveBeenCalled();
+  });
+});
+
+describe('usePlayerLogic — restoreSession newest-wins guard', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    playTrackSpy.mockClear();
+    mockPrepareTrack.mockClear();
+    mockProbePlayable.mockClear();
+    mockProbePlayable.mockResolvedValue(true);
+    mockIsAuthenticated.mockReturnValue(true);
+  });
+
+  it('a superseded restoreSession resolving late cannot clobber the newer one', async () => {
+    // #given — the first restore's playability probe hangs; a second restore
+    // (e.g. a double-clicked Resume, or Resume racing idle-hydrate) begins
+    // and completes while the first is still awaiting its probe.
+    const slowProbe = deferred<boolean>();
+    mockProbePlayable.mockReturnValueOnce(slowProbe.promise);
+
+    const sessionA = makeSession({ trackIndex: 0, trackId: 'track-a' });
+    const sessionB = makeSession({ trackIndex: 1, trackId: 'track-b' });
+    const { result } = renderHook(() => usePlayerLogic(), { wrapper: AllProviders });
+
+    // #when — start A (hangs in probePlayable), then run B to completion,
+    // then let A's stale probe resolve.
+    let resultA!: Awaited<ReturnType<typeof result.current.handlers.restoreSession>>;
+    let resultB!: Awaited<ReturnType<typeof result.current.handlers.restoreSession>>;
+    await act(async () => {
+      const pendingA = result.current.handlers.restoreSession(sessionA, { autoplay: true });
+      resultB = await result.current.handlers.restoreSession(sessionB, { autoplay: true });
+      slowProbe.resolve(true);
+      resultA = await pendingA;
+    });
+
+    // #then — B won: playback started once, on B's track, and A reported the
+    // silent no-op result (no track, no totalFailure) so callers surface nothing.
+    expect(resultB.track?.id).toBe('track-b');
+    expect(playTrackSpy).toHaveBeenCalledTimes(1);
+    expect(playTrackSpy.mock.calls[0][0]).toBe(1);
+    expect(queueStore.getCurrentIndex()).toBe(1);
+    expect(resultA.track).toBeNull();
+    expect(resultA.totalFailure).toBe(false);
   });
 });

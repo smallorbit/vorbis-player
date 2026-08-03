@@ -4,6 +4,7 @@ import { useVisualEffectsToggle } from '@/contexts/visualEffects';
 import { useColorContext } from '@/contexts/ColorContext';
 import { useProviderContext } from '@/contexts/ProviderContext';
 import { useSpotifyPlaylistManager } from '@/providers/spotify/useSpotifyPlaylistManager';
+import { useNewestWins } from '@/hooks/useNewestWins';
 import { useProviderPlayback } from '@/hooks/useProviderPlayback';
 import { useAutoAdvance } from '@/hooks/useAutoAdvance';
 import { useAccentColor } from '@/hooks/useAccentColor';
@@ -306,6 +307,12 @@ export function usePlayerLogic() {
     setIsSettingsOpen(false);
   }, [handlePause, stopRadio, setSelection, setShowQueue, setIsSettingsOpen]);
 
+  // Newest-wins guard for session restore: overlapping invocations (a
+  // double-clicked Resume card, or Resume racing the idle auto-hydrate)
+  // iterate playability candidates asynchronously and write to the shared
+  // queue/playback stores — only the newest call may commit.
+  const restoreGuard = useNewestWins();
+
   /**
    * The single session-restore path, shared by the landing page's hydrate
    * flow (autoplay: false — prime the player, wait for the user's play
@@ -315,6 +322,9 @@ export function usePlayerLogic() {
    * or that fail the playability probe, bounded by one full pass over the
    * queue. Only the first candidate gets the saved position; fallbacks
    * start at zero.
+   *
+   * A superseded invocation resolves to the no-op result ({ track: null,
+   * totalFailure: false }) — callers surface nothing for it.
    */
   const restoreSession = useCallback(async (
     session: SessionSnapshot,
@@ -323,6 +333,7 @@ export function usePlayerLogic() {
     if (!session.queueTracks?.length) {
       return { track: null, skipped: false, totalFailure: false };
     }
+    const token = restoreGuard.begin();
     const { queueTracks, trackId, trackIndex, selection: savedSelection, playbackPosition: savedPositionMs } = session;
 
     const fallbackIdx = Math.max(0, Math.min(trackIndex, queueTracks.length - 1));
@@ -361,22 +372,30 @@ export function usePlayerLogic() {
       // never advance against real provider failures like a market-restricted
       // Spotify track or a moved Dropbox file.
       if (descriptor.playback.probePlayable) {
+        let playable: boolean;
         try {
-          const playable = await descriptor.playback.probePlayable(candidateTrack);
-          if (!playable) {
-            logQueue(
-              'restoreSession probePlayable=false on index=%d, track=%s',
-              candidateIdx,
-              trkSummary(candidateTrack),
-            );
-            continue;
-          }
+          playable = await descriptor.playback.probePlayable(candidateTrack);
         } catch (error) {
           if (error instanceof AuthExpiredError) {
             logQueue('restoreSession probePlayable AuthExpiredError on index=%d, provider=%s', candidateIdx, providerId);
           } else {
             logQueue('restoreSession probePlayable threw on index=%d: %o', candidateIdx, error);
           }
+          if (token.isStale()) break;
+          continue;
+        }
+        // A newer restoreSession began while the probe was in flight — this
+        // invocation must not touch the stores.
+        if (token.isStale()) {
+          logQueue('restoreSession superseded during probePlayable on index=%d', candidateIdx);
+          return { track: null, skipped: false, totalFailure: false };
+        }
+        if (!playable) {
+          logQueue(
+            'restoreSession probePlayable=false on index=%d, track=%s',
+            candidateIdx,
+            trkSummary(candidateTrack),
+          );
           continue;
         }
       }
@@ -441,6 +460,11 @@ export function usePlayerLogic() {
       return { track: candidateTrack, skipped: offset > 0, totalFailure: false };
     }
 
+    // Superseded mid-iteration — the newer invocation owns the outcome.
+    if (token.isStale()) {
+      return { track: null, skipped: false, totalFailure: false };
+    }
+
     // No track could be restored — drop the queue and let the caller clear the
     // saved session (AudioPlayer owns the session state).
     logQueue('restoreSession — total failure, resetting to library');
@@ -448,6 +472,7 @@ export function usePlayerLogic() {
     handleBackToLibrary();
     return { track: null, skipped: false, totalFailure: true };
   }, [
+    restoreGuard,
     setSelection,
     activeDescriptor,
     playTrack,
