@@ -33,6 +33,7 @@ import { useSpotifyPlaylistManager as usePlaylistManager } from '@/providers/spo
 import { spotifyPlayer } from '@/services/spotifyPlayer';
 import { spotifyAuth } from '@/services/spotify';
 import { providerRegistry } from '@/providers/registry';
+import { queueStore } from '@/stores/queueStore';
 
 function playlistRef(id: string): CollectionRef {
   return { provider: 'spotify', kind: 'playlist', id };
@@ -60,12 +61,9 @@ describe('usePlaylistManager (context-playback fallback)', () => {
   const setError = vi.fn();
   const setIsLoading = vi.fn();
   const setSelection = vi.fn();
-  const setTracks = vi.fn();
-  const setOriginalTracks = vi.fn();
-  const setCurrentTrackIndex = vi.fn();
 
   const defaultProps = {
-    trackOps: { setError, setIsLoading, setSelection, setTracks, setOriginalTracks, setCurrentTrackIndex },
+    trackOps: { setError, setIsLoading, setSelection },
   };
 
   beforeEach(() => {
@@ -115,10 +113,10 @@ describe('usePlaylistManager (context-playback fallback)', () => {
     });
 
     // #then — previous + current + next, deduped, in window order
-    const tracks = setTracks.mock.calls[0]?.[0] as Array<{ id: string }>;
+    const tracks = queueStore.getTracks();
     expect(tracks.map((t) => t.id)).toEqual(['p1', 'c1', 'n1']);
-    expect(setOriginalTracks).toHaveBeenCalledWith(tracks);
-    expect(setCurrentTrackIndex).toHaveBeenCalledWith(0);
+    expect(queueStore.getSnapshot().originalTracks).toEqual(tracks);
+    expect(queueStore.getCurrentIndex()).toBe(0);
     expect(returned).toEqual(tracks);
   });
 
@@ -161,7 +159,7 @@ describe('usePlaylistManager (context-playback fallback)', () => {
 
     // #then
     expect(setError).toHaveBeenCalledWith(expect.stringContaining('No tracks found in this playlist'));
-    expect(setTracks).not.toHaveBeenCalled();
+    expect(queueStore.getTracks()).toEqual([]);
   });
 
   it('calls redirectToAuth on auth error', async () => {

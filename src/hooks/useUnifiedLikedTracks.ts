@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useMemo, useSyncExternalStore } from 
 import { useProviderContext } from '@/contexts/ProviderContext';
 import { LIBRARY_REFRESH_EVENT } from '@/hooks/useLibrarySync';
 import { providerRegistry } from '@/providers/registry';
+import { createNewestWins } from '@/hooks/useNewestWins';
 import type { MediaTrack, ProviderId } from '@/types/domain';
 
 const CACHE_UPDATED_EVENT = 'vorbis-unified-liked-cache-updated';
@@ -16,11 +17,12 @@ interface CacheState {
 const EMPTY_CACHE: CacheState = { tracks: [], totalCount: 0, isLoading: false, providerKey: '' };
 
 let cache: CacheState = { ...EMPTY_CACHE };
-let activeAbort: AbortController | null = null;
+// Newest-wins guard for the module-level cache refresh: a newer refresh (or a
+// reset) supersedes an in-flight one and aborts its fetches.
+const refreshGuard = createNewestWins();
 
 export function resetUnifiedLikedCache(): void {
-  activeAbort?.abort();
-  activeAbort = null;
+  refreshGuard.invalidate();
   cache = { ...EMPTY_CACHE };
 }
 
@@ -53,22 +55,20 @@ async function fetchUnifiedLiked(providerIds: ProviderId[], signal: AbortSignal)
 }
 
 function refreshCache(providerIds: ProviderId[]): void {
-  activeAbort?.abort();
-  const controller = new AbortController();
-  activeAbort = controller;
+  const token = refreshGuard.begin();
 
   updateCache({ isLoading: true });
 
-  fetchUnifiedLiked(providerIds, controller.signal)
+  fetchUnifiedLiked(providerIds, token.signal)
     .then(merged => {
-      if (!controller.signal.aborted) {
+      if (!token.isStale()) {
         updateCache({ tracks: merged, totalCount: merged.length, isLoading: false });
       }
     })
     .catch(err => {
       if (err instanceof DOMException && err.name === 'AbortError') return;
       console.error('[useUnifiedLikedTracks] Fetch failed:', err);
-      if (!controller.signal.aborted) {
+      if (!token.isStale()) {
         updateCache({ isLoading: false });
       }
     });
@@ -109,8 +109,7 @@ export function useUnifiedLikedTracks(): UseUnifiedLikedTracksResult {
   useEffect(() => {
     if (!isUnifiedLikedActive) {
       if (cache.totalCount > 0 || cache.isLoading) {
-        activeAbort?.abort();
-        activeAbort = null;
+        refreshGuard.invalidate();
         updateCache({ tracks: [], totalCount: 0, isLoading: false, providerKey: '' });
       }
       setLastProviderKey('');

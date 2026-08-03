@@ -1,13 +1,15 @@
-import React, { createContext, useContext, useState, useMemo, useCallback, useEffect, useRef } from 'react';
+import React, { createContext, useContext, useState, useMemo, useEffect, useRef, useSyncExternalStore } from 'react';
 import type { MediaTrack, PlaybackSelection } from '@/types/domain';
-import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { isProfilingEnabled } from '@/contexts/ProfilingContext';
-import { shuffleArray } from '@/utils/shuffleArray';
-import { logQueue } from '@/lib/debugLog';
-import { STORAGE_KEYS } from '@/constants/storage';
+import { queueStore } from '@/stores/queueStore';
 import { shouldUseMockProvider } from '@/providers/mock/shouldUseMockProvider';
 
 // --- TrackListContext ---
+//
+// Queue state (tracks/originalTracks/currentIndex/shuffle) is owned by
+// `queueStore`; this context is the React read bridge plus the remaining
+// load-status state (isLoading/error/selection). Mutations go through the
+// store's mutators, not through context setters.
 
 interface TrackListContextValue {
   tracks: MediaTrack[];
@@ -16,11 +18,8 @@ interface TrackListContextValue {
   error: string | null;
   shuffleEnabled: boolean;
   selection: PlaybackSelection | null;
-  setTracks: (tracks: MediaTrack[] | ((prev: MediaTrack[]) => MediaTrack[])) => void;
-  setOriginalTracks: (tracks: MediaTrack[] | ((prev: MediaTrack[]) => MediaTrack[])) => void;
   setIsLoading: (loading: boolean | ((prev: boolean) => boolean)) => void;
   setError: (error: string | null | ((prev: string | null) => string | null)) => void;
-  setShuffleEnabled: (enabled: boolean) => void;
   setSelection: (selection: PlaybackSelection | null | ((prev: PlaybackSelection | null) => PlaybackSelection | null)) => void;
   handleShuffleToggle: () => void;
 }
@@ -30,7 +29,6 @@ interface TrackListContextValue {
 interface CurrentTrackContextValue {
   currentTrack: MediaTrack | null;
   currentTrackIndex: number;
-  setCurrentTrackIndex: (index: number | ((prev: number) => number)) => void;
   showQueue: boolean;
   setShowQueue: (visible: boolean | ((prev: boolean) => boolean)) => void;
 }
@@ -39,60 +37,18 @@ const TrackListContext = createContext<TrackListContextValue | null>(null);
 const CurrentTrackContext = createContext<CurrentTrackContextValue | null>(null);
 
 export function TrackProvider({ children }: { children: React.ReactNode }) {
-  const [tracks, setTracks] = useState<MediaTrack[]>([]);
-  const [originalTracks, setOriginalTracks] = useState<MediaTrack[]>([]);
-  const [currentTrackIndex, setCurrentTrackIndex] = useState(0);
+  const queue = useSyncExternalStore(queueStore.subscribe, queueStore.getSnapshot);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [shuffleEnabled, setShuffleEnabled] = useLocalStorage(STORAGE_KEYS.SHUFFLE_ENABLED, false);
   const [selection, setSelection] = useState<PlaybackSelection | null>(null);
   const [showQueue, setShowQueue] = useState(false);
+
+  const { tracks, originalTracks, currentIndex: currentTrackIndex, shuffle: shuffleEnabled } = queue;
 
   const currentTrack = useMemo(
     () => tracks[currentTrackIndex] || null,
     [tracks, currentTrackIndex]
   );
-
-  const handleShuffleToggle = useCallback(() => {
-    if (originalTracks.length === 0) return;
-
-    const current = tracks[currentTrackIndex];
-    logQueue(
-      'shuffleToggle — %s, currentIndex=%d, current="%s", tracksLen=%d, originalLen=%d',
-      shuffleEnabled ? 'OFF' : 'ON',
-      currentTrackIndex,
-      current?.name ?? '',
-      tracks.length,
-      originalTracks.length,
-    );
-
-    if (!shuffleEnabled) {
-      // Shuffle using current track data (not originalTracks objects, which may be stale)
-      const rest = tracks.filter(t => t.id !== current?.id);
-      const shuffled = shuffleArray(rest);
-      const newTracks = current ? [current, ...shuffled] : shuffled;
-      setTracks(newTracks);
-      setCurrentTrackIndex(0);
-      logQueue('shuffleToggle — shuffled: newIndex=0, newLen=%d', newTracks.length);
-    } else {
-      // Restore original order by reordering current tracks (preserves up-to-date track data)
-      const currentTrackId = current?.id;
-      const originalOrderIds = originalTracks.map(t => t.id);
-      const byId = new Map(tracks.map(t => [t.id, t]));
-      const reordered = [
-        ...originalOrderIds.flatMap(id => { const t = byId.get(id); return t ? [t] : []; }),
-        ...tracks.filter(t => !originalOrderIds.includes(t.id)),
-      ];
-      const restoredIndex = currentTrackId
-        ? reordered.findIndex(t => t.id === currentTrackId)
-        : 0;
-      setTracks(reordered);
-      setCurrentTrackIndex(restoredIndex >= 0 ? restoredIndex : 0);
-      logQueue('shuffleToggle — restored original order: newIndex=%d, len=%d', restoredIndex >= 0 ? restoredIndex : 0, reordered.length);
-    }
-
-    setShuffleEnabled(!shuffleEnabled);
-  }, [originalTracks, tracks, currentTrackIndex, shuffleEnabled, setShuffleEnabled]);
 
   const trackListValue = useMemo<TrackListContextValue>(() => ({
     tracks,
@@ -101,13 +57,10 @@ export function TrackProvider({ children }: { children: React.ReactNode }) {
     error,
     shuffleEnabled,
     selection,
-    setTracks,
-    setOriginalTracks,
     setIsLoading,
     setError,
-    setShuffleEnabled,
     setSelection,
-    handleShuffleToggle,
+    handleShuffleToggle: queueStore.toggleShuffle,
   }), [
     tracks,
     originalTracks,
@@ -115,14 +68,11 @@ export function TrackProvider({ children }: { children: React.ReactNode }) {
     error,
     shuffleEnabled,
     selection,
-    setShuffleEnabled,
-    handleShuffleToggle,
   ]);
 
   const currentTrackValue = useMemo<CurrentTrackContextValue>(() => ({
     currentTrack,
     currentTrackIndex,
-    setCurrentTrackIndex,
     showQueue,
     setShowQueue,
   }), [currentTrack, currentTrackIndex, showQueue]);
@@ -146,15 +96,11 @@ export function TrackProvider({ children }: { children: React.ReactNode }) {
 
     const handleSetQueue = (e: Event) => {
       const tracks = (e as CustomEvent<MediaTrack[]>).detail;
-      setTracks(tracks);
-      setOriginalTracks(tracks);
-      setCurrentTrackIndex(0);
+      queueStore.replaceQueue(tracks);
     };
 
     const handleReset = () => {
-      setTracks([]);
-      setOriginalTracks([]);
-      setCurrentTrackIndex(0);
+      queueStore.clear();
     };
 
     window.addEventListener('mock:set-queue', handleSetQueue);
@@ -163,7 +109,7 @@ export function TrackProvider({ children }: { children: React.ReactNode }) {
       window.removeEventListener('mock:set-queue', handleSetQueue);
       window.removeEventListener('mock:reset', handleReset);
     };
-  }, [setTracks, setOriginalTracks, setCurrentTrackIndex]);
+  }, []);
 
   return (
     <TrackListContext.Provider value={trackListValue}>

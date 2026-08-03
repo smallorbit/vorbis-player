@@ -1,6 +1,8 @@
 import { useEffect, useRef, useCallback } from 'react';
 import type { MediaTrack } from '@/types/domain';
 import { providerRegistry } from '@/providers/registry';
+import { queueStore } from '@/stores/queueStore';
+import { useNewestWins } from '@/hooks/useNewestWins';
 import { logQueue } from '@/lib/debugLog';
 import { logCaughtError } from '@/utils/logCaughtError';
 
@@ -16,31 +18,25 @@ const FETCH_CONCURRENCY = 3;
  *
  * Updates are batched so the queue UI re-renders efficiently.
  */
-export function useQueueThumbnailLoader(
-  tracks: readonly MediaTrack[],
-  setTracks: React.Dispatch<React.SetStateAction<MediaTrack[]>>,
-) {
+export function useQueueThumbnailLoader(tracks: readonly MediaTrack[]) {
   const attemptedAlbumIds = useRef(new Set<string>());
-  const abortRef = useRef<AbortController | null>(null);
+  // Newest-wins guard: a queue change supersedes the previous resolution run.
+  const resolveGuard = useNewestWins();
 
   const applyImageUpdates = useCallback(
     (updates: Map<string, string>) => {
       if (updates.size === 0) return;
       logQueue('thumbnailLoader — applying %d image updates', updates.size);
 
-      setTracks((prev) => {
-        let changed = false;
-        const next = prev.map((t) => {
-          if (!t.image && t.albumId) {
-            const img = updates.get(t.albumId);
-            if (img) { changed = true; return { ...t, image: img }; }
-          }
-          return t;
-        });
-        return changed ? next : prev;
+      queueStore.mapTracks((t) => {
+        if (!t.image && t.albumId) {
+          const img = updates.get(t.albumId);
+          if (img) return { ...t, image: img };
+        }
+        return t;
       });
     },
-    [setTracks],
+    [],
   );
 
   useEffect(() => {
@@ -53,15 +49,13 @@ export function useQueueThumbnailLoader(
 
     for (const id of toResolve) attemptedAlbumIds.current.add(id);
 
-    abortRef.current?.abort();
-    const controller = new AbortController();
-    abortRef.current = controller;
+    const token = resolveGuard.begin();
 
     logQueue('thumbnailLoader — resolving art for %d albums', toResolve.length);
 
     const run = async () => {
       for (let i = 0; i < toResolve.length; i += FETCH_CONCURRENCY) {
-        if (controller.signal.aborted) return;
+        if (token.isStale()) return;
         const batch = toResolve.slice(i, i + FETCH_CONCURRENCY);
         const batchResults = new Map<string, string>();
 
@@ -72,7 +66,7 @@ export function useQueueThumbnailLoader(
             if (!mt) return;
             try {
               const provider = providerRegistry.get(mt.provider);
-              const art = await provider?.catalog.resolveArtwork?.(albumId, controller.signal);
+              const art = await provider?.catalog.resolveArtwork?.(albumId, token.signal);
               if (art) batchResults.set(albumId, art);
             } catch (err) {
               // Swallow errors for individual album art resolution
@@ -81,7 +75,7 @@ export function useQueueThumbnailLoader(
           }),
         );
 
-        if (batchResults.size > 0 && !controller.signal.aborted) {
+        if (batchResults.size > 0 && !token.isStale()) {
           applyImageUpdates(batchResults);
           logQueue('thumbnailLoader — resolved %d in batch', batchResults.size);
         }
@@ -90,8 +84,8 @@ export function useQueueThumbnailLoader(
 
     run().catch(() => {});
 
-    return () => controller.abort();
-  }, [tracks, applyImageUpdates]);
+    return () => resolveGuard.invalidate();
+  }, [tracks, applyImageUpdates, resolveGuard]);
 
   useEffect(() => {
     if (tracks.length === 0) {

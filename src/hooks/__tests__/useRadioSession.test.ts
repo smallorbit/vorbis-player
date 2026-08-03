@@ -29,15 +29,12 @@ vi.mock('../playerLogicUtils', () => ({
 }));
 
 import { providerRegistry } from '@/providers/registry';
+import { queueStore } from '@/stores/queueStore';
 
 function makeTrackOps() {
   return {
     setError: vi.fn(),
-    setTracks: vi.fn(),
-    setOriginalTracks: vi.fn(),
-    setCurrentTrackIndex: vi.fn(),
     setSelection: vi.fn(),
-    mediaTracksRef: { current: [] as MediaTrack[] },
   };
 }
 
@@ -70,7 +67,8 @@ describe('useRadioSession', () => {
     mockOnProgress = vi.fn();
     mockSetAuthExpired = vi.fn();
     seedTrack = track('seed-1', 'Creep', 'Radiohead');
-    trackOps.mediaTracksRef.current = [seedTrack];
+    queueStore.__resetForTests();
+    queueStore.replaceQueue([seedTrack], { currentIndex: 0 });
   });
 
   function renderSession(overrides?: Partial<Parameters<typeof useRadioSession>[0]>) {
@@ -275,9 +273,7 @@ describe('useRadioSession', () => {
     });
 
     // #then
-    expect(trackOps.setTracks).toHaveBeenCalled();
-    const setTracksCall = trackOps.setTracks.mock.calls[0][0] as MediaTrack[];
-    const names = setTracksCall.map(t => t.name);
+    const names = queueStore.getTracks().map(t => t.name);
     expect(names).toContain('Fake Plastic Trees');
     expect(names).toContain('Karma Police');
   });
@@ -319,8 +315,7 @@ describe('useRadioSession', () => {
     });
 
     // #then
-    const setTracksCall = trackOps.setTracks.mock.calls[0][0] as MediaTrack[];
-    const karmaCount = setTracksCall.filter(t => t.name === 'Karma Police').length;
+    const karmaCount = queueStore.getTracks().filter(t => t.name === 'Karma Police').length;
     expect(karmaCount).toBe(1);
   });
 
@@ -337,7 +332,7 @@ describe('useRadioSession', () => {
 
     // #then
     expect(mockOnProgress).toHaveBeenLastCalledWith(null);
-    expect(trackOps.setTracks).not.toHaveBeenCalled();
+    expect(queueStore.getTracks()).toEqual([seedTrack]);
   });
 
   it('sets error state when generation throws', async () => {
@@ -371,9 +366,9 @@ describe('useRadioSession', () => {
     expect(trackOps.setError).toHaveBeenCalledWith('Failed to start radio.');
   });
 
-  it('uses currentTrack as seed when mediaTracksRef entry does not match', async () => {
+  it('uses currentTrack as seed when the queue entry does not match', async () => {
     // #given
-    trackOps.mediaTracksRef.current = [track('other-id', 'Other Song', 'Other Artist')];
+    queueStore.replaceQueue([track('other-id', 'Other Song', 'Other Artist')], { currentIndex: 0 });
 
     mockStartRadio.mockResolvedValue({
       queue: [track('g1', 'Karma Police', 'Radiohead')],
@@ -388,9 +383,9 @@ describe('useRadioSession', () => {
     });
 
     // #then
-    const setTracksCall = trackOps.setTracks.mock.calls[0][0] as MediaTrack[];
-    expect(setTracksCall[0].id).toBe('seed-1');
-    expect(setTracksCall[0].name).toBe('Creep');
+    const committed = queueStore.getTracks();
+    expect(committed[0]?.id).toBe('seed-1');
+    expect(committed[0]?.name).toBe('Creep');
   });
 
   it('stopRadio delegates to stopRadioBase and clears authExpired', () => {
@@ -514,13 +509,9 @@ describe('useRadioSession', () => {
     // stale A that resolved last. (runRadioPipeline prepends the seed and returns
     // a new combined array, so assert on content, not reference.) Without a
     // generation guard the late A clobbers B.
-    const committedNames = trackOps.mediaTracksRef.current.map((t) => t.name);
+    const committedNames = queueStore.getTracks().map((t) => t.name);
     expect(committedNames).toContain('Fresh Song');
     expect(committedNames).not.toContain('Stale Song');
-
-    const lastSetTracks = trackOps.setTracks.mock.calls.at(-1)?.[0] as MediaTrack[];
-    expect(lastSetTracks.map((t) => t.name)).toContain('Fresh Song');
-    expect(lastSetTracks.map((t) => t.name)).not.toContain('Stale Song');
   });
 
   it('does not commit a radio queue that finishes generating after stopRadio', async () => {
@@ -556,8 +547,7 @@ describe('useRadioSession', () => {
     });
 
     // #then the stale result must not populate the queue
-    expect(trackOps.setTracks).not.toHaveBeenCalled();
-    expect(trackOps.mediaTracksRef.current).toEqual([seedTrack]);
+    expect(queueStore.getTracks()).toEqual([seedTrack]);
   });
 
   it('does not invoke searchTrack on a provider whose hasTrackSearch is false', async () => {

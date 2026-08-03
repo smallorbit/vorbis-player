@@ -1,8 +1,8 @@
-import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
 import type { MediaTrack, ProviderId } from '@/types/domain';
 import { createDeferredFn } from '@/test/asyncRace';
+import { queueStore } from '@/stores/queueStore';
 
 // The adapter's playTrack is the awaited async dependency whose two invocations
 // we settle out of order. Each render of the descriptor shares this deferred fn.
@@ -64,12 +64,11 @@ describe('useProviderPlayback — playTrack stale-write race', () => {
   it('newer playTrack wins when an older adapter call resolves later', async () => {
     // #given a queue and two overlapping playTrack invocations
     const tracks = [makeTrack('t0'), makeTrack('t1'), makeTrack('t2')];
-    const mediaTracksRef: React.MutableRefObject<MediaTrack[]> = { current: tracks };
-    const setCurrentTrackIndex = vi.fn();
+    queueStore.replaceQueue(tracks, { currentIndex: 0 });
+    const committed: number[] = [];
+    queueStore.subscribe(() => { committed.push(queueStore.getCurrentIndex()); });
 
-    const { result } = renderHook(() =>
-      useProviderPlayback({ setCurrentTrackIndex, mediaTracksRef }),
-    );
+    const { result } = renderHook(() => useProviderPlayback({}));
 
     // #when playTrack(1) then playTrack(2) both reach the awaited adapter call,
     // pinning adapter call index 0 → index 1 (older), index 1 → index 2 (newer).
@@ -91,9 +90,9 @@ describe('useProviderPlayback — playTrack stale-write race', () => {
 
     // #then the committed current-track index must reflect the newer call (2),
     // and the stale older call (1) must not clobber it after resolving last.
-    const committed = setCurrentTrackIndex.mock.calls.map((c: [number]) => c[0]);
     expect(committed).toContain(2);
     expect(committed.at(-1)).toBe(2);
-    expect(setCurrentTrackIndex).not.toHaveBeenCalledWith(1);
+    expect(committed).not.toContain(1);
+    expect(queueStore.getCurrentIndex()).toBe(2);
   });
 });

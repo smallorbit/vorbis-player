@@ -1,11 +1,12 @@
-import type { MediaTrack, PlaybackSelection } from './domain';
+import type { PlaybackSelection } from './domain';
 
+/**
+ * Load-status operations shared by the queue-loading hooks. Queue content
+ * itself is owned by `queueStore` (src/stores/queueStore.ts) — mutate it
+ * through the store's mutators, never through React state.
+ */
 export interface TrackOperations {
-  setTracks: (tracks: MediaTrack[] | ((prev: MediaTrack[]) => MediaTrack[])) => void;
-  setOriginalTracks: (tracks: MediaTrack[] | ((prev: MediaTrack[]) => MediaTrack[])) => void;
-  setCurrentTrackIndex: (index: number | ((prev: number) => number)) => void;
   setSelection: (selection: PlaybackSelection | null) => void;
   setError: (error: string | null) => void;
   setIsLoading: (loading: boolean) => void;
-  mediaTracksRef: React.MutableRefObject<MediaTrack[]>;
 }

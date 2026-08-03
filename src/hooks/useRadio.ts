@@ -1,8 +1,9 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback } from 'react';
 import type { MediaTrack } from '@/types/domain';
 import type { RadioSeed, RadioResult, RadioState } from '@/types/radio';
 import { generateRadioQueue } from '@/services/radioService';
 import { isLastFmConfigured } from '@/services/lastfm';
+import { useNewestWins } from '@/hooks/useNewestWins';
 import { logRadio } from '@/lib/debugLog';
 
 interface UseRadioReturn {
@@ -23,13 +24,15 @@ export function useRadio(): UseRadioReturn {
     lastMatchStats: null,
   });
 
-  const generationRef = useRef(0);
+  // Newest-wins guard: a newer start (or a stop) supersedes an in-flight
+  // generation so its late result cannot flip radio state back.
+  const radioGuard = useNewestWins();
 
   const startRadio = useCallback(async (
     seed: RadioSeed,
     catalogTracks: MediaTrack[],
   ): Promise<RadioResult | null> => {
-    const generationId = ++generationRef.current;
+    const token = radioGuard.begin();
 
     setRadioState({
       isActive: false,
@@ -41,7 +44,7 @@ export function useRadio(): UseRadioReturn {
     try {
       const result = await generateRadioQueue(seed, catalogTracks);
 
-      if (generationRef.current !== generationId) return null;
+      if (token.isStale()) return null;
 
       if (result.queue.length === 0) {
         setRadioState({
@@ -64,7 +67,7 @@ export function useRadio(): UseRadioReturn {
       logRadio('queue generated: %o', result.matchStats);
       return result;
     } catch (err) {
-      if (generationRef.current !== generationId) return null;
+      if (token.isStale()) return null;
 
       const message = err instanceof Error ? err.message : 'Failed to generate radio queue.';
       setRadioState({
@@ -75,17 +78,17 @@ export function useRadio(): UseRadioReturn {
       });
       return null;
     }
-  }, []);
+  }, [radioGuard]);
 
   const stopRadio = useCallback(() => {
-    generationRef.current++;
+    radioGuard.invalidate();
     setRadioState({
       isActive: false,
       isGenerating: false,
       error: null,
       lastMatchStats: null,
     });
-  }, []);
+  }, [radioGuard]);
 
   const isRadioAvailable = isLastFmConfigured();
 

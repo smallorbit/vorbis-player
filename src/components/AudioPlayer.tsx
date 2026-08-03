@@ -25,6 +25,8 @@ import { useProviderContext } from '@/contexts/ProviderContext';
 import { LIKED_SONGS_NAME } from '@/constants/playlist';
 import { useSessionPersistence } from '@/hooks/useSessionPersistence';
 import { decodeLegacySelection } from '@/services/sessionPersistence';
+import { playbackStore } from '@/stores/playbackStore';
+import { usePlaybackState } from '@/hooks/usePlaybackState';
 import QuickAccessPanel from './QuickAccessPanel';
 import { CmdKPalette } from './CmdKPalette';
 import type { CollectionSelection, MediaCollection, MediaTrack } from '@/types/domain';
@@ -63,7 +65,7 @@ const ScreenReaderAnnouncement = styled.div`
 `;
 
 const AudioPlayerComponent = () => {
-  const { state, handlers, radio, currentPlaybackProviderRef: playbackProviderRef, mediaTracksRef, expectedTrackIdRef } = usePlayerLogic();
+  const { state, handlers, radio } = usePlayerLogic();
   const { debugActive, handleActivatorTap } = useDebugActivator();
   const { accentColor } = useColorContext();
   const {
@@ -74,34 +76,22 @@ const AudioPlayerComponent = () => {
   } = useVisualizer();
   const { accentColorBackgroundEnabled } = useAccentColorBackground();
   const { isSettingsOpen, setIsSettingsOpen } = useVisualEffectsToggle();
-  const { tracks, selection, setTracks, setOriginalTracks, setSelection } = useTrackListContext();
-  const { currentTrack, currentTrackIndex, setCurrentTrackIndex, showQueue, setShowQueue } = useCurrentTrackContext();
+  const { tracks, selection } = useTrackListContext();
+  const { currentTrack, currentTrackIndex, showQueue, setShowQueue } = useCurrentTrackContext();
 
-  const resolveDisplayProvider = useCallback((): import('@/types/domain').ProviderId | undefined => (
-    currentTrack?.provider
-    ?? playbackProviderRef.current
-    ?? undefined
-  ), [currentTrack, playbackProviderRef]);
-
-  // Track the current playback provider — derives from the ref but as React state for re-renders
-  const [displayProviderId, setDisplayProviderId] = useState<import('@/types/domain').ProviderId | undefined>(
-    resolveDisplayProvider()
-  );
-  useEffect(() => {
-    setDisplayProviderId(resolveDisplayProvider());
-  }, [resolveDisplayProvider]);
+  // Provider badge shown in the player — the track's own provider, falling
+  // back to whichever provider is driving audio (store-derived, re-renders
+  // with the playback snapshot).
+  const { drivingProviderId } = usePlaybackState();
+  const displayProviderId = currentTrack?.provider ?? drivingProviderId ?? undefined;
 
   const collectionNameRef = useRef<string>('');
   const pendingLibraryQueryRef = useRef<string | undefined>(undefined);
 
   const getLivePosition = useCallback(async (): Promise<number | null> => {
-    const drivingId = playbackProviderRef.current;
-    if (!drivingId) return null;
-    const { providerRegistry } = await import('@/providers/registry');
-    const descriptor = providerRegistry.get(drivingId);
-    const ps = await descriptor?.playback.getState();
+    const ps = await playbackStore.getDrivingDescriptor()?.playback.getState();
     return ps?.positionMs ?? null;
-  }, [playbackProviderRef]);
+  }, []);
 
   const { lastSession, resetLastSession } = useSessionPersistence(
     selection,
@@ -405,27 +395,22 @@ const AudioPlayerComponent = () => {
 
   const handleResume = useCallback(async () => {
     if (!lastSession?.queueTracks?.length) return;
-    const { queueTracks, trackId, trackIndex, selection: savedSelection, playbackPosition: savedPositionMs } = lastSession;
-    const targetIdx = trackId
-      ? queueTracks.findIndex(t => t.id === trackId)
-      : Math.min(trackIndex, queueTracks.length - 1);
-    const resolvedIdx = targetIdx >= 0 ? targetIdx : Math.min(trackIndex, queueTracks.length - 1);
-    setTracks(queueTracks);
-    setOriginalTracks(queueTracks);
-    setSelection(savedSelection);
-    setCurrentTrackIndex(resolvedIdx);
-    // Update the imperative tracks mirror synchronously so playTrack can resolve
-    // the right track before React re-renders. Required for iOS Safari, which
-    // blocks audio.play() called outside the synchronous user-gesture call stack.
-    mediaTracksRef.current = queueTracks;
-    // Guard the playback subscription against index-sync racing during load:
-    // without this, usePlaybackSubscription may overwrite resolvedIdx with a
-    // stale provider track index before the new track's ID is confirmed.
-    expectedTrackIdRef.current = queueTracks[resolvedIdx]?.id ?? null;
+    const result = await handlers.restoreSession(lastSession, { autoplay: true });
+    if (result.totalFailure) {
+      resetLastSession();
+      toast(`Couldn't resume your last session.`, { id: RESUME_TOAST_ID, duration: Infinity });
+      return;
+    }
+    if (result.skipped && result.track) {
+      toast(`Couldn't resume previous track — playing '${result.track.name}' instead.`, { id: RESUME_TOAST_ID });
+    }
+  }, [lastSession, handlers, resetLastSession]);
 
-    const positionMs = savedPositionMs && savedPositionMs > 0 ? savedPositionMs : undefined;
-    await handlers.playTrack(resolvedIdx, false, positionMs ? { positionMs } : undefined);
-  }, [lastSession, setTracks, setOriginalTracks, setSelection, setCurrentTrackIndex, mediaTracksRef, expectedTrackIdRef, handlers]);
+  const handleHydrateSession = useCallback(
+    (session: import('@/services/sessionPersistence').SessionSnapshot) =>
+      handlers.restoreSession(session, { autoplay: false }),
+    [handlers],
+  );
 
   const renderContent = () => {
     if (needsSetup) {
@@ -453,7 +438,7 @@ const AudioPlayerComponent = () => {
               lastSession={lastSession}
               onResume={handleResume}
               onOpenSettings={handleOpenSettings}
-              onHydrate={handlers.handleHydrate}
+              onHydrate={handleHydrateSession}
               onHydrateFired={handleHydrateFired}
               onHydrateFailed={handleHydrateFailed}
             />
@@ -505,7 +490,6 @@ const AudioPlayerComponent = () => {
           isRadioAvailable={radio.isRadioAvailable}
           radioActive={radio.isActive}
           currentTrackProvider={displayProviderId}
-          mediaTracksRef={mediaTracksRef}
           radioProgress={radio.radioProgress}
           onDismissRadioProgress={radio.dismissRadioProgress}
         />

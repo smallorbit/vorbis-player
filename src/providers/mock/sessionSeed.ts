@@ -76,7 +76,7 @@ export function seedSessionFromUrlParam(
           }
         : { type: 'liked', provider: track.provider, name: track.album },
       collectionName: track.album,
-      // trackIndex: 0 — single-element queue; handleHydrate resolves by trackId first so
+      // trackIndex: 0 — single-element queue; restoreSession resolves by trackId first so
       // this is benign. Multi-track reload scenarios are a known limitation of the seed.
       trackIndex: 0,
       trackId: track.id,

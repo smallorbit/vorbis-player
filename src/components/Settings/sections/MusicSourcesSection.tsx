@@ -2,7 +2,8 @@ import { memo, useMemo, useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
 import { useProviderContext } from '@/contexts/ProviderContext';
-import { useTrackListContext, useCurrentTrackContext } from '@/contexts/TrackContext';
+import { useTrackListContext } from '@/contexts/TrackContext';
+import { queueStore } from '@/stores/queueStore';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { STORAGE_KEYS } from '@/constants/storage';
 import { AUTH_COMPLETE_EVENT } from '@/constants/events';
@@ -23,8 +24,7 @@ import {
 
 export const MusicSourcesSection = memo(() => {
   const { registry, enabledProviderIds, toggleProvider } = useProviderContext();
-  const { tracks, setTracks, setOriginalTracks } = useTrackListContext();
-  const { currentTrackIndex, setCurrentTrackIndex } = useCurrentTrackContext();
+  const { tracks } = useTrackListContext();
   const providers = useMemo(() => registry.getAll(), [registry]);
 
   const [disconnectDialogProviderId, setDisconnectDialogProviderId] = useState<ProviderId | null>(null);
@@ -122,41 +122,12 @@ export const MusicSourcesSection = memo(() => {
     const descriptor = registry.get(id);
     descriptor?.playback.pause().catch(() => {});
 
-    const providerTracks = tracks.filter(t => t.provider === id);
-    const providerTrackIds = new Set(providerTracks.map(t => t.id));
-    const remainingTracks = tracks.filter(t => t.provider !== id);
-
-    if (remainingTracks.length === 0) {
-      setTracks([]);
-      setOriginalTracks([]);
-      setCurrentTrackIndex(0);
-    } else {
-      const playingTrack = tracks[currentTrackIndex];
-      const removedBeforeCurrent = tracks
-        .slice(0, currentTrackIndex)
-        .filter(t => providerTrackIds.has(t.id)).length;
-      const newIndex = Math.max(
-        0,
-        Math.min(currentTrackIndex - removedBeforeCurrent, remainingTracks.length - 1),
-      );
-      setTracks(remainingTracks);
-      setOriginalTracks(prev => prev.filter(t => t.provider !== id));
-      if (playingTrack && providerTrackIds.has(playingTrack.id)) {
-        setCurrentTrackIndex(0);
-      } else {
-        setCurrentTrackIndex(newIndex);
-      }
-    }
+    queueStore.removeTracksByProvider(id);
 
     descriptor?.auth.logout();
     toggleProvider(id);
   }, [
     registry,
-    tracks,
-    currentTrackIndex,
-    setTracks,
-    setOriginalTracks,
-    setCurrentTrackIndex,
     toggleProvider,
   ]);
 

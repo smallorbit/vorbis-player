@@ -1,51 +1,29 @@
-import { useCallback, useEffect, useRef } from 'react';
-import type { ProviderDescriptor } from '@/types/providers';
-import type { MediaTrack, ProviderId } from '@/types/domain';
+import { useCallback, useEffect } from 'react';
+import type { ProviderId } from '@/types/domain';
 import { providerRegistry } from '@/providers/registry';
 import { AuthExpiredError, UnavailableTrackError } from '@/providers/errors';
+import { playbackStore } from '@/stores/playbackStore';
+import { queueStore } from '@/stores/queueStore';
+import { useNewestWins } from '@/hooks/useNewestWins';
 import { logQueue, logArtRace } from '@/lib/debugLog';
 import { SKIP_ON_ERROR_DELAY_MS } from '@/constants/timing';
 import { PROVIDER_RECONNECTED_EVENT } from '@/constants/events';
 import { loadSession } from '@/services/sessionPersistence';
 
 interface UseProviderPlaybackProps {
-  setCurrentTrackIndex: (index: number) => void;
-  activeDescriptor?: ProviderDescriptor | null | undefined;
-  mediaTracksRef: React.MutableRefObject<MediaTrack[]>;
-  /**
-   * Ref tracking the current track index. Used by the re-prime listener so
-   * the handler reads the live index without re-binding on every change.
-   */
-  currentTrackIndexRef?: React.MutableRefObject<number> | undefined;
   onAuthExpired?: ((providerId: ProviderId) => void) | undefined;
-  /**
-   * Shared guard ref used by `usePlaybackSubscription` to ignore stale provider
-   * index updates during a transition. `playTrack` sets this to the target
-   * track id BEFORE any adapter call (including the pre-warm `prepareTrack` on
-   * the next track) so that provider state events emitted during the handoff
-   * cannot flip `currentTrackIndex` to the wrong track.
-   */
-  expectedTrackIdRef?: React.MutableRefObject<string | null> | undefined;
 }
 
 export const useProviderPlayback = ({
-  setCurrentTrackIndex,
-  activeDescriptor,
-  mediaTracksRef,
-  currentTrackIndexRef,
   onAuthExpired,
-  expectedTrackIdRef,
 }: UseProviderPlaybackProps) => {
 
-  const currentPlaybackProviderRef = useRef<ProviderId | null>(null);
-
-  // Monotonic generation guard. `playTrack` awaits the provider adapter (a
-  // network round-trip for Spotify transfer/play); overlapping invocations —
-  // e.g. mashing next — can resolve out of order. A later invocation supersedes
-  // an earlier one, so the earlier one's late resolution must not commit its
-  // (now-stale) index or fire its pre-warm. Mirrors the guard in
-  // useCollectionLoader / useRadioSession.
-  const playGenerationRef = useRef(0);
+  // Newest-wins guard. `playTrack` awaits the provider adapter (a network
+  // round-trip for Spotify transfer/play); overlapping invocations — e.g.
+  // mashing next — can resolve out of order. A later invocation supersedes an
+  // earlier one, so the earlier one's late resolution must not commit its
+  // (now-stale) index or fire its pre-warm.
+  const playGuard = useNewestWins();
 
   // Re-prime the current track when its provider re-authenticates after a
   // session expiry. The dispatcher (ProviderContext) skips the initial mount,
@@ -57,9 +35,7 @@ export const useProviderPlayback = ({
       const providerId = detail?.providerId;
       if (!providerId) return;
 
-      const tracks = mediaTracksRef.current;
-      const index = currentTrackIndexRef?.current ?? -1;
-      const currentTrack = index >= 0 ? tracks[index] : undefined;
+      const currentTrack = queueStore.getCurrentTrack();
       if (!currentTrack) return;
       if (currentTrack.provider !== providerId) return;
 
@@ -82,29 +58,22 @@ export const useProviderPlayback = ({
 
     window.addEventListener(PROVIDER_RECONNECTED_EVENT, handler);
     return () => window.removeEventListener(PROVIDER_RECONNECTED_EVENT, handler);
-  }, [mediaTracksRef, currentTrackIndexRef]);
-
-  const resolveTrackProvider = useCallback((mediaTrack?: MediaTrack): ProviderId | undefined => (
-    mediaTrack?.provider
-    ?? currentPlaybackProviderRef.current
-    ?? activeDescriptor?.id
-    ?? undefined
-  ), [activeDescriptor]);
+  }, []);
 
   const pausePreviousProvider = useCallback((nextProvider: ProviderId): void => {
-    const previousProvider = currentPlaybackProviderRef.current;
+    const previousProvider = playbackStore.getSnapshot().drivingProviderId;
     if (previousProvider && previousProvider !== nextProvider) {
       providerRegistry.get(previousProvider)?.playback.pause().catch(() => {});
     }
   }, []);
 
   const playTrack = useCallback(async (index: number, skipOnError = false, options?: { positionMs?: number }) => {
-    const tracks = mediaTracksRef.current;
+    const tracks = queueStore.getTracks();
     const mediaTrack = tracks[index];
-    const trackProvider = resolveTrackProvider(mediaTrack);
+    const trackProvider = playbackStore.resolveDrivingProviderId(mediaTrack?.provider);
 
     logQueue(
-      'playTrack(%d) — provider=%s, track=%s, mediaLen=%d, skipOnError=%s',
+      'playTrack(%d) — provider=%s, track=%s, queueLen=%d, skipOnError=%s',
       index,
       trackProvider ?? 'NONE',
       mediaTrack ? `"${mediaTrack.name}" (${mediaTrack.id.slice(0, 8)})` : 'NO_MEDIA_TRACK',
@@ -119,31 +88,27 @@ export const useProviderPlayback = ({
 
     if (!mediaTrack) {
       if (tracks.length > 0) {
-        console.warn(`[Playback] playTrack(${index}) — index out of bounds! mediaTracksRef has ${tracks.length} items`);
+        console.warn(`[Playback] playTrack(${index}) — index out of bounds! queue has ${tracks.length} items`);
       }
       console.error(`[Playback] playTrack(${index}) — no track at index`);
       return;
     }
 
-    // Raise the expected-track guard BEFORE any adapter call so that the
-    // subscription layer ignores provider state events emitted during the
+    // Raise the transition guard BEFORE any adapter call so that the playback
+    // store's pipeline ignores provider state events emitted during the
     // transition (pausePreviousProvider pause, adapter playTrack start, and
     // the next-track prepareTrack pre-warm below). Must run before all of
     // those to cover every entry point into playTrack — fresh collection
     // load at index 0, empty-queue append, next/previous, etc.
-    if (expectedTrackIdRef) {
-      expectedTrackIdRef.current = mediaTrack.id;
-      logArtRace('playTrack guard set: expected=%s (idx=%d, provider=%s)',
-        mediaTrack.id.slice(0, 8), index, trackProvider);
-    }
+    playbackStore.beginTransition(mediaTrack.id);
 
-    // Claim this as the newest intended playback. A concurrent later call bumps
-    // this again; when our awaited adapter call resolves we drop the result if
-    // we're no longer the newest.
-    const generation = ++playGenerationRef.current;
+    // Claim this as the newest intended playback. A concurrent later call
+    // supersedes this token; when our awaited adapter call resolves we drop
+    // the result if we're no longer the newest.
+    const token = playGuard.begin();
 
     pausePreviousProvider(trackProvider);
-    currentPlaybackProviderRef.current = trackProvider;
+    playbackStore.setDrivingProvider(trackProvider);
 
     const descriptor = providerRegistry.get(trackProvider);
     if (!descriptor) {
@@ -165,18 +130,17 @@ export const useProviderPlayback = ({
 
       // Superseded by a newer playTrack while the adapter was starting — drop
       // this stale result rather than commit its index or pre-warm its next.
-      if (playGenerationRef.current !== generation) return;
+      if (token.isStale()) return;
 
-      setCurrentTrackIndex(index);
+      queueStore.setCurrentIndex(index);
 
       const nextIndex = (index + 1) % tracks.length;
       const nextTrack = tracks[nextIndex];
       if (nextTrack && nextIndex !== index) {
         const nextDescriptor = providerRegistry.get(nextTrack.provider);
         if (nextDescriptor?.playback.prepareTrack) {
-          logArtRace('pre-warm dispatch: next=%s (idx=%d, provider=%s) — guard still=%s',
-            nextTrack.id.slice(0, 8), nextIndex, nextTrack.provider,
-            expectedTrackIdRef?.current ? expectedTrackIdRef.current.slice(0, 8) : 'null');
+          logArtRace('pre-warm dispatch: next=%s (idx=%d, provider=%s)',
+            nextTrack.id.slice(0, 8), nextIndex, nextTrack.provider);
           nextDescriptor.playback.prepareTrack(nextTrack);
         }
       }
@@ -199,35 +163,20 @@ export const useProviderPlayback = ({
         setTimeout(() => playTrack(index + 1, skipOnError), SKIP_ON_ERROR_DELAY_MS);
       }
     }
-    // mediaTracksRef included for exhaustive-deps; ref identity is stable so it does not cause callback re-creation.
-  }, [setCurrentTrackIndex, pausePreviousProvider, resolveTrackProvider, onAuthExpired, expectedTrackIdRef, mediaTracksRef]);
+  }, [playGuard, pausePreviousProvider, onAuthExpired]);
 
   const resumePlayback = useCallback(async () => {
-    const currentProvider = currentPlaybackProviderRef.current;
-    if (currentProvider) {
-      const descriptor = providerRegistry.get(currentProvider);
-      if (descriptor) {
-        try {
-          await descriptor.playback.resume();
-        } catch (error) {
-          console.error(`[${currentProvider}] Failed to resume playback:`, error);
-        }
-        return;
-      }
+    const descriptor = playbackStore.getDrivingDescriptor();
+    if (!descriptor) return;
+    try {
+      await descriptor.playback.resume();
+    } catch (error) {
+      console.error(`[${descriptor.id}] Failed to resume playback:`, error);
     }
-
-    if (activeDescriptor) {
-      try {
-        await activeDescriptor.playback.resume();
-      } catch (error) {
-        console.error('Failed to resume playback:', error);
-      }
-    }
-  }, [activeDescriptor]);
+  }, []);
 
   return {
     playTrack,
     resumePlayback,
-    currentPlaybackProviderRef,
   };
 };
