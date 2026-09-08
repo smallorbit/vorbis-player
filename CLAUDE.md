@@ -195,9 +195,25 @@ Run with `npm run test:run`. Tests are colocated with source files in `__tests__
 All Playwright work runs against the **mock provider** — no credentials, no browser login, no Spotify SDK.
 
 ```bash
-npm run test:e2e       # run specs
+npm run test:e2e       # run specs (both viewports)
 npm run capture        # visual capture (desktop + mobile)
 ```
+
+Specs run under two projects, selected by tag. `isMobile` in `usePlayerSizing`
+flips at 700px and swaps whole components (`QueueBottomSheet` vs `QueueDrawer`),
+so a desktop-only run leaves the mobile surface unasserted:
+
+| Tag | Runs at |
+|---|---|
+| *(untagged)* | desktop only — the default; right-click, CmdK, hover |
+| `@mobile-only` | mobile only — touch affordances, bottom sheet |
+| `@responsive` | both viewports |
+
+Shared spec helpers live in `playwright/fixtures/player.ts`. Prefer
+`openPlaylist` over `window.__mockTest.setQueue` when a spec depends on queue
+position: `setQueue` dispatches into TrackContext alone, so the drawer re-renders
+while `usePlayerLogic` still closes over the previous track list, and navigation
+then reads one length while playing from another.
 
 The mock provider (`src/providers/mock/`) serves catalog from `playwright/fixtures/data/spotify-snapshot.json` and `dropbox-snapshot.json` and plays bundled audio. Activate manually with `VITE_MOCK_PROVIDER=true npm run dev` or `?provider=mock` URL param.
 
