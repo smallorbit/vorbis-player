@@ -32,7 +32,10 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: 'VITE_MOCK_PROVIDER=true npm run dev',
+    // VITE_LASTFM_API_KEY only has to be present — isLastFmConfigured gates the
+    // radio UI on its existence. Specs stub ws.audioscrobbler.com with
+    // page.route, so this key is never sent anywhere.
+    command: 'VITE_MOCK_PROVIDER=true VITE_LASTFM_API_KEY=e2e-stub-key npm run dev',
     url: 'http://127.0.0.1:3000',
     reuseExistingServer: !process.env.CI,
     timeout: 30_000,
