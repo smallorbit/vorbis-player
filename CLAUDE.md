@@ -219,8 +219,7 @@ playlists/albums get captured before generating the snapshot.
 
 2. **Edit `playwright/fixtures/data/snapshot.config.json`** to include the IDs and
    folder paths you want to curate. Aim for a small, representative set — about
-   5–10 playlists, a few saved albums, and the most-played folders. The committed
-   file ships with empty arrays so you can populate from scratch.
+   5–10 playlists, a few saved albums, and the most-played folders.
 
 3. **Generate the snapshot** (writes JSON + downloads art):
    ```
@@ -238,6 +237,19 @@ playlists/albums get captured before generating the snapshot.
 Re-curate any time your library changes substantially. Re-running with the same
 `scripts/snapshot/seed.json` produces deterministic diffs (only changed content
 shows up).
+
+### Fixture preconditions are enforced, not skipped
+
+`dropbox-snapshot.json` is committed as a **synthetic** fixture (fictional artists,
+folder-shaped ids, art and audio reused from the bundled clips). It contains no real
+data, so cross-provider specs run for every contributor without a Dropbox login.
+Running `npm run snapshot:dropbox` overwrites it with a real capture — valid, but it
+then carries your library's data and needs the usual PII review.
+
+Specs no longer `test.skip` on an empty snapshot. `playwright/fixtures/require-snapshot.ts`
+throws instead, so a hollow fixture fails the run with the command that repopulates it.
+A skipped spec used to read as a green CI, which is how the Dropbox snapshot stayed
+empty — and every cross-provider spec silently dead — for months.
 
 ## Keyboard Shortcuts
 

@@ -1,14 +1,11 @@
 import { test, expect } from '../fixtures/auth-state';
 import spotifySnapshot from '../fixtures/data/spotify-snapshot.json' with { type: 'json' };
+import { requireCollections } from '../fixtures/require-snapshot';
 
-const hasContent = spotifySnapshot.playlists.length > 0;
+requireCollections(spotifySnapshot, 'spotify');
 
 test.describe('Zen Mode', () => {
   test.beforeEach(async ({ page }) => {
-    test.skip(
-      !hasContent,
-      'Specs require populated snapshots. Run `npm run snapshot:spotify -- --list` to enumerate your library, populate `snapshot.config.json`, then `npm run snapshot:spotify`. See #1372 §10 ("Curating fixtures").',
-    );
     await page.goto('/');
     await page.locator('[data-testid="library-home"]').waitFor({ state: 'visible', timeout: 30_000 });
     await page.locator('[data-testid^="library-card-playlist-"]').first().click();
