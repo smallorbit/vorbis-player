@@ -2,6 +2,7 @@ import type { Page } from '@playwright/test';
 import { test, expect } from '../fixtures/auth-state';
 import spotifySnapshot from '../fixtures/data/spotify-snapshot.json' with { type: 'json' };
 import dropboxSnapshot from '../fixtures/data/dropbox-snapshot.json' with { type: 'json' };
+import { requireCollectionWithTrack } from '../fixtures/require-snapshot';
 
 /**
  * CmdK library search (#1685 WS1 exit criterion).
@@ -13,41 +14,8 @@ import dropboxSnapshot from '../fixtures/data/dropbox-snapshot.json' with { type
  * collection first and then searches for one of its tracks.
  */
 
-interface SnapshotTrack {
-  name: string;
-}
-
-interface SnapshotCollection {
-  id: string;
-  name: string;
-  trackIds: string[];
-}
-
-interface ProviderSnapshot {
-  tracks: Record<string, SnapshotTrack>;
-  playlists: SnapshotCollection[];
-  albums: SnapshotCollection[];
-}
-
-function firstCollectionWithTrack(snapshot: ProviderSnapshot): {
-  kind: 'playlist' | 'album';
-  collection: SnapshotCollection;
-  trackName: string;
-} | null {
-  const candidates: Array<{ kind: 'playlist' | 'album'; collection: SnapshotCollection }> = [
-    ...snapshot.playlists.map((collection) => ({ kind: 'playlist' as const, collection })),
-    ...snapshot.albums.map((collection) => ({ kind: 'album' as const, collection })),
-  ];
-  for (const candidate of candidates) {
-    const trackId = candidate.collection.trackIds[0];
-    const trackName = trackId ? snapshot.tracks[trackId]?.name : undefined;
-    if (trackName) return { ...candidate, trackName };
-  }
-  return null;
-}
-
-const spotifyTarget = firstCollectionWithTrack(spotifySnapshot as unknown as ProviderSnapshot);
-const dropboxTarget = firstCollectionWithTrack(dropboxSnapshot as unknown as ProviderSnapshot);
+const spotifyTarget = requireCollectionWithTrack(spotifySnapshot, 'spotify');
+const dropboxTarget = requireCollectionWithTrack(dropboxSnapshot, 'dropbox');
 
 async function openCollectionAndReturnToPlayer(
   page: Page,
@@ -72,12 +40,6 @@ async function searchInCmdK(page: Page, query: string): Promise<void> {
 
 test.describe('CmdK library search', () => {
   test('returns tracks from an opened collection', async ({ page }) => {
-    test.skip(
-      !spotifyTarget,
-      'Specs require populated snapshots. Run `npm run snapshot:spotify` after curating `snapshot.config.json`.',
-    );
-    if (!spotifyTarget) return;
-
     await openCollectionAndReturnToPlayer(page, spotifyTarget.kind, spotifyTarget.collection.id);
     await searchInCmdK(page, spotifyTarget.trackName);
 
@@ -87,12 +49,6 @@ test.describe('CmdK library search', () => {
   });
 
   test('returns Dropbox tracks — search is cross-provider', async ({ page }) => {
-    test.skip(
-      !dropboxTarget,
-      'Dropbox snapshot is empty. Run `npm run snapshot:dropbox` after curating `snapshot.config.json` to exercise the cross-provider search path.',
-    );
-    if (!dropboxTarget) return;
-
     await openCollectionAndReturnToPlayer(page, dropboxTarget.kind, dropboxTarget.collection.id);
     await searchInCmdK(page, dropboxTarget.trackName);
 

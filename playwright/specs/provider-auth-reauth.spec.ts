@@ -1,5 +1,6 @@
 import { test, expect } from '../fixtures/auth-state';
 import spotifySnapshot from '../fixtures/data/spotify-snapshot.json' with { type: 'json' };
+import { requireLongTrack } from '../fixtures/require-snapshot';
 
 /**
  * Re-prime after re-authentication
@@ -23,18 +24,7 @@ const SEED_POSITION_MS = 45_000;
 // useSessionPersistence DEBOUNCE_MS=1000; wait a hair longer to be safe.
 const SESSION_DEBOUNCE_SETTLE_MS = 1_500;
 
-type SnapshotTrack = (typeof spotifySnapshot)['tracks'][keyof (typeof spotifySnapshot)['tracks']];
-
-function pickSeedTrack(): SnapshotTrack | null {
-  const entries = Object.entries(spotifySnapshot.tracks as Record<string, SnapshotTrack>);
-  const sorted = entries.sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0));
-  for (const [, track] of sorted) {
-    if (track.durationMs > 60_000) return track;
-  }
-  return null;
-}
-
-const seedTrack = pickSeedTrack();
+const seedTrack = requireLongTrack(spotifySnapshot, 'spotify');
 
 function encodeSeed(trackId: string, positionMs: number): string {
   const json = JSON.stringify({ trackId, positionMs });
@@ -42,16 +32,7 @@ function encodeSeed(trackId: string, positionMs: number): string {
 }
 
 test.describe('Provider re-authentication — re-prime current track at saved position', () => {
-  test.beforeEach(() => {
-    test.skip(
-      !seedTrack,
-      'Spec requires a fixture track with durationMs > 60_000. Run `npm run snapshot:spotify`.',
-    );
-  });
-
   test('seek bar updates from zeroed placeholder to seeded position after re-auth', async ({ page }) => {
-    if (!seedTrack) return;
-
     // #given — seed a session 45s into a spotify fixture track. mockProvider's
     // seedSessionFromUrlParam writes the full SessionSnapshot to localStorage
     // before React mounts, so the hydrate path primes the seek bar at 45s.

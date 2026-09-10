@@ -1,21 +1,270 @@
 {
+  "albums": [
+    {
+      "artists": [
+        {
+          "name": "Nocturne Atlas"
+        }
+      ],
+      "genres": [],
+      "id": "/music/nocturne atlas/paper lanterns",
+      "image": {
+        "height": 300,
+        "url": "/playwright-fixtures/art/0c7bc2749020182c.jpg",
+        "width": 300
+      },
+      "name": "Paper Lanterns",
+      "releaseDate": "2019",
+      "trackCount": 4,
+      "trackIds": [
+        "/music/nocturne atlas/paper lanterns/01 harbour lights.mp3",
+        "/music/nocturne atlas/paper lanterns/02 paper lanterns.mp3",
+        "/music/nocturne atlas/paper lanterns/03 low tide signal.mp3",
+        "/music/nocturne atlas/paper lanterns/04 cassette sunrise.mp3"
+      ]
+    },
+    {
+      "artists": [
+        {
+          "name": "Vela Drift"
+        }
+      ],
+      "genres": [],
+      "id": "/music/vela drift/salt and static",
+      "image": {
+        "height": 300,
+        "url": "/playwright-fixtures/art/0ebf84bb11a5da56.jpg",
+        "width": 300
+      },
+      "name": "Salt and Static",
+      "releaseDate": "2022",
+      "trackCount": 4,
+      "trackIds": [
+        "/music/vela drift/salt and static/01 static bloom.mp3",
+        "/music/vela drift/salt and static/02 saltwater radio.mp3",
+        "/music/vela drift/salt and static/03 deadzone waltz.mp3",
+        "/music/vela drift/salt and static/04 everything hums.mp3"
+      ]
+    }
+  ],
+  "likedTrackIds": [
+    "/music/nocturne atlas/paper lanterns/02 paper lanterns.mp3",
+    "/music/vela drift/salt and static/01 static bloom.mp3",
+    "/music/vela drift/salt and static/03 deadzone waltz.mp3"
+  ],
   "meta": {
-    "schemaVersion": 1,
+    "anonymizationSeed": "0000000000000000",
     "generatedAt": "2026-04-29T00:00:00.000Z",
     "generatorVersion": "0.0.0",
     "provider": "dropbox",
-    "anonymizationSeed": "0000000000000000"
+    "schemaVersion": 1
+  },
+  "pins": {
+    "albumIds": [],
+    "playlistIds": []
+  },
+  "playlists": [
+    {
+      "description": "",
+      "id": "/.vorbis-player/playlists/field-recordings.json",
+      "image": {
+        "height": 300,
+        "url": "/playwright-fixtures/art/004cac0846d12849.jpg",
+        "width": 300
+      },
+      "name": "Field Recordings",
+      "ownerName": "Anonymous User",
+      "revision": null,
+      "trackCount": 5,
+      "trackIds": [
+        "/music/nocturne atlas/paper lanterns/01 harbour lights.mp3",
+        "/music/nocturne atlas/paper lanterns/02 paper lanterns.mp3",
+        "/music/vela drift/salt and static/01 static bloom.mp3",
+        "/music/vela drift/salt and static/02 saltwater radio.mp3",
+        "/music/vela drift/salt and static/04 everything hums.mp3"
+      ]
+    }
+  ],
+  "tracks": {
+    "/music/nocturne atlas/paper lanterns/01 harbour lights.mp3": {
+      "album": {
+        "id": "/music/nocturne atlas/paper lanterns",
+        "name": "Paper Lanterns"
+      },
+      "artists": [
+        {
+          "name": "Nocturne Atlas"
+        }
+      ],
+      "artistsDisplay": "Nocturne Atlas",
+      "durationMs": 212480,
+      "id": "/music/nocturne atlas/paper lanterns/01 harbour lights.mp3",
+      "image": {
+        "height": 300,
+        "url": "/playwright-fixtures/art/0c7bc2749020182c.jpg",
+        "width": 300
+      },
+      "name": "Harbour Lights",
+      "ref": "/music/nocturne atlas/paper lanterns/01 harbour lights.mp3",
+      "trackNumber": 1
+    },
+    "/music/nocturne atlas/paper lanterns/02 paper lanterns.mp3": {
+      "album": {
+        "id": "/music/nocturne atlas/paper lanterns",
+        "name": "Paper Lanterns"
+      },
+      "artists": [
+        {
+          "name": "Nocturne Atlas"
+        }
+      ],
+      "artistsDisplay": "Nocturne Atlas",
+      "durationMs": 264900,
+      "id": "/music/nocturne atlas/paper lanterns/02 paper lanterns.mp3",
+      "image": {
+        "height": 300,
+        "url": "/playwright-fixtures/art/0c7bc2749020182c.jpg",
+        "width": 300
+      },
+      "name": "Paper Lanterns",
+      "ref": "/music/nocturne atlas/paper lanterns/02 paper lanterns.mp3",
+      "trackNumber": 2
+    },
+    "/music/nocturne atlas/paper lanterns/03 low tide signal.mp3": {
+      "album": {
+        "id": "/music/nocturne atlas/paper lanterns",
+        "name": "Paper Lanterns"
+      },
+      "artists": [
+        {
+          "name": "Nocturne Atlas"
+        }
+      ],
+      "artistsDisplay": "Nocturne Atlas",
+      "durationMs": 198040,
+      "id": "/music/nocturne atlas/paper lanterns/03 low tide signal.mp3",
+      "image": {
+        "height": 300,
+        "url": "/playwright-fixtures/art/0c7bc2749020182c.jpg",
+        "width": 300
+      },
+      "name": "Low Tide Signal",
+      "ref": "/music/nocturne atlas/paper lanterns/03 low tide signal.mp3",
+      "trackNumber": 3
+    },
+    "/music/nocturne atlas/paper lanterns/04 cassette sunrise.mp3": {
+      "album": {
+        "id": "/music/nocturne atlas/paper lanterns",
+        "name": "Paper Lanterns"
+      },
+      "artists": [
+        {
+          "name": "Nocturne Atlas"
+        }
+      ],
+      "artistsDisplay": "Nocturne Atlas",
+      "durationMs": 301620,
+      "id": "/music/nocturne atlas/paper lanterns/04 cassette sunrise.mp3",
+      "image": {
+        "height": 300,
+        "url": "/playwright-fixtures/art/0c7bc2749020182c.jpg",
+        "width": 300
+      },
+      "name": "Cassette Sunrise",
+      "ref": "/music/nocturne atlas/paper lanterns/04 cassette sunrise.mp3",
+      "trackNumber": 4
+    },
+    "/music/vela drift/salt and static/01 static bloom.mp3": {
+      "album": {
+        "id": "/music/vela drift/salt and static",
+        "name": "Salt and Static"
+      },
+      "artists": [
+        {
+          "name": "Vela Drift"
+        }
+      ],
+      "artistsDisplay": "Vela Drift",
+      "durationMs": 245310,
+      "id": "/music/vela drift/salt and static/01 static bloom.mp3",
+      "image": {
+        "height": 300,
+        "url": "/playwright-fixtures/art/0ebf84bb11a5da56.jpg",
+        "width": 300
+      },
+      "name": "Static Bloom",
+      "ref": "/music/vela drift/salt and static/01 static bloom.mp3",
+      "trackNumber": 1
+    },
+    "/music/vela drift/salt and static/02 saltwater radio.mp3": {
+      "album": {
+        "id": "/music/vela drift/salt and static",
+        "name": "Salt and Static"
+      },
+      "artists": [
+        {
+          "name": "Vela Drift"
+        }
+      ],
+      "artistsDisplay": "Vela Drift",
+      "durationMs": 187760,
+      "id": "/music/vela drift/salt and static/02 saltwater radio.mp3",
+      "image": {
+        "height": 300,
+        "url": "/playwright-fixtures/art/0ebf84bb11a5da56.jpg",
+        "width": 300
+      },
+      "name": "Saltwater Radio",
+      "ref": "/music/vela drift/salt and static/02 saltwater radio.mp3",
+      "trackNumber": 2
+    },
+    "/music/vela drift/salt and static/03 deadzone waltz.mp3": {
+      "album": {
+        "id": "/music/vela drift/salt and static",
+        "name": "Salt and Static"
+      },
+      "artists": [
+        {
+          "name": "Vela Drift"
+        }
+      ],
+      "artistsDisplay": "Vela Drift",
+      "durationMs": 273150,
+      "id": "/music/vela drift/salt and static/03 deadzone waltz.mp3",
+      "image": {
+        "height": 300,
+        "url": "/playwright-fixtures/art/0ebf84bb11a5da56.jpg",
+        "width": 300
+      },
+      "name": "Deadzone Waltz",
+      "ref": "/music/vela drift/salt and static/03 deadzone waltz.mp3",
+      "trackNumber": 3
+    },
+    "/music/vela drift/salt and static/04 everything hums.mp3": {
+      "album": {
+        "id": "/music/vela drift/salt and static",
+        "name": "Salt and Static"
+      },
+      "artists": [
+        {
+          "name": "Vela Drift"
+        }
+      ],
+      "artistsDisplay": "Vela Drift",
+      "durationMs": 229880,
+      "id": "/music/vela drift/salt and static/04 everything hums.mp3",
+      "image": {
+        "height": 300,
+        "url": "/playwright-fixtures/art/0ebf84bb11a5da56.jpg",
+        "width": 300
+      },
+      "name": "Everything Hums",
+      "ref": "/music/vela drift/salt and static/04 everything hums.mp3",
+      "trackNumber": 4
+    }
   },
   "user": {
     "displayName": "Anonymous User",
     "hashedId": "user_00000000"
-  },
-  "tracks": {},
-  "playlists": [],
-  "albums": [],
-  "likedTrackIds": [],
-  "pins": {
-    "playlistIds": [],
-    "albumIds": []
   }
 }

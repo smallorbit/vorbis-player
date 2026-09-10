@@ -1,5 +1,6 @@
 import { test, expect } from '../fixtures/auth-state';
 import spotifySnapshot from '../fixtures/data/spotify-snapshot.json' with { type: 'json' };
+import { requireLongTrack } from '../fixtures/require-snapshot';
 
 /**
  * Regression coverage for #1394 / #1478 — the persisted-session hydrate must
@@ -34,18 +35,7 @@ const SEED_POSITION_MS = 45_000;
  *   clears the duration floor. Deterministic across snapshot regenerations
  *   that preserve the same id set.
  */
-type SnapshotTrack = (typeof spotifySnapshot)['tracks'][keyof (typeof spotifySnapshot)['tracks']];
-
-function pickSeedTrack(): SnapshotTrack | null {
-  const entries = Object.entries(spotifySnapshot.tracks as Record<string, SnapshotTrack>);
-  const sorted = entries.sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0));
-  for (const [, track] of sorted) {
-    if (track.durationMs > 60_000) return track;
-  }
-  return null;
-}
-
-const seedTrack = pickSeedTrack();
+const seedTrack = requireLongTrack(spotifySnapshot, 'spotify');
 
 function encodeSeed(trackId: string, positionMs: number): string {
   const json = JSON.stringify({ trackId, positionMs });
@@ -60,10 +50,6 @@ interface FirstRealFrame {
 
 test.describe('Persisted-session hydrate (no 0:00 flicker)', () => {
   test.beforeEach(async ({ page }) => {
-    test.skip(
-      !seedTrack,
-      'Spec requires a fixture track with durationMs > 60_000. Run `npm run snapshot:spotify` to populate playwright/fixtures/data/spotify-snapshot.json.',
-    );
 
     // #given — install a MutationObserver before any page script runs. It
     // tracks every mount and attribute change on the seek-timeline slider
@@ -133,7 +119,6 @@ test.describe('Persisted-session hydrate (no 0:00 flicker)', () => {
   });
 
   test('seek bar paints with the restored position on its first real-duration frame', async ({ page }) => {
-    if (!seedTrack) return; // beforeEach already skipped.
 
     // #given — seed a session 45s into a known fixture track. mockProvider's
     // seedSessionFromUrlParam runs during the module's top-level eager import

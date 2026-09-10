@@ -1,9 +1,11 @@
 import { test, expect } from '../fixtures/auth-state';
 import spotifySnapshot from '../fixtures/data/spotify-snapshot.json' with { type: 'json' };
+import { requireAlbum, requireCollections, requirePlaylist } from '../fixtures/require-snapshot';
 
-const hasPlaylists = spotifySnapshot.playlists.length > 0;
-const hasAlbums = spotifySnapshot.albums.length > 0;
-const hasContent = hasPlaylists || hasAlbums;
+requireCollections(spotifySnapshot, 'spotify');
+
+const firstPlaylist = requirePlaylist(spotifySnapshot, 'spotify');
+const firstAlbum = requireAlbum(spotifySnapshot, 'spotify');
 
 async function navigateToLibrary(page: import('@playwright/test').Page) {
   await page.goto('/');
@@ -12,10 +14,6 @@ async function navigateToLibrary(page: import('@playwright/test').Page) {
 
 test.describe('Playlist Selection', () => {
   test('shows library UI when authenticated', async ({ page }) => {
-    test.skip(
-      !hasContent,
-      'Specs require populated snapshots. Run `npm run snapshot:spotify -- --list` to enumerate your library, populate `snapshot.config.json`, then `npm run snapshot:spotify`. See #1372 §10 ("Curating fixtures").',
-    );
     await navigateToLibrary(page);
     await expect(page.getByText('Connect Spotify')).not.toBeVisible({ timeout: 5000 });
     await expect(page.locator('[data-testid="library-home"]')).toBeVisible({ timeout: 5000 });
@@ -26,12 +24,6 @@ test.describe('Playlist Selection', () => {
   });
 
   test('renders playlist tiles bound to real snapshot data', async ({ page }) => {
-    if (!hasPlaylists) {
-      test.skip(true, 'Snapshot has no playlists — skipping playlist-render test');
-      return;
-    }
-    const firstPlaylist = spotifySnapshot.playlists[0];
-    if (!firstPlaylist) return;
 
     await navigateToLibrary(page);
 
@@ -45,10 +37,6 @@ test.describe('Playlist Selection', () => {
   });
 
   test('clicking a playlist tile loads that playlist into the player', async ({ page }) => {
-    if (!hasPlaylists) {
-      test.skip(true, 'Snapshot has no playlists — skipping playlist-click test');
-      return;
-    }
     await navigateToLibrary(page);
     await page.locator('[data-testid^="library-card-playlist-"]').first().click();
 
@@ -64,12 +52,6 @@ test.describe('Playlist Selection', () => {
   });
 
   test('renders album tiles bound to real snapshot data', async ({ page }) => {
-    if (!hasAlbums) {
-      test.skip(true, 'Snapshot has no albums — skipping album-render test');
-      return;
-    }
-    const firstAlbum = spotifySnapshot.albums[0];
-    if (!firstAlbum) return;
 
     await navigateToLibrary(page);
 
@@ -81,10 +63,6 @@ test.describe('Playlist Selection', () => {
   });
 
   test('library section renders without auth errors', async ({ page }) => {
-    test.skip(
-      !hasContent,
-      'Specs require populated snapshots. Run `npm run snapshot:spotify -- --list` to enumerate your library, populate `snapshot.config.json`, then `npm run snapshot:spotify`. See #1372 §10 ("Curating fixtures").',
-    );
     await navigateToLibrary(page);
     await expect(page.locator('[data-testid="library-home"]')).toBeVisible({ timeout: 5000 });
     await expect(page.getByText('Connect Spotify')).not.toBeVisible();
