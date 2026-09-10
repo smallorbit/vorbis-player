@@ -11,11 +11,6 @@ import { openPlaylist } from '../fixtures/player';
  * presence and Playwright's toBeVisible() are both useless as signals: the
  * controls report "visible" before any flip. What actually changes is whether
  * they can receive a pointer, so these assert clickability instead.
- *
- * Only the ToggleGroup controls are covered. The glow and visualizer switches
- * sit under a z-index:2 layout layer at the top of the card and cannot be
- * clicked even after the flip — see the note in the PR; that needs a fix in the
- * component, not a workaround here.
  */
 
 const playlist = requirePlaylist(spotifySnapshot, 'spotify');
@@ -82,5 +77,68 @@ test.describe('Visual effects flip menu', () => {
     // #then - the selection persisted
     await expect(visualizerStyle(page).getByRole('radio', { name: 'Comet' }))
       .toHaveAttribute('aria-checked', 'true', { timeout: 5_000 });
+  });
+});
+
+/**
+ * Regression guard for the clipped effects menu.
+ *
+ * BacksideRoot is overflow:hidden and Content was justify-content:center, so
+ * whenever the menu was taller than the square card the overflow split evenly
+ * and the top half was clipped outside it. At 1280x720 that put the accent
+ * swatches at y=6 and the glow switch at y=41 against a card starting at y=64:
+ * rendered, reported "visible", and impossible to see or click.
+ */
+test.describe('Visual effects menu — nothing clipped above the card', () => {
+  test.beforeEach(async ({ page }) => {
+    await openPlaylist(page, playlist.id);
+    await flipToEffectsMenu(page);
+  });
+
+  test('no control renders above the top of the card', async ({ page }) => {
+    // #given - the flipped menu and the card that clips it
+    const cardTop = await page.evaluate(() => {
+      const sw = document.querySelector('[aria-label="Toggle glow"]');
+      let content: Element | null = sw;
+      while (content && getComputedStyle(content).zIndex !== '1') content = content.parentElement;
+      return content?.getBoundingClientRect().top ?? null;
+    });
+    expect(cardTop).not.toBeNull();
+
+    // #when - each interactive control is measured
+    const controls = page.locator(
+      '[aria-label^="Choose color"], [aria-label="Pick color from album art"], [aria-label^="Toggle "]',
+    );
+    const count = await controls.count();
+    expect(count).toBeGreaterThan(0);
+
+    // #then - none of them sits above the clip boundary
+    for (let i = 0; i < count; i++) {
+      const box = await controls.nth(i).boundingBox();
+      const label = await controls.nth(i).getAttribute('aria-label');
+      expect(box, `${label} has no box`).not.toBeNull();
+      expect(box!.y, `${label} is clipped above the card`).toBeGreaterThanOrEqual(cardTop!);
+    }
+  });
+
+  test('the glow switch is reachable and toggles', async ({ page }) => {
+    // #given - the glow switch, previously clipped outside the card
+    const glow = page.getByRole('switch', { name: 'Toggle glow' });
+    const before = await glow.getAttribute('aria-checked');
+
+    // #when - the user clicks it, hit-testing included
+    await glow.click();
+
+    // #then - it actually flips, so the click landed on the switch
+    await expect(glow).not.toHaveAttribute('aria-checked', before ?? '', { timeout: 5_000 });
+  });
+
+  test('an accent swatch is reachable', async ({ page }) => {
+    // #given - the accent row, which sat furthest above the clip boundary
+    const swatch = page.locator('[aria-label^="Choose color"]').first();
+
+    // #when / #then - it can be clicked rather than timing out on actionability
+    await swatch.click({ timeout: 5_000 });
+    await expect(swatch).toBeVisible();
   });
 });

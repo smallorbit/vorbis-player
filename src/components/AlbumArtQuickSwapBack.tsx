@@ -65,7 +65,14 @@ const Content = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  /* The card is square but the effects menu is not, so on shorter viewports the
+     menu is taller than the card. Plain "center" splits that overflow evenly and
+     BacksideRoot's overflow:hidden clips the top half away — which took the glow
+     and visualizer switches with it, leaving them invisible and unclickable.
+     "safe center" keeps centering while it fits and falls back to flex-start once
+     it does not, so nothing is pushed past the top edge. */
+  justify-content: safe center;
+  overflow-y: auto;
   height: 100%;
   padding: ${theme.spacing.lg};
   box-sizing: border-box;
