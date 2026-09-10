@@ -13,8 +13,12 @@ Centralized in `useKeyboardShortcuts.ts`. Uses `pointer: fine` / `hover: hover` 
 | `Shift+S` / `K` / `M` | Effects menu / Like / Mute | same |
 | `Cmd+K` / `Ctrl+K` | Open command palette (search library) | not bound |
 | `?` / `/` | Keyboard help | same |
-| `Escape` | Close all menus | same |
+| `Escape` | Close all menus, exit zen mode | same |
 
 `Q` and `L` are device-independent alternatives for drawer toggles. `↑`/`↓` have cross-dismiss behavior.
+
+`Escape` also leaves zen mode. It previously did not: revealing the faded controls made it
+look like it had, and the e2e test asserted only that the track info was visible, so it
+passed while zen stayed on. `Z` remains the direct toggle.
 
 The command palette (`Cmd+K` / `Ctrl+K`) lives in `src/components/CmdKPalette/` and registers its own `keydown` listener — separate from `useKeyboardShortcuts.ts`. Inside the palette, ↑/↓ navigate results and Enter selects (handled natively by `cmdk`). The palette does not mount on touch devices.
