@@ -36,6 +36,17 @@ interface MockTestApi {
   restoreAuth(providerId: ProviderId): Promise<void>;
   reset(): Promise<void>;
   triggerNaturalEnd(providerId: ProviderId): Promise<void>;
+  /**
+   * Read a provider's playback state directly from its adapter.
+   *
+   * Cross-provider handoff requires the outgoing provider to be paused before
+   * the incoming one starts, and that is invisible from the DOM: the player
+   * chrome only ever reflects the driving provider, so a queue that advanced
+   * across a provider boundary looks identical whether or not the old provider
+   * is still producing audio. Specs assert "only one provider is playing"
+   * through this.
+   */
+  getPlaybackState(providerId: ProviderId): Promise<{ isPlaying: boolean; trackId: string | null }>;
 }
 
 interface InstallOptions {
@@ -122,6 +133,14 @@ export function installMockTestApi(opts: InstallOptions): void {
 
     async triggerNaturalEnd(providerId) {
       resolvePlayback(providerId).__testTriggerNaturalEnd();
+    },
+
+    async getPlaybackState(providerId) {
+      const state = await resolvePlayback(providerId).getState();
+      return {
+        isPlaying: state?.isPlaying ?? false,
+        trackId: state?.currentTrackId ?? null,
+      };
     },
   };
 }
