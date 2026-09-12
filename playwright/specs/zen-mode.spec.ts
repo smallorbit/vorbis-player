@@ -1,6 +1,7 @@
 import { test, expect } from '../fixtures/auth-state';
 import spotifySnapshot from '../fixtures/data/spotify-snapshot.json' with { type: 'json' };
 import { requireCollections } from '../fixtures/require-snapshot';
+import { waitForZenControlsHidden } from '../fixtures/player';
 
 requireCollections(spotifySnapshot, 'spotify');
 
@@ -15,18 +16,6 @@ test.describe('Zen Mode', () => {
   // Playwright's isVisible() checks the element's own opacity, not inherited opacity from
   // ancestors. The ZenControlsWrapper hides via opacity:0 on a parent, so we must walk
   // the ancestor chain to detect the effective hidden state.
-  async function waitForControlsHidden(page: import('@playwright/test').Page) {
-    await page.waitForFunction(() => {
-      const el = document.querySelector('[data-testid="player-track-info-album"]');
-      if (!el) return false;
-      let anc: Element | null = el;
-      while (anc) {
-        if (parseFloat(window.getComputedStyle(anc).opacity) < 0.1) return true;
-        anc = anc.parentElement;
-      }
-      return false;
-    }, { timeout: 2000 });
-  }
 
   test('zen mode button exists in the bottom bar', async ({ page }) => {
     const zenButton = page.locator('button[title^="Zen Mode"]');
@@ -40,20 +29,28 @@ test.describe('Zen Mode', () => {
     await expect(zenButton).toBeVisible({ timeout: 5000 });
     await zenButton.click();
 
-    await waitForControlsHidden(page);
+    await waitForZenControlsHidden(page);
 
     await expect(page.locator('button[title="Zen Mode ON"]')).toBeVisible({ timeout: 5000 });
   });
 
   test('escape key exits zen mode', async ({ page }) => {
+    // #given - zen mode engaged
     const zenButton = page.locator('button[title="Zen Mode OFF"]');
     await expect(zenButton).toBeVisible({ timeout: 5000 });
     await zenButton.click();
+    await expect(page.locator('button[title="Zen Mode ON"]')).toBeVisible({ timeout: 5000 });
 
-    await waitForControlsHidden(page);
+    await waitForZenControlsHidden(page);
 
+    // #when - the user presses Escape
     await page.keyboard.press('Escape');
 
+    // #then - zen mode is actually off. Asserting the album info is visible is
+    // not enough: it reappears whenever the faded controls are revealed, so
+    // this test passed while zen was still on. The button's title is the
+    // state, so assert that.
+    await expect(page.locator('button[title="Zen Mode OFF"]')).toBeVisible({ timeout: 5000 });
     await expect(page.locator('[data-testid="player-track-info-album"]')).toBeVisible({ timeout: 5000 });
   });
 

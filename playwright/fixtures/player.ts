@@ -93,3 +93,19 @@ export async function dragQueueRow(page: Page, fromIndex: number, toIndex: numbe
   await page.mouse.move(target.x + target.width / 2, target.y + target.height / 2, { steps: 10 });
   await page.mouse.up();
 }
+
+/**
+ * Wait for zen mode's fade to finish. Zen does not unmount the controls, it
+ * fades an ancestor's opacity, so a spec that presses Escape immediately after
+ * entering zen races the transition and the exit is dropped.
+ */
+export async function waitForZenControlsHidden(page: Page): Promise<void> {
+  await page.waitForFunction(() => {
+    const el = document.querySelector('[data-testid="player-track-info-album"]');
+    if (!el) return false;
+    for (let anc: Element | null = el; anc; anc = anc.parentElement) {
+      if (parseFloat(window.getComputedStyle(anc).opacity) < 0.1) return true;
+    }
+    return false;
+  }, { timeout: 5_000 });
+}

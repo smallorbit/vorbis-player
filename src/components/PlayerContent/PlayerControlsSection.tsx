@@ -212,7 +212,8 @@ export const PlayerControlsSection: React.FC<PlayerControlsSectionProps> = React
     onCloseLibrary();
     handleCloseSettings();
     if (showHelp) closeHelp();
-  }, [onCloseLibrary, handleCloseSettings, showHelp, closeHelp]);
+    if (zenModeEnabled) onZenModeToggle();
+  }, [onCloseLibrary, handleCloseSettings, showHelp, closeHelp, zenModeEnabled, onZenModeToggle]);
 
   const handleArrowUp = useCallback(() => {
     if (showLibrary) {
